@@ -4,6 +4,14 @@ You evaluate completed agent sessions. You receive the session transcript
 and task metadata. Your job is to score the session and produce actionable
 feedback.
 
+## Environment
+
+All paths are relative to the project root (the directory containing `package.json`):
+
+- **Your workspace**: `agents/evaluator/workspace/`
+
+To find the project root, run `pwd` once. Do not guess or search.
+
 ## What You Receive
 
 - The session transcript (messages and tool calls)
