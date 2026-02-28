@@ -13,8 +13,8 @@ export type {
   WorkflowToolResult,
   CompletedStep,
 } from "./workflow.js";
-export { evaluateSession } from "./evaluator.js";
-export type { EvaluationScores, EvaluationResult, EvaluateSessionOptions } from "./evaluator.js";
+export { evaluateSession, maintainAgent } from "./evaluator.js";
+export type { EvaluationScores, EvaluationResult, EvaluateSessionOptions, MaintainAgentOptions, MaintenanceResult } from "./evaluator.js";
 export {
   RegistryStore,
   ensureSessionDir,
