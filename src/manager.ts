@@ -1,7 +1,7 @@
 import { Agent } from "@mariozechner/pi-agent-core";
 import type { AgentMessage, AgentEvent } from "@mariozechner/pi-agent-core";
 import type { SubagentDefinition, SessionInfo, TaskResult } from "./types.js";
-import { RegistryStore } from "./persistence.js";
+import { RegistryStore, ensureSessionDir, appendSessionMessage } from "./persistence.js";
 
 let nextId = 0;
 function generateId(): string {
@@ -43,6 +43,7 @@ interface ActiveSession {
   startedAt: number;
   status: "running" | "done" | "error";
   error?: string;
+  unsubscribe?: () => void;
 }
 
 export interface SubagentManagerOptions {
@@ -64,6 +65,18 @@ export class SubagentManager {
     this.registry?.saveAgent(def);
   }
 
+  /** Subscribe to message_end events and persist messages to session JSONL. */
+  private subscribeForPersistence(session: ActiveSession): void {
+    if (!this.registry) return;
+    const persistDir = this.registry.persistDir;
+    const { sessionId } = session;
+    session.unsubscribe = session.agent.subscribe((event: AgentEvent) => {
+      if (event.type === "message_end") {
+        appendSessionMessage(persistDir, sessionId, event.message);
+      }
+    });
+  }
+
   /** Start a new session for a registered agent. Returns sessionId. Non-blocking. */
   run(name: string, task: string): string {
     const registered = this.agents.get(name);
@@ -71,6 +84,11 @@ export class SubagentManager {
 
     const def = registered.definition;
     const sessionId = generateId();
+
+    // Create session directory for JSONL persistence
+    if (this.registry) {
+      ensureSessionDir(this.registry.persistDir, sessionId);
+    }
 
     const agent = new Agent({
       initialState: {
@@ -91,7 +109,10 @@ export class SubagentManager {
       status: "running",
     };
 
-    // Persist the new session
+    // Subscribe for JSONL persistence before starting the prompt
+    this.subscribeForPersistence(session);
+
+    // Persist the new session to registry
     this.registry?.saveSession(sessionId, {
       agent: name,
       task,

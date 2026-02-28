@@ -1,5 +1,6 @@
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, appendFileSync, mkdirSync, existsSync } from "node:fs";
 import { join, dirname } from "node:path";
+import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { SubagentDefinition } from "./types.js";
 
 /** Serializable agent config (no tools, no apiKey, no full model object). */
@@ -40,11 +41,50 @@ export function toPersistedConfig(def: SubagentDefinition): PersistedAgentConfig
   };
 }
 
+// ── Session JSONL helpers ──────────────────────────────────────────────
+
+/** Return the path to a session's directory. */
+export function sessionDir(persistDir: string, sessionId: string): string {
+  return join(persistDir, "sessions", sessionId);
+}
+
+/** Return the path to a session's JSONL file. */
+export function sessionJsonlPath(persistDir: string, sessionId: string): string {
+  return join(sessionDir(persistDir, sessionId), "session.jsonl");
+}
+
+/** Create the session directory (idempotent). */
+export function ensureSessionDir(persistDir: string, sessionId: string): void {
+  mkdirSync(sessionDir(persistDir, sessionId), { recursive: true });
+}
+
+/** Append a single message as a JSON line to the session's JSONL file. */
+export function appendSessionMessage(persistDir: string, sessionId: string, message: AgentMessage): void {
+  const line = JSON.stringify(message) + "\n";
+  appendFileSync(sessionJsonlPath(persistDir, sessionId), line, "utf-8");
+}
+
+/** Read all messages from a session's JSONL file. Returns [] if the file doesn't exist or is empty. */
+export function readSessionMessages(persistDir: string, sessionId: string): AgentMessage[] {
+  const filePath = sessionJsonlPath(persistDir, sessionId);
+  if (!existsSync(filePath)) return [];
+  const raw = readFileSync(filePath, "utf-8");
+  if (!raw.trim()) return [];
+  return raw
+    .trim()
+    .split("\n")
+    .map((line) => JSON.parse(line) as AgentMessage);
+}
+
+// ── RegistryStore ──────────────────────────────────────────────────────
+
 export class RegistryStore {
   private filePath: string;
   private data: Registry;
+  readonly persistDir: string;
 
   constructor(persistDir: string) {
+    this.persistDir = persistDir;
     this.filePath = join(persistDir, "registry.json");
     this.data = this.load();
   }
