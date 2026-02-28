@@ -34,10 +34,10 @@ export interface MaintainAgentOptions {
 }
 
 export interface MaintenanceResult {
-  domainUpdated: boolean;   // was domain.md rewritten?
-  lessonsPruned: number;    // how many lessons were consolidated
-  staleItems: string[];     // stale knowledge detected
-  toolIssues: string[];     // broken/missing tools detected
+  lessonsPruned: number;        // how many lessons were consolidated/removed
+  suggestions: string[];        // suggested changes for domain.md (human reviews)
+  staleItems: string[];         // stale knowledge detected
+  toolIssues: string[];         // broken/missing tools detected
 }
 
 // ── Transcript formatting ──────────────────────────────────────────────
@@ -128,28 +128,15 @@ function parseEvaluation(text: string): EvaluationResult {
 // ── Maintenance response parsing ───────────────────────────────────────
 
 function parseMaintenanceResponse(text: string): {
-  updatedDomain: string | null;
   updatedLessons: string | null;
-  report: { domainUpdated: boolean; lessonsPruned: number; staleItems: string[]; toolIssues: string[] };
+  report: { lessonsPruned: number; suggestions: string[]; staleItems: string[]; toolIssues: string[] };
 } {
   const defaultReport = {
-    domainUpdated: false,
     lessonsPruned: 0,
+    suggestions: [] as string[],
     staleItems: [] as string[],
     toolIssues: [] as string[],
   };
-
-  // Tolerant regex for fenced code blocks:
-  // - Allows optional newline before closing ```
-  // - Allows optional language tag (markdown, md, etc.)
-  // - Case-insensitive heading match for domain.md/lessons.md
-
-  // Extract updated domain.md content
-  let updatedDomain: string | null = null;
-  const domainMatch = text.match(/###\s+[Uu]pdated\s+domain\.md\s*\n[\s\S]*?```(?:markdown|md)?\s*\n([\s\S]*?)```/);
-  if (domainMatch) {
-    updatedDomain = domainMatch[1].replace(/\n$/, "");
-  }
 
   // Extract updated lessons.md content
   let updatedLessons: string | null = null;
@@ -170,7 +157,7 @@ function parseMaintenanceResponse(text: string): {
     }
   }
 
-  return { updatedDomain, updatedLessons, report };
+  return { updatedLessons, report };
 }
 
 // ── Main function ──────────────────────────────────────────────────────
@@ -282,26 +269,27 @@ export async function evaluateSession(opts: EvaluateSessionOptions): Promise<Eva
 // ── Maintenance function ───────────────────────────────────────────────
 
 const DEFAULT_MAINTENANCE_RESULT: MaintenanceResult = {
-  domainUpdated: false,
   lessonsPruned: 0,
+  suggestions: [],
   staleItems: [],
   toolIssues: [],
 };
 
 /**
- * Orchestrate the evaluator agent to consolidate an agent's knowledge.
+ * Prune and consolidate an agent's lessons.md using the evaluator agent.
  *
- * Reads domain.md and lessons.md, sends them to the evaluator agent for
- * analysis and consolidation, then writes the updated files back to disk.
+ * Does NOT modify domain.md — that's human-authored and stable.
+ * Instead, returns suggestions for domain.md changes that a human can review.
  *
- * The evaluator agent does the actual consolidation work — it reads both
- * files, decides what to promote, and writes the updated versions. This
- * function just orchestrates (formats prompt, runs agent, collects results).
+ * The evaluator:
+ * 1. Reads lessons.md (and domain.md for context)
+ * 2. Deduplicates, removes obsolete entries
+ * 3. Writes pruned lessons.md back
+ * 4. Returns suggestions for what should be promoted to domain.md
  */
 export async function maintainAgent(opts: MaintainAgentOptions): Promise<MaintenanceResult> {
   const { manager, agentName, knowledgeDir } = opts;
 
-  // 1. Read current knowledge files
   const lessonsPath = join(knowledgeDir, "lessons.md");
   const domainPath = join(knowledgeDir, "domain.md");
 
@@ -315,79 +303,69 @@ export async function maintainAgent(opts: MaintainAgentOptions): Promise<Mainten
     return { ...DEFAULT_MAINTENANCE_RESULT };
   }
 
-  // domain.md may or may not exist
-  let domainContent: string | null = null;
+  // Read domain.md for context (read-only — we won't modify it)
+  let domainContent = "(no domain.md exists)";
   if (existsSync(domainPath)) {
     domainContent = readFileSync(domainPath, "utf-8");
   }
 
-  // 2. Build maintenance prompt
-  const promptParts: string[] = [
-    `# Knowledge Maintenance for agent: ${agentName}\n`,
-  ];
+  // Build maintenance prompt
+  const prompt = [
+    `# Lessons Maintenance for agent: ${agentName}\n`,
+    `## Current domain.md (READ-ONLY — do not rewrite this)\n\`\`\`markdown\n${domainContent}\n\`\`\`\n`,
+    `## Current lessons.md (this is what you're pruning)\n\`\`\`markdown\n${lessonsContent}\n\`\`\`\n`,
+    [
+      `## Instructions`,
+      ``,
+      `Prune and consolidate the lessons.md for the "${agentName}" agent.`,
+      ``,
+      `1. Remove duplicate/redundant lessons`,
+      `2. Remove lessons already covered in domain.md`,
+      `3. Merge similar lessons into single entries`,
+      `4. Remove obsolete lessons (references to things that no longer exist)`,
+      `5. Keep recent and important lessons`,
+      `6. Identify lessons that SHOULD be in domain.md — list as suggestions (human will review)`,
+      `7. Check for stale knowledge in domain.md (references to files/APIs that may have changed)`,
+      ``,
+      `**Do NOT output an updated domain.md.** Domain.md is human-authored.`,
+      ``,
+      `Respond with exactly these two sections:`,
+      ``,
+      `### Updated lessons.md`,
+      `(fenced markdown block with pruned lessons.md)`,
+      ``,
+      `### Maintenance Report`,
+      `\`\`\`json`,
+      `{`,
+      `  "lessonsPruned": <number of lessons removed/merged>,`,
+      `  "suggestions": ["suggestion for domain.md change", ...],`,
+      `  "staleItems": ["stale reference in domain.md", ...],`,
+      `  "toolIssues": ["broken/missing tool", ...]`,
+      `}`,
+      `\`\`\``,
+    ].join("\n"),
+  ].join("\n");
 
-  if (domainContent !== null) {
-    promptParts.push(`## Current domain.md\n\`\`\`markdown\n${domainContent}\n\`\`\`\n`);
-  } else {
-    promptParts.push(`## Current domain.md\n(does not exist yet — create initial domain.md from lessons)\n`);
-  }
-
-  promptParts.push(`## Current lessons.md\n\`\`\`markdown\n${lessonsContent}\n\`\`\`\n`);
-
-  promptParts.push([
-    `## Instructions`,
-    ``,
-    `Analyze the lessons and consolidate knowledge for the "${agentName}" agent:`,
-    ``,
-    `1. Group lessons by theme`,
-    `2. Promote important/repeated lessons into domain.md (update existing sections or add new ones)`,
-    `3. If a lesson contradicts domain.md, the lesson wins (it's newer)`,
-    `4. Discard redundant lessons that are already captured in domain.md`,
-    `5. Rewrite lessons.md keeping only recent un-promoted entries`,
-    `6. Detect any stale knowledge or tool issues`,
-    ``,
-    `Respond with exactly these three sections. Each section must contain a fenced code block:`,
-    ``,
-    `### Updated domain.md`,
-    `(fenced markdown block with the full updated domain.md)`,
-    ``,
-    `### Updated lessons.md`,
-    `(fenced markdown block with pruned lessons)`,
-    ``,
-    `### Maintenance Report`,
-    `(fenced json block with: domainUpdated (bool), lessonsPruned (number), staleItems (string[]), toolIssues (string[]))`,
-  ].join("\n"));
-
-  const prompt = promptParts.join("\n");
-
-  // 3. Run evaluator agent
+  // Run evaluator agent
   const evalSessionId = manager.run("evaluator", prompt);
   const evalResult = await manager.waitFor(evalSessionId);
 
   const responseText = evalResult?.lastAssistantText;
-
-  // Handle empty/null response
   if (!responseText) {
     return { ...DEFAULT_MAINTENANCE_RESULT };
   }
 
-  // 4. Parse the evaluator's structured response
+  // Parse response
   const parsed = parseMaintenanceResponse(responseText);
 
-  // 5. Write updated files back to disk (only if content was returned)
-  if (parsed.updatedDomain !== null) {
-    mkdirSync(dirname(domainPath), { recursive: true });
-    writeFileSync(domainPath, parsed.updatedDomain, "utf-8");
-  }
-
+  // Write pruned lessons.md (only if content was returned)
   if (parsed.updatedLessons !== null) {
     writeFileSync(lessonsPath, parsed.updatedLessons, "utf-8");
   }
 
-  // 6. Return MaintenanceResult
   return {
-    domainUpdated: parsed.report.domainUpdated,
     lessonsPruned: parsed.report.lessonsPruned,
+    suggestions: parsed.report.suggestions,
     staleItems: parsed.report.staleItems,
     toolIssues: parsed.report.toolIssues,
   };
