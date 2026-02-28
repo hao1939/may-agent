@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 import { createInterface } from "node:readline";
 import { fileURLToPath } from "node:url";
 import { resolve, dirname } from "node:path";
@@ -100,6 +100,14 @@ let lastWorkflowUsed: string | null = null;
 const mayKnowledge = readFileSync(`${PROJECT_ROOT}/agents/may/knowledge/domain.md`, "utf-8");
 const mayTools = readFileSync(`${PROJECT_ROOT}/agents/may/tools/INDEX.md`, "utf-8");
 
+const mayLessonsPath = `${PROJECT_ROOT}/agents/may/knowledge/lessons.md`;
+const mayLessons = existsSync(mayLessonsPath) ? readFileSync(mayLessonsPath, "utf-8") : "";
+
+const mayPromptParts = [mayKnowledge, mayTools];
+if (mayLessons) {
+  mayPromptParts.push(mayLessons);
+}
+
 const workflowTool = createWorkflowTool({
   manager,
   workflowDir: resolve(PROJECT_ROOT, "agents/may/workflows"),
@@ -133,7 +141,7 @@ manager.register({
   name: "may",
   description: "Supervisor agent — plans, delegates, reviews",
   domain: "may-agent architecture and coordination",
-  systemPrompt: [mayKnowledge, mayTools].join("\n\n---\n\n"),
+  systemPrompt: mayPromptParts.join("\n\n---\n\n"),
   workspace: resolve(PROJECT_ROOT, "agents/may/workspace"),
   model: opus,
   tools: [
