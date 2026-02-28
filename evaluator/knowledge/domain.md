@@ -6,11 +6,13 @@ feedback.
 
 ## Environment
 
-All paths are relative to the project root (the directory containing `package.json`):
+All paths are relative to the **project root** (the directory containing `package.json`).
+Your exec tool's working directory is the project root.
 
 - **Your workspace**: `agents/evaluator/workspace/`
+- **Agents config**: `agents/` (separate git repo from the library)
 
-To find the project root, run `pwd` once. Do not guess or search.
+To confirm the project root, run `pwd` once. Do not guess or search.
 
 ## What You Receive
 
