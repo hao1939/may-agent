@@ -1,6 +1,7 @@
 import { readFileSync, mkdirSync } from "node:fs";
 import { Agent } from "@mariozechner/pi-agent-core";
-import type { AgentMessage, AgentEvent } from "@mariozechner/pi-agent-core";
+import type { AgentMessage, AgentEvent, AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
+import { Type } from "@mariozechner/pi-ai";
 import type { SubagentDefinition, SessionInfo, TaskResult } from "./types.js";
 import {
   RegistryStore,
@@ -75,6 +76,36 @@ interface ActiveSession {
 export interface SubagentManagerOptions {
   persistDir?: string;
 }
+
+// ── createTool() schema ────────────────────────────────────────────────
+
+const SubagentToolParams = Type.Union([
+  Type.Object({
+    action: Type.Literal("list"),
+  }),
+  Type.Object({
+    action: Type.Literal("run"),
+    agent: Type.String({ description: "Name of the registered agent" }),
+    task: Type.String({ description: "Task description to send to the agent" }),
+  }),
+  Type.Object({
+    action: Type.Literal("status"),
+    sessionId: Type.String({ description: "Session ID to query" }),
+  }),
+  Type.Object({
+    action: Type.Literal("progress"),
+    sessionId: Type.String({ description: "Session ID to query" }),
+    limit: Type.Optional(Type.Number({ description: "Max number of recent messages to return (default: all)" })),
+  }),
+  Type.Object({
+    action: Type.Literal("result"),
+    sessionId: Type.String({ description: "Session ID to get the result for" }),
+  }),
+  Type.Object({
+    action: Type.Literal("cancel"),
+    sessionId: Type.String({ description: "Session ID to cancel" }),
+  }),
+]);
 
 export class SubagentManager {
   private agents = new Map<string, RegisteredAgent>();
@@ -509,5 +540,95 @@ export class SubagentManager {
     if (existsSync(activeOutputDir)) return activeOutputDir;
 
     return undefined;
+  }
+
+  // ── Parent agent tool ────────────────────────────────────────────────
+
+  /** Create an AgentTool that exposes sub-agent management to a parent agent. */
+  createTool(): AgentTool<typeof SubagentToolParams> {
+    const manager = this;
+
+    function textResult(text: string): AgentToolResult<string> {
+      return {
+        content: [{ type: "text", text }],
+        details: text,
+      };
+    }
+
+    return {
+      name: "subagents",
+      label: "Sub-Agents",
+      description:
+        "Manage sub-agents: list registered agents, run tasks, check status/progress, get results, or cancel sessions.",
+      parameters: SubagentToolParams,
+      execute: async (_toolCallId, params) => {
+        switch (params.action) {
+          case "list": {
+            const agents = Array.from(manager.agents.values()).map((a) => {
+              const def = a.definition;
+              return {
+                name: def.name,
+                description: def.description,
+                domain: def.domain,
+                sessions: manager.sessions(def.name),
+              };
+            });
+            return textResult(JSON.stringify(agents, null, 2));
+          }
+
+          case "run": {
+            try {
+              const sessionId = manager.run(params.agent, params.task);
+              return textResult(JSON.stringify({ sessionId }));
+            } catch (err: unknown) {
+              const msg = err instanceof Error ? err.message : String(err);
+              return textResult(JSON.stringify({ error: msg }));
+            }
+          }
+
+          case "status": {
+            const allSessions = manager.status();
+            const session = allSessions.find((s) => s.sessionId === params.sessionId);
+            if (!session) {
+              return textResult(JSON.stringify({ error: `Session "${params.sessionId}" not found` }));
+            }
+            return textResult(JSON.stringify(session, null, 2));
+          }
+
+          case "progress": {
+            const messages = manager.progress(params.sessionId, params.limit);
+            if (messages.length === 0) {
+              return textResult(JSON.stringify({ error: `Session "${params.sessionId}" not found or no messages` }));
+            }
+            // Return a simplified view of messages for the parent agent
+            const simplified = messages.map((m) => ({
+              role: m.role,
+              content: m.content,
+            }));
+            return textResult(JSON.stringify(simplified, null, 2));
+          }
+
+          case "result": {
+            const taskResult = manager.result(params.sessionId);
+            if (!taskResult) {
+              return textResult(JSON.stringify({ error: `Session "${params.sessionId}" not found or still running` }));
+            }
+            // Return result without the full messages array (too large for tool output)
+            const { messages: _msgs, ...resultWithoutMessages } = taskResult;
+            return textResult(JSON.stringify(resultWithoutMessages, null, 2));
+          }
+
+          case "cancel": {
+            manager.cancel(params.sessionId);
+            return textResult(JSON.stringify({ cancelled: params.sessionId }));
+          }
+
+          default: {
+            const _exhaustive: never = params;
+            return textResult(JSON.stringify({ error: "Unknown action" }));
+          }
+        }
+      },
+    };
   }
 }
