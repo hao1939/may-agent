@@ -9,6 +9,7 @@ import {
   readSessionMessages,
   sessionDir,
   sessionJsonlPath,
+  historyDir,
 } from "../src/persistence.js";
 import { SubagentManager } from "../src/manager.js";
 import type { Model } from "@mariozechner/pi-ai";
@@ -157,6 +158,26 @@ describe("Session JSONL persistence", () => {
       expect(existsSync(dir)).toBe(true);
     });
 
+    it("creates output subdirectory on run()", () => {
+      const manager = new SubagentManager({ persistDir });
+
+      manager.register({
+        name: "test-agent",
+        description: "A test agent",
+        domain: "testing",
+        systemPrompt: "You are a test agent.",
+        model: fakeModel(),
+        tools: [],
+        apiKey: "fake-key",
+      });
+
+      const sessionId = manager.run("test-agent", "do something");
+
+      // Output directory should exist inside the session directory
+      const outputDir = join(sessionDir(persistDir, sessionId), "output");
+      expect(existsSync(outputDir)).toBe(true);
+    });
+
     it("persists messages to session.jsonl via message_end events", async () => {
       const manager = new SubagentManager({ persistDir });
 
@@ -175,16 +196,48 @@ describe("Session JSONL persistence", () => {
       // Wait for the session to complete (will error or complete with fake model)
       await manager.waitFor(sessionId);
 
-      // Read back the persisted messages
-      const messages = readSessionMessages(persistDir, sessionId);
+      // After completion, session is archived to history/
+      // Read back the persisted messages from the archived location
+      const archivedJsonl = join(historyDir(persistDir), sessionId, "session.jsonl");
+      expect(existsSync(archivedJsonl)).toBe(true);
+
+      const raw = readFileSync(archivedJsonl, "utf-8");
+      const messages = raw.trim().split("\n").map((line) => JSON.parse(line) as AgentMessage);
 
       // Should have at least the user message (the task).
-      // The agent sends a user message and possibly gets an error before an assistant message.
       expect(messages.length).toBeGreaterThanOrEqual(1);
 
       // The first message should be the user's task
       expect(messages[0].role).toBe("user");
       expect((messages[0] as any).content[0].text).toBe("do something");
+    });
+
+    it("archives session directory to history after completion", async () => {
+      const manager = new SubagentManager({ persistDir });
+
+      manager.register({
+        name: "test-agent",
+        description: "A test agent",
+        domain: "testing",
+        systemPrompt: "You are a test agent.",
+        model: fakeModel(),
+        tools: [],
+        apiKey: "fake-key",
+      });
+
+      const sessionId = manager.run("test-agent", "do something");
+      await manager.waitFor(sessionId);
+
+      // Original session dir should no longer exist
+      expect(existsSync(sessionDir(persistDir, sessionId))).toBe(false);
+
+      // Archived session dir should exist in history
+      const archivedDir = join(historyDir(persistDir), sessionId);
+      expect(existsSync(archivedDir)).toBe(true);
+
+      // Output dir should exist in archived location
+      const archivedOutput = join(archivedDir, "output");
+      expect(existsSync(archivedOutput)).toBe(true);
     });
   });
 });

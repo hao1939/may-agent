@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, appendFileSync, mkdirSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, appendFileSync, mkdirSync, existsSync, renameSync } from "node:fs";
 import { join, dirname } from "node:path";
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { SubagentDefinition } from "./types.js";
@@ -99,6 +99,21 @@ export function readSessionMessages(persistDir: string, sessionId: string): Agen
     .trim()
     .split("\n")
     .map((line) => JSON.parse(line) as AgentMessage);
+}
+
+// ── History / archival helpers ─────────────────────────────────────────
+
+/** Return the path to the history directory: <persistDir>/sessions/history/ */
+export function historyDir(persistDir: string): string {
+  return join(persistDir, "sessions", "history");
+}
+
+/** Move a session directory from sessions/<id>/ to sessions/history/<id>/. */
+export function archiveSession(persistDir: string, sessionId: string): void {
+  const src = sessionDir(persistDir, sessionId);
+  const dest = join(historyDir(persistDir), sessionId);
+  mkdirSync(historyDir(persistDir), { recursive: true });
+  renameSync(src, dest);
 }
 
 // ── Memory JSONL helpers ───────────────────────────────────────────────
