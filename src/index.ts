@@ -8,6 +8,7 @@ export {
   readSessionMessages,
   sessionDir,
   sessionJsonlPath,
+  sessionOutputDir,
 } from "./persistence.js";
 export type {
   SubagentDefinition,

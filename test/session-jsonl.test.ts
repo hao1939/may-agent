@@ -143,6 +143,7 @@ describe("Session JSONL persistence", () => {
       manager.register({
         name: "test-agent",
         description: "A test agent",
+        domain: "testing",
         systemPrompt: "You are a test agent.",
         model: fakeModel(),
         tools: [],
@@ -162,6 +163,7 @@ describe("Session JSONL persistence", () => {
       manager.register({
         name: "test-agent",
         description: "A test agent",
+        domain: "testing",
         systemPrompt: "You are a test agent.",
         model: fakeModel(),
         tools: [],

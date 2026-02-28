@@ -5,10 +5,22 @@ import type { Model } from "@mariozechner/pi-ai";
 export interface SubagentDefinition {
   name: string;
   description: string;
-  systemPrompt: string;
-  model: Model<any>;
+  domain: string;
+
+  // System prompt: if systemPrompt is provided, it takes precedence over systemPromptFiles.
+  // systemPromptFiles are loaded and concatenated at session start.
+  systemPrompt?: string;
+  systemPromptFiles?: string[];
+
+  // Caller-managed paths (persisted for resume)
+  workspace?: string;
+
+  // Capabilities
   tools: AgentTool[];
+  model: Model<any>;
   apiKey?: string;
+  timeoutMs?: number;
+  memoryLimit?: number; // default 20
 }
 
 /** Runtime info about a session. */
@@ -16,9 +28,12 @@ export interface SessionInfo {
   sessionId: string;
   agent: string;
   task: string;
-  status: "running" | "done" | "error";
+  status: "running" | "done" | "error" | "interrupted";
   startedAt: number;
   endedAt?: number;
+  runtime: string;
+  outputDir: string;
+  lastActivity?: string;
   error?: string;
 }
 
@@ -29,5 +44,6 @@ export interface TaskResult {
   lastAssistantText: string | null;
   messages: AgentMessage[];
   duration: string;
+  outputDir: string;
   error?: string;
 }

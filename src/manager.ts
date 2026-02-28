@@ -1,7 +1,7 @@
 import { Agent } from "@mariozechner/pi-agent-core";
 import type { AgentMessage, AgentEvent } from "@mariozechner/pi-agent-core";
 import type { SubagentDefinition, SessionInfo, TaskResult } from "./types.js";
-import { RegistryStore, ensureSessionDir, appendSessionMessage } from "./persistence.js";
+import { RegistryStore, ensureSessionDir, appendSessionMessage, sessionOutputDir } from "./persistence.js";
 
 let nextId = 0;
 function generateId(): string {
@@ -41,8 +41,9 @@ interface ActiveSession {
   promise: Promise<void>;
   task: string;
   startedAt: number;
-  status: "running" | "done" | "error";
+  status: "running" | "done" | "error" | "interrupted";
   error?: string;
+  outputDir: string;
   unsubscribe?: () => void;
 }
 
@@ -77,6 +78,14 @@ export class SubagentManager {
     });
   }
 
+  /** Resolve the system prompt from a definition. If systemPrompt is set, use it directly.
+   *  Otherwise, if systemPromptFiles is set, it would be loaded (not implemented yet — placeholder). */
+  private resolveSystemPrompt(def: SubagentDefinition): string {
+    if (def.systemPrompt) return def.systemPrompt;
+    // TODO: load and concatenate systemPromptFiles
+    return "";
+  }
+
   /** Start a new session for a registered agent. Returns sessionId. Non-blocking. */
   run(name: string, task: string): string {
     const registered = this.agents.get(name);
@@ -85,6 +94,11 @@ export class SubagentManager {
     const def = registered.definition;
     const sessionId = generateId();
 
+    // Compute output directory
+    const outputDir = this.registry
+      ? sessionOutputDir(this.registry.persistDir, sessionId)
+      : "";
+
     // Create session directory for JSONL persistence
     if (this.registry) {
       ensureSessionDir(this.registry.persistDir, sessionId);
@@ -92,7 +106,7 @@ export class SubagentManager {
 
     const agent = new Agent({
       initialState: {
-        systemPrompt: def.systemPrompt,
+        systemPrompt: this.resolveSystemPrompt(def),
         model: def.model,
         tools: def.tools,
       },
@@ -107,6 +121,7 @@ export class SubagentManager {
       task,
       startedAt: Date.now(),
       status: "running",
+      outputDir,
     };
 
     // Subscribe for JSONL persistence before starting the prompt
@@ -150,6 +165,8 @@ export class SubagentManager {
       status: s.status,
       startedAt: s.startedAt,
       endedAt: s.status !== "running" ? Date.now() : undefined,
+      runtime: formatDuration(Date.now() - s.startedAt),
+      outputDir: s.outputDir,
       error: s.error,
     }));
   }
@@ -172,10 +189,11 @@ export class SubagentManager {
     const messages = session.agent.state.messages;
     return {
       sessionId: session.sessionId,
-      status: session.status,
+      status: session.status === "interrupted" ? "error" : session.status,
       lastAssistantText: extractLastAssistantText(messages),
       messages: messages.slice(),
       duration: formatDuration(Date.now() - session.startedAt),
+      outputDir: session.outputDir,
       error: session.error,
     };
   }

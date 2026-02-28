@@ -16,6 +16,7 @@ const manager = new SubagentManager();
 manager.register({
   name: "greeter",
   description: "Says hello",
+  domain: "greeting",
   systemPrompt: "You are a helpful assistant. Keep responses very short (one sentence).",
   model: proxyModel,
   tools: [],
