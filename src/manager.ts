@@ -1,4 +1,4 @@
-import { readFileSync, mkdirSync } from "node:fs";
+import { readFileSync, mkdirSync, existsSync } from "node:fs";
 import { Agent } from "@mariozechner/pi-agent-core";
 import type { AgentMessage, AgentEvent, AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
 import { Type } from "@mariozechner/pi-ai";
@@ -17,7 +17,6 @@ import {
 } from "./persistence.js";
 import type { MemoryEntry } from "./persistence.js";
 import { join, dirname } from "node:path";
-import { existsSync } from "node:fs";
 
 let nextId = 0;
 function generateId(): string {
@@ -141,6 +140,7 @@ export class SubagentManager {
   /** Resolve the system prompt from a definition.
    *  - If systemPrompt is set, use it directly.
    *  - If systemPromptFiles is set, read each file and concatenate with separator.
+   *  - If knowledgeDir has a lessons.md, append it.
    *  - If persistDir exists and memoryLimit > 0, append recent memory entries.
    *  - Append workspace and output sections.
    */
@@ -160,6 +160,17 @@ export class SubagentManager {
         readFileSync(filePath, "utf-8"),
       );
       sections.push(fileContents.join("\n\n---\n\n"));
+    }
+
+    // Auto-load lessons.md from knowledgeDir if it exists
+    if (def.knowledgeDir) {
+      const lessonsPath = join(def.knowledgeDir, "lessons.md");
+      if (existsSync(lessonsPath)) {
+        const lessons = readFileSync(lessonsPath, "utf-8").trim();
+        if (lessons) {
+          sections.push(lessons);
+        }
+      }
     }
 
     // Load memory entries
