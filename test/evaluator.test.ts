@@ -101,24 +101,19 @@ function buildEvalResponse(opts: {
  * and a maintenance report JSON section.
  */
 function buildMaintenanceResponse(opts: {
-  domain?: string;
   lessons?: string;
-  report?: Partial<{ domainUpdated: boolean; lessonsPruned: number; staleItems: string[]; toolIssues: string[] }>;
+  report?: Partial<{ lessonsPruned: number; suggestions: string[]; staleItems: string[]; toolIssues: string[] }>;
 }): string {
   const parts: string[] = [];
   parts.push("# Maintenance Results\n");
-
-  if (opts.domain !== undefined) {
-    parts.push("### Updated domain.md\n```markdown\n" + opts.domain + "\n```\n");
-  }
 
   if (opts.lessons !== undefined) {
     parts.push("### Updated lessons.md\n```markdown\n" + opts.lessons + "\n```\n");
   }
 
   const report = {
-    domainUpdated: opts.report?.domainUpdated ?? false,
     lessonsPruned: opts.report?.lessonsPruned ?? 0,
+    suggestions: opts.report?.suggestions ?? [],
     staleItems: opts.report?.staleItems ?? [],
     toolIssues: opts.report?.toolIssues ?? [],
     ...opts.report,
@@ -1279,12 +1274,10 @@ describe("evaluateSession", () => {
 describe("maintainAgent", () => {
   let persistDir: string;
   let knowledgeDir: string;
-  let workflowDir: string;
 
   beforeEach(() => {
     persistDir = mkdtempSync(join(tmpdir(), "maintain-test-"));
     knowledgeDir = join(persistDir, "knowledge");
-    workflowDir = join(persistDir, "workflows");
     mkdirSync(knowledgeDir, { recursive: true });
   });
 
@@ -1292,8 +1285,6 @@ describe("maintainAgent", () => {
     rmSync(persistDir, { recursive: true, force: true });
     vi.restoreAllMocks();
   });
-
-  // ── No-op cases ──────────────────────────────────────────────────────
 
   describe("no-op cases", () => {
     it("returns early without calling manager.run when lessons.md is missing", async () => {
@@ -1305,14 +1296,14 @@ describe("maintainAgent", () => {
         persistDir,
       });
 
-      expect(result.domainUpdated).toBe(false);
       expect(result.lessonsPruned).toBe(0);
+      expect(result.suggestions).toEqual([]);
       expect(result.staleItems).toEqual([]);
       expect(result.toolIssues).toEqual([]);
       expect(manager.run).not.toHaveBeenCalled();
     });
 
-    it("returns early without calling manager.run when lessons.md is empty", async () => {
+    it("returns early when lessons.md is empty", async () => {
       writeFileSync(join(knowledgeDir, "lessons.md"), "", "utf-8");
       const manager = mockManager("");
       const result = await maintainAgent({
@@ -1322,14 +1313,12 @@ describe("maintainAgent", () => {
         persistDir,
       });
 
-      expect(result.domainUpdated).toBe(false);
       expect(result.lessonsPruned).toBe(0);
-      expect(result.staleItems).toEqual([]);
-      expect(result.toolIssues).toEqual([]);
+      expect(result.suggestions).toEqual([]);
       expect(manager.run).not.toHaveBeenCalled();
     });
 
-    it("returns early without calling manager.run when lessons.md is whitespace-only", async () => {
+    it("returns early when lessons.md is whitespace-only", async () => {
       writeFileSync(join(knowledgeDir, "lessons.md"), "   \n  \n  ", "utf-8");
       const manager = mockManager("");
       const result = await maintainAgent({
@@ -1339,70 +1328,23 @@ describe("maintainAgent", () => {
         persistDir,
       });
 
-      expect(result.domainUpdated).toBe(false);
+      expect(result.lessonsPruned).toBe(0);
       expect(manager.run).not.toHaveBeenCalled();
     });
   });
 
-  // ── Successful consolidation ─────────────────────────────────────────
-
-  describe("successful consolidation", () => {
-    it("writes updated domain.md and lessons.md and returns correct result", async () => {
-      // Seed existing files
-      writeFileSync(join(knowledgeDir, "domain.md"), "# Domain\n\nOld domain content.\n", "utf-8");
+  describe("successful pruning", () => {
+    it("prunes lessons.md and returns suggestions without modifying domain.md", async () => {
+      const originalDomain = "# Domain\n\nOriginal content.\n";
+      writeFileSync(join(knowledgeDir, "domain.md"), originalDomain, "utf-8");
       writeFileSync(join(knowledgeDir, "lessons.md"), "# Lessons\n\n- Lesson A\n- Lesson B\n- Lesson C\n", "utf-8");
 
       const responseText = buildMaintenanceResponse({
-        domain: "# Domain\n\nUpdated domain with promoted lessons.\n\n## Best Practices\n- Lesson A consolidated",
         lessons: "# Lessons\n\n- Lesson C (recent, kept)",
         report: {
-          domainUpdated: true,
           lessonsPruned: 2,
-          staleItems: ["old API reference"],
-          toolIssues: ["grep tool missing -r flag"],
-        },
-      });
-
-      const manager = mockManager(responseText);
-      const result = await maintainAgent({
-        manager,
-        agentName: "coder",
-        knowledgeDir,
-        persistDir,
-      });
-
-      // Verify result
-      expect(result.domainUpdated).toBe(true);
-      expect(result.lessonsPruned).toBe(2);
-      expect(result.staleItems).toEqual(["old API reference"]);
-      expect(result.toolIssues).toEqual(["grep tool missing -r flag"]);
-
-      // Verify files were written
-      const domainContent = readFileSync(join(knowledgeDir, "domain.md"), "utf-8");
-      expect(domainContent).toContain("Updated domain with promoted lessons");
-      expect(domainContent).toContain("Lesson A consolidated");
-
-      const lessonsContent = readFileSync(join(knowledgeDir, "lessons.md"), "utf-8");
-      expect(lessonsContent).toContain("Lesson C (recent, kept)");
-      expect(lessonsContent).not.toContain("Lesson A");
-      expect(lessonsContent).not.toContain("Lesson B");
-    });
-  });
-
-  // ── Creates domain.md when it doesn't exist ──────────────────────────
-
-  describe("domain.md creation", () => {
-    it("creates domain.md when it doesn't exist but lessons.md does", async () => {
-      // Only lessons.md exists, no domain.md
-      writeFileSync(join(knowledgeDir, "lessons.md"), "# Lessons\n\n- Important pattern discovered\n- Always validate input\n", "utf-8");
-
-      const responseText = buildMaintenanceResponse({
-        domain: "# Domain\n\nInitial domain created from lessons.\n\n## Patterns\n- Important pattern discovered\n\n## Rules\n- Always validate input",
-        lessons: "# Lessons\n\n(all promoted)",
-        report: {
-          domainUpdated: true,
-          lessonsPruned: 2,
-          staleItems: [],
+          suggestions: ["Add 'Lesson A' to ## Best Practices in domain.md"],
+          staleItems: ["old API reference in domain.md"],
           toolIssues: [],
         },
       });
@@ -1415,28 +1357,50 @@ describe("maintainAgent", () => {
         persistDir,
       });
 
-      expect(result.domainUpdated).toBe(true);
       expect(result.lessonsPruned).toBe(2);
+      expect(result.suggestions).toEqual(["Add 'Lesson A' to ## Best Practices in domain.md"]);
+      expect(result.staleItems).toEqual(["old API reference in domain.md"]);
 
-      // domain.md should now exist
-      const domainPath = join(knowledgeDir, "domain.md");
-      expect(existsSync(domainPath)).toBe(true);
-      const domainContent = readFileSync(domainPath, "utf-8");
-      expect(domainContent).toContain("Initial domain created from lessons");
-      expect(domainContent).toContain("Important pattern discovered");
+      // domain.md must NOT be modified
+      const domainContent = readFileSync(join(knowledgeDir, "domain.md"), "utf-8");
+      expect(domainContent).toBe(originalDomain);
 
-      // The prompt should indicate domain.md does not exist
-      const prompt = (manager.run as ReturnType<typeof vi.fn>).mock.calls[0][1] as string;
-      expect(prompt).toContain("does not exist yet");
+      // lessons.md should be pruned
+      const lessonsContent = readFileSync(join(knowledgeDir, "lessons.md"), "utf-8");
+      expect(lessonsContent).toContain("Lesson C (recent, kept)");
+      expect(lessonsContent).not.toContain("Lesson A");
     });
   });
 
-  // ── Empty evaluator response ──────────────────────────────────────────
+  describe("domain.md not created", () => {
+    it("does not create domain.md even when it doesn't exist", async () => {
+      writeFileSync(join(knowledgeDir, "lessons.md"), "# Lessons\n\n- Important lesson\n", "utf-8");
+
+      const responseText = buildMaintenanceResponse({
+        lessons: "# Lessons\n\n- Important lesson (kept)",
+        report: {
+          lessonsPruned: 0,
+          suggestions: ["Create domain.md with identity section"],
+        },
+      });
+
+      const manager = mockManager(responseText);
+      const result = await maintainAgent({
+        manager,
+        agentName: "coder",
+        knowledgeDir,
+        persistDir,
+      });
+
+      expect(result.suggestions).toEqual(["Create domain.md with identity section"]);
+      expect(existsSync(join(knowledgeDir, "domain.md"))).toBe(false);
+    });
+  });
 
   describe("empty evaluator response", () => {
-    it("returns default MaintenanceResult when evaluator returns empty text", async () => {
+    it("returns defaults when evaluator returns empty text", async () => {
       writeFileSync(join(knowledgeDir, "lessons.md"), "# Lessons\n\n- Some lesson\n", "utf-8");
-      writeFileSync(join(knowledgeDir, "domain.md"), "# Domain\n\nOriginal content.\n", "utf-8");
+      writeFileSync(join(knowledgeDir, "domain.md"), "# Domain\n\nOriginal.\n", "utf-8");
 
       const manager = mockManager("");
       const result = await maintainAgent({
@@ -1446,21 +1410,17 @@ describe("maintainAgent", () => {
         persistDir,
       });
 
-      expect(result.domainUpdated).toBe(false);
       expect(result.lessonsPruned).toBe(0);
-      expect(result.staleItems).toEqual([]);
-      expect(result.toolIssues).toEqual([]);
+      expect(result.suggestions).toEqual([]);
 
-      // Files should remain unchanged
-      const domainContent = readFileSync(join(knowledgeDir, "domain.md"), "utf-8");
-      expect(domainContent).toBe("# Domain\n\nOriginal content.\n");
+      // Files unchanged
+      expect(readFileSync(join(knowledgeDir, "domain.md"), "utf-8")).toBe("# Domain\n\nOriginal.\n");
+      expect(readFileSync(join(knowledgeDir, "lessons.md"), "utf-8")).toBe("# Lessons\n\n- Some lesson\n");
     });
   });
 
-  // ── Null lastAssistantText ────────────────────────────────────────────
-
   describe("null lastAssistantText", () => {
-    it("returns default MaintenanceResult when evaluator returns null text", async () => {
+    it("returns defaults when evaluator returns null text", async () => {
       writeFileSync(join(knowledgeDir, "lessons.md"), "# Lessons\n\n- A lesson\n", "utf-8");
 
       const manager = mockManagerNullText();
@@ -1471,21 +1431,16 @@ describe("maintainAgent", () => {
         persistDir,
       });
 
-      expect(result.domainUpdated).toBe(false);
       expect(result.lessonsPruned).toBe(0);
-      expect(result.staleItems).toEqual([]);
-      expect(result.toolIssues).toEqual([]);
+      expect(result.suggestions).toEqual([]);
     });
   });
 
-  // ── Malformed evaluator response ──────────────────────────────────────
-
   describe("malformed evaluator response", () => {
-    it("returns graceful defaults when response has partial/missing sections", async () => {
+    it("returns defaults when response has no structured sections", async () => {
       writeFileSync(join(knowledgeDir, "lessons.md"), "# Lessons\n\n- Some lesson\n", "utf-8");
 
-      // Response with only some text, no structured sections
-      const manager = mockManager("I analyzed the lessons but couldn't format the response properly.");
+      const manager = mockManager("I analyzed the lessons but couldn't format the response.");
       const result = await maintainAgent({
         manager,
         agentName: "coder",
@@ -1493,40 +1448,17 @@ describe("maintainAgent", () => {
         persistDir,
       });
 
-      expect(result.domainUpdated).toBe(false);
       expect(result.lessonsPruned).toBe(0);
-      expect(result.staleItems).toEqual([]);
-      expect(result.toolIssues).toEqual([]);
+      expect(result.suggestions).toEqual([]);
     });
 
-    it("handles response with only domain section but no lessons or report", async () => {
-      writeFileSync(join(knowledgeDir, "lessons.md"), "# Lessons\n\n- A lesson\n", "utf-8");
-
-      const responseText = "### Updated domain.md\n```markdown\n# Domain\nNew content\n```\n\nSome extra text.";
-      const manager = mockManager(responseText);
-      const result = await maintainAgent({
-        manager,
-        agentName: "coder",
-        knowledgeDir,
-        persistDir,
-      });
-
-      // domain.md should be written since we got that section
-      const domainContent = readFileSync(join(knowledgeDir, "domain.md"), "utf-8");
-      expect(domainContent).toContain("New content");
-
-      // But report defaults are used
-      expect(result.domainUpdated).toBe(false);
-      expect(result.lessonsPruned).toBe(0);
-    });
-
-    it("handles response with malformed JSON in report section", async () => {
+    it("handles malformed JSON in report section", async () => {
       writeFileSync(join(knowledgeDir, "lessons.md"), "# Lessons\n\n- A lesson\n", "utf-8");
 
       const responseText = [
-        "### Updated domain.md",
+        "### Updated lessons.md",
         "```markdown",
-        "# Domain\nContent",
+        "# Lessons\n- Pruned",
         "```",
         "",
         "### Maintenance Report",
@@ -1543,25 +1475,23 @@ describe("maintainAgent", () => {
         persistDir,
       });
 
-      // Should use defaults for report
-      expect(result.domainUpdated).toBe(false);
       expect(result.lessonsPruned).toBe(0);
-      expect(result.staleItems).toEqual([]);
-      expect(result.toolIssues).toEqual([]);
+      expect(result.suggestions).toEqual([]);
+
+      // lessons.md should still be updated since that section was valid
+      const lessonsContent = readFileSync(join(knowledgeDir, "lessons.md"), "utf-8");
+      expect(lessonsContent).toContain("Pruned");
     });
   });
 
-  // ── Prompt content verification ───────────────────────────────────────
-
   describe("prompt construction", () => {
-    it("includes domain.md and lessons.md content in the prompt", async () => {
-      writeFileSync(join(knowledgeDir, "domain.md"), "# Domain\n\nMy domain knowledge here.\n", "utf-8");
-      writeFileSync(join(knowledgeDir, "lessons.md"), "# Lessons\n\n- Lesson Alpha\n- Lesson Beta\n", "utf-8");
+    it("includes domain.md content as READ-ONLY context", async () => {
+      writeFileSync(join(knowledgeDir, "domain.md"), "# Domain\n\nMy domain knowledge.\n", "utf-8");
+      writeFileSync(join(knowledgeDir, "lessons.md"), "# Lessons\n\n- Lesson Alpha\n", "utf-8");
 
       const responseText = buildMaintenanceResponse({
-        domain: "# Domain\nUpdated",
         lessons: "# Lessons",
-        report: { domainUpdated: true, lessonsPruned: 2 },
+        report: {},
       });
       const manager = mockManager(responseText);
 
@@ -1573,18 +1503,15 @@ describe("maintainAgent", () => {
       });
 
       const prompt = (manager.run as ReturnType<typeof vi.fn>).mock.calls[0][1] as string;
-      expect(prompt).toContain("My domain knowledge here.");
+      expect(prompt).toContain("My domain knowledge.");
       expect(prompt).toContain("Lesson Alpha");
-      expect(prompt).toContain("Lesson Beta");
+      expect(prompt).toContain("READ-ONLY");
     });
 
     it("includes agent name in the prompt", async () => {
       writeFileSync(join(knowledgeDir, "lessons.md"), "# Lessons\n\n- A lesson\n", "utf-8");
 
-      const responseText = buildMaintenanceResponse({
-        lessons: "# Lessons",
-        report: {},
-      });
+      const responseText = buildMaintenanceResponse({ lessons: "# Lessons", report: {} });
       const manager = mockManager(responseText);
 
       await maintainAgent({
@@ -1597,46 +1524,23 @@ describe("maintainAgent", () => {
       const prompt = (manager.run as ReturnType<typeof vi.fn>).mock.calls[0][1] as string;
       expect(prompt).toContain("my-special-agent");
     });
-  });
 
-  // ── Domain.md not overwritten when evaluator returns no updated domain ─
-
-  describe("selective file writing", () => {
-    it("does not overwrite domain.md when evaluator returns no updated domain section", async () => {
-      const originalDomain = "# Domain\n\nOriginal domain content.\n";
-      writeFileSync(join(knowledgeDir, "domain.md"), originalDomain, "utf-8");
+    it("indicates when domain.md does not exist", async () => {
       writeFileSync(join(knowledgeDir, "lessons.md"), "# Lessons\n\n- A lesson\n", "utf-8");
 
-      // Response that only has lessons and report, no domain section
-      const responseText = [
-        "# Maintenance Results\n",
-        "### Updated lessons.md",
-        "```markdown",
-        "# Lessons\n\n- A lesson (kept)",
-        "```",
-        "",
-        "### Maintenance Report",
-        "```json",
-        JSON.stringify({ domainUpdated: false, lessonsPruned: 0, staleItems: [], toolIssues: [] }),
-        "```",
-      ].join("\n");
-
+      const responseText = buildMaintenanceResponse({ lessons: "# Lessons", report: {} });
       const manager = mockManager(responseText);
-      const result = await maintainAgent({
+
+      await maintainAgent({
         manager,
         agentName: "coder",
         knowledgeDir,
         persistDir,
       });
 
-      // domain.md should remain unchanged
-      const domainContent = readFileSync(join(knowledgeDir, "domain.md"), "utf-8");
-      expect(domainContent).toBe(originalDomain);
-      expect(result.domainUpdated).toBe(false);
-
-      // lessons.md should be updated
-      const lessonsContent = readFileSync(join(knowledgeDir, "lessons.md"), "utf-8");
-      expect(lessonsContent).toContain("A lesson (kept)");
+      const prompt = (manager.run as ReturnType<typeof vi.fn>).mock.calls[0][1] as string;
+      expect(prompt).toContain("no domain.md exists");
     });
   });
 });
+
