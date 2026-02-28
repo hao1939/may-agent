@@ -1,41 +1,33 @@
-/** Static definition of a feature unit. Passed by the caller. */
+import type { AgentTool, AgentMessage } from "@mariozechner/pi-agent-core";
+import type { Model } from "@mariozechner/pi-ai";
+
+/** Minimal definition for registering a feature unit. */
 export interface SubagentDefinition {
   name: string;
   description: string;
-  domain: string;
-  systemPromptFiles?: string[];
-  workspace?: string;
+  systemPrompt: string;
+  model: Model<any>;
+  tools: AgentTool[];
+  apiKey?: string;
 }
 
+/** Runtime info about a session. */
 export interface SessionInfo {
   sessionId: string;
   agent: string;
   task: string;
-  status: "running" | "done" | "error" | "interrupted";
+  status: "running" | "done" | "error";
   startedAt: number;
   endedAt?: number;
+  error?: string;
 }
 
-export interface SubagentInfo {
-  name: string;
-  description: string;
-  domain: string;
-  sessions: SessionInfo[];
-}
-
+/** Result of a completed session. */
 export interface TaskResult {
   sessionId: string;
   status: "done" | "error";
   lastAssistantText: string | null;
-  outputDir: string;
+  messages: AgentMessage[];
   duration: string;
-}
-
-export interface MemoryEntry {
-  ts: number;
-  sessionId: string;
-  task: string;
-  status: "done" | "error";
-  duration: string;
-  summary: string;
+  error?: string;
 }
