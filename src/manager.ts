@@ -6,6 +6,7 @@ import {
   RegistryStore,
   ensureSessionDir,
   appendSessionMessage,
+  readSessionMessages,
   sessionOutputDir,
   appendMemoryEntry,
   readMemoryEntries,
@@ -256,6 +257,111 @@ export class SubagentManager {
 
     this.activeSessions.set(sessionId, session);
     return sessionId;
+  }
+
+  /** Resume interrupted sessions after process restart.
+   *  Caller must have already called register() for all agents.
+   *  Returns SessionInfo[] for all resumed sessions.
+   */
+  resume(): SessionInfo[] {
+    if (!this.registry) return [];
+
+    const registryData = this.registry.getRegistry();
+    const persistDir = this.registry.persistDir;
+    const resumed: SessionInfo[] = [];
+
+    for (const [sessionId, persisted] of Object.entries(registryData.sessions)) {
+      if (persisted.status !== "running") continue;
+
+      // Find matching registered agent
+      const registered = this.agents.get(persisted.agent);
+      if (!registered) {
+        console.warn(
+          `[SubagentManager] Cannot resume session "${sessionId}": agent "${persisted.agent}" is not registered. Marking as interrupted.`,
+        );
+        this.registry.updateSessionStatus(sessionId, "interrupted");
+        continue;
+      }
+
+      const def = registered.definition;
+
+      // Load session conversation from sessions/<id>/session.jsonl
+      const savedMessages = readSessionMessages(persistDir, sessionId);
+
+      // Rebuild system prompt
+      const systemPrompt = this.resolveSystemPrompt(def, persisted.agent, sessionId, persistDir);
+
+      // Compute output directory
+      const outputDir = sessionOutputDir(persistDir, sessionId);
+
+      // Create a new Agent with the registered agent's tools, model, apiKey
+      const agent = new Agent({
+        initialState: {
+          systemPrompt,
+          model: def.model,
+          tools: def.tools,
+          messages: savedMessages,
+        },
+        getApiKey: def.apiKey ? () => def.apiKey : undefined,
+      });
+
+      // Build the resume message
+      const resumeMessage: AgentMessage = {
+        role: "user",
+        content: [{ type: "text", text: "Your session was interrupted. Continue where you left off." }],
+        timestamp: Date.now(),
+      };
+
+      const session: ActiveSession = {
+        sessionId,
+        agentName: persisted.agent,
+        agent,
+        promise: null!,
+        task: persisted.task,
+        startedAt: persisted.startedAt,
+        status: "running",
+        outputDir,
+      };
+
+      // Subscribe for JSONL persistence before starting the prompt
+      this.subscribeForPersistence(session);
+
+      // Start the agent running with the resume message
+      session.promise = agent.prompt(resumeMessage)
+        .then(() => {
+          if (agent.state.error) {
+            session.status = "error";
+            session.error = agent.state.error;
+            this.registry?.updateSessionStatus(sessionId, "error", agent.state.error);
+          } else {
+            session.status = "done";
+            this.registry?.updateSessionStatus(sessionId, "done");
+          }
+          this.appendMemory(session);
+          this.archiveSessionDir(session);
+        })
+        .catch((err) => {
+          session.status = "error";
+          session.error = err?.message ?? String(err);
+          this.registry?.updateSessionStatus(sessionId, "error", session.error);
+          this.appendMemory(session);
+          this.archiveSessionDir(session);
+        });
+
+      this.activeSessions.set(sessionId, session);
+
+      resumed.push({
+        sessionId,
+        agent: persisted.agent,
+        task: persisted.task,
+        status: "running",
+        startedAt: persisted.startedAt,
+        runtime: formatDuration(Date.now() - persisted.startedAt),
+        outputDir,
+      });
+    }
+
+    return resumed;
   }
 
   /** Get all sessions. */
