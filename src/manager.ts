@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, mkdirSync } from "node:fs";
 import { Agent } from "@mariozechner/pi-agent-core";
 import type { AgentMessage, AgentEvent } from "@mariozechner/pi-agent-core";
 import type { SubagentDefinition, SessionInfo, TaskResult } from "./types.js";
@@ -9,8 +9,13 @@ import {
   sessionOutputDir,
   appendMemoryEntry,
   readMemoryEntries,
+  memoryPath,
+  archiveSession,
+  historyDir,
 } from "./persistence.js";
 import type { MemoryEntry } from "./persistence.js";
+import { join, dirname } from "node:path";
+import { existsSync } from "node:fs";
 
 let nextId = 0;
 function generateId(): string {
@@ -72,7 +77,7 @@ export interface SubagentManagerOptions {
 
 export class SubagentManager {
   private agents = new Map<string, RegisteredAgent>();
-  private sessions = new Map<string, ActiveSession>();
+  private activeSessions = new Map<string, ActiveSession>();
   private registry: RegistryStore | null;
 
   constructor(opts?: SubagentManagerOptions) {
@@ -167,6 +172,16 @@ export class SubagentManager {
     appendMemoryEntry(this.registry.persistDir, session.agentName, entry);
   }
 
+  /** Archive a session after completion: move to history. */
+  private archiveSessionDir(session: ActiveSession): void {
+    if (!this.registry) return;
+    try {
+      archiveSession(this.registry.persistDir, session.sessionId);
+    } catch {
+      // Session dir may not exist (e.g. no persistDir or already archived)
+    }
+  }
+
   /** Start a new session for a registered agent. Returns sessionId. Non-blocking. */
   run(name: string, task: string): string {
     const registered = this.agents.get(name);
@@ -181,9 +196,10 @@ export class SubagentManager {
       ? sessionOutputDir(persistDir, sessionId)
       : "";
 
-    // Create session directory for JSONL persistence
+    // Create session directory and output subdirectory for JSONL persistence
     if (this.registry) {
       ensureSessionDir(this.registry.persistDir, sessionId);
+      mkdirSync(sessionOutputDir(this.registry.persistDir, sessionId), { recursive: true });
     }
 
     const agent = new Agent({
@@ -228,21 +244,23 @@ export class SubagentManager {
           this.registry?.updateSessionStatus(sessionId, "done");
         }
         this.appendMemory(session);
+        this.archiveSessionDir(session);
       })
       .catch((err) => {
         session.status = "error";
         session.error = err?.message ?? String(err);
         this.registry?.updateSessionStatus(sessionId, "error", session.error);
         this.appendMemory(session);
+        this.archiveSessionDir(session);
       });
 
-    this.sessions.set(sessionId, session);
+    this.activeSessions.set(sessionId, session);
     return sessionId;
   }
 
   /** Get all sessions. */
   status(): SessionInfo[] {
-    return Array.from(this.sessions.values()).map((s) => ({
+    return Array.from(this.activeSessions.values()).map((s) => ({
       sessionId: s.sessionId,
       agent: s.agentName,
       task: s.task,
@@ -255,9 +273,14 @@ export class SubagentManager {
     }));
   }
 
+  /** Get sessions filtered by agent name. */
+  sessions(name: string): SessionInfo[] {
+    return this.status().filter((s) => s.agent === name);
+  }
+
   /** Get last N messages from a session. */
   progress(sessionId: string, limit?: number): AgentMessage[] {
-    const session = this.sessions.get(sessionId);
+    const session = this.activeSessions.get(sessionId);
     if (!session) return [];
     const messages = session.agent.state.messages;
     if (limit === undefined) return messages.slice();
@@ -266,7 +289,7 @@ export class SubagentManager {
 
   /** Get result of a completed session. */
   result(sessionId: string): TaskResult | null {
-    const session = this.sessions.get(sessionId);
+    const session = this.activeSessions.get(sessionId);
     if (!session) return null;
     if (session.status === "running") return null;
 
@@ -284,14 +307,14 @@ export class SubagentManager {
 
   /** Cancel a running session. */
   cancel(sessionId: string): void {
-    const session = this.sessions.get(sessionId);
+    const session = this.activeSessions.get(sessionId);
     if (!session || session.status !== "running") return;
     session.agent.abort();
   }
 
   /** Send a follow-up message to a completed session. Resumes the same Agent. Non-blocking. */
   send(sessionId: string, message: string): boolean {
-    const session = this.sessions.get(sessionId);
+    const session = this.activeSessions.get(sessionId);
     if (!session) return false;
     if (session.status === "running") return false;
 
@@ -317,7 +340,7 @@ export class SubagentManager {
 
   /** Steer a running session mid-run. */
   steer(sessionId: string, message: string): "steered" | "queued" | "not_running" {
-    const session = this.sessions.get(sessionId);
+    const session = this.activeSessions.get(sessionId);
     if (!session || session.status !== "running") return "not_running";
     if (session.agent.state.isStreaming) {
       session.agent.steer({
@@ -337,16 +360,48 @@ export class SubagentManager {
 
   /** Subscribe to agent events for a session. Returns unsubscribe function. */
   subscribe(sessionId: string, fn: (e: AgentEvent) => void): (() => void) | null {
-    const session = this.sessions.get(sessionId);
+    const session = this.activeSessions.get(sessionId);
     if (!session) return null;
     return session.agent.subscribe(fn);
   }
 
   /** Wait for a session to finish. */
   async waitFor(sessionId: string): Promise<TaskResult | null> {
-    const session = this.sessions.get(sessionId);
+    const session = this.activeSessions.get(sessionId);
     if (!session) return null;
     await session.promise;
     return this.result(sessionId);
+  }
+
+  // ── Path accessors ───────────────────────────────────────────────────
+
+  /** Get the workspace path for a registered agent. */
+  getWorkspacePath(name: string): string | undefined {
+    const registered = this.agents.get(name);
+    return registered?.definition.workspace;
+  }
+
+  /** Get the memory JSONL path for an agent. Requires persistDir. */
+  getMemoryPath(name: string): string | undefined {
+    if (!this.registry) return undefined;
+    return memoryPath(this.registry.persistDir, name);
+  }
+
+  /** Get the output directory for a session (active or archived). */
+  getOutputPath(sessionId: string): string | undefined {
+    const session = this.activeSessions.get(sessionId);
+    if (session) return session.outputDir;
+
+    // Check archived sessions in history
+    if (!this.registry) return undefined;
+    const persistDir = this.registry.persistDir;
+    const archivedOutputDir = join(historyDir(persistDir), sessionId, "output");
+    if (existsSync(archivedOutputDir)) return archivedOutputDir;
+
+    // Check if session exists in active sessions dir (not yet archived)
+    const activeOutputDir = sessionOutputDir(persistDir, sessionId);
+    if (existsSync(activeOutputDir)) return activeOutputDir;
+
+    return undefined;
   }
 }

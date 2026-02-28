@@ -12,6 +12,8 @@ export {
   memoryPath,
   appendMemoryEntry,
   readMemoryEntries,
+  historyDir,
+  archiveSession,
 } from "./persistence.js";
 export type {
   SubagentDefinition,
