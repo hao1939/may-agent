@@ -104,6 +104,7 @@ manager.register({
     createWriteTool(),
     createValidateWorkflowTool(),
     createExecTool(PROJECT_ROOT),
+    createLearnTool(knowledgeDir("evaluator")),
   ],
   apiKey: "not-needed",
 });
@@ -305,29 +306,34 @@ async function runEvaluation(sessionId: string): Promise<void> {
       console.log(`[eval] workflow suggested: ${result.workflowName}`);
     }
 
-    // Periodic maintenance
+    // Periodic maintenance — run for all agents
     evalsSinceMaintenance++;
     if (evalsSinceMaintenance >= MAINTENANCE_INTERVAL) {
-      console.log("\n[maintenance] Running lessons consolidation...");
-      try {
-        const mResult = await maintainAgent({
-          manager,
-          agentName: "may",
-          knowledgeDir: knowledgeDir("may"),
-          persistDir: PERSIST_DIR,
-        });
-        console.log(`[maintenance] pruned ${mResult.lessonsPruned} lessons`);
-        if (mResult.suggestions.length > 0) {
-          console.log(`[maintenance] suggestions for domain.md:`);
-          for (const s of mResult.suggestions) {
-            console.log(`  - ${s}`);
+      const agentNames = ["may", "coder", "reviewer"];
+      for (const name of agentNames) {
+        console.log(`\n[maintenance] Consolidating lessons for ${name}...`);
+        try {
+          const mResult = await maintainAgent({
+            manager,
+            agentName: name,
+            knowledgeDir: knowledgeDir(name),
+            persistDir: PERSIST_DIR,
+          });
+          if (mResult.lessonsPruned > 0) {
+            console.log(`[maintenance:${name}] pruned ${mResult.lessonsPruned} lessons`);
           }
+          if (mResult.suggestions.length > 0) {
+            console.log(`[maintenance:${name}] suggestions for domain.md:`);
+            for (const s of mResult.suggestions) {
+              console.log(`  - ${s}`);
+            }
+          }
+          if (mResult.staleItems.length > 0) {
+            console.log(`[maintenance:${name}] stale: ${mResult.staleItems.join(", ")}`);
+          }
+        } catch (err) {
+          console.log(`[maintenance:${name}] failed: ${err instanceof Error ? err.message : String(err)}`);
         }
-        if (mResult.staleItems.length > 0) {
-          console.log(`[maintenance] stale items: ${mResult.staleItems.join(", ")}`);
-        }
-      } catch (err) {
-        console.log(`[maintenance] failed: ${err instanceof Error ? err.message : String(err)}`);
       }
       evalsSinceMaintenance = 0;
     }
