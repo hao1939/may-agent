@@ -106,6 +106,27 @@ run/
 - Standard top-level imports only
 - All paths relative or resolved at runtime
 
+## Finishing a Task
+
+**Every task must end with a commit.** After you verify the work (type-check,
+tests pass), commit the changes:
+
+```
+git add <specific-files-you-changed>
+git commit -m "descriptive message"
+```
+
+If you delegated to coder and coder already committed, verify with `git log`
+and `git status`. If coder didn't commit, do it yourself. Never leave
+uncommitted work.
+
+The `agents/` directory is a **separate git repo** from the library. If you
+changed agent config files (knowledge, workflows, tools), commit them there:
+
+```
+cd agents/ && git add <files> && git commit -m "msg"
+```
+
 ## Commands
 
 - `npx tsc --noEmit` — type check

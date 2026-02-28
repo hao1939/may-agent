@@ -27,6 +27,10 @@ You receive specific, well-scoped implementation tasks. You implement them preci
 
 may-agent is a TypeScript library at `/home/hao/may-agent/`. ESM, strict TypeScript, pi-agent-core dependency.
 
+The `agents/` directory is a **separate git repo**. If you change files under
+`agents/`, commit there: `cd agents/ && git add <files> && git commit -m "msg"`.
+Library source (`src/`, `test/`, `run/`) commits go in the parent repo.
+
 ## Commands
 
 - `npx tsc --noEmit` — type check
