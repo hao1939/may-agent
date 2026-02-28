@@ -1,6 +1,19 @@
 export { SubagentManager } from "./manager.js";
 export type { SubagentManagerOptions } from "./manager.js";
-export { createReadTool, createWriteTool, createExecTool } from "./tools.js";
+export { createReadTool, createWriteTool, createExecTool, createValidateWorkflowTool } from "./tools.js";
+export { createWorkflowTool } from "./workflow-tool.js";
+export type { WorkflowToolOptions, WorkflowTool } from "./workflow-tool.js";
+export { WorkflowInterrupted } from "./workflow.js";
+export type {
+  WorkflowContext,
+  WorkflowResult,
+  WorkflowEvent,
+  WorkflowModule,
+  WorkflowToolResult,
+  CompletedStep,
+} from "./workflow.js";
+export { evaluateSession } from "./evaluator.js";
+export type { EvaluationScores, EvaluationResult, EvaluateSessionOptions } from "./evaluator.js";
 export {
   RegistryStore,
   ensureSessionDir,
