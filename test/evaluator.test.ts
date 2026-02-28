@@ -546,7 +546,7 @@ describe("evaluateSession", () => {
       expect(result.workflowName).toBe("batch-file-ops");
     });
 
-    it("writes workflow file to workflowDir", async () => {
+    it("stages workflow file to .state/staged/workflows/", async () => {
       const responseText = buildEvalResponse({
         scores: { pattern_detected: true },
         workflowCode: sampleWorkflowCode,
@@ -569,7 +569,7 @@ describe("evaluateSession", () => {
         workflowDir,
       });
 
-      const expectedPath = join(workflowDir, "batch-file-ops.ts");
+      const expectedPath = join(persistDir, "staged", "workflows", "batch-file-ops.ts");
       expect(existsSync(expectedPath)).toBe(true);
       const content = readFileSync(expectedPath, "utf-8");
       expect(content).toBe(sampleWorkflowCode);
@@ -606,11 +606,11 @@ describe("evaluateSession", () => {
         workflowDir,
       });
 
-      const expectedPath = join(workflowDir, "my-great-workflow.ts");
+      const expectedPath = join(persistDir, "staged", "workflows", "my-great-workflow.ts");
       expect(existsSync(expectedPath)).toBe(true);
     });
 
-    it("does not write workflow file when workflowDir is not provided", async () => {
+    it("stages workflow even when workflowDir is not provided", async () => {
       const responseText = buildEvalResponse({
         scores: { pattern_detected: true },
         workflowCode: sampleWorkflowCode,
@@ -636,8 +636,9 @@ describe("evaluateSession", () => {
       // Code is still parsed
       expect(result.workflowCode).toBe(sampleWorkflowCode);
       expect(result.workflowName).toBe("batch-file-ops");
-      // But no file written
-      expect(existsSync(workflowDir)).toBe(false);
+      // File IS staged (uses persistDir, not workflowDir)
+      const stagedPath = join(persistDir, "staged", "workflows", "batch-file-ops.ts");
+      expect(existsSync(stagedPath)).toBe(true);
     });
 
     it("does not write workflow file when no workflow code in response", async () => {
@@ -661,7 +662,7 @@ describe("evaluateSession", () => {
 
       expect(result.workflowCode).toBeNull();
       expect(result.workflowName).toBeNull();
-      expect(existsSync(workflowDir)).toBe(false);
+      expect(existsSync(join(persistDir, "staged", "workflows"))).toBe(false);
     });
 
     it("does not write workflow when code has no name export", async () => {
@@ -696,8 +697,8 @@ describe("evaluateSession", () => {
       // workflowCode is extracted but workflowName is null → no file written
       expect(result.workflowCode).toBe(codeNoName);
       expect(result.workflowName).toBeNull();
-      // workflowDir should not even be created
-      expect(existsSync(workflowDir)).toBe(false);
+      // staged dir should not even be created
+      expect(existsSync(join(persistDir, "staged", "workflows"))).toBe(false);
     });
   });
 
@@ -1148,7 +1149,7 @@ describe("evaluateSession", () => {
       });
 
       expect(result.workflowName).toBe("single-quote-wf");
-      const expectedPath = join(workflowDir, "single-quote-wf.ts");
+      const expectedPath = join(persistDir, "staged", "workflows", "single-quote-wf.ts");
       expect(existsSync(expectedPath)).toBe(true);
     });
   });
@@ -1207,8 +1208,8 @@ describe("evaluateSession", () => {
       expect(lessonsContent).toContain("Combine file reads");
       expect(lessonsContent).toContain("Workflow: implement-and-review");
 
-      // 2. Workflow file
-      const wfPath = join(workflowDir, "integration-wf.ts");
+      // 2. Workflow file (staged, not in workflowDir)
+      const wfPath = join(persistDir, "staged", "workflows", "integration-wf.ts");
       expect(existsSync(wfPath)).toBe(true);
       expect(readFileSync(wfPath, "utf-8")).toBe(workflowCode);
 
