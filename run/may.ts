@@ -108,6 +108,28 @@ manager.register({
   apiKey: "not-needed",
 });
 
+// ── Register optimizer ─────────────────────────────────────────────────
+
+manager.register({
+  name: "optimizer",
+  description: "Performance optimizer — analyzes cost/efficiency, generates skills, proposes model changes",
+  domain: "agent performance optimization",
+  systemPromptFiles: [
+    resolve(knowledgeDir("optimizer"), "domain.md"),
+    resolve(agentDir("optimizer"), "tools/INDEX.md"),
+  ],
+  knowledgeDir: knowledgeDir("optimizer"),
+  workspace: resolve(agentDir("optimizer"), "workspace"),
+  model: gpt52,
+  tools: [
+    createReadTool(),
+    createWriteTool(),
+    createExecTool(PROJECT_ROOT),
+    createLearnTool(knowledgeDir("optimizer")),
+  ],
+  apiKey: "not-needed",
+});
+
 // ── Track which workflow was used ──────────────────────────────────────
 
 let lastWorkflowUsed: string | null = null;
