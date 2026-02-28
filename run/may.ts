@@ -270,6 +270,9 @@ async function runEvaluation(sessionId: string): Promise<void> {
       workflowDir: resolve(agentDir("may"), "workflows"),
     });
     console.log(`[eval] verdict: ${result.scores.verdict} (efficiency: ${result.scores.efficiency}, quality: ${result.scores.quality})`);
+    if (result.usage.totalTokens > 0) {
+      console.log(`[eval] usage: ${result.usage.totalTokens} tokens, $${result.usage.cost.toFixed(4)}, ${result.usage.turns} turns`);
+    }
     if (result.scores.pattern_detected) {
       console.log(`[eval] pattern detected: ${result.scores.pattern_name}`);
     }

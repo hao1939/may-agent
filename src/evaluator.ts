@@ -1,10 +1,22 @@
 import { readFileSync, writeFileSync, appendFileSync, mkdirSync, existsSync } from "node:fs";
 import { join, dirname } from "node:path";
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
+import type { AssistantMessage } from "@mariozechner/pi-ai";
 import type { SubagentManager } from "./manager.js";
 import { readSessionMessages, historyDir } from "./persistence.js";
 
 // ── Types ──────────────────────────────────────────────────────────────
+
+/** Aggregated token usage and cost for a session. */
+export interface UsageSummary {
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens: number;
+  cacheWriteTokens: number;
+  totalTokens: number;
+  cost: number; // total cost in dollars
+  turns: number; // number of assistant messages
+}
 
 export interface EvaluationScores {
   efficiency: number;
@@ -19,6 +31,7 @@ export interface EvaluationScores {
 
 export interface EvaluationResult {
   scores: EvaluationScores;
+  usage: UsageSummary;
   lessons: string | null;
   workflowCode: string | null;
   workflowName: string | null;
@@ -38,6 +51,35 @@ export interface MaintenanceResult {
   suggestions: string[];        // suggested changes for domain.md (human reviews)
   staleItems: string[];         // stale knowledge detected
   toolIssues: string[];         // broken/missing tools detected
+}
+
+// ── Usage extraction ───────────────────────────────────────────────────
+
+function extractUsage(messages: AgentMessage[]): UsageSummary {
+  let inputTokens = 0;
+  let outputTokens = 0;
+  let cacheReadTokens = 0;
+  let cacheWriteTokens = 0;
+  let totalTokens = 0;
+  let cost = 0;
+  let turns = 0;
+
+  for (const msg of messages) {
+    if ("role" in msg && msg.role === "assistant") {
+      const am = msg as AssistantMessage;
+      if (am.usage) {
+        inputTokens += am.usage.input ?? 0;
+        outputTokens += am.usage.output ?? 0;
+        cacheReadTokens += am.usage.cacheRead ?? 0;
+        cacheWriteTokens += am.usage.cacheWrite ?? 0;
+        totalTokens += am.usage.totalTokens ?? 0;
+        cost += am.usage.cost?.total ?? 0;
+      }
+      turns++;
+    }
+  }
+
+  return { inputTokens, outputTokens, cacheReadTokens, cacheWriteTokens, totalTokens, cost, turns };
 }
 
 // ── Transcript formatting ──────────────────────────────────────────────
@@ -77,7 +119,7 @@ function formatTranscript(messages: AgentMessage[]): string {
 
 // ── Response parsing ───────────────────────────────────────────────────
 
-function parseEvaluation(text: string): EvaluationResult {
+function parseEvaluation(text: string, usage: UsageSummary): EvaluationResult {
   const result: EvaluationResult = {
     scores: {
       efficiency: 0,
@@ -89,6 +131,7 @@ function parseEvaluation(text: string): EvaluationResult {
       wasted_calls: 0,
       verdict: "needs_improvement",
     },
+    usage,
     lessons: null,
     workflowCode: null,
     workflowName: null,
@@ -206,6 +249,7 @@ export async function evaluateSession(opts: EvaluateSessionOptions): Promise<Eva
         efficiency: 0, quality: 0, pattern_detected: false, pattern_name: null,
         total_tool_calls: 0, productive_calls: 0, wasted_calls: 0, verdict: "needs_improvement",
       },
+      usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, totalTokens: 0, cost: 0, turns: 0 },
       lessons: null,
       workflowCode: null,
       workflowName: null,
@@ -231,8 +275,11 @@ export async function evaluateSession(opts: EvaluateSessionOptions): Promise<Eva
 
   const responseText = evalResult?.lastAssistantText ?? "";
 
-  // 4. Parse structured output
-  const evaluation = parseEvaluation(responseText);
+  // 4. Compute usage from session messages
+  const usage = extractUsage(messages);
+
+  // 5. Parse structured output
+  const evaluation = parseEvaluation(responseText, usage);
 
   // 5. Append lessons to agent's knowledge/lessons.md
   if (evaluation.lessons) {
@@ -257,11 +304,11 @@ export async function evaluateSession(opts: EvaluateSessionOptions): Promise<Eva
     writeFileSync(workflowPath, evaluation.workflowCode, "utf-8");
   }
 
-  // 7. Save scores
+  // 7. Save scores and usage
   const evalDir = join(persistDir, "evaluations");
   mkdirSync(evalDir, { recursive: true });
   const scoresPath = join(evalDir, `${sessionId}.json`);
-  writeFileSync(scoresPath, JSON.stringify(evaluation.scores, null, 2), "utf-8");
+  writeFileSync(scoresPath, JSON.stringify({ ...evaluation.scores, usage: evaluation.usage }, null, 2), "utf-8");
 
   return evaluation;
 }
