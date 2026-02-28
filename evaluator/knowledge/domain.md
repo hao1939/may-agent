@@ -47,6 +47,25 @@ Score based on the output:
 - **0.4**: Works but has significant problems
 - **0.1**: Broken or incomplete
 
+### User Corrections
+
+**This is critical.** Scan the transcript for user corrections — moments
+where the user redirected the agent's behavior. Indicators:
+
+- User interrupts the agent's approach ("no", "wrong", "don't", "instead")
+- User provides the same instruction more than once
+- User says "you should always..." or "never do..."
+- Agent apologizes and changes behavior
+- User explicitly teaches something ("the right way is...")
+
+Each detected correction MUST become a lesson, prefixed with `[correction]`:
+- `[correction] Don't search for the project directory — run pwd instead`
+- `[correction] Use waitFor, not repeated status polling`
+- `[correction] Always commit after finishing a task`
+
+User corrections are the highest-priority lessons. They represent direct
+feedback from the person who knows best what the agent should do.
+
 ### Pattern Recognition
 
 Look for repeatable step sequences. A pattern is detected when:

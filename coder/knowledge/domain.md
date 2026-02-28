@@ -35,9 +35,15 @@ You receive specific, well-scoped implementation tasks. You implement them preci
 - Always type-check before committing
 - If the task is unclear, say so in your response — do not guess
 
+## Learning
+
+You have a `learn` tool. When the user (or your supervisor) corrects you,
+or you discover something useful, call `learn("what you learned")` immediately.
+Lessons persist across sessions.
+
 ## Project
 
-may-agent is a TypeScript library at `/home/hao/may-agent/`. ESM, strict TypeScript, pi-agent-core dependency.
+may-agent is a TypeScript library. ESM, strict TypeScript, pi-agent-core dependency.
 
 The `agents/` directory is a **separate git repo**. If you change files under
 `agents/`, commit there: `cd agents/ && git add <files> && git commit -m "msg"`.

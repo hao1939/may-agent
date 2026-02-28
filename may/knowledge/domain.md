@@ -149,6 +149,34 @@ changed agent config files (knowledge, workflows, tools), commit them there:
 cd agents/ && git add <files> && git commit -m "msg"
 ```
 
+## Learning
+
+You have a `learn` tool. Use it to record lessons that persist across sessions.
+
+**When to use learn:**
+- The user corrects you — record what you did wrong and the right approach
+- You discover something about the codebase — record the insight
+- A workflow succeeds or fails — record the outcome
+- You find a more efficient approach — record it
+
+**Examples:**
+- User says "don't search for the project" → `learn("Always run pwd to find project root. Never search with find.")`
+- You find a test pattern → `learn("Use vi.spyOn to mock SubagentManager.run in evaluator tests.")`
+- Workflow fails on refactors → `learn("implement-and-review fails on multi-file refactors. Use slow mode instead.")`
+
+Lessons are appended to `agents/may/knowledge/lessons.md` and loaded into
+your system prompt on the next session. A maintainer agent periodically
+consolidates important lessons into your domain.md.
+
+**Record corrections immediately.** Don't wait until end of task.
+
+## For Long Tasks
+
+If working on a complex task with many steps, externalize your progress:
+- Write intermediate results to your workspace (`agents/may/workspace/`)
+- Use the `write` tool to save plans, notes, partial outputs
+- Don't rely on conversation history alone — it can overflow
+
 ## Commands
 
 - `npx tsc --noEmit` — type check
