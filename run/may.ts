@@ -1,4 +1,3 @@
-import { readFileSync, existsSync } from "node:fs";
 import { createInterface } from "node:readline";
 import { fileURLToPath } from "node:url";
 import { resolve, dirname } from "node:path";
@@ -10,11 +9,21 @@ import {
   createExecTool,
   createWorkflowTool,
   createValidateWorkflowTool,
+  createLearnTool,
   evaluateSession,
 } from "../src/index.js";
 import type { WorkflowEvent } from "../src/workflow.js";
 
 const PROJECT_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const AGENTS_ROOT = resolve(PROJECT_ROOT, "agents");
+
+function agentDir(name: string): string {
+  return resolve(AGENTS_ROOT, name);
+}
+
+function knowledgeDir(name: string): string {
+  return resolve(agentDir(name), "knowledge");
+}
 
 // Models
 const opus = {
@@ -28,59 +37,66 @@ const gpt52 = {
   baseUrl: "http://localhost:4000/v1",
 };
 
+const PERSIST_DIR = resolve(PROJECT_ROOT, ".state");
+
 const manager = new SubagentManager({
-  persistDir: resolve(PROJECT_ROOT, ".state"),
+  persistDir: PERSIST_DIR,
 });
 
-// ── Register coder (Opus) ──────────────────────────────────────────────
-
-const coderKnowledge = readFileSync(`${PROJECT_ROOT}/agents/coder/knowledge/domain.md`, "utf-8");
-const coderTools = readFileSync(`${PROJECT_ROOT}/agents/coder/tools/INDEX.md`, "utf-8");
+// ── Register coder ─────────────────────────────────────────────────────
 
 manager.register({
   name: "coder",
   description: "Focused implementation agent — writes code, tests, commits",
   domain: "may-agent implementation",
-  systemPrompt: [coderKnowledge, coderTools].join("\n\n---\n\n"),
-  workspace: resolve(PROJECT_ROOT, "agents/coder/workspace"),
+  systemPromptFiles: [
+    resolve(knowledgeDir("coder"), "domain.md"),
+    resolve(agentDir("coder"), "tools/INDEX.md"),
+  ],
+  knowledgeDir: knowledgeDir("coder"),
+  workspace: resolve(agentDir("coder"), "workspace"),
   model: opus,
   tools: [
     createReadTool(),
     createWriteTool(),
     createExecTool(PROJECT_ROOT),
+    createLearnTool(knowledgeDir("coder")),
   ],
   apiKey: "not-needed",
 });
 
-// ── Register reviewer (GPT-5.2) ───────────────────────────────────────
-
-const reviewerKnowledge = readFileSync(`${PROJECT_ROOT}/agents/reviewer/knowledge/domain.md`, "utf-8");
-const reviewerTools = readFileSync(`${PROJECT_ROOT}/agents/reviewer/tools/INDEX.md`, "utf-8");
+// ── Register reviewer ──────────────────────────────────────────────────
 
 manager.register({
   name: "reviewer",
-  description: "Independent code/design reviewer on GPT-5.2 — provides different perspective",
+  description: "Independent code/design reviewer on GPT-5.2 — different perspective",
   domain: "code review and design evaluation",
-  systemPrompt: [reviewerKnowledge, reviewerTools].join("\n\n---\n\n"),
-  workspace: resolve(PROJECT_ROOT, "agents/reviewer/workspace"),
+  systemPromptFiles: [
+    resolve(knowledgeDir("reviewer"), "domain.md"),
+    resolve(agentDir("reviewer"), "tools/INDEX.md"),
+  ],
+  knowledgeDir: knowledgeDir("reviewer"),
+  workspace: resolve(agentDir("reviewer"), "workspace"),
   model: gpt52,
   tools: [
     createReadTool(),
     createExecTool(PROJECT_ROOT),
+    createLearnTool(knowledgeDir("reviewer")),
   ],
   apiKey: "not-needed",
 });
 
-// ── Register evaluator (GPT-5.2) ──────────────────────────────────────
-
-const evaluatorKnowledge = readFileSync(`${PROJECT_ROOT}/agents/evaluator/knowledge/domain.md`, "utf-8");
+// ── Register evaluator ─────────────────────────────────────────────────
 
 manager.register({
   name: "evaluator",
   description: "Session evaluator — scores efficiency/quality, detects patterns, suggests workflows",
   domain: "session evaluation and workflow generation",
-  systemPrompt: evaluatorKnowledge,
-  workspace: resolve(PROJECT_ROOT, "agents/evaluator/workspace"),
+  systemPromptFiles: [
+    resolve(knowledgeDir("evaluator"), "domain.md"),
+  ],
+  knowledgeDir: knowledgeDir("evaluator"),
+  workspace: resolve(agentDir("evaluator"), "workspace"),
   model: gpt52,
   tools: [
     createReadTool(),
@@ -95,22 +111,11 @@ manager.register({
 
 let lastWorkflowUsed: string | null = null;
 
-// ── Register may supervisor (Opus) ─────────────────────────────────────
-
-const mayKnowledge = readFileSync(`${PROJECT_ROOT}/agents/may/knowledge/domain.md`, "utf-8");
-const mayTools = readFileSync(`${PROJECT_ROOT}/agents/may/tools/INDEX.md`, "utf-8");
-
-const mayLessonsPath = `${PROJECT_ROOT}/agents/may/knowledge/lessons.md`;
-const mayLessons = existsSync(mayLessonsPath) ? readFileSync(mayLessonsPath, "utf-8") : "";
-
-const mayPromptParts = [mayKnowledge, mayTools];
-if (mayLessons) {
-  mayPromptParts.push(mayLessons);
-}
+// ── Workflow tool ──────────────────────────────────────────────────────
 
 const workflowTool = createWorkflowTool({
   manager,
-  workflowDir: resolve(PROJECT_ROOT, "agents/may/workflows"),
+  workflowDir: resolve(agentDir("may"), "workflows"),
   onEvent: (event: WorkflowEvent) => {
     switch (event.type) {
       case "workflow_start":
@@ -119,7 +124,6 @@ const workflowTool = createWorkflowTool({
         break;
       case "step_start":
         console.log(`[workflow:step] ${event.step} started${event.sessionId ? ` (${event.sessionId})` : ""}`);
-        // Subscribe to sub-agent events for streaming
         if (event.sessionId) {
           attachSubagentEvents(event.step, event.sessionId);
         }
@@ -137,18 +141,25 @@ const workflowTool = createWorkflowTool({
   },
 });
 
+// ── Register may supervisor ────────────────────────────────────────────
+
 manager.register({
   name: "may",
   description: "Supervisor agent — plans, delegates, reviews",
   domain: "may-agent architecture and coordination",
-  systemPrompt: mayPromptParts.join("\n\n---\n\n"),
-  workspace: resolve(PROJECT_ROOT, "agents/may/workspace"),
+  systemPromptFiles: [
+    resolve(knowledgeDir("may"), "domain.md"),
+    resolve(agentDir("may"), "tools/INDEX.md"),
+  ],
+  knowledgeDir: knowledgeDir("may"),
+  workspace: resolve(agentDir("may"), "workspace"),
   model: opus,
   tools: [
     createReadTool(),
     createWriteTool(),
     createExecTool(PROJECT_ROOT),
     createValidateWorkflowTool(),
+    createLearnTool(knowledgeDir("may")),
     manager.createTool(),
     workflowTool,
   ],
@@ -240,7 +251,6 @@ function ask(): Promise<string | null> {
   });
 }
 
-const PERSIST_DIR = resolve(PROJECT_ROOT, ".state");
 const AUTO_EVALUATE = process.env.MAY_EVALUATE !== "0";
 
 async function runEvaluation(sessionId: string): Promise<void> {
@@ -253,8 +263,8 @@ async function runEvaluation(sessionId: string): Promise<void> {
       agentName: "may",
       workflowUsed: lastWorkflowUsed,
       persistDir: PERSIST_DIR,
-      knowledgeDir: resolve(PROJECT_ROOT, "agents/may/knowledge"),
-      workflowDir: resolve(PROJECT_ROOT, "agents/may/workflows"),
+      knowledgeDir: knowledgeDir("may"),
+      workflowDir: resolve(agentDir("may"), "workflows"),
     });
     console.log(`[eval] verdict: ${result.scores.verdict} (efficiency: ${result.scores.efficiency}, quality: ${result.scores.quality})`);
     if (result.scores.pattern_detected) {
@@ -293,7 +303,6 @@ while (!closed) {
     break;
   }
 
-  // Check if this is a steering command while a workflow is running
   if (workflowTool.isRunning) {
     const steered = workflowTool.steer(input);
     if (steered) {
@@ -302,7 +311,6 @@ while (!closed) {
     }
   }
 
-  // Reset workflow tracking for each new turn
   lastWorkflowUsed = null;
 
   manager.send(sid, input);

@@ -1,6 +1,6 @@
 import { Type } from "@mariozechner/pi-ai";
 import type { AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, appendFileSync, mkdirSync, existsSync } from "node:fs";
 import { execSync } from "node:child_process";
 import { dirname, resolve, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -356,6 +356,53 @@ export function createHealthCheckTool(options?: HealthCheckOptions): AgentTool<t
         content: [{ type: "text", text: summary }],
         details: report,
       };
+    },
+  };
+}
+
+// ── Learn tool ─────────────────────────────────────────────────────────
+
+const LearnParams = Type.Object({
+  lesson: Type.String({ description: "What you learned. Be specific and actionable." }),
+});
+
+/**
+ * Create a tool that appends a lesson to the agent's knowledge/lessons.md.
+ *
+ * This is a dumb append — no consolidation, no dedup. The maintainer
+ * agent handles cleanup later. The point is fast capture: when the user
+ * corrects you or you discover something, write it down immediately.
+ *
+ * @param knowledgeDir - path to the agent's knowledge/ directory
+ */
+export function createLearnTool(knowledgeDir: string): AgentTool<typeof LearnParams> {
+  return {
+    name: "learn",
+    label: "Learn",
+    description:
+      "Record a lesson. Use when: the user corrects you, you discover " +
+      "something useful, or you find a better approach. Lessons persist " +
+      "across sessions.",
+    parameters: LearnParams,
+    execute: async (_id, params) => {
+      try {
+        const lessonsPath = join(knowledgeDir, "lessons.md");
+        mkdirSync(knowledgeDir, { recursive: true });
+
+        const ts = new Date().toISOString().slice(0, 16).replace("T", " ");
+        const entry = `- ${ts}: ${params.lesson}\n`;
+
+        if (!existsSync(lessonsPath)) {
+          writeFileSync(lessonsPath, `# Lessons\n\n---\n\n${entry}`, "utf-8");
+        } else {
+          appendFileSync(lessonsPath, entry, "utf-8");
+        }
+
+        return textResult("Lesson recorded.");
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        return textResult(`Error: ${msg}`);
+      }
     },
   };
 }
