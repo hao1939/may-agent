@@ -32,6 +32,15 @@ export interface Registry {
   sessions: Record<string, PersistedSession>;
 }
 
+/** A single memory entry, appended to memory/<name>.jsonl after each session. */
+export interface MemoryEntry {
+  task: string;
+  status: string;
+  duration: string;
+  summary: string | null;
+  timestamp: number;
+}
+
 function emptyRegistry(): Registry {
   return { agents: {}, sessions: {} };
 }
@@ -90,6 +99,38 @@ export function readSessionMessages(persistDir: string, sessionId: string): Agen
     .trim()
     .split("\n")
     .map((line) => JSON.parse(line) as AgentMessage);
+}
+
+// ── Memory JSONL helpers ───────────────────────────────────────────────
+
+/** Return the path to an agent's memory JSONL file. */
+export function memoryPath(persistDir: string, name: string): string {
+  return join(persistDir, "memory", `${name}.jsonl`);
+}
+
+/** Append a memory entry as a JSON line. Creates the file and directory if needed. */
+export function appendMemoryEntry(persistDir: string, name: string, entry: MemoryEntry): void {
+  const filePath = memoryPath(persistDir, name);
+  mkdirSync(dirname(filePath), { recursive: true });
+  const line = JSON.stringify(entry) + "\n";
+  appendFileSync(filePath, line, "utf-8");
+}
+
+/** Read the last N memory entries (or all if limit is not specified). */
+export function readMemoryEntries(persistDir: string, name: string, limit?: number): MemoryEntry[] {
+  const filePath = memoryPath(persistDir, name);
+  if (!existsSync(filePath)) return [];
+  const raw = readFileSync(filePath, "utf-8");
+  if (!raw.trim()) return [];
+  const entries = raw
+    .trim()
+    .split("\n")
+    .map((line) => JSON.parse(line) as MemoryEntry);
+  if (limit !== undefined) {
+    if (limit <= 0) return [];
+    return entries.slice(-limit);
+  }
+  return entries;
 }
 
 // ── RegistryStore ──────────────────────────────────────────────────────

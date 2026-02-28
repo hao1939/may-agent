@@ -9,6 +9,9 @@ export {
   sessionDir,
   sessionJsonlPath,
   sessionOutputDir,
+  memoryPath,
+  appendMemoryEntry,
+  readMemoryEntries,
 } from "./persistence.js";
 export type {
   SubagentDefinition,
@@ -19,4 +22,5 @@ export type {
   Registry,
   PersistedAgentConfig,
   PersistedSession,
+  MemoryEntry,
 } from "./persistence.js";

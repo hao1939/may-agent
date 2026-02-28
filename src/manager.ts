@@ -1,7 +1,16 @@
+import { readFileSync } from "node:fs";
 import { Agent } from "@mariozechner/pi-agent-core";
 import type { AgentMessage, AgentEvent } from "@mariozechner/pi-agent-core";
 import type { SubagentDefinition, SessionInfo, TaskResult } from "./types.js";
-import { RegistryStore, ensureSessionDir, appendSessionMessage, sessionOutputDir } from "./persistence.js";
+import {
+  RegistryStore,
+  ensureSessionDir,
+  appendSessionMessage,
+  sessionOutputDir,
+  appendMemoryEntry,
+  readMemoryEntries,
+} from "./persistence.js";
+import type { MemoryEntry } from "./persistence.js";
 
 let nextId = 0;
 function generateId(): string {
@@ -28,6 +37,16 @@ function extractLastAssistantText(messages: AgentMessage[]): string | null {
     }
   }
   return null;
+}
+
+function formatMemoryTimestamp(ts: number): string {
+  const d = new Date(ts);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  const hh = String(d.getHours()).padStart(2, "0");
+  const min = String(d.getMinutes()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd} ${hh}:${min}`;
 }
 
 interface RegisteredAgent {
@@ -78,12 +97,74 @@ export class SubagentManager {
     });
   }
 
-  /** Resolve the system prompt from a definition. If systemPrompt is set, use it directly.
-   *  Otherwise, if systemPromptFiles is set, it would be loaded (not implemented yet — placeholder). */
-  private resolveSystemPrompt(def: SubagentDefinition): string {
+  /** Resolve the system prompt from a definition.
+   *  - If systemPrompt is set, use it directly.
+   *  - If systemPromptFiles is set, read each file and concatenate with separator.
+   *  - If persistDir exists and memoryLimit > 0, append recent memory entries.
+   *  - Append workspace and output sections.
+   */
+  private resolveSystemPrompt(
+    def: SubagentDefinition,
+    agentName: string,
+    sessionId: string,
+    persistDir: string | null,
+  ): string {
     if (def.systemPrompt) return def.systemPrompt;
-    // TODO: load and concatenate systemPromptFiles
-    return "";
+
+    const sections: string[] = [];
+
+    // Load systemPromptFiles
+    if (def.systemPromptFiles && def.systemPromptFiles.length > 0) {
+      const fileContents = def.systemPromptFiles.map((filePath) =>
+        readFileSync(filePath, "utf-8"),
+      );
+      sections.push(fileContents.join("\n\n---\n\n"));
+    }
+
+    // Load memory entries
+    const memoryLimit = def.memoryLimit ?? 20;
+    if (persistDir && memoryLimit > 0) {
+      const entries = readMemoryEntries(persistDir, agentName, memoryLimit);
+      if (entries.length > 0) {
+        const lines = entries.map((e) => {
+          const ts = formatMemoryTimestamp(e.timestamp);
+          const summary = e.summary ? ` — ${e.summary}` : "";
+          return `- ${ts}: "${e.task}" — ${e.status} (${e.duration})${summary}`;
+        });
+        sections.push(`# Recent Task History\n${lines.join("\n")}`);
+      }
+    }
+
+    // Workspace section
+    if (def.workspace) {
+      sections.push(
+        `# Workspace\nYour persistent workspace is: ${def.workspace}\nUse this for working files, scripts, and data that persist across tasks.`,
+      );
+    }
+
+    // Output section
+    if (persistDir) {
+      const outputPath = sessionOutputDir(persistDir, sessionId);
+      sections.push(
+        `# Output\nWrite deliverables for this task to: ${outputPath}`,
+      );
+    }
+
+    return sections.join("\n\n");
+  }
+
+  /** Append a memory entry after session completion. */
+  private appendMemory(session: ActiveSession): void {
+    if (!this.registry) return;
+    const messages = session.agent.state.messages;
+    const entry: MemoryEntry = {
+      task: session.task,
+      status: session.status,
+      duration: formatDuration(Date.now() - session.startedAt),
+      summary: extractLastAssistantText(messages),
+      timestamp: Date.now(),
+    };
+    appendMemoryEntry(this.registry.persistDir, session.agentName, entry);
   }
 
   /** Start a new session for a registered agent. Returns sessionId. Non-blocking. */
@@ -93,10 +174,11 @@ export class SubagentManager {
 
     const def = registered.definition;
     const sessionId = generateId();
+    const persistDir = this.registry?.persistDir ?? null;
 
     // Compute output directory
-    const outputDir = this.registry
-      ? sessionOutputDir(this.registry.persistDir, sessionId)
+    const outputDir = persistDir
+      ? sessionOutputDir(persistDir, sessionId)
       : "";
 
     // Create session directory for JSONL persistence
@@ -106,7 +188,7 @@ export class SubagentManager {
 
     const agent = new Agent({
       initialState: {
-        systemPrompt: this.resolveSystemPrompt(def),
+        systemPrompt: this.resolveSystemPrompt(def, name, sessionId, persistDir),
         model: def.model,
         tools: def.tools,
       },
@@ -145,11 +227,13 @@ export class SubagentManager {
           session.status = "done";
           this.registry?.updateSessionStatus(sessionId, "done");
         }
+        this.appendMemory(session);
       })
       .catch((err) => {
         session.status = "error";
         session.error = err?.message ?? String(err);
         this.registry?.updateSessionStatus(sessionId, "error", session.error);
+        this.appendMemory(session);
       });
 
     this.sessions.set(sessionId, session);
