@@ -11,6 +11,7 @@ import {
   createValidateWorkflowTool,
   createLearnTool,
   evaluateSession,
+  maintainAgent,
 } from "../src/index.js";
 import type { WorkflowEvent } from "../src/workflow.js";
 
@@ -252,6 +253,8 @@ function ask(): Promise<string | null> {
 }
 
 const AUTO_EVALUATE = process.env.MAY_EVALUATE !== "0";
+const MAINTENANCE_INTERVAL = 5; // run maintenance every N evaluations
+let evalsSinceMaintenance = 0;
 
 async function runEvaluation(sessionId: string): Promise<void> {
   if (!AUTO_EVALUATE) return;
@@ -276,9 +279,74 @@ async function runEvaluation(sessionId: string): Promise<void> {
     if (result.workflowCode) {
       console.log(`[eval] workflow suggested: ${result.workflowName}`);
     }
+
+    // Periodic maintenance
+    evalsSinceMaintenance++;
+    if (evalsSinceMaintenance >= MAINTENANCE_INTERVAL) {
+      console.log("\n[maintenance] Running lessons consolidation...");
+      try {
+        const mResult = await maintainAgent({
+          manager,
+          agentName: "may",
+          knowledgeDir: knowledgeDir("may"),
+          persistDir: PERSIST_DIR,
+        });
+        console.log(`[maintenance] pruned ${mResult.lessonsPruned} lessons`);
+        if (mResult.suggestions.length > 0) {
+          console.log(`[maintenance] suggestions for domain.md:`);
+          for (const s of mResult.suggestions) {
+            console.log(`  - ${s}`);
+          }
+        }
+        if (mResult.staleItems.length > 0) {
+          console.log(`[maintenance] stale items: ${mResult.staleItems.join(", ")}`);
+        }
+      } catch (err) {
+        console.log(`[maintenance] failed: ${err instanceof Error ? err.message : String(err)}`);
+      }
+      evalsSinceMaintenance = 0;
+    }
   } catch (err) {
     console.log(`[eval] evaluation failed: ${err instanceof Error ? err.message : String(err)}`);
   }
+}
+
+// ── Session management with compaction ─────────────────────────────────
+
+let sid: string;
+
+function startSession(task: string): string {
+  lastWorkflowUsed = null;
+  const sessionId = manager.run("may", task);
+  attachEvents(sessionId);
+  return sessionId;
+}
+
+async function waitAndCheck(sessionId: string): Promise<void> {
+  const result = await manager.waitFor(sessionId);
+
+  // Check if session ended with an error (possible context overflow)
+  if (result?.status === "error" && result.error) {
+    const isOverflow = result.error.includes("context")
+      || result.error.includes("token")
+      || result.error.includes("too long")
+      || result.error.includes("maximum");
+
+    if (isOverflow) {
+      console.log("\n[runner] Context overflow detected. Starting fresh session with summary...");
+
+      // Build summary from the last assistant text and task
+      const summary = result.lastAssistantText
+        ? `Previous session hit context limit. Last progress:\n\n${result.lastAssistantText.slice(0, 2000)}\n\nContinue from where you left off.`
+        : "Previous session hit context limit. Check your workspace for any progress notes, then continue.";
+
+      sid = startSession(summary);
+      await waitAndCheck(sid);
+      return;
+    }
+  }
+
+  await runEvaluation(sessionId);
 }
 
 let firstMessage = process.argv.slice(2).join(" ");
@@ -288,13 +356,8 @@ if (!firstMessage) {
   firstMessage = input;
 }
 
-// Reset workflow tracking for each new task
-lastWorkflowUsed = null;
-
-const sid = manager.run("may", firstMessage);
-attachEvents(sid);
-await manager.waitFor(sid);
-await runEvaluation(sid);
+sid = startSession(firstMessage);
+await waitAndCheck(sid);
 
 while (!closed) {
   const input = await ask();
@@ -314,8 +377,7 @@ while (!closed) {
   lastWorkflowUsed = null;
 
   manager.send(sid, input);
-  await manager.waitFor(sid);
-  await runEvaluation(sid);
+  await waitAndCheck(sid);
 }
 
 rl.close();
