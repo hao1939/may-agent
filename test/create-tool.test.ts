@@ -375,3 +375,48 @@ describe("createTool()", () => {
     });
   });
 });
+
+describe("listAgents()", () => {
+  it("returns empty array when no agents registered", () => {
+    const manager = new SubagentManager();
+    expect(manager.listAgents()).toEqual([]);
+  });
+
+  it("returns correct { name, description, domain } for registered agents", () => {
+    const manager = new SubagentManager();
+    registerTestAgents(manager);
+
+    const agents = manager.listAgents();
+    expect(agents).toHaveLength(2);
+
+    const researcher = agents.find((a) => a.name === "researcher");
+    expect(researcher).toEqual({
+      name: "researcher",
+      description: "Deep research on technical topics",
+      domain: "academic research",
+    });
+
+    const writer = agents.find((a) => a.name === "writer");
+    expect(writer).toEqual({
+      name: "writer",
+      description: "Content writing and editing",
+      domain: "content creation",
+    });
+  });
+
+  it("does NOT include session info (simpler than status/list)", () => {
+    const manager = new SubagentManager();
+    registerTestAgents(manager);
+
+    const agents = manager.listAgents();
+    for (const agent of agents) {
+      // Should only have name, description, domain — no session-related fields
+      const keys = Object.keys(agent);
+      expect(keys).toEqual(["name", "description", "domain"]);
+      expect(agent).not.toHaveProperty("sessions");
+      expect(agent).not.toHaveProperty("sessionId");
+      expect(agent).not.toHaveProperty("status");
+      expect(agent).not.toHaveProperty("task");
+    }
+  });
+});

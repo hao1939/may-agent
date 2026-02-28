@@ -105,6 +105,10 @@ const SubagentToolParams = Type.Union([
     action: Type.Literal("cancel"),
     sessionId: Type.String({ description: "Session ID to cancel" }),
   }),
+  Type.Object({
+    action: Type.Literal("waitFor"),
+    sessionId: Type.String({ description: "Session ID to wait for completion" }),
+  }),
 ]);
 
 export class SubagentManager {
@@ -410,6 +414,15 @@ export class SubagentManager {
     }));
   }
 
+  /** List all registered agents (name, description, domain). */
+  listAgents(): Array<{ name: string; description: string; domain: string }> {
+    return Array.from(this.agents.values()).map((a) => ({
+      name: a.definition.name,
+      description: a.definition.description,
+      domain: a.definition.domain,
+    }));
+  }
+
   /** Get sessions filtered by agent name. */
   sessions(name: string): SessionInfo[] {
     return this.status().filter((s) => s.agent === name);
@@ -518,6 +531,17 @@ export class SubagentManager {
     return registered?.definition.workspace;
   }
 
+  /** Get the workflows directory for a registered agent.
+   *  Convention: agentDir = dirname(workspace), workflows = agentDir/workflows.
+   */
+  getWorkflowDir(name: string): string | undefined {
+    const registered = this.agents.get(name);
+    const workspace = registered?.definition.workspace;
+    if (!workspace) return undefined;
+    const agentDir = dirname(workspace);
+    return join(agentDir, "workflows");
+  }
+
   /** Get the memory JSONL path for an agent. Requires persistDir. */
   getMemoryPath(name: string): string | undefined {
     if (!this.registry) return undefined;
@@ -621,6 +645,15 @@ export class SubagentManager {
           case "cancel": {
             manager.cancel(params.sessionId);
             return textResult(JSON.stringify({ cancelled: params.sessionId }));
+          }
+
+          case "waitFor": {
+            const taskResult = await manager.waitFor(params.sessionId);
+            if (!taskResult) {
+              return textResult(JSON.stringify({ error: `Session "${params.sessionId}" not found` }));
+            }
+            const { messages: _msgs, ...resultWithoutMessages } = taskResult;
+            return textResult(JSON.stringify(resultWithoutMessages, null, 2));
           }
 
           default: {
