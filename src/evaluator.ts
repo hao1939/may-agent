@@ -296,12 +296,12 @@ export async function evaluateSession(opts: EvaluateSessionOptions): Promise<Eva
     }
   }
 
-  // 6. Write workflow if pattern detected
-  if (evaluation.workflowCode && evaluation.workflowName && workflowDir) {
+  // 6. Stage workflow if pattern detected (optimizer validates later)
+  if (evaluation.workflowCode && evaluation.workflowName) {
     const fileName = evaluation.workflowName.replace(/\s+/g, "-").toLowerCase() + ".ts";
-    const workflowPath = join(workflowDir, fileName);
-    mkdirSync(workflowDir, { recursive: true });
-    writeFileSync(workflowPath, evaluation.workflowCode, "utf-8");
+    const stagedDir = join(persistDir, "staged", "workflows");
+    mkdirSync(stagedDir, { recursive: true });
+    writeFileSync(join(stagedDir, fileName), evaluation.workflowCode, "utf-8");
   }
 
   // 7. Save scores and usage
