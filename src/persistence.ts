@@ -7,15 +7,20 @@ import type { SubagentDefinition } from "./types.js";
 export interface PersistedAgentConfig {
   name: string;
   description: string;
-  systemPrompt: string;
+  domain: string;
+  systemPrompt?: string;
+  systemPromptFiles?: string[];
+  workspace?: string;
   model: { provider: string; id: string };
+  timeoutMs?: number;
+  memoryLimit?: number;
 }
 
 /** Serializable session record. */
 export interface PersistedSession {
   agent: string;
   task: string;
-  status: "running" | "done" | "error";
+  status: "running" | "done" | "error" | "interrupted";
   startedAt: number;
   endedAt?: number;
   error?: string;
@@ -33,12 +38,18 @@ function emptyRegistry(): Registry {
 
 /** Extract persistable fields from a SubagentDefinition. */
 export function toPersistedConfig(def: SubagentDefinition): PersistedAgentConfig {
-  return {
+  const config: PersistedAgentConfig = {
     name: def.name,
     description: def.description,
-    systemPrompt: def.systemPrompt,
+    domain: def.domain,
     model: { provider: (def.model as any).provider ?? "unknown", id: def.model.id },
   };
+  if (def.systemPrompt !== undefined) config.systemPrompt = def.systemPrompt;
+  if (def.systemPromptFiles !== undefined) config.systemPromptFiles = def.systemPromptFiles;
+  if (def.workspace !== undefined) config.workspace = def.workspace;
+  if (def.timeoutMs !== undefined) config.timeoutMs = def.timeoutMs;
+  if (def.memoryLimit !== undefined) config.memoryLimit = def.memoryLimit;
+  return config;
 }
 
 // ── Session JSONL helpers ──────────────────────────────────────────────
@@ -51,6 +62,11 @@ export function sessionDir(persistDir: string, sessionId: string): string {
 /** Return the path to a session's JSONL file. */
 export function sessionJsonlPath(persistDir: string, sessionId: string): string {
   return join(sessionDir(persistDir, sessionId), "session.jsonl");
+}
+
+/** Return the path to a session's output directory. */
+export function sessionOutputDir(persistDir: string, sessionId: string): string {
+  return join(sessionDir(persistDir, sessionId), "output");
 }
 
 /** Create the session directory (idempotent). */
@@ -116,8 +132,8 @@ export class RegistryStore {
     this.save();
   }
 
-  /** Update session status (done/error). */
-  updateSessionStatus(sessionId: string, status: "done" | "error", error?: string): void {
+  /** Update session status (done/error/interrupted). */
+  updateSessionStatus(sessionId: string, status: "done" | "error" | "interrupted", error?: string): void {
     const session = this.data.sessions[sessionId];
     if (!session) return;
     session.status = status;

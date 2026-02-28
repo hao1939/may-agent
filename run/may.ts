@@ -24,6 +24,7 @@ const manager = new SubagentManager();
 manager.register({
   name: "may",
   description: "Supervisor agent — implements and evolves may-agent",
+  domain: "may-agent development",
   systemPrompt,
   model,
   tools: [

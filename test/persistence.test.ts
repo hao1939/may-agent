@@ -39,6 +39,7 @@ describe("Registry persistence", () => {
     manager.register({
       name: "test-agent",
       description: "A test agent",
+      domain: "testing",
       systemPrompt: "You are a test agent.",
       model: fakeModel(),
       tools: [],
@@ -51,8 +52,34 @@ describe("Registry persistence", () => {
     expect(registry.agents["test-agent"]).toBeDefined();
     expect(registry.agents["test-agent"].name).toBe("test-agent");
     expect(registry.agents["test-agent"].description).toBe("A test agent");
+    expect(registry.agents["test-agent"].domain).toBe("testing");
     expect(registry.agents["test-agent"].systemPrompt).toBe("You are a test agent.");
     expect(registry.agents["test-agent"].model).toEqual({ provider: "anthropic", id: "test-model" });
+  });
+
+  it("persists new fields (domain, systemPromptFiles, workspace, timeoutMs, memoryLimit)", () => {
+    const manager = new SubagentManager({ persistDir });
+
+    manager.register({
+      name: "full-agent",
+      description: "Full config agent",
+      domain: "research",
+      systemPromptFiles: ["/path/to/knowledge.md", "/path/to/tools/INDEX.md"],
+      workspace: "/path/to/workspace",
+      model: fakeModel(),
+      tools: [],
+      timeoutMs: 600000,
+      memoryLimit: 30,
+    });
+
+    const registryPath = join(persistDir, "registry.json");
+    const registry: Registry = JSON.parse(readFileSync(registryPath, "utf-8"));
+    const agent = registry.agents["full-agent"];
+    expect(agent.domain).toBe("research");
+    expect(agent.systemPromptFiles).toEqual(["/path/to/knowledge.md", "/path/to/tools/INDEX.md"]);
+    expect(agent.workspace).toBe("/path/to/workspace");
+    expect(agent.timeoutMs).toBe(600000);
+    expect(agent.memoryLimit).toBe(30);
   });
 
   it("persists multiple agents", () => {
@@ -61,6 +88,7 @@ describe("Registry persistence", () => {
     manager.register({
       name: "agent-a",
       description: "First agent",
+      domain: "domain-a",
       systemPrompt: "Prompt A",
       model: fakeModel(),
       tools: [],
@@ -69,6 +97,7 @@ describe("Registry persistence", () => {
     manager.register({
       name: "agent-b",
       description: "Second agent",
+      domain: "domain-b",
       systemPrompt: "Prompt B",
       model: fakeModel(),
       tools: [],
@@ -87,6 +116,7 @@ describe("Registry persistence", () => {
     manager1.register({
       name: "persisted-agent",
       description: "Survives restart",
+      domain: "persistence",
       systemPrompt: "I persist",
       model: fakeModel(),
       tools: [],
@@ -99,6 +129,7 @@ describe("Registry persistence", () => {
     manager2.register({
       name: "new-agent",
       description: "Added after restart",
+      domain: "new",
       systemPrompt: "I am new",
       model: fakeModel(),
       tools: [],
@@ -116,6 +147,7 @@ describe("Registry persistence", () => {
     manager.register({
       name: "runner",
       description: "Runs tasks",
+      domain: "running",
       systemPrompt: "You are a runner.",
       model: fakeModel(),
       tools: [],
@@ -151,6 +183,7 @@ describe("Registry persistence", () => {
     manager.register({
       name: "ephemeral",
       description: "No persistence",
+      domain: "ephemeral",
       systemPrompt: "Temp",
       model: fakeModel(),
       tools: [],
@@ -158,5 +191,27 @@ describe("Registry persistence", () => {
 
     const status = manager.status();
     expect(status).toEqual([]);
+  });
+
+  it("does not persist optional fields when not provided", () => {
+    const manager = new SubagentManager({ persistDir });
+
+    manager.register({
+      name: "minimal",
+      description: "Minimal agent",
+      domain: "minimal",
+      model: fakeModel(),
+      tools: [],
+    });
+
+    const registryPath = join(persistDir, "registry.json");
+    const registry: Registry = JSON.parse(readFileSync(registryPath, "utf-8"));
+    const agent = registry.agents["minimal"];
+    expect(agent.domain).toBe("minimal");
+    expect(agent.systemPrompt).toBeUndefined();
+    expect(agent.systemPromptFiles).toBeUndefined();
+    expect(agent.workspace).toBeUndefined();
+    expect(agent.timeoutMs).toBeUndefined();
+    expect(agent.memoryLimit).toBeUndefined();
   });
 });
