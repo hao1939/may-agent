@@ -38,6 +38,9 @@ interface WorkflowContext {
   /** Run a sub-agent, wait for it to finish, return result. */
   runAgent(name: string, task: string): Promise<TaskResult>;
 
+  /** Run a sub-workflow by name. Enables workflow composition. */
+  runWorkflow(name: string, task: string): Promise<WorkflowResult>;
+
   /** Emit a workflow event (observable by subscribers). */
   emit(event: WorkflowEvent): void;
 

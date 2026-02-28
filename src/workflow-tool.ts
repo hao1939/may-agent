@@ -7,6 +7,7 @@ import type { TaskResult } from "./types.js";
 import type {
   WorkflowContext,
   WorkflowModule,
+  WorkflowResult,
   WorkflowEvent,
   WorkflowToolResult,
   CompletedStep,
@@ -62,6 +63,27 @@ function listWorkflowFiles(workflowDir: string): string[] {
   } catch {
     return []; // directory doesn't exist yet
   }
+}
+
+async function findWorkflow(workflowDir: string, name: string): Promise<{ workflow: WorkflowModule | null; error: string | null }> {
+  const files = listWorkflowFiles(workflowDir);
+  let loadError: string | null = null;
+
+  for (const filePath of files) {
+    try {
+      const wf = await loadWorkflow(filePath);
+      if (wf.name === name) {
+        return { workflow: wf, error: null };
+      }
+    } catch (err) {
+      loadError = err instanceof Error ? err.message : String(err);
+    }
+  }
+
+  const error = loadError
+    ? `Workflow "${name}" not found (load error: ${loadError})`
+    : `Workflow "${name}" not found`;
+  return { workflow: null, error };
 }
 
 // ── WorkflowTool type ──────────────────────────────────────────────────
@@ -167,27 +189,10 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
 
         case "run": {
           // Find the workflow file by name
-          const files = listWorkflowFiles(workflowDir);
-          let workflow: WorkflowModule | null = null;
-          let loadError: string | null = null;
-
-          for (const filePath of files) {
-            try {
-              const wf = await loadWorkflow(filePath);
-              if (wf.name === params.name) {
-                workflow = wf;
-                break;
-              }
-            } catch (err) {
-              loadError = err instanceof Error ? err.message : String(err);
-            }
-          }
+          const { workflow, error: findError } = await findWorkflow(workflowDir, params.name);
 
           if (!workflow) {
-            const msg = loadError
-              ? `Workflow "${params.name}" not found (load error: ${loadError})`
-              : `Workflow "${params.name}" not found`;
-            return textResult(JSON.stringify({ type: "error", workflow: params.name, error: msg }));
+            return textResult(JSON.stringify({ type: "error", workflow: params.name, error: findError }));
           }
 
           // Build the context
@@ -233,6 +238,40 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
 
             emit: (event: WorkflowEvent) => {
               onEvent?.(event);
+            },
+
+            runWorkflow: async (wfName: string, wfTask: string): Promise<WorkflowResult> => {
+              // Check steering before starting sub-workflow
+              const steering = steeringQueue.shift();
+              if (steering) {
+                throw new WorkflowInterrupted(steering, completedSteps);
+              }
+
+              const { workflow: subWf, error: subErr } = await findWorkflow(workflowDir, wfName);
+              if (!subWf) {
+                return { type: "escalate", reason: subErr ?? `Workflow "${wfName}" not found` };
+              }
+
+              // Sub-workflow shares the same steering queue and completed steps
+              const subCtx: WorkflowContext = {
+                task: wfTask,
+                runAgent: ctx.runAgent,
+                runWorkflow: ctx.runWorkflow,
+                emit: ctx.emit,
+                done: ctx.done,
+                escalate: ctx.escalate,
+              };
+
+              onEvent?.({ type: "workflow_start", workflow: subWf.name, task: wfTask });
+              const result = await subWf.execute(subCtx);
+
+              if (result.type === "done") {
+                onEvent?.({ type: "workflow_done", summary: result.summary });
+              } else {
+                onEvent?.({ type: "workflow_escalate", reason: result.reason });
+              }
+
+              return result;
             },
 
             done: (summary: string) => ({ type: "done" as const, summary }),
