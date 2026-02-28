@@ -15,6 +15,8 @@ export type {
 } from "./workflow.js";
 export { evaluateSession, maintainAgent } from "./evaluator.js";
 export type { EvaluationScores, EvaluationResult, EvaluateSessionOptions, MaintainAgentOptions, MaintenanceResult } from "./evaluator.js";
+export { parseFrontmatter, loadSkillsFromDirs, formatSkillsForPrompt } from "./skills.js";
+export type { Frontmatter, SkillEntry } from "./skills.js";
 export {
   RegistryStore,
   ensureSessionDir,
