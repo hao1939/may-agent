@@ -1,0 +1,31 @@
+{
+  "name": "may-agent",
+  "version": "0.1.0",
+  "description": "Persistent feature-unit sub-agent system built on pi-agent-core",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "clean": "rm -rf dist",
+    "build": "tsc -p tsconfig.build.json",
+    "check": "tsc --noEmit",
+    "test": "vitest --run"
+  },
+  "dependencies": {
+    "@mariozechner/pi-agent-core": "file:/home/example-user/pi-mono/packages/agent",
+    "@mariozechner/pi-ai": "file:/home/example-user/pi-mono/packages/ai"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.3",
+    "vitest": "^3.2.4"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "license": "MIT"
+}
