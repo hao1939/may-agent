@@ -3,6 +3,7 @@ import { Agent } from "@mariozechner/pi-agent-core";
 import type { AgentMessage, AgentEvent, AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
 import { Type } from "@mariozechner/pi-ai";
 import type { SubagentDefinition, SessionInfo, TaskResult } from "./types.js";
+import { loadSkillsFromDirs, formatSkillsForPrompt } from "./skills.js";
 import {
   RegistryStore,
   ensureSessionDir,
@@ -169,6 +170,25 @@ export class SubagentManager {
         const lessons = readFileSync(lessonsPath, "utf-8").trim();
         if (lessons) {
           sections.push(lessons);
+        }
+      }
+    }
+
+    // Load skills from per-agent skills/ dir + shared skillsDirs
+    {
+      const skillDirs: string[] = [];
+      if (def.knowledgeDir) {
+        const agentDir = dirname(def.knowledgeDir);
+        skillDirs.push(join(agentDir, "skills"));
+      }
+      if (def.skillsDirs) {
+        skillDirs.push(...def.skillsDirs);
+      }
+      if (skillDirs.length > 0) {
+        const skills = loadSkillsFromDirs(skillDirs);
+        const block = formatSkillsForPrompt(skills);
+        if (block) {
+          sections.push(block);
         }
       }
     }

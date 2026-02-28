@@ -17,6 +17,9 @@ export interface SubagentDefinition {
   /** Directory containing agent knowledge files (domain.md, lessons.md, etc.). */
   knowledgeDir?: string;
 
+  /** Directories to scan for skills (SKILL.md files). Per-agent skills dir is auto-added from knowledgeDir. */
+  skillsDirs?: string[];
+
   // Capabilities
   tools: AgentTool[];
   model: Model<any>;
