@@ -14,6 +14,8 @@ export interface SubagentDefinition {
 
   // Caller-managed paths (persisted for resume)
   workspace?: string;
+  /** Directory containing agent knowledge files (domain.md, lessons.md, etc.). */
+  knowledgeDir?: string;
 
   // Capabilities
   tools: AgentTool[];

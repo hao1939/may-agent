@@ -1,8 +1,8 @@
 import { Type } from "@mariozechner/pi-ai";
 import type { AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
-import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { execSync } from "node:child_process";
-import { dirname, resolve } from "node:path";
+import { dirname, resolve, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const DEFS_PATH = resolve(dirname(fileURLToPath(import.meta.url)), "workflow-defs.d.ts");
@@ -180,3 +180,183 @@ export function createValidateWorkflowTool(): AgentTool<typeof ValidateWorkflowP
     },
   };
 }
+
+// ── Health check tool ──────────────────────────────────────────────────
+
+/** A single check result in the health report. */
+export interface HealthCheck {
+  name: string;
+  ok: boolean;
+  detail: string;
+}
+
+/** Structured health report returned by the health_check tool. */
+export interface HealthReport {
+  healthy: boolean;
+  checks: HealthCheck[];
+}
+
+const HealthCheckParams = Type.Object({});
+
+export interface HealthCheckOptions {
+  /** Project root directory. Defaults to process.cwd(). */
+  projectRoot?: string;
+  /** Path to .state directory. Defaults to <projectRoot>/.state */
+  stateDir?: string;
+  /** Whether to run tsc type-check. Defaults to true. */
+  runTypeCheck?: boolean;
+  /** Whether to run vitest. Defaults to true. */
+  runTests?: boolean;
+}
+
+/**
+ * Create a health check tool that verifies the project environment is sane.
+ *
+ * Checks:
+ * 1. package.json exists (project root is correct)
+ * 2. agents/ directory exists
+ * 3. .state/ directory exists (creates if missing)
+ * 4. node_modules/ exists
+ * 5. TypeScript compiles cleanly (npx tsc --noEmit)
+ * 6. Tests pass (npx vitest --run)
+ * 7. No stale sessions stuck in "running" status
+ */
+export function createHealthCheckTool(options?: HealthCheckOptions): AgentTool<typeof HealthCheckParams, HealthReport> {
+  const projectRoot = options?.projectRoot ?? process.cwd();
+  const stateDir = options?.stateDir ?? join(projectRoot, ".state");
+  const runTypeCheck = options?.runTypeCheck ?? true;
+  const runTests = options?.runTests ?? true;
+
+  return {
+    name: "health_check",
+    label: "Health Check",
+    description:
+      "Run a startup health check on the project environment. " +
+      "Verifies project root, directories, dependencies, type-checking, tests, and session state. " +
+      "Returns a structured report with { healthy: boolean, checks: [{name, ok, detail}] }.",
+    parameters: HealthCheckParams,
+    execute: async () => {
+      const checks: HealthCheck[] = [];
+
+      // 1. package.json exists
+      const pkgPath = join(projectRoot, "package.json");
+      if (existsSync(pkgPath)) {
+        checks.push({ name: "package.json", ok: true, detail: `Found at ${pkgPath}` });
+      } else {
+        checks.push({ name: "package.json", ok: false, detail: `Missing: ${pkgPath} — project root may be wrong` });
+      }
+
+      // 2. agents/ directory exists
+      const agentsDir = join(projectRoot, "agents");
+      if (existsSync(agentsDir)) {
+        checks.push({ name: "agents/", ok: true, detail: `Found at ${agentsDir}` });
+      } else {
+        checks.push({ name: "agents/", ok: false, detail: `Missing: ${agentsDir}` });
+      }
+
+      // 3. .state/ directory exists (create if missing)
+      if (existsSync(stateDir)) {
+        checks.push({ name: ".state/", ok: true, detail: `Found at ${stateDir}` });
+      } else {
+        try {
+          mkdirSync(stateDir, { recursive: true });
+          checks.push({ name: ".state/", ok: true, detail: `Created ${stateDir} (was missing)` });
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : String(err);
+          checks.push({ name: ".state/", ok: false, detail: `Failed to create ${stateDir}: ${msg}` });
+        }
+      }
+
+      // 4. node_modules/ exists
+      const nodeModules = join(projectRoot, "node_modules");
+      if (existsSync(nodeModules)) {
+        checks.push({ name: "node_modules/", ok: true, detail: `Found at ${nodeModules}` });
+      } else {
+        checks.push({ name: "node_modules/", ok: false, detail: `Missing: ${nodeModules} — run npm install` });
+      }
+
+      // 5. TypeScript type-check
+      if (runTypeCheck) {
+        try {
+          execSync("npx tsc --noEmit", {
+            cwd: projectRoot,
+            encoding: "utf-8",
+            timeout: 60000,
+            stdio: ["pipe", "pipe", "pipe"],
+          });
+          checks.push({ name: "tsc", ok: true, detail: "Type-check passed" });
+        } catch (err: unknown) {
+          let detail = "Type-check failed";
+          if (err && typeof err === "object" && "stdout" in err) {
+            const e = err as { stdout: string; stderr: string };
+            const output = [e.stdout, e.stderr].filter(Boolean).join("\n").trim();
+            if (output) detail += ":\n" + output;
+          }
+          checks.push({ name: "tsc", ok: false, detail });
+        }
+      }
+
+      // 6. Tests
+      if (runTests) {
+        try {
+          execSync("npx vitest --run", {
+            cwd: projectRoot,
+            encoding: "utf-8",
+            timeout: 120000,
+            stdio: ["pipe", "pipe", "pipe"],
+          });
+          checks.push({ name: "tests", ok: true, detail: "All tests passed" });
+        } catch (err: unknown) {
+          let detail = "Tests failed";
+          if (err && typeof err === "object" && "stdout" in err) {
+            const e = err as { stdout: string; stderr: string };
+            const output = [e.stdout, e.stderr].filter(Boolean).join("\n").trim();
+            if (output) detail += ":\n" + output;
+          }
+          checks.push({ name: "tests", ok: false, detail });
+        }
+      }
+
+      // 7. Stale sessions in registry.json
+      const registryPath = join(stateDir, "registry.json");
+      if (existsSync(registryPath)) {
+        try {
+          const raw = readFileSync(registryPath, "utf-8");
+          const registry = JSON.parse(raw) as { sessions?: Record<string, { status: string; agent?: string; task?: string }> };
+          const sessions = registry.sessions ?? {};
+          const stale = Object.entries(sessions).filter(([, s]) => s.status === "running");
+          if (stale.length === 0) {
+            checks.push({ name: "stale_sessions", ok: true, detail: "No sessions stuck in running state" });
+          } else {
+            const details = stale
+              .map(([id, s]) => `  ${id}: agent=${s.agent ?? "?"}, task=${s.task ?? "?"}`)
+              .join("\n");
+            checks.push({
+              name: "stale_sessions",
+              ok: false,
+              detail: `${stale.length} session(s) stuck in "running" status:\n${details}`,
+            });
+          }
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : String(err);
+          checks.push({ name: "stale_sessions", ok: false, detail: `Failed to read registry: ${msg}` });
+        }
+      } else {
+        checks.push({ name: "stale_sessions", ok: true, detail: "No registry.json yet (clean state)" });
+      }
+
+      const healthy = checks.every((c) => c.ok);
+      const report: HealthReport = { healthy, checks };
+
+      // Format a human-readable summary
+      const lines = checks.map((c) => `${c.ok ? "✓" : "✗"} ${c.name}: ${c.detail}`);
+      const summary = `Health check: ${healthy ? "HEALTHY" : "UNHEALTHY"}\n\n${lines.join("\n")}`;
+
+      return {
+        content: [{ type: "text", text: summary }],
+        details: report,
+      };
+    },
+  };
+}
+
