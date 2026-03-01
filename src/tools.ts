@@ -84,6 +84,24 @@ export interface ExecToolOptions {
   denyMessage?: string;
   /** If true, prefix the first exec output with "CWD: <path>" so the agent knows where it is. */
   echoCwd?: boolean;
+  /** If set, commands referencing absolute paths outside this root get a warning appended to output. */
+  warnOutsideRoot?: string;
+}
+
+/**
+ * Detect whether a command string contains absolute paths outside the given root.
+ * Matches common top-level dirs like /home, /app, /work, /usr, /etc, /tmp, /var, /opt.
+ */
+function detectsOutsidePaths(command: string, root: string): boolean {
+  const absPathRegex = /(?:^|\s|['";=])(\/(?:home|app|work|usr|etc|tmp|var|opt)(?:\/\S*)?)/g;
+  let match;
+  while ((match = absPathRegex.exec(command)) !== null) {
+    const path = match[1];
+    if (path !== root && !path.startsWith(root + "/")) {
+      return true;
+    }
+  }
+  return false;
 }
 
 export function createExecTool(cwdOrOpts?: string | ExecToolOptions): AgentTool<typeof ExecParams> {
@@ -91,6 +109,7 @@ export function createExecTool(cwdOrOpts?: string | ExecToolOptions): AgentTool<
   const effectiveCwd = opts.cwd ?? process.cwd();
   const denyPatterns = opts.denyPatterns ?? [];
   const denyMessage = opts.denyMessage ?? "Use relative paths from the project root instead.";
+  const warnOutsideRoot = opts.warnOutsideRoot;
   let cwdEchoed = false;
 
   return {
@@ -108,6 +127,10 @@ export function createExecTool(cwdOrOpts?: string | ExecToolOptions): AgentTool<
         }
       }
 
+      const outsideWarning = warnOutsideRoot && detectsOutsidePaths(params.command, warnOutsideRoot)
+        ? `\nWARNING: Your command references paths outside the project root (${warnOutsideRoot}). Use relative paths from the project root instead.`
+        : "";
+
       try {
         const timeout = (params.timeout ?? 30) * 1000;
         const output = execSync(params.command, {
@@ -122,15 +145,15 @@ export function createExecTool(cwdOrOpts?: string | ExecToolOptions): AgentTool<
           result = `CWD: ${effectiveCwd}\n${result}`;
           cwdEchoed = true;
         }
-        return textResult(result);
+        return textResult(result + outsideWarning);
       } catch (err: unknown) {
         if (err && typeof err === "object" && "stdout" in err) {
           const e = err as { stdout: string; stderr: string; status: number };
           const output = [e.stdout, e.stderr].filter(Boolean).join("\n");
-          return textResult(`Exit code ${e.status}\n${output}`);
+          return textResult(`Exit code ${e.status}\n${output}${outsideWarning}`);
         }
         const msg = err instanceof Error ? err.message : String(err);
-        return textResult(`Error: ${msg}`);
+        return textResult(`Error: ${msg}${outsideWarning}`);
       }
     },
   };
@@ -447,4 +470,3 @@ export function createLearnTool(knowledgeDir: string): AgentTool<typeof LearnPar
     },
   };
 }
-

@@ -157,3 +157,92 @@ describe("createExecTool with options", () => {
     expect(r4.content[0].text).not.toContain("Blocked");
   });
 });
+
+describe("warnOutsideRoot", () => {
+  const ROOT = "/home/example-user/may-agent";
+
+  it("warns when command uses /home/user path", async () => {
+    const tool = createExecTool({ cwd: "/tmp", warnOutsideRoot: ROOT });
+    const result = await tool.execute("id", { command: "find /home/user -name foo" });
+    expect(result.content[0].text).toContain("WARNING:");
+    expect(result.content[0].text).toContain("outside the project root");
+    expect(result.content[0].text).toContain(ROOT);
+  });
+
+  it("does not warn when command uses project-root path", async () => {
+    const tool = createExecTool({ cwd: ROOT, warnOutsideRoot: ROOT });
+    const result = await tool.execute("id", { command: "find /home/example-user/may-agent/src -name foo" });
+    expect(result.content[0].text).not.toContain("WARNING:");
+    expect(result.content[0].text).not.toContain("outside the project root");
+  });
+
+  it("does not warn when command uses relative paths", async () => {
+    const tool = createExecTool({ cwd: "/tmp", warnOutsideRoot: ROOT });
+    const result = await tool.execute("id", { command: "find . -name foo" });
+    expect(result.content[0].text).not.toContain("WARNING:");
+    expect(result.content[0].text).not.toContain("outside the project root");
+  });
+
+  it("does not warn when warnOutsideRoot is not set", async () => {
+    const tool = createExecTool({ cwd: "/tmp" });
+    const result = await tool.execute("id", { command: "find /home/user -name foo" });
+    expect(result.content[0].text).not.toContain("WARNING:");
+    expect(result.content[0].text).not.toContain("outside the project root");
+  });
+
+  it("warns on /app/ paths", async () => {
+    const tool = createExecTool({ cwd: "/tmp", warnOutsideRoot: ROOT });
+    const result = await tool.execute("id", { command: "ls /app/something" });
+    expect(result.content[0].text).toContain("WARNING:");
+    expect(result.content[0].text).toContain("outside the project root");
+  });
+
+  it("warning is appended to actual output, not replacing it", async () => {
+    const tool = createExecTool({ cwd: "/tmp", warnOutsideRoot: ROOT });
+    // echo produces output, and the command references an outside path
+    const result = await tool.execute("id", { command: "echo hello && echo /home/user/something" });
+    const text = result.content[0].text;
+    // The echo output should be present
+    expect(text).toContain("hello");
+    // The warning should also be present
+    expect(text).toContain("WARNING:");
+    expect(text).toContain("outside the project root");
+  });
+
+  it("warns on non-zero exit code too", async () => {
+    const tool = createExecTool({ cwd: "/tmp", warnOutsideRoot: ROOT });
+    // ls on a non-existent outside path — will fail with non-zero exit
+    const result = await tool.execute("id", { command: "ls /home/user/nonexistent_path_xyz" });
+    const text = result.content[0].text;
+    expect(text).toContain("WARNING:");
+    expect(text).toContain("outside the project root");
+  });
+
+  it("warns on /tmp without trailing slash", async () => {
+    const tool = createExecTool({ cwd: "/tmp", warnOutsideRoot: ROOT });
+    const result = await tool.execute("id", { command: "ls /tmp" });
+    expect(result.content[0].text).toContain("WARNING:");
+    expect(result.content[0].text).toContain("outside the project root");
+  });
+
+  it("warns on /home without trailing slash", async () => {
+    const tool = createExecTool({ cwd: "/tmp", warnOutsideRoot: ROOT });
+    const result = await tool.execute("id", { command: "cd /home" });
+    expect(result.content[0].text).toContain("WARNING:");
+    expect(result.content[0].text).toContain("outside the project root");
+  });
+
+  it("warns on path after equals sign", async () => {
+    const tool = createExecTool({ cwd: "/tmp", warnOutsideRoot: ROOT });
+    const result = await tool.execute("id", { command: "--root=/home/user/x" });
+    expect(result.content[0].text).toContain("WARNING:");
+    expect(result.content[0].text).toContain("outside the project root");
+  });
+
+  it("warns on path-boundary sibling", async () => {
+    const tool = createExecTool({ cwd: "/tmp", warnOutsideRoot: ROOT });
+    const result = await tool.execute("id", { command: "ls /home/example-user/may-agent-old" });
+    expect(result.content[0].text).toContain("WARNING:");
+    expect(result.content[0].text).toContain("outside the project root");
+  });
+});
