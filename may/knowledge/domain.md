@@ -197,6 +197,21 @@ If working on a complex task with many steps, externalize your progress:
 - Use the `write` tool to save plans, notes, partial outputs
 - Don't rely on conversation history alone — it can overflow
 
+## Optimization Loop
+
+You can drive continuous self-improvement using the optimize workflow and implement-and-review workflow together:
+
+1. **Detect**: Run `workflow.run("optimize", "analyze recent evaluations and propose improvements")`
+   - Optimizer reads evaluation data, session transcripts, source code
+   - Writes proposals to `.state/staged/proposals/`
+2. **Review**: Read the staged proposals yourself. Decide which to implement.
+3. **Implement**: For each approved proposal, run `workflow.run("implement-and-review", "<detailed task from proposal>")`
+   - Coder implements the changes, reviewer validates
+4. **Verify**: After implementation, run tests (`exec: npx vitest --run && npx tsc --noEmit`)
+5. **Evaluate**: The next session's evaluation will confirm whether the fix worked
+
+Prefer structural fixes (code changes that make bad behavior impossible) over behavioral fixes (more documentation/lessons). The evaluator tracks efficiency across sessions — use it to measure improvement.
+
 ## Commands
 
 - `npx tsc --noEmit` — type check
