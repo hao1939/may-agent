@@ -1,4 +1,5 @@
 import { createInterface } from "node:readline";
+import { readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { resolve, dirname } from "node:path";
 import { getModel } from "@mariozechner/pi-ai";
@@ -288,6 +289,7 @@ function ask(): Promise<string | null> {
 }
 
 const AUTO_EVALUATE = process.env.MAY_EVALUATE !== "0";
+const IDLE_TIMEOUT_MS = parseInt(process.env.MAY_IDLE_TIMEOUT ?? "60000", 10); // default 60s
 const MAINTENANCE_INTERVAL = 5; // run maintenance every N evaluations
 let evalsSinceMaintenance = 0;
 
@@ -392,6 +394,61 @@ async function waitAndCheck(sessionId: string): Promise<void> {
   await runEvaluation(sessionId);
 }
 
+// ── Meta work detection ────────────────────────────────────────────────
+
+function hasMetaWork(): string | null {
+  // Check for unimplemented proposals
+  const proposalDir = resolve(PERSIST_DIR, "staged", "proposals");
+  try {
+    const proposals = readdirSync(proposalDir).filter((f) => f.endsWith(".md"));
+    if (proposals.length > 0) {
+      return `There are ${proposals.length} staged optimization proposal(s) in .state/staged/proposals/. Review them, decide which to implement, and drive the implementation using the implement-and-review workflow. After implementation, run tests to verify.`;
+    }
+  } catch { /* dir doesn't exist */ }
+
+  // Check for recent evaluations with poor scores
+  const evalDir = resolve(PERSIST_DIR, "evaluations");
+  try {
+    const evalFiles = readdirSync(evalDir).filter((f) => f.endsWith(".json"));
+    if (evalFiles.length >= 3) {
+      return `Run an optimization cycle: use the optimize workflow to analyze recent evaluation data in .state/evaluations/ and generate improvement proposals. Then review and implement the proposals.`;
+    }
+  } catch { /* dir doesn't exist */ }
+
+  return null;
+}
+
+// ── Input with idle timeout ────────────────────────────────────────────
+
+function askWithTimeout(timeoutMs: number): Promise<{ type: "input"; value: string } | { type: "idle" }> {
+  if (closed) return Promise.resolve({ type: "input", value: "" });
+  return new Promise((resolve) => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let resolved = false;
+
+    if (timeoutMs > 0) {
+      timer = setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          resolve({ type: "idle" });
+        }
+      }, timeoutMs);
+    }
+
+    rl.question("\nyou> ", (answer) => {
+      if (timer) clearTimeout(timer);
+      if (!resolved) {
+        resolved = true;
+        resolve({ type: "input", value: answer.trim() });
+      }
+    });
+  });
+}
+
+let metaSessionId: string | null = null;
+
+// ── Interactive loop ───────────────────────────────────────────────────
+
 let firstMessage = process.argv.slice(2).join(" ");
 if (!firstMessage) {
   const input = await ask();
@@ -403,22 +460,79 @@ sid = startSession(firstMessage);
 await waitAndCheck(sid);
 
 while (!closed) {
-  const input = await ask();
+  const response = await askWithTimeout(IDLE_TIMEOUT_MS);
 
-  if (!input || input === "exit" || input === "quit") {
-    break;
+  if (response.type === "idle") {
+    // Check for meta work
+    const metaTask = hasMetaWork();
+    if (metaTask) {
+      console.log("\n[idle] Found meta work to do. Starting optimization cycle...");
+      console.log("[idle] (Type anything to interrupt and switch to your task)\n");
+      metaSessionId = startSession(metaTask);
+
+      // Wait for meta work, but allow user to interrupt
+      const metaPromise = manager.waitFor(metaSessionId);
+      const inputPromise = ask();
+
+      const winner = await Promise.race([
+        metaPromise.then(() => ({ type: "meta-done" as const })),
+        inputPromise.then((v) => ({ type: "user-input" as const, value: v })),
+      ]);
+
+      if (winner.type === "user-input") {
+        // User typed something — cancel meta work and handle user input
+        if (winner.value && winner.value !== "exit" && winner.value !== "quit") {
+          console.log("\n[idle] User input received. Cancelling meta work...");
+          manager.cancel(metaSessionId);
+          metaSessionId = null;
+
+          lastWorkflowUsed = null;
+          sid = startSession(winner.value);
+          await waitAndCheck(sid);
+        } else {
+          manager.cancel(metaSessionId);
+          break;
+        }
+      } else {
+        // Meta work finished
+        console.log("\n[idle] Meta work completed.");
+        await runEvaluation(metaSessionId);
+        metaSessionId = null;
+        // Let inputPromise resolve naturally on next iteration
+      }
+      continue;
+    }
+    // No meta work found, just wait for user input
+    const input = await ask();
+    if (!input || input === "exit" || input === "quit") break;
+
+    if (workflowTool.isRunning) {
+      const steered = workflowTool.steer(input);
+      if (steered) {
+        console.log(`[steering] Signal queued for workflow "${workflowTool.activeWorkflow}"`);
+        continue;
+      }
+    }
+
+    lastWorkflowUsed = null;
+    manager.send(sid, input);
+    await waitAndCheck(sid);
+    continue;
   }
+
+  // Direct user input
+  const input = response.value;
+  if (!input || input === "exit" || input === "quit") break;
 
   if (workflowTool.isRunning) {
     const steered = workflowTool.steer(input);
     if (steered) {
-      console.log(`[steering] Signal queued for workflow "${workflowTool.activeWorkflow}" — will interrupt at next step boundary.`);
+      console.log(`[steering] Signal queued for workflow "${workflowTool.activeWorkflow}"`);
       continue;
     }
   }
 
   lastWorkflowUsed = null;
-
   manager.send(sid, input);
   await waitAndCheck(sid);
 }
