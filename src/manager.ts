@@ -143,6 +143,16 @@ export class SubagentManager {
 
     const sections: string[] = [];
 
+    // Runtime environment FIRST — agent needs to know where it is before anything else
+    if (def.projectRoot) {
+      const envLines = [`# Runtime Environment`, `- Project root (exec cwd): ${def.projectRoot}`];
+      if (def.workspace) {
+        envLines.push(`- Workspace: ${def.workspace}`);
+      }
+      envLines.push(``, `Use paths relative to project root. Do not guess or search for the root.`);
+      sections.push(envLines.join("\n"));
+    }
+
     // Load systemPromptFiles
     if (def.systemPromptFiles && def.systemPromptFiles.length > 0) {
       const fileContents = def.systemPromptFiles.map((filePath) =>
@@ -193,16 +203,6 @@ export class SubagentManager {
         });
         sections.push(`# Recent Task History\n${lines.join("\n")}`);
       }
-    }
-
-    // Runtime environment — inject concrete paths to prevent path guessing
-    if (def.projectRoot) {
-      const envLines = [`# Runtime Environment`, `- Project root (exec cwd): ${def.projectRoot}`];
-      if (def.workspace) {
-        envLines.push(`- Workspace: ${def.workspace}`);
-      }
-      envLines.push(``, `Use paths relative to project root. Do not guess or search for the root.`);
-      sections.push(envLines.join("\n"));
     }
 
     // Workspace section
