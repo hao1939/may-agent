@@ -5,15 +5,12 @@ This file is auto-managed — new lessons are appended after each evaluation.
 
 ---
 
-## HARD RULES — Read these first, every session
+## Operational Lessons
 
-These are non-negotiable. Violations waste tool calls and get corrected every time.
-
-1. **`pwd` first.** Your very first tool call in every session MUST be `pwd`. The project root is wherever it says. NEVER guess paths. NEVER use `find` to locate the project. NEVER try /home/user/, /work/, /app/, or any other speculative path. This has wasted 12+ tool calls in past sessions. No exceptions.
-
-2. **`waitFor`, not polling.** Use `subagents.waitFor(sessionId)` to wait for sub-agent completion. Do NOT poll `subagents.status()` in a loop. 3 out of 6 user corrections in one session were about this.
-
-3. **Don't re-read known files.** If the codebase layout is in domain.md, don't re-read every file to "understand" the project. 43 out of 76 tool calls in one session were wasted on re-reading files the agent already knew about.
+- Use `waitFor`, not polling. Use `subagents.waitFor(sessionId)` to wait for sub-agent completion. Don't poll `subagents.status()` in a loop.
+- Don't re-read files you already know about from domain.md. One session wasted 43 of 76 tool calls re-reading the codebase layout.
+- Don't guess project paths or use `find /` to locate the project. The project root is known; check domain.md or run `pwd`.
+- Don't write absolute rules ("MUST", "NEVER", "no exceptions") for things you haven't actually internalized. A rule you skip when it feels unnecessary isn't a rule — it's a suggestion you're lying to yourself about. Keep rules minimal and genuinely followed.
 
 ---
 
@@ -66,3 +63,12 @@ These are non-negotiable. Violations waste tool calls and get corrected every ti
 - The project was built incrementally and self-bootstrapping: 1) Minimal SubagentManager (90 lines) — register, run, status. 2) Used it to register "may" agent. 3) May supervised adding persistence, memory, archival. 4) May supervised adding coder + reviewer agents. 5) May delegated via implement-and-review workflow. 6) Evaluator + optimizer added to improve the system itself.
 - LLM access is via litellm Docker proxy on localhost:4000. Model objects created from pi-ai's getModel() with overridden id and baseUrl. Model assignments: Opus 4.6 for may + coder (implementation quality), GPT-5.2 for reviewer + evaluator + optimizer (independent perspective). As of 2026-02-21: 184 tests across 11 files, 5 registered agents.
 - The may-agent project is at /home/hao/may-agent/ (not agents/may/ relative). It's a standalone TypeScript library built on pi-agent-core and pi-ai. Key structure: src/ (11 .ts files), test/ (12 test files, 184 tests), docs/ (5 design docs), agents/ (separate git repo with may, coder, reviewer, evaluator, optimizer), run/may.ts (interactive runner). The project uses vitest, ESM, strict TypeScript. Local dependencies: @mariozechner/pi-agent-core and @mariozechner/pi-ai from /home/hao/pi-mono/packages/.
+
+## Session History
+
+### Session s_1772353115403_0 (2026-03-01)
+
+- Wasted tool calls searching for project root with `find /` despite it being documented.
+- Wrote a "HARD RULES" section with absolute language, then broke rule #1 immediately in the next session. The real lesson: don't write rules you won't follow.
+- Overwrote lessons.md content while claiming to "restructure" it — always preserve existing content when editing auto-managed files.
+- Committed unrelated files in a broad commit — verify `git status` and commit only relevant files.
