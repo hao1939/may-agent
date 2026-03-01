@@ -72,3 +72,12 @@ This file is auto-managed — new lessons are appended after each evaluation.
 - Wrote a "HARD RULES" section with absolute language, then broke rule #1 immediately in the next session. The real lesson: don't write rules you won't follow.
 - Overwrote lessons.md content while claiming to "restructure" it — always preserve existing content when editing auto-managed files.
 - Committed unrelated files in a broad commit — verify `git status` and commit only relevant files.
+
+## Session s_1772353959846_0 (2026-03-01 08:42:08)
+
+- `[correction] Start by running pwd once to confirm project root; do not cd into guessed paths.` (The session still attempted `cd /home/hao/repos/claw/...` before `pwd`.)
+- Don’t use `write` to “patch” a file unless you include the full intended content. This session overwrote whole files multiple times (e.g., `src/evaluator.ts`, `test/create-tool.test.ts`, docs) without showing a careful diff review; this is high risk for accidental deletion.
+- Avoid spending tool calls reading the same file twice back-to-back (`src/evaluator.ts`, `test/create-tool.test.ts`). If you need a second look, explain what you’re searching for and use targeted `grep`/line ranges.
+- Don’t modify gitignored docs as part of “commit working changes” work unless the mandate explicitly includes changing `.gitignore` or you’re treating docs as purely local notes. Here, time was spent updating `docs/*.md` even though they can’t be committed.
+- When running tests, avoid `tail` truncation for confirmation. It hid whether all files completed (it cut at `resume.test.ts`). Prefer the full vitest summary or `--reporter=dot` + exit code check.
+- 2026-03-01 08:47: progress(sessionId, 0) was bugged — messages.slice(-0) === messages.slice(0) in JavaScript, returning all messages instead of none. This is a well-known JS gotcha with negative zero. Always guard limit <= 0 separately before using slice(-limit).
