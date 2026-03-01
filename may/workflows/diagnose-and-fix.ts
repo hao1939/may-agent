@@ -25,7 +25,11 @@ Write your diagnosis to .state/staged/proposals/ as a single markdown file.
 Name it with a sequential number (check .state/staged/done/ for the latest).
 
 IMPORTANT: The fix must be structural (change code/tools/prompts), not documentary (add lessons).
-If the only fix is a lesson, explain why no structural fix exists.`);
+If the only fix is a lesson, explain why no structural fix exists.
+
+When done, output EXACTLY on the last line:
+PROPOSAL_FILE: <filename>
+where <filename> is just the filename (not the full path).`);
 
   if (diagnosis.status === "error") {
     return ctx.escalate("Optimizer diagnosis failed: " + (diagnosis.error ?? "unknown"));
@@ -39,20 +43,32 @@ If the only fix is a lesson, explain why no structural fix exists.`);
     return ctx.done("No actionable problems found in recent evaluations.");
   }
 
-  // Step 2: Delegate fix to implement-and-review workflow
+  // Extract the proposal filename from optimizer output
+  const fileMatch = diagnosisText.match(/PROPOSAL_FILE:\s*(\S+)/);
+  const proposalFile = fileMatch?.[1] ?? null;
+
+  if (!proposalFile) {
+    return ctx.escalate("Optimizer did not specify which proposal file was written", {
+      diagnosis: diagnosisText,
+    });
+  }
+
+  // Step 2: Delegate fix to implement-and-review with the SPECIFIC proposal
   const fixResult = await ctx.runWorkflow("implement-and-review",
-    `Implement the fix described in the latest proposal in .state/staged/proposals/.
-Read the proposal file to understand what to change.
-After implementation, move the proposal to .state/staged/done/.`);
+    `Implement the fix described in .state/staged/proposals/${proposalFile}.
+Read that specific file to understand what to change.
+Ignore any other proposal files in the directory.
+After implementation, move .state/staged/proposals/${proposalFile} to .state/staged/done/${proposalFile}.`);
 
   if (fixResult.type === "escalate") {
     return ctx.escalate("Fix implementation failed: " + fixResult.reason, {
       diagnosis: diagnosisText,
+      proposalFile,
       fixResult,
     });
   }
 
   return ctx.done(
-    `## Diagnosis\n${diagnosisText}\n\n## Fix\n${fixResult.summary}`
+    `## Diagnosis\n${diagnosisText}\n\n## Proposal\n${proposalFile}\n\n## Fix\n${fixResult.summary}`
   );
 }

@@ -4,8 +4,8 @@ export const name: string = "implement-and-review";
 
 export const description: string =
   "Code changes: delegates to coder, then reviewer. " +
-  "One retry if reviewer requests changes. " +
-  "Escalates if coder fails or reviewer rejects twice.";
+  "Escalates on critical review issues (wrong task, policy violation). " +
+  "One retry for fixable issues. Escalates if reviewer rejects twice.";
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   // Step 1: Coder implements
@@ -33,7 +33,30 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     );
   }
 
-  // Step 4: One iteration — send feedback to coder
+  // Step 3b: Check if the rejection is about something the coder can fix,
+  // or something that requires higher-level judgment (wrong task, policy
+  // violation, architectural disagreement).
+  // If the reviewer flags critical/structural issues, escalate to the
+  // supervisor instead of letting the coder blindly retry.
+  const reviewLower = reviewText.toLowerCase();
+  const isCriticalRejection =
+    reviewLower.includes("wrong proposal") ||
+    reviewLower.includes("wrong task") ||
+    reviewLower.includes("wrong implementation") ||
+    reviewLower.includes("implemented the wrong") ||
+    reviewLower.includes("policy violation") ||
+    reviewLower.includes("policy mismatch") ||
+    reviewLower.includes("contradicts") ||
+    reviewLower.includes("behavioral regression");
+
+  if (isCriticalRejection) {
+    return ctx.escalate(
+      "reviewer flagged critical issues that require supervisor judgment",
+      { coderResult: coder.lastAssistantText, reviewFeedback: reviewText },
+    );
+  }
+
+  // Step 4: One iteration — send feedback to coder for fixable issues
   const fixTask =
     `Fix these issues from the reviewer:\n\n${reviewText}\n\n` +
     `Original task: ${ctx.task}`;
