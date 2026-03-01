@@ -131,6 +131,51 @@ function isFindWithNoResults(toolName: string, args: Record<string, unknown>, re
 }
 
 /**
+ * Check if a tool result represents the tool's OWN error output format,
+ * as opposed to data content that happens to contain error-like strings.
+ *
+ * This is a fallback heuristic for when `tr.isError` is not set. The tools
+ * in this codebase (`createReadTool`, `createExecTool`) handle errors
+ * internally and return error text without setting `isError: true`, so we
+ * need to detect their specific error output formats.
+ *
+ * When `tr.isError` IS set (e.g., by the agent framework when a tool throws),
+ * it takes precedence — see the `isError` classification in `extractFailureChains`.
+ *
+ * This avoids false positives when:
+ * - `read` successfully reads a file containing "ENOENT" in its source code
+ * - `exec` runs `git diff` and the diff contains "Error reading file" or "Exit code 1"
+ * - `exec` runs tests whose names contain error strings
+ *
+ * The key distinction: tool errors appear at the START of the result text
+ * (the tool's own output format), not embedded in data content.
+ */
+function isToolOwnError(toolName: string, resultText: string): boolean {
+  // read tool error format: "Error reading file: ENOENT: ..."
+  // Only match when the result STARTS with this prefix — if the read tool
+  // successfully returned file content that happens to contain "ENOENT",
+  // the result will NOT start with "Error reading file:".
+  if (toolName === "read") {
+    return resultText.startsWith("Error reading file:");
+  }
+
+  // exec tool error format: the exec tool outputs "Exit code <status>\n..."
+  // at the very start of its error result (see createExecTool in tools.ts).
+  // The exec tool does NOT prepend a CWD line on error — CWD is only added
+  // on the first successful call. So we check the start of the result directly.
+  //
+  // Note: the exec tool does not set `tr.isError` on non-zero exit codes
+  // (it catches the error internally and returns text), so this heuristic
+  // is the primary detection mechanism for exec failures when `tr.isError`
+  // is false.
+  if (toolName === "exec") {
+    return /^Exit code (?!0\b)\S+/.test(resultText);
+  }
+
+  return false;
+}
+
+/**
  * Extract causal failure chains from a message sequence.
  *
  * A failure chain starts when a tool call returns an error (ENOENT, exit code != 0, etc.)
@@ -165,19 +210,18 @@ export function extractFailureChains(messages: AgentMessage[]): FailureChain[] {
     if (msg.role === "toolResult") {
       const tr = msg as { toolCallId: string; toolName: string; content?: Array<{ type: string; text?: string }>; isError: boolean };
       const call = pendingCalls.get(tr.toolCallId);
+      const toolName = call?.name ?? tr.toolName;
       const resultText = tr.content
         ?.map((c) => c.type === "text" ? (c.text ?? "") : "")
         .join("")
         .slice(0, 500) ?? "";
       pairs.push({
-        tool: call?.name ?? tr.toolName,
+        tool: toolName,
         args: call?.arguments ?? {},
         resultText,
-        isError: tr.isError
-          || resultText.includes("ENOENT")
-          || resultText.includes("Error reading file")
-          || /Exit code (?!0\b)\S+/.test(resultText)
-          || isFindWithNoResults(call?.name ?? tr.toolName, call?.arguments ?? {}, resultText),
+        isError: tr.isError                                    // Primary: trust the tool's own error flag
+          || isToolOwnError(toolName, resultText)              // Fallback: tool-specific error output formats
+          || isFindWithNoResults(toolName, call?.arguments ?? {}, resultText),
       });
       if (call) pendingCalls.delete(tr.toolCallId);
     }
