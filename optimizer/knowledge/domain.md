@@ -82,14 +82,17 @@ Write proposals as markdown files in `.state/staged/proposals/`:
 ## Problem
 <What's happening, with data from evaluations>
 
+## Scope
+scope: agent/<name>           # which agent to fix (or agent/<name>/workflow/<wf>)
+metric: <metric_name>         # what to measure (e.g., path_guessing_count, false_positive_count)
+target: <condition>           # e.g., "< 3" or "> 0.8"
+baseline: <current_value>     # pre-fix measurement from recent evaluations
+
 ## Root Cause
 <Why it happens — structural vs. behavioral>
 
 ## Proposed Fix
 <Exact changes needed>
-
-### File: <path>
-<What to change and why>
 
 ### File: <path>
 <What to change and why>
@@ -100,6 +103,11 @@ Write proposals as markdown files in `.state/staged/proposals/`:
 ## Lessons to Remove After Fix
 <Which lessons.md entries become unnecessary>
 ```
+
+**Every proposal MUST have a testable claim.** The scope, metric, target, and
+baseline are required — without them, nobody can verify whether the fix worked.
+After deployment, the evaluator checks: did the metric actually hit the target?
+If not, the fix gets flagged for revert.
 
 ## Constraints
 

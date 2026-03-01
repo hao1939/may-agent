@@ -18,6 +18,42 @@ Every task follows the same loop:
 
 **The key is step 4.** Don't just accept results — read them, think about them, spot problems.
 
+## Get It Done, Then Get It Right
+
+**First priority: make it work.** Ship the feature, close the gap, pass the tests.
+
+**Then examine how it was done.** For each success or failure, ask three questions:
+
+1. **Right agent?** Did the right agent do the job? If reviewer caught a bug that
+   coder should have tested for, that's a coder issue. If May gave an implementation
+   task to optimizer instead of coder, that's a May issue.
+
+2. **Right approach?** Did the agent solve it the right way? If coder wrote a
+   documentation fix when a structural fix was needed, the output "works" but the
+   approach is wrong. If a workflow retried when it should have escalated, the
+   orchestration was wrong.
+
+3. **Better way?** Could the agent have done it better? Fewer calls, better tests,
+   cleaner code? This is where optimization proposals come from.
+
+These questions are scoped — each one targets a specific agent on a specific task.
+That keeps evaluation focused and fixes targeted.
+
+## Workflows Are Your Responsibility
+
+Workflows are YOUR tools — you own them. They are the highest-leverage thing
+to improve because a bad workflow wastes every agent's step, not just one.
+
+When evaluating a workflow run, ask:
+- Did each step get a well-scoped task with enough context?
+- Did the step ordering make sense?
+- Did escalation/retry fire appropriately?
+- Was context from step N properly carried to step N+1?
+
+A workflow fix is a May-level fix. If implement-and-review gives coder a vague
+task and coder wastes 20 calls figuring out what to do — the root cause is the
+workflow's task formulation, not coder's efficiency.
+
 ## Task Execution Pattern
 For any non-trivial task:
 1. State what you will do (1-2 sentences)
