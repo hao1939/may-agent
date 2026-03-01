@@ -1,6 +1,6 @@
 import { readdirSync } from "node:fs";
 import { join } from "node:path";
-import { Type } from "@mariozechner/pi-ai";
+import { Type, StringEnum } from "@mariozechner/pi-ai";
 import type { AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
 import type { SubagentManager } from "./manager.js";
 import type { TaskResult } from "./types.js";
@@ -15,17 +15,20 @@ import type {
 import { WorkflowInterrupted } from "./workflow.js";
 
 // ── Tool schema ────────────────────────────────────────────────────────
+//
+// Flat Type.Object instead of Type.Union so that all LLM providers
+// (Anthropic, OpenAI, Google) see a well-formed JSON Schema with
+// top-level `properties` and `required`.  The Anthropic provider in
+// pi-ai reads `jsonSchema.properties` directly — a Union schema has
+// `anyOf` instead, so the LLM would see zero parameters.
+//
+// Runtime validation of per-action required fields happens in execute().
 
-const WorkflowToolParams = Type.Union([
-  Type.Object({
-    action: Type.Literal("list"),
-  }),
-  Type.Object({
-    action: Type.Literal("run"),
-    name: Type.String({ description: "Workflow name to execute" }),
-    task: Type.String({ description: "Task to pass to the workflow" }),
-  }),
-]);
+const WorkflowToolParams = Type.Object({
+  action: StringEnum(["list", "run"] as const, { description: "Action to perform" }),
+  name: Type.Optional(Type.String({ description: "Workflow name to execute (required for 'run')" })),
+  task: Type.Optional(Type.String({ description: "Task to pass to the workflow (required for 'run')" })),
+});
 
 // ── Helpers ────────────────────────────────────────────────────────────
 
@@ -188,6 +191,10 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
         }
 
         case "run": {
+          if (!params.name || !params.task) {
+            return textResult(JSON.stringify({ type: "error", error: "action 'run' requires 'name' and 'task'" }));
+          }
+
           // Find the workflow file by name
           const { workflow, error: findError } = await findWorkflow(workflowDir, params.name);
 
@@ -326,8 +333,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
         }
 
         default: {
-          const _exhaustive: never = params;
-          return textResult(JSON.stringify({ error: "Unknown action" }));
+          return textResult(JSON.stringify({ error: `Unknown action: ${params.action}` }));
         }
       }
     },

@@ -1,7 +1,7 @@
 import { readFileSync, mkdirSync, existsSync } from "node:fs";
 import { Agent } from "@mariozechner/pi-agent-core";
 import type { AgentMessage, AgentEvent, AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
-import { Type } from "@mariozechner/pi-ai";
+import { Type, StringEnum } from "@mariozechner/pi-ai";
 import type { SubagentDefinition, SessionInfo, TaskResult } from "./types.js";
 import { loadSkillsFromDirs, formatSkillsForPrompt } from "./skills.js";
 import {
@@ -79,38 +79,25 @@ export interface SubagentManagerOptions {
 }
 
 // ── createTool() schema ────────────────────────────────────────────────
+//
+// Flat Type.Object instead of Type.Union so that all LLM providers
+// (Anthropic, OpenAI, Google) see a well-formed JSON Schema with
+// top-level `properties` and `required`.  The Anthropic provider in
+// pi-ai reads `jsonSchema.properties` directly — a Union schema has
+// `anyOf` instead, so the LLM would see zero parameters.
+//
+// Runtime validation of per-action required fields happens in execute().
 
-const SubagentToolParams = Type.Union([
-  Type.Object({
-    action: Type.Literal("list"),
-  }),
-  Type.Object({
-    action: Type.Literal("run"),
-    agent: Type.String({ description: "Name of the registered agent" }),
-    task: Type.String({ description: "Task description to send to the agent" }),
-  }),
-  Type.Object({
-    action: Type.Literal("status"),
-    sessionId: Type.String({ description: "Session ID to query" }),
-  }),
-  Type.Object({
-    action: Type.Literal("progress"),
-    sessionId: Type.String({ description: "Session ID to query" }),
-    limit: Type.Optional(Type.Number({ description: "Max number of recent messages to return (default: all)" })),
-  }),
-  Type.Object({
-    action: Type.Literal("result"),
-    sessionId: Type.String({ description: "Session ID to get the result for" }),
-  }),
-  Type.Object({
-    action: Type.Literal("cancel"),
-    sessionId: Type.String({ description: "Session ID to cancel" }),
-  }),
-  Type.Object({
-    action: Type.Literal("waitFor"),
-    sessionId: Type.String({ description: "Session ID to wait for completion" }),
-  }),
-]);
+const SubagentToolParams = Type.Object({
+  action: StringEnum(
+    ["list", "run", "status", "progress", "result", "cancel", "waitFor"] as const,
+    { description: "Action to perform" },
+  ),
+  agent: Type.Optional(Type.String({ description: "Name of the registered agent (required for 'run')" })),
+  task: Type.Optional(Type.String({ description: "Task description to send to the agent (required for 'run')" })),
+  sessionId: Type.Optional(Type.String({ description: "Session ID (required for 'status', 'progress', 'result', 'cancel', 'waitFor')" })),
+  limit: Type.Optional(Type.Number({ description: "Max number of recent messages to return (for 'progress', default: all)" })),
+});
 
 export class SubagentManager {
   private agents = new Map<string, RegisteredAgent>();
@@ -686,6 +673,9 @@ export class SubagentManager {
           }
 
           case "run": {
+            if (!params.agent || !params.task) {
+              return textResult(JSON.stringify({ error: "action 'run' requires 'agent' and 'task'" }));
+            }
             try {
               const sessionId = manager.run(params.agent, params.task);
               return textResult(JSON.stringify({ sessionId }));
@@ -696,6 +686,9 @@ export class SubagentManager {
           }
 
           case "status": {
+            if (!params.sessionId) {
+              return textResult(JSON.stringify({ error: "action 'status' requires 'sessionId'" }));
+            }
             const allSessions = manager.status();
             const session = allSessions.find((s) => s.sessionId === params.sessionId);
             if (!session) {
@@ -705,6 +698,9 @@ export class SubagentManager {
           }
 
           case "progress": {
+            if (!params.sessionId) {
+              return textResult(JSON.stringify({ error: "action 'progress' requires 'sessionId'" }));
+            }
             const messages = manager.progress(params.sessionId, params.limit);
             if (messages.length === 0) {
               return textResult(JSON.stringify({ error: `Session "${params.sessionId}" not found or no messages` }));
@@ -718,6 +714,9 @@ export class SubagentManager {
           }
 
           case "result": {
+            if (!params.sessionId) {
+              return textResult(JSON.stringify({ error: "action 'result' requires 'sessionId'" }));
+            }
             const taskResult = manager.result(params.sessionId);
             if (!taskResult) {
               return textResult(JSON.stringify({ error: `Session "${params.sessionId}" not found or still running` }));
@@ -728,11 +727,17 @@ export class SubagentManager {
           }
 
           case "cancel": {
+            if (!params.sessionId) {
+              return textResult(JSON.stringify({ error: "action 'cancel' requires 'sessionId'" }));
+            }
             manager.cancel(params.sessionId);
             return textResult(JSON.stringify({ cancelled: params.sessionId }));
           }
 
           case "waitFor": {
+            if (!params.sessionId) {
+              return textResult(JSON.stringify({ error: "action 'waitFor' requires 'sessionId'" }));
+            }
             const taskResult = await manager.waitFor(params.sessionId);
             if (!taskResult) {
               return textResult(JSON.stringify({ error: `Session "${params.sessionId}" not found` }));
@@ -742,8 +747,7 @@ export class SubagentManager {
           }
 
           default: {
-            const _exhaustive: never = params;
-            return textResult(JSON.stringify({ error: "Unknown action" }));
+            return textResult(JSON.stringify({ error: `Unknown action: ${params.action}` }));
           }
         }
       },
