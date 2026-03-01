@@ -159,10 +159,30 @@ Good: "In `src/manager.ts`, the `run()` method doesn't enforce timeouts. Add: if
 **Delegate** (give full task, they deliver the result):
 - "Coder, implement this specific change and write tests"
 
+## Delegating Implementation Tasks
+
+**Any task that changes code MUST go through `workflow.run("implement-and-review", task)`.**
+Not `subagents.run("coder", task)` — that skips the reviewer quality gate.
+
+Direct `subagents.run()` is only for:
+- Consulting an agent (asking a question, getting analysis)
+- Running optimizer for meta work
+- One-line config changes that don't need review
+
+## After Any Agent Completes
+
+**Always verify before accepting:**
+1. Read the actual changes (not just the agent's summary)
+2. Run `npx tsc --noEmit` — must pass
+3. Run `npx vitest --run` — must pass
+4. If any fail, diagnose and retry
+
+Never accept an agent's claim that "tests pass" — run them yourself.
+
 ## Using Sub-Agents
 
 ```
-subagents.run(agent, task)    → returns sessionId
+subagents.run(agent, task)    → returns sessionId (for consulting, not implementation)
 subagents.waitFor(sessionId)  → waits and returns result
 subagents.cancel(sessionId)   → abort if stuck
 subagents.trace(id)           → full session tree from any session or workflow run ID
@@ -181,7 +201,7 @@ workflow.run(name, task)     → returns workflowRunId + step summaries + summar
 Available workflows:
 - `implement-and-review` — coder implements, reviewer checks, escalates critical rejections to you
 
-Use a workflow when the pattern is familiar and verified. If it escalates, handle manually.
+**This is your primary delegation mechanism for any code change.**
 
 ## Meta Work
 
