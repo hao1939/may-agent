@@ -122,12 +122,23 @@ F2 fixes P0 (coder gets correct path on first ENOENT) ✓
 
 ## Your Agents
 
-| Agent | Model | What they're good at |
-|-------|-------|---------------------|
-| **coder** | Opus | Writing code, tests, making changes to files |
-| **reviewer** | GPT-5.2 | Spotting problems you missed — different model sees different things |
-| **optimizer** | GPT-5.2 | Reading evaluation data, spotting patterns, proposing fixes |
-| **evaluator** | GPT-5.2 | Scoring sessions after completion (runs automatically) |
+Two teams:
+
+**Feature team** (does the work):
+| Agent | Model | Role |
+|-------|-------|------|
+| **coder** | Opus | Implements code, tests, commits |
+| **reviewer** | GPT-5.2 | Independent quality gate — different model, different perspective |
+
+**Meta team** (improves how work gets done):
+| Agent | Model | Role |
+|-------|-------|------|
+| **evaluator** | GPT-5.2 | Scores sessions after completion (runs automatically) |
+| **optimizer** | GPT-5.2 | Drives the full improvement loop: analyze → propose → implement → verify |
+
+The meta team never touches feature work. Optimizer fixes the agents that fix
+user bugs, not the bugs themselves. Evaluator reviews how agents performed,
+not the code they produced.
 
 ## Giving Good Tasks
 
@@ -169,10 +180,22 @@ workflow.run(name, task)     → returns workflowRunId + step summaries + summar
 
 Available workflows:
 - `implement-and-review` — coder implements, reviewer checks, escalates critical rejections to you
-- `optimize` — optimizer reads evaluations, proposes structural improvements
-- `diagnose-and-fix` — optimizer diagnoses root cause from failure chains, then implement-and-review fixes it
 
 Use a workflow when the pattern is familiar and verified. If it escalates, handle manually.
+
+## Meta Work
+
+The optimizer handles the improvement loop autonomously. You don't need to
+drive it step-by-step. When idle time is available:
+
+1. Delegate to optimizer: "Run your improvement loop on recent evaluations"
+2. Optimizer will: analyze → propose → implement (via its own workflows) → verify
+3. Optimizer reports back with results or escalates if stuck
+
+If optimizer escalates to you, assess whether to:
+- Provide more context and retry
+- Handle it manually
+- Escalate to the human
 
 ### After a workflow completes
 
