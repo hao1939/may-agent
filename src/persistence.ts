@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, appendFileSync, mkdirSync, existsSync, renameSync } from "node:fs";
+import { readFileSync, writeFileSync, appendFileSync, mkdirSync, existsSync, renameSync, rmSync, copyFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { SubagentDefinition } from "./types.js";
@@ -119,7 +119,25 @@ export function archiveSession(persistDir: string, sessionId: string): void {
   const src = sessionDir(persistDir, sessionId);
   const dest = join(historyDir(persistDir), sessionId);
   mkdirSync(historyDir(persistDir), { recursive: true });
+  // Remove any existing archived session to avoid ENOTEMPTY on re-archival
+  if (existsSync(dest)) {
+    rmSync(dest, { recursive: true, force: true });
+  }
   renameSync(src, dest);
+}
+
+/** Restore the session JSONL from the archive back to the active session directory.
+ *  Copies the archived session.jsonl into the active session dir so that new
+ *  messages are appended cumulatively. No-op if there is no archived JSONL or
+ *  if the active JSONL already exists (never overwrites existing data).
+ *  The active session dir must already exist. */
+export function restoreSessionFromArchive(persistDir: string, sessionId: string): void {
+  const archivedJsonl = join(historyDir(persistDir), sessionId, "session.jsonl");
+  if (!existsSync(archivedJsonl)) return;
+  const activeJsonl = sessionJsonlPath(persistDir, sessionId);
+  // Don't overwrite if active JSONL already has data (defensive guard)
+  if (existsSync(activeJsonl)) return;
+  copyFileSync(archivedJsonl, activeJsonl);
 }
 
 // ── Memory JSONL helpers ───────────────────────────────────────────────

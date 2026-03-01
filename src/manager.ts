@@ -14,6 +14,7 @@ import {
   readMemoryEntries,
   memoryPath,
   archiveSession,
+  restoreSessionFromArchive,
   historyDir,
 } from "./persistence.js";
 import type { MemoryEntry } from "./persistence.js";
@@ -267,6 +268,7 @@ export class SubagentManager {
 
   /** Common completion handler for run(), resume(), and send(). */
   private handleCompletion(session: ActiveSession): void {
+    session.unsubscribe?.();
     this.clearTimeout(session);
     this.appendMemory(session);
     this.archiveSessionDir(session);
@@ -535,9 +537,14 @@ export class SubagentManager {
     // so the sessions/<id>/ path no longer exists. We need it back for JSONL persistence.
     if (this.registry) {
       ensureSessionDir(this.registry.persistDir, sessionId);
+      // Restore previously archived JSONL so new messages are appended cumulatively
+      restoreSessionFromArchive(this.registry.persistDir, sessionId);
     }
 
-    // Re-subscribe for JSONL persistence (previous subscription may have been cleaned up)
+    // Clean up old persistence subscription before re-subscribing to avoid leaked listeners
+    session.unsubscribe?.();
+
+    // Re-subscribe for JSONL persistence (previous subscription was cleaned up on completion)
     this.subscribeForPersistence(session);
 
     // Update registry status back to running

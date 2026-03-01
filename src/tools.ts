@@ -28,7 +28,13 @@ const ExecParams = Type.Object({
   timeout: Type.Optional(Type.Number({ description: "Timeout in seconds (default: 30)" })),
 });
 
-export function createReadTool(): AgentTool<typeof ReadParams> {
+/** Options for the read tool. */
+export interface ReadToolOptions {
+  /** If set, ENOENT errors include a hint showing this path as the project root. */
+  projectRoot?: string;
+}
+
+export function createReadTool(options?: ReadToolOptions): AgentTool<typeof ReadParams> {
   return {
     name: "read",
     label: "Read File",
@@ -40,7 +46,10 @@ export function createReadTool(): AgentTool<typeof ReadParams> {
         return textResult(content);
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
-        return textResult(`Error reading file: ${msg}`);
+        const hint = options?.projectRoot && msg.includes("ENOENT")
+          ? `\nHint: project root is ${options.projectRoot} — use paths relative to it, e.g. src/manager.ts not /home/user/repos/.../src/manager.ts`
+          : "";
+        return textResult(`Error reading file: ${msg}${hint}`);
       }
     },
   };
