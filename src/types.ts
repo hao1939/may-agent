@@ -20,6 +20,9 @@ export interface SubagentDefinition {
   /** Directories to scan for skills (SKILL.md files). Per-agent skills dir is auto-added from knowledgeDir. */
   skillsDirs?: string[];
 
+  /** Project root / exec cwd. Injected into system prompt as a concrete runtime fact. */
+  projectRoot?: string;
+
   // Capabilities
   tools: AgentTool[];
   model: Model<any>;

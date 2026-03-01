@@ -13,6 +13,7 @@ import {
   evaluateSession,
   maintainAgent,
 } from "../src/index.js";
+import type { ExecToolOptions } from "../src/index.js";
 import type { WorkflowEvent } from "../src/workflow.js";
 
 const PROJECT_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -40,6 +41,21 @@ const gpt52 = {
 
 const PERSIST_DIR = resolve(PROJECT_ROOT, ".state");
 
+// Guarded exec tool — blocks path-guessing commands, echoes cwd on first call
+const EXEC_OPTS: ExecToolOptions = {
+  cwd: PROJECT_ROOT,
+  echoCwd: true,
+  denyPatterns: [
+    /\bfind\s+\/(?!\w)/, // blocks "find /" but not "find ./src"
+    /\bfind\s+\/home\b/, // blocks "find /home"
+  ],
+  denyMessage: "Global filesystem searches are blocked. Use relative paths from the project root.",
+};
+
+function guardedExec() {
+  return createExecTool(EXEC_OPTS);
+}
+
 const manager = new SubagentManager({
   persistDir: PERSIST_DIR,
 });
@@ -57,11 +73,12 @@ manager.register({
   ],
   knowledgeDir: knowledgeDir("coder"),
   workspace: resolve(agentDir("coder"), "workspace"),
+  projectRoot: PROJECT_ROOT,
   model: opus,
   tools: [
     createReadTool(),
     createWriteTool(),
-    createExecTool(PROJECT_ROOT),
+    guardedExec(),
     createLearnTool(knowledgeDir("coder")),
   ],
   apiKey: "not-needed",
@@ -79,10 +96,11 @@ manager.register({
   ],
   knowledgeDir: knowledgeDir("reviewer"),
   workspace: resolve(agentDir("reviewer"), "workspace"),
+  projectRoot: PROJECT_ROOT,
   model: gpt52,
   tools: [
     createReadTool(),
-    createExecTool(PROJECT_ROOT),
+    guardedExec(),
     createLearnTool(knowledgeDir("reviewer")),
   ],
   apiKey: "not-needed",
@@ -99,12 +117,13 @@ manager.register({
   ],
   knowledgeDir: knowledgeDir("evaluator"),
   workspace: resolve(agentDir("evaluator"), "workspace"),
+  projectRoot: PROJECT_ROOT,
   model: gpt52,
   tools: [
     createReadTool(),
     createWriteTool(),
     createValidateWorkflowTool(),
-    createExecTool(PROJECT_ROOT),
+    guardedExec(),
     createLearnTool(knowledgeDir("evaluator")),
   ],
   apiKey: "not-needed",
@@ -118,15 +137,17 @@ manager.register({
   domain: "agent performance optimization",
   systemPromptFiles: [
     resolve(knowledgeDir("optimizer"), "domain.md"),
+    resolve(knowledgeDir("optimizer"), "codebase.md"),
     resolve(agentDir("optimizer"), "tools/INDEX.md"),
   ],
   knowledgeDir: knowledgeDir("optimizer"),
   workspace: resolve(agentDir("optimizer"), "workspace"),
+  projectRoot: PROJECT_ROOT,
   model: gpt52,
   tools: [
     createReadTool(),
     createWriteTool(),
-    createExecTool(PROJECT_ROOT),
+    guardedExec(),
     createLearnTool(knowledgeDir("optimizer")),
   ],
   apiKey: "not-needed",
@@ -178,11 +199,12 @@ manager.register({
   ],
   knowledgeDir: knowledgeDir("may"),
   workspace: resolve(agentDir("may"), "workspace"),
+  projectRoot: PROJECT_ROOT,
   model: opus,
   tools: [
     createReadTool(),
     createWriteTool(),
-    createExecTool(PROJECT_ROOT),
+    guardedExec(),
     createValidateWorkflowTool(),
     createLearnTool(knowledgeDir("may")),
     manager.createTool(),
