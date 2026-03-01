@@ -68,11 +68,47 @@ export class WorkflowInterrupted extends Error {
   }
 }
 
+// ── Session Trace ──────────────────────────────────────────────────────
+
+/** A node in the session tree — either a workflow run or a session. */
+export interface TraceNode {
+  type: "workflow" | "session";
+  id: string;
+  label: string;
+  status: string;
+  task: string;
+  depth: number;
+  /** true for the session/workflow that was queried */
+  isTarget: boolean;
+  children: TraceNode[];
+}
+
+/** Full trace result — the session tree from any node. */
+export interface SessionTrace {
+  /** The queried session or workflow run ID. */
+  targetId: string;
+  /** Path from root to target: ["wr_1/diagnose-and-fix", "wr_2/implement-and-review", "s_3/reviewer"] */
+  path: string[];
+  /** The full tree. */
+  tree: TraceNode;
+}
+
 // ── Workflow Tool Result Types ─────────────────────────────────────────
 
 export type WorkflowToolResult =
-  | { type: "done"; workflow: string; summary: string }
-  | { type: "escalated"; workflow: string; reason: string; context?: unknown }
-  | { type: "interrupted"; workflow: string; completedSteps: CompletedStep[]; steeringMessage: string }
+  | { type: "done"; workflow: string; workflowRunId: string; summary: string; steps: WorkflowStepSummary[] }
+  | { type: "escalated"; workflow: string; workflowRunId: string; reason: string; context?: unknown; steps: WorkflowStepSummary[] }
+  | { type: "interrupted"; workflow: string; workflowRunId: string; completedSteps: CompletedStep[]; steeringMessage: string }
   | { type: "error"; workflow: string; error: string }
   | { type: "list"; workflows: Array<{ name: string; description: string }> };
+
+/** Compact summary of a workflow step — included in the tool result so the supervisor
+ *  can see what happened without calling trace(). */
+export interface WorkflowStepSummary {
+  agent: string;
+  sessionId: string;
+  status: "done" | "error";
+  /** Truncated key output. */
+  output: string;
+  duration: string;
+}

@@ -18,8 +18,11 @@ import {
   archiveSession,
   restoreSessionFromArchive,
   historyDir,
+  readWorkflowRun,
+  listWorkflowRuns,
 } from "./persistence.js";
-import type { MemoryEntry } from "./persistence.js";
+import type { MemoryEntry, WorkflowRun, PersistedSession, Registry } from "./persistence.js";
+import type { TraceNode, SessionTrace } from "./workflow.js";
 import { join, dirname } from "node:path";
 
 let nextId = 0;
@@ -75,6 +78,16 @@ interface ActiveSession {
   outputDir: string;
   unsubscribe?: () => void;
   timeoutTimer?: ReturnType<typeof setTimeout>;
+  parentSessionId?: string;
+  workflowRunId?: string;
+  stepLabel?: string;
+}
+
+/** Options for spawning a session with parent/workflow context. */
+export interface RunOptions {
+  parentSessionId?: string;
+  workflowRunId?: string;
+  stepLabel?: string;
 }
 
 export interface SubagentManagerOptions {
@@ -93,12 +106,12 @@ export interface SubagentManagerOptions {
 
 const SubagentToolParams = Type.Object({
   action: StringEnum(
-    ["list", "run", "status", "progress", "result", "cancel", "waitFor"] as const,
+    ["list", "run", "status", "progress", "result", "cancel", "waitFor", "trace"] as const,
     { description: "Action to perform" },
   ),
   agent: Type.Optional(Type.String({ description: "Name of the registered agent (required for 'run')" })),
   task: Type.Optional(Type.String({ description: "Task description to send to the agent (required for 'run')" })),
-  sessionId: Type.Optional(Type.String({ description: "Session ID (required for 'status', 'progress', 'result', 'cancel', 'waitFor')" })),
+  sessionId: Type.Optional(Type.String({ description: "Session ID or workflow run ID (required for 'status', 'progress', 'result', 'cancel', 'waitFor', 'trace')" })),
   limit: Type.Optional(Type.Number({ description: "Max number of recent messages to return (for 'progress', default: all)" })),
 });
 
@@ -285,8 +298,10 @@ export class SubagentManager {
     this.archiveSessionDir(session);
   }
 
-  /** Start a new session for a registered agent. Returns sessionId. Non-blocking. */
-  run(name: string, task: string): string {
+  /** Start a new session for a registered agent. Returns sessionId. Non-blocking.
+   *  Optionally pass RunOptions to link this session into a session graph.
+   */
+  run(name: string, task: string, opts?: RunOptions): string {
     const registered = this.agents.get(name);
     if (!registered) throw new Error(`Agent "${name}" not registered`);
 
@@ -324,6 +339,9 @@ export class SubagentManager {
       startedAt: Date.now(),
       status: "running",
       outputDir,
+      parentSessionId: opts?.parentSessionId,
+      workflowRunId: opts?.workflowRunId,
+      stepLabel: opts?.stepLabel,
     };
 
     // Subscribe for JSONL persistence before starting the prompt
@@ -335,6 +353,9 @@ export class SubagentManager {
       task,
       status: "running",
       startedAt: session.startedAt,
+      parentSessionId: opts?.parentSessionId,
+      workflowRunId: opts?.workflowRunId,
+      stepLabel: opts?.stepLabel,
     });
 
     // Set up timeout if configured
@@ -482,6 +503,9 @@ export class SubagentManager {
       runtime: formatDuration(Date.now() - s.startedAt),
       outputDir: s.outputDir,
       error: s.error,
+      parentSessionId: s.parentSessionId,
+      workflowRunId: s.workflowRunId,
+      stepLabel: s.stepLabel,
     }));
   }
 
@@ -674,6 +698,191 @@ export class SubagentManager {
     return undefined;
   }
 
+  // ── Session graph: trace ─────────────────────────────────────────────
+
+  /** Build a session trace from any session or workflow run ID.
+   *  Walks parent pointers up to the root, loads workflow run records,
+   *  and builds a tree showing the position of the target in the graph.
+   */
+  trace(targetId: string): SessionTrace | null {
+    if (!this.registry) return null;
+    const persistDir = this.registry.persistDir;
+    const registryData = this.registry.getRegistry();
+
+    // Check if targetId is a workflow run
+    const targetRun = readWorkflowRun(persistDir, targetId);
+    if (targetRun) {
+      return this.buildTraceFromWorkflowRun(targetRun, targetId, persistDir, registryData);
+    }
+
+    // Check if targetId is a session
+    const persistedSession = registryData.sessions[targetId];
+    const activeSession = this.activeSessions.get(targetId);
+    if (persistedSession || activeSession) {
+      const sessionData: PersistedSession = persistedSession ?? {
+        agent: activeSession!.agentName,
+        task: activeSession!.task,
+        status: activeSession!.status,
+        startedAt: activeSession!.startedAt,
+        parentSessionId: activeSession!.parentSessionId,
+        workflowRunId: activeSession!.workflowRunId,
+        stepLabel: activeSession!.stepLabel,
+      };
+      return this.buildTraceFromSession(targetId, sessionData, targetId, persistDir, registryData);
+    }
+
+    return null;
+  }
+
+  private buildTraceFromSession(
+    sessionId: string,
+    session: PersistedSession,
+    targetId: string,
+    persistDir: string,
+    registryData: Registry,
+  ): SessionTrace {
+    // If this session belongs to a workflow run, build from the workflow
+    if (session.workflowRunId) {
+      const run = readWorkflowRun(persistDir, session.workflowRunId);
+      if (run) {
+        return this.buildTraceFromWorkflowRun(run, targetId, persistDir, registryData);
+      }
+    }
+
+    // Standalone session — just return it as a single node
+    const node: TraceNode = {
+      type: "session",
+      id: sessionId,
+      label: session.stepLabel ?? ("agent" in session ? session.agent : "unknown"),
+      status: session.status,
+      task: session.task,
+      depth: 0,
+      isTarget: sessionId === targetId,
+      children: [],
+    };
+
+    return {
+      targetId,
+      path: [`${sessionId}/${node.label}`],
+      tree: node,
+    };
+  }
+
+  private buildTraceFromWorkflowRun(
+    run: WorkflowRun,
+    targetId: string,
+    persistDir: string,
+    registryData: Registry,
+  ): SessionTrace {
+    // Walk up the parent chain to find the root workflow
+    const chain: WorkflowRun[] = [run];
+    let current = run;
+    while (current.parentWorkflowRunId) {
+      const parent = readWorkflowRun(persistDir, current.parentWorkflowRunId);
+      if (!parent) break;
+      chain.unshift(parent);
+      current = parent;
+    }
+
+    // The root is chain[0]. Build the tree from the root.
+    const rootRun = chain[0];
+
+    // Build the root's parent session node (May's session)
+    const parentSession = registryData.sessions[rootRun.parentSessionId];
+    const rootNode: TraceNode = {
+      type: "session",
+      id: rootRun.parentSessionId,
+      label: parentSession?.agent ?? "caller",
+      status: parentSession?.status ?? "unknown",
+      task: parentSession?.task ?? "(unknown)",
+      depth: 0,
+      isTarget: rootRun.parentSessionId === targetId,
+      children: [],
+    };
+
+    // Build workflow tree recursively
+    const wfNode = this.buildWorkflowNode(rootRun, targetId, persistDir, registryData);
+    rootNode.children.push(wfNode);
+
+    // Build path from root to target
+    const path = this.findPathToTarget(rootNode, targetId);
+
+    return { targetId, path, tree: rootNode };
+  }
+
+  private buildWorkflowNode(
+    run: WorkflowRun,
+    targetId: string,
+    persistDir: string,
+    registryData: Registry,
+  ): TraceNode {
+    const node: TraceNode = {
+      type: "workflow",
+      id: run.runId,
+      label: run.workflow,
+      status: run.status,
+      task: run.task,
+      depth: run.depth,
+      isTarget: run.runId === targetId,
+      children: [],
+    };
+
+    // Add steps as children
+    for (const step of run.steps) {
+      const stepNode: TraceNode = {
+        type: "session",
+        id: step.sessionId,
+        label: step.agent,
+        status: step.status,
+        task: step.task,
+        depth: run.depth,
+        isTarget: step.sessionId === targetId,
+        children: [],
+      };
+      node.children.push(stepNode);
+    }
+
+    // Find sub-workflow runs (children of this run)
+    const allRunIds = listWorkflowRuns(persistDir);
+    for (const runId of allRunIds) {
+      if (runId === run.runId) continue;
+      const subRun = readWorkflowRun(persistDir, runId);
+      if (subRun && subRun.parentWorkflowRunId === run.runId) {
+        // Insert the sub-workflow node at the right position
+        // (after the last step that started before the sub-workflow)
+        const subNode = this.buildWorkflowNode(subRun, targetId, persistDir, registryData);
+        // Find insertion point: after the last step whose sessionId
+        // appears in run.steps before the sub-workflow's first step
+        let insertIdx = node.children.length;
+        if (subRun.steps.length > 0) {
+          const firstSubStepId = subRun.steps[0].sessionId;
+          for (let i = 0; i < node.children.length; i++) {
+            if (node.children[i].id === firstSubStepId) {
+              insertIdx = i;
+              break;
+            }
+          }
+        }
+        node.children.splice(insertIdx, 0, subNode);
+      }
+    }
+
+    return node;
+  }
+
+  private findPathToTarget(node: TraceNode, targetId: string): string[] {
+    if (node.id === targetId) {
+      return [`${node.id}/${node.label}`];
+    }
+    for (const child of node.children) {
+      const childPath = this.findPathToTarget(child, targetId);
+      if (childPath.length > 0) {
+        return [`${node.id}/${node.label}`, ...childPath];
+      }
+    }
+    return [];
+  }
+
   // ── Parent agent tool ────────────────────────────────────────────────
 
   /** Create an AgentTool that exposes sub-agent management to a parent agent. */
@@ -780,6 +989,17 @@ export class SubagentManager {
             }
             const { messages: _msgs, ...resultWithoutMessages } = taskResult;
             return textResult(JSON.stringify(resultWithoutMessages, null, 2));
+          }
+
+          case "trace": {
+            if (!params.sessionId) {
+              return textResult(JSON.stringify({ error: "action 'trace' requires 'sessionId' (session ID or workflow run ID)" }));
+            }
+            const traceResult = manager.trace(params.sessionId);
+            if (!traceResult) {
+              return textResult(JSON.stringify({ error: `No trace found for "${params.sessionId}". Requires persistence (persistDir) and a valid session or workflow run ID.` }));
+            }
+            return textResult(JSON.stringify(traceResult, null, 2));
           }
 
           default: {

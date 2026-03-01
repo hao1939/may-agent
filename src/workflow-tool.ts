@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { Type, StringEnum } from "@mariozechner/pi-ai";
 import type { AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
 import type { SubagentManager } from "./manager.js";
+import type { RunOptions } from "./manager.js";
 import type { TaskResult } from "./types.js";
 import type {
   WorkflowContext,
@@ -10,19 +11,14 @@ import type {
   WorkflowResult,
   WorkflowEvent,
   WorkflowToolResult,
+  WorkflowStepSummary,
   CompletedStep,
 } from "./workflow.js";
 import { WorkflowInterrupted } from "./workflow.js";
+import type { WorkflowRun, WorkflowStep } from "./persistence.js";
+import { saveWorkflowRun } from "./persistence.js";
 
 // ── Tool schema ────────────────────────────────────────────────────────
-//
-// Flat Type.Object instead of Type.Union so that all LLM providers
-// (Anthropic, OpenAI, Google) see a well-formed JSON Schema with
-// top-level `properties` and `required`.  The Anthropic provider in
-// pi-ai reads `jsonSchema.properties` directly — a Union schema has
-// `anyOf` instead, so the LLM would see zero parameters.
-//
-// Runtime validation of per-action required fields happens in execute().
 
 const WorkflowToolParams = Type.Object({
   action: StringEnum(["list", "run"] as const, { description: "Action to perform" }),
@@ -41,8 +37,26 @@ function textResult(text: string): AgentToolResult<string> {
   };
 }
 
+function truncate(text: string, maxLen: number): string {
+  if (text.length <= maxLen) return text;
+  return text.slice(0, maxLen) + "...";
+}
+
+function generateRunId(): string {
+  return `wr_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+}
+
+function buildStepSummaries(completedSteps: CompletedStep[]): WorkflowStepSummary[] {
+  return completedSteps.map((step) => ({
+    agent: step.step,
+    sessionId: step.sessionId ?? "unknown",
+    status: step.result.status,
+    output: truncate(step.result.lastAssistantText ?? "(no output)", 2000),
+    duration: step.result.duration,
+  }));
+}
+
 async function loadWorkflow(filePath: string): Promise<WorkflowModule> {
-  // Cache-bust to pick up edits
   const mod = await import(filePath + "?t=" + (++importCounter));
   if (typeof mod.name !== "string") {
     throw new Error(`Workflow file ${filePath} must export a 'name' string`);
@@ -64,7 +78,7 @@ function listWorkflowFiles(workflowDir: string): string[] {
       .sort()
       .map((f) => join(workflowDir, f));
   } catch {
-    return []; // directory doesn't exist yet
+    return [];
   }
 }
 
@@ -91,61 +105,169 @@ async function findWorkflow(workflowDir: string, name: string): Promise<{ workfl
 
 // ── WorkflowTool type ──────────────────────────────────────────────────
 
-/**
- * Extended AgentTool returned by createWorkflowTool.
- * Includes a steer() method for routing steering signals into running workflows.
- */
 export interface WorkflowTool extends AgentTool<typeof WorkflowToolParams> {
-  /**
-   * Push a steering signal into the currently running workflow.
-   * The next ctx.runAgent() call will check the queue and throw
-   * WorkflowInterrupted, returning the agent to slow mode.
-   *
-   * @returns true if a workflow is currently running and the signal was queued,
-   *          false if no workflow is active.
-   */
   steer(message: string): boolean;
-
-  /**
-   * Whether a workflow is currently executing.
-   */
   readonly isRunning: boolean;
-
-  /**
-   * The name of the currently running workflow, or null if none.
-   */
   readonly activeWorkflow: string | null;
 }
 
 // ── createWorkflowTool ─────────────────────────────────────────────────
 
 export interface WorkflowToolOptions {
-  /** The SubagentManager to use for running sub-agents inside workflows. */
   manager: SubagentManager;
-  /** Path to the agent's workflows/ directory. */
   workflowDir: string;
-  /** Optional callback for workflow events. */
+  /** Persist directory for saving workflow run records. */
+  persistDir?: string;
+  /** The caller's session ID — used as parentSessionId for spawned sessions. */
+  callerSessionId?: string;
+  /** Maximum workflow nesting depth (default: 3). */
+  maxDepth?: number;
   onEvent?: (event: WorkflowEvent) => void;
 }
 
-/**
- * Create a WorkflowTool that lets an agent list and run workflows.
- *
- * - `list`: scan the workflowDir, return names + descriptions
- * - `run`: load a workflow by name, build a WorkflowContext, execute it
- *
- * The returned tool has a `steer(message)` method that pushes steering
- * signals into the active workflow's queue. The workflow checks this
- * queue before each `ctx.runAgent()` call and throws WorkflowInterrupted
- * if a signal is present, returning the agent to slow mode.
- */
 export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
-  const { manager, workflowDir, onEvent } = opts;
+  const { manager, workflowDir, persistDir, onEvent } = opts;
+  const maxDepth = opts.maxDepth ?? 3;
 
-  // Shared state: the steering queue for the currently running workflow.
-  // Only one workflow runs at a time per tool instance.
   let activeSteeringQueue: string[] | null = null;
   let activeWorkflowName: string | null = null;
+
+  /** Execute a workflow at the given depth, tracking everything in a WorkflowRun. */
+  async function executeWorkflow(
+    workflow: WorkflowModule,
+    task: string,
+    depth: number,
+    parentSessionId: string | undefined,
+    parentWorkflowRunId: string | undefined,
+    completedSteps: CompletedStep[],
+    steeringQueue: string[],
+  ): Promise<{ result: WorkflowResult; runId: string; steps: CompletedStep[] }> {
+    const runId = generateRunId();
+    const localSteps: CompletedStep[] = [];
+
+    // Create the workflow run record
+    const run: WorkflowRun = {
+      runId,
+      workflow: workflow.name,
+      task,
+      parentSessionId: parentSessionId ?? "unknown",
+      parentWorkflowRunId,
+      depth,
+      startedAt: Date.now(),
+      status: "running",
+      steps: [],
+    };
+    if (persistDir) saveWorkflowRun(persistDir, run);
+
+    const ctx: WorkflowContext = {
+      task,
+
+      runAgent: async (agentName: string, agentTask: string): Promise<TaskResult> => {
+        const steering = steeringQueue.shift();
+        if (steering) {
+          throw new WorkflowInterrupted(steering, completedSteps);
+        }
+
+        const runOpts: RunOptions = {
+          parentSessionId,
+          workflowRunId: runId,
+          stepLabel: agentName,
+        };
+        const sid = manager.run(agentName, agentTask, runOpts);
+        onEvent?.({ type: "step_start", step: agentName, sessionId: sid });
+
+        const taskResult = (await manager.waitFor(sid))!;
+
+        const step: CompletedStep = { step: agentName, sessionId: sid, result: taskResult };
+        localSteps.push(step);
+        completedSteps.push(step);
+
+        // Persist step to the workflow run
+        const wfStep: WorkflowStep = {
+          sessionId: sid,
+          agent: agentName,
+          task: agentTask,
+          status: taskResult.status,
+          startedAt: taskResult.messages[0]?.timestamp ?? Date.now(),
+          endedAt: Date.now(),
+          lastAssistantText: taskResult.lastAssistantText,
+        };
+        run.steps.push(wfStep);
+        if (persistDir) saveWorkflowRun(persistDir, run);
+
+        onEvent?.({ type: "step_done", step: agentName, sessionId: sid, result: taskResult });
+
+        const steeringAfter = steeringQueue.shift();
+        if (steeringAfter) {
+          throw new WorkflowInterrupted(steeringAfter, completedSteps);
+        }
+
+        return taskResult;
+      },
+
+      emit: (event: WorkflowEvent) => {
+        onEvent?.(event);
+      },
+
+      runWorkflow: async (wfName: string, wfTask: string): Promise<WorkflowResult> => {
+        const steering = steeringQueue.shift();
+        if (steering) {
+          throw new WorkflowInterrupted(steering, completedSteps);
+        }
+
+        if (depth + 1 > maxDepth) {
+          return { type: "escalate", reason: `Maximum workflow nesting depth (${maxDepth}) exceeded` };
+        }
+
+        const { workflow: subWf, error: subErr } = await findWorkflow(workflowDir, wfName);
+        if (!subWf) {
+          return { type: "escalate", reason: subErr ?? `Workflow "${wfName}" not found` };
+        }
+
+        onEvent?.({ type: "workflow_start", workflow: subWf.name, task: wfTask });
+
+        const sub = await executeWorkflow(
+          subWf, wfTask, depth + 1, parentSessionId, runId,
+          completedSteps, steeringQueue,
+        );
+
+        if (sub.result.type === "done") {
+          onEvent?.({ type: "workflow_done", summary: sub.result.summary });
+        } else {
+          onEvent?.({ type: "workflow_escalate", reason: sub.result.reason });
+        }
+
+        return sub.result;
+      },
+
+      done: (summary: string) => ({ type: "done" as const, summary }),
+      escalate: (reason: string, context?: unknown) => ({ type: "escalate" as const, reason, context }),
+    };
+
+    try {
+      const result = await workflow.execute(ctx);
+
+      // Finalize the workflow run
+      run.endedAt = Date.now();
+      run.status = result.type === "done" ? "done" : "escalated";
+      run.result = result.type === "done"
+        ? { summary: result.summary }
+        : { reason: result.reason };
+      if (persistDir) saveWorkflowRun(persistDir, run);
+
+      return { result, runId, steps: localSteps };
+    } catch (err) {
+      run.endedAt = Date.now();
+      if (err instanceof WorkflowInterrupted) {
+        run.status = "interrupted";
+      } else {
+        run.status = "error";
+        run.result = { reason: err instanceof Error ? err.message : String(err) };
+      }
+      if (persistDir) saveWorkflowRun(persistDir, run);
+      throw err;
+    }
+  }
 
   const tool: WorkflowTool = {
     name: "workflow",
@@ -153,7 +275,8 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
     description:
       "List available workflows or run a workflow by name. " +
       "Workflows are predefined step sequences that coordinate sub-agents efficiently. " +
-      "Use 'list' to see what's available, 'run' to execute one.",
+      "Use 'list' to see what's available, 'run' to execute one. " +
+      "Results include workflowRunId — use subagents.trace(workflowRunId) to see the full session tree.",
     parameters: WorkflowToolParams,
 
     steer(message: string): boolean {
@@ -195,137 +318,62 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
             return textResult(JSON.stringify({ type: "error", error: "action 'run' requires 'name' and 'task'" }));
           }
 
-          // Find the workflow file by name
           const { workflow, error: findError } = await findWorkflow(workflowDir, params.name);
-
           if (!workflow) {
             return textResult(JSON.stringify({ type: "error", workflow: params.name, error: findError }));
           }
 
-          // Build the context
           const completedSteps: CompletedStep[] = [];
           const steeringQueue: string[] = [];
-
-          // Register this queue as the active one for steer() calls
           activeSteeringQueue = steeringQueue;
           activeWorkflowName = workflow.name;
 
-          const ctx: WorkflowContext = {
-            task: params.task,
-
-            runAgent: async (agentName: string, agentTask: string): Promise<TaskResult> => {
-              // Check steering before starting the step
-              const steering = steeringQueue.shift();
-              if (steering) {
-                throw new WorkflowInterrupted(steering, completedSteps);
-              }
-
-              const sid = manager.run(agentName, agentTask);
-              const stepStartEvent: WorkflowEvent = { type: "step_start", step: agentName, sessionId: sid };
-              onEvent?.(stepStartEvent);
-
-              const result = await manager.waitFor(sid);
-              const taskResult = result!;
-
-              const step: CompletedStep = { step: agentName, sessionId: sid, result: taskResult };
-              completedSteps.push(step);
-
-              const stepDoneEvent: WorkflowEvent = { type: "step_done", step: agentName, sessionId: sid, result: taskResult };
-              onEvent?.(stepDoneEvent);
-
-              // Check steering again after the step completes
-              // (signal may have arrived while sub-agent was running)
-              const steeringAfter = steeringQueue.shift();
-              if (steeringAfter) {
-                throw new WorkflowInterrupted(steeringAfter, completedSteps);
-              }
-
-              return taskResult;
-            },
-
-            emit: (event: WorkflowEvent) => {
-              onEvent?.(event);
-            },
-
-            runWorkflow: async (wfName: string, wfTask: string): Promise<WorkflowResult> => {
-              // Check steering before starting sub-workflow
-              const steering = steeringQueue.shift();
-              if (steering) {
-                throw new WorkflowInterrupted(steering, completedSteps);
-              }
-
-              const { workflow: subWf, error: subErr } = await findWorkflow(workflowDir, wfName);
-              if (!subWf) {
-                return { type: "escalate", reason: subErr ?? `Workflow "${wfName}" not found` };
-              }
-
-              // Sub-workflow shares the same steering queue and completed steps
-              const subCtx: WorkflowContext = {
-                task: wfTask,
-                runAgent: ctx.runAgent,
-                runWorkflow: ctx.runWorkflow,
-                emit: ctx.emit,
-                done: ctx.done,
-                escalate: ctx.escalate,
-              };
-
-              onEvent?.({ type: "workflow_start", workflow: subWf.name, task: wfTask });
-              const result = await subWf.execute(subCtx);
-
-              if (result.type === "done") {
-                onEvent?.({ type: "workflow_done", summary: result.summary });
-              } else {
-                onEvent?.({ type: "workflow_escalate", reason: result.reason });
-              }
-
-              return result;
-            },
-
-            done: (summary: string) => ({ type: "done" as const, summary }),
-            escalate: (reason: string, context?: unknown) => ({ type: "escalate" as const, reason, context }),
-          };
-
-          // Execute
           onEvent?.({ type: "workflow_start", workflow: workflow.name, task: params.task });
 
           try {
-            const result = await workflow.execute(ctx);
+            const { result, runId, steps } = await executeWorkflow(
+              workflow, params.task, 1,
+              opts.callerSessionId, undefined,
+              completedSteps, steeringQueue,
+            );
 
-            // Clear active state
             activeSteeringQueue = null;
             activeWorkflowName = null;
 
+            const stepSummaries = buildStepSummaries(completedSteps);
+
             if (result.type === "done") {
               onEvent?.({ type: "workflow_done", summary: result.summary });
-              const toolResult: WorkflowToolResult = { type: "done", workflow: workflow.name, summary: result.summary };
+              const toolResult: WorkflowToolResult = {
+                type: "done", workflow: workflow.name, workflowRunId: runId,
+                summary: result.summary, steps: stepSummaries,
+              };
               return textResult(JSON.stringify(toolResult, null, 2));
             }
 
-            // Escalated
             onEvent?.({ type: "workflow_escalate", reason: result.reason });
             const toolResult: WorkflowToolResult = {
-              type: "escalated",
-              workflow: workflow.name,
-              reason: result.reason,
-              context: result.context,
+              type: "escalated", workflow: workflow.name, workflowRunId: runId,
+              reason: result.reason, context: result.context, steps: stepSummaries,
             };
             return textResult(JSON.stringify(toolResult, null, 2));
           } catch (err) {
-            // Clear active state on any exit path
             activeSteeringQueue = null;
             activeWorkflowName = null;
 
             if (err instanceof WorkflowInterrupted) {
+              // We need the runId — it was created inside executeWorkflow
+              // For interrupted, we report the completedSteps directly
               const toolResult: WorkflowToolResult = {
                 type: "interrupted",
                 workflow: workflow.name,
+                workflowRunId: "unknown", // interrupted before we can capture it cleanly
                 completedSteps: err.completedSteps,
                 steeringMessage: err.steeringMessage,
               };
               return textResult(JSON.stringify(toolResult, null, 2));
             }
 
-            // Workflow code itself crashed
             const msg = err instanceof Error ? err.message : String(err);
             const toolResult: WorkflowToolResult = { type: "error", workflow: workflow.name, error: msg };
             return textResult(JSON.stringify(toolResult, null, 2));

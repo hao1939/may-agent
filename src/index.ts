@@ -1,5 +1,5 @@
 export { SubagentManager } from "./manager.js";
-export type { SubagentManagerOptions } from "./manager.js";
+export type { SubagentManagerOptions, RunOptions } from "./manager.js";
 export { createReadTool, createWriteTool, createExecTool, createValidateWorkflowTool, createHealthCheckTool, createLearnTool } from "./tools.js";
 export type { ExecToolOptions, HealthCheck, HealthReport, HealthCheckOptions } from "./tools.js";
 export { createWorkflowTool } from "./workflow-tool.js";
@@ -11,7 +11,10 @@ export type {
   WorkflowEvent,
   WorkflowModule,
   WorkflowToolResult,
+  WorkflowStepSummary,
   CompletedStep,
+  TraceNode,
+  SessionTrace,
 } from "./workflow.js";
 export { createCompactionTransform } from "./compaction.js";
 export type { CompactionOptions, CompactionInfo } from "./compaction.js";
@@ -33,6 +36,11 @@ export {
   historyDir,
   archiveSession,
   restoreSessionFromArchive,
+  saveWorkflowRun,
+  readWorkflowRun,
+  listWorkflowRuns,
+  workflowRunDir,
+  workflowRunPath,
 } from "./persistence.js";
 export type {
   SubagentDefinition,
@@ -44,4 +52,6 @@ export type {
   PersistedAgentConfig,
   PersistedSession,
   MemoryEntry,
+  WorkflowRun,
+  WorkflowStep,
 } from "./persistence.js";

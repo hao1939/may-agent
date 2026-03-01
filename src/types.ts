@@ -53,6 +53,12 @@ export interface SessionInfo {
   outputDir: string;
   lastActivity?: string;
   error?: string;
+  /** Session that spawned this one (e.g. May's session when a workflow runs a sub-agent). */
+  parentSessionId?: string;
+  /** Workflow execution that this session belongs to. */
+  workflowRunId?: string;
+  /** Role of this session in its workflow (e.g. "coder", "reviewer"). */
+  stepLabel?: string;
 }
 
 /** Result of a completed session. */
