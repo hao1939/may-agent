@@ -498,6 +498,7 @@ while (!closed) {
 
   if (response.type === "idle") {
     // Check for meta work
+    console.log("[idle] Idle timeout fired, checking for meta work...");
     const metaTask = hasMetaWork();
     if (metaTask) {
       console.log("\n[idle] Found meta work to do. Starting optimization cycle...");
