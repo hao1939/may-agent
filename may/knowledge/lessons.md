@@ -4,4 +4,65 @@ Evaluator-generated feedback from completed sessions.
 This file is auto-managed — new lessons are appended after each evaluation.
 
 ---
-- 2026-02-28 12:59: When parsing LLM-generated structured responses with regexes (e.g., fenced code blocks with ### headings), make regexes tolerant of common LLM output variations: case differences in headings, optional trailing newlines before closing ```, optional language tags (markdown/md), and extra whitespace. Strict regexes cause unnecessary parsing failures in practice.
+
+## HARD RULES — Read these first, every session
+
+These are non-negotiable. Violations waste tool calls and get corrected every time.
+
+1. **`pwd` first.** Your very first tool call in every session MUST be `pwd`. The project root is wherever it says. NEVER guess paths. NEVER use `find` to locate the project. NEVER try /home/user/, /work/, /app/, or any other speculative path. This has wasted 12+ tool calls in past sessions. No exceptions.
+
+2. **`waitFor`, not polling.** Use `subagents.waitFor(sessionId)` to wait for sub-agent completion. Do NOT poll `subagents.status()` in a loop. 3 out of 6 user corrections in one session were about this.
+
+3. **Don't re-read known files.** If the codebase layout is in domain.md, don't re-read every file to "understand" the project. 43 out of 76 tool calls in one session were wasted on re-reading files the agent already knew about.
+
+---
+
+## Architecture & Design Decisions
+
+- may-agent originated from a specific problem in OpenClaw (a multi-agent system): sub-agents would block the parent agent while waiting for results. The user built may-agent as a standalone sub-agent management library that works independently of OpenClaw. It is its own project at /home/hao/may-agent/, not embedded in pi-agent-core. It's a library built on top of pi-agent-core and pi-ai.
+- Architecture has six layers of state, split by ownership. Caller-managed (user configures): 1) knowledge/ — domain.md, lessons.md, codebase references, 2) tools/ — INDEX.md manifest listing available tools, 3) workspace/ — working directory for agent scratch files. Manager-managed (SubagentManager handles): 4) memory/ — per-agent JSONL of past session summaries, 5) session/ — active session JSONL (conversation messages), 6) output/ — per-session output directory.
+- The user explicitly rejected a central Orchestrator class. Iteration history: v1 had a WorkflowOrchestrator class with match() — REJECTED. v2 removed match() but still had orchestrator — REJECTED. v3 (final): workflow is "just a tool", agent calls workflow.run(name, task) when it wants to. No central orchestrator.
+- Steering exits fast mode cleanly. When a user steers during a workflow, WorkflowInterrupted is thrown. The agent returns to "slow mode" with full context of completed steps. NO hybrid mode — steering is a full exit from the workflow. The user explicitly rejected hybrid steering (fast+slow simultaneously).
+- Three-layer workflow discovery: 1) workflow.list() shows unverified workflows, 2) lessons.md contains verified workflows (learned from experience), 3) Agent decides based on task match. Only strong models (evaluator on GPT-5.2) write new workflow files. Weak models can USE verified workflows but should not generate them.
+- Workflow context uses the existing SubagentManager — ctx.runAgent() delegates to the existing manager. No new pi-agent-core instances are created per workflow. Sub-workflows share steering queue and completed steps.
+- For dynamic workflow imports, use cache-busting via monotonic counter, not timestamp: import(filePath + "?t=" + (++importCounter)). Counter is more predictable than timestamps.
+- agents/ is its own git repo, gitignored in the library repo. Agent configs (knowledge, workflows, tools) evolve independently from library code. Library changes need tests; agent knowledge changes are iterative. This was a deliberate architectural choice.
+- Agent path independence: agents/ dir may not be at <project_root>/agents/. The runner wires the paths. Agents should not assume the relationship between their dir and the project root.
+
+## Learning & Evaluation Architecture
+
+- Three-layer learning architecture: 1) learn tool — fast capture during session (dumb append to lessons.md), 2) evaluator — detects corrections agent missed, post-session scoring, 3) maintainAgent() — consolidates lessons into domain.md, periodically. The user considered separate evaluator and maintainer agents but decided NO — merged into one agent. Same evaluator does post-session scoring AND periodic maintenance.
+- Learning is NOT a tool on the agent itself for consolidation — it's a separate agent (evaluator). Weak models can't consolidate their own knowledge effectively. A strong model (evaluator on GPT-5.2) maintains them. But the learn tool (dumb append) is still useful for fast in-session capture by any model.
+- Evaluator is the Builder, Optimizer is the Allocator. Evaluator creates new capabilities (validates workflows, detects patterns, writes lessons). Optimizer decides resource allocation (model selection, cost optimization, experiments). Neither judges its own output — evaluator validates what optimizer generates, and vice versa. Cross-validation is the design principle.
+- Evaluator stages, never deploys directly. Workflows generated by evaluator go to .state/staged/workflows/, not directly to agents/<name>/workflows/. The optimizer workflow validates and promotes them.
+- Design principle: every feature/capability can be an agent. Learning, maintenance, tool generation should be agents, not tools on the agent. Because weak models can't self-improve — a strong model maintains them.
+
+## Skills & Tools
+
+- Skills are NOT programmatic tools. Skills are markdown instructions (SKILL.md with YAML frontmatter) + bundled scripts. The agent reads instructions and follows them using existing read/exec tools. No special AgentTool registration. Per-agent skills in agents/<name>/skills/ + shared skills via skillsDirs on SubagentDefinition. Skill installation is just exec: git clone or curl into the skills dir. No special mechanism. Next session auto-discovers via directory scan.
+- Only May needs context compaction. Sub-agents have scoped, short-lived tasks. If a sub-agent overflows, the task was too broad — split it, don't compact. Only May's long-running supervisor conversation needs overflow handling.
+
+## User Preferences
+
+- No breaking changes to sub-agents — sub-agents should keep working as-is; only orchestration layer changes.
+- Direct, no fluff — technical prose only, no emojis, no cheerful filler.
+- Deep root-cause analysis — user wants to understand WHY, not just surface fixes.
+- Ask before removing functionality — never remove code that appears intentional.
+- Step-by-step coaching style — user feeds tasks one at a time, verifies output between steps.
+- User's core design philosophy: "start from the design and improve while using" — don't over-engineer upfront. Build minimal features first, use them to build the rest.
+
+## Rejected Approaches (Design History)
+
+- Pub/sub for sub-agent progress — too complex, agents don't need real-time events.
+- Journal-based communication (shared files) — race conditions, no ordering guarantees.
+- session_journal tool (polling-based) — still wastes calls.
+- match() function on workflows — removed; agent decides based on lessons.
+- New pi-agent-core instances per workflow — rejected; reuse existing manager.
+- Inline imports for workflow loading — uses standard dynamic import with counter suffix instead.
+
+## Technical Details
+
+- When parsing LLM-generated structured responses with regexes (e.g., fenced code blocks with ### headings), make regexes tolerant of common LLM output variations: case differences in headings, optional trailing newlines before closing ```, optional language tags (markdown/md), and extra whitespace. Strict regexes cause unnecessary parsing failures in practice.
+- The project was built incrementally and self-bootstrapping: 1) Minimal SubagentManager (90 lines) — register, run, status. 2) Used it to register "may" agent. 3) May supervised adding persistence, memory, archival. 4) May supervised adding coder + reviewer agents. 5) May delegated via implement-and-review workflow. 6) Evaluator + optimizer added to improve the system itself.
+- LLM access is via litellm Docker proxy on localhost:4000. Model objects created from pi-ai's getModel() with overridden id and baseUrl. Model assignments: Opus 4.6 for may + coder (implementation quality), GPT-5.2 for reviewer + evaluator + optimizer (independent perspective). As of 2026-02-21: 184 tests across 11 files, 5 registered agents.
+- The may-agent project is at /home/hao/may-agent/ (not agents/may/ relative). It's a standalone TypeScript library built on pi-agent-core and pi-ai. Key structure: src/ (11 .ts files), test/ (12 test files, 184 tests), docs/ (5 design docs), agents/ (separate git repo with may, coder, reviewer, evaluator, optimizer), run/may.ts (interactive runner). The project uses vitest, ESM, strict TypeScript. Local dependencies: @mariozechner/pi-agent-core and @mariozechner/pi-ai from /home/hao/pi-mono/packages/.
