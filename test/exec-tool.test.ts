@@ -18,7 +18,7 @@ describe("createExecTool with options", () => {
   it("blocks commands matching denyPatterns", async () => {
     const tool = createExecTool({
       cwd: "/tmp",
-      denyPatterns: [/\bfind\s+\/(?!\w)/],
+      denyPatterns: [/\bfind\s+\/\s*(?:$|[;&|]|-)/],
       denyMessage: "No global searches allowed.",
     });
     const result = await tool.execute("id", { command: "find / -name foo" });
@@ -30,11 +30,52 @@ describe("createExecTool with options", () => {
   it("allows commands that don't match denyPatterns", async () => {
     const tool = createExecTool({
       cwd: "/tmp",
-      denyPatterns: [/\bfind\s+\/(?!\w)/],
+      denyPatterns: [/\bfind\s+\/\s*(?:$|[;&|]|-)/],
     });
     const result = await tool.execute("id", { command: "find ./src -name foo" });
     // Should not be blocked — "find ./src" doesn't match "find /"
     expect(result.content[0].text).not.toContain("Blocked");
+  });
+
+  it("allows find with specific absolute paths", async () => {
+    const tool = createExecTool({
+      cwd: "/tmp",
+      denyPatterns: [/\bfind\s+\/\s*(?:$|[;&|]|-)/],
+    });
+
+    // "find /tmp" — specific dir, should be allowed
+    const r1 = await tool.execute("id1", { command: "find /tmp -name foo" });
+    expect(r1.content[0].text).not.toContain("Blocked");
+
+    // "find /.hidden" — specific dir starting with dot, should be allowed
+    const r2 = await tool.execute("id2", { command: "find /.hidden -name foo" });
+    expect(r2.content[0].text).not.toContain("Blocked");
+
+    // "find /var-log" — specific dir with hyphen, should be allowed
+    const r3 = await tool.execute("id3", { command: "find /var-log -name foo" });
+    expect(r3.content[0].text).not.toContain("Blocked");
+  });
+
+  it("blocks find / with flags", async () => {
+    const tool = createExecTool({
+      cwd: "/tmp",
+      denyPatterns: [/\bfind\s+\/\s*(?:$|[;&|]|-)/],
+    });
+
+    // "find / -maxdepth 3" — root traversal with flags, should be blocked
+    const result = await tool.execute("id", { command: "find / -maxdepth 3 -name foo" });
+    expect(result.content[0].text).toContain("Blocked");
+  });
+
+  it("blocks find / at end of command", async () => {
+    const tool = createExecTool({
+      cwd: "/tmp",
+      denyPatterns: [/\bfind\s+\/\s*(?:$|[;&|]|-)/],
+    });
+
+    // "find /" at end of string — should be blocked
+    const result = await tool.execute("id", { command: "find /" });
+    expect(result.content[0].text).toContain("Blocked");
   });
 
   it("blocks find /home pattern", async () => {
@@ -43,6 +84,15 @@ describe("createExecTool with options", () => {
       denyPatterns: [/\bfind\s+\/home\b/],
     });
     const result = await tool.execute("id", { command: "find /home -name package.json" });
+    expect(result.content[0].text).toContain("Blocked");
+  });
+
+  it("blocks sudo find / pattern", async () => {
+    const tool = createExecTool({
+      cwd: "/tmp",
+      denyPatterns: [/\bsudo\s+find\s+\/\s*(?:$|[;&|]|-)/],
+    });
+    const result = await tool.execute("id", { command: "sudo find / -name foo" });
     expect(result.content[0].text).toContain("Blocked");
   });
 
@@ -72,7 +122,7 @@ describe("createExecTool with options", () => {
   it("shows cwd hint in deny message", async () => {
     const tool = createExecTool({
       cwd: "/my/project",
-      denyPatterns: [/\bfind\s+\/(?!\w)/],
+      denyPatterns: [/\bfind\s+\/\s*(?:$|[;&|]|-)/],
     });
     const result = await tool.execute("id", { command: "find / -type f" });
     expect(result.content[0].text).toContain("/my/project");
@@ -88,7 +138,7 @@ describe("createExecTool with options", () => {
     const tool = createExecTool({
       cwd: "/tmp",
       denyPatterns: [
-        /\bfind\s+\/(?!\w)/,
+        /\bfind\s+\/\s*(?:$|[;&|]|-)/,
         /\bfind\s+\/home\b/,
         /\bsudo\b/,
       ],
