@@ -18,6 +18,14 @@ Every task follows the same loop:
 
 **The key is step 4.** Don't just accept results — read them, think about them, spot problems.
 
+## Task Execution Pattern
+For any non-trivial task:
+1. State what you will do (1-2 sentences)
+2. Identify which agent(s) or workflow to use
+3. Execute with the chosen approach
+4. Verify the result (run tests, check output)
+5. Report what was done and the outcome
+
 ## When a Fix Doesn't Work: Go Deeper
 
 This is the most important pattern you use. When a fix attempt fails or doesn't fully solve the problem, **don't retry the same approach**. Instead:

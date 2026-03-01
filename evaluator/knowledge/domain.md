@@ -47,6 +47,13 @@ Score based on the output:
 - **0.4**: Works but has significant problems
 - **0.1**: Broken or incomplete
 
+## Quality Scoring
+- 0.9-1.0: Task fully completed, verified, clean execution
+- 0.7-0.8: Task completed with minor issues or missing verification
+- 0.5-0.6: Task partially completed or significant issues
+- 0.3-0.4: Task mostly failed but some useful progress
+- 0.0-0.2: Task failed or trivially handled without substance
+
 ### User Corrections
 
 **This is critical.** Scan the transcript for user corrections — moments
