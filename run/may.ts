@@ -157,6 +157,7 @@ let lastWorkflowUsed: string | null = null;
 const workflowTool = createWorkflowTool({
   manager,
   workflowDir: resolve(agentDir("may"), "workflows"),
+  persistDir: PERSIST_DIR,
   onEvent: (event: WorkflowEvent) => {
     switch (event.type) {
       case "workflow_start":
