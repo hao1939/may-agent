@@ -43,7 +43,7 @@ const PERSIST_DIR = resolve(PROJECT_ROOT, ".state");
 
 // Exec tool with echoCwd — shows working directory on first call to orient the agent
 function guardedExec() {
-  return createExecTool({ cwd: PROJECT_ROOT, echoCwd: true });
+  return createExecTool({ cwd: PROJECT_ROOT, echoCwd: true, warnOutsideRoot: PROJECT_ROOT });
 }
 
 // Read tool with projectRoot hint — ENOENT errors tell the agent where files actually are
