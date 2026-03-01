@@ -3,6 +3,8 @@ import { Agent } from "@mariozechner/pi-agent-core";
 import type { AgentMessage, AgentEvent, AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
 import { Type, StringEnum } from "@mariozechner/pi-ai";
 import type { SubagentDefinition, SessionInfo, TaskResult } from "./types.js";
+import { createCompactionTransform } from "./compaction.js";
+import type { CompactionOptions } from "./compaction.js";
 import { loadSkillsFromDirs, formatSkillsForPrompt } from "./skills.js";
 import {
   RegistryStore,
@@ -125,6 +127,15 @@ export class SubagentManager {
         appendSessionMessage(persistDir, sessionId, event.message);
       }
     });
+  }
+
+  /** Build a transformContext function if compaction is enabled for this agent. */
+  private buildTransformContext(
+    def: SubagentDefinition,
+  ): ((messages: AgentMessage[], signal?: AbortSignal) => Promise<AgentMessage[]>) | undefined {
+    if (!def.compaction) return undefined;
+    const compactionOpts: CompactionOptions = typeof def.compaction === "object" ? def.compaction : {};
+    return createCompactionTransform(def.model, compactionOpts);
   }
 
   /** Resolve the system prompt from a definition.
@@ -300,6 +311,7 @@ export class SubagentManager {
         model: def.model,
         tools: def.tools,
       },
+      transformContext: this.buildTransformContext(def),
       getApiKey: def.apiKey ? () => def.apiKey : undefined,
     });
 
@@ -394,6 +406,7 @@ export class SubagentManager {
           tools: def.tools,
           messages: savedMessages,
         },
+        transformContext: this.buildTransformContext(def),
         getApiKey: def.apiKey ? () => def.apiKey : undefined,
       });
 

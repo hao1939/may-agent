@@ -206,6 +206,13 @@ manager.register({
     workflowTool,
   ],
   apiKey: "not-needed",
+  compaction: {
+    threshold: 0.7,
+    keepRatio: 0.4,
+    onCompact: (info) => {
+      console.log(`\n[compaction] Round ${info.compactionCount}: ${info.messagesCompacted} messages compacted, ${info.messagesKept} kept (${info.tokensBefore} → ${info.tokensAfter} est. tokens)`);
+    },
+  },
 });
 
 // ── Event streaming ────────────────────────────────────────────────────
@@ -441,7 +448,7 @@ function hasMetaWork(): string | null {
         } catch { /* skip bad files */ }
       }
       if (count > 0 && totalEff / count < 0.7) {
-        return `Recent evaluations show declining efficiency (avg ${(totalEff / count).toFixed(2)}). Run an optimization cycle: use the optimize workflow to analyze evaluation data and generate improvement proposals.`;
+        return `Recent evaluations show declining efficiency (avg ${(totalEff / count).toFixed(2)}). Use the diagnose-and-fix workflow to identify the root cause and drive a fix.`;
       }
     }
   } catch { /* dir doesn't exist */ }
