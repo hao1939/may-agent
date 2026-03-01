@@ -46,6 +46,11 @@ function guardedExec() {
   return createExecTool({ cwd: PROJECT_ROOT, echoCwd: true });
 }
 
+// Read tool with projectRoot hint — ENOENT errors tell the agent where files actually are
+function projectRead() {
+  return createReadTool({ projectRoot: PROJECT_ROOT });
+}
+
 const manager = new SubagentManager({
   persistDir: PERSIST_DIR,
 });
@@ -66,7 +71,7 @@ manager.register({
   projectRoot: PROJECT_ROOT,
   model: opus,
   tools: [
-    createReadTool(),
+    projectRead(),
     createWriteTool(),
     guardedExec(),
     createLearnTool(knowledgeDir("coder")),
@@ -89,7 +94,7 @@ manager.register({
   projectRoot: PROJECT_ROOT,
   model: gpt52,
   tools: [
-    createReadTool(),
+    projectRead(),
     guardedExec(),
     createLearnTool(knowledgeDir("reviewer")),
   ],
@@ -110,7 +115,7 @@ manager.register({
   projectRoot: PROJECT_ROOT,
   model: gpt52,
   tools: [
-    createReadTool(),
+    projectRead(),
     createWriteTool(),
     createValidateWorkflowTool(),
     guardedExec(),
@@ -135,7 +140,7 @@ manager.register({
   projectRoot: PROJECT_ROOT,
   model: gpt52,
   tools: [
-    createReadTool(),
+    projectRead(),
     createWriteTool(),
     guardedExec(),
     createLearnTool(knowledgeDir("optimizer")),
@@ -192,7 +197,7 @@ manager.register({
   projectRoot: PROJECT_ROOT,
   model: opus,
   tools: [
-    createReadTool(),
+    projectRead(),
     createWriteTool(),
     guardedExec(),
     createValidateWorkflowTool(),
