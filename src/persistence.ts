@@ -89,16 +89,22 @@ export function appendSessionMessage(persistDir: string, sessionId: string, mess
   appendFileSync(sessionJsonlPath(persistDir, sessionId), line, "utf-8");
 }
 
-/** Read all messages from a session's JSONL file. Returns [] if the file doesn't exist or is empty. */
+/** Read all messages from a session's JSONL file. Returns [] if the file doesn't exist or is empty.
+ *  Corrupted lines are skipped with a warning. */
 export function readSessionMessages(persistDir: string, sessionId: string): AgentMessage[] {
   const filePath = sessionJsonlPath(persistDir, sessionId);
   if (!existsSync(filePath)) return [];
   const raw = readFileSync(filePath, "utf-8");
   if (!raw.trim()) return [];
-  return raw
-    .trim()
-    .split("\n")
-    .map((line) => JSON.parse(line) as AgentMessage);
+  const messages: AgentMessage[] = [];
+  for (const line of raw.trim().split("\n")) {
+    try {
+      messages.push(JSON.parse(line) as AgentMessage);
+    } catch {
+      console.warn(`[persistence] Skipping corrupted JSONL line in ${filePath}`);
+    }
+  }
+  return messages;
 }
 
 // ── History / archival helpers ─────────────────────────────────────────
@@ -131,16 +137,21 @@ export function appendMemoryEntry(persistDir: string, name: string, entry: Memor
   appendFileSync(filePath, line, "utf-8");
 }
 
-/** Read the last N memory entries (or all if limit is not specified). */
+/** Read the last N memory entries (or all if limit is not specified).
+ *  Corrupted lines are skipped with a warning. */
 export function readMemoryEntries(persistDir: string, name: string, limit?: number): MemoryEntry[] {
   const filePath = memoryPath(persistDir, name);
   if (!existsSync(filePath)) return [];
   const raw = readFileSync(filePath, "utf-8");
   if (!raw.trim()) return [];
-  const entries = raw
-    .trim()
-    .split("\n")
-    .map((line) => JSON.parse(line) as MemoryEntry);
+  const entries: MemoryEntry[] = [];
+  for (const line of raw.trim().split("\n")) {
+    try {
+      entries.push(JSON.parse(line) as MemoryEntry);
+    } catch {
+      console.warn(`[persistence] Skipping corrupted JSONL line in ${filePath}`);
+    }
+  }
   if (limit !== undefined) {
     if (limit <= 0) return [];
     return entries.slice(-limit);
@@ -171,9 +182,12 @@ export class RegistryStore {
     }
   }
 
+  /** Atomic save: write to a temp file, then rename. */
   private save(): void {
     mkdirSync(dirname(this.filePath), { recursive: true });
-    writeFileSync(this.filePath, JSON.stringify(this.data, null, 2), "utf-8");
+    const tmpPath = this.filePath + ".tmp";
+    writeFileSync(tmpPath, JSON.stringify(this.data, null, 2), "utf-8");
+    renameSync(tmpPath, this.filePath);
   }
 
   /** Persist an agent config. */

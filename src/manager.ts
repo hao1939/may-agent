@@ -71,6 +71,7 @@ interface ActiveSession {
   error?: string;
   outputDir: string;
   unsubscribe?: () => void;
+  timeoutTimer?: ReturnType<typeof setTimeout>;
 }
 
 export interface SubagentManagerOptions {
@@ -249,6 +250,31 @@ export class SubagentManager {
     }
   }
 
+  /** Set up a timeout timer for a session if timeoutMs is configured. */
+  private setupTimeout(session: ActiveSession, timeoutMs: number | undefined): void {
+    if (!timeoutMs || timeoutMs <= 0) return;
+    session.timeoutTimer = setTimeout(() => {
+      if (session.status === "running") {
+        this.cancel(session.sessionId);
+      }
+    }, timeoutMs);
+  }
+
+  /** Clear any active timeout timer for a session. */
+  private clearTimeout(session: ActiveSession): void {
+    if (session.timeoutTimer) {
+      clearTimeout(session.timeoutTimer);
+      session.timeoutTimer = undefined;
+    }
+  }
+
+  /** Common completion handler for run(), resume(), and send(). */
+  private handleCompletion(session: ActiveSession): void {
+    this.clearTimeout(session);
+    this.appendMemory(session);
+    this.archiveSessionDir(session);
+  }
+
   /** Start a new session for a registered agent. Returns sessionId. Non-blocking. */
   run(name: string, task: string): string {
     const registered = this.agents.get(name);
@@ -300,6 +326,9 @@ export class SubagentManager {
       startedAt: session.startedAt,
     });
 
+    // Set up timeout if configured
+    this.setupTimeout(session, def.timeoutMs);
+
     session.promise = agent.prompt(task)
       .then(() => {
         if (agent.state.error) {
@@ -310,15 +339,13 @@ export class SubagentManager {
           session.status = "done";
           this.registry?.updateSessionStatus(sessionId, "done");
         }
-        this.appendMemory(session);
-        this.archiveSessionDir(session);
+        this.handleCompletion(session);
       })
       .catch((err) => {
         session.status = "error";
         session.error = err?.message ?? String(err);
         this.registry?.updateSessionStatus(sessionId, "error", session.error);
-        this.appendMemory(session);
-        this.archiveSessionDir(session);
+        this.handleCompletion(session);
       });
 
     this.activeSessions.set(sessionId, session);
@@ -392,6 +419,9 @@ export class SubagentManager {
       // Subscribe for JSONL persistence before starting the prompt
       this.subscribeForPersistence(session);
 
+      // Set up timeout if configured
+      this.setupTimeout(session, def.timeoutMs);
+
       // Start the agent running with the resume message
       session.promise = agent.prompt(resumeMessage)
         .then(() => {
@@ -403,15 +433,13 @@ export class SubagentManager {
             session.status = "done";
             this.registry?.updateSessionStatus(sessionId, "done");
           }
-          this.appendMemory(session);
-          this.archiveSessionDir(session);
+          this.handleCompletion(session);
         })
         .catch((err) => {
           session.status = "error";
           session.error = err?.message ?? String(err);
           this.registry?.updateSessionStatus(sessionId, "error", session.error);
-          this.appendMemory(session);
-          this.archiveSessionDir(session);
+          this.handleCompletion(session);
         });
 
       this.activeSessions.set(sessionId, session);
@@ -493,7 +521,10 @@ export class SubagentManager {
     session.agent.abort();
   }
 
-  /** Send a follow-up message to a completed session. Resumes the same Agent. Non-blocking. */
+  /** Send a follow-up message to a completed session. Resumes the same Agent. Non-blocking.
+   *  Includes full lifecycle management: persistence subscription, registry update,
+   *  memory append, and archival on completion.
+   */
   send(sessionId: string, message: string): boolean {
     const session = this.activeSessions.get(sessionId);
     if (!session) return false;
@@ -502,18 +533,34 @@ export class SubagentManager {
     session.status = "running";
     session.error = undefined;
 
+    // Re-subscribe for JSONL persistence (previous subscription may have been cleaned up)
+    this.subscribeForPersistence(session);
+
+    // Update registry status back to running
+    this.registry?.updateSessionStatus(sessionId, "running" as any);
+
+    // Look up timeoutMs from the agent definition
+    const registered = this.agents.get(session.agentName);
+    const timeoutMs = registered?.definition.timeoutMs;
+    this.setupTimeout(session, timeoutMs);
+
     session.promise = session.agent.prompt(message)
       .then(() => {
         if (session.agent.state.error) {
           session.status = "error";
           session.error = session.agent.state.error;
+          this.registry?.updateSessionStatus(sessionId, "error", session.agent.state.error);
         } else {
           session.status = "done";
+          this.registry?.updateSessionStatus(sessionId, "done");
         }
+        this.handleCompletion(session);
       })
       .catch((err) => {
         session.status = "error";
         session.error = err?.message ?? String(err);
+        this.registry?.updateSessionStatus(sessionId, "error", session.error);
+        this.handleCompletion(session);
       });
 
     return true;
@@ -555,6 +602,12 @@ export class SubagentManager {
   }
 
   // ── Path accessors ───────────────────────────────────────────────────
+
+  /** Get the knowledge directory path for a registered agent. */
+  getKnowledgePath(name: string): string | undefined {
+    const registered = this.agents.get(name);
+    return registered?.definition.knowledgeDir;
+  }
 
   /** Get the workspace path for a registered agent. */
   getWorkspacePath(name: string): string | undefined {

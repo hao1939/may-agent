@@ -23,6 +23,24 @@ function writeWorkflow(name: string, content: string): void {
   writeFileSync(join(workflowDir, name), content, "utf-8");
 }
 
+/** Create a promise that resolves when the first event matching the predicate is seen. */
+function waitForEvent(events: WorkflowEvent[], predicate: (e: WorkflowEvent) => boolean): Promise<void> {
+  return new Promise((resolve) => {
+    // Check if already seen
+    if (events.some(predicate)) {
+      resolve();
+      return;
+    }
+    // Poll at microtask level — events are pushed synchronously by the tool
+    const interval = setInterval(() => {
+      if (events.some(predicate)) {
+        clearInterval(interval);
+        resolve();
+      }
+    }, 1);
+  });
+}
+
 beforeEach(() => {
   testDir = freshDir();
   workflowDir = join(testDir, "workflows");
@@ -437,14 +455,18 @@ describe("workflow tool: steering", () => {
   });
 
   it("pre-queued steering signal interrupts workflow before first runAgent", async () => {
-    // Write a workflow that delays before calling runAgent,
-    // giving us a window to call steer()
+    // Write a workflow that uses a global signal to indicate it's ready,
+    // then waits for a signal to proceed. This avoids flaky setTimeout timing.
     writeWorkflow("delayed.ts", `
       export const name = "delayed";
       export const description = "Delays then calls runAgent";
       export async function execute(ctx) {
-        // Yield to event loop to allow steer() to be called
-        await new Promise(resolve => setTimeout(resolve, 50));
+        // Signal readiness via a custom event, then wait for the steering signal
+        // to be queued before proceeding to runAgent
+        ctx.emit({ type: "step_start", step: "ready-for-steering" });
+        // Small yield to let the test queue a steering signal
+        await new Promise(resolve => setTimeout(resolve, 0));
+        await new Promise(resolve => setTimeout(resolve, 0));
         const result = await ctx.runAgent("coder", "do something");
         return ctx.done("should not reach here");
       }
@@ -465,14 +487,13 @@ describe("workflow tool: steering", () => {
       task: "steerable task",
     });
 
-    // Wait a tick for the workflow to start
-    await new Promise(resolve => setTimeout(resolve, 10));
+    // Wait for the workflow to signal it's ready for steering
+    await waitForEvent(events, (e) => e.type === "step_start" && "step" in e && e.step === "ready-for-steering");
 
-    // Now the workflow is running (in its 50ms delay)
+    // Now the workflow is running and waiting — steer it
     expect(tool.isRunning).toBe(true);
     expect(tool.activeWorkflow).toBe("delayed");
 
-    // Steer it
     const steered = tool.steer("change direction please");
     expect(steered).toBe(true);
 
@@ -494,20 +515,20 @@ describe("workflow tool: steering", () => {
   });
 
   it("steering after one completed step includes that step in completedSteps", async () => {
-    // Write a workflow that does two runAgent calls with delays
+    // Write a workflow that emits a signal when it's past the first step
+    // and ready for the steering signal
     writeWorkflow("two-step.ts", `
       export const name = "two-step";
       export const description = "Two step workflow";
       export async function execute(ctx) {
-        // First step - just resolve immediately (will fail because agent not registered)
-        // Actually, we need a different approach...
-        // Let's use emit to track and then delay before second "step"
         ctx.emit({ type: "step_start", step: "planning" });
-        await new Promise(resolve => setTimeout(resolve, 20));
         ctx.emit({ type: "step_done", step: "planning" });
 
-        // Second "step" with delay to allow steering
-        await new Promise(resolve => setTimeout(resolve, 50));
+        // Signal that we're past step 1 and ready for steering
+        ctx.emit({ type: "step_start", step: "ready-for-steering" });
+        // Yield to let the test queue a steering signal
+        await new Promise(resolve => setTimeout(resolve, 0));
+        await new Promise(resolve => setTimeout(resolve, 0));
 
         // This runAgent will check steering queue
         const result = await ctx.runAgent("coder", "implement");
@@ -529,8 +550,8 @@ describe("workflow tool: steering", () => {
       task: "task",
     });
 
-    // Wait for the workflow to be past its first emit
-    await new Promise(resolve => setTimeout(resolve, 40));
+    // Wait for the workflow to signal readiness
+    await waitForEvent(events, (e) => e.type === "step_start" && "step" in e && e.step === "ready-for-steering");
 
     expect(tool.isRunning).toBe(true);
     tool.steer("abort now");
@@ -553,14 +574,21 @@ describe("workflow tool: steering", () => {
       export const name = "multi-steer";
       export const description = "Multi-steer test";
       export async function execute(ctx) {
-        await new Promise(resolve => setTimeout(resolve, 50));
+        ctx.emit({ type: "step_start", step: "ready-for-steering" });
+        await new Promise(resolve => setTimeout(resolve, 0));
+        await new Promise(resolve => setTimeout(resolve, 0));
         const result = await ctx.runAgent("coder", "first");
         return ctx.done("done");
       }
     `);
 
+    const events: WorkflowEvent[] = [];
     const manager = new SubagentManager();
-    const tool = createWorkflowTool({ manager, workflowDir });
+    const tool = createWorkflowTool({
+      manager,
+      workflowDir,
+      onEvent: (e) => events.push(e),
+    });
 
     const execPromise = tool.execute("tc1", {
       action: "run",
@@ -568,7 +596,7 @@ describe("workflow tool: steering", () => {
       task: "task",
     });
 
-    await new Promise(resolve => setTimeout(resolve, 10));
+    await waitForEvent(events, (e) => e.type === "step_start" && "step" in e && e.step === "ready-for-steering");
 
     tool.steer("first signal");
     tool.steer("second signal");
