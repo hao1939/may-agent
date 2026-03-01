@@ -320,7 +320,7 @@ rl.on("close", () => { closed = true; });
 
 const AUTO_EVALUATE = process.env.MAY_EVALUATE !== "0";
 const IDLE_TIMEOUT_MS = parseInt(process.env.MAY_IDLE_TIMEOUT ?? "60000", 10); // default 60s
-const MAINTENANCE_INTERVAL = 5; // run maintenance every N evaluations
+const MAINTENANCE_INTERVAL = 3; // run maintenance every N evaluations
 let evalsSinceMaintenance = 0;
 
 async function runEvaluation(sessionId: string): Promise<void> {
@@ -359,7 +359,7 @@ async function runEvaluation(sessionId: string): Promise<void> {
     // Periodic maintenance — run for all agents
     evalsSinceMaintenance++;
     if (evalsSinceMaintenance >= MAINTENANCE_INTERVAL) {
-      const agentNames = ["may", "coder", "reviewer"];
+      const agentNames = ["may", "coder", "reviewer", "optimizer", "evaluator"];
       for (const name of agentNames) {
         console.log(`\n[maintenance] Consolidating lessons for ${name}...`);
         try {
