@@ -39,6 +39,15 @@ const gpt52 = {
   baseUrl: "http://localhost:4000/v1",
 };
 
+const gemini3 = {
+  ...getModel("azure-openai-responses", "gpt-5.2"), // base config for litellm compatibility
+  id: "gemini-3-pro",
+  name: "Gemini 3 Pro",
+  baseUrl: "http://localhost:4000/v1",
+  contextWindow: 1_000_000,
+  maxTokens: 64_000,
+};
+
 const PERSIST_DIR = resolve(PROJECT_ROOT, ".state");
 
 // Exec tool with echoCwd — shows working directory on first call to orient the agent
@@ -138,7 +147,7 @@ manager.register({
   knowledgeDir: knowledgeDir("optimizer"),
   workspace: resolve(agentDir("optimizer"), "workspace"),
   projectRoot: PROJECT_ROOT,
-  model: gpt52,
+  model: gemini3,
   tools: [
     projectRead(),
     createWriteTool(),
