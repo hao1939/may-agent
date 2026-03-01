@@ -13,7 +13,6 @@ import {
   evaluateSession,
   maintainAgent,
 } from "../src/index.js";
-import type { ExecToolOptions } from "../src/index.js";
 import type { WorkflowEvent } from "../src/workflow.js";
 
 const PROJECT_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -41,19 +40,9 @@ const gpt52 = {
 
 const PERSIST_DIR = resolve(PROJECT_ROOT, ".state");
 
-// Guarded exec tool — blocks path-guessing commands, echoes cwd on first call
-const EXEC_OPTS: ExecToolOptions = {
-  cwd: PROJECT_ROOT,
-  echoCwd: true,
-  denyPatterns: [
-    /\bfind\s+\/(?!\w)/, // blocks "find /" but not "find ./src"
-    /\bfind\s+\/home\b/, // blocks "find /home"
-  ],
-  denyMessage: "Global filesystem searches are blocked. Use relative paths from the project root.",
-};
-
+// Exec tool with echoCwd — shows working directory on first call to orient the agent
 function guardedExec() {
-  return createExecTool(EXEC_OPTS);
+  return createExecTool({ cwd: PROJECT_ROOT, echoCwd: true });
 }
 
 const manager = new SubagentManager({
