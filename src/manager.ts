@@ -493,6 +493,7 @@ export class SubagentManager {
     if (!session) return [];
     const messages = session.agent.state.messages;
     if (limit === undefined) return messages.slice();
+    if (limit <= 0) return [];
     return messages.slice(-limit);
   }
 
