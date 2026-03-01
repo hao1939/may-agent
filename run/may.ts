@@ -128,7 +128,7 @@ manager.register({
 
 manager.register({
   name: "optimizer",
-  description: "Performance optimizer — analyzes cost/efficiency, generates skills, proposes model changes",
+  description: "Performance optimizer — drives full improvement loop: analyze, propose, implement, verify",
   domain: "agent performance optimization",
   systemPromptFiles: [
     resolve(knowledgeDir("optimizer"), "domain.md"),
@@ -144,6 +144,8 @@ manager.register({
     createWriteTool(),
     guardedExec(),
     createLearnTool(knowledgeDir("optimizer")),
+    manager.createTool(),
+    optimizerWorkflowTool,
   ],
   apiKey: "not-needed",
 });
@@ -152,35 +154,48 @@ manager.register({
 
 let lastWorkflowUsed: string | null = null;
 
-// ── Workflow tool ──────────────────────────────────────────────────────
+// ── Workflow event handler factory ─────────────────────────────────────
 
-const workflowTool = createWorkflowTool({
-  manager,
-  workflowDir: resolve(agentDir("may"), "workflows"),
-  persistDir: PERSIST_DIR,
-  onEvent: (event: WorkflowEvent) => {
+function workflowEventHandler(label: string) {
+  return (event: WorkflowEvent) => {
     switch (event.type) {
       case "workflow_start":
-        console.log(`\n[workflow] ${event.workflow}: ${event.task.slice(0, 100)}`);
-        lastWorkflowUsed = event.workflow;
+        console.log(`\n[${label}:workflow] ${event.workflow}: ${event.task.slice(0, 100)}`);
+        if (label === "may") lastWorkflowUsed = event.workflow;
         break;
       case "step_start":
-        console.log(`[workflow:step] ${event.step} started${event.sessionId ? ` (${event.sessionId})` : ""}`);
+        console.log(`[${label}:step] ${event.step} started${event.sessionId ? ` (${event.sessionId})` : ""}`);
         if (event.sessionId) {
           attachSubagentEvents(event.step, event.sessionId);
         }
         break;
       case "step_done":
-        console.log(`[workflow:step] ${event.step} ${event.result?.status ?? "done"} (${event.result?.duration ?? "?"})`);
+        console.log(`[${label}:step] ${event.step} ${event.result?.status ?? "done"} (${event.result?.duration ?? "?"})`);
         break;
       case "workflow_done":
-        console.log(`[workflow] done`);
+        console.log(`[${label}:workflow] done`);
         break;
       case "workflow_escalate":
-        console.log(`[workflow] escalated: ${event.reason}`);
+        console.log(`[${label}:workflow] escalated: ${event.reason}`);
         break;
     }
-  },
+  };
+}
+
+// ── Workflow tools ─────────────────────────────────────────────────────
+
+const mayWorkflowTool = createWorkflowTool({
+  manager,
+  workflowDir: resolve(agentDir("may"), "workflows"),
+  persistDir: PERSIST_DIR,
+  onEvent: workflowEventHandler("may"),
+});
+
+const optimizerWorkflowTool = createWorkflowTool({
+  manager,
+  workflowDir: resolve(agentDir("optimizer"), "workflows"),
+  persistDir: PERSIST_DIR,
+  onEvent: workflowEventHandler("optimizer"),
 });
 
 // ── Register may supervisor ────────────────────────────────────────────
@@ -204,7 +219,7 @@ manager.register({
     createValidateWorkflowTool(),
     createLearnTool(knowledgeDir("may")),
     manager.createTool(),
-    workflowTool,
+    mayWorkflowTool,
   ],
   apiKey: "not-needed",
   compaction: {
@@ -427,11 +442,13 @@ function hasMetaWork(): string | null {
   try {
     const proposals = readdirSync(proposalDir).filter((f) => f.endsWith(".md"));
     if (proposals.length > 0) {
-      return `There are ${proposals.length} staged optimization proposal(s) in .state/staged/proposals/. Review them, decide which to implement, and drive the implementation using the implement-and-review workflow. After implementation, run tests to verify.`;
+      return `Meta work available: there are ${proposals.length} staged proposal(s) in .state/staged/proposals/. ` +
+        `Delegate to optimizer to run its improvement loop — it will implement, review, and verify the proposals. ` +
+        `Use: subagents.run("optimizer", "Run your improvement loop. There are staged proposals in .state/staged/proposals/.")`;
     }
   } catch { /* dir doesn't exist */ }
 
-  // Check for recent evaluations with poor scores — only trigger if the last 3 evals average below threshold
+  // Check for recent evaluations with poor scores
   const evalDir = resolve(PERSIST_DIR, "evaluations");
   try {
     const evalFiles = readdirSync(evalDir).filter((f) => f.endsWith(".json")).sort();
@@ -449,7 +466,10 @@ function hasMetaWork(): string | null {
         } catch { /* skip bad files */ }
       }
       if (count > 0 && totalEff / count < 0.7) {
-        return `Recent evaluations show declining efficiency (avg ${(totalEff / count).toFixed(2)}). Use the diagnose-and-fix workflow to identify the root cause and drive a fix.`;
+        const avg = (totalEff / count).toFixed(2);
+        return `Meta work available: recent evaluations show declining efficiency (avg ${avg}). ` +
+          `Delegate to optimizer to run its improvement loop — it will analyze evaluations, identify the top problem, and drive a fix. ` +
+          `Use: subagents.run("optimizer", "Run your improvement loop. Recent efficiency is ${avg}.")`;
       }
     }
   } catch { /* dir doesn't exist */ }
@@ -578,10 +598,10 @@ while (!closed) {
   const input = response.value;
   if (!input || input === "exit" || input === "quit") break;
 
-  if (workflowTool.isRunning) {
-    const steered = workflowTool.steer(input);
+  if (mayWorkflowTool.isRunning) {
+    const steered = mayWorkflowTool.steer(input);
     if (steered) {
-      console.log(`[steering] Signal queued for workflow "${workflowTool.activeWorkflow}"`);
+      console.log(`[steering] Signal queued for workflow "${mayWorkflowTool.activeWorkflow}"`);
       continue;
     }
   }
