@@ -64,6 +64,54 @@ const manager = new SubagentManager({
   persistDir: PERSIST_DIR,
 });
 
+// ── Track which workflow was used ──────────────────────────────────────
+
+let lastWorkflowUsed: string | null = null;
+
+// ── Workflow event handler factory ─────────────────────────────────────
+
+function workflowEventHandler(label: string) {
+  return (event: WorkflowEvent) => {
+    switch (event.type) {
+      case "workflow_start":
+        console.log(`\n[${label}:workflow] ${event.workflow}: ${event.task.slice(0, 100)}`);
+        if (label === "may") lastWorkflowUsed = event.workflow;
+        break;
+      case "step_start":
+        console.log(`[${label}:step] ${event.step} started${event.sessionId ? ` (${event.sessionId})` : ""}`);
+        if (event.sessionId) {
+          attachSubagentEvents(event.step, event.sessionId);
+        }
+        break;
+      case "step_done":
+        console.log(`[${label}:step] ${event.step} ${event.result?.status ?? "done"} (${event.result?.duration ?? "?"})`);
+        break;
+      case "workflow_done":
+        console.log(`[${label}:workflow] done`);
+        break;
+      case "workflow_escalate":
+        console.log(`[${label}:workflow] escalated: ${event.reason}`);
+        break;
+    }
+  };
+}
+
+// ── Workflow tools ─────────────────────────────────────────────────────
+
+const mayWorkflowTool = createWorkflowTool({
+  manager,
+  workflowDir: resolve(agentDir("may"), "workflows"),
+  persistDir: PERSIST_DIR,
+  onEvent: workflowEventHandler("may"),
+});
+
+const optimizerWorkflowTool = createWorkflowTool({
+  manager,
+  workflowDir: resolve(agentDir("optimizer"), "workflows"),
+  persistDir: PERSIST_DIR,
+  onEvent: workflowEventHandler("optimizer"),
+});
+
 // ── Register coder ─────────────────────────────────────────────────────
 
 manager.register({
@@ -157,54 +205,6 @@ manager.register({
     optimizerWorkflowTool,
   ],
   apiKey: "not-needed",
-});
-
-// ── Track which workflow was used ──────────────────────────────────────
-
-let lastWorkflowUsed: string | null = null;
-
-// ── Workflow event handler factory ─────────────────────────────────────
-
-function workflowEventHandler(label: string) {
-  return (event: WorkflowEvent) => {
-    switch (event.type) {
-      case "workflow_start":
-        console.log(`\n[${label}:workflow] ${event.workflow}: ${event.task.slice(0, 100)}`);
-        if (label === "may") lastWorkflowUsed = event.workflow;
-        break;
-      case "step_start":
-        console.log(`[${label}:step] ${event.step} started${event.sessionId ? ` (${event.sessionId})` : ""}`);
-        if (event.sessionId) {
-          attachSubagentEvents(event.step, event.sessionId);
-        }
-        break;
-      case "step_done":
-        console.log(`[${label}:step] ${event.step} ${event.result?.status ?? "done"} (${event.result?.duration ?? "?"})`);
-        break;
-      case "workflow_done":
-        console.log(`[${label}:workflow] done`);
-        break;
-      case "workflow_escalate":
-        console.log(`[${label}:workflow] escalated: ${event.reason}`);
-        break;
-    }
-  };
-}
-
-// ── Workflow tools ─────────────────────────────────────────────────────
-
-const mayWorkflowTool = createWorkflowTool({
-  manager,
-  workflowDir: resolve(agentDir("may"), "workflows"),
-  persistDir: PERSIST_DIR,
-  onEvent: workflowEventHandler("may"),
-});
-
-const optimizerWorkflowTool = createWorkflowTool({
-  manager,
-  workflowDir: resolve(agentDir("optimizer"), "workflows"),
-  persistDir: PERSIST_DIR,
-  onEvent: workflowEventHandler("optimizer"),
 });
 
 // ── Register may supervisor ────────────────────────────────────────────
