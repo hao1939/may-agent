@@ -81,3 +81,24 @@ This file is auto-managed — new lessons are appended after each evaluation.
 - Don’t modify gitignored docs as part of “commit working changes” work unless the mandate explicitly includes changing `.gitignore` or you’re treating docs as purely local notes. Here, time was spent updating `docs/*.md` even though they can’t be committed.
 - When running tests, avoid `tail` truncation for confirmation. It hid whether all files completed (it cut at `resume.test.ts`). Prefer the full vitest summary or `--reporter=dot` + exit code check.
 - 2026-03-01 08:47: progress(sessionId, 0) was bugged — messages.slice(-0) === messages.slice(0) in JavaScript, returning all messages instead of none. This is a well-known JS gotcha with negative zero. Always guard limit <= 0 separately before using slice(-limit).
+
+## Session s_1772354573391_0 (2026-03-01 08:49:24)
+
+- **[correction] `pwd` must be the first tool call.** The session again started by guessing `/home/amadeus/...` and doing broad `find /` searches before using `pwd`. This is an explicitly user-corrected recurring failure and should be treated as a hard gate.
+- Don’t run `find / ...` for discovery in normal operation. It’s high-cost/noise and you immediately pulled in `node_modules` test files that were irrelevant.
+- Avoid contradictory environment claims. You asserted “main codebase is at `/app/`” while actually working in `/home/hao/may-agent`; `/app/CLAUDE.md` was unrelated and added confusion.
+- When you claim “I cannot call my own subagents/workflow tools,” verify by inspecting the actual tool JSON schema source (or the generated schema) before concluding it’s impossible. In this transcript you retried the same invalid empty call and stopped; no attempt was made to discover the required shape from code or docs.
+- Fixes should prefer safe edits over `sed -i` + ad-hoc python rewriting. The `progress(limit<=0)` fix was correct, but the editing method is risky and can silently delete content.
+- If you find a serious architectural bug (you did: `send()` persistence after archival likely writing into missing directories), either:
+  - turn it into a failing test and fix it, or
+  - explicitly document it as a known issue with a concrete next-step PR plan.
+  Here it was only noted, not resolved.
+- 2026-03-01 08:58: The Anthropic provider in pi-ai (packages/ai/src/providers/anthropic.ts) flattens tool schemas by reading `jsonSchema.properties` and `jsonSchema.required` directly (lines 830-831). Type.Union schemas produce `anyOf` at the top level instead of `properties`, so the LLM sees tools with zero parameters. Fix: use a flat Type.Object with a string enum `action` field and all other fields as Optional, with runtime validation of required fields per action in execute().
+
+## Session s_1772355066580_0 (2026-03-01 08:59:15)
+
+- [correction] **Run `pwd` first, then use repo-relative paths.** The session again started by reading nonexistent `/home/user/...` paths and doing broad `find /` searches. This is explicitly corrected behavior and should be treated as a hard gate before any other filesystem navigation.
+- Don’t do global `find /` when you already have a known project location and repo structure. In this task, once `/home/hao/may-agent` was known/derivable, the early discovery phase was almost entirely avoidable.
+- When asked to change **specific files** (`src/manager.ts`, `src/workflow-tool.ts` in may-agent), don’t detour into unrelated monorepos (`pi-mono`) except to confirm a single referenced snippet. Keep the investigation scoped.
+- Avoid rewriting entire source files with `write` unless you validate you preserved all content. This session overwrote full contents of `src/manager.ts` and `src/workflow-tool.ts` without showing any intermediate checks (e.g., targeted diffs/greps) before running the suite—high risk even if tests pass.
+- After schema changes, add at least one targeted test that checks the produced JSON schema is an object with `properties`/`required` (the exact regression you fixed). Current tests only verify runtime behavior, not the provider-facing schema shape.
