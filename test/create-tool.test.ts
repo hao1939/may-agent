@@ -265,6 +265,52 @@ describe("createTool()", () => {
     });
   });
 
+  describe("action: waitFor", () => {
+    it("waits for session to complete and returns result", async () => {
+      const tool = manager.createTool();
+      const sessionId = manager.run("researcher", "find papers");
+
+      const result = await tool.execute("tc1", {
+        action: "waitFor" as const,
+        sessionId,
+      });
+
+      const parsed = JSON.parse(result.content[0].type === "text" ? result.content[0].text : "");
+      expect(parsed.sessionId).toBe(sessionId);
+      expect(parsed.status).toBeDefined();
+      expect(parsed.duration).toBeDefined();
+      // Should not include full messages array (same as result action)
+      expect(parsed.messages).toBeUndefined();
+    });
+
+    it("returns error for unknown session", async () => {
+      const tool = manager.createTool();
+      const result = await tool.execute("tc1", {
+        action: "waitFor" as const,
+        sessionId: "nonexistent",
+      });
+
+      const parsed = JSON.parse(result.content[0].type === "text" ? result.content[0].text : "");
+      expect(parsed.error).toContain("nonexistent");
+    });
+
+    it("returns immediately for already-completed session", async () => {
+      const tool = manager.createTool();
+      const sessionId = manager.run("researcher", "find papers");
+      await manager.waitFor(sessionId);
+
+      // Session is already done — waitFor should return immediately
+      const result = await tool.execute("tc1", {
+        action: "waitFor" as const,
+        sessionId,
+      });
+
+      const parsed = JSON.parse(result.content[0].type === "text" ? result.content[0].text : "");
+      expect(parsed.sessionId).toBe(sessionId);
+      expect(parsed.status).toBeDefined();
+    });
+  });
+
   describe("action: cancel", () => {
     it("cancels a session and returns confirmation", async () => {
       const tool = manager.createTool();
