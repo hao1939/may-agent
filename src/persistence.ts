@@ -223,13 +223,19 @@ export class RegistryStore {
     this.save();
   }
 
-  /** Update session status (done/error/interrupted). */
-  updateSessionStatus(sessionId: string, status: "done" | "error" | "interrupted", error?: string): void {
+  /** Update session status (running/done/error/interrupted). */
+  updateSessionStatus(sessionId: string, status: "running" | "done" | "error" | "interrupted", error?: string): void {
     const session = this.data.sessions[sessionId];
     if (!session) return;
     session.status = status;
-    session.endedAt = Date.now();
-    if (error) session.error = error;
+    if (status === "running") {
+      // Resuming — clear completion fields
+      delete session.endedAt;
+      delete session.error;
+    } else {
+      session.endedAt = Date.now();
+      if (error) session.error = error;
+    }
     this.save();
   }
 
