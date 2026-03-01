@@ -52,6 +52,7 @@ manager.register({
   domain: "may-agent implementation",
   systemPromptFiles: [
     resolve(knowledgeDir("coder"), "domain.md"),
+    resolve(knowledgeDir("coder"), "codebase.md"),
     resolve(agentDir("coder"), "tools/INDEX.md"),
   ],
   knowledgeDir: knowledgeDir("coder"),
