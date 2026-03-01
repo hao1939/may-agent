@@ -1,5 +1,6 @@
 import type { AgentTool, AgentMessage } from "@mariozechner/pi-agent-core";
 import type { Model } from "@mariozechner/pi-ai";
+import type { CompactionOptions } from "./compaction.js";
 
 /** Minimal definition for registering a feature unit. */
 export interface SubagentDefinition {
@@ -29,6 +30,15 @@ export interface SubagentDefinition {
   apiKey?: string;
   timeoutMs?: number;
   memoryLimit?: number; // default 20
+
+  /**
+   * Enable automatic context compaction for long-running sessions.
+   * When message tokens exceed threshold % of context window, older messages
+   * are summarized to keep the context under control.
+   * Set to `true` for defaults, or pass CompactionOptions for fine-tuning.
+   * Only recommended for supervisor/long-running agents, not scoped sub-agents.
+   */
+  compaction?: boolean | CompactionOptions;
 }
 
 /** Runtime info about a session. */

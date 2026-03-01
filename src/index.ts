@@ -13,6 +13,8 @@ export type {
   WorkflowToolResult,
   CompletedStep,
 } from "./workflow.js";
+export { createCompactionTransform } from "./compaction.js";
+export type { CompactionOptions, CompactionInfo } from "./compaction.js";
 export { evaluateSession, maintainAgent, extractFailureChains, formatFailureChains } from "./evaluator.js";
 export type { EvaluationScores, EvaluationResult, EvaluateSessionOptions, MaintainAgentOptions, MaintenanceResult, UsageSummary, FailureChain, FailureStep } from "./evaluator.js";
 export { parseFrontmatter, loadSkillsFromDirs, formatSkillsForPrompt } from "./skills.js";
