@@ -22,3 +22,6 @@ This file is auto-managed — new lessons are appended after each evaluation.
 - `send()` persistence: unsubscribe old listener before re-subscribing, restore archived JSONL.
 - Read tool ENOENT errors include projectRoot hint — no need for `pwd` or `find /` to orient.
 - Runtime Environment section is FIRST in system prompt — agents know their paths immediately.
+- Exec tool `warnOutsideRoot` warns when commands use paths outside project root.
+- Context overflow recovery includes original task + path reinforcement.
+- If tests pass individually but fail in suite, rerun with `--no-cache` (vitest caching).
