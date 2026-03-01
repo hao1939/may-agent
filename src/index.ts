@@ -13,8 +13,8 @@ export type {
   WorkflowToolResult,
   CompletedStep,
 } from "./workflow.js";
-export { evaluateSession, maintainAgent } from "./evaluator.js";
-export type { EvaluationScores, EvaluationResult, EvaluateSessionOptions, MaintainAgentOptions, MaintenanceResult, UsageSummary } from "./evaluator.js";
+export { evaluateSession, maintainAgent, extractFailureChains, formatFailureChains } from "./evaluator.js";
+export type { EvaluationScores, EvaluationResult, EvaluateSessionOptions, MaintainAgentOptions, MaintenanceResult, UsageSummary, FailureChain, FailureStep } from "./evaluator.js";
 export { parseFrontmatter, loadSkillsFromDirs, formatSkillsForPrompt } from "./skills.js";
 export type { Frontmatter, SkillEntry } from "./skills.js";
 export {

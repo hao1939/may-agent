@@ -303,6 +303,12 @@ async function runEvaluation(sessionId: string): Promise<void> {
     if (result.usage.totalTokens > 0) {
       console.log(`[eval] usage: ${result.usage.totalTokens} tokens, $${result.usage.cost.toFixed(4)}, ${result.usage.turns} turns`);
     }
+    if (result.failureChains.length > 0) {
+      console.log(`[eval] failure chains: ${result.failureChains.length} detected (${result.failureChains.reduce((s, c) => s + c.wastedCalls, 0)} wasted calls)`);
+      for (const chain of result.failureChains) {
+        console.log(`[eval]   root cause: ${chain.rootCause}`);
+      }
+    }
     if (result.scores.pattern_detected) {
       console.log(`[eval] pattern detected: ${result.scores.pattern_name}`);
     }
