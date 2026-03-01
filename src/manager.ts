@@ -195,6 +195,16 @@ export class SubagentManager {
       }
     }
 
+    // Runtime environment — inject concrete paths to prevent path guessing
+    if (def.projectRoot) {
+      const envLines = [`# Runtime Environment`, `- Project root (exec cwd): ${def.projectRoot}`];
+      if (def.workspace) {
+        envLines.push(`- Workspace: ${def.workspace}`);
+      }
+      envLines.push(``, `Use paths relative to project root. Do not guess or search for the root.`);
+      sections.push(envLines.join("\n"));
+    }
+
     // Workspace section
     if (def.workspace) {
       sections.push(

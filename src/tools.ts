@@ -65,23 +65,55 @@ export function createWriteTool(): AgentTool<typeof WriteParams> {
   };
 }
 
-export function createExecTool(cwd?: string): AgentTool<typeof ExecParams> {
+/** Options for the exec tool. */
+export interface ExecToolOptions {
+  /** Working directory for commands. */
+  cwd?: string;
+  /** Regex patterns that block commands. Matched commands return an error hint instead of executing. */
+  denyPatterns?: RegExp[];
+  /** Message shown when a command is blocked. */
+  denyMessage?: string;
+  /** If true, prefix the first exec output with "CWD: <path>" so the agent knows where it is. */
+  echoCwd?: boolean;
+}
+
+export function createExecTool(cwdOrOpts?: string | ExecToolOptions): AgentTool<typeof ExecParams> {
+  const opts: ExecToolOptions = typeof cwdOrOpts === "string" ? { cwd: cwdOrOpts } : (cwdOrOpts ?? {});
+  const effectiveCwd = opts.cwd ?? process.cwd();
+  const denyPatterns = opts.denyPatterns ?? [];
+  const denyMessage = opts.denyMessage ?? "Use relative paths from the project root instead.";
+  let cwdEchoed = false;
+
   return {
     name: "exec",
     label: "Execute Command",
     description: "Execute a shell command. Returns stdout and stderr.",
     parameters: ExecParams,
     execute: async (_id, params) => {
+      // Check deny patterns
+      for (const pattern of denyPatterns) {
+        if (pattern.test(params.command)) {
+          return textResult(
+            `Blocked: command matches a denied pattern.\n${denyMessage}\nHint: your working directory is ${effectiveCwd}`,
+          );
+        }
+      }
+
       try {
         const timeout = (params.timeout ?? 30) * 1000;
         const output = execSync(params.command, {
-          cwd: cwd ?? process.cwd(),
+          cwd: effectiveCwd,
           encoding: "utf-8",
           timeout,
           maxBuffer: 1024 * 1024,
           stdio: ["pipe", "pipe", "pipe"],
         });
-        return textResult(output || "(no output)");
+        let result = output || "(no output)";
+        if (opts.echoCwd && !cwdEchoed) {
+          result = `CWD: ${effectiveCwd}\n${result}`;
+          cwdEchoed = true;
+        }
+        return textResult(result);
       } catch (err: unknown) {
         if (err && typeof err === "object" && "stdout" in err) {
           const e = err as { stdout: string; stderr: string; status: number };
