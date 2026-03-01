@@ -24,6 +24,7 @@ import {
 import type { MemoryEntry, WorkflowRun, PersistedSession, Registry } from "./persistence.js";
 import type { TraceNode, SessionTrace } from "./workflow.js";
 import { join, dirname } from "node:path";
+import { isOverflowError, extractProgress, writeProgressFile } from "./overflow.js";
 
 let nextId = 0;
 function generateId(): string {
@@ -174,6 +175,7 @@ export class SubagentManager {
       if (def.workspace) {
         envLines.push(`- Workspace: ${def.workspace}`);
       }
+      envLines.push(`- Session ID: ${sessionId}`);
       envLines.push(``, `Use paths relative to project root. Do not guess or search for the root.`);
       sections.push(envLines.join("\n"));
     }
@@ -294,6 +296,25 @@ export class SubagentManager {
   private handleCompletion(session: ActiveSession): void {
     session.unsubscribe?.();
     this.clearTimeout(session);
+
+    // On context overflow, dump structured progress to workspace
+    if (session.status === "error" && session.error && isOverflowError(session.error)) {
+      const registered = this.agents.get(session.agentName);
+      const workspace = registered?.definition.workspace;
+      if (workspace) {
+        try {
+          const progress = extractProgress(
+            session.task,
+            session.agent.state.messages,
+            session.error,
+          );
+          writeProgressFile(workspace, progress);
+        } catch {
+          // Best-effort — don't let progress dump failure mask the original error
+        }
+      }
+    }
+
     this.appendMemory(session);
     this.archiveSessionDir(session);
   }
@@ -585,7 +606,7 @@ export class SubagentManager {
     this.subscribeForPersistence(session);
 
     // Update registry status back to running
-    this.registry?.updateSessionStatus(sessionId, "running" as any);
+    this.registry?.updateSessionStatus(sessionId, "running");
 
     // Look up timeoutMs from the agent definition
     const registered = this.agents.get(session.agentName);

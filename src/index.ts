@@ -22,6 +22,7 @@ export { evaluateSession, maintainAgent, extractFailureChains, formatFailureChai
 export type { EvaluationScores, EvaluationResult, EvaluateSessionOptions, MaintainAgentOptions, MaintenanceResult, UsageSummary, FailureChain, FailureStep } from "./evaluator.js";
 export { parseFrontmatter, loadSkillsFromDirs, formatSkillsForPrompt } from "./skills.js";
 export type { Frontmatter, SkillEntry } from "./skills.js";
+export { isOverflowError, extractProgress, writeProgressFile } from "./overflow.js";
 export {
   RegistryStore,
   ensureSessionDir,
