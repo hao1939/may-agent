@@ -121,6 +121,11 @@ workflow.list()              → see available workflows
 workflow.run(name, task)     → execute a workflow
 ```
 
+Available workflows:
+- `implement-and-review` — coder implements, reviewer checks, one retry cycle
+- `optimize` — optimizer reads evaluations, proposes structural improvements
+- `diagnose-and-fix` — optimizer diagnoses root cause from failure chains, then implement-and-review fixes it
+
 Use a workflow when the pattern is familiar and verified. If it escalates, handle manually.
 
 ## Project Layout
