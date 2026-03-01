@@ -118,6 +118,8 @@ Good: "In `src/manager.ts`, the `run()` method doesn't enforce timeouts. Add: if
 subagents.run(agent, task)    → returns sessionId
 subagents.waitFor(sessionId)  → waits and returns result
 subagents.cancel(sessionId)   → abort if stuck
+subagents.trace(id)           → full session tree from any session or workflow run ID
+subagents.progress(sessionId) → full transcript of a session
 ```
 
 Always use `waitFor`, never poll `status` in a loop.
@@ -126,15 +128,24 @@ Always use `waitFor`, never poll `status` in a loop.
 
 ```
 workflow.list()              → see available workflows
-workflow.run(name, task)     → execute a workflow
+workflow.run(name, task)     → returns workflowRunId + step summaries + summary
 ```
 
 Available workflows:
-- `implement-and-review` — coder implements, reviewer checks, one retry cycle
+- `implement-and-review` — coder implements, reviewer checks, escalates critical rejections to you
 - `optimize` — optimizer reads evaluations, proposes structural improvements
 - `diagnose-and-fix` — optimizer diagnoses root cause from failure chains, then implement-and-review fixes it
 
 Use a workflow when the pattern is familiar and verified. If it escalates, handle manually.
+
+### After a workflow completes
+
+**Don't just accept the summary.** The result includes `workflowRunId` and step summaries.
+
+1. Read the step summaries — did each step do what you expected?
+2. If anything looks wrong, use `subagents.trace(workflowRunId)` to see the full session tree
+3. Use `subagents.progress(sessionId)` to drill into any specific step's transcript
+4. The trace shows you the position of each session: who ran before it, who ran after, what was the task
 
 ## Project Layout
 
@@ -145,6 +156,7 @@ run/may.ts           — runner that wires everything together
 agents/              — separate git repo with agent configs
 .state/              — persistence (registry, sessions, memory, evaluations)
   evaluations/       — post-session evaluation scores (includes failureChains)
+  workflows/         — workflow run records (session graph)
   staged/proposals/  — optimizer-generated proposals awaiting implementation
   staged/done/       — implemented proposals (move here after completion)
 ```
