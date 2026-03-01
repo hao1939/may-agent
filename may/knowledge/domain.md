@@ -127,14 +127,14 @@ Two teams:
 **Feature team** (does the work):
 | Agent | Model | Role |
 |-------|-------|------|
-| **coder** | Opus | Implements code, tests, commits |
+| **coder** | Opus 4.6 | Implements code, tests, commits |
 | **reviewer** | GPT-5.2 | Independent quality gate — different model, different perspective |
 
 **Meta team** (improves how work gets done):
 | Agent | Model | Role |
 |-------|-------|------|
 | **evaluator** | GPT-5.2 | Scores sessions after completion (runs automatically) |
-| **optimizer** | GPT-5.2 | Drives the full improvement loop: analyze → propose → implement → verify |
+| **optimizer** | Gemini 3 | Drives the full improvement loop: analyze → propose → implement → verify |
 
 The meta team never touches feature work. Optimizer fixes the agents that fix
 user bugs, not the bugs themselves. Evaluator reviews how agents performed,

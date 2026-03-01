@@ -16,7 +16,8 @@ Each agent has its own directory with:
 | **may** | Supervisor — plans, delegates, reviews | Opus 4.6 |
 | **coder** | Implementation — writes code, tests | Opus 4.6 |
 | **reviewer** | Independent review — different perspective | GPT-5.2 |
-| **evaluator** | Session evaluation — scores, patterns, workflows | GPT-5.2 |
+| **evaluator** | Session evaluation — scores, patterns, verification | GPT-5.2 |
+| **optimizer** | Full improvement loop — analyze, propose, implement, verify | Gemini 3 |
 
 ## Why a Separate Repo?
 
