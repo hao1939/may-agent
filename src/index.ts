@@ -30,6 +30,7 @@ export {
   readMemoryEntries,
   historyDir,
   archiveSession,
+  restoreSessionFromArchive,
 } from "./persistence.js";
 export type {
   SubagentDefinition,
