@@ -363,9 +363,11 @@ async function runEvaluation(sessionId: string): Promise<void> {
 // ── Session management with compaction ─────────────────────────────────
 
 let sid: string;
+let currentTask: string = "";
 
 function startSession(task: string): string {
   lastWorkflowUsed = null;
+  currentTask = task;
   const sessionId = manager.run("may", task);
   attachEvents(sessionId);
   return sessionId;
@@ -384,10 +386,21 @@ async function waitAndCheck(sessionId: string): Promise<void> {
     if (isOverflow) {
       console.log("\n[runner] Context overflow detected. Starting fresh session with summary...");
 
-      // Build summary from the last assistant text and task
-      const summary = result.lastAssistantText
-        ? `Previous session hit context limit. Last progress:\n\n${result.lastAssistantText.slice(0, 2000)}\n\nContinue from where you left off.`
-        : "Previous session hit context limit. Check your workspace for any progress notes, then continue.";
+      // Build summary that preserves critical context
+      const lastProgress = result.lastAssistantText?.slice(0, 2000) ?? "";
+      const summary = [
+        `Your previous session hit the context limit. Here's what you need to know:`,
+        ``,
+        `## Original Task`,
+        currentTask.slice(0, 500),
+        ``,
+        `## Last Progress`,
+        lastProgress || "(no progress captured)",
+        ``,
+        `## Instructions`,
+        `Continue from where you left off. Your project root and workspace paths are in your system prompt.`,
+        `Do NOT search for or guess the project location — use the paths from Runtime Environment above.`,
+      ].join("\n");
 
       sid = startSession(summary);
       await waitAndCheck(sid);
