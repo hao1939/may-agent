@@ -82,6 +82,24 @@ function extractUsage(messages: AgentMessage[]): UsageSummary {
   return { inputTokens, outputTokens, cacheReadTokens, cacheWriteTokens, totalTokens, cost, turns };
 }
 
+// ── JSONL helpers ──────────────────────────────────────────────────────
+
+/** Read messages from a JSONL file, skipping corrupted lines. */
+function readJsonlMessages(filePath: string): AgentMessage[] {
+  if (!existsSync(filePath)) return [];
+  const raw = readFileSync(filePath, "utf-8");
+  if (!raw.trim()) return [];
+  const messages: AgentMessage[] = [];
+  for (const line of raw.trim().split("\n")) {
+    try {
+      messages.push(JSON.parse(line) as AgentMessage);
+    } catch {
+      console.warn(`[evaluator] Skipping corrupted JSONL line in ${filePath}`);
+    }
+  }
+  return messages;
+}
+
 // ── Transcript formatting ──────────────────────────────────────────────
 
 function formatTranscript(messages: AgentMessage[]): string {
@@ -231,14 +249,10 @@ export async function evaluateSession(opts: EvaluateSessionOptions): Promise<Eva
   const { manager, sessionId, agentName, workflowUsed, persistDir, knowledgeDir, workflowDir } = opts;
 
   // 1. Load session transcript (check history dir first, then active)
+  //    Uses per-line error handling to skip corrupted JSONL lines.
   let messages: AgentMessage[] = [];
   const historyJsonl = join(historyDir(persistDir), sessionId, "session.jsonl");
-  if (existsSync(historyJsonl)) {
-    const raw = readFileSync(historyJsonl, "utf-8");
-    if (raw.trim()) {
-      messages = raw.trim().split("\n").map((line) => JSON.parse(line) as AgentMessage);
-    }
-  }
+  messages = readJsonlMessages(historyJsonl);
   if (messages.length === 0) {
     messages = readSessionMessages(persistDir, sessionId);
   }
@@ -281,7 +295,7 @@ export async function evaluateSession(opts: EvaluateSessionOptions): Promise<Eva
   // 5. Parse structured output
   const evaluation = parseEvaluation(responseText, usage);
 
-  // 5. Append lessons to agent's knowledge/lessons.md
+  // 6. Append lessons to agent's knowledge/lessons.md
   if (evaluation.lessons) {
     const lessonsPath = join(knowledgeDir, "lessons.md");
     const timestamp = new Date().toISOString().slice(0, 19).replace("T", " ");
@@ -296,7 +310,7 @@ export async function evaluateSession(opts: EvaluateSessionOptions): Promise<Eva
     }
   }
 
-  // 6. Stage workflow if pattern detected (optimizer validates later)
+  // 7. Stage workflow if pattern detected (optimizer validates later)
   if (evaluation.workflowCode && evaluation.workflowName) {
     const fileName = evaluation.workflowName.replace(/\s+/g, "-").toLowerCase() + ".ts";
     const stagedDir = join(persistDir, "staged", "workflows");
@@ -304,7 +318,7 @@ export async function evaluateSession(opts: EvaluateSessionOptions): Promise<Eva
     writeFileSync(join(stagedDir, fileName), evaluation.workflowCode, "utf-8");
   }
 
-  // 7. Save scores and usage
+  // 8. Save scores and usage
   const evalDir = join(persistDir, "evaluations");
   mkdirSync(evalDir, { recursive: true });
   const scoresPath = join(evalDir, `${sessionId}.json`);
