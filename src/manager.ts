@@ -531,6 +531,12 @@ export class SubagentManager {
     session.status = "running";
     session.error = undefined;
 
+    // Recreate the session directory — handleCompletion() archives it to history/,
+    // so the sessions/<id>/ path no longer exists. We need it back for JSONL persistence.
+    if (this.registry) {
+      ensureSessionDir(this.registry.persistDir, sessionId);
+    }
+
     // Re-subscribe for JSONL persistence (previous subscription may have been cleaned up)
     this.subscribeForPersistence(session);
 
