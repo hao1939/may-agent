@@ -1,5 +1,5 @@
 import { createInterface } from "node:readline";
-import { readdirSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { resolve, dirname } from "node:path";
 import { getModel } from "@mariozechner/pi-ai";
@@ -281,13 +281,6 @@ const rl = createInterface({ input: process.stdin, output: process.stdout });
 let closed = false;
 rl.on("close", () => { closed = true; });
 
-function ask(): Promise<string | null> {
-  if (closed) return Promise.resolve(null);
-  return new Promise((resolve) => {
-    rl.question("\nyou> ", (answer) => resolve(answer.trim()));
-  });
-}
-
 const AUTO_EVALUATE = process.env.MAY_EVALUATE !== "0";
 const IDLE_TIMEOUT_MS = parseInt(process.env.MAY_IDLE_TIMEOUT ?? "60000", 10); // default 60s
 const MAINTENANCE_INTERVAL = 5; // run maintenance every N evaluations
@@ -406,42 +399,81 @@ function hasMetaWork(): string | null {
     }
   } catch { /* dir doesn't exist */ }
 
-  // Check for recent evaluations with poor scores
+  // Check for recent evaluations with poor scores — only trigger if the last 3 evals average below threshold
   const evalDir = resolve(PERSIST_DIR, "evaluations");
   try {
-    const evalFiles = readdirSync(evalDir).filter((f) => f.endsWith(".json"));
+    const evalFiles = readdirSync(evalDir).filter((f) => f.endsWith(".json")).sort();
     if (evalFiles.length >= 3) {
-      return `Run an optimization cycle: use the optimize workflow to analyze recent evaluation data in .state/evaluations/ and generate improvement proposals. Then review and implement the proposals.`;
+      const recent = evalFiles.slice(-3);
+      let totalEff = 0;
+      let count = 0;
+      for (const f of recent) {
+        try {
+          const data = JSON.parse(readFileSync(resolve(evalDir, f), "utf-8"));
+          if (typeof data.efficiency === "number") {
+            totalEff += data.efficiency;
+            count++;
+          }
+        } catch { /* skip bad files */ }
+      }
+      if (count > 0 && totalEff / count < 0.7) {
+        return `Recent evaluations show declining efficiency (avg ${(totalEff / count).toFixed(2)}). Run an optimization cycle: use the optimize workflow to analyze evaluation data and generate improvement proposals.`;
+      }
     }
   } catch { /* dir doesn't exist */ }
 
   return null;
 }
 
-// ── Input with idle timeout ────────────────────────────────────────────
+// ── Input handling ─────────────────────────────────────────────────────
 
-function askWithTimeout(timeoutMs: number): Promise<{ type: "input"; value: string } | { type: "idle" }> {
+// Single input queue — readline pushes lines, consumers pull them
+const inputQueue: string[] = [];
+let inputWaiter: ((line: string) => void) | null = null;
+
+rl.on("line", (line) => {
+  const trimmed = line.trim();
+  if (inputWaiter) {
+    const waiter = inputWaiter;
+    inputWaiter = null;
+    waiter(trimmed);
+  } else {
+    inputQueue.push(trimmed);
+  }
+});
+
+/** Wait for the next user input line. */
+function waitForInput(): Promise<string> {
+  if (inputQueue.length > 0) return Promise.resolve(inputQueue.shift()!);
+  return new Promise((resolve) => { inputWaiter = resolve; });
+}
+
+/** Wait for input OR idle timeout — whichever comes first. */
+function waitForInputOrIdle(timeoutMs: number): Promise<{ type: "input"; value: string } | { type: "idle" }> {
   if (closed) return Promise.resolve({ type: "input", value: "" });
+  if (inputQueue.length > 0) return Promise.resolve({ type: "input", value: inputQueue.shift()! });
+
   return new Promise((resolve) => {
-    let timer: ReturnType<typeof setTimeout> | null = null;
     let resolved = false;
 
-    if (timeoutMs > 0) {
-      timer = setTimeout(() => {
-        if (!resolved) {
-          resolved = true;
-          resolve({ type: "idle" });
-        }
-      }, timeoutMs);
-    }
+    const timer = timeoutMs > 0 ? setTimeout(() => {
+      if (!resolved) {
+        resolved = true;
+        // Remove our waiter so the input goes to queue instead
+        inputWaiter = (line) => { inputQueue.push(line); };
+        // Clear immediately
+        inputWaiter = null;
+        resolve({ type: "idle" });
+      }
+    }, timeoutMs) : null;
 
-    rl.question("\nyou> ", (answer) => {
+    inputWaiter = (line) => {
       if (timer) clearTimeout(timer);
       if (!resolved) {
         resolved = true;
-        resolve({ type: "input", value: answer.trim() });
+        resolve({ type: "input", value: line });
       }
-    });
+    };
   });
 }
 
@@ -451,7 +483,8 @@ let metaSessionId: string | null = null;
 
 let firstMessage = process.argv.slice(2).join(" ");
 if (!firstMessage) {
-  const input = await ask();
+  process.stdout.write("\nyou> ");
+  const input = await waitForInput();
   if (!input) { rl.close(); process.exit(0); }
   firstMessage = input;
 }
@@ -460,7 +493,8 @@ sid = startSession(firstMessage);
 await waitAndCheck(sid);
 
 while (!closed) {
-  const response = await askWithTimeout(IDLE_TIMEOUT_MS);
+  process.stdout.write("\nyou> ");
+  const response = await waitForInputOrIdle(IDLE_TIMEOUT_MS);
 
   if (response.type === "idle") {
     // Check for meta work
@@ -472,11 +506,11 @@ while (!closed) {
 
       // Wait for meta work, but allow user to interrupt
       const metaPromise = manager.waitFor(metaSessionId);
-      const inputPromise = ask();
+      const userPromise = waitForInput();
 
       const winner = await Promise.race([
         metaPromise.then(() => ({ type: "meta-done" as const })),
-        inputPromise.then((v) => ({ type: "user-input" as const, value: v })),
+        userPromise.then((v) => ({ type: "user-input" as const, value: v })),
       ]);
 
       if (winner.type === "user-input") {
@@ -494,29 +528,16 @@ while (!closed) {
           break;
         }
       } else {
-        // Meta work finished
+        // Meta work finished — but userPromise is still pending.
+        // Put it back into the queue system so it doesn't leak.
+        userPromise.then((v) => { inputQueue.push(v); });
         console.log("\n[idle] Meta work completed.");
         await runEvaluation(metaSessionId);
         metaSessionId = null;
-        // Let inputPromise resolve naturally on next iteration
       }
       continue;
     }
-    // No meta work found, just wait for user input
-    const input = await ask();
-    if (!input || input === "exit" || input === "quit") break;
-
-    if (workflowTool.isRunning) {
-      const steered = workflowTool.steer(input);
-      if (steered) {
-        console.log(`[steering] Signal queued for workflow "${workflowTool.activeWorkflow}"`);
-        continue;
-      }
-    }
-
-    lastWorkflowUsed = null;
-    manager.send(sid, input);
-    await waitAndCheck(sid);
+    // No meta work found, just wait for next input
     continue;
   }
 
