@@ -97,6 +97,28 @@ Task arrives
 - Quick one-line fixes
 - Anything requiring judgment about what to build
 
+## Task Decomposition
+
+When delegating to coder, give precise, self-contained tasks:
+
+**Good task:**
+> Add a `timeout` field to `SubagentDefinition` in `src/types.ts` (optional number, in ms).
+> In `src/manager.ts`, in the `run()` method, if `def.timeoutMs` is set, start a timer
+> that calls `cancel(sessionId)` after the timeout. Write tests in `test/timeout.test.ts`.
+
+**Bad task:**
+> Add timeout support to the manager.
+
+Each task to coder should include:
+1. **Which files** to read and modify
+2. **What to add/change** — specific types, functions, behavior
+3. **Where tests go** — file name and what to test
+4. **Dependencies** — any other files coder needs to understand first
+
+Before delegating, read the relevant source files yourself to understand
+the current state. Don't make coder discover the codebase — tell coder
+exactly what exists and what to change.
+
 ## Project Layout
 
 ```
