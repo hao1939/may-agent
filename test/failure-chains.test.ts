@@ -188,6 +188,176 @@ describe("extractFailureChains", () => {
     ];
     expect(extractFailureChains(messages)).toEqual([]);
   });
+
+  // ── False positive prevention tests ──────────────────────────────────
+
+  it("does not flag read tool result containing ENOENT in file content as error", () => {
+    // read tool successfully reads a file (isError: false) whose content
+    // includes "ENOENT" — e.g., reading evaluator.ts or error-handling code
+    const fileContent = `
+      try {
+        const content = readFileSync(path, "utf-8");
+      } catch (err) {
+        if (err.code === "ENOENT") {
+          return "Error reading file: ENOENT: no such file or directory";
+        }
+      }
+    `;
+    const messages: AgentMessage[] = [
+      assistantWithCalls({ id: "1", name: "read", arguments: { path: "src/tools.ts" } }),
+      toolResult("1", "read", fileContent),
+      assistantWithCalls({ id: "2", name: "write", arguments: { path: "src/tools.ts", content: "updated" } }),
+      toolResult("2", "write", "Wrote 7 bytes"),
+    ];
+
+    const chains = extractFailureChains(messages);
+    expect(chains).toHaveLength(0);
+  });
+
+  it("does not flag exec git diff output containing error strings as error", () => {
+    // exec tool runs `git diff` (isError: false) and the diff output contains
+    // lines with "ENOENT", "Error reading file", and "Exit code 1" as diff content
+    const diffOutput = `CWD: /home/user/project
+diff --git a/src/evaluator.ts b/src/evaluator.ts
+index abc1234..def5678 100644
+--- a/src/evaluator.ts
++++ b/src/evaluator.ts
+@@ -140,7 +140,7 @@
+-          || resultText.includes("ENOENT")
+-          || resultText.includes("Error reading file")
+-          || /Exit code (?!0\\b)\\S+/.test(resultText)
++          || isToolOwnError(toolName, resultText)
+`;
+    const messages: AgentMessage[] = [
+      assistantWithCalls({ id: "1", name: "exec", arguments: { command: "git diff src/evaluator.ts" } }),
+      toolResult("1", "exec", diffOutput),
+      assistantWithCalls({ id: "2", name: "write", arguments: { path: "output.md", content: "done" } }),
+      toolResult("2", "write", "Wrote 4 bytes"),
+    ];
+
+    const chains = extractFailureChains(messages);
+    expect(chains).toHaveLength(0);
+  });
+
+  it("does not flag exec test output mentioning errors as a tool failure", () => {
+    // exec tool runs tests (isError: false) and the test output shows test names
+    // containing error strings like "handles ENOENT correctly"
+    const testOutput = `CWD: /home/user/project
+ ✓ src/evaluator.test.ts (5 tests) 42ms
+   ✓ handles ENOENT correctly
+   ✓ returns Exit code 1 for missing commands
+   ✓ Error reading file returns proper message
+   ✓ detects non-zero exit codes
+   ✓ works with valid input
+
+ Test Files  1 passed (1)
+      Tests  5 passed (5)
+   Duration  1.23s
+`;
+    const messages: AgentMessage[] = [
+      assistantWithCalls({ id: "1", name: "exec", arguments: { command: "npx vitest --run" } }),
+      toolResult("1", "exec", testOutput),
+    ];
+
+    const chains = extractFailureChains(messages);
+    expect(chains).toHaveLength(0);
+  });
+
+  it("still detects genuine read tool ENOENT errors via isError flag", () => {
+    // read tool fails with isError: true — the primary contract.
+    // This validates that tr.isError is authoritative.
+    const messages: AgentMessage[] = [
+      assistantWithCalls({ id: "1", name: "read", arguments: { path: "/wrong/path/file.ts" } }),
+      toolResult("1", "read", "Error reading file: ENOENT: no such file or directory, open '/wrong/path/file.ts'", true),
+      assistantWithCalls({ id: "2", name: "write", arguments: { path: "output.txt", content: "done" } }),
+      toolResult("2", "write", "Wrote 4 bytes"),
+    ];
+
+    const chains = extractFailureChains(messages);
+    expect(chains).toHaveLength(1);
+    expect(chains[0].trigger.tool).toBe("read");
+    expect(chains[0].trigger.isError).toBe(true);
+    expect(chains[0].rootCause).toContain("ENOENT");
+  });
+
+  it("still detects genuine read tool ENOENT errors via heuristic fallback", () => {
+    // read tool fails but isError is false (as createReadTool actually behaves —
+    // it catches errors internally and returns error text without throwing).
+    // The heuristic "starts with Error reading file:" catches this.
+    const messages: AgentMessage[] = [
+      assistantWithCalls({ id: "1", name: "read", arguments: { path: "/wrong/path/file.ts" } }),
+      toolResult("1", "read", "Error reading file: ENOENT: no such file or directory, open '/wrong/path/file.ts'"),
+      assistantWithCalls({ id: "2", name: "write", arguments: { path: "output.txt", content: "done" } }),
+      toolResult("2", "write", "Wrote 4 bytes"),
+    ];
+
+    const chains = extractFailureChains(messages);
+    expect(chains).toHaveLength(1);
+    expect(chains[0].trigger.tool).toBe("read");
+    expect(chains[0].trigger.isError).toBe(true);
+    expect(chains[0].rootCause).toContain("ENOENT");
+  });
+
+  it("still detects genuine exec non-zero exit code errors via isError flag", () => {
+    // exec tool fails with isError: true — the primary contract.
+    const messages: AgentMessage[] = [
+      assistantWithCalls({ id: "1", name: "exec", arguments: { command: "npm run build" } }),
+      toolResult("1", "exec", "Exit code 2\nsrc/index.ts(10,5): error TS2322: Type 'string' is not assignable to type 'number'.", true),
+      assistantWithCalls({ id: "2", name: "write", arguments: { path: "output.txt", content: "done" } }),
+      toolResult("2", "write", "Wrote 4 bytes"),
+    ];
+
+    const chains = extractFailureChains(messages);
+    expect(chains).toHaveLength(1);
+    expect(chains[0].trigger.tool).toBe("exec");
+    expect(chains[0].trigger.isError).toBe(true);
+  });
+
+  it("still detects genuine exec non-zero exit code errors via heuristic fallback", () => {
+    // exec tool fails but isError is false (as createExecTool actually behaves —
+    // it catches errors internally and returns "Exit code N\n..." without throwing).
+    // The heuristic "starts with Exit code N" catches this.
+    const messages: AgentMessage[] = [
+      assistantWithCalls({ id: "1", name: "exec", arguments: { command: "npm run build" } }),
+      toolResult("1", "exec", "Exit code 2\nsrc/index.ts(10,5): error TS2322: Type 'string' is not assignable to type 'number'."),
+      assistantWithCalls({ id: "2", name: "write", arguments: { path: "output.txt", content: "done" } }),
+      toolResult("2", "write", "Wrote 4 bytes"),
+    ];
+
+    const chains = extractFailureChains(messages);
+    expect(chains).toHaveLength(1);
+    expect(chains[0].trigger.tool).toBe("exec");
+    expect(chains[0].trigger.isError).toBe(true);
+  });
+
+  it("does not flag exec cat/grep of source code containing error patterns", () => {
+    // exec runs `cat src/evaluator.ts` and the output contains all the error
+    // pattern strings — should NOT create a failure chain since the exec tool
+    // succeeded (isError: false, output doesn't START with "Exit code")
+    const catOutput = `CWD: /home/user/project
+import { readFileSync } from "node:fs";
+
+// Check for ENOENT errors
+function handleError(err) {
+  if (err.code === "ENOENT") {
+    return "Error reading file: " + err.message;
+  }
+  // Exit code 1 means failure
+  if (result.exitCode !== 0) {
+    throw new Error("Exit code " + result.exitCode);
+  }
+}
+`;
+    const messages: AgentMessage[] = [
+      assistantWithCalls({ id: "1", name: "exec", arguments: { command: "cat src/evaluator.ts" } }),
+      toolResult("1", "exec", catOutput),
+      assistantWithCalls({ id: "2", name: "write", arguments: { path: "output.txt", content: "done" } }),
+      toolResult("2", "write", "Wrote 4 bytes"),
+    ];
+
+    const chains = extractFailureChains(messages);
+    expect(chains).toHaveLength(0);
+  });
 });
 
 describe("formatFailureChains", () => {
