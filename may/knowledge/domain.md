@@ -94,8 +94,21 @@ agents/              — separate git repo with agent configs
   evaluator/         — evaluator's knowledge
 .state/              — persistence (registry, sessions, memory, evaluations)
   evaluations/       — post-session evaluation scores
-  staged/proposals/  — optimizer-generated proposals
+  staged/proposals/  — optimizer-generated proposals awaiting implementation
+  staged/done/       — proposals that have been implemented (moved here after completion)
 ```
+
+## Proposal Lifecycle
+
+The optimizer writes proposals to `.state/staged/proposals/`. The runner's idle loop picks them up and asks you to implement them.
+
+**After you finish implementing a proposal**, move it from `proposals/` to `done/` so it is not re-implemented on the next idle cycle:
+
+```bash
+mv .state/staged/proposals/<filename>.md .state/staged/done/<filename>.md
+```
+
+Do this as the final step after verifying that tests pass and the change is committed. If you only partially implement a proposal, leave it in `proposals/` so it gets picked up again.
 
 ## Verification
 

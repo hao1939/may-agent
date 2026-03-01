@@ -27,4 +27,4 @@ This file is auto-managed — new lessons are appended after each evaluation.
 ## Technical Notes
 
 - Anthropic provider flattens Type.Union schemas — use flat Type.Object with StringEnum for tool params.
-- `send()` has a persistence gap after archival — needs explicit `archive()` method.
+- `send()` persistence gap after archival — FIXED: `send()` now calls `ensureSessionDir()` to recreate the session dir before re-subscribing for persistence.
