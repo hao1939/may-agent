@@ -35,6 +35,7 @@ export interface EvaluationResult {
   lessons: string | null;
   workflowCode: string | null;
   workflowName: string | null;
+  failureChains: FailureChain[];
   raw: string;
 }
 
@@ -100,6 +101,244 @@ function readJsonlMessages(filePath: string): AgentMessage[] {
   return messages;
 }
 
+// ── Failure chain extraction ───────────────────────────────────────────
+
+/** A single step in a failure chain: a tool call and its result. */
+export interface FailureStep {
+  tool: string;
+  args: string;      // compact JSON of arguments
+  result: string;    // first 200 chars of result text
+  isError: boolean;
+}
+
+/** A causal failure chain: trigger error → recovery attempts → eventual resolution. */
+export interface FailureChain {
+  trigger: FailureStep;       // the tool call that started the chain
+  recovery: FailureStep[];    // subsequent attempts to recover
+  resolution: FailureStep | null;  // the call that finally succeeded (null if never resolved)
+  wastedCalls: number;        // number of calls wasted in this chain
+  rootCause: string;          // short description of why the chain started
+}
+
+/** Detect `find` or `ls` commands that returned empty — a sign the agent is searching blindly. */
+function isFindWithNoResults(toolName: string, args: Record<string, unknown>, resultText: string): boolean {
+  if (toolName !== "exec") return false;
+  const cmd = typeof args.command === "string" ? args.command : "";
+  if (!/\b(find|locate)\b/.test(cmd)) return false;
+  // Strip the CWD echo line if present
+  const cleaned = resultText.replace(/^CWD:[^\n]*\n?/, "").trim();
+  return cleaned === "" || cleaned === "(no output)";
+}
+
+/**
+ * Extract causal failure chains from a message sequence.
+ *
+ * A failure chain starts when a tool call returns an error (ENOENT, exit code != 0, etc.)
+ * and the agent makes follow-up calls to recover (find, pwd, ls to discover paths).
+ * The chain ends when a call succeeds at the original intent or the agent moves on.
+ *
+ * This is pure pattern matching — no LLM needed.
+ */
+export function extractFailureChains(messages: AgentMessage[]): FailureChain[] {
+  // Build a flat list of (toolCall, toolResult) pairs in order
+  type CallPair = { tool: string; args: Record<string, unknown>; resultText: string; isError: boolean };
+  const pairs: CallPair[] = [];
+
+  // Collect tool calls from assistant messages, then match with results
+  const pendingCalls = new Map<string, { name: string; arguments: Record<string, unknown> }>();
+
+  for (const msg of messages) {
+    if (!("role" in msg)) continue;
+
+    if (msg.role === "assistant") {
+      const content = msg.content;
+      if (Array.isArray(content)) {
+        for (const block of content) {
+          if (typeof block === "object" && block !== null && "type" in block && block.type === "toolCall") {
+            const tc = block as { id: string; name: string; arguments: Record<string, unknown> };
+            pendingCalls.set(tc.id, { name: tc.name, arguments: tc.arguments });
+          }
+        }
+      }
+    }
+
+    if (msg.role === "toolResult") {
+      const tr = msg as { toolCallId: string; toolName: string; content?: Array<{ type: string; text?: string }>; isError: boolean };
+      const call = pendingCalls.get(tr.toolCallId);
+      const resultText = tr.content
+        ?.map((c) => c.type === "text" ? (c.text ?? "") : "")
+        .join("")
+        .slice(0, 500) ?? "";
+      pairs.push({
+        tool: call?.name ?? tr.toolName,
+        args: call?.arguments ?? {},
+        resultText,
+        isError: tr.isError
+          || resultText.includes("ENOENT")
+          || resultText.includes("Error reading file")
+          || /Exit code (?!0\b)\S+/.test(resultText)
+          || isFindWithNoResults(call?.name ?? tr.toolName, call?.arguments ?? {}, resultText),
+      });
+      if (call) pendingCalls.delete(tr.toolCallId);
+    }
+  }
+
+  // Now scan pairs for failure chains
+  const chains: FailureChain[] = [];
+  let i = 0;
+
+  while (i < pairs.length) {
+    const p = pairs[i];
+    if (!p.isError) { i++; continue; }
+
+    // Start a chain from this error
+    const trigger = pairToStep(p);
+    const recovery: FailureStep[] = [];
+    let resolution: FailureStep | null = null;
+    let j = i + 1;
+
+    // Determine what the agent was trying to do (read a file? run a command?)
+    const originalIntent = detectIntent(p);
+
+    // Follow recovery attempts
+    while (j < pairs.length) {
+      const next = pairs[j];
+      // Is this a recovery attempt? (searching for files, checking paths, pwd)
+      if (isRecoveryAttempt(next, originalIntent)) {
+        if (!next.isError && matchesOriginalIntent(next, originalIntent)) {
+          // Found the resolution
+          resolution = pairToStep(next);
+          j++;
+          break;
+        }
+        recovery.push(pairToStep(next));
+        j++;
+      } else {
+        // Agent moved on to something else — chain ends unresolved
+        break;
+      }
+    }
+
+    const wastedCalls = 1 + recovery.length; // trigger + recovery (resolution is productive)
+    const rootCause = diagnoseRootCause(trigger, recovery, resolution);
+
+    chains.push({ trigger, recovery, resolution, wastedCalls, rootCause });
+    i = j;
+  }
+
+  return chains;
+}
+
+function pairToStep(p: { tool: string; args: Record<string, unknown>; resultText: string; isError: boolean }): FailureStep {
+  return {
+    tool: p.tool,
+    args: JSON.stringify(p.args).slice(0, 200),
+    result: p.resultText.slice(0, 200),
+    isError: p.isError,
+  };
+}
+
+/** What was the agent trying to do when it failed? */
+function detectIntent(p: { tool: string; args: Record<string, unknown>; resultText: string }): { type: string; path?: string } {
+  if (p.tool === "read" && typeof p.args.path === "string") {
+    return { type: "read-file", path: p.args.path };
+  }
+  if (p.tool === "exec" && typeof p.args.command === "string") {
+    return { type: "exec-command" };
+  }
+  return { type: "unknown" };
+}
+
+/** Is this call a recovery attempt related to the original failure? */
+function isRecoveryAttempt(p: { tool: string; args: Record<string, unknown> }, intent: { type: string; path?: string }): boolean {
+  const cmd = typeof p.args.command === "string" ? p.args.command : "";
+  const path = typeof p.args.path === "string" ? p.args.path : "";
+
+  // find, ls, pwd are almost always recovery/discovery
+  if (p.tool === "exec" && /\b(find|locate|which|pwd|ls)\b/.test(cmd)) return true;
+
+  // Reading the same file at a different path
+  if (p.tool === "read" && intent.type === "read-file" && intent.path) {
+    const origFile = intent.path.split("/").pop() ?? "";
+    const newFile = path.split("/").pop() ?? "";
+    if (origFile && origFile === newFile) return true;
+  }
+
+  return false;
+}
+
+/** Does this call achieve what the original trigger was trying to do? */
+function matchesOriginalIntent(p: { tool: string; args: Record<string, unknown>; isError: boolean }, intent: { type: string; path?: string }): boolean {
+  if (p.isError) return false;
+
+  if (intent.type === "read-file" && p.tool === "read" && intent.path) {
+    const origFile = intent.path.split("/").pop() ?? "";
+    const newPath = typeof p.args.path === "string" ? p.args.path : "";
+    const newFile = newPath.split("/").pop() ?? "";
+    return origFile === newFile;
+  }
+
+  return false;
+}
+
+/** Produce a short root-cause description from the chain. */
+function diagnoseRootCause(trigger: FailureStep, recovery: FailureStep[], resolution: FailureStep | null): string {
+  // ENOENT on read → path guessing
+  if (trigger.tool === "read" && trigger.result.includes("ENOENT")) {
+    const guessedPath = trigger.args;
+    if (resolution) {
+      const resolvedPath = resolution.args;
+      return `read tool returned ENOENT for ${guessedPath} with no path hint — agent searched filesystem to find ${resolvedPath}`;
+    }
+    return `read tool returned ENOENT for ${guessedPath} with no path hint — agent could not find the file`;
+  }
+
+  // Exec failure — distinguish find-empty from other exec errors
+  if (trigger.tool === "exec") {
+    const cmd = trigger.args.slice(0, 80);
+    let cmdStr = "";
+    try { cmdStr = (JSON.parse(trigger.args) as { command?: string }).command ?? ""; } catch { /* ignore */ }
+    if (/\b(find|locate)\b/.test(cmdStr) && (!trigger.result.trim() || trigger.result.includes("(no output)"))) {
+      return `blind filesystem search returned empty: ${cmd} — agent is guessing paths instead of using cwd`;
+    }
+    return `exec failed: ${cmd} — ${trigger.result.slice(0, 80)}`;
+  }
+
+  return `${trigger.tool} failed: ${trigger.result.slice(0, 80)}`;
+}
+
+/** Format failure chains as a human-readable section for the evaluation prompt. */
+export function formatFailureChains(chains: FailureChain[]): string {
+  if (chains.length === 0) return "";
+
+  const lines = [`## Failure Chains (auto-extracted)\n`];
+  lines.push(`Found ${chains.length} failure chain(s) — sequences where an error triggered recovery attempts.\n`);
+
+  for (let i = 0; i < chains.length; i++) {
+    const c = chains[i];
+    lines.push(`### Chain ${i + 1} (${c.wastedCalls} wasted call${c.wastedCalls === 1 ? "" : "s"})`);
+    lines.push(`**Root cause:** ${c.rootCause}`);
+    lines.push(`**Trigger:** \`${c.trigger.tool}(${c.trigger.args})\` → ${c.trigger.result}`);
+    for (const r of c.recovery) {
+      lines.push(`  → \`${r.tool}(${r.args})\` → ${r.result || "(empty)"}`);
+    }
+    if (c.resolution) {
+      lines.push(`  → **resolved:** \`${c.resolution.tool}(${c.resolution.args})\` → OK`);
+    } else {
+      lines.push(`  → **unresolved** (agent gave up or moved on)`);
+    }
+    lines.push("");
+  }
+
+  const totalWasted = chains.reduce((sum, c) => sum + c.wastedCalls, 0);
+  lines.push(`**Total wasted calls from failure chains: ${totalWasted}**`);
+  lines.push(`\nWhen proposing fixes, address the **root cause** of each chain, not the symptoms.`);
+  lines.push(`For example, if the root cause is "read tool returned ENOENT with no path hint",`);
+  lines.push(`the fix is in the read tool's error message, not in blocking the recovery commands.`);
+
+  return lines.join("\n");
+}
+
 // ── Transcript formatting ──────────────────────────────────────────────
 
 function formatTranscript(messages: AgentMessage[]): string {
@@ -153,6 +392,7 @@ function parseEvaluation(text: string, usage: UsageSummary): EvaluationResult {
     lessons: null,
     workflowCode: null,
     workflowName: null,
+    failureChains: [],
     raw: text,
   };
 
@@ -267,33 +507,40 @@ export async function evaluateSession(opts: EvaluateSessionOptions): Promise<Eva
       lessons: null,
       workflowCode: null,
       workflowName: null,
+      failureChains: [],
       raw: "(no session transcript found)",
     };
   }
 
   const transcript = formatTranscript(messages);
 
-  // 2. Build evaluation prompt
+  // 2. Extract failure chains (structural, no LLM needed)
+  const failureChains = extractFailureChains(messages);
+  const failureChainsSection = formatFailureChains(failureChains);
+
+  // 3. Build evaluation prompt
   const prompt = [
     `# Session Evaluation\n`,
     `## Agent: ${agentName}`,
     `## Workflow Used: ${workflowUsed ?? "slow path (no workflow)"}`,
     `## Session ID: ${sessionId}\n`,
+    failureChainsSection ? `${failureChainsSection}\n` : "",
     `## Transcript\n${transcript}\n`,
     `## Instructions\nEvaluate this session according to your criteria. Output scores, lessons, and workflow suggestion if applicable.`,
-  ].join("\n");
+  ].filter(Boolean).join("\n");
 
-  // 3. Run evaluator agent
+  // 4. Run evaluator agent
   const evalSessionId = manager.run("evaluator", prompt);
   const evalResult = await manager.waitFor(evalSessionId);
 
   const responseText = evalResult?.lastAssistantText ?? "";
 
-  // 4. Compute usage from session messages
+  // 5. Compute usage from session messages
   const usage = extractUsage(messages);
 
-  // 5. Parse structured output
+  // 6. Parse structured output
   const evaluation = parseEvaluation(responseText, usage);
+  evaluation.failureChains = failureChains;
 
   // 6. Append lessons to agent's knowledge/lessons.md
   if (evaluation.lessons) {
@@ -322,7 +569,11 @@ export async function evaluateSession(opts: EvaluateSessionOptions): Promise<Eva
   const evalDir = join(persistDir, "evaluations");
   mkdirSync(evalDir, { recursive: true });
   const scoresPath = join(evalDir, `${sessionId}.json`);
-  writeFileSync(scoresPath, JSON.stringify({ ...evaluation.scores, usage: evaluation.usage }, null, 2), "utf-8");
+  writeFileSync(scoresPath, JSON.stringify({
+    ...evaluation.scores,
+    usage: evaluation.usage,
+    failureChains: evaluation.failureChains,
+  }, null, 2), "utf-8");
 
   return evaluation;
 }
