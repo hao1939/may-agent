@@ -1,8 +1,8 @@
 import { Type } from "@mariozechner/pi-ai";
 import type { AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
-import { readFileSync, writeFileSync, appendFileSync, mkdirSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, appendFileSync, mkdirSync, existsSync, readdirSync, statSync } from "node:fs";
 import { execSync } from "node:child_process";
-import { dirname, resolve, join, isAbsolute } from "node:path";
+import { dirname, resolve, join, isAbsolute, relative, basename } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const DEFS_PATH = resolve(dirname(fileURLToPath(import.meta.url)), "workflow-defs.d.ts");
@@ -192,6 +192,100 @@ export function resolveWritePath(path: string, projectRoot: string): string {
   return resolveReadPath(path, projectRoot);
 }
 
+/**
+ * Build a helpful ENOENT error hint that includes directory listings.
+ *
+ * When a file is not found, agents waste calls guessing what exists.
+ * This function builds a hint that includes:
+ * 1. The project root path
+ * 2. What files/dirs exist in the parent directory of the missing file
+ * 3. If the parent doesn't exist either, the top-level project structure
+ *
+ * This eliminates the need for follow-up `ls` or `find` commands.
+ *
+ * @param effectivePath - The resolved absolute path that was not found
+ * @param projectRoot - The project root directory
+ * @returns A multi-line hint string
+ */
+export function buildEnoentHint(effectivePath: string, projectRoot: string): string {
+  const lines: string[] = [];
+  lines.push(`Project root: ${projectRoot}`);
+
+  // Show the path relative to project root for clarity
+  if (effectivePath.startsWith(projectRoot + "/")) {
+    const relPath = relative(projectRoot, effectivePath);
+    lines.push(`Requested (relative): ${relPath}`);
+  }
+
+  // Try to list the parent directory of the missing file
+  const parentDir = dirname(effectivePath);
+  let parentListed = false;
+
+  if (existsSync(parentDir)) {
+    try {
+      const entries = listDirEntries(parentDir);
+      if (entries.length > 0) {
+        const parentLabel = parentDir.startsWith(projectRoot + "/")
+          ? relative(projectRoot, parentDir) + "/"
+          : parentDir === projectRoot
+            ? "(project root)"
+            : parentDir + "/";
+        lines.push(`Directory ${parentLabel} contains: ${entries.join(", ")}`);
+        parentListed = true;
+      }
+    } catch { /* permission error, etc. — fall through */ }
+  } else {
+    // Parent dir doesn't exist — tell the agent
+    const parentLabel = parentDir.startsWith(projectRoot + "/")
+      ? relative(projectRoot, parentDir) + "/"
+      : parentDir + "/";
+    lines.push(`Directory ${parentLabel} does not exist.`);
+  }
+
+  // If we couldn't list the parent (or parent is outside project root),
+  // show the top-level project structure
+  if (!parentListed || !parentDir.startsWith(projectRoot)) {
+    try {
+      const topEntries = listDirEntries(projectRoot);
+      if (topEntries.length > 0) {
+        lines.push(`Top-level entries: ${topEntries.join(", ")}`);
+      }
+    } catch { /* ignore */ }
+  }
+
+  return "\n" + lines.join("\n");
+}
+
+/**
+ * List directory entries as "name" or "name/" (for directories).
+ * Returns at most 30 entries to avoid flooding output.
+ * Entries are sorted alphabetically with directories first.
+ */
+export function listDirEntries(dirPath: string): string[] {
+  const raw = readdirSync(dirPath);
+  const entries: { name: string; isDir: boolean }[] = [];
+  for (const name of raw) {
+    try {
+      const full = join(dirPath, name);
+      const isDir = statSync(full).isDirectory();
+      entries.push({ name, isDir });
+    } catch {
+      entries.push({ name, isDir: false });
+    }
+  }
+  // Sort: directories first, then alphabetically
+  entries.sort((a, b) => {
+    if (a.isDir !== b.isDir) return a.isDir ? -1 : 1;
+    return a.name.localeCompare(b.name);
+  });
+  const MAX_ENTRIES = 30;
+  const formatted = entries.slice(0, MAX_ENTRIES).map(e => e.isDir ? e.name + "/" : e.name);
+  if (entries.length > MAX_ENTRIES) {
+    formatted.push(`... and ${entries.length - MAX_ENTRIES} more`);
+  }
+  return formatted;
+}
+
 export function createReadTool(options?: ReadToolOptions): AgentTool<typeof ReadParams> {
   return {
     name: "read",
@@ -210,7 +304,7 @@ export function createReadTool(options?: ReadToolOptions): AgentTool<typeof Read
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
         const hint = options?.projectRoot && msg.includes("ENOENT")
-          ? `\nHint: project root is ${options.projectRoot} — use paths relative to it, e.g. src/manager.ts not /home/user/repos/.../src/manager.ts`
+          ? buildEnoentHint(effectivePath, options.projectRoot)
           : "";
         return textResult(`Error reading file: ${msg}${hint}`);
       }

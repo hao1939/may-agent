@@ -238,7 +238,7 @@ describe("read tool hallucinated path rewriting", () => {
     const result = await tool.execute("id", { path: "/home/user/repo/nonexistent.ts" });
     expect(result.content[0].text).toContain("Error reading file:");
     expect(result.content[0].text).toContain("ENOENT");
-    expect(result.content[0].text).toContain("Hint:");
+    expect(result.content[0].text).toContain("Project root:");
 
     rmSync(ROOT, { recursive: true, force: true });
   });
@@ -301,7 +301,7 @@ describe("read tool relative path resolution", () => {
     const result = await tool.execute("id", { path: "nonexistent/file.ts" });
     expect(result.content[0].text).toContain("Error reading file:");
     expect(result.content[0].text).toContain("ENOENT");
-    expect(result.content[0].text).toContain("Hint:");
+    expect(result.content[0].text).toContain("Project root:");
 
     rmSync(ROOT, { recursive: true, force: true });
   });
