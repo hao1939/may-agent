@@ -20,7 +20,7 @@ export interface PersistedAgentConfig {
 export interface PersistedSession {
   agent: string;
   task: string;
-  status: "running" | "done" | "error" | "interrupted";
+  status: "running" | "done" | "error" | "interrupted" | "idle";
   startedAt: number;
   endedAt?: number;
   error?: string;
@@ -236,13 +236,13 @@ export class RegistryStore {
     this.save();
   }
 
-  /** Update session status (running/done/error/interrupted). */
-  updateSessionStatus(sessionId: string, status: "running" | "done" | "error" | "interrupted", error?: string): void {
+  /** Update session status (running/done/error/interrupted/idle). */
+  updateSessionStatus(sessionId: string, status: "running" | "done" | "error" | "interrupted" | "idle", error?: string): void {
     const session = this.data.sessions[sessionId];
     if (!session) return;
     session.status = status;
-    if (status === "running") {
-      // Resuming — clear completion fields
+    if (status === "running" || status === "idle") {
+      // Running or idle — clear completion fields
       delete session.endedAt;
       delete session.error;
     } else {

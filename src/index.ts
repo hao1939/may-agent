@@ -1,6 +1,6 @@
 export { SubagentManager, generateId } from "./manager.js";
 export type { SubagentManagerOptions, RunOptions } from "./manager.js";
-export { createReadTool, createWriteTool, createExecTool, createValidateWorkflowTool, createHealthCheckTool, createLearnTool, stripRedundantCd, detectsOutsidePaths } from "./tools.js";
+export { createReadTool, createWriteTool, createExecTool, createValidateWorkflowTool, createHealthCheckTool, createLearnTool, stripRedundantCd, detectsOutsidePaths, rewriteHallucinatedPath, rewriteHallucinatedCommand, extractHallucinatedRelPath } from "./tools.js";
 export type { ExecToolOptions, HealthCheck, HealthReport, HealthCheckOptions } from "./tools.js";
 export { createWorkflowTool } from "./workflow-tool.js";
 export type { WorkflowToolOptions, WorkflowTool } from "./workflow-tool.js";
@@ -18,8 +18,8 @@ export type {
 } from "./workflow.js";
 export { createCompactionTransform } from "./compaction.js";
 export type { CompactionOptions, CompactionInfo } from "./compaction.js";
-export { evaluateSession, maintainAgent, extractFailureChains, formatFailureChains } from "./evaluator.js";
-export type { EvaluationScores, EvaluationResult, EvaluateSessionOptions, MaintainAgentOptions, MaintenanceResult, UsageSummary, FailureChain, FailureStep } from "./evaluator.js";
+export { evaluateSession, evaluateTask, findUnevaluatedChildren, maintainAgent, extractFailureChains, extractUsage, formatFailureChains } from "./evaluator.js";
+export type { EvaluationScores, EvaluationResult, EvaluateSessionOptions, EvaluateTaskOptions, TaskEvaluationResult, AgentScores, ChildSessionInfo, MaintainAgentOptions, MaintenanceResult, UsageSummary, FailureChain, FailureStep } from "./evaluator.js";
 export { parseFrontmatter, loadSkillsFromDirs, formatSkillsForPrompt } from "./skills.js";
 export type { Frontmatter, SkillEntry } from "./skills.js";
 export { isOverflowError, extractProgress, writeProgressFile } from "./overflow.js";
