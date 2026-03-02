@@ -765,6 +765,12 @@ export class SubagentManager {
     return Array.from(this.agents.keys());
   }
 
+
+  /** Get the full definition for a registered agent, or undefined if not registered. */
+  getAgentDefinition(name: string): SubagentDefinition | undefined {
+    const registered = this.agents.get(name);
+    return registered?.definition;
+  }
   /** Get sessions filtered by agent name. */
   sessions(name: string): SessionInfo[] {
     return this.status().filter((s) => s.agent === name);
