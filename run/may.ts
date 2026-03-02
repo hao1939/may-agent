@@ -15,6 +15,9 @@ import {
   maintainAgent,
 } from "../src/index.js";
 import type { WorkflowEvent } from "../src/workflow.js";
+import { EventBus } from "./event-bus.js";
+import { attachConsoleUI } from "./console-ui.js";
+import { attachSocketUI } from "./socket-ui.js";
 
 const PROJECT_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const AGENTS_ROOT = resolve(PROJECT_ROOT, "agents");
@@ -40,7 +43,7 @@ const gpt52 = {
 };
 
 const gemini = {
-  ...getModel("azure-openai-responses", "gpt-5.2"), // base config for litellm compatibility
+  ...getModel("azure-openai-responses", "gpt-5.2"),
   id: "gemini-3-pro-preview",
   name: "Gemini 3 Pro",
   baseUrl: "http://localhost:4000/v1",
@@ -49,13 +52,18 @@ const gemini = {
 };
 
 const PERSIST_DIR = resolve(PROJECT_ROOT, ".state");
+const SOCKET_PATH = resolve(PERSIST_DIR, "may.sock");
 
-// Exec tool with echoCwd — shows working directory on first call to orient the agent
+// ── Event bus ──────────────────────────────────────────────────────────
+
+const bus = new EventBus();
+
+// Exec tool with echoCwd
 function guardedExec() {
   return createExecTool({ cwd: PROJECT_ROOT, echoCwd: true, warnOutsideRoot: PROJECT_ROOT });
 }
 
-// Read tool with projectRoot hint — ENOENT errors tell the agent where files actually are
+// Read tool with projectRoot hint
 function projectRead() {
   return createReadTool({ projectRoot: PROJECT_ROOT });
 }
@@ -72,25 +80,28 @@ let lastWorkflowUsed: string | null = null;
 
 function workflowEventHandler(label: string) {
   return (event: WorkflowEvent) => {
+    if (label === "may" && event.type === "workflow_start") {
+      lastWorkflowUsed = event.workflow;
+    }
+    if (event.type === "step_start" && event.sessionId) {
+      attachAgentEvents(event.step, event.sessionId);
+    }
+
     switch (event.type) {
       case "workflow_start":
-        console.log(`\n[${label}:workflow] ${event.workflow}: ${event.task.slice(0, 100)}`);
-        if (label === "may") lastWorkflowUsed = event.workflow;
+        bus.emit({ type: "workflow", agent: label, workflow: event.workflow, event: "start", task: event.task.slice(0, 200) });
         break;
       case "step_start":
-        console.log(`[${label}:step] ${event.step} started${event.sessionId ? ` (${event.sessionId})` : ""}`);
-        if (event.sessionId) {
-          attachSubagentEvents(event.step, event.sessionId);
-        }
+        bus.emit({ type: "workflow", agent: label, workflow: "", event: "step_start", step: event.step, sessionId: event.sessionId });
         break;
       case "step_done":
-        console.log(`[${label}:step] ${event.step} ${event.result?.status ?? "done"} (${event.result?.duration ?? "?"})`);
+        bus.emit({ type: "workflow", agent: label, workflow: "", event: "step_done", step: event.step, status: event.result?.status, duration: event.result?.duration });
         break;
       case "workflow_done":
-        console.log(`[${label}:workflow] done`);
+        bus.emit({ type: "workflow", agent: label, workflow: "", event: "done" });
         break;
       case "workflow_escalate":
-        console.log(`[${label}:workflow] escalated: ${event.reason}`);
+        bus.emit({ type: "workflow", agent: label, workflow: "", event: "escalated", reason: event.reason });
         break;
     }
   };
@@ -112,7 +123,7 @@ const optimizerWorkflowTool = createWorkflowTool({
   onEvent: workflowEventHandler("optimizer"),
 });
 
-// ── Register coder ─────────────────────────────────────────────────────
+// ── Register agents ────────────────────────────────────────────────────
 
 manager.register({
   name: "coder",
@@ -127,17 +138,10 @@ manager.register({
   workspace: resolve(agentDir("coder"), "workspace"),
   projectRoot: PROJECT_ROOT,
   model: opus,
-  tools: [
-    projectRead(),
-    createWriteTool(),
-    guardedExec(),
-    createLearnTool(knowledgeDir("coder")),
-  ],
+  tools: [projectRead(), createWriteTool(), guardedExec(), createLearnTool(knowledgeDir("coder"))],
   apiKey: "not-needed",
   maxTurns: 30,
 });
-
-// ── Register reviewer ──────────────────────────────────────────────────
 
 manager.register({
   name: "reviewer",
@@ -151,44 +155,28 @@ manager.register({
   workspace: resolve(agentDir("reviewer"), "workspace"),
   projectRoot: PROJECT_ROOT,
   model: gpt52,
-  tools: [
-    projectRead(),
-    guardedExec(),
-    createLearnTool(knowledgeDir("reviewer")),
-  ],
+  tools: [projectRead(), guardedExec(), createLearnTool(knowledgeDir("reviewer"))],
   apiKey: "not-needed",
   maxTurns: 30,
 });
 
-// ── Register evaluator ─────────────────────────────────────────────────
-
 manager.register({
   name: "evaluator",
-  description: "Session evaluator — scores efficiency/quality, detects patterns, suggests workflows",
+  description: "Session evaluator — scores efficiency/quality, detects patterns",
   domain: "session evaluation and workflow generation",
-  systemPromptFiles: [
-    resolve(knowledgeDir("evaluator"), "domain.md"),
-  ],
+  systemPromptFiles: [resolve(knowledgeDir("evaluator"), "domain.md")],
   knowledgeDir: knowledgeDir("evaluator"),
   workspace: resolve(agentDir("evaluator"), "workspace"),
   projectRoot: PROJECT_ROOT,
   model: gpt52,
-  tools: [
-    projectRead(),
-    createWriteTool(),
-    createValidateWorkflowTool(),
-    guardedExec(),
-    createLearnTool(knowledgeDir("evaluator")),
-  ],
+  tools: [projectRead(), createWriteTool(), createValidateWorkflowTool(), guardedExec(), createLearnTool(knowledgeDir("evaluator"))],
   apiKey: "not-needed",
   maxTurns: 30,
 });
 
-// ── Register optimizer ─────────────────────────────────────────────────
-
 manager.register({
   name: "optimizer",
-  description: "Performance optimizer — drives full improvement loop: analyze, propose, implement, verify",
+  description: "Performance optimizer — drives full improvement loop",
   domain: "agent performance optimization",
   systemPromptFiles: [
     resolve(knowledgeDir("optimizer"), "domain.md"),
@@ -199,19 +187,10 @@ manager.register({
   workspace: resolve(agentDir("optimizer"), "workspace"),
   projectRoot: PROJECT_ROOT,
   model: gemini,
-  tools: [
-    projectRead(),
-    createWriteTool(),
-    guardedExec(),
-    createLearnTool(knowledgeDir("optimizer")),
-    manager.createTool(),
-    optimizerWorkflowTool,
-  ],
+  tools: [projectRead(), createWriteTool(), guardedExec(), createLearnTool(knowledgeDir("optimizer")), manager.createTool(), optimizerWorkflowTool],
   apiKey: "not-needed",
   maxTurns: 30,
 });
-
-// ── Register may supervisor ────────────────────────────────────────────
 
 manager.register({
   name: "may",
@@ -225,112 +204,59 @@ manager.register({
   workspace: resolve(agentDir("may"), "workspace"),
   projectRoot: PROJECT_ROOT,
   model: opus,
-  tools: [
-    projectRead(),
-    createWriteTool(),
-    guardedExec(),
-    createValidateWorkflowTool(),
-    createLearnTool(knowledgeDir("may")),
-    manager.createTool(),
-    mayWorkflowTool,
-  ],
+  tools: [projectRead(), createWriteTool(), guardedExec(), createValidateWorkflowTool(), createLearnTool(knowledgeDir("may")), manager.createTool(), mayWorkflowTool],
   apiKey: "not-needed",
   maxTurns: 40,
   compaction: {
     threshold: 0.7,
     keepRatio: 0.4,
     onCompact: (info) => {
-      console.log(`\n[compaction] Round ${info.compactionCount}: ${info.messagesCompacted} messages compacted, ${info.messagesKept} kept (${info.tokensBefore} → ${info.tokensAfter} est. tokens)`);
+      bus.emit({ type: "info", message: `Compaction round ${info.compactionCount}: ${info.messagesCompacted} messages compacted, ${info.messagesKept} kept (${info.tokensBefore} → ${info.tokensAfter} est. tokens)` });
     },
   },
 });
 
-// ── Event streaming ────────────────────────────────────────────────────
+// ── Event routing ──────────────────────────────────────────────────────
 
-function attachSubagentEvents(label: string, sid: string): void {
-  manager.subscribe(sid, (event) => {
+function attachAgentEvents(label: string, sessionId: string): void {
+  manager.subscribe(sessionId, (event) => {
     switch (event.type) {
       case "message_start":
         if (event.message.role === "assistant") {
-          process.stdout.write(`\n  [${label}] `);
+          bus.emit({ type: "prompt", message: label });
         }
         break;
       case "message_update":
         if (event.assistantMessageEvent.type === "text_delta") {
-          process.stdout.write(event.assistantMessageEvent.delta);
-        }
-        break;
-      case "message_end":
-        if (event.message.role === "assistant") {
-          process.stdout.write("\n");
+          bus.emit({ type: "text", agent: label, text: event.assistantMessageEvent.delta });
         }
         break;
       case "tool_execution_start":
-        console.log(`  [${label}:${event.toolName}] ${JSON.stringify(event.args).slice(0, 200)}`);
+        bus.emit({ type: "tool_call", agent: label, tool: event.toolName, args: event.args });
         break;
       case "tool_execution_end": {
-        if (event.isError) {
-          console.log(`  [${label}:${event.toolName}] ERROR`);
-        } else {
-          const text = event.result?.content?.[0]?.text ?? "";
-          const preview = text.slice(0, 200);
-          console.log(`  [${label}:${event.toolName}] ${preview}${text.length > 200 ? "..." : ""}`);
-        }
+        const text = event.result?.content?.[0]?.text ?? "";
+        bus.emit({ type: "tool_result", agent: label, tool: event.toolName, preview: text.slice(0, 200), isError: !!event.isError });
         break;
       }
     }
   });
 }
 
-function attachEvents(sid: string): void {
-  manager.subscribe(sid, (event) => {
-    switch (event.type) {
-      case "message_start":
-        if (event.message.role === "assistant") {
-          process.stdout.write("\n[may] ");
-        }
-        break;
-      case "message_update":
-        if (event.assistantMessageEvent.type === "text_delta") {
-          process.stdout.write(event.assistantMessageEvent.delta);
-        }
-        break;
-      case "message_end":
-        if (event.message.role === "assistant") {
-          process.stdout.write("\n");
-        }
-        break;
-      case "tool_execution_start":
-        console.log(`\n[tool:${event.toolName}] ${JSON.stringify(event.args).slice(0, 200)}`);
-        break;
-      case "tool_execution_end": {
-        if (event.isError) {
-          console.log(`[tool:${event.toolName}] ERROR`);
-        } else {
-          const text = event.result?.content?.[0]?.text ?? "";
-          const preview = text.slice(0, 200);
-          console.log(`[tool:${event.toolName}] ${preview}${text.length > 200 ? "..." : ""}`);
-        }
-        break;
-      }
-    }
-  });
-}
+// ── Attach UIs ─────────────────────────────────────────────────────────
 
-// ── Interactive loop ───────────────────────────────────────────────────
+attachConsoleUI(bus);
 
-const rl = createInterface({ input: process.stdin, output: process.stdout });
-let closed = false;
-rl.on("close", () => { closed = true; });
+// ── Evaluation ─────────────────────────────────────────────────────────
 
 const AUTO_EVALUATE = process.env.MAY_EVALUATE !== "0";
-const IDLE_TIMEOUT_MS = parseInt(process.env.MAY_IDLE_TIMEOUT ?? "60000", 10); // default 60s
-const MAINTENANCE_INTERVAL = 3; // run maintenance every N evaluations
+const IDLE_TIMEOUT_MS = parseInt(process.env.MAY_IDLE_TIMEOUT ?? "60000", 10);
+const MAINTENANCE_INTERVAL = 3;
 let evalsSinceMaintenance = 0;
 
 async function runEvaluation(sessionId: string): Promise<string | null> {
   if (!AUTO_EVALUATE) return null;
-  console.log("\n[eval] Evaluating session...");
+  bus.emit({ type: "info", message: "Evaluating session..." });
   try {
     const result = await evaluateSession({
       manager,
@@ -341,81 +267,58 @@ async function runEvaluation(sessionId: string): Promise<string | null> {
       knowledgeDir: knowledgeDir("may"),
       workflowDir: resolve(agentDir("may"), "workflows"),
     });
-    console.log(`[eval] verdict: ${result.scores.verdict} (efficiency: ${result.scores.efficiency}, quality: ${result.scores.quality})`);
-    if (result.usage.totalTokens > 0) {
-      console.log(`[eval] usage: ${result.usage.totalTokens} tokens, $${result.usage.cost.toFixed(4)}, ${result.usage.turns} turns`);
-    }
-    if (result.failureChains.length > 0) {
-      console.log(`[eval] failure chains: ${result.failureChains.length} detected (${result.failureChains.reduce((s, c) => s + c.wastedCalls, 0)} wasted calls)`);
-      for (const chain of result.failureChains) {
-        console.log(`[eval]   root cause: ${chain.rootCause}`);
-      }
-    }
-    if (result.scores.pattern_detected) {
-      console.log(`[eval] pattern detected: ${result.scores.pattern_name}`);
-    }
+
+    bus.emit({
+      type: "eval",
+      verdict: result.scores.verdict,
+      efficiency: result.scores.efficiency,
+      quality: result.scores.quality,
+      tokens: result.usage.totalTokens,
+      cost: result.usage.cost,
+      turns: result.usage.turns,
+      failureChains: result.failureChains.length,
+      wastedCalls: result.failureChains.reduce((s, c) => s + c.wastedCalls, 0),
+    });
+
     if (result.lessons) {
-      console.log(`[eval] lessons appended to knowledge/lessons.md`);
-    }
-    if (result.workflowCode) {
-      console.log(`[eval] workflow suggested: ${result.workflowName}`);
+      bus.emit({ type: "info", message: "Lessons appended to knowledge/lessons.md" });
     }
 
-    // Detect anomalies worth surfacing to May
+    // Anomaly detection
     const anomalies: string[] = [];
     const { efficiency, quality } = result.scores;
     if (efficiency === 0 && quality === 0) {
-      anomalies.push(`Evaluator returned 0/0 scores — likely a parsing bug. Check evaluator session output.`);
+      anomalies.push(`Evaluator returned 0/0 scores — likely a parsing bug.`);
     }
     if (result.failureChains.length > 0) {
       const totalWasted = result.failureChains.reduce((s, c) => s + c.wastedCalls, 0);
       anomalies.push(`${result.failureChains.length} failure chain(s), ${totalWasted} wasted calls. Root causes: ${result.failureChains.map((c) => c.rootCause.slice(0, 100)).join("; ")}`);
     }
 
-    // Periodic maintenance — run for all agents
+    // Periodic maintenance
     evalsSinceMaintenance++;
     if (evalsSinceMaintenance >= MAINTENANCE_INTERVAL) {
-      const agentNames = ["may", "coder", "reviewer", "optimizer", "evaluator"];
-      for (const name of agentNames) {
-        console.log(`\n[maintenance] Consolidating lessons for ${name}...`);
+      for (const name of ["may", "coder", "reviewer", "optimizer", "evaluator"]) {
+        bus.emit({ type: "info", message: `Consolidating lessons for ${name}...` });
         try {
-          const mResult = await maintainAgent({
-            manager,
-            agentName: name,
-            knowledgeDir: knowledgeDir(name),
-            persistDir: PERSIST_DIR,
-          });
-          if (mResult.lessonsPruned > 0) {
-            console.log(`[maintenance:${name}] pruned ${mResult.lessonsPruned} lessons`);
-          }
-          if (mResult.suggestions.length > 0) {
-            console.log(`[maintenance:${name}] suggestions for domain.md:`);
-            for (const s of mResult.suggestions) {
-              console.log(`  - ${s}`);
-            }
-          }
-          if (mResult.staleItems.length > 0) {
-            console.log(`[maintenance:${name}] stale: ${mResult.staleItems.join(", ")}`);
-          }
+          const mResult = await maintainAgent({ manager, agentName: name, knowledgeDir: knowledgeDir(name), persistDir: PERSIST_DIR });
+          if (mResult.lessonsPruned > 0) bus.emit({ type: "info", message: `[maintenance:${name}] pruned ${mResult.lessonsPruned} lessons` });
+          if (mResult.suggestions.length > 0) bus.emit({ type: "info", message: `[maintenance:${name}] ${mResult.suggestions.join("; ")}` });
         } catch (err) {
-          console.log(`[maintenance:${name}] failed: ${err instanceof Error ? err.message : String(err)}`);
+          bus.emit({ type: "info", message: `[maintenance:${name}] failed: ${err instanceof Error ? err.message : String(err)}` });
         }
       }
       evalsSinceMaintenance = 0;
     }
 
-    return anomalies.length > 0
-      ? `[Post-session evaluation]\n${anomalies.join("\n")}`
-      : null;
+    return anomalies.length > 0 ? `[Post-session evaluation]\n${anomalies.join("\n")}` : null;
   } catch (err) {
-    console.log(`[eval] evaluation failed: ${err instanceof Error ? err.message : String(err)}`);
+    bus.emit({ type: "info", message: `Evaluation failed: ${err instanceof Error ? err.message : String(err)}` });
     return null;
   }
 }
 
-// ── Startup: resume May or start fresh ─────────────────────────────────
-
-// ── Session management with compaction ─────────────────────────────────
+// ── Session management ─────────────────────────────────────────────────
 
 let sid: string;
 let currentTask: string = "";
@@ -424,14 +327,13 @@ function startSession(task: string): string {
   lastWorkflowUsed = null;
   currentTask = task;
   const sessionId = manager.run("may", task);
-  attachEvents(sessionId);
+  attachAgentEvents("may", sessionId);
   return sessionId;
 }
 
 async function waitAndCheck(sessionId: string): Promise<void> {
   const result = await manager.waitFor(sessionId);
 
-  // Check if session ended with an error (possible context overflow)
   if (result?.status === "error" && result.error) {
     const isOverflow = result.error.includes("context")
       || result.error.includes("token")
@@ -439,20 +341,14 @@ async function waitAndCheck(sessionId: string): Promise<void> {
       || result.error.includes("maximum");
 
     if (isOverflow) {
-      console.log("\n[runner] Context overflow detected. Starting fresh session with summary...");
+      bus.emit({ type: "info", message: "Context overflow detected. Starting fresh session with summary..." });
 
-      // Build summary that preserves critical context
       const lastProgress = result.lastAssistantText?.slice(0, 2000) ?? "";
       const summary = [
         `Your previous session hit the context limit. Here's what you need to know:`,
-        ``,
-        `## Original Task`,
-        currentTask.slice(0, 500),
-        ``,
-        `## Last Progress`,
-        lastProgress || "(no progress captured)",
-        ``,
-        `## Instructions`,
+        ``, `## Original Task`, currentTask.slice(0, 500),
+        ``, `## Last Progress`, lastProgress || "(no progress captured)",
+        ``, `## Instructions`,
         `Continue from where you left off. Your project root and workspace paths are in your system prompt.`,
         `Do NOT search for or guess the project location — use the paths from Runtime Environment above.`,
       ].join("\n");
@@ -465,7 +361,7 @@ async function waitAndCheck(sessionId: string): Promise<void> {
 
   const anomaly = await runEvaluation(sessionId);
   if (anomaly) {
-    console.log(`\n[runner] Surfacing evaluation anomaly to May`);
+    bus.emit({ type: "info", message: "Surfacing evaluation anomaly to May" });
     manager.send(sid, anomaly);
     await manager.waitFor(sid);
   }
@@ -474,7 +370,6 @@ async function waitAndCheck(sessionId: string): Promise<void> {
 // ── Meta work detection ────────────────────────────────────────────────
 
 function hasMetaWork(): string | null {
-  // Check for unimplemented proposals in optimizer's state directory
   const proposalDir = resolve(PERSIST_DIR, "proposals", "optimizer");
   try {
     const proposals = readdirSync(proposalDir).filter((f) => f.endsWith(".md"));
@@ -485,7 +380,6 @@ function hasMetaWork(): string | null {
     }
   } catch { /* dir doesn't exist */ }
 
-  // Check for recent evaluations with poor scores
   const evalDir = resolve(PERSIST_DIR, "evaluations");
   try {
     const evalFiles = readdirSync(evalDir).filter((f) => f.endsWith(".json")).sort();
@@ -496,16 +390,13 @@ function hasMetaWork(): string | null {
       for (const f of recent) {
         try {
           const data = JSON.parse(readFileSync(resolve(evalDir, f), "utf-8"));
-          if (typeof data.efficiency === "number") {
-            totalEff += data.efficiency;
-            count++;
-          }
+          if (typeof data.efficiency === "number") { totalEff += data.efficiency; count++; }
         } catch { /* skip bad files */ }
       }
       if (count > 0 && totalEff / count < 0.7) {
         const avg = (totalEff / count).toFixed(2);
         return `Meta work available: recent evaluations show declining efficiency (avg ${avg}). ` +
-          `Delegate to optimizer to run its improvement loop — it will analyze evaluations, identify the top problem, and drive a fix. ` +
+          `Delegate to optimizer to run its improvement loop. ` +
           `Use: subagents.run("optimizer", "Run your improvement loop. Recent efficiency is ${avg}.")`;
       }
     }
@@ -516,7 +407,10 @@ function hasMetaWork(): string | null {
 
 // ── Input handling ─────────────────────────────────────────────────────
 
-// Single input queue — readline pushes lines, consumers pull them
+const rl = createInterface({ input: process.stdin, output: process.stdout });
+let closed = false;
+rl.on("close", () => { closed = true; });
+
 const inputQueue: string[] = [];
 let inputWaiter: ((line: string) => void) | null = null;
 
@@ -531,13 +425,11 @@ rl.on("line", (line) => {
   }
 });
 
-/** Wait for the next user input line. */
 function waitForInput(): Promise<string> {
   if (inputQueue.length > 0) return Promise.resolve(inputQueue.shift()!);
   return new Promise((resolve) => { inputWaiter = resolve; });
 }
 
-/** Wait for input OR idle timeout — whichever comes first. */
 function waitForInputOrIdle(timeoutMs: number): Promise<{ type: "input"; value: string } | { type: "idle" }> {
   if (closed) return Promise.resolve({ type: "input", value: "" });
   if (inputQueue.length > 0) return Promise.resolve({ type: "input", value: inputQueue.shift()! });
@@ -548,9 +440,6 @@ function waitForInputOrIdle(timeoutMs: number): Promise<{ type: "input"; value: 
     const timer = timeoutMs > 0 ? setTimeout(() => {
       if (!resolved) {
         resolved = true;
-        // Remove our waiter so the input goes to queue instead
-        inputWaiter = (line) => { inputQueue.push(line); };
-        // Clear immediately
         inputWaiter = null;
         resolve({ type: "idle" });
       }
@@ -566,28 +455,53 @@ function waitForInputOrIdle(timeoutMs: number): Promise<{ type: "input"; value: 
   });
 }
 
-let metaSessionId: string | null = null;
+// ── Command handling (from socket) ─────────────────────────────────────
 
-// ── Interactive loop ───────────────────────────────────────────────────
+bus.onCommand((cmd) => {
+  switch (cmd.type) {
+    case "steer":
+      bus.emit({ type: "info", message: `[control] Steering May: "${cmd.message.slice(0, 80)}"` });
+      manager.send(sid, cmd.message);
+      break;
+    case "cancel":
+      bus.emit({ type: "info", message: `[control] Cancelling session: ${cmd.sessionId}` });
+      manager.cancel(cmd.sessionId);
+      break;
+    case "cancel_all":
+      bus.emit({ type: "info", message: "[control] Cancelling all sessions" });
+      for (const s of manager.status()) {
+        if (s.status === "running") manager.cancel(s.sessionId);
+      }
+      break;
+    case "input":
+      // Treat as if typed on stdin
+      inputQueue.push(cmd.message);
+      if (inputWaiter) {
+        const waiter = inputWaiter;
+        inputWaiter = null;
+        waiter(inputQueue.shift()!);
+      }
+      break;
+  }
+});
 
-// Try to resume May's session from previous process
+// ── Startup ────────────────────────────────────────────────────────────
+
 const resumeResult = manager.resumeAgent("may");
 
 if (resumeResult?.resumed) {
   sid = resumeResult.resumed.sessionId;
   currentTask = resumeResult.resumed.task;
-  console.log(`[runner] Resumed May's session: ${sid}`);
-  console.log(`[runner] Task: "${currentTask.slice(0, 80)}"`);
+  bus.emit({ type: "info", message: `Resumed May's session: ${sid}` });
+  bus.emit({ type: "info", message: `Task: "${currentTask.slice(0, 80)}"` });
   if (resumeResult.interrupted.length > 0) {
-    console.log(`[runner] Cleaned up ${resumeResult.interrupted.length} stale sub-agent session(s)`);
+    bus.emit({ type: "info", message: `Cleaned up ${resumeResult.interrupted.length} stale sub-agent session(s)` });
   }
-  attachEvents(sid);
-  await waitAndCheck(sid);
+  attachAgentEvents("may", sid);
 } else {
-  // No May session to resume — clean up any stale sessions and start fresh
   const stale = manager.cleanupStaleSessions();
   if (stale.length > 0) {
-    console.log(`[runner] Cleaned up ${stale.length} stale session(s) from previous run`);
+    bus.emit({ type: "info", message: `Cleaned up ${stale.length} stale session(s) from previous run` });
   }
 
   let firstMessage = process.argv.slice(2).join(" ");
@@ -599,23 +513,33 @@ if (resumeResult?.resumed) {
   }
 
   sid = startSession(firstMessage);
-  await waitAndCheck(sid);
 }
+
+// Start socket UI after sid is set
+const socketUI = attachSocketUI({
+  socketPath: SOCKET_PATH,
+  bus,
+  manager,
+  getSessionId: () => sid,
+});
+
+// Wait for initial session
+await waitAndCheck(sid);
+
+// ── Main loop ──────────────────────────────────────────────────────────
+
+let metaSessionId: string | null = null;
 
 while (!closed) {
   process.stdout.write("\nyou> ");
   const response = await waitForInputOrIdle(IDLE_TIMEOUT_MS);
 
   if (response.type === "idle") {
-    // Check for meta work
-    console.log("[idle] Idle timeout fired, checking for meta work...");
     const metaTask = hasMetaWork();
     if (metaTask) {
-      console.log("\n[idle] Found meta work to do. Starting optimization cycle...");
-      console.log("[idle] (Type anything to interrupt and switch to your task)\n");
+      bus.emit({ type: "info", message: "Found meta work. Starting optimization cycle... (type anything to interrupt)" });
       metaSessionId = startSession(metaTask);
 
-      // Wait for meta work, but allow user to interrupt
       const metaPromise = manager.waitFor(metaSessionId);
       const userPromise = waitForInput();
 
@@ -625,13 +549,10 @@ while (!closed) {
       ]);
 
       if (winner.type === "user-input") {
-        // User typed something — cancel meta work and handle user input
         if (winner.value && winner.value !== "exit" && winner.value !== "quit") {
-          console.log("\n[idle] User input received. Cancelling meta work...");
+          bus.emit({ type: "info", message: "User input received. Cancelling meta work..." });
           manager.cancel(metaSessionId);
           metaSessionId = null;
-
-          lastWorkflowUsed = null;
           sid = startSession(winner.value);
           await waitAndCheck(sid);
         } else {
@@ -639,27 +560,23 @@ while (!closed) {
           break;
         }
       } else {
-        // Meta work finished — but userPromise is still pending.
-        // Put it back into the queue system so it doesn't leak.
         userPromise.then((v) => { inputQueue.push(v); });
-        console.log("\n[idle] Meta work completed.");
+        bus.emit({ type: "info", message: "Meta work completed." });
         await runEvaluation(metaSessionId);
         metaSessionId = null;
       }
       continue;
     }
-    // No meta work found, just wait for next input
     continue;
   }
 
-  // Direct user input
   const input = response.value;
   if (!input || input === "exit" || input === "quit") break;
 
   if (mayWorkflowTool.isRunning) {
     const steered = mayWorkflowTool.steer(input);
     if (steered) {
-      console.log(`[steering] Signal queued for workflow "${mayWorkflowTool.activeWorkflow}"`);
+      bus.emit({ type: "info", message: `Steering signal queued for workflow "${mayWorkflowTool.activeWorkflow}"` });
       continue;
     }
   }
@@ -669,4 +586,5 @@ while (!closed) {
   await waitAndCheck(sid);
 }
 
+socketUI.close();
 rl.close();
