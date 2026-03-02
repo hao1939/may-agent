@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
-import { createCompactionTransform, trimAccumulatedSummary } from "../src/compaction.js";
-import type { CompactionInfo } from "../src/compaction.js";
+import { createCompactionTransform, trimAccumulatedSummary, extractKeyFacts, mergeKeyFacts, formatKeyFacts } from "../src/compaction.js";
+import type { CompactionInfo, KeyFacts } from "../src/compaction.js";
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { Model } from "@mariozechner/pi-ai";
 
@@ -37,10 +37,11 @@ function assistantMsg(text: string, ts = Date.now()): AgentMessage {
   } as AgentMessage;
 }
 
+let _tcCounter = 0;
 function toolCallMsg(name: string, args: Record<string, any>, ts = Date.now()): AgentMessage {
   return {
     role: "assistant",
-    content: [{ type: "toolCall", id: `tc_${Date.now()}`, name, arguments: args }],
+    content: [{ type: "toolCall", id: `tc_${++_tcCounter}`, name, arguments: args }],
     api: "openai-chat",
     provider: "test",
     model: "test-model",
@@ -53,7 +54,7 @@ function toolCallMsg(name: string, args: Record<string, any>, ts = Date.now()): 
 function toolResultMsg(name: string, text: string, ts = Date.now()): AgentMessage {
   return {
     role: "toolResult",
-    toolCallId: `tc_${Date.now()}`,
+    toolCallId: `tc_${_tcCounter}`,
     toolName: name,
     content: [{ type: "text", text }],
     isError: false,
@@ -64,7 +65,7 @@ function toolResultMsg(name: string, text: string, ts = Date.now()): AgentMessag
 function errorToolResultMsg(name: string, text: string, ts = Date.now()): AgentMessage {
   return {
     role: "toolResult",
-    toolCallId: `tc_${Date.now()}`,
+    toolCallId: `tc_${_tcCounter}`,
     toolName: name,
     content: [{ type: "text", text }],
     isError: true,
@@ -261,19 +262,10 @@ describe("createCompactionTransform", () => {
     const model = fakeModel(500);
     const transform = createCompactionTransform(model, { threshold: 0.3, keepRatio: 0.1 });
 
-    const errorResult: AgentMessage = {
-      role: "toolResult",
-      toolCallId: "tc_1",
-      toolName: "read",
-      content: [{ type: "text", text: "ENOENT: no such file " + longText(30) }],
-      isError: true,
-      timestamp: Date.now(),
-    } as AgentMessage;
-
     const messages = [
       userMsg("Read the file " + longText(30)),
       toolCallMsg("read", { path: "/foo.ts" }),
-      errorResult,
+      errorToolResultMsg("read", "ENOENT: no such file " + longText(30)),
       assistantMsg("File not found " + longText(30)),
       userMsg(longText(50)),
       assistantMsg(longText(50)),
@@ -546,6 +538,64 @@ describe("createCompactionTransform", () => {
     expect(summaryText).toContain("Files written: src/tools.ts");
   });
 
+  it("extracts exec commands with outcomes in key facts", async () => {
+    const model = fakeModel(1000);
+    const transform = createCompactionTransform(model, { threshold: 0.3, keepRatio: 0.1 });
+
+    const messages = [
+      userMsg("Run the tests " + longText(20)),
+      toolCallMsg("exec", { command: "npx vitest run" }),
+      toolResultMsg("exec", "All tests passed " + longText(30)),
+      assistantMsg("Tests passed! " + longText(20)),
+      toolCallMsg("exec", { command: "npx tsc --noEmit" }),
+      errorToolResultMsg("exec", "Error: type mismatch " + longText(10)),
+      assistantMsg("Compile error " + longText(20)),
+      userMsg(longText(100)),
+      assistantMsg(longText(100)),
+    ];
+
+    const result = await transform(messages);
+    const summaryText = (result[0].content as any[])[0].text;
+    expect(summaryText).toContain("Key facts");
+    expect(summaryText).toContain("Exec commands run:");
+    expect(summaryText).toContain("[ok] npx vitest run");
+    expect(summaryText).toContain("[FAILED] npx tsc --noEmit");
+  });
+
+  it("merges exec commands across compaction rounds", async () => {
+    const model = fakeModel(1000);
+    const transform = createCompactionTransform(model, { threshold: 0.3, keepRatio: 0.1 });
+
+    // Round 1: run vitest
+    const messages1 = [
+      userMsg("Run tests " + longText(20)),
+      toolCallMsg("exec", { command: "npx vitest run" }),
+      toolResultMsg("exec", "passed " + longText(30)),
+      assistantMsg("ok " + longText(20)),
+      userMsg(longText(100)),
+      assistantMsg(longText(100)),
+    ];
+
+    const result1 = await transform(messages1);
+
+    // Round 2: run tsc (add to result1)
+    const messages2 = [
+      ...result1,
+      toolCallMsg("exec", { command: "npx tsc --noEmit" }),
+      toolResultMsg("exec", "no errors " + longText(30)),
+      assistantMsg("compiled " + longText(20)),
+      userMsg(longText(100)),
+      assistantMsg(longText(100)),
+    ];
+
+    const result2 = await transform(messages2);
+    const summaryText = (result2[0].content as any[])[0].text;
+
+    // Both commands should appear in key facts
+    expect(summaryText).toContain("npx vitest run");
+    expect(summaryText).toContain("npx tsc --noEmit");
+  });
+
   // ── Summary trimming via createCompactionTransform ───────────────────
 
   it("caps accumulated summary to prevent unbounded growth", async () => {
@@ -584,6 +634,183 @@ describe("createCompactionTransform", () => {
     expect(summaryText).toContain("COMPACTED CONTEXT");
     // Summary should be bounded — 8000 chars min budget + overhead
     expect(summaryText.length).toBeLessThan(12000);
+  });
+});
+
+// ── extractKeyFacts unit tests ─────────────────────────────────────────
+
+describe("extractKeyFacts", () => {
+  it("extracts files read and written", () => {
+    const messages: AgentMessage[] = [
+      toolCallMsg("read", { path: "src/a.ts" }),
+      toolResultMsg("read", "contents"),
+      toolCallMsg("write", { path: "src/b.ts", content: "new" }),
+      toolResultMsg("write", "Wrote 3 bytes"),
+    ];
+
+    const facts = extractKeyFacts(messages);
+    expect(facts.filesRead.has("src/a.ts")).toBe(true);
+    expect(facts.filesWritten.has("src/b.ts")).toBe(true);
+  });
+
+  it("extracts exec commands with success status", () => {
+    const messages: AgentMessage[] = [
+      toolCallMsg("exec", { command: "npm test" }),
+      toolResultMsg("exec", "All tests passed"),
+    ];
+
+    const facts = extractKeyFacts(messages);
+    expect(facts.execCommands).toHaveLength(1);
+    expect(facts.execCommands[0].command).toBe("npm test");
+    expect(facts.execCommands[0].failed).toBe(false);
+  });
+
+  it("extracts exec commands with failure status", () => {
+    const messages: AgentMessage[] = [
+      toolCallMsg("exec", { command: "npx tsc --noEmit" }),
+      errorToolResultMsg("exec", "Error: type mismatch"),
+    ];
+
+    const facts = extractKeyFacts(messages);
+    expect(facts.execCommands).toHaveLength(1);
+    expect(facts.execCommands[0].command).toBe("npx tsc --noEmit");
+    expect(facts.execCommands[0].failed).toBe(true);
+  });
+
+  it("handles multiple exec commands", () => {
+    const messages: AgentMessage[] = [
+      toolCallMsg("exec", { command: "ls" }),
+      toolResultMsg("exec", "file1 file2"),
+      toolCallMsg("exec", { command: "cat file1" }),
+      toolResultMsg("exec", "contents"),
+      toolCallMsg("exec", { command: "npm test" }),
+      errorToolResultMsg("exec", "FAIL"),
+    ];
+
+    const facts = extractKeyFacts(messages);
+    expect(facts.execCommands).toHaveLength(3);
+    expect(facts.execCommands[0]).toEqual({ command: "ls", failed: false });
+    expect(facts.execCommands[1]).toEqual({ command: "cat file1", failed: false });
+    expect(facts.execCommands[2]).toEqual({ command: "npm test", failed: true });
+  });
+
+  it("returns empty facts for messages with no tool calls", () => {
+    const messages: AgentMessage[] = [
+      userMsg("hello"),
+      assistantMsg("hi"),
+    ];
+
+    const facts = extractKeyFacts(messages);
+    expect(facts.filesRead.size).toBe(0);
+    expect(facts.filesWritten.size).toBe(0);
+    expect(facts.execCommands).toHaveLength(0);
+  });
+});
+
+// ── mergeKeyFacts unit tests ───────────────────────────────────────────
+
+describe("mergeKeyFacts", () => {
+  it("unions file sets from both rounds", () => {
+    const a: KeyFacts = {
+      filesRead: new Set(["a.ts"]),
+      filesWritten: new Set(["b.ts"]),
+      execCommands: [],
+    };
+    const b: KeyFacts = {
+      filesRead: new Set(["c.ts"]),
+      filesWritten: new Set(["d.ts"]),
+      execCommands: [],
+    };
+
+    const merged = mergeKeyFacts(a, b);
+    expect(merged.filesRead).toEqual(new Set(["a.ts", "c.ts"]));
+    expect(merged.filesWritten).toEqual(new Set(["b.ts", "d.ts"]));
+  });
+
+  it("deduplicates exec commands by command string, keeping latest outcome", () => {
+    const a: KeyFacts = {
+      filesRead: new Set(),
+      filesWritten: new Set(),
+      execCommands: [{ command: "npm test", failed: true }],
+    };
+    const b: KeyFacts = {
+      filesRead: new Set(),
+      filesWritten: new Set(),
+      execCommands: [{ command: "npm test", failed: false }],
+    };
+
+    const merged = mergeKeyFacts(a, b);
+    expect(merged.execCommands).toHaveLength(1);
+    expect(merged.execCommands[0]).toEqual({ command: "npm test", failed: false });
+  });
+
+  it("caps exec commands at 15, dropping oldest", () => {
+    const a: KeyFacts = {
+      filesRead: new Set(),
+      filesWritten: new Set(),
+      execCommands: Array.from({ length: 10 }, (_, i) => ({
+        command: `cmd_a_${i}`,
+        failed: false,
+      })),
+    };
+    const b: KeyFacts = {
+      filesRead: new Set(),
+      filesWritten: new Set(),
+      execCommands: Array.from({ length: 10 }, (_, i) => ({
+        command: `cmd_b_${i}`,
+        failed: false,
+      })),
+    };
+
+    const merged = mergeKeyFacts(a, b);
+    expect(merged.execCommands.length).toBeLessThanOrEqual(15);
+    // Should keep the newest commands (from b)
+    expect(merged.execCommands.some(c => c.command === "cmd_b_9")).toBe(true);
+  });
+});
+
+// ── formatKeyFacts unit tests ──────────────────────────────────────────
+
+describe("formatKeyFacts", () => {
+  it("formats files and exec commands", () => {
+    const facts: KeyFacts = {
+      filesRead: new Set(["a.ts", "b.ts"]),
+      filesWritten: new Set(["c.ts"]),
+      execCommands: [
+        { command: "npm test", failed: false },
+        { command: "npx tsc", failed: true },
+      ],
+    };
+
+    const lines = formatKeyFacts(facts);
+    expect(lines).toContain("Files read: a.ts, b.ts");
+    expect(lines).toContain("Files written: c.ts");
+    expect(lines).toContain("Exec commands run:");
+    expect(lines).toContain("  [ok] npm test");
+    expect(lines).toContain("  [FAILED] npx tsc");
+  });
+
+  it("truncates long commands", () => {
+    const longCmd = "A".repeat(200);
+    const facts: KeyFacts = {
+      filesRead: new Set(),
+      filesWritten: new Set(),
+      execCommands: [{ command: longCmd, failed: false }],
+    };
+
+    const lines = formatKeyFacts(facts);
+    const cmdLine = lines.find(l => l.includes("[ok]"))!;
+    expect(cmdLine.length).toBeLessThan(200);
+    expect(cmdLine).toContain("…");
+  });
+
+  it("returns empty array for empty facts", () => {
+    const facts: KeyFacts = {
+      filesRead: new Set(),
+      filesWritten: new Set(),
+      execCommands: [],
+    };
+    expect(formatKeyFacts(facts)).toEqual([]);
   });
 });
 
