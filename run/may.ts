@@ -474,14 +474,14 @@ async function waitAndCheck(sessionId: string): Promise<void> {
 // ── Meta work detection ────────────────────────────────────────────────
 
 function hasMetaWork(): string | null {
-  // Check for unimplemented proposals
-  const proposalDir = resolve(PERSIST_DIR, "staged", "proposals");
+  // Check for unimplemented proposals in optimizer's state directory
+  const proposalDir = resolve(PERSIST_DIR, "proposals", "optimizer");
   try {
     const proposals = readdirSync(proposalDir).filter((f) => f.endsWith(".md"));
     if (proposals.length > 0) {
-      return `Meta work available: there are ${proposals.length} staged proposal(s) in .state/staged/proposals/. ` +
-        `Delegate to optimizer to run its improvement loop — it will implement, review, and verify the proposals. ` +
-        `Use: subagents.run("optimizer", "Run your improvement loop. There are staged proposals in .state/staged/proposals/.")`;
+      return `Meta work available: there are ${proposals.length} staged proposal(s) awaiting the optimizer. ` +
+        `Delegate to optimizer to run its improvement loop. ` +
+        `Use: subagents.run("optimizer", "Run your improvement loop. You have ${proposals.length} pending proposal(s).")`;
     }
   } catch { /* dir doesn't exist */ }
 
