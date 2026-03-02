@@ -81,6 +81,20 @@ function formatMemoryTimestamp(ts: number): string {
   return `${yyyy}-${mm}-${dd} ${hh}:${min}`;
 }
 
+/** Maximum characters for task/summary text in the system-prompt memory section.
+ *  Full data is preserved in the JSONL — this only affects the prompt injection. */
+const MEMORY_TASK_MAX = 200;
+const MEMORY_SUMMARY_MAX = 500;
+
+/** Truncate text to maxLen chars for prompt injection.
+ *  Strips newlines (compact single-line) and appends "…" if truncated. */
+export function truncateForPrompt(text: string, maxLen: number): string {
+  // Collapse newlines to spaces for compact single-line display
+  const oneLine = text.replace(/\n+/g, " ").replace(/\s+/g, " ").trim();
+  if (oneLine.length <= maxLen) return oneLine;
+  return oneLine.slice(0, maxLen) + "…";
+}
+
 interface RegisteredAgent {
   definition: SubagentDefinition;
 }
@@ -274,8 +288,9 @@ export class SubagentManager {
       if (entries.length > 0) {
         const lines = entries.map((e) => {
           const ts = formatMemoryTimestamp(e.timestamp);
-          const summary = e.summary ? ` — ${e.summary}` : "";
-          return `- ${ts}: "${e.task}" — ${e.status} (${e.duration})${summary}`;
+          const taskText = truncateForPrompt(e.task, MEMORY_TASK_MAX);
+          const summary = e.summary ? ` — ${truncateForPrompt(e.summary, MEMORY_SUMMARY_MAX)}` : "";
+          return `- ${ts}: "${taskText}" — ${e.status} (${e.duration})${summary}`;
         });
         sections.push(`# Recent Task History\n${lines.join("\n")}`);
       }
