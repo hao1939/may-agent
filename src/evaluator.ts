@@ -4,6 +4,7 @@ import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { AssistantMessage } from "@mariozechner/pi-ai";
 import type { SubagentManager } from "./manager.js";
 import { readSessionMessages, readArchivedSessionMessages, historyDir } from "./persistence.js";
+import { extractHallucinatedRelPath } from "./tools.js";
 import type { PersistedSession } from "./persistence.js";
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -156,14 +157,60 @@ export interface FailureChain {
   rootCause: string;          // short description of why the chain started
 }
 
-/** Detect `find` or `ls` commands that returned empty — a sign the agent is searching blindly. */
+/**
+ * Detect `find` or `locate` commands that returned empty AND targeted a
+ * hallucinated or clearly wrong path — a sign the agent is guessing paths.
+ *
+ * Only flags empty finds when the search path is outside the project or matches
+ * a hallucinated-root pattern (e.g., /home/user, /Users/jdoe/project, /app).
+ * Finds starting from `.`, `./`, or the actual project root that return empty
+ * are just "file not found" — normal exploration, not an error.
+ *
+ * This prevents false-positive failure chains from legitimate checks like
+ * `find . -name "vitest.config.ts"` (file simply doesn't exist) while still
+ * catching `find /home/user -name "*.ts"` (hallucinated path, real problem).
+ */
 function isFindWithNoResults(toolName: string, args: Record<string, unknown>, resultText: string): boolean {
   if (toolName !== "exec") return false;
   const cmd = typeof args.command === "string" ? args.command : "";
   if (!/\b(find|locate)\b/.test(cmd)) return false;
+
   // Strip the CWD echo line if present
   const cleaned = resultText.replace(/^CWD:[^\n]*\n?/, "").trim();
-  return cleaned === "" || cleaned === "(no output)";
+  const isEmpty = cleaned === "" || cleaned === "(no output)";
+  if (!isEmpty) return false;
+
+  // Extract the search path from the command.
+  // Matches: find <path> ..., locate ..., cd <dir> && find <path> ...
+  const stripped = cmd.replace(/^\s*cd\s+\S+\s*(?:&&|;)\s*/, "");
+  const pathMatch = stripped.match(/\b(?:find|locate)\s+(?:["']([^"']+)["']|(\S+))/);
+  const searchPath = pathMatch?.[1] ?? pathMatch?.[2] ?? "";
+
+  // Relative paths (., ./, src/, test/) are local exploration — not errors.
+  if (!searchPath || searchPath === "." || searchPath.startsWith("./") || !searchPath.startsWith("/")) {
+    return false;
+  }
+
+  // Absolute paths that match hallucinated patterns are real problems.
+  if (extractHallucinatedRelPath(searchPath) !== null) {
+    return true;
+  }
+
+  // Other absolute paths outside common project roots are suspicious.
+  // e.g., /home/hao (not /home/hao/may-agent), /tmp, /var
+  // But we can't know the project root here, so flag any absolute path
+  // that doesn't match the CWD from the output.
+  const cwdMatch = resultText.match(/^CWD:\s*(\S+)/);
+  if (cwdMatch) {
+    const cwd = cwdMatch[1];
+    // If search path starts with the CWD, it's within the project — not an error.
+    if (searchPath === cwd || searchPath.startsWith(cwd + "/")) {
+      return false;
+    }
+  }
+
+  // Absolute path outside project/CWD with no results — likely wrong path.
+  return true;
 }
 
 /**
@@ -196,6 +243,22 @@ function isTestOrBuildRunner(command: string): boolean {
   if (/\btsc\b/.test(actual) && /--noEmit|--build/.test(actual)) return true;
 
   return false;
+}
+
+/**
+ * Check if a command is an existence/availability check.
+ *
+ * Agents commonly check if a command or package is available before using it.
+ * These commands exit 1 when the target is not found — this is informational,
+ * not an error:
+ * - `which python3` → exit 1 (not installed)
+ * - `command -v pip` → exit 1 (not available)
+ * - `type node` → exit 1 (not found)
+ * - `hash git` → exit 1 (not hashed/available)
+ */
+function isExistenceCheck(command: string): boolean {
+  const actual = command.replace(/^\s*cd\s+\S+\s*(?:&&|;)\s*/, "");
+  return /^\s*(which|command\s+-v|type|hash)\s+/.test(actual);
 }
 
 /**
@@ -239,6 +302,13 @@ function isExpectedNonZeroExit(command: string, exitCode: string, resultText: st
   // fix → re-run). Flagging these as failure chains would inflate wasted-call
   // counts and penalize productive iterative development behavior.
   if (code === 1 && isTestOrBuildRunner(command)) {
+    return true;
+  }
+
+  // Existence-check commands: which, command -v, type, hash all exit 1 when
+  // the command is not found. This is normal exploration ("is X installed?"),
+  // not an error. The agent is gathering information, not failing.
+  if (code === 1 && isExistenceCheck(command)) {
     return true;
   }
 
