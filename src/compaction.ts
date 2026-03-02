@@ -76,37 +76,133 @@ const SUMMARY_BUDGET_FRACTION = 0.15;
 const MIN_SUMMARY_BUDGET_CHARS = 8000;
 
 /**
- * Extract key facts from messages: file paths accessed, commands run,
- * and critical decisions. These survive summary trimming because they
- * help the agent avoid re-reading files or repeating commands.
+ * Maximum number of exec commands to track in key facts.
+ * Keeps the key facts section bounded; oldest commands are dropped when exceeded.
  */
-function extractKeyFacts(messages: AgentMessage[]): string[] {
-  const facts: string[] = [];
+const MAX_EXEC_COMMANDS_IN_FACTS = 15;
+
+/**
+ * Maximum display length for an exec command in key facts.
+ * Long commands (e.g., with inline scripts) are truncated to this length.
+ */
+const EXEC_COMMAND_DISPLAY_LENGTH = 120;
+
+/**
+ * Structured key facts extracted from messages.
+ * Using structured data allows proper merging across compaction rounds
+ * (e.g., unioning file sets instead of duplicating "Files read: ..." lines).
+ */
+export interface KeyFacts {
+  filesRead: Set<string>;
+  filesWritten: Set<string>;
+  /** Exec commands run, with their outcome. Ordered oldest-first. */
+  execCommands: Array<{ command: string; failed: boolean }>;
+}
+
+/**
+ * Extract key facts from messages: file paths accessed, exec commands run
+ * and their outcomes. These survive summary trimming because they help
+ * the agent avoid re-reading files or repeating commands after compaction.
+ */
+export function extractKeyFacts(messages: AgentMessage[]): KeyFacts {
   const filesRead = new Set<string>();
   const filesWritten = new Set<string>();
+  const execCommands: Array<{ command: string; failed: boolean }> = [];
+
+  // Build a map from toolCall IDs to exec commands so we can pair with results
+  const pendingExecCalls = new Map<string, string>(); // toolCallId → command
 
   for (const msg of messages) {
-    if (msg.role !== "assistant" || !Array.isArray(msg.content)) continue;
-    for (const block of msg.content) {
-      if (block.type !== "toolCall") continue;
-      const args = block.arguments as Record<string, any>;
+    if (msg.role === "assistant" && Array.isArray(msg.content)) {
+      for (const block of msg.content) {
+        if (block.type !== "toolCall") continue;
+        const args = block.arguments as Record<string, any>;
 
-      if (block.name === "read" && args.path) {
-        filesRead.add(args.path);
-      } else if (block.name === "write" && args.path) {
-        filesWritten.add(args.path);
+        if (block.name === "read" && args.path) {
+          filesRead.add(args.path);
+        } else if (block.name === "write" && args.path) {
+          filesWritten.add(args.path);
+        } else if (block.name === "exec" && args.command) {
+          pendingExecCalls.set(block.id, args.command);
+        }
+      }
+    } else if (msg.role === "toolResult") {
+      const trMsg = msg as ToolResultMessage;
+      if (trMsg.toolName === "exec" && pendingExecCalls.has(trMsg.toolCallId)) {
+        const command = pendingExecCalls.get(trMsg.toolCallId)!;
+        pendingExecCalls.delete(trMsg.toolCallId);
+        execCommands.push({ command, failed: !!trMsg.isError });
       }
     }
   }
 
-  if (filesRead.size > 0) {
-    facts.push(`Files read: ${[...filesRead].join(", ")}`);
-  }
-  if (filesWritten.size > 0) {
-    facts.push(`Files written: ${[...filesWritten].join(", ")}`);
+  // Any exec calls without a paired result (shouldn't happen normally, but be safe)
+  for (const [_id, command] of pendingExecCalls) {
+    execCommands.push({ command, failed: false });
   }
 
-  return facts;
+  return { filesRead, filesWritten, execCommands };
+}
+
+/**
+ * Merge new key facts into accumulated facts, deduplicating properly.
+ * - File sets are unioned.
+ * - Exec commands are appended (deduped by command string), capped at MAX_EXEC_COMMANDS_IN_FACTS.
+ */
+export function mergeKeyFacts(accumulated: KeyFacts, newFacts: KeyFacts): KeyFacts {
+  const filesRead = new Set([...accumulated.filesRead, ...newFacts.filesRead]);
+  const filesWritten = new Set([...accumulated.filesWritten, ...newFacts.filesWritten]);
+
+  // Merge exec commands, deduplicating by command string (keep latest outcome)
+  const seen = new Map<string, { command: string; failed: boolean }>();
+  for (const cmd of accumulated.execCommands) {
+    seen.set(cmd.command, cmd);
+  }
+  for (const cmd of newFacts.execCommands) {
+    seen.set(cmd.command, cmd); // newer outcome overwrites older
+  }
+
+  // Convert back to array, keeping order (accumulated first, then new), capped
+  let execCommands = [...seen.values()];
+  if (execCommands.length > MAX_EXEC_COMMANDS_IN_FACTS) {
+    // Drop oldest commands (keep the most recent ones)
+    execCommands = execCommands.slice(execCommands.length - MAX_EXEC_COMMANDS_IN_FACTS);
+  }
+
+  return { filesRead, filesWritten, execCommands };
+}
+
+/**
+ * Format key facts into display lines for the compacted context header.
+ */
+export function formatKeyFacts(facts: KeyFacts): string[] {
+  const lines: string[] = [];
+
+  if (facts.filesRead.size > 0) {
+    lines.push(`Files read: ${[...facts.filesRead].join(", ")}`);
+  }
+  if (facts.filesWritten.size > 0) {
+    lines.push(`Files written: ${[...facts.filesWritten].join(", ")}`);
+  }
+  if (facts.execCommands.length > 0) {
+    lines.push(`Exec commands run:`);
+    for (const cmd of facts.execCommands) {
+      const display = cmd.command.length > EXEC_COMMAND_DISPLAY_LENGTH
+        ? cmd.command.slice(0, EXEC_COMMAND_DISPLAY_LENGTH) + "…"
+        : cmd.command;
+      const status = cmd.failed ? "FAILED" : "ok";
+      lines.push(`  [${status}] ${display}`);
+    }
+  }
+
+  return lines;
+}
+
+/**
+ * Create an empty KeyFacts object.
+ */
+function emptyKeyFacts(): KeyFacts {
+  return { filesRead: new Set(), filesWritten: new Set(), execCommands: [] };
 }
 
 /**
@@ -322,8 +418,9 @@ export interface CompactionInfo {
  * where repeated compactions cause the summary itself to consume
  * an ever-growing fraction of the context window.
  *
- * Key facts (files read/written) are tracked separately and always
- * preserved, so the agent doesn't re-read files after compaction.
+ * Key facts (files read/written, exec commands run) are tracked
+ * separately and always preserved, so the agent doesn't re-read files
+ * or repeat commands after compaction.
  *
  * The original messages on the Agent are NOT modified — transformContext
  * only affects what gets sent to the LLM. The full conversation is
@@ -342,8 +439,8 @@ export function createCompactionTransform(
   let compactionCount = 0;
   // Accumulate previous summaries so context isn't lost across multiple compactions
   let accumulatedSummary = "";
-  // Accumulate key facts (files read/written) across all compaction rounds
-  let accumulatedKeyFacts: string[] = [];
+  // Accumulate key facts (files read/written, commands run) across all compaction rounds
+  let accumulatedKeyFacts: KeyFacts = emptyKeyFacts();
 
   const triggerTokens = Math.floor(contextWindow * threshold);
   const keepTokens = Math.floor(contextWindow * keepRatio);
@@ -372,13 +469,9 @@ export function createCompactionTransform(
     // Build the summary
     const newSummary = summarizeMessages(oldMessages);
 
-    // Extract and accumulate key facts
+    // Extract and merge key facts
     const newFacts = extractKeyFacts(oldMessages);
-    for (const fact of newFacts) {
-      if (!accumulatedKeyFacts.includes(fact)) {
-        accumulatedKeyFacts.push(fact);
-      }
-    }
+    accumulatedKeyFacts = mergeKeyFacts(accumulatedKeyFacts, newFacts);
 
     // Accumulate with previous summaries
     if (accumulatedSummary) {
@@ -396,8 +489,9 @@ export function createCompactionTransform(
     compactionCount++;
 
     // Build the key facts header (always preserved, not subject to trimming)
-    const keyFactsBlock = accumulatedKeyFacts.length > 0
-      ? `[Key facts across compaction rounds]\n${accumulatedKeyFacts.join("\n")}\n\n`
+    const keyFactLines = formatKeyFacts(accumulatedKeyFacts);
+    const keyFactsBlock = keyFactLines.length > 0
+      ? `[Key facts across compaction rounds]\n${keyFactLines.join("\n")}\n\n`
       : "";
 
     // Create a synthetic user message with the compacted context
