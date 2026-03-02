@@ -39,9 +39,9 @@ const gpt52 = {
   baseUrl: "http://localhost:4000/v1",
 };
 
-const gemini3 = {
+const gemini = {
   ...getModel("azure-openai-responses", "gpt-5.2"), // base config for litellm compatibility
-  id: "gemini-3-pro",
+  id: "gemini-3-pro-preview",
   name: "Gemini 3 Pro",
   baseUrl: "http://localhost:4000/v1",
   contextWindow: 1_000_000,
@@ -198,7 +198,7 @@ manager.register({
   knowledgeDir: knowledgeDir("optimizer"),
   workspace: resolve(agentDir("optimizer"), "workspace"),
   projectRoot: PROJECT_ROOT,
-  model: gemini3,
+  model: gemini,
   tools: [
     projectRead(),
     createWriteTool(),
