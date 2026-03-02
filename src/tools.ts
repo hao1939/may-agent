@@ -2,7 +2,7 @@ import { Type } from "@mariozechner/pi-ai";
 import type { AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
 import { readFileSync, writeFileSync, appendFileSync, mkdirSync, existsSync } from "node:fs";
 import { execSync } from "node:child_process";
-import { dirname, resolve, join } from "node:path";
+import { dirname, resolve, join, isAbsolute } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const DEFS_PATH = resolve(dirname(fileURLToPath(import.meta.url)), "workflow-defs.d.ts");
@@ -134,6 +134,32 @@ export function rewriteHallucinatedCommand(command: string, projectRoot: string)
   );
 }
 
+/**
+ * Resolve a read tool path to an absolute path.
+ *
+ * Handles three cases:
+ * 1. Relative paths (e.g., "src/tools.ts") → resolved against projectRoot
+ * 2. Hallucinated absolute paths (e.g., "/home/user/repo/src/tools.ts") → rewritten to projectRoot
+ * 3. Correct absolute paths → returned as-is
+ *
+ * This eliminates the most common failure pattern in evaluations: agents
+ * getting an ENOENT error, seeing the hint "use paths like src/manager.ts",
+ * then getting another ENOENT because the read tool didn't resolve relative paths.
+ *
+ * @param path - The path from the agent (relative or absolute)
+ * @param projectRoot - The project root to resolve against
+ * @returns An absolute path ready for readFileSync
+ */
+export function resolveReadPath(path: string, projectRoot: string): string {
+  // 1. Relative paths: resolve against projectRoot
+  if (!isAbsolute(path)) {
+    return resolve(projectRoot, path);
+  }
+
+  // 2. Hallucinated absolute paths: rewrite to projectRoot
+  return rewriteHallucinatedPath(path, projectRoot);
+}
+
 export function createReadTool(options?: ReadToolOptions): AgentTool<typeof ReadParams> {
   return {
     name: "read",
@@ -141,9 +167,9 @@ export function createReadTool(options?: ReadToolOptions): AgentTool<typeof Read
     description: "Read the contents of a file.",
     parameters: ReadParams,
     execute: async (_id, params) => {
-      // Try to rewrite hallucinated paths before reading
+      // Resolve path: relative → projectRoot-based, hallucinated → rewritten, correct → as-is
       const effectivePath = options?.projectRoot
-        ? rewriteHallucinatedPath(params.path, options.projectRoot)
+        ? resolveReadPath(params.path, options.projectRoot)
         : params.path;
 
       try {
