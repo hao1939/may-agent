@@ -1,6 +1,7 @@
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import { writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
+import { extractKeyFacts } from "./compaction.js";
 
 /**
  * Regex patterns for detecting context overflow from error strings.
@@ -131,35 +132,20 @@ export function extractProgress(task: string, messages: AgentMessage[], error: s
     sections.push(``);
   }
 
-  // Extract any file paths that were read or written (from exec/read/write tool calls)
-  const filesRead = new Set<string>();
-  const filesWritten = new Set<string>();
-  for (const msg of messages) {
-    if (msg.role === "assistant" && Array.isArray(msg.content)) {
-      for (const block of msg.content) {
-        if (block.type === "toolCall") {
-          const args = block.arguments as Record<string, unknown>;
-          if (block.name === "read" && typeof args.path === "string") {
-            filesRead.add(args.path);
-          }
-          if (block.name === "write" && typeof args.path === "string") {
-            filesWritten.add(args.path);
-          }
-        }
-      }
-    }
-  }
-  if (filesRead.size > 0 || filesWritten.size > 0) {
+  // Reuse extractKeyFacts from compaction.ts to get file paths
+  // (avoids duplicating the same file-extraction logic)
+  const keyFacts = extractKeyFacts(messages);
+  if (keyFacts.filesRead.size > 0 || keyFacts.filesWritten.size > 0) {
     sections.push(`## Files Touched`);
     sections.push(``);
-    if (filesRead.size > 0) {
+    if (keyFacts.filesRead.size > 0) {
       sections.push(`### Read`);
-      for (const f of filesRead) sections.push(`- ${f}`);
+      for (const f of keyFacts.filesRead) sections.push(`- ${f}`);
       sections.push(``);
     }
-    if (filesWritten.size > 0) {
+    if (keyFacts.filesWritten.size > 0) {
       sections.push(`### Written`);
-      for (const f of filesWritten) sections.push(`- ${f}`);
+      for (const f of keyFacts.filesWritten) sections.push(`- ${f}`);
       sections.push(``);
     }
   }
