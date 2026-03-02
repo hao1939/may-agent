@@ -331,7 +331,7 @@ export function createWriteTool(options?: WriteToolOptions): AgentTool<typeof Wr
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
         const hint = options?.projectRoot
-          ? `\nHint: project root is ${options.projectRoot} — use paths relative to it, e.g. src/manager.ts not /home/user/repos/.../src/manager.ts`
+          ? buildEnoentHint(effectivePath, options.projectRoot)
           : "";
         return textResult(`Error writing file: ${msg}${hint}`);
       }

@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from "vitest";
 import { createWriteTool, resolveWritePath } from "../src/tools.js";
-import { mkdirSync, readFileSync, rmSync, existsSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { mkdirSync, readFileSync, rmSync, existsSync, writeFileSync, mkdtempSync } from "node:fs";
+import { join } from "node:path";
 import { tmpdir } from "node:os";
 
 // ── resolveWritePath ───────────────────────────────────────────────────
@@ -181,5 +181,89 @@ describe("write tool without options (backward compat)", () => {
     const text = result.content[0].text;
     expect(text).toContain("Wrote");
     expect(text).toContain(filePath);
+  });
+});
+
+// ── Write tool error messages with directory listing hints ──────────────
+
+describe("write tool error messages", () => {
+  let projectRoot: string;
+
+  beforeEach(() => {
+    projectRoot = mkdtempSync(join(tmpdir(), "write-err-"));
+    mkdirSync(join(projectRoot, "src"), { recursive: true });
+    mkdirSync(join(projectRoot, "test"), { recursive: true });
+    writeFileSync(join(projectRoot, "package.json"), "{}");
+    writeFileSync(join(projectRoot, "src", "tools.ts"), "// tools");
+    writeFileSync(join(projectRoot, "src", "manager.ts"), "// manager");
+  });
+
+  afterEach(() => {
+    rmSync(projectRoot, { recursive: true, force: true });
+  });
+
+  it("includes project root and top-level entries in error hint", async () => {
+    // Writing through an existing file (tools.ts is a file, not a dir) triggers EEXIST on mkdir
+    const tool = createWriteTool({ projectRoot });
+    const result = await tool.execute("test-id", {
+      path: join(projectRoot, "src", "tools.ts", "subdir", "file.ts"),
+      content: "// will fail\n",
+    });
+    const text = result.content[0].text;
+    expect(text).toContain("Error writing file:");
+    expect(text).toContain(`Project root: ${projectRoot}`);
+    // Should show top-level entries since the parent path traverses through a file
+    expect(text).toContain("src/");
+    expect(text).toContain("test/");
+  });
+
+  it("shows top-level structure when write fails through root-level file", async () => {
+    const tool = createWriteTool({ projectRoot });
+    const result = await tool.execute("test-id", {
+      path: join(projectRoot, "package.json", "impossible", "file.ts"),
+      content: "// will fail\n",
+    });
+    const text = result.content[0].text;
+    expect(text).toContain("Error writing file:");
+    // Should show what actually exists at the project root
+    expect(text).toContain("src/");
+    expect(text).toContain("test/");
+    expect(text).toContain("package.json");
+  });
+
+  it("shows relative path in error hint for paths under project root", async () => {
+    const tool = createWriteTool({ projectRoot });
+    const result = await tool.execute("test-id", {
+      path: join(projectRoot, "src", "tools.ts", "deep", "file.ts"),
+      content: "// will fail\n",
+    });
+    const text = result.content[0].text;
+    // buildEnoentHint shows the relative path for paths under project root
+    expect(text).toContain("Requested (relative): src/tools.ts/deep/file.ts");
+  });
+
+  it("does not include hint without projectRoot option", async () => {
+    const tool = createWriteTool();
+    const result = await tool.execute("test-id", {
+      path: join(projectRoot, "src", "tools.ts", "nested.ts"),
+      content: "// will fail\n",
+    });
+    const text = result.content[0].text;
+    expect(text).toContain("Error writing file:");
+    expect(text).not.toContain("Project root:");
+  });
+
+  it("uses buildEnoentHint (not static string) for error messages", async () => {
+    // Verify that the old static hint format is NOT used
+    const tool = createWriteTool({ projectRoot });
+    const result = await tool.execute("test-id", {
+      path: join(projectRoot, "src", "tools.ts", "nested.ts"),
+      content: "// will fail\n",
+    });
+    const text = result.content[0].text;
+    // Old format was: "Hint: project root is ... — use paths relative to it"
+    expect(text).not.toContain("use paths relative to it");
+    // New format uses buildEnoentHint which starts with "Project root:"
+    expect(text).toContain("Project root:");
   });
 });
