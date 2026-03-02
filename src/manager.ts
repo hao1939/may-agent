@@ -110,11 +110,11 @@ export interface SubagentManagerOptions {
 
 const SubagentToolParams = Type.Object({
   action: StringEnum(
-    ["list", "run", "status", "progress", "result", "cancel", "waitFor", "trace"] as const,
-    { description: "Action to perform" },
+    ["list", "run", "status", "progress", "result", "cancel", "waitFor", "delegate", "trace"] as const,
+    { description: "Action to perform. Use 'delegate' for fire-and-forget: runs agent, waits for completion, returns result in one call." },
   ),
-  agent: Type.Optional(Type.String({ description: "Name of the registered agent (required for 'run')" })),
-  task: Type.Optional(Type.String({ description: "Task description to send to the agent (required for 'run')" })),
+  agent: Type.Optional(Type.String({ description: "Name of the registered agent (required for 'run', 'delegate')" })),
+  task: Type.Optional(Type.String({ description: "Task description to send to the agent (required for 'run', 'delegate')" })),
   sessionId: Type.Optional(Type.String({ description: "Session ID or workflow run ID (required for 'status', 'progress', 'result', 'cancel', 'waitFor', 'trace')" })),
   limit: Type.Optional(Type.Number({ description: "Max number of recent messages to return (for 'progress', default: all)" })),
 });
@@ -776,6 +776,11 @@ export class SubagentManager {
     const registered = this.agents.get(name);
     return registered?.definition;
   }
+  /** Return the total number of sessions (active + completed). */
+  getSessionCount(): number {
+    return this.activeSessions.size;
+  }
+
   /** Get sessions filtered by agent name. */
   sessions(name: string): SessionInfo[] {
     return this.status().filter((s) => s.agent === name);
@@ -1150,8 +1155,9 @@ export class SubagentManager {
   // ── Parent agent tool ────────────────────────────────────────────────
 
   /** Create an AgentTool that exposes sub-agent management to a parent agent. */
-  createTool(): AgentTool<typeof SubagentToolParams> {
+  createTool(opts?: { onSessionStart?: (agent: string, sessionId: string) => void }): AgentTool<typeof SubagentToolParams> {
     const manager = this;
+    const onSessionStart = opts?.onSessionStart;
 
     function textResult(text: string): AgentToolResult<string> {
       return {
@@ -1187,6 +1193,7 @@ export class SubagentManager {
             }
             try {
               const sessionId = manager.run(params.agent, params.task);
+              onSessionStart?.(params.agent, sessionId);
               return textResult(JSON.stringify({ sessionId }));
             } catch (err: unknown) {
               const msg = err instanceof Error ? err.message : String(err);
@@ -1253,6 +1260,23 @@ export class SubagentManager {
             }
             const { messages: _msgs, ...resultWithoutMessages } = taskResult;
             return textResult(JSON.stringify(resultWithoutMessages, null, 2));
+          }
+
+          case "delegate": {
+            if (!params.agent) {
+              return textResult(JSON.stringify({ error: "action 'delegate' requires 'agent'" }));
+            }
+            if (!params.task) {
+              return textResult(JSON.stringify({ error: "action 'delegate' requires 'task'" }));
+            }
+            const delegateSessionId = manager.run(params.agent, params.task);
+            onSessionStart?.(params.agent, delegateSessionId);
+            const delegateResult = await manager.waitFor(delegateSessionId);
+            if (!delegateResult) {
+              return textResult(JSON.stringify({ error: `Session "${delegateSessionId}" disappeared` }));
+            }
+            const { messages: _delegateMsgs, ...delegateWithoutMessages } = delegateResult;
+            return textResult(JSON.stringify(delegateWithoutMessages, null, 2));
           }
 
           case "trace": {
