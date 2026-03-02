@@ -1239,12 +1239,33 @@ export class SubagentManager {
               if (!params.sessionId) {
                 return textResult(JSON.stringify({ error: "action 'status' requires 'sessionId'" }));
               }
+              // Check active sessions first
               const allSessions = manager.status();
               const session = allSessions.find((s) => s.sessionId === params.sessionId);
-              if (!session) {
-                return textResult(JSON.stringify({ error: `Session "${params.sessionId}" not found or not running` }));
+              if (session) {
+                return textResult(JSON.stringify(session, null, 2));
               }
-              return textResult(JSON.stringify(session, null, 2));
+              // Fall back to registry for completed/archived sessions
+              const persisted = manager.registry.getRegistry().sessions[params.sessionId];
+              if (persisted) {
+                const endedAt = persisted.endedAt ?? Date.now();
+                const info: SessionInfo = {
+                  sessionId: params.sessionId,
+                  agent: persisted.agent,
+                  task: persisted.task,
+                  status: persisted.status,
+                  startedAt: persisted.startedAt,
+                  endedAt: persisted.endedAt,
+                  runtime: formatDuration(endedAt - persisted.startedAt),
+                  outputDir: sessionOutputDir(manager.registry.persistDir, params.sessionId),
+                  error: persisted.error,
+                  parentSessionId: persisted.parentSessionId,
+                  workflowRunId: persisted.workflowRunId,
+                  stepLabel: persisted.stepLabel,
+                };
+                return textResult(JSON.stringify(info, null, 2));
+              }
+              return textResult(JSON.stringify({ error: `Session "${params.sessionId}" not found` }));
             }
 
             case "progress": {
