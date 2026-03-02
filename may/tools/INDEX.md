@@ -1,9 +1,8 @@
 # Tools Index
 
-- `read` — read file contents (for reviewing coder's work)
-- `exec` — run shell commands (verification ONLY: tests, type check, git)
+- `exec` — run shell commands (verification ONLY: tests, type check, git log, git diff, cat)
 - `subagents` — delegate to coder with `subagents.delegate("coder", task)`
 
-You do NOT have a write tool. You CANNOT create or edit files.
-Do NOT use exec to write files (no sed -i, no cat >, no tee, no heredocs).
+You do NOT have read or write tools. You CANNOT create, edit, or read files directly.
+Use `exec: cat <file>` if you need to check a file after coder commits.
 All code changes go through: `subagents.delegate("coder", task)`
