@@ -763,18 +763,102 @@ export function createHealthCheckTool(options?: HealthCheckOptions): AgentTool<t
   };
 }
 
+
 // ── Learn tool ─────────────────────────────────────────────────────────
 
 const LearnParams = Type.Object({
-  lesson: Type.String({ description: "What you learned. Be specific and actionable." }),
+  lesson: Type.Optional(Type.String({ description: "What you learned. Be specific and actionable. Required when adding a lesson." })),
+  category: Type.Optional(Type.String({ description: "Category for the lesson (e.g. 'testing', 'architecture', 'debugging'). Default: 'general'." })),
+  listLessons: Type.Optional(Type.Boolean({ description: "When true, return current lessons instead of adding. The 'lesson' param is ignored." })),
 });
 
 /**
- * Create a tool that appends a lesson to the agent's knowledge/lessons.md.
+ * Parse a lessons.md file into a map of category → lesson lines.
  *
- * This is a dumb append — no consolidation, no dedup. The maintainer
- * agent handles cleanup later. The point is fast capture: when the user
- * corrects you or you discover something, write it down immediately.
+ * Expected format:
+ *   # Lessons
+ *
+ *   ## category-name
+ *
+ *   - 2024-01-01 12:00: Some lesson
+ *   - 2024-01-02 13:00: Another lesson
+ *
+ *   ## another-category
+ *   ...
+ *
+ * Returns a Map preserving insertion order.
+ * Lessons not under any ## header go into the "general" category.
+ */
+function parseLessons(content: string): Map<string, string[]> {
+  const categories = new Map<string, string[]>();
+  let currentCategory = "general";
+  categories.set(currentCategory, []);
+
+  for (const line of content.split("\n")) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith("## ")) {
+      currentCategory = trimmed.slice(3).trim().toLowerCase();
+      if (!categories.has(currentCategory)) {
+        categories.set(currentCategory, []);
+      }
+    } else if (trimmed.startsWith("- ")) {
+      const list = categories.get(currentCategory);
+      if (list) list.push(trimmed);
+      else categories.set(currentCategory, [trimmed]);
+    }
+    // Skip # Lessons header, ---, and blank lines
+  }
+
+  return categories;
+}
+
+/**
+ * Serialize a category map back to markdown.
+ */
+function serializeLessons(categories: Map<string, string[]>): string {
+  const sections: string[] = ["# Lessons\n"];
+
+  for (const [cat, lessons] of categories) {
+    if (lessons.length === 0) continue;
+    sections.push(`## ${cat}\n`);
+    for (const lesson of lessons) {
+      sections.push(lesson);
+    }
+    sections.push(""); // blank line after section
+  }
+
+  return sections.join("\n");
+}
+
+/**
+ * Check whether a similar lesson already exists in any category.
+ *
+ * Uses case-insensitive substring matching: if the new lesson text
+ * is contained in an existing entry (or vice versa), it's a duplicate.
+ */
+function isDuplicate(categories: Map<string, string[]>, lessonText: string): boolean {
+  const needle = lessonText.toLowerCase();
+  for (const lessons of categories.values()) {
+    for (const existing of lessons) {
+      const existingLower = existing.toLowerCase();
+      // Extract the lesson text after the timestamp prefix "- YYYY-MM-DD HH:MM: "
+      const match = existingLower.match(/^- \d{4}-\d{2}-\d{2} \d{2}:\d{2}: (.+)$/);
+      const existingText = match ? match[1] : existingLower;
+      if (existingText.includes(needle) || needle.includes(existingText)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+/**
+ * Create a tool that records lessons to the agent's knowledge/lessons.md.
+ *
+ * Features:
+ * - **Categories**: lessons are organized under markdown ## headers
+ * - **Deduplication**: before adding, checks if a similar lesson exists (substring match)
+ * - **Listing**: set listLessons=true to retrieve current lessons
  *
  * @param knowledgeDir - path to the agent's knowledge/ directory
  */
@@ -783,23 +867,56 @@ export function createLearnTool(knowledgeDir: string): AgentTool<typeof LearnPar
     name: "learn",
     label: "Learn",
     description:
-      "Record a lesson. Use when: the user corrects you, you discover " +
+      "Record a lesson or list existing lessons. Use when: the user corrects you, you discover " +
       "something useful, or you find a better approach. Lessons persist " +
-      "across sessions.",
+      "across sessions. Set listLessons=true to see what's already recorded. " +
+      "Duplicate lessons are detected and skipped automatically.",
     parameters: LearnParams,
     execute: async (_id, params) => {
       try {
         const lessonsPath = join(knowledgeDir, "lessons.md");
         mkdirSync(knowledgeDir, { recursive: true });
 
-        const ts = new Date().toISOString().slice(0, 16).replace("T", " ");
-        const entry = `- ${ts}: ${params.lesson}\n`;
-
-        if (!existsSync(lessonsPath)) {
-          writeFileSync(lessonsPath, `# Lessons\n\n---\n\n${entry}`, "utf-8");
-        } else {
-          appendFileSync(lessonsPath, entry, "utf-8");
+        // ── List mode ──────────────────────────────────────────────
+        if (params.listLessons) {
+          if (!existsSync(lessonsPath)) {
+            return textResult("No lessons recorded yet.");
+          }
+          const content = readFileSync(lessonsPath, "utf-8");
+          return textResult(content);
         }
+
+        // ── Add mode ───────────────────────────────────────────────
+        if (!params.lesson) {
+          return textResult("Error: 'lesson' parameter is required when adding a lesson.");
+        }
+
+        const category = (params.category ?? "general").toLowerCase().trim();
+        const ts = new Date().toISOString().slice(0, 16).replace("T", " ");
+        const entry = `- ${ts}: ${params.lesson}`;
+
+        // Load existing lessons or start fresh
+        let categories: Map<string, string[]>;
+        if (existsSync(lessonsPath)) {
+          const content = readFileSync(lessonsPath, "utf-8");
+          categories = parseLessons(content);
+        } else {
+          categories = new Map();
+        }
+
+        // Dedup check
+        if (isDuplicate(categories, params.lesson)) {
+          return textResult("Lesson already exists (duplicate skipped).");
+        }
+
+        // Add to the right category
+        if (!categories.has(category)) {
+          categories.set(category, []);
+        }
+        categories.get(category)!.push(entry);
+
+        // Write back
+        writeFileSync(lessonsPath, serializeLessons(categories), "utf-8");
 
         return textResult("Lesson recorded.");
       } catch (err: unknown) {
