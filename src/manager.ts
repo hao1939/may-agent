@@ -118,6 +118,10 @@ interface ActiveSession {
   stepLabel?: string;
   turnCount: number;
   maxTurns?: number;
+  /** Threshold (0-1) at which to fire a turn budget warning. */
+  turnWarningThreshold: number;
+  /** Whether the turn warning has already been fired. */
+  turnWarningFired: boolean;
   /** When true, session stays active after completion (transitions to "idle"). */
   persistent: boolean;
 }
@@ -193,12 +197,30 @@ export class SubagentManager {
     });
   }
 
-  /** Subscribe to turn_end events and enforce maxTurns limit. */
+  /** Subscribe to turn_end events, inject turn-budget warning, and enforce maxTurns limit. */
   private subscribeForTurnLimit(session: ActiveSession): void {
     if (!session.maxTurns || session.maxTurns <= 0) return;
     session.unsubscribeTurnLimit = session.agent.subscribe((event: AgentEvent) => {
       if (event.type === "turn_end") {
         session.turnCount++;
+
+        // Inject a one-time warning when the agent crosses the warning threshold
+        const warningTurn = Math.floor(session.maxTurns! * session.turnWarningThreshold);
+        if (!session.turnWarningFired && warningTurn > 0 && session.turnCount >= warningTurn) {
+          session.turnWarningFired = true;
+          const remaining = session.maxTurns! - session.turnCount;
+          session.agent.steer({
+            role: "user",
+            content: [{
+              type: "text",
+              text: `⚠️ TURN BUDGET WARNING: You have used ${session.turnCount} of ${session.maxTurns} turns. ` +
+                `Only ${remaining} turns remain. Wrap up your current work, commit any changes if possible, ` +
+                `and do not start new tasks. Summarize any remaining work that could not be completed.`,
+            }],
+            timestamp: Date.now(),
+          });
+        }
+
         if (session.turnCount >= session.maxTurns!) {
           session.agent.abort();
         }
@@ -478,6 +500,8 @@ export class SubagentManager {
       stepLabel: opts?.stepLabel,
       turnCount: 0,
       maxTurns: def.maxTurns,
+      turnWarningThreshold: def.turnWarningThreshold ?? 0.8,
+      turnWarningFired: false,
       persistent: def.persistent ?? false,
     };
 
@@ -676,6 +700,8 @@ export class SubagentManager {
       outputDir,
       turnCount: savedMessages.filter((m) => m.role === "assistant").length,
       maxTurns: def.maxTurns,
+      turnWarningThreshold: def.turnWarningThreshold ?? 0.8,
+      turnWarningFired: false,
       persistent: def.persistent ?? false,
     };
 
@@ -784,6 +810,8 @@ export class SubagentManager {
         outputDir,
         turnCount: savedMessages.filter((m) => m.role === "assistant").length,
         maxTurns: def.maxTurns,
+        turnWarningThreshold: def.turnWarningThreshold ?? 0.8,
+        turnWarningFired: false,
         persistent: def.persistent ?? false,
       };
 
