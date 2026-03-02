@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { createCompactionTransform, trimAccumulatedSummary, extractKeyFacts, mergeKeyFacts, formatKeyFacts } from "../src/compaction.js";
+import { createCompactionTransform, trimAccumulatedSummary, extractKeyFacts, mergeKeyFacts, formatKeyFacts, extractOriginalTask } from "../src/compaction.js";
 import type { CompactionInfo, KeyFacts } from "../src/compaction.js";
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { Model } from "@mariozechner/pi-ai";
@@ -116,7 +116,9 @@ describe("createCompactionTransform", () => {
   });
 
   it("calls onCompact callback with info", async () => {
-    const model = fakeModel(1000);
+    // Use a larger context window so the original task overhead (~125 tokens)
+    // doesn't exceed compaction savings. 2000 tokens, threshold 0.5 = trigger at 1000.
+    const model = fakeModel(2000);
     const onCompact = vi.fn();
     const transform = createCompactionTransform(model, {
       threshold: 0.5,
@@ -125,10 +127,10 @@ describe("createCompactionTransform", () => {
     });
 
     const messages = [
-      userMsg(longText(200)),
-      assistantMsg(longText(100)),
-      userMsg(longText(100)),
-      assistantMsg(longText(150)),
+      userMsg(longText(300)), // old — large enough that summary is much smaller
+      assistantMsg(longText(300)), // old
+      userMsg(longText(200)), // recent
+      assistantMsg(longText(250)), // recent
     ];
 
     await transform(messages);
@@ -596,6 +598,108 @@ describe("createCompactionTransform", () => {
     expect(summaryText).toContain("npx tsc --noEmit");
   });
 
+  // ── Original task preservation ───────────────────────────────────────
+
+  it("preserves full original task in compacted context", async () => {
+    const model = fakeModel(1000);
+    const transform = createCompactionTransform(model, { threshold: 0.3, keepRatio: 0.1 });
+
+    const task = "Implement the FrobnicatorService class with methods for encoding, " +
+      "decoding, and validating frobnicated data streams. The service should handle " +
+      "both synchronous and asynchronous pipelines. Include proper error handling " +
+      "and unit tests for all edge cases.";
+
+    const messages = [
+      userMsg(task + " " + longText(50)),
+      assistantMsg("I'll start by reading the codebase. " + longText(50)),
+      userMsg(longText(100)),
+      assistantMsg(longText(100)),
+    ];
+
+    const result = await transform(messages);
+    const summaryText = (result[0].content as any[])[0].text;
+
+    // The full task should be preserved, not just truncated to 200 chars
+    expect(summaryText).toContain("[Original task]");
+    expect(summaryText).toContain("FrobnicatorService");
+    expect(summaryText).toContain("synchronous and asynchronous pipelines");
+    expect(summaryText).toContain("unit tests for all edge cases");
+  });
+
+  it("truncates very long original tasks with ellipsis", async () => {
+    const model = fakeModel(1000);
+    const transform = createCompactionTransform(model, { threshold: 0.3, keepRatio: 0.1 });
+
+    // Task longer than ORIGINAL_TASK_MAX_LENGTH (500 chars)
+    const longTask = "Implement feature: " + "A".repeat(600);
+
+    const messages = [
+      userMsg(longTask),
+      assistantMsg(longText(100)),
+      userMsg(longText(100)),
+      assistantMsg(longText(100)),
+    ];
+
+    const result = await transform(messages);
+    const summaryText = (result[0].content as any[])[0].text;
+
+    expect(summaryText).toContain("[Original task]");
+    // Should be truncated at 500 chars
+    expect(summaryText).not.toContain("A".repeat(600));
+    expect(summaryText).toContain("A".repeat(481)); // 500 - "Implement feature: ".length
+    expect(summaryText).toContain("…");
+  });
+
+  it("preserves original task across multiple compaction rounds", async () => {
+    const model = fakeModel(1000);
+    const transform = createCompactionTransform(model, { threshold: 0.3, keepRatio: 0.15 });
+
+    const task = "Fix the authentication middleware to properly validate JWT tokens";
+
+    // Round 1
+    const messages1 = [
+      userMsg(task + " " + longText(50)),
+      assistantMsg(longText(100)),
+      userMsg(longText(100)),
+      assistantMsg(longText(100)),
+    ];
+
+    const result1 = await transform(messages1);
+    const text1 = (result1[0].content as any[])[0].text;
+    expect(text1).toContain("[Original task]");
+    expect(text1).toContain("JWT tokens");
+
+    // Round 2: original first message is gone, but task should persist
+    const messages2 = [
+      ...result1,
+      userMsg(longText(100)),
+      assistantMsg(longText(100)),
+      userMsg(longText(100)),
+      assistantMsg(longText(100)),
+    ];
+
+    const result2 = await transform(messages2);
+    const text2 = (result2[0].content as any[])[0].text;
+    expect(text2).toContain("[Original task]");
+    expect(text2).toContain("JWT tokens");
+  });
+
+  it("does not include original task block when first message is empty", async () => {
+    const model = fakeModel(1000);
+    const transform = createCompactionTransform(model, { threshold: 0.3, keepRatio: 0.1 });
+
+    const messages = [
+      userMsg(""), // empty task
+      assistantMsg(longText(200)),
+      userMsg(longText(100)),
+      assistantMsg(longText(100)),
+    ];
+
+    const result = await transform(messages);
+    const summaryText = (result[0].content as any[])[0].text;
+    expect(summaryText).not.toContain("[Original task]");
+  });
+
   // ── Summary trimming via createCompactionTransform ───────────────────
 
   it("caps accumulated summary to prevent unbounded growth", async () => {
@@ -632,8 +736,72 @@ describe("createCompactionTransform", () => {
     // ensures it stays bounded.
     const summaryText = (lastResult[0].content as any[])[0].text;
     expect(summaryText).toContain("COMPACTED CONTEXT");
-    // Summary should be bounded — 8000 chars min budget + overhead
+    // Summary should be bounded — 8000 chars min budget + original task block + overhead
     expect(summaryText.length).toBeLessThan(12000);
+  });
+});
+
+// ── extractOriginalTask unit tests ─────────────────────────────────────
+
+describe("extractOriginalTask", () => {
+  it("extracts text from first user message with array content", () => {
+    const messages: AgentMessage[] = [
+      userMsg("Implement the new feature"),
+      assistantMsg("Sure thing"),
+    ];
+    expect(extractOriginalTask(messages)).toBe("Implement the new feature");
+  });
+
+  it("extracts text from first user message with string content", () => {
+    const messages: AgentMessage[] = [
+      { role: "user", content: "Fix the bug", timestamp: Date.now() } as any,
+      assistantMsg("OK"),
+    ];
+    expect(extractOriginalTask(messages)).toBe("Fix the bug");
+  });
+
+  it("returns null when first user message is empty", () => {
+    const messages: AgentMessage[] = [
+      userMsg(""),
+      assistantMsg("OK"),
+    ];
+    expect(extractOriginalTask(messages)).toBeNull();
+  });
+
+  it("returns null when no user messages exist", () => {
+    const messages: AgentMessage[] = [
+      assistantMsg("Hello"),
+    ];
+    expect(extractOriginalTask(messages)).toBeNull();
+  });
+
+  it("returns null for empty messages array", () => {
+    expect(extractOriginalTask([])).toBeNull();
+  });
+
+  it("returns first user message even if there are later user messages", () => {
+    const messages: AgentMessage[] = [
+      userMsg("First task"),
+      assistantMsg("Working on it"),
+      userMsg("Actually do something else"),
+      assistantMsg("OK"),
+    ];
+    expect(extractOriginalTask(messages)).toBe("First task");
+  });
+
+  it("joins multiple text blocks in a single user message", () => {
+    const messages: AgentMessage[] = [
+      {
+        role: "user",
+        content: [
+          { type: "text", text: "Part 1." },
+          { type: "text", text: "Part 2." },
+        ],
+        timestamp: Date.now(),
+      },
+      assistantMsg("OK"),
+    ];
+    expect(extractOriginalTask(messages as any)).toBe("Part 1. Part 2.");
   });
 });
 
