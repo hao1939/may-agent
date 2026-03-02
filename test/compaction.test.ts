@@ -361,4 +361,119 @@ describe("createCompactionTransform", () => {
     expect(result.length).toBeLessThan(messages.length);
     expect((result[0].content as any[])[0].text).toContain("COMPACTED CONTEXT");
   });
+
+  // ── Last reasoning preservation tests ────────────────────────────────
+
+  it("preserves last substantial assistant reasoning in summary", async () => {
+    const model = fakeModel(1000);
+    const transform = createCompactionTransform(model, { threshold: 0.3, keepRatio: 0.1 });
+
+    const reasoning = "The test failure is caused by using toBe for object comparison. " +
+      "The assertion should use toEqual instead, because toBe checks reference equality " +
+      "while toEqual performs deep structural comparison. I will update the test file.";
+
+    const messages = [
+      userMsg("Fix the failing test " + longText(50)),
+      assistantMsg(reasoning + " " + longText(50)),
+      userMsg(longText(100)),
+      assistantMsg(longText(100)),
+    ];
+
+    const result = await transform(messages);
+    const summaryText = (result[0].content as any[])[0].text;
+    expect(summaryText).toContain("[Last reasoning before compaction]");
+    // The full reasoning should be preserved, not truncated to 200 chars
+    expect(summaryText).toContain("deep structural comparison");
+    expect(summaryText).toContain("toBe for object comparison");
+  });
+
+  it("picks the LAST substantial reasoning when multiple exist", async () => {
+    const model = fakeModel(1000);
+    const transform = createCompactionTransform(model, { threshold: 0.3, keepRatio: 0.1 });
+
+    const earlyReasoning = "First I need to read the config file to understand the setup. " +
+      "This will help me determine the correct approach for fixing the integration issue.";
+    const laterReasoning = "After reading the config, I see the problem is in the database " +
+      "connection string. The host is wrong — it should be localhost not 127.0.0.1 for IPv6.";
+
+    const messages = [
+      userMsg("Fix the DB connection " + longText(30)),
+      assistantMsg(earlyReasoning + " " + longText(30)),
+      userMsg("Here is more context " + longText(30)),
+      assistantMsg(laterReasoning + " " + longText(30)),
+      userMsg(longText(100)),
+      assistantMsg(longText(100)),
+    ];
+
+    const result = await transform(messages);
+    const summaryText = (result[0].content as any[])[0].text;
+    // Should have the LATER reasoning, not the early one
+    expect(summaryText).toContain("database connection string");
+    expect(summaryText).toContain("localhost not 127.0.0.1");
+  });
+
+  it("does not include reasoning section when no substantial text exists", async () => {
+    const model = fakeModel(1000);
+    const transform = createCompactionTransform(model, { threshold: 0.3, keepRatio: 0.1 });
+
+    const messages = [
+      userMsg(longText(200)),
+      assistantMsg("OK"), // too short to be substantial (< 100 chars)
+      userMsg(longText(100)),
+      assistantMsg(longText(100)),
+    ];
+
+    const result = await transform(messages);
+    const summaryText = (result[0].content as any[])[0].text;
+    expect(summaryText).not.toContain("[Last reasoning before compaction]");
+  });
+
+  it("truncates very long reasoning blocks with a marker", async () => {
+    const model = fakeModel(2000);
+    const transform = createCompactionTransform(model, { threshold: 0.3, keepRatio: 0.1 });
+
+    // Reasoning block that exceeds the 2000-char cap
+    const longReasoning = "A".repeat(3000);
+
+    const messages = [
+      userMsg(longText(200)),
+      assistantMsg(longReasoning + " " + longText(50)),
+      userMsg(longText(200)),
+      assistantMsg(longText(200)),
+    ];
+
+    const result = await transform(messages);
+    const summaryText = (result[0].content as any[])[0].text;
+    expect(summaryText).toContain("[Last reasoning before compaction]");
+    expect(summaryText).toContain("_(reasoning truncated)_");
+    // Should not contain the full 3000-char string
+    expect(summaryText).not.toContain("A".repeat(3000));
+  });
+
+  it("reasoning is preserved alongside structural tool call log", async () => {
+    const model = fakeModel(1000);
+    const transform = createCompactionTransform(model, { threshold: 0.3, keepRatio: 0.1 });
+
+    const reasoning = "The ENOENT error on config.json means the file was moved. " +
+      "Based on the find output, it's now at src/config/config.json. I'll update the import path.";
+
+    const messages = [
+      userMsg("Fix the missing config " + longText(20)),
+      toolCallMsg("read", { path: "config.json" }),
+      toolResultMsg("read", "ENOENT: no such file"),
+      assistantMsg(reasoning + " " + longText(20)),
+      toolCallMsg("read", { path: "src/config/config.json" }),
+      toolResultMsg("read", "{ port: 3000 }" + longText(20)),
+      userMsg(longText(100)),
+      assistantMsg(longText(100)),
+    ];
+
+    const result = await transform(messages);
+    const summaryText = (result[0].content as any[])[0].text;
+    // Should have BOTH the structural log AND the reasoning
+    expect(summaryText).toContain("[read]"); // structural tool result
+    expect(summaryText).toContain("[Last reasoning before compaction]");
+    expect(summaryText).toContain("file was moved");
+    expect(summaryText).toContain("src/config/config.json");
+  });
 });
