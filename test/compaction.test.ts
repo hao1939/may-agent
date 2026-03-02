@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { createCompactionTransform } from "../src/compaction.js";
+import { createCompactionTransform, trimAccumulatedSummary } from "../src/compaction.js";
 import type { CompactionInfo } from "../src/compaction.js";
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { Model } from "@mariozechner/pi-ai";
@@ -57,6 +57,17 @@ function toolResultMsg(name: string, text: string, ts = Date.now()): AgentMessag
     toolName: name,
     content: [{ type: "text", text }],
     isError: false,
+    timestamp: ts,
+  } as AgentMessage;
+}
+
+function errorToolResultMsg(name: string, text: string, ts = Date.now()): AgentMessage {
+  return {
+    role: "toolResult",
+    toolCallId: `tc_${Date.now()}`,
+    toolName: name,
+    content: [{ type: "text", text }],
+    isError: true,
     timestamp: ts,
   } as AgentMessage;
 }
@@ -475,5 +486,151 @@ describe("createCompactionTransform", () => {
     expect(summaryText).toContain("[Last reasoning before compaction]");
     expect(summaryText).toContain("file was moved");
     expect(summaryText).toContain("src/config/config.json");
+  });
+
+  // ── Error tool results get longer previews ─────────────────────────
+
+  it("gives error tool results longer previews than success results", async () => {
+    const model = fakeModel(1000);
+    const transform = createCompactionTransform(model, { threshold: 0.3, keepRatio: 0.1 });
+
+    // Create an error message that's 250 chars long — longer than old 150 limit but under 300
+    const errorText = "E".repeat(250);
+    // Create a success message that's 250 chars long — should be truncated at 200
+    const successText = "S".repeat(250);
+
+    const messages = [
+      userMsg("test " + longText(20)),
+      toolCallMsg("exec", { command: "test" }),
+      errorToolResultMsg("exec", errorText),
+      assistantMsg("error " + longText(20)),
+      toolCallMsg("exec", { command: "test2" }),
+      toolResultMsg("exec", successText),
+      assistantMsg("success " + longText(20)),
+      userMsg(longText(100)),
+      assistantMsg(longText(100)),
+    ];
+
+    const result = await transform(messages);
+    const summaryText = (result[0].content as any[])[0].text;
+
+    // Error result: 250 chars < 300 limit → full text preserved
+    expect(summaryText).toContain("E".repeat(250));
+    // Success result: 250 chars > 200 limit → truncated
+    expect(summaryText).not.toContain("S".repeat(250));
+    expect(summaryText).toContain("S".repeat(200));
+  });
+
+  // ── Key facts extraction ─────────────────────────────────────────────
+
+  it("extracts key facts about files read and written", async () => {
+    const model = fakeModel(1000);
+    const transform = createCompactionTransform(model, { threshold: 0.3, keepRatio: 0.1 });
+
+    const messages = [
+      userMsg("Fix the bug " + longText(20)),
+      toolCallMsg("read", { path: "src/tools.ts" }),
+      toolResultMsg("read", "file content " + longText(30)),
+      assistantMsg("I see the issue " + longText(20)),
+      toolCallMsg("write", { path: "src/tools.ts", content: "fixed" }),
+      toolResultMsg("write", "Wrote 5 bytes"),
+      assistantMsg("Fixed! " + longText(20)),
+      userMsg(longText(100)),
+      assistantMsg(longText(100)),
+    ];
+
+    const result = await transform(messages);
+    const summaryText = (result[0].content as any[])[0].text;
+    expect(summaryText).toContain("Key facts");
+    expect(summaryText).toContain("Files read: src/tools.ts");
+    expect(summaryText).toContain("Files written: src/tools.ts");
+  });
+
+  // ── Summary trimming via createCompactionTransform ───────────────────
+
+  it("caps accumulated summary to prevent unbounded growth", async () => {
+    // In production, the min budget is 8000 chars.
+    // We test that after many compaction rounds, the summary doesn't grow forever
+    // by checking it stays under a reasonable bound.
+    const model = fakeModel(1000);
+    const onCompact = vi.fn();
+    const transform = createCompactionTransform(model, {
+      threshold: 0.3,
+      keepRatio: 0.15,
+      onCompact,
+    });
+
+    // Run many compaction rounds
+    let lastResult: AgentMessage[] = [];
+    for (let round = 0; round < 10; round++) {
+      const messages = [
+        ...(lastResult.length > 0 ? lastResult : []),
+        userMsg(longText(100)),
+        assistantMsg(longText(100)),
+        userMsg(longText(100)),
+        assistantMsg(longText(100)),
+      ];
+      lastResult = await transform(messages);
+    }
+
+    // Should have compacted multiple times
+    expect(onCompact.mock.calls.length).toBeGreaterThan(3);
+
+    // The summary message should exist and not be unbounded
+    // With 10 rounds of compaction, without trimming the summary
+    // would grow linearly. The MIN_SUMMARY_BUDGET_CHARS cap (8000)
+    // ensures it stays bounded.
+    const summaryText = (lastResult[0].content as any[])[0].text;
+    expect(summaryText).toContain("COMPACTED CONTEXT");
+    // Summary should be bounded — 8000 chars min budget + overhead
+    expect(summaryText.length).toBeLessThan(12000);
+  });
+});
+
+// ── trimAccumulatedSummary unit tests ──────────────────────────────────
+
+describe("trimAccumulatedSummary", () => {
+  it("returns summary unchanged when under budget", () => {
+    const summary = "short summary";
+    expect(trimAccumulatedSummary(summary, 1000)).toBe(summary);
+  });
+
+  it("trims oldest sections first when over budget", () => {
+    const section1 = "Section 1: " + "A".repeat(100);
+    const section2 = "Section 2: " + "B".repeat(100);
+    const section3 = "Section 3: " + "C".repeat(100);
+    const summary = [section1, section2, section3].join("\n\n--- (compacted) ---\n\n");
+
+    // Budget that fits 2 sections but not 3
+    const budget = section2.length + section3.length + 100; // separator + trim notice
+    const result = trimAccumulatedSummary(summary, budget);
+
+    // Should NOT contain section 1 (oldest)
+    expect(result).not.toContain("Section 1");
+    // Should contain section 3 (newest)
+    expect(result).toContain("Section 3");
+    // Should contain trim notice
+    expect(result).toContain("earlier compaction rounds trimmed");
+  });
+
+  it("handles single section that exceeds budget", () => {
+    const summary = "A".repeat(500);
+    const result = trimAccumulatedSummary(summary, 200);
+    expect(result.length).toBeLessThanOrEqual(250); // 200 + trim marker
+    expect(result).toContain("_(earlier context trimmed)_");
+  });
+
+  it("preserves newest section when only one fits", () => {
+    const section1 = "Old: " + "A".repeat(200);
+    const section2 = "New: " + "B".repeat(200);
+    const summary = [section1, section2].join("\n\n--- (compacted) ---\n\n");
+
+    // Budget that fits only 1 section
+    const budget = 300;
+    const result = trimAccumulatedSummary(summary, budget);
+
+    // Should contain the NEWER section
+    expect(result).toContain("New:");
+    expect(result).toContain("earlier compaction rounds trimmed");
   });
 });
