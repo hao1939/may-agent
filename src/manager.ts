@@ -27,7 +27,7 @@ import { join, dirname } from "node:path";
 import { isOverflowError, extractProgress, writeProgressFile } from "./overflow.js";
 
 let nextId = 0;
-function generateId(prefix = "s"): string {
+export function generateId(prefix = "s"): string {
   return `${prefix}_${Date.now()}_${nextId++}`;
 }
 
