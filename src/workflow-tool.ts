@@ -17,6 +17,7 @@ import type {
 import { WorkflowInterrupted } from "./workflow.js";
 import type { WorkflowRun, WorkflowStep } from "./persistence.js";
 import { saveWorkflowRun, readWorkflowRun } from "./persistence.js";
+import { summarizeForHandoff } from "./handoff.js";
 
 // ── Tool schema ────────────────────────────────────────────────────────
 
@@ -119,8 +120,9 @@ export interface WorkflowToolOptions {
   workflowDir: string;
   /** Persist directory for saving workflow run records. */
   persistDir?: string;
-  /** The caller's session ID — used as parentSessionId for spawned sessions. */
-  callerSessionId?: string;
+  /** The caller's session ID — used as parentSessionId for spawned sessions.
+   *  Can be a string or a function returning a string (for lazy resolution). */
+  callerSessionId?: string | (() => string);
   /** Maximum workflow nesting depth (default: 3). */
   maxDepth?: number;
   onEvent?: (event: WorkflowEvent) => void;
@@ -129,6 +131,11 @@ export interface WorkflowToolOptions {
 export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
   const { manager, workflowDir, persistDir, onEvent } = opts;
   const maxDepth = opts.maxDepth ?? 3;
+
+  const resolveCallerSessionId = (): string | undefined => {
+    const v = opts.callerSessionId;
+    return typeof v === "function" ? v() : v;
+  };
 
   let activeSteeringQueue: string[] | null = null;
   let activeWorkflowName: string | null = null;
@@ -262,6 +269,10 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
         onEvent?.(event);
       },
 
+      summarize: (result: TaskResult, handoffOpts?) => {
+        return summarizeForHandoff(result, handoffOpts);
+      },
+
       runWorkflow: async (wfName: string, wfTask: string): Promise<WorkflowResult> => {
         const steering = steeringQueue.shift();
         if (steering) {
@@ -386,7 +397,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
           try {
             const { result, runId, steps } = await executeWorkflow(
               workflow, params.task, 1,
-              opts.callerSessionId, undefined,
+              resolveCallerSessionId(), undefined,
               completedSteps, steeringQueue,
             );
 

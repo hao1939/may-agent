@@ -1,4 +1,5 @@
 import type { TaskResult } from "./types.js";
+import type { HandoffOptions } from "./handoff.js";
 
 // ── Workflow Events ────────────────────────────────────────────────────
 
@@ -32,6 +33,24 @@ export interface WorkflowContext {
 
   /** Emit a workflow event (observable by subscribers). */
   emit(event: WorkflowEvent): void;
+
+  /**
+   * Build a rich context summary from a completed TaskResult for step handoff.
+   *
+   * Instead of passing just `result.lastAssistantText` to the next step,
+   * use this to give it structured context about files modified, commands run,
+   * errors encountered, and the agent's final assessment.
+   *
+   * Example:
+   * ```ts
+   * const coder = await ctx.runAgent("coder", ctx.task);
+   * const reviewTask = `Review this implementation.\n\n` +
+   *   `## Task\n${ctx.task}\n\n` +
+   *   `## Implementation Summary\n${ctx.summarize(coder)}`;
+   * const review = await ctx.runAgent("reviewer", reviewTask);
+   * ```
+   */
+  summarize(result: TaskResult, opts?: HandoffOptions): string;
 
   /** Mark workflow as done. */
   done(summary: string): WorkflowResult;
