@@ -501,7 +501,7 @@ export class SubagentManager {
    *
    * Returns null if the agent has no "running" session to resume.
    */
-  resumeAgent(agentName: string): { resumed: SessionInfo; interrupted: SessionInfo[] } | null {
+  resumeAgent(agentName: string): { resumed: SessionInfo | null; interrupted: SessionInfo[] } | null {
     const registryData = this.registry.getRegistry();
     const persistDir = this.registry.persistDir;
 
@@ -540,7 +540,7 @@ export class SubagentManager {
     if (!targetSessionId || !targetPersisted) {
       // No running session for this agent — still clean up others
       this.cleanupStaleWorkflowRuns();
-      return interrupted.length > 0 ? { resumed: null!, interrupted } : null;
+      return interrupted.length > 0 ? { resumed: null, interrupted } : null;
     }
 
     // Find matching registered agent
