@@ -28,10 +28,27 @@ import { join, dirname } from "node:path";
 import { isOverflowError, extractProgress, writeProgressFile } from "./overflow.js";
 
 let nextId = 0;
+/**
+ * Generate a unique session ID.
+ *
+ * Format: `{prefix}_{timestamp}_{counter}` — e.g. `s_1700000000000_0`.
+ *
+ * @param prefix - String prefix for the ID (default: `"s"`).
+ * @returns A unique ID string.
+ */
 export function generateId(prefix = "s"): string {
   return `${prefix}_${Date.now()}_${nextId++}`;
 }
 
+/**
+ * Converts a duration in milliseconds to a human-readable string.
+ *
+ * Returns seconds only for durations under a minute (e.g. `"42s"`),
+ * or minutes and seconds for longer durations (e.g. `"2m30s"`).
+ *
+ * @param ms - Duration in milliseconds.
+ * @returns A formatted duration string such as `"42s"` or `"2m30s"`.
+ */
 function formatDuration(ms: number): string {
   const seconds = Math.floor(ms / 1000);
   if (seconds < 60) return `${seconds}s`;
