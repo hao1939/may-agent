@@ -75,6 +75,7 @@ interface ActiveSession {
   promise: Promise<void>;
   task: string;
   startedAt: number;
+  endedAt?: number;
   status: "running" | "done" | "error" | "interrupted";
   error?: string;
   outputDir: string;
@@ -281,12 +282,13 @@ export class SubagentManager {
   /** Append a memory entry after session completion. */
   private appendMemory(session: ActiveSession): void {
     const messages = session.agent.state.messages;
+    const endTime = session.endedAt ?? Date.now();
     const entry: MemoryEntry = {
       task: session.task,
       status: session.status,
-      duration: formatDuration(Date.now() - session.startedAt),
+      duration: formatDuration(endTime - session.startedAt),
       summary: extractLastAssistantText(messages),
-      timestamp: Date.now(),
+      timestamp: endTime,
     };
     appendMemoryEntry(this.registry.persistDir, session.agentName, entry);
   }
@@ -322,6 +324,7 @@ export class SubagentManager {
   private handleCompletion(session: ActiveSession): void {
     session.unsubscribe?.();
     session.unsubscribeTurnLimit?.();
+    session.endedAt = Date.now();
     this.clearTimeout(session);
 
     // Detect turn-limit abort: if maxTurns was set and turnCount reached it,
@@ -759,8 +762,8 @@ export class SubagentManager {
       task: s.task,
       status: s.status,
       startedAt: s.startedAt,
-      endedAt: s.status !== "running" ? Date.now() : undefined,
-      runtime: formatDuration(Date.now() - s.startedAt),
+      endedAt: s.endedAt ?? (s.status !== "running" ? Date.now() : undefined),
+      runtime: formatDuration((s.endedAt ?? Date.now()) - s.startedAt),
       outputDir: s.outputDir,
       error: s.error,
       parentSessionId: s.parentSessionId,
@@ -853,7 +856,7 @@ export class SubagentManager {
       status: session.status === "interrupted" ? "error" : session.status as "done" | "error",
       lastAssistantText: extractLastAssistantText(messages),
       messages: messages.slice(),
-      duration: formatDuration((session.status !== "running" ? Date.now() : Date.now()) - session.startedAt),
+      duration: formatDuration((session.endedAt ?? Date.now()) - session.startedAt),
       outputDir: session.outputDir,
       error: session.error,
       turnsUsed: session.turnCount,
