@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { createExecTool } from "../src/tools.js";
+import { createExecTool, stripRedundantCd, detectsOutsidePaths } from "../src/tools.js";
 import type { ExecToolOptions } from "../src/tools.js";
 
 describe("createExecTool with options", () => {
@@ -113,9 +113,30 @@ describe("createExecTool with options", () => {
     expect(result2.content[0].text).toContain("world");
   });
 
+  it("echoes cwd on error output when echoCwd is true", async () => {
+    const tool = createExecTool({
+      cwd: "/tmp",
+      echoCwd: true,
+    });
+
+    // Command that will fail with non-zero exit code
+    const result = await tool.execute("id", { command: "ls /nonexistent_path_xyz_12345" });
+    const text = result.content[0].text;
+    // Should include CWD even on error
+    expect(text).toContain("CWD: /tmp");
+    // Should also include the error
+    expect(text).toContain("Exit code");
+  });
+
   it("does not echo cwd when echoCwd is false or unset", async () => {
     const tool = createExecTool({ cwd: "/tmp" });
     const result = await tool.execute("id", { command: "echo hello" });
+    expect(result.content[0].text).not.toContain("CWD:");
+  });
+
+  it("does not echo cwd on error when echoCwd is false", async () => {
+    const tool = createExecTool({ cwd: "/tmp" });
+    const result = await tool.execute("id", { command: "ls /nonexistent_path_xyz_12345" });
     expect(result.content[0].text).not.toContain("CWD:");
   });
 
@@ -244,5 +265,133 @@ describe("warnOutsideRoot", () => {
     const result = await tool.execute("id", { command: "ls /home/example-user/may-agent-old" });
     expect(result.content[0].text).toContain("WARNING:");
     expect(result.content[0].text).toContain("outside the project root");
+  });
+});
+
+describe("stripRedundantCd", () => {
+  const ROOT = "/home/example-user/may-agent";
+
+  it("strips cd <root> && prefix", () => {
+    expect(stripRedundantCd("cd /home/example-user/may-agent && git log", ROOT))
+      .toBe("git log");
+  });
+
+  it("strips cd <root>; prefix", () => {
+    expect(stripRedundantCd("cd /home/example-user/may-agent; git log", ROOT))
+      .toBe("git log");
+  });
+
+  it("strips cd with quotes around path (double)", () => {
+    expect(stripRedundantCd('cd "/home/example-user/may-agent" && git log', ROOT))
+      .toBe("git log");
+  });
+
+  it("strips cd with quotes around path (single)", () => {
+    expect(stripRedundantCd("cd '/home/example-user/may-agent' && git log", ROOT))
+      .toBe("git log");
+  });
+
+  it("strips cd with leading whitespace", () => {
+    expect(stripRedundantCd("  cd /home/example-user/may-agent && ls", ROOT))
+      .toBe("ls");
+  });
+
+  it("does NOT strip cd to a different directory", () => {
+    const cmd = "cd /home/user && git log";
+    expect(stripRedundantCd(cmd, ROOT)).toBe(cmd);
+  });
+
+  it("does NOT strip cd to a subdirectory", () => {
+    const cmd = "cd /home/example-user/may-agent/src && ls";
+    expect(stripRedundantCd(cmd, ROOT)).toBe(cmd);
+  });
+
+  it("does NOT strip cd to parent directory", () => {
+    const cmd = "cd /home/example-user && ls";
+    expect(stripRedundantCd(cmd, ROOT)).toBe(cmd);
+  });
+
+  it("does NOT strip cd to sibling directory", () => {
+    const cmd = "cd /home/example-user/may-agent-old && ls";
+    expect(stripRedundantCd(cmd, ROOT)).toBe(cmd);
+  });
+
+  it("does NOT strip cd in the middle of a command", () => {
+    const cmd = "echo hello && cd /home/example-user/may-agent && ls";
+    expect(stripRedundantCd(cmd, ROOT)).toBe(cmd);
+  });
+
+  it("passes through commands without cd prefix", () => {
+    expect(stripRedundantCd("git log", ROOT)).toBe("git log");
+    expect(stripRedundantCd("ls -la", ROOT)).toBe("ls -la");
+    expect(stripRedundantCd("echo hello", ROOT)).toBe("echo hello");
+  });
+
+  it("handles root path with special regex characters", () => {
+    const specialRoot = "/home/user/my.project+1";
+    expect(stripRedundantCd("cd /home/user/my.project+1 && ls", specialRoot))
+      .toBe("ls");
+  });
+});
+
+describe("stripRedundantCd integration with exec tool", () => {
+  it("executes command after stripping cd prefix", async () => {
+    const tool = createExecTool({ cwd: "/tmp" });
+    // This would fail if the cd was actually executed (cd to /tmp then run echo)
+    // but since cwd is /tmp and cd /tmp is stripped, it just runs "echo ok"
+    const result = await tool.execute("id", { command: "cd /tmp && echo ok" });
+    expect(result.content[0].text).toContain("ok");
+  });
+
+  it("deny patterns checked after stripping cd prefix", async () => {
+    const tool = createExecTool({
+      cwd: "/tmp",
+      denyPatterns: [/\bfind\s+\/\s*(?:$|[;&|]|-)/],
+    });
+    // cd /tmp && find / -name foo → stripped to: find / -name foo → blocked
+    const result = await tool.execute("id", { command: "cd /tmp && find / -name foo" });
+    expect(result.content[0].text).toContain("Blocked");
+  });
+
+  it("warnOutsideRoot checked after stripping cd prefix", async () => {
+    const ROOT = "/home/example-user/may-agent";
+    const tool = createExecTool({ cwd: ROOT, warnOutsideRoot: ROOT });
+    // cd <root> && echo hello → stripped to: echo hello → no warning
+    const result = await tool.execute("id", { command: `cd ${ROOT} && echo hello` });
+    const text = result.content[0].text;
+    expect(text).toContain("hello");
+    expect(text).not.toContain("WARNING:");
+  });
+});
+
+describe("detectsOutsidePaths", () => {
+  const ROOT = "/home/example-user/may-agent";
+
+  it("detects /home/user as outside root", () => {
+    expect(detectsOutsidePaths("find /home/user -name foo", ROOT)).toBe(true);
+  });
+
+  it("does not detect project root as outside", () => {
+    expect(detectsOutsidePaths("find /home/example-user/may-agent/src -name foo", ROOT)).toBe(false);
+  });
+
+  it("detects /home/example-user (parent of root) as outside", () => {
+    expect(detectsOutsidePaths("cd /home/example-user && ls", ROOT)).toBe(true);
+  });
+
+  it("does not flag relative paths", () => {
+    expect(detectsOutsidePaths("find . -name foo", ROOT)).toBe(false);
+  });
+
+  it("detects /app as outside", () => {
+    expect(detectsOutsidePaths("ls /app/something", ROOT)).toBe(true);
+  });
+
+  it("detects exact root as not-outside", () => {
+    expect(detectsOutsidePaths("cd /home/example-user/may-agent", ROOT)).toBe(false);
+  });
+
+  it("detects sibling directories as outside", () => {
+    expect(detectsOutsidePaths("ls /home/example-user/may-agent-old", ROOT)).toBe(true);
   });
 });
