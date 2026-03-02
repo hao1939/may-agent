@@ -173,8 +173,8 @@ describe("Registry persistence", () => {
     expect(registryAfter.sessions[sessionId].endedAt).toBeDefined();
   });
 
-  it("works without persistDir (no persistence)", () => {
-    const manager = new SubagentManager();
+  it("works with a fresh persistDir (no prior state)", () => {
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
 
     // Should work fine, just no file created
     manager.register({

@@ -62,6 +62,7 @@ export class WorkflowInterrupted extends Error {
   constructor(
     public readonly steeringMessage: string,
     public readonly completedSteps: CompletedStep[],
+    public readonly workflowRunId: string = "unknown",
   ) {
     super(`Workflow interrupted: ${steeringMessage}`);
     this.name = "WorkflowInterrupted";

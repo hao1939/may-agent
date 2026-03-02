@@ -63,7 +63,7 @@ function thinkingMessage(): AgentMessage {
 }
 
 function mockManager(responseText: string): SubagentManager {
-  const manager = new SubagentManager();
+  const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
   vi.spyOn(manager, "run").mockReturnValue("eval_mock");
   vi.spyOn(manager, "waitFor").mockResolvedValue({
     sessionId: "eval_mock",

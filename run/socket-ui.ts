@@ -110,8 +110,9 @@ export function attachSocketUI(opts: SocketUIOptions): SocketUI {
     } catch { /* ignore */ }
   };
   process.on("exit", cleanup);
-  process.on("SIGINT", () => { cleanup(); process.exit(0); });
-  process.on("SIGTERM", () => { cleanup(); process.exit(0); });
+  // Socket cleanup only — shutdown orchestration is in may.ts
+  process.on("SIGINT", cleanup);
+  process.on("SIGTERM", cleanup);
 
   return {
     close: () => {

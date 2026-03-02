@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdirSync, writeFileSync, rmSync, existsSync } from "node:fs";
+import { mkdirSync, writeFileSync, rmSync, existsSync, mkdtempSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { createWorkflowTool } from "../src/workflow-tool.js";
@@ -53,7 +53,7 @@ describe("workflow composition: runWorkflow", () => {
       }
     `);
 
-    const manager = new SubagentManager();
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
     const tool = createWorkflowTool({ manager, workflowDir });
 
     const result = await tool.execute("tc1", {
@@ -90,7 +90,7 @@ describe("workflow composition: runWorkflow", () => {
       }
     `);
 
-    const manager = new SubagentManager();
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
     const tool = createWorkflowTool({ manager, workflowDir });
 
     const result = await tool.execute("tc1", {
@@ -119,7 +119,7 @@ describe("workflow composition: runWorkflow", () => {
       }
     `);
 
-    const manager = new SubagentManager();
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
     const tool = createWorkflowTool({ manager, workflowDir });
 
     const result = await tool.execute("tc1", {
@@ -155,7 +155,7 @@ describe("workflow composition: runWorkflow", () => {
     `);
 
     const events: WorkflowEvent[] = [];
-    const manager = new SubagentManager();
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
     const tool = createWorkflowTool({
       manager,
       workflowDir,
@@ -207,7 +207,7 @@ describe("workflow composition: runWorkflow", () => {
     `);
 
     const events: WorkflowEvent[] = [];
-    const manager = new SubagentManager();
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
     const tool = createWorkflowTool({
       manager,
       workflowDir,

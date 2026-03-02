@@ -49,24 +49,28 @@ describe("SubagentManager.steer()", () => {
     }
   });
 
-  it("returns 'not_running' for a non-existent session", () => {
-    expect(manager.steer("nonexistent", "hello")).toBe("not_running");
+  it("throws for a non-existent session", () => {
+    expect(() => manager.steer("nonexistent", "hello")).toThrow("not found or not running");
   });
 
-  it("returns 'not_running' for a completed session", async () => {
+  it("throws for a completed session (removed from memory)", async () => {
     const sessionId = manager.run("test-agent", "task");
     await manager.waitFor(sessionId);
 
-    expect(manager.steer(sessionId, "hello")).toBe("not_running");
+    expect(() => manager.steer(sessionId, "hello")).toThrow("not found or not running");
   });
 
   it("returns a valid steer result for a running session", () => {
     const sessionId = manager.run("test-agent", "task");
 
     // Session may complete very quickly (fake model errors out fast),
-    // but steer should return one of the valid results
-    const result = manager.steer(sessionId, "change direction");
-    expect(["steered", "queued", "not_running"]).toContain(result);
+    // but steer should return one of the valid results or throw
+    try {
+      const result = manager.steer(sessionId, "change direction");
+      expect(["steered", "queued"]).toContain(result);
+    } catch (err: unknown) {
+      expect((err as Error).message).toMatch(/not found or not running/);
+    }
   });
 });
 
@@ -86,20 +90,18 @@ describe("SubagentManager.subscribe()", () => {
     }
   });
 
-  it("returns null for a non-existent session", () => {
-    const unsub = manager.subscribe("nonexistent", () => {});
-    expect(unsub).toBeNull();
+  it("throws for a non-existent session", () => {
+    expect(() => manager.subscribe("nonexistent", () => {})).toThrow("not found or not running");
   });
 
   it("returns an unsubscribe function for an active session", () => {
     const sessionId = manager.run("test-agent", "task");
     const unsub = manager.subscribe(sessionId, () => {});
 
-    expect(unsub).not.toBeNull();
     expect(typeof unsub).toBe("function");
 
     // Unsubscribe should not throw
-    unsub!();
+    unsub();
   });
 
   it("receives events from the session", async () => {
@@ -125,7 +127,7 @@ describe("SubagentManager.subscribe()", () => {
     const countBefore = events.length;
 
     // Unsubscribe immediately
-    unsub!();
+    unsub();
 
     await manager.waitFor(sessionId);
 
@@ -139,7 +141,7 @@ describe("SubagentManager.sessions()", () => {
   let manager: SubagentManager;
 
   beforeEach(() => {
-    manager = new SubagentManager();
+    manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
     registerAgent(manager, "agent-a");
     registerAgent(manager, "agent-b");
   });
@@ -148,13 +150,11 @@ describe("SubagentManager.sessions()", () => {
     expect(manager.sessions("agent-a")).toEqual([]);
   });
 
-  it("filters sessions by agent name", async () => {
+  it("filters sessions by agent name (while running)", () => {
     const s1 = manager.run("agent-a", "task for a");
     const s2 = manager.run("agent-b", "task for b");
 
-    await manager.waitFor(s1);
-    await manager.waitFor(s2);
-
+    // Check while still active (before completion removes them)
     const sessionsA = manager.sessions("agent-a");
     const sessionsB = manager.sessions("agent-b");
 

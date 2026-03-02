@@ -1,4 +1,7 @@
 import { describe, it, expect } from "vitest";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { mkdtempSync, rmSync } from "node:fs";
 import { SubagentManager } from "../src/manager.js";
 import type { Model } from "@mariozechner/pi-ai";
 
@@ -19,12 +22,12 @@ function fakeModel(): Model<any> {
 
 describe("getWorkflowDir", () => {
   it("returns undefined for an unregistered agent name", () => {
-    const manager = new SubagentManager();
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
     expect(manager.getWorkflowDir("nonexistent")).toBeUndefined();
   });
 
   it("returns undefined when the agent has no workspace", () => {
-    const manager = new SubagentManager();
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
     manager.register({
       name: "no-workspace",
       description: "Agent without workspace",
@@ -37,7 +40,7 @@ describe("getWorkflowDir", () => {
   });
 
   it("returns <dirname(workspace)>/workflows when workspace is set", () => {
-    const manager = new SubagentManager();
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
     manager.register({
       name: "coder",
       description: "Coding agent",
@@ -53,7 +56,7 @@ describe("getWorkflowDir", () => {
   });
 
   it("works for different workspace paths", () => {
-    const manager = new SubagentManager();
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
     manager.register({
       name: "myagent",
       description: "Another agent",

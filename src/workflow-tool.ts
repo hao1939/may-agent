@@ -16,14 +16,15 @@ import type {
 } from "./workflow.js";
 import { WorkflowInterrupted } from "./workflow.js";
 import type { WorkflowRun, WorkflowStep } from "./persistence.js";
-import { saveWorkflowRun } from "./persistence.js";
+import { saveWorkflowRun, readWorkflowRun } from "./persistence.js";
 
 // ── Tool schema ────────────────────────────────────────────────────────
 
 const WorkflowToolParams = Type.Object({
-  action: StringEnum(["list", "run"] as const, { description: "Action to perform" }),
+  action: StringEnum(["list", "run", "resume"] as const, { description: "Action to perform. Use 'resume' to continue a workflow that was interrupted by a crash." }),
   name: Type.Optional(Type.String({ description: "Workflow name to execute (required for 'run')" })),
   task: Type.Optional(Type.String({ description: "Task to pass to the workflow (required for 'run')" })),
+  workflowRunId: Type.Optional(Type.String({ description: "Previous workflow run ID to resume from (required for 'resume')" })),
 });
 
 // ── Helpers ────────────────────────────────────────────────────────────
@@ -132,7 +133,13 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
   let activeSteeringQueue: string[] | null = null;
   let activeWorkflowName: string | null = null;
 
-  /** Execute a workflow at the given depth, tracking everything in a WorkflowRun. */
+  /** Execute a workflow at the given depth, tracking everything in a WorkflowRun.
+   *  If `previousRun` is provided, completed steps are replayed from archived
+   *  session data instead of spawning new sessions. Replay stops (and live
+   *  execution begins) at the first step whose agent name doesn't match the
+   *  previous run — which means the workflow code changed and the old data
+   *  no longer applies.
+   */
   async function executeWorkflow(
     workflow: WorkflowModule,
     task: string,
@@ -141,9 +148,13 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
     parentWorkflowRunId: string | undefined,
     completedSteps: CompletedStep[],
     steeringQueue: string[],
+    previousRun?: WorkflowRun,
   ): Promise<{ result: WorkflowResult; runId: string; steps: CompletedStep[] }> {
     const runId = generateRunId();
     const localSteps: CompletedStep[] = [];
+    let stepCounter = 0;
+    // Once we detect a mismatch (workflow code changed), stop replaying
+    let replayExhausted = false;
 
     // Create the workflow run record
     const run: WorkflowRun = {
@@ -156,6 +167,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
       startedAt: Date.now(),
       status: "running",
       steps: [],
+      resumedFromRunId: previousRun?.runId,
     };
     if (persistDir) saveWorkflowRun(persistDir, run);
 
@@ -163,9 +175,50 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
       task,
 
       runAgent: async (agentName: string, agentTask: string): Promise<TaskResult> => {
+        const currentStep = stepCounter++;
+
+        // Replay: if we have a previous run with a completed step at this index,
+        // return the archived result instead of spawning a new session.
+        if (previousRun && !replayExhausted && currentStep < previousRun.steps.length) {
+          const prevStep = previousRun.steps[currentStep];
+          if (prevStep.agent === agentName) {
+            // Agent matches — replay from archive
+            try {
+              const taskResult = manager.result(prevStep.sessionId);
+
+              const step: CompletedStep = { step: agentName, sessionId: prevStep.sessionId, result: taskResult };
+              localSteps.push(step);
+              completedSteps.push(step);
+
+              // Record the replayed step in the new run
+              const wfStep: WorkflowStep = {
+                sessionId: prevStep.sessionId,
+                agent: agentName,
+                task: agentTask,
+                status: taskResult.status,
+                startedAt: prevStep.startedAt,
+                endedAt: prevStep.endedAt,
+                lastAssistantText: taskResult.lastAssistantText,
+              };
+              run.steps.push(wfStep);
+              if (persistDir) saveWorkflowRun(persistDir, run);
+
+              onEvent?.({ type: "step_done", step: agentName, sessionId: prevStep.sessionId, result: taskResult });
+              return taskResult;
+            } catch {
+              // Archived data unavailable — fall through to live execution
+              replayExhausted = true;
+            }
+          } else {
+            // Agent name mismatch — workflow code changed, stop replaying
+            replayExhausted = true;
+          }
+        }
+
+        // Live execution
         const steering = steeringQueue.shift();
         if (steering) {
-          throw new WorkflowInterrupted(steering, completedSteps);
+          throw new WorkflowInterrupted(steering, completedSteps, runId);
         }
 
         const runOpts: RunOptions = {
@@ -176,7 +229,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
         const sid = manager.run(agentName, agentTask, runOpts);
         onEvent?.({ type: "step_start", step: agentName, sessionId: sid });
 
-        const taskResult = (await manager.waitFor(sid))!;
+        const taskResult = await manager.waitFor(sid);
 
         const step: CompletedStep = { step: agentName, sessionId: sid, result: taskResult };
         localSteps.push(step);
@@ -199,7 +252,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
 
         const steeringAfter = steeringQueue.shift();
         if (steeringAfter) {
-          throw new WorkflowInterrupted(steeringAfter, completedSteps);
+          throw new WorkflowInterrupted(steeringAfter, completedSteps, runId);
         }
 
         return taskResult;
@@ -212,7 +265,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
       runWorkflow: async (wfName: string, wfTask: string): Promise<WorkflowResult> => {
         const steering = steeringQueue.shift();
         if (steering) {
-          throw new WorkflowInterrupted(steering, completedSteps);
+          throw new WorkflowInterrupted(steering, completedSteps, runId);
         }
 
         if (depth + 1 > maxDepth) {
@@ -367,7 +420,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
               const toolResult: WorkflowToolResult = {
                 type: "interrupted",
                 workflow: workflow.name,
-                workflowRunId: "unknown", // interrupted before we can capture it cleanly
+                workflowRunId: err.workflowRunId,
                 completedSteps: err.completedSteps,
                 steeringMessage: err.steeringMessage,
               };
@@ -376,6 +429,79 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
 
             const msg = err instanceof Error ? err.message : String(err);
             const toolResult: WorkflowToolResult = { type: "error", workflow: workflow.name, error: msg };
+            return textResult(JSON.stringify(toolResult, null, 2));
+          }
+        }
+
+        case "resume": {
+          if (!params.workflowRunId) {
+            return textResult(JSON.stringify({ type: "error", error: "action 'resume' requires 'workflowRunId'" }));
+          }
+          if (!persistDir) {
+            return textResult(JSON.stringify({ type: "error", error: "workflow resume requires persistDir" }));
+          }
+
+          const prevRun = readWorkflowRun(persistDir, params.workflowRunId);
+          if (!prevRun) {
+            return textResult(JSON.stringify({ type: "error", error: `Workflow run "${params.workflowRunId}" not found` }));
+          }
+
+          const { workflow: resumeWf, error: resumeFindError } = await findWorkflow(workflowDir, prevRun.workflow);
+          if (!resumeWf) {
+            return textResult(JSON.stringify({ type: "error", workflow: prevRun.workflow, error: resumeFindError }));
+          }
+
+          const resumeCompletedSteps: CompletedStep[] = [];
+          const resumeSteeringQueue: string[] = [];
+          activeSteeringQueue = resumeSteeringQueue;
+          activeWorkflowName = resumeWf.name;
+
+          onEvent?.({ type: "workflow_start", workflow: resumeWf.name, task: prevRun.task });
+
+          try {
+            const { result, runId } = await executeWorkflow(
+              resumeWf, prevRun.task, prevRun.depth, prevRun.parentSessionId,
+              prevRun.parentWorkflowRunId, resumeCompletedSteps,
+              resumeSteeringQueue, prevRun,
+            );
+
+            activeSteeringQueue = null;
+            activeWorkflowName = null;
+
+            const stepSummaries = buildStepSummaries(resumeCompletedSteps);
+
+            if (result.type === "done") {
+              onEvent?.({ type: "workflow_done", summary: result.summary });
+              const toolResult: WorkflowToolResult = {
+                type: "done", workflow: resumeWf.name, workflowRunId: runId,
+                summary: result.summary, steps: stepSummaries,
+              };
+              return textResult(JSON.stringify(toolResult, null, 2));
+            }
+
+            onEvent?.({ type: "workflow_escalate", reason: result.reason });
+            const toolResult: WorkflowToolResult = {
+              type: "escalated", workflow: resumeWf.name, workflowRunId: runId,
+              reason: result.reason, context: result.context, steps: stepSummaries,
+            };
+            return textResult(JSON.stringify(toolResult, null, 2));
+          } catch (err) {
+            activeSteeringQueue = null;
+            activeWorkflowName = null;
+
+            if (err instanceof WorkflowInterrupted) {
+              const toolResult: WorkflowToolResult = {
+                type: "interrupted",
+                workflow: resumeWf.name,
+                workflowRunId: err.workflowRunId,
+                completedSteps: err.completedSteps,
+                steeringMessage: err.steeringMessage,
+              };
+              return textResult(JSON.stringify(toolResult, null, 2));
+            }
+
+            const msg = err instanceof Error ? err.message : String(err);
+            const toolResult: WorkflowToolResult = { type: "error", workflow: resumeWf.name, error: msg };
             return textResult(JSON.stringify(toolResult, null, 2));
           }
         }

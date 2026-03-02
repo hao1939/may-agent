@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdirSync, writeFileSync, rmSync, existsSync, readFileSync } from "node:fs";
+import { mkdirSync, writeFileSync, rmSync, existsSync, readFileSync, mkdtempSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { SubagentManager } from "../src/manager.js";
@@ -399,8 +399,8 @@ describe("trace()", () => {
     expect(manager.trace("nonexistent")).toBeNull();
   });
 
-  it("returns null without persistDir", () => {
-    const manager = new SubagentManager();
+  it("returns null for unknown session", () => {
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
     expect(manager.trace("anything")).toBeNull();
   });
 

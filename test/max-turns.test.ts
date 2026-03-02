@@ -54,35 +54,27 @@ describe("maxTurns in SubagentDefinition", () => {
     manager.register(baseDef({ name: "agent-mt", maxTurns: 10 }));
 
     const sessionId = manager.run("agent-mt", "do work");
-    await manager.waitFor(sessionId);
-
-    const result = manager.result(sessionId);
-    expect(result).not.toBeNull();
-    expect(result!.maxTurns).toBe(10);
+    // waitFor() captures the result from the session before cleanup
+    const result = await manager.waitFor(sessionId);
+    expect(result.maxTurns).toBe(10);
   });
 
   it("maxTurns is undefined when not set", async () => {
     manager.register(baseDef({ name: "agent-no-mt" }));
 
     const sessionId = manager.run("agent-no-mt", "do work");
-    await manager.waitFor(sessionId);
-
-    const result = manager.result(sessionId);
-    expect(result).not.toBeNull();
-    expect(result!.maxTurns).toBeUndefined();
+    const result = await manager.waitFor(sessionId);
+    expect(result.maxTurns).toBeUndefined();
   });
 
   it("maxTurns of 0 is treated as no limit", async () => {
     manager.register(baseDef({ name: "agent-zero-mt", maxTurns: 0 }));
 
     const sessionId = manager.run("agent-zero-mt", "do work");
-    await manager.waitFor(sessionId);
-
-    const result = manager.result(sessionId);
-    expect(result).not.toBeNull();
+    const result = await manager.waitFor(sessionId);
     // maxTurns: 0 is stored but subscribeForTurnLimit early-returns
     // The important thing is that it doesn't cause a turn-limit error
-    expect(result!.error ?? "").not.toContain("Turn limit reached");
+    expect(result.error ?? "").not.toContain("Turn limit reached");
   });
 });
 
@@ -154,24 +146,19 @@ describe("turnsUsed/maxTurns in TaskResult", () => {
     manager.register(baseDef({ name: "agent-r1", maxTurns: 5 }));
 
     const sessionId = manager.run("agent-r1", "do work");
-    await manager.waitFor(sessionId);
-
-    const result = manager.result(sessionId);
-    expect(result).not.toBeNull();
-    expect(result!.turnsUsed).toBe(0);
-    expect(result!.maxTurns).toBe(5);
+    // Use waitFor() which captures result from the live session before cleanup
+    const result = await manager.waitFor(sessionId);
+    expect(result.turnsUsed).toBe(0);
+    expect(result.maxTurns).toBe(5);
   });
 
   it("result() includes turnsUsed: 0 and maxTurns: undefined when no limit configured", async () => {
     manager.register(baseDef({ name: "agent-r2" }));
 
     const sessionId = manager.run("agent-r2", "do work");
-    await manager.waitFor(sessionId);
-
-    const result = manager.result(sessionId);
-    expect(result).not.toBeNull();
-    expect(result!.turnsUsed).toBe(0);
-    expect(result!.maxTurns).toBeUndefined();
+    const result = await manager.waitFor(sessionId);
+    expect(result.turnsUsed).toBe(0);
+    expect(result.maxTurns).toBeUndefined();
   });
 
   it("waitFor() also returns turnsUsed and maxTurns", async () => {
@@ -180,9 +167,8 @@ describe("turnsUsed/maxTurns in TaskResult", () => {
     const sessionId = manager.run("agent-r3", "do work");
     const result = await manager.waitFor(sessionId);
 
-    expect(result).not.toBeNull();
-    expect(result!.turnsUsed).toBe(0);
-    expect(result!.maxTurns).toBe(8);
+    expect(result.turnsUsed).toBe(0);
+    expect(result.maxTurns).toBe(8);
   });
 });
 
@@ -203,58 +189,27 @@ describe("Turn limit subscription cleanup", () => {
     }
   });
 
-  it("send() works after a session with maxTurns completes (proves cleanup happened)", async () => {
-    manager.register(baseDef({ name: "agent-c1", maxTurns: 10 }));
-
-    const sessionId = manager.run("agent-c1", "initial task");
-    await manager.waitFor(sessionId);
-
-    // If handleCompletion didn't clean up the subscription,
-    // send() would fail or behave incorrectly
-    const sendResult = manager.send(sessionId, "follow up");
-    expect(sendResult).toBe(true);
-
-    await manager.waitFor(sessionId);
-
-    const result = manager.result(sessionId);
-    expect(result).not.toBeNull();
-    // turnsUsed carries over (cumulative), still 0 because fake model errors instantly
-    expect(result!.turnsUsed).toBe(0);
-    expect(result!.maxTurns).toBe(10);
-  });
-
-  it("send() cleans up old turn limit subscription before re-subscribing", async () => {
+  it("turn limit subscription is cleaned up on completion", async () => {
     manager.register(baseDef({ name: "agent-c2", maxTurns: 20 }));
 
     const sessionId = manager.run("agent-c2", "task 1");
-    await manager.waitFor(sessionId);
+    const result = await manager.waitFor(sessionId);
 
-    // First follow-up
-    manager.send(sessionId, "task 2");
-    await manager.waitFor(sessionId);
-
-    // Second follow-up — if old subscriptions leaked, turnCount could be wrong
-    manager.send(sessionId, "task 3");
-    await manager.waitFor(sessionId);
-
-    const result = manager.result(sessionId);
-    expect(result).not.toBeNull();
-    // turnsUsed should remain 0 (fake model never completes a turn)
-    expect(result!.turnsUsed).toBe(0);
-    expect(result!.maxTurns).toBe(20);
+    // turnsUsed should be 0 (fake model never completes a turn)
+    expect(result.turnsUsed).toBe(0);
+    expect(result.maxTurns).toBe(20);
+    // Session should be cleaned up from activeSessions
+    expect(manager.getSessionCount()).toBe(0);
   });
 
-  it("turn limit subscription is set up even without persistence", async () => {
-    // No persistDir — SubagentManager with no persistence
-    const noPersistManager = new SubagentManager();
-    noPersistManager.register(baseDef({ name: "agent-c3", maxTurns: 7 }));
+  it("turn limit subscription works with a fresh manager", async () => {
+    const mgr = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
+    mgr.register(baseDef({ name: "agent-c3", maxTurns: 7 }));
 
-    const sessionId = noPersistManager.run("agent-c3", "do work");
-    await noPersistManager.waitFor(sessionId);
+    const sessionId = mgr.run("agent-c3", "do work");
+    const result = await mgr.waitFor(sessionId);
 
-    const result = noPersistManager.result(sessionId);
-    expect(result).not.toBeNull();
-    expect(result!.maxTurns).toBe(7);
-    expect(result!.turnsUsed).toBe(0);
+    expect(result.maxTurns).toBe(7);
+    expect(result.turnsUsed).toBe(0);
   });
 });

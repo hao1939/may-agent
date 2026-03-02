@@ -1,14 +1,10 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { mkdtempSync, rmSync, existsSync, readFileSync, mkdirSync, readdirSync } from "node:fs";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { mkdtempSync, rmSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { SubagentManager } from "../src/manager.js";
 import {
-  readSessionMessages,
-  sessionJsonlPath,
-  sessionDir,
   historyDir,
-  readMemoryEntries,
 } from "../src/persistence.js";
 import type { Model } from "@mariozechner/pi-ai";
 
@@ -79,50 +75,28 @@ describe("Edge cases", () => {
     });
   });
 
-  describe("send() after session archival", () => {
-    it("send() on a completed session does not crash despite archived directory", async () => {
-      manager.register(baseDef("agent-s"));
-      const sessionId = manager.run("agent-s", "initial task");
-      await manager.waitFor(sessionId);
-
-      // Verify session was archived
-      const archivePath = join(historyDir(persistDir), sessionId);
-      expect(existsSync(archivePath)).toBe(true);
-
-      // The original session directory should be gone
-      const originalDir = sessionDir(persistDir, sessionId);
-      expect(existsSync(originalDir)).toBe(false);
-
-      // send() should return true and not throw
-      const sendResult = manager.send(sessionId, "follow up");
-      expect(sendResult).toBe(true);
-
-      // Wait for it to complete — the agent will error (fake model) but shouldn't crash the process
-      const result = await manager.waitFor(sessionId);
-      expect(result).not.toBeNull();
-    });
-  });
-
   describe("result() edge cases", () => {
-    it("returns null for a session that was never created", () => {
-      expect(manager.result("nonexistent-session")).toBeNull();
+    it("throws for a session that was never created", () => {
+      expect(() => manager.result("nonexistent-session")).toThrow('Session "nonexistent-session" not found');
     });
 
-    it("returns null for a still-running session", () => {
+    it("throws for a still-running session", () => {
       manager.register(baseDef("agent-r"));
       const sessionId = manager.run("agent-r", "task");
-      // Immediately check — session should still be running (or just errored)
-      const result = manager.result(sessionId);
-      // Could be null (running) or a TaskResult (already errored due to fake model)
-      if (result !== null) {
+      // Immediately check — session might still be running or already errored
+      try {
+        const result = manager.result(sessionId);
+        // If it didn't throw, it already completed (errored due to fake model)
         expect(result.status).toBe("error");
+      } catch (err: unknown) {
+        expect((err as Error).message).toMatch(/still running/);
       }
     });
   });
 
   describe("progress() edge cases", () => {
-    it("returns empty array for non-existent session", () => {
-      expect(manager.progress("nonexistent")).toEqual([]);
+    it("throws for non-existent session", () => {
+      expect(() => manager.progress("nonexistent")).toThrow('Session "nonexistent" not found');
     });
 
     it("returns empty array for limit=0", async () => {
@@ -152,9 +126,8 @@ describe("Edge cases", () => {
   });
 
   describe("waitFor() edge cases", () => {
-    it("returns null for non-existent session", async () => {
-      const result = await manager.waitFor("nonexistent");
-      expect(result).toBeNull();
+    it("throws for non-existent session", async () => {
+      await expect(manager.waitFor("nonexistent")).rejects.toThrow('Session "nonexistent" not found');
     });
 
     it("multiple concurrent waitFor() calls on same session all resolve", async () => {
@@ -167,9 +140,7 @@ describe("Edge cases", () => {
         manager.waitFor(sessionId),
       ]);
 
-      expect(result1).not.toBeNull();
-      expect(result2).not.toBeNull();
-      expect(result1!.sessionId).toBe(result2!.sessionId);
+      expect(result1.sessionId).toBe(result2.sessionId);
     });
   });
 
@@ -187,27 +158,21 @@ describe("Edge cases", () => {
     });
   });
 
-  describe("SubagentManager without persistDir", () => {
-    it("can run sessions without persistence", async () => {
-      const noPersistManager = new SubagentManager();
-      noPersistManager.register(baseDef("agent-np"));
+  describe("SubagentManager basics", () => {
+    it("can run sessions", async () => {
+      const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
+      manager.register(baseDef("agent-np"));
 
-      const sessionId = noPersistManager.run("agent-np", "task");
-      const result = await noPersistManager.waitFor(sessionId);
+      const sessionId = manager.run("agent-np", "task");
+      const result = await manager.waitFor(sessionId);
 
       expect(result).not.toBeNull();
       expect(result!.sessionId).toBe(sessionId);
     });
 
-    it("resume() returns empty array without persistDir", () => {
-      const noPersistManager = new SubagentManager();
-      expect(noPersistManager.resume()).toEqual([]);
-    });
-
-    it("getMemoryPath() returns undefined without persistDir", () => {
-      const noPersistManager = new SubagentManager();
-      noPersistManager.register(baseDef("agent-mp"));
-      expect(noPersistManager.getMemoryPath("agent-mp")).toBeUndefined();
+    it("resume() returns empty array when no sessions to resume", () => {
+      const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
+      expect(manager.resume()).toEqual([]);
     });
   });
 });

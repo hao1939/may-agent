@@ -1,4 +1,7 @@
 import { describe, it, expect } from "vitest";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { mkdtempSync, rmSync } from "node:fs";
 import { SubagentManager } from "../src/manager.js";
 import type { Model } from "@mariozechner/pi-ai";
 
@@ -19,7 +22,7 @@ function fakeModel(): Model<any> {
 
 describe("session ID prefix", () => {
   it("uses default 's' prefix when sessionIdPrefix is not set", () => {
-    const manager = new SubagentManager();
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
     manager.register({
       name: "default-agent",
       description: "Agent with default prefix",
@@ -35,7 +38,7 @@ describe("session ID prefix", () => {
   });
 
   it("uses custom prefix when sessionIdPrefix is set", () => {
-    const manager = new SubagentManager();
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
     manager.register({
       name: "custom-agent",
       description: "Agent with custom prefix",
@@ -52,7 +55,7 @@ describe("session ID prefix", () => {
   });
 
   it("different agents can have different prefixes", () => {
-    const manager = new SubagentManager();
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
     manager.register({
       name: "coder",
       description: "Coder agent",

@@ -1,4 +1,7 @@
 import { SubagentManager } from "../src/index.js";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { mkdtempSync, rmSync } from "node:fs";
 import { getModel } from "@mariozechner/pi-ai";
 
 // Use a known model from pi-ai, override baseUrl to go through litellm
@@ -11,7 +14,7 @@ const proxyModel = {
   baseUrl: "http://localhost:4000",
 };
 
-const manager = new SubagentManager();
+const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
 
 manager.register({
   name: "greeter",

@@ -291,6 +291,8 @@ export interface WorkflowRun {
   endedAt?: number;
   status: "running" | "done" | "escalated" | "interrupted" | "error";
   steps: WorkflowStep[];
+  /** If this run was resumed from a previous crashed run, its runId. */
+  resumedFromRunId?: string;
   result?: {
     summary?: string;
     reason?: string;
@@ -326,6 +328,23 @@ export function readWorkflowRun(persistDir: string, runId: string): WorkflowRun 
   } catch {
     return null;
   }
+}
+
+/** Read messages from the archived (history) session JSONL. Returns [] if not found. */
+export function readArchivedSessionMessages(persistDir: string, sessionId: string): AgentMessage[] {
+  const filePath = join(historyDir(persistDir), sessionId, "session.jsonl");
+  if (!existsSync(filePath)) return [];
+  const raw = readFileSync(filePath, "utf-8");
+  if (!raw.trim()) return [];
+  const messages: AgentMessage[] = [];
+  for (const line of raw.trim().split("\n")) {
+    try {
+      messages.push(JSON.parse(line) as AgentMessage);
+    } catch {
+      console.warn(`[persistence] Skipping corrupted JSONL line in ${filePath}`);
+    }
+  }
+  return messages;
 }
 
 /** List all workflow run IDs, sorted by filename (which includes timestamp). */
