@@ -110,6 +110,14 @@ export function readSessionMessages(persistDir: string, sessionId: string): Agen
   return messages;
 }
 
+/** Delete the session JSONL file if it exists. */
+export function clearSessionMessages(persistDir: string, sessionId: string): void {
+  const filePath = sessionJsonlPath(persistDir, sessionId);
+  if (existsSync(filePath)) {
+    rmSync(filePath);
+  }
+}
+
 // ── History / archival helpers ─────────────────────────────────────────
 
 /** Return the path to the history directory: <persistDir>/sessions/history/ */
