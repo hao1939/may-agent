@@ -96,7 +96,7 @@ describe("createExecTool with options", () => {
     expect(result.content[0].text).toContain("Blocked");
   });
 
-  it("echoes cwd on first exec call when echoCwd is true", async () => {
+  it("echoes cwd on every exec call when echoCwd is true", async () => {
     const tool = createExecTool({
       cwd: "/tmp",
       echoCwd: true,
@@ -107,9 +107,9 @@ describe("createExecTool with options", () => {
     expect(result1.content[0].text).toContain("CWD: /tmp");
     expect(result1.content[0].text).toContain("hello");
 
-    // Second call should NOT include CWD
+    // Second call should also include CWD
     const result2 = await tool.execute("id2", { command: "echo world" });
-    expect(result2.content[0].text).not.toContain("CWD:");
+    expect(result2.content[0].text).toContain("CWD: /tmp");
     expect(result2.content[0].text).toContain("world");
   });
 
