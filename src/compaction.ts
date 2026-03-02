@@ -41,12 +41,27 @@ function totalTokens(messages: AgentMessage[]): number {
 
 // ── Compaction ──────────────────────────────────────────────────────────
 
+/** Minimum length for an assistant text block to be considered "substantial" reasoning. */
+const SUBSTANTIAL_TEXT_MIN_LENGTH = 100;
+
+/**
+ * Maximum length for the preserved reasoning block.
+ * Keeps the cost bounded — even the longest reasoning gets capped.
+ */
+const REASONING_MAX_LENGTH = 2000;
+
 /**
  * Summarize a block of messages into a compact text summary.
  * This is a structural extraction, not LLM-based — fast and deterministic.
+ *
+ * In addition to the structural log of tool calls and results, the last
+ * substantial assistant text block (reasoning, diagnosis, plan) is preserved
+ * verbatim at the end. This keeps the most important context — the model's
+ * most recent thinking — across compaction boundaries.
  */
 function summarizeMessages(messages: AgentMessage[]): string {
   const parts: string[] = [];
+  let lastSubstantialText = "";
 
   for (const msg of messages) {
     if (msg.role === "user") {
@@ -67,6 +82,10 @@ function summarizeMessages(messages: AgentMessage[]): string {
         for (const block of msg.content) {
           if (block.type === "text" && block.text.trim()) {
             texts.push(block.text.slice(0, 200));
+            // Track the last substantial reasoning block
+            if (block.text.trim().length >= SUBSTANTIAL_TEXT_MIN_LENGTH) {
+              lastSubstantialText = block.text.trim();
+            }
           } else if (block.type === "toolCall") {
             tools.push(block.name);
           }
@@ -88,6 +107,18 @@ function summarizeMessages(messages: AgentMessage[]): string {
       const errMark = trMsg.isError ? " ERROR" : "";
       parts.push(`[${trMsg.toolName}${errMark}] ${preview}`);
     }
+  }
+
+  // Append the last substantial reasoning block verbatim.
+  // This preserves the model's most recent diagnosis, plan, or decision
+  // that would otherwise be truncated to 200 chars in the structural log.
+  if (lastSubstantialText) {
+    const capped = lastSubstantialText.length > REASONING_MAX_LENGTH
+      ? lastSubstantialText.slice(0, REASONING_MAX_LENGTH) + "\n\n_(reasoning truncated)_"
+      : lastSubstantialText;
+    parts.push("");
+    parts.push("[Last reasoning before compaction]");
+    parts.push(capped);
   }
 
   return parts.join("\n");
