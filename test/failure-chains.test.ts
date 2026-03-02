@@ -199,7 +199,7 @@ describe("extractFailureChains", () => {
         const content = readFileSync(path, "utf-8");
       } catch (err) {
         if (err.code === "ENOENT") {
-          return "Error reading file: ENOENT: no such file or directory";
+          return "Error reading file: " + err.message;
         }
       }
     `;
@@ -330,6 +330,22 @@ index abc1234..def5678 100644
     expect(chains[0].trigger.isError).toBe(true);
   });
 
+  it("detects exec errors with CWD prefix via heuristic fallback", () => {
+    // With echoCwd enabled, exec errors now include "CWD: /path\nExit code N\n..."
+    // The heuristic must strip the CWD prefix before checking for the error pattern.
+    const messages: AgentMessage[] = [
+      assistantWithCalls({ id: "1", name: "exec", arguments: { command: "ls /home/user/nonexistent" } }),
+      toolResult("1", "exec", "CWD: /home/example-user/may-agent\nExit code 2\nls: cannot access '/home/user/nonexistent': No such file or directory"),
+      assistantWithCalls({ id: "2", name: "write", arguments: { path: "output.txt", content: "done" } }),
+      toolResult("2", "write", "Wrote 4 bytes"),
+    ];
+
+    const chains = extractFailureChains(messages);
+    expect(chains).toHaveLength(1);
+    expect(chains[0].trigger.tool).toBe("exec");
+    expect(chains[0].trigger.isError).toBe(true);
+  });
+
   it("does not flag exec cat/grep of source code containing error patterns", () => {
     // exec runs `cat src/evaluator.ts` and the output contains all the error
     // pattern strings — should NOT create a failure chain since the exec tool
@@ -357,6 +373,153 @@ function handleError(err) {
 
     const chains = extractFailureChains(messages);
     expect(chains).toHaveLength(0);
+  });
+
+  // ── Expected non-zero exit code tests (false positive prevention) ────
+
+  it("does not flag grep with no matches (exit 1) as error", () => {
+    // grep exits 1 when no lines match — this is normal, not an error
+    const messages: AgentMessage[] = [
+      assistantWithCalls({ id: "1", name: "exec", arguments: { command: 'grep -r "nonexistentPattern" src/' } }),
+      toolResult("1", "exec", "Exit code 1\n"),
+      // Agent moves on (not a recovery attempt)
+      assistantWithCalls({ id: "2", name: "write", arguments: { path: "notes.md", content: "pattern not found" } }),
+      toolResult("2", "write", "Wrote 17 bytes"),
+    ];
+
+    const chains = extractFailureChains(messages);
+    expect(chains).toHaveLength(0);
+  });
+
+  it("does not flag grep -c returning 0 (exit 1) as error", () => {
+    // grep -c outputs "0" and exits 1 when no matches — completely normal
+    const messages: AgentMessage[] = [
+      assistantWithCalls({ id: "1", name: "exec", arguments: { command: 'grep -c "pattern" file.ts' } }),
+      toolResult("1", "exec", "Exit code 1\n0\n"),
+      assistantWithCalls({ id: "2", name: "write", arguments: { path: "out.txt", content: "done" } }),
+      toolResult("2", "write", "Wrote 4 bytes"),
+    ];
+
+    const chains = extractFailureChains(messages);
+    expect(chains).toHaveLength(0);
+  });
+
+  it("does not flag grep with CWD prefix and no matches as error", () => {
+    const messages: AgentMessage[] = [
+      assistantWithCalls({ id: "1", name: "exec", arguments: { command: 'grep -n "buildSystemPrompt" src/manager.ts' } }),
+      toolResult("1", "exec", "CWD: /home/example-user/may-agent\nExit code 1\n"),
+      assistantWithCalls({ id: "2", name: "write", arguments: { path: "out.txt", content: "done" } }),
+      toolResult("2", "write", "Wrote 4 bytes"),
+    ];
+
+    const chains = extractFailureChains(messages);
+    expect(chains).toHaveLength(0);
+  });
+
+  it("does not flag pipe ending in grep with no matches as error", () => {
+    // e.g., "pip show litellm | grep -i version" — grep at end of pipe exits 1
+    const messages: AgentMessage[] = [
+      assistantWithCalls({ id: "1", name: "exec", arguments: { command: "pip show litellm 2>/dev/null | grep -i version" } }),
+      toolResult("1", "exec", "Exit code 1\n"),
+      assistantWithCalls({ id: "2", name: "write", arguments: { path: "out.txt", content: "done" } }),
+      toolResult("2", "write", "Wrote 4 bytes"),
+    ];
+
+    const chains = extractFailureChains(messages);
+    expect(chains).toHaveLength(0);
+  });
+
+  it("does not flag git diff with changes (exit 1) as error", () => {
+    // git diff exits 1 when there ARE differences — the diff output IS the result
+    const messages: AgentMessage[] = [
+      assistantWithCalls({ id: "1", name: "exec", arguments: { command: "git diff HEAD" } }),
+      toolResult("1", "exec", "Exit code 1\ndiff --git a/src/evaluator.ts b/src/evaluator.ts\nindex abc..def 100644\n--- a/src/evaluator.ts\n+++ b/src/evaluator.ts"),
+      assistantWithCalls({ id: "2", name: "write", arguments: { path: "out.txt", content: "done" } }),
+      toolResult("2", "write", "Wrote 4 bytes"),
+    ];
+
+    const chains = extractFailureChains(messages);
+    expect(chains).toHaveLength(0);
+  });
+
+  it("does not flag git diff with CWD prefix and changes as error", () => {
+    const messages: AgentMessage[] = [
+      assistantWithCalls({ id: "1", name: "exec", arguments: { command: "git diff HEAD -- src/tools.ts" } }),
+      toolResult("1", "exec", "CWD: /home/example-user/may-agent\nExit code 1\ndiff --git a/src/tools.ts b/src/tools.ts\n--- a/src/tools.ts\n+++ b/src/tools.ts"),
+      assistantWithCalls({ id: "2", name: "write", arguments: { path: "out.txt", content: "done" } }),
+      toolResult("2", "write", "Wrote 4 bytes"),
+    ];
+
+    const chains = extractFailureChains(messages);
+    expect(chains).toHaveLength(0);
+  });
+
+  it("does not flag commands with 2>/dev/null that exit 1 with empty output", () => {
+    // Intentional error suppression pattern: "cat file 2>/dev/null || cat other"
+    const messages: AgentMessage[] = [
+      assistantWithCalls({ id: "1", name: "exec", arguments: { command: "cat vitest.config.ts 2>/dev/null || cat vite.config.ts 2>/dev/null" } }),
+      toolResult("1", "exec", "Exit code 1\n"),
+      assistantWithCalls({ id: "2", name: "write", arguments: { path: "out.txt", content: "done" } }),
+      toolResult("2", "write", "Wrote 4 bytes"),
+    ];
+
+    const chains = extractFailureChains(messages);
+    expect(chains).toHaveLength(0);
+  });
+
+  it("still flags grep exit 2 (actual error) as error", () => {
+    // grep exit 2 means an actual error (e.g., invalid regex), not "no match"
+    const messages: AgentMessage[] = [
+      assistantWithCalls({ id: "1", name: "exec", arguments: { command: 'grep -r "[invalid" src/' } }),
+      toolResult("1", "exec", "Exit code 2\ngrep: Invalid regular expression"),
+      assistantWithCalls({ id: "2", name: "write", arguments: { path: "out.txt", content: "done" } }),
+      toolResult("2", "write", "Wrote 4 bytes"),
+    ];
+
+    const chains = extractFailureChains(messages);
+    expect(chains).toHaveLength(1);
+    expect(chains[0].trigger.tool).toBe("exec");
+  });
+
+  it("still flags git diff exit 128 (not a git repo) as error", () => {
+    // git diff exits 128 for fatal errors — this IS a real error
+    const messages: AgentMessage[] = [
+      assistantWithCalls({ id: "1", name: "exec", arguments: { command: "git diff HEAD" } }),
+      toolResult("1", "exec", "Exit code 128\nfatal: not a git repository"),
+      assistantWithCalls({ id: "2", name: "write", arguments: { path: "out.txt", content: "done" } }),
+      toolResult("2", "write", "Wrote 4 bytes"),
+    ];
+
+    const chains = extractFailureChains(messages);
+    expect(chains).toHaveLength(1);
+    expect(chains[0].trigger.tool).toBe("exec");
+  });
+
+  it("still flags non-grep commands with exit 1 as errors", () => {
+    // npm run build exiting 1 is a real failure
+    const messages: AgentMessage[] = [
+      assistantWithCalls({ id: "1", name: "exec", arguments: { command: "npm run build" } }),
+      toolResult("1", "exec", "Exit code 1\nERROR in src/index.ts: Cannot find module"),
+      assistantWithCalls({ id: "2", name: "write", arguments: { path: "out.txt", content: "done" } }),
+      toolResult("2", "write", "Wrote 4 bytes"),
+    ];
+
+    const chains = extractFailureChains(messages);
+    expect(chains).toHaveLength(1);
+    expect(chains[0].trigger.tool).toBe("exec");
+  });
+
+  it("still flags commands with 2>/dev/null exit 1 WITH output as errors", () => {
+    // If there's meaningful error output despite 2>/dev/null, something went wrong
+    const messages: AgentMessage[] = [
+      assistantWithCalls({ id: "1", name: "exec", arguments: { command: "python3 -c 'import litellm' 2>/dev/null" } }),
+      toolResult("1", "exec", "Exit code 1\nTraceback (most recent call last):\n  ModuleNotFoundError: No module named 'litellm'"),
+      assistantWithCalls({ id: "2", name: "write", arguments: { path: "out.txt", content: "done" } }),
+      toolResult("2", "write", "Wrote 4 bytes"),
+    ];
+
+    const chains = extractFailureChains(messages);
+    expect(chains).toHaveLength(1);
   });
 });
 
