@@ -55,6 +55,14 @@ export interface SubagentDefinition {
    * Only recommended for supervisor/long-running agents, not scoped sub-agents.
    */
   compaction?: boolean | CompactionOptions;
+
+  /**
+   * Mark this agent as persistent (long-lived).
+   * When true, the session is NOT archived after completion. Instead, it
+   * transitions to "idle" and waits for more input via `send()`.
+   * Use for orchestrator agents that maintain context across multiple tasks.
+   */
+  persistent?: boolean;
 }
 
 /** Runtime info about a session. */
@@ -62,7 +70,7 @@ export interface SessionInfo {
   sessionId: string;
   agent: string;
   task: string;
-  status: "running" | "done" | "error" | "interrupted";
+  status: "running" | "done" | "error" | "interrupted" | "idle";
   startedAt: number;
   endedAt?: number;
   runtime: string;

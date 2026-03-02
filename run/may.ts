@@ -7,6 +7,7 @@ import {
   createReadTool,
   createWriteTool,
   createExecTool,
+  evaluateTask,
 } from "../src/index.js";
 import { EventBus } from "./event-bus.js";
 import { attachConsoleUI } from "./console-ui.js";
@@ -16,6 +17,7 @@ const PROJECT_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const AGENTS_ROOT = resolve(PROJECT_ROOT, "agents");
 const PERSIST_DIR = resolve(PROJECT_ROOT, ".state");
 const SOCKET_PATH = resolve(PERSIST_DIR, "may.sock");
+const SHARED_KNOWLEDGE = resolve(AGENTS_ROOT, "shared/system-design.md");
 
 // ── Model ──────────────────────────────────────────────────────────────
 
@@ -35,7 +37,12 @@ const gpt52 = {
 const bus = new EventBus();
 attachConsoleUI(bus);
 
-const manager = new SubagentManager({ persistDir: PERSIST_DIR });
+// Agents to skip for auto-evaluation (meta agents evaluate feature agents, not themselves)
+const EVAL_SKIP_AGENTS = new Set(["evaluator", "optimizer", "may"]);
+
+const manager = new SubagentManager({
+  persistDir: PERSIST_DIR,
+});
 
 function projectRead() {
   return createReadTool({ projectRoot: PROJECT_ROOT });
@@ -100,7 +107,7 @@ manager.register({
   model: opus,
   tools: [projectRead(), createWriteTool(), projectExec()],
   apiKey: "not-needed",
-  maxTurns: 30,
+  maxTurns: 50,
 });
 
 manager.register({
@@ -121,10 +128,59 @@ manager.register({
 });
 
 manager.register({
+  name: "evaluator",
+  description: "Evaluates completed task trees — scores each agent by responsibility",
+  domain: "agent performance evaluation",
+  systemPromptFiles: [
+    SHARED_KNOWLEDGE,
+    resolve(AGENTS_ROOT, "evaluator/knowledge/domain.md"),
+  ],
+  knowledgeDir: resolve(AGENTS_ROOT, "evaluator/knowledge"),
+  workspace: resolve(AGENTS_ROOT, "evaluator/workspace"),
+  projectRoot: PROJECT_ROOT,
+  model: gpt52,
+  tools: [projectRead(), createWriteTool(), projectExec()],
+  apiKey: "not-needed",
+  maxTurns: 20,
+});
+
+manager.register({
+  name: "optimizer",
+  description: "Analyzes agent performance data, proposes and implements improvements to the agent system",
+  domain: "agent system optimization",
+  systemPromptFiles: [
+    SHARED_KNOWLEDGE,
+    resolve(AGENTS_ROOT, "optimizer/knowledge/domain.md"),
+    resolve(AGENTS_ROOT, "optimizer/knowledge/codebase.md"),
+    resolve(AGENTS_ROOT, "optimizer/tools/INDEX.md"),
+  ],
+  knowledgeDir: resolve(AGENTS_ROOT, "optimizer/knowledge"),
+  workspace: resolve(AGENTS_ROOT, "optimizer/workspace"),
+  workflowDir: resolve(AGENTS_ROOT, "optimizer/workflows"),
+  projectRoot: PROJECT_ROOT,
+  model: opus,
+  tools: [
+    projectRead(),
+    createWriteTool(),
+    projectExec(),
+    manager.createTool({
+      onSessionStart: (agent, sessionId) => {
+        attachAgentEvents(agent, sessionId);
+      },
+    }),
+  ],
+  apiKey: "not-needed",
+  maxTurns: 40,
+});
+
+let sid: string;
+
+manager.register({
   name: "may",
   description: "Supervisor — delegates to coder, reviews results",
   domain: "may-agent coordination",
   systemPromptFiles: [
+    SHARED_KNOWLEDGE,
     resolve(AGENTS_ROOT, "may/knowledge/domain.md"),
     resolve(AGENTS_ROOT, "may/tools/INDEX.md"),
   ],
@@ -139,7 +195,7 @@ manager.register({
     getCallerSessionId: () => sid,
   })],
   apiKey: "not-needed",
-  maxTurns: 40,
+  persistent: true,
   compaction: {
     threshold: 0.7,
     keepRatio: 0.4,
@@ -176,21 +232,33 @@ function attachAgentEvents(label: string, sessionId: string): void {
   });
 }
 
-// ── Session management ─────────────────────────────────────────────────
+// ── Post-task evaluation ───────────────────────────────────────────────
 
-let sid: string;
+/**
+ * Run task-tree evaluation after May finishes a task (goes idle).
+ * Finds all unevaluated child sessions and evaluates them together,
+ * scoring each agent by its responsibility.
+ */
+async function runPostTaskEvaluation(): Promise<void> {
+  try {
+    const result = await evaluateTask({
+      manager,
+      persistDir: PERSIST_DIR,
+      parentSessionId: sid,
+      skipAgents: EVAL_SKIP_AGENTS,
+    });
 
-function startSession(task: string): string {
-  const sessionId = manager.run("may", task);
-  attachAgentEvents("may", sessionId);
-  return sessionId;
-}
+    if (!result) return; // no unevaluated children
 
-async function waitForCompletion(sessionId: string): Promise<void> {
-  const result = await manager.waitFor(sessionId);
-
-  if (result.status === "error" && result.error) {
-    bus.emit({ type: "info", message: `Session error: ${result.error.slice(0, 200)}` });
+    const agentSummaries = Object.values(result.agents)
+      .map((a) => `${a.agent}: eff=${a.efficiency} qual=${a.quality} verdict=${a.verdict}`)
+      .join(", ");
+    bus.emit({
+      type: "info",
+      message: `[eval] Task evaluation: ${agentSummaries} | overall: eff=${result.overall.efficiency} qual=${result.overall.quality} verdict=${result.overall.verdict}`,
+    });
+  } catch (err) {
+    bus.emit({ type: "info", message: `[eval] Error: ${err instanceof Error ? err.message : String(err)}` });
   }
 }
 
@@ -229,12 +297,33 @@ bus.onCommand((cmd) => {
       break;
     }
     case "input":
-      bus.emit({ type: "info", message: `[socket] New task: "${cmd.message.slice(0, 80)}"` });
-      sid = startSession(cmd.message);
-      waitForCompletion(sid);
+      bus.emit({ type: "info", message: `[socket] Input: "${cmd.message.slice(0, 80)}"` });
+      lastUserInput = Date.now();
+      sendToMay(cmd.message);
       break;
   }
 });
+
+// ── Send input to persistent May session ───────────────────────────────
+
+let lastUserInput = Date.now();
+let lastOptimizerRun = 0;
+let optimizerRunning = false;
+
+async function sendToMay(message: string): Promise<void> {
+  try {
+    await manager.send(sid, message);
+    // If send() steered into a running session, wait for it to finish
+    await manager.waitForIdle(sid);
+
+    // Post-task evaluation: evaluate all unevaluated child sessions
+    // Fire-and-forget — don't block the user prompt
+    runPostTaskEvaluation();
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    bus.emit({ type: "info", message: `Send error: ${msg}` });
+  }
+}
 
 // ── Graceful shutdown ──────────────────────────────────────────────────
 
@@ -243,11 +332,17 @@ let shuttingDown = false;
 function gracefulShutdown() {
   if (shuttingDown) return;
   shuttingDown = true;
-  bus.emit({ type: "info", message: "Shutting down — cancelling active sessions..." });
-  if (sid) {
-    manager.cancel(sid); // cascades to all children
+  bus.emit({ type: "info", message: "Shutting down..." });
+
+  // Cancel non-persistent child sessions (coder, qa) but leave May's
+  // persistent session intact for resume on next startup.
+  for (const s of manager.status()) {
+    if (s.status === "running" && s.sessionId !== sid) {
+      manager.cancel(s.sessionId);
+    }
   }
-  // Give handleCompletion a moment to archive, then exit
+
+  // Give handleCompletion a moment to archive children, then exit
   setTimeout(() => process.exit(0), 2000);
 }
 
@@ -256,10 +351,10 @@ process.on("SIGTERM", gracefulShutdown);
 
 // ── Startup ────────────────────────────────────────────────────────────
 
-// Try to resume May's session from a previous process crash/stop
 const resumed = manager.resumeAgent("may");
 
 if (resumed?.resumed) {
+  // Resume existing persistent May session
   const { resumed: resumedSession, interrupted } = resumed;
   sid = resumedSession.sessionId;
   attachAgentEvents("may", sid);
@@ -269,9 +364,10 @@ if (resumed?.resumed) {
     bus.emit({ type: "info", message: `${interrupted.length} sub-agent session(s) marked as interrupted` });
   }
 
-  await waitForCompletion(sid);
+  // Wait for resume processing to complete (May goes idle)
+  await manager.waitForIdle(sid);
 } else {
-  // No session to resume — clean up stale state
+  // No session to resume — clean up and start fresh
   if (resumed) {
     bus.emit({ type: "info", message: `${resumed.interrupted.length} sub-agent session(s) marked as interrupted` });
   } else {
@@ -281,13 +377,57 @@ if (resumed?.resumed) {
     }
   }
 
-  // Run initial task from CLI arg (if provided)
-  const cliTask = process.argv.slice(2).join(" ");
-  if (cliTask) {
-    sid = startSession(cliTask);
-    await waitForCompletion(sid);
-  }
+  // Start new persistent May session
+  const initialTask = process.argv.slice(2).join(" ") || "Ready. Waiting for tasks.";
+  sid = manager.run("may", initialTask);
+  attachAgentEvents("may", sid);
+  bus.emit({ type: "info", message: `Started persistent May session: ${sid}` });
+
+  // Wait for initial processing to complete (May goes idle)
+  await manager.waitForIdle(sid);
 }
+
+// ── Idle timer for optimizer ────────────────────────────────────────────
+
+const IDLE_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+const OPTIMIZER_COOLDOWN_MS = 30 * 60 * 1000; // 30 minutes between optimizer runs
+const IDLE_CHECK_INTERVAL_MS = 60 * 1000; // check every 60 seconds
+
+const idleTimer = setInterval(() => {
+  if (shuttingDown) return;
+  if (optimizerRunning) return;
+
+  const now = Date.now();
+  const idleMs = now - lastUserInput;
+  if (idleMs < IDLE_TIMEOUT_MS) return;
+
+  // Enforce cooldown between optimizer runs
+  if (now - lastOptimizerRun < OPTIMIZER_COOLDOWN_MS) return;
+
+  // Check May is actually idle (not processing something)
+  const sessions = manager.status();
+  const maySessions = sessions.filter((s) => s.sessionId === sid);
+  if (maySessions.length === 0 || maySessions[0].status !== "idle") return;
+
+  // Don't run if there are active sub-agent sessions
+  const activeSubs = sessions.filter((s) => s.sessionId !== sid && s.status === "running");
+  if (activeSubs.length > 0) return;
+
+  optimizerRunning = true;
+  lastOptimizerRun = now;
+  bus.emit({ type: "info", message: `[idle] ${Math.floor(idleMs / 1000)}s idle — triggering optimizer via May` });
+
+  sendToMay(
+    "No user tasks for 5 minutes. Run the optimizer to analyze recent sessions and improve agent performance. " +
+    "Delegate to optimizer: analyze recent evaluation data in .state/evaluations/ and session transcripts in " +
+    ".state/sessions/history/. Identify the highest-impact improvement, implement it, verify it, and commit."
+  ).then(() => {
+    optimizerRunning = false;
+    lastUserInput = Date.now(); // reset so we don't immediately re-trigger
+  }).catch(() => {
+    optimizerRunning = false;
+  });
+}, IDLE_CHECK_INTERVAL_MS);
 
 // ── Socket (always available) ──────────────────────────────────────────
 
@@ -311,10 +451,11 @@ for await (const line of rl) {
   if (input === "exit" || input === "quit") break;
   if (!input) { prompt(); continue; }
 
-  sid = startSession(input);
-  await waitForCompletion(sid);
+  lastUserInput = Date.now();
+  await sendToMay(input);
   prompt();
 }
 
+clearInterval(idleTimer);
 socketUI.close();
 rl.close();

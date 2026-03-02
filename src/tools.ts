@@ -34,6 +34,106 @@ export interface ReadToolOptions {
   projectRoot?: string;
 }
 
+/**
+ * Patterns that match hallucinated project root paths.
+ *
+ * Agents frequently hallucinate paths like:
+ * - /home/user, /home/user/repo, /home/user/repos/my-project
+ * - /Users/jdoe/amp-agent, /Users/someone/project
+ * - /app (Docker-style)
+ *
+ * Each pattern captures: (hallucinated_root)(relative_path)
+ * Group 1 = the fake root, Group 2 = the relative path to preserve.
+ *
+ * The patterns are ordered from most specific to least specific
+ * so that longer matches win (e.g., /home/user/repo/ before /home/user/).
+ */
+const HALLUCINATED_PATH_PATTERNS: RegExp[] = [
+  // /home/user/repos/<project-name>/... → keep path after project-name
+  /^(\/home\/user\/repos\/[^/]+)(\/.*)?$/,
+  // /home/user/repo/... → keep path after repo
+  /^(\/home\/user\/repo)(\/.*)?$/,
+  // /home/user/... → keep path after user
+  /^(\/home\/user)(\/.*)?$/,
+  // /Users/<name>/<project>/... → keep path after project
+  /^(\/Users\/[^/]+\/[^/]+)(\/.*)?$/,
+  // /app/... → keep path after app
+  /^(\/app)(\/.*)?$/,
+];
+
+/**
+ * Extract the relative path from a hallucinated absolute path.
+ *
+ * When an agent hallucinates a project root (e.g., /home/user/repo),
+ * this function extracts the relative path portion that can be rebased
+ * onto the actual project root.
+ *
+ * @returns The relative path (e.g., "/src/tools.ts") or null if not a hallucinated path.
+ */
+export function extractHallucinatedRelPath(path: string): string | null {
+  for (const pattern of HALLUCINATED_PATH_PATTERNS) {
+    const match = path.match(pattern);
+    if (match) {
+      // Return the relative portion, or empty string if it's just the root
+      return match[2] ?? "";
+    }
+  }
+  return null;
+}
+
+/**
+ * Rewrite a hallucinated absolute path to point to the actual project root.
+ *
+ * Agents commonly hallucinate paths like /home/user/repo/src/tools.ts
+ * when the actual path is /home/hao/may-agent/src/tools.ts. This function
+ * detects the hallucinated root and rebases the relative path onto the
+ * actual project root.
+ *
+ * Only rewrites when:
+ * 1. The path matches a known hallucination pattern
+ * 2. The hallucinated root is NOT the actual root (no false rewrites)
+ *
+ * @param path - The path to check
+ * @param projectRoot - The actual project root
+ * @returns The rewritten path, or the original path if no rewrite needed
+ */
+export function rewriteHallucinatedPath(path: string, projectRoot: string): string {
+  const relPath = extractHallucinatedRelPath(path);
+  if (relPath === null) return path;
+
+  // Don't rewrite if the path already starts with the actual project root
+  if (path === projectRoot || path.startsWith(projectRoot + "/")) return path;
+
+  return projectRoot + relPath;
+}
+
+/**
+ * Rewrite hallucinated paths in a shell command string.
+ *
+ * Scans for absolute paths in the command that match hallucination patterns
+ * and rewrites them to point to the actual project root.
+ *
+ * Handles paths appearing in various positions:
+ * - As standalone arguments: find /home/user/src -name foo
+ * - After cd: cd /home/user && ls
+ * - After flags: --root=/home/user/src
+ * - In quotes: grep "pattern" "/home/user/file.ts"
+ */
+export function rewriteHallucinatedCommand(command: string, projectRoot: string): string {
+  // Match absolute paths that could be hallucinated.
+  // We look for paths starting with /home/user, /Users/<name>, or /app
+  // in various command contexts.
+  return command.replace(
+    /(\/(?:home\/user(?:\/repos?\/[^/\s'"]+)?|Users\/[^/\s'"]+\/[^/\s'"]+|app))(\/?[^)\s'"]*)/g,
+    (_match, root: string, relPath: string) => {
+      const fullPath = root + relPath;
+      // Don't rewrite if it's already the correct root
+      if (fullPath === projectRoot || fullPath.startsWith(projectRoot + "/")) return fullPath;
+      return projectRoot + relPath;
+    },
+  );
+}
+
 export function createReadTool(options?: ReadToolOptions): AgentTool<typeof ReadParams> {
   return {
     name: "read",
@@ -41,8 +141,13 @@ export function createReadTool(options?: ReadToolOptions): AgentTool<typeof Read
     description: "Read the contents of a file.",
     parameters: ReadParams,
     execute: async (_id, params) => {
+      // Try to rewrite hallucinated paths before reading
+      const effectivePath = options?.projectRoot
+        ? rewriteHallucinatedPath(params.path, options.projectRoot)
+        : params.path;
+
       try {
-        const content = readFileSync(params.path, "utf-8");
+        const content = readFileSync(effectivePath, "utf-8");
         return textResult(content);
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
@@ -142,7 +247,12 @@ export function createExecTool(cwdOrOpts?: string | ExecToolOptions): AgentTool<
     parameters: ExecParams,
     execute: async (_id, params) => {
       // Strip redundant `cd <cwd> && ` prefix — the cwd is already set
-      const command = stripRedundantCd(params.command, effectiveCwd);
+      let command = stripRedundantCd(params.command, effectiveCwd);
+
+      // Rewrite hallucinated paths to actual project root
+      if (warnOutsideRoot) {
+        command = rewriteHallucinatedCommand(command, warnOutsideRoot);
+      }
 
       // Check deny patterns (on the cleaned command)
       for (const pattern of denyPatterns) {

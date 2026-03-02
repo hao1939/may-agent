@@ -182,12 +182,14 @@ describe("createExecTool with options", () => {
 describe("warnOutsideRoot", () => {
   const ROOT = "/home/hao/may-agent";
 
-  it("warns when command uses /home/user path", async () => {
-    const tool = createExecTool({ cwd: "/tmp", warnOutsideRoot: ROOT });
+  it("rewrites /home/user to project root (hallucinated path auto-correction)", async () => {
+    const tool = createExecTool({ cwd: ROOT, warnOutsideRoot: ROOT });
+    // /home/user is a hallucinated path — it gets rewritten to ROOT
+    // The command becomes: find /home/hao/may-agent -name foo
+    // After rewriting, no WARNING is needed since the path is now correct
     const result = await tool.execute("id", { command: "find /home/user -name foo" });
-    expect(result.content[0].text).toContain("WARNING:");
-    expect(result.content[0].text).toContain("outside the project root");
-    expect(result.content[0].text).toContain(ROOT);
+    // Should NOT contain warning — path was auto-corrected
+    expect(result.content[0].text).not.toContain("WARNING:");
   });
 
   it("does not warn when command uses project-root path", async () => {
@@ -211,56 +213,64 @@ describe("warnOutsideRoot", () => {
     expect(result.content[0].text).not.toContain("outside the project root");
   });
 
-  it("warns on /app/ paths", async () => {
-    const tool = createExecTool({ cwd: "/tmp", warnOutsideRoot: ROOT });
+  it("rewrites /app/ paths to project root (hallucinated path auto-correction)", async () => {
+    const tool = createExecTool({ cwd: ROOT, warnOutsideRoot: ROOT });
+    // /app/something is a hallucinated path — rewritten to ROOT/something
+    // The ls will fail because ROOT/something doesn't exist, but the path is now correct
     const result = await tool.execute("id", { command: "ls /app/something" });
-    expect(result.content[0].text).toContain("WARNING:");
-    expect(result.content[0].text).toContain("outside the project root");
-  });
-
-  it("warning is appended to actual output, not replacing it", async () => {
-    const tool = createExecTool({ cwd: "/tmp", warnOutsideRoot: ROOT });
-    // echo produces output, and the command references an outside path
-    const result = await tool.execute("id", { command: "echo hello && echo /home/user/something" });
     const text = result.content[0].text;
-    // The echo output should be present
-    expect(text).toContain("hello");
-    // The warning should also be present
-    expect(text).toContain("WARNING:");
-    expect(text).toContain("outside the project root");
+    // Should reference the corrected project root path, not /app/
+    expect(text).toContain(ROOT);
+    // No outside-root warning because the path was auto-corrected
+    expect(text).not.toContain("WARNING:");
   });
 
-  it("warns on non-zero exit code too", async () => {
+  it("rewritten hallucinated path appears in echo output", async () => {
     const tool = createExecTool({ cwd: "/tmp", warnOutsideRoot: ROOT });
-    // ls on a non-existent outside path — will fail with non-zero exit
+    // echo /home/user/something → rewritten to echo /home/hao/may-agent/something
+    const result = await tool.execute("id", { command: "echo /home/user/something" });
+    const text = result.content[0].text;
+    // The echo output should show the rewritten path
+    expect(text).toContain(ROOT + "/something");
+    // No WARNING because the hallucinated path was rewritten
+    expect(text).not.toContain("WARNING:");
+  });
+
+  it("rewrites hallucinated paths even on non-zero exit code", async () => {
+    const tool = createExecTool({ cwd: "/tmp", warnOutsideRoot: ROOT });
+    // ls on a non-existent path under hallucinated root — will fail but with corrected path
     const result = await tool.execute("id", { command: "ls /home/user/nonexistent_path_xyz" });
     const text = result.content[0].text;
-    expect(text).toContain("WARNING:");
-    expect(text).toContain("outside the project root");
+    // The error should reference the corrected project root, not /home/user
+    expect(text).toContain(ROOT);
+    // No WARNING because the path was rewritten
+    expect(text).not.toContain("WARNING:");
   });
 
-  it("warns on /tmp without trailing slash", async () => {
+  it("warns on /tmp without trailing slash (not a hallucinated path)", async () => {
     const tool = createExecTool({ cwd: "/tmp", warnOutsideRoot: ROOT });
     const result = await tool.execute("id", { command: "ls /tmp" });
     expect(result.content[0].text).toContain("WARNING:");
     expect(result.content[0].text).toContain("outside the project root");
   });
 
-  it("warns on /home without trailing slash", async () => {
+  it("warns on /home without trailing slash (not a hallucinated path)", async () => {
     const tool = createExecTool({ cwd: "/tmp", warnOutsideRoot: ROOT });
     const result = await tool.execute("id", { command: "cd /home" });
     expect(result.content[0].text).toContain("WARNING:");
     expect(result.content[0].text).toContain("outside the project root");
   });
 
-  it("warns on path after equals sign", async () => {
-    const tool = createExecTool({ cwd: "/tmp", warnOutsideRoot: ROOT });
-    const result = await tool.execute("id", { command: "--root=/home/user/x" });
-    expect(result.content[0].text).toContain("WARNING:");
-    expect(result.content[0].text).toContain("outside the project root");
+  it("rewrites --root=/home/user/x (hallucinated path in flag)", async () => {
+    const tool = createExecTool({ cwd: ROOT, warnOutsideRoot: ROOT });
+    // --root=/home/user/x → rewritten to --root=/home/hao/may-agent/x
+    const result = await tool.execute("id", { command: "echo --root=/home/user/x" });
+    const text = result.content[0].text;
+    expect(text).toContain(ROOT);
+    expect(text).not.toContain("WARNING:");
   });
 
-  it("warns on path-boundary sibling", async () => {
+  it("warns on path-boundary sibling (not hallucinated)", async () => {
     const tool = createExecTool({ cwd: "/tmp", warnOutsideRoot: ROOT });
     const result = await tool.execute("id", { command: "ls /home/hao/may-agent-old" });
     expect(result.content[0].text).toContain("WARNING:");
