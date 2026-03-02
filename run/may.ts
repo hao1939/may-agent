@@ -7,6 +7,7 @@ import {
   createReadTool,
   createWriteTool,
   createExecTool,
+  createWorkflowTool,
   evaluateTask,
 } from "../src/index.js";
 import { EventBus } from "./event-bus.js";
@@ -48,6 +49,10 @@ function projectRead() {
   return createReadTool({ projectRoot: PROJECT_ROOT });
 }
 
+
+function projectWrite() {
+  return createWriteTool({ projectRoot: PROJECT_ROOT });
+}
 function projectExec() {
   return createExecTool({
     cwd: PROJECT_ROOT,
@@ -105,7 +110,7 @@ manager.register({
   workspace: resolve(AGENTS_ROOT, "coder/workspace"),
   projectRoot: PROJECT_ROOT,
   model: opus,
-  tools: [projectRead(), createWriteTool(), projectExec()],
+  tools: [projectRead(), projectWrite(), projectExec()],
   apiKey: "not-needed",
   maxTurns: 50,
 });
@@ -122,7 +127,7 @@ manager.register({
   workspace: resolve(AGENTS_ROOT, "qa/workspace"),
   projectRoot: PROJECT_ROOT,
   model: gpt52,
-  tools: [projectRead(), createWriteTool(), projectExec()],
+  tools: [projectRead(), projectWrite(), projectExec()],
   apiKey: "not-needed",
   maxTurns: 30,
 });
@@ -139,9 +144,10 @@ manager.register({
   workspace: resolve(AGENTS_ROOT, "evaluator/workspace"),
   projectRoot: PROJECT_ROOT,
   model: gpt52,
-  tools: [projectRead(), createWriteTool(), projectExec()],
+  tools: [projectRead(), projectWrite(), projectExec()],
   apiKey: "not-needed",
   maxTurns: 20,
+  memoryLimit: 5,
 });
 
 manager.register({
@@ -161,7 +167,7 @@ manager.register({
   model: opus,
   tools: [
     projectRead(),
-    createWriteTool(),
+    projectWrite(),
     projectExec(),
     manager.createTool({
       onSessionStart: (agent, sessionId) => {
@@ -175,6 +181,31 @@ manager.register({
 
 let sid: string;
 
+const maySubagentTool = manager.createTool({
+  onSessionStart: (agent, sessionId) => {
+    attachAgentEvents(agent, sessionId);
+  },
+  getCallerSessionId: () => sid,
+});
+
+const mayWorkflowTool = createWorkflowTool({
+  manager,
+  workflowDir: resolve(AGENTS_ROOT, "may/workflows"),
+  persistDir: PERSIST_DIR,
+  callerSessionId: () => sid,
+  onEvent: (event) => {
+    if (event.type === "workflow_start") {
+      bus.emit({ type: "info", message: `[workflow] Starting: ${event.workflow}` });
+    } else if (event.type === "workflow_done") {
+      bus.emit({ type: "info", message: `[workflow] Done: ${event.summary.slice(0, 100)}` });
+    } else if (event.type === "workflow_escalate") {
+      bus.emit({ type: "info", message: `[workflow] Escalated: ${event.reason}` });
+    } else if (event.type === "step_start") {
+      bus.emit({ type: "info", message: `[workflow] Step: ${event.step}` });
+    }
+  },
+});
+
 manager.register({
   name: "may",
   description: "Supervisor — delegates to coder, reviews results",
@@ -186,14 +217,10 @@ manager.register({
   ],
   knowledgeDir: resolve(AGENTS_ROOT, "may/knowledge"),
   workspace: resolve(AGENTS_ROOT, "may/workspace"),
+  workflowDir: resolve(AGENTS_ROOT, "may/workflows"),
   projectRoot: PROJECT_ROOT,
   model: opus,
-  tools: [readOnlyExec(), manager.createTool({
-    onSessionStart: (agent, sessionId) => {
-      attachAgentEvents(agent, sessionId);
-    },
-    getCallerSessionId: () => sid,
-  })],
+  tools: [readOnlyExec(), maySubagentTool, mayWorkflowTool],
   apiKey: "not-needed",
   persistent: true,
   compaction: {

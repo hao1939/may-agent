@@ -34,6 +34,19 @@ export interface ReadToolOptions {
   projectRoot?: string;
 }
 
+/** Options for the write tool. */
+export interface WriteToolOptions {
+  /**
+   * If set, the write tool resolves paths the same way the read tool does:
+   * - Relative paths (e.g., "src/foo.ts") → resolved against projectRoot
+   * - Hallucinated paths (e.g., "/home/user/repo/src/foo.ts") → rewritten to projectRoot
+   * - Correct absolute paths → used as-is
+   *
+   * Also adds a hint to error messages showing the project root.
+   */
+  projectRoot?: string;
+}
+
 /**
  * Patterns that match hallucinated project root paths.
  *
@@ -135,7 +148,7 @@ export function rewriteHallucinatedCommand(command: string, projectRoot: string)
 }
 
 /**
- * Resolve a read tool path to an absolute path.
+ * Resolve a tool path to an absolute path.
  *
  * Handles three cases:
  * 1. Relative paths (e.g., "src/tools.ts") → resolved against projectRoot
@@ -144,11 +157,13 @@ export function rewriteHallucinatedCommand(command: string, projectRoot: string)
  *
  * This eliminates the most common failure pattern in evaluations: agents
  * getting an ENOENT error, seeing the hint "use paths like src/manager.ts",
- * then getting another ENOENT because the read tool didn't resolve relative paths.
+ * then getting another ENOENT because the tool didn't resolve relative paths.
+ *
+ * Used by both the read and write tools.
  *
  * @param path - The path from the agent (relative or absolute)
  * @param projectRoot - The project root to resolve against
- * @returns An absolute path ready for readFileSync
+ * @returns An absolute path ready for readFileSync/writeFileSync
  */
 export function resolveReadPath(path: string, projectRoot: string): string {
   // 1. Relative paths: resolve against projectRoot
@@ -158,6 +173,23 @@ export function resolveReadPath(path: string, projectRoot: string): string {
 
   // 2. Hallucinated absolute paths: rewrite to projectRoot
   return rewriteHallucinatedPath(path, projectRoot);
+}
+
+/**
+ * Resolve a write tool path to an absolute path.
+ *
+ * Identical logic to resolveReadPath — resolves relative paths against
+ * projectRoot and rewrites hallucinated absolute paths.
+ *
+ * Exported separately so callers can use the semantically correct name,
+ * but delegates to the same implementation.
+ *
+ * @param path - The path from the agent (relative or absolute)
+ * @param projectRoot - The project root to resolve against
+ * @returns An absolute path ready for writeFileSync
+ */
+export function resolveWritePath(path: string, projectRoot: string): string {
+  return resolveReadPath(path, projectRoot);
 }
 
 export function createReadTool(options?: ReadToolOptions): AgentTool<typeof ReadParams> {
@@ -186,20 +218,28 @@ export function createReadTool(options?: ReadToolOptions): AgentTool<typeof Read
   };
 }
 
-export function createWriteTool(): AgentTool<typeof WriteParams> {
+export function createWriteTool(options?: WriteToolOptions): AgentTool<typeof WriteParams> {
   return {
     name: "write",
     label: "Write File",
     description: "Write content to a file. Creates parent directories if needed.",
     parameters: WriteParams,
     execute: async (_id, params) => {
+      // Resolve path: relative → projectRoot-based, hallucinated → rewritten, correct → as-is
+      const effectivePath = options?.projectRoot
+        ? resolveWritePath(params.path, options.projectRoot)
+        : params.path;
+
       try {
-        mkdirSync(dirname(params.path), { recursive: true });
-        writeFileSync(params.path, params.content, "utf-8");
-        return textResult(`Wrote ${params.content.length} bytes to ${params.path}`);
+        mkdirSync(dirname(effectivePath), { recursive: true });
+        writeFileSync(effectivePath, params.content, "utf-8");
+        return textResult(`Wrote ${params.content.length} bytes to ${effectivePath}`);
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
-        return textResult(`Error writing file: ${msg}`);
+        const hint = options?.projectRoot
+          ? `\nHint: project root is ${options.projectRoot} — use paths relative to it, e.g. src/manager.ts not /home/user/repos/.../src/manager.ts`
+          : "";
+        return textResult(`Error writing file: ${msg}${hint}`);
       }
     },
   };
