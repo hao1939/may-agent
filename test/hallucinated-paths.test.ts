@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { rewriteHallucinatedPath, rewriteHallucinatedCommand, extractHallucinatedRelPath, createReadTool, createExecTool } from "../src/tools.js";
+import { rewriteHallucinatedPath, rewriteHallucinatedCommand, extractHallucinatedRelPath, createReadTool, createExecTool, resolveReadPath } from "../src/tools.js";
 import { mkdirSync, writeFileSync, rmSync } from "node:fs";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 
 // ── extractHallucinatedRelPath ─────────────────────────────────────────
@@ -165,6 +165,53 @@ describe("rewriteHallucinatedCommand", () => {
   });
 });
 
+// ── resolveReadPath ────────────────────────────────────────────────────
+
+describe("resolveReadPath", () => {
+  const ROOT = "/home/example-user/may-agent";
+
+  it("resolves relative path against projectRoot", () => {
+    expect(resolveReadPath("src/tools.ts", ROOT))
+      .toBe("/home/example-user/may-agent/src/tools.ts");
+  });
+
+  it("resolves bare filename against projectRoot", () => {
+    expect(resolveReadPath("package.json", ROOT))
+      .toBe("/home/example-user/may-agent/package.json");
+  });
+
+  it("resolves dotfile relative path", () => {
+    expect(resolveReadPath(".state/evaluations/foo.json", ROOT))
+      .toBe("/home/example-user/may-agent/.state/evaluations/foo.json");
+  });
+
+  it("resolves ./prefixed relative path", () => {
+    expect(resolveReadPath("./src/tools.ts", ROOT))
+      .toBe("/home/example-user/may-agent/src/tools.ts");
+  });
+
+  it("resolves nested relative path with ../", () => {
+    // resolve("root", "../other") goes up one level
+    expect(resolveReadPath("../other/file.ts", ROOT))
+      .toBe(resolve(ROOT, "../other/file.ts"));
+  });
+
+  it("rewrites hallucinated absolute path", () => {
+    expect(resolveReadPath("/home/user/repo/src/tools.ts", ROOT))
+      .toBe("/home/example-user/may-agent/src/tools.ts");
+  });
+
+  it("passes through correct absolute path unchanged", () => {
+    expect(resolveReadPath("/home/example-user/may-agent/src/tools.ts", ROOT))
+      .toBe("/home/example-user/may-agent/src/tools.ts");
+  });
+
+  it("passes through non-hallucinated absolute path unchanged", () => {
+    expect(resolveReadPath("/etc/hosts", ROOT))
+      .toBe("/etc/hosts");
+  });
+});
+
 // ── Integration: read tool with hallucinated path rewriting ────────────
 
 describe("read tool hallucinated path rewriting", () => {
@@ -205,6 +252,81 @@ describe("read tool hallucinated path rewriting", () => {
     expect(result.content[0].text).toBe("real content");
 
     rmSync(ROOT, { recursive: true, force: true });
+  });
+});
+
+// ── Integration: read tool with relative path resolution ───────────────
+
+describe("read tool relative path resolution", () => {
+  const testDir = join(tmpdir(), `relative-read-test-${Date.now()}`);
+  const ROOT = testDir;
+
+  it("reads file via relative path when projectRoot is set", async () => {
+    mkdirSync(join(ROOT, "src"), { recursive: true });
+    writeFileSync(join(ROOT, "src/hello.txt"), "relative works", "utf-8");
+
+    const tool = createReadTool({ projectRoot: ROOT });
+    const result = await tool.execute("id", { path: "src/hello.txt" });
+    expect(result.content[0].text).toBe("relative works");
+
+    rmSync(ROOT, { recursive: true, force: true });
+  });
+
+  it("reads file via ./prefixed relative path", async () => {
+    mkdirSync(ROOT, { recursive: true });
+    writeFileSync(join(ROOT, "readme.md"), "dot-slash works", "utf-8");
+
+    const tool = createReadTool({ projectRoot: ROOT });
+    const result = await tool.execute("id", { path: "./readme.md" });
+    expect(result.content[0].text).toBe("dot-slash works");
+
+    rmSync(ROOT, { recursive: true, force: true });
+  });
+
+  it("reads bare filename against projectRoot", async () => {
+    mkdirSync(ROOT, { recursive: true });
+    writeFileSync(join(ROOT, "package.json"), '{"name":"test"}', "utf-8");
+
+    const tool = createReadTool({ projectRoot: ROOT });
+    const result = await tool.execute("id", { path: "package.json" });
+    expect(result.content[0].text).toBe('{"name":"test"}');
+
+    rmSync(ROOT, { recursive: true, force: true });
+  });
+
+  it("returns ENOENT with hint for non-existent relative path", async () => {
+    mkdirSync(ROOT, { recursive: true });
+
+    const tool = createReadTool({ projectRoot: ROOT });
+    const result = await tool.execute("id", { path: "nonexistent/file.ts" });
+    expect(result.content[0].text).toContain("Error reading file:");
+    expect(result.content[0].text).toContain("ENOENT");
+    expect(result.content[0].text).toContain("Hint:");
+
+    rmSync(ROOT, { recursive: true, force: true });
+  });
+
+  it("reads nested .state path via relative path", async () => {
+    mkdirSync(join(ROOT, ".state", "evaluations"), { recursive: true });
+    writeFileSync(join(ROOT, ".state/evaluations/test.json"), '{"score":1}', "utf-8");
+
+    const tool = createReadTool({ projectRoot: ROOT });
+    const result = await tool.execute("id", { path: ".state/evaluations/test.json" });
+    expect(result.content[0].text).toBe('{"score":1}');
+
+    rmSync(ROOT, { recursive: true, force: true });
+  });
+
+  it("relative path without projectRoot falls back to cwd resolution", async () => {
+    // Without projectRoot, relative paths resolve from process.cwd()
+    const tool = createReadTool();
+    const result = await tool.execute("id", { path: "src/tools.ts" });
+    // Should either work (if cwd has src/tools.ts) or fail with ENOENT (no hint)
+    const text = result.content[0].text;
+    // Since we're running from the project root, this should read the file
+    // (can't check "not contains Error" because the file source itself has that string)
+    expect(text).toContain("import");
+    expect(text.startsWith("Error reading file:")).toBe(false);
   });
 });
 
