@@ -25,6 +25,11 @@ const opus = {
   baseUrl: "http://localhost:4000",
 };
 
+const gpt52 = {
+  ...getModel("openai", "gpt-5.2"),
+  baseUrl: "http://localhost:4000",
+};
+
 // ── Infrastructure ─────────────────────────────────────────────────────
 
 const bus = new EventBus();
@@ -72,7 +77,7 @@ function readOnlyExec() {
       /\bchmod\b|\bchown\b/,                   // chmod, chown
       /\bpython3?\s+-c\b.*open\(/,             // python -c "...open(..."
       /\bnode\s+-e\b/,                          // node -e
-      /\bgit\s+(add|commit|reset|checkout)\b/,  // git write operations
+      /\bgit\s+(reset|checkout)\b/,            // git destructive operations (add/commit allowed)
     ],
     denyMessage: "You cannot write files. Delegate code changes to coder: subagents.delegate(\"coder\", task)",
   });
@@ -99,6 +104,23 @@ manager.register({
 });
 
 manager.register({
+  name: "qa",
+  description: "Reviews code changes for correctness, quality, and requirement compliance",
+  domain: "code quality review",
+  systemPromptFiles: [
+    resolve(AGENTS_ROOT, "qa/knowledge/domain.md"),
+    resolve(AGENTS_ROOT, "qa/tools/INDEX.md"),
+  ],
+  knowledgeDir: resolve(AGENTS_ROOT, "qa/knowledge"),
+  workspace: resolve(AGENTS_ROOT, "qa/workspace"),
+  projectRoot: PROJECT_ROOT,
+  model: gpt52,
+  tools: [projectRead(), createWriteTool(), projectExec()],
+  apiKey: "not-needed",
+  maxTurns: 30,
+});
+
+manager.register({
   name: "may",
   description: "Supervisor — delegates to coder, reviews results",
   domain: "may-agent coordination",
@@ -117,7 +139,7 @@ manager.register({
     getCallerSessionId: () => sid,
   })],
   apiKey: "not-needed",
-  maxTurns: 20,
+  maxTurns: 40,
   compaction: {
     threshold: 0.7,
     keepRatio: 0.4,
@@ -172,34 +194,7 @@ async function waitForCompletion(sessionId: string): Promise<void> {
   }
 }
 
-// ── Input handling ─────────────────────────────────────────────────────
-
-const rl = createInterface({ input: process.stdin, output: process.stdout });
-let closed = false;
-rl.on("close", () => { closed = true; });
-// readline intercepts SIGINT — forward it to our graceful shutdown
-rl.on("SIGINT", () => { gracefulShutdown(); });
-
-const inputQueue: string[] = [];
-let inputWaiter: ((line: string) => void) | null = null;
-
-rl.on("line", (line) => {
-  const trimmed = line.trim();
-  if (inputWaiter) {
-    const waiter = inputWaiter;
-    inputWaiter = null;
-    waiter(trimmed);
-  } else {
-    inputQueue.push(trimmed);
-  }
-});
-
-function waitForInput(): Promise<string> {
-  if (inputQueue.length > 0) return Promise.resolve(inputQueue.shift()!);
-  return new Promise((resolve) => { inputWaiter = resolve; });
-}
-
-// ── Command handling (from socket) ─────────────────────────────────────
+// ── Socket commands ────────────────────────────────────────────────────
 
 bus.onCommand((cmd) => {
   switch (cmd.type) {
@@ -234,12 +229,9 @@ bus.onCommand((cmd) => {
       break;
     }
     case "input":
-      inputQueue.push(cmd.message);
-      if (inputWaiter) {
-        const waiter = inputWaiter;
-        inputWaiter = null;
-        waiter(inputQueue.shift()!);
-      }
+      bus.emit({ type: "info", message: `[socket] New task: "${cmd.message.slice(0, 80)}"` });
+      sid = startSession(cmd.message);
+      waitForCompletion(sid);
       break;
   }
 });
@@ -267,7 +259,7 @@ process.on("SIGTERM", gracefulShutdown);
 // Try to resume May's session from a previous process crash/stop
 const resumed = manager.resumeAgent("may");
 
-if (resumed) {
+if (resumed?.resumed) {
   const { resumed: resumedSession, interrupted } = resumed;
   sid = resumedSession.sessionId;
   attachAgentEvents("may", sid);
@@ -276,27 +268,28 @@ if (resumed) {
   if (interrupted.length > 0) {
     bus.emit({ type: "info", message: `${interrupted.length} sub-agent session(s) marked as interrupted` });
   }
+
+  await waitForCompletion(sid);
 } else {
-  // No session to resume — start fresh
-  const stale = manager.cleanupStaleSessions();
-  if (stale.length > 0) {
-    bus.emit({ type: "info", message: `Cleaned up ${stale.length} stale session(s)` });
-  }
-
-  const cliTask = process.argv.slice(2).join(" ");
-  let firstMessage: string;
-
-  if (cliTask) {
-    firstMessage = cliTask;
+  // No session to resume — clean up stale state
+  if (resumed) {
+    bus.emit({ type: "info", message: `${resumed.interrupted.length} sub-agent session(s) marked as interrupted` });
   } else {
-    process.stdout.write("\nyou> ");
-    const input = await waitForInput();
-    if (!input) { rl.close(); process.exit(0); }
-    firstMessage = input;
+    const stale = manager.cleanupStaleSessions();
+    if (stale.length > 0) {
+      bus.emit({ type: "info", message: `Cleaned up ${stale.length} stale session(s)` });
+    }
   }
 
-  sid = startSession(firstMessage);
+  // Run initial task from CLI arg (if provided)
+  const cliTask = process.argv.slice(2).join(" ");
+  if (cliTask) {
+    sid = startSession(cliTask);
+    await waitForCompletion(sid);
+  }
 }
+
+// ── Socket (always available) ──────────────────────────────────────────
 
 const socketUI = attachSocketUI({
   socketPath: SOCKET_PATH,
@@ -305,17 +298,22 @@ const socketUI = attachSocketUI({
   getSessionId: () => sid,
 });
 
-await waitForCompletion(sid);
-
 // ── Main loop ──────────────────────────────────────────────────────────
 
-while (!closed) {
-  process.stdout.write("\nyou> ");
-  const input = await waitForInput();
-  if (!input || input === "exit" || input === "quit") break;
+const rl = createInterface({ input: process.stdin, output: process.stdout });
+rl.on("SIGINT", () => { gracefulShutdown(); });
+
+const prompt = () => { process.stdout.write("\nyou> "); };
+prompt();
+
+for await (const line of rl) {
+  const input = line.trim();
+  if (input === "exit" || input === "quit") break;
+  if (!input) { prompt(); continue; }
 
   sid = startSession(input);
   await waitForCompletion(sid);
+  prompt();
 }
 
 socketUI.close();
