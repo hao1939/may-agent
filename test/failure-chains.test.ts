@@ -495,11 +495,11 @@ function handleError(err) {
     expect(chains[0].trigger.tool).toBe("exec");
   });
 
-  it("still flags non-grep commands with exit 1 as errors", () => {
-    // npm run build exiting 1 is a real failure
+  it("still flags non-grep non-runner commands with exit 1 as errors", () => {
+    // A command like `node script.js` exiting 1 is a real failure
     const messages: AgentMessage[] = [
-      assistantWithCalls({ id: "1", name: "exec", arguments: { command: "npm run build" } }),
-      toolResult("1", "exec", "Exit code 1\nERROR in src/index.ts: Cannot find module"),
+      assistantWithCalls({ id: "1", name: "exec", arguments: { command: "node deploy.js --production" } }),
+      toolResult("1", "exec", "Exit code 1\nError: Connection refused"),
       assistantWithCalls({ id: "2", name: "write", arguments: { path: "out.txt", content: "done" } }),
       toolResult("2", "write", "Wrote 4 bytes"),
     ];
@@ -522,6 +522,133 @@ function handleError(err) {
     expect(chains).toHaveLength(1);
   });
 });
+
+  // ── Test/build runner false positive prevention ───────────────────────
+
+  it("does not flag vitest exit 1 (test failures) as error", () => {
+    // Agent runs tests, some fail — this is normal development cycle
+    const messages: AgentMessage[] = [
+      assistantWithCalls({ id: "1", name: "exec", arguments: { command: "npx vitest --run" } }),
+      toolResult("1", "exec", "Exit code 1\n\n RUN  v3.2.4 /home/example-user/may-agent\n\n ❯ test/exec-tool.test.ts (21 tests | 4 failed) 158ms"),
+      assistantWithCalls({ id: "2", name: "write", arguments: { path: "src/tools.ts", content: "fixed code" } }),
+      toolResult("2", "write", "Wrote 10 bytes"),
+    ];
+
+    const chains = extractFailureChains(messages);
+    expect(chains).toHaveLength(0);
+  });
+
+  it("does not flag vitest run with specific test file as error", () => {
+    const messages: AgentMessage[] = [
+      assistantWithCalls({ id: "1", name: "exec", arguments: { command: "npx vitest run test/max-turns.test.ts 2>&1" } }),
+      toolResult("1", "exec", "Exit code 1\n\n RUN  v3.2.4\n\n ❯ test/max-turns.test.ts (31 tests | 25 failed)"),
+      assistantWithCalls({ id: "2", name: "write", arguments: { path: "src/manager.ts", content: "fix" } }),
+      toolResult("2", "write", "Wrote 3 bytes"),
+    ];
+
+    const chains = extractFailureChains(messages);
+    expect(chains).toHaveLength(0);
+  });
+
+  it("does not flag vitest with cd prefix as error", () => {
+    const messages: AgentMessage[] = [
+      assistantWithCalls({ id: "1", name: "exec", arguments: { command: "cd /home/example-user/may-agent && npx vitest --run 2>&1" } }),
+      toolResult("1", "exec", "Exit code 1\n\n RUN  v3.2.4\n\n ❯ test/foo.test.ts (5 tests | 2 failed)"),
+      assistantWithCalls({ id: "2", name: "write", arguments: { path: "out.txt", content: "done" } }),
+      toolResult("2", "write", "Wrote 4 bytes"),
+    ];
+
+    const chains = extractFailureChains(messages);
+    expect(chains).toHaveLength(0);
+  });
+
+  it("does not flag jest exit 1 as error", () => {
+    const messages: AgentMessage[] = [
+      assistantWithCalls({ id: "1", name: "exec", arguments: { command: "npx jest --run" } }),
+      toolResult("1", "exec", "Exit code 1\nFAIL src/index.test.ts\n  ✕ should work"),
+      assistantWithCalls({ id: "2", name: "write", arguments: { path: "out.txt", content: "done" } }),
+      toolResult("2", "write", "Wrote 4 bytes"),
+    ];
+
+    const chains = extractFailureChains(messages);
+    expect(chains).toHaveLength(0);
+  });
+
+  it("does not flag npm test exit 1 as error", () => {
+    const messages: AgentMessage[] = [
+      assistantWithCalls({ id: "1", name: "exec", arguments: { command: "npm test" } }),
+      toolResult("1", "exec", "Exit code 1\n> test\n> vitest --run\n\nFailed tests"),
+      assistantWithCalls({ id: "2", name: "write", arguments: { path: "out.txt", content: "done" } }),
+      toolResult("2", "write", "Wrote 4 bytes"),
+    ];
+
+    const chains = extractFailureChains(messages);
+    expect(chains).toHaveLength(0);
+  });
+
+  it("does not flag npm run build exit 1 as error", () => {
+    const messages: AgentMessage[] = [
+      assistantWithCalls({ id: "1", name: "exec", arguments: { command: "npm run build" } }),
+      toolResult("1", "exec", "Exit code 1\nERROR: Build failed with errors"),
+      assistantWithCalls({ id: "2", name: "write", arguments: { path: "out.txt", content: "done" } }),
+      toolResult("2", "write", "Wrote 4 bytes"),
+    ];
+
+    const chains = extractFailureChains(messages);
+    expect(chains).toHaveLength(0);
+  });
+
+  it("does not flag tsc --noEmit exit 1 as error", () => {
+    const messages: AgentMessage[] = [
+      assistantWithCalls({ id: "1", name: "exec", arguments: { command: "npx tsc --noEmit 2>&1" } }),
+      toolResult("1", "exec", "Exit code 1\nsrc/tools.ts(42,5): error TS2322: Type 'string' is not assignable"),
+      assistantWithCalls({ id: "2", name: "write", arguments: { path: "out.txt", content: "done" } }),
+      toolResult("2", "write", "Wrote 4 bytes"),
+    ];
+
+    const chains = extractFailureChains(messages);
+    expect(chains).toHaveLength(0);
+  });
+
+  it("does not flag vitest piped to grep as error", () => {
+    // Common pattern: npx vitest --run 2>&1 | grep -A 20 "FAIL"
+    const messages: AgentMessage[] = [
+      assistantWithCalls({ id: "1", name: "exec", arguments: { command: "npx vitest --run 2>&1 | grep -A 20 \"FAIL\"" } }),
+      toolResult("1", "exec", " FAIL  test/exec-tool.test.ts > warnOutsideRoot > warns when command uses /home/user path"),
+      assistantWithCalls({ id: "2", name: "write", arguments: { path: "out.txt", content: "done" } }),
+      toolResult("2", "write", "Wrote 4 bytes"),
+    ];
+
+    const chains = extractFailureChains(messages);
+    expect(chains).toHaveLength(0);
+  });
+
+  it("still flags vitest exit 2 (configuration error) as error", () => {
+    // Exit code 2+ from test runners indicates a config/setup error, not test failures
+    const messages: AgentMessage[] = [
+      assistantWithCalls({ id: "1", name: "exec", arguments: { command: "npx vitest --run" } }),
+      toolResult("1", "exec", "Exit code 2\nError: Cannot find module 'vitest'"),
+      assistantWithCalls({ id: "2", name: "write", arguments: { path: "out.txt", content: "done" } }),
+      toolResult("2", "write", "Wrote 4 bytes"),
+    ];
+
+    const chains = extractFailureChains(messages);
+    expect(chains).toHaveLength(1);
+    expect(chains[0].trigger.tool).toBe("exec");
+  });
+
+  it("still flags random commands exit 1 that aren't test/build runners", () => {
+    // Regular commands that exit 1 should still be flagged
+    const messages: AgentMessage[] = [
+      assistantWithCalls({ id: "1", name: "exec", arguments: { command: "curl https://api.example.com/health" } }),
+      toolResult("1", "exec", "Exit code 1\ncurl: (6) Could not resolve host"),
+      assistantWithCalls({ id: "2", name: "write", arguments: { path: "out.txt", content: "done" } }),
+      toolResult("2", "write", "Wrote 4 bytes"),
+    ];
+
+    const chains = extractFailureChains(messages);
+    expect(chains).toHaveLength(1);
+  });
 
 describe("formatFailureChains", () => {
   it("returns empty string for no chains", () => {

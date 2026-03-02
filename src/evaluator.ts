@@ -167,6 +167,38 @@ function isFindWithNoResults(toolName: string, args: Record<string, unknown>, re
 }
 
 /**
+ * Check if a command is a test runner, type checker, or build tool.
+ *
+ * When agents run these tools and they exit with code 1, it's part of the
+ * normal development cycle: write code → run tests/build → see failures →
+ * fix → re-run. This is productive work, not a failure chain.
+ *
+ * Matches:
+ * - Test runners: vitest, jest, mocha, pytest, npm test, npx test
+ * - Type checkers: tsc, npx tsc
+ * - Build tools: npm run build, npx build
+ * - Linters: eslint, prettier --check
+ */
+function isTestOrBuildRunner(command: string): boolean {
+  // Strip leading cd ... && or cd ...; prefix to get the actual command
+  const actual = command.replace(/^\s*cd\s+\S+\s*(?:&&|;)\s*/, "");
+
+  // Test runners
+  if (/\b(vitest|jest|mocha|pytest|playwright)\b/.test(actual)) return true;
+
+  // npx-invoked test/build tools: npx vitest, npx tsc, npx jest, etc.
+  if (/\bnpx\s+(vitest|jest|tsc|mocha)\b/.test(actual)) return true;
+
+  // npm/yarn/pnpm test or build scripts
+  if (/\b(npm|yarn|pnpm)\s+(test|run\s+(test|build|check|lint|typecheck))\b/.test(actual)) return true;
+
+  // Direct tsc invocation
+  if (/\btsc\b/.test(actual) && /--noEmit|--build/.test(actual)) return true;
+
+  return false;
+}
+
+/**
  * Check whether an exec command with a non-zero exit code is actually
  * expected behavior, not a real error.
  *
@@ -200,6 +232,14 @@ function isExpectedNonZeroExit(command: string, exitCode: string, resultText: st
   if (code === 1 && /2>\/dev\/null/.test(command)) {
     const output = resultText.replace(/^CWD:[^\n]*\n?/, "").replace(/^Exit code \d+\n?/, "").trim();
     if (output === "") return true;
+  }
+
+  // Test/build runners exit 1 when tests fail or builds fail — this is the
+  // agent's normal development cycle (write code → run tests → see failures →
+  // fix → re-run). Flagging these as failure chains would inflate wasted-call
+  // counts and penalize productive iterative development behavior.
+  if (code === 1 && isTestOrBuildRunner(command)) {
+    return true;
   }
 
   return false;
