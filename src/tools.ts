@@ -191,7 +191,53 @@ export interface ExecToolOptions {
   echoCwd?: boolean;
   /** If set, commands referencing absolute paths outside this root get a warning appended to output. */
   warnOutsideRoot?: string;
+  /**
+   * Maximum character length for exec output. When output exceeds this limit,
+   * the middle is replaced with a truncation marker showing how many characters
+   * were omitted, keeping the head and tail visible.
+   *
+   * This prevents large outputs (git diff, find, cat) from consuming excessive
+   * tokens. The head typically contains headers/structure and the tail contains
+   * summaries/final results — the middle is usually repetitive.
+   *
+   * Default: 20000 (~5K tokens). Set to 0 or Infinity to disable.
+   */
+  maxOutputLength?: number;
 }
+
+/**
+ * Truncate output that exceeds maxLen by keeping the head and tail,
+ * replacing the middle with a marker showing how much was omitted.
+ *
+ * The split is 60% head / 40% tail so the beginning (which usually
+ * contains structure, headers, or the first results) gets more space.
+ *
+ * @param output - The raw output string
+ * @param maxLen - Maximum allowed length (0 or Infinity = no truncation)
+ * @returns The original string if within limits, or a truncated version
+ */
+export function truncateOutput(output: string, maxLen: number): string {
+  if (!maxLen || maxLen === Infinity || output.length <= maxLen) return output;
+
+  // Reserve space for the marker line itself (~80 chars)
+  const markerReserve = 80;
+  const available = maxLen - markerReserve;
+  if (available <= 0) return output.slice(0, maxLen);
+
+  const headLen = Math.floor(available * 0.6);
+  const tailLen = available - headLen;
+
+  const head = output.slice(0, headLen);
+  const tail = output.slice(output.length - tailLen);
+  const omitted = output.length - headLen - tailLen;
+
+  const marker = `\n\n... [${omitted.toLocaleString()} characters truncated] ...\n\n`;
+
+  return head + marker + tail;
+}
+
+/** Default max output length for exec tool (~5K tokens). */
+const DEFAULT_MAX_OUTPUT_LENGTH = 20_000;
 
 /**
  * Detect whether a command string contains absolute paths outside the given root.
@@ -239,6 +285,7 @@ export function createExecTool(cwdOrOpts?: string | ExecToolOptions): AgentTool<
   const denyMessage = opts.denyMessage ?? "Use relative paths from the project root instead.";
   const warnOutsideRoot = opts.warnOutsideRoot;
   const cwdPrefix = opts.echoCwd ? `CWD: ${effectiveCwd}\n` : "";
+  const maxOutputLength = opts.maxOutputLength ?? DEFAULT_MAX_OUTPUT_LENGTH;
 
   return {
     name: "exec",
@@ -277,12 +324,12 @@ export function createExecTool(cwdOrOpts?: string | ExecToolOptions): AgentTool<
           stdio: ["pipe", "pipe", "pipe"],
         });
         const result = output || "(no output)";
-        return textResult(cwdPrefix + result + outsideWarning);
+        return textResult(cwdPrefix + truncateOutput(result, maxOutputLength) + outsideWarning);
       } catch (err: unknown) {
         if (err && typeof err === "object" && "stdout" in err) {
           const e = err as { stdout: string; stderr: string; status: number };
           const output = [e.stdout, e.stderr].filter(Boolean).join("\n");
-          return textResult(`${cwdPrefix}Exit code ${e.status}\n${output}${outsideWarning}`);
+          return textResult(`${cwdPrefix}Exit code ${e.status}\n${truncateOutput(output, maxOutputLength)}${outsideWarning}`);
         }
         const msg = err instanceof Error ? err.message : String(err);
         return textResult(`${cwdPrefix}Error: ${msg}${outsideWarning}`);
