@@ -19,7 +19,7 @@ SubagentManager
   ├── register()        ← define agents (name, domain, model, tools, knowledge)
   ├── run()             ← start a task → returns sessionId (non-blocking)
   ├── progress()        ← read conversation so far
-  ├── steer() / send()  ← redirect a running or completed session
+  ├── steer()            ← redirect a running session
   ├── cancel()          ← abort a session
   ├── result()          ← get final output
   ├── waitFor()         ← await completion
@@ -161,14 +161,13 @@ If `persistDir` is provided, all state (registry, sessions, memory) is persisted
 |--------|---------|-------------|
 | `progress(sessionId, limit?)` | `AgentMessage[]` | Get recent messages from a session. |
 | `steer(sessionId, message)` | `"steered" \| "queued" \| "not_running"` | Inject guidance into a running session. |
-| `send(sessionId, message)` | `boolean` | Send a follow-up message to a completed session (resumes it). |
-| `subscribe(sessionId, fn)` | `(() => void) \| null` | Subscribe to real-time agent events. Returns unsubscribe function. |
+| `subscribe(sessionId, fn)` | `() => void` | Subscribe to real-time agent events. Returns unsubscribe function. |
 
 #### Query
 
 | Method | Returns | Description |
 |--------|---------|-------------|
-| `status()` | `SessionInfo[]` | List all tracked sessions with their current status. |
+| `status()` | `SessionInfo[]` | List active (running) sessions. Completed sessions are removed from memory; use `result()` or `progress()` to access them. |
 | `sessions(name)` | `SessionInfo[]` | List sessions filtered by agent name. |
 | `result(sessionId)` | `TaskResult \| null` | Get the result of a completed session. `null` if still running or not found. |
 
@@ -225,7 +224,6 @@ interface SessionInfo {
   endedAt?: number;
   runtime: string;           // Human-readable, e.g. "4m12s"
   outputDir: string;
-  lastActivity?: string;
   error?: string;
 }
 ```
