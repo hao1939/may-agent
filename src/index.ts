@@ -1,4 +1,4 @@
-export { SubagentManager, generateId } from "./manager.js";
+export { SubagentManager, generateId, truncateForPrompt } from "./manager.js";
 export type { SubagentManagerOptions, RunOptions } from "./manager.js";
 export { createReadTool, createWriteTool, createExecTool, createValidateWorkflowTool, createHealthCheckTool, createLearnTool, stripRedundantCd, detectsOutsidePaths, rewriteHallucinatedPath, rewriteHallucinatedCommand, extractHallucinatedRelPath, truncateOutput, resolveReadPath, resolveWritePath } from "./tools.js";
 export type { ExecToolOptions, HealthCheck, HealthReport, HealthCheckOptions, WriteToolOptions } from "./tools.js";
