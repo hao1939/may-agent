@@ -134,6 +134,7 @@ manager.register({
     createLearnTool(knowledgeDir("coder")),
   ],
   apiKey: "not-needed",
+  maxTurns: 30,
 });
 
 // ── Register reviewer ──────────────────────────────────────────────────
@@ -156,6 +157,7 @@ manager.register({
     createLearnTool(knowledgeDir("reviewer")),
   ],
   apiKey: "not-needed",
+  maxTurns: 30,
 });
 
 // ── Register evaluator ─────────────────────────────────────────────────
@@ -179,6 +181,7 @@ manager.register({
     createLearnTool(knowledgeDir("evaluator")),
   ],
   apiKey: "not-needed",
+  maxTurns: 30,
 });
 
 // ── Register optimizer ─────────────────────────────────────────────────
@@ -205,6 +208,7 @@ manager.register({
     optimizerWorkflowTool,
   ],
   apiKey: "not-needed",
+  maxTurns: 30,
 });
 
 // ── Register may supervisor ────────────────────────────────────────────
@@ -231,6 +235,7 @@ manager.register({
     mayWorkflowTool,
   ],
   apiKey: "not-needed",
+  maxTurns: 40,
   compaction: {
     threshold: 0.7,
     keepRatio: 0.4,
@@ -323,8 +328,8 @@ const IDLE_TIMEOUT_MS = parseInt(process.env.MAY_IDLE_TIMEOUT ?? "60000", 10); /
 const MAINTENANCE_INTERVAL = 3; // run maintenance every N evaluations
 let evalsSinceMaintenance = 0;
 
-async function runEvaluation(sessionId: string): Promise<void> {
-  if (!AUTO_EVALUATE) return;
+async function runEvaluation(sessionId: string): Promise<string | null> {
+  if (!AUTO_EVALUATE) return null;
   console.log("\n[eval] Evaluating session...");
   try {
     const result = await evaluateSession({
@@ -354,6 +359,17 @@ async function runEvaluation(sessionId: string): Promise<void> {
     }
     if (result.workflowCode) {
       console.log(`[eval] workflow suggested: ${result.workflowName}`);
+    }
+
+    // Detect anomalies worth surfacing to May
+    const anomalies: string[] = [];
+    const { efficiency, quality } = result.scores;
+    if (efficiency === 0 && quality === 0) {
+      anomalies.push(`Evaluator returned 0/0 scores — likely a parsing bug. Check evaluator session output.`);
+    }
+    if (result.failureChains.length > 0) {
+      const totalWasted = result.failureChains.reduce((s, c) => s + c.wastedCalls, 0);
+      anomalies.push(`${result.failureChains.length} failure chain(s), ${totalWasted} wasted calls. Root causes: ${result.failureChains.map((c) => c.rootCause.slice(0, 100)).join("; ")}`);
     }
 
     // Periodic maintenance — run for all agents
@@ -387,8 +403,24 @@ async function runEvaluation(sessionId: string): Promise<void> {
       }
       evalsSinceMaintenance = 0;
     }
+
+    return anomalies.length > 0
+      ? `[Post-session evaluation]\n${anomalies.join("\n")}`
+      : null;
   } catch (err) {
     console.log(`[eval] evaluation failed: ${err instanceof Error ? err.message : String(err)}`);
+    return null;
+  }
+}
+
+// ── Resume crashed sessions ────────────────────────────────────────────
+
+const resumed = manager.resume();
+if (resumed.length > 0) {
+  console.log(`[runner] Resumed ${resumed.length} interrupted session(s):`);
+  for (const r of resumed) {
+    console.log(`  ${r.sessionId} (${r.agent}) — "${r.task.slice(0, 80)}"`);
+    attachSubagentEvents(r.agent, r.sessionId);
   }
 }
 
@@ -440,7 +472,12 @@ async function waitAndCheck(sessionId: string): Promise<void> {
     }
   }
 
-  await runEvaluation(sessionId);
+  const anomaly = await runEvaluation(sessionId);
+  if (anomaly) {
+    console.log(`\n[runner] Surfacing evaluation anomaly to May`);
+    manager.send(sid, anomaly);
+    await manager.waitFor(sid);
+  }
 }
 
 // ── Meta work detection ────────────────────────────────────────────────

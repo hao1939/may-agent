@@ -29,6 +29,15 @@ export interface SubagentDefinition {
   model: Model<any>;
   apiKey?: string;
   timeoutMs?: number;
+
+  /**
+   * Maximum number of assistant turns before the session is automatically stopped.
+   * A "turn" is one LLM response (tracked via turn_end events from pi-agent-core).
+   * When the limit is reached, the session is aborted with a structured error.
+   * The error and turn count are included in the TaskResult for diagnosis.
+   */
+  maxTurns?: number;
+
   memoryLimit?: number; // default 20
 
   /**
@@ -70,4 +79,8 @@ export interface TaskResult {
   duration: string;
   outputDir: string;
   error?: string;
+  /** Number of assistant turns completed in this session. */
+  turnsUsed?: number;
+  /** The maxTurns limit that was configured (undefined = no limit). */
+  maxTurns?: number;
 }
