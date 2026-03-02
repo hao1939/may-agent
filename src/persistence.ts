@@ -86,6 +86,11 @@ export function ensureSessionDir(persistDir: string, sessionId: string): void {
   mkdirSync(sessionDir(persistDir, sessionId), { recursive: true });
 }
 
+/** Check whether a session directory exists on disk. */
+export function sessionExists(persistDir: string, sessionId: string): boolean {
+  return existsSync(sessionDir(persistDir, sessionId));
+}
+
 /** Append a single message as a JSON line to the session's JSONL file. */
 export function appendSessionMessage(persistDir: string, sessionId: string, message: AgentMessage): void {
   const line = JSON.stringify(message) + "\n";
