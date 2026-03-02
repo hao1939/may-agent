@@ -175,4 +175,21 @@ describe("Edge cases", () => {
       expect(manager.resume()).toEqual([]);
     });
   });
+
+  describe("duration freezes at completion time", () => {
+    it("result() returns the same duration string after a delay", async () => {
+      manager.register(baseDef("agent-dur"));
+      const sessionId = manager.run("agent-dur", "task");
+      await manager.waitFor(sessionId);
+
+      const result1 = manager.result(sessionId);
+
+      // Wait 50ms and call result() again
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      const result2 = manager.result(sessionId);
+
+      expect(result1.duration).toBe(result2.duration);
+    });
+  });
 });

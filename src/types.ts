@@ -67,7 +67,6 @@ export interface SessionInfo {
   endedAt?: number;
   runtime: string;
   outputDir: string;
-  lastActivity?: string;
   error?: string;
   /** Session that spawned this one (e.g. May's session when a workflow runs a sub-agent). */
   parentSessionId?: string;
