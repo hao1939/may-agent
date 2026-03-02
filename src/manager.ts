@@ -27,8 +27,8 @@ import { join, dirname } from "node:path";
 import { isOverflowError, extractProgress, writeProgressFile } from "./overflow.js";
 
 let nextId = 0;
-function generateId(): string {
-  return `s_${Date.now()}_${nextId++}`;
+function generateId(prefix = "s"): string {
+  return `${prefix}_${Date.now()}_${nextId++}`;
 }
 
 function formatDuration(ms: number): string {
@@ -361,7 +361,7 @@ export class SubagentManager {
     if (!registered) throw new Error(`Agent "${name}" not registered`);
 
     const def = registered.definition;
-    const sessionId = generateId();
+    const sessionId = generateId(def.sessionIdPrefix);
     const persistDir = this.registry?.persistDir ?? null;
 
     // Compute output directory
