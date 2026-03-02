@@ -444,7 +444,184 @@ export class SubagentManager {
     return sessionId;
   }
 
+  /**
+   * Clean up sessions left in "running" state from a previous process.
+   * Marks them as "interrupted" and returns a summary.
+   */
+  cleanupStaleSessions(): SessionInfo[] {
+    if (!this.registry) return [];
+
+    const registryData = this.registry.getRegistry();
+    const cleaned: SessionInfo[] = [];
+
+    for (const [sessionId, persisted] of Object.entries(registryData.sessions)) {
+      if (persisted.status !== "running") continue;
+
+      this.registry.updateSessionStatus(sessionId, "interrupted", "Process restarted");
+
+      cleaned.push({
+        sessionId,
+        agent: persisted.agent,
+        task: persisted.task,
+        status: "interrupted",
+        startedAt: persisted.startedAt,
+        endedAt: Date.now(),
+        runtime: formatDuration(Date.now() - persisted.startedAt),
+        outputDir: sessionOutputDir(this.registry.persistDir, sessionId),
+        error: "Process restarted",
+      });
+    }
+
+    return cleaned;
+  }
+
+  /**
+   * Resume a specific agent's most recent session from a previous process.
+   * All other "running" sessions are marked as interrupted.
+   *
+   * Returns the resumed session info (with the agent running), plus a list
+   * of interrupted sessions so the caller can inform the resumed agent.
+   *
+   * Returns null if the agent has no "running" session to resume.
+   */
+  resumeAgent(agentName: string): { resumed: SessionInfo; interrupted: SessionInfo[] } | null {
+    if (!this.registry) return null;
+
+    const registryData = this.registry.getRegistry();
+    const persistDir = this.registry.persistDir;
+
+    // Find all running sessions, separate the target agent from the rest
+    let targetSessionId: string | null = null;
+    let targetPersisted: (typeof registryData.sessions)[string] | null = null;
+    const otherRunning: Array<{ sessionId: string; persisted: (typeof registryData.sessions)[string] }> = [];
+
+    for (const [sessionId, persisted] of Object.entries(registryData.sessions)) {
+      if (persisted.status !== "running") continue;
+      if (persisted.agent === agentName && !targetSessionId) {
+        targetSessionId = sessionId;
+        targetPersisted = persisted;
+      } else {
+        otherRunning.push({ sessionId, persisted });
+      }
+    }
+
+    // Mark all non-target running sessions as interrupted
+    const interrupted: SessionInfo[] = [];
+    for (const { sessionId, persisted } of otherRunning) {
+      this.registry.updateSessionStatus(sessionId, "interrupted", "Process restarted");
+      interrupted.push({
+        sessionId,
+        agent: persisted.agent,
+        task: persisted.task,
+        status: "interrupted",
+        startedAt: persisted.startedAt,
+        endedAt: Date.now(),
+        runtime: formatDuration(Date.now() - persisted.startedAt),
+        outputDir: sessionOutputDir(persistDir, sessionId),
+        error: "Process restarted",
+      });
+    }
+
+    if (!targetSessionId || !targetPersisted) {
+      // No running session for this agent — still clean up others
+      return interrupted.length > 0 ? { resumed: null!, interrupted } : null;
+    }
+
+    // Find matching registered agent
+    const registered = this.agents.get(agentName);
+    if (!registered) {
+      this.registry.updateSessionStatus(targetSessionId, "interrupted", "Agent not registered");
+      return null;
+    }
+
+    const def = registered.definition;
+    const savedMessages = readSessionMessages(persistDir, targetSessionId);
+    const systemPrompt = this.resolveSystemPrompt(def, agentName, targetSessionId, persistDir);
+    const outputDir = sessionOutputDir(persistDir, targetSessionId);
+
+    const agent = new Agent({
+      initialState: {
+        systemPrompt,
+        model: def.model,
+        tools: def.tools,
+        messages: savedMessages,
+      },
+      transformContext: this.buildTransformContext(def),
+      getApiKey: def.apiKey ? () => def.apiKey : undefined,
+    });
+
+    // Build restart message with interrupted sub-agent context
+    const interruptedSummary = interrupted.length > 0
+      ? `\n\nInterrupted sub-agent sessions from previous run:\n` +
+        interrupted.map((s) => `- ${s.agent} (${s.sessionId}): "${s.task.slice(0, 100)}"`).join("\n") +
+        `\n\nThese sessions are no longer running. Re-delegate if the work is still needed.`
+      : "";
+
+    const resumeMessage: AgentMessage = {
+      role: "user",
+      content: [{
+        type: "text",
+        text: `Process restarted. Your session has been restored with your previous conversation history. Continue where you left off.${interruptedSummary}`,
+      }],
+      timestamp: Date.now(),
+    };
+
+    this.registry.updateSessionStatus(targetSessionId, "running");
+
+    const session: ActiveSession = {
+      sessionId: targetSessionId,
+      agentName,
+      agent,
+      promise: null!,
+      task: targetPersisted.task,
+      startedAt: targetPersisted.startedAt,
+      status: "running",
+      outputDir,
+      turnCount: savedMessages.filter((m) => m.role === "assistant").length,
+      maxTurns: def.maxTurns,
+    };
+
+    this.subscribeForPersistence(session);
+    this.subscribeForTurnLimit(session);
+    this.setupTimeout(session, def.timeoutMs);
+
+    const sid = targetSessionId;
+    session.promise = agent.prompt(resumeMessage)
+      .then(() => {
+        if (agent.state.error) {
+          session.status = "error";
+          session.error = agent.state.error;
+          this.registry?.updateSessionStatus(sid, "error", agent.state.error);
+        } else {
+          session.status = "done";
+          this.registry?.updateSessionStatus(sid, "done");
+        }
+        this.handleCompletion(session);
+      })
+      .catch((err) => {
+        session.status = "error";
+        session.error = err?.message ?? String(err);
+        this.registry?.updateSessionStatus(sid, "error", session.error);
+        this.handleCompletion(session);
+      });
+
+    this.activeSessions.set(targetSessionId, session);
+
+    const resumedInfo: SessionInfo = {
+      sessionId: targetSessionId,
+      agent: agentName,
+      task: targetPersisted.task,
+      status: "running",
+      startedAt: targetPersisted.startedAt,
+      runtime: formatDuration(Date.now() - targetPersisted.startedAt),
+      outputDir,
+    };
+
+    return { resumed: resumedInfo, interrupted };
+  }
+
   /** Resume interrupted sessions after process restart.
+   *  @deprecated Use resumeAgent(name) for targeted resume, or cleanupStaleSessions().
    *  Caller must have already called register() for all agents.
    *  Returns SessionInfo[] for all resumed sessions.
    */

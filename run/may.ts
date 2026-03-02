@@ -413,16 +413,7 @@ async function runEvaluation(sessionId: string): Promise<string | null> {
   }
 }
 
-// ── Resume crashed sessions ────────────────────────────────────────────
-
-const resumed = manager.resume();
-if (resumed.length > 0) {
-  console.log(`[runner] Resumed ${resumed.length} interrupted session(s):`);
-  for (const r of resumed) {
-    console.log(`  ${r.sessionId} (${r.agent}) — "${r.task.slice(0, 80)}"`);
-    attachSubagentEvents(r.agent, r.sessionId);
-  }
-}
+// ── Startup: resume May or start fresh ─────────────────────────────────
 
 // ── Session management with compaction ─────────────────────────────────
 
@@ -579,16 +570,37 @@ let metaSessionId: string | null = null;
 
 // ── Interactive loop ───────────────────────────────────────────────────
 
-let firstMessage = process.argv.slice(2).join(" ");
-if (!firstMessage) {
-  process.stdout.write("\nyou> ");
-  const input = await waitForInput();
-  if (!input) { rl.close(); process.exit(0); }
-  firstMessage = input;
-}
+// Try to resume May's session from previous process
+const resumeResult = manager.resumeAgent("may");
 
-sid = startSession(firstMessage);
-await waitAndCheck(sid);
+if (resumeResult?.resumed) {
+  sid = resumeResult.resumed.sessionId;
+  currentTask = resumeResult.resumed.task;
+  console.log(`[runner] Resumed May's session: ${sid}`);
+  console.log(`[runner] Task: "${currentTask.slice(0, 80)}"`);
+  if (resumeResult.interrupted.length > 0) {
+    console.log(`[runner] Cleaned up ${resumeResult.interrupted.length} stale sub-agent session(s)`);
+  }
+  attachEvents(sid);
+  await waitAndCheck(sid);
+} else {
+  // No May session to resume — clean up any stale sessions and start fresh
+  const stale = manager.cleanupStaleSessions();
+  if (stale.length > 0) {
+    console.log(`[runner] Cleaned up ${stale.length} stale session(s) from previous run`);
+  }
+
+  let firstMessage = process.argv.slice(2).join(" ");
+  if (!firstMessage) {
+    process.stdout.write("\nyou> ");
+    const input = await waitForInput();
+    if (!input) { rl.close(); process.exit(0); }
+    firstMessage = input;
+  }
+
+  sid = startSession(firstMessage);
+  await waitAndCheck(sid);
+}
 
 while (!closed) {
   process.stdout.write("\nyou> ");
