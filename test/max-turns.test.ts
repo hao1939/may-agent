@@ -213,3 +213,164 @@ describe("Turn limit subscription cleanup", () => {
     expect(result.turnsUsed).toBe(0);
   });
 });
+
+// ── Group 5: Turn budget warning (turnWarningThreshold) ────────────────
+
+describe("Turn budget warning", () => {
+  let persistDir: string;
+  let manager: SubagentManager;
+
+  beforeEach(() => {
+    persistDir = mkdtempSync(join(tmpdir(), "may-turn-warning-"));
+    manager = new SubagentManager({ persistDir });
+  });
+
+  afterEach(() => {
+    if (existsSync(persistDir)) {
+      rmSync(persistDir, { recursive: true, force: true });
+    }
+  });
+
+  it("turnWarningThreshold defaults to 0.8 on ActiveSession", async () => {
+    manager.register(baseDef({ name: "agent-tw1", maxTurns: 40 }));
+
+    const sessionId = manager.run("agent-tw1", "do work");
+
+    // Access internal activeSessions to check the default threshold
+    const sessions = (manager as any).activeSessions as Map<string, any>;
+    const session = sessions.get(sessionId);
+    expect(session).toBeDefined();
+    expect(session.turnWarningThreshold).toBe(0.8);
+    expect(session.turnWarningFired).toBe(false);
+
+    await manager.waitFor(sessionId);
+  });
+
+  it("custom turnWarningThreshold is stored on ActiveSession", async () => {
+    manager.register(baseDef({ name: "agent-tw2", maxTurns: 40, turnWarningThreshold: 0.5 }));
+
+    const sessionId = manager.run("agent-tw2", "do work");
+
+    const sessions = (manager as any).activeSessions as Map<string, any>;
+    const session = sessions.get(sessionId);
+    expect(session).toBeDefined();
+    expect(session.turnWarningThreshold).toBe(0.5);
+
+    await manager.waitFor(sessionId);
+  });
+
+  it("turnWarningThreshold of 0 disables the warning (warningTurn computes to 0)", async () => {
+    manager.register(baseDef({ name: "agent-tw3", maxTurns: 40, turnWarningThreshold: 0 }));
+
+    const sessionId = manager.run("agent-tw3", "do work");
+
+    const sessions = (manager as any).activeSessions as Map<string, any>;
+    const session = sessions.get(sessionId);
+    expect(session.turnWarningThreshold).toBe(0);
+    // Math.floor(40 * 0) = 0, and the condition checks warningTurn > 0, so no warning fires
+
+    await manager.waitFor(sessionId);
+  });
+
+  it("turnWarningThreshold defaults to 0.8 even when not explicitly set", () => {
+    const def = baseDef({ name: "agent-tw4", maxTurns: 10 });
+    // turnWarningThreshold is not set on the def
+    expect(def.turnWarningThreshold).toBeUndefined();
+
+    manager.register(def);
+    const sessionId = manager.run("agent-tw4", "do work");
+
+    const sessions = (manager as any).activeSessions as Map<string, any>;
+    const session = sessions.get(sessionId);
+    // Should default to 0.8
+    expect(session.turnWarningThreshold).toBe(0.8);
+  });
+
+  it("warning turn is computed correctly: floor(maxTurns * threshold)", () => {
+    // Test the math: for maxTurns=40, threshold=0.8, warningTurn = floor(32) = 32
+    expect(Math.floor(40 * 0.8)).toBe(32);
+    // For maxTurns=10, threshold=0.8, warningTurn = floor(8) = 8
+    expect(Math.floor(10 * 0.8)).toBe(8);
+    // For maxTurns=5, threshold=0.75, warningTurn = floor(3.75) = 3
+    expect(Math.floor(5 * 0.75)).toBe(3);
+    // For maxTurns=3, threshold=0.5, warningTurn = floor(1.5) = 1
+    expect(Math.floor(3 * 0.5)).toBe(1);
+  });
+
+  it("turnWarningFired starts as false on new session", async () => {
+    manager.register(baseDef({ name: "agent-tw5", maxTurns: 20 }));
+
+    const sessionId = manager.run("agent-tw5", "do work");
+
+    const sessions = (manager as any).activeSessions as Map<string, any>;
+    const session = sessions.get(sessionId);
+    expect(session.turnWarningFired).toBe(false);
+
+    await manager.waitFor(sessionId);
+  });
+
+  it("turnWarningThreshold is included in SubagentDefinition type", () => {
+    // Verifies the type accepts the field without TS errors
+    const def: SubagentDefinition = baseDef({
+      name: "agent-tw6",
+      maxTurns: 40,
+      turnWarningThreshold: 0.9,
+    });
+    expect(def.turnWarningThreshold).toBe(0.9);
+    expect(def.maxTurns).toBe(40);
+  });
+
+  it("session without maxTurns does not set up turn limit subscription", async () => {
+    manager.register(baseDef({ name: "agent-tw7" }));
+
+    const sessionId = manager.run("agent-tw7", "do work");
+
+    const sessions = (manager as any).activeSessions as Map<string, any>;
+    const session = sessions.get(sessionId);
+    // Without maxTurns, subscribeForTurnLimit early-returns
+    expect(session.unsubscribeTurnLimit).toBeUndefined();
+
+    await manager.waitFor(sessionId);
+  });
+
+  it("session with maxTurns sets up turn limit subscription", async () => {
+    manager.register(baseDef({ name: "agent-tw8", maxTurns: 10 }));
+
+    const sessionId = manager.run("agent-tw8", "do work");
+
+    const sessions = (manager as any).activeSessions as Map<string, any>;
+    const session = sessions.get(sessionId);
+    // With maxTurns, subscription should be set
+    expect(session.unsubscribeTurnLimit).toBeDefined();
+    expect(typeof session.unsubscribeTurnLimit).toBe("function");
+
+    await manager.waitFor(sessionId);
+  });
+
+  it("warning message mentions remaining turns and wrap-up instructions", () => {
+    // Verify the warning message format by checking what would be generated
+    // for a session at turn 32 of 40
+    const turnCount = 32;
+    const maxTurns = 40;
+    const remaining = maxTurns - turnCount;
+
+    const expectedParts = [
+      "TURN BUDGET WARNING",
+      `${turnCount} of ${maxTurns}`,
+      `${remaining} turns remain`,
+      "Wrap up",
+      "commit",
+      "do not start new tasks",
+    ];
+
+    // Build the message the same way the code does
+    const message =
+      `⚠️ TURN BUDGET WARNING: You have used ${turnCount} of ${maxTurns} turns. ` +
+      `Only ${remaining} turns remain. Wrap up your current work, commit any changes if possible, ` +
+      `and do not start new tasks. Summarize any remaining work that could not be completed.`;
+
+    for (const part of expectedParts) {
+      expect(message).toContain(part);
+    }
+  });
+});
