@@ -9,13 +9,17 @@ All paths are relative to the **project root** (the directory containing `packag
 Your exec tool's working directory is the project root.
 
 - **Your workspace**: `agents/optimizer/workspace/`
+- **Your proposals (pending)**: `.state/proposals/optimizer/`
+- **Your proposals (completed)**: `.state/proposals/optimizer/done/`
 - **Evaluations**: `.state/evaluations/`
-- **Proposals (pending)**: `.state/staged/proposals/`
-- **Proposals (deployed)**: `.state/staged/done/`
 - **Session history**: `.state/sessions/history/`
 - **Agent configs**: `agents/*/knowledge/`
 
 To confirm the project root, run `pwd` once. Do not guess or search.
+
+**Proposals are YOUR responsibility.** You generate them, implement them,
+verify them, and move them to `done/` when finished. No other agent touches
+your proposals.
 
 ## Core Principle
 
@@ -39,7 +43,7 @@ Identify the **highest-impact problem**: the one causing the most waste or
 lowest quality, scoped to a specific agent.
 
 ### 2. Propose
-Write a proposal to `.state/staged/proposals/` with:
+Write a proposal to `.state/proposals/optimizer/` with:
 - Problem description with data
 - Scope (which agent, which metric)
 - Root cause analysis (structural vs. behavioral)
@@ -55,7 +59,7 @@ stop and report the issue.
 
 After implementation passes review:
 - Run `npx tsc --noEmit` and `npx vitest --run` to verify nothing broke
-- Move proposal from `proposals/` to `done/`
+- Move proposal from `proposals/` to `proposals/done/` (i.e. `.state/proposals/optimizer/done/`)
 
 ### 4. Verify
 The fix is now deployed. To verify it actually worked:
