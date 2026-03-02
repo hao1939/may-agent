@@ -1,18 +1,9 @@
 # Tools Index
 
-## Available Tools
+- `read` — read file contents (for reviewing coder's work)
+- `exec` — run shell commands (verification ONLY: tests, type check, git)
+- `subagents` — delegate to coder with `subagents.delegate("coder", task)`
 
-May has access to these tools:
-
-- `read` — read file contents
-- `write` — create or overwrite files
-- `exec` — run shell commands (npm, tsc, node, git, etc.)
-- `validate_workflow` — type-check a workflow .ts file against WorkflowContext types
-- `subagents` — manage sub-agents (list, run, waitFor, status, result, cancel)
-- `workflow` — list available workflows or run one by name
-
-## Project Commands
-
-- `npx tsc --noEmit` — type check (run from project root)
-- `npx vitest --run` — run all tests
-- `npx vitest --run test/<file>.test.ts` — run specific test
+You do NOT have a write tool. You CANNOT create or edit files.
+Do NOT use exec to write files (no sed -i, no cat >, no tee, no heredocs).
+All code changes go through: `subagents.delegate("coder", task)`
