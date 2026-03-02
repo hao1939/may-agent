@@ -51,6 +51,65 @@ const SUBSTANTIAL_TEXT_MIN_LENGTH = 100;
 const REASONING_MAX_LENGTH = 2000;
 
 /**
+ * Preview length for tool result text in compaction summaries.
+ * Errors get more space since they're critical for debugging.
+ */
+const TOOL_RESULT_PREVIEW_OK = 200;
+const TOOL_RESULT_PREVIEW_ERROR = 300;
+
+/**
+ * Maximum fraction of the context window that the accumulated summary may consume.
+ * When the accumulated summary exceeds this budget (in characters), the oldest
+ * compaction sections are trimmed so the summary doesn't crowd out recent messages.
+ *
+ * 0.15 means the summary may use at most 15% of the context window.
+ * For a 200K context window, that's ~30K tokens (~120K chars) — plenty for
+ * summaries but prevents unbounded growth across many compaction rounds.
+ */
+const SUMMARY_BUDGET_FRACTION = 0.15;
+
+/**
+ * Minimum summary budget in characters, regardless of context window size.
+ * Ensures summaries have enough space even with tiny context windows (e.g., in tests).
+ * 8000 chars ≈ 2000 tokens — enough for several compaction rounds of key info.
+ */
+const MIN_SUMMARY_BUDGET_CHARS = 8000;
+
+/**
+ * Extract key facts from messages: file paths accessed, commands run,
+ * and critical decisions. These survive summary trimming because they
+ * help the agent avoid re-reading files or repeating commands.
+ */
+function extractKeyFacts(messages: AgentMessage[]): string[] {
+  const facts: string[] = [];
+  const filesRead = new Set<string>();
+  const filesWritten = new Set<string>();
+
+  for (const msg of messages) {
+    if (msg.role !== "assistant" || !Array.isArray(msg.content)) continue;
+    for (const block of msg.content) {
+      if (block.type !== "toolCall") continue;
+      const args = block.arguments as Record<string, any>;
+
+      if (block.name === "read" && args.path) {
+        filesRead.add(args.path);
+      } else if (block.name === "write" && args.path) {
+        filesWritten.add(args.path);
+      }
+    }
+  }
+
+  if (filesRead.size > 0) {
+    facts.push(`Files read: ${[...filesRead].join(", ")}`);
+  }
+  if (filesWritten.size > 0) {
+    facts.push(`Files written: ${[...filesWritten].join(", ")}`);
+  }
+
+  return facts;
+}
+
+/**
  * Summarize a block of messages into a compact text summary.
  * This is a structural extraction, not LLM-based — fast and deterministic.
  *
@@ -103,7 +162,9 @@ function summarizeMessages(messages: AgentMessage[]): string {
         .filter((b): b is { type: "text"; text: string } => b.type === "text")
         .map((b) => b.text)
         .join(" ");
-      const preview = text.slice(0, 150);
+      // Errors get more preview space — they're critical for debugging
+      const previewLen = trMsg.isError ? TOOL_RESULT_PREVIEW_ERROR : TOOL_RESULT_PREVIEW_OK;
+      const preview = text.slice(0, previewLen);
       const errMark = trMsg.isError ? " ERROR" : "";
       parts.push(`[${trMsg.toolName}${errMark}] ${preview}`);
     }
@@ -160,6 +221,58 @@ function findSplitPoint(messages: AgentMessage[], keepTokens: number): number {
   return splitAt;
 }
 
+/**
+ * Trim the accumulated summary to fit within a character budget.
+ *
+ * When multiple compaction rounds accumulate, the oldest sections are
+ * dropped first (they're least relevant). The key facts section is
+ * preserved and merged so the agent always knows which files were
+ * accessed across all compaction rounds.
+ *
+ * Sections are delimited by `--- (compacted) ---` markers.
+ *
+ * @param summary - The full accumulated summary
+ * @param maxChars - Maximum character length for the summary
+ * @returns The trimmed summary, or the original if within budget
+ */
+export function trimAccumulatedSummary(summary: string, maxChars: number): string {
+  if (summary.length <= maxChars) return summary;
+
+  // Split into compaction sections (oldest first)
+  const sections = summary.split(/\n\n--- \(compacted\) ---\n\n/);
+
+  if (sections.length <= 1) {
+    // Single section — can't trim by section, just truncate
+    return summary.slice(0, maxChars) + "\n\n_(earlier context trimmed)_";
+  }
+
+  // Keep sections from newest to oldest until we exceed budget
+  // Newest section is last in the array
+  const kept: string[] = [];
+  let currentLen = 0;
+  const separator = "\n\n--- (compacted) ---\n\n";
+  const trimNotice = "_(earlier compaction rounds trimmed — key context preserved below)_";
+  const trimNoticeLen = trimNotice.length + separator.length;
+
+  for (let i = sections.length - 1; i >= 0; i--) {
+    const sectionLen = sections[i].length + (kept.length > 0 ? separator.length : 0);
+    if (currentLen + sectionLen + (i > 0 ? trimNoticeLen : 0) > maxChars && kept.length > 0) {
+      // This section would push us over budget — stop here
+      break;
+    }
+    kept.unshift(sections[i]);
+    currentLen += sectionLen;
+  }
+
+  // If we dropped any sections, prepend a notice
+  if (kept.length < sections.length) {
+    return `${trimNotice}\n\n--- (compacted) ---\n\n${kept.join(separator)}`;
+  }
+
+  // Shouldn't happen, but if somehow all sections fit, return as-is
+  return kept.join(separator);
+}
+
 export interface CompactionOptions {
   /**
    * Fraction of contextWindow at which compaction triggers.
@@ -203,6 +316,15 @@ export interface CompactionInfo {
  * 4. Prepends the summary as a system-injected user message
  * 5. Returns summary + recent messages
  *
+ * The accumulated summary is capped at 15% of the context window
+ * (with a minimum of 8000 chars). When it exceeds this budget, the
+ * oldest compaction sections are trimmed. This prevents "summary bloat"
+ * where repeated compactions cause the summary itself to consume
+ * an ever-growing fraction of the context window.
+ *
+ * Key facts (files read/written) are tracked separately and always
+ * preserved, so the agent doesn't re-read files after compaction.
+ *
  * The original messages on the Agent are NOT modified — transformContext
  * only affects what gets sent to the LLM. The full conversation is
  * still persisted to JSONL.
@@ -220,9 +342,18 @@ export function createCompactionTransform(
   let compactionCount = 0;
   // Accumulate previous summaries so context isn't lost across multiple compactions
   let accumulatedSummary = "";
+  // Accumulate key facts (files read/written) across all compaction rounds
+  let accumulatedKeyFacts: string[] = [];
 
   const triggerTokens = Math.floor(contextWindow * threshold);
   const keepTokens = Math.floor(contextWindow * keepRatio);
+
+  // Budget for accumulated summary: fraction of context window in chars (×4),
+  // with a minimum to ensure summaries aren't immediately trimmed in small contexts
+  const summaryBudgetChars = Math.max(
+    MIN_SUMMARY_BUDGET_CHARS,
+    Math.floor(contextWindow * SUMMARY_BUDGET_FRACTION * 4),
+  );
 
   return async (messages: AgentMessage[]): Promise<AgentMessage[]> => {
     const currentTokens = totalTokens(messages);
@@ -241,6 +372,14 @@ export function createCompactionTransform(
     // Build the summary
     const newSummary = summarizeMessages(oldMessages);
 
+    // Extract and accumulate key facts
+    const newFacts = extractKeyFacts(oldMessages);
+    for (const fact of newFacts) {
+      if (!accumulatedKeyFacts.includes(fact)) {
+        accumulatedKeyFacts.push(fact);
+      }
+    }
+
     // Accumulate with previous summaries
     if (accumulatedSummary) {
       accumulatedSummary = `${accumulatedSummary}\n\n--- (compacted) ---\n\n${newSummary}`;
@@ -248,7 +387,18 @@ export function createCompactionTransform(
       accumulatedSummary = newSummary;
     }
 
+    // Trim accumulated summary if it exceeds the budget
+    // This prevents unbounded growth across many compaction rounds
+    if (accumulatedSummary.length > summaryBudgetChars) {
+      accumulatedSummary = trimAccumulatedSummary(accumulatedSummary, summaryBudgetChars);
+    }
+
     compactionCount++;
+
+    // Build the key facts header (always preserved, not subject to trimming)
+    const keyFactsBlock = accumulatedKeyFacts.length > 0
+      ? `[Key facts across compaction rounds]\n${accumulatedKeyFacts.join("\n")}\n\n`
+      : "";
 
     // Create a synthetic user message with the compacted context
     const summaryMessage: UserMessage = {
@@ -259,7 +409,7 @@ export function createCompactionTransform(
           text: [
             `[COMPACTED CONTEXT — earlier conversation summarized to save space]`,
             ``,
-            accumulatedSummary,
+            keyFactsBlock + accumulatedSummary,
             ``,
             `[END COMPACTED CONTEXT — conversation continues below]`,
           ].join("\n"),
