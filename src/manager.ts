@@ -78,10 +78,13 @@ interface ActiveSession {
   error?: string;
   outputDir: string;
   unsubscribe?: () => void;
+  unsubscribeTurnLimit?: () => void;
   timeoutTimer?: ReturnType<typeof setTimeout>;
   parentSessionId?: string;
   workflowRunId?: string;
   stepLabel?: string;
+  turnCount: number;
+  maxTurns?: number;
 }
 
 /** Options for spawning a session with parent/workflow context. */
@@ -139,6 +142,19 @@ export class SubagentManager {
     session.unsubscribe = session.agent.subscribe((event: AgentEvent) => {
       if (event.type === "message_end") {
         appendSessionMessage(persistDir, sessionId, event.message);
+      }
+    });
+  }
+
+  /** Subscribe to turn_end events and enforce maxTurns limit. */
+  private subscribeForTurnLimit(session: ActiveSession): void {
+    if (!session.maxTurns || session.maxTurns <= 0) return;
+    session.unsubscribeTurnLimit = session.agent.subscribe((event: AgentEvent) => {
+      if (event.type === "turn_end") {
+        session.turnCount++;
+        if (session.turnCount >= session.maxTurns!) {
+          session.agent.abort();
+        }
       }
     });
   }
@@ -247,6 +263,15 @@ export class SubagentManager {
       );
     }
 
+    // Turn budget section (if maxTurns is set)
+    if (def.maxTurns && def.maxTurns > 0) {
+      sections.push(
+        `# Turn Budget\nYou have a maximum of ${def.maxTurns} turns for this session. ` +
+        `Plan your work to complete within this budget. If you are running low, ` +
+        `prioritize completing the most important part and summarize remaining work.`,
+      );
+    }
+
     return sections.join("\n\n");
   }
 
@@ -295,7 +320,16 @@ export class SubagentManager {
   /** Common completion handler for run(), resume(), and send(). */
   private handleCompletion(session: ActiveSession): void {
     session.unsubscribe?.();
+    session.unsubscribeTurnLimit?.();
     this.clearTimeout(session);
+
+    // Detect turn-limit abort: if maxTurns was set and turnCount reached it,
+    // override the generic abort error with a structured turn-limit error
+    if (session.maxTurns && session.turnCount >= session.maxTurns) {
+      session.status = "error";
+      session.error = `Turn limit reached (${session.turnCount}/${session.maxTurns} turns)`;
+      this.registry?.updateSessionStatus(session.sessionId, "error", session.error);
+    }
 
     // On context overflow, dump structured progress to workspace
     if (session.status === "error" && session.error && isOverflowError(session.error)) {
@@ -363,10 +397,15 @@ export class SubagentManager {
       parentSessionId: opts?.parentSessionId,
       workflowRunId: opts?.workflowRunId,
       stepLabel: opts?.stepLabel,
+      turnCount: 0,
+      maxTurns: def.maxTurns,
     };
 
     // Subscribe for JSONL persistence before starting the prompt
     this.subscribeForPersistence(session);
+
+    // Subscribe for turn limit enforcement
+    this.subscribeForTurnLimit(session);
 
     // Persist the new session to registry
     this.registry?.saveSession(sessionId, {
@@ -468,10 +507,15 @@ export class SubagentManager {
         startedAt: persisted.startedAt,
         status: "running",
         outputDir,
+        turnCount: savedMessages.filter((m) => m.role === "assistant").length,
+        maxTurns: def.maxTurns,
       };
 
       // Subscribe for JSONL persistence before starting the prompt
       this.subscribeForPersistence(session);
+
+      // Subscribe for turn limit enforcement
+      this.subscribeForTurnLimit(session);
 
       // Set up timeout if configured
       this.setupTimeout(session, def.timeoutMs);
@@ -569,6 +613,8 @@ export class SubagentManager {
       duration: formatDuration(Date.now() - session.startedAt),
       outputDir: session.outputDir,
       error: session.error,
+      turnsUsed: session.turnCount,
+      maxTurns: session.maxTurns,
     };
   }
 
@@ -601,9 +647,13 @@ export class SubagentManager {
 
     // Clean up old persistence subscription before re-subscribing to avoid leaked listeners
     session.unsubscribe?.();
+    session.unsubscribeTurnLimit?.();
 
     // Re-subscribe for JSONL persistence (previous subscription was cleaned up on completion)
     this.subscribeForPersistence(session);
+
+    // Re-subscribe for turn limit (turnCount carries over from previous run)
+    this.subscribeForTurnLimit(session);
 
     // Update registry status back to running
     this.registry?.updateSessionStatus(sessionId, "running");

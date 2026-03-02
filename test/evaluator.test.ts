@@ -81,9 +81,29 @@ function buildEvalResponse(opts: {
     ...opts.scores,
   };
 
+  // Emit the nested format the evaluator actually produces
+  const nested = {
+    agents: {
+      agent: {
+        efficiency: scores.efficiency,
+        quality: scores.quality,
+        wasted_calls: scores.wasted_calls,
+        productive_calls: scores.productive_calls,
+        metrics: {},
+      },
+    },
+    workflow: null,
+    overall: {
+      efficiency: scores.efficiency,
+      quality: scores.quality,
+      verdict: scores.verdict,
+    },
+    verifications: [],
+  };
+
   const parts: string[] = [];
   parts.push("# Evaluation\n");
-  parts.push("```json\n" + JSON.stringify(scores, null, 2) + "\n```\n");
+  parts.push("```json\n" + JSON.stringify(nested, null, 2) + "\n```\n");
 
   if (opts.lessons) {
     parts.push("### Lessons\n" + opts.lessons + "\n");
@@ -260,8 +280,6 @@ describe("evaluateSession", () => {
 
       expect(result.scores.efficiency).toBe(7);
       expect(result.scores.quality).toBe(8);
-      expect(result.scores.pattern_detected).toBe(true);
-      expect(result.scores.pattern_name).toBe("file-search-loop");
       expect(result.scores.total_tool_calls).toBe(12);
       expect(result.scores.productive_calls).toBe(9);
       expect(result.scores.wasted_calls).toBe(3);
@@ -314,7 +332,7 @@ describe("evaluateSession", () => {
     });
 
     it("merges partial JSON with defaults", async () => {
-      const responseText = '# Evaluation\n\n```json\n{"efficiency": 10, "quality": 10}\n```\n';
+      const responseText = '# Evaluation\n\n```json\n{"overall": {"efficiency": 10, "quality": 10}}\n```\n';
       const manager = mockManager(responseText);
       const sessionId = "partial-json-session";
       seedHistorySession(persistDir, sessionId, [
@@ -484,7 +502,7 @@ describe("evaluateSession", () => {
 
     it("treats lessons section at end of response with only whitespace as null", async () => {
       // When ### Lessons is the last section with only whitespace, trim → empty → null
-      const responseText = "# Evaluation\n\n```json\n{\"efficiency\":5}\n```\n\n### Lessons\n   \n";
+      const responseText = '# Evaluation\n\n```json\n{"overall":{"efficiency":5,"quality":0,"verdict":"needs_improvement"}}\n```\n\n### Lessons\n   \n';
       const manager = mockManager(responseText);
       const sessionId = "empty-lessons-session";
       seedHistorySession(persistDir, sessionId, [
@@ -1019,11 +1037,11 @@ describe("evaluateSession", () => {
     it("handles multiple JSON code blocks (takes the first)", async () => {
       const responseText = [
         "```json",
-        '{"efficiency": 5, "quality": 5, "verdict": "acceptable"}',
+        '{"overall": {"efficiency": 5, "quality": 5, "verdict": "acceptable"}}',
         "```",
         "Some text",
         "```json",
-        '{"efficiency": 99}',
+        '{"overall": {"efficiency": 99, "quality": 99, "verdict": "good"}}',
         "```",
       ].join("\n");
 

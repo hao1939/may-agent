@@ -445,7 +445,18 @@ function parseEvaluation(text: string, usage: UsageSummary): EvaluationResult {
   if (jsonMatch) {
     try {
       const parsed = JSON.parse(jsonMatch[1]);
-      result.scores = { ...result.scores, ...parsed };
+      if (parsed.overall && typeof parsed.overall.efficiency === "number") {
+        result.scores.efficiency = parsed.overall.efficiency;
+        result.scores.quality = parsed.overall.quality;
+        result.scores.verdict = parsed.overall.verdict ?? result.scores.verdict;
+        if (parsed.agents && typeof parsed.agents === "object") {
+          for (const agent of Object.values(parsed.agents) as Array<Record<string, unknown>>) {
+            if (typeof agent.productive_calls === "number") result.scores.productive_calls += agent.productive_calls;
+            if (typeof agent.wasted_calls === "number") result.scores.wasted_calls += agent.wasted_calls;
+          }
+          result.scores.total_tool_calls = result.scores.productive_calls + result.scores.wasted_calls;
+        }
+      }
     } catch {
       // Keep defaults
     }
