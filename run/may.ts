@@ -109,7 +109,7 @@ manager.register({
   workspace: resolve(AGENTS_ROOT, "may/workspace"),
   projectRoot: PROJECT_ROOT,
   model: opus,
-  tools: [projectRead(), readOnlyExec(), manager.createTool({
+  tools: [readOnlyExec(), manager.createTool({
     onSessionStart: (agent, sessionId) => {
       attachAgentEvents(agent, sessionId);
     },
