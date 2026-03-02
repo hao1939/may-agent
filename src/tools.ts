@@ -110,7 +110,6 @@ export function createExecTool(cwdOrOpts?: string | ExecToolOptions): AgentTool<
   const denyPatterns = opts.denyPatterns ?? [];
   const denyMessage = opts.denyMessage ?? "Use relative paths from the project root instead.";
   const warnOutsideRoot = opts.warnOutsideRoot;
-  let cwdEchoed = false;
 
   return {
     name: "exec",
@@ -141,9 +140,8 @@ export function createExecTool(cwdOrOpts?: string | ExecToolOptions): AgentTool<
           stdio: ["pipe", "pipe", "pipe"],
         });
         let result = output || "(no output)";
-        if (opts.echoCwd && !cwdEchoed) {
+        if (opts.echoCwd) {
           result = `CWD: ${effectiveCwd}\n${result}`;
-          cwdEchoed = true;
         }
         return textResult(result + outsideWarning);
       } catch (err: unknown) {
