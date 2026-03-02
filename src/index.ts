@@ -1,6 +1,6 @@
 export { SubagentManager, generateId } from "./manager.js";
 export type { SubagentManagerOptions, RunOptions } from "./manager.js";
-export { createReadTool, createWriteTool, createExecTool, createValidateWorkflowTool, createHealthCheckTool, createLearnTool } from "./tools.js";
+export { createReadTool, createWriteTool, createExecTool, createValidateWorkflowTool, createHealthCheckTool, createLearnTool, stripRedundantCd, detectsOutsidePaths } from "./tools.js";
 export type { ExecToolOptions, HealthCheck, HealthReport, HealthCheckOptions } from "./tools.js";
 export { createWorkflowTool } from "./workflow-tool.js";
 export type { WorkflowToolOptions, WorkflowTool } from "./workflow-tool.js";

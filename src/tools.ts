@@ -82,7 +82,7 @@ export interface ExecToolOptions {
   denyPatterns?: RegExp[];
   /** Message shown when a command is blocked. */
   denyMessage?: string;
-  /** If true, prefix the first exec output with "CWD: <path>" so the agent knows where it is. */
+  /** If true, prefix exec output with "CWD: <path>" so the agent always knows where it is. Included on both success and error output. */
   echoCwd?: boolean;
   /** If set, commands referencing absolute paths outside this root get a warning appended to output. */
   warnOutsideRoot?: string;
@@ -92,7 +92,7 @@ export interface ExecToolOptions {
  * Detect whether a command string contains absolute paths outside the given root.
  * Matches common top-level dirs like /home, /app, /work, /usr, /etc, /tmp, /var, /opt.
  */
-function detectsOutsidePaths(command: string, root: string): boolean {
+export function detectsOutsidePaths(command: string, root: string): boolean {
   const absPathRegex = /(?:^|\s|['";=])(\/(?:home|app|work|usr|etc|tmp|var|opt)(?:\/\S*)?)/g;
   let match;
   while ((match = absPathRegex.exec(command)) !== null) {
@@ -104,12 +104,36 @@ function detectsOutsidePaths(command: string, root: string): boolean {
   return false;
 }
 
+/**
+ * Strip redundant `cd <root> && ` or `cd <root>;` prefix from a command.
+ *
+ * Agents frequently emit commands like `cd /home/hao/may-agent && git log`
+ * even though the exec tool's cwd is already set to that directory. This
+ * wastes tokens (the cd output + absolute path echoed back) and indicates
+ * the agent doesn't trust the CWD. Silently stripping the prefix:
+ * 1. Saves tokens on every invocation
+ * 2. Makes the echoed CWD the only source of truth
+ * 3. Removes a source of confusion when the path is slightly wrong
+ *
+ * Only strips when the cd target exactly matches `root`.
+ */
+export function stripRedundantCd(command: string, root: string): string {
+  // Match: cd /path/to/root && rest  or  cd /path/to/root; rest
+  // Also handles: cd "/path/to/root" && rest  and  cd '/path/to/root' && rest
+  const escapedRoot = root.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const pattern = new RegExp(
+    `^\\s*cd\\s+["']?${escapedRoot}["']?\\s*(?:&&|;)\\s*`,
+  );
+  return command.replace(pattern, "");
+}
+
 export function createExecTool(cwdOrOpts?: string | ExecToolOptions): AgentTool<typeof ExecParams> {
   const opts: ExecToolOptions = typeof cwdOrOpts === "string" ? { cwd: cwdOrOpts } : (cwdOrOpts ?? {});
   const effectiveCwd = opts.cwd ?? process.cwd();
   const denyPatterns = opts.denyPatterns ?? [];
   const denyMessage = opts.denyMessage ?? "Use relative paths from the project root instead.";
   const warnOutsideRoot = opts.warnOutsideRoot;
+  const cwdPrefix = opts.echoCwd ? `CWD: ${effectiveCwd}\n` : "";
 
   return {
     name: "exec",
@@ -117,41 +141,41 @@ export function createExecTool(cwdOrOpts?: string | ExecToolOptions): AgentTool<
     description: "Execute a shell command. Returns stdout and stderr.",
     parameters: ExecParams,
     execute: async (_id, params) => {
-      // Check deny patterns
+      // Strip redundant `cd <cwd> && ` prefix — the cwd is already set
+      const command = stripRedundantCd(params.command, effectiveCwd);
+
+      // Check deny patterns (on the cleaned command)
       for (const pattern of denyPatterns) {
-        if (pattern.test(params.command)) {
+        if (pattern.test(command)) {
           return textResult(
             `Blocked: command matches a denied pattern.\n${denyMessage}\nHint: your working directory is ${effectiveCwd}`,
           );
         }
       }
 
-      const outsideWarning = warnOutsideRoot && detectsOutsidePaths(params.command, warnOutsideRoot)
+      const outsideWarning = warnOutsideRoot && detectsOutsidePaths(command, warnOutsideRoot)
         ? `\nWARNING: Your command references paths outside the project root (${warnOutsideRoot}). Use relative paths from the project root instead.`
         : "";
 
       try {
         const timeout = (params.timeout ?? 30) * 1000;
-        const output = execSync(params.command, {
+        const output = execSync(command, {
           cwd: effectiveCwd,
           encoding: "utf-8",
           timeout,
           maxBuffer: 1024 * 1024,
           stdio: ["pipe", "pipe", "pipe"],
         });
-        let result = output || "(no output)";
-        if (opts.echoCwd) {
-          result = `CWD: ${effectiveCwd}\n${result}`;
-        }
-        return textResult(result + outsideWarning);
+        const result = output || "(no output)";
+        return textResult(cwdPrefix + result + outsideWarning);
       } catch (err: unknown) {
         if (err && typeof err === "object" && "stdout" in err) {
           const e = err as { stdout: string; stderr: string; status: number };
           const output = [e.stdout, e.stderr].filter(Boolean).join("\n");
-          return textResult(`Exit code ${e.status}\n${output}${outsideWarning}`);
+          return textResult(`${cwdPrefix}Exit code ${e.status}\n${output}${outsideWarning}`);
         }
         const msg = err instanceof Error ? err.message : String(err);
-        return textResult(`Error: ${msg}${outsideWarning}`);
+        return textResult(`${cwdPrefix}Error: ${msg}${outsideWarning}`);
       }
     },
   };
