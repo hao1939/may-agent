@@ -131,6 +131,54 @@ function isFindWithNoResults(toolName: string, args: Record<string, unknown>, re
 }
 
 /**
+ * Check whether an exec command with a non-zero exit code is actually
+ * expected behavior, not a real error.
+ *
+ * Many Unix commands use non-zero exit codes for normal results:
+ * - `grep` exits 1 when no lines match (normal "not found" result)
+ * - `git diff` exits 1 when differences exist (the diff output IS the result)
+ * - Commands with `2>/dev/null` that exit 1 (intentional error suppression)
+ * - Pipe chains ending in `grep` (exit 1 = final grep found nothing)
+ *
+ * Without this, the evaluator creates false-positive failure chains for
+ * perfectly normal tool usage, inflating wasted-call counts and skewing
+ * efficiency scores.
+ */
+function isExpectedNonZeroExit(command: string, exitCode: string, resultText: string): boolean {
+  const code = parseInt(exitCode, 10);
+
+  // grep exits 1 when no lines match — this is normal, not an error.
+  // Also catches: grep -c (outputs "0"), grep -l, grep -r, egrep, fgrep
+  // and pipe chains ending in grep (e.g., "cat file | grep pattern")
+  if (code === 1) {
+    // Direct grep invocation or pipe ending in grep
+    if (/\bgrep\b/.test(command)) {
+      // Strip CWD prefix and exit code line to get actual output
+      const output = resultText.replace(/^CWD:[^\n]*\n?/, "").replace(/^Exit code \d+\n?/, "").trim();
+      // grep exit 1 with empty output or just "0" (from grep -c) = no match, not error
+      if (output === "" || output === "0") return true;
+    }
+  }
+
+  // git diff exits 1 when there ARE differences — the diff output is the result.
+  // Only exit code 1, not higher codes which indicate actual errors.
+  if (code === 1 && /\bgit\s+diff\b/.test(command)) {
+    // If the output contains actual diff content, this is success not failure
+    if (resultText.includes("diff --git") || resultText.includes("--- a/")) return true;
+  }
+
+  // Commands with 2>/dev/null that exit 1 with empty output are intentional
+  // "try and see" patterns (e.g., "cat file1 2>/dev/null || cat file2").
+  // The agent deliberately suppressed errors, so don't treat as failure.
+  if (code === 1 && /2>\/dev\/null/.test(command)) {
+    const output = resultText.replace(/^CWD:[^\n]*\n?/, "").replace(/^Exit code \d+\n?/, "").trim();
+    if (output === "") return true;
+  }
+
+  return false;
+}
+
+/**
  * Check if a tool result represents the tool's OWN error output format,
  * as opposed to data content that happens to contain error-like strings.
  *
@@ -146,11 +194,13 @@ function isFindWithNoResults(toolName: string, args: Record<string, unknown>, re
  * - `read` successfully reads a file containing "ENOENT" in its source code
  * - `exec` runs `git diff` and the diff contains "Error reading file" or "Exit code 1"
  * - `exec` runs tests whose names contain error strings
+ * - `grep` returns exit 1 (no matches — normal behavior)
+ * - `git diff` returns exit 1 (differences found — the output IS the result)
  *
  * The key distinction: tool errors appear at the START of the result text
  * (the tool's own output format), not embedded in data content.
  */
-function isToolOwnError(toolName: string, resultText: string): boolean {
+function isToolOwnError(toolName: string, resultText: string, args?: Record<string, unknown>): boolean {
   // read tool error format: "Error reading file: ENOENT: ..."
   // Only match when the result STARTS with this prefix — if the read tool
   // successfully returned file content that happens to contain "ENOENT",
@@ -160,16 +210,31 @@ function isToolOwnError(toolName: string, resultText: string): boolean {
   }
 
   // exec tool error format: the exec tool outputs "Exit code <status>\n..."
-  // at the very start of its error result (see createExecTool in tools.ts).
-  // The exec tool does NOT prepend a CWD line on error — CWD is only added
-  // on the first successful call. So we check the start of the result directly.
+  // either at the very start of its result or after a "CWD: <path>\n" prefix
+  // (when echoCwd is enabled). Both success and error output may include the
+  // CWD prefix, so we strip it before checking for the error pattern.
   //
   // Note: the exec tool does not set `tr.isError` on non-zero exit codes
   // (it catches the error internally and returns text), so this heuristic
   // is the primary detection mechanism for exec failures when `tr.isError`
   // is false.
   if (toolName === "exec") {
-    return /^Exit code (?!0\b)\S+/.test(resultText);
+    // Strip optional CWD prefix line before checking
+    const stripped = resultText.replace(/^CWD:[^\n]*\n/, "");
+    const exitMatch = stripped.match(/^Exit code (\S+)/);
+    if (!exitMatch) return false;
+
+    const exitCode = exitMatch[1];
+    // Exit code 0 is success
+    if (exitCode === "0") return false;
+
+    // Check for known non-error exit codes (grep no-match, git diff, etc.)
+    const command = typeof args?.command === "string" ? args.command : "";
+    if (command && isExpectedNonZeroExit(command, exitCode, resultText)) {
+      return false;
+    }
+
+    return true;
   }
 
   return false;
@@ -211,17 +276,18 @@ export function extractFailureChains(messages: AgentMessage[]): FailureChain[] {
       const tr = msg as { toolCallId: string; toolName: string; content?: Array<{ type: string; text?: string }>; isError: boolean };
       const call = pendingCalls.get(tr.toolCallId);
       const toolName = call?.name ?? tr.toolName;
+      const callArgs = call?.arguments ?? {};
       const resultText = tr.content
         ?.map((c) => c.type === "text" ? (c.text ?? "") : "")
         .join("")
         .slice(0, 500) ?? "";
       pairs.push({
         tool: toolName,
-        args: call?.arguments ?? {},
+        args: callArgs,
         resultText,
         isError: tr.isError                                    // Primary: trust the tool's own error flag
-          || isToolOwnError(toolName, resultText)              // Fallback: tool-specific error output formats
-          || isFindWithNoResults(toolName, call?.arguments ?? {}, resultText),
+          || isToolOwnError(toolName, resultText, callArgs)    // Fallback: tool-specific error output formats
+          || isFindWithNoResults(toolName, callArgs, resultText),
       });
       if (call) pendingCalls.delete(tr.toolCallId);
     }
