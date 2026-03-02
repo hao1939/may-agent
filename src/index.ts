@@ -16,6 +16,8 @@ export type {
   TraceNode,
   SessionTrace,
 } from "./workflow.js";
+export { summarizeForHandoff, extractHandoff } from "./handoff.js";
+export type { HandoffOptions, HandoffData } from "./handoff.js";
 export { createCompactionTransform } from "./compaction.js";
 export type { CompactionOptions, CompactionInfo } from "./compaction.js";
 export { evaluateSession, evaluateTask, findUnevaluatedChildren, maintainAgent, extractFailureChains, extractUsage, formatFailureChains } from "./evaluator.js";
