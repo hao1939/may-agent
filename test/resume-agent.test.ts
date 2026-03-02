@@ -184,14 +184,15 @@ describe("SubagentManager.resumeAgent()", () => {
 
     // Verify resumed session — full shape validation
     const { resumed, interrupted } = result!;
-    expect(resumed.sessionId).toBe("session-a");
-    expect(resumed.agent).toBe("agent-a");
-    expect(resumed.task).toBe("task A");
-    expect(resumed.status).toBe("running");
-    expect(resumed.startedAt).toBe(startedAtA);
-    expect(resumed.outputDir).toBe(sessionOutputDir(persistDir, "session-a"));
-    expect(resumed.runtime).toMatch(/^\d+s$|^\d+m\d+s$/);
-    expect(resumed.error).toBeUndefined(); // running session should have no error
+    expect(resumed).not.toBeNull();
+    expect(resumed!.sessionId).toBe("session-a");
+    expect(resumed!.agent).toBe("agent-a");
+    expect(resumed!.task).toBe("task A");
+    expect(resumed!.status).toBe("running");
+    expect(resumed!.startedAt).toBe(startedAtA);
+    expect(resumed!.outputDir).toBe(sessionOutputDir(persistDir, "session-a"));
+    expect(resumed!.runtime).toMatch(/^\d+s$|^\d+m\d+s$/);
+    expect(resumed!.error).toBeUndefined(); // running session should have no error
 
     // Verify interrupted sessions — should contain only the other running sessions
     expect(interrupted).toHaveLength(2);
@@ -228,7 +229,7 @@ describe("SubagentManager.resumeAgent()", () => {
     await manager.waitFor("session-a");
   });
 
-  it("returns object with interrupted list when no running session for the named agent but others exist", () => {
+  it("returns object with resumed: null and interrupted list when no running session for the named agent but others exist", () => {
     const registry: Registry = {
       agents: {
         "agent-b": {
@@ -263,8 +264,9 @@ describe("SubagentManager.resumeAgent()", () => {
 
     const result = manager.resumeAgent("nonexistent-agent");
 
-    // Code returns { resumed: null!, interrupted } when target not found but others exist
+    // Returns { resumed: null, interrupted } when target not found but others exist
     expect(result).not.toBeNull();
+    expect(result!.resumed).toBeNull();
     expect(result!.interrupted).toHaveLength(1);
     expect(result!.interrupted[0].sessionId).toBe("session-b");
     expect(result!.interrupted[0].status).toBe("interrupted");
@@ -391,7 +393,8 @@ describe("SubagentManager.resumeAgent()", () => {
 
     const result = manager.resumeAgent("output-agent");
     expect(result).not.toBeNull();
-    expect(result!.resumed.outputDir).toBe(sessionOutputDir(persistDir, "session-out"));
+    expect(result!.resumed).not.toBeNull();
+    expect(result!.resumed!.outputDir).toBe(sessionOutputDir(persistDir, "session-out"));
 
     await manager.waitFor("session-out");
   });
@@ -431,8 +434,9 @@ describe("SubagentManager.resumeAgent()", () => {
 
     const result = manager.resumeAgent("runtime-agent");
     expect(result).not.toBeNull();
+    expect(result!.resumed).not.toBeNull();
     // Started 90 seconds ago, should be "1m30s"
-    expect(result!.resumed.runtime).toMatch(/^\d+m\d+s$/);
+    expect(result!.resumed!.runtime).toMatch(/^\d+m\d+s$/);
 
     await manager.waitFor("session-runtime");
   });
