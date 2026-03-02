@@ -766,6 +766,11 @@ export class SubagentManager {
   }
 
 
+  /** Return the number of registered agents. */
+  agentCount(): number {
+    return this.agents.size;
+  }
+
   /** Check whether an agent with the given name is registered. */
   hasAgent(name: string): boolean {
     return this.agents.has(name);
