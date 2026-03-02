@@ -88,6 +88,14 @@ const MAX_EXEC_COMMANDS_IN_FACTS = 15;
 const EXEC_COMMAND_DISPLAY_LENGTH = 120;
 
 /**
+ * Maximum length for the original task preserved in compacted context.
+ * Tasks longer than this are truncated with an ellipsis marker.
+ * 500 chars ≈ 125 tokens — enough for detailed multi-paragraph tasks
+ * while keeping the compacted header bounded.
+ */
+const ORIGINAL_TASK_MAX_LENGTH = 500;
+
+/**
  * Structured key facts extracted from messages.
  * Using structured data allows proper merging across compaction rounds
  * (e.g., unioning file sets instead of duplicating "Files read: ..." lines).
@@ -203,6 +211,31 @@ export function formatKeyFacts(facts: KeyFacts): string[] {
  */
 function emptyKeyFacts(): KeyFacts {
   return { filesRead: new Set(), filesWritten: new Set(), execCommands: [] };
+}
+
+/**
+ * Extract the text content from the first user message in a conversation.
+ * This is the original task that was assigned to the agent.
+ *
+ * Handles both string content and array content formats.
+ * Returns null if no user message is found or the message has no text.
+ */
+export function extractOriginalTask(messages: AgentMessage[]): string | null {
+  for (const msg of messages) {
+    if (msg.role === "user") {
+      if (typeof msg.content === "string") return msg.content.trim() || null;
+      if (Array.isArray(msg.content)) {
+        const text = msg.content
+          .filter((b): b is { type: "text"; text: string } => b.type === "text")
+          .map((b) => b.text)
+          .join(" ")
+          .trim();
+        return text || null;
+      }
+      return null;
+    }
+  }
+  return null;
 }
 
 /**
@@ -412,6 +445,12 @@ export interface CompactionInfo {
  * 4. Prepends the summary as a system-injected user message
  * 5. Returns summary + recent messages
  *
+ * The original task (first user message) is always preserved prominently
+ * in the compacted context header. This prevents the agent from losing
+ * track of what it was asked to do after compaction — a critical failure
+ * mode where the agent starts working on the wrong thing or asks the
+ * user to repeat the task.
+ *
  * The accumulated summary is capped at 15% of the context window
  * (with a minimum of 8000 chars). When it exceeds this budget, the
  * oldest compaction sections are trimmed. This prevents "summary bloat"
@@ -441,6 +480,8 @@ export function createCompactionTransform(
   let accumulatedSummary = "";
   // Accumulate key facts (files read/written, commands run) across all compaction rounds
   let accumulatedKeyFacts: KeyFacts = emptyKeyFacts();
+  // Cache the original task from the first user message — persists across compaction rounds
+  let cachedOriginalTask: string | null | undefined = undefined; // undefined = not yet extracted
 
   const triggerTokens = Math.floor(contextWindow * threshold);
   const keepTokens = Math.floor(contextWindow * keepRatio);
@@ -466,6 +507,13 @@ export function createCompactionTransform(
     const oldMessages = messages.slice(0, splitAt);
     const recentMessages = messages.slice(splitAt);
 
+    // Extract original task on first compaction (from full message history).
+    // Cache it so it survives across compaction rounds — once compacted,
+    // the original first user message is gone from the messages array.
+    if (cachedOriginalTask === undefined) {
+      cachedOriginalTask = extractOriginalTask(messages);
+    }
+
     // Build the summary
     const newSummary = summarizeMessages(oldMessages);
 
@@ -488,6 +536,17 @@ export function createCompactionTransform(
 
     compactionCount++;
 
+    // Build the original task block (always preserved, never trimmed).
+    // This is the single most important piece of context after compaction —
+    // without it, agents can lose track of what they were asked to do.
+    let originalTaskBlock = "";
+    if (cachedOriginalTask) {
+      const taskText = cachedOriginalTask.length > ORIGINAL_TASK_MAX_LENGTH
+        ? cachedOriginalTask.slice(0, ORIGINAL_TASK_MAX_LENGTH) + "…"
+        : cachedOriginalTask;
+      originalTaskBlock = `[Original task]\n${taskText}\n\n`;
+    }
+
     // Build the key facts header (always preserved, not subject to trimming)
     const keyFactLines = formatKeyFacts(accumulatedKeyFacts);
     const keyFactsBlock = keyFactLines.length > 0
@@ -503,7 +562,7 @@ export function createCompactionTransform(
           text: [
             `[COMPACTED CONTEXT — earlier conversation summarized to save space]`,
             ``,
-            keyFactsBlock + accumulatedSummary,
+            originalTaskBlock + keyFactsBlock + accumulatedSummary,
             ``,
             `[END COMPACTED CONTEXT — conversation continues below]`,
           ].join("\n"),
