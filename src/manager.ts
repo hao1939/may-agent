@@ -760,6 +760,11 @@ export class SubagentManager {
     }));
   }
 
+  /** Return the names of all registered agents. */
+  listAgentNames(): string[] {
+    return Array.from(this.agents.keys());
+  }
+
   /** Get sessions filtered by agent name. */
   sessions(name: string): SessionInfo[] {
     return this.status().filter((s) => s.agent === name);
