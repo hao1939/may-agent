@@ -64,8 +64,8 @@ describe("SubagentManager.resume()", () => {
     rmSync(persistDir, { recursive: true, force: true });
   });
 
-  it("returns empty array when no persistDir", () => {
-    const manager = new SubagentManager(); // no persistDir
+  it("returns empty array when no sessions to resume", () => {
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
     const resumed = manager.resume();
     expect(resumed).toEqual([]);
   });

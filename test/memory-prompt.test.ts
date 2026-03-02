@@ -399,8 +399,8 @@ describe("Memory auto-append on completion", () => {
     expect(tasks).toContain("task two");
   });
 
-  it("does not append memory without persistDir", async () => {
-    const manager = new SubagentManager(); // no persistDir
+  it("handles session completion with memory", async () => {
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
 
     manager.register({
       name: "no-persist",
@@ -413,10 +413,9 @@ describe("Memory auto-append on completion", () => {
     });
 
     const sessionId = manager.run("no-persist", "do something");
-    await manager.waitFor(sessionId);
+    const result = await manager.waitFor(sessionId);
 
     // No crash, no memory file created — just verify it doesn't throw
-    const result = manager.result(sessionId);
     expect(result).not.toBeNull();
   });
 });

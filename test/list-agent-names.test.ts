@@ -1,4 +1,7 @@
 import { describe, it, expect } from "vitest";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { mkdtempSync, rmSync } from "node:fs";
 import { SubagentManager } from "../src/manager.js";
 import type { Model } from "@mariozechner/pi-ai";
 
@@ -31,18 +34,18 @@ function registerAgent(manager: SubagentManager, name: string) {
 
 describe("SubagentManager.listAgentNames()", () => {
   it("returns an empty array when no agents are registered", () => {
-    const manager = new SubagentManager();
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
     expect(manager.listAgentNames()).toEqual([]);
   });
 
   it("returns a single name after one registration", () => {
-    const manager = new SubagentManager();
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
     registerAgent(manager, "alpha");
     expect(manager.listAgentNames()).toEqual(["alpha"]);
   });
 
   it("returns all names after multiple registrations", () => {
-    const manager = new SubagentManager();
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
     registerAgent(manager, "alpha");
     registerAgent(manager, "beta");
     registerAgent(manager, "gamma");
@@ -50,7 +53,7 @@ describe("SubagentManager.listAgentNames()", () => {
   });
 
   it("returns string[] (every element is a string)", () => {
-    const manager = new SubagentManager();
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
     registerAgent(manager, "agent-1");
     registerAgent(manager, "agent-2");
     const names = manager.listAgentNames();
@@ -60,7 +63,7 @@ describe("SubagentManager.listAgentNames()", () => {
   });
 
   it("reflects the latest registration when an agent is re-registered", () => {
-    const manager = new SubagentManager();
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
     registerAgent(manager, "alpha");
     registerAgent(manager, "beta");
     // Re-register alpha — Map.set replaces the value but key order is preserved
@@ -73,7 +76,7 @@ describe("SubagentManager.listAgentNames()", () => {
   });
 
   it("is consistent with listAgents() names", () => {
-    const manager = new SubagentManager();
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
     registerAgent(manager, "x");
     registerAgent(manager, "y");
     const names = manager.listAgentNames();

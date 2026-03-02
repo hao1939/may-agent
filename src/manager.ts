@@ -11,15 +11,16 @@ import {
   ensureSessionDir,
   appendSessionMessage,
   readSessionMessages,
+  readArchivedSessionMessages,
   sessionOutputDir,
   appendMemoryEntry,
   readMemoryEntries,
   memoryPath,
   archiveSession,
-  restoreSessionFromArchive,
   historyDir,
   readWorkflowRun,
   listWorkflowRuns,
+  saveWorkflowRun,
 } from "./persistence.js";
 import type { MemoryEntry, WorkflowRun, PersistedSession, Registry } from "./persistence.js";
 import type { TraceNode, SessionTrace } from "./workflow.js";
@@ -95,7 +96,7 @@ export interface RunOptions {
 }
 
 export interface SubagentManagerOptions {
-  persistDir?: string;
+  persistDir: string;
 }
 
 // ── createTool() schema ────────────────────────────────────────────────
@@ -122,21 +123,25 @@ const SubagentToolParams = Type.Object({
 export class SubagentManager {
   private agents = new Map<string, RegisteredAgent>();
   private activeSessions = new Map<string, ActiveSession>();
-  private registry: RegistryStore | null;
+  /** Stores the result promise for every session started by this manager.
+   *  Survives session removal from activeSessions so waitFor() works
+   *  even if the session completes before waitFor() is called.
+   */
+  private sessionResults = new Map<string, Promise<TaskResult>>();
+  private registry: RegistryStore;
 
-  constructor(opts?: SubagentManagerOptions) {
-    this.registry = opts?.persistDir ? new RegistryStore(opts.persistDir) : null;
+  constructor(opts: SubagentManagerOptions) {
+    this.registry = new RegistryStore(opts.persistDir);
   }
 
   /** Register a feature unit. */
   register(def: SubagentDefinition): void {
     this.agents.set(def.name, { definition: def });
-    this.registry?.saveAgent(def);
+    this.registry.saveAgent(def);
   }
 
   /** Subscribe to message_end events and persist messages to session JSONL. */
   private subscribeForPersistence(session: ActiveSession): void {
-    if (!this.registry) return;
     const persistDir = this.registry.persistDir;
     const { sessionId } = session;
     session.unsubscribe = session.agent.subscribe((event: AgentEvent) => {
@@ -179,7 +184,7 @@ export class SubagentManager {
     def: SubagentDefinition,
     agentName: string,
     sessionId: string,
-    persistDir: string | null,
+    persistDir: string,
   ): string {
     if (def.systemPrompt) return def.systemPrompt;
 
@@ -236,7 +241,7 @@ export class SubagentManager {
 
     // Load memory entries
     const memoryLimit = def.memoryLimit ?? 20;
-    if (persistDir && memoryLimit > 0) {
+    if (memoryLimit > 0) {
       const entries = readMemoryEntries(persistDir, agentName, memoryLimit);
       if (entries.length > 0) {
         const lines = entries.map((e) => {
@@ -256,12 +261,10 @@ export class SubagentManager {
     }
 
     // Output section
-    if (persistDir) {
-      const outputPath = sessionOutputDir(persistDir, sessionId);
-      sections.push(
-        `# Output\nWrite deliverables for this task to: ${outputPath}`,
-      );
-    }
+    const outputPath = sessionOutputDir(persistDir, sessionId);
+    sections.push(
+      `# Output\nWrite deliverables for this task to: ${outputPath}`,
+    );
 
     // Turn budget section (if maxTurns is set)
     if (def.maxTurns && def.maxTurns > 0) {
@@ -277,7 +280,6 @@ export class SubagentManager {
 
   /** Append a memory entry after session completion. */
   private appendMemory(session: ActiveSession): void {
-    if (!this.registry) return;
     const messages = session.agent.state.messages;
     const entry: MemoryEntry = {
       task: session.task,
@@ -291,7 +293,6 @@ export class SubagentManager {
 
   /** Archive a session after completion: move to history. */
   private archiveSessionDir(session: ActiveSession): void {
-    if (!this.registry) return;
     try {
       archiveSession(this.registry.persistDir, session.sessionId);
     } catch {
@@ -317,7 +318,7 @@ export class SubagentManager {
     }
   }
 
-  /** Common completion handler for run(), resume(), and send(). */
+  /** Common completion handler for run() and resume(). */
   private handleCompletion(session: ActiveSession): void {
     session.unsubscribe?.();
     session.unsubscribeTurnLimit?.();
@@ -328,7 +329,7 @@ export class SubagentManager {
     if (session.maxTurns && session.turnCount >= session.maxTurns) {
       session.status = "error";
       session.error = `Turn limit reached (${session.turnCount}/${session.maxTurns} turns)`;
-      this.registry?.updateSessionStatus(session.sessionId, "error", session.error);
+      this.registry.updateSessionStatus(session.sessionId, "error", session.error);
     }
 
     // On context overflow, dump structured progress to workspace
@@ -351,6 +352,9 @@ export class SubagentManager {
 
     this.appendMemory(session);
     this.archiveSessionDir(session);
+
+    // Remove from active sessions — completed sessions are read from persistence
+    this.activeSessions.delete(session.sessionId);
   }
 
   /** Start a new session for a registered agent. Returns sessionId. Non-blocking.
@@ -362,18 +366,14 @@ export class SubagentManager {
 
     const def = registered.definition;
     const sessionId = generateId(def.sessionIdPrefix);
-    const persistDir = this.registry?.persistDir ?? null;
+    const persistDir = this.registry.persistDir;
 
     // Compute output directory
-    const outputDir = persistDir
-      ? sessionOutputDir(persistDir, sessionId)
-      : "";
+    const outputDir = sessionOutputDir(persistDir, sessionId);
 
     // Create session directory and output subdirectory for JSONL persistence
-    if (this.registry) {
-      ensureSessionDir(this.registry.persistDir, sessionId);
-      mkdirSync(sessionOutputDir(this.registry.persistDir, sessionId), { recursive: true });
-    }
+    ensureSessionDir(persistDir, sessionId);
+    mkdirSync(outputDir, { recursive: true });
 
     const agent = new Agent({
       initialState: {
@@ -408,7 +408,7 @@ export class SubagentManager {
     this.subscribeForTurnLimit(session);
 
     // Persist the new session to registry
-    this.registry?.saveSession(sessionId, {
+    this.registry.saveSession(sessionId, {
       agent: name,
       task,
       status: "running",
@@ -426,31 +426,47 @@ export class SubagentManager {
         if (agent.state.error) {
           session.status = "error";
           session.error = agent.state.error;
-          this.registry?.updateSessionStatus(sessionId, "error", agent.state.error);
+          this.registry.updateSessionStatus(sessionId, "error", agent.state.error);
         } else {
           session.status = "done";
-          this.registry?.updateSessionStatus(sessionId, "done");
+          this.registry.updateSessionStatus(sessionId, "done");
         }
         this.handleCompletion(session);
       })
       .catch((err) => {
         session.status = "error";
         session.error = err?.message ?? String(err);
-        this.registry?.updateSessionStatus(sessionId, "error", session.error);
+        this.registry.updateSessionStatus(sessionId, "error", session.error);
         this.handleCompletion(session);
       });
 
+    this.sessionResults.set(sessionId, session.promise.then(() => this.buildResultFromSession(session)));
     this.activeSessions.set(sessionId, session);
     return sessionId;
+  }
+
+  /** Mark any workflow runs stuck at "running" as "interrupted".
+   *  Called during startup cleanup (both cleanupStaleSessions and resumeAgent). */
+  private cleanupStaleWorkflowRuns(): void {
+    const persistDir = this.registry.persistDir;
+    const runIds = listWorkflowRuns(persistDir);
+    for (const runId of runIds) {
+      const run = readWorkflowRun(persistDir, runId);
+      if (run && run.status === "running") {
+        run.status = "interrupted";
+        run.endedAt = Date.now();
+        run.result = { reason: "Process restarted" };
+        saveWorkflowRun(persistDir, run);
+      }
+    }
   }
 
   /**
    * Clean up sessions left in "running" state from a previous process.
    * Marks them as "interrupted" and returns a summary.
+   * Also cleans up stale workflow runs.
    */
   cleanupStaleSessions(): SessionInfo[] {
-    if (!this.registry) return [];
-
     const registryData = this.registry.getRegistry();
     const cleaned: SessionInfo[] = [];
 
@@ -472,6 +488,7 @@ export class SubagentManager {
       });
     }
 
+    this.cleanupStaleWorkflowRuns();
     return cleaned;
   }
 
@@ -485,8 +502,6 @@ export class SubagentManager {
    * Returns null if the agent has no "running" session to resume.
    */
   resumeAgent(agentName: string): { resumed: SessionInfo; interrupted: SessionInfo[] } | null {
-    if (!this.registry) return null;
-
     const registryData = this.registry.getRegistry();
     const persistDir = this.registry.persistDir;
 
@@ -524,6 +539,7 @@ export class SubagentManager {
 
     if (!targetSessionId || !targetPersisted) {
       // No running session for this agent — still clean up others
+      this.cleanupStaleWorkflowRuns();
       return interrupted.length > 0 ? { resumed: null!, interrupted } : null;
     }
 
@@ -531,6 +547,7 @@ export class SubagentManager {
     const registered = this.agents.get(agentName);
     if (!registered) {
       this.registry.updateSessionStatus(targetSessionId, "interrupted", "Agent not registered");
+      this.cleanupStaleWorkflowRuns();
       return null;
     }
 
@@ -591,20 +608,21 @@ export class SubagentManager {
         if (agent.state.error) {
           session.status = "error";
           session.error = agent.state.error;
-          this.registry?.updateSessionStatus(sid, "error", agent.state.error);
+          this.registry.updateSessionStatus(sid, "error", agent.state.error);
         } else {
           session.status = "done";
-          this.registry?.updateSessionStatus(sid, "done");
+          this.registry.updateSessionStatus(sid, "done");
         }
         this.handleCompletion(session);
       })
       .catch((err) => {
         session.status = "error";
         session.error = err?.message ?? String(err);
-        this.registry?.updateSessionStatus(sid, "error", session.error);
+        this.registry.updateSessionStatus(sid, "error", session.error);
         this.handleCompletion(session);
       });
 
+    this.sessionResults.set(targetSessionId, session.promise.then(() => this.buildResultFromSession(session)));
     this.activeSessions.set(targetSessionId, session);
 
     const resumedInfo: SessionInfo = {
@@ -617,6 +635,7 @@ export class SubagentManager {
       outputDir,
     };
 
+    this.cleanupStaleWorkflowRuns();
     return { resumed: resumedInfo, interrupted };
   }
 
@@ -626,8 +645,6 @@ export class SubagentManager {
    *  Returns SessionInfo[] for all resumed sessions.
    */
   resume(): SessionInfo[] {
-    if (!this.registry) return [];
-
     const registryData = this.registry.getRegistry();
     const persistDir = this.registry.persistDir;
     const resumed: SessionInfo[] = [];
@@ -703,20 +720,21 @@ export class SubagentManager {
           if (agent.state.error) {
             session.status = "error";
             session.error = agent.state.error;
-            this.registry?.updateSessionStatus(sessionId, "error", agent.state.error);
+            this.registry.updateSessionStatus(sessionId, "error", agent.state.error);
           } else {
             session.status = "done";
-            this.registry?.updateSessionStatus(sessionId, "done");
+            this.registry.updateSessionStatus(sessionId, "done");
           }
           this.handleCompletion(session);
         })
         .catch((err) => {
           session.status = "error";
           session.error = err?.message ?? String(err);
-          this.registry?.updateSessionStatus(sessionId, "error", session.error);
+          this.registry.updateSessionStatus(sessionId, "error", session.error);
           this.handleCompletion(session);
         });
 
+      this.sessionResults.set(sessionId, session.promise.then(() => this.buildResultFromSession(session)));
       this.activeSessions.set(sessionId, session);
 
       resumed.push({
@@ -733,7 +751,7 @@ export class SubagentManager {
     return resumed;
   }
 
-  /** Get all sessions. */
+  /** Get all active (running) sessions. Completed sessions are not listed — use result() or progress(). */
   status(): SessionInfo[] {
     return Array.from(this.activeSessions.values()).map((s) => ({
       sessionId: s.sessionId,
@@ -781,7 +799,7 @@ export class SubagentManager {
     const registered = this.agents.get(name);
     return registered?.definition;
   }
-  /** Return the total number of sessions (active + completed). */
+  /** Return the number of active (running) sessions. */
   getSessionCount(): number {
     return this.activeSessions.size;
   }
@@ -791,29 +809,51 @@ export class SubagentManager {
     return this.status().filter((s) => s.agent === name);
   }
 
-  /** Get last N messages from a session. */
+  /** Get last N messages from a session.
+   *  Falls back to archived JSONL for completed sessions.
+   *  Throws if session not found.
+   */
   progress(sessionId: string, limit?: number): AgentMessage[] {
     const session = this.activeSessions.get(sessionId);
-    if (!session) return [];
-    const messages = session.agent.state.messages;
+    let messages: AgentMessage[];
+    if (session) {
+      messages = session.agent.state.messages;
+    } else {
+      const persisted = this.registry.getRegistry().sessions[sessionId];
+      if (!persisted) {
+        throw new Error(`Session "${sessionId}" not found`);
+      }
+      messages = readArchivedSessionMessages(this.registry.persistDir, sessionId);
+    }
     if (limit === undefined) return messages.slice();
     if (limit <= 0) return [];
     return messages.slice(-limit);
   }
 
-  /** Get result of a completed session. */
-  result(sessionId: string): TaskResult | null {
+  /** Get result of a completed session.
+   *  Throws if session not found or still running.
+   */
+  result(sessionId: string): TaskResult {
     const session = this.activeSessions.get(sessionId);
-    if (!session) return null;
-    if (session.status === "running") return null;
+    if (session) {
+      if (session.status === "running") {
+        throw new Error(`Session "${sessionId}" is still running`);
+      }
+      return this.buildResultFromSession(session);
+    }
+    // Not active — check registry for completed session
+    return this.resultFromArchive(sessionId);
+  }
 
+  /** Build a TaskResult from an ActiveSession object (which may have been removed from the map). */
+  private buildResultFromSession(session: ActiveSession): TaskResult {
     const messages = session.agent.state.messages;
     return {
       sessionId: session.sessionId,
-      status: session.status === "interrupted" ? "error" : session.status,
+      status: session.status === "interrupted" ? "error" : session.status as "done" | "error",
       lastAssistantText: extractLastAssistantText(messages),
       messages: messages.slice(),
-      duration: formatDuration(Date.now() - session.startedAt),
+      duration: formatDuration((session.status !== "running" ? Date.now() : Date.now()) - session.startedAt),
       outputDir: session.outputDir,
       error: session.error,
       turnsUsed: session.turnCount,
@@ -821,77 +861,55 @@ export class SubagentManager {
     };
   }
 
-  /** Cancel a running session. */
+  /** Build a TaskResult from archived persistence data.
+   *  Throws if session not found in registry.
+   */
+  private resultFromArchive(sessionId: string): TaskResult {
+    const persisted = this.registry.getRegistry().sessions[sessionId];
+    if (!persisted) {
+      throw new Error(`Session "${sessionId}" not found`);
+    }
+    if (persisted.status === "running") {
+      throw new Error(`Session "${sessionId}" is still running (stale registry entry)`);
+    }
+    const messages = readArchivedSessionMessages(this.registry.persistDir, sessionId);
+    const duration = persisted.endedAt
+      ? formatDuration(persisted.endedAt - persisted.startedAt)
+      : formatDuration(Date.now() - persisted.startedAt);
+    return {
+      sessionId,
+      status: persisted.status === "interrupted" ? "error" : persisted.status as "done" | "error",
+      lastAssistantText: extractLastAssistantText(messages),
+      messages,
+      duration,
+      outputDir: sessionOutputDir(this.registry.persistDir, sessionId),
+      error: persisted.error,
+    };
+  }
+
+  /** Cancel a running session and all its children (cascading). No-op if session not found or already completed. */
   cancel(sessionId: string): void {
     const session = this.activeSessions.get(sessionId);
     if (!session || session.status !== "running") return;
+
+    // Cancel children first (depth-first)
+    for (const child of this.activeSessions.values()) {
+      if (child.parentSessionId === sessionId && child.status === "running") {
+        this.cancel(child.sessionId);
+      }
+    }
+
     session.agent.abort();
   }
 
-  /** Send a follow-up message to a completed session. Resumes the same Agent. Non-blocking.
-   *  Includes full lifecycle management: persistence subscription, registry update,
-   *  memory append, and archival on completion.
+  /** Steer a running session mid-run.
+   *  Throws if session not found or not running.
    */
-  send(sessionId: string, message: string): boolean {
+  steer(sessionId: string, message: string): "steered" | "queued" {
     const session = this.activeSessions.get(sessionId);
-    if (!session) return false;
-    if (session.status === "running") return false;
-
-    session.status = "running";
-    session.error = undefined;
-
-    // Recreate the session directory — handleCompletion() archives it to history/,
-    // so the sessions/<id>/ path no longer exists. We need it back for JSONL persistence.
-    if (this.registry) {
-      ensureSessionDir(this.registry.persistDir, sessionId);
-      // Restore previously archived JSONL so new messages are appended cumulatively
-      restoreSessionFromArchive(this.registry.persistDir, sessionId);
+    if (!session || session.status !== "running") {
+      throw new Error(`Session "${sessionId}" not found or not running`);
     }
-
-    // Clean up old persistence subscription before re-subscribing to avoid leaked listeners
-    session.unsubscribe?.();
-    session.unsubscribeTurnLimit?.();
-
-    // Re-subscribe for JSONL persistence (previous subscription was cleaned up on completion)
-    this.subscribeForPersistence(session);
-
-    // Re-subscribe for turn limit (turnCount carries over from previous run)
-    this.subscribeForTurnLimit(session);
-
-    // Update registry status back to running
-    this.registry?.updateSessionStatus(sessionId, "running");
-
-    // Look up timeoutMs from the agent definition
-    const registered = this.agents.get(session.agentName);
-    const timeoutMs = registered?.definition.timeoutMs;
-    this.setupTimeout(session, timeoutMs);
-
-    session.promise = session.agent.prompt(message)
-      .then(() => {
-        if (session.agent.state.error) {
-          session.status = "error";
-          session.error = session.agent.state.error;
-          this.registry?.updateSessionStatus(sessionId, "error", session.agent.state.error);
-        } else {
-          session.status = "done";
-          this.registry?.updateSessionStatus(sessionId, "done");
-        }
-        this.handleCompletion(session);
-      })
-      .catch((err) => {
-        session.status = "error";
-        session.error = err?.message ?? String(err);
-        this.registry?.updateSessionStatus(sessionId, "error", session.error);
-        this.handleCompletion(session);
-      });
-
-    return true;
-  }
-
-  /** Steer a running session mid-run. */
-  steer(sessionId: string, message: string): "steered" | "queued" | "not_running" {
-    const session = this.activeSessions.get(sessionId);
-    if (!session || session.status !== "running") return "not_running";
     if (session.agent.state.isStreaming) {
       session.agent.steer({
         role: "user",
@@ -908,19 +926,28 @@ export class SubagentManager {
     return "queued";
   }
 
-  /** Subscribe to agent events for a session. Returns unsubscribe function. */
-  subscribe(sessionId: string, fn: (e: AgentEvent) => void): (() => void) | null {
+  /** Subscribe to agent events for a running session. Returns unsubscribe function.
+   *  Throws if session not found or not running.
+   */
+  subscribe(sessionId: string, fn: (e: AgentEvent) => void): () => void {
     const session = this.activeSessions.get(sessionId);
-    if (!session) return null;
+    if (!session) {
+      throw new Error(`Session "${sessionId}" not found or not running`);
+    }
     return session.agent.subscribe(fn);
   }
 
-  /** Wait for a session to finish. */
-  async waitFor(sessionId: string): Promise<TaskResult | null> {
-    const session = this.activeSessions.get(sessionId);
-    if (!session) return null;
-    await session.promise;
-    return this.result(sessionId);
+  /** Wait for a session to finish. Returns result.
+   *  Throws if session not found (neither active nor in registry).
+   */
+  async waitFor(sessionId: string): Promise<TaskResult> {
+    // Check the result promise first — works even if session already completed
+    const resultPromise = this.sessionResults.get(sessionId);
+    if (resultPromise) {
+      return resultPromise;
+    }
+    // Not started by this manager instance — check archive
+    return this.resultFromArchive(sessionId);
   }
 
   // ── Path accessors ───────────────────────────────────────────────────
@@ -948,9 +975,8 @@ export class SubagentManager {
     return join(agentDir, "workflows");
   }
 
-  /** Get the memory JSONL path for an agent. Requires persistDir. */
-  getMemoryPath(name: string): string | undefined {
-    if (!this.registry) return undefined;
+  /** Get the memory JSONL path for an agent. */
+  getMemoryPath(name: string): string {
     return memoryPath(this.registry.persistDir, name);
   }
 
@@ -960,7 +986,6 @@ export class SubagentManager {
     if (session) return session.outputDir;
 
     // Check archived sessions in history
-    if (!this.registry) return undefined;
     const persistDir = this.registry.persistDir;
     const archivedOutputDir = join(historyDir(persistDir), sessionId, "output");
     if (existsSync(archivedOutputDir)) return archivedOutputDir;
@@ -979,7 +1004,6 @@ export class SubagentManager {
    *  and builds a tree showing the position of the target in the graph.
    */
   trace(targetId: string): SessionTrace | null {
-    if (!this.registry) return null;
     const persistDir = this.registry.persistDir;
     const registryData = this.registry.getRegistry();
 
@@ -1160,9 +1184,14 @@ export class SubagentManager {
   // ── Parent agent tool ────────────────────────────────────────────────
 
   /** Create an AgentTool that exposes sub-agent management to a parent agent. */
-  createTool(opts?: { onSessionStart?: (agent: string, sessionId: string) => void }): AgentTool<typeof SubagentToolParams> {
+  createTool(opts?: {
+    onSessionStart?: (agent: string, sessionId: string) => void;
+    /** Returns the current caller's session ID for parent→child linking. */
+    getCallerSessionId?: () => string | undefined;
+  }): AgentTool<typeof SubagentToolParams> {
     const manager = this;
     const onSessionStart = opts?.onSessionStart;
+    const getCallerSessionId = opts?.getCallerSessionId;
 
     function textResult(text: string): AgentToolResult<string> {
       return {
@@ -1178,126 +1207,116 @@ export class SubagentManager {
         "Manage sub-agents: list registered agents, run tasks, check status/progress, get results, or cancel sessions.",
       parameters: SubagentToolParams,
       execute: async (_toolCallId, params) => {
-        switch (params.action) {
-          case "list": {
-            const agents = Array.from(manager.agents.values()).map((a) => {
-              const def = a.definition;
-              return {
-                name: def.name,
-                description: def.description,
-                domain: def.domain,
-                sessions: manager.sessions(def.name),
-              };
-            });
-            return textResult(JSON.stringify(agents, null, 2));
-          }
-
-          case "run": {
-            if (!params.agent || !params.task) {
-              return textResult(JSON.stringify({ error: "action 'run' requires 'agent' and 'task'" }));
+        try {
+          switch (params.action) {
+            case "list": {
+              const agents = Array.from(manager.agents.values()).map((a) => {
+                const def = a.definition;
+                return {
+                  name: def.name,
+                  description: def.description,
+                  domain: def.domain,
+                  sessions: manager.sessions(def.name),
+                };
+              });
+              return textResult(JSON.stringify(agents, null, 2));
             }
-            try {
-              const sessionId = manager.run(params.agent, params.task);
+
+            case "run": {
+              if (!params.agent || !params.task) {
+                return textResult(JSON.stringify({ error: "action 'run' requires 'agent' and 'task'" }));
+              }
+              const parentSid = getCallerSessionId?.();
+              const sessionId = manager.run(params.agent, params.task, parentSid ? { parentSessionId: parentSid } : undefined);
               onSessionStart?.(params.agent, sessionId);
               return textResult(JSON.stringify({ sessionId }));
-            } catch (err: unknown) {
-              const msg = err instanceof Error ? err.message : String(err);
-              return textResult(JSON.stringify({ error: msg }));
             }
-          }
 
-          case "status": {
-            if (!params.sessionId) {
-              return textResult(JSON.stringify({ error: "action 'status' requires 'sessionId'" }));
+            case "status": {
+              if (!params.sessionId) {
+                return textResult(JSON.stringify({ error: "action 'status' requires 'sessionId'" }));
+              }
+              const allSessions = manager.status();
+              const session = allSessions.find((s) => s.sessionId === params.sessionId);
+              if (!session) {
+                return textResult(JSON.stringify({ error: `Session "${params.sessionId}" not found or not running` }));
+              }
+              return textResult(JSON.stringify(session, null, 2));
             }
-            const allSessions = manager.status();
-            const session = allSessions.find((s) => s.sessionId === params.sessionId);
-            if (!session) {
-              return textResult(JSON.stringify({ error: `Session "${params.sessionId}" not found` }));
-            }
-            return textResult(JSON.stringify(session, null, 2));
-          }
 
-          case "progress": {
-            if (!params.sessionId) {
-              return textResult(JSON.stringify({ error: "action 'progress' requires 'sessionId'" }));
+            case "progress": {
+              if (!params.sessionId) {
+                return textResult(JSON.stringify({ error: "action 'progress' requires 'sessionId'" }));
+              }
+              const messages = manager.progress(params.sessionId, params.limit);
+              // Return a simplified view of messages for the parent agent
+              const simplified = messages.map((m) => ({
+                role: m.role,
+                content: m.content,
+              }));
+              return textResult(JSON.stringify(simplified, null, 2));
             }
-            const messages = manager.progress(params.sessionId, params.limit);
-            if (messages.length === 0) {
-              return textResult(JSON.stringify({ error: `Session "${params.sessionId}" not found or no messages` }));
-            }
-            // Return a simplified view of messages for the parent agent
-            const simplified = messages.map((m) => ({
-              role: m.role,
-              content: m.content,
-            }));
-            return textResult(JSON.stringify(simplified, null, 2));
-          }
 
-          case "result": {
-            if (!params.sessionId) {
-              return textResult(JSON.stringify({ error: "action 'result' requires 'sessionId'" }));
+            case "result": {
+              if (!params.sessionId) {
+                return textResult(JSON.stringify({ error: "action 'result' requires 'sessionId'" }));
+              }
+              const taskResult = manager.result(params.sessionId);
+              // Return result without the full messages array (too large for tool output)
+              const { messages: _msgs, ...resultWithoutMessages } = taskResult;
+              return textResult(JSON.stringify(resultWithoutMessages, null, 2));
             }
-            const taskResult = manager.result(params.sessionId);
-            if (!taskResult) {
-              return textResult(JSON.stringify({ error: `Session "${params.sessionId}" not found or still running` }));
-            }
-            // Return result without the full messages array (too large for tool output)
-            const { messages: _msgs, ...resultWithoutMessages } = taskResult;
-            return textResult(JSON.stringify(resultWithoutMessages, null, 2));
-          }
 
-          case "cancel": {
-            if (!params.sessionId) {
-              return textResult(JSON.stringify({ error: "action 'cancel' requires 'sessionId'" }));
+            case "cancel": {
+              if (!params.sessionId) {
+                return textResult(JSON.stringify({ error: "action 'cancel' requires 'sessionId'" }));
+              }
+              manager.cancel(params.sessionId);
+              return textResult(JSON.stringify({ cancelled: params.sessionId }));
             }
-            manager.cancel(params.sessionId);
-            return textResult(JSON.stringify({ cancelled: params.sessionId }));
-          }
 
-          case "waitFor": {
-            if (!params.sessionId) {
-              return textResult(JSON.stringify({ error: "action 'waitFor' requires 'sessionId'" }));
+            case "waitFor": {
+              if (!params.sessionId) {
+                return textResult(JSON.stringify({ error: "action 'waitFor' requires 'sessionId'" }));
+              }
+              const taskResult = await manager.waitFor(params.sessionId);
+              const { messages: _msgs, ...resultWithoutMessages } = taskResult;
+              return textResult(JSON.stringify(resultWithoutMessages, null, 2));
             }
-            const taskResult = await manager.waitFor(params.sessionId);
-            if (!taskResult) {
-              return textResult(JSON.stringify({ error: `Session "${params.sessionId}" not found` }));
-            }
-            const { messages: _msgs, ...resultWithoutMessages } = taskResult;
-            return textResult(JSON.stringify(resultWithoutMessages, null, 2));
-          }
 
-          case "delegate": {
-            if (!params.agent) {
-              return textResult(JSON.stringify({ error: "action 'delegate' requires 'agent'" }));
+            case "delegate": {
+              if (!params.agent) {
+                return textResult(JSON.stringify({ error: "action 'delegate' requires 'agent'" }));
+              }
+              if (!params.task) {
+                return textResult(JSON.stringify({ error: "action 'delegate' requires 'task'" }));
+              }
+              const delegateParentSid = getCallerSessionId?.();
+              const delegateSessionId = manager.run(params.agent, params.task, delegateParentSid ? { parentSessionId: delegateParentSid } : undefined);
+              onSessionStart?.(params.agent, delegateSessionId);
+              const delegateResult = await manager.waitFor(delegateSessionId);
+              const { messages: _delegateMsgs, ...delegateWithoutMessages } = delegateResult;
+              return textResult(JSON.stringify(delegateWithoutMessages, null, 2));
             }
-            if (!params.task) {
-              return textResult(JSON.stringify({ error: "action 'delegate' requires 'task'" }));
-            }
-            const delegateSessionId = manager.run(params.agent, params.task);
-            onSessionStart?.(params.agent, delegateSessionId);
-            const delegateResult = await manager.waitFor(delegateSessionId);
-            if (!delegateResult) {
-              return textResult(JSON.stringify({ error: `Session "${delegateSessionId}" disappeared` }));
-            }
-            const { messages: _delegateMsgs, ...delegateWithoutMessages } = delegateResult;
-            return textResult(JSON.stringify(delegateWithoutMessages, null, 2));
-          }
 
-          case "trace": {
-            if (!params.sessionId) {
-              return textResult(JSON.stringify({ error: "action 'trace' requires 'sessionId' (session ID or workflow run ID)" }));
+            case "trace": {
+              if (!params.sessionId) {
+                return textResult(JSON.stringify({ error: "action 'trace' requires 'sessionId' (session ID or workflow run ID)" }));
+              }
+              const traceResult = manager.trace(params.sessionId);
+              if (!traceResult) {
+                return textResult(JSON.stringify({ error: `No trace found for "${params.sessionId}". Requires persistence (persistDir) and a valid session or workflow run ID.` }));
+              }
+              return textResult(JSON.stringify(traceResult, null, 2));
             }
-            const traceResult = manager.trace(params.sessionId);
-            if (!traceResult) {
-              return textResult(JSON.stringify({ error: `No trace found for "${params.sessionId}". Requires persistence (persistDir) and a valid session or workflow run ID.` }));
-            }
-            return textResult(JSON.stringify(traceResult, null, 2));
-          }
 
-          default: {
-            return textResult(JSON.stringify({ error: `Unknown action: ${params.action}` }));
+            default: {
+              return textResult(JSON.stringify({ error: `Unknown action: ${params.action}` }));
+            }
           }
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : String(err);
+          return textResult(JSON.stringify({ error: msg }));
         }
       },
     };

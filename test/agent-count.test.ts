@@ -1,4 +1,7 @@
 import { describe, it, expect } from "vitest";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { mkdtempSync, rmSync } from "node:fs";
 import { SubagentManager } from "../src/manager.js";
 import type { Model } from "@mariozechner/pi-ai";
 
@@ -31,12 +34,12 @@ function registerAgent(manager: SubagentManager, name: string) {
 
 describe("SubagentManager.agentCount()", () => {
   it("returns 0 when no agents are registered", () => {
-    const manager = new SubagentManager();
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
     expect(manager.agentCount()).toBe(0);
   });
 
   it("returns the correct count after registering multiple agents", () => {
-    const manager = new SubagentManager();
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
     registerAgent(manager, "alpha");
     expect(manager.agentCount()).toBe(1);
 
@@ -48,7 +51,7 @@ describe("SubagentManager.agentCount()", () => {
   });
 
   it("does not double-count when re-registering the same agent name", () => {
-    const manager = new SubagentManager();
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
     registerAgent(manager, "alpha");
     registerAgent(manager, "alpha");
     expect(manager.agentCount()).toBe(1);

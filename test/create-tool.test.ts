@@ -339,9 +339,9 @@ describe("createTool()", () => {
     });
   });
 
-  describe("without persistDir", () => {
-    it("works without persistence", async () => {
-      const mgr = new SubagentManager(); // no persistDir
+  describe("basic functionality", () => {
+    it("works with createTool", async () => {
+      const mgr = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
       mgr.register({
         name: "ephemeral",
         description: "Test agent",
@@ -369,14 +369,12 @@ describe("createTool()", () => {
       const { sessionId } = JSON.parse(runResult.content[0].type === "text" ? runResult.content[0].text : "");
       expect(sessionId).toBeDefined();
 
-      await mgr.waitFor(sessionId);
-
-      // result
-      const resultResult = await tool.execute("tc3", {
-        action: "result" as const,
+      // waitFor (result action requires waiting since sessions are removed on completion)
+      const waitResult = await tool.execute("tc3", {
+        action: "waitFor" as const,
         sessionId,
       });
-      const taskResult = JSON.parse(resultResult.content[0].type === "text" ? resultResult.content[0].text : "");
+      const taskResult = JSON.parse(waitResult.content[0].type === "text" ? waitResult.content[0].text : "");
       expect(taskResult.sessionId).toBe(sessionId);
     });
   });
@@ -424,12 +422,12 @@ describe("createTool()", () => {
 
 describe("listAgents()", () => {
   it("returns empty array when no agents registered", () => {
-    const manager = new SubagentManager();
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
     expect(manager.listAgents()).toEqual([]);
   });
 
   it("returns correct { name, description, domain } for registered agents", () => {
-    const manager = new SubagentManager();
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
     registerTestAgents(manager);
 
     const agents = manager.listAgents();
@@ -451,7 +449,7 @@ describe("listAgents()", () => {
   });
 
   it("does NOT include session info (simpler than status/list)", () => {
-    const manager = new SubagentManager();
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
     registerTestAgents(manager);
 
     const agents = manager.listAgents();

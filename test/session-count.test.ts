@@ -1,4 +1,7 @@
 import { describe, it, expect } from "vitest";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { mkdtempSync, rmSync } from "node:fs";
 import { SubagentManager } from "../src/manager.js";
 import type { Model } from "@mariozechner/pi-ai";
 
@@ -31,37 +34,39 @@ function registerAgent(manager: SubagentManager, name: string) {
 
 describe("SubagentManager.getSessionCount()", () => {
   it("returns 0 when no sessions have been created", () => {
-    const manager = new SubagentManager();
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
     expect(manager.getSessionCount()).toBe(0);
   });
 
   it("returns 1 after a single session is started", () => {
-    const manager = new SubagentManager();
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
     registerAgent(manager, "alpha");
     manager.run("alpha", "do something");
     expect(manager.getSessionCount()).toBe(1);
   });
 
-  it("counts completed sessions as well as active ones", async () => {
-    const manager = new SubagentManager();
+  it("completed sessions are removed from active count", async () => {
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
     registerAgent(manager, "alpha");
 
     const s1 = manager.run("alpha", "task one");
-    await manager.waitFor(s1);
-
-    // s1 is now completed but should still be counted
     expect(manager.getSessionCount()).toBe(1);
 
-    // Start a second session — total should be 2
+    await manager.waitFor(s1);
+
+    // s1 completed and was removed from activeSessions
+    expect(manager.getSessionCount()).toBe(0);
+
+    // Start a second session
     const s2 = manager.run("alpha", "task two");
-    expect(manager.getSessionCount()).toBe(2);
+    expect(manager.getSessionCount()).toBe(1);
 
     await manager.waitFor(s2);
-    expect(manager.getSessionCount()).toBe(2);
+    expect(manager.getSessionCount()).toBe(0);
   });
 
-  it("counts sessions across multiple agents", async () => {
-    const manager = new SubagentManager();
+  it("counts only running sessions across multiple agents", async () => {
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
     registerAgent(manager, "alpha");
     registerAgent(manager, "beta");
 
@@ -75,7 +80,7 @@ describe("SubagentManager.getSessionCount()", () => {
     await manager.waitFor(s2);
     await manager.waitFor(s3);
 
-    // All completed — count should still be 3
-    expect(manager.getSessionCount()).toBe(3);
+    // All completed — removed from active sessions
+    expect(manager.getSessionCount()).toBe(0);
   });
 });

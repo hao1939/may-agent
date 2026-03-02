@@ -63,8 +63,9 @@ function readOnlyExec() {
       // Block file-writing commands
       /\bsed\s+-i\b/,                         // sed -i (in-place edit)
       /\bcat\s*>[^&]/,                          // cat > file (but not cat >&)
+      /<<\s*['"]?\w+['"]?/,                     // heredoc (cat << EOF, cat <<'EOF')
       /\btee\s/,                                // tee file
-      /\b(echo|printf)\b.*>>[^&]/,             // echo >> file
+      /\b(echo|printf)\b.*>{1,2}[^&]/,        // echo > file or echo >> file
       /\bmv\s|\bcp\s|\brm\s/,                  // mv, cp, rm (followed by space)
       /\bmkdir\b/,                             // mkdir
       /\btouch\b/,                             // touch
@@ -113,6 +114,7 @@ manager.register({
     onSessionStart: (agent, sessionId) => {
       attachAgentEvents(agent, sessionId);
     },
+    getCallerSessionId: () => sid,
   })],
   apiKey: "not-needed",
   maxTurns: 20,
@@ -165,7 +167,7 @@ function startSession(task: string): string {
 async function waitForCompletion(sessionId: string): Promise<void> {
   const result = await manager.waitFor(sessionId);
 
-  if (result?.status === "error" && result.error) {
+  if (result.status === "error" && result.error) {
     bus.emit({ type: "info", message: `Session error: ${result.error.slice(0, 200)}` });
   }
 }
@@ -175,6 +177,8 @@ async function waitForCompletion(sessionId: string): Promise<void> {
 const rl = createInterface({ input: process.stdin, output: process.stdout });
 let closed = false;
 rl.on("close", () => { closed = true; });
+// readline intercepts SIGINT — forward it to our graceful shutdown
+rl.on("SIGINT", () => { gracefulShutdown(); });
 
 const inputQueue: string[] = [];
 let inputWaiter: ((line: string) => void) | null = null;
@@ -201,7 +205,11 @@ bus.onCommand((cmd) => {
   switch (cmd.type) {
     case "steer":
       bus.emit({ type: "info", message: `[socket] Steering: "${cmd.message.slice(0, 80)}"` });
-      manager.send(sid, cmd.message);
+      try {
+        manager.steer(sid, cmd.message);
+      } catch {
+        bus.emit({ type: "info", message: `[socket] Cannot steer — session not running` });
+      }
       break;
     case "cancel":
       bus.emit({ type: "info", message: `[socket] Cancel: ${cmd.sessionId}` });
@@ -213,6 +221,18 @@ bus.onCommand((cmd) => {
         if (s.status === "running") manager.cancel(s.sessionId);
       }
       break;
+    case "status": {
+      const sessions = manager.status();
+      if (sessions.length === 0) {
+        bus.emit({ type: "info", message: "[status] No active sessions" });
+      } else {
+        const lines = sessions.map((s) =>
+          `  ${s.agent} (${s.sessionId}): ${s.status} — "${s.task.slice(0, 80)}" [${s.runtime}]`
+        );
+        bus.emit({ type: "info", message: `[status] ${sessions.length} active session(s):\n${lines.join("\n")}` });
+      }
+      break;
+    }
     case "input":
       inputQueue.push(cmd.message);
       if (inputWaiter) {
@@ -224,27 +244,59 @@ bus.onCommand((cmd) => {
   }
 });
 
+// ── Graceful shutdown ──────────────────────────────────────────────────
+
+let shuttingDown = false;
+
+function gracefulShutdown() {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  bus.emit({ type: "info", message: "Shutting down — cancelling active sessions..." });
+  if (sid) {
+    manager.cancel(sid); // cascades to all children
+  }
+  // Give handleCompletion a moment to archive, then exit
+  setTimeout(() => process.exit(0), 2000);
+}
+
+process.on("SIGINT", gracefulShutdown);
+process.on("SIGTERM", gracefulShutdown);
+
 // ── Startup ────────────────────────────────────────────────────────────
 
-// Always clean up stale sessions on start
-const stale = manager.cleanupStaleSessions();
-if (stale.length > 0) {
-  bus.emit({ type: "info", message: `Cleaned up ${stale.length} stale session(s)` });
-}
+// Try to resume May's session from a previous process crash/stop
+const resumed = manager.resumeAgent("may");
 
-const cliTask = process.argv.slice(2).join(" ");
-let firstMessage: string;
+if (resumed) {
+  const { resumed: resumedSession, interrupted } = resumed;
+  sid = resumedSession.sessionId;
+  attachAgentEvents("may", sid);
 
-if (cliTask) {
-  firstMessage = cliTask;
+  bus.emit({ type: "info", message: `Resumed session ${sid} (task: "${resumedSession.task.slice(0, 80)}")` });
+  if (interrupted.length > 0) {
+    bus.emit({ type: "info", message: `${interrupted.length} sub-agent session(s) marked as interrupted` });
+  }
 } else {
-  process.stdout.write("\nyou> ");
-  const input = await waitForInput();
-  if (!input) { rl.close(); process.exit(0); }
-  firstMessage = input;
-}
+  // No session to resume — start fresh
+  const stale = manager.cleanupStaleSessions();
+  if (stale.length > 0) {
+    bus.emit({ type: "info", message: `Cleaned up ${stale.length} stale session(s)` });
+  }
 
-sid = startSession(firstMessage);
+  const cliTask = process.argv.slice(2).join(" ");
+  let firstMessage: string;
+
+  if (cliTask) {
+    firstMessage = cliTask;
+  } else {
+    process.stdout.write("\nyou> ");
+    const input = await waitForInput();
+    if (!input) { rl.close(); process.exit(0); }
+    firstMessage = input;
+  }
+
+  sid = startSession(firstMessage);
+}
 
 const socketUI = attachSocketUI({
   socketPath: SOCKET_PATH,
@@ -262,11 +314,7 @@ while (!closed) {
   const input = await waitForInput();
   if (!input || input === "exit" || input === "quit") break;
 
-  const sent = manager.send(sid, input);
-  if (!sent) {
-    bus.emit({ type: "info", message: "Session ended. Starting new session." });
-    sid = startSession(input);
-  }
+  sid = startSession(input);
   await waitForCompletion(sid);
 }
 

@@ -1,4 +1,7 @@
 import { describe, it, expect } from "vitest";
+import { mkdtempSync } from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { SubagentManager } from "../src/manager.js";
 import type { Model } from "@mariozechner/pi-ai";
 
@@ -31,12 +34,12 @@ function registerAgent(manager: SubagentManager, name: string) {
 
 describe("SubagentManager.hasAgent()", () => {
   it("returns false when no agents are registered", () => {
-    const manager = new SubagentManager();
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
     expect(manager.hasAgent("anything")).toBe(false);
   });
 
   it("returns true for a registered agent and false for an unregistered one", () => {
-    const manager = new SubagentManager();
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
     registerAgent(manager, "alpha");
     registerAgent(manager, "beta");
 
@@ -46,7 +49,7 @@ describe("SubagentManager.hasAgent()", () => {
   });
 
   it("returns true after re-registering an agent", () => {
-    const manager = new SubagentManager();
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
     registerAgent(manager, "alpha");
     expect(manager.hasAgent("alpha")).toBe(true);
 

@@ -1,4 +1,7 @@
 import { describe, it, expect } from "vitest";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { mkdtempSync, rmSync } from "node:fs";
 import { SubagentManager } from "../src/manager.js";
 import type { SubagentDefinition } from "../src/types.js";
 import type { Model } from "@mariozechner/pi-ai";
@@ -33,7 +36,7 @@ function makeDef(overrides: Partial<SubagentDefinition> = {}): SubagentDefinitio
 
 describe("SubagentManager.getAgentDefinition()", () => {
   it("returns the definition for a registered agent", () => {
-    const manager = new SubagentManager();
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
     const def = makeDef({ name: "coder" });
     manager.register(def);
 
@@ -43,7 +46,7 @@ describe("SubagentManager.getAgentDefinition()", () => {
   });
 
   it("returns undefined for a name that was never registered", () => {
-    const manager = new SubagentManager();
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
     manager.register(makeDef({ name: "alpha" }));
 
     const result = manager.getAgentDefinition("nonexistent");
@@ -51,7 +54,7 @@ describe("SubagentManager.getAgentDefinition()", () => {
   });
 
   it("returns correct fields matching the originally registered definition", () => {
-    const manager = new SubagentManager();
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
     const def = makeDef({
       name: "builder",
       description: "Builds things",
@@ -76,7 +79,7 @@ describe("SubagentManager.getAgentDefinition()", () => {
   });
 
   it("returns the latest definition when an agent is re-registered", () => {
-    const manager = new SubagentManager();
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
     manager.register(makeDef({ name: "agent-x", description: "Version 1" }));
     expect(manager.getAgentDefinition("agent-x")!.description).toBe("Version 1");
 
@@ -87,7 +90,7 @@ describe("SubagentManager.getAgentDefinition()", () => {
   });
 
   it("returns SubagentDefinition | undefined (type safety)", () => {
-    const manager = new SubagentManager();
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
     manager.register(makeDef({ name: "typed" }));
 
     // Found case: result is SubagentDefinition

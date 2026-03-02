@@ -149,7 +149,7 @@ function buildMaintenanceResponse(opts: {
  * so no real LLM call is made.  The evaluator agent returns `responseText`.
  */
 function mockManager(responseText: string): SubagentManager {
-  const manager = new SubagentManager();
+  const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
   const fakeSessionId = "eval_mock_1";
 
   vi.spyOn(manager, "run").mockReturnValue(fakeSessionId);
@@ -169,7 +169,7 @@ function mockManager(responseText: string): SubagentManager {
  * Create a mock SubagentManager that returns null lastAssistantText.
  */
 function mockManagerNullText(): SubagentManager {
-  const manager = new SubagentManager();
+  const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
   const fakeSessionId = "eval_null_text";
 
   vi.spyOn(manager, "run").mockReturnValue(fakeSessionId);
