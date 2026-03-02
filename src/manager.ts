@@ -766,6 +766,11 @@ export class SubagentManager {
   }
 
 
+  /** Check whether an agent with the given name is registered. */
+  hasAgent(name: string): boolean {
+    return this.agents.has(name);
+  }
+
   /** Get the full definition for a registered agent, or undefined if not registered. */
   getAgentDefinition(name: string): SubagentDefinition | undefined {
     const registered = this.agents.get(name);
