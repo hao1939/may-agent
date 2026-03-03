@@ -17,6 +17,7 @@ import {
   readMemoryEntries,
   memoryPath,
   archiveSession,
+  restoreSessionFromArchive,
   historyDir,
   readWorkflowRun,
   listWorkflowRuns,
@@ -26,6 +27,7 @@ import type { MemoryEntry, WorkflowRun, PersistedSession, Registry } from "./per
 import type { TraceNode, SessionTrace } from "./workflow.js";
 import { join, dirname } from "node:path";
 import { isOverflowError, extractProgress, writeProgressFile } from "./overflow.js";
+import { buildProjectStructure } from "./tools.js";
 
 let nextId = 0;
 /**
@@ -265,6 +267,14 @@ export class SubagentManager {
       sections.push(envLines.join("\n"));
     }
 
+    // Project structure — eliminates find/ls discovery calls
+    if (def.projectRoot && def.projectStructure !== false) {
+      const depth = typeof def.projectStructure === "number" ? def.projectStructure : 2;
+      const structure = buildProjectStructure(def.projectRoot, depth);
+      if (structure) {
+        sections.push(`# Project Structure\n\`\`\`\n${structure}\n\`\`\``);
+      }
+    }
     // Load systemPromptFiles
     if (def.systemPromptFiles && def.systemPromptFiles.length > 0) {
       const fileContents = def.systemPromptFiles.map((filePath) =>
@@ -605,7 +615,7 @@ export class SubagentManager {
    *
    * Returns null if the agent has no "running" or "idle" session to resume.
    */
-  resumeAgent(agentName: string): { resumed: SessionInfo | null; interrupted: SessionInfo[] } | null {
+  resumeAgent(agentName: string): { resumed: SessionInfo; interrupted: SessionInfo[] } {
     const registryData = this.registry.getRegistry();
     const persistDir = this.registry.persistDir;
 
@@ -624,7 +634,21 @@ export class SubagentManager {
       }
     }
 
-    // Mark all non-target running sessions as interrupted
+    if (!targetSessionId || !targetPersisted) {
+      // No running session for this agent — don't touch other sessions
+      this.cleanupStaleWorkflowRuns();
+      throw new Error(`No running/idle session for "${agentName}" in registry`);
+    }
+
+    // Find matching registered agent
+    const registered = this.agents.get(agentName);
+    if (!registered) {
+      this.registry.updateSessionStatus(targetSessionId, "interrupted", "Agent not registered");
+      this.cleanupStaleWorkflowRuns();
+      throw new Error(`Agent "${agentName}" has session "${targetSessionId}" in registry but is not registered in this process`);
+    }
+
+    // Target found and registered — now interrupt other running sessions
     const interrupted: SessionInfo[] = [];
     for (const { sessionId, persisted } of otherRunning) {
       this.registry.updateSessionStatus(sessionId, "interrupted", "Process restarted");
@@ -641,21 +665,10 @@ export class SubagentManager {
       });
     }
 
-    if (!targetSessionId || !targetPersisted) {
-      // No running session for this agent — still clean up others
-      this.cleanupStaleWorkflowRuns();
-      return interrupted.length > 0 ? { resumed: null, interrupted } : null;
-    }
-
-    // Find matching registered agent
-    const registered = this.agents.get(agentName);
-    if (!registered) {
-      this.registry.updateSessionStatus(targetSessionId, "interrupted", "Agent not registered");
-      this.cleanupStaleWorkflowRuns();
-      return null;
-    }
-
     const def = registered.definition;
+    // Restore session JSONL from history archive if it was archived by a previous process
+    ensureSessionDir(persistDir, targetSessionId);
+    restoreSessionFromArchive(persistDir, targetSessionId);
     const savedMessages = readSessionMessages(persistDir, targetSessionId);
     const systemPrompt = this.resolveSystemPrompt(def, agentName, targetSessionId, persistDir);
     const outputDir = sessionOutputDir(persistDir, targetSessionId);

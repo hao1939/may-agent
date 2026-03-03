@@ -211,9 +211,8 @@ describe("persistent sessions", () => {
     manager2.register(baseDef());
 
     const result = manager2.resumeAgent("bot");
-    expect(result).not.toBeNull();
-    expect(result!.resumed).not.toBeNull();
-    expect(result!.resumed!.sessionId).toBe("idle_session_1");
+    expect(result.resumed).not.toBeNull();
+    expect(result.resumed.sessionId).toBe("idle_session_1");
   });
 
   it("multiple send() calls accumulate context", async () => {
