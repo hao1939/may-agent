@@ -1,21 +1,31 @@
-# Shared Knowledge
+# Shared Knowledge Library
 
-Common knowledge files loaded into agents that need system-level context (May, evaluator, optimizer).
+Curated knowledge about the agent system — architecture, team, patterns. Organized
+by topic, not by consumer. See the [Knowledge Library section in system-design.md](system-design.md#shared-knowledge-library) for the design rationale.
+
+## How It Works
+
+1. **This directory is the source of truth** — versioned docs about the system
+2. **Agents include relevant docs** in their system prompt via `systemPromptFiles`
+3. **Any agent can browse** the full library at `agents/shared/` when it needs more context
+4. **The library evolves** through normal work — optimizer updates docs, design reviews identify gaps
 
 ## Documents
 
-- **system-design.md** — Conceptual architecture: what agents are, how they collaborate, design principles (no silent failures, run first then design, role-based evaluation), the optimization loop, fix hierarchy, session lifecycle.
+### Architecture
+- **[system-design.md](system-design.md)** — Conceptual model: what agents are, collaboration patterns, design principles, optimization loop, fix hierarchy, knowledge library design, session lifecycle
 
-- **team.md** — Concrete team roster: which agents exist, their models/tools/turn limits, model assignment strategy, available workflows, automation (post-task eval, idle optimizer, hot-reload, compaction, turn warnings), structural constraints.
+### Team
+- **[team.md](team.md)** — Concrete roster: agents, models, tools, turn limits, workflows, automation, structural constraints
 
-## Who Gets These
+## Inclusion
 
-| Agent | system-design.md | team.md |
-|-------|:-:|:-:|
-| May | ✓ | ✓ |
-| Evaluator | ✓ | ✓ |
-| Optimizer | ✓ | ✓ |
-| Coder | — | — |
-| QA | — | — |
+| Agent | system-design | team | Why |
+|-------|:---:|:---:|-----|
+| May | ✓ | ✓ | Coordinates the team, needs full picture |
+| Evaluator | ✓ | ✓ | Scores agents, needs to understand roles and constraints |
+| Optimizer | ✓ | ✓ | Improves agents, needs to understand architecture |
+| Coder | — | — | Works on specific tasks independently |
+| QA | — | — | Reviews code independently |
 
-Coder and QA don't need system-level context — they receive specific tasks and work independently.
+All agents can `read agents/shared/` during a session if they need additional context.

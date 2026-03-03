@@ -193,6 +193,32 @@ Agent knowledge (domain.md, lessons.md) is read fresh at the start of each sessi
 Changes take effect on the next session without restarting the system. This means
 the optimizer's changes are immediately active.
 
+### Shared Knowledge Library
+
+The system maintains a shared knowledge library — a curated collection of documents
+about the system's architecture, team composition, and common patterns. It serves
+three purposes:
+
+1. **Common ground** — Agents that need system-level context (May, evaluator,
+   optimizer) share the same understanding of how things work, what exists, and
+   what the constraints are. Without this, each agent builds its own mental model
+   from scratch every session.
+
+2. **Selective inclusion** — Not every agent needs every document. Each agent's
+   system prompt includes only the docs relevant to its role. Coder and QA don't
+   need to know how the optimization loop works — they just need their task. May,
+   evaluator, and optimizer do need that context to make good decisions.
+
+3. **Living documentation** — The library evolves with the system. When agents are
+   added, models change, or workflows are restructured, the relevant docs get
+   updated. The optimizer can update shared docs as part of its improvement work.
+   Design reviews can identify gaps. The library stays accurate because it's
+   maintained as part of normal operation, not as an afterthought.
+
+The library is organized by topic (architecture, team details, patterns) rather
+than by consumer. Agents browse the library when they need context beyond what's
+in their prompt — the full library is always accessible via the filesystem.
+
 ### Evaluation Data
 
 Evaluations are saved per session ID. Each contains:
