@@ -151,14 +151,15 @@ describe("createExecTool maxOutputLength", () => {
     expect(text.length).toBeLessThan(700); // 500 for output + prefix/exit code
   });
 
-  it("includes fabrication warning in truncated exec output", async () => {
+  it("includes actionable truncation guidance in truncated exec output", async () => {
     const tool = createExecTool({ cwd: "/tmp", maxOutputLength: 500 });
     const result = await tool.execute("test-id", {
       command: `python3 -c "print('w' * 2000)"`,
       timeout: 10,
     });
     const text = result.content[0].type === "text" ? result.content[0].text : "";
-    expect(text).toContain("DO NOT fabricate");
+    expect(text).toContain("OUTPUT TRUNCATED");
+    expect(text).toContain("Do NOT fabricate");
   });
 });
 
@@ -183,9 +184,10 @@ describe("createReadTool maxFileLength", () => {
     const tool = createReadTool({ maxFileLength: 1000 });
     return tool.execute("test-id", { path: filePath }).then((result) => {
       const text = result.content[0].type === "text" ? result.content[0].text : "";
-      expect(text.length).toBeLessThanOrEqual(1000);
+      expect(text.length).toBeLessThanOrEqual(1100);
       expect(text).toContain("truncated");
-      expect(text).toContain("DO NOT fabricate");
+      expect(text).toContain("FILE TRUNCATED");
+      expect(text).toContain("DO NOT use the write tool");
       cleanup();
     });
   });

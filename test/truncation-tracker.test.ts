@@ -112,14 +112,15 @@ describe("linked read/write tools with truncation tracking", () => {
     // Verify tracker recorded the truncation
     expect(tools.tracker.has(join(testDir, "src/big.ts"))).toBe(true);
 
-    // Write back much shorter content (simulating data loss)
+    // Write back much shorter content (simulating data loss) — should be BLOCKED
     const writeResult = await tools.write.execute("w1", {
       path: join(testDir, "src/big.ts"),
       content: "// shortened version\n" + "y".repeat(500),
     });
     const writeText = writeResult.content[0].text;
-    expect(writeText).toContain("WARNING");
-    expect(writeText).toContain("truncation");
+    expect(writeText).toContain("BLOCKED");
+    expect(writeText).toContain("data loss");
+    expect(writeText).toContain("sed");
   });
 
   it("does NOT warn when writing a new file", async () => {
@@ -181,22 +182,30 @@ describe("linked read/write tools with truncation tracking", () => {
 
     const tools = createLinkedTools({ projectRoot: testDir, maxFileLength: 1000 });
 
-    // Read (truncated) → write (warning) → write again (no warning)
+    // Read (truncated) → write (blocked) → write with enough content (warning) → write again (no warning)
     await tools.read.execute("r1", { path: join(testDir, "src/clear.ts") });
 
-    // First write: should warn
-    const firstWrite = await tools.write.execute("w1", {
+    // First write: way too short, should be BLOCKED (doesn't clear tracker)
+    const blockedWrite = await tools.write.execute("w0", {
       path: join(testDir, "src/clear.ts"),
       content: "short",
     });
-    expect(firstWrite.content[0].text).toContain("WARNING");
+    expect(blockedWrite.content[0].text).toContain("BLOCKED");
 
-    // Second write: tracker was cleared, no warning
-    const secondWrite = await tools.write.execute("w2", {
+    // Second write: 60% of original (between 50% block and 80% warn thresholds)
+    const warningWrite = await tools.write.execute("w1", {
+      path: join(testDir, "src/clear.ts"),
+      content: "x".repeat(3000),
+    });
+    expect(warningWrite.content[0].text).toContain("WARNING");
+
+    // Third write: tracker was cleared after the successful write, no warning
+    const cleanWrite = await tools.write.execute("w2", {
       path: join(testDir, "src/clear.ts"),
       content: "also short",
     });
-    expect(secondWrite.content[0].text).not.toContain("WARNING");
+    expect(cleanWrite.content[0].text).not.toContain("WARNING");
+    expect(cleanWrite.content[0].text).not.toContain("BLOCKED");
   });
 
   it("clears tracker when file is re-read without truncation", async () => {
@@ -226,12 +235,14 @@ describe("linked read/write tools with truncation tracking", () => {
     expect(tools.tracker.has(join(testDir, "src/hallucinated.ts"))).toBe(true);
 
     // Write with relative path (should resolve to same absolute path)
+    // 'very short' is <50% of 5000 chars, so should be BLOCKED
     const writeResult = await tools.write.execute("w1", {
       path: "src/hallucinated.ts",
       content: "very short",
     });
     const writeText = writeResult.content[0].text;
-    expect(writeText).toContain("WARNING");
+    expect(writeText).toContain("BLOCKED");
+    expect(writeText).toContain("data loss");
   });
 });
 
