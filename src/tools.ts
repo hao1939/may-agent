@@ -32,6 +32,18 @@ const ExecParams = Type.Object({
 export interface ReadToolOptions {
   /** If set, ENOENT errors include a hint showing this path as the project root. */
   projectRoot?: string;
+  /**
+   * Maximum character length for file content returned by the read tool.
+   * When a file exceeds this limit, the middle is replaced with a truncation
+   * warning showing how many characters were omitted.
+   *
+   * This prevents large files from consuming excessive context tokens and
+   * reduces the risk of agents fabricating information about content they
+   * never saw (the #2 evaluation issue pattern).
+   *
+   * Default: 0 (no truncation). Set to a positive number to enable.
+   */
+  maxFileLength?: number;
 }
 
 /** Options for the write tool. */
@@ -430,6 +442,8 @@ const STRUCTURE_SHOW_DOTFILES = new Set([
 ]);
 
 export function createReadTool(options?: ReadToolOptions): AgentTool<typeof ReadParams> {
+  const maxFileLength = options?.maxFileLength ?? 0;
+
   return {
     name: "read",
     label: "Read File",
@@ -443,7 +457,7 @@ export function createReadTool(options?: ReadToolOptions): AgentTool<typeof Read
 
       try {
         const content = readFileSync(effectivePath, "utf-8");
-        return textResult(content);
+        return textResult(truncateOutput(content, maxFileLength));
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
         const hint = options?.projectRoot && msg.includes("ENOENT")
@@ -522,8 +536,8 @@ export interface ExecToolOptions {
 export function truncateOutput(output: string, maxLen: number): string {
   if (!maxLen || maxLen === Infinity || output.length <= maxLen) return output;
 
-  // Reserve space for the marker line itself (~80 chars)
-  const markerReserve = 80;
+  // Reserve space for the marker line itself (~150 chars with warning)
+  const markerReserve = 160;
   const available = maxLen - markerReserve;
   if (available <= 0) return output.slice(0, maxLen);
 
@@ -534,7 +548,7 @@ export function truncateOutput(output: string, maxLen: number): string {
   const tail = output.slice(output.length - tailLen);
   const omitted = output.length - headLen - tailLen;
 
-  const marker = `\n\n... [${omitted.toLocaleString()} characters truncated] ...\n\n`;
+  const marker = `\n\n... [${omitted.toLocaleString()} characters truncated — DO NOT fabricate content from the truncated section. Only reference what is shown above and below.] ...\n\n`;
 
   return head + marker + tail;
 }

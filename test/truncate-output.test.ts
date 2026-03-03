@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { truncateOutput, createExecTool } from "../src/tools.js";
+import { truncateOutput, createExecTool, createReadTool } from "../src/tools.js";
+import { writeFileSync, mkdirSync, rmSync } from "node:fs";
+import { join } from "node:path";
 
 describe("truncateOutput", () => {
   it("returns short strings unchanged", () => {
@@ -12,11 +14,11 @@ describe("truncateOutput", () => {
   });
 
   it("truncates strings exceeding the limit", () => {
-    const s = "a".repeat(200);
-    const result = truncateOutput(s, 100);
-    expect(result.length).toBeLessThanOrEqual(100);
+    const s = "a".repeat(1000);
+    const result = truncateOutput(s, 500);
+    expect(result.length).toBeLessThanOrEqual(500);
     expect(result).toContain("[");
-    expect(result).toContain("truncated]");
+    expect(result).toContain("truncated");
   });
 
   it("preserves head and tail content", () => {
@@ -26,21 +28,28 @@ describe("truncateOutput", () => {
     const tail = "_END_TAIL_CONTENT";
     const full = head + middle + tail;
 
-    const result = truncateOutput(full, 200);
+    const result = truncateOutput(full, 400);
     expect(result).toContain("HEAD_CONTENT_START");
     expect(result).toContain("TAIL_CONTENT");
     expect(result).toContain("truncated");
   });
 
   it("includes character count in truncation marker", () => {
-    const s = "x".repeat(1000);
-    const result = truncateOutput(s, 200);
+    const s = "x".repeat(5000);
+    const result = truncateOutput(s, 1000);
     // The marker should mention how many characters were omitted
-    const match = result.match(/\[(\d[\d,]*) characters truncated\]/);
+    const match = result.match(/\[(\d[\d,]*) characters truncated/);
     expect(match).not.toBeNull();
     const omitted = parseInt(match![1].replace(/,/g, ""), 10);
     expect(omitted).toBeGreaterThan(0);
-    expect(omitted).toBeLessThan(1000);
+    expect(omitted).toBeLessThan(5000);
+  });
+
+  it("includes fabrication warning in truncation marker", () => {
+    const s = "x".repeat(5000);
+    const result = truncateOutput(s, 1000);
+    expect(result).toContain("DO NOT fabricate");
+    expect(result).toContain("truncated section");
   });
 
   it("does not truncate when maxLen is 0 (disabled)", () => {
@@ -59,11 +68,11 @@ describe("truncateOutput", () => {
     const markerIdx = result.indexOf("...");
     const markerEnd = result.lastIndexOf("...");
     // Head should be roughly 60% of available space
-    // Available = 1000 - ~80 marker = ~920
-    // Head ≈ 552, tail ≈ 368
-    expect(markerIdx).toBeGreaterThan(400); // head is substantial
+    // Available = 1000 - ~160 marker = ~840
+    // Head ≈ 504, tail ≈ 336
+    expect(markerIdx).toBeGreaterThan(300); // head is substantial
     const tailLen = result.length - markerEnd - 3;
-    expect(tailLen).toBeGreaterThan(250); // tail is also substantial
+    expect(tailLen).toBeGreaterThan(200); // tail is also substantial
     expect(markerIdx).toBeGreaterThan(tailLen); // head > tail
   });
 
@@ -109,13 +118,13 @@ describe("createExecTool maxOutputLength", () => {
   });
 
   it("respects custom maxOutputLength", async () => {
-    const tool = createExecTool({ cwd: "/tmp", maxOutputLength: 100 });
+    const tool = createExecTool({ cwd: "/tmp", maxOutputLength: 500 });
     const result = await tool.execute("test-id", {
-      command: `python3 -c "print('y' * 500)"`,
+      command: `python3 -c "print('y' * 2000)"`,
       timeout: 10,
     });
     const text = result.content[0].type === "text" ? result.content[0].text : "";
-    expect(text.length).toBeLessThanOrEqual(100);
+    expect(text.length).toBeLessThanOrEqual(500);
     expect(text).toContain("truncated");
   });
 
@@ -131,14 +140,116 @@ describe("createExecTool maxOutputLength", () => {
   });
 
   it("truncates error output too", async () => {
-    const tool = createExecTool({ cwd: "/tmp", maxOutputLength: 200 });
+    const tool = createExecTool({ cwd: "/tmp", maxOutputLength: 500 });
     const result = await tool.execute("test-id", {
-      command: `python3 -c "import sys; sys.stderr.write('E' * 500); sys.exit(1)"`,
+      command: `python3 -c "import sys; sys.stderr.write('E' * 2000); sys.exit(1)"`,
       timeout: 10,
     });
     const text = result.content[0].type === "text" ? result.content[0].text : "";
     expect(text).toContain("Exit code 1");
     expect(text).toContain("truncated");
-    expect(text.length).toBeLessThan(400); // 200 for output + prefix/exit code
+    expect(text.length).toBeLessThan(700); // 500 for output + prefix/exit code
+  });
+
+  it("includes fabrication warning in truncated exec output", async () => {
+    const tool = createExecTool({ cwd: "/tmp", maxOutputLength: 500 });
+    const result = await tool.execute("test-id", {
+      command: `python3 -c "print('w' * 2000)"`,
+      timeout: 10,
+    });
+    const text = result.content[0].type === "text" ? result.content[0].text : "";
+    expect(text).toContain("DO NOT fabricate");
+  });
+});
+
+describe("createReadTool maxFileLength", () => {
+  const tmpDir = join("/tmp", "read-truncation-test");
+
+  // Setup test files
+  const setupDir = () => {
+    mkdirSync(tmpDir, { recursive: true });
+  };
+
+  const cleanup = () => {
+    try { rmSync(tmpDir, { recursive: true }); } catch { /* ignore */ }
+  };
+
+  it("truncates large files when maxFileLength is set", () => {
+    setupDir();
+    const filePath = join(tmpDir, "large.txt");
+    const largeContent = "x".repeat(5000);
+    writeFileSync(filePath, largeContent);
+
+    const tool = createReadTool({ maxFileLength: 1000 });
+    return tool.execute("test-id", { path: filePath }).then((result) => {
+      const text = result.content[0].type === "text" ? result.content[0].text : "";
+      expect(text.length).toBeLessThanOrEqual(1000);
+      expect(text).toContain("truncated");
+      expect(text).toContain("DO NOT fabricate");
+      cleanup();
+    });
+  });
+
+  it("does not truncate small files", () => {
+    setupDir();
+    const filePath = join(tmpDir, "small.txt");
+    const content = "hello world";
+    writeFileSync(filePath, content);
+
+    const tool = createReadTool({ maxFileLength: 1000 });
+    return tool.execute("test-id", { path: filePath }).then((result) => {
+      const text = result.content[0].type === "text" ? result.content[0].text : "";
+      expect(text).toBe("hello world");
+      expect(text).not.toContain("truncated");
+      cleanup();
+    });
+  });
+
+  it("does not truncate when maxFileLength is 0 (disabled)", () => {
+    setupDir();
+    const filePath = join(tmpDir, "nolimit.txt");
+    const largeContent = "y".repeat(5000);
+    writeFileSync(filePath, largeContent);
+
+    const tool = createReadTool({ maxFileLength: 0 });
+    return tool.execute("test-id", { path: filePath }).then((result) => {
+      const text = result.content[0].type === "text" ? result.content[0].text : "";
+      expect(text).toBe(largeContent);
+      expect(text).not.toContain("truncated");
+      cleanup();
+    });
+  });
+
+  it("does not truncate when maxFileLength is not set", () => {
+    setupDir();
+    const filePath = join(tmpDir, "default.txt");
+    const largeContent = "z".repeat(5000);
+    writeFileSync(filePath, largeContent);
+
+    const tool = createReadTool({});
+    return tool.execute("test-id", { path: filePath }).then((result) => {
+      const text = result.content[0].type === "text" ? result.content[0].text : "";
+      expect(text).toBe(largeContent);
+      expect(text).not.toContain("truncated");
+      cleanup();
+    });
+  });
+
+  it("preserves head and tail of truncated files", () => {
+    setupDir();
+    const filePath = join(tmpDir, "headtail.txt");
+    const head = "HEADER_CONTENT_";
+    const middle = "m".repeat(5000);
+    const tail = "_FOOTER_CONTENT";
+    writeFileSync(filePath, head + middle + tail);
+
+    const tool = createReadTool({ maxFileLength: 1000 });
+    return tool.execute("test-id", { path: filePath }).then((result) => {
+      const text = result.content[0].type === "text" ? result.content[0].text : "";
+      expect(text).toContain("HEADER_CONTENT");
+      expect(text).toContain("FOOTER_CONTENT");
+      expect(text).toContain("truncated");
+      cleanup();
+    });
   });
 });

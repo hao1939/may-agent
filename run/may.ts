@@ -49,7 +49,7 @@ const manager = new SubagentManager({
 });
 
 function projectRead() {
-  return createReadTool({ projectRoot: PROJECT_ROOT });
+  return createReadTool({ projectRoot: PROJECT_ROOT, maxFileLength: 40_000 });
 }
 
 
