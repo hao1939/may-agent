@@ -14,6 +14,7 @@
 - `AgentMessage.isError` is only set when a tool's `execute()` throws. Detect failures by parsing tool output text, not by checking `isError`.
 - Always use the `write` tool to edit files — never `sed`, `cat >`, or heredocs via exec.
 - Read the full file before modifying it. Don't guess at file contents based on grep snippets.
+- When asked to "add X to file Y", preserve all existing content. Don't rewrite or reorganize sections you weren't asked to change. A task like "add a Review Quality section to domain.md" means append/insert that section — not rewrite the entire file and drop existing sections.
 
 ## Truncated Output
 

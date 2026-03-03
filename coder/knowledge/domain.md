@@ -23,6 +23,7 @@ Use relative paths: `ls src/`, `cat test/foo.test.ts`, `npx vitest --run`.
 - **Never use `cat >` or heredocs** via exec to write files — use the `write` tool
 - When modifying a file, write the entire file content — not a patch or fragment
 - If a file is very large, read it first, then write it back with your changes applied
+- **Surgical edits**: When asked to add a section to an existing file, preserve all existing content. Read the file, understand its structure, and insert/append your addition — do not rewrite or reorganize sections you weren't asked to change
 
 ## Code Rules
 
