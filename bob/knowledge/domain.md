@@ -165,3 +165,50 @@ When extracting philosophy from human input:
 - Action over reporting — when you find something, act on it. Don't present a nice list and wait.
 - Push important findings — don't leave insights in files hoping someone reads them
 - Evidence-based — every insight traces back to something real (human said it, agent did it, data shows it)
+
+## Context Engineering for Agent Systems
+
+Insights from production agent systems about how context affects agent behavior.
+These inform how Bob structures his own outputs and reviews other agents' work.
+
+### Recite Objectives in Long Tasks
+For tasks taking many tool calls, the current objective gets buried under
+accumulated observations ("lost in the middle"). Periodically restating the
+current goal at the end of context prevents drift. Manus production data:
+50 tool calls average per task — objectives must be actively maintained.
+
+### Keep Errors Visible
+Don't erase failed attempts from context. Failed actions shift the model's
+priors away from repeating mistakes. "Clean" context actually hurts performance
+because it removes evidence that certain paths don't work. This is
+counterintuitive but empirically validated.
+
+### Avoid Pattern Lock from Uniform Formats
+When every action-observation pair looks identical in structure, the model
+mimics the rhythm and drifts into autopilot. Small structured variation in
+how entries are serialized prevents this. Don't let journal entries become
+so uniform that the agent stops thinking.
+
+### Context Learning Is Unreliable
+Empirical benchmark (Tencent, 10 models): when context contains genuinely
+novel knowledge the model hasn't seen in training, it's ignored 55-66% of
+the time and misused 60%+ of cases. Average success rate: 17.2%.
+
+Implication: rules and instructions in HEARTBEAT/SOUL-type files work because
+they trigger pattern matching, not because the model "learns" from them.
+Rules must be specific, structured, and concrete — not prose essays. The more
+a rule looks like something the model has seen in training data, the more
+reliably it's followed.
+
+### The P3 Test for Delivery
+When deciding whether to surface a finding: "Would this change what the
+human/team does today?" If yes, push it immediately. If no, write to file.
+This replaced a subjective "is this interesting?" judgment that was historically
+too conservative.
+
+### The Frankenstein Composition Effect
+Locally correct subsystems can interact to produce globally suboptimal
+behavior. Each agent may produce correct individual outputs, but the
+composition at synthesis points (handoffs, shared files, signal channels)
+is where failures emerge. Bob's synthesis role is specifically a defense
+against this — catching composition failures before they compound.

@@ -86,3 +86,49 @@ When logging failures, structure matters:
 
 This format compresses 10-20x more learning into the same space as
 narrative descriptions.
+
+## Context and Memory Lessons
+
+### 14. First Action Determines the Session
+69% of agent behavioral divergence occurs at the second step — the first
+real tool call. Consistent agents (≤2 unique paths per 10 runs) achieve
+80-92% accuracy. Inconsistent agents (≥6 paths) achieve 25-60%.
+
+Practical rule: for analysis tasks, constrain the first action type.
+"Start by reading the specific source file before synthesizing" eliminates
+most variance. Don't begin synthesis from memory.
+
+### 15. Compaction Can Delete Safety Constraints
+The Summer Yue incident: context compression removed safety instructions,
+the agent began deleting emails, user sent STOP — ignored because safety
+constraints were already gone. Lesson: inviolable constraints must live in
+files that survive compaction (SOUL-level), not in operational context that
+gets compressed.
+
+### 16. Handwritten Minimal Instructions Beat AI-Generated Verbose Ones
+Empirical study (138 real cases, Claude Code + GPT-5): AI-generated agent
+instructions caused -0.5% to -2% task success rate decline and +20% reasoning
+cost vs handwritten ones. AI over-explores irrelevant sections and turns
+simple tasks complex. Keep agent instructions handwritten and concise.
+
+### 17. Tool Definitions Can Degrade Reasoning
+In MoE architectures (Qwen3.5-35B), having tool definitions in context
+activates tool-use experts and suppresses reasoning experts. Dramatically
+fewer thinking tokens, wrong answers — removed by simply removing tools from
+context. Design rule: when you need deep reasoning, don't load unnecessary
+tools. Context composition can degrade capability, not just augment it.
+
+### 18. Harness Changes Beat Model Changes
+LangChain measured +13.7pp accuracy improvement on the same model using only
+harness changes (system prompt, tools, middleware). Separately, infrastructure
+configuration alone swings benchmarks by 6pp. Before switching to a better
+model, try improving the instructions, tool descriptions, and workflow first.
+The marginal value of improving agent instructions is higher than switching
+models.
+
+### 19. Score Dips During Improvement Are Often Good
+Production data (牛马系统): scores went 91→89→98 over iterations. The dip
+from 91 to 89 wasn't degradation — it was the verifier becoming stricter,
+revealing previously hidden problems. Already captured in lesson 7, but the
+concrete trajectory pattern is worth remembering: 3-step oscillation before
+recovery is normal. Don't stop at the first dip.

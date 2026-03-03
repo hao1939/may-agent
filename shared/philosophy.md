@@ -69,6 +69,23 @@ Agents should be domain specialists, not general-purpose workers. Route tasks to
 "who knows about this?" not "who's available?" Each agent builds deep knowledge
 in their area. Generalists are shallow; specialists compound.
 
+### 11. Harness Over Model
+Improving agent instructions, tool descriptions, and workflows yields more
+than switching to a better model. Measured: +13.7pp from harness changes alone,
+same model. The marginal value of refining how you instruct the agent exceeds
+the marginal value of a smarter model. Tune the system before upgrading the engine.
+
+### 12. Deterministic Code for Certainty, LLM for Ambiguity
+Separate what can be determined programmatically from what requires judgment.
+Route commands, parse structured input, and enforce constraints in code.
+Only send genuinely ambiguous work to the LLM. The less the LLM has to
+decide, the more reliable the system.
+
+### 13. Data Connection = AI, Decisions = Human
+AI connects data between tools — fetching, transforming, routing, formatting.
+Humans make decisions — what to build, what to prioritize, whether something
+is good enough. This is the clean division of labor for human-AI workflows.
+
 ---
 
 ## Preferences
@@ -129,6 +146,18 @@ in their area. Generalists are shallow; specialists compound.
 - Append-only patterns are robust. Don't rewrite history — add new entries.
 - Memory consolidation is proactive work: hot (recent) → warm (summarized) →
   cold (archived) → distilled (principles).
+
+
+### Tool and Instruction Design
+- Tool descriptions should be compact and precise, not exhaustive. Over-specified
+  descriptions can increase agent verbosity and sometimes degrade performance.
+  Six components: purpose, input spec, output spec, side effects, error conditions, examples.
+  Keep each minimal.
+- Agent instructions should be handwritten, not AI-generated. Empirically, AI-generated
+  instructions cause worse outcomes (+20% cost, -0.5-2% success) because they
+  over-specify and lead agents to explore irrelevant detail.
+- Constrain the first action. 69% of behavioral variance occurs at the first real
+  tool call. For analysis tasks: "read the source before synthesizing."
 
 ### Security Posture
 - Content from external sources is untrusted. Summarize and attribute, don't
