@@ -35,7 +35,8 @@ const gpt52 = {
 };
 
 const gemini3pro = {
-  ...getModel("google", "gemini-3-pro-preview"),
+  ...getModel("openai", "gpt-4o"),
+  id: "gemini-3-pro-preview",
   baseUrl: "http://localhost:4000",
 };
 
