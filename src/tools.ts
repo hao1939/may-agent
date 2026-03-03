@@ -613,6 +613,165 @@ export function buildExecEnoentHint(output: string, projectRoot: string): string
   return "\n" + buildEnoentHint(failedPath, projectRoot);
 }
 
+/**
+ * Build actionable recovery hints for common exec failure patterns.
+ *
+ * When exec commands fail, agents often waste 2-5 follow-up calls blindly
+ * retrying or probing the filesystem. This function detects the failure
+ * pattern from the command + output and provides specific guidance.
+ *
+ * Covers the top failure patterns from evaluation data:
+ * - Empty output on non-zero exit (glob/ls with no matches, grep no match)
+ * - Module not found (wrong import path or missing build)
+ * - Syntax errors in sed/node/shell
+ * - Command not found
+ * - Permission denied
+ * - cd to non-existent directory
+ *
+ * @param command - The command that was executed
+ * @param output - The combined stdout+stderr (may be empty)
+ * @param exitCode - The exit code
+ * @param projectRoot - The project root directory
+ * @returns A hint string to append, or empty string if no pattern matched
+ */
+export function buildExecErrorHint(
+  command: string,
+  output: string,
+  exitCode: number,
+  projectRoot: string,
+): string {
+  const hints: string[] = [];
+
+  // ── Pattern 1: Empty output on non-zero exit ──────────────────────
+  // This is the #1 wasted-call pattern. Glob expansions like
+  // `ls agents/*/skills/` or `cat *.test.ts` silently fail with exit 2
+  // when nothing matches, leaving the agent with zero information.
+  if (!output.trim()) {
+    // Detect glob patterns in the command
+    const hasGlob = /[*?]/.test(command);
+    const hasRedirectedStderr = /2>\s*\/dev\/null/.test(command);
+
+    if (hasGlob || hasRedirectedStderr) {
+      hints.push(
+        `Hint: command produced no output (exit ${exitCode}). ` +
+        `This usually means a glob pattern matched nothing` +
+        (hasRedirectedStderr ? ` or errors were redirected to /dev/null` : ``) +
+        `. Try listing the parent directory first to see what exists.`,
+      );
+    } else if (exitCode === 1 && /\bgrep\b/.test(command)) {
+      hints.push(
+        `Hint: grep exited with code 1 (no matches found). ` +
+        `The pattern may not exist in the searched files, or the file paths may be wrong.`,
+      );
+    } else {
+      hints.push(
+        `Hint: command failed with exit code ${exitCode} and no output. ` +
+        `Check that the command syntax is correct and all paths exist.`,
+      );
+    }
+
+    // Try to identify a directory path in the command and list it
+    const dirMatch = command.match(/(?:ls|cat|head|tail|find|cd)\s+['"]*([^\s'"*?|;&]+)/);
+    if (dirMatch) {
+      const targetPath = dirMatch[1];
+      const resolvedPath = targetPath.startsWith("/")
+        ? targetPath
+        : projectRoot + "/" + targetPath;
+      // Try to find the parent directory that exists
+      const parts = resolvedPath.split("/");
+      for (let i = parts.length; i > 0; i--) {
+        const candidate = parts.slice(0, i).join("/");
+        if (candidate && candidate !== "/" && existsSyncSafe(candidate)) {
+          try {
+            const entries = listDirEntries(candidate);
+            if (entries.length > 0) {
+              const label = candidate.startsWith(projectRoot + "/")
+                ? candidate.slice(projectRoot.length + 1) + "/"
+                : candidate === projectRoot
+                  ? "(project root)"
+                  : candidate + "/";
+              hints.push(`Directory ${label} contains: ${entries.join(", ")}`);
+            }
+          } catch { /* ignore */ }
+          break;
+        }
+      }
+    }
+  }
+
+  // ── Pattern 2: Module/package not found ───────────────────────────
+  if (/Cannot find module|ERR_MODULE_NOT_FOUND|MODULE_NOT_FOUND/.test(output)) {
+    const moduleMatch = output.match(/Cannot find module ['"]([^'"]+)['"]/);
+    const moduleName = moduleMatch ? moduleMatch[1] : "unknown";
+    if (moduleName.includes("./dist/") || moduleName.includes("./build/")) {
+      hints.push(
+        `Hint: module "${moduleName}" not found — the project may need to be built first. ` +
+        `Try: npx tsc (or check package.json for the build command).`,
+      );
+    } else if (moduleName.startsWith("./") || moduleName.startsWith("../")) {
+      hints.push(
+        `Hint: local module "${moduleName}" not found. Check if the file exists ` +
+        `and use the correct extension (.js for ESM, .ts for source).`,
+      );
+    } else {
+      hints.push(
+        `Hint: module "${moduleName}" not found. It may need to be installed: npm install ${moduleName}`,
+      );
+    }
+  }
+
+  // ── Pattern 3: Command not found ──────────────────────────────────
+  if (/command not found|not found$/.test(output)) {
+    const cmdMatch = output.match(/(?:bash|sh|\/bin\/sh):\s*(?:line \d+:\s*)?(?:\d+:\s*)?(\S+):\s*(?:command )?not found/);
+    if (cmdMatch) {
+      hints.push(
+        `Hint: "${cmdMatch[1]}" is not installed or not in PATH. ` +
+        `Use npx to run Node.js tools (e.g., npx tsc, npx vitest).`,
+      );
+    }
+  }
+
+  // ── Pattern 4: sed "old text not found" ───────────────────────────
+  if (/old text not found|unterminated.*substitute|invalid command code/.test(output)) {
+    hints.push(
+      `Hint: sed command failed. Common causes: the search text doesn't match exactly ` +
+      `(check whitespace, special chars), or the delimiter conflicts with the replacement text. ` +
+      `Consider using the write tool to replace the entire file content instead.`,
+    );
+  }
+
+  // ── Pattern 5: TypeScript / compilation errors ────────────────────
+  if (/error TS\d+:|Cannot find name|Property .* does not exist/.test(output)) {
+    hints.push(
+      `Hint: TypeScript compilation error. Read the specific file and line number ` +
+      `from the error to understand the type mismatch.`,
+    );
+  }
+
+  // ── Pattern 6: cd to non-existent directory ───────────────────────
+  if (/can't cd to|cd:.*No such/.test(output)) {
+    const cdMatch = output.match(/cd:\s*(?:can't cd to\s+)?([^:]+?)(?::|$)/m);
+    if (cdMatch) {
+      const failedDir = cdMatch[1].trim();
+      hints.push(
+        `Hint: directory "${failedDir}" does not exist. ` +
+        `Your working directory is already ${projectRoot} — use relative paths.`,
+      );
+    }
+  }
+
+  if (hints.length === 0) return "";
+  return "\n" + hints.join("\n");
+}
+
+/**
+ * Safe existsSync wrapper that won't throw on permission errors.
+ */
+function existsSyncSafe(p: string): boolean {
+  try { return existsSync(p); } catch { return false; }
+}
+
+
 export function createExecTool(cwdOrOpts?: string | ExecToolOptions): AgentTool<typeof ExecParams> {
   const opts: ExecToolOptions = typeof cwdOrOpts === "string" ? { cwd: cwdOrOpts } : (cwdOrOpts ?? {});
   const effectiveCwd = opts.cwd ?? process.cwd();
@@ -665,7 +824,8 @@ export function createExecTool(cwdOrOpts?: string | ExecToolOptions): AgentTool<
           const e = err as { stdout: string; stderr: string; status: number };
           const output = [e.stdout, e.stderr].filter(Boolean).join("\n");
           const enoentHint = warnOutsideRoot ? buildExecEnoentHint(output, warnOutsideRoot) : "";
-          return textResult(`${cwdPrefix}Exit code ${e.status}\n${truncateOutput(output, maxOutputLength)}${enoentHint}${outsideWarning}`);
+          const errorHint = warnOutsideRoot ? buildExecErrorHint(command, output, e.status ?? 1, warnOutsideRoot) : "";
+          return textResult(`${cwdPrefix}Exit code ${e.status}\n${truncateOutput(output, maxOutputLength)}${enoentHint}${errorHint}${outsideWarning}`);
         }
         const msg = err instanceof Error ? err.message : String(err);
         return textResult(`${cwdPrefix}Error: ${msg}${outsideWarning}`);

@@ -405,3 +405,32 @@ describe("detectsOutsidePaths", () => {
     expect(detectsOutsidePaths("ls /home/hao/may-agent-old", ROOT)).toBe(true);
   });
 });
+
+describe("exec error hints integration", () => {
+  const ROOT = "/home/hao/may-agent";
+
+  it("provides glob hint when ls with wildcard matches nothing (stderr suppressed)", async () => {
+    const tool = createExecTool({ cwd: ROOT, warnOutsideRoot: ROOT, echoCwd: true });
+    const result = await tool.execute("id", { command: "ls agents/*/nonexistent_dir_xyz/ 2>/dev/null" });
+    const text = result.content[0].text;
+    expect(text).toContain("Exit code");
+    expect(text).toContain("Hint:");
+    expect(text).toContain("glob pattern matched nothing");
+  });
+
+  it("provides module-not-found hint", async () => {
+    const tool = createExecTool({ cwd: ROOT, warnOutsideRoot: ROOT, echoCwd: true });
+    const result = await tool.execute("id", { command: 'node -e "require(\'./dist/nonexistent.js\')"' });
+    const text = result.content[0].text;
+    expect(text).toContain("Hint:");
+    expect(text).toContain("built first");
+  });
+
+  it("provides grep no-match hint", async () => {
+    const tool = createExecTool({ cwd: ROOT, warnOutsideRoot: ROOT, echoCwd: true });
+    const result = await tool.execute("id", { command: "grep -r 'ZZZZNONEXISTENT_PATTERN_XYZ' src/" });
+    const text = result.content[0].text;
+    expect(text).toContain("Hint:");
+    expect(text).toContain("grep exited with code 1");
+  });
+});
