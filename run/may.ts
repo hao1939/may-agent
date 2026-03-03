@@ -57,6 +57,7 @@ const manager = new SubagentManager({
   onSessionStart: (agentName, sessionId) => {
     attachAgentEvents(agentName, sessionId);
     if (agentName === "optimizer") optimizerSid = sessionId;
+    if (agentName === "bob") bobSid = sessionId;
   },
 });
 
@@ -176,6 +177,7 @@ manager.register({
 
 const optimizerTools = projectTools();
 let optimizerSid: string | undefined;
+let bobSid: string | undefined;
 
 const optimizerWorkflowTool = createWorkflowTool({
   manager,
@@ -231,19 +233,28 @@ manager.register({
 const bobTools = projectTools();
 manager.register({
   name: "bob",
-  description: "Design philosopher — learns human intent, reviews team work against philosophy",
-  domain: "design philosophy",
+  description: "Design philosopher — learns human intent, reviews team work against philosophy, orchestrates meta-loop",
+  domain: "design philosophy and meta-loop orchestration",
   systemPromptFiles: [
     SHARED_KNOWLEDGE,
     SHARED_TEAM,
     SHARED_PHILOSOPHY,
     resolve(AGENTS_ROOT, "bob/knowledge/domain.md"),
+    resolve(AGENTS_ROOT, "shared/meta-loop.md"),
+    resolve(AGENTS_ROOT, "bob/tools/INDEX.md"),
   ],
   knowledgeDir: resolve(AGENTS_ROOT, "bob/knowledge"),
   workspace: resolve(AGENTS_ROOT, "bob/workspace"),
   projectRoot: PROJECT_ROOT,
   model: gemini3pro,
-  tools: [bobTools.read, bobTools.write, projectExec()],
+  tools: [
+    bobTools.read,
+    bobTools.write,
+    projectExec(),
+    manager.createTool({
+      getCallerSessionId: () => bobSid,
+    }),
+  ],
   apiKey: "not-needed",
   maxTurns: 30,
 });
@@ -407,8 +418,6 @@ bus.onCommand((cmd) => {
 // ── Send input to persistent May session ───────────────────────────────
 
 let lastUserInput = Date.now();
-let lastOptimizerRun = 0;
-let optimizerRunning = false;
 
 async function sendToMay(message: string): Promise<void> {
   try {
@@ -502,23 +511,26 @@ if (resumeError) {
   await manager.waitForIdle(sid);
 }
 
-// ── Idle timer for optimizer ────────────────────────────────────────────
+// ── Idle timer for meta-loop (Bob orchestrates) ─────────────────────────
 
 const IDLE_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
-const OPTIMIZER_COOLDOWN_MS = 30 * 60 * 1000; // 30 minutes between optimizer runs
+const META_LOOP_COOLDOWN_MS = 30 * 60 * 1000; // 30 minutes between meta-loop runs
 const IDLE_CHECK_INTERVAL_MS = 60 * 1000; // check every 60 seconds
+
+let metaLoopRunning = false;
+let lastMetaLoopRun = 0;
 
 const idleTimer = setInterval(() => {
   if (shuttingDown) return;
   if (!META_ENABLED) return;
-  if (optimizerRunning) return;
+  if (metaLoopRunning) return;
 
   const now = Date.now();
   const idleMs = now - lastUserInput;
   if (idleMs < IDLE_TIMEOUT_MS) return;
 
-  // Enforce cooldown between optimizer runs
-  if (now - lastOptimizerRun < OPTIMIZER_COOLDOWN_MS) return;
+  // Enforce cooldown between meta-loop runs
+  if (now - lastMetaLoopRun < META_LOOP_COOLDOWN_MS) return;
 
   // Check May is actually idle (not processing something)
   const sessions = manager.status();
@@ -529,19 +541,18 @@ const idleTimer = setInterval(() => {
   const activeSubs = sessions.filter((s) => s.sessionId !== sid && s.status === "running");
   if (activeSubs.length > 0) return;
 
-  optimizerRunning = true;
-  lastOptimizerRun = now;
-  bus.emit({ type: "info", message: `[idle] ${Math.floor(idleMs / 1000)}s idle — triggering optimizer via May` });
+  metaLoopRunning = true;
+  lastMetaLoopRun = now;
+  bus.emit({ type: "info", message: `[idle] ${Math.floor(idleMs / 1000)}s idle — triggering meta-loop via Bob` });
 
   sendToMay(
-    "No user tasks for 5 minutes. Run the optimizer to analyze recent sessions and improve agent performance. " +
-    "Delegate to optimizer: analyze recent evaluation data in .state/evaluations/ and session transcripts in " +
-    ".state/sessions/history/. Identify the highest-impact improvement, implement it, verify it, and commit."
+    "No user tasks for 5 minutes. Delegate to Bob to run the meta-loop: analyze recent evaluations, " +
+    "check alignment with philosophy, write an optimizer brief, then trigger the optimizer with specific recommendations."
   ).then(() => {
-    optimizerRunning = false;
+    metaLoopRunning = false;
     lastUserInput = Date.now(); // reset so we don't immediately re-trigger
   }).catch(() => {
-    optimizerRunning = false;
+    metaLoopRunning = false;
   });
 }, IDLE_CHECK_INTERVAL_MS);
 
