@@ -4,8 +4,7 @@ import { resolve, dirname } from "node:path";
 import { getModel } from "@mariozechner/pi-ai";
 import {
   SubagentManager,
-  createReadTool,
-  createWriteTool,
+  createLinkedTools,
   createExecTool,
   createWorkflowTool,
   evaluateTask,
@@ -48,14 +47,18 @@ const manager = new SubagentManager({
   },
 });
 
-function projectRead() {
-  return createReadTool({ projectRoot: PROJECT_ROOT, maxFileLength: 40_000 });
+/**
+ * Create linked read+write tools with shared truncation tracking.
+ * When read truncates a file, write warns if the agent writes back
+ * significantly shorter content (catching data loss).
+ */
+function projectTools() {
+  return createLinkedTools({
+    projectRoot: PROJECT_ROOT,
+    maxFileLength: 40_000,
+  });
 }
 
-
-function projectWrite() {
-  return createWriteTool({ projectRoot: PROJECT_ROOT });
-}
 function projectExec() {
   return createExecTool({
     cwd: PROJECT_ROOT,
@@ -100,6 +103,8 @@ function readOnlyExec() {
 
 // ── Register agents ────────────────────────────────────────────────────
 
+// Each agent gets its own linked tools (separate truncation trackers per agent)
+const coderTools = projectTools();
 manager.register({
   name: "coder",
   description: "Writes code, tests, commits",
@@ -113,11 +118,12 @@ manager.register({
   workspace: resolve(AGENTS_ROOT, "coder/workspace"),
   projectRoot: PROJECT_ROOT,
   model: opus,
-  tools: [projectRead(), projectWrite(), projectExec()],
+  tools: [coderTools.read, coderTools.write, projectExec()],
   apiKey: "not-needed",
   maxTurns: 50,
 });
 
+const qaTools = projectTools();
 manager.register({
   name: "qa",
   description: "Reviews code changes for correctness, quality, and requirement compliance",
@@ -130,11 +136,12 @@ manager.register({
   workspace: resolve(AGENTS_ROOT, "qa/workspace"),
   projectRoot: PROJECT_ROOT,
   model: gpt52,
-  tools: [projectRead(), projectWrite(), projectExec()],
+  tools: [qaTools.read, qaTools.write, projectExec()],
   apiKey: "not-needed",
   maxTurns: 30,
 });
 
+const evaluatorTools = projectTools();
 manager.register({
   name: "evaluator",
   description: "Evaluates completed task trees — scores each agent by responsibility",
@@ -147,12 +154,13 @@ manager.register({
   workspace: resolve(AGENTS_ROOT, "evaluator/workspace"),
   projectRoot: PROJECT_ROOT,
   model: gpt52,
-  tools: [projectRead(), projectWrite(), projectExec()],
+  tools: [evaluatorTools.read, evaluatorTools.write, projectExec()],
   apiKey: "not-needed",
   maxTurns: 20,
   memoryLimit: 5,
 });
 
+const optimizerTools = projectTools();
 manager.register({
   name: "optimizer",
   description: "Analyzes agent performance data, proposes and implements improvements to the agent system",
@@ -169,8 +177,8 @@ manager.register({
   projectRoot: PROJECT_ROOT,
   model: opus,
   tools: [
-    projectRead(),
-    projectWrite(),
+    optimizerTools.read,
+    optimizerTools.write,
     projectExec(),
     manager.createTool({}),
   ],
