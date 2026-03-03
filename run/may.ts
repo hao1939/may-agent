@@ -7,7 +7,7 @@ import {
   createLinkedTools,
   createExecTool,
   createWorkflowTool,
-  evaluateTask,
+  stripCliPromptContent,
 } from "../src/index.js";
 import { EventBus } from "./event-bus.js";
 import { attachConsoleUI } from "./console-ui.js";
@@ -15,8 +15,7 @@ import { attachSocketUI } from "./socket-ui.js";
 
 const PROJECT_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const AGENTS_ROOT = resolve(PROJECT_ROOT, "agents");
-const PERSIST_DIR = resolve(PROJECT_ROOT, ".state");
-const SOCKET_PATH = resolve(PERSIST_DIR, "may.sock");
+const PERSIST_DIR = resolve(PROJECT_ROOT, process.env.STATE_DIR || ".state");
 const SHARED_KNOWLEDGE = resolve(AGENTS_ROOT, "shared/system-design.md");
 const SHARED_TEAM = resolve(AGENTS_ROOT, "shared/team.md");
 const SHARED_PHILOSOPHY = resolve(AGENTS_ROOT, "shared/philosophy.md");
@@ -45,12 +44,6 @@ const gemini3pro = {
 
 const bus = new EventBus();
 attachConsoleUI(bus);
-
-// Agents to skip for auto-evaluation (meta agents evaluate feature agents, not themselves)
-const EVAL_SKIP_AGENTS = new Set(["evaluator", "optimizer", "bob", "may"]);
-
-// MAY_META=0 disables auto-evaluation and idle optimizer trigger
-const META_ENABLED = process.env.MAY_META !== "0";
 
 const manager = new SubagentManager({
   persistDir: PERSIST_DIR,
@@ -265,6 +258,11 @@ function masterExec() {
     cwd: PROJECT_ROOT,
     echoCwd: true,
     warnOutsideRoot: PROJECT_ROOT,
+    maxOutputLength: 80_000, // CLI agents produce long output
+    // Strip prompt content from CLI agent invocations before applying deny patterns.
+    // Without this, a prompt like `claude -p "echo foo > bar"` would match the
+    // echo/redirect deny pattern even though it's just text passed to a sub-agent.
+    stripForDenyCheck: stripCliPromptContent,
     denyPatterns: [
       /^\s*find\s+\/\s/,
       /^\s*ls\s+\/\s*$/,
@@ -275,9 +273,6 @@ function masterExec() {
       /<<\s*['"]?\w+['"]?/,
       /\btee\s/,
       /\b(echo|printf)\b.*>{1,2}[^&]/,
-      /\bmv\s|\bcp\s|\brm\s/,
-      /\bmkdir\b/,
-      /\btouch\b/,
       /\bchmod\b|\bchown\b/,
       /\bpython3?\s+-c\b.*open\(/,
       /\bnode\s+-e\b/,
@@ -347,14 +342,6 @@ manager.register({
   model: opus,
   tools: [readOnlyExec(), maySubagentTool, mayWorkflowTool],
   apiKey: "not-needed",
-  persistent: true,
-  compaction: {
-    threshold: 0.7,
-    keepRatio: 0.4,
-    onCompact: (info) => {
-      bus.emit({ type: "info", message: `Compaction: ${info.messagesCompacted} messages compacted (${info.tokensBefore} → ${info.tokensAfter} est. tokens)` });
-    },
-  },
 });
 
 // ── Event routing ──────────────────────────────────────────────────────
@@ -385,34 +372,6 @@ function attachAgentEvents(label: string, sessionId: string): void {
 }
 
 // ── Post-task evaluation ───────────────────────────────────────────────
-
-/**
- * Run task-tree evaluation after May finishes a task (goes idle).
- * Finds all unevaluated child sessions and evaluates them together,
- * scoring each agent by its responsibility.
- */
-async function runPostTaskEvaluation(): Promise<void> {
-  try {
-    const result = await evaluateTask({
-      manager,
-      persistDir: PERSIST_DIR,
-      parentSessionId: sid,
-      skipAgents: EVAL_SKIP_AGENTS,
-    });
-
-    if (!result) return; // no unevaluated children
-
-    const agentSummaries = Object.values(result.agents)
-      .map((a) => `${a.agent}: eff=${a.efficiency} qual=${a.quality} verdict=${a.verdict}`)
-      .join(", ");
-    bus.emit({
-      type: "info",
-      message: `[eval] Task evaluation: ${agentSummaries} | overall: eff=${result.overall.efficiency} qual=${result.overall.quality} verdict=${result.overall.verdict}`,
-    });
-  } catch (err) {
-    bus.emit({ type: "info", message: `[eval] Error: ${err instanceof Error ? err.message : String(err)}` });
-  }
-}
 
 // ── Socket commands ────────────────────────────────────────────────────
 
@@ -456,27 +415,42 @@ bus.onCommand((cmd) => {
     case "input":
       bus.emit({ type: "info", message: `[socket] Input: "${cmd.message.slice(0, 80)}"` });
       lastUserInput = Date.now();
-      sendToMay(cmd.message);
+      sendToInterface(cmd.message);
       break;
+    case "run": {
+      bus.emit({ type: "info", message: `[socket] Run @${cmd.agent}: "${cmd.message.slice(0, 80)}"` });
+      lastUserInput = Date.now();
+      runDirect(cmd.agent, cmd.message);
+      break;
+    }
   }
 });
 
-// ── Send input to persistent May session ───────────────────────────────
+// ── Send input to interface agent's persistent session ─────────────────
 
 let lastUserInput = Date.now();
 
-async function sendToMay(message: string): Promise<void> {
+async function sendToInterface(message: string): Promise<void> {
   try {
     await manager.send(sid, message);
     // If send() steered into a running session, wait for it to finish
     await manager.waitForIdle(sid);
-
-    // Post-task evaluation: evaluate all unevaluated child sessions
-    // Fire-and-forget — don't block the user prompt
-    if (META_ENABLED) runPostTaskEvaluation();
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     bus.emit({ type: "info", message: `Send error: ${msg}` });
+  }
+}
+
+/** Run a fresh ephemeral session on any agent directly (bypasses interface agent). */
+async function runDirect(agentName: string, message: string): Promise<void> {
+  try {
+    const sessionId = manager.run(agentName, message);
+    bus.emit({ type: "info", message: `[direct] Started ${agentName} session: ${sessionId}` });
+    await manager.waitFor(sessionId);
+    bus.emit({ type: "info", message: `[direct] ${agentName} session completed: ${sessionId}` });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    bus.emit({ type: "info", message: `[direct] Error: ${msg}` });
   }
 }
 
@@ -490,7 +464,7 @@ function gracefulShutdown() {
   const stack = new Error("gracefulShutdown trace").stack;
   bus.emit({ type: "info", message: `Shutting down...\n${stack}` });
 
-  // Cancel non-persistent child sessions (coder, qa) but leave May's
+  // Cancel non-persistent child sessions but leave the interface agent's
   // persistent session intact for resume on next startup.
   for (const s of manager.status()) {
     if (s.status === "running" && s.sessionId !== sid) {
@@ -525,20 +499,52 @@ process.on("exit", (code) => {
   console.error(`[exit] Process exiting with code ${code}`);
 });
 
+// ── Interface agent selection ──────────────────────────────────────────
+
+const interfaceAgent = process.env.AGENT || "may";
+
+// Verify the interface agent is registered
+if (!manager.hasAgent(interfaceAgent)) {
+  console.error(`Agent "${interfaceAgent}" is not registered. Available: ${manager.agentNames().join(", ")}`);
+  process.exit(1);
+}
+
+// Runtime options for the interface agent's persistent session
+const interfaceRunOpts = {
+  persistent: true,
+  compaction: {
+    threshold: 0.7,
+    keepRatio: 0.4,
+    onCompact: (info: { messagesCompacted: number; tokensBefore: number; tokensAfter: number }) => {
+      bus.emit({ type: "info", message: `Compaction: ${info.messagesCompacted} messages compacted (${info.tokensBefore} → ${info.tokensAfter} est. tokens)` });
+    },
+  },
+};
+
+// ── Socket (always available — created BEFORE startup so it's reachable during resume) ──
+
+const SOCKET_PATH = resolve(PERSIST_DIR, `${interfaceAgent}.sock`);
+
+const socketUI = attachSocketUI({
+  socketPath: SOCKET_PATH,
+  bus,
+  manager,
+  getSessionId: () => sid,
+});
+
 // ── Startup ────────────────────────────────────────────────────────────
 
 let resumeError: string | null = null;
 try {
-  const resumed = manager.resumeAgent("may");
-  // Resume existing persistent May session
+  const resumed = manager.resumeAgent(interfaceAgent, interfaceRunOpts);
   sid = resumed.resumed.sessionId;
 
-  bus.emit({ type: "info", message: `Resumed session ${sid} (task: "${resumed.resumed.task.slice(0, 80)}")` });
+  bus.emit({ type: "info", message: `Resumed ${interfaceAgent} session ${sid} (task: "${resumed.resumed.task.slice(0, 80)}")` });
   if (resumed.interrupted.length > 0) {
     bus.emit({ type: "info", message: `${resumed.interrupted.length} sub-agent session(s) marked as interrupted` });
   }
 
-  // Wait for resume processing to complete (May goes idle)
+  // Wait for resume processing to complete (agent goes idle)
   await manager.waitForIdle(sid);
 } catch (err) {
   resumeError = err instanceof Error ? err.message : String(err);
@@ -548,80 +554,28 @@ if (resumeError) {
   // No session to resume — start fresh
   bus.emit({ type: "info", message: `[resume] ${resumeError}` });
 
-  // Start new persistent May session
-  const initialTask = process.argv.slice(2).join(" ") || "Ready. Waiting for tasks.";
-  sid = manager.run("may", initialTask);
-  bus.emit({ type: "info", message: `Started persistent May session: ${sid}` });
+  const initialTask = "Ready. Waiting for tasks.";
+  sid = manager.run(interfaceAgent, initialTask, interfaceRunOpts);
+  bus.emit({ type: "info", message: `Started persistent ${interfaceAgent} session: ${sid}` });
 
-  // Wait for initial processing to complete (May goes idle)
+  // Wait for initial processing to complete (agent goes idle)
   await manager.waitForIdle(sid);
 }
 
-// ── Idle timer for meta-loop (Bob orchestrates) ─────────────────────────
-
-const IDLE_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
-const META_LOOP_COOLDOWN_MS = 30 * 60 * 1000; // 30 minutes between meta-loop runs
-const IDLE_CHECK_INTERVAL_MS = 60 * 1000; // check every 60 seconds
-
-let metaLoopRunning = false;
-let lastMetaLoopRun = 0;
-
-const idleTimer = setInterval(() => {
-  if (shuttingDown) return;
-  if (!META_ENABLED) return;
-  if (metaLoopRunning) return;
-
-  const now = Date.now();
-  const idleMs = now - lastUserInput;
-  if (idleMs < IDLE_TIMEOUT_MS) return;
-
-  // Enforce cooldown between meta-loop runs
-  if (now - lastMetaLoopRun < META_LOOP_COOLDOWN_MS) return;
-
-  // Check May is actually idle (not processing something)
-  const sessions = manager.status();
-  const maySessions = sessions.filter((s) => s.sessionId === sid);
-  if (maySessions.length === 0 || maySessions[0].status !== "idle") return;
-
-  // Don't run if there are active sub-agent sessions
-  const activeSubs = sessions.filter((s) => s.sessionId !== sid && s.status === "running");
-  if (activeSubs.length > 0) return;
-
-  metaLoopRunning = true;
-  lastMetaLoopRun = now;
-  bus.emit({ type: "info", message: `[idle] ${Math.floor(idleMs / 1000)}s idle — triggering meta-loop via Bob` });
-
-  sendToMay(
-    "No user tasks for 5 minutes. Delegate to Bob to run the meta-loop: analyze recent evaluations, " +
-    "check alignment with philosophy, write an optimizer brief, then trigger the optimizer with specific recommendations."
-  ).then(() => {
-    metaLoopRunning = false;
-    lastUserInput = Date.now(); // reset so we don't immediately re-trigger
-  }).catch(() => {
-    metaLoopRunning = false;
-  });
-}, IDLE_CHECK_INTERVAL_MS);
-
-// ── Socket (always available) ──────────────────────────────────────────
-
-if (!META_ENABLED) {
-  bus.emit({ type: "info", message: "[config] Meta tasks disabled (MAY_META=0). No auto-evaluation or optimizer triggers." });
-}
-
-const socketUI = attachSocketUI({
-  socketPath: SOCKET_PATH,
-  bus,
-  manager,
-  getSessionId: () => sid,
-});
-
 // ── Main loop ──────────────────────────────────────────────────────────
+
+/** Parse @agent prefix from input. Returns [agentName, message] or [null, original]. */
+function parseAgentPrefix(input: string): [string | null, string] {
+  const match = input.match(/^@(\w+)\s+([\s\S]+)/);
+  if (match) return [match[1], match[2]];
+  return [null, input];
+}
 
 if (process.stdin.isTTY) {
   const rl = createInterface({ input: process.stdin, output: process.stdout });
   rl.on("SIGINT", () => { gracefulShutdown(); });
 
-  const prompt = () => { process.stdout.write("\nyou> "); };
+  const prompt = () => { process.stdout.write(`\nyou> `); };
   prompt();
 
   for await (const line of rl) {
@@ -635,15 +589,26 @@ if (process.stdin.isTTY) {
     if (!input) { prompt(); continue; }
 
     lastUserInput = Date.now();
-    await sendToMay(input);
+
+    const [targetAgent, message] = parseAgentPrefix(input);
+    if (targetAgent) {
+      // Direct agent invocation: @agent message
+      await runDirect(targetAgent, message);
+    } else {
+      // Default: send to interface agent
+      await sendToInterface(input);
+    }
+
     prompt();
   }
 
-  clearInterval(idleTimer);
   socketUI.close();
   rl.close();
 } else {
-  // Daemon mode: no TTY, keep alive via socket + idle timer.
-  // Process stays alive until SIGINT/SIGTERM triggers gracefulShutdown().
-  bus.emit({ type: "info", message: "[daemon] Running in daemon mode (no TTY). Use socket for control." });
+  // Daemon mode: no TTY, keep alive via socket.
+  // The socket server normally keeps the event loop alive, but stdin EOF
+  // in nohup/background mode can trigger a Node.js shutdown. Use a
+  // periodic keepalive to ensure the process stays alive.
+  bus.emit({ type: "info", message: `[daemon] Running in daemon mode (no TTY). Interface agent: ${interfaceAgent}. Use socket for control.` });
+  setInterval(() => {}, 60_000); // keepalive
 }
