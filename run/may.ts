@@ -183,7 +183,7 @@ const optimizerWorkflowTool = createWorkflowTool({
       bus.emit({ type: "info", message: `[workflow:optimizer] Escalated: ${event.reason}` });
     } else if (event.type === "step_start") {
       bus.emit({ type: "info", message: `[workflow:optimizer] Step: ${event.step}` });
-      attachAgentEvents(event.step, event.sessionId);
+      if (event.sessionId) attachAgentEvents(event.step, event.sessionId);
     }
   },
 });
@@ -237,6 +237,7 @@ const mayWorkflowTool = createWorkflowTool({
       bus.emit({ type: "info", message: `[workflow] Escalated: ${event.reason}` });
     } else if (event.type === "step_start") {
       bus.emit({ type: "info", message: `[workflow] Step: ${event.step}` });
+      if (event.sessionId) attachAgentEvents(event.step, event.sessionId);
     }
   },
 });
