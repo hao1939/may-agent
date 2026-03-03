@@ -270,13 +270,12 @@ export class SubagentManager {
 
     const sections: string[] = [];
 
-    // Runtime environment FIRST — agent needs to know where it is before anything else
+    // Static environment FIRST — stable prefix for LLM cache hits (Principle 36)
     if (def.projectRoot) {
       const envLines = [`# Runtime Environment`, `- Project root (exec cwd): ${def.projectRoot}`];
       if (def.workspace) {
         envLines.push(`- Workspace: ${def.workspace}`);
       }
-      envLines.push(`- Session ID: ${sessionId}`);
       envLines.push(``, `Use paths relative to project root. Do not guess or search for the root.`);
       sections.push(envLines.join("\n"));
     }
@@ -326,6 +325,9 @@ export class SubagentManager {
         }
       }
     }
+
+    // Session context (volatile) — placed after stable content for cache efficiency
+    sections.push(`# Session Context\n- Session ID: ${sessionId}`);
 
     // Load memory entries
     const memoryLimit = def.memoryLimit ?? 20;
@@ -1193,8 +1195,8 @@ export class SubagentManager {
     }
 
     if (session.status === "idle") {
-      // Idle persistent session — no agent loop to abort, just clean up
-      session.persistent = false; // allow handleCompletion to fully archive
+      // No agent loop to abort — go straight to completion handling.
+      // handleCompletion will decide: persistent → stay idle, non-persistent → archive.
       session.status = "interrupted";
       session.error = "Cancelled";
       this.registry.updateSessionStatus(sessionId, "interrupted", "Cancelled");
@@ -1202,7 +1204,40 @@ export class SubagentManager {
       return;
     }
 
+    // Running — abort the agent loop. handleCompletion will fire when the
+    // agent promise settles and will respect the persistent flag.
     session.agent.abort();
+  }
+
+  /**
+   * Permanently close a session — archive to disk and remove from memory.
+   *
+   * If the session is running, cancels it first (cascading children).
+   * Unlike cancel(), this always archives — even for persistent sessions.
+   * The session will NOT resume on restart.
+   */
+  close(sessionId: string): void {
+    const session = this.activeSessions.get(sessionId);
+    if (!session) return;
+
+    // If running or has running children, cancel first
+    this.cancel(sessionId);
+
+    // At this point, persistent sessions are "idle" from cancel().
+    // Non-persistent sessions are already archived by handleCompletion.
+    // We only need to handle the persistent case.
+    if (!this.activeSessions.has(sessionId)) return; // already gone
+
+    // Archive the persistent session
+    session.unsubscribe?.();
+    session.unsubscribeTurnLimit?.();
+    session.endedAt = Date.now();
+    session.status = "interrupted";
+    session.error = "Closed";
+    this.registry.updateSessionStatus(sessionId, "interrupted", "Closed");
+    this.appendMemory(session);
+    this.archiveSessionDir(session);
+    this.activeSessions.delete(sessionId);
   }
 
   /** Steer a running session mid-run.
