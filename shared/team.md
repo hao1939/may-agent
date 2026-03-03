@@ -16,15 +16,17 @@ Concrete details about who's on the team, what they have, and how the automation
 |-------|-------|-------|------------|-------|
 | **Evaluator** | gpt-5.2 | read, write, exec | 20 | Scores each agent in a task tree by responsibility. Transcripts are provided in the prompt, so tools aren't needed for evaluation. Also used for maintenance tasks (lessons pruning) which do need tools. memoryLimit=5 (vs default 20). |
 | **Optimizer** | opus | read, write, exec, subagents, workflow | 40 | Can delegate to coder and QA via subagents tool and workflows. Implements one fix per run. Has access to evaluation data and session transcripts. |
-| **Bob** | gpt-5.2 | read, write, exec | 30 | Design philosopher. Learns human intent and preferences, reviews team work against philosophy, maintains philosophy.md. |
+| **Bob** | gemini-3-pro | read, write, exec | 30 | Design philosopher. Learns human intent and preferences, reviews team work against philosophy, maintains philosophy.md. |
 
 ## Model Assignment
 
-Implementation agents (May, coder, optimizer) use opus. Review agents (QA, evaluator,
-Bob) use gpt-5.2. Both are proxy-aliased labels routed through a local proxy — check
-`run/may.ts` for the actual model configuration. Different model families provide
-genuine perspective diversity — a reviewer using the same model as the implementer
-tends to agree with the implementation's reasoning rather than challenging it.
+Three model families provide independent perspective across the team. Opus for builders
+(May, Coder, Optimizer) — the implementation backbone. GPT-5.2 for reviewers (QA,
+Evaluator) — catches issues the builders' shared reasoning style would miss. Gemini 3
+Pro for design philosophy (Bob) — a third independent voice ensures Bob's design
+reviews aren't biased toward either the builders' or the reviewers' tendencies. All
+are proxy-aliased labels routed through a local proxy — check `run/may.ts` for the
+actual model configuration.
 
 ## Workflows
 
