@@ -415,8 +415,17 @@ function gracefulShutdown() {
   setTimeout(() => process.exit(0), 2000);
 }
 
-process.on("SIGINT", gracefulShutdown);
-process.on("SIGTERM", gracefulShutdown);
+process.on("SIGINT", () => {
+  bus.emit({ type: "info", message: "[signal] SIGINT received" });
+  gracefulShutdown();
+});
+process.on("SIGTERM", () => {
+  bus.emit({ type: "info", message: "[signal] SIGTERM received" });
+  gracefulShutdown();
+});
+process.on("SIGHUP", () => {
+  bus.emit({ type: "info", message: "[signal] SIGHUP received (ignoring)" });
+});
 
 // ── Startup ────────────────────────────────────────────────────────────
 
