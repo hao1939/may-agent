@@ -35,7 +35,7 @@ function baseDef(overrides: Partial<SubagentDefinition> = {}): SubagentDefinitio
   };
 }
 
-describe("close persistent session (cancel → no resume)", () => {
+describe("close persistent session (close → no resume)", () => {
   let dir: string;
   let manager: SubagentManager;
 
@@ -48,15 +48,14 @@ describe("close persistent session (cancel → no resume)", () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
-  it("cancel on idle persistent session archives it to history", async () => {
+  it("close on idle persistent session archives it to history", async () => {
     manager.register(baseDef());
 
     const sid = manager.run("bot", "hello");
     await manager.waitForIdle(sid);
     expect(manager.status()[0].status).toBe("idle");
 
-    // Close = cancel the persistent session
-    manager.cancel(sid);
+    manager.close(sid);
 
     // Session removed from active
     expect(manager.getSessionCount()).toBe(0);
@@ -66,26 +65,25 @@ describe("close persistent session (cancel → no resume)", () => {
     expect(existsSync(historyPath)).toBe(true);
   });
 
-  it("cancel on idle persistent session sets registry status to interrupted", async () => {
+  it("close on idle persistent session sets registry status to interrupted", async () => {
     manager.register(baseDef());
 
     const sid = manager.run("bot", "hello");
     await manager.waitForIdle(sid);
 
-    manager.cancel(sid);
+    manager.close(sid);
 
     const meta = readSessionMeta(dir, sid);
     expect(meta!.status).toBe("interrupted");
   });
 
-  it("resumeAgent throws after cancel (no session to resume)", async () => {
+  it("resumeAgent throws after close (no session to resume)", async () => {
     manager.register(baseDef());
 
     const sid = manager.run("bot", "hello");
     await manager.waitForIdle(sid);
 
-    // Close the session
-    manager.cancel(sid);
+    manager.close(sid);
 
     // Simulate restart: new manager with same persistDir
     const manager2 = new SubagentManager({ persistDir: dir });
@@ -96,13 +94,13 @@ describe("close persistent session (cancel → no resume)", () => {
     );
   });
 
-  it("resumeAgent finds idle session when NOT cancelled (normal exit)", async () => {
+  it("resumeAgent finds idle session when NOT closed (normal exit)", async () => {
     manager.register(baseDef());
 
     const sid = manager.run("bot", "hello");
     await manager.waitForIdle(sid);
 
-    // Do NOT cancel — simulate normal exit (session stays idle in registry)
+    // Do NOT close — simulate normal exit (session stays idle in registry)
 
     // Simulate restart: new manager with same persistDir
     const manager2 = new SubagentManager({ persistDir: dir });
@@ -117,31 +115,31 @@ describe("close persistent session (cancel → no resume)", () => {
     await manager2.waitFor(sid);
   });
 
-  it("send throws after cancel (session is gone)", async () => {
+  it("send throws after close (session is gone)", async () => {
     manager.register(baseDef());
 
     const sid = manager.run("bot", "hello");
     await manager.waitForIdle(sid);
 
-    manager.cancel(sid);
+    manager.close(sid);
 
     await expect(manager.send(sid, "more")).rejects.toThrow();
   });
 
-  it("cancel is idempotent on already-cancelled session", async () => {
+  it("close is idempotent on already-closed session", async () => {
     manager.register(baseDef());
 
     const sid = manager.run("bot", "hello");
     await manager.waitForIdle(sid);
 
-    manager.cancel(sid);
-    // Second cancel should be a no-op (session already gone)
-    manager.cancel(sid);
+    manager.close(sid);
+    // Second close should be a no-op (session already gone)
+    manager.close(sid);
 
     expect(manager.getSessionCount()).toBe(0);
   });
 
-  it("multiple persistent sessions: cancel one, other still resumes", async () => {
+  it("multiple persistent sessions: close one, other still resumes", async () => {
     manager.register(baseDef({ name: "bot-a" }));
     manager.register(baseDef({ name: "bot-b" }));
 
@@ -152,7 +150,7 @@ describe("close persistent session (cancel → no resume)", () => {
     await manager.waitForIdle(sidB);
 
     // Close only bot-a
-    manager.cancel(sidA);
+    manager.close(sidA);
 
     // Simulate restart
     const manager2 = new SubagentManager({ persistDir: dir });

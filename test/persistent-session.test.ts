@@ -118,7 +118,7 @@ describe("persistent sessions", () => {
     await expect(manager.send("nonexistent", "hi")).rejects.toThrow("not found");
   });
 
-  it("cancel() works on idle persistent session", async () => {
+  it("cancel() on idle persistent session keeps it alive (goes back to idle)", async () => {
     manager.register(baseDef());
 
     const sid = manager.run("bot", "hello");
@@ -126,11 +126,12 @@ describe("persistent sessions", () => {
 
     manager.cancel(sid);
 
-    // Session should be removed from active
-    expect(manager.getSessionCount()).toBe(0);
+    // Session should still be in active sessions
+    expect(manager.getSessionCount()).toBe(1);
+    expect(manager.status()[0].status).toBe("idle");
   });
 
-  it("cancel() on idle session marks as interrupted in registry", async () => {
+  it("cancel() on idle persistent session preserves idle status in registry", async () => {
     manager.register(baseDef());
 
     const sid = manager.run("bot", "hello");
@@ -139,16 +140,52 @@ describe("persistent sessions", () => {
     manager.cancel(sid);
 
     const meta = readSessionMeta(dir, sid);
-    expect(meta!.status).toBe("interrupted");
+    expect(meta!.status).toBe("idle");
   });
 
-  it("send() throws after cancel", async () => {
+  it("send() works after cancel on persistent session (session still alive)", async () => {
     manager.register(baseDef());
 
     const sid = manager.run("bot", "hello");
     await manager.waitForIdle(sid);
 
     manager.cancel(sid);
+
+    // Session is still alive — send should work
+    await manager.send(sid, "more");
+    expect(manager.status()[0].status).toBe("idle");
+  });
+
+  it("close() removes persistent session from active", async () => {
+    manager.register(baseDef());
+
+    const sid = manager.run("bot", "hello");
+    await manager.waitForIdle(sid);
+
+    manager.close(sid);
+
+    expect(manager.getSessionCount()).toBe(0);
+  });
+
+  it("close() marks persistent session as interrupted in registry", async () => {
+    manager.register(baseDef());
+
+    const sid = manager.run("bot", "hello");
+    await manager.waitForIdle(sid);
+
+    manager.close(sid);
+
+    const meta = readSessionMeta(dir, sid);
+    expect(meta!.status).toBe("interrupted");
+  });
+
+  it("send() throws after close (session is gone)", async () => {
+    manager.register(baseDef());
+
+    const sid = manager.run("bot", "hello");
+    await manager.waitForIdle(sid);
+
+    manager.close(sid);
 
     await expect(manager.send(sid, "more")).rejects.toThrow("not found");
   });

@@ -395,9 +395,13 @@ bus.onCommand((cmd) => {
         if (s.status === "running") manager.cancel(s.sessionId);
       }
       break;
+    case "cancel_task":
+      bus.emit({ type: "info", message: "[socket] Cancel current task" });
+      manager.cancel(sid);
+      break;
     case "close":
       bus.emit({ type: "info", message: "[socket] Closing session (will not resume on restart)..." });
-      manager.cancel(sid);
+      manager.close(sid);
       gracefulShutdown();
       break;
     case "status": {
@@ -574,7 +578,26 @@ function parseAgentPrefix(input: string): [string | null, string] {
 
 if (process.stdin.isTTY) {
   const rl = createInterface({ input: process.stdin, output: process.stdout });
-  rl.on("SIGINT", () => { gracefulShutdown(); });
+
+  // Track whether we're in the middle of a task (sendToInterface or runDirect)
+  let taskRunning = false;
+
+  rl.on("SIGINT", () => {
+    if (taskRunning) {
+      // Ctrl+C while a task is running: cancel the task, keep the session
+      bus.emit({ type: "info", message: "\n[ctrl+c] Cancelling current task..." });
+      manager.cancel(sid);
+      // Also cancel any direct-agent sessions
+      for (const s of manager.status()) {
+        if (s.status === "running" && s.sessionId !== sid) {
+          manager.cancel(s.sessionId);
+        }
+      }
+    } else {
+      // Ctrl+C when idle: shutdown
+      gracefulShutdown();
+    }
+  });
 
   const prompt = () => { process.stdout.write(`\nyou> `); };
   prompt();
@@ -584,12 +607,18 @@ if (process.stdin.isTTY) {
     if (input === "exit" || input === "quit") break;
     if (input === "close") {
       bus.emit({ type: "info", message: "Closing session (will not resume on restart)..." });
-      manager.cancel(sid);
+      manager.close(sid);
       break;
+    }
+    if (input === "cancel") {
+      manager.cancel(sid);
+      prompt();
+      continue;
     }
     if (!input) { prompt(); continue; }
 
     lastUserInput = Date.now();
+    taskRunning = true;
 
     const [targetAgent, message] = parseAgentPrefix(input);
     if (targetAgent) {
@@ -600,6 +629,7 @@ if (process.stdin.isTTY) {
       await sendToInterface(input);
     }
 
+    taskRunning = false;
     prompt();
   }
 
