@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { createExecTool, stripRedundantCd, detectsOutsidePaths, isMetaRecursionCommand, stripCliPromptContent } from "../src/tools.js";
+import { createExecTool, stripRedundantCd, detectsOutsidePaths, isMetaRecursionCommand, isFlakyCliWriteCommand, stripCliPromptContent } from "../src/tools.js";
 import type { ExecToolOptions } from "../src/tools.js";
 
 describe("createExecTool with options", () => {
@@ -662,5 +662,119 @@ describe("stripCliPromptContent", () => {
     const stripped = stripCliPromptContent(cmd);
     expect(stripped).not.toContain("cat >");
     expect(stripped).not.toContain("EOF");
+  });
+});
+
+describe("flaky CLI file-write guardrail", () => {
+  describe("isFlakyCliWriteCommand", () => {
+    it("detects gemini-cli > file.ts", () => {
+      expect(isFlakyCliWriteCommand("gemini-cli --yolo > output.ts")).toBe(true);
+    });
+
+    it("detects gemini-cli >> file.ts (append)", () => {
+      expect(isFlakyCliWriteCommand("gemini-cli --yolo >> output.ts")).toBe(true);
+    });
+
+    it("detects gemini > file.ts", () => {
+      expect(isFlakyCliWriteCommand("gemini -p 'task' > result.txt")).toBe(true);
+    });
+
+    it("detects claude > file.ts", () => {
+      expect(isFlakyCliWriteCommand("claude --print -p 'task' > output.ts")).toBe(true);
+    });
+
+    it("detects claude >> file.ts (append)", () => {
+      expect(isFlakyCliWriteCommand("claude -p 'task' >> output.ts")).toBe(true);
+    });
+
+    it("detects redirection with flags before it", () => {
+      expect(isFlakyCliWriteCommand("gemini-cli --yolo --model gemini-3.1-pro > file.ts")).toBe(true);
+    });
+
+    it("does NOT block gemini-cli with 2>&1 (stderr merge)", () => {
+      expect(isFlakyCliWriteCommand("gemini-cli --yolo 2>&1")).toBe(false);
+    });
+
+    it("does NOT block claude with 2>&1 (stderr merge)", () => {
+      expect(isFlakyCliWriteCommand("claude -p 'task' 2>&1")).toBe(false);
+    });
+
+    it("does NOT block claude with 2>/dev/null (stderr discard)", () => {
+      expect(isFlakyCliWriteCommand("claude -p 'task' 2>/dev/null")).toBe(false);
+    });
+
+    it("does NOT block regular commands (echo, ls)", () => {
+      expect(isFlakyCliWriteCommand("echo hello")).toBe(false);
+      expect(isFlakyCliWriteCommand("ls -la")).toBe(false);
+      expect(isFlakyCliWriteCommand("grep foo bar.txt")).toBe(false);
+    });
+
+    it("does NOT block gemini-cli without redirection", () => {
+      expect(isFlakyCliWriteCommand("gemini-cli --yolo 2>&1")).toBe(false);
+    });
+
+    it("does NOT block claude without redirection", () => {
+      expect(isFlakyCliWriteCommand("claude -p 'hello'")).toBe(false);
+    });
+
+    it("does NOT block claude -p with prompt containing > in quotes", () => {
+      // The > is inside the prompt string, not a shell redirect
+      expect(isFlakyCliWriteCommand('claude -p "echo hello > file.txt" 2>&1')).toBe(false);
+    });
+
+    it("does NOT block gemini with prompt containing > in quotes", () => {
+      expect(isFlakyCliWriteCommand("gemini -p 'write to > file.txt' 2>&1")).toBe(false);
+    });
+
+    it("does NOT block piped output to gemini", () => {
+      expect(isFlakyCliWriteCommand("echo 'task' | gemini --yolo 2>&1")).toBe(false);
+    });
+
+    it("does NOT block git commands mentioning gemini in messages", () => {
+      expect(isFlakyCliWriteCommand("git commit -m 'fix gemini integration'")).toBe(false);
+    });
+
+    it("does NOT block grep for claude in files", () => {
+      expect(isFlakyCliWriteCommand("grep -r 'claude' src/")).toBe(false);
+    });
+  });
+
+  describe("exec tool integration", () => {
+    it("blocks gemini-cli > file.ts with helpful error", async () => {
+      const tool = createExecTool({ cwd: "/tmp" });
+      const result = await tool.execute("id", { command: "gemini-cli --yolo > output.ts" });
+      const text = result.content[0].text;
+      expect(text).toContain("BLOCKED");
+      expect(text).toContain("write");
+      expect(text).toContain("unreliable");
+    });
+
+    it("blocks claude > file.ts with helpful error", async () => {
+      const tool = createExecTool({ cwd: "/tmp" });
+      const result = await tool.execute("id", { command: "claude --print -p 'task' > output.ts" });
+      const text = result.content[0].text;
+      expect(text).toContain("BLOCKED");
+      expect(text).toContain("write");
+    });
+
+    it("blocks gemini >> file.ts with helpful error", async () => {
+      const tool = createExecTool({ cwd: "/tmp" });
+      const result = await tool.execute("id", { command: "gemini -p 'task' >> result.txt" });
+      const text = result.content[0].text;
+      expect(text).toContain("BLOCKED");
+    });
+
+    it("does NOT block claude -p '...' 2>&1 (normal usage)", async () => {
+      const tool = createExecTool({ cwd: "/tmp" });
+      const result = await tool.execute("id", { command: "echo test" });
+      expect(result.content[0].text).not.toContain("BLOCKED");
+    });
+
+    it("does NOT block normal echo commands", async () => {
+      const tool = createExecTool({ cwd: "/tmp" });
+      const result = await tool.execute("id", { command: "echo hello world" });
+      expect(result.content[0].text).not.toContain("BLOCKED");
+      expect(result.content[0].text).toContain("hello world");
+    });
   });
 });

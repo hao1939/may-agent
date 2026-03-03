@@ -1474,6 +1474,53 @@ export function isMetaRecursionCommand(command: string): boolean {
   return META_RECURSION_PATTERNS.some((pattern) => pattern.test(command));
 }
 
+
+// ── Flaky CLI file-write guardrail ─────────────────────────────────────
+
+/**
+ * Detect attempts to use external CLI wrappers (gemini-cli, gemini, claude)
+ * for file writing via shell redirection.
+ *
+ * These CLI tools are unreliable in the agent environment — they may report
+ * success while producing empty or missing files. Agents should use the
+ * native `write` tool for file operations (Principle 1: Simplest Thing First).
+ *
+ * The pattern matches commands that:
+ * 1. Start with or contain `gemini-cli`, `gemini`, or `claude` (the CLI tools)
+ * 2. Include shell output redirection (`>` or `>>`) to a file
+ *
+ * We exclude `2>&1` and `2>` (stderr redirects) and `>&2` since those are
+ * standard shell patterns, not file-writing attempts.
+ *
+ * Implements Principle 21 (Deterministic Guardrails) and Principle 11
+ * (No Silent Failures).
+ */
+const FLAKY_CLI_WRITE_PATTERN =
+  /\b(gemini-cli|gemini|claude)\b.*(?<![2&])>{1,2}\s*(?!&|\/)\S+/;
+
+const FLAKY_CLI_WRITE_ERROR =
+  "⛔ BLOCKED: External CLI tools (gemini-cli, gemini, claude) with shell redirection " +
+  "are unreliable for file writing in this environment — they may silently produce empty or missing files.\n" +
+  "Please use the native `write` tool for file operations instead, which is deterministic and reliable.\n" +
+  "If you need to run a CLI tool for reasoning/generation, capture its output without file redirection " +
+  "(e.g., use `2>&1` for stderr only, or pipe to stdout).";
+
+/**
+ * Check whether a command attempts to use a flaky CLI wrapper for file writing.
+ *
+ * Strips prompt content first (via stripCliPromptContent) so that redirection
+ * characters inside quoted prompt strings don't trigger false positives.
+ * For example, `claude -p "echo hello > file.txt" 2>&1` is NOT blocked because
+ * the `>` is inside the prompt being sent to claude, not a shell-level redirect.
+ *
+ * Exported for testing.
+ */
+export function isFlakyCliWriteCommand(command: string): boolean {
+  // Strip prompt content so quoted args to -p/--prompt don't false-positive
+  const stripped = stripCliPromptContent(command);
+  return FLAKY_CLI_WRITE_PATTERN.test(stripped);
+}
+
 export function createExecTool(cwdOrOpts?: string | ExecToolOptions): AgentTool<typeof ExecParams> {
   const opts: ExecToolOptions = typeof cwdOrOpts === "string" ? { cwd: cwdOrOpts } : (cwdOrOpts ?? {});
   const effectiveCwd = opts.cwd ?? process.cwd();
@@ -1503,6 +1550,10 @@ export function createExecTool(cwdOrOpts?: string | ExecToolOptions): AgentTool<
         return textResult(META_RECURSION_ERROR);
       }
 
+      // Block flaky CLI wrappers attempting file writes via shell redirection
+      if (isFlakyCliWriteCommand(command)) {
+        return textResult(FLAKY_CLI_WRITE_ERROR);
+      }
 
       // Check deny patterns (on the cleaned command, optionally stripped of prompt content)
       const commandForDeny = stripForDenyCheck ? stripForDenyCheck(command) : command;
