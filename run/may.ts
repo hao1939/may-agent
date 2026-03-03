@@ -34,6 +34,11 @@ const gpt52 = {
   baseUrl: "http://localhost:4000",
 };
 
+const gemini3pro = {
+  ...getModel("google", "gemini-3-pro-preview"),
+  baseUrl: "http://localhost:4000",
+};
+
 // ── Infrastructure ─────────────────────────────────────────────────────
 
 const bus = new EventBus();
@@ -235,7 +240,7 @@ manager.register({
   knowledgeDir: resolve(AGENTS_ROOT, "bob/knowledge"),
   workspace: resolve(AGENTS_ROOT, "bob/workspace"),
   projectRoot: PROJECT_ROOT,
-  model: gpt52,
+  model: gemini3pro,
   tools: [bobTools.read, bobTools.write, projectExec()],
   apiKey: "not-needed",
   maxTurns: 30,
