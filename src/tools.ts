@@ -1061,6 +1061,115 @@ function existsSyncSafe(p: string): boolean {
 }
 
 
+// ── Git commit guardrails ──────────────────────────────────────────────
+
+/**
+ * Detect whether a shell command contains a `git commit` invocation.
+ *
+ * Matches patterns like:
+ * - `git commit -m "msg"`
+ * - `git add -A && git commit -m "msg"`
+ * - `git commit --amend`
+ * - `cd agents && git commit -m "..."`
+ *
+ * Does NOT match `git commit` inside comments, echo, or grep.
+ *
+ * @param command - The shell command string (after stripRedundantCd/rewrite)
+ * @returns true if the command will execute a git commit
+ */
+export function isGitCommitCommand(command: string): boolean {
+  // Split on && and ; to check each subcommand
+  const subcommands = command.split(/\s*(?:&&|;)\s*/);
+  for (const sub of subcommands) {
+    const trimmed = sub.trim();
+    // Skip if it's inside echo/grep/comment
+    if (/^\s*#/.test(trimmed)) continue;
+    if (/^\s*(?:echo|grep|printf)\b/.test(trimmed)) continue;
+    // Match: git commit (with optional flags)
+    if (/\bgit\s+commit\b/.test(trimmed)) return true;
+  }
+  return false;
+}
+
+/**
+ * Gather post-commit context to append after a git commit's output.
+ *
+ * Runs `git status --short` to show what remains uncommitted in the
+ * working tree after the commit completes. This addresses evaluation
+ * failure patterns:
+ * - "Committed unintended changes from dirty working tree"
+ * - "Claims about commit stats contradict actual output"
+ * - "Did not run git status after committing"
+ *
+ * @param cwd - Working directory for git commands
+ * @param command - The original command, used to detect cd target
+ * @returns A context string to append, or empty string if clean/not a git repo
+ */
+export function buildGitCommitContext(cwd: string, command: string): string {
+  // Determine the effective git directory — the command may cd elsewhere first
+  let gitCwd = cwd;
+  const cdMatch = command.match(/^\s*cd\s+["']?([^"';&]+?)["']?\s*(?:&&|;)/);
+  if (cdMatch) {
+    const cdTarget = cdMatch[1].trim();
+    if (cdTarget.startsWith("/")) {
+      gitCwd = cdTarget;
+    } else {
+      gitCwd = join(cwd, cdTarget);
+    }
+  }
+
+  const lines: string[] = [];
+
+  // Check for remaining unstaged/untracked changes AFTER the commit
+  try {
+    const status = execSync("git status --short", {
+      cwd: gitCwd,
+      encoding: "utf-8",
+      timeout: 5000,
+      stdio: ["pipe", "pipe", "pipe"],
+    }).trim();
+
+    if (status) {
+      // Parse status lines to categorize
+      const statusLines = status.split("\n");
+      const modified: string[] = [];
+      const untracked: string[] = [];
+
+      for (const line of statusLines) {
+        const code = line.slice(0, 2);
+        const file = line.slice(3).trim();
+        if (code === "??") {
+          untracked.push(file);
+        } else {
+          modified.push(file);
+        }
+      }
+
+      const warnings: string[] = [];
+      if (modified.length > 0) {
+        warnings.push(`${modified.length} modified/staged file(s) not in this commit: ${modified.slice(0, 5).join(", ")}${modified.length > 5 ? ` (+${modified.length - 5} more)` : ""}`);
+      }
+      if (untracked.length > 0) {
+        warnings.push(`${untracked.length} untracked file(s): ${untracked.slice(0, 5).join(", ")}${untracked.length > 5 ? ` (+${untracked.length - 5} more)` : ""}`);
+      }
+
+      if (warnings.length > 0) {
+        lines.push(`\n⚠️ POST-COMMIT: Working tree is not clean.`);
+        for (const w of warnings) {
+          lines.push(`  - ${w}`);
+        }
+        lines.push(`  Run \`git status\` and \`git diff\` to review remaining changes.`);
+      }
+    }
+  } catch {
+    // Not a git repo or git not available — skip silently
+  }
+
+  return lines.join("\n");
+}
+
+
+
 export function createExecTool(cwdOrOpts?: string | ExecToolOptions): AgentTool<typeof ExecParams> {
   const opts: ExecToolOptions = typeof cwdOrOpts === "string" ? { cwd: cwdOrOpts } : (cwdOrOpts ?? {});
   const effectiveCwd = opts.cwd ?? process.cwd();
@@ -1107,7 +1216,8 @@ export function createExecTool(cwdOrOpts?: string | ExecToolOptions): AgentTool<
           stdio: ["pipe", "pipe", "pipe"],
         });
         const result = output || "(no output)";
-        return textResult(cwdPrefix + truncateOutput(result, maxOutputLength, execOutputTruncationMarker) + outsideWarning);
+        const gitContext = isGitCommitCommand(command) ? buildGitCommitContext(effectiveCwd, command) : "";
+        return textResult(cwdPrefix + truncateOutput(result, maxOutputLength, execOutputTruncationMarker) + gitContext + outsideWarning);
       } catch (err: unknown) {
         if (err && typeof err === "object" && "stdout" in err) {
           const e = err as { stdout: string; stderr: string; status: number };
