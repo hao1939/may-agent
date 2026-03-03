@@ -554,7 +554,7 @@ export function createReadTool(options?: ReadToolOptions): AgentTool<typeof Read
 
       try {
         const content = readFileSync(effectivePath, "utf-8");
-        const truncated = truncateOutput(content, maxFileLength);
+        const truncated = truncateOutput(content, maxFileLength, fileContentTruncationMarker);
 
         // Track truncation: record when a file was truncated, clear when it wasn't
         if (tracker) {
@@ -592,20 +592,37 @@ export function createWriteTool(options?: WriteToolOptions): AgentTool<typeof Wr
         : params.path;
 
       try {
+        // Check for write-after-truncated-read data loss BEFORE writing
+        const truncationWarning = tracker
+          ? tracker.checkWrite(effectivePath, params.content.length)
+          : null;
+
+        // Block writes that would lose >50% of content from a truncated file
+        if (truncationWarning && tracker) {
+          const originalLength = tracker.getOriginalLength(effectivePath);
+          if (originalLength && params.content.length < originalLength * 0.5) {
+            return textResult(
+              `❌ BLOCKED: Write to ${effectivePath} rejected to prevent data loss.\n` +
+              `This file was previously read with truncation (original: ${originalLength.toLocaleString()} chars). ` +
+              `Your write contains only ${params.content.length.toLocaleString()} chars (${Math.round(params.content.length / originalLength * 100)}% of original).\n\n` +
+              `To edit this file safely, use one of these approaches:\n` +
+              `  1. exec with sed: sed -i 's/old_text/new_text/g' ${effectivePath}\n` +
+              `  2. exec with awk for multi-line changes\n` +
+              `  3. Read specific line ranges: exec 'sed -n "100,200p" ${effectivePath}'\n` +
+              `  4. Use exec with a heredoc to append/replace specific sections`
+            );
+          }
+        }
+
         mkdirSync(dirname(effectivePath), { recursive: true });
         writeFileSync(effectivePath, params.content, "utf-8");
-
-        // Check for write-after-truncated-read data loss
-        const truncationWarning = tracker
-          ? tracker.checkWrite(effectivePath, params.content.length) ?? ""
-          : "";
 
         // Clear the tracker entry after write (the file has been rewritten)
         if (tracker) {
           tracker.clearPath(effectivePath);
         }
 
-        return textResult(`Wrote ${params.content.length} bytes to ${effectivePath}${truncationWarning}`);
+        return textResult(`Wrote ${params.content.length} bytes to ${effectivePath}${truncationWarning ? truncationWarning : ""}`);
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
         const hint = options?.projectRoot
@@ -689,11 +706,11 @@ export interface ExecToolOptions {
  * @param maxLen - Maximum allowed length (0 or Infinity = no truncation)
  * @returns The original string if within limits, or a truncated version
  */
-export function truncateOutput(output: string, maxLen: number): string {
+export function truncateOutput(output: string, maxLen: number, markerFn?: (omitted: number) => string): string {
   if (!maxLen || maxLen === Infinity || output.length <= maxLen) return output;
 
-  // Reserve space for the marker line itself (~150 chars with warning)
-  const markerReserve = 160;
+  // Reserve space for the marker line itself (~300 chars with guidance)
+  const markerReserve = 320;
   const available = maxLen - markerReserve;
   if (available <= 0) return output.slice(0, maxLen);
 
@@ -704,9 +721,47 @@ export function truncateOutput(output: string, maxLen: number): string {
   const tail = output.slice(output.length - tailLen);
   const omitted = output.length - headLen - tailLen;
 
-  const marker = `\n\n... [${omitted.toLocaleString()} characters truncated — DO NOT fabricate content from the truncated section. Only reference what is shown above and below.] ...\n\n`;
+  const marker = markerFn
+    ? markerFn(omitted)
+    : `\n\n... [${omitted.toLocaleString()} characters truncated — DO NOT fabricate content from the truncated section. Only reference what is shown above and below.] ...\n\n`;
 
   return head + marker + tail;
+}
+
+/**
+ * Build a truncation marker for file content read by the read tool.
+ *
+ * Unlike the generic marker, this includes actionable guidance telling
+ * the agent to use targeted editing (exec with sed, line-range reads)
+ * instead of full-file writes — the #1 remaining quality issue in evals.
+ *
+ * @param omitted - Number of characters that were omitted
+ * @returns A marker string to insert between head and tail
+ */
+export function fileContentTruncationMarker(omitted: number): string {
+  return (
+    `\n\n... [${omitted.toLocaleString()} characters truncated] ...\n` +
+    `⚠️ FILE TRUNCATED: You are seeing only the beginning and end of this file.\n` +
+    `DO NOT use the write tool to rewrite this entire file — you will lose the content you cannot see.\n` +
+    `Instead, use exec with sed or awk for targeted edits, or read specific line ranges with: exec 'sed -n "100,200p" <file>'.\n\n`
+  );
+}
+
+/**
+ * Build a truncation marker for exec command output.
+ *
+ * Includes guidance to re-run with narrower scope rather than fabricating
+ * claims about counts or results from the truncated section.
+ *
+ * @param omitted - Number of characters that were omitted
+ * @returns A marker string to insert between head and tail
+ */
+export function execOutputTruncationMarker(omitted: number): string {
+  return (
+    `\n\n... [${omitted.toLocaleString()} characters truncated] ...\n` +
+    `⚠️ OUTPUT TRUNCATED: Do NOT fabricate or assume content from the truncated section.\n` +
+    `If you need the full output, re-run with narrower scope (e.g., grep -c for counts, | head/tail, or filter args).\n\n`
+  );
 }
 
 /** Default max output length for exec tool (~5K tokens). */
@@ -988,7 +1043,7 @@ export function createExecTool(cwdOrOpts?: string | ExecToolOptions): AgentTool<
           stdio: ["pipe", "pipe", "pipe"],
         });
         const result = output || "(no output)";
-        return textResult(cwdPrefix + truncateOutput(result, maxOutputLength) + outsideWarning);
+        return textResult(cwdPrefix + truncateOutput(result, maxOutputLength, execOutputTruncationMarker) + outsideWarning);
       } catch (err: unknown) {
         if (err && typeof err === "object" && "stdout" in err) {
           const e = err as { stdout: string; stderr: string; status: number };
