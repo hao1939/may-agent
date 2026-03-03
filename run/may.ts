@@ -19,6 +19,7 @@ const PERSIST_DIR = resolve(PROJECT_ROOT, ".state");
 const SOCKET_PATH = resolve(PERSIST_DIR, "may.sock");
 const SHARED_KNOWLEDGE = resolve(AGENTS_ROOT, "shared/system-design.md");
 const SHARED_TEAM = resolve(AGENTS_ROOT, "shared/team.md");
+const SHARED_PHILOSOPHY = resolve(AGENTS_ROOT, "shared/philosophy.md");
 
 // ── Model ──────────────────────────────────────────────────────────────
 
@@ -39,7 +40,7 @@ const bus = new EventBus();
 attachConsoleUI(bus);
 
 // Agents to skip for auto-evaluation (meta agents evaluate feature agents, not themselves)
-const EVAL_SKIP_AGENTS = new Set(["evaluator", "optimizer", "may"]);
+const EVAL_SKIP_AGENTS = new Set(["evaluator", "optimizer", "bob", "may"]);
 
 // MAY_META=0 disables auto-evaluation and idle optimizer trigger
 const META_ENABLED = process.env.MAY_META !== "0";
@@ -218,6 +219,26 @@ manager.register({
   ],
   apiKey: "not-needed",
   maxTurns: 40,
+});
+
+const bobTools = projectTools();
+manager.register({
+  name: "bob",
+  description: "Design philosopher — learns human intent, reviews team work against philosophy",
+  domain: "design philosophy",
+  systemPromptFiles: [
+    SHARED_KNOWLEDGE,
+    SHARED_TEAM,
+    SHARED_PHILOSOPHY,
+    resolve(AGENTS_ROOT, "bob/knowledge/domain.md"),
+  ],
+  knowledgeDir: resolve(AGENTS_ROOT, "bob/knowledge"),
+  workspace: resolve(AGENTS_ROOT, "bob/workspace"),
+  projectRoot: PROJECT_ROOT,
+  model: gpt52,
+  tools: [bobTools.read, bobTools.write, projectExec()],
+  apiKey: "not-needed",
+  maxTurns: 30,
 });
 
 let sid: string;
