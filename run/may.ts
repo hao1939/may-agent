@@ -256,7 +256,7 @@ manager.register({
     }),
   ],
   apiKey: "not-needed",
-  maxTurns: 30,
+  maxTurns: 50,
 });
 
 let sid: string;
