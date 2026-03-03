@@ -286,6 +286,149 @@ export function listDirEntries(dirPath: string): string[] {
   return formatted;
 }
 
+// ── Project structure for system prompt ────────────────────────────────
+
+/**
+ * Directories to skip when building project structure.
+ * These are noise — agents never need to browse into them.
+ */
+const STRUCTURE_SKIP_DIRS = new Set([
+  "node_modules",
+  ".git",
+  ".state",
+  "dist",
+  ".cache",
+  ".next",
+  ".nuxt",
+  "coverage",
+  ".turbo",
+  ".vscode",
+  ".idea",
+  "__pycache__",
+  ".tox",
+  "venv",
+  ".env",
+]);
+
+/**
+ * Build a compact project structure tree for injection into system prompts.
+ *
+ * Eliminates the #1 source of wasted tool calls: agents running `find`, `ls`,
+ * and other discovery commands to orient themselves in the codebase. By
+ * including the structure upfront, agents can immediately reference correct
+ * paths.
+ *
+ * The output is an indented tree like:
+ * ```
+ * src/
+ *   manager.ts
+ *   tools.ts
+ *   types.ts
+ * test/
+ *   tools.test.ts
+ * package.json
+ * tsconfig.json
+ * ```
+ *
+ * @param rootDir - The project root directory to scan
+ * @param maxDepth - Maximum directory depth to recurse (default: 2).
+ *   Depth 0 = just top-level entries. Depth 2 covers src/sub/file.ts.
+ * @param maxEntries - Maximum total entries to include (default: 200).
+ *   Prevents huge monorepos from bloating the prompt.
+ * @returns A formatted tree string, or empty string if rootDir doesn't exist.
+ */
+export function buildProjectStructure(
+  rootDir: string,
+  maxDepth = 2,
+  maxEntries = 200,
+): string {
+  if (!existsSync(rootDir)) return "";
+
+  const lines: string[] = [];
+  let entryCount = 0;
+
+  function walk(dir: string, depth: number, indent: string): void {
+    if (entryCount >= maxEntries) return;
+
+    let entries: string[];
+    try {
+      entries = readdirSync(dir);
+    } catch {
+      return;
+    }
+
+    // Classify entries into dirs and files
+    const dirs: string[] = [];
+    const files: string[] = [];
+
+    for (const name of entries) {
+      // Skip hidden files/dirs (except specific ones we want to show)
+      if (name.startsWith(".") && !STRUCTURE_SHOW_DOTFILES.has(name)) continue;
+      // Skip known noise directories at any depth
+      if (STRUCTURE_SKIP_DIRS.has(name)) continue;
+
+      try {
+        const full = join(dir, name);
+        if (statSync(full).isDirectory()) {
+          dirs.push(name);
+        } else {
+          files.push(name);
+        }
+      } catch {
+        files.push(name);
+      }
+    }
+
+    // Sort: dirs first (alphabetical), then files (alphabetical)
+    dirs.sort();
+    files.sort();
+
+    // Emit directories
+    for (const name of dirs) {
+      if (entryCount >= maxEntries) {
+        lines.push(`${indent}... (truncated)`);
+        return;
+      }
+      lines.push(`${indent}${name}/`);
+      entryCount++;
+
+      if (depth < maxDepth) {
+        walk(join(dir, name), depth + 1, indent + "  ");
+      }
+    }
+
+    // Emit files
+    for (const name of files) {
+      if (entryCount >= maxEntries) {
+        lines.push(`${indent}... (truncated)`);
+        return;
+      }
+      lines.push(`${indent}${name}`);
+      entryCount++;
+    }
+  }
+
+  walk(rootDir, 0, "");
+
+  return lines.join("\n");
+}
+
+/**
+ * Dotfiles/dotdirs that ARE shown in the project structure.
+ * Most dotfiles are noise, but some are important config.
+ */
+const STRUCTURE_SHOW_DOTFILES = new Set([
+  ".github",
+  ".gitignore",
+  ".env.example",
+  ".eslintrc",
+  ".eslintrc.js",
+  ".eslintrc.json",
+  ".prettierrc",
+  ".prettierrc.js",
+  ".prettierrc.json",
+]);
+
 export function createReadTool(options?: ReadToolOptions): AgentTool<typeof ReadParams> {
   return {
     name: "read",

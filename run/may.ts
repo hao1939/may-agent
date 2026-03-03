@@ -311,6 +311,11 @@ bus.onCommand((cmd) => {
         if (s.status === "running") manager.cancel(s.sessionId);
       }
       break;
+    case "close":
+      bus.emit({ type: "info", message: "[socket] Closing session (will not resume on restart)..." });
+      manager.cancel(sid);
+      gracefulShutdown();
+      break;
     case "status": {
       const sessions = manager.status();
       if (sessions.length === 0) {
@@ -378,31 +383,27 @@ process.on("SIGTERM", gracefulShutdown);
 
 // ── Startup ────────────────────────────────────────────────────────────
 
-const resumed = manager.resumeAgent("may");
-
-if (resumed?.resumed) {
+let resumeError: string | null = null;
+try {
+  const resumed = manager.resumeAgent("may");
   // Resume existing persistent May session
-  const { resumed: resumedSession, interrupted } = resumed;
-  sid = resumedSession.sessionId;
+  sid = resumed.resumed.sessionId;
   attachAgentEvents("may", sid);
 
-  bus.emit({ type: "info", message: `Resumed session ${sid} (task: "${resumedSession.task.slice(0, 80)}")` });
-  if (interrupted.length > 0) {
-    bus.emit({ type: "info", message: `${interrupted.length} sub-agent session(s) marked as interrupted` });
+  bus.emit({ type: "info", message: `Resumed session ${sid} (task: "${resumed.resumed.task.slice(0, 80)}")` });
+  if (resumed.interrupted.length > 0) {
+    bus.emit({ type: "info", message: `${resumed.interrupted.length} sub-agent session(s) marked as interrupted` });
   }
 
   // Wait for resume processing to complete (May goes idle)
   await manager.waitForIdle(sid);
-} else {
-  // No session to resume — clean up and start fresh
-  if (resumed) {
-    bus.emit({ type: "info", message: `${resumed.interrupted.length} sub-agent session(s) marked as interrupted` });
-  } else {
-    const stale = manager.cleanupStaleSessions();
-    if (stale.length > 0) {
-      bus.emit({ type: "info", message: `Cleaned up ${stale.length} stale session(s)` });
-    }
-  }
+} catch (err) {
+  resumeError = err instanceof Error ? err.message : String(err);
+}
+
+if (resumeError) {
+  // No session to resume — start fresh
+  bus.emit({ type: "info", message: `[resume] ${resumeError}` });
 
   // Start new persistent May session
   const initialTask = process.argv.slice(2).join(" ") || "Ready. Waiting for tasks.";
@@ -476,6 +477,11 @@ prompt();
 for await (const line of rl) {
   const input = line.trim();
   if (input === "exit" || input === "quit") break;
+  if (input === "close") {
+    bus.emit({ type: "info", message: "Closing session (will not resume on restart)..." });
+    manager.cancel(sid);
+    break;
+  }
   if (!input) { prompt(); continue; }
 
   lastUserInput = Date.now();

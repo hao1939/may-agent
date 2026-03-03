@@ -279,11 +279,12 @@ function isExpectedNonZeroExit(command: string, exitCode: string, resultText: st
   const code = parseInt(exitCode, 10);
 
   // grep exits 1 when no lines match — this is normal, not an error.
-  if (code === 1) {
-    if (/\bgrep\b/.test(command)) {
-      const output = resultText.replace(/^CWD:[^\n]*\n?/, "").replace(/^Exit code \d+\n?/, "").trim();
-      if (output === "" || output === "0") return true;
-    }
+  // Exit code 1 = "no match found" (informational). Exit code 2 = actual error.
+  // This applies whether grep is the main command, in a pipe, or in an && chain.
+  // Agents frequently use grep to search for patterns that may or may not exist;
+  // treating "not found" as an error creates massive false-positive failure chains.
+  if (code === 1 && /\bgrep\b/.test(command)) {
+    return true;
   }
 
   // git diff exits 1 when there ARE differences — the diff output is the result.

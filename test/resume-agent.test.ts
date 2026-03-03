@@ -7,6 +7,7 @@ import {
   ensureSessionDir,
   appendSessionMessage,
   sessionOutputDir,
+  archiveSession,
 } from "../src/persistence.js";
 import type { Registry } from "../src/persistence.js";
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
@@ -229,7 +230,7 @@ describe("SubagentManager.resumeAgent()", () => {
     await manager.waitFor("session-a");
   });
 
-  it("returns object with resumed: null and interrupted list when no running session for the named agent but others exist", () => {
+  it("throws when target not found but other running sessions exist (and interrupts them)", () => {
     const registry: Registry = {
       agents: {
         "agent-b": {
@@ -262,25 +263,18 @@ describe("SubagentManager.resumeAgent()", () => {
       apiKey: "fake-key",
     });
 
-    const result = manager.resumeAgent("nonexistent-agent");
+    expect(() => manager.resumeAgent("nonexistent-agent")).toThrow(
+      'No running/idle session for "nonexistent-agent" in registry'
+    );
 
-    // Returns { resumed: null, interrupted } when target not found but others exist
-    expect(result).not.toBeNull();
-    expect(result!.resumed).toBeNull();
-    expect(result!.interrupted).toHaveLength(1);
-    expect(result!.interrupted[0].sessionId).toBe("session-b");
-    expect(result!.interrupted[0].status).toBe("interrupted");
-    expect(result!.interrupted[0].error).toBe("Process restarted");
-    expect(result!.interrupted[0].outputDir).toBe(sessionOutputDir(persistDir, "session-b"));
-
-    // Verify the registry marks session-b as interrupted
+    // Other sessions should NOT be interrupted (resumeAgent failed before reaching that point)
     const updatedRegistry: Registry = JSON.parse(
       readFileSync(join(persistDir, "registry.json"), "utf-8"),
     );
-    expect(updatedRegistry.sessions["session-b"].status).toBe("interrupted");
+    expect(updatedRegistry.sessions["session-b"].status).toBe("running");
   });
 
-  it("returns null when no running sessions at all for any agent", () => {
+  it("throws when no running sessions at all for any agent", () => {
     const registry: Registry = {
       agents: {
         "agent-a": {
@@ -312,17 +306,19 @@ describe("SubagentManager.resumeAgent()", () => {
       tools: [],
     });
 
-    const result = manager.resumeAgent("agent-a");
-    expect(result).toBeNull();
+    expect(() => manager.resumeAgent("agent-a")).toThrow(
+      'No running/idle session for "agent-a" in registry'
+    );
   });
 
-  it("returns null when agent has no running sessions", () => {
+  it("throws when agent has no running sessions", () => {
     const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
-    const result = manager.resumeAgent("x");
-    expect(result).toBeNull();
+    expect(() => manager.resumeAgent("x")).toThrow(
+      'No running/idle session for "x" in registry'
+    );
   });
 
-  it("returns null and marks session interrupted when agent is not registered", () => {
+  it("throws and marks session interrupted when agent is not registered", () => {
     const registry: Registry = {
       agents: {
         "agent-x": {
@@ -347,8 +343,9 @@ describe("SubagentManager.resumeAgent()", () => {
     const manager = new SubagentManager({ persistDir });
     // Do NOT register agent-x
 
-    const result = manager.resumeAgent("agent-x");
-    expect(result).toBeNull();
+    expect(() => manager.resumeAgent("agent-x")).toThrow(
+      'Agent "agent-x" has session "session-x" in registry but is not registered in this process'
+    );
 
     // Verify session marked interrupted in registry with "Agent not registered" error
     const updatedRegistry: Registry = JSON.parse(
@@ -440,6 +437,60 @@ describe("SubagentManager.resumeAgent()", () => {
 
     await manager.waitFor("session-runtime");
   });
+  it("restores messages from history archive when active JSONL is missing", async () => {
+    const registry: Registry = {
+      agents: {
+        "bot": {
+          name: "bot",
+          description: "Test",
+          domain: "test",
+          model: { provider: "anthropic", id: "test-model" },
+        },
+      },
+      sessions: {
+        "session-archived": {
+          agent: "bot",
+          task: "archived task",
+          status: "idle",
+          startedAt: Date.now() - 60000,
+        },
+      },
+    };
+    writeRegistry(persistDir, registry);
+
+    // Set up session with messages, then archive it (simulating previous process)
+    setupSession(persistDir, "session-archived", [
+      userMessage("original task"),
+      assistantMessage("I completed the task."),
+    ]);
+    archiveSession(persistDir, "session-archived");
+
+    // Verify active dir is gone
+    const { existsSync } = await import("node:fs");
+    const { sessionDir } = await import("../src/persistence.js");
+    expect(existsSync(sessionDir(persistDir, "session-archived"))).toBe(false);
+
+    const manager = new SubagentManager({ persistDir });
+    manager.register({
+      name: "bot",
+      description: "Test",
+      domain: "test",
+      systemPrompt: "You are a bot.",
+      model: fakeModel(),
+      tools: [],
+      persistent: true,
+      apiKey: "fake-key",
+    });
+
+    const result = manager.resumeAgent("bot");
+    expect(result.resumed.sessionId).toBe("session-archived");
+
+    // Verify the active session dir was recreated with the restored JSONL
+    expect(existsSync(sessionDir(persistDir, "session-archived"))).toBe(true);
+
+    await manager.waitFor("session-archived");
+  });
+
 });
 
 // ── cleanupStaleSessions() ─────────────────────────────────────────────

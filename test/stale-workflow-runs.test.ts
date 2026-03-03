@@ -84,11 +84,12 @@ describe("stale workflow run cleanup", () => {
     saveWorkflowRun(persistDir, makeStaleRun("wr_orphan"));
 
     const manager = new SubagentManager({ persistDir });
-    // No agents registered, no sessions to resume — resumeAgent returns null
-    const result = manager.resumeAgent("may");
-    expect(result).toBeNull();
+    // No agents registered, no sessions to resume — resumeAgent throws
+    expect(() => manager.resumeAgent("may")).toThrow(
+      'No running/idle session for "may" in registry'
+    );
 
-    // But stale workflow runs should still be cleaned up
+    // But stale workflow runs should still be cleaned up (side effect before throw)
     const updated = readWorkflowRun(persistDir, "wr_orphan");
     expect(updated!.status).toBe("interrupted");
   });
