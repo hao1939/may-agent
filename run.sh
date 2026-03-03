@@ -1,7 +1,10 @@
 #!/bin/bash
 # run.sh — keep may-agent alive across crashes
-# May's session is persistent (append-only JSONL), so resumeAgent()
-# picks up exactly where it left off after a restart.
+# The interface agent's session is persistent (append-only JSONL),
+# so resumeAgent() picks up exactly where it left off after a restart.
+#
+# Usage: ./run.sh [--agent <name>]
+#   AGENT env var or --agent flag selects the interface agent (default: may)
 #
 # Exit code 0 = clean exit (user typed "exit"/"quit", or SIGINT/SIGTERM)
 # Any other code = crash — restart after a brief delay.

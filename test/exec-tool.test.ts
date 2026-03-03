@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { createExecTool, stripRedundantCd, detectsOutsidePaths, isMetaRecursionCommand } from "../src/tools.js";
+import { createExecTool, stripRedundantCd, detectsOutsidePaths, isMetaRecursionCommand, stripCliPromptContent } from "../src/tools.js";
 import type { ExecToolOptions } from "../src/tools.js";
 
 describe("createExecTool with options", () => {
@@ -553,5 +553,114 @@ describe("meta-recursion guard", () => {
       expect(result.content[0].text).not.toContain("BLOCKED");
       expect(result.content[0].text).toContain("hello");
     });
+  });
+
+  describe("stripForDenyCheck", () => {
+    it("allows CLI agent prompts containing write patterns", async () => {
+      const tool = createExecTool({
+        cwd: "/tmp",
+        denyPatterns: [/\b(echo|printf)\b.*>{1,2}[^&]/],
+        denyMessage: "No direct writes.",
+        stripForDenyCheck: stripCliPromptContent,
+      });
+      // This prompt contains "echo > file" but it's inside claude's -p argument
+      const result = await tool.execute("id", {
+        command: `claude --print --dangerously-skip-permissions -p "echo 'hello' > test.txt" 2>&1`,
+        timeout: 2,
+      });
+      // Should NOT be blocked — the echo > is inside a prompt string
+      expect(result.content[0].text).not.toContain("Blocked");
+    });
+
+    it("still blocks direct write commands even with stripForDenyCheck", async () => {
+      const tool = createExecTool({
+        cwd: "/tmp",
+        denyPatterns: [/\b(echo|printf)\b.*>{1,2}[^&]/],
+        denyMessage: "No direct writes.",
+        stripForDenyCheck: stripCliPromptContent,
+      });
+      const result = await tool.execute("id", { command: "echo 'hello' > /tmp/foo.txt" });
+      expect(result.content[0].text).toContain("Blocked");
+    });
+  });
+});
+
+describe("stripCliPromptContent", () => {
+  it("strips quoted -p argument from claude command", () => {
+    const cmd = `claude -p "echo foo > bar.txt" --model claude-opus-4.6`;
+    const stripped = stripCliPromptContent(cmd);
+    expect(stripped).not.toContain("echo foo");
+    expect(stripped).toContain("-p");
+    expect(stripped).toContain("--model claude-opus-4.6");
+  });
+
+  it("strips single-quoted -p argument", () => {
+    const cmd = `claude -p 'tee /tmp/output.txt <<EOF' 2>&1`;
+    const stripped = stripCliPromptContent(cmd);
+    expect(stripped).not.toContain("tee");
+    expect(stripped).not.toContain("EOF");
+  });
+
+  it("strips --prompt argument from gemini command", () => {
+    const cmd = `gemini --prompt "printf 'data' > file.txt" --model gemini-3.1-pro`;
+    const stripped = stripCliPromptContent(cmd);
+    expect(stripped).not.toContain("printf");
+    expect(stripped).toContain("--prompt");
+  });
+
+  it("strips piped echo content to gemini", () => {
+    const cmd = `echo 'Run this: echo hello > /tmp/test.txt' | gemini 2>&1`;
+    const stripped = stripCliPromptContent(cmd);
+    expect(stripped).not.toContain("hello");
+    expect(stripped).toContain("gemini");
+  });
+
+  it("strips piped printf content to gemini", () => {
+    const cmd = `printf 'Create file with tee' | gemini --yolo 2>&1`;
+    const stripped = stripCliPromptContent(cmd);
+    expect(stripped).not.toContain("tee");
+    expect(stripped).toContain("gemini");
+  });
+
+  it("strips shell variable assignments used as prompts", () => {
+    const cmd = `PROMPT='echo hello > file.txt'\nclaude -p "$PROMPT" 2>&1`;
+    const stripped = stripCliPromptContent(cmd);
+    expect(stripped).not.toContain("echo hello");
+  });
+
+  it("strips $VARIABLE reference after -p", () => {
+    const cmd = `claude -p "$PROMPT" 2>&1`;
+    const stripped = stripCliPromptContent(cmd);
+    expect(stripped).not.toContain("$PROMPT");
+  });
+
+  it("preserves non-prompt parts of the command", () => {
+    const cmd = `claude --dangerously-skip-permissions --print -p "task here" --model claude-opus-4.6 2>&1`;
+    const stripped = stripCliPromptContent(cmd);
+    expect(stripped).toContain("--dangerously-skip-permissions");
+    expect(stripped).toContain("--print");
+    expect(stripped).toContain("--model claude-opus-4.6");
+    expect(stripped).toContain("2>&1");
+  });
+
+  it("does NOT strip regular echo commands (no pipe to CLI tool)", () => {
+    const cmd = `echo 'hello' > /tmp/output.txt`;
+    const stripped = stripCliPromptContent(cmd);
+    // This should still contain the echo > pattern for deny matching
+    expect(stripped).toContain("echo");
+    expect(stripped).toContain(">");
+  });
+
+  it("does NOT strip non-CLI sed commands", () => {
+    const cmd = `sed -i 's/foo/bar/g' file.txt`;
+    const stripped = stripCliPromptContent(cmd);
+    expect(stripped).toContain("sed -i");
+  });
+
+  it("handles complex multi-line prompt with heredoc-like content", () => {
+    const cmd = `claude -p "Create a file using:\ncat > output.txt << 'EOF'\nhello\nEOF" 2>&1`;
+    const stripped = stripCliPromptContent(cmd);
+    expect(stripped).not.toContain("cat >");
+    expect(stripped).not.toContain("EOF");
   });
 });
