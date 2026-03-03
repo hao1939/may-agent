@@ -313,6 +313,31 @@ function isExpectedNonZeroExit(command: string, exitCode: string, resultText: st
     return true;
   }
 
+  // diff (non-git) exits 1 when files differ — the diff output IS the result.
+  // This is the standard Unix convention: 0 = identical, 1 = different, 2 = error.
+  if (code === 1 && /\bdiff\b/.test(command) && !/\bgit\b/.test(command)) {
+    return true;
+  }
+
+  // ls/stat with glob patterns exit 2 when no files match the glob.
+  // e.g., `ls agents/*/domain.md` exits 2 if no agent has domain.md.
+  // This is normal exploration, not an error worth chaining.
+  if (code === 2 && /\bls\b/.test(command) && /[*?\[\]]/.test(command)) {
+    return true;
+  }
+
+  // git add with nothing to add (exit 1) and git commit with nothing to commit
+  // (exit 1) are normal workflow outcomes, not errors.
+  if (code === 1 && /\bgit\s+(add|commit)\b/.test(command)) {
+    return true;
+  }
+
+  // wc on non-existent files or wc piped through failing commands — exit 1
+  // is informational (0 count), not a real error.
+  if (code === 1 && /\bwc\b/.test(command)) {
+    return true;
+  }
+
   return false;
 }
 
@@ -457,7 +482,14 @@ function isRecoveryAttempt(p: { tool: string; args: Record<string, unknown> }, i
   const cmd = typeof p.args.command === "string" ? p.args.command : "";
   const path = typeof p.args.path === "string" ? p.args.path : "";
 
-  if (p.tool === "exec" && /\b(find|locate|which|pwd|ls)\b/.test(cmd)) return true;
+  // Filesystem discovery commands — agent is trying to find the right path
+  if (p.tool === "exec" && /\b(find|locate|which|pwd|ls|tree|stat)\b/.test(cmd)) return true;
+
+  // Content inspection after failure — agent retrying with different path or approach
+  if (p.tool === "exec" && /\b(cat|head|tail|wc)\b/.test(cmd) && intent.type === "exec-command") return true;
+
+  // grep/ag/rg to search for patterns after initial command failed
+  if (p.tool === "exec" && /\b(grep|ag|rg)\b/.test(cmd) && intent.type === "exec-command") return true;
 
   if (p.tool === "read" && intent.type === "read-file" && intent.path) {
     const origFile = intent.path.split("/").pop() ?? "";
