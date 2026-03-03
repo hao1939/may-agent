@@ -1774,32 +1774,26 @@ export function createHealthCheckTool(options?: HealthCheckOptions): AgentTool<t
         }
       }
 
-      // 7. Stale sessions in registry.json
-      const registryPath = join(stateDir, "registry.json");
-      if (existsSync(registryPath)) {
-        try {
-          const raw = readFileSync(registryPath, "utf-8");
-          const registry = JSON.parse(raw) as { sessions?: Record<string, { status: string; agent?: string; task?: string }> };
-          const sessions = registry.sessions ?? {};
-          const stale = Object.entries(sessions).filter(([, s]) => s.status === "running");
-          if (stale.length === 0) {
-            checks.push({ name: "stale_sessions", ok: true, detail: "No sessions stuck in running state" });
-          } else {
-            const details = stale
-              .map(([id, s]) => `  ${id}: agent=${s.agent ?? "?"}, task=${s.task ?? "?"}`)
-              .join("\n");
-            checks.push({
-              name: "stale_sessions",
-              ok: false,
-              detail: `${stale.length} session(s) stuck in "running" status:\n${details}`,
-            });
-          }
-        } catch (err: unknown) {
-          const msg = err instanceof Error ? err.message : String(err);
-          checks.push({ name: "stale_sessions", ok: false, detail: `Failed to read registry: ${msg}` });
+      // 7. Stale sessions in session meta.json files
+      try {
+        const { loadAllSessionMetas } = await import("./persistence.js");
+        const sessions = loadAllSessionMetas(stateDir);
+        const stale = Object.entries(sessions).filter(([, s]) => s.status === "running");
+        if (stale.length === 0) {
+          checks.push({ name: "stale_sessions", ok: true, detail: "No sessions stuck in running state" });
+        } else {
+          const details = stale
+            .map(([id, s]) => `  ${id}: agent=${s.agent ?? "?"}, task=${s.task ?? "?"}`)
+            .join("\n");
+          checks.push({
+            name: "stale_sessions",
+            ok: false,
+            detail: `${stale.length} session(s) stuck in "running" status:\n${details}`,
+          });
         }
-      } else {
-        checks.push({ name: "stale_sessions", ok: true, detail: "No registry.json yet (clean state)" });
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        checks.push({ name: "stale_sessions", ok: false, detail: `Failed to scan sessions: ${msg}` });
       }
 
       const healthy = checks.every((c) => c.ok);

@@ -15,8 +15,7 @@ import { attachSocketUI } from "./socket-ui.js";
 
 const PROJECT_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const AGENTS_ROOT = resolve(PROJECT_ROOT, "agents");
-const PERSIST_DIR = resolve(PROJECT_ROOT, ".state");
-const SOCKET_PATH = resolve(PERSIST_DIR, "may.sock");
+const PERSIST_DIR = resolve(PROJECT_ROOT, process.env.STATE_DIR || ".state");
 const SHARED_KNOWLEDGE = resolve(AGENTS_ROOT, "shared/system-design.md");
 const SHARED_TEAM = resolve(AGENTS_ROOT, "shared/team.md");
 const SHARED_PHILOSOPHY = resolve(AGENTS_ROOT, "shared/philosophy.md");
@@ -525,6 +524,7 @@ const interfaceRunOpts = {
 
 // ── Socket (always available — created BEFORE startup so it's reachable during resume) ──
 
+const SOCKET_PATH = resolve(PERSIST_DIR, `${interfaceAgent}.sock`);
 
 const socketUI = attachSocketUI({
   socketPath: SOCKET_PATH,

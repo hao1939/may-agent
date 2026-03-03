@@ -4,7 +4,8 @@ import type { SubagentDefinition } from "../src/types.js";
 import type { Model } from "@mariozechner/pi-ai";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { mkdtempSync, rmSync, existsSync, readFileSync } from "node:fs";
+import { mkdtempSync, rmSync, existsSync } from "node:fs";
+import { readSessionMeta } from "../src/persistence.js";
 
 function fakeModel(): Model<any> {
   return {
@@ -73,8 +74,8 @@ describe("close persistent session (cancel → no resume)", () => {
 
     manager.cancel(sid);
 
-    const registry = JSON.parse(readFileSync(join(dir, "registry.json"), "utf-8"));
-    expect(registry.sessions[sid].status).toBe("interrupted");
+    const meta = readSessionMeta(dir, sid);
+    expect(meta!.status).toBe("interrupted");
   });
 
   it("resumeAgent throws after cancel (no session to resume)", async () => {
