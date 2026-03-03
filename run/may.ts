@@ -43,6 +43,9 @@ const EVAL_SKIP_AGENTS = new Set(["evaluator", "optimizer", "may"]);
 
 const manager = new SubagentManager({
   persistDir: PERSIST_DIR,
+  onSessionStart: (agentName, sessionId) => {
+    attachAgentEvents(agentName, sessionId);
+  },
 });
 
 function projectRead() {
@@ -169,11 +172,7 @@ manager.register({
     projectRead(),
     projectWrite(),
     projectExec(),
-    manager.createTool({
-      onSessionStart: (agent, sessionId) => {
-        attachAgentEvents(agent, sessionId);
-      },
-    }),
+    manager.createTool({}),
   ],
   apiKey: "not-needed",
   maxTurns: 40,
@@ -182,9 +181,6 @@ manager.register({
 let sid: string;
 
 const maySubagentTool = manager.createTool({
-  onSessionStart: (agent, sessionId) => {
-    attachAgentEvents(agent, sessionId);
-  },
   getCallerSessionId: () => sid,
 });
 
@@ -388,7 +384,6 @@ try {
   const resumed = manager.resumeAgent("may");
   // Resume existing persistent May session
   sid = resumed.resumed.sessionId;
-  attachAgentEvents("may", sid);
 
   bus.emit({ type: "info", message: `Resumed session ${sid} (task: "${resumed.resumed.task.slice(0, 80)}")` });
   if (resumed.interrupted.length > 0) {
@@ -408,7 +403,6 @@ if (resumeError) {
   // Start new persistent May session
   const initialTask = process.argv.slice(2).join(" ") || "Ready. Waiting for tasks.";
   sid = manager.run("may", initialTask);
-  attachAgentEvents("may", sid);
   bus.emit({ type: "info", message: `Started persistent May session: ${sid}` });
 
   // Wait for initial processing to complete (May goes idle)
