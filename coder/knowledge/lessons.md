@@ -15,6 +15,13 @@
 - Always use the `write` tool to edit files — never `sed`, `cat >`, or heredocs via exec.
 - Read the full file before modifying it. Don't guess at file contents based on grep snippets.
 
+## Truncated Output
+
+- When output contains `[... characters truncated]`, that content is GONE — you cannot see it. Never claim to know what was in the truncated section.
+- If a file read or command output is truncated, use targeted commands (e.g., `grep -n`, `head -n`, `tail -n`, `sed -n 'Np'`) to read the specific parts you need.
+- Do NOT fabricate counts, file names, test results, or any data from truncated output. Only report what you actually saw.
+- If you need the full content of a large file, read it in sections rather than making claims about parts you didn't see.
+
 ## Testing & Verification
 
 - After making changes, run the full test suite (`npx vitest --run`), not just the test you think is affected. Changes often break unrelated tests.

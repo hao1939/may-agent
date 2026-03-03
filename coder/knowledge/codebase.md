@@ -10,8 +10,10 @@
 | `src/tools.ts` | `createReadTool`, `createWriteTool`, `createExecTool`, `createLearnTool`, `createHealthCheckTool`, `createValidateWorkflowTool` |
 | `src/workflow.ts` | `WorkflowContext`, `WorkflowResult`, `WorkflowEvent`, `WorkflowInterrupted` |
 | `src/workflow-tool.ts` | `createWorkflowTool()` — list/run actions |
-| `src/evaluator.ts` | `evaluateSession()`, `maintainAgent()`, `UsageSummary` |
+| `src/evaluator.ts` | `evaluateTask()`, `evaluateSession()`, `extractFailureChains()`, `extractUsage()` |
+| `src/compaction.ts` | Context compaction for long-running sessions |
 | `src/skills.ts` | `parseFrontmatter()`, `loadSkillsFromDirs()`, `formatSkillsForPrompt()` |
+| `src/overflow.ts` | Context overflow detection and progress extraction |
 | `src/index.ts` | Re-exports everything public |
 
 ## Key Types
@@ -21,16 +23,20 @@ interface SubagentDefinition {
   name: string;
   description: string;
   domain: string;
-  systemPrompt?: string;        // takes precedence if set
-  systemPromptFiles?: string[];  // loaded + concatenated
+  systemPrompt?: string;
+  systemPromptFiles?: string[];
   workspace?: string;
-  knowledgeDir?: string;         // auto-loads lessons.md
-  skillsDirs?: string[];         // scanned for SKILL.md
+  knowledgeDir?: string;
+  skillsDirs?: string[];
+  projectRoot?: string;
   tools: AgentTool[];
   model: Model<any>;
   apiKey?: string;
   timeoutMs?: number;
-  memoryLimit?: number;          // default 20
+  maxTurns?: number;
+  memoryLimit?: number;
+  compaction?: boolean | CompactionOptions;
+  persistent?: boolean;
 }
 
 interface TaskResult {
@@ -41,6 +47,21 @@ interface TaskResult {
   duration: string;
   outputDir: string;
   error?: string;
+  turnsUsed?: number;
+  maxTurns?: number;
+}
+
+interface SessionInfo {
+  sessionId: string;
+  agent: string;
+  task: string;
+  status: "running" | "done" | "error" | "interrupted" | "idle";
+  startedAt: number;
+  endedAt?: number;
+  runtime: string;
+  outputDir: string;
+  error?: string;
+  parentSessionId?: string;
 }
 ```
 
@@ -50,18 +71,20 @@ interface TaskResult {
 class SubagentManager {
   constructor(opts: { persistDir: string })
   register(def: SubagentDefinition): void
-  run(name: string, task: string): string              // returns sessionId
-  resume(): SessionInfo[]                               // restart recovery
-  status(): SessionInfo[]                               // all sessions
+  run(name: string, task: string, opts?: RunOptions): string
+  resumeAgent(name: string): { resumed: SessionInfo | null; interrupted: SessionInfo[] } | null
+  status(): SessionInfo[]
   listAgents(): Array<{ name, description, domain }>
   progress(sessionId: string, limit?: number): AgentMessage[]
-  result(sessionId: string): TaskResult | null
+  result(sessionId: string): TaskResult
   cancel(sessionId: string): void
-  send(sessionId: string, message: string): boolean     // inject user message
-  steer(sessionId: string, message: string): "steered" | "queued" | "not_running"
-  subscribe(sessionId: string, fn: (e: AgentEvent) => void): (() => void) | null
-  createTool(): AgentTool                               // single "subagents" tool
-  waitFor(sessionId: string): Promise<TaskResult | null>
+  send(sessionId: string, message: string): Promise<void>
+  steer(sessionId: string, message: string): "steered" | "queued"
+  subscribe(sessionId: string, fn: (e: AgentEvent) => void): () => void
+  waitFor(sessionId: string): Promise<TaskResult>
+  waitForIdle(sessionId: string): Promise<void>
+  createTool(opts?): AgentTool
+  getAgentDefinition(name: string): SubagentDefinition | undefined
 }
 ```
 
@@ -71,14 +94,14 @@ class SubagentManager {
 - Run all: `npx vitest --run`
 - Run one: `npx vitest --run test/<file>.test.ts`
 - Type check: `npx tsc --noEmit`
-- Currently: 184 tests across 11 files
 
 ## Patterns
 
 - All tools return `{ content: [{ type: "text", text }], details?: object }`
 - Manager uses `RegistryStore` for persistence (`registry.json`)
 - Session messages stored as JSONL in `.state/sessions/<id>/session.jsonl`
-- History archived to `.state/history/<id>/`
+- History archived to `.state/sessions/history/<id>/`
 - Memory entries appended to `.state/memory/<agent>.jsonl`
+- Evaluations saved to `.state/evaluations/<sessionId>.json`
 - Skills discovered via `SKILL.md` files with YAML frontmatter
 - Workflows are `.ts` files with `name`, `description`, `execute(ctx)` exports
