@@ -2,27 +2,41 @@
 
 Agent configurations for the [may-agent](https://github.com/hao1939/may-agent) system.
 
-Each agent has its own directory with:
-- `knowledge/domain.md` — agent identity, role, and domain expertise
-- `knowledge/lessons.md` — evaluator-generated feedback (auto-managed)
-- `tools/INDEX.md` — available tools manifest
-- `workflows/` — workflow recipes (`.ts` files)
-- `workspace/` — working directory for the agent
+## Structure
+
+Each agent has its own directory:
+- `knowledge/domain.md` — role, responsibilities, instructions
+- `knowledge/lessons.md` — accumulated lessons from evaluations (auto-managed)
+- `knowledge/codebase.md` — project-specific code knowledge (coder, optimizer)
+- `tools/INDEX.md` — available tools documentation
+- `workflows/` — workflow definitions (May, optimizer)
+- `workspace/` — working directory for scratch files
+
+Shared knowledge lives in `shared/`:
+- `shared/system-design.md` — conceptual architecture (what agents are, principles, evaluation model)
+- `shared/team.md` — concrete team roster (who, what tools, models, automation)
 
 ## Agents
 
+### Feature Team
+
 | Agent | Role | Model |
 |-------|------|-------|
-| **may** | Supervisor — plans, delegates, reviews | Opus 4.6 |
-| **coder** | Implementation — writes code, tests | Opus 4.6 |
-| **reviewer** | Independent review — different perspective | GPT-5.2 |
-| **evaluator** | Session evaluation — scores, patterns, verification | GPT-5.2 |
-| **optimizer** | Full improvement loop — analyze, propose, implement, verify | Gemini 3 |
+| **may** | Supervisor — delegates, reviews, commits | opus |
+| **coder** | Implementation — reads, writes, tests | opus |
+| **qa** | Code review — independent quality check | gpt-5.2 |
+
+### Meta Team
+
+| Agent | Role | Model |
+|-------|------|-------|
+| **evaluator** | Scores agent behavior per task tree | gpt-5.2 |
+| **optimizer** | Finds patterns, implements fixes | opus |
 
 ## Why a Separate Repo?
 
 Agent configs evolve independently from the library code:
-- The evaluator modifies `lessons.md` and creates new workflows automatically
-- Agents may update their own knowledge files
+- The optimizer edits domain.md, lessons.md, tools, and workflows
+- The evaluator writes lessons from evaluation data
 - Config changes shouldn't create noise in the library's git history
-- Different deployment environments may use different agent configs
+- Knowledge hot-reload: changes take effect on next agent session without restart
