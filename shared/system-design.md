@@ -12,8 +12,8 @@ An agent is an autonomous worker with:
 - A **task** — the specific job it was given for this session
 
 Each agent runs in its own session. It receives a task, uses its tools to accomplish it,
-and produces a result. Agents don't share state directly — they communicate through
-delegation and results.
+and produces a result. Agents communicate through delegation (task descriptions and
+results) and through the shared filesystem (code, config, knowledge files).
 
 ## The Feature Team
 
@@ -26,8 +26,9 @@ examines their results, and makes final decisions.
 description from May and works independently until done.
 
 **QA** — Reviews code changes for correctness and quality. Runs type checks and tests.
-Reports a verdict (pass/fail) with specific issues. QA is advisory — May decides
-whether to act on the feedback or not.
+Reports a verdict (PASS/FAIL/CONDITIONAL) with specific issues. QA can fix issues
+directly when appropriate. In the slow path, QA is advisory — May decides whether to
+act on the feedback. In workflows, QA verdicts drive retries mechanically.
 
 ## How Agents Work Together
 
@@ -54,8 +55,9 @@ of May's session. This tree structure is how we track which work belongs to whic
 result before deciding next steps. Flexible but verbose.
 
 **Fast path (workflows)**: Pre-defined sequences of agent calls. A workflow like
-"implement-and-review" runs coder→qa automatically without May making individual
-decisions. Faster but less adaptive. The slow path is the default when no workflow
+"implement-and-review" runs coder→QA automatically without May making individual
+decisions. If QA rejects, the workflow retries once, then escalates back to the
+caller. Faster but less adaptive. The slow path is the default when no workflow
 matches the task shape.
 
 ## Design Principles
@@ -101,12 +103,14 @@ better knowledge or tools.
 
 The meta team improves the feature team's performance over time:
 
-**Evaluator** — After a task completes, the evaluator receives the full task tree
-(all agent sessions) and scores each agent's behavior.
+**Evaluator** — After a task completes, the evaluator receives formatted transcripts
+of each agent's session and scores their behavior. The evaluator also handles
+maintenance tasks (e.g., pruning lessons) that require file I/O.
 
 **Optimizer** — Reads accumulated evaluations, identifies recurring problems, and
 implements fixes. The optimizer can change anything: tool code, agent knowledge,
-workflows, system prompts. Git provides the safety net for reverting bad changes.
+workflows, system prompts. It can delegate to coder and QA via sub-agents and
+workflows. Git provides the safety net for reverting bad changes.
 
 ### Agent as Feature Unit
 
@@ -241,7 +245,7 @@ Evaluations are saved per session ID. Each contains:
 - Efficiency and quality scores
 - Specific issues identified
 - Failure chains (auto-extracted error→recovery sequences)
-- Overall task-level scores
+- Overall task-level scores (efficiency, quality, verdict, result delivered)
 
 The optimizer reads this data to find patterns: which agent scores worst, which
 issues recur, which failure chain root causes keep appearing.
@@ -255,6 +259,7 @@ completes, gets archived. One session per task.
 task arrives, the same session wakes up. This preserves conversation history across
 tasks — May remembers previous interactions with the user.
 
-When the process restarts, May's persistent session is restored from disk with full
-message history. Any sub-agent sessions that were interrupted are reported to May
-so it can re-delegate the work.
+When the process restarts, May's persistent session is restored from disk. Message
+history is preserved, but the system prompt is regenerated from current knowledge
+files. This means knowledge changes (domain.md, lessons.md, shared docs) take effect
+even on restored sessions.

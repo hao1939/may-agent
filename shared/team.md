@@ -14,8 +14,8 @@ Concrete details about who's on the team, what they have, and how the automation
 
 | Agent | Model | Tools | Turn Limit | Notes |
 |-------|-------|-------|------------|-------|
-| **Evaluator** | gpt-5.2 | read, write, exec | 20 | Scores each agent in a task tree by responsibility. Should not use tools during evaluation (transcripts are provided). Also used for maintenance tasks (lessons pruning) which do need tools. |
-| **Optimizer** | opus | read, write, exec, subagents | 40 | Can delegate to coder and QA via subagents tool and implement-and-review workflow. Implements one fix per run. Has access to evaluation data and session transcripts. |
+| **Evaluator** | gpt-5.2 | read, write, exec | 20 | Scores each agent in a task tree by responsibility. Transcripts are provided in the prompt, so tools aren't needed for evaluation. Also used for maintenance tasks (lessons pruning) which do need tools. |
+| **Optimizer** | opus | read, write, exec, subagents, workflow | 40 | Can delegate to coder and QA via subagents tool and workflows. Implements one fix per run. Has access to evaluation data and session transcripts. |
 
 ## Model Assignment
 
@@ -28,7 +28,8 @@ implementation's reasoning rather than challenging it.
 
 **implement-and-review** — Both May and optimizer have this workflow. Sequence:
 coder implements → QA reviews → if FAIL/CONDITIONAL, one retry → if still failing,
-escalates back to the caller. QA verdicts drive the retry logic mechanically.
+escalates back to the caller. Critical rejections (wrong task, policy violation)
+escalate immediately without retry. QA verdicts drive the retry logic mechanically.
 
 **design-review** — Optimizer only. Reviews shared knowledge docs against reality.
 Evaluator and optimizer independently review, then cross-respond to each other's
@@ -45,8 +46,7 @@ this as part of regular maintenance.
 - **Knowledge hot-reload**: All agent knowledge (domain.md, lessons.md) is read fresh
   at session start. Optimizer changes take effect on the next agent session.
 - **Context compaction**: When May's persistent session grows beyond 70% of context
-  capacity, older messages are summarized to free space. The last reasoning block
-  is preserved verbatim.
+  capacity, older messages are summarized to free space.
 - **Turn budget warnings**: Agents receive a warning when they reach 80% of their
   turn limit, giving them a chance to wrap up.
 
@@ -55,10 +55,10 @@ this as part of regular maintenance.
 - **May cannot write files** — enforced structurally via read-only exec (sed -i, cat >,
   heredocs, tee all blocked). This forces delegation for all code changes.
 - **Coder never commits** — May handles git add/commit after QA review.
-- **QA is advisory** — In the slow path, May decides. In workflows, QA verdicts
-  drive retries mechanically.
-- **Evaluator has tools it shouldn't use during evaluation** — Tools exist for
-  maintenance tasks (lessons pruning). During evaluation, transcripts are provided
-  in the prompt, so tools waste turns.
+- **QA is advisory in the slow path** — May decides whether to act on feedback.
+  In workflows, QA verdicts drive retries mechanically.
+- **Evaluator has tools for maintenance** — During evaluation, transcripts are
+  provided in the prompt, so tools are unnecessary. Tools exist for maintenance
+  tasks (lessons pruning) where file I/O is needed.
 - **One fix per optimizer run** — Isolates changes so evaluation can measure
   which fix helped or hurt.

@@ -20,6 +20,9 @@ by topic, not by consumer. See the [Knowledge Library section in system-design.m
 ### Team
 - **[team.md](team.md)** — Concrete roster: agents, models, tools, turn limits, workflows, automation, structural constraints
 
+### Reviews
+- **[system-design-review.md](system-design-review.md)** — Historical review of system-design.md against the codebase, with findings and status tracking
+
 ## Inclusion
 
 | Agent | system-design | team | Why |
