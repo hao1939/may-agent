@@ -45,31 +45,38 @@ User gives task to May
   May reports result to user
 ```
 
-Each delegation creates a **session**. Sessions are linked into a **task tree** via
-parent-child relationships. When May delegates to coder, coder's session is a child
-of May's session. This tree structure is how we track which work belongs to which task.
+Each delegation creates a **session**. Sessions are linked via **parent-child
+relationships** using `parentSessionId`. When May delegates to coder, coder's session
+is a child of May's session. The evaluator finds unevaluated child sessions of a
+parent session to build task tree evaluations. Deeper chains are supported (coder
+delegates to sub-agents), but evaluation currently scans direct children of a given
+parent, not full recursive descendants.
 
 ### Slow Path vs Fast Path
 
 **Slow path**: May delegates step by step — one call per sub-agent, examining each
-result before deciding next steps. Flexible but verbose.
+result before deciding next steps. Flexible but verbose. This is the standard
+approach — May uses direct delegation by default.
 
 **Fast path (workflows)**: Pre-defined sequences of agent calls. A workflow like
 "implement-and-review" runs coder→QA automatically without May making individual
-decisions. If QA rejects, the workflow retries once, then escalates back to the
-caller. Faster but less adaptive. The slow path is the default when no workflow
-matches the task shape.
+decisions. If QA rejects with fixable issues, the workflow retries once. If the
+rejection is critical (wrong task, policy violation, behavioral regression), the
+workflow escalates immediately without retry. Faster but less adaptive. May or the
+optimizer chooses when to use a workflow vs direct delegation.
 
 ## Design Principles
 
 ### No Silent Failures
 
-When something fails, the agent must know **why**. Tools return explicit error
-messages, never null or empty results with no explanation. Silent failures force
+When something fails, the agent must know **why**. Tools aim to return explicit error
+messages rather than null or empty results with no explanation. Silent failures force
 agents to guess what went wrong, which wastes calls on blind recovery attempts.
 
 This applies everywhere: tool results, delegation results, file operations. If a
-tool can't do what was asked, it says what happened and why.
+tool can't do what was asked, it says what happened and why. Note that empty output
+can be valid data (e.g., `find` returning no matches) — the system distinguishes
+between "no results" and "something went wrong."
 
 ### Run First, Then Design
 
@@ -96,15 +103,17 @@ The system is designed around **roles**. Evaluation asks two questions in order:
    flags non-issues is playing the right role badly.
 
 This two-level view guides both evaluation (what to score) and optimization (what
-to fix). Role violations need structural enforcement. Poor role execution needs
-better knowledge or tools.
+to fix). Role violations are addressed through structural enforcement where possible
+(e.g., tool constraints that prevent an agent from performing actions outside its
+role). Poor role execution needs better knowledge or tools.
 
 ## The Meta Team
 
 The meta team improves the feature team's performance over time:
 
 **Evaluator** — After a task completes, the evaluator receives formatted transcripts
-of each agent's session and scores their behavior. The evaluator also handles
+of each agent's session and scores their behavior. It operates a structured analysis
+pipeline with multiple evaluation scopes (agent, workflow, step). It also handles
 maintenance tasks (e.g., pruning lessons) that require file I/O.
 
 **Optimizer** — Reads accumulated evaluations, identifies recurring problems, and
@@ -119,7 +128,8 @@ improvement. Like a team member in a code review — you evaluate their contribu
 not the whole team's output.
 
 This means:
-- Scores are per-agent, not per-task
+- Primary scoring is per-agent; an overall task outcome is also recorded for
+  triage and convenience
 - Issues are attributed to the agent whose action caused them
 - Improvements target specific agents
 - An agent's track record over time reveals patterns
@@ -244,7 +254,8 @@ Evaluations are saved per session ID. Each contains:
 - Which agent was evaluated
 - Efficiency and quality scores
 - Specific issues identified
-- Failure chains (auto-extracted error→recovery sequences)
+- Failure chains (auto-extracted error→recovery sequences, identified via heuristic
+  pattern matching — signals to aid diagnosis, not definitive causal analysis)
 - Overall task-level scores (efficiency, quality, verdict, result delivered)
 
 The optimizer reads this data to find patterns: which agent scores worst, which

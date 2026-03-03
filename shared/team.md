@@ -6,23 +6,24 @@ Concrete details about who's on the team, what they have, and how the automation
 
 | Agent | Model | Tools | Turn Limit | Notes |
 |-------|-------|-------|------------|-------|
-| **May** | opus | exec (read-only), subagents, workflow | — | Persistent session. Cannot read/write files — forces delegation. Can run shell commands for verification (tsc, tests, git). Handles all commits. |
-| **Coder** | opus | read, write, exec | 50 | Full project access. Implements code changes. Does not commit — May handles that. |
+| **May** | opus | exec (read-only), subagents, workflow | — | Persistent session. No read/write tools — forces delegation for all code changes. Can read files and run shell commands for verification (cat, grep, tsc, tests, git) but cannot write files via exec. |
+| **Coder** | opus | read, write, exec | 50 | Full project access. Implements code changes and commits. |
 | **QA** | gpt-5.2 | read, write, exec | 30 | Different model from coder for perspective diversity. Can fix issues directly. Uses PASS/FAIL/CONDITIONAL verdicts. |
 
 ## Meta Team
 
 | Agent | Model | Tools | Turn Limit | Notes |
 |-------|-------|-------|------------|-------|
-| **Evaluator** | gpt-5.2 | read, write, exec | 20 | Scores each agent in a task tree by responsibility. Transcripts are provided in the prompt, so tools aren't needed for evaluation. Also used for maintenance tasks (lessons pruning) which do need tools. |
+| **Evaluator** | gpt-5.2 | read, write, exec | 20 | Scores each agent in a task tree by responsibility. Transcripts are provided in the prompt, so tools aren't needed for evaluation. Also used for maintenance tasks (lessons pruning) which do need tools. memoryLimit=5 (vs default 20). |
 | **Optimizer** | opus | read, write, exec, subagents, workflow | 40 | Can delegate to coder and QA via subagents tool and workflows. Implements one fix per run. Has access to evaluation data and session transcripts. |
 
 ## Model Assignment
 
 Implementation agents (May, coder, optimizer) use opus. Review agents (QA, evaluator)
-use gpt-5.2. Different model families provide genuine perspective diversity — a
-reviewer using the same model as the implementer tends to agree with the
-implementation's reasoning rather than challenging it.
+use gpt-5.2. Both are proxy-aliased labels routed through a local proxy — check
+`run/may.ts` for the actual model configuration. Different model families provide
+genuine perspective diversity — a reviewer using the same model as the implementer
+tends to agree with the implementation's reasoning rather than challenging it.
 
 ## Workflows
 
@@ -33,8 +34,7 @@ escalate immediately without retry. QA verdicts drive the retry logic mechanical
 
 **design-review** — Optimizer only. Reviews shared knowledge docs against reality.
 Evaluator and optimizer independently review, then cross-respond to each other's
-findings. Returns structured findings for the optimizer to act on. May can trigger
-this as part of regular maintenance.
+findings. Returns structured findings for the optimizer to act on.
 
 ## Automation
 
@@ -53,8 +53,10 @@ this as part of regular maintenance.
 ## Constraints
 
 - **May cannot write files** — enforced structurally via read-only exec (sed -i, cat >,
-  heredocs, tee all blocked). This forces delegation for all code changes.
-- **Coder never commits** — May handles git add/commit after QA review.
+  heredocs, tee all blocked). May can read file contents via shell commands (cat, grep,
+  git diff, rg) but cannot modify them. This forces delegation for all code changes.
+- **Coder implements and commits** — May orchestrates what gets built; coder handles
+  implementation and git commits.
 - **QA is advisory in the slow path** — May decides whether to act on feedback.
   In workflows, QA verdicts drive retries mechanically.
 - **Evaluator has tools for maintenance** — During evaluation, transcripts are
