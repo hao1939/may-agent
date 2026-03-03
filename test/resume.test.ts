@@ -1,18 +1,19 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { mkdtempSync, rmSync, readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
+import { mkdtempSync, rmSync, readFileSync, mkdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { SubagentManager } from "../src/manager.js";
 import {
-  RegistryStore,
   ensureSessionDir,
   appendSessionMessage,
   readSessionMessages,
   sessionDir,
   sessionOutputDir,
   historyDir,
+  writeSessionMeta,
+  readSessionMeta,
 } from "../src/persistence.js";
-import type { Registry, PersistedSession } from "../src/persistence.js";
+import type { PersistedSession } from "../src/persistence.js";
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { Model } from "@mariozechner/pi-ai";
 
@@ -47,10 +48,12 @@ function assistantMessage(text: string): AgentMessage {
   } as AgentMessage;
 }
 
-/** Write a registry.json directly to simulate a previous process's state. */
-function writeRegistry(persistDir: string, registry: Registry): void {
+/** Write per-session meta.json files to simulate a previous process's state. */
+function writeRegistryState(persistDir: string, sessions: Record<string, PersistedSession>): void {
   mkdirSync(persistDir, { recursive: true });
-  writeFileSync(join(persistDir, "registry.json"), JSON.stringify(registry, null, 2), "utf-8");
+  for (const [sid, meta] of Object.entries(sessions)) {
+    writeSessionMeta(persistDir, sid, meta);
+  }
 }
 
 describe("SubagentManager.resume()", () => {
@@ -85,28 +88,15 @@ describe("SubagentManager.resume()", () => {
   });
 
   it("returns empty array when all sessions are done", () => {
-    // Write a registry with only "done" sessions
-    const registry: Registry = {
-      agents: {
-        "agent-a": {
-          name: "agent-a",
-          description: "Test",
-          domain: "test",
-          systemPrompt: "You are a test agent.",
-          model: { provider: "anthropic", id: "test-model" },
-        },
+    writeRegistryState(persistDir, {
+      "session-1": {
+        agent: "agent-a",
+        task: "completed task",
+        status: "done",
+        startedAt: Date.now() - 10000,
+        endedAt: Date.now() - 5000,
       },
-      sessions: {
-        "session-1": {
-          agent: "agent-a",
-          task: "completed task",
-          status: "done",
-          startedAt: Date.now() - 10000,
-          endedAt: Date.now() - 5000,
-        },
-      },
-    };
-    writeRegistry(persistDir, registry);
+    });
 
     const manager = new SubagentManager({ persistDir });
     manager.register({
@@ -123,26 +113,14 @@ describe("SubagentManager.resume()", () => {
   });
 
   it("marks running sessions as interrupted when agent is not registered", () => {
-    const registry: Registry = {
-      agents: {
-        "missing-agent": {
-          name: "missing-agent",
-          description: "Test",
-          domain: "test",
-          systemPrompt: "You are a test agent.",
-          model: { provider: "anthropic", id: "test-model" },
-        },
+    writeRegistryState(persistDir, {
+      "session-orphan": {
+        agent: "missing-agent",
+        task: "orphaned task",
+        status: "running",
+        startedAt: Date.now() - 10000,
       },
-      sessions: {
-        "session-orphan": {
-          agent: "missing-agent",
-          task: "orphaned task",
-          status: "running",
-          startedAt: Date.now() - 10000,
-        },
-      },
-    };
-    writeRegistry(persistDir, registry);
+    });
 
     // Suppress the console.warn
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
@@ -153,11 +131,9 @@ describe("SubagentManager.resume()", () => {
     const resumed = manager.resume();
     expect(resumed).toEqual([]);
 
-    // Verify the session was marked interrupted in registry
-    const updatedRegistry: Registry = JSON.parse(
-      readFileSync(join(persistDir, "registry.json"), "utf-8"),
-    );
-    expect(updatedRegistry.sessions["session-orphan"].status).toBe("interrupted");
+    // Verify the session was marked interrupted
+    const meta = readSessionMeta(persistDir, "session-orphan");
+    expect(meta!.status).toBe("interrupted");
 
     // Should have logged a warning
     expect(warnSpy).toHaveBeenCalledWith(
@@ -170,27 +146,14 @@ describe("SubagentManager.resume()", () => {
   it("resumes a running session with persisted conversation", async () => {
     const startedAt = Date.now() - 30000;
 
-    // Set up registry with a running session
-    const registry: Registry = {
-      agents: {
-        "test-agent": {
-          name: "test-agent",
-          description: "Test",
-          domain: "test",
-          systemPrompt: "You are a test agent.",
-          model: { provider: "anthropic", id: "test-model" },
-        },
+    writeRegistryState(persistDir, {
+      "session-resume": {
+        agent: "test-agent",
+        task: "in-progress task",
+        status: "running",
+        startedAt,
       },
-      sessions: {
-        "session-resume": {
-          agent: "test-agent",
-          task: "in-progress task",
-          status: "running",
-          startedAt,
-        },
-      },
-    };
-    writeRegistry(persistDir, registry);
+    });
 
     // Write conversation history to session JSONL
     ensureSessionDir(persistDir, "session-resume");
@@ -251,46 +214,27 @@ describe("SubagentManager.resume()", () => {
   });
 
   it("resumes multiple running sessions", async () => {
-    const registry: Registry = {
-      agents: {
-        "agent-a": {
-          name: "agent-a",
-          description: "Agent A",
-          domain: "test",
-          systemPrompt: "You are agent A.",
-          model: { provider: "anthropic", id: "test-model" },
-        },
-        "agent-b": {
-          name: "agent-b",
-          description: "Agent B",
-          domain: "test",
-          systemPrompt: "You are agent B.",
-          model: { provider: "anthropic", id: "test-model" },
-        },
+    writeRegistryState(persistDir, {
+      "session-a": {
+        agent: "agent-a",
+        task: "task A",
+        status: "running",
+        startedAt: Date.now() - 20000,
       },
-      sessions: {
-        "session-a": {
-          agent: "agent-a",
-          task: "task A",
-          status: "running",
-          startedAt: Date.now() - 20000,
-        },
-        "session-b": {
-          agent: "agent-b",
-          task: "task B",
-          status: "running",
-          startedAt: Date.now() - 10000,
-        },
-        "session-done": {
-          agent: "agent-a",
-          task: "done task",
-          status: "done",
-          startedAt: Date.now() - 50000,
-          endedAt: Date.now() - 40000,
-        },
+      "session-b": {
+        agent: "agent-b",
+        task: "task B",
+        status: "running",
+        startedAt: Date.now() - 10000,
       },
-    };
-    writeRegistry(persistDir, registry);
+      "session-done": {
+        agent: "agent-a",
+        task: "done task",
+        status: "done",
+        startedAt: Date.now() - 50000,
+        endedAt: Date.now() - 40000,
+      },
+    });
 
     // Create session dirs
     for (const sid of ["session-a", "session-b"]) {
@@ -339,26 +283,14 @@ describe("SubagentManager.resume()", () => {
   });
 
   it("resumes sessions with empty conversation history", async () => {
-    const registry: Registry = {
-      agents: {
-        "fresh-agent": {
-          name: "fresh-agent",
-          description: "Test",
-          domain: "test",
-          systemPrompt: "You are a test agent.",
-          model: { provider: "anthropic", id: "test-model" },
-        },
+    writeRegistryState(persistDir, {
+      "session-empty": {
+        agent: "fresh-agent",
+        task: "task with no messages",
+        status: "running",
+        startedAt: Date.now() - 5000,
       },
-      sessions: {
-        "session-empty": {
-          agent: "fresh-agent",
-          task: "task with no messages",
-          status: "running",
-          startedAt: Date.now() - 5000,
-        },
-      },
-    };
-    writeRegistry(persistDir, registry);
+    });
 
     // Create session dir but no messages (simulating crash before any messages were persisted)
     ensureSessionDir(persistDir, "session-empty");
@@ -384,42 +316,30 @@ describe("SubagentManager.resume()", () => {
   });
 
   it("skips non-running sessions (error, done, interrupted)", () => {
-    const registry: Registry = {
-      agents: {
-        "agent-a": {
-          name: "agent-a",
-          description: "Test",
-          domain: "test",
-          systemPrompt: "Test",
-          model: { provider: "anthropic", id: "test-model" },
-        },
+    writeRegistryState(persistDir, {
+      "s-done": {
+        agent: "agent-a",
+        task: "done",
+        status: "done",
+        startedAt: Date.now() - 50000,
+        endedAt: Date.now() - 40000,
       },
-      sessions: {
-        "s-done": {
-          agent: "agent-a",
-          task: "done",
-          status: "done",
-          startedAt: Date.now() - 50000,
-          endedAt: Date.now() - 40000,
-        },
-        "s-error": {
-          agent: "agent-a",
-          task: "error",
-          status: "error",
-          startedAt: Date.now() - 30000,
-          endedAt: Date.now() - 20000,
-          error: "something broke",
-        },
-        "s-interrupted": {
-          agent: "agent-a",
-          task: "interrupted",
-          status: "interrupted",
-          startedAt: Date.now() - 10000,
-          endedAt: Date.now() - 5000,
-        },
+      "s-error": {
+        agent: "agent-a",
+        task: "error",
+        status: "error",
+        startedAt: Date.now() - 30000,
+        endedAt: Date.now() - 20000,
+        error: "something broke",
       },
-    };
-    writeRegistry(persistDir, registry);
+      "s-interrupted": {
+        agent: "agent-a",
+        task: "interrupted",
+        status: "interrupted",
+        startedAt: Date.now() - 10000,
+        endedAt: Date.now() - 5000,
+      },
+    });
 
     const manager = new SubagentManager({ persistDir });
     manager.register({
@@ -436,27 +356,14 @@ describe("SubagentManager.resume()", () => {
   });
 
   it("uses the registered agent's tools and model, not the persisted config", async () => {
-    // Simulate: persisted model says "old-model", but registered agent has fakeModel
-    const registry: Registry = {
-      agents: {
-        "tool-agent": {
-          name: "tool-agent",
-          description: "Test",
-          domain: "test",
-          systemPrompt: "You are a test agent.",
-          model: { provider: "anthropic", id: "old-model" },
-        },
+    writeRegistryState(persistDir, {
+      "session-tools": {
+        agent: "tool-agent",
+        task: "test tools",
+        status: "running",
+        startedAt: Date.now() - 5000,
       },
-      sessions: {
-        "session-tools": {
-          agent: "tool-agent",
-          task: "test tools",
-          status: "running",
-          startedAt: Date.now() - 5000,
-        },
-      },
-    };
-    writeRegistry(persistDir, registry);
+    });
 
     ensureSessionDir(persistDir, "session-tools");
     mkdirSync(sessionOutputDir(persistDir, "session-tools"), { recursive: true });
@@ -486,26 +393,14 @@ describe("SubagentManager.resume()", () => {
   });
 
   it("resumed session can be waited on and produces result", async () => {
-    const registry: Registry = {
-      agents: {
-        "result-agent": {
-          name: "result-agent",
-          description: "Test",
-          domain: "test",
-          systemPrompt: "You are a test agent.",
-          model: { provider: "anthropic", id: "test-model" },
-        },
+    writeRegistryState(persistDir, {
+      "session-result": {
+        agent: "result-agent",
+        task: "produce result",
+        status: "running",
+        startedAt: Date.now() - 5000,
       },
-      sessions: {
-        "session-result": {
-          agent: "result-agent",
-          task: "produce result",
-          status: "running",
-          startedAt: Date.now() - 5000,
-        },
-      },
-    };
-    writeRegistry(persistDir, registry);
+    });
 
     ensureSessionDir(persistDir, "session-result");
     mkdirSync(sessionOutputDir(persistDir, "session-result"), { recursive: true });
@@ -530,26 +425,14 @@ describe("SubagentManager.resume()", () => {
   });
 
   it("resumed session persists new messages to JSONL", async () => {
-    const registry: Registry = {
-      agents: {
-        "persist-agent": {
-          name: "persist-agent",
-          description: "Test",
-          domain: "test",
-          systemPrompt: "You are a test agent.",
-          model: { provider: "anthropic", id: "test-model" },
-        },
+    writeRegistryState(persistDir, {
+      "session-persist": {
+        agent: "persist-agent",
+        task: "persist test",
+        status: "running",
+        startedAt: Date.now() - 5000,
       },
-      sessions: {
-        "session-persist": {
-          agent: "persist-agent",
-          task: "persist test",
-          status: "running",
-          startedAt: Date.now() - 5000,
-        },
-      },
-    };
-    writeRegistry(persistDir, registry);
+    });
 
     ensureSessionDir(persistDir, "session-persist");
     mkdirSync(sessionOutputDir(persistDir, "session-persist"), { recursive: true });
@@ -591,39 +474,20 @@ describe("SubagentManager.resume()", () => {
   });
 
   it("mixes resumed and unregistered agents correctly", async () => {
-    const registry: Registry = {
-      agents: {
-        "good-agent": {
-          name: "good-agent",
-          description: "Test",
-          domain: "test",
-          systemPrompt: "You are a test agent.",
-          model: { provider: "anthropic", id: "test-model" },
-        },
-        "missing-agent": {
-          name: "missing-agent",
-          description: "Test",
-          domain: "test",
-          systemPrompt: "You are a test agent.",
-          model: { provider: "anthropic", id: "test-model" },
-        },
+    writeRegistryState(persistDir, {
+      "session-good": {
+        agent: "good-agent",
+        task: "good task",
+        status: "running",
+        startedAt: Date.now() - 5000,
       },
-      sessions: {
-        "session-good": {
-          agent: "good-agent",
-          task: "good task",
-          status: "running",
-          startedAt: Date.now() - 5000,
-        },
-        "session-bad": {
-          agent: "missing-agent",
-          task: "orphan task",
-          status: "running",
-          startedAt: Date.now() - 5000,
-        },
+      "session-bad": {
+        agent: "missing-agent",
+        task: "orphan task",
+        status: "running",
+        startedAt: Date.now() - 5000,
       },
-    };
-    writeRegistry(persistDir, registry);
+    });
 
     ensureSessionDir(persistDir, "session-good");
     mkdirSync(sessionOutputDir(persistDir, "session-good"), { recursive: true });
@@ -649,10 +513,8 @@ describe("SubagentManager.resume()", () => {
     expect(resumed[0].sessionId).toBe("session-good");
 
     // The missing agent's session should be interrupted
-    const updatedRegistry: Registry = JSON.parse(
-      readFileSync(join(persistDir, "registry.json"), "utf-8"),
-    );
-    expect(updatedRegistry.sessions["session-bad"].status).toBe("interrupted");
+    const meta = readSessionMeta(persistDir, "session-bad");
+    expect(meta!.status).toBe("interrupted");
 
     expect(warnSpy).toHaveBeenCalled();
     warnSpy.mockRestore();
@@ -661,26 +523,14 @@ describe("SubagentManager.resume()", () => {
   });
 
   it("resumed session output dir is correct", () => {
-    const registry: Registry = {
-      agents: {
-        "output-agent": {
-          name: "output-agent",
-          description: "Test",
-          domain: "test",
-          systemPrompt: "Test",
-          model: { provider: "anthropic", id: "test-model" },
-        },
+    writeRegistryState(persistDir, {
+      "session-out": {
+        agent: "output-agent",
+        task: "check output",
+        status: "running",
+        startedAt: Date.now() - 5000,
       },
-      sessions: {
-        "session-out": {
-          agent: "output-agent",
-          task: "check output",
-          status: "running",
-          startedAt: Date.now() - 5000,
-        },
-      },
-    };
-    writeRegistry(persistDir, registry);
+    });
 
     ensureSessionDir(persistDir, "session-out");
     mkdirSync(sessionOutputDir(persistDir, "session-out"), { recursive: true });

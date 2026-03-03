@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { createHealthCheckTool } from "../src/tools.js";
 import { mkdtempSync, rmSync, writeFileSync, mkdirSync } from "node:fs";
+import { writeSessionMeta } from "../src/persistence.js";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
@@ -116,16 +117,14 @@ describe("health check tool", () => {
     mkdirSync(stateDir, { recursive: true });
     mkdirSync(join(projectRoot, "node_modules"), { recursive: true });
 
-    // Seed a stale session
-    writeFileSync(
-      join(stateDir, "registry.json"),
-      JSON.stringify({
-        agents: {},
-        sessions: {
-          "stale-1": { agent: "coder", task: "stuck task", status: "running", startedAt: 1000 },
-        },
-      }),
-    );
+    // Seed a stale session as meta.json
+    mkdirSync(stateDir, { recursive: true });
+    writeSessionMeta(stateDir, "stale-1", {
+      agent: "coder",
+      task: "stuck task",
+      status: "running",
+      startedAt: 1000,
+    });
 
     const tool = createHealthCheckTool({
       projectRoot,
@@ -147,16 +146,18 @@ describe("health check tool", () => {
     mkdirSync(stateDir, { recursive: true });
     mkdirSync(join(projectRoot, "node_modules"), { recursive: true });
 
-    writeFileSync(
-      join(stateDir, "registry.json"),
-      JSON.stringify({
-        agents: {},
-        sessions: {
-          "done-1": { agent: "coder", task: "finished", status: "done", startedAt: 1000 },
-          "err-1": { agent: "coder", task: "failed", status: "error", startedAt: 2000 },
-        },
-      }),
-    );
+    writeSessionMeta(stateDir, "done-1", {
+      agent: "coder",
+      task: "finished",
+      status: "done",
+      startedAt: 1000,
+    });
+    writeSessionMeta(stateDir, "err-1", {
+      agent: "coder",
+      task: "failed",
+      status: "error",
+      startedAt: 2000,
+    });
 
     const tool = createHealthCheckTool({
       projectRoot,
@@ -186,7 +187,7 @@ describe("health check tool", () => {
     const result = await tool.execute("tc8", {});
     const staleCheck = result.details.checks.find((c: any) => c.name === "stale_sessions");
     expect(staleCheck.ok).toBe(true);
-    expect(staleCheck.detail).toContain("clean state");
+    expect(staleCheck.detail).toContain("No sessions stuck");
   });
 
   it("includes human-readable text in content", async () => {
