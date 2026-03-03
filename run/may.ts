@@ -41,6 +41,9 @@ attachConsoleUI(bus);
 // Agents to skip for auto-evaluation (meta agents evaluate feature agents, not themselves)
 const EVAL_SKIP_AGENTS = new Set(["evaluator", "optimizer", "may"]);
 
+// MAY_META=0 disables auto-evaluation and idle optimizer trigger
+const META_ENABLED = process.env.MAY_META !== "0";
+
 const manager = new SubagentManager({
   persistDir: PERSIST_DIR,
   onSessionStart: (agentName, sessionId) => {
@@ -387,7 +390,7 @@ async function sendToMay(message: string): Promise<void> {
 
     // Post-task evaluation: evaluate all unevaluated child sessions
     // Fire-and-forget — don't block the user prompt
-    runPostTaskEvaluation();
+    if (META_ENABLED) runPostTaskEvaluation();
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     bus.emit({ type: "info", message: `Send error: ${msg}` });
@@ -479,6 +482,7 @@ const IDLE_CHECK_INTERVAL_MS = 60 * 1000; // check every 60 seconds
 
 const idleTimer = setInterval(() => {
   if (shuttingDown) return;
+  if (!META_ENABLED) return;
   if (optimizerRunning) return;
 
   const now = Date.now();
@@ -514,6 +518,10 @@ const idleTimer = setInterval(() => {
 }, IDLE_CHECK_INTERVAL_MS);
 
 // ── Socket (always available) ──────────────────────────────────────────
+
+if (!META_ENABLED) {
+  bus.emit({ type: "info", message: "[config] Meta tasks disabled (MAY_META=0). No auto-evaluation or optimizer triggers." });
+}
 
 const socketUI = attachSocketUI({
   socketPath: SOCKET_PATH,
