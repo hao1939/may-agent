@@ -1,0 +1,62 @@
+# Agent Team
+
+Concrete details about who's on the team, what they have, and how the automation works.
+
+## Feature Team
+
+| Agent | Model | Tools | Turn Limit | Notes |
+|-------|-------|-------|------------|-------|
+| **May** | opus | exec (read-only), subagents, workflow | — | Persistent session. Cannot read/write files — forces delegation. Can run shell commands for verification (tsc, tests, git). Handles all commits. |
+| **Coder** | opus | read, write, exec | 50 | Full project access. Implements code changes. Does not commit — May handles that. |
+| **QA** | gpt-5.2 | read, write, exec | 30 | Different model from coder for perspective diversity. Can fix issues directly. Uses PASS/FAIL/CONDITIONAL verdicts. |
+
+## Meta Team
+
+| Agent | Model | Tools | Turn Limit | Notes |
+|-------|-------|-------|------------|-------|
+| **Evaluator** | gpt-5.2 | read, write, exec | 20 | Scores each agent in a task tree by responsibility. Should not use tools during evaluation (transcripts are provided). Also used for maintenance tasks (lessons pruning) which do need tools. |
+| **Optimizer** | opus | read, write, exec, subagents | 40 | Can delegate to coder and QA via subagents tool and implement-and-review workflow. Implements one fix per run. Has access to evaluation data and session transcripts. |
+
+## Model Assignment
+
+Implementation agents (May, coder, optimizer) use opus. Review agents (QA, evaluator)
+use gpt-5.2. Different model families provide genuine perspective diversity — a
+reviewer using the same model as the implementer tends to agree with the
+implementation's reasoning rather than challenging it.
+
+## Workflows
+
+**implement-and-review** — Both May and optimizer have this workflow. Sequence:
+coder implements → QA reviews → if FAIL/CONDITIONAL, one retry → if still failing,
+escalates back to the caller. QA verdicts drive the retry logic mechanically.
+
+**design-review** — May only. Evaluator and optimizer independently review a design
+document, then cross-respond to each other's findings. May synthesizes the final brief.
+
+## Automation
+
+- **Post-task evaluation**: When May goes idle after completing a task, unevaluated
+  child sessions are automatically sent to the evaluator for scoring.
+- **Idle optimizer trigger**: After 5 minutes of idle time (with 30-minute cooldown),
+  the optimizer is triggered via May to analyze recent evaluations and implement
+  improvements.
+- **Knowledge hot-reload**: All agent knowledge (domain.md, lessons.md) is read fresh
+  at session start. Optimizer changes take effect on the next agent session.
+- **Context compaction**: When May's persistent session grows beyond 70% of context
+  capacity, older messages are summarized to free space. The last reasoning block
+  is preserved verbatim.
+- **Turn budget warnings**: Agents receive a warning when they reach 80% of their
+  turn limit, giving them a chance to wrap up.
+
+## Constraints
+
+- **May cannot write files** — enforced structurally via read-only exec (sed -i, cat >,
+  heredocs, tee all blocked). This forces delegation for all code changes.
+- **Coder never commits** — May handles git add/commit after QA review.
+- **QA is advisory** — In the slow path, May decides. In workflows, QA verdicts
+  drive retries mechanically.
+- **Evaluator has tools it shouldn't use during evaluation** — Tools exist for
+  maintenance tasks (lessons pruning). During evaluation, transcripts are provided
+  in the prompt, so tools waste turns.
+- **One fix per optimizer run** — Isolates changes so evaluation can measure
+  which fix helped or hurt.
