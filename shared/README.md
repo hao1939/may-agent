@@ -20,17 +20,21 @@ by topic, not by consumer. See the [Knowledge Library section in system-design.m
 ### Team
 - **[team.md](team.md)** — Concrete roster: agents, models, tools, turn limits, workflows, automation, structural constraints
 
+### Philosophy
+- **[philosophy.md](philosophy.md)** — Design values, preferences, and quality standards extracted from human input. Owned by Bob.
+
 ### Reviews
 - **[system-design-review.md](system-design-review.md)** — Historical review of system-design.md against the codebase, with findings and status tracking
 
 ## Inclusion
 
-| Agent | system-design | team | Why |
-|-------|:---:|:---:|-----|
-| May | ✓ | ✓ | Coordinates the team, needs full picture |
-| Evaluator | ✓ | ✓ | Scores agents, needs to understand roles and constraints |
-| Optimizer | ✓ | ✓ | Improves agents, needs to understand architecture |
-| Coder | — | — | Works on specific tasks independently |
-| QA | — | — | Reviews code independently |
+| Agent | system-design | team | philosophy | Why |
+|-------|:---:|:---:|:---:|-----|
+| May | ✓ | ✓ | — | Coordinates the team, needs full picture |
+| Evaluator | ✓ | ✓ | — | Scores agents, needs to understand roles and constraints |
+| Optimizer | ✓ | ✓ | — | Improves agents, needs to understand architecture |
+| Bob | ✓ | ✓ | ✓ | Reviews team work against philosophy, maintains philosophy.md |
+| Coder | — | — | — | Works on specific tasks independently |
+| QA | — | — | — | Reviews code independently |
 
 All agents can `read agents/shared/` during a session if they need additional context.
