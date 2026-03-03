@@ -45,6 +45,7 @@ const manager = new SubagentManager({
   persistDir: PERSIST_DIR,
   onSessionStart: (agentName, sessionId) => {
     attachAgentEvents(agentName, sessionId);
+    if (agentName === "optimizer") optimizerSid = sessionId;
   },
 });
 
@@ -163,6 +164,30 @@ manager.register({
 });
 
 const optimizerTools = projectTools();
+let optimizerSid: string | undefined;
+
+const optimizerWorkflowTool = createWorkflowTool({
+  manager,
+  workflowDir: resolve(AGENTS_ROOT, "optimizer/workflows"),
+  persistDir: PERSIST_DIR,
+  callerSessionId: () => {
+    if (!optimizerSid) throw new Error("No active optimizer session");
+    return optimizerSid;
+  },
+  onEvent: (event) => {
+    if (event.type === "workflow_start") {
+      bus.emit({ type: "info", message: `[workflow:optimizer] Starting: ${event.workflow}` });
+    } else if (event.type === "workflow_done") {
+      bus.emit({ type: "info", message: `[workflow:optimizer] Done: ${event.summary.slice(0, 100)}` });
+    } else if (event.type === "workflow_escalate") {
+      bus.emit({ type: "info", message: `[workflow:optimizer] Escalated: ${event.reason}` });
+    } else if (event.type === "step_start") {
+      bus.emit({ type: "info", message: `[workflow:optimizer] Step: ${event.step}` });
+      attachAgentEvents(event.step, event.sessionId);
+    }
+  },
+});
+
 manager.register({
   name: "optimizer",
   description: "Analyzes agent performance data, proposes and implements improvements to the agent system",
@@ -183,7 +208,10 @@ manager.register({
     optimizerTools.read,
     optimizerTools.write,
     projectExec(),
-    manager.createTool({}),
+    manager.createTool({
+      getCallerSessionId: () => optimizerSid,
+    }),
+    optimizerWorkflowTool,
   ],
   apiKey: "not-needed",
   maxTurns: 40,
