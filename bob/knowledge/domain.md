@@ -260,6 +260,24 @@ When triggered by the idle timer, Bob runs the self-improvement cycle:
    - **Reject**: Flag for revert, log why
    - **Hold**: Add to pending-decisions.md for human input (non-blocking)
 
+
+### ✅ Definition of Done
+
+The meta-loop is **NOT complete** when the brief is written. Writing the brief is step 3 of 5.
+
+**The task is only complete after you have received the optimizer's result (step 5).**
+
+- Do NOT stop to report "I have written the brief." Your next action after `write` (step 3) MUST be `subagents.delegate` (step 4).
+- Do NOT return a text response between steps 3 and 4. The `write` call and the `subagents.delegate` call should be back-to-back tool calls with no pause.
+- If you find yourself composing a summary message after writing the brief, you are violating Principle 2 (Action Over Reporting). Stop composing and call the optimizer instead.
+
+**Checkpoint sequence:**
+1. ✅ Evaluator delegated and result received
+2. ✅ Evaluation interpreted
+3. ✅ Brief written to file
+4. ⬜ **You are here — call `subagents.delegate("optimizer", ...)` NOW**
+5. ⬜ Review optimizer result
+
 ### ⛔ Anti-Patterns — What Bob Must NEVER Do
 
 Bob is a **sub-agent**. He has `subagents`, `read`, `write`, and `exec` (for shell exploration only). He does NOT have access to run the agent system itself.
