@@ -25,6 +25,7 @@ export type RunnerCommand =
   | { type: "steer"; message: string }
   | { type: "cancel"; sessionId: string }
   | { type: "cancel_all" }
+  | { type: "cancel_task" }
   | { type: "close" }
   | { type: "status" }
   | { type: "input"; message: string }
