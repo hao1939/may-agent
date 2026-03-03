@@ -102,6 +102,10 @@ export function attachSocketUI(opts: SocketUIOptions): SocketUI {
     console.error(`[control] Socket error: ${err.message}`);
   });
 
+  server.on("close", () => {
+    console.error(`[control] Socket server CLOSED`);
+  });
+
   // Cleanup on process exit
   const cleanup = () => {
     try {

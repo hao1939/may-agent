@@ -133,6 +133,10 @@ export interface RunOptions {
   parentSessionId?: string;
   workflowRunId?: string;
   stepLabel?: string;
+  /** Runtime override: make this session persistent (long-lived). */
+  persistent?: boolean;
+  /** Runtime override: enable compaction for this session. */
+  compaction?: boolean | CompactionOptions;
 }
 
 export interface SubagentManagerOptions {
@@ -241,9 +245,11 @@ export class SubagentManager {
   /** Build a transformContext function if compaction is enabled for this agent. */
   private buildTransformContext(
     def: SubagentDefinition,
+    compactionOverride?: boolean | CompactionOptions,
   ): ((messages: AgentMessage[], signal?: AbortSignal) => Promise<AgentMessage[]>) | undefined {
-    if (!def.compaction) return undefined;
-    const compactionOpts: CompactionOptions = typeof def.compaction === "object" ? def.compaction : {};
+    const compaction = compactionOverride ?? def.compaction;
+    if (!compaction) return undefined;
+    const compactionOpts: CompactionOptions = typeof compaction === "object" ? compaction : {};
     return createCompactionTransform(def.model, compactionOpts);
   }
 
@@ -500,7 +506,7 @@ export class SubagentManager {
         model: def.model,
         tools: def.tools,
       },
-      transformContext: this.buildTransformContext(def),
+      transformContext: this.buildTransformContext(def, opts?.compaction),
       getApiKey: def.apiKey ? () => def.apiKey : undefined,
     });
 
@@ -520,7 +526,7 @@ export class SubagentManager {
       maxTurns: def.maxTurns,
       turnWarningThreshold: def.turnWarningThreshold ?? 0.8,
       turnWarningFired: false,
-      persistent: def.persistent ?? false,
+      persistent: opts?.persistent ?? def.persistent ?? false,
     };
 
     // Subscribe for JSONL persistence before starting the prompt
@@ -628,7 +634,7 @@ export class SubagentManager {
    *
    * Returns null if the agent has no "running" or "idle" session to resume.
    */
-  resumeAgent(agentName: string): { resumed: SessionInfo; interrupted: SessionInfo[] } {
+  resumeAgent(agentName: string, opts?: { persistent?: boolean; compaction?: boolean | CompactionOptions }): { resumed: SessionInfo; interrupted: SessionInfo[] } {
     const registryData = this.registry.getRegistry();
     const persistDir = this.registry.persistDir;
 
@@ -693,7 +699,7 @@ export class SubagentManager {
         tools: def.tools,
         messages: savedMessages,
       },
-      transformContext: this.buildTransformContext(def),
+      transformContext: this.buildTransformContext(def, opts?.compaction),
       getApiKey: def.apiKey ? () => def.apiKey : undefined,
     });
 
@@ -754,7 +760,7 @@ export class SubagentManager {
       maxTurns: def.maxTurns,
       turnWarningThreshold: def.turnWarningThreshold ?? 0.8,
       turnWarningFired: false,
-      persistent: def.persistent ?? false,
+      persistent: opts?.persistent ?? def.persistent ?? false,
     };
 
     this.subscribeForPersistence(session);
@@ -971,6 +977,11 @@ export class SubagentManager {
   /** Check whether an agent with the given name is registered. */
   hasAgent(name: string): boolean {
     return this.agents.has(name);
+  }
+
+  /** Get the names of all registered agents. */
+  agentNames(): string[] {
+    return [...this.agents.keys()];
   }
 
   /** Get the full definition for a registered agent, or undefined if not registered. */

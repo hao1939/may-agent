@@ -812,6 +812,19 @@ export interface ExecToolOptions {
    * Default: 20000 (~5K tokens). Set to 0 or Infinity to disable.
    */
   maxOutputLength?: number;
+  /**
+   * Transform the command string before applying deny patterns.
+   *
+   * Use this to strip out content that shouldn't be subject to deny checks.
+   * For example, when the master agent passes a prompt string to claude-code
+   * or gemini-cli, the prompt content may contain shell patterns (echo >,
+   * tee, heredocs) that match deny patterns even though they're just text
+   * being passed to a sub-agent, not actual shell commands.
+   *
+   * The original command is still executed as-is — this only affects what
+   * the deny pattern matcher sees.
+   */
+  stripForDenyCheck?: (command: string) => string;
 }
 
 /**
@@ -1369,6 +1382,60 @@ export function buildGitCommitContext(cwd: string, command: string): string {
 // ── Meta-recursion guard ───────────────────────────────────────────────
 
 /**
+ * Strip prompt/argument content from CLI agent invocations so that deny
+ * patterns don't match text inside prompts.
+ *
+ * When the master agent runs `claude -p "use echo > file" ...`, the deny
+ * pattern for `echo ... >` would match the prompt text, even though it's
+ * just a string being passed to the sub-agent. This function replaces
+ * quoted prompt arguments with a placeholder so only the outer command
+ * structure is checked against deny patterns.
+ *
+ * Handles:
+ * - claude ... -p "prompt" or -p 'prompt'
+ * - claude ... -p $VARIABLE
+ * - gemini ... --prompt "prompt" or --prompt 'prompt'
+ * - printf "..." | gemini (piped prompt content)
+ * - echo "..." | gemini (piped prompt content)
+ * - VARIABLE='...' (shell variable assignments used as prompts)
+ *
+ * The original command is executed as-is — this only affects deny matching.
+ */
+export function stripCliPromptContent(command: string): string {
+  let result = command;
+
+  // Strip shell variable assignments: PROMPT='...' or PROMPT="..."
+  // These are used to build prompts before passing to CLI tools
+  result = result.replace(/\b[A-Z_]+=['"](?:[^'"]|\\.)*['"]/g, (match) => {
+    const eqIdx = match.indexOf("=");
+    return match.slice(0, eqIdx + 1) + '""';
+  });
+
+  // Strip quoted args after -p / --prompt / --print for claude/gemini
+  // Handles both single and double quotes, including escaped quotes
+  result = result.replace(
+    /(-p|--prompt)\s+(?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')/g,
+    '$1 ""',
+  );
+
+  // Strip variable references after -p: -p "$PROMPT" or -p $PROMPT
+  result = result.replace(
+    /(-p|--prompt)\s+(?:"\$[A-Za-z_]+"|\$[A-Za-z_]+)/g,
+    '$1 ""',
+  );
+
+  // Strip piped content: echo '...' | gemini or printf '...' | gemini
+  // Replace the echo/printf part with a harmless placeholder
+  result = result.replace(
+    /\b(?:echo|printf)\s+(?:['"$](?:[^|]|\\\|)*?)\s*\|\s*(gemini|claude)/g,
+    'true | $1',
+  );
+
+  return result;
+}
+
+
+/**
  * Patterns that detect attempts to run the agent system itself via exec.
  *
  * This is the #1 recurring failure mode ("meta confusion"): agents try to
@@ -1415,6 +1482,7 @@ export function createExecTool(cwdOrOpts?: string | ExecToolOptions): AgentTool<
   const warnOutsideRoot = opts.warnOutsideRoot;
   const cwdPrefix = opts.echoCwd ? `CWD: ${effectiveCwd}\n` : "";
   const maxOutputLength = opts.maxOutputLength ?? DEFAULT_MAX_OUTPUT_LENGTH;
+  const stripForDenyCheck = opts.stripForDenyCheck;
 
   return {
     name: "exec",
@@ -1436,9 +1504,10 @@ export function createExecTool(cwdOrOpts?: string | ExecToolOptions): AgentTool<
       }
 
 
-      // Check deny patterns (on the cleaned command)
+      // Check deny patterns (on the cleaned command, optionally stripped of prompt content)
+      const commandForDeny = stripForDenyCheck ? stripForDenyCheck(command) : command;
       for (const pattern of denyPatterns) {
-        if (pattern.test(command)) {
+        if (pattern.test(commandForDeny)) {
           return textResult(
             `Blocked: command matches a denied pattern.\n${denyMessage}\nHint: your working directory is ${effectiveCwd}`,
           );
