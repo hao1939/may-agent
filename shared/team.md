@@ -30,8 +30,10 @@ implementation's reasoning rather than challenging it.
 coder implements → QA reviews → if FAIL/CONDITIONAL, one retry → if still failing,
 escalates back to the caller. QA verdicts drive the retry logic mechanically.
 
-**design-review** — May only. Evaluator and optimizer independently review a design
-document, then cross-respond to each other's findings. May synthesizes the final brief.
+**design-review** — Optimizer only. Reviews shared knowledge docs against reality.
+Evaluator and optimizer independently review, then cross-respond to each other's
+findings. Returns structured findings for the optimizer to act on. May can trigger
+this as part of regular maintenance.
 
 ## Automation
 
