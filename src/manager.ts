@@ -143,6 +143,12 @@ export interface SubagentManagerOptions {
    * NOT called for persistent sessions transitioning to "idle".
    */
   onSessionComplete?: (info: SessionInfo) => void;
+  /**
+   * Called when any new session starts (via run() or resumeAgent()).
+   * Use to subscribe to agent events for UI streaming.
+   * This is the single point where all session creation is observed.
+   */
+  onSessionStart?: (agentName: string, sessionId: string) => void;
 }
 
 // ── createTool() schema ────────────────────────────────────────────────
@@ -176,10 +182,12 @@ export class SubagentManager {
   private sessionResults = new Map<string, Promise<TaskResult>>();
   private registry: RegistryStore;
   private onSessionComplete?: (info: SessionInfo) => void;
+  private onSessionStart?: (agentName: string, sessionId: string) => void;
 
   constructor(opts: SubagentManagerOptions) {
     this.registry = new RegistryStore(opts.persistDir);
     this.onSessionComplete = opts.onSessionComplete;
+    this.onSessionStart = opts.onSessionStart;
   }
 
   /** Register a feature unit. */
@@ -535,6 +543,12 @@ export class SubagentManager {
     // Set up timeout if configured
     this.setupTimeout(session, def.timeoutMs);
 
+    // Add to activeSessions before notifying listener (subscribe() needs it)
+    this.activeSessions.set(sessionId, session);
+
+    // Notify listener that a new session has started
+    this.onSessionStart?.(name, sessionId);
+
     session.promise = agent.prompt(task)
       .then(() => {
         if (agent.state.error) {
@@ -555,7 +569,6 @@ export class SubagentManager {
       });
 
     this.sessionResults.set(sessionId, session.promise.then(() => this.buildResultFromSession(session)));
-    this.activeSessions.set(sessionId, session);
     return sessionId;
   }
 
@@ -722,6 +735,12 @@ export class SubagentManager {
     this.subscribeForTurnLimit(session);
     this.setupTimeout(session, def.timeoutMs);
 
+    // Add to activeSessions before notifying listener (subscribe() needs it)
+    this.activeSessions.set(targetSessionId, session);
+
+    // Notify listener that a session has been resumed
+    this.onSessionStart?.(agentName, targetSessionId);
+
     const sid = targetSessionId;
     session.promise = agent.prompt(resumeMessage)
       .then(() => {
@@ -743,7 +762,6 @@ export class SubagentManager {
       });
 
     this.sessionResults.set(targetSessionId, session.promise.then(() => this.buildResultFromSession(session)));
-    this.activeSessions.set(targetSessionId, session);
 
     const resumedInfo: SessionInfo = {
       sessionId: targetSessionId,
@@ -837,6 +855,12 @@ export class SubagentManager {
       // Set up timeout if configured
       this.setupTimeout(session, def.timeoutMs);
 
+      // Add to activeSessions before notifying listener (subscribe() needs it)
+      this.activeSessions.set(sessionId, session);
+
+      // Notify listener that a session has been resumed
+      this.onSessionStart?.(persisted.agent, sessionId);
+
       // Start the agent running with the resume message
       session.promise = agent.prompt(resumeMessage)
         .then(() => {
@@ -858,7 +882,6 @@ export class SubagentManager {
         });
 
       this.sessionResults.set(sessionId, session.promise.then(() => this.buildResultFromSession(session)));
-      this.activeSessions.set(sessionId, session);
 
       resumed.push({
         sessionId,
