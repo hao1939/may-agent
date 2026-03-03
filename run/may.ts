@@ -502,27 +502,33 @@ const socketUI = attachSocketUI({
 
 // ── Main loop ──────────────────────────────────────────────────────────
 
-const rl = createInterface({ input: process.stdin, output: process.stdout });
-rl.on("SIGINT", () => { gracefulShutdown(); });
+if (process.stdin.isTTY) {
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  rl.on("SIGINT", () => { gracefulShutdown(); });
 
-const prompt = () => { process.stdout.write("\nyou> "); };
-prompt();
-
-for await (const line of rl) {
-  const input = line.trim();
-  if (input === "exit" || input === "quit") break;
-  if (input === "close") {
-    bus.emit({ type: "info", message: "Closing session (will not resume on restart)..." });
-    manager.cancel(sid);
-    break;
-  }
-  if (!input) { prompt(); continue; }
-
-  lastUserInput = Date.now();
-  await sendToMay(input);
+  const prompt = () => { process.stdout.write("\nyou> "); };
   prompt();
-}
 
-clearInterval(idleTimer);
-socketUI.close();
-rl.close();
+  for await (const line of rl) {
+    const input = line.trim();
+    if (input === "exit" || input === "quit") break;
+    if (input === "close") {
+      bus.emit({ type: "info", message: "Closing session (will not resume on restart)..." });
+      manager.cancel(sid);
+      break;
+    }
+    if (!input) { prompt(); continue; }
+
+    lastUserInput = Date.now();
+    await sendToMay(input);
+    prompt();
+  }
+
+  clearInterval(idleTimer);
+  socketUI.close();
+  rl.close();
+} else {
+  // Daemon mode: no TTY, keep alive via socket + idle timer.
+  // Process stays alive until SIGINT/SIGTERM triggers gracefulShutdown().
+  bus.emit({ type: "info", message: "[daemon] Running in daemon mode (no TTY). Use socket for control." });
+}
