@@ -7,7 +7,7 @@ Concrete details about who's on the team, what they have, and how the automation
 | Agent | Model | Tools | Turn Limit | Notes |
 |-------|-------|-------|------------|-------|
 | **May** | opus | exec (read-only), subagents, workflow | — | Persistent session. No read/write tools — forces delegation for all code changes. Can read files and run shell commands for verification (cat, grep, tsc, tests, git) but cannot write files via exec. |
-| **Coder** | opus | read, write, exec | 50 | Full project access. Implements code changes and commits. |
+| **Coder** | opus | read, write, exec | 50 | Full project access. Implements code changes. Does not commit — May handles git add/commit after QA review. |
 | **QA** | gpt-5.2 | read, write, exec | 30 | Different model from coder for perspective diversity. Can fix issues directly. Uses PASS/FAIL/CONDITIONAL verdicts. |
 
 ## Meta Team
@@ -55,8 +55,8 @@ findings. Returns structured findings for the optimizer to act on.
 - **May cannot write files** — enforced structurally via read-only exec (sed -i, cat >,
   heredocs, tee all blocked). May can read file contents via shell commands (cat, grep,
   git diff, rg) but cannot modify them. This forces delegation for all code changes.
-- **Coder implements and commits** — May orchestrates what gets built; coder handles
-  implementation and git commits.
+- **Coder never commits** — May handles git add/commit after QA review. This ensures
+  May can verify changes before they're committed.
 - **QA is advisory in the slow path** — May decides whether to act on feedback.
   In workflows, QA verdicts drive retries mechanically.
 - **Evaluator has tools for maintenance** — During evaluation, transcripts are
