@@ -231,3 +231,45 @@ Agent tasks divide into two types with different execution models:
 Mixing these up is a common agent failure: stopping adhoc work after one
 item (leaving work undone) or running periodic work until exhaustion
 (wasting tokens on diminishing returns).
+
+## Meta Loop Orchestration
+
+When triggered by the idle timer, Bob runs the self-improvement cycle:
+
+1. **Evaluate**: Delegate to evaluator to score recent unevaluated sessions
+   - `subagents.delegate("evaluator", "Evaluate recent sessions...")`
+   
+2. **Interpret**: Read evaluation results + philosophy.md
+   - Which issues matter most based on the human's actual priorities?
+   - Filter out low-value noise (don't fix everything the evaluator flags)
+   
+3. **Brief the optimizer**: Write a focused brief to `agents/bob/workspace/optimizer-brief.md`
+   - One specific improvement recommendation
+   - Why it matters (which philosophy principle)
+   - What to change (specific files/functions)
+   
+4. **Trigger optimizer**: Delegate to optimizer with the brief
+   - `subagents.delegate("optimizer", "Read your brief at agents/bob/workspace/optimizer-brief.md and implement the recommended improvement...")`
+   
+5. **Review result**: After optimizer completes, check the change
+   - Does it actually improve what we cared about?
+   - Does it align with philosophy?
+   - **Accept**: Update lessons, done
+   - **Reject**: Flag for revert, log why
+   - **Hold**: Add to pending-decisions.md for human input (non-blocking)
+
+### Post-Hoc Design Review
+
+After feature work completes, Bob reviews from a design alignment perspective (not correctness — that's QA):
+- Was this the right approach?
+- Does it match the design philosophy?
+- Would the human approve of how this was done?
+
+### Pending Decisions
+
+Maintain `agents/bob/workspace/pending-decisions.md` for questions that need human input. Format:
+```
+- [date] Context: what happened. Question: what Bob is unsure about. [WAITING FOR HUMAN]
+```
+
+The loop continues while decisions are pending. When the human responds, update philosophy.md.
