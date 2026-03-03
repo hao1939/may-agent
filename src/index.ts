@@ -1,6 +1,6 @@
 export { SubagentManager, generateId, truncateForPrompt } from "./manager.js";
 export type { SubagentManagerOptions, RunOptions } from "./manager.js";
-export { createReadTool, createWriteTool, createExecTool, createValidateWorkflowTool, createHealthCheckTool, createLearnTool, createLinkedTools, TruncationTracker, stripRedundantCd, detectsOutsidePaths, rewriteHallucinatedPath, rewriteHallucinatedCommand, extractHallucinatedRelPath, truncateOutput, resolveReadPath, resolveWritePath, buildEnoentHint, buildExecEnoentHint, listDirEntries, extractLineRange, isGitCommitCommand, buildGitCommitContext } from "./tools.js";
+export { createReadTool, createWriteTool, createExecTool, createValidateWorkflowTool, createHealthCheckTool, createLearnTool, createLinkedTools, TruncationTracker, stripRedundantCd, detectsOutsidePaths, rewriteHallucinatedPath, rewriteHallucinatedCommand, extractHallucinatedRelPath, truncateOutput, resolveReadPath, resolveWritePath, buildEnoentHint, buildExecEnoentHint, listDirEntries, extractLineRange, isGitCommitCommand, buildGitCommitContext, warnBlanketGitAdd } from "./tools.js";
 export type { ExecToolOptions, HealthCheck, HealthReport, HealthCheckOptions, ReadToolOptions, WriteToolOptions } from "./tools.js";
 export { createWorkflowTool } from "./workflow-tool.js";
 export type { WorkflowToolOptions, WorkflowTool } from "./workflow-tool.js";

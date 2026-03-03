@@ -1064,6 +1064,54 @@ function existsSyncSafe(p: string): boolean {
 // ── Git commit guardrails ──────────────────────────────────────────────
 
 /**
+ * Detect whether a shell command contains a blanket `git add` that stages
+ * everything (e.g., `git add -A`, `git add .`, `git add --all`).
+ *
+ * Returns a warning string to prepend to the exec result, or empty string
+ * if the command uses specific file paths (which is fine).
+ */
+export function warnBlanketGitAdd(command: string, cwd: string): string {
+  const subcommands = command.split(/\s*(?:&&|;)\s*/);
+  for (const sub of subcommands) {
+    const trimmed = sub.trim();
+    if (/^\s*#/.test(trimmed)) continue;
+    if (/^\s*(?:echo|grep|printf)\b/.test(trimmed)) continue;
+    // Match: git add -A, git add --all, git add .
+    if (/\bgit\s+add\s+(-A|--all|\.)\s*$/.test(trimmed) ||
+        /\bgit\s+add\s+(-A|--all|\.)\s*(?=&&|;|\|)/.test(trimmed)) {
+      // Determine effective cwd for git status
+      let gitCwd = cwd;
+      const cdMatch = command.match(/^\s*cd\s+["']?([^"';&]+?)["']?\s*(?:&&|;)/);
+      if (cdMatch) {
+        const cdTarget = cdMatch[1].trim();
+        gitCwd = cdTarget.startsWith("/") ? cdTarget : join(cwd, cdTarget);
+      }
+
+      // Show what would be staged
+      try {
+        const status = execSync("git status --short", {
+          cwd: gitCwd,
+          encoding: "utf-8",
+          timeout: 5000,
+          stdio: ["pipe", "pipe", "pipe"],
+        }).trim();
+
+        if (status) {
+          const lines = status.split("\n");
+          const preview = lines.slice(0, 10).join("\n  ");
+          const more = lines.length > 10 ? `\n  (+${lines.length - 10} more files)` : "";
+          return `⚠️ BLANKET GIT ADD: This command stages ALL changes. ${lines.length} file(s) will be staged:\n  ${preview}${more}\nUse \`git add <specific-files>\` to stage only the files you changed.\n\n`;
+        }
+      } catch {
+        // Not a git repo — skip
+      }
+      return "";
+    }
+  }
+  return "";
+}
+
+/**
  * Detect whether a shell command contains a `git commit` invocation.
  *
  * Matches patterns like:
@@ -1130,14 +1178,20 @@ export function buildGitCommitContext(cwd: string, command: string): string {
     }).trim();
 
     if (status) {
-      // Parse status lines to categorize
+      // Parse status lines — format is "XY filename" where XY are 2 status chars
+      // Note: .trim() on the full output can eat the leading space of the first line
+      // (e.g., " M file.txt" becomes "M file.txt"), so we use a regex that handles
+      // both 2-char and 1-char prefixes gracefully.
       const statusLines = status.split("\n");
       const modified: string[] = [];
       const untracked: string[] = [];
 
       for (const line of statusLines) {
-        const code = line.slice(0, 2);
-        const file = line.slice(3).trim();
+        // Match: optional leading whitespace + XY + space + filename
+        const match = line.match(/^(.{1,2})\s+(.+)$/);
+        if (!match) continue;
+        const code = match[1].trim();
+        const file = match[2].trim();
         if (code === "??") {
           untracked.push(file);
         } else {
@@ -1208,6 +1262,9 @@ export function createExecTool(cwdOrOpts?: string | ExecToolOptions): AgentTool<
 
       try {
         const timeout = (params.timeout ?? 30) * 1000;
+        // Pre-exec: warn about blanket git add BEFORE the command runs
+        // (after execution, git add -A && git commit leaves a clean tree — too late to warn)
+        const gitAddWarning = warnBlanketGitAdd(command, effectiveCwd);
         const output = execSync(command, {
           cwd: effectiveCwd,
           encoding: "utf-8",
@@ -1217,7 +1274,7 @@ export function createExecTool(cwdOrOpts?: string | ExecToolOptions): AgentTool<
         });
         const result = output || "(no output)";
         const gitContext = isGitCommitCommand(command) ? buildGitCommitContext(effectiveCwd, command) : "";
-        return textResult(cwdPrefix + truncateOutput(result, maxOutputLength, execOutputTruncationMarker) + gitContext + outsideWarning);
+        return textResult(cwdPrefix + gitAddWarning + truncateOutput(result, maxOutputLength, execOutputTruncationMarker) + gitContext + outsideWarning);
       } catch (err: unknown) {
         if (err && typeof err === "object" && "stdout" in err) {
           const e = err as { stdout: string; stderr: string; status: number };
