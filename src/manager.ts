@@ -713,6 +713,32 @@ export class SubagentManager {
       timestamp: Date.now(),
     };
 
+    // Repair broken message sequences before resuming.
+    // If the process died mid-tool-execution, the last assistant message has
+    // tool calls with no corresponding tool results. Inject synthetic error
+    // results so the conversation is well-formed for the LLM API.
+    const lastMsg = savedMessages.length > 0 ? savedMessages[savedMessages.length - 1] : null;
+    const lastRole = lastMsg?.role;
+    if (lastRole === "assistant" && lastMsg && Array.isArray(lastMsg.content)) {
+      const toolCalls = (lastMsg.content as any[]).filter(
+        (b: any) => b.type === "toolCall",
+      );
+      if (toolCalls.length > 0) {
+        // Inject error tool results for each pending tool call
+        for (const tc of toolCalls) {
+          const errorResult: AgentMessage = {
+            role: "toolResult",
+            toolCallId: (tc as any).id,
+            toolName: (tc as any).name,
+            content: [{ type: "text", text: "Error: process restarted while this tool call was in progress." }],
+            isError: true,
+            timestamp: Date.now(),
+          } as AgentMessage;
+          agent.followUp(errorResult);
+        }
+      }
+    }
+
     this.registry.updateSessionStatus(targetSessionId, "running");
 
     const session: ActiveSession = {
@@ -741,8 +767,15 @@ export class SubagentManager {
     // Notify listener that a session has been resumed
     this.onSessionStart?.(agentName, targetSessionId);
 
+    // Decide how to resume based on the last message:
+    // - If last message is "user", there's already a pending prompt → use continue()
+    // - Otherwise, inject the resume message → use prompt()
     const sid = targetSessionId;
-    session.promise = agent.prompt(resumeMessage)
+    const startPromise = lastRole === "user"
+      ? agent.continue()
+      : agent.prompt(resumeMessage);
+
+    session.promise = startPromise
       .then(() => {
         if (agent.state.error) {
           session.status = "error";
