@@ -44,6 +44,17 @@ export interface ReadToolOptions {
    * Default: 0 (no truncation). Set to a positive number to enable.
    */
   maxFileLength?: number;
+  /**
+   * Shared truncation tracker. When a file is truncated during read, the
+   * tracker records the original file size. The write tool can then warn
+   * when the agent writes back significantly shorter content — a strong
+   * signal of data loss from write-after-truncated-read.
+   *
+   * Created automatically by `createLinkedTools()`, or provide your own
+   * `TruncationTracker` instance to share between independently-created
+   * read and write tools.
+   */
+  truncationTracker?: TruncationTracker;
 }
 
 /** Options for the write tool. */
@@ -57,6 +68,91 @@ export interface WriteToolOptions {
    * Also adds a hint to error messages showing the project root.
    */
   projectRoot?: string;
+  /**
+   * Shared truncation tracker. When the agent writes to a file that was
+   * previously read with truncation, and the new content is significantly
+   * shorter than the original, a warning is appended to the write result.
+   *
+   * This catches the "write-after-truncated-read" anti-pattern where agents
+   * read a large file (truncated), then write it back with fabricated or
+   * missing content from the truncated section.
+   */
+  truncationTracker?: TruncationTracker;
+}
+
+// ── Truncation Tracker ─────────────────────────────────────────────────
+
+/**
+ * Tracks files that were read with truncation, enabling the write tool
+ * to warn about potential data loss.
+ *
+ * When the read tool truncates a file (because it exceeds maxFileLength),
+ * it records the path and original size. When the write tool later writes
+ * to that same file, it can compare the new content length to the original
+ * and warn if significant content may have been lost.
+ *
+ * This is a simple Map wrapper for clarity and testability.
+ */
+export class TruncationTracker {
+  /** Maps resolved absolute path → original file size in characters */
+  private readonly truncatedReads = new Map<string, number>();
+
+  /** Record that a file was read and its content was truncated. */
+  recordTruncatedRead(path: string, originalLength: number): void {
+    this.truncatedReads.set(path, originalLength);
+  }
+
+  /** Clear the record for a path (e.g., after a successful non-truncated read). */
+  clearPath(path: string): void {
+    this.truncatedReads.delete(path);
+  }
+
+  /**
+   * Check if writing to this path risks data loss from a prior truncated read.
+   *
+   * Returns a warning string if:
+   * 1. The file was previously read with truncation
+   * 2. The new content is significantly shorter than the original
+   *
+   * The threshold is 80%: if the new content is less than 80% of the original
+   * size, it's likely the agent is writing back incomplete content.
+   *
+   * Returns null if no warning is needed.
+   */
+  checkWrite(path: string, newContentLength: number): string | null {
+    const originalLength = this.truncatedReads.get(path);
+    if (originalLength === undefined) return null;
+
+    // If new content is at least 80% of original, it's probably fine
+    // (the agent may have legitimately shortened the file)
+    const ratio = newContentLength / originalLength;
+    if (ratio >= 0.8) return null;
+
+    const pctKept = Math.round(ratio * 100);
+    const charsLost = originalLength - newContentLength;
+    return (
+      `\n⚠️ WARNING: This file was previously read with truncation (original: ${originalLength.toLocaleString()} chars, ` +
+      `you saw a truncated version). Your write contains only ${newContentLength.toLocaleString()} chars (${pctKept}% of original, ` +
+      `${charsLost.toLocaleString()} chars lost). ` +
+      `This may indicate data loss from the truncated section you didn't see. ` +
+      `Consider using exec with sed, patch, or targeted edits instead of rewriting the entire file.`
+    );
+  }
+
+  /** Get the number of tracked files (for testing). */
+  get size(): number {
+    return this.truncatedReads.size;
+  }
+
+  /** Check if a path is being tracked (for testing). */
+  has(path: string): boolean {
+    return this.truncatedReads.has(path);
+  }
+
+  /** Get original length for a path (for testing). */
+  getOriginalLength(path: string): number | undefined {
+    return this.truncatedReads.get(path);
+  }
 }
 
 /**
@@ -443,6 +539,7 @@ const STRUCTURE_SHOW_DOTFILES = new Set([
 
 export function createReadTool(options?: ReadToolOptions): AgentTool<typeof ReadParams> {
   const maxFileLength = options?.maxFileLength ?? 0;
+  const tracker = options?.truncationTracker;
 
   return {
     name: "read",
@@ -457,7 +554,18 @@ export function createReadTool(options?: ReadToolOptions): AgentTool<typeof Read
 
       try {
         const content = readFileSync(effectivePath, "utf-8");
-        return textResult(truncateOutput(content, maxFileLength));
+        const truncated = truncateOutput(content, maxFileLength);
+
+        // Track truncation: record when a file was truncated, clear when it wasn't
+        if (tracker) {
+          if (truncated !== content) {
+            tracker.recordTruncatedRead(effectivePath, content.length);
+          } else {
+            tracker.clearPath(effectivePath);
+          }
+        }
+
+        return textResult(truncated);
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
         const hint = options?.projectRoot && msg.includes("ENOENT")
@@ -470,6 +578,8 @@ export function createReadTool(options?: ReadToolOptions): AgentTool<typeof Read
 }
 
 export function createWriteTool(options?: WriteToolOptions): AgentTool<typeof WriteParams> {
+  const tracker = options?.truncationTracker;
+
   return {
     name: "write",
     label: "Write File",
@@ -484,7 +594,18 @@ export function createWriteTool(options?: WriteToolOptions): AgentTool<typeof Wr
       try {
         mkdirSync(dirname(effectivePath), { recursive: true });
         writeFileSync(effectivePath, params.content, "utf-8");
-        return textResult(`Wrote ${params.content.length} bytes to ${effectivePath}`);
+
+        // Check for write-after-truncated-read data loss
+        const truncationWarning = tracker
+          ? tracker.checkWrite(effectivePath, params.content.length) ?? ""
+          : "";
+
+        // Clear the tracker entry after write (the file has been rewritten)
+        if (tracker) {
+          tracker.clearPath(effectivePath);
+        }
+
+        return textResult(`Wrote ${params.content.length} bytes to ${effectivePath}${truncationWarning}`);
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
         const hint = options?.projectRoot
@@ -493,6 +614,41 @@ export function createWriteTool(options?: WriteToolOptions): AgentTool<typeof Wr
         return textResult(`Error writing file: ${msg}${hint}`);
       }
     },
+  };
+}
+
+/**
+ * Create linked read and write tools that share a truncation tracker.
+ *
+ * When the read tool truncates a file (because it exceeds maxFileLength),
+ * the write tool will warn if the agent subsequently writes back significantly
+ * shorter content — catching the "write-after-truncated-read" data loss pattern.
+ *
+ * This is the recommended way to create read/write tools for agents.
+ *
+ * @param options - Combined options for both tools
+ * @returns An object with `read`, `write`, and `tracker` properties
+ */
+export function createLinkedTools(options: {
+  projectRoot: string;
+  maxFileLength?: number;
+}): {
+  read: AgentTool<typeof ReadParams>;
+  write: AgentTool<typeof WriteParams>;
+  tracker: TruncationTracker;
+} {
+  const tracker = new TruncationTracker();
+  return {
+    read: createReadTool({
+      projectRoot: options.projectRoot,
+      maxFileLength: options.maxFileLength,
+      truncationTracker: tracker,
+    }),
+    write: createWriteTool({
+      projectRoot: options.projectRoot,
+      truncationTracker: tracker,
+    }),
+    tracker,
   };
 }
 
