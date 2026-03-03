@@ -13,18 +13,20 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     return ctx.escalate("coder failed", { error: coder.error });
   }
 
-  // Step 2: Reviewer evaluates
+  // Step 2: QA evaluates
   const reviewTask =
     `Review the following implementation.\n\n` +
     `## Task\n${ctx.task}\n\n` +
     `## Implementation\n${coder.lastAssistantText}`;
-  const review = await ctx.runAgent("reviewer", reviewTask);
+  const review = await ctx.runAgent("qa", reviewTask);
   if (review.status === "error") {
-    return ctx.escalate("reviewer failed", { error: review.error });
+    return ctx.escalate("qa failed", { error: review.error });
   }
 
+  // Check verdict (QA uses PASS/FAIL/CONDITIONAL)
   const reviewText = review.lastAssistantText ?? "";
-  if (!reviewText.includes("REQUEST_CHANGES")) {
+  const reviewUpper = reviewText.toUpperCase();
+  if (reviewUpper.includes("PASS") && !reviewUpper.includes("FAIL")) {
     return ctx.done(
       `## Implementation\n${coder.lastAssistantText}\n\n` +
       `## Review\n${reviewText}`
@@ -43,14 +45,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
   if (isCritical) {
     return ctx.escalate(
-      "reviewer flagged critical issues",
+      "qa flagged critical issues",
       { coderResult: coder.lastAssistantText, reviewFeedback: reviewText },
     );
   }
 
   // Step 3: One retry
   const fixTask =
-    `Fix these issues from the reviewer:\n\n${reviewText}\n\n` +
+    `Fix these issues from QA:\n\n${reviewText}\n\n` +
     `Original task: ${ctx.task}`;
   const fix = await ctx.runAgent("coder", fixTask);
   if (fix.status === "error") {
@@ -62,13 +64,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     `Re-review after fixes.\n\n` +
     `## Original Review Feedback\n${reviewText}\n\n` +
     `## Updated Implementation\n${fix.lastAssistantText}`;
-  const review2 = await ctx.runAgent("reviewer", reReviewTask);
+  const review2 = await ctx.runAgent("qa", reReviewTask);
   if (review2.status === "error") {
     return ctx.escalate("re-review failed", { error: review2.error });
   }
 
   const review2Text = review2.lastAssistantText ?? "";
-  if (review2Text.includes("REQUEST_CHANGES")) {
+  const review2Upper = review2Text.toUpperCase();
+  if (review2Upper.includes("FAIL") || (review2Upper.includes("CONDITIONAL") && !review2Upper.includes("PASS"))) {
     return ctx.escalate("still failing after one iteration", {
       fixResult: fix.lastAssistantText,
       reviewFeedback: review2Text,
