@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdirSync, writeFileSync, rmSync, existsSync, readFileSync, mkdtempSync } from "node:fs";
+import { mkdirSync, writeFileSync, rmSync, existsSync, mkdtempSync } from "node:fs";
+import { readSessionMeta } from "../src/persistence.js";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { SubagentManager } from "../src/manager.js";
@@ -116,12 +117,11 @@ describe("session graph: parent links on run()", () => {
       stepLabel: "reviewer",
     });
 
-    // Read the registry file directly
-    const registry = JSON.parse(readFileSync(join(persistDir, "registry.json"), "utf-8"));
-    const persisted = registry.sessions[sid];
-    expect(persisted.parentSessionId).toBe("s_parent_456");
-    expect(persisted.workflowRunId).toBe("wr_456");
-    expect(persisted.stepLabel).toBe("reviewer");
+    // Read the session's meta.json directly
+    const persisted = readSessionMeta(persistDir, sid);
+    expect(persisted!.parentSessionId).toBe("s_parent_456");
+    expect(persisted!.workflowRunId).toBe("wr_456");
+    expect(persisted!.stepLabel).toBe("reviewer");
   });
 });
 

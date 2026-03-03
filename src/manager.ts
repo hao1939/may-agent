@@ -1111,7 +1111,7 @@ export class SubagentManager {
     if (session) {
       messages = session.agent.state.messages;
     } else {
-      const persisted = this.registry.getRegistry().sessions[sessionId];
+      const persisted = this.registry.getSession(sessionId);
       if (!persisted) {
         throw new Error(`Session "${sessionId}" not found`);
       }
@@ -1157,7 +1157,7 @@ export class SubagentManager {
    *  Throws if session not found in registry.
    */
   private resultFromArchive(sessionId: string): TaskResult {
-    const persisted = this.registry.getRegistry().sessions[sessionId];
+    const persisted = this.registry.getSession(sessionId);
     if (!persisted) {
       throw new Error(`Session "${sessionId}" not found`);
     }
@@ -1626,7 +1626,7 @@ export class SubagentManager {
                 return textResult(JSON.stringify(session, null, 2));
               }
               // Fall back to registry for completed/archived sessions
-              const persisted = manager.registry.getRegistry().sessions[params.sessionId];
+              const persisted = manager.registry.getSession(params.sessionId);
               if (persisted) {
                 const endedAt = persisted.endedAt ?? Date.now();
                 const info: SessionInfo = {

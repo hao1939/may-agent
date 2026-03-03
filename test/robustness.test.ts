@@ -10,6 +10,7 @@ import {
   ensureSessionDir,
   RegistryStore,
   sessionJsonlPath,
+  sessionMetaPath,
   memoryPath,
 } from "../src/persistence.js";
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
@@ -155,10 +156,10 @@ describe("RegistryStore atomic writes", () => {
     }
   });
 
-  it("persists registry data correctly through atomic write", () => {
+  it("persists session data correctly through per-session meta.json", () => {
     const store = new RegistryStore(persistDir);
 
-    // The store should have created the file
+    // Save a session
     store.saveSession("s1", {
       agent: "test",
       task: "task 1",
@@ -166,7 +167,7 @@ describe("RegistryStore atomic writes", () => {
       startedAt: Date.now(),
     });
 
-    // Create a second store instance that reads from the same file
+    // Create a second store instance that reads from the same dir
     const store2 = new RegistryStore(persistDir);
     const data = store2.getRegistry();
 
@@ -183,7 +184,7 @@ describe("RegistryStore atomic writes", () => {
       startedAt: Date.now(),
     });
 
-    const tmpPath = join(persistDir, "registry.json.tmp");
+    const tmpPath = sessionMetaPath(persistDir, "s1") + ".tmp";
     expect(existsSync(tmpPath)).toBe(false);
   });
 });

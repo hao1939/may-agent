@@ -29,7 +29,9 @@ export interface PersistedSession {
   stepLabel?: string;
 }
 
-/** Shape of registry.json on disk. */
+/** Shape of the registry data (in-memory view).
+ *  Agents are only held in-memory (re-registered on every startup).
+ *  Sessions are persisted as individual meta.json files per session dir. */
 export interface Registry {
   agents: Record<string, PersistedAgentConfig>;
   sessions: Record<string, PersistedSession>;
@@ -42,10 +44,6 @@ export interface MemoryEntry {
   duration: string;
   summary: string | null;
   timestamp: number;
-}
-
-function emptyRegistry(): Registry {
-  return { agents: {}, sessions: {} };
 }
 
 /** Extract persistable fields from a SubagentDefinition. */
@@ -193,73 +191,188 @@ export function readMemoryEntries(persistDir: string, name: string, limit?: numb
   return entries;
 }
 
+// ── Session meta.json helpers ─────────────────────────────────────────
+
+/** Path to a session's meta.json (in active session dir). */
+export function sessionMetaPath(persistDir: string, sessionId: string): string {
+  return join(sessionDir(persistDir, sessionId), "meta.json");
+}
+
+/** Path to a session's meta.json in the history archive. */
+function archivedSessionMetaPath(persistDir: string, sessionId: string): string {
+  return join(historyDir(persistDir), sessionId, "meta.json");
+}
+
+/** Read a session's meta.json. Checks active dir first, then history.
+ *  Returns null if not found or corrupted. */
+export function readSessionMeta(persistDir: string, sessionId: string): PersistedSession | null {
+  // Check active session dir first
+  const activePath = sessionMetaPath(persistDir, sessionId);
+  if (existsSync(activePath)) {
+    try {
+      return JSON.parse(readFileSync(activePath, "utf-8")) as PersistedSession;
+    } catch {
+      return null;
+    }
+  }
+  // Fall back to history archive
+  const archivePath = archivedSessionMetaPath(persistDir, sessionId);
+  if (existsSync(archivePath)) {
+    try {
+      return JSON.parse(readFileSync(archivePath, "utf-8")) as PersistedSession;
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+/** Write a session's meta.json atomically. Creates the session dir if needed. */
+export function writeSessionMeta(persistDir: string, sessionId: string, meta: PersistedSession): void {
+  ensureSessionDir(persistDir, sessionId);
+  const filePath = sessionMetaPath(persistDir, sessionId);
+  const tmpPath = filePath + ".tmp";
+  writeFileSync(tmpPath, JSON.stringify(meta, null, 2), "utf-8");
+  renameSync(tmpPath, filePath);
+}
+
+/** Scan sessions/ directory for all session IDs (active, not archived).
+ *  Returns directory names that look like session IDs (skips 'history'). */
+function listActiveSessionIds(persistDir: string): string[] {
+  const sessionsRoot = join(persistDir, "sessions");
+  if (!existsSync(sessionsRoot)) return [];
+  try {
+    return readdirSync(sessionsRoot, { withFileTypes: true })
+      .filter((d) => d.isDirectory() && d.name !== "history")
+      .map((d) => d.name);
+  } catch {
+    return [];
+  }
+}
+
+/** Scan sessions/history/ directory for all archived session IDs. */
+function listArchivedSessionIds(persistDir: string): string[] {
+  const histDir = historyDir(persistDir);
+  if (!existsSync(histDir)) return [];
+  try {
+    return readdirSync(histDir, { withFileTypes: true })
+      .filter((d) => d.isDirectory())
+      .map((d) => d.name);
+  } catch {
+    return [];
+  }
+}
+
+/** Scan all session meta.json files (active + archived) and return a map.
+ *  This is the replacement for reading the sessions section of registry.json. */
+export function loadAllSessionMetas(persistDir: string): Record<string, PersistedSession> {
+  const result: Record<string, PersistedSession> = {};
+  // Active sessions
+  for (const sid of listActiveSessionIds(persistDir)) {
+    const meta = readSessionMeta(persistDir, sid);
+    if (meta) result[sid] = meta;
+  }
+  // Archived sessions (don't overwrite active — active takes precedence)
+  for (const sid of listArchivedSessionIds(persistDir)) {
+    if (result[sid]) continue;
+    const meta = readSessionMeta(persistDir, sid);
+    if (meta) result[sid] = meta;
+  }
+  return result;
+}
+
 // ── RegistryStore ──────────────────────────────────────────────────────
+//
+// Per-session file-based storage. No single shared file.
+//
+// Agent configs: in-memory only (re-registered on every startup).
+// Session metadata: individual meta.json per session directory.
+//
+// This design eliminates the single-file bottleneck that caused
+// conflicts when multiple may-agent instances share the same .state/.
 
 export class RegistryStore {
-  private filePath: string;
-  private data: Registry;
+  private agents: Record<string, PersistedAgentConfig> = {};
   readonly persistDir: string;
 
   constructor(persistDir: string) {
     this.persistDir = persistDir;
-    this.filePath = join(persistDir, "registry.json");
-    this.data = this.load();
+    mkdirSync(persistDir, { recursive: true });
+    this.migrateFromRegistryJson();
   }
 
-  private load(): Registry {
-    if (!existsSync(this.filePath)) return emptyRegistry();
+  /** One-time migration: if a legacy registry.json exists, write individual
+   *  meta.json files for any sessions that don't already have one, then
+   *  rename the old file so it's not loaded again. */
+  private migrateFromRegistryJson(): void {
+    const legacyPath = join(this.persistDir, "registry.json");
+    if (!existsSync(legacyPath)) return;
     try {
-      const raw = readFileSync(this.filePath, "utf-8");
-      return JSON.parse(raw) as Registry;
-    } catch {
-      return emptyRegistry();
+      const raw = readFileSync(legacyPath, "utf-8");
+      const legacy = JSON.parse(raw) as Registry;
+      let migrated = 0;
+      for (const [sid, meta] of Object.entries(legacy.sessions ?? {})) {
+        // Only write if no meta.json exists yet (active or archived)
+        if (!readSessionMeta(this.persistDir, sid)) {
+          writeSessionMeta(this.persistDir, sid, meta);
+          migrated++;
+        }
+      }
+      // Rename legacy file so migration doesn't run again
+      const backupPath = legacyPath + ".migrated";
+      renameSync(legacyPath, backupPath);
+      if (migrated > 0) {
+        console.log(`[registry] Migrated ${migrated} sessions from registry.json to per-session meta.json`);
+      }
+    } catch (err) {
+      console.warn(`[registry] Failed to migrate registry.json: ${err}`);
     }
   }
 
-  /** Atomic save: write to a temp file, then rename. */
-  private save(): void {
-    mkdirSync(dirname(this.filePath), { recursive: true });
-    const tmpPath = this.filePath + ".tmp";
-    writeFileSync(tmpPath, JSON.stringify(this.data, null, 2), "utf-8");
-    renameSync(tmpPath, this.filePath);
-  }
-
-  /** Persist an agent config. */
+  /** Store an agent config (in-memory only — not persisted to disk). */
   saveAgent(def: SubagentDefinition): void {
-    this.data.agents[def.name] = toPersistedConfig(def);
-    this.save();
+    this.agents[def.name] = toPersistedConfig(def);
   }
 
-  /** Record a new session. */
+  /** Record a new session (writes meta.json to the session dir). */
   saveSession(sessionId: string, entry: PersistedSession): void {
-    this.data.sessions[sessionId] = entry;
-    this.save();
+    writeSessionMeta(this.persistDir, sessionId, entry);
   }
 
-  /** Update session status (running/done/error/interrupted/idle). */
+  /** Update session status (running/done/error/interrupted/idle).
+   *  Reads the current meta.json, updates in place, writes back. */
   updateSessionStatus(sessionId: string, status: "running" | "done" | "error" | "interrupted" | "idle", error?: string): void {
-    const session = this.data.sessions[sessionId];
+    const session = readSessionMeta(this.persistDir, sessionId);
     if (!session) return;
     session.status = status;
     if (status === "running" || status === "idle") {
-      // Running or idle — clear completion fields
       delete session.endedAt;
       delete session.error;
     } else {
       session.endedAt = Date.now();
       if (error) session.error = error;
     }
-    this.save();
+    writeSessionMeta(this.persistDir, sessionId, session);
   }
 
-  /** Get the current registry data (for testing / inspection). */
+  /** Get the current registry data (scans session dirs on each call).
+   *  Agent configs come from in-memory registrations.
+   *  Session metadata comes from individual meta.json files. */
   getRegistry(): Registry {
-    return this.data;
+    return {
+      agents: { ...this.agents },
+      sessions: loadAllSessionMetas(this.persistDir),
+    };
   }
 
-  /** Get the file path (for testing). */
+  /** Get a single session's metadata without scanning all sessions. */
+  getSession(sessionId: string): PersistedSession | null {
+    return readSessionMeta(this.persistDir, sessionId);
+  }
+
+  /** Get the persist directory path. */
   getFilePath(): string {
-    return this.filePath;
+    return this.persistDir;
   }
 }
 

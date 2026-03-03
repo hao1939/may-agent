@@ -3,7 +3,8 @@ import { SubagentManager } from "../src/index.js";
 import { mkdtempSync, rmSync, readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import type { Registry } from "../src/persistence.js";
+import { readSessionMeta, RegistryStore, toPersistedConfig } from "../src/persistence.js";
+import type { PersistedAgentConfig } from "../src/persistence.js";
 import type { Model } from "@mariozechner/pi-ai";
 
 // Minimal fake model that satisfies the Model interface
@@ -33,7 +34,7 @@ describe("Registry persistence", () => {
     rmSync(persistDir, { recursive: true, force: true });
   });
 
-  it("creates registry.json on register", () => {
+  it("stores agent config in-memory on register", () => {
     const manager = new SubagentManager({ persistDir });
 
     manager.register({
@@ -45,10 +46,10 @@ describe("Registry persistence", () => {
       tools: [],
     });
 
-    const registryPath = join(persistDir, "registry.json");
-    expect(existsSync(registryPath)).toBe(true);
-
-    const registry: Registry = JSON.parse(readFileSync(registryPath, "utf-8"));
+    // Agent config is in-memory — no registry.json on disk
+    expect(existsSync(join(persistDir, "registry.json"))).toBe(false);
+    // But getRegistry() returns the agent
+    const registry = (manager as any).registry.getRegistry();
     expect(registry.agents["test-agent"]).toBeDefined();
     expect(registry.agents["test-agent"].name).toBe("test-agent");
     expect(registry.agents["test-agent"].description).toBe("A test agent");
@@ -72,8 +73,7 @@ describe("Registry persistence", () => {
       memoryLimit: 30,
     });
 
-    const registryPath = join(persistDir, "registry.json");
-    const registry: Registry = JSON.parse(readFileSync(registryPath, "utf-8"));
+    const registry = (manager as any).registry.getRegistry();
     const agent = registry.agents["full-agent"];
     expect(agent.domain).toBe("research");
     expect(agent.systemPromptFiles).toEqual(["/path/to/knowledge.md", "/path/to/tools/INDEX.md"]);
@@ -103,15 +103,14 @@ describe("Registry persistence", () => {
       tools: [],
     });
 
-    const registryPath = join(persistDir, "registry.json");
-    const registry: Registry = JSON.parse(readFileSync(registryPath, "utf-8"));
+    const registry = (manager as any).registry.getRegistry();
     expect(Object.keys(registry.agents)).toHaveLength(2);
     expect(registry.agents["agent-a"].description).toBe("First agent");
     expect(registry.agents["agent-b"].description).toBe("Second agent");
   });
 
-  it("loads existing registry on construction", () => {
-    // First manager writes
+  it("agent configs are in-memory only — not shared across instances", () => {
+    // First manager registers
     const manager1 = new SubagentManager({ persistDir });
     manager1.register({
       name: "persisted-agent",
@@ -122,26 +121,26 @@ describe("Registry persistence", () => {
       tools: [],
     });
 
-    // Second manager reads from same persistDir
+    // Second manager reads from same persistDir — agents are in-memory only
     const manager2 = new SubagentManager({ persistDir });
-    // Registry should have the agent from manager1
-    // (The agent is in registry.json; we verify by registering another and checking both exist)
+    const registry2 = (manager2 as any).registry.getRegistry();
+    // Agent configs don't survive restart (by design — re-registered on every startup)
+    expect(registry2.agents["persisted-agent"]).toBeUndefined();
+
+    // But once registered again, it's available
     manager2.register({
-      name: "new-agent",
-      description: "Added after restart",
-      domain: "new",
-      systemPrompt: "I am new",
+      name: "persisted-agent",
+      description: "Survives restart",
+      domain: "persistence",
+      systemPrompt: "I persist",
       model: fakeModel(),
       tools: [],
     });
-
-    const registryPath = join(persistDir, "registry.json");
-    const registry: Registry = JSON.parse(readFileSync(registryPath, "utf-8"));
-    expect(registry.agents["persisted-agent"]).toBeDefined();
-    expect(registry.agents["new-agent"]).toBeDefined();
+    const registry2b = (manager2 as any).registry.getRegistry();
+    expect(registry2b.agents["persisted-agent"]).toBeDefined();
   });
 
-  it("records session in registry on run and updates on completion", async () => {
+  it("records session as meta.json on run and updates on completion", async () => {
     const manager = new SubagentManager({ persistDir });
 
     manager.register({
@@ -156,21 +155,21 @@ describe("Registry persistence", () => {
 
     const sessionId = manager.run("runner", "do something");
 
-    // Session should be recorded immediately as running
-    const registryPath = join(persistDir, "registry.json");
-    const registryBefore: Registry = JSON.parse(readFileSync(registryPath, "utf-8"));
-    expect(registryBefore.sessions[sessionId]).toBeDefined();
-    expect(registryBefore.sessions[sessionId].status).toBe("running");
-    expect(registryBefore.sessions[sessionId].agent).toBe("runner");
-    expect(registryBefore.sessions[sessionId].task).toBe("do something");
+    // Session should have a meta.json immediately
+    const metaBefore = readSessionMeta(persistDir, sessionId);
+    expect(metaBefore).toBeDefined();
+    expect(metaBefore!.status).toBe("running");
+    expect(metaBefore!.agent).toBe("runner");
+    expect(metaBefore!.task).toBe("do something");
 
     // Wait for it to complete (fake model — will end as done or error)
     await manager.waitFor(sessionId);
 
-    // Session status should be updated to a terminal state
-    const registryAfter: Registry = JSON.parse(readFileSync(registryPath, "utf-8"));
-    expect(["done", "error"]).toContain(registryAfter.sessions[sessionId].status);
-    expect(registryAfter.sessions[sessionId].endedAt).toBeDefined();
+    // Session meta.json should be updated (may be in history now)
+    const metaAfter = readSessionMeta(persistDir, sessionId);
+    expect(metaAfter).toBeDefined();
+    expect(["done", "error"]).toContain(metaAfter!.status);
+    expect(metaAfter!.endedAt).toBeDefined();
   });
 
   it("works with a fresh persistDir (no prior state)", () => {
@@ -201,8 +200,7 @@ describe("Registry persistence", () => {
       tools: [],
     });
 
-    const registryPath = join(persistDir, "registry.json");
-    const registry: Registry = JSON.parse(readFileSync(registryPath, "utf-8"));
+    const registry = (manager as any).registry.getRegistry();
     const agent = registry.agents["minimal"];
     expect(agent.domain).toBe("minimal");
     expect(agent.systemPrompt).toBeUndefined();

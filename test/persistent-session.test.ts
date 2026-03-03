@@ -4,7 +4,8 @@ import type { SubagentDefinition } from "../src/types.js";
 import type { Model } from "@mariozechner/pi-ai";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { mkdtempSync, rmSync, existsSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, existsSync } from "node:fs";
+import { readSessionMeta, writeSessionMeta } from "../src/persistence.js";
 
 function fakeModel(): Model<any> {
   return {
@@ -85,8 +86,8 @@ describe("persistent sessions", () => {
     const sid = manager.run("bot", "hello");
     await manager.waitForIdle(sid);
 
-    const registry = JSON.parse(readFileSync(join(dir, "registry.json"), "utf-8"));
-    expect(registry.sessions[sid].status).toBe("idle");
+    const meta = readSessionMeta(dir, sid);
+    expect(meta!.status).toBe("idle");
   });
 
   it("send() wakes an idle session and returns to idle", async () => {
@@ -137,8 +138,8 @@ describe("persistent sessions", () => {
 
     manager.cancel(sid);
 
-    const registry = JSON.parse(readFileSync(join(dir, "registry.json"), "utf-8"));
-    expect(registry.sessions[sid].status).toBe("interrupted");
+    const meta = readSessionMeta(dir, sid);
+    expect(meta!.status).toBe("interrupted");
   });
 
   it("send() throws after cancel", async () => {
@@ -171,18 +172,15 @@ describe("persistent sessions", () => {
   it("cleanupStaleSessions marks idle sessions as interrupted", () => {
     manager.register(baseDef());
 
-    // Write a stale idle session directly to registry
-    const registryPath = join(dir, "registry.json");
-    const registry = JSON.parse(readFileSync(registryPath, "utf-8"));
-    registry.sessions["stale_idle_1"] = {
+    // Write a stale idle session directly as meta.json
+    writeSessionMeta(dir, "stale_idle_1", {
       agent: "bot",
       task: "old task",
       status: "idle",
       startedAt: Date.now() - 60000,
-    };
-    writeFileSync(registryPath, JSON.stringify(registry, null, 2));
+    });
 
-    // Re-create manager to pick up the stale registry
+    // Re-create manager to pick up the stale session
     const manager2 = new SubagentManager({ persistDir: dir });
     manager2.register(baseDef());
 
@@ -195,16 +193,13 @@ describe("persistent sessions", () => {
   it("resumeAgent picks up idle sessions", () => {
     manager.register(baseDef());
 
-    // Write a stale idle session to registry
-    const registryPath = join(dir, "registry.json");
-    const registry = JSON.parse(readFileSync(registryPath, "utf-8"));
-    registry.sessions["idle_session_1"] = {
+    // Write a stale idle session as meta.json
+    writeSessionMeta(dir, "idle_session_1", {
       agent: "bot",
       task: "previous task",
       status: "idle",
       startedAt: Date.now() - 60000,
-    };
-    writeFileSync(registryPath, JSON.stringify(registry, null, 2));
+    });
 
     // Re-create manager
     const manager2 = new SubagentManager({ persistDir: dir });
