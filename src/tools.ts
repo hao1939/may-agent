@@ -99,6 +99,13 @@ export class TruncationTracker {
   /** Maps resolved absolute path → original file size in characters */
   private readonly truncatedReads = new Map<string, number>();
 
+  /**
+   * Tracks how many times each file has been fully read (non-line-range).
+   * Used to detect redundant full-file reads where the agent re-reads
+   * a file it already has in context — wasting tokens and turns.
+   */
+  private readonly fullReadCounts = new Map<string, number>();
+
   /** Record that a file was read and its content was truncated. */
   recordTruncatedRead(path: string, originalLength: number): void {
     this.truncatedReads.set(path, originalLength);
@@ -154,6 +161,48 @@ export class TruncationTracker {
   /** Get original length for a path (for testing). */
   getOriginalLength(path: string): number | undefined {
     return this.truncatedReads.get(path);
+  }
+
+  /**
+   * Record a full-file read (not a line-range read).
+   * Returns the new read count for this path.
+   */
+  recordFullRead(path: string): number {
+    const count = (this.fullReadCounts.get(path) ?? 0) + 1;
+    this.fullReadCounts.set(path, count);
+    return count;
+  }
+
+  /**
+   * Build a warning for repeated full-file reads.
+   *
+   * When an agent reads the same file multiple times without using
+   * line-range reads, it wastes context tokens on duplicate content.
+   * This nudges the agent toward targeted reads.
+   *
+   * @param path - The file path
+   * @param readCount - How many times this file has been fully read
+   * @param totalLines - Total lines in the file
+   * @returns A warning string to prepend, or empty string on first read
+   */
+  buildRepeatedReadWarning(path: string, readCount: number, totalLines: number): string {
+    if (readCount <= 1) return "";
+    return (
+      `\n⚠️ REPEATED READ (${readCount}x): You have already read this file in full. ` +
+      `To save context tokens, use line-range reads: read(path, startLine=N, endLine=M) ` +
+      `to view only the section you need (this file has ${totalLines} lines). ` +
+      `For edits, use exec with sed instead of read+write.\n\n`
+    );
+  }
+
+  /** Get full-read count for a path (for testing). */
+  getFullReadCount(path: string): number {
+    return this.fullReadCounts.get(path) ?? 0;
+  }
+
+  /** Reset full-read tracking for a path (e.g., after write). */
+  resetFullReadCount(path: string): void {
+    this.fullReadCounts.delete(path);
   }
 }
 
@@ -629,7 +678,13 @@ export function createReadTool(options?: ReadToolOptions): AgentTool<typeof Read
           }
         }
 
-        return textResult(truncated);
+        // Track repeated full-file reads — warn agent to use line-range reads
+        const totalLines = content.split("\n").length;
+        const repeatedReadWarning = tracker
+          ? tracker.buildRepeatedReadWarning(effectivePath, tracker.recordFullRead(effectivePath), totalLines)
+          : "";
+
+        return textResult(repeatedReadWarning + truncated);
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
         const hint = options?.projectRoot && msg.includes("ENOENT")
