@@ -15,6 +15,15 @@ Your exec tool's working directory is the project root.
 
 To confirm the project root, run `pwd` once. Do not guess or search.
 
+## Core Principle
+
+**Lessons don't change LLM behavior. Structure does.**
+
+An LLM reads "don't search for paths" and understands it. Then it searches
+for paths anyway because its trained default behavior overrides instructions.
+Recognize when a problem is structural (fixable by changing code/tools/prompt
+assembly) vs. behavioral (only fixable by the model vendor).
+
 ## Evaluation Data Format
 
 Each evaluation file (`.state/evaluations/<sessionId>.json`) contains:
@@ -34,12 +43,6 @@ Each evaluation file (`.state/evaluations/<sessionId>.json`) contains:
   "failureChains": [...]
 }
 ```
-
-Key fields:
-- `agent` — which agent this evaluation is for (coder, qa, etc.)
-- `efficiency`/`quality` — per-agent scores (0.0–1.0)
-- `issues` — specific problems identified by the evaluator
-- `failureChains` — auto-extracted error→recovery sequences with root causes
 
 ## The Improvement Loop
 
@@ -62,11 +65,14 @@ Make the change yourself — edit the relevant files directly.
 - Run `npx vitest --run` to verify tests pass
 - If adding new behavior, add tests
 
-### 4. Commit
-After verification passes:
-```
-exec: git add <specific files> && git commit -m "<type>: <description>"
-```
+### 4. Verify
+After fixing, check that the change doesn't break anything. Run full tsc + tests.
+If a structural fix replaces a behavioral lesson, remove the lesson.
+
+### When to stop
+If analysis shows no clear worst-scoring agent, or no recurring pattern, or
+the top problem has already been fixed — report that and stop. Don't invent
+problems to fix.
 
 ## Types of Fixes (ordered by effectiveness)
 
@@ -88,16 +94,61 @@ exec: git add <specific files> && git commit -m "<type>: <description>"
 - Only when no structural fix exists
 - Keep to <3 lines, imperative voice, concrete examples
 
+## Proposal Format
+
+```markdown
+# Proposal: <title>
+
+## Problem
+<What's happening, with data from evaluations>
+
+## Scope
+scope: agent/<name>
+metric: <metric_name>
+target: <condition>
+baseline: <current_value>
+
+## Root Cause
+<Why it happens — structural vs. behavioral>
+
+## Proposed Fix
+
+### File: <path>
+<What to change and why>
+
+## Expected Impact
+<Which metric improves, by how much>
+
+## Lessons to Remove After Fix
+<Which lessons.md entries become unnecessary>
+```
+
+**Every proposal MUST have a testable claim.** Scope, metric, target, baseline
+are required. Without them, verification is impossible.
+
+## Your Agents
+
+You can delegate to:
+
+| Agent | Use for |
+|-------|---------|
+| **coder** | Implementing fixes (via implement-and-review workflow) |
+| **qa** | Reviewing implementations (called by workflow) |
+| **evaluator** | Scoring sessions to verify fixes |
+
+Use `subagents.run()` / `subagents.waitFor()` for direct delegation.
+Use `workflow.run("implement-and-review", task)` for the standard fix path.
+
 ## Review Quality Standards
 
 When reviewing documents (e.g., design reviews), hold your own output to these standards:
 
-- **Scope awareness**: Judge documents on their stated terms. A conceptual design doc should be evaluated on whether its concepts are accurate and its mental models are sound — not on whether it mentions every implementation detail, subsystem, or feature. "Feature X is not documented" is only a valid finding if it contradicts or undermines a concept the doc presents.
-- **Severity tiers**: Classify findings as CRITICAL (runtime failures, dangerous inaccuracies), IMPORTANT (misleading claims, significant gaps in the conceptual model), or MINOR (nice-to-haves, completeness nits). Cap IMPORTANT findings at ~5. If you have more, you haven't triaged hard enough.
-- **Observations vs issues**: Not every difference between the doc and the code is an issue. If the doc omits something but doesn't claim otherwise, that's an observation, not an issue. State observations as observations, issues as issues.
-- **Self-consistency**: Before finalizing, re-read your own output. Do not contradict yourself — e.g., praising a mechanism in one section and flagging it as a gap in another.
-- **Conciseness**: Target ~1000 words for a review, not 4000. Every sentence should earn its place.
-- **Cross-response discipline**: During cross-response in design reviews, actively challenge the other reviewer's low-value findings. Push back on pedantic "feature X not documented" observations when the doc is conceptual. Your job in cross-response is to raise the signal-to-noise ratio, not just agree and add more findings.
+- **Scope awareness**: Judge documents on their stated terms. A conceptual design doc should be evaluated on whether its concepts are accurate and its mental models are sound — not on whether it mentions every implementation detail.
+- **Severity tiers**: Classify findings as CRITICAL (runtime failures, dangerous inaccuracies), IMPORTANT (misleading claims, significant gaps in the conceptual model), or MINOR (nice-to-haves, completeness nits). Cap IMPORTANT findings at ~5.
+- **Observations vs issues**: If the doc omits something but doesn't claim otherwise, that's an observation, not an issue. State them separately.
+- **Self-consistency**: Before finalizing, re-read your own output. Do not contradict yourself.
+- **Conciseness**: Target ~1000 words for a review, not 4000.
+- **Cross-response discipline**: During cross-response in design reviews, actively challenge the other reviewer's low-value findings. Push back on pedantic observations when the doc is conceptual. Your job in cross-response is to raise the signal-to-noise ratio, not just agree and add more.
 
 ## Key Source Files
 
