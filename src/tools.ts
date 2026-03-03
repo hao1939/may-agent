@@ -581,6 +581,38 @@ export function stripRedundantCd(command: string, root: string): string {
   return command.replace(pattern, "");
 }
 
+
+/**
+ * Extract a failing path from exec error output and build a helpful hint.
+ *
+ * When exec commands fail with "No such file or directory", the agent typically
+ * wastes 2-3 follow-up calls running `ls` and `find` to discover what exists.
+ * This function detects the failing path from the error output and appends
+ * the same directory-listing hint that the read tool provides.
+ *
+ * @param output - The combined stdout+stderr from the failed command
+ * @param projectRoot - The project root for building hints
+ * @returns A hint string to append, or empty string if no ENOENT detected
+ */
+export function buildExecEnoentHint(output: string, projectRoot: string): string {
+  if (!output.includes("No such file or directory")) return "";
+
+  // Extract the failing path from common error formats:
+  //   head: cannot open '/path/to/file' for reading: No such file or directory
+  //   ls: cannot access '/path/to/dir': No such file or directory
+  //   cat: /path/to/file: No such file or directory
+  //   bash: cd: /path/to/dir: No such file or directory
+  const pathMatch = output.match(
+    /(?:cannot (?:open|access|stat)|cd:|cat:?)\s*['"]*([^'":\n]+?)['"]*(?:\s*(?:for reading)?\s*:\s*No such file or directory|':\s*No such file)/
+  );
+  if (!pathMatch) return "";
+
+  const failedPath = pathMatch[1].trim();
+  if (!failedPath || !failedPath.startsWith("/")) return "";
+
+  return "\n" + buildEnoentHint(failedPath, projectRoot);
+}
+
 export function createExecTool(cwdOrOpts?: string | ExecToolOptions): AgentTool<typeof ExecParams> {
   const opts: ExecToolOptions = typeof cwdOrOpts === "string" ? { cwd: cwdOrOpts } : (cwdOrOpts ?? {});
   const effectiveCwd = opts.cwd ?? process.cwd();
@@ -632,7 +664,8 @@ export function createExecTool(cwdOrOpts?: string | ExecToolOptions): AgentTool<
         if (err && typeof err === "object" && "stdout" in err) {
           const e = err as { stdout: string; stderr: string; status: number };
           const output = [e.stdout, e.stderr].filter(Boolean).join("\n");
-          return textResult(`${cwdPrefix}Exit code ${e.status}\n${truncateOutput(output, maxOutputLength)}${outsideWarning}`);
+          const enoentHint = warnOutsideRoot ? buildExecEnoentHint(output, warnOutsideRoot) : "";
+          return textResult(`${cwdPrefix}Exit code ${e.status}\n${truncateOutput(output, maxOutputLength)}${enoentHint}${outsideWarning}`);
         }
         const msg = err instanceof Error ? err.message : String(err);
         return textResult(`${cwdPrefix}Error: ${msg}${outsideWarning}`);
