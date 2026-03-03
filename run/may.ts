@@ -401,7 +401,8 @@ let shuttingDown = false;
 function gracefulShutdown() {
   if (shuttingDown) return;
   shuttingDown = true;
-  bus.emit({ type: "info", message: "Shutting down..." });
+  const stack = new Error("gracefulShutdown trace").stack;
+  bus.emit({ type: "info", message: `Shutting down...\n${stack}` });
 
   // Cancel non-persistent child sessions (coder, qa) but leave May's
   // persistent session intact for resume on next startup.
@@ -425,6 +426,17 @@ process.on("SIGTERM", () => {
 });
 process.on("SIGHUP", () => {
   bus.emit({ type: "info", message: "[signal] SIGHUP received (ignoring)" });
+});
+process.on("uncaughtException", (err) => {
+  bus.emit({ type: "info", message: `[fatal] Uncaught exception: ${err.message}\n${err.stack}` });
+  process.exit(1);
+});
+process.on("unhandledRejection", (reason) => {
+  bus.emit({ type: "info", message: `[fatal] Unhandled rejection: ${reason}` });
+});
+process.on("exit", (code) => {
+  // This fires synchronously just before the process exits
+  console.error(`[exit] Process exiting with code ${code}`);
 });
 
 // ── Startup ────────────────────────────────────────────────────────────
