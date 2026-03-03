@@ -59,8 +59,8 @@ Do the job that was asked—no scope expansion. If new work is discovered, propo
 ### 15. Act → Verify → Refine Loop [hao-pattern]
 Execution should be closed-loop: do the change, verify via an independent check (read back, run tests), then refine.
 
-### 16. The Artifact Effect [imported]
-Artifacts can look “finished” even when wrong. Treat artifacts with the same skepticism as unverified claims.
+### 16. The Artifact Effect [hao-pattern]
+Artifacts can look “finished” even when wrong. Treat artifacts with the same skepticism as unverified claims. (Validated by agent failures where "correct-looking" text was trusted over user bug reports).
 
 ### 17. Absorb Theory, Apply What’s Suitable [hao-pattern]
 External ideas are inputs, not marching orders. Adopt only what matches our constraints and observed problems.
@@ -81,6 +81,12 @@ Workflow/tooling/instruction improvements often beat swapping models. Keep this 
 
 ### 21. Deterministic Guardrails for Reliability [hao-pattern]
 Put constraints and invariants in code/tools where possible (structural fixes) rather than relying only on “be careful” instructions.
+
+### 22. Verification Must Be Explicit [hao-pattern]
+Don’t guess what’s in a file or assume a task is done based on a summary. Read the actual bytes, run the actual test. Partial/truncated data = no data.
+
+### 23. Hard Constraints Are Facts [hao-pattern]
+If the environment (tool, compiler, OS) blocks an action, it’s a hard fact. Don’t retry the exact same action expecting a different result. Change your approach immediately.
 
 ---
 
@@ -151,4 +157,3 @@ Put constraints and invariants in code/tools where possible (structural fixes) r
 
 _Things Bob is unsure about and needs Hao clarification on._
 - Which decisions (if any) must always remain human-only (e.g., git history rewrites, deleting state, security-sensitive changes)?
-- Should we keep Principle 16 (“Artifact Effect”) if it remains mostly imported, or remove it until Hao explicitly endorses it?
