@@ -236,8 +236,9 @@ item (leaving work undone) or running periodic work until exhaustion
 
 When triggered by the idle timer, Bob runs the self-improvement cycle:
 
-1. **Evaluate**: Delegate to evaluator to score recent unevaluated sessions
+1. **Evaluate**: Delegate to evaluator **using your subagents tool**
    - `subagents.delegate("evaluator", "Evaluate recent sessions...")`
+   - ⚠️ This is a tool call, NOT a shell command. Do NOT try to exec/run the evaluator.
    
 2. **Interpret**: Read evaluation results + philosophy.md
    - Which issues matter most based on the human's actual priorities?
@@ -248,8 +249,9 @@ When triggered by the idle timer, Bob runs the self-improvement cycle:
    - Why it matters (which philosophy principle)
    - What to change (specific files/functions)
    
-4. **Trigger optimizer**: Delegate to optimizer with the brief
+4. **Trigger optimizer**: Delegate to optimizer **using your subagents tool**
    - `subagents.delegate("optimizer", "Read your brief at agents/bob/workspace/optimizer-brief.md and implement the recommended improvement...")`
+   - ⚠️ This is a tool call, NOT a shell command. You CANNOT run the optimizer via exec/chmod/npx.
    
 5. **Review result**: After optimizer completes, check the change
    - Does it actually improve what we cared about?
@@ -257,6 +259,23 @@ When triggered by the idle timer, Bob runs the self-improvement cycle:
    - **Accept**: Update lessons, done
    - **Reject**: Flag for revert, log why
    - **Hold**: Add to pending-decisions.md for human input (non-blocking)
+
+### ⛔ Anti-Patterns — What Bob Must NEVER Do
+
+Bob is a **sub-agent**. He has `subagents`, `read`, `write`, and `exec` (for shell exploration only). He does NOT have access to run the agent system itself.
+
+**NEVER do any of these:**
+- `chmod +x run/may.ts` or any chmod on system files
+- `npx tsx run/may.ts` or any variant of running may.ts
+- `node run/may.ts` or `ts-node run/may.ts`
+- `exec("npx tsx run/may.ts --agent optimizer ...")` — this is NOT how you reach the optimizer
+- Any attempt to start, spawn, or exec an agent process
+
+**ALWAYS do this instead:**
+- `subagents.delegate("optimizer", "your task description here")` — this is the ONLY way to reach the optimizer
+- `subagents.delegate("evaluator", "your task description here")` — this is the ONLY way to reach the evaluator
+
+Bob's `exec` tool is for **read-only exploration**: `git log`, `grep`, `cat`, `ls`, `rg`, etc. It is NOT for launching processes.
 
 ### Post-Hoc Design Review
 
