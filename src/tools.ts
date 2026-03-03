@@ -16,6 +16,8 @@ function textResult(text: string): AgentToolResult<string> {
 
 const ReadParams = Type.Object({
   path: Type.String({ description: "Absolute path to the file" }),
+  startLine: Type.Optional(Type.Number({ description: "First line to return (1-based, inclusive). Use with endLine to read a specific range without truncation." })),
+  endLine: Type.Optional(Type.Number({ description: "Last line to return (1-based, inclusive). Use with startLine to read a specific range without truncation." })),
 });
 
 const WriteParams = Type.Object({
@@ -135,7 +137,7 @@ export class TruncationTracker {
       `you saw a truncated version). Your write contains only ${newContentLength.toLocaleString()} chars (${pctKept}% of original, ` +
       `${charsLost.toLocaleString()} chars lost). ` +
       `This may indicate data loss from the truncated section you didn't see. ` +
-      `Consider using exec with sed, patch, or targeted edits instead of rewriting the entire file.`
+      `Consider reading specific line ranges with read(path, startLine, endLine) and using exec with sed for targeted edits.`
     );
   }
 
@@ -537,6 +539,48 @@ const STRUCTURE_SHOW_DOTFILES = new Set([
   ".prettierrc.json",
 ]);
 
+/**
+ * Extract a range of lines from content.
+ *
+ * Both startLine and endLine are 1-based and inclusive.
+ * Returns the selected lines joined with newlines, prefixed with
+ * line numbers for easy reference in subsequent edits.
+ *
+ * @param content - The full file content
+ * @param startLine - First line number (1-based, inclusive)
+ * @param endLine - Last line number (1-based, inclusive)
+ * @returns Object with the extracted text and metadata
+ */
+export function extractLineRange(
+  content: string,
+  startLine: number,
+  endLine: number,
+): { text: string; totalLines: number; linesReturned: number } {
+  const allLines = content.split("\n");
+  const totalLines = allLines.length;
+
+  // Clamp to valid range
+  const start = Math.max(1, Math.min(startLine, totalLines));
+  const end = Math.max(start, Math.min(endLine, totalLines));
+
+  // Extract lines (convert from 1-based to 0-based index)
+  const selected = allLines.slice(start - 1, end);
+  const linesReturned = selected.length;
+
+  // Prefix each line with its line number for easy reference
+  const numbered = selected.map((line, i) => {
+    const lineNum = start + i;
+    const pad = String(end).length; // pad to width of largest line number
+    return `${String(lineNum).padStart(pad)}| ${line}`;
+  });
+
+  return {
+    text: numbered.join("\n"),
+    totalLines,
+    linesReturned,
+  };
+}
+
 export function createReadTool(options?: ReadToolOptions): AgentTool<typeof ReadParams> {
   const maxFileLength = options?.maxFileLength ?? 0;
   const tracker = options?.truncationTracker;
@@ -544,7 +588,7 @@ export function createReadTool(options?: ReadToolOptions): AgentTool<typeof Read
   return {
     name: "read",
     label: "Read File",
-    description: "Read the contents of a file.",
+    description: "Read the contents of a file. Supports optional startLine/endLine for reading specific line ranges without truncation — use this instead of full-file reads when editing large files.",
     parameters: ReadParams,
     execute: async (_id, params) => {
       // Resolve path: relative → projectRoot-based, hallucinated → rewritten, correct → as-is
@@ -554,6 +598,26 @@ export function createReadTool(options?: ReadToolOptions): AgentTool<typeof Read
 
       try {
         const content = readFileSync(effectivePath, "utf-8");
+
+        // ── Line-range mode ──────────────────────────────────────
+        // When startLine or endLine is specified, return only those lines
+        // with line numbers. No truncation is applied in this mode because
+        // the agent is explicitly requesting a bounded range.
+        if (params.startLine !== undefined || params.endLine !== undefined) {
+          const totalLines = content.split("\n").length;
+          const startLine = params.startLine ?? 1;
+          const endLine = params.endLine ?? totalLines;
+          const { text, linesReturned } = extractLineRange(content, startLine, endLine);
+
+          // Line-range reads do NOT trigger truncation tracking because
+          // the agent is intentionally reading a subset — it knows it
+          // doesn't have the full file and shouldn't attempt a full rewrite.
+
+          const header = `[Lines ${startLine}-${Math.min(endLine, totalLines)} of ${totalLines} total (${linesReturned} lines shown)]`;
+          return textResult(`${header}\n${text}`);
+        }
+
+        // ── Full-file mode (with potential truncation) ────────────
         const truncated = truncateOutput(content, maxFileLength, fileContentTruncationMarker);
 
         // Track truncation: record when a file was truncated, clear when it wasn't
@@ -606,9 +670,9 @@ export function createWriteTool(options?: WriteToolOptions): AgentTool<typeof Wr
               `This file was previously read with truncation (original: ${originalLength.toLocaleString()} chars). ` +
               `Your write contains only ${params.content.length.toLocaleString()} chars (${Math.round(params.content.length / originalLength * 100)}% of original).\n\n` +
               `To edit this file safely, use one of these approaches:\n` +
-              `  1. exec with sed: sed -i 's/old_text/new_text/g' ${effectivePath}\n` +
-              `  2. exec with awk for multi-line changes\n` +
-              `  3. Read specific line ranges: exec 'sed -n "100,200p" ${effectivePath}'\n` +
+              `  1. read(path, startLine=N, endLine=M) to see the specific section you need to change\n` +
+              `  2. exec with sed: sed -i 's/old_text/new_text/g' ${effectivePath}\n` +
+              `  3. exec with awk for multi-line changes\n` +
               `  4. Use exec with a heredoc to append/replace specific sections`
             );
           }
@@ -732,7 +796,7 @@ export function truncateOutput(output: string, maxLen: number, markerFn?: (omitt
  * Build a truncation marker for file content read by the read tool.
  *
  * Unlike the generic marker, this includes actionable guidance telling
- * the agent to use targeted editing (exec with sed, line-range reads)
+ * the agent to use line-range reads or targeted editing (exec with sed)
  * instead of full-file writes — the #1 remaining quality issue in evals.
  *
  * @param omitted - Number of characters that were omitted
@@ -743,7 +807,7 @@ export function fileContentTruncationMarker(omitted: number): string {
     `\n\n... [${omitted.toLocaleString()} characters truncated] ...\n` +
     `⚠️ FILE TRUNCATED: You are seeing only the beginning and end of this file.\n` +
     `DO NOT use the write tool to rewrite this entire file — you will lose the content you cannot see.\n` +
-    `Instead, use exec with sed or awk for targeted edits, or read specific line ranges with: exec 'sed -n "100,200p" <file>'.\n\n`
+    `Instead: use read(path, startLine=N, endLine=M) to see specific sections, or exec with sed for targeted edits.\n\n`
   );
 }
 
