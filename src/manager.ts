@@ -2,7 +2,7 @@ import { readFileSync, mkdirSync, existsSync } from "node:fs";
 import { Agent } from "@mariozechner/pi-agent-core";
 import type { AgentMessage, AgentEvent, AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
 import { Type, StringEnum } from "@mariozechner/pi-ai";
-import type { SubagentDefinition, SessionInfo, TaskResult } from "./types.js";
+import type { SubagentDefinition, SessionInfo, TaskResult, SessionTreeNode } from "./types.js";
 import { createCompactionTransform } from "./compaction.js";
 import type { CompactionOptions } from "./compaction.js";
 import { loadSkillsFromDirs, formatSkillsForPrompt } from "./skills.js";
@@ -982,6 +982,108 @@ export class SubagentManager {
   getSessionCount(): number {
     return this.activeSessions.size;
   }
+
+  /** Build a recursive tree of the session hierarchy rooted at the given session.
+   *  Looks up both active sessions and archived/completed sessions in the registry.
+   *  Recursively finds all child sessions (sessions whose parentSessionId matches).
+   */
+  getSessionTree(sessionId: string): SessionTreeNode {
+    const registryData = this.registry.getRegistry();
+
+    // Helper to find session data from active sessions or registry
+    const findSession = (sid: string): { agent: string; task: string; status: string; error?: string } | null => {
+      const active = this.activeSessions.get(sid);
+      if (active) {
+        return { agent: active.agentName, task: active.task, status: active.status, error: active.error };
+      }
+      const persisted = registryData.sessions[sid];
+      if (persisted) {
+        return { agent: persisted.agent, task: persisted.task, status: persisted.status, error: persisted.error };
+      }
+      return null;
+    };
+
+    // Map internal statuses to the SessionTreeNode status union
+    const mapStatus = (status: string): "running" | "completed" | "cancelled" => {
+      if (status === "running" || status === "idle") return "running";
+      if (status === "done") return "completed";
+      return "cancelled"; // error, interrupted
+    };
+
+    // Extract a result string: last assistant text from active session or archived messages
+    const extractResult = (sid: string): string | undefined => {
+      const active = this.activeSessions.get(sid);
+      if (active) {
+        const text = extractLastAssistantText(active.agent.state.messages);
+        return text ?? undefined;
+      }
+      // Try archived messages
+      try {
+        const messages = readArchivedSessionMessages(this.registry.persistDir, sid);
+        if (messages.length > 0) {
+          const text = extractLastAssistantText(messages);
+          return text ?? undefined;
+        }
+      } catch {
+        // No archived messages available
+      }
+      return undefined;
+    };
+
+    // Collect all session IDs from both active sessions and registry
+    const allSessionIds = new Set<string>();
+    for (const sid of this.activeSessions.keys()) {
+      allSessionIds.add(sid);
+    }
+    for (const sid of Object.keys(registryData.sessions)) {
+      allSessionIds.add(sid);
+    }
+
+    // Build a parent -> children index
+    const childrenOf = new Map<string, string[]>();
+    for (const sid of allSessionIds) {
+      const active = this.activeSessions.get(sid);
+      const persisted = registryData.sessions[sid];
+      const parentSid = active?.parentSessionId ?? persisted?.parentSessionId;
+      if (parentSid) {
+        const siblings = childrenOf.get(parentSid);
+        if (siblings) {
+          siblings.push(sid);
+        } else {
+          childrenOf.set(parentSid, [sid]);
+        }
+      }
+    }
+
+    // Recursive tree builder
+    const buildNode = (sid: string): SessionTreeNode => {
+      const data = findSession(sid);
+      if (!data) {
+        throw new Error(`Session "${sid}" not found`);
+      }
+      const childIds = childrenOf.get(sid) ?? [];
+      const children = childIds.map(buildNode);
+      const status = mapStatus(data.status);
+      const node: SessionTreeNode = {
+        sessionId: sid,
+        agent: data.agent,
+        task: data.task,
+        status,
+        children,
+      };
+      // Attach result for completed/cancelled sessions
+      if (status === "completed" || status === "cancelled") {
+        const result = extractResult(sid);
+        if (result !== undefined) {
+          node.result = result;
+        }
+      }
+      return node;
+    };
+
+    return buildNode(sessionId);
+  }
+
 
   /** Get sessions filtered by agent name. */
   sessions(name: string): SessionInfo[] {

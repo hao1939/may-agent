@@ -1,315 +1,226 @@
 # may-agent
 
-A persistent, multi-session sub-agent manager built on [pi-agent-core](https://github.com/nicokoenig/pi-mono). **may-agent** turns LLM agents into **feature units** — long-lived capabilities that own a domain, accumulate knowledge and memory across tasks, and can be orchestrated by a parent agent or used standalone.
+Infrastructure for running a team of cooperating LLM agents. Built on [pi-agent-core](https://github.com/badlogic/pi-mono/tree/main/packages/agent) and [pi-ai](https://github.com/badlogic/pi-mono/tree/main/packages/ai).
 
-## Why may-agent?
+## What Is This For
 
-Running one-off LLM prompts is easy. Building agents that **remember**, **evolve**, and **coordinate** is hard. may-agent provides:
+Running a single LLM prompt is easy. Running a team of agents that delegate to each other, survive crashes, manage long conversations, and improve over time is hard. may-agent handles the infrastructure so you can focus on defining what each agent does rather than how the plumbing works.
 
-- **Persistent identity** — each agent has a name, domain, knowledge base, tools, and workspace that survive across tasks and process restarts.
-- **Cross-session memory** — task outcomes are automatically logged and injected into future sessions so agents learn from past work.
-- **Non-blocking multi-session** — run multiple agents (or multiple tasks on the same agent) concurrently. Poll progress, steer mid-run, or `await` completion.
-- **Session persistence & resume** — conversations are streamed to disk as JSONL. If the process crashes, `resume()` picks up where it left off.
-- **Parent-agent orchestration** — expose the entire manager as a single tool (`createTool()`) so a coordinating agent can dispatch, monitor, and collect results from sub-agents.
+The framework doesn't prescribe agent behavior or strategy — it provides the primitives (sessions, persistence, tools, workflows, evaluation) and gets out of the way.
 
-## Architecture Overview
+## Architecture
+
+### Overview
 
 ```
-SubagentManager
-  ├── register()        ← define agents (name, domain, model, tools, knowledge)
-  ├── run()             ← start a task → returns sessionId (non-blocking)
-  ├── progress()        ← read conversation so far
-  ├── steer()            ← redirect a running session
-  ├── cancel()          ← abort a session
-  ├── result()          ← get final output
-  ├── waitFor()         ← await completion
-  ├── resume()          ← restart interrupted sessions after crash
-  └── createTool()      ← expose as a tool for a parent agent
+┌─────────────────────────────────────────────────────┐
+│                   Event Bus                         │
+│         (text, tool calls, workflow, eval)           │
+├──────────┬──────────────────────────────┬────────────┤
+│ Console  │       Socket (JSON-line)     │  Custom    │
+└──────────┴──────────────────────────────┴────────────┘
+       ▲                                     ▲
+       │            events                   │
+┌──────┴─────────────────────────────────────┴─────────┐
+│                 SubagentManager                       │
+│  ┌─────────┐  ┌─────────┐  ┌─────────┐              │
+│  │  Agent   │  │  Agent   │  │  Agent   │  ...        │
+│  │ (coder)  │  │  (qa)    │  │ (eval)   │             │
+│  └────┬─────┘  └────┬─────┘  └────┬─────┘            │
+│       │ session      │ session     │ session          │
+│       ▼              ▼             ▼                  │
+│  ┌──────────────────────────────────────────┐        │
+│  │           Session Layer                   │        │
+│  │  run → steer/progress → complete → archive│       │
+│  └──────────────────────────────────────────┘        │
+├───────────────────────────────────────────────────────┤
+│                Persistence Layer                      │
+│  registry.json │ session.jsonl │ memory.jsonl │ runs  │
+└───────────────────────────────────────────────────────┘
 ```
 
-### Six Layers of State
+### Layers
 
-| Layer | Location | Lifetime | Purpose |
-|-------|----------|----------|---------|
-| **Knowledge** | `<agentDir>/knowledge/` | Permanent, mutable | Domain expertise (loaded via `systemPromptFiles`) |
-| **Tools** | `<agentDir>/tools/` | Permanent, mutable | Reusable scripts the agent creates and maintains |
-| **Workspace** | `<agentDir>/workspace/` | Permanent, mutable | Working files, drafts, temp data |
-| **Memory** | `<persistDir>/memory/` | Permanent, append-only | Task outcomes across all sessions |
-| **Session** | `<persistDir>/sessions/<id>/` | Archived after task | Conversation trace (JSONL) |
-| **Output** | `<persistDir>/sessions/<id>/output/` | Archived with session | Task deliverables |
+The **SubagentManager** is the central hub. It owns the agent registry, spawns sessions, manages their lifecycle, and exposes everything through a uniform API.
 
-The top three layers are **caller-managed** (your directory structure). The bottom three are **manager-managed** (automatic persistence).
+**Agent definitions** describe what an agent is — name, model, tools, knowledge files, turn budget, memory limit. Definitions are registered at startup and persist in a registry file.
 
-## Installation
+**Sessions** are where work happens. A session is a single conversation between an agent and its LLM. Sessions run non-blocking, produce a stream of events, and can be steered, cancelled, or waited on. Every message is persisted to JSONL as it arrives.
 
-```bash
-npm install may-agent
+**Tools** are how agents interact with the world. The manager provides factory functions that produce tools with built-in safety guardrails. A special `subagents` tool lets agents delegate to each other, creating parent-child session trees.
+
+**Persistence** is append-only JSONL for sessions and memory, JSON for registry and workflow runs. Everything needed to reconstruct state after a crash lives on disk.
+
+**Events** flow from sessions through a push-based bus to UI backends. The bus decouples agent activity from rendering — attach a console, a socket server, a web UI, or all of them.
+
+### Session Lifecycle
+
+Sessions have two modes:
+
+**Ephemeral** sessions are the default. They run a task, produce a result, archive to the history directory, and are removed from memory. Good for one-off tasks delegated by a supervisor.
+
+**Persistent** sessions stay alive after completing a task. They transition to an idle state and can be woken with new messages, maintaining conversational continuity across tasks. Used for supervisor agents that need to remember what happened across multiple delegations.
+
+```
+run() → running → complete → archive (ephemeral)
+                           → idle → send() → running → ... (persistent)
 ```
 
-> **Requirements:** Node.js ≥ 20. Peer dependencies: `@mariozechner/pi-agent-core`, `@mariozechner/pi-ai`.
+Cancel cascades depth-first through the session tree — cancelling a supervisor cancels all its children.
 
-## Quick Start
+### Delegation Model
 
-### Standalone Usage
+Agents delegate to each other through the `subagents` tool exposed by `createTool()`. A supervisor agent sees this as a single tool with actions:
 
-```typescript
-import { SubagentManager, createReadTool, createWriteTool, createExecTool } from "may-agent";
-import { Claude } from "@mariozechner/pi-ai";
+- **delegate** — start a task and wait for the result (synchronous)
+- **run** / **waitFor** — start a task and collect the result later (async)
+- **progress** — read the conversation so far
+- **steer** — redirect a running session
+- **cancel** — abort a session
+- **trace** — visualize the session tree
 
-const manager = new SubagentManager({ persistDir: "./state" });
+Parent-child relationships are tracked automatically via session IDs. This enables cascading cancel, tree-wide evaluation, and structured traces.
 
-// 1. Register an agent
-manager.register({
-  name: "researcher",
-  description: "Deep research on technical topics",
-  domain: "academic research",
-  systemPromptFiles: [
-    "./agents/researcher/knowledge/domain.md",
-    "./agents/researcher/tools/INDEX.md",
-  ],
-  workspace: "./agents/researcher/workspace",
-  tools: [createReadTool(), createWriteTool(), createExecTool()],
-  model: Claude.Sonnet,
-  apiKey: process.env.ANTHROPIC_API_KEY,
-  memoryLimit: 20,
-});
+### Knowledge & Prompt Assembly
 
-// 2. Run a task (non-blocking, returns immediately)
-const sessionId = manager.run("researcher", "Find recent papers on multi-agent RL");
+System prompts are not static strings. They're assembled fresh per session from multiple sources:
 
-// 3. Check progress
-const messages = manager.progress(sessionId, 5); // last 5 messages
+1. **System prompt files** — domain docs, lessons, tool descriptions loaded from disk
+2. **Memory entries** — summaries of past sessions, injected for continuity
+3. **Skills** — discovered from SKILL.md files in configured directories
+4. **Project structure** — directory tree so agents know what exists
+5. **Runtime context** — workspace path, output path, turn budget
 
-// 4. Steer mid-run
-manager.steer(sessionId, "Focus on cooperative settings, not competitive");
+Because files are read at session start, changes to knowledge files take effect immediately — no restart needed.
 
-// 5. Wait for completion and get the result
-const result = await manager.waitFor(sessionId);
-console.log(result.lastAssistantText);
-console.log(result.outputDir); // "./state/sessions/history/<id>/output/"
+### Persistence & Crash Recovery
+
+Three persistence mechanisms work together:
+
+**Session JSONL** — every message (user, assistant, tool result) is appended to a JSONL file as it arrives. On crash, `resumeAgent()` reads these back, repairs broken sequences (dangling tool calls, duplicate messages), and resumes the agent loop.
+
+**Registry** — agent definitions and session metadata stored in `registry.json`. Atomic writes (temp file + rename) prevent corruption.
+
+**Workflow runs** — workflow execution records stored as JSON files. On crash, the workflow engine replays completed steps from cached results and resumes from the first missing step.
+
+### Context Management
+
+Long-running sessions hit context window limits. Two mechanisms handle this:
+
+**Compaction** triggers when token usage exceeds a configurable threshold (default 70% of context window). It structurally summarizes old messages — no LLM calls, fast and deterministic. Preserved across compaction rounds: the original task, key facts (files read/written, commands executed), and the agent's most recent reasoning block. Multiple rounds accumulate; oldest sections are trimmed first. Summary budget is capped at 15% of the context window.
+
+**Overflow recovery** handles the case where compaction wasn't enough (or isn't enabled). When a session hits the context window hard limit, the system extracts structured progress (task, actions taken, files touched, last reasoning) into a markdown document that a new session can pick up from.
+
+### Workflow System
+
+Workflows are predefined multi-step coordination patterns written as TypeScript files. A workflow context provides:
+
+- **runAgent()** — delegate to an agent and get a TaskResult
+- **summarize()** — produce a structured handoff between steps (files modified, commands run, errors, agent response)
+- **runWorkflow()** — compose sub-workflows (nestable up to configurable depth)
+- **emit()** — send progress events to the event bus
+- **done() / escalate()** — signal completion or failure
+
+Humans can steer workflows mid-execution — the workflow engine checks a steering queue before each step and interrupts if redirected.
+
+Workflow execution is crash-safe: step results are persisted as workflow run records. On resume, completed steps return cached results; execution picks up from the first missing step.
+
+### Tool Safety
+
+Built-in tools (read, write, exec) come with guardrails that prevent common agent failure modes:
+
+- **Truncation tracking** — the read tool tracks which files were truncated. If the agent tries to overwrite a file it only partially read, the write tool warns before proceeding. Repeated full-file reads also trigger warnings.
+- **Path correction** — LLMs hallucinate absolute paths. The tools detect common patterns and rewrite them to the correct project-relative paths.
+- **Sandboxing** — exec blocks commands that access paths outside the project root.
+- **Git guards** — warns on blanket `git add -A`/`.` (shows what would be staged), shows remaining dirty tree after commits.
+- **Meta-recursion blocking** — prevents agents from trying to run the agent system itself via exec.
+- **Error hints** — recognizes common failure patterns (tsc errors, test failures, ENOENT) and adds actionable context to help the agent recover.
+
+### Evaluation
+
+The evaluation system scores completed agent sessions on efficiency and quality:
+
+- **Failure chain extraction** — identifies patterns of repeated failures (error → recovery attempt → error again) that indicate wasted effort
+- **Token usage tracking** — aggregates input/output/cache tokens and cost across sessions
+- **Per-agent attribution** — in a task tree (supervisor → coder → QA), each agent is scored by its own responsibilities. Vague delegation is the supervisor's fault; path guessing is the coder's fault.
+- **Task-tree evaluation** — the evaluator sees the full delegation tree and produces per-agent scores rather than a single aggregate score
+
+### Memory
+
+Per-agent memory is stored as JSONL. After each session completes, a summary (task, status, key outcome) is appended. On future sessions, the most recent entries are injected into the system prompt, giving the agent context about its past work. A configurable limit prevents memory from consuming too much of the context window.
+
+### Event System
+
+All activity flows through a push-based event bus. Event types:
+
+- **text** — streaming text from an agent
+- **tool_call / tool_result** — tool invocations and their outcomes
+- **session_start / session_end** — session lifecycle
+- **workflow** — workflow progress (start, step_start, step_done, done, escalated)
+- **eval** — evaluation results
+- **info / prompt** — system messages
+
+Two built-in UI backends: a console renderer (stdout with formatting) and a Unix socket server (JSON-line protocol for external tooling and dashboards). The bus accepts commands back from UIs: steer, cancel, status queries, input.
+
+## Usage
+
+1. Create a `SubagentManager` with a persistence directory
+2. Register agents — each with a name, model, tools, and knowledge files
+3. Run tasks — the manager returns a session ID immediately (non-blocking)
+4. Interact — steer sessions, check progress, wait for results, cancel
+5. Delegate — give a supervisor agent the `createTool()` output so it can manage sub-agents through tool calls
+6. Define workflows — write TypeScript files that orchestrate multi-agent sequences
+7. Resume on crash — call `resumeAgent()` after restart to pick up where you left off
+
+## Project Structure
+
+```
+src/
+  manager.ts        Core orchestrator — registration, sessions, lifecycle
+  tools.ts          Tool factories with safety guardrails
+  persistence.ts    JSONL storage, registry, memory, archival
+  compaction.ts     Context window management
+  evaluator.ts      Session quality scoring and failure chain extraction
+  workflow-tool.ts  Workflow execution engine with replay-based resume
+  workflow.ts       Workflow types and context
+  handoff.ts        Structured context transfer between workflow steps
+  overflow.ts       Context overflow detection and recovery
+  skills.ts         Skill discovery and prompt formatting
+
+run/
+  may.ts            Application runner (agent registration, startup, UI)
+  event-bus.ts      Event types and bus
+  console-ui.ts     Console renderer
+  socket-ui.ts      Unix socket server for external control
 ```
 
-### As a Parent-Agent Tool
-
-Let a coordinating agent manage sub-agents through a single tool:
-
-```typescript
-import { Agent } from "@mariozechner/pi-agent-core";
-
-const manager = new SubagentManager({ persistDir: "./state" });
-manager.register({ name: "researcher", /* ... */ });
-manager.register({ name: "writer",     /* ... */ });
-
-const orchestrator = new Agent({
-  initialState: {
-    systemPrompt: "You coordinate specialized agents to complete complex tasks.",
-    model: Claude.Sonnet,
-    tools: [manager.createTool()],
-  },
-  getApiKey: () => process.env.ANTHROPIC_API_KEY,
-});
-
-// The orchestrator can now list agents, run tasks, check status,
-// read progress, get results, and cancel sessions — all through
-// the "subagents" tool.
-await orchestrator.prompt("Research transformer architectures, then write a summary report.");
-```
-
-### Resuming After a Crash
-
-```typescript
-const manager = new SubagentManager({ persistDir: "./state" });
-
-// Re-register agents (tools and apiKey are not persisted — must be re-supplied)
-manager.register({ name: "researcher", tools: [...], apiKey: "...", /* ... */ });
-
-// Resume all sessions that were "running" when the process died
-const resumed = manager.resume();
-console.log(`Resumed ${resumed.length} sessions`);
-```
-
-## API Reference
-
-### `SubagentManager`
-
-The core class. Manages agent registration, session lifecycle, persistence, and recovery.
-
-```typescript
-new SubagentManager(opts?: { persistDir?: string })
-```
-
-If `persistDir` is provided, all state (registry, sessions, memory) is persisted to disk. Without it, everything is in-memory only.
-
-#### Agent Registration
-
-| Method | Description |
-|--------|-------------|
-| `register(def: SubagentDefinition): void` | Register (or update) an agent definition. |
-
-#### Session Lifecycle
-
-| Method | Returns | Description |
-|--------|---------|-------------|
-| `run(name, task)` | `string` | Start a task on a registered agent. Returns `sessionId`. Non-blocking. |
-| `waitFor(sessionId)` | `Promise<TaskResult \| null>` | Wait for a session to finish, then return the result. |
-| `cancel(sessionId)` | `void` | Abort a running session. |
-| `resume()` | `SessionInfo[]` | Resume all interrupted sessions (after process restart). |
-
-#### Session Interaction
-
-| Method | Returns | Description |
-|--------|---------|-------------|
-| `progress(sessionId, limit?)` | `AgentMessage[]` | Get recent messages from a session. |
-| `steer(sessionId, message)` | `"steered" \| "queued" \| "not_running"` | Inject guidance into a running session. |
-| `subscribe(sessionId, fn)` | `() => void` | Subscribe to real-time agent events. Returns unsubscribe function. |
-
-#### Query
-
-| Method | Returns | Description |
-|--------|---------|-------------|
-| `status()` | `SessionInfo[]` | List active (running) sessions. Completed sessions are removed from memory; use `result()` or `progress()` to access them. |
-| `sessions(name)` | `SessionInfo[]` | List sessions filtered by agent name. |
-| `result(sessionId)` | `TaskResult \| null` | Get the result of a completed session. `null` if still running or not found. |
-
-#### Path Accessors
-
-| Method | Returns | Description |
-|--------|---------|-------------|
-| `getWorkspacePath(name)` | `string \| undefined` | Workspace directory for an agent. |
-| `getMemoryPath(name)` | `string \| undefined` | Path to an agent's memory JSONL file. |
-| `getOutputPath(sessionId)` | `string \| undefined` | Output directory for a session (active or archived). |
-
-#### Parent-Agent Integration
-
-| Method | Returns | Description |
-|--------|---------|-------------|
-| `createTool()` | `AgentTool` | Create a tool that exposes `list`, `run`, `status`, `progress`, `result`, and `cancel` actions to a parent agent. |
-
----
-
-### `SubagentDefinition`
-
-Configuration for registering an agent.
-
-```typescript
-interface SubagentDefinition {
-  name: string;              // Unique agent identifier
-  description: string;       // What this agent does (visible to parent agents)
-  domain: string;            // Domain of expertise
-
-  // System prompt (choose one)
-  systemPrompt?: string;           // Direct system prompt string
-  systemPromptFiles?: string[];    // Files loaded and concatenated at session start
-
-  workspace?: string;        // Persistent working directory
-  tools: AgentTool[];        // Tools available to the agent
-  model: Model<any>;         // LLM model to use
-  apiKey?: string;           // API key (not persisted to disk)
-  timeoutMs?: number;        // Session timeout
-  memoryLimit?: number;      // Max recent memory entries in system prompt (default: 20)
-}
-```
-
-### `SessionInfo`
-
-Runtime information about a session.
-
-```typescript
-interface SessionInfo {
-  sessionId: string;
-  agent: string;
-  task: string;
-  status: "running" | "done" | "error" | "interrupted";
-  startedAt: number;
-  endedAt?: number;
-  runtime: string;           // Human-readable, e.g. "4m12s"
-  outputDir: string;
-  error?: string;
-}
-```
-
-### `TaskResult`
-
-Result of a completed session.
-
-```typescript
-interface TaskResult {
-  sessionId: string;
-  status: "done" | "error";
-  lastAssistantText: string | null;  // Final assistant response
-  messages: AgentMessage[];          // Full conversation history
-  duration: string;                  // Human-readable duration
-  outputDir: string;                 // Where deliverables were written
-  error?: string;
-}
-```
-
-### Built-in Tools
-
-may-agent ships with three tool factories for common agent capabilities:
-
-```typescript
-import { createReadTool, createWriteTool, createExecTool } from "may-agent";
-
-createReadTool()          // Read file contents
-createWriteTool()         // Write files (creates parent dirs)
-createExecTool(cwd?)      // Execute shell commands (optional working directory)
-```
-
-### Persistence Utilities
-
-Lower-level exports for custom persistence workflows:
-
-```typescript
-import {
-  RegistryStore,              // Manages registry.json (agent configs + session status)
-  appendSessionMessage,       // Append a message to session JSONL
-  readSessionMessages,        // Read all messages from session JSONL
-  appendMemoryEntry,          // Append to agent memory
-  readMemoryEntries,          // Read recent memory entries
-  archiveSession,             // Move session to history
-} from "may-agent";
-```
-
-## Persistence Layout
-
-When `persistDir` is set, may-agent writes the following structure:
+### Persistence Layout
 
 ```
 <persistDir>/
-  ├── registry.json               # Agent configs + session status
-  ├── memory/
-  │   ├── researcher.jsonl        # Task history for "researcher"
-  │   └── writer.jsonl            # Task history for "writer"
-  └── sessions/
-      ├── <sessionId>/            # Active session
-      │   ├── session.jsonl       # Conversation (append-only)
-      │   └── output/             # Task deliverables
-      └── history/
-          └── <sessionId>/        # Archived (completed) session
-              ├── session.jsonl
-              └── output/
+  registry.json              Agent definitions + session metadata
+  memory/<agent>.jsonl        Per-agent task history
+  sessions/<id>/session.jsonl Conversation messages (append-only)
+  sessions/history/<id>/      Archived completed sessions
+  workflows/<runId>.json      Workflow execution records
 ```
 
-## Recommended Agent Directory Layout
-
-While may-agent doesn't enforce this structure, it's designed to work with it:
+### Recommended Agent Layout
 
 ```
-<agentDir>/
-  ├── knowledge/              # Domain expertise → systemPromptFiles
-  │   ├── domain.md
-  │   ├── patterns.md
-  │   └── user-preferences.md
-  ├── tools/                  # Reusable scripts the agent creates
-  │   ├── INDEX.md            # Agent-maintained manifest
-  │   └── ...
-  └── workspace/              # Working directory → workspace
+agents/
+  shared/                    Docs shared across agents
+  <agent>/
+    knowledge/domain.md      Domain expertise (loaded into system prompt)
+    knowledge/lessons.md     Accumulated lessons (auto-appended by learn tool)
+    tools/INDEX.md           Tool documentation
+    workflows/               Multi-step coordination patterns (.ts)
+    workspace/               Working files
 ```
 
-## Design
+## Requirements
 
-See [docs/design.md](./docs/design.md) for the full architecture document, including the six-layer state model, evolution patterns, and restart recovery flow.
+Node.js ≥ 20. Peer dependencies: `@mariozechner/pi-agent-core`, `@mariozechner/pi-ai`.
 
 ## License
 
