@@ -212,3 +212,22 @@ behavior. Each agent may produce correct individual outputs, but the
 composition at synthesis points (handoffs, shared files, signal channels)
 is where failures emerge. Bob's synthesis role is specifically a defense
 against this — catching composition failures before they compound.
+
+### Coaching Mode for New Agents
+New agents start in coaching mode: a senior agent (or the human) watches their
+output after each run, gives concrete structural feedback, and fixes issues
+immediately. The new agent doesn't run autonomously yet. Transition to
+independent mode is a judgment call: consistent clean output, self-correcting
+behavior, no repeated mistakes. Coaching mode is high-cost but prevents bad
+habits from compounding. Don't skip it — an agent released too early
+accumulates design debt that's expensive to fix later.
+
+### Adhoc vs Periodic Task Patterns
+Agent tasks divide into two types with different execution models:
+- **Adhoc** (has a natural end — drain a TODO queue, answer a question):
+  drain completely before resting. Don't stop after one item.
+- **Periodic** (never fully done — scan feeds, review docs): one cycle,
+  then rest. Don't try to finish what can't be finished.
+Mixing these up is a common agent failure: stopping adhoc work after one
+item (leaving work undone) or running periodic work until exhaustion
+(wasting tokens on diminishing returns).

@@ -132,3 +132,43 @@ from 91 to 89 wasn't degradation — it was the verifier becoming stricter,
 revealing previously hidden problems. Already captured in lesson 7, but the
 concrete trajectory pattern is worth remembering: 3-step oscillation before
 recovery is normal. Don't stop at the first dip.
+
+## Operational Lessons (from production agent systems)
+
+### 20. Shared State Mutation Is System-Wide Risk
+Any file that multiple agents depend on (shared config, coordination files,
+philosophy docs) is a single point of failure on every read. A typo, bad
+schema, or malformed entry doesn't just break the writer — it breaks every
+agent that reads the file next. Treat shared-file edits with production
+deployment discipline: validate before writing, keep backups, and test
+that consumers can still parse the result.
+
+### 21. "Be Resourceful" Needs a Scope Gate
+Any instruction that encourages exploration ("try other approaches", "be
+resourceful", "find another way") must pair with a failure recognition
+condition. Without a gate, the agent spirals — trying increasingly unlikely
+approaches, burning tokens exponentially. Pattern: "Try up to N approaches.
+If none work, stop and report what you tried." Every resourceful rule needs
+an exit condition.
+
+### 22. Capability On Demand Over Pre-Installation
+Start with minimal tools. Generate or add tools only when a concrete task
+requires them. Pre-installing capabilities "just in case" adds complexity
+tax: more tools in context = more for the model to consider = slower and
+less focused. Specialist agents need domain tools; general agents need
+only the tools they actually use.
+
+### 23. Agent Value Scales With Domain Knowledge Gap
+Agents add the most value in domains where the LLM's pretraining has gaps.
+Measured: medical domain skills +51.9pp improvement vs software engineering
++4.5pp. Implication: invest agent knowledge-building effort where the
+model knows least — niche domains, proprietary processes, team-specific
+conventions. Don't build elaborate agent workflows for tasks the model
+already handles well natively.
+
+### 24. Domain-Specific Evaluation Over Generic Benchmarks
+Generic benchmarks saturate quickly and stop distinguishing quality.
+Meaningful agent evaluation is domain-specific: "Can Bob spot a philosophy
+contradiction in one review pass?" "Can the optimizer reduce a real file's
+complexity score?" Design evaluation criteria that test what actually
+matters for the agent's specific role, not generic reasoning ability.
