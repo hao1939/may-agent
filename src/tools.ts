@@ -1365,6 +1365,48 @@ export function buildGitCommitContext(cwd: string, command: string): string {
 
 
 
+
+// ── Meta-recursion guard ───────────────────────────────────────────────
+
+/**
+ * Patterns that detect attempts to run the agent system itself via exec.
+ *
+ * This is the #1 recurring failure mode ("meta confusion"): agents try to
+ * spawn the agent system as a subprocess instead of using the `subagents`
+ * tool. Blocking this deterministically (Principle 21) with a clear error
+ * message (Principle 11) eliminates the problem entirely.
+ */
+const META_RECURSION_PATTERNS: RegExp[] = [
+  // npx tsx run/may.ts, npx tsx ./run/may.ts
+  /\bnpx\s+tsx\s+\.?\/?\.?\/?run\/may\.ts\b/,
+  // node run/may.ts, node ./run/may.ts
+  /\bnode\s+\.?\/?\.?\/?run\/may\.ts\b/,
+  // ts-node run/may.ts, ts-node ./run/may.ts
+  /\bts-node\s+\.?\/?\.?\/?run\/may\.ts\b/,
+  // ./run/may.ts (direct execution)
+  /(?:^|[;&|]\s*)\.\/run\/may\.ts\b/,
+  // npx tsx src/index.ts, node src/index.ts, etc.
+  /\b(?:npx\s+tsx|node|ts-node)\s+\.?\/?\.?\/?src\/index\.ts\b/,
+  // ./src/index.ts (direct execution)
+  /(?:^|[;&|]\s*)\.\/src\/index\.ts\b/,
+];
+
+const META_RECURSION_ERROR =
+  "⛔ BLOCKED: You are trying to run the agent system from within the agent system. " +
+  "This is a meta-recursion error.\n" +
+  "To delegate a task to another agent, use the \`subagents\` tool " +
+  "(e.g., \`subagents.delegate('optimizer', 'task...')\`).\n" +
+  "Do NOT try to spawn the system process manually.";
+
+/**
+ * Check whether a command attempts to run the agent system.
+ *
+ * Exported for testing.
+ */
+export function isMetaRecursionCommand(command: string): boolean {
+  return META_RECURSION_PATTERNS.some((pattern) => pattern.test(command));
+}
+
 export function createExecTool(cwdOrOpts?: string | ExecToolOptions): AgentTool<typeof ExecParams> {
   const opts: ExecToolOptions = typeof cwdOrOpts === "string" ? { cwd: cwdOrOpts } : (cwdOrOpts ?? {});
   const effectiveCwd = opts.cwd ?? process.cwd();
@@ -1387,6 +1429,12 @@ export function createExecTool(cwdOrOpts?: string | ExecToolOptions): AgentTool<
       if (warnOutsideRoot) {
         command = rewriteHallucinatedCommand(command, warnOutsideRoot);
       }
+
+      // Block meta-recursion: agents trying to run the agent system via exec
+      if (isMetaRecursionCommand(command)) {
+        return textResult(META_RECURSION_ERROR);
+      }
+
 
       // Check deny patterns (on the cleaned command)
       for (const pattern of denyPatterns) {
