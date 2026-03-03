@@ -109,7 +109,7 @@ function readOnlyExec() {
 const coderTools = projectTools();
 manager.register({
   name: "coder",
-  description: "Writes code, tests, commits",
+  description: "Writes code, runs tests — does not commit",
   domain: "may-agent implementation",
   systemPromptFiles: [
     resolve(AGENTS_ROOT, "coder/knowledge/domain.md"),
