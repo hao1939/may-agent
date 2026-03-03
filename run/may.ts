@@ -18,6 +18,7 @@ const AGENTS_ROOT = resolve(PROJECT_ROOT, "agents");
 const PERSIST_DIR = resolve(PROJECT_ROOT, ".state");
 const SOCKET_PATH = resolve(PERSIST_DIR, "may.sock");
 const SHARED_KNOWLEDGE = resolve(AGENTS_ROOT, "shared/system-design.md");
+const SHARED_TEAM = resolve(AGENTS_ROOT, "shared/team.md");
 
 // ── Model ──────────────────────────────────────────────────────────────
 
@@ -148,6 +149,7 @@ manager.register({
   domain: "agent performance evaluation",
   systemPromptFiles: [
     SHARED_KNOWLEDGE,
+    SHARED_TEAM,
     resolve(AGENTS_ROOT, "evaluator/knowledge/domain.md"),
   ],
   knowledgeDir: resolve(AGENTS_ROOT, "evaluator/knowledge"),
@@ -167,6 +169,7 @@ manager.register({
   domain: "agent system optimization",
   systemPromptFiles: [
     SHARED_KNOWLEDGE,
+    SHARED_TEAM,
     resolve(AGENTS_ROOT, "optimizer/knowledge/domain.md"),
     resolve(AGENTS_ROOT, "optimizer/knowledge/codebase.md"),
     resolve(AGENTS_ROOT, "optimizer/tools/INDEX.md"),
@@ -216,6 +219,7 @@ manager.register({
   domain: "may-agent coordination",
   systemPromptFiles: [
     SHARED_KNOWLEDGE,
+    SHARED_TEAM,
     resolve(AGENTS_ROOT, "may/knowledge/domain.md"),
     resolve(AGENTS_ROOT, "may/tools/INDEX.md"),
   ],
