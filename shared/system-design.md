@@ -219,6 +219,21 @@ The library is organized by topic (architecture, team details, patterns) rather
 than by consumer. Agents browse the library when they need context beyond what's
 in their prompt — the full library is always accessible via the filesystem.
 
+### Document Ownership
+
+Every document has an **owner** — the agent responsible for keeping it accurate
+and up to date. Ownership means:
+
+- The owner updates the doc when the system changes
+- Other agents can propose changes, but the owner decides what goes in
+- If a design review finds a doc is stale, the owner is responsible for fixing it
+
+The shared knowledge library is owned by the **optimizer**. The optimizer already
+maintains agent knowledge (domain.md, lessons.md, tools, workflows) as part of
+its improvement work. The shared library is the system-level extension of that
+responsibility — when the optimizer changes team composition, adds automation,
+or restructures workflows, it updates the shared docs to match.
+
 ### Evaluation Data
 
 Evaluations are saved per session ID. Each contains:

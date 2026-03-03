@@ -1,5 +1,7 @@
 # Shared Knowledge Library
 
+**Owner: optimizer**
+
 Curated knowledge about the agent system — architecture, team, patterns. Organized
 by topic, not by consumer. See the [Knowledge Library section in system-design.md](system-design.md#shared-knowledge-library) for the design rationale.
 
