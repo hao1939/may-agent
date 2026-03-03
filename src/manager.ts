@@ -444,6 +444,15 @@ export class SubagentManager {
     // Keep the session in activeSessions so it can receive new input via send().
     // DON'T unsubscribe persistence/turn-limit listeners — they'll be needed when resumed.
     if (session.persistent) {
+      // If the session was aborted (cancelled by user), queue a notice so the agent
+      // doesn't retry the cancelled task on next resume or send().
+      if (session.agent.state.error === "Request was aborted") {
+        session.agent.followUp({
+          role: "user",
+          content: [{ type: "text", text: "[Task cancelled by user. Do not retry. Wait for new instructions.]" }],
+          timestamp: Date.now(),
+        });
+      }
       session.status = "idle";
       this.registry.updateSessionStatus(session.sessionId, "idle");
       return;
