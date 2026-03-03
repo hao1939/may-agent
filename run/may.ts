@@ -259,6 +259,52 @@ manager.register({
   maxTurns: 50,
 });
 
+// Read-only exec for master — blocks direct file writes, forces use of claude-code/gemini-cli
+function masterExec() {
+  return createExecTool({
+    cwd: PROJECT_ROOT,
+    echoCwd: true,
+    warnOutsideRoot: PROJECT_ROOT,
+    denyPatterns: [
+      /^\s*find\s+\/\s/,
+      /^\s*ls\s+\/\s*$/,
+      /^\s*cd\s+\/(?!home\/hao\/may-agent)/,
+      // Block direct file-writing commands — must use CLI agents
+      /\bsed\s+-i\b/,
+      /\bcat\s*>[^&]/,
+      /<<\s*['"]?\w+['"]?/,
+      /\btee\s/,
+      /\b(echo|printf)\b.*>{1,2}[^&]/,
+      /\bmv\s|\bcp\s|\brm\s/,
+      /\bmkdir\b/,
+      /\btouch\b/,
+      /\bchmod\b|\bchown\b/,
+      /\bpython3?\s+-c\b.*open\(/,
+      /\bnode\s+-e\b/,
+      /\bgit\s+(reset|checkout)\b/,
+    ],
+    denyMessage: "You cannot write files directly. Use claude-code or gemini-cli to implement changes.",
+  });
+}
+
+const masterReadTools = projectTools();
+manager.register({
+  name: "master",
+  description: "Senior engineer who leverages claude-code and gemini-cli for challenging tasks",
+  domain: "complex implementation via external coding agents",
+  systemPromptFiles: [
+    resolve(AGENTS_ROOT, "master/knowledge/domain.md"),
+    resolve(AGENTS_ROOT, "master/tools/INDEX.md"),
+  ],
+  knowledgeDir: resolve(AGENTS_ROOT, "master/knowledge"),
+  workspace: resolve(AGENTS_ROOT, "master/workspace"),
+  projectRoot: PROJECT_ROOT,
+  model: opus,
+  tools: [masterReadTools.read, masterExec()],
+  apiKey: "not-needed",
+  maxTurns: 30,
+});
+
 let sid: string;
 
 const maySubagentTool = manager.createTool({

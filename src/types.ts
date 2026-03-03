@@ -124,3 +124,13 @@ export interface TaskResult {
   /** The maxTurns limit that was configured (undefined = no limit). */
   maxTurns?: number;
 }
+
+/** Recursive tree node representing a session and its children in the session hierarchy. */
+export interface SessionTreeNode {
+  sessionId: string;
+  agent: string;
+  task: string;
+  status: "running" | "completed" | "cancelled";
+  children: SessionTreeNode[];
+  result?: string;
+}

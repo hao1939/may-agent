@@ -48,6 +48,7 @@ export {
 export type {
   SubagentDefinition,
   SessionInfo,
+  SessionTreeNode,
   TaskResult,
 } from "./types.js";
 export type {
