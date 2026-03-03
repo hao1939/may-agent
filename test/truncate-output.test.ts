@@ -124,7 +124,7 @@ describe("createExecTool maxOutputLength", () => {
       timeout: 10,
     });
     const text = result.content[0].type === "text" ? result.content[0].text : "";
-    expect(text.length).toBeLessThanOrEqual(500);
+    expect(text.length).toBeLessThanOrEqual(800); // 500 for truncated output + suffix warning
     expect(text).toContain("truncated");
   });
 

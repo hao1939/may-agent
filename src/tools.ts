@@ -848,6 +848,31 @@ export function truncateOutput(output: string, maxLen: number, markerFn?: (omitt
 }
 
 /**
+ * Like truncateOutput but also returns whether truncation occurred.
+ *
+ * Used when callers need to append additional context (like suffix warnings)
+ * only when output was actually truncated.
+ *
+ * @param output - The raw output string
+ * @param maxLen - Maximum allowed length (0 or Infinity = no truncation)
+ * @param markerFn - Optional custom marker builder
+ * @returns Object with truncated text and whether truncation was applied
+ */
+export function truncateOutputWithFlag(
+  output: string,
+  maxLen: number,
+  markerFn?: (omitted: number) => string,
+): { text: string; wasTruncated: boolean } {
+  if (!maxLen || maxLen === Infinity || output.length <= maxLen) {
+    return { text: output, wasTruncated: false };
+  }
+
+  return { text: truncateOutput(output, maxLen, markerFn), wasTruncated: true };
+}
+
+
+
+/**
  * Build a truncation marker for file content read by the read tool.
  *
  * Unlike the generic marker, this includes actionable guidance telling
@@ -882,6 +907,67 @@ export function execOutputTruncationMarker(omitted: number): string {
     `If you need the full output, re-run with narrower scope (e.g., grep -c for counts, | head/tail, or filter args).\n\n`
   );
 }
+
+/**
+ * Build an end-of-output suffix warning when exec output was truncated.
+ *
+ * This addresses the #1 remaining quality issue in evaluations: agents see
+ * truncated exec output (test results, file lists, git diff) and then make
+ * specific quantitative claims about data they never saw, e.g.:
+ * - "All 718 tests pass across 48 test files" (test output was truncated)
+ * - "42 files found" (file listing was truncated)
+ * - "9 files, +300/-68 lines" (git output was truncated)
+ *
+ * The middle-of-output truncation marker is often ignored because agents
+ * focus on the tail. This suffix appears at the very END of the output,
+ * making it the last thing the agent reads before responding.
+ *
+ * The warning is tailored to the detected output type (test runner, file
+ * listing, git) for maximum relevance.
+ *
+ * @param command - The original command string (used to detect output type)
+ * @param output - The original (pre-truncation) output string
+ * @returns A suffix warning string, or empty string if no special warning needed
+ */
+export function buildExecTruncationSuffix(command: string, output: string): string {
+  const lines: string[] = [];
+
+  lines.push("\n⚠️ IMPORTANT: This output was truncated. You did NOT see the complete output.");
+
+  // Detect test runner output
+  const isTestRunner = /\b(vitest|jest|mocha|pytest|npm test|npx test|yarn test|pnpm test|bun test)\b/i.test(command) ||
+    /\b(Tests?|PASS|FAIL|✓|✗|✘)\b/.test(output.slice(0, 2000));
+
+  // Detect file listing commands
+  const isFileListing = /\b(find|ls|tree|glob|dir)\b/.test(command) ||
+    /\bwc\b.*-[lw]/.test(command);
+
+  // Detect git output  
+  const isGitOutput = /\bgit\s+(diff|log|show|status|stash)\b/.test(command);
+
+  // Detect counting/aggregation commands
+  const isCounting = /\bwc\b|\bgrep\s+-c\b|\bcount\b|\|\s*wc\b/.test(command);
+
+  if (isTestRunner) {
+    lines.push("You MUST NOT claim a specific number of passing/failing tests or test files.");
+    lines.push("Say \"tests were run but output was truncated — re-run with `| tail -20` to see the summary\" instead.");
+  } else if (isFileListing) {
+    lines.push("You MUST NOT claim a total file count or assert the listing is complete.");
+    lines.push("Say \"file listing was truncated\" and re-run with `| wc -l` for counts or `| grep <pattern>` for specific files.");
+  } else if (isGitOutput) {
+    lines.push("You MUST NOT claim specific line counts (+N/-M) or file counts from truncated diff/log output.");
+    lines.push("Use `git diff --stat` for a summary, or `git diff <specific-file>` for targeted diffs.");
+  } else if (isCounting) {
+    lines.push("The count output may be incomplete. Verify by re-running with a narrower scope.");
+  } else {
+    lines.push("Do NOT make specific quantitative claims (counts, totals, completeness) about the truncated output.");
+    lines.push("Re-run with narrower scope (| head, | tail, | grep, -c flag) to get the specific data you need.");
+  }
+
+  return lines.join("\n");
+}
+
+
 
 /** Default max output length for exec tool (~5K tokens). */
 const DEFAULT_MAX_OUTPUT_LENGTH = 20_000;
@@ -1329,14 +1415,18 @@ export function createExecTool(cwdOrOpts?: string | ExecToolOptions): AgentTool<
         });
         const result = output || "(no output)";
         const gitContext = isGitCommitCommand(command) ? buildGitCommitContext(effectiveCwd, command) : "";
-        return textResult(cwdPrefix + gitAddWarning + truncateOutput(result, maxOutputLength, execOutputTruncationMarker) + gitContext + outsideWarning);
+        const { text: truncatedResult, wasTruncated } = truncateOutputWithFlag(result, maxOutputLength, execOutputTruncationMarker);
+        const truncSuffix = wasTruncated ? buildExecTruncationSuffix(command, result) : "";
+        return textResult(cwdPrefix + gitAddWarning + truncatedResult + truncSuffix + gitContext + outsideWarning);
       } catch (err: unknown) {
         if (err && typeof err === "object" && "stdout" in err) {
           const e = err as { stdout: string; stderr: string; status: number };
           const output = [e.stdout, e.stderr].filter(Boolean).join("\n");
           const enoentHint = warnOutsideRoot ? buildExecEnoentHint(output, warnOutsideRoot) : "";
           const errorHint = warnOutsideRoot ? buildExecErrorHint(command, output, e.status ?? 1, warnOutsideRoot) : "";
-          return textResult(`${cwdPrefix}Exit code ${e.status}\n${truncateOutput(output, maxOutputLength)}${enoentHint}${errorHint}${outsideWarning}`);
+          const { text: truncatedErr, wasTruncated: errTruncated } = truncateOutputWithFlag(output, maxOutputLength);
+          const errTruncSuffix = errTruncated ? buildExecTruncationSuffix(command, output) : "";
+          return textResult(`${cwdPrefix}Exit code ${e.status}\n${truncatedErr}${errTruncSuffix}${enoentHint}${errorHint}${outsideWarning}`);
         }
         const msg = err instanceof Error ? err.message : String(err);
         return textResult(`${cwdPrefix}Error: ${msg}${outsideWarning}`);
