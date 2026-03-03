@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { createExecTool, stripRedundantCd, detectsOutsidePaths } from "../src/tools.js";
+import { createExecTool, stripRedundantCd, detectsOutsidePaths, isMetaRecursionCommand } from "../src/tools.js";
 import type { ExecToolOptions } from "../src/tools.js";
 
 describe("createExecTool with options", () => {
@@ -432,5 +432,126 @@ describe("exec error hints integration", () => {
     const text = result.content[0].text;
     expect(text).toContain("Hint:");
     expect(text).toContain("grep exited with code 1");
+  });
+});
+
+describe("meta-recursion guard", () => {
+  describe("isMetaRecursionCommand", () => {
+    it("detects npx tsx run/may.ts", () => {
+      expect(isMetaRecursionCommand("npx tsx run/may.ts")).toBe(true);
+    });
+
+    it("detects npx tsx run/may.ts with arguments", () => {
+      expect(isMetaRecursionCommand("npx tsx run/may.ts --agent optimizer")).toBe(true);
+    });
+
+    it("detects npx tsx ./run/may.ts", () => {
+      expect(isMetaRecursionCommand("npx tsx ./run/may.ts")).toBe(true);
+    });
+
+    it("detects node run/may.ts", () => {
+      expect(isMetaRecursionCommand("node run/may.ts")).toBe(true);
+    });
+
+    it("detects node ./run/may.ts", () => {
+      expect(isMetaRecursionCommand("node ./run/may.ts")).toBe(true);
+    });
+
+    it("detects ts-node run/may.ts", () => {
+      expect(isMetaRecursionCommand("ts-node run/may.ts")).toBe(true);
+    });
+
+    it("detects ts-node ./run/may.ts", () => {
+      expect(isMetaRecursionCommand("ts-node ./run/may.ts")).toBe(true);
+    });
+
+    it("detects ./run/may.ts (direct execution)", () => {
+      expect(isMetaRecursionCommand("./run/may.ts")).toBe(true);
+    });
+
+    it("detects npx tsx src/index.ts", () => {
+      expect(isMetaRecursionCommand("npx tsx src/index.ts")).toBe(true);
+    });
+
+    it("detects node src/index.ts", () => {
+      expect(isMetaRecursionCommand("node src/index.ts")).toBe(true);
+    });
+
+    it("detects node ./src/index.ts", () => {
+      expect(isMetaRecursionCommand("node ./src/index.ts")).toBe(true);
+    });
+
+    it("detects ./src/index.ts (direct execution)", () => {
+      expect(isMetaRecursionCommand("./src/index.ts")).toBe(true);
+    });
+
+    it("detects meta-recursion in chained commands", () => {
+      expect(isMetaRecursionCommand("cd /tmp && ./run/may.ts")).toBe(true);
+    });
+
+    it("detects meta-recursion with semicolons", () => {
+      expect(isMetaRecursionCommand("echo hello; ./run/may.ts")).toBe(true);
+    });
+
+    it("detects meta-recursion with pipes", () => {
+      expect(isMetaRecursionCommand("echo foo | npx tsx run/may.ts")).toBe(true);
+    });
+
+    it("does NOT block normal commands", () => {
+      expect(isMetaRecursionCommand("echo hello")).toBe(false);
+      expect(isMetaRecursionCommand("ls -la")).toBe(false);
+      expect(isMetaRecursionCommand("npx vitest --run")).toBe(false);
+      expect(isMetaRecursionCommand("npx tsc --noEmit")).toBe(false);
+      expect(isMetaRecursionCommand("node test.js")).toBe(false);
+      expect(isMetaRecursionCommand("grep may.ts src/")).toBe(false);
+      expect(isMetaRecursionCommand("cat run/may.ts")).toBe(false);
+    });
+
+    it("does NOT block reading/editing may.ts (non-exec operations)", () => {
+      expect(isMetaRecursionCommand("cat src/index.ts")).toBe(false);
+      expect(isMetaRecursionCommand("grep -n something run/may.ts")).toBe(false);
+      expect(isMetaRecursionCommand("wc -l run/may.ts")).toBe(false);
+    });
+  });
+
+  describe("exec tool integration", () => {
+    it("blocks npx tsx run/may.ts with helpful error", async () => {
+      const tool = createExecTool({ cwd: "/tmp" });
+      const result = await tool.execute("id", { command: "npx tsx run/may.ts" });
+      const text = result.content[0].text;
+      expect(text).toContain("BLOCKED");
+      expect(text).toContain("meta-recursion");
+      expect(text).toContain("subagents");
+    });
+
+    it("blocks node run/may.ts with helpful error", async () => {
+      const tool = createExecTool({ cwd: "/tmp" });
+      const result = await tool.execute("id", { command: "node run/may.ts --agent bob" });
+      const text = result.content[0].text;
+      expect(text).toContain("BLOCKED");
+      expect(text).toContain("subagents");
+    });
+
+    it("blocks ./run/may.ts with helpful error", async () => {
+      const tool = createExecTool({ cwd: "/tmp" });
+      const result = await tool.execute("id", { command: "./run/may.ts" });
+      const text = result.content[0].text;
+      expect(text).toContain("BLOCKED");
+    });
+
+    it("blocks npx tsx src/index.ts with helpful error", async () => {
+      const tool = createExecTool({ cwd: "/tmp" });
+      const result = await tool.execute("id", { command: "npx tsx src/index.ts" });
+      const text = result.content[0].text;
+      expect(text).toContain("BLOCKED");
+      expect(text).toContain("subagents");
+    });
+
+    it("does NOT block normal exec commands", async () => {
+      const tool = createExecTool({ cwd: "/tmp" });
+      const result = await tool.execute("id", { command: "echo hello" });
+      expect(result.content[0].text).not.toContain("BLOCKED");
+      expect(result.content[0].text).toContain("hello");
+    });
   });
 });
