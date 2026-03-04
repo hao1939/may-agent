@@ -1018,6 +1018,7 @@ export interface AgentScoreSummary {
   avgQuality: number;
   count: number;
   verdicts: Record<string, number>;
+  trend: "improving" | "declining" | "stable";
 }
 
 export function getAgentScoreSummary(
@@ -1026,10 +1027,10 @@ export function getAgentScoreSummary(
   const evalsDir = join(persistDir, "evaluations");
   if (!existsSync(evalsDir)) return {};
 
-  const files = readdirSync(evalsDir).filter((f) => f.endsWith(".json"));
+  const files = readdirSync(evalsDir).filter((f) => f.endsWith(".json")).sort();
   const accum: Record<
     string,
-    { totalEfficiency: number; totalQuality: number; count: number; verdicts: Record<string, number> }
+    { totalEfficiency: number; totalQuality: number; count: number; verdicts: Record<string, number>; orderedEfficiencies: number[] }
   > = {};
 
   for (const file of files) {
@@ -1051,13 +1052,14 @@ export function getAgentScoreSummary(
     const verdict = typeof rec.verdict === "string" ? rec.verdict : "unknown";
 
     if (!accum[agent]) {
-      accum[agent] = { totalEfficiency: 0, totalQuality: 0, count: 0, verdicts: {} };
+      accum[agent] = { totalEfficiency: 0, totalQuality: 0, count: 0, verdicts: {}, orderedEfficiencies: [] };
     }
     const entry = accum[agent];
     entry.totalEfficiency += efficiency;
     entry.totalQuality += quality;
     entry.count += 1;
     entry.verdicts[verdict] = (entry.verdicts[verdict] ?? 0) + 1;
+    entry.orderedEfficiencies.push(efficiency);
   }
 
   const result: Record<string, AgentScoreSummary> = {};
@@ -1067,8 +1069,25 @@ export function getAgentScoreSummary(
       avgQuality: entry.totalQuality / entry.count,
       count: entry.count,
       verdicts: entry.verdicts,
+      trend: computeTrend(entry.orderedEfficiencies),
     };
   }
 
   return result;
+}
+
+function computeTrend(efficiencies: number[]): "improving" | "declining" | "stable" {
+  if (efficiencies.length <= 1) return "stable";
+
+  const mid = Math.floor(efficiencies.length / 2);
+  const firstHalf = efficiencies.slice(0, mid);
+  const secondHalf = efficiencies.slice(mid);
+
+  const firstAvg = firstHalf.reduce((a, b) => a + b, 0) / firstHalf.length;
+  const secondAvg = secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length;
+
+  const diff = secondAvg - firstAvg;
+  if (diff >= 0.1) return "improving";
+  if (diff <= -0.1) return "declining";
+  return "stable";
 }

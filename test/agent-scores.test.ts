@@ -67,6 +67,7 @@ describe("getAgentScoreSummary", () => {
       avgQuality: 8,
       count: 2,
       verdicts: { good: 1, acceptable: 1 },
+      trend: "declining",
     });
 
     expect(result.qa).toEqual({
@@ -74,6 +75,7 @@ describe("getAgentScoreSummary", () => {
       avgQuality: 10,
       count: 1,
       verdicts: { good: 1 },
+      trend: "stable",
     });
   });
 
@@ -106,6 +108,55 @@ describe("getAgentScoreSummary", () => {
       avgQuality: 0,
       count: 1,
       verdicts: { unknown: 1 },
+      trend: "stable",
     });
+  });
+
+  it("returns stable trend with only 1 evaluation", () => {
+    const dir = tmpDir();
+    const evalsDir = join(dir, "evaluations");
+    mkdirSync(evalsDir, { recursive: true });
+
+    writeFileSync(
+      join(evalsDir, "2024-01-01T00-00-00.json"),
+      JSON.stringify({
+        agent: "solo",
+        efficiency: 5,
+        quality: 5,
+        verdict: "acceptable",
+      }),
+    );
+
+    const result = getAgentScoreSummary(dir);
+    expect(result.solo.trend).toBe("stable");
+  });
+
+  it("returns improving trend when second half efficiency is higher", () => {
+    const dir = tmpDir();
+    const evalsDir = join(dir, "evaluations");
+    mkdirSync(evalsDir, { recursive: true });
+
+    writeFileSync(
+      join(evalsDir, "2024-01-01T00-00-00.json"),
+      JSON.stringify({
+        agent: "learner",
+        efficiency: 4,
+        quality: 5,
+        verdict: "needs_improvement",
+      }),
+    );
+
+    writeFileSync(
+      join(evalsDir, "2024-06-01T00-00-00.json"),
+      JSON.stringify({
+        agent: "learner",
+        efficiency: 8,
+        quality: 9,
+        verdict: "good",
+      }),
+    );
+
+    const result = getAgentScoreSummary(dir);
+    expect(result.learner.trend).toBe("improving");
   });
 });
