@@ -57,6 +57,15 @@ export interface ReadToolOptions {
    * read and write tools.
    */
   truncationTracker?: TruncationTracker;
+  /**
+   * Maximum cumulative bytes an agent can read before a budget warning.
+   * When this threshold is exceeded, a one-time warning is appended to the
+   * read result nudging the agent toward line-range reads.
+   *
+   * Only effective when a truncationTracker is provided (e.g., via createLinkedTools).
+   * Default: 500_000 (~500KB).
+   */
+  maxSessionReadBytes?: number;
 }
 
 /** Options for the write tool. */
@@ -105,6 +114,17 @@ export class TruncationTracker {
    * a file it already has in context — wasting tokens and turns.
    */
   private readonly fullReadCounts = new Map<string, number>();
+
+  /** Cumulative bytes read across all files in this session */
+  private cumulativeReadBytes = 0;
+  /** Maximum cumulative bytes before warning (default: 500_000 = ~500KB) */
+  private maxSessionReadBytes: number;
+  /** Whether the budget warning has been fired */
+  private budgetWarningFired = false;
+
+  constructor(opts?: { maxSessionReadBytes?: number }) {
+    this.maxSessionReadBytes = opts?.maxSessionReadBytes ?? 500_000;
+  }
 
   /** Record that a file was read and its content was truncated. */
   recordTruncatedRead(path: string, originalLength: number): void {
@@ -203,6 +223,23 @@ export class TruncationTracker {
   /** Reset full-read tracking for a path (e.g., after write). */
   resetFullReadCount(path: string): void {
     this.fullReadCounts.delete(path);
+  }
+
+  /** Record bytes read and return a warning if budget is exceeded */
+  recordBytesRead(bytes: number): string {
+    this.cumulativeReadBytes += bytes;
+    if (this.cumulativeReadBytes > this.maxSessionReadBytes && !this.budgetWarningFired) {
+      this.budgetWarningFired = true;
+      return `\n⚠️ READ BUDGET WARNING: You have read ${(this.cumulativeReadBytes / 1000).toFixed(0)}KB total this session (budget: ${(this.maxSessionReadBytes / 1000).toFixed(0)}KB). ` +
+        `Use line-range reads: read(path, startLine, endLine) to read only the sections you need. ` +
+        `For bulk operations, summarize each file immediately after reading — don't accumulate.`;
+    }
+    return "";
+  }
+
+  /** Get cumulative bytes read (for testing) */
+  getCumulativeReadBytes(): number {
+    return this.cumulativeReadBytes;
   }
 }
 
@@ -663,7 +700,8 @@ export function createReadTool(options?: ReadToolOptions): AgentTool<typeof Read
           // doesn't have the full file and shouldn't attempt a full rewrite.
 
           const header = `[Lines ${startLine}-${Math.min(endLine, totalLines)} of ${totalLines} total (${linesReturned} lines shown)]`;
-          return textResult(`${header}\n${text}`);
+          const budgetWarning1 = tracker?.recordBytesRead(text.length) ?? "";
+          return textResult(`${header}\n${text}${budgetWarning1}`);
         }
 
         // ── Full-file mode (with potential truncation) ────────────
@@ -684,7 +722,8 @@ export function createReadTool(options?: ReadToolOptions): AgentTool<typeof Read
           ? tracker.buildRepeatedReadWarning(effectivePath, tracker.recordFullRead(effectivePath), totalLines)
           : "";
 
-        return textResult(repeatedReadWarning + truncated);
+        const budgetWarning2 = tracker?.recordBytesRead(content.length) ?? "";
+        return textResult(repeatedReadWarning + truncated + budgetWarning2);
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
         const hint = options?.projectRoot && msg.includes("ENOENT")
@@ -768,12 +807,13 @@ export function createWriteTool(options?: WriteToolOptions): AgentTool<typeof Wr
 export function createLinkedTools(options: {
   projectRoot: string;
   maxFileLength?: number;
+  maxSessionReadBytes?: number;
 }): {
   read: AgentTool<typeof ReadParams>;
   write: AgentTool<typeof WriteParams>;
   tracker: TruncationTracker;
 } {
-  const tracker = new TruncationTracker();
+  const tracker = new TruncationTracker({ maxSessionReadBytes: options.maxSessionReadBytes });
   return {
     read: createReadTool({
       projectRoot: options.projectRoot,
