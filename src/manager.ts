@@ -858,8 +858,6 @@ export class SubagentManager {
     }));
   }
 
-
-
   /** Return the number of registered agents. */
   agentCount(): number {
     return this.agents.size;
@@ -1252,11 +1250,14 @@ export class SubagentManager {
     session.status = "running";
     this.registry.updateSessionStatus(sessionId, "running");
 
-    session.agent.followUp({
+    const msg: AgentMessage = {
       role: "user",
       content: [{ type: "text", text: message }],
       timestamp: Date.now(),
-    });
+    };
+
+    session.agent.followUp(msg);
+    appendSessionMessage(this.registry.persistDir, sessionId, msg);
 
     session.promise = session.agent.continue()
       .then(() => {
