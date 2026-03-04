@@ -162,4 +162,58 @@ describe("Cron", () => {
 
     c.stop();
   });
+
+  it("skips disabled entries on start", () => {
+    writeFileSync(configPath, JSON.stringify([
+      { name: "active", intervalMs: 10000, message: "yes", enabled: true },
+      { name: "disabled", intervalMs: 10000, message: "no", enabled: false },
+    ]));
+    const mgr = makeMockManager();
+    const c = new Cron(configPath, mgr as any, () => "sid-1");
+    c.load();
+    c.start();
+
+    vi.advanceTimersByTime(10000);
+    expect(mgr.calls).toHaveLength(1);
+    expect(mgr.calls[0].message).toBe("yes");
+
+    c.stop();
+  });
+
+  it("skips disabled entries on reload", () => {
+    writeFileSync(configPath, JSON.stringify([
+      { name: "a", intervalMs: 10000, message: "on" },
+    ]));
+    const mgr = makeMockManager();
+    const c = new Cron(configPath, mgr as any, () => "sid-1");
+    c.load();
+    c.start();
+
+    // Disable the job
+    writeFileSync(configPath, JSON.stringify([
+      { name: "a", intervalMs: 10000, message: "on", enabled: false },
+    ]));
+    c.reload();
+
+    vi.advanceTimersByTime(10000);
+    expect(mgr.calls).toHaveLength(0);
+
+    c.stop();
+  });
+
+  it("treats entries without enabled field as enabled", () => {
+    writeFileSync(configPath, JSON.stringify([
+      { name: "implicit", intervalMs: 10000, message: "go" },
+    ]));
+    const mgr = makeMockManager();
+    const c = new Cron(configPath, mgr as any, () => "sid-1");
+    c.load();
+    c.start();
+
+    vi.advanceTimersByTime(10000);
+    expect(mgr.calls).toHaveLength(1);
+    expect(mgr.calls[0].message).toBe("go");
+
+    c.stop();
+  });
 });

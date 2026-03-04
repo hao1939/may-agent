@@ -538,11 +538,13 @@ function formatTranscript(messages: AgentMessage[]): string {
     lines.push(`## ${msg.role}`);
 
     if (msg.role === "toolResult") {
-      const text = msg.content
+      const fullText = msg.content
         ?.map((c) => c.type === "text" ? c.text : "")
-        .join("")
-        .slice(0, 500) ?? "";
-      lines.push(`[tool_result: ${msg.toolName}] ${text}`);
+        .join("") ?? "";
+      const truncated = fullText.length > 500;
+      const text = fullText.slice(0, 500);
+      const suffix = truncated ? ` [REVIEWER NOTE: this tool result was ${fullText.length} chars total — truncated here for review brevity. The agent saw the full output.]` : "";
+      lines.push(`[tool_result: ${msg.toolName}] ${text}${suffix}`);
     } else if (typeof msg.content === "string") {
       lines.push(msg.content);
     } else {
