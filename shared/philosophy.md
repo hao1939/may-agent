@@ -158,9 +158,11 @@ Each agent owns its own TODO list. Global TODO = cross-agent, system-wide items 
 Single source of truth is a software principle, not an agent principle. For agents, controlled redundancy is encouraged:
 - **Important content:** duplicate across files. It's emphasis, backup, and cache.
 - **Frequently used content:** cache in the agent's own file.
+- **Consensus efficiency:** knowledge shared by multiple agents is easier to come to agreement on — redundancy accelerates convergence, not just resilience.
 - **Constraint:** duplicates must align. Redundancy is resilience. Contradiction is damage.
 
 > "redundant is allowed and sometimes encouraged, as long as they align with each other. single source is easy to damage by one mistake or accident" — Hao
+> "repeating is for efficient and reliable, knowledge shared by multiple agents could be easier to come to agreement" — Hao
 
 ### 35. Agreement and Disagreement [hao-direct]
 The agent system builds consensus but doesn't enforce god-truth. Three levels:
@@ -194,7 +196,12 @@ New agents start in coaching mode: a coach agent spawns them, watches output, gi
 
 > "it's a useful pattern especially for agent in early stage, we should name it, maybe coaching mode?" — Hao
 
-### 40. Agent Pairing: 2-Player Default [hao-direct]
+### 40. Escalation via Error Propagation [hao-direct]
+Failures escalate upward structurally: sub-agent → agent → human. The mechanism is error propagation — a failing step returns an error, the caller catches it and either handles it (retry with different approach) or propagates it further up. This is enforced in code: workflows use `ctx.escalate()`, delegation returns `TaskResult` with `status: "error"`. Retrying the same operation with different arguments is valid; retrying the exact same thing is not (see #23).
+
+> "escalate by throw error, the caller would catch it and report higher, e.g., from sub-agent to agent to human" — Hao
+
+### 41. Agent Pairing: 2-Player Default [hao-direct]
 Two-agent pairing is the default for task execution. A third agent adds value but also cost. Use 3-player when: high-stakes changes, new coaching scenarios, quality matters more than speed. Default to 2-player: sufficient for most work, less complexity.
 
 > "typical 2 agents pairing is enough, but we can explore whether it gain better effect with the third player... only need to evaluate the gain/cost vs complexity" — Hao

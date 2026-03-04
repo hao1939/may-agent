@@ -65,6 +65,29 @@ rejection is critical (wrong task, policy violation, behavioral regression), the
 workflow escalates immediately without retry. Faster but less adaptive. May or the
 optimizer chooses when to use a workflow vs direct delegation.
 
+### Escalation Model
+
+Failures propagate upward through the agent chain: sub-agent → agent → human.
+The mechanism differs by layer but the pattern is uniform — errors bubble up
+until something handles them.
+
+**Workflow layer** — `ctx.escalate(reason, context)`. When a workflow step fails
+or a sub-agent errors, the workflow calls `ctx.escalate()` which returns a
+structured result `{type: "escalated", reason, steps}` to the calling agent.
+The workflow decides per-step whether to retry (with different input) or
+escalate. One retry then escalate is the standard pattern.
+
+**Delegation layer** — `TaskResult` with `status: "error"`. When a sub-agent
+is invoked via `delegate`, the caller gets back a JSON result containing the
+error. The calling agent reads it and decides: retry with different arguments,
+delegate to a different agent, or report upward. Retrying the same call with
+the same arguments is not valid (hard constraints are facts).
+
+**Agent → human** — The interface agent (May, Bob) reports to the human via
+text. When the interface agent can't resolve a failure, it reports what
+happened and what it tried. Bob also queues unresolved design questions in
+`pending-decisions.md` for async human input.
+
 ## Design Principles
 
 ### No Silent Failures
