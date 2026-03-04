@@ -121,6 +121,14 @@ implements fixes. The optimizer can change anything: tool code, agent knowledge,
 workflows, system prompts. It can delegate to coder and QA via sub-agents and
 workflows. Git provides the safety net for reverting bad changes.
 
+**Coach** — Tests agents through live exercises. Where the evaluator measures past
+performance, the coach creates new work designed to probe specific weaknesses, then
+watches the agent do it in real-time. The coach spawns a separate may-agent process
+with the target agent as interface, connects via socket to observe and intervene,
+then writes a report with findings. Coaching fills the gap between measurement
+(evaluator) and implementation (optimizer) — it provides the live evidence that
+confirms whether a problem is real and whether a fix works.
+
 ### Agent as Feature Unit
 
 Each agent is treated as an independent **feature unit** for evaluation and
@@ -263,14 +271,24 @@ issues recur, which failure chain root causes keep appearing.
 
 ## Session Lifecycle
 
-**Non-persistent agents** (coder, qa, evaluator, optimizer): Session starts, runs,
-completes, gets archived. One session per task.
+**Ephemeral sessions**: Session starts, runs, completes, gets archived. One session
+per task. This is the default for all agents.
 
-**Persistent agents** (May): Session starts, runs, goes idle when done. When a new
-task arrives, the same session wakes up. This preserves conversation history across
-tasks — May remembers previous interactions with the user.
+**Persistent sessions**: Session starts, runs, goes idle when done. When a new task
+arrives, the same session wakes up. This preserves conversation history across tasks.
+Persistence is a runtime choice — any agent becomes persistent when it serves as
+the interface agent. It's not a property of the agent itself.
 
-When the process restarts, May's persistent session is restored from disk. Message
-history is preserved, but the system prompt is regenerated from current knowledge
-files. This means knowledge changes (domain.md, lessons.md, shared docs) take effect
-even on restored sessions.
+When the process restarts, the interface agent's persistent session is restored from
+disk. Message history is preserved, but the system prompt is regenerated from current
+knowledge files. This means knowledge changes (domain.md, lessons.md, shared docs)
+take effect even on restored sessions.
+
+### The Runner is Agent-Agnostic
+
+The runner doesn't know which agent is "special." It manages one persistent interface
+agent (configurable) and routes input to it. Any agent can serve as the interface:
+May for normal work, Bob for meta-loop, Master for CLI tool work.
+
+Agents that aren't the interface agent can still be invoked directly via `@agent`
+prefix or the socket `run` command — these create fresh ephemeral sessions.
