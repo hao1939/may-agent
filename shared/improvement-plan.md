@@ -65,53 +65,60 @@ Statuses: `TODO` | `IN_PROGRESS` | `DONE` | `BLOCKED` | `SKIPPED`
 ## P2 — Agent Effectiveness
 
 ### P2.1: May escalation to Master
-- **Status:** TODO
+- **Status:** DONE
 - **What:** Add concrete escalation triggers: coder fails twice → Master; task says "debug"/"complex refactor" → consider Master; coder hits turn limit → escalate with partial progress
 - **Who:** Optimizer updates May's domain.md
 - **Acceptance:** May's domain.md has explicit Master escalation rules
 - **Log:**
+  - 2026-03-04: Updated May's domain.md with concrete Master escalation triggers (coder fails twice, turn limit hit, complex refactor). Added "do NOT start with Master" guard.
 
 ### P2.2: Coder bounded reads
-- **Status:** TODO
+- **Status:** DONE
 - **What:** Add session read budget tracking — warn at 80%, structural guard against context overflow on bulk reads
 - **Who:** Coder implements in src/tools.ts (extend TruncationTracker or new mechanism)
 - **Acceptance:** Coder sessions doing bulk reads get warnings before overflow; tsc + tests pass
 - **Log:**
+  - 2026-03-04: Added session read budget to TruncationTracker in src/tools.ts. Tracks cumulative bytes, warns at 500KB. 7 new tests. Committed as e9f6b0a.
 
 ### P2.3: Evaluator structured output
-- **Status:** TODO
+- **Status:** DONE
 - **What:** Parse evaluator JSON output in evaluateTask(), retry once if malformed
 - **Who:** Coder implements in src/evaluator.ts
 - **Acceptance:** evaluateTask() returns parsed JSON reliably; test coverage added
 - **Log:**
+  - 2026-03-04: Added retry logic in evaluateTask() — if evaluator produces no JSON agent scores, retries once with focused prompt. Committed as 60d9049.
 
 ### P2.4: test-and-fix workflow
-- **Status:** TODO
+- **Status:** DONE
 - **What:** New workflow: run tests → if fail → coder fixes → re-test → done or escalate
 - **Who:** Coder implements in agents/may/workflows/test-and-fix.ts
 - **Acceptance:** workflow.list() shows test-and-fix; tests pass
 - **Log:**
+  - 2026-03-04: Created agents/may/workflows/test-and-fix.ts. Pattern: run tests → if fail → coder fixes → re-test → done or escalate. One retry.
 
 ### P2.5: QA severity calibration
-- **Status:** TODO
+- **Status:** DONE
 - **What:** Promote severity examples from QA lessons.md to domain.md; add May rule "MINOR-only = PASS"
 - **Who:** Optimizer updates QA domain.md and May domain.md
 - **Acceptance:** QA domain.md has concrete severity examples section
 - **Log:**
+  - 2026-03-04: Added severity calibration section to QA's domain.md with CRITICAL/IMPORTANT/MINOR examples and false positive list. Added "MINOR-only = PASS" rule to May's domain.md.
 
 ## P3 — Infrastructure
 
 ### P3.1: Agent config hot-update
-- **Status:** TODO
+- **Status:** DONE
 - **What:** Extend reloadAgents() to detect agent.json changes and re-register (only when no active sessions)
 - **Who:** Coder implements in run/agent-loader.ts
 - **Acceptance:** Changing agent.json + running reload picks up changes; tests pass
 - **Log:**
+  - 2026-03-04: Already implemented in commit 0283a05 — reloadAgents() re-registers existing agents. manager.register() uses Map.set() which overwrites. Active sessions keep old config; new sessions use updated definition.
 
 ### P3.2: Metrics dashboard
-- **Status:** TODO
+- **Status:** DONE
 - **What:** Aggregation script/command that summarizes evaluation data (per-agent scores, top issues, trends)
 - **Who:** Coder implements (CLI script or health-check extension)
 - **Depends on:** P0.2 (needs sufficient evaluation data)
 - **Acceptance:** Running the command produces a readable agent performance summary
 - **Log:**
+  - 2026-03-04: Created run/metrics.ts — CLI dashboard aggregating evaluation data. Per-agent scores, waste ratios, verdicts, top issues, top lessons. Usage: npx tsx run/metrics.ts --days 30. Committed as d0fae11.
