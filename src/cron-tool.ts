@@ -105,6 +105,7 @@ export function createCronTool(opts: CronToolOptions): AgentTool<typeof CronPara
           if (input.name.length > 50) return textResult("Error: name must be <= 50 characters");
           if (!input.intervalMs) return textResult("Error: 'intervalMs' is required for add");
           if (!input.message) return textResult("Error: 'message' is required for add");
+          if (input.message.length > 500) return textResult("Error: message must be <= 500 characters");
           if (input.intervalMs < 10_000) return textResult("Error: intervalMs must be >= 10000 (10 seconds)");
           const entries = readEntries();
           if (entries.some(e => e.name === input.name)) {
