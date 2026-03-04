@@ -246,4 +246,18 @@ describe("cron tool", () => {
     const out = await exec(ctx.tool, { action: "list" });
     expect(out).toContain("— This is a helpful description of the job");
   });
+
+  it("add truncates long description to 200 chars", async () => {
+    const longDesc = "a".repeat(250);
+    await exec(ctx.tool, {
+      action: "add",
+      name: "long-desc",
+      intervalMs: 60000,
+      message: "msg",
+      description: longDesc,
+    });
+    const entries: CronEntry[] = JSON.parse(readFileSync(ctx.configPath, "utf-8"));
+    expect(entries[0].description).toBe("a".repeat(200) + "...");
+    expect(entries[0].description!.length).toBe(203);
+  });
 });

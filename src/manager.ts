@@ -1496,10 +1496,13 @@ export class SubagentManager {
     onSessionStart?: (agent: string, sessionId: string) => void;
     /** Returns the current caller's session ID for parent→child linking. */
     getCallerSessionId?: () => string | undefined;
+    /** Agent names that cannot be delegated to directly. Returns error with hint message. */
+    delegateDeny?: { agents: string[]; hint: string };
   }): AgentTool<typeof SubagentToolParams> {
     const manager = this;
     const onSessionStart = opts?.onSessionStart;
     const getCallerSessionId = opts?.getCallerSessionId;
+    const delegateDeny = opts?.delegateDeny;
 
     function textResult(text: string): AgentToolResult<string> {
       return {
@@ -1533,6 +1536,9 @@ export class SubagentManager {
             case "run": {
               if (!params.agent || !params.task) {
                 return textResult(JSON.stringify({ error: "action 'run' requires 'agent' and 'task'" }));
+              }
+              if (delegateDeny && delegateDeny.agents.includes(params.agent)) {
+                return textResult(JSON.stringify({ error: `Cannot delegate directly to "${params.agent}". ${delegateDeny.hint}` }));
               }
               const parentSid = getCallerSessionId?.();
               const sessionId = manager.run(params.agent, params.task, parentSid ? { parentSessionId: parentSid } : undefined);
@@ -1619,6 +1625,9 @@ export class SubagentManager {
               }
               if (!params.task) {
                 return textResult(JSON.stringify({ error: "action 'delegate' requires 'task'" }));
+              }
+              if (delegateDeny && delegateDeny.agents.includes(params.agent)) {
+                return textResult(JSON.stringify({ error: `Cannot delegate directly to "${params.agent}". ${delegateDeny.hint}` }));
               }
               const delegateParentSid = getCallerSessionId?.();
               const delegateSessionId = manager.run(params.agent, params.task, delegateParentSid ? { parentSessionId: delegateParentSid } : undefined);

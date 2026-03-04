@@ -44,6 +44,8 @@ export interface AgentConfig {
   sharedKnowledge?: string[]; // filenames in agents/shared/
   maxTurns?: number;
   memoryLimit?: number;
+  /** Block direct delegation to specific agents via subagents tool. */
+  delegateDeny?: { agents: string[]; hint: string };
 }
 
 // ── Loader options ──────────────────────────────────────────────────────
@@ -205,11 +207,15 @@ function buildTools(
         }));
         break;
 
-      case "subagents":
+      case "subagents": {
+        // Check agent config for delegateDeny
+        const denyConfig = config.delegateDeny;
         tools.push(manager.createTool({
           getCallerSessionId: () => agentSessionIds.get(config.name),
+          delegateDeny: denyConfig,
         }));
         break;
+      }
 
       case "workflow": {
         const workflowDir = resolve(agentDir, "workflows");
