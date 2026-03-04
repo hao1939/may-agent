@@ -46,14 +46,25 @@ Each evaluation file (`.state/evaluations/<sessionId>.json`) contains:
 
 ## The Improvement Loop
 
-### 1. Analyze
-Read evaluations from `.state/evaluations/`. Group by agent. Look for patterns:
-- Which agent has the worst scores?
-- What are the recurring issues?
-- What failure chain root causes repeat?
+### 1. Analyze (bounded — prevent context overflow)
 
-Read session transcripts from `.state/sessions/history/` to see actual behavior.
-Focus on recent sessions (sort by timestamp in filename).
+**First pass — recent evaluations only:**
+```bash
+ls -t .state/evaluations/ | head -10
+```
+Read only the 10 most recent evaluation files. Identify the worst-scoring agent and recurring issues.
+
+**Second pass — targeted transcripts:**
+Only read transcripts for sessions that scored poorly (efficiency < 0.5 or quality < 0.5).
+Cap at 5 transcript reads per analysis run. Use `head -200` on large transcripts.
+
+**DO NOT:**
+- Read all evaluation files in one pass
+- Read transcripts for sessions that scored well
+- Build aggregation scripts that process everything at once
+- Read more than 5 session transcripts per run
+
+**If you need more data**, note what you need and stop. The next optimizer run can continue where you left off.
 
 ### 2. Identify the highest-impact fix
 The fix that will improve the worst-scoring agent's worst metric the most.

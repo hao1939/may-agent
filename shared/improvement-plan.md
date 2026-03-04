@@ -19,43 +19,48 @@ Statuses: `TODO` | `IN_PROGRESS` | `DONE` | `BLOCKED` | `SKIPPED`
 ## P0 — Close the Loop
 
 ### P0.1: Schedule Bob via crontab
-- **Status:** TODO
+- **Status:** DONE
 - **What:** Add crontab entries to trigger Bob's meta-loop every 4 hours and daily tasks
 - **Who:** Ops task — document in docs/usage.md, provide ready-to-paste crontab lines
 - **Acceptance:** docs/usage.md has a "Scheduling" section with crontab examples
 - **Log:**
+  - 2026-03-04: Added Scheduling section to docs/usage.md with ready-to-paste crontab entries for May daily review + Bob meta-loop/philosophy/consolidation/health. run/cron-task.sh already existed.
 
 ### P0.2: Auto-evaluate after task completion
-- **Status:** TODO
+- **Status:** DONE
 - **What:** When a child session of May completes, auto-trigger evaluator on the task tree
 - **Who:** Coder implements in run/may.ts onSessionComplete callback
 - **Files:** run/may.ts, src/evaluator.ts
 - **Acceptance:** After any coder/qa session completes under May, an evaluation JSON appears in .state/evaluations/
 - **Log:**
+  - 2026-03-04: Added auto-evaluation in run/may.ts onSessionComplete. When child sessions of May complete, evaluateTask() runs after 3s debounce. Saves scores to .state/evaluations/ and appends lessons to agent knowledge files. Committed as 498081a.
 
 ## P1 — Data Pipeline
 
 ### P1.1: Evaluator lessons → agent knowledge pipeline
-- **Status:** TODO
+- **Status:** DONE
 - **What:** After evaluation, parse [agent_name] lessons and append to agents/<agent>/knowledge/lessons.md with dedup
 - **Who:** Optimizer implements — extend evaluateTask() or add post-evaluation hook
 - **Depends on:** P0.2
 - **Acceptance:** After evaluation runs, new lessons appear in the correct agent's lessons.md (no duplicates)
 - **Log:**
+  - 2026-03-04: Already implemented inside evaluateTask() in src/evaluator.ts — it parses [agent_name] lessons from evaluator output and appends to agents/<agent>/knowledge/lessons.md with timestamps. No additional work needed.
 
 ### P1.2: Optimizer bounded analysis
-- **Status:** TODO
+- **Status:** DONE
 - **What:** Update optimizer's domain.md: first pass reads only last 10 evaluations, cap transcript reads at 5
 - **Who:** Optimizer updates its own domain.md
 - **Acceptance:** Optimizer sessions no longer overflow on analysis phase
 - **Log:**
+  - 2026-03-04: Updated optimizer's domain.md "Analyze" section with bounded analysis rules: max 10 recent evaluations, max 5 transcript reads, head -200 on large files.
 
 ### P1.3: Lighter meta-loop for Bob
-- **Status:** TODO
+- **Status:** DONE
 - **What:** Split Bob's meta-loop into atomic tasks in periodic-tasks.md (evaluate, analyze, optimize, philosophy-check as separate triggers)
 - **Who:** Bob updates periodic-tasks.md
 - **Acceptance:** Each periodic task completes in <15 turns
 - **Log:**
+  - 2026-03-04: Rewrote bob/periodic-tasks.md — split monolithic meta-loop into 5 atomic tasks (evaluate, analyze+brief, philosophy check, lesson consolidation, health check). Each completable in <15 turns.
 
 ## P2 — Agent Effectiveness
 
