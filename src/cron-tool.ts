@@ -24,7 +24,8 @@ const CronParams = Type.Object({
     Type.Literal("add"),
     Type.Literal("remove"),
     Type.Literal("update"),
-  ], { description: "list | add | remove | update" }),
+    Type.Literal("status"),
+  ], { description: "list | add | remove | update | status" }),
   name: Type.Optional(Type.String({ description: "Job name (required for add/remove/update)" })),
   intervalMs: Type.Optional(Type.Number({ description: "Interval in milliseconds (required for add, optional for update). Minimum 10000 (10s)." })),
   message: Type.Optional(Type.String({ description: "Message to send on each interval (required for add, optional for update)" })),
@@ -62,9 +63,18 @@ export function createCronTool(opts: CronToolOptions): AgentTool<typeof CronPara
     name: "cron",
     label: "cron",
     description:
-      "Manage cron jobs. Use 'list' to see all jobs, 'add' to create one, " +
-      "'remove' to delete by name, 'update' to modify an existing entry. " +
-      "Jobs fire periodically and inject a message into your session.",
+      "Manage YOUR cron jobs — recurring tasks that automatically send a message " +
+      "into your session on a fixed interval. These are your built-in scheduled tasks, " +
+      "persisted in your cron.json config file.\n\n" +
+      "Actions:\n" +
+      "- list: show all your cron jobs and whether cron is currently active\n" +
+      "- add: create a new job (name, intervalMs, message)\n" +
+      "- remove: delete a job by name\n" +
+      "- update: modify an existing job's interval or message\n" +
+      "- status: brief summary (job count, enabled/disabled, next to fire)\n\n" +
+      "When cron is active (SCHEDULERS=1), each job fires its message into your " +
+      "session at the configured interval. When disabled, you can still manage " +
+      "jobs but they won't fire.",
     parameters: CronParams,
     execute: async (_toolCallId: string, input: CronInput) => {
       switch (input.action) {
@@ -117,8 +127,21 @@ export function createCronTool(opts: CronToolOptions): AgentTool<typeof CronPara
           return textResult(`Updated job "${input.name}"`);
         }
 
+        case "status": {
+          const entries = readEntries();
+          const enabled = opts.cronEnabled ? "enabled" : "disabled";
+          if (entries.length === 0) {
+            return textResult(`Cron status: ${enabled}, 0 jobs`);
+          }
+          const shortest = entries.reduce((a, b) => a.intervalMs <= b.intervalMs ? a : b);
+          return textResult(
+            `Cron status: ${enabled}, ${entries.length} job(s)\n` +
+            `Next to fire: "${shortest.name}" (every ${(shortest.intervalMs / 1000).toFixed(0)}s)`
+          );
+        }
+
         default:
-          return textResult(`Error: unknown action "${input.action}". Use list/add/remove/update.`);
+          return textResult(`Error: unknown action "${input.action}". Use list/add/remove/update/status.`);
       }
     },
   };
