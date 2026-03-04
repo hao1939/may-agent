@@ -1,0 +1,14 @@
+{
+  "name": "optimizer",
+  "description": "Analyzes agent performance data, proposes and implements improvements to the agent system",
+  "domain": "agent system optimization",
+  "model": "opus",
+  "tools": ["read-write", "exec", "subagents", "workflow"],
+  "sharedKnowledge": ["system-design.md", "team.md"],
+  "systemPromptFiles": [
+    "knowledge/domain.md",
+    "knowledge/codebase.md",
+    "tools/INDEX.md"
+  ],
+  "maxTurns": 40
+}

@@ -1,0 +1,13 @@
+{
+  "name": "evaluator",
+  "description": "Evaluates completed task trees — scores each agent by responsibility",
+  "domain": "agent performance evaluation",
+  "model": "gpt52",
+  "tools": ["read-write", "exec"],
+  "sharedKnowledge": ["system-design.md", "team.md"],
+  "systemPromptFiles": [
+    "knowledge/domain.md"
+  ],
+  "maxTurns": 20,
+  "memoryLimit": 5
+}

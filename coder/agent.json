@@ -1,0 +1,13 @@
+{
+  "name": "coder",
+  "description": "Writes code, runs tests — does not commit",
+  "domain": "may-agent implementation",
+  "model": "opus",
+  "tools": ["read-write", "exec"],
+  "systemPromptFiles": [
+    "knowledge/domain.md",
+    "knowledge/codebase.md",
+    "tools/INDEX.md"
+  ],
+  "maxTurns": 50
+}
