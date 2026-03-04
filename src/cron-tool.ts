@@ -12,6 +12,7 @@ export interface CronEntry {
   name: string;
   intervalMs: number;
   message: string;
+  enabled: boolean;
 }
 
 function textResult(text: string): AgentToolResult<string> {
@@ -29,6 +30,7 @@ const CronParams = Type.Object({
   name: Type.Optional(Type.String({ description: "Job name (required for add/remove/update)" })),
   intervalMs: Type.Optional(Type.Number({ description: "Interval in milliseconds (required for add, optional for update). Minimum 10000 (10s)." })),
   message: Type.Optional(Type.String({ description: "Message to send on each interval (required for add, optional for update)" })),
+  enabled: Type.Optional(Type.Boolean({ description: "Whether the job is enabled (default true). Disabled jobs won't fire." })),
 });
 
 type CronInput = Static<typeof CronParams>;
@@ -47,7 +49,12 @@ export function createCronTool(opts: CronToolOptions): AgentTool<typeof CronPara
     if (!existsSync(opts.configPath)) return [];
     try {
       const raw = readFileSync(opts.configPath, "utf-8");
-      return JSON.parse(raw);
+      const parsed = JSON.parse(raw);
+      // Migrate legacy entries that lack the `enabled` field
+      return parsed.map((e: any) => ({
+        ...e,
+        enabled: e.enabled !== undefined ? e.enabled : true,
+      }));
     } catch {
       return [];
     }
@@ -82,9 +89,10 @@ export function createCronTool(opts: CronToolOptions): AgentTool<typeof CronPara
           const entries = readEntries();
           const status = opts.cronEnabled ? "Status: ACTIVE" : "Status: DISABLED (jobs defined but won't fire until SCHEDULERS=1)";
           if (entries.length === 0) return textResult(`no cron jobs configured\n${status}`);
-          const lines = entries.map(e =>
-            `- ${e.name}: every ${(e.intervalMs / 1000).toFixed(0)}s → "${e.message.slice(0, 100)}"`
-          );
+          const lines = entries.map(e => {
+            const prefix = e.enabled ? "" : "[DISABLED] ";
+            return `- ${prefix}${e.name}: every ${(e.intervalMs / 1000).toFixed(0)}s → "${e.message.slice(0, 100)}"`;
+          });
           lines.push("", status);
           return textResult(lines.join("\n"));
         }
@@ -98,7 +106,12 @@ export function createCronTool(opts: CronToolOptions): AgentTool<typeof CronPara
           if (entries.some(e => e.name === input.name)) {
             return textResult(`Error: job "${input.name}" already exists. Use 'update' to modify.`);
           }
-          entries.push({ name: input.name, intervalMs: input.intervalMs, message: input.message });
+          entries.push({
+            name: input.name,
+            intervalMs: input.intervalMs,
+            message: input.message,
+            enabled: input.enabled !== undefined ? input.enabled : true,
+          });
           writeEntries(entries);
           return textResult(`Added job "${input.name}": every ${(input.intervalMs / 1000).toFixed(0)}s`);
         }
@@ -123,6 +136,7 @@ export function createCronTool(opts: CronToolOptions): AgentTool<typeof CronPara
             entry.intervalMs = input.intervalMs;
           }
           if (input.message !== undefined) entry.message = input.message;
+          if (input.enabled !== undefined) entry.enabled = input.enabled;
           writeEntries(entries);
           return textResult(`Updated job "${input.name}"`);
         }
@@ -133,10 +147,17 @@ export function createCronTool(opts: CronToolOptions): AgentTool<typeof CronPara
           if (entries.length === 0) {
             return textResult(`No cron jobs configured.\n${status}`);
           }
-          const shortest = entries.reduce((a, b) => a.intervalMs <= b.intervalMs ? a : b);
+          const enabledEntries = entries.filter(e => e.enabled);
+          let nextToFire: string;
+          if (enabledEntries.length === 0) {
+            nextToFire = "Next to fire: none (all jobs disabled)";
+          } else {
+            const shortest = enabledEntries.reduce((a, b) => a.intervalMs <= b.intervalMs ? a : b);
+            nextToFire = `Next to fire: "${shortest.name}" (every ${(shortest.intervalMs / 1000).toFixed(0)}s)`;
+          }
           return textResult(
             `${entries.length} job(s) configured\n` +
-            `Next to fire: "${shortest.name}" (every ${(shortest.intervalMs / 1000).toFixed(0)}s)\n\n` +
+            `${nextToFire}\n\n` +
             status
           );
         }

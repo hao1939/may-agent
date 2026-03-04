@@ -53,7 +53,7 @@ describe("cron tool", () => {
     // Verify file contents
     const entries: CronEntry[] = JSON.parse(readFileSync(ctx.configPath, "utf-8"));
     expect(entries).toHaveLength(1);
-    expect(entries[0]).toEqual({ name: "health", intervalMs: 60000, message: "check health" });
+    expect(entries[0]).toEqual({ name: "health", intervalMs: 60000, message: "check health", enabled: true });
   });
 
   it("add rejects duplicate names", async () => {
@@ -200,5 +200,38 @@ describe("cron tool", () => {
     expect(out).toContain("DISABLED");
     expect(out).toContain("1 job(s)");
     expect(out).toContain('"job1"');
+  });
+
+  it("add creates entry with enabled=true by default", async () => {
+    await exec(ctx.tool, { action: "add", name: "j1", intervalMs: 60000, message: "msg" });
+    const entries: CronEntry[] = JSON.parse(readFileSync(ctx.configPath, "utf-8"));
+    expect(entries[0].enabled).toBe(true);
+  });
+
+  it("update can set enabled=false", async () => {
+    await exec(ctx.tool, { action: "add", name: "j1", intervalMs: 60000, message: "msg" });
+    await exec(ctx.tool, { action: "update", name: "j1", enabled: false });
+    const entries: CronEntry[] = JSON.parse(readFileSync(ctx.configPath, "utf-8"));
+    expect(entries[0].enabled).toBe(false);
+  });
+
+  it("list shows [DISABLED] prefix for disabled jobs", async () => {
+    await exec(ctx.tool, { action: "add", name: "active-job", intervalMs: 60000, message: "m" });
+    await exec(ctx.tool, { action: "add", name: "dead-job", intervalMs: 60000, message: "m" });
+    await exec(ctx.tool, { action: "update", name: "dead-job", enabled: false });
+    const out = await exec(ctx.tool, { action: "list" });
+    expect(out).toContain("- active-job:");
+    expect(out).not.toContain("[DISABLED] active-job");
+    expect(out).toContain("[DISABLED] dead-job");
+  });
+
+  it("status skips disabled jobs for next-to-fire", async () => {
+    await exec(ctx.tool, { action: "add", name: "fast", intervalMs: 10000, message: "m" });
+    await exec(ctx.tool, { action: "add", name: "slow", intervalMs: 120000, message: "m" });
+    await exec(ctx.tool, { action: "update", name: "fast", enabled: false });
+    const out = await exec(ctx.tool, { action: "status" });
+    expect(out).toContain("2 job(s) configured");
+    expect(out).toContain('"slow"');
+    expect(out).not.toContain('"fast"');
   });
 });
