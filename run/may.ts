@@ -6,6 +6,7 @@ import { SubagentManager, evaluateTask } from "../src/index.js";
 import { EventBus } from "./event-bus.js";
 import { attachConsoleUI } from "./console-ui.js";
 import { attachSocketUI } from "./socket-ui.js";
+import { attachOpenClawUI } from "./openclaw-ui.js";
 import { loadAgents, reloadAgents, setAgentSessionId, runAgentCleanup, getAgentCrons, type AgentLoaderOptions } from "./agent-loader.js";
 
 const PROJECT_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -38,6 +39,14 @@ let sid: string;
 
 const bus = new EventBus();
 attachConsoleUI(bus);
+
+// ── OpenClaw bridge (OPENCLAW_TARGET=<id> to enable) ────────────────────
+
+let openclawUI: ReturnType<typeof attachOpenClawUI> | null = null;
+if (process.env.OPENCLAW_TARGET) {
+  openclawUI = attachOpenClawUI({ bus, interfaceAgent: process.env.AGENT || "may" });
+  bus.emit({ type: "info", message: `[openclaw-ui] Enabled — sending to ${process.env.OPENCLAW_CHANNEL || "telegram"}:${process.env.OPENCLAW_TARGET}` });
+}
 
 const manager = new SubagentManager({
   persistDir: PERSIST_DIR,
@@ -468,6 +477,7 @@ if (process.stdin.isTTY) {
   }
 
   socketUI.close();
+  openclawUI?.close();
   rl.close();
 } else {
   // Daemon mode: no TTY, keep alive via socket + keepalive timer.
