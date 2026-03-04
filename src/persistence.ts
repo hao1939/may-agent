@@ -62,6 +62,24 @@ export function toPersistedConfig(def: SubagentDefinition): PersistedAgentConfig
   return config;
 }
 
+// ── Shared JSONL parser ─────────────────────────────────────────────────
+
+/** Read all JSON lines from a file, skipping corrupted lines. Returns [] if not found or empty. */
+function readJsonlFile<T>(filePath: string): T[] {
+  if (!existsSync(filePath)) return [];
+  const raw = readFileSync(filePath, "utf-8");
+  if (!raw.trim()) return [];
+  const items: T[] = [];
+  for (const line of raw.trim().split("\n")) {
+    try {
+      items.push(JSON.parse(line) as T);
+    } catch {
+      console.warn(`[persistence] Skipping corrupted JSONL line in ${filePath}`);
+    }
+  }
+  return items;
+}
+
 // ── Session JSONL helpers ──────────────────────────────────────────────
 
 /** Return the path to a session's directory. */
@@ -98,19 +116,7 @@ export function appendSessionMessage(persistDir: string, sessionId: string, mess
 /** Read all messages from a session's JSONL file. Returns [] if the file doesn't exist or is empty.
  *  Corrupted lines are skipped with a warning. */
 export function readSessionMessages(persistDir: string, sessionId: string): AgentMessage[] {
-  const filePath = sessionJsonlPath(persistDir, sessionId);
-  if (!existsSync(filePath)) return [];
-  const raw = readFileSync(filePath, "utf-8");
-  if (!raw.trim()) return [];
-  const messages: AgentMessage[] = [];
-  for (const line of raw.trim().split("\n")) {
-    try {
-      messages.push(JSON.parse(line) as AgentMessage);
-    } catch {
-      console.warn(`[persistence] Skipping corrupted JSONL line in ${filePath}`);
-    }
-  }
-  return messages;
+  return readJsonlFile<AgentMessage>(sessionJsonlPath(persistDir, sessionId));
 }
 
 /** Delete the session JSONL file if it exists. */
@@ -172,18 +178,7 @@ export function appendMemoryEntry(persistDir: string, name: string, entry: Memor
 /** Read the last N memory entries (or all if limit is not specified).
  *  Corrupted lines are skipped with a warning. */
 export function readMemoryEntries(persistDir: string, name: string, limit?: number): MemoryEntry[] {
-  const filePath = memoryPath(persistDir, name);
-  if (!existsSync(filePath)) return [];
-  const raw = readFileSync(filePath, "utf-8");
-  if (!raw.trim()) return [];
-  const entries: MemoryEntry[] = [];
-  for (const line of raw.trim().split("\n")) {
-    try {
-      entries.push(JSON.parse(line) as MemoryEntry);
-    } catch {
-      console.warn(`[persistence] Skipping corrupted JSONL line in ${filePath}`);
-    }
-  }
+  const entries = readJsonlFile<MemoryEntry>(memoryPath(persistDir, name));
   if (limit !== undefined) {
     if (limit <= 0) return [];
     return entries.slice(-limit);
@@ -303,7 +298,8 @@ export class RegistryStore {
 
   /** One-time migration: if a legacy registry.json exists, write individual
    *  meta.json files for any sessions that don't already have one, then
-   *  rename the old file so it's not loaded again. */
+   *  rename the old file so it's not loaded again.
+   *  TODO: Remove this method once all deployments have migrated (no registry.json files remain). */
   private migrateFromRegistryJson(): void {
     const legacyPath = join(this.persistDir, "registry.json");
     if (!existsSync(legacyPath)) return;
@@ -445,19 +441,7 @@ export function readWorkflowRun(persistDir: string, runId: string): WorkflowRun 
 
 /** Read messages from the archived (history) session JSONL. Returns [] if not found. */
 export function readArchivedSessionMessages(persistDir: string, sessionId: string): AgentMessage[] {
-  const filePath = join(historyDir(persistDir), sessionId, "session.jsonl");
-  if (!existsSync(filePath)) return [];
-  const raw = readFileSync(filePath, "utf-8");
-  if (!raw.trim()) return [];
-  const messages: AgentMessage[] = [];
-  for (const line of raw.trim().split("\n")) {
-    try {
-      messages.push(JSON.parse(line) as AgentMessage);
-    } catch {
-      console.warn(`[persistence] Skipping corrupted JSONL line in ${filePath}`);
-    }
-  }
-  return messages;
+  return readJsonlFile<AgentMessage>(join(historyDir(persistDir), sessionId, "session.jsonl"));
 }
 
 /** List all workflow run IDs, sorted by filename (which includes timestamp). */
