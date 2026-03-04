@@ -579,6 +579,16 @@ export class SubagentManager {
     // Notify listener that a new session has started
     this.onSessionStart?.(name, sessionId);
 
+    // Persist the initial user task message immediately (Principle 8: Crash Recovery).
+    // The message_end subscriber only fires for assistant/tool messages from the LLM.
+    // If the agent crashes before producing any response, the task would be lost.
+    const initialUserMessage: AgentMessage = {
+      role: "user" as const,
+      content: [{ type: "text" as const, text: task }],
+      timestamp: session.startedAt,
+    };
+    appendSessionMessage(persistDir, sessionId, initialUserMessage);
+
     session.promise = agent.prompt(task)
       .then(() => {
         this.handleCompletion(session);
