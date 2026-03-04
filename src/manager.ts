@@ -1,4 +1,4 @@
-import { readFileSync, mkdirSync, existsSync } from "node:fs";
+import { readFileSync, readdirSync, mkdirSync, existsSync } from "node:fs";
 import { Agent } from "@mariozechner/pi-agent-core";
 import type { AgentMessage, AgentEvent, AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
 import { Type, StringEnum } from "@mariozechner/pi-ai";
@@ -280,6 +280,34 @@ export class SubagentManager {
       }
       envLines.push(``, `Use paths relative to project root. Do not guess or search for the root.`);
       sections.push(envLines.join("\n"));
+    }
+
+    // Identity — tells the agent who it is, what it can do, and what files it owns
+    {
+      const idLines = [
+        `# Identity`,
+        `- Name: ${def.name}`,
+        `- Role: ${def.description}`,
+        `- Domain: ${def.domain}`,
+      ];
+      // Tool names
+      const toolNames = def.tools.map((t) => t.name);
+      if (toolNames.length > 0) {
+        idLines.push(`- Tools: ${toolNames.join(", ")}`);
+      }
+      // Workspace file listing (auto-discovered)
+      if (def.workspace && existsSync(def.workspace)) {
+        try {
+          const wsFiles = readdirSync(def.workspace, { withFileTypes: true })
+            .filter((e) => e.isFile())
+            .map((e) => e.name)
+            .sort();
+          if (wsFiles.length > 0) {
+            idLines.push(`- Workspace files: ${wsFiles.join(", ")}`);
+          }
+        } catch { /* best-effort — workspace may not be readable */ }
+      }
+      sections.push(idLines.join("\n"));
     }
 
     // Project structure — eliminates find/ls discovery calls
