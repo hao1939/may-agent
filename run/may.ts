@@ -6,7 +6,7 @@ import { SubagentManager } from "../src/index.js";
 import { EventBus } from "./event-bus.js";
 import { attachConsoleUI } from "./console-ui.js";
 import { attachSocketUI } from "./socket-ui.js";
-import { loadAgents, reloadAgents, setAgentSessionId, type AgentLoaderOptions } from "./agent-loader.js";
+import { loadAgents, reloadAgents, setAgentSessionId, runAgentCleanup, type AgentLoaderOptions } from "./agent-loader.js";
 
 const PROJECT_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const AGENTS_ROOT = resolve(PROJECT_ROOT, "agents");
@@ -42,6 +42,10 @@ const manager = new SubagentManager({
   onSessionStart: (agentName, sessionId) => {
     attachAgentEvents(agentName, sessionId);
     setAgentSessionId(agentName, sessionId);
+  },
+  onSessionComplete: (info) => {
+    // Run cleanup for tools that track per-session resources (background_exec, socket_watch)
+    runAgentCleanup(info.agent);
   },
 });
 
