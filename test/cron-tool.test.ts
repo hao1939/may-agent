@@ -35,8 +35,8 @@ describe("cron tool", () => {
 
   it("list returns empty when no cron.json", async () => {
     const out = await exec(ctx.tool, { action: "list" });
-    expect(out).toContain("No cron jobs.");
-    expect(out).toContain("Cron: disabled");
+    expect(out).toContain("no cron jobs configured");
+    expect(out).toContain("DISABLED");
   });
 
   it("add creates a cron entry", async () => {
@@ -150,15 +150,15 @@ describe("cron tool", () => {
   it("list shows cron disabled when cronEnabled is false", async () => {
     await exec(ctx.tool, { action: "add", name: "a", intervalMs: 60000, message: "m" });
     const out = await exec(ctx.tool, { action: "list" });
-    expect(out).toContain("Cron: disabled");
+    expect(out).toContain("DISABLED");
   });
 
   it("list shows cron active when cronEnabled is true", async () => {
     const enabledCtx = makeToolCtx(true);
     await exec(enabledCtx.tool, { action: "add", name: "a", intervalMs: 60000, message: "m" });
     const out = await exec(enabledCtx.tool, { action: "list" });
-    expect(out).toContain("Cron: active");
-    expect(out).not.toContain("disabled");
+    expect(out).toContain("ACTIVE");
+    expect(out).not.toContain("DISABLED");
     enabledCtx.cleanup();
   });
 });

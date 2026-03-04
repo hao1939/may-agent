@@ -190,15 +190,21 @@ bus.onCommand((cmd) => {
   }
 });
 
-// ── Input handling (non-blocking via followUp) ─────────────────────────
+// ── Input handling ──────────────────────────────────────────────────────
 
 /**
- * Send input to the interface agent. Non-blocking: uses followUp() which
- * queues at the turn boundary if busy, or wakes idle sessions.
+ * Send input to the interface agent. Steers if busy, follows up if idle.
+ * From the user's perspective, they just type — the runner picks the right verb.
  */
 function sendInput(message: string): void {
   try {
-    manager.followUp(sid, message);
+    const sessions = manager.status();
+    const session = sessions.find(s => s.sessionId === sid);
+    if (session && session.status === "running") {
+      manager.steer(sid, message);
+    } else {
+      manager.followUp(sid, message);
+    }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     bus.emit({ type: "info", message: `Input error: ${msg}` });

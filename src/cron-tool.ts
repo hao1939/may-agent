@@ -70,8 +70,8 @@ export function createCronTool(opts: CronToolOptions): AgentTool<typeof CronPara
       switch (input.action) {
         case "list": {
           const entries = readEntries();
-          const status = opts.cronEnabled ? "Cron: active" : "Cron: disabled (jobs defined but won't fire until cron is enabled)";
-          if (entries.length === 0) return textResult(`No cron jobs.\n${status}`);
+          const status = opts.cronEnabled ? "Status: ACTIVE" : "Status: DISABLED (jobs defined but won't fire until SCHEDULERS=1)";
+          if (entries.length === 0) return textResult(`no cron jobs configured\n${status}`);
           const lines = entries.map(e =>
             `- ${e.name}: every ${(e.intervalMs / 1000).toFixed(0)}s → "${e.message.slice(0, 100)}"`
           );
