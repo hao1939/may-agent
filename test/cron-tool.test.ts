@@ -165,14 +165,14 @@ describe("cron tool", () => {
   it("status shows 0 jobs when empty", async () => {
     const out = await exec(ctx.tool, { action: "status" });
     expect(out).toContain("0 jobs");
-    expect(out).toContain("disabled");
+    expect(out).toContain("DISABLED");
   });
 
   it("status shows enabled when cronEnabled is true", async () => {
     const enabledCtx = makeToolCtx(true);
     const out = await exec(enabledCtx.tool, { action: "status" });
-    expect(out).toContain("enabled");
-    expect(out).not.toContain("disabled");
+    expect(out).toContain("ACTIVE");
+    expect(out).not.toContain("DISABLED");
     enabledCtx.cleanup();
   });
 
@@ -184,5 +184,21 @@ describe("cron tool", () => {
     expect(out).toContain("3 job(s)");
     expect(out).toContain('"fast"');
     expect(out).toContain("30s");
+  });
+
+  it("status reports first-defined job on intervalMs tie", async () => {
+    await exec(ctx.tool, { action: "add", name: "alpha", intervalMs: 30000, message: "a" });
+    await exec(ctx.tool, { action: "add", name: "beta", intervalMs: 30000, message: "b" });
+    const out = await exec(ctx.tool, { action: "status" });
+    expect(out).toContain('"alpha"');
+    expect(out).not.toContain('"beta"');
+  });
+
+  it("status shows disabled when jobs exist but cronEnabled is false", async () => {
+    await exec(ctx.tool, { action: "add", name: "job1", intervalMs: 60000, message: "m" });
+    const out = await exec(ctx.tool, { action: "status" });
+    expect(out).toContain("DISABLED");
+    expect(out).toContain("1 job(s)");
+    expect(out).toContain('"job1"');
   });
 });
