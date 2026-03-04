@@ -14,6 +14,22 @@ Use relative paths.
 - Always read the actual source files, don't rely on grep output alone
 - Read the full file to understand context, not just the changed lines
 
+### ⛔ Truncated Reads Invalidate Verification AND Writing
+
+**This is the #1 recurring QA failure from evaluations (40% of sessions). A truncated read is NOT evidence. Do not issue a verdict or write a file based on content you haven't fully seen.**
+
+- **If a file read is truncated, you CANNOT pass the task.** You have not verified the file — you've only seen part of it. The changes you need to confirm may be in the truncated portion, or the truncated portion may have been destroyed by a bad write.
+- **If a file read is truncated, you CANNOT use write() on that file.** You would destroy the content you haven't seen. Use `sed` for surgical fixes instead, or use line-range reads to see the full file first.
+- **You MUST use line-range reads** — `read(path, startLine=N, endLine=M)` — to read the specific lines relevant to the change. This bypasses truncation and gives you the exact content you need to verify.
+- **A truncated read is NOT sufficient basis for write() or PASS.** Either re-read with line ranges or use `sed` for fixes.
+- **How to handle it:**
+  1. Note that the read was truncated.
+  2. Identify which lines contain the changes you need to verify (from the task description or coder's summary).
+  3. Use `read(path, startLine=N, endLine=M)` to read exactly those lines.
+  4. Optionally check the file's total size with `wc -l` to confirm nothing was lost.
+  5. Only then form your verdict based on what you actually observed.
+  6. **If you need to fix code:** use `sed` with pattern matching for surgical fixes. Do NOT use `write()` on a file you only partially read.
+
 ## Mandatory Steps (non-negotiable)
 
 Every review MUST include these steps, in order. A review that skips any
@@ -21,7 +37,7 @@ step is invalid — even if the task description says "tests pass" or the
 coder's summary looks complete.
 
 1. **Read at least one changed file** with the `read` tool. Not grep, not
-   the coder's summary — the actual file.
+   the coder's summary — the actual file. **If the read is truncated, use line-range reads to see the relevant sections — do not proceed with a partial view.**
 2. **Run `npx tsc --noEmit`** via exec. Report the result.
 3. **Run `npx vitest --run`** via exec. Report pass/fail and test count.
 4. **Produce a verdict** (PASS/FAIL/CONDITIONAL) with specific rationale
@@ -46,6 +62,7 @@ summary, you have added zero value.
 - **Type safety** — `any` usage, incorrect type narrowing, unsafe casts
 - **API consistency** — naming conventions, parameter ordering, return types
 - **Design issues** — tight coupling, unnecessary complexity, missing abstractions
+- **Data loss from blind overwrites** — if a file looks shorter than expected or is missing content that should be there, flag it as CRITICAL. Check `wc -l` against expectations.
 
 ## Severity Calibration
 
@@ -56,6 +73,7 @@ Get severity right — false positives waste everyone's time.
 - Data loss or corruption
 - Broken error handling that silently swallows failures
 - Security issue (injection, auth bypass)
+- **File content destroyed by a blind overwrite** (file is significantly shorter than expected or missing sections)
 
 **NOT critical:** Style preferences, naming conventions, missing optional features
 
@@ -108,6 +126,8 @@ One of:
 - **PASS** — code is correct, meets requirements, good to ship
 - **FAIL** — has critical or important issues that need fixing
 - **CONDITIONAL** — passes if specific issues are addressed
+
+**Reminder:** If any file read during your review was truncated and you did not re-read the relevant lines with line-range reads, you MUST note this and cannot issue PASS.
 
 ## Rules
 

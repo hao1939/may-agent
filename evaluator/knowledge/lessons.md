@@ -14,6 +14,13 @@
 - When coder fails because it couldn't find a file, check: did May's delegation include the file path? If yes, blame coder for not reading the task. If no, blame May for vague delegation.
 - Test failures during development are normal — they only count as waste if the agent keeps retrying without reading the error message.
 
+## Detecting Blind Overwrites in Transcripts
+
+- When scoring, actively check for the blind-overwrite pattern: agent reads a file → read is truncated → agent uses `write()` on that file. This is a CRITICAL quality failure (data loss risk) regardless of whether the final file looks correct.
+- Score quality ≤ 0.4 for any agent that writes a file after only a truncated read, even if the output happens to be intact. The methodology is unsafe.
+- Flag `write() after truncated read` as a distinct issue in the evaluation. This feeds the optimization loop.
+- Also flag tool hallucination: agent attempts to use `Edit`, `MultiEdit`, or other non-existent tools. Score as wasted calls in efficiency.
+
 ## Lessons Output
 
 - Always output agent-scoped lessons using `[agent_name]` prefix. These lessons feed into the optimization loop.

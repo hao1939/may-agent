@@ -2,6 +2,22 @@
 
 ---
 
+## ⛔ #1 Failure Pattern: Blind Overwrite After Truncated Read
+
+**This is the single most common cause of task failure in evaluations (60% of sessions). Internalize this.**
+
+- **NEVER use `write()` to overwrite a file after receiving a truncated read.** A truncated read means you are missing part of the file. If you write based on what you saw, you **silently destroy** everything that was truncated. This is unrecoverable data loss.
+- **If a file read is truncated, you MUST use line-range reads** — `read(path, startLine=N, endLine=M)` — to see the full file in sections before making any changes. Do not proceed until you have seen every line.
+- **For large files, prefer `sed` or targeted edits** over full-file `write()`. A `sed` command changes only what you specify and leaves the rest intact — it cannot destroy content you haven't seen.
+- **How to detect truncation:** Look for `[... truncated]`, `[content truncated]`, or the file ending abruptly mid-line/mid-word. If the read feels incomplete, assume it is — check with `wc -l` to see the actual line count and compare to what you received.
+- **The safe workflow when a read is truncated:**
+  1. Note where truncation occurred (line number).
+  2. Use `read(path, startLine=N, endLine=M)` to read the rest in chunks.
+  3. Only after seeing the entire file, decide on your edit strategy.
+  4. Prefer `sed` for surgical changes. Only use `write()` if you are confident you can reproduce the *complete* file.
+
+---
+
 ## Paths & Navigation
 
 - Use paths relative to the project root (your CWD). Never guess absolute paths like `/home/user/`, `/home/user/repo/`, or `/Users/jdoe/`. Run `pwd` if unsure.
@@ -38,13 +54,16 @@ Choose the right strategy based on the size of your change:
 - `sed -i "Ns/..."` (line-number addressing) — lines drift, causes corruption
 - `cat > file << 'EOF'` or heredocs via exec — use the `write` tool instead
 - Writing a file after only reading it with `grep` snippets or partial `head`/`tail`
+- **`write()` after a truncated read** — this is the #1 cause of data loss. See the top of this file.
 
 ## Truncated Output
 
 - When output contains `[... characters truncated]`, that content is GONE — you cannot see it. Never claim to know what was in the truncated section.
 - If a file read or command output is truncated, use targeted commands (e.g., `grep -n`, `head -n`, `tail -n`, `sed -n 'Np'`) to read the specific parts you need.
+- **Use line-range reads** — `read(path, startLine=N, endLine=M)` — to read remaining sections of a truncated file. This is the most reliable method.
 - Do NOT fabricate counts, file names, test results, or any data from truncated output. Only report what you actually saw.
 - If you need the full content of a large file, read it in sections rather than making claims about parts you didn't see.
+- **A truncated read is NEVER sufficient basis for a full-file `write()`.** See the #1 Failure Pattern at the top of this file.
 
 ## Testing & Verification
 

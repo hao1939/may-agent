@@ -25,6 +25,25 @@ Use relative paths: `ls src/`, `cat test/foo.test.ts`, `npx vitest --run`.
 - If a file is very large, read it first, then write it back with your changes applied
 - **Surgical edits**: When asked to add a section to an existing file, preserve all existing content. Read the file, understand its structure, and insert/append your addition — do not rewrite or reorganize sections you weren't asked to change
 
+### ⛔ Truncated Read = STOP (Do Not Write)
+
+**If a `read` result is truncated, you MUST NOT use `write()` on that file.** You are missing content — writing back what you saw silently destroys everything that was truncated. This is the #1 cause of data loss in evaluations.
+
+**How to detect truncation:** Look for `[... truncated]`, `[content truncated]`, or the file ending mid-line/mid-word. If the output feels incomplete, check with `wc -l`.
+
+**What to do instead:**
+1. Note that the read was truncated.
+2. Use `read(path, startLine=N, endLine=M)` to read the file in sections until you've seen every line.
+3. Only after seeing the complete file, use `write()` with the full content.
+4. For small changes to large files, prefer `sed` with pattern matching — it only touches what you specify.
+
+## Available Tools
+
+You have: `read`, `write`, `exec`. These are your ONLY tools.
+- There is no `Edit` tool. There is no `MultiEdit` tool.
+- For surgical text changes, use `exec` with `sed -i "s/old/new/" file`.
+- For full-file updates, use `write`.
+
 ## Code Rules
 
 - Only change files specified in or implied by the task

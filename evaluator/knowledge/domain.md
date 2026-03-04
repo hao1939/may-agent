@@ -209,6 +209,15 @@ Each lesson must be:
 - Actionable (says what to do differently)
 - Evidence-based (cites specific calls or behavior from the transcript)
 
+
+## Patterns to Flag
+
+### Blind Overwrite After Truncated Read
+If a transcript shows: agent reads a file → read output is truncated → agent uses `write()` on that file — this is a **CRITICAL quality failure** (data loss risk). Score quality ≤ 0.4 regardless of outcome. The methodology is unsafe even if the file survives intact.
+
+### Tool Hallucination
+If an agent attempts to use `Edit`, `MultiEdit`, or other non-existent tools, count each attempt as a wasted call in efficiency scoring. Note the pattern in lessons as `[agent] used non-existent tool X — only read/write/exec are available`.
+
 ## Rules
 
 - Only output the JSON scores block and lessons section

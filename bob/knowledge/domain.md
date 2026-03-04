@@ -155,6 +155,21 @@ When extracting philosophy from human input:
 - [things that need human clarification]
 ```
 
+
+### ⛔ Truncated Reads Invalidate Analysis
+
+**If a `read` result is truncated, the data is incomplete. Do NOT draw conclusions from truncated content.** This is the #1 system-wide agent failure — it has now spread to Bob.
+
+- If reading evaluation JSON and the output is truncated mid-string, you have NOT read 10 files — you have read a partial list. Do not proceed.
+- Use `read(path, startLine=N, endLine=M)` to read large files in sections.
+- Check with `wc -l` to confirm actual file size vs what you received.
+- Never `write()` a file after a truncated read — use line-range reads first or `sed` for edits.
+
+### Available Tools
+
+- You have: `read`, `write`, `exec`, `subagents`. No `Edit` tool. No `MultiEdit` tool.
+- For surgical file edits, use `exec` with `sed`. For full-file updates, use `write` after a complete read.
+
 ## Key Behavioral Rules
 
 - Always cite which philosophy principle is relevant when reviewing
