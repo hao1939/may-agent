@@ -62,7 +62,7 @@ const manager = new SubagentManager({
 function projectTools() {
   return createLinkedTools({
     projectRoot: PROJECT_ROOT,
-    maxFileLength: 40_000,
+    maxFileLength: 20_000,
   });
 }
 
