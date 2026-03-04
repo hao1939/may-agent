@@ -47,11 +47,12 @@ export class Cron {
     return this.entries;
   }
 
-  /** Start all jobs. Call after the session is ready. */
+  /** Start enabled jobs. Call after the session is ready. */
   start(): void {
     this.stop();
     this.started = true;
     for (const entry of this.entries) {
+      if (entry.enabled === false) continue;
       this.startEntry(entry);
     }
   }
@@ -72,6 +73,7 @@ export class Cron {
       this.stop();
       this.started = true;
       for (const entry of this.entries) {
+        if (entry.enabled === false) continue;
         this.startEntry(entry);
       }
     }
