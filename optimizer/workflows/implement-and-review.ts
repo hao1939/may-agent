@@ -13,11 +13,13 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     return ctx.escalate("coder failed", { error: coder.error });
   }
 
-  // Step 2: QA evaluates
+  // Step 2: QA evaluates independently
   const reviewTask =
-    `Review the following implementation.\n\n` +
-    `## Task\n${ctx.task}\n\n` +
-    `## Implementation\n${coder.lastAssistantText}`;
+    `Review these code changes independently. Read the changed files yourself and run checks yourself.\n\n` +
+    `## Task Description\n${ctx.task}\n\n` +
+    `## Coder's Summary (claims to verify — do NOT trust without checking)\n${coder.lastAssistantText}\n\n` +
+    `Your job: verify the coder's claims by reading the actual files and running tsc/tests yourself. ` +
+    `Form your own judgment. Report what YOU found, not what the coder said.`;
   const review = await ctx.runAgent("qa", reviewTask);
   if (review.status === "error") {
     return ctx.escalate("qa failed", { error: review.error });
@@ -61,9 +63,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
   // Step 4: Re-review
   const reReviewTask =
-    `Re-review after fixes.\n\n` +
-    `## Original Review Feedback\n${reviewText}\n\n` +
-    `## Updated Implementation\n${fix.lastAssistantText}`;
+    `Re-review after fixes. Verify the issues from your original review are actually resolved.\n\n` +
+    `## Your Original Review Feedback\n${reviewText}\n\n` +
+    `## Coder's Fix Summary (verify independently)\n${fix.lastAssistantText}\n\n` +
+    `Read the changed files yourself. Run tsc and tests. Confirm each issue is fixed.`;
   const review2 = await ctx.runAgent("qa", reReviewTask);
   if (review2.status === "error") {
     return ctx.escalate("re-review failed", { error: review2.error });

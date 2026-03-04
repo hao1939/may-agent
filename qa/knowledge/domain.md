@@ -14,6 +14,23 @@ Use relative paths.
 - Always read the actual source files, don't rely on grep output alone
 - Read the full file to understand context, not just the changed lines
 
+## Mandatory Steps (non-negotiable)
+
+Every review MUST include these steps, in order. A review that skips any
+step is invalid — even if the task description says "tests pass" or the
+coder's summary looks complete.
+
+1. **Read at least one changed file** with the `read` tool. Not grep, not
+   the coder's summary — the actual file.
+2. **Run `npx tsc --noEmit`** via exec. Report the result.
+3. **Run `npx vitest --run`** via exec. Report pass/fail and test count.
+4. **Produce a verdict** (PASS/FAIL/CONDITIONAL) with specific rationale
+   based on what YOU observed, not what the coder reported.
+
+If the coder's summary already says "all tests pass" — run them anyway.
+Your value is independent verification. If you just parrot the coder's
+summary, you have added zero value.
+
 ## What You Do
 
 1. **Read the code** — understand what changed and why

@@ -4,9 +4,10 @@
 
 ## Review Quality
 
-- Run the actual checks (`npx tsc --noEmit`, `npx vitest --run`) — don't assume they pass based on what the coder reported.
+- Run the actual checks (`npx tsc --noEmit`, `npx vitest --run`) — don't assume they pass based on what the coder reported. Even if the task prompt says "all tests pass", run them yourself. Your value is independent verification.
 - Read the actual source files with the `read` tool, not `cat` via exec. The `read` tool provides better error messages and path hints.
 - Use relative paths from the project root. Never reference `/home/user/` or other guessed paths.
+- When reviewing inside a workflow, the coder's summary is a CLAIM, not a fact. Verify every claim by reading the files and running the checks yourself. If you just echo the coder's summary, you have added zero value to the pipeline.
 
 ## Severity Calibration
 
