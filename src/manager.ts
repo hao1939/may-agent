@@ -1216,61 +1216,6 @@ export class SubagentManager {
     }
   }
 
-  /**
-   * Send a message to a persistent (long-lived) session.
-   *
-   * If the session is "idle" (finished processing, waiting for input),
-   * queues the message via followUp() and re-enters the agent loop via continue().
-   * If the session is "running", delegates to steer() for mid-run injection.
-   *
-   * Returns a Promise that resolves when the agent finishes processing this input
-   * (goes back to "idle" or hits an error).
-   *
-   * Throws if the session is not found, not persistent, or in a terminal state.
-   */
-  async send(sessionId: string, message: string): Promise<void> {
-    const session = this.activeSessions.get(sessionId);
-    if (!session) {
-      throw new Error(`Session "${sessionId}" not found`);
-    }
-    if (!session.persistent) {
-      throw new Error(`Session "${sessionId}" is not persistent — use steer() for non-persistent sessions`);
-    }
-    if (session.status !== "running" && session.status !== "idle") {
-      throw new Error(`Session "${sessionId}" is in terminal state: ${session.status}`);
-    }
-
-    if (session.status === "running") {
-      // Session is actively processing — inject via steer
-      this.steer(sessionId, message);
-      return;
-    }
-
-    // Session is "idle" — wake it up
-    session.status = "running";
-    this.registry.updateSessionStatus(sessionId, "running");
-
-    const msg: AgentMessage = {
-      role: "user",
-      content: [{ type: "text", text: message }],
-      timestamp: Date.now(),
-    };
-
-    session.agent.followUp(msg);
-    appendSessionMessage(this.registry.persistDir, sessionId, msg);
-
-    session.promise = session.agent.continue()
-      .then(() => {
-        this.handleCompletion(session);
-      })
-      .catch((err) => {
-        session.error = err?.message ?? String(err);
-        this.handleCompletion(session);
-      });
-
-    return session.promise;
-  }
-
   /** Subscribe to agent events for a running session. Returns unsubscribe function.
    *  Throws if session not found or not running.
    */

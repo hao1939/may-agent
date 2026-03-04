@@ -53,6 +53,10 @@ export { createBackgroundExecTool } from "./background-exec.js";
 export type { BackgroundExecToolOptions } from "./background-exec.js";
 export { createSocketWatchTool } from "./socket-watch.js";
 export type { SocketWatchToolOptions } from "./socket-watch.js";
+export { createClaudeCodeTool, createGeminiCliTool } from "./cli-agents.js";
+export type { CliAgentToolOptions, GeminiCliToolOptions } from "./cli-agents.js";
+export { createCronTool } from "./cron-tool.js";
+export type { CronToolOptions, CronEntry } from "./cron-tool.js";
 export type {
   SubagentDefinition,
   SessionInfo,

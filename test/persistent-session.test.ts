@@ -90,32 +90,22 @@ describe("persistent sessions", () => {
     expect(meta!.status).toBe("idle");
   });
 
-  it("send() wakes an idle session and returns to idle", async () => {
+  it("followUp() wakes an idle session and returns to idle", async () => {
     manager.register(baseDef());
 
     const sid = manager.run("bot", "first");
     await manager.waitForIdle(sid);
     expect(manager.status()[0].status).toBe("idle");
 
-    // Send another message — should wake, process, return to idle
-    await manager.send(sid, "second");
+    // followUp another message — should wake, process, return to idle
+    manager.followUp(sid, "second");
+    await manager.waitForIdle(sid);
     expect(manager.status()[0].status).toBe("idle");
   });
 
-  it("send() throws on non-persistent session", async () => {
-    manager.register(baseDef({ persistent: false }));
-
-    const sid = manager.run("bot", "hello");
-    // Wait for the non-persistent session to complete and be archived
-    try { await manager.waitFor(sid); } catch { /* error expected */ }
-
-    // Session is gone from activeSessions
-    await expect(manager.send(sid, "more")).rejects.toThrow("not found");
-  });
-
-  it("send() throws on missing session", async () => {
+  it("followUp() throws on missing session", async () => {
     manager.register(baseDef());
-    await expect(manager.send("nonexistent", "hi")).rejects.toThrow("not found");
+    expect(() => manager.followUp("nonexistent", "hi")).toThrow("not found");
   });
 
   it("cancel() on idle persistent session keeps it alive (goes back to idle)", async () => {
@@ -143,7 +133,7 @@ describe("persistent sessions", () => {
     expect(meta!.status).toBe("idle");
   });
 
-  it("send() works after cancel on persistent session (session still alive)", async () => {
+  it("followUp() works after cancel on persistent session (session still alive)", async () => {
     manager.register(baseDef());
 
     const sid = manager.run("bot", "hello");
@@ -151,8 +141,9 @@ describe("persistent sessions", () => {
 
     manager.cancel(sid);
 
-    // Session is still alive — send should work
-    await manager.send(sid, "more");
+    // Session is still alive — followUp should work
+    manager.followUp(sid, "more");
+    await manager.waitForIdle(sid);
     expect(manager.status()[0].status).toBe("idle");
   });
 
@@ -179,7 +170,7 @@ describe("persistent sessions", () => {
     expect(meta!.status).toBe("interrupted");
   });
 
-  it("send() throws after close (session is gone)", async () => {
+  it("followUp() throws after close (session is gone)", async () => {
     manager.register(baseDef());
 
     const sid = manager.run("bot", "hello");
@@ -187,7 +178,7 @@ describe("persistent sessions", () => {
 
     manager.close(sid);
 
-    await expect(manager.send(sid, "more")).rejects.toThrow("not found");
+    expect(() => manager.followUp(sid, "more")).toThrow("not found");
   });
 
   it("waitForIdle() resolves immediately if already idle", async () => {
@@ -247,14 +238,17 @@ describe("persistent sessions", () => {
     expect(result.resumed.sessionId).toBe("idle_session_1");
   });
 
-  it("multiple send() calls accumulate context", async () => {
+  it("multiple followUp() calls accumulate context", async () => {
     manager.register(baseDef());
 
     const sid = manager.run("bot", "first");
     await manager.waitForIdle(sid);
 
-    await manager.send(sid, "second");
-    await manager.send(sid, "third");
+    manager.followUp(sid, "second");
+    await manager.waitForIdle(sid);
+
+    manager.followUp(sid, "third");
+    await manager.waitForIdle(sid);
 
     // Session should still be idle and in active list
     expect(manager.status()[0].status).toBe("idle");

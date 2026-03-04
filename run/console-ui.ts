@@ -1,39 +1,50 @@
 /**
  * Console UI — renders RunnerEvents to stdout.
+ *
+ * Chat-channel events render normally (bright).
+ * Activity-channel events render dimmed so the user can focus on conversation.
  */
 
-import type { EventBus } from "./event-bus.js";
+import { eventChannel, type EventBus } from "./event-bus.js";
+
+const DIM = "\x1b[2m";
+const RESET = "\x1b[0m";
 
 export function attachConsoleUI(bus: EventBus): void {
   bus.on((event) => {
+    const ch = eventChannel(event);
+    const dim = ch === "activity";
+
     switch (event.type) {
       case "text":
-        process.stdout.write(event.text);
+        if (dim) {
+          process.stdout.write(`${DIM}${event.text}${RESET}`);
+        } else {
+          process.stdout.write(event.text);
+        }
         break;
 
       case "tool_call":
         if (event.agent === "may") {
-          console.log(`\n[tool:${event.tool}] ${JSON.stringify(event.args).slice(0, 200)}`);
+          dimLog(dim, `\n[tool:${event.tool}] ${JSON.stringify(event.args).slice(0, 200)}`);
         } else {
-          console.log(`  [${event.agent}:${event.tool}] ${JSON.stringify(event.args).slice(0, 200)}`);
+          dimLog(dim, `  [${event.agent}:${event.tool}] ${JSON.stringify(event.args).slice(0, 200)}`);
         }
         break;
 
       case "tool_result": {
         const prefix = event.agent === "may" ? `[tool:${event.tool}]` : `  [${event.agent}:${event.tool}]`;
         if (event.isError) {
-          console.log(`${prefix} ERROR`);
+          dimLog(dim, `${prefix} ERROR`);
         } else {
           const line = `${event.preview}${event.preview.length >= 200 ? "..." : ""}`;
-          console.log(`${prefix} ${line}`);
+          dimLog(dim, `${prefix} ${line}`);
         }
-      }
         break;
+      }
 
       case "session_start":
-        if (event.agent !== "may") {
-          // Sub-agent sessions announced via workflow events
-        }
+        // Sub-agent sessions announced via workflow events
         break;
 
       case "session_end":
@@ -44,41 +55,54 @@ export function attachConsoleUI(bus: EventBus): void {
         const prefix = `[${event.agent}:${event.event === "start" ? "workflow" : "step"}]`;
         switch (event.event) {
           case "start":
-            console.log(`\n${prefix} ${event.workflow}: ${(event.task ?? "").slice(0, 100)}`);
+            dimLog(dim, `\n${prefix} ${event.workflow}: ${(event.task ?? "").slice(0, 100)}`);
             break;
           case "step_start":
-            console.log(`${prefix} ${event.step} started${event.sessionId ? ` (${event.sessionId})` : ""}`);
+            dimLog(dim, `${prefix} ${event.step} started${event.sessionId ? ` (${event.sessionId})` : ""}`);
             break;
           case "step_done":
-            console.log(`[${event.agent}:step] ${event.step} ${event.status ?? "done"} (${event.duration ?? "?"})`);
+            dimLog(dim, `[${event.agent}:step] ${event.step} ${event.status ?? "done"} (${event.duration ?? "?"})`);
             break;
           case "done":
-            console.log(`[${event.agent}:workflow] done`);
+            dimLog(dim, `[${event.agent}:workflow] done`);
             break;
           case "escalated":
-            console.log(`[${event.agent}:workflow] escalated: ${event.reason ?? ""}`);
+            dimLog(dim, `[${event.agent}:workflow] escalated: ${event.reason ?? ""}`);
             break;
         }
         break;
       }
 
       case "eval":
-        console.log(`\n[eval] verdict: ${event.verdict} (efficiency: ${event.efficiency}, quality: ${event.quality})`);
+        dimLog(dim, `\n[eval] verdict: ${event.verdict} (efficiency: ${event.efficiency}, quality: ${event.quality})`);
         if (event.tokens) {
-          console.log(`[eval] usage: ${event.tokens} tokens, $${(event.cost ?? 0).toFixed(4)}, ${event.turns} turns`);
+          dimLog(dim, `[eval] usage: ${event.tokens} tokens, $${(event.cost ?? 0).toFixed(4)}, ${event.turns} turns`);
         }
         if (event.failureChains && event.failureChains > 0) {
-          console.log(`[eval] failure chains: ${event.failureChains} (${event.wastedCalls} wasted calls)`);
+          dimLog(dim, `[eval] failure chains: ${event.failureChains} (${event.wastedCalls} wasted calls)`);
         }
         break;
 
       case "info":
-        console.log(`\n[runner] ${event.message}`);
+        dimLog(dim, `\n[runner] ${event.message}`);
         break;
 
       case "prompt":
-        process.stdout.write(`\n[may] `);
+        if (ch === "chat") {
+          process.stdout.write(`\n[${event.message}] `);
+        } else {
+          dimLog(true, `\n[${event.message}]`);
+        }
         break;
     }
   });
+}
+
+/** console.log with optional ANSI dim wrapping. */
+function dimLog(dim: boolean, msg: string): void {
+  if (dim) {
+    console.log(`${DIM}${msg}${RESET}`);
+  } else {
+    console.log(msg);
+  }
 }

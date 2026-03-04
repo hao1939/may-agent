@@ -6,18 +6,28 @@
  * through RunnerCommands.
  */
 
+// ── Channels ────────────────────────────────────────────────────────────
+//
+// Every event carries an optional channel tag:
+//   "chat"     — direct conversation with the user (May's responses, prompts)
+//   "activity" — background work (sub-agent tool calls, workflow events, evals)
+//
+// UI layers can filter/style by channel. Default: "activity".
+
+export type EventChannel = "chat" | "activity";
+
 // ── Events (runner → UI) ──────────────────────────────────────────────
 
 export type RunnerEvent =
-  | { type: "text"; agent: string; text: string }
-  | { type: "tool_call"; agent: string; tool: string; args: unknown }
-  | { type: "tool_result"; agent: string; tool: string; preview: string; isError: boolean }
-  | { type: "session_start"; agent: string; sessionId: string; task: string }
-  | { type: "session_end"; agent: string; sessionId: string; status: string; duration?: string; error?: string }
-  | { type: "workflow"; agent: string; workflow: string; event: "start" | "step_start" | "step_done" | "done" | "escalated"; step?: string; sessionId?: string; status?: string; duration?: string; reason?: string; task?: string }
-  | { type: "eval"; verdict: string; efficiency: number; quality: number; tokens?: number; cost?: number; turns?: number; failureChains?: number; wastedCalls?: number }
-  | { type: "info"; message: string }
-  | { type: "prompt"; message: string };
+  | { type: "text"; agent: string; text: string; channel?: EventChannel }
+  | { type: "tool_call"; agent: string; tool: string; args: unknown; channel?: EventChannel }
+  | { type: "tool_result"; agent: string; tool: string; preview: string; isError: boolean; channel?: EventChannel }
+  | { type: "session_start"; agent: string; sessionId: string; task: string; channel?: EventChannel }
+  | { type: "session_end"; agent: string; sessionId: string; status: string; duration?: string; error?: string; channel?: EventChannel }
+  | { type: "workflow"; agent: string; workflow: string; event: "start" | "step_start" | "step_done" | "done" | "escalated"; step?: string; sessionId?: string; status?: string; duration?: string; reason?: string; task?: string; channel?: EventChannel }
+  | { type: "eval"; verdict: string; efficiency: number; quality: number; tokens?: number; cost?: number; turns?: number; failureChains?: number; wastedCalls?: number; channel?: EventChannel }
+  | { type: "info"; message: string; channel?: EventChannel }
+  | { type: "prompt"; message: string; channel?: EventChannel };
 
 // ── Commands (UI → runner) ─────────────────────────────────────────────
 
@@ -36,6 +46,11 @@ export type RunnerCommand =
 
 export type EventListener = (event: RunnerEvent) => void;
 export type CommandHandler = (command: RunnerCommand) => void;
+
+/** Resolve the channel of an event. Defaults to "activity" if not set. */
+export function eventChannel(event: RunnerEvent): EventChannel {
+  return (event as { channel?: EventChannel }).channel ?? "activity";
+}
 
 export class EventBus {
   private listeners = new Set<EventListener>();
