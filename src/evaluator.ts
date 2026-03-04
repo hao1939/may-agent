@@ -1,9 +1,9 @@
-import { readFileSync, writeFileSync, appendFileSync, mkdirSync, existsSync, readdirSync } from "node:fs";
+import { readFileSync, writeFileSync, appendFileSync, mkdirSync, existsSync } from "node:fs";
 import { join, dirname } from "node:path";
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { AssistantMessage } from "@mariozechner/pi-ai";
 import type { SubagentManager } from "./manager.js";
-import { readSessionMessages, readArchivedSessionMessages, historyDir } from "./persistence.js";
+import { readSessionMessages, readArchivedSessionMessages } from "./persistence.js";
 import { extractHallucinatedRelPath } from "./tools.js";
 import type { PersistedSession } from "./persistence.js";
 
@@ -18,27 +18,6 @@ export interface UsageSummary {
   totalTokens: number;
   cost: number; // total cost in dollars
   turns: number; // number of assistant messages
-}
-
-export interface EvaluationScores {
-  efficiency: number;
-  quality: number;
-  pattern_detected: boolean;
-  pattern_name: string | null;
-  total_tool_calls: number;
-  productive_calls: number;
-  wasted_calls: number;
-  verdict: "good" | "acceptable" | "needs_improvement";
-}
-
-export interface EvaluationResult {
-  scores: EvaluationScores;
-  usage: UsageSummary;
-  lessons: string | null;
-  workflowCode: string | null;
-  workflowName: string | null;
-  failureChains: FailureChain[];
-  raw: string;
 }
 
 /** Per-agent scores within a task evaluation. */
@@ -118,24 +97,6 @@ export function extractUsage(messages: AgentMessage[]): UsageSummary {
   }
 
   return { inputTokens, outputTokens, cacheReadTokens, cacheWriteTokens, totalTokens, cost, turns };
-}
-
-// ── JSONL helpers ──────────────────────────────────────────────────────
-
-/** Read messages from a JSONL file, skipping corrupted lines. */
-function readJsonlMessages(filePath: string): AgentMessage[] {
-  if (!existsSync(filePath)) return [];
-  const raw = readFileSync(filePath, "utf-8");
-  if (!raw.trim()) return [];
-  const messages: AgentMessage[] = [];
-  for (const line of raw.trim().split("\n")) {
-    try {
-      messages.push(JSON.parse(line) as AgentMessage);
-    } catch {
-      console.warn(`[evaluator] Skipping corrupted JSONL line in ${filePath}`);
-    }
-  }
-  return messages;
 }
 
 // ── Failure chain extraction ───────────────────────────────────────────
@@ -605,63 +566,6 @@ function formatTranscript(messages: AgentMessage[]): string {
 
 // ── Response parsing ───────────────────────────────────────────────────
 
-function parseEvaluation(text: string, usage: UsageSummary): EvaluationResult {
-  const result: EvaluationResult = {
-    scores: {
-      efficiency: 0,
-      quality: 0,
-      pattern_detected: false,
-      pattern_name: null,
-      total_tool_calls: 0,
-      productive_calls: 0,
-      wasted_calls: 0,
-      verdict: "needs_improvement",
-    },
-    usage,
-    lessons: null,
-    workflowCode: null,
-    workflowName: null,
-    failureChains: [],
-    raw: text,
-  };
-
-  const jsonMatch = text.match(/```json\s*\n([\s\S]*?)\n\s*```/);
-  if (jsonMatch) {
-    try {
-      const parsed = JSON.parse(jsonMatch[1]);
-      if (parsed.overall && typeof parsed.overall.efficiency === "number") {
-        result.scores.efficiency = parsed.overall.efficiency;
-        result.scores.quality = parsed.overall.quality;
-        result.scores.verdict = parsed.overall.verdict ?? result.scores.verdict;
-        if (parsed.agents && typeof parsed.agents === "object") {
-          for (const agent of Object.values(parsed.agents) as Array<Record<string, unknown>>) {
-            if (typeof agent.productive_calls === "number") result.scores.productive_calls += agent.productive_calls;
-            if (typeof agent.wasted_calls === "number") result.scores.wasted_calls += agent.wasted_calls;
-          }
-          result.scores.total_tool_calls = result.scores.productive_calls + result.scores.wasted_calls;
-        }
-      }
-    } catch {
-      // Keep defaults
-    }
-  }
-
-  const lessonsMatch = text.match(/### Lessons\s*\n([\s\S]*?)(?=\n### |$)/);
-  if (lessonsMatch) {
-    const lessons = lessonsMatch[1].trim();
-    if (lessons) result.lessons = lessons;
-  }
-
-  const workflowMatch = text.match(/### Workflow Suggestion\s*\n[\s\S]*?```typescript\s*\n([\s\S]*?)\n\s*```/);
-  if (workflowMatch) {
-    result.workflowCode = workflowMatch[1];
-    const nameMatch = result.workflowCode.match(/export const name\s*=\s*["']([^"']+)["']/);
-    if (nameMatch) result.workflowName = nameMatch[1];
-  }
-
-  return result;
-}
-
 /** Parse per-agent task evaluation response from evaluator. */
 function parseTaskEvaluation(text: string): {
   agents: Record<string, { efficiency: number; quality: number; productive_calls: number; wasted_calls: number; verdict: string; issues: string[] }>;
@@ -994,103 +898,6 @@ export async function evaluateTask(opts: EvaluateTaskOptions): Promise<TaskEvalu
   }
 
   return result;
-}
-
-// ── Legacy single-session evaluation ───────────────────────────────────
-
-export interface EvaluateSessionOptions {
-  manager: SubagentManager;
-  sessionId: string;
-  agentName: string;
-  workflowUsed: string | null;
-  persistDir: string;
-  knowledgeDir: string;
-  workflowDir?: string;
-}
-
-/**
- * Evaluate a completed session using the evaluator agent.
- * @deprecated Use evaluateTask() for task-tree evaluation instead.
- */
-export async function evaluateSession(opts: EvaluateSessionOptions): Promise<EvaluationResult> {
-  const { manager, sessionId, agentName, workflowUsed, persistDir, knowledgeDir } = opts;
-
-  let messages: AgentMessage[] = [];
-  const historyJsonl = join(historyDir(persistDir), sessionId, "session.jsonl");
-  messages = readJsonlMessages(historyJsonl);
-  if (messages.length === 0) {
-    messages = readSessionMessages(persistDir, sessionId);
-  }
-
-  if (messages.length === 0) {
-    return {
-      scores: {
-        efficiency: 0, quality: 0, pattern_detected: false, pattern_name: null,
-        total_tool_calls: 0, productive_calls: 0, wasted_calls: 0, verdict: "needs_improvement",
-      },
-      usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, totalTokens: 0, cost: 0, turns: 0 },
-      lessons: null,
-      workflowCode: null,
-      workflowName: null,
-      failureChains: [],
-      raw: "(no session transcript found)",
-    };
-  }
-
-  const transcript = formatTranscript(messages);
-  const failureChains = extractFailureChains(messages);
-  const failureChainsSection = formatFailureChains(failureChains);
-
-  const prompt = [
-    `# Session Evaluation\n`,
-    `## Agent: ${agentName}`,
-    `## Workflow Used: ${workflowUsed ?? "slow path (no workflow)"}`,
-    `## Session ID: ${sessionId}\n`,
-    failureChainsSection ? `${failureChainsSection}\n` : "",
-    `## Transcript\n${transcript}\n`,
-    `## Instructions\nEvaluate this session according to your criteria. Output scores, lessons, and workflow suggestion if applicable.`,
-  ].filter(Boolean).join("\n");
-
-  const evalSessionId = manager.run("evaluator", prompt);
-  const evalResult = await manager.waitFor(evalSessionId);
-
-  const responseText = evalResult?.lastAssistantText ?? "";
-  const usage = extractUsage(messages);
-  const evaluation = parseEvaluation(responseText, usage);
-  evaluation.failureChains = failureChains;
-
-  if (evaluation.lessons) {
-    const lessonsPath = join(knowledgeDir, "lessons.md");
-    const timestamp = new Date().toISOString().slice(0, 19).replace("T", " ");
-    const header = `\n## Session ${sessionId} (${timestamp})\n`;
-    const workflowNote = workflowUsed ? `Workflow: ${workflowUsed}\n` : "";
-
-    if (!existsSync(lessonsPath)) {
-      mkdirSync(dirname(lessonsPath), { recursive: true });
-      writeFileSync(lessonsPath, `# Lessons\n\nFeedback from evaluator sessions.\n${header}${workflowNote}\n${evaluation.lessons}\n`, "utf-8");
-    } else {
-      appendFileSync(lessonsPath, `${header}${workflowNote}\n${evaluation.lessons}\n`, "utf-8");
-    }
-  }
-
-  if (evaluation.workflowCode && evaluation.workflowName) {
-    const fileName = evaluation.workflowName.replace(/\s+/g, "-").toLowerCase() + ".ts";
-    const stagedDir = join(persistDir, "staged", "workflows");
-    mkdirSync(stagedDir, { recursive: true });
-    writeFileSync(join(stagedDir, fileName), evaluation.workflowCode, "utf-8");
-  }
-
-  const evalDir = join(persistDir, "evaluations");
-  mkdirSync(evalDir, { recursive: true });
-  const scoresPath = join(evalDir, `${sessionId}.json`);
-  writeFileSync(scoresPath, JSON.stringify({
-    agent: agentName,
-    ...evaluation.scores,
-    usage: evaluation.usage,
-    failureChains: evaluation.failureChains,
-  }, null, 2), "utf-8");
-
-  return evaluation;
 }
 
 // ── Maintenance function ───────────────────────────────────────────────

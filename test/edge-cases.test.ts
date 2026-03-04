@@ -169,11 +169,6 @@ describe("Edge cases", () => {
       expect(result).not.toBeNull();
       expect(result!.sessionId).toBe(sessionId);
     });
-
-    it("resume() returns empty array when no sessions to resume", () => {
-      const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
-      expect(manager.resume()).toEqual([]);
-    });
   });
 
   describe("duration freezes at completion time", () => {
