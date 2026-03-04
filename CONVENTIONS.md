@@ -18,6 +18,7 @@ agents/
 │   │   └── *.ts                # each file exports execute(ctx): WorkflowResult
 │   ├── workspace/              # scratch files, progress logs, working artifacts
 │   │   ├── .gitkeep
+│   │   ├── todo.md             # per-agent TODO + tracking list (optional)
 │   │   └── progress.md         # action log, last output (auto-updated)
 │   ├── cron.json               # cron schedule (only if agent has "cron" tool)
 │   └── periodic-tasks.md       # describes recurring responsibilities (optional)
@@ -162,6 +163,41 @@ Scratch directory for the agent's working files. Used for:
 - Session transcripts
 
 Convention: include a `.gitkeep` so the directory exists in git even when empty. Workspace files are generally committed but are ephemeral working artifacts, not core configuration.
+
+## workspace/todo.md
+
+Per-agent TODO list. Only for agents that make autonomous decisions and have ongoing
+concerns (bob, may, optimizer, coach). Task-executing agents (coder, qa, evaluator,
+master) don't need one — they receive work and finish it.
+
+Two sections:
+
+```markdown
+# TODO
+
+- [2026-03-04] Fix coder's sed line-number corruption — structural fix
+- [2026-03-04] Consolidate duplicate lessons in qa/lessons.md
+- [2026-03-02] Add test coverage for handoff module edge cases
+
+# Tracking
+
+- [2026-03-01] QA rubber-stamping tendency — monitor after workflow prompt changes
+- [2026-02-25] Cost per task trending up — watch next 10 evaluations
+```
+
+**TODO** — actionable work with a finish line. Ordered by priority (top = do first).
+An item is high-priority if: someone asked for it, it's blocking other work, or it's
+a quick win. Agents drain TODO top-down when they wake up.
+
+**Tracking** — ongoing observations with no finish line. Trends to watch, patterns to
+monitor, things that need attention over days or weeks. Check in periodically, note
+what you see. Items graduate to TODO when something concrete needs doing, or get
+removed when no longer relevant.
+
+Each entry has a `[date]` prefix for temporal context — stale items get noticed.
+
+**Who maintains it:** The agent itself, plus optimizer/bob when they discover work
+for that agent.
 
 ## cron.json
 
