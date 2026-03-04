@@ -1,0 +1,390 @@
+/**
+ * Dynamic agent loader.
+ *
+ * Scans agents/ for agent.json configs and registers them with SubagentManager.
+ * Tool presets map strings like "read-write", "exec", "subagents" to actual tool
+ * constructors. Adding a new agent = create agents/<name>/agent.json + restart
+ * (or send reload_agents command).
+ *
+ * Convention-based paths:
+ *   agents/<name>/knowledge/   → knowledgeDir
+ *   agents/<name>/workspace/   → workspace
+ *   agents/<name>/workflows/   → workflowDir (if exists)
+ *   agents/<name>/skills/      → skillsDirs
+ */
+
+import { readFileSync, existsSync, readdirSync } from "node:fs";
+import { resolve } from "node:path";
+import type { Model } from "@mariozechner/pi-ai";
+import type { AgentTool } from "@mariozechner/pi-agent-core";
+import {
+  SubagentManager,
+  createLinkedTools,
+  createExecTool,
+  createWorkflowTool,
+  stripCliPromptContent,
+} from "../src/index.js";
+import type { EventBus } from "./event-bus.js";
+
+// ── Agent config schema (agent.json) ────────────────────────────────────
+
+export interface AgentConfig {
+  name: string;
+  description: string;
+  domain: string;
+  model: string; // key into models map
+  tools: string[]; // preset names: "read-write", "exec", "subagents", etc.
+  systemPromptFiles?: string[]; // relative to agent dir
+  sharedKnowledge?: string[]; // filenames in agents/shared/
+  maxTurns?: number;
+  memoryLimit?: number;
+}
+
+// ── Loader options ──────────────────────────────────────────────────────
+
+export interface AgentLoaderOptions {
+  agentsRoot: string;
+  projectRoot: string;
+  persistDir: string;
+  models: Record<string, Model<any>>;
+  manager: SubagentManager;
+  bus: EventBus;
+  /** Called when a session starts — for wiring event routing. */
+  onSessionStart: (agentName: string, sessionId: string) => void;
+}
+
+// ── Track active session IDs for subagent/workflow tools ────────────────
+
+/** Per-agent session ID tracking. Updated by onSessionStart callback. */
+const agentSessionIds = new Map<string, string>();
+
+export function getAgentSessionId(name: string): string | undefined {
+  return agentSessionIds.get(name);
+}
+
+export function setAgentSessionId(name: string, sid: string): void {
+  agentSessionIds.set(name, sid);
+}
+
+// ── Tool factories ──────────────────────────────────────────────────────
+
+function buildTools(
+  config: AgentConfig,
+  opts: AgentLoaderOptions,
+): AgentTool[] {
+  const { projectRoot, persistDir, manager, bus } = opts;
+  const agentDir = resolve(opts.agentsRoot, config.name);
+  const tools: AgentTool[] = [];
+
+  // Standard deny patterns for all exec tools
+  const baseDenyPatterns = [
+    /^\s*find\s+\/\s/,
+    /^\s*ls\s+\/\s*$/,
+    /^\s*cd\s+\/(?!home\/hao\/may-agent)/,
+  ];
+
+  // File-write deny patterns for read-only exec
+  const writeDenyPatterns = [
+    /\bsed\s+-i\b/,
+    /\bcat\s*>[^&]/,
+    /<<\s*['"]?\w+['"]?/,
+    /\btee\s/,
+    /\b(echo|printf)\b.*>{1,2}[^&]/,
+    /\bmv\s|\bcp\s|\brm\s/,
+    /\bmkdir\b/,
+    /\btouch\b/,
+    /\bchmod\b|\bchown\b/,
+    /\bpython3?\s+-c\b.*open\(/,
+    /\bnode\s+-e\b/,
+    /\bgit\s+(reset|checkout)\b/,
+  ];
+
+  for (const preset of config.tools) {
+    switch (preset) {
+      case "read-write": {
+        const linked = createLinkedTools({
+          projectRoot,
+          maxFileLength: 20_000,
+        });
+        tools.push(linked.read, linked.write);
+        break;
+      }
+
+      case "read-only": {
+        const linked = createLinkedTools({
+          projectRoot,
+          maxFileLength: 20_000,
+        });
+        tools.push(linked.read);
+        break;
+      }
+
+      case "exec":
+        tools.push(createExecTool({
+          cwd: projectRoot,
+          echoCwd: true,
+          warnOutsideRoot: projectRoot,
+          denyPatterns: baseDenyPatterns,
+          denyMessage: "Do not explore outside the project root. Use relative paths.",
+        }));
+        break;
+
+      case "exec-readonly":
+        tools.push(createExecTool({
+          cwd: projectRoot,
+          echoCwd: true,
+          warnOutsideRoot: projectRoot,
+          denyPatterns: [...baseDenyPatterns, ...writeDenyPatterns],
+          denyMessage: 'You cannot write files. Delegate code changes to coder: subagents.delegate("coder", task)',
+        }));
+        break;
+
+      case "exec-master":
+        tools.push(createExecTool({
+          cwd: projectRoot,
+          echoCwd: true,
+          warnOutsideRoot: projectRoot,
+          maxOutputLength: 80_000,
+          stripForDenyCheck: stripCliPromptContent,
+          denyPatterns: [
+            ...baseDenyPatterns,
+            ...writeDenyPatterns,
+          ],
+          denyMessage: "You cannot write files directly. Use claude-code or gemini-cli to implement changes.",
+        }));
+        break;
+
+      case "subagents":
+        tools.push(manager.createTool({
+          getCallerSessionId: () => agentSessionIds.get(config.name),
+        }));
+        break;
+
+      case "workflow": {
+        const workflowDir = resolve(agentDir, "workflows");
+        tools.push(createWorkflowTool({
+          manager,
+          workflowDir,
+          persistDir,
+          callerSessionId: () => {
+            const sid = agentSessionIds.get(config.name);
+            if (!sid) throw new Error(`No active ${config.name} session`);
+            return sid;
+          },
+          onEvent: (event) => {
+            const label = `workflow:${config.name}`;
+            if (event.type === "workflow_start") {
+              bus.emit({ type: "info", message: `[${label}] Starting: ${event.workflow}` });
+            } else if (event.type === "workflow_done") {
+              bus.emit({ type: "info", message: `[${label}] Done: ${event.summary.slice(0, 100)}` });
+            } else if (event.type === "workflow_escalate") {
+              bus.emit({ type: "info", message: `[${label}] Escalated: ${event.reason}` });
+            } else if (event.type === "step_start") {
+              bus.emit({ type: "info", message: `[${label}] Step: ${event.step}` });
+              if (event.sessionId) opts.onSessionStart(event.step, event.sessionId);
+            }
+          },
+        }));
+        break;
+      }
+
+      default:
+        console.warn(`[loader] Unknown tool preset "${preset}" for agent "${config.name}" — skipping`);
+    }
+  }
+
+  return tools;
+}
+
+// ── Resolve system prompt files ─────────────────────────────────────────
+
+function resolvePromptFiles(config: AgentConfig, agentsRoot: string): string[] {
+  const agentDir = resolve(agentsRoot, config.name);
+  const files: string[] = [];
+
+  // Shared knowledge files first
+  if (config.sharedKnowledge) {
+    for (const filename of config.sharedKnowledge) {
+      files.push(resolve(agentsRoot, "shared", filename));
+    }
+  }
+
+  // Agent-specific system prompt files (relative to agent dir)
+  if (config.systemPromptFiles) {
+    for (const relPath of config.systemPromptFiles) {
+      files.push(resolve(agentDir, relPath));
+    }
+  }
+
+  return files;
+}
+
+// ── Validation ──────────────────────────────────────────────────────────
+
+const VALID_TOOL_PRESETS = new Set([
+  "read-write", "read-only", "exec", "exec-readonly", "exec-master",
+  "subagents", "workflow",
+]);
+
+const REQUIRED_FIELDS: (keyof AgentConfig)[] = ["name", "description", "domain", "model", "tools"];
+
+export interface ValidationError {
+  agent: string;
+  field: string;
+  message: string;
+}
+
+/**
+ * Validate an agent config. Returns errors (empty array = valid).
+ */
+export function validateAgentConfig(
+  config: AgentConfig,
+  models: Record<string, any>,
+  agentsRoot: string,
+): ValidationError[] {
+  const errors: ValidationError[] = [];
+  const name = config.name || "<unnamed>";
+
+  // Required fields
+  for (const field of REQUIRED_FIELDS) {
+    if (!config[field]) {
+      errors.push({ agent: name, field, message: `Missing required field "${field}"` });
+    }
+  }
+
+  // Model must exist in the models map
+  if (config.model && !models[config.model]) {
+    errors.push({ agent: name, field: "model", message: `Unknown model "${config.model}"` });
+  }
+
+  // Tool presets must be valid
+  if (config.tools) {
+    if (!Array.isArray(config.tools)) {
+      errors.push({ agent: name, field: "tools", message: `"tools" must be an array` });
+    } else {
+      for (const preset of config.tools) {
+        if (!VALID_TOOL_PRESETS.has(preset)) {
+          errors.push({ agent: name, field: "tools", message: `Unknown tool preset "${preset}"` });
+        }
+      }
+    }
+  }
+
+  // System prompt files should exist
+  if (config.systemPromptFiles) {
+    const agentDir = resolve(agentsRoot, config.name);
+    for (const relPath of config.systemPromptFiles) {
+      const absPath = resolve(agentDir, relPath);
+      if (!existsSync(absPath)) {
+        errors.push({ agent: name, field: "systemPromptFiles", message: `File not found: ${relPath}` });
+      }
+    }
+  }
+
+  // Shared knowledge files should exist
+  if (config.sharedKnowledge) {
+    for (const filename of config.sharedKnowledge) {
+      const absPath = resolve(agentsRoot, "shared", filename);
+      if (!existsSync(absPath)) {
+        errors.push({ agent: name, field: "sharedKnowledge", message: `Shared file not found: ${filename}` });
+      }
+    }
+  }
+
+  return errors;
+}
+
+// ── Load and register agents ────────────────────────────────────────────
+
+function loadAgentConfig(agentDir: string): AgentConfig | null {
+  const configPath = resolve(agentDir, "agent.json");
+  if (!existsSync(configPath)) return null;
+
+  try {
+    const raw = readFileSync(configPath, "utf-8");
+    return JSON.parse(raw) as AgentConfig;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(`[loader] Failed to parse ${configPath}: ${msg}`);
+    return null;
+  }
+}
+
+/**
+ * Scan agents/ directory, load and validate agent.json configs, register with manager.
+ * Returns names of agents that were loaded.
+ * Throws on validation errors (fail-fast prevents running with broken config).
+ */
+export function loadAgents(opts: AgentLoaderOptions): string[] {
+  const { agentsRoot, projectRoot, models, manager } = opts;
+  const loaded: string[] = [];
+  const allErrors: ValidationError[] = [];
+
+  const entries = readdirSync(agentsRoot, { withFileTypes: true });
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    if (entry.name === "shared") continue; // shared/ is not an agent
+
+    const agentDir = resolve(agentsRoot, entry.name);
+    const config = loadAgentConfig(agentDir);
+    if (!config) continue;
+
+    // Validate before registering
+    const errors = validateAgentConfig(config, models, agentsRoot);
+    if (errors.length > 0) {
+      allErrors.push(...errors);
+      continue;
+    }
+
+    // Already registered? Skip (for reload scenarios)
+    if (manager.hasAgent(config.name)) continue;
+
+    const model = models[config.model];
+    const knowledgeDir = resolve(agentDir, "knowledge");
+    const workspace = resolve(agentDir, "workspace");
+    const workflowDir = resolve(agentDir, "workflows");
+
+    manager.register({
+      name: config.name,
+      description: config.description,
+      domain: config.domain,
+      model,
+      tools: buildTools(config, opts),
+      systemPromptFiles: resolvePromptFiles(config, agentsRoot),
+      knowledgeDir: existsSync(knowledgeDir) ? knowledgeDir : undefined,
+      workspace: existsSync(workspace) ? workspace : undefined,
+      workflowDir: existsSync(workflowDir) ? workflowDir : undefined,
+      projectRoot,
+      apiKey: "not-needed",
+      maxTurns: config.maxTurns,
+      memoryLimit: config.memoryLimit,
+    });
+
+    loaded.push(config.name);
+  }
+
+  // Fail-fast: if any agent configs have errors, report them all and throw
+  if (allErrors.length > 0) {
+    const report = allErrors
+      .map((e) => `  ${e.agent}.${e.field}: ${e.message}`)
+      .join("\n");
+    throw new Error(`Agent config validation failed:\n${report}`);
+  }
+
+  return loaded;
+}
+
+/**
+ * Reload: scan for new agent.json files and register any new agents.
+ * Does NOT re-register existing agents (their sessions would break).
+ * Returns { loaded, errors } — errors are reported but don't crash.
+ */
+export function reloadAgents(opts: AgentLoaderOptions): { loaded: string[]; errors: string[] } {
+  try {
+    const loaded = loadAgents(opts);
+    return { loaded, errors: [] };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { loaded: [], errors: [msg] };
+  }
+}
