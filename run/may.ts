@@ -2,42 +2,34 @@ import { createInterface } from "node:readline";
 import { fileURLToPath } from "node:url";
 import { resolve, dirname } from "node:path";
 import { getModel } from "@mariozechner/pi-ai";
-import {
-  SubagentManager,
-  createLinkedTools,
-  createExecTool,
-  createWorkflowTool,
-  stripCliPromptContent,
-} from "../src/index.js";
+import { SubagentManager } from "../src/index.js";
 import { EventBus } from "./event-bus.js";
 import { attachConsoleUI } from "./console-ui.js";
 import { attachSocketUI } from "./socket-ui.js";
+import { loadAgents, reloadAgents, setAgentSessionId, type AgentLoaderOptions } from "./agent-loader.js";
 
 const PROJECT_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const AGENTS_ROOT = resolve(PROJECT_ROOT, "agents");
 const PERSIST_DIR = resolve(PROJECT_ROOT, process.env.STATE_DIR || ".state");
-const SHARED_KNOWLEDGE = resolve(AGENTS_ROOT, "shared/system-design.md");
-const SHARED_TEAM = resolve(AGENTS_ROOT, "shared/team.md");
-const SHARED_PHILOSOPHY = resolve(AGENTS_ROOT, "shared/philosophy.md");
 
-// ── Model ──────────────────────────────────────────────────────────────
+// ── Models ──────────────────────────────────────────────────────────────
 
-const opus = {
-  ...getModel("anthropic", "claude-sonnet-4-20250514"),
-  id: "claude-opus-4.6",
-  baseUrl: "http://localhost:4000",
-};
-
-const gpt52 = {
-  ...getModel("openai", "gpt-5.2"),
-  baseUrl: "http://localhost:4000",
-};
-
-const gemini3pro = {
-  ...getModel("openai", "gpt-4o"),
-  api: "openai-completions" as const,
-  id: "gemini-3-pro-preview",
-  baseUrl: "http://localhost:4000",
+const models: Record<string, any> = {
+  opus: {
+    ...getModel("anthropic", "claude-sonnet-4-20250514"),
+    id: "claude-opus-4.6",
+    baseUrl: "http://localhost:4000",
+  },
+  gpt52: {
+    ...getModel("openai", "gpt-5.2"),
+    baseUrl: "http://localhost:4000",
+  },
+  gemini3pro: {
+    ...getModel("openai", "gpt-4o"),
+    api: "openai-completions" as const,
+    id: "gemini-3-pro-preview",
+    baseUrl: "http://localhost:4000",
+  },
 };
 
 // ── Infrastructure ─────────────────────────────────────────────────────
@@ -49,300 +41,26 @@ const manager = new SubagentManager({
   persistDir: PERSIST_DIR,
   onSessionStart: (agentName, sessionId) => {
     attachAgentEvents(agentName, sessionId);
-    if (agentName === "optimizer") optimizerSid = sessionId;
-    if (agentName === "bob") bobSid = sessionId;
+    setAgentSessionId(agentName, sessionId);
   },
 });
 
-/**
- * Create linked read+write tools with shared truncation tracking.
- * When read truncates a file, write warns if the agent writes back
- * significantly shorter content (catching data loss).
- */
-function projectTools() {
-  return createLinkedTools({
-    projectRoot: PROJECT_ROOT,
-    maxFileLength: 20_000,
-  });
-}
+// ── Load agents from agents/*/agent.json ────────────────────────────────
 
-function projectExec() {
-  return createExecTool({
-    cwd: PROJECT_ROOT,
-    echoCwd: true,
-    warnOutsideRoot: PROJECT_ROOT,
-    denyPatterns: [
-      /^\s*find\s+\/\s/,      // find / ...
-      /^\s*ls\s+\/\s*$/,      // ls /
-      /^\s*cd\s+\/(?!home\/hao\/may-agent)/, // cd /anything except our project
-    ],
-    denyMessage: "Do not explore outside the project root. Use relative paths.",
-  });
-}
-
-// Read-only exec for May — blocks file-writing commands
-function readOnlyExec() {
-  return createExecTool({
-    cwd: PROJECT_ROOT,
-    echoCwd: true,
-    warnOutsideRoot: PROJECT_ROOT,
-    denyPatterns: [
-      /^\s*find\s+\/\s/,
-      /^\s*ls\s+\/\s*$/,
-      /^\s*cd\s+\/(?!home\/hao\/may-agent)/,
-      // Block file-writing commands
-      /\bsed\s+-i\b/,                         // sed -i (in-place edit)
-      /\bcat\s*>[^&]/,                          // cat > file (but not cat >&)
-      /<<\s*['"]?\w+['"]?/,                     // heredoc (cat << EOF, cat <<'EOF')
-      /\btee\s/,                                // tee file
-      /\b(echo|printf)\b.*>{1,2}[^&]/,        // echo > file or echo >> file
-      /\bmv\s|\bcp\s|\brm\s/,                  // mv, cp, rm (followed by space)
-      /\bmkdir\b/,                             // mkdir
-      /\btouch\b/,                             // touch
-      /\bchmod\b|\bchown\b/,                   // chmod, chown
-      /\bpython3?\s+-c\b.*open\(/,             // python -c "...open(..."
-      /\bnode\s+-e\b/,                          // node -e
-      /\bgit\s+(reset|checkout)\b/,            // git destructive operations (add/commit allowed)
-    ],
-    denyMessage: "You cannot write files. Delegate code changes to coder: subagents.delegate(\"coder\", task)",
-  });
-}
-
-// ── Register agents ────────────────────────────────────────────────────
-
-// Each agent gets its own linked tools (separate truncation trackers per agent)
-const coderTools = projectTools();
-manager.register({
-  name: "coder",
-  description: "Writes code, runs tests — does not commit",
-  domain: "may-agent implementation",
-  systemPromptFiles: [
-    resolve(AGENTS_ROOT, "coder/knowledge/domain.md"),
-    resolve(AGENTS_ROOT, "coder/knowledge/codebase.md"),
-    resolve(AGENTS_ROOT, "coder/tools/INDEX.md"),
-  ],
-  knowledgeDir: resolve(AGENTS_ROOT, "coder/knowledge"),
-  workspace: resolve(AGENTS_ROOT, "coder/workspace"),
+const loaderOpts: AgentLoaderOptions = {
+  agentsRoot: AGENTS_ROOT,
   projectRoot: PROJECT_ROOT,
-  model: opus,
-  tools: [coderTools.read, coderTools.write, projectExec()],
-  apiKey: "not-needed",
-  maxTurns: 50,
-});
-
-const qaTools = projectTools();
-manager.register({
-  name: "qa",
-  description: "Reviews code changes for correctness, quality, and requirement compliance",
-  domain: "code quality review",
-  systemPromptFiles: [
-    resolve(AGENTS_ROOT, "qa/knowledge/domain.md"),
-    resolve(AGENTS_ROOT, "qa/tools/INDEX.md"),
-  ],
-  knowledgeDir: resolve(AGENTS_ROOT, "qa/knowledge"),
-  workspace: resolve(AGENTS_ROOT, "qa/workspace"),
-  projectRoot: PROJECT_ROOT,
-  model: gpt52,
-  tools: [qaTools.read, qaTools.write, projectExec()],
-  apiKey: "not-needed",
-  maxTurns: 30,
-});
-
-const evaluatorTools = projectTools();
-manager.register({
-  name: "evaluator",
-  description: "Evaluates completed task trees — scores each agent by responsibility",
-  domain: "agent performance evaluation",
-  systemPromptFiles: [
-    SHARED_KNOWLEDGE,
-    SHARED_TEAM,
-    resolve(AGENTS_ROOT, "evaluator/knowledge/domain.md"),
-  ],
-  knowledgeDir: resolve(AGENTS_ROOT, "evaluator/knowledge"),
-  workspace: resolve(AGENTS_ROOT, "evaluator/workspace"),
-  projectRoot: PROJECT_ROOT,
-  model: gpt52,
-  tools: [evaluatorTools.read, evaluatorTools.write, projectExec()],
-  apiKey: "not-needed",
-  maxTurns: 20,
-  memoryLimit: 5,
-});
-
-const optimizerTools = projectTools();
-let optimizerSid: string | undefined;
-let bobSid: string | undefined;
-
-const optimizerWorkflowTool = createWorkflowTool({
-  manager,
-  workflowDir: resolve(AGENTS_ROOT, "optimizer/workflows"),
   persistDir: PERSIST_DIR,
-  callerSessionId: () => {
-    if (!optimizerSid) throw new Error("No active optimizer session");
-    return optimizerSid;
-  },
-  onEvent: (event) => {
-    if (event.type === "workflow_start") {
-      bus.emit({ type: "info", message: `[workflow:optimizer] Starting: ${event.workflow}` });
-    } else if (event.type === "workflow_done") {
-      bus.emit({ type: "info", message: `[workflow:optimizer] Done: ${event.summary.slice(0, 100)}` });
-    } else if (event.type === "workflow_escalate") {
-      bus.emit({ type: "info", message: `[workflow:optimizer] Escalated: ${event.reason}` });
-    } else if (event.type === "step_start") {
-      bus.emit({ type: "info", message: `[workflow:optimizer] Step: ${event.step}` });
-      if (event.sessionId) attachAgentEvents(event.step, event.sessionId);
-    }
-  },
-});
-
-manager.register({
-  name: "optimizer",
-  description: "Analyzes agent performance data, proposes and implements improvements to the agent system",
-  domain: "agent system optimization",
-  systemPromptFiles: [
-    SHARED_KNOWLEDGE,
-    SHARED_TEAM,
-    resolve(AGENTS_ROOT, "optimizer/knowledge/domain.md"),
-    resolve(AGENTS_ROOT, "optimizer/knowledge/codebase.md"),
-    resolve(AGENTS_ROOT, "optimizer/tools/INDEX.md"),
-  ],
-  knowledgeDir: resolve(AGENTS_ROOT, "optimizer/knowledge"),
-  workspace: resolve(AGENTS_ROOT, "optimizer/workspace"),
-  workflowDir: resolve(AGENTS_ROOT, "optimizer/workflows"),
-  projectRoot: PROJECT_ROOT,
-  model: opus,
-  tools: [
-    optimizerTools.read,
-    optimizerTools.write,
-    projectExec(),
-    manager.createTool({
-      getCallerSessionId: () => optimizerSid,
-    }),
-    optimizerWorkflowTool,
-  ],
-  apiKey: "not-needed",
-  maxTurns: 40,
-});
-
-const bobTools = projectTools();
-manager.register({
-  name: "bob",
-  description: "Design philosopher — learns human intent, reviews team work against philosophy, orchestrates meta-loop",
-  domain: "design philosophy and meta-loop orchestration",
-  systemPromptFiles: [
-    SHARED_KNOWLEDGE,
-    SHARED_TEAM,
-    SHARED_PHILOSOPHY,
-    resolve(AGENTS_ROOT, "bob/knowledge/domain.md"),
-    resolve(AGENTS_ROOT, "shared/meta-loop.md"),
-    resolve(AGENTS_ROOT, "bob/tools/INDEX.md"),
-  ],
-  knowledgeDir: resolve(AGENTS_ROOT, "bob/knowledge"),
-  workspace: resolve(AGENTS_ROOT, "bob/workspace"),
-  projectRoot: PROJECT_ROOT,
-  model: gemini3pro,
-  tools: [
-    bobTools.read,
-    bobTools.write,
-    projectExec(),
-    manager.createTool({
-      getCallerSessionId: () => bobSid,
-    }),
-  ],
-  apiKey: "not-needed",
-  maxTurns: 50,
-});
-
-// Read-only exec for master — blocks direct file writes, forces use of claude-code/gemini-cli
-function masterExec() {
-  return createExecTool({
-    cwd: PROJECT_ROOT,
-    echoCwd: true,
-    warnOutsideRoot: PROJECT_ROOT,
-    maxOutputLength: 80_000, // CLI agents produce long output
-    // Strip prompt content from CLI agent invocations before applying deny patterns.
-    // Without this, a prompt like `claude -p "echo foo > bar"` would match the
-    // echo/redirect deny pattern even though it's just text passed to a sub-agent.
-    stripForDenyCheck: stripCliPromptContent,
-    denyPatterns: [
-      /^\s*find\s+\/\s/,
-      /^\s*ls\s+\/\s*$/,
-      /^\s*cd\s+\/(?!home\/hao\/may-agent)/,
-      // Block direct file-writing commands — must use CLI agents
-      /\bsed\s+-i\b/,
-      /\bcat\s*>[^&]/,
-      /<<\s*['"]?\w+['"]?/,
-      /\btee\s/,
-      /\b(echo|printf)\b.*>{1,2}[^&]/,
-      /\bchmod\b|\bchown\b/,
-      /\bpython3?\s+-c\b.*open\(/,
-      /\bnode\s+-e\b/,
-      /\bgit\s+(reset|checkout)\b/,
-    ],
-    denyMessage: "You cannot write files directly. Use claude-code or gemini-cli to implement changes.",
-  });
-}
-
-const masterReadTools = projectTools();
-manager.register({
-  name: "master",
-  description: "Senior engineer who leverages claude-code and gemini-cli for challenging tasks",
-  domain: "complex implementation via external coding agents",
-  systemPromptFiles: [
-    resolve(AGENTS_ROOT, "master/knowledge/domain.md"),
-    resolve(AGENTS_ROOT, "master/tools/INDEX.md"),
-  ],
-  knowledgeDir: resolve(AGENTS_ROOT, "master/knowledge"),
-  workspace: resolve(AGENTS_ROOT, "master/workspace"),
-  projectRoot: PROJECT_ROOT,
-  model: opus,
-  tools: [masterReadTools.read, masterExec()],
-  apiKey: "not-needed",
-  maxTurns: 30,
-});
-
-let sid: string;
-
-const maySubagentTool = manager.createTool({
-  getCallerSessionId: () => sid,
-});
-
-const mayWorkflowTool = createWorkflowTool({
+  models,
   manager,
-  workflowDir: resolve(AGENTS_ROOT, "may/workflows"),
-  persistDir: PERSIST_DIR,
-  callerSessionId: () => sid,
-  onEvent: (event) => {
-    if (event.type === "workflow_start") {
-      bus.emit({ type: "info", message: `[workflow] Starting: ${event.workflow}` });
-    } else if (event.type === "workflow_done") {
-      bus.emit({ type: "info", message: `[workflow] Done: ${event.summary.slice(0, 100)}` });
-    } else if (event.type === "workflow_escalate") {
-      bus.emit({ type: "info", message: `[workflow] Escalated: ${event.reason}` });
-    } else if (event.type === "step_start") {
-      bus.emit({ type: "info", message: `[workflow] Step: ${event.step}` });
-      if (event.sessionId) attachAgentEvents(event.step, event.sessionId);
-    }
+  bus,
+  onSessionStart: (agentName, sessionId) => {
+    attachAgentEvents(agentName, sessionId);
   },
-});
+};
 
-manager.register({
-  name: "may",
-  description: "Supervisor — delegates to coder, reviews results",
-  domain: "may-agent coordination",
-  systemPromptFiles: [
-    SHARED_KNOWLEDGE,
-    SHARED_TEAM,
-    resolve(AGENTS_ROOT, "may/knowledge/domain.md"),
-    resolve(AGENTS_ROOT, "may/tools/INDEX.md"),
-  ],
-  knowledgeDir: resolve(AGENTS_ROOT, "may/knowledge"),
-  workspace: resolve(AGENTS_ROOT, "may/workspace"),
-  workflowDir: resolve(AGENTS_ROOT, "may/workflows"),
-  projectRoot: PROJECT_ROOT,
-  model: opus,
-  tools: [readOnlyExec(), maySubagentTool, mayWorkflowTool],
-  apiKey: "not-needed",
-});
+const loaded = loadAgents(loaderOpts);
+bus.emit({ type: "info", message: `Loaded ${loaded.length} agent(s): ${loaded.join(", ")}` });
 
 // ── Event routing ──────────────────────────────────────────────────────
 
@@ -371,9 +89,9 @@ function attachAgentEvents(label: string, sessionId: string): void {
   });
 }
 
-// ── Post-task evaluation ───────────────────────────────────────────────
-
 // ── Socket commands ────────────────────────────────────────────────────
+
+let sid: string;
 
 bus.onCommand((cmd) => {
   switch (cmd.type) {
@@ -425,6 +143,17 @@ bus.onCommand((cmd) => {
       bus.emit({ type: "info", message: `[socket] Run @${cmd.agent}: "${cmd.message.slice(0, 80)}"` });
       lastUserInput = Date.now();
       runDirect(cmd.agent, cmd.message);
+      break;
+    }
+    case "reload_agents": {
+      const result = reloadAgents(loaderOpts);
+      if (result.errors.length > 0) {
+        bus.emit({ type: "info", message: `[reload] Validation errors:\n${result.errors.join("\n")}` });
+      } else if (result.loaded.length > 0) {
+        bus.emit({ type: "info", message: `[reload] Loaded ${result.loaded.length} new agent(s): ${result.loaded.join(", ")}` });
+      } else {
+        bus.emit({ type: "info", message: "[reload] No new agents found" });
+      }
       break;
     }
   }
@@ -612,6 +341,18 @@ if (process.stdin.isTTY) {
     }
     if (input === "cancel") {
       manager.cancel(sid);
+      prompt();
+      continue;
+    }
+    if (input === "reload") {
+      const result = reloadAgents(loaderOpts);
+      if (result.errors.length > 0) {
+        bus.emit({ type: "info", message: `[reload] Validation errors:\n${result.errors.join("\n")}` });
+      } else if (result.loaded.length > 0) {
+        bus.emit({ type: "info", message: `[reload] Loaded ${result.loaded.length} new agent(s): ${result.loaded.join(", ")}` });
+      } else {
+        bus.emit({ type: "info", message: "[reload] No new agents found" });
+      }
       prompt();
       continue;
     }

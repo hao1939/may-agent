@@ -29,7 +29,8 @@ export type RunnerCommand =
   | { type: "close" }
   | { type: "status" }
   | { type: "input"; message: string }
-  | { type: "run"; agent: string; message: string };
+  | { type: "run"; agent: string; message: string }
+  | { type: "reload_agents" };
 
 // ── Event Bus ──────────────────────────────────────────────────────────
 
