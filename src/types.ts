@@ -89,6 +89,7 @@ export interface SubagentDefinition {
    * Use for orchestrator agents that maintain context across multiple tasks.
    */
   persistent?: boolean;
+
 }
 
 /** Runtime info about a session. */
