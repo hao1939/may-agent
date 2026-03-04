@@ -379,6 +379,61 @@ describe("createTool()", () => {
     });
   });
 
+  describe("delegateDeny", () => {
+    it("blocks delegate to denied agent with hint", async () => {
+      const tool = manager.createTool({
+        delegateDeny: { agents: ["researcher"], hint: "Use workflow instead." },
+      });
+      const result = await tool.execute("tc1", {
+        action: "delegate" as const,
+        agent: "researcher",
+        task: "find papers",
+      });
+      const parsed = JSON.parse(result.content[0].type === "text" ? result.content[0].text : "");
+      expect(parsed.error).toContain("Cannot delegate directly");
+      expect(parsed.error).toContain("researcher");
+      expect(parsed.error).toContain("Use workflow instead.");
+    });
+
+    it("blocks run to denied agent with hint", async () => {
+      const tool = manager.createTool({
+        delegateDeny: { agents: ["researcher"], hint: "Use workflow instead." },
+      });
+      const result = await tool.execute("tc1", {
+        action: "run" as const,
+        agent: "researcher",
+        task: "find papers",
+      });
+      const parsed = JSON.parse(result.content[0].type === "text" ? result.content[0].text : "");
+      expect(parsed.error).toContain("Cannot delegate directly");
+      expect(parsed.error).toContain("researcher");
+    });
+
+    it("allows delegate to non-denied agent", async () => {
+      const tool = manager.createTool({
+        delegateDeny: { agents: ["researcher"], hint: "Use workflow instead." },
+      });
+      const result = await tool.execute("tc1", {
+        action: "run" as const,
+        agent: "writer",
+        task: "write something",
+      });
+      const parsed = JSON.parse(result.content[0].type === "text" ? result.content[0].text : "");
+      expect(parsed.sessionId).toBeDefined();
+      expect(parsed.error).toBeUndefined();
+      await manager.waitFor(parsed.sessionId);
+    });
+
+    it("list still works with delegateDeny", async () => {
+      const tool = manager.createTool({
+        delegateDeny: { agents: ["researcher"], hint: "Use workflow instead." },
+      });
+      const result = await tool.execute("tc1", { action: "list" as const });
+      const parsed = JSON.parse(result.content[0].type === "text" ? result.content[0].text : "");
+      expect(parsed).toHaveLength(2);
+    });
+  });
+
   describe("tool output format", () => {
     it("all actions return content with text type", async () => {
       const tool = manager.createTool();
