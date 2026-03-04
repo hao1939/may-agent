@@ -2,7 +2,7 @@ import { createInterface } from "node:readline";
 import { fileURLToPath } from "node:url";
 import { resolve, dirname } from "node:path";
 import { getModel } from "@mariozechner/pi-ai";
-import { SubagentManager } from "../src/index.js";
+import { SubagentManager, evaluateTask } from "../src/index.js";
 import { EventBus } from "./event-bus.js";
 import { attachConsoleUI } from "./console-ui.js";
 import { attachSocketUI } from "./socket-ui.js";
@@ -32,6 +32,8 @@ const models: Record<string, any> = {
   },
 };
 
+let sid: string;
+
 // ── Infrastructure ─────────────────────────────────────────────────────
 
 const bus = new EventBus();
@@ -46,6 +48,30 @@ const manager = new SubagentManager({
   onSessionComplete: (info) => {
     // Run cleanup for tools that track per-session resources (background_exec, socket_watch)
     runAgentCleanup(info.agent);
+
+    // Auto-evaluate completed task trees
+    // Only evaluate child sessions of the interface agent (May's children)
+    // Skip meta agents (evaluator, optimizer, bob) to avoid eval loops
+    if (info.parentSessionId && info.parentSessionId === sid) {
+      // Debounce: wait a moment for sibling sessions to complete
+      setTimeout(async () => {
+        try {
+          const result = await evaluateTask({
+            manager,
+            persistDir: PERSIST_DIR,
+            parentSessionId: info.parentSessionId!,
+          });
+          if (result) {
+            const agentNames = Object.keys(result.agents).join(", ");
+            const verdict = result.overall.verdict;
+            bus.emit({ type: "info", message: `[eval] Auto-evaluated ${result.sessionIds.length} session(s) (${agentNames}): ${verdict}` });
+          }
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          bus.emit({ type: "info", message: `[eval] Auto-evaluation failed: ${msg}` });
+        }
+      }, 3000); // 3 second debounce for sibling sessions
+    }
   },
 });
 
@@ -91,8 +117,6 @@ function attachAgentEvents(label: string, sessionId: string): void {
 }
 
 // ── Socket commands ────────────────────────────────────────────────────
-
-let sid: string;
 
 bus.onCommand((cmd) => {
   switch (cmd.type) {
