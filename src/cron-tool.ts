@@ -134,6 +134,7 @@ export function createCronTool(opts: CronToolOptions): AgentTool<typeof CronPara
 
         case "update": {
           if (!input.name) return textResult("Error: 'name' is required for update");
+          if (input.name.length > 50) return textResult("Error: name must be <= 50 characters");
           const entries = readEntries();
           const entry = entries.find(e => e.name === input.name);
           if (!entry) return textResult(`Error: job "${input.name}" not found`);

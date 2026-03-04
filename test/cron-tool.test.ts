@@ -135,6 +135,12 @@ describe("cron tool", () => {
     expect(out).toContain("not found");
   });
 
+  it("update rejects name longer than 50 chars", async () => {
+    const longName = "a".repeat(51);
+    const out = await exec(ctx.tool, { action: "update", name: longName, intervalMs: 60000 });
+    expect(out).toContain("Error: name must be <= 50 characters");
+  });
+
   it("calls onConfigChange on every write", async () => {
     expect(ctx.reloadCount).toBe(0);
     await exec(ctx.tool, { action: "add", name: "a", intervalMs: 10000, message: "m" });
