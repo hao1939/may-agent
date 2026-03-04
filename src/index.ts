@@ -49,6 +49,10 @@ export {
   workflowRunDir,
   workflowRunPath,
 } from "./persistence.js";
+export { createBackgroundExecTool } from "./background-exec.js";
+export type { BackgroundExecToolOptions } from "./background-exec.js";
+export { createSocketWatchTool } from "./socket-watch.js";
+export type { SocketWatchToolOptions } from "./socket-watch.js";
 export type {
   SubagentDefinition,
   SessionInfo,

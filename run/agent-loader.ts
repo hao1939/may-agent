@@ -22,6 +22,8 @@ import {
   createLinkedTools,
   createExecTool,
   createWorkflowTool,
+  createBackgroundExecTool,
+  createSocketWatchTool,
   stripCliPromptContent,
 } from "../src/index.js";
 import type { EventBus } from "./event-bus.js";
@@ -67,6 +69,29 @@ export function setAgentSessionId(name: string, sid: string): void {
 }
 
 // ── Tool factories ──────────────────────────────────────────────────────
+
+/** Per-agent cleanup functions. Called when agent sessions end. */
+const agentCleanups = new Map<string, Array<() => void>>();
+
+/** Register a cleanup function for an agent. */
+function addCleanup(agentName: string, fn: () => void): void {
+  const existing = agentCleanups.get(agentName);
+  if (existing) {
+    existing.push(fn);
+  } else {
+    agentCleanups.set(agentName, [fn]);
+  }
+}
+
+/** Run all cleanup functions for an agent and clear the list. */
+export function runAgentCleanup(agentName: string): void {
+  const fns = agentCleanups.get(agentName);
+  if (!fns) return;
+  for (const fn of fns) {
+    try { fn(); } catch { /* best-effort */ }
+  }
+  agentCleanups.delete(agentName);
+}
 
 function buildTools(
   config: AgentConfig,
@@ -188,6 +213,31 @@ function buildTools(
         break;
       }
 
+      case "background-exec": {
+        const bgExec = createBackgroundExecTool({
+          cwd: projectRoot,
+          denyPatterns: baseDenyPatterns,
+          denyMessage: "Do not explore outside the project root. Use relative paths.",
+        });
+        tools.push(bgExec.tool);
+        addCleanup(config.name, bgExec.cleanup);
+        break;
+      }
+
+      case "socket-watch": {
+        const sw = createSocketWatchTool({
+          manager,
+          getSessionId: () => {
+            const sid = agentSessionIds.get(config.name);
+            if (!sid) throw new Error(`No active ${config.name} session`);
+            return sid;
+          },
+        });
+        tools.push(sw.tool);
+        addCleanup(config.name, sw.cleanup);
+        break;
+      }
+
       default:
         console.warn(`[loader] Unknown tool preset "${preset}" for agent "${config.name}" — skipping`);
     }
@@ -223,7 +273,7 @@ function resolvePromptFiles(config: AgentConfig, agentsRoot: string): string[] {
 
 const VALID_TOOL_PRESETS = new Set([
   "read-write", "read-only", "exec", "exec-readonly", "exec-master",
-  "subagents", "workflow",
+  "subagents", "workflow", "background-exec", "socket-watch",
 ]);
 
 const REQUIRED_FIELDS: (keyof AgentConfig)[] = ["name", "description", "domain", "model", "tools"];

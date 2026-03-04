@@ -1285,6 +1285,55 @@ export class SubagentManager {
   }
 
   /**
+   * Inject a non-interrupting message into a session.
+   *
+   * Unlike steer(), this never interrupts mid-turn — the message is queued
+   * via agent.followUp() and delivered at the next natural turn boundary.
+   *
+   * If the session is idle (persistent), wakes it: queues the message,
+   * calls continue(), and wires handleCompletion. Does NOT wait for
+   * processing to finish — returns immediately after queueing.
+   *
+   * Use for automated event injection (socket_watch, coaching events, etc.)
+   * where the caller doesn't need to wait for a response.
+   *
+   * Throws if session not found or in a terminal state.
+   */
+  followUp(sessionId: string, message: string): void {
+    const session = this.activeSessions.get(sessionId);
+    if (!session) {
+      throw new Error(`Session "${sessionId}" not found`);
+    }
+    if (session.status !== "running" && session.status !== "idle") {
+      throw new Error(`Session "${sessionId}" is in terminal state: ${session.status}`);
+    }
+
+    const msg: AgentMessage = {
+      role: "user",
+      content: [{ type: "text", text: message }],
+      timestamp: Date.now(),
+    };
+
+    session.agent.followUp(msg);
+    appendSessionMessage(this.registry.persistDir, sessionId, msg);
+
+    // If idle persistent session, wake it up
+    if (session.status === "idle" && session.persistent) {
+      session.status = "running";
+      this.registry.updateSessionStatus(sessionId, "running");
+
+      session.promise = session.agent.continue()
+        .then(() => {
+          this.handleCompletion(session);
+        })
+        .catch((err) => {
+          session.error = err?.message ?? String(err);
+          this.handleCompletion(session);
+        });
+    }
+  }
+
+  /**
    * Send a message to a persistent (long-lived) session.
    *
    * If the session is "idle" (finished processing, waiting for input),
