@@ -1,0 +1,14 @@
+{
+  "name": "coach",
+  "description": "Supervises and trains agents through process-isolated coaching sessions with real exercises",
+  "domain": "agent coaching and training",
+  "model": "opus",
+  "tools": ["read-write", "exec-readonly", "background-exec", "socket-watch"],
+  "systemPromptFiles": [
+    "knowledge/domain.md",
+    "tools/INDEX.md",
+    "../shared/team.md"
+  ],
+  "maxTurns": 100,
+  "memoryLimit": 10
+}
