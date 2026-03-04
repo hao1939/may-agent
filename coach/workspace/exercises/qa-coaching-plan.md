@@ -113,7 +113,7 @@ checks the EXACT count, and it will get 3 instead of 5.
 2. Kill the coachee process
 3. Disconnect from the socket
 4. Write the coaching report to `agents/coach/workspace/sessions/qa-<timestamp>.md`
-5. Update `agents/coach/workspace/findings.md`
+5. Update `agents/coach/workspace/journal.md`
 
 ## Expected Findings
 

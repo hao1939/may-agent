@@ -7,12 +7,12 @@ Read files from the project. Use to:
 - Read agent memory (`.state/memory/<agent>.jsonl`)
 - Read agent knowledge (`agents/<name>/knowledge/domain.md`)
 - Read shared docs (`agents/shared/team.md`, `agents/shared/system-design.md`)
-- Read past coaching findings (`agents/coach/workspace/findings.md`)
+- Read past coaching findings (`agents/coach/workspace/journal.md`)
 
 ## write
 Write files. Scoped to coaching workspace:
 - Coaching reports: `agents/coach/workspace/sessions/<agent>-<timestamp>.md`
-- Accumulated findings: `agents/coach/workspace/findings.md`
+- Accumulated findings: `agents/coach/workspace/journal.md`
 - Exercise definitions: `agents/coach/workspace/exercises/<name>.md`
 
 Do NOT write to agent knowledge files, source code, or configuration.

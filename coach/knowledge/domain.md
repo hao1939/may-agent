@@ -82,7 +82,7 @@ How the agent handles edge cases:
 Re-run exercises from past coaching sessions:
 
 ```
-read("agents/coach/workspace/findings.md")
+read("agents/coach/workspace/journal.md")
 read("agents/coach/workspace/exercises/<exercise>.md")
 ```
 
@@ -226,7 +226,7 @@ Write to `agents/coach/workspace/sessions/<agent>-<timestamp>.md`:
 
 ### Update Accumulated Findings
 
-Append to `agents/coach/workspace/findings.md`:
+Append to `agents/coach/workspace/journal.md`:
 
 ```markdown
 ## <date> — <agent>

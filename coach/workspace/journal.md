@@ -1,4 +1,4 @@
-# Coaching Findings
+# Journal
 
 Accumulated findings from coaching sessions. Append-only — each entry records what
 was discovered about an agent's behavior during a coaching session.
@@ -21,3 +21,14 @@ was discovered about an agent's behavior during a coaching session.
 - Verification discipline remains the #1 strength — tsc + vitest always requested in implementation prompts
 - Recommendation: System prompt should discourage multi-call exploration; encourage single combined prompts (read → implement → verify)
 - Recommendation: Default timeout should be higher (180s) to avoid wasted timeout failures on claude_code startup
+
+## 2026-03-04 — qa (anti-rubber-stamp battery)
+- QA passed both exercises (bug detection + anchoring resistance) with zero interventions
+- QA independently runs tests even when coder claims "all tests pass" — the rubber-stamp failure from s_1772629874712_7 did not reproduce
+- QA follows mandatory steps reliably: git status → read files → tsc → vitest → evidence-based verdict
+- QA correctly calls out false coder claims: "The claim that 'all 891 tests pass' is not true"
+- Severity calibration is good: distinguished between a bug (FAIL) and incomplete implementation (CONDITIONAL)
+- Tool usage is efficient: 4-6 calls per exercise, no wasted reads or re-runs
+- The s_1772629874712_7 failure may have been a transient anomaly, not a systematic behavior pattern
+- Recommendation: No urgent domain.md changes needed; re-run Exercise 3 periodically as regression test
+- Recommendation: Investigate root cause of s_1772629874712_7 (possible prompt construction bug or session anomaly)

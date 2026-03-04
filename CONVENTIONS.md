@@ -19,6 +19,7 @@ agents/
 │   ├── workspace/              # scratch files, progress logs, working artifacts
 │   │   ├── .gitkeep
 │   │   ├── todo.md             # per-agent TODO + tracking list (optional)
+│   │   ├── journal.md          # agent's own reflections and findings (optional)
 │   │   └── progress.md         # action log, last output (auto-updated)
 │   ├── cron.json               # cron schedule (only if agent has "cron" tool)
 │   └── periodic-tasks.md       # describes recurring responsibilities (optional)
@@ -163,6 +164,39 @@ Scratch directory for the agent's working files. Used for:
 - Session transcripts
 
 Convention: include a `.gitkeep` so the directory exists in git even when empty. Workspace files are generally committed but are ephemeral working artifacts, not core configuration.
+
+## workspace/journal.md
+
+Per-agent reflection log. Only for agents that do ongoing work across sessions and
+benefit from recording what they learned (optimizer, coach, bob). Task-executing
+agents (coder, qa, evaluator, master) don't need one — their work is captured in
+session transcripts and evaluations.
+
+The journal sits between `progress.md` (raw action log) and `lessons.md` (distilled
+rules). It captures the agent's own observations — what it tried, what it found,
+what surprised it, what it would do differently.
+
+```markdown
+# Journal
+
+## 2026-03-04 — analyzed file editing patterns
+Ran optimizer on coder's recent sessions. Found oscillation between brittle sed
+(line-number corruption in s_1772629766734_6) and risky full-file write (partial
+reads in s_1772625163096_2). Root cause: no safe middle-ground tool. Proposed
+replace_in_file but went with File Editing Protocol in lessons instead — behavioral
+fix until structural tool is built. Watch whether this actually changes behavior.
+```
+
+Entries are chronological, newest first. Each entry: date + context, what happened,
+what was learned. No rigid format — the value is in the reflection.
+
+**Who maintains it:** The agent itself. The optimizer/bob may review other agents'
+journals when looking for patterns.
+
+**Relationship to other files:**
+- `progress.md` = what I did (actions, auto-logged)
+- `journal.md` = what I learned from doing it (agent-written reflection)
+- `lessons.md` = distilled rules I follow (evaluator/optimizer-managed)
 
 ## workspace/todo.md
 
