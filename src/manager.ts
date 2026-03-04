@@ -821,117 +821,6 @@ export class SubagentManager {
     return { resumed: resumedInfo, interrupted };
   }
 
-  /** Resume interrupted sessions after process restart.
-   *  @deprecated Use resumeAgent(name) for targeted resume, or cleanupStaleSessions().
-   *  Caller must have already called register() for all agents.
-   *  Returns SessionInfo[] for all resumed sessions.
-   */
-  resume(): SessionInfo[] {
-    const registryData = this.registry.getRegistry();
-    const persistDir = this.registry.persistDir;
-    const resumed: SessionInfo[] = [];
-
-    for (const [sessionId, persisted] of Object.entries(registryData.sessions)) {
-      if (persisted.status !== "running" && persisted.status !== "idle") continue;
-
-      // Find matching registered agent
-      const registered = this.agents.get(persisted.agent);
-      if (!registered) {
-        console.warn(
-          `[SubagentManager] Cannot resume session "${sessionId}": agent "${persisted.agent}" is not registered. Marking as interrupted.`,
-        );
-        this.registry.updateSessionStatus(sessionId, "interrupted");
-        continue;
-      }
-
-      const def = registered.definition;
-
-      // Load session conversation from sessions/<id>/session.jsonl
-      const savedMessages = readSessionMessages(persistDir, sessionId);
-
-      // Rebuild system prompt
-      const systemPrompt = this.resolveSystemPrompt(def, persisted.agent, sessionId, persistDir);
-
-      // Compute output directory
-      const outputDir = sessionOutputDir(persistDir, sessionId);
-
-      // Create a new Agent with the registered agent's tools, model, apiKey
-      const agent = new Agent({
-        initialState: {
-          systemPrompt,
-          model: def.model,
-          tools: def.tools,
-          messages: savedMessages,
-        },
-        transformContext: this.buildTransformContext(def),
-        getApiKey: def.apiKey ? () => def.apiKey : undefined,
-      });
-
-      // Build the resume message
-      const resumeMessage: AgentMessage = {
-        role: "user",
-        content: [{ type: "text", text: "Your session was interrupted. Continue where you left off." }],
-        timestamp: Date.now(),
-      };
-
-      const session: ActiveSession = {
-        sessionId,
-        agentName: persisted.agent,
-        agent,
-        promise: null!,
-        task: persisted.task,
-        startedAt: persisted.startedAt,
-        status: "running",
-        outputDir,
-        turnCount: savedMessages.filter((m) => m.role === "assistant").length,
-        maxTurns: def.maxTurns,
-        turnWarningThreshold: def.turnWarningThreshold ?? 0.8,
-        turnWarningFired: false,
-        persistent: def.persistent ?? false,
-        closed: false,
-      };
-
-      // Subscribe for JSONL persistence before starting the prompt
-      this.subscribeForPersistence(session);
-
-      // Subscribe for turn limit enforcement
-      this.subscribeForTurnLimit(session);
-
-      // Set up timeout if configured
-      this.setupTimeout(session, def.timeoutMs);
-
-      // Add to activeSessions before notifying listener (subscribe() needs it)
-      this.activeSessions.set(sessionId, session);
-
-      // Notify listener that a session has been resumed
-      this.onSessionStart?.(persisted.agent, sessionId);
-
-      // Start the agent running with the resume message
-      session.promise = agent.prompt(resumeMessage)
-        .then(() => {
-          this.handleCompletion(session);
-        })
-        .catch((err) => {
-          session.error = err?.message ?? String(err);
-          this.handleCompletion(session);
-        });
-
-      this.sessionResults.set(sessionId, session.promise.then(() => this.buildResultFromSession(session)));
-
-      resumed.push({
-        sessionId,
-        agent: persisted.agent,
-        task: persisted.task,
-        status: "running",
-        startedAt: persisted.startedAt,
-        runtime: formatDuration(Date.now() - persisted.startedAt),
-        outputDir,
-      });
-    }
-
-    return resumed;
-  }
-
   /** Get all active (running) sessions. Completed sessions are not listed — use result() or progress(). */
   status(): SessionInfo[] {
     return Array.from(this.activeSessions.values()).map((s) => ({
@@ -959,10 +848,6 @@ export class SubagentManager {
     }));
   }
 
-  /** Return the names of all registered agents. */
-  listAgentNames(): string[] {
-    return Array.from(this.agents.keys());
-  }
 
 
   /** Return the number of registered agents. */

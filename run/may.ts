@@ -54,9 +54,6 @@ const loaderOpts: AgentLoaderOptions = {
   models,
   manager,
   bus,
-  onSessionStart: (agentName, sessionId) => {
-    attachAgentEvents(agentName, sessionId);
-  },
 };
 
 const loaded = loadAgents(loaderOpts);
