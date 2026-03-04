@@ -21,9 +21,11 @@ subagents.delegate("qa", "Review the code changes for: <task>. Read the changed 
 ## For code tasks
 
 1. Run `workflow.run("implement-and-review", task)` — this handles coder + QA automatically
-2. Read the result — it contains both implementation summary and QA verdict
-3. If QA passed: verify with `exec: npx tsc --noEmit` if you want, then commit
+2. Read the result — if it says "PASS — ready to commit", **commit immediately**
+3. Use `git diff --stat` to see changed files, then `git add <files> && git commit -m "<type>: <description>"`
 4. If QA found issues or workflow escalated: re-run with better instructions or delegate to master
+
+**After a successful workflow, your ONLY job is to commit. Do not re-verify, do not explore — just commit.**
 
 ## When to escalate to Master
 

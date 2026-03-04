@@ -1,32 +1,44 @@
 [
   {
-    "name": "daily-review",
-    "intervalMs": 86400000,
-    "message": "[cron:daily-review] Check improvement-plan.md for TODO items. Pick one and work on it."
-  },
-  {
     "name": "evaluate-sessions",
     "intervalMs": 14400000,
-    "message": "[cron:evaluate-sessions] Run bob to evaluate recent unevaluated sessions."
+    "message": "[cron:evaluate-sessions] Check .state/sessions/ for unevaluated sessions (no matching .state/evaluations/ file). For each, delegate to evaluator to score it.",
+    "enabled": true,
+    "description": "Auto-evaluate completed sessions every 4 hours"
   },
   {
-    "name": "analyze-and-optimize",
-    "intervalMs": 14400000,
-    "message": "[cron:analyze-and-optimize] Run bob to analyze evaluations and brief the optimizer."
+    "name": "analyze-failures",
+    "intervalMs": 28800000,
+    "message": "[cron:analyze-failures] Delegate to bob: analyze the last 10 evaluations in .state/evaluations/, identify the top recurring pattern, write findings to agents/bob/workspace/analysis.md.",
+    "enabled": true,
+    "description": "Bob analyzes evaluation patterns every 8 hours"
   },
   {
-    "name": "philosophy-check",
+    "name": "optimize",
     "intervalMs": 86400000,
-    "message": "[cron:philosophy-check] Run bob to check recent commits against philosophy.md."
+    "message": "[cron:optimize] Read agents/bob/workspace/analysis.md. If it contains actionable findings, delegate to optimizer to implement the top recommendation. Only update knowledge/prompt files — no code changes without human approval.",
+    "enabled": true,
+    "description": "Optimizer implements one fix per day from bob's analysis"
+  },
+  {
+    "name": "health-check",
+    "intervalMs": 86400000,
+    "message": "[cron:health-check] Run: npx tsc --noEmit && npx vitest --run. Report pass/fail and test count. If anything fails, investigate.",
+    "enabled": true,
+    "description": "Daily tsc + test suite health check"
+  },
+  {
+    "name": "coaching",
+    "intervalMs": 604800000,
+    "message": "[cron:coaching] Check agent scores via .state/evaluations/. If any agent has 3+ sessions below threshold (eff < 0.5 or qual < 0.5), delegate to coach to run exercises on that agent.",
+    "enabled": false,
+    "description": "Weekly coaching for underperforming agents (disabled until more data)"
   },
   {
     "name": "lesson-consolidation",
     "intervalMs": 604800000,
-    "message": "[cron:lesson-consolidation] Run bob to consolidate and dedupe all agents' lessons.md files."
-  },
-  {
-    "name": "health-check",
-    "intervalMs": 604800000,
-    "message": "[cron:health-check] Run tests, check for stale sessions, verify system health."
+    "message": "[cron:lesson-consolidation] Delegate to bob: read all agents/*/knowledge/lessons.md files. Deduplicate, consolidate, remove stale entries. Preserve proven lessons.",
+    "enabled": false,
+    "description": "Weekly lessons.md cleanup (disabled until more data)"
   }
 ]
