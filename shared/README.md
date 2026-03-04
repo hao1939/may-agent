@@ -15,16 +15,16 @@ by topic, not by consumer. See the [Knowledge Library section in system-design.m
 ## Documents
 
 ### Architecture
-- **[system-design.md](system-design.md)** — Conceptual model: what agents are, collaboration patterns, design principles, optimization loop, fix hierarchy, knowledge library design, session lifecycle
+- **[system-design.md](system-design.md)** — Conceptual model: what agents are, collaboration patterns, design principles, optimization loop, fix hierarchy, knowledge library design, session lifecycle, agent-agnostic runner
 
 ### Team
-- **[team.md](team.md)** — Concrete roster: agents, models, tools, turn limits, workflows, automation, structural constraints
+- **[team.md](team.md)** — Concrete roster: agents, models, tools, turn limits, workflows, runner configuration, constraints
 
 ### Philosophy
 - **[philosophy.md](philosophy.md)** — Design values, preferences, and quality standards extracted from human input. Owned by Bob.
 
 ### Process
-- **[meta-loop.md](meta-loop.md)** — Self-improvement cycle: how evaluator, Bob, and optimizer coordinate during idle time
+- **[meta-loop.md](meta-loop.md)** — Self-improvement cycle: how Bob, evaluator, and optimizer coordinate. Just a normal agent session, no special infrastructure.
 
 ### Reviews
 - **[system-design-review.md](system-design-review.md)** — Historical review of system-design.md against the codebase, with findings and status tracking
@@ -36,7 +36,8 @@ by topic, not by consumer. See the [Knowledge Library section in system-design.m
 | May | ✓ | ✓ | — | — | Coordinates the team, needs full picture |
 | Evaluator | ✓ | ✓ | — | — | Scores agents, needs to understand roles and constraints |
 | Optimizer | ✓ | ✓ | — | — | Improves agents, needs to understand architecture |
-| Bob | ✓ | ✓ | ✓ | ✓ | Reviews team work against philosophy, maintains philosophy.md |
+| Bob | ✓ | ✓ | ✓ | ✓ | Reviews team work against philosophy, orchestrates meta-loop |
+| Coach | — | ✓ | — | — | Needs team roster and roles to design exercises. Reads system-design on demand. |
 | Coder | — | — | — | — | Works on specific tasks independently |
 | QA | — | — | — | — | Reviews code independently |
 
