@@ -1,0 +1,32 @@
+[
+  {
+    "name": "daily-review",
+    "intervalMs": 86400000,
+    "message": "[cron:daily-review] Check improvement-plan.md for TODO items. Pick one and work on it."
+  },
+  {
+    "name": "evaluate-sessions",
+    "intervalMs": 14400000,
+    "message": "[cron:evaluate-sessions] Run bob to evaluate recent unevaluated sessions."
+  },
+  {
+    "name": "analyze-and-optimize",
+    "intervalMs": 14400000,
+    "message": "[cron:analyze-and-optimize] Run bob to analyze evaluations and brief the optimizer."
+  },
+  {
+    "name": "philosophy-check",
+    "intervalMs": 86400000,
+    "message": "[cron:philosophy-check] Run bob to check recent commits against philosophy.md."
+  },
+  {
+    "name": "lesson-consolidation",
+    "intervalMs": 604800000,
+    "message": "[cron:lesson-consolidation] Run bob to consolidate and dedupe all agents' lessons.md files."
+  },
+  {
+    "name": "health-check",
+    "intervalMs": 604800000,
+    "message": "[cron:health-check] Run tests, check for stale sessions, verify system health."
+  }
+]
