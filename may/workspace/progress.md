@@ -7,94 +7,55 @@
 
 Ready. Waiting for tasks.
 
-## Actions Taken (121 tool calls)
+## Actions Taken (176 tool calls)
 
-_(showing last 30 of 121)_
+_(showing last 30 of 176)_
 
-- **exec**: {"command":"cd /home/hao/may-agent && npx tsc --noEmit 2>&1 && npx vitest --run 2>&1 | tail -5","timeout":120}
-- **subagents**: {"action":"delegate","agent":"optimizer","task":"FOCUSED TASK: Find and implement the next highest-impact improvement to agent performance.\n\nCOMPLETED AREAS (do NOT touch):\n1. Evaluator false-positive suppression (fully covered)\n2. Tool path resolution (read/write/exec — hallucination rewriting ...
-- **exec**: {"command":"cd /home/hao/may-agent && git diff --stat && echo \"---staged---\" && git diff --cached --stat"}
-- **subagents**: {"action":"progress","limit":6,"sessionId":"s_1772486710120_42"}
-- **subagents**: {"action":"delegate","agent":"optimizer","task":"FOCUSED TASK: Add turn budget warnings to prevent agents from running out of turns.\n\nCONTEXT: The previous optimizer run identified this as high-impact. Many sessions hit the 40-turn limit mid-work. The agent has access to `agent.steer(msg)` to inje...
-- **exec**: {"command":"cd /home/hao/may-agent && git log --oneline -3"}
-- **exec**: {"command":"cd /home/hao/may-agent && npx tsc --noEmit 2>&1 && npx vitest --run 2>&1 | tail -5","timeout":120}
-- **subagents**: {"action":"delegate","agent":"optimizer","task":"FOCUSED TASK: Find and implement the next highest-impact improvement to agent performance.\n\nCOMPLETED AREAS (do NOT touch):\n1. Evaluator false-positive suppression (fully covered)\n2. Tool path resolution (read/write/exec — hallucination rewriting ...
-- **exec**: {"command":"cd /home/hao/may-agent && git log --oneline -3 && echo \"---\" && git diff --stat && echo \"---staged---\" && git diff --cached --stat"}
-- **exec**: {"command":"cd /home/hao/may-agent && git diff src/workflow.ts"}
-- **exec**: {"command":"cd /home/hao/may-agent && git diff src/workflow-tool.ts"}
-- **exec**: {"command":"cd /home/hao/may-agent && git diff src/workflow-defs.d.ts"}
-- **exec**: {"command":"cd /home/hao/may-agent && ls src/handoff.ts 2>&1"}
-- **exec**: {"command":"cd /home/hao/may-agent && cat src/handoff.ts"}
-- **exec**: {"command":"cd /home/hao/may-agent && npx tsc --noEmit 2>&1"}
-- **exec**: {"command":"cd /home/hao/may-agent && npx vitest --run 2>&1 | tail -5","timeout":120}
-- **exec**: {"command":"cd /home/hao/may-agent && git add src/handoff.ts src/workflow-tool.ts src/workflow.ts src/workflow-defs.d.ts src/index.ts && git diff --cached --stat"}
-- **exec**: {"command":"cd /home/hao/may-agent && git commit -m \"feat: add structured handoff summaries for workflow step context passing\n\nAdd src/handoff.ts module with rich context extraction and formatting\nfor passing information between workflow steps. Instead of just passing\nresult.lastAssistantText t...
-- **exec**: {"command":"cd /home/hao/may-agent && echo \"Commits:\" && git log --oneline HEAD~15..HEAD | wc -l && echo \"Tests:\" && npx vitest --run 2>&1 | grep \"Tests \" | tail -1 && echo \"Files:\" && git log --oneline HEAD~15..HEAD","timeout":60}
-- **subagents**: {"action":"delegate","agent":"optimizer","task":"FOCUSED TASK: Add tests for the new handoff module, then find one more improvement.\n\nPART 1 (priority): The src/handoff.ts module was added in the last run but has NO tests. Add comprehensive tests in test/handoff.test.ts covering:\n- extractHandoff...
-- **exec**: {"command":"cd /home/hao/may-agent && git log --oneline -3"}
-- **exec**: {"command":"cd /home/hao/may-agent && npx tsc --noEmit 2>&1 && npx vitest --run 2>&1 | tail -5","timeout":120}
-- **subagents**: {"action":"delegate","agent":"optimizer","task":"FOCUSED TASK: Find and implement the next improvement to agent performance.\n\nCOMPLETED AREAS (do NOT touch):\n1. Evaluator false-positive suppression (fully covered)\n2. Tool path resolution (read/write/exec — hallucination rewriting + relative path...
-- **exec**: {"command":"cd /home/hao/may-agent && git diff --stat"}
-- **exec**: {"command":"cd /home/hao/may-agent && git diff --cached --stat"}
-- **subagents**: {"action":"progress","limit":4,"sessionId":"s_1772488991771_50"}
-- **subagents**: {"action":"delegate","agent":"optimizer","task":"FOCUSED TASK: Improve the learn tool to support categories and deduplication.\n\nThe current learn tool (createLearnTool in src/tools.ts, lines 766-811) simply appends text to a lessons.md file. Problems:\n1. No deduplication — agents can learn the sa...
-- **exec**: {"command":"cd /home/hao/may-agent && git log --oneline -3"}
-- **exec**: {"command":"cd /home/hao/may-agent && npx tsc --noEmit 2>&1 && npx vitest --run 2>&1 | tail -5","timeout":120}
-- **subagents**: {"action":"delegate","agent":"optimizer","task":"FOCUSED TASK: Find and implement the next improvement to agent performance.\n\nCOMPLETED AREAS (do NOT touch — 18 commits already):\n1. Evaluator false-positive suppression (fully covered)\n2. Tool path resolution (read/write/exec — hallucination rewr...
+- **cron**: {"action":"add","name":"analyze-and-optimize","intervalMs":14400000,"message":"[cron:analyze-and-optimize] Delegate to bob: subagents.delegate(\"bob\", \"Read recent evaluations from .state/evaluations/ (last 10 files). Identify the single worst pattern. Write optimizer brief to agents/bob/workspace...
+- **cron**: {"action":"add","name":"philosophy-check","intervalMs":86400000,"message":"[cron:philosophy-check] Delegate to bob: subagents.delegate(\"bob\", \"Check recent git commits (git log --since='24 hours ago' --oneline) for philosophy violations. Read agents/shared/philosophy.md, review what changed. Fix ...
+- **cron**: {"action":"add","name":"lesson-consolidation","intervalMs":604800000,"message":"[cron:lesson-consolidation] Delegate to bob: subagents.delegate(\"bob\", \"For each agent (coder, qa, evaluator, optimizer, may, bob): read their lessons.md, remove outdated lessons already fixed structurally, consolidat...
+- **cron**: {"action":"add","name":"health-check","intervalMs":604800000,"message":"[cron:health-check] Run system health check: exec 'npx vitest --run 2>&1 | tail -5' to verify tests pass. Check for stale sessions with exec 'find .state/sessions -name meta.json -exec grep -l \"running\" {} \\;'. Report any iss...
+- **cron**: {"action":"list"}
+- **exec**: {"command":"cd /home/hao/may-agent && grep -n \"followUp\" src/manager.ts | head -10"}
+- **exec**: {"command":"cd /home/hao/may-agent && sed -n '1174,1210p' src/manager.ts"}
+- **exec**: {"command":"cd /home/hao/may-agent && cat run/cron.ts"}
+- **exec**: {"command":"cd /home/hao/may-agent && cat src/cron-tool.ts | grep -A5 \"interface CronEntry\""}
+- **subagents**: {"action":"delegate","agent":"coder","task":"Add an `agent` field to cron entries so cron jobs can spawn ephemeral sessions on any agent instead of always injecting into the interface agent's session.\n\n**1. Edit `src/cron-tool.ts`:**\n\nAdd `agent` to the CronEntry interface:\n```typescript\nexpor...
+- **exec**: {"command":"cd /home/hao/may-agent && git checkout src/cron-tool.ts run/cron.ts"}
+- **cron**: {"action":"list"}
+- **cron**: {"action":"remove","name":"daily-review"}
+- **cron**: {"action":"remove","name":"evaluate-sessions"}
+- **cron**: {"action":"remove","name":"analyze-and-optimize"}
+- **cron**: {"action":"remove","name":"philosophy-check"}
+- **cron**: {"action":"remove","name":"lesson-consolidation"}
+- **cron**: {"action":"remove","name":"health-check"}
+- **cron**: {"action":"add","name":"daily-review","intervalMs":86400000,"message":"[cron:daily-review] Check improvement-plan.md for TODO items. Pick one and work on it."}
+- **cron**: {"action":"add","name":"evaluate-sessions","intervalMs":14400000,"message":"[cron:evaluate-sessions] Run bob to evaluate recent unevaluated sessions."}
+- **cron**: {"action":"add","name":"analyze-and-optimize","intervalMs":14400000,"message":"[cron:analyze-and-optimize] Run bob to analyze evaluations and brief the optimizer."}
+- **cron**: {"action":"add","name":"philosophy-check","intervalMs":86400000,"message":"[cron:philosophy-check] Run bob to check recent commits against philosophy.md."}
+- **cron**: {"action":"add","name":"lesson-consolidation","intervalMs":604800000,"message":"[cron:lesson-consolidation] Run bob to consolidate and dedupe all agents' lessons.md files."}
+- **cron**: {"action":"add","name":"health-check","intervalMs":604800000,"message":"[cron:health-check] Run tests, check for stale sessions, verify system health."}
+- **cron**: {"action":"list"}
+- **subagents**: {"action":"delegate","agent":"coder","task":"Run `git checkout src/cron-tool.ts run/cron.ts` to revert the changes to those files. Then run `npx tsc --noEmit` to verify everything still compiles."}
+- **exec**: {"command":"ls -t /home/hao/may-agent/.state/sessions/history/ | head -5"}
+- **exec**: {"command":"ls -t /home/hao/may-agent/.state/evaluations/ | head -5"}
+- **subagents**: {"action":"run","agent":"bob","task":"Evaluate the 3-5 most recent unevaluated sessions. Check .state/evaluations/ to see which sessions already have evaluation files. Find recent archived sessions in .state/sessions/history/ that don't have evaluations yet. Delegate to evaluator for each."}
+- **exec**: {"command":"cd /home/hao/may-agent && grep -n \"followUp\\|onCronApprove\\|cronCallback\" run/may.ts run/cron.ts src/cron-tool.ts 2>/dev/null"}
 
 ## Last Assistant Output
 
-All 710 tests pass.
 
----
 
-## Optimizer Results (Run 21)
+You want the cron message to be self-contained — I just say "approve" and the system handles execution automatically. No manual `subagents.run()` call from me.
 
-### What Was Found
+That means the cron entry needs to carry the agent + task, and the runner needs a way to execute on approval. Let me think about the simplest approach...
 
-The learn tool (`createLearnTool`) simply appended text to a flat `lessons.md` file with no structure. Problems:
-1. **No deduplication** — agents could learn the same lesson repeatedly, bloating the file
-2. **No categorization** — all lessons in a flat list, hard to find relevant ones
-3. **No querying** — no way to check what was already learned
+The cron tool could have an `agent` and `task` field. When the message fires into my session, it includes an action I can trigger. If I approve, the runner picks up the approval and spawns the ephemeral session.
 
-### What Was Changed
-
-**`src/tools.ts`** — Learn tool improvements:
-
-- **`category` parameter** (optional, default "general") — organizes lessons under `## category` markdown headers
-- **`listLessons` parameter** (optional boolean) — when true, returns current lessons instead of adding
-- **Deduplication** via `isDuplicate()` — case-insensitive substring matching across all categories; skips if new lesson overlaps with existing one
-- **Internal helpers**: `parseLessons()`, `serializeLessons()`, `isDuplicate()`
-- **Backwards compatible** — old flat files are parsed correctly
-
-**New file format:**
-```markdown
-# Lessons
-
-## testing
-- 2024-01-15 10:30: Always run vitest before committing.
-
-## general
-- 2024-01-15 10:31: Check file existence before reading.
-```
-
-**`test/learn-tool.test.ts`** — Expanded from **7 → 22 tests** (+15 new):
-- Category defaults, explicit categories, multiple categories, case normalization
-- Exact/case-insensitive/substring deduplication (both directions), cross-category dedup
-- listLessons mode (empty, with content, ignoring lesson param)
-- Error handling for missing lesson in add mode
-
-### Verification
-✅ tsc compiles cleanly  
-✅ **710 tests pass** (47 test files)  
-✅ Committed as `7829a75`
-
-### Running Totals
-- **21 optimizer runs**, **18 commits**
-- **422 → 710 tests** (+288 tests, +68%)
+Let me check what hooks we have:
 
 ## Error
 
 ```
-400 {"error":{"message":"litellm.BadRequestError: Github_copilotException - prompt token count of 129208 exceeds the limit of 128000. Received Model Group=claude-opus-4.6\nAvailable Model Group Fallbacks=None","type":null,"param":null,"code":"400"}}
+400 {"error":{"message":"litellm.BadRequestError: Github_copilotException - prompt token count of 128354 exceeds the limit of 128000. Received Model Group=claude-opus-4.6\nAvailable Model Group Fallbacks=None","type":null,"param":null,"code":"400"}}
 ```
