@@ -51,8 +51,6 @@ export interface AgentLoaderOptions {
   models: Record<string, Model<any>>;
   manager: SubagentManager;
   bus: EventBus;
-  /** Called when a session starts — for wiring event routing. */
-  onSessionStart: (agentName: string, sessionId: string) => void;
 }
 
 // ── Track active session IDs for subagent/workflow tools ────────────────
@@ -206,7 +204,6 @@ function buildTools(
               bus.emit({ type: "info", message: `[${label}] Escalated: ${event.reason}` });
             } else if (event.type === "step_start") {
               bus.emit({ type: "info", message: `[${label}] Step: ${event.step}` });
-              if (event.sessionId) opts.onSessionStart(event.step, event.sessionId);
             }
           },
         }));

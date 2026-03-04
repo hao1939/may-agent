@@ -1,10 +1,15 @@
 /**
- * Workflow type definitions.
+ * Ambient type definitions for workflow .ts files.
  *
- * Workflow .ts files should reference this file for type checking:
+ * Workflow files reference this for type checking:
  *   /// <reference path="../../../src/workflow-defs.d.ts" />
  *
- * Or place a tsconfig.json in the workflows/ directory that includes it.
+ * IMPORTANT: These types must stay in sync with their source of truth:
+ *   - TaskResult        → src/types.ts
+ *   - WorkflowEvent     → src/workflow.ts
+ *   - WorkflowResult    → src/workflow.ts
+ *   - WorkflowContext   → src/workflow.ts
+ *   - HandoffOptions    → src/handoff.ts
  */
 
 /** Result from running a sub-agent. */

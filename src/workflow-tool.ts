@@ -333,6 +333,70 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
     }
   }
 
+  /** Shared logic for both 'run' and 'resume' actions — sets up steering,
+   *  executes the workflow, and maps the result to a tool response. */
+  async function runOrResume(
+    workflow: WorkflowModule,
+    task: string,
+    depth: number,
+    parentSessionId: string | undefined,
+    parentWorkflowRunId: string | undefined,
+    previousRun?: WorkflowRun,
+  ): ReturnType<WorkflowTool["execute"]> {
+    const completedSteps: CompletedStep[] = [];
+    const steeringQueue: string[] = [];
+    activeSteeringQueue = steeringQueue;
+    activeWorkflowName = workflow.name;
+
+    onEvent?.({ type: "workflow_start", workflow: workflow.name, task });
+
+    try {
+      const { result, runId } = await executeWorkflow(
+        workflow, task, depth, parentSessionId, parentWorkflowRunId,
+        completedSteps, steeringQueue, previousRun,
+      );
+
+      activeSteeringQueue = null;
+      activeWorkflowName = null;
+
+      const stepSummaries = buildStepSummaries(completedSteps);
+
+      if (result.type === "done") {
+        onEvent?.({ type: "workflow_done", summary: result.summary });
+        const toolResult: WorkflowToolResult = {
+          type: "done", workflow: workflow.name, workflowRunId: runId,
+          summary: result.summary, steps: stepSummaries,
+        };
+        return textResult(JSON.stringify(toolResult, null, 2));
+      }
+
+      onEvent?.({ type: "workflow_escalate", reason: result.reason });
+      const toolResult: WorkflowToolResult = {
+        type: "escalated", workflow: workflow.name, workflowRunId: runId,
+        reason: result.reason, context: result.context, steps: stepSummaries,
+      };
+      return textResult(JSON.stringify(toolResult, null, 2));
+    } catch (err) {
+      activeSteeringQueue = null;
+      activeWorkflowName = null;
+
+      if (err instanceof WorkflowInterrupted) {
+        const toolResult: WorkflowToolResult = {
+          type: "interrupted",
+          workflow: workflow.name,
+          workflowRunId: err.workflowRunId,
+          completedSteps: err.completedSteps,
+          steeringMessage: err.steeringMessage,
+        };
+        return textResult(JSON.stringify(toolResult, null, 2));
+      }
+
+      const msg = err instanceof Error ? err.message : String(err);
+      const toolResult: WorkflowToolResult = { type: "error", workflow: workflow.name, error: msg };
+      return textResult(JSON.stringify(toolResult, null, 2));
+    }
+  }
+
   const tool: WorkflowTool = {
     name: "workflow",
     label: "Workflow",
@@ -387,61 +451,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
             return textResult(JSON.stringify({ type: "error", workflow: params.name, error: findError }));
           }
 
-          const completedSteps: CompletedStep[] = [];
-          const steeringQueue: string[] = [];
-          activeSteeringQueue = steeringQueue;
-          activeWorkflowName = workflow.name;
-
-          onEvent?.({ type: "workflow_start", workflow: workflow.name, task: params.task });
-
-          try {
-            const { result, runId, steps } = await executeWorkflow(
-              workflow, params.task, 1,
-              resolveCallerSessionId(), undefined,
-              completedSteps, steeringQueue,
-            );
-
-            activeSteeringQueue = null;
-            activeWorkflowName = null;
-
-            const stepSummaries = buildStepSummaries(completedSteps);
-
-            if (result.type === "done") {
-              onEvent?.({ type: "workflow_done", summary: result.summary });
-              const toolResult: WorkflowToolResult = {
-                type: "done", workflow: workflow.name, workflowRunId: runId,
-                summary: result.summary, steps: stepSummaries,
-              };
-              return textResult(JSON.stringify(toolResult, null, 2));
-            }
-
-            onEvent?.({ type: "workflow_escalate", reason: result.reason });
-            const toolResult: WorkflowToolResult = {
-              type: "escalated", workflow: workflow.name, workflowRunId: runId,
-              reason: result.reason, context: result.context, steps: stepSummaries,
-            };
-            return textResult(JSON.stringify(toolResult, null, 2));
-          } catch (err) {
-            activeSteeringQueue = null;
-            activeWorkflowName = null;
-
-            if (err instanceof WorkflowInterrupted) {
-              // We need the runId — it was created inside executeWorkflow
-              // For interrupted, we report the completedSteps directly
-              const toolResult: WorkflowToolResult = {
-                type: "interrupted",
-                workflow: workflow.name,
-                workflowRunId: err.workflowRunId,
-                completedSteps: err.completedSteps,
-                steeringMessage: err.steeringMessage,
-              };
-              return textResult(JSON.stringify(toolResult, null, 2));
-            }
-
-            const msg = err instanceof Error ? err.message : String(err);
-            const toolResult: WorkflowToolResult = { type: "error", workflow: workflow.name, error: msg };
-            return textResult(JSON.stringify(toolResult, null, 2));
-          }
+          return runOrResume(workflow, params.task, 1, resolveCallerSessionId(), undefined);
         }
 
         case "resume": {
@@ -462,59 +472,10 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
             return textResult(JSON.stringify({ type: "error", workflow: prevRun.workflow, error: resumeFindError }));
           }
 
-          const resumeCompletedSteps: CompletedStep[] = [];
-          const resumeSteeringQueue: string[] = [];
-          activeSteeringQueue = resumeSteeringQueue;
-          activeWorkflowName = resumeWf.name;
-
-          onEvent?.({ type: "workflow_start", workflow: resumeWf.name, task: prevRun.task });
-
-          try {
-            const { result, runId } = await executeWorkflow(
-              resumeWf, prevRun.task, prevRun.depth, prevRun.parentSessionId,
-              prevRun.parentWorkflowRunId, resumeCompletedSteps,
-              resumeSteeringQueue, prevRun,
-            );
-
-            activeSteeringQueue = null;
-            activeWorkflowName = null;
-
-            const stepSummaries = buildStepSummaries(resumeCompletedSteps);
-
-            if (result.type === "done") {
-              onEvent?.({ type: "workflow_done", summary: result.summary });
-              const toolResult: WorkflowToolResult = {
-                type: "done", workflow: resumeWf.name, workflowRunId: runId,
-                summary: result.summary, steps: stepSummaries,
-              };
-              return textResult(JSON.stringify(toolResult, null, 2));
-            }
-
-            onEvent?.({ type: "workflow_escalate", reason: result.reason });
-            const toolResult: WorkflowToolResult = {
-              type: "escalated", workflow: resumeWf.name, workflowRunId: runId,
-              reason: result.reason, context: result.context, steps: stepSummaries,
-            };
-            return textResult(JSON.stringify(toolResult, null, 2));
-          } catch (err) {
-            activeSteeringQueue = null;
-            activeWorkflowName = null;
-
-            if (err instanceof WorkflowInterrupted) {
-              const toolResult: WorkflowToolResult = {
-                type: "interrupted",
-                workflow: resumeWf.name,
-                workflowRunId: err.workflowRunId,
-                completedSteps: err.completedSteps,
-                steeringMessage: err.steeringMessage,
-              };
-              return textResult(JSON.stringify(toolResult, null, 2));
-            }
-
-            const msg = err instanceof Error ? err.message : String(err);
-            const toolResult: WorkflowToolResult = { type: "error", workflow: resumeWf.name, error: msg };
-            return textResult(JSON.stringify(toolResult, null, 2));
-          }
+          return runOrResume(
+            resumeWf, prevRun.task, prevRun.depth,
+            prevRun.parentSessionId, prevRun.parentWorkflowRunId, prevRun,
+          );
         }
 
         default: {

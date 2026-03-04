@@ -8,11 +8,7 @@ export function attachConsoleUI(bus: EventBus): void {
   bus.on((event) => {
     switch (event.type) {
       case "text":
-        if (event.agent === "may") {
-          process.stdout.write(event.text);
-        } else {
-          process.stdout.write(event.text);
-        }
+        process.stdout.write(event.text);
         break;
 
       case "tool_call":
@@ -23,21 +19,15 @@ export function attachConsoleUI(bus: EventBus): void {
         }
         break;
 
-      case "tool_result":
+      case "tool_result": {
+        const prefix = event.agent === "may" ? `[tool:${event.tool}]` : `  [${event.agent}:${event.tool}]`;
         if (event.isError) {
-          if (event.agent === "may") {
-            console.log(`[tool:${event.tool}] ERROR`);
-          } else {
-            console.log(`  [${event.agent}:${event.tool}] ERROR`);
-          }
+          console.log(`${prefix} ERROR`);
         } else {
           const line = `${event.preview}${event.preview.length >= 200 ? "..." : ""}`;
-          if (event.agent === "may") {
-            console.log(`[tool:${event.tool}] ${line}`);
-          } else {
-            console.log(`  [${event.agent}:${event.tool}] ${line}`);
-          }
+          console.log(`${prefix} ${line}`);
         }
+      }
         break;
 
       case "session_start":
