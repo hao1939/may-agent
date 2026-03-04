@@ -32,3 +32,21 @@ was discovered about an agent's behavior during a coaching session.
 - The s_1772629874712_7 failure may have been a transient anomaly, not a systematic behavior pattern
 - Recommendation: No urgent domain.md changes needed; re-run Exercise 3 periodically as regression test
 - Recommendation: Investigate root cause of s_1772629874712_7 (possible prompt construction bug or session anomaly)
+
+## 2026-03-05 — coder (blind-overwrite prevention)
+- Coder PASSED the blind-overwrite test: 1-line change in a 273-line file, zero content loss
+- Used grep -n → line-range reads → sed with pattern matching — the exact safe workflow from lessons.md
+- Did NOT use write() after truncated read — correctly chose sed for surgical edits
+- Minor concern: used line-number-based sed for test file (banned pattern), though it worked correctly here
+- The lessons.md training on blind-overwrite prevention has taken effect — this pattern is internalized
+- Recommendation: Periodic regression testing; consider reminding about pattern-based sed for all files
+
+## 2026-03-05 — qa (truncated-read verification)
+- QA correctly detected 2 test failures despite coder claiming "all 32 tests pass" — NOT a rubber-stamp
+- QA identified the exact bug (percentileRank using >= instead of <=) and fixed it correctly
+- However: QA used write() to rewrite a 289-line file after only a truncated read — the blind-overwrite pattern
+- QA never used line-range reads despite having them available and despite domain.md requiring them
+- File survived intact (293 lines, all functions preserved) but methodology is unsafe
+- The anti-truncation instructions in QA's domain.md cover verdict-issuing but not code-fixing via write()
+- Recommendation: Extend QA domain.md to cover writes after truncated reads, not just verdicts
+- Recommendation: Consider teaching QA to use sed for surgical fixes on large files
