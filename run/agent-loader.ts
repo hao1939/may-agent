@@ -310,14 +310,21 @@ function loadAgentConfig(agentDir: string): AgentConfig | null {
   }
 }
 
+export interface LoadResult {
+  added: string[];
+  updated: string[];
+}
+
 /**
  * Scan agents/ directory, load and validate agent.json configs, register with manager.
- * Returns names of agents that were loaded.
+ * Re-registers existing agents so config changes (model, tools, maxTurns, etc.)
+ * take effect on next session. Active sessions keep their old config.
  * Throws on validation errors (fail-fast prevents running with broken config).
  */
-export function loadAgents(opts: AgentLoaderOptions): string[] {
+export function loadAgents(opts: AgentLoaderOptions): LoadResult {
   const { agentsRoot, projectRoot, models, manager } = opts;
-  const loaded: string[] = [];
+  const added: string[] = [];
+  const updated: string[] = [];
   const allErrors: ValidationError[] = [];
 
   const entries = readdirSync(agentsRoot, { withFileTypes: true });
@@ -336,8 +343,7 @@ export function loadAgents(opts: AgentLoaderOptions): string[] {
       continue;
     }
 
-    // Already registered? Skip (for reload scenarios)
-    if (manager.hasAgent(config.name)) continue;
+    const isUpdate = manager.hasAgent(config.name);
 
     const model = models[config.model];
     const knowledgeDir = resolve(agentDir, "knowledge");
@@ -360,7 +366,11 @@ export function loadAgents(opts: AgentLoaderOptions): string[] {
       memoryLimit: config.memoryLimit,
     });
 
-    loaded.push(config.name);
+    if (isUpdate) {
+      updated.push(config.name);
+    } else {
+      added.push(config.name);
+    }
   }
 
   // Fail-fast: if any agent configs have errors, report them all and throw
@@ -371,20 +381,20 @@ export function loadAgents(opts: AgentLoaderOptions): string[] {
     throw new Error(`Agent config validation failed:\n${report}`);
   }
 
-  return loaded;
+  return { added, updated };
 }
 
 /**
- * Reload: scan for new agent.json files and register any new agents.
- * Does NOT re-register existing agents (their sessions would break).
- * Returns { loaded, errors } — errors are reported but don't crash.
+ * Reload: scan agent.json files, register new agents and update existing ones.
+ * Active sessions keep their old config; only new sessions use the updated definition.
+ * Returns { added, updated, errors } — errors are reported but don't crash.
  */
-export function reloadAgents(opts: AgentLoaderOptions): { loaded: string[]; errors: string[] } {
+export function reloadAgents(opts: AgentLoaderOptions): { added: string[]; updated: string[]; errors: string[] } {
   try {
-    const loaded = loadAgents(opts);
-    return { loaded, errors: [] };
+    const result = loadAgents(opts);
+    return { ...result, errors: [] };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    return { loaded: [], errors: [msg] };
+    return { added: [], updated: [], errors: [msg] };
   }
 }

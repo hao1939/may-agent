@@ -59,8 +59,8 @@ const loaderOpts: AgentLoaderOptions = {
   },
 };
 
-const loaded = loadAgents(loaderOpts);
-bus.emit({ type: "info", message: `Loaded ${loaded.length} agent(s): ${loaded.join(", ")}` });
+const loadResult = loadAgents(loaderOpts);
+bus.emit({ type: "info", message: `Loaded ${loadResult.added.length} agent(s): ${loadResult.added.join(", ")}` });
 
 // ── Event routing ──────────────────────────────────────────────────────
 
@@ -149,10 +149,13 @@ bus.onCommand((cmd) => {
       const result = reloadAgents(loaderOpts);
       if (result.errors.length > 0) {
         bus.emit({ type: "info", message: `[reload] Validation errors:\n${result.errors.join("\n")}` });
-      } else if (result.loaded.length > 0) {
-        bus.emit({ type: "info", message: `[reload] Loaded ${result.loaded.length} new agent(s): ${result.loaded.join(", ")}` });
+      } else if (result.added.length > 0 || result.updated.length > 0) {
+        const parts: string[] = [];
+        if (result.added.length > 0) parts.push(`${result.added.length} new (${result.added.join(", ")})`);
+        if (result.updated.length > 0) parts.push(`${result.updated.length} updated (${result.updated.join(", ")})`);
+        bus.emit({ type: "info", message: `[reload] ${parts.join(", ")}` });
       } else {
-        bus.emit({ type: "info", message: "[reload] No new agents found" });
+        bus.emit({ type: "info", message: "[reload] No changes" });
       }
       break;
     }
@@ -348,10 +351,13 @@ if (process.stdin.isTTY) {
       const result = reloadAgents(loaderOpts);
       if (result.errors.length > 0) {
         bus.emit({ type: "info", message: `[reload] Validation errors:\n${result.errors.join("\n")}` });
-      } else if (result.loaded.length > 0) {
-        bus.emit({ type: "info", message: `[reload] Loaded ${result.loaded.length} new agent(s): ${result.loaded.join(", ")}` });
+      } else if (result.added.length > 0 || result.updated.length > 0) {
+        const parts: string[] = [];
+        if (result.added.length > 0) parts.push(`${result.added.length} new (${result.added.join(", ")})`);
+        if (result.updated.length > 0) parts.push(`${result.updated.length} updated (${result.updated.join(", ")})`);
+        bus.emit({ type: "info", message: `[reload] ${parts.join(", ")}` });
       } else {
-        bus.emit({ type: "info", message: "[reload] No new agents found" });
+        bus.emit({ type: "info", message: "[reload] No changes" });
       }
       prompt();
       continue;
