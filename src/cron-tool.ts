@@ -13,6 +13,7 @@ export interface CronEntry {
   intervalMs: number;
   message: string;
   enabled: boolean;
+  description?: string;
 }
 
 function textResult(text: string): AgentToolResult<string> {
@@ -31,6 +32,7 @@ const CronParams = Type.Object({
   intervalMs: Type.Optional(Type.Number({ description: "Interval in milliseconds (required for add, optional for update). Minimum 10000 (10s)." })),
   message: Type.Optional(Type.String({ description: "Message to send on each interval (required for add, optional for update)" })),
   enabled: Type.Optional(Type.Boolean({ description: "Whether the job is enabled (default true). Disabled jobs won't fire." })),
+  description: Type.Optional(Type.String({ description: "Optional description for the job" })),
 });
 
 type CronInput = Static<typeof CronParams>;
@@ -91,7 +93,8 @@ export function createCronTool(opts: CronToolOptions): AgentTool<typeof CronPara
           if (entries.length === 0) return textResult(`no cron jobs configured\n${status}`);
           const lines = entries.map(e => {
             const prefix = e.enabled ? "" : "[DISABLED] ";
-            return `- ${prefix}${e.name}: every ${(e.intervalMs / 1000).toFixed(0)}s → "${e.message.slice(0, 100)}"`;
+            const desc = e.description ? ` — ${e.description.slice(0, 50)}` : "";
+            return `- ${prefix}${e.name}: every ${(e.intervalMs / 1000).toFixed(0)}s → "${e.message.slice(0, 100)}"${desc}`;
           });
           lines.push("", status);
           return textResult(lines.join("\n"));
@@ -106,12 +109,14 @@ export function createCronTool(opts: CronToolOptions): AgentTool<typeof CronPara
           if (entries.some(e => e.name === input.name)) {
             return textResult(`Error: job "${input.name}" already exists. Use 'update' to modify.`);
           }
-          entries.push({
+          const newEntry: CronEntry = {
             name: input.name,
             intervalMs: input.intervalMs,
             message: input.message,
             enabled: input.enabled !== undefined ? input.enabled : true,
-          });
+          };
+          if (input.description !== undefined) newEntry.description = input.description;
+          entries.push(newEntry);
           writeEntries(entries);
           return textResult(`Added job "${input.name}": every ${(input.intervalMs / 1000).toFixed(0)}s`);
         }
@@ -136,6 +141,7 @@ export function createCronTool(opts: CronToolOptions): AgentTool<typeof CronPara
             entry.intervalMs = input.intervalMs;
           }
           if (input.message !== undefined) entry.message = input.message;
+          if (input.description !== undefined) entry.description = input.description;
           if (input.enabled !== undefined) entry.enabled = input.enabled;
           writeEntries(entries);
           return textResult(`Updated job "${input.name}"`);
