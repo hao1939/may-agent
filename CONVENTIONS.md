@@ -137,9 +137,17 @@ Files that form the agent's system prompt. Read fresh at the start of each sessi
 
 ### System prompt assembly order
 
-1. Shared knowledge files (from `sharedKnowledge`, in order)
-2. Agent-specific files (from `systemPromptFiles`, in order)
-3. Lessons file (auto-appended from `knowledge/lessons.md` if it exists)
+1. Runtime Environment (project root, workspace path)
+2. Identity (name, role, domain, tools, workspace files — auto-injected from definition)
+3. Project Structure (directory tree, if enabled)
+4. Shared knowledge files (from `sharedKnowledge`, in order)
+5. Agent-specific files (from `systemPromptFiles`, in order)
+6. Lessons file (auto-appended from `knowledge/lessons.md` if it exists)
+7. Skills (from `skills/` dirs)
+8. Session Context (session ID)
+9. Recent Task History (from memory)
+10. Workspace / Output paths
+11. Turn Budget (if `maxTurns` is set)
 
 ## tools/INDEX.md
 
