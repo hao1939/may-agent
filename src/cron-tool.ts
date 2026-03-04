@@ -141,7 +141,7 @@ export function createCronTool(opts: CronToolOptions): AgentTool<typeof CronPara
             entry.intervalMs = input.intervalMs;
           }
           if (input.message !== undefined) entry.message = input.message;
-          if (input.description !== undefined) entry.description = input.description;
+          if (input.description !== undefined) entry.description = input.description.length > 200 ? input.description.slice(0, 200) + "..." : input.description;
           if (input.enabled !== undefined) entry.enabled = input.enabled;
           writeEntries(entries);
           return textResult(`Updated job "${input.name}"`);
