@@ -5,6 +5,7 @@
 #
 # Usage: ./run.sh [--agent <name>]
 #   AGENT env var or --agent flag selects the interface agent (default: may)
+#   SCHEDULERS=1 enables cron jobs (off by default)
 #
 # Exit code 0 = clean exit (user typed "exit"/"quit", or SIGINT/SIGTERM)
 # Any other code = crash — restart after a brief delay.

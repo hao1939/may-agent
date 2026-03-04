@@ -115,7 +115,7 @@ describe("close persistent session (close → no resume)", () => {
     await manager2.waitFor(sid);
   });
 
-  it("send throws after close (session is gone)", async () => {
+  it("followUp throws after close (session is gone)", async () => {
     manager.register(baseDef());
 
     const sid = manager.run("bot", "hello");
@@ -123,7 +123,7 @@ describe("close persistent session (close → no resume)", () => {
 
     manager.close(sid);
 
-    await expect(manager.send(sid, "more")).rejects.toThrow();
+    expect(() => manager.followUp(sid, "more")).toThrow("not found");
   });
 
   it("close is idempotent on already-closed session", async () => {

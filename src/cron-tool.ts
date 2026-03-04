@@ -1,0 +1,125 @@
+/**
+ * Cron tool — CRUD for cron.json entries.
+ * Agents use this to manage their own scheduled jobs.
+ */
+
+import { Type, type Static } from "@mariozechner/pi-ai";
+import type { AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
+import { dirname } from "node:path";
+
+export interface CronEntry {
+  name: string;
+  intervalMs: number;
+  message: string;
+}
+
+function textResult(text: string): AgentToolResult<string> {
+  return { content: [{ type: "text", text }], details: text };
+}
+
+const CronParams = Type.Object({
+  action: Type.Union([
+    Type.Literal("list"),
+    Type.Literal("add"),
+    Type.Literal("remove"),
+    Type.Literal("update"),
+  ], { description: "list | add | remove | update" }),
+  name: Type.Optional(Type.String({ description: "Job name (required for add/remove/update)" })),
+  intervalMs: Type.Optional(Type.Number({ description: "Interval in milliseconds (required for add, optional for update). Minimum 10000 (10s)." })),
+  message: Type.Optional(Type.String({ description: "Message to send on each interval (required for add, optional for update)" })),
+});
+
+type CronInput = Static<typeof CronParams>;
+
+export interface CronToolOptions {
+  /** Path to the agent's cron.json */
+  configPath: string;
+  /** Called after any write to cron.json so the cron runner can reload. */
+  onConfigChange: () => void;
+  /** Whether cron is active (jobs actually fire). */
+  cronEnabled?: boolean;
+}
+
+export function createCronTool(opts: CronToolOptions): AgentTool<typeof CronParams, string> {
+  function readEntries(): CronEntry[] {
+    if (!existsSync(opts.configPath)) return [];
+    try {
+      const raw = readFileSync(opts.configPath, "utf-8");
+      return JSON.parse(raw);
+    } catch {
+      return [];
+    }
+  }
+
+  function writeEntries(entries: CronEntry[]): void {
+    mkdirSync(dirname(opts.configPath), { recursive: true });
+    writeFileSync(opts.configPath, JSON.stringify(entries, null, 2) + "\n");
+    opts.onConfigChange();
+  }
+
+  return {
+    name: "cron",
+    label: "cron",
+    description:
+      "Manage cron jobs. Use 'list' to see all jobs, 'add' to create one, " +
+      "'remove' to delete by name, 'update' to modify an existing entry. " +
+      "Jobs fire periodically and inject a message into your session.",
+    parameters: CronParams,
+    execute: async (_toolCallId: string, input: CronInput) => {
+      switch (input.action) {
+        case "list": {
+          const entries = readEntries();
+          const status = opts.cronEnabled ? "Cron: active" : "Cron: disabled (jobs defined but won't fire until cron is enabled)";
+          if (entries.length === 0) return textResult(`No cron jobs.\n${status}`);
+          const lines = entries.map(e =>
+            `- ${e.name}: every ${(e.intervalMs / 1000).toFixed(0)}s → "${e.message.slice(0, 100)}"`
+          );
+          lines.push("", status);
+          return textResult(lines.join("\n"));
+        }
+
+        case "add": {
+          if (!input.name) return textResult("Error: 'name' is required for add");
+          if (!input.intervalMs) return textResult("Error: 'intervalMs' is required for add");
+          if (!input.message) return textResult("Error: 'message' is required for add");
+          if (input.intervalMs < 10_000) return textResult("Error: intervalMs must be >= 10000 (10 seconds)");
+          const entries = readEntries();
+          if (entries.some(e => e.name === input.name)) {
+            return textResult(`Error: job "${input.name}" already exists. Use 'update' to modify.`);
+          }
+          entries.push({ name: input.name, intervalMs: input.intervalMs, message: input.message });
+          writeEntries(entries);
+          return textResult(`Added job "${input.name}": every ${(input.intervalMs / 1000).toFixed(0)}s`);
+        }
+
+        case "remove": {
+          if (!input.name) return textResult("Error: 'name' is required for remove");
+          const entries = readEntries();
+          const idx = entries.findIndex(e => e.name === input.name);
+          if (idx === -1) return textResult(`Error: job "${input.name}" not found`);
+          entries.splice(idx, 1);
+          writeEntries(entries);
+          return textResult(`Removed job "${input.name}"`);
+        }
+
+        case "update": {
+          if (!input.name) return textResult("Error: 'name' is required for update");
+          const entries = readEntries();
+          const entry = entries.find(e => e.name === input.name);
+          if (!entry) return textResult(`Error: job "${input.name}" not found`);
+          if (input.intervalMs !== undefined) {
+            if (input.intervalMs < 10_000) return textResult("Error: intervalMs must be >= 10000 (10 seconds)");
+            entry.intervalMs = input.intervalMs;
+          }
+          if (input.message !== undefined) entry.message = input.message;
+          writeEntries(entries);
+          return textResult(`Updated job "${input.name}"`);
+        }
+
+        default:
+          return textResult(`Error: unknown action "${input.action}". Use list/add/remove/update.`);
+      }
+    },
+  };
+}

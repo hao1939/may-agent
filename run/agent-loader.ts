@@ -24,9 +24,13 @@ import {
   createWorkflowTool,
   createBackgroundExecTool,
   createSocketWatchTool,
+  createClaudeCodeTool,
+  createGeminiCliTool,
+  createCronTool,
   stripCliPromptContent,
 } from "../src/index.js";
 import type { EventBus } from "./event-bus.js";
+import { Cron } from "./cron.js";
 
 // ── Agent config schema (agent.json) ────────────────────────────────────
 
@@ -70,6 +74,14 @@ export function setAgentSessionId(name: string, sid: string): void {
 
 /** Per-agent cleanup functions. Called when agent sessions end. */
 const agentCleanups = new Map<string, Array<() => void>>();
+
+/** Per-agent cron instances. Created for agents with the "cron" tool preset. */
+const agentCrons = new Map<string, Cron>();
+
+/** Get all cron instances (for starting/stopping from may.ts). */
+export function getAgentCrons(): Map<string, Cron> {
+  return agentCrons;
+}
 
 /** Register a cleanup function for an agent. */
 function addCleanup(agentName: string, fn: () => void): void {
@@ -117,8 +129,10 @@ function buildTools(
     /\bmkdir\b/,
     /\btouch\b/,
     /\bchmod\b|\bchown\b/,
-    /\bpython3?\s+-c\b.*open\(/,
+    /\bpython3?\s+-c\b[\s\S]*open\(/,
     /\bnode\s+-e\b/,
+    /\bperl\s+-e\b/,
+    /\bruby\s+-e\b/,
     /\bgit\s+(reset|checkout)\b/,
   ];
 
@@ -174,6 +188,20 @@ function buildTools(
             ...writeDenyPatterns,
           ],
           denyMessage: "You cannot write files directly. Use claude-code or gemini-cli to implement changes.",
+        }));
+        break;
+
+      case "claude-code":
+        tools.push(createClaudeCodeTool({
+          cwd: projectRoot,
+          maxOutputLength: 80_000,
+        }));
+        break;
+
+      case "gemini-cli":
+        tools.push(createGeminiCliTool({
+          cwd: projectRoot,
+          maxOutputLength: 80_000,
         }));
         break;
 
@@ -236,6 +264,31 @@ function buildTools(
         break;
       }
 
+      case "cron": {
+        const cronPath = resolve(agentDir, "cron.json");
+        let cron = agentCrons.get(config.name);
+        if (!cron) {
+          cron = new Cron(
+            cronPath,
+            manager,
+            () => {
+              const sid = agentSessionIds.get(config.name);
+              if (!sid) throw new Error(`No active ${config.name} session`);
+              return sid;
+            },
+            (msg) => bus.emit({ type: "info", message: `[cron:${config.name}] ${msg}` }),
+          );
+          cron.load();
+          agentCrons.set(config.name, cron);
+        }
+        tools.push(createCronTool({
+          configPath: cronPath,
+          onConfigChange: () => cron!.reload(),
+          cronEnabled: process.env.SCHEDULERS === "1",
+        }));
+        break;
+      }
+
       default:
         console.warn(`[loader] Unknown tool preset "${preset}" for agent "${config.name}" — skipping`);
     }
@@ -271,7 +324,8 @@ function resolvePromptFiles(config: AgentConfig, agentsRoot: string): string[] {
 
 const VALID_TOOL_PRESETS = new Set([
   "read-write", "read-only", "exec", "exec-readonly", "exec-master",
-  "subagents", "workflow", "background-exec", "socket-watch",
+  "claude-code", "gemini-cli",
+  "subagents", "workflow", "background-exec", "socket-watch", "cron",
 ]);
 
 const REQUIRED_FIELDS: (keyof AgentConfig)[] = ["name", "description", "domain", "model", "tools"];

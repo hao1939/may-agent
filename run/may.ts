@@ -6,7 +6,7 @@ import { SubagentManager, evaluateTask } from "../src/index.js";
 import { EventBus } from "./event-bus.js";
 import { attachConsoleUI } from "./console-ui.js";
 import { attachSocketUI } from "./socket-ui.js";
-import { loadAgents, reloadAgents, setAgentSessionId, runAgentCleanup, type AgentLoaderOptions } from "./agent-loader.js";
+import { loadAgents, reloadAgents, setAgentSessionId, runAgentCleanup, getAgentCrons, type AgentLoaderOptions } from "./agent-loader.js";
 
 const PROJECT_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const AGENTS_ROOT = resolve(PROJECT_ROOT, "agents");
@@ -91,17 +91,22 @@ bus.emit({ type: "info", message: `Loaded ${loadResult.added.length} agent(s): $
 
 // ── Event routing ──────────────────────────────────────────────────────
 
+const interfaceAgent = process.env.AGENT || "may";
+
 function attachAgentEvents(label: string, sessionId: string): void {
   manager.subscribe(sessionId, (event) => {
+    // Tag interface agent's assistant text as "chat" channel
+    const channel = label === interfaceAgent ? "chat" as const : undefined;
+
     switch (event.type) {
       case "message_start":
         if (event.message.role === "assistant") {
-          bus.emit({ type: "prompt", message: label });
+          bus.emit({ type: "prompt", message: label, channel });
         }
         break;
       case "message_update":
         if (event.assistantMessageEvent.type === "text_delta") {
-          bus.emit({ type: "text", agent: label, text: event.assistantMessageEvent.delta });
+          bus.emit({ type: "text", agent: label, text: event.assistantMessageEvent.delta, channel });
         }
         break;
       case "tool_execution_start":
@@ -161,12 +166,10 @@ bus.onCommand((cmd) => {
     }
     case "input":
       bus.emit({ type: "info", message: `[socket] Input: "${cmd.message.slice(0, 80)}"` });
-      lastUserInput = Date.now();
-      sendToInterface(cmd.message);
+      sendInput(cmd.message);
       break;
     case "run": {
       bus.emit({ type: "info", message: `[socket] Run @${cmd.agent}: "${cmd.message.slice(0, 80)}"` });
-      lastUserInput = Date.now();
       runDirect(cmd.agent, cmd.message);
       break;
     }
@@ -187,28 +190,33 @@ bus.onCommand((cmd) => {
   }
 });
 
-// ── Send input to interface agent's persistent session ─────────────────
+// ── Input handling (non-blocking via followUp) ─────────────────────────
 
-let lastUserInput = Date.now();
-
-async function sendToInterface(message: string): Promise<void> {
+/**
+ * Send input to the interface agent. Non-blocking: uses followUp() which
+ * queues at the turn boundary if busy, or wakes idle sessions.
+ */
+function sendInput(message: string): void {
   try {
-    await manager.send(sid, message);
-    // If send() steered into a running session, wait for it to finish
-    await manager.waitForIdle(sid);
+    manager.followUp(sid, message);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    bus.emit({ type: "info", message: `Send error: ${msg}` });
+    bus.emit({ type: "info", message: `Input error: ${msg}` });
   }
 }
 
 /** Run a fresh ephemeral session on any agent directly (bypasses interface agent). */
-async function runDirect(agentName: string, message: string): Promise<void> {
+function runDirect(agentName: string, message: string): void {
   try {
     const sessionId = manager.run(agentName, message);
     bus.emit({ type: "info", message: `[direct] Started ${agentName} session: ${sessionId}` });
-    await manager.waitFor(sessionId);
-    bus.emit({ type: "info", message: `[direct] ${agentName} session completed: ${sessionId}` });
+    // Non-blocking: don't await. Session result will be logged via onSessionComplete.
+    manager.waitFor(sessionId).then(() => {
+      bus.emit({ type: "info", message: `[direct] ${agentName} session completed: ${sessionId}` });
+    }).catch((err) => {
+      const msg = err instanceof Error ? err.message : String(err);
+      bus.emit({ type: "info", message: `[direct] ${agentName} session error: ${msg}` });
+    });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     bus.emit({ type: "info", message: `[direct] Error: ${msg}` });
@@ -224,6 +232,11 @@ function gracefulShutdown() {
   shuttingDown = true;
   const stack = new Error("gracefulShutdown trace").stack;
   bus.emit({ type: "info", message: `Shutting down...\n${stack}` });
+
+  // Stop all cron jobs
+  for (const cron of getAgentCrons().values()) {
+    cron.stop();
+  }
 
   // Cancel non-persistent child sessions but leave the interface agent's
   // persistent session intact for resume on next startup.
@@ -262,8 +275,6 @@ process.on("exit", (code) => {
 });
 
 // ── Interface agent selection ──────────────────────────────────────────
-
-const interfaceAgent = process.env.AGENT || "may";
 
 // Verify the interface agent is registered
 if (!manager.hasAgent(interfaceAgent)) {
@@ -324,6 +335,57 @@ if (resumeError) {
   await manager.waitForIdle(sid);
 }
 
+// ── Start cron jobs (SCHEDULERS=1 to enable) ───────────────────────────
+
+if (process.env.SCHEDULERS === "1") {
+  for (const [name, cron] of getAgentCrons()) {
+    const entries = cron.getEntries();
+    if (entries.length > 0) {
+      bus.emit({ type: "info", message: `[cron:${name}] Starting ${entries.length} job(s)` });
+      cron.start();
+    }
+  }
+}
+
+// ── Idle prompt ────────────────────────────────────────────────────────
+
+/**
+ * Track whether the interface agent is busy so we can prompt at the right time.
+ * Subscribe to the interface session to detect idle transitions.
+ */
+function emitPrompt(): void {
+  if (process.stdin.isTTY) {
+    process.stdout.write(`\nyou> `);
+  }
+}
+
+// Emit prompt when the interface agent finishes processing
+manager.subscribe(sid, (event) => {
+  if (event.type === "turn_end") {
+    // Check if this is the last turn (agent going idle).
+    // We detect this by checking if the stop reason indicates natural end.
+    // The handleCompletion in manager sets status to "idle" for persistent sessions.
+  }
+});
+
+// Simpler approach: poll status briefly after each followUp completes.
+// But actually — the best approach is a waitForIdle-based watcher.
+// After each input, waitForIdle in the background and prompt when done.
+let idleWatcher: Promise<void> | null = null;
+
+function watchForIdle(): void {
+  // Cancel any previous watcher
+  idleWatcher = manager.waitForIdle(sid).then(() => {
+    emitPrompt();
+  }).catch(() => {
+    // Session error — still prompt
+    emitPrompt();
+  });
+}
+
+// Watch for initial idle (already idle after startup, but set up the pattern)
+watchForIdle();
+
 // ── Main loop ──────────────────────────────────────────────────────────
 
 /** Parse @agent prefix from input. Returns [agentName, message] or [null, original]. */
@@ -336,16 +398,16 @@ function parseAgentPrefix(input: string): [string | null, string] {
 if (process.stdin.isTTY) {
   const rl = createInterface({ input: process.stdin, output: process.stdout });
 
-  // Track whether we're in the middle of a task (sendToInterface or runDirect)
-  let taskRunning = false;
-
   rl.on("SIGINT", () => {
-    if (taskRunning) {
-      // Ctrl+C while a task is running: cancel the task, keep the session
+    // Check if the interface agent is currently running
+    const sessions = manager.status();
+    const interfaceSession = sessions.find(s => s.sessionId === sid);
+    if (interfaceSession && interfaceSession.status === "running") {
+      // Ctrl+C while busy: cancel the task
       bus.emit({ type: "info", message: "\n[ctrl+c] Cancelling current task..." });
       manager.cancel(sid);
       // Also cancel any direct-agent sessions
-      for (const s of manager.status()) {
+      for (const s of sessions) {
         if (s.status === "running" && s.sessionId !== sid) {
           manager.cancel(s.sessionId);
         }
@@ -355,9 +417,6 @@ if (process.stdin.isTTY) {
       gracefulShutdown();
     }
   });
-
-  const prompt = () => { process.stdout.write(`\nyou> `); };
-  prompt();
 
   for await (const line of rl) {
     const input = line.trim();
@@ -369,7 +428,7 @@ if (process.stdin.isTTY) {
     }
     if (input === "cancel") {
       manager.cancel(sid);
-      prompt();
+      emitPrompt();
       continue;
     }
     if (input === "reload") {
@@ -384,25 +443,22 @@ if (process.stdin.isTTY) {
       } else {
         bus.emit({ type: "info", message: "[reload] No changes" });
       }
-      prompt();
+      emitPrompt();
       continue;
     }
-    if (!input) { prompt(); continue; }
-
-    lastUserInput = Date.now();
-    taskRunning = true;
+    if (!input) { emitPrompt(); continue; }
 
     const [targetAgent, message] = parseAgentPrefix(input);
     if (targetAgent) {
-      // Direct agent invocation: @agent message
-      await runDirect(targetAgent, message);
+      // Direct agent invocation: @agent message (non-blocking)
+      runDirect(targetAgent, message);
     } else {
-      // Default: send to interface agent
-      await sendToInterface(input);
+      // Default: send to interface agent (non-blocking via followUp)
+      sendInput(input);
     }
 
-    taskRunning = false;
-    prompt();
+    // Watch for the agent to go idle, then re-prompt
+    watchForIdle();
   }
 
   socketUI.close();
