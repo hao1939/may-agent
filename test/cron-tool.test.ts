@@ -67,6 +67,12 @@ describe("cron tool", () => {
     expect(out).toContain("10000");
   });
 
+  it("add rejects name longer than 50 chars", async () => {
+    const longName = "a".repeat(51);
+    const out = await exec(ctx.tool, { action: "add", name: longName, intervalMs: 60000, message: "m" });
+    expect(out).toContain("Error: name must be <= 50 characters");
+  });
+
   it("add requires all fields", async () => {
     expect(await exec(ctx.tool, { action: "add" })).toContain("'name' is required");
     expect(await exec(ctx.tool, { action: "add", name: "x" })).toContain("'intervalMs' is required");
