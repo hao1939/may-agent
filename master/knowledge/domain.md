@@ -41,6 +41,29 @@ Both tools take a `prompt` (your task description) and an optional `timeout`
 - **Ask for verification**: "After making the change, run `npx tsc --noEmit` and `npx vitest --run`"
 - **One logical task per invocation**: Don't ask an agent to do 5 unrelated things
 
+## Combine Read + Implement + Verify in One Prompt
+
+Each tool call is expensive. Do NOT use separate calls to explore and then implement.
+Instead, combine everything into a single prompt:
+
+**Bad** (3 calls):
+1. "Read src/overflow.ts and show me the contents"
+2. "Now read test/overflow.test.ts"
+3. "Now add a formatBytes function to src/overflow.ts and add tests"
+
+**Good** (1 call):
+1. "Read src/overflow.ts, then append a formatBytes function at the end. Add tests
+   in test/format-bytes.test.ts. Run npx tsc --noEmit and npx vitest --run to verify."
+
+The CLI agents can read files, make changes, and verify — all in one invocation.
+Let them do the exploration as part of the implementation.
+
+## Timeout
+
+CLI agents need time to start up and do their work. Always use `timeout: 180` or
+higher for implementation tasks. The default (120s) is often too tight for
+multi-file changes. Never use timeouts below 60s — they will almost always fail.
+
 ## Rules
 
 - **Do NOT commit** — May handles all git operations

@@ -12,9 +12,32 @@
 ## Editing & Tools
 
 - `AgentMessage.isError` is only set when a tool's `execute()` throws. Detect failures by parsing tool output text, not by checking `isError`.
-- Always use the `write` tool to edit files — never `sed`, `cat >`, or heredocs via exec.
+- The `write` tool OVERWRITES THE ENTIRE FILE. Never use it for a one-line edit on a large file — you'll destroy the file. For surgical edits to existing files: read the full file first, apply your changes in memory, then write the complete updated file. For new files, write is fine.
+- For all file editing decisions, follow the **File Editing Protocol** section below.
 - Read the full file before modifying it. Don't guess at file contents based on grep snippets.
 - When asked to "add X to file Y", preserve all existing content. Don't rewrite or reorganize sections you weren't asked to change. A task like "add a Review Quality section to domain.md" means append/insert that section — not rewrite the entire file and drop existing sections.
+
+## File Editing Protocol
+
+Choose the right strategy based on the size of your change:
+
+### Surgical edits (one or a few lines)
+- Use `sed` with **pattern matching**: `sed -i "s/exact_old_text/new_text/" file`
+- **NEVER use `sed` with line numbers** (e.g., `sed -i "5s/old/new/"`, `sed -i "168s/foo/bar/"`). Line numbers shift as you make edits, causing you to corrupt the wrong lines.
+- If the pattern isn't unique enough, add surrounding context: `sed -i "/surrounding_context/s/old/new/" file`
+
+### Larger changes (multiple lines, new sections, structural rewrites)
+- **Read** the full file first with the `read` tool.
+- Apply your changes mentally.
+- **Write** the complete updated file with the `write` tool.
+
+### The cardinal rule
+- **Before using `write` on an existing file: read it in full first.** Never write a file you have only partially read. If your earlier read was truncated, re-read the missing sections before writing. A `write` based on incomplete knowledge silently destroys the parts you didn't see.
+
+### Banned patterns
+- `sed -i "Ns/..."` (line-number addressing) — lines drift, causes corruption
+- `cat > file << 'EOF'` or heredocs via exec — use the `write` tool instead
+- Writing a file after only reading it with `grep` snippets or partial `head`/`tail`
 
 ## Truncated Output
 
