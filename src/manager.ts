@@ -126,6 +126,8 @@ interface ActiveSession {
   turnWarningFired: boolean;
   /** When true, session stays active after completion (transitions to "idle"). */
   persistent: boolean;
+  /** Set by close() — prevents handleCompletion from acting on an already-archived session. */
+  closed: boolean;
 }
 
 /** Options for spawning a session with parent/workflow context. */
@@ -410,66 +412,80 @@ export class SubagentManager {
     }
   }
 
-  /** Common completion handler for run() and resume(). */
+  /**
+   * Common completion handler — called when the agent's prompt()/continue() settles.
+   *
+   * Determines the outcome from agent state, then branches:
+   *   - Persistent sessions → idle (stays in activeSessions)
+   *   - Non-persistent sessions → terminal status (done/error/interrupted) → archive + remove
+   *
+   * See docs/session-state-machine.md for the full state machine.
+   */
   private handleCompletion(session: ActiveSession): void {
     this.clearTimeout(session);
 
-    // Detect turn-limit abort: if maxTurns was set and turnCount reached it,
-    // override the generic abort error with a structured turn-limit error
-    if (session.maxTurns && session.turnCount >= session.maxTurns) {
-      session.status = "error";
+    // Guard: if close() already archived this session, skip.
+    if (session.closed) return;
+
+    // ── Determine outcome from agent state ─────────────────────────────
+    const agentError = session.agent.state.error ?? session.error;
+    const wasAborted = agentError?.includes("aborted") ?? false;
+    const wasTurnLimit = !!(session.maxTurns && session.turnCount >= session.maxTurns);
+
+    // Set error field (turn-limit overrides the generic abort message)
+    if (wasTurnLimit) {
       session.error = `Turn limit reached (${session.turnCount}/${session.maxTurns} turns)`;
-      this.registry.updateSessionStatus(session.sessionId, "error", session.error);
+    } else if (agentError) {
+      session.error = agentError;
     }
 
-    // On context overflow, dump structured progress to workspace
-    if (session.status === "error" && session.error && isOverflowError(session.error)) {
+    // On context overflow, dump structured progress to workspace (best-effort)
+    if (session.error && isOverflowError(session.error)) {
       const registered = this.agents.get(session.agentName);
       const workspace = registered?.definition.workspace;
       if (workspace) {
         try {
-          const progress = extractProgress(
-            session.task,
-            session.agent.state.messages,
-            session.error,
-          );
-          writeProgressFile(workspace, progress);
-        } catch {
-          // Best-effort — don't let progress dump failure mask the original error
-        }
+          writeProgressFile(workspace, extractProgress(session.task, session.agent.state.messages, session.error));
+        } catch { /* best-effort */ }
       }
     }
 
-    // Persistent sessions: transition to "idle" instead of archiving.
-    // Keep the session in activeSessions so it can receive new input via send().
-    // DON'T unsubscribe persistence/turn-limit listeners — they'll be needed when resumed.
+    // ── Persistent: always transition to idle ──────────────────────────
     if (session.persistent) {
-      // If the session was aborted (cancelled by user), queue a notice so the agent
-      // doesn't retry the cancelled task on next resume or send().
-      if (session.agent.state.error === "Request was aborted") {
-        session.agent.followUp({
+      // Persist cancellation notice so agent doesn't retry on resume/wake.
+      // Written to JSONL (survives restart) and queued as followUp (in-process wake).
+      if (wasAborted && !wasTurnLimit) {
+        const cancelMsg: AgentMessage = {
           role: "user",
-          content: [{ type: "text", text: "[Task cancelled by user. Do not retry. Wait for new instructions.]" }],
+          content: [{ type: "text", text: "[Task cancelled by user. Do not retry the cancelled task. Wait for new instructions.]" }],
           timestamp: Date.now(),
-        });
+        };
+        appendSessionMessage(this.registry.persistDir, session.sessionId, cancelMsg);
+        session.agent.followUp(cancelMsg);
       }
       session.status = "idle";
       this.registry.updateSessionStatus(session.sessionId, "idle");
       return;
     }
 
-    // Non-persistent: full cleanup
+    // ── Non-persistent: set terminal status, archive, remove ───────────
+    if (wasAborted) {
+      session.status = "interrupted";
+    } else if (session.error) {
+      session.status = "error";
+    } else {
+      session.status = "done";
+    }
+    this.registry.updateSessionStatus(session.sessionId, session.status, session.error);
+
     session.unsubscribe?.();
     session.unsubscribeTurnLimit?.();
     session.endedAt = Date.now();
 
     this.appendMemory(session);
     this.archiveSessionDir(session);
-
-    // Remove from active sessions — completed sessions are read from persistence
     this.activeSessions.delete(session.sessionId);
 
-    // Notify completion callback (for auto-evaluation, metrics, etc.)
     if (this.onSessionComplete) {
       const info: SessionInfo = {
         sessionId: session.sessionId,
@@ -485,11 +501,7 @@ export class SubagentManager {
         workflowRunId: session.workflowRunId,
         stepLabel: session.stepLabel,
       };
-      try {
-        this.onSessionComplete(info);
-      } catch {
-        // Best-effort — don't let callback errors affect session lifecycle
-      }
+      try { this.onSessionComplete(info); } catch { /* best-effort */ }
     }
   }
 
@@ -538,6 +550,7 @@ export class SubagentManager {
       turnWarningThreshold: def.turnWarningThreshold ?? 0.8,
       turnWarningFired: false,
       persistent: opts?.persistent ?? def.persistent ?? false,
+      closed: false,
     };
 
     // Subscribe for JSONL persistence before starting the prompt
@@ -568,20 +581,10 @@ export class SubagentManager {
 
     session.promise = agent.prompt(task)
       .then(() => {
-        if (agent.state.error) {
-          session.status = "error";
-          session.error = agent.state.error;
-          this.registry.updateSessionStatus(sessionId, "error", agent.state.error);
-        } else {
-          session.status = "done";
-          this.registry.updateSessionStatus(sessionId, "done");
-        }
         this.handleCompletion(session);
       })
       .catch((err) => {
-        session.status = "error";
         session.error = err?.message ?? String(err);
-        this.registry.updateSessionStatus(sessionId, "error", session.error);
         this.handleCompletion(session);
       });
 
@@ -772,6 +775,7 @@ export class SubagentManager {
       turnWarningThreshold: def.turnWarningThreshold ?? 0.8,
       turnWarningFired: false,
       persistent: opts?.persistent ?? def.persistent ?? false,
+      closed: false,
     };
 
     this.subscribeForPersistence(session);
@@ -794,20 +798,10 @@ export class SubagentManager {
 
     session.promise = startPromise
       .then(() => {
-        if (agent.state.error) {
-          session.status = "error";
-          session.error = agent.state.error;
-          this.registry.updateSessionStatus(sid, "error", agent.state.error);
-        } else {
-          session.status = "done";
-          this.registry.updateSessionStatus(sid, "done");
-        }
         this.handleCompletion(session);
       })
       .catch((err) => {
-        session.status = "error";
         session.error = err?.message ?? String(err);
-        this.registry.updateSessionStatus(sid, "error", session.error);
         this.handleCompletion(session);
       });
 
@@ -894,6 +888,7 @@ export class SubagentManager {
         turnWarningThreshold: def.turnWarningThreshold ?? 0.8,
         turnWarningFired: false,
         persistent: def.persistent ?? false,
+        closed: false,
       };
 
       // Subscribe for JSONL persistence before starting the prompt
@@ -914,20 +909,10 @@ export class SubagentManager {
       // Start the agent running with the resume message
       session.promise = agent.prompt(resumeMessage)
         .then(() => {
-          if (agent.state.error) {
-            session.status = "error";
-            session.error = agent.state.error;
-            this.registry.updateSessionStatus(sessionId, "error", agent.state.error);
-          } else {
-            session.status = "done";
-            this.registry.updateSessionStatus(sessionId, "done");
-          }
           this.handleCompletion(session);
         })
         .catch((err) => {
-          session.status = "error";
           session.error = err?.message ?? String(err);
-          this.registry.updateSessionStatus(sessionId, "error", session.error);
           this.handleCompletion(session);
         });
 
@@ -1134,13 +1119,16 @@ export class SubagentManager {
   }
 
   /** Get result of a completed session.
-   *  Throws if session not found or still running.
+   *  Throws if session not found, still running, or idle (persistent).
    */
   result(sessionId: string): TaskResult {
     const session = this.activeSessions.get(sessionId);
     if (session) {
       if (session.status === "running") {
         throw new Error(`Session "${sessionId}" is still running`);
+      }
+      if (session.status === "idle") {
+        throw new Error(`Session "${sessionId}" is idle (persistent) — use progress() to read messages`);
       }
       return this.buildResultFromSession(session);
     }
@@ -1190,7 +1178,11 @@ export class SubagentManager {
     };
   }
 
-  /** Cancel a running session and all its children (cascading). No-op if session not found or already completed. */
+  /**
+   * Cancel a running session and all its children (cascading).
+   * No-op if session not found, already terminal, or idle+persistent (nothing to cancel).
+   * See docs/session-state-machine.md.
+   */
   cancel(sessionId: string): void {
     const session = this.activeSessions.get(sessionId);
     if (!session) return;
@@ -1204,17 +1196,24 @@ export class SubagentManager {
     }
 
     if (session.status === "idle") {
-      // No agent loop to abort — go straight to completion handling.
-      // handleCompletion will decide: persistent → stay idle, non-persistent → archive.
+      if (session.persistent) {
+        // Persistent + idle: no-op — nothing is running. Use close() to destroy.
+        return;
+      }
+      // Non-persistent + idle: shouldn't normally happen, but clean up.
       session.status = "interrupted";
       session.error = "Cancelled";
       this.registry.updateSessionStatus(sessionId, "interrupted", "Cancelled");
-      this.handleCompletion(session);
+      session.unsubscribe?.();
+      session.unsubscribeTurnLimit?.();
+      session.endedAt = Date.now();
+      this.appendMemory(session);
+      this.archiveSessionDir(session);
+      this.activeSessions.delete(sessionId);
       return;
     }
 
-    // Running — abort the agent loop. handleCompletion will fire when the
-    // agent promise settles and will respect the persistent flag.
+    // Running — abort the agent loop. handleCompletion fires when the promise settles.
     session.agent.abort();
   }
 
@@ -1224,20 +1223,22 @@ export class SubagentManager {
    * If the session is running, cancels it first (cascading children).
    * Unlike cancel(), this always archives — even for persistent sessions.
    * The session will NOT resume on restart.
+   * See docs/session-state-machine.md.
    */
   close(sessionId: string): void {
     const session = this.activeSessions.get(sessionId);
     if (!session) return;
 
-    // If running or has running children, cancel first
+    // Set closed flag FIRST — prevents handleCompletion (from pending abort) from acting.
+    session.closed = true;
+
+    // Cancel running work (cascading children).
     this.cancel(sessionId);
 
-    // At this point, persistent sessions are "idle" from cancel().
-    // Non-persistent sessions are already archived by handleCompletion.
-    // We only need to handle the persistent case.
-    if (!this.activeSessions.has(sessionId)) return; // already gone
+    // If already removed (non-persistent idle was archived by cancel), done.
+    if (!this.activeSessions.has(sessionId)) return;
 
-    // Archive the persistent session
+    // Still here — archive and remove.
     session.unsubscribe?.();
     session.unsubscribeTurnLimit?.();
     session.endedAt = Date.now();
@@ -1293,7 +1294,7 @@ export class SubagentManager {
     if (!session.persistent) {
       throw new Error(`Session "${sessionId}" is not persistent — use steer() for non-persistent sessions`);
     }
-    if (session.status === "done" || session.status === "error" || session.status === "interrupted") {
+    if (session.status !== "running" && session.status !== "idle") {
       throw new Error(`Session "${sessionId}" is in terminal state: ${session.status}`);
     }
 
@@ -1315,20 +1316,10 @@ export class SubagentManager {
 
     session.promise = session.agent.continue()
       .then(() => {
-        if (session.agent.state.error) {
-          session.status = "error";
-          session.error = session.agent.state.error;
-          this.registry.updateSessionStatus(sessionId, "error", session.agent.state.error);
-        } else {
-          session.status = "done";
-          this.registry.updateSessionStatus(sessionId, "done");
-        }
         this.handleCompletion(session);
       })
       .catch((err) => {
-        session.status = "error";
         session.error = err?.message ?? String(err);
-        this.registry.updateSessionStatus(sessionId, "error", session.error);
         this.handleCompletion(session);
       });
 
