@@ -215,6 +215,7 @@ function buildTools(
           cwd: projectRoot,
           denyPatterns: baseDenyPatterns,
           denyMessage: "Do not explore outside the project root. Use relative paths.",
+          allowAgentSpawn: true, // Coach agents need to spawn coachee processes
         });
         tools.push(bgExec.tool);
         addCleanup(config.name, bgExec.cleanup);

@@ -57,10 +57,6 @@ class OutputBuffer {
     return unread;
   }
 
-  /** Peek at all buffered output without advancing cursor. */
-  peek(): string {
-    return this.buffer;
-  }
 }
 
 // ── Process tracking ────────────────────────────────────────────────────
@@ -82,6 +78,11 @@ export interface BackgroundExecToolOptions {
   denyPatterns?: RegExp[];
   /** Message shown when a command is blocked by a deny pattern. */
   denyMessage?: string;
+  /**
+   * Skip the meta-recursion guard (which normally blocks npx tsx run/may.ts etc.).
+   * Enable this for the coach agent, which legitimately needs to spawn coachee processes.
+   */
+  allowAgentSpawn?: boolean;
 }
 
 const BackgroundExecParams = Type.Object({
@@ -109,6 +110,7 @@ export function createBackgroundExecTool(
   const cwd = opts?.cwd ?? process.cwd();
   const denyPatterns = opts?.denyPatterns ?? [];
   const denyMessage = opts?.denyMessage ?? "Command blocked by deny pattern.";
+  const allowAgentSpawn = opts?.allowAgentSpawn ?? false;
 
   const processes = new Map<number, ProcessEntry>();
 
@@ -143,7 +145,7 @@ export function createBackgroundExecTool(
             const command = params.command;
 
             // Deny pattern check
-            if (isMetaRecursionCommand(command)) {
+            if (!allowAgentSpawn && isMetaRecursionCommand(command)) {
               return textResult(JSON.stringify({ error: "Blocked: command would recursively start the agent runtime. Use socket_watch to interact with other agent processes." }));
             }
             for (const pattern of denyPatterns) {
