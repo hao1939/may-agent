@@ -129,7 +129,7 @@ export function createCronTool(opts: CronToolOptions): AgentTool<typeof CronPara
 
         case "status": {
           const entries = readEntries();
-          const enabled = opts.cronEnabled ? "enabled" : "disabled";
+          const enabled = opts.cronEnabled ? "ACTIVE" : "DISABLED";
           if (entries.length === 0) {
             return textResult(`Cron status: ${enabled}, 0 jobs`);
           }
