@@ -164,14 +164,14 @@ describe("cron tool", () => {
 
   it("status shows 0 jobs when empty", async () => {
     const out = await exec(ctx.tool, { action: "status" });
-    expect(out).toContain("0 jobs");
-    expect(out).toContain("DISABLED");
+    expect(out).toContain("No cron jobs configured.");
+    expect(out).toContain("Status: DISABLED");
   });
 
   it("status shows enabled when cronEnabled is true", async () => {
     const enabledCtx = makeToolCtx(true);
     const out = await exec(enabledCtx.tool, { action: "status" });
-    expect(out).toContain("ACTIVE");
+    expect(out).toContain("Status: ACTIVE");
     expect(out).not.toContain("DISABLED");
     enabledCtx.cleanup();
   });
@@ -181,7 +181,7 @@ describe("cron tool", () => {
     await exec(ctx.tool, { action: "add", name: "fast", intervalMs: 30000, message: "fast msg" });
     await exec(ctx.tool, { action: "add", name: "medium", intervalMs: 60000, message: "med msg" });
     const out = await exec(ctx.tool, { action: "status" });
-    expect(out).toContain("3 job(s)");
+    expect(out).toContain("3 job(s) configured");
     expect(out).toContain('"fast"');
     expect(out).toContain("30s");
   });
