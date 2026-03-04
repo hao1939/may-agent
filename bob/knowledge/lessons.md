@@ -1,6 +1,6 @@
-# Lessons
+## Lessons
 
-## How Bob Operates
+### How Bob Operates
 
 ### 1. Don't Stop at Synthesis
 Bob's recurring failure mode: produce analysis, write it to a file, stop. The
@@ -172,3 +172,30 @@ Meaningful agent evaluation is domain-specific: "Can Bob spot a philosophy
 contradiction in one review pass?" "Can the optimizer reduce a real file's
 complexity score?" Design evaluation criteria that test what actually
 matters for the agent's specific role, not generic reasoning ability.
+
+### 25. Abort ≠ Partial Success
+When a task is aborted before any output (0 tool calls, or error on first call),
+it is a failure (0 quality, 0 efficiency). Do not attempt to infer partial
+success or give credit for "intent". An aborted session provides no value.
+(Learned from session `s_1772559317109_1`).
+
+### 26. Block Known Broken Paths
+If an external tool (like a CLI wrapper) is known to be flaky in the current
+environment, block it structurally. Don't rely on "be careful" instructions.
+Return an explicit error guiding the agent to the reliable path. This enforces
+Principles 11 (No Silent Failures) and 21 (Deterministic Guardrails).
+(Implemented via `FLAKY_CLI_WRITE_PATTERN` in `tools.ts`).
+
+### 27. Verify Inputs Before Delegation
+Before delegating a task to another agent, verify that the necessary inputs
+(files, IDs, data) actually exist. Passing null/empty inputs causes
+downstream failures and wastes tokens. If the inputs aren't there, abort
+the task locally instead of spawning a sub-agent. (Learned from session
+`s_1772602312610_0`).
+
+### 28. Persist Intent Immediately
+When an agent starts a task, persist the task description to disk *before*
+any execution begins. Relying on async event streams (like `message_end`)
+means a crash during initialization leaves no trace of what the agent was
+trying to do. "What was requested" is as important as "what happened".
+(Fixed in `src/manager.ts` after evaluator found missing transcripts).

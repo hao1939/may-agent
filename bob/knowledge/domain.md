@@ -310,3 +310,10 @@ Maintain `agents/bob/workspace/pending-decisions.md` for questions that need hum
 ```
 
 The loop continues while decisions are pending. When the human responds, update philosophy.md.
+
+### Periodic Tasks
+
+Your periodic task list is at `agents/bob/periodic-tasks.md`. When asked to
+check periodic tasks, read that file and pick the most appropriate one based
+on what's been done recently. You own this file — add, remove, or adjust
+tasks as you learn what's valuable.

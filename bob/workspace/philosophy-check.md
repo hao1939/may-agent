@@ -1,14 +1,16 @@
-## Philosophy Check: recent sessions
+## Philosophy Check: System Prompt Reordering
 
 ### Aligned ✅
-- **Deterministic Guardrails (Principle 21)**: The optimizer successfully implemented a structural block for `exec run/may.ts` in `s_1772532605282_6`. Instead of just telling agents "don't do this", it made it impossible.
-- **Approve Means Apply (Principle 4)**: The optimizer (in `s_1772532605282_6`) read the brief and immediately implemented the fix without asking for further confirmation.
+- **Context Engineering (Principle 36):** The fix implements "Stable prefix for cache hits" by moving the volatile `Session ID` from the top (where it invalidates the entire cache) to the bottom.
+- **Measurable Operations (Principle 13):** The test (`test/system-prompt-cache.test.ts`) quantifies the improvement (stable prefix increased from ~100 to ~4,700 chars).
+- **Simplest Thing First (Principle 1):** The fix required moving 3 lines of code in `src/manager.ts`. No new abstractions, no complexity.
 
 ### Drift ⚠️
-- **Action Over Reporting (Principle 2)**: Bob consistently fails to complete the "Act" part of the loop without explicit coercion. In `s_1772532544019_4` and `s_1772530276229_7`, the user had to explicitly command "Do NOT stop after writing the brief" or "Continue from where you left off". Bob treats the *plan* (the brief) as the deliverable, rather than the *result* (the optimization).
+- **Session Context Fragmentation:** The "Runtime Environment" section is now split: Project Root at the top, Session ID at the bottom. This might be slightly confusing for humans reading the prompt, but it's optimized for the machine.
 
 ### Questions ❓
-- None at this stage.
+- **Turn Budget Stability:** The Turn Budget section is currently at the very bottom (after volatile content). Since it's stable (per-agent config), could it move higher? (Probably not worth moving if it's short).
 
 ### Recommendations
-- Update Bob's prompts/knowledge to explicitly define the "Meta-Loop" task as *including* the delegation. The "Brief" is an internal artifact, not a final output.
+- **Monitor:** Check if this improves latency/cost on subsequent runs of the same agent.
+- **Extend:** Apply similar "stable prefix" logic to other agent definitions if they have custom prompt construction logic.

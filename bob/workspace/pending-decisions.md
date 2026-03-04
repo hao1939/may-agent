@@ -1,0 +1,1 @@
+- [2026-03-03] Context: Implemented `FLAKY_CLI_WRITE_PATTERN` to block `gemini-cli`/`claude` file redirection. Question: Should we block *all* CLI tools from file redirection, or just these known flaky ones? [WAITING FOR HUMAN]
