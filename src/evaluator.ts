@@ -788,13 +788,33 @@ export async function evaluateTask(opts: EvaluateTaskOptions): Promise<TaskEvalu
     ...perAgentTranscripts,
   ].join("\n");
 
-  // Run evaluator agent
+  // Run evaluator agent with retry on malformed output
+  let responseText = "";
+  let parsed = parseTaskEvaluation("");
+  
   const evalSessionId = manager.run("evaluator", prompt);
   const evalResult = await manager.waitFor(evalSessionId);
-  const responseText = evalResult?.lastAssistantText ?? "";
-
-  // Parse per-agent scores
-  const parsed = parseTaskEvaluation(responseText);
+  responseText = evalResult?.lastAssistantText ?? "";
+  parsed = parseTaskEvaluation(responseText);
+  
+  // Retry once if evaluator produced no agent scores (malformed or missing JSON)
+  const hasAgentScores = Object.keys(parsed.agents).length > 0;
+  if (!hasAgentScores && children.length > 0) {
+    const retryPrompt = 
+      `Your previous response did not contain a valid JSON scores block. ` +
+      `Please output ONLY the JSON scores block in a \`\`\`json code fence, ` +
+      `followed by a ### Lessons section. No other text.\n\n` +
+      `Agents to score: ${[...new Set(children.map(c => c.agent))].join(", ")}\n\n` +
+      `Your previous response was:\n${responseText.slice(0, 2000)}`;
+    const retrySessionId = manager.run("evaluator", retryPrompt);
+    const retryResult = await manager.waitFor(retrySessionId);
+    const retryText = retryResult?.lastAssistantText ?? "";
+    const retryParsed = parseTaskEvaluation(retryText);
+    if (Object.keys(retryParsed.agents).length > 0) {
+      responseText = retryText;
+      parsed = retryParsed;
+    }
+  }
 
   // Build result
   const result: TaskEvaluationResult = {
