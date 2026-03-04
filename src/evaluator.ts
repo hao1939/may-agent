@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, appendFileSync, mkdirSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, appendFileSync, mkdirSync, existsSync, readdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { AssistantMessage } from "@mariozechner/pi-ai";
@@ -1011,4 +1011,64 @@ export async function maintainAgent(opts: MaintainAgentOptions): Promise<Mainten
     staleItems: parsed.report.staleItems,
     toolIssues: parsed.report.toolIssues,
   };
+}
+
+export interface AgentScoreSummary {
+  avgEfficiency: number;
+  avgQuality: number;
+  count: number;
+  verdicts: Record<string, number>;
+}
+
+export function getAgentScoreSummary(
+  persistDir: string,
+): Record<string, AgentScoreSummary> {
+  const evalsDir = join(persistDir, "evaluations");
+  if (!existsSync(evalsDir)) return {};
+
+  const files = readdirSync(evalsDir).filter((f) => f.endsWith(".json"));
+  const accum: Record<
+    string,
+    { totalEfficiency: number; totalQuality: number; count: number; verdicts: Record<string, number> }
+  > = {};
+
+  for (const file of files) {
+    let data: unknown;
+    try {
+      data = JSON.parse(readFileSync(join(evalsDir, file), "utf-8"));
+    } catch {
+      continue;
+    }
+
+    if (typeof data !== "object" || data === null) continue;
+
+    const rec = data as Record<string, unknown>;
+    const agent = rec.agent;
+    if (typeof agent !== "string" || agent === "") continue;
+
+    const efficiency = typeof rec.efficiency === "number" ? rec.efficiency : 0;
+    const quality = typeof rec.quality === "number" ? rec.quality : 0;
+    const verdict = typeof rec.verdict === "string" ? rec.verdict : "unknown";
+
+    if (!accum[agent]) {
+      accum[agent] = { totalEfficiency: 0, totalQuality: 0, count: 0, verdicts: {} };
+    }
+    const entry = accum[agent];
+    entry.totalEfficiency += efficiency;
+    entry.totalQuality += quality;
+    entry.count += 1;
+    entry.verdicts[verdict] = (entry.verdicts[verdict] ?? 0) + 1;
+  }
+
+  const result: Record<string, AgentScoreSummary> = {};
+  for (const [agent, entry] of Object.entries(accum)) {
+    result[agent] = {
+      avgEfficiency: entry.totalEfficiency / entry.count,
+      avgQuality: entry.totalQuality / entry.count,
+      count: entry.count,
+      verdicts: entry.verdicts,
+    };
+  }
+
+  return result;
 }
