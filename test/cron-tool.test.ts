@@ -234,4 +234,16 @@ describe("cron tool", () => {
     expect(out).toContain('"slow"');
     expect(out).not.toContain('"fast"');
   });
+
+  it("add with description shows it in list", async () => {
+    await exec(ctx.tool, {
+      action: "add",
+      name: "described",
+      intervalMs: 60000,
+      message: "do stuff",
+      description: "This is a helpful description of the job",
+    });
+    const out = await exec(ctx.tool, { action: "list" });
+    expect(out).toContain("— This is a helpful description of the job");
+  });
 });
