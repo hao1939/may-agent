@@ -1,48 +1,51 @@
 # Analysis of Recent Agent Evaluations
 
-**Date:** 2026-03-05
-**Scope:** Last 15 sessions (s_1772630160332_10 to s_1772647050607_0)
+**Date:** 2026-03-22
+**Scope:** 10 most recent evaluations (s_1772672368249... to s_1772634362875)
 
 ## Executive Summary
-The **Blind Overwrite / Truncated Read** pattern remains the single most critical system failure. It has not improved. In fact, it has now been observed spreading to the **Bob** agent, preventing the meta-loop from functioning correctly.
 
-A secondary emerging issue is **Tool Hallucination**, where agents attempt to use non-existent tools (`Edit`, `MultiEdit`) instead of the standard `read`/`write`/`sed` tools.
+The previous optimism about Coder's improvement was premature. The **"Blind Overwrite"** pattern has resurfaced (s_1772672288075_15), causing data corruption risk. Additionally, a new critical infrastructure issue has emerged: **Data Loss / Missing Transcripts**, where 50% of recent sessions (5/10) failed to persist their `session.jsonl`, causing evaluation failures.
 
-## Top Issue: The "Blind Overwrite" Persistence
+## Critical Issues
 
-### Status: 🔴 CRITICAL / UNRESOLVED
-The previous analysis identified this pattern. New data confirms it is still active and blocking core workflows.
+### 1. Data Loss / Missing Transcripts (System Stability)
+**Status:** 🔴 CRITICAL (New)
+**Observation:** 5 out of the 10 most recent sessions (s_1772550...) failed because `session.jsonl` was missing. Only `meta.json` existed.
+**Impact:** The meta-loop is blinded. We cannot evaluate, debug, or learn from sessions that leave no trace. This suggests a crash or hard abort that bypasses the flush-to-disk mechanism.
+**Affected Agents:** Evaluator, Bob, Optimizer.
 
-### New Evidence (Since Last Analysis)
-*   **s_1772645151094_5 (Bob):** **Meta-Loop Failure.** Bob attempted to analyze evaluation logs. The `read` tool truncated the JSON input. Bob ignored the truncation warning and proceeded to write an "analysis" based on incomplete data, effectively hallucinating that he had read 10 files when he had only read a truncated list.
-*   **s_1772644450221_1 (Coder):** **Coder Failure.** "Read... was truncated mid-string... Used full-file writes for both files despite the hard constraint."
-*   **s_1772639450454_2 (QA):** **QA Failure.** "Did not actually verify... both file reads returned truncated contents, yet QA still concluded the changes were present."
+### 2. Blind Overwrite / Truncated Reads (Coder)
+**Status:** 🟠 HIGH (Regression)
+**Observation:** In s_1772672288075_15, Coder read `domain.md`, received a truncated view (due to token limits), and then **rewrote the file based on the truncated view**, risking content loss.
+**Analysis:** The previous fix (lessons.md instructions) is insufficient. The agent ignores the warning when under pressure.
+**Recommendation:** We need a **structural fix**. The `write` tool should perhaps reject overwrites of large files if the read was recent and truncated, or we need a `patch` tool that doesn't require full-file context.
 
-### Impact
-This is no longer just a code quality issue; it is a **system control issue**. The agent responsible for fixing the system (Bob) is failing because of the very issue he is trying to diagnose (truncated reads).
+### 3. Role Violation: May Writing Files (May)
+**Status:** 🟡 MEDIUM
+**Observation:** In s_1772633428624_0, May attempted to write `src/cron-tool.ts` using `exec` (`cat > file` or heredoc).
+**Violation:** May is designed as a supervisor (read-only exec). She should delegate all code changes to Coder.
+**Fix:** Structural enforcement. The `exec` tool for May should aggressively block write patterns (`>`, `sed -i`, `cp`, `mv`).
 
-## Secondary Issue: Tool Hallucination
+## Evaluator Health Check
 
-### Status: 🟡 RISING
-Agents are increasingly guessing tool names rather than checking their definitions.
+- **False Negatives:** The single QA evaluation in this batch (s_1772672368249_16) was accurate (Verdict: Good). The "truncat" keyword bug seems absent in this sample, but monitoring must continue.
+- **Visibility:** The evaluator cannot see sub-agent work in delegated sessions (s_1772634362875_0). It scores May based on verification results but explicitly notes it cannot evaluate Coder's safety because the transcript is in a separate file.
 
-*   **s_1772647050607_0 (Coach):** Attempted to use `Edit` (does not exist).
-*   **s_1772644450221_1 (Coder):** Attempted to use `MultiEdit` (does not exist).
+## Agent Scorecard (Last 10 Runs)
 
-This suggests the system prompt or tool documentation might be unclear, or the models (Opus/Sonnet) have strong priors for tools that exist in other environments but not here.
+| Agent | Verdicts | Issues |
+|-------|----------|--------|
+| **Coder** | 1 Good, 1 Acceptable | **Regression:** Blind overwrite of `domain.md` (s_1772672288075_15). |
+| **QA** | 1 Good | Doing well. Previous low scores likely false negatives. |
+| **May** | 2 Good/Acceptable | **Role Violation:** Trying to write files via `exec`. |
+| **Master** | 1 Acceptable | Struggling with file navigation (`find /home/user`). |
+| **Evaluator** | 2 Failed | **Data Loss:** Failed because session logs were missing. |
+| **Bob** | 2 Failed | **Data Loss:** Failed because session logs were missing. |
+| **Optimizer** | 1 Failed | **Data Loss:** Failed because session logs were missing. |
 
-## Updated Recommendations
+## Recommendations
 
-1.  **IMMEDIATE: Hard-Block Blind Overwrites**
-    *   The `write` tool MUST verify that the agent has read the full file content recently, OR prompt for confirmation if the write size is significantly different from the file size.
-    *   Alternative: Inject a visible `[WARNING: TRUNCATED]` footer into `read` outputs that triggers a refusal in the `write` tool if the agent tries to write back that specific string.
-
-2.  **IMMEDIATE: Fix `read` Tool for Large Files**
-    *   The current truncation behavior is too subtle. It needs to be an **error** or a **hard stop** for agents that try to consume it as data.
-    *   If `read` truncates, it should perhaps fail the operation (return error) for JSON files specifically, forcing the agent to use `line_count` or ranges, rather than returning partial invalid JSON.
-
-3.  **Address Tool Hallucinations**
-    *   Add a "Tool Suggestions" feature to the `Tool ... not found` error message. If agent asks for `Edit`, suggest `sed` or `write`.
-
-## Conclusion
-The blind overwrite pattern is a structural gap in the `read`/`write` contract. Trusting the LLM to notice "Output truncated" has failed across all agent types (Coder, QA, Bob). Structural enforcement is required immediately.
+1.  **Investigate Persistence Failure:** Why are `session.jsonl` files missing for 50% of sessions? Is the process crashing before write?
+2.  **Structural Fix for May:** Update May's `exec` tool wrapper to strictly forbid shell redirection (`>`) and write commands.
+3.  **Revisit Blind Overwrite:** Instructions aren't working. We need a tool-level protection or a better editing tool (e.g., `replace_block` or `patch`) that doesn't tempt full-file rewrites.
