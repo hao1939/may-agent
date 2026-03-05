@@ -777,7 +777,7 @@ export class SubagentManager {
     // tool calls with no corresponding tool results. Inject synthetic error
     // results so the conversation is well-formed for the LLM API.
     const lastMsg = savedMessages.length > 0 ? savedMessages[savedMessages.length - 1] : null;
-    const lastRole = lastMsg?.role;
+    let lastRole = lastMsg?.role;
     if (lastRole === "assistant" && lastMsg && Array.isArray(lastMsg.content)) {
       const toolCalls = (lastMsg.content as any[]).filter(
         (b: any) => b.type === "toolCall",
@@ -795,6 +795,13 @@ export class SubagentManager {
           } as AgentMessage;
           agent.followUp(errorResult);
         }
+      } else if ((lastMsg as any).stopReason === "toolUse") {
+        // Malformed response: stopReason says "toolUse" but no tool call content
+        // blocks exist (proxy/network glitch). Remove the broken message so the
+        // agent can resume cleanly from the previous user/toolResult message.
+        savedMessages.pop();
+        agent.replaceMessages(savedMessages);
+        lastRole = savedMessages.length > 0 ? savedMessages[savedMessages.length - 1].role : undefined;
       }
     }
 
