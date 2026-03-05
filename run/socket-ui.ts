@@ -3,16 +3,16 @@
  *
  * Usage:
  *   # Watch events:
- *   socat - UNIX-CONNECT:/home/hao/may-agent/.state/may.sock
+ *   socat - UNIX-CONNECT:.state/may.sock
  *
- *   # Send a steer command:
- *   echo '{"type":"steer","message":"Stop modifying tools.ts"}' | socat - UNIX-CONNECT:/home/hao/may-agent/.state/may.sock
+ *   # Send a command:
+ *   echo '{"type":"steer","message":"Stop"}' | socat - UNIX-CONNECT:.state/may.sock
  *
- *   # Interactive (read + write):
- *   socat READLINE UNIX-CONNECT:/home/hao/may-agent/.state/may.sock
+ *   # Interactive:
+ *   socat READLINE UNIX-CONNECT:.state/may.sock
  */
 
-import { createServer, type Server, type Socket } from "node:net";
+import { createServer, connect, type Server, type Socket } from "node:net";
 import { existsSync, unlinkSync } from "node:fs";
 import type { EventBus, RunnerEvent } from "./event-bus.js";
 import type { SubagentManager } from "../src/index.js";
@@ -29,12 +29,46 @@ export interface SocketUI {
   clientCount: () => number;
 }
 
-export function attachSocketUI(opts: SocketUIOptions): SocketUI {
+/**
+ * Check if a socket file has a live listener by attempting to connect.
+ */
+function isSocketAlive(socketPath: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    const client = connect(socketPath);
+    const timer = setTimeout(() => {
+      client.destroy();
+      resolve(false);
+    }, 1000);
+    client.on("connect", () => {
+      clearTimeout(timer);
+      client.destroy();
+      resolve(true);
+    });
+    client.on("error", () => {
+      clearTimeout(timer);
+      resolve(false);
+    });
+  });
+}
+
+export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
   const { socketPath, bus, manager, getSessionId } = opts;
   const clients = new Set<Socket>();
 
-  // Clean up stale socket file
+  // If socket file exists, check whether it's live or stale
   if (existsSync(socketPath)) {
+    const alive = await isSocketAlive(socketPath);
+    if (alive) {
+      // Another instance owns this socket — run without one
+      console.error(`[control] Socket ${socketPath} is owned by another instance.`);
+      console.error(`[control] This instance will run WITHOUT a control socket.`);
+      console.error(`[control] Set INSTANCE=<name> to use a separate socket.`);
+      return {
+        close: () => {},
+        clientCount: () => 0,
+      };
+    }
+    // Stale socket — clean up and take over
     unlinkSync(socketPath);
   }
 
@@ -114,7 +148,6 @@ export function attachSocketUI(opts: SocketUIOptions): SocketUI {
     } catch { /* ignore */ }
   };
   process.on("exit", cleanup);
-  // Socket cleanup only — shutdown orchestration is in may.ts
   process.on("SIGINT", cleanup);
   process.on("SIGTERM", cleanup);
 
