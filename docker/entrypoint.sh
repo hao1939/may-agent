@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e
 
-# Source env files if they exist
-[ -f ${PROJECT_ROOT:-.}/.env.telegram ] && export $(grep -v "^#" ${PROJECT_ROOT:-.}/.env.telegram | xargs)
+# Source env file
+[ -f ${PROJECT_ROOT:-.}/.env ] && export $(grep -v "^#" ${PROJECT_ROOT:-.}/.env | xargs)
 
 DISPLAY_NUM=${DISPLAY_NUM:-99}
 SCREEN_RES=${SCREEN_RESOLUTION:-1920x1080x24}

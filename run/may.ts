@@ -47,6 +47,14 @@ const models: Record<string, any> = {
     id: "gemini-3-pro-preview",
     baseUrl: MODEL_BASE_URL,
   },
+  kimi: {
+    ...getModel("openai", "gpt-4o"),
+    api: "openai-completions" as const,
+    id: "kimi-k2.5",
+    contextWindow: 262144,
+    baseUrl: process.env.KIMI_BASE_URL || "https://api.moonshot.ai/v1",
+    apiKey: process.env.KIMI_API_KEY || "",
+  },
 };
 
 let sid: string;
@@ -493,15 +501,6 @@ if (SCHEDULERS_ENABLED) {
       cron.start();
     }
   }
-}
-
-
-
-
-
-
-
-
 }
 
 // ── Telegram bot (TELEGRAM_BOT_TOKEN to enable) ─────────────────────────
