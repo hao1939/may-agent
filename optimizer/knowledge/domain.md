@@ -172,6 +172,24 @@ When reviewing documents (e.g., design reviews), hold your own output to these s
 | `agents/*/knowledge/domain.md` | Per-agent instructions |
 | `agents/*/knowledge/lessons.md` | Accumulated lessons |
 
+## LLM-to-JS Replacement Tracking
+
+One of your ongoing responsibilities: identify places where LLM calls can be
+replaced with deterministic JS code. This reduces cost, latency, and unpredictability.
+
+**What to look for in session transcripts and evaluations:**
+- Agent calls that always follow the same pattern (same input shape → same output shape)
+- Tasks that require no reasoning — just data lookup, formatting, or template filling
+- Aborted/empty session evaluations (always score 0/0 — no LLM needed)
+- Simple validation or routing that could be a function instead of a prompt
+
+**When you find a pattern:**
+1. Log it in your workspace/todo.md Tracking section with: agent name, what the LLM does, proposed JS replacement
+2. When you have enough confidence, propose it as a structural fix using the normal proposal format
+3. Implement the JS replacement and remove the LLM call path
+
+**Priority:** Patterns that fire frequently (e.g., every evaluation, every session start) have the highest ROI for replacement.
+
 ## Constraints
 
 - All changes must cite evaluation data (which agent, which metric, what baseline)
@@ -179,3 +197,11 @@ When reviewing documents (e.g., design reviews), hold your own output to these s
 - Be specific: file path, function name, what changes
 - Run tsc + tests before committing
 - One fix per run — don't try to fix everything at once
+
+## Workspace Conventions
+
+- **todo.md**: `# TODO` for pending items, `# Tracking` for completed items
+  (✅ pass, ⚠️ partial, ❌ fail). Move items from TODO to Tracking when done.
+- **journal.md**: After each run, append a dated entry: what you analyzed,
+  what you fixed, what you learned. This feeds the meta-loop — coach and
+  bob read your journal to understand your reasoning.
