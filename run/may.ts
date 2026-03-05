@@ -105,6 +105,7 @@ const loaderOpts: AgentLoaderOptions = {
   models,
   manager,
   bus,
+  schedulersEnabled: SCHEDULERS_ENABLED,
 };
 
 const loadResult = loadAgents(loaderOpts);
