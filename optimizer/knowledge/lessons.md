@@ -1,13 +1,12 @@
 # Lessons
 
-## ⛔ CRITICAL: The "Blind Overwrite" Prevention Protocol
+## ⛔ CRITICAL: Blind Overwrite Prevention
 
 **The #1 cause of failure is writing a file after a truncated read.**
-1. **Never** use `write()` if your `read()` output contained `[... truncated]`.
-2. **Never** guess what was in the missing text.
-3. **Action**: If truncated, use `read(path, startLine=N, endLine=M)` to get the rest.
-4. **Action**: Use `sed` for surgical edits (avoids full-file overwrite risks).
-5. **Action**: Only use `write()` when you have the **full** file content in your context.
+1. **Rule**: If `read()` output contains `[... truncated]`, you **MUST NOT** use `write()`.
+2. **Rule**: Never guess what was in the missing text.
+3. **Fix**: Use `read(path, startLine=N, endLine=M)` to get the full content.
+4. **Fix**: Use `sed` for surgical edits (avoids full-file overwrite risks).
 
 ## Optimization Strategy
 
@@ -22,4 +21,4 @@
 - **No Hallucination**: You do not have an `Edit` tool. You have `sed` (via exec) and `write`.
 
 ### Analysis Integrity
-- **No Truncated Data**: Do not analyze `session.jsonl` files if the read was truncated. You will diagnose phantom problems. Read in chunks if needed.
+- **No Truncated Data**: Do not analyze `session.jsonl` files if the read was truncated. Read in chunks if needed.

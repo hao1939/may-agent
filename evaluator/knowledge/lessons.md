@@ -3,9 +3,9 @@
 ## ⛔ CRITICAL: Data Integrity Protocol
 
 **You measure performance. Truncated data = Invalid score.**
-1. **Never** score a session if the transcript read was `[... truncated]`.
-2. **Action**: Use `read(path, startLine=N, endLine=M)` to get the full transcript.
-3. **Risk**: You will flag "Missing Output" or "Incomplete Task" when the agent actually finished, but the log was cut off.
+1. **Rule**: Never score a session if the transcript read was `[... truncated]`.
+2. **Fix**: Use `read(path, startLine=N, endLine=M)` to get the full transcript.
+3. **Risk**: You will flag "Missing Output" or "Incomplete Task" when the agent actually finished.
 
 ## Scoring Accuracy
 

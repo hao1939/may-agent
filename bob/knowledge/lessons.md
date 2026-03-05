@@ -1,11 +1,17 @@
 # Lessons
 
-## ⛔ CRITICAL: Data Integrity Protocol
+## ⛔ CRITICAL: Safety Protocol
 
-**You analyze data. Truncated data = Fake data.**
-1. **Never** draw conclusions from a `read()` that output `[... truncated]`.
-2. **Action**: Use `read(path, startLine=N, endLine=M)` to get the full dataset.
-3. **Risk**: Analyzing a partial log leads to hallucinated failure patterns (e.g., claiming a step was skipped when it was just truncated).
+### 1. No Blind Overwrites
+**Writing a file after a truncated read is the #1 system failure.**
+- **Rule**: If `read()` output contains `[... truncated]`, you **MUST NOT** write to that file.
+- **Fix**: Use `read(path, startLine=N, endLine=M)` to get the missing content first.
+- **Fix**: Use `sed` for surgical edits if you only have a partial view.
+
+### 2. No Partial Analysis
+**Truncated data = Fake data.**
+- **Rule**: Never draw conclusions from a truncated log or file.
+- **Risk**: You will hallucinate patterns (e.g., "step skipped") that are actually just hidden.
 
 ## Meta-Loop Operations
 

@@ -68,5 +68,54 @@
     "message": "[cron:review-human-inputs] Read agents/may/workspace/human-inputs.md. Extract patterns: recurring preferences, design directions, corrections, unaddressed ideas. Update todo.md with actionable findings. Clear processed entries from human-inputs.md.",
     "enabled": true,
     "description": "Review human input patterns every 12 hours"
+  },
+  {
+    "name": "bob-drain-todo",
+    "intervalMs": 28800000,
+    "message": "[cron:bob-drain-todo] Read agents/bob/workspace/todo.md. If there are pending items under # TODO (especially ## Research Tasks), delegate to bob to work on the top item. Bob should delegate to scout for fetching/research, then synthesize and evaluate himself. One item per run.",
+    "enabled": true,
+    "description": "Bob drains his research/todo backlog every 8 hours"
+  },
+  {
+    "name": "philosophy-check",
+    "intervalMs": 86400000,
+    "message": "[cron:philosophy-check] Delegate to bob: check recent git commits (git log --since='24 hours ago' --oneline) for philosophy violations. Read agents/shared/philosophy.md, then review what changed. If you find drift, either recommend a fix or update the philosophy. Write findings to agents/bob/workspace/philosophy-check.md.",
+    "enabled": true,
+    "description": "Daily philosophy alignment check — Bob reviews commits against design principles"
+  },
+  {
+    "name": "scout-explore",
+    "intervalMs": 28800000,
+    "message": "[cron:scout-explore] Delegate to scout: Run an exploration cycle. Pick 1-2 sources (rotate between GitHub trending, arXiv, Reddit Arctic Shift, vendor blogs). Search for recent activity on AI agents, autonomous systems, context engineering. Grep discoveries.md for dedup before adding. Archive findings. Follow interesting threads. Commit at 60% budget.",
+    "enabled": true,
+    "description": "Scout explores the internet for AI agent research every 8 hours"
+  },
+  {
+    "name": "amy-explore",
+    "intervalMs": 28800000,
+    "message": "[cron:amy-explore] Delegate to amy: Run an XHS exploration cycle. Search 1-2 keywords from your tracked list. Read interesting posts deeply (with xsec_token from search results). Archive findings in knowledge/. If tools fail (CAPTCHA, rate limit), synthesize from existing archive. Max 3 searches, 5+ seconds between operations.",
+    "enabled": true,
+    "description": "Amy explores Xiaohongshu for AI content every 8 hours"
+  },
+  {
+    "name": "amy-drain-todo",
+    "intervalMs": 28800000,
+    "message": "[cron:amy-drain-todo] Read agents/amy/workspace/todo.md. If there are pending items under ## Pending, delegate the top one to amy. When done, move the item from ## Pending to ## Completed with result (✅/⚠️/❌) and date. Stop after one item.",
+    "enabled": true,
+    "description": "Amy drains her todo.md every 8 hours — one item per cycle"
+  },
+  {
+    "name": "scout-drain-todo",
+    "intervalMs": 28800000,
+    "message": "[cron:scout-drain-todo] Read agents/scout/workspace/todo.md. If there are pending items under ## Pending, delegate the top one to scout. When done, move the item from ## Pending to ## Completed with result (✅/⚠️/❌) and date. Stop after one item.",
+    "enabled": true,
+    "description": "Scout drains his todo.md every 8 hours — one item per cycle"
+  },
+  {
+    "name": "amy-kimi-drain-todo",
+    "intervalMs": 28800000,
+    "message": "[cron:amy-kimi-drain-todo] Read agents/amy-kimi/workspace/todo.md. If there are pending items under ## Pending, delegate the top one to amy-kimi. When done, move the item from ## Pending to ## Completed with result (✅/⚠️/❌) and date. Stop after one item.",
+    "enabled": true,
+    "description": "Amy-Kimi drains her todo.md every 8 hours — one item per cycle"
   }
 ]

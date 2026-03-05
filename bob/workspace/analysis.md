@@ -1,39 +1,50 @@
 # Analysis of Recent Agent Evaluations
 
 **Date:** 2026-03-05
-**Scope:** 10 most recent evaluations (s_1772680626122_8 to s_1772550312502_1)
+**Scope:** 10 most recent evaluations (s_1772711317942_11 to s_1772702720687_1)
 
 ## Executive Summary
 
-The system is recovering from a period of significant instability. The **"Blind Overwrite"** pattern (Coder reading a truncated file and rewriting it, causing data loss) has been addressed with a structural fix (**Shrink Guard**). The **"Missing Transcript"** issue (Evaluator failing because `session.jsonl` was not found) dominated the older half of this batch but has effectively vanished in the 5 most recent sessions.
+The critical "Blind Overwrite" issue (data loss) has been successfully eliminated by the "Shrink Guard" structural fix. No instances were observed in this batch. However, a new dominant failure pattern has emerged: **Filesystem Disorientation & Path Hallucination**. Agents across the board (Amy, Scout, Coach) are consistently guessing incorrect absolute paths (e.g., `/home/user/...`) instead of using repo-relative paths, leading to `ENOENT` errors, wasted recovery cycles, and dangerous broad searches (`find /home`).
 
 ## Top Recurring Patterns
 
-### 1. Data Loss / Missing Transcripts (System Stability)
-**Frequency:** 5/10 sessions (s_1772550... series)
-**Status:** 🟢 RESOLVED (in latest batch) / MONITORING
-**Observation:** Half of the analyzed sessions failed because the evaluator could not find `session.jsonl`.
-**Analysis:** This cluster of failures appears to be a specific incident or instability period. The 5 most recent sessions (s_1772680...) all have valid transcripts and successful evaluations. The addition of `writeSkippedEvaluations` (commit `1eccb417`) suggests the system is now better at handling/reporting these aborts, or the underlying crash cause has been resolved.
+### 1. Filesystem Disorientation (Path Guessing)
+**Frequency:** 5/8 active sessions (62%)
+**Severity:** High (Wasted calls, potential sandbox escapes, confusing recovery)
+**Observation:** Agents repeatedly assume they are in a generic environment rather than the specific project root.
+- **Amy (`s_1772711298581_8`)**: Tried `/home/user/amy/...` (ENOENT), then `find /home` (broad search).
+- **Scout (`s_1772711303892_9`)**: Tried `/home/user/knowledge/...` (ENOENT).
+- **Amy-Kimi (`s_1772710444875_5`)**: Wrote to `/home/hao/workspace/journal.md` (wrong absolute path).
+- **Amy (`s_1772710437431_4`)**: Searched `/home/hao/.openclaw` (guessing config).
+**Root Cause:** Agents lack a grounded understanding of their CWD (`/home/hao/may-agent`) and the project structure. They fall back to training data assumptions (`/home/user`) or hallucinate paths.
 
-### 2. Blind Overwrite / Truncated Reads (Coder)
-**Frequency:** 1/10 sessions (s_1772672288075_15)
-**Status:** 🟢 FIXED (Structural)
-**Observation:** In session 15, Coder read `domain.md`, received a truncated view, and rewrote the file, deleting ~30KB of data.
-**Fix Verification:** Commit `1cb49cad` introduced **Shrink Guard**, which structurally blocks `write()` operations that would shrink a file to <50% of its original size without an explicit override. This makes the "Blind Overwrite" failure mode impossible for standard agent operations.
-**Result:** In the post-fix sessions (s_1772680565027_6, s_1772680441326_2), Coder scored **Good**, with no overwrite attempts.
+### 2. Scope Creep & Redundancy
+**Frequency:** 3/8 active sessions
+**Severity:** Medium (Inefficiency)
+**Observation:** Agents ignore "pick ONE" instructions or re-read files unnecessarily.
+- **Amy (`s_1772710444875_5`, `s_1772710437431_4`)**: Explicitly asked to read ONE post, read 2 or 3 "for completeness."
+- **Amy (`s_1772709342440_2`)**: Read `todo.md` 3 times in full.
 
-## Comparison: Before vs. After Fix
+### 3. Meta-Agent Quality Regression
+**Frequency:** 2/2 meta-agent sessions (Bob, Coach)
+**Severity:** High (False signals)
+**Observation:**
+- **Bob (`s_1772711309438_10`)**: Hallucinated git diffs that didn't exist in the log. Claimed checks it didn't do.
+- **Coach (`s_1772711317942_11`)**: Failed to perform *any* coaching. Spent entire session struggling with `find` commands and then exited.
 
-| Metric | Before Fix (s_1772550... - s_1772672...) | After Fix (s_1772680...) |
-| :--- | :--- | :--- |
-| **Coder Verdicts** | **Acceptable** (High Risk: Overwrite) | **Good** (Clean execution) |
-| **System Stability** | **Critical Failure** (50% missing logs) | **Stable** (100% evaluated) |
-| **Top Issue** | Data Corruption (Overwrite) & Data Loss (Logs) | Minor Efficiency (Redundant reads) |
+## Fix Effectiveness Review
 
-## Conclusion
+### ✅ Structural Fix: Shrink Guard (Blind Overwrite)
+**Status:** **100% Effective.**
+**Evidence:** Zero instances of truncated reads leading to overwrites. The structural barrier works. This is a closed issue.
 
-The structural fix for **Blind Overwrite** (Shrink Guard) is a high-leverage win. It converts a behavioral risk (hoping the agent checks file size) into a hard constraint. Coder's performance has immediately improved in subsequent sessions. The "Missing Transcript" instability appears to have subsided.
+### ❌ Optimization: Lesson Consolidation
+**Status:** **Ineffective / Needs Adjustment.**
+**Evidence:** Despite consolidated lessons, agents still misused basic tools (hallucinating `note` subcommand, `xhs_fetch.mjs read`). The knowledge update didn't prevent basic tool hallucination or path guessing.
 
-## Recommendation
+## Recommendations
 
-**Focus on Efficiency.** With safety rails in place (Shrink Guard), the next optimization target should be **Redundant Reads**. Multiple sessions (s_1772680626122_8, s_1772680441326_2) flagged agents re-reading files they just read.
+1.  **Structural Fix for Paths:** Inject the `PROJECT_ROOT` and `CWD` explicitly into the system prompt or agent environment variable so they *know* where they are. Don't rely on them "figuring it out."
+2.  **Constraint Enforcement:** If an agent is told to "pick one," the environment/supervisor should enforce it (harder to do structurally, but coaching might help).
+3.  **Meta-Agent Rehabilitation:** Bob and Coach are currently underperforming. Bob needs to be forced to *actually* read files before analyzing them (Principle 21: Verification). Coach needs a simpler, more robust starting script that doesn't rely on complex `find` chains.

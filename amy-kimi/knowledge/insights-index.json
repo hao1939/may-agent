@@ -1,0 +1,149 @@
+# insights-index.json — Amy-Kimi Knowledge L0 Layer
+# Auto-generated from insights.md structure
+# Purpose: Load index first, fetch details on-demand
+
+[
+  {
+    "id": "cross-agent-synthesis",
+    "title": "Cross-Agent Synthesis — XHS Findings ↔ System Design",
+    "tags": ["synthesis", "system-design", "gap-analysis"],
+    "priority": "P0",
+    "lineRange": [4, 45],
+    "summary": "Community insights mapped to our system principles with gap/opportunity analysis",
+    "keyAuthors": ["小盖", "AgenticWeb", "NikolaFu", "ERL"]
+  },
+  {
+    "id": "three-threads-convergence",
+    "title": "🧩 Three Threads, One Convergence",
+    "tags": ["memory", "evaluation", "evolution", "convergence"],
+    "priority": "P0",
+    "lineRange": [49, 83],
+    "summary": "Memory → Eval → Evolution thread convergence from 6 archived posts",
+    "keyAuthors": ["OpenViking", "OC", "NikolaFu", "Akari"]
+  },
+  {
+    "id": "five-patterns-feb28",
+    "title": "🔍 Five Patterns Across the Archive",
+    "tags": ["patterns", "verification", "skill", "memory", "security"],
+    "priority": "P0",
+    "lineRange": [87, 135],
+    "summary": "Verify Output, Skill=Workflow, Memory Evolution, Hybrid Arch, Containerization",
+    "keyAuthors": ["小盖", "CC船长", "奥森木", "愚园路12妹", "石头哥"]
+  },
+  {
+    "id": "feishu-tutorial",
+    "title": "📱 飞书智能助手接入教程",
+    "tags": ["feishu", "integration", "tutorial"],
+    "priority": "P1",
+    "lineRange": [139, 168],
+    "sourcePost": "69877f24",
+    "engagement": "❤️588",
+    "summary": "High-engagement Feishu integration tutorial with 3 key strengths"
+  },
+  {
+    "id": "skill-4step-workflow",
+    "title": "🛠️ 四步法创建Skill",
+    "tags": ["skill", "workflow", "dual-ai", "赛马机制"],
+    "priority": "P1",
+    "lineRange": [172, 199],
+    "sourcePost": "69a29d89",
+    "engagement": "❤️5",
+    "summary": "4-step Skill creation: dual-AI prompting → testing → packaging → A/B selection"
+  },
+  {
+    "id": "three-tier-memory",
+    "title": "🧠 三层记忆架构+自动衰减",
+    "tags": ["memory", "hot-warm-cold", "auto-decay", "architecture"],
+    "priority": "P0",
+    "lineRange": [203, 237],
+    "sourcePost": "69a29d5a",
+    "engagement": "N/A",
+    "summary": "Ray Wang's hot/warm/cold 3-tier memory + auto-decay: 10KB→2KB heartbeat load"
+  },
+  {
+    "id": "agent-kit-im",
+    "title": "🚀 agent-kit IM Routing",
+    "tags": ["competitor", "agent-kit", "telegram", "discord"],
+    "priority": "P2",
+    "lineRange": [241, 256],
+    "sourcePost": "69a29cb9",
+    "summary": "Competitor update: agent-kit adds Telegram/Discord routing with self-iteration"
+  },
+  {
+    "id": "context-explosion",
+    "title": "🐢 OpenClaw Context Explosion",
+    "tags": ["context", "optimization", "6-solutions"],
+    "priority": "P1",
+    "lineRange": [260, 283],
+    "sourcePost": "6991f6b6",
+    "engagement": "❤️22",
+    "summary": "6 solutions for context explosion: limit history, reduce skills, compress, split tasks, reset sessions, file persistence"
+  },
+  {
+    "id": "ops-best-practices",
+    "title": "📋 OpenClaw运维全链路指南",
+    "tags": ["ops", "security", "multi-agent", "crash-recovery"],
+    "priority": "P0",
+    "lineRange": [287, 311],
+    "sourcePost": "698facff",
+    "engagement": "❤️197",
+    "summary": "奥森木's comprehensive ops guide: security, Agent constraints, memory management, Cron vs heartbeat, crash recovery"
+  },
+  {
+    "id": "kb-synthesis-mar2",
+    "title": "Knowledge Base Synthesis — March 2, 2026",
+    "tags": ["meta", "patterns", "memory-convergence", "skill-maturity", "feishu"],
+    "priority": "P1",
+    "lineRange": [315, 400],
+    "summary": "Tools-offline synthesis: 3 new patterns from 34-post archive analysis",
+    "keyFindings": [
+      "Memory Architecture Convergence (hot/warm/cold consensus)",
+      "Skill Creation Workflow Maturity (4-step → dual-AI → quantified)",
+      "飞书 Integration Saturation (11.7% of archive)"
+    ]
+  },
+  {
+    "id": "supply-chain-attack",
+    "title": "🚨 Supply Chain Attack on ClawHub — CRITICAL",
+    "tags": ["security", "supply-chain", "clawhub", "critical"],
+    "priority": "P0",
+    "lineRange": [403, 443],
+    "sourcePost": "6984e837",
+    "engagement": "❤️1459",
+    "summary": "First documented supply chain attack: coding-agent skill with malicious payload targeting macOS",
+    "iocs": ["91.92.242.30", "f2cb9de40cb8b7e13e7d2b0b3e426f8503781a35d8bba3715395430e9b5eeb38"]
+  },
+  {
+    "id": "claude-code-handbook",
+    "title": "📚 Claude Code Best Practices — Eyad Handbook",
+    "tags": ["claude-code", "best-practices", "prompt-engineering"],
+    "priority": "P1",
+    "lineRange": [445, 483],
+    "sourcePost": "698feae7",
+    "engagement": "❤️394",
+    "summary": "7 rules from 7.3M view tutorial: Plan Mode, CLAUDE.md ~150 limit, context management, model分工",
+    "keyInsight": "Good CLAUDE.md is like a note for your future amnesic self"
+  },
+  {
+    "id": "skill-ecosystem-finance",
+    "title": "📊 Skill Ecosystem: Finance Vertical Mature",
+    "tags": ["skills", "finance", "feishu", "ecosystem"],
+    "priority": "P1",
+    "lineRange": [485, 513],
+    "sourcePost": "69a02956",
+    "engagement": "❤️960",
+    "summary": "18 skills cataloged: 61% finance/stock, 11% feishu integration. Self-install habit = attack surface"
+  },
+  {
+    "id": "agent-arch-convergence",
+    "title": "🏗️ Agent Architecture Convergence 2025",
+    "tags": ["architecture", "convergence", "react", "middleware"],
+    "priority": "P1",
+    "lineRange": [515, 533],
+    "sourcePost": "6992c596",
+    "engagement": "❤️936",
+    "summary": "2025 industry consensus: ReAct Loop + Middleware + Skills. Validates our design direction"
+  }
+]
+
+*Index updated: 2026-03-02 | 14 entries total*

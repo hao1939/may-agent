@@ -10,26 +10,24 @@ agents/
 │   ├── agent.json              # required — agent config (identity, model, tools)
 │   ├── knowledge/              # system prompt content
 │   │   ├── domain.md           # required — role, responsibilities, instructions
-│   │   ├── lessons.md          # accumulated lessons (auto-managed by evaluator/optimizer)
-│   │   └── codebase.md         # project-specific code knowledge (optional)
+│   │   ├── tools.md            # tool reference specific to this agent (optional)
+│   │   ├── coaching.md         # corrections to known failure patterns (optional)
+│   │   └── lessons.md          # accumulated lessons (auto-managed by evaluator/optimizer)
 │   ├── tools/
 │   │   └── INDEX.md            # documents available tools and routing rules
 │   ├── workflows/              # workflow definitions (optional)
 │   │   └── *.ts                # each file exports execute(ctx): WorkflowResult
-│   ├── workspace/              # scratch files, progress logs, working artifacts
-│   │   ├── .gitkeep
-│   │   ├── todo.md             # per-agent TODO + tracking list (optional)
-│   │   ├── journal.md          # agent's own reflections and findings (optional)
-│   │   └── progress.md         # action log, last output (auto-updated)
-│   ├── cron.json               # cron schedule (only if agent has "cron" tool)
-│   └── periodic-tasks.md       # describes recurring responsibilities (optional)
+│   └── workspace/              # scratch files, progress logs, working artifacts
+│       ├── todo.md             # per-agent TODO + tracking list
+│       └── journal.md          # agent's own reflections and findings
 ├── shared/                     # shared knowledge library (not an agent)
+│   ├── conventions.md          # detailed workspace/cron/source-tag conventions
 │   ├── system-design.md        # conceptual architecture
 │   ├── team.md                 # concrete team roster, models, tools, constraints
 │   ├── philosophy.md           # Hao's design principles
 │   ├── meta-loop.md            # meta-loop process description
-│   └── *.md                    # other shared docs (improvement-plan, design-ideas, etc.)
-├── README.md                   # repo overview, agent roster, why separate repo
+│   └── *.md                    # other shared docs
+├── README.md                   # repo overview, agent roster
 └── CONVENTIONS.md              # this file
 ```
 
@@ -48,8 +46,8 @@ The only required file. The runner discovers agents by scanning for `<name>/agen
   // Optional fields:
   "systemPromptFiles": [              // paths relative to agent dir, loaded in order
     "knowledge/domain.md",
-    "knowledge/codebase.md",
-    "tools/INDEX.md"
+    "knowledge/tools.md",
+    "knowledge/coaching.md"
   ],
   "sharedKnowledge": [                // filenames in shared/, prepended before agent files
     "system-design.md",
@@ -116,7 +114,6 @@ Tool presets are string names in `agent.json` `tools` array, mapped to actual to
 |--------|---------------|-------|
 | `subagents` | `subagents` | Delegate tasks to other agents. Respects `delegateDeny` config. |
 | `workflow` | `workflow` | Run multi-step workflows from the agent's `workflows/` dir. |
-| `cron` | `cron` | Manage recurring tasks. Reads/writes `cron.json` in agent dir. |
 
 ### Coaching/observation
 
@@ -131,9 +128,10 @@ Files that form the agent's system prompt. Read fresh at the start of each sessi
 
 | File | Purpose | Who maintains it |
 |------|---------|------------------|
-| `domain.md` | **Required.** Role definition, responsibilities, instructions, rules. The core of what the agent "is." | Optimizer, human |
+| `domain.md` | **Required.** Role definition, responsibilities, instructions, rules. | Optimizer, human |
+| `tools.md` | Tool reference specific to this agent — how to use its tools, tips, gotchas. | Human, optimizer |
+| `coaching.md` | Corrections to known failure patterns. Lessons from coaching sessions. | Coach, human |
 | `lessons.md` | Accumulated lessons from real sessions. Added by evaluator/optimizer after reviewing transcripts. | Evaluator, optimizer |
-| `codebase.md` | Project-specific code knowledge — architecture, key files, patterns. Only for agents that touch code. | Optimizer, human |
 
 ### System prompt assembly order
 
@@ -163,123 +161,145 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> { .
 
 Workflows coordinate multi-agent sequences (e.g., coder → QA → retry → escalate). The `workflow` tool preset auto-discovers all `.ts` files in this directory. Workflow name = filename without extension.
 
-## workspace/
+## Workspace Conventions
 
-Scratch directory for the agent's working files. Used for:
-- Progress logs (`progress.md`)
-- Analysis outputs, briefs, reports
-- Exercise materials (coach)
-- Session transcripts
+Standard workspace files and their formats. See `agents/shared/conventions.md` for detailed format specs.
 
-Convention: include a `.gitkeep` so the directory exists in git even when empty. Workspace files are generally committed but are ephemeral working artifacts, not core configuration.
+### todo.md
 
-## workspace/journal.md
-
-Per-agent reflection log. Only for agents that do ongoing work across sessions and
-benefit from recording what they learned (optimizer, coach, bob). Task-executing
-agents (coder, qa, evaluator, master) don't need one — their work is captured in
-session transcripts and evaluations.
-
-The journal sits between `progress.md` (raw action log) and `lessons.md` (distilled
-rules). It captures the agent's own observations — what it tried, what it found,
-what surprised it, what it would do differently.
-
-```markdown
-# Journal
-
-## 2026-03-04 — analyzed file editing patterns
-Ran optimizer on coder's recent sessions. Found oscillation between brittle sed
-(line-number corruption in s_1772629766734_6) and risky full-file write (partial
-reads in s_1772625163096_2). Root cause: no safe middle-ground tool. Proposed
-replace_in_file but went with File Editing Protocol in lessons instead — behavioral
-fix until structural tool is built. Watch whether this actually changes behavior.
-```
-
-Entries are chronological, newest first. Each entry: date + context, what happened,
-what was learned. No rigid format — the value is in the reflection.
-
-**Who maintains it:** The agent itself. The optimizer/bob may review other agents'
-journals when looking for patterns.
-
-**Relationship to other files:**
-- `progress.md` = what I did (actions, auto-logged)
-- `journal.md` = what I learned from doing it (agent-written reflection)
-- `lessons.md` = distilled rules I follow (evaluator/optimizer-managed)
-
-## workspace/todo.md
-
-Per-agent TODO list. Only for agents that make autonomous decisions and have ongoing
-concerns (bob, may, optimizer, coach). Task-executing agents (coder, qa, evaluator,
-master) don't need one — they receive work and finish it.
-
-Two sections:
+Per-agent TODO list. Two sections:
 
 ```markdown
 # TODO
 
-- [2026-03-04] Fix coder's sed line-number corruption — structural fix
-- [2026-03-04] Consolidate duplicate lessons in qa/lessons.md
-- [2026-03-02] Add test coverage for handoff module edge cases
+- [ ] **Task name** — description. Delegate to X if needed.
 
 # Tracking
 
-- [2026-03-01] QA rubber-stamping tendency — monitor after workflow prompt changes
-- [2026-02-25] Cost per task trending up — watch next 10 evaluations
+- [2026-03-05] ✅ Task name — result summary
+- [2026-03-04] ⚠️ Partial task — what worked, what didn't
+- [2026-03-03] ❌ Failed task — why it failed
 ```
 
 **TODO** — actionable work with a finish line. Ordered by priority (top = do first).
-An item is high-priority if: someone asked for it, it's blocking other work, or it's
-a quick win. Agents drain TODO top-down when they wake up.
+Agents drain TODO top-down when they wake up.
 
-**Tracking** — ongoing observations with no finish line. Trends to watch, patterns to
-monitor, things that need attention over days or weeks. Check in periodically, note
-what you see. Items graduate to TODO when something concrete needs doing, or get
-removed when no longer relevant.
+**Tracking** — completed items with date and result icon.
 
-Each entry has a `[date]` prefix for temporal context — stale items get noticed.
+### journal.md
 
-**Who maintains it:** The agent itself, plus optimizer/bob when they discover work
-for that agent.
+Per-agent reflection log. Append-only, chronological.
 
-## cron.json
-
-Only present for agents with the `cron` tool preset. Array of scheduled tasks:
-
-```json
-[
-  {
-    "name": "daily-review",
-    "intervalMs": 86400000,
-    "message": "[cron:daily-review] Check improvement-plan.md for TODO items."
-  }
-]
+```markdown
+## 2026-03-04 — brief description
+- What was done
+- Key findings
+- Next steps
 ```
 
-Each entry fires `message` as input to the agent's session at the given interval. Cron jobs only run when `SCHEDULERS=1` environment variable is set.
+The journal captures the agent's own observations — what it tried, what it found,
+what surprised it, what it would do differently.
 
-## periodic-tasks.md
+### Optional workspace files
 
-Human-readable description of the agent's recurring responsibilities. Not machine-read — serves as documentation for what the agent should do when idle or on a schedule.
+| File | Purpose |
+|------|---------|
+| `learnings.md` | Self-evolved operational knowledge (edit in place) |
+| `inbox.md` | Messages from other agents or the human |
 
-## shared/
+## Cron Conventions
 
-Not an agent directory. Contains knowledge documents shared across multiple agents via `sharedKnowledge` in `agent.json`. Owned by the optimizer.
+All periodic work runs through **May's `agents/may/cron.json`**. May is the central scheduler — she delegates to the right agent. Individual agents do NOT have their own cron.json.
 
-Any agent can reference shared docs, but only agents that list them in `sharedKnowledge` get them injected into their system prompt. Other agents can still read them via filesystem when needed.
+### Well-Known Cron Patterns
+
+Every agent with ongoing responsibilities should have a **heartbeat** — a periodic wake-up cron job.
+
+#### Heartbeat (drain-todo)
+
+The most common pattern. Wakes the agent to check for work and drain one TODO item.
+
+```json
+{
+  "name": "<agent>-drain-todo",
+  "intervalMs": 28800000,
+  "message": "[cron:<agent>-drain-todo] Read agents/<agent>/workspace/todo.md. If there are pending items under # TODO, delegate to <agent> to work on the top item. One item per run.",
+  "enabled": true,
+  "description": "<Agent> drains its todo.md every 8 hours"
+}
+```
+
+Typical intervals: 4h (high-priority), 8h (standard), 24h (low-frequency).
+
+#### Exploration
+
+For research/explorer agents. Periodic search and discovery cycles.
+
+```json
+{
+  "name": "<agent>-explore",
+  "intervalMs": 28800000,
+  "message": "[cron:<agent>-explore] Delegate to <agent>: Run an exploration cycle. <specific instructions>.",
+  "enabled": true,
+  "description": "<Agent> explores <domain> every 8 hours"
+}
+```
+
+#### Review/Audit
+
+For quality-focused agents. Periodic review of recent work.
+
+```json
+{
+  "name": "<review-name>",
+  "intervalMs": 86400000,
+  "message": "[cron:<review-name>] Delegate to <agent>: review <what> since last run. Write findings to <output file>.",
+  "enabled": true,
+  "description": "<Agent> reviews <what> daily"
+}
+```
+
+### Cron Message Convention
+
+- **Prefix:** `[cron:<job-name>]` — so the agent knows this is automated
+- **Be specific:** Include file paths, delegate targets, scope limits
+- **One item per run:** Cron jobs should be atomic
+- **Source tag:** Cron messages get `source: "cron"` automatically
+
+### Adding a New Cron Job
+
+1. Add the job to `agents/may/cron.json`
+2. Use one of the well-known patterns above
+3. Include the `[cron:<name>]` prefix in the message
+4. Set `enabled: true` (or `false` to stage without firing)
+5. Takes effect on next restart or `reload`
+
+## Source Tags
+
+Messages carry a `source` field indicating origin:
+
+| Source | Meaning |
+|--------|---------|
+| `human` | User typed in terminal or Telegram |
+| `human-telegram` | User via Telegram specifically |
+| `agent` | Delegated by another agent |
+| `cron` | Automated cron job |
+| `system` | System-generated (turn warnings, cancellations) |
 
 ## Adding a New Agent
 
 1. Create `agents/<name>/agent.json` with required fields
 2. Create `agents/<name>/knowledge/domain.md` with role and instructions
-3. Optionally add: `tools/INDEX.md`, `workflows/`, `workspace/.gitkeep`, `knowledge/lessons.md`
-4. Restart the runner (or send `reload_agents` command via socket)
+3. Optionally add: `knowledge/tools.md`, `knowledge/coaching.md`, `workspace/todo.md`, `workspace/journal.md`
+4. Add a heartbeat cron job to `agents/may/cron.json` if the agent has ongoing work
+5. Restart the runner (or send `reload` command)
 
 The agent-loader validates config at startup — missing required fields, unknown model keys, unknown tool presets, and missing referenced files all produce errors.
 
 ## Naming Conventions
 
 - Agent directory name = `agent.json` `name` field (must match)
-- Knowledge files: lowercase, hyphenated (`domain.md`, `lessons.md`, `codebase.md`)
-- Workflow files: lowercase, hyphenated (`implement-and-review.ts`, `design-review.ts`)
-- Workspace files: descriptive, hyphenated (`progress.md`, `latest-analysis.md`, `optimizer-brief.md`)
+- Knowledge files: lowercase, hyphenated (`domain.md`, `lessons.md`, `tools.md`)
+- Workflow files: lowercase, hyphenated (`implement-and-review.ts`)
+- Workspace files: descriptive, hyphenated (`todo.md`, `journal.md`, `learnings.md`)
 - Shared docs: lowercase, hyphenated (`system-design.md`, `team.md`, `philosophy.md`)

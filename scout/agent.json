@@ -1,0 +1,17 @@
+{
+  "name": "scout",
+  "description": "Knowledge explorer — searches GitHub, arXiv, Reddit, blogs for AI agent research and tools",
+  "domain": "Open internet research on AI agents, autonomous systems, and related technology",
+  "model": "opus",
+  "tools": [
+    "read-write",
+    "exec"
+  ],
+  "systemPromptFiles": [
+    "knowledge/domain.md",
+    "knowledge/tools.md",
+    "knowledge/coaching.md"
+  ],
+  "maxTurns": 40,
+  "workspace": "workspace"
+}
