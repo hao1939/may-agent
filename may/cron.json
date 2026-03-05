@@ -54,5 +54,12 @@
     "message": "[cron:drain-todo] Check agents/may/workspace/todo.md for pending items under # TODO. Work on the top item — delegate, fix, or resolve it. Move completed items to # Tracking with result (✅/⚠️/❌). Stop after one item.",
     "enabled": true,
     "description": "Drain one TODO item every 4 hours"
+  },
+  {
+    "name": "optimizer-drain-todo",
+    "intervalMs": 28800000,
+    "message": "[cron:optimizer-drain-todo] Read agents/optimizer/workspace/todo.md. If there are pending items under # TODO, delegate to optimizer to work on the top item. One item per run.",
+    "enabled": true,
+    "description": "Optimizer drains its todo.md every 8 hours"
   }
 ]
