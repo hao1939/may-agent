@@ -119,7 +119,7 @@ describe("linked read/write tools with truncation tracking", () => {
     });
     const writeText = writeResult.content[0].text;
     expect(writeText).toContain("BLOCKED");
-    expect(writeText).toContain("data loss");
+    expect(writeText).toContain("shrink the file");
     expect(writeText).toContain("sed");
   });
 
@@ -199,13 +199,18 @@ describe("linked read/write tools with truncation tracking", () => {
     });
     expect(warningWrite.content[0].text).toContain("WARNING");
 
-    // Third write: tracker was cleared after the successful write, no warning
+    // Third write: tracker was cleared after the successful write.
+    // The disk-based shrink guard still applies (file is now 3000 bytes,
+    // "also short" is <50%), so we use allowShrink to bypass the shrink guard.
+    // The point is that the truncation tracker warning is gone.
     const cleanWrite = await tools.write.execute("w2", {
       path: join(testDir, "src/clear.ts"),
       content: "also short",
+      allowShrink: true,
     });
     expect(cleanWrite.content[0].text).not.toContain("WARNING");
     expect(cleanWrite.content[0].text).not.toContain("BLOCKED");
+    expect(cleanWrite.content[0].text).toContain("Wrote");
   });
 
   it("clears tracker when file is re-read without truncation", async () => {
@@ -242,7 +247,7 @@ describe("linked read/write tools with truncation tracking", () => {
     });
     const writeText = writeResult.content[0].text;
     expect(writeText).toContain("BLOCKED");
-    expect(writeText).toContain("data loss");
+    expect(writeText).toContain("shrink the file");
   });
 });
 
@@ -286,5 +291,173 @@ describe("read/write tools without tracker (backward compat)", () => {
     });
     expect(result.content[0].text).toContain("Wrote");
     expect(readFileSync(filePath, "utf-8")).toBe("no options");
+  });
+});
+
+// ── Shrink guard (disk-based) tests ────────────────────────────────────
+
+describe("shrink guard (disk-based file size check)", () => {
+  let testDir: string;
+
+  beforeEach(() => {
+    testDir = mkdtempSync(join(tmpdir(), "shrink-guard-test-"));
+    mkdirSync(join(testDir, "src"), { recursive: true });
+  });
+
+  afterEach(() => {
+    rmSync(testDir, { recursive: true, force: true });
+  });
+
+  it("blocks write when new content is <50% of existing file size", async () => {
+    // Create a 2000-byte file
+    writeFileSync(join(testDir, "src/large.ts"), "x".repeat(2000));
+
+    const tool = createWriteTool({ projectRoot: testDir });
+
+    // Try to write 500 bytes (25% of original) — should be BLOCKED
+    const result = await tool.execute("w1", {
+      path: join(testDir, "src/large.ts"),
+      content: "y".repeat(500),
+    });
+    const text = result.content[0].text;
+    expect(text).toContain("BLOCKED");
+    expect(text).toContain("shrink the file");
+    expect(text).toContain("2,000");
+    expect(text).toContain("500");
+    expect(text).toContain("allowShrink=true");
+
+    // Verify the file was NOT modified
+    const content = readFileSync(join(testDir, "src/large.ts"), "utf-8");
+    expect(content).toBe("x".repeat(2000));
+  });
+
+  it("warns (but allows) when new content is 50-80% of existing file size", async () => {
+    writeFileSync(join(testDir, "src/medium.ts"), "x".repeat(2000));
+
+    const tool = createWriteTool({ projectRoot: testDir });
+
+    // Write 1200 bytes (60% of original) — should WARN but succeed
+    const result = await tool.execute("w1", {
+      path: join(testDir, "src/medium.ts"),
+      content: "y".repeat(1200),
+    });
+    const text = result.content[0].text;
+    expect(text).toContain("Wrote");
+    expect(text).toContain("SHRINK WARNING");
+    expect(text).toContain("60%");
+
+    // Verify the file WAS modified
+    const content = readFileSync(join(testDir, "src/medium.ts"), "utf-8");
+    expect(content).toBe("y".repeat(1200));
+  });
+
+  it("allows write when new content is >=80% of existing file size", async () => {
+    writeFileSync(join(testDir, "src/normal.ts"), "x".repeat(2000));
+
+    const tool = createWriteTool({ projectRoot: testDir });
+
+    // Write 1800 bytes (90% of original) — no warning
+    const result = await tool.execute("w1", {
+      path: join(testDir, "src/normal.ts"),
+      content: "y".repeat(1800),
+    });
+    const text = result.content[0].text;
+    expect(text).toContain("Wrote");
+    expect(text).not.toContain("WARNING");
+    expect(text).not.toContain("BLOCKED");
+  });
+
+  it("allows write to new files without restriction", async () => {
+    const tool = createWriteTool({ projectRoot: testDir });
+
+    const result = await tool.execute("w1", {
+      path: join(testDir, "src/brand-new.ts"),
+      content: "// small file\n",
+    });
+    const text = result.content[0].text;
+    expect(text).toContain("Wrote");
+    expect(text).not.toContain("BLOCKED");
+    expect(text).not.toContain("WARNING");
+  });
+
+  it("skips shrink guard for small files (under shrinkGuardMinSize)", async () => {
+    // Default shrinkGuardMinSize is 500
+    writeFileSync(join(testDir, "src/tiny.ts"), "x".repeat(400));
+
+    const tool = createWriteTool({ projectRoot: testDir });
+
+    // Write 10 bytes to replace 400-byte file — should be allowed (under threshold)
+    const result = await tool.execute("w1", {
+      path: join(testDir, "src/tiny.ts"),
+      content: "// tiny\n",
+    });
+    const text = result.content[0].text;
+    expect(text).toContain("Wrote");
+    expect(text).not.toContain("BLOCKED");
+    expect(text).not.toContain("WARNING");
+  });
+
+  it("respects custom shrinkGuardMinSize", async () => {
+    writeFileSync(join(testDir, "src/custom.ts"), "x".repeat(800));
+
+    // Set custom min size to 1000 — so an 800-byte file won't be protected
+    const tool = createWriteTool({ projectRoot: testDir, shrinkGuardMinSize: 1000 });
+
+    const result = await tool.execute("w1", {
+      path: join(testDir, "src/custom.ts"),
+      content: "// short\n",
+    });
+    const text = result.content[0].text;
+    expect(text).toContain("Wrote");
+    expect(text).not.toContain("BLOCKED");
+  });
+
+  it("allowShrink=true bypasses the shrink guard", async () => {
+    writeFileSync(join(testDir, "src/explicit.ts"), "x".repeat(5000));
+
+    const tool = createWriteTool({ projectRoot: testDir });
+
+    // Write 100 bytes with allowShrink — should succeed
+    const result = await tool.execute("w1", {
+      path: join(testDir, "src/explicit.ts"),
+      content: "// intentionally short\n",
+      allowShrink: true,
+    });
+    const text = result.content[0].text;
+    expect(text).toContain("Wrote");
+    expect(text).not.toContain("BLOCKED");
+
+    // Verify the file was modified
+    const content = readFileSync(join(testDir, "src/explicit.ts"), "utf-8");
+    expect(content).toBe("// intentionally short\n");
+  });
+
+  it("works without projectRoot (uses raw path)", async () => {
+    writeFileSync(join(testDir, "src/no-root.ts"), "x".repeat(3000));
+
+    // No projectRoot — shrink guard still works with absolute paths
+    const tool = createWriteTool();
+
+    const result = await tool.execute("w1", {
+      path: join(testDir, "src/no-root.ts"),
+      content: "// very short\n",
+    });
+    const text = result.content[0].text;
+    expect(text).toContain("BLOCKED");
+    expect(text).toContain("shrink the file");
+  });
+
+  it("correctly reports the shrink ratio in the blocked message", async () => {
+    writeFileSync(join(testDir, "src/ratio.ts"), "x".repeat(10000));
+
+    const tool = createWriteTool({ projectRoot: testDir });
+
+    const result = await tool.execute("w1", {
+      path: join(testDir, "src/ratio.ts"),
+      content: "y".repeat(2200),
+    });
+    const text = result.content[0].text;
+    expect(text).toContain("BLOCKED");
+    expect(text).toContain("22%"); // 2200/10000 = 22%
   });
 });
