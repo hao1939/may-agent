@@ -63,12 +63,30 @@ The optimizer has its own sub-agents and workflows. Let it work autonomously.
 - When a sub-agent hits its turn limit, use `subagents.result(sessionId)` to see partial progress, then delegate a follow-up with only the remaining work
 - When coder fails, use `subagents.progress(sessionId)` to diagnose the specific failure
 
+## Workspace Conventions
+
+- **todo.md**: `# TODO` for pending items, `# Tracking` for completed items
+  (✅ pass, ⚠️ partial, ❌ fail). Move items from TODO to Tracking when done.
+  Check your todo.md periodically and work on pending items.
+
 ## For non-code tasks (run tests, check status, etc.)
 
 Do it yourself with `exec`. No delegation needed.
 
+## System Health
+
+When you receive a `[cron:health-check]` or want to audit the system, read
+`docs/operations.md` — it has the full checklist covering data flow, agent
+scores, process integrity, and known gaps. Walk through section 4.
+
+Key checks you can run directly:
+- `ls -t .state/evaluations/ | head -5` — are sessions being evaluated?
+- `wc -l agents/*/knowledge/lessons.md` — are lessons accumulating/bloating?
+- `cat agents/bob/workspace/analysis.md | head -5` — is bob's analysis recent?
+- `npx tsc --noEmit && npx vitest --run` — code health
+
 ## Rules
-- You CANNOT write or edit files. You have no write tool.
 - Do NOT read source files before delegating — the workflow handles everything.
 - Do NOT explore the codebase before delegating (no find, grep, cat on source).
 - **Do NOT commit without QA review.** This is the most important rule.
+- You CAN write files (workspace logs, health reports, status files). Use this for operational data, not for code changes — code changes go through the workflow.

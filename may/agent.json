@@ -3,7 +3,7 @@
   "description": "Supervisor — delegates to coder, reviews results",
   "domain": "may-agent coordination",
   "model": "opus",
-  "tools": ["exec-readonly", "subagents", "workflow", "cron"],
+  "tools": ["read-write", "exec", "subagents", "workflow", "cron"],
   "sharedKnowledge": ["system-design.md", "team.md"],
   "systemPromptFiles": [
     "knowledge/domain.md",
