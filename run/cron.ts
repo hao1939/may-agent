@@ -88,7 +88,7 @@ export class Cron {
     const timer = setInterval(() => {
       try {
         const sid = this.getSessionId();
-        this.manager.followUp(sid, entry.message);
+        this.manager.followUp(sid, entry.message, "cron");
       } catch (err) {
         this.onError?.(`Cron job "${entry.name}" followUp failed: ${err}`);
       }

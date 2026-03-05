@@ -31,6 +31,7 @@ const models: Record<string, any> = {
   opus: {
     ...getModel("anthropic", "claude-sonnet-4-20250514"),
     id: "claude-opus-4.6",
+    contextWindow: 128000,
     baseUrl: MODEL_BASE_URL,
   },
   gpt52: {
@@ -220,6 +221,8 @@ bus.onCommand((cmd) => {
 
 // ── Input handling ──────────────────────────────────────────────────────
 
+let humanInputLogFailed = false;
+
 /**
  * Send input to the interface agent. Steers if busy, follows up if idle.
  * From the user's perspective, they just type — the runner picks the right verb.
@@ -233,16 +236,22 @@ function sendInput(message: string): void {
       const logPath = resolve(logDir, "human-inputs.md");
       const truncated = message.length > 200 ? message.slice(0, 200) : message;
       appendFileSync(logPath, `- [${new Date().toISOString()}] ${truncated}\n`);
-    } catch { /* best-effort */ }
+    } catch (err) {
+      if (!humanInputLogFailed) {
+        humanInputLogFailed = true;
+        const msg = err instanceof Error ? err.message : String(err);
+        bus.emit({ type: "info", message: `[human-input-log] Write failed (will not retry): ${msg}` });
+      }
+    }
   }
 
   try {
     const sessions = manager.status();
     const session = sessions.find(s => s.sessionId === sid);
     if (session && session.status === "running") {
-      manager.steer(sid, message);
+      manager.steer(sid, message, "human");
     } else {
-      manager.followUp(sid, message);
+      manager.followUp(sid, message, "human");
     }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
