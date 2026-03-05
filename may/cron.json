@@ -16,7 +16,7 @@
   {
     "name": "optimize",
     "intervalMs": 86400000,
-    "message": "[cron:optimize] Read agents/bob/workspace/analysis.md and agents/coach/workspace/journal.md. If either contains actionable findings, delegate to optimizer to implement the top recommendation. Only update knowledge/prompt files — no code changes without human approval.",
+    "message": "[cron:optimize] Read agents/bob/workspace/analysis.md, agents/coach/workspace/journal.md, and agents/optimizer/workspace/todo.md. Work on the top TODO item or the top finding. Also check for LLM-to-JS replacement opportunities in recent sessions. One fix per run.",
     "enabled": true,
     "description": "Optimizer implements one fix per day from bob's analysis and coach's findings"
   },
