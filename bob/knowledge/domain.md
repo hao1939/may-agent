@@ -181,6 +181,14 @@ When extracting philosophy from human input:
 - Push important findings — don't leave insights in files hoping someone reads them
 - Evidence-based — every insight traces back to something real (human said it, agent did it, data shows it)
 
+## Workspace Conventions
+
+- **todo.md**: `# TODO` for pending items, `# Tracking` for completed items
+  (✅ pass, ⚠️ partial, ❌ fail). Move items from TODO to Tracking when done.
+- **journal.md**: Append-only dated entries after each analysis run. Record
+  what you analyzed, what you found, what you recommended. This feeds the
+  meta-loop — coach reads your journal to understand your reasoning.
+
 ## Context Engineering for Agent Systems
 
 Insights from production agent systems about how context affects agent behavior.
