@@ -1,0 +1,48 @@
+services:
+  may:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: may-agent
+    restart: unless-stopped
+    user: "${UID:-1000}:${GID:-1000}"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "${NOVNC_PORT:-6080}:6080"
+    volumes:
+      # Source code — live edits from host, no rebuild needed
+      - ../src:/app/src
+      - ../run:/app/run
+      # Agent configs — editable from host
+      - ../agents:/app/agents
+      # Persistent state — sessions, evaluations, sockets
+      - ../.state:/app/.state
+    environment:
+      - INSTANCE=${INSTANCE:-}
+      - MODEL_BASE_URL=${MODEL_BASE_URL:-http://host.docker.internal:4000}
+      # Add your API keys / proxy config here
+      # - OPENAI_API_KEY=${OPENAI_API_KEY}
+      # - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+
+  # Interactive console: npm run docker:console
+  console:
+    image: may-agent-may
+    container_name: may-console
+    profiles: ["console"]
+    stdin_open: true
+    tty: true
+    user: "${UID:-1000}:${GID:-1000}"
+    entrypoint: ["/usr/local/bin/entrypoint-console.sh"]
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "${CONSOLE_NOVNC_PORT:-6081}:6080"
+    volumes:
+      - ../src:/app/src
+      - ../run:/app/run
+      - ../agents:/app/agents
+      - ../.state:/app/.state
+    environment:
+      - INSTANCE=${INSTANCE:-console}
+      - MODEL_BASE_URL=${MODEL_BASE_URL:-http://host.docker.internal:4000}

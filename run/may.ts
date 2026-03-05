@@ -10,32 +10,38 @@ import { attachSocketUI } from "./socket-ui.js";
 import { attachOpenClawUI } from "./openclaw-ui.js";
 import { loadAgents, reloadAgents, setAgentSessionId, runAgentCleanup, getAgentCrons, type AgentLoaderOptions } from "./agent-loader.js";
 
-const PROJECT_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const AGENTS_ROOT = resolve(PROJECT_ROOT, "agents");
-const PERSIST_DIR = resolve(PROJECT_ROOT, process.env.STATE_DIR || ".state");
+const PROJECT_ROOT = resolve(process.env.PROJECT_ROOT || dirname(fileURLToPath(import.meta.url)), process.env.PROJECT_ROOT ? "." : "..");
+const AGENTS_ROOT = resolve(process.env.AGENTS_ROOT || resolve(PROJECT_ROOT, "agents"));
+const PERSIST_DIR = resolve(process.env.STATE_DIR || resolve(PROJECT_ROOT, ".state"));
 
 // ── Instance identity ───────────────────────────────────────────────────
 
 const INSTANCE = process.env.INSTANCE || "";
 const INSTANCE_LABEL = INSTANCE || "default";
 
+// Capture and clear SCHEDULERS so child processes don't inherit it.
+const SCHEDULERS_ENABLED = process.env.SCHEDULERS === "1";
+delete process.env.SCHEDULERS;
+
 // ── Models ──────────────────────────────────────────────────────────────
+
+const MODEL_BASE_URL = process.env.MODEL_BASE_URL || "http://localhost:4000";
 
 const models: Record<string, any> = {
   opus: {
     ...getModel("anthropic", "claude-sonnet-4-20250514"),
     id: "claude-opus-4.6",
-    baseUrl: "http://localhost:4000",
+    baseUrl: MODEL_BASE_URL,
   },
   gpt52: {
     ...getModel("openai", "gpt-5.2"),
-    baseUrl: "http://localhost:4000",
+    baseUrl: MODEL_BASE_URL,
   },
   gemini3pro: {
     ...getModel("openai", "gpt-4o"),
     api: "openai-completions" as const,
     id: "gemini-3-pro-preview",
-    baseUrl: "http://localhost:4000",
+    baseUrl: MODEL_BASE_URL,
   },
 };
 
@@ -391,7 +397,7 @@ if (resumeError) {
 
 // ── Start cron jobs (SCHEDULERS=1 to enable) ───────────────────────────
 
-if (process.env.SCHEDULERS === "1") {
+if (SCHEDULERS_ENABLED) {
   for (const [name, cron] of getAgentCrons()) {
     const entries = cron.getEntries();
     if (entries.length > 0) {
