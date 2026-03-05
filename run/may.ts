@@ -8,6 +8,7 @@ import { EventBus } from "./event-bus.js";
 import { attachConsoleUI } from "./console-ui.js";
 import { attachSocketUI } from "./socket-ui.js";
 import { attachOpenClawUI } from "./openclaw-ui.js";
+import { attachTelegramBot } from "./telegram-ui.js";
 import { loadAgents, reloadAgents, setAgentSessionId, runAgentCleanup, getAgentCrons, type AgentLoaderOptions } from "./agent-loader.js";
 
 const PROJECT_ROOT = resolve(process.env.PROJECT_ROOT || dirname(fileURLToPath(import.meta.url)), process.env.PROJECT_ROOT ? "." : "..");
@@ -152,70 +153,121 @@ function attachAgentEvents(label: string, sessionId: string): void {
 
 // ── Socket commands ────────────────────────────────────────────────────
 
+/** Parse @agent prefix from input. Returns [agentName, message] or [null, original]. */
+function parseAgentPrefix(input: string): [string | null, string] {
+  const match = input.match(/^@(\w+)\s+([\s\S]+)/);
+  if (match) return [match[1], match[2]];
+  return [null, input];
+}
+
+/**
+ * Unified input handler. All channels (terminal, socket, telegram) route through here.
+ * Handles built-in commands, @agent prefixes, and regular input to May.
+ */
+function handleInput(message: string): void {
+  const trimmed = message.trim();
+  if (!trimmed) return;
+
+  // Built-in commands (case-insensitive for first word)
+  const lower = trimmed.toLowerCase();
+
+  if (lower === "cancel") {
+    bus.emit({ type: "info", message: "[cmd] Cancel current task" });
+    manager.cancel(sid);
+    watchForIdle();
+    return;
+  }
+  if (lower === "cancel all") {
+    bus.emit({ type: "info", message: "[cmd] Cancel all" });
+    for (const s of manager.status()) {
+      if (s.status === "running") manager.cancel(s.sessionId);
+    }
+    watchForIdle();
+    return;
+  }
+  if (lower === "status") {
+    const sessions = manager.status();
+    if (sessions.length === 0) {
+      bus.emit({ type: "info", message: "[status] No active sessions" });
+    } else {
+      const lines = sessions.map((s) =>
+        \`  \${s.agent} (\${s.sessionId}): \${s.status} — "\${s.task.slice(0, 80)}" [\${s.runtime}]\`
+      );
+      bus.emit({ type: "info", message: \`[status] \${sessions.length} active session(s):\n\${lines.join("\n")}\` });
+    }
+    return;
+  }
+  if (lower === "reload") {
+    const result = reloadAgents(loaderOpts);
+    if (result.errors.length > 0) {
+      bus.emit({ type: "info", message: \`[reload] Validation errors:\n\${result.errors.join("\n")}\` });
+    } else if (result.added.length > 0 || result.updated.length > 0) {
+      const parts: string[] = [];
+      if (result.added.length > 0) parts.push(\`\${result.added.length} new (\${result.added.join(", ")})\`);
+      if (result.updated.length > 0) parts.push(\`\${result.updated.length} updated (\${result.updated.join(", ")})\`);
+      bus.emit({ type: "info", message: \`[reload] \${parts.join(", ")}\` });
+    } else {
+      bus.emit({ type: "info", message: "[reload] No changes" });
+    }
+    return;
+  }
+  if (lower === "close") {
+    bus.emit({ type: "info", message: "[cmd] Closing session (will not resume on restart)..." });
+    manager.close(sid);
+    gracefulShutdown();
+    return;
+  }
+
+  // @agent prefix — direct agent invocation
+  const [targetAgent, agentMessage] = parseAgentPrefix(trimmed);
+  if (targetAgent) {
+    runDirect(targetAgent, agentMessage);
+    watchForIdle();
+    return;
+  }
+
+  // Default: send to interface agent
+  sendInput(trimmed);
+  watchForIdle();
+}
+
 bus.onCommand((cmd) => {
   switch (cmd.type) {
+    case "input":
+      handleInput(cmd.message);
+      break;
     case "steer":
-      bus.emit({ type: "info", message: `[socket] Steering: "${cmd.message.slice(0, 80)}"` });
+      // Raw steer — bypass command parsing, used for programmatic control
       try {
-        manager.steer(sid, cmd.message);
+        manager.steer(sid, cmd.message, "human");
       } catch {
-        bus.emit({ type: "info", message: `[socket] Cannot steer — session not running` });
+        bus.emit({ type: "info", message: "[steer] Cannot steer — session not running" });
       }
       break;
     case "cancel":
-      bus.emit({ type: "info", message: `[socket] Cancel: ${cmd.sessionId}` });
+      bus.emit({ type: "info", message: \`[cmd] Cancel: \${cmd.sessionId}\` });
       manager.cancel(cmd.sessionId);
       break;
     case "cancel_all":
-      bus.emit({ type: "info", message: "[socket] Cancel all" });
-      for (const s of manager.status()) {
-        if (s.status === "running") manager.cancel(s.sessionId);
-      }
+      handleInput("cancel all");
       break;
     case "cancel_task":
-      bus.emit({ type: "info", message: "[socket] Cancel current task" });
-      manager.cancel(sid);
+      handleInput("cancel");
       break;
     case "close":
-      bus.emit({ type: "info", message: "[socket] Closing session (will not resume on restart)..." });
-      manager.close(sid);
-      gracefulShutdown();
+      handleInput("close");
       break;
-    case "status": {
-      const sessions = manager.status();
-      if (sessions.length === 0) {
-        bus.emit({ type: "info", message: "[status] No active sessions" });
-      } else {
-        const lines = sessions.map((s) =>
-          `  ${s.agent} (${s.sessionId}): ${s.status} — "${s.task.slice(0, 80)}" [${s.runtime}]`
-        );
-        bus.emit({ type: "info", message: `[status] ${sessions.length} active session(s):\n${lines.join("\n")}` });
-      }
-      break;
-    }
-    case "input":
-      bus.emit({ type: "info", message: `[socket] Input: "${cmd.message.slice(0, 80)}"` });
-      sendInput(cmd.message);
+    case "status":
+      handleInput("status");
       break;
     case "run": {
-      bus.emit({ type: "info", message: `[socket] Run @${cmd.agent}: "${cmd.message.slice(0, 80)}"` });
       runDirect(cmd.agent, cmd.message);
+      watchForIdle();
       break;
     }
-    case "reload_agents": {
-      const result = reloadAgents(loaderOpts);
-      if (result.errors.length > 0) {
-        bus.emit({ type: "info", message: `[reload] Validation errors:\n${result.errors.join("\n")}` });
-      } else if (result.added.length > 0 || result.updated.length > 0) {
-        const parts: string[] = [];
-        if (result.added.length > 0) parts.push(`${result.added.length} new (${result.added.join(", ")})`);
-        if (result.updated.length > 0) parts.push(`${result.updated.length} updated (${result.updated.join(", ")})`);
-        bus.emit({ type: "info", message: `[reload] ${parts.join(", ")}` });
-      } else {
-        bus.emit({ type: "info", message: "[reload] No changes" });
-      }
+    case "reload_agents":
+      handleInput("reload");
       break;
-    }
   }
 });
 
@@ -291,6 +343,9 @@ function gracefulShutdown() {
   for (const cron of getAgentCrons().values()) {
     cron.stop();
   }
+
+  // Stop Telegram bot
+  telegramBot.close();
 
   // Cancel non-persistent child sessions but leave the interface agent's
   // persistent session intact for resume on next startup.
@@ -417,6 +472,15 @@ if (SCHEDULERS_ENABLED) {
   }
 }
 
+// ── Telegram bot (TELEGRAM_BOT_TOKEN to enable) ─────────────────────────
+
+const telegramBot = attachTelegramBot({
+  bus,
+  manager,
+  getSessionId: () => sid,
+  interfaceAgent,
+});
+
 // ── Idle prompt ────────────────────────────────────────────────────────
 
 /**
@@ -424,6 +488,8 @@ if (SCHEDULERS_ENABLED) {
  * Subscribe to the interface session to detect idle transitions.
  */
 function emitPrompt(): void {
+  // Notify all UI layers (telegram, openclaw, etc.) that the turn is done
+  bus.emit({ type: "prompt", message: interfaceAgent, channel: "chat" });
   if (process.stdin.isTTY) {
     const prefix = INSTANCE ? `[${INSTANCE}] ` : "";
     process.stdout.write(`\n${prefix}you> `);
@@ -459,13 +525,6 @@ watchForIdle();
 
 // ── Main loop ──────────────────────────────────────────────────────────
 
-/** Parse @agent prefix from input. Returns [agentName, message] or [null, original]. */
-function parseAgentPrefix(input: string): [string | null, string] {
-  const match = input.match(/^@(\w+)\s+([\s\S]+)/);
-  if (match) return [match[1], match[2]];
-  return [null, input];
-}
-
 if (process.stdin.isTTY) {
   const rl = createInterface({ input: process.stdin, output: process.stdout });
 
@@ -492,48 +551,15 @@ if (process.stdin.isTTY) {
   for await (const line of rl) {
     const input = line.trim();
     if (input === "exit" || input === "quit") break;
-    if (input === "close") {
-      bus.emit({ type: "info", message: "Closing session (will not resume on restart)..." });
-      manager.close(sid);
-      break;
-    }
-    if (input === "cancel") {
-      manager.cancel(sid);
-      emitPrompt();
-      continue;
-    }
-    if (input === "reload") {
-      const result = reloadAgents(loaderOpts);
-      if (result.errors.length > 0) {
-        bus.emit({ type: "info", message: `[reload] Validation errors:\n${result.errors.join("\n")}` });
-      } else if (result.added.length > 0 || result.updated.length > 0) {
-        const parts: string[] = [];
-        if (result.added.length > 0) parts.push(`${result.added.length} new (${result.added.join(", ")})`);
-        if (result.updated.length > 0) parts.push(`${result.updated.length} updated (${result.updated.join(", ")})`);
-        bus.emit({ type: "info", message: `[reload] ${parts.join(", ")}` });
-      } else {
-        bus.emit({ type: "info", message: "[reload] No changes" });
-      }
-      emitPrompt();
-      continue;
-    }
     if (!input) { emitPrompt(); continue; }
 
-    const [targetAgent, message] = parseAgentPrefix(input);
-    if (targetAgent) {
-      // Direct agent invocation: @agent message (non-blocking)
-      runDirect(targetAgent, message);
-    } else {
-      // Default: send to interface agent (non-blocking via followUp)
-      sendInput(input);
-    }
-
-    // Watch for the agent to go idle, then re-prompt
-    watchForIdle();
+    // All input goes through the unified handler via bus command
+    bus.command({ type: "input", message: input });
   }
 
   socketUI.close();
   openclawUI?.close();
+  telegramBot.close();
   rl.close();
 } else {
   // Daemon mode: no TTY, keep alive via socket + keepalive timer.

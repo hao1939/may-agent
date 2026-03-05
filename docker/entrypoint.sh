@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+# Source env files if they exist
+[ -f ${PROJECT_ROOT:-.}/.env.telegram ] && export $(grep -v "^#" ${PROJECT_ROOT:-.}/.env.telegram | xargs)
+
 DISPLAY_NUM=${DISPLAY_NUM:-99}
 SCREEN_RES=${SCREEN_RESOLUTION:-1920x1080x24}
 VNC_PORT=${VNC_PORT:-5900}
@@ -65,7 +68,7 @@ stdout_logfile=/dev/null
 stderr_logfile=/dev/null
 
 [program:may-agent]
-command=sh -c "SCHEDULERS=1 exec npx tsx run/may.ts"
+command=sh -c "SCHEDULERS=1 TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-} TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID:-} exec tsx run/may.ts"
 directory=/app
 priority=40
 autorestart=true
