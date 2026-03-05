@@ -3,7 +3,7 @@ import { join, dirname } from "node:path";
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { AssistantMessage } from "@mariozechner/pi-ai";
 import type { SubagentManager } from "./manager.js";
-import { readSessionMessages, readArchivedSessionMessages } from "./persistence.js";
+import { readSessionMessages, readArchivedSessionMessages, loadAllSessionMetas, historyDir } from "./persistence.js";
 import { extractHallucinatedRelPath } from "./tools.js";
 import type { PersistedSession } from "./persistence.js";
 
@@ -1092,4 +1092,91 @@ function computeTrend(efficiencies: number[]): "improving" | "declining" | "stab
   if (diff >= 0.1) return "improving";
   if (diff <= -0.1) return "declining";
   return "stable";
+}
+
+// ── Skip-evaluation for sessions that don't need LLM scoring ───────────
+
+/**
+ * Write deterministic "skipped" evaluations for sessions that don't need
+ * an LLM evaluator call. This is a pure JS replacement for what would
+ * otherwise be an evaluator agent session (~$0.05-0.15 each).
+ *
+ * Two categories are handled:
+ * 1. **Meta-agent sessions** (evaluator, optimizer, may) — these are always
+ *    skipped by evaluateTask's skipAgents, but without a marker file they
+ *    show up as "unevaluated" every time the cron job runs, wasting May's
+ *    time scanning them.
+ * 2. **No-transcript sessions** — sessions with no session.jsonl in either
+ *    the active or history directory. These can never be evaluated.
+ *
+ * Returns the number of evaluation files written.
+ */
+export function writeSkippedEvaluations(
+  persistDir: string,
+  skipAgents: Set<string> = new Set(["evaluator", "optimizer", "may"]),
+): number {
+  const evalDir = join(persistDir, "evaluations");
+  mkdirSync(evalDir, { recursive: true });
+
+  const allSessions: Record<string, PersistedSession> = loadAllSessionMetas(persistDir);
+  let written = 0;
+
+  for (const [sessionId, session] of Object.entries(allSessions)) {
+    // Skip if already evaluated
+    const evalPath = join(evalDir, `${sessionId}.json`);
+    if (existsSync(evalPath)) continue;
+
+    // Skip sessions still running
+    if (session.status === "running" || session.status === "idle") continue;
+
+    // Determine skip reason
+    let skipReason: string | null = null;
+
+    if (skipAgents.has(session.agent)) {
+      skipReason = `meta_agent_skipped (${session.agent})`;
+    } else {
+      // Check if transcript exists anywhere
+      const activeJsonl = join(persistDir, "sessions", sessionId, "session.jsonl");
+      const archivedJsonl = join(historyDir(persistDir), sessionId, "session.jsonl");
+      if (!existsSync(activeJsonl) && !existsSync(archivedJsonl)) {
+        skipReason = "no_transcript";
+      }
+    }
+
+    if (!skipReason) continue;
+
+    // Write deterministic evaluation — no LLM call needed
+    const evaluation = {
+      agent: session.agent,
+      sessionId,
+      efficiency: 0,
+      quality: 0,
+      productive_calls: 0,
+      wasted_calls: 0,
+      verdict: "skipped" as const,
+      issues: [skipReason],
+      overall: {
+        efficiency: 0,
+        quality: 0,
+        verdict: "skipped",
+        result_delivered: false,
+      },
+      usage: {
+        inputTokens: 0,
+        outputTokens: 0,
+        cacheReadTokens: 0,
+        cacheWriteTokens: 0,
+        totalTokens: 0,
+        cost: 0,
+        turns: 0,
+      },
+      failureChains: [],
+      skippedByJs: true,
+    };
+
+    writeFileSync(evalPath, JSON.stringify(evaluation, null, 2), "utf-8");
+    written++;
+  }
+
+  return written;
 }

@@ -20,7 +20,7 @@ export { summarizeForHandoff, extractHandoff } from "./handoff.js";
 export type { HandoffOptions, HandoffData } from "./handoff.js";
 export { createCompactionTransform } from "./compaction.js";
 export type { CompactionOptions, CompactionInfo } from "./compaction.js";
-export { evaluateTask, findUnevaluatedChildren, maintainAgent, extractFailureChains, extractUsage, formatFailureChains, getAgentScoreSummary } from "./evaluator.js";
+export { evaluateTask, findUnevaluatedChildren, maintainAgent, extractFailureChains, extractUsage, formatFailureChains, getAgentScoreSummary, writeSkippedEvaluations } from "./evaluator.js";
 export type { EvaluateTaskOptions, TaskEvaluationResult, AgentScores, ChildSessionInfo, MaintainAgentOptions, MaintenanceResult, UsageSummary, FailureChain, FailureStep, AgentScoreSummary } from "./evaluator.js";
 export { parseFrontmatter, loadSkillsFromDirs, formatSkillsForPrompt } from "./skills.js";
 export type { Frontmatter, SkillEntry } from "./skills.js";
