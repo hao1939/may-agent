@@ -191,21 +191,21 @@ function handleInput(message: string): void {
       bus.emit({ type: "info", message: "[status] No active sessions" });
     } else {
       const lines = sessions.map((s) =>
-        \`  \${s.agent} (\${s.sessionId}): \${s.status} — "\${s.task.slice(0, 80)}" [\${s.runtime}]\`
+        `  ${s.agent} (${s.sessionId}): ${s.status} — "${s.task.slice(0, 80)}" [${s.runtime}]`
       );
-      bus.emit({ type: "info", message: \`[status] \${sessions.length} active session(s):\n\${lines.join("\n")}\` });
+      bus.emit({ type: "info", message: `[status] ${sessions.length} active session(s):\n${lines.join("\n")}` });
     }
     return;
   }
   if (lower === "reload") {
     const result = reloadAgents(loaderOpts);
     if (result.errors.length > 0) {
-      bus.emit({ type: "info", message: \`[reload] Validation errors:\n\${result.errors.join("\n")}\` });
+      bus.emit({ type: "info", message: `[reload] Validation errors:\n${result.errors.join("\n")}` });
     } else if (result.added.length > 0 || result.updated.length > 0) {
       const parts: string[] = [];
-      if (result.added.length > 0) parts.push(\`\${result.added.length} new (\${result.added.join(", ")})\`);
-      if (result.updated.length > 0) parts.push(\`\${result.updated.length} updated (\${result.updated.join(", ")})\`);
-      bus.emit({ type: "info", message: \`[reload] \${parts.join(", ")}\` });
+      if (result.added.length > 0) parts.push(`${result.added.length} new (${result.added.join(", ")})`);
+      if (result.updated.length > 0) parts.push(`${result.updated.length} updated (${result.updated.join(", ")})`);
+      bus.emit({ type: "info", message: `[reload] ${parts.join(", ")}` });
     } else {
       bus.emit({ type: "info", message: "[reload] No changes" });
     }
@@ -245,7 +245,7 @@ bus.onCommand((cmd) => {
       }
       break;
     case "cancel":
-      bus.emit({ type: "info", message: \`[cmd] Cancel: \${cmd.sessionId}\` });
+      bus.emit({ type: "info", message: `[cmd] Cancel: ${cmd.sessionId}` });
       manager.cancel(cmd.sessionId);
       break;
     case "cancel_all":

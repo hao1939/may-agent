@@ -43,16 +43,17 @@ COPY pi-deps/ai /pi-deps/ai
 COPY package.json package-lock.json ./
 RUN sed -i 's|file:/home/hao/pi-mono/packages/agent|file:/pi-deps/agent|' package.json && \
     sed -i 's|file:/home/hao/pi-mono/packages/ai|file:/pi-deps/ai|' package.json && \
-    npm install --ignore-scripts
+    npm install --ignore-scripts && \
+    npm install -g tsx
 
 # Copy source
 COPY src/ src/
 COPY run/ run/
 COPY tsconfig.json tsconfig.build.json ./
 
-# Copy entrypoints
-COPY docker/entrypoint.sh docker/entrypoint-console.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/entrypoint-console.sh
+# Copy entrypoints and helpers
+COPY docker/entrypoint.sh docker/entrypoint-console.sh docker/restart-may.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/entrypoint-console.sh /usr/local/bin/restart-may.sh
 
 # Virtual display
 ENV DISPLAY=:99
