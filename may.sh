@@ -15,9 +15,14 @@
 
 set -e
 cd "$(dirname "$0")"
+# Source env files (telegram bot, etc.)
+[ -f .env.telegram ] && export $(grep -v "^#" .env.telegram | xargs)
+
 
 STATE_DIR="${STATE_DIR:-.state}"
 AGENT="${AGENT:-may}"
+# Capture explicit SCHEDULERS override; per-command defaults apply below.
+SCHEDULERS_OVERRIDE="${SCHEDULERS:-}"
 SCHEDULERS="${SCHEDULERS:-1}"
 export SCHEDULERS
 
@@ -75,6 +80,9 @@ cleanup_stale() {
 
 cmd_run() {
   # Interactive foreground run (default instance, with restart loop)
+  # Cron jobs disabled by default in interactive mode (set SCHEDULERS=1 to override)
+  SCHEDULERS="${SCHEDULERS_OVERRIDE:-0}"
+  export SCHEDULERS
   local instance="${1:-}"
   export INSTANCE="$instance"
   while true; do
@@ -113,6 +121,8 @@ cmd_start() {
   local cmd="INSTANCE='${name}'"
   [ -n "$SCHEDULERS" ] && cmd="$cmd SCHEDULERS=$SCHEDULERS"
   [ -n "$AGENT" ] && cmd="$cmd AGENT=$AGENT"
+  [ -n "$TELEGRAM_BOT_TOKEN" ] && cmd="$cmd TELEGRAM_BOT_TOKEN=$TELEGRAM_BOT_TOKEN"
+  [ -n "$TELEGRAM_CHAT_ID" ] && cmd="$cmd TELEGRAM_CHAT_ID=$TELEGRAM_CHAT_ID"
   [ -n "$STATE_DIR" ] && [ "$STATE_DIR" != ".state" ] && cmd="$cmd STATE_DIR=$STATE_DIR"
   cmd="$cmd npx tsx run/may.ts"
 
