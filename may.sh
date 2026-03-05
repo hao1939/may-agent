@@ -15,8 +15,8 @@
 
 set -e
 cd "$(dirname "$0")"
-# Source env files (telegram bot, etc.)
-[ -f .env.telegram ] && export $(grep -v "^#" .env.telegram | xargs)
+# Source env file
+[ -f .env ] && export $(grep -v "^#" .env | xargs)
 
 
 STATE_DIR="${STATE_DIR:-.state}"
@@ -121,8 +121,13 @@ cmd_start() {
   local cmd="INSTANCE='${name}'"
   [ -n "$SCHEDULERS" ] && cmd="$cmd SCHEDULERS=$SCHEDULERS"
   [ -n "$AGENT" ] && cmd="$cmd AGENT=$AGENT"
-  [ -n "$TELEGRAM_BOT_TOKEN" ] && cmd="$cmd TELEGRAM_BOT_TOKEN=$TELEGRAM_BOT_TOKEN"
-  [ -n "$TELEGRAM_CHAT_ID" ] && cmd="$cmd TELEGRAM_CHAT_ID=$TELEGRAM_CHAT_ID"
+  # Pass through all .env vars to tmux
+  if [ -f .env ]; then
+    while IFS="=" read -r key val; do
+      case "$key" in "#"*|"") continue;; esac
+      cmd="$cmd $key=$val"
+    done < .env
+  fi
   [ -n "$STATE_DIR" ] && [ "$STATE_DIR" != ".state" ] && cmd="$cmd STATE_DIR=$STATE_DIR"
   cmd="$cmd npx tsx run/may.ts"
 
