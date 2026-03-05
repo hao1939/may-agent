@@ -1,8 +1,9 @@
 import { createInterface } from "node:readline";
 import { fileURLToPath } from "node:url";
 import { resolve, dirname } from "node:path";
+import { existsSync, writeFileSync, unlinkSync, mkdirSync, appendFileSync } from "node:fs";
 import { getModel } from "@mariozechner/pi-ai";
-import { SubagentManager, evaluateTask } from "../src/index.js";
+import { SubagentManager, evaluateTask, writeSkippedEvaluations } from "../src/index.js";
 import { EventBus } from "./event-bus.js";
 import { attachConsoleUI } from "./console-ui.js";
 import { attachSocketUI } from "./socket-ui.js";
@@ -12,6 +13,11 @@ import { loadAgents, reloadAgents, setAgentSessionId, runAgentCleanup, getAgentC
 const PROJECT_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const AGENTS_ROOT = resolve(PROJECT_ROOT, "agents");
 const PERSIST_DIR = resolve(PROJECT_ROOT, process.env.STATE_DIR || ".state");
+
+// ── Instance identity ───────────────────────────────────────────────────
+
+const INSTANCE = process.env.INSTANCE || "";
+const INSTANCE_LABEL = INSTANCE || "default";
 
 // ── Models ──────────────────────────────────────────────────────────────
 
@@ -97,6 +103,12 @@ const loaderOpts: AgentLoaderOptions = {
 
 const loadResult = loadAgents(loaderOpts);
 bus.emit({ type: "info", message: `Loaded ${loadResult.added.length} agent(s): ${loadResult.added.join(", ")}` });
+
+// Write deterministic evaluations for sessions that never need LLM scoring
+// (meta-agents like evaluator/optimizer/may, and sessions with no transcript).
+// This is a JS shortcut that saves ~$0.05-0.15 per evaluator call.
+const skipped = writeSkippedEvaluations(PERSIST_DIR);
+if (skipped > 0) bus.emit({ type: "info", message: `[eval] Wrote ${skipped} skipped evaluation(s) (meta-agents/no-transcript) — no LLM needed` });
 
 // ── Event routing ──────────────────────────────────────────────────────
 
@@ -206,6 +218,17 @@ bus.onCommand((cmd) => {
  * From the user's perspective, they just type — the runner picks the right verb.
  */
 function sendInput(message: string): void {
+  // Log human input (skip cron messages)
+  if (!message.startsWith("[cron:")) {
+    try {
+      const logDir = resolve(AGENTS_ROOT, interfaceAgent, "workspace");
+      mkdirSync(logDir, { recursive: true });
+      const logPath = resolve(logDir, "human-inputs.md");
+      const truncated = message.length > 200 ? message.slice(0, 200) : message;
+      appendFileSync(logPath, `- [${new Date().toISOString()}] ${truncated}\n`);
+    } catch { /* best-effort */ }
+  }
+
   try {
     const sessions = manager.status();
     const session = sessions.find(s => s.sessionId === sid);
@@ -309,16 +332,32 @@ const interfaceRunOpts = {
   },
 };
 
-// ── Socket (always available — created BEFORE startup so it's reachable during resume) ──
+// ── Socket + PID file ────────────────────────────────────────────────────
 
-const SOCKET_PATH = resolve(PERSIST_DIR, `${interfaceAgent}.sock`);
+// Socket name: may.sock (default) or may.<instance>.sock (named)
+const sockName = INSTANCE ? `${interfaceAgent}.${INSTANCE}.sock` : `${interfaceAgent}.sock`;
+const pidName = INSTANCE ? `${interfaceAgent}.${INSTANCE}.pid` : `${interfaceAgent}.pid`;
+const SOCKET_PATH = resolve(PERSIST_DIR, sockName);
+const PID_PATH = resolve(PERSIST_DIR, pidName);
 
-const socketUI = attachSocketUI({
+// Write PID file so may.sh can manage this instance
+mkdirSync(PERSIST_DIR, { recursive: true });
+writeFileSync(PID_PATH, String(process.pid), "utf-8");
+const cleanupPid = () => {
+  try {
+    if (existsSync(PID_PATH)) unlinkSync(PID_PATH);
+  } catch { /* ignore */ }
+};
+process.on("exit", cleanupPid);
+
+const socketUI = await attachSocketUI({
   socketPath: SOCKET_PATH,
   bus,
   manager,
   getSessionId: () => sid,
 });
+
+bus.emit({ type: "info", message: `[instance:${INSTANCE_LABEL}] PID ${process.pid}, socket ${sockName}` });
 
 // ── Startup ────────────────────────────────────────────────────────────
 
@@ -370,7 +409,8 @@ if (process.env.SCHEDULERS === "1") {
  */
 function emitPrompt(): void {
   if (process.stdin.isTTY) {
-    process.stdout.write(`\nyou> `);
+    const prefix = INSTANCE ? `[${INSTANCE}] ` : "";
+    process.stdout.write(`\n${prefix}you> `);
   }
 }
 
