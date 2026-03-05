@@ -23,6 +23,7 @@ const ReadParams = Type.Object({
 const WriteParams = Type.Object({
   path: Type.String({ description: "Absolute path to the file" }),
   content: Type.String({ description: "Content to write" }),
+  allowShrink: Type.Optional(Type.Boolean({ description: "Set to true to confirm intentional overwrite of a file with significantly shorter content. Required when new content is <50% of existing file size." })),
 });
 
 const ExecParams = Type.Object({
@@ -89,6 +90,13 @@ export interface WriteToolOptions {
    * missing content from the truncated section.
    */
   truncationTracker?: TruncationTracker;
+  /**
+   * Minimum file size (in characters) for shrink-guard to activate.
+   * Files smaller than this threshold can be freely overwritten.
+   * This prevents false positives on small config files or stubs.
+   * Default: 500.
+   */
+  shrinkGuardMinSize?: number;
 }
 
 // ── Truncation Tracker ─────────────────────────────────────────────────
@@ -737,11 +745,14 @@ export function createReadTool(options?: ReadToolOptions): AgentTool<typeof Read
 
 export function createWriteTool(options?: WriteToolOptions): AgentTool<typeof WriteParams> {
   const tracker = options?.truncationTracker;
+  const shrinkGuardMinSize = options?.shrinkGuardMinSize ?? 500;
 
   return {
     name: "write",
     label: "Write File",
-    description: "Write content to a file. Creates parent directories if needed.",
+    description: "Write content to a file. Creates parent directories if needed. " +
+      "If the file already exists and your new content is significantly shorter (less than 50% of the original), " +
+      "the write will be blocked unless you set allowShrink=true. This prevents accidental data loss from partial reads.",
     parameters: WriteParams,
     execute: async (_id, params) => {
       // Resolve path: relative → projectRoot-based, hallucinated → rewritten, correct → as-is
@@ -750,24 +761,76 @@ export function createWriteTool(options?: WriteToolOptions): AgentTool<typeof Wr
         : params.path;
 
       try {
-        // Check for write-after-truncated-read data loss BEFORE writing
+        // ── Shrink guard: check existing file size on disk ──────────
+        // This catches blind overwrites regardless of whether the truncation
+        // tracker is active. If the file exists and the new content is
+        // drastically shorter, block or warn.
+        if (!params.allowShrink && existsSync(effectivePath)) {
+          const existingStat = statSync(effectivePath);
+          const existingSize = existingStat.size;
+
+          if (existingSize >= shrinkGuardMinSize) {
+            const ratio = params.content.length / existingSize;
+
+            if (ratio < 0.5) {
+              const pctKept = Math.round(ratio * 100);
+              return textResult(
+                `❌ BLOCKED: Write to ${effectivePath} would shrink the file from ${existingSize.toLocaleString()} to ${params.content.length.toLocaleString()} bytes (${pctKept}% of original).\n\n` +
+                `This is usually caused by reading a large file (which gets truncated), then writing back only the portion you saw.\n\n` +
+                `Safe alternatives:\n` +
+                `  1. read(path, startLine=N, endLine=M) to see the specific section, then use exec with sed/awk for targeted edits\n` +
+                `  2. exec: sed -i 's/old_text/new_text/g' ${effectivePath}\n` +
+                `  3. exec: use awk or a heredoc for multi-line replacements\n\n` +
+                `If you truly intend to replace this file with shorter content, call write() again with allowShrink=true.`
+              );
+            }
+
+            if (ratio < 0.8) {
+              // Between 50-80%: warn but allow
+              const pctKept = Math.round(ratio * 100);
+              // Continue to write, but we'll append a warning to the result
+              // (set a flag for later)
+              const shrinkWarning = `\n⚠️ SHRINK WARNING: This write reduced the file from ${existingSize.toLocaleString()} to ${params.content.length.toLocaleString()} bytes (${pctKept}% of original). ` +
+                `Verify no content was unintentionally lost.`;
+
+              // Check truncation tracker too (belt-and-suspenders)
+              const truncationWarning = tracker
+                ? tracker.checkWrite(effectivePath, params.content.length)
+                : null;
+
+              mkdirSync(dirname(effectivePath), { recursive: true });
+              writeFileSync(effectivePath, params.content, "utf-8");
+
+              if (tracker) {
+                tracker.clearPath(effectivePath);
+              }
+
+              return textResult(`Wrote ${params.content.length} bytes to ${effectivePath}${shrinkWarning}${truncationWarning ?? ""}`);
+            }
+          }
+        }
+
+        // ── Legacy truncation tracker check (belt-and-suspenders) ──
         const truncationWarning = tracker
           ? tracker.checkWrite(effectivePath, params.content.length)
           : null;
 
         // Block writes that would lose >50% of content from a truncated file
+        // (this catches cases where the file was already overwritten and is now
+        // small on disk, but was large when originally read)
         if (truncationWarning && tracker) {
           const originalLength = tracker.getOriginalLength(effectivePath);
-          if (originalLength && params.content.length < originalLength * 0.5) {
+          if (originalLength && params.content.length < originalLength * 0.5 && !params.allowShrink) {
             return textResult(
               `❌ BLOCKED: Write to ${effectivePath} rejected to prevent data loss.\n` +
               `This file was previously read with truncation (original: ${originalLength.toLocaleString()} chars). ` +
               `Your write contains only ${params.content.length.toLocaleString()} chars (${Math.round(params.content.length / originalLength * 100)}% of original).\n\n` +
               `To edit this file safely, use one of these approaches:\n` +
               `  1. read(path, startLine=N, endLine=M) to see the specific section you need to change\n` +
-              `  2. exec with sed: sed -i 's/old_text/new_text/g' ${effectivePath}\n` +
+              `  2. exec with sed: sed -i \'s/old_text/new_text/g\' ${effectivePath}\n` +
               `  3. exec with awk for multi-line changes\n` +
-              `  4. Use exec with a heredoc to append/replace specific sections`
+              `  4. Use exec with a heredoc to append/replace specific sections\n\n` +
+              `If you truly intend to replace this file with shorter content, call write() again with allowShrink=true.`
             );
           }
         }
