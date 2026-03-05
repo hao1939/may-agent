@@ -233,7 +233,7 @@ export function writeSessionMeta(persistDir: string, sessionId: string, meta: Pe
 
 /** Scan sessions/ directory for all session IDs (active, not archived).
  *  Returns directory names that look like session IDs (skips 'history'). */
-function listActiveSessionIds(persistDir: string): string[] {
+export function listActiveSessionIds(persistDir: string): string[] {
   const sessionsRoot = join(persistDir, "sessions");
   if (!existsSync(sessionsRoot)) return [];
   try {
@@ -246,7 +246,7 @@ function listActiveSessionIds(persistDir: string): string[] {
 }
 
 /** Scan sessions/history/ directory for all archived session IDs. */
-function listArchivedSessionIds(persistDir: string): string[] {
+export function listArchivedSessionIds(persistDir: string): string[] {
   const histDir = historyDir(persistDir);
   if (!existsSync(histDir)) return [];
   try {
