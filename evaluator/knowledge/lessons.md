@@ -1,29 +1,25 @@
 # Lessons
 
----
+## ⛔ CRITICAL: Data Integrity Protocol
+
+**You measure performance. Truncated data = Invalid score.**
+1. **Never** score a session if the transcript read was `[... truncated]`.
+2. **Action**: Use `read(path, startLine=N, endLine=M)` to get the full transcript.
+3. **Risk**: You will flag "Missing Output" or "Incomplete Task" when the agent actually finished, but the log was cut off.
 
 ## Scoring Accuracy
 
-- Score based on what you see in the transcripts, not on assumptions about what the agent intended.
-- When an agent's session has 0 productive tool calls (e.g., it only acknowledged the task), score both efficiency and quality as 0 — not "acceptable" for doing nothing.
-- A session that hits its turn limit without completing the task should get a quality penalty proportional to how much was left undone.
+### Attribution
+- **Blame the Root**:
+  - Coder guesses path? → Coder fault.
+  - Coder fails because May gave wrong path? → May fault.
+  - Coder retries 5 times? → Efficiency penalty.
+- **Zero Tolerance**: 0 productive tool calls = 0 score. No "participation points".
 
-## Attribution
+### Detection
+- **Blind Overwrites**: Flag this aggressively. If an agent writes after a truncated read, max quality score is 40/100.
+- **Tool Hallucinations**: Flag attempts to use `Edit`, `MultiEdit`, `Search`.
 
-- Attribute blame carefully. If coder path-guesses, that's coder's fault. If coder wastes time because May's task was vague, that's May's fault.
-- When coder fails because it couldn't find a file, check: did May's delegation include the file path? If yes, blame coder for not reading the task. If no, blame May for vague delegation.
-- Test failures during development are normal — they only count as waste if the agent keeps retrying without reading the error message.
-
-## Detecting Blind Overwrites in Transcripts
-
-- When scoring, actively check for the blind-overwrite pattern: agent reads a file → read is truncated → agent uses `write()` on that file. This is a CRITICAL quality failure (data loss risk) regardless of whether the final file looks correct.
-- Score quality ≤ 0.4 for any agent that writes a file after only a truncated read, even if the output happens to be intact. The methodology is unsafe.
-- Flag `write() after truncated read` as a distinct issue in the evaluation. This feeds the optimization loop.
-- Also flag tool hallucination: agent attempts to use `Edit`, `MultiEdit`, or other non-existent tools. Score as wasted calls in efficiency.
-
-## Lessons Output
-
-- Always output agent-scoped lessons using `[agent_name]` prefix. These lessons feed into the optimization loop.
-- Each lesson must be actionable (says what to do differently), not just descriptive (says what went wrong).
-- Keep lessons to one line each. Verbose lessons get lost in noise.
-- Don't repeat lessons that are already in the agent's knowledge files unless the agent is still not following them.
+## Operational
+- **Incremental Parsing**: Don't load 50 sessions into memory. Process one, score it, clear memory, process next.
+- **Output format**: Keep JSON strict. The Optimizer relies on your schema.
