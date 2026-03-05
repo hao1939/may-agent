@@ -12,6 +12,7 @@ import { attachTelegramBot } from "./telegram-ui.js";
 import { loadAgents, reloadAgents, setAgentSessionId, runAgentCleanup, getAgentCrons, type AgentLoaderOptions } from "./agent-loader.js";
 import { handleSystemStatus } from "./system-status.js";
 import { handleEvaluateSessions } from "./evaluate-sessions.js";
+import { createDrainTodoHandler } from "./drain-todo.js";
 
 const PROJECT_ROOT = resolve(process.env.PROJECT_ROOT || dirname(fileURLToPath(import.meta.url)), process.env.PROJECT_ROOT ? "." : "..");
 const AGENTS_ROOT = resolve(process.env.AGENTS_ROOT || resolve(PROJECT_ROOT, "agents"));
@@ -494,6 +495,33 @@ if (SCHEDULERS_ENABLED) {
         }
       });
       bus.emit({ type: "info", message: `[cron:may] Registered JS handler for evaluate-sessions (no LLM needed)` });
+
+      // Register JS handlers for drain-todo cron jobs (LLM-to-JS #4)
+      const drainTodoOpts = {
+        agentsRoot: AGENTS_ROOT,
+        manager,
+        onLog: (msg: string) => bus.emit({ type: "info", message: msg }),
+      };
+
+      // May self-drain: followUp into May's own persistent session
+      cron.registerHandler("drain-todo", createDrainTodoHandler(
+        { sourceAgent: "may", targetAgent: "may", mode: "followUp", getSessionId: () => sid },
+        drainTodoOpts,
+      ));
+
+      // Optimizer drain: spawn new optimizer session
+      cron.registerHandler("optimizer-drain-todo", createDrainTodoHandler(
+        { sourceAgent: "optimizer", targetAgent: "optimizer", mode: "run" },
+        drainTodoOpts,
+      ));
+
+      // Bob drain: spawn new bob session
+      cron.registerHandler("bob-drain-todo", createDrainTodoHandler(
+        { sourceAgent: "bob", targetAgent: "bob", mode: "run" },
+        drainTodoOpts,
+      ));
+
+      bus.emit({ type: "info", message: `[cron:may] Registered JS handlers for drain-todo, optimizer-drain-todo, bob-drain-todo (no LLM needed)` });
     }
     const entries = cron.getEntries();
     if (entries.length > 0) {
