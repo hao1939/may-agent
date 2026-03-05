@@ -2,7 +2,7 @@
   {
     "name": "evaluate-sessions",
     "intervalMs": 14400000,
-    "message": "[cron:evaluate-sessions] Check .state/sessions/ for unevaluated sessions (no matching .state/evaluations/ file). For each, delegate to evaluator to score it.",
+    "message": "[cron:evaluate-sessions] Check .state/sessions/ for unevaluated sessions (no matching .state/evaluations/ file). Skip sessions without session.jsonl (aborted). Skip currently running sessions. Delegate each to evaluator.",
     "enabled": true,
     "description": "Auto-evaluate completed sessions every 4 hours"
   },
@@ -47,5 +47,12 @@
     "message": "[cron:system-status] Operational check. Run: 1) session count last 24h 2) unevaluated session backlog 3) stuck/running sessions 4) lessons.md line counts 5) bob analysis freshness 6) tsc --noEmit. Append summary to agents/may/workspace/health-log.md. If any anomalies found, add them as TODO items in agents/may/workspace/todo.md.",
     "enabled": true,
     "description": "Operational status check every 4 hours — writes findings to health-log.md"
+  },
+  {
+    "name": "drain-todo",
+    "intervalMs": 14400000,
+    "message": "[cron:drain-todo] Check agents/may/workspace/todo.md for pending items under # TODO. Work on the top item — delegate, fix, or resolve it. Move completed items to # Tracking with result (✅/⚠️/❌). Stop after one item.",
+    "enabled": true,
+    "description": "Drain one TODO item every 4 hours"
   }
 ]
