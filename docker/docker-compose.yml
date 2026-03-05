@@ -1,3 +1,5 @@
+name: may-agent
+
 services:
   may:
     build:
