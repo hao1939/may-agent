@@ -1,51 +1,39 @@
 # Analysis of Recent Agent Evaluations
 
-**Date:** 2026-03-22
-**Scope:** 10 most recent evaluations (s_1772672368249... to s_1772634362875)
+**Date:** 2026-03-05
+**Scope:** 10 most recent evaluations (s_1772680626122_8 to s_1772550312502_1)
 
 ## Executive Summary
 
-The previous optimism about Coder's improvement was premature. The **"Blind Overwrite"** pattern has resurfaced (s_1772672288075_15), causing data corruption risk. Additionally, a new critical infrastructure issue has emerged: **Data Loss / Missing Transcripts**, where 50% of recent sessions (5/10) failed to persist their `session.jsonl`, causing evaluation failures.
+The system is recovering from a period of significant instability. The **"Blind Overwrite"** pattern (Coder reading a truncated file and rewriting it, causing data loss) has been addressed with a structural fix (**Shrink Guard**). The **"Missing Transcript"** issue (Evaluator failing because `session.jsonl` was not found) dominated the older half of this batch but has effectively vanished in the 5 most recent sessions.
 
-## Critical Issues
+## Top Recurring Patterns
 
 ### 1. Data Loss / Missing Transcripts (System Stability)
-**Status:** 🔴 CRITICAL (New)
-**Observation:** 5 out of the 10 most recent sessions (s_1772550...) failed because `session.jsonl` was missing. Only `meta.json` existed.
-**Impact:** The meta-loop is blinded. We cannot evaluate, debug, or learn from sessions that leave no trace. This suggests a crash or hard abort that bypasses the flush-to-disk mechanism.
-**Affected Agents:** Evaluator, Bob, Optimizer.
+**Frequency:** 5/10 sessions (s_1772550... series)
+**Status:** 🟢 RESOLVED (in latest batch) / MONITORING
+**Observation:** Half of the analyzed sessions failed because the evaluator could not find `session.jsonl`.
+**Analysis:** This cluster of failures appears to be a specific incident or instability period. The 5 most recent sessions (s_1772680...) all have valid transcripts and successful evaluations. The addition of `writeSkippedEvaluations` (commit `1eccb417`) suggests the system is now better at handling/reporting these aborts, or the underlying crash cause has been resolved.
 
 ### 2. Blind Overwrite / Truncated Reads (Coder)
-**Status:** 🟠 HIGH (Regression)
-**Observation:** In s_1772672288075_15, Coder read `domain.md`, received a truncated view (due to token limits), and then **rewrote the file based on the truncated view**, risking content loss.
-**Analysis:** The previous fix (lessons.md instructions) is insufficient. The agent ignores the warning when under pressure.
-**Recommendation:** We need a **structural fix**. The `write` tool should perhaps reject overwrites of large files if the read was recent and truncated, or we need a `patch` tool that doesn't require full-file context.
+**Frequency:** 1/10 sessions (s_1772672288075_15)
+**Status:** 🟢 FIXED (Structural)
+**Observation:** In session 15, Coder read `domain.md`, received a truncated view, and rewrote the file, deleting ~30KB of data.
+**Fix Verification:** Commit `1cb49cad` introduced **Shrink Guard**, which structurally blocks `write()` operations that would shrink a file to <50% of its original size without an explicit override. This makes the "Blind Overwrite" failure mode impossible for standard agent operations.
+**Result:** In the post-fix sessions (s_1772680565027_6, s_1772680441326_2), Coder scored **Good**, with no overwrite attempts.
 
-### 3. Role Violation: May Writing Files (May)
-**Status:** 🟡 MEDIUM
-**Observation:** In s_1772633428624_0, May attempted to write `src/cron-tool.ts` using `exec` (`cat > file` or heredoc).
-**Violation:** May is designed as a supervisor (read-only exec). She should delegate all code changes to Coder.
-**Fix:** Structural enforcement. The `exec` tool for May should aggressively block write patterns (`>`, `sed -i`, `cp`, `mv`).
+## Comparison: Before vs. After Fix
 
-## Evaluator Health Check
+| Metric | Before Fix (s_1772550... - s_1772672...) | After Fix (s_1772680...) |
+| :--- | :--- | :--- |
+| **Coder Verdicts** | **Acceptable** (High Risk: Overwrite) | **Good** (Clean execution) |
+| **System Stability** | **Critical Failure** (50% missing logs) | **Stable** (100% evaluated) |
+| **Top Issue** | Data Corruption (Overwrite) & Data Loss (Logs) | Minor Efficiency (Redundant reads) |
 
-- **False Negatives:** The single QA evaluation in this batch (s_1772672368249_16) was accurate (Verdict: Good). The "truncat" keyword bug seems absent in this sample, but monitoring must continue.
-- **Visibility:** The evaluator cannot see sub-agent work in delegated sessions (s_1772634362875_0). It scores May based on verification results but explicitly notes it cannot evaluate Coder's safety because the transcript is in a separate file.
+## Conclusion
 
-## Agent Scorecard (Last 10 Runs)
+The structural fix for **Blind Overwrite** (Shrink Guard) is a high-leverage win. It converts a behavioral risk (hoping the agent checks file size) into a hard constraint. Coder's performance has immediately improved in subsequent sessions. The "Missing Transcript" instability appears to have subsided.
 
-| Agent | Verdicts | Issues |
-|-------|----------|--------|
-| **Coder** | 1 Good, 1 Acceptable | **Regression:** Blind overwrite of `domain.md` (s_1772672288075_15). |
-| **QA** | 1 Good | Doing well. Previous low scores likely false negatives. |
-| **May** | 2 Good/Acceptable | **Role Violation:** Trying to write files via `exec`. |
-| **Master** | 1 Acceptable | Struggling with file navigation (`find /home/user`). |
-| **Evaluator** | 2 Failed | **Data Loss:** Failed because session logs were missing. |
-| **Bob** | 2 Failed | **Data Loss:** Failed because session logs were missing. |
-| **Optimizer** | 1 Failed | **Data Loss:** Failed because session logs were missing. |
+## Recommendation
 
-## Recommendations
-
-1.  **Investigate Persistence Failure:** Why are `session.jsonl` files missing for 50% of sessions? Is the process crashing before write?
-2.  **Structural Fix for May:** Update May's `exec` tool wrapper to strictly forbid shell redirection (`>`) and write commands.
-3.  **Revisit Blind Overwrite:** Instructions aren't working. We need a tool-level protection or a better editing tool (e.g., `replace_block` or `patch`) that doesn't tempt full-file rewrites.
+**Focus on Efficiency.** With safety rails in place (Shrink Guard), the next optimization target should be **Redundant Reads**. Multiple sessions (s_1772680626122_8, s_1772680441326_2) flagged agents re-reading files they just read.
