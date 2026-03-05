@@ -57,6 +57,7 @@ export interface AgentLoaderOptions {
   models: Record<string, Model<any>>;
   manager: SubagentManager;
   bus: EventBus;
+  schedulersEnabled: boolean;
 }
 
 // ── Track active session IDs for subagent/workflow tools ────────────────
@@ -290,7 +291,7 @@ function buildTools(
         tools.push(createCronTool({
           configPath: cronPath,
           onConfigChange: () => cron!.reload(),
-          cronEnabled: process.env.SCHEDULERS === "1",
+          cronEnabled: opts.schedulersEnabled,
         }));
         break;
       }
