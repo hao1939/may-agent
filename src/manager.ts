@@ -280,8 +280,11 @@ export class SubagentManager {
       const envLines = [`# Runtime Environment`, `- Project root (exec cwd): ${def.projectRoot}`];
       if (def.workspace) {
         envLines.push(`- Workspace: ${def.workspace}`);
+        if (def.knowledgeDir) {
+          envLines.push(`- Knowledge directory: ${def.knowledgeDir}`);
+        }
       }
-      envLines.push(``, `Use paths relative to project root. Do not guess or search for the root.`);
+      envLines.push(``, `IMPORTANT: Always use absolute paths. Your workspace is the ONLY directory you should write to. Never write to the project root directly.`);
       sections.push(envLines.join("\n"));
     }
 
@@ -380,7 +383,7 @@ export class SubagentManager {
     // Workspace section
     if (def.workspace) {
       sections.push(
-        `# Workspace\nYour persistent workspace is: ${def.workspace}\nUse this for working files, scripts, and data that persist across tasks.`,
+        `# Workspace\nYour persistent workspace is: ${def.workspace}\nALL file writes (journal.md, todo.md, analysis, archives) MUST go here. Never create files in the project root or other directories.`,
       );
     }
 
