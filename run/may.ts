@@ -10,6 +10,8 @@ import { attachSocketUI } from "./socket-ui.js";
 import { attachOpenClawUI } from "./openclaw-ui.js";
 import { attachTelegramBot } from "./telegram-ui.js";
 import { loadAgents, reloadAgents, setAgentSessionId, runAgentCleanup, getAgentCrons, type AgentLoaderOptions } from "./agent-loader.js";
+import { handleSystemStatus } from "./system-status.js";
+import { handleEvaluateSessions } from "./evaluate-sessions.js";
 
 const PROJECT_ROOT = resolve(process.env.PROJECT_ROOT || dirname(fileURLToPath(import.meta.url)), process.env.PROJECT_ROOT ? "." : "..");
 const AGENTS_ROOT = resolve(process.env.AGENTS_ROOT || resolve(PROJECT_ROOT, "agents"));
@@ -464,12 +466,42 @@ if (resumeError) {
 
 if (SCHEDULERS_ENABLED) {
   for (const [name, cron] of getAgentCrons()) {
+    // Register JS handlers for formulaic cron jobs (LLM-to-JS #3)
+    if (name === "may") {
+      cron.registerHandler("system-status", () => handleSystemStatus({
+        persistDir: PERSIST_DIR,
+        projectRoot: PROJECT_ROOT,
+        agentsRoot: AGENTS_ROOT,
+        healthLogPath: resolve(AGENTS_ROOT, "may", "workspace", "health-log.md"),
+      }));
+      bus.emit({ type: "info", message: `[cron:may] Registered JS handler for system-status (no LLM needed)` });
+      cron.registerHandler("evaluate-sessions", async () => {
+        const result = await handleEvaluateSessions({
+          persistDir: PERSIST_DIR,
+          manager,
+          onLog: (msg) => bus.emit({ type: "info", message: msg }),
+        });
+        if (result.sessionsEvaluated > 0 || result.skipped > 0) {
+          bus.emit({ type: "info", message: `[cron:evaluate-sessions] JS handler: ${result.skipped} skipped, ${result.sessionsEvaluated} evaluated, ${result.errors.length} errors` });
+        }
+      });
+      bus.emit({ type: "info", message: `[cron:may] Registered JS handler for evaluate-sessions (no LLM needed)` });
+    }
     const entries = cron.getEntries();
     if (entries.length > 0) {
       bus.emit({ type: "info", message: `[cron:${name}] Starting ${entries.length} job(s)` });
       cron.start();
     }
   }
+}
+
+
+
+
+
+
+
+
 }
 
 // ── Telegram bot (TELEGRAM_BOT_TOKEN to enable) ─────────────────────────
