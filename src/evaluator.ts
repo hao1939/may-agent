@@ -3,7 +3,7 @@ import { join, dirname } from "node:path";
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { AssistantMessage } from "@mariozechner/pi-ai";
 import type { SubagentManager } from "./manager.js";
-import { readSessionMessages, readArchivedSessionMessages, loadAllSessionMetas, historyDir } from "./persistence.js";
+import { readSessionMessages, readArchivedSessionMessages, loadAllSessionMetas, historyDir, listActiveSessionIds, listArchivedSessionIds } from "./persistence.js";
 import { extractHallucinatedRelPath } from "./tools.js";
 import type { PersistedSession } from "./persistence.js";
 
@@ -1155,6 +1155,56 @@ export function writeSkippedEvaluations(
       wasted_calls: 0,
       verdict: "skipped" as const,
       issues: [skipReason],
+      overall: {
+        efficiency: 0,
+        quality: 0,
+        verdict: "skipped",
+        result_delivered: false,
+      },
+      usage: {
+        inputTokens: 0,
+        outputTokens: 0,
+        cacheReadTokens: 0,
+        cacheWriteTokens: 0,
+        totalTokens: 0,
+        cost: 0,
+        turns: 0,
+      },
+      failureChains: [],
+      skippedByJs: true,
+    };
+
+    writeFileSync(evalPath, JSON.stringify(evaluation, null, 2), "utf-8");
+    written++;
+  }
+
+  // ── Second pass: orphaned sessions (no meta.json) ──────────────────
+  // These directories exist but loadAllSessionMetas() skipped them
+  // because they have no meta.json. They can never be LLM-evaluated
+  // (evaluator needs agent info), so write a deterministic skip.
+  const knownSessionIds = new Set(Object.keys(allSessions));
+  const allDirIds = new Set([
+    ...listActiveSessionIds(persistDir),
+    ...listArchivedSessionIds(persistDir),
+  ]);
+
+  for (const sessionId of allDirIds) {
+    // Already handled in the meta-based loop above
+    if (knownSessionIds.has(sessionId)) continue;
+
+    // Skip if already evaluated
+    const evalPath = join(evalDir, `${sessionId}.json`);
+    if (existsSync(evalPath)) continue;
+
+    const evaluation = {
+      agent: "unknown",
+      sessionId,
+      efficiency: 0,
+      quality: 0,
+      productive_calls: 0,
+      wasted_calls: 0,
+      verdict: "skipped" as const,
+      issues: ["no_metadata"],
       overall: {
         efficiency: 0,
         quality: 0,

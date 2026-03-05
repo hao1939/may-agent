@@ -48,6 +48,8 @@ export {
   listWorkflowRuns,
   workflowRunDir,
   workflowRunPath,
+  listActiveSessionIds,
+  listArchivedSessionIds,
 } from "./persistence.js";
 export { createBackgroundExecTool } from "./background-exec.js";
 export type { BackgroundExecToolOptions } from "./background-exec.js";

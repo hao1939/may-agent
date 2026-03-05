@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { mkdirSync, writeFileSync, existsSync } from "node:fs";
+import { mkdirSync, writeFileSync, existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { findUnevaluatedChildren } from "../src/evaluator.js";
+import { findUnevaluatedChildren, writeSkippedEvaluations } from "../src/evaluator.js";
 import type { PersistedSession } from "../src/persistence.js";
 
 function tmpDir(): string {
@@ -185,5 +185,68 @@ describe("findUnevaluatedChildren", () => {
     expect(children[0].task).toBe("implement foo");
     expect(children[0].messages).toHaveLength(2);
     expect(children[0].messages[0].role).toBe("user");
+  });
+});
+
+describe("writeSkippedEvaluations – orphaned sessions (no meta.json)", () => {
+  let persistDir: string;
+
+  beforeEach(() => {
+    persistDir = tmpDir();
+  });
+
+  it("handles sessions without meta.json", () => {
+    // Create an orphaned session directory with a session.jsonl but NO meta.json
+    const sessionId = "orphan-session-1";
+    const sessionDirPath = join(persistDir, "sessions", "history", sessionId);
+    mkdirSync(sessionDirPath, { recursive: true });
+    writeFileSync(
+      join(sessionDirPath, "session.jsonl"),
+      JSON.stringify({ role: "user", content: [{ type: "text", text: "hello" }] }) + "\n",
+      "utf-8",
+    );
+    // No meta.json written — this is the orphan scenario
+
+    const written = writeSkippedEvaluations(persistDir);
+    expect(written).toBeGreaterThanOrEqual(1);
+
+    const evalPath = join(persistDir, "evaluations", `${sessionId}.json`);
+    expect(existsSync(evalPath)).toBe(true);
+
+    const evaluation = JSON.parse(readFileSync(evalPath, "utf-8"));
+    expect(evaluation.agent).toBe("unknown");
+    expect(evaluation.issues).toContain("no_metadata");
+    expect(evaluation.skippedByJs).toBe(true);
+    expect(evaluation.efficiency).toBe(0);
+    expect(evaluation.quality).toBe(0);
+    expect(evaluation.verdict).toBe("skipped");
+  });
+
+  it("skips already-evaluated orphaned sessions", () => {
+    // Create an orphaned session directory
+    const sessionId = "orphan-session-2";
+    const sessionDirPath = join(persistDir, "sessions", sessionId);
+    mkdirSync(sessionDirPath, { recursive: true });
+    writeFileSync(
+      join(sessionDirPath, "session.jsonl"),
+      JSON.stringify({ role: "user", content: [{ type: "text", text: "hello" }] }) + "\n",
+      "utf-8",
+    );
+    // No meta.json
+
+    // Pre-existing evaluation
+    const evalDir = join(persistDir, "evaluations");
+    mkdirSync(evalDir, { recursive: true });
+    const existingEval = { agent: "previously-evaluated", custom: true };
+    writeFileSync(join(evalDir, `${sessionId}.json`), JSON.stringify(existingEval), "utf-8");
+
+    const written = writeSkippedEvaluations(persistDir);
+    // Should NOT have written a new evaluation for this session
+    expect(written).toBe(0);
+
+    // Verify original evaluation is unchanged
+    const evaluation = JSON.parse(readFileSync(join(evalDir, `${sessionId}.json`), "utf-8"));
+    expect(evaluation.agent).toBe("previously-evaluated");
+    expect(evaluation.custom).toBe(true);
   });
 });
