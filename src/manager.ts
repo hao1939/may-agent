@@ -139,6 +139,8 @@ export interface RunOptions {
   persistent?: boolean;
   /** Runtime override: enable compaction for this session. */
   compaction?: boolean | CompactionOptions;
+  /** Message source tag for the initial task message. */
+  source?: string;
 }
 
 export interface SubagentManagerOptions {
@@ -234,7 +236,8 @@ export class SubagentManager {
                 `and do not start new tasks. Summarize any remaining work that could not be completed.`,
             }],
             timestamp: Date.now(),
-          });
+            source: "system",
+          } as AgentMessage);
         }
 
         if (session.turnCount >= session.maxTurns!) {
@@ -487,8 +490,11 @@ export class SubagentManager {
           role: "user",
           content: [{ type: "text", text: "[Task cancelled by user. Do not retry the cancelled task. Wait for new instructions.]" }],
           timestamp: Date.now(),
-        };
-        appendSessionMessage(this.registry.persistDir, session.sessionId, cancelMsg);
+          source: "system",
+        } as AgentMessage;
+        // Queued as followUp — persisted via the message_end subscriber when
+        // the agent loop processes it on next wake. No explicit write here
+        // to avoid duplicate JSONL entries.
         session.agent.followUp(cancelMsg);
       }
       session.status = "idle";
@@ -607,15 +613,9 @@ export class SubagentManager {
     // Notify listener that a new session has started
     this.onSessionStart?.(name, sessionId);
 
-    // Persist the initial user task message immediately (Principle 8: Crash Recovery).
-    // The message_end subscriber only fires for assistant/tool messages from the LLM.
-    // If the agent crashes before producing any response, the task would be lost.
-    const initialUserMessage: AgentMessage = {
-      role: "user" as const,
-      content: [{ type: "text" as const, text: task }],
-      timestamp: session.startedAt,
-    };
-    appendSessionMessage(persistDir, sessionId, initialUserMessage);
+    // The initial user message is persisted via the message_end subscriber
+    // when agentLoop emits it (before any LLM call). No explicit write here
+    // to avoid duplicate JSONL entries.
 
     session.promise = agent.prompt(task)
       .then(() => {
@@ -769,7 +769,8 @@ export class SubagentManager {
         text: `Process restarted. Your session has been restored with your previous conversation history. Continue where you left off.${interruptedSummary}`,
       }],
       timestamp: Date.now(),
-    };
+      source: "system",
+    } as AgentMessage;
 
     // Repair broken message sequences before resuming.
     // If the process died mid-tool-execution, the last assistant message has
@@ -1174,7 +1175,7 @@ export class SubagentManager {
   /** Steer a running session mid-run.
    *  Throws if session not found or not running.
    */
-  steer(sessionId: string, message: string): "steered" | "queued" {
+  steer(sessionId: string, message: string, source?: string): "steered" | "queued" {
     const session = this.activeSessions.get(sessionId);
     if (!session || session.status !== "running") {
       throw new Error(`Session "${sessionId}" not found or not running`);
@@ -1184,6 +1185,7 @@ export class SubagentManager {
         role: "user",
         content: [{ type: "text", text: message }],
         timestamp: Date.now(),
+        ...(source ? { source } : {}),
       });
       return "steered";
     }
@@ -1191,6 +1193,7 @@ export class SubagentManager {
       role: "user",
       content: [{ type: "text", text: message }],
       timestamp: Date.now(),
+      ...(source ? { source } : {}),
     });
     return "queued";
   }
@@ -1210,7 +1213,7 @@ export class SubagentManager {
    *
    * Throws if session not found or in a terminal state.
    */
-  followUp(sessionId: string, message: string): void {
+  followUp(sessionId: string, message: string, source?: string): void {
     const session = this.activeSessions.get(sessionId);
     if (!session) {
       throw new Error(`Session "${sessionId}" not found`);
@@ -1223,10 +1226,13 @@ export class SubagentManager {
       role: "user",
       content: [{ type: "text", text: message }],
       timestamp: Date.now(),
+      ...(source ? { source } : {}),
     };
 
     session.agent.followUp(msg);
-    appendSessionMessage(this.registry.persistDir, sessionId, msg);
+    // Message is persisted via the message_end subscriber when the agent
+    // loop processes it. No explicit appendSessionMessage here to avoid
+    // duplicate JSONL entries.
 
     // If idle persistent session, wake it up
     if (session.status === "idle" && session.persistent) {
@@ -1569,7 +1575,7 @@ export class SubagentManager {
                 return textResult(JSON.stringify({ error: `Cannot delegate directly to "${params.agent}". ${delegateDeny.hint}` }));
               }
               const parentSid = getCallerSessionId?.();
-              const sessionId = manager.run(params.agent, params.task, parentSid ? { parentSessionId: parentSid } : undefined);
+              const sessionId = manager.run(params.agent, params.task, { ...(parentSid ? { parentSessionId: parentSid } : {}), source: "agent" });
               onSessionStart?.(params.agent, sessionId);
               return textResult(JSON.stringify({ sessionId }));
             }
@@ -1658,7 +1664,7 @@ export class SubagentManager {
                 return textResult(JSON.stringify({ error: `Cannot delegate directly to "${params.agent}". ${delegateDeny.hint}` }));
               }
               const delegateParentSid = getCallerSessionId?.();
-              const delegateSessionId = manager.run(params.agent, params.task, delegateParentSid ? { parentSessionId: delegateParentSid } : undefined);
+              const delegateSessionId = manager.run(params.agent, params.task, { ...(delegateParentSid ? { parentSessionId: delegateParentSid } : {}), source: "agent" });
               onSessionStart?.(params.agent, delegateSessionId);
               const delegateResult = await manager.waitFor(delegateSessionId);
               const { messages: _delegateMsgs, ...delegateWithoutMessages } = delegateResult;
