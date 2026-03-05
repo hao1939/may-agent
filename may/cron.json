@@ -61,5 +61,12 @@
     "message": "[cron:optimizer-drain-todo] Read agents/optimizer/workspace/todo.md. If there are pending items under # TODO, delegate to optimizer to work on the top item. One item per run.",
     "enabled": true,
     "description": "Optimizer drains its todo.md every 8 hours"
+  },
+  {
+    "name": "review-human-inputs",
+    "intervalMs": 43200000,
+    "message": "[cron:review-human-inputs] Read agents/may/workspace/human-inputs.md. Extract patterns: recurring preferences, design directions, corrections, unaddressed ideas. Update todo.md with actionable findings. Clear processed entries from human-inputs.md.",
+    "enabled": true,
+    "description": "Review human input patterns every 12 hours"
   }
 ]
