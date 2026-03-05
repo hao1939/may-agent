@@ -127,7 +127,7 @@ function buildTools(
     /\bcat\s*>[^&]/,
     /<<\s*['"]?\w+['"]?/,
     /\btee\s/,
-    /\b(echo|printf)\b.*>{1,2}[^&]/,
+    /\b(echo|printf)\b[^;|]*(?<![0-9])>{1,2}[^&]/,
     /\bmv\s|\bcp\s|\brm\s/,
     /\bmkdir\b/,
     /\btouch\b/,
