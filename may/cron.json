@@ -44,7 +44,7 @@
   {
     "name": "system-status",
     "intervalMs": 14400000,
-    "message": "[cron:system-status] Operational check. Run: 1) session count last 24h 2) unevaluated session backlog 3) stuck/running sessions via subagents list 4) lessons.md line counts 5) bob analysis freshness 6) tsc --noEmit. Append concise summary with timestamp to agents/may/workspace/health-log.md. Only detail anomalies.",
+    "message": "[cron:system-status] Operational check. Run: 1) session count last 24h 2) unevaluated session backlog 3) stuck/running sessions 4) lessons.md line counts 5) bob analysis freshness 6) tsc --noEmit. Append summary to agents/may/workspace/health-log.md. If any anomalies found, add them as TODO items in agents/may/workspace/todo.md.",
     "enabled": true,
     "description": "Operational status check every 4 hours — writes findings to health-log.md"
   }
