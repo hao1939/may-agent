@@ -477,12 +477,15 @@ if (SCHEDULERS_ENABLED) {
   for (const [name, cron] of getAgentCrons()) {
     // Register JS handlers for formulaic cron jobs (LLM-to-JS #3)
     if (name === "may") {
-      cron.registerHandler("system-status", () => handleSystemStatus({
-        persistDir: PERSIST_DIR,
-        projectRoot: PROJECT_ROOT,
-        agentsRoot: AGENTS_ROOT,
-        healthLogPath: resolve(AGENTS_ROOT, "may", "workspace", "health-log.md"),
-      }));
+      cron.registerHandler("system-status", async () => {
+        await handleSystemStatus({
+          persistDir: PERSIST_DIR,
+          projectRoot: PROJECT_ROOT,
+          agentsRoot: AGENTS_ROOT,
+          healthLogPath: resolve(AGENTS_ROOT, "may", "workspace", "health-log.md"),
+        });
+        bus.emit({ type: "text", agent: "may", channel: "chat" as any, message: "✅ [cron:system-status] Health check completed — see health-log.md" });
+      });
       bus.emit({ type: "info", message: `[cron:may] Registered JS handler for system-status (no LLM needed)` });
       cron.registerHandler("evaluate-sessions", async () => {
         const result = await handleEvaluateSessions({
@@ -491,7 +494,7 @@ if (SCHEDULERS_ENABLED) {
           onLog: (msg) => bus.emit({ type: "info", message: msg }),
         });
         if (result.sessionsEvaluated > 0 || result.skipped > 0) {
-          bus.emit({ type: "info", message: `[cron:evaluate-sessions] JS handler: ${result.skipped} skipped, ${result.sessionsEvaluated} evaluated, ${result.errors.length} errors` });
+          bus.emit({ type: "text", agent: "may", channel: "chat" as any, message: `✅ [cron:evaluate-sessions] ${result.skipped} skipped, ${result.sessionsEvaluated} evaluated, ${result.errors.length} errors` });
         }
       });
       bus.emit({ type: "info", message: `[cron:may] Registered JS handler for evaluate-sessions (no LLM needed)` });
@@ -500,7 +503,7 @@ if (SCHEDULERS_ENABLED) {
       const drainTodoOpts = {
         agentsRoot: AGENTS_ROOT,
         manager,
-        onLog: (msg: string) => bus.emit({ type: "info", message: msg }),
+        onLog: (msg: string) => bus.emit({ type: "text", agent: "may", channel: "chat" as any, message: `📋 ${msg}` }),
       };
 
       // May self-drain: followUp into May's own persistent session
@@ -523,6 +526,17 @@ if (SCHEDULERS_ENABLED) {
 
       bus.emit({ type: "info", message: `[cron:may] Registered JS handlers for drain-todo, optimizer-drain-todo, bob-drain-todo (no LLM needed)` });
     }
+    // Notify on job fire (goes to Telegram via bus)
+    cron.onFire((entry, type) => {
+      const emoji = type === "js" ? "⚡" : "🤖";
+      bus.emit({
+        type: "text",
+        agent: "may",
+        channel: "chat" as any,
+        message: `${emoji} [cron] ${entry.name} fired (${type === "js" ? "JS handler" : "LLM"})`,
+      });
+    });
+
     const entries = cron.getEntries();
     if (entries.length > 0) {
       bus.emit({ type: "info", message: `[cron:${name}] Starting ${entries.length} job(s)` });

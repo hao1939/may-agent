@@ -14,12 +14,17 @@ import type { CronEntry } from "../src/cron-tool.js";
 /** A JS function that replaces the LLM for a specific cron job. */
 export type CronHandler = () => Promise<void>;
 
+/** Callback when a job fires (for notifications). */
+export type CronJobCallback = (entry: CronEntry, type: "js" | "llm") => void;
+
 export class Cron {
   private timers = new Map<string, ReturnType<typeof setInterval>>();
   private entries: CronEntry[] = [];
   private started = false;
   /** JS handlers registered for specific job names. */
   private handlers = new Map<string, CronHandler>();
+  /** Callback fired when any job starts. */
+  private onJobFire?: CronJobCallback;
 
   constructor(
     private configPath: string,
@@ -31,57 +36,61 @@ export class Cron {
   /**
    * Register a JS handler for a cron job by name.
    * When the job fires, the handler runs instead of sending followUp() to the LLM.
-   * This saves the cost of an LLM call for formulaic/deterministic tasks.
    */
   registerHandler(jobName: string, handler: CronHandler): void {
     this.handlers.set(jobName, handler);
   }
 
-  /** Load entries from config file (does NOT start jobs). */
-  load(): CronEntry[] {
-    this.entries = [];
-    if (!existsSync(this.configPath)) return this.entries;
+  /** Register a callback for when any job fires (for notifications/briefs). */
+  onFire(cb: CronJobCallback): void {
+    this.onJobFire = cb;
+  }
+
+  /** Load (or reload) cron config from disk. */
+  load(): void {
+    if (!existsSync(this.configPath)) {
+      this.entries = [];
+      return;
+    }
     try {
       const raw = readFileSync(this.configPath, "utf-8");
       const parsed = JSON.parse(raw);
       if (!Array.isArray(parsed)) {
         this.onError?.(`Cron config is not an array: ${this.configPath}`);
-        return this.entries;
+        return;
       }
-      for (const entry of parsed) {
-        if (typeof entry.name !== "string" || typeof entry.intervalMs !== "number" || typeof entry.message !== "string") {
+      this.entries = parsed.filter((entry: CronEntry) => {
+        if (!entry.name || !entry.intervalMs || !entry.message) {
           this.onError?.(`Invalid cron entry: ${JSON.stringify(entry)}`);
-          continue;
+          return false;
         }
         if (entry.intervalMs < 10_000) {
           this.onError?.(`Cron job "${entry.name}" intervalMs too low (${entry.intervalMs}ms < 10s minimum)`);
-          continue;
+          return false;
         }
-        this.entries.push(entry);
-      }
+        return true;
+      });
     } catch (err) {
       this.onError?.(`Failed to parse cron config: ${err}`);
     }
-    return this.entries;
   }
 
-  /** Start enabled jobs. Call after the session is ready. */
+  /** Start all enabled cron jobs. */
   start(): void {
     this.stop();
     this.started = true;
+    this.load();
     for (const entry of this.entries) {
       if (entry.enabled === false) continue;
       this.startEntry(entry);
     }
   }
 
-  /** Stop all jobs. */
+  /** Stop all running jobs. */
   stop(): void {
-    this.started = false;
-    for (const timer of this.timers.values()) {
-      clearInterval(timer);
-    }
+    for (const timer of this.timers.values()) clearInterval(timer);
     this.timers.clear();
+    this.started = false;
   }
 
   /** Reload config and restart jobs. */
@@ -106,6 +115,9 @@ export class Cron {
     const handler = this.handlers.get(entry.name);
 
     const timer = setInterval(() => {
+      const type = handler ? "js" : "llm";
+      this.onJobFire?.(entry, type);
+
       if (handler) {
         // JS handler — run directly, bypass LLM
         handler().catch((err) => {
