@@ -45,7 +45,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       agentsRoot: ctx.agentsRoot,
       healthLogPath,
     });
-    ctx.emit(`[cron:system-status] Health check completed — see health-log.md`);
+    ctx.log(`[cron:system-status] Health check completed — see health-log.md`);
   };
 };
 
@@ -91,6 +91,19 @@ export function runSystemStatus(opts: SystemStatusOptions): SystemStatusResult {
   for (const [sid, session] of Object.entries(allSessions)) {
     if (session.status === "running" || session.status === "idle") {
       runningSessions.push(`${session.agent} (${sid})`);
+    }
+  }
+
+  // Flag sessions running > 30 minutes as potential anomalies
+  const STALE_THRESHOLD_MS = 30 * 60 * 1000;
+  const PERSISTENT_AGENTS = new Set(["may"]);
+  for (const [sid, session] of Object.entries(allSessions)) {
+    if (session.status !== "running") continue;
+    if (PERSISTENT_AGENTS.has(session.agent)) continue;
+    const ageMs = now - session.startedAt;
+    if (ageMs > STALE_THRESHOLD_MS) {
+      const ageMin = Math.round(ageMs / 60_000);
+      anomalies.push(`${session.agent} session ${sid} running ${ageMin}min — may be stuck`);
     }
   }
 

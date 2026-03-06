@@ -7,6 +7,7 @@
  * Exports create() conforming to HandlerModule.
  */
 
+import { execSync } from "node:child_process";
 import { readdirSync, readFileSync, statSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import type { HandlerContext, HandlerModule } from "../../../run/handler-context.js";
@@ -20,9 +21,8 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
       persistDir: ctx.persistDir,
       agentsRoot: ctx.agentsRoot,
       projectRoot: ctx.projectRoot,
-      cronJobCount: (entry.handlerConfig as any)?.cronJobCount ?? 0,
     });
-    ctx.emit(brief);
+    ctx.log(brief);
   };
 };
 
@@ -32,14 +32,13 @@ export interface DailyBriefOptions {
   persistDir: string;
   agentsRoot: string;
   projectRoot: string;
-  cronJobCount: number;
 }
 
 interface EvalSummary { agent: string; efficiency: number; quality: number; verdict: string; }
 interface AgentSummary { name: string; todoCount: number; journalLines: number; }
 
 export function collectDailyBrief(opts: DailyBriefOptions): string {
-  const { persistDir, agentsRoot, projectRoot, cronJobCount } = opts;
+  const { persistDir, agentsRoot, projectRoot } = opts;
   const now = Date.now();
   const oneDayAgo = now - 24 * 60 * 60 * 1000;
 
@@ -50,9 +49,9 @@ export function collectDailyBrief(opts: DailyBriefOptions): string {
     const dirs = readdirSync(sessionsDir, { withFileTypes: true }).filter(d => d.isDirectory());
     totalSessions = dirs.length;
     for (const d of dirs) {
-      try { if (statSync(join(sessionsDir, d.name)).mtimeMs > oneDayAgo) sessions24h++; } catch {}
+      try { if (statSync(join(sessionsDir, d.name)).mtimeMs > oneDayAgo) sessions24h++; } catch { /* best-effort */ }
     }
-  } catch {}
+  } catch { /* best-effort */ }
 
   // 2. Recent evaluations
   const evalsDir = join(persistDir, "evaluations");
@@ -70,9 +69,9 @@ export function collectDailyBrief(opts: DailyBriefOptions): string {
             recentEvals.push({ agent: data.agent || "unknown", efficiency: data.efficiency, quality: data.quality, verdict: data.verdict || "unknown" });
           }
         }
-      } catch {}
+      } catch { /* best-effort */ }
     }
-  } catch {}
+  } catch { /* best-effort */ }
 
   // 3. Agent workspace status
   const agentSummaries: AgentSummary[] = [];
@@ -81,17 +80,25 @@ export function collectDailyBrief(opts: DailyBriefOptions): string {
       const todoPath = join(agentsRoot, d.name, "workspace", "todo.md");
       const journalPath = join(agentsRoot, d.name, "workspace", "journal.md");
       let todoCount = 0, journalLines = 0;
-      try { if (existsSync(todoPath)) { todoCount = (readFileSync(todoPath, "utf-8").split("# Tracking")[0].match(/^- \[ \]/gm) || []).length; } } catch {}
-      try { if (existsSync(journalPath)) { journalLines = readFileSync(journalPath, "utf-8").split("\n").length; } } catch {}
+      try { if (existsSync(todoPath)) { todoCount = (readFileSync(todoPath, "utf-8").split("# Tracking")[0].match(/^- \[ \]/gm) || []).length; } } catch { /* best-effort */ }
+      try { if (existsSync(journalPath)) { journalLines = readFileSync(journalPath, "utf-8").split("\n").length; } } catch { /* best-effort */ }
       if (todoCount > 0 || journalLines > 0) agentSummaries.push({ name: d.name, todoCount, journalLines });
     }
-  } catch {}
+  } catch { /* best-effort */ }
 
   // 4. Git commits
   let commits24h = 0;
-  try { const { execSync } = require("node:child_process"); commits24h = parseInt(execSync("git log --since='24 hours ago' --oneline 2>/dev/null | wc -l", { cwd: projectRoot, encoding: "utf-8" }).trim()) || 0; } catch {}
+  try { commits24h = parseInt(execSync("git log --since='24 hours ago' --oneline 2>/dev/null | wc -l", { cwd: projectRoot, encoding: "utf-8" }).trim()) || 0; } catch { /* best-effort */ }
 
-  // 5. Top issue
+  // 5. Cron job count (from actual cron.json)
+  let cronJobCount = 0;
+  try {
+    const cronPath = join(agentsRoot, "may", "cron.json");
+    const cronEntries = JSON.parse(readFileSync(cronPath, "utf-8")) as unknown[];
+    cronJobCount = cronEntries.length;
+  } catch { /* best-effort */ }
+
+  // 6. Top issue
   let topIssue = "No analysis available";
   try {
     const analysisPath = join(agentsRoot, "bob", "workspace", "analysis.md");
@@ -101,9 +108,9 @@ export function collectDailyBrief(opts: DailyBriefOptions): string {
       if (match) topIssue = match[1].split("\n")[0].trim().substring(0, 120);
       else { const sm = content.match(/##\s+Executive Summary\s*\n\n(.*?)(?:\n\n)/s); if (sm) topIssue = sm[1].trim().substring(0, 120); }
     }
-  } catch {}
+  } catch { /* best-effort */ }
 
-  // 6. Aggregate scores
+  // 7. Aggregate scores
   const avgEff = recentEvals.length > 0 ? recentEvals.reduce((s, e) => s + e.efficiency, 0) / recentEvals.length : 0;
   const avgQual = recentEvals.length > 0 ? recentEvals.reduce((s, e) => s + e.quality, 0) / recentEvals.length : 0;
 

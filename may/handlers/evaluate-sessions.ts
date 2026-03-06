@@ -30,10 +30,10 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     const result = await handleEvaluateSessions({
       persistDir: ctx.persistDir,
       manager: ctx.manager,
-      onLog: (msg) => ctx.emit(msg),
+      onLog: (msg) => ctx.log(msg),
     });
     if (result.sessionsEvaluated > 0 || result.skipped > 0) {
-      ctx.emit(`[cron:evaluate-sessions] ${result.skipped} skipped, ${result.sessionsEvaluated} evaluated, ${result.errors.length} errors`);
+      ctx.log(`[cron:evaluate-sessions] ${result.skipped} skipped, ${result.sessionsEvaluated} evaluated, ${result.errors.length} errors`);
     }
   };
 };

@@ -83,7 +83,13 @@ export function parseTodoItems(content: string): string[] {
       continue;
     }
     if (/^- /.test(line)) {
+      // Flush any pending item
       if (currentItem.length > 0) items.push(currentItem.join("\n").trim());
+      // Skip completed items: checked checkbox or strikethrough
+      if (/^- \[x\]/i.test(line) || /^- ~~/.test(line)) {
+        currentItem = [];
+        continue;
+      }
       currentItem = [line];
       continue;
     }
