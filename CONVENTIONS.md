@@ -205,6 +205,25 @@ Record evidence inline in the Tracking entry:
 
 If evidence cannot be confirmed, use ⚠️ (partial) or ❌ (failed) — never ✅.
 
+
+### [STUCK] Escalation
+
+If an agent tries a task twice and cannot make progress, it should stop and escalate:
+
+1. **Mark the item** — write `[STUCK] reason` next to the TODO item in `workspace/todo.md`
+2. **Stop working on it** — do not spin or retry further. Move on to the next item or end the session.
+3. **Wait for help** — the next cron cycle or human review will catch it and either provide guidance, context, or reassign the task.
+
+The `[STUCK]` tag is a structured signal, not a failure. It means "I need something I don't have" — more context, a different approach, or human judgment.
+
+Example in todo.md:
+
+```markdown
+- [ ] [STUCK] Fix follow-up persistence — JSONL write succeeds but read returns empty, tried flushing and sync, need to check if persistence layer has a race condition
+```
+
+After marking, add a brief journal entry explaining what was tried and why it failed.
+
 ### journal.md
 
 Per-agent reflection log. Append-only, chronological.

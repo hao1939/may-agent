@@ -276,3 +276,20 @@ Infrastructure (runtimes, sandboxes, skill registries) is commoditized. The moat
 3. **Accumulated domain intelligence** (archives, discoveries, principles)
 4. **Verified trust hierarchy** (safeguards)
 This layer survives platform absorption and model commoditization.
+
+---
+
+## H. Boundaries: What Agents Don't Do (owner: may)
+
+Clear boundaries on what falls outside agent responsibility.
+
+### 40. Agents Do Cognitive Work, Not Chores [hao-pattern]
+Agents exist for reasoning, exploration, creation, and judgment — not mechanical infrastructure tasks. An agent should never:
+- Monitor system health or check whether services are running
+- Check other agents' status or liveness
+- Count its own failures or track its own retry budget
+- Do file maintenance, cleanup, or housekeeping chores
+
+If infrastructure detects a problem (crash, hang, resource issue), it writes to the affected agent's `workspace/todo.md` or `workspace/inbox.md`. The agent then responds with *cognitive* work — diagnosing, fixing, deciding — not the detection itself.
+
+**The principle:** Cron, JS handlers, and system infrastructure handle mechanical/operational concerns. Agents handle thinking. Mixing the two wastes expensive LLM turns on work that `setTimeout` can do better.

@@ -224,7 +224,7 @@ Same interface for humans, cron, and agents:
 
 Every instance writes its own identity file on startup. No external tracker.
 
-**File:** `.state/<instance>/identity.json`
+**File:** `.state/instances/<instance>/identity.json`
 
 On startup:
 ```json
@@ -257,7 +257,7 @@ On exit (updated in place):
 }
 ```
 
-**Discovery:** `ls .state/*/identity.json` → all instances.
+**Discovery:** `ls .state/instances/*/identity.json` → all instances.
 **Status:** `./may.sh ps` → reads identity.json files, shows running/completed.
 **Investigation:** `./may.sh logs <instance>` → session JSONL transcript.
 
