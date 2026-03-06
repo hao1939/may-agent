@@ -23,21 +23,15 @@ AGENT="${AGENT:-may}"
 # ── Helpers ──────────────────────────────────────────────────────────────
 
 sock_path() {
-  local name="$1"
-  if [ -z "$name" ] || [ "$name" = "default" ]; then
-    echo "${STATE_DIR}/${AGENT}.sock"
-  else
-    echo "${STATE_DIR}/${AGENT}.${name}.sock"
-  fi
+  local name="${1:-default}"
+  [ "$name" = "" ] && name="default"
+  echo "${STATE_DIR}/instances/${name}/${AGENT}.sock"
 }
 
 pid_path() {
-  local name="$1"
-  if [ -z "$name" ] || [ "$name" = "default" ]; then
-    echo "${STATE_DIR}/${AGENT}.pid"
-  else
-    echo "${STATE_DIR}/${AGENT}.${name}.pid"
-  fi
+  local name="${1:-default}"
+  [ "$name" = "" ] && name="default"
+  echo "${STATE_DIR}/instances/${name}/${AGENT}.pid"
 }
 
 tmux_name() {
@@ -157,13 +151,11 @@ cmd_stop() {
 cmd_list() {
   echo "Instances:"
   local found=0
-  for pf in "${STATE_DIR}"/${AGENT}*.pid; do
+  for pf in "${STATE_DIR}"/instances/*/${AGENT}.pid; do
     [ -f "$pf" ] || continue
     found=1
     local name
-    name=$(basename "$pf" .pid)
-    name="${name#${AGENT}.}"
-    [ "$name" = "$AGENT" ] && name="default"
+    name=$(basename "$(dirname "$pf")")
     if is_alive "$pf"; then
       local pid
       pid=$(cat "$pf")
