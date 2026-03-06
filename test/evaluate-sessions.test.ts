@@ -10,7 +10,7 @@ import {
 } from "node:fs";
 import { resolve, join } from "node:path";
 import { tmpdir } from "node:os";
-import { findParentsWithUnevaluatedChildren } from "../run/evaluate-sessions.js";
+import { findParentsWithUnevaluatedChildren } from "../run/handlers/evaluate-sessions.js";
 
 describe("evaluate-sessions (LLM-to-JS #4)", () => {
   let dir: string;

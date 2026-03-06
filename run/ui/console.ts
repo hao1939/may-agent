@@ -5,7 +5,7 @@
  * Activity-channel events render dimmed so the user can focus on conversation.
  */
 
-import { eventChannel, type EventBus } from "./event-bus.js";
+import { eventChannel, type EventBus } from "../event-bus.js";
 
 const DIM = "\x1b[2m";
 const RESET = "\x1b[0m";

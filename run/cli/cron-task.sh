@@ -1,8 +1,8 @@
 #!/bin/bash
 # cron-task.sh — run a task as an ephemeral agent session via socket
 #
-# Usage: ./run/cron-task.sh <agent> <message>
-#   e.g.: ./run/cron-task.sh bob "Run meta-loop: evaluate recent sessions..."
+# Usage: ./run/cli/cron-task.sh <agent> <message>
+#   e.g.: ./run/cli/cron-task.sh bob "Run meta-loop: evaluate recent sessions..."
 #
 # Sends a {"type":"run"} command to the agent's socket, creating an
 # ephemeral session. The agent must be running (socket must exist).
@@ -13,7 +13,7 @@ set -euo pipefail
 AGENT="${1:?Usage: cron-task.sh <agent> <message>}"
 MESSAGE="${2:?Usage: cron-task.sh <agent> <message>}"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+PROJECT_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
 STATE_DIR="${STATE_DIR:-${PROJECT_ROOT}/.state}"
 SOCKET="${STATE_DIR}/${AGENT}.sock"
 

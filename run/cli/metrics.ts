@@ -1,6 +1,6 @@
 /**
  * Agent performance metrics dashboard.
- * Usage: npx tsx run/metrics.ts [--days N]
+ * Usage: npx tsx run/cli/metrics.ts [--days N]
  *
  * Reads .state/evaluations/*.json and produces a summary:
  * - Per-agent average scores (efficiency, quality)

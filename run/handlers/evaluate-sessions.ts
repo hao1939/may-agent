@@ -19,12 +19,12 @@ import { join } from "node:path";
 import {
   loadAllSessionMetas,
   type PersistedSession,
-} from "../src/persistence.js";
+} from "../../src/persistence.js";
 import {
   evaluateTask,
   writeSkippedEvaluations,
-} from "../src/evaluator.js";
-import type { SubagentManager } from "../src/index.js";
+} from "../../src/evaluator.js";
+import type { SubagentManager } from "../../src/index.js";
 
 export interface EvaluateSessionsResult {
   /** Number of skip-evaluations written (meta-agents, no-transcript). */

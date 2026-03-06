@@ -14,8 +14,8 @@
 
 import { createServer, connect, type Server, type Socket } from "node:net";
 import { existsSync, unlinkSync } from "node:fs";
-import type { EventBus, RunnerEvent } from "./event-bus.js";
-import type { SubagentManager } from "../src/index.js";
+import type { EventBus, RunnerEvent } from "../event-bus.js";
+import type { SubagentManager } from "../../src/index.js";
 
 export interface SocketUIOptions {
   socketPath: string;
