@@ -117,7 +117,7 @@ let sid: string;
 // ── Infrastructure ─────────────────────────────────────────────────────
 
 const bus = new EventBus();
-attachConsoleUI(bus);
+if (!TASK_MODE) attachConsoleUI(bus);
 
 // ── OpenClaw bridge (--openclaw + OPENCLAW_TARGET to enable) ────────────────────
 
