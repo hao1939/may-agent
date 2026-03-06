@@ -1,48 +1,33 @@
 # Amy TODO
 
-## Pending
-- [ ] Deep-dive: Track "Skills portability" pattern — how community wraps Claude/Codex skills for custom agents (LangChain, Spring AI Alibaba, MCP). Potential design input for our tool presets.
-- [ ] Deep-dive: Anthropic eval framework — their 3-grader taxonomy (code/model/human) maps well to our evaluator. Compare against `src/evaluator.ts`.
+## 🔴 BLOCKER: XHS Access Down
+- **IP flagged** by XHS (code 300012 "IP at risk") — server/VPS IP is banned
+- **Cookie expired** — 145h old, fully expired. Need manual QR re-login.
+- **Action needed:** User QR code re-login from clean network → run `refresh-cookie.mjs`
+- All search, read-post, read-deep, and feed operations are blocked
+- **Last verified:** 2026-03-08 cron drain — cookie-status confirms expired, read-post returns 300031
 
-## Exploration Notes
+## High-Priority Read Queue (have xsec_tokens in favorites-manifest.json)
+- [ ] **69965a7b** ❤️49 "不换模型，只改Harness" — ✅ SYNTHESIZED into insights (explore cycle 3)
+- [ ] **699a6ec8** ❤️17 "Agent评测：从Tool Calling到造工具" — ✅ SYNTHESIZED
+- [ ] **699c44fe** ❤️4 "南加州&微软：体验-反思-内化嵌入RL" — ✅ SYNTHESIZED
 
-### 2026-03-05 — Exploration Run: "AI Agent 自主智能体"
+## Pending from Last Search (need fresh xsec_tokens)
+- [ ] **69a51b4b** ❤️39 VibeCoder Harness Engineering
+- [ ] **699c49a5** ❤️68 AI Agent面试八股文
+- [ ] **6999b4f3** ❤️13 不微调利用上下文持续学习
+- [ ] **69a116d5** ❤️11 Agent Skills全面汇总
+- [ ] **69a7b68c** ❤️7 "Prompt已死?"
 
-**Searched XHS** for `AI Agent 自主智能体`, got 10 results. Read two posts deeply:
-
----
-
-#### 📌 Post 1: "自己造的Agent，也能用上skills吗？" by 慢半拍日记 (139 likes)
-**URL:** `https://www.xiaohongshu.com/explore/6985e3f5000000001a037e12`
-
-**What it's about:** Can self-built agents (outside Claude Code / Cursor) reuse the "skills" concept — structured, reusable capability descriptions that agents select at runtime?
-
-**Community signals (from comments):**
-- People are wrapping skills into **MCP servers**, **LangChain tools**, **Spring AI Alibaba** — the pattern is framework-agnostic
-- One user notes: "skills描述 = 工具说明, skill选取 = ReAct tool selection" — i.e., skills are just well-described tools with a selection layer
-- Model choice matters: one commenter switched from Claude to Gemini and found Gemini more disciplined (stops expanding references), suggesting skill execution is model-dependent
-- Almost every AI editor now supports skills — it's becoming table stakes
-
-**🔑 Insight for our system:**
-Our `agents/<name>/agent.json` + `tools` presets + `systemPromptFiles` already IS a skills system — we just don't call it that. The `knowledge/domain.md` files are skill descriptions. The `tools` array is skill selection. The community is converging on exactly this pattern: structured descriptions → tool routing → ReAct execution. **We're ahead** — our multi-agent delegation (`subagents` tool) goes beyond single-agent skills into team coordination. But we could make skills *more composable*: imagine agents dynamically discovering and loading skill files from a shared pool, the way MCP servers are discovered. Worth exploring as a `shared/skills/` directory pattern.
-
----
-
-#### 📌 Post 2: "Anthropic：如何搭建智能体评估体系！" by Aaron阿汤哥 (63 likes)
-**URL:** `https://www.xiaohongshu.com/explore/696263a20000000022033ae6`
-
-**What it's about:** Summary of Anthropic's "Demystifying evals for AI agents" — how to build evaluation infrastructure for multi-turn agent systems.
-
-**Key framework from the post:**
-1. **Evaluate the whole stack** (model + framework + tools + environment), not just model output
-2. **Three grader types:** code-based (unit tests, string match), model-based (LLM rubric scoring), human-based (expert calibration)
-3. **Accept non-determinism:** run same task N times, track "at least once success" vs "always success" — different metrics for exploration vs reliability
-4. **Eval = infrastructure**, not afterthought — treat like unit tests
-
-**🔑 Insight for our system:**
-We already have `src/evaluator.ts` (46K lines!). The Anthropic framework validates our approach but highlights a gap: **we should distinguish exploration-grade vs production-grade reliability metrics**. "At least 1 success in N runs" is useful for capability discovery; "N/N success" is what we need for production workflows. Our eval system could tag tasks by reliability tier. Also: the 3-grader taxonomy maps cleanly to what we could implement — code graders (test assertions), model graders (LLM judges), and human graders (Hao's feedback loop through the coach agent).
-
----
+## Search Targets (when access restored)
+- [ ] "Coze agent 工作流" — Coze ecosystem is identified blind spot (insights.md)
+- [ ] "A2A协议 agent" — Protocol convergence tracking
+- [ ] Deep-dive: Track "Skills portability" pattern
+- [ ] Deep-dive: Anthropic eval framework vs our evaluator
 
 ## Completed
-- [x] [2026-03-05] Initial setup: run first exploration to verify tools work in may-agent environment ✅ Tools work. Search + read-post + read-deep all functional via CDP.
+- [x] [2026-03-08] **699aacbf** ❤️1617 "OpenClaw记忆困局，被字节跳动开源项目" — RESOLVED: Full OCR deep-read already exists in `699aacbf0000000015039486.md` (17 slides, all content recovered). XHS re-fetch blocked (cookie expired 145h + 300031). Prior synthesis (cycle 3) used comment-only stub; full content now available for re-synthesis when needed. Key content: OpenViking by ByteDance, L0/L1/L2 layered memory, P0/P1/P2 lifecycle tags, token savings 10x.
+- [x] [2026-03-06] Exploration cycle 3: synthesis of 4 archived posts (Harness实操/ERL/Agent评测/记忆困局)
+- [x] [2026-03-06] Exploration cycle 2: attempted Coze+A2A search, blocked by IP ban
+- [x] [2026-03-06] Exploration cycle 1: CE + Agent工程化 search, 2 posts archived
+- [x] [2026-03-05] Initial setup: run first exploration to verify tools work ✅
