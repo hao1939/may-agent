@@ -75,7 +75,7 @@ function errorToolResultMsg(name: string, text: string, ts = Date.now()): AgentM
 
 /** Generate a long string of approximately `tokens` estimated tokens (4 chars each). */
 function longText(tokens: number): string {
-  return "x".repeat(tokens * 4);
+  return "x".repeat(tokens * 3);
 }
 
 // ── Tests ──────────────────────────────────────────────────────────────
@@ -116,9 +116,9 @@ describe("createCompactionTransform", () => {
   });
 
   it("calls onCompact callback with info", async () => {
-    // Use a larger context window so the original task overhead (~125 tokens)
-    // doesn't exceed compaction savings. 2000 tokens, threshold 0.5 = trigger at 1000.
-    const model = fakeModel(2000);
+    // Use a larger context window so compaction savings exceed the summary +
+    // original task overhead. 5000 tokens, threshold 0.5 = trigger at 2500.
+    const model = fakeModel(5000);
     const onCompact = vi.fn();
     const transform = createCompactionTransform(model, {
       threshold: 0.5,
@@ -127,10 +127,10 @@ describe("createCompactionTransform", () => {
     });
 
     const messages = [
-      userMsg(longText(300)), // old — large enough that summary is much smaller
-      assistantMsg(longText(300)), // old
-      userMsg(longText(200)), // recent
-      assistantMsg(longText(250)), // recent
+      userMsg(longText(800)), // old — large enough that summary is much smaller
+      assistantMsg(longText(800)), // old
+      userMsg(longText(400)), // recent
+      assistantMsg(longText(500)), // recent
     ];
 
     await transform(messages);
@@ -280,23 +280,23 @@ describe("createCompactionTransform", () => {
     expect(summaryText).toContain("ERROR");
   });
 
-  it("default threshold is 0.7", async () => {
+  it("default threshold is 0.6", async () => {
     const model = fakeModel(10000);
     const onCompact = vi.fn();
     const transform = createCompactionTransform(model, { onCompact });
 
-    // 6000 tokens in 4 messages — under 70% of 10000
+    // 5000 tokens in 4 messages — under 60% of 10000
     const messages = [
-      userMsg(longText(1500)),
-      assistantMsg(longText(1500)),
-      userMsg(longText(1500)),
-      assistantMsg(longText(1500)),
+      userMsg(longText(1250)),
+      assistantMsg(longText(1250)),
+      userMsg(longText(1250)),
+      assistantMsg(longText(1250)),
     ];
 
     await transform(messages);
     expect(onCompact).not.toHaveBeenCalled();
 
-    // 8000 tokens in 4 messages — over 70% of 10000
+    // 8000 tokens in 4 messages — over 60% of 10000
     const messages2 = [
       userMsg(longText(2000)),
       assistantMsg(longText(2000)),
