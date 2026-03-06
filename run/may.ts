@@ -70,7 +70,8 @@ const TELEGRAM_ENABLED = process.argv.includes("--telegram");
 const OPENCLAW_ENABLED = process.argv.includes("--openclaw");
 const CONSOLE_ENABLED = process.argv.includes("--console");
 const HEARTBEAT_ENABLED = process.argv.includes("--heartbeat");
-const TASK_MODE = (() => {
+const KEEP_SESSION = process.argv.includes("--keep-session");
+const INITIAL_TASK = (() => {
   const idx = process.argv.indexOf("--task");
   if (idx !== -1 && process.argv[idx + 1]) return process.argv[idx + 1];
   const fileIdx = process.argv.indexOf("--task-file");
@@ -475,8 +476,8 @@ if (!manager.hasAgent(interfaceAgent)) {
 
 // Runtime options for the interface agent's session
 const interfaceRunOpts = {
-  persistent: !TASK_MODE,  // task mode = non-persistent (ephemeral)
-  compaction: TASK_MODE ? false : {
+  persistent: KEEP_SESSION,  
+  compaction: !KEEP_SESSION ? false : {
     threshold: 0.6,
     keepRatio: 0.3,
     onCompact: (info: { messagesCompacted: number; tokensBefore: number; tokensAfter: number }) => {
@@ -514,9 +515,9 @@ bus.emit({ type: "info", message: `[instance:${INSTANCE_LABEL}] PID ${process.pi
 
 // ── Startup ────────────────────────────────────────────────────────────
 
-if (TASK_MODE) {
+if (!KEEP_SESSION) {
   // Task mode: start fresh with task message, no resume
-  const initialTask = TASK_MODE;
+  const initialTask = INITIAL_TASK!;
   sid = manager.run(interfaceAgent, initialTask, interfaceRunOpts);
   bus.emit({ type: "info", message: `[task] Started ${interfaceAgent} task session: ${sid}` });
   await manager.waitForIdle(sid);
@@ -559,8 +560,8 @@ writeIdentity({
   instance: INSTANCE_LABEL,
   socket: resolve(PERSIST_DIR, INSTANCE_LABEL + ".sock"),
   startedAt: new Date().toISOString(),
-  startedBy: TASK_MODE ? (INSTANCE.startsWith("job-") ? "cron:" + INSTANCE.replace("job-", "") : "task") : "human",
-  task: TASK_MODE || null,
+  startedBy: KEEP_SESSION ? "human" : (INSTANCE.startsWith("job-") ? "cron:" + INSTANCE.replace("job-", "") : "task"),
+  task: INITIAL_TASK || null,
   status: "running",
   sessionId: sid,
 });
@@ -693,8 +694,8 @@ function emitPrompt(): void {
   }
 }
 
-// Emit prompt when the interface agent finishes processing (skip in task mode)
-if (!TASK_MODE) {
+// Emit prompt when the interface agent finishes processing (only for persistent sessions)
+if (KEEP_SESSION) {
   manager.subscribe(sid, (event) => {
     if (event.type === "turn_end") {
       // Check if this is the last turn (agent going idle).
@@ -720,11 +721,11 @@ function watchForIdle(): void {
 }
 
 // Watch for initial idle (skip in task mode — session already complete)
-if (!TASK_MODE) watchForIdle();
+if (KEEP_SESSION) watchForIdle();
 
 // ── Main loop ──────────────────────────────────────────────────────────
 
-if (TASK_MODE) {
+if (!KEEP_SESSION) {
   // Task mode: agent already ran to completion above (waitForIdle).
   // Exit cleanly.
   bus.emit({ type: "info", message: `[task] Task completed. Exiting.` });
