@@ -1,7 +1,7 @@
 import { createInterface } from "node:readline";
 import { fileURLToPath } from "node:url";
 import { resolve, dirname } from "node:path";
-import { existsSync, writeFileSync, unlinkSync, mkdirSync, appendFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync, unlinkSync, mkdirSync, appendFileSync } from "node:fs";
 import { getModel } from "@mariozechner/pi-ai";
 import { SubagentManager, evaluateTask, writeSkippedEvaluations } from "../src/index.js";
 import { EventBus } from "./event-bus.js";
@@ -23,8 +23,60 @@ const PERSIST_DIR = resolve(process.env.STATE_DIR || resolve(PROJECT_ROOT, ".sta
 const INSTANCE = process.env.INSTANCE || "";
 const INSTANCE_LABEL = INSTANCE || "default";
 
-// CLI args: --cron enables cron jobs (only for the main instance)
+// ── Identity file ─────────────────────────────────────────────────────
+// Every instance writes identity.json so callers can track it.
+
+interface InstanceIdentity {
+  pid: number;
+  agent: string;
+  instance: string;
+  socket: string;
+  startedAt: string;
+  startedBy: string;
+  task: string | null;
+  status: "running" | "done" | "error";
+  exitCode?: number | null;
+  endedAt?: string;
+  duration?: string;
+  sessionId?: string;
+}
+
+const IDENTITY_PATH = resolve(PERSIST_DIR, INSTANCE_LABEL, "identity.json");
+
+function writeIdentity(data: Partial<InstanceIdentity>): void {
+  const dir = resolve(PERSIST_DIR, INSTANCE_LABEL);
+  mkdirSync(dir, { recursive: true });
+  let existing: Partial<InstanceIdentity> = {};
+  try { existing = JSON.parse(readFileSync(IDENTITY_PATH, "utf-8")); } catch {}
+  const merged = { ...existing, ...data };
+  writeFileSync(IDENTITY_PATH, JSON.stringify(merged, null, 2));
+}
+
+function formatDurationMs(ms: number): string {
+  const seconds = Math.floor(ms / 1000);
+  if (seconds < 60) return seconds + "s";
+  const minutes = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  if (minutes < 60) return minutes + "m" + secs + "s";
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return hours + "h" + mins + "m";
+}
+
+// CLI args
 const SCHEDULERS_ENABLED = process.argv.includes("--cron");
+const TASK_MODE = (() => {
+  const idx = process.argv.indexOf("--task");
+  if (idx !== -1 && process.argv[idx + 1]) return process.argv[idx + 1];
+  const fileIdx = process.argv.indexOf("--task-file");
+  if (fileIdx !== -1 && process.argv[fileIdx + 1]) {
+    const taskFile = process.argv[fileIdx + 1];
+    if (existsSync(taskFile)) return readFileSync(taskFile, "utf-8").trim();
+    console.error(`Task file not found: ${taskFile}`);
+    process.exit(1);
+  }
+  return null;
+})();
 
 // ── Models ──────────────────────────────────────────────────────────────
 
@@ -388,7 +440,15 @@ process.on("unhandledRejection", (reason) => {
   bus.emit({ type: "info", message: `[fatal] Unhandled rejection: ${reason}` });
 });
 process.on("exit", (code) => {
-  // This fires synchronously just before the process exits
+  // Update identity with exit info
+  try {
+    writeIdentity({
+      status: code === 0 ? "done" : "error",
+      exitCode: code,
+      endedAt: new Date().toISOString(),
+      duration: formatDurationMs(Date.now() - Date.parse(JSON.parse(readFileSync(IDENTITY_PATH, "utf-8")).startedAt)),
+    });
+  } catch {}
   const err = new Error("exit trace");
   console.error(`[exit] Process exiting with code ${code}\n${err.stack}`);
 });
@@ -401,10 +461,10 @@ if (!manager.hasAgent(interfaceAgent)) {
   process.exit(1);
 }
 
-// Runtime options for the interface agent's persistent session
+// Runtime options for the interface agent's session
 const interfaceRunOpts = {
-  persistent: true,
-  compaction: {
+  persistent: !TASK_MODE,  // task mode = non-persistent (ephemeral)
+  compaction: TASK_MODE ? false : {
     threshold: 0.7,
     keepRatio: 0.4,
     onCompact: (info: { messagesCompacted: number; tokensBefore: number; tokensAfter: number }) => {
@@ -442,33 +502,56 @@ bus.emit({ type: "info", message: `[instance:${INSTANCE_LABEL}] PID ${process.pi
 
 // ── Startup ────────────────────────────────────────────────────────────
 
-let resumeError: string | null = null;
-try {
-  const resumed = manager.resumeAgent(interfaceAgent, interfaceRunOpts);
-  sid = resumed.resumed.sessionId;
+if (TASK_MODE) {
+  // Task mode: start fresh with task message, no resume
+  const initialTask = TASK_MODE;
+  sid = manager.run(interfaceAgent, initialTask, interfaceRunOpts);
+  bus.emit({ type: "info", message: `[task] Started ${interfaceAgent} task session: ${sid}` });
+  await manager.waitForIdle(sid);
+} else {
+  // Interactive mode: try resume, fall back to fresh
+  let resumeError: string | null = null;
+  try {
+    const resumed = manager.resumeAgent(interfaceAgent, interfaceRunOpts);
+    sid = resumed.resumed.sessionId;
 
-  bus.emit({ type: "info", message: `Resumed ${interfaceAgent} session ${sid} (task: "${resumed.resumed.task.slice(0, 80)}")` });
-  if (resumed.interrupted.length > 0) {
-    bus.emit({ type: "info", message: `${resumed.interrupted.length} sub-agent session(s) marked as interrupted` });
+    bus.emit({ type: "info", message: `Resumed ${interfaceAgent} session ${sid} (task: "${resumed.resumed.task.slice(0, 80)}")` });
+    if (resumed.interrupted.length > 0) {
+      bus.emit({ type: "info", message: `${resumed.interrupted.length} sub-agent session(s) marked as interrupted` });
+    }
+
+    // Wait for resume processing to complete (agent goes idle)
+    await manager.waitForIdle(sid);
+  } catch (err) {
+    resumeError = err instanceof Error ? err.message : String(err);
   }
 
-  // Wait for resume processing to complete (agent goes idle)
-  await manager.waitForIdle(sid);
-} catch (err) {
-  resumeError = err instanceof Error ? err.message : String(err);
+  if (resumeError) {
+    // No session to resume — start fresh
+    bus.emit({ type: "info", message: `[resume] ${resumeError}` });
+
+    const initialTask = "Ready. Waiting for tasks.";
+    sid = manager.run(interfaceAgent, initialTask, interfaceRunOpts);
+    bus.emit({ type: "info", message: `Started persistent ${interfaceAgent} session: ${sid}` });
+
+    // Wait for initial processing to complete (agent goes idle)
+    await manager.waitForIdle(sid);
+  }
 }
 
-if (resumeError) {
-  // No session to resume — start fresh
-  bus.emit({ type: "info", message: `[resume] ${resumeError}` });
+// ── Write identity ─────────────────────────────────────────────────────
 
-  const initialTask = "Ready. Waiting for tasks.";
-  sid = manager.run(interfaceAgent, initialTask, interfaceRunOpts);
-  bus.emit({ type: "info", message: `Started persistent ${interfaceAgent} session: ${sid}` });
-
-  // Wait for initial processing to complete (agent goes idle)
-  await manager.waitForIdle(sid);
-}
+writeIdentity({
+  pid: process.pid,
+  agent: interfaceAgent,
+  instance: INSTANCE_LABEL,
+  socket: resolve(PERSIST_DIR, INSTANCE_LABEL + ".sock"),
+  startedAt: new Date().toISOString(),
+  startedBy: TASK_MODE ? (INSTANCE.startsWith("job-") ? "cron:" + INSTANCE.replace("job-", "") : "task") : "human",
+  task: TASK_MODE || null,
+  status: "running",
+  sessionId: sid,
+});
 
 // ── Start cron jobs (SCHEDULERS=1 to enable) ───────────────────────────
 
@@ -527,12 +610,13 @@ if (SCHEDULERS_ENABLED) {
     }
     // Notify on job fire (goes to Telegram via bus)
     cron.onFire((entry, type) => {
-      const emoji = type === "js" ? "⚡" : "🤖";
+      const emoji = type === "js" ? "⚡" : type === "task" ? "🚀" : "💓";
+      const label = type === "js" ? "JS handler" : type === "task" ? `task → ${entry.agent}` : "heartbeat";
       bus.emit({
         type: "text",
         agent: "may",
         channel: "chat" as any,
-        message: `${emoji} [cron] ${entry.name} fired (${type === "js" ? "JS handler" : "LLM"})`,
+        message: `${emoji} [cron] ${entry.name} fired (${label})`,
       });
     });
 
@@ -542,6 +626,33 @@ if (SCHEDULERS_ENABLED) {
       cron.start();
     }
   }
+}
+
+// ── Heartbeat timer ──────────────────────────────────────────────────────
+
+if (!TASK_MODE) {
+  // Read heartbeatMs from agent.json
+  const agentConfigPath = resolve(AGENTS_ROOT, interfaceAgent, "agent.json");
+  try {
+    const agentConfig = JSON.parse(readFileSync(agentConfigPath, "utf-8"));
+    if (agentConfig.heartbeatMs && agentConfig.heartbeatMs >= 60_000) {
+      const heartbeatFile = resolve(AGENTS_ROOT, interfaceAgent, "heartbeat.md");
+      if (existsSync(heartbeatFile)) {
+        const timer = setInterval(() => {
+          const msg = `[heartbeat] Read ${heartbeatFile} and work through each section. This is your periodic wake-up.`;
+          try {
+            manager.followUp(sid, msg, "system");
+            watchForIdle();
+            bus.emit({ type: "info", message: `[heartbeat] Fired for ${interfaceAgent}` });
+          } catch (err) {
+            bus.emit({ type: "info", message: `[heartbeat] Failed: ${err}` });
+          }
+        }, agentConfig.heartbeatMs);
+        timer.unref();
+        bus.emit({ type: "info", message: `[heartbeat] Enabled for ${interfaceAgent} (every ${Math.round(agentConfig.heartbeatMs / 60000)}min)` });
+      }
+    }
+  } catch {}
 }
 
 // ── Telegram bot (TELEGRAM_BOT_TOKEN to enable) ─────────────────────────
@@ -597,7 +708,12 @@ watchForIdle();
 
 // ── Main loop ──────────────────────────────────────────────────────────
 
-if (process.stdin.isTTY) {
+if (TASK_MODE) {
+  // Task mode: agent already ran to completion above (waitForIdle).
+  // Exit cleanly.
+  bus.emit({ type: "info", message: `[task] Task completed. Exiting.` });
+  process.exit(0);
+} else if (process.stdin.isTTY) {
   const rl = createInterface({ input: process.stdin, output: process.stdout });
 
   rl.on("SIGINT", () => {

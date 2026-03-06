@@ -14,6 +14,8 @@ export interface CronEntry {
   message: string;
   enabled: boolean;
   description?: string;
+  /** Agent to run this job. If set, spawns a dedicated instance. If not, uses followUp to main session. */
+  agent?: string;
 }
 
 function textResult(text: string): AgentToolResult<string> {

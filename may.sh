@@ -217,6 +217,115 @@ cmd_log() {
 
 # ── Main ─────────────────────────────────────────────────────────────────
 
+
+cmd_task() {
+  # Parse args
+  local agent="$AGENT"
+  local name=""
+  local task_file=""
+  local task_msg=""
+
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --agent) agent="$2"; shift 2 ;;
+      --name)  name="$2"; shift 2 ;;
+      --file)  task_file="$2"; shift 2 ;;
+      *)       task_msg="$1"; shift ;;
+    esac
+  done
+
+  if [ -z "$task_msg" ] && [ -z "$task_file" ]; then
+    echo "Usage: ./may.sh task [--agent <agent>] [--name <name>] [--file <file>] "task message""
+    exit 1
+  fi
+
+  # Auto-generate instance name if not provided
+  if [ -z "$name" ]; then
+    name="task-$(date +%s)-$$"
+  fi
+
+  local instance_name="job-${name}"
+  local task_args=""
+  if [ -n "$task_file" ]; then
+    task_args="--task-file $task_file"
+  else
+    task_args="--task \"${task_msg}\""
+  fi
+
+  echo "Starting task instance: ${instance_name} (agent: ${agent})"
+
+  # Run in background, detached
+  AGENT="$agent" INSTANCE="$instance_name" STATE_DIR="$STATE_DIR" \
+    nohup npx tsx run/may.ts $task_args > "${STATE_DIR}/${instance_name}.log" 2>&1 &
+
+  local pid=$!
+  echo "PID: $pid"
+  echo "Logs: ${STATE_DIR}/${instance_name}.log"
+  echo "Identity: ${STATE_DIR}/${instance_name}/identity.json"
+}
+
+cmd_ps() {
+  echo "Running instances:"
+  echo ""
+  local found=0
+  for identity in "${STATE_DIR}"/*/identity.json; do
+    [ -f "$identity" ] || continue
+    found=1
+    local status agent instance pid started task duration
+    status=$(python3 -c "import json; d=json.load(open('$identity')); print(d.get('status','?'))" 2>/dev/null || echo "?")
+    agent=$(python3 -c "import json; d=json.load(open('$identity')); print(d.get('agent','?'))" 2>/dev/null || echo "?")
+    instance=$(python3 -c "import json; d=json.load(open('$identity')); print(d.get('instance','?'))" 2>/dev/null || echo "?")
+    pid=$(python3 -c "import json; d=json.load(open('$identity')); print(d.get('pid','?'))" 2>/dev/null || echo "?")
+    started=$(python3 -c "import json; d=json.load(open('$identity')); print(d.get('startedAt','?')[:19])" 2>/dev/null || echo "?")
+    task=$(python3 -c "import json; d=json.load(open('$identity')); t=d.get('task',''); print(t[:60] if t else '-')" 2>/dev/null || echo "-")
+    duration=$(python3 -c "import json; d=json.load(open('$identity')); print(d.get('duration',''))" 2>/dev/null || echo "")
+
+    # Check if actually alive
+    local alive="dead"
+    if kill -0 "$pid" 2>/dev/null; then alive="alive"; fi
+
+    local icon="❓"
+    if [ "$status" = "running" ] && [ "$alive" = "alive" ]; then icon="🟢"
+    elif [ "$status" = "running" ] && [ "$alive" = "dead" ]; then icon="💀"
+    elif [ "$status" = "done" ]; then icon="✅"
+    elif [ "$status" = "error" ]; then icon="❌"
+    fi
+
+    printf "  %s %-25s %-10s pid=%-7s %s  %s\n" "$icon" "$instance" "$agent" "$pid" "$started" "$task"
+    [ -n "$duration" ] && [ "$status" != "running" ] && printf "     duration: %s\n" "$duration"
+  done
+  if [ $found -eq 0 ]; then
+    echo "  (no instances found)"
+  fi
+}
+
+cmd_logs() {
+  local name="${1:-}"
+  if [ -z "$name" ]; then
+    echo "Usage: ./may.sh logs <instance-name>"
+    exit 1
+  fi
+
+  # Check for log file
+  local logfile="${STATE_DIR}/${name}.log"
+  if [ -f "$logfile" ]; then
+    tail -f "$logfile"
+  else
+    # Try session JSONL
+    local session_dir="${STATE_DIR}/sessions"
+    local sid
+    sid=$(python3 -c "import json; d=json.load(open('${STATE_DIR}/${name}/identity.json')); print(d.get('sessionId',''))" 2>/dev/null || echo "")
+    if [ -n "$sid" ] && [ -f "${session_dir}/${sid}/session.jsonl" ]; then
+      tail -f "${session_dir}/${sid}/session.jsonl"
+    else
+      echo "No logs found for instance '${name}'"
+      echo "Checked: ${logfile}"
+      [ -n "$sid" ] && echo "Checked: ${session_dir}/${sid}/session.jsonl"
+      exit 1
+    fi
+  fi
+}
+
 case "${1:-}" in
   start)
     shift
@@ -237,6 +346,17 @@ case "${1:-}" in
     shift
     cmd_log "$@"
     ;;
+  task)
+    shift
+    cmd_task "$@"
+    ;;
+  ps)
+    cmd_ps
+    ;;
+  logs)
+    shift
+    cmd_logs "$@"
+    ;;
   help|--help|-h)
     echo "Usage: ./may.sh [command] [args]"
     echo ""
@@ -244,7 +364,10 @@ case "${1:-}" in
     echo "  (no command)        Start default instance interactively (with --cron)"
     echo "  start [name]        Start instance in background (tmux, with --cron)"
     echo "  stop [name]         Stop an instance"
-    echo "  list                List all instances"
+    echo "  list                List tmux instances"
+    echo "  ps                  List all instances (from identity.json)"
+    echo "  task [opts] \"msg\"  Run a task in a dedicated instance"
+    echo "  logs <instance>     Tail instance logs"
     echo "  send [name] \"msg\"   Send message to instance"
     echo "  log [name]          Attach to instance's tmux session"
     echo ""
