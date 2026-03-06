@@ -6,6 +6,7 @@ const AGENTS_ROOT = resolve(import.meta.dirname, "..", "agents");
 
 const fakeModels = {
   opus: { id: "opus", provider: "anthropic" },
+  "claude-sonnet-4-20250514": { id: "claude-sonnet-4-20250514", provider: "anthropic" },
   gpt52: { id: "gpt52", provider: "openai" },
   gemini3pro: { id: "gemini3pro", provider: "openai" },
   kimi: { id: "kimi", provider: "openai" },

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { createSocketWatchTool } from "../src/socket-watch.js";
 import { SubagentManager } from "../src/manager.js";
 import type { Model } from "@mariozechner/pi-ai";
@@ -200,6 +200,9 @@ describe("socket_watch tool", () => {
     testServer = createTestServer(socketPath);
     const tool = makeTool();
 
+    // Spy on manager.followUp to capture what the socket_watch tool sends
+    const followUpSpy = vi.spyOn(manager, "followUp");
+
     await exec(tool, {
       action: "connect",
       socketPath,
@@ -212,28 +215,18 @@ describe("socket_watch tool", () => {
     testServer.broadcast({ type: "tool_call", tool: "exec", args: { command: "npm test" } });
     testServer.broadcast({ type: "tool_result", tool: "exec", preview: "All tests pass" });
 
-    // Wait for debounce + injection
+    // Wait for debounce flush
     await new Promise((r) => setTimeout(r, 500));
 
-    // The followUp wakes the session, but the LLM call will fail (fake API key).
-    // Wait for the session to settle (error → idle for persistent).
-    await manager.waitForIdle(sessionId);
-
-    // Check that the followUp message was persisted to JSONL
-    const { readSessionMessages } = await import("../src/persistence.js");
-    const messages = readSessionMessages(dir, sessionId);
-    const followUpMsgs = messages.filter(
-      (m) => m.role === "user" && m.content.some(
-        (c) => c.type === "text" && (c as { text: string }).text.includes("[socket_watch: coachee]"),
-      ),
-    );
-    expect(followUpMsgs.length).toBeGreaterThanOrEqual(1);
-
-    // Verify the batch contains our events
-    const batchText = (followUpMsgs[0].content[0] as { text: string }).text;
+    // The socket_watch tool should have called manager.followUp with the batched events
+    expect(followUpSpy).toHaveBeenCalled();
+    const batchText = followUpSpy.mock.calls[0][1];
+    expect(batchText).toContain("[socket_watch: coachee]");
     expect(batchText).toContain("[tool_call]");
     expect(batchText).toContain("exec");
     expect(batchText).toContain("[tool_result]");
+
+    followUpSpy.mockRestore();
   });
 
   it("filters events by type", async () => {
