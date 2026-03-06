@@ -906,7 +906,7 @@ export interface ExecToolOptions {
   /** Working directory for commands. */
   cwd?: string;
   /** Regex patterns that block commands. Matched commands return an error hint instead of executing. */
-  denyPatterns?: RegExp[];
+  denyPatterns?: { test(s: string): boolean }[];
   /** Message shown when a command is blocked. */
   denyMessage?: string;
   /** If true, prefix exec output with "CWD: <path>" so the agent always knows where it is. Included on both success and error output. */
