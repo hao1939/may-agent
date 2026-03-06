@@ -669,7 +669,7 @@ export interface EvaluateTaskOptions {
   persistDir: string;
   /** The parent session ID (May's session). Used to find child sessions. */
   parentSessionId: string;
-  /** Agents to skip (evaluator, optimizer — meta agents). */
+  /** Agents to skip (evaluator only — to prevent infinite evaluation loops). */
   skipAgents?: Set<string>;
 }
 
@@ -732,7 +732,7 @@ export function findUnevaluatedChildren(
  * Returns null if there are no unevaluated children.
  */
 export async function evaluateTask(opts: EvaluateTaskOptions): Promise<TaskEvaluationResult | null> {
-  const { manager, persistDir, parentSessionId, skipAgents = new Set(["evaluator", "optimizer", "may"]) } = opts;
+  const { manager, persistDir, parentSessionId, skipAgents = new Set(["evaluator"]) } = opts;
 
   // Get registry to find child sessions
   const registryStore = (manager as any).registry as { getRegistry(): { sessions: Record<string, PersistedSession> } };
@@ -1102,10 +1102,9 @@ function computeTrend(efficiencies: number[]): "improving" | "declining" | "stab
  * otherwise be an evaluator agent session (~$0.05-0.15 each).
  *
  * Two categories are handled:
- * 1. **Meta-agent sessions** (evaluator, optimizer, may) — these are always
- *    skipped by evaluateTask's skipAgents, but without a marker file they
- *    show up as "unevaluated" every time the cron job runs, wasting May's
- *    time scanning them.
+ * 1. **Evaluator sessions** — skipped to prevent infinite evaluation loops.
+ *    Optimizer and may sessions are now evaluated to measure the meta-team's
+ *    performance.
  * 2. **No-transcript sessions** — sessions with no session.jsonl in either
  *    the active or history directory. These can never be evaluated.
  *
@@ -1113,7 +1112,7 @@ function computeTrend(efficiencies: number[]): "improving" | "declining" | "stab
  */
 export function writeSkippedEvaluations(
   persistDir: string,
-  skipAgents: Set<string> = new Set(["evaluator", "optimizer", "may"]),
+  skipAgents: Set<string> = new Set(["evaluator"]),
 ): number {
   const evalDir = join(persistDir, "evaluations");
   mkdirSync(evalDir, { recursive: true });
