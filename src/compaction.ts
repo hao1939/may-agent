@@ -189,6 +189,7 @@ export function formatKeyFacts(facts: KeyFacts): string[] {
 
   if (facts.filesRead.size > 0) {
     lines.push(`Files read: ${[...facts.filesRead].join(", ")}`);
+    lines.push(`⚠️ File contents from before compaction are SUMMARIZED, not exact. Re-read any file before overwriting it.`);
   }
   if (facts.filesWritten.size > 0) {
     lines.push(`Files written: ${[...facts.filesWritten].join(", ")}`);

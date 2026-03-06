@@ -57,6 +57,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
   }
 
   const baseUrl = `https://api.telegram.org/bot${token}`;
+  bus.emit({ type: "info", message: `[telegram] Bot enabled (${allowedChatIds.length} allowed chat(s))` });
   let running = true;
   let offset = 0;
 
