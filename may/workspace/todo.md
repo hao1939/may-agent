@@ -1,15 +1,22 @@
 # TODO
-- [2026-03-06] **Session Architecture: Implement Three Types** — Design finalized in agents/shared/design-ideas.md. Build:
-  1. `--task "message"` mode in run/may.ts (task as initial message, exit on done, keep socket)
-  2. CronEntry: add `agent` and `sessionType` fields
-  3. Cron dispatcher: spawn dedicated instance for task jobs, followUp for heartbeats
-  4. Job tracker: `.state/jobs/<name>/status.json`
-  5. Telegram: `/jobs` command, completion summaries
-  6. Heartbeat: consolidate per-agent cron jobs into single heartbeat.md per agent
+- [2026-03-06] ~~**Session Architecture: Implement Three Types**~~ → Mostly done, see tracking below.
+  Remaining: Telegram `/jobs` command, per-agent heartbeat consolidation
+
+- [2026-03-06] **Launcher: Implement `run/launcher.ts`** — Minimal wrapper that replaces bash restart loops.
+  Bob review: `agents/bob/workspace/launcher-review.md`. Design: `docs/launcher-design.md`.
+  Required changes before implementation:
+  1. Exit code protocol: 0=stop, 1=crash+backoff, 100=hot-reload (immediate restart)
+  2. Shutdown timeout: SIGKILL child after 5s if SIGTERM ignored
+  3. Docker: `tini` as PID 1, launcher runs under it
+  4. Update `may.sh cmd_run` to use launcher instead of bash while-true loop
+  5. Update Docker entrypoint to use launcher
+
+- [2026-03-06] **Bug: Agent shrink-write after compaction** — Bob's write to `journal.md` was blocked (73 lines → 6 lines). After compaction, agents lose full file content and attempt to overwrite with partial data. The `allowShrink` guard caught it, but the agent shouldn't have tried.
+  Investigate: Is this a compaction issue (file content not preserved)? Or agent prompting issue (should read before writing)? Check if CONVENTIONS.md covers "always read before overwriting".
 
 - [2026-03-05] SubagentManager status API: see detailed spec in Tracking section below (originally here, moved for space).
 
-- [2026-03-05] **Learnings from OpenClaw — Design Philosophy Import**: OC Bob maintained a 42-principle `design-philosophy.md` (553 lines) capturing deep design wisdom from user interactions and cross-referencing community research. Key principles our Bob should absorb:
+- [2026-03-05] ~~**Learnings from OpenClaw — Design Philosophy Import**~~ → Analysis complete (Bob), integration pending: OC Bob maintained a 42-principle `design-philosophy.md` (553 lines) capturing deep design wisdom from user interactions and cross-referencing community research. Key principles our Bob should absorb:
   - P31: Context Engineering > Prompt Engineering (CE = select + compress + memory)
   - P32: pass@k vs pass^k — production agents need reliability, not lottery metrics
   - P34: Verify-on-Edit beats search algorithms (+16pp on SWE-bench from one harness nudge)
@@ -69,7 +76,12 @@
 # Tracking
 - [2026-03-06] ✅ **philosophy.md restoration**: Restored full philosophy.md from 72 lines (corrupted after compaction) to 278 lines with 40 principles (P0-P39) across 7 sections (Foundation + A-G). Merged the new P33 "Heartbeat vs Cron" principle that was added after the last backup.
 - [2026-03-06] ✅ **SOUL.md principle references updated**: Fixed all 7 agent SOUL.md files to reference correct principle numbers after philosophy.md renumbering. Fixed cascading replacement bug (P36→P35→P34 chain).
+- [2026-03-06] ✅ **Unified Cron System (feat: 785a273)**: Implemented three execution modes (heartbeat/job-handler/job-task) with overlap prevention, timeout protection (SIGTERM+SIGKILL), job-history.jsonl tracking, backward compatibility. All 33 tests pass. Design: docs/cron-session-design.md.
 - [2026-03-06] ✅ **Cron test fix**: Changed `Cron.load()` return type from `void` to `CronEntry[]` — 3 tests were failing because tests expected load() to return entries. All 11 cron tests now pass.
+- [2026-03-06] ✅ **Code review fixes (7832110)**: Removed dangling --heartbeat flag from may.sh/entrypoint.sh, made compaction error recovery robust (always reset on any error vs brittle string matching), clarified isSessionAlive doc, removed cosmetic blank line. Verified isSessionAlive is correct — idle persistent sessions stay in activeSessions.
+- [2026-03-06] ✅ **CONVENTIONS.md — [STUCK] escalation**: Added convention for agents to mark items [STUCK] after 2 failed attempts. Prevents spinning.
+- [2026-03-06] ✅ **Philosophy P40 — Agents Do Cognitive Work, Not Chores**: Added as Section H (Boundaries). Agents reason; infra handles mechanical concerns.
+- [2026-03-06] ✅ **OpenClaw philosophy import analysis**: Bob completed analysis (workspace/oc-philosophy-import.md). Identified 6 new principles to add (P40-P45: Platform Risk, Memory Quality, Verify-on-Edit, Delegation Trust, Minimalism, Static Policies) and 3 to refine (P18/P19/P37). Ready for integration.
 
 - [2026-03-05] ✅ Human input collection — implemented in run/may.ts. Committed as 069ec3d.
 - [2026-03-05] ✅ Review-human-inputs cron job — added at 12h interval. Committed as 54175a0.
@@ -250,3 +262,16 @@ User runs Claude Code reviews on uncommitted changes, then relays feedback:
 
 ### Tracking (review #4)
 - [2026-03-06] ✅ Fourth human-inputs review completed. 1983 lines (+147). 4 new patterns. Most new inputs are from design sessions already implemented (session architecture, heartbeat design, philosophy restructuring, SOUL.md).
+
+### Heartbeat Cycle — 2026-03-06T08:30Z
+**Section 1 (System Audit):** ✅ Disk 41% (142G free), Memory 4.7G/31G, tsc clean, 956/962 tests pass (6 pre-existing failures)
+**Section 2 (Human Inputs):** ✅ Reviewed 147 new lines. 4 new patterns extracted (session architecture, heartbeat vs cron, philosophy as architecture, code review relay). All already implemented.
+**Section 3 (TODO Drain):**
+- ✅ Bob: Weekly Synthesis Brief — template + first brief (2026-W10) produced. Evidence: agents/bob/workspace/weekly-brief-template.md (56 lines), agents/bob/workspace/weekly-briefs/2026-W10.md (58 lines)
+- ✅ Coach: Amy coaching exercise — Amy did test exploration cycle, Coach evaluated. Evidence: agents/coach/workspace/amy-coaching-results.md (223 lines), agents/amy/workspace/exploration-log.md (131 lines)
+- ✅ Optimizer: CONVENTIONS.md completion evidence convention — added at line 189. Evidence: agents/CONVENTIONS.md updated, agents/optimizer/workspace/todo.md updated.
+- ✅ Optimizer: Marked health API TODO as done (was already implemented in manager.ts).
+**Section 4 (Mission Reflection):** ✅ Routing correct. No agents overwhelmed. Slow path appropriate for cognitive tasks.
+**Section 5 (Exploration):** Skipped — only 2.5h since last (need 8h).
+
+- [2026-03-06] ✅ **Agent-owned cron handlers with auto-discovery**: Moved handler files from `run/handlers/` to `agents/may/handlers/` (system-status, evaluate-sessions, drain-todo, daily-brief). Added `loadAgentHandlers()` in agent-loader.ts that auto-discovers handler files from `agents/<name>/handlers/`, imports them, calls `create(ctx, entry)`, and registers with cron. Removed 50+ lines of hardcoded handler registration from may.ts. Handler files follow `HandlerModule` interface from `run/handler-context.ts`. Config via `handlerConfig` in cron.json entries. Clean compile, all 89 handler/cron tests pass.

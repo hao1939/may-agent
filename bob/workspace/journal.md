@@ -42,3 +42,43 @@ The **Blind Overwrite** pattern has mutated and infected the meta-layer. **Bob**
 ### Recommendations
 1.  **Stop Full Rewrites:** The  task must switch to an **Append-Only** or **Surgical Edit** model. Reading and rewriting entire knowledge bases is inherently unsafe with current context limits.
 2.  **Hard Block on Truncated Writes:** Implement a structural check in the  tool that rejects the operation if the content was derived from a read containing .
+
+# 2026-03-06 Design Review: Unified Cron & Session Architecture
+
+I have reviewed and refined the "Unified Cron & Session Design" document (`docs/cron-session-design.md`).
+
+## Summary
+This design moves cron management, job scheduling, and concurrency control from the LLM layer into deterministic infrastructure (JS/TS), which is perfectly aligned with **Phase 2: Harden**.
+
+### Aligned ✅
+*   **Deterministic Guardrails (P14)**: Concurrency (`skip` policy) and timeouts are now enforced by code, not agent judgment.
+*   **File System as Memory (P11)**: The addition of `.state/job-history.jsonl` creates a persistent, append-only memory of system events that survives restarts.
+*   **Measurable Operations (P18)**: `JobResult` standardizes metrics across both AI and JS tasks.
+
+### Key Refinements
+1.  **Concurrency Control**: Explicitly defined `skip` (don't stack) as the default policy for overlapping heartbeats and jobs.
+2.  **Zombie Management**: Added mandatory `timeoutMs` and `SIGKILL` logic for spawned job processes.
+3.  **Compaction Safety**: Defined a "Hard Reset" fallback if persistent sessions hit context limits and compaction fails.
+4.  **Unified Indexing**: Introduced `.state/job-history.jsonl` so agents can efficiently query "what happened since I last woke up?" without expensive file tree scanning.
+
+### Recommendations
+*   **Implementation Priority**: The `JobResult` interface and JSONL appending logic are critical prerequisites for the unified system. The Cron Runner needs to implement these immediately.
+
+## 2026-03-06: Launcher Design Review
+
+Reviewed the proposed `launcher.ts` design.
+- **Assessment**: Structurally sound but flawed in handling "intentional restart" vs "crash".
+- **Gap**: Lacks a mechanism for immediate hot-reload (currently would backoff 2s+).
+- **Recommendation**: Introduce `exit(100)` for hot-reload to bypass backoff. Use `tini` in Docker to handle zombie reaping.
+- **Deliverable**: `workspace/launcher-review.md`
+
+## 2026-03-06: Launcher Design Review
+
+Reviewed the proposed `launcher.ts` design.
+- **Assessment**: Structurally sound but flawed in handling "intentional restart" vs "crash" — both exit non-zero, causing backoff on hot-reloads.
+- **Recommendations**:
+  1. Exit code protocol: 0=stop, 1=crash (backoff), 100=hot-reload (immediate restart)
+  2. Shutdown timeout: SIGKILL after 5s if child ignores SIGTERM
+  3. Docker: Use `tini` as PID 1 to reap zombies, launcher runs under it
+- **Verdict**: Do not implement as-is. Add exit code protocol first.
+- **Full analysis**: `agents/bob/workspace/launcher-review.md`

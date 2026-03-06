@@ -4,7 +4,8 @@
 
 ## Ideas from OpenClaw Coach (to validate)
 
-- [ ] **Coach Amy and Amy-Kimi** — New agents ported from OpenClaw. Both passed smoke tests (tools, knowledge archive, search→read→analyze workflow). Run a proper coaching session to verify:
+- [x] **Coach Amy** — ✅ PASS (2026-03-09). Exploration cycle exercise: topic selection → search attempt → CAPTCHA handling → archive synthesis → written analysis. All coaching rules followed. Output: 131-line analysis cross-referencing 7 posts. L1 confirmed. Pass streak: 1/3.
+- [ ] **Coach Amy-Kimi** — Same exercise needed. Share Amy's infrastructure (XHS tools, same IP ban blocker). Run after Amy completes graduation or when XHS access is restored.
   - Can they handle tool failures gracefully (CAPTCHA, rate limit)?
   - Do they produce actionable insights (not just summaries)?
   - Do they follow frequency discipline (max 3 searches)?
@@ -16,8 +17,13 @@
   - Does Scout rotate sources or fixate on one?
   - Does Scout commit at 60% budget?
 
+- [ ] **Amy exercise 2** — Ambiguous/self-directed task for L2 assessment. Give Amy an open-ended exploration prompt (e.g., "something changed in the community recently") and see if she can self-direct without clear topic guidance.
+
+- [ ] **Amy live search validation** — When XHS access is restored (IP ban lifted + cookie refreshed), re-run the search→read-post→read-deep→archive pipeline to validate the full workflow.
+
 # Tracking
 
+- [2026-03-09] ✅ Coach Amy (exploration cycle) — **PASS, no interventions.** Amy selected "context entropy" topic, attempted XHS search (CAPTCHA → stopped immediately, no retry), pivoted to archive synthesis, produced 131-line analysis cross-referencing 7 verified posts across 3 research lines. Coaching rules #1, #3, #5, #6, #8 all followed correctly. Source integrity verified (7/7 post IDs exist). Orientation phase broad (18 reads, some unnecessary). Root cause: Agent (minor). L1 confirmed (no longer provisional). Pass streak: 1/3. Report: `sessions/amy-20260309-exploration-cycle.md` + `amy-coaching-results.md`.
 - [2026-03-22] ✅ "Coach doesn't do the agent's work" boundary — **Made explicit in domain.md.** Renamed section from "What the Coach Does NOT Do" to "The Core Boundary: Coach Does NOT Do the Agent's Work." Added positive scope (what coach does: observe, assess, design exercises, give feedback, write reports) alongside expanded negative scope (does not explore, search, research, analyze external systems, build knowledge, or produce deliverables beyond coaching reports). Added anti-pattern: "Never accept research/analysis tasks — redirect to the appropriate agent." Reviewed all 8 coaching sessions for violations: actual coaching sessions (coder, qa ×2, master ×2, amy) all respect boundary correctly. Two evaluation reports (COMMON.md and MAST taxonomy) were analysis/research tasks that arguably crossed the boundary — coach performed analyst work rather than coaching. New rule prevents this going forward. Fix: `agents/coach/knowledge/domain.md` lines 238-264 rewritten.
 - [2026-03-22] ✅ Periodic review of graduated agents — **Designed regression review process.** 3-tier system: Tier 1 (passive monitoring via evaluator scores — continuous, zero cost), Tier 2 (scheduled spot check — replay weakest graduation exercise, every 2 weeks initially, graduating to 4 weeks after clean pass), Tier 3 (quarterly steady state — minimum review cadence, never fully exempt). Automatic regression triggers: quality score crash (q<0.3 on 2+ evals), known-pattern recurrence, capability level downgrade. Manual triggers: domain.md changes, model swaps, new tools, infra changes. Re-coaching resets pass streak to 0/3, requires full re-graduation. Exercise replay table maps agents to their historically-weakest exercise. Cost budget: regression reviews capped at 20% of coaching capacity. Process: `workspace/regression-review-process.md` (7.4KB). Activates when first agent graduates.
 - [2026-03-06] ✅ Capability level assessment (L1/L2/L3) — **Assessed all 10 agents.** Used 123+ evaluations, 8 coaching sessions, and workspace artifacts as evidence. Results: Coder=L2 (confirmed), QA=L2 (↑ upgraded from L1→L2), Master=L2 (confirmed), May=L1 (↓ downgraded — by design, follows prescriptive workflow), Evaluator=L1 (confirmed), Optimizer=L2 (limited evidence), Bob=L2→L3 (↑ emerging L3 — system-level analysis but poor execution), Amy=L1 (new, blocked by infra), Amy-Kimi=L1 (new, minimal evidence), Scout=L2 (new, strong journal evidence). Framework validated: yes, it helps prioritize coaching. Key insight: blind-overwrite handling is the strongest L1/L2 litmus test; L3 is rare and comes with execution tradeoffs (Bob). Report: `workspace/capability-level-assessment-2026-03-06.md` (19.8KB).

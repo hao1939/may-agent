@@ -107,3 +107,16 @@ was discovered about an agent's behavior during a coaching session.
 - Key insight: completion evidence is a genuine gap — agents mark things done without verifiable proof. The `Evidence: ...` pattern is lightweight and auditable.
 - 3 action items added to optimizer's todo.md for implementation
 - Report: `sessions/common-md-behavioral-contract-evaluation-2026-03-22.md`
+
+## 2026-03-09 — amy (exploration cycle exercise)
+- Amy PASSED first clean coaching exercise: topic selection → search attempt → CAPTCHA handling → archive synthesis → written analysis
+- **CAPTCHA handling is correct**: single search attempt, immediate stop on CAPTCHA, explicit pivot to synthesis mode. Coaching rules #1, #3, #5, #6 all followed
+- **Source integrity verified**: all 7 referenced post IDs exist in archive. Zero fabrication
+- **Archive synthesis is strong**: cross-referenced 7 posts across 3 independent research lines (practitioner, analyst, academic), mapped 8 community patterns to our system, identified 3 concrete gaps
+- **Orientation phase is broad**: 18 context reads before task execution; some reads (CONVENTIONS.md, heartbeat.md, signals.md, `find /home`) not relevant to the task. Root cause: Agent (minor)
+- **Capability level**: L1 confirmed (no longer provisional). Solid task execution with coaching rule compliance. Not yet L2 — needs ambiguous task handling test
+- **Infrastructure blocker persists**: XHS IP ban + expired cookie prevents live search→read→archive validation. Archive synthesis path confirmed working
+- Pass streak: 1/3
+- Recommendation: Next exercise should test ambiguous/self-directed exploration for L2 assessment
+- Recommendation: For optimizer — Amy's orientation could benefit from task-type-specific context loading guidance in domain.md
+- Report: `sessions/amy-20260309-exploration-cycle.md` + `amy-coaching-results.md`

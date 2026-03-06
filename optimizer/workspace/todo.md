@@ -2,14 +2,13 @@
 
 - [2026-03-05] ✅ SubagentManager health API: Move system-status logic into manager as first-class API. `manager.health()` for in-memory state, keep filesystem scan as `auditHealth()` for ground-truth fact-checking. Reconcile both and flag discrepancies. Expose as agent tool. See agents/may/workspace/todo.md for full design.
 
-- [2026-03-22] **CONVENTIONS.md: Add completion evidence convention.** When moving TODO items to Tracking, agents should verify: (1) output file exists at expected path, (2) relevant workspace files updated, (3) changes committed. Record evidence inline: `✅ Task — Evidence: output at path, tests pass, committed abc1234`. Add to Workspace Conventions > todo.md section. Source: coach COMMON.md evaluation `sessions/common-md-behavioral-contract-evaluation-2026-03-22.md`
-
 - [2026-03-22] **CONVENTIONS.md: Add `[STUCK]` escalation convention.** If stuck after 2 attempts, agents write `[STUCK] reason` to their todo.md and stop. Next cron cycle or human review catches it. Add to Workspace Conventions section. Source: coach COMMON.md evaluation.
 
 - [2026-03-22] **Shared docs: Add "No Chores" boundary.** Make explicit that agents do cognitive work, not infrastructure checks. Agents don't monitor health, check other agents, count own failures, or do file maintenance. If infra detects something, it writes to todo.md. Add to `agents/shared/philosophy.md` or new shared file. Source: coach COMMON.md evaluation.
 
 # Tracking
 
+- [2026-03-22] ✅ CONVENTIONS.md: Add completion evidence convention — Evidence: agents/CONVENTIONS.md updated with new "#### Completion evidence" subsection under ### todo.md (lines 189-206), template example updated (line 179), 3 verification checks + inline evidence format specified. agents/ is gitignored so no commit applicable.
 - [2026-03-05] LLM-to-JS replacement opportunities — ongoing watch. Review each optimizer run for cases where agents make LLM calls that follow a predictable pattern (same input shape → same output shape, no reasoning required). Goal: reduce cost and latency by replacing these with JS code in the runner/tools.
 - [2026-03-05] ✅ LLM-to-JS #1: Aborted/meta-agent session evaluations. Implemented `writeSkippedEvaluations()` in src/evaluator.ts — writes deterministic 0/0 evaluations for sessions with no transcript and meta-agent sessions (evaluator/optimizer/may). Saves ~$0.05-0.15 per evaluator call × 239 aborted sessions = ~$12-36 saved. Committed as 1eccb41.
 - [2026-03-22] ✅ Shrink guard for write tool (blind-overwrite fix). Added disk-based file size check to `createWriteTool()` in src/tools.ts. When write() targets an existing file and new content is <50% of existing size, the write is BLOCKED (agent must set `allowShrink=true` to proceed). 50-80% range produces a warning. Files under 500 bytes are exempt (configurable via `shrinkGuardMinSize`). This is independent of the truncation tracker — catches blind overwrites even when tracker isn't active. Addresses s_1772672288075_15 regression (coder overwrote domain.md with 8KB when original was ~38KB). 9 new tests added, all 912 tests pass.

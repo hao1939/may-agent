@@ -156,7 +156,7 @@ async function handleFeed(send) {
 
 async function handleSearch(send, keyword) {
   const encoded = encodeURIComponent(keyword);
-  const url = `https://www.xiaohongshu.com/search_result?keyword=${encoded}&source=web_search_result_notes`;
+  const url = 'https://www.xiaohongshu.com/search_result?keyword=' + encoded + '&source=web_search_result_notes';
   await navigate(send, url);
   
   return await evaluate(send, `

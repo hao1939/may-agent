@@ -42,3 +42,11 @@
 
 - [x] **RALPH Loop** — Research complete (2026-03-05).
   - **Decision**: Adopt the **"Hard-Gated Exit"** principle for tasks with deterministic success criteria.
+
+- [x] **Launcher Design Review** — Review complete (2026-03-06).
+  - **Findings**: Design is structurally sound. Three fixes identified:
+    1. Exit code 100 for hot-reload (bypass backoff)
+    2. SIGKILL timeout after 5s for stuck children
+    3. Backoff reset after stable run (60s threshold)
+  - **Implementation**: All three fixes applied in `355724d`.
+  - **Review doc**: `agents/bob/workspace/launcher-review.md`
