@@ -1,10 +1,9 @@
 #!/bin/bash
 # restart-may.sh — restart may-agent inside the container without killing the container.
 #
-# Three strategies, tried in order:
+# Two strategies, tried in order:
 #   1. Socket: send {"type":"restart"} → may.ts exits 100 → launcher respawns
-#   2. Kill may.ts child: launcher sees crash, respawns with backoff
-#   3. supervisorctl: restart the whole launcher (last resort)
+#   2. Kill may.ts via PID file: launcher sees exit, respawns
 #
 # Usage:
 #   docker exec <container> restart-may.sh
@@ -16,9 +15,12 @@ FORCE=0
 [ "${1:-}" = "--force" ] && FORCE=1
 
 STATE="${STATE_DIR:-/app/.state}"
-SOCK_PATH="${STATE}/instances/${INSTANCE:-default}/may.sock"
+INST="${INSTANCE:-default}"
+INST_DIR="${STATE}/instances/${INST}"
+SOCK_PATH="${INST_DIR}/may.sock"
+PID_FILE="${INST_DIR}/may.pid"
 
-# ── Strategy 1: Socket restart (preferred) ────────────────────────────────
+# ── Strategy 1: Socket restart (preferred, clean) ─────────────────────────
 if [ "$FORCE" -eq 0 ] && [ -S "$SOCK_PATH" ]; then
   echo "Sending restart via socket ($SOCK_PATH)..."
   if echo '{"type":"restart"}' | socat -t2 - UNIX-CONNECT:"$SOCK_PATH" 2>/dev/null; then
@@ -28,33 +30,27 @@ if [ "$FORCE" -eq 0 ] && [ -S "$SOCK_PATH" ]; then
   echo "Socket send failed. Trying fallback..."
 fi
 
-# ── Strategy 2: Kill the may.ts child process ─────────────────────────────
+# ── Strategy 2: Kill may.ts via PID file ──────────────────────────────────
 # The launcher stays alive and respawns may.ts
-MAY_PID=$(pgrep -f "run/may\.ts" | head -1)
-if [ -n "$MAY_PID" ]; then
-  echo "Killing may.ts (PID $MAY_PID). Launcher will respawn..."
-  kill "$MAY_PID"
-  # Wait for clean exit
-  for i in $(seq 1 5); do
-    if ! kill -0 "$MAY_PID" 2>/dev/null; then
-      echo "✅ may.ts stopped. Launcher will respawn."
-      exit 0
-    fi
-    sleep 1
-  done
-  echo "Still alive after 5s, sending SIGKILL..."
-  kill -9 "$MAY_PID" 2>/dev/null || true
-  echo "✅ may.ts killed. Launcher will respawn."
-  exit 0
+if [ -f "$PID_FILE" ]; then
+  MAY_PID=$(cat "$PID_FILE")
+  if kill -0 "$MAY_PID" 2>/dev/null; then
+    echo "Killing may.ts (PID $MAY_PID). Launcher will respawn..."
+    kill "$MAY_PID"
+    for i in $(seq 1 5); do
+      if ! kill -0 "$MAY_PID" 2>/dev/null; then
+        echo "✅ may.ts stopped. Launcher will respawn."
+        exit 0
+      fi
+      sleep 1
+    done
+    echo "Still alive after 5s, sending SIGKILL..."
+    kill -9 "$MAY_PID" 2>/dev/null || true
+    echo "✅ may.ts killed. Launcher will respawn."
+    exit 0
+  fi
+  echo "PID $MAY_PID from $PID_FILE is stale."
 fi
 
-# ── Strategy 3: supervisorctl (last resort) ────────────────────────────────
-if pgrep -x supervisord >/dev/null 2>&1; then
-  echo "No may.ts process found. Restarting launcher via supervisord..."
-  supervisorctl -c /tmp/supervisord.conf restart may-agent
-  echo "✅ Launcher restarted via supervisord."
-  exit 0
-fi
-
-echo "❌ Could not find may.ts process or supervisord. Is the agent running?"
+echo "❌ Could not find may.ts process. Is the agent running?"
 exit 1
