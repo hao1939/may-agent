@@ -3,12 +3,13 @@ import type { Message, AssistantMessage, UserMessage, ToolResultMessage, Model }
 
 // ── Token estimation ───────────────────────────────────────────────────
 //
-// Rough approximation: 1 token ≈ 4 chars for English text.
-// This is intentionally conservative (overestimates) so we compact
-// before actually hitting the limit.
+// Rough approximation: 1 token ≈ 3 chars for mixed content (JSON, code,
+// tool calls). This is intentionally conservative (overestimates token
+// count) so we compact before actually hitting the limit. Previous value
+// of 4 chars/token underestimated, causing context overflow on LLM calls.
 
 function estimateTokens(text: string): number {
-  return Math.ceil(text.length / 4);
+  return Math.ceil(text.length / 3);
 }
 
 function messageTokens(msg: AgentMessage): number {
@@ -486,11 +487,11 @@ export function createCompactionTransform(
   const triggerTokens = Math.floor(contextWindow * threshold);
   const keepTokens = Math.floor(contextWindow * keepRatio);
 
-  // Budget for accumulated summary: fraction of context window in chars (×4),
+  // Budget for accumulated summary: fraction of context window in chars (×3),
   // with a minimum to ensure summaries aren't immediately trimmed in small contexts
   const summaryBudgetChars = Math.max(
     MIN_SUMMARY_BUDGET_CHARS,
-    Math.floor(contextWindow * SUMMARY_BUDGET_FRACTION * 4),
+    Math.floor(contextWindow * SUMMARY_BUDGET_FRACTION * 3),
   );
 
   return async (messages: AgentMessage[]): Promise<AgentMessage[]> => {
@@ -500,87 +501,105 @@ export function createCompactionTransform(
       return messages;
     }
 
-    // Find where to split
-    const splitAt = findSplitPoint(messages, keepTokens);
-    if (splitAt <= 0) return messages; // nothing to compact
+    // Safety ceiling: if after compaction we're still above 85% of context
+    // window, compact again with a tighter keepTokens budget. This handles
+    // estimation drift where our char-based token estimate underestimates
+    // the real LLM token count.
+    const safetyCeiling = Math.floor(contextWindow * 0.85);
+    let effectiveKeepTokens = keepTokens;
+    let result = messages;
 
-    const oldMessages = messages.slice(0, splitAt);
-    const recentMessages = messages.slice(splitAt);
+    // Allow up to 3 compaction passes to get under the safety ceiling
+    for (let pass = 0; pass < 3; pass++) {
+      const passTokens = totalTokens(result);
+      if (pass > 0 && passTokens < safetyCeiling) break;
+      if (pass === 0 && passTokens < triggerTokens) break;
 
-    // Extract original task on first compaction (from full message history).
-    // Cache it so it survives across compaction rounds — once compacted,
-    // the original first user message is gone from the messages array.
-    if (cachedOriginalTask === undefined) {
-      cachedOriginalTask = extractOriginalTask(messages);
-    }
+      // Find where to split
+      const splitAt = findSplitPoint(result, effectiveKeepTokens);
+      if (splitAt <= 0) break; // nothing to compact
 
-    // Build the summary
-    const newSummary = summarizeMessages(oldMessages);
+      const oldMessages = result.slice(0, splitAt);
+      const recentMessages = result.slice(splitAt);
 
-    // Extract and merge key facts
-    const newFacts = extractKeyFacts(oldMessages);
-    accumulatedKeyFacts = mergeKeyFacts(accumulatedKeyFacts, newFacts);
+      // Extract original task on first compaction (from full message history).
+      // Cache it so it survives across compaction rounds — once compacted,
+      // the original first user message is gone from the messages array.
+      if (cachedOriginalTask === undefined) {
+        cachedOriginalTask = extractOriginalTask(result);
+      }
 
-    // Accumulate with previous summaries
-    if (accumulatedSummary) {
-      accumulatedSummary = `${accumulatedSummary}\n\n--- (compacted) ---\n\n${newSummary}`;
-    } else {
-      accumulatedSummary = newSummary;
-    }
+      // Build the summary
+      const newSummary = summarizeMessages(oldMessages);
 
-    // Trim accumulated summary if it exceeds the budget
-    // This prevents unbounded growth across many compaction rounds
-    if (accumulatedSummary.length > summaryBudgetChars) {
-      accumulatedSummary = trimAccumulatedSummary(accumulatedSummary, summaryBudgetChars);
-    }
+      // Extract and merge key facts
+      const newFacts = extractKeyFacts(oldMessages);
+      accumulatedKeyFacts = mergeKeyFacts(accumulatedKeyFacts, newFacts);
 
-    compactionCount++;
+      // Accumulate with previous summaries
+      if (accumulatedSummary) {
+        accumulatedSummary = `${accumulatedSummary}\n\n--- (compacted) ---\n\n${newSummary}`;
+      } else {
+        accumulatedSummary = newSummary;
+      }
 
-    // Build the original task block (always preserved, never trimmed).
-    // This is the single most important piece of context after compaction —
-    // without it, agents can lose track of what they were asked to do.
-    let originalTaskBlock = "";
-    if (cachedOriginalTask) {
-      const taskText = cachedOriginalTask.length > ORIGINAL_TASK_MAX_LENGTH
-        ? cachedOriginalTask.slice(0, ORIGINAL_TASK_MAX_LENGTH) + "…"
-        : cachedOriginalTask;
-      originalTaskBlock = `[Original task]\n${taskText}\n\n`;
-    }
+      // Trim accumulated summary if it exceeds the budget
+      // This prevents unbounded growth across many compaction rounds
+      if (accumulatedSummary.length > summaryBudgetChars) {
+        accumulatedSummary = trimAccumulatedSummary(accumulatedSummary, summaryBudgetChars);
+      }
 
-    // Build the key facts header (always preserved, not subject to trimming)
-    const keyFactLines = formatKeyFacts(accumulatedKeyFacts);
-    const keyFactsBlock = keyFactLines.length > 0
-      ? `[Key facts across compaction rounds]\n${keyFactLines.join("\n")}\n\n`
-      : "";
+      compactionCount++;
 
-    // Create a synthetic user message with the compacted context
-    const summaryMessage: UserMessage = {
-      role: "user",
-      content: [
-        {
-          type: "text",
-          text: [
-            `[COMPACTED CONTEXT — earlier conversation summarized to save space]`,
-            ``,
-            originalTaskBlock + keyFactsBlock + accumulatedSummary,
-            ``,
-            `[END COMPACTED CONTEXT — conversation continues below]`,
-          ].join("\n"),
-        },
-      ],
-      timestamp: oldMessages[0]?.timestamp ?? Date.now(),
-    };
+      // Build the original task block (always preserved, never trimmed).
+      // This is the single most important piece of context after compaction —
+      // without it, agents can lose track of what they were asked to do.
+      let originalTaskBlock = "";
+      if (cachedOriginalTask) {
+        const taskText = cachedOriginalTask.length > ORIGINAL_TASK_MAX_LENGTH
+          ? cachedOriginalTask.slice(0, ORIGINAL_TASK_MAX_LENGTH) + "…"
+          : cachedOriginalTask;
+        originalTaskBlock = `[Original task]\n${taskText}\n\n`;
+      }
 
-    const result = [summaryMessage as AgentMessage, ...recentMessages];
+      // Build the key facts header (always preserved, not subject to trimming)
+      const keyFactLines = formatKeyFacts(accumulatedKeyFacts);
+      const keyFactsBlock = keyFactLines.length > 0
+        ? `[Key facts across compaction rounds]\n${keyFactLines.join("\n")}\n\n`
+        : "";
 
-    if (onCompact) {
-      onCompact({
-        tokensBefore: currentTokens,
-        tokensAfter: totalTokens(result),
-        messagesCompacted: oldMessages.length,
-        messagesKept: recentMessages.length,
-        compactionCount,
-      });
+      // Create a synthetic user message with the compacted context
+      const summaryMessage: UserMessage = {
+        role: "user",
+        content: [
+          {
+            type: "text",
+            text: [
+              `[COMPACTED CONTEXT — earlier conversation summarized to save space]`,
+              ``,
+              originalTaskBlock + keyFactsBlock + accumulatedSummary,
+              ``,
+              `[END COMPACTED CONTEXT — conversation continues below]`,
+            ].join("\n"),
+          },
+        ],
+        timestamp: oldMessages[0]?.timestamp ?? Date.now(),
+      };
+
+      result = [summaryMessage as AgentMessage, ...recentMessages];
+
+      if (onCompact) {
+        onCompact({
+          tokensBefore: pass === 0 ? currentTokens : passTokens,
+          tokensAfter: totalTokens(result),
+          messagesCompacted: oldMessages.length,
+          messagesKept: recentMessages.length,
+          compactionCount,
+        });
+      }
+
+      // On subsequent passes, keep less to ensure we get under the ceiling
+      effectiveKeepTokens = Math.floor(effectiveKeepTokens * 0.6);
     }
 
     return result;

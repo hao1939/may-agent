@@ -46,17 +46,17 @@ export class Cron {
     this.onJobFire = cb;
   }
 
-  load(): void {
+  load(): CronEntry[] {
     if (!existsSync(this.configPath)) {
       this.entries = [];
-      return;
+      return this.entries;
     }
     try {
       const raw = readFileSync(this.configPath, "utf-8");
       const parsed = JSON.parse(raw);
       if (!Array.isArray(parsed)) {
         this.onError?.(`Cron config is not an array: ${this.configPath}`);
-        return;
+        return this.entries;
       }
       this.entries = parsed.filter((entry: CronEntry) => {
         if (!entry.name || !entry.intervalMs) {
@@ -76,6 +76,7 @@ export class Cron {
     } catch (err) {
       this.onError?.(`Failed to parse cron config: ${err}`);
     }
+    return this.entries;
   }
 
   start(): void {

@@ -8,6 +8,7 @@ const fakeModels = {
   opus: { id: "opus", provider: "anthropic" },
   gpt52: { id: "gpt52", provider: "openai" },
   gemini3pro: { id: "gemini3pro", provider: "openai" },
+  kimi: { id: "kimi", provider: "openai" },
 };
 
 describe("validateAgentConfig", () => {
