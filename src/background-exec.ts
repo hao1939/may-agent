@@ -75,7 +75,7 @@ export interface BackgroundExecToolOptions {
   /** Working directory for spawned processes. */
   cwd?: string;
   /** Patterns that block command execution. */
-  denyPatterns?: RegExp[];
+  denyPatterns?: { test(s: string): boolean }[];
   /** Message shown when a command is blocked by a deny pattern. */
   denyMessage?: string;
   /**

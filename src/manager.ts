@@ -26,7 +26,7 @@ import {
 } from "./persistence.js";
 import type { MemoryEntry, WorkflowRun, PersistedSession, Registry } from "./persistence.js";
 import type { TraceNode, SessionTrace } from "./workflow.js";
-import { join, dirname } from "node:path";
+import { join, dirname, relative } from "node:path";
 import { isOverflowError, extractProgress, writeProgressFile } from "./overflow.js";
 import { buildProjectStructure } from "./tools.js";
 
@@ -282,14 +282,15 @@ export class SubagentManager {
 
     // Static environment FIRST — stable prefix for LLM cache hits (Principle 36)
     if (def.projectRoot) {
+      const relPath = (abs: string) => relative(def.projectRoot!, abs) || ".";
       const envLines = [`# Runtime Environment`, `- Project root (exec cwd): ${def.projectRoot}`];
       if (def.workspace) {
-        envLines.push(`- Workspace: ${def.workspace}`);
+        envLines.push(`- Workspace: ${relPath(def.workspace)}`);
         if (def.knowledgeDir) {
-          envLines.push(`- Knowledge directory: ${def.knowledgeDir}`);
+          envLines.push(`- Knowledge directory: ${relPath(def.knowledgeDir)}`);
         }
       }
-      envLines.push(``, `IMPORTANT: Always use absolute paths. Your workspace is the ONLY directory you should write to. Never write to the project root directly.`);
+      envLines.push(``, `IMPORTANT: Use paths relative to the project root (e.g. agents/may/workspace/todo.md). Tools resolve relative paths automatically. Your workspace is the ONLY directory you should write to.`);
       sections.push(envLines.join("\n"));
     }
 
@@ -398,15 +399,17 @@ export class SubagentManager {
 
     // Workspace section
     if (def.workspace) {
+      const wsRel = def.projectRoot ? relative(def.projectRoot, def.workspace) : def.workspace;
       sections.push(
-        `# Workspace\nYour persistent workspace is: ${def.workspace}\nALL file writes (journal.md, todo.md, analysis, archives) MUST go here. Never create files in the project root or other directories.`,
+        `# Workspace\nYour persistent workspace is: ${wsRel}\nALL file writes (journal.md, todo.md, analysis, archives) MUST go here. Never create files in the project root or other directories.`,
       );
     }
 
     // Output section
     const outputPath = sessionOutputDir(persistDir, sessionId);
+    const outputRel = def.projectRoot ? relative(def.projectRoot, outputPath) : outputPath;
     sections.push(
-      `# Output\nWrite deliverables for this task to: ${outputPath}`,
+      `# Output\nWrite deliverables for this task to: ${outputRel}`,
     );
 
     // Turn budget section (if maxTurns is set)
