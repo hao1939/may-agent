@@ -329,6 +329,17 @@ export class SubagentManager {
         sections.push(`# Project Structure\n\`\`\`\n${structure}\n\`\`\``);
       }
     }
+    // Auto-load SOUL.md from knowledgeDir if it exists (identity & mission — before domain knowledge)
+    if (def.knowledgeDir) {
+      const soulPath = join(def.knowledgeDir, "SOUL.md");
+      if (existsSync(soulPath)) {
+        const soul = readFileSync(soulPath, "utf-8").trim();
+        if (soul) {
+          sections.push(soul);
+        }
+      }
+    }
+
     // Load systemPromptFiles
     if (def.systemPromptFiles && def.systemPromptFiles.length > 0) {
       const fileContents = def.systemPromptFiles.map((filePath) =>
