@@ -562,15 +562,15 @@ writeIdentity({
   pid: process.pid,
   agent: interfaceAgent,
   instance: INSTANCE_LABEL,
-  socket: resolve(PERSIST_DIR, INSTANCE_LABEL + ".sock"),
+  socket: SOCKET_PATH,
   startedAt: new Date().toISOString(),
   startedBy: KEEP_SESSION ? "human" : (INSTANCE.startsWith("job-") ? "cron:" + INSTANCE.replace("job-", "") : "task"),
-  task: INITIAL_TASK || null,
+  task: INITIAL_TASK,
   status: "running",
   sessionId: sid,
 });
 
-// ── Start cron jobs (SCHEDULERS=1 to enable) ───────────────────────────
+// ── Start cron jobs (--cron to enable) ──────────────────────────────────
 
 if (SCHEDULERS_ENABLED) {
   for (const [name, cron] of getAgentCrons()) {
@@ -698,17 +698,6 @@ function emitPrompt(): void {
   }
 }
 
-// Emit prompt when the interface agent finishes processing (only for persistent sessions)
-if (KEEP_SESSION) {
-  manager.subscribe(sid, (event) => {
-    if (event.type === "turn_end") {
-      // Check if this is the last turn (agent going idle).
-      // We detect this by checking if the stop reason indicates natural end.
-      // The handleCompletion in manager sets status to "idle" for persistent sessions.
-    }
-  });
-}
-
 // Simpler approach: poll status briefly after each followUp completes.
 // But actually — the best approach is a waitForIdle-based watcher.
 // After each input, waitForIdle in the background and prompt when done.
@@ -724,7 +713,7 @@ function watchForIdle(): void {
   });
 }
 
-// Watch for initial idle (skip in task mode — session already complete)
+// Watch for initial idle (skip in ephemeral mode — session already complete)
 if (KEEP_SESSION) watchForIdle();
 
 // ── Main loop ──────────────────────────────────────────────────────────

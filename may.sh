@@ -2,8 +2,8 @@
 # may.sh — manage may-agent instances
 #
 # Usage:
-#   ./may.sh                      Start default instance (interactive, with --cron)
-#   ./may.sh start [name]         Start instance in background (tmux, with --cron)
+#   ./may.sh                      Start default instance (interactive, all features)
+#   ./may.sh start [name]         Start instance in background (tmux, all features)
 #   ./may.sh list                 List all instances
 #   ./may.sh stop [name]          Stop an instance (SIGTERM)
 #   ./may.sh send [name] "msg"    Send message to instance via socket
@@ -359,8 +359,8 @@ case "${1:-}" in
     echo "Usage: ./may.sh [command] [args]"
     echo ""
     echo "Commands:"
-    echo "  (no command)        Start default instance interactively (with --cron)"
-    echo "  start [name]        Start instance in background (tmux, with --cron)"
+    echo "  (no command)        Start default instance interactively (all features)"
+    echo "  start [name]        Start instance in background (tmux, all features)"
     echo "  stop [name]         Stop an instance"
     echo "  list                List tmux instances"
     echo "  ps                  List all instances (from identity.json)"
@@ -370,8 +370,8 @@ case "${1:-}" in
     echo "  log [name]          Attach to instance's tmux session"
     echo ""
     echo "If name is omitted, 'default' is used."
-    echo "Cron jobs (--cron) are always enabled for the main instance."
-    echo "Sub-agents spawned by the system never get --cron."
+    echo "All features (--keep-session --cron --telegram --openclaw --console --heartbeat) are enabled for the main instance."
+    echo "Task instances spawned by the system get no feature flags."
     echo ""
     echo "Examples:"
     echo "  ./may.sh                          # interactive default"
