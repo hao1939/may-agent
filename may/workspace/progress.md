@@ -7,62 +7,104 @@
 
 Ready. Waiting for tasks.
 
-## Actions Taken (286 tool calls)
+## Actions Taken (824 tool calls)
 
-_(showing last 30 of 286)_
+_(showing last 30 of 824)_
 
-- **exec**: {"command":"wc -l agents/may/workspace/human-inputs.md"}
-- **exec**: {"command":"python3 -c \"\nimport json, os, glob\n\n# Let's check ALL sessions for user messages, not just ones starting with 'Ready. Waiting'\n# Some May sessions might start differently\n\nall_active = glob.glob('.state/sessions/s_*/session.jsonl')\nall_history = glob.glob('.state/sessions/history...
-- **exec**: {"command":"python3 -c \"\nimport json, os, glob\nfrom datetime import datetime, timezone\n\n# Better approach: look at ALL sessions, but filter out messages that are clearly system-generated\n# Sub-agent tasks usually start with specific patterns\n\nall_active = glob.glob('.state/sessions/s_*/sessi...
-- **exec**: {"command":"python3 -c \"\nimport json, os, glob\n\n# Check meta.json for agent name - May's interface sessions are agent='may'\n# But sub-agents delegated BY may also exist. The key difference:\n# - Interface sessions: have 'persistent: true' or no parentSessionId\n# - Sub-agent sessions: have pare...
-- **exec**: {"command":"python3 -c \"\nimport json, os\n\n# Check the top sessions I missed - what do their first messages look like?\nsessions = [\n    's_1772614263963_0',  # 45 msgs\n    's_1772610263931_1',  # 38 msgs  \n    's_1772647050607_0',  # 13 msgs\n]\n\nfor sid in sessions:\n    for base in ['.stat...
-- **exec**: {"command":"python3 -c \"\nimport json, os, glob\n\n# Find ALL sessions where first user message looks like human conversation\n# (not a structured task delegation)\n\nhuman_indicators = [\n    'Ready. Waiting for tasks',\n    'Process restarted',\n    'Process was restarted',\n]\n\ntask_indicators ...
-- **exec**: {"command":"python3 -c \"\nimport json, os, glob\nfrom datetime import datetime, timezone\n\nall_paths = sorted(\n    glob.glob('.state/sessions/s_*/session.jsonl') + \n    glob.glob('.state/sessions/history/s_*/session.jsonl')\n)\n\nskip_prefixes = [\n    'Process restarted', 'Process was restarted...
-- **exec**: {"command":"wc -l agents/may/workspace/human-inputs.md && echo \"---\" && head -5 agents/may/workspace/human-inputs.md && echo \"...\" && tail -5 agents/may/workspace/human-inputs.md"}
-- **exec**: {"command":"grep -n \"followUp\\|steer\\|role.*user\\|addMessage\" src/manager.ts | head -30"}
-- **exec**: {"command":"grep -n \"metadata\\|source\\|origin\\|tag\" src/manager.ts | head -20"}
-- **exec**: {"command":"grep -n \"interface.*Message\\|type.*Message\\|AgentMessage\" src/manager.ts | head -10"}
-- **exec**: {"command":"grep -n \"AgentMessage\" node_modules/@mariozechner/pi-agent-core/dist/index.d.ts 2>/dev/null | head -10"}
-- **exec**: {"command":"find node_modules/@mariozechner/pi-agent-core -name \"*.d.ts\" -exec grep -l \"AgentMessage\" {} \\;"}
-- **exec**: {"command":"find node_modules/@mariozechner -name \"*.ts\" -o -name \"*.js\" | head -10 && find node_modules/@mariozechner -name \"*.d.ts\" | head -10"}
-- **exec**: {"command":"ls node_modules/@mariozechner/ 2>/dev/null && find node_modules -path \"*/pi-agent*\" -maxdepth 3 | head -10"}
-- **exec**: {"command":"ls node_modules/@mariozechner/pi-agent-core/ && cat node_modules/@mariozechner/pi-agent-core/package.json | grep -E \"main|types|exports\" | head -5"}
-- **exec**: {"command":"grep \"AgentMessage\\|interface.*Message\" node_modules/@mariozechner/pi-agent-core/dist/index.d.ts | head -10"}
-- **exec**: {"command":"grep -r \"AgentMessage\" node_modules/@mariozechner/pi-agent-core/src/ | head -10"}
-- **exec**: {"command":"grep -A5 \"export.*type.*AgentMessage\\|export.*interface.*AgentMessage\" node_modules/@mariozechner/pi-agent-core/src/*.ts"}
-- **exec**: {"command":"grep -B5 -A15 \"export.*interface.*Message \" node_modules/@mariozechner/pi-agent-core/src/types.ts | head -40"}
-- **exec**: {"command":"grep -B2 -A10 \"role.*user\\|UserMessage\\|interface.*Message\" node_modules/@mariozechner/pi-ai/src/types.ts 2>/dev/null | head -40"}
-- **exec**: {"command":"grep -B2 -A10 \"role.*user.*content\" src/manager.ts | head -80"}
-- **exec**: {"command":"grep -n \"role: \\\"user\\\"\" src/manager.ts"}
-- **exec**: {"command":"for line_num in 229 487 614 766 1184 1191 1223; do\n  echo \"=== Line $line_num ===\"\n  sed -n \"$((line_num-5)),$((line_num+5))p\" src/manager.ts\n  echo \"\"\ndone"}
-- **workflow**: {"action":"run","name":"implement-and-review","task":"Add message source tagging to distinguish human input from system/agent messages.\n\n## Problem\nAll user messages in session transcripts look identical — we can't tell if a message came from a human, a cron job, the system (restart/cancel), or a...
-- **subagents**: {"action":"progress","limit":3,"sessionId":"s_1772695941253_0"}
-- **exec**: {"command":"grep -n \"source\" src/manager.ts | head -20"}
-- **exec**: {"command":"grep -n \"source\\|human\\|cron\" run/may.ts | grep -i \"source\\|human\" | head -10"}
-- **exec**: {"command":"grep -n \"followUp\\|source\" run/cron.ts | head -10"}
-- **workflow**: {"action":"run","name":"implement-and-review","task":"Fix 3 TypeScript errors in src/manager.ts where `source` is added to user message objects but `UserMessage` type doesn't have that field.\n\nThe errors are:\n- Line 239: `source: \"system\"` on turn warning steer message\n- Line 493: `source: \"s...
+- **exec**: {"command":"cd /home/hao/may-agent\npython3 << 'PYEOF'\ncontent = open('agents/shared/philosophy.md').read()\n\nnew_principle = \"\"\"\n### 13. Context Isolation [hao-direct]\nAgents don't need to be powerful at everything. Their abilities are intentionally limited to their scope and responsibilitie...
+- **exec**: {"command":"cd /home/hao/may-agent\ngrep \"^### \" agents/shared/philosophy.md"}
+- **exec**: {"command":"cd /home/hao/may-agent\npython3 << 'PYEOF'\ncontent = open('agents/shared/philosophy.md').read()\n# Fix: first #19 (Offload) should be #18\ncontent = content.replace('### 19. Offload Routing to Infra', '### 18. Offload Routing to Infra')\nopen('agents/shared/philosophy.md', 'w').write(co...
+- **exec**: {"command":"cd /home/hao/may-agent\ngrep \"^### \" agents/shared/philosophy.md | cat -n"}
+- **exec**: {"command":"cd /home/hao/may-agent\ngrep \"see #\" agents/shared/philosophy.md"}
+- **exec**: {"command":"cd /home/hao/may-agent\nsed -n '/### 13\\. Context Isolation/,/### 14\\./p' agents/shared/philosophy.md | head -20"}
+- **exec**: {"command":"cd /home/hao/may-agent\npython3 << 'PYEOF'\ncontent = open('agents/shared/philosophy.md').read()\n\nnew_principle = \"\"\"\n### 17. Skills vs Agents [hao-direct]\nTwo ways to extend the system, fundamentally different in nature:\n\n- **Skills** are static capabilities — a tool, a script,...
+- **exec**: {"command":"cd /home/hao/may-agent\ngrep \"^### \" agents/shared/philosophy.md | cat -n"}
+- **exec**: {"command":"cd /home/hao/may-agent\npython3 << 'PYEOF'\ncontent = open('agents/shared/philosophy.md').read()\n# The new one got numbered #18 instead of #17, and old #17 also became #18\n# Fix: new principle should be #17, Spec-File should be #18\ncontent = content.replace('### 18. Skills vs Agents',...
+- **exec**: {"command":"cd /home/hao/may-agent\n# Verify clean numbering\ngrep \"^### \" agents/shared/philosophy.md | awk '{print $2}' | tr -d '.' | sort -n | uniq -d"}
+- **exec**: {"command":"cd /home/hao/may-agent\ngrep \"see #\" agents/shared/philosophy.md"}
+- **exec**: {"command":"cd /home/hao/may-agent\npython3 << 'PYEOF'\ncontent = open('agents/shared/philosophy.md').read()\ncontent = content.replace(\n    'skills offloaded from agents (see #18)',\n    'skills offloaded from agents (see #19)'\n)\nopen('agents/shared/philosophy.md', 'w').write(content)\nprint(\"F...
+- **exec**: {"command":"cd /home/hao/may-agent\necho \"=== Total principles ===\"\ngrep -c \"^### \" agents/shared/philosophy.md\necho \"=== Sections ===\"\ngrep \"^## \" agents/shared/philosophy.md\necho \"=== New principle ===\"\nsed -n '/### 17\\. Skills vs Agents/,/### 18\\./p' agents/shared/philosophy.md |...
+- **exec**: {"command":"cd /home/hao/may-agent\ntail -15 agents/may/workspace/human-inputs.md 2>/dev/null"}
+- **exec**: {"command":"cd /home/hao/may-agent\nfor agent in may optimizer bob amy scout amy-kimi coach; do\n  f=\"agents/$agent/workspace/todo.md\"\n  if [ -f \"$f\" ]; then\n    pending=$(grep -c '^\\- \\[ \\]' \"$f\" 2>/dev/null || echo 0)\n    [ \"$pending\" -gt 0 ] && echo \"$agent: $pending pending\"\n  f...
+- **exec**: {"command":"cd /home/hao/may-agent\necho \"=== bob top ===\"\ngrep -m1 '^\\- \\[ \\]' agents/bob/workspace/todo.md\necho \"=== amy top ===\"\ngrep -m1 '^\\- \\[ \\]' agents/amy/workspace/todo.md\necho \"=== coach top ===\"\ngrep -m1 '^\\- \\[ \\]' agents/coach/workspace/todo.md"}
+- **exec**: {"command":"cd /home/hao/may-agent\n# Check recent bob and coach sessions\nfor sid in $(ls -t .state/sessions/ | head -20); do\n  if [ -f \".state/sessions/$sid/meta.json\" ]; then\n    agent=$(python3 -c \"import json; print(json.load(open('.state/sessions/$sid/meta.json')).get('agent','?'))\" 2>/d...
+- **subagents**: {"action":"run","agent":"bob","task":"[heartbeat:drain-todo] Read agents/bob/workspace/todo.md. Work on the top unchecked item: \"Scout synthesis\". Check agents/scout/knowledge/discoveries.md for recent findings. Cross-reference with our system design in agents/shared/. Write a synthesis to agents/...
+- **subagents**: {"action":"run","agent":"coach","task":"[heartbeat:drain-todo] Read agents/coach/workspace/todo.md. Work on the top unchecked item: \"Coach doesn't do the agent's work boundary\". Review agents/coach/knowledge/domain.md — add explicit boundary rule if missing. Check recent coaching sessions in agent...
+- **exec**: {"command":"cd /home/hao/may-agent\npython3 -c \"\nfrom datetime import datetime, timezone\ntry:\n    ts = open('agents/may/workspace/last-explore-time.txt').read().strip()\n    last = datetime.fromisoformat(ts.replace('Z', '+00:00'))\n    hours = (datetime.now(timezone.utc) - last).total_seconds() ...
+- **exec**: {"command":"cd /home/hao/may-agent\nsed -n '/### 17\\. Skills vs Agents/,/### 18\\./p' agents/shared/philosophy.md"}
+- **exec**: {"command":"cd /home/hao/may-agent\npython3 << 'PYEOF'\ncontent = open('agents/shared/philosophy.md').read()\n\nold = \"\"\"**Decision rule:** If the capability needs judgment, memory, or improvement over time → agent. If it's deterministic, stateless, and unchanging → skill. Don't make an agent whe...
+- **exec**: {"command":"cd /home/hao/may-agent\nsed -n '/### 17\\. Skills vs Agents/,/### 18\\./p' agents/shared/philosophy.md"}
+- **exec**: {"command":"cd /home/hao/may-agent\necho \"=== STRUCTURE ===\"\ngrep \"^## \\|^### \" agents/shared/philosophy.md\necho \"\"\necho \"=== CHANGES THIS SESSION ===\"\necho \"\"\necho \"1. ADDED: Foundation section (owner: may)\"\nsed -n '/## Foundation/,/^---$/p' agents/shared/philosophy.md | head -3\...
+- **exec**: {"command":"cd /home/hao/may-agent\n# How do agents currently get their context?\necho \"=== Agent loader: what goes into system prompt ===\"\ngrep -n \"resolveSystemPrompt\\|knowledge\\|lessons\\|domain\\|coaching\" src/manager.ts | head -15\necho \"\"\necho \"=== Agent knowledge structure ===\"\nf...
+- **exec**: {"command":"cd /home/hao/may-agent\n# What's in a typical domain.md?\necho \"=== bob domain.md (first 20 lines) ===\"\nhead -20 agents/bob/knowledge/domain.md\necho \"\"\necho \"=== coach domain.md (first 20 lines) ===\"\nhead -20 agents/coach/knowledge/domain.md"}
+- **exec**: {"command":"cd /home/hao/may-agent\necho \"=== OpenClaw soul.md examples ===\"\nfor agent in amy bob coach scout; do\n  f=\"/home/hao/openclaw-config/workspace-$agent/SOUL.md\"\n  if [ -f \"$f\" ]; then\n    echo \"--- $agent ---\"\n    head -30 \"$f\"\n    echo \"\"\n  fi\ndone"}
+- **exec**: {"command":"cd /home/hao/may-agent\necho \"=== Current agent knowledge files ===\"\nfor agent in may bob coach optimizer coder evaluator qa amy amy-kimi scout; do\n  echo \"$agent: $(ls agents/$agent/knowledge/*.md 2>/dev/null | xargs -I{} basename {} | tr '\\n' ' ')\"\ndone\necho \"\"\necho \"=== A...
+- **subagents**: {"action":"delegate","agent":"bob","task":"Research and design: soul.md for our agent system.\n\nContext:\n- We just reorganized agents/shared/philosophy.md into 7 sections with owners (Foundation→may, A.Universal→evaluator, B.Design→bob, C.Execution→optimizer, D.Growth→coach, E.Operations→may, F.Kn...
+- **read**: {"path":"/home/hao/may-agent/agents/bob/workspace/soul-md-design.md"}
 
 ## Last Assistant Output
 
-All the call sites are tagged. Just need to fix the type errors. The simplest approach — cast the system messages:
+Bob delivered. Let me review what he produced:
 
 ## Files Touched
 
 ### Read
-- /home/hao/may-agent/agents/optimizer/workspace/todo.md
-- /home/hao/may-agent/agents/may/workspace/todo.md
 - /app/agents/may/workspace/human-inputs.md
-- /app/run/may.ts
+- /home/hao/may-agent/run/may.ts
+- /home/hao/may-agent/run/event-bus.ts
+- /home/hao/may-agent/run/openclaw-ui.ts
+- /home/hao/may-agent/docker/entrypoint.sh
+- /home/hao/may-agent/may.sh
+- /home/hao/may-agent/run/telegram-ui.ts
+- /home/hao/may-agent/run/socket-ui.ts
+- /home/hao/may-agent/agents/coach/workspace/todo.md
+- /home/hao/may-agent/agents/bob/workspace/todo.md
+- /home/hao/may-agent/agents/may/cron.json
+- /home/hao/may-agent/agents/CONVENTIONS.md
+- /home/hao/may-agent/agents/may/workspace/todo.md
+- /home/hao/may-agent/agents/optimizer/workspace/todo.md
+- /home/hao/may-agent/src/manager.ts
+- /home/hao/may-agent/run/agent-loader.ts
+- /home/hao/may-agent/run/cron.ts
+- /home/hao/may-agent/src/tools.ts
+- /home/hao/may-agent/src/cron-tool.ts
+- /home/hao/may-agent/agents/shared/design-ideas.md
+- /home/hao/may-agent/agents/may/heartbeat.md
+- /home/hao/may-agent/agents/shared/philosophy.md
+- /home/hao/may-agent/agents/bob/workspace/soul-md-design.md
 
 ### Written
-- /home/hao/may-agent/agents/optimizer/workspace/todo.md
-- /home/hao/may-agent/agents/may/workspace/todo.md
-- /home/hao/may-agent/agents/may/workspace/health-log.md
-- /app/agents/may/workspace/human-inputs.md
 - /app/agents/may/workspace/todo.md
+- /home/hao/may-agent/run/telegram-ui.ts
+- /home/hao/may-agent/agents/amy/agent.json
+- /home/hao/may-agent/agents/amy/knowledge/domain.md
+- /home/hao/may-agent/agents/amy/knowledge/tools.md
+- /home/hao/may-agent/agents/amy/knowledge/coaching.md
+- /home/hao/may-agent/agents/amy/workspace/todo.md
+- /home/hao/may-agent/agents/amy-kimi/agent.json
+- /home/hao/may-agent/agents/amy-kimi/knowledge/domain.md
+- /home/hao/may-agent/agents/amy-kimi/knowledge/tools.md
+- /home/hao/may-agent/agents/amy-kimi/knowledge/coaching.md
+- /home/hao/may-agent/agents/coach/workspace/todo.md
+- /home/hao/may-agent/agents/scout/agent.json
+- /home/hao/may-agent/agents/scout/knowledge/domain.md
+- /home/hao/may-agent/agents/scout/knowledge/tools.md
+- /home/hao/may-agent/agents/scout/knowledge/coaching.md
+- /home/hao/may-agent/agents/scout/workspace/todo.md
+- /home/hao/may-agent/agents/bob/workspace/todo.md
+- /home/hao/may-agent/agents/may/cron.json
+- /home/hao/may-agent/agents/shared/conventions.md
+- /home/hao/may-agent/agents/CONVENTIONS.md
+- /home/hao/may-agent/agents/may/workspace/todo.md
+- /home/hao/may-agent/run/fix-pattern.py
+- /home/hao/may-agent/run/daily-brief.ts
+- /home/hao/may-agent/run/cron.ts
+- /home/hao/may-agent/may.sh
+- /home/hao/may-agent/agents/shared/design-ideas.md
+- /home/hao/may-agent/agents/shared/philosophy.md
 
 ## Error
 
 ```
-400 {"error":{"message":"litellm.BadRequestError: Github_copilotException - prompt token count of 129158 exceeds the limit of 128000. Received Model Group=claude-opus-4.6\nAvailable Model Group Fallbacks=None","type":null,"param":null,"code":"400"}}
+400 {"error":{"message":"litellm.BadRequestError: Github_copilotException - prompt token count of 128153 exceeds the limit of 128000. Received Model Group=claude-opus-4.6\nAvailable Model Group Fallbacks=None","type":null,"param":null,"code":"400"}}
 ```

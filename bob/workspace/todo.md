@@ -2,39 +2,10 @@
 
 ## Research Tasks
 
-- [ ] **Anthropic Skill Creator** — Anthropic provides a skill-creator tool that can create skills for agents. Research:
-  1. Learn how it works — what does it create, what format, how does it integrate?
-  2. Try it hands-on — create a skill, see what it produces
-  3. Evaluate: does this provide value for our agent system? Could we use it to generate skills for our agents? What are the limitations?
-  4. Compare against our current approach (knowledge files, domain.md, coaching.md)
-  - Delegate to Scout for initial research, then hands-on evaluation yourself
-
-- [ ] **RALPH Loop** — Investigate the RALPH (Reason, Act, Learn, Plan, Hypothesize) loop pattern. Research:
-  1. How does it work? What's the loop structure and what problem does it solve?
-  2. How well does it perform compared to standard ReAct or plan-then-execute?
-  3. What specific problems does it address that simpler loops don't?
-  4. Try it — build a small prototype or run the demo
-  5. Evaluate: is this useful for our agent system? Could it improve our agents' reasoning?
-  - References:
-    - https://github.com/thomas-chong/google-adk-ralph-loop-demo
-    - https://github.com/PageAI-Pro/ralph-loop
-  - Delegate to Scout to fetch and analyze both repos first, then synthesize
-
-## OpenClaw Learnings — Design & Architecture
-
-- [ ] **Import Design Philosophy Principles** — OC Bob maintained 42 design principles (553 lines). Read `/home/hao/openclaw-config/knowledge/design-philosophy.md`. Key ones to evaluate for our system:
-  - P31 (Context Engineering > Prompt Engineering), P32 (pass@k vs pass^k), P34 (Verify-on-Edit), P35 (Harness = Moat), P40 (Acceptance Criteria Before Decomposition), P41 (Minimalism), P42 (Static Policies Fail)
-  - Integrate applicable ones into `agents/shared/philosophy.md`
-
-- [ ] **Weekly Synthesis Brief** — OC Bob produced weekly briefs: signal inventory, gold metric check ("is the system measurably better?"), structured findings. Start producing a weekly synthesis for our system. Template: `/home/hao/openclaw-config/knowledge/weekly-briefs/2026-W10.md`
-
-- [ ] **Product Roadmap** — OC maintained a living `product-roadmap.md` capturing product direction from user input. Evaluate if our system needs one and what it would contain. Source: `/home/hao/openclaw-config/knowledge/product-roadmap.md`
-
-- [ ] **Agent Evaluation Framework Upgrade** — OC has per-agent L1/L2/L3 capability profiles with specific eval questions (not generic rubrics). Review `/home/hao/openclaw-config/knowledge/agent-evaluation.md` and propose targeted evaluation criteria for each of our agents.
+- [x] **Weekly Synthesis Brief** — OC Bob produced weekly briefs: signal inventory, gold metric check ("is the system measurably better?"), structured findings. Start producing a weekly synthesis for our system. Template: `/home/hao/openclaw-config/knowledge/weekly-briefs/2026-W10.md`
+  - **Status**: Drafted `agents/bob/workspace/weekly-briefs/2026-W10.md` (2026-03-06).
 
 ## Ideas from OpenClaw Bob (to validate)
-
-- [ ] **Scout synthesis** — OpenClaw Bob produced 19 synthesis files cross-referencing Scout's tech discoveries with the system's design. Pattern: `[Scout finding] → [our system state] → [judgment/action]`. Reference examples in `knowledge/synthesis/`. Try this when Scout has new discoveries.
 
 - [ ] **Amy + Scout cross-synthesis** — "The community (Amy/XHS) thinks X about agents, the field (Scout/arXiv) has Y, our system does Z." Higher-order pattern that no single agent can see. OpenClaw Bob did 2 of these.
 
@@ -44,4 +15,30 @@
 
 # Tracking
 
-_(empty)_
+- [x] **Scout synthesis** — Research complete (2026-03-06).
+  - **Findings**: Analyzed Scout's recent discoveries (MAST, Vibe Code Bench, Jido 2.0).
+  - **Synthesis**: Created `agents/bob/workspace/synthesis-2026-03-06.md`.
+  - **Key Insights**:
+    1. **Verification Gap (FM-3.3)**: "Incorrect Verification" is the top failure mode. Solution: **Hard-Gated Exit** (Ralph Loop).
+    2. **Skills as Units**: Move to packaged "Skill" formats with lazy-loaded docs.
+    3. **Context Hygiene**: Audit prompt ordering to ensure stable prefix for KV-cache efficiency.
+    4. **Runtime Matters**: Adopt supervision trees in logic (parent monitors child session health).
+
+- [x] **Agent Evaluation Framework Upgrade** — Research complete (2026-03-06).
+  - **Findings**: The `openclaw-config` framework uses specific L1/L2/L3 targets per agent.
+  - **Action**: Created `agents/bob/workspace/agent-evaluation-criteria.md`.
+  - **Key Change**: Shifted to role-specific behavioral questions.
+
+- [x] **Product Roadmap** — Research complete (2026-03-06).
+  - **Findings**: The `openclaw-config` roadmap contained vital context ("Ilm Intelligence", "Two-Cycle Evolution").
+  - **Decision**: Adopted a living roadmap `agents/shared/roadmap.md`.
+  - **Focus**: "Robustness & Deterministic Guardrails" (Phase 2 Hardening).
+
+- [x] **OpenClaw Learnings — Design & Architecture** — Research complete (2026-03-06).
+  - **Action**: Updated `agents/shared/philosophy.md` with 5 imported principles (Verify-on-Edit, Acceptance Criteria First, Minimalism, Supply Chain Trust, Governance as Moat).
+
+- [x] **Anthropic Skill Creator** — Research complete (2026-03-05).
+  - **Decision**: Adopt the **Progressive Disclosure** pattern (lazy loading) for tools.
+
+- [x] **RALPH Loop** — Research complete (2026-03-05).
+  - **Decision**: Adopt the **"Hard-Gated Exit"** principle for tasks with deterministic success criteria.

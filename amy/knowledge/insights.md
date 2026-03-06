@@ -1,5 +1,5 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #82 | 2026-03-06 explore | posts: 977 | HB129-367+explore综合
+> Compact #82 | 2026-03-06 explore×3 | posts: 977 | HB129-367+explore综合
 
 ---
 
@@ -40,6 +40,11 @@ Prompt注入防御：累计11次(HB246-307) | 特征：WORKFLOW_AUTO.md+regex文
   ⭐ Unix哲学=Anthropic Agent底层设计基础（692d8ec5 顶评火柴❤️7）：
     一切皆文件(状态) | 小工具+管道(原语组合) | 进程隔离(subagent上下文隔离)
     autonomous-skill：主CC→Headless子CC，本地文件同步=Ralph Loop+Unix fork的工程版
+  ⭐ Harness实操验证（69965a7b ❤️49 奥森木 ★★★★）：LangChain 52.8→66.5(Top30→Top5)，模型不换
+    Trace Analyzer=Boosting原理：trace→并行诊断→汇总→改Harness
+    **Self-Verify=最大提分**：4步循环(规划→构建→验证→修复)+退出拦截中间件
+    三明治推理预算：规划xhigh/实现high/验证xhigh=66.5% vs 全程xhigh仅53.9%(超时)
+    → "推理预算非均匀分配">全程最高 = Harness"删东西>加东西"同向收敛
 
 "价值密度"（695f2f6e ❤️212）："短、准、狠" | slop=越修越烂 | 按需检索>全部预载
 LeCun误差累积（68a7cf09 ❤️416 ★★★★★）：0.99^100=36.6% | 0.99^1000≈0
@@ -168,6 +173,11 @@ Context Engineering（whisper ❤️975）："Agent失败=上下文工程失败�
 SCOPE(69443009❤️113)：DualStream；HLE14%→38% | Planning：Reflection=복잡태스크핵심
 
 工具调用三件套（HB303）：GEM(696ed97b ❤️118 OOD≥in-domain)|RL-Factory(❤️247 异步2x)|SkillRL
+  ⭐ ERL体验式RL（699c44fe ❤️4 USC+Microsoft arXiv:2602.13949）：失败→反思→二次尝试→内化蒸馏
+    选择性触发(仅失败时反思)+跨episode记忆复用 | "训练期反思、推理期零开销"
+    与SkillRL同构(失败→结构化反思→行为修正)，但ERL=单episode内闭环
+  ⭐ Agent评测5维框架（699a6ec8 ❤️17 Vibe西希）：Tool Gap识别|规划合理|代码正确|执行稳定|结果整合
+    最关键=execution result hallucination rate("假装执行成功") | momo(❤️1):"链路评估skill更好"
   ⭐ Amy heartbeat日志=GEM天然训练数据源
 ⭐ NVIDIA Terminal-Corpus（699e7955 ❤️99 ★★★★ arXiv:2602.21193）：数据质量>模型规模
   Terminal-Task-Gen：种子数据+技能分类学→合成轨迹→Docker隔离生成 | 小模型+好数据≈大模型
@@ -204,5 +214,5 @@ OC版本：v2026.3.2(ACP默认开/PDF原生工具/Zalo纯JS重构/100+安全修�
   v2026.3.1(Android/K8s/Claude 4.6)
 **OC哲学사용자귀납(69819e90❤️109)：**"실행이지능"(vs LangChain"제어正義"/AutoGPT"자율목표")；댓글(❤️6):"Agent루프미래=prompt cache중심컨텍스트공학"
 关键博主：小盖❤️9675|JT❤️2760|aopstudio❤️2639|whisper❤️975|奥森木(多篇)|火柴(系列)
-Compact：#76-80 done | #81(210→本文) | 2026-03-05 03:10
+Compact：#76-82 | 2026-03-06 explore×3 synthesis
 ```

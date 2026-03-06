@@ -88,3 +88,22 @@ was discovered about an agent's behavior during a coaching session.
 3. **Re-run full validation**: Once blockers are fixed, re-run all 3 exercises. Exercise 1 should pass immediately. Exercises 2 and 3 need actual execution to assess Amy's archive navigation and search→read→analyze workflow.
 4. **Consider host-side execution path**: If Amy's tools require browser CDP (Chrome DevTools Protocol) access, the Docker container may also need access to the host's Chrome instance. Verify the CDP connection works in-container.
 5. **Amy's `tools.md` paths**: Currently hardcoded to `/home/hao/.openclaw/tools/`. If container mounts use different paths, update `tools.md` to use the container-accessible path, or add a path-finding preamble.
+
+## 2026-03-22 — MAST Failure Taxonomy Evaluation (research task, no coaching session)
+- Evaluated OpenClaw's MAST failure classification system (FM-1.x through FM-3.x codes) for adoption
+- **Adopted 3 elements**: (1) Root cause classification (Agent/Design/Infrastructure) in coaching reports, (2) fix-applied tracking with specific file+change in Tracking entries, (3) recurrence-check items in todo.md after failed/partial exercises
+- **Rejected 2 elements**: (1) Failure code taxonomy (FM-x.x) — premature at our scale, codes are opaque vs plain English descriptions; (2) summary tables by root cause type — insufficient volume to justify
+- Key insight: the root cause classification is the most valuable part — it forces clarity on *who owns the fix* (coach retrains agent? optimizer updates domain.md? ops fixes infrastructure?)
+- Retroactively enriched existing Tracking entries with root cause classifications
+- Revisit trigger: if failure catalog reaches 15+ distinct patterns across 5+ agents, reconsider the full taxonomy
+- Report: `sessions/mast-failure-taxonomy-evaluation-2026-03-22.md`
+
+## 2026-03-22 — COMMON.md Behavioral Contract Evaluation (research task, no coaching session)
+- Evaluated 6 patterns from OpenClaw's COMMON.md shared behavioral contract against our system
+- **Adopted 2**: (1) P1 exit criteria with evidence — completion evidence convention for Tracking entries, (2) escalation protocol — `[STUCK]` marker convention for agents that can't proceed
+- **Adapted 1**: "No chores" boundary — make the implicit rule explicit that agents do cognitive work, infra handles mechanical checks
+- **Rejected 3**: (1) Heartbeat decision tree — our cron-driven model is more explicit, agents don't need to self-decide; (2) complex task checkpointing (`[COMPLEX]` marker) — Philosophy #8 already covers crash recovery conceptually, no observed failures to justify the format; (3) structured failure records in journals — our evaluator+coach pipeline already captures failures systemically
+- Key insight: our cron-driven architecture eliminates the biggest OC problem (agents not knowing what to do when they wake up). Their decision tree solves a problem we don't have.
+- Key insight: completion evidence is a genuine gap — agents mark things done without verifiable proof. The `Evidence: ...` pattern is lightweight and auditable.
+- 3 action items added to optimizer's todo.md for implementation
+- Report: `sessions/common-md-behavioral-contract-evaluation-2026-03-22.md`

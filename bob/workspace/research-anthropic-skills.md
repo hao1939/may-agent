@@ -1,52 +1,62 @@
 # Research: Anthropic Skill Creator / Custom Skills
 
-**Source**: Extracted from Anthropic documentation via Scout (s_1772712166111_24).
+**Status**: Research Complete
+**Date**: 2026-03-05
+**Outcome**: The "Skill Creator" tool itself is less relevant than the **Progressive Disclosure** pattern it uses. We should adopt the pattern, not the specific tool.
 
 ## 1. What is it?
-"Custom Skills" (or just "Skills") is a standardized format for packaging specialized knowledge and workflows for Claude. It is supported natively in **Claude Code** (the CLI tool) and the Claude.ai web interface.
+"Custom Skills" is a standardized format (`SKILL.md` with YAML frontmatter) for packaging capabilities. It is designed to work with **Claude Code** (CLI) and the Claude.ai web interface.
 
-It is essentially a **Prompt Engineering Pattern + Directory Structure** that enables **Progressive Disclosure** (Lazy Loading).
+**Key Mechanism: Progressive Disclosure**
+1. **Discovery**: System reads metadata (name/description) from all skills and injects *only that* into the system prompt.
+2. **Activation**: When the model decides a skill is relevant, it "loads" the full content (via tool use or context injection).
 
-## 2. Structure & Format
-A Skill is a directory containing at minimum a `SKILL.md` file.
+## 2. Findings from `claude-code` Testing (via Master)
+We tested `claude-code` to see if it natively auto-discovers `skills/` directories.
+- **Result**: **No native auto-discovery.** `claude-code` did not automatically see `skills/hello-world/SKILL.md`.
+- **Workaround**: It only worked when explicitly told to read the file.
+- **Native Equivalent**: `claude-code` uses `CLAUDE.md` (project-level instructions) as its primary customization hook, which is auto-loaded.
 
-**`SKILL.md` Format:**
-- **YAML Frontmatter**: Required. Must contain `name` and `description`.
-  ```markdown
-  ---
-  name: Brand Guidelines
-  description: Apply Acme Corp brand guidelines to presentations and documents.
-  ---
-  ```
-- **Markdown Body**: The actual instructions, examples, or knowledge.
+## 3. Recommendation for May Agent System
 
-## 3. Mechanism: Progressive Disclosure
-The system (e.g., Claude Code or a custom agent) uses a two-step process to manage context window usage:
+We should **NOT** use Anthropic's "Skill Creator" tool directly, as it generates artifacts for a runtime we don't fully control.
 
-1. **Discovery (Level 1)**: At startup, the agent reads only the **metadata** (name/description) of all installed skills and injects them into the System Prompt.
-   > "You have access to the following skills: ..."
-2. **Activation (Level 2)**: When the model determines a skill is relevant (based on the description), it "loads" the skill.
-   - In Claude Code/Web: The harness detects this intent and injects the full `SKILL.md` content into the context.
-   - For API users: You must implement this logic (tool use -> read file).
+However, we **SHOULD** adopt the **Progressive Disclosure** pattern for our own agent knowledge.
 
-## 4. Relevance to Our System
+### The Problem
+Currently, we inject `knowledge/domain.md`, `knowledge/lessons.md`, and all `tools/` definitions into the context at startup.
+- **Cost**: High token usage for unused knowledge.
+- **Distraction**: Irrelevant knowledge confuses the model.
 
-**Current State**:
-- We inject `domain.md`, `lessons.md`, and `tools` fully at startup.
-- We have `knowledge/` files but no standardized auto-loading mechanism (agents must explicitly `read` them).
+### The Solution: "Skill" Architecture
+Refactor `knowledge/` into modular "Skills":
 
-**Value Proposition**:
-- **Standardization**: A clean format (`SKILL.md`) for defining modular capabilities.
-- **Context Efficiency**: The "Progressive Disclosure" pattern allows us to have 50 skills available but only pay the context cost for the one currently in use.
-- **Interoperability**: If we adopt this format, we might be able to use community-created skills (if/when they exist).
+1. **Structure**:
+   ```
+   agents/coder/skills/
+     react-best-practices/SKILL.md  (Metadata + Content)
+     typescript-tips/SKILL.md       (Metadata + Content)
+   ```
 
-**Comparison**:
-- **Our Approach**: `knowledge/*.md` (Passive) vs. **Skills**: `SKILL.md` (Active/Lazy-Loaded).
-- **Implementation**: We would need to write a "Skill Loader" in `agent-loader.ts` or `system-prompt.ts` to:
-  1. Scan `skills/` directories.
-  2. Inject summaries into System Prompt.
-  3. Give the agent a tool (e.g., `use_skill(name)`) or simply let it `read` the file when it decides to.
+2. **System Prompt (Lazy Loading)**:
+   Instead of dumping all files, the System Prompt Generator (`system-prompt.ts`) should:
+   - Scan `skills/` directories.
+   - Extract `name` and `description` from YAML frontmatter.
+   - Inject a summary:
+     ```
+     ## Available Skills
+     - React Best Practices: Guidelines for functional components and hooks.
+     - TypeScript Tips: specialized type manipulation patterns.
+     (To use a skill, use the read tool on its file path.)
+     ```
 
-## 5. Next Steps
-- **Hands-on Test**: Create a simple `SKILL.md` and see if `claude-code` (via Master) picks it up.
-- **Decision**: Should we refactor our `knowledge/` folder into `skills/`?
+3. **Behavior**:
+   The agent sees the menu. If it needs "React Best Practices", it calls `read('.../react-best-practices/SKILL.md')`.
+   
+### Value
+- **Scalability**: We can have 100 skills but only pay for the ones used.
+- **Focus**: Agent starts with a clean slate and pulls in context only as needed.
+
+## 4. Next Actions
+- [ ] Create a prototype "Skill" for Coder (e.g., specific testing patterns).
+- [ ] Update `system-prompt.ts` to support `skills` directory scanning and metadata extraction.

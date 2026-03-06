@@ -1,16 +1,30 @@
-# Optimizer Brief: Block `npx tsc` in Exec Tool
+# Optimizer Brief: Implement "Poisoned Path" Protection for Truncated Reads
 
-**Philosophy Principle:** 21. Deterministic Guardrails for Reliability
-**Principle:** "Put constraints and invariants in code/tools where possible (structural fixes) rather than relying only on 'be careful' instructions."
+## Context
+We are experiencing a **Critical Data Integrity Failure**. Agents (Bob, Amy) are reading large files (like `lessons.md` or `todo.md`), receiving truncated output (due to token limits), and then writing back the partial content, effectively deleting the unread portions of the file.
 
-## Problem
-The evaluator found that `npx tsc` (full type checking) is frequently run by agents, consuming massive time and tokens, often timing out or filling context with thousands of irrelevant errors from the entire repo. Agents should not be running full project type checks — they should rely on `health_check` (which runs tsc safely) or check specific files.
+The existing "Shrink Guard" (which blocks writes <50% of original size) is failing because:
+1. Agents use `allowShrink: true` to bypass it.
+2. The size difference might not always trigger the 50% threshold.
 
-## Recommended Fix
-Modify `src/tools.ts` to add `npx tsc` (and `tsc`) to the `denyPatterns` in the `exec` tool options.
+## Objective
+Implement a **"Poisoned Path" state** in the session to structurally prevent writing to files that have been read partially.
 
-1.  **Block `npx tsc` and `tsc`** in `createExecTool` (or the default deny list).
-2.  **Provide a helpful error message**: "Full type checking is too expensive. Use the `health_check` tool to run project-wide checks, or trust your specific file edits."
+## Proposed Implementation
+Modify `src/tools.ts` (specifically the `read` and `write` tools):
 
-## Target File
-- `src/tools.ts`
+1.  **Track Truncation:** Add a session-level Set (or state property) `truncatedPaths`.
+2.  **Flag on Read:** In the `read` tool, if the output is truncated (i.e., we are returning `[... truncated]` or similar metadata indicates partial read), add the absolute `path` to `truncatedPaths`.
+3.  **Block on Write:** In the `write` tool, before performing the write, check if `path` is in `truncatedPaths`.
+    *   If yes: **Throw an Error immediately.**
+    *   **Error Message:** "SAFETY BLOCK: You previously read a truncated version of this file ('{path}'). Writing now would destroy the unread data. You MUST use 'read' with startLine/endLine to read the MISSING parts before you can write to this file."
+    *   **Constraint:** This block **cannot** be bypassed with `allowShrink: true`. The only way to clear the block is to read the file again fully (or maybe we just block it for the session to be safe).
+
+## Supporting Changes
+*   Ensure the `read` tool correctly identifies when it is truncating data.
+*   Ensure the state persistence handles this if necessary (though in-memory for the session is likely enough for the immediate crash-prevention).
+
+## Why This Fits Philosophy
+*   **No Silent Failures:** We are turning a silent data-loss bug into a loud, actionable error.
+*   **Structural Fix:** We are not asking agents to "be careful"; we are making the error impossible.
+*   **Deterministic Guardrails:** Code prevents the failure, not LLM judgment.

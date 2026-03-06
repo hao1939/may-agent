@@ -1821,3 +1821,163 @@ The fix has already been app
 - [2026-03-05T11:43:13.768Z] let's review agents one by one and their corn job: 1) make sure they follow the cron job convention 2) make sure they don't have overlay jobs 3) make sure the job do something reasonable 4) make sure 
 - [2026-03-05T11:46:35.860Z] please try each cron jobs and make sure it works. or we may need to fix it
 - [2026-03-05T12:00:28.621Z] some one generate /home/hao/may-agent/workspace and /home/hao/may-agent/knowledge, which is in wrong place, agent should only generate content under their workspace/ folder
+- [2026-03-05T12:10:49.834Z] someone generate /home/hao/may-agent/skills which is not in it's workspace, fix it
+- [2026-03-05T12:12:17.840Z] ping
+- [2026-03-05T14:52:47.960Z] sure, fix coach job
+- [2026-03-05T14:54:06.513Z] Maybe coach agent need context compacting
+- [2026-03-06T03:40:39.846Z] I want to receive brief of the daily jobs
+- [2026-03-06T03:42:01.521Z] What about generate brief after each job and send to me?
+- [2026-03-06T03:44:04.169Z] I got no messages of the cron jobs, does it work?
+- [2026-03-06T03:47:11.366Z] We should not ovveride the env, which would impact the instance spawn by it, we only want to enable cron for the main instance. We need something better, maybe an argument?  Which is better than env
+- [2026-03-06T03:49:01.852Z] We should lift the limit on exec
+- [2026-03-06T03:51:03.337Z] Let’s just disable it for now
+- [2026-03-06T03:52:14.843Z] Can you hot reload?
+- [2026-03-06T03:53:21.169Z] Ok, so please manually run the jobs for me, one by one until all done
+- [2026-03-06T04:59:43.469Z] is the corn job enabled?
+- [2026-03-06T05:22:38.683Z] we recently update cron job config, here's some think: 1) what about make heartbeats a litter special? e.g., we want heartbeats to have a long persistent session so there is context of perviously work
+- [2026-03-06T05:25:58.690Z] show me the proposal again
+- [2026-03-06T05:30:25.881Z] we seperate chat vs heartbeat only because don't want to interrupt user, there should be no other differents. and the Ephemeral session also need to recover from restart, so the restart won't broken j
+- [2026-03-06T05:33:03.220Z] '2. **Ephemeral sessions must survive restart.** Currently they're lost. They need to resume where they left off, just like persistent sessions do.' I'm think about make it simpler? would it be too co
+- [2026-03-06T05:34:23.201Z] or maybe or restart won't impact the cron job?
+- [2026-03-06T05:35:03.455Z] I'm saying we start dedicate instance on the cron job, so the may job restart won't affect it.
+- [2026-03-06T05:39:37.518Z] file make sense. baiscally the main instance hold the chat and heartbeats, and spawn dedicate instance for cron jobs, and we need to keep track of the job instance so we can retry on failure or invest
+- [2026-03-06T05:43:49.617Z] seems you are make it complicat, for the cron job, we only need to change the followUP to start a dedicate instance, does it make sense?
+- [2026-03-06T05:45:08.321Z] I like something between the 2 proposal: the trigger should be simple, and we also want the tracker
+- [2026-03-06T05:46:54.290Z] what's your design?
+- [2026-03-06T05:47:33.821Z] let's review your orignal proposal
+- [2026-03-06T05:50:10.484Z] let's restart from the doc: ## Session Architecture: Three Archetypes
+- [2026-03-06T05:50:10.490Z] **Status:** Proposed (2026-03-06)
+- [2026-03-06T05:50:10.493Z] ### Problem
+- [2026-03-06T05:50:10.493Z] Currently all cron jobs run in-process. When the main May instance restarts,
+- [2026-03-06T05:50:10.493Z] running task sessions are killed. Heartbeat-style agents (amy-explore, scout-explore)
+- [2026-03-06T05:50:10.496Z] lose their accumulated session context on every restart too.
+- [2026-03-06T05:50:10.496Z] ### Design
+- [2026-03-06T05:50:10.496Z] Three session types, two execution modes:
+- [2026-03-06T05:50:10.498Z] ```
+- [2026-03-06T05:50:10.498Z] Main Instance (persistent process)
+- [2026-03-06T05:50:10.498Z] ├── Chat session      — May ↔ human, persistent, in-process
+- [2026-03-06T05:50:10.498Z] ├── Heartbeat sessions — agent persistent sessions, in-process followUp()
+- [2026-03-06T05:50:10.498Z] └── Cron scheduler     — timer that spawns child processes for task jobs
+- [2026-03-06T05:50:10.499Z] Child Processes (independent, survive main restart)
+- [2026-03-06T05:50:10.499Z] ├── analyze-failures   — AGENT=bob npx tsx run/may.ts --task "..."
+- [2026-03-06T05:50:10.499Z] ├── lesson-consolidation — AGENT=bob npx tsx run/may.ts --task "..."
+- [2026-03-06T05:50:10.499Z] └── ...
+- [2026-03-06T05:50:10.499Z] ```
+- [2026-03-06T05:50:10.499Z] ### Session Types
+- [2026-03-06T05:50:10.499Z] | Type | Execution | Lifecycle | Restart | Owner |
+- [2026-03-06T05:50:10.499Z] |------|-----------|-----------|---------|-------|
+- [2026-03-06T05:50:10.499Z] | Chat | In-process | Persistent forever | resumeAgent() | Interface agent |
+- [2026-03-06T05:50:10.499Z] | Heartbeat | In-process | Persistent, followUp() per tick | resumeAgent() | Named agent |
+- [2026-03-06T05:50:10.499Z] | Task | Child process | Ephemeral, exit on done | Survives parent restart | Named agent |
+- [2026-03-06T05:50:10.499Z] | JS handler | In-process | Sync function call | Re-fires next tick | N/A |
+- [2026-03-06T05:50:10.499Z] ### CronEntry Extension
+- [2026-03-06T05:50:10.499Z] ```typescript
+- [2026-03-06T05:50:10.500Z] interface CronEntry {
+- [2026-03-06T05:50:10.500Z] name: string;
+- [2026-03-06T05:50:10.500Z] intervalMs: number;
+- [2026-03-06T05:50:10.500Z] message: string;
+- [2026-03-06T05:50:10.500Z] enabled: boolean;
+- [2026-03-06T05:50:10.500Z] description?: string;
+- [2026-03-06T05:50:10.500Z] agent?: string;                      // NEW: session owner
+- [2026-03-06T05:50:10.500Z] sessionType?: "heartbeat" | "task";  // NEW: default "task"
+- [2026-03-06T05:50:10.500Z] }
+- [2026-03-06T05:50:10.500Z] ```
+- [2026-03-06T05:50:10.500Z] ### Task Mode (`--task`)
+- [2026-03-06T05:50:10.500Z] ```bash
+- [2026-03-06T05:50:10.500Z] AGENT=bob npx tsx run/may.ts --task "[cron:analyze-failures] ..."
+- [2026-03-06T05:50:10.500Z] ```
+- [2026-03-06T05:50:10.500Z] - Starts agent with task message (non-persistent)
+- [2026-03-06T05:50:10.500Z] - Runs to completion, writes result to `.state/jobs/<name>/`
+- [2026-03-06T05:50:10.500Z] - Process exits 0/1
+- [2026-03-06T05:50:10.500Z] - No stdin, no socket, no Telegram (quiet mode)
+- [2026-03-06T05:50:10.500Z] ### Job Tracker
+- [2026-03-06T05:50:10.501Z] ```
+- [2026-03-06T05:50:10.501Z] .state/jobs/<job-name>/
+- [2026-03-06T05:50:10.501Z] current.json     → { pid, startedAt, sessionId, status }
+- [2026-03-06T05:50:10.501Z] last-result.json → { status, duration, exitCode, summary, sessionId }
+- [2026-03-06T05:50:10.501Z] history/         → archived results
+- [2026-03-06T05:50:10.501Z] ```
+- [2026-03-06T05:50:10.501Z] ### Heartbeat Sessions
+- [2026-03-06T05:50:10.501Z] In-process persistent sessions. Each cron tick sends `followUp()` into the
+- [2026-03-06T05:50:10.501Z] same session. Agent accumulates context across heartbeats:
+- [2026-03-06T05:50:10.501Z] - Amy remembers what she explored last time
+- [2026-03-06T05:50:10.501Z] - Scout knows which sources it checked today
+- [2026-03-06T05:50:10.501Z] - Coach tracks coaching progress across sessions
+- [2026-03-06T05:50:10.501Z] ### Observability
+- [2026-03-06T05:50:10.501Z] User observes job/heartbeat sessions via:
+- [2026-03-06T05:50:10.501Z] 1. **Telegram summary** — on job complete, emit brief to chat channel
+- [2026-03-06T05:50:10.501Z] 2. **`/watch <agent>`** — stream agent's session live to Telegram (on-demand)
+- [2026-03-06T05:50:10.501Z] 3. **`/jobs`** — list running/recent jobs with status
+- [2026-03-06T05:50:11.090Z] 4. **Job tracker files** — `.state/jobs/` for investigation
+- [2026-03-06T05:50:28.634Z] work on the design now
+- [2026-03-06T05:52:34.395Z] chat and heartbeats should in main instance, and cron job in dedicate instance which may quit on stask finish
+- [2026-03-06T06:13:20.643Z] let's start from beginning: 1) each instance should be self contained, that's say it should write down it's pid, owner, sock, who start it and so on. then caller can easily track it no extra tool requ
+- [2026-03-06T06:16:35.232Z] we can break heartbeat from the cron system, buildin with the main process, that's say agent can have heartbeat without enable cron. heartbeat can be event simpler, just a timer
+- [2026-03-06T06:17:07.522Z] think about the config file, should we use jsonl or markdown?
+- [2026-03-06T06:17:38.640Z] show me the full proposal for review
+- [2026-03-06T06:21:10.046Z] how can agent manually trigger a task?
+- [2026-03-06T06:21:59.146Z] great, let's do it. please remeber to update the doc
+- [2026-03-06T06:51:12.628Z] I aks claude-code to review un-commited code, here's the feedback:   Feature 1: Health API (manager.ts, types.ts, index.ts)
+- [2026-03-06T06:51:12.640Z] What it does: Adds three tiered health-check methods to SubagentManager:
+- [2026-03-06T06:51:12.640Z] 1. health() — fast in-memory snapshot (registered agents, active sessions, uptime)
+- [2026-03-06T06:51:12.643Z] 2. auditHealth() — filesystem scan (persisted sessions, unevaluated counts, stale sessions, workflow runs)
+- [2026-03-06T06:51:12.643Z] 3. reconcileHealth() — cross-references the two and reports discrepancies
+- [2026-03-06T06:51:12.646Z] Exposed via the subagents tool as action: "health".
+- [2026-03-06T06:51:12.647Z] Positives:
+- [2026-03-06T06:51:12.648Z] - Clean three-tier design (in-memory → disk → reconciliation) is well-thought-out
+- [2026-03-06T06:51:12.648Z] - Good types — all return types are well-defined interfaces
+- [2026-03-06T06:51:12.648Z] - Stale session detection (running on disk but not in memory) is valuable for debugging
+- [2026-03-06T06:51:12.650Z] - Test coverage is solid — 14 tests covering all three methods + tool integration
+- [2026-03-06T06:51:12.650Z] Suggestions:
+- [2026-03-06T06:51:12.650Z] 1. Unused imports: listActiveSessionIds and listArchivedSessionIds are imported but never directly called in manager.ts — they're only used
+- [2026-03-06T06:51:12.650Z] internally by loadAllSessionMetas. Remove the unused imports.
+- [2026-03-06T06:51:12.651Z] 2. Double filesystem scan in reconcileHealth(): reconcileHealth() calls this.auditHealth() (which calls loadAllSessionMetas), and then also calls
+- [2026-03-06T06:51:12.651Z] loadAllSessionMetas again directly on line ~1672. This is a redundant full filesystem scan. You could either:
+- [2026-03-06T06:51:12.651Z] - Store the session map inside AuditHealthReport for reuse, or
+- [2026-03-06T06:51:12.651Z] - Accept the redundancy since it's a diagnostic endpoint (not hot path)
+- [2026-03-06T06:51:12.651Z] 3. AuditHealthOptions is partially vestigial: The type defines agentsRoot and skipBuildChecks fields, but neither is used in the implementation.
+- [2026-03-06T06:51:12.651Z] Either implement them or trim the interface to avoid confusion.
+- [2026-03-06T06:51:12.651Z] 4. Hardcoded META_AGENTS set: new Set(["evaluator", "optimizer", "may"]) is a magic constant buried in method logic. Consider hoisting it to a
+- [2026-03-06T06:51:12.651Z] module-level constant, or making it configurable via options, so it doesn't silently break when agent names change.
+- [2026-03-06T06:54:03.090Z] 5. Extra blank line at the case "health" block in the tool's switch statement (double newline before case "health") — minor style nit.
+- [2026-03-06T06:54:30.212Z] does the feedback make sense? work on it if it does
+- [2026-03-06T06:58:20.464Z] I believe the ' Poisoned Path Write Guard' should be removed, it's the false direction, which can be easily mis-used
+- [2026-03-06T07:00:43.512Z] I got some feedback per uncommited change:   Feature 1: Health API (manager.ts, types.ts, index.ts, test/health-api.test.ts)
+
+  What it does: Adds three tiered health-check methods to SubagentManager:
+- [2026-03-06T07:01:15.142Z] could block the event loop. Fine for now, but worth a comment noting it's intentionally sync.
+- [2026-03-06T07:04:03.706Z] now let's add one philosophy or design rule: 1) please keep off-load routing/fixed task from agent to infra 2) after off-load, agent only need to regulary audit to make sure it work as design and fix 
+- [2026-03-06T07:08:36.551Z] now, let's start our mission, it's can be the first principle before all philosophy: 1) each agent serve a mission and keep push forward the mission 2) agent have a scope and responsibilites, they try
+- [2026-03-06T07:10:52.088Z] now, let's revie the philosophy.md, we need to better organized it, so we can assign some realted/coupled to one agent
+- [2026-03-06T07:13:12.325Z] that's great start. can we do it better, or we miss some role, found some agent have to serve mutlple aspect (it's ok, just feel they are somehow busy)
+- [2026-03-06T07:14:53.787Z] or we can review principle, should we merge or split some?
+- [2026-03-06T07:15:38.457Z] show me which merged
+- [2026-03-06T07:17:27.042Z] sure. show me your final proposal
+- [2026-03-06T07:18:16.821Z] show me the proposal
+- [2026-03-06T07:18:59.125Z] show me how you cluster the principles
+- [2026-03-06T07:20:52.938Z] update: may as my dupty own the FOUNDATION
+- [2026-03-06T07:21:13.718Z] sure
+- [2026-03-06T07:22:43.355Z] I didn't see the updated doc
+- [2026-03-06T07:25:39.734Z] test: are you alive?
+- [2026-03-06T07:27:44.585Z] here's one philosophy need to add: context isolation, agent don't need to be powerful for everything, their abilities are limited, so each agent should foucs on their scope and responsibilites, and do
+- [2026-03-06T07:30:20.688Z] add one more: skills vs agents, they are 2 different way to extend the system, the different is agents has mission to evolving and skill not. refine it and update the phisolophy
+- [2026-03-06T07:32:47.897Z] some comments about it: sometime we also combine some skill to one agent and not expect the agent to evolving. the power is combinaton create more availablities, extend the single skill's power, refin
+- [2026-03-06T07:33:50.248Z] show me recently update of the philosophy
+- [2026-03-06T07:38:25.365Z] now we have the philosophy, for each agent to following and driving their forward, we need properly design, how should work on it? 'proposal how to update the system so agent can following and driving
+- [2026-03-06T07:39:04.237Z] first question: whos dhould do it, then how to do it
+- [2026-03-06T07:42:23.314Z] before that, I have some suggestion: we can have a soul.md which keep the missiong and philosohpy, just like openclaw. and bob can to more research and design, then may can start to coordinate the job
+- [2026-03-06T07:46:12.391Z] what's the progress? what's next
+- [2026-03-06T07:47:11.286Z] hi may, how's it going?
+- [2026-03-06T07:51:52.882Z] please be aware, not every agent need it. that should also be the principle
+- [2026-03-06T07:53:04.648Z] sure
+- [2026-03-06T07:56:28.500Z] we need a process to drive the effort, show me your design
+- [2026-03-06T07:58:34.795Z] what about use the heartbeat for mission reflection?
+- [2026-03-06T08:01:49.553Z] heartbeat: something need to explore/try, need llm power; cron job: some proved process which is useful, so we keep it running and audit it regularly. we can let the heartbeat to trigger job if agent 
+- [2026-03-06T08:03:42.261Z] yes, that's the right design, please save it and ask someone to impl and enforuce the process
+- [2026-03-06T08:09:34.735Z] here's some comments on code change:   Code Review: Two Changes in run/may.ts
+
+  Change 1: Compaction tuning (threshold 0.7→0.6, keepRatio 0.4→0.3)
+
+  What it does: Triggers compaction earlier (at 60%
+- [2026-03-06T08:19:12.262Z] Now the architecture is clear. The SOUL.md files reference a 7-section reorganization (A–G) of the philosophy, but only sections F and G actually
+  exist in the current philosophy.md. Sections A–E wer

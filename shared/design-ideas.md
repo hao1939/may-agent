@@ -135,3 +135,195 @@ ClawHub supply-chain incident: SKILL.md injected with base64 → bash payload. D
 
 ### Anthropic RSP Pledge Weakened (Feb 2026)
 No longer committed to halting training if safety measures aren't pre-verified. Models improve faster; gap between capability and system hardening may widen. Re-evaluate agent safety assumptions more frequently.
+
+---
+
+## Instance Architecture
+
+**Status:** Proposed (2026-03-06)
+
+### Problem
+
+All cron jobs run in-process. When the main instance restarts, running task
+sessions are killed. Heartbeat context is lost on restart too.
+
+### Design
+
+Separate heartbeat (built-in timer) from tasks (dedicated instances).
+
+```
+Main Instance (persistent process, survives restart via resumeAgent)
+├── Chat session       — May ↔ human, persistent
+├── Heartbeat timer    — built-in, followUp() every N minutes
+│                        Agent reads heartbeat.md, works through sections
+└── Cron scheduler     — spawns task instances via ./may.sh task
+
+Task Instances (independent processes, survive main restart)
+├── analyze-failures   — ./may.sh task --agent bob "..."
+├── lesson-consolidation — ./may.sh task --agent bob "..."
+├── optimize           — ./may.sh task --agent optimizer "..."
+└── ...
+    Each instance is self-contained, writes identity.json, exits on done
+```
+
+### Heartbeat
+
+Built into the main process. Not part of cron. Just a timer.
+
+**Config** — in `agent.json`:
+```json
+{
+  "heartbeatMs": 1800000
+}
+```
+
+**Heartbeat file** — `agents/<name>/heartbeat.md`:
+The agent reads this file on each tick and works through each section.
+Markdown — human-readable, agent-readable, easy to edit. No schema.
+
+**How it works:**
+1. Main process reads `heartbeatMs` from agent.json
+2. Sets up `setInterval()`
+3. On each tick: `manager.followUp(sid, "[heartbeat] Read your heartbeat.md ...")`
+4. Same session as chat — agent has full conversation context
+5. No cron entry needed. Works without cron enabled.
+
+### Task Instances
+
+Independent processes. Spawned by cron, by agents (via exec), or by humans.
+
+**Unified interface — `may.sh`:**
+```bash
+# Main instance (existing):
+./may.sh                                              # interactive
+./may.sh start                                        # background (tmux)
+
+# Task instance (new):
+./may.sh task --agent bob "analyze failures"           # inline task
+./may.sh task --agent bob --file tasks/analyze.md      # task from file
+./may.sh task --name my-job --agent bob "do something" # named instance
+
+# Observe (new):
+./may.sh ps                          # list all running instances
+./may.sh logs <instance>             # tail session JSONL
+./may.sh send <instance> "message"   # send via socket (existing)
+```
+
+Same interface for humans, cron, and agents:
+- Human types: `./may.sh task --agent bob "analyze failures"`
+- Cron runs:   `./may.sh task --agent bob --name analyze-failures "..."`
+- Agent execs: `exec("./may.sh task --agent bob 'analyze failures'")`
+
+**`--task` mode in `may.ts`:**
+- Reads task from CLI arg or `--file`
+- Uses it as initial message (not "Ready. Waiting for tasks.")
+- Agent runs to completion, process exits 0 (done) or 1 (error)
+- Socket stays open during execution for observability
+
+### Self-Contained Instances
+
+Every instance writes its own identity file on startup. No external tracker.
+
+**File:** `.state/<instance>/identity.json`
+
+On startup:
+```json
+{
+  "pid": 12345,
+  "agent": "bob",
+  "instance": "job-analyze-failures",
+  "socket": ".state/job-analyze-failures/bob.sock",
+  "startedAt": "2026-03-06T06:00:00Z",
+  "startedBy": "cron:analyze-failures",
+  "task": "Analyze last 10 evaluations...",
+  "status": "running"
+}
+```
+
+On exit (updated in place):
+```json
+{
+  "pid": 12345,
+  "agent": "bob",
+  "instance": "job-analyze-failures",
+  "socket": ".state/job-analyze-failures/bob.sock",
+  "startedAt": "2026-03-06T06:00:00Z",
+  "startedBy": "cron:analyze-failures",
+  "task": "Analyze last 10 evaluations...",
+  "status": "done",
+  "exitCode": 0,
+  "endedAt": "2026-03-06T06:05:30Z",
+  "duration": "5m30s"
+}
+```
+
+**Discovery:** `ls .state/*/identity.json` → all instances.
+**Status:** `./may.sh ps` → reads identity.json files, shows running/completed.
+**Investigation:** `./may.sh logs <instance>` → session JSONL transcript.
+
+### Cron Config
+
+Simplified — just task jobs. No heartbeat entries, no sessionType.
+
+```json
+[
+  {
+    "name": "analyze-failures",
+    "intervalMs": 28800000,
+    "agent": "bob",
+    "task": "[cron:analyze-failures] Analyze last 10 evaluations...",
+    "description": "Bob analyzes evaluation patterns every 8 hours"
+  },
+  {
+    "name": "optimize",
+    "intervalMs": 86400000,
+    "agent": "optimizer",
+    "task": "[cron:optimize] Read analysis and work on top improvement...",
+    "description": "Optimizer works on system improvements daily"
+  }
+]
+```
+
+Cron dispatcher just runs:
+```bash
+./may.sh task --agent $agent --name $name "$task"
+```
+
+JS handlers stay in-process (system-status, evaluate-sessions) — registered
+in code, no config change.
+
+### Observability
+
+1. `./may.sh ps` — list running instances from identity.json files
+2. `./may.sh logs <instance>` — tail session JSONL for investigation
+3. Telegram `/jobs` — same as `./may.sh ps`, sent to chat
+4. Telegram summary — on task exit, brief sent to chat channel
+5. Socket — connect to instance socket for live streaming
+
+### Job Classification
+
+| Job | Home | Why |
+|-----|------|-----|
+| amy-explore | heartbeat.md | Needs prior context |
+| scout-explore | heartbeat.md | Needs prior context |
+| drain-todo (all agents) | heartbeat.md | Needs prior context |
+| review-human-inputs | heartbeat.md | Needs prior context |
+| coaching | heartbeat.md | Tracks progress |
+| analyze-failures | cron → task instance | Fresh each time |
+| philosophy-check | cron → task instance | Fresh each time |
+| lesson-consolidation | cron → task instance | Fresh each time |
+| optimize | cron → task instance | Fresh each time |
+| health-check | cron → task instance | Fresh each time |
+| system-status | JS handler (in-process) | Pure computation |
+| evaluate-sessions | JS handler (in-process) | Pure computation |
+
+### Implementation Steps
+
+1. `may.ts` — add heartbeat timer (read `heartbeatMs` from agent.json)
+2. `may.ts` — add `--task` mode (task as initial message, exit on idle)
+3. `may.ts` — write `identity.json` on startup, update on exit
+4. `may.sh` — add `task`, `ps`, `logs` commands
+5. `cron.ts` — spawn `./may.sh task` instead of `followUp()`
+6. `cron.json` — add `agent` field, move heartbeat jobs to heartbeat.md
+7. `agent.json` — add `heartbeatMs` field for may
+8. Telegram — add `/jobs` command

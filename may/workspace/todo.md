@@ -1,4 +1,12 @@
 # TODO
+- [2026-03-06] **Session Architecture: Implement Three Types** — Design finalized in agents/shared/design-ideas.md. Build:
+  1. `--task "message"` mode in run/may.ts (task as initial message, exit on done, keep socket)
+  2. CronEntry: add `agent` and `sessionType` fields
+  3. Cron dispatcher: spawn dedicated instance for task jobs, followUp for heartbeats
+  4. Job tracker: `.state/jobs/<name>/status.json`
+  5. Telegram: `/jobs` command, completion summaries
+  6. Heartbeat: consolidate per-agent cron jobs into single heartbeat.md per agent
+
 - [2026-03-05] SubagentManager status API: see detailed spec in Tracking section below (originally here, moved for space).
 
 - [2026-03-05] **Learnings from OpenClaw — Design Philosophy Import**: OC Bob maintained a 42-principle `design-philosophy.md` (553 lines) capturing deep design wisdom from user interactions and cross-referencing community research. Key principles our Bob should absorb:
@@ -59,6 +67,9 @@
   - Action: evaluate if our agents face similar risks and if we need IPI defense rules
 
 # Tracking
+- [2026-03-06] ✅ **philosophy.md restoration**: Restored full philosophy.md from 72 lines (corrupted after compaction) to 278 lines with 40 principles (P0-P39) across 7 sections (Foundation + A-G). Merged the new P33 "Heartbeat vs Cron" principle that was added after the last backup.
+- [2026-03-06] ✅ **SOUL.md principle references updated**: Fixed all 7 agent SOUL.md files to reference correct principle numbers after philosophy.md renumbering. Fixed cascading replacement bug (P36→P35→P34 chain).
+- [2026-03-06] ✅ **Cron test fix**: Changed `Cron.load()` return type from `void` to `CronEntry[]` — 3 tests were failing because tests expected load() to return entries. All 11 cron tests now pass.
 
 - [2026-03-05] ✅ Human input collection — implemented in run/may.ts. Committed as 069ec3d.
 - [2026-03-05] ✅ Review-human-inputs cron job — added at 12h interval. Committed as 54175a0.
@@ -120,3 +131,122 @@ User expects agents to be self-directing: "drain his backlog", "keep push it to 
 # Tracking (continued)
 
 - [2026-03-05] ✅ Second human-inputs review completed. 1824 lines analyzed. 10 recurring patterns identified (3+ occurrences each). Top themes: verify-before-done, delegation discipline, cron management, efficiency/cost, turn budget, git hygiene, workspace boundaries, proactive autonomy.
+
+---
+
+## Human Input Pattern Review — 2026-03-06 (review #3, 1836 lines analyzed, +12 lines since last review)
+
+**Delta since review #2:** 12 new human inputs (2026-03-05T14:52 → 2026-03-06T03:53). Combined with deeper analysis of the full 1836-line corpus, the following **new patterns** emerge (3+ occurrences threshold, not already captured in review #2):
+
+### NEW Pattern 11: Briefings / observability — "tell me what happened" (8+ occurrences)
+User repeatedly asks for summaries of system activity and wants proactive reporting:
+- "I want to receive brief of the daily jobs" (03-06)
+- "What about generate brief after each job and send to me?" (03-06)
+- "I got no messages of the cron jobs, does it work?" (03-06)
+- "how's the system running" (03-05)
+- "can you run the cron job and report current states" (03-05)
+- "show me all the living sessions" (03-04)
+- "show me corn jobs" (03-05, 03-04 — multiple times)
+- "please manually run the jobs for me, one by one until all done" (03-06)
+- **Actionable:** Implement a post-job briefing system. After each cron job completes, write a short summary to a known location (e.g., `agents/may/workspace/briefings/`) and optionally push to telegram. User should NOT have to ask "what happened" — the system should tell them.
+- **Owner:** May + Optimizer
+- **Priority:** HIGH — this is the user's most recent frustration
+
+### NEW Pattern 12: Cron reliability skepticism — "does it actually work?" (6+ occurrences)
+User doesn't trust cron jobs are running correctly:
+- "I got no messages of the cron jobs, does it work?" (03-06)
+- "please trigger each cron job to make sure it works" (03-05, 03-04)
+- "trigger the review-human-inputs job" (03-05)
+- "investigate and fix it now" (03-05, after review-human-inputs failed)
+- "not work" (03-05, after telegram setup)
+- Overlaps with Pattern 3 (cron management) but this is a distinct trust/reliability issue — user can't tell if cron is silently failing.
+- **Actionable:** Cron jobs should produce visible artifacts (log file, briefing, or telegram notification) on every execution. Silent success is indistinguishable from silent failure. Add a "last run" timestamp visible via cron.status().
+- **Owner:** May (cron infrastructure)
+- **Priority:** HIGH
+
+### NEW Pattern 13: Env/config isolation — "don't break other instances" (4 occurrences)
+User concerned about configuration leaking across instances:
+- "We should not override the env, which would impact the instance spawn by it" (03-06)
+- "We need something better, maybe an argument? Which is better than env" (03-06)
+- "why not use only one .env?" (03-05)
+- "we only want to enable cron for the main instance" (03-06)
+- **Actionable:** Audit env var usage. Any env var that changes behavior (SCHEDULERS, model selection) should use CLI args or config files, not env vars that inherit to child processes. Document the isolation model.
+- **Owner:** Optimizer
+- **Priority:** MEDIUM
+
+### NEW Pattern 14: Hot reload / zero-downtime expectations (3 occurrences)
+User expects changes to take effect without restart:
+- "Can you hot reload?" (03-06)
+- "I would restart, then the cron job should be working" (03-05 — indicates restart was needed)
+- "Let's just disable it for now" (03-06 — user gives up on fixing live)
+- **Actionable:** Investigate which subsystems can be hot-reloaded (cron jobs? agent registrations? knowledge files?) vs which require restart. Document in usage.md. The `reloadAgents()` function exists but may not cover all cases.
+- **Owner:** Optimizer
+- **Priority:** LOW (nice-to-have)
+
+### INTENSIFIED Pattern 3+: Cron as centralized management hub (now 110+ mentions across all inputs)
+Since review #2, cron has evolved from "manage jobs" to "cron is the control plane for agent autonomy." User expects:
+1. May manages ALL agents' cron jobs centrally
+2. Each job produces a visible briefing
+3. Jobs can be manually triggered for testing
+4. Jobs use ephemeral sessions (not inject into main session)
+- **Delta action:** The existing Pattern 3 actionable is insufficient. Need a cron management dashboard: list all jobs across all agents, show last-run time, show last-run result (pass/fail/skipped), and a trigger-now capability.
+
+### INTENSIFIED Pattern 10+: Todo-driven autonomy is now the user's primary operating model
+Since review #2, user explicitly asks agents to "drain backlog", "explore and try more jobs", "pick some top issue". The todo.md → drain-todo cron → work → report cycle is THE expected workflow.
+- **Delta action:** Every agent with a workspace/todo.md MUST have a drain-todo cron job. Verify this is true for ALL agents (not just amy/scout/amy-kimi which were fixed in review #2).
+
+### Unaddressed Ideas (new since review #2):
+1. **Post-job briefing to telegram** — user asked 3x (03-06). Never implemented. HIGH priority.
+2. **Cron job last-run metadata** — no timestamp tracking for when jobs actually executed. Needed for reliability trust.
+3. **CLI arg for cron enable** — user explicitly said env vars are wrong approach (03-06). Not yet fixed.
+4. **Context compacting for long-lived agents** — "Maybe coach agent need context compacting" (03-05). Not addressed.
+
+### Reinforced Findings from Review #2 (still active):
+- Pattern 1 (verify it works): Still the #1 preference. No new violations but user is now testing cron jobs specifically.
+- Pattern 7 (git hygiene): "git checkout -- ." still appears in recent sessions from crashed optimizer runs.
+- Pattern 9 (workspace discipline): Two new violations flagged (03-05: /workspace and /skills in wrong place).
+
+
+# Tracking (review #3)
+
+- [2026-03-06] ✅ Third human-inputs review completed. 1836 lines analyzed (+12 since last review). 4 new patterns identified: briefings/observability demand (HIGH), cron reliability skepticism (HIGH), env/config isolation (MEDIUM), hot reload expectations (LOW). 2 existing patterns intensified: cron-as-control-plane and todo-driven-autonomy. 4 new unaddressed ideas flagged.
+
+---
+
+## Human Input Pattern Review — 2026-03-06 (review #4, 1983 lines analyzed, +147 lines since review #3)
+
+**Delta since review #3:** 147 new inputs covering a dense design session.
+
+### NEW Pattern 15: Session Architecture as Infrastructure Priority (19 mentions)
+User drove the 3-archetype session design (Chat/Heartbeat/Task) to completion in a single session. Key decisions:
+- Main instance holds chat + heartbeats; spawns dedicated instances for cron task jobs
+- Each instance is self-contained with identity.json (pid, owner, socket path)
+- `--task` mode: agent runs to completion, exits, no stdin/socket/telegram
+- Already implemented and committed (bf7aa7f, 78e1039, 9fdb3f9)
+- **Status:** IMPLEMENTED ✅
+
+### NEW Pattern 16: Heartbeat ≠ Cron — Distinct Purposes (19 mentions)
+User clarified the distinction repeatedly:
+- **Heartbeat** = needs LLM power, exploration/reflection, mission-driven
+- **Cron job** = proved mechanical process, runs reliably, audited regularly
+- Heartbeat can trigger cron jobs when agent finds something worth automating
+- Heartbeat is built into main process, doesn't need --cron flag
+- **Status:** Captured in design-heartbeat-mission-loop.md ✅
+
+### NEW Pattern 17: Philosophy as Living Architecture (12 mentions)
+User drove major philosophy.md restructuring:
+- Cluster principles by owner agent (7 sections A-G)
+- Merge overlapping principles, add missing ones
+- Added Context Isolation (P38), Skills vs Agents (P39)
+- Result: 40 principles, each agent gets relevant subset in SOUL.md
+- **Status:** IMPLEMENTED ✅
+
+### NEW Pattern 18: External Code Review Relay (9 mentions)
+User runs Claude Code reviews on uncommitted changes, then relays feedback:
+- Expects agents to evaluate and act on feedback
+- Will override: "Poisoned Path Write Guard should be removed"
+- Health API got 6 review items; compaction tuning reviewed
+- **Actionable:** When user relays code review, treat as high-priority directive. Act immediately.
+
+### Tracking (review #4)
+- [2026-03-06] ✅ Fourth human-inputs review completed. 1983 lines (+147). 4 new patterns. Most new inputs are from design sessions already implemented (session architecture, heartbeat design, philosophy restructuring, SOUL.md).

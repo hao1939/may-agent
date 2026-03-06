@@ -176,7 +176,7 @@ Per-agent TODO list. Two sections:
 
 # Tracking
 
-- [2026-03-05] ✅ Task name — result summary
+- [2026-03-05] ✅ Task name — result summary. Evidence: output at path, committed abc1234
 - [2026-03-04] ⚠️ Partial task — what worked, what didn't
 - [2026-03-03] ❌ Failed task — why it failed
 ```
@@ -185,6 +185,25 @@ Per-agent TODO list. Two sections:
 Agents drain TODO top-down when they wake up.
 
 **Tracking** — completed items with date and result icon.
+
+#### Completion evidence
+
+Before moving a TODO item to Tracking, the agent must verify completion — not just
+assume the work is done because it ran some steps. Check all that apply:
+
+1. **Output file exists** at the expected path (read or stat the file)
+2. **Relevant workspace files updated** (todo.md moved to Tracking, journal.md entry written)
+3. **Changes committed** if the task produced code or config changes (record the commit hash)
+
+Record evidence inline in the Tracking entry:
+
+```markdown
+- [2026-03-05] ✅ Add user validation — Evidence: src/validate.ts exists, 6 tests pass, committed a1b2c3d
+- [2026-03-05] ✅ Write exploration report — Evidence: output at workspace/report-2026-03-05.md (142 lines)
+- [2026-03-05] ⚠️ Refactor auth module — Evidence: src/auth.ts updated, 2/5 tests fail (see journal)
+```
+
+If evidence cannot be confirmed, use ⚠️ (partial) or ❌ (failed) — never ✅.
 
 ### journal.md
 
