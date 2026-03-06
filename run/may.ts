@@ -23,9 +23,8 @@ const PERSIST_DIR = resolve(process.env.STATE_DIR || resolve(PROJECT_ROOT, ".sta
 const INSTANCE = process.env.INSTANCE || "";
 const INSTANCE_LABEL = INSTANCE || "default";
 
-// Capture and clear SCHEDULERS so child processes don't inherit it.
-const SCHEDULERS_ENABLED = process.env.SCHEDULERS === "1";
-delete process.env.SCHEDULERS;
+// CLI args: --cron enables cron jobs (only for the main instance)
+const SCHEDULERS_ENABLED = process.argv.includes("--cron");
 
 // ── Models ──────────────────────────────────────────────────────────────
 

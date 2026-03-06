@@ -68,7 +68,7 @@ stdout_logfile=/dev/null
 stderr_logfile=/dev/null
 
 [program:may-agent]
-command=sh -c "SCHEDULERS=1 TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-} TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID:-} exec tsx run/may.ts"
+command=sh -c "exec tsx run/may.ts --cron"
 directory=/app
 priority=40
 autorestart=true
