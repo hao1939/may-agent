@@ -72,7 +72,7 @@ cmd_run() {
   export INSTANCE="$instance"
   while true; do
     echo "[$(date)] Starting may-agent (instance: ${instance:-default})..."
-    npx tsx run/may.ts --keep-session --cron --telegram --openclaw --console --heartbeat
+    npx tsx run/may.ts --keep-session --cron --telegram --openclaw --console
     EXIT_CODE=$?
     if [ $EXIT_CODE -eq 0 ]; then
       echo "[$(date)] Clean exit."
@@ -113,7 +113,7 @@ cmd_start() {
     done < .env
   fi
   [ -n "$STATE_DIR" ] && [ "$STATE_DIR" != ".state" ] && cmd="$cmd STATE_DIR=$STATE_DIR"
-  cmd="$cmd npx tsx run/may.ts --keep-session --cron --telegram --openclaw --console --heartbeat"
+  cmd="$cmd npx tsx run/may.ts --keep-session --cron --telegram --openclaw --console"
 
   # Start in tmux
   if tmux has-session -t "$tmux_session" 2>/dev/null; then
@@ -370,7 +370,7 @@ case "${1:-}" in
     echo "  log [name]          Attach to instance's tmux session"
     echo ""
     echo "If name is omitted, 'default' is used."
-    echo "All features (--keep-session --cron --telegram --openclaw --console --heartbeat) are enabled for the main instance."
+    echo "All features (--keep-session --cron --telegram --openclaw --console) are enabled for the main instance."
     echo "Task instances spawned by the system get no feature flags."
     echo ""
     echo "Examples:"

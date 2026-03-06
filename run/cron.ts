@@ -238,11 +238,9 @@ export class Cron {
         this.heartbeatRunning.delete(heartbeatKey);
         const errMsg = err instanceof Error ? err.message : String(err);
 
-        // Compaction failure safety valve: force hard reset
-        if (errMsg.includes("compaction") || errMsg.includes("context")) {
-          this.onError?.(`Cron heartbeat "${entry.name}" hit context limit — hard resetting session`);
-          this.heartbeatSessions.delete(agentName);
-        }
+        // Any heartbeat error → hard reset session to recover
+        this.onError?.(`Cron heartbeat "${entry.name}" failed — resetting session for next fire`);
+        this.heartbeatSessions.delete(agentName);
 
         this.appendJobResult({
           jobName: entry.name,
@@ -276,7 +274,7 @@ export class Cron {
     }
   }
 
-  /** Check if a session is still alive (active in manager). */
+  /** Check if a session is still in the manager (includes idle persistent sessions). */
   private isSessionAlive(sessionId: string): boolean {
     try {
       const sessions = this.manager.status();

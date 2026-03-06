@@ -644,7 +644,6 @@ if (SCHEDULERS_ENABLED) {
   }
 }
 
-
 // ── Telegram bot (--telegram flag to enable) ─────────────────────────
 
 const telegramBot = TELEGRAM_ENABLED
