@@ -2,120 +2,111 @@
   {
     "name": "evaluate-sessions",
     "intervalMs": 14400000,
-    "message": "[cron:evaluate-sessions] Check .state/sessions/ for unevaluated sessions (no matching .state/evaluations/ file). Skip sessions without session.jsonl (aborted). Skip currently running sessions. Delegate each to evaluator.",
+    "message": "[cron:evaluate-sessions] Evaluate unevaluated sessions.",
     "enabled": true,
-    "description": "Auto-evaluate completed sessions every 4 hours"
-  },
-  {
-    "name": "analyze-failures",
-    "intervalMs": 28800000,
-    "message": "[cron:analyze-failures] Delegate to bob: analyze the last 10 evaluations in .state/evaluations/, identify the top recurring pattern, write findings to agents/bob/workspace/analysis.md. Also compare the last 5 evaluations against the 5 before the most recent knowledge file change (check git log in agents/ for the last commit). Did the targeted agent's scores improve? If the same issue persists after a fix, say so explicitly and recommend a different approach.",
-    "enabled": true,
-    "description": "Bob analyzes evaluation patterns every 8 hours, including fix-effectiveness"
-  },
-  {
-    "name": "optimize",
-    "intervalMs": 86400000,
-    "message": "[cron:optimize] Read agents/bob/workspace/analysis.md, agents/coach/workspace/journal.md, and agents/optimizer/workspace/todo.md. Work on the top TODO item or the top finding. Also check for LLM-to-JS replacement opportunities in recent sessions. One fix per run.",
-    "enabled": true,
-    "description": "Optimizer implements one fix per day from bob's analysis and coach's findings"
-  },
-  {
-    "name": "health-check",
-    "intervalMs": 86400000,
-    "message": "[cron:health-check] Run: npx tsc --noEmit && npx vitest --run. Report pass/fail and test count. If anything fails, investigate.",
-    "enabled": true,
-    "description": "Daily tsc + test suite health check"
-  },
-  {
-    "name": "coaching",
-    "intervalMs": 172800000,
-    "message": "[cron:coaching] Check agents/coach/workspace/todo.md for pending training tasks (items under # TODO, not # Tracking). If any exist, delegate to coach to work on the next one. Also check agent scores via .state/evaluations/ — if any agent has 3+ sessions below threshold (eff < 0.5 or qual < 0.5), delegate to coach to run exercises on that agent.",
-    "enabled": true,
-    "description": "Coach drains todo.md every 48h and trains underperforming agents"
-  },
-  {
-    "name": "lesson-consolidation",
-    "intervalMs": 604800000,
-    "message": "[cron:lesson-consolidation] Delegate to bob: read all agents/*/knowledge/lessons.md files. Deduplicate, consolidate, remove stale entries. Preserve proven lessons.",
-    "enabled": true,
-    "description": "Weekly lessons.md cleanup"
+    "description": "Auto-evaluate completed sessions every 4 hours (JS handler)"
   },
   {
     "name": "system-status",
     "intervalMs": 14400000,
-    "message": "[cron:system-status] Operational check. Run: 1) session count last 24h 2) unevaluated session backlog 3) stuck/running sessions 4) lessons.md line counts 5) bob analysis freshness 6) tsc --noEmit. Append summary to agents/may/workspace/health-log.md. If any anomalies found, add them as TODO items in agents/may/workspace/todo.md.",
+    "message": "[cron:system-status] Operational status check.",
     "enabled": true,
-    "description": "Operational status check every 4 hours — writes findings to health-log.md"
+    "description": "Operational status check every 4 hours (JS handler)"
   },
   {
-    "name": "drain-todo",
-    "intervalMs": 14400000,
-    "message": "[cron:drain-todo] Check agents/may/workspace/todo.md for pending items under # TODO. Work on the top item — delegate, fix, or resolve it. Move completed items to # Tracking with result (✅/⚠️/❌). Stop after one item.",
+    "name": "analyze-failures",
+    "intervalMs": 86400000,
+    "agent": "bob",
+    "message": "[cron:analyze-failures] Analyze the last 10 evaluations in .state/evaluations/. Identify the top recurring pattern. Write findings to agents/bob/workspace/analysis.md. Compare recent evaluations against previous ones \u2014 did targeted fixes help? If same issue persists, recommend a different approach.",
     "enabled": true,
-    "description": "Drain one TODO item every 4 hours"
+    "description": "Bob analyzes evaluation patterns daily (dedicated instance)"
   },
   {
-    "name": "optimizer-drain-todo",
-    "intervalMs": 28800000,
-    "message": "[cron:optimizer-drain-todo] Read agents/optimizer/workspace/todo.md. If there are pending items under # TODO, delegate to optimizer to work on the top item. One item per run.",
+    "name": "optimize",
+    "intervalMs": 86400000,
+    "agent": "optimizer",
+    "message": "[cron:optimize] Read agents/bob/workspace/analysis.md and agents/optimizer/workspace/todo.md. Work on the top TODO item or top finding. Check for LLM-to-JS replacement opportunities. One fix per run.",
     "enabled": true,
-    "description": "Optimizer drains its todo.md every 8 hours"
+    "description": "Optimizer implements one fix per day (dedicated instance)"
   },
   {
-    "name": "review-human-inputs",
-    "intervalMs": 43200000,
-    "message": "[cron:review-human-inputs] Read agents/may/workspace/human-inputs.md. Extract patterns: recurring preferences, design directions, corrections, unaddressed ideas. Update todo.md with actionable findings. Clear processed entries from human-inputs.md.",
+    "name": "health-check",
+    "intervalMs": 86400000,
+    "agent": "may",
+    "message": "[cron:health-check] Run: npx tsc --noEmit && npx vitest --run. Report pass/fail and test count. If anything fails, investigate.",
     "enabled": true,
-    "description": "Review human input patterns every 12 hours"
+    "description": "Daily tsc + test suite health check (dedicated instance)"
   },
   {
-    "name": "bob-drain-todo",
-    "intervalMs": 28800000,
-    "message": "[cron:bob-drain-todo] Read agents/bob/workspace/todo.md. If there are pending items under # TODO (especially ## Research Tasks), delegate to bob to work on the top item. Bob should delegate to scout for fetching/research, then synthesize and evaluate himself. One item per run.",
+    "name": "coaching",
+    "intervalMs": 172800000,
+    "agent": "coach",
+    "message": "[cron:coaching] Read agents/coach/workspace/todo.md. If there are pending items under # TODO (not # Tracking), work on the top item. You have subagents and can run exercises on other agents. One task per run. If TODO is empty, skip silently.",
     "enabled": true,
-    "description": "Bob drains his research/todo backlog every 8 hours"
+    "description": "Coach drains todo.md every 48h (dedicated instance)"
+  },
+  {
+    "name": "lesson-consolidation",
+    "intervalMs": 604800000,
+    "agent": "bob",
+    "message": "[cron:lesson-consolidation] Read all agents/*/knowledge/lessons.md files. Deduplicate, consolidate, remove stale entries. Preserve proven lessons.",
+    "enabled": true,
+    "description": "Weekly lessons.md cleanup (dedicated instance)"
   },
   {
     "name": "philosophy-check",
     "intervalMs": 86400000,
-    "message": "[cron:philosophy-check] Delegate to bob: check recent git commits (git log --since='24 hours ago' --oneline) for philosophy violations. Read agents/shared/philosophy.md, then review what changed. If you find drift, either recommend a fix or update the philosophy. Write findings to agents/bob/workspace/philosophy-check.md.",
-    "enabled": true,
-    "description": "Daily philosophy alignment check — Bob reviews commits against design principles"
+    "agent": "bob",
+    "message": "[cron:philosophy-check] Check recent git commits (git log --since='24 hours ago' --oneline) for philosophy violations. Read agents/shared/philosophy.md, review changes. Write findings to agents/bob/workspace/philosophy-check.md.",
+    "enabled": false,
+    "description": "Daily philosophy alignment check (dedicated instance, disabled)"
   },
   {
-    "name": "scout-explore",
-    "intervalMs": 28800000,
-    "message": "[cron:scout-explore] Delegate to scout: Run an exploration cycle. Pick 1-2 sources (rotate between GitHub trending, arXiv, Reddit Arctic Shift, vendor blogs). Search for recent activity on AI agents, autonomous systems, context engineering. Grep discoveries.md for dedup before adding. Archive findings. Follow interesting threads. Commit at 60% budget.",
+    "name": "heartbeat-bob",
+    "intervalMs": 86400000,
+    "agent": "bob",
+    "message": "[heartbeat] Read your SOUL.md and heartbeat.md. Work through each section top to bottom.",
     "enabled": true,
-    "description": "Scout explores the internet for AI agent research every 8 hours"
+    "description": "Bob's mission heartbeat \u2014 design reflection, philosophy audit (24h)"
   },
   {
-    "name": "amy-explore",
-    "intervalMs": 28800000,
-    "message": "[cron:amy-explore] Delegate to amy: Run an XHS exploration cycle. Search 1-2 keywords from your tracked list. Read interesting posts deeply (with xsec_token from search results). Archive findings in knowledge/. If tools fail (CAPTCHA, rate limit), synthesize from existing archive. Max 3 searches, 5+ seconds between operations.",
+    "name": "heartbeat-optimizer",
+    "intervalMs": 86400000,
+    "agent": "optimizer",
+    "message": "[heartbeat] Read your SOUL.md and heartbeat.md. Work through each section top to bottom.",
     "enabled": true,
-    "description": "Amy explores Xiaohongshu for AI content every 8 hours"
+    "description": "Optimizer's mission heartbeat \u2014 find highest-impact improvement (24h)"
   },
   {
-    "name": "amy-drain-todo",
-    "intervalMs": 28800000,
-    "message": "[cron:amy-drain-todo] Read agents/amy/workspace/todo.md. If there are pending items under ## Pending, delegate the top one to amy. When done, move the item from ## Pending to ## Completed with result (✅/⚠️/❌) and date. Stop after one item.",
+    "name": "heartbeat-coach",
+    "intervalMs": 172800000,
+    "agent": "coach",
+    "message": "[heartbeat] Read your SOUL.md and heartbeat.md. Work through each section top to bottom.",
     "enabled": true,
-    "description": "Amy drains her todo.md every 8 hours — one item per cycle"
+    "description": "Coach's mission heartbeat \u2014 plan training, review progress (48h)"
   },
   {
-    "name": "scout-drain-todo",
-    "intervalMs": 28800000,
-    "message": "[cron:scout-drain-todo] Read agents/scout/workspace/todo.md. If there are pending items under ## Pending, delegate the top one to scout. When done, move the item from ## Pending to ## Completed with result (✅/⚠️/❌) and date. Stop after one item.",
+    "name": "heartbeat-evaluator",
+    "intervalMs": 86400000,
+    "agent": "evaluator",
+    "message": "[heartbeat] Read your SOUL.md and heartbeat.md. Work through each section top to bottom.",
     "enabled": true,
-    "description": "Scout drains his todo.md every 8 hours — one item per cycle"
+    "description": "Evaluator's mission heartbeat \u2014 review eval quality, calibrate (24h)"
   },
   {
-    "name": "amy-kimi-drain-todo",
-    "intervalMs": 28800000,
-    "message": "[cron:amy-kimi-drain-todo] Read agents/amy-kimi/workspace/todo.md. If there are pending items under ## Pending, delegate the top one to amy-kimi. When done, move the item from ## Pending to ## Completed with result (✅/⚠️/❌) and date. Stop after one item.",
+    "name": "heartbeat-amy",
+    "intervalMs": 43200000,
+    "agent": "amy",
+    "message": "[heartbeat] Read your SOUL.md and heartbeat.md. Work through each section top to bottom.",
     "enabled": true,
-    "description": "Amy-Kimi drains her todo.md every 8 hours — one item per cycle"
+    "description": "Amy's mission heartbeat \u2014 XHS exploration and insight synthesis (12h)"
+  },
+  {
+    "name": "heartbeat-scout",
+    "intervalMs": 86400000,
+    "agent": "scout",
+    "message": "[heartbeat] Read your SOUL.md and heartbeat.md. Work through each section top to bottom.",
+    "enabled": true,
+    "description": "Scout's mission heartbeat \u2014 wide-net research and discovery (24h)"
   }
 ]
