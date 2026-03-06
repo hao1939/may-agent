@@ -31,8 +31,11 @@ describe("extractHallucinatedRelPath", () => {
     expect(extractHallucinatedRelPath("/home/user")).toBe("");
   });
 
-  it("returns null for real paths like /home/example-user/may-agent", () => {
-    expect(extractHallucinatedRelPath("/home/example-user/may-agent")).toBe(null);
+  it("matches /home/<user>/<project> patterns (real paths are filtered by rewriteHallucinatedPath)", () => {
+    // extractHallucinatedRelPath matches the pattern but doesn't know the real root.
+    // rewriteHallucinatedPath handles the "don't rewrite if it's the actual root" check.
+    expect(extractHallucinatedRelPath("/home/example-user/may-agent")).toBe("");
+    expect(extractHallucinatedRelPath("/home/example-user/may-agent/src/tools.ts")).toBe("/src/tools.ts");
   });
 
   it("returns null for relative paths", () => {

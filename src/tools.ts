@@ -266,12 +266,14 @@ export class TruncationTracker {
  * so that longer matches win (e.g., /home/user/repo/ before /home/user/).
  */
 const HALLUCINATED_PATH_PATTERNS: RegExp[] = [
-  // /home/user/repos/<project-name>/... → keep path after project-name
-  /^(\/home\/user\/repos\/[^/]+)(\/.*)?$/,
-  // /home/user/repo/... → keep path after repo
-  /^(\/home\/user\/repo)(\/.*)?$/,
-  // /home/user/... → keep path after user
+  // /home/<user>/repos/<project-name>/... → keep path after project-name
+  /^(\/home\/[^/]+\/repos\/[^/]+)(\/.*)?$/,
+  // /home/<user>/repo/... → keep path after repo
+  /^(\/home\/[^/]+\/repo)(\/.*)?$/,
+  // /home/user/... → keep path after user (legacy: "user" is literal placeholder)
   /^(\/home\/user)(\/.*)?$/,
+  // /home/<user>/<project>/... → keep path after project (any real username)
+  /^(\/home\/[^/]+\/[^/]+)(\/.*)?$/,
   // /Users/<name>/<project>/... → keep path after project
   /^(\/Users\/[^/]+\/[^/]+)(\/.*)?$/,
   // /app/... → keep path after app
@@ -338,10 +340,18 @@ export function rewriteHallucinatedPath(path: string, projectRoot: string): stri
  */
 export function rewriteHallucinatedCommand(command: string, projectRoot: string): string {
   // Match absolute paths that could be hallucinated.
-  // We look for paths starting with /home/user, /Users/<name>, or /app
+  // We look for paths starting with /home/<user>/<project>, /Users/<name>/<project>, or /app
   // in various command contexts.
+  //
+  // Order matters: longer/more-specific patterns first.
+  // - /home/<user>/repos/<project>/... (4 segments)
+  // - /home/<user>/repo/... (3 segments, literal "repo")
+  // - /home/user/... (literal "user" — legacy placeholder)
+  // - /home/<user>/<project>/... (3 segments, any real username)
+  // - /Users/<name>/<project>/...
+  // - /app/...
   return command.replace(
-    /(\/(?:home\/user(?:\/repos?\/[^/\s'"]+)?|Users\/[^/\s'"]+\/[^/\s'"]+|app))(\/?[^)\s'"]*)/g,
+    /(\/(?:home\/[^/\s'"]+\/repos\/[^/\s'"]+|home\/[^/\s'"]+\/repo|home\/user|home\/[^/\s'"]+\/[^/\s'"]+|Users\/[^/\s'"]+\/[^/\s'"]+|app))(\/?[^)\s'"]*)/g,
     (_match, root: string, relPath: string) => {
       const fullPath = root + relPath;
       // Don't rewrite if it's already the correct root
