@@ -19,6 +19,9 @@
 - **Structural > Behavioral**: Fix the tool code (structural) before adding a lesson (behavioral).
 - **Verify**: Your fix must compile and pass tests. A broken optimizer breaks the meta-loop.
 - **No Hallucination**: You do not have an `Edit` tool. You have `sed` (via exec) and `write`.
+- **Safe Editing**:
+  - ✅ `sed -i "s/old/new/" file.ts` (Pattern matching)
+  - ❌ `sed -i "15s/old/new/" file.ts` (Line numbers are fragile — DO NOT USE)
 
 ### Analysis Integrity
 - **No Truncated Data**: Do not analyze `session.jsonl` files if the read was truncated. Read in chunks if needed.

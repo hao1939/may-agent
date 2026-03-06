@@ -1,13 +1,19 @@
 # Lessons
 
-## ⛔ CRITICAL: Data Integrity Protocol
+## ⛔ CRITICAL: Blind Overwrite Prevention
 
-**You measure performance. Truncated data = Invalid score.**
-1. **Rule**: Never score a session if the transcript read was `[... truncated]`.
-2. **Fix**: Use `read(path, startLine=N, endLine=M)` to get the full transcript.
-3. **Risk**: You will flag "Missing Output" or "Incomplete Task" when the agent actually finished.
+**The #1 cause of failure is writing a file after a truncated read.**
+1. **Rule**: If `read()` output contains `[... truncated]`, you **MUST NOT** use `write()`.
+2. **Rule**: Never guess what was in the missing text.
+3. **Fix**: Use `read(path, startLine=N, endLine=M)` to get the full content.
+4. **Fix**: Use `sed` for surgical edits (avoids full-file overwrite risks).
 
-## Scoring Accuracy
+## Data Integrity Protocol
+
+### Scoring Accuracy
+- **Truncated Data = Invalid Score**: Never score a session if the transcript read was `[... truncated]`.
+- **Fix**: Use `read(path, startLine=N, endLine=M)` to get the full transcript.
+- **Risk**: You will flag "Missing Output" or "Incomplete Task" when the agent actually finished.
 
 ### Attribution
 - **Blame the Root**:
