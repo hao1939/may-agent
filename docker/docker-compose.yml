@@ -8,6 +8,7 @@ services:
     container_name: may-agent
     restart: unless-stopped
     user: "${UID:-1000}:${GID:-1000}"
+    env_file: ../.env
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
@@ -35,6 +36,7 @@ services:
     stdin_open: true
     tty: true
     user: "${UID:-1000}:${GID:-1000}"
+    env_file: ../.env
     entrypoint: ["/usr/local/bin/entrypoint-console.sh"]
     extra_hosts:
       - "host.docker.internal:host-gateway"

@@ -10,7 +10,6 @@ VNC_PORT=${VNC_PORT:-5900}
 NOVNC_PORT=${NOVNC_PORT:-6080}
 
 export DISPLAY=":${DISPLAY_NUM}"
-export SCHEDULERS=1
 
 # Start virtual display
 Xvfb :${DISPLAY_NUM} -screen 0 ${SCREEN_RES} -ac +extension GLX +render -noreset &>/dev/null &
@@ -31,4 +30,4 @@ google-chrome --no-sandbox --disable-gpu --no-first-run --disable-dev-shm-usage 
 # Launcher is the supervisor — handles crash recovery, hot-reload (exit 100), backoff.
 # To restart agent without restarting container:
 #   docker exec <container> restart-may.sh
-exec tsx run/launcher.ts --keep-session --cron --telegram --openclaw --console
+exec tsx run/launcher.ts --keep-session --cron --telegram --console
