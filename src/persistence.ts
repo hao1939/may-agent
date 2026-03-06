@@ -457,3 +457,37 @@ export function listWorkflowRuns(persistDir: string): string[] {
     return [];
   }
 }
+
+// ── Rolling Compaction: compacted state snapshot ─────────────────────────
+
+/** Path to the compacted message snapshot for a session. */
+export function sessionCompactPath(persistDir: string, sessionId: string): string {
+  return join(sessionDir(persistDir, sessionId), "session-compact.jsonl");
+}
+
+/**
+ * Save compacted messages to session-compact.jsonl (overwrites previous snapshot).
+ * The full session.jsonl is never modified — it remains the append-only source of truth.
+ * Write is atomic: data goes to a .tmp file first, then renamed into place.
+ */
+export function saveCompactedMessages(persistDir: string, sessionId: string, messages: AgentMessage[]): void {
+  const filePath = sessionCompactPath(persistDir, sessionId);
+  const tmpPath = filePath + ".tmp";
+  writeFileSync(tmpPath, messages.map((m) => JSON.stringify(m)).join("\n") + "\n");
+  renameSync(tmpPath, filePath);
+}
+
+/**
+ * Read compacted messages from session-compact.jsonl.
+ * Returns null if no compacted snapshot exists or the file is corrupt (fall back to full JSONL).
+ */
+export function readCompactedMessages(persistDir: string, sessionId: string): AgentMessage[] | null {
+  const filePath = sessionCompactPath(persistDir, sessionId);
+  if (!existsSync(filePath)) return null;
+  try {
+    const messages = readJsonlFile<AgentMessage>(filePath);
+    return messages.length > 0 ? messages : null;
+  } catch {
+    return null;
+  }
+}
