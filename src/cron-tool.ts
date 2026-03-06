@@ -22,6 +22,8 @@ export interface CronEntry {
   handler?: string;
   /** Timeout for spawned job processes in ms (default: 600000 = 10 min). */
   timeoutMs?: number;
+  /** Config passed to the handler's create() factory. Handler-specific. */
+  handlerConfig?: Record<string, unknown>;
 }
 
 export interface JobResult {
@@ -103,7 +105,7 @@ export function createCronTool(opts: CronToolOptions): AgentTool<typeof CronPara
       "- remove: delete a job by name\n" +
       "- update: modify an existing job's interval or message\n" +
       "- status: brief summary (job count, enabled/disabled, next to fire)\n\n" +
-      "When cron is active (SCHEDULERS=1), each job fires its message into your " +
+      "When cron is active (--cron flag), each job fires its message into your " +
       "session at the configured interval. When disabled, you can still manage " +
       "jobs but they won't fire.",
     parameters: CronParams,
@@ -111,7 +113,7 @@ export function createCronTool(opts: CronToolOptions): AgentTool<typeof CronPara
       switch (input.action) {
         case "list": {
           const entries = readEntries();
-          const status = opts.cronEnabled ? "Status: ACTIVE" : "Status: DISABLED (jobs defined but won't fire until SCHEDULERS=1)";
+          const status = opts.cronEnabled ? "Status: ACTIVE" : "Status: DISABLED (jobs defined but won't fire until --cron flag is set)";
           if (entries.length === 0) return textResult(`no cron jobs configured\n${status}`);
           const lines = entries.map(e => {
             const prefix = e.enabled ? "" : "[DISABLED] ";
@@ -174,7 +176,7 @@ export function createCronTool(opts: CronToolOptions): AgentTool<typeof CronPara
 
         case "status": {
           const entries = readEntries();
-          const status = opts.cronEnabled ? "Status: ACTIVE" : "Status: DISABLED (jobs defined but won't fire until SCHEDULERS=1)";
+          const status = opts.cronEnabled ? "Status: ACTIVE" : "Status: DISABLED (jobs defined but won't fire until --cron flag is set)";
           if (entries.length === 0) {
             return textResult(`No cron jobs configured.\n${status}`);
           }
