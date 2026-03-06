@@ -245,18 +245,16 @@ cmd_task() {
   fi
 
   local instance_name="job-${name}"
-  local task_args=""
-  if [ -n "$task_file" ]; then
-    task_args="--task-file $task_file"
-  else
-    task_args="--task \"${task_msg}\""
-  fi
-
   echo "Starting task instance: ${instance_name} (agent: ${agent})"
 
   # Run in background, detached
-  AGENT="$agent" INSTANCE="$instance_name" STATE_DIR="$STATE_DIR" \
-    nohup npx tsx run/may.ts $task_args > "${STATE_DIR}/${instance_name}.log" 2>&1 &
+  if [ -n "$task_file" ]; then
+    AGENT="$agent" INSTANCE="$instance_name" STATE_DIR="$STATE_DIR" \
+      nohup npx tsx run/may.ts --task-file "$task_file" > "${STATE_DIR}/${instance_name}.log" 2>&1 &
+  else
+    AGENT="$agent" INSTANCE="$instance_name" STATE_DIR="$STATE_DIR" \
+      nohup npx tsx run/may.ts --task "$task_msg" > "${STATE_DIR}/${instance_name}.log" 2>&1 &
+  fi
 
   local pid=$!
   echo "PID: $pid"

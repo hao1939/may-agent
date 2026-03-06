@@ -42,6 +42,7 @@ interface InstanceIdentity {
 }
 
 const IDENTITY_PATH = resolve(PERSIST_DIR, INSTANCE_LABEL, "identity.json");
+const PROCESS_START_TIME = Date.now();
 
 function writeIdentity(data: Partial<InstanceIdentity>): void {
   const dir = resolve(PERSIST_DIR, INSTANCE_LABEL);
@@ -446,7 +447,7 @@ process.on("exit", (code) => {
       status: code === 0 ? "done" : "error",
       exitCode: code,
       endedAt: new Date().toISOString(),
-      duration: formatDurationMs(Date.now() - Date.parse(JSON.parse(readFileSync(IDENTITY_PATH, "utf-8")).startedAt)),
+      duration: formatDurationMs(Date.now() - PROCESS_START_TIME),
     });
   } catch {}
   const err = new Error("exit trace");
@@ -679,14 +680,16 @@ function emitPrompt(): void {
   }
 }
 
-// Emit prompt when the interface agent finishes processing
-manager.subscribe(sid, (event) => {
-  if (event.type === "turn_end") {
-    // Check if this is the last turn (agent going idle).
-    // We detect this by checking if the stop reason indicates natural end.
-    // The handleCompletion in manager sets status to "idle" for persistent sessions.
-  }
-});
+// Emit prompt when the interface agent finishes processing (skip in task mode)
+if (!TASK_MODE) {
+  manager.subscribe(sid, (event) => {
+    if (event.type === "turn_end") {
+      // Check if this is the last turn (agent going idle).
+      // We detect this by checking if the stop reason indicates natural end.
+      // The handleCompletion in manager sets status to "idle" for persistent sessions.
+    }
+  });
+}
 
 // Simpler approach: poll status briefly after each followUp completes.
 // But actually — the best approach is a waitForIdle-based watcher.
@@ -703,8 +706,8 @@ function watchForIdle(): void {
   });
 }
 
-// Watch for initial idle (already idle after startup, but set up the pattern)
-watchForIdle();
+// Watch for initial idle (skip in task mode — session already complete)
+if (!TASK_MODE) watchForIdle();
 
 // ── Main loop ──────────────────────────────────────────────────────────
 
