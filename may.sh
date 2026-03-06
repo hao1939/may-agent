@@ -259,14 +259,14 @@ cmd_task() {
   local pid=$!
   echo "PID: $pid"
   echo "Logs: ${STATE_DIR}/${instance_name}.log"
-  echo "Identity: ${STATE_DIR}/${instance_name}/identity.json"
+  echo "Identity: ${STATE_DIR}/instances/${instance_name}/identity.json"
 }
 
 cmd_ps() {
   echo "Running instances:"
   echo ""
   local found=0
-  for identity in "${STATE_DIR}"/*/identity.json; do
+  for identity in "${STATE_DIR}"/instances/*/identity.json; do
     [ -f "$identity" ] || continue
     found=1
     local status agent instance pid started task duration
@@ -312,7 +312,7 @@ cmd_logs() {
     # Try session JSONL
     local session_dir="${STATE_DIR}/sessions"
     local sid
-    sid=$(python3 -c "import json; d=json.load(open('${STATE_DIR}/${name}/identity.json')); print(d.get('sessionId',''))" 2>/dev/null || echo "")
+    sid=$(python3 -c "import json; d=json.load(open('${STATE_DIR}/instances/${name}/identity.json')); print(d.get('sessionId',''))" 2>/dev/null || echo "")
     if [ -n "$sid" ] && [ -f "${session_dir}/${sid}/session.jsonl" ]; then
       tail -f "${session_dir}/${sid}/session.jsonl"
     else
