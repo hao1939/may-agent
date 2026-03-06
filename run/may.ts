@@ -515,6 +515,10 @@ bus.emit({ type: "info", message: `[instance:${INSTANCE_LABEL}] PID ${process.pi
 
 // ── Startup ────────────────────────────────────────────────────────────
 
+if (!KEEP_SESSION && !INITIAL_TASK) {
+  console.error("Error: ephemeral mode requires --task or --task-file. Use --keep-session for interactive mode.");
+  process.exit(1);
+}
 if (!KEEP_SESSION) {
   // Task mode: start fresh with task message, no resume
   const initialTask = INITIAL_TASK!;
