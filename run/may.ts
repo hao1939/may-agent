@@ -69,7 +69,6 @@ const SCHEDULERS_ENABLED = process.argv.includes("--cron");
 const TELEGRAM_ENABLED = process.argv.includes("--telegram");
 const OPENCLAW_ENABLED = process.argv.includes("--openclaw");
 const CONSOLE_ENABLED = process.argv.includes("--console");
-const HEARTBEAT_ENABLED = process.argv.includes("--heartbeat");
 const KEEP_SESSION = process.argv.includes("--keep-session");
 const INITIAL_TASK = (() => {
   const idx = process.argv.indexOf("--task");
@@ -645,32 +644,6 @@ if (SCHEDULERS_ENABLED) {
   }
 }
 
-// ── Heartbeat timer ──────────────────────────────────────────────────────
-
-if (HEARTBEAT_ENABLED) {
-  // Read heartbeatMs from agent.json
-  const agentConfigPath = resolve(AGENTS_ROOT, interfaceAgent, "agent.json");
-  try {
-    const agentConfig = JSON.parse(readFileSync(agentConfigPath, "utf-8"));
-    if (agentConfig.heartbeatMs && agentConfig.heartbeatMs >= 60_000) {
-      const heartbeatFile = resolve(AGENTS_ROOT, interfaceAgent, "heartbeat.md");
-      if (existsSync(heartbeatFile)) {
-        const timer = setInterval(() => {
-          const msg = `[heartbeat] Read ${heartbeatFile} and work through each section. This is your periodic wake-up.`;
-          try {
-            manager.followUp(sid, msg, "system");
-            watchForIdle();
-            bus.emit({ type: "info", message: `[heartbeat] Fired for ${interfaceAgent}` });
-          } catch (err) {
-            bus.emit({ type: "info", message: `[heartbeat] Failed: ${err}` });
-          }
-        }, agentConfig.heartbeatMs);
-        timer.unref();
-        bus.emit({ type: "info", message: `[heartbeat] Enabled for ${interfaceAgent} (every ${Math.round(agentConfig.heartbeatMs / 60000)}min)` });
-      }
-    }
-  } catch {}
-}
 
 // ── Telegram bot (--telegram flag to enable) ─────────────────────────
 
