@@ -25,6 +25,7 @@ const INSTANCE_LABEL = INSTANCE || "default";
 
 // ── Identity file ─────────────────────────────────────────────────────
 // Every instance writes identity.json so callers can track it.
+// All instance files live under .state/instances/<name>/.
 
 interface InstanceIdentity {
   pid: number;
@@ -41,11 +42,12 @@ interface InstanceIdentity {
   sessionId?: string;
 }
 
-const IDENTITY_PATH = resolve(PERSIST_DIR, INSTANCE_LABEL, "identity.json");
+const INSTANCES_DIR = resolve(PERSIST_DIR, "instances");
+const IDENTITY_PATH = resolve(INSTANCES_DIR, INSTANCE_LABEL, "identity.json");
 const PROCESS_START_TIME = Date.now();
 
 function writeIdentity(data: Partial<InstanceIdentity>): void {
-  const dir = resolve(PERSIST_DIR, INSTANCE_LABEL);
+  const dir = resolve(INSTANCES_DIR, INSTANCE_LABEL);
   mkdirSync(dir, { recursive: true });
   let existing: Partial<InstanceIdentity> = {};
   try { existing = JSON.parse(readFileSync(IDENTITY_PATH, "utf-8")); } catch {}
