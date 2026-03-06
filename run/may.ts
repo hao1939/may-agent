@@ -9,10 +9,7 @@ import { attachConsoleUI } from "./ui/console.js";
 import { attachSocketUI } from "./ui/socket.js";
 import { attachOpenClawUI } from "./ui/openclaw.js";
 import { attachTelegramBot } from "./ui/telegram.js";
-import { loadAgents, reloadAgents, setAgentSessionId, runAgentCleanup, getAgentCrons, type AgentLoaderOptions } from "./agent-loader.js";
-import { handleSystemStatus } from "./handlers/system-status.js";
-import { handleEvaluateSessions } from "./handlers/evaluate-sessions.js";
-import { createDrainTodoHandler } from "./handlers/drain-todo.js";
+import { loadAgents, reloadAgents, setAgentSessionId, getAgentSessionId, runAgentCleanup, getAgentCrons, loadAgentHandlers, type AgentLoaderOptions } from "./agent-loader.js";
 
 const PROJECT_ROOT = resolve(process.env.PROJECT_ROOT || dirname(fileURLToPath(import.meta.url)), process.env.PROJECT_ROOT ? "." : "..");
 const AGENTS_ROOT = resolve(process.env.AGENTS_ROOT || resolve(PROJECT_ROOT, "agents"));
@@ -67,7 +64,7 @@ function formatDurationMs(ms: number): string {
 }
 
 // CLI args
-const SCHEDULERS_ENABLED = process.argv.includes("--cron");
+const CRON_ENABLED = process.argv.includes("--cron");
 const TELEGRAM_ENABLED = process.argv.includes("--telegram");
 const OPENCLAW_ENABLED = process.argv.includes("--openclaw");
 const CONSOLE_ENABLED = process.argv.includes("--console");
@@ -123,6 +120,8 @@ let sid: string;
 const bus = new EventBus();
 if (CONSOLE_ENABLED) attachConsoleUI(bus);
 
+console.log(`[${new Date().toISOString()}] [may.ts] Starting (pid=${process.pid}, instance=${INSTANCE_LABEL}, root=${PROJECT_ROOT})`);
+
 // ── OpenClaw bridge (--openclaw + OPENCLAW_TARGET to enable) ────────────────────
 
 let openclawUI: ReturnType<typeof attachOpenClawUI> | null = null;
@@ -176,7 +175,7 @@ const loaderOpts: AgentLoaderOptions = {
   models,
   manager,
   bus,
-  schedulersEnabled: SCHEDULERS_ENABLED,
+  schedulersEnabled: CRON_ENABLED,
 };
 
 const loadResult = loadAgents(loaderOpts);
@@ -193,9 +192,36 @@ if (skipped > 0) bus.emit({ type: "info", message: `[eval] Wrote ${skipped} skip
 const interfaceAgent = process.env.AGENT || "may";
 
 function attachAgentEvents(label: string, sessionId: string): void {
+  const isChat = label === interfaceAgent;
+
+  if (!isChat) {
+    // Background sessions (heartbeat, cron, sub-agents): only emit a summary
+    // line per turn. Suppress per-event detail to keep the terminal clean.
+    let toolCalls = 0;
+    let turnStart = Date.now();
+
+    manager.subscribe(sessionId, (event) => {
+      switch (event.type) {
+        case "turn_start":
+          turnStart = Date.now();
+          toolCalls = 0;
+          break;
+        case "tool_execution_start":
+          toolCalls++;
+          break;
+        case "turn_end": {
+          const elapsed = ((Date.now() - turnStart) / 1000).toFixed(0);
+          bus.emit({ type: "info", message: `[${label}] turn done (${elapsed}s, ${toolCalls} tool calls)` });
+          break;
+        }
+      }
+    });
+    return;
+  }
+
+  // Chat session: full event streaming
   manager.subscribe(sessionId, (event) => {
-    // Tag interface agent's assistant text as "chat" channel
-    const channel = label === interfaceAgent ? "chat" as const : undefined;
+    const channel = "chat" as const;
 
     switch (event.type) {
       case "message_start":
@@ -209,11 +235,11 @@ function attachAgentEvents(label: string, sessionId: string): void {
         }
         break;
       case "tool_execution_start":
-        bus.emit({ type: "tool_call", agent: label, tool: event.toolName, args: event.args });
+        bus.emit({ type: "tool_call", agent: label, tool: event.toolName, args: event.args, channel });
         break;
       case "tool_execution_end": {
         const text = event.result?.content?.[0]?.text ?? "";
-        bus.emit({ type: "tool_result", agent: label, tool: event.toolName, preview: text.slice(0, 200), isError: !!event.isError });
+        bus.emit({ type: "tool_result", agent: label, tool: event.toolName, preview: text.slice(0, 200), isError: !!event.isError, channel });
         break;
       }
     }
@@ -450,7 +476,11 @@ function gracefulShutdown() {
 const EXIT_RELOAD = 100;
 
 function gracefulRestart() {
-  if (shuttingDown) return;
+  // If already restarting, force-exit immediately
+  if (shuttingDown) {
+    process.exit(EXIT_RELOAD);
+    return;
+  }
   shuttingDown = true;
   bus.emit({ type: "info", message: "Restarting (hot-reload)..." });
 
@@ -462,13 +492,16 @@ function gracefulRestart() {
     activeRL.close();
     activeRL = null;
   }
+  // Cancel ALL running sessions (including the interface agent's)
   for (const s of manager.status()) {
-    if (s.status === "running" && s.sessionId !== sid) {
+    if (s.status === "running") {
       manager.cancel(s.sessionId);
     }
   }
 
-  setTimeout(() => process.exit(EXIT_RELOAD), 2000);
+  // Exit synchronously — don't rely on timers which can be starved
+  // by an active agent loop (LLM streaming, compaction, etc.)
+  process.exit(EXIT_RELOAD);
 }
 
 process.on("SIGINT", () => {
@@ -607,68 +640,30 @@ writeIdentity({
 
 // ── Start cron jobs (--cron to enable) ──────────────────────────────────
 
-if (SCHEDULERS_ENABLED) {
+
+if (CRON_ENABLED) {
+  // Auto-discover and register JS handlers from agent handler directories
+  const handlerResult = await loadAgentHandlers({
+    ...loaderOpts,
+    getSessionId: (agentName: string) => {
+      if (agentName === interfaceAgent) return sid;
+      return getAgentSessionId(agentName) ?? null;
+    },
+  });
+  if (handlerResult.registered.length > 0) {
+    bus.emit({ type: "info", message: `[handlers] Registered ${handlerResult.registered.length}: ${handlerResult.registered.join(", ")}` });
+  }
+  if (handlerResult.errors.length > 0) {
+    bus.emit({ type: "info", message: `[handlers] ⚠️ ${handlerResult.errors.length} error(s): ${handlerResult.errors.join("; ")}` });
+  }
+
+  // Start all crons with onFire notification
   for (const [name, cron] of getAgentCrons()) {
-    // Register JS handlers for formulaic cron jobs (LLM-to-JS #3)
-    if (name === "may") {
-      cron.registerHandler("system-status", async () => {
-        await handleSystemStatus({
-          persistDir: PERSIST_DIR,
-          projectRoot: PROJECT_ROOT,
-          agentsRoot: AGENTS_ROOT,
-          healthLogPath: resolve(AGENTS_ROOT, "may", "workspace", "health-log.md"),
-        });
-        bus.emit({ type: "text", agent: "may", channel: "chat" as any, message: "✅ [cron:system-status] Health check completed — see health-log.md" });
-      });
-      bus.emit({ type: "info", message: `[cron:may] Registered JS handler for system-status (no LLM needed)` });
-      cron.registerHandler("evaluate-sessions", async () => {
-        const result = await handleEvaluateSessions({
-          persistDir: PERSIST_DIR,
-          manager,
-          onLog: (msg) => bus.emit({ type: "info", message: msg }),
-        });
-        if (result.sessionsEvaluated > 0 || result.skipped > 0) {
-          bus.emit({ type: "text", agent: "may", channel: "chat" as any, message: `✅ [cron:evaluate-sessions] ${result.skipped} skipped, ${result.sessionsEvaluated} evaluated, ${result.errors.length} errors` });
-        }
-      });
-      bus.emit({ type: "info", message: `[cron:may] Registered JS handler for evaluate-sessions (no LLM needed)` });
-
-      // Register JS handlers for drain-todo cron jobs (LLM-to-JS #4)
-      const drainTodoOpts = {
-        agentsRoot: AGENTS_ROOT,
-        manager,
-        onLog: (msg: string) => bus.emit({ type: "text", agent: "may", channel: "chat" as any, message: `📋 ${msg}` }),
-      };
-
-      // May self-drain: followUp into May's own persistent session
-      cron.registerHandler("drain-todo", createDrainTodoHandler(
-        { sourceAgent: "may", targetAgent: "may", mode: "followUp", getSessionId: () => sid },
-        drainTodoOpts,
-      ));
-
-      // Optimizer drain: spawn new optimizer session
-      cron.registerHandler("optimizer-drain-todo", createDrainTodoHandler(
-        { sourceAgent: "optimizer", targetAgent: "optimizer", mode: "run" },
-        drainTodoOpts,
-      ));
-
-      // Bob drain: spawn new bob session
-      cron.registerHandler("bob-drain-todo", createDrainTodoHandler(
-        { sourceAgent: "bob", targetAgent: "bob", mode: "run" },
-        drainTodoOpts,
-      ));
-
-      bus.emit({ type: "info", message: `[cron:may] Registered JS handlers for drain-todo, optimizer-drain-todo, bob-drain-todo (no LLM needed)` });
-    }
-    // Notify on job fire (goes to Telegram via bus)
     cron.onFire((entry, type) => {
-      const emoji = type === "js" ? "⚡" : type === "task" ? "🚀" : "💓";
       const label = type === "js" ? "JS handler" : type === "task" ? `task → ${entry.agent}` : "heartbeat";
       bus.emit({
-        type: "text",
-        agent: "may",
-        channel: "chat" as any,
-        message: `${emoji} [cron] ${entry.name} fired (${label})`,
+        type: "info",
+        message: `[cron] ${entry.name} fired (${label})`,
       });
     });
 
@@ -679,6 +674,7 @@ if (SCHEDULERS_ENABLED) {
     }
   }
 }
+
 
 // ── Telegram bot (--telegram flag to enable) ─────────────────────────
 

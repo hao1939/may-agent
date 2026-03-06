@@ -1,8 +1,9 @@
 #!/bin/bash
 # cron-task.sh — run a task as an ephemeral agent session via socket
 #
-# Usage: ./run/cli/cron-task.sh <agent> <message>
+# Usage: ./run/cli/cron-task.sh <agent> <message> [instance]
 #   e.g.: ./run/cli/cron-task.sh bob "Run meta-loop: evaluate recent sessions..."
+#   e.g.: ./run/cli/cron-task.sh may "daily review" console
 #
 # Sends a {"type":"run"} command to the agent's socket, creating an
 # ephemeral session. The agent must be running (socket must exist).
@@ -10,12 +11,13 @@
 
 set -euo pipefail
 
-AGENT="${1:?Usage: cron-task.sh <agent> <message>}"
-MESSAGE="${2:?Usage: cron-task.sh <agent> <message>}"
+AGENT="${1:?Usage: cron-task.sh <agent> <message> [instance]}"
+MESSAGE="${2:?Usage: cron-task.sh <agent> <message> [instance]}"
+INSTANCE="${3:-default}"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
 STATE_DIR="${STATE_DIR:-${PROJECT_ROOT}/.state}"
-SOCKET="${STATE_DIR}/${AGENT}.sock"
+SOCKET="${STATE_DIR}/instances/${INSTANCE}/${AGENT}.sock"
 
 if [ ! -S "$SOCKET" ]; then
     echo "[cron-task] ${AGENT} not running (no socket at ${SOCKET}), skipping."
