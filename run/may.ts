@@ -68,6 +68,8 @@ function formatDurationMs(ms: number): string {
 const SCHEDULERS_ENABLED = process.argv.includes("--cron");
 const TELEGRAM_ENABLED = process.argv.includes("--telegram");
 const OPENCLAW_ENABLED = process.argv.includes("--openclaw");
+const CONSOLE_ENABLED = process.argv.includes("--console");
+const HEARTBEAT_ENABLED = process.argv.includes("--heartbeat");
 const TASK_MODE = (() => {
   const idx = process.argv.indexOf("--task");
   if (idx !== -1 && process.argv[idx + 1]) return process.argv[idx + 1];
@@ -117,7 +119,7 @@ let sid: string;
 // ── Infrastructure ─────────────────────────────────────────────────────
 
 const bus = new EventBus();
-if (!TASK_MODE) attachConsoleUI(bus);
+if (CONSOLE_ENABLED) attachConsoleUI(bus);
 
 // ── OpenClaw bridge (--openclaw + OPENCLAW_TARGET to enable) ────────────────────
 
@@ -640,7 +642,7 @@ if (SCHEDULERS_ENABLED) {
 
 // ── Heartbeat timer ──────────────────────────────────────────────────────
 
-if (!TASK_MODE) {
+if (HEARTBEAT_ENABLED) {
   // Read heartbeatMs from agent.json
   const agentConfigPath = resolve(AGENTS_ROOT, interfaceAgent, "agent.json");
   try {
