@@ -489,14 +489,15 @@ const interfaceRunOpts = {
 
 // ── Socket + PID file ────────────────────────────────────────────────────
 
-// Socket name: may.sock (default) or may.<instance>.sock (named)
-const sockName = INSTANCE ? `${interfaceAgent}.${INSTANCE}.sock` : `${interfaceAgent}.sock`;
-const pidName = INSTANCE ? `${interfaceAgent}.${INSTANCE}.pid` : `${interfaceAgent}.pid`;
-const SOCKET_PATH = resolve(PERSIST_DIR, sockName);
-const PID_PATH = resolve(PERSIST_DIR, pidName);
+// All instance files (identity.json, PID, socket) live under .state/instances/<name>/
+const INSTANCE_DIR = resolve(INSTANCES_DIR, INSTANCE_LABEL);
+const sockName = `${interfaceAgent}.sock`;
+const pidName = `${interfaceAgent}.pid`;
+const SOCKET_PATH = resolve(INSTANCE_DIR, sockName);
+const PID_PATH = resolve(INSTANCE_DIR, pidName);
 
 // Write PID file so may.sh can manage this instance
-mkdirSync(PERSIST_DIR, { recursive: true });
+mkdirSync(INSTANCE_DIR, { recursive: true });
 writeFileSync(PID_PATH, String(process.pid), "utf-8");
 const cleanupPid = () => {
   try {
