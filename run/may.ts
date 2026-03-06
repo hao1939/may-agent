@@ -395,6 +395,7 @@ function runDirect(agentName: string, message: string): void {
 // ── Graceful shutdown ──────────────────────────────────────────────────
 
 let shuttingDown = false;
+let activeRL: ReturnType<typeof createInterface> | null = null;
 
 function gracefulShutdown() {
   if (shuttingDown) return;
@@ -409,6 +410,12 @@ function gracefulShutdown() {
 
   // Stop Telegram bot
   telegramBot.close();
+
+  // Close readline if active (triggers rl.on("close") cleanup)
+  if (activeRL) {
+    activeRL.close();
+    activeRL = null;
+  }
 
   // Cancel non-persistent child sessions but leave the interface agent's
   // persistent session intact for resume on next startup.
@@ -466,8 +473,8 @@ if (!manager.hasAgent(interfaceAgent)) {
 const interfaceRunOpts = {
   persistent: !TASK_MODE,  // task mode = non-persistent (ephemeral)
   compaction: TASK_MODE ? false : {
-    threshold: 0.7,
-    keepRatio: 0.4,
+    threshold: 0.6,
+    keepRatio: 0.3,
     onCompact: (info: { messagesCompacted: number; tokensBefore: number; tokensAfter: number }) => {
       bus.emit({ type: "info", message: `Compaction: ${info.messagesCompacted} messages compacted (${info.tokensBefore} → ${info.tokensAfter} est. tokens)` });
     },
@@ -718,6 +725,7 @@ if (TASK_MODE) {
   process.exit(0);
 } else if (process.stdin.isTTY) {
   const rl = createInterface({ input: process.stdin, output: process.stdout });
+  activeRL = rl;
 
   rl.on("SIGINT", () => {
     // Check if the interface agent is currently running
@@ -739,19 +747,42 @@ if (TASK_MODE) {
     }
   });
 
-  for await (const line of rl) {
-    const input = line.trim();
-    if (input === "exit" || input === "quit") break;
-    if (!input) { emitPrompt(); continue; }
+  // Use event-based input instead of async iterator to support paste detection.
+  // The async iterator (`for await (const line of rl)`) conflicts with the
+  // temporary listener needed to collect pasted lines.
+  let pasteBuffer: string[] = [];
+  let pasteTimer: ReturnType<typeof setTimeout> | null = null;
+  const PASTE_WINDOW_MS = 50;
 
-    // All input goes through the unified handler via bus command
-    bus.command({ type: "input", message: input });
-  }
+  const flushPaste = () => {
+    pasteTimer = null;
+    const joined = pasteBuffer.join("\n").trim();
+    pasteBuffer = [];
+    if (!joined) { emitPrompt(); return; }
+    if (joined === "exit" || joined === "quit") {
+      rl.close();
+      return;
+    }
+    bus.command({ type: "input", message: joined });
+  };
 
-  socketUI.close();
-  openclawUI?.close();
-  telegramBot.close();
-  rl.close();
+  rl.on("line", (line: string) => {
+    pasteBuffer.push(line);
+    if (pasteTimer) clearTimeout(pasteTimer);
+    pasteTimer = setTimeout(flushPaste, PASTE_WINDOW_MS);
+  });
+
+  // Keep the process alive until rl closes (Ctrl+D or exit/quit)
+  // Single close listener: flush pending paste, cleanup UIs, then resolve.
+  await new Promise<void>((resolve) => {
+    rl.on("close", () => {
+      if (pasteTimer) { clearTimeout(pasteTimer); flushPaste(); }
+      socketUI.close();
+      openclawUI?.close();
+      telegramBot.close();
+      resolve();
+    });
+  });
 } else {
   // Daemon mode: no TTY, keep alive via socket + keepalive timer.
   // Without a TTY, process.stdin is /dev/null which emits 'end' immediately.
