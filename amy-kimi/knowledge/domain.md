@@ -40,7 +40,7 @@ Every insight must answer: **"What does this mean for our system?"**
 **Your write scope:**
 - `agents/amy-kimi/workspace/` — your working files
 - `agents/amy-kimi/knowledge/` — your knowledge archive
-- `/home/hao/.openclaw/knowledge/amy-kimi/` — shared knowledge archive (read and write)
+- `~/.openclaw/knowledge/amy-kimi/` — shared knowledge archive (read and write)
 
 **Read-only:** Everything else, including `agents/amy/` (Amy's separate archive). You can read Amy's knowledge for cross-reference but don't write to it.
 

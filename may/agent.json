@@ -24,6 +24,5 @@
       "qa"
     ],
     "hint": "Use workflow.run(\"implement-and-review\", task) for code changes. The workflow handles coder + QA review automatically."
-  },
-  "heartbeatMs": 1800000
+  }
 }

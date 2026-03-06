@@ -2,7 +2,7 @@
 
 ## 小红书工具
 
-Tool location: `/home/hao/.openclaw/tools/xhs-downloader/xhs_fetch.mjs`
+Tool location: `~/.openclaw/tools/xhs-downloader/xhs_fetch.mjs`
 
 Tools use CDP (Chrome DevTools Protocol) to connect to the browser directly.
 
@@ -10,26 +10,26 @@ Tools use CDP (Chrome DevTools Protocol) to connect to the browser directly.
 
 ```bash
 # Search — returns results with xsec_token
-node /home/hao/.openclaw/tools/xhs-downloader/xhs_fetch.mjs search "<keyword>" --count 10
+node ~/.openclaw/tools/xhs-downloader/xhs_fetch.mjs search "<keyword>" --count 10
 
 # Feed — read /explore page DOM (zero navigation)
-node /home/hao/.openclaw/tools/xhs-downloader/xhs_fetch.mjs feed --count 20
+node ~/.openclaw/tools/xhs-downloader/xhs_fetch.mjs feed --count 20
 
 # Cookie health check (for diagnostics only, not routine)
-node /home/hao/.openclaw/tools/xhs-downloader/xhs_fetch.mjs cookie-status
+node ~/.openclaw/tools/xhs-downloader/xhs_fetch.mjs cookie-status
 ```
 
 ### Post Reading
 
 ```bash
 # Basic read — title, text, tags, engagement
-node /home/hao/.openclaw/tools/xhs-downloader/xhs_fetch.mjs read-post "<url with xsec_token>"
+node ~/.openclaw/tools/xhs-downloader/xhs_fetch.mjs read-post "<url with xsec_token>"
 
 # Deep read — OCR all images + comments + references
-node /home/hao/.openclaw/tools/xhs-downloader/xhs_fetch.mjs read-deep "<url with xsec_token>"
+node ~/.openclaw/tools/xhs-downloader/xhs_fetch.mjs read-deep "<url with xsec_token>"
 
 # Deep read (skip OCR)
-node /home/hao/.openclaw/tools/xhs-downloader/xhs_fetch.mjs read-deep "<url>" --no-ocr
+node ~/.openclaw/tools/xhs-downloader/xhs_fetch.mjs read-deep "<url>" --no-ocr
 ```
 
 ### ⚠️ xsec_token is REQUIRED
@@ -72,14 +72,14 @@ XHS requires `xsec_token` parameter in every post URL. Without it → 404.
 ### Keyword Management
 
 ```bash
-node /home/hao/.openclaw/tools/sync-keywords.mjs list
-node /home/hao/.openclaw/tools/sync-keywords.mjs add "new keyword"
-node /home/hao/.openclaw/tools/sync-keywords.mjs remove "old keyword"
+node ~/.openclaw/tools/sync-keywords.mjs list
+node ~/.openclaw/tools/sync-keywords.mjs add "new keyword"
+node ~/.openclaw/tools/sync-keywords.mjs remove "old keyword"
 ```
 
 ### Knowledge Archive Locations
 
-**Your archive:** `/home/hao/.openclaw/knowledge/amy-kimi/`
+**Your archive:** `~/.openclaw/knowledge/amy-kimi/`
 
 | File | Content |
 |------|---------|
@@ -89,4 +89,4 @@ node /home/hao/.openclaw/tools/sync-keywords.mjs remove "old keyword"
 | `openclaw-mentions.md` | OpenClaw mentions |
 | `posts/<id>.md` | Deep-archived post full text |
 
-**Amy's archive (read-only for cross-reference):** `/home/hao/.openclaw/knowledge/amy/`
+**Amy's archive (read-only for cross-reference):** `~/.openclaw/knowledge/amy/`

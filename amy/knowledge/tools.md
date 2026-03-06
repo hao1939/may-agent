@@ -2,7 +2,7 @@
 
 ## 小红书工具
 
-Tool location: `/home/hao/.openclaw/tools/xhs-downloader/xhs_fetch.mjs`
+Tool location: `~/.openclaw/tools/xhs-downloader/xhs_fetch.mjs`
 
 Tools use CDP (Chrome DevTools Protocol) to connect to the browser directly. No Playwright, no anti-automation detection.
 
@@ -10,29 +10,29 @@ Tools use CDP (Chrome DevTools Protocol) to connect to the browser directly. No 
 
 ```bash
 # Search — returns results with xsec_token
-node /home/hao/.openclaw/tools/xhs-downloader/xhs_fetch.mjs search "<keyword>" --count 10
+node ~/.openclaw/tools/xhs-downloader/xhs_fetch.mjs search "<keyword>" --count 10
 
 # Feed — read /explore page DOM (zero navigation)
-node /home/hao/.openclaw/tools/xhs-downloader/xhs_fetch.mjs feed --count 20
+node ~/.openclaw/tools/xhs-downloader/xhs_fetch.mjs feed --count 20
 
 # User favorites
-node /home/hao/.openclaw/tools/xhs-downloader/xhs_fetch.mjs favorites --count 20 --read 0
+node ~/.openclaw/tools/xhs-downloader/xhs_fetch.mjs favorites --count 20 --read 0
 
 # User likes
-node /home/hao/.openclaw/tools/xhs-downloader/xhs_fetch.mjs likes --count 20
+node ~/.openclaw/tools/xhs-downloader/xhs_fetch.mjs likes --count 20
 ```
 
 ### Post Reading
 
 ```bash
 # Basic read — title, text, tags, engagement
-node /home/hao/.openclaw/tools/xhs-downloader/xhs_fetch.mjs read-post "<url with xsec_token>"
+node ~/.openclaw/tools/xhs-downloader/xhs_fetch.mjs read-post "<url with xsec_token>"
 
 # Deep read — OCR all images + comments + references
-node /home/hao/.openclaw/tools/xhs-downloader/xhs_fetch.mjs read-deep "<url with xsec_token>"
+node ~/.openclaw/tools/xhs-downloader/xhs_fetch.mjs read-deep "<url with xsec_token>"
 
 # Deep read (skip OCR)
-node /home/hao/.openclaw/tools/xhs-downloader/xhs_fetch.mjs read-deep "<url>" --no-ocr
+node ~/.openclaw/tools/xhs-downloader/xhs_fetch.mjs read-deep "<url>" --no-ocr
 ```
 
 ### ⚠️ xsec_token is REQUIRED
@@ -86,21 +86,21 @@ node xhs_fetch.mjs read-post "https://www.xiaohongshu.com/explore/698dc...?xsec_
 ### Keyword Management
 
 ```bash
-node /home/hao/.openclaw/tools/sync-keywords.mjs list
-node /home/hao/.openclaw/tools/sync-keywords.mjs add "new keyword"
-node /home/hao/.openclaw/tools/sync-keywords.mjs remove "old keyword"
+node ~/.openclaw/tools/sync-keywords.mjs list
+node ~/.openclaw/tools/sync-keywords.mjs add "new keyword"
+node ~/.openclaw/tools/sync-keywords.mjs remove "old keyword"
 ```
 
 ### Batch Archive
 
 ```bash
-node /home/hao/.openclaw/tools/xhs-downloader/batch-archive.mjs        # incremental
-node /home/hao/.openclaw/tools/xhs-downloader/batch-archive.mjs --dry   # preview
+node ~/.openclaw/tools/xhs-downloader/batch-archive.mjs        # incremental
+node ~/.openclaw/tools/xhs-downloader/batch-archive.mjs --dry   # preview
 ```
 
 ### Knowledge Archive Location
 
-`/home/hao/.openclaw/knowledge/amy/`:
+`~/.openclaw/knowledge/amy/`:
 
 | File | Content |
 |------|---------|

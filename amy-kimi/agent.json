@@ -1,6 +1,6 @@
 {
   "name": "amy-kimi",
-  "description": "小红书 intelligence researcher (Kimi variant) — same mission as Amy but with independent knowledge archive and synthesis focus",
+  "description": "\u5c0f\u7ea2\u4e66 intelligence researcher (Kimi variant) \u2014 same mission as Amy but with independent knowledge archive and synthesis focus",
   "domain": "Xiaohongshu content research and deep analysis",
   "model": "kimi",
   "tools": [
@@ -12,6 +12,5 @@
     "knowledge/tools.md",
     "knowledge/coaching.md"
   ],
-  "maxTurns": 40,
-  "workspace": "workspace"
+  "maxTurns": 40
 }

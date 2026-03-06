@@ -37,7 +37,7 @@ Every insight must answer: **"What does this mean for our system?"**
 **Your write scope:**
 - `agents/amy/workspace/` — your working files
 - `agents/amy/knowledge/` — your knowledge archive
-- `/home/hao/.openclaw/knowledge/amy/` — shared knowledge archive (read and write)
+- `~/.openclaw/knowledge/amy/` — shared knowledge archive (read and write)
 
 **Read-only:** Everything else. If you need to share findings with other agents, report back to May.
 
