@@ -24,7 +24,7 @@ nodaemon=true
 logfile=/dev/null
 logfile_maxbytes=0
 pidfile=/tmp/supervisord.pid
-environment=DISPLAY=":${DISPLAY_NUM}"
+environment=DISPLAY=":${DISPLAY_NUM}",SCHEDULERS="1"
 
 [program:xvfb]
 command=Xvfb :${DISPLAY_NUM} -screen 0 ${SCREEN_RES} -ac +extension GLX +render -noreset
@@ -71,7 +71,9 @@ stderr_logfile=/dev/null
 command=sh -c "exec tsx run/launcher.ts --keep-session --cron --telegram --openclaw --console"
 directory=/app
 priority=40
-autorestart=true
+autorestart=unexpected
+startsecs=5
+stopwaitsecs=10
 stopasgroup=true
 killasgroup=true
 stdout_logfile=/dev/stdout
