@@ -148,8 +148,6 @@ export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
     } catch { /* ignore */ }
   };
   process.on("exit", cleanup);
-  process.on("SIGINT", cleanup);
-  process.on("SIGTERM", cleanup);
 
   return {
     close: () => {

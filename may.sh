@@ -6,6 +6,7 @@
 #   ./may.sh start [name]         Start instance in background (tmux, all features)
 #   ./may.sh list                 List all instances
 #   ./may.sh stop [name]          Stop an instance (SIGTERM)
+#   ./may.sh restart [name]       Hot-reload instance (exit 100 → launcher respawns)
 #   ./may.sh send [name] "msg"    Send message to instance via socket
 #   ./may.sh log [name]           Attach to instance's tmux session
 #
@@ -60,21 +61,11 @@ cleanup_stale() {
 # ── Commands ─────────────────────────────────────────────────────────────
 
 cmd_run() {
-  # Interactive foreground run (default instance, with restart loop)
+  # Interactive foreground run via launcher (handles crash recovery + hot-reload)
   # --cron enables cron jobs; only the main instance should have this
   local instance="${1:-}"
   export INSTANCE="$instance"
-  while true; do
-    echo "[$(date)] Starting may-agent (instance: ${instance:-default})..."
-    npx tsx run/may.ts --keep-session --cron --telegram --openclaw --console
-    EXIT_CODE=$?
-    if [ $EXIT_CODE -eq 0 ]; then
-      echo "[$(date)] Clean exit."
-      break
-    fi
-    echo "[$(date)] Crashed with exit code $EXIT_CODE. Restarting in 3s..."
-    sleep 3
-  done
+  npx tsx run/launcher.ts --keep-session --cron --telegram --openclaw --console
 }
 
 cmd_start() {
@@ -107,7 +98,7 @@ cmd_start() {
     done < .env
   fi
   [ -n "$STATE_DIR" ] && [ "$STATE_DIR" != ".state" ] && cmd="$cmd STATE_DIR=$STATE_DIR"
-  cmd="$cmd npx tsx run/may.ts --keep-session --cron --telegram --openclaw --console"
+  cmd="$cmd npx tsx run/launcher.ts --keep-session --cron --telegram --openclaw --console"
 
   # Start in tmux
   if tmux has-session -t "$tmux_session" 2>/dev/null; then
@@ -146,6 +137,28 @@ cmd_stop() {
   echo "Force killing..."
   kill -9 "$pid" 2>/dev/null
   rm -f "$pf"
+}
+
+cmd_restart() {
+  local name="${1:-}"
+  local sf
+  sf=$(sock_path "$name")
+
+  if [ ! -S "$sf" ]; then
+    echo "Instance '${name:-default}' socket not found at $sf"
+    echo "Instance may not be running. Try: ./may.sh start ${name:-default}"
+    exit 1
+  fi
+
+  echo "Sending restart to instance '${name:-default}' via $sf..."
+  echo '{"type":"restart"}' | socat - UNIX-CONNECT:"$sf" 2>/dev/null || {
+    echo "Failed to connect to socket. Falling back to stop + start."
+    cmd_stop "$name"
+    sleep 1
+    cmd_start "$name"
+    return
+  }
+  echo "Restart command sent. Launcher will respawn with fresh code."
 }
 
 cmd_list() {
@@ -325,6 +338,10 @@ case "${1:-}" in
     shift
     cmd_stop "$@"
     ;;
+  restart)
+    shift
+    cmd_restart "$@"
+    ;;
   list)
     cmd_list
     ;;
@@ -354,6 +371,7 @@ case "${1:-}" in
     echo "  (no command)        Start default instance interactively (all features)"
     echo "  start [name]        Start instance in background (tmux, all features)"
     echo "  stop [name]         Stop an instance"
+    echo "  restart [name]      Hot-reload an instance (no session loss)"
     echo "  list                List tmux instances"
     echo "  ps                  List all instances (from identity.json)"
     echo "  task [opts] \"msg\"  Run a task in a dedicated instance"

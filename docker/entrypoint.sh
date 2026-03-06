@@ -68,7 +68,7 @@ stdout_logfile=/dev/null
 stderr_logfile=/dev/null
 
 [program:may-agent]
-command=sh -c "exec tsx run/may.ts --keep-session --cron --telegram --openclaw --console"
+command=sh -c "exec tsx run/launcher.ts --keep-session --cron --telegram --openclaw --console"
 directory=/app
 priority=40
 autorestart=true
