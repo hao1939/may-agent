@@ -2,8 +2,8 @@
 # may.sh — manage may-agent instances
 #
 # Usage:
-#   ./may.sh                      Start default instance (interactive)
-#   ./may.sh start [name]         Start instance in background (tmux)
+#   ./may.sh                      Start default instance (interactive, with --cron)
+#   ./may.sh start [name]         Start instance in background (tmux, with --cron)
 #   ./may.sh list                 List all instances
 #   ./may.sh stop [name]          Stop an instance (SIGTERM)
 #   ./may.sh send [name] "msg"    Send message to instance via socket
@@ -11,20 +11,14 @@
 #
 # Environment:
 #   STATE_DIR     State directory (default: .state)
-#   SCHEDULERS=1  Enable cron jobs (default: on)
 
 set -e
 cd "$(dirname "$0")"
 # Source env file
 [ -f .env ] && export $(grep -v "^#" .env | xargs)
 
-
 STATE_DIR="${STATE_DIR:-.state}"
 AGENT="${AGENT:-may}"
-# Capture explicit SCHEDULERS override; per-command defaults apply below.
-SCHEDULERS_OVERRIDE="${SCHEDULERS:-}"
-SCHEDULERS="${SCHEDULERS:-1}"
-export SCHEDULERS
 
 # ── Helpers ──────────────────────────────────────────────────────────────
 
@@ -56,23 +50,16 @@ tmux_name() {
 }
 
 is_alive() {
-  local pid_file="$1"
-  if [ ! -f "$pid_file" ]; then
-    return 1
-  fi
-  local pid
-  pid=$(cat "$pid_file" 2>/dev/null)
-  if [ -z "$pid" ]; then
-    return 1
-  fi
-  kill -0 "$pid" 2>/dev/null
+  local pf="$1"
+  [ -f "$pf" ] && kill -0 "$(cat "$pf")" 2>/dev/null
 }
 
 cleanup_stale() {
-  local pid_file="$1"
+  local pf="$1"
   local sock_file="$2"
-  if [ -f "$pid_file" ] && ! is_alive "$pid_file"; then
-    rm -f "$pid_file" "$sock_file" 2>/dev/null
+  if [ -f "$pf" ] && ! kill -0 "$(cat "$pf")" 2>/dev/null; then
+    echo "Cleaning up stale PID file: $pf"
+    rm -f "$pf" "$sock_file" 2>/dev/null
   fi
 }
 
@@ -80,14 +67,12 @@ cleanup_stale() {
 
 cmd_run() {
   # Interactive foreground run (default instance, with restart loop)
-  # Cron jobs disabled by default in interactive mode (set SCHEDULERS=1 to override)
-  SCHEDULERS="${SCHEDULERS_OVERRIDE:-0}"
-  export SCHEDULERS
+  # --cron enables cron jobs; only the main instance should have this
   local instance="${1:-}"
   export INSTANCE="$instance"
   while true; do
     echo "[$(date)] Starting may-agent (instance: ${instance:-default})..."
-    npx tsx run/may.ts
+    npx tsx run/may.ts --cron
     EXIT_CODE=$?
     if [ $EXIT_CODE -eq 0 ]; then
       echo "[$(date)] Clean exit."
@@ -119,7 +104,6 @@ cmd_start() {
 
   # Build the command
   local cmd="INSTANCE='${name}'"
-  [ -n "$SCHEDULERS" ] && cmd="$cmd SCHEDULERS=$SCHEDULERS"
   [ -n "$AGENT" ] && cmd="$cmd AGENT=$AGENT"
   # Pass through all .env vars to tmux
   if [ -f .env ]; then
@@ -129,7 +113,7 @@ cmd_start() {
     done < .env
   fi
   [ -n "$STATE_DIR" ] && [ "$STATE_DIR" != ".state" ] && cmd="$cmd STATE_DIR=$STATE_DIR"
-  cmd="$cmd npx tsx run/may.ts"
+  cmd="$cmd npx tsx run/may.ts --cron"
 
   # Start in tmux
   if tmux has-session -t "$tmux_session" 2>/dev/null; then
@@ -156,76 +140,40 @@ cmd_stop() {
   pid=$(cat "$pf")
   echo "Stopping instance '${name:-default}' (PID $pid)..."
   kill "$pid"
-
-  # Wait up to 5s for graceful shutdown
+  # Wait up to 10s for graceful shutdown
   for i in $(seq 1 10); do
     if ! kill -0 "$pid" 2>/dev/null; then
       echo "Stopped."
+      rm -f "$pf"
       return
     fi
-    sleep 0.5
+    sleep 1
   done
-
-  echo "Still alive after 5s, sending SIGKILL..."
+  echo "Force killing..."
   kill -9 "$pid" 2>/dev/null
-  cleanup_stale "$pf" "$(sock_path "$name")"
-  echo "Killed."
+  rm -f "$pf"
 }
 
 cmd_list() {
-  mkdir -p "$STATE_DIR"
-
-  printf "%-15s %-8s %-8s %-30s\n" "INSTANCE" "PID" "STATUS" "SOCKET"
-  printf "%-15s %-8s %-8s %-30s\n" "--------" "---" "------" "------"
-
+  echo "Instances:"
   local found=0
-
-  for pid_file in "${STATE_DIR}/${AGENT}"*.pid; do
-    [ -f "$pid_file" ] || continue
+  for pf in "${STATE_DIR}"/${AGENT}*.pid; do
+    [ -f "$pf" ] || continue
     found=1
-
-    local base
-    base=$(basename "$pid_file" .pid)
-
-    # Extract instance name: may.pid -> default, may.foo.pid -> foo
-    local instance_name
-    if [ "$base" = "$AGENT" ]; then
-      instance_name="default"
+    local name
+    name=$(basename "$pf" .pid)
+    name="${name#${AGENT}.}"
+    [ "$name" = "$AGENT" ] && name="default"
+    if is_alive "$pf"; then
+      local pid
+      pid=$(cat "$pf")
+      echo "  ✅ ${name} (PID $pid)"
     else
-      instance_name="${base#${AGENT}.}"
+      echo "  ❌ ${name} (stale)"
     fi
-
-    local pid
-    pid=$(cat "$pid_file" 2>/dev/null)
-    local status="dead"
-    local sock_file
-
-    if [ "$instance_name" = "default" ]; then
-      sock_file="${STATE_DIR}/${AGENT}.sock"
-    else
-      sock_file="${STATE_DIR}/${AGENT}.${instance_name}.sock"
-    fi
-
-    if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
-      status="alive"
-    else
-      # Clean up stale files
-      rm -f "$pid_file" "$sock_file" 2>/dev/null
-      status="stale (cleaned)"
-    fi
-
-    local sock_display
-    if [ -S "$sock_file" ]; then
-      sock_display=$(basename "$sock_file")
-    else
-      sock_display="-"
-    fi
-
-    printf "%-15s %-8s %-8s %-30s\n" "$instance_name" "${pid:-?}" "$status" "$sock_display"
   done
-
   if [ $found -eq 0 ]; then
-    echo "(no instances found)"
+    echo "  (none)"
   fi
 }
 
@@ -233,45 +181,41 @@ cmd_send() {
   local name=""
   local message=""
 
-  if [ $# -eq 1 ]; then
-    # ./may.sh send "message" — default instance
-    message="$1"
-  elif [ $# -eq 2 ]; then
+  if [ $# -ge 2 ]; then
     name="$1"
-    message="$2"
+    shift
+    message="$*"
+  elif [ $# -eq 1 ]; then
+    message="$1"
   else
-    echo "Usage: ./may.sh send [instance] \"message\""
+    echo "Usage: ./may.sh send [name] \"message\""
     exit 1
   fi
 
-  local sf
-  sf=$(sock_path "$name")
-
-  if [ ! -S "$sf" ]; then
-    echo "No socket at $sf. Is instance '${name:-default}' running?"
-    echo "Run: ./may.sh list"
+  local sock
+  sock=$(sock_path "$name")
+  if [ ! -S "$sock" ]; then
+    echo "Socket not found: $sock"
+    echo "Is instance '${name:-default}' running?"
     exit 1
   fi
 
-  local payload
-  payload=$(printf '{"type":"input","message":"%s"}\n' "$(echo "$message" | sed 's/"/\\"/g')")
-  echo "$payload" | socat - UNIX-CONNECT:"$sf"
+  echo "{\"type\":\"input\",\"message\":$(printf '%s' "$message" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')}" | socat - UNIX-CONNECT:"$sock"
 }
 
 cmd_log() {
   local name="${1:-}"
   local tmux_session
   tmux_session=$(tmux_name "$name")
-
-  if ! tmux has-session -t "$tmux_session" 2>/dev/null; then
-    echo "No tmux session '$tmux_session'. Is instance '${name:-default}' running via ./may.sh start?"
-    exit 1
+  if tmux has-session -t "$tmux_session" 2>/dev/null; then
+    tmux attach-session -t "$tmux_session"
+  else
+    echo "No tmux session '$tmux_session' found."
+    echo "Start one with: ./may.sh start ${name:-default}"
   fi
-
-  tmux attach-session -t "$tmux_session"
 }
 
-# ── Dispatch ─────────────────────────────────────────────────────────────
+# ── Main ─────────────────────────────────────────────────────────────────
 
 case "${1:-}" in
   start)
@@ -297,14 +241,16 @@ case "${1:-}" in
     echo "Usage: ./may.sh [command] [args]"
     echo ""
     echo "Commands:"
-    echo "  (no command)        Start default instance interactively (with restart loop)"
-    echo "  start [name]        Start instance in background (tmux)"
+    echo "  (no command)        Start default instance interactively (with --cron)"
+    echo "  start [name]        Start instance in background (tmux, with --cron)"
     echo "  stop [name]         Stop an instance"
     echo "  list                List all instances"
     echo "  send [name] \"msg\"   Send message to instance"
     echo "  log [name]          Attach to instance's tmux session"
     echo ""
     echo "If name is omitted, 'default' is used."
+    echo "Cron jobs (--cron) are always enabled for the main instance."
+    echo "Sub-agents spawned by the system never get --cron."
     echo ""
     echo "Examples:"
     echo "  ./may.sh                          # interactive default"
