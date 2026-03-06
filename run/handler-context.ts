@@ -27,10 +27,7 @@ export interface HandlerContext {
   /** Agent's persistent session ID getter (for followUp). Returns null if no active session. */
   getSessionId: () => string | null;
 
-  /** Emit a user-facing message (shows in console/telegram). */
-  emit: (msg: string) => void;
-
-  /** Log a diagnostic message (for internal bus events). */
+  /** Log a diagnostic message (routed through EventBus as info). */
   log: (msg: string) => void;
 }
 
