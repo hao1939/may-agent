@@ -23,6 +23,8 @@ import {
   listWorkflowRuns,
   saveWorkflowRun,
   loadAllSessionMetas,
+  saveCompactedMessages,
+  readCompactedMessages,
 } from "./persistence.js";
 import type { MemoryEntry, WorkflowRun, PersistedSession, Registry } from "./persistence.js";
 import type { TraceNode, SessionTrace } from "./workflow.js";
@@ -117,6 +119,8 @@ interface ActiveSession {
   unsubscribeTurnLimit?: () => void;
   timeoutTimer?: ReturnType<typeof setTimeout>;
   parentSessionId?: string;
+  /** Agent name of the parent session (cached at creation for notification after parent may be gone). */
+  parentAgentName?: string;
   workflowRunId?: string;
   stepLabel?: string;
   turnCount: number;
@@ -127,6 +131,8 @@ interface ActiveSession {
   turnWarningFired: boolean;
   /** When true, session stays active after completion (transitions to "idle"). */
   persistent: boolean;
+  /** Compaction transform for persistent sessions (rolling compaction). */
+  compactionTransform?: (messages: AgentMessage[], signal?: AbortSignal) => Promise<AgentMessage[]>;
   /** Set by close() — prevents handleCompletion from acting on an already-archived session. */
   closed: boolean;
 }
@@ -466,6 +472,30 @@ export class SubagentManager {
   }
 
   /**
+   * Compact a persistent session's in-memory messages after it goes idle.
+   * Replaces the agent's message array with the compacted version and
+   * saves the compacted state to disk for faster resume.
+   *
+   * The full session.jsonl on disk is never modified — it remains the
+   * source of truth. session-compact.jsonl is a separate snapshot.
+   */
+  private async compactPersistentSession(session: ActiveSession): Promise<void> {
+    if (!session.persistent) return;
+    if (!session.compactionTransform) return;
+
+    const messages = session.agent.state.messages;
+    if (messages.length === 0) return;
+
+    const compacted = await session.compactionTransform(messages);
+
+    if (compacted.length < messages.length) {
+      session.agent.replaceMessages(compacted);
+      // Save compacted state to disk for faster resume
+      saveCompactedMessages(this.registry.persistDir, session.sessionId, compacted);
+    }
+  }
+
+  /**
    * Common completion handler — called when the agent's prompt()/continue() settles.
    *
    * Determines the outcome from agent state, then branches:
@@ -519,6 +549,10 @@ export class SubagentManager {
         // to avoid duplicate JSONL entries.
         session.agent.followUp(cancelMsg);
       }
+      // Rolling compaction: compact in-memory messages and save to disk (fire-and-forget)
+      this.compactPersistentSession(session).catch((err) => {
+        console.warn(`[manager] Compaction failed for session ${session.sessionId}:`, err);
+      });
       session.status = "idle";
       this.registry.updateSessionStatus(session.sessionId, "idle");
       return;
@@ -559,6 +593,39 @@ export class SubagentManager {
       };
       try { this.onSessionComplete(info); } catch { /* best-effort */ }
     }
+
+    // ── Notify parent about completion ─────────────────────────────────
+    // Send a followUp to the parent session (or its agent's persistent
+    // session) so it learns about this child's completion.
+    // Skip workflow step sessions — the workflow tool coordinates those internally.
+    try {
+      if (session.parentSessionId && !session.workflowRunId) {
+        const runtime = formatDuration((session.endedAt ?? Date.now()) - session.startedAt);
+        const icon = session.status === "done" ? "✅" : "❌";
+        const taskText = session.task ?? "";
+        const taskPreview = taskText.length > 80 ? taskText.slice(0, 77) + "..." : taskText;
+        const notifyMsg = `[task-complete] ${icon} ${session.agentName} finished (${runtime}): "${taskPreview}" Session: ${session.sessionId}`;
+
+        // 1. Parent session still alive → notify it directly
+        if (this.activeSessions.has(session.parentSessionId)) {
+          this.followUp(session.parentSessionId, notifyMsg, "task-notify");
+        }
+        // 2. Else: find a persistent session for the parent agent
+        else if (session.parentAgentName) {
+          let persistentSid: string | undefined;
+          for (const [sid, s] of this.activeSessions) {
+            if (s.agentName === session.parentAgentName && s.persistent) {
+              persistentSid = sid;
+              break;
+            }
+          }
+          if (persistentSid) {
+            this.followUp(persistentSid, notifyMsg, "task-notify");
+          }
+        }
+        // 3. Else: no one to notify
+      }
+    } catch { /* notification must never crash handleCompletion */ }
   }
 
   /** Start a new session for a registered agent. Returns sessionId. Non-blocking.
@@ -579,13 +646,14 @@ export class SubagentManager {
     ensureSessionDir(persistDir, sessionId);
     mkdirSync(outputDir, { recursive: true });
 
+    const compactionTransform = this.buildTransformContext(def, opts?.compaction);
     const agent = new Agent({
       initialState: {
         systemPrompt: this.resolveSystemPrompt(def, name, sessionId, persistDir),
         model: def.model,
         tools: def.tools,
       },
-      transformContext: this.buildTransformContext(def, opts?.compaction),
+      transformContext: compactionTransform,
       getApiKey: def.apiKey ? () => def.apiKey : undefined,
     });
 
@@ -599,6 +667,7 @@ export class SubagentManager {
       status: "running",
       outputDir,
       parentSessionId: opts?.parentSessionId,
+      parentAgentName: opts?.parentSessionId ? this.activeSessions.get(opts.parentSessionId)?.agentName : undefined,
       workflowRunId: opts?.workflowRunId,
       stepLabel: opts?.stepLabel,
       turnCount: 0,
@@ -606,6 +675,7 @@ export class SubagentManager {
       turnWarningThreshold: def.turnWarningThreshold ?? 0.8,
       turnWarningFired: false,
       persistent: opts?.persistent ?? def.persistent ?? false,
+      compactionTransform,
       closed: false,
     };
 
@@ -762,10 +832,14 @@ export class SubagentManager {
     // Restore session JSONL from history archive if it was archived by a previous process
     ensureSessionDir(persistDir, targetSessionId);
     restoreSessionFromArchive(persistDir, targetSessionId);
-    const savedMessages = readSessionMessages(persistDir, targetSessionId);
+    // Load compacted messages if available (faster resume).
+    // Falls back to full JSONL if no compacted state exists.
+    const compactedMessages = readCompactedMessages(persistDir, targetSessionId);
+    const savedMessages = compactedMessages ?? readSessionMessages(persistDir, targetSessionId);
     const systemPrompt = this.resolveSystemPrompt(def, agentName, targetSessionId, persistDir);
     const outputDir = sessionOutputDir(persistDir, targetSessionId);
 
+    const compactionTransform = this.buildTransformContext(def, opts?.compaction);
     const agent = new Agent({
       initialState: {
         systemPrompt,
@@ -773,7 +847,7 @@ export class SubagentManager {
         tools: def.tools,
         messages: savedMessages,
       },
-      transformContext: this.buildTransformContext(def, opts?.compaction),
+      transformContext: compactionTransform,
       getApiKey: def.apiKey ? () => def.apiKey : undefined,
     });
 
@@ -843,6 +917,7 @@ export class SubagentManager {
       turnWarningThreshold: def.turnWarningThreshold ?? 0.8,
       turnWarningFired: false,
       persistent: opts?.persistent ?? def.persistent ?? false,
+      compactionTransform,
       closed: false,
     };
 
