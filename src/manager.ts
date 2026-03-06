@@ -2,7 +2,7 @@ import { readFileSync, readdirSync, mkdirSync, existsSync } from "node:fs";
 import { Agent } from "@mariozechner/pi-agent-core";
 import type { AgentMessage, AgentEvent, AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
 import { Type, StringEnum } from "@mariozechner/pi-ai";
-import type { SubagentDefinition, SessionInfo, TaskResult, SessionTreeNode } from "./types.js";
+import type { SubagentDefinition, SessionInfo, TaskResult, SessionTreeNode, ManagerHealthReport, HealthActiveSession, AuditHealthOptions, AuditHealthReport, ReconcileReport } from "./types.js";
 import { createCompactionTransform } from "./compaction.js";
 import type { CompactionOptions } from "./compaction.js";
 import { loadSkillsFromDirs, formatSkillsForPrompt } from "./skills.js";
@@ -22,6 +22,7 @@ import {
   readWorkflowRun,
   listWorkflowRuns,
   saveWorkflowRun,
+  loadAllSessionMetas,
 } from "./persistence.js";
 import type { MemoryEntry, WorkflowRun, PersistedSession, Registry } from "./persistence.js";
 import type { TraceNode, SessionTrace } from "./workflow.js";
@@ -171,7 +172,7 @@ export interface SubagentManagerOptions {
 
 const SubagentToolParams = Type.Object({
   action: StringEnum(
-    ["list", "run", "status", "progress", "result", "cancel", "waitFor", "delegate", "trace"] as const,
+    ["list", "run", "status", "progress", "result", "cancel", "waitFor", "delegate", "trace", "health"] as const,
     { description: "Action to perform. Use 'delegate' for fire-and-forget: runs agent, waits for completion, returns result in one call." },
   ),
   agent: Type.Optional(Type.String({ description: "Name of the registered agent (required for 'run', 'delegate')" })),
@@ -179,6 +180,9 @@ const SubagentToolParams = Type.Object({
   sessionId: Type.Optional(Type.String({ description: "Session ID or workflow run ID (required for 'status', 'progress', 'result', 'cancel', 'waitFor', 'trace')" })),
   limit: Type.Optional(Type.Number({ description: "Max number of recent messages to return (for 'progress', default: all)" })),
 });
+
+/** Agents whose sessions are auto-skippable for evaluation (meta-agents). */
+const EVAL_SKIP_AGENTS = new Set(["evaluator", "optimizer", "may"]);
 
 export class SubagentManager {
   private agents = new Map<string, RegisteredAgent>();
@@ -191,6 +195,7 @@ export class SubagentManager {
   private registry: RegistryStore;
   private onSessionComplete?: (info: SessionInfo) => void;
   private onSessionStart?: (agentName: string, sessionId: string) => void;
+  private startedAt = Date.now();
 
   constructor(opts: SubagentManagerOptions) {
     this.registry = new RegistryStore(opts.persistDir);
@@ -1533,6 +1538,163 @@ export class SubagentManager {
     return [];
   }
 
+  // ── Health API ────────────────────────────────────────────────────────
+
+  /** Fast, in-memory health snapshot. Returns data the manager already knows. */
+  health(): ManagerHealthReport {
+    const now = Date.now();
+    const names = [...this.agents.keys()];
+
+    const activeList: HealthActiveSession[] = [];
+    let running = 0;
+    let idle = 0;
+    for (const s of this.activeSessions.values()) {
+      activeList.push({
+        sessionId: s.sessionId,
+        agent: s.agentName,
+        status: s.status,
+        startedAt: s.startedAt,
+        runtime: formatDuration((s.endedAt ?? now) - s.startedAt),
+        turnCount: s.turnCount,
+        maxTurns: s.maxTurns,
+      });
+      if (s.status === "running") running++;
+      if (s.status === "idle") idle++;
+    }
+
+    return {
+      registeredAgents: { count: names.length, names },
+      activeSessions: activeList,
+      sessionCounts: { running, idle, total: this.activeSessions.size },
+      uptime: formatDuration(now - this.startedAt),
+      timestamp: new Date(now).toISOString(),
+    };
+  }
+
+  /** Filesystem-based ground-truth scan. Inspects persisted session data on disk. */
+  auditHealth(opts?: AuditHealthOptions): AuditHealthReport {
+    const persistDir = this.registry.persistDir;
+    const now = Date.now();
+    const oneDayAgo = now - 24 * 60 * 60 * 1000;
+
+    // Load all persisted session metas
+    const allSessions = loadAllSessionMetas(persistDir);
+    const allSessionEntries = Object.entries(allSessions);
+
+    // 1. Sessions in last 24h
+    let sessionsLast24h = 0;
+    for (const session of Object.values(allSessions)) {
+      if (session.startedAt >= oneDayAgo) sessionsLast24h++;
+    }
+
+    // 2. Unevaluated sessions
+    const evalDir = join(persistDir, "evaluations");
+    const evaluatedIds = new Set<string>();
+    if (existsSync(evalDir)) {
+      try {
+        for (const f of readdirSync(evalDir)) {
+          if (f.endsWith(".json")) evaluatedIds.add(f.replace(".json", ""));
+        }
+      } catch { /* best-effort */ }
+    }
+
+    const META_AGENTS = EVAL_SKIP_AGENTS;
+    let unevalTotal = 0;
+    let unevalActionable = 0;
+    let unevalAutoSkippable = 0;
+
+    for (const [sid, session] of allSessionEntries) {
+      if (evaluatedIds.has(sid)) continue;
+      if (session.status === "running" || session.status === "idle") continue;
+      unevalTotal++;
+
+      if (META_AGENTS.has(session.agent)) {
+        unevalAutoSkippable++;
+        continue;
+      }
+
+      // Check if transcript exists
+      const activeJsonl = join(persistDir, "sessions", sid, "session.jsonl");
+      const archivedJsonl = join(persistDir, "sessions", "history", sid, "session.jsonl");
+      if (!existsSync(activeJsonl) && !existsSync(archivedJsonl)) {
+        unevalAutoSkippable++;
+        continue;
+      }
+
+      unevalActionable++;
+    }
+
+    // 3. Stale sessions: status "running" in filesystem but not in activeSessions
+    const staleSessions: Array<{ sessionId: string; agent: string; task: string }> = [];
+    for (const [sid, session] of allSessionEntries) {
+      if (session.status === "running" && !this.activeSessions.has(sid)) {
+        staleSessions.push({ sessionId: sid, agent: session.agent, task: session.task });
+      }
+    }
+
+    // 4. Total persisted sessions
+    const totalPersistedSessions = allSessionEntries.length;
+
+    // 5. Workflow runs
+    const runIds = listWorkflowRuns(persistDir);
+    let wfRunning = 0;
+    let wfCompleted = 0;
+    let wfInterrupted = 0;
+    for (const runId of runIds) {
+      const run = readWorkflowRun(persistDir, runId);
+      if (!run) continue;
+      if (run.status === "running") wfRunning++;
+      else if (run.status === "done") wfCompleted++;
+      else if (run.status === "interrupted" || run.status === "error") wfInterrupted++;
+      else wfCompleted++; // escalated counts as completed
+    }
+
+    return {
+      sessionsLast24h,
+      unevaluated: { total: unevalTotal, actionable: unevalActionable, autoSkippable: unevalAutoSkippable },
+      staleSessions,
+      totalPersistedSessions,
+      workflowRuns: { total: runIds.length, running: wfRunning, completed: wfCompleted, interrupted: wfInterrupted },
+      persistedSessionIds: new Set(Object.keys(allSessions)),
+      timestamp: new Date(now).toISOString(),
+    };
+  }
+
+  /** Compare in-memory state vs filesystem and flag discrepancies. */
+  reconcileHealth(opts?: AuditHealthOptions): ReconcileReport {
+    const healthReport = this.health();
+    const auditReport = this.auditHealth(opts);
+    const discrepancies: string[] = [];
+
+    // 1. Stale sessions: running in filesystem but not in activeSessions
+    if (auditReport.staleSessions.length > 0) {
+      for (const s of auditReport.staleSessions) {
+        discrepancies.push(`Stale session: ${s.sessionId} (agent=${s.agent}) is "running" on disk but not active in memory`);
+      }
+    }
+
+    // 2. Active in memory but missing from filesystem
+    for (const active of healthReport.activeSessions) {
+      if (!auditReport.persistedSessionIds.has(active.sessionId)) {
+        discrepancies.push(`Lost persistence: ${active.sessionId} (agent=${active.agent}) is active in memory but has no meta.json on disk`);
+      }
+    }
+
+    // 3. Agent count mismatch: if filesystem has agent configs that aren't registered
+    // (We can only check in-memory vs in-memory here since agents are not persisted to disk
+    //  as separate files, but we flag if there are 0 registered agents as suspicious)
+    if (healthReport.registeredAgents.count === 0 && auditReport.totalPersistedSessions > 0) {
+      discrepancies.push(`No agents registered but ${auditReport.totalPersistedSessions} persisted sessions exist — agents may not have been re-registered after restart`);
+    }
+
+    return {
+      health: healthReport,
+      audit: auditReport,
+      discrepancies,
+      healthy: discrepancies.length === 0,
+    };
+  }
+
   // ── Parent agent tool ────────────────────────────────────────────────
 
   /** Create an AgentTool that exposes sub-agent management to a parent agent. */
@@ -1559,7 +1721,7 @@ export class SubagentManager {
       name: "subagents",
       label: "Sub-Agents",
       description:
-        "Manage sub-agents: list registered agents, run tasks, check status/progress, get results, or cancel sessions.",
+        "Manage sub-agents: list registered agents, run tasks, check status/progress, get results, cancel sessions, or run a health check.",
       parameters: SubagentToolParams,
       execute: async (_toolCallId, params) => {
         try {
@@ -1690,6 +1852,11 @@ export class SubagentManager {
                 return textResult(JSON.stringify({ error: `No trace found for "${params.sessionId}". Requires persistence (persistDir) and a valid session or workflow run ID.` }));
               }
               return textResult(JSON.stringify(traceResult, null, 2));
+            }
+
+            case "health": {
+              const report = manager.reconcileHealth();
+              return textResult(JSON.stringify(report, null, 2));
             }
 
             default: {
