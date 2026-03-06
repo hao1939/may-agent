@@ -66,4 +66,7 @@ ENV STATE_DIR=/app/.state
 # noVNC web interface
 EXPOSE 6080
 
+# Restart agent without restarting container:
+#   docker exec <container> restart-may.sh
+#   docker exec <container> restart-may.sh --force  # skip socket, kill directly
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
