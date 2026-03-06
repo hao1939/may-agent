@@ -286,6 +286,11 @@ function handleInput(message: string): void {
     gracefulShutdown();
     return;
   }
+  if (lower === "restart") {
+    bus.emit({ type: "info", message: "[cmd] Restarting (exit 100 for launcher hot-reload)..." });
+    gracefulRestart();
+    return;
+  }
 
   // @agent prefix — direct agent invocation
   const [targetAgent, agentMessage] = parseAgentPrefix(trimmed);
@@ -336,6 +341,9 @@ bus.onCommand((cmd) => {
     }
     case "reload_agents":
       handleInput("reload");
+      break;
+    case "restart":
+      handleInput("restart");
       break;
   }
 });
@@ -404,10 +412,12 @@ let shuttingDown = false;
 let activeRL: ReturnType<typeof createInterface> | null = null;
 
 function gracefulShutdown() {
-  if (shuttingDown) return;
+  if (shuttingDown) {
+    // Second call (repeated Ctrl+C) — force exit immediately
+    process.exit(1);
+  }
   shuttingDown = true;
-  const stack = new Error("gracefulShutdown trace").stack;
-  bus.emit({ type: "info", message: `Shutting down...\n${stack}` });
+  bus.emit({ type: "info", message: `Shutting down...` });
 
   // Stop all cron jobs
   for (const cron of getAgentCrons().values()) {
@@ -435,8 +445,33 @@ function gracefulShutdown() {
   setTimeout(() => process.exit(0), 2000);
 }
 
+// Exit code 100 = hot-reload signal to launcher.ts
+// Same cleanup as gracefulShutdown, but exit 100 instead of 0
+const EXIT_RELOAD = 100;
+
+function gracefulRestart() {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  bus.emit({ type: "info", message: "Restarting (hot-reload)..." });
+
+  for (const cron of getAgentCrons().values()) {
+    cron.stop();
+  }
+  telegramBot.close();
+  if (activeRL) {
+    activeRL.close();
+    activeRL = null;
+  }
+  for (const s of manager.status()) {
+    if (s.status === "running" && s.sessionId !== sid) {
+      manager.cancel(s.sessionId);
+    }
+  }
+
+  setTimeout(() => process.exit(EXIT_RELOAD), 2000);
+}
+
 process.on("SIGINT", () => {
-  bus.emit({ type: "info", message: "[signal] SIGINT received" });
   gracefulShutdown();
 });
 process.on("SIGTERM", () => {
@@ -463,8 +498,6 @@ process.on("exit", (code) => {
       duration: formatDurationMs(Date.now() - PROCESS_START_TIME),
     });
   } catch {}
-  const err = new Error("exit trace");
-  console.error(`[exit] Process exiting with code ${code}\n${err.stack}`);
 });
 
 // ── Interface agent selection ──────────────────────────────────────────
