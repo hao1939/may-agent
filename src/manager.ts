@@ -1571,7 +1571,11 @@ export class SubagentManager {
     };
   }
 
-  /** Filesystem-based ground-truth scan. Inspects persisted session data on disk. */
+  /**
+   * Filesystem-based ground-truth scan. Inspects persisted session data on disk.
+   * Intentionally synchronous — this is a diagnostic endpoint, not a hot path.
+   * For large state directories, consider running in a worker thread if latency matters.
+   */
   auditHealth(opts?: AuditHealthOptions): AuditHealthReport {
     const persistDir = this.registry.persistDir;
     const now = Date.now();
