@@ -1,20 +1,25 @@
 [
   {
     "name": "evaluate-sessions",
+    "type": "job",
     "intervalMs": 14400000,
     "message": "[cron:evaluate-sessions] Evaluate unevaluated sessions.",
     "enabled": true,
+    "handler": "evaluate-sessions",
     "description": "Auto-evaluate completed sessions every 4 hours (JS handler)"
   },
   {
     "name": "system-status",
+    "type": "job",
     "intervalMs": 14400000,
     "message": "[cron:system-status] Operational status check.",
     "enabled": true,
+    "handler": "system-status",
     "description": "Operational status check every 4 hours (JS handler)"
   },
   {
     "name": "analyze-failures",
+    "type": "job",
     "intervalMs": 86400000,
     "agent": "bob",
     "message": "[cron:analyze-failures] Analyze the last 10 evaluations in .state/evaluations/. Identify the top recurring pattern. Write findings to agents/bob/workspace/analysis.md. Compare recent evaluations against previous ones \u2014 did targeted fixes help? If same issue persists, recommend a different approach.",
@@ -23,6 +28,7 @@
   },
   {
     "name": "optimize",
+    "type": "job",
     "intervalMs": 86400000,
     "agent": "optimizer",
     "message": "[cron:optimize] Read agents/bob/workspace/analysis.md and agents/optimizer/workspace/todo.md. Work on the top TODO item or top finding. Check for LLM-to-JS replacement opportunities. One fix per run.",
@@ -31,6 +37,7 @@
   },
   {
     "name": "health-check",
+    "type": "job",
     "intervalMs": 86400000,
     "agent": "may",
     "message": "[cron:health-check] Run: npx tsc --noEmit && npx vitest --run. Report pass/fail and test count. If anything fails, investigate.",
@@ -39,6 +46,7 @@
   },
   {
     "name": "coaching",
+    "type": "job",
     "intervalMs": 172800000,
     "agent": "coach",
     "message": "[cron:coaching] Read agents/coach/workspace/todo.md. If there are pending items under # TODO (not # Tracking), work on the top item. You have subagents and can run exercises on other agents. One task per run. If TODO is empty, skip silently.",
@@ -47,6 +55,7 @@
   },
   {
     "name": "lesson-consolidation",
+    "type": "job",
     "intervalMs": 604800000,
     "agent": "bob",
     "message": "[cron:lesson-consolidation] Read all agents/*/knowledge/lessons.md files. Deduplicate, consolidate, remove stale entries. Preserve proven lessons.",
@@ -55,6 +64,7 @@
   },
   {
     "name": "philosophy-check",
+    "type": "job",
     "intervalMs": 86400000,
     "agent": "bob",
     "message": "[cron:philosophy-check] Check recent git commits (git log --since='24 hours ago' --oneline) for philosophy violations. Read agents/shared/philosophy.md, review changes. Write findings to agents/bob/workspace/philosophy-check.md.",
@@ -63,6 +73,7 @@
   },
   {
     "name": "heartbeat-bob",
+    "type": "heartbeat",
     "intervalMs": 86400000,
     "agent": "bob",
     "message": "[heartbeat] Read your SOUL.md and heartbeat.md. Work through each section top to bottom.",
@@ -71,6 +82,7 @@
   },
   {
     "name": "heartbeat-optimizer",
+    "type": "heartbeat",
     "intervalMs": 86400000,
     "agent": "optimizer",
     "message": "[heartbeat] Read your SOUL.md and heartbeat.md. Work through each section top to bottom.",
@@ -79,6 +91,7 @@
   },
   {
     "name": "heartbeat-coach",
+    "type": "heartbeat",
     "intervalMs": 172800000,
     "agent": "coach",
     "message": "[heartbeat] Read your SOUL.md and heartbeat.md. Work through each section top to bottom.",
@@ -87,6 +100,7 @@
   },
   {
     "name": "heartbeat-evaluator",
+    "type": "heartbeat",
     "intervalMs": 86400000,
     "agent": "evaluator",
     "message": "[heartbeat] Read your SOUL.md and heartbeat.md. Work through each section top to bottom.",
@@ -95,6 +109,7 @@
   },
   {
     "name": "heartbeat-amy",
+    "type": "heartbeat",
     "intervalMs": 43200000,
     "agent": "amy",
     "message": "[heartbeat] Read your SOUL.md and heartbeat.md. Work through each section top to bottom.",
@@ -103,10 +118,53 @@
   },
   {
     "name": "heartbeat-scout",
+    "type": "heartbeat",
     "intervalMs": 86400000,
     "agent": "scout",
     "message": "[heartbeat] Read your SOUL.md and heartbeat.md. Work through each section top to bottom.",
     "enabled": true,
     "description": "Scout's mission heartbeat \u2014 wide-net research and discovery (24h)"
+  },
+  {
+    "name": "drain-todo",
+    "type": "job",
+    "intervalMs": 14400000,
+    "message": "[cron:drain-todo] Drain todo items for may.",
+    "enabled": true,
+    "handler": "drain-todo",
+    "description": "May self-drain: process todo.md items (JS handler, 4h)",
+    "handlerConfig": {
+      "sourceAgent": "may",
+      "targetAgent": "may",
+      "mode": "followUp"
+    }
+  },
+  {
+    "name": "optimizer-drain-todo",
+    "type": "job",
+    "intervalMs": 14400000,
+    "message": "[cron:optimizer-drain-todo] Drain todo items for optimizer.",
+    "enabled": true,
+    "handler": "drain-todo",
+    "description": "Optimizer drain: process todo.md items (JS handler, 4h)",
+    "handlerConfig": {
+      "sourceAgent": "optimizer",
+      "targetAgent": "optimizer",
+      "mode": "run"
+    }
+  },
+  {
+    "name": "bob-drain-todo",
+    "type": "job",
+    "intervalMs": 14400000,
+    "message": "[cron:bob-drain-todo] Drain todo items for bob.",
+    "enabled": true,
+    "handler": "drain-todo",
+    "description": "Bob drain: process todo.md items (JS handler, 4h)",
+    "handlerConfig": {
+      "sourceAgent": "bob",
+      "targetAgent": "bob",
+      "mode": "run"
+    }
   }
 ]
