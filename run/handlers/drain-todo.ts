@@ -24,7 +24,7 @@
 
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
-import type { SubagentManager } from "../src/index.js";
+import type { SubagentManager } from "../../src/index.js";
 
 export interface DrainTodoOptions {
   /** Path to the agents directory (e.g., /home/hao/may-agent/agents) */

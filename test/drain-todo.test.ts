@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { mkdtempSync, writeFileSync, mkdirSync, readFileSync, rmSync, existsSync } from "node:fs";
 import { resolve, join } from "node:path";
 import { tmpdir } from "node:os";
-import { parseTodoItems, createDrainTodoHandler } from "../run/drain-todo.js";
+import { parseTodoItems, createDrainTodoHandler } from "../run/handlers/drain-todo.js";
 
 describe("drain-todo (LLM-to-JS #4)", () => {
   let dir: string;

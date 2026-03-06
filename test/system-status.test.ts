@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { mkdtempSync, writeFileSync, mkdirSync, readFileSync, rmSync, existsSync } from "node:fs";
 import { resolve, join } from "node:path";
 import { tmpdir } from "node:os";
-import { runSystemStatus, formatStatusReport } from "../run/system-status.js";
+import { runSystemStatus, formatStatusReport } from "../run/handlers/system-status.js";
 import { Cron } from "../run/cron.js";
 
 describe("system-status (LLM-to-JS #3)", () => {

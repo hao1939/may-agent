@@ -20,8 +20,8 @@
 import { readdirSync, readFileSync, existsSync, statSync, appendFileSync, mkdirSync } from "node:fs";
 import { join, dirname, basename } from "node:path";
 import { execSync } from "node:child_process";
-import { loadAllSessionMetas } from "../src/persistence.js";
-import type { PersistedSession } from "../src/persistence.js";
+import { loadAllSessionMetas } from "../../src/persistence.js";
+import type { PersistedSession } from "../../src/persistence.js";
 
 export interface SystemStatusResult {
   timestamp: string;

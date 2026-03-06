@@ -5,14 +5,14 @@ import { existsSync, readFileSync, writeFileSync, unlinkSync, mkdirSync, appendF
 import { getModel } from "@mariozechner/pi-ai";
 import { SubagentManager, evaluateTask, writeSkippedEvaluations } from "../src/index.js";
 import { EventBus } from "./event-bus.js";
-import { attachConsoleUI } from "./console-ui.js";
-import { attachSocketUI } from "./socket-ui.js";
-import { attachOpenClawUI } from "./openclaw-ui.js";
-import { attachTelegramBot } from "./telegram-ui.js";
+import { attachConsoleUI } from "./ui/console.js";
+import { attachSocketUI } from "./ui/socket.js";
+import { attachOpenClawUI } from "./ui/openclaw.js";
+import { attachTelegramBot } from "./ui/telegram.js";
 import { loadAgents, reloadAgents, setAgentSessionId, runAgentCleanup, getAgentCrons, type AgentLoaderOptions } from "./agent-loader.js";
-import { handleSystemStatus } from "./system-status.js";
-import { handleEvaluateSessions } from "./evaluate-sessions.js";
-import { createDrainTodoHandler } from "./drain-todo.js";
+import { handleSystemStatus } from "./handlers/system-status.js";
+import { handleEvaluateSessions } from "./handlers/evaluate-sessions.js";
+import { createDrainTodoHandler } from "./handlers/drain-todo.js";
 
 const PROJECT_ROOT = resolve(process.env.PROJECT_ROOT || dirname(fileURLToPath(import.meta.url)), process.env.PROJECT_ROOT ? "." : "..");
 const AGENTS_ROOT = resolve(process.env.AGENTS_ROOT || resolve(PROJECT_ROOT, "agents"));

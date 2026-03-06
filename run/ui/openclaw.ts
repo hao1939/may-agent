@@ -23,7 +23,7 @@
 
 import { execSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync, watchFile, unwatchFile } from "node:fs";
-import { eventChannel, type EventBus } from "./event-bus.js";
+import { eventChannel, type EventBus } from "../event-bus.js";
 
 export interface OpenClawUIOptions {
   bus: EventBus;
