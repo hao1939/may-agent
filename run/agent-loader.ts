@@ -115,10 +115,20 @@ function buildTools(
   const tools: AgentTool[] = [];
 
   // Standard deny patterns for all exec tools
+  // `cd /absolute` is allowed only when the target is under projectRoot.
+  // Stale-path rewrites are handled by rewriteHallucinatedCommand in createExecTool.
+  const allowedRoots = [projectRoot, opts.agentsRoot, persistDir];
   const baseDenyPatterns = [
     /^\s*find\s+\/\s/,
     /^\s*ls\s+\/\s*$/,
-    /^\s*cd\s+\/(?!home\/hao\/may-agent)/,
+    {
+      test: (cmd: string) => {
+        const m = cmd.match(/^\s*cd\s+(["']?)(\/\S+)\1/);
+        if (!m) return false;
+        const target = m[2];
+        return !allowedRoots.some(r => target === r || target.startsWith(r + '/'));
+      },
+    },
   ];
 
   // File-write deny patterns for read-only exec
@@ -506,4 +516,98 @@ export function reloadAgents(opts: AgentLoaderOptions): { added: string[]; updat
     const msg = err instanceof Error ? err.message : String(err);
     return { added: [], updated: [], errors: [msg] };
   }
+}
+
+// ── Agent handler auto-discovery ──────────────────────────────────────────
+
+import type { HandlerContext, HandlerModule } from "./handler-context.js";
+import type { CronEntry } from "../src/cron-tool.js";
+
+/**
+ * Auto-discover and register JS handlers for cron entries.
+ *
+ * For each agent with a cron, scans its cron.json for entries with a `handler`
+ * field. The handler field names a file in agents/<name>/handlers/<handler>.js.
+ * The file must export { create } conforming to HandlerModule.
+ *
+ * Call this after loadAgents() completes.
+ */
+export async function loadAgentHandlers(opts: AgentLoaderOptions & {
+  /** Function to get an agent's active session ID (for followUp). */
+  getSessionId: (agentName: string) => string | null;
+}): Promise<{ registered: string[]; errors: string[] }> {
+  const { agentsRoot, persistDir, projectRoot, manager, bus } = opts;
+  const registered: string[] = [];
+  const errors: string[] = [];
+
+  for (const [agentName, cron] of agentCrons) {
+    const entries = cron.getEntries();
+    const handlersNeeded = entries.filter(e => e.handler);
+
+    if (handlersNeeded.length === 0) continue;
+
+    // Build a HandlerContext for this agent
+    const ctx: HandlerContext = {
+      manager,
+      persistDir,
+      projectRoot,
+      agentsRoot,
+      agentName,
+      getSessionId: () => opts.getSessionId(agentName),
+      emit: (msg) => bus.emit({ type: "info", message: msg }),
+      log: (msg) => bus.emit({ type: "info", message: msg }),
+    };
+
+    // Group entries by handler file (multiple entries can share one handler file)
+    const byFile = new Map<string, CronEntry[]>();
+    for (const entry of handlersNeeded) {
+      const file = entry.handler!;
+      if (!byFile.has(file)) byFile.set(file, []);
+      byFile.get(file)!.push(entry);
+    }
+
+    for (const [handlerFile, fileEntries] of byFile) {
+      // Resolve handler: look for .js (compiled) first, then .ts  
+      const handlerDir = resolve(agentsRoot, agentName, "handlers");
+      const jsPath = resolve(handlerDir, `${handlerFile}.js`);
+      const tsPath = resolve(handlerDir, `${handlerFile}.ts`);
+
+      // We need the compiled .js version. If only .ts exists, that's an error.
+      let modulePath: string;
+      if (existsSync(jsPath)) {
+        modulePath = jsPath;
+      } else if (existsSync(tsPath)) {
+        // Try tsx import via the .ts path — Node with tsx loader can handle it
+        modulePath = tsPath;
+      } else {
+        const msg = `Handler file not found: ${handlerDir}/${handlerFile}.(js|ts)`;
+        errors.push(msg);
+        bus.emit({ type: "info", message: `[handler] ⚠️ ${msg}` });
+        continue;
+      }
+
+      try {
+        const mod: HandlerModule = await import(modulePath);
+        if (typeof mod.create !== "function") {
+          const msg = `Handler ${modulePath} does not export create()`;
+          errors.push(msg);
+          bus.emit({ type: "info", message: `[handler] ⚠️ ${msg}` });
+          continue;
+        }
+
+        for (const entry of fileEntries) {
+          const fn = mod.create(ctx, entry);
+          cron.registerHandler(entry.name, fn);
+          registered.push(`${agentName}:${entry.name}`);
+          bus.emit({ type: "info", message: `[handler] Registered ${agentName}:${entry.name} → ${handlerFile}.ts` });
+        }
+      } catch (err) {
+        const msg = `Failed to import handler ${modulePath}: ${err instanceof Error ? err.message : String(err)}`;
+        errors.push(msg);
+        bus.emit({ type: "info", message: `[handler] ⚠️ ${msg}` });
+      }
+    }
+  }
+
+  return { registered, errors };
 }
