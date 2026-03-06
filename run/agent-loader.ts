@@ -57,7 +57,7 @@ export interface AgentLoaderOptions {
   models: Record<string, Model<any>>;
   manager: SubagentManager;
   bus: EventBus;
-  schedulersEnabled: boolean;
+  cronEnabled: boolean;
 }
 
 // ── Track active session IDs for subagent/workflow tools ────────────────
@@ -301,7 +301,7 @@ function buildTools(
         tools.push(createCronTool({
           configPath: cronPath,
           onConfigChange: () => cron!.reload(),
-          cronEnabled: opts.schedulersEnabled,
+          cronEnabled: opts.cronEnabled,
         }));
         break;
       }
@@ -554,7 +554,6 @@ export async function loadAgentHandlers(opts: AgentLoaderOptions & {
       agentsRoot,
       agentName,
       getSessionId: () => opts.getSessionId(agentName),
-      emit: (msg) => bus.emit({ type: "info", message: msg }),
       log: (msg) => bus.emit({ type: "info", message: msg }),
     };
 

@@ -165,7 +165,7 @@ const loaderOpts: AgentLoaderOptions = {
   models,
   manager,
   bus,
-  schedulersEnabled: CRON_ENABLED,
+  cronEnabled: CRON_ENABLED,
 };
 
 const loadResult = loadAgents(loaderOpts);

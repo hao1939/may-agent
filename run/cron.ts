@@ -7,22 +7,17 @@
  *    Session is created lazily on first fire and reused across fires.
  *    If the session is still processing when the timer fires again, the fire is skipped.
  *
- * 2. **job** (no handler) — spawns `./may.sh task` as a child process.
- *    Each fire gets its own ephemeral session/process. Overlap is prevented
- *    (skip if previous instance still running). Timeout protection with SIGTERM/SIGKILL.
- *
- * 3. **job** (with handler) — runs a registered JS function in-process.
+ * 2. **job** (with handler) — runs a registered JS function in-process.
  *    Result is tracked the same as LLM jobs. No process spawn, no LLM cost.
+ *    All job entries MUST have a handler registered (via loadAgentHandlers).
  *
- * Backward compatibility: if `type` is missing, infer from fields:
- *   - Has `handler` registered → job with handler
- *   - Has `agent` → job (spawn task)
- *   - Otherwise → followUp into caller's session (legacy heartbeat behavior)
+ * 3. **legacy-followup** — followUp into caller's session (backward compat for
+ *    entries with no type/handler/agent). Will be removed once all entries
+ *    are migrated to heartbeat or job-with-handler.
  *
  * Every completed execution appends a JobResult to `.state/job-history.jsonl`.
  */
 
-import { spawn, type ChildProcess } from "node:child_process";
 import { readFileSync, existsSync, appendFileSync, mkdirSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import type { SubagentManager } from "../src/index.js";
@@ -32,13 +27,7 @@ import type { CronEntry, JobResult } from "../src/cron-tool.js";
 export type CronHandler = () => Promise<void>;
 
 /** Callback when a job fires (for notifications). */
-export type CronJobCallback = (entry: CronEntry, type: "js" | "heartbeat" | "task") => void;
-
-/** Default timeout for spawned job processes: 10 minutes. */
-const DEFAULT_TIMEOUT_MS = 600_000;
-
-/** Grace period between SIGTERM and SIGKILL. */
-const KILL_GRACE_MS = 5_000;
+export type CronJobCallback = (entry: CronEntry, type: "js" | "heartbeat") => void;
 
 export class Cron {
   private timers = new Map<string, ReturnType<typeof setInterval>>();
@@ -46,9 +35,6 @@ export class Cron {
   private started = false;
   private handlers = new Map<string, CronHandler>();
   private onJobFire?: CronJobCallback;
-
-  /** Track running task processes to prevent overlap. */
-  private runningTasks = new Map<string, ChildProcess>();
 
   /** Track running heartbeat sessions (sessionId per agent). */
   private heartbeatSessions = new Map<string, string>();
@@ -146,7 +132,7 @@ export class Cron {
   }
 
   /** Resolve the effective execution mode for an entry. */
-  private resolveMode(entry: CronEntry): "heartbeat" | "job-handler" | "job-task" | "legacy-followup" {
+  private resolveMode(entry: CronEntry): "heartbeat" | "job-handler" | "legacy-followup" | null {
     const handler = this.handlers.get(entry.name);
 
     if (entry.type === "heartbeat") {
@@ -154,17 +140,23 @@ export class Cron {
     }
 
     if (entry.type === "job") {
-      return handler ? "job-handler" : "job-task";
+      if (handler) return "job-handler";
+      this.onError?.(`Cron entry "${entry.name}" has type "job" but no registered handler — skipping. All job entries require a handler.`);
+      return null;
     }
 
     // Backward compatibility: no type field — infer from fields
     if (handler) return "job-handler";
-    if (entry.agent) return "job-task";
+    if (entry.agent && !handler) {
+      this.onError?.(`Cron entry "${entry.name}" has agent "${entry.agent}" but no registered handler — skipping. Use handler: "run-agent-task" in cron.json.`);
+      return null;
+    }
     return "legacy-followup";
   }
 
   private startEntry(entry: CronEntry): void {
     const mode = this.resolveMode(entry);
+    if (!mode) return; // entry was rejected by resolveMode
 
     const timer = setInterval(() => {
       switch (mode) {
@@ -173,9 +165,6 @@ export class Cron {
           break;
         case "job-handler":
           this.fireHandler(entry);
-          break;
-        case "job-task":
-          this.fireTask(entry);
           break;
         case "legacy-followup":
           this.fireLegacyFollowUp(entry);
@@ -331,93 +320,6 @@ export class Cron {
         error: errMsg,
       });
       this.onError?.(`Cron handler "${entry.name}" failed: ${errMsg}`);
-    });
-  }
-
-  // ── Job without handler: spawn task process ─────────────────────────
-
-  private fireTask(entry: CronEntry): void {
-    // Don't spawn if already running
-    if (this.runningTasks.has(entry.name)) {
-      const result = this.makeSkipResult(entry, "job");
-      this.appendJobResult(result);
-      this.onError?.(`Cron job "${entry.name}" skipped — already running`);
-      return;
-    }
-
-    this.onJobFire?.(entry, "task");
-    const startedAt = new Date().toISOString();
-    const startMs = Date.now();
-    const taskMsg = entry.message || `[cron:${entry.name}] Run your task.`;
-    const agentName = entry.agent || "may";
-    const timeoutMs = entry.timeoutMs ?? DEFAULT_TIMEOUT_MS;
-
-    // Spawn: ./may.sh task --agent <agent> --name <name> "message"
-    const proc = spawn("bash", [
-      resolve(this.projectRoot, "may.sh"),
-      "task",
-      "--agent", agentName,
-      "--name", entry.name,
-      taskMsg,
-    ], {
-      cwd: this.projectRoot,
-      stdio: "ignore",
-      detached: true,
-    });
-    proc.unref();
-
-    this.runningTasks.set(entry.name, proc);
-
-    // Timeout protection
-    const timeoutTimer = setTimeout(() => {
-      if (!this.runningTasks.has(entry.name)) return;
-
-      this.onError?.(`Cron job "${entry.name}" timed out after ${timeoutMs}ms — sending SIGTERM`);
-
-      try { proc.kill("SIGTERM"); } catch {}
-
-      // SIGKILL after grace period
-      const killTimer = setTimeout(() => {
-        try { proc.kill("SIGKILL"); } catch {}
-      }, KILL_GRACE_MS);
-      killTimer.unref();
-    }, timeoutMs);
-    timeoutTimer.unref();
-
-    const cleanup = (status: JobResult["status"], error?: string) => {
-      clearTimeout(timeoutTimer);
-      this.runningTasks.delete(entry.name);
-
-      const isTimeout = status === "failure" && error?.includes("timed out");
-      this.appendJobResult({
-        jobName: entry.name,
-        type: "job",
-        status: isTimeout ? "timeout" : status,
-        summary: isTimeout
-          ? `Job "${entry.name}" timed out after ${timeoutMs}ms`
-          : status === "success"
-            ? `Job "${entry.name}" completed`
-            : `Job "${entry.name}" failed`,
-        startedAt,
-        endedAt: new Date().toISOString(),
-        durationMs: Date.now() - startMs,
-        agent: agentName,
-        error,
-      });
-    };
-
-    proc.on("exit", (code, signal) => {
-      if (signal === "SIGTERM" || signal === "SIGKILL") {
-        cleanup("timeout", `Process killed by ${signal} after timeout`);
-      } else if (code === 0) {
-        cleanup("success");
-      } else {
-        cleanup("failure", `Process exited with code ${code}`);
-      }
-    });
-
-    proc.on("error", (err) => {
-      cleanup("failure", `Spawn failed: ${err.message}`);
     });
   }
 

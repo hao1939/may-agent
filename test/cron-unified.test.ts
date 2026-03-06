@@ -90,7 +90,7 @@ describe("Cron — unified design", () => {
     c.stop();
   });
 
-  it("legacy entries with agent: attempts task spawn (backward compat)", () => {
+  it("legacy entries with agent but no handler: skipped with error", () => {
     writeFileSync(configPath, JSON.stringify([
       { name: "analyze", intervalMs: 60000, agent: "bob", message: "do analysis" },
     ]));
@@ -99,11 +99,11 @@ describe("Cron — unified design", () => {
     const c = new Cron(configPath, mgr as any, () => "sid-1", (msg) => errors.push(msg));
     c.start();
 
-    // spawn will fail (no may.sh) — we're testing mode resolution
     vi.advanceTimersByTime(60000);
     c.stop();
-    // No followUp/run calls — it went to spawnTask path
-    expect(mgr.calls.filter(c => c.method === "followUp")).toHaveLength(0);
+    // Entry should be rejected at startup, no calls at all
+    expect(mgr.calls).toHaveLength(0);
+    expect(errors.some(e => e.includes("no registered handler"))).toBe(true);
   });
 
   it("legacy entries with registered handler: run JS handler", async () => {
