@@ -7,7 +7,6 @@ import { SubagentManager, evaluateTask, writeSkippedEvaluations } from "../src/i
 import { EventBus } from "./event-bus.js";
 import { attachConsoleUI } from "./ui/console.js";
 import { attachSocketUI } from "./ui/socket.js";
-import { attachOpenClawUI } from "./ui/openclaw.js";
 import { attachTelegramBot } from "./ui/telegram.js";
 import { loadAgents, reloadAgents, setAgentSessionId, getAgentSessionId, runAgentCleanup, getAgentCrons, loadAgentHandlers, type AgentLoaderOptions } from "./agent-loader.js";
 
@@ -66,7 +65,6 @@ function formatDurationMs(ms: number): string {
 // CLI args
 const CRON_ENABLED = process.argv.includes("--cron");
 const TELEGRAM_ENABLED = process.argv.includes("--telegram");
-const OPENCLAW_ENABLED = process.argv.includes("--openclaw");
 const CONSOLE_ENABLED = process.argv.includes("--console");
 const KEEP_SESSION = process.argv.includes("--keep-session");
 const INITIAL_TASK = (() => {
@@ -120,15 +118,7 @@ let sid: string;
 const bus = new EventBus();
 if (CONSOLE_ENABLED) attachConsoleUI(bus);
 
-console.log(`[${new Date().toISOString()}] [may.ts] Starting (pid=${process.pid}, instance=${INSTANCE_LABEL}, root=${PROJECT_ROOT})`);
-
-// ── OpenClaw bridge (--openclaw + OPENCLAW_TARGET to enable) ────────────────────
-
-let openclawUI: ReturnType<typeof attachOpenClawUI> | null = null;
-if (OPENCLAW_ENABLED && process.env.OPENCLAW_TARGET) {
-  openclawUI = attachOpenClawUI({ bus, interfaceAgent: process.env.AGENT || "may" });
-  bus.emit({ type: "info", message: `[openclaw-ui] Enabled — sending to ${process.env.OPENCLAW_CHANNEL || "telegram"}:${process.env.OPENCLAW_TARGET}` });
-}
+bus.emit({ type: "info", message: `[may.ts] Starting (pid=${process.pid}, instance=${INSTANCE_LABEL}, root=${PROJECT_ROOT})` });
 
 const manager = new SubagentManager({
   persistDir: PERSIST_DIR,
@@ -694,7 +684,7 @@ const telegramBot = TELEGRAM_ENABLED
  * Subscribe to the interface session to detect idle transitions.
  */
 function emitPrompt(): void {
-  // Notify all UI layers (telegram, openclaw, etc.) that the turn is done
+  // Notify all UI layers (telegram, etc.) that the turn is done
   bus.emit({ type: "prompt", message: interfaceAgent, channel: "chat" });
   if (process.stdin.isTTY) {
     const prefix = INSTANCE ? `[${INSTANCE}] ` : "";
@@ -730,7 +720,6 @@ if (!KEEP_SESSION) {
 } else if (process.stdin.isTTY) {
   const rl = createInterface({ input: process.stdin, output: process.stdout });
   activeRL = rl;
-
   rl.on("SIGINT", () => {
     // Check if the interface agent is currently running
     const sessions = manager.status();
@@ -782,7 +771,6 @@ if (!KEEP_SESSION) {
     rl.on("close", () => {
       if (pasteTimer) { clearTimeout(pasteTimer); flushPaste(); }
       socketUI.close();
-      openclawUI?.close();
       telegramBot.close();
       resolve();
     });
