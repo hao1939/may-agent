@@ -174,7 +174,7 @@ describe("Cron handler registration", () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
-  it("calls JS handler instead of followUp when registered", () => {
+  it("calls JS handler instead of followUp when registered", async () => {
     writeFileSync(configPath, JSON.stringify([
       { name: "system-status", intervalMs: 10000, message: "ignored when handler exists" },
     ]));
@@ -188,11 +188,11 @@ describe("Cron handler registration", () => {
     c.load();
     c.start();
 
-    vi.advanceTimersByTime(10000);
+    await vi.advanceTimersByTimeAsync(10000);
     expect(handlerCalls).toHaveLength(1);
     expect(followUpCalls).toHaveLength(0); // LLM NOT called
 
-    vi.advanceTimersByTime(10000);
+    await vi.advanceTimersByTimeAsync(10000);
     expect(handlerCalls).toHaveLength(2);
     expect(followUpCalls).toHaveLength(0);
 

@@ -14,8 +14,28 @@ export interface CronEntry {
   message: string;
   enabled: boolean;
   description?: string;
-  /** Agent to run this job. If set, spawns a dedicated instance. If not, uses followUp to main session. */
+  /** Entry type: "heartbeat" fires into persistent session, "job" spawns task or runs handler. */
+  type?: "heartbeat" | "job";
+  /** Agent to run this job. For heartbeat: which agent's session. For job: spawns dedicated instance. */
   agent?: string;
+  /** JS handler name. If set, runs in-process instead of spawning. */
+  handler?: string;
+  /** Timeout for spawned job processes in ms (default: 600000 = 10 min). */
+  timeoutMs?: number;
+}
+
+export interface JobResult {
+  jobName: string;
+  type: "heartbeat" | "job";
+  status: "success" | "failure" | "skipped" | "timeout";
+  summary: string;
+  startedAt: string;
+  endedAt: string;
+  durationMs: number;
+  agent?: string;
+  sessionId?: string;
+  artifacts?: string[];
+  error?: string;
 }
 
 function textResult(text: string): AgentToolResult<string> {
