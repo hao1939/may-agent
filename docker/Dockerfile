@@ -8,7 +8,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     jq \
     procps \
     socat \
-    supervisor \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Google Chrome stable

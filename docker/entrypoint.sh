@@ -9,77 +9,26 @@ SCREEN_RES=${SCREEN_RESOLUTION:-1920x1080x24}
 VNC_PORT=${VNC_PORT:-5900}
 NOVNC_PORT=${NOVNC_PORT:-6080}
 
-cat > /tmp/supervisord.conf << EOF
-[unix_http_server]
-file=/tmp/supervisor.sock
+export DISPLAY=":${DISPLAY_NUM}"
+export SCHEDULERS=1
 
-[supervisorctl]
-serverurl=unix:///tmp/supervisor.sock
+# Start virtual display
+Xvfb :${DISPLAY_NUM} -screen 0 ${SCREEN_RES} -ac +extension GLX +render -noreset &>/dev/null &
+sleep 1
 
-[rpcinterface:supervisor]
-supervisor.rpcinterface_factory=supervisor.rpcinterface:make_main_rpcinterface
+# Start window manager
+fluxbox &>/dev/null &
 
-[supervisord]
-nodaemon=true
-logfile=/dev/null
-logfile_maxbytes=0
-pidfile=/tmp/supervisord.pid
-environment=DISPLAY=":${DISPLAY_NUM}",SCHEDULERS="1"
+# Start VNC server
+x11vnc -display :${DISPLAY_NUM} -forever -shared -rfbport ${VNC_PORT} -nopw -quiet -xkb -noxrecord -noxfixes -noxdamage &>/dev/null &
 
-[program:xvfb]
-command=Xvfb :${DISPLAY_NUM} -screen 0 ${SCREEN_RES} -ac +extension GLX +render -noreset
-priority=10
-autorestart=true
-stdout_logfile=/dev/null
-stderr_logfile=/dev/null
+# Start noVNC web client
+websockify --web /usr/share/novnc ${NOVNC_PORT} localhost:${VNC_PORT} &>/dev/null &
 
-[program:fluxbox]
-command=fluxbox
-priority=20
-autorestart=true
-startretries=10
-stdout_logfile=/dev/null
-stderr_logfile=/dev/null
+# Start Chrome
+google-chrome --no-sandbox --disable-gpu --no-first-run --disable-dev-shm-usage --start-maximized --user-data-dir=/tmp/chrome-profile &>/dev/null &
 
-[program:x11vnc]
-command=x11vnc -display :${DISPLAY_NUM} -forever -shared -rfbport ${VNC_PORT} -nopw -quiet -xkb -noxrecord -noxfixes -noxdamage
-priority=20
-autorestart=true
-startretries=10
-stdout_logfile=/dev/null
-stderr_logfile=/dev/null
-
-[program:novnc]
-command=websockify --web /usr/share/novnc ${NOVNC_PORT} localhost:${VNC_PORT}
-priority=30
-autorestart=true
-stdout_logfile=/dev/stdout
-stdout_logfile_maxbytes=0
-stderr_logfile=/dev/stderr
-stderr_logfile_maxbytes=0
-
-[program:chrome]
-command=google-chrome --no-sandbox --disable-gpu --no-first-run --disable-dev-shm-usage --start-maximized --user-data-dir=/tmp/chrome-profile
-priority=35
-autorestart=true
-startretries=5
-startsecs=3
-stdout_logfile=/dev/null
-stderr_logfile=/dev/null
-
-[program:may-agent]
-command=sh -c "exec tsx run/launcher.ts --keep-session --cron --telegram --openclaw --console"
-directory=/app
-priority=40
-autorestart=unexpected
-startsecs=5
-stopwaitsecs=10
-stopasgroup=true
-killasgroup=true
-stdout_logfile=/dev/stdout
-stdout_logfile_maxbytes=0
-stderr_logfile=/dev/stderr
-stderr_logfile_maxbytes=0
-EOF
-
-exec supervisord -n -c /tmp/supervisord.conf
+# Launcher is the supervisor — handles crash recovery, hot-reload (exit 100), backoff.
+# To restart agent without restarting container:
+#   docker exec <container> restart-may.sh
+exec tsx run/launcher.ts --keep-session --cron --telegram --openclaw --console
