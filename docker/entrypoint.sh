@@ -68,7 +68,7 @@ stdout_logfile=/dev/null
 stderr_logfile=/dev/null
 
 [program:may-agent]
-command=sh -c "exec tsx run/may.ts --cron"
+command=sh -c "exec tsx run/may.ts --cron --telegram --openclaw"
 directory=/app
 priority=40
 autorestart=true

@@ -66,6 +66,8 @@ function formatDurationMs(ms: number): string {
 
 // CLI args
 const SCHEDULERS_ENABLED = process.argv.includes("--cron");
+const TELEGRAM_ENABLED = process.argv.includes("--telegram");
+const OPENCLAW_ENABLED = process.argv.includes("--openclaw");
 const TASK_MODE = (() => {
   const idx = process.argv.indexOf("--task");
   if (idx !== -1 && process.argv[idx + 1]) return process.argv[idx + 1];
@@ -117,10 +119,10 @@ let sid: string;
 const bus = new EventBus();
 attachConsoleUI(bus);
 
-// ── OpenClaw bridge (OPENCLAW_TARGET=<id> to enable) ────────────────────
+// ── OpenClaw bridge (--openclaw + OPENCLAW_TARGET to enable) ────────────────────
 
 let openclawUI: ReturnType<typeof attachOpenClawUI> | null = null;
-if (process.env.OPENCLAW_TARGET) {
+if (OPENCLAW_ENABLED && process.env.OPENCLAW_TARGET) {
   openclawUI = attachOpenClawUI({ bus, interfaceAgent: process.env.AGENT || "may" });
   bus.emit({ type: "info", message: `[openclaw-ui] Enabled — sending to ${process.env.OPENCLAW_CHANNEL || "telegram"}:${process.env.OPENCLAW_TARGET}` });
 }
@@ -663,14 +665,16 @@ if (!TASK_MODE) {
   } catch {}
 }
 
-// ── Telegram bot (TELEGRAM_BOT_TOKEN to enable) ─────────────────────────
+// ── Telegram bot (--telegram flag to enable) ─────────────────────────
 
-const telegramBot = attachTelegramBot({
-  bus,
-  manager,
-  getSessionId: () => sid,
-  interfaceAgent,
-});
+const telegramBot = TELEGRAM_ENABLED
+  ? attachTelegramBot({
+      bus,
+      manager,
+      getSessionId: () => sid,
+      interfaceAgent,
+    })
+  : { close: () => {} };
 
 // ── Idle prompt ────────────────────────────────────────────────────────
 

@@ -72,7 +72,7 @@ cmd_run() {
   export INSTANCE="$instance"
   while true; do
     echo "[$(date)] Starting may-agent (instance: ${instance:-default})..."
-    npx tsx run/may.ts --cron
+    npx tsx run/may.ts --cron --telegram --openclaw
     EXIT_CODE=$?
     if [ $EXIT_CODE -eq 0 ]; then
       echo "[$(date)] Clean exit."
@@ -113,7 +113,7 @@ cmd_start() {
     done < .env
   fi
   [ -n "$STATE_DIR" ] && [ "$STATE_DIR" != ".state" ] && cmd="$cmd STATE_DIR=$STATE_DIR"
-  cmd="$cmd npx tsx run/may.ts --cron"
+  cmd="$cmd npx tsx run/may.ts --cron --telegram --openclaw"
 
   # Start in tmux
   if tmux has-session -t "$tmux_session" 2>/dev/null; then
