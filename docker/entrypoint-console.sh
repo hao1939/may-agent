@@ -25,7 +25,6 @@ google-chrome --no-sandbox --disable-gpu --no-first-run --disable-dev-shm-usage 
 # Run may-agent via launcher (handles crash recovery + hot-reload).
 # To restart may-agent without killing the container:
 #   docker exec <container> /usr/local/bin/restart-may.sh
-export SCHEDULERS=1
 
 # Launcher handles signals, backoff, and exit codes — no bash loop needed
-exec tsx run/launcher.ts --keep-session --cron --telegram --openclaw --console
+exec tsx run/launcher.ts --keep-session --cron --telegram --console
