@@ -135,3 +135,51 @@ export interface SessionTreeNode {
   children: SessionTreeNode[];
   result?: string;
 }
+
+// ── Health API types ───────────────────────────────────────────────────
+
+/** Active session info returned by health(). */
+export interface HealthActiveSession {
+  sessionId: string;
+  agent: string;
+  status: "running" | "done" | "error" | "interrupted" | "idle";
+  startedAt: number;
+  runtime: string;
+  turnCount: number;
+  maxTurns?: number;
+}
+
+/** In-memory health snapshot returned by manager.health(). */
+export interface ManagerHealthReport {
+  registeredAgents: { count: number; names: string[] };
+  activeSessions: HealthActiveSession[];
+  sessionCounts: { running: number; idle: number; total: number };
+  uptime: string;
+  timestamp: string;
+}
+
+/** Options for auditHealth(). */
+export interface AuditHealthOptions {
+  // Reserved for future options (e.g., agentsRoot, skipBuildChecks).
+  // Currently unused — kept as extension point.
+}
+
+/** Filesystem-based ground-truth scan returned by manager.auditHealth(). */
+export interface AuditHealthReport {
+  sessionsLast24h: number;
+  unevaluated: { total: number; actionable: number; autoSkippable: number };
+  staleSessions: Array<{ sessionId: string; agent: string; task: string }>;
+  totalPersistedSessions: number;
+  workflowRuns: { total: number; running: number; completed: number; interrupted: number };
+  /** All persisted session IDs (for reconciliation without re-scanning). */
+  persistedSessionIds: Set<string>;
+  timestamp: string;
+}
+
+/** Reconciliation report comparing in-memory vs filesystem state. */
+export interface ReconcileReport {
+  health: ManagerHealthReport;
+  audit: AuditHealthReport;
+  discrepancies: string[];
+  healthy: boolean;
+}
