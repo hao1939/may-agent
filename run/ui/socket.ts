@@ -60,9 +60,7 @@ export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
     const alive = await isSocketAlive(socketPath);
     if (alive) {
       // Another instance owns this socket — run without one
-      console.error(`[control] Socket ${socketPath} is owned by another instance.`);
-      console.error(`[control] This instance will run WITHOUT a control socket.`);
-      console.error(`[control] Set INSTANCE=<name> to use a separate socket.`);
+      bus.emit({ type: "info", message: `[control] Socket ${socketPath} is owned by another instance. Running WITHOUT a control socket. Set INSTANCE=<name> to use a separate socket.` });
       return {
         close: () => {},
         clientCount: () => 0,
@@ -129,15 +127,15 @@ export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
   });
 
   server.listen(socketPath, () => {
-    console.log(`[control] Listening on ${socketPath}`);
+    bus.emit({ type: "info", message: `[control] Listening on ${socketPath}` });
   });
 
   server.on("error", (err) => {
-    console.error(`[control] Socket error: ${err.message}`);
+    bus.emit({ type: "info", message: `[control] Socket error: ${err.message}` });
   });
 
   server.on("close", () => {
-    console.error(`[control] Socket server CLOSED`);
+    bus.emit({ type: "info", message: `[control] Socket server CLOSED` });
   });
 
   // Cleanup on process exit

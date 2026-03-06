@@ -307,7 +307,7 @@ function buildTools(
       }
 
       default:
-        console.warn(`[loader] Unknown tool preset "${preset}" for agent "${config.name}" — skipping`);
+        bus.emit({ type: "info", message: `[loader] Unknown tool preset "${preset}" for agent "${config.name}" — skipping` });
     }
   }
 
@@ -415,7 +415,7 @@ export function validateAgentConfig(
 
 // ── Load and register agents ────────────────────────────────────────────
 
-function loadAgentConfig(agentDir: string): AgentConfig | null {
+function loadAgentConfig(agentDir: string, bus: EventBus): AgentConfig | null {
   const configPath = resolve(agentDir, "agent.json");
   if (!existsSync(configPath)) return null;
 
@@ -424,7 +424,7 @@ function loadAgentConfig(agentDir: string): AgentConfig | null {
     return JSON.parse(raw) as AgentConfig;
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error(`[loader] Failed to parse ${configPath}: ${msg}`);
+    bus.emit({ type: "info", message: `[loader] Failed to parse ${configPath}: ${msg}` });
     return null;
   }
 }
@@ -452,7 +452,7 @@ export function loadAgents(opts: AgentLoaderOptions): LoadResult {
     if (entry.name === "shared") continue; // shared/ is not an agent
 
     const agentDir = resolve(agentsRoot, entry.name);
-    const config = loadAgentConfig(agentDir);
+    const config = loadAgentConfig(agentDir, opts.bus);
     if (!config) continue;
 
     // Validate before registering
@@ -492,12 +492,12 @@ export function loadAgents(opts: AgentLoaderOptions): LoadResult {
     }
   }
 
-  // Fail-fast: if any agent configs have errors, report them all and throw
+  // Report validation errors as warnings — skip bad agents, don't crash
   if (allErrors.length > 0) {
     const report = allErrors
       .map((e) => `  ${e.agent}.${e.field}: ${e.message}`)
       .join("\n");
-    throw new Error(`Agent config validation failed:\n${report}`);
+    opts.bus.emit({ type: "info", message: `[loader] Skipped agents with config errors:\n${report}` });
   }
 
   return { added, updated };
