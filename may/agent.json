@@ -1,16 +1,29 @@
 {
   "name": "may",
-  "description": "Supervisor — delegates to coder, reviews results",
+  "description": "Supervisor \u2014 delegates to coder, reviews results",
   "domain": "may-agent coordination",
   "model": "opus",
-  "tools": ["read-write", "exec", "subagents", "workflow", "cron"],
-  "sharedKnowledge": ["system-design.md", "team.md"],
+  "tools": [
+    "read-write",
+    "exec",
+    "subagents",
+    "workflow",
+    "cron"
+  ],
+  "sharedKnowledge": [
+    "system-design.md",
+    "team.md"
+  ],
   "systemPromptFiles": [
     "knowledge/domain.md",
     "tools/INDEX.md"
   ],
   "delegateDeny": {
-    "agents": ["coder", "qa"],
+    "agents": [
+      "coder",
+      "qa"
+    ],
     "hint": "Use workflow.run(\"implement-and-review\", task) for code changes. The workflow handles coder + QA review automatically."
-  }
+  },
+  "heartbeatMs": 1800000
 }
