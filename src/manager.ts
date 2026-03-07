@@ -28,8 +28,10 @@ import {
 } from "./persistence.js";
 import type { MemoryEntry, WorkflowRun, PersistedSession, Registry } from "./persistence.js";
 import type { TraceNode, SessionTrace } from "./workflow.js";
-import { join, dirname, relative } from "node:path";
+import { join, dirname, relative, resolve } from "node:path";
 import { isOverflowError, extractProgress, writeProgressFile } from "./overflow.js";
+import { spawnDetachedAgent } from "./detached.js";
+import { sendSocketCommand } from "./socket-client.js";
 import { buildProjectStructure } from "./tools.js";
 
 let nextId = 0;
@@ -140,6 +142,8 @@ interface ActiveSession {
 /** Options for spawning a session with parent/workflow context. */
 export interface RunOptions {
   parentSessionId?: string;
+  /** Name of the parent agent (for cross-process notification routing). */
+  parentAgentName?: string;
   workflowRunId?: string;
   stepLabel?: string;
   /** Runtime override: make this session persistent (long-lived). */
@@ -148,6 +152,8 @@ export interface RunOptions {
   compaction?: boolean | CompactionOptions;
   /** Message source tag for the initial task message. */
   source?: string;
+  /** Pre-assigned session ID (used by detached sub-agents). If set, skips generateId(). */
+  sessionId?: string;
 }
 
 export interface SubagentManagerOptions {
@@ -178,13 +184,18 @@ export interface SubagentManagerOptions {
 
 const SubagentToolParams = Type.Object({
   action: StringEnum(
-    ["list", "run", "status", "progress", "result", "cancel", "waitFor", "delegate", "trace", "health"] as const,
-    { description: "Action to perform. Use 'delegate' for fire-and-forget: runs agent, waits for completion, returns result in one call." },
+    ["list", "run", "status", "progress", "result", "cancel", "waitFor", "delegate", "trace", "health", "steer"] as const,
+    { description: "Action to perform. Use 'delegate' for fire-and-forget: runs agent, waits for completion, returns result in one call. Use 'steer' to inject a message into a running session." },
   ),
   agent: Type.Optional(Type.String({ description: "Name of the registered agent (required for 'run', 'delegate')" })),
   task: Type.Optional(Type.String({ description: "Task description to send to the agent (required for 'run', 'delegate')" })),
-  sessionId: Type.Optional(Type.String({ description: "Session ID or workflow run ID (required for 'status', 'progress', 'result', 'cancel', 'waitFor', 'trace')" })),
+  sessionId: Type.Optional(Type.String({ description: "Session ID or workflow run ID (required for 'status', 'progress', 'result', 'cancel', 'waitFor', 'trace', 'steer')" })),
   limit: Type.Optional(Type.Number({ description: "Max number of recent messages to return (for 'progress', default: all)" })),
+  mode: Type.Optional(StringEnum(
+    ["attached", "detached"] as const,
+    { description: "Execution mode for 'run'. Default: attached (in-process). Detached: separate OS process, survives caller restart." },
+  )),
+  message: Type.Optional(Type.String({ description: "Message to inject (required for 'steer')" })),
 });
 
 /** Agents whose sessions are auto-skippable for evaluation (meta-agents). */
@@ -808,7 +819,7 @@ export class SubagentManager {
     if (!registered) throw new Error(`Agent "${name}" not registered`);
 
     const def = registered.definition;
-    const sessionId = generateId(def.sessionIdPrefix);
+    const sessionId = opts?.sessionId ?? generateId(def.sessionIdPrefix);
     const persistDir = this.registry.persistDir;
 
     // Compute output directory
@@ -839,7 +850,7 @@ export class SubagentManager {
       status: "running",
       outputDir,
       parentSessionId: opts?.parentSessionId,
-      parentAgentName: opts?.parentSessionId ? this.activeSessions.get(opts.parentSessionId)?.agentName : undefined,
+      parentAgentName: opts?.parentAgentName ?? (opts?.parentSessionId ? this.activeSessions.get(opts.parentSessionId)?.agentName : undefined),
       workflowRunId: opts?.workflowRunId,
       stepLabel: opts?.stepLabel,
       turnCount: 0,
@@ -857,15 +868,18 @@ export class SubagentManager {
     // Subscribe for turn limit enforcement
     this.subscribeForTurnLimit(session);
 
-    // Persist the new session to registry
+    // Persist the new session to registry — merge with existing meta
+    // to preserve detached/pid/instance fields pre-written by the parent
+    const existingMeta = this.registry.getSession(sessionId);
     this.registry.saveSession(sessionId, {
+      ...(existingMeta ?? {}),
       agent: name,
       task,
       status: "running",
       startedAt: session.startedAt,
-      parentSessionId: opts?.parentSessionId,
-      workflowRunId: opts?.workflowRunId,
-      stepLabel: opts?.stepLabel,
+      parentSessionId: opts?.parentSessionId ?? existingMeta?.parentSessionId,
+      workflowRunId: opts?.workflowRunId ?? existingMeta?.workflowRunId,
+      stepLabel: opts?.stepLabel ?? existingMeta?.stepLabel,
     });
 
     // Set up timeout if configured
@@ -1407,6 +1421,10 @@ export class SubagentManager {
       outputDir: sessionOutputDir(this.registry.persistDir, sessionId),
       error: persisted.error,
     };
+  }
+  /** Check if a session is currently active in-memory. */
+  hasActiveSession(sessionId: string): boolean {
+    return this.activeSessions.has(sessionId);
   }
 
   /**
@@ -2000,12 +2018,15 @@ export class SubagentManager {
     onSessionStart?: (agent: string, sessionId: string) => void;
     /** Returns the current caller's session ID for parent→child linking. */
     getCallerSessionId?: () => string | undefined;
+    /** Returns the current caller's agent name (for detached parent tracking). */
+    getCallerAgentName?: () => string | undefined;
     /** Agent names that cannot be delegated to directly. Returns error with hint message. */
     delegateDeny?: { agents: string[]; hint: string };
   }): AgentTool<typeof SubagentToolParams> {
     const manager = this;
     const onSessionStart = opts?.onSessionStart;
     const getCallerSessionId = opts?.getCallerSessionId;
+    const getCallerAgentName = opts?.getCallerAgentName;
     const delegateDeny = opts?.delegateDeny;
 
     function textResult(text: string): AgentToolResult<string> {
@@ -2045,6 +2066,62 @@ export class SubagentManager {
                 return textResult(JSON.stringify({ error: `Cannot delegate directly to "${params.agent}". ${delegateDeny.hint}` }));
               }
               const parentSid = getCallerSessionId?.();
+
+              // Detached mode: spawn a separate OS process
+              if (params.mode === "detached") {
+                const registered = manager.agents.get(params.agent);
+                if (!registered) {
+                  return textResult(JSON.stringify({ error: `Agent "${params.agent}" not registered` }));
+                }
+                const sessionId = generateId(registered.definition.sessionIdPrefix);
+                const callerAgentName = getCallerAgentName?.();
+                const projectRoot = resolve(manager.registry.persistDir, "..");
+
+                // Register in registry as detached before spawning
+                manager.registry.saveSession(sessionId, {
+                  agent: params.agent,
+                  task: params.task,
+                  status: "running",
+                  startedAt: Date.now(),
+                  parentSessionId: parentSid,
+                  detached: true,
+                  instance: `job-${sessionId}`,
+                });
+
+                try {
+                  const { pid } = spawnDetachedAgent({
+                    projectRoot,
+                    agentName: params.agent,
+                    task: params.task,
+                    sessionId,
+                    parentSessionId: parentSid,
+                    parentAgentName: callerAgentName,
+                  });
+
+                  // Update registry with pid in one save
+                  const existingMeta = manager.registry.getSession(sessionId);
+                  if (existingMeta) {
+                    manager.registry.saveSession(sessionId, { ...existingMeta, pid });
+                  }
+
+                  return textResult(JSON.stringify({ sessionId, mode: "detached", pid }));
+                } catch (err) {
+                  const errMsg = err instanceof Error ? err.message : String(err);
+                  manager.registry.saveSession(sessionId, {
+                    agent: params.agent,
+                    task: params.task,
+                    status: "error",
+                    startedAt: Date.now(),
+                    parentSessionId: parentSid,
+                    detached: true,
+                    instance: `job-${sessionId}`,
+                    error: errMsg,
+                  });
+                  return textResult(JSON.stringify({ error: `Failed to spawn detached agent: ${errMsg}`, sessionId }));
+                }
+              }
+
+              // Attached mode (default): run in-process
               const sessionId = manager.run(params.agent, params.task, { ...(parentSid ? { parentSessionId: parentSid } : {}), source: "agent" });
               onSessionStart?.(params.agent, sessionId);
               return textResult(JSON.stringify({ sessionId }));
@@ -2110,6 +2187,37 @@ export class SubagentManager {
               if (!params.sessionId) {
                 return textResult(JSON.stringify({ error: "action 'cancel' requires 'sessionId'" }));
               }
+              // Attached: in-memory cancel
+              if (manager.hasActiveSession(params.sessionId)) {
+                manager.cancel(params.sessionId);
+                return textResult(JSON.stringify({ cancelled: params.sessionId }));
+              }
+              // Detached: try graceful socket cancel, fall back to SIGTERM
+              const cancelMeta = manager.registry.getSession(params.sessionId);
+              if (cancelMeta?.detached) {
+                // Try socket-based graceful cancel first
+                if (cancelMeta.instance) {
+                  try {
+                    const identityPath = resolve(manager.registry.persistDir, "instances", cancelMeta.instance, "identity.json");
+                    const identity = JSON.parse(readFileSync(identityPath, "utf-8"));
+                    if (identity.socket) {
+                      await sendSocketCommand(identity.socket, { type: "cancel", sessionId: params.sessionId });
+                      manager.registry.updateSessionStatus(params.sessionId, "interrupted", "Cancelled (socket)");
+                      return textResult(JSON.stringify({ cancelled: params.sessionId, mode: "detached", method: "socket" }));
+                    }
+                  } catch {
+                    // Socket dead or identity missing, fall back to SIGTERM
+                  }
+                }
+                // Fall back to SIGTERM
+                if (cancelMeta.pid) {
+                  try { process.kill(cancelMeta.pid, "SIGTERM"); } catch { /* process may be gone */ }
+                  manager.registry.updateSessionStatus(params.sessionId, "interrupted", "Cancelled (SIGTERM)");
+                  return textResult(JSON.stringify({ cancelled: params.sessionId, mode: "detached", method: "sigterm" }));
+                }
+                return textResult(JSON.stringify({ error: `Detached session "${params.sessionId}" has no PID or socket to cancel` }));
+              }
+              // Not found anywhere — try manager.cancel anyway (no-op if missing)
               manager.cancel(params.sessionId);
               return textResult(JSON.stringify({ cancelled: params.sessionId }));
             }
@@ -2155,6 +2263,33 @@ export class SubagentManager {
             case "health": {
               const report = manager.reconcileHealth();
               return textResult(JSON.stringify(report, null, 2));
+            }
+
+            case "steer": {
+              if (!params.sessionId || !params.message) {
+                return textResult(JSON.stringify({ error: "action 'steer' requires 'sessionId' and 'message'" }));
+              }
+              // Attached: use manager.steer (handles running vs idle)
+              if (manager.hasActiveSession(params.sessionId)) {
+                manager.steer(params.sessionId, params.message, "steer");
+                return textResult(JSON.stringify({ steered: params.sessionId }));
+              }
+              // Detached: send via socket
+              const steerMeta = manager.registry.getSession(params.sessionId);
+              if (steerMeta?.instance) {
+                try {
+                  const steerIdentityPath = resolve(manager.registry.persistDir, "instances", steerMeta.instance, "identity.json");
+                  const steerIdentity = JSON.parse(readFileSync(steerIdentityPath, "utf-8"));
+                  if (steerIdentity.socket) {
+                    await sendSocketCommand(steerIdentity.socket, { type: "steer", message: params.message });
+                    return textResult(JSON.stringify({ steered: params.sessionId, mode: "detached" }));
+                  }
+                } catch (socketErr) {
+                  const socketMsg = socketErr instanceof Error ? socketErr.message : String(socketErr);
+                  return textResult(JSON.stringify({ error: `Failed to steer detached session: ${socketMsg}` }));
+                }
+              }
+              return textResult(JSON.stringify({ error: `Session "${params.sessionId}" not found or not running` }));
             }
 
             default: {
