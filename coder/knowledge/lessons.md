@@ -25,3 +25,9 @@
 - **Verify**: Always run `npx vitest --run` after changes. `tsc --noEmit` for type checks.
 - **Focus**: Touch only the files requested. Scope creep = failure.
 - **Error Handling**: `AgentMessage.isError` is unreliable. Check the text output.
+
+## Task evaluation (2026-03-07 14:45:46)
+
+- Never `write()` a file after any `read()` output marked truncated in the transcript; re-read with `read(startLine,endLine)` and then apply surgical edits (e.g., `sed`) to avoid catastrophic data loss.
+- Follow the task’s requested integration approach (here: inspect on-disk eval JSON location) unless you can prove it’s impossible; if you must deviate, validate with direct evidence (file reads/greps) before refactoring interfaces/return types.
+- Prefer minimal diffs: avoid full-file rewrites of existing handlers/interfaces when a small insertion suffices; it reduces risk and improves reviewability even when tests pass.

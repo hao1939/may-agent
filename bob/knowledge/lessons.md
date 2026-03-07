@@ -30,3 +30,8 @@
 - After `write()`, always `read()` back the target file to confirm the deliverable is complete (no mid-sentence truncation) before ending the task.
 - Stay on-task: for cron “analyze-failures”, only produce `agents/bob/workspace/analysis.md`; put implementation proposals as a short appendix inside the analysis instead of creating extra briefs/delegations.
 - Don’t attempt non-existent tools (e.g., `subagents`); if delegation is needed, use the supported mechanism for your runtime or explicitly note inability and proceed with local analysis.
+
+## Task evaluation (2026-03-06 16:28:53)
+
+- After reading required inputs, always produce the specified file deliverable (`agents/bob/workspace/rolling-compaction-review.md`) before ending the session.
+- Explicitly address each enumerated question in the prompt (1–5) with concrete answers and risk/ordering recommendations; do not stop after gathering context.

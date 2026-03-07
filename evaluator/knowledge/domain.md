@@ -47,50 +47,44 @@ The distinction matters for targeting fixes:
 - QA got a task missing context → fix workflow (workflow scope)
 - QA is the wrong agent for this step → fix workflow (workflow scope)
 
+## Role-Specific Evaluation (L1/L2/L3)
+
+Evaluate agents based on their specific role and maturity level.
+
+### Coder
+- **Responsibility**: Implement changes, verify they work.
+- **L1 (Useful)**: Writes correct code for simple tasks.
+- **L2 (Self-Driving)**: **Verifies every edit** (P19). Never guesses paths. Handles errors without human help.
+- **L3 (Building)**: Refactors proactively. Improves test coverage.
+- **Key Failure**: Writing code without reading the file first. Writing code without running a verification test.
+
+### QA
+- **Responsibility**: Gatekeeper of quality.
+- **L1**: Runs provided tests.
+- **L2**: **Finds real issues** (not lint nits). Writes new tests to repro bugs.
+- **L3**: Improves the testing infrastructure.
+- **Key Failure**: False positives (flagging style as error). False negatives (passing broken code).
+
+### May (Manager)
+- **Responsibility**: Delegation and orchestration.
+- **L1**: Routes tasks to correct agents.
+- **L2**: **Provides full context** in delegations (no "fix it" without saying what "it" is). Handles pushback/errors from subs.
+- **L3**: Optimizes workflows. Spot-checks work before reporting to user.
+- **Key Failure**: Vague delegation. Ignoring sub-agent failures.
+
+### Bob (Architect)
+- **Responsibility**: Design integrity and system health.
+- **L1**: Answers design questions.
+- **L2**: **Proactively fixes** design drift. Maintains philosophy.md.
+- **L3**: Evolves the system architecture (meta-loop).
+- **Key Failure**: Hallucinating tools. Writing files without reading.
+
 ## What You Receive
 
 A combined transcript of all agent sessions in a task tree, labeled by agent:
 - Each section starts with `# Agent: <name> (session <id>)`
 - Each section has the agent's task, status, usage stats, failure chains, and transcript
 - You see every tool call and result for each agent
-
-## How to Evaluate
-
-### 1. Score each agent by its responsibility
-
-Each agent is an independent unit. Score it on **what it controls**:
-
-**coder** — Did it:
-- Use tools efficiently? (no path guessing, no redundant reads)
-- Read files before editing?
-- Run tests and fix errors?
-- Implement what was asked?
-
-**qa** — Did it:
-- Find real issues? (not false positives)
-- Run the actual checks (tsc, tests)?
-- Give a clear, actionable verdict?
-
-**may** (when included) — Did it:
-- Give clear, complete task descriptions to coder/qa?
-- Include enough context in delegations?
-- Make good decisions on QA feedback?
-
-### 2. Attribute blame correctly
-
-This is the critical part. Waste gets blamed to the agent whose **action** caused it:
-
-- Coder path-guesses → **coder's fault** (efficiency penalty on coder)
-- Coder wastes calls because May's task was vague → **May's fault** (May gave bad delegation)
-- QA flags a non-issue, causing a wasteful coder retry → **QA's fault** (false positive)
-- Coder reads a file that was already provided in the task context → **coder's fault** (didn't read the task)
-
-Ask: "Could this agent have done better given what it received?" If yes, blame the agent.
-If no (it received bad input), blame the upstream agent.
-
-### 3. Score overall result
-
-Did the user's request actually get fulfilled? Was the final deliverable correct?
 
 ## Scoring
 
@@ -115,46 +109,21 @@ Quality of the agent's output:
 
 ### Agent-specific metrics
 Track per agent over time:
-- **coder**: `wasted_exec_calls`, `path_guessing_count`, `tests_added`
+- **coder**: `wasted_exec_calls`, `path_guessing_count`, `tests_added`, `verified_edits`
 - **qa**: `false_positive_count`, `issues_found`
 - **optimizer**: `structural_vs_documentary`
 - **may**: `delegation_accuracy`, `workflow_choice_accuracy`
 
-## Workflow Scoring
+## Patterns to Flag
 
-When a workflow was used, score it separately:
+### Blind Overwrite After Truncated Read
+If a transcript shows: agent reads a file → read output is truncated → agent uses `write()` on that file — this is a **CRITICAL quality failure** (data loss risk). Score quality ≤ 0.4 regardless of outcome. The methodology is unsafe even if the file survives intact.
 
-### Task formulation (0.0–1.0)
-Did each step's task description give the executing agent enough context
-to succeed without waste?
+### Tool Hallucination
+If an agent attempts to use `Edit`, `MultiEdit`, or other non-existent tools, count each attempt as a wasted call in efficiency scoring. Note the pattern in lessons as `[agent] used non-existent tool X — only read/write/exec are available`.
 
-### Orchestration (0.0–1.0)
-Was the step sequence, retry logic, and escalation behavior correct?
-
-### Outcome efficiency
-Compare total workflow cost (all steps) vs what a well-orchestrated
-version would cost.
-
-## User Corrections
-
-Scan for user redirections:
-- User interrupts approach ("no", "wrong", "don't", "instead")
-- Same instruction given more than once
-- Agent apologizes and changes behavior
-
-Each correction → lesson prefixed with `[correction]` and scoped to agent:
-- `[correction][coder] Don't search for the project directory`
-- `[correction][may] Use implement-and-review for implementation tasks`
-
-## Review Quality Standards
-
-When reviewing documents (e.g., design reviews), hold your own output to these standards:
-
-- **Scope awareness**: Judge documents on their stated terms. A conceptual design doc should be evaluated on whether its concepts are accurate and its mental models are sound — not on whether it mentions every implementation detail. "Feature X is not documented" is only a valid finding if it contradicts or undermines a concept the doc presents.
-- **Severity tiers**: Classify findings as CRITICAL (runtime failures, dangerous inaccuracies), IMPORTANT (misleading claims, significant gaps in the conceptual model), or MINOR (nice-to-haves, completeness nits). Cap IMPORTANT findings at ~5.
-- **Observations vs issues**: If the doc omits something but doesn't claim otherwise, that's an observation, not an issue. State them separately.
-- **Self-consistency**: Before finalizing, re-read your own output. Do not contradict yourself.
-- **Conciseness**: Target ~1000 words for a review, not 4000.
+### Verification Failure (P19)
+If a coder edits a file but never runs a command to verify the edit (test, build, lint), flag as **Verification Failure**.
 
 ## Output Format
 
@@ -170,7 +139,7 @@ When reviewing documents (e.g., design reviews), hold your own output to these s
       "wasted_calls": 2,
       "verdict": "good",
       "issues": ["re-read package.json unnecessarily"],
-      "metrics": { "path_guessing_count": 0, "tests_added": 12 }
+      "metrics": { "path_guessing_count": 0, "tests_added": 12, "verified_edits": true }
     },
     "qa": {
       "efficiency": 0.95,
@@ -204,20 +173,6 @@ Agent-scoped and actionable:
 - `[qa] Don't flag self-corrected concerns as IMPORTANT`
 - `[may/workflow] implement-and-review task description should include file list`
 
-Each lesson must be:
-- Scoped to one agent (the one whose behavior needs to change)
-- Actionable (says what to do differently)
-- Evidence-based (cites specific calls or behavior from the transcript)
-
-
-## Patterns to Flag
-
-### Blind Overwrite After Truncated Read
-If a transcript shows: agent reads a file → read output is truncated → agent uses `write()` on that file — this is a **CRITICAL quality failure** (data loss risk). Score quality ≤ 0.4 regardless of outcome. The methodology is unsafe even if the file survives intact.
-
-### Tool Hallucination
-If an agent attempts to use `Edit`, `MultiEdit`, or other non-existent tools, count each attempt as a wasted call in efficiency scoring. Note the pattern in lessons as `[agent] used non-existent tool X — only read/write/exec are available`.
-
 ## Rules
 
 - Only output the JSON scores block and lessons section
@@ -226,4 +181,3 @@ If an agent attempts to use `Edit`, `MultiEdit`, or other non-existent tools, co
 - If a session has 0 tool calls and just acknowledged the task, still score it
 - Keep lessons concise — one line each
 - **Transcript truncation:** Tool results in transcripts are truncated for brevity. When you see `[REVIEWER NOTE: this tool result was Xchars total — truncated here for review brevity. The agent saw the full output.]`, the agent received the full output — do NOT penalize the agent for "truncated reads" based on what YOU see truncated in the review transcript. Only flag truncation if the agent's own behavior shows it noticed truncation (e.g., the agent says "output was truncated" or the tool result itself contains a truncation marker like `[... truncated]`).
-- **Word "truncat" in file content ≠ truncated read:** Source files may contain the word "truncate" in variable names, test names, comments, or function names (e.g., `"add truncates long description"`). This is normal file content — NOT evidence that the read was truncated. A truncated read is indicated by the read tool's own markers (`[... truncated]`, `Output truncated`), not by words that happen to appear in the file being read.

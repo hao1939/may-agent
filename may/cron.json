@@ -18,13 +18,22 @@
     "description": "Operational status check every 4 hours (JS handler)"
   },
   {
+    "name": "watchdog",
+    "type": "job",
+    "intervalMs": 600000,
+    "message": "[cron:watchdog] Check for stale sessions.",
+    "enabled": true,
+    "handler": "watchdog",
+    "description": "Cancel sessions stuck running > 30min (JS handler, 10min interval)"
+  },
+  {
     "name": "analyze-failures",
     "type": "job",
     "intervalMs": 86400000,
     "agent": "bob",
     "message": "[cron:analyze-failures] Analyze the last 10 evaluations in .state/evaluations/. Identify the top recurring pattern. Write findings to agents/bob/workspace/analysis.md. Compare recent evaluations against previous ones \u2014 did targeted fixes help? If same issue persists, recommend a different approach.",
     "enabled": true,
-    "description": "Bob analyzes evaluation patterns daily (dedicated instance)"
+    "description": "Bob analyzes evaluation patterns daily (detached agent process)"
   },
   {
     "name": "optimize",
@@ -33,16 +42,7 @@
     "agent": "optimizer",
     "message": "[cron:optimize] Read agents/bob/workspace/analysis.md and agents/optimizer/workspace/todo.md. Work on the top TODO item or top finding. Check for LLM-to-JS replacement opportunities. One fix per run.",
     "enabled": true,
-    "description": "Optimizer implements one fix per day (dedicated instance)"
-  },
-  {
-    "name": "health-check",
-    "type": "job",
-    "intervalMs": 86400000,
-    "agent": "may",
-    "message": "[cron:health-check] Run: npx tsc --noEmit && npx vitest --run. Report pass/fail and test count. If anything fails, investigate.",
-    "enabled": true,
-    "description": "Daily tsc + test suite health check (dedicated instance)"
+    "description": "Optimizer implements one fix per day (detached agent process)"
   },
   {
     "name": "coaching",
@@ -51,7 +51,7 @@
     "agent": "coach",
     "message": "[cron:coaching] Read agents/coach/workspace/todo.md. If there are pending items under # TODO (not # Tracking), work on the top item. You have subagents and can run exercises on other agents. One task per run. If TODO is empty, skip silently.",
     "enabled": true,
-    "description": "Coach drains todo.md every 48h (dedicated instance)"
+    "description": "Coach drains todo.md every 48h (detached agent process)"
   },
   {
     "name": "lesson-consolidation",
@@ -60,7 +60,7 @@
     "agent": "bob",
     "message": "[cron:lesson-consolidation] Read all agents/*/knowledge/lessons.md files. Deduplicate, consolidate, remove stale entries. Preserve proven lessons.",
     "enabled": true,
-    "description": "Weekly lessons.md cleanup (dedicated instance)"
+    "description": "Weekly lessons.md cleanup (detached agent process)"
   },
   {
     "name": "philosophy-check",
@@ -69,21 +69,21 @@
     "agent": "bob",
     "message": "[cron:philosophy-check] Check recent git commits (git log --since='24 hours ago' --oneline) for philosophy violations. Read agents/shared/philosophy.md, review changes. Write findings to agents/bob/workspace/philosophy-check.md.",
     "enabled": false,
-    "description": "Daily philosophy alignment check (dedicated instance, disabled)"
+    "description": "RETIRED \u2014 low value (3.3 avg turns), Bob's heartbeat already covers philosophy. Disabled 2026-03-22."
   },
   {
     "name": "heartbeat-bob",
     "type": "heartbeat",
-    "intervalMs": 86400000,
+    "intervalMs": 1800000,
     "agent": "bob",
-    "message": "[heartbeat] Read your SOUL.md and heartbeat.md. Work through each section top to bottom.",
+    "message": "[heartbeat] Read your SOUL.md and workspace/todo.md. Pick the top unchecked item, do it, mark done. Then pick the next. Keep working until todo is empty or you run out of turns. When a design/review is complete and needs implementation, add a task to agents/may/workspace/todo.md: Review [design name] and implement if approved.",
     "enabled": true,
-    "description": "Bob's mission heartbeat \u2014 design reflection, philosophy audit (24h)"
+    "description": "Bob's mission heartbeat \u2014 design reflection, todo drain, philosophy audit (30min)"
   },
   {
     "name": "heartbeat-optimizer",
     "type": "heartbeat",
-    "intervalMs": 86400000,
+    "intervalMs": 1800000,
     "agent": "optimizer",
     "message": "[heartbeat] Read your SOUL.md and heartbeat.md. Work through each section top to bottom.",
     "enabled": true,
@@ -92,7 +92,7 @@
   {
     "name": "heartbeat-coach",
     "type": "heartbeat",
-    "intervalMs": 172800000,
+    "intervalMs": 1800000,
     "agent": "coach",
     "message": "[heartbeat] Read your SOUL.md and heartbeat.md. Work through each section top to bottom.",
     "enabled": true,
@@ -101,7 +101,7 @@
   {
     "name": "heartbeat-evaluator",
     "type": "heartbeat",
-    "intervalMs": 86400000,
+    "intervalMs": 1800000,
     "agent": "evaluator",
     "message": "[heartbeat] Read your SOUL.md and heartbeat.md. Work through each section top to bottom.",
     "enabled": true,
@@ -119,7 +119,7 @@
   {
     "name": "heartbeat-scout",
     "type": "heartbeat",
-    "intervalMs": 86400000,
+    "intervalMs": 172800000,
     "agent": "scout",
     "message": "[heartbeat] Read your SOUL.md and heartbeat.md. Work through each section top to bottom.",
     "enabled": true,
@@ -154,17 +154,72 @@
     }
   },
   {
-    "name": "bob-drain-todo",
+    "name": "amy-drain-todo",
     "type": "job",
     "intervalMs": 14400000,
-    "message": "[cron:bob-drain-todo] Drain todo items for bob.",
+    "message": "[cron:amy-drain-todo] Drain todo items for amy.",
     "enabled": true,
     "handler": "drain-todo",
-    "description": "Bob drain: process todo.md items (JS handler, 4h)",
+    "description": "Amy drain: process todo.md items (JS handler, 4h)",
     "handlerConfig": {
-      "sourceAgent": "bob",
-      "targetAgent": "bob",
+      "sourceAgent": "amy",
+      "targetAgent": "amy",
       "mode": "run"
     }
+  },
+  {
+    "name": "coach-drain-todo",
+    "type": "job",
+    "intervalMs": 14400000,
+    "message": "[cron:coach-drain-todo] Drain todo items for coach.",
+    "enabled": true,
+    "handler": "drain-todo",
+    "description": "Coach drain: process todo.md items (JS handler, 4h)",
+    "handlerConfig": {
+      "sourceAgent": "coach",
+      "targetAgent": "coach",
+      "mode": "run"
+    }
+  },
+  {
+    "name": "scout-drain-todo",
+    "type": "job",
+    "intervalMs": 14400000,
+    "message": "[cron:scout-drain-todo] Drain todo items for scout.",
+    "enabled": true,
+    "handler": "drain-todo",
+    "description": "Scout drain: process todo.md items (JS handler, 4h)",
+    "handlerConfig": {
+      "sourceAgent": "scout",
+      "targetAgent": "scout",
+      "mode": "run"
+    }
+  },
+  {
+    "name": "heartbeat",
+    "type": "heartbeat",
+    "agent": "may",
+    "intervalMs": 1800000,
+    "message": "[heartbeat] Read SOUL.md and workspace/todo.md. Check dispatched sessions (subagents.status). Check Bob's progress. Assign tasks to the right agent (bob=design, coder=code, optimizer=perf). Follow up failures. Then stop \u2014 stay idle and available for human.",
+    "enabled": true,
+    "description": "May's captain heartbeat \u2014 health check, task follow-up, dispatch (30min)"
+  },
+  {
+    "name": "focus-task-tracker",
+    "type": "job",
+    "intervalMs": 3600000,
+    "message": "[cron:focus-task-tracker] Check active focus tasks for progress.",
+    "enabled": true,
+    "handler": "focus-task-tracker",
+    "description": "Track focus task progress every 8h \u2014 remind, check signals, escalate if stuck (JS handler)"
+  },
+  {
+    "name": "daily-brief",
+    "type": "job",
+    "intervalMs": 86400000,
+    "message": "[cron:daily-brief] Generate daily system brief.",
+    "enabled": true,
+    "handler": "daily-brief",
+    "description": "Daily system metrics summary, emitted to Telegram (JS handler, 24h)"
   }
 ]

@@ -8,6 +8,21 @@ Your project root is in the Runtime Environment section at the top of this promp
 All commands run from there. **Never** run `find /`, `ls /`, or explore outside it.
 Use relative paths.
 
+## Role-Specific Responsibilities (L1/L2/L3)
+
+### L1 (Useful)
+- Runs provided tests (`npm test`).
+- Reports PASS/FAIL correctly.
+
+### L2 (Self-Driving)
+- **Finds real issues** (not lint nits).
+- Writes new tests to reproduce bugs.
+- **Verifies fixes** independently.
+
+### L3 (Building)
+- Improves the testing infrastructure.
+- Adds regression tests for entire classes of bugs.
+
 ## File Reading Rules
 
 - **Use the `read` tool** to read files — not `cat` via exec
