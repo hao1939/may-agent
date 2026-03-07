@@ -1,4 +1,5 @@
 import { Type } from "@mariozechner/pi-ai";
+import type { TSchema } from "@mariozechner/pi-ai";
 import type { AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
 import { readFileSync, writeFileSync, appendFileSync, mkdirSync, existsSync, readdirSync, statSync } from "node:fs";
 import { execSync } from "node:child_process";
@@ -14,22 +15,28 @@ function textResult(text: string): AgentToolResult<string> {
   };
 }
 
-const ReadParams = Type.Object({
+const ReadParams: TSchema = Type.Object({
   path: Type.String({ description: "Absolute path to the file" }),
   startLine: Type.Optional(Type.Number({ description: "First line to return (1-based, inclusive). Use with endLine to read a specific range without truncation." })),
   endLine: Type.Optional(Type.Number({ description: "Last line to return (1-based, inclusive). Use with startLine to read a specific range without truncation." })),
 });
 
-const WriteParams = Type.Object({
+const WriteParams: TSchema = Type.Object({
   path: Type.String({ description: "Absolute path to the file" }),
   content: Type.String({ description: "Content to write" }),
   allowShrink: Type.Optional(Type.Boolean({ description: "Set to true to confirm intentional overwrite of a file with significantly shorter content. Required when new content is <50% of existing file size." })),
 });
 
-const ExecParams = Type.Object({
+const ExecParams: TSchema = Type.Object({
   command: Type.String({ description: "Shell command to execute" }),
   timeout: Type.Optional(Type.Number({ description: "Timeout in seconds (default: 30)" })),
 });
+
+// ── Typed interfaces for tool params (mirrors Type.Object schemas above) ──
+interface ReadInput { path: string; startLine?: number; endLine?: number; }
+interface WriteInput { path: string; content: string; allowShrink?: boolean; }
+interface ExecInput { command: string; timeout?: number; }
+
 
 /** Options for the read tool. */
 export interface ReadToolOptions {
@@ -685,7 +692,7 @@ export function extractLineRange(
   };
 }
 
-export function createReadTool(options?: ReadToolOptions): AgentTool<typeof ReadParams> {
+export function createReadTool(options?: ReadToolOptions): AgentTool {
   const maxFileLength = options?.maxFileLength ?? 0;
   const tracker = options?.truncationTracker;
 
@@ -694,7 +701,8 @@ export function createReadTool(options?: ReadToolOptions): AgentTool<typeof Read
     label: "Read File",
     description: "Read the contents of a file. Supports optional startLine/endLine for reading specific line ranges without truncation — use this instead of full-file reads when editing large files.",
     parameters: ReadParams,
-    execute: async (_id, params) => {
+    execute: async (_id, _params) => {
+      const params = _params as ReadInput;
       // Resolve path: relative → projectRoot-based, hallucinated → rewritten, correct → as-is
       const effectivePath = options?.projectRoot
         ? resolveReadPath(params.path, options.projectRoot)
@@ -753,7 +761,7 @@ export function createReadTool(options?: ReadToolOptions): AgentTool<typeof Read
   };
 }
 
-export function createWriteTool(options?: WriteToolOptions): AgentTool<typeof WriteParams> {
+export function createWriteTool(options?: WriteToolOptions): AgentTool {
   const tracker = options?.truncationTracker;
   const shrinkGuardMinSize = options?.shrinkGuardMinSize ?? 500;
 
@@ -764,7 +772,8 @@ export function createWriteTool(options?: WriteToolOptions): AgentTool<typeof Wr
       "If the file already exists and your new content is significantly shorter (less than 50% of the original), " +
       "the write will be blocked unless you set allowShrink=true. This prevents accidental data loss from partial reads.",
     parameters: WriteParams,
-    execute: async (_id, params) => {
+    execute: async (_id, _params) => {
+      const params = _params as WriteInput;
       // Resolve path: relative → projectRoot-based, hallucinated → rewritten, correct → as-is
       const effectivePath = options?.projectRoot
         ? resolveWritePath(params.path, options.projectRoot)
@@ -882,8 +891,8 @@ export function createLinkedTools(options: {
   maxFileLength?: number;
   maxSessionReadBytes?: number;
 }): {
-  read: AgentTool<typeof ReadParams>;
-  write: AgentTool<typeof WriteParams>;
+  read: AgentTool;
+  write: AgentTool;
   tracker: TruncationTracker;
 } {
   const tracker = new TruncationTracker({ maxSessionReadBytes: options.maxSessionReadBytes });
@@ -1634,7 +1643,7 @@ export function isFlakyCliWriteCommand(command: string): boolean {
   return FLAKY_CLI_WRITE_PATTERN.test(stripped);
 }
 
-export function createExecTool(cwdOrOpts?: string | ExecToolOptions): AgentTool<typeof ExecParams> {
+export function createExecTool(cwdOrOpts?: string | ExecToolOptions): AgentTool {
   const opts: ExecToolOptions = typeof cwdOrOpts === "string" ? { cwd: cwdOrOpts } : (cwdOrOpts ?? {});
   const effectiveCwd = opts.cwd ?? process.cwd();
   const denyPatterns = opts.denyPatterns ?? [];
@@ -1649,7 +1658,8 @@ export function createExecTool(cwdOrOpts?: string | ExecToolOptions): AgentTool<
     label: "Execute Command",
     description: "Execute a shell command. Returns stdout and stderr.",
     parameters: ExecParams,
-    execute: async (_id, params) => {
+    execute: async (_id, _params) => {
+      const params = _params as ExecInput;
       // Strip redundant `cd <cwd> && ` prefix — the cwd is already set
       let command = stripRedundantCd(params.command, effectiveCwd);
 
@@ -1719,9 +1729,11 @@ export function createExecTool(cwdOrOpts?: string | ExecToolOptions): AgentTool<
 
 // ── Workflow validation tool ───────────────────────────────────────────
 
-const ValidateWorkflowParams = Type.Object({
+const ValidateWorkflowParams: TSchema = Type.Object({
   path: Type.String({ description: "Absolute path to the workflow .ts file to validate" }),
 });
+interface ValidateWorkflowInput { path: string; }
+
 
 /**
  * Create a tool that type-checks a workflow .ts file against the WorkflowContext types.
@@ -1732,7 +1744,7 @@ const ValidateWorkflowParams = Type.Object({
  * If the reference directive is missing, the tool prepends it before checking
  * and reports whether the file needs it.
  */
-export function createValidateWorkflowTool(): AgentTool<typeof ValidateWorkflowParams> {
+export function createValidateWorkflowTool(): AgentTool {
   return {
     name: "validate_workflow",
     label: "Validate Workflow",
@@ -1741,7 +1753,8 @@ export function createValidateWorkflowTool(): AgentTool<typeof ValidateWorkflowP
       "name (string), description (string), and execute (WorkflowContext => Promise<WorkflowResult>). " +
       "Returns type errors if any, or 'valid' if the file passes.",
     parameters: ValidateWorkflowParams,
-    execute: async (_id, params) => {
+    execute: async (_id, _params) => {
+      const params = _params as ValidateWorkflowInput;
       try {
         // Read the file first to check for reference directive
         let content: string;
@@ -1818,7 +1831,7 @@ export interface HealthReport {
   checks: HealthCheck[];
 }
 
-const HealthCheckParams = Type.Object({});
+const HealthCheckParams: TSchema = Type.Object({});
 
 export interface HealthCheckOptions {
   /** Project root directory. Defaults to process.cwd(). */
@@ -1979,11 +1992,13 @@ export function createHealthCheckTool(options?: HealthCheckOptions): AgentTool<t
 
 // ── Learn tool ─────────────────────────────────────────────────────────
 
-const LearnParams = Type.Object({
+const LearnParams: TSchema = Type.Object({
   lesson: Type.Optional(Type.String({ description: "What you learned. Be specific and actionable. Required when adding a lesson." })),
   category: Type.Optional(Type.String({ description: "Category for the lesson (e.g. 'testing', 'architecture', 'debugging'). Default: 'general'." })),
   listLessons: Type.Optional(Type.Boolean({ description: "When true, return current lessons instead of adding. The 'lesson' param is ignored." })),
 });
+interface LearnInput { lesson?: string; category?: string; listLessons?: boolean; }
+
 
 /**
  * Parse a lessons.md file into a map of category → lesson lines.
@@ -2075,7 +2090,7 @@ function isDuplicate(categories: Map<string, string[]>, lessonText: string): boo
  *
  * @param knowledgeDir - path to the agent's knowledge/ directory
  */
-export function createLearnTool(knowledgeDir: string): AgentTool<typeof LearnParams> {
+export function createLearnTool(knowledgeDir: string): AgentTool {
   return {
     name: "learn",
     label: "Learn",
@@ -2085,7 +2100,8 @@ export function createLearnTool(knowledgeDir: string): AgentTool<typeof LearnPar
       "across sessions. Set listLessons=true to see what's already recorded. " +
       "Duplicate lessons are detected and skipped automatically.",
     parameters: LearnParams,
-    execute: async (_id, params) => {
+    execute: async (_id, _params) => {
+      const params = _params as LearnInput;
       try {
         const lessonsPath = join(knowledgeDir, "lessons.md");
         mkdirSync(knowledgeDir, { recursive: true });

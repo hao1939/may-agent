@@ -180,7 +180,7 @@ export class Cron {
     this.timers.set(entry.name, timer);
   }
 
-  // ── Heartbeat: followUp into persistent heartbeat session ───────────
+  // ── Heartbeat: spawn fresh task session (Chat+Task model) ──────────
 
   private fireHeartbeat(entry: CronEntry): void {
     const agentName = entry.agent || "may";
@@ -200,22 +200,13 @@ export class Cron {
     const startMs = Date.now();
 
     try {
-      let sessionId = this.heartbeatSessions.get(agentName);
+      // Always spawn a fresh task session — no persistent heartbeat sessions.
+      // The agent reads todo.md/SOUL.md for context. Memory is the filesystem.
+      const sessionId = this.manager.run(agentName, entry.message);
+      this.heartbeatSessions.set(agentName, sessionId);
 
-      if (!sessionId || !this.isSessionAlive(sessionId)) {
-        // Create a new persistent session for this agent's heartbeat
-        sessionId = this.manager.run(agentName, entry.message, {
-          persistent: true,
-          compaction: { threshold: 0.6, keepRatio: 0.3 },
-        });
-        this.heartbeatSessions.set(agentName, sessionId);
-      } else {
-        // Follow up into existing persistent session
-        this.manager.followUp(sessionId, entry.message, "cron");
-      }
-
-      // Wait for idle then record result
-      this.manager.waitForIdle(sessionId).then(() => {
+      // Wait for completion then record result
+      this.manager.waitFor(sessionId).then(() => {
         this.heartbeatRunning.delete(heartbeatKey);
         this.appendJobResult({
           jobName: entry.name,

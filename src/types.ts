@@ -82,14 +82,6 @@ export interface SubagentDefinition {
    */
   compaction?: boolean | CompactionOptions;
 
-  /**
-   * Mark this agent as persistent (long-lived).
-   * When true, the session is NOT archived after completion. Instead, it
-   * transitions to "idle" and waits for more input via `send()`.
-   * Use for orchestrator agents that maintain context across multiple tasks.
-   */
-  persistent?: boolean;
-
 }
 
 /** Runtime info about a session. */
@@ -142,7 +134,7 @@ export interface SessionTreeNode {
 export interface HealthActiveSession {
   sessionId: string;
   agent: string;
-  status: "running" | "done" | "error" | "interrupted" | "idle";
+  status: "running" | "interrupted" | "idle";
   startedAt: number;
   runtime: string;
   turnCount: number;

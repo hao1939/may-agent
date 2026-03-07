@@ -30,7 +30,6 @@ function baseDef(overrides: Partial<SubagentDefinition> = {}): SubagentDefinitio
     systemPrompt: "You are a test bot.",
     model: fakeModel(),
     tools: [],
-    persistent: true,
     ...overrides,
   };
 }
@@ -51,7 +50,7 @@ describe("close persistent session (close → no resume)", () => {
   it("close on idle persistent session archives it to history", async () => {
     manager.register(baseDef());
 
-    const sid = manager.run("bot", "hello");
+    const sid = manager.run("bot", "hello", { autoClose: "never" });
     await manager.waitForIdle(sid);
     expect(manager.status()[0].status).toBe("idle");
 
@@ -68,7 +67,7 @@ describe("close persistent session (close → no resume)", () => {
   it("close on idle persistent session sets registry status to interrupted", async () => {
     manager.register(baseDef());
 
-    const sid = manager.run("bot", "hello");
+    const sid = manager.run("bot", "hello", { autoClose: "never" });
     await manager.waitForIdle(sid);
 
     manager.close(sid);
@@ -80,7 +79,7 @@ describe("close persistent session (close → no resume)", () => {
   it("resumeAgent throws after close (no session to resume)", async () => {
     manager.register(baseDef());
 
-    const sid = manager.run("bot", "hello");
+    const sid = manager.run("bot", "hello", { autoClose: "never" });
     await manager.waitForIdle(sid);
 
     manager.close(sid);
@@ -97,7 +96,7 @@ describe("close persistent session (close → no resume)", () => {
   it("resumeAgent finds idle session when NOT closed (normal exit)", async () => {
     manager.register(baseDef());
 
-    const sid = manager.run("bot", "hello");
+    const sid = manager.run("bot", "hello", { autoClose: "never" });
     await manager.waitForIdle(sid);
 
     // Do NOT close — simulate normal exit (session stays idle in registry)
@@ -106,7 +105,7 @@ describe("close persistent session (close → no resume)", () => {
     const manager2 = new SubagentManager({ persistDir: dir });
     manager2.register(baseDef());
 
-    const result = manager2.resumeAgent("bot");
+    const result = manager2.resumeAgent("bot", { autoClose: "never" });
     expect(result).not.toBeNull();
     expect(result!.resumed).not.toBeNull();
     expect(result!.resumed!.sessionId).toBe(sid);
@@ -118,7 +117,7 @@ describe("close persistent session (close → no resume)", () => {
   it("followUp throws after close (session is gone)", async () => {
     manager.register(baseDef());
 
-    const sid = manager.run("bot", "hello");
+    const sid = manager.run("bot", "hello", { autoClose: "never" });
     await manager.waitForIdle(sid);
 
     manager.close(sid);
@@ -129,7 +128,7 @@ describe("close persistent session (close → no resume)", () => {
   it("close is idempotent on already-closed session", async () => {
     manager.register(baseDef());
 
-    const sid = manager.run("bot", "hello");
+    const sid = manager.run("bot", "hello", { autoClose: "never" });
     await manager.waitForIdle(sid);
 
     manager.close(sid);
@@ -143,10 +142,10 @@ describe("close persistent session (close → no resume)", () => {
     manager.register(baseDef({ name: "bot-a" }));
     manager.register(baseDef({ name: "bot-b" }));
 
-    const sidA = manager.run("bot-a", "task A");
+    const sidA = manager.run("bot-a", "task A", { autoClose: "never" });
     await manager.waitForIdle(sidA);
 
-    const sidB = manager.run("bot-b", "task B");
+    const sidB = manager.run("bot-b", "task B", { autoClose: "never" });
     await manager.waitForIdle(sidB);
 
     // Close only bot-a
@@ -163,7 +162,7 @@ describe("close persistent session (close → no resume)", () => {
     );
 
     // bot-b should still resume
-    const resultB = manager2.resumeAgent("bot-b");
+    const resultB = manager2.resumeAgent("bot-b", { autoClose: "never" });
     expect(resultB.resumed.sessionId).toBe(sidB);
     await manager2.waitFor(sidB);
   });

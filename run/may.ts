@@ -185,7 +185,11 @@ if (skipped > 0) bus.emit({ type: "info", message: `[eval] Wrote ${skipped} skip
 
 // ── Event routing ──────────────────────────────────────────────────────
 
-const interfaceAgent = process.env.AGENT || "may";
+const interfaceAgent = (() => {
+  const idx = process.argv.indexOf("--agent");
+  if (idx !== -1 && process.argv[idx + 1]) return process.argv[idx + 1];
+  return process.env.AGENT || "may";
+})();
 
 function attachAgentEvents(label: string, sessionId: string): void {
   const isChat = label === interfaceAgent;
@@ -460,8 +464,8 @@ function gracefulShutdown() {
     activeRL = null;
   }
 
-  // Cancel non-persistent child sessions but leave the interface agent's
-  // persistent session intact for resume on next startup.
+  // Cancel child task sessions but leave the interface agent's
+  // session intact for resume on next startup.
   for (const s of manager.status()) {
     if (s.status === "running" && s.sessionId !== sid) {
       manager.cancel(s.sessionId);
@@ -544,9 +548,12 @@ if (!manager.hasAgent(interfaceAgent)) {
   process.exit(1);
 }
 
+// Designate the interface agent — only this agent gets persistent/idle behavior.
+// All other agents are ephemeral task sessions (Chat+Task model).
+manager.setInterfaceAgent(interfaceAgent);
+
 // Runtime options for the interface agent's session
 const interfaceRunOpts = {
-  persistent: KEEP_SESSION,  
   compaction: !KEEP_SESSION ? false : {
     threshold: 0.6,
     keepRatio: 0.3,
@@ -625,7 +632,7 @@ if (!KEEP_SESSION) {
 
     const initialTask = "Ready. Waiting for tasks.";
     sid = manager.run(interfaceAgent, initialTask, interfaceRunOpts);
-    bus.emit({ type: "info", message: `Started persistent ${interfaceAgent} session: ${sid}` });
+    bus.emit({ type: "info", message: `Started ${interfaceAgent} session: ${sid}` });
 
     // Wait for initial processing to complete (agent goes idle)
     await manager.waitForIdle(sid);

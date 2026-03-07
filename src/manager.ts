@@ -114,7 +114,7 @@ interface ActiveSession {
   task: string;
   startedAt: number;
   endedAt?: number;
-  status: "running" | "done" | "error" | "interrupted" | "idle";
+  status: "running" | "interrupted" | "idle";
   error?: string;
   outputDir: string;
   unsubscribe?: () => void;
@@ -131,12 +131,14 @@ interface ActiveSession {
   turnWarningThreshold: number;
   /** Whether the turn warning has already been fired. */
   turnWarningFired: boolean;
-  /** When true, session stays active after completion (transitions to "idle"). */
-  persistent: boolean;
-  /** Compaction transform for persistent sessions (rolling compaction). */
+  /** Compaction transform for the interface session (rolling compaction). */
   compactionTransform?: (messages: AgentMessage[], signal?: AbortSignal) => Promise<AgentMessage[]>;
   /** Set by close() — prevents handleCompletion from acting on an already-archived session. */
   closed: boolean;
+  /** Session lifecycle policy. "never" = interface agent (stays idle), "immediate" = task agent (archives on completion). */
+  autoClose: "immediate" | "never";
+  /** Terminal status for archive/result reporting. Set before archival so the promise chain can read it after the session is removed from activeSessions. */
+  archiveStatus?: "done" | "error" | "interrupted";
 }
 
 /** Options for spawning a session with parent/workflow context. */
@@ -146,22 +148,24 @@ export interface RunOptions {
   parentAgentName?: string;
   workflowRunId?: string;
   stepLabel?: string;
-  /** Runtime override: make this session persistent (long-lived). */
-  persistent?: boolean;
   /** Runtime override: enable compaction for this session. */
   compaction?: boolean | CompactionOptions;
   /** Message source tag for the initial task message. */
   source?: string;
   /** Pre-assigned session ID (used by detached sub-agents). If set, skips generateId(). */
   sessionId?: string;
+  /** Session lifecycle policy. Default: derived from isInterfaceAgent().
+   *  - "immediate": archive on completion (task sessions)
+   *  - "never": stay idle on completion (interface/chat session) */
+  autoClose?: "immediate" | "never";
 }
 
 export interface SubagentManagerOptions {
   persistDir: string;
   /**
-   * Called after a non-persistent session completes (done/error/interrupted).
+   * Called after a task session completes (done/error/interrupted).
    * Fires after archival. Use for post-session tasks like evaluation.
-   * NOT called for persistent sessions transitioning to "idle".
+   * NOT called for the interface agent transitioning to "idle".
    */
   onSessionComplete?: (info: SessionInfo) => void;
   /**
@@ -198,6 +202,17 @@ const SubagentToolParams = Type.Object({
   message: Type.Optional(Type.String({ description: "Message to inject (required for 'steer')" })),
 });
 
+/** Static type for SubagentToolParams — avoids TS2742 portability issue with inferred TObject. */
+interface SubagentToolParamsType {
+  action: "list" | "run" | "status" | "progress" | "result" | "cancel" | "waitFor" | "delegate" | "trace" | "health" | "steer";
+  agent?: string;
+  task?: string;
+  sessionId?: string;
+  limit?: number;
+  mode?: "attached" | "detached";
+  message?: string;
+}
+
 /** Agents whose sessions are auto-skippable for evaluation (meta-agents). */
 const EVAL_SKIP_AGENTS = new Set(["evaluator", "optimizer", "may"]);
 
@@ -213,11 +228,22 @@ export class SubagentManager {
   private onSessionComplete?: (info: SessionInfo) => void;
   private onSessionStart?: (agentName: string, sessionId: string) => void;
   private startedAt = Date.now();
+  private interfaceAgentName?: string;
 
   constructor(opts: SubagentManagerOptions) {
     this.registry = new RegistryStore(opts.persistDir);
     this.onSessionComplete = opts.onSessionComplete;
     this.onSessionStart = opts.onSessionStart;
+  }
+
+  /** Declare which agent is the interface (Chat) agent. */
+  setInterfaceAgent(name: string): void {
+    this.interfaceAgentName = name;
+  }
+
+  /** Check if a given agent name is the interface agent. */
+  private isInterfaceAgent(name: string): boolean {
+    return name === this.interfaceAgentName;
   }
 
   /** Register a feature unit. */
@@ -447,7 +473,7 @@ export class SubagentManager {
     const endTime = session.endedAt ?? Date.now();
     const entry: MemoryEntry = {
       task: session.task,
-      status: session.status,
+      status: session.archiveStatus ?? session.status,
       duration: formatDuration(endTime - session.startedAt),
       summary: extractLastAssistantText(messages),
       timestamp: endTime,
@@ -483,15 +509,15 @@ export class SubagentManager {
   }
 
   /**
-   * Compact a persistent session's in-memory messages after it goes idle.
+   * Compact an interface session's in-memory messages after it goes idle.
    * Replaces the agent's message array with the compacted version and
    * saves the compacted state to disk for faster resume.
    *
    * The full session.jsonl on disk is never modified — it remains the
    * source of truth. session-compact.jsonl is a separate snapshot.
    */
-  private async compactPersistentSession(session: ActiveSession): Promise<void> {
-    if (!session.persistent) return;
+  private async compactIdleSession(session: ActiveSession): Promise<void> {
+    if (session.autoClose !== "never") return;
     if (!session.compactionTransform) return;
 
     const messages = session.agent.state.messages;
@@ -510,8 +536,8 @@ export class SubagentManager {
    * Common completion handler — called when the agent's prompt()/continue() settles.
    *
    * Determines the outcome from agent state, then branches:
-   *   - Persistent sessions → idle (stays in activeSessions)
-   *   - Non-persistent sessions → terminal status (done/error/interrupted) → archive + remove
+   *   - Interface agent sessions → idle (stays in activeSessions)
+   *   - Task sessions → terminal status (done/error/interrupted) → archive + remove
    *
    * See docs/session-state-machine.md for the full state machine.
    */
@@ -544,8 +570,8 @@ export class SubagentManager {
       }
     }
 
-    // ── Persistent: always transition to idle ──────────────────────────
-    if (session.persistent) {
+    // ── Interface agent: always transition to idle ─────────────────────
+    if (session.autoClose === "never") {
       // Persist cancellation notice so agent doesn't retry on resume/wake.
       // Written to JSONL (survives restart) and queued as followUp (in-process wake).
       if (wasAborted && !wasTurnLimit) {
@@ -561,7 +587,7 @@ export class SubagentManager {
         session.agent.followUp(cancelMsg);
       }
       // Rolling compaction: compact in-memory messages and save to disk (fire-and-forget)
-      this.compactPersistentSession(session).catch((err) => {
+      this.compactIdleSession(session).catch((err) => {
         console.warn(`[manager] Compaction failed for session ${session.sessionId}:`, err);
       });
       session.status = "idle";
@@ -569,15 +595,12 @@ export class SubagentManager {
       return;
     }
 
-    // ── Non-persistent: set terminal status, archive, remove ───────────
-    if (wasAborted) {
-      session.status = "interrupted";
-    } else if (session.error) {
-      session.status = "error";
-    } else {
-      session.status = "done";
-    }
-    this.registry.updateSessionStatus(session.sessionId, session.status, session.error);
+    // ── Task session: determine archive status, archive, remove ─────────
+    // The live session status never transitions to done/error — those are
+    // archive-only states. The session goes from running → archived+removed.
+    const archiveStatus: "done" | "error" | "interrupted" = wasAborted ? "interrupted" : (session.error ? "error" : "done");
+    session.archiveStatus = archiveStatus;
+    this.registry.updateSessionStatus(session.sessionId, archiveStatus, session.error);
 
     session.unsubscribe?.();
     session.unsubscribeTurnLimit?.();
@@ -592,7 +615,7 @@ export class SubagentManager {
         sessionId: session.sessionId,
         agent: session.agentName,
         task: session.task,
-        status: session.status as "done" | "error" | "interrupted",
+        status: archiveStatus,
         startedAt: session.startedAt,
         endedAt: session.endedAt,
         runtime: formatDuration(session.endedAt - session.startedAt),
@@ -606,13 +629,13 @@ export class SubagentManager {
     }
 
     // ── Notify parent about completion ─────────────────────────────────
-    // Send a followUp to the parent session (or its agent's persistent
+    // Send a followUp to the parent session (or its agent's interface
     // session) so it learns about this child's completion.
     // Skip workflow step sessions — the workflow tool coordinates those internally.
     try {
       if (session.parentSessionId && !session.workflowRunId) {
         const runtime = formatDuration((session.endedAt ?? Date.now()) - session.startedAt);
-        const icon = session.status === "done" ? "✅" : "❌";
+        const icon = archiveStatus === "done" ? "✅" : "❌";
         const taskText = session.task ?? "";
         const taskPreview = taskText.length > 80 ? taskText.slice(0, 77) + "..." : taskText;
         const errorSuffix = session.error ? ` Error: ${session.error}` : "";
@@ -627,20 +650,20 @@ export class SubagentManager {
             delivered = true;
           } catch { /* parent may have just closed */ }
         }
-        // 2. Else: find a persistent session for the parent agent
+        // 2. Else: find the interface session for the parent agent
         if (!delivered && session.parentAgentName) {
-          let persistentSid: string | undefined;
+          let interfaceSid: string | undefined;
           for (const [sid, s] of this.activeSessions) {
-            if (s.agentName === session.parentAgentName && s.persistent) {
-              persistentSid = sid;
+            if (s.agentName === session.parentAgentName && s.autoClose === "never") {
+              interfaceSid = sid;
               break;
             }
           }
-          if (persistentSid) {
+          if (interfaceSid) {
             try {
-              this.followUp(persistentSid, notifyMsg, "task-notify");
+              this.followUp(interfaceSid, notifyMsg, "task-notify");
               delivered = true;
-            } catch { /* persistent session may have just closed */ }
+            } catch { /* interface session may have just closed */ }
           }
         }
         // 3. Fallback: write to undelivered notifications file
@@ -651,7 +674,7 @@ export class SubagentManager {
               ts: Date.now(),
               sessionId: session.sessionId,
               agent: session.agentName,
-              status: session.status,
+              status: archiveStatus,
               task: session.task,
               runtime,
               parentSessionId: session.parentSessionId,
@@ -677,7 +700,7 @@ export class SubagentManager {
   /**
    * Drain the undelivered-notifications.jsonl fallback file.
    *
-   * For each notification, attempt to route to the right persistent session
+   * For each notification, attempt to route to the parent agent's interface session
    * via followUp. If routing fails and retryCount < 5, re-append with
    * incremented retryCount. If retryCount >= 5, log warning and drop (dead letter).
    * Clears the file after processing all entries.
@@ -730,14 +753,14 @@ export class SubagentManager {
           } catch { /* session may have just closed */ }
         }
 
-        // Try parent agent's persistent session
+        // Try parent agent's interface session
         if (!delivered && parentAgent) {
           for (const [sid, s] of this.activeSessions) {
-            if (s.agentName === parentAgent && s.persistent) {
+            if (s.agentName === parentAgent && s.autoClose === "never") {
               try {
                 this.followUp(sid, notifyMsg, "task-notify");
                 delivered = true;
-              } catch { /* persistent session may have just closed */ }
+              } catch { /* interface session may have just closed */ }
               break;
             }
           }
@@ -813,6 +836,10 @@ export class SubagentManager {
 
   /** Start a new session for a registered agent. Returns sessionId. Non-blocking.
    *  Optionally pass RunOptions to link this session into a session graph.
+   *
+   *  Chat+Task model:
+   *  - Interface agent → Chat session (autoClose: "never", idle state, compaction, followUp)
+   *  - All others → ephemeral Task session (spawn → work → finish → die)
    */
   run(name: string, task: string, opts?: RunOptions): string {
     const registered = this.agents.get(name);
@@ -857,9 +884,9 @@ export class SubagentManager {
       maxTurns: def.maxTurns,
       turnWarningThreshold: def.turnWarningThreshold ?? 0.8,
       turnWarningFired: false,
-      persistent: opts?.persistent ?? def.persistent ?? false,
       compactionTransform,
       closed: false,
+      autoClose: opts?.autoClose ?? (this.isInterfaceAgent(name) ? "never" : "immediate"),
     };
 
     // Subscribe for JSONL persistence before starting the prompt
@@ -925,9 +952,12 @@ export class SubagentManager {
   }
 
   /**
-   * Clean up sessions left in "running" state from a previous process.
+   * Clean up sessions left in "running" or "idle" state from a previous process.
    * Marks them as "interrupted" and returns a summary.
    * Also cleans up stale workflow runs.
+   *
+   * Chat+Task model: task sessions should never be "idle" on disk. If found,
+   * they are interrupted the same as stale "running" sessions.
    */
   cleanupStaleSessions(): SessionInfo[] {
     const registryData = this.registry.getRegistry();
@@ -956,15 +986,18 @@ export class SubagentManager {
   }
 
   /**
-   * Resume a specific agent's most recent session from a previous process.
-   * All other "running" sessions are marked as interrupted.
+   * Resume the interface agent's most recent session from a previous process.
+   * All other "running"/"idle" sessions are marked as interrupted.
+   *
+   * Chat+Task model: only the interface (Chat) agent should be resumed.
+   * Task sessions are ephemeral — they die on process exit and are never resumed.
    *
    * Returns the resumed session info (with the agent running), plus a list
    * of interrupted sessions so the caller can inform the resumed agent.
    *
-   * Returns null if the agent has no "running" or "idle" session to resume.
+   * Throws if the agent has no "running" or "idle" session to resume.
    */
-  resumeAgent(agentName: string, opts?: { persistent?: boolean; compaction?: boolean | CompactionOptions }): { resumed: SessionInfo; interrupted: SessionInfo[] } {
+  resumeAgent(agentName: string, opts?: { compaction?: boolean | CompactionOptions; autoClose?: "immediate" | "never" }): { resumed: SessionInfo; interrupted: SessionInfo[] } {
     const registryData = this.registry.getRegistry();
     const persistDir = this.registry.persistDir;
 
@@ -1135,9 +1168,9 @@ export class SubagentManager {
       maxTurns: def.maxTurns,
       turnWarningThreshold: def.turnWarningThreshold ?? 0.8,
       turnWarningFired: false,
-      persistent: opts?.persistent ?? def.persistent ?? false,
       compactionTransform,
       closed: false,
+      autoClose: opts?.autoClose ?? (this.isInterfaceAgent(agentName) ? "never" : "immediate"),
     };
 
     this.subscribeForPersistence(session);
@@ -1364,7 +1397,8 @@ export class SubagentManager {
   }
 
   /** Get result of a completed session.
-   *  Throws if session not found, still running, or idle (persistent).
+   *  Throws if session not found, still running, or idle (Chat session).
+   *  Chat+Task model: only the interface agent can be idle.
    */
   result(sessionId: string): TaskResult {
     const session = this.activeSessions.get(sessionId);
@@ -1373,7 +1407,7 @@ export class SubagentManager {
         throw new Error(`Session "${sessionId}" is still running`);
       }
       if (session.status === "idle") {
-        throw new Error(`Session "${sessionId}" is idle (persistent) — use progress() to read messages`);
+        throw new Error(`Session "${sessionId}" is idle (Chat session) — use progress() to read messages`);
       }
       return this.buildResultFromSession(session);
     }
@@ -1386,7 +1420,9 @@ export class SubagentManager {
     const messages = session.agent.state.messages;
     return {
       sessionId: session.sessionId,
-      status: session.status === "interrupted" ? "error" : session.status as "done" | "error",
+      status: (session.archiveStatus === "interrupted" || session.status === "interrupted")
+        ? "error"
+        : (session.archiveStatus ?? session.status) as "done" | "error",
       lastAssistantText: extractLastAssistantText(messages),
       messages: messages.slice(),
       duration: formatDuration((session.endedAt ?? Date.now()) - session.startedAt),
@@ -1429,7 +1465,10 @@ export class SubagentManager {
 
   /**
    * Cancel a running session and all its children (cascading).
-   * No-op if session not found, already terminal, or idle+persistent (nothing to cancel).
+   * No-op if session not found, already terminal, or idle interface agent (nothing to cancel).
+   *
+   * Chat+Task model: only the interface agent can be idle. Task sessions are
+   * always running or terminal — they never enter idle state.
    * See docs/session-state-machine.md.
    */
   cancel(sessionId: string): void {
@@ -1439,26 +1478,13 @@ export class SubagentManager {
 
     // Cancel children first (depth-first)
     for (const child of this.activeSessions.values()) {
-      if (child.parentSessionId === sessionId && (child.status === "running" || child.status === "idle")) {
+      if (child.parentSessionId === sessionId && child.status === "running") {
         this.cancel(child.sessionId);
       }
     }
 
+    // Idle interface agent: no-op — nothing is running. Use close() to destroy.
     if (session.status === "idle") {
-      if (session.persistent) {
-        // Persistent + idle: no-op — nothing is running. Use close() to destroy.
-        return;
-      }
-      // Non-persistent + idle: shouldn't normally happen, but clean up.
-      session.status = "interrupted";
-      session.error = "Cancelled";
-      this.registry.updateSessionStatus(sessionId, "interrupted", "Cancelled");
-      session.unsubscribe?.();
-      session.unsubscribeTurnLimit?.();
-      session.endedAt = Date.now();
-      this.appendMemory(session);
-      this.archiveSessionDir(session);
-      this.activeSessions.delete(sessionId);
       return;
     }
 
@@ -1470,7 +1496,7 @@ export class SubagentManager {
    * Permanently close a session — archive to disk and remove from memory.
    *
    * If the session is running, cancels it first (cascading children).
-   * Unlike cancel(), this always archives — even for persistent sessions.
+   * Unlike cancel(), this always archives — even for the interface agent.
    * The session will NOT resume on restart.
    * See docs/session-state-machine.md.
    */
@@ -1484,7 +1510,7 @@ export class SubagentManager {
     // Cancel running work (cascading children).
     this.cancel(sessionId);
 
-    // If already removed (non-persistent idle was archived by cancel), done.
+    // If already removed (task session archived by cancel), done.
     if (!this.activeSessions.has(sessionId)) return;
 
     // Still here — archive and remove.
@@ -1492,6 +1518,7 @@ export class SubagentManager {
     session.unsubscribeTurnLimit?.();
     session.endedAt = Date.now();
     session.status = "interrupted";
+    session.archiveStatus = "interrupted";
     session.error = "Closed";
     this.registry.updateSessionStatus(sessionId, "interrupted", "Closed");
     this.appendMemory(session);
@@ -1531,14 +1558,18 @@ export class SubagentManager {
    * Unlike steer(), this never interrupts mid-turn — the message is queued
    * via agent.followUp() and delivered at the next natural turn boundary.
    *
-   * If the session is idle (persistent), wakes it: queues the message,
+   * If the session is idle (interface agent), wakes it: queues the message,
    * calls continue(), and wires handleCompletion. Does NOT wait for
    * processing to finish — returns immediately after queueing.
    *
    * Use for automated event injection (socket_watch, coaching events, etc.)
    * where the caller doesn't need to wait for a response.
    *
-   * Throws if session not found or in a terminal state.
+   * Chat+Task model: only the interface agent supports followUp (idle wake).
+   * Task sessions are fire-and-forget — use cancel + re-run instead of steering.
+   *
+   * Throws if session not found, in a terminal state, or if a non-interface
+   * session is idle (which should never happen under the Chat+Task model).
    */
   followUp(sessionId: string, message: string, source?: string): void {
     const session = this.activeSessions.get(sessionId);
@@ -1547,6 +1578,10 @@ export class SubagentManager {
     }
     if (session.status !== "running" && session.status !== "idle") {
       throw new Error(`Session "${sessionId}" is in terminal state: ${session.status}`);
+    }
+    // Reject waking an idle task session — only interface sessions support followUp wake
+    if (session.status === "idle" && session.autoClose !== "never") {
+      throw new Error(`Cannot wake task session "${sessionId}" — task sessions do not support followUp`);
     }
 
     const msg: AgentMessage = {
@@ -1561,8 +1596,9 @@ export class SubagentManager {
     // loop processes it. No explicit appendSessionMessage here to avoid
     // duplicate JSONL entries.
 
-    // If idle persistent session, wake it up
-    if (session.status === "idle" && session.persistent) {
+    // If idle interface session, wake it up.
+    // Only the interface agent can be idle (Chat+Task model).
+    if (session.status === "idle") {
       session.status = "running";
       this.registry.updateSessionStatus(sessionId, "running");
 
@@ -1590,7 +1626,7 @@ export class SubagentManager {
 
   /** Wait for a session to finish. Returns result.
    *  Throws if session not found (neither active nor in registry).
-   *  Note: for persistent sessions, this resolves after the first processing cycle
+   *  Note: for the interface agent, this resolves after the first processing cycle
    *  but the TaskResult status may not be meaningful. Use waitForIdle() instead.
    */
   async waitFor(sessionId: string): Promise<TaskResult> {
@@ -1604,9 +1640,11 @@ export class SubagentManager {
   }
 
   /**
-   * Wait for a persistent session's current processing to finish (transition to "idle").
+   * Wait for the interface (Chat) session's current processing to finish (transition to "idle").
    * Resolves immediately if the session is already idle.
-   * For non-persistent sessions, waits for completion like waitFor().
+   *
+   * Chat+Task model: for task sessions, this waits for completion (they never
+   * enter idle — they terminate with done/error/interrupted).
    * Throws if session not found.
    */
   async waitForIdle(sessionId: string): Promise<void> {
@@ -2022,7 +2060,7 @@ export class SubagentManager {
     getCallerAgentName?: () => string | undefined;
     /** Agent names that cannot be delegated to directly. Returns error with hint message. */
     delegateDeny?: { agents: string[]; hint: string };
-  }): AgentTool<typeof SubagentToolParams> {
+  }): AgentTool {
     const manager = this;
     const onSessionStart = opts?.onSessionStart;
     const getCallerSessionId = opts?.getCallerSessionId;
@@ -2042,7 +2080,8 @@ export class SubagentManager {
       description:
         "Manage sub-agents: list registered agents, run tasks, check status/progress, get results, cancel sessions, or run a health check.",
       parameters: SubagentToolParams,
-      execute: async (_toolCallId, params) => {
+      execute: async (_toolCallId, _params) => {
+        const params = _params as SubagentToolParamsType;
         try {
           switch (params.action) {
             case "list": {

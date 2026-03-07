@@ -4,6 +4,7 @@
  */
 
 import { Type, type Static } from "@mariozechner/pi-ai";
+import type { TSchema } from "@mariozechner/pi-ai";
 import type { AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { dirname } from "node:path";
@@ -14,7 +15,7 @@ export interface CronEntry {
   message: string;
   enabled: boolean;
   description?: string;
-  /** Entry type: "heartbeat" fires into persistent session, "job" spawns task or runs handler. */
+  /** Entry type: "heartbeat" spawns fresh task session (Chat+Task model), "job" spawns task or runs handler. */
   type?: "heartbeat" | "job";
   /** Agent to run this job. For heartbeat: which agent's session. For job: spawns dedicated instance. */
   agent?: string;
@@ -44,7 +45,7 @@ function textResult(text: string): AgentToolResult<string> {
   return { content: [{ type: "text", text }], details: text };
 }
 
-const CronParams = Type.Object({
+const CronParams: TSchema = Type.Object({
   action: Type.Union([
     Type.Literal("list"),
     Type.Literal("add"),
@@ -59,7 +60,7 @@ const CronParams = Type.Object({
   description: Type.Optional(Type.String({ description: "Optional description for the job" })),
 });
 
-type CronInput = Static<typeof CronParams>;
+interface CronInput { action: "list" | "add" | "remove" | "update" | "status"; name?: string; intervalMs?: number; message?: string; enabled?: boolean; description?: string; }
 
 export interface CronToolOptions {
   /** Path to the agent's cron.json */
@@ -70,7 +71,7 @@ export interface CronToolOptions {
   cronEnabled?: boolean;
 }
 
-export function createCronTool(opts: CronToolOptions): AgentTool<typeof CronParams, string> {
+export function createCronTool(opts: CronToolOptions): AgentTool {
   function readEntries(): CronEntry[] {
     if (!existsSync(opts.configPath)) return [];
     try {
@@ -109,7 +110,8 @@ export function createCronTool(opts: CronToolOptions): AgentTool<typeof CronPara
       "session at the configured interval. When disabled, you can still manage " +
       "jobs but they won't fire.",
     parameters: CronParams,
-    execute: async (_toolCallId: string, input: CronInput) => {
+    execute: async (_toolCallId: string, _input: unknown) => {
+      const input = _input as CronInput;
       switch (input.action) {
         case "list": {
           const entries = readEntries();

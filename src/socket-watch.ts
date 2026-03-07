@@ -10,6 +10,7 @@
  */
 
 import { Type, StringEnum } from "@mariozechner/pi-ai";
+import type { TSchema } from "@mariozechner/pi-ai";
 import type { AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
 import { Socket } from "node:net";
 import type { SubagentManager } from "./manager.js";
@@ -141,7 +142,7 @@ export interface SocketWatchToolOptions {
 
 // ── Tool params ─────────────────────────────────────────────────────────
 
-const SocketWatchParams = Type.Object({
+const SocketWatchParams: TSchema = Type.Object({
   action: StringEnum(
     ["connect", "send", "disconnect", "list"] as const,
     { description: "Action to perform on socket connections." },
@@ -154,6 +155,8 @@ const SocketWatchParams = Type.Object({
   interrupt: Type.Optional(Type.Boolean({ description: "If true, use steer (interrupting) instead of followUp (non-interrupting) for event injection (default: false)" })),
   filter: Type.Optional(Type.Array(Type.String(), { description: "Event types to forward. Default: text, tool_call, tool_result, info, session_start, session_end, connected. Use ['*'] for all." })),
 });
+interface SocketWatchInput { action: "connect" | "send" | "disconnect" | "list"; socketPath?: string; watchId?: string; data?: unknown; label?: string; debounceMs?: number; interrupt?: boolean; filter?: string[]; }
+
 
 /**
  * Create a socket watch tool for connecting to Unix domain sockets.
@@ -163,7 +166,7 @@ const SocketWatchParams = Type.Object({
  */
 export function createSocketWatchTool(
   opts: SocketWatchToolOptions,
-): { tool: AgentTool<typeof SocketWatchParams>; cleanup: () => void } {
+): { tool: AgentTool; cleanup: () => void } {
   const { manager } = opts;
   const watches = new Map<string, WatchEntry>();
 
@@ -213,7 +216,7 @@ export function createSocketWatchTool(
     return entry;
   }
 
-  const tool: AgentTool<typeof SocketWatchParams> = {
+  const tool: AgentTool = {
     name: "socket_watch",
     label: "Socket Watch",
     description:
@@ -221,7 +224,8 @@ export function createSocketWatchTool(
       "Events are debounced and delivered as follow-up messages between turns. " +
       "Use for coaching (watch coachee processes), receiving external input, or inter-agent communication.",
     parameters: SocketWatchParams,
-    execute: async (_toolCallId, params) => {
+    execute: async (_toolCallId, _params) => {
+      const params = _params as SocketWatchInput;
       try {
         switch (params.action) {
           case "connect": {

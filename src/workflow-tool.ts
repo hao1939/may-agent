@@ -1,6 +1,7 @@
 import { readdirSync } from "node:fs";
 import { join } from "node:path";
 import { Type, StringEnum } from "@mariozechner/pi-ai";
+import type { TSchema } from "@mariozechner/pi-ai";
 import type { AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
 import type { SubagentManager } from "./manager.js";
 import type { RunOptions } from "./manager.js";
@@ -21,12 +22,14 @@ import { summarizeForHandoff } from "./handoff.js";
 
 // ── Tool schema ────────────────────────────────────────────────────────
 
-const WorkflowToolParams = Type.Object({
+const WorkflowToolParams: TSchema = Type.Object({
   action: StringEnum(["list", "run", "resume"] as const, { description: "Action to perform. Use 'resume' to continue a workflow that was interrupted by a crash." }),
   name: Type.Optional(Type.String({ description: "Workflow name to execute (required for 'run')" })),
   task: Type.Optional(Type.String({ description: "Task to pass to the workflow (required for 'run')" })),
   workflowRunId: Type.Optional(Type.String({ description: "Previous workflow run ID to resume from (required for 'resume')" })),
 });
+interface WorkflowInput { action: "list" | "run" | "resume"; name?: string; task?: string; workflowRunId?: string; }
+
 
 // ── Helpers ────────────────────────────────────────────────────────────
 
@@ -107,7 +110,7 @@ async function findWorkflow(workflowDir: string, name: string): Promise<{ workfl
 
 // ── WorkflowTool type ──────────────────────────────────────────────────
 
-export interface WorkflowTool extends AgentTool<typeof WorkflowToolParams> {
+export interface WorkflowTool extends AgentTool {
   steer(message: string): boolean;
   readonly isRunning: boolean;
   readonly activeWorkflow: string | null;
@@ -421,7 +424,8 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
       return activeWorkflowName;
     },
 
-    execute: async (_toolCallId, params) => {
+    execute: async (_toolCallId, _params) => {
+      const params = _params as WorkflowInput;
       switch (params.action) {
         case "list": {
           const files = listWorkflowFiles(workflowDir);
