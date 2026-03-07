@@ -1,26 +1,18 @@
 # TODO
 
-- [2026-03-05] ✅ SubagentManager health API: Move system-status logic into manager as first-class API. `manager.health()` for in-memory state, keep filesystem scan as `auditHealth()` for ground-truth fact-checking. Reconcile both and flag discrepancies. Expose as agent tool. See agents/may/workspace/todo.md for full design.
+## 🔴 FOCUS — TOP PRIORITY
 
-- [2026-03-22] **CONVENTIONS.md: Add `[STUCK]` escalation convention.** If stuck after 2 attempts, agents write `[STUCK] reason` to their todo.md and stop. Next cron cycle or human review catches it. Add to Workspace Conventions section. Source: coach COMMON.md evaluation.
-
-- [2026-03-22] **Shared docs: Add "No Chores" boundary.** Make explicit that agents do cognitive work, not infrastructure checks. Agents don't monitor health, check other agents, count own failures, or do file maintenance. If infra detects something, it writes to todo.md. Add to `agents/shared/philosophy.md` or new shared file. Source: coach COMMON.md evaluation.
+- [ ] **F3: Score-Reactive Coaching Trigger** — Verify that when evaluate-sessions finds needs_improvement, coach's todo.md gets a coaching item in the same cron cycle. Test by checking recent needs_improvement evals and whether coach was notified.
+- [ ] **Shared docs: Add "No Chores" boundary** — Make explicit that agents do cognitive work, not infrastructure checks. Add to `agents/shared/philosophy.md` or new shared file.
+- [ ] **LLM-to-JS replacement opportunities** — Ongoing. Review each optimizer run for predictable-pattern LLM calls that could be JS.
 
 # Tracking
 
-- [2026-03-22] ✅ CONVENTIONS.md: Add completion evidence convention — Evidence: agents/CONVENTIONS.md updated with new "#### Completion evidence" subsection under ### todo.md (lines 189-206), template example updated (line 179), 3 verification checks + inline evidence format specified. agents/ is gitignored so no commit applicable.
-- [2026-03-05] LLM-to-JS replacement opportunities — ongoing watch. Review each optimizer run for cases where agents make LLM calls that follow a predictable pattern (same input shape → same output shape, no reasoning required). Goal: reduce cost and latency by replacing these with JS code in the runner/tools.
-- [2026-03-05] ✅ LLM-to-JS #1: Aborted/meta-agent session evaluations. Implemented `writeSkippedEvaluations()` in src/evaluator.ts — writes deterministic 0/0 evaluations for sessions with no transcript and meta-agent sessions (evaluator/optimizer/may). Saves ~$0.05-0.15 per evaluator call × 239 aborted sessions = ~$12-36 saved. Committed as 1eccb41.
-- [2026-03-22] ✅ Shrink guard for write tool (blind-overwrite fix). Added disk-based file size check to `createWriteTool()` in src/tools.ts. When write() targets an existing file and new content is <50% of existing size, the write is BLOCKED (agent must set `allowShrink=true` to proceed). 50-80% range produces a warning. Files under 500 bytes are exempt (configurable via `shrinkGuardMinSize`). This is independent of the truncation tracker — catches blind overwrites even when tracker isn't active. Addresses s_1772672288075_15 regression (coder overwrote domain.md with 8KB when original was ~38KB). 9 new tests added, all 912 tests pass.
-- [2026-03-22] ✅ LLM-to-JS #2: Auto-skip orphaned sessions without meta.json. Extended `writeSkippedEvaluations()` in src/evaluator.ts to handle ~139 session directories that have no meta.json (from before per-session metadata migration). These were invisible to the evaluation system. Now writes deterministic skip evaluations with agent="unknown" and issue="no_metadata". Exported `listActiveSessionIds` and `listArchivedSessionIds` from persistence.ts. 2 new tests added, all 914 tests pass. Committed as c7299ad.
-- [2026-03-05] ✅ LLM-to-JS #3: system-status + evaluate-sessions JS handlers. Implemented in run/system-status.ts and run/evaluate-sessions.ts with registerHandler() on Cron. Committed as 7f3fb6c. Rebase resolved.
-- [2026-03-22] ✅ LLM-to-JS #4: drain-todo JS handler. Created run/drain-todo.ts — replaces three LLM-consuming cron jobs (drain-todo, optimizer-drain-todo, bob-drain-todo) with pure JS. Parses TODO items from workspace/todo.md and delegates via manager.run() or manager.followUp(). Two modes: "run" for spawning new sessions (optimizer, bob), "followUp" for May self-drain. 15 new tests, all 945 pass. Saves ~$3.75/day. Committed as 1ff096c.
-- [2026-03-05] LLM-to-JS audit progress (this run): Reviewed all 14 cron jobs, analyzed session transcripts, confirmed #3 is implemented but rebasing. Identified #4 candidate (drain-todo dispatch). Template-based status reports = done in #3. File existence/routing checks = done in #3 (evaluate-sessions). Formulaic cron task dispatch = #4 (drain-todo). Health-check cron is another candidate but has conditional logic (investigate on failure) that makes it less suitable.
-
-## OpenClaw Learnings — Infrastructure Patterns
-
-- [2026-03-05] **Structured Issue Detection Pipeline**: OC has a `detect.py` that scans sessions with categorized severity signals (high/medium/low) and categories (waste/error/drift/confusion/cost). Our system-status is simpler. Evaluate building a JS equivalent with structured detectors. Source: `/home/hao/openclaw-config/detect.py`
-
-- [2026-03-05] **Structured User Input Archive**: OC archives user inputs as JSONL with fields: id, timestamp, date, channel, sessionId, category (instruction/question/feedback), text, wordCount, assistantReply. Our human-inputs.md is plain text. Upgrade to structured JSONL for better pattern analysis. Source: `/home/hao/openclaw-config/knowledge/user-input-archive.jsonl`
-
-- [2026-03-05] **3-Tier Knowledge Architecture**: OC uses Hot (≤200 lines, always loaded) / Warm (archives, on-demand) / Cold (search, don't read). As our agents' knowledge files grow, we'll need similar tiering. Add to agent-loader or conventions. Source: `/home/hao/openclaw-config/knowledge/SCHEMA.md`
+- [x] CONVENTIONS.md: Add `[STUCK]` escalation convention — Done (lines 209-225).
+- [x] Analyze session patterns — Done (improvement-proposals.md, 301 lines).
+- [x] SubagentManager health API — Design complete, deferred.
+- [x] CONVENTIONS.md: Add completion evidence convention — Done (lines 189-206).
+- [x] LLM-to-JS #1: Aborted session evaluations — Done (writeSkippedEvaluations).
+- [x] Shrink guard for write tool — Done (50% threshold).
+- [x] LLM-to-JS #2: Auto-skip orphaned sessions — Done.
+- [x] LLM-to-JS #3: system-status + evaluate-sessions JS handlers — Done.

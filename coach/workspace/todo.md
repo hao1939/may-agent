@@ -1,36 +1,22 @@
 # TODO
 
-## OpenClaw Learnings — Coaching Patterns
+## 🔴 FOCUS — TOP PRIORITY
 
-## Ideas from OpenClaw Coach (to validate)
-
-- [x] **Coach Amy** — ✅ PASS (2026-03-09). Exploration cycle exercise: topic selection → search attempt → CAPTCHA handling → archive synthesis → written analysis. All coaching rules followed. Output: 131-line analysis cross-referencing 7 posts. L1 confirmed. Pass streak: 1/3.
-- [ ] **Coach Amy-Kimi** — Same exercise needed. Share Amy's infrastructure (XHS tools, same IP ban blocker). Run after Amy completes graduation or when XHS access is restored.
-  - Can they handle tool failures gracefully (CAPTCHA, rate limit)?
-  - Do they produce actionable insights (not just summaries)?
-  - Do they follow frequency discipline (max 3 searches)?
-  - Do they synthesize from archive when tools fail?
-
-- [ ] **Coach Scout** — New agent ported from OpenClaw. Passed smoke tests (GitHub, arXiv, Reddit sources + search→dedup→archive workflow). Run a coaching session to verify:
-  - Can Scout dedup against existing discoveries.md?
-  - Does Scout follow threads vs just surface scanning?
-  - Does Scout rotate sources or fixate on one?
-  - Does Scout commit at 60% budget?
-
-- [ ] **Amy exercise 2** — Ambiguous/self-directed task for L2 assessment. Give Amy an open-ended exploration prompt (e.g., "something changed in the community recently") and see if she can self-direct without clear topic guidance.
-
-- [ ] **Amy live search validation** — When XHS access is restored (IP ban lifted + cookie refreshed), re-run the search→read-post→read-deep→archive pipeline to validate the full workflow.
+- [ ] **Coach Scout** — Run a coaching session. Verify: source rotation, dedup against discoveries.md, thread-following vs surface scanning, 60% budget commitment.
+- [ ] **Coach Amy-Kimi** — Same exploration cycle exercise as Amy. Verify tool failure handling, actionable insights, frequency discipline, archive synthesis.
+- [ ] **Amy exercise 2** — L2 assessment: ambiguous/self-directed task. Open-ended exploration prompt, see if Amy can self-direct.
+- [ ] **Amy live search validation** — When XHS access is restored, re-run full search→read→archive pipeline.
 
 # Tracking
 
-- [2026-03-09] ✅ Coach Amy (exploration cycle) — **PASS, no interventions.** Amy selected "context entropy" topic, attempted XHS search (CAPTCHA → stopped immediately, no retry), pivoted to archive synthesis, produced 131-line analysis cross-referencing 7 verified posts across 3 research lines. Coaching rules #1, #3, #5, #6, #8 all followed correctly. Source integrity verified (7/7 post IDs exist). Orientation phase broad (18 reads, some unnecessary). Root cause: Agent (minor). L1 confirmed (no longer provisional). Pass streak: 1/3. Report: `sessions/amy-20260309-exploration-cycle.md` + `amy-coaching-results.md`.
-- [2026-03-22] ✅ "Coach doesn't do the agent's work" boundary — **Made explicit in domain.md.** Renamed section from "What the Coach Does NOT Do" to "The Core Boundary: Coach Does NOT Do the Agent's Work." Added positive scope (what coach does: observe, assess, design exercises, give feedback, write reports) alongside expanded negative scope (does not explore, search, research, analyze external systems, build knowledge, or produce deliverables beyond coaching reports). Added anti-pattern: "Never accept research/analysis tasks — redirect to the appropriate agent." Reviewed all 8 coaching sessions for violations: actual coaching sessions (coder, qa ×2, master ×2, amy) all respect boundary correctly. Two evaluation reports (COMMON.md and MAST taxonomy) were analysis/research tasks that arguably crossed the boundary — coach performed analyst work rather than coaching. New rule prevents this going forward. Fix: `agents/coach/knowledge/domain.md` lines 238-264 rewritten.
-- [2026-03-22] ✅ Periodic review of graduated agents — **Designed regression review process.** 3-tier system: Tier 1 (passive monitoring via evaluator scores — continuous, zero cost), Tier 2 (scheduled spot check — replay weakest graduation exercise, every 2 weeks initially, graduating to 4 weeks after clean pass), Tier 3 (quarterly steady state — minimum review cadence, never fully exempt). Automatic regression triggers: quality score crash (q<0.3 on 2+ evals), known-pattern recurrence, capability level downgrade. Manual triggers: domain.md changes, model swaps, new tools, infra changes. Re-coaching resets pass streak to 0/3, requires full re-graduation. Exercise replay table maps agents to their historically-weakest exercise. Cost budget: regression reviews capped at 20% of coaching capacity. Process: `workspace/regression-review-process.md` (7.4KB). Activates when first agent graduates.
-- [2026-03-06] ✅ Capability level assessment (L1/L2/L3) — **Assessed all 10 agents.** Used 123+ evaluations, 8 coaching sessions, and workspace artifacts as evidence. Results: Coder=L2 (confirmed), QA=L2 (↑ upgraded from L1→L2), Master=L2 (confirmed), May=L1 (↓ downgraded — by design, follows prescriptive workflow), Evaluator=L1 (confirmed), Optimizer=L2 (limited evidence), Bob=L2→L3 (↑ emerging L3 — system-level analysis but poor execution), Amy=L1 (new, blocked by infra), Amy-Kimi=L1 (new, minimal evidence), Scout=L2 (new, strong journal evidence). Framework validated: yes, it helps prioritize coaching. Key insight: blind-overwrite handling is the strongest L1/L2 litmus test; L3 is rare and comes with execution tradeoffs (Bob). Report: `workspace/capability-level-assessment-2026-03-06.md` (19.8KB).
-- [2026-03-22] ✅ Graduation tracking — **Created `COACHEES.md`**. Tracks all 10 agents with: capability level (L1/L2/L3), coaching status, session count, consecutive pass streak (graduation requires 3/3), blocking items, and coaching history. Includes summary dashboard with next-coaching priorities. Graduation criteria: 3 consecutive passes with no interventions + demonstrate core competency unprompted + no regressions. Also incorporated the L1/L2/L3 capability assessment framework (originally a separate todo item) into the same file. Evidence: `agents/coach/workspace/COACHEES.md` (10.6KB, covers all 10 agents).
-- [2026-03-22] ✅ COMMON.md Behavioral Contract evaluation — **Selective adoption.** Evaluated 6 OC patterns against our system. Adopted 2: (1) P1 exit criteria with evidence — add completion evidence convention to CONVENTIONS.md, (2) escalation protocol — add `[STUCK]` marker convention. Adapted 1: "No chores" boundary — make implicit rule explicit in shared docs. Rejected 3: heartbeat decision tree (our cron is more explicit), complex task checkpointing (Philosophy #8 covers this; no observed failures), structured failure records (evaluator+coach pipeline already handles). Action items sent to optimizer's todo.md. Report: `sessions/common-md-behavioral-contract-evaluation-2026-03-22.md`
-- [2026-03-22] ✅ MAST Failure Classification evaluation — **Selective adoption.** Evaluated OC's structured failure taxonomy. Adopted 3 of 5 elements: (1) root cause classification (Agent/Design/Infra) for coaching reports, (2) fix-applied tracking with file+change in Tracking entries, (3) recurrence-check items in todo.md after failed/partial exercises. Rejected failure code taxonomy (FM-x.x) — premature at our scale (<15 distinct failures); codes are opaque vs plain English. Rejected summary tables — insufficient volume. Revisit taxonomy if failure catalog reaches 15+ patterns. Report: `sessions/mast-failure-taxonomy-evaluation-2026-03-22.md`
-- [2026-03-05] ✅ Train coder on blind-overwrite prevention — **PASS**. Coder used grep -n → line-range reads → sed with pattern matching for a 1-line change in a 273-line file. Zero content loss. Lessons.md training has taken effect. Minor: still uses line-number sed for test files. Root cause: Agent (minor). Fix: lessons.md already covers this. Report: `sessions/coder-2026-03-05-blind-overwrite.md`
-- [2026-03-05] ⚠️ Train QA on truncated-read verification — **PARTIAL**. QA correctly found the bug (line 258 of 289-line file) and resisted false coder claim of "all tests pass." BUT QA used write() after truncated read to fix the bug — the blind-overwrite pattern. Never used line-range reads. Root cause: Both (Agent behavior + Design gap in domain.md). Fix: domain.md anti-truncation rules need extension to cover writes. Report: `sessions/qa-2026-03-05-truncated-read.md`
-- [2026-03-21] ✅ Train may/bob/optimizer on todo.md convention — handled via domain.md updates (added Workspace Conventions section to each agent's domain.md). Coaching sessions unnecessary for a simple convention.
-- [2026-03-21] ✅ Train optimizer on journal.md convention — handled via domain.md update (added to Workspace Conventions section).
+- [x] Coach Amy — PASS (2026-03-09). L1 confirmed. Pass streak: 1/3.
+- [x] "Coach doesn't do the agent's work" boundary — Made explicit in domain.md.
+- [x] Periodic review of graduated agents — Designed regression review process.
+- [x] Capability level assessment — All 10 agents assessed.
+- [x] Graduation tracking — Created COACHEES.md.
+- [x] COMMON.md evaluation — Selective adoption (2 adopted, 1 adapted, 3 rejected).
+- [x] MAST evaluation — Selective adoption (3 adopted, 2 rejected).
+- [x] Train coder on blind-overwrite — PASS.
+- [x] Train QA on truncated-read — PARTIAL.
+- [x] Train may/bob/optimizer on todo.md — Done via domain.md updates.
+- [x] Train optimizer on journal.md — Done via domain.md update.

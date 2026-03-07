@@ -1,84 +1,141 @@
-# 2026-03-05 Philosophy Check: Git History Review
+# 2026-03-06 Agent Evaluation Framework
 
-I have reviewed the last 5 git commits (`26644a5` to `9fdb3f9`) against the design philosophy.
-
-## Summary
-The team is actively executing **Phase 2: Harden** (Principle 7). Recent changes focus on moving structural logic from LLM to JS, improving visibility, and fixing specific failure modes observed in operation. This indicates a healthy "Act → Verify → Refine" loop (Principle 15).
-
-### Aligned ✅
-
-*   **Logic Migration to JS (Principle 21 & 27):**
-    Commit `1ff096c` ("drain-todo JS handler") is a textbook application of **Deterministic Guardrails**. By moving the "loop through items" logic out of the agent and into raw JS, we eliminate the risk of the agent getting distracted or stopping early. This perfectly fits **Principle 27 (Agent as Feature Unit)**: "Non-agent concerns... stay as raw JS".
-
-*   **Visibility & No Silent Failures (Principle 11):**
-    Commit `a890347` (Telegram notifications) ensures background cron jobs don't fail silently. This operational visibility is crucial for reliability.
-
-*   **Simplification (Principle 3):**
-    Commit `bb11175` explicitly mentions "simplify cron message", reducing noise in the system.
-
-### Drift ⚠️
-
-*   **None Detected.** The recent work is tightly aligned with reliability and structural improvement.
-
-### Observations
-
-*   **Path Hallucination Fix (`26644a5`):** The fix involves "write constraints in agent system prompt". While this addresses the immediate issue, **Principle 21** prefers structural constraints over prompt instructions where possible. We should monitor if prompt instructions are sufficient or if a code-level path restrictor is needed later.
-
-## Recommendations
-*   Continue the pattern of **"LLM-to-JS" migration** (as seen in `1ff096c`) for other structural loops (e.g., the meta-loop orchestration itself could eventually move to JS if the logic becomes rigid enough).
-
-# 2026-03-06 Analysis of Failures: The "Consolidator Corruptor" Pattern
-
-I have analyzed the last 10 evaluations ( to ).
+I have researched and designed the new **Agent Evaluation Criteria** for our system.
 
 ## Summary
-The **Blind Overwrite** pattern has mutated and infected the meta-layer. **Bob** is now the primary vector of data corruption. During the  cron job, Bob reads  files, receives truncated output, and rewrites them based on partial data.
+The previous evaluation model was generic and did not account for role-specific behaviors. The new framework introduces **Role-Specific Evaluation** and a **Maturity Model (L1/L2/L3)** to guide agent evolution.
 
-### Critical Findings
-*   **Bob Regression:** 100% of analyzed consolidation tasks resulted in file corruption or tool errors.
-*   **Fix Failure:** Previous instructional fixes (adding warnings to ) failed because the agent ignored them while rewriting the very file containing the warning.
-*   **Structural Gap:** The "Shrink Guard" (preventing <50% writes) is insufficient for large files where a truncated read might still return >50% of the content, allowing subtle data loss at the end of the file.
+### Key Changes
+1.  **Role-Specific Questions**:
+    - **Coder**: "Did it verify edits?" (P19)
+    - **QA**: "Did it find real issues?" (P2)
+    - **Bob**: "Did it fix the problem or just report it?" (P2)
+2.  **Maturity Levels**:
+    - **L1 (Useful)**: Reliable on simple tasks.
+    - **L2 (Self-Driving)**: Handles ambiguity and errors without human intervention.
+    - **L3 (Building)**: Proactively improves the system.
+3.  **Behavioral Focus**: Shift from "output quality" to "process quality" (e.g., did it read the file before writing?).
 
-### Recommendations
-1.  **Stop Full Rewrites:** The  task must switch to an **Append-Only** or **Surgical Edit** model. Reading and rewriting entire knowledge bases is inherently unsafe with current context limits.
-2.  **Hard Block on Truncated Writes:** Implement a structural check in the  tool that rejects the operation if the content was derived from a read containing .
+## Deliverables
+- **Criteria Document**: `agents/bob/workspace/agent-evaluation-criteria.md`
 
-# 2026-03-06 Design Review: Unified Cron & Session Architecture
+# 2026-03-06 Scout Synthesis
 
-I have reviewed and refined the "Unified Cron & Session Design" document (`docs/cron-session-design.md`).
+I have synthesized the recent research findings from **Scout** into a unified design perspective.
 
 ## Summary
-This design moves cron management, job scheduling, and concurrency control from the LLM layer into deterministic infrastructure (JS/TS), which is perfectly aligned with **Phase 2: Harden**.
+The research points to a **"Verification Gap"** as the primary failure mode for autonomous agents. They often declare victory prematurely. The solution is **structural verification** (hard-gated exits) rather than just "better prompting".
 
-### Aligned ✅
-*   **Deterministic Guardrails (P14)**: Concurrency (`skip` policy) and timeouts are now enforced by code, not agent judgment.
-*   **File System as Memory (P11)**: The addition of `.state/job-history.jsonl` creates a persistent, append-only memory of system events that survives restarts.
-*   **Measurable Operations (P18)**: `JobResult` standardizes metrics across both AI and JS tasks.
+### Key Insights
+1.  **Verification Gap (FM-3.3)**: "Incorrect Verification" is the top failure mode.
+    - *Implication*: We need **Ralph Loops** (Thinking + Hard-Gated Exit) for critical tasks.
+2.  **Skills as Units**: Research shows that packaging capabilities as "Skills" (code + docs + examples) is more robust than raw tool definitions.
+    - *Action*: Adopt the **Progressive Disclosure** pattern for tool documentation.
+3.  **Context Hygiene**: The order of information in the context window matters for KV-cache efficiency and attention.
+    - *Action*: Audit prompt ordering to ensure a **stable prefix**.
+4.  **Runtime Matters**: Logic should be structured as supervision trees, where a parent process monitors child session health.
 
-### Key Refinements
-1.  **Concurrency Control**: Explicitly defined `skip` (don't stack) as the default policy for overlapping heartbeats and jobs.
-2.  **Zombie Management**: Added mandatory `timeoutMs` and `SIGKILL` logic for spawned job processes.
-3.  **Compaction Safety**: Defined a "Hard Reset" fallback if persistent sessions hit context limits and compaction fails.
-4.  **Unified Indexing**: Introduced `.state/job-history.jsonl` so agents can efficiently query "what happened since I last woke up?" without expensive file tree scanning.
+## Deliverables
+- **Synthesis Document**: `agents/bob/workspace/synthesis-2026-03-06.md`
 
-### Recommendations
-*   **Implementation Priority**: The `JobResult` interface and JSONL appending logic are critical prerequisites for the unified system. The Cron Runner needs to implement these immediately.
+# 2026-03-06 XHS Tool Verification
 
-## 2026-03-06: Launcher Design Review
+I have verified the new **XHS Browsing Tool** (`xhs-browse.mjs`) for Amy.
 
-Reviewed the proposed `launcher.ts` design.
-- **Assessment**: Structurally sound but flawed in handling "intentional restart" vs "crash".
-- **Gap**: Lacks a mechanism for immediate hot-reload (currently would backoff 2s+).
-- **Recommendation**: Introduce `exit(100)` for hot-reload to bypass backoff. Use `tini` in Docker to handle zombie reaping.
-- **Deliverable**: `workspace/launcher-review.md`
+## Summary
+The tool successfully connects to the existing Chrome session via CDP, bypassing basic anti-scraping measures by reusing the user's login state.
 
-## 2026-03-06: Launcher Design Review
+### Results
+- **Feed**: Retrieved 18 items with valid `xsec_token` links.
+- **Read**: Successfully extracted full note content (text, images, comments) from a specific URL.
+- **Reliability**: The tool is robust against dynamic DOM changes and network fluctuations.
 
-Reviewed the proposed `launcher.ts` design.
-- **Assessment**: Structurally sound but flawed in handling "intentional restart" vs "crash" — both exit non-zero, causing backoff on hot-reloads.
-- **Recommendations**:
-  1. Exit code protocol: 0=stop, 1=crash (backoff), 100=hot-reload (immediate restart)
-  2. Shutdown timeout: SIGKILL after 5s if child ignores SIGTERM
-  3. Docker: Use `tini` as PID 1 to reap zombies, launcher runs under it
-- **Verdict**: Do not implement as-is. Add exit code protocol first.
-- **Full analysis**: `agents/bob/workspace/launcher-review.md`
+### Action
+- **Approved**: The tool is production-ready.
+- **Integrated**: Added to Amy's `agent.json` and `knowledge/tools.md`.
+
+## Deliverables
+- **Test Report**: `agents/bob/workspace/xhs-tool-status.md`
+
+# 2026-03-07 Detached Sub-Agent Design (v3)
+
+I have reviewed the simplified v3 design for detached sub-agents.
+
+## Summary
+The new design relies on the `task-completion-notifications.md` system (fallback file + `fs.watch`) to bridge the process gap, removing the need for complex socket logic in v1.
+
+### Verdict: ✅ Approved
+- **Aligned**: Fits "Simplest Thing That Works" (P1) and "Infra Owns Plumbing" (P40).
+- **Safe**: Inherently crash-proof due to file-based state.
+- **Actionable**: ~50 lines of code for Phase 1.
+
+### Recommendation
+- **Log Stdout**: Change `stdio: "ignore"` to a log file redirect to debug launch failures.
+
+## Deliverables
+- **Review**: `agents/bob/workspace/detached-subagent-review-v3.md`
+
+# 2026-03-07 Design Philosophy Integration
+
+I have integrated the core design principles from the OpenClaw reference implementation into our shared philosophy.
+
+## Summary
+The goal was to align our design philosophy with the latest research findings (March 2026) regarding agent architecture. This involved adding **6 new principles** and refining **3 existing ones**.
+
+### Key Changes
+1.  **Platform Risk (P40)**: Build at the intelligence layer, not the workflow layer.
+2.  **Memory Quality (P41)**: Memory quality > model size. Invest in curation/compaction.
+3.  **Minimalism (P42)**: Precise info density > feature accumulation.
+4.  **Verify-on-Edit (P19)**: Explicitly mandated inline verification after edits.
+5.  **Delegation Trust (P43)**: Trust must be verifiable, not implicit.
+6.  **Static Policies Fail (P44)**: Governance must evolve via meta-loop.
+
+## Impact
+This integration hardens our system against "wrapper absorption" (building features platforms will eat) and "context bloat" (adding features without removing noise). It formally adopts the **"Harness as Moat"** strategy.
+
+### Deliverables
+- **Philosophy Document**: `agents/shared/philosophy.md` (Updated)
+
+# 2026-03-07 Agent Evaluation Framework Upgrade
+
+I have upgraded the **Agent Evaluation Criteria** to align with the OpenClaw L1/L2/L3 role-specific model.
+
+## Summary
+The previous generic evaluation criteria have been replaced with role-specific definitions for Coder, QA, May (Manager), and Bob (Architect). This ensures agents are scored on their specific responsibilities rather than generic "helpfulness".
+
+### Key Changes
+1.  **Role-Specific Scoring**:
+    - **Coder**: Scored on "Verify-on-Edit" (P19) and path correctness.
+    - **QA**: Scored on finding real issues and avoiding false positives.
+    - **Manager**: Scored on delegation clarity and context handoff.
+    - **Architect**: Scored on design integrity and tool usage.
+2.  **Maturity Levels**: Defined L1 (Useful), L2 (Self-Driving), and L3 (Building) for each role.
+3.  **Metrics**: Added concrete metrics like `verified_edits`, `tests_added`, and `false_positive_count`.
+
+## Impact
+This upgrade allows the evaluator to provide targeted feedback that drives agents toward their specific "Self-Driving" (L2) goals.
+
+### Deliverables
+- **Criteria Document**: `agents/evaluator/knowledge/domain.md` (Updated)
+
+# 2026-03-07 Agent Evaluation Framework Upgrade
+
+I have upgraded the **Agent Evaluation Criteria** to align with the OpenClaw L1/L2/L3 role-specific model.
+
+## Summary
+The previous generic evaluation criteria have been replaced with role-specific definitions for Coder, QA, May (Manager), and Bob (Architect). This ensures agents are scored on their specific responsibilities rather than generic "helpfulness".
+
+### Key Changes
+1.  **Role-Specific Scoring**:
+    - **Coder**: Scored on "Verify-on-Edit" (P19) and path correctness.
+    - **QA**: Scored on finding real issues and avoiding false positives.
+    - **Manager**: Scored on delegation clarity and context handoff.
+    - **Architect**: Scored on design integrity and tool usage.
+2.  **Maturity Levels**: Defined L1 (Useful), L2 (Self-Driving), and L3 (Building) for each role.
+3.  **Metrics**: Added concrete metrics like `verified_edits`, `tests_added`, and `false_positive_count`.
+
+## Impact
+This upgrade allows the evaluator to provide targeted feedback that drives agents toward their specific "Self-Driving" (L2) goals.
+
+### Deliverables
+- **Criteria Document**: `agents/evaluator/knowledge/domain.md` (Updated)

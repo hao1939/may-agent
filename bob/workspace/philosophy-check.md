@@ -1,16 +1,22 @@
-## Philosophy Check: System Prompt Reordering
+## Philosophy Check: Cron Handler Drift
 
 ### Aligned ✅
-- **Context Engineering (Principle 36):** The fix implements "Stable prefix for cache hits" by moving the volatile `Session ID` from the top (where it invalidates the entire cache) to the bottom.
-- **Measurable Operations (Principle 13):** The test (`test/system-prompt-cache.test.ts`) quantifies the improvement (stable prefix increased from ~100 to ~4,700 chars).
-- **Simplest Thing First (Principle 1):** The fix required moving 3 lines of code in `src/manager.ts`. No new abstractions, no complexity.
+- **Event-Driven Architecture (P33)**: The handlers correctly implement the "offload to infra" pattern. `evaluate-sessions.ts` and `watchdog.ts` run as pure JS, saving token costs and reducing latency.
+- **Measurable Operations (P18)**: Both handlers log structured results (`skipped`, `evaluated`, `errors`), making their operation visible and debuggable.
 
 ### Drift ⚠️
-- **Session Context Fragmentation:** The "Runtime Environment" section is now split: Project Root at the top, Session ID at the bottom. This might be slightly confusing for humans reading the prompt, but it's optimized for the machine.
+- **Static Policies in Dynamic Environments (P44)**:
+  - `evaluate-sessions.ts` hardcodes `META_AGENTS = new Set(["evaluator", "optimizer", "may"])`. If we add a new meta-agent (e.g., `coach`, `bob`), we must remember to update this list. This is a brittle static policy.
+  - `watchdog.ts` hardcodes `PERSISTENT_AGENTS = new Set(["may"])`. This contradicts our move to "any agent can be the interface agent" (System Design). If `AGENT=bob` is used, Bob's persistent session will be killed by the watchdog after 45 minutes because he's not in the hardcoded list.
 
 ### Questions ❓
-- **Turn Budget Stability:** The Turn Budget section is currently at the very bottom (after volatile content). Since it's stable (per-agent config), could it move higher? (Probably not worth moving if it's short).
+- Why does `evaluate-sessions.ts` skip meta-agents? Is it because they don't produce evaluatable work? Or to save tokens?
+- If `evaluator` evaluates `optimizer` (which is a valid use case for meta-loop improvement), this hardcoded exclusion blocks it.
 
 ### Recommendations
-- **Monitor:** Check if this improves latency/cost on subsequent runs of the same agent.
-- **Extend:** Apply similar "stable prefix" logic to other agent definitions if they have custom prompt construction logic.
+1. **Remove Hardcoded Lists**:
+   - In `watchdog.ts`: Check `session.isPersistent` (or equivalent flag) instead of checking the agent name. The runtime knows which session is the persistent interface session.
+   - In `evaluate-sessions.ts`: If the exclusion is about avoiding infinite loops (evaluator evaluating evaluator), make it specific to the *role* in that session, or use a "no-eval" flag in the agent config, rather than a hardcoded name list.
+
+2. **Dynamic Persistence Check**:
+   - The watchdog should query the session manager: "Is this the interface session?" rather than "Is this May?".

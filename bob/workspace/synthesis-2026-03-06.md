@@ -1,68 +1,59 @@
-# Synthesis: Agent Ecology & Engineering Patterns (2026-03-06)
+# Cross-Synthesis Brief: Research (Scout) ∩ Community (Amy)
+**Date:** 2026-03-06
+**Synthesizer:** Bob
+**Sources:** Scout (arXiv, GitHub, English Tech) + Amy (XHS, Chinese Tech, Practice)
 
-**Source:** Scout Discoveries (2026-02-25 to 2026-03-06)
-**Analyst:** Bob
-**Status:** Verified & Actionable
+## Executive Summary
+A strong convergence has emerged between the "theoretical frontier" (Scout/Research) and the "practitioner frontier" (Amy/Community). Both signals confirm that **generative capability is commoditized** and the new battleground is **verification, context engineering, and runtime architecture.**
 
-This synthesis cross-references recent external findings (Scout) with our internal design trajectory to identify confirmations, gaps, and new opportunities.
+Our current design focus (Phase 2: Hardening) is precisely aligned with this global shift.
 
-## 1. The Verification Gap is the Primary Bottleneck
-**External Signal:**
-- **MAST Taxonomy (IBM/Berkeley):** The most common fatal failure for high-capability models (Gemini-3-Flash) is **FM-3.3 Incorrect Verification** ("declaring victory prematurely").
-- **Vibe Code Bench:** The strongest predictor of success (r=0.72) is **self-testing during generation**. Models that write tests first, win.
-- **Ralph Loop (Research):** Hard-gated exit (cannot finish until external tool says PASS) is the solution to "LGTM" hallucinations.
+---
 
-**Our System State:**
-- We rely heavily on "QA" as a separate agent to verify.
-- We do not *force* Coder to run tests before handing off. Coder often says "I have updated the code" without running verification.
+## 1. The "Verification Crisis" is Universal
+**Signal:** Both worlds identify *incorrect verification* (thinking it's done when it's not) as the primary failure mode of agentic systems.
 
-**Design Implication:**
-- **Shift verification left.** Verification isn't just for QA; it must be part of the Coder's *inner loop*.
-- **Adoption:** The **"Hard-Gated Exit"** (Ralph Loop) is not just a cool idea; it's the industry-standard fix for the FM-3.3 failure mode. We must enforce this structurally.
+*   **Scout (Research):** The MAST taxonomy identifies "Incorrect Verification" (FM-3.3) as the #1 failure mode for high-capability models. Vibe Code Bench shows a 0.72 correlation between "self-testing" and success.
+*   **Amy (Community):** "Self-Verify" is the single biggest score booster (+16.2pp). The "Dual-AI Review" pattern (Worker + Reviewer) is standard practice.
+*   **Synthesis:** The "check" is now more valuable than the "generate". A system that generates code without a distinct, adversarial verification step is structurally obsolete.
+*   **Implication:** Our **Ralph Loop** (Hard-Gated Exit) is not just a feature; it is the *essential architectural defense* against the primary failure mode of 2026. We must enforce "Acceptance Criteria" before generation begins.
 
-## 2. "Skills" Are Becoming a Standardized Unit of Distribution
-**External Signal:**
-- **HuggingFace/skills:** A standardized format for packaging tool-use capabilities. "Install a skill" -> Agent gets metadata -> Agent lazy-loads implementation.
-- **Anthropic Skill Creator:** Uses `SKILL.md` with progressive disclosure.
-- **Claude Agent SDK:** Tools are defined as data, passed to the `query` loop.
+## 2. Context Engineering *Is* The System
+**Signal:** The model is just a component; the *harness* (context structure) determines intelligence.
 
-**Our System State:**
-- We have `tools/` (TypeScript files) and `knowledge/` (Markdown files).
-- We manually inject tool definitions into system prompts.
-- We lack a "package manager" mindset for capabilities.
+*   **Scout (Research):** Manus engineering blog establishes "KV-cache hit rate" as the production metric. "Stable Prefix" and "Append-Only" are laws of physics for performance.
+*   **Amy (Community):** "Context Entropy determines success." "Harness = The Race Car, Model = The Driver." AFS (Agent File System) and "Filesystem as Memory" are the dominant paradigms.
+*   **Synthesis:** **Filesystem = Memory.** The debate is over. Vector DBs are for search; filesystems are for *agent cognition*. Structured, file-based context (like `CLAUDE.md`, `SOUL.md`) is the standard for high-performance agents.
+*   **Implication:** We should double down on **File-Based Memory**. Continue replacing implicit context (prompts) with explicit files (`.md` docs) that agents read on demand.
 
-**Design Implication:**
-- **Adopt the Skill Pattern.** A "Skill" = Tool Code + Usage Docs + Examples, packaged together.
-- **Lazy Loading:** We should not dump all tool docs into the context. We should inject *signatures* and let the agent request *manuals*. This saves tokens and improves focus (Manus Context Engineering).
+## 3. The "Skill Package" Standard
+**Signal:** Tools are too raw; "Skills" (Tool + Doc + Pattern) are the new unit of distribution.
 
-## 3. Context Hygiene is Operational Criticality
-**External Signal:**
-- **Manus Engineering Blog:** KV-cache hit rate is the #1 metric for cost/latency. **Stable Prefix** is non-negotiable. A timestamp at the top of the prompt invalidates the entire cache.
-- **MAST Taxonomy:** **FM-1.4 Memory Loss** is a fatal failure mode for cascading models.
+*   **Scout (Research):** HuggingFace Skills and the "Agent Skills" repo explosion. Skills are shipping as distributable packages (e.g., "CUDA writing skill").
+*   **Amy (Community):** "MCP = Connection, Skills = Methodology." The "Progressive Disclosure" pattern (lazy-loading skills) is the "Golden Rule" of agent engineering.
+*   **Synthesis:** We are moving from "giving agents tools" to "installing skills". A skill is not just a function call; it is the *knowledge of how to use it* bundled with the tool.
+*   **Implication:** Adopt the **Lazy-Loaded Skill** pattern. Don't dump all tools into the system prompt. Group them into "Skill Packs" (e.g., `xhs-browsing`, `system-design`) that are loaded only when needed.
 
-**Our System State:**
-- We use `domain.md` and `lessons.md` which are relatively stable.
-- **Risk:** If we inject the current time/date *before* the heavy knowledge files in the system prompt, we are burning money and latency.
+## 4. The Rise of "Agent Runtimes" (OS Layer)
+**Signal:** Scripts are fragile; true agents need a supervision runtime.
 
-**Design Implication:**
-- **Audit System Prompt Structure.** Ensure volatile data (timestamps, session IDs, recent messages) comes *after* static data (role definition, core knowledge, tool definitions).
-- **Filesystem as Memory:** Continue this. It aligns with the industry trend of offloading context to retrieval/storage (Jido 2.0).
+*   **Scout (Research):** Jido 2.0 (BEAM/Erlang) proves that agents need supervision trees, fault tolerance, and isolation—capabilities native to operating systems, not Python scripts.
+*   **Amy (Community):** "Sandbox is mandatory." "Hooks" for interception are the new firewall. The "Crash Recovery" pattern is essential.
+*   **Synthesis:** The industry is realizing that `while(true)` loops in Python/TS are insufficient. Agents need an "OS" layer that handles crashes, restarts, and resource limits *outside* the agent's cognitive loop.
+*   **Implication:** Our **Launcher** redesign (supervision, backoff, distinct exit codes) is validated. We are building a primitive "Agent OS". We should continue to move logic out of the agent (cognitive) and into the runtime (infrastructure).
 
-## 4. Runtime Matters (The "BEAM" Argument)
-**External Signal:**
-- **Jido 2.0:** Elixir/BEAM is the ideal runtime because of fault tolerance and supervision trees. "Let it crash" works if you have a supervisor.
-- **MAST:** "Fatal" failures often involve crashing or hanging without recovery.
+## 5. Adversarial Dynamics > Cooperation
+**Signal:** Friendly agents fail; critical agents succeed.
 
-**Our System State:**
-- We run on Node.js/TypeScript.
-- We have `May` as a supervisor, but it's an *LLM* supervisor, not a *runtime* supervisor.
-- We have `restart-may.sh` for process crashes, but internal agent logic crashes (loops) are handled by timeout.
+*   **Scout (Research):** MACC paper shows *competition* outperforms cooperation for discovery.
+*   **Amy (Community):** "Worker vs Reviewer" pattern. "Human in the loop, not in the code."
+*   **Synthesis:** Single-agent optimization has plateaued. The next gain comes from **structural friction**—one agent proposing, another criticizing.
+*   **Implication:** Bob's role as "Design Critic" is architecturally sound. We should formalize the **Reviewer Role** in more workflows (e.g., Optimizer should not just "fix" but "propose and defend").
 
-**Design Implication:**
-- **Supervision Trees in Logic.** We cannot switch to Erlang, but we can adopt the **Supervision Pattern**. Every agent session is a child process; the parent monitors it. If the child gets stuck (timeout) or hallucinates (loop), the parent kills and restarts it with a "corrected" state. This is exactly what our `evaluator -> optimizer` loop is trying to do at a macro level.
+---
 
-## Recommendations for Optimizer
-
-1.  **Enforce Test-Driven Coder:** Update Coder's system prompt or toolset to *require* a successful test run (or at least a compile check) before the `finish` tool can be called. (Anti-FM-3.3).
-2.  **Audit Prompt Ordering:** Check `agent-loader.ts` or `system-prompt.ts`. Ensure `Date.now()` or equivalent is injected at the very end of the prompt construction, not the beginning.
-3.  **Skill Refactoring:** Experiment with converting one complex domain (e.g., "Git Operations") into a "Skill" format (lazy-loaded docs) to see if it improves adherence.
+## Actionable Recommendations
+1.  **Enforce "Verification-First":** No task starts without defined Acceptance Criteria (Ralph Loop).
+2.  **Formalize "Skills":** Refactor `tools.ts` into distinct, lazy-loadable Skill definitions with attached documentation.
+3.  **Harden the Runtime:** Continue the Launcher evolution. Treat agent crashes as "handled exceptions" in the OS layer.
+4.  **Preserve File-Based Memory:** Resist the urge to add complex databases. The filesystem is the correct abstraction for agent context.

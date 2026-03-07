@@ -13,28 +13,11 @@ status, created date, and check history. Tasks move through:
 
 ## Active Tasks
 
-### F1: Lean Heartbeat Messages
+### F4: Ralph Loop — Explore-to-Implement Pipeline
 - **Owner:** bob
-- **Status:** in-progress (actively working — s_1772902537648_0)
-- **Created:** 2026-03-07
-- **Signal:** Average turns per heartbeat session < 6 (check last 5 heartbeat sessions per agent)
-- **Escalate after:** 3 failed checks
-- **Checks:**
-
-### F2: Pattern Recognition Pipeline
-- **Owner:** bob
-- **Status:** done
-- **Created:** 2026-03-07
-- **Signal:** File exists: agents/shared/workflow-proposals/*.md (at least 2 proposals)
-- **Escalate after:** 3 failed checks
-- **Checks:**
-- [2026-03-07] Verified: `enhance-cron.md` and `safe-edit.md` exist. Pattern recognition active.
-
-### F3: Score-Reactive Coaching Trigger
-- **Owner:** optimizer
-- **Status:** in-progress (actively working — s_1772902563880_3)
-- **Created:** 2026-03-07
-- **Signal:** When evaluate-sessions finds needs_improvement, coach's todo.md gets an item within same cron cycle
+- **Status:** in-progress
+- **Created:** 2026-03-22
+- **Signal:** Design doc exists at agents/shared/ralph-loop-design.md with concrete adaptation plan for our system
 - **Escalate after:** 3 failed checks
 - **Checks:**
 
@@ -42,13 +25,14 @@ status, created date, and check history. Tasks move through:
 
 ## Completed Tasks
 
-### F2: Pattern Recognition Pipeline
-- **Owner:** bob
-- **Status:** done
-- **Created:** 2026-03-07
-- **Completion Date:** 2026-03-07
-- **Result:**
-  - Analyzed recent sessions (`s_1772894556976_13` failure).
-  - Identified critical anti-pattern: Blind overwrite after truncated read.
-  - Created `agents/shared/workflow-proposals/safe-edit.md` to solve it.
-  - Verified `enhance-cron.md` also exists from previous work.
+### F1: Lean Heartbeat Messages ✅
+- **Completed:** 2026-03-22 (s_1772902537648_0, 1m24s)
+- **Result:** All 7 heartbeat.md files rewritten to 4-5 line checklists. Zero prose.
+
+### F2: Pattern Recognition Pipeline ✅
+- **Completed:** 2026-03-22 (s_1772902546390_1, 1m46s)
+- **Result:** Created `safe-edit.md` workflow proposal. Identified blind-overwrite-after-truncation pattern.
+
+### F3: Score-Reactive Coaching Trigger ✅
+- **Completed:** 2026-03-22 (s_1772902563880_3, 4m50s)
+- **Result:** Found bug — auto-eval path in may.ts lacked coaching trigger. Fixed: both may.ts and cron handler now write to coach's todo + triggerNow on needs_improvement. "No Chores" boundary already existed as P45.

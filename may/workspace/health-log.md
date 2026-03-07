@@ -36,3 +36,36 @@
 - Bob analysis: fresh (1h ago)
 - ⚠️ 123 actionable unevaluated sessions — evaluation may be falling behind
 
+## 2026-03-06T22:08 — Auto (JS cron handler)
+
+- Sessions (24h): 232
+- Unevaluated: 133 total, 133 actionable, 0 auto-skippable
+- Running sessions: may (s_1772649590298_0), bob (s_1772821697660_6), evaluator (s_1772834900629_13)
+- tsc: FAIL: src/background-exec.ts(88,7): error TS2742: The inferred type of 'BackgroundExecParams' cannot be named without a reference to '@mariozechner/pi-ai/node_modules/@sinclair/typebox'. This is likely not 
+- Lessons: 191 lines total (bob 38, evaluator 32, qa 29, coder 28, optimizer 28, amy 18, may 18)
+- Bob analysis: fresh (12h ago)
+- ⚠️ tsc --noEmit failed
+- ⚠️ 133 actionable unevaluated sessions — evaluation may be falling behind
+
+## 2026-03-07T02:21 — Auto (JS cron handler)
+
+- Sessions (24h): 254
+- Unevaluated: 81 total, 80 actionable, 1 auto-skippable
+- Running sessions: may (s_1772649590298_0), bob (s_1772821697660_6)
+- tsc: FAIL: src/background-exec.ts(88,7): error TS2742: The inferred type of 'BackgroundExecParams' cannot be named without a reference to '@mariozechner/pi-ai/node_modules/@sinclair/typebox'. This is likely not 
+- Lessons: 191 lines total (bob 38, evaluator 32, qa 29, coder 28, optimizer 28, amy 18, may 18)
+- Bob analysis: fresh (16h ago)
+- ⚠️ tsc --noEmit failed
+- ⚠️ 80 actionable unevaluated sessions — evaluation may be falling behind
+
+## 2026-03-07T06:34 — Auto (JS cron handler)
+
+- Sessions (24h): 201
+- Unevaluated: 84 total, 82 actionable, 2 auto-skippable
+- Running sessions: may (s_1772649590298_0), bob (s_1772821697660_6), amy (s_1772865289601_39)
+- tsc: FAIL: src/background-exec.ts(88,7): error TS2742: The inferred type of 'BackgroundExecParams' cannot be named without a reference to '@mariozechner/pi-ai/node_modules/@sinclair/typebox'. This is likely not 
+- Lessons: 191 lines total (bob 38, evaluator 32, qa 29, coder 28, optimizer 28, amy 18, may 18)
+- Bob analysis: fresh (21h ago)
+- ⚠️ tsc --noEmit failed
+- ⚠️ 82 actionable unevaluated sessions — evaluation may be falling behind
+
