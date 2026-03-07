@@ -29,6 +29,9 @@ export interface HandlerContext {
 
   /** Log a diagnostic message (routed through EventBus as info). */
   log: (msg: string) => void;
+
+  /** Trigger a cron entry immediately (reactive trigger). Returns true if fired/latched. */
+  triggerNow: (entryName: string) => boolean;
 }
 
 /**
