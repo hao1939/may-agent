@@ -11,6 +11,7 @@ import { readdirSync, readFileSync, existsSync, statSync, appendFileSync, mkdirS
 import { join, dirname } from "node:path";
 import { execSync } from "node:child_process";
 import { loadAllSessionMetas } from "../../../src/persistence.js";
+import { appendToTodoSection } from "../../../run/todo-utils.js";
 import type { HandlerContext, HandlerModule } from "../../../run/handler-context.js";
 import type { CronEntry } from "../../../src/cron-tool.js";
 
@@ -39,13 +40,31 @@ export interface SystemStatusOptions {
 export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
   const healthLogPath = join(ctx.agentsRoot, ctx.agentName, "workspace", "health-log.md");
   return async () => {
-    await handleSystemStatus({
+    const result = runSystemStatus({
       persistDir: ctx.persistDir,
       projectRoot: ctx.projectRoot,
       agentsRoot: ctx.agentsRoot,
       healthLogPath,
     });
+    const report = formatStatusReport(result);
+
+    // Write health log (same as handleSystemStatus)
+    mkdirSync(dirname(healthLogPath), { recursive: true });
+    if (!existsSync(healthLogPath) || !readFileSync(healthLogPath, "utf-8").includes("# Health Log")) {
+      appendFileSync(healthLogPath, "# Health Log\n\n");
+    }
+    appendFileSync(healthLogPath, report + "\n\n");
     ctx.log(`[cron:system-status] Health check completed — see health-log.md`);
+
+    // Reactive trigger: anomalies → write to May's todo + trigger heartbeat
+    if (result.anomalies.length > 0) {
+      const todoPath = join(ctx.agentsRoot, "may", "workspace", "todo.md");
+      const item = `- [system-status] ${result.anomalies.length} anomaly(ies) detected: ` +
+        result.anomalies.map(a => a.slice(0, 80)).join("; ").slice(0, 300);
+      appendToTodoSection(todoPath, item);
+      ctx.triggerNow("heartbeat");
+      ctx.log(`[system-status] ${result.anomalies.length} anomalies → triggered May heartbeat`);
+    }
   };
 };
 

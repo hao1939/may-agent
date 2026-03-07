@@ -11,12 +11,15 @@ import { readdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { loadAllSessionMetas } from "../../../src/persistence.js";
 import { evaluateTask, writeSkippedEvaluations } from "../../../src/evaluator.js";
+import { appendToTodoSection } from "../../../run/todo-utils.js";
 import type { HandlerContext, HandlerModule } from "../../../run/handler-context.js";
 import type { CronEntry } from "../../../src/cron-tool.js";
 
 export interface EvaluateSessionsResult {
   skipped: number;
   parentsEvaluated: string[];
+  /** Per-parent verdict from overall evaluation. */
+  parentVerdicts: Record<string, string>;
   sessionsEvaluated: number;
   errors: string[];
 }
@@ -34,6 +37,25 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     });
     if (result.sessionsEvaluated > 0 || result.skipped > 0) {
       ctx.log(`[cron:evaluate-sessions] ${result.skipped} skipped, ${result.sessionsEvaluated} evaluated, ${result.errors.length} errors`);
+    }
+
+    // Check for bad evaluations → reactive coaching trigger
+    let triggered = false;
+    for (const parentId of result.parentsEvaluated) {
+      const verdict = result.parentVerdicts[parentId];
+      if (verdict === "needs_improvement") {
+        const todoPath = join(ctx.agentsRoot, "coach", "workspace", "todo.md");
+        const item = `- Review session ${parentId} (verdict: needs_improvement). ` +
+          `Check .state/evaluations/ for details. ` +
+          `Identify which agent needs coaching and run a targeted exercise.`;
+        appendToTodoSection(todoPath, item);
+        triggered = true;
+        ctx.log(`[evaluate-sessions] Bad score for ${parentId} → queued coaching item`);
+      }
+    }
+    if (triggered) {
+      ctx.triggerNow("heartbeat-coach");
+      ctx.log(`[evaluate-sessions] Triggered coach heartbeat`);
     }
   };
 };
@@ -70,7 +92,7 @@ export async function handleEvaluateSessions(opts: {
   onLog?: (msg: string) => void;
 }): Promise<EvaluateSessionsResult> {
   const { persistDir, manager, onLog } = opts;
-  const result: EvaluateSessionsResult = { skipped: 0, parentsEvaluated: [], sessionsEvaluated: 0, errors: [] };
+  const result: EvaluateSessionsResult = { skipped: 0, parentsEvaluated: [], parentVerdicts: {}, sessionsEvaluated: 0, errors: [] };
 
   try {
     result.skipped = writeSkippedEvaluations(persistDir);
@@ -90,6 +112,7 @@ export async function handleEvaluateSessions(opts: {
       const evalResult = await evaluateTask({ manager, persistDir, parentSessionId: parentId });
       if (evalResult) {
         result.parentsEvaluated.push(parentId);
+        result.parentVerdicts[parentId] = evalResult.overall.verdict;
         result.sessionsEvaluated += evalResult.sessionIds.length;
         onLog?.(`[eval] Evaluated ${evalResult.sessionIds.length} session(s) for parent ${parentId}: ${evalResult.overall.verdict}`);
       }
