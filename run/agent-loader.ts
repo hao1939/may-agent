@@ -223,6 +223,7 @@ function buildTools(
         const denyConfig = config.delegateDeny;
         tools.push(manager.createTool({
           getCallerSessionId: () => agentSessionIds.get(config.name),
+          getCallerAgentName: () => config.name,
           delegateDeny: denyConfig,
         }));
         break;

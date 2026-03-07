@@ -11,9 +11,9 @@
  *    Result is tracked the same as LLM jobs. No process spawn, no LLM cost.
  *    All job entries MUST have a handler registered (via loadAgentHandlers).
  *
- * 3. **legacy-followup** — followUp into caller's session (backward compat for
- *    entries with no type/handler/agent). Will be removed once all entries
- *    are migrated to heartbeat or job-with-handler.
+ * 3. **legacy-followup** — spawns a detached agent process (backward compat
+ *    for entries with no type/handler/agent). Runs out-of-process so it
+ *    does not compete with the main event loop.
  *
  * Every completed execution appends a JobResult to `.state/job-history.jsonl`.
  */
@@ -21,13 +21,15 @@
 import { readFileSync, existsSync, appendFileSync, mkdirSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import type { SubagentManager } from "../src/index.js";
+import { generateId } from "../src/index.js";
+import { spawnDetachedAgent } from "../src/detached.js";
 import type { CronEntry, JobResult } from "../src/cron-tool.js";
 
 /** A JS function that replaces the LLM for a specific cron job. */
 export type CronHandler = () => Promise<void>;
 
 /** Callback when a job fires (for notifications). */
-export type CronJobCallback = (entry: CronEntry, type: "js" | "heartbeat") => void;
+export type CronJobCallback = (entry: CronEntry, type: "js" | "heartbeat" | "legacy") => void;
 
 export class Cron {
   private timers = new Map<string, ReturnType<typeof setInterval>>();
@@ -44,6 +46,9 @@ export class Cron {
 
   /** Track whether a JS handler is currently running (prevents overlap). */
   private handlerRunning = new Set<string>();
+
+  /** Track running detached legacy tasks: name → { sessionId, pid, startedAt }. */
+  private legacyRunning = new Map<string, { sessionId: string; pid: number | undefined; startedAt: string }>();
 
   private projectRoot: string;
   private persistDir: string;
@@ -323,16 +328,92 @@ export class Cron {
     });
   }
 
-  // ── Legacy: followUp into main session (backward compat) ────────────
+  // ── Legacy: spawn detached agent process (backward compat) ──────────
+
+  /** Check if a process with the given pid is still running. */
+  private isProcessAlive(pid: number | undefined): boolean {
+    if (pid === undefined) return false;
+    try {
+      process.kill(pid, 0); // signal 0: check existence without killing
+      return true;
+    } catch {
+      return false;
+    }
+  }
 
   private fireLegacyFollowUp(entry: CronEntry): void {
-    this.onJobFire?.(entry, "heartbeat");
-    try {
-      const sid = this.getSessionId();
-      this.manager.followUp(sid, entry.message, "cron");
-    } catch (err) {
-      this.onError?.(`Cron job "${entry.name}" followUp failed: ${err}`);
+    // If a detached process for this entry is tracked, check if it's still alive
+    if (this.legacyRunning.has(entry.name)) {
+      const tracked = this.legacyRunning.get(entry.name)!;
+      if (this.isProcessAlive(tracked.pid)) {
+        // Process still running — skip this fire
+        const result = this.makeSkipResult(entry, "job");
+        this.appendJobResult(result);
+        this.onError?.(`Cron legacy job "${entry.name}" skipped — detached process still running (pid=${tracked.pid})`);
+        return;
+      }
+      // Process is no longer running — clear tracking and allow re-fire
+      this.legacyRunning.delete(entry.name);
     }
+
+    this.onJobFire?.(entry, "legacy");
+    const startedAt = new Date().toISOString();
+
+    try {
+      const sessionId = generateId("cron");
+      let parentSessionId: string | undefined;
+      try {
+        parentSessionId = this.getSessionId();
+      } catch {
+        // No active parent session — that's fine for detached spawn
+      }
+
+      const { pid } = spawnDetachedAgent({
+        projectRoot: this.projectRoot,
+        agentName: entry.agent ?? "may",
+        task: entry.message,
+        sessionId,
+        parentSessionId,
+      });
+
+      this.legacyRunning.set(entry.name, { sessionId, pid, startedAt });
+
+      this.appendJobResult({
+        jobName: entry.name,
+        type: "job",
+        status: "success",
+        summary: `Detached agent spawned (pid=${pid ?? "unknown"}, session=${sessionId})`,
+        startedAt,
+        endedAt: new Date().toISOString(),
+        durationMs: 0,
+        agent: entry.agent ?? "may",
+        sessionId,
+      });
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      this.appendJobResult({
+        jobName: entry.name,
+        type: "job",
+        status: "failure",
+        summary: `Failed to spawn detached agent for "${entry.name}"`,
+        startedAt,
+        endedAt: new Date().toISOString(),
+        durationMs: 0,
+        agent: entry.agent,
+        error: errMsg,
+      });
+      this.onError?.(`Cron job "${entry.name}" detached spawn failed: ${errMsg}`);
+    }
+  }
+
+  /** Clear tracking for a legacy detached task (called when process completes). */
+  clearLegacyTask(jobName: string): void {
+    this.legacyRunning.delete(jobName);
+  }
+
+  /** Get info about running legacy detached tasks. */
+  getLegacyRunning(): Map<string, { sessionId: string; pid: number | undefined; startedAt: string }> {
+    return new Map(this.legacyRunning);
   }
 
   // ── JobResult tracking ──────────────────────────────────────────────

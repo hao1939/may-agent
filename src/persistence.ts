@@ -27,6 +27,9 @@ export interface PersistedSession {
   parentSessionId?: string;
   workflowRunId?: string;
   stepLabel?: string;
+  detached?: boolean;
+  pid?: number;
+  instance?: string;
 }
 
 /** Shape of the registry data (in-memory view).

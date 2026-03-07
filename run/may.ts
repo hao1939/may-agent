@@ -80,6 +80,12 @@ const INITIAL_TASK = (() => {
   return null;
 })();
 
+// ── Detached sub-agent env vars ──────────────────────────────────────────
+// When spawned by spawnDetachedAgent(), these env vars override defaults.
+const ENV_SESSION_ID = process.env.SESSION_ID || undefined;
+const ENV_PARENT_SESSION_ID = process.env.PARENT_SESSION_ID || undefined;
+const ENV_PARENT_AGENT = process.env.PARENT_AGENT || undefined;
+
 // ── Models ──────────────────────────────────────────────────────────────
 
 const MODEL_BASE_URL = process.env.MODEL_BASE_URL || "http://localhost:4000";
@@ -587,7 +593,12 @@ if (!KEEP_SESSION && !INITIAL_TASK) {
 if (!KEEP_SESSION) {
   // Task mode: start fresh with task message, no resume
   const initialTask = INITIAL_TASK!;
-  sid = manager.run(interfaceAgent, initialTask, interfaceRunOpts);
+  sid = manager.run(interfaceAgent, initialTask, {
+    ...interfaceRunOpts,
+    ...(ENV_SESSION_ID ? { sessionId: ENV_SESSION_ID } : {}),
+    ...(ENV_PARENT_SESSION_ID ? { parentSessionId: ENV_PARENT_SESSION_ID } : {}),
+    ...(ENV_PARENT_AGENT ? { parentAgentName: ENV_PARENT_AGENT } : {}),
+  });
   bus.emit({ type: "info", message: `[task] Started ${interfaceAgent} task session: ${sid}` });
   await manager.waitForIdle(sid);
 } else {
