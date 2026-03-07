@@ -426,6 +426,7 @@ function runDirect(agentName: string, message: string): void {
 
 let shuttingDown = false;
 let activeRL: ReturnType<typeof createInterface> | null = null;
+let notificationDrainTimer: ReturnType<typeof setInterval> | undefined;
 
 function gracefulShutdown() {
   if (shuttingDown) {
@@ -434,6 +435,10 @@ function gracefulShutdown() {
   }
   shuttingDown = true;
   bus.emit({ type: "info", message: `Shutting down...` });
+
+  // Stop notification watcher
+  manager.stopNotificationWatcher();
+  clearInterval(notificationDrainTimer);
 
   // Stop all cron jobs
   for (const cron of getAgentCrons().values()) {
@@ -474,6 +479,8 @@ function gracefulRestart() {
   shuttingDown = true;
   bus.emit({ type: "info", message: "Restarting (hot-reload)..." });
 
+  manager.stopNotificationWatcher();
+  clearInterval(notificationDrainTimer);
   for (const cron of getAgentCrons().values()) {
     cron.stop();
   }
@@ -613,6 +620,15 @@ if (!KEEP_SESSION) {
     await manager.waitForIdle(sid);
   }
 }
+
+// ── Start notification watcher (after resume completes) ─────────────────
+// Startup order: Load Registry → Resume Agents → Start Watcher/Drain
+// fs.watch is a latency optimization; periodic drain is the reliability layer.
+manager.startNotificationWatcher();
+notificationDrainTimer = setInterval(() => {
+  try { manager.drainNotifications(); } catch { /* best-effort */ }
+}, 30_000);
+notificationDrainTimer.unref();
 
 // ── Write identity ─────────────────────────────────────────────────────
 
