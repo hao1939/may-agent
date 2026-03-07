@@ -32,7 +32,7 @@ export type RunnerEvent =
 // ── Commands (UI → runner) ─────────────────────────────────────────────
 
 export type RunnerCommand =
-  | { type: "steer"; message: string }
+  | { type: "steer"; message: string; sessionId?: string }
   | { type: "cancel"; sessionId: string }
   | { type: "cancel_all" }
   | { type: "cancel_task" }
@@ -43,10 +43,16 @@ export type RunnerCommand =
   | { type: "reload_agents" }
   | { type: "restart" };
 
+/** Result returned by command handlers to the socket server. */
+export interface CommandResult {
+  ok: boolean;
+  message?: string;
+}
+
 // ── Event Bus ──────────────────────────────────────────────────────────
 
 export type EventListener = (event: RunnerEvent) => void;
-export type CommandHandler = (command: RunnerCommand) => void;
+export type CommandHandler = (command: RunnerCommand) => CommandResult | void;
 
 /** Resolve the channel of an event. Defaults to "activity" if not set. */
 export function eventChannel(event: RunnerEvent): EventChannel {
@@ -77,9 +83,9 @@ export class EventBus {
     this.commandHandler = handler;
   }
 
-  /** Send a command to the runner (UI-side). */
-  command(cmd: RunnerCommand): void {
-    this.commandHandler?.(cmd);
+  /** Send a command to the runner (UI-side). Returns handler result if available. */
+  command(cmd: RunnerCommand): CommandResult | void {
+    return this.commandHandler?.(cmd);
   }
 
   /** Number of listeners. */
