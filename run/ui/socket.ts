@@ -1,15 +1,17 @@
 /**
  * Unix socket UI — streams RunnerEvents as JSON lines, accepts RunnerCommands.
  *
+ * Design: docs/socket-protocol.md
+ *
  * Usage:
  *   # Watch events:
- *   socat - UNIX-CONNECT:.state/may.sock
+ *   socat - UNIX-CONNECT:.state/instances/default/may.sock
  *
  *   # Send a command:
- *   echo '{"type":"steer","message":"Stop"}' | socat - UNIX-CONNECT:.state/may.sock
+ *   echo '{"type":"steer","message":"Stop"}' | socat - UNIX-CONNECT:.state/instances/default/may.sock
  *
  *   # Interactive:
- *   socat READLINE UNIX-CONNECT:.state/may.sock
+ *   socat READLINE UNIX-CONNECT:.state/instances/default/may.sock
  */
 
 import { createServer, connect, type Server, type Socket } from "node:net";
@@ -17,11 +19,22 @@ import { existsSync, unlinkSync } from "node:fs";
 import type { EventBus, RunnerEvent } from "../event-bus.js";
 import type { SubagentManager } from "../../src/index.js";
 
+// ── Valid command types (for validation) ────────────────────────────────
+
+const VALID_COMMAND_TYPES = new Set([
+  "steer", "cancel", "cancel_all", "cancel_task", "close",
+  "status", "input", "run", "reload_agents", "restart",
+]);
+
 export interface SocketUIOptions {
   socketPath: string;
   bus: EventBus;
   manager: SubagentManager;
   getSessionId: () => string;
+  /** Agent name for the interface agent (included in welcome message). */
+  agentName: string;
+  /** Instance label (included in welcome message). */
+  instance: string;
 }
 
 export interface SocketUI {
@@ -52,7 +65,7 @@ function isSocketAlive(socketPath: string): Promise<boolean> {
 }
 
 export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
-  const { socketPath, bus, manager, getSessionId } = opts;
+  const { socketPath, bus, manager, getSessionId, agentName, instance } = opts;
   const clients = new Set<Socket>();
 
   // If socket file exists, check whether it's live or stale
@@ -88,17 +101,22 @@ export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
   const server: Server = createServer((socket) => {
     clients.add(socket);
 
-    // Welcome message with current state
+    // Welcome message with process metadata and current state (L6)
     const status = manager.status();
-    const running = status.filter((s) => s.status === "running");
     socket.write(JSON.stringify({
       type: "connected",
-      maySession: getSessionId(),
-      activeAgents: running.map((s) => ({
-        agent: s.agent,
-        sessionId: s.sessionId,
-        task: s.task.slice(0, 100),
-      })),
+      pid: process.pid,
+      agent: agentName,
+      instance,
+      sessionId: getSessionId(),
+      activeAgents: status
+        .filter((s) => s.status === "running" || s.status === "idle")
+        .map((s) => ({
+          agent: s.agent,
+          sessionId: s.sessionId,
+          status: s.status,
+          task: s.task.slice(0, 100),
+        })),
     }) + "\n");
 
     // Handle incoming commands
@@ -112,12 +130,35 @@ export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
         const trimmed = line.trim();
         if (!trimmed) continue;
 
+        let cmd: Record<string, unknown>;
         try {
-          const cmd = JSON.parse(trimmed);
-          bus.command(cmd);
-          socket.write(JSON.stringify({ type: "ok", command: cmd.type }) + "\n");
+          cmd = JSON.parse(trimmed) as Record<string, unknown>;
         } catch {
           socket.write(JSON.stringify({ type: "error", message: `Invalid JSON: ${trimmed.slice(0, 100)}` }) + "\n");
+          continue;
+        }
+
+        // Validate command type (L4)
+        const cmdType = cmd.type;
+        if (typeof cmdType !== "string" || !VALID_COMMAND_TYPES.has(cmdType)) {
+          socket.write(JSON.stringify({
+            type: "error",
+            command: cmdType ?? null,
+            message: `Unknown command type: ${String(cmdType)}`,
+          }) + "\n");
+          continue;
+        }
+
+        // Dispatch and propagate handler result (L5)
+        const result = bus.command(cmd as Parameters<typeof bus.command>[0]);
+        if (result && !result.ok) {
+          socket.write(JSON.stringify({
+            type: "error",
+            command: cmdType,
+            message: result.message ?? "Command failed",
+          }) + "\n");
+        } else {
+          socket.write(JSON.stringify({ type: "ok", command: cmdType }) + "\n");
         }
       }
     });

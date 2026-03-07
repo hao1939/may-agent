@@ -66,6 +66,7 @@ function formatDurationMs(ms: number): string {
 const CRON_ENABLED = process.argv.includes("--cron");
 const TELEGRAM_ENABLED = process.argv.includes("--telegram");
 const CONSOLE_ENABLED = process.argv.includes("--console");
+const SOCKET_ENABLED = process.argv.includes("--socket");
 const KEEP_SESSION = process.argv.includes("--keep-session");
 const INITIAL_TASK = (() => {
   const idx = process.argv.indexOf("--task");
@@ -335,42 +336,49 @@ bus.onCommand((cmd) => {
   switch (cmd.type) {
     case "input":
       handleInput(cmd.message);
-      break;
-    case "steer":
-      // Raw steer — bypass command parsing, used for programmatic control
+      return { ok: true };
+    case "steer": {
+      // Raw steer — bypass command parsing, used for programmatic control.
+      // Optional sessionId targets a specific session; default: interface agent.
+      const targetSid = cmd.sessionId ?? sid;
       try {
-        manager.steer(sid, cmd.message, "human");
-      } catch {
-        bus.emit({ type: "info", message: "[steer] Cannot steer — session not running" });
+        manager.steer(targetSid, cmd.message, "human");
+        return { ok: true };
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        bus.emit({ type: "info", message: `[steer] ${msg}` });
+        return { ok: false, message: msg };
       }
-      break;
+    }
     case "cancel":
       bus.emit({ type: "info", message: `[cmd] Cancel: ${cmd.sessionId}` });
       manager.cancel(cmd.sessionId);
-      break;
+      return { ok: true };
     case "cancel_all":
       handleInput("cancel all");
-      break;
+      return { ok: true };
     case "cancel_task":
       handleInput("cancel");
-      break;
+      return { ok: true };
     case "close":
       handleInput("close");
-      break;
+      return { ok: true };
     case "status":
       handleInput("status");
-      break;
+      return { ok: true };
     case "run": {
       runDirect(cmd.agent, cmd.message);
       watchForIdle();
-      break;
+      return { ok: true };
     }
     case "reload_agents":
       handleInput("reload");
-      break;
+      return { ok: true };
     case "restart":
       handleInput("restart");
-      break;
+      return { ok: true };
+    default:
+      return { ok: false, message: `Unknown command type: ${(cmd as { type: string }).type}` };
   }
 });
 
@@ -582,14 +590,23 @@ const cleanupPid = () => {
 };
 process.on("exit", cleanupPid);
 
-const socketUI = await attachSocketUI({
-  socketPath: SOCKET_PATH,
-  bus,
-  manager,
-  getSessionId: () => sid,
-});
+// Socket is opt-in via --socket flag
+const socketUI = SOCKET_ENABLED
+  ? await attachSocketUI({
+      socketPath: SOCKET_PATH,
+      bus,
+      manager,
+      getSessionId: () => sid,
+      agentName: interfaceAgent,
+      instance: INSTANCE_LABEL,
+    })
+  : { close: () => {}, clientCount: () => 0 };
 
-bus.emit({ type: "info", message: `[instance:${INSTANCE_LABEL}] PID ${process.pid}, socket ${sockName}` });
+if (SOCKET_ENABLED) {
+  bus.emit({ type: "info", message: `[instance:${INSTANCE_LABEL}] PID ${process.pid}, socket ${sockName}` });
+} else {
+  bus.emit({ type: "info", message: `[instance:${INSTANCE_LABEL}] PID ${process.pid}, socket disabled (use --socket to enable)` });
+}
 
 // ── Startup ────────────────────────────────────────────────────────────
 
@@ -654,7 +671,7 @@ writeIdentity({
   pid: process.pid,
   agent: interfaceAgent,
   instance: INSTANCE_LABEL,
-  socket: SOCKET_PATH,
+  socket: SOCKET_ENABLED ? SOCKET_PATH : "",
   startedAt: new Date().toISOString(),
   startedBy: KEEP_SESSION ? "human" : (INSTANCE.startsWith("job-") ? "cron:" + INSTANCE.replace("job-", "") : "task"),
   task: INITIAL_TASK,
@@ -813,7 +830,7 @@ if (!KEEP_SESSION) {
   // Daemon mode: no TTY, keep alive via socket + keepalive timer.
   // Without a TTY, process.stdin is /dev/null which emits 'end' immediately.
   // We need explicit mechanisms to keep the event loop alive.
-  bus.emit({ type: "info", message: `[daemon] Running in daemon mode (no TTY). Interface agent: ${interfaceAgent}. Use socket for control.` });
+  bus.emit({ type: "info", message: `[daemon] Running in daemon mode (no TTY). Interface agent: ${interfaceAgent}.${SOCKET_ENABLED ? " Use socket for control." : " Socket disabled — no external control available."}` });
 
   // Keep the event loop alive. This timer is referenced (not unref'd),
   // so Node.js won't exit while it's active.

@@ -34,7 +34,7 @@ export function spawnDetachedAgent(opts: SpawnDetachedOpts): { pid: number | und
 
   const proc = spawn(
     process.execPath,
-    [...execArgv, resolve(opts.projectRoot, "run/may.ts"), "--task", opts.task],
+    [...execArgv, resolve(opts.projectRoot, "run/may.ts"), "--task", opts.task, "--socket"],
     {
       cwd: opts.projectRoot,
       stdio: ["ignore", logFd, logFd],
