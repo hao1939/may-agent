@@ -65,7 +65,7 @@ cmd_run() {
   # --cron enables cron jobs; only the main instance should have this
   local instance="${1:-}"
   export INSTANCE="$instance"
-  npx tsx run/launcher.ts --keep-session --cron --telegram --console --socket
+  npx tsx run/launcher.ts --chat --cron --telegram --console --socket
 }
 
 cmd_start() {
@@ -98,7 +98,7 @@ cmd_start() {
     done < .env
   fi
   [ -n "$STATE_DIR" ] && [ "$STATE_DIR" != ".state" ] && cmd="$cmd STATE_DIR=$STATE_DIR"
-  cmd="$cmd npx tsx run/launcher.ts --keep-session --cron --telegram --console --socket"
+  cmd="$cmd npx tsx run/launcher.ts --chat --cron --telegram --console --socket"
 
   # Start in tmux
   if tmux has-session -t "$tmux_session" 2>/dev/null; then
@@ -381,7 +381,7 @@ case "${1:-}" in
     echo "  log [name]          Attach to instance's tmux session"
     echo ""
     echo "If name is omitted, 'default' is used."
-    echo "All features (--keep-session --cron --telegram --console --socket) are enabled for the main instance."
+    echo "All features (--chat --cron --telegram --console --socket) are enabled for the main instance."
     echo "Task instances get --socket only (for send/restart/cancel)."
     echo ""
     echo "Examples:"

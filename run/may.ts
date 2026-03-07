@@ -67,7 +67,7 @@ const CRON_ENABLED = process.argv.includes("--cron");
 const TELEGRAM_ENABLED = process.argv.includes("--telegram");
 const CONSOLE_ENABLED = process.argv.includes("--console");
 const SOCKET_ENABLED = process.argv.includes("--socket");
-const CHAT_MODE = process.argv.includes("--chat") || process.argv.includes("--keep-session");
+const CHAT_MODE = process.argv.includes("--chat");
 const INITIAL_TASK = (() => {
   const idx = process.argv.indexOf("--task");
   if (idx !== -1 && process.argv[idx + 1]) return process.argv[idx + 1];
