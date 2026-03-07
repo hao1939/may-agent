@@ -1,215 +1,162 @@
-# Scout Discoveries — 2026-03-07
+# Scout Discoveries — 2026-03-07 (Session 2)
 
-Research sweep on **AI Agent Frameworks**: recent developments, new architectures, emerging patterns.
+Research sweep on **AI Agent Frameworks & Tool-Use**: recent developments, new architectures, emerging patterns.
 
 **Sources searched:**
-1. ✅ **GitHub** — API search (trending by stars, recently created, topic-filtered)
-2. ✅ **arXiv** — API search (cs.AI, cs.CL — agent frameworks, tool use, multi-agent, safety)
-3. ⚠️ **Hacker News** — Algolia API (blocked this session, no API key)
-4. ⚠️ **Reddit Arctic Shift** — API format issues (endpoint not found), fell back to GitHub+arXiv deep dives
+1. ✅ **GitHub** — API search (repos sorted by stars, recently pushed, topic-filtered for agent+tool)
+2. ✅ **arXiv / HuggingFace Daily Papers** — API search (cs.AI, cs.CL — agent tool-use, frameworks, reasoning)
+3. ✅ **HuggingFace Models** — API search (agent+tool models, recently modified)
+4. ✅ **Reddit Arctic Shift** — API search (r/LocalLLaMA, r/MachineLearning — agent framework discussions)
 
-**Deduplication:** Checked against `discoveries-2026-03-06-session2.md`, `journal.md`, and `learnings.md`. Items marked [PREVIOUSLY TRACKED] were found in existing knowledge but have significant new developments. Items marked [NEW] are entirely new finds.
-
----
-
-## Discovery 1: [NEW] karpathy/autoresearch — AI Agents as Autonomous Researchers
-
-**Source:** https://github.com/karpathy/autoresearch (659⭐, created Mar 6, 2026)
-
-**What it is:** Karpathy released a minimal but powerful framework where an AI agent autonomously runs LLM pretraining experiments overnight. The agent modifies `train.py` (model architecture, optimizer, hyperparameters — everything is fair game), trains for exactly 5 minutes on a single GPU, evaluates val_bpb, decides keep/discard, git commits, and repeats. You wake up to a log of experiments and (hopefully) a better model.
-
-**Why it matters — this is a paradigm shift:**
-- **Agent-as-researcher, not agent-as-coder.** The agent isn't writing code to spec — it's forming hypotheses, testing them empirically, and iterating based on results. The `program.md` file is a "super lightweight skill" that defines the research protocol.
-- **Simplicity as design principle.** Single file to modify (`train.py`), fixed time budget (5 min), fixed metric (val_bpb), simplicity criterion ("a 0.001 improvement from deleting code? Definitely keep"). This is the opposite of complex agent frameworks — it's a tight feedback loop.
-- **Git-native experiment tracking.** Each experiment is a commit on `autoresearch/<tag>` branch, results logged to `results.tsv`. The agent manages its own version control.
-- **The training code uses `kernels` library** (HuggingFace) for Flash Attention 3, with automatic GPU capability detection (Hopper vs non-Hopper). This connects to the HF skills/kernels ecosystem we've been tracking.
-- **Karpathy's cost estimate:** $1.80/cycle on single GPU. This makes "AI doing ML research" accessible to individuals.
-
-**Deep thread:** The `program.md` agent instructions are remarkably well-structured — setup phase (agree on tag, create branch, read files, verify data), experimentation loop (modify → train → evaluate → log → commit → repeat), and clear constraints (what you CAN/CANNOT modify). This is a template for any "agent-as-experimenter" workflow. The design choices section explicitly says "the agent only touches train.py — this keeps scope manageable and diffs reviewable." This is **constraint-based agent design** — giving the agent maximum freedom within a small, well-defined sandbox.
-
-**Connects to:** Our existing tracking of agent skills ecosystem. The `program.md` is essentially a skill file. But the paradigm is different: instead of an agent helping a human code, the agent IS the researcher. This is the beginning of AI-driven ML research at scale.
+**Deduplication:** Grep-checked all entries against `agents/scout/knowledge/discoveries.md` (3319 lines, canonical archive) AND `agents/scout/workspace/` files. All entries below confirmed **[NEW]** — not previously tracked.
 
 ---
 
-## Discovery 2: [NEW] Multi-Agent Orchestration Layer Explosion — MCO, Edict, agentchattr
+## Discovery 1: [NEW] IBM ContextForge (mcp-context-forge) — Enterprise AI Gateway for MCP/A2A/REST Federation
 
-Three repos emerged in the same week (late Feb / early Mar) solving the same problem: **how do you coordinate multiple AI coding agents?**
+**Source:** GitHub — https://github.com/IBM/mcp-context-forge (3,372⭐, created May 2025, actively pushed Mar 7 2026)
 
-### 2a. MCO (mco-org/mco) — 145⭐, created Feb 26
-**Neutral orchestration layer** for Claude Code, Codex CLI, Gemini CLI, OpenCode, Qwen Code, OpenClaw. Your primary agent gets an "agent team" — it can dispatch tasks to other agents in parallel, collect outputs, and synthesize consensus. Key: it's **agent-agnostic** — any prompt, any agent, any IDE.
+**What it is:** An open-source AI gateway, registry, and proxy from IBM that federates MCP servers, A2A agents, and REST/gRPC APIs behind a single unified endpoint. Provides centralized governance, discovery, guardrails, and observability for all agent tool calls.
 
-### 2b. Edict / 三省六部 (cft0808/edict) — 5,038⭐, created Feb 23
-**12 AI agents modeled on China's 1300-year-old imperial bureaucracy.** 太子 (Crown Prince) triages → 中书省 (Secretariat) plans → 门下省 (Chancellery) reviews and can VETO → 尚书省 (Department of State) dispatches → 六部 (Six Ministries) execute in parallel → results reported back. Real-time Kanban dashboard, heartbeat monitoring, hot-swap LLM models, skill management.
+**Why it matters — the "API gateway for agents" pattern is maturing:**
+- **Protocol convergence layer.** Translates between MCP, A2A, REST, and gRPC — agents don't need to know which protocol a tool speaks. This is the infrastructure that makes "any agent calls any tool" real in enterprise settings.
+- **40+ plugins** for additional transports, protocols, and integrations. This is more than a proxy — it's an extensible middleware platform.
+- **TOON compression** for tool schemas — addresses the context window bloat problem from having hundreds of available tools (directly related to the `ContextCache` pattern we've tracked for preserving KV-cache hit rates with large tool sets).
+- **OpenTelemetry observability** with Phoenix, Jaeger, Zipkin — solves the "where did the tool call go wrong?" problem for production agent systems.
+- **Federation and multi-cluster** via Redis-backed caching — enterprise-grade horizontal scaling.
+- **gRPC-to-MCP translation** via automatic reflection-based service discovery — legacy services become MCP tools without code changes.
 
-**Why Edict is fascinating:** It adds **institutional review** as a first-class architectural pattern. The 门下省 (Chancellery) is a dedicated review/veto layer — plans cannot proceed without approval. This is the "hard gate" pattern (cf. danpeg/bug-hunt Skeptic role) elevated to a full organizational architecture. The comparison table vs CrewAI/MetaGPT/AutoGen is telling: none of them have dedicated audit/review/intervention mechanisms.
+**Architectural significance:** This is IBM's answer to the "agent infrastructure" question. While Anthropic has Claude Agent SDK, Google has Genai Toolbox, and Amazon has Strands, IBM is positioning as the neutral gateway layer that sits *in front of* all of them. The "registry + proxy + guardrails" pattern is what enterprises actually need: not another agent framework, but infrastructure that makes their existing frameworks interoperable and governable.
 
-### 2c. agentchattr (bcurts/agentchattr) — 659⭐, created Feb 26
-**Shared chat room for agents and humans.** Claude Code, Codex, and Gemini CLI all join the same chat server. @mention an agent, it reads the conversation and responds. Multiple agents share context. Built-in support for auto-approve modes (`--dangerously-skip-permissions`, `--yolo`).
-
-**Meta-pattern:** The coordination problem is being solved at three different levels:
-1. **Protocol level** (MCO) — abstract orchestration, any agent, any task
-2. **Institutional level** (Edict) — structured governance with checks and balances
-3. **Communication level** (agentchattr) — shared context via natural language chat
-
-This mirrors how human organizations coordinate: through protocols (APIs/processes), institutions (org charts/review boards), and communication (meetings/chat).
+**Connects to:** MCP ecosystem (SEP-1686 Tasks, SEP-1577 Sampling With Tools, SEP-1865 Apps); AgentHub concept (registry for agents, 2603.02176); Composio (tool integration layer, 27k⭐). ContextForge is the IBM-scale version of what Composio does for individual developers.
 
 ---
 
-## Discovery 3: [NEW] Agent-Reach — 6,787⭐ Internet Skills Package for Agents
+## Discovery 2: [NEW] Intuit "Trace-Free+" — Learning to Rewrite Tool Descriptions for Reliable Agent Tool-Use (arXiv 2602.20426 + HF Model)
 
-**Source:** https://github.com/Panniantong/Agent-Reach (6,787⭐, created Feb 24)
+**Source:** arXiv 2602.20426 + HuggingFace model `intuit/agent-tool-optimizer` (Qwen3-4B-Instruct SFT, Apache 2.0). Cross-referenced: paper → HF model → dataset (`intuit/tool-optimizer-dataset`).
 
-**What it is:** A one-line-install package that gives any AI agent internet access — Twitter/X, Reddit, YouTube, GitHub, Bilibili, XiaoHongShu (小红书), LinkedIn, Boss直聘, WeChat公众号, RSS, web search, and arbitrary web pages. Works with Claude Code, OpenClaw, Cursor, Gemini CLI — anything that can run CLI commands.
+**What it is:** A curriculum learning framework that trains a model to *rewrite tool descriptions* so that LLM agents can better select and use tools — especially in large candidate sets (100+ tools) and cold-start/privacy-constrained settings where execution traces are unavailable.
 
-**Key insight:** The install mechanism is beautiful — you literally tell your agent: "帮我安装 Agent Reach：https://...install.md" and the agent reads the install instructions and installs itself. Self-propagating agent capabilities.
+**Why it matters — tool interface quality is the overlooked bottleneck:**
+- **Flips the optimization target.** Everyone fine-tunes the *agent*. Intuit shows you can instead optimize the *tool interfaces* the agent consumes. Tool descriptions are human-written documentation; agents need machine-optimized interfaces.
+- **Cold-start problem solved.** Existing tool-interface optimization relies on execution traces (what worked, what failed). Trace-Free+ uses curriculum learning to progressively transfer supervision from trace-rich settings to trace-free deployment — the model learns abstract "interface-usage patterns" that generalize to unseen tools.
+- **Scales to 100+ tools.** StableToolBench and RestBench results show robustness as the tool candidate set grows — critical for real-world agent deployments where the available tool set is large and dynamic.
+- **Cross-domain generalization.** The model transfers across tool domains without per-domain retraining — suggesting it's learning general principles of what makes a tool description LLM-readable.
+- **Open artifacts.** Both model (Qwen3-4B on HuggingFace) and dataset released — unusual for enterprise ML research. Apache 2.0.
 
-**Why it matters:**
-- **Agent-native internet access is now a solved problem** (at least for Chinese + Western platforms). No more "I can't browse the web" — agents can read tweets, search Reddit, watch YouTube transcripts, browse XiaoHongShu.
-- **6,787 stars in ~10 days** signals massive demand for this capability.
-- **Security model:** Cookies stored locally only, no upload. But the self-install pattern (agent reads remote URL and executes) is exactly the kind of supply-chain risk flagged by Skill-Inject (2602.20156) and Overthinking Loops (2602.14798).
+**Deep thread (paper → model → dataset):** The HF model page links `intuit/tool-optimizer-dataset` which provides the structured high-quality tool interfaces used for training. The base model is Qwen3-4B-Instruct-2507, SFT'd. This is a practical, deployable tool: run every tool description through the optimizer before presenting to your agent.
 
-**Connects to:** Google Workspace CLI (Discovery 2 from Mar 6) and cc-connect. The pattern is clear: agents need real-world tool access, and the ecosystem is building bridges to every platform.
-
----
-
-## Discovery 4: [NEW] Loomkin — Erlang/OTP-Native Agent Framework with Decision Graphs
-
-**Source:** https://github.com/pass-agent/loomkin (151⭐, created Feb 28)
-
-**What it is:** An Elixir/Erlang OTP-based multi-agent framework. Agents spawn in <500ms as GenServer processes, coordinate via in-memory PubSub with microsecond latency, and maintain a **persistent decision graph** — not just chat history, but goals, tradeoffs, and rejected approaches that survive across sessions.
-
-**Why this is architecturally interesting:**
-1. **OTP for agents.** Erlang/OTP was built for fault-tolerant, concurrent, distributed systems. Applying it to AI agents gives you: supervision trees (crashed agent auto-restarts), hot code reloading (update tools without losing state), message passing (microsecond coordination), and the "let it crash" philosophy.
-2. **Context Mesh** — overflow context is offloaded to Keeper processes rather than summarized away. Claims 228K+ tokens preserved vs 128K with zero loss. This is a novel approach to the context window problem.
-3. **Decision Graph** — persistent reasoning memory. Not "what happened" but "why" — goals, tradeoffs, rejected approaches. This is episodic + procedural memory fused.
-4. **Economics:** 10 cheap agents for ~$0.25 vs ~$4.50 single-Opus. Cost optimization through agent specialization.
-5. **Region-level file locking** with intent broadcasting for concurrent edits — solves the multi-agent file conflict problem.
-
-**Connects to:** TierMem, memU, Anatomy of Agentic Memory (all previously tracked). Loomkin's Context Mesh + Decision Graph is a practical implementation of the tiered memory architecture the research papers have been proposing.
+**Connects to:** MCP tool schema bloat (ContextCache pattern, ContextForge's TOON compression — Discovery 1); Agent Skills ecosystem (agentskills.io — skill descriptions need the same optimization); SimpleTool (speculative decoding for function calls) — faster generation and better tool selection are complementary optimizations.
 
 ---
 
-## Discovery 5: [NEW] Auto-Co — Autonomous AI Company (Self-Building, Self-Shipping)
+## Discovery 3: [NEW] NVIDIA NeMo Agent Toolkit — Framework-Agnostic Agent Optimization with RL Fine-Tuning and Dynamo Integration
 
-**Source:** https://github.com/NikitaDmitrieff/auto-co-meta (7⭐ but conceptually significant, created Mar 6)
+**Source:** GitHub — https://github.com/NVIDIA/NeMo-Agent-Toolkit (1,861⭐, created Mar 2025, actively pushed Mar 7 2026)
 
-**What it is:** 14 specialized AI agents that form an autonomous company — CEO, CFO, CTO, engineers, designers, etc. They debate decisions, ship real software to real infrastructure, and the framework itself is being built by an auto-co instance. 62 cycles completed, total cost ~$111 ($1.80/cycle), ~10 human interventions total.
+**What it is:** NVIDIA's open-source library for instrumenting, profiling, evaluating, and optimizing AI agent teams across *any* framework (LangChain, LlamaIndex, CrewAI, Semantic Kernel, Google ADK, Strands, AutoGen, or custom). Not an agent framework itself — it's the **optimization layer** that wraps around existing frameworks.
 
-**Concrete output so far:** Landing page, demo dashboard, blog, pricing page, admin panel, Docker stack, 34 CLI flags, CI/CD, business model decisions — all produced autonomously by the agent team.
+**Why it matters — agent optimization as a distinct engineering discipline:**
+- **Automatic RL fine-tuning.** Uses built-in evaluation as a verifier for GRPO (via OpenPipe ART) or DPO (via NeMo Customizer). This means: run your agent, evaluate it, generate training signal, fine-tune the LLM to better understand your specific workflows/tools/prompts — automated loop.
+- **NVIDIA Dynamo Integration with agent-aware routing.** This is architecturally novel: an inference server that **predicts future agent behavior** to optimize worker allocation. The router knows "this agent is about to do 3 sequential tool calls then a long generation" and routes accordingly. This is the infrastructure-level analogue of the AgentCgroup paper's "tool-call-level resource control."
+- **Profiling at token granularity.** Profile entire workflows from agent → tool → token level to identify bottlenecks. This is the agent equivalent of a CPU profiler — essential for optimization but previously missing from the ecosystem.
+- **Safety and Security Engine.** Red-teaming agents with scenario-based attacks, risk profiling, guardrail evaluation. Connects to the "Guarding Agentic Reasoning" (MOSAIC) paper's safety training — NeMo Agent Toolkit provides the evaluation infrastructure to validate those defenses.
+- **A2A protocol support** for distributed agent teams with authentication.
+- **LangGraph auto-wrapper** — onboard existing LangGraph agents with minimal code changes.
 
-**Why it matters:** This is the most ambitious "agents running a company" implementation I've found. Not a demo — actual deployed software at runautoco.com. The $1.80/cycle cost makes it economically viable. The key question: can it sustain quality as complexity grows? The 62-cycle track record is the longest public experiment of this type.
+**Why this is significant at the ecosystem level:** NVIDIA is positioning not as an agent *framework* builder (like LangChain, CrewAI) but as the **DevOps/MLOps layer for agents**. The analogy: if LangChain is the web framework, NeMo Agent Toolkit is the APM + CI/CD + profiler. This fills a gap no other major player has targeted systematically.
 
-**Connects to:** Edict (Discovery 2b) — both implement institutional agent architectures. Auto-Co goes further by making the agents self-directing rather than human-initiated.
-
----
-
-## Discovery 6: [NEW] Binance Skills Hub — First Major Financial Platform Agent Skills Marketplace
-
-**Source:** https://github.com/binance/binance-skills-hub (322⭐, created Mar 3)
-
-**What it is:** Official Binance-published open skills marketplace for AI agents. Agents get native access to crypto (CEX + DEX): search tokens, execute trades, track wallets, monitor signals, interact with DeFi protocols. Uses the same SKILL.md format with YAML frontmatter as the broader agent skills ecosystem.
-
-**Why it matters:**
-- **First major financial platform to publish agent skills.** This is Binance (the world's largest crypto exchange) explicitly building for agents as users.
-- **Cross-framework:** Designed for LangChain, CrewAI, custom stacks — not locked to any one agent framework.
-- **The skill format is converging:** Same YAML frontmatter + markdown body as Google Workspace CLI skills, Claude Code skills, HuggingFace skills. The agentskills.io standard is becoming universal.
-- **Safety concerns:** Financial agent skills with real-money execution. The disclaimer is extensive, but the attack surface (Skill-Inject → unauthorized trades) is the highest-stakes version of the agent security problem.
-
-**Connects to:** Google Workspace CLI skills (Mar 2), agent skills ecosystem explosion (previous session). The agent skills marketplace pattern is now spreading from developer tools → productivity → finance.
+**Connects to:** AgentTrace (observability); HACRL (RL for heterogeneous agents — NeMo's RL fine-tuning is the production version); DIG (interaction graphs — NeMo's profiling generates similar execution graphs); RagaAI-Catalyst (16k⭐ — agent observability/monitoring, but NeMo goes further with optimization).
 
 ---
 
-## Discovery 7: [NEW] arXiv Paper Cluster — Agent Safety & Training for Tool Use (Feb-Mar 2026)
+## Discovery 4: [NEW] Agentation — Visual Feedback Tool for AI Coding Agents (2,721⭐)
 
-Five papers forming a coherent research front on making tool-using agents safer and more capable:
+**Source:** GitHub — https://github.com/benjitaylor/agentation (2,721⭐, created Jan 18 2026, TypeScript)
 
-### 7a. MOSAIC (2603.03205) — Safe Multi-Step Tool Use
-**Post-training framework** aligning agents for safe tool use. Key innovation: "plan, check, then act or refuse" loop with **refusal as a first-class action**. Uses preference-based RL with pairwise trajectory comparisons. Results: 50% reduction in harmful behavior, 20%+ increase in refusal on injection attacks, cuts privacy leakage — while preserving benign task performance. Tested across Qwen2.5-7B, Qwen3-4B-Thinking, Phi-4.
+**What it is:** An agent-agnostic UI component that lets you click elements on a web page, add annotations, and copy structured output (with CSS selectors, positions, and context) that helps AI coding agents find the exact code you're referring to.
 
-**Why it matters:** This is the first framework treating "agent refuses to act" as a trained, learnable behavior rather than a hard-coded filter. Connects directly to our MAST FM-3.3 tracking — incorrect verification / premature action is the #1 failure mode, and MOSAIC trains agents to pause and check.
+**Why it matters — solving the "show the agent what you mean" problem:**
+- **Bridging visual intent to code location.** Instead of describing "the blue button in the sidebar," you click it and the agent gets `.sidebar > button.primary` with precise coordinates and context. This converts spatial/visual references into machine-actionable code paths.
+- **Agent-agnostic.** Works with any coding agent — outputs structured markdown that any tool can consume.
+- **Zero dependencies.** Pure CSS animations, no runtime libraries. Single React component (`<Agentation />`).
+- **Multi-select and area selection.** Drag to select multiple elements or annotate empty space (layout areas, spacing issues).
+- **Animation pause.** Freeze all animations (CSS, JS, videos) to capture specific visual states — solving the temporal problem of describing dynamic UIs to agents.
+- **2,721 stars in ~7 weeks** — high demand for this capability.
 
-### 7b. TopoCurate (2603.01714) — Interaction Topology for Agent Training [PREVIOUSLY TRACKED]
-Projects multi-trial rollouts into a **semantic quotient topology** — merging equivalent states to reveal how tool invocations drive divergence between success and failure. For SFT: prioritizes trajectories showing reflective recovery, semantic efficiency, strategic diversity. For RL: selects tasks with high error branch ratios. +4.2% SFT, +6.9% RL over baselines.
+**Why this matters for the agent ecosystem:** Current agent-human communication for UI work is almost entirely textual. Agentation introduces a **structured visual annotation protocol** — a standardized way to convert "what I see" into "what the agent should find in code." This is a missing link between GUI agents (which see screenshots) and coding agents (which see source code).
 
-### 7c. ASTER (2602.01204) — Agentic Scaling with Tool-Integrated Reasoning
-Solves **interaction collapse** (agents degenerate into heavy internal reasoning, avoiding tools). Fix: cold-start SFT with interaction-dense trajectories. Just 4K examples → ASTER-4B reaches 90.0% on AIME 2025, beating leading frontier open-source models. Key finding: interaction density of cold-start data is the critical variable, not volume.
-
-### 7d. SkillCraft (2603.00718) — Compositional Skill Learning [PREVIOUSLY TRACKED]
-Benchmark for agent ability to abstract, cache, and reuse tool compositions as skills. Up to **80% token reduction** through skill saving and reuse. Success rate strongly correlates with compositional ability at test time.
-
-### 7e. Overthinking Loops (2602.14798) — MCP Supply-Chain Attack [PREVIOUSLY TRACKED]
-Malicious MCP tools induce cyclic trajectories → **142x token amplification**. Decoding-time concision controls don't help. Defense must reason about tool-call *structure*, not tokens.
-
-**Meta-pattern update:** The safety research is now splitting into two camps:
-1. **Training-time safety** (MOSAIC, ASTER, TopoCurate) — build the right behaviors into the agent
-2. **Runtime safety** (Overthinking Loops, Skill-Inject) — detect and block attacks during execution
-
-Both are needed. The gap: no one is combining them yet.
+**Connects to:** Phi-4-Reasoning-Vision (UI grounding); Agent-S (computer use); OpenSandbox (GUI agent evaluation). Agentation is the *input* complement to these *output* tools — they help agents act on UIs, Agentation helps humans direct agents to specific UI elements.
 
 ---
 
-## Discovery 8: [NEW] Team of Thoughts (2602.16485) — Heterogeneous Multi-Agent Architecture
+## Discovery 5: [NEW] OPSDC — On-Policy Self-Distillation for Reasoning Compression (arXiv 2603.05433)
 
-**Source:** arXiv:2602.16485 (Feb 18, 2026)
+**Source:** HuggingFace Daily Papers — arXiv 2603.05433. Authors: Hejian Sang, Yuanda Xu, Zhengze Zhou, Ran He, Zhipeng Wang.
 
-**What it is:** A multi-agent system that exploits the **complementary capabilities of differently post-trained models** via an orchestrator-tool paradigm. Instead of using identical model copies in different "roles," it uses actually different models with different strengths. Two innovations:
-1. **Orchestrator calibration** — identifies which model is best at coordination
-2. **Self-assessment protocol** — tool agents profile their own domain expertise
+**What it is:** A method that teaches reasoning models to think more concisely by distilling their own concise behavior back into themselves. No ground-truth answers, no token budgets, no difficulty estimators — just a "be concise" instruction to generate teacher logits, then minimize per-token reverse KL on the student's own rollouts.
 
-Results: 96.67% on AIME24 (vs 80% homogeneous baseline), 72.53% on LiveCodeBench (vs 65.93%).
+**Why it matters — 57-59% token reduction while *improving* accuracy:**
+- **Results are striking.** On Qwen3-8B and Qwen3-14B: 57-59% token reduction on MATH-500 while *improving accuracy by 9-16 points absolute*. On AIME 2024: 14B model gains 10 points with 41% compression.
+- **Much reasoning is actively harmful.** The paper's key finding: a significant portion of what reasoning models produce is "not just redundant — it is actively harmful." Verbose reasoning introduces noise, self-contradiction, and distraction. Compression removes the noise, leaving cleaner reasoning chains.
+- **Automatic difficulty calibration.** OPSDC compresses easy problems aggressively while preserving deliberation for hard ones — without any explicit difficulty estimator. The compression ratio is emergent from the self-distillation process.
+- **Dead simple.** One idea: self-distillation from concise to standard. No specialized infrastructure.
 
-**Why it matters:** Most multi-agent frameworks use the same model for all agents (just with different system prompts). Team of Thoughts shows that using heterogeneous models — each chosen for actual capability differences — gives massive gains. This validates MCO's approach (coordinate Claude + Codex + Gemini) over Edict's approach (same model in different roles).
+**Agent implications:** Reasoning models are increasingly used as agent backbones (e.g., high-reasoning variants on SWE-Bench score 2-4pp higher). But reasoning tokens are expensive — they consume context window and inference budget. OPSDC offers: *cheaper reasoning agents that perform better*. A 57% token reduction in reasoning chains means significantly lower per-step cost in long-horizon agent tasks where every tool-call decision involves reasoning.
 
----
-
-## Discovery 9: [NEW] Enterprise Voice Agents Tutorial (2603.05413) — The Agent Interface Evolving
-
-**Source:** arXiv:2603.05413 (Mar 5, 2026 — Jielin Qiu et al.)
-
-**What it is:** Complete technical tutorial for building realtime voice agents from scratch. Key findings:
-- Native speech-to-speech models (Qwen2.5-Omni) are **too slow** for realtime (~13s time-to-first-audio)
-- Industry standard: cascaded streaming pipeline STT → LLM → TTS
-- The key to "realtime" is **streaming and pipelining**, not any single fast model
-- Achieved 947ms P50 time-to-first-audio (729ms best case)
-
-**Why it matters for agent frameworks:** Voice is the next interface layer for agents. This paper shows the architecture: you don't need a speech-to-speech model — you need streaming orchestration of specialized components. This is the same pattern as multi-agent coordination: specialized components, streaming pipelines, orchestration layer.
+**Connects to:** Agent cost optimization (Loomkin's 10 cheap agents for $0.25; Karpathy's autoresearch at $1.80/cycle); StateLM (active context management to reduce KV-cache bloat); the "high reasoning" vs "standard" variants on SWE-Bench (bash-only track) — OPSDC could give high-reasoning performance at standard-reasoning token cost.
 
 ---
 
-## Discovery 10: [NEW] The "OpenClaw" Ecosystem — A Cambrian Explosion
+## Discovery 6: [NEW] V₁: Unifying Generation and Self-Verification for Parallel Reasoners (arXiv 2603.04304)
 
-Multiple repos reference "OpenClaw" as a foundational agent runtime (appears to be an open-source Claude Code-like system):
+**Source:** HuggingFace Daily Papers — arXiv 2603.04304. Authors: Harman Singh, Xiuyu Li, Kusha Sareen, Monishwaran Maheswaran, Sijun Tan.
 
-| Repo | Stars | What |
-|------|-------|------|
-| Star-Office-UI | 3,075 | Pixel art office UI for monitoring OpenClaw agents |
-| openclaw-agents | 179 | One-command multi-agent setup, 9 specialized agents |
-| openclaw-office | 149 | Visual monitoring/management frontend |
-| openclaw-backup | 675 | One-click backup/restore for instances |
-| awesome-openclaw-usecases-zh | 936 | 40+ Chinese use cases |
-| claude-forge | 426 | Plugin framework with 11 agents, 36 commands, 15 skills |
-| goclaw | 520 | Go-based multi-agent gateway |
-| ai-jail | 81 | Multi-OS sandbox for running agents safely |
-| claw0 | 417 | Build an agent from scratch tutorial |
-| GoGogot | 390 | Lightweight Go alternative |
+**What it is:** A framework that unifies solution generation and self-verification through efficient pairwise ranking. V₁-Infer uses tournament-based ranking with uncertainty-guided compute allocation for self-verification. V₁-PairRL jointly trains a single model as both generator and pairwise self-verifier.
 
-**Why it matters:** This is an entire ecosystem forming around a single agent runtime — the same way npm/pip ecosystems formed around Node/Python. The tooling is diversifying into: monitoring (Star-Office-UI, openclaw-office), multi-agent (openclaw-agents, goclaw), security (ai-jail), education (claw0), and plugin architecture (claude-forge). This is the infrastructure layer for the "agent as primary developer" paradigm.
+**Why it matters — pairwise verification beats scalar scoring:**
+- **Core insight.** Models are substantially stronger at *pairwise* self-verification ("is solution A better than solution B?") than at *independent* scalar scoring ("rate solution A from 1-10"). This means existing verification approaches (majority voting, reward model scoring) leave significant performance on the table.
+- **Tournament-based ranking.** Instead of scoring all candidates independently, V₁ runs a tournament: sample many solutions, then pairs compete head-to-head with the model as judge. Uncertainty-guided allocation focuses verification compute on pairs whose relative correctness is most uncertain.
+- **Unified training.** V₁-PairRL trains one model for both generation and pairwise verification — no separate verifier model needed. This reduces the model count for "generate-and-verify" pipelines from 2 to 1.
+
+**Agent implications:** Agents frequently need to choose between alternative action plans, tool selections, or code implementations. V₁'s insight that pairwise comparison > independent scoring applies directly: instead of scoring each possible action independently, have the agent compare actions pairwise. This is cheaper (O(n log n) comparisons in tournament structure vs O(n) but with lower accuracy per comparison) and more reliable. The "unified generation + verification" training is especially relevant for coding agents that generate-then-verify (SWE-Adept pattern, MOSAIC's plan-check-act loop).
+
+**Connects to:** MOSAIC/Guarding Agentic Reasoning (2603.03205 — plan→check→act/refuse; V₁ improves the "check" step); self-testing during generation (SWE-Bench finding: Pearson r=0.72 — models that test their own code perform better; V₁ formalizes this as pairwise verification); OPSDC (Discovery 5 — compression; V₁ + OPSDC = verify better with fewer tokens).
 
 ---
 
-## Meta-Patterns (Updated)
+## Discovery 7: [NEW] Interactive Benchmarks — Evaluating Models Through Active Information Acquisition (arXiv 2603.04737)
 
-### Pattern 1: Agent-as-Researcher (NEW)
-Karpathy's autoresearch represents a qualitative shift: the agent isn't assisting research — it IS the researcher. The feedback loop (modify → train → evaluate → commit → repeat) is fully autonomous. This will expand to other domains (drug discovery, materials science, chip design).
+**Source:** HuggingFace Daily Papers — arXiv 2603.04737.
 
-### Pattern 2: Coordination is the Bottleneck (STRENGTHENED)
-MCO, Edict, agentchattr, Loomkin, auto-co — five independent teams all building multi-agent coordination in the same week. The problem is clearly felt. Solutions are stratifying into protocol/institutional/communication layers.
+**What it is:** A new evaluation paradigm where models are evaluated on their ability to *actively acquire information* through interaction — asking questions, probing, exploring — under budget constraints. Two instantiations: Interactive Proofs (deduce truths via interaction with a judge) and Interactive Games (reason through strategic interaction).
 
-### Pattern 3: Agent Skills as Universal Package Format (STRENGTHENED)
-Binance Skills Hub confirms the SKILL.md format (YAML frontmatter + markdown) is becoming the universal standard. Now seen in: Google Workspace CLI, Binance, HuggingFace, Claude Code, Codex, Gemini CLI, OpenClaw, Cursor. This is the "package.json moment" for agent capabilities.
+**Why it matters — standard benchmarks are failing; interactive evaluation is the fix:**
+- **Benchmark saturation problem.** Standard benchmarks are increasingly unreliable due to saturation, subjectivity, and poor generalization. Models that ace MMLU/HumanEval may fail at actual interactive reasoning.
+- **Active vs passive evaluation.** Current benchmarks measure passive performance (given input, generate output). Interactive Benchmarks measure *active intelligence* — can the model formulate the right questions to acquire the information it needs? This is exactly the agent skill.
+- **Budget constraints.** Models can't ask unlimited questions — they must be efficient. This directly measures the agent quality that InfoPO (2603.00656) trains for: asking high-information-gain questions.
+- **Interactive Proofs setting.** Models interact with a verifiable judge to deduce mathematical truths — this is a formalization of the "agent + oracle" pattern where the agent doesn't have full information and must strategically query.
 
-### Pattern 4: Safety is Bifurcating (NEW)
-Training-time safety (MOSAIC, ASTER, TopoCurate) and runtime safety (Overthinking Loops, agent sandboxes) are developing as separate research programs. The integration point is missing.
+**Agent implications:** This is the evaluation framework that agents actually need. An agent operating in the real world is always in an "interactive benchmark" — it has incomplete information and must decide what to ask, search, or probe. The budget constraint mirrors real-world cost/latency constraints. Interactive Benchmarks could become the standard evaluation for agent information-gathering capabilities.
 
-### Pattern 5: The Chinese AI Agent Ecosystem (NEW)
-A massive, largely Chinese-language ecosystem is developing around OpenClaw/agent frameworks. Edict (5k⭐), Agent-Reach (6.7k⭐), Star-Office-UI (3k⭐) — these are getting thousands of stars from a community that's building production agent tooling at high velocity. The design philosophies are different (Edict's imperial bureaucracy metaphor, Agent-Reach's "tell your agent to install itself" pattern).
+**Connects to:** InfoPO (2603.00656 — trains agents to ask good questions; Interactive Benchmarks evaluates this capability); CowCorpus (2602.17588 — human-agent interaction patterns; Interactive Benchmarks measures the model's interaction strategy quality); "When Should an AI Act?" (2602.22814 — act vs. gather-more-info decisions; this benchmark directly measures that decision quality).
+
+---
+
+## Meta-Pattern: Agent Infrastructure Stack Crystallization
+
+Across all sources this session, a clear **agent infrastructure stack** is emerging:
+
+| Layer | What | Examples Found |
+|-------|------|---------------|
+| **Gateway/Registry** | Protocol federation, discovery, guardrails | IBM ContextForge (Discovery 1) |
+| **Tool Optimization** | Make tools more agent-readable | Intuit Trace-Free+ (Discovery 2), ContextForge TOON compression |
+| **Agent Optimization** | Profile, evaluate, RL-fine-tune agents | NVIDIA NeMo Agent Toolkit (Discovery 3) |
+| **Human-Agent Interface** | Structured visual annotation for agent direction | Agentation (Discovery 4) |
+| **Inference Optimization** | Cheaper, faster reasoning | OPSDC (Discovery 5), V₁ pairwise verification (Discovery 6) |
+| **Evaluation** | Interactive, budget-constrained benchmarks | Interactive Benchmarks (Discovery 7) |
+
+**The insight:** The agent ecosystem is no longer building *agents* — it's building the **infrastructure around agents**. Gateways, profilers, tool optimizers, visual annotation tools, evaluation frameworks. This mirrors the maturation pattern of every computing platform: first the runtime (agents themselves), then the tooling ecosystem (everything that makes agents production-ready). We're firmly in the tooling phase.
+
+**Reddit signal (r/LocalLLaMA):** Community discussions confirm this shift. Top threads are no longer "which agent framework should I use?" but practical infrastructure questions: "how do I run multiple agents reliably?", "best tool-calling benchmarks for local models?", "treating LLMs as unreliable dependencies." The framing has shifted from excitement about agent capabilities to engineering around agent limitations.
