@@ -135,7 +135,7 @@ interface ActiveSession {
   compactionTransform?: (messages: AgentMessage[], signal?: AbortSignal) => Promise<AgentMessage[]>;
   /** Set by close() — prevents handleCompletion from acting on an already-archived session. */
   closed: boolean;
-  /** Session lifecycle policy. "never" = interface agent (stays idle), "immediate" = task agent (archives on completion). */
+  /** Session lifecycle policy. "never" = chat session (stays idle), "immediate" = task session (archives on completion). */
   autoClose: "immediate" | "never";
   /** Terminal status for archive/result reporting. Set before archival so the promise chain can read it after the session is removed from activeSessions. */
   archiveStatus?: "done" | "error" | "interrupted";
@@ -154,7 +154,7 @@ export interface RunOptions {
   source?: string;
   /** Pre-assigned session ID (used by detached sub-agents). If set, skips generateId(). */
   sessionId?: string;
-  /** Session lifecycle policy. Default: derived from isInterfaceAgent().
+  /** Session lifecycle policy. Default: "immediate" (task sessions).
    *  - "immediate": archive on completion (task sessions)
    *  - "never": stay idle on completion (interface/chat session) */
   autoClose?: "immediate" | "never";
@@ -165,11 +165,11 @@ export interface SubagentManagerOptions {
   /**
    * Called after a task session completes (done/error/interrupted).
    * Fires after archival. Use for post-session tasks like evaluation.
-   * NOT called for the interface agent transitioning to "idle".
+   * NOT called for the chat session transitioning to "idle".
    */
   onSessionComplete?: (info: SessionInfo) => void;
   /**
-   * Called when any new session starts (via run() or resumeAgent()).
+   * Called when any new session starts (via run(), resumeAgent(), createChatSession(), or resumeChatSession()).
    * Use to subscribe to agent events for UI streaming.
    * This is the single point where all session creation is observed.
    */
@@ -228,7 +228,7 @@ export class SubagentManager {
   private onSessionComplete?: (info: SessionInfo) => void;
   private onSessionStart?: (agentName: string, sessionId: string) => void;
   private startedAt = Date.now();
-  private interfaceAgentName?: string;
+  private chatSessionId?: string;
 
   constructor(opts: SubagentManagerOptions) {
     this.registry = new RegistryStore(opts.persistDir);
@@ -236,14 +236,32 @@ export class SubagentManager {
     this.onSessionStart = opts.onSessionStart;
   }
 
-  /** Declare which agent is the interface (Chat) agent. */
-  setInterfaceAgent(name: string): void {
-    this.interfaceAgentName = name;
+  /**
+   * Create a new persistent chat session. Only one chat session can exist at a time.
+   * The chat session gets autoClose: "never" (stays idle instead of archiving).
+   * All other sessions created via run() default to autoClose: "immediate".
+   */
+  createChatSession(agentName: string, task: string, opts?: RunOptions): string {
+    if (this.chatSessionId) throw new Error("Chat session already exists");
+    const sid = this.run(agentName, task, { ...opts, autoClose: "never" });
+    this.chatSessionId = sid;
+    return sid;
   }
 
-  /** Check if a given agent name is the interface agent. */
-  private isInterfaceAgent(name: string): boolean {
-    return name === this.interfaceAgentName;
+  /**
+   * Resume an existing chat session. Wraps resumeAgent() and marks the
+   * resumed session as the chat session (autoClose: "never").
+   * Throws if no running/idle session exists for the agent.
+   */
+  resumeChatSession(agentName: string, opts?: { compaction?: boolean | CompactionOptions }): { resumed: SessionInfo; interrupted: SessionInfo[] } {
+    const result = this.resumeAgent(agentName, { ...opts, autoClose: "never" });
+    this.chatSessionId = result.resumed.sessionId;
+    return result;
+  }
+
+  /** Get the current chat session ID, if one exists. */
+  getChatSessionId(): string | undefined {
+    return this.chatSessionId;
   }
 
   /** Register a feature unit. */
@@ -536,8 +554,8 @@ export class SubagentManager {
    * Common completion handler — called when the agent's prompt()/continue() settles.
    *
    * Determines the outcome from agent state, then branches:
-   *   - Interface agent sessions → idle (stays in activeSessions)
-   *   - Task sessions → terminal status (done/error/interrupted) → archive + remove
+   *   - Chat sessions (autoClose: "never") → idle (stays in activeSessions)
+   *   - Task sessions (autoClose: "immediate") → terminal status (done/error/interrupted) → archive + remove
    *
    * See docs/session-state-machine.md for the full state machine.
    */
@@ -570,7 +588,7 @@ export class SubagentManager {
       }
     }
 
-    // ── Interface agent: always transition to idle ─────────────────────
+    // ── Chat session: always transition to idle ─────────────────────
     if (session.autoClose === "never") {
       // Persist cancellation notice so agent doesn't retry on resume/wake.
       // Written to JSONL (survives restart) and queued as followUp (in-process wake).
@@ -650,20 +668,14 @@ export class SubagentManager {
             delivered = true;
           } catch { /* parent may have just closed */ }
         }
-        // 2. Else: find the interface session for the parent agent
-        if (!delivered && session.parentAgentName) {
-          let interfaceSid: string | undefined;
-          for (const [sid, s] of this.activeSessions) {
-            if (s.agentName === session.parentAgentName && s.autoClose === "never") {
-              interfaceSid = sid;
-              break;
-            }
-          }
-          if (interfaceSid) {
+        // 2. Else: fall back to chat session (if it belongs to the parent agent)
+        if (!delivered && this.chatSessionId && this.activeSessions.has(this.chatSessionId)) {
+          const chatSession = this.activeSessions.get(this.chatSessionId)!;
+          if (chatSession.agentName === session.parentAgentName) {
             try {
-              this.followUp(interfaceSid, notifyMsg, "task-notify");
+              this.followUp(this.chatSessionId, notifyMsg, "task-notify");
               delivered = true;
-            } catch { /* interface session may have just closed */ }
+            } catch { /* chat session may have just closed */ }
           }
         }
         // 3. Fallback: write to undelivered notifications file
@@ -753,16 +765,14 @@ export class SubagentManager {
           } catch { /* session may have just closed */ }
         }
 
-        // Try parent agent's interface session
-        if (!delivered && parentAgent) {
-          for (const [sid, s] of this.activeSessions) {
-            if (s.agentName === parentAgent && s.autoClose === "never") {
-              try {
-                this.followUp(sid, notifyMsg, "task-notify");
-                delivered = true;
-              } catch { /* interface session may have just closed */ }
-              break;
-            }
+        // Try chat session as fallback (if it belongs to the parent agent)
+        if (!delivered && parentAgent && this.chatSessionId && this.activeSessions.has(this.chatSessionId)) {
+          const chatSession = this.activeSessions.get(this.chatSessionId)!;
+          if (chatSession.agentName === parentAgent) {
+            try {
+              this.followUp(this.chatSessionId, notifyMsg, "task-notify");
+              delivered = true;
+            } catch { /* chat session may have just closed */ }
           }
         }
 
@@ -838,8 +848,8 @@ export class SubagentManager {
    *  Optionally pass RunOptions to link this session into a session graph.
    *
    *  Chat+Task model:
-   *  - Interface agent → Chat session (autoClose: "never", idle state, compaction, followUp)
-   *  - All others → ephemeral Task session (spawn → work → finish → die)
+   *  - Chat session (autoClose: "never") → created via createChatSession(), stays idle on completion
+   *  - Task session (autoClose: "immediate", default) → spawn → work → finish → archive
    */
   run(name: string, task: string, opts?: RunOptions): string {
     const registered = this.agents.get(name);
@@ -886,7 +896,7 @@ export class SubagentManager {
       turnWarningFired: false,
       compactionTransform,
       closed: false,
-      autoClose: opts?.autoClose ?? (this.isInterfaceAgent(name) ? "never" : "immediate"),
+      autoClose: opts?.autoClose ?? "immediate",
     };
 
     // Subscribe for JSONL persistence before starting the prompt
@@ -989,7 +999,7 @@ export class SubagentManager {
    * Resume the interface agent's most recent session from a previous process.
    * All other "running"/"idle" sessions are marked as interrupted.
    *
-   * Chat+Task model: only the interface (Chat) agent should be resumed.
+   * Chat+Task model: resumeAgent is a low-level method. Use resumeChatSession() for the chat session.
    * Task sessions are ephemeral — they die on process exit and are never resumed.
    *
    * Returns the resumed session info (with the agent running), plus a list
@@ -1170,7 +1180,7 @@ export class SubagentManager {
       turnWarningFired: false,
       compactionTransform,
       closed: false,
-      autoClose: opts?.autoClose ?? (this.isInterfaceAgent(agentName) ? "never" : "immediate"),
+      autoClose: opts?.autoClose ?? "immediate",
     };
 
     this.subscribeForPersistence(session);

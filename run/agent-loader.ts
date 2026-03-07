@@ -556,6 +556,7 @@ export async function loadAgentHandlers(opts: AgentLoaderOptions & {
       agentName,
       getSessionId: () => opts.getSessionId(agentName),
       log: (msg) => bus.emit({ type: "info", message: msg }),
+      triggerNow: (entryName: string) => cron.triggerNow(entryName),
     };
 
     // Group entries by handler file (multiple entries can share one handler file)

@@ -67,7 +67,7 @@ const CRON_ENABLED = process.argv.includes("--cron");
 const TELEGRAM_ENABLED = process.argv.includes("--telegram");
 const CONSOLE_ENABLED = process.argv.includes("--console");
 const SOCKET_ENABLED = process.argv.includes("--socket");
-const KEEP_SESSION = process.argv.includes("--keep-session");
+const CHAT_MODE = process.argv.includes("--chat") || process.argv.includes("--keep-session");
 const INITIAL_TASK = (() => {
   const idx = process.argv.indexOf("--task");
   if (idx !== -1 && process.argv[idx + 1]) return process.argv[idx + 1];
@@ -556,13 +556,12 @@ if (!manager.hasAgent(interfaceAgent)) {
   process.exit(1);
 }
 
-// Designate the interface agent — only this agent gets persistent/idle behavior.
-// All other agents are ephemeral task sessions (Chat+Task model).
-manager.setInterfaceAgent(interfaceAgent);
+// Chat+Task model: chat session is created explicitly via createChatSession/resumeChatSession.
+// All other sessions are ephemeral task sessions (autoClose: "immediate").
 
-// Runtime options for the interface agent's session
-const interfaceRunOpts = {
-  compaction: !KEEP_SESSION ? false : {
+// Runtime options for the chat session (compaction enabled only in chat mode)
+const chatRunOpts = {
+  compaction: !CHAT_MODE ? false : {
     threshold: 0.6,
     keepRatio: 0.3,
     onCompact: (info: { messagesCompacted: number; tokensBefore: number; tokensAfter: number }) => {
@@ -610,26 +609,26 @@ if (SOCKET_ENABLED) {
 
 // ── Startup ────────────────────────────────────────────────────────────
 
-if (!KEEP_SESSION && !INITIAL_TASK) {
-  console.error("Error: ephemeral mode requires --task or --task-file. Use --keep-session for interactive mode.");
+if (!CHAT_MODE && !INITIAL_TASK && !CRON_ENABLED) {
+  console.error("Error: need --chat, --task, or --cron.");
   process.exit(1);
 }
-if (!KEEP_SESSION) {
+if (INITIAL_TASK && !CHAT_MODE) {
   // Task mode: start fresh with task message, no resume
   const initialTask = INITIAL_TASK!;
   sid = manager.run(interfaceAgent, initialTask, {
-    ...interfaceRunOpts,
+    ...chatRunOpts,
     ...(ENV_SESSION_ID ? { sessionId: ENV_SESSION_ID } : {}),
     ...(ENV_PARENT_SESSION_ID ? { parentSessionId: ENV_PARENT_SESSION_ID } : {}),
     ...(ENV_PARENT_AGENT ? { parentAgentName: ENV_PARENT_AGENT } : {}),
   });
   bus.emit({ type: "info", message: `[task] Started ${interfaceAgent} task session: ${sid}` });
   await manager.waitForIdle(sid);
-} else {
-  // Interactive mode: try resume, fall back to fresh
+} else if (CHAT_MODE) {
+  // Chat mode: try resume, fall back to fresh
   let resumeError: string | null = null;
   try {
-    const resumed = manager.resumeAgent(interfaceAgent, interfaceRunOpts);
+    const resumed = manager.resumeChatSession(interfaceAgent, chatRunOpts);
     sid = resumed.resumed.sessionId;
 
     bus.emit({ type: "info", message: `Resumed ${interfaceAgent} session ${sid} (task: "${resumed.resumed.task.slice(0, 80)}")` });
@@ -648,12 +647,15 @@ if (!KEEP_SESSION) {
     bus.emit({ type: "info", message: `[resume] ${resumeError}` });
 
     const initialTask = "Ready. Waiting for tasks.";
-    sid = manager.run(interfaceAgent, initialTask, interfaceRunOpts);
+    sid = manager.createChatSession(interfaceAgent, initialTask, chatRunOpts);
     bus.emit({ type: "info", message: `Started ${interfaceAgent} session: ${sid}` });
 
     // Wait for initial processing to complete (agent goes idle)
     await manager.waitForIdle(sid);
   }
+} else {
+  // Cron-only mode: no session needed, just tick
+  bus.emit({ type: "info", message: `[cron-only] No chat session. Running cron jobs only.` });
 }
 
 // ── Start notification watcher (after resume completes) ─────────────────
@@ -673,7 +675,7 @@ writeIdentity({
   instance: INSTANCE_LABEL,
   socket: SOCKET_ENABLED ? SOCKET_PATH : "",
   startedAt: new Date().toISOString(),
-  startedBy: KEEP_SESSION ? "human" : (INSTANCE.startsWith("job-") ? "cron:" + INSTANCE.replace("job-", "") : "task"),
+  startedBy: CHAT_MODE ? "human" : (INSTANCE.startsWith("job-") ? "cron:" + INSTANCE.replace("job-", "") : "task"),
   task: INITIAL_TASK,
   status: "running",
   sessionId: sid,
@@ -758,14 +760,14 @@ function watchForIdle(): void {
   });
 }
 
-// Watch for initial idle (skip in ephemeral mode — session already complete)
-if (KEEP_SESSION) watchForIdle();
+// Watch for initial idle (only in chat mode — task mode already completed)
+if (CHAT_MODE) watchForIdle();
 
 // ── Main loop ──────────────────────────────────────────────────────────
 
-if (!KEEP_SESSION) {
+if (!CHAT_MODE && !CRON_ENABLED) {
   // Task mode: agent already ran to completion above (waitForIdle).
-  // Exit cleanly.
+  // Exit cleanly. (Cron-only mode must stay alive for timers.)
   bus.emit({ type: "info", message: `[task] Task completed. Exiting.` });
   process.exit(0);
 } else if (process.stdin.isTTY) {
