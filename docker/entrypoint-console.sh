@@ -27,4 +27,4 @@ websockify --web /usr/share/novnc ${NOVNC_PORT} localhost:${VNC_PORT} &>/dev/nul
 #   docker exec <container> /usr/local/bin/restart-may.sh
 
 # Launcher handles signals, backoff, and exit codes — no bash loop needed
-exec tsx run/launcher.ts --keep-session --cron --telegram --console --socket
+exec tsx run/launcher.ts --chat --cron --telegram --console --socket
