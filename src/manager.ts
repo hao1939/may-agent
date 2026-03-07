@@ -1163,7 +1163,17 @@ export class SubagentManager {
       }
     }
 
-    this.registry.updateSessionStatus(targetSessionId, "running");
+    // Determine whether the agent needs to be prompted.
+    // If the agent was idle (last msg = assistant, stopReason = stop) and there's
+    // nothing to reconcile (no interrupted sessions, no completed/stale children,
+    // no broken tool calls), restore silently to idle — no LLM call needed.
+    const hasBrokenToolCalls = lastRole === "assistant" && lastMsg && Array.isArray(lastMsg.content) &&
+      (lastMsg.content as any[]).some((b: any) => b.type === "toolCall");
+    const needsPrompt = lastRole === "user" || hasBrokenToolCalls ||
+      interruptedSummary.length > 0 || childrenSummary.length > 0;
+
+    const initialStatus = needsPrompt ? "running" as const : "idle" as const;
+    this.registry.updateSessionStatus(targetSessionId, initialStatus);
 
     const session: ActiveSession = {
       sessionId: targetSessionId,
@@ -1172,7 +1182,7 @@ export class SubagentManager {
       promise: null!,
       task: targetPersisted.task,
       startedAt: targetPersisted.startedAt,
-      status: "running",
+      status: initialStatus,
       outputDir,
       turnCount: savedMessages.filter((m) => m.role === "assistant").length,
       maxTurns: def.maxTurns,
@@ -1193,30 +1203,38 @@ export class SubagentManager {
     // Notify listener that a session has been resumed
     this.onSessionStart?.(agentName, targetSessionId);
 
-    // Decide how to resume based on the last message:
-    // - If last message is "user", there's already a pending prompt → use continue()
-    // - Otherwise, inject the resume message → use prompt()
-    const sid = targetSessionId;
-    const startPromise = lastRole === "user"
-      ? agent.continue()
-      : agent.prompt(resumeMessage);
+    if (needsPrompt) {
+      // Something to reconcile — prompt the agent
+      const sid = targetSessionId;
+      const startPromise = lastRole === "user"
+        ? agent.continue()
+        : agent.prompt(resumeMessage);
 
-    session.promise = startPromise
-      .then(() => {
-        this.handleCompletion(session);
-      })
-      .catch((err) => {
-        session.error = err?.message ?? String(err);
-        this.handleCompletion(session);
-      });
+      session.promise = startPromise
+        .then(() => {
+          this.handleCompletion(session);
+        })
+        .catch((err) => {
+          session.error = err?.message ?? String(err);
+          this.handleCompletion(session);
+        });
 
-    this.sessionResults.set(targetSessionId, session.promise.then(() => this.buildResultFromSession(session)));
+      this.sessionResults.set(targetSessionId, session.promise.then(() => this.buildResultFromSession(session)));
+    } else if (session.autoClose === "immediate") {
+      // Task session with nothing to reconcile — complete immediately
+      session.promise = Promise.resolve();
+      this.handleCompletion(session);
+      this.sessionResults.set(targetSessionId, Promise.resolve(this.buildResultFromSession(session)));
+    } else {
+      // Chat session with nothing to reconcile — restore to idle silently
+      session.promise = Promise.resolve();
+    }
 
     const resumedInfo: SessionInfo = {
       sessionId: targetSessionId,
       agent: agentName,
       task: targetPersisted.task,
-      status: "running",
+      status: initialStatus,
       startedAt: targetPersisted.startedAt,
       runtime: formatDuration(Date.now() - targetPersisted.startedAt),
       outputDir,

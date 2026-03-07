@@ -631,12 +631,13 @@ if (INITIAL_TASK && !CHAT_MODE) {
     const resumed = manager.resumeChatSession(interfaceAgent, chatRunOpts);
     sid = resumed.resumed.sessionId;
 
-    bus.emit({ type: "info", message: `Resumed ${interfaceAgent} session ${sid} (task: "${resumed.resumed.task.slice(0, 80)}")` });
+    const quiet = resumed.resumed.status === "idle";
+    bus.emit({ type: "info", message: `Resumed ${interfaceAgent} session ${sid}${quiet ? " (idle, no reconciliation needed)" : ` (task: "${resumed.resumed.task.slice(0, 80)}")`}` });
     if (resumed.interrupted.length > 0) {
       bus.emit({ type: "info", message: `${resumed.interrupted.length} sub-agent session(s) marked as interrupted` });
     }
 
-    // Wait for resume processing to complete (agent goes idle)
+    // Wait for resume processing to complete (resolves immediately if quiet)
     await manager.waitForIdle(sid);
   } catch (err) {
     resumeError = err instanceof Error ? err.message : String(err);

@@ -394,13 +394,13 @@ describe("SubagentManager.resumeAgent()", () => {
       apiKey: "fake-key",
     });
 
-    const result = manager.resumeAgent("bot");
+    const result = manager.resumeAgent("bot", { autoClose: "never" });
     expect(result.resumed.sessionId).toBe("session-archived");
 
     // Verify the active session dir was recreated with the restored JSONL
     expect(existsSync(sessionDir(persistDir, "session-archived"))).toBe(true);
 
-    await manager.waitFor("session-archived");
+    // Session is idle (nothing to reconcile) — no waitFor needed
   });
 
 });
