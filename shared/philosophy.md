@@ -119,6 +119,15 @@ Three phases, applied repeatedly:
 
 > "keep off-load routing/fixed task from agent to infra. After off-load, agent only need to regularly audit to make sure it works as designed and fix any issue or gap. It's a continuous process." — Hao
 
+### 40. Platform Risk is a First-Class Constraint [imported]
+Before investing in a new capability, evaluate: Will this be absorbed by the platform layer? Build at the intelligence layer (which survives absorption), not the workflow layer. Don't build wrappers that models will soon devour.
+
+### 41. Memory Quality > Model Size [imported]
+A smaller model with good memory outperforms a larger model with no memory. Memory quality is a first-class performance lever. Invest in curation and compaction over searching for a smarter model.
+
+### 42. Minimalism as Force Multiplier [imported]
+Precise information density beats feature accumulation. Large contexts cause over-exploration. The expert practitioner's skill is removal, not addition. Remove noise to improve signal.
+
 ---
 
 ## C. Execution: How Work Gets Done (owner: optimizer)
@@ -127,10 +136,10 @@ Workflow patterns, verification, and efficiency. Optimizer ensures
 these are followed and improves execution over time.
 
 ### 18. Measurable Operations [hao-pattern]
-Prefer designs that can be measured and improved (tool-call waste, cost, retries, turn limits, success rates). If it can't be measured, it will drift.
+Prefer designs that can be measured and improved. Measure reliability (pass on every run), not just peak performance (pass once). Production agents require **pass^k** (reliability), not **pass@k** (lottery). If it can't be measured, it will drift.
 
 ### 19. Act → Verify → Refine [hao-pattern+imported]
-Execution should be closed-loop: do the change, verify via an independent check (read back, run tests), then refine. After any file edit, verify immediately with a minimal test — do not wait for the end of the task. Reliability stems from engineering structures, not model intelligence.
+Execution should be closed-loop: do the change, verify via an independent check (read back, run tests), then refine. **Verify-on-Edit**: After every file edit, verify immediately with a minimal test. Do not wait for the end of the task. Reliability stems from engineering structures, not model intelligence.
 
 ### 20. Short Chains, Verified Handoffs [hao-direct]
 The system intentionally uses short agent chains (e.g., coder → QA). The rule is:
@@ -245,19 +254,11 @@ The system builds consensus but doesn't enforce god-truth:
 > "disagreement is also allowed if they serve as an alternative opinion. The agent system is about common sense but not god truth" — Hao
 
 ### 37. Context Engineering [hao-direct+imported]
-For agent instruction documents:
+**Context Engineering > Prompt Engineering.** It is Selection, Compression, and Persistence.
 1. **Handwritten > AI-generated** — AI-generated docs cost 20% more and perform 2% worse.
 2. **Minimal > comprehensive** — Only list core requirements. Comprehensive overviews create information overload.
 3. **Reference > inject** — For non-core documents, reference by path rather than injecting full content.
 4. **Stable prefix > lazy loading** — Complementary, not competing. Stable prefix for cache hits; lazy loading for non-core variable content.
-
-As agents accumulate knowledge, context grows unboundedly. The solution is structural:
-- **Big picture, small focus.** Know the system state summary but only deep-dive into one area per heartbeat.
-- **Offload and recall.** Design ways to offload context not immediately needed, with a recall mechanism.
-- **Question complexity itself.** When runs get too heavy, ask: are agents too complex, or are tasks not properly broken down?
-
-> "keep tracking of the big picture but focus on a small problem each time" — Hao
-> "questions whether the agents has being too complex or our tasks were not properly breaking down, try dividing and conquering" — Hao
 
 ---
 
@@ -270,12 +271,18 @@ infrastructure reliability.
 Every input surface is an attack vector. Traditional security asks "is this a valid user?"; agent security asks "is every input sanitized against injection?". Any agent that interpolates external content (issues, web pages, user files) requires sanitization.
 
 ### 39. Governance Layer as Moat [imported]
-Infrastructure (runtimes, sandboxes, skill registries) is commoditized. The moat is the governance layer:
+Infrastructure (runtimes, sandboxes, skill registries) is commoditized. The **moat** is the accumulated intelligence and governance layer:
 1. **Role specification** (identity/mission)
 2. **Principal oversight** (synthesis loop)
 3. **Accumulated domain intelligence** (archives, discoveries, principles)
 4. **Verified trust hierarchy** (safeguards)
 This layer survives platform absorption and model commoditization.
+
+### 43. Delegation Requires Verifiable Trust [imported]
+Do not assume trust just because an agent is internal. In long delegation chains, agents must provide evidence of intent/authority ("Confused Deputy" problem). Trust must be verifiable, not implicit.
+
+### 44. Static Policies Fail in Dynamic Environments [imported]
+Static assumptions (trust, permissions) break when agents mediate interactions. Solutions must be evidence-based and evolving (meta-loop), not static rules. If a rule never changes, it's likely broken.
 
 ---
 
@@ -283,7 +290,7 @@ This layer survives platform absorption and model commoditization.
 
 Clear boundaries on what falls outside agent responsibility.
 
-### 40. Agents Do Cognitive Work, Not Chores [hao-pattern]
+### 45. Agents Do Cognitive Work, Not Chores [hao-pattern]
 Agents exist for reasoning, exploration, creation, and judgment — not mechanical infrastructure tasks. An agent should never:
 - Monitor system health or check whether services are running
 - Check other agents' status or liveness

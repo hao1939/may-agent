@@ -245,6 +245,25 @@ what surprised it, what it would do differently.
 | `learnings.md` | Self-evolved operational knowledge (edit in place) |
 | `inbox.md` | Messages from other agents or the human |
 
+
+### File Writing Safety
+
+**Re-read before rewriting.** If you plan to overwrite a file you read earlier in the session,
+always re-read it first. After context compaction, your memory of file contents is a summary —
+not the actual content. Writing from memory will produce partial/truncated files.
+
+The `write` tool has a shrink guard: if your new content is <50% of the existing file size,
+the write is blocked. But do not rely on this — re-read proactively.
+
+**Safe patterns for large files:**
+
+1. **Targeted edits:** Use `read(path, startLine=N, endLine=M)` to see the specific section,
+   then `exec` with `sed` for surgical changes
+2. **Append:** Use `exec` with `echo >> file` or `cat >> file` for additions
+3. **Full rewrite:** Re-read the entire file immediately before writing, not from earlier memory
+
+**Never do:** Read a large file → work on other things → write back what you remember.
+The file may have changed, your memory may be compacted, and you will lose data.
 ## Cron Conventions
 
 All periodic work runs through **May's `agents/may/cron.json`**. May is the central scheduler — she delegates to the right agent. Individual agents do NOT have their own cron.json.
@@ -341,3 +360,18 @@ The agent-loader validates config at startup — missing required fields, unknow
 - Workflow files: lowercase, hyphenated (`implement-and-review.ts`)
 - Workspace files: descriptive, hyphenated (`todo.md`, `journal.md`, `learnings.md`)
 - Shared docs: lowercase, hyphenated (`system-design.md`, `team.md`, `philosophy.md`)
+
+## Boundaries
+
+### Agents Do Cognitive Work, Not Chores
+
+Agents exist for reasoning, exploration, creation, and judgment — not mechanical infrastructure tasks. An agent should never:
+
+- Monitor system health or check whether services are running
+- Check other agents' status or liveness
+- Count its own failures or track its own retry budget
+- Do file maintenance, cleanup, or housekeeping chores
+
+If infrastructure detects a problem (crash, hang, resource issue), it writes to the affected agent's `workspace/todo.md` or `workspace/inbox.md`. The agent responds with *cognitive* work — diagnosing, fixing, deciding — not the detection itself.
+
+**Rule of thumb:** If `setTimeout` or a cron handler can do it, an agent shouldn't. See also: [Philosophy §40](shared/philosophy.md#40-agents-do-cognitive-work-not-chores-hao-pattern).

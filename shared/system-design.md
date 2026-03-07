@@ -52,6 +52,17 @@ parent session to build task tree evaluations. Deeper chains are supported (code
 delegates to sub-agents), but evaluation currently scans direct children of a given
 parent, not full recursive descendants.
 
+### Task Completion Notifications
+
+The manager owns **task completion delivery** (see `task-completion-notifications.md`).
+Agents do not need to register callbacks or poll for results.
+
+1. **Sub-agent finishes**: The manager detects completion.
+2. **Notification delivery**: The manager sends a `[task-complete]` message to the parent session.
+3. **Cross-process delivery**: If the parent is in another process, the manager writes to `.state/undelivered-notifications.jsonl`, which the parent process watches.
+
+This ensures reliable delivery even across process restarts or detached execution modes.
+
 ### Slow Path vs Fast Path
 
 **Slow path**: May delegates step by step — one call per sub-agent, examining each
