@@ -1,6 +1,6 @@
 {
   "name": "may",
-  "description": "Supervisor \u2014 delegates to coder, reviews results",
+  "description": "Supervisor — delegates to coder, reviews results",
   "domain": "may-agent coordination",
   "model": "opus",
   "tools": [
@@ -15,6 +15,7 @@
     "team.md"
   ],
   "systemPromptFiles": [
+    "knowledge/SOUL.md",
     "knowledge/domain.md",
     "tools/INDEX.md"
   ],

@@ -10,11 +10,12 @@
     "socket-watch"
   ],
   "systemPromptFiles": [
+    "knowledge/SOUL.md",
     "knowledge/domain.md",
     "tools/INDEX.md",
     "../shared/team.md"
   ],
-  "maxTurns": 100,
+  "maxTurns": 40,
   "memoryLimit": 10,
   "compaction": true
 }

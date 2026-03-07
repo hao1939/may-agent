@@ -3,9 +3,18 @@
   "description": "Design philosopher — learns human intent, reviews team work against philosophy, orchestrates meta-loop",
   "domain": "design philosophy and meta-loop orchestration",
   "model": "gemini3pro",
-  "tools": ["read-write", "exec", "subagents"],
-  "sharedKnowledge": ["system-design.md", "team.md", "philosophy.md"],
+  "tools": [
+    "read-write",
+    "exec",
+    "subagents"
+  ],
+  "sharedKnowledge": [
+    "system-design.md",
+    "team.md",
+    "philosophy.md"
+  ],
   "systemPromptFiles": [
+    "knowledge/SOUL.md",
     "knowledge/domain.md",
     "../shared/meta-loop.md",
     "tools/INDEX.md"

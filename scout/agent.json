@@ -1,6 +1,6 @@
 {
   "name": "scout",
-  "description": "Knowledge explorer \u2014 searches GitHub, arXiv, Reddit, blogs for AI agent research and tools",
+  "description": "Knowledge explorer — searches GitHub, arXiv, Reddit, blogs for AI agent research and tools",
   "domain": "Open internet research on AI agents, autonomous systems, and related technology",
   "model": "opus",
   "tools": [
@@ -8,6 +8,7 @@
     "exec"
   ],
   "systemPromptFiles": [
+    "knowledge/SOUL.md",
     "knowledge/domain.md",
     "knowledge/tools.md",
     "knowledge/coaching.md"
