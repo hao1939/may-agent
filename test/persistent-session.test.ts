@@ -30,7 +30,6 @@ function baseDef(overrides: Partial<SubagentDefinition> = {}): SubagentDefinitio
     systemPrompt: "You are a test bot.",
     model: fakeModel(),
     tools: [],
-    persistent: true,
     ...overrides,
   };
 }
@@ -51,7 +50,7 @@ describe("persistent sessions", () => {
   it("transitions to idle after run() completes (even on error)", async () => {
     manager.register(baseDef());
 
-    const sid = manager.run("bot", "hello");
+    const sid = manager.run("bot", "hello", { autoClose: "never" });
     await manager.waitForIdle(sid);
 
     const sessions = manager.status();
@@ -62,7 +61,7 @@ describe("persistent sessions", () => {
   it("stays in activeSessions after going idle", async () => {
     manager.register(baseDef());
 
-    const sid = manager.run("bot", "hello");
+    const sid = manager.run("bot", "hello", { autoClose: "never" });
     await manager.waitForIdle(sid);
 
     expect(manager.getSessionCount()).toBe(1);
@@ -73,7 +72,7 @@ describe("persistent sessions", () => {
   it("does not archive persistent session on completion", async () => {
     manager.register(baseDef());
 
-    const sid = manager.run("bot", "hello");
+    const sid = manager.run("bot", "hello", { autoClose: "never" });
     await manager.waitForIdle(sid);
 
     const historyPath = join(dir, "sessions", "history", sid);
@@ -83,7 +82,7 @@ describe("persistent sessions", () => {
   it("registry shows idle status", async () => {
     manager.register(baseDef());
 
-    const sid = manager.run("bot", "hello");
+    const sid = manager.run("bot", "hello", { autoClose: "never" });
     await manager.waitForIdle(sid);
 
     const meta = readSessionMeta(dir, sid);
@@ -93,7 +92,7 @@ describe("persistent sessions", () => {
   it("followUp() wakes an idle session and returns to idle", async () => {
     manager.register(baseDef());
 
-    const sid = manager.run("bot", "first");
+    const sid = manager.run("bot", "first", { autoClose: "never" });
     await manager.waitForIdle(sid);
     expect(manager.status()[0].status).toBe("idle");
 
@@ -111,7 +110,7 @@ describe("persistent sessions", () => {
   it("cancel() on idle persistent session keeps it alive (goes back to idle)", async () => {
     manager.register(baseDef());
 
-    const sid = manager.run("bot", "hello");
+    const sid = manager.run("bot", "hello", { autoClose: "never" });
     await manager.waitForIdle(sid);
 
     manager.cancel(sid);
@@ -124,7 +123,7 @@ describe("persistent sessions", () => {
   it("cancel() on idle persistent session preserves idle status in registry", async () => {
     manager.register(baseDef());
 
-    const sid = manager.run("bot", "hello");
+    const sid = manager.run("bot", "hello", { autoClose: "never" });
     await manager.waitForIdle(sid);
 
     manager.cancel(sid);
@@ -136,7 +135,7 @@ describe("persistent sessions", () => {
   it("followUp() works after cancel on persistent session (session still alive)", async () => {
     manager.register(baseDef());
 
-    const sid = manager.run("bot", "hello");
+    const sid = manager.run("bot", "hello", { autoClose: "never" });
     await manager.waitForIdle(sid);
 
     manager.cancel(sid);
@@ -150,7 +149,7 @@ describe("persistent sessions", () => {
   it("close() removes persistent session from active", async () => {
     manager.register(baseDef());
 
-    const sid = manager.run("bot", "hello");
+    const sid = manager.run("bot", "hello", { autoClose: "never" });
     await manager.waitForIdle(sid);
 
     manager.close(sid);
@@ -161,7 +160,7 @@ describe("persistent sessions", () => {
   it("close() marks persistent session as interrupted in registry", async () => {
     manager.register(baseDef());
 
-    const sid = manager.run("bot", "hello");
+    const sid = manager.run("bot", "hello", { autoClose: "never" });
     await manager.waitForIdle(sid);
 
     manager.close(sid);
@@ -173,7 +172,7 @@ describe("persistent sessions", () => {
   it("followUp() throws after close (session is gone)", async () => {
     manager.register(baseDef());
 
-    const sid = manager.run("bot", "hello");
+    const sid = manager.run("bot", "hello", { autoClose: "never" });
     await manager.waitForIdle(sid);
 
     manager.close(sid);
@@ -184,7 +183,7 @@ describe("persistent sessions", () => {
   it("waitForIdle() resolves immediately if already idle", async () => {
     manager.register(baseDef());
 
-    const sid = manager.run("bot", "hello");
+    const sid = manager.run("bot", "hello", { autoClose: "never" });
     await manager.waitForIdle(sid);
 
     // Second call should resolve immediately
@@ -233,7 +232,7 @@ describe("persistent sessions", () => {
     const manager2 = new SubagentManager({ persistDir: dir });
     manager2.register(baseDef());
 
-    const result = manager2.resumeAgent("bot");
+    const result = manager2.resumeAgent("bot", { autoClose: "never" });
     expect(result.resumed).not.toBeNull();
     expect(result.resumed.sessionId).toBe("idle_session_1");
   });
@@ -241,7 +240,7 @@ describe("persistent sessions", () => {
   it("multiple followUp() calls accumulate context", async () => {
     manager.register(baseDef());
 
-    const sid = manager.run("bot", "first");
+    const sid = manager.run("bot", "first", { autoClose: "never" });
     await manager.waitForIdle(sid);
 
     manager.followUp(sid, "second");
@@ -256,7 +255,7 @@ describe("persistent sessions", () => {
   });
 
   it("non-persistent session is removed after completion", async () => {
-    manager.register(baseDef({ name: "ephemeral", persistent: false }));
+    manager.register(baseDef({ name: "ephemeral" }));
 
     const sid = manager.run("ephemeral", "hello");
     try { await manager.waitFor(sid); } catch { /* error expected */ }

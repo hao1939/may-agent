@@ -76,8 +76,8 @@ describe("manager.followUp()", () => {
   });
 
   it("followUp on idle persistent session wakes it and returns to idle", async () => {
-    manager.register(baseDef({ persistent: true }));
-    const sid = manager.run("bot", "hello", { persistent: true });
+    manager.register(baseDef());
+    const sid = manager.run("bot", "hello", { autoClose: "never" });
     await manager.waitForIdle(sid);
     expect(manager.status()[0].status).toBe("idle");
 
@@ -98,8 +98,8 @@ describe("manager.followUp()", () => {
   });
 
   it("wakes idle persistent session", async () => {
-    manager.register(baseDef({ persistent: true }));
-    const sid = manager.run("bot", "hello", { persistent: true });
+    manager.register(baseDef());
+    const sid = manager.run("bot", "hello", { autoClose: "never" });
     await manager.waitForIdle(sid);
 
     // Status should be idle
@@ -119,8 +119,8 @@ describe("manager.followUp()", () => {
   });
 
   it("does not interrupt a running persistent session", async () => {
-    manager.register(baseDef({ persistent: true }));
-    const sid = manager.run("bot", "hello", { persistent: true });
+    manager.register(baseDef());
+    const sid = manager.run("bot", "hello", { autoClose: "never" });
 
     // While running, followUp should not throw and should not steer
     manager.followUp(sid, "background info");

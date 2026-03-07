@@ -8,6 +8,7 @@
  */
 
 import { Type, type Static } from "@mariozechner/pi-ai";
+import type { TSchema } from "@mariozechner/pi-ai";
 import type { AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
 import { execSync } from "node:child_process";
 
@@ -20,12 +21,12 @@ function textResult(text: string): AgentToolResult<string> {
 
 // ── Shared params ──────────────────────────────────────────────────────
 
-const CliAgentParams = Type.Object({
+const CliAgentParams: TSchema = Type.Object({
   prompt: Type.String({ description: "The task/prompt to send to the CLI agent. Be specific: include file paths, constraints, what to change, and what to verify." }),
   timeout: Type.Optional(Type.Number({ description: "Timeout in seconds (default: 180). Increase for complex tasks." })),
 });
 
-type CliAgentInput = Static<typeof CliAgentParams>;
+interface CliAgentInput { prompt: string; timeout?: number; }
 
 // ── Options ────────────────────────────────────────────────────────────
 
@@ -49,7 +50,7 @@ function truncateOutput(output: string, maxLen: number): string {
 
 // ── Claude Code tool ───────────────────────────────────────────────────
 
-export function createClaudeCodeTool(opts: CliAgentToolOptions): AgentTool<typeof CliAgentParams, string> {
+export function createClaudeCodeTool(opts: CliAgentToolOptions): AgentTool {
   const maxOutput = opts.maxOutputLength ?? 80_000;
 
   return {
@@ -60,7 +61,8 @@ export function createClaudeCodeTool(opts: CliAgentToolOptions): AgentTool<typeo
       "Claude-code has full read/write access to the project and runs with auto-approval. " +
       "Frame your prompt carefully — include specific file paths, what to change, constraints, and verification steps.",
     parameters: CliAgentParams,
-    execute: async (_toolCallId: string, input: CliAgentInput) => {
+    execute: async (_toolCallId: string, _input: unknown) => {
+      const input = _input as CliAgentInput;
       const timeout = (input.timeout ?? 180) * 1000;
       const prompt = input.prompt;
 
@@ -100,7 +102,7 @@ export interface GeminiCliToolOptions extends CliAgentToolOptions {
   model?: string;
 }
 
-export function createGeminiCliTool(opts: GeminiCliToolOptions): AgentTool<typeof CliAgentParams, string> {
+export function createGeminiCliTool(opts: GeminiCliToolOptions): AgentTool {
   const maxOutput = opts.maxOutputLength ?? 80_000;
   const apiKey = opts.apiKey ?? "dummy";
   const baseUrl = opts.baseUrl ?? "http://localhost:4000";
@@ -115,7 +117,8 @@ export function createGeminiCliTool(opts: GeminiCliToolOptions): AgentTool<typeo
       "Gemini-cli has full read/write access to the project and runs with auto-approval. " +
       "Frame your prompt carefully — include specific file paths, what to analyze/change, and what output you expect.",
     parameters: CliAgentParams,
-    execute: async (_toolCallId: string, input: CliAgentInput) => {
+    execute: async (_toolCallId: string, _input: unknown) => {
+      const input = _input as CliAgentInput;
       const timeout = (input.timeout ?? 180) * 1000;
       const prompt = input.prompt;
 

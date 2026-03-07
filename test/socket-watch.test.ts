@@ -93,10 +93,9 @@ describe("socket_watch tool", () => {
       systemPrompt: "You are a test coach.",
       model: fakeModel(),
       tools: [],
-      persistent: true,
     });
 
-    sessionId = manager.run("coach", "coaching task", { persistent: true });
+    sessionId = manager.run("coach", "coaching task", { autoClose: "never" });
     await manager.waitForIdle(sessionId);
   });
 

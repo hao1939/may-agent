@@ -9,6 +9,7 @@
  */
 
 import { Type, StringEnum } from "@mariozechner/pi-ai";
+import type { TSchema } from "@mariozechner/pi-ai";
 import type { AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
 import { spawn, type ChildProcess } from "node:child_process";
 import { isMetaRecursionCommand } from "./tools.js";
@@ -85,7 +86,7 @@ export interface BackgroundExecToolOptions {
   allowAgentSpawn?: boolean;
 }
 
-const BackgroundExecParams = Type.Object({
+const BackgroundExecParams: TSchema = Type.Object({
   action: StringEnum(
     ["spawn", "output", "input", "kill", "list"] as const,
     { description: "Action to perform on background processes." },
@@ -97,6 +98,8 @@ const BackgroundExecParams = Type.Object({
   lines: Type.Optional(Type.Number({ description: "Max lines to return (optional for 'output', default: all unread)" })),
   signal: Type.Optional(Type.String({ description: "Signal to send (optional for 'kill', default: SIGTERM)" })),
 });
+interface BackgroundExecInput { action: "spawn" | "output" | "input" | "kill" | "list"; command?: string; label?: string; pid?: number; text?: string; lines?: number; signal?: string; }
+
 
 /**
  * Create a background exec tool for managing long-lived child processes.
@@ -106,7 +109,7 @@ const BackgroundExecParams = Type.Object({
  */
 export function createBackgroundExecTool(
   opts?: BackgroundExecToolOptions,
-): { tool: AgentTool<typeof BackgroundExecParams>; cleanup: () => void } {
+): { tool: AgentTool; cleanup: () => void } {
   const cwd = opts?.cwd ?? process.cwd();
   const denyPatterns = opts?.denyPatterns ?? [];
   const denyMessage = opts?.denyMessage ?? "Command blocked by deny pattern.";
@@ -129,13 +132,14 @@ export function createBackgroundExecTool(
     return entry;
   }
 
-  const tool: AgentTool<typeof BackgroundExecParams> = {
+  const tool: AgentTool = {
     name: "background_exec",
     label: "Background Exec",
     description:
       "Spawn and manage long-lived background processes. Use for processes that run while you continue working (e.g. servers, watchers, other agent processes).",
     parameters: BackgroundExecParams,
-    execute: async (_toolCallId, params) => {
+    execute: async (_toolCallId, _params) => {
+      const params = _params as BackgroundExecInput;
       try {
         switch (params.action) {
           case "spawn": {
