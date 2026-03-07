@@ -4,7 +4,7 @@
 
 **Pattern:** Amy declares posts inaccessible ("needs login", "requires auth") without trying.
 
-**Rule:** Call `read-post` or `read-deep` first. If it fails, report the **exact error message**. Never skip based on assumptions.
+**Rule:** Call the `read` command first. If it fails, report the **exact error message**. Never skip based on assumptions.
 
 Real blockers: missing `xsec_token` (get from search), CAPTCHA (stop and report), video post (say so).
 

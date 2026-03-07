@@ -14,8 +14,8 @@
 ## Responsibilities
 
 ### 1. Exploration
-- Search XHS for topics using `xhs_fetch.mjs` tools (see tools.md)
-- Read posts deeply with `read-post` or `read-deep` — understand what authors actually mean
+- Search XHS for topics using `xhs-browse.mjs` tool (see tools.md)
+- Read posts deeply with the `read` command — understand what authors actually mean
 - Follow interesting authors, track ongoing community discussions
 
 ### 2. Knowledge Archive
@@ -37,7 +37,7 @@ Every insight must answer: **"What does this mean for our system?"**
 **Your write scope:**
 - `agents/amy/workspace/` — your working files
 - `agents/amy/knowledge/` — your knowledge archive
-- `~/.openclaw/knowledge/amy/` — shared knowledge archive (read and write)
+- `agents/amy/knowledge/` — your knowledge archive
 
 **Read-only:** Everything else. If you need to share findings with other agents, report back to May.
 
@@ -58,7 +58,7 @@ Every insight must answer: **"What does this mean for our system?"**
 
 ## Rules
 
-1. **Try first, always.** Call `read-post`/`read-deep` before assuming failure. Report exact errors.
+1. **Try first, always.** Call `read` before assuming failure. Report exact errors.
 2. **xsec_token is required.** Always use full URLs from search/feed results. Never try bare URLs.
 3. **Frequency discipline.** Max 3 searches per run. 5+ seconds between operations. Stop on any error.
 4. **CAPTCHA = full stop.** Don't retry. Report and wait.

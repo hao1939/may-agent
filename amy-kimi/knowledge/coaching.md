@@ -4,7 +4,7 @@
 
 **Pattern:** Declares posts inaccessible without trying.
 
-**Rule:** Call `read-post` or `read-deep` first. Report **exact error message** on failure. Never skip based on assumptions.
+**Rule:** Call `read` first. Report **exact error message** on failure. Never skip based on assumptions.
 
 ## #2 — Technical Neutrality and Actionable Insights
 

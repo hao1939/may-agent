@@ -2,84 +2,104 @@
 
 ## 小红书工具
 
-Tool location: `~/.openclaw/tools/xhs-downloader/xhs_fetch.mjs`
+Tool location: `agents/amy-kimi/tools/xhs-browse.mjs` (symlink to Amy's shared tool)
 
-Tools use CDP (Chrome DevTools Protocol) to connect to the browser directly.
+Uses CDP (Chrome DevTools Protocol) to connect to Chrome on `localhost:9222`. No Playwright, no npm deps.
 
-### Data Commands
+### Commands
 
 ```bash
+# Feed — browse the /explore page, get ~15-20 items
+node agents/amy-kimi/tools/xhs-browse.mjs feed
+
 # Search — returns results with xsec_token
-node ~/.openclaw/tools/xhs-downloader/xhs_fetch.mjs search "<keyword>" --count 10
+node agents/amy-kimi/tools/xhs-browse.mjs search "<keyword>"
 
-# Feed — read /explore page DOM (zero navigation)
-node ~/.openclaw/tools/xhs-downloader/xhs_fetch.mjs feed --count 20
+# Read — open a note and extract full content
+node agents/amy-kimi/tools/xhs-browse.mjs read "<full_url_with_xsec_token>"
 
-# Cookie health check (for diagnostics only, not routine)
-node ~/.openclaw/tools/xhs-downloader/xhs_fetch.mjs cookie-status
+# Scroll — scroll feed page down for more items
+node agents/amy-kimi/tools/xhs-browse.mjs scroll
 ```
 
-### Post Reading
+### ⚠️ xsec_token is REQUIRED for `read`
+
+XHS requires `xsec_token` parameter in every note URL. Without it → page won't render.
+
+**Always use the full URL from feed/search results** — they include the token automatically.
 
 ```bash
-# Basic read — title, text, tags, engagement
-node ~/.openclaw/tools/xhs-downloader/xhs_fetch.mjs read-post "<url with xsec_token>"
+# ❌ No token — will fail
+node xhs-browse.mjs read "https://www.xiaohongshu.com/explore/698dc..."
 
-# Deep read — OCR all images + comments + references
-node ~/.openclaw/tools/xhs-downloader/xhs_fetch.mjs read-deep "<url with xsec_token>"
-
-# Deep read (skip OCR)
-node ~/.openclaw/tools/xhs-downloader/xhs_fetch.mjs read-deep "<url>" --no-ocr
+# ✅ With token — works
+node xhs-browse.mjs read "https://www.xiaohongshu.com/explore/698dc...?xsec_token=AB81...&xsec_source="
 ```
 
-### ⚠️ xsec_token is REQUIRED
+### Output Format
 
-XHS requires `xsec_token` parameter in every post URL. Without it → 404.
+All commands return JSON:
 
-**Always use the full URL from search/feed results.**
+```json
+{
+  "status": "success",
+  "data": { ... }
+}
+```
 
-### read-deep Fields
+### Feed/Search Result Fields
 
 | Field | Description |
 |-------|-------------|
-| `fullText` | OCR text from all images (core content) |
-| `imageTexts[]` | Per-image OCR text |
-| `topComments[]` | Top comments (author, content, likes, replies) |
-| `references[]` | Extracted references (GitHub, arXiv, papers, code) |
-| `desc` | Post text description |
+| `id` | Note ID |
+| `title` | Note title |
+| `author` | Author name |
+| `likes` | Like count |
+| `cover` | Cover image URL |
+| `link` | Full URL with xsec_token (use this for `read`) |
+
+### Read Result Fields
+
+| Field | Description |
+|-------|-------------|
+| `noteType` | "video" or "normal" (image) |
+| `title` | Note title |
+| `description` | Full text description with hashtags |
+| `author` | Author name |
+| `date` | Post date |
+| `likes` | Like count |
+| `collects` | Bookmark/collect count |
+| `commentCount` | Total comment count |
+| `tags` | Array of hashtags (e.g. `["#AI", "#agent"]`) |
+| `comments` | Array of `{author, text, isReply?}` (up to 20) |
+| `images` | Array of image URLs (up to 10, deduplicated) |
+| `rawText` | Raw page text (first 3000 chars, fallback) |
 
 ### Standard Workflow
 
 ```
-1. search "keyword" --count 10
-   → get post list with url (includes xsec_token)
+1. feed  OR  search "关键词"
+   → get post list with links (includes xsec_token)
 
-2. Pick interesting posts, use returned url for read-post
+2. Pick interesting posts, use the `link` field for read
+   → get full title, description, comments, engagement
 
-3. For deeper content (image OCR, comments), use read-deep
+3. Archive to knowledge/posts/<id>.md
 
-4. Archive to knowledge/posts/<id>.md
+4. Synthesize insights → update insights.md
 ```
 
 ### Error Handling
 
 | Output | Meaning | Action |
 |--------|---------|--------|
-| `CAPTCHA` | Browser flagged | **Stop all ops.** Report. Wait. |
-| `Rate limited` | Too frequent | Wait 5-10 min |
-| `404 or error` | Token invalid/expired | Re-search for new token |
+| `CAPTCHA` or login modal | Browser flagged | **Stop all ops.** Report. Wait. |
+| `status: "error"` | Various (timeout, DOM change) | Try once more, then switch to synthesis |
+| Empty results | Token expired or IP ban | Re-search for fresh tokens |
 
-### Keyword Management
+### Knowledge Archive Location
 
-```bash
-node ~/.openclaw/tools/sync-keywords.mjs list
-node ~/.openclaw/tools/sync-keywords.mjs add "new keyword"
-node ~/.openclaw/tools/sync-keywords.mjs remove "old keyword"
-```
-
-### Knowledge Archive Locations
-
-**Your archive:** `~/.openclaw/knowledge/amy-kimi/`
+Your archive: `agents/amy-kimi/knowledge/`
 
 | File | Content |
 |------|---------|
@@ -89,4 +109,4 @@ node ~/.openclaw/tools/sync-keywords.mjs remove "old keyword"
 | `openclaw-mentions.md` | OpenClaw mentions |
 | `posts/<id>.md` | Deep-archived post full text |
 
-**Amy's archive (read-only for cross-reference):** `~/.openclaw/knowledge/amy/`
+**Amy's archive (read-only for cross-reference):** `agents/amy/knowledge/`
