@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync, mkdirSync, existsSync } from "node:fs";
+import { readFileSync, readdirSync, mkdirSync, existsSync, appendFileSync, writeFileSync, watch as fsWatch, renameSync, unlinkSync } from "node:fs";
 import { Agent } from "@mariozechner/pi-agent-core";
 import type { AgentMessage, AgentEvent, AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
 import { Type, StringEnum } from "@mariozechner/pi-ai";
@@ -604,14 +604,20 @@ export class SubagentManager {
         const icon = session.status === "done" ? "✅" : "❌";
         const taskText = session.task ?? "";
         const taskPreview = taskText.length > 80 ? taskText.slice(0, 77) + "..." : taskText;
-        const notifyMsg = `[task-complete] ${icon} ${session.agentName} finished (${runtime}): "${taskPreview}" Session: ${session.sessionId}`;
+        const errorSuffix = session.error ? ` Error: ${session.error}` : "";
+        const notifyMsg = `[task-complete] ${icon} ${session.agentName} finished (${runtime}): "${taskPreview}" Session: ${session.sessionId}${errorSuffix}`;
+
+        let delivered = false;
 
         // 1. Parent session still alive → notify it directly
         if (this.activeSessions.has(session.parentSessionId)) {
-          this.followUp(session.parentSessionId, notifyMsg, "task-notify");
+          try {
+            this.followUp(session.parentSessionId, notifyMsg, "task-notify");
+            delivered = true;
+          } catch { /* parent may have just closed */ }
         }
         // 2. Else: find a persistent session for the parent agent
-        else if (session.parentAgentName) {
+        if (!delivered && session.parentAgentName) {
           let persistentSid: string | undefined;
           for (const [sid, s] of this.activeSessions) {
             if (s.agentName === session.parentAgentName && s.persistent) {
@@ -620,12 +626,178 @@ export class SubagentManager {
             }
           }
           if (persistentSid) {
-            this.followUp(persistentSid, notifyMsg, "task-notify");
+            try {
+              this.followUp(persistentSid, notifyMsg, "task-notify");
+              delivered = true;
+            } catch { /* persistent session may have just closed */ }
           }
         }
-        // 3. Else: no one to notify
+        // 3. Fallback: write to undelivered notifications file
+        if (!delivered) {
+          try {
+            const fallbackPath = join(this.registry.persistDir, "undelivered-notifications.jsonl");
+            appendFileSync(fallbackPath, JSON.stringify({
+              ts: Date.now(),
+              sessionId: session.sessionId,
+              agent: session.agentName,
+              status: session.status,
+              task: session.task,
+              runtime,
+              parentSessionId: session.parentSessionId,
+              parentAgent: session.parentAgentName ?? null,
+              error: session.error ?? null,
+              retryCount: 0,
+            }) + "\n");
+          } catch (fileErr) {
+            console.warn("[manager] Failed to write undelivered notification:", fileErr);
+          }
+        }
       }
     } catch { /* notification must never crash handleCompletion */ }
+  }
+
+  // ── Undelivered notification drain & watcher ─────────────────────────
+
+  /** Watcher reference for cleanup. */
+  private notificationWatcher?: ReturnType<typeof fsWatch>;
+  /** Debounce timer for fs.watch callback. */
+  private drainTimer?: ReturnType<typeof setTimeout>;
+
+  /**
+   * Drain the undelivered-notifications.jsonl fallback file.
+   *
+   * For each notification, attempt to route to the right persistent session
+   * via followUp. If routing fails and retryCount < 5, re-append with
+   * incremented retryCount. If retryCount >= 5, log warning and drop (dead letter).
+   * Clears the file after processing all entries.
+   */
+  private drainUndeliveredNotifications(): void {
+    const fallbackPath = join(this.registry.persistDir, "undelivered-notifications.jsonl");
+    try {
+      if (!existsSync(fallbackPath)) return;
+
+      // Rename-then-process to avoid race: new notifications written between
+      // clear and re-append won't be lost.
+      const tmpPath = fallbackPath + ".processing";
+      try { renameSync(fallbackPath, tmpPath); } catch { return; }
+      const raw = readFileSync(tmpPath, "utf-8").trim();
+      if (!raw) {
+        try { unlinkSync(tmpPath); } catch { /* best-effort */ }
+        return;
+      }
+
+      const retryEntries: string[] = [];
+
+      for (const line of raw.split("\n")) {
+        if (!line.trim()) continue;
+        let entry: any;
+        try {
+          entry = JSON.parse(line);
+        } catch {
+          // Malformed line — skip (defensive JSON parsing per Bob's review)
+          console.warn("[manager] Skipping malformed notification line:", line.slice(0, 100));
+          continue;
+        }
+
+        const { sessionId, agent, status, task, parentSessionId, parentAgent, error, retryCount = 0 } = entry;
+
+        // Build the notification message
+        const runtime = entry.runtime ?? "?";
+        const icon = status === "done" ? "✅" : "❌";
+        const taskText = task ?? "";
+        const taskPreview = taskText.length > 80 ? taskText.slice(0, 77) + "..." : taskText;
+        const errorSuffix = error ? ` Error: ${error}` : "";
+        const notifyMsg = `[task-complete] ${icon} ${agent} finished (${runtime}): "${taskPreview}" Session: ${sessionId}${errorSuffix}`;
+
+        let delivered = false;
+
+        // Try parent session directly
+        if (parentSessionId && this.activeSessions.has(parentSessionId)) {
+          try {
+            this.followUp(parentSessionId, notifyMsg, "task-notify");
+            delivered = true;
+          } catch { /* session may have just closed */ }
+        }
+
+        // Try parent agent's persistent session
+        if (!delivered && parentAgent) {
+          for (const [sid, s] of this.activeSessions) {
+            if (s.agentName === parentAgent && s.persistent) {
+              try {
+                this.followUp(sid, notifyMsg, "task-notify");
+                delivered = true;
+              } catch { /* persistent session may have just closed */ }
+              break;
+            }
+          }
+        }
+
+        // If still undelivered, re-queue with incremented retryCount or drop
+        if (!delivered) {
+          if (retryCount >= 5) {
+            console.warn(`[manager] Dropping dead-letter notification after ${retryCount} retries: session=${sessionId} agent=${agent} task="${taskPreview}"`);
+          } else {
+            retryEntries.push(JSON.stringify({ ...entry, retryCount: retryCount + 1 }));
+          }
+        }
+      }
+
+      // Re-append any entries that still couldn't be delivered
+      if (retryEntries.length > 0) {
+        appendFileSync(fallbackPath, retryEntries.join("\n") + "\n");
+      }
+      // Clean up temp file
+      try { unlinkSync(tmpPath); } catch { /* best-effort */ }
+    } catch (err) {
+      console.warn("[manager] Error draining undelivered notifications:", err);
+    }
+  }
+
+  /**
+   * Start watching the undelivered-notifications.jsonl file for changes.
+   * fs.watch is treated as a latency optimization — heartbeat polling is the
+   * reliability layer (per Bob's review: fs.watch is flaky across platforms).
+   *
+   * Call AFTER resumeAgent completes (startup order: Load Registry → Resume Agents → Start Watcher/Drain).
+   */
+  startNotificationWatcher(): void {
+    // Initial drain of any notifications accumulated while we were down
+    this.drainUndeliveredNotifications();
+
+    // Set up fs.watch as optimization (may miss events on some platforms)
+    try {
+      const fallbackPath = join(this.registry.persistDir, "undelivered-notifications.jsonl");
+      // Ensure file exists so fs.watch doesn't error
+      if (!existsSync(fallbackPath)) {
+        writeFileSync(fallbackPath, "");
+      }
+      this.notificationWatcher = fsWatch(fallbackPath, () => {
+        // Debounce: clear previous timer so rapid writes don't cause multiple drains
+        clearTimeout(this.drainTimer);
+        this.drainTimer = setTimeout(() => this.drainUndeliveredNotifications(), 200);
+      });
+    } catch (err) {
+      // fs.watch failure is non-fatal — heartbeat drain is the reliability layer
+      console.warn("[manager] Could not watch undelivered-notifications.jsonl:", err);
+    }
+  }
+
+  /**
+   * Drain undelivered notifications (call from heartbeat as safety net).
+   * Public so callers (e.g. heartbeat handler) can trigger periodic drain.
+   */
+  drainNotifications(): void {
+    this.drainUndeliveredNotifications();
+  }
+
+  /** Stop the notification file watcher (cleanup). */
+  stopNotificationWatcher(): void {
+    try {
+      clearTimeout(this.drainTimer);
+      this.drainTimer = undefined;
+      this.notificationWatcher?.close();
+      this.notificationWatcher = undefined;
+    } catch { /* best-effort cleanup */ }
   }
 
   /** Start a new session for a registered agent. Returns sessionId. Non-blocking.
@@ -858,11 +1030,44 @@ export class SubagentManager {
         `\n\nThese sessions are no longer running. Re-delegate if the work is still needed.`
       : "";
 
+    // ── Reconcile children: completed + stale-running ────────────────
+    let childrenSummary = "";
+    try {
+      const completedChildren = Object.entries(registryData.sessions)
+        .filter(([_, s]) => s.parentSessionId === targetSessionId && (s.status === "done" || s.status === "error"));
+
+      // Detect stale-running: registry says "running" but no ActiveSession exists
+      const staleRunning = Object.entries(registryData.sessions)
+        .filter(([sid, s]) => s.parentSessionId === targetSessionId && s.status === "running" && !this.activeSessions.has(sid));
+
+      // Mark stale as interrupted
+      for (const [sid] of staleRunning) {
+        this.registry.updateSessionStatus(sid, "interrupted", "Process restarted (stale)");
+      }
+
+      const completedLines = completedChildren.map(([sid, s]) => {
+        const icon = s.status === "done" ? "✅" : "❌";
+        const taskPreview = (s.task ?? "").slice(0, 100);
+        const errorInfo = s.error ? ` Error: ${s.error}` : "";
+        return `- ${icon} ${s.agent} (${sid}): "${taskPreview}"${errorInfo}`;
+      });
+      const staleLine = staleRunning.map(([sid, s]) => {
+        const taskPreview = (s.task ?? "").slice(0, 100);
+        return `- ⚠️ ${s.agent} (${sid}): "${taskPreview}" — was running, now interrupted (stale)`;
+      });
+      const allChildLines = [...completedLines, ...staleLine];
+      if (allChildLines.length > 0) {
+        childrenSummary = `\n\nCompleted/stale child sessions since last run:\n` +
+          allChildLines.join("\n") +
+          `\nReview results if needed (use subagents status/result).`;
+      }
+    } catch { /* reconciliation must not crash resume */ }
+
     const resumeMessage: AgentMessage = {
       role: "user",
       content: [{
         type: "text",
-        text: `Process restarted. Your session has been restored with your previous conversation history. Continue where you left off.${interruptedSummary}`,
+        text: `Process restarted. Your session has been restored with your previous conversation history. Continue where you left off.${interruptedSummary}${childrenSummary}`,
       }],
       timestamp: Date.now(),
       source: "system",
