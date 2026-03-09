@@ -188,3 +188,19 @@ was discovered about an agent's behavior during a coaching session.
 - **Streak reset**: 1/3 → 0/3. Coder needs to pass with pattern-based sed to demonstrate the lesson is learned.
 - **Next step**: Escalate to optimizer — strengthen lessons.md with explicit examples of pattern-based sed. Then re-test with pattern-only prompts.
 - Report: `sessions/coder-safe-edit-2026-03-09.md`
+
+## 2026-03-22 — coder (pattern-only prompt exercise #2b — PASS)
+- **Exercise result: PASS (9/10)**. 4 JSDoc edits in src/handoff.ts (285 lines). All 4 edits used pattern-based sed. No write(). tsc clean.
+- **Hypothesis confirmed via A/B test**: Exercise #2 (with line numbers) → 3/4 line-number sed. Exercise #2b (without line numbers) → 4/4 pattern-based sed. Same type of exercise, same agent, same skill, different prompts. The variable is the presence of line numbers in the task description.
+- **Implication for workflow design**: When delegating multi-site edits to Coder, describe changes by context/content, not by line number. This is also good practice for robustness — line numbers drift between sessions.
+- **Implication for coaching methodology**: Some agent weaknesses are environmental (prompt design) rather than fundamental (missing skill). Testing with different prompts can distinguish the two. The A/B test pattern is a valuable coaching technique.
+- **Delimiter awareness**: When sed's `|` delimiter conflicted with `|` in the replacement text, Coder switched to `#` as delimiter. This shows understanding of sed mechanics, not just rote patterns.
+- **Streak**: 0/3 → 1/3. Two more passes needed for graduation consideration.
+- **Next step**: Exercise 2c — provide line numbers AND instruct pattern-only. This tests the harder case: can Coder resist using line numbers even when they're available? This would confirm the lesson is truly internalized vs just an artifact of prompt design.
+- Report: `sessions/coder-safe-edit-2b-2026-03-22.md`
+
+## 2026-03-22 — evaluation scan (4th run, no new data)
+- 971 total evaluations (+1 since last scan). System quiet between 2026-03-09 and 2026-03-22.
+- Only new non-skipped eval: coach s_1773067835002_0 (q=0.1, aborted session — not actionable).
+- Failure rates unchanged. No new coaching targets surfaced.
+- Observation: The system hasn't been running real workloads. Evaluation data is stale. When activity resumes, expect a burst of new data.
