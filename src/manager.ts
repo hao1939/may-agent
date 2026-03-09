@@ -118,7 +118,6 @@ interface ActiveSession {
   error?: string;
   outputDir: string;
   unsubscribe?: () => void;
-  unsubscribeTurnLimit?: () => void;
   timeoutTimer?: ReturnType<typeof setTimeout>;
   parentSessionId?: string;
   /** Agent name of the parent session (cached at creation for notification after parent may be gone). */
@@ -126,11 +125,6 @@ interface ActiveSession {
   workflowRunId?: string;
   stepLabel?: string;
   turnCount: number;
-  maxTurns?: number;
-  /** Threshold (0-1) at which to fire a turn budget warning. */
-  turnWarningThreshold: number;
-  /** Whether the turn warning has already been fired. */
-  turnWarningFired: boolean;
   /** Compaction transform for the interface session (rolling compaction). */
   compactionTransform?: (messages: AgentMessage[], signal?: AbortSignal) => Promise<AgentMessage[]>;
   /** Set by close() — prevents handleCompletion from acting on an already-archived session. */
@@ -162,6 +156,9 @@ export interface RunOptions {
 
 export interface SubagentManagerOptions {
   persistDir: string;
+  /** Root of the project. Used for detached agent spawning.
+   *  Falls back to resolve(persistDir, "..") if not set. */
+  projectRoot?: string;
   /**
    * Called after a task session completes (done/error/interrupted).
    * Fires after archival. Use for post-session tasks like evaluation.
@@ -229,9 +226,14 @@ export class SubagentManager {
   private onSessionStart?: (agentName: string, sessionId: string) => void;
   private startedAt = Date.now();
   private chatSessionId?: string;
+  private _projectRoot: string;
+
+  /** Project root directory. Used for detached agent spawning. */
+  get projectRoot(): string { return this._projectRoot; }
 
   constructor(opts: SubagentManagerOptions) {
     this.registry = new RegistryStore(opts.persistDir);
+    this._projectRoot = opts.projectRoot ?? resolve(opts.persistDir, "..");
     this.onSessionComplete = opts.onSessionComplete;
     this.onSessionStart = opts.onSessionStart;
   }
@@ -277,37 +279,8 @@ export class SubagentManager {
     session.unsubscribe = session.agent.subscribe((event: AgentEvent) => {
       if (event.type === "message_end") {
         appendSessionMessage(persistDir, sessionId, event.message);
-      }
-    });
-  }
-
-  /** Subscribe to turn_end events, inject turn-budget warning, and enforce maxTurns limit. */
-  private subscribeForTurnLimit(session: ActiveSession): void {
-    if (!session.maxTurns || session.maxTurns <= 0) return;
-    session.unsubscribeTurnLimit = session.agent.subscribe((event: AgentEvent) => {
-      if (event.type === "turn_end") {
-        session.turnCount++;
-
-        // Inject a one-time warning when the agent crosses the warning threshold
-        const warningTurn = Math.floor(session.maxTurns! * session.turnWarningThreshold);
-        if (!session.turnWarningFired && warningTurn > 0 && session.turnCount >= warningTurn) {
-          session.turnWarningFired = true;
-          const remaining = session.maxTurns! - session.turnCount;
-          session.agent.steer({
-            role: "user",
-            content: [{
-              type: "text",
-              text: `⚠️ TURN BUDGET WARNING: You have used ${session.turnCount} of ${session.maxTurns} turns. ` +
-                `Only ${remaining} turns remain. Wrap up your current work, commit any changes if possible, ` +
-                `and do not start new tasks. Summarize any remaining work that could not be completed.`,
-            }],
-            timestamp: Date.now(),
-            source: "system",
-          } as AgentMessage);
-        }
-
-        if (session.turnCount >= session.maxTurns!) {
-          session.agent.abort();
+        if (event.message.role === "assistant") {
+          session.turnCount++;
         }
       }
     });
@@ -344,7 +317,21 @@ export class SubagentManager {
     // Static environment FIRST — stable prefix for LLM cache hits (Principle 36)
     if (def.projectRoot) {
       const relPath = (abs: string) => relative(def.projectRoot!, abs) || ".";
+      const agentDir = def.knowledgeDir ? dirname(def.knowledgeDir) : def.workspace ? dirname(def.workspace) : undefined;
       const envLines = [`# Runtime Environment`, `- Project root (exec cwd): ${def.projectRoot}`];
+      if (agentDir) {
+        envLines.push(`- Agent directory: ${relPath(agentDir)}`);
+        // List agent-level files (heartbeat.md, periodic-tasks.md, etc.)
+        try {
+          const agentFiles = readdirSync(agentDir, { withFileTypes: true })
+            .filter((e) => e.isFile() && !["agent.json"].includes(e.name))
+            .map((e) => e.name)
+            .sort();
+          if (agentFiles.length > 0) {
+            envLines.push(`- Agent files: ${agentFiles.join(", ")}`);
+          }
+        } catch { /* best-effort */ }
+      }
       if (def.workspace) {
         envLines.push(`- Workspace: ${relPath(def.workspace)}`);
         if (def.knowledgeDir) {
@@ -508,15 +495,6 @@ export class SubagentManager {
       `# Output\nWrite deliverables for this task to: ${outputRel}`,
     );
 
-    // Turn budget section (if maxTurns is set)
-    if (def.maxTurns && def.maxTurns > 0) {
-      sections.push(
-        `# Turn Budget\nYou have a maximum of ${def.maxTurns} turns for this session. ` +
-        `Plan your work to complete within this budget. If you are running low, ` +
-        `prioritize completing the most important part and summarize remaining work.`,
-      );
-    }
-
     return sections.join("\n\n");
   }
 
@@ -603,12 +581,9 @@ export class SubagentManager {
     // ── Determine outcome from agent state ─────────────────────────────
     const agentError = session.agent.state.error ?? session.error;
     const wasAborted = agentError?.includes("aborted") ?? false;
-    const wasTurnLimit = !!(session.maxTurns && session.turnCount >= session.maxTurns);
 
-    // Set error field (turn-limit overrides the generic abort message)
-    if (wasTurnLimit) {
-      session.error = `Turn limit reached (${session.turnCount}/${session.maxTurns} turns)`;
-    } else if (agentError) {
+    // Set error field
+    if (agentError) {
       session.error = agentError;
     }
 
@@ -627,7 +602,7 @@ export class SubagentManager {
     if (session.autoClose === "never") {
       // Persist cancellation notice so agent doesn't retry on resume/wake.
       // Written to JSONL (survives restart) and queued as followUp (in-process wake).
-      if (wasAborted && !wasTurnLimit) {
+      if (wasAborted) {
         const cancelMsg: AgentMessage = {
           role: "user",
           content: [{ type: "text", text: "[Task cancelled by user. Do not retry the cancelled task. Wait for new instructions.]" }],
@@ -656,7 +631,6 @@ export class SubagentManager {
     this.registry.updateSessionStatus(session.sessionId, archiveStatus, session.error);
 
     session.unsubscribe?.();
-    session.unsubscribeTurnLimit?.();
     session.endedAt = Date.now();
 
     this.appendMemory(session);
@@ -926,9 +900,6 @@ export class SubagentManager {
       workflowRunId: opts?.workflowRunId,
       stepLabel: opts?.stepLabel,
       turnCount: 0,
-      maxTurns: def.maxTurns,
-      turnWarningThreshold: def.turnWarningThreshold ?? 0.8,
-      turnWarningFired: false,
       compactionTransform,
       closed: false,
       autoClose: opts?.autoClose ?? "immediate",
@@ -936,9 +907,6 @@ export class SubagentManager {
 
     // Subscribe for JSONL persistence before starting the prompt
     this.subscribeForPersistence(session);
-
-    // Subscribe for turn limit enforcement
-    this.subscribeForTurnLimit(session);
 
     // Persist the new session to registry — merge with existing meta
     // to preserve detached/pid/instance fields pre-written by the parent
@@ -1220,16 +1188,12 @@ export class SubagentManager {
       status: initialStatus,
       outputDir,
       turnCount: savedMessages.filter((m) => m.role === "assistant").length,
-      maxTurns: def.maxTurns,
-      turnWarningThreshold: def.turnWarningThreshold ?? 0.8,
-      turnWarningFired: false,
       compactionTransform,
       closed: false,
       autoClose: opts?.autoClose ?? "immediate",
     };
 
     this.subscribeForPersistence(session);
-    this.subscribeForTurnLimit(session);
     this.setupTimeout(session, def.timeoutMs);
 
     // Add to activeSessions before notifying listener (subscribe() needs it)
@@ -1493,7 +1457,6 @@ export class SubagentManager {
       outputDir: session.outputDir,
       error: session.error,
       turnsUsed: session.turnCount,
-      maxTurns: session.maxTurns,
     };
   }
 
@@ -1579,7 +1542,6 @@ export class SubagentManager {
 
     // Still here — archive and remove.
     session.unsubscribe?.();
-    session.unsubscribeTurnLimit?.();
     session.endedAt = Date.now();
     session.status = "interrupted";
     session.archiveStatus = "interrupted";
@@ -1970,7 +1932,6 @@ export class SubagentManager {
         startedAt: s.startedAt,
         runtime: formatDuration((s.endedAt ?? now) - s.startedAt),
         turnCount: s.turnCount,
-        maxTurns: s.maxTurns,
       });
       if (s.status === "running") running++;
       if (s.status === "idle") idle++;
@@ -2178,7 +2139,7 @@ export class SubagentManager {
                 }
                 const sessionId = generateId(registered.definition.sessionIdPrefix);
                 const callerAgentName = getCallerAgentName?.();
-                const projectRoot = resolve(manager.registry.persistDir, "..");
+                const projectRoot = manager.projectRoot;
 
                 // Register in registry as detached before spawning
                 manager.registry.saveSession(sessionId, {

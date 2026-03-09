@@ -60,7 +60,6 @@ describe("SubagentManager.getAgentDefinition()", () => {
       description: "Builds things",
       domain: "construction",
       systemPrompt: "You build stuff.",
-      maxTurns: 42,
       timeoutMs: 5000,
       workspace: "/tmp/builder-ws",
     });
@@ -71,7 +70,6 @@ describe("SubagentManager.getAgentDefinition()", () => {
     expect(result.description).toBe("Builds things");
     expect(result.domain).toBe("construction");
     expect(result.systemPrompt).toBe("You build stuff.");
-    expect(result.maxTurns).toBe(42);
     expect(result.timeoutMs).toBe(5000);
     expect(result.workspace).toBe("/tmp/builder-ws");
     expect(result.model.id).toBe("test-model");
@@ -83,10 +81,9 @@ describe("SubagentManager.getAgentDefinition()", () => {
     manager.register(makeDef({ name: "agent-x", description: "Version 1" }));
     expect(manager.getAgentDefinition("agent-x")!.description).toBe("Version 1");
 
-    manager.register(makeDef({ name: "agent-x", description: "Version 2", maxTurns: 99 }));
+    manager.register(makeDef({ name: "agent-x", description: "Version 2" }));
     const result = manager.getAgentDefinition("agent-x")!;
     expect(result.description).toBe("Version 2");
-    expect(result.maxTurns).toBe(99);
   });
 
   it("returns SubagentDefinition | undefined (type safety)", () => {

@@ -129,6 +129,7 @@ bus.emit({ type: "info", message: `[may.ts] Starting (pid=${process.pid}, instan
 
 const manager = new SubagentManager({
   persistDir: PERSIST_DIR,
+  projectRoot: PROJECT_ROOT,
   onSessionStart: (agentName, sessionId) => {
     attachAgentEvents(agentName, sessionId);
     setAgentSessionId(agentName, sessionId);

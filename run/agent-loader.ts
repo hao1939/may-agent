@@ -22,6 +22,7 @@ import {
   createLinkedTools,
   createExecTool,
   createWorkflowTool,
+  createValidateWorkflowTool,
   createBackgroundExecTool,
   createSocketWatchTool,
   createClaudeCodeTool,
@@ -42,7 +43,6 @@ export interface AgentConfig {
   tools: string[]; // preset names: "read-write", "exec", "subagents", etc.
   systemPromptFiles?: string[]; // relative to agent dir
   sharedKnowledge?: string[]; // filenames in agents/shared/
-  maxTurns?: number;
   memoryLimit?: number;
   /** Block direct delegation to specific agents via subagents tool. */
   delegateDeny?: { agents: string[]; hint: string };
@@ -256,6 +256,10 @@ function buildTools(
         break;
       }
 
+      case "validate-workflow":
+        tools.push(createValidateWorkflowTool());
+        break;
+
       case "background-exec": {
         const bgExec = createBackgroundExecTool({
           cwd: projectRoot,
@@ -343,7 +347,7 @@ function resolvePromptFiles(config: AgentConfig, agentsRoot: string): string[] {
 const VALID_TOOL_PRESETS = new Set([
   "read-write", "read-only", "exec", "exec-readonly", "exec-master",
   "claude-code", "gemini-cli",
-  "subagents", "workflow", "background-exec", "socket-watch", "cron",
+  "subagents", "workflow", "validate-workflow", "background-exec", "socket-watch", "cron",
 ]);
 
 const REQUIRED_FIELDS: (keyof AgentConfig)[] = ["name", "description", "domain", "model", "tools"];
@@ -437,7 +441,7 @@ export interface LoadResult {
 
 /**
  * Scan agents/ directory, load and validate agent.json configs, register with manager.
- * Re-registers existing agents so config changes (model, tools, maxTurns, etc.)
+ * Re-registers existing agents so config changes (model, tools, etc.)
  * take effect on next session. Active sessions keep their old config.
  * Throws on validation errors (fail-fast prevents running with broken config).
  */
@@ -482,7 +486,6 @@ export function loadAgents(opts: AgentLoaderOptions): LoadResult {
       workflowDir: existsSync(workflowDir) ? workflowDir : undefined,
       projectRoot,
       apiKey: "not-needed",
-      maxTurns: config.maxTurns,
       memoryLimit: config.memoryLimit,
     });
 
