@@ -7,7 +7,7 @@ Concrete details about who's on the team, what they have, and how the runner wor
 | Agent | Model | Tools | Notes |
 |-------|-------|-------|-------|
 | **Tech Lead** | opus | read, exec, workflow, subagents | Architect. Decomposes features, supervises execution. |
-| **May** | opus | exec (read-only), subagents, workflow | Supervisor. No read/write tools — forces delegation for all code changes. Can read files and run shell commands for verification (cat, grep, tsc, tests, git) but cannot write files via exec. |
+| **May** | opus | read, write, exec, subagents, workflow, cron | Hao's Deputy. Orchestrates agents, tracks work end-to-end, maintains system. Delegates code changes to tech-lead/master. |
 | **Coder** | opus | read, write, exec | Full project access. Implements code changes. Does not commit — supervisor handles git add/commit after QA review. |
 | **QA** | gpt-5.2 | read, write, exec | Different model from coder for perspective diversity. Can fix issues directly. Uses PASS/FAIL/CONDITIONAL verdicts. |
 | **Master** | opus | claude-code, gemini-cli | Two dedicated CLI agent tools. No read, write, or exec — interacts with codebase exclusively through claude-code and gemini-cli. |
@@ -73,7 +73,7 @@ restarting.
 
 ## Constraints
 
-- **May cannot write files** — read-only exec enforced structurally
+- **May delegates code changes** — code goes through tech-lead/master, not written directly
 - **Coder never commits** — supervisor handles git add/commit after QA review
 - **Master cannot write files** — must use CLI agents (claude-code, gemini-cli)
 - **One fix per optimizer run** — isolates changes for measurable evaluation
