@@ -24,8 +24,6 @@ export interface EvaluateSessionsResult {
   errors: string[];
 }
 
-const META_AGENTS = new Set(["evaluator", "optimizer", "may"]);
-
 // ── Factory ───────────────────────────────────────────────────────────
 
 export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
@@ -62,6 +60,13 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
 // ── Pure logic ────────────────────────────────────────────────────────
 
+/**
+ * Find parent sessions that have unevaluated children.
+ *
+ * All agents are eligible for evaluation (P25: Everything Gets Reviewed).
+ * No agents are excluded by default — evaluateTask() uses an empty
+ * skipAgents set.
+ */
 export function findParentsWithUnevaluatedChildren(persistDir: string): string[] {
   const allSessions = loadAllSessionMetas(persistDir);
   const evalDir = join(persistDir, "evaluations");
@@ -76,7 +81,6 @@ export function findParentsWithUnevaluatedChildren(persistDir: string): string[]
   for (const [sid, session] of Object.entries(allSessions)) {
     if (evaluatedIds.has(sid)) continue;
     if (session.status === "running" || session.status === "idle") continue;
-    if (META_AGENTS.has(session.agent)) continue;
     if (!session.parentSessionId) continue;
     const activeJsonl = join(persistDir, "sessions", sid, "session.jsonl");
     const archivedJsonl = join(persistDir, "sessions", "history", sid, "session.jsonl");

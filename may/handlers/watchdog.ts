@@ -8,8 +8,8 @@
  * Thresholds are configurable per-agent via handlerConfig.agentTimeouts,
  * with a sensible default of 30 minutes for most agents.
  *
- * Persistent sessions (status "idle") are never cancelled — they're long-lived
- * by design. Only "running" non-persistent sessions are eligible.
+ * Persistent sessions (autoClose: "never") are never cancelled — they're
+ * long-lived by design. Only "running" non-persistent sessions are eligible.
  *
  * Exports create() conforming to HandlerModule.
  */
@@ -27,9 +27,6 @@ const DEFAULT_AGENT_TIMEOUTS: Record<string, number> = {
   bob: 45 * 60 * 1000,         // bob does analysis + multi-file changes
   coach: 45 * 60 * 1000,       // coach runs exercises with sub-agents
 };
-
-/** Agents whose persistent sessions should never be flagged as stale. */
-const PERSISTENT_AGENTS = new Set(["may"]);
 
 export interface WatchdogResult {
   checked: number;
@@ -96,8 +93,9 @@ export function runWatchdog(ctx: HandlerContext, config: WatchdogConfig): Watchd
     // Skip non-running sessions
     if (session.status !== "running") continue;
 
-    // Skip persistent agents' own sessions (May's persistent session)
-    if (PERSISTENT_AGENTS.has(session.agent) && !session.parentSessionId) continue;
+    // Skip persistent/chat sessions (autoClose: "never") — they're long-lived by design.
+    // Detected by session config rather than agent name (P44: no hardcoded agent names).
+    if (session.autoClose === "never") continue;
 
     result.checked++;
 

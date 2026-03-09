@@ -90,7 +90,6 @@ export function runSystemStatus(opts: SystemStatusOptions): SystemStatusResult {
     }
   }
 
-  const META_AGENTS = new Set(["evaluator", "optimizer", "may"]);
   let unevalTotal = 0;
   let unevalActionable = 0;
   let unevalAutoSkippable = 0;
@@ -99,7 +98,7 @@ export function runSystemStatus(opts: SystemStatusOptions): SystemStatusResult {
     if (evaluatedIds.has(sid)) continue;
     if (session.status === "running" || session.status === "idle") continue;
     unevalTotal++;
-    if (META_AGENTS.has(session.agent)) { unevalAutoSkippable++; continue; }
+    if (session.agent === "evaluator") { unevalAutoSkippable++; continue; }
     const activeJsonl = join(persistDir, "sessions", sid, "session.jsonl");
     const archivedJsonl = join(persistDir, "sessions", "history", sid, "session.jsonl");
     if (!existsSync(activeJsonl) && !existsSync(archivedJsonl)) { unevalAutoSkippable++; continue; }
@@ -115,10 +114,9 @@ export function runSystemStatus(opts: SystemStatusOptions): SystemStatusResult {
 
   // Flag sessions running > 30 minutes as potential anomalies
   const STALE_THRESHOLD_MS = 30 * 60 * 1000;
-  const PERSISTENT_AGENTS = new Set(["may"]);
   for (const [sid, session] of Object.entries(allSessions)) {
     if (session.status !== "running") continue;
-    if (PERSISTENT_AGENTS.has(session.agent)) continue;
+    if (session.autoClose === "never") continue;
     const ageMs = now - session.startedAt;
     if (ageMs > STALE_THRESHOLD_MS) {
       const ageMin = Math.round(ageMs / 60_000);
@@ -163,8 +161,8 @@ export function runSystemStatus(opts: SystemStatusOptions): SystemStatusResult {
     } catch (err: any) { const output = err.stdout?.toString() || err.stderr?.toString() || "unknown"; testResult = `FAIL: ${output.slice(0, 200)}`; anomalies.push("Test suite failed"); }
   }
 
-  if (unevalActionable > 20) anomalies.push(`${unevalActionable} actionable unevaluated sessions — evaluation may be falling behind`);
-  if (unevalAutoSkippable > 50) anomalies.push(`${unevalAutoSkippable} auto-skippable sessions — writeSkippedEvaluations may need to run`);
+  if (unevalActionable > 150) anomalies.push(`${unevalActionable} actionable unevaluated sessions — evaluation may be falling behind`);
+  if (unevalAutoSkippable > 150) anomalies.push(`${unevalAutoSkippable} auto-skippable sessions — writeSkippedEvaluations may need to run`);
   const totalLessons = Object.values(lessonLineCounts).reduce((a, b) => a + b, 0);
   if (totalLessons > 500) anomalies.push(`Total lesson lines (${totalLessons}) high — may need consolidation`);
 

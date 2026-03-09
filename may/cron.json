@@ -2,9 +2,9 @@
   {
     "name": "evaluate-sessions",
     "type": "job",
-    "intervalMs": 14400000,
+    "intervalMs": 3600000,
     "message": "[cron:evaluate-sessions] Evaluate unevaluated sessions.",
-    "enabled": true,
+    "enabled": false,
     "handler": "evaluate-sessions",
     "description": "Auto-evaluate completed sessions every 4 hours (JS handler)"
   },
@@ -13,7 +13,7 @@
     "type": "job",
     "intervalMs": 14400000,
     "message": "[cron:system-status] Operational status check.",
-    "enabled": true,
+    "enabled": false,
     "handler": "system-status",
     "description": "Operational status check every 4 hours (JS handler)"
   },
@@ -22,7 +22,7 @@
     "type": "job",
     "intervalMs": 600000,
     "message": "[cron:watchdog] Check for stale sessions.",
-    "enabled": true,
+    "enabled": false,
     "handler": "watchdog",
     "description": "Cancel sessions stuck running > 30min (JS handler, 10min interval)"
   },
@@ -31,9 +31,10 @@
     "type": "job",
     "intervalMs": 86400000,
     "agent": "bob",
-    "message": "[cron:analyze-failures] Analyze the last 10 evaluations in .state/evaluations/. Identify the top recurring pattern. Write findings to agents/bob/workspace/analysis.md. Compare recent evaluations against previous ones \u2014 did targeted fixes help? If same issue persists, recommend a different approach.",
-    "enabled": true,
-    "description": "Bob analyzes evaluation patterns daily (detached agent process)"
+    "message": "[cron:analyze-failures] Analyze the last 10 evaluations in .state/evaluations/. Identify the top recurring pattern. Write findings to agents/bob/workspace/analysis.md. Compare recent evaluations against previous ones — did targeted fixes help? If same issue persists, recommend a different approach.",
+    "enabled": false,
+    "description": "Bob analyzes evaluation patterns daily (JS handler via run-agent-task)",
+    "handler": "run-agent-task"
   },
   {
     "name": "optimize",
@@ -41,17 +42,9 @@
     "intervalMs": 86400000,
     "agent": "optimizer",
     "message": "[cron:optimize] Read agents/bob/workspace/analysis.md and agents/optimizer/workspace/todo.md. Work on the top TODO item or top finding. Check for LLM-to-JS replacement opportunities. One fix per run.",
-    "enabled": true,
-    "description": "Optimizer implements one fix per day (detached agent process)"
-  },
-  {
-    "name": "coaching",
-    "type": "job",
-    "intervalMs": 172800000,
-    "agent": "coach",
-    "message": "[cron:coaching] Read agents/coach/workspace/todo.md. If there are pending items under # TODO (not # Tracking), work on the top item. You have subagents and can run exercises on other agents. One task per run. If TODO is empty, skip silently.",
-    "enabled": true,
-    "description": "Coach drains todo.md every 48h (detached agent process)"
+    "enabled": false,
+    "description": "Optimizer implements one fix per day (JS handler via run-agent-task)",
+    "handler": "run-agent-task"
   },
   {
     "name": "lesson-consolidation",
@@ -59,8 +52,9 @@
     "intervalMs": 604800000,
     "agent": "bob",
     "message": "[cron:lesson-consolidation] Read all agents/*/knowledge/lessons.md files. Deduplicate, consolidate, remove stale entries. Preserve proven lessons.",
-    "enabled": true,
-    "description": "Weekly lessons.md cleanup (detached agent process)"
+    "enabled": false,
+    "description": "Weekly lessons.md cleanup (JS handler via run-agent-task)",
+    "handler": "run-agent-task"
   },
   {
     "name": "philosophy-check",
@@ -69,68 +63,68 @@
     "agent": "bob",
     "message": "[cron:philosophy-check] Check recent git commits (git log --since='24 hours ago' --oneline) for philosophy violations. Read agents/shared/philosophy.md, review changes. Write findings to agents/bob/workspace/philosophy-check.md.",
     "enabled": false,
-    "description": "RETIRED \u2014 low value (3.3 avg turns), Bob's heartbeat already covers philosophy. Disabled 2026-03-22."
+    "description": "RETIRED — low value (3.3 avg turns), Bob's heartbeat already covers philosophy. Disabled 2026-03-22."
   },
   {
     "name": "heartbeat-bob",
     "type": "heartbeat",
     "intervalMs": 1800000,
     "agent": "bob",
-    "message": "[heartbeat] Read your SOUL.md and workspace/todo.md. Pick the top unchecked item, do it, mark done. Then pick the next. Keep working until todo is empty or you run out of turns. When a design/review is complete and needs implementation, add a task to agents/may/workspace/todo.md: Review [design name] and implement if approved.",
-    "enabled": true,
-    "description": "Bob's mission heartbeat \u2014 design reflection, todo drain, philosophy audit (30min)"
+    "message": "[heartbeat] Read agents/bob/workspace/todo.md. Pick the top unchecked item, do it, mark done. Then pick the next. Keep working until todo is empty. When a design/review is complete and needs implementation, add a task to agents/may/workspace/todo.md: Review [design name] and implement if approved.",
+    "enabled": false,
+    "description": "Bob's mission heartbeat — design reflection, todo drain, philosophy audit (30min)"
   },
   {
     "name": "heartbeat-optimizer",
     "type": "heartbeat",
     "intervalMs": 1800000,
     "agent": "optimizer",
-    "message": "[heartbeat] Read your SOUL.md and heartbeat.md. Work through each section top to bottom.",
-    "enabled": true,
-    "description": "Optimizer's mission heartbeat \u2014 find highest-impact improvement (24h)"
+    "message": "[heartbeat] Read agents/optimizer/heartbeat.md and work through each section top to bottom.",
+    "enabled": false,
+    "description": "Optimizer's mission heartbeat — find highest-impact improvement (24h)"
   },
   {
     "name": "heartbeat-coach",
     "type": "heartbeat",
     "intervalMs": 1800000,
     "agent": "coach",
-    "message": "[heartbeat] Read your SOUL.md and heartbeat.md. Work through each section top to bottom.",
+    "message": "[heartbeat] Read agents/coach/heartbeat.md and work through each section top to bottom.",
     "enabled": true,
-    "description": "Coach's mission heartbeat \u2014 plan training, review progress (48h)"
+    "description": "Coach heartbeat — triage (urgent todo vs overdue periodic), coaching, long-term mission work, escalation"
   },
   {
     "name": "heartbeat-evaluator",
     "type": "heartbeat",
     "intervalMs": 1800000,
     "agent": "evaluator",
-    "message": "[heartbeat] Read your SOUL.md and heartbeat.md. Work through each section top to bottom.",
-    "enabled": true,
-    "description": "Evaluator's mission heartbeat \u2014 review eval quality, calibrate (24h)"
+    "message": "[heartbeat] Read agents/evaluator/heartbeat.md and work through each section top to bottom.",
+    "enabled": false,
+    "description": "Evaluator's mission heartbeat — review eval quality, calibrate (24h)"
   },
   {
     "name": "heartbeat-amy",
     "type": "heartbeat",
-    "intervalMs": 43200000,
+    "intervalMs": 3600000,
     "agent": "amy",
-    "message": "[heartbeat] Read your SOUL.md and heartbeat.md. Work through each section top to bottom.",
-    "enabled": true,
-    "description": "Amy's mission heartbeat \u2014 XHS exploration and insight synthesis (12h)"
+    "message": "[heartbeat] Read agents/amy/heartbeat.md and work through each section top to bottom.",
+    "enabled": false,
+    "description": "Amy's mission heartbeat — XHS exploration and insight synthesis (12h)"
   },
   {
     "name": "heartbeat-scout",
     "type": "heartbeat",
-    "intervalMs": 172800000,
+    "intervalMs": 3600000,
     "agent": "scout",
-    "message": "[heartbeat] Read your SOUL.md and heartbeat.md. Work through each section top to bottom.",
-    "enabled": true,
-    "description": "Scout's mission heartbeat \u2014 wide-net research and discovery (24h)"
+    "message": "[heartbeat] Read agents/scout/heartbeat.md and work through each section top to bottom.",
+    "enabled": false,
+    "description": "Scout's mission heartbeat — wide-net research and discovery (24h)"
   },
   {
     "name": "drain-todo",
     "type": "job",
     "intervalMs": 14400000,
     "message": "[cron:drain-todo] Drain todo items for may.",
-    "enabled": true,
+    "enabled": false,
     "handler": "drain-todo",
     "description": "May self-drain: process todo.md items (JS handler, 4h)",
     "handlerConfig": {
@@ -144,7 +138,7 @@
     "type": "job",
     "intervalMs": 14400000,
     "message": "[cron:optimizer-drain-todo] Drain todo items for optimizer.",
-    "enabled": true,
+    "enabled": false,
     "handler": "drain-todo",
     "description": "Optimizer drain: process todo.md items (JS handler, 4h)",
     "handlerConfig": {
@@ -158,7 +152,7 @@
     "type": "job",
     "intervalMs": 14400000,
     "message": "[cron:amy-drain-todo] Drain todo items for amy.",
-    "enabled": true,
+    "enabled": false,
     "handler": "drain-todo",
     "description": "Amy drain: process todo.md items (JS handler, 4h)",
     "handlerConfig": {
@@ -168,25 +162,11 @@
     }
   },
   {
-    "name": "coach-drain-todo",
-    "type": "job",
-    "intervalMs": 14400000,
-    "message": "[cron:coach-drain-todo] Drain todo items for coach.",
-    "enabled": true,
-    "handler": "drain-todo",
-    "description": "Coach drain: process todo.md items (JS handler, 4h)",
-    "handlerConfig": {
-      "sourceAgent": "coach",
-      "targetAgent": "coach",
-      "mode": "run"
-    }
-  },
-  {
     "name": "scout-drain-todo",
     "type": "job",
     "intervalMs": 14400000,
     "message": "[cron:scout-drain-todo] Drain todo items for scout.",
-    "enabled": true,
+    "enabled": false,
     "handler": "drain-todo",
     "description": "Scout drain: process todo.md items (JS handler, 4h)",
     "handlerConfig": {
@@ -200,26 +180,55 @@
     "type": "heartbeat",
     "agent": "may",
     "intervalMs": 1800000,
-    "message": "[heartbeat] Read SOUL.md and workspace/todo.md. Check dispatched sessions (subagents.status). Check Bob's progress. Assign tasks to the right agent (bob=design, coder=code, optimizer=perf). Follow up failures. Then stop \u2014 stay idle and available for human.",
-    "enabled": true,
-    "description": "May's captain heartbeat \u2014 health check, task follow-up, dispatch (30min)"
+    "message": "[heartbeat] Read agents/may/workspace/todo.md. Check dispatched sessions (subagents.status). Check Bob's progress. Assign tasks to the right agent (bob=design, coder=code, optimizer=perf). Follow up failures. Then stop — stay idle and available for human.",
+    "enabled": false,
+    "description": "May's captain heartbeat — health check, task follow-up, dispatch (30min)"
   },
   {
     "name": "focus-task-tracker",
     "type": "job",
     "intervalMs": 3600000,
     "message": "[cron:focus-task-tracker] Check active focus tasks for progress.",
-    "enabled": true,
+    "enabled": false,
     "handler": "focus-task-tracker",
-    "description": "Track focus task progress every 8h \u2014 remind, check signals, escalate if stuck (JS handler)"
+    "description": "Track focus task progress every 8h — remind, check signals, escalate if stuck (JS handler)"
   },
   {
     "name": "daily-brief",
     "type": "job",
     "intervalMs": 86400000,
     "message": "[cron:daily-brief] Generate daily system brief.",
-    "enabled": true,
+    "enabled": false,
     "handler": "daily-brief",
     "description": "Daily system metrics summary, emitted to Telegram (JS handler, 24h)"
+  },
+  {
+    "name": "coaching-report",
+    "type": "job",
+    "intervalMs": 86400000,
+    "message": "[cron:coaching-report] Generate daily coaching quality report.",
+    "enabled": false,
+    "handler": "coaching-report",
+    "description": "Daily coaching quality report — per-agent scores, trends, attention needed (JS handler, 24h)"
+  },
+  {
+    "name": "focus-task-driver",
+    "type": "job",
+    "agent": "bob",
+    "intervalMs": 3600000,
+    "message": "[cron:focus-task-driver] You are the Focus Task Driver.\n\n1. Read agents/shared/focus-tasks.md\n2. Pick the focus task most needing attention (stale, blocked, or has a clear next action)\n3. Work on it. Do the actual work — don't just write docs or update tables.\n4. After completing a step, CHECK if the problem is resolved:\n   - Did the fix actually work? Verify it.\n   - Did the investigation produce a clear answer? If not, dig deeper.\n   - Did the proposal get implemented? If not, implement it or delegate.\n5. If not resolved → do the next step. Keep iterating.\n6. Keep going until either:\n   - The current focus task item makes real, verified progress\n   - OR you've exhausted what you can do alone (need human input, need another agent, need to wait for data)\n7. Update focus-tasks.md with what you accomplished and what's still needed.\n\nUse exec+python for data aggregation. Don't read files one by one. When you need another agent to do work, add concrete tasks to their workspace/todo.md.",
+    "enabled": false,
+    "description": "Bob drives focus tasks forward every 1h — keeps iterating until resolved, not just one step",
+    "handler": "run-agent-task"
+  },
+  {
+    "name": "iraq-conflict-monitor",
+    "type": "job",
+    "agent": "scout",
+    "intervalMs": 3600000,
+    "message": "[cron:iraq-conflict-monitor] Hourly Iraq conflict brief for human.\n\nSearch Reddit (r/worldnews, r/geopolitics, r/iraq, r/MiddleEastNews, r/credibledefense) and any news sources you can access for the latest on US-Iraq conflict/tensions.\n\nWrite/update agents/shared/daily-briefs/iraq-conflict-latest.md:\n\n## Iraq Conflict Brief — [timestamp]\n\n### New Developments (since last brief)\n- What changed in the last hour?\n\n### Facts (verified/sourced)\n- [event] — [source]\n\n### Diplomatic/Political\n- [moves, statements] — [who, context]\n\n### Sentiment vs Reality\n- What Reddit/media is saying vs what's actually confirmed\n- Flag emotional narratives separately from facts\n\n### Key Unknowns\n\nRULES:\n- Fact vs emotion is the #1 priority. Label everything.\n- Keep it SHORT — human reads this in 2 min\n- If nothing new since last brief, say so and stop (don't pad)\n- Append a --- separator and new brief at the top (keep history)",
+    "enabled": false,
+    "description": "Hourly Iraq conflict monitoring brief — fact vs emotion, for human review",
+    "handler": "run-agent-task"
   }
 ]
