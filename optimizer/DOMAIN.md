@@ -205,3 +205,6 @@ replaced with deterministic JS code. This reduces cost, latency, and unpredictab
 - **journal.md**: After each run, append a dated entry: what you analyzed,
   what you fixed, what you learned. This feeds the meta-loop — coach and
   bob read your journal to understand your reasoning.
+
+## Reference Files
+- `knowledge/codebase.md` — file map and architecture reference

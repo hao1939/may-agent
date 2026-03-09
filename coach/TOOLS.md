@@ -28,22 +28,37 @@ Execute read-only shell commands. Use for:
 
 Cannot write files, create directories, or modify git state.
 
-## background_exec
-Spawn and manage long-lived background processes.
+## subagents
+Spawn and manage agent sessions (in-process or detached).
 
 Actions:
-- `spawn(command, label?)` — start a background process, returns `{ pid, label }`
-- `output(pid, lines?)` — read new output since last read (drain semantics)
-- `input(pid, text)` — write to process stdin
-- `kill(pid, signal?)` — terminate a process (default: SIGTERM)
-- `list()` — list all tracked processes with status
+- `run({ agent, task, mode? })` — spawn a session. `mode: "detached"` runs in a separate process with its own socket. Returns `{ sessionId, mode, pid? }`.
+- `status({ sessionId })` — get session status, runtime, task, output dir.
+- `result({ sessionId })` — get final result (last assistant text, duration, output dir).
+- `progress({ sessionId, limit? })` — get recent messages from a running session.
+- `cancel({ sessionId })` — cancel a session. Detached sessions receive SIGTERM.
+- `list()` — list all registered agents and their active/archived sessions.
+- `delegate(agent, task)` — shorthand: spawn, wait for completion, return result.
 
-Primary use: spawning the coachee may-agent process.
+Primary use: spawning coachee in detached mode for observation.
 
 Example:
 ```
-spawn("cd /home/hao/may-agent && STATE_DIR=.state/coaching AGENT=coder npx tsx run/may.ts", "coachee")
+run({ agent: "coder", task: "Run exec(\"echo hello\") and stop.", mode: "detached" })
+// Returns: { sessionId: "s_...", mode: "detached", pid: 12345 }
+// Instance dir: .state/instances/job-<sessionId>/
+// Socket: .state/instances/job-<sessionId>/<agent>.sock
 ```
+
+## workflow
+Discover and run multi-step workflows defined in `agents/coach/workflows/`.
+
+Actions:
+- `list()` — list available workflows with names and descriptions.
+- `run({ name, task })` — execute a workflow. Each step spawns a coach sub-session.
+
+## validate_workflow
+Validate workflow files for correct structure and exports.
 
 ## socket_watch
 Connect to Unix domain sockets, receive events, and send commands.

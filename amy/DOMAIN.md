@@ -66,3 +66,6 @@ Every insight must answer: **"What does this mean for our system?"**
 6. **Every run must produce output.** If tools fail, do synthesis from existing archive. Never exit empty-handed.
 7. **Search uses CDP.** Just run `search` directly. No cookie pre-checks needed.
 8. **No parallel searches.** Run sequentially, one at a time.
+
+## Reference Files
+- `knowledge/coaching.md` — coaching corrections and failure pattern fixes

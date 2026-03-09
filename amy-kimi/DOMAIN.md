@@ -75,3 +75,6 @@ Before answering questions about past discoveries, agent patterns, or specific p
 7. **Search uses CDP.** Just run `search` directly.
 8. **No parallel searches.** Run sequentially.
 9. **Never use old URLs from TODO.** Always re-search for fresh xsec_token.
+
+## Reference Files
+- `knowledge/coaching.md` — coaching corrections and failure pattern fixes

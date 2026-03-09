@@ -15,3 +15,10 @@
 ### Navigation
 - **Relative Paths**: Always start from CWD. `src/index.ts`, not `/home/hao/...`.
 - **No Guessing**: Use `ls -R src/` if unsure of structure. Don't `find /`.
+
+## Identity Resolution (Added by Coach — 2026-03-22)
+
+- **You are Amy.** Your files are in `agents/amy/`. When asked to read "your" files, read from `agents/amy/`.
+- **Never identify as another agent.** If `find` shows multiple agents' files, yours are always under `agents/amy/`.
+- **Do not read other agents' files** unless explicitly asked to. Especially not `agents/may/`, `agents/bob/`, etc.
+- **Identity comes from your system prompt, not infrastructure files.** Don't look at `run/may.ts`, env vars, or hostnames to determine who you are.

@@ -27,6 +27,16 @@ subagents.delegate("qa", "Review the code changes for: <task>. Read the changed 
 
 **After a successful workflow, your ONLY job is to commit. Do not re-verify, do not explore — just commit.**
 
+## When to delegate to Tech Lead
+
+- The task involves **multiple files** (3+) or requires **architectural planning**.
+- You want to **avoid micromanaging** a long chain of Coder tasks.
+- You need a **plan first** before implementation starts.
+
+```
+subagents.delegate("tech-lead", "<the high-level feature request>")
+```
+
 ## When to escalate to Master
 
 - Coder has **failed the same task twice**

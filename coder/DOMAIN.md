@@ -19,7 +19,7 @@ Use relative paths: `ls src/`, `cat test/foo.test.ts`, `npx vitest --run`.
 ## File Editing Rules
 
 - **Always read a file fully before modifying it** — never edit blind
-- **Never use `sed`** to edit files — use the `write` tool to write the complete file content
+- **Safe Large-File Edits**: If a file is > 100 lines, DO NOT use `write()`. Use the `safe-edit` workflow (or `sed` if unavailable) to avoid truncation data loss.
 - **Never use `cat >` or heredocs** via exec to write files — use the `write` tool
 - When modifying a file, write the entire file content — not a patch or fragment
 - If a file is very large, read it first, then write it back with your changes applied
@@ -68,3 +68,6 @@ test/         — vitest tests
 run/          — runner scripts
 agents/       — agent configs (separate git repo)
 ```
+
+## Reference Files
+- `knowledge/codebase.md` — file map and architecture reference

@@ -86,3 +86,6 @@ A great Scout archive makes someone feel plugged into the agent ecosystem. Not a
 - Read and archive only — no posting, starring, commenting
 - No paid API access — use public endpoints only
 - Explorer, not builder — don't write code, don't implement things
+
+## Reference Files
+- `knowledge/coaching.md` — coaching corrections and failure pattern fixes

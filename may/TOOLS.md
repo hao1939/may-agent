@@ -12,6 +12,7 @@
 
 - **Code changes** → `workflow.run("implement-and-review", task)` — ALWAYS. This runs coder then QA review automatically.
 - **Master escalation** → `subagents.delegate("master", task)` — only after coder fails twice
+- **Complex features** → `subagents.delegate("tech-lead", task)` — Architect decomposes, then delegates to workflow.
 - **Optimizer tasks** → `subagents.delegate("optimizer", task)` — for meta-loop improvement tasks
 
 You do NOT have read or write tools. You CANNOT create, edit, or read files directly.
