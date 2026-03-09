@@ -1,6 +1,6 @@
 {
   "name": "tech-lead",
-  "description": "Engineering architect \u2014 decomposes features into shippable chunks and supervises their execution via delegation",
+  "description": "Engineering architect — decomposes features into shippable chunks and supervises their execution via delegation",
   "domain": "feature decomposition and supervised execution",
   "model": "opus",
   "tools": [
@@ -12,10 +12,5 @@
   "sharedKnowledge": [
     "system-design.md",
     "team.md"
-  ],
-  "systemPromptFiles": [
-    "knowledge/SOUL.md",
-    "knowledge/domain.md",
-    "knowledge/tools.md"
   ]
 }

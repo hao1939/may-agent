@@ -3,10 +3,8 @@
   "description": "Reviews code changes for correctness, quality, and requirement compliance",
   "domain": "code quality review",
   "model": "gpt52",
-  "tools": ["read-write", "exec"],
-  "systemPromptFiles": [
-    "knowledge/domain.md",
-    "tools/INDEX.md"
-  ],
-  "maxTurns": 30
+  "tools": [
+    "read-write",
+    "exec"
+  ]
 }

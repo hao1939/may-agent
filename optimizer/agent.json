@@ -12,12 +12,5 @@
   "sharedKnowledge": [
     "system-design.md",
     "team.md"
-  ],
-  "systemPromptFiles": [
-    "knowledge/SOUL.md",
-    "knowledge/domain.md",
-    "knowledge/codebase.md",
-    "tools/INDEX.md"
-  ],
-  "maxTurns": 40
+  ]
 }

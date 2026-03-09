@@ -3,10 +3,8 @@
   "description": "Senior engineer who leverages claude-code and gemini-cli for challenging tasks",
   "domain": "complex implementation via external coding agents",
   "model": "opus",
-  "tools": ["claude-code", "gemini-cli"],
-  "systemPromptFiles": [
-    "knowledge/domain.md",
-    "tools/INDEX.md"
-  ],
-  "maxTurns": 30
+  "tools": [
+    "claude-code",
+    "gemini-cli"
+  ]
 }

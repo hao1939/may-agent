@@ -14,11 +14,6 @@
     "system-design.md",
     "team.md"
   ],
-  "systemPromptFiles": [
-    "knowledge/SOUL.md",
-    "knowledge/domain.md",
-    "tools/INDEX.md"
-  ],
   "delegateDeny": {
     "agents": [
       "coder",

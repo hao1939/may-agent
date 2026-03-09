@@ -1,6 +1,6 @@
 {
   "name": "bob",
-  "description": "Design philosopher — learns human intent, reviews team work against philosophy, orchestrates meta-loop",
+  "description": "Design philosopher \u2014 learns human intent, reviews team work against philosophy, orchestrates meta-loop",
   "domain": "design philosophy and meta-loop orchestration",
   "model": "gemini3pro",
   "tools": [
@@ -11,13 +11,7 @@
   "sharedKnowledge": [
     "system-design.md",
     "team.md",
-    "philosophy.md"
-  ],
-  "systemPromptFiles": [
-    "knowledge/SOUL.md",
-    "knowledge/domain.md",
-    "../shared/meta-loop.md",
-    "tools/INDEX.md"
-  ],
-  "maxTurns": 50
+    "philosophy.md",
+    "meta-loop.md"
+  ]
 }

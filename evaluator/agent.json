@@ -1,6 +1,6 @@
 {
   "name": "evaluator",
-  "description": "Evaluates completed task trees — scores each agent by responsibility",
+  "description": "Evaluates completed task trees \u2014 scores each agent by responsibility",
   "domain": "agent performance evaluation",
   "model": "gpt52",
   "tools": [
@@ -11,10 +11,5 @@
     "system-design.md",
     "team.md"
   ],
-  "systemPromptFiles": [
-    "knowledge/SOUL.md",
-    "knowledge/domain.md"
-  ],
-  "maxTurns": 20,
   "memoryLimit": 5
 }

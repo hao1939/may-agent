@@ -6,16 +6,14 @@
   "tools": [
     "read-write",
     "exec-readonly",
-    "background-exec",
-    "socket-watch"
+    "socket-watch",
+    "subagents",
+    "workflow",
+    "validate-workflow"
   ],
-  "systemPromptFiles": [
-    "knowledge/SOUL.md",
-    "knowledge/domain.md",
-    "tools/INDEX.md",
-    "../shared/team.md"
-  ],
-  "maxTurns": 40,
   "memoryLimit": 10,
-  "compaction": true
+  "compaction": true,
+  "sharedKnowledge": [
+    "team.md"
+  ]
 }
