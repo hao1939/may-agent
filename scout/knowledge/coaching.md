@@ -43,3 +43,19 @@ discoveries.md will grow large. Don't read it in full for dedup — use grep. Do
 **Good:** "SkillOrchestra (2602.19672) — skill-aware multi-agent routing. 22.5% over SOTA RL orchestrators at 700x lower cost. Connects to: our agent delegation could use skill-matching instead of fixed routing."
 
 Every entry must answer: what is it, why it matters, how it connects to what we care about.
+
+## #10 — Source Rotation
+
+Don't hit the same source every run. Rotate between GitHub, arXiv, Reddit, vendor blogs, and HuggingFace. Each has different signal strength at different times.
+
+## #11 — Your Files Are in agents/scout/
+
+Your knowledge files are at `agents/scout/knowledge/`, NOT `knowledge/` or `/home/user/knowledge/`. If a read fails with ENOENT, try the agent-prefixed path. Your workspace is `agents/scout/workspace/`.
+
+## #12 — State What Failed Before Falling Back
+
+When a REQUIRED source fails, state what you tried, what failed, and what fallback you're using — BEFORE presenting results. Don't silently skip a source and pretend everything went fine.
+
+## #13 — Your Write Scope
+
+Your write scope is `agents/scout/knowledge/` and `agents/scout/workspace/`, not `knowledge/` at project root. Always use the full project-relative path: `agents/scout/knowledge/discoveries.md`, not just `knowledge/discoveries.md`.

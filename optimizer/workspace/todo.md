@@ -2,7 +2,7 @@
 
 ## 🔴 FOCUS — TOP PRIORITY
 
-- [ ] **[BLOCKING GRADUATION] Fix Scout's knowledge file paths** — Scout cannot find its own files. 3 consecutive coaching session failures. Two changes needed:
+- [x] **[BLOCKING GRADUATION] Fix Scout's knowledge file paths** — Scout cannot find its own files. 3 consecutive coaching session failures. Two changes needed:
   1. Add coaching corrections #11, #12, #13 to `agents/scout/knowledge/coaching.md`:
      - **#11**: "Your knowledge files are at `agents/scout/knowledge/`, NOT `knowledge/` or `/home/user/knowledge/`. If a read fails with ENOENT, try the agent-prefixed path."
      - **#12**: "When a REQUIRED source fails, state what you tried, what failed, and what fallback you're using — BEFORE presenting results."
@@ -11,7 +11,7 @@
   - **Evidence**: Scout tried `/home/user/knowledge/reddit.md` (hallucinated path), never found its 3319-line discoveries.md archive, wrote output to wrong location. See `agents/coach/workspace/sessions/scout-graduation-2026-03-09.md`.
   - **Escalated by**: Coach (2026-03-09). Originally flagged 2026-03-09 (constrained-source session).
 
-- [ ] **[BLOCKING CODER GRADUATION] Strengthen Coder's lessons.md on pattern-based sed** — Coder consistently uses line-number-based sed (`sed -i '6s/...'`, `sed -i '107s|...'`) instead of pattern-based sed (`sed -i 's/old-pattern/new-pattern/'`). The current lessons.md bans line-number sed but doesn't provide compelling examples of why it fails or how to use pattern-based addressing instead. Changes needed in `agents/coder/knowledge/lessons.md`:
+- [x] **[BLOCKING CODER GRADUATION] Strengthen Coder's lessons.md on pattern-based sed** — Coder consistently uses line-number-based sed (`sed -i '6s/...'`, `sed -i '107s|...'`) instead of pattern-based sed (`sed -i 's/old-pattern/new-pattern/'`). The current lessons.md bans line-number sed but doesn't provide compelling examples of why it fails or how to use pattern-based addressing instead. Changes needed in `agents/coder/knowledge/lessons.md`:
   1. Add explicit side-by-side examples: **BAD** `sed -i '6s/old/new/'` vs **GOOD** `sed -i 's/old-pattern/new-pattern/'`
   2. Explain WHY line-number sed is dangerous in multi-edit scenarios: "If you insert a line with edit #1, all subsequent line numbers shift by 1. Pattern-based sed is immune to this."
   3. Add a rule: "When making multiple edits, ALWAYS use pattern-based sed. Use `grep -n` to find the pattern, but use the PATTERN (not the line number) in the sed command."

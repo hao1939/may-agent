@@ -2,13 +2,11 @@
 
 ## Active
 
-- [ ] **Review [Rolling Compaction Design]** — Bob approved Option C (Manager-Level Compaction After Idle). Doc: `agents/bob/workspace/rolling-compaction-review.md`. Assign to coder.
 - [ ] **Review [Detached Sub-Agent Design]** — Bob approved v2. Doc: `agents/bob/workspace/detached-subagent-review.md`. Phase 1: `src/detached.ts`, socket client, manager updates.
 - [ ] **Review [Agent Cooperation Design]** — Doc: `agents/bob/workspace/agent-cooperation-review.md`. Update `run-agent-task.ts` and `drain-todo.ts` for parentSessionId.
 - [ ] **Implement [Session Simplification]** — Bob approved 2026-03-08. Design: `agents/shared/session-model-simplification.md`.
 - [ ] **Fix agent identity in heartbeat prompts** — Agents can't determine own identity from generic heartbeat. Include explicit agent name + paths. Affects: amy, optimizer, potentially all. Coach report: `agents/coach/workspace/sessions/amy-identity-exercise-2026-03-22.md`.
 - [ ] **Review [Agent Evaluation Framework Upgrade]** — Role-specific criteria. Doc: `agents/bob/workspace/agent-evaluation-review.md`.
-- [ ] **[ESCALATION] Optimizer corrections blocking graduation** — Two items in `agents/optimizer/workspace/todo.md` have been pending 14+ days (since 2026-03-09): (1) Scout coaching corrections #11-13 to `agents/scout/knowledge/coaching.md` (path resolution lessons), (2) Coder pattern-sed strengthening in `agents/coder/knowledge/lessons.md`. Scout is at 2/3 pass streak — one exercise from first graduation. These are quick knowledge file edits that the optimizer should apply. Please trigger an optimizer run or apply directly.
 
 ## Backlog (approved designs, not yet started)
 
@@ -34,6 +32,11 @@
 <details>
 <summary>Completed items (click to expand)</summary>
 
+- [x] **Rolling Compaction (Option C)** — Already implemented. `compactIdleSession` in manager.ts (line 560-574), called from handleCompletion (line 628). QA PASS. Verified 2026-03-23.
+- [x] **[ESCALATION] Optimizer corrections blocking graduation** — Applied directly by May 2026-03-23:
+  - Scout coaching corrections #11-13 added to `agents/scout/knowledge/coaching.md`
+  - Scout DOMAIN.md paths fixed (all `knowledge/` → `agents/scout/knowledge/`)
+  - Coder `agents/coder/knowledge/lessons.md` created with pattern-sed rules, side-by-side examples, multi-edit guidance
 - [x] BUG FIX: Add `hasAgent()` to SubagentManager (2026-03-09)
 - [x] Review [Remove Evaluator Hardcoded Skip] (2026-03-22)
 - [x] Review [Drift Detection: System Design] — Fixed by Bob 2026-03-08

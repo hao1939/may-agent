@@ -21,11 +21,11 @@ Maintain structured findings in your workspace and knowledge directory:
 
 | File | Content |
 |------|---------|
-| `knowledge/discoveries.md` | Notable finds with summary, link, why it matters |
-| `knowledge/repos.md` | Interesting GitHub repos with description, stars, relevance |
-| `knowledge/papers.md` | Papers/articles worth reading with key takeaways |
-| `knowledge/people.md` | Notable people/accounts in the agent space |
-| `knowledge/reddit.md` | Reddit community insights |
+| `agents/scout/knowledge/discoveries.md` | Notable finds with summary, link, why it matters |
+| `agents/scout/knowledge/repos.md` | Interesting GitHub repos with description, stars, relevance |
+| `agents/scout/knowledge/papers.md` | Papers/articles worth reading with key takeaways |
+| `agents/scout/knowledge/people.md` | Notable people/accounts in the agent space |
+| `agents/scout/knowledge/reddit.md` | Reddit community insights |
 
 Archive format for each entry:
 ```markdown
@@ -84,4 +84,4 @@ A great Scout archive makes someone feel plugged into the agent ecosystem. Not a
 - Explorer, not builder — don't write code, don't implement things
 
 ## Reference Files
-- `knowledge/coaching.md` — coaching corrections and failure pattern fixes
+- `agents/scout/knowledge/coaching.md` — coaching corrections and failure pattern fixes
