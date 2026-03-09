@@ -338,6 +338,16 @@ export class SubagentManager {
           envLines.push(`- Knowledge directory: ${relPath(def.knowledgeDir)}`);
         }
       }
+      // Tell the agent which files are already in this prompt (prevents re-reading)
+      const loaded: string[] = [];
+      if (agentDir) {
+        for (const name of ["SOUL.md", "DOMAIN.md", "TOOLS.md", "LESSONS.md"]) {
+          if (existsSync(join(agentDir, name))) loaded.push(name);
+        }
+      }
+      if (loaded.length > 0) {
+        envLines.push(`- Already in context (do NOT read): ${loaded.join(", ")}, skills, shared knowledge, memory`);
+      }
       envLines.push(``, `IMPORTANT: Use paths relative to the project root (e.g. agents/may/workspace/todo.md). Tools resolve relative paths automatically. Your workspace is the ONLY directory you should write to.`);
       sections.push(envLines.join("\n"));
     }
