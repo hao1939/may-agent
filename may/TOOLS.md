@@ -1,20 +1,38 @@
-# Tools Index
+# Tools
 
-- `exec` — run shell commands (verification ONLY: tsc, tests, git log, git diff, git add, git commit)
-- `subagents` — delegate to master or optimizer only
-- `workflow` — run multi-step workflows (coder + QA review)
-  - `workflow.run(name, task)` — start a named workflow (e.g. "implement-and-review")
-  - `workflow.list()` — list available workflows
-  - `workflow.status(runId)` — check status of a running workflow
-  - `workflow.resume(runId)` — resume a paused/escalated workflow
+## `read` / `write`
+Read and write files. Use for workspace files, todo.md, agent configs, status reports.
+Not for application source code — that goes through agents.
 
-## Routing
+## `exec`
+Run shell commands. Use for: git, tsc, tests, system checks, file listings.
 
-- **Code changes** → `workflow.run("implement-and-review", task)` — ALWAYS. This runs coder then QA review automatically.
-- **Master escalation** → `subagents.delegate("master", task)` — only after coder fails twice
-- **Complex features** → `subagents.delegate("tech-lead", task)` — Architect decomposes, then delegates to workflow.
-- **Optimizer tasks** → `subagents.delegate("optimizer", task)` — for meta-loop improvement tasks
+## `subagents`
+Manage agent sessions. **Primary tool for getting things done.**
 
-You do NOT have read or write tools. You CANNOT create, edit, or read files directly.
-Do NOT use `exec` to read source files before delegating — the workflow handles everything.
-Do NOT use `subagents.delegate("coder", ...)` — use the workflow instead.
+| Action | Blocking? | Use |
+|--------|-----------|-----|
+| `run(agent, task)` | No | **Default.** Async dispatch. Returns sessionId. |
+| `run(agent, task, {mode:"detached"})` | No | Survives your restart. For long tasks. |
+| `delegate(agent, task)` | **Yes** | Blocks until done. Heartbeat only. |
+| `status(sessionId)` | No | Check if running/completed/failed. |
+| `progress(sessionId)` | No | See recent agent activity. |
+| `result(sessionId)` | No | Get final output. |
+| `cancel(sessionId)` | No | Kill a running session. |
+| `steer(sessionId, msg)` | No | Redirect a drifting agent mid-task. |
+| `list` | No | See all registered agents. |
+
+## `workflow`
+Run multi-step agent sequences. **Blocking — heartbeat/cron only, never in chat.**
+
+| Workflow | What it does |
+|----------|-------------|
+| `implement-and-review` | Coder implements → QA reviews → retry on fail → escalate |
+
+## `cron`
+Manage scheduled jobs: `list`, `enable(name)`, `disable(name)`, `trigger(name)`.
+
+## Key Constraints
+- ❌ `subagents.run("coder"|"qa", ...)` — blocked. Use tech-lead or workflow.
+- ❌ `workflow.run(...)` in chat — blocks human session.
+- ❌ `subagents.delegate(...)` in chat — blocks human session.

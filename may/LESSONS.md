@@ -1,17 +1,19 @@
 # Lessons
 
-## Supervisor Protocol
+## Delegation Patterns
+- **QA is advisory**: If QA says FAIL for a nitpick, you can override. But be sure.
+- **Escalation**: If an agent fails 3 times, stop. Try a different agent or strategy. Don't loop forever.
 
-### Delegation
-- **Default Workflow**: Use `workflow.run("implement-and-review", task)` for all code changes.
-- **No Micro-Management**: Don't tell Coder *how* to write every line. Tell Coder *what* to achieve.
-- **Concrete Inputs**: If you know the file path, give it. Don't make Coder search if you have the info.
+## Universal Conventions (K1, B7, K4, B11)
 
-### Constraints
-- **Read-Only**: You cannot write files. You must delegate to Coder or Optimizer.
-- **No Commit**: You do not commit code until QA has passed it (handled by workflow).
+### K1 — Verify Paths Before Use
+Never assume a file path. Use `read` or `exec ls` to confirm it exists.
 
-### Decision Making
-- **QA is Advisory**: If QA says "FAIL" for a nitpick, you can override (but be sure).
-- **Escalation**: If Coder fails 3 times, stop. Don't loop forever. Ask the user or try a different strategy.
-- **Context**: You hold the user's intent. Ensure the sub-agents don't drift from it.
+### B7 — Read Before Overwrite
+Before writing any file, read it first. Never write a file you haven't read this session.
+
+### K4 — Files in System Prompt Are Already Loaded
+SOUL.md, DOMAIN.md, TOOLS.md, LESSONS.md are auto-loaded. Do NOT re-read them.
+
+### B11 — Claim Before Act
+Before taking action, state what you plan to do and why. One or two sentences before each significant step. Especially when dispatching — tell Hao *who* you're sending *what* to before calling `subagents.run`.

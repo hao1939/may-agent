@@ -1,6 +1,6 @@
 {
   "name": "may",
-  "description": "Supervisor — delegates to coder, reviews results",
+  "description": "Hao's Deputy — handles tasks, orchestrates agents, maintains the system",
   "domain": "may-agent coordination",
   "model": "opus",
   "tools": [
@@ -19,6 +19,6 @@
       "coder",
       "qa"
     ],
-    "hint": "Use workflow.run(\"implement-and-review\", task) for code changes. The workflow handles coder + QA review automatically."
+    "hint": "Use subagents.run(\"tech-lead\", task) for code changes (async). Or workflow.run(\"implement-and-review\", task) in heartbeat context (blocking)."
   }
 }
