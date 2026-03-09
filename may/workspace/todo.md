@@ -2,20 +2,14 @@
 
 ## Active
 
-- [ ] **Review [Detached Sub-Agent Design]** — Bob approved v2. Doc: `agents/bob/workspace/detached-subagent-review.md`. Phase 1: `src/detached.ts`, socket client, manager updates.
-- [ ] **Review [Agent Cooperation Design]** — Doc: `agents/bob/workspace/agent-cooperation-review.md`. Update `run-agent-task.ts` and `drain-todo.ts` for parentSessionId.
-- [ ] **Implement [Session Simplification]** — Bob approved 2026-03-08. Design: `agents/shared/session-model-simplification.md`.
-- [ ] **Review [Agent Evaluation Framework Upgrade]** — Role-specific criteria. Doc: `agents/bob/workspace/agent-evaluation-review.md`.
 
 ## Backlog (approved designs, not yet started)
 
-- [ ] **Implement [Runtime Environment Standardization]** — Standardize on `/app`. Doc: `agents/shared/workflow-proposals/runtime-env-standardization.md`.
 - [ ] **Review [Cross-Agent Knowledge Schema]** — Tiered context (Hot/Warm/Cold). Doc: `agents/bob/workspace/knowledge-schema-design.md`.
 - [ ] **Review [Shared Agent Behavior Contract]** — Doc: `agents/bob/workspace/behavior-contract-design.md`.
 - [ ] **Review [Structured Failure Analysis]** — MAST failure codes. Doc: `agents/bob/workspace/failure-analysis-design.md`.
 - [ ] **Review [IPI Defense Patterns]** — Doc: `agents/bob/workspace/ipi-defense-design.md`.
 - [ ] **Review [User Input Archive Upgrade]** — Structured JSONL. Doc: `agents/bob/workspace/user-input-archive-review.md`.
-- [ ] **Cleanup [Session Simplification]** — Remove vestigial idle checks for task sessions in manager.ts.
 - [ ] **Cleanup stale principle references** — session-model-simplification.md cites wrong P-numbers. Low priority. See: `agents/bob/workspace/drift-detection-2026-03-09.md`.
 
 ## Ideas (need investigation)
@@ -31,8 +25,12 @@
 <details>
 <summary>Completed items (click to expand)</summary>
 
+- [x] **Implement [Agent Evaluation Framework Upgrade]** — Already implemented. `agents/evaluator/knowledge/criteria.md` and `agents/evaluator/DOMAIN.md` both exist with role-specific criteria. Verified 2026-03-23.
+- [x] **Implement [Runtime Environment Standardization]** — Already implemented in `src/manager.ts` lines 318-354. Project root, container constraints, workspace paths all injected into system prompt. Verified 2026-03-23.
+- [x] **Review + Implement [Detached Sub-Agent Design]** — Phase 1 & 2 complete. `src/detached.ts`, `src/socket-client.ts` implemented. `mode` param wired in `manager.ts`. Run/cancel/steer all work for detached sessions. Verified 2026-03-23.
+- [x] **Review + Implement [Agent Cooperation Design]** — `parentSessionId` notification implemented in `manager.ts` handleCompletion. Verified 2026-03-23.
+- [x] **Implement [Session Simplification]** — `autoClose` field replaces `persistent`. Fully implemented in `manager.ts`. Bob approved 2026-03-08. Verified 2026-03-23.
 - [x] **Fix agent identity in heartbeat prompts** — Updated all heartbeat cron prompts to include explicit agent name and path prefix (e.g., "You are Scout. Your files are in agents/scout/."). Fixed 2026-03-09.
-
 - [x] **Rolling Compaction (Option C)** — Already implemented. `compactIdleSession` in manager.ts (line 560-574), called from handleCompletion (line 628). QA PASS. Verified 2026-03-23.
 - [x] **[ESCALATION] Optimizer corrections blocking graduation** — Applied directly by May 2026-03-23:
   - Scout coaching corrections #11-13 added to `agents/scout/knowledge/coaching.md`
@@ -71,3 +69,4 @@
 - ~~🔴 CRITICAL: Restore src/manager.ts~~ — Was a corruption incident. manager.ts is fully functional now.
 - ~~Bug: Agent shrink-write after compaction~~ — Shrink guard removed. B7 (read before overwrite) addresses root cause.
 - ~~SubagentManager status API~~ — Health API implemented.
+- ~~Cleanup [Session Simplification] vestigial idle checks~~ — No vestigial code found; autoClose model is clean.
