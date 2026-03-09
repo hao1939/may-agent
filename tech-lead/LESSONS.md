@@ -14,6 +14,9 @@
 - **Feasibility feedback is your job.** If a design won't build cleanly, say so early. Better to push back in planning than discover it mid-implementation.
 - **Apply philosophy, don't just follow specs.** When implementing, check: does this reflect what `philosophy.md` says we value? Code that works but violates our principles is technical debt.
 
+## Error Diagnosis
+- **Errors are signals, not just tasks.** Don't just fix an error — ask what it tells you about the system. A type error is a fact about the codebase. A QA rejection pattern is a fact about the build process. A coder failure is a fact about how you delegate. Repeated errors of the same kind mean something structural needs changing.
+
 ## Operational
 - If a task is stuck after 2 attempts, mark it `[STUCK]` with the reason and move on. Don't burn cycles on the same failure.
 - Truncated reads = no data. Never write a file you haven't fully read.

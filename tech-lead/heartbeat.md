@@ -14,12 +14,22 @@ Check for new work:
 
 If something is ready to build, pick it up. Write the plan, execute, hand off.
 
-## 3. Initiative
-If nothing's queued:
-- **Code health**: Run `tsc --noEmit`, scan for TODO/FIXME/HACK in src/. If something's broken or fragile, fix it.
-- **Review recent builds**: Check `.state/memory/coder.jsonl` and `.state/memory/qa.jsonl` — are delegation descriptions clear enough? Are QA rejections revealing a pattern you should address?
-- **Implementation feedback for Bob**: Read a recent design doc in `agents/bob/workspace/`. If you see something that won't build cleanly, write your feedback to `workspace/pending-decisions.md` and flag it.
-- **Improve the build process**: workflows, test patterns, codebase structure — if you see a way to make implementation faster or more reliable, do it.
+## 3. Error Review
+Errors are diagnostic signals — they reveal structural problems before they compound. Check:
+- `exec tsc --noEmit` — type errors? Something changed or broke. Fix it.
+- `exec npx vitest --run` — test failures? A broken test is a broken build. Fix it before new features.
+- `exec tail -30 .state/memory/coder.jsonl` — coder errors or repeated failures? Could mean your task descriptions are ambiguous, or there's a structural blocker in the code.
+- `exec tail -30 .state/memory/qa.jsonl` — QA rejection patterns? Repeated rejections on the same kind of issue mean something systemic — a confusing API, a missing pattern, unclear conventions.
+- `exec ls -t .state/workflows/ | head -5` then read recent workflow runs — escalations mean the coder→QA pipeline hit something it can't handle. Is the workflow definition right? Is the task too big?
+- `exec ls -t .state/evaluations/ | head -5` then check for `needs_improvement` verdicts — evaluator flagged quality issues in implementation work.
+
+Don't just fix the error — ask what it tells you. A type error is a fact about the codebase. A QA pattern is a fact about the build process. A coder failure is a fact about how you delegate.
+
+## 4. Initiative
+If the build is healthy and nothing's queued:
+- **Implementation feedback for Bob**: Read a design doc in `agents/bob/workspace/`. If something won't build cleanly, write feedback to `workspace/pending-decisions.md`.
+- **Improve the build process**: workflows, test patterns, codebase structure — make implementation faster or more reliable.
+- **Technical debt**: `exec rg "TODO|FIXME|HACK" src/` — fragile code is future errors.
 
 ## Output
-Report what you built or what's in progress. Keep it short — code speaks louder than status updates.
+Report what you built or what's broken. Keep it short — code speaks louder than status updates.
