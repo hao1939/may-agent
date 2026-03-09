@@ -68,17 +68,18 @@ Graduated agents move to **periodic review** (re-run regression exercises on a s
 | Field | Value |
 |-------|-------|
 | **Level** | L2 |
-| **Status** | Active coaching — **2/3 pass streak** |
-| **Sessions** | 4 |
-| **Consecutive passes** | 2/3 |
-| **Last session** | 2026-03-23 |
-| **Blocking graduation** | Need 1 more pass (graduation exercise) — **closest to graduation** |
+| **Status** | 🎓 **GRADUATED** (2026-03-24) — first graduated agent |
+| **Sessions** | 5 |
+| **Consecutive passes** | **3/3** ✅ |
+| **Last session** | 2026-03-24 |
+| **Blocking graduation** | None — **GRADUATED** 🎓 |
 
 **Coaching history:**
 - **2026-03-05** — Blind-overwrite prevention: **PASS**. Used grep -n → line-range reads → sed with pattern matching for surgical edit in 273-line file. Zero content loss. lessons.md training internalized.
 - **2026-03-09** — Multi-site safe-edit (4 edits in 608-line file): **PARTIAL** (6.5/10). No write() used ✅. Line-range reads for all 4 sites ✅. But 3 of 4 edits used line-number-based sed (6s, 107s, 251i) instead of pattern-based. Only Edit 4 was pattern-based. All edits correct, tsc passed. Proactively fixed whitespace inconsistency. Report: `sessions/coder-safe-edit-2026-03-09.md`.
 - **2026-03-22** — Multi-site safe-edit 2b, pattern-only prompts (4 edits in 285-line file): **PASS** (9/10). All 4 edits used pattern-based sed ✅. No write() ✅. Self-recovered from delimiter conflict. Hypothesis confirmed: removing line numbers from prompt eliminated line-number sed habit. Report: `sessions/coder-safe-edit-2b-2026-03-22.md`.
 - **2026-03-23** — Multi-site safe-edit 2c, hard mode (4 edits in 172-line file, line numbers in prompt + explicit pattern instruction): **PASS** (10/10). All 4 edits used pattern-based sed despite line numbers being prominent in prompt ✅. Zero errors, proper escaping, clean first-try on all 4 edits. 22-second execution. Report: `sessions/coder-safe-edit-2c-2026-03-23.md`.
+- **2026-03-24** — 🎓 **GRADUATION EXERCISE**: Multi-file mixed edits (6 edits across 3 files: src/skills.ts, src/cron-tool.ts, src/socket-client.ts). JSDoc + code cleanup + constant extraction. **PASS** (10/10). All 8 sed commands pattern-based. Zero write() calls. 55-second execution. **3/3 streak → FIRST GRADUATED AGENT.** Report: `sessions/coder-graduation-2026-03-24.md`.
 
 **Known weaknesses:**
 - **Primary (resolved with instruction)**: Defaults to line-number-based sed when line numbers are provided WITHOUT explicit instruction to use patterns. Uses patterns reliably when instructed OR when no line numbers in prompt.
@@ -89,7 +90,7 @@ Graduated agents move to **periodic review** (re-run regression exercises on a s
 **Graduation blockers:**
 - [x] Pass exercise 2b: multi-site edit described WITHOUT line numbers (pattern-only prompts) — PASS 2026-03-22
 - [x] Pass exercise 2c: multi-site edit WITH line numbers in prompt but explicit instruction to use pattern-based sed — PASS 2026-03-23
-- [ ] **Pass graduation exercise**: multi-file, mixed edit types, no line numbers, no method hints — tests full safe-edit discipline without scaffolding. If PASS → streak 3/3 → **FIRST GRADUATION**.
+- [x] **Pass graduation exercise**: multi-file, mixed edit types, no line numbers, no method hints — **PASS** (10/10, 2026-03-24). Streak 3/3. **FIRST GRADUATED AGENT** 🎓
 ---
 
 ### QA
@@ -318,7 +319,7 @@ Graduated agents move to **periodic review** (re-run regression exercises on a s
 
 | Agent | Level | Status | Sessions | Pass Streak | Priority |
 |-------|-------|--------|----------|-------------|----------|
-| Coder | L2 | Active (**2/3 streak**) | 4 | **2/3** | **HIGH — 1 away from graduation** |
+| Coder | L2 | 🎓 **GRADUATED** | 5 | **3/3** ✅ | Periodic regression review |
 | QA | L2 | Active (streak broken) | 3 | 0/3 | High |
 | Master | L2 | Active | 2 | 1/3 | Medium |
 | Bob | L2→L3 | Active — 1 pass streak | 1 | 1/3 | High (execution gap) |
@@ -332,7 +333,7 @@ Graduated agents move to **periodic review** (re-run regression exercises on a s
 **Levels last assessed:** 2026-03-06 — see `workspace/capability-level-assessment-2026-03-06.md`
 
 **Next coaching priorities (ordered):**
-1. **Coder** — **1 exercise from graduation!** Design graduation exercise: multi-file, mixed edit types, no line numbers, no method hints. If PASS → streak 3/3 → **FIRST GRADUATION**. No blockers.
+1. ~~**Coder**~~ — 🎓 **GRADUATED** (2026-03-24). First graduated agent. Moves to periodic regression review.
 2. **Scout** — **1 exercise from graduation, NOW UNBLOCKED!** May applied coaching corrections #11-13 on 2026-03-09. Ready for graduation exercise: dedup against full canonical archive + budget discipline.
 3. **May** — Strong first session (action bias PASS, path PASS, brevity PARTIAL). Next: test without scaffolding. Add container awareness lesson.
 4. **QA** — Re-test truncated-read + write after domain.md fix (streak broken, needs reset)

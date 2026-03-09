@@ -1,44 +1,31 @@
-# Shared Knowledge Library
+# Shared Knowledge
 
-**Owner: optimizer**
+Files here are available to all agents via `sharedKnowledge` in agent.json (auto-loaded into system prompt) or by reading directly.
 
-Curated knowledge about the agent system — architecture, team, patterns. Organized
-by topic, not by consumer. See the [Knowledge Library section in system-design.md](system-design.md#shared-knowledge-library) for the design rationale.
+## Auto-Loaded Files
 
-## How It Works
+| File | Purpose | Loaded by |
+|------|---------|-----------|
+| `system-design.md` | System architecture | May, Bob, Evaluator, Optimizer, Scout, Tech-Lead |
+| `team.md` | Agent roster and roles | May, Bob, Coach, Evaluator, Optimizer, Tech-Lead |
+| `philosophy.md` | Design values and principles | Bob |
+| `roadmap.md` | Product direction and priorities | — (read on demand) |
 
-1. **This directory is the source of truth** — versioned docs about the system
-2. **Agents include relevant docs** in their system prompt via `systemPromptFiles`
-3. **Any agent can browse** the full library at `agents/shared/` when it needs more context
-4. **The library evolves** through normal work — optimizer updates docs, design reviews identify gaps
+## Knowledge Sharing
 
-## Documents
+| File | Purpose |
+|------|---------|
+| `bulletin.md` | Cross-agent findings needing attention or action |
+| `knowledge-index.md` | Directory of what each agent knows and where to find it |
+| `SIGNALS.md` | Legacy append-only signal log (superseded by bulletin.md) |
 
-### Architecture
-- **[system-design.md](system-design.md)** — Conceptual model: what agents are, collaboration patterns, design principles, optimization loop, fix hierarchy, knowledge library design, session lifecycle, agent-agnostic runner
+## Skills
 
-### Team
-- **[team.md](team.md)** — Concrete roster: agents, models, tools, turn limits, workflows, runner configuration, constraints
+| Skill | Purpose |
+|-------|---------|
+| `skills/knowledge-sharing/` | How agents share discoveries and reference each other's knowledge |
+| `skills/sub-agent-coordination/` | How to delegate work to other agents |
 
-### Philosophy
-- **[philosophy.md](philosophy.md)** — Design values, preferences, and quality standards extracted from human input. Owned by Bob.
+## Historical Docs
 
-### Process
-- **[meta-loop.md](meta-loop.md)** — Self-improvement cycle: how Bob, evaluator, and optimizer coordinate. Just a normal agent session, no special infrastructure.
-
-### Reviews
-- **[system-design-review.md](system-design-review.md)** — Historical review of system-design.md against the codebase, with findings and status tracking
-
-## Inclusion
-
-| Agent | system-design | team | philosophy | meta-loop | Why |
-|-------|:---:|:---:|:---:|:---:|-----|
-| May | ✓ | ✓ | — | — | Coordinates the team, needs full picture |
-| Evaluator | ✓ | ✓ | — | — | Scores agents, needs to understand roles and constraints |
-| Optimizer | ✓ | ✓ | — | — | Improves agents, needs to understand architecture |
-| Bob | ✓ | ✓ | ✓ | ✓ | Reviews team work against philosophy, orchestrates meta-loop |
-| Coach | — | ✓ | — | — | Needs team roster and roles to design exercises. Reads system-design on demand. |
-| Coder | — | — | — | — | Works on specific tasks independently |
-| QA | — | — | — | — | Reviews code independently |
-
-All agents can `read agents/shared/` during a session if they need additional context.
+`may-agent-docs/` — Design docs, proposals, daily briefs. Historical reference, not actively loaded.

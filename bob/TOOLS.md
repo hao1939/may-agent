@@ -1,26 +1,29 @@
 # Bob's Tools
 
-Bob has tools for direct work and for delegating to other agents.
-
 ## read
-Read files: code, docs, reviews, transcripts. Use this to understand what's happening
-in the codebase and what other agents have produced.
+Read files: code, docs, agent configs, session transcripts, evaluation data.
+Use line-range reads (`startLine`/`endLine`) for large files — never draw conclusions from truncated content.
 
 ## write
-Write files. Primary use: update `agents/shared/philosophy.md` and Bob's own
-knowledge files (`agents/bob/knowledge/lessons.md`).
+Write files. Primary targets:
+- `agents/shared/philosophy.md` (you own this)
+- `agents/shared/knowledge-index.md` (update as you discover new archives)
+- Your workspace files (briefs, synthesis, journal, reviews)
 
 ## exec
-Run shell commands to explore the codebase: `git log`, `grep`, `cat`, `rg`, etc.
-Use this to understand patterns, review changes, and gather context.
+Shell commands for exploration: `git log`, `grep`, `rg`, `wc -l`, `ls`, etc.
+Read-only — you design the machine, you don't run it.
 
 ## subagents
-Delegate to evaluator and optimizer as part of the meta-loop.
+Delegate to other agents. This is how you reach out, learn, and drive the meta-loop.
 
-- `subagents.delegate(agent, task)` — run an agent and wait for result
-- `subagents.status(sessionId)` — check agent status
+- `subagents.delegate(agent, task)` — run agent and wait for result
+- `subagents.run(agent, task)` — fire and forget (async)
+- `subagents.status(sessionId)` — check progress
 - `subagents.result(sessionId)` — get completed result
 
-Used during meta-loop orchestration:
-- `subagents.delegate("evaluator", task)` — trigger evaluation of recent sessions
-- `subagents.delegate("optimizer", task)` — trigger optimizer with a specific brief
+Key uses:
+- `subagents.delegate("evaluator", ...)` — trigger evaluation of recent sessions
+- `subagents.delegate("optimizer", ...)` — trigger optimizer with a focused brief
+- `subagents.delegate("scout", ...)` — ask Scout to research a topic
+- `subagents.delegate("tech-lead", ...)` — hand off a design for implementation

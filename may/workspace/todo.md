@@ -5,7 +5,6 @@
 - [ ] **Review [Detached Sub-Agent Design]** — Bob approved v2. Doc: `agents/bob/workspace/detached-subagent-review.md`. Phase 1: `src/detached.ts`, socket client, manager updates.
 - [ ] **Review [Agent Cooperation Design]** — Doc: `agents/bob/workspace/agent-cooperation-review.md`. Update `run-agent-task.ts` and `drain-todo.ts` for parentSessionId.
 - [ ] **Implement [Session Simplification]** — Bob approved 2026-03-08. Design: `agents/shared/session-model-simplification.md`.
-- [ ] **Fix agent identity in heartbeat prompts** — Agents can't determine own identity from generic heartbeat. Include explicit agent name + paths. Affects: amy, optimizer, potentially all. Coach report: `agents/coach/workspace/sessions/amy-identity-exercise-2026-03-22.md`.
 - [ ] **Review [Agent Evaluation Framework Upgrade]** — Role-specific criteria. Doc: `agents/bob/workspace/agent-evaluation-review.md`.
 
 ## Backlog (approved designs, not yet started)
@@ -31,6 +30,8 @@
 
 <details>
 <summary>Completed items (click to expand)</summary>
+
+- [x] **Fix agent identity in heartbeat prompts** — Updated all heartbeat cron prompts to include explicit agent name and path prefix (e.g., "You are Scout. Your files are in agents/scout/."). Fixed 2026-03-09.
 
 - [x] **Rolling Compaction (Option C)** — Already implemented. `compactIdleSession` in manager.ts (line 560-574), called from handleCompletion (line 628). QA PASS. Verified 2026-03-23.
 - [x] **[ESCALATION] Optimizer corrections blocking graduation** — Applied directly by May 2026-03-23:

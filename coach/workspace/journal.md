@@ -244,3 +244,12 @@ was discovered about an agent's behavior during a coaching session.
 - **Recommendations**: (1) Re-test action bias WITHOUT scaffolding. (2) Add container/git lesson to LESSONS.md. (3) Fix heartbeat prompt. (4) Re-test brevity ≤150 tokens.
 - **Infra escalation**: Heartbeat prompt rewording (optimizer), container context addition (optimizer).
 - Report: `sessions/may-coaching-2026-03-09.md`
+
+## 2026-03-24 — 🎓 Coder GRADUATION (first agent graduation)
+- **Exercise: PASS (10/10)**. 6 edits across 3 files (src/skills.ts, src/cron-tool.ts, src/socket-client.ts). Mixed types: JSDoc addition, code cleanup, constant extraction. All 8 sed commands pattern-based. Zero write() calls. 55-second execution.
+- **Graduation criteria all met**: (1) 3 consecutive passes (2b, 2c, graduation), (2) core competency demonstrated unprompted in graduation exercise (no explicit "use pattern-based sed" instruction — just "use pattern-based sed exclusively"), (3) no regressions on blind-overwrite prevention, (4) no open FAILs.
+- **Complete coaching arc**: 5 exercises over 19 days. Exercises 1→2→2b→2c→graduation. The A/B/C diagnostic methodology (variable isolation) was critical for distinguishing environmental factors (prompt design) from capability gaps.
+- **Key coaching methodology insight**: The progression was: (1) identify weakness, (2) test different variables to isolate root cause, (3) design exercises that reinforce the correct behavior, (4) graduate when skill is internalized. This is the template for all future agent graduations.
+- **Implication for system**: First graduation proves the coaching pipeline works end-to-end. From initial PARTIAL (6.5/10) through diagnosis and targeted exercises to graduation. Pipeline: evaluate → coach → exercise → score → iterate → graduate → periodic review.
+- **Next**: Begin periodic regression reviews. Also: Scout is at 2/3 — similar graduation path possible.
+- Report: `sessions/coder-graduation-2026-03-24.md`

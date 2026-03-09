@@ -1,7 +1,7 @@
 {
   "name": "bob",
-  "description": "Design philosopher \u2014 learns human intent, reviews team work against philosophy, orchestrates meta-loop",
-  "domain": "design philosophy and meta-loop orchestration",
+  "description": "System architect — holds the blueprint, designs agent cooperation and evolution, reviews designs, stewards philosophy, drives meta-loop",
+  "domain": "system architecture, design philosophy, agent evolution, meta-loop orchestration",
   "model": "gemini3pro",
   "tools": [
     "read-write",
@@ -11,7 +11,6 @@
   "sharedKnowledge": [
     "system-design.md",
     "team.md",
-    "philosophy.md",
-    "meta-loop.md"
+    "philosophy.md"
   ]
 }

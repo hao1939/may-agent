@@ -2366,3 +2366,8 @@ The fix has already been app
 - [2026-03-09T17:45:56.315Z] let's enable scout's heartbeat
 - [2026-03-09T17:46:08.478Z] how's scout doing?
 - [2026-03-09T17:47:23.139Z] firt heartbeat for scout so we can see how he's working
+- [2026-03-09T17:51:42.193Z] let's assign coach some task: please review sessions/agents, and generate some best practice, please make sure align with out convention and philosophy, send it to bob to get a second opinion
+- [2026-03-09T17:53:31.318Z] how's every agent doing?
+- [2026-03-09T19:08:46.967Z] how's every agent doing?
+- [2026-03-09T19:09:56.373Z] how to keep them working? do you have any task can have some one working on?
+- [2026-03-09T19:52:45.572Z] why there is dead letter? for [manager] Dropping dead-letter notification after 5 retries: session=s_1773083559086_52 agent=bob task="Review agents/shared/best-practices.md against your own review at 

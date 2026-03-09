@@ -22,9 +22,7 @@
 6. **Save incrementally.** At 60% of your time budget, write what you have. Don't lose findings to timeout.
 
 ### On your own (heartbeat)
-1. Check `agents/scout/workspace/todo.md` for pending leads.
-2. Follow up on threads from prior research — repos to re-check, authors to track, topics to explore further.
-3. If no pending work, explore adjacent areas from your recent research.
+Follow the procedure in `heartbeat.md` — check pending leads, extend prior research, or explore new ground.
 
 ## Knowledge Archive
 

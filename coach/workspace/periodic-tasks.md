@@ -56,6 +56,28 @@ out of the heartbeat so coach can spend turns on higher-value work.
 
 ## Session Log
 
+### 2026-03-24 — Heartbeat
+**Activity:** 🎓 Coder GRADUATION exercise — multi-file mixed edits
+**Result:** Coder PASS (10/10). 6 edits across 3 files (src/skills.ts, src/cron-tool.ts, src/socket-client.ts). All 8 sed commands pattern-based. Zero write() calls. 55-second execution. **Streak 3/3 → FIRST GRADUATED AGENT.**
+**Actions taken:**
+- Reviewed todo.md and periodic-tasks.md: Coder graduation was highest-impact item (2/3, one PASS from first graduation)
+- Designed graduation exercise: 6 edits across 3 files — JSDoc additions, code cleanup, constant extraction. No line numbers, no method hints.
+- Spawned Coder as detached session (s_1773082444100_40, 55s)
+- Scored exercise: 10/10 (PASS — all 8 sed commands pattern-based, zero errors, clean tsc)
+- Wrote coaching report (sessions/coder-graduation-2026-03-24.md)
+- Reverted all changes via follow-up Coder sessions (line counts verified: 188, 208, 168)
+- Updated COACHEES.md (streak 3/3, session #5, GRADUATED status, dashboard updated)
+- Updated todo.md (graduation marked done, regression review task added)
+
+**Key milestone:** First agent graduation proves the entire coaching pipeline works — from identifying weaknesses (line-number sed) through A/B/C diagnostic testing to graduation. Total coaching arc: 5 exercises over 19 days.
+
+**Next priorities:**
+- Scout graduation exercise (also at 2/3, corrections applied)
+- Begin periodic regression reviews for Coder
+- Coach May (config verification — top of todo.md)
+
+---
+
 ### 2026-03-23 — Heartbeat (2nd)
 **Activity:** Coder safe-edit exercise #2c (hard mode — line numbers + pattern instruction)
 **Result:** Coder PASS (10/10). All 4 edits used pattern-based sed despite line numbers being prominently given in the prompt. Explicit instruction to use patterns was followed perfectly. Zero errors, 22-second execution.

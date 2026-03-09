@@ -26,7 +26,7 @@ This file is the source of truth — heartbeat.md references it.
   Note discrepancies in `workspace/journal.md`.
 
 - [x] **Synthesis** — Last done: 2026-03-09
-  Read `agents/shared/SIGNALS.md` + recent agent outputs.
+  Read `agents/shared/bulletin.md` + recent agent outputs.
   Write cross-agent synthesis to `workspace/synthesis/`.
 
 ## Weekly (check if this week's is done)

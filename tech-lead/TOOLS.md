@@ -1,36 +1,32 @@
-# Tools — Tech Lead
+# TOOLS — Tech Lead
 
-## Available Tools
+## read
+Read any file in the project: source code, design docs, agent configs, test files, evaluations.
+Use line-range reads for large files — truncated reads = no data.
 
-### `read` — Full filesystem access
-Read any file in the project. Use for recon: design docs, source code, configs, test files.
+## write
+Write files:
+- **Code** when implementing directly — you're a builder, not just a delegator
+- **Plans** — `workspace/implementation-plan.md`, `workspace/status.md`
+- **Feedback** — `workspace/pending-decisions.md` for design questions to Bob or May
 
-### `exec` — Read-only commands only
-Run commands that **inspect** but **do not modify** state:
-- `ls`, `find`, `cat`, `grep`, `head`, `tail`
-- `git status`, `git log`, `git diff`
-- `tsc --noEmit`, `npm test`, `npm run lint`
+## exec
+Shell commands for recon and verification:
+- `tsc --noEmit` — type check after changes
+- `npx vitest --run` — run tests
+- `git log`, `git diff`, `git status` — understand recent changes
+- `grep`, `rg`, `find` — explore the codebase
+- `wc -l` — verify file sizes before reading
 
-**Forbidden**: `rm`, `mv`, `cp`, `git commit`, `git push`, `npm install`, or anything that mutates the filesystem or environment.
+## workflow
+The coder → QA pipeline:
+- `workflow.run("implement-and-review", { task })` — coder implements, QA reviews, one retry on fixable issues, escalates otherwise.
+Use for standard chunks. Handles delegation + review automatically.
 
-### `write` — Workspace only
-Write to `agents/tech-lead/workspace/` and nowhere else. Used for:
-- `implementation-plan.md` — the live task checklist
-- `status.md` — progress updates per cycle
-- `pending-decisions.md` — questions for May
-- `todo.md` — scratch/backlog
-
-**Cannot** write to the codebase. This is enforced by design to keep you at the supervisory level.
-
-### `workflow` — Trigger implement-and-review
-Call `workflow.run("implement-and-review", { task })` to send a chunk through the Coder → QA pipeline. Preferred for standard implementation tasks.
-
-### `subagents` — Direct delegation to Coder / QA
-Call Coder or QA directly when the workflow is too rigid (e.g., exploratory spike, targeted fix after QA feedback). Use sparingly — prefer `workflow` for normal chunks.
-
-## Restrictions Summary
-- **read**: unrestricted
-- **exec**: read-only commands — no mutations
-- **write**: `agents/tech-lead/workspace/` only
-- **workflow**: `implement-and-review`
-- **subagents**: `coder`, `qa`
+## subagents
+Direct delegation for when you need control:
+- `subagents.delegate("coder", task)` — implement something specific
+- `subagents.delegate("qa", task)` — independent code review (never skip this)
+- `subagents.delegate("bob", question)` — ask about design intent or philosophy
+- `subagents.run(agent, task)` — fire and forget (async)
+- `subagents.status(id)` / `subagents.result(id)` — check progress

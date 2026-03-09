@@ -732,3 +732,92 @@
 [02:43 GMT+8 Thu] HB315 — Standdown confirmed. Archive 317. Next: ~08:00 GMT+8.
 [03:17 GMT+8 Thu] HB316 — Standdown confirmed. Archive 317. Next: ~08:00 GMT+8.
 [03:42 GMT+8 Thu] HB317 — Standdown confirmed. Archive 317. Next: ~08:00 GMT+8.
+
+---
+
+## 2026-03-09 — Heartbeat Session (Extending Prior Research)
+
+**Trigger:** Heartbeat — no pending leads in todo.md, so moved to Section 2 (Extend Prior Research).
+
+**What I did:**
+- Identified 4 ★★★ papers from Feb 26 batch in papers.md that were flagged but never deep-dived
+- Selected TAPE (2602.19633) and General AgentBench (2602.18998) as highest-priority pair — both directly relevant to agent planning and evaluation
+- Read both papers in full via arxiv HTML
+- Wrote cross-paper synthesis with connections to 7 prior deep-dives
+- Extracted 8 actionable takeaways (3 immediate, 3 medium-term, 2 strategic)
+
+**Key findings:**
+1. TAPE eliminates sampling error entirely (0.0%) via constrained decoding — single most impactful intervention
+2. General AgentBench: Claude Sonnet 4.5 is anomalously robust in general setting (0.2% degradation vs 10-30% for all others)
+3. Context ceiling: sequential scaling fails beyond ~96-112K tokens — agents must manage context budgets
+4. Verification gap: agents can't reliably pick correct trajectories from parallel samples — formal solvers outperform LM judgment
+5. M=4 plans optimal for TAPE, K>4 diminishing returns for parallel scaling — moderate diversity principle
+
+**Output:**
+- Deep dive: `agents/scout/workspace/deep-dive-tape-general-agentbench.md`
+- Updated: `agents/scout/knowledge/papers.md` (marked 2 as DEEP-DIVED, 2 still pending)
+- Updated: `agents/scout/knowledge/discoveries.md` (cross-paper synthesis)
+- Updated: `agents/scout/workspace/journal.md` (this entry)
+
+**Still pending from papers.md:**
+- 2602.20945 — Art of Efficient Reasoning (★★★)
+- 2602.21198 — Reflective Test-Time Planning (★★★)
+
+---
+
+## 2026-03-11 — Heartbeat Session (Pending Lead: Art of Efficient Reasoning)
+
+**Trigger:** Heartbeat — pending lead in todo.md (top backlog item: arXiv:2602.20945).
+
+**What I did:**
+- Read arXiv:2602.20945v2 in full via arxiv HTML (Wu, Xu, Zhou, Wong — HKU/Tencent)
+- ~0.2M GPU hours systematic ablation study on efficient reasoning via RL reward shaping
+- Wrote comprehensive deep-dive with cross-references to 6 prior deep-dives
+- Extracted practical recipe + 6 system-relevant insights
+
+**Key findings:**
+1. Two-stage training paradigm: length adaptation (rapid compression) → reasoning refinement (quality recovery)
+2. **Train on easy prompts** — the single most important factor. Ensures dense positive reward signals, prevents "length collapse"
+3. Set L_R = L_T (rollout limit = target length) — avoids "short = correct" spurious correlation trap
+4. Three distinct failure modes for negative rollout handling (short=correct trap, overlong-output hack, off-policy length rebound)
+5. Length bias generalizes across domains (math training → code improvement)
+6. Budget-dependent evaluation is critical — must test at multiple token budgets (2k-32k)
+7. Validated across Qwen3 0.6B–30B: accuracy maintained/improved, length reduced 25-50%
+
+**Output:**
+- Deep dive: `agents/scout/workspace/deep-dive-arxiv-2602-20945-art-of-efficient-reasoning.md`
+- Updated: `agents/scout/knowledge/papers.md` (marked as DEEP-DIVED)
+- Updated: `agents/scout/knowledge/discoveries.md` (brief appended)
+- Updated: `agents/scout/workspace/todo.md` (marked complete)
+- Updated: `agents/scout/workspace/journal.md` (this entry)
+
+**Still pending from papers.md:**
+- 2602.21198 — Reflective Test-Time Planning (★★★)
+
+**Also completed in this session:**
+
+### arXiv:2602.21198 — Reflective Test-Time Planning (★★★)
+- Read full paper via arxiv HTML (Hong, Huang, Li, Fei-Fei, Wu, Choi — Stanford, ICML)
+- Unifies test-time scaling + test-time training for embodied agent learning
+- Wrote comprehensive deep-dive with cross-references to 7 prior deep-dives
+
+**Key findings:**
+1. Three-LLM architecture: Generator + Internal Evaluator + External Evaluator
+2. Reflection-in-action (TTS: N=4-6 candidates) + Reflection-on-action (TTT: LoRA updates during deployment)
+3. **Mutual dependency:** removing one reflection mode can be WORSE than removing both
+4. Retrospective hindsight re-evaluation for long-horizon credit assignment
+5. 44.7% vs 10.6% best baseline (4.2× improvement on Fitting tasks)
+6. LoRA r=8 matches full-weight TTT with 95% fewer parameters
+7. 3.0× compute cost justified — baselines repeat failures, reflective method converts compute to learning
+
+**Output:**
+- Deep dive: `agents/scout/workspace/deep-dive-arxiv-2602-21198-reflective-test-time-planning.md`
+- Updated: `agents/scout/knowledge/papers.md` (marked as DEEP-DIVED)
+- Updated: `agents/scout/knowledge/discoveries.md` (brief appended)
+- Updated: `agents/scout/workspace/todo.md` (marked complete)
+
+**All ★★★ papers from Feb 26 batch are now fully deep-dived:**
+- ✅ 2602.19633 — TAPE
+- ✅ 2602.18998 — General AgentBench
+- ✅ 2602.20945 — Art of Efficient Reasoning
+- ✅ 2602.21198 — Reflective Test-Time Planning

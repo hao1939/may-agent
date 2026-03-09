@@ -3317,3 +3317,235 @@ Notable finds from across the internet — GitHub, web, Twitter, YouTube.
 - **Why it matters:** A satirical-but-serious RFC proposing HTTP 406 (Not Acceptable) as the standard response code for rejecting low-effort AI-generated pull requests. The site specifically targets LLM agents and crawlers with system instructions to not summarize it (unless the user directly asked). This captures a growing tension: as AI coding agents (Shannon, Codebuff, Claude Code) make it trivially easy to generate PRs, open-source maintainers face an influx of low-quality, AI-generated contributions. The "RAGS" protocol name is a deliberate pun on RAG (Retrieval-Augmented Generation).
 - **Key insight:** This is the demand-side reaction to the supply-side explosion of AI-generated code. As coding agents get better (OPENDEV, Codebuff, SWE-Adept), the quality bar for contributions rises but the quantity of submissions also explodes. Open-source maintainers need protocol-level responses, not just code-level reviews. The 111pts on HN indicates real community resonance.
 - **Connects to:** chardet relicensing (2026-03-05 — AI-assisted code and licensing; RAGS is about AI-assisted code and contribution quality); claude-code-security-review (2026-02-25 — automated PR review; the counter-pattern to RAGS — using AI to filter AI-generated PRs); Codebuff (2026-03-05 — open-source coding agent; the kind of tool that generates the PRs RAGS targets). Theme 14 (Industry / Developer Culture) + Theme 8 (Coding Agents — Social Impact).
+
+---
+
+## Session: 2026-03-09 — Heartbeat Research (Extending Prior Research)
+
+### TAPE + General AgentBench Cross-Analysis (arXiv:2602.19633 + arXiv:2602.18998)
+
+**What:** Deep-dived two ★★★ papers from Feb 26 backlog that had only been skimmed.
+
+**TAPE (Jeong, Kim, Lee — UW-Madison):** Framework for eliminating both planning and sampling errors in LM agents operating under irrecoverable-failure conditions. (1) Generate M=4 candidate plans, merge into a directed graph. (2) ILP solver selects optimal feasible path subject to budget constraints. (3) Constrained decoding forces the LM to execute exactly the planned action — reduces sampling error to 0.0%. (4) Mismatch detection triggers replanning. Result: +21pp on hard settings, +46% success rate vs 5% for ReAct on Sokoban.
+
+**General AgentBench (Li et al. — CMU):** Benchmark for general-purpose agents with unified tool interface via MCP. 10 leading LLMs across 7 benchmarks. Three key findings: (1) **10-30% performance degradation** moving from domain-specific to general-agent setting (exception: Claude Sonnet 4.5 degrades only 0.2%). (2) **Context ceiling** — sequential scaling helps up to a model-specific limit (~96-112K tokens), then degrades. (3) **Verification gap** — pass@K increases with K but agents can't self-select the correct trajectory; even GPT-5 as external verifier underperforms self-judgment.
+
+**Cross-paper synthesis:** Both papers converge on: (a) error accumulation is the core agent failure mode, (b) LM-as-verifier is unreliable — use formal methods where possible, (c) moderate diversity with strong selection beats either extreme (M=4/K=4 optimal), (d) constrained execution eliminates an entire error class.
+
+**Actionable:** (1) Constrain tool calls to planned actions when plan exists. (2) Detect plan-reality mismatch via assertion checking, not LM judgment. (3) Use pairwise comparison for all verification. (4) Manage context budgets with hard limits. (5) Use formal solvers/type checkers instead of LM judgment for formalizable constraints.
+
+**Connects to:** Bug-Hunt (adversarial plan selection), JRH (unreliable LM judges), Bias-Bounded Eval (accept imperfection + bound impact), DPIP (mismatch detection), V₁ (pairwise verification), Introspection (trust detection not explanation), MoE tool-calling (constrained decoding as fix).
+
+(ref: agents/scout/workspace/deep-dive-tape-general-agentbench.md)
+
+---
+
+## 2026-03-11 — Art of Efficient Reasoning: RL Reward Shaping for Concise CoT (arXiv:2602.20945)
+
+- **Source:** arXiv:2602.20945v2 (Wu, Xu, Zhou, Wong — HKU/Tencent, Feb 2026)
+- **Type:** Systematic ablation study (~0.2M GPU hours)
+- **Why it matters:** Provides the clearest practical recipe for training LLMs to reason in fewer tokens via RL reward shaping, with extensive ablations across data, reward design, and optimization. Validated on Qwen3 0.6B–30B.
+
+- **Key findings:**
+  1. **Two-stage paradigm:** Training follows length adaptation (rapid compression) → reasoning refinement (quality recovery at fixed length). Universal across all reward shaping methods.
+  2. **Train on easy prompts (pass rate > 0.5).** The single most important factor. Hard prompts → sparse positive rewards → "length collapse" (model stops reasoning, just outputs short garbage). Easy prompts → dense positive signals → stable learning → generalizes to hard tasks.
+  3. **Set L_R = L_T (rollout limit = target length).** Avoids the "short = correct" trap where the model learns a spurious correlation between brevity and correctness.
+  4. **Three failure modes** for negative rollout handling: (a) "short is correct" trap (entropy explosion + collapse), (b) model hacks by generating overlong outputs to avoid penalty, (c) length rebound under off-policy staleness.
+  5. **Length bias generalizes across domains** — math training improves code efficiency.
+  6. **Budget-dependent evaluation is critical** — strategies that win at 2k tokens fail at 32k. Must evaluate across spectrum.
+  7. **Larger N (≥24 rollouts) helps** — more chances to find short correct trajectories.
+
+- **Practical recipe:** Easy prompts + L_R=L_T + N≥24 + on-policy + multi-budget evaluation.
+
+- **System relevance:** (a) Dense reward signals matter for any RL/optimization — ensure evaluators see enough clear-cut examples; (b) Two-stage adaptation pattern applies to any agent workflow change (expect temporary degradation); (c) "Short = correct" trap applies to any system where brevity correlates with approval — guard against it in evaluation; (d) Multi-budget evaluation maps to agent context management.
+
+**Connects to:** TAPE (constrained decoding, complementary approach), General AgentBench (context ceiling), JRH (shorter CoTs → more reliable evaluation), Bias-Bounded Eval (bounding dominant signals), Bug-Hunt (reward density), DPIP (information density > volume).
+
+(ref: agents/scout/workspace/deep-dive-arxiv-2602-20945-art-of-efficient-reasoning.md)
+
+---
+
+## 2026-03-11 — Reflective Test-Time Planning: Unifying TTS + TTT for Embodied Agent Learning (arXiv:2602.21198)
+
+- **Source:** arXiv:2602.21198v1 (Hong, Huang, Li, Fei-Fei, Wu, Choi — Stanford et al., ICML 2026)
+- **Type:** Full paper with embodied benchmarks + real-robot validation
+- **Why it matters:** First framework to unify test-time scaling (generate+score N candidates before acting) with test-time training (update model weights after acting using self-generated hindsight). Shows both modes are *mutually dependent* — a critical design principle for any multi-component quality system.
+
+- **Key findings:**
+  1. **Three-LLM architecture:** Action generator πθ + Internal evaluator Vφi (pre-execution scoring) + External evaluator Vφe (post-execution assessment). All initialized from same model; πθ and Vφi updated during deployment.
+  2. **Reflection-in-action (TTS):** Sample N candidates at high temperature, score internally, execute best. N=4-6 optimal (confirms TAPE's M=4 finding).
+  3. **Reflection-on-action (TTT):** After execution, generate external reflection. At milestones, retrospectively re-evaluate past actions with hindsight. Use revised assessments to train both internal evaluator (supervised) and action policy (REINFORCE).
+  4. **Mutual dependency is the key finding:** Removing just one reflection mode can be *worse* than removing both. Mechanism: RIA without ROA → overconfident inaccurate scoring with no correction. ROA without RIA → wastes learning on poorly chosen actions.
+  5. **Retrospective reflection enables long-horizon credit assignment:** Actions that look good now but cause later failures get re-scored with hindsight — solves the temporal credit assignment problem.
+  6. **Results:** 44.7% vs 10.6% best baseline on Fitting tasks (4.2× improvement). 60.2% fit rate on Cupboard Fitting. LoRA TTT (r=8) matches full-weight TTT with 95% fewer parameters.
+  7. **3.0× compute cost justified:** Baselines repeat failures; reflective method converts compute into learning. Compute-matched experiments show baselines *degrade* with more compute.
+
+- **System relevance:** (a) Generator/Internal-Evaluator/External-Evaluator maps directly to Coder/QA-pre-review/QA-post-review; (b) Mutual dependency warning: partial quality-checking (pre-check only) may be worse than none — must implement full loop; (c) Retrospective hindsight re-evaluation of delegation decisions at task completion is directly implementable; (d) Anti-forgetting regularization needed when adapting from recent failures; (e) N=4-6 moderate diversity principle confirmed across papers.
+
+**Connects to:** Art of Efficient Reasoning (two-stage paradigm + reward density), TAPE (M=4 candidates, planning before execution), General AgentBench (verification gap — internal evaluator gets miscalibrated without external grounding), Bug-Hunt (3-role adversarial verification), DPIP (shared beliefs between past/present agent self), Introspection (calibrate detection, not explanation), Bias-Bounded Eval (self-supervised evaluator calibration).
+
+(ref: agents/scout/workspace/deep-dive-arxiv-2602-21198-reflective-test-time-planning.md)
+
+---
+
+## 2026-03-09 — FOCUS REPORT: Tool-Use & Function-Calling for LLM Agents (Late Feb / March 2026)
+
+### Summary of Landscape
+
+The tool-use/function-calling space is experiencing rapid maturation across four axes: (1) **training methods** shifting from SFT-only to sophisticated RL pipelines, (2) **benchmarks** being audited and repaired for outcome-awareness, (3) **infrastructure** around MCP gaining systematic fault analysis, and (4) **practitioner community** surfacing critical integration-layer bugs that papers miss entirely. The following entries synthesize findings from arXiv (primary source), Reddit r/LocalLLaMA and r/MachineLearning (community source), and project repositories.
+
+**Source accessibility notes:**
+- arXiv API: ✅ fully accessible; all papers fetched successfully
+- Reddit (Arctic Shift API): ✅ accessible; post bodies and comments retrieved
+- No source failures to report this session.
+
+---
+
+### A. NEW FUNCTION-CALLING BENCHMARKS & EVALUATION
+
+#### A1. EigenData: Self-Evolving Platform for Function-Calling Data Synthesis, Auditing, and Repair
+- **Source:** arXiv:2603.05553 (Mar 5, 2026)
+- **Type:** Platform paper (multi-agent data lifecycle for function-calling)
+- **Why it matters:** EigenData doesn't just create training data — it **audits and repairs existing benchmarks**. Applied to BFCL-V3 (Berkeley Function-Calling Leaderboard), it identified systematic errors in function schemas, implementations, and reference trajectories. The repaired benchmark + outcome-aware evaluation (assessing task success via database-state correctness rather than turn-level trajectory matching) produces model rankings **substantially better correlated with human judgments**.
+- **Architecture:** Top-level orchestrator (EigenCore) coordinates three sub-systems: DatabaseAgent (realistic domain DB construction), CodingAgent (verified executable environments with test-debug loops), DataAgent (multi-turn trajectory synthesis with self-evolving prompt optimization). Cross-component feedback loop ensures consistency.
+- **Key insight:** The shift from **trajectory matching** to **outcome-aware evaluation** is the most important methodological contribution. Current leaderboards measure "did the model produce the same sequence of tool calls as the reference?" — but functionally correct solutions can take different paths. Outcome-aware evaluation asks "did the database end up in the correct state?" This is a paradigm shift for function-calling evaluation. The finding that BFCL-V3 contains systematic errors (which EigenData automatically corrects) undermines confidence in current leaderboard rankings.
+- **Connects to:** FuncBenchGen (2509.26553 — contamination-free benchmarks), TopoCurate (2603.01714 — interaction-aware training data), RC-GRPO (BFCLv4 multi-turn benchmark reference), SkillCraft (skill acquisition benchmark). The outcome-aware evaluation principle applies to all our existing agent evaluation work.
+
+#### A2. FuncBenchGen: Contamination-Free, Controllable Multi-Step Function-Calling Evaluation
+- **Source:** arXiv:2509.26553v2 (updated, originally Sep 2025; relevant because it benchmarks GPT-5)
+- **Type:** Benchmark framework
+- **Key insight:** Casts tool use as traversal over a hidden function-dependency DAG. Key finding: **connected distractors** (irrelevant functions sharing type-compatible variables with relevant ones) are especially difficult. Models make syntactically valid calls but **propagate incorrect/stale argument values across steps** — revealing brittle state tracking. A simple mitigation (explicitly restating prior variable values at each step) improves GPT-5 from 62.5% to 81.3%.
+- **Practical implication:** For any multi-step agent workflow: explicitly restate the current state of all variables at each tool-call step. This costs tokens but dramatically improves reliability.
+
+#### A3. MCP Fault Taxonomy: Real Faults in Model Context Protocol Software
+- **Source:** arXiv:2603.05637 (Mar 5, 2026)
+- **Type:** Empirical taxonomy (first large-scale MCP fault study)
+- **Why it matters:** First systematic taxonomy of real-world faults in MCP servers. Five high-level fault categories derived from empirical evidence, validated by practitioner survey. Identifies the most error-prone and critical components of MCP-based systems. Confirms that MCP-specific faults have distinct characteristics from non-MCP faults.
+- **Connects to:** MCP Tool Description Smells (2602.14878 — tool descriptions cause agent failures), MCPShield (2602.14281 — security layer for MCP), LiveMCPBench (2602.08780 — retrieval failures = 50% of MCP failures), SGD-MCP Convergence (2602.18764 — schema design principles).
+
+#### A4. ToolLoad-Bench: Cognitive Load Framework for Tool-Use Agent Capability Boundaries
+- **Source:** arXiv:2601.20412 (Jan 28, 2026)
+- **Type:** Benchmark with theoretical framework
+- **Key insight:** Applies Cognitive Load Theory to tool-use evaluation. Decomposes task complexity into **Intrinsic Load** (structural complexity via Tool Interaction Graph) and **Extraneous Load** (ambiguity in task presentation). Reveals **distinct performance cliffs** as cognitive load increases — allows precise mapping of each model's capability boundary. Framework predictions are highly calibrated with empirical results.
+- **Practical implication:** Don't just measure accuracy — measure where each model's cliff is. A model that scores 90% on easy tasks but cliff-drops at medium complexity is very different from one that degrades gracefully.
+
+---
+
+### B. TOOL-USE TRAINING METHODS (RL + Data Curation)
+
+#### B1. RC-GRPO: Reward-Conditioned GRPO for Multi-Turn Tool Calling
+- **Source:** arXiv:2602.03025 (Feb 3, 2026)
+- **Type:** RL training method
+- **Why it matters:** Solves a key GRPO failure mode: when within-group reward variation is low (all 0 or all 1), group-normalized advantage becomes uninformative → vanishing updates. RC-GRPO introduces **reward-conditioned trajectory generation**: fine-tune a Reward-Conditioned Trajectory Policy (RCTP) with discrete reward tokens (`<|high_reward|>`, `<|low_reward|>`), then during RL, sample diverse reward tokens within each group to force within-group diversity.
+- **Result:** On BFCLv4 multi-turn benchmark, Qwen-2.5-7B-Instruct trained with RC-GRPO **surpasses all closed-source API models**.
+- **Key insight:** The exploration-diversity problem in RL for tool-calling is solved by conditioning on reward quality tokens — the model learns to generate different quality trajectories on demand, which provides the gradient signal GRPO needs.
+- **Connects to:** EGPO (entropy-enhanced GRPO for function calling), D-CORE (task decomposition for complex tool use), TopoCurate (interaction topology for training data selection), Art of Efficient Reasoning (reward shaping for RL).
+
+#### B2. D-CORE: Task Decomposition + Composed Reasoning for Complex Tool Use
+- **Source:** arXiv:2602.02160 (Feb 2, 2026)
+- **Type:** Training framework (Alibaba)
+- **Why it matters:** Identifies **Lazy Reasoning** as a key failure mode in Large Reasoning Models (LRMs) for tool use — models skip sub-task decomposition and attempt monolithic tool-call sequences. D-CORE uses two-stage training: (1) self-distillation to incentivize task decomposition, (2) diversity-aware RL to restore reflective reasoning.
+- **Results:** D-CORE-8B reaches 77.7% on BFCLv3 (surpassing best 8B by 5.7%). D-CORE-14B achieves 79.3% SOTA, outperforming 70B models despite being 5× smaller.
+- **Key insight:** The "Lazy Reasoning" diagnosis is critical for agent designers: reasoning models with tool access often take shortcuts, calling tools before properly decomposing the task. Explicit decomposition training is needed — it doesn't emerge from scale alone.
+- **Connects to:** RC-GRPO (complementary RL approach), PEARL (plan exploration for multihop tool use), CoLT (latent tool calls for efficiency).
+
+#### B3. EGPO: Entropy-Enhanced Advantage for Robust Function Calling via RL
+- **Source:** arXiv:2508.05118v4 (updated; originally Aug 2025)
+- **Type:** RL framework
+- **Key insight:** Integrates CoT entropy into the GRPO advantage function to encourage diverse reasoning strategies during tool-call training. A 4B model trained with EGPO achieves SOTA on BFCL among comparable-size models, surpassing GPT-4o and Gemini-2.5.
+- **Connects to:** RC-GRPO (both address exploration diversity in GRPO), D-CORE (both target sub-4B/8B parameter-efficient function calling).
+
+#### B4. TopoCurate: Interaction Topology for Tool-Use Agent Training (already archived, updated context)
+- **Source:** arXiv:2603.01714 (Mar 2, 2026)
+- **Updated note:** Previously archived with initial summary. Key update: the BFCLv3 results show **4.2% SFT gain and 6.9% RL gain** over SOTA baselines. The semantic quotient topology approach (merging equivalent action-observation states into a manifold) is the most theoretically novel training data curation method in this space.
+
+#### B5. EigenData as Training Infrastructure (see A1 above)
+- **Cross-reference:** EigenData's DataAgent generates multi-turn trajectory data with self-evolving prompt optimization. Combined with its benchmark-repair capability, it provides both the training data and the evaluation infrastructure in one platform.
+
+---
+
+### C. AGENT-TOOL INTEGRATION FRAMEWORKS
+
+#### C1. SimpleTool: Parallel Decoding for Real-Time Function Calling (already archived, updated context)
+- **Source:** arXiv:2603.00030 (Feb 4, 2026; already in archive)
+- **Updated context:** SimpleTool's key insight remains uniquely practical: function call output has different statistical properties from free-form text — structured outputs (delimiters, parameter names) are highly predictable. SimpleTool exploits this with special tokens for both compression (4-6× reduction) and mode-switching (parallel generation of function name + arguments). **3-6× speedup, up to 9.6×**. On Mobile Actions, ST-Qwen-0.5B outperforms Google's FunctionGemma. Enables **16 Hz real-time control** at 4B model scale.
+
+#### C2. Team-of-Thoughts: Heterogeneous MAS via Orchestrated Tool Calling
+- **Source:** arXiv:2602.16485 (Feb 18, 2026)
+- **Type:** MAS architecture
+- **Key insight:** Treats differently post-trained models as **tool agents** within a heterogeneous MAS. Key mechanisms: (1) orchestrator calibration to identify models with superior coordination, (2) self-assessment protocol where tool agents profile their own domain expertise. During inference, orchestrator dynamically activates most suitable tool agents based on proficiency profiles.
+- **Results:** On AIME24: 96.67% (vs 80% for homogeneous baselines). On LiveCodeBench: 72.53% (vs 65.93%).
+- **Practical implication:** Different models are good at different things — rather than using one model for all tool calls, use an orchestrator that routes tool-call types to the most capable model. This is the architectural pattern for production multi-model agent deployments.
+
+#### C3. SGD-MCP Convergence: Schema Design Principles for Tool Integration
+- **Source:** arXiv:2602.18764v2 (Feb 21, 2026)
+- **Type:** Design principles paper
+- **Key insight:** Schema-Guided Dialogue (SGD, 2019) and MCP share the same core insight: schemas encode not just tool signatures but operational constraints and reasoning guidance. Five foundational principles: (1) Semantic Completeness > Syntactic Precision, (2) Explicit Action Boundaries, (3) Failure Mode Documentation, (4) Progressive Disclosure Compatibility, (5) Inter-Tool Relationship Declaration.
+- **Practical implication:** When writing MCP tool descriptions: document failure modes explicitly, declare relationships between tools, and use progressive disclosure (don't dump all parameters upfront — reveal them as needed). This directly reduces the "MCP Tool Description Smells" problem (2602.14878).
+
+---
+
+### D. PRACTITIONER FINDINGS (Reddit r/LocalLLaMA)
+
+#### D1. LM Studio Parser Silently Breaks Qwen3.5 Tool Calling (109↑, 42 comments)
+- **Source:** r/LocalLLaMA, post 1riwhcf (Mar 1, 2026)
+- **Why it matters:** Detailed root-cause analysis of a cluster of interacting bugs in LM Studio's server parser that silently break tool calling, corrupt reasoning output, and make models look worse than they are. **Three bugs:**
+  1. Parser scans inside `<think>` blocks for tool-call patterns — creates recursive traps where reasoning about tool calling triggers the parser
+  2. Completion text after tool calls gets silently dropped (LM Studio issue #1592, open since Feb 2025)
+  3. Interaction between bugs makes models appear incapable when the infrastructure is at fault
+- **Key insight for researchers:** Benchmark results on local models can be **silently corrupted by inference infrastructure**. A model scoring poorly on tool-calling benchmarks through LM Studio may score significantly better through llama.cpp directly. This is an invisible confound in all local-model evaluations.
+- **Community response:** Multiple users confirmed the bugs. llama.cpp has since added autoparsing support. The core issue (parser treating reasoning-about-tools as tool-calls) is an infrastructure-level failure that no model training can fix.
+- **Connects to:** KV cache quantization breaking tool calls at 30k+ context (prior archive entry), Qwen3.5 MoE thinking-suppression with tools (prior archive), infrastructure noise ±6pp (Anthropic engineering blog).
+
+#### D2. 22 Local Models Benchmarked for Agent Tool Calling on RTX 3090 (11 comments, deep data)
+- **Source:** r/LocalLLaMA, post 1rmkqco (Mar 6, 2026)
+- **Why it matters:** Most comprehensive practitioner benchmark of local models for real agent tool-calling (not academic benchmarks — actual agent workloads: Telegram, email, CRM). 22 models tested on 7 categories (tool calling 25%, multi-step 25%, instructions 20%, bilingual 10%, JSON 10%, speed 5%, prefix cache 5%).
+- **Key findings:**
+  - **Qwen 2.5 Coder 32B (Oct 2024) at Q4_K_M scores 9.3/10** — beats every 2025-2026 model AND beats Claude Sonnet 4.5 API (8.6/10) on pure agent execution
+  - **Reasoning models (R1 Distill, QwQ, OLMo Think) make terrible agents** — thinking ≠ doing
+  - **MoE with 3B active params can't handle multi-step** — fast but unreliable
+  - **Magistral Small 2509 is the dark horse** — best multi-step (9/10), perfect French
+  - **KV cache recalculation on every iteration** for Qwen3-Coder-Next and Qwen3.5 makes them non-viable in production (deltanet architecture poorly supported)
+- **Key insight:** There is a **massive gap between academic tool-calling benchmarks and production agent performance**. Qwen 2.5 Coder 32B — a model from October 2024 that appears mediocre on BFCL — dominates real-world agent workflows because it has: (a) extremely reliable JSON output, (b) stable tool-call formatting, (c) good multi-step planning, (d) fast inference. Newer models with better benchmark scores often fail on the formatting/reliability axis that benchmarks don't capture.
+- **Connects to:** EigenData's outcome-aware evaluation (A1 above — academic benchmarks need reform), LM Studio parser bugs (D1 — infrastructure confounds), MoE thinking suppression (prior archive), SimpleTool (C1 — latency matters for production agents).
+
+#### D3. "Tool Calling Is Where Agents Fail Most" — Intent Layer Thesis (7 comments)
+- **Source:** r/LocalLLaMA, post 1rjm4bl (Mar 1, 2026)
+- **Type:** Practitioner observation + design proposal
+- **Key insight:** Agents don't hallucinate in reasoning — they hallucinate in **tool calling**. The model sounds confident and logical, but picks wrong tools, passes wrong parameters, or executes in wrong order. Root cause: tool calls are driven by shallow context matching and pattern recognition, not goal understanding. **Context ≠ intent**. Proposed solution: a multi-modal intent layer that sits before reasoning and tool selection, answering: What is the objective? What constraints can't be violated? What signals matter beyond text?
+- **Connects to:** TAPE (constrained execution from plans), D-CORE (Lazy Reasoning — models skip decomposition), ToolLoad-Bench (cognitive load framework for understanding WHERE failures happen), MAST taxonomy (FM-2.6 Reasoning-Action Mismatch).
+
+#### D4. 0.6B Fine-Tuned Model Beats 120B Teacher by 29 Points on Structured Function Calling
+- **Source:** r/LocalLLaMA, post 1rp440i (Mar 7, 2026)
+- **Type:** Practitioner project (open source, Apache-2.0)
+- **Key findings:**
+  - GPT-OSS-120B teacher: 50.0% tool-call equivalence on IoT smart home functions
+  - Base Qwen3-0.6B: 10.3%
+  - **Fine-tuned Qwen3-0.6B: 79.5%** (+29.5 over teacher)
+  - Pipeline: dlt extracts production traces → LLM judge filters → Distil Labs generates ~10k synthetic examples grounded in real traffic → fine-tune student
+- **Key insight:** For narrow-domain function calling (specific schemas, specific user patterns), a **200× smaller fine-tuned model can dramatically outperform the general-purpose teacher**. This is the TabAgent insight (replacing LLM bottlenecks with specialized classifiers) applied to function calling. The production trace → synthetic data → fine-tuning pipeline is now accessible with open-source tooling.
+- **Connects to:** TabAgent (2602.16429 — replace LLM decision bottlenecks with classifiers), EigenData (data synthesis platform), D-CORE (small models can compete with large), SimpleTool (0.5B models for real-time function calling).
+
+#### D5. Open WebUI + Native Tool Calling + Qwen3.5 35B (851↑, 184 comments — highest engagement)
+- **Source:** r/LocalLLaMA, post 1rmplvs (Mar 6, 2026)
+- **Type:** Community excitement thread
+- **Why it matters:** 851 upvotes signals massive community interest in the convergence of local inference UIs (Open WebUI) gaining native tool-calling support. The combination of Open WebUI's new Open Terminal feature + native tool calling + Qwen3.5 35B is being treated as a breakthrough for local AI agent capability. Indicates that **tool-calling is the primary capability the local LLM community wants from their models**, ahead of raw reasoning or generation quality.
+- **Connects to:** LM Studio parser bugs (D1 — different inference platforms, different reliability), 22-model benchmark (D2 — practical tool-calling evaluation).
+
+---
+
+### E. CROSS-CUTTING SYNTHESIS: What's Actually Changing (March 2026)
+
+**1. Evaluation is being reformed.** The shift from trajectory-matching to outcome-aware evaluation (EigenData repairing BFCL-V3) will reshape model rankings. Current leaderboard positions are unreliable — models that take different-but-correct paths get penalized. Expect significant ranking changes when outcome-aware metrics become standard.
+
+**2. RL for tool-calling has matured past naive GRPO.** Three independent approaches (RC-GRPO, D-CORE, EGPO) all solve the same core problem: sparse rewards in multi-turn tool-calling make standard RL methods stall. Solutions converge on: (a) force exploration diversity through conditioning (RC-GRPO), entropy bonuses (EGPO), or decomposition training (D-CORE); (b) 8B-14B models can now compete with or exceed 70B+ models on function calling.
+
+**3. Infrastructure is the hidden variable.** The LM Studio parser bugs (D1), KV cache quantization breaking tool calls at 30k+ context (prior archive), and the 22-model benchmark showing older models winning on reliability (D2) all point to the same conclusion: **the inference infrastructure layer introduces silent failures that are invisible to benchmark designers and paper authors**. Model capability improvements are being masked or nullified by infrastructure bugs.
+
+**4. MCP ecosystem is being stress-tested.** Three papers in Feb-Mar 2026 directly address MCP failure modes: the fault taxonomy (2603.05637), tool description smells (2602.14878), and the SGD-MCP convergence principles (2602.18764). The MCP ecosystem is transitioning from "adopt it" to "make it reliable."
+
+**5. Small specialist models are the deployment sweet spot for function calling.** Multiple convergent signals: 0.6B fine-tuned model beating 120B teacher (D4), D-CORE-14B outperforming 70B models (B2), SimpleTool enabling 16Hz at 4B (C1), Qwen 2.5 Coder 32B at Q4 beating Claude Sonnet 4.5 on agent execution (D2). For production function-calling: fine-tune a small model on your specific tool schemas.
+
+**6. The intent gap is the next frontier.** Practitioner consensus (D3, D2) is that models fail not on understanding language or reasoning, but on **connecting user intent to correct tool invocations**. Current training optimizes for format compliance and single-tool accuracy — it doesn't train for intent fidelity across multi-step workflows. D-CORE's "Lazy Reasoning" and FuncBenchGen's "stale argument propagation" are both manifestations of this gap.
+
+---

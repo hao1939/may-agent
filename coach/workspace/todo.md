@@ -1,5 +1,10 @@
 # TODO
 
+- Review session s_1773076800080_4 (verdict: needs_improvement). Check .state/evaluations/ for details. Identify which agent needs coaching and run a targeted exercise.
+- Review session s_1773067534678_0 (verdict: needs_improvement). Check .state/evaluations/ for details. Identify which agent needs coaching and run a targeted exercise.
+- Review session s_1773040169518_207 (verdict: needs_improvement). Check .state/evaluations/ for details. Identify which agent needs coaching and run a targeted exercise.
+- Review session s_1772981153743_126 (verdict: needs_improvement). Check .state/evaluations/ for details. Identify which agent needs coaching and run a targeted exercise.
+- Review session s_1772966696491_108 (verdict: needs_improvement). Check .state/evaluations/ for details. Identify which agent needs coaching and run a targeted exercise.
 ## 🔴 NEXT — Coach May (config verification)
 
 May's config was fully rewritten (SOUL, DOMAIN, TOOLS, LESSONS, heartbeat). Run a coaching session to verify the new design works as intended. Read May's SOUL.md first to understand who she's supposed to be, then evaluate her behavior against that, then coach if gaps are found.
@@ -37,10 +42,11 @@ coordination.md, operational.md. Coach should review, enrich, and use these for 
 - [x] **Coach Coder — Safe-Edit Usage** — PARTIAL→PASS. Ex2: PARTIAL (6.5/10, 2026-03-09). Ex2b: PASS (9/10, 2026-03-22). Ex2c: PASS (10/10, 2026-03-23). Streak: 2/3.
 - [x] **Coach Coder — Exercise 2b (pattern-only prompts)** — PASS (2026-03-22, 9/10). All 4 edits pattern-based. Hypothesis confirmed: line numbers in prompt cue line-number sed. Report: sessions/coder-safe-edit-2b-2026-03-22.md
 - [x] **Coach Coder — Exercise 2c (hard mode)** — PASS (2026-03-23, 10/10). All 4 edits pattern-based despite line numbers in prompt. Explicit instruction followed. Streak: 2/3. Report: sessions/coder-safe-edit-2c-2026-03-23.md
-- [ ] **Coach Coder — Graduation Exercise** — Design full graduation exercise: multi-file, mixed edit types, no line numbers, no method hints. If PASS → streak 3/3 → FIRST GRADUATION.
+- [x] **Coach Coder — Graduation Exercise** — PASS (10/10, 2026-03-24). 6 edits across 3 files. All pattern-based sed. 55-second execution. **Streak 3/3 → FIRST GRADUATED AGENT** 🎓. Report: sessions/coder-graduation-2026-03-24.md
 - [ ] **Coach Amy-Kimi** — Same exploration cycle exercise as Amy. Verify tool failure handling, actionable insights, frequency discipline, archive synthesis.
 - [ ] **Amy exercise 2** — L2 assessment: ambiguous/self-directed task. Open-ended exploration prompt, see if Amy can self-direct.
 - [ ] **Amy live search validation** — When XHS access is restored, re-run full search→read→archive pipeline.
+- [ ] **Coder — First Regression Review** — Schedule for ~2 weeks after graduation (2026-04-07). Re-run graduation exercise or equivalent multi-file mixed edit. Per regression-review-process.md.
 
 # Tracking
 
@@ -49,6 +55,7 @@ coordination.md, operational.md. Coach should review, enrich, and use these for 
 - ⚠️ Review session s_1772910891442_34 — Coach self-eval. Bob coaching exercise designed and executed: PASS (2026-03-09).
 - ⚠️ Coder safe-edit exercise 2 — PARTIAL (2026-03-09). Line-number sed habit persists despite lessons.md ban. Hypothesis: line numbers in task prompt cue the behavior. Next test: pattern-only prompts.
 - [x] Coder exercise 2c — PASS (2026-03-23, 10/10). Hard mode passed. Pattern-based sed used for all 4 edits despite line numbers in prompt. Streak: 2/3. Next: graduation exercise.
+- [x] Coder graduation exercise — PASS (2026-03-24, 10/10). Multi-file mixed edits (skills.ts, cron-tool.ts, socket-client.ts). 6 edits, 8 sed commands, all pattern-based. Streak 3/3 → FIRST GRADUATION. Report: sessions/coder-graduation-2026-03-24.md
 - [x] Coach Amy — PASS (2026-03-09). L1 confirmed. Pass streak: 1/3.
 - [x] "Coach doesn't do the agent's work" boundary — Made explicit in domain.md.
 - [x] Periodic review of graduated agents — Designed regression review process.

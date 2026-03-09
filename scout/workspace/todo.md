@@ -5,6 +5,8 @@
 ### Medium Priority
 
 ### Backlog
+- [x] Deep-dive arXiv:2602.20945 — Art of Efficient Reasoning (★★★ from Feb 26 batch) — COMPLETED 2026-03-11
+- [x] Deep-dive arXiv:2602.21198 — Reflective Test-Time Planning (★★★ from Feb 26 batch) — COMPLETED 2026-03-11
 
 ## Completed (2026-03-06)
 - [x] Verified tool access: GitHub API ✅, arXiv ✅, Reddit (301 redirect, 403 on follow — blocked by bot detection, use API instead)

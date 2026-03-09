@@ -1,25 +1,23 @@
-
-⚠️ REPEATED READ (2x): You have already read this file in full. To save context tokens, use line-range reads: read(path, startLine=N, endLine=M) to view only the section you need (this file has 53 lines). For edits, use exec with sed instead of read+write.
-
 # Lessons Learned
 
-## Meta-Loop Operations (2026-03-08)
-- **Verify Before Briefing**: I briefed the optimizer to remove `META_AGENTS` from `evaluate-sessions.ts`, but the code was already clean. The high skip rate in the daily brief was a *symptom*, but my diagnosis of the *cause* (hardcoded exclusion) was outdated.
-- **Lesson**: Before requesting a code change, `read` the file to confirm the code actually exists. Don't assume the codebase state based on secondary metrics.
+## Data Integrity
+- If a read is truncated, you have NO data. Never analyze, conclude, or write files based on partial content. Use line-range reads for large files.
+- After `write()`, always `read()` back the target file to confirm it's complete — no mid-sentence truncation.
 
-## Task Evaluation (2026-03-06)
-- **Verify Delivery**: After `write()`, always `read()` back the target file to confirm the deliverable is complete (no mid-sentence truncation) before ending the task.
-- **Stay on Task**: For cron “analyze-failures”, only produce `agents/bob/workspace/analysis.md`; put implementation proposals as a short appendix inside the analysis instead of creating extra briefs/delegations.
+## Meta-Loop Discipline
+- Verify before briefing: `read` the actual file before requesting a change to it. Don't assume codebase state from secondary metrics.
+- The brief is step 3 of 5. Don't stop to report "I have written the brief." Call the optimizer immediately after writing.
 
-## Truncated Reads (2026-03-07)
-- **Data Integrity is Law**: Never analyze or update files based on truncated reads. If `[... truncated]`, you have NO data.
-- **Surgical Edits**: Use `sed` or line-range `read()` to update files. Never rewrite a full file unless you have read the full content in this session.
+## Design Work
+- Evidence first, essay second. List the raw data (commits, diffs, quotes) before writing analysis. If the data command returns nothing, your analysis is empty.
+- Corrections from the human are the strongest signal — update philosophy.md immediately.
+- Watch for drift between stated philosophy and actual system behavior. Either the principle is wrong or the system drifted — investigate which.
 
-## Design Philosophy (2026-03-07)
-- **Corrections = Gold**: When the human corrects you, that is the highest-value signal. Update `philosophy.md`.
-- **Evidence-Based**: "I think" is weak. "Session X shows Y" is strong.
-- **Drift Detection**: Watch for the system slowly moving away from `philosophy.md` principles.
+## File Editing
+- Use `exec` with `sed` or line-range reads for surgical updates. Never rewrite a full file unless you've read the complete content this session.
+- Verify delivery: confirm the file on disk matches what you intended.
 
-## Operational Discipline
-- **Idle ≠ Done**: If no active task, review the state. Check for stale docs.
-- **Verification**: Don't write a "Fact" into `shared/` unless you've verified it against a source (code or primary doc).
+## Anti-Patterns (from experience)
+- Don't try to run agents via `exec` (`npx tsx run/may.ts`, `chmod +x`). Always use `subagents.delegate()`.
+- Don't stop at "nice list and wait" — if there's a clear next step, take it.
+- Don't treat a single data point as a trend. One comment is curiosity; three in a week is a priority.
