@@ -4,27 +4,31 @@ Concrete details about who's on the team, what they have, and how the runner wor
 
 ## Feature Team
 
-| Agent | Model | Tools | Turn Limit | Notes |
-|-------|-------|-------|------------|-------|
-| **May** | opus | exec (read-only), subagents, workflow | — | Supervisor. No read/write tools — forces delegation for all code changes. Can read files and run shell commands for verification (cat, grep, tsc, tests, git) but cannot write files via exec. |
-| **Coder** | opus | read, write, exec | 50 | Full project access. Implements code changes. Does not commit — supervisor handles git add/commit after QA review. |
-| **QA** | gpt-5.2 | read, write, exec | 30 | Different model from coder for perspective diversity. Can fix issues directly. Uses PASS/FAIL/CONDITIONAL verdicts. |
-| **Master** | opus | claude_code, gemini_cli | 30 | Two dedicated CLI agent tools. No read, write, or exec — interacts with codebase exclusively through claude-code and gemini-cli. |
+| Agent | Model | Tools | Notes |
+|-------|-------|-------|-------|
+| **Tech Lead** | opus | read, exec, workflow, subagents | Architect. Decomposes features, supervises execution. |
+| **May** | opus | exec (read-only), subagents, workflow | Supervisor. No read/write tools — forces delegation for all code changes. Can read files and run shell commands for verification (cat, grep, tsc, tests, git) but cannot write files via exec. |
+| **Coder** | opus | read, write, exec | Full project access. Implements code changes. Does not commit — supervisor handles git add/commit after QA review. |
+| **QA** | gpt-5.2 | read, write, exec | Different model from coder for perspective diversity. Can fix issues directly. Uses PASS/FAIL/CONDITIONAL verdicts. |
+| **Master** | opus | claude-code, gemini-cli | Two dedicated CLI agent tools. No read, write, or exec — interacts with codebase exclusively through claude-code and gemini-cli. |
+| **Amy** | opus | read, write, exec | XHS content exploration and archival. |
+| **Amy-Kimi** | kimi | read, write, exec | Kimi-powered variant of Amy for Chinese content. |
+| **Scout** | gemini-3-pro | read, write, exec | Wide-net research and discovery. |
 
 ## Meta Team
 
-| Agent | Model | Tools | Turn Limit | Notes |
-|-------|-------|-------|------------|-------|
-| **Evaluator** | gpt-5.2 | read, write, exec | 20 | Scores each agent in a task tree by responsibility. memoryLimit=5. |
-| **Optimizer** | opus | read, write, exec, subagents, workflow | 40 | Implements one fix per run. Can delegate to coder and QA. |
-| **Bob** | gemini-3-pro | read, write, exec, subagents | 50 | Design philosopher. Orchestrates meta-loop. Maintains philosophy.md. |
-| **Coach** | opus | read, write, exec (read-only), background-exec, socket-watch | 100 | Trains agents through live exercises. Spawns coachee in separate process, observes via socket, writes reports. |
+| Agent | Model | Tools | Notes |
+|-------|-------|-------|-------|
+| **Evaluator** | gpt-5.2 | read, write, exec | Scores each agent in a task tree by responsibility. memoryLimit=5. |
+| **Optimizer** | opus | read, write, exec, subagents, workflow | Implements one fix per run. Can delegate to coder and QA. |
+| **Bob** | gemini-3-pro | read, write, exec, subagents | Design philosopher. Orchestrates meta-loop. Maintains philosophy.md. |
+| **Coach** | opus | read, write (workspace only), exec (read-only), subagents, workflow, validate-workflow, socket-watch | Trains agents through live exercises. Spawns coachee via subagents (detached), observes via socket, writes reports. |
 
 ## Model Assignment
 
 Three model families provide independent perspective. Opus for builders (May, Coder,
 Optimizer, Master, Coach). GPT-5.2 for reviewers (QA, Evaluator). Gemini 3 Pro for design
-philosophy (Bob). All are proxy-aliased labels routed through a local proxy.
+philosophy (Bob) and research (Scout). All are proxy-aliased labels routed through a local proxy.
 
 ## Runner
 
@@ -47,7 +51,7 @@ as ephemeral sessions.
 
 ### External Scheduling
 
-No built-in timers. Use crontab or similar for recurring tasks:
+Recurring tasks use cron.json (agent-owned cron handlers) or external crontab:
 ```
 # Run meta-loop every 30 minutes
 */30 * * * * echo '{"type":"run","agent":"bob","message":"Run the meta-loop"}' | socat - UNIX-CONNECT:/path/to/.state/may.sock
@@ -63,8 +67,9 @@ shared docs, then cross-respond.
 
 ## Knowledge Hot-Reload
 
-All agent knowledge (domain.md, lessons.md) is read fresh at session start. Changes
-take effect on the next agent session without restarting.
+All agent knowledge (SOUL.md, DOMAIN.md, TOOLS.md, LESSONS.md, skills/) is read
+fresh at session start. Changes take effect on the next agent session without
+restarting.
 
 ## Constraints
 

@@ -14,37 +14,40 @@ We are transitioning from "Exploration" (Phase 1) to "Hardening" (Phase 2). The 
 
 ### 1. Zero Data Loss (Blind Overwrite Prevention)
 **Goal:** Eliminate "truncated read → blind overwrite" failures entirely.
-- **Status:** In Progress.
-- **Mechanism:** Structural "Shrink Guard" in `write` tool; strictly enforced "Read-Range" protocols in `lessons.md`.
+- **Status:** Deployed (Workflow Available).
+- **Mechanism:** `safe-edit` workflow (uses `grep` + `sed` instead of read-write).
+- **Adoption:** Workflow exists (`agents/optimizer/workflows/safe-edit.ts`). Next: Roll out to Coder/Optimizer domain instructions.
 - **Success Metric:** 0 incidents of `lessons.md` or `todo.md` corruption in 7 days.
 
 ### 2. Meta-Loop Autonomy
 **Goal:** The system self-diagnoses and self-repairs without human initiation.
-- **Status:** Active.
-- **Mechanism:** Bob (Analyze) → Optimizer (Fix) → Evaluator (Measure) loop.
+- **Status:** Active (Daily Cycle Established).
+- **Mechanism:**
+    - **Detection:** Pattern Recognition Pipeline (F2) scans for recurring issues.
+    - **Reporting:** Daily Brief (F5) summarizes health for human.
+    - **Fixing:** Ralph Loop (F4) drives discoveries to implementation.
 - **Success Metric:** Optimizer successfully implements a fix that survives 3 subsequent sessions without regression.
 
-### 3. Deterministic Operations
-**Goal:** Move repetitive, high-risk logic out of the LLM and into raw code.
-- **Status:** Started.
-- **Items:**
-    - `drain-todo`: Moved to JS loop.
-    - `lesson-consolidation`: Moved to strict protocol (considering JS port).
-- **Principle:** "If it happens every time, it should be code, not a prompt."
+### 3. Hard-Gated Coder (RALPH Loop)
+**Goal:** A Coder workflow that *structurally disables* the `finish` tool until a verification command (test/lint) returns exit code 0.
+- **Status:** Prototyping (Experiment 1 Complete).
+- **Progress:** `vet-skill` workflow successfully used the loop.
+- **Next:** Apply this pattern to general coding tasks.
 
 ## Feature Backlog
 
 ### High Priority
-- **Hard-Gated Coder (RALPH Loop)**: A Coder workflow that *structurally disables* the `finish` tool until a verification command (test/lint) returns exit code 0.
 - **Modular Skill Registry**: Refactor giant system prompts into small `SKILL.md` files that are lazy-loaded only when needed (Progressive Disclosure pattern).
+- **Crash Recovery State**: `[STARTED]` state tracking to auto-resume orphaned sessions after a process restart.
 
 ### Medium Priority
-- **Agent-Specific Evaluation**: Custom scorecards for each agent (e.g., Coder = correctness/tests; Bob = insight/alignment) instead of generic "Quality".
-- **Crash Recovery State**: `[STARTED]` state tracking to auto-resume orphaned sessions after a process restart.
+- **Agent-Specific Evaluation**: Custom scorecards for each agent (e.g., Coder = correctness/tests; Bob = insight/alignment) instead of generic "Quality". (Partially done with L1/L2/L3 criteria).
+- **Deterministic Operations**: Move repetitive, high-risk logic out of the LLM and into raw code (e.g., `drain-todo` loop).
 
 ## Parked / Watchlist
 - **Scout/Amy Cross-Synthesis**: synthesizing external market signals. (Parked until core system stability is >95%).
 - **Vector Memory**: (Parked; file-based navigation is sufficient for current scale).
 
 ## Change Log
+- **2026-03-07**: Updated status for Zero Data Loss (Deployed), Meta-Loop (Active), and Ralph Loop (Prototyping).
 - **2026-03-06**: Initial Roadmap created by Bob. Focus defined as "Robustness & Deterministic Guardrails".

@@ -65,6 +65,9 @@ Do the job that was asked — no scope expansion. If new work is discovered, pro
 ### 8. Hard Constraints Are Facts [hao-pattern]
 If the environment (tool, compiler, OS) blocks an action, it's a hard fact. Don't retry the exact same action expecting a different result. Change your approach immediately.
 
+### 46. Claim Before Act [hao-direct]
+Before taking action, state what you plan to do and why. Every significant step should be preceded by a brief claim: what will be done, what the expected outcome is, what you'll check afterward. This enables coaching (coach can intervene before a mistake), auditing (evaluator can assess planning quality), debugging (transcripts are readable), and human oversight (user can redirect before wasted work). The claim doesn't need to be long — one or two sentences. The point is legibility: anyone reading the transcript should understand the agent's intent without having to reverse-engineer it from tool calls.
+
 ---
 
 ## B. Design: System Architecture (owner: bob)
@@ -191,6 +194,9 @@ An agent should carry enough context internally that the heartbeat is just a tri
 New agents start in coaching mode: a coach agent spawns them, watches output, gives immediate feedback. Transition to independent mode (own heartbeat, runs autonomously) is a judgment call: consistent clean output, self-evolving behavior, no repeated mistakes → ready.
 
 > "it's a useful pattern especially for agent in early stage, we should name it, maybe coaching mode?" — Hao
+
+### 47. Evaluate Before Apply [hao-direct]
+Never push a convention, practice, or change to agents without first testing it. Coach must verify a convention works by running it against real session data or designing an exercise that tests it. Optimizer must verify a fix actually fixes the problem before marking it done. This applies to conventions, knowledge updates, workflow changes, and any systematic improvement. The sequence is: observe → hypothesize → test → apply. Skipping "test" is how bad conventions propagate.
 
 ### 29. The Artifact Effect [hao-pattern]
 Artifacts can look "finished" even when wrong. Treat artifacts with the same skepticism as unverified claims. When AI produces a visible artifact, users apply less critical scrutiny — the artifact *looks finished*, triggering a completion heuristic.

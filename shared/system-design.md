@@ -20,10 +20,10 @@ results) and through the shared filesystem (code, config, knowledge files).
 The feature team does the actual work:
 
 **May** (supervisor) — Receives tasks from the user. Delegates to specialized agents,
-examines their results, and makes final decisions.
+examines their results, and makes final decisions. Typically runs as the **Chat Session** (Interface).
 
 **Coder** — Implements code changes. Reads files, edits code, runs tests. Gets a task
-description from May and works independently until done.
+description from May and works independently until done. Always runs as a **Task Session**.
 
 **QA** — Reviews code changes for correctness and quality. Runs type checks and tests.
 Reports a verdict (PASS/FAIL/CONDITIONAL) with specific issues. QA can fix issues
@@ -305,24 +305,93 @@ issues recur, which failure chain root causes keep appearing.
 
 ## Session Lifecycle
 
-**Ephemeral sessions**: Session starts, runs, completes, gets archived. One session
-per task. This is the default for all agents.
+The system uses a binary session model: **Chat** (User Interface) and **Task** (Worker).
 
-**Persistent sessions**: Session starts, runs, goes idle when done. When a new task
-arrives, the same session wakes up. This preserves conversation history across tasks.
-Persistence is a runtime choice — any agent becomes persistent when it serves as
-the interface agent. It's not a property of the agent itself.
+### Chat Session (The Interface)
+- **Role**: Maintains the continuous thread of "User Intent".
+- **Lifespan**: Long-lived, persists across restarts, restores from disk.
+- **Count**: Exactly ONE active interface agent (default: May).
+- **Behavior**: Starts on boot. Enters "idle" state when waiting for user input. Supports `followUp` for notifications.
+- **Mechanism**: `persistent: true`.
 
-When the process restarts, the interface agent's persistent session is restored from
-disk. Message history is preserved, but the system prompt is regenerated from current
-knowledge files. This means knowledge changes (domain.md, lessons.md, shared docs)
-take effect even on restored sessions.
+### Task Session (The Workers)
+- **Role**: Executes a specific unit of work (sub-agent, cron job, CLI tool).
+- **Lifespan**: Ephemeral. Spawns → Works → Dies. No idle state.
+- **Count**: Unlimited.
+- **Behavior**: Always starts fresh. Reads `SOUL.md` and `todo.md`, executes the task, writes `journal.md`, and exits.
+- **Mechanism**: `persistent: false`. The filesystem (`todo.md`, `journal.md`) is the memory.
 
-### The Runner is Agent-Agnostic
+### The Runner
 
-The runner doesn't know which agent is "special." It manages one persistent interface
-agent (configurable) and routes input to it. Any agent can serve as the interface:
-May for normal work, Bob for meta-loop, Master for CLI tool work.
+The runner manages this distinction. It restores the single Interface Agent session at startup. All other requests (cron, sub-agents, CLI) spawn fresh Task Sessions.
 
-Agents that aren't the interface agent can still be invoked directly via `@agent`
-prefix or the socket `run` command — these create fresh ephemeral sessions.
+## Agent Team
+
+Concrete details about who's on the team, what they have, and how the runner works.
+
+## Feature Team
+
+| Agent | Model | Tools | Turn Limit | Notes |
+|-------|-------|-------|------------|-------|
+| **May** | opus | exec (read-only), subagents, workflow | — | Supervisor. No read/write tools — forces delegation for all code changes. Can read files and run shell commands for verification (cat, grep, tsc, tests, git) but cannot write files via exec. |
+| **Coder** | opus | read, write, exec | 50 | Full project access. Implements code changes. Does not commit — supervisor handles git add/commit after QA review. |
+| **QA** | gpt-5.2 | read, write, exec | 30 | Different model from coder for perspective diversity. Can fix issues directly. Uses PASS/FAIL/CONDITIONAL verdicts. |
+| **Master** | opus | claude_code, gemini_cli | 30 | Two dedicated CLI agent tools. No read, write, or exec — interacts with codebase exclusively through claude-code and gemini-cli. |
+
+## Meta Team
+
+| Agent | Model | Tools | Turn Limit | Notes |
+|-------|-------|-------|------------|-------|
+| **Evaluator** | gpt-5.2 | read, write, exec | 20 | Scores each agent in a task tree by responsibility. memoryLimit=5. |
+| **Optimizer** | opus | read, write, exec, subagents, workflow | 40 | Implements one fix per run. Can delegate to coder and QA. |
+| **Bob** | gemini-3-pro | read, write, exec, subagents | 50 | Design philosopher. Orchestrates meta-loop. Maintains philosophy.md. |
+| **Coach** | opus | read, write, exec (read-only), background-exec, socket-watch | 100 | Trains agents through live exercises. Spawns coachee in separate process, observes via socket, writes reports. |
+
+## Model Assignment
+
+Three model families provide independent perspective. Opus for builders (May, Coder,
+Optimizer, Master, Coach). GPT-5.2 for reviewers (QA, Evaluator). Gemini 3 Pro for design
+philosophy (Bob). All are proxy-aliased labels routed through a local proxy.
+
+## Runner
+
+The runner is agent-agnostic but enforces the session model:
+
+- **Interface Agent** (defined by `AGENT` env var, default `may`) gets the single **Chat Session**.
+- **All other agents** run as **Task Sessions**.
+
+### Input Routing
+
+- **Default input** goes to the interface agent's Chat Session.
+- **`@agent message`** spawns a fresh Task Session for that agent.
+- **Socket `run` command** spawns a fresh Task Session.
+- **Socket `input` command** sends to the Chat Session.
+
+### External Scheduling
+
+No built-in timers. Use crontab or similar for recurring tasks:
+```
+# Run meta-loop every 30 minutes
+*/30 * * * * echo '{"type":"run","agent":"bob","message":"Run the meta-loop"}' | socat - UNIX-CONNECT:/path/to/.state/may.sock
+```
+
+## Workflows
+
+**implement-and-review** — Both May and optimizer have this. Coder implements → QA
+reviews → one retry on FAIL/CONDITIONAL → escalate if still failing.
+
+**design-review** — Optimizer only. Evaluator and optimizer independently review
+shared docs, then cross-respond.
+
+## Knowledge Hot-Reload
+
+All agent knowledge (domain.md, lessons.md) is read fresh at session start. Changes
+take effect on the next agent session without restarting.
+
+## Constraints
+
+- **May cannot write files** — read-only exec enforced structurally
+- **Coder never commits** — supervisor handles git add/commit after QA review
+- **Master cannot write files** — must use CLI agents (claude-code, gemini-cli)
+- **One fix per optimizer run** — isolates changes for measurable evaluation
+- **Persistent sessions use compaction** — threshold 70%, keep ratio 40% (Chat Session only)
