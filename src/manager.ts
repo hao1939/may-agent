@@ -30,7 +30,7 @@ import type { MemoryEntry, WorkflowRun, PersistedSession, Registry } from "./per
 import type { TraceNode, SessionTrace } from "./workflow.js";
 import { join, dirname, relative, resolve } from "node:path";
 import { isOverflowError, extractProgress, writeProgressFile } from "./overflow.js";
-import { spawnDetachedAgent } from "./detached.js";
+import { spawnDetachedAgent, readIdentity } from "./detached.js";
 import { sendSocketCommand } from "./socket-client.js";
 import { buildProjectStructure } from "./tools.js";
 
@@ -319,6 +319,7 @@ export class SubagentManager {
       const relPath = (abs: string) => relative(def.projectRoot!, abs) || ".";
       const agentDir = def.knowledgeDir ? dirname(def.knowledgeDir) : def.workspace ? dirname(def.workspace) : undefined;
       const envLines = [`# Runtime Environment`, `- Project root (exec cwd): ${def.projectRoot}`];
+      envLines.push(`- Container: Docker (there is NO /home/, /Users/, /root/, or ~ directory — all work happens under ${def.projectRoot})`);
       if (agentDir) {
         envLines.push(`- Agent directory: ${relPath(agentDir)}`);
         // List agent-level files (heartbeat.md, periodic-tasks.md, etc.)
@@ -348,7 +349,7 @@ export class SubagentManager {
       if (loaded.length > 0) {
         envLines.push(`- Already in context (do NOT read): ${loaded.join(", ")}, skills, shared knowledge, memory`);
       }
-      envLines.push(``, `IMPORTANT: Use paths relative to the project root (e.g. agents/may/workspace/todo.md). Tools resolve relative paths automatically. Your workspace is the ONLY directory you should write to.`);
+      envLines.push(``, `IMPORTANT: All paths are relative to project root. Example: agents/${def.name}/workspace/todo.md (NOT /home/user/..., /Users/hao/..., or /root/...). Tools resolve relative paths automatically. Your workspace is the ONLY directory you should write to.`);
       sections.push(envLines.join("\n"));
     }
 
@@ -1693,6 +1694,59 @@ export class SubagentManager {
     await session.promise;
   }
 
+
+  /**
+   * Wait for a detached session to complete by polling its meta.json on disk.
+   * Returns a TaskResult built from the persisted session data.
+   *
+   * Strategy: poll meta.json for terminal status. This is the most reliable
+   * approach since the detached process always writes meta.json on completion.
+   * Socket-based instant notification is a future optimization.
+   *
+   * @param sessionId - The session ID of the detached session
+   * @param opts.pollIntervalMs - Polling interval (default: 2000ms)
+   * @param opts.timeoutMs - Overall timeout (default: 600_000ms = 10 min)
+   */
+  async waitForDetached(sessionId: string, opts?: { pollIntervalMs?: number; timeoutMs?: number }): Promise<TaskResult> {
+    const pollInterval = opts?.pollIntervalMs ?? 2000;
+    const timeoutMs = opts?.timeoutMs ?? 600_000;
+
+    // Check if already done
+    const initialMeta = this.registry.getSession(sessionId);
+    if (!initialMeta) {
+      throw new Error(`Session "${sessionId}" not found`);
+    }
+    if (initialMeta.status !== "running" && initialMeta.status !== "idle") {
+      return this.resultFromArchive(sessionId);
+    }
+
+    // Poll meta.json until status is terminal
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+      const meta = this.registry.getSession(sessionId);
+      if (meta && meta.status !== "running" && meta.status !== "idle") {
+        return this.resultFromArchive(sessionId);
+      }
+      // Also check identity.json for process exit (catches cases where
+      // meta.json wasn't updated but the process died)
+      if (initialMeta.instance) {
+        const identity = readIdentity(this.registry.persistDir, initialMeta.instance);
+        if (identity && identity.status !== "running") {
+          // Process exited — give meta.json a moment to flush, then check
+          await new Promise(r => setTimeout(r, 500));
+          const finalMeta = this.registry.getSession(sessionId);
+          if (finalMeta && finalMeta.status !== "running" && finalMeta.status !== "idle") {
+            return this.resultFromArchive(sessionId);
+          }
+          // Process is dead but meta still says running — mark as error
+          this.registry.updateSessionStatus(sessionId, "error", "Process exited without completing");
+          return this.resultFromArchive(sessionId);
+        }
+      }
+      await new Promise(r => setTimeout(r, pollInterval));
+    }
+    throw new Error(`Timeout waiting for detached session "${sessionId}" (${timeoutMs}ms)`);
+  }
   // ── Path accessors ───────────────────────────────────────────────────
 
   /** Get the knowledge directory path for a registered agent. */
@@ -2271,16 +2325,15 @@ export class SubagentManager {
               if (cancelMeta?.detached) {
                 // Try socket-based graceful cancel first
                 if (cancelMeta.instance) {
-                  try {
-                    const identityPath = resolve(manager.registry.persistDir, "instances", cancelMeta.instance, "identity.json");
-                    const identity = JSON.parse(readFileSync(identityPath, "utf-8"));
-                    if (identity.socket) {
-                      await sendSocketCommand(identity.socket, { type: "cancel", sessionId: params.sessionId });
+                  const cancelIdentity = readIdentity(manager.registry.persistDir, cancelMeta.instance);
+                  if (cancelIdentity?.socket) {
+                    try {
+                      await sendSocketCommand(cancelIdentity.socket, { type: "cancel", sessionId: params.sessionId });
                       manager.registry.updateSessionStatus(params.sessionId, "interrupted", "Cancelled (socket)");
                       return textResult(JSON.stringify({ cancelled: params.sessionId, mode: "detached", method: "socket" }));
+                    } catch {
+                      // Socket dead, fall back to SIGTERM
                     }
-                  } catch {
-                    // Socket dead or identity missing, fall back to SIGTERM
                   }
                 }
                 // Fall back to SIGTERM
@@ -2300,6 +2353,20 @@ export class SubagentManager {
               if (!params.sessionId) {
                 return textResult(JSON.stringify({ error: "action 'waitFor' requires 'sessionId'" }));
               }
+              // Attached: use in-process waitFor
+              if (manager.hasActiveSession(params.sessionId)) {
+                const taskResult = await manager.waitFor(params.sessionId);
+                const { messages: _msgs, ...resultWithoutMessages } = taskResult;
+                return textResult(JSON.stringify(resultWithoutMessages, null, 2));
+              }
+              // Detached: poll meta.json + identity.json for completion
+              const waitMeta = manager.registry.getSession(params.sessionId);
+              if (waitMeta?.detached) {
+                const taskResult = await manager.waitForDetached(params.sessionId);
+                const { messages: _msgs, ...resultWithoutMessages } = taskResult;
+                return textResult(JSON.stringify(resultWithoutMessages, null, 2));
+              }
+              // Fallback: try normal waitFor (checks sessionResults + archive)
               const taskResult = await manager.waitFor(params.sessionId);
               const { messages: _msgs, ...resultWithoutMessages } = taskResult;
               return textResult(JSON.stringify(resultWithoutMessages, null, 2));
@@ -2351,16 +2418,15 @@ export class SubagentManager {
               // Detached: send via socket
               const steerMeta = manager.registry.getSession(params.sessionId);
               if (steerMeta?.instance) {
-                try {
-                  const steerIdentityPath = resolve(manager.registry.persistDir, "instances", steerMeta.instance, "identity.json");
-                  const steerIdentity = JSON.parse(readFileSync(steerIdentityPath, "utf-8"));
-                  if (steerIdentity.socket) {
+                const steerIdentity = readIdentity(manager.registry.persistDir, steerMeta.instance);
+                if (steerIdentity?.socket) {
+                  try {
                     await sendSocketCommand(steerIdentity.socket, { type: "steer", message: params.message });
                     return textResult(JSON.stringify({ steered: params.sessionId, mode: "detached" }));
+                  } catch (socketErr) {
+                    const socketMsg = socketErr instanceof Error ? socketErr.message : String(socketErr);
+                    return textResult(JSON.stringify({ error: `Failed to steer detached session: ${socketMsg}` }));
                   }
-                } catch (socketErr) {
-                  const socketMsg = socketErr instanceof Error ? socketErr.message : String(socketErr);
-                  return textResult(JSON.stringify({ error: `Failed to steer detached session: ${socketMsg}` }));
                 }
               }
               return textResult(JSON.stringify({ error: `Session "${params.sessionId}" not found or not running` }));

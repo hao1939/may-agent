@@ -473,6 +473,7 @@ export function loadAgents(opts: AgentLoaderOptions): LoadResult {
     const knowledgeDir = resolve(agentDir, "knowledge");
     const workspace = resolve(agentDir, "workspace");
     const workflowDir = resolve(agentDir, "workflows");
+    const sharedSkillsDir = resolve(agentsRoot, "shared", "skills");
 
     manager.register({
       name: config.name,
@@ -484,6 +485,7 @@ export function loadAgents(opts: AgentLoaderOptions): LoadResult {
       knowledgeDir: existsSync(knowledgeDir) ? knowledgeDir : undefined,
       workspace: existsSync(workspace) ? workspace : undefined,
       workflowDir: existsSync(workflowDir) ? workflowDir : undefined,
+      skillsDirs: existsSync(sharedSkillsDir) ? [sharedSkillsDir] : undefined,
       projectRoot,
       apiKey: "not-needed",
       memoryLimit: config.memoryLimit,

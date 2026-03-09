@@ -1,6 +1,6 @@
 /**
  * Cron tool — CRUD for cron.json entries.
- * Agents use this to manage their own scheduled jobs.
+ * Agents use this to manage their own scheduled jobs. Each agent has its own cron.json.
  */
 
 import { Type, type Static } from "@mariozechner/pi-ai";
@@ -25,6 +25,7 @@ export interface CronEntry {
   timeoutMs?: number;
   /** Config passed to the handler's create() factory. Handler-specific. */
   handlerConfig?: Record<string, unknown>;
+  lastModified?: string;
 }
 
 export interface JobResult {
@@ -135,7 +136,7 @@ export function createCronTool(opts: CronToolOptions): AgentTool {
           if (input.intervalMs < 10_000) return textResult("Error: intervalMs must be >= 10000 (10 seconds)");
           const entries = readEntries();
           if (entries.some(e => e.name === input.name)) {
-            return textResult(`Error: job "${input.name}" already exists. Use 'update' to modify.`);
+            return textResult(`Error: job "${input.name}" already exists. Use 'update' to modify it, or 'remove' first to replace it.`);
           }
           const newEntry: CronEntry = {
             name: input.name,
@@ -172,6 +173,7 @@ export function createCronTool(opts: CronToolOptions): AgentTool {
           if (input.message !== undefined) entry.message = input.message;
           if (input.description !== undefined) entry.description = input.description.length > 200 ? input.description.slice(0, 200) + "..." : input.description;
           if (input.enabled !== undefined) entry.enabled = input.enabled;
+          entry.lastModified = new Date().toISOString();
           writeEntries(entries);
           return textResult(`Updated job "${input.name}"`);
         }
@@ -203,3 +205,4 @@ export function createCronTool(opts: CronToolOptions): AgentTool {
     },
   };
 }
+
