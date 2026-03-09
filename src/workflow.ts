@@ -12,6 +12,7 @@ export type WorkflowEvent =
 
 // ── Workflow Result ────────────────────────────────────────────────────
 
+/** The outcome of a workflow execution — either successful completion with a summary, or an escalation with a reason. */
 export type WorkflowResult =
   | { type: "done"; summary: string }
   | { type: "escalate"; reason: string; context?: unknown };
@@ -25,7 +26,9 @@ export interface WorkflowContext {
 
   /** Run a sub-agent, wait for it to finish, return result.
    *  Checks the steering queue before each step — if a steering signal
-   *  is pending, throws WorkflowInterrupted. */
+   *  is pending, throws WorkflowInterrupted.
+   *  @throws {WorkflowInterrupted} If a steering signal is received while the agent is running.
+   */
   runAgent(name: string, task: string): Promise<TaskResult>;
 
   /** Run a sub-workflow by name. Enables workflow composition. */

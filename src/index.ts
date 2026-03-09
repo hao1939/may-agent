@@ -59,9 +59,10 @@ export { createClaudeCodeTool, createGeminiCliTool } from "./cli-agents.js";
 export type { CliAgentToolOptions, GeminiCliToolOptions } from "./cli-agents.js";
 export { createCronTool } from "./cron-tool.js";
 export type { CronToolOptions, CronEntry, JobResult } from "./cron-tool.js";
-export { spawnDetachedAgent } from "./detached.js";
-export type { SpawnDetachedOpts } from "./detached.js";
-export { sendSocketCommand } from "./socket-client.js";
+export { spawnDetachedAgent, readIdentity } from "./detached.js";
+export type { SpawnDetachedOpts, InstanceIdentity } from "./detached.js";
+export { sendSocketCommand, waitForSocketEvent } from "./socket-client.js";
+export type { SocketResponse, SocketEvent } from "./socket-client.js";
 export type {
   SubagentDefinition,
   SessionInfo,

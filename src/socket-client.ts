@@ -1,11 +1,14 @@
 /**
- * Socket client — command sender for detached agents.
+ * Socket client — command sender and event listener for detached agents.
  *
  * Connects to a Unix domain socket, writes a JSON command, reads the
  * server's ack response, and disconnects. Used for steer/cancel on
  * detached sub-agents whose socket path is recorded in identity.json.
  *
- * Design: docs/socket-protocol.md
+ * Also provides waitForSocketEvent() for blocking on detached session
+ * completion (used by `waitFor` on detached sessions).
+ *
+ * Design: agents/may/workspace/detached-subagent-design.md
  */
 
 import { connect } from "node:net";
@@ -88,3 +91,78 @@ export function sendSocketCommand(
     });
   });
 }
+
+/** Event shape from the socket — a superset including all RunnerEvent types. */
+export interface SocketEvent {
+  type: string;
+  sessionId?: string;
+  agent?: string;
+  status?: string;
+  message?: string;
+  [key: string]: unknown;
+}
+
+/**
+ * Connect to a Unix socket and wait for a specific event type.
+ * Resolves with the matching event. Rejects on timeout or socket error.
+ *
+ * Used primarily to wait for "session_end" or "info" events from
+ * detached sub-agent processes. The socket server broadcasts all
+ * RunnerEvents as JSON lines.
+ *
+ * @param socketPath - Path to the Unix domain socket
+ * @param eventType - Event type to wait for (e.g. "session_end")
+ * @param opts.sessionId - Optional: only match events with this sessionId
+ * @param opts.timeoutMs - Timeout in ms (default: 600_000 = 10 minutes)
+ */
+export function waitForSocketEvent(
+  socketPath: string,
+  eventType: string,
+  opts?: { sessionId?: string; timeoutMs?: number },
+): Promise<SocketEvent> {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const settle = (fn: () => void) => { if (!settled) { settled = true; fn(); } };
+    const client = connect(socketPath);
+    const timeoutMs = opts?.timeoutMs ?? 600_000;
+    const timeout = setTimeout(() => {
+      client.destroy();
+      settle(() => reject(new Error(`Timeout waiting for ${eventType} (${timeoutMs}ms)`)));
+    }, timeoutMs);
+
+    let buffer = "";
+    client.on("data", (data) => {
+      buffer += data.toString();
+      const lines = buffer.split("\n");
+      buffer = lines.pop()!;
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+        try {
+          const event = JSON.parse(trimmed) as SocketEvent;
+          if (event.type === eventType) {
+            // If sessionId filter is provided, only match that session
+            if (opts?.sessionId && event.sessionId !== opts.sessionId) continue;
+            clearTimeout(timeout);
+            client.destroy();
+            settle(() => resolve(event));
+            return;
+          }
+        } catch {
+          // Non-JSON line — skip
+        }
+      }
+    });
+
+    client.on("error", (err) => {
+      clearTimeout(timeout);
+      settle(() => reject(err));
+    });
+
+    client.on("close", () => {
+      clearTimeout(timeout);
+      settle(() => reject(new Error("Socket closed before event received")));
+    });
+  });
+}
+

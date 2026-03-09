@@ -16,7 +16,7 @@ export interface PersistedAgentConfig {
   memoryLimit?: number;
 }
 
-/** Serializable session record. */
+/** Serializable session record stored as meta.json per session directory. */
 export interface PersistedSession {
   agent: string;
   task: string;
@@ -77,7 +77,7 @@ function readJsonlFile<T>(filePath: string): T[] {
     try {
       items.push(JSON.parse(line) as T);
     } catch {
-      console.warn(`[persistence] Skipping corrupted JSONL line in ${filePath}`);
+      console.warn(`[persistence:jsonl] Skipping corrupted JSONL line in ${filePath}`);
     }
   }
   return items;
@@ -180,7 +180,7 @@ export function appendMemoryEntry(persistDir: string, name: string, entry: Memor
 
 /** Read the last N memory entries (or all if limit is not specified).
  *  Corrupted lines are skipped with a warning. */
-export function readMemoryEntries(persistDir: string, name: string, limit?: number): MemoryEntry[] {
+export function readMemoryEntries(persistDir: string, name: string, limit?: number, includeCorrupted: boolean = false): MemoryEntry[] {
   const entries = readJsonlFile<MemoryEntry>(memoryPath(persistDir, name));
   if (limit !== undefined) {
     if (limit <= 0) return [];
@@ -262,7 +262,8 @@ export function listArchivedSessionIds(persistDir: string): string[] {
 }
 
 /** Scan all session meta.json files (active + archived) and return a map.
- *  This is the replacement for reading the sessions section of registry.json. */
+ *  This is the replacement for reading the sessions section of registry.json.
+ *  @returns Record mapping session IDs to their persisted metadata. */
 export function loadAllSessionMetas(persistDir: string): Record<string, PersistedSession> {
   const result: Record<string, PersistedSession> = {};
   // Active sessions

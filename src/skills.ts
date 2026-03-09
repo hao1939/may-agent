@@ -8,7 +8,7 @@ export interface Frontmatter {
   [key: string]: unknown;
 }
 
-/** A discovered skill with its metadata. */
+/** A discovered skill with its name, description, and filesystem location. */
 export interface SkillEntry {
   name: string;
   description: string;
@@ -18,7 +18,8 @@ export interface SkillEntry {
 /**
  * Parse YAML frontmatter from markdown content.
  * Expects content starting with `---\n`, followed by YAML lines, closed by `---\n`.
- * Only handles simple `key: value` pairs (string values). No nested YAML.
+ * Only handles simple `key: value` pairs (string values). Arrays and nested YAML are not supported.
+ * @returns An object of key-value pairs from the YAML block, or an empty object if no valid frontmatter is found.
  */
 export function parseFrontmatter(content: string): Frontmatter {
   const trimmed = content.trimStart();
@@ -181,5 +182,7 @@ function escapeXml(str: string): string {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "\&apos;");
 }
+
