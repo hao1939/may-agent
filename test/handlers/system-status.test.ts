@@ -183,6 +183,7 @@ describe("runSystemStatus", () => {
       status: "running",
       startedAt: Date.now() - 120 * 60 * 1000, // 2 hours
       task: "main session",
+      autoClose: "never",
     }));
 
     const result = runSystemStatus({
