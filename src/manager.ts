@@ -391,48 +391,55 @@ export class SubagentManager {
         sections.push(`# Project Structure\n\`\`\`\n${structure}\n\`\`\``);
       }
     }
-    // Auto-load SOUL.md from knowledgeDir if it exists (identity & mission — before domain knowledge)
-    if (def.knowledgeDir) {
-      const soulPath = join(def.knowledgeDir, "SOUL.md");
-      if (existsSync(soulPath)) {
-        const soul = readFileSync(soulPath, "utf-8").trim();
-        if (soul) {
-          sections.push(soul);
+    // ── Always-loaded files (UPPERCASE at agent root, convention-driven) ──
+    // Order: SOUL → DOMAIN → TOOLS → systemPromptFiles → LESSONS
+    // Fallback: also checks knowledge/ for backward compat during migration.
+    const agentDir = def.knowledgeDir ? dirname(def.knowledgeDir) : undefined;
+
+    const autoLoadFile = (primary: string | undefined, fallback: string | undefined): string | undefined => {
+      for (const p of [primary, fallback]) {
+        if (p && existsSync(p)) {
+          const content = readFileSync(p, "utf-8").trim();
+          if (content) return content;
         }
       }
-    }
+      return undefined;
+    };
 
-    // Auto-load domain.md from knowledgeDir if it exists (domain expertise — after identity)
-    if (def.knowledgeDir) {
-      const domainPath = join(def.knowledgeDir, "domain.md");
-      if (existsSync(domainPath)) {
-        const domain = readFileSync(domainPath, "utf-8").trim();
-        if (domain) {
-          sections.push(domain);
-        }
-      }
-    }
+    // 1. SOUL.md — identity & mission
+    const soul = autoLoadFile(
+      agentDir ? join(agentDir, "SOUL.md") : undefined,
+      def.knowledgeDir ? join(def.knowledgeDir, "SOUL.md") : undefined,
+    );
+    if (soul) sections.push(soul);
 
-    // Auto-load tools/INDEX.md if it exists (tool usage guide — after domain, before other prompt files)
-    if (def.knowledgeDir) {
-      const agentDir = dirname(def.knowledgeDir);
-      const toolsIndexPath = join(agentDir, "tools", "INDEX.md");
-      if (existsSync(toolsIndexPath)) {
-        const toolsIndex = readFileSync(toolsIndexPath, "utf-8").trim();
-        if (toolsIndex) {
-          sections.push(toolsIndex);
-        }
-      }
-    }
+    // 2. DOMAIN.md — domain expertise (references knowledge/ files for on-demand reading)
+    const domain = autoLoadFile(
+      agentDir ? join(agentDir, "DOMAIN.md") : undefined,
+      def.knowledgeDir ? join(def.knowledgeDir, "domain.md") : undefined,
+    );
+    if (domain) sections.push(domain);
 
-    // Load systemPromptFiles (skip auto-loaded files to avoid duplication)
+    // 3. TOOLS.md — tool usage guide
+    const tools = autoLoadFile(
+      agentDir ? join(agentDir, "TOOLS.md") : undefined,
+      agentDir ? join(agentDir, "tools", "INDEX.md") : undefined,
+    );
+    if (tools) sections.push(tools);
+
+    // Load systemPromptFiles (skip any that overlap with auto-loaded paths)
     if (def.systemPromptFiles && def.systemPromptFiles.length > 0) {
       const autoLoaded = new Set<string>();
       if (def.knowledgeDir) {
         autoLoaded.add(join(def.knowledgeDir, "SOUL.md"));
         autoLoaded.add(join(def.knowledgeDir, "domain.md"));
         autoLoaded.add(join(def.knowledgeDir, "lessons.md"));
-        const agentDir = dirname(def.knowledgeDir);
+      }
+      if (agentDir) {
+        autoLoaded.add(join(agentDir, "SOUL.md"));
+        autoLoaded.add(join(agentDir, "DOMAIN.md"));
+        autoLoaded.add(join(agentDir, "TOOLS.md"));
+        autoLoaded.add(join(agentDir, "LESSONS.md"));
         autoLoaded.add(join(agentDir, "tools", "INDEX.md"));
       }
       const fileContents = def.systemPromptFiles
@@ -443,22 +450,17 @@ export class SubagentManager {
       }
     }
 
-    // Auto-load lessons.md from knowledgeDir if it exists
-    if (def.knowledgeDir) {
-      const lessonsPath = join(def.knowledgeDir, "lessons.md");
-      if (existsSync(lessonsPath)) {
-        const lessons = readFileSync(lessonsPath, "utf-8").trim();
-        if (lessons) {
-          sections.push(lessons);
-        }
-      }
-    }
+    // 4. LESSONS.md — accumulated learnings (near end, changes often)
+    const lessons = autoLoadFile(
+      agentDir ? join(agentDir, "LESSONS.md") : undefined,
+      def.knowledgeDir ? join(def.knowledgeDir, "lessons.md") : undefined,
+    );
+    if (lessons) sections.push(lessons);
 
     // Load skills from per-agent skills/ dir + shared skillsDirs
     {
       const skillDirs: string[] = [];
-      if (def.knowledgeDir) {
-        const agentDir = dirname(def.knowledgeDir);
+      if (agentDir) {
         skillDirs.push(join(agentDir, "skills"));
       }
       if (def.skillsDirs) {
