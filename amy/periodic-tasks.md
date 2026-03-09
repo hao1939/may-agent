@@ -1,0 +1,34 @@
+# Amy's Periodic Tasks
+
+Track when each task was last done. Pick the most overdue one during heartbeat step 3.
+
+## Per heartbeat (do one, rotate)
+- [ ] **XHS exploration cycle** — Last done: never
+  Pick a topic from research interests or recent signals.
+  Search XHS (max 3 searches, 5s between ops).
+  Read interesting posts, synthesize insights.
+  Write findings to workspace/insights.md.
+  Write cross-agent signals to agents/shared/SIGNALS.md.
+
+- [ ] **Insights review** — Last done: 2026-03-09
+  Read workspace/insights.md and recent insight archives.
+  Any patterns emerging across posts? Trending topics?
+  Write synthesis to workspace/signals.md.
+
+- [ ] **Signal scan** — Last done: 2026-03-09
+  Read agents/shared/SIGNALS.md — anything relevant to XHS research?
+  Cross-reference with what other agents have found.
+  Update research interests based on system needs.
+
+## Weekly
+- [ ] **Archive maintenance** — Last done: never
+  Review workspace/insights.md. Move older entries to knowledge/insights-archive-YYYYMMDD.md.
+  Keep workspace/insights.md focused on recent, actionable findings.
+
+---
+
+## How to use this file
+1. Read this file during heartbeat step 3
+2. Find the most overdue task
+3. Do it
+4. Update "Last done" date
