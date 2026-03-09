@@ -29,10 +29,11 @@ Graduated agents move to **periodic review** (re-run regression exercises on a s
 | Field | Value |
 |-------|-------|
 | **Level** | L1 (targeting L2) |
-| **Status** | Not yet coached |
-| **Sessions** | 0 |
-| **Consecutive passes** | 0/3 |
-| **Blocking graduation** | No coaching sessions run yet |
+| **Status** | Active coaching — **1/3 pass streak** |
+| **Sessions** | 1 |
+| **Consecutive passes** | 1/3 |
+| **Last session** | 2026-03-09 |
+| **Blocking graduation** | Brevity re-test (PARTIAL); needs 2 more consecutive PASS without scaffolding |
 
 **Notes:** May is Hao's Deputy — creative partner, system operator, end-to-end task owner. She has read/write, exec, subagents, workflow, and cron tools. Delegates code to tech-lead/master. Cannot dispatch coder/qa directly (delegateDeny). Core competencies: async dispatch in chat (never blocking), routing to the right agent, follow-through on dispatched work, system health awareness.
 
@@ -43,7 +44,22 @@ Graduated agents move to **periodic review** (re-run regression exercises on a s
 - ⛔ Passes sufficient context to sub-agents (they start with zero)
 - ⛔ Follows through — doesn't just dispatch and forget
 
-**Coaching priority:** High. May's config was fully rewritten (SOUL, DOMAIN, TOOLS, LESSONS, heartbeat). Need to verify the new design works as intended.
+**Coaching history:**
+- **2026-03-09** — Action Bias + Path Reliability + Brevity (3 exercises, 1 session). Action Bias: **PASS** (9/10) — dispatched 3 items (Scout corrections, Coder lessons, Rolling Compaction workflow), zero "standing down" language, self-recovered from delegateDeny error. Path Reliability: **PASS** (9/10) — zero SOUL.md re-reads, correct todo.md path first try, zero ENOENT errors. Brevity: **PARTIAL** (6/10) — ~291 tokens (improved from 500-700 baseline but exceeds 200-token target), included System Health table that was mostly non-actionable. Report: `sessions/may-coaching-2026-03-09.md`.
+
+**Key findings from first session:**
+- Action paralysis (26.6% baseline) dropped to **0%** with explicit SOUL.md reinforcement in task prompt
+- Behavior is **prompt-driven, not model-inherent** — heartbeat prompt wording is the primary cause of paralysis
+- Excellent prioritization: chose 14-day-stale graduation blockers as highest impact
+- End-to-end ownership demonstrated: dispatch → verify → archive → update related todos
+- Git environment confusion: thinks she's on `/Users/hao/c`, wasted 4-5 turns. Needs container awareness lesson.
+
+**Coaching priority:** High. Next session should test action bias *without* the explicit authority reminder (standard heartbeat prompt) to see if the behavior persists.
+
+**Graduation blockers:**
+- [ ] Pass action bias exercise WITHOUT explicit scaffolding (standard heartbeat prompt)
+- [ ] Pass brevity exercise (≤150 tokens, exceptions-only reporting)
+- [ ] 3 consecutive PASS exercises
 
 ---
 
@@ -261,7 +277,7 @@ Graduated agents move to **periodic review** (re-run regression exercises on a s
 | **Sessions** | 2 |
 | **Consecutive passes** | 2/3 |
 | **Last session** | 2026-03-09 |
-| **Blocking graduation** | Needs 1 more consecutive pass |
+| **Blocking graduation** | Needs 1 more consecutive pass — **coaching corrections now applied by May (2026-03-09)** |
 
 **Coaching history:**
 - **2026-03-22** — Exploration exercise (source rotation, dedup, thread-following, budget): **PASS** (8/10). Searched 3 sources (GitHub API, arXiv API, HuggingFace API). Multi-pass dedup with grep sweeps against existing workspace files. 6 deep-dives on specific papers/repos. Write at 44% of session (ahead of 60% target), commit at 67% (slightly late due to git config friction). Full report: `sessions/scout-coaching-2026-03-22.md`
@@ -284,14 +300,17 @@ Graduated agents move to **periodic review** (re-run regression exercises on a s
 - **Path resolution for own knowledge files**: uses `knowledge/` instead of `agents/scout/knowledge/` — gave up after ENOENT instead of retrying correct path. This caused 3-4 wasted API param guesses that were documented in `knowledge/reddit.md`.
 - **Implicit source failure reporting**: doesn't explicitly state when a required source is blocked and a fallback is being used
 
-**Coaching corrections needed (for optimizer to apply — Scout is L2, no direct edits):**
-- Add lesson #11 to `agents/scout/knowledge/coaching.md`: Knowledge file paths are `agents/scout/knowledge/`, not `knowledge/`
-- Add lesson #12 to `agents/scout/knowledge/coaching.md`: Report source failures explicitly before presenting fallback results
+**Coaching corrections applied (by May, 2026-03-09):**
+- ✅ Lesson #11 added to `agents/scout/knowledge/coaching.md`: Knowledge file paths are `agents/scout/knowledge/`
+- ✅ Lesson #12 added to `agents/scout/knowledge/coaching.md`: Report source failures explicitly before presenting fallback results
+- ✅ Lesson #13 added to `agents/scout/knowledge/coaching.md`: Write scope is `agents/scout/knowledge/` and `agents/scout/workspace/`
+- ✅ Scout DOMAIN.md paths updated to use `agents/scout/knowledge/` prefix
 
 **Graduation blockers:**
 - [x] ~~Run coaching session covering source rotation, dedup, thread-following, budget~~ (2026-03-22: PASS)
 - [x] ~~Run coaching session covering constrained-source integrity~~ (2026-03-09: PASS)
-- [ ] Pass exercise 3: dedup against full canonical archive + budget discipline (commit by 50%, no post-commit tail) — **this is the graduation exercise**
+- [x] ~~Coaching corrections applied~~ (2026-03-09: May applied #11, #12, #13 + DOMAIN.md path fixes)
+- [ ] Pass exercise 3: dedup against full canonical archive + budget discipline (commit by 50%, no post-commit tail) — **this is the graduation exercise, NO LONGER BLOCKED**
 
 ---
 
@@ -305,8 +324,8 @@ Graduated agents move to **periodic review** (re-run regression exercises on a s
 | Bob | L2→L3 | Active — 1 pass streak | 1 | 1/3 | High (execution gap) |
 | Amy | L1 (provisional) | Blocked (infra) | 2 | 0/3 | High (after infra fix) |
 | Amy-Kimi | L1 (provisional) | Not started | 0 | 0/3 | Medium (after infra fix) |
-| Scout | L2 | Active — 2 pass streak | 2 | 2/3 | High (1 away, but BLOCKED on optimizer) |
-| May | L1→L2 | Not started | 0 | 0/3 | **HIGH (new config, needs verification)** |
+| Scout | L2 | Active — **2/3 streak, UNBLOCKED** | 2 | **2/3** | **HIGH — 1 away from graduation** |
+| **May** | **L1→L2** | **Active — 1/3 streak** | **1** | **1/3** | **HIGH (strong first session)** |
 | Optimizer | L2 | Not started | 0 | 0/3 | Medium |
 | Evaluator | L1 | Not started | 0 | 0/3 | Low |
 
@@ -314,8 +333,9 @@ Graduated agents move to **periodic review** (re-run regression exercises on a s
 
 **Next coaching priorities (ordered):**
 1. **Coder** — **1 exercise from graduation!** Design graduation exercise: multi-file, mixed edit types, no line numbers, no method hints. If PASS → streak 3/3 → **FIRST GRADUATION**. No blockers.
-2. **Scout** — Also 1 exercise from graduation, but BLOCKED: optimizer needs to apply coaching corrections #11/#12 first. Re-escalate to may.
-3. **QA** — Re-test truncated-read + write after domain.md fix (streak broken, needs reset)
-4. **Bob** — Highest-ceiling agent (L3 analytical capability) but worst execution reliability; focus on execution discipline
-5. **Master** — Efficiency exercise (excessive exploration is main weakness)
-6. **Amy/Amy-Kimi** — Blocked on infra; escalate Docker mount fix
+2. **Scout** — **1 exercise from graduation, NOW UNBLOCKED!** May applied coaching corrections #11-13 on 2026-03-09. Ready for graduation exercise: dedup against full canonical archive + budget discipline.
+3. **May** — Strong first session (action bias PASS, path PASS, brevity PARTIAL). Next: test without scaffolding. Add container awareness lesson.
+4. **QA** — Re-test truncated-read + write after domain.md fix (streak broken, needs reset)
+5. **Bob** — Highest-ceiling agent (L3 analytical capability) but worst execution reliability; focus on execution discipline
+6. **Master** — Efficiency exercise (excessive exploration is main weakness)
+7. **Amy/Amy-Kimi** — Blocked on infra; escalate Docker mount fix
