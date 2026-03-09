@@ -24,19 +24,26 @@ Graduated agents move to **periodic review** (re-run regression exercises on a s
 
 ## Feature Team
 
-### May (Supervisor)
+### May (Hao's Deputy)
 
 | Field | Value |
 |-------|-------|
-| **Level** | L1 (by design — appropriate for prescriptive supervisor role) |
+| **Level** | L1 (targeting L2) |
 | **Status** | Not yet coached |
 | **Sessions** | 0 |
 | **Consecutive passes** | 0/3 |
 | **Blocking graduation** | No coaching sessions run yet |
 
-**Notes:** May delegates all code work. Core competency is task decomposition, delegation clarity, and verification. Not yet directly coached because coaching has focused on execution agents first. All evaluations return q=0/e=0 (evaluator doesn't score supervisor-level delegation behavior). L1 is the *target* level for this role — reliable workflow execution is more valuable than self-direction for a supervisor.
+**Notes:** May is Hao's Deputy — creative partner, system operator, end-to-end task owner. She has read/write, exec, subagents, workflow, and cron tools. Delegates code to tech-lead/master. Cannot dispatch coder/qa directly (delegateDeny). Core competencies: async dispatch in chat (never blocking), routing to the right agent, follow-through on dispatched work, system health awareness.
 
-**Coaching priority:** Medium. Test delegation quality, context passing to sub-agents, and failure handling when coder/QA return poor results. Goal: verify L1 reliability, not push to L2.
+**Key design constraints to test:**
+- ⛔ Never blocks in chat — must use `subagents.run`, never `delegate` or `workflow.run`
+- ⛔ Approval means act — when Hao says "go", execute immediately, no re-confirmation
+- ⛔ Routes to correct agent by domain (tech-lead for code, bob for design, coach for training)
+- ⛔ Passes sufficient context to sub-agents (they start with zero)
+- ⛔ Follows through — doesn't just dispatch and forget
+
+**Coaching priority:** High. May's config was fully rewritten (SOUL, DOMAIN, TOOLS, LESSONS, heartbeat). Need to verify the new design works as intended.
 
 ---
 
@@ -45,27 +52,28 @@ Graduated agents move to **periodic review** (re-run regression exercises on a s
 | Field | Value |
 |-------|-------|
 | **Level** | L2 |
-| **Status** | Active coaching — 1/3 pass streak |
-| **Sessions** | 3 |
-| **Consecutive passes** | 1/3 |
-| **Last session** | 2026-03-22 |
-| **Blocking graduation** | Need exercise 2c (line numbers in prompt + instruction to use patterns) and regression re-test |
+| **Status** | Active coaching — **2/3 pass streak** |
+| **Sessions** | 4 |
+| **Consecutive passes** | 2/3 |
+| **Last session** | 2026-03-23 |
+| **Blocking graduation** | Need 1 more pass (graduation exercise) — **closest to graduation** |
 
 **Coaching history:**
 - **2026-03-05** — Blind-overwrite prevention: **PASS**. Used grep -n → line-range reads → sed with pattern matching for surgical edit in 273-line file. Zero content loss. lessons.md training internalized.
 - **2026-03-09** — Multi-site safe-edit (4 edits in 608-line file): **PARTIAL** (6.5/10). No write() used ✅. Line-range reads for all 4 sites ✅. But 3 of 4 edits used line-number-based sed (6s, 107s, 251i) instead of pattern-based. Only Edit 4 was pattern-based. All edits correct, tsc passed. Proactively fixed whitespace inconsistency. Report: `sessions/coder-safe-edit-2026-03-09.md`.
 - **2026-03-22** — Multi-site safe-edit 2b, pattern-only prompts (4 edits in 285-line file): **PASS** (9/10). All 4 edits used pattern-based sed ✅. No write() ✅. Self-recovered from delimiter conflict. Hypothesis confirmed: removing line numbers from prompt eliminated line-number sed habit. Report: `sessions/coder-safe-edit-2b-2026-03-22.md`.
+- **2026-03-23** — Multi-site safe-edit 2c, hard mode (4 edits in 172-line file, line numbers in prompt + explicit pattern instruction): **PASS** (10/10). All 4 edits used pattern-based sed despite line numbers being prominent in prompt ✅. Zero errors, proper escaping, clean first-try on all 4 edits. 22-second execution. Report: `sessions/coder-safe-edit-2c-2026-03-23.md`.
 
 **Known weaknesses:**
-- **Primary (partially resolved)**: Defaults to line-number-based sed when line numbers are provided in the task — confirmed by A/B test (Exercise #2 vs #2b). Uses patterns when no line numbers in prompt.
+- **Primary (resolved with instruction)**: Defaults to line-number-based sed when line numbers are provided WITHOUT explicit instruction to use patterns. Uses patterns reliably when instructed OR when no line numbers in prompt.
 - Quality inconsistency across evaluations (0.0 to 1.0, cluster at 0.78)
 
-**Hypothesis CONFIRMED:** Providing line numbers in the task prompt cues Coder to use them in sed. When described by context only, Coder uses pattern-based sed consistently (4/4).
+**Hypothesis CONFIRMED + EXTENDED:** Providing line numbers in the task prompt cues Coder to use them in sed. When described by context only, Coder uses pattern-based sed consistently (4/4). When given line numbers + explicit instruction to use patterns, Coder also uses patterns consistently (4/4). The behavior is environmental/contextual, not a capability gap.
 
 **Graduation blockers:**
 - [x] Pass exercise 2b: multi-site edit described WITHOUT line numbers (pattern-only prompts) — PASS 2026-03-22
-- [ ] Pass exercise 2c: multi-site edit WITH line numbers in prompt but explicit instruction to use pattern-based sed (harder test)
-- [ ] Pass exercise 3: regression re-test of blind-overwrite (periodic)
+- [x] Pass exercise 2c: multi-site edit WITH line numbers in prompt but explicit instruction to use pattern-based sed — PASS 2026-03-23
+- [ ] **Pass graduation exercise**: multi-file, mixed edit types, no line numbers, no method hints — tests full safe-edit discipline without scaffolding. If PASS → streak 3/3 → **FIRST GRADUATION**.
 ---
 
 ### QA
@@ -291,22 +299,22 @@ Graduated agents move to **periodic review** (re-run regression exercises on a s
 
 | Agent | Level | Status | Sessions | Pass Streak | Priority |
 |-------|-------|--------|----------|-------------|----------|
-| Coder | L2 | Active (1/3 streak) | 3 | 1/3 | High |
+| Coder | L2 | Active (**2/3 streak**) | 4 | **2/3** | **HIGH — 1 away from graduation** |
 | QA | L2 | Active (streak broken) | 3 | 0/3 | High |
 | Master | L2 | Active | 2 | 1/3 | Medium |
 | Bob | L2→L3 | Active — 1 pass streak | 1 | 1/3 | High (execution gap) |
 | Amy | L1 (provisional) | Blocked (infra) | 2 | 0/3 | High (after infra fix) |
 | Amy-Kimi | L1 (provisional) | Not started | 0 | 0/3 | Medium (after infra fix) |
-| Scout | L2 | Active — **2 pass streak** | 2 | **2/3** | **High (1 away from graduation)** |
-| May | L1 (by design) | Not started | 0 | 0/3 | Medium |
+| Scout | L2 | Active — 2 pass streak | 2 | 2/3 | High (1 away, but BLOCKED on optimizer) |
+| May | L1→L2 | Not started | 0 | 0/3 | **HIGH (new config, needs verification)** |
 | Optimizer | L2 | Not started | 0 | 0/3 | Medium |
 | Evaluator | L1 | Not started | 0 | 0/3 | Low |
 
 **Levels last assessed:** 2026-03-06 — see `workspace/capability-level-assessment-2026-03-06.md`
 
 **Next coaching priorities (ordered):**
-1. **Scout** — **1 exercise from graduation!** Next: dedup against canonical archive + budget discipline. If PASS → first graduated agent. BLOCKED: optimizer needs to apply coaching corrections #11/#12 first.
-2. **Coder** — Exercise 2c: multi-site edit WITH line numbers but explicit instruction to use patterns. Tests whether lesson is truly internalized. Streak: 1/3.
+1. **Coder** — **1 exercise from graduation!** Design graduation exercise: multi-file, mixed edit types, no line numbers, no method hints. If PASS → streak 3/3 → **FIRST GRADUATION**. No blockers.
+2. **Scout** — Also 1 exercise from graduation, but BLOCKED: optimizer needs to apply coaching corrections #11/#12 first. Re-escalate to may.
 3. **QA** — Re-test truncated-read + write after domain.md fix (streak broken, needs reset)
 4. **Bob** — Highest-ceiling agent (L3 analytical capability) but worst execution reliability; focus on execution discipline
 5. **Master** — Efficiency exercise (excessive exploration is main weakness)

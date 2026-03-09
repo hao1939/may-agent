@@ -30,3 +30,12 @@
 - Regression testing catches real regressions — previously-passing exercises do fail again
 - Scoring rubric (PASS/PARTIAL/FAIL) keeps assessments consistent and comparable
 - Workflow-first: proven step sequences are more reliable than ad-hoc coaching — codify what works
+
+## Infrastructure Fail-Fast
+- If infrastructure blocks coaching, diagnose in ≤2 tool calls, then create an escalation ticket in the responsible agent's todo.md and move to the next coachable agent
+- Don't burn turns debugging runner, Docker, or proxy issues — that's not coach's scope
+- Pattern: if `subagents.run` or `socket_watch.connect` fails twice with the same error, escalate immediately
+
+## Dependency Management
+- If corrections escalated to optimizer haven't been applied after 2+ coaching cycles, re-escalate to may with evidence of the delay and its impact
+- Don't let blocked agents consume coaching attention — rotate to unblocked agents

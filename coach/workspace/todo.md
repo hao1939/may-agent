@@ -1,5 +1,9 @@
 # TODO
 
+## 🔴 NEXT — Coach May (config verification)
+
+May's config was fully rewritten (SOUL, DOMAIN, TOOLS, LESSONS, heartbeat). Run a coaching session to verify the new design works as intended. Read May's SOUL.md first to understand who she's supposed to be, then evaluate her behavior against that, then coach if gaps are found.
+
 ## Convention Library (2026-03-05)
 
 A structured convention library was seeded at `agents/coach/skills/agent-conventions/`.
@@ -30,9 +34,10 @@ coordination.md, operational.md. Coach should review, enrich, and use these for 
 - [x] **Coach Scout — Graduation Exercise** — **FAIL** (2026-03-09). Score: 7/14. Hard fail on knowledge file paths (3rd consecutive occurrence). Pass streak RESET to 0/3. Report: sessions/scout-graduation-2026-03-09.md
 - [🔴] **Optimizer: Apply Scout coaching corrections — BLOCKING** — Add lessons #11 (knowledge file paths), #12 (explicit source failure reporting), #13 (write scope paths) to `agents/scout/knowledge/coaching.md`. Also fix DOMAIN.md path ambiguity (`knowledge/discoveries.md` → `agents/scout/knowledge/discoveries.md`). **Scout cannot graduate until this is done.** Scout is L2, coach should not edit directly.
 - [ ] **Coach Scout — Re-test after corrections** — Re-run graduation exercise after optimizer applies corrections. If PASS, streak is 1/3 (not graduation — streak was reset).
-- [x] **Coach Coder — Safe-Edit Usage** — PARTIAL→PASS. Ex2: PARTIAL (6.5/10, 2026-03-09). Ex2b: PASS (9/10, 2026-03-22). Pattern-only prompts fixed the issue. Streak: 1/3.
+- [x] **Coach Coder — Safe-Edit Usage** — PARTIAL→PASS. Ex2: PARTIAL (6.5/10, 2026-03-09). Ex2b: PASS (9/10, 2026-03-22). Ex2c: PASS (10/10, 2026-03-23). Streak: 2/3.
 - [x] **Coach Coder — Exercise 2b (pattern-only prompts)** — PASS (2026-03-22, 9/10). All 4 edits pattern-based. Hypothesis confirmed: line numbers in prompt cue line-number sed. Report: sessions/coder-safe-edit-2b-2026-03-22.md
-- [ ] **Coach Coder — Exercise 2c (hard mode)** — Multi-site edit WITH line numbers in prompt but explicit instruction to use pattern-based sed. Tests whether lesson is internalized vs just environmental.
+- [x] **Coach Coder — Exercise 2c (hard mode)** — PASS (2026-03-23, 10/10). All 4 edits pattern-based despite line numbers in prompt. Explicit instruction followed. Streak: 2/3. Report: sessions/coder-safe-edit-2c-2026-03-23.md
+- [ ] **Coach Coder — Graduation Exercise** — Design full graduation exercise: multi-file, mixed edit types, no line numbers, no method hints. If PASS → streak 3/3 → FIRST GRADUATION.
 - [ ] **Coach Amy-Kimi** — Same exploration cycle exercise as Amy. Verify tool failure handling, actionable insights, frequency discipline, archive synthesis.
 - [ ] **Amy exercise 2** — L2 assessment: ambiguous/self-directed task. Open-ended exploration prompt, see if Amy can self-direct.
 - [ ] **Amy live search validation** — When XHS access is restored, re-run full search→read→archive pipeline.
@@ -43,6 +48,7 @@ coordination.md, operational.md. Coach should review, enrich, and use these for 
 - ⚠️ Review session s_1772966696498_109 — Agent: **scout**. Verdict: **needs_improvement** (q=0.25). Root cause: **completion bias**. Exercise designed and executed: **PASS** (2026-03-09, 7/10). 3 of 4 failure modes improved; knowledge file path resolution still failing. **Graduation exercise FAIL** (2026-03-09, 7/14). Root cause: Agent (path hallucination) + Design (coaching corrections never applied). Streak reset 0/3.
 - ⚠️ Review session s_1772910891442_34 — Coach self-eval. Bob coaching exercise designed and executed: PASS (2026-03-09).
 - ⚠️ Coder safe-edit exercise 2 — PARTIAL (2026-03-09). Line-number sed habit persists despite lessons.md ban. Hypothesis: line numbers in task prompt cue the behavior. Next test: pattern-only prompts.
+- [x] Coder exercise 2c — PASS (2026-03-23, 10/10). Hard mode passed. Pattern-based sed used for all 4 edits despite line numbers in prompt. Streak: 2/3. Next: graduation exercise.
 - [x] Coach Amy — PASS (2026-03-09). L1 confirmed. Pass streak: 1/3.
 - [x] "Coach doesn't do the agent's work" boundary — Made explicit in domain.md.
 - [x] Periodic review of graduated agents — Designed regression review process.

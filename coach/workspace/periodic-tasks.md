@@ -23,10 +23,11 @@ what's overdue. A task is "overdue" when it's the oldest last-done date.
   If a pattern appears 2+ times and isn't codified → create a skill via skill-development workflow.
   **Result:** 4 cross-agent patterns identified. Report: sessions/coaching-pattern-check-2026-03-22.md
 
-- [ ] **Self-review** — Last done: 2026-03-09
+- [x] **Self-review** — Last done: 2026-03-23
   Run `workflow.run("coaching-session", "coaching-session targeting yourself (coach)")`.
   Be honest about gaps. Check: TOOLS.md accuracy, workflow compilation, skill loading,
   team.md correctness. Update todo.md with any fixes needed.
+  **Result (2026-03-23):** Grade 7/10 (up from 6/10). 3 of 10 prior gaps fixed (TOOLS.md, team.md, skill-development.ts bug). All 4 workflows compile clean. No new evaluations since last scan. Scout at 2/3, Coder at 1/3. Main bottleneck: optimizer corrections pending 14+ days. Added Infrastructure Fail-Fast and Dependency Management sections to LESSONS.md. Report: sessions/self-review-2026-03-23.md
 
 ## Monthly
 
@@ -54,6 +55,54 @@ out of the heartbeat so coach can spend turns on higher-value work.
 ---
 
 ## Session Log
+
+### 2026-03-23 — Heartbeat (2nd)
+**Activity:** Coder safe-edit exercise #2c (hard mode — line numbers + pattern instruction)
+**Result:** Coder PASS (10/10). All 4 edits used pattern-based sed despite line numbers being prominently given in the prompt. Explicit instruction to use patterns was followed perfectly. Zero errors, 22-second execution.
+**Actions taken:**
+- Reviewed todo.md: Coder exercise 2c was top actionable item (Scout blocked on optimizer)
+- Confirmed optimizer corrections for Scout still not applied (coaching.md unchanged since 2026-03-05)
+- Designed exercise 2c: 4 JSDoc edits in src/overflow.ts (172 lines, new file), WITH line numbers AND explicit pattern instruction
+- Spawned Coder as detached session (s_1773074468675_18, 22s, 8 tool calls)
+- Scored exercise: 10/10 (PASS — all 4 pattern-based, zero errors, clean tsc)
+- Wrote coaching report (sessions/coder-safe-edit-2c-2026-03-23.md)
+- Reverted all changes to src/overflow.ts via follow-up Coder session (checksum verified)
+- Updated COACHEES.md (streak 2/3, session #4, Coder now top graduation priority)
+- Updated todo.md (exercise 2c marked done, added graduation exercise item)
+
+**Key insight:** Coder's pattern-sed behavior is fully controllable:
+- No line numbers → pattern sed (2b: 4/4)
+- Line numbers + instruction → pattern sed (2c: 4/4)  
+- Line numbers + no instruction → line-number sed (2: 3/4)
+The skill is internalized; the default just needs reinforcement. Coder is now 1 PASS from first graduation — no blockers.
+
+**Next priority:**
+- Design and run Coder graduation exercise (multi-file, mixed edits, no hints)
+- Re-escalate optimizer corrections for Scout to may (16+ days pending)
+
+---
+
+### 2026-03-23 — Heartbeat
+**Activity:** Self-review (most overdue periodic task)
+**Result:** Grade 7/10 (up from 6/10 on 2026-03-09). 3/10 prior gaps fixed. Added 2 new LESSONS.md sections.
+**Actions taken:**
+- Audited all prior self-review gaps against current state
+- Verified TOOLS.md accuracy (fixed ✅), team.md accuracy (fixed ✅), workflow compilation (all 4 pass ✅)
+- Checked skill-development.ts bug (fixed — uses ctx.escalate now ✅)
+- Confirmed optimizer corrections for Scout (#11-13) and Coder (pattern-sed) still pending (14+ days)
+- Confirmed no new evaluations since 2026-03-22
+- Added "Infrastructure Fail-Fast" section to LESSONS.md (recommendation #3 from prior review)
+- Added "Dependency Management" section to LESSONS.md (new pattern identified)
+- Wrote self-review report: sessions/self-review-2026-03-23.md
+
+**Key insight:** The main coaching bottleneck has shifted from "focus and follow-through" to "dependency on optimizer." Scout is 1 pass from graduation but corrections haven't been applied. Need to either re-escalate or design exercises that work around the gap.
+
+**Next priority:**
+- Re-escalate optimizer corrections to may (14+ days pending)
+- Coach Coder — exercise 2c (hard mode: line numbers + pattern-only instruction)
+- Scout — graduation exercise (if optimizer applies corrections) or regular exercise (to maintain streak)
+
+---
 
 ### 2026-03-22 — Heartbeat
 **Activity:** Evaluation scan + Coder safe-edit exercise #2b (pattern-only prompts)

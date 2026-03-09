@@ -204,3 +204,27 @@ was discovered about an agent's behavior during a coaching session.
 - Only new non-skipped eval: coach s_1773067835002_0 (q=0.1, aborted session — not actionable).
 - Failure rates unchanged. No new coaching targets surfaced.
 - Observation: The system hasn't been running real workloads. Evaluation data is stale. When activity resumes, expect a burst of new data.
+
+## 2026-03-23 — coach (self-review — 2nd)
+- **Grade: 7/10** (up from 6/10 on 2026-03-09). Significant progress on 3 of 10 prior gaps.
+- **Fixed since last review**: (1) TOOLS.md now correct — `background_exec` removed, `subagents` documented; (2) team.md tool list accurate; (3) skill-development.ts bug fixed — `ctx.escalate()` in error handler.
+- **Still open**: Zero graduated agents, no quantitative self-metrics, ad-hoc exercise library, no self-review workflow.
+- **Key shift**: Main bottleneck moved from "focus and follow-through" to "dependency on optimizer." Scout at 2/3, Coder at 1/3 — both blocked by optimizer corrections pending 14+ days.
+- **Actions taken**: Added Infrastructure Fail-Fast and Dependency Management sections to LESSONS.md (prior recommendation #3, plus new pattern).
+- **New insight**: Coach should either re-escalate optimizer corrections to may, or design exercises that test corrected behaviors without requiring corrections in agent knowledge files. Waiting passively violates the dependency management lesson just added.
+- Full report: `sessions/self-review-2026-03-23.md`
+
+## 2026-03-23 — coder (hard mode exercise #2c — PASS, 10/10)
+- **Exercise result: PASS (10/10)**. 4 JSDoc edits in src/overflow.ts (172 lines). All 4 edits used pattern-based sed despite line numbers being prominently given in the task prompt. Zero errors. 22-second execution.
+- **Hard mode test passed**: Task prompt included "Line 46:", "Line 52-53:", "Line 68-69:", "Line 165:" alongside an explicit instruction to use pattern-based sed. Coder followed the instruction and used text content patterns for all 4 edits. No line-number addressing anywhere in the session.
+- **Complete A/B/C picture now available**:
+  - Exercise 2 (line numbers, no instruction) → 1/4 pattern-based (25%)
+  - Exercise 2b (no line numbers, no instruction) → 4/4 pattern-based (100%)
+  - Exercise 2c (line numbers, WITH instruction) → 4/4 pattern-based (100%)
+- **Conclusion**: The pattern-sed skill is fully present. The behavior is triggered by explicit instruction OR absence of line-number cues. When line numbers are given without instruction, Coder defaults to using them — a reasonable shortcut, not a capability gap.
+- **Proper escaping throughout**: Escaped dots in regex, handled single quotes in Edit 4 (apostrophe in "agent's"), used `|` delimiter consistently. No errors on any attempt.
+- **Efficient batching**: All 4 sed commands fired in a single turn (parallel). Both verification commands (grep + tsc) also batched in a single turn.
+- **Streak**: 1/3 → 2/3. **One more pass for first graduation.**
+- **Next step**: Design Coder graduation exercise — multi-file, mixed edit types (JSDoc, logic changes, imports), no line numbers in prompt, no method hints. This tests full safe-edit discipline without scaffolding. If PASS → streak 3/3 → FIRST GRADUATED AGENT.
+- **Key coaching methodology insight**: The 3-exercise A/B/C pattern (variable isolation) is a powerful coaching diagnostic technique. Worth codifying as a reusable skill for diagnosing other agents' weaknesses.
+- Report: `sessions/coder-safe-edit-2c-2026-03-23.md`

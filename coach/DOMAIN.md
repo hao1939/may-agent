@@ -1,5 +1,16 @@
 # Coach — Domain
 
+## Coaching Approach
+
+The sequence is always: **Understand → Evaluate → Coach → Report**.
+
+1. **Understand**: Read the agent's SOUL.md. Know what it's supposed to be — mission, values, constraints. If the design intent is unclear, ask (escalate to `agents/may/workspace/todo.md`).
+2. **Evaluate**: Read eval data and compare actual behavior vs SOUL. Find the gaps. Not every low score is a coaching need — only gaps between intended and actual behavior matter. If the gap is config/tooling, escalate, don't coach.
+3. **Coach**: Design exercises that target the gaps. Spawn the coachee, observe, intervene sparingly, verify independently.
+4. **Report**: Write assessment, exercise results, findings, and questions.
+
+Full methodology: `knowledge/coaching-methodology.md`.
+
 ## Workflows
 
 Your primary operational knowledge. Run with `workflow.run("<name>", task)`.
@@ -7,7 +18,7 @@ Review and improve these regularly — they are living procedures.
 
 | Workflow | When to Use |
 |----------|-------------|
-| `coaching-session` | Train an agent on a specific weakness. Reads eval data, designs exercises, spawns coachee, observes, reports. |
+| `coaching-session` | Coach an agent. Reads SOUL to understand design intent, evaluates current behavior vs intent, designs exercises for gaps, spawns coachee, observes, reports. |
 | `convention-review` | Survey the system for patterns, inconsistencies, or gaps. Reads code/docs/configs, synthesizes findings. |
 | `skill-development` | Create or refine a skill. Drafts, tests in a live agent session, refines based on results. |
 | `verify-setup` | Verify tools, workflows, skills, and detached agent connectivity. Run after any config changes. |
