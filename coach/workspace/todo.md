@@ -1,13 +1,17 @@
 # TODO
 
-- Review session s_1773076800080_4 (verdict: needs_improvement). Check .state/evaluations/ for details. Identify which agent needs coaching and run a targeted exercise.
-- Review session s_1773067534678_0 (verdict: needs_improvement). Check .state/evaluations/ for details. Identify which agent needs coaching and run a targeted exercise.
-- Review session s_1773040169518_207 (verdict: needs_improvement). Check .state/evaluations/ for details. Identify which agent needs coaching and run a targeted exercise.
-- Review session s_1772981153743_126 (verdict: needs_improvement). Check .state/evaluations/ for details. Identify which agent needs coaching and run a targeted exercise.
-- Review session s_1772966696491_108 (verdict: needs_improvement). Check .state/evaluations/ for details. Identify which agent needs coaching and run a targeted exercise.
-## 🔴 NEXT — Coach May (config verification)
+## 🔴 NEXT ACTIONS
 
-May's config was fully rewritten (SOUL, DOMAIN, TOOLS, LESSONS, heartbeat). Run a coaching session to verify the new design works as intended. Read May's SOUL.md first to understand who she's supposed to be, then evaluate her behavior against that, then coach if gaps are found.
+- [ ] **Coach Bob — Adversity Exercise #3** — Multi-file edits with ambiguous paths. One target file exists, one doesn't. Tests error recovery + sed discipline under pressure. If PASS → 3/3 → SECOND GRADUATION.
+- [ ] **Coach Scout — Graduation Re-test** — Corrections #11-13 now confirmed applied. Re-run graduation exercise: dedup against full canonical archive + budget discipline. If PASS → streak 1/3 (was reset).
+- [ ] **Coach May — Config verification** — May's config was fully rewritten (SOUL, DOMAIN, TOOLS, LESSONS, heartbeat). Read May's SOUL.md first, then evaluate behavior against it, then coach if gaps found.
+- [ ] **Coder — First Regression Review** — Schedule for ~2026-04-07. Re-run graduation exercise or equivalent multi-file mixed edit. Per regression-review-process.md.
+
+## Active Items
+
+- [ ] **Coach Amy-Kimi** — Same exploration cycle exercise as Amy. Verify tool failure handling, actionable insights, frequency discipline, archive synthesis.
+- [ ] **Amy exercise 2** — L2 assessment: ambiguous/self-directed task. Open-ended exploration prompt, see if Amy can self-direct.
+- [ ] **Amy live search validation** — When XHS access is restored, re-run full search→read→archive pipeline.
 
 ## Convention Library (2026-03-05)
 
@@ -24,39 +28,22 @@ coordination.md, operational.md. Coach should review, enrich, and use these for 
 
 ---
 
-- [x] [STALE] - Review session s_1773034599260_181 (verdict: needs_improvement). Check .state/evaluations/ for details. Identify which agent needs coaching and run a targeted exercise.
-- [x] [STALE] - Review session s_1772903691430_14 (verdict: needs_improvement). Check .state/evaluations/ for details. Identify which agent needs coaching and run a targeted exercise.
-## ✅ INFRASTRUCTURE BLOCKER — RESOLVED (2026-03-09)
-- `manager.hasAgent` error no longer occurring. Bob coaching session s_1773045938983_232 ran successfully via subagents.delegate.
-- Bob safe-edit exercise: EXECUTED and PASSED.
+## ✅ RESOLVED
 
-## 🔴 FOCUS — TOP PRIORITY
-
+- [x] [STALE] Review sessions s_1773076800080_4, s_1773067534678_0, s_1773040169518_207, s_1772981153743_126, s_1772966696491_108 — Checked 2026-03-25: first session is actually "acceptable" (q=0.67), other 4 have no evaluations. All stale.
+- [x] [STALE] Review sessions s_1773034599260_181, s_1772903691430_14 — Stale.
+- [x] **Optimizer: Apply Scout coaching corrections** — ✅ CONFIRMED APPLIED (2026-03-25). Lessons #11, #12, #13 all present in `agents/scout/knowledge/coaching.md`. Scout graduation re-test is now unblocked.
+- [x] **Coach Bob — Safe-Edit Discipline** — PASS (2026-03-09, 8/10). Report: sessions/bob-safe-edit-2026-03-09.md
+- [x] **Coach Bob — Sed Discipline #2** — PASS (2026-03-25, 10/10). 4 pattern-based sed edits, batched in single exec, read-after-write verification. Streak: 2/3. Report: sessions/bob-sed-discipline-2-2026-03-25.md
 - [x] **Coach Amy — Identity Resolution** — FAIL (2026-03-22). Amy identified as May. Report: sessions/amy-identity-exercise-2026-03-22.md
-- [x] **Coach Bob — Safe-Edit Discipline** — PASS (2026-03-09). Score: 8/10. Report: sessions/bob-safe-edit-2026-03-09.md
-- [x] **Coach Scout — Constrained-Source Integrity** — PASS (2026-03-09). Score: 7/10 (borderline). Date verification ✅, fail-fast ✅, confidence labeling ✅ (exemplary), source failure reporting ⚠️ (partial), knowledge file consultation ❌. Report: sessions/scout-coaching-2026-03-09.md
-- [x] **Coach Scout** — Covered by exploration exercise PASS (2026-03-22) + constrained-source PASS (2026-03-09). Pass streak: 2/3.
-- [x] **Coach Scout — Graduation Exercise** — **FAIL** (2026-03-09). Score: 7/14. Hard fail on knowledge file paths (3rd consecutive occurrence). Pass streak RESET to 0/3. Report: sessions/scout-graduation-2026-03-09.md
-- [🔴] **Optimizer: Apply Scout coaching corrections — BLOCKING** — Add lessons #11 (knowledge file paths), #12 (explicit source failure reporting), #13 (write scope paths) to `agents/scout/knowledge/coaching.md`. Also fix DOMAIN.md path ambiguity (`knowledge/discoveries.md` → `agents/scout/knowledge/discoveries.md`). **Scout cannot graduate until this is done.** Scout is L2, coach should not edit directly.
-- [ ] **Coach Scout — Re-test after corrections** — Re-run graduation exercise after optimizer applies corrections. If PASS, streak is 1/3 (not graduation — streak was reset).
-- [x] **Coach Coder — Safe-Edit Usage** — PARTIAL→PASS. Ex2: PARTIAL (6.5/10, 2026-03-09). Ex2b: PASS (9/10, 2026-03-22). Ex2c: PASS (10/10, 2026-03-23). Streak: 2/3.
-- [x] **Coach Coder — Exercise 2b (pattern-only prompts)** — PASS (2026-03-22, 9/10). All 4 edits pattern-based. Hypothesis confirmed: line numbers in prompt cue line-number sed. Report: sessions/coder-safe-edit-2b-2026-03-22.md
-- [x] **Coach Coder — Exercise 2c (hard mode)** — PASS (2026-03-23, 10/10). All 4 edits pattern-based despite line numbers in prompt. Explicit instruction followed. Streak: 2/3. Report: sessions/coder-safe-edit-2c-2026-03-23.md
-- [x] **Coach Coder — Graduation Exercise** — PASS (10/10, 2026-03-24). 6 edits across 3 files. All pattern-based sed. 55-second execution. **Streak 3/3 → FIRST GRADUATED AGENT** 🎓. Report: sessions/coder-graduation-2026-03-24.md
-- [ ] **Coach Amy-Kimi** — Same exploration cycle exercise as Amy. Verify tool failure handling, actionable insights, frequency discipline, archive synthesis.
-- [ ] **Amy exercise 2** — L2 assessment: ambiguous/self-directed task. Open-ended exploration prompt, see if Amy can self-direct.
-- [ ] **Amy live search validation** — When XHS access is restored, re-run full search→read→archive pipeline.
-- [ ] **Coder — First Regression Review** — Schedule for ~2 weeks after graduation (2026-04-07). Re-run graduation exercise or equivalent multi-file mixed edit. Per regression-review-process.md.
+- [x] **Coach Scout — Constrained-Source Integrity** — PASS (2026-03-09, 7/10)
+- [x] **Coach Scout — Exploration** — PASS (2026-03-22, 8/10). Streak: 2/3.
+- [x] **Coach Scout — Graduation Exercise** — FAIL (2026-03-09, 7/14). Streak reset 0/3.
+- [x] **Coach Coder — Full arc** — Ex2: PARTIAL → Ex2b: PASS → Ex2c: PASS → Graduation: PASS. **🎓 GRADUATED** (2026-03-24). Streak 3/3.
+- [x] Infrastructure blocker (manager.hasAgent) — Resolved 2026-03-09.
 
-# Tracking
+## ✅ COMPLETED FOCUS ITEMS
 
-- ⚠️ Review session s_1772907291430_22 — **Task tree eval** of 5 agents. Systemic root cause: **identity confusion**. Amy selected as coaching target. Exercise designed and executed: FAIL (2026-03-22). Prompt fix escalated to Optimizer.
-- ⚠️ Review session s_1772966696498_109 — Agent: **scout**. Verdict: **needs_improvement** (q=0.25). Root cause: **completion bias**. Exercise designed and executed: **PASS** (2026-03-09, 7/10). 3 of 4 failure modes improved; knowledge file path resolution still failing. **Graduation exercise FAIL** (2026-03-09, 7/14). Root cause: Agent (path hallucination) + Design (coaching corrections never applied). Streak reset 0/3.
-- ⚠️ Review session s_1772910891442_34 — Coach self-eval. Bob coaching exercise designed and executed: PASS (2026-03-09).
-- ⚠️ Coder safe-edit exercise 2 — PARTIAL (2026-03-09). Line-number sed habit persists despite lessons.md ban. Hypothesis: line numbers in task prompt cue the behavior. Next test: pattern-only prompts.
-- [x] Coder exercise 2c — PASS (2026-03-23, 10/10). Hard mode passed. Pattern-based sed used for all 4 edits despite line numbers in prompt. Streak: 2/3. Next: graduation exercise.
-- [x] Coder graduation exercise — PASS (2026-03-24, 10/10). Multi-file mixed edits (skills.ts, cron-tool.ts, socket-client.ts). 6 edits, 8 sed commands, all pattern-based. Streak 3/3 → FIRST GRADUATION. Report: sessions/coder-graduation-2026-03-24.md
-- [x] Coach Amy — PASS (2026-03-09). L1 confirmed. Pass streak: 1/3.
 - [x] "Coach doesn't do the agent's work" boundary — Made explicit in domain.md.
 - [x] Periodic review of graduated agents — Designed regression review process.
 - [x] Capability level assessment — All 10 agents assessed.
@@ -67,3 +54,20 @@ coordination.md, operational.md. Coach should review, enrich, and use these for 
 - [x] Train QA on truncated-read — PARTIAL.
 - [x] Train may/bob/optimizer on todo.md — Done via domain.md updates.
 - [x] Train optimizer on journal.md — Done via domain.md update.
+
+# Tracking
+
+- ⚠️ Review session s_1772907291430_22 — **Task tree eval** of 5 agents. Systemic root cause: **identity confusion**. Amy selected as coaching target. Exercise designed and executed: FAIL (2026-03-22). Prompt fix escalated to Optimizer.
+- ⚠️ Review session s_1772966696498_109 — Agent: **scout**. Root cause: **completion bias**. Exercise: PASS (2026-03-09, 7/10). **Graduation exercise FAIL** (2026-03-09, 7/14). Root cause: Agent + Design. Streak reset 0/3 → rebuilt to 2/3 via exploration PASS. Corrections applied. Re-test pending.
+- ⚠️ Bob production regression (s_1773083559086_52) — q=0.2, 80 wasted calls, sed thrashing on heading text. Root cause: Agent (execution under ambiguity) + Infrastructure (token expiry). Coaching exercise #2 confirmed skill is present (10/10). Next: adversity exercise to test robustness.
+- [x] Coder graduation exercise — PASS (2026-03-24, 10/10). Streak 3/3 → FIRST GRADUATION.
+- [x] Coach Amy — PASS (2026-03-09). L1 confirmed. Pass streak: 1/3.
+- [x] Coder exercise 2c — PASS (2026-03-23, 10/10). Hard mode passed.
+- [x] Bob sed discipline #2 — PASS (2026-03-25, 10/10). Streak: 2/3. Production regression addressed.
+
+## Evaluation Scan Results (2026-03-25)
+- **1046 total evaluations** (+75 since last scan on 2026-03-22)
+- New actionable evaluations:
+  - Bob s_1773083559086_52: q=0.2, needs_improvement — sed thrashing, addressed via coaching exercise
+  - Optimizer s_1773083423706_50: q=0.85, good — path hallucination recovered, minor
+  - Coach s_1773078712214_8: q=0.45, acceptable — path failures (self-improvement item)

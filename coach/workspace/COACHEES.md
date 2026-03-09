@@ -190,10 +190,10 @@ Graduated agents move to **periodic review** (re-run regression exercises on a s
 | Field | Value |
 |-------|-------|
 | **Level** | L2→L3 (emerging L3 — system-level analysis, poor execution) |
-| **Status** | Active coaching — 1 pass streak |
-| **Sessions** | 1 |
-| **Consecutive passes** | 1/3 |
-| **Blocking graduation** | Needs 2 more consecutive passes |
+| **Status** | Active coaching — **2/3 pass streak** |
+| **Sessions** | 2 |
+| **Consecutive passes** | 2/3 |
+| **Blocking graduation** | Needs 1 more consecutive pass |
 
 **Notes:** Orchestrates meta-loop, maintains philosophy.md. Different model (Gemini 3 Pro) from most agents. 22 evaluated sessions with highly variable quality (q=0.0 to 0.8, recent trend downward).
 
@@ -205,6 +205,7 @@ Graduated agents move to **periodic review** (re-run regression exercises on a s
 
 **Coaching history:**
 - **2026-03-09** — Safe-Edit Discipline: **PASS** (8/10). Used grep→line-range reads→sed for all edits. Zero write() calls, zero shrink guard triggers. Self-corrected two placement errors through verification reads. Major improvement over historical blind-overwrite pattern. Report: `sessions/bob-safe-edit-2026-03-09.md`.
+- **2026-03-25** — Sed Discipline Exercise #2: **PASS** (10/10). 4 pattern-based sed edits on a 66-line doc. All edits batched in single exec call. Zero thrashing, zero wasted calls. Read-after-write verification. 42-second execution. Dramatic improvement over recent production regression (s_1773083559086_52, q=0.2). Report: `sessions/bob-sed-discipline-2-2026-03-25.md`.
 
 ---
 
@@ -322,7 +323,7 @@ Graduated agents move to **periodic review** (re-run regression exercises on a s
 | Coder | L2 | 🎓 **GRADUATED** | 5 | **3/3** ✅ | Periodic regression review |
 | QA | L2 | Active (streak broken) | 3 | 0/3 | High |
 | Master | L2 | Active | 2 | 1/3 | Medium |
-| Bob | L2→L3 | Active — 1 pass streak | 1 | 1/3 | High (execution gap) |
+| Bob | L2→L3 | Active — **2/3 streak** | 2 | **2/3** | **HIGH — 1 from graduation** |
 | Amy | L1 (provisional) | Blocked (infra) | 2 | 0/3 | High (after infra fix) |
 | Amy-Kimi | L1 (provisional) | Not started | 0 | 0/3 | Medium (after infra fix) |
 | Scout | L2 | Active — **2/3 streak, UNBLOCKED** | 2 | **2/3** | **HIGH — 1 away from graduation** |
@@ -337,6 +338,6 @@ Graduated agents move to **periodic review** (re-run regression exercises on a s
 2. **Scout** — **1 exercise from graduation, NOW UNBLOCKED!** May applied coaching corrections #11-13 on 2026-03-09. Ready for graduation exercise: dedup against full canonical archive + budget discipline.
 3. **May** — Strong first session (action bias PASS, path PASS, brevity PARTIAL). Next: test without scaffolding. Add container awareness lesson.
 4. **QA** — Re-test truncated-read + write after domain.md fix (streak broken, needs reset)
-5. **Bob** — Highest-ceiling agent (L3 analytical capability) but worst execution reliability; focus on execution discipline
+5. **Bob** — **2/3 streak, 1 from graduation.** Next: adversity exercise (ambiguous paths, multi-file, error recovery). If PASS → 3/3 → second graduation.
 6. **Master** — Efficiency exercise (excessive exploration is main weakness)
 7. **Amy/Amy-Kimi** — Blocked on infra; escalate Docker mount fix

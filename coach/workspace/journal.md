@@ -253,3 +253,18 @@ was discovered about an agent's behavior during a coaching session.
 - **Implication for system**: First graduation proves the coaching pipeline works end-to-end. From initial PARTIAL (6.5/10) through diagnosis and targeted exercises to graduation. Pipeline: evaluate → coach → exercise → score → iterate → graduate → periodic review.
 - **Next**: Begin periodic regression reviews. Also: Scout is at 2/3 — similar graduation path possible.
 - Report: `sessions/coder-graduation-2026-03-24.md`
+
+## 2026-03-25 — bob (sed discipline exercise #2 — PASS, 10/10)
+- **Exercise result: PASS (10/10)**. 4 pattern-based sed edits on a 66-line markdown file. All 4 edits batched in a single exec call. Zero thrashing, zero wasted calls. Read-after-write verification performed. 42-second execution, 3 tool calls total.
+- **Context**: Bob's recent production session (s_1773083559086_52) scored q=0.2 with 80 wasted calls — severe sed thrashing, toggling heading text back and forth, path confusion, task incompletion. This was a regression from the safe-edit exercise Bob passed on 2026-03-09.
+- **Key finding — controlled vs adversity performance gap**: Bob executes safe-edit discipline perfectly in controlled conditions (10/10 in exercise) but regresses severely under adversity (q=0.2 in production with ambiguous file paths + token expiry). This mirrors the Coder pattern: skill is present but environmental factors (ambiguity, errors, pressure) trigger regression.
+- **Production failure root causes**: (1) Ambiguous file paths — convention file location was unclear, Bob tried non-existent paths. (2) Token expiry mid-session — Gemini API authentication error terminated the session. (3) Sed thrashing — repeated sed commands toggling the same text back and forth, indicating loss of edit intent tracking.
+- **Coaching methodology confirmation**: The A/B testing approach (controlled exercise vs production conditions) consistently reveals the gap between skill presence and skill robustness. Both Coder and Bob showed the same pattern. Next exercise should introduce controlled adversity (ambiguous paths, partial errors) to test robustness.
+- **Streak**: 1/3 → 2/3. One more pass for second graduation.
+- Report: `sessions/bob-sed-discipline-2-2026-03-25.md`
+
+## 2026-03-25 — evaluation scan (5th run, +75 new evaluations)
+- 1046 total evaluations (up from 971). Significant burst of new data since last scan.
+- 3 new actionable evaluations: Bob q=0.2 (coached), Optimizer q=0.85 (minor), Coach q=0.45 (self-improvement item).
+- **Scout coaching corrections confirmed applied**: Lessons #11, #12, #13 all present in agents/scout/knowledge/coaching.md. Scout graduation re-test is now unblocked.
+- **Cross-agent pattern**: Both Bob and Optimizer showed path hallucination in their new evaluations (Bob: non-existent convention paths; Optimizer: macOS-style /Users/ paths). This is a recurring Gemini-model pattern worth tracking.

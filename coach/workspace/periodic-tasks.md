@@ -5,11 +5,12 @@ what's overdue. A task is "overdue" when it's the oldest last-done date.
 
 ## Rotating tasks (one per heartbeat when no urgent todo)
 
-- [x] **Evaluation scan** — Last done: 2026-03-22 (4th run)
+- [x] **Evaluation scan** — Last done: 2026-03-25 (5th run)
   Read recent evaluations (.state/evaluations/). Any agent with quality < 0.5 on 2+ sessions?
   If found → design targeted exercise, add to workspace/todo.md.
   **Result (2026-03-09 3rd):** 970 total evaluations. No new evaluations since last scan (most recent: coach s_1773067835002_0, a short aborted session). System quiet. Failure rates unchanged: Bob 73%, Scout 69%, Coach 62%, Amy 44%, Coder 38%, QA 16%, Optimizer 11%. No new coaching targets. Note: persistence.ts already had all 4 "planned" exercise edits applied — file had been modified by the workflow's planning step. Used compaction.ts (608 lines) for actual exercise instead.
   **Result (2026-03-22 4th):** 971 total evaluations (+1 since last scan). No significant new data — only 1 new non-skipped eval (coach s_1773067835002_0, q=0.1, aborted session). Failure rates unchanged: Bob 75%, Scout 62%, Coach 62%, Optimizer 53%, Amy 44%, Coder 40%, QA 16%. System quiet between 03-09 and 03-22.
+  **Result (2026-03-25 5th):** 1046 total evaluations (+75 since last scan). 3 new actionable evaluations: Bob s_1773083559086_52 q=0.2 needs_improvement (sed thrashing — coached, PASS 10/10), Optimizer s_1773083423706_50 q=0.85 good (path hallucination, minor), Coach s_1773078712214_8 q=0.45 acceptable (path failures). Bob coaching exercise completed this session.
 
 - [x] **COACHEES review** — Last done: 2026-03-22
   Read workspace/COACHEES.md. Any agent due for coaching or regression review?
@@ -55,6 +56,32 @@ out of the heartbeat so coach can spend turns on higher-value work.
 ---
 
 ## Session Log
+
+### 2026-03-25 — Heartbeat
+**Activity:** Evaluation scan + Bob coaching exercise #2 (sed discipline)
+**Result:** Eval scan: 1046 total (+75 since last scan). Bob exercise: PASS (10/10). All 4 edits pattern-based, batched in single exec, read-after-write verification. 42 seconds, 3 tool calls. Zero thrashing.
+**Actions taken:**
+- Ran evaluation scan: 3 new actionable evaluations found (Bob q=0.2, Optimizer q=0.85, Coach q=0.45)
+- Identified Bob production regression (s_1773083559086_52, q=0.2, sed thrashing) as coaching target
+- Confirmed Scout coaching corrections #11-13 applied — Scout re-test unblocked
+- Designed and ran Bob sed discipline exercise #2 (s_1773086094977_65, 42s)
+- Scored exercise: 10/10 (PASS — all pattern-based, zero thrashing, verification done)
+- Reverted test file to original state
+- Updated COACHEES.md (Bob streak 2/3, session #2, dashboard updated)
+- Cleaned todo.md: resolved 5 stale session reviews, reorganized priorities
+- Updated periodic-tasks.md (evaluation scan 5th run)
+
+**Key findings:**
+- Bob's sed skill is present (10/10 in controlled conditions) but regresses under adversity (q=0.2 in production with ambiguous paths + token expiry). Same pattern as Coder's early exercises.
+- Scout corrections confirmed applied — unblocked for graduation re-test
+- System saw +75 evaluations since last scan (was at 971, now 1046)
+
+**Next priorities:**
+- Bob adversity exercise #3 (ambiguous paths, multi-file, error recovery) — if PASS → second graduation
+- Scout graduation re-test (corrections applied, streak 2/3)
+- Coach May config verification
+
+---
 
 ### 2026-03-24 — Heartbeat
 **Activity:** 🎓 Coder GRADUATION exercise — multi-file mixed edits
