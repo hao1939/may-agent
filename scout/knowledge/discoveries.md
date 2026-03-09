@@ -3549,3 +3549,65 @@ The tool-use/function-calling space is experiencing rapid maturation across four
 **6. The intent gap is the next frontier.** Practitioner consensus (D3, D2) is that models fail not on understanding language or reasoning, but on **connecting user intent to correct tool invocations**. Current training optimizes for format compliance and single-tool accuracy — it doesn't train for intent fidelity across multi-step workflows. D-CORE's "Lazy Reasoning" and FuncBenchGen's "stale argument propagation" are both manifestations of this gap.
 
 ---
+
+---
+
+## 2026-03-11 — Heartbeat: March 5-6 arXiv Batch + Cross-Reference Synthesis
+
+### A. arXiv:2603.06333 — SAHOO: Safeguarded Alignment for Recursive Self-Improvement (★★★)
+- **Source:** arXiv cs.AI, Mar 6 2026. ICLR 2026 Workshop on AI with Recursive Self-Improvement.
+- **Authors:** Sahoo (Cambridge AI Safety Hub), Chadha (AWS/Stanford), Jain (Google/Stanford), Chaudhary (Northeastern)
+- **What it is:** First practical framework for measuring/monitoring/controlling alignment drift during recursive self-improvement. Three safeguards: (1) Goal Drift Index — 4-signal composite detector (semantic/lexical/structural/distributional drift), weights learned via logistic regression; (2) Constraint Preservation — binary enforcement of safety invariants with zero-tolerance stopping; (3) Regression-Risk Quantification — volatility + trend + normalized-gap → regression probability with early warning at mean cycle 4.5.
+- **Key results:** +18.3% code quality, +16.8% reasoning on Qwen3-8B across 189 tasks. Capability-Alignment Ratio (CAR) frontier shows efficient early cycles but rising alignment costs later. 0.7% regression rate. All parameters data-driven (no hand-tuning). Calibration needs only 18 tasks + 3 cycles.
+- **Why it matters for us:** Our evaluator-agent feedback loop IS a recursive self-improvement system. GDI could monitor evaluator drift. Constraint preservation maps to delegation requirements. CAR frontier informs when to stop iterating. The "accept drift exists, bound it" philosophy matches bias-bounded eval (2603.05485).
+- **Connects to:** JRH (2603.05399 — judge reliability + system drift = layered defense); Bias-Bounded (2603.05485 — bounded bias per-eval + bounded drift per-cycle); Introspection (2603.05414 — content-agnostic anomaly detection = semantic drift signal); DPIP (2603.05450 — epistemic asymmetry; constraint preservation enforces explicit context); Bug-Hunt (adversarial role stability monitoring); Reflective TTP (2602.21198 — three-LLM loop is self-improvement cycle).
+- **Full deep-dive:** agents/scout/workspace/deep-dive-arxiv-2603-06333-sahoo-recursive-self-improvement.md
+
+### B. arXiv:2603.06007 — MASFactory: Graph-centric MAS Orchestration (★★)
+- **Source:** arXiv cs.CL, Mar 6 2026. BUPT-GAMMA + SJTU.
+- **What it is:** Framework modeling MAS workflows as directed computation graphs. Key innovation: "Vibe Graphing" — human-in-the-loop compilation of natural-language intent → editable workflow spec → executable graph through 3 stages (Role Assignment → Structure Design → Semantic Completion).
+- **Key features:** (a) Message Adapters decouple collaboration topology from protocol; (b) Context Adapters unify Mem0/LlamaIndex/MCP; (c) NodeTemplates for branch-style reuse; (d) ComposedGraph for dynamic scheduling patterns; (e) VS Code extension visualizer with runtime tracing.
+- **Results:** Reproduces ChatDev, MetaGPT, AgentVerse, CAMEL, HuggingGPT with consistent or improved results. Vibe Graphing workflows competitive with hand-designed ones (84.76 HumanEval, 90.71 SRDD).
+- **GitHub:** BUPT-GAMMA/MASFactory, 14⭐, Python, Apache-2.0.
+- **Why it matters:** The intent→structure→instantiation compilation chain is the closest thing to a "compiler for multi-agent systems." The declarative/imperative dual interface is clean. But 14⭐ = very early.
+- **Connects to:** NFR Pattern Language (2603.00472 — schema-gated approach to aspects); Schema-Gated (2603.06394 — same design space from different angle); TAPE (2602.19633 — plan graph + constrained execution is MASFactory's graph + validation).
+
+### C. arXiv:2603.06394 — Schema-Gated Agentic AI for Scientific Workflows (★★)
+- **Source:** arXiv cs.AI, Mar 6 2026. Cambridge/Intellegens.
+- **What it is:** User research (18 experts, 10 industrial R&D stakeholders) surfaces two competing requirements: Execution Determinism (ED) and Conversational Flexibility (CF). Proposes schema-gated orchestration: schema = mandatory execution boundary. Nothing runs unless complete action validates against machine-checkable spec.
+- **Three operational principles:** (1) Clarification-before-execution; (2) Constrained plan–act orchestration; (3) Tool-to-workflow-level gating (not just individual tool calls, but composed workflows).
+- **Notable:** Multi-model scoring protocol (15 sessions across 3 LLM families) achieves α=0.80 ED, α=0.98 CF — demonstrates LLM panels as reusable alternative to human expert panels for architectural assessment.
+- **Maps 20 systems** on ED/CF axes → Pareto front visible. No system achieves both high flexibility AND high determinism. Schema-gating claims to decouple this tradeoff.
+- **Why it matters:** The ED vs CF tension is exactly what our system faces — agents need flexibility to reason, but delegated work needs deterministic execution guarantees. Schema-gating as mandatory boundary is worth studying as a pattern.
+- **Connects to:** SAHOO (2603.06333 — constraint preservation IS schema-gating at the improvement-loop level); TAPE (2602.19633 — ILP constraint + plan graph = schema-gated planning); Bug-Hunt (adversarial verification = execution determinism); NFR Pattern Language (2603.00472 — separation of concerns via aspects).
+
+### D. arXiv:2603.05069 — Jagarin: Hibernating Personal Duty Agents on Mobile (★★)
+- **Source:** arXiv cs.AI, Mar 5 2026. Single author (Ravi Kiran Kadaboina).
+- **What it is:** Three-layer mobile agent architecture solving the "persistent execution vs battery drain" paradox:
+  - **DAWN (Duty-Aware Wake Network):** On-device heuristic computing composite urgency from 4 signals: temporal opportunity curve (Gaussian value window, NOT countdown), behavioral engagement prediction, value decay integral (opportunity cost), cross-duty batch resonance. Adaptive per-user thresholds. <50ms inference.
+  - **ARIA (Agent Relay Identity Architecture):** Email identity proxy routing commercial inbox to DAWN handlers via 4-category classification (Temporal Obligation / Commercial Opportunity / Rewards Signal / Social Update). Gemini 2.5 Flash for structured extraction. Automatic duty ingestion — no manual entry.
+  - **ACE (Agent-Centric Exchange):** Protocol for direct institution-to-agent communication. 4 mandatory schemas: ACE-TEMP (temporal), ACE-VALUE (value declaration), ACE-SCOPE (authorization), ACE-TRUST (transparency). 11 domain extensions.
+- **Key design decisions:** User-deployed (not institution-deployed) → optimization target is user value, not institutional engagement. No persistent cloud state. No continuous background execution. Ephemeral cloud agent only on explicit user escalation. Platform-compliant (WorkManager/BGTaskScheduler).
+- **Flutter prototype on Android** with 12 duty types implemented.
+- **Why it matters:** Novel framing of agent deployment on constrained platforms. The "urgency ≠ proximity to deadline" insight (45-day obligation can be MORE urgent than 5-day one if in its optimal action window) is transferable. The ACE protocol's 4 mandatory schemas (temporal/value/scope/trust) are a clean interface design for agent communication. The user-alignment-by-design principle (all 20 institution agents competing for attention = commons tragedy) is important for multi-agent trust.
+- **Connects to:** cc-connect (repos.md — agent-to-messaging bridge; Jagarin is agent-to-real-world-obligation bridge); AI Runtime Infrastructure (2603.00495 — mobile agent runtime constraints); Selection as Power (2603.02019 — bounded decision authority; DAWN's adaptive thresholds bound agent interruption authority).
+
+### E. CROSS-CUTTING SYNTHESIS: The Self-Improvement Safety Stack (March 2026)
+
+Six papers from our archive now form a coherent **layered safety stack** for self-improving agent systems:
+
+| Layer | Paper | Function |
+|-------|-------|----------|
+| **L1: Per-evaluation reliability** | JRH (2603.05399) | Stress-test judge reliability via perturbations. Catch unreliable (model × task × perturbation) triples. |
+| **L2: Per-evaluation bias bounding** | Bias-Bounded (2603.05485) | Gaussian noise + Lipschitz shrinkage → (τ,δ) guarantees on individual evaluations. |
+| **L3: Anomaly detection** | Introspection (2603.05414) | Content-agnostic internal anomaly flags. Trust detection signals, never trust explanations. |
+| **L4: Common ground enforcement** | DPIP (2603.05450) | Explicit context specification. Don't assume shared knowledge. Deterministic belief tracking. |
+| **L5: Adversarial verification** | Bug-Hunt | Weaponized bias composition. Hunter/Skeptic/Referee for structured disagreement. |
+| **L6: System-level drift monitoring** | SAHOO (2603.06333) | GDI + constraint preservation + regression risk. Bound cumulative drift across improvement cycles. |
+
+**The insight:** No single layer is sufficient. L1-L2 catch per-evaluation failures but can't detect system-level drift. L3 detects anomalies but can't explain them. L4 prevents misunderstanding but not misalignment. L5 catches bugs but not gradual degradation. L6 monitors the whole loop but depends on the lower layers for measurement.
+
+**The full stack provides defense-in-depth:** reliable per-evaluation judgments (L1) → bounded bias on those judgments (L2) → anomaly flags on suspicious outputs (L3) → enforced common ground in delegation (L4) → adversarial challenge on completed work (L5) → drift monitoring across the full improvement cycle (L6).
+
+This is the first time our archive has produced a complete, layered safety framework from independently discovered papers. The convergence is not coincidental — the field is simultaneously discovering these layers because production agent systems are hitting each failure mode independently.
+

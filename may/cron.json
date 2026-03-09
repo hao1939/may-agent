@@ -50,7 +50,7 @@
     "intervalMs": 1800000,
     "agent": "bob",
     "message": "[heartbeat] You are Bob. Your files are in agents/bob/. Read agents/bob/workspace/todo.md. Pick the top unchecked item, do it, mark done. Then perform a philosophy check on any recent changes.",
-    "enabled": false,
+    "enabled": true,
     "description": "Bob's mission heartbeat — design, todo drain, philosophy audit (30min)"
   },
   {
@@ -207,5 +207,19 @@
       "targetAgent": "scout",
       "mode": "run"
     }
+  },
+  {
+    "name": "heartbeat-tech-lead",
+    "intervalMs": 1800000,
+    "message": "[heartbeat] Read agents/tech-lead/heartbeat.md and work through each section top to bottom.",
+    "enabled": true,
+    "description": "Tech-lead's heartbeat — build pending work, intake new designs, code health (30min)"
+  },
+  {
+    "name": "heartbeat-amy-kimi",
+    "intervalMs": 3600000,
+    "message": "[heartbeat] Read agents/amy-kimi/heartbeat.md and work through each section top to bottom.",
+    "enabled": true,
+    "description": "Amy-Kimi's heartbeat — XHS exploration with Kimi model (1h)"
   }
 ]

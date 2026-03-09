@@ -2371,3 +2371,13 @@ The fix has already been app
 - [2026-03-09T19:08:46.967Z] how's every agent doing?
 - [2026-03-09T19:09:56.373Z] how to keep them working? do you have any task can have some one working on?
 - [2026-03-09T19:52:45.572Z] why there is dead letter? for [manager] Dropping dead-letter notification after 5 retries: session=s_1773083559086_52 agent=bob task="Review agents/shared/best-practices.md against your own review at 
+- [2026-03-09T19:59:53.519Z] let's also enable heartbeat for bob and tech-lead
+- [2026-03-09T20:00:06.454Z] which agents enabled heartbeats?
+- [2026-03-09T20:18:51.789Z] alsoe enable heartbeat of amy-kimi, take a try
+- [2026-03-09T20:19:51.688Z] how's every agent working? are they working well?
+- [2026-03-09T20:21:37.266Z] which model do bob and coach use?
+- [2026-03-09T20:22:31.347Z] why bob would have token issue? we are using litellm proxy which use github copilot subscription, and other model all works
+- [2026-03-09T20:23:03.367Z] they
+- [2026-03-09T20:24:57.139Z] how's amy-kimi doing?
+- [2026-03-09T20:25:02.580Z] let's make she working
+- [2026-03-09T20:25:50.750Z] seems she never working? we may need to ask coach to coach her?

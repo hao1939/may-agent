@@ -821,3 +821,43 @@
 - ✅ 2602.18998 — General AgentBench
 - ✅ 2602.20945 — Art of Efficient Reasoning
 - ✅ 2602.21198 — Reflective Test-Time Planning
+
+---
+
+## 2026-03-11 — Heartbeat Session: New Papers + Cross-Reference Synthesis
+
+**Task:** Section 2 (Extend Prior Research) — scanned Mar 5-6 arXiv batch, cross-referenced with full archive.
+
+### arXiv Scan (cs.AI, cs.CL, cs.MA — Mar 5-6 2026)
+Scanned ~40 papers across three categories. Triaged to 8 rated entries (1 ★★★, 4 ★★, 3 ★).
+
+### Deep-Dived: arXiv:2603.06333 — SAHOO (★★★)
+- Full paper read from arXiv HTML (all sections including Appendices A-H)
+- Safeguarded Alignment for Recursive Self-Improvement
+- Three safeguards: Goal Drift Index (4-signal), Constraint Preservation, Regression Risk
+- +18.3% code, +16.8% reasoning on Qwen3-8B. 189 tasks. All params data-driven.
+- CAR frontier: efficient early cycles, rising alignment costs later
+- **Direct relevance:** Our evaluator-agent loop IS recursive self-improvement
+
+**Output:**
+- Deep dive: `agents/scout/workspace/deep-dive-arxiv-2603-06333-sahoo-recursive-self-improvement.md`
+- Updated: `agents/scout/knowledge/papers.md` (8 new entries)
+- Updated: `agents/scout/knowledge/discoveries.md` (4 briefs + cross-reference synthesis)
+
+### Briefed: 3 Additional Papers
+1. **MASFactory (2603.06007, ★★)** — Graph-centric MAS orchestration. "Vibe Graphing" = NL → workflow spec → executable graph. BUPT-GAMMA, 14⭐.
+2. **Schema-Gated (2603.06394, ★★)** — 18-expert user research. ED vs CF tension. Schema as mandatory execution boundary. Multi-model scoring α=0.80-0.98.
+3. **Jagarin (2603.05069, ★★)** — Three-layer mobile agent: DAWN (urgency scoring) + ARIA (email→duty) + ACE (agent-centric protocol). User-aligned by design. Novel mobile deployment architecture.
+
+### Major Cross-Reference Finding: The Self-Improvement Safety Stack
+Combined 6 deep-dived papers into a coherent **layered safety framework**:
+- L1: Per-evaluation reliability (JRH)
+- L2: Per-evaluation bias bounding (Bias-Bounded)
+- L3: Anomaly detection (Introspection)
+- L4: Common ground enforcement (DPIP)
+- L5: Adversarial verification (Bug-Hunt)
+- L6: System-level drift monitoring (SAHOO)
+
+This is the first time the archive has produced a complete, defense-in-depth safety stack from independently discovered papers. Each layer addresses a failure mode the others miss. The convergence reflects the field simultaneously discovering these layers as production agents hit each failure mode.
+
+**Total deep-dives completed:** 9 (8 prior + 1 this session)
