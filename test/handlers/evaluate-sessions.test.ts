@@ -80,7 +80,7 @@ describe("findParentsWithUnevaluatedChildren", () => {
     expect(findParentsWithUnevaluatedChildren(persistDir)).toEqual([]);
   });
 
-  it("skips meta-agent sessions (evaluator, optimizer, may)", () => {
+  it("includes meta-agent sessions (filtering happens at evaluation time, not discovery)", () => {
     createSession("s_eval_1", {
       agent: "evaluator",
       status: "complete",
@@ -103,7 +103,9 @@ describe("findParentsWithUnevaluatedChildren", () => {
       parentSessionId: "s_parent_1",
     });
 
-    expect(findParentsWithUnevaluatedChildren(persistDir)).toEqual([]);
+    // findParentsWithUnevaluatedChildren returns parents — filtering by agent
+    // happens later in evaluateTask() via skipAgents
+    expect(findParentsWithUnevaluatedChildren(persistDir)).toEqual(["s_parent_1"]);
   });
 
   it("skips sessions without transcript", () => {

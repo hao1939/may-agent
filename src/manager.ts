@@ -1259,6 +1259,7 @@ export class SubagentManager {
       parentSessionId: s.parentSessionId,
       workflowRunId: s.workflowRunId,
       stepLabel: s.stepLabel,
+      autoClose: s.autoClose,
     }));
   }
 

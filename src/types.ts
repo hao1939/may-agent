@@ -101,6 +101,8 @@ export interface SessionInfo {
   workflowRunId?: string;
   /** Role of this session in its workflow (e.g. "coder", "reviewer"). */
   stepLabel?: string;
+  /** Session lifecycle policy. "never" = persistent/chat session, "immediate" = task session. */
+  autoClose?: "immediate" | "never";
 }
 
 /** Result of a completed session. */

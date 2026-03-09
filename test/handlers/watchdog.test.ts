@@ -12,6 +12,7 @@ function makeContext(sessions: Array<{
   status: string;
   startedAt: number;
   parentSessionId?: string;
+  autoClose?: "immediate" | "never";
 }>): HandlerContext {
   const cancelled: string[] = [];
   return {
@@ -22,6 +23,7 @@ function makeContext(sessions: Array<{
         status: s.status,
         startedAt: s.startedAt,
         parentSessionId: s.parentSessionId,
+        autoClose: s.autoClose,
         task: "some task",
         runtime: "1m",
       })),
@@ -93,7 +95,7 @@ describe("runWatchdog", () => {
   it("skips persistent agent (may) sessions without parent", () => {
     const now = Date.now();
     const ctx = makeContext([
-      { agent: "may", sessionId: "s1", status: "running", startedAt: now - 60 * 60 * 1000 },
+      { agent: "may", sessionId: "s1", status: "running", startedAt: now - 60 * 60 * 1000, autoClose: "never" },
     ]);
     const result = runWatchdog(ctx, {});
 
