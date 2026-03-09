@@ -20,7 +20,6 @@ describe("validateAgentConfig", () => {
       domain: "coding",
       model: "opus",
       tools: ["read-write", "exec"],
-      systemPromptFiles: ["knowledge/domain.md"],
     };
     const errors = validateAgentConfig(config, fakeModels, AGENTS_ROOT);
     expect(errors).toEqual([]);
