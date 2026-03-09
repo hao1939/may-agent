@@ -53,7 +53,6 @@ async function scenario1_singleAgent() {
     model,
     tools: [],
     apiKey: "not-needed",
-    maxTurns: 3,
   });
 
   const sid = manager.run("helper", "What is 7 * 8?");
@@ -63,7 +62,6 @@ async function scenario1_singleAgent() {
   assert(result.lastAssistantText !== null, "got a response");
   assert(result.lastAssistantText!.includes("56"), `response mentions 56 (got: ${result.lastAssistantText?.slice(0, 100)})`);
   assert(result.turnsUsed !== undefined && result.turnsUsed > 0, `turns used > 0 (got: ${result.turnsUsed})`);
-  assert(result.maxTurns === 3, `maxTurns is 3`);
 }
 
 // ── Scenario 2: Agent with exec tool ───────────────────────────────────
@@ -83,7 +81,6 @@ async function scenario2_agentWithExec() {
     model,
     tools: [createExecTool({ cwd: "/tmp" })],
     apiKey: "not-needed",
-    maxTurns: 5,
   });
 
   const sid = manager.run("runner", "Run `echo hello_world` and tell me the output.");
@@ -110,7 +107,6 @@ async function scenario3_delegation() {
     model,
     tools: [createWriteTool(), createReadTool()],
     apiKey: "not-needed",
-    maxTurns: 5,
   });
 
   // Register supervisor — can only delegate
@@ -125,7 +121,6 @@ async function scenario3_delegation() {
     model,
     tools: [manager.createTool()],
     apiKey: "not-needed",
-    maxTurns: 5,
   });
 
   const sid = manager.run(
@@ -180,7 +175,6 @@ async function scenario4_lifecycle() {
     model,
     tools: [createExecTool({ cwd: "/tmp" })],
     apiKey: "not-needed",
-    maxTurns: 3,
   });
 
   const sid = manager.run("worker", "Run `date` and tell me today's date.");
@@ -224,7 +218,6 @@ async function scenario5_cancel() {
     model,
     tools: [],
     apiKey: "not-needed",
-    maxTurns: 10,
   });
 
   const sid = manager.run("slow", "Count from 1 to 1000, one per line.");
@@ -254,7 +247,6 @@ async function scenario6_concurrent() {
     model,
     tools: [],
     apiKey: "not-needed",
-    maxTurns: 2,
   });
 
   const s1 = manager.run("math", "What is 3 + 4?");
@@ -295,7 +287,6 @@ async function scenario7_events() {
     model,
     tools: [],
     apiKey: "not-needed",
-    maxTurns: 2,
   });
 
   const sid = manager.run("talker", "Say the pangram.");
@@ -317,35 +308,7 @@ async function scenario7_events() {
   assert(gotText, `received text_delta in message_update`);
 }
 
-// ── Scenario 8: Turn limit enforcement ─────────────────────────────────
-
-async function scenario8_turnLimit() {
-  console.log("\n=== Scenario 8: Turn limit enforcement ===");
-
-  const { manager } = makeManager();
-
-  manager.register({
-    name: "looper",
-    description: "Loops with tools",
-    domain: "test",
-    systemPrompt: "You are a worker. Always run a command before answering. Run `echo step` each time.",
-    model,
-    tools: [createExecTool({ cwd: "/tmp" })],
-    apiKey: "not-needed",
-    maxTurns: 2,
-  });
-
-  const sid = manager.run("looper", "Run echo step, look at the result, run it again, look at the result, run it again. Keep going.");
-  const result = await manager.waitFor(sid);
-
-  assert(result.turnsUsed !== undefined, `turnsUsed is tracked`);
-  assert(result.maxTurns === 2, `maxTurns is 2`);
-  // The agent should be stopped at or near the limit
-  assert(
-    result.turnsUsed! <= 3, // might slightly overshoot
-    `turns used is near limit (got: ${result.turnsUsed})`,
-  );
-}
+// ── (Scenario 8 removed: turn limit enforcement was removed) ──────────
 
 // ── Scenario 9: Memory persistence across sessions ─────────────────────
 
@@ -362,7 +325,6 @@ async function scenario9_memory() {
     model,
     tools: [],
     apiKey: "not-needed",
-    maxTurns: 2,
   });
 
   // Run first session
@@ -406,7 +368,6 @@ async function scenario10_coderTools() {
       createExecTool({ cwd: workDir }),
     ],
     apiKey: "not-needed",
-    maxTurns: 5,
   });
 
   const sid = manager.run(
@@ -439,7 +400,6 @@ await scenario4_lifecycle();
 await scenario5_cancel();
 await scenario6_concurrent();
 await scenario7_events();
-await scenario8_turnLimit();
 await scenario9_memory();
 await scenario10_coderTools();
 

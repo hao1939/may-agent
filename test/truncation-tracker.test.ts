@@ -112,15 +112,15 @@ describe("linked read/write tools with truncation tracking", () => {
     // Verify tracker recorded the truncation
     expect(tools.tracker.has(join(testDir, "src/big.ts"))).toBe(true);
 
-    // Write back much shorter content (simulating data loss) — should be BLOCKED
+    // Write back much shorter content (simulating data loss) — now just writes with truncation warning
     const writeResult = await tools.write.execute("w1", {
       path: join(testDir, "src/big.ts"),
       content: "// shortened version\n" + "y".repeat(500),
     });
     const writeText = writeResult.content[0].text;
-    expect(writeText).toContain("BLOCKED");
-    expect(writeText).toContain("shrink the file");
-    expect(writeText).toContain("sed");
+    expect(writeText).toContain("Wrote");
+    expect(writeText).toContain("WARNING");
+    expect(writeText).toContain("truncation");
   });
 
   it("does NOT warn when writing a new file", async () => {
@@ -182,34 +182,23 @@ describe("linked read/write tools with truncation tracking", () => {
 
     const tools = createLinkedTools({ projectRoot: testDir, maxFileLength: 1000 });
 
-    // Read (truncated) → write (blocked) → write with enough content (warning) → write again (no warning)
+    // Read (truncated) → write short (warning) → write again (no warning, tracker cleared)
     await tools.read.execute("r1", { path: join(testDir, "src/clear.ts") });
 
-    // First write: way too short, should be BLOCKED (doesn't clear tracker)
-    const blockedWrite = await tools.write.execute("w0", {
+    // First write: short but succeeds with truncation warning
+    const firstWrite = await tools.write.execute("w0", {
       path: join(testDir, "src/clear.ts"),
       content: "short",
     });
-    expect(blockedWrite.content[0].text).toContain("BLOCKED");
+    expect(firstWrite.content[0].text).toContain("Wrote");
+    expect(firstWrite.content[0].text).toContain("WARNING");
 
-    // Second write: 60% of original (between 50% block and 80% warn thresholds)
-    const warningWrite = await tools.write.execute("w1", {
-      path: join(testDir, "src/clear.ts"),
-      content: "x".repeat(3000),
-    });
-    expect(warningWrite.content[0].text).toContain("WARNING");
-
-    // Third write: tracker was cleared after the successful write.
-    // The disk-based shrink guard still applies (file is now 3000 bytes,
-    // "also short" is <50%), so we use allowShrink to bypass the shrink guard.
-    // The point is that the truncation tracker warning is gone.
+    // Second write: tracker was cleared after the successful write — no warning
     const cleanWrite = await tools.write.execute("w2", {
       path: join(testDir, "src/clear.ts"),
       content: "also short",
-      allowShrink: true,
     });
     expect(cleanWrite.content[0].text).not.toContain("WARNING");
-    expect(cleanWrite.content[0].text).not.toContain("BLOCKED");
     expect(cleanWrite.content[0].text).toContain("Wrote");
   });
 
@@ -240,14 +229,14 @@ describe("linked read/write tools with truncation tracking", () => {
     expect(tools.tracker.has(join(testDir, "src/hallucinated.ts"))).toBe(true);
 
     // Write with relative path (should resolve to same absolute path)
-    // 'very short' is <50% of 5000 chars, so should be BLOCKED
+    // With no shrink guard, writes always succeed — truncation tracker warns
     const writeResult = await tools.write.execute("w1", {
       path: "src/hallucinated.ts",
       content: "very short",
     });
     const writeText = writeResult.content[0].text;
-    expect(writeText).toContain("BLOCKED");
-    expect(writeText).toContain("shrink the file");
+    expect(writeText).toContain("Wrote");
+    expect(writeText).toContain("WARNING");
   });
 });
 
@@ -294,13 +283,15 @@ describe("read/write tools without tracker (backward compat)", () => {
   });
 });
 
-// ── Shrink guard (disk-based) tests ────────────────────────────────────
+// ── Write tool: no shrink guard ────────────────────────────────────────
+// The shrink guard was removed — writes always succeed. These tests verify
+// that the write tool works correctly without any blocking behavior.
 
-describe("shrink guard (disk-based file size check)", () => {
+describe("write tool without shrink guard", () => {
   let testDir: string;
 
   beforeEach(() => {
-    testDir = mkdtempSync(join(tmpdir(), "shrink-guard-test-"));
+    testDir = mkdtempSync(join(tmpdir(), "write-test-"));
     mkdirSync(join(testDir, "src"), { recursive: true });
   });
 
@@ -308,66 +299,24 @@ describe("shrink guard (disk-based file size check)", () => {
     rmSync(testDir, { recursive: true, force: true });
   });
 
-  it("blocks write when new content is <50% of existing file size", async () => {
-    // Create a 2000-byte file
+  it("allows overwrite when new content is much shorter", async () => {
     writeFileSync(join(testDir, "src/large.ts"), "x".repeat(2000));
-
     const tool = createWriteTool({ projectRoot: testDir });
 
-    // Try to write 500 bytes (25% of original) — should be BLOCKED
     const result = await tool.execute("w1", {
       path: join(testDir, "src/large.ts"),
       content: "y".repeat(500),
     });
     const text = result.content[0].text;
-    expect(text).toContain("BLOCKED");
-    expect(text).toContain("shrink the file");
-    expect(text).toContain("2,000");
-    expect(text).toContain("500");
-    expect(text).toContain("allowShrink=true");
-
-    // Verify the file was NOT modified
-    const content = readFileSync(join(testDir, "src/large.ts"), "utf-8");
-    expect(content).toBe("x".repeat(2000));
-  });
-
-  it("warns (but allows) when new content is 50-80% of existing file size", async () => {
-    writeFileSync(join(testDir, "src/medium.ts"), "x".repeat(2000));
-
-    const tool = createWriteTool({ projectRoot: testDir });
-
-    // Write 1200 bytes (60% of original) — should WARN but succeed
-    const result = await tool.execute("w1", {
-      path: join(testDir, "src/medium.ts"),
-      content: "y".repeat(1200),
-    });
-    const text = result.content[0].text;
     expect(text).toContain("Wrote");
-    expect(text).toContain("SHRINK WARNING");
-    expect(text).toContain("60%");
+    expect(text).not.toContain("BLOCKED");
 
     // Verify the file WAS modified
-    const content = readFileSync(join(testDir, "src/medium.ts"), "utf-8");
-    expect(content).toBe("y".repeat(1200));
+    const content = readFileSync(join(testDir, "src/large.ts"), "utf-8");
+    expect(content).toBe("y".repeat(500));
   });
 
-  it("allows write when new content is >=80% of existing file size", async () => {
-    writeFileSync(join(testDir, "src/normal.ts"), "x".repeat(2000));
-
-    const tool = createWriteTool({ projectRoot: testDir });
-
-    // Write 1800 bytes (90% of original) — no warning
-    const result = await tool.execute("w1", {
-      path: join(testDir, "src/normal.ts"),
-      content: "y".repeat(1800),
-    });
-    const text = result.content[0].text;
-    expect(text).toContain("Wrote");
-    expect(text).not.toContain("WARNING");
-    expect(text).not.toContain("BLOCKED");
-  });
-
-  it("allows write to new files without restriction", async () => {
+  it("allows overwrite to new files", async () => {
     const tool = createWriteTool({ projectRoot: testDir });
 
     const result = await tool.execute("w1", {
@@ -377,65 +326,10 @@ describe("shrink guard (disk-based file size check)", () => {
     const text = result.content[0].text;
     expect(text).toContain("Wrote");
     expect(text).not.toContain("BLOCKED");
-    expect(text).not.toContain("WARNING");
   });
 
-  it("skips shrink guard for small files (under shrinkGuardMinSize)", async () => {
-    // Default shrinkGuardMinSize is 500
-    writeFileSync(join(testDir, "src/tiny.ts"), "x".repeat(400));
-
-    const tool = createWriteTool({ projectRoot: testDir });
-
-    // Write 10 bytes to replace 400-byte file — should be allowed (under threshold)
-    const result = await tool.execute("w1", {
-      path: join(testDir, "src/tiny.ts"),
-      content: "// tiny\n",
-    });
-    const text = result.content[0].text;
-    expect(text).toContain("Wrote");
-    expect(text).not.toContain("BLOCKED");
-    expect(text).not.toContain("WARNING");
-  });
-
-  it("respects custom shrinkGuardMinSize", async () => {
-    writeFileSync(join(testDir, "src/custom.ts"), "x".repeat(800));
-
-    // Set custom min size to 1000 — so an 800-byte file won't be protected
-    const tool = createWriteTool({ projectRoot: testDir, shrinkGuardMinSize: 1000 });
-
-    const result = await tool.execute("w1", {
-      path: join(testDir, "src/custom.ts"),
-      content: "// short\n",
-    });
-    const text = result.content[0].text;
-    expect(text).toContain("Wrote");
-    expect(text).not.toContain("BLOCKED");
-  });
-
-  it("allowShrink=true bypasses the shrink guard", async () => {
-    writeFileSync(join(testDir, "src/explicit.ts"), "x".repeat(5000));
-
-    const tool = createWriteTool({ projectRoot: testDir });
-
-    // Write 100 bytes with allowShrink — should succeed
-    const result = await tool.execute("w1", {
-      path: join(testDir, "src/explicit.ts"),
-      content: "// intentionally short\n",
-      allowShrink: true,
-    });
-    const text = result.content[0].text;
-    expect(text).toContain("Wrote");
-    expect(text).not.toContain("BLOCKED");
-
-    // Verify the file was modified
-    const content = readFileSync(join(testDir, "src/explicit.ts"), "utf-8");
-    expect(content).toBe("// intentionally short\n");
-  });
-
-  it("works without projectRoot (uses raw path)", async () => {
+  it("allows overwrite without projectRoot", async () => {
     writeFileSync(join(testDir, "src/no-root.ts"), "x".repeat(3000));
-
-    // No projectRoot — shrink guard still works with absolute paths
     const tool = createWriteTool();
 
     const result = await tool.execute("w1", {
@@ -443,21 +337,7 @@ describe("shrink guard (disk-based file size check)", () => {
       content: "// very short\n",
     });
     const text = result.content[0].text;
-    expect(text).toContain("BLOCKED");
-    expect(text).toContain("shrink the file");
-  });
-
-  it("correctly reports the shrink ratio in the blocked message", async () => {
-    writeFileSync(join(testDir, "src/ratio.ts"), "x".repeat(10000));
-
-    const tool = createWriteTool({ projectRoot: testDir });
-
-    const result = await tool.execute("w1", {
-      path: join(testDir, "src/ratio.ts"),
-      content: "y".repeat(2200),
-    });
-    const text = result.content[0].text;
-    expect(text).toContain("BLOCKED");
-    expect(text).toContain("22%"); // 2200/10000 = 22%
+    expect(text).toContain("Wrote");
+    expect(text).not.toContain("BLOCKED");
   });
 });

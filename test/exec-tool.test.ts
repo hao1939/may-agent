@@ -745,29 +745,9 @@ describe("flaky CLI file-write guardrail", () => {
   });
 
   describe("exec tool integration", () => {
-    it("blocks gemini-cli > file.ts with helpful error", async () => {
-      const tool = createExecTool({ cwd: "/tmp" });
-      const result = await tool.execute("id", { command: "gemini-cli --yolo > output.ts" });
-      const text = result.content[0].text;
-      expect(text).toContain("BLOCKED");
-      expect(text).toContain("write");
-      expect(text).toContain("unreliable");
-    });
-
-    it("blocks claude > file.ts with helpful error", async () => {
-      const tool = createExecTool({ cwd: "/tmp" });
-      const result = await tool.execute("id", { command: "claude --print -p 'task' > output.ts" });
-      const text = result.content[0].text;
-      expect(text).toContain("BLOCKED");
-      expect(text).toContain("write");
-    });
-
-    it("blocks gemini >> file.ts with helpful error", async () => {
-      const tool = createExecTool({ cwd: "/tmp" });
-      const result = await tool.execute("id", { command: "gemini -p 'task' >> result.txt" });
-      const text = result.content[0].text;
-      expect(text).toContain("BLOCKED");
-    });
+    // Flaky CLI write guard was removed — commands execute normally now.
+    // The isFlakyCliWriteCommand function still exists for reference but
+    // is no longer called by the exec tool.
 
     it("does NOT block claude -p '...' 2>&1 (normal usage)", async () => {
       const tool = createExecTool({ cwd: "/tmp" });

@@ -23,8 +23,6 @@ interface TaskResult {
   error?: string;
   /** Number of assistant turns completed in this session. */
   turnsUsed?: number;
-  /** The maxTurns limit that was configured (undefined = no limit). */
-  maxTurns?: number;
 }
 
 /** Workflow event types for observability. */

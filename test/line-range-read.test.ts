@@ -254,14 +254,15 @@ describe("truncation markers reference line-range reading", () => {
     // First, read the big file (triggers truncation tracking)
     await read.execute("test-id", { path: filePath });
 
-    // Try to write back something much smaller (should be blocked)
+    // Try to write back something much smaller — now succeeds with warning
     const result = await write.execute("test-id", {
       path: filePath,
       content: "tiny",
     });
 
     const text = result.content[0].type === "text" ? result.content[0].text : "";
-    expect(text).toContain("BLOCKED");
-    expect(text).toContain("read(path, startLine=N, endLine=M)");
+    expect(text).toContain("Wrote");
+    expect(text).toContain("WARNING");
+    expect(text).toContain("truncation");
   });
 });
