@@ -228,3 +228,19 @@ was discovered about an agent's behavior during a coaching session.
 - **Next step**: Design Coder graduation exercise — multi-file, mixed edit types (JSDoc, logic changes, imports), no line numbers in prompt, no method hints. This tests full safe-edit discipline without scaffolding. If PASS → streak 3/3 → FIRST GRADUATED AGENT.
 - **Key coaching methodology insight**: The 3-exercise A/B/C pattern (variable isolation) is a powerful coaching diagnostic technique. Worth codifying as a reusable skill for diagnosing other agents' weaknesses.
 - Report: `sessions/coder-safe-edit-2c-2026-03-23.md`
+
+## 2026-03-09 — may (first coaching session — action bias + path reliability + brevity)
+- **Exercise results**: Action Bias **PASS** (9/10), Path Reliability **PASS** (9/10), Brevity **PARTIAL** (6/10). Composite: 2 PASS, 1 PARTIAL. Pass streak: 0/3 → 1/3.
+- **Action paralysis eliminated in this session**: Baseline was 26.6% (45/169 heartbeats ending "standing down" / "needs human"). This session: 0%. May dispatched 3 items (Scout coaching corrections, Coder lessons.md, Rolling Compaction workflow) without any hesitation or permission-seeking language.
+- **Highest-impact work selected first**: May identified 14-day-stale graduation blockers (Scout corrections #11-13, Coder lessons) as top priority and resolved them in ~2 minutes. Genuine prioritization skill.
+- **End-to-end ownership demonstrated**: Dispatch → verify → archive → update related todo files. Full loop from Scout corrections through Rolling Compaction workflow to archiving.
+- **Self-recovery from delegateDeny error**: Tried subagents.run("coder") → got delegateDeny → checked workflow.list → used workflow.run("implement-and-review"). Clean fallback, zero interventions.
+- **Zero SOUL.md re-reads**: K4 (auto-loaded files) fully respected. First productive action (parallel reads + agent list) on turn 2.
+- **Brevity improved but not passed**: ~291 tokens (down from 500-700 baseline). Included non-actionable System Health table. Target is ≤200 tokens, exceptions-only.
+- **Key finding — behavior is prompt-driven, not model-inherent**: Task prompt included explicit authority reinforcement. May responded dramatically — 26.6% paralysis → 0%. The heartbeat prompt wording ("Then stop — stay idle") is the primary cause of paralysis.
+- **Git environment confusion (new finding)**: May attempted cd /Users/hao/c — thinks she is on Hao's local machine. Wasted 4-5 turns. Needs container awareness lesson.
+- **Zero coaching interventions needed**: May acted autonomously from first turn to last.
+- **Root cause classification**: Action paralysis = Design (heartbeat prompt) + Agent (risk aversion). Path confusion = Agent (environment model). Brevity = Agent (completionism).
+- **Recommendations**: (1) Re-test action bias WITHOUT scaffolding. (2) Add container/git lesson to LESSONS.md. (3) Fix heartbeat prompt. (4) Re-test brevity ≤150 tokens.
+- **Infra escalation**: Heartbeat prompt rewording (optimizer), container context addition (optimizer).
+- Report: `sessions/may-coaching-2026-03-09.md`
