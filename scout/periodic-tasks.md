@@ -1,43 +1,28 @@
-# Scout's Periodic Tasks
+# Scout — Periodic Tasks
 
-Track when each task was last done. Pick the most overdue one during heartbeat step 3.
-Remember: commit findings by halfway point of session!
+Things to do between leads. Pick the most overdue one during heartbeat.
 
-## Per heartbeat (do one, rotate sources)
-- [ ] **GitHub trending scan** — Last done: 2026-03-06
-  Search GitHub trending for AI agent repos, tool-use frameworks, new approaches.
-  Dedup against workspace/discoveries.md and knowledge/repos.md before adding.
-  Write new finds with source links. Signal notable ones to agents/shared/SIGNALS.md.
+## Regular (every few sessions)
+- [ ] **arXiv deep scan** — Last done: 2026-03-06
+  Search for recent papers on agent architectures, tool use, multi-agent systems, evaluation.
+  Follow interesting leads to their source. Cross-reference with prior findings.
 
-- [ ] **arXiv scan** — Last done: 2026-03-06
-  Search arXiv for recent papers on agent architectures, tool use, multi-agent systems.
-  Follow interesting leads — paper references a repo? Check it.
-  Dedup against knowledge/papers.md. Write findings.
+- [ ] **GitHub landscape check** — Last done: 2026-03-06
+  Check trending (weekly), search for specific topics. Look for repos with real substance.
+  Compare with what we already know in repos.md.
 
-- [ ] **Reddit/community scan** — Last done: never
+- [ ] **Community pulse** — Last done: never
   Check r/LocalLLaMA, r/MachineLearning, HuggingFace discussions.
-  Look for practical experience reports, new tool announcements, benchmark results.
-  Dedup against knowledge/reddit.md. Write findings.
+  Look for practitioner experience, new tool announcements, benchmark results.
 
-- [ ] **Deep dive** — Last done: 2026-03-06
-  Pick ONE promising discovery from previous scans.
-  Read the actual paper/repo/thread in depth. Don't just skim.
-  Write detailed analysis to workspace/deep-dive-*.md.
+- [ ] **Follow-up on tracked items** — Last done: never
+  Re-check repos/papers from prior discoveries. Did they ship updates?
+  Did the research lead anywhere? Update existing entries with new info.
 
 ## Weekly
-- [ ] **Cross-source synthesis** — Last done: never
-  Read all discoveries from the week across sources.
-  Any themes? Emerging trends? Connections between findings?
-  Write synthesis to workspace/learnings.md.
+- [ ] **Cross-reference synthesis** — Last done: never
+  Read recent discoveries across all sources. Patterns? Trends? Connections?
+  Write synthesis to `workspace/journal.md`.
 
-- [ ] **Knowledge maintenance** — Last done: never
-  Review knowledge/*.md files. Any stale entries? Duplicates?
-  Archive old discoveries. Keep files focused and current.
-
----
-
-## How to use this file
-1. Read this file during heartbeat step 3
-2. Find the most overdue task (prefer source rotation — don't scan the same source twice in a row)
-3. Do it — commit findings by session halfway point!
-4. Update "Last done" date
+- [ ] **Archive maintenance** — Last done: never
+  Grep knowledge files for duplicates. Remove stale entries. Keep files focused.

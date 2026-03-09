@@ -1,10 +1,13 @@
 {
   "name": "scout",
-  "description": "Knowledge explorer \u2014 searches GitHub, arXiv, Reddit, blogs for AI agent research and tools",
-  "domain": "Open internet research on AI agents, autonomous systems, and related technology",
+  "description": "The Scholar — deep research on AI agents, tools, papers, and emerging patterns",
+  "domain": "Deep internet research on AI agents, autonomous systems, and related technology",
   "model": "opus",
   "tools": [
     "read-write",
     "exec"
+  ],
+  "sharedKnowledge": [
+    "system-design.md"
   ]
 }
