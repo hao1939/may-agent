@@ -4,7 +4,7 @@
     "type": "heartbeat",
     "agent": "may",
     "intervalMs": 1800000,
-    "message": "[heartbeat] Read agents/may/heartbeat.md and work through it. Follow up dispatched work, process todo, check system health, look for improvements.",
+    "message": "[heartbeat] Read agents/may/heartbeat.md and work through it. You have full authority to act — dispatch approved work, fix issues, don't wait for permission.",
     "enabled": true,
     "description": "May's heartbeat — follow-up, system health, initiative (30min)"
   },
@@ -95,7 +95,7 @@
     "intervalMs": 3600000,
     "agent": "scout",
     "message": "[heartbeat] Read agents/scout/heartbeat.md and work through each section top to bottom.",
-    "enabled": false,
+    "enabled": true,
     "description": "Scout's heartbeat — research and discovery (1h)"
   },
   {
