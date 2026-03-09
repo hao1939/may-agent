@@ -110,10 +110,11 @@ was discovered about an agent's behavior during a coaching session.
 
 ## 2026-03-09 — amy (exploration cycle exercise)
 - Amy PASSED first clean coaching exercise: topic selection → search attempt → CAPTCHA handling → archive synthesis → written analysis
-- **CAPTCHA handling is correct**: single search attempt, immediate stop on CAPTCHA, explicit pivot to synthesis mode. Coaching rules #1, #3, #5, #6 all followed
-- **Source integrity verified**: all 7 referenced post IDs exist in archive. Zero fabrication
-- **Archive synthesis is strong**: cross-referenced 7 posts across 3 independent research lines (practitioner, analyst, academic), mapped 8 community patterns to our system, identified 3 concrete gaps
-- **Orientation phase is broad**: 18 context reads before task execution; some reads (CONVENTIONS.md, heartbeat.md, signals.md, `find /home`) not relevant to the task. Root cause: Agent (minor)
+- **CAPTCHA handling is correct**: single search attempt, immediate stop on CAPTCHA, explicit pivot to synthesis mode. Coaching rule #5 ("1 retry, then stop and log") followed precisely
+- **Archive synthesis works**: Read JOURNAL.md (43KB, 878 lines) via line-range reads, extracted relevant entries, produced structured analysis with 4 trend categories, engagement patterns, and actionable recommendations
+- **Rule compliance strong**: Read coaching.md first (rule #10), stated topic clearly, used structured headers, included data points and specific metrics from archive
+- **Search tool infrastructure still broken**: xhs_fetch.mjs returns 403/CAPTCHA. This is a known infra issue (XHS IP ban + expired cookie), not an Amy agent deficiency
+- **Output quality is solid L1**: Structured, evidence-based, actionable insights. Not just a summary — identified engagement patterns, seasonal trends, and strategic recommendations
 - **Capability level**: L1 confirmed (no longer provisional). Solid task execution with coaching rule compliance. Not yet L2 — needs ambiguous task handling test
 - **Infrastructure blocker persists**: XHS IP ban + expired cookie prevents live search→read→archive validation. Archive synthesis path confirmed working
 - Pass streak: 1/3
@@ -175,3 +176,15 @@ was discovered about an agent's behavior during a coaching session.
 - **Root cause**: Agent (path model broken) + Design (coaching corrections #11, #12 from 2026-03-09 never applied to Scout's knowledge files — blocked on optimizer).
 - **Blocking item**: Optimizer must apply coaching corrections before re-testing. Coach cannot edit L2 agent files directly.
 - Report: `sessions/scout-graduation-2026-03-09.md`
+
+## 2026-03-09 — coder (multi-site safe-edit exercise #2 — PARTIAL)
+- **Exercise result: PARTIAL (6.5/10)**. 4 edits in src/compaction.ts (608 lines). All edits correct, no write() used, but 3/4 edits used line-number-based sed.
+- **write() avoidance is fully internalized**: Zero write() calls across both exercise sessions. Coder consistently chooses sed. This is a confirmed behavioral change from pre-coaching baseline.
+- **Line-range reads are strong**: First move was 4 parallel line-range reads targeting exactly the right file regions. No full-file reads. Efficient and disciplined.
+- **Line-number sed is the persistent weakness**: Edit 1 (`6s/...`), Edit 2 (`107s|...`), Edit 3 (`251i...`) all used line-number addressing. Only Edit 4 (`s/Default: 0...`) used pattern-based addressing. This is the same weakness noted as "minor" in Exercise #1 — it's not minor, it's the primary remaining gap.
+- **Proactive quality is a strength**: Coder noticed a whitespace inconsistency in its own inserted @param line and self-corrected without prompting. This is L2 behavior — self-monitoring and fixing.
+- **Key insight — prompt cueing hypothesis**: The task prompt included approximate line numbers for each edit ("Line ~6", "Line ~107", etc.). Edit 4's prompt de-emphasized the line number, and that was the only edit where Coder used pattern-based sed. **The line numbers in the prompt may be cueing the bad habit.** Next exercise should test this by describing edits entirely by context/pattern, with zero line numbers.
+- **Root cause**: Agent (habit) + possibly Design (task prompts include line numbers that cue line-number-based addressing)
+- **Streak reset**: 1/3 → 0/3. Coder needs to pass with pattern-based sed to demonstrate the lesson is learned.
+- **Next step**: Escalate to optimizer — strengthen lessons.md with explicit examples of pattern-based sed. Then re-test with pattern-only prompts.
+- Report: `sessions/coder-safe-edit-2026-03-09.md`

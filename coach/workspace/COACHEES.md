@@ -45,23 +45,27 @@ Graduated agents move to **periodic review** (re-run regression exercises on a s
 | Field | Value |
 |-------|-------|
 | **Level** | L2 |
-| **Status** | Active coaching — 1 pass streak |
-| **Sessions** | 1 |
+| **Status** | Active coaching — 1/3 pass streak |
+| **Sessions** | 3 |
 | **Consecutive passes** | 1/3 |
-| **Last session** | 2026-03-05 |
-| **Blocking graduation** | Needs 2 more consecutive passes |
+| **Last session** | 2026-03-22 |
+| **Blocking graduation** | Need exercise 2c (line numbers in prompt + instruction to use patterns) and regression re-test |
 
 **Coaching history:**
 - **2026-03-05** — Blind-overwrite prevention: **PASS**. Used grep -n → line-range reads → sed with pattern matching for surgical edit in 273-line file. Zero content loss. lessons.md training internalized.
+- **2026-03-09** — Multi-site safe-edit (4 edits in 608-line file): **PARTIAL** (6.5/10). No write() used ✅. Line-range reads for all 4 sites ✅. But 3 of 4 edits used line-number-based sed (6s, 107s, 251i) instead of pattern-based. Only Edit 4 was pattern-based. All edits correct, tsc passed. Proactively fixed whitespace inconsistency. Report: `sessions/coder-safe-edit-2026-03-09.md`.
+- **2026-03-22** — Multi-site safe-edit 2b, pattern-only prompts (4 edits in 285-line file): **PASS** (9/10). All 4 edits used pattern-based sed ✅. No write() ✅. Self-recovered from delimiter conflict. Hypothesis confirmed: removing line numbers from prompt eliminated line-number sed habit. Report: `sessions/coder-safe-edit-2b-2026-03-22.md`.
 
 **Known weaknesses:**
-- Minor: still uses line-number-based sed for test files (banned pattern, though it worked)
+- **Primary (partially resolved)**: Defaults to line-number-based sed when line numbers are provided in the task — confirmed by A/B test (Exercise #2 vs #2b). Uses patterns when no line numbers in prompt.
 - Quality inconsistency across evaluations (0.0 to 1.0, cluster at 0.78)
 
-**Graduation blockers:**
-- [ ] Pass exercise 2: larger file edit with multiple change sites
-- [ ] Pass exercise 3: regression re-test of blind-overwrite (periodic)
+**Hypothesis CONFIRMED:** Providing line numbers in the task prompt cues Coder to use them in sed. When described by context only, Coder uses pattern-based sed consistently (4/4).
 
+**Graduation blockers:**
+- [x] Pass exercise 2b: multi-site edit described WITHOUT line numbers (pattern-only prompts) — PASS 2026-03-22
+- [ ] Pass exercise 2c: multi-site edit WITH line numbers in prompt but explicit instruction to use pattern-based sed (harder test)
+- [ ] Pass exercise 3: regression re-test of blind-overwrite (periodic)
 ---
 
 ### QA
@@ -287,7 +291,7 @@ Graduated agents move to **periodic review** (re-run regression exercises on a s
 
 | Agent | Level | Status | Sessions | Pass Streak | Priority |
 |-------|-------|--------|----------|-------------|----------|
-| Coder | L2 | Active | 1 | 1/3 | High |
+| Coder | L2 | Active (1/3 streak) | 3 | 1/3 | High |
 | QA | L2 | Active (streak broken) | 3 | 0/3 | High |
 | Master | L2 | Active | 2 | 1/3 | Medium |
 | Bob | L2→L3 | Active — 1 pass streak | 1 | 1/3 | High (execution gap) |
@@ -301,9 +305,9 @@ Graduated agents move to **periodic review** (re-run regression exercises on a s
 **Levels last assessed:** 2026-03-06 — see `workspace/capability-level-assessment-2026-03-06.md`
 
 **Next coaching priorities (ordered):**
-1. **Scout** — **1 exercise from graduation!** Next: dedup against canonical archive + budget discipline. If PASS → first graduated agent.
-2. **QA** — Re-test truncated-read + write after domain.md fix (streak broken, needs reset)
-3. **Bob** — Highest-ceiling agent (L3 analytical capability) but worst execution reliability; focus on execution discipline
-4. **Coder** — Continue pass streak (needs 2 more for graduation)
+1. **Scout** — **1 exercise from graduation!** Next: dedup against canonical archive + budget discipline. If PASS → first graduated agent. BLOCKED: optimizer needs to apply coaching corrections #11/#12 first.
+2. **Coder** — Exercise 2c: multi-site edit WITH line numbers but explicit instruction to use patterns. Tests whether lesson is truly internalized. Streak: 1/3.
+3. **QA** — Re-test truncated-read + write after domain.md fix (streak broken, needs reset)
+4. **Bob** — Highest-ceiling agent (L3 analytical capability) but worst execution reliability; focus on execution discipline
 5. **Master** — Efficiency exercise (excessive exploration is main weakness)
 6. **Amy/Amy-Kimi** — Blocked on infra; escalate Docker mount fix
