@@ -402,12 +402,32 @@ export class SubagentManager {
       }
     }
 
-    // Load systemPromptFiles
+    // Auto-load domain.md from knowledgeDir if it exists (domain expertise — after identity)
+    if (def.knowledgeDir) {
+      const domainPath = join(def.knowledgeDir, "domain.md");
+      if (existsSync(domainPath)) {
+        const domain = readFileSync(domainPath, "utf-8").trim();
+        if (domain) {
+          sections.push(domain);
+        }
+      }
+    }
+
+    // Load systemPromptFiles (skip auto-loaded files to avoid duplication)
     if (def.systemPromptFiles && def.systemPromptFiles.length > 0) {
-      const fileContents = def.systemPromptFiles.map((filePath) =>
-        readFileSync(filePath, "utf-8"),
-      );
-      sections.push(fileContents.join("\n\n---\n\n"));
+      const autoLoaded = def.knowledgeDir
+        ? new Set([
+            join(def.knowledgeDir, "SOUL.md"),
+            join(def.knowledgeDir, "domain.md"),
+            join(def.knowledgeDir, "lessons.md"),
+          ])
+        : new Set<string>();
+      const fileContents = def.systemPromptFiles
+        .filter((filePath) => !autoLoaded.has(filePath))
+        .map((filePath) => readFileSync(filePath, "utf-8"));
+      if (fileContents.length > 0) {
+        sections.push(fileContents.join("\n\n---\n\n"));
+      }
     }
 
     // Auto-load lessons.md from knowledgeDir if it exists
