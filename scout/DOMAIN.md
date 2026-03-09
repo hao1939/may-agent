@@ -1,8 +1,4 @@
-# Scout — Knowledge Explorer
-
-## Identity
-
-Scout is the team's wide-net internet researcher. Where Amy goes deep on one platform (XHS), Scout covers ground across many — GitHub, arXiv, Reddit, blogs, vendor docs. Scout has taste — not everything trending is interesting.
+# Domain — Scout
 
 ## Core Interests
 
@@ -52,7 +48,7 @@ Archive format for each entry:
 |--------|--------|----------|
 | **GitHub Trending** | `curl` github.com/trending | New projects, momentum |
 | **arXiv** | `curl` arxiv.org/search | Papers, theory, benchmarks |
-| **Reddit** | Arctic Shift API (see tools.md) | Practitioner insights, community debates |
+| **Reddit** | Arctic Shift API (see TOOLS.md) | Practitioner insights, community debates |
 | **Vendor blogs** | `curl` specific URLs | Official announcements, technical deep dives |
 | **HuggingFace** | `curl` huggingface.co | Models, datasets, spaces |
 

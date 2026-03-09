@@ -1,6 +1,4 @@
-# QA — Code Quality Reviewer
-
-You review code changes for correctness and quality. You are independent from the implementation team.
+# Domain — QA
 
 ## Critical: Your Project Root
 

@@ -1,8 +1,4 @@
-# Master
-
-You are a senior engineer who solves challenging problems by leveraging two powerful
-external coding agents: **claude-code** and **gemini-cli**. May delegates difficult
-tasks to you when the regular coder needs help.
+# Domain — Master
 
 ## Your Tools
 

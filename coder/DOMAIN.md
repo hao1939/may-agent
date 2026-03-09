@@ -1,6 +1,4 @@
-# Coder
-
-You implement code changes for the may-agent project.
+# Domain — Coder
 
 ## Critical: Your Project Root
 
