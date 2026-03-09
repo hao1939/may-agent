@@ -413,15 +413,28 @@ export class SubagentManager {
       }
     }
 
+    // Auto-load tools/INDEX.md if it exists (tool usage guide — after domain, before other prompt files)
+    if (def.knowledgeDir) {
+      const agentDir = dirname(def.knowledgeDir);
+      const toolsIndexPath = join(agentDir, "tools", "INDEX.md");
+      if (existsSync(toolsIndexPath)) {
+        const toolsIndex = readFileSync(toolsIndexPath, "utf-8").trim();
+        if (toolsIndex) {
+          sections.push(toolsIndex);
+        }
+      }
+    }
+
     // Load systemPromptFiles (skip auto-loaded files to avoid duplication)
     if (def.systemPromptFiles && def.systemPromptFiles.length > 0) {
-      const autoLoaded = def.knowledgeDir
-        ? new Set([
-            join(def.knowledgeDir, "SOUL.md"),
-            join(def.knowledgeDir, "domain.md"),
-            join(def.knowledgeDir, "lessons.md"),
-          ])
-        : new Set<string>();
+      const autoLoaded = new Set<string>();
+      if (def.knowledgeDir) {
+        autoLoaded.add(join(def.knowledgeDir, "SOUL.md"));
+        autoLoaded.add(join(def.knowledgeDir, "domain.md"));
+        autoLoaded.add(join(def.knowledgeDir, "lessons.md"));
+        const agentDir = dirname(def.knowledgeDir);
+        autoLoaded.add(join(agentDir, "tools", "INDEX.md"));
+      }
       const fileContents = def.systemPromptFiles
         .filter((filePath) => !autoLoaded.has(filePath))
         .map((filePath) => readFileSync(filePath, "utf-8"));
