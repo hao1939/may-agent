@@ -1,30 +1,31 @@
-# Optimizer Brief: Implement "Poisoned Path" Protection for Truncated Reads
+# Optimizer Brief: Enforce Safe Edit & Fix Meta-Agent Exclusion
 
-## Context
-We are experiencing a **Critical Data Integrity Failure**. Agents (Bob, Amy) are reading large files (like `lessons.md` or `todo.md`), receiving truncated output (due to token limits), and then writing back the partial content, effectively deleting the unread portions of the file.
+## Status: ✅ COMPLETE (both changes already implemented)
 
-The existing "Shrink Guard" (which blocks writes <50% of original size) is failing because:
-1. Agents use `allowShrink: true` to bypass it.
-2. The size difference might not always trigger the 50% threshold.
+## 1. Context
+We have two critical issues identified in the Daily Brief and Analysis:
+1. **Blind Overwrites**: Agents still risk corrupting large files. The `safe-edit` workflow exists but isn't used.
+2. **Lost Intelligence**: 56% of sessions (evaluator/may) are skipped because of a hardcoded `META_AGENTS` exclusion in `evaluate-sessions.ts`.
 
-## Objective
-Implement a **"Poisoned Path" state** in the session to structurally prevent writing to files that have been read partially.
+## 2. Required Changes
 
-## Proposed Implementation
-Modify `src/tools.ts` (specifically the `read` and `write` tools):
+### A. Adoption of Safe Edit ✅ Already Done
+Coder's `domain.md` (line 22) already instructs:
+> **Safe Large-File Edits**: If a file is > 100 lines, DO NOT use `write()`. Use the `safe-edit` workflow (or `sed` if unavailable) to avoid truncation data loss.
 
-1.  **Track Truncation:** Add a session-level Set (or state property) `truncatedPaths`.
-2.  **Flag on Read:** In the `read` tool, if the output is truncated (i.e., we are returning `[... truncated]` or similar metadata indicates partial read), add the absolute `path` to `truncatedPaths`.
-3.  **Block on Write:** In the `write` tool, before performing the write, check if `path` is in `truncatedPaths`.
-    *   If yes: **Throw an Error immediately.**
-    *   **Error Message:** "SAFETY BLOCK: You previously read a truncated version of this file ('{path}'). Writing now would destroy the unread data. You MUST use 'read' with startLine/endLine to read the MISSING parts before you can write to this file."
-    *   **Constraint:** This block **cannot** be bypassed with `allowShrink: true`. The only way to clear the block is to read the file again fully (or maybe we just block it for the session to be safe).
+This is **stricter** than the 300-line threshold requested (triggers at 100 lines). No `tools.md` exists separately — all instructions are in `domain.md`.
 
-## Supporting Changes
-*   Ensure the `read` tool correctly identifies when it is truncating data.
-*   Ensure the state persistence handles this if necessary (though in-memory for the session is likely enough for the immediate crash-prevention).
+### B. Fix Evaluator Blind Spot ✅ Already Done
+`agents/may/handlers/evaluate-sessions.ts` has **no** `META_AGENTS` exclusion. Verified:
+- `grep META_AGENTS` returns nothing in both the handler and `src/evaluator.ts`.
+- `evaluateTask()` defaults to `skipAgents = new Set()` (empty) — all agents are evaluated.
+- Comment on lines 64-68 explicitly states: *"All agents are eligible for evaluation (P25: Everything Gets Reviewed). No agents are excluded by default."*
+- Self-evaluation loops are prevented by the `findUnevaluatedChildren()` logic which only picks completed/failed sessions and checks against the evaluation registry.
 
-## Why This Fits Philosophy
-*   **No Silent Failures:** We are turning a silent data-loss bug into a loud, actionable error.
-*   **Structural Fix:** We are not asking agents to "be careful"; we are making the error impossible.
-*   **Deterministic Guardrails:** Code prevents the failure, not LLM judgment.
+## 3. Verification Summary
+| Check | Result |
+|-------|--------|
+| `grep META_AGENTS evaluate-sessions.ts` | No matches |
+| `grep META_AGENTS src/evaluator.ts` | No matches |
+| `skipAgents` default | `new Set()` (empty) |
+| `safe-edit` in Coder domain.md | Present (line 22, 100-line threshold) |

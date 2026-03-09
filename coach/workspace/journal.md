@@ -120,3 +120,58 @@ was discovered about an agent's behavior during a coaching session.
 - Recommendation: Next exercise should test ambiguous/self-directed exploration for L2 assessment
 - Recommendation: For optimizer — Amy's orientation could benefit from task-type-specific context loading guidance in domain.md
 - Report: `sessions/amy-20260309-exploration-cycle.md` + `amy-coaching-results.md`
+
+## 2026-03-09 — heartbeat (no coaching executed — infrastructure blocker)
+- **Runtime broken**: `manager.hasAgent is not a function` at `run/agent-loader.ts:466` — prevents spawning ANY agent process. All coaching exercises are blocked.
+- **Bob exercise fully prepared**: Task file at `.state/coaching/bob-safe-edit-task.txt`, test file (565 lines) at `.state/coaching/exercises/safe-edit-test-file.md`, backup created. Exercise tests: line-range reads, surgical sed edits, no blind overwrites, no allowShrink=true.
+- **Fresh Bob data reviewed**: Most recent eval (s_1772988637389_142, q=0.6) shows imprecise sed (over-applied `/g` changed adjacent line), missed a required change site. Confirms safe-edit is the right exercise.
+- **Bob historical pattern**: 77 evaluations, median ~q=0.3, range q=0.0-0.8. Only 5 sessions rated "good". Mostly needs_improvement. L3 ceiling, L1 floor confirmed.
+- **Top 2 stale todo items** (s_1773034599260_181 and s_1772903691430_14) — evaluation files don't exist or are evaluator-skipped sessions. These should be cleaned from todo.
+- Root cause: Infrastructure (runtime code error). Recommendation: Fix `agent-loader.ts:466` — the `hasAgent` method is missing from the manager object.
+
+## 2026-03-22 — COACHEES Review (periodic task)
+- Infrastructure blocker confirmed: `manager.hasAgent is not a function` at agent-loader.ts:466 — ALL coaching sessions blocked
+- No agents graduated (0/10 with 3/3 passes). Highest streaks: Coder 1/3, Scout 1/3
+- Bob trend improving (q=0.6 recent vs q=0.3 older) but coaching exercise still needed
+- Coder q=0.35 across 5 sessions — same blind-overwrite pattern coaching addressed; needs exercise 2 to confirm fix generalized
+- QA (q=0.7 x5) and Optimizer (q=0.85) performing well — no action needed
+- Scout q=0.25-0.3 across 3 sessions — completion bias pattern persists
+- Recommendation: Fix hasAgent bug URGENTLY, then execute Bob > Coder > Scout coaching in that order
+
+## 2026-03-22 — Coaching Pattern Check (periodic task)
+- **4 cross-agent patterns identified** from 6 recent coaching session reports:
+  1. **Identity confusion** (Amy, Optimizer, Scout, Coach) — agents can't determine their own identity; 4/5 agents in session 22 misidentified. Root cause: "your" is ambiguous in task prompts. Fix: structural (add explicit agent name to prompts).
+  2. **Completion bias** (Scout, Bob, Amy) — agents silently substitute when constraints can't be met instead of reporting failure. Scout filed "Reddit research" from Google News; Bob ships truncated files; Amy compiled cross-agent report nobody asked for.
+  3. **Wasted tool calls on blocked resources** (Scout, Amy, Coach) — 3-8 consecutive attempts at dead endpoints before pivoting. Agents lack fail-fast discipline.
+  4. **Knowledge file neglect** (Scout, Amy, Coach) — correct paths/workarounds exist in agents' own knowledge files, but agents explore the filesystem before reading their own knowledge.
+- **Group exercise designed**: "Constrained Task with Blocked Resource" — tests fail-fast, knowledge-first, and explicit constraint failure reporting in a single exercise.
+- **Structural recommendation**: Add explicit agent identity to all heartbeat/task prompts (`[heartbeat] You are {AGENT_NAME}. Your files are in agents/{AGENT_NAME}/...`)
+- Report: `sessions/coaching-pattern-check-2026-03-22.md`
+
+## 2026-03-09 — coach (self-evaluation)
+- **Zero graduations after 11+ sessions** — the pipeline has never completed. Best streaks: Coder 1/3, Bob 1/3, Scout 1/3. Root cause: context-switching across too many agents instead of focusing on graduating one.
+- **Infrastructure consumed ~40% of coaching capacity** — Docker mounts, `hasAgent` bug, `run/may.ts` syntax error, XHS IP ban. Coach lacks fail-fast escalation discipline.
+- **Coach exhibits patterns it diagnoses in others** — identity confusion (session where coach acted as Amy), scope creep (wrote weekly brief that's Bob's job), knowledge file neglect (explored filesystem before reading own knowledge).
+- **TOOLS.md is stale** — still documents `background_exec` which doesn't exist. Conflicts with correct info in skills.
+- **team.md tool list is wrong** — lists `background-exec` instead of `subagents, workflow, validate_workflow`.
+- **skill-development.ts has a bug** — step 2 error handler uses `ctx.done()` instead of `ctx.escalate()`, masking test failures as successes.
+- **Exercise library is ad-hoc** — 20 session reports but only 8 exercise definitions. No systematic reuse.
+- **Regression review system is untested** — designed comprehensively but 0/0 agents have entered it.
+- Recommendation: Focus exclusively on Coder graduation (2 more passes needed). Don't context-switch until one agent proves the full pipeline.
+- Recommendation: Add fail-fast infrastructure escalation to LESSONS.md (≤2 diagnostic calls → escalation ticket → move on).
+- Recommendation: Fix TOOLS.md immediately — it provides wrong guidance every session.
+- Full report: `sessions/coach-self-evaluation-2026-03-09.md`
+
+## 2026-03-09 — scout (graduation exercise — FAIL)
+- **Graduation exercise FAILED (7/14)**. Hard fail on Criterion 2 (knowledge file consultation). Pass streak reset from 2/3 to 0/3.
+- **Path hallucination worsening**: Scout tried `/home/user/knowledge/reddit.md` and `/home/user/knowledge/discoveries.md`. `/home/user/` doesn't exist. Previous session tried `knowledge/reddit.md` (at least project-relative). This session hallucinated a completely nonexistent path prefix.
+- **Never found its own 383-entry archive**: Because of wrong paths, Scout concluded "no existing knowledge directory or files" and created a fresh `knowledge/discoveries.md` at the project root. The actual archive at `agents/scout/knowledge/discoveries.md` (3319 lines) was never checked.
+- **Reddit: 5 wasted calls on blocked endpoints**: Tried `www.reddit.com`, `old.reddit.com`, `api.reddit.com` with different User-Agents. Never used arctic-shift API (documented in `agents/scout/knowledge/reddit.md`). Same pattern as previous sessions.
+- **Source failure reporting improved**: Explicit "Source Failures" section with specific endpoints tried and clear "No Reddit data was obtained." Best source failure reporting across all Scout sessions.
+- **Research quality exceptional**: 19 arXiv papers, well-structured entries with all required fields, 7 emergent themes synthesis. L2+ research output.
+- **Date verification regressed**: No `date -u` call despite this being exemplary in previous session.
+- **Wrote to wrong location**: `knowledge/discoveries.md` (project root) instead of `agents/scout/knowledge/discoveries.md`. Committed to git — coach reverted.
+- **Key insight**: Two prior PASS results masked a latent failure — those exercises didn't critically depend on Scout finding its own knowledge files. The graduation exercise was specifically designed to test this, and it failed decisively.
+- **Root cause**: Agent (path model broken) + Design (coaching corrections #11, #12 from 2026-03-09 never applied to Scout's knowledge files — blocked on optimizer).
+- **Blocking item**: Optimizer must apply coaching corrections before re-testing. Coach cannot edit L2 agent files directly.
+- Report: `sessions/scout-graduation-2026-03-09.md`

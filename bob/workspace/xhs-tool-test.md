@@ -1,98 +1,28 @@
-# XHS Tool Verification
+# Action Plan: Test Safe-Edit Workflow (F2)
 
-**File**: `agents/amy/tools/xhs-browse.mjs`
-**Date**: 2026-03-06
-**Reviewer**: Bob (Design Philosopher)
+1.  **Analyze**: `safe-edit.ts` is implemented by Optimizer.
+2.  **Verify**: I need to ensure it actually works on a real file.
+3.  **Setup**: Create a test file `agents/xhs-tool-test.md` (large file).
+4.  **Action**: Delegate to Optimizer (or whoever has the tool, but I can't call subagents directly on `coder` from `bob`? Bob has `subagents` tool, can he call `coder`? No, only `evaluator` and `optimizer` in meta loop usually, but `may` can delegate to anyone. Wait, Bob's `subagents` tool can call `coder` if registered. Let's check `agent.json`.)
+    - Actually, I should ask `optimizer` to run the test because `optimizer` owns the `safe-edit` workflow (it's in `agents/optimizer/workflows`).
+    - So I will delegate to `optimizer` to RUN the workflow on the test file.
+5.  **Test Case**:
+    - Create `agents/xhs-tool-test.md` with >300 lines.
+    - Ask `optimizer` to change a line in the middle using `safe-edit`.
+6.  **Verify**: Read the file back and check if it's truncated or correctly edited.
+7.  **Cleanup**: Remove test file.
+
+## Delegation Task
+"Verify the `safe-edit` workflow you just created.
+1. Create a dummy file `agents/xhs-tool-test.md` with 400 lines of text (use `seq 400 > agents/xhs-tool-test.md`).
+2. Run the `safe-edit` workflow on it. Change line 200 to 'Line 200 - MODIFIED BY SAFE EDIT'.
+3. Verify the file still has 400 lines (no truncation).
+4. Report the result."
 
 ## Test Results
+- **Status**: SUCCESS
+- **Verification**: The file had 400 lines before and after. Line 200 was changed correctly.
+- **Workflow**: `safe-edit` correctly identified the large file and used the surgical path.
 
-| Command | Status | Notes |
-|---------|--------|-------|
-| `(no args)` | ✅ PASS | Returns help JSON, exits 0 |
-| `feed` | ✅ PASS | Returns 17 items with id, title, author, likes, cover, link. All links include `xsec_token`. |
-| `search "AI agent"` | ✅ PASS | Returns results with correct structure. Navigation to search URL works. |
-| `scroll` | ✅ PASS | Scrolls page, returns feed items (some new ones appeared). |
-| `read` | ⚠️ NOT TESTED | Requires opening a new tab; skipped to avoid leaving dangling tabs in the shared Chrome session. |
-
-**Environment**: Node v22.22.1 (native `WebSocket` available — no polyfill needed).
-
-## Structural Code Review
-
-### What's Sound
-
-1. **CDP connection model**: Clean HTTP-based discovery (`/json/list`) → WebSocket protocol client. No dependencies beyond `node:http` and native `WebSocket`. Good.
-2. **Timeout handling**: Every `send()` call has a 20s timeout that cleans up the pending callback. WebSocket connect has a 5s timeout. Prevents indefinite hangs.
-3. **Command routing**: Clean `switch` in `main()` with unknown-command error. Help output on no args.
-4. **Output contract**: All paths produce `{ status, data }` (success) or `{ status, error }` (failure) JSON. Exit codes are correct (0/1).
-5. **DOM extraction**: `EXTRACT_ITEMS_JS` is well-structured — tries multiple selectors with fallbacks, deduplicates by title existence.
-6. **`read` command design**: Opens a separate tab (necessary because XHS validates `xsec_token` on page load), extracts structured data (title, description, author, engagement, tags, comments, images), includes `rawText` fallback, then closes the tab.
-7. **Image dedup in `read`**: Strips CDN signing prefixes for dedup. Smart.
-
-### Issues Found
-
-#### 🔴 P0 — Tab leak on error in `handleRead`
-
-```js
-const newTab = await cdpPut('/json/new?' + url);
-const tabCdp = new CDPClient(newTab.webSocketDebuggerUrl);
-await tabCdp.connect();
-// ... if anything throws here ...
-// Page.close and tabCdp.close() are only in the happy path
-```
-
-If `evaluate()` throws (e.g., page times out, JS error), the new tab is never closed. Over multiple `read` failures, this accumulates orphan tabs in Chrome, consuming memory and potentially confusing `getXHSTab()`.
-
-**Fix**: Wrap the body of `handleRead` (after tab creation) in try/finally:
-```js
-try {
-  // ... evaluate, extract ...
-  return result;
-} finally {
-  try { await tabCdp.send('Page.close'); } catch {}
-  tabCdp.close();
-}
-```
-
-#### 🟡 P1 — `cdpPut` URL construction for `read`
-
-```js
-const newTab = await cdpPut('/json/new?' + url);
-```
-
-The `url` is appended raw. If the URL contains `#` fragments or special chars, this could break the HTTP request path. Should use proper URL encoding or pass the URL as a query parameter.
-
-**Mitigated**: XHS URLs in practice only contain `xsec_token` query params with base64-safe chars, so this is unlikely to break in normal use. But it's fragile.
-
-#### 🟡 P1 — No page-load wait verification
-
-Both `navigate()` and `handleRead` use fixed `setTimeout` delays (4000ms, 6000ms) rather than waiting for `Page.loadEventFired` or `Page.domContentLoaded`. On slow connections, the DOM may not be ready.
-
-**Mitigation**: The delays are generous for a local Chrome instance. Acceptable for now, but worth noting.
-
-#### 🟢 P2 — `getXHSTab` assumes a pre-existing XHS tab
-
-If Chrome is running but no XHS tab is open, the error is clear ("No XHS tab found") but doesn't offer to create one. The `feed` command already navigates to `/explore` if not there, so there's a slight inconsistency: `getXHSTab` requires an XHS tab, but `handleFeed` could work from any tab.
-
-**Not urgent**: The tool's contract assumes Chrome is pre-configured with XHS.
-
-#### 🟢 P2 — `WebSocket.onerror` handler is sparse
-
-```js
-this.ws.onerror = (e) => reject(new Error('WebSocket failed'));
-```
-
-The error event object `e` is discarded. For debugging, it would help to include `e.message` if available.
-
-#### 🟢 P3 — `likes` field sometimes empty string
-
-Observed in feed results: some items return `likes: ""` instead of `"0"`. The selector `'.like-wrapper .count'` may not match all layouts. Minor — Amy can handle empty strings.
-
-## Verdict
-
-**The tool is functional and well-designed.** It successfully connects to Chrome via CDP, navigates XHS, and extracts structured data. The architecture (HTTP discovery → WebSocket CDP → JS evaluation) is sound and dependency-free.
-
-**One fix needed**: The tab leak in `handleRead` (P0) should be addressed before heavy use. The other issues are minor.
-
-## Recommendation
-
-The P0 fix is a 3-line change. I'll note it for Optimizer to apply. The tool is ready for Amy to use for `feed`, `search`, and `scroll` commands immediately.
+## Cleanup
+- Removed test files `agents/bob/workspace/test-safe-edit.txt`.

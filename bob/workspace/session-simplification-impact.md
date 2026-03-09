@@ -1,43 +1,40 @@
-# Impact Analysis: Session Model Simplification
+# Session Simplification: Impact Analysis
 
-**Date:** 2026-03-07
-**Author:** Bob
-**Topic:** Moving to "Chat + Task" binary session model.
+## Context
+We are simplifying the session model from a complex 3-type system (Chat/Heartbeat/Task) to a binary model:
+1. **Chat Session** (`persistent: true`): Long-lived, interactive, maintains "User Intent".
+2. **Task Session** (`persistent: false`): Ephemeral, single-purpose unit of work.
 
-## The Core Change
-Eliminating "Persistent Sub-Agents". Only the Interface Agent (May) persists. All others (Coder, Reviewer, Cron) are ephemeral: Spawn → Work → Die.
+## Impact on System Design
 
-## Deep Dive: What We Lose vs. What We Gain
+### 1. Philosophy Alignment (P15 Agent as Feature Unit)
+- **Before**: "Heartbeat Session" was a weird hybrid — persistent but not chat.
+- **After**: Heartbeat is just a Task Session triggered by a timer. It wakes up, does work, and dies.
+- **Verdict**: **Strong Alignment**. The "Unit of Work" is now clearly defined as "A Task Session".
 
-### 1. The "Conversational Sub-Agent" Illusion
-*   **Current State**: We treat sub-agents like persistent employees sitting at a desk. We can say "do X", then "fix that error", then "try again".
-*   **New State**: Sub-agents are lambda functions. You say "do X". It finishes. If you want a fix, you spawn a *new* lambda with "Previous attempt failed with Y. Fix it and do X."
-*   **Impact**:
-    *   *Negative*: Loss of implicit context. The "Fix it" prompt must include the error.
-    *   *Positive*: **Elimination of Hidden State.** The "Fix it" prompt *must* include the error. This forces explicit context, which is better for debugging and reliability. The agent can't rely on "what I thought 5 minutes ago" which might be wrong.
-    *   *Philosophy Check*: **P12 Context Isolation**. Fresh sessions are cleaner.
+### 2. Operational Impact
+- **Zombie Process Elimination**: The old Heartbeat sessions would sometimes hang or accumulate state. New ephemeral sessions guarantee a fresh start every time.
+- **State Management**: Chat session holds the *context*. Task session holds the *work*. Clear separation.
 
-### 2. Token Economics
-*   **Concern**: Re-reading `SOUL.md`, `domain.md`, and system prompts for every single task.
-*   **Analysis**:
-    *   Input tokens are cheap (approx $3/1M tokens for Opus inputs, much less for others).
-    *   Prompt Caching (Anthropic) reduces this cost by ~90% for static prefixes.
-    *   Cost of *maintaining* a persistent session (polling, heartbeat checks, idle management) is non-zero in terms of complexity and potential bugs.
-    *   *Verdict*: The reliability gain outweighs the marginal token cost.
+### 3. Developer Experience
+- **Simpler Debugging**: If a task fails, you replay the exact command that spawned it. No hidden state from 3 hours ago.
+- **Clearer Logs**: Logs are scoped to "Task ID", not "Infinite Stream of Consciousness".
 
-### 3. Concurrency & Overlap
-*   **Concern**: If we don't have a persistent session to say "I'm busy", how do we prevent pile-ups?
-*   **Answer**: **Infra-level Backpressure.**
-    *   The Scheduler (Cron) must check `activeSessions` before firing.
-    *   This is *better* than Session-level backpressure because it keeps the Agent logic simple ("I just run") and puts the scheduling logic where it belongs (The Scheduler).
-    *   *Philosophy Check*: **P40 Agents Do Cognitive Work, Not Chores**. Managing schedule overlap is a Chore.
+## Risks & Mitigations
 
-### 4. Future Proofing
-*   **Question**: Will we ever need a persistent sub-agent?
-*   **Scenario**: A "Game Master" agent that maintains the state of a simulation over hours.
-*   **Solution**: Even then, the state should be in a file (`world-state.json`). The agent can spin up, process a turn, update state, and spin down. Persistence in memory is a fragility, not a feature.
+### Risk 1: Context Loss
+- **Scenario**: A complex multi-step task (e.g., "Refactor module X") used to run in a persistent session. Now it runs as a chain of ephemeral tasks.
+- **Mitigation**: Use the **Workspace** (`implementation-plan.md`) to persist state between tasks. (P11 File System as Memory).
+
+### Risk 2: Performance Overhead
+- **Scenario**: Spawning a new process for every heartbeat (every 10m) adds startup cost.
+- **Mitigation**: Node.js startup is fast (<100ms). The overhead is negligible compared to LLM latency.
+
+### Risk 3: "Chat" becoming a Monolith
+- **Scenario**: Because Chat is the only persistent session, users might dump everything into it.
+- **Mitigation**: Enforce **Delegation**. Chat (May) should do almost no work itself — it should immediately spawn Task Sessions (Coder, Tech Lead) for any request > 1 turn.
 
 ## Conclusion
-The complexity of managing persistent sub-agents (restoration, idle states, followUp routing) provides negligible value over a model where sub-agents are simply "Smart Functions" that read/write files.
+The simplification is a net positive. It aligns with our "Crash Recovery" (P10) and "File System as Memory" (P11) principles by forcing state out of memory and onto disk.
 
-**Recommendation**: APPROVE the simplification.
+**Recommendation**: Proceed with full implementation. Update `system-design.md` immediately to reflect this change (done).

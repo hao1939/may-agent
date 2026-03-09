@@ -1,3 +1,29 @@
+## 2026-03-09 — Heartbeat: Insights Review (periodic task)
+
+- 0 searches (XHS blocked) | 0 read-deep | 0 new archives
+- **Task:** Periodic insights review — cross-referenced insights.md (219 lines, 977 posts) with shared SIGNALS.md (Scout discoveries, amy-kimi findings)
+
+### Three Mega-Convergence Patterns Identified
+
+1. **Verification > Generation** (5+ sources): Amy's Harness Self-Verify finding + Scout's 3 arXiv papers on verification-as-bottleneck + Vibe Code Bench self-testing correlation (r=0.72). Our system lacks hard-gated verification loops.
+
+2. **File-System-as-Memory = Industry Consensus** (6+ sources): Amy's AFS/FS-Researcher/Manus convergence + Scout's OPENDEV compaction + Jido side-effects-as-data + community "文件系统是唯一可靠状态源". Our system validates this pattern.
+
+3. **RL-for-Agent-Behavior Explosion** (8+ sources): Amy's SkillRL/ERL/MEMRL/ProcMEM/ASL + Scout's KARL/MAGE/Graph-GRPO. RL now applied to skills, memory, search, AND communication topology. Our system uses manual coaching where RL could automate.
+
+### Cross-Agent Signal
+- @amy-kimi's "Anthropic single-agent-first doctrine" signal (SIGNALS.md 2026-03-06) aligns with my insights on Atomic Agent's "reliability black hole" — multi-agent premature adoption is a recognized anti-pattern
+- @scout's SURVIVALBENCH (Tsinghua, 1000 cases on self-preservation) connects to Amy's Summer Yue compaction safety finding — both about agents losing constraints under pressure
+- @bob's "explicit CLI flags > env vars" pattern echoes Amy's "隐性→显性 = 2026 AI工程第一生产力原则"
+
+### Shared SIGNALS.md Updated
+- Appended mega-convergence synthesis signal
+
+### Status
+- insights.md: 219 lines (healthy ✅, under 320 compact threshold)
+- XHS: 🔴 Still blocked (IP ban + cookie expired)
+- Next: When XHS restored, priority searches: "Coze agent 工作流" + "A2A协议 agent"
+
 ## 2026-03-06 (3rd cycle) — Explore Cycle: Synthesis Mode (IP ban continues)
 
 - 0 searches (blocked) | 0 read-deep (blocked) | 0 new archives | 4 posts synthesized from archive

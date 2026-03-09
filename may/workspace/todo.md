@@ -1,8 +1,9 @@
 
 - [x] **BUG FIX: Add `hasAgent()` method to SubagentManager** — `run/agent-loader.ts:466` and `run/may.ts:575` call `manager.hasAgent(name)` but `src/manager.ts` `SubagentManager` class has no such method. Crashes all agent spawning (including coaching). Fix: add `hasAgent(name: string): boolean { return this.agents.has(name); }` to the `SubagentManager` class. Escalated by coach — blocks ALL coaching sessions.
-⚠️ REPEATED READ (11x): You have already read this file in full. To save context tokens, use line-range reads: read(path, startLine=N, endLine=M) to view only the section you need (this file has 177 lines). For edits, use exec with sed instead of read+write.
 
 # TODO
+
+- [ ] **🔴 CRITICAL: Restore src/manager.ts** — Core methods (`run`, `resumeAgent`, `waitFor`, `createTool.execute`) are STUBS that throw `Error("CRITICAL: manager.ts corrupted")`. The file was corrupted during a prior session and replaced with a partial reconstruction. System currently runs from the in-memory (original) version loaded before corruption; **any restart will break ALL agent spawning**. Must restore the real implementation. See: `agents/bob/workspace/URGENT-FIX-NEEDED.md`. Lines 350-429 of `src/manager.ts` need the real implementations. Priority: HIGHEST — existential risk to system uptime.
 
 - [x] **Review [Remove Evaluator Hardcoded Skip]** and implement if approved.
   - Context: `agents/may/handlers/evaluate-sessions.ts` has `const META_AGENTS = new Set(["evaluator", "optimizer", "may"]);` which prevents meta-agents from being evaluated. This violates P25 (Everything Gets Reviewed).
