@@ -601,6 +601,10 @@ export async function loadAgentHandlers(opts: AgentLoaderOptions & {
       agentName,
       getSessionId: () => opts.getSessionId(agentName),
       log: (msg) => bus.emit({ type: "info", message: msg }),
+      notify: (msg) => {
+        bus.emit({ type: "text", agent: agentName, text: msg, channel: "chat" });
+        bus.emit({ type: "prompt", message: agentName, channel: "chat" });
+      },
       triggerNow: (entryName: string) => cron.triggerNow(entryName),
     };
 

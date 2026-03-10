@@ -512,16 +512,36 @@ if (INITIAL_TASK && !CHAT_MODE) {
   await manager.waitForIdle(taskSessionId);
 } else if (CHAT_MODE) {
   // ── V2 Chat mode: ephemeral sessions via ChatLoop ────────────────
-  // Clean up any stale sessions from previous crashes
-  const stale = manager.cleanupStaleSessions();
-  if (stale.length > 0) {
-    bus.emit({ type: "info", message: `[startup] Cleaned up ${stale.length} stale session(s)` });
+  // Resume any sessions from a previous process crash
+  const { resumed, interrupted } = manager.resumeStaleSessions();
+  if (resumed.length > 0) {
+    bus.emit({ type: "info", message: `[startup] Resumed ${resumed.length} session(s): ${resumed.map((s) => `${s.agent}/${s.sessionId}`).join(", ")}` });
+    for (const s of resumed) {
+      attachAgentEvents(s.agent, s.sessionId);
+    }
+  }
+  if (interrupted.length > 0) {
+    bus.emit({ type: "info", message: `[startup] Could not resume ${interrupted.length} session(s): ${interrupted.map((s) => `${s.agent}/${s.sessionId}`).join(", ")}` });
+  }
+
+  // Build startup context for the agent: report what couldn't be resumed
+  let startupContext: string | undefined;
+  if (interrupted.length > 0) {
+    const lines = interrupted.map((s) =>
+      `- ${s.agent} (${s.sessionId}): "${(s.task ?? "").slice(0, 120)}" — ${s.error ?? "unknown"}`
+    );
+    startupContext =
+      `Process restarted. ${resumed.length} session(s) were automatically resumed. ` +
+      `The following ${interrupted.length} session(s) could NOT be resumed:\n` +
+      lines.join("\n") +
+      `\n\nThese sessions are lost. Check if any work needs to be re-dispatched.`;
   }
 
   chatLoop = new ChatLoop({
     manager,
     bus,
     agentName: interfaceAgent,
+    startupContext,
     onSessionDone: () => {
       emitPrompt();
     },
@@ -542,6 +562,17 @@ if (INITIAL_TASK && !CHAT_MODE) {
   bus.emit({ type: "info", message: `[chat] V2 chat loop ready. Agent: ${interfaceAgent}` });
 } else {
   // ── Cron-only mode ───────────────────────────────────────────────
+  // Resume any sessions from a previous process crash
+  const { resumed: cronResumed, interrupted: cronInterrupted } = manager.resumeStaleSessions();
+  if (cronResumed.length > 0) {
+    bus.emit({ type: "info", message: `[startup] Resumed ${cronResumed.length} session(s)` });
+    for (const s of cronResumed) {
+      attachAgentEvents(s.agent, s.sessionId);
+    }
+  }
+  if (cronInterrupted.length > 0) {
+    bus.emit({ type: "info", message: `[startup] Could not resume ${cronInterrupted.length} session(s)` });
+  }
   bus.emit({ type: "info", message: `[cron-only] No chat session. Running cron jobs only.` });
 }
 
