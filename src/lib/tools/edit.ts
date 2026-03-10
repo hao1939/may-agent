@@ -1,5 +1,6 @@
 import type { AgentTool } from "@mariozechner/pi-agent-core";
-import { type Static, Type } from "@mariozechner/pi-ai";
+import { Type } from "@mariozechner/pi-ai";
+import type { TSchema } from "@mariozechner/pi-ai";
 import { constants } from "fs";
 import { access as fsAccess, readFile as fsReadFile, writeFile as fsWriteFile } from "fs/promises";
 import {
@@ -13,13 +14,13 @@ import {
 } from "./edit-diff.js";
 import { resolveToCwd } from "./path-utils.js";
 
-const editSchema = Type.Object({
+const editSchema: TSchema = Type.Object({
 	path: Type.String({ description: "Path to the file to edit (relative or absolute)" }),
 	oldText: Type.String({ description: "Exact text to find and replace (must match exactly)" }),
 	newText: Type.String({ description: "New text to replace the old text with" }),
 });
 
-export type EditToolInput = Static<typeof editSchema>;
+export interface EditToolInput { path: string; oldText: string; newText: string; }
 
 export interface EditToolDetails {
 	/** Unified diff of the changes made */
@@ -52,7 +53,7 @@ export interface EditToolOptions {
 	operations?: EditOperations;
 }
 
-export function createEditTool(cwd: string, options?: EditToolOptions): AgentTool<typeof editSchema> {
+export function createEditTool(cwd: string, options?: EditToolOptions): AgentTool<TSchema> {
 	const ops = options?.operations ?? defaultEditOperations;
 
 	return {
@@ -63,9 +64,10 @@ export function createEditTool(cwd: string, options?: EditToolOptions): AgentToo
 		parameters: editSchema,
 		execute: async (
 			_toolCallId: string,
-			{ path, oldText, newText }: { path: string; oldText: string; newText: string },
+			_params: unknown,
 			signal?: AbortSignal,
 		) => {
+			const { path, oldText, newText } = _params as EditToolInput;
 			const absolutePath = resolveToCwd(path, cwd);
 
 			return new Promise<{

@@ -4,7 +4,6 @@ import { Type, StringEnum } from "@mariozechner/pi-ai";
 import type { TSchema } from "@mariozechner/pi-ai";
 import type { AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
 import type { SubagentManager } from "./manager.js";
-import type { RunOptions } from "./manager.js";
 import type { TaskResult } from "./types.js";
 import type {
   WorkflowContext,
@@ -231,15 +230,16 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
           throw new WorkflowInterrupted(steering, completedSteps, runId);
         }
 
-        const runOpts: RunOptions = {
+        onEvent?.({ type: "step_start", step: agentName });
+
+        const taskResult = await manager.callAgent(agentName, agentTask, {
           parentSessionId,
           workflowRunId: runId,
           stepLabel: agentName,
-        };
-        const sid = manager.run(agentName, agentTask, runOpts);
-        onEvent?.({ type: "step_start", step: agentName, sessionId: sid });
+          source: "workflow",
+        });
 
-        const taskResult = await manager.waitFor(sid);
+        const sid = taskResult.sessionId;
 
         const step: CompletedStep = { step: agentName, sessionId: sid, result: taskResult };
         localSteps.push(step);

@@ -140,7 +140,7 @@ describe("coach: knowledge files", () => {
   });
 
   it("coaching-methodology.md references subagents, not background_exec", () => {
-    const file = resolve(COACH_DIR, "knowledge", "coaching-methodology.md");
+    const file = resolve(COACH_DIR, "knowledge", "library", "coaching-methodology.md");
     expect(existsSync(file)).toBe(true);
     const content = readFileSync(file, "utf-8");
     expect(content).toContain("subagents");

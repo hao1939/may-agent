@@ -1,15 +1,16 @@
 import type { AgentTool } from "@mariozechner/pi-agent-core";
-import { type Static, Type } from "@mariozechner/pi-ai";
+import { Type } from "@mariozechner/pi-ai";
+import type { TSchema } from "@mariozechner/pi-ai";
 import { mkdir as fsMkdir, writeFile as fsWriteFile } from "fs/promises";
 import { dirname } from "path";
 import { resolveToCwd } from "./path-utils.js";
 
-const writeSchema = Type.Object({
+const writeSchema: TSchema = Type.Object({
 	path: Type.String({ description: "Path to the file to write (relative or absolute)" }),
 	content: Type.String({ description: "Content to write to the file" }),
 });
 
-export type WriteToolInput = Static<typeof writeSchema>;
+export interface WriteToolInput { path: string; content: string; }
 
 /**
  * Pluggable operations for the write tool.
@@ -32,7 +33,7 @@ export interface WriteToolOptions {
 	operations?: WriteOperations;
 }
 
-export function createWriteTool(cwd: string, options?: WriteToolOptions): AgentTool<typeof writeSchema> {
+export function createWriteTool(cwd: string, options?: WriteToolOptions): AgentTool<TSchema> {
 	const ops = options?.operations ?? defaultWriteOperations;
 
 	return {
@@ -43,9 +44,10 @@ export function createWriteTool(cwd: string, options?: WriteToolOptions): AgentT
 		parameters: writeSchema,
 		execute: async (
 			_toolCallId: string,
-			{ path, content }: { path: string; content: string },
+			_params: unknown,
 			signal?: AbortSignal,
 		) => {
+			const { path, content } = _params as WriteToolInput;
 			const absolutePath = resolveToCwd(path, cwd);
 			const dir = dirname(absolutePath);
 

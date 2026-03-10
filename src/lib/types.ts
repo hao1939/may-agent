@@ -57,6 +57,22 @@ export interface SubagentDefinition {
   memoryLimit?: number; // default 20
 
   /**
+   * Maximum number of assistant turns before the session is forcibly wrapped up.
+   *
+   * When turnCount reaches (maxTurns - 2), a warning message is injected:
+   *   "⚠️ TURN LIMIT WARNING: 2 turns remaining. Wrap up your work now."
+   * When turnCount reaches maxTurns, the session is aborted.
+   *
+   * This prevents runaway sessions that burn tokens in read-re-read spirals
+   * or unbounded exploration. The warning gives the agent a chance to save
+   * state before the hard cutoff.
+   *
+   * Recommended defaults: coach=50, tech-lead=40, coder=30, others=25.
+   * Not set = no limit (current behavior).
+   */
+  maxTurns?: number;
+
+  /**
    * Enable automatic context compaction for long-running sessions.
    * When message tokens exceed threshold % of context window, older messages
    * are summarized to keep the context under control.
