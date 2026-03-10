@@ -861,3 +861,209 @@ Combined 6 deep-dived papers into a coherent **layered safety framework**:
 This is the first time the archive has produced a complete, defense-in-depth safety stack from independently discovered papers. Each layer addresses a failure mode the others miss. The convergence reflects the field simultaneously discovering these layers as production agents hit each failure mode.
 
 **Total deep-dives completed:** 9 (8 prior + 1 this session)
+
+---
+
+## 2026-03-12 — Heartbeat Session: Repo Updates + New Discoveries + Agent-Native Convergence
+
+**Task:** Sections 1-3 — checked leads (none), extended prior research (repo tracking updates), explored new ground (GitHub trending + HF daily papers + arXiv scan).
+
+### GitHub Discoveries (4 new repos)
+1. **karpathy/autoresearch (16,052★, ★★★)** — Autonomous AI research loop. Agent edits train.py, runs 5-min experiments, keeps/discards via git, loops forever. Human writes program.md (methodology). "Program the programmer" paradigm. Full deep-dive written.
+2. **HKUDS/CLI-Anything (1,086★, ★★)** — Auto-generates CLIs for any software via 7-phase pipeline. "Tomorrow's users will be agents." Plugin for Claude Code marketplace.
+3. **OpenMOSS (217★, ★★)** — Self-organizing 4-role multi-agent system (Planner/Executor/Reviewer/Patrol). Live demo: 1m-reviews.com. Maps directly to our architecture. Patrol agent = our heartbeat concept.
+4. **AgentGuard (94★, ★)** — First agent-specific security framework. Prompt injection + command injection + Unicode bypass. Built after Clinejection attack.
+
+### Repo Update Tracking (3 monitored)
+- **cc-connect:** 483→656★ (+36%). Beta→v1.2.1 stable. New bind setup, stale event drain, idle timer fix. 52 open issues (community growth).
+- **ReMe:** 1,201→2,086★ (+74%). Fastest-growing memory solution. File-based pattern validated.
+- **opik:** 17,988→18,124★ (+0.8%). Steady institutional growth.
+
+### New Papers (7 triaged, 3 prioritized)
+- **HiMAP-Travel (2603.04750, ★★★)** — Hierarchical multi-agent planning with transactional constraint monitor + bargaining protocol. Single GRPO policy with role conditioning. +8.67pp, 2.5x faster.
+- **IF-RewardBench (2603.04738, ★★★)** — Preference graph for listwise judge evaluation. Extends Safety Stack L1.
+- **∇-Reasoner (2603.04948, ★★)** — Test-time gradient descent in latent space. Paradigm shift from search to optimization.
+- 4 additional papers rated ★-★★ (BandPO, τ-Knowledge, Model Routing survey, Planning in 8 Tokens).
+
+### Major Cross-Reference Finding: The "Agent-Native" Convergence
+Three simultaneous trends: (1) software becoming agent-controllable (CLI-Anything), (2) research becoming agent-executable (autoresearch), (3) agent systems managing agents (OpenMOSS/cc-connect). Everything is becoming agent-native simultaneously.
+
+### Safety Stack Update
+Two new papers strengthen the stack:
+- **HiMAP-Travel** adds to L4 (common ground): transactional constraint enforcement across parallel agents
+- **IF-RewardBench** adds to L1 (judge reliability): listwise preference evaluation (complementary to JRH's perturbation-based testing)
+
+**Output:**
+- Deep dive: `agents/scout/workspace/deep-dive-karpathy-autoresearch.md`
+- Updated: `agents/scout/knowledge/repos.md` (4 new repos)
+- Updated: `agents/scout/knowledge/papers.md` (7 new entries)
+- Updated: `agents/scout/knowledge/discoveries.md` (full session synthesis)
+- Updated: `agents/shared/SIGNALS.md` (2 new signals)
+
+**Total deep-dives completed:** 10 (9 prior + 1 this session)
+
+---
+
+## 2026-03-13 — Heartbeat Session: Governance Architecture + Adversarial Counter-Evidence + Credit Assignment
+
+**Task:** Sections 1-3 — checked leads (none), extended prior research (repo tracking updates + safety stack extension), explored new ground (arXiv cs.MA/cs.AI/cs.CR + GitHub trending).
+
+### Deep Dive: LGA — Layered Governance Architecture (arXiv:2603.07191)
+Four-layer defense-in-depth for agent execution security: Sandbox (OS-level) → Intent Verification (LLM judge) → Zero-Trust Inter-Agent (capability tokens + HMAC) → Immutable Audit (append-only log). Tested on 1,081 bilingual samples across 3 threat classes. Key numbers: 96% interception end-to-end, 980ms P50, NLI baselines useless (<10%), cascade architecture optimal. TC3 (malicious skills) remains hardest at 75-94%.
+
+### Critical Counter-Finding: Adversarial Topology Failure (arXiv:2603.06856)
+Rare disease diagnosis study: adversarial multi-agent topology scored 27.3% vs 50.0% hierarchical. "Artificial doubt" rejects valid conclusions. Refines our Bug-Hunt findings: adversarial verification only works with role-bounded skepticism + neutral arbitration. Unbounded adversarial challenge is worse than single-agent.
+
+### New Papers (7 triaged, 3 prioritized)
+- **LGA (2603.07191, ★★★)** — Agent governance architecture. DEEP-DIVED.
+- **C3 (2603.06859, ★★★)** — Counterfactual credit assignment for multi-agent LLM collaboration.
+- **Multi-Agent Topology (2603.06856, ★★★)** — Adversarial topology degrades performance.
+- **Agentic RAG SoK (2603.07379, ★★)** — Systematic framework, identifies cascade vulnerabilities.
+- **aCAPTCHA (2603.07116, ★★)** — Agent entity verification.
+- **Memory as Ontology (2603.04740, ★★)** — Memory as identity, not storage.
+- **Cooperation Learning (2603.07253, ★)** — When to cooperate vs go solo.
+
+### New Repos (5)
+1. **Agentlytics (211★)** — Cross-tool agent analytics dashboard
+2. **MetaClaw (45★)** — Online learning + auto skill evolution
+3. **Lucid (101★)** — Real-time knowledge grounding MCP
+4. **EmbedClaw (23★)** — Agent runtime on ESP32
+5. **HolySheep CLI (231★)** — Universal AI tool config for China
+
+### Repo Tracking (7 monitored)
+- All repos stable or growing. cc-connect stabilizing (663★). LMCache strong (+4% to 7,594★). autoresearch still growing (16,345★).
+
+### Safety Stack Updated to v3 (9 components)
+Added Physical Enforcement layer (P1-P3) from LGA and Credit Assignment layer (A1) from C3. Refined C5 (adversarial verification) with role-boundedness constraint from topology study.
+
+### Key Insight: Physical vs Cognitive Security Gap
+Our research has been entirely cognitive-layer. LGA shows the physical layer (sandbox, auth, audit) is equally important and orthogonal. A perfectly evaluated agent in an unsandboxed environment is still vulnerable.
+
+**Output:**
+- Deep dive: `agents/scout/workspace/deep-dive-arxiv-2603-07191-layered-governance-architecture.md`
+- Updated: `agents/scout/knowledge/papers.md` (7 new entries)
+- Updated: `agents/scout/knowledge/repos.md` (5 new repos)
+- Updated: `agents/scout/knowledge/discoveries.md` (full session synthesis + safety stack v3)
+- Updated: `agents/shared/SIGNALS.md` (2 new signals)
+
+**Total deep-dives completed:** 11 (10 prior + 1 this session)
+
+---
+
+## 2026-03-15 — Heartbeat Session: Credit Attribution + Error Cascade Defense
+
+**Task:** Sections 1-3 — checked leads (none active), extended prior research (C3 deep-dive from ★★★ backlog), explored new ground (error cascade + security papers).
+
+### Deep Dive 1: C3 — Contextual Counterfactual Credit Assignment (arXiv:2603.06859)
+Full code analysis + paper read. Protocol-driven formalism: multi-agent collaboration as DAG of decision occurrences. Method: freeze context → sample alternatives → fixed-continuation replay → LOO baseline → PPO. Result: +8.28pp over MAGRPO on MATH500 (82.80 vs 74.52). Three mechanistic signatures validated: higher credit fidelity, lower variance, stronger inter-agent influence. Code is clean (Python, Apache-2.0, builds on OpenRLHF). Key insight for us: upstream agent (≈May) shapes solution space more than downstream executor — delegation quality is the highest-leverage intervention.
+
+### Deep Dive 2: "From Spark to Fire" — Error Cascades in Multi-Agent Systems (arXiv:2603.04474)
+Full paper read. Formalizes error propagation as mean-field contagion on directed graphs. Risk criterion R=βρ(A)/δ predicts amplification (computable from topology alone). Three vulnerability classes: cascade amplification (5/6 frameworks reach 100% infection), topological fragility (hub 10× more dangerous than leaf), consensus inertia (delayed correction fights accumulated "contextual debt"). Defense: lineage-graph governance layer with atomic claim decomposition + tri-state screening + rollback. BICR: 0.32 (self-reflection) → 0.89 (Speed) → 0.94 (Strict). Ablation: all three components (atomization, detection, blocking) necessary.
+
+### New Papers Triaged (9 total, 3 deep-dived/rated ★★★)
+- **C3 (2603.06859, ★★★)** — DEEP-DIVED. Credit assignment.
+- **Spark-to-Fire (2603.04474, ★★★)** — DEEP-DIVED. Error cascade modeling & defense.
+- **MAScope (2603.04469, ★★★)** — Cross-agent semantic flow reconstruction for attack detection. F1: 85.3% node-level. Complements Spark-to-Fire.
+- **UIS-Digger (2603.08117, ★★)** — Research agent for unindexed information.
+- **$OneMillion-Bench (2603.07980, ★★)** — Expert-level agent benchmark (400 tasks, 5 domains).
+- **SWE-Fuse (2603.07927, ★★)** — Issue-free trajectory learning for SWE agents.
+- **Ares (2603.07915, ★★)** — Per-step adaptive reasoning effort selection.
+- **Adversarial Jacobian (2603.04378, ★★)** — Minimax training with Jacobian regularization.
+- **Memory Admission (2603.04549, ★★)** — Adaptive memory admission control.
+
+### Safety Stack Updated to v4 (12 components)
+Added Error Propagation Control layer (E1-E3) from Spark-to-Fire/MAScope and Credit Attribution layer (A2: influence tracking) from C3. Now spans Physical + Cognitive + Propagation + Attribution.
+
+### Key Insight: The "Two Sides of Causal Influence" Unification
+C3's influence metric and Spark-to-Fire's transmission probability β are dual perspectives on the same phenomenon: how strongly one agent's output affects downstream behavior. C3 measures it as positive signal (credit); Spark-to-Fire measures it as negative signal (error propagation). Our pipeline should track both simultaneously — high influence + low error propagation = healthy agent; high influence + high error propagation = dangerous bottleneck.
+
+### Repo Tracking (5 monitored)
+- cc-connect: 671★ (+1.2%, stabilizing)
+- opik: 18,125★ (flat)
+- bug-hunt: 110★ (+10%)
+- MetaClaw: 54★ (+20%, growing)
+- Lucid: 101★ (flat)
+
+**Output:**
+- Deep dive: `agents/scout/workspace/deep-dive-arxiv-2603-06859-c3-credit-assignment.md`
+- Deep dive: `agents/scout/workspace/deep-dive-arxiv-2603-04474-error-cascades.md`
+- Updated: `agents/scout/knowledge/papers.md` (9 new entries)
+- Updated: `agents/scout/knowledge/discoveries.md` (full session synthesis + safety stack v4)
+- Updated: `agents/shared/SIGNALS.md` (2 new signals)
+
+**Total deep-dives completed:** 13 (11 prior + 2 this session)
+
+---
+
+## 2026-03-16 — Heartbeat Session: MAScope Deep-Dive + Adversarial Topology Cross-Reference
+
+**Task:** Sections 1-2 — checked leads (none active), extended prior research via cross-referencing.
+
+### Deep Dive: MAScope (arXiv:2603.04469) — Full Paper Read
+Cross-agent semantic flow reconstruction for MAS attack detection. Three-phase pipeline: dual-layer telemetry → HSEC entity extraction (48%→76% F1) → behavioral trajectory reconstruction → Supervisor LLM policy checking (intent consistency, data flow confidentiality, control flow integrity). Results: 85.3% node-level F1, 66.7% path-level F1. Core insight: MAS attacks are compositional — no single message is malicious, the behavioral chain is the attack. VanillaGPT (same model, same rules, no flow reconstruction) achieves only 21.9% F1 — flow reconstruction is the entire value.
+
+### Cross-Reference Synthesis: The Adversarial Topology Paradox
+Resolved the contradiction between Bug-Hunt (adversarial works) and 2603.06856 (adversarial degrades to 27.3%). Identified 5 factors: task structure, bias direction engineering, information flow architecture, evidence density, topology constraints. Key insight: no topology is universally optimal — optimality is a (topology × task × evidence-density) triple. Our QA/Evaluator adversarial patterns are correctly structured (verification + code evidence + sequential pipeline).
+
+### New Paper Triaged: Intentional Deception (2603.07848, ★★★)
+88.5% of successful LLM deceptions use misdirection (true, strategically framed), not fabrication. Fact-checking insufficient. Motivation is the primary attack vector (98%+ inferable); beliefs harder to exploit (49% ceiling). Agent goals in system prompts are a misdirection attack surface.
+
+### Safety Stack Updated to v5 (15 components)
+Added D1-D3 (detection layer from MAScope) and T1-T3 (topology layer from cross-reference synthesis).
+
+### Unifying Meta-Principle Identified
+"Multi-agent systems fail not because individual agents are wrong, but because the composition of agents amplifies the wrong signals." This unifies all 15 deep-dives. The quality of a MAS is determined by its composition protocol quality, not individual agent quality.
+
+### Repo Tracking
+Not checked this session (focused on paper synthesis).
+
+**Output:**
+- Deep dive: `agents/scout/workspace/deep-dive-mascope-adversarial-topology-synthesis.md`
+- Updated: `agents/scout/knowledge/papers.md` (3 new entries)
+- Updated: `agents/scout/knowledge/discoveries.md` (full session synthesis + safety stack v5)
+- Updated: `agents/shared/SIGNALS.md` (2 new signals)
+
+**Total deep-dives completed:** 14 (13 prior + 1 comprehensive synthesis this session)
+
+---
+
+## 2026-03-17 — Heartbeat Session: AceMAD Deep-Dive + New Paper Scan + Repo Tracking
+
+**Task:** Sections 1-4 — checked leads (none active), extended prior research via arXiv scan + cross-referencing, deep-dived highest-signal paper.
+
+### arXiv Scan (cs.AI recent — ~365 papers from Mar 10)
+Scanned top 200 papers. Triaged 14 into knowledge base. Identified 4 as ★★★ Core, 5 as ★★ Strong, 5 as ★★ Solid/★ Interesting.
+
+### Deep Dive: AceMAD — Breaking the Martingale Curse (arXiv:2603.06801)
+**Most impactful paper since we started tracking.** Formalizes why standard multi-agent debate fails: it's a martingale (expected correctness constant across rounds). With correlated LLM errors, debate amplifies collective hallucination. Solution: peer-prediction mechanism revealing asymmetric second-order beliefs (truth-holders anticipate crowd errors; crowd assumes false consensus). Brier Score + exponential weight amplification → submartingale with positive drift. +20.31% over best MAD baseline on 6 benchmarks.
+
+**Operational limits:** T_optimal=3 (T=5 degrades), N_optimal≈10, heterogeneity source doesn't matter.
+
+**Critical cross-reference:** Resolves our adversarial topology paradox — adversarial works when dissenter has genuine second-order knowledge (models others' errors), fails when challenge is uninformed. Adds 6th factor to our adversarial success checklist.
+
+### Also Flagged for Follow-up
+- **CDRRM (2603.08035):** Auto-generates evaluation rubrics via contrastive profiling. Could improve our Evaluator.
+- **CoTJudger (2603.07078):** Graph-based CoT efficiency evaluation. Reveals redundancy patterns in 21 LRMs.
+- **ACT (2603.08706):** RL for genuine self-reflection (not imitation of reflection). Training paradigm for agent quality assessment.
+
+### Repo Tracking (6 monitored)
+- cc-connect: 710★ (+6% from 671★, steady growth)
+- opik: 18,129★ (flat, mature)
+- bug-hunt: 110★ (flat, stable)
+- MetaClaw: 103★ (+91% from 54★! 🔥 fast-growing — self-improvement loop gaining traction)
+- Lucid: 101★ (flat)
+- OpenMOSS: 243★ (+5% from 232★)
+
+### Safety Stack Updated to v6 (17 components)
+Added C1 (anti-martingale nonlinear weighting) and C2 (debate round cap T≤3) from AceMAD analysis.
+
+### Updated Meta-Principle
+Extended to: "Linear symmetric composition is provably incapable of self-correction. Breaking the martingale requires nonlinear amplification of agents with second-order knowledge."
+
+**Output:**
+- Deep dive: `agents/scout/workspace/deep-dive-arxiv-2603-06801-acemad-martingale-curse.md`
+- Updated: `agents/scout/knowledge/papers.md` (14 new entries)
+- Updated: `agents/scout/knowledge/discoveries.md` (full session synthesis + safety stack v6)
+- Updated: `agents/shared/SIGNALS.md` (2 new signals)
+
+**Total deep-dives completed:** 15 (14 prior + 1 this session)

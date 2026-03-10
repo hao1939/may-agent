@@ -5,7 +5,8 @@
   "model": "opus",
   "tools": [
     "read-write",
-    "exec"
+    "exec",
+    "scrape"
   ],
   "sharedKnowledge": [
     "system-design.md"

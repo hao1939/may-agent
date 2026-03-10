@@ -1,38 +1,52 @@
 # Scout — Tools Reference
 
-## Web Fetching
+## scrape_webpage (PREFERRED for web pages)
 
-Scout uses `curl` for all web fetching. No browser needed.
+Use `scrape_webpage` as your **first choice** for fetching any web page. It handles User-Agent headers, redirects, and bot-detection avoidance automatically, and returns clean text (HTML stripped).
 
-### GitHub
+```
+scrape_webpage(url: "https://arxiv.org/abs/2402.12345")
+scrape_webpage(url: "https://github.com/org/repo", maxLength: 30000)
+scrape_webpage(url: "https://blog.langchain.com/some-post", raw: true)  # raw HTML
+```
+
+**Parameters:**
+- `url` (required) — Full URL starting with http:// or https://
+- `raw` (optional, default: false) — Return raw HTML instead of cleaned text
+- `maxLength` (optional, default: 20000) — Max characters returned
+
+**When to use scrape_webpage vs curl:**
+- **scrape_webpage** → web pages (articles, docs, papers, blogs, repos)
+- **curl** → JSON APIs (GitHub API, Arctic Shift), or when you need specific curl flags
+
+## curl (for APIs and fallback)
+
+Use `curl` via `exec` for JSON APIs or when scrape_webpage doesn't work.
+
+### GitHub API
 
 ```bash
-# Trending repos (weekly is better than daily — less noise)
-curl -sL "https://github.com/trending?since=weekly" 2>&1 | head -500
-
-# Trending by language
-curl -sL "https://github.com/trending/python?since=weekly" 2>&1 | head -500
-
-# Specific repo (use root URL, not blob/ paths)
-curl -sL "https://github.com/<org>/<repo>" 2>&1 | head -300
-
-# Releases
+# Releases (JSON API — use curl)
 curl -sL "https://api.github.com/repos/<org>/<repo>/releases?per_page=5" 2>&1
+```
+
+### GitHub Pages (use scrape_webpage instead)
+
+```
+scrape_webpage(url: "https://github.com/trending?since=weekly")
+scrape_webpage(url: "https://github.com/<org>/<repo>")
 ```
 
 **Note:** `github.com/<org>/<repo>/blob/main/README.md` returns login redirect. Use root URL instead.
 
 ### arXiv
 
-```bash
-# Search (returns ~5-8 titles/abstracts within 6K chars)
-curl -sL "https://arxiv.org/search/?searchtype=all&query=multi+agent+systems&order=-announced_date_first" 2>&1 | head -500
-
-# Specific paper abstract
-curl -sL "https://arxiv.org/abs/2602.XXXXX" 2>&1 | head -200
+```
+scrape_webpage(url: "https://arxiv.org/search/?searchtype=all&query=multi+agent+systems&order=-announced_date_first")
+scrape_webpage(url: "https://arxiv.org/abs/2602.XXXXX")
 ```
 
-### Reddit (Arctic Shift API)
+### Reddit (Arctic Shift API — JSON, use curl)
 
 ```bash
 # Recent posts in a subreddit
@@ -48,22 +62,10 @@ Active subreddits: r/LocalLLaMA, r/MachineLearning, r/ClaudeAI, r/OpenAI, r/arti
 
 ### Vendor Blogs
 
-```bash
-# Anthropic (note: /research/ redirects to /engineering/)
-curl -sL "https://anthropic.com/engineering/<slug>" 2>&1 | head -500
-
-# LangChain (homepage returns single headline — use direct post URLs)
-curl -sL "https://blog.langchain.com/<slug>" 2>&1 | head -500
-
-# MCP Protocol (llms.txt gives full index!)
-curl -sL "https://modelcontextprotocol.io/llms.txt" 2>&1 | head -300
 ```
-
-### General Web
-
-```bash
-# Any URL
-curl -sL "<url>" 2>&1 | head -500
+scrape_webpage(url: "https://anthropic.com/engineering/<slug>")
+scrape_webpage(url: "https://blog.langchain.com/<slug>")
+scrape_webpage(url: "https://modelcontextprotocol.io/llms.txt")
 ```
 
 **Blocked sources:**

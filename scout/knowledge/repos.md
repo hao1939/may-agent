@@ -440,3 +440,82 @@ Interesting GitHub repos — tracked, watched, or archived.
 - **Status:** No public GitHub yet (video demo only)
 - **Why it matters:** Spawns Claude Code / Codex CLI / Gemini CLI as real isolated terminal processes. 20 MCP tools for inter-agent communication via central WebSocket hub. Contract-driven development gate (sign-off required before coding starts). Idle-aware queue via JSONL transcript monitoring. State persistence across crashes.
 - **Watch for:** GitHub repo launch. Contract-driven MCP spec formalization.
+
+## karpathy/autoresearch — Autonomous AI Research Loop (16,052★)
+- **URL:** https://github.com/karpathy/autoresearch
+- **Stars:** 16,052 (created 2026-03-06, ~4 days old, 2,045 forks)
+- **What it does:** Minimal framework for autonomous AI research: agent modifies a single train.py, runs 5-minute fixed-budget experiments, keeps improvements / discards failures via git, logs to results.tsv, loops forever. Based on nanochat. Uses program.md as the agent's "skill" file — human writes the methodology, agent writes the code.
+- **Why it matters:** Karpathy's "program the programmer" paradigm: you edit program.md (research org design), not train.py (code). This is the highest-profile implementation of recursive self-improvement via agent loops. 16k★ in 4 days = massive community signal. The fixed-budget + git-tracked + structured-log experiment loop is the minimal viable template for automated improvement. Missing: safety rails, drift detection, constraint preservation — exactly what SAHOO (2603.06333) provides.
+- **Connects to:** SAHOO (2603.06333 — safety framework for exactly this kind of loop); Reflective Test-Time Planning (2602.21198 — reflection-in/on-action maps to keep/discard + experiment design); Art of Efficient Reasoning (2602.20945 — efficient exploration of solution space); our system's agent heartbeat/mission loop. Theme 1 (Self-Improvement) + Theme 8 (Agent Engineering).
+
+## HKUDS/CLI-Anything — Making ALL Software Agent-Native (1,086★)
+- **URL:** https://github.com/HKUDS/CLI-Anything
+- **Stars:** 1,086 (created 2026-03-08, 107 forks)
+- **What it does:** Claude Code plugin that auto-generates complete CLIs for any software (GIMP, Blender, LibreOffice, etc.) in 7 phases: Analyze → Design → Implement → Plan Tests → Write Tests → Document → Publish. Output is a Click-based Python CLI with REPL, JSON output, undo/redo, and comprehensive test suite. Distributed as Claude Code plugin marketplace package.
+- **Why it matters:** "Today's Software Serves Humans. Tomorrow's Users will be Agents." — addresses the fundamental interface gap: most software has GUIs but no agent-friendly API. 7-phase pipeline is fully autonomous. 1,436 passing tests across 9 demo apps (GIMP, Blender, LibreOffice Calc, VLC, Inkscape, Audacity, Calibre, Zotero, OBS Studio). The "agent-native software" vision: every application becomes agent-controllable through structured CLI without rebuilding.
+- **Connects to:** agentskills.io (CLI generation = skill generation); cc-connect (agent communication); GWS CLI (Google Workspace agent access — CLI-Anything is the generic version). Theme 7 (Agent Infrastructure) + Theme 11 (Agent Skills Ecosystem).
+
+## uluckyXH/OpenMOSS — Self-Organizing Multi-Agent System for OpenClaw (217★)
+- **URL:** https://github.com/uluckyXH/OpenMOSS
+- **Stars:** 217 (created 2026-03-08, 20 forks)
+- **What it does:** Multi-agent orchestration middleware with 4 specialized roles: Planner (breaks down requirements), Executor (claims tasks, writes code), Reviewer (quality scoring, approve/reject), Patrol (monitors anomalies, flags blocked tasks). Agents wake via cron, communicate asynchronously through FastAPI, never talk directly. Built on OpenClaw. Has WebUI with task management, activity feed, score leaderboard.
+- **Why it matters:** Live demo: 1m-reviews.com — news site entirely operated by OpenMOSS agents (20+ articles in 2 days, zero human intervention). The 4-role pattern (Plan/Execute/Review/Patrol) maps closely to our architecture (May/Coder/QA/Bob). The Patrol agent (anomaly detection, stuck task recovery) is a production implementation of our heartbeat monitoring concept. Scoring & leaderboard system for agent quality is a novel accountability mechanism.
+- **Key insight:** "Agent death rate drops to 0%" via the Patrol agent — autonomous recovery from agent failures is the production concern, not agent capability.
+- **Connects to:** Bug-Hunt (adversarial verification — OpenMOSS's Reviewer fills the Skeptic role); SAHOO (drift monitoring — Patrol agent IS L6 monitoring); our system's agent architecture (4-role mapping). Theme 6 (Multi-Agent Coordination).
+
+## numbergroup/AgentGuard — AI Agent Security Framework (94★)
+- **URL:** https://github.com/numbergroup/AgentGuard
+- **Stars:** 94 (trending Mar 2026)
+- **What it does:** Security framework protecting AI agents: command injection detection, prompt injection blocking, Unicode bypass prevention (homoglyph attacks), social engineering detection, encoding/obfuscation detection, GitHub issue screening (Clinejection-style), rate limiting, surgical sanitization. Available as OpenClaw Skill, Claude MCP Server, or standalone CLI.
+- **Performance:** 0.02ms avg analysis, 50k+ analyses/sec, 98.7% detection rate, <2% false positives, <10MB memory.
+- **Why it matters:** Built in response to the Clinejection attack (4,000 developer machines compromised via malicious GitHub issue). The first security framework specifically designed for AI agent protection (not web app security adapted for agents). The "surgical sanitization" approach (replace only detected threats, preserve legitimate content) is the right design — full blocking would break agent workflows.
+- **Connects to:** ClawHavoc (arXiv:2602.20867 — ~1,200 malicious skills; AgentGuard addresses the attack vector); Agent Skills security gap (our prior research identified lack of trust/verification in skill ecosystem); Zombie Agents (2602.15654 — persistent memory poisoning; AgentGuard's prompt injection blocking is a complementary defense). Theme 10 (Agent Security).
+
+## Agentlytics — Analytics Dashboard for AI Coding Agents (211★)
+- **URL:** https://github.com/f/agentlytics
+- **Stars:** 211 (created 2026-03-07)
+- **What it does:** Comprehensive analytics dashboard for AI coding agents — Cursor, Windsurf, Claude Code, VS Code Copilot, Zed, Antigravity, OpenCode, Command Code. Local-first, SQLite-based. JavaScript/React. Tracks agent usage, token spend, session metrics across all major coding assistants.
+- **Why it matters:** As coding agents proliferate, meta-observability (which agent did what, how much did it cost) becomes essential. First unified dashboard across all major tools. Local-first = no data leakage. Complements opik (LLM-level observability) at the developer-workflow level.
+- **Connects to:** opik (LLM observability — agentlytics is the developer-facing layer above); our system's journal/log patterns. Theme 7 (Agent Infrastructure).
+
+## aiming-lab/MetaClaw — Agent That Learns and Evolves (45★)
+- **URL:** https://github.com/aiming-lab/MetaClaw
+- **Stars:** 45 (created 2026-03-09)
+- **What it does:** Wraps model behind OpenAI-compatible API, intercepts OpenClaw conversations, scores each turn, continuously improves policy through online fine-tuning. Hot-swaps updated LoRA weights with no restart. Uses Kimi-2.5 (~200B MoE) via Tinker for cloud-based LoRA training, Qwen3-4B as lightweight alternative. Supports GRPO + On-Policy Distillation. **Automatic skill evolution:** when agent fails, LLM analyzes trajectory and generates new skills.
+- **Why it matters:** First production implementation of continuous online learning from live agent conversations. The skill evolution feature (failure → analyze → generate new skill) is the practical realization of SAHOO-style self-improvement loops. No GPU cluster needed (cloud LoRA training). From aiming-lab (also behind SkillRL).
+- **Connects to:** SAHOO (2603.06333 — MetaClaw is the engineering implementation of recursive self-improvement); autoresearch (same loop pattern — experiment, evaluate, improve); SkillRL (same lab, RL for skill learning). Theme 1 (Self-Improvement) + Theme 11 (Agent Skills).
+
+## get-Lucid/Lucid — Real-Time Knowledge Grounding for Agents (101★)
+- **URL:** https://github.com/get-Lucid/Lucid
+- **Stars:** 101 (created 2026-03-09, MIT)
+- **What it does:** MCP server exposing 4 tools: doc search, package version check, fact verification, API reference fetch. 5 skills auto-trigger tools based on conversation context. Installs as Claude Code plugin or OpenClaw skill. $20/mo.
+- **Why it matters:** Addresses the "stale training data" problem for coding agents. Key principle: "If docs say one thing and training data says another, docs win." Skills-driven auto-triggering means agents don't need explicit invocation. Validates the agent skill + MCP tool combo pattern.
+- **Connects to:** skilless.ai (similar agent-capability-extension via skills); agentskills.io format. Theme 11 (Agent Skills).
+
+## wireless-tag-com/EmbedClaw — Full Agent Runtime on ESP32-S3 (23★)
+- **URL:** https://github.com/wireless-tag-com/EmbedClaw
+- **Stars:** 23 (created 2026-03-09, MIT, C)
+- **What it does:** Decouples LLM, Tools, Agent, Channels, Memory, Skills — all running on a single ESP32-S3 microcontroller. Uses Qwen via DashScope API. Features: Feishu + WebSocket channels, ReAct tool loop, long-term memory (MEMORY.md), short-term memory (session JSONL), daily notes, SPIFFS-based skills, cron scheduling. Complete agent loop on embedded hardware.
+- **Why it matters:** Proof that the agent architecture pattern (channels → agent loop → LLM → tools → memory → skills) is so well-understood it can be implemented on a microcontroller. The decoupled architecture is a clean reference implementation. Uses same file-based memory patterns (MEMORY.md, daily notes) as ReMe and our system.
+- **Connects to:** ReMe (file-based memory); cc-connect (channel abstraction); agentskills.io (skill format on embedded). Theme 7 (Agent Infrastructure) — extreme edge.
+
+## holysheep123/holysheep-cli — Universal AI Tool Configurator for China (231★)
+- **URL:** https://github.com/holysheep123/holysheep-cli
+- **Stars:** 231 (created 2026-03-07, MIT)
+- **What it does:** One command configures all AI coding assistants (Claude Code, Codex CLI, Aider, Continue.dev, OpenCode, OpenClaw) to use HolySheep API relay. Solves API access for developers in China.
+- **Why it matters:** Chinese market signal: 231★ in 3 days shows strong demand for unified AI tool configuration. Confirms the multi-tool agent landscape is fragmenting enough to need meta-configuration tools. The relay architecture (proxying through holysheep.ai) is identical to cc-connect's provider proxy pattern.
+- **Connects to:** cc-connect (provider proxy pattern); hello-agents (Chinese agent ecosystem). Theme 2 (Ecosystem Adoption).
+
+## OpenMOSS — Self-Organizing Multi-Agent Collaboration Platform (232★)
+- **URL:** https://github.com/uluckyXH/OpenMOSS
+- **Stars:** 232 (created 2026-03-08, MIT, Python/FastAPI/Vue)
+- **What it does:** Self-organizing multi-agent collaboration platform for OpenClaw. 4 agent roles: Planner (breaks down requirements, assigns tasks), Executor (claims tasks, writes code), Reviewer (reviews quality, scores 1-5, approves/rejects for rework), Patrol (monitors system, detects stuck tasks, triggers recovery). Cron-based autonomous wake-ups. SQLite backend, REST/WebSocket API. Built-in scoring/leaderboard system with reward/penalty logs driving agent rankings. Demonstrated with a live news site (1M Reviews) — 20+ articles in 2 days, fully autonomous.
+- **Architecture parallel to ours:** Planner≈May, Executor≈Coder, Reviewer≈QA+Evaluator, Patrol≈monitoring concern. Key difference: asynchronous task queue model (agents claim tasks from queue) vs. our synchronous pipeline. Their scoring system (1-5 per review, cumulative leaderboard, reward/penalty per task) is a concrete implementation of Bug-Hunt's scoring incentive pattern.
+- **Why it matters:** Validates our multi-agent architecture pattern at scale. The closed-loop quality control (review → score → rework cycle) is exactly what our QA/Evaluator loop does. The Patrol agent (anomaly detection, stuck task recovery) addresses a gap we haven't formalized. The scoring/leaderboard system provides concrete inspiration for our evaluator's output format.
+- **Connects to:** Bug-Hunt (scoring incentives for agents), our own May/Coder/QA/Evaluator pipeline, cc-connect (agent communication layer). Theme 7 (Agent Infrastructure).
+
+## MASFactory — Graph-centric Framework for Multi-Agent Orchestration (arXiv:2603.06007)
+- **URL:** https://github.com/BUPT-GAMMA/MASFactory
+- **What it does:** Compiles natural-language intent into editable workflow specifications, then into executable directed computation graphs for MAS. "Vibe Graphing" = human-in-the-loop approach. Reusable components, pluggable context integration, topology preview, runtime tracing.
+- **Why it matters:** The "intent → graph → execution" pipeline is a cleaner formalization of what our system does implicitly (user request → May delegation → agent execution graph). The topology preview/tracing features complement MAScope's behavioral flow reconstruction.
+- **Connects to:** MAScope (runtime tracing for security), Spark-to-Fire (graph topology analysis), our workflow system. Theme 7 (Agent Infrastructure).
