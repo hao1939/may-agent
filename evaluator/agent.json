@@ -4,12 +4,15 @@
   "domain": "agent performance evaluation",
   "model": "gpt52",
   "tools": [
-    "read-write",
-    "exec"
+    "coding"
   ],
   "sharedKnowledge": [
     "system-design.md",
     "team.md"
   ],
-  "memoryLimit": 5
+  "memoryLimit": 5,
+  "skills": [
+    "file-safety",
+    "error-handling"
+  ]
 }

@@ -4,7 +4,10 @@
   "domain": "Xiaohongshu content research and deep analysis",
   "model": "kimi",
   "tools": [
-    "read-write",
-    "exec"
+    "coding"
+  ],
+  "skills": [
+    "file-safety",
+    "error-handling"
   ]
 }

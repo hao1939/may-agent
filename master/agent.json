@@ -6,5 +6,6 @@
   "tools": [
     "claude-code",
     "gemini-cli"
-  ]
+  ],
+  "skills": ["file-safety", "error-handling"]
 }

@@ -4,7 +4,10 @@
   "domain": "may-agent implementation",
   "model": "opus",
   "tools": [
-    "read-write",
-    "exec"
+    "coding"
+  ],
+  "skills": [
+    "file-safety",
+    "error-handling"
   ]
 }

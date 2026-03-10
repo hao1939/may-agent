@@ -4,13 +4,16 @@
   "domain": "agent system optimization",
   "model": "opus",
   "tools": [
-    "read-write",
-    "exec",
+    "coding",
     "subagents",
     "workflow"
   ],
   "sharedKnowledge": [
     "system-design.md",
     "team.md"
+  ],
+  "skills": [
+    "file-safety",
+    "error-handling"
   ]
 }

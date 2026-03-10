@@ -1,11 +1,10 @@
 {
   "name": "may",
-  "description": "Hao's Deputy — handles tasks, orchestrates agents, maintains the system",
+  "description": "Hao's Deputy \u2014 handles tasks, orchestrates agents, maintains the system",
   "domain": "may-agent coordination",
   "model": "opus",
   "tools": [
-    "read-write",
-    "exec",
+    "coding",
     "subagents",
     "workflow",
     "cron"
@@ -20,5 +19,9 @@
       "qa"
     ],
     "hint": "Use subagents.run(\"tech-lead\", task) for code changes (async). Or workflow.run(\"implement-and-review\", task) in heartbeat context (blocking)."
-  }
+  },
+  "skills": [
+    "file-safety",
+    "error-handling"
+  ]
 }
