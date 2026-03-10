@@ -242,7 +242,8 @@ function attachAgentEvents(label: string, sessionId: string): void {
 
 let shuttingDown = false;
 let activeRL: ReturnType<typeof createInterface> | null = null;
-/** Task-mode session ID (only set in --task mode). */
+/** Track whether Ctrl+C cancel has been issued (second Ctrl+C force-quits). */
+let cancelledOnce = false;
 let taskSessionId: string | undefined;
 /** Chat loop instance (only set in --chat mode). */
 let chatLoop: ChatLoop | undefined;
@@ -353,6 +354,7 @@ process.on("exit", (code) => {
  * In chat mode, delegates to ChatLoop. In task/cron mode, handles commands directly.
  */
 function handleInput(message: string): void {
+  cancelledOnce = false;
   if (chatLoop) {
     chatLoop.handleInput(message);
     return;
@@ -516,9 +518,6 @@ if (INITIAL_TASK && !CHAT_MODE) {
   const { resumed, interrupted } = manager.resumeStaleSessions();
   if (resumed.length > 0) {
     bus.emit({ type: "info", message: `[startup] Resumed ${resumed.length} session(s): ${resumed.map((s) => `${s.agent}/${s.sessionId}`).join(", ")}` });
-    for (const s of resumed) {
-      attachAgentEvents(s.agent, s.sessionId);
-    }
   }
   if (interrupted.length > 0) {
     bus.emit({ type: "info", message: `[startup] Could not resume ${interrupted.length} session(s): ${interrupted.map((s) => `${s.agent}/${s.sessionId}`).join(", ")}` });
@@ -545,9 +544,7 @@ if (INITIAL_TASK && !CHAT_MODE) {
     onSessionDone: () => {
       emitPrompt();
     },
-    onSessionStart: (agentName, sessionId) => {
-      attachAgentEvents(agentName, sessionId);
-    },
+    onSessionStart: undefined, // handled by manager.onSessionStart
     onReload: handleReload,
     onClose: () => {
       bus.emit({ type: "info", message: "[cmd] Closing..." });
@@ -566,9 +563,6 @@ if (INITIAL_TASK && !CHAT_MODE) {
   const { resumed: cronResumed, interrupted: cronInterrupted } = manager.resumeStaleSessions();
   if (cronResumed.length > 0) {
     bus.emit({ type: "info", message: `[startup] Resumed ${cronResumed.length} session(s)` });
-    for (const s of cronResumed) {
-      attachAgentEvents(s.agent, s.sessionId);
-    }
   }
   if (cronInterrupted.length > 0) {
     bus.emit({ type: "info", message: `[startup] Could not resume ${cronInterrupted.length} session(s)` });
@@ -647,14 +641,21 @@ if (!CHAT_MODE && !CRON_ENABLED) {
   const rl = createInterface({ input: process.stdin, output: process.stdout });
   activeRL = rl;
 
+  // Moved to module scope for handleInput() reset access
+
   rl.on("SIGINT", () => {
-    if (chatLoop && chatLoop.getActiveCount() > 0) {
-      // Ctrl+C while sessions are running: cancel all
-      bus.emit({ type: "info", message: "\n[ctrl+c] Cancelling active sessions..." });
+    if (chatLoop && chatLoop.getActiveCount() > 0 && !cancelledOnce) {
+      // First Ctrl+C while sessions are running: cancel all
+      cancelledOnce = true;
+      bus.emit({ type: "info", message: "\n[ctrl+c] Cancelling active sessions... (press again to force quit)" });
       chatLoop.cancelAll();
+      // Also cancel any resumed sessions not tracked by chatLoop
+      for (const s of manager.status()) {
+        if (s.status === "running") manager.cancel(s.sessionId);
+      }
       emitPrompt();
     } else {
-      // Ctrl+C when idle: shutdown
+      // Second Ctrl+C or idle: shutdown
       gracefulShutdown();
     }
   });

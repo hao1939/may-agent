@@ -29,7 +29,8 @@
     "docker:logs": "docker compose -f docker/docker-compose.yml logs -f",
     "docker:console": "docker compose -f docker/docker-compose.yml run --rm -it --name may-console --service-ports console",
     "docker:reload": "docker exec may-agent /usr/local/bin/restart-may.sh",
-    "docker:reload:console": "docker exec may-console /usr/local/bin/restart-may.sh"
+    "docker:reload:console": "docker exec may-console /usr/local/bin/restart-may.sh",
+    "v2": "tsx scripts/v2.ts"
   },
   "dependencies": {
     "@mariozechner/pi-agent-core": "file:/home/hao/pi-mono/packages/agent",

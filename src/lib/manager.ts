@@ -619,8 +619,25 @@ export class SubagentManager {
     }
 
     // ── Determine archive status, archive, remove ──────────────────────
-    // The live session status never transitions to done/error — those are
-    // archive-only states. The session goes from running → archived+removed.
+    if (session.autoClose === "never" && !wasAborted) {
+      // Interface session (Chat) — stays alive in "idle" state
+      session.status = "idle";
+      session.turnCount = 0; 
+      
+      this.registry.updateSessionStatus(session.sessionId, "idle", session.error);
+      
+      // Remove [STARTED] sentinel (session is not running)
+      try {
+        const sentinelPath = join(sessionDir(this.registry.persistDir, session.sessionId), "[STARTED]");
+        if (existsSync(sentinelPath)) unlinkSync(sentinelPath);
+      } catch { /* best-effort */ }
+
+      // Do NOT remove from activeSessions
+      // Do NOT unsubscribe (we want to catch next turn's events)
+      return;
+    }
+
+    // Task sessions (or aborted interface sessions) → archive and remove
     const archiveStatus: "done" | "error" | "interrupted" = wasAborted ? "interrupted" : (session.error ? "error" : "done");
     session.archiveStatus = archiveStatus;
     this.registry.updateSessionStatus(session.sessionId, archiveStatus, session.error);
@@ -657,9 +674,6 @@ export class SubagentManager {
     }
   }
 
-  /** Start a new session for a registered agent. Returns sessionId. Non-blocking.
-   *  Task sessions archive on completion (autoClose: "immediate").
-   */
   run(name: string, task: string, opts?: RunOptions): string {
     const registered = this.agents.get(name);
     if (!registered) throw new Error(`Agent "${name}" not registered`);
@@ -904,7 +918,10 @@ export class SubagentManager {
         (b) => b.type === "toolCall",
       );
       if (toolCalls.length > 0) {
-        // Inject error tool results for each pending tool call
+        // Inject error tool results for each pending tool call.
+        // Use appendMessage (not followUp) so they appear in the message
+        // history immediately — followUp only queues for the *next* turn
+        // boundary and would be lost if the LLM call fails immediately.
         for (const tc of toolCalls) {
           const errorResult: AgentMessage = {
             role: "toolResult",
@@ -914,8 +931,11 @@ export class SubagentManager {
             isError: true,
             timestamp: Date.now(),
           } as AgentMessage;
-          agent.followUp(errorResult);
+          agent.appendMessage(errorResult);
         }
+        // After appending tool results, the last role is now "toolResult",
+        // so the resume path below will use agent.continue() correctly.
+        lastRole = "toolResult";
       } else if ((lastMsg as any).stopReason === "toolUse") {
         // Malformed response: stopReason says "toolUse" but no tool call content
         savedMessages.pop();
@@ -957,7 +977,7 @@ export class SubagentManager {
       source: "system",
     } as AgentMessage;
 
-    const startPromise = lastRole === "user"
+    const startPromise = (lastRole === "user" || lastRole === "toolResult")
       ? agent.continue()
       : agent.prompt(resumeMessage);
 
@@ -1226,6 +1246,59 @@ export class SubagentManager {
   /** Check if a session is currently active in-memory. */
   hasActiveSession(sessionId: string): boolean {
     return this.activeSessions.has(sessionId);
+  }
+
+  /**
+   * Send input to an IDLE session (interface/chat agent), or steer a RUNNING one.
+   *
+   * If the session is IDLE, this triggers a new turn with the provided text.
+   * If the session is RUNNING, this acts as a steer() (injects message).
+   *
+   * @param sessionId - The session ID.
+   * @param text - The user input text.
+   * @returns Promise that resolves when the *new* turn completes.
+   */
+  async input(sessionId: string, text: string): Promise<TaskResult> {
+    const session = this.activeSessions.get(sessionId);
+    if (!session) {
+      throw new Error(`Session "${sessionId}" not found (or not active)`);
+    }
+
+    // Case 1: Session is RUNNING — delegate to steer
+    if (session.status === "running") {
+      this.steer(sessionId, text, "user");
+      // Return a promise that resolves when the *current* session promise resolves.
+      // This is slightly weird semantics (input() on running session returns result of session),
+      // but consistent with blocking workflow.
+      return session.promise.then(() => this.buildResultFromSession(session));
+    }
+
+    // Case 2: Session is IDLE — wake it up
+    if (session.status === "idle") {
+      session.status = "running";
+      this.registry.updateSessionStatus(sessionId, "running");
+
+      // Write [STARTED] sentinel
+      try {
+        const sentinelPath = join(sessionDir(this.registry.persistDir, session.sessionId), "[STARTED]");
+        writeFileSync(sentinelPath, new Date().toISOString());
+      } catch { /* best-effort */ }
+
+      // Prompt the agent with new input
+      session.promise = session.agent.prompt(text)
+        .then(() => {
+          this.handleCompletion(session);
+        })
+        .catch((err) => {
+          session.error = err?.message ?? String(err);
+          this.handleCompletion(session);
+        });
+      
+      this.sessionResults.set(sessionId, session.promise.then(() => this.buildResultFromSession(session)));
+      return session.promise.then(() => this.buildResultFromSession(session));
+    }
+
+    throw new Error(`Session "${sessionId}" is in terminal state (${session.status}) — cannot accept input`);
   }
 
   /**
