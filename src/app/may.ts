@@ -10,7 +10,7 @@ import { attachSocketUI } from "./ui/socket.js";
 import { attachTelegramBot } from "./ui/telegram.js";
 import { loadAgents, reloadAgents, setAgentSessionId, getAgentSessionId, runAgentCleanup, getAgentCrons, loadAgentHandlers, type AgentLoaderOptions } from "./agent-loader.js";
 
-const PROJECT_ROOT = resolve(process.env.PROJECT_ROOT || dirname(fileURLToPath(import.meta.url)), process.env.PROJECT_ROOT ? "." : "..");
+const PROJECT_ROOT = resolve(process.env.PROJECT_ROOT || dirname(fileURLToPath(import.meta.url)), process.env.PROJECT_ROOT ? "." : "../..");
 const AGENTS_ROOT = resolve(process.env.AGENTS_ROOT || resolve(PROJECT_ROOT, "agents"));
 const PERSIST_DIR = resolve(process.env.STATE_DIR || resolve(PROJECT_ROOT, ".state"));
 
