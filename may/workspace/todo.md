@@ -2,20 +2,13 @@
 
 ## Active
 
-
 ## Backlog (approved designs, not yet started)
 
-- [ ] **Review [Cross-Agent Knowledge Schema]** — Tiered context (Hot/Warm/Cold). Doc: `agents/bob/workspace/knowledge-schema-design.md`.
-- [ ] **Review [Shared Agent Behavior Contract]** — Doc: `agents/bob/workspace/behavior-contract-design.md`.
-- [ ] **Review [Structured Failure Analysis]** — MAST failure codes. Doc: `agents/bob/workspace/failure-analysis-design.md`.
-- [ ] **Review [IPI Defense Patterns]** — Doc: `agents/bob/workspace/ipi-defense-design.md`.
-- [ ] **Review [User Input Archive Upgrade]** — Structured JSONL. Doc: `agents/bob/workspace/user-input-archive-review.md`.
 - [ ] **Cleanup stale principle references** — session-model-simplification.md cites wrong P-numbers. Low priority. See: `agents/bob/workspace/drift-detection-2026-03-09.md`.
 
 ## Ideas (need investigation)
 
 - [ ] **Auto-commit after QA approval** — Add commit step to `implement-and-review` workflow.
-- [ ] **Cross-Agent Knowledge Schema** — OC-style Hot/Warm/Cold tiered knowledge. Source: `/home/hao/openclaw-config/knowledge/SCHEMA.md`.
 - [ ] **SIGNALS.md pattern** — Lightweight cross-agent communication. Source: `/home/hao/openclaw-config/SIGNALS.md`.
 - [ ] **Weekly Briefs** — Bob produces periodic synthesis reports. Source: `/home/hao/openclaw-config/knowledge/weekly-briefs/2026-W10.md`.
 - [ ] **Issue Detection Pipeline** — JS port of OC's `detect.py`. Structured signal reports.
@@ -24,7 +17,9 @@
 
 <details>
 <summary>Completed items (click to expand)</summary>
+- [x] **🔴 BUG: Detached sessions crash on startup** — Added `buildProjectStructure` to `src/tools.ts`. Builds tree-like directory listing for agent system prompts. Fixed 2026-03-09.
 
+- [x] **Verify agents/shared/team.md accuracy** — Scout audited all 12 agents. 1 mismatch fixed (Scout model gemini-3-pro → opus). Report: agents/may/workspace/team-audit.md. Completed 2026-03-09.
 - [x] **Implement [Agent Evaluation Framework Upgrade]** — Already implemented. `agents/evaluator/knowledge/criteria.md` and `agents/evaluator/DOMAIN.md` both exist with role-specific criteria. Verified 2026-03-23.
 - [x] **Implement [Runtime Environment Standardization]** — Already implemented in `src/manager.ts` lines 318-354. Project root, container constraints, workspace paths all injected into system prompt. Verified 2026-03-23.
 - [x] **Review + Implement [Detached Sub-Agent Design]** — Phase 1 & 2 complete. `src/detached.ts`, `src/socket-client.ts` implemented. `mode` param wired in `manager.ts`. Run/cancel/steer all work for detached sessions. Verified 2026-03-23.
@@ -61,7 +56,13 @@
 - [x] Agent Architecture Alignment — configs standardized
 - [x] Human input collection (069ec3d)
 - [x] Score Distribution Analysis (2026-03-22)
-
+- [x] **Review [Cross-Agent Knowledge Schema]** — APPROVED Phase 1. Hot tier already implemented. Deferred Phase 2. Reviewed 2026-03-25.
+- [x] **Review [Shared Agent Behavior Contract]** — DEFERRED. Overlaps existing docs. Reviewed 2026-03-25.
+- [x] **Review [Structured Failure Analysis]** — CLOSED. Coach already handled. Reviewed 2026-03-25.
+- [x] **Review [IPI Defense Patterns]** — APPROVED Layer 2 (context framing). Reviewed 2026-03-25.
+- [x] **Review [User Input Archive Upgrade]** — APPROVED. Ready for implementation. Reviewed 2026-03-25.
+- [x] **Check optimizer todo completion** — Bob coaching corrections were the last blocking item. Created `agents/bob/knowledge/coaching.md` with 3 adversity-handling corrections (#1 file existence check, #2 post-sed verification, #3 diagnose before retry). Completed 2026-03-25.
+- [x] **Scout research: agent self-improvement loops** — Scout delivered 10 entries with URLs/dates/summaries covering DSPy, TextGrad, ADAS, EvoAgentX, AgentOptimizer, Promptbreeder, Voyager, LangSmith, EvoAgent, and a survey paper. Report: `agents/scout/workspace/self-improvement-loops-research.md`. Completed 2026-03-25.
 </details>
 
 ## Stale (closed without action)

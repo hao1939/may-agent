@@ -4,31 +4,32 @@ Concrete details about who's on the team, what they have, and how the runner wor
 
 ## Feature Team
 
-| Agent | Model | Tools | Notes |
-|-------|-------|-------|-------|
-| **Tech Lead** | opus | read, write, exec, workflow, subagents | The Builder. Shares Bob's vision, drives implementation. Leads coder+QA, applies philosophy in code. |
-| **May** | opus | read, write, exec, subagents, workflow, cron | Hao's Deputy. Orchestrates agents, tracks work end-to-end, maintains system. Delegates code changes to tech-lead/master. |
-| **Coder** | opus | read, write, exec | Full project access. Implements code changes. Does not commit — supervisor handles git add/commit after QA review. |
-| **QA** | gpt-5.2 | read, write, exec | Different model from coder for perspective diversity. Can fix issues directly. Uses PASS/FAIL/CONDITIONAL verdicts. |
-| **Master** | opus | claude-code, gemini-cli | Two dedicated CLI agent tools. No read, write, or exec — interacts with codebase exclusively through claude-code and gemini-cli. |
-| **Amy** | opus | read, write, exec | XHS content exploration and archival. |
-| **Amy-Kimi** | kimi | read, write, exec | Kimi-powered variant of Amy for Chinese content. |
-| **Scout** | gemini-3-pro | read, write, exec | The Scholar. Takes leads and goes deep — cross-referencing, archiving, building compounding knowledge. |
+| Agent | Role | Model | Tools | Notes |
+|-------|------|-------|-------|-------|
+| **Tech Lead** | Builder | opus | read, write, exec, workflow, subagents | The Builder. Shares Bob's vision, drives implementation. Leads coder+QA, applies philosophy in code. |
+| **May** | Supervisor | opus | read, write, exec, subagents, workflow, cron | Hao's Deputy. Orchestrates agents, tracks work end-to-end, maintains system. Delegates code changes to tech-lead/master. |
+| **Coder** | Builder | opus | read, write, exec | Full project access. Implements code changes. Does not commit — supervisor handles git add/commit after QA review. |
+| **QA** | Builder | gpt-5.2 | read, write, exec | Different model from coder for perspective diversity. Can fix issues directly. Uses PASS/FAIL/CONDITIONAL verdicts. |
+| **Master** | Builder | opus | claude-code, gemini-cli | Two dedicated CLI agent tools. No read, write, or exec — interacts with codebase exclusively through claude-code and gemini-cli. |
+| **Amy** | Researcher | opus | read, write, exec | XHS content exploration and archival. |
+| **Amy-Kimi** | Researcher | kimi | read, write, exec | Kimi-powered variant of Amy for Chinese content. |
+| **Scout** | Researcher | opus | read, write, exec | The Scholar. Takes leads and goes deep — cross-referencing, archiving, building compounding knowledge. |
 
 ## Meta Team
 
-| Agent | Model | Tools | Notes |
-|-------|-------|-------|-------|
-| **Evaluator** | gpt-5.2 | read, write, exec | Scores each agent in a task tree by responsibility. memoryLimit=5. |
-| **Optimizer** | opus | read, write, exec, subagents, workflow | Implements one fix per run. Can delegate to coder and QA. |
-| **Bob** | gemini-3-pro | read, write, exec, subagents | System architect. Holds the blueprint, designs agent cooperation and evolution, reviews designs, stewards philosophy.md, drives meta-loop. |
-| **Coach** | opus | read, write (workspace only), exec (read-only), subagents, workflow, validate-workflow, socket-watch | Trains agents through live exercises. Spawns coachee via subagents (detached), observes via socket, writes reports. |
+| Agent | Role | Model | Tools | Notes |
+|-------|------|-------|-------|-------|
+| **Evaluator** | Supervisor | gpt-5.2 | read, write, exec | Scores each agent in a task tree by responsibility. memoryLimit=5. |
+| **Optimizer** | Builder | opus | read, write, exec, subagents, workflow | Implements one fix per run. Can delegate to coder and QA. |
+| **Bob** | Philosopher | gemini-3-pro | read, write, exec, subagents | System architect. Holds the blueprint, designs agent cooperation and evolution, reviews designs, stewards philosophy.md, drives meta-loop. |
+| **Coach** | Philosopher | opus | read, write (workspace only), exec (read-only), subagents, workflow, validate-workflow, socket-watch | Trains agents through live exercises. Spawns coachee via subagents (detached), observes via socket, writes reports. |
 
 ## Model Assignment
 
-Three model families provide independent perspective. Opus for builders (May, Coder,
-Optimizer, Master, Coach). GPT-5.2 for reviewers (QA, Evaluator). Gemini 3 Pro for design
-philosophy (Bob) and research (Scout). All are proxy-aliased labels routed through a local proxy.
+Four model families provide independent perspective. Opus for builders and research
+(Tech Lead, May, Coder, Optimizer, Master, Coach, Amy, Scout). GPT-5.2 for reviewers
+(QA, Evaluator). Gemini 3 Pro for design philosophy (Bob). Kimi for Chinese-language
+research (Amy-Kimi). All are proxy-aliased labels routed through a local proxy.
 
 ## Runner
 

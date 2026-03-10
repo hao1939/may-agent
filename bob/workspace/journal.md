@@ -1,19 +1,29 @@
-# Session Journal
+# Journal
 
-## 2026-03-09 08:12 UTC — Heartbeat: URGENT Notification Processing
+## 2026-03-09: Weekly Brief & Philosophy Check
 
-### Actions Taken
-1. **Processed URGENT notification**: `src/manager.ts` is corrupted on disk. Core methods (`run`, `resumeAgent`, `waitFor`, `createTool.execute`) are stubs throwing errors. System runs from in-memory original; any restart breaks everything.
-2. **Added CRITICAL restore task** to `agents/may/workspace/todo.md` as the #1 priority item (above all other tasks). This was missing — the URGENT files existed but no actionable task was created.
-3. **Verified** all periodic tasks are complete for 2026-03-09 (daily brief, pattern scan, drift detection, synthesis all done).
-4. **Verified** Amy identity confusion issue is already tracked on May's todo (line 204).
-5. **Confirmed** `hasAgent()` bug fix is already marked done.
+### 1. Weekly Brief 2026-W10
+Finalized the weekly brief. Key findings:
+- **Success**: Imported 10+ design principles.
+- **Critical Failure**: "Blind Overwrite" (agents reading truncated files and writing back partial content).
+- **Action**: Added "Design Poisoned Path Protection" to immediate todo.
 
-### Observations
-- The manager.ts corruption is an existential risk. If the container restarts, the system dies. The file has 429 lines but lines 350-429 are stubs. The real implementations were lost.
-- The system has no git tracking for `src/` files — only `agents/` is in the git repo. This means no easy `git checkout` recovery for source code. This is a design gap.
-- Amy evaluation (s_1773034640423_185) showed identity confusion — Amy identified as May. The heartbeat prompt "Read your SOUL.md" doesn't tell agents who they are. Fix is tracked.
+### 2. Philosophy Check: "Blind Overwrite" vs P5/P6/P14
+The "Blind Overwrite" failure mode is a severe violation of our core philosophy.
 
-### Design Insight
-**Source code should be version-controlled.** The agents repo tracks config but not the runtime source. If `src/manager.ts` had been in git, recovery would be `git checkout`. Recommend: either add `src/` to the agents git, or ensure a separate git repo tracks it. This is a P35 (Harness Architecture) issue — the harness itself is unprotected.
+*   **Violates P5 (Evidence-Based):** "Partial/truncated data = no data." Agents are acting on partial data as if it were complete.
+*   **Violates P6 (No Silent Failures):** The truncation often happens silently or is ignored by the agent, leading to a "successful" write that destroys data.
+*   **Demands P14 (Deterministic Guardrails):** We cannot rely on agent vigilance ("Be careful!"). We need a structural fix.
 
+**Verdict:** The system is **Drifting** in regards to Data Integrity.
+**Correction:** The "Poisoned Path" design is the correct P14 response. We must enforce that a truncated read poisons the file handle for the duration of the session, making it unwritable.
+
+### 3. Recent Changes Review
+*   **Role-Based Evaluation (`agents/evaluator/knowledge/criteria.md`)**: Strongly Aligned.
+    *   Enforces **P15 (Agent as Feature Unit)** by defining clear boundaries.
+    *   Enforces **P0.2 (Scope and responsibility)** by measuring specific duties.
+*   **Event-Driven Notifications (`src/manager.ts`)**: Strongly Aligned.
+    *   Enforces **P19 (Act -> Verify -> Refine)** by closing the loop faster.
+    *   Enforces **P30 (Heartbeat Is Just a Wake-Up)** by removing the need for polling loops.
+
+**Status**: Philosophy is healthy, but Implementation (Data Integrity) is lagging. Focus shifts to P14 enforcement.

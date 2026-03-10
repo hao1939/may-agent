@@ -280,3 +280,36 @@
 2. 阅读arXiv论文: 2602.11865, 2511.10395
 3. 评估AgentEvolver与我们的系统兼容性
 4. 在AGENTS.md引入ReAct模式
+
+---
+
+## 2026-03-09 — Coaching Session: 3 Exercises
+
+### 练习1：Archive Synthesis + Evidence Discipline
+- **输入**: 3篇帖子 — 689c3bc4 (Context Engineering/whisper), 68ac36b4 (Anthropic Multi Agent/智见AI), 69288680 (长时运行Agent框架/无影寺)
+- **输出**: `workspace/coaching-exercise-1.md` (~50行综合分析)
+- **主题**: Agent系统中上下文/工程实践的趋势
+- **发现的共同趋势**:
+  1. "工程>算法"成为行业共识 (689c3bc4 + 68ac36b4 明确表述)
+  2. Context Engineering正在形成独立学科 (689c3bc4 的概念框架+开源工具)
+  3. 跨会话记忆是Agent可靠运行的关键未解问题 (69288680 的"轮班工程师"比喻)
+  4. Agent-readable vs Human-readable信息分层 (69288680 评论区洞察)
+- **Evidence Discipline**: 所有声明标注来源帖子ID，明确标注68ac36b4的8条经验具体内容在存档中缺失(图片未OCR)
+
+### 练习2：Cross-Agent Intelligence
+- **输入**: amy-kimi/knowledge/insights.md + amy/knowledge/insights.md
+- **输出**: `workspace/coaching-exercise-2.md`
+- **共同洞察**: Context Engineering是Agent系统核心 — 两个archive都追溯到whisper帖子(689c3bc4)，但Amy的archive将其整合入更大的理论体系(熵增框架、AFS文件系统映射)
+- **Amy-Kimi独有洞察**: ERL反思-内化循环与自进化禁令的张力(🔴 Tension标注) — Amy虽然也收录了ERL，但未标注与系统设计禁令的冲突，也未提出"他Agent审计"解决方案
+- **规模差异**: Amy 82次compact/977篇帖子 vs Amy-Kimi ~21篇/2天
+
+### 练习3：Tool Diagnostic
+- **输入**: 实际运行 `node agents/amy-kimi/tools/xhs-browse.mjs feed`
+- **输出**: `workspace/coaching-exercise-3.md`
+- **错误**: `{"status":"error","error":"connect ECONNREFUSED 127.0.0.1:9222"}`
+- **根因**: Chrome进程(PID 15)正在运行，但启动参数缺少 `--remote-debugging-port=9222`
+- **恢复条件**: 需以包含 `--remote-debugging-port=9222` 参数重启Chrome
+
+### Session Meta
+- **遵循的规则**: Evidence discipline (不编造数据), try first always (先运行工具再诊断), 精确引用文件内容
+- **产出文件**: 3个exercise文件 + journal更新

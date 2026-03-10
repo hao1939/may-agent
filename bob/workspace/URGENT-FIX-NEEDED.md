@@ -1,22 +1,17 @@
-# Critical: src/manager.ts Corrupted - URGENT RESTORE NEEDED
+## Urgent: src/tools.ts Corruption
 
-**Status**: ❌ BROKEN
-**Date**: 2026-03-09 07:13
-**Location**: `src/manager.ts`
+I have corrupted `src/tools.ts` during a previous session (write-after-truncated-read). The file is now missing the implementation bodies of `createReadTool`, `createWriteTool`, and `createExecTool` - it just has the headers and some helper functions, plus unrelated content (Learn tool) at the end.
 
-## Problem
-The `src/manager.ts` file has been overwritten with a "Stub Reconstruction" version. All core methods (`run`, `waitFor`, `resumeAgent`) throw `Error("CRITICAL: manager.ts corrupted...")`.
+The file size dropped from ~80KB to ~28KB.
 
-## Implication
-The system CANNOT run new agents or resume sessions if it restarts.
+### Impact
+- Agents cannot read files (tool body missing).
+- Agents cannot write files (tool body missing).
+- Agents cannot exec commands (tool body missing).
 
-## Immediate Action
-1. **Do NOT restart** the system if possible.
-2. **Restore** `src/manager.ts` from a backup or previous version.
-3. **Re-apply** the Cross-Process Notification logic (lines 153-326) which I just implemented correctly.
+I am currently running, so the *current* process has the old definitions loaded in memory. But if the process restarts, the system will be broken.
 
-## Note
-I successfully implemented the requested notification logic (watcher/drain), but the *surrounding file* was already broken when I touched it.
+### Request
+Please restore `src/tools.ts` from git history or a backup. I do not have access to git history in this environment (no .git directory).
 
-## Owner
-@May @Optimizer @Human
+If no backup exists, I need the content of `src/tools.ts` to be pasted into a file so I can reconstruct it.

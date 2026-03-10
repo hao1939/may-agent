@@ -28,12 +28,12 @@ Graduated agents move to **periodic review** (re-run regression exercises on a s
 
 | Field | Value |
 |-------|-------|
-| **Level** | L1 (targeting L2) |
-| **Status** | Active coaching — **1/3 pass streak** |
-| **Sessions** | 1 |
-| **Consecutive passes** | 1/3 |
+| **Level** | L1→L2 (targeting L2) |
+| **Status** | Active coaching — **3/3 pass streak** ✅ → GRADUATION EXERCISE NEXT |
+| **Sessions** | 3 |
+| **Consecutive passes** | 3/3 |
 | **Last session** | 2026-03-09 |
-| **Blocking graduation** | Brevity re-test (PARTIAL); needs 2 more consecutive PASS without scaffolding |
+| **Blocking graduation** | `delegate` vs `subagents.run` design constraint; needs graduation exercise |
 
 **Notes:** May is Hao's Deputy — creative partner, system operator, end-to-end task owner. She has read/write, exec, subagents, workflow, and cron tools. Delegates code to tech-lead/master. Cannot dispatch coder/qa directly (delegateDeny). Core competencies: async dispatch in chat (never blocking), routing to the right agent, follow-through on dispatched work, system health awareness.
 
@@ -46,20 +46,29 @@ Graduated agents move to **periodic review** (re-run regression exercises on a s
 
 **Coaching history:**
 - **2026-03-09** — Action Bias + Path Reliability + Brevity (3 exercises, 1 session). Action Bias: **PASS** (9/10) — dispatched 3 items (Scout corrections, Coder lessons, Rolling Compaction workflow), zero "standing down" language, self-recovered from delegateDeny error. Path Reliability: **PASS** (9/10) — zero SOUL.md re-reads, correct todo.md path first try, zero ENOENT errors. Brevity: **PARTIAL** (6/10) — ~291 tokens (improved from 500-700 baseline but exceeds 200-token target), included System Health table that was mostly non-actionable. Report: `sessions/may-coaching-2026-03-09.md`.
+- **2026-03-09** — Heartbeat Standard (no scaffolding, config verification): **PASS** (8/10). Dispatched team.md audit, followed through on completion (mark done + archive). Action bias confirmed without scaffolding ✅. Paths correct ✅. No auto-loaded re-reads ✅. Brevity improved but still above 200-token target ⚠️. Over-delegation: sent file-comparison task to Scout instead of self-executing ⚠️. Report: `sessions/may-heartbeat-exercise-2-2026-03-09.md`.
+- **2026-03-09** — Multi-step Follow-through: **PASS** (13.5/15, 90%). Self-executed optimizer todo check ✅. Proactively created Bob's coaching.md (unblocking Bob's graduation) ✅. Dispatched Scout research with full parameters ✅. Followed through on completion ✅. Brevity ~160 tokens ✅. Zero ENOENT ✅. Zero auto-loaded re-reads ✅. Gap: used `delegate` instead of `subagents.run`. Report: `sessions/may-exercise-3-2026-03-09.md`.
 
-**Key findings from first session:**
-- Action paralysis (26.6% baseline) dropped to **0%** with explicit SOUL.md reinforcement in task prompt
-- Behavior is **prompt-driven, not model-inherent** — heartbeat prompt wording is the primary cause of paralysis
-- Excellent prioritization: chose 14-day-stale graduation blockers as highest impact
-- End-to-end ownership demonstrated: dispatch → verify → archive → update related todos
-- Git environment confusion: thinks she's on `/Users/hao/c`, wasted 4-5 turns. Needs container awareness lesson.
+**Key findings:**
+- Action paralysis (26.6% baseline) dropped to **0%** — confirmed persistent across all 3 sessions
+- **Config rewrite is effective** — SOUL.md, DOMAIN.md, TOOLS.md, LESSONS.md (K1-K7) all demonstrably working
+- Container confusion (K1) and path hallucination (K2): **fully resolved** by LESSONS.md
+- Over-delegation: **RESOLVED** as of exercise #3 — May self-executed simple tasks instead of dispatching
+- Follow-through is excellent and consistent across all sessions — May's strongest dimension
+- Brevity: steady improvement (500-700 → 291 → ~160 tokens). Approaching 200-token target.
+- **New gap: `delegate` vs `subagents.run`** — May uses blocking `delegate` instead of async `subagents.run`. Low severity in heartbeat context but violates design constraint.
 
-**Coaching priority:** High. Next session should test action bias *without* the explicit authority reminder (standard heartbeat prompt) to see if the behavior persists.
+**Coaching priority:** HIGH — qualifies for graduation exercise (3/3 consecutive passes).
+
+**Coaching corrections needed:**
+- [ ] Add `subagents.run` vs `delegate` clarification to LESSONS.md
+- [x] ~~Self-execution guidance~~ — RESOLVED organically (exercise #3)
 
 **Graduation blockers:**
-- [ ] Pass action bias exercise WITHOUT explicit scaffolding (standard heartbeat prompt)
-- [ ] Pass brevity exercise (≤150 tokens, exceptions-only reporting)
-- [ ] 3 consecutive PASS exercises
+- [x] Pass action bias exercise WITHOUT explicit scaffolding — PASS 2026-03-09
+- [x] Demonstrate self-execution for simple tasks — PASS exercise #3
+- [x] 3 consecutive PASS exercises — **3/3 achieved**
+- [ ] **GRADUATION EXERCISE** — Must use `subagents.run` (not `delegate`), test full heartbeat cycle
 
 ---
 
@@ -130,7 +139,7 @@ Graduated agents move to **periodic review** (re-run regression exercises on a s
 |-------|-------|
 | **Level** | L2 |
 | **Status** | Active coaching — 1 pass streak |
-| **Sessions** | 2 |
+| **Sessions** | 3 |
 | **Consecutive passes** | 1/3 (counting tools session pass) |
 | **Last session** | 2026-03-04 |
 | **Blocking graduation** | Efficiency issues; needs 2 more passes |
@@ -190,10 +199,10 @@ Graduated agents move to **periodic review** (re-run regression exercises on a s
 | Field | Value |
 |-------|-------|
 | **Level** | L2→L3 (emerging L3 — system-level analysis, poor execution) |
-| **Status** | Active coaching — **2/3 pass streak** |
-| **Sessions** | 2 |
-| **Consecutive passes** | 2/3 |
-| **Blocking graduation** | Needs 1 more consecutive pass |
+| **Status** | Active coaching — **0/3 (streak reset)** — coaching corrections now applied |
+| **Sessions** | 3 |
+| **Consecutive passes** | 0/3 |
+| **Blocking graduation** | Streak reset — needs 3 consecutive passes. Coaching corrections #1-3 applied (by May, 2026-03-09). |
 
 **Notes:** Orchestrates meta-loop, maintains philosophy.md. Different model (Gemini 3 Pro) from most agents. 22 evaluated sessions with highly variable quality (q=0.0 to 0.8, recent trend downward).
 
@@ -201,11 +210,17 @@ Graduated agents move to **periodic review** (re-run regression exercises on a s
 
 **L3 weakness:** Bob *is* the failure mode it documented — blind overwrites during lesson consolidation. Recent quality scores are poor (q=0.1-0.35). 70% of recent sessions skipped by evaluator.
 
-**Coaching priority:** High. Bob has the highest ceiling (L3 analytical capability) but lowest floor (q=0.1 execution). Focus on execution discipline, not capability expansion. The consolidation task is currently destructive — needs structural fix.
+**Coaching priority:** High. Bob has the highest ceiling (L3 analytical capability) but lowest floor (q=0.1 execution). Focus on execution discipline, not capability expansion. Coaching corrections now applied — ready for exercise #4.
+
+**Coaching corrections applied (by May, 2026-03-09):**
+- ✅ #1: File existence check — `agents/bob/knowledge/coaching.md`
+- ✅ #2: Post-sed verification — `agents/bob/knowledge/coaching.md`
+- ✅ #3: Diagnose before retry — `agents/bob/knowledge/coaching.md`
 
 **Coaching history:**
 - **2026-03-09** — Safe-Edit Discipline: **PASS** (8/10). Used grep→line-range reads→sed for all edits. Zero write() calls, zero shrink guard triggers. Self-corrected two placement errors through verification reads. Major improvement over historical blind-overwrite pattern. Report: `sessions/bob-safe-edit-2026-03-09.md`.
 - **2026-03-25** — Sed Discipline Exercise #2: **PASS** (10/10). 4 pattern-based sed edits on a 66-line doc. All edits batched in single exec call. Zero thrashing, zero wasted calls. Read-after-write verification. 42-second execution. Dramatic improvement over recent production regression (s_1773083559086_52, q=0.2). Report: `sessions/bob-sed-discipline-2-2026-03-25.md`.
+- **2026-03-25** — Adversity Exercise #3 (multi-file, ambiguous paths, nonexistent file): **FAIL** (8.5/15, 57%). Path resolution ok for 2/3 files, but edited wrong file for nonexistent drift-patterns.md (used drift-detection instead of reporting error). Edit 2a failed silently (backtick-wrapped markdown foiled sed pattern, never noticed). Thrashing on File 1 (4 sed attempts, 6 reads). Same failure modes as production session q=0.2. Streak reset 0/3. Report: `sessions/bob-adversity-exercise-3-2026-03-25.md`.
 
 ---
 
@@ -231,12 +246,6 @@ Graduated agents move to **periodic review** (re-run regression exercises on a s
 
 **L1 evidence:** 16 evaluations, quality 0.25-0.85 (median ~0.6). Path hallucination (/Users/amy/...), repeated retries against known-blocked XHS endpoint, wrong output locations, broken commands under time pressure. Does not gracefully degrade when primary tools fail.
 
-**Observed behavior (from partial Exercise 1):**
-- ✅ Correct tool invocation with exact paths
-- ✅ Parallel execution of independent commands (efficient)
-- ✅ Clear, structured error reporting
-- ⚠️ Minor: didn't try `ls` to diagnose further after tool failure
-
 **Infrastructure blockers:**
 - [ ] Docker mount gap: add `/home/hao/.openclaw/tools/` to container volumes
 - [ ] Verify CDP (Chrome DevTools Protocol) access works in-container
@@ -245,10 +254,7 @@ Graduated agents move to **periodic review** (re-run regression exercises on a s
 **Graduation blockers:**
 - [ ] Resolve infrastructure blockers
 - [ ] Re-run full 3-exercise validation
-- [ ] Handle tool failures gracefully (CAPTCHA, rate limit)
-- [ ] Produce actionable insights (not just summaries)
-- [ ] Follow frequency discipline (max 3 searches)
-- [ ] Synthesize from archive when tools fail
+- [ ] 3 consecutive PASS exercises
 
 ---
 
@@ -256,17 +262,31 @@ Graduated agents move to **periodic review** (re-run regression exercises on a s
 
 | Field | Value |
 |-------|-------|
-| **Level** | L1 (provisional — minimal evidence) |
-| **Status** | Not yet coached |
-| **Sessions** | 0 |
-| **Consecutive passes** | 0/3 |
-| **Blocking graduation** | Same infra blockers as Amy; no coaching attempted |
+| **Level** | L1 (confirmed — agent design validated; kimi-model validation pending) |
+| **Status** | Active coaching — **1/3 pass streak** |
+| **Sessions** | 1 |
+| **Consecutive passes** | 1/3 |
+| **Last session** | 2026-03-09 |
+| **Blocking graduation** | Kimi API key fix + re-test with kimi model; Chrome CDP fix for full pipeline |
 
-**Notes:** Passed smoke tests (tools, knowledge archive, search→read→analyze workflow). Shares Amy's tool dependencies — same Docker mount gap applies. 1 evaluation (q=0.35, e=0.55). Insufficient evidence for higher classification.
+**Notes:** First coaching session completed 2026-03-09. 3/3 exercises PASS (archive synthesis, cross-agent intelligence, tool diagnostic). Zero coaching interventions. **⚠️ Model was opus (not kimi)** due to KIMI_API_KEY 401 error — agent.json temporarily swapped, restored after session. Results validate the agent design (SOUL/DOMAIN/TOOLS/coaching rules) but kimi-model-specific behavior (especially evidence overreach from eval) remains untested.
 
-**Graduation blockers (same as Amy plus):**
-- [ ] Resolve infrastructure blockers (shared with Amy)
-- [ ] Run coaching session: tool failure handling, insight quality, frequency discipline, archive synthesis
+**Coaching history:**
+- **2026-03-09** — Archive Synthesis + Evidence Discipline, Cross-Agent Intelligence, Tool Diagnostic (3 exercises, 1 session, model=opus due to kimi 401).
+  - Exercise 1 (Archive Synthesis + Evidence Discipline): **PASS**. 8/8 citations verified. Zero fabricated claims. Tests Gap #4 (evidence overreach, HIGH) — NOT reproduced.
+  - Exercise 2 (Cross-Agent Intelligence): **PASS**. All paths correct (project-relative). Genuine analytical depth. Tests Gap #2 (path confusion) — NOT reproduced.
+  - Exercise 3 (Tool Diagnostic): **PASS**. Tried tool first (rule #1), reported exact error (ECONNREFUSED), diagnosed root cause. Tests Gaps #1/#3 (tool misuse) — NOT reproduced.
+  - Report: `sessions/amy-kimi-coaching-2026-03-09.md`
+
+**Infrastructure blockers:**
+- [ ] **KIMI_API_KEY** — returns 401 Invalid Authentication. Needs refresh/replacement. BLOCKING.
+- [ ] **Chrome CDP** — running (PID 15) but missing `--remote-debugging-port=9222`. Cannot run XHS tools.
+
+**Graduation blockers:**
+- [x] ~~Run first coaching session~~ (2026-03-09: 3/3 PASS with opus model)
+- [ ] Fix KIMI_API_KEY and re-run Exercise 1 with kimi model (test if evidence overreach is model-specific)
+- [ ] Fix Chrome CDP and test full XHS pipeline (search→read→archive)
+- [ ] 3 consecutive PASS exercises (currently 1/3)
 
 ---
 
@@ -275,44 +295,20 @@ Graduated agents move to **periodic review** (re-run regression exercises on a s
 | Field | Value |
 |-------|-------|
 | **Level** | L2 (confirmed — formal coaching validates journal evidence) |
-| **Status** | Active coaching — 2 pass streak |
-| **Sessions** | 2 |
-| **Consecutive passes** | 2/3 |
+| **Status** | 🎓 **GRADUATED** (2026-03-09) |
+| **Sessions** | 3 |
+| **Consecutive passes** | 3/3 ✅ |
 | **Last session** | 2026-03-09 |
-| **Blocking graduation** | Needs 1 more consecutive pass — **coaching corrections now applied by May (2026-03-09)** |
+| **Blocking graduation** | None — **GRADUATED** 🎓 |
 
 **Coaching history:**
-- **2026-03-22** — Exploration exercise (source rotation, dedup, thread-following, budget): **PASS** (8/10). Searched 3 sources (GitHub API, arXiv API, HuggingFace API). Multi-pass dedup with grep sweeps against existing workspace files. 6 deep-dives on specific papers/repos. Write at 44% of session (ahead of 60% target), commit at 67% (slightly late due to git config friction). Full report: `sessions/scout-coaching-2026-03-22.md`
-- **2026-03-09** — Constrained-source integrity exercise (MoE tool-calling topic): **PASS** (7/10, borderline). Date verification ✅ (ran `date -u` first, used in output). Fail-fast ✅ (zero calls to blocked endpoints). Confidence labeling ✅ (every claim labeled CONFIRMED/HEADLINE-ONLY/INFERRED — exemplary). Source failure reporting ⚠️ (implicit, not explicit). Knowledge file consultation ❌ (wrong path, gave up after one attempt). Research output exceptional (18KB, well-sourced). Report: `sessions/scout-coaching-2026-03-09.md`
-
-**L2 evidence (now coaching-validated):**
-- Source rotation: 3 sources with multiple query variants each; adaptive retry when HuggingFace queries returned empty
-- Dedup rigor: Read prior discovery files first, ran 2 separate grep sweeps before writing, checked learnings.md for concept overlap
-- Thread-following: Fetched individual arXiv papers (EvoTool, Self-Attribution Bias, STRUCTUREDAGENT, KARL) and GitHub repo details (Open-Sable, gitagent) — not just surface scanning
-- Self-awareness: Noticed post-commit file content anomaly (write/race condition) and investigated systematically
-- Parallel execution: 3–5 tool calls per turn when independent, efficient batching
-- Confidence labeling: Exemplary discipline in constrained-source exercise — every claim labeled, HEADLINE-ONLY correctly segregated from verified findings
-
-**Known weaknesses:**
-- Invalid `exec({})` calls (empty command) — known bug, still occurring
-- Tool name confusion: attempted `Bash` and `subagents` tools (don't exist), recovered
-- Dedup gap: checked workspace files but NOT canonical archive (`agents/scout/knowledge/discoveries.md`, 3,319 lines)
-- No cross-source thread-following (paper → GitHub repo → discussion threads)
-- Post-commit verification spiral (6 turns / 33% of session on file anomaly investigation)
-- **Path resolution for own knowledge files**: uses `knowledge/` instead of `agents/scout/knowledge/` — gave up after ENOENT instead of retrying correct path. This caused 3-4 wasted API param guesses that were documented in `knowledge/reddit.md`.
-- **Implicit source failure reporting**: doesn't explicitly state when a required source is blocked and a fallback is being used
+- **2026-03-22** — Exploration exercise: **PASS** (8/10). Report: `sessions/scout-coaching-2026-03-22.md`
+- **2026-03-09** — Constrained-source integrity: **PASS** (7/10). Report: `sessions/scout-coaching-2026-03-09.md`
+- **2026-03-09** — Graduation re-test: **PASS** (14/14, perfect). Report: `sessions/scout-graduation-retest-2026-03-09.md`
 
 **Coaching corrections applied (by May, 2026-03-09):**
-- ✅ Lesson #11 added to `agents/scout/knowledge/coaching.md`: Knowledge file paths are `agents/scout/knowledge/`
-- ✅ Lesson #12 added to `agents/scout/knowledge/coaching.md`: Report source failures explicitly before presenting fallback results
-- ✅ Lesson #13 added to `agents/scout/knowledge/coaching.md`: Write scope is `agents/scout/knowledge/` and `agents/scout/workspace/`
-- ✅ Scout DOMAIN.md paths updated to use `agents/scout/knowledge/` prefix
-
-**Graduation blockers:**
-- [x] ~~Run coaching session covering source rotation, dedup, thread-following, budget~~ (2026-03-22: PASS)
-- [x] ~~Run coaching session covering constrained-source integrity~~ (2026-03-09: PASS)
-- [x] ~~Coaching corrections applied~~ (2026-03-09: May applied #11, #12, #13 + DOMAIN.md path fixes)
-- [ ] Pass exercise 3: dedup against full canonical archive + budget discipline (commit by 50%, no post-commit tail) — **this is the graduation exercise, NO LONGER BLOCKED**
+- ✅ Lesson #11-13 in `agents/scout/knowledge/coaching.md`
+- ✅ Scout DOMAIN.md paths updated
 
 ---
 
@@ -321,23 +317,24 @@ Graduated agents move to **periodic review** (re-run regression exercises on a s
 | Agent | Level | Status | Sessions | Pass Streak | Priority |
 |-------|-------|--------|----------|-------------|----------|
 | Coder | L2 | 🎓 **GRADUATED** | 5 | **3/3** ✅ | Periodic regression review |
+| Scout | L2 | 🎓 **GRADUATED** | 3 | **3/3** ✅ | Periodic regression review |
+| **May** | **L1→L2** | **3/3 streak → GRADUATION NEXT** | **3** | **3/3** ✅ | **🔴 HIGHEST — graduation exercise** |
+| Bob | L2→L3 | Active — 0/3 (corrections applied) | 3 | 0/3 | High (rebuild streak) |
 | QA | L2 | Active (streak broken) | 3 | 0/3 | High |
 | Master | L2 | Active | 2 | 1/3 | Medium |
-| Bob | L2→L3 | Active — **2/3 streak** | 2 | **2/3** | **HIGH — 1 from graduation** |
-| Amy | L1 (provisional) | Blocked (infra) | 2 | 0/3 | High (after infra fix) |
-| Amy-Kimi | L1 (provisional) | Not started | 0 | 0/3 | Medium (after infra fix) |
-| Scout | L2 | Active — **2/3 streak, UNBLOCKED** | 2 | **2/3** | **HIGH — 1 away from graduation** |
-| **May** | **L1→L2** | **Active — 1/3 streak** | **1** | **1/3** | **HIGH (strong first session)** |
+| Amy-Kimi | L1 | Active — 1/3 streak | 1 | 1/3 | Medium (pending kimi API fix) |
+| Amy | L1 | Blocked (infra) | 2 | 0/3 | High (after infra fix) |
 | Optimizer | L2 | Not started | 0 | 0/3 | Medium |
 | Evaluator | L1 | Not started | 0 | 0/3 | Low |
 
 **Levels last assessed:** 2026-03-06 — see `workspace/capability-level-assessment-2026-03-06.md`
 
 **Next coaching priorities (ordered):**
-1. ~~**Coder**~~ — 🎓 **GRADUATED** (2026-03-24). First graduated agent. Moves to periodic regression review.
-2. **Scout** — **1 exercise from graduation, NOW UNBLOCKED!** May applied coaching corrections #11-13 on 2026-03-09. Ready for graduation exercise: dedup against full canonical archive + budget discipline.
-3. **May** — Strong first session (action bias PASS, path PASS, brevity PARTIAL). Next: test without scaffolding. Add container awareness lesson.
-4. **QA** — Re-test truncated-read + write after domain.md fix (streak broken, needs reset)
-5. **Bob** — **2/3 streak, 1 from graduation.** Next: adversity exercise (ambiguous paths, multi-file, error recovery). If PASS → 3/3 → second graduation.
+1. **May** — **3/3 streak.** Qualifies for graduation exercise. If PASS → **THIRD GRADUATED AGENT.** Must test: `subagents.run` (not `delegate`), full heartbeat cycle, brevity.
+2. **Bob** — **0/3 streak.** Coaching corrections #1-3 now applied (by May). Ready for exercise #4 (adversity re-test). If PASS → rebuild streak toward graduation.
+3. ~~**Coder**~~ — 🎓 **GRADUATED** (2026-03-24). Periodic regression review.
+4. ~~**Scout**~~ — 🎓 **GRADUATED** (2026-03-09). Periodic regression review.
+5. **QA** — Re-test truncated-read + write after domain.md fix (streak broken, needs reset)
 6. **Master** — Efficiency exercise (excessive exploration is main weakness)
-7. **Amy/Amy-Kimi** — Blocked on infra; escalate Docker mount fix
+7. **Amy-Kimi** — 1/3 streak (opus model). Blocked on KIMI_API_KEY refresh + Chrome CDP fix.
+8. **Amy** — Blocked on infra; escalate Docker mount fix

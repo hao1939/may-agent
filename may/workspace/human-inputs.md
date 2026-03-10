@@ -2381,3 +2381,5 @@ The fix has already been app
 - [2026-03-09T20:24:57.139Z] how's amy-kimi doing?
 - [2026-03-09T20:25:02.580Z] let's make she working
 - [2026-03-09T20:25:50.750Z] seems she never working? we may need to ask coach to coach her?
+- [2026-03-09T20:28:01.230Z] Hi may, you need to watch everyone working and try to help them moving on.
+- [2026-03-09T20:46:49.995Z] amy-Kimi directly connected to kimi no need litellm

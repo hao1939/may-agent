@@ -219,7 +219,7 @@
     "name": "heartbeat-amy-kimi",
     "intervalMs": 3600000,
     "message": "[heartbeat] Read agents/amy-kimi/heartbeat.md and work through each section top to bottom.",
-    "enabled": true,
+    "enabled": false,
     "description": "Amy-Kimi's heartbeat — XHS exploration with Kimi model (1h)"
   }
 ]
