@@ -589,6 +589,19 @@ export class SubagentManager {
     // Guard: if close() already archived this session, skip.
     if (session.closed) return;
 
+    // ── Detect silent stream errors ────────────────────────────────────
+    // When the LLM stream function throws before yielding any events
+    // (e.g., missing API key, connection refused), the agent-core error
+    // path (terminateStreamOnError) emits agent_end but NOT turn_end,
+    // so agent.state.error is never set. Detect this by checking if
+    // the last message is still a user message (no assistant reply).
+    const messages = session.agent.state.messages;
+    const lastMsg = messages.length > 0 ? messages[messages.length - 1] : null;
+    if (!session.agent.state.error && !session.error && lastMsg?.role === "user") {
+      session.error = "Agent completed without producing a response (possible stream/API error)";
+      session.agent.state.error = session.error;
+    }
+
     // ── Determine outcome from agent state ─────────────────────────────
     const agentError = session.agent.state.error ?? session.error;
     const wasAborted = agentError?.includes("aborted") ?? false;

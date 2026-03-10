@@ -421,6 +421,7 @@ export function loadAgents(opts: AgentLoaderOptions): LoadResult {
       workspace: existsSync(workspace) ? workspace : undefined,
       skillsDirs: existsSync(sharedSkillsDir) ? [sharedSkillsDir] : undefined,
       projectRoot,
+      apiKey: (model as any).apiKey,
       memoryLimit: config.memoryLimit,
     });
 
