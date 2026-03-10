@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { isOverflowError, extractProgress, writeProgressFile } from "../src/overflow.js";
+import { isOverflowError, extractProgress, writeProgressFile } from "../src/lib/overflow.js";
 import { mkdtempSync, readFileSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";

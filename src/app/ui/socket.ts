@@ -17,7 +17,7 @@
 import { createServer, connect, type Server, type Socket } from "node:net";
 import { existsSync, unlinkSync } from "node:fs";
 import type { EventBus, RunnerEvent } from "../event-bus.js";
-import type { SubagentManager } from "../../src/index.js";
+import type { SubagentManager } from "../../lib/index.js";
 
 // ── Valid command types (for validation) ────────────────────────────────
 

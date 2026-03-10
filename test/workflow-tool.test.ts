@@ -2,10 +2,10 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdirSync, writeFileSync, rmSync, existsSync, mkdtempSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { createWorkflowTool } from "../src/workflow-tool.js";
-import { SubagentManager } from "../src/manager.js";
-import type { WorkflowEvent, WorkflowToolResult } from "../src/workflow.js";
-import type { WorkflowTool } from "../src/workflow-tool.js";
+import { createWorkflowTool } from "../src/lib/workflow-tool.js";
+import { SubagentManager } from "../src/lib/manager.js";
+import type { WorkflowEvent, WorkflowToolResult } from "../src/lib/workflow.js";
+import type { WorkflowTool } from "../src/lib/workflow-tool.js";
 
 // ── Test fixtures ──────────────────────────────────────────────────────
 

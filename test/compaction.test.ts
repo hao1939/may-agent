@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
-import { createCompactionTransform, trimAccumulatedSummary, extractKeyFacts, mergeKeyFacts, formatKeyFacts, extractOriginalTask } from "../src/compaction.js";
-import type { CompactionInfo, KeyFacts } from "../src/compaction.js";
+import { createCompactionTransform, trimAccumulatedSummary, extractKeyFacts, mergeKeyFacts, formatKeyFacts, extractOriginalTask } from "../src/lib/compaction.js";
+import type { CompactionInfo, KeyFacts } from "../src/lib/compaction.js";
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { Model } from "@mariozechner/pi-ai";
 

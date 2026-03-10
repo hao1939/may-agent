@@ -65,7 +65,7 @@ cmd_run() {
   # --cron enables cron jobs; only the main instance should have this
   local instance="${1:-}"
   export INSTANCE="$instance"
-  npx tsx run/launcher.ts --chat --cron --telegram --console --socket
+  npx tsx src/app/launcher.ts --chat --cron --telegram --console --socket
 }
 
 cmd_start() {
@@ -98,7 +98,7 @@ cmd_start() {
     done < .env
   fi
   [ -n "$STATE_DIR" ] && [ "$STATE_DIR" != ".state" ] && cmd="$cmd STATE_DIR=$STATE_DIR"
-  cmd="$cmd npx tsx run/launcher.ts --chat --cron --telegram --console --socket"
+  cmd="$cmd npx tsx src/app/launcher.ts --chat --cron --telegram --console --socket"
 
   # Start in tmux
   if tmux has-session -t "$tmux_session" 2>/dev/null; then
@@ -256,10 +256,10 @@ cmd_task() {
   # --socket enables steer/cancel via `may.sh send <name>` and `may.sh restart <name>`
   if [ -n "$task_file" ]; then
     AGENT="$agent" INSTANCE="$instance_name" STATE_DIR="$STATE_DIR" \
-      nohup npx tsx run/may.ts --task-file "$task_file" --socket > "${STATE_DIR}/${instance_name}.log" 2>&1 &
+      nohup npx tsx src/app/may.ts --task-file "$task_file" --socket > "${STATE_DIR}/${instance_name}.log" 2>&1 &
   else
     AGENT="$agent" INSTANCE="$instance_name" STATE_DIR="$STATE_DIR" \
-      nohup npx tsx run/may.ts --task "$task_msg" --socket > "${STATE_DIR}/${instance_name}.log" 2>&1 &
+      nohup npx tsx src/app/may.ts --task "$task_msg" --socket > "${STATE_DIR}/${instance_name}.log" 2>&1 &
   fi
 
   local pid=$!

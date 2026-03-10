@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { ensureSessionDir, sessionExists } from "../src/persistence.js";
+import { ensureSessionDir, sessionExists } from "../src/lib/persistence.js";
 
 describe("sessionExists", () => {
   let persistDir: string;

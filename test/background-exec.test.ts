@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from "vitest";
-import { createBackgroundExecTool } from "../src/background-exec.js";
+import { createBackgroundExecTool } from "../src/lib/background-exec.js";
 
 describe("background_exec tool", () => {
   const cleanups: Array<() => void> = [];

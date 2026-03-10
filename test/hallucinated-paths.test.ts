@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { resolveHallucinatedPath, extractHallucinatedRelPath, createReadTool } from "../src/tools.js";
+import { resolveHallucinatedPath, extractHallucinatedRelPath, createReadTool } from "../src/lib/tools.js";
 import { mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";

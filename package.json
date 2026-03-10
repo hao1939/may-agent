@@ -3,12 +3,18 @@
   "version": "0.1.0",
   "description": "Persistent feature-unit sub-agent system built on pi-agent-core",
   "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/lib/index.js",
+  "types": "./dist/lib/index.d.ts",
   "files": [
     "dist",
     "README.md"
   ],
+  "bin": {
+    "may-agent": "./dist/app/may.js"
+  },
+  "exports": {
+    ".": "./dist/lib/index.js"
+  },
   "scripts": {
     "clean": "rm -rf dist",
     "build": "tsc -p tsconfig.build.json",

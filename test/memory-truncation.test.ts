@@ -2,9 +2,9 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdtempSync, rmSync, writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { truncateForPrompt } from "../src/manager.js";
-import { appendMemoryEntry } from "../src/persistence.js";
-import { SubagentManager } from "../src/manager.js";
+import { truncateForPrompt } from "../src/lib/manager.js";
+import { appendMemoryEntry } from "../src/lib/persistence.js";
+import { SubagentManager } from "../src/lib/manager.js";
 import type { Model } from "@mariozechner/pi-ai";
 
 function fakeModel(): Model<any> {

@@ -30,4 +30,4 @@ websockify --web /usr/share/novnc ${NOVNC_PORT} localhost:${VNC_PORT} &>/dev/nul
 # Launcher is the supervisor — handles crash recovery, hot-reload (exit 100), backoff.
 # To restart agent without restarting container:
 #   docker exec <container> restart-may.sh
-exec tsx run/launcher.ts --chat --cron --telegram --console --socket
+exec tsx src/app/launcher.ts --chat --cron --telegram --console --socket

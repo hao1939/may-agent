@@ -45,9 +45,8 @@ RUN sed -i 's|file:/home/hao/pi-mono/packages/agent|file:/pi-deps/agent|' packag
     npm install --ignore-scripts && \
     npm install -g tsx
 
-# Copy source
+# Copy source (lib + app are both under src/)
 COPY src/ src/
-COPY run/ run/
 COPY tsconfig.json tsconfig.build.json ./
 
 # Copy entrypoints and helpers

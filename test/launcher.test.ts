@@ -13,7 +13,7 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = resolve(__dirname, "..");
-const launcherTs = resolve(projectRoot, "run/launcher.ts");
+const launcherTs = resolve(projectRoot, "src/app/launcher.ts");
 
 // Helper: create a temp script that exits with a specific code
 function createExitScript(exitCode: number, delayMs = 0): string {
@@ -145,13 +145,13 @@ describe("launcher module structure", () => {
 describe("may.ts restart integration", () => {
   it("event-bus has restart command type", async () => {
     const { readFileSync } = await import("node:fs");
-    const eventBus = readFileSync(resolve(projectRoot, "run/event-bus.ts"), "utf-8");
+    const eventBus = readFileSync(resolve(projectRoot, "src/app/event-bus.ts"), "utf-8");
     expect(eventBus).toContain('"restart"');
   });
 
   it("may.ts has gracefulRestart function", async () => {
     const { readFileSync } = await import("node:fs");
-    const mayTs = readFileSync(resolve(projectRoot, "run/may.ts"), "utf-8");
+    const mayTs = readFileSync(resolve(projectRoot, "src/app/may.ts"), "utf-8");
     expect(mayTs).toContain("function gracefulRestart");
     expect(mayTs).toContain("EXIT_RELOAD");
     expect(mayTs).toContain("process.exit(EXIT_RELOAD)");
@@ -159,13 +159,13 @@ describe("may.ts restart integration", () => {
 
   it("may.ts EXIT_RELOAD = 100", async () => {
     const { readFileSync } = await import("node:fs");
-    const mayTs = readFileSync(resolve(projectRoot, "run/may.ts"), "utf-8");
+    const mayTs = readFileSync(resolve(projectRoot, "src/app/may.ts"), "utf-8");
     expect(mayTs).toContain("EXIT_RELOAD = 100");
   });
 
   it('may.ts handles "restart" text command', async () => {
     const { readFileSync } = await import("node:fs");
-    const mayTs = readFileSync(resolve(projectRoot, "run/may.ts"), "utf-8");
+    const mayTs = readFileSync(resolve(projectRoot, "src/app/may.ts"), "utf-8");
     expect(mayTs).toContain('"restart"');
     expect(mayTs).toContain("gracefulRestart()");
   });

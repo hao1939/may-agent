@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { generateId } from "../src/manager.js";
+import { generateId } from "../src/lib/manager.js";
 
 describe("generateId()", () => {
   it("uses default prefix and custom prefix", () => {

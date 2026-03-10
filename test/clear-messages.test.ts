@@ -10,7 +10,7 @@ import {
   clearSessionMessages,
   sessionJsonlPath,
   sessionDir,
-} from "../src/persistence.js";
+} from "../src/lib/persistence.js";
 
 function userMessage(text: string): AgentMessage {
   return {

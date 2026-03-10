@@ -4,7 +4,7 @@
 
 import { describe, it, expect } from "vitest";
 import { runWatchdog } from "../../agents/may/handlers/watchdog.js";
-import type { HandlerContext } from "../../run/handler-context.js";
+import type { HandlerContext } from "../../src/lib/handler-context.js";
 
 function makeContext(sessions: Array<{
   agent: string;

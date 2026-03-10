@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { createReadTool, createWriteTool, createLinkedTools, TruncationTracker } from "../src/tools.js";
+import { createReadTool, createWriteTool, createLinkedTools, TruncationTracker } from "../src/lib/tools.js";
 import { mkdirSync, writeFileSync, readFileSync, rmSync, mkdtempSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";

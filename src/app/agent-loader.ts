@@ -28,7 +28,7 @@ import {
   createGeminiCliTool,
   createCronTool,
   createScrapeTool,
-} from "../src/index.js";
+} from "../lib/index.js";
 import type { EventBus } from "./event-bus.js";
 import { Cron } from "./cron.js";
 
@@ -195,7 +195,6 @@ function buildTools(
       case "background-exec": {
         const bgExec = createBackgroundExecTool({
           cwd: projectRoot,
-          denyPatterns: baseDenyPatterns,
           denyMessage: "Do not explore outside the project root. Use relative paths.",
           allowAgentSpawn: true, // Coach agents need to spawn coachee processes
         });
@@ -420,10 +419,8 @@ export function loadAgents(opts: AgentLoaderOptions): LoadResult {
       systemPromptFiles: resolvePromptFiles(config, agentsRoot),
       knowledgeDir: existsSync(knowledgeDir) ? knowledgeDir : undefined,
       workspace: existsSync(workspace) ? workspace : undefined,
-      workflowDir: existsSync(workflowDir) ? workflowDir : undefined,
       skillsDirs: existsSync(sharedSkillsDir) ? [sharedSkillsDir] : undefined,
       projectRoot,
-      apiKey: model.apiKey || "not-needed",
       memoryLimit: config.memoryLimit,
     });
 
@@ -462,8 +459,8 @@ export function reloadAgents(opts: AgentLoaderOptions): { added: string[]; updat
 
 // ── Agent handler auto-discovery ──────────────────────────────────────────
 
-import type { HandlerContext, HandlerModule } from "./handler-context.js";
-import type { CronEntry } from "../src/cron-tool.js";
+import type { HandlerContext, HandlerModule } from "../lib/handler-context.js";
+import type { CronEntry } from "../lib/cron-tool.js";
 
 /**
  * Auto-discover and register JS handlers for cron entries.

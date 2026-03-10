@@ -2,9 +2,9 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdirSync, rmSync, existsSync, mkdtempSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { SubagentManager } from "../src/manager.js";
-import type { WorkflowRun } from "../src/persistence.js";
-import { saveWorkflowRun, readWorkflowRun } from "../src/persistence.js";
+import { SubagentManager } from "../src/lib/manager.js";
+import type { WorkflowRun } from "../src/lib/persistence.js";
+import { saveWorkflowRun, readWorkflowRun } from "../src/lib/persistence.js";
 
 let persistDir: string;
 

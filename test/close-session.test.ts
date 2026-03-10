@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { SubagentManager } from "../src/manager.js";
-import type { SubagentDefinition } from "../src/types.js";
+import { SubagentManager } from "../src/lib/manager.js";
+import type { SubagentDefinition } from "../src/lib/types.js";
 import type { Model } from "@mariozechner/pi-ai";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { mkdtempSync, rmSync, existsSync } from "node:fs";
-import { readSessionMeta } from "../src/persistence.js";
+import { readSessionMeta } from "../src/lib/persistence.js";
 
 function fakeModel(): Model<any> {
   return {

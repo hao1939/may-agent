@@ -18,10 +18,10 @@
 
 import { readFileSync, existsSync, appendFileSync, mkdirSync } from "node:fs";
 import { resolve, dirname } from "node:path";
-import type { SubagentManager } from "../src/index.js";
-import { generateId } from "../src/index.js";
-import { spawnDetachedAgent } from "../src/detached.js";
-import type { CronEntry, JobResult } from "../src/cron-tool.js";
+import type { SubagentManager } from "../lib/index.js";
+import { generateId } from "../lib/index.js";
+import { spawnDetachedAgent } from "../lib/detached.js";
+import type { CronEntry, JobResult } from "../lib/cron-tool.js";
 
 /** A JS function that replaces the LLM for a specific cron job. */
 export type CronHandler = () => Promise<void>;

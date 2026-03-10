@@ -13,15 +13,15 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { mkdtempSync, writeFileSync, readFileSync, rmSync, existsSync, mkdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { tmpdir } from "node:os";
-import { Cron } from "../run/cron.js";
-import type { JobResult } from "../src/cron-tool.js";
+import { Cron } from "../src/app/cron.js";
+import type { JobResult } from "../src/lib/cron-tool.js";
 
 // Mock spawnDetachedAgent — we don't want real child processes in tests
-vi.mock("../src/detached.js", () => ({
+vi.mock("../src/lib/detached.js", () => ({
   spawnDetachedAgent: vi.fn(() => ({ pid: 99999 })),
 }));
 
-import { spawnDetachedAgent } from "../src/detached.js";
+import { spawnDetachedAgent } from "../src/lib/detached.js";
 const mockSpawn = vi.mocked(spawnDetachedAgent);
 
 /**

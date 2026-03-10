@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { TruncationTracker } from "../src/tools.js";
+import { TruncationTracker } from "../src/lib/tools.js";
 
 describe("TruncationTracker read budget", () => {
   let tracker: TruncationTracker;

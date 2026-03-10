@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdtempSync, rmSync, existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { SubagentManager } from "../src/manager.js";
+import { SubagentManager } from "../src/lib/manager.js";
 import {
   historyDir,
   archiveSession,
@@ -10,7 +10,7 @@ import {
   sessionDir,
   sessionOutputDir,
   appendSessionMessage,
-} from "../src/persistence.js";
+} from "../src/lib/persistence.js";
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { Model } from "@mariozechner/pi-ai";
 
