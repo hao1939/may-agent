@@ -554,13 +554,8 @@ describe("trace()", () => {
     expect(parsed.type).toBe("done");
     if (parsed.type !== "done") return;
 
-    // Use the subagents tool to trace
-    const subTool = manager.createTool();
-    const traceResult = await subTool.execute("tc2", {
-      action: "trace",
-      sessionId: parsed.workflowRunId,
-    });
-    const traceData = JSON.parse(traceResult.content[0].text);
+    // Use the manager trace directly
+    const traceData = manager.trace(parsed.workflowRunId);
 
     expect(traceData.targetId).toBe(parsed.workflowRunId);
     expect(traceData.tree).toBeDefined();
@@ -568,13 +563,11 @@ describe("trace()", () => {
     expect(traceData.path.length).toBeGreaterThan(0);
   });
 
-  it("trace requires sessionId parameter", async () => {
+  it("trace requires a valid sessionId", async () => {
     const manager = new SubagentManager({ persistDir });
-    const subTool = manager.createTool();
 
-    const result = await subTool.execute("tc1", { action: "trace" });
-    const parsed = JSON.parse(result.content[0].text);
-    expect(parsed.error).toContain("requires");
+    const traceData = manager.trace("nonexistent");
+    expect(traceData).toBeNull();
   });
 });
 

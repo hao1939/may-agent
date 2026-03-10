@@ -116,10 +116,10 @@ async function scenario3_delegation() {
     domain: "supervision",
     systemPrompt:
       "You are a supervisor. You CANNOT write files yourself. " +
-      "For any file-writing task, use subagents.delegate(\"coder\", task). " +
-      "After delegation, report what the coder did.",
+      "For any file-writing task, use agents.call(\"coder\", task). " +
+      "After the call, report what the coder did.",
     model,
-    tools: [manager.createTool()],
+    tools: [manager.createAgentsTool()],
     apiKey: "not-needed",
   });
 

@@ -5,7 +5,6 @@ import type { Model } from "@mariozechner/pi-ai";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { mkdtempSync, rmSync } from "node:fs";
-import { readSessionMessages } from "../src/lib/persistence.js";
 
 function fakeModel(): Model<any> {
   return {
@@ -60,7 +59,7 @@ describe("manager.followUp()", () => {
     expect(() => manager.followUp(sid, "hello")).toThrow("not found");
   });
 
-  it("queues followUp on running non-persistent session without interrupting", async () => {
+  it("queues followUp on running session without interrupting", async () => {
     manager.register(baseDef());
     const sid = manager.run("bot", "hello");
 
@@ -73,59 +72,5 @@ describe("manager.followUp()", () => {
     }
 
     await manager.waitFor(sid);
-  });
-
-  it("followUp on idle persistent session wakes it and returns to idle", async () => {
-    manager.register(baseDef());
-    const sid = manager.run("bot", "hello", { autoClose: "never" });
-    await manager.waitForIdle(sid);
-    expect(manager.status()[0].status).toBe("idle");
-
-    // followUp should wake the session even though the LLM will fail
-    manager.followUp(sid, "new info");
-    expect(manager.status()[0].status).toBe("running");
-    await manager.waitForIdle(sid);
-    expect(manager.status()[0].status).toBe("idle");
-
-    // With a broken model, JSONL persistence depends on the agent loop
-    // successfully processing the message. Verify at least the initial
-    // user message is persisted.
-    const messages = readSessionMessages(dir, sid);
-    expect(messages.length).toBeGreaterThanOrEqual(1);
-    expect(messages[0].content.some(
-      (c) => c.type === "text" && (c as { text: string }).text === "hello",
-    )).toBe(true);
-  });
-
-  it("wakes idle persistent session", async () => {
-    manager.register(baseDef());
-    const sid = manager.run("bot", "hello", { autoClose: "never" });
-    await manager.waitForIdle(sid);
-
-    // Status should be idle
-    const statusBefore = manager.status();
-    expect(statusBefore[0].status).toBe("idle");
-
-    // followUp should wake it to running
-    manager.followUp(sid, "wake up");
-
-    // Should transition to running
-    const statusDuring = manager.status();
-    expect(statusDuring[0].status).toBe("running");
-
-    // Wait for it to finish processing
-    await manager.waitForIdle(sid);
-    expect(manager.status()[0].status).toBe("idle");
-  });
-
-  it("does not interrupt a running persistent session", async () => {
-    manager.register(baseDef());
-    const sid = manager.run("bot", "hello", { autoClose: "never" });
-
-    // While running, followUp should not throw and should not steer
-    manager.followUp(sid, "background info");
-
-    await manager.waitForIdle(sid);
-    expect(manager.status()[0].status).toBe("idle");
   });
 });

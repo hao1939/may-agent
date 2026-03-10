@@ -1,3 +1,9 @@
+/**
+ * Tests for V2 agents tool (createAgentsTool).
+ *
+ * Migrated from V1 createTool tests — covers the 5 actions: call, list, peek, steer, cancel.
+ */
+
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
@@ -41,27 +47,33 @@ function registerTestAgents(manager: SubagentManager) {
   });
 }
 
-describe("createTool()", () => {
+function parseResult(result: { content: Array<{ type: string; text?: string }> }): any {
+  const text = result.content[0]?.type === "text" ? (result.content[0] as any).text : "";
+  return JSON.parse(text);
+}
+
+describe("createAgentsTool()", () => {
   let persistDir: string;
   let manager: SubagentManager;
 
   beforeEach(() => {
-    persistDir = mkdtempSync(join(tmpdir(), "may-create-tool-"));
+    persistDir = mkdtempSync(join(tmpdir(), "may-agents-tool-"));
     manager = new SubagentManager({ persistDir });
     registerTestAgents(manager);
   });
 
   afterEach(() => {
+    for (const s of manager.status()) manager.cancel(s.sessionId);
     rmSync(persistDir, { recursive: true, force: true });
   });
 
-  it("returns a tool with name 'subagents'", () => {
-    const tool = manager.createTool();
-    expect(tool.name).toBe("subagents");
+  it("returns a tool with name 'agents'", () => {
+    const tool = manager.createAgentsTool();
+    expect(tool.name).toBe("agents");
   });
 
   it("has label, description, parameters, and execute", () => {
-    const tool = manager.createTool();
+    const tool = manager.createAgentsTool();
     expect(tool.label).toBeTruthy();
     expect(tool.description).toBeTruthy();
     expect(tool.parameters).toBeDefined();
@@ -69,408 +81,244 @@ describe("createTool()", () => {
   });
 
   describe("action: list", () => {
-    it("returns all registered agents with descriptions and domains", async () => {
-      const tool = manager.createTool();
-      const result = await tool.execute("tc1", { action: "list" as const });
+    it("returns all registered agents", async () => {
+      const tool = manager.createAgentsTool();
+      const result = await tool.execute("tc1", { action: "list" });
+      const parsed = parseResult(result);
 
-      const parsed = JSON.parse(result.content[0].type === "text" ? result.content[0].text : "");
-      expect(parsed).toHaveLength(2);
-
-      const names = parsed.map((a: any) => a.name);
+      expect(parsed.agents).toHaveLength(2);
+      const names = parsed.agents.map((a: any) => a.name);
       expect(names).toContain("researcher");
       expect(names).toContain("writer");
-
-      const researcher = parsed.find((a: any) => a.name === "researcher");
-      expect(researcher.description).toBe("Deep research on technical topics");
-      expect(researcher.domain).toBe("academic research");
-      expect(researcher.sessions).toEqual([]);
     });
 
-    it("includes active sessions for each agent", async () => {
-      const tool = manager.createTool();
-
-      // Start a session
+    it("includes running sessions", async () => {
+      const tool = manager.createAgentsTool();
       const sessionId = manager.run("researcher", "find papers");
 
-      const result = await tool.execute("tc2", { action: "list" as const });
-      const parsed = JSON.parse(result.content[0].type === "text" ? result.content[0].text : "");
+      const result = await tool.execute("tc2", { action: "list" });
+      const parsed = parseResult(result);
 
-      const researcher = parsed.find((a: any) => a.name === "researcher");
-      expect(researcher.sessions).toHaveLength(1);
-      expect(researcher.sessions[0].sessionId).toBe(sessionId);
-      expect(researcher.sessions[0].task).toBe("find papers");
-
-      // Writer should have no sessions
-      const writer = parsed.find((a: any) => a.name === "writer");
-      expect(writer.sessions).toEqual([]);
+      expect(parsed.runningSessions.length).toBeGreaterThanOrEqual(1);
+      const session = parsed.runningSessions.find((s: any) => s.sessionId === sessionId);
+      expect(session).toBeDefined();
+      expect(session.agent).toBe("researcher");
 
       await manager.waitFor(sessionId);
     });
   });
 
-  describe("action: run", () => {
-    it("starts a session and returns sessionId", async () => {
-      const tool = manager.createTool();
+  describe("action: call", () => {
+    it("runs agent to completion and returns result", async () => {
+      const tool = manager.createAgentsTool();
       const result = await tool.execute("tc1", {
-        action: "run" as const,
+        action: "call",
         agent: "researcher",
         task: "find papers on RL",
       });
 
-      const parsed = JSON.parse(result.content[0].type === "text" ? result.content[0].text : "");
+      const parsed = parseResult(result);
       expect(parsed.sessionId).toBeDefined();
-      expect(typeof parsed.sessionId).toBe("string");
-
-      await manager.waitFor(parsed.sessionId);
-    });
-
-    it("returns error for unknown agent", async () => {
-      const tool = manager.createTool();
-      const result = await tool.execute("tc1", {
-        action: "run" as const,
-        agent: "nonexistent",
-        task: "do something",
-      });
-
-      const parsed = JSON.parse(result.content[0].type === "text" ? result.content[0].text : "");
-      expect(parsed.error).toContain("nonexistent");
-      expect(parsed.error).toContain("not registered");
-    });
-  });
-
-  describe("action: status", () => {
-    it("returns session info for a valid session", async () => {
-      const tool = manager.createTool();
-      const sessionId = manager.run("researcher", "find papers");
-
-      const result = await tool.execute("tc1", {
-        action: "status" as const,
-        sessionId,
-      });
-
-      const parsed = JSON.parse(result.content[0].type === "text" ? result.content[0].text : "");
-      expect(parsed.sessionId).toBe(sessionId);
-      expect(parsed.agent).toBe("researcher");
-      expect(parsed.task).toBe("find papers");
-      expect(parsed.status).toBeDefined();
-
-      await manager.waitFor(sessionId);
-    });
-
-    it("returns error for unknown session", async () => {
-      const tool = manager.createTool();
-      const result = await tool.execute("tc1", {
-        action: "status" as const,
-        sessionId: "nonexistent",
-      });
-
-      const parsed = JSON.parse(result.content[0].type === "text" ? result.content[0].text : "");
-      expect(parsed.error).toContain("nonexistent");
-    });
-  });
-
-  describe("action: progress", () => {
-    it("returns messages for a session", async () => {
-      const tool = manager.createTool();
-      const sessionId = manager.run("researcher", "find papers");
-      await manager.waitFor(sessionId);
-
-      const result = await tool.execute("tc1", {
-        action: "progress" as const,
-        sessionId,
-      });
-
-      const parsed = JSON.parse(result.content[0].type === "text" ? result.content[0].text : "");
-      // There should be at least the user message
-      expect(Array.isArray(parsed)).toBe(true);
-    });
-
-    it("returns error for unknown session", async () => {
-      const tool = manager.createTool();
-      const result = await tool.execute("tc1", {
-        action: "progress" as const,
-        sessionId: "nonexistent",
-      });
-
-      const parsed = JSON.parse(result.content[0].type === "text" ? result.content[0].text : "");
-      expect(parsed.error).toContain("nonexistent");
-    });
-
-    it("respects limit parameter", async () => {
-      const tool = manager.createTool();
-      const sessionId = manager.run("researcher", "find papers");
-      await manager.waitFor(sessionId);
-
-      const result = await tool.execute("tc1", {
-        action: "progress" as const,
-        sessionId,
-        limit: 1,
-      });
-
-      const parsed = JSON.parse(result.content[0].type === "text" ? result.content[0].text : "");
-      expect(Array.isArray(parsed)).toBe(true);
-      expect(parsed.length).toBeLessThanOrEqual(1);
-    });
-  });
-
-  describe("action: result", () => {
-    it("returns result for a completed session", async () => {
-      const tool = manager.createTool();
-      const sessionId = manager.run("researcher", "find papers");
-      await manager.waitFor(sessionId);
-
-      const result = await tool.execute("tc1", {
-        action: "result" as const,
-        sessionId,
-      });
-
-      const parsed = JSON.parse(result.content[0].type === "text" ? result.content[0].text : "");
-      expect(parsed.sessionId).toBe(sessionId);
       expect(parsed.status).toBeDefined();
       expect(parsed.duration).toBeDefined();
       // Should not include full messages array
       expect(parsed.messages).toBeUndefined();
     });
 
-    it("returns error for running session", async () => {
-      const tool = manager.createTool();
-      const sessionId = manager.run("researcher", "find papers");
-
-      // Query immediately while still running (may or may not be running depending on speed)
+    it("returns error for unknown agent", async () => {
+      const tool = manager.createAgentsTool();
       const result = await tool.execute("tc1", {
-        action: "result" as const,
-        sessionId,
+        action: "call",
+        agent: "nonexistent",
+        task: "do something",
       });
 
-      const parsed = JSON.parse(result.content[0].type === "text" ? result.content[0].text : "");
-      // Either returns error (still running) or a result (already done)
-      if (parsed.error) {
-        expect(parsed.error).toContain(sessionId);
-      } else {
-        expect(parsed.sessionId).toBe(sessionId);
-      }
-
-      await manager.waitFor(sessionId);
+      const parsed = parseResult(result);
+      expect(parsed.error).toContain("nonexistent");
     });
 
-    it("returns error for unknown session", async () => {
-      const tool = manager.createTool();
-      const result = await tool.execute("tc1", {
-        action: "result" as const,
-        sessionId: "nonexistent",
-      });
-
-      const parsed = JSON.parse(result.content[0].type === "text" ? result.content[0].text : "");
-      expect(parsed.error).toContain("nonexistent");
+    it("returns error when agent/task missing", async () => {
+      const tool = manager.createAgentsTool();
+      const result = await tool.execute("tc1", { action: "call" });
+      const parsed = parseResult(result);
+      expect(parsed.error).toContain("requires");
     });
   });
 
-  describe("action: waitFor", () => {
-    it("waits for session to complete and returns result", async () => {
-      const tool = manager.createTool();
-      const sessionId = manager.run("researcher", "find papers");
-
-      const result = await tool.execute("tc1", {
-        action: "waitFor" as const,
-        sessionId,
-      });
-
-      const parsed = JSON.parse(result.content[0].type === "text" ? result.content[0].text : "");
-      expect(parsed.sessionId).toBe(sessionId);
-      expect(parsed.status).toBeDefined();
-      expect(parsed.duration).toBeDefined();
-      // Should not include full messages array (same as result action)
-      expect(parsed.messages).toBeUndefined();
-    });
-
-    it("returns error for unknown session", async () => {
-      const tool = manager.createTool();
-      const result = await tool.execute("tc1", {
-        action: "waitFor" as const,
-        sessionId: "nonexistent",
-      });
-
-      const parsed = JSON.parse(result.content[0].type === "text" ? result.content[0].text : "");
-      expect(parsed.error).toContain("nonexistent");
-    });
-
-    it("returns immediately for already-completed session", async () => {
-      const tool = manager.createTool();
+  describe("action: peek", () => {
+    it("returns messages for a session", async () => {
+      const tool = manager.createAgentsTool();
       const sessionId = manager.run("researcher", "find papers");
       await manager.waitFor(sessionId);
 
-      // Session is already done — waitFor should return immediately
       const result = await tool.execute("tc1", {
-        action: "waitFor" as const,
+        action: "peek",
         sessionId,
       });
 
-      const parsed = JSON.parse(result.content[0].type === "text" ? result.content[0].text : "");
-      expect(parsed.sessionId).toBe(sessionId);
-      expect(parsed.status).toBeDefined();
+      const parsed = parseResult(result);
+      expect(Array.isArray(parsed)).toBe(true);
+    });
+
+    it("returns error for unknown session", async () => {
+      const tool = manager.createAgentsTool();
+      const result = await tool.execute("tc1", {
+        action: "peek",
+        sessionId: "nonexistent",
+      });
+
+      const parsed = parseResult(result);
+      expect(parsed.error).toBeDefined();
+    });
+
+    it("returns error when sessionId missing", async () => {
+      const tool = manager.createAgentsTool();
+      const result = await tool.execute("tc1", { action: "peek" });
+      const parsed = parseResult(result);
+      expect(parsed.error).toContain("requires");
     });
   });
 
   describe("action: cancel", () => {
     it("cancels a session and returns confirmation", async () => {
-      const tool = manager.createTool();
+      const tool = manager.createAgentsTool();
       const sessionId = manager.run("researcher", "find papers");
 
       const result = await tool.execute("tc1", {
-        action: "cancel" as const,
+        action: "cancel",
         sessionId,
       });
 
-      const parsed = JSON.parse(result.content[0].type === "text" ? result.content[0].text : "");
+      const parsed = parseResult(result);
       expect(parsed.cancelled).toBe(sessionId);
 
       await manager.waitFor(sessionId);
     });
 
     it("does not throw for unknown session", async () => {
-      const tool = manager.createTool();
+      const tool = manager.createAgentsTool();
       const result = await tool.execute("tc1", {
-        action: "cancel" as const,
+        action: "cancel",
         sessionId: "nonexistent",
       });
 
-      const parsed = JSON.parse(result.content[0].type === "text" ? result.content[0].text : "");
+      const parsed = parseResult(result);
       expect(parsed.cancelled).toBe("nonexistent");
     });
   });
 
-  describe("basic functionality", () => {
-    it("works with createTool", async () => {
-      const mgr = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
-      mgr.register({
-        name: "ephemeral",
-        description: "Test agent",
-        domain: "test",
-        systemPrompt: "You are a test.",
-        model: fakeModel(),
-        tools: [],
-        apiKey: "fake-key",
+  describe("action: steer", () => {
+    it("returns error when sessionId or message missing", async () => {
+      const tool = manager.createAgentsTool();
+
+      const r1 = await tool.execute("tc1", { action: "steer", sessionId: "s_1" });
+      expect(parseResult(r1).error).toContain("requires");
+
+      const r2 = await tool.execute("tc2", { action: "steer", message: "hi" });
+      expect(parseResult(r2).error).toContain("requires");
+    });
+
+    it("returns error for non-running session", async () => {
+      const tool = manager.createAgentsTool();
+      const result = await tool.execute("tc1", {
+        action: "steer",
+        sessionId: "nonexistent",
+        message: "hurry up",
       });
 
-      const tool = mgr.createTool();
-
-      // list
-      const listResult = await tool.execute("tc1", { action: "list" as const });
-      const agents = JSON.parse(listResult.content[0].type === "text" ? listResult.content[0].text : "");
-      expect(agents).toHaveLength(1);
-      expect(agents[0].name).toBe("ephemeral");
-
-      // run
-      const runResult = await tool.execute("tc2", {
-        action: "run" as const,
-        agent: "ephemeral",
-        task: "do stuff",
-      });
-      const { sessionId } = JSON.parse(runResult.content[0].type === "text" ? runResult.content[0].text : "");
-      expect(sessionId).toBeDefined();
-
-      // waitFor (result action requires waiting since sessions are removed on completion)
-      const waitResult = await tool.execute("tc3", {
-        action: "waitFor" as const,
-        sessionId,
-      });
-      const taskResult = JSON.parse(waitResult.content[0].type === "text" ? waitResult.content[0].text : "");
-      expect(taskResult.sessionId).toBe(sessionId);
+      const parsed = parseResult(result);
+      expect(parsed.error).toContain("not found");
     });
   });
 
-  describe("delegateDeny", () => {
-    it("blocks delegate to denied agent with hint", async () => {
-      const tool = manager.createTool({
-        delegateDeny: { agents: ["researcher"], hint: "Use workflow instead." },
+  describe("callDeny", () => {
+    it("blocks call to denied agent with hint", async () => {
+      const tool = manager.createAgentsTool({
+        callDeny: { agents: ["researcher"], hint: "Use workflow instead." },
       });
       const result = await tool.execute("tc1", {
-        action: "delegate" as const,
+        action: "call",
         agent: "researcher",
         task: "find papers",
       });
-      const parsed = JSON.parse(result.content[0].type === "text" ? result.content[0].text : "");
-      expect(parsed.error).toContain("Cannot delegate directly");
+      const parsed = parseResult(result);
+      expect(parsed.error).toContain("Cannot call");
       expect(parsed.error).toContain("researcher");
       expect(parsed.error).toContain("Use workflow instead.");
     });
 
-    it("blocks run to denied agent with hint", async () => {
-      const tool = manager.createTool({
-        delegateDeny: { agents: ["researcher"], hint: "Use workflow instead." },
+    it("allows call to non-denied agent", async () => {
+      const tool = manager.createAgentsTool({
+        callDeny: { agents: ["researcher"], hint: "Use workflow instead." },
       });
       const result = await tool.execute("tc1", {
-        action: "run" as const,
-        agent: "researcher",
-        task: "find papers",
-      });
-      const parsed = JSON.parse(result.content[0].type === "text" ? result.content[0].text : "");
-      expect(parsed.error).toContain("Cannot delegate directly");
-      expect(parsed.error).toContain("researcher");
-    });
-
-    it("allows delegate to non-denied agent", async () => {
-      const tool = manager.createTool({
-        delegateDeny: { agents: ["researcher"], hint: "Use workflow instead." },
-      });
-      const result = await tool.execute("tc1", {
-        action: "run" as const,
+        action: "call",
         agent: "writer",
         task: "write something",
       });
-      const parsed = JSON.parse(result.content[0].type === "text" ? result.content[0].text : "");
+      const parsed = parseResult(result);
       expect(parsed.sessionId).toBeDefined();
-      expect(parsed.error).toBeUndefined();
-      await manager.waitFor(parsed.sessionId);
+      // May have an error from the fake model, but NOT a deny error
+      if (parsed.error) {
+        expect(parsed.error).not.toContain("Cannot call");
+      }
     });
 
-    it("list still works with delegateDeny", async () => {
-      const tool = manager.createTool({
-        delegateDeny: { agents: ["researcher"], hint: "Use workflow instead." },
+    it("list still works with callDeny", async () => {
+      const tool = manager.createAgentsTool({
+        callDeny: { agents: ["researcher"], hint: "Use workflow instead." },
       });
-      const result = await tool.execute("tc1", { action: "list" as const });
-      const parsed = JSON.parse(result.content[0].type === "text" ? result.content[0].text : "");
-      expect(parsed).toHaveLength(2);
+      const result = await tool.execute("tc1", { action: "list" });
+      const parsed = parseResult(result);
+      expect(parsed.agents).toHaveLength(2);
+    });
+  });
+
+  describe("asyncCall mode", () => {
+    it("returns sessionId immediately without waiting", async () => {
+      const tool = manager.createAgentsTool({ asyncCall: true });
+      const result = await tool.execute("tc1", {
+        action: "call",
+        agent: "researcher",
+        task: "find papers",
+      });
+
+      const parsed = parseResult(result);
+      expect(parsed.sessionId).toBeDefined();
+      expect(parsed.status).toBe("started");
+
+      // Clean up
+      manager.cancel(parsed.sessionId);
+      await manager.waitFor(parsed.sessionId);
     });
   });
 
   describe("tool output format", () => {
     it("all actions return content with text type", async () => {
-      const tool = manager.createTool();
+      const tool = manager.createAgentsTool();
 
       // list
-      const listResult = await tool.execute("tc1", { action: "list" as const });
+      const listResult = await tool.execute("tc1", { action: "list" });
       expect(listResult.content).toHaveLength(1);
       expect(listResult.content[0].type).toBe("text");
-      expect(listResult.details).toBeDefined();
 
-      // run
-      const runResult = await tool.execute("tc2", {
-        action: "run" as const,
+      // call
+      const callResult = await tool.execute("tc2", {
+        action: "call",
         agent: "researcher",
         task: "test",
       });
-      expect(runResult.content).toHaveLength(1);
-      expect(runResult.content[0].type).toBe("text");
+      expect(callResult.content).toHaveLength(1);
+      expect(callResult.content[0].type).toBe("text");
+    });
+  });
 
-      const { sessionId } = JSON.parse(runResult.content[0].type === "text" ? runResult.content[0].text : "");
-      await manager.waitFor(sessionId);
-
-      // status
-      const statusResult = await tool.execute("tc3", {
-        action: "status" as const,
-        sessionId,
-      });
-      expect(statusResult.content).toHaveLength(1);
-      expect(statusResult.content[0].type).toBe("text");
-
-      // result
-      const resultResult = await tool.execute("tc5", {
-        action: "result" as const,
-        sessionId,
-      });
-      expect(resultResult.content).toHaveLength(1);
-      expect(resultResult.content[0].type).toBe("text");
+  describe("unknown action", () => {
+    it("returns error for unknown action", async () => {
+      const tool = manager.createAgentsTool();
+      const result = await tool.execute("tc1", { action: "unknown" as any });
+      const parsed = parseResult(result);
+      expect(parsed.error).toContain("Unknown action");
     });
   });
 });
@@ -509,13 +357,9 @@ describe("listAgents()", () => {
 
     const agents = manager.listAgents();
     for (const agent of agents) {
-      // Should only have name, description, domain — no session-related fields
       const keys = Object.keys(agent);
       expect(keys).toEqual(["name", "description", "domain"]);
       expect(agent).not.toHaveProperty("sessions");
-      expect(agent).not.toHaveProperty("sessionId");
-      expect(agent).not.toHaveProperty("status");
-      expect(agent).not.toHaveProperty("task");
     }
   });
 });

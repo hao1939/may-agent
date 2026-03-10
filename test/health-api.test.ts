@@ -270,7 +270,7 @@ describe("reconcileHealth()", () => {
   });
 });
 
-describe("health action via createTool()", () => {
+describe("health via reconcileHealth()", () => {
   let persistDir: string;
   let manager: SubagentManager;
 
@@ -284,12 +284,8 @@ describe("health action via createTool()", () => {
     rmSync(persistDir, { recursive: true, force: true });
   });
 
-  it("returns reconcile report via health action", async () => {
-    const tool = manager.createTool();
-    const result = await tool.execute("tc1", { action: "health" as const });
-
-    const text = result.content[0].type === "text" ? result.content[0].text : "";
-    const parsed = JSON.parse(text);
+  it("returns reconcile report", () => {
+    const parsed = manager.reconcileHealth();
 
     expect(parsed.health).toBeDefined();
     expect(parsed.audit).toBeDefined();
