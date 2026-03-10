@@ -53,6 +53,8 @@ export interface AgentConfig {
   systemPromptFiles?: string[]; // relative to agent dir
   sharedKnowledge?: string[]; // filenames in agents/shared/
   memoryLimit?: number;
+  /** Maximum assistant turns before session is forcibly wrapped up. */
+  maxTurns?: number;
   /** Block direct delegation to specific agents via subagents tool. */
   delegateDeny?: { agents: string[]; hint: string };
   /**
@@ -178,6 +180,17 @@ function buildTools(
           getCallerSessionId: () => agentSessionIds.get(config.name),
           getCallerAgentName: () => config.name,
           delegateDeny: denyConfig,
+        }));
+        break;
+      }
+
+      case "agents": {
+        // V2 agents tool — 5 actions: call, list, peek, steer, cancel
+        const denyConfig = config.delegateDeny;
+        tools.push(manager.createAgentsTool({
+          getCallerSessionId: () => agentSessionIds.get(config.name),
+          getCallerAgentName: () => config.name,
+          callDeny: denyConfig ? { agents: denyConfig.agents, hint: denyConfig.hint } : undefined,
         }));
         break;
       }
@@ -365,7 +378,7 @@ function resolveSkillsDirs(
 const VALID_TOOL_PRESETS = new Set([
   "coding", "read-write", "read-only", "exec", "exec-readonly", "exec-master",
   "claude-code", "gemini-cli",
-  "subagents", "workflow", "background-exec", "socket-watch", "cron", "scrape",
+  "subagents", "agents", "workflow", "background-exec", "socket-watch", "cron", "scrape",
 ]);
 
 const REQUIRED_FIELDS: (keyof AgentConfig)[] = ["name", "description", "domain", "model", "tools"];
@@ -526,6 +539,7 @@ export function loadAgents(opts: AgentLoaderOptions): LoadResult {
       projectRoot,
       apiKey: (model as any).apiKey,
       memoryLimit: config.memoryLimit,
+      maxTurns: config.maxTurns,
     });
 
     if (isUpdate) {

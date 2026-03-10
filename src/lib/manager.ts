@@ -9,6 +9,7 @@ import type { CompactionOptions } from "./compaction.js";
 import { loadSkillsFromDirs, formatSkillsForPrompt } from "./skills.js";
 import {
   RegistryStore,
+  sessionDir,
   ensureSessionDir,
   appendSessionMessage,
   readSessionMessages,
@@ -136,6 +137,10 @@ interface ActiveSession {
   workflowRunId?: string;
   stepLabel?: string;
   turnCount: number;
+  /** Maximum turns before forced wrap-up. Undefined = no limit. */
+  maxTurns?: number;
+  /** Set when the turn-limit warning has been injected (prevents duplicate warnings). */
+  turnLimitWarned?: boolean;
   /** Compaction transform for the interface session (rolling compaction). */
   compactionTransform?: (messages: AgentMessage[], signal?: AbortSignal) => Promise<AgentMessage[]>;
   /** Set by close() — prevents handleCompletion from acting on an already-archived session. */
@@ -170,6 +175,9 @@ export interface SubagentManagerOptions {
   /** Root of the project. Used for detached agent spawning.
    *  Falls back to resolve(persistDir, "..") if not set. */
   projectRoot?: string;
+  /** Maximum call depth for nested callAgent chains (default: 10).
+   *  Prevents infinite loops like A→B→A→B→... */
+  maxCallDepth?: number;
   /**
    * Called after a task session completes (done/error/interrupted).
    * Fires after archival. Use for post-session tasks like evaluation.
@@ -238,6 +246,10 @@ export class SubagentManager {
   private startedAt = Date.now();
   private chatSessionId?: string;
   private _projectRoot: string;
+  /** Maximum call depth for callAgent chains. Prevents A→B→A infinite loops. */
+  private _maxCallDepth: number;
+  /** Current call depth per root session (tracks nested callAgent chains). */
+  private callDepths = new Map<string, number>();
 
   /** Project root directory. Used for detached agent spawning. */
   get projectRoot(): string { return this._projectRoot; }
@@ -245,6 +257,7 @@ export class SubagentManager {
   constructor(opts: SubagentManagerOptions) {
     this.registry = new RegistryStore(opts.persistDir);
     this._projectRoot = opts.projectRoot ?? resolve(opts.persistDir, "..");
+    this._maxCallDepth = opts.maxCallDepth ?? 10;
     this.onSessionComplete = opts.onSessionComplete;
     this.onSessionStart = opts.onSessionStart;
   }
@@ -292,9 +305,53 @@ export class SubagentManager {
         appendSessionMessage(persistDir, sessionId, event.message);
         if (event.message.role === "assistant") {
           session.turnCount++;
+          this.checkTurnLimit(session);
         }
       }
     });
+  }
+
+  /**
+   * Enforce maxTurns limit on a session.
+   *
+   * When turnCount reaches (maxTurns - 2): inject a warning message.
+   * When turnCount reaches maxTurns: abort the session.
+   *
+   * The warning gives the agent 2 turns to save state (write workspace/todo.md,
+   * commit partial work) before the hard cutoff.
+   */
+  private checkTurnLimit(session: ActiveSession): void {
+    if (!session.maxTurns || session.maxTurns <= 0) return;
+    // Don't enforce turn limits on persistent chat sessions (interface agents)
+    if (session.autoClose === "never") return;
+
+    const warningThreshold = Math.max(1, session.maxTurns - 2);
+
+    // Warning at (maxTurns - 2)
+    if (session.turnCount >= warningThreshold && !session.turnLimitWarned) {
+      session.turnLimitWarned = true;
+      const remaining = session.maxTurns - session.turnCount;
+      const warnMsg = `⚠️ TURN LIMIT WARNING: ${remaining} turn(s) remaining (limit: ${session.maxTurns}). Wrap up immediately: save any partial work to workspace/todo.md and stop.`;
+      try {
+        session.agent.followUp({
+          role: "user",
+          content: [{ type: "text", text: warnMsg }],
+          timestamp: Date.now(),
+          source: "system:turn-limit",
+        } as AgentMessage);
+      } catch {
+        // Session may have ended between the check and followUp — safe to ignore
+      }
+    }
+
+    // Hard cutoff at maxTurns
+    if (session.turnCount >= session.maxTurns) {
+      try {
+        session.agent.abort();
+      } catch {
+        // Already ended — safe to ignore
+      }
+    }
   }
 
   /** Build a transformContext function if compaction is enabled for this agent. */
@@ -466,6 +523,26 @@ export class SubagentManager {
     );
     if (lessons) sections.push(lessons);
 
+
+    // 5. Knowledge library index — list available reference material (not auto-loaded)
+    if (def.knowledgeDir) {
+      const libraryDir = join(def.knowledgeDir, "library");
+      if (existsSync(libraryDir)) {
+        try {
+          const libraryFiles = readdirSync(libraryDir, { withFileTypes: true })
+            .filter((e) => e.isFile() && e.name.endsWith(".md"))
+            .map((e) => e.name)
+            .sort();
+          if (libraryFiles.length > 0) {
+            const relLib = def.projectRoot ? relative(def.projectRoot, libraryDir) : libraryDir;
+            const fileList = libraryFiles.map((f) => `- ${f}`).join("\n");
+            sections.push(
+              `# Reference Library\nAdditional reference material available on demand (use \`read\` tool to access):\nDirectory: ${relLib}/\n${fileList}`
+            );
+          }
+        } catch { /* best-effort — library may not be readable */ }
+      }
+    }
     // Load skills from per-agent skills/ dir + shared skillsDirs
     {
       const skillDirs: string[] = [];
@@ -667,6 +744,12 @@ export class SubagentManager {
 
     session.unsubscribe?.();
     session.endedAt = Date.now();
+
+    // Remove [STARTED] sentinel on clean exit
+    try {
+      const sentinelPath = join(sessionDir(this.registry.persistDir, session.sessionId), "[STARTED]");
+      if (existsSync(sentinelPath)) unlinkSync(sentinelPath);
+    } catch { /* best-effort */ }
 
     this.appendMemory(session);
     this.archiveSessionDir(session);
@@ -937,10 +1020,17 @@ export class SubagentManager {
       workflowRunId: opts?.workflowRunId,
       stepLabel: opts?.stepLabel,
       turnCount: 0,
+      maxTurns: def.maxTurns,
       compactionTransform,
       closed: false,
       autoClose: opts?.autoClose ?? "immediate",
     };
+
+    // Write [STARTED] sentinel
+    try {
+      const sentinelPath = join(sessionDir(persistDir, sessionId), "[STARTED]");
+      writeFileSync(sentinelPath, new Date().toISOString());
+    } catch { /* best-effort */ }
 
     // Subscribe for JSONL persistence before starting the prompt
     this.subscribeForPersistence(session);
@@ -1015,8 +1105,55 @@ export class SubagentManager {
   cleanupStaleSessions(): SessionInfo[] {
     const registryData = this.registry.getRegistry();
     const cleaned: SessionInfo[] = [];
+    const interruptedSessionIds = new Set<string>();
+
+    // Scan for orphan [STARTED] sentinels in session directories
+    const sessionsDir = join(this.registry.persistDir, "sessions");
+    if (existsSync(sessionsDir)) {
+      try {
+        const sessionDirs = readdirSync(sessionsDir);
+        for (const dirName of sessionDirs) {
+          const sentinelPath = join(sessionsDir, dirName, "[STARTED]");
+          if (existsSync(sentinelPath)) {
+            // Found a session that crashed or was killed abruptly
+            const sessionId = dirName;
+            // Ensure registry matches reality (if registry says "running" but process is gone, it's stale)
+            const persisted = registryData.sessions[sessionId];
+            
+            // If there's a sentinel, but no registry entry or it's not "running", it's weird but not active.
+            // If it IS "running" in registry, check if PID is alive.
+            if (persisted && persisted.status === "running" && !isProcessAlive(persisted.pid)) {
+               // Mark as interrupted
+               this.registry.updateSessionStatus(sessionId, "interrupted", "Crash detected ([STARTED] sentinel found)");
+               
+               // Clean up sentinel
+               try { unlinkSync(sentinelPath); } catch {}
+
+               cleaned.push({
+                 sessionId,
+                 agent: persisted.agent,
+                 task: persisted.task,
+                 status: "interrupted",
+                 startedAt: persisted.startedAt,
+                 endedAt: Date.now(),
+                 runtime: formatDuration(Date.now() - persisted.startedAt),
+                 outputDir: sessionOutputDir(this.registry.persistDir, sessionId),
+                 error: "Crash detected",
+               });
+               interruptedSessionIds.add(sessionId);
+            } else if (!persisted) {
+              // Sentinel exists but no registry entry? Just delete sentinel.
+              try { unlinkSync(sentinelPath); } catch {}
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("[manager] Error scanning for crashed sessions:", err);
+      }
+    }
 
     for (const [sessionId, persisted] of Object.entries(registryData.sessions)) {
+      if (interruptedSessionIds.has(sessionId)) continue; // Already handled by sentinel check
       if (persisted.status !== "running" && persisted.status !== "idle") continue;
 
       // Detached sessions live in a separate OS process — skip if still alive
@@ -1253,6 +1390,7 @@ export class SubagentManager {
       status: initialStatus,
       outputDir,
       turnCount: savedMessages.filter((m) => m.role === "assistant").length,
+      maxTurns: def.maxTurns,
       compactionTransform,
       closed: false,
       autoClose: opts?.autoClose ?? "immediate",
@@ -2489,6 +2627,328 @@ export class SubagentManager {
             default: {
               return textResult(JSON.stringify({ error: `Unknown action: ${params.action}` }));
             }
+          }
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : String(err);
+          return textResult(JSON.stringify({ error: msg }));
+        }
+      },
+    };
+  }
+
+  // ── V2: callAgent + agents tool ──────────────────────────────────────
+
+  /**
+   * Synchronous agent call — runs an agent to completion and returns the result.
+   * This is the single cooperation primitive in V2.
+   *
+   * Blocks until the child agent finishes. The child runs in-process as a
+   * new Agent instance (same event loop, different call stack frame via await).
+   *
+   * Call depth is tracked to prevent infinite recursion (A→B→A→B→...).
+   *
+   * @param name - Registered agent name
+   * @param task - Task description
+   * @param opts.parentSessionId - Parent session ID for tracking
+   * @param opts.onEvent - Streaming callback for real-time events
+   * @param opts.signal - AbortSignal for cancellation
+   * @param opts.timeout - Timeout in ms (aborts child if exceeded)
+   */
+  async callAgent(name: string, task: string, opts?: {
+    parentSessionId?: string;
+    onEvent?: (event: AgentEvent) => void;
+    signal?: AbortSignal;
+    timeout?: number;
+    /** Workflow run ID — passed through to the spawned session for tracking. */
+    workflowRunId?: string;
+    /** Step label — passed through to the spawned session for tracking. */
+    stepLabel?: string;
+    /** Message source tag (default: "callAgent"). */
+    source?: string;
+  }): Promise<TaskResult> {
+    // ── Depth check ────────────────────────────────────────────────────
+    // Find the root session by walking up parentSessionId chain
+    const rootSessionId = this.findRootSession(opts?.parentSessionId);
+    const currentDepth = rootSessionId ? (this.callDepths.get(rootSessionId) ?? 0) : 0;
+
+    if (currentDepth >= this._maxCallDepth) {
+      return {
+        sessionId: "",
+        status: "error",
+        lastAssistantText: null,
+        messages: [],
+        duration: "0s",
+        outputDir: "",
+        error: `Call depth limit exceeded (${this._maxCallDepth}). This usually means agents are calling each other in a loop.`,
+      };
+    }
+
+    // Increment depth
+    if (rootSessionId) {
+      this.callDepths.set(rootSessionId, currentDepth + 1);
+    }
+
+    try {
+      // ── Start session ──────────────────────────────────────────────────
+      const sessionId = this.run(name, task, {
+        parentSessionId: opts?.parentSessionId,
+        workflowRunId: opts?.workflowRunId,
+        stepLabel: opts?.stepLabel,
+        source: opts?.source ?? "callAgent",
+      });
+
+      // Subscribe for streaming events if requested
+      let unsubscribe: (() => void) | undefined;
+      if (opts?.onEvent) {
+        try {
+          unsubscribe = this.subscribe(sessionId, opts.onEvent);
+        } catch { /* session may have already completed */ }
+      }
+
+      // Set up timeout
+      let timeoutTimer: ReturnType<typeof setTimeout> | undefined;
+      if (opts?.timeout) {
+        timeoutTimer = setTimeout(() => {
+          this.cancel(sessionId);
+        }, opts.timeout);
+      }
+
+      // Forward abort signal
+      if (opts?.signal) {
+        if (opts.signal.aborted) {
+          this.cancel(sessionId);
+        } else {
+          opts.signal.addEventListener("abort", () => {
+            this.cancel(sessionId);
+          }, { once: true });
+        }
+      }
+
+      // ── Wait for completion ────────────────────────────────────────────
+      const result = await this.waitFor(sessionId);
+
+      // Cleanup
+      if (timeoutTimer) clearTimeout(timeoutTimer);
+      unsubscribe?.();
+
+      return result;
+    } finally {
+      // Decrement depth
+      if (rootSessionId) {
+        const depth = this.callDepths.get(rootSessionId) ?? 1;
+        if (depth <= 1) {
+          this.callDepths.delete(rootSessionId);
+        } else {
+          this.callDepths.set(rootSessionId, depth - 1);
+        }
+      }
+    }
+  }
+
+  /** Walk up the parentSessionId chain to find the root session. */
+  private findRootSession(sessionId: string | undefined): string | undefined {
+    if (!sessionId) return undefined;
+    const session = this.activeSessions.get(sessionId);
+    if (!session) return sessionId;
+    if (session.parentSessionId) {
+      return this.findRootSession(session.parentSessionId);
+    }
+    return sessionId;
+  }
+
+  /**
+   * Create the V2 agents tool — 5 actions: call, list, peek, steer, cancel.
+   *
+   * `call` is synchronous: blocks until the child agent finishes and returns
+   * the result. This is the single cooperation primitive.
+   *
+   * `peek`, `steer`, `cancel` operate on running sessions (monitoring).
+   * `list` shows available agents and running sessions.
+   */
+  createAgentsTool(opts?: {
+    /** Returns the current caller's session ID for parent→child linking. */
+    getCallerSessionId?: () => string | undefined;
+    /** Returns the current caller's agent name. */
+    getCallerAgentName?: () => string | undefined;
+    /** Agent names that cannot be called directly. Returns error with hint. */
+    callDeny?: { agents: string[]; hint: string };
+    /** If true, `call` action spawns a background session and returns immediately
+     *  instead of blocking. Used for the chat session where blocking is not allowed. */
+    asyncCall?: boolean;
+  }): AgentTool {
+    const manager = this;
+    const getCallerSessionId = opts?.getCallerSessionId;
+    const getCallerAgentName = opts?.getCallerAgentName;
+    const callDeny = opts?.callDeny;
+    const asyncCall = opts?.asyncCall ?? false;
+
+    function textResult(text: string): AgentToolResult<string> {
+      return {
+        content: [{ type: "text", text }],
+        details: text,
+      };
+    }
+
+    const AgentsToolParams = Type.Object({
+      action: StringEnum(
+        ["call", "list", "peek", "steer", "cancel"] as const,
+        { description: "Action to perform. 'call' runs an agent synchronously (blocks until done). 'list' shows agents and running sessions. 'peek'/'steer'/'cancel' operate on running sessions." },
+      ),
+      agent: Type.Optional(Type.String({ description: "Agent name (required for 'call')" })),
+      task: Type.Optional(Type.String({ description: "Task description (required for 'call')" })),
+      sessionId: Type.Optional(Type.String({ description: "Session ID (required for 'peek', 'steer', 'cancel')" })),
+      message: Type.Optional(Type.String({ description: "Message to inject (required for 'steer')" })),
+      limit: Type.Optional(Type.Number({ description: "Max messages to return (for 'peek', default: 20)" })),
+    });
+
+    interface AgentsToolParamsType {
+      action: "call" | "list" | "peek" | "steer" | "cancel";
+      agent?: string;
+      task?: string;
+      sessionId?: string;
+      message?: string;
+      limit?: number;
+    }
+
+    return {
+      name: "agents",
+      label: "Agents",
+      description:
+        "Cooperate with other agents. 'call' runs an agent and returns the result (blocks). 'list' shows available agents and running sessions. 'peek'/'steer'/'cancel' monitor running sessions.",
+      parameters: AgentsToolParams,
+      execute: async (_toolCallId, _params) => {
+        const params = _params as AgentsToolParamsType;
+        try {
+          switch (params.action) {
+            case "call": {
+              if (!params.agent || !params.task) {
+                return textResult(JSON.stringify({ error: "'call' requires 'agent' and 'task'" }));
+              }
+              if (callDeny && callDeny.agents.includes(params.agent)) {
+                return textResult(JSON.stringify({ error: `Cannot call "${params.agent}" directly. ${callDeny.hint}` }));
+              }
+              const parentSid = getCallerSessionId?.();
+
+              if (asyncCall) {
+                // Chat session mode: spawn and return immediately
+                const sessionId = manager.run(params.agent, params.task, {
+                  ...(parentSid ? { parentSessionId: parentSid } : {}),
+                  source: "agent",
+                });
+                return textResult(JSON.stringify({
+                  sessionId,
+                  status: "started",
+                  message: `${params.agent} session started. Use peek/steer/cancel to monitor.`,
+                }));
+              }
+
+              // Normal mode: sync call, blocks until done
+              const result = await manager.callAgent(params.agent, params.task, {
+                parentSessionId: parentSid,
+              });
+              // Return result without full messages array (too large for tool output)
+              const { messages: _msgs, ...resultWithoutMessages } = result;
+              return textResult(JSON.stringify(resultWithoutMessages, null, 2));
+            }
+
+            case "list": {
+              const agents = Array.from(manager.agents.values()).map((a) => ({
+                name: a.definition.name,
+                description: a.definition.description,
+                domain: a.definition.domain,
+              }));
+              const sessions = manager.status().map((s) => ({
+                sessionId: s.sessionId,
+                agent: s.agent,
+                task: s.task.slice(0, 100),
+                status: s.status,
+                runtime: s.runtime,
+              }));
+              return textResult(JSON.stringify({ agents, runningSessions: sessions }, null, 2));
+            }
+
+            case "peek": {
+              if (!params.sessionId) {
+                return textResult(JSON.stringify({ error: "'peek' requires 'sessionId'" }));
+              }
+              try {
+                const messages = manager.progress(params.sessionId, params.limit ?? 20);
+                const simplified = messages.map((m) => ({
+                  role: m.role,
+                  content: m.content,
+                }));
+                return textResult(JSON.stringify(simplified, null, 2));
+              } catch (err) {
+                const msg = err instanceof Error ? err.message : String(err);
+                return textResult(JSON.stringify({ error: msg }));
+              }
+            }
+
+            case "steer": {
+              if (!params.sessionId || !params.message) {
+                return textResult(JSON.stringify({ error: "'steer' requires 'sessionId' and 'message'" }));
+              }
+              // Attached: use manager.steer
+              if (manager.hasActiveSession(params.sessionId)) {
+                try {
+                  manager.steer(params.sessionId, params.message, "steer");
+                  return textResult(JSON.stringify({ steered: params.sessionId }));
+                } catch (err) {
+                  const msg = err instanceof Error ? err.message : String(err);
+                  return textResult(JSON.stringify({ error: msg }));
+                }
+              }
+              // Detached: try socket
+              const steerMeta = manager.registry.getSession(params.sessionId);
+              if (steerMeta?.instance) {
+                const steerIdentity = readIdentity(manager.registry.persistDir, steerMeta.instance);
+                if (steerIdentity?.socket) {
+                  try {
+                    await sendSocketCommand(steerIdentity.socket, { type: "steer", message: params.message });
+                    return textResult(JSON.stringify({ steered: params.sessionId, mode: "detached" }));
+                  } catch (socketErr) {
+                    const socketMsg = socketErr instanceof Error ? socketErr.message : String(socketErr);
+                    return textResult(JSON.stringify({ error: `Failed to steer detached session: ${socketMsg}` }));
+                  }
+                }
+              }
+              return textResult(JSON.stringify({ error: `Session "${params.sessionId}" not found or not running` }));
+            }
+
+            case "cancel": {
+              if (!params.sessionId) {
+                return textResult(JSON.stringify({ error: "'cancel' requires 'sessionId'" }));
+              }
+              // Attached: in-memory cancel
+              if (manager.hasActiveSession(params.sessionId)) {
+                manager.cancel(params.sessionId);
+                return textResult(JSON.stringify({ cancelled: params.sessionId }));
+              }
+              // Detached: try socket, fall back to SIGTERM
+              const cancelMeta = manager.registry.getSession(params.sessionId);
+              if (cancelMeta?.detached) {
+                if (cancelMeta.instance) {
+                  const cancelIdentity = readIdentity(manager.registry.persistDir, cancelMeta.instance);
+                  if (cancelIdentity?.socket) {
+                    try {
+                      await sendSocketCommand(cancelIdentity.socket, { type: "cancel", sessionId: params.sessionId });
+                      manager.registry.updateSessionStatus(params.sessionId, "interrupted", "Cancelled (socket)");
+                      return textResult(JSON.stringify({ cancelled: params.sessionId, method: "socket" }));
+                    } catch { /* fall through to SIGTERM */ }
+                  }
+                }
+                if (cancelMeta.pid) {
+                  try { process.kill(cancelMeta.pid, "SIGTERM"); } catch { /* process gone */ }
+                  manager.registry.updateSessionStatus(params.sessionId, "interrupted", "Cancelled (SIGTERM)");
+                  return textResult(JSON.stringify({ cancelled: params.sessionId, method: "sigterm" }));
+                }
+              }
+              manager.cancel(params.sessionId);
+              return textResult(JSON.stringify({ cancelled: params.sessionId }));
+            }
+
+            default:
+              return textResult(JSON.stringify({ error: `Unknown action: ${(params as any).action}` }));
           }
         } catch (err: unknown) {
           const msg = err instanceof Error ? err.message : String(err);
