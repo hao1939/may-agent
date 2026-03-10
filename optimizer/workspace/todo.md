@@ -2,6 +2,8 @@
 
 ## 🔴 FOCUS — TOP PRIORITY
 
+- [ ] **[QA COACHING] Broaden write() avoidance in QA DOMAIN.md/LESSONS.md** — QA's anti-write() rules are truncation-conditional ("if read was truncated, don't use write"). But QA uses write() for surgical fixes even when the file was NOT truncated (2026-03-10 exercise: rewrote entire 197-line file to change one character). Broaden the rule: "For surgical fixes (1-3 lines), ALWAYS use sed via exec. Reserve write() for creating new files or complete rewrites where you are the original author." Files to update: `agents/qa/DOMAIN.md` (line 44 area) and `agents/qa/LESSONS.md`. **Evidence**: `agents/coach/workspace/sessions/qa-code-review-2026-03-10.md`. **Escalated by**: Coach (2026-03-10).
+
 - [ ] **[MAY COACHING] Add `subagents.run` vs `delegate` clarification to May's LESSONS.md** — May consistently uses `delegate` (blocking) instead of `subagents.run` (async) when dispatching work in heartbeats. Her DOMAIN says "Dispatch work with `subagents.run(agent, task)` — returns immediately" but LESSONS.md doesn't reinforce this. Add to `agents/may/LESSONS.md`:
   - "Use `subagents.run(agent, task)` to dispatch work — it returns immediately and you can continue. `delegate` blocks your session until the sub-agent finishes. In heartbeats, always use `subagents.run`."
   - **Evidence**: May exercise #3 (2026-03-09) — used `delegate("scout", ...)` which blocked for 2m58s. DOMAIN explicitly says dispatch returns immediately. See `agents/coach/workspace/sessions/may-exercise-3-2026-03-09.md`.

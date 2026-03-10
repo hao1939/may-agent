@@ -10,10 +10,10 @@
 import { readdirSync, readFileSync, existsSync, statSync, appendFileSync, mkdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { execSync } from "node:child_process";
-import { loadAllSessionMetas } from "../../../src/persistence.js";
-import { appendToTodoSection } from "../../../run/todo-utils.js";
-import type { HandlerContext, HandlerModule } from "../../../run/handler-context.js";
-import type { CronEntry } from "../../../src/cron-tool.js";
+import { loadAllSessionMetas } from "../../../src/lib/persistence.js";
+import { appendToTodoSection } from "../../../src/lib/todo-utils.js";
+import type { HandlerContext, HandlerModule } from "../../../src/lib/handler-context.js";
+import type { CronEntry } from "../../../src/lib/cron-tool.js";
 
 export interface SystemStatusResult {
   timestamp: string;

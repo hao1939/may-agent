@@ -173,3 +173,31 @@
 - ⚠️ 123 actionable unevaluated sessions — evaluation may be falling behind
 - ⚠️ 88 auto-skippable sessions — writeSkippedEvaluations may need to run
 
+## 2026-03-10T01:02 — Auto (JS cron handler)
+
+- Sessions (24h): 225
+- Unevaluated: 290 total, 287 actionable, 3 auto-skippable
+- Running sessions: may (s_1772649590298_0)
+- tsc: FAIL: src/background-exec.ts(15,10): error TS2305: Module '"./tools.js"' has no exported member 'isMetaRecursionCommand'.
+src/evaluator.ts(7,10): error TS2305: Module '"./tools.js"' has no exported member '
+- Lessons: 64 lines total (coder 64)
+- Bob analysis: fresh (1h ago)
+- ⚠️ tsc --noEmit failed
+- ⚠️ 287 actionable unevaluated sessions — evaluation may be falling behind
+
+## 2026-03-10T05:15 — Auto (JS cron handler)
+
+- Sessions (24h): 278
+- Unevaluated: 331 total, 329 actionable, 2 auto-skippable
+- Running sessions: may (s_1772649590298_0), amy-kimi (s_1773117048127_114), amy-kimi (s_1773117193124_116)
+- tsc: PASS
+- Tests: Test Files  1 failed | 5 passed (6)
+      Tests  1 failed | 59 passed (60)
+   Start at  05:15:48
+   
+- Lessons: 64 lines total (coder 64)
+- Bob analysis: fresh (5h ago)
+- ⚠️ amy-kimi session s_1773117048127_114 running 45min — may be stuck
+- ⚠️ amy-kimi session s_1773117193124_116 running 43min — may be stuck
+- ⚠️ 329 actionable unevaluated sessions — evaluation may be falling behind
+

@@ -12,8 +12,8 @@
 
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
-import type { HandlerContext, HandlerModule } from "../../../run/handler-context.js";
-import type { CronEntry } from "../../../src/cron-tool.js";
+import type { HandlerContext, HandlerModule } from "../../../src/lib/handler-context.js";
+import type { CronEntry } from "../../../src/lib/cron-tool.js";
 
 // ── Factory ───────────────────────────────────────────────────────────
 

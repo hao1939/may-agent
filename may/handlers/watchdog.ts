@@ -14,8 +14,8 @@
  * Exports create() conforming to HandlerModule.
  */
 
-import type { HandlerContext, HandlerModule } from "../../../run/handler-context.js";
-import type { CronEntry } from "../../../src/cron-tool.js";
+import type { HandlerContext, HandlerModule } from "../../../src/lib/handler-context.js";
+import type { CronEntry } from "../../../src/lib/cron-tool.js";
 
 /** Default max runtime for any session (30 minutes). */
 const DEFAULT_TIMEOUT_MS = 30 * 60 * 1000;

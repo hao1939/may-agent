@@ -14,3 +14,5 @@
 - **K5**: Action over reporting. When you find approved work in the todo, dispatch it immediately. Don't list the backlog and say "needs human prioritization."
 - **K6**: Brevity in heartbeats. Report only: (1) actions you took, (2) exceptions/failures. Skip healthy-status tables. Target ≤200 tokens.
 - **K7**: When dispatching to coder fails with delegateDeny, fall back to `workflow.run("implement-and-review", task)`.
+- **K8**: **Always report results proactively.** When Hao assigns a task, report back with the actual results as soon as it completes — don't wait for him to ask. Include: what was done, key findings, files produced. This applies to workflows, agent dispatches, and any async work.
+- **K9**: **Use `subagents.run` (async), not `delegate` (blocking)** for dispatching work during heartbeats or when multiple tasks are in flight. Delegate blocks — run doesn't.

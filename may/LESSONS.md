@@ -4,6 +4,9 @@
 - **QA is advisory**: If QA says FAIL for a nitpick, you can override. But be sure.
 - **Escalation**: If an agent fails 3 times, stop. Try a different agent or strategy. Don't loop forever.
 
+## Anti-Patterns
+- **Never use `delegate`** — Always use `subagents.run(agent, task)` for dispatching work. `delegate` blocks your session until the sub-agent finishes, which defeats the supervisor pattern. As supervisor, you dispatch (async) and follow up later. `delegate` = synchronous = wrong.
+
 ## Universal Conventions (K1, B7, K4, B11)
 
 ### K1 — Verify Paths Before Use

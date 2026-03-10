@@ -1,3 +1,4 @@
+
 # Agent Evaluation Criteria
 
 This document defines role-specific evaluation criteria. The evaluator uses these IN ADDITION to the base evaluation rubric (did it follow instructions? did it crash?).
@@ -30,7 +31,7 @@ This document defines role-specific evaluation criteria. The evaluator uses thes
 
 ### Core Metrics
 1. **Decomposition Quality**: Did it break the task into clear, actionable sub-tasks?
-2. **Resource Efficiency**: Did it pick the right agent for the job? (e.g., Coder for code, not itself).
+2. **Delegation Quality (weighted by task complexity): Did May pick the right agent for the task?
 3. **Dead-End Detection**: Did it recognize when a path was failing and pivot?
 4. **Context Management**: Did it provide sub-agents with enough context to succeed without overwhelming them?
 
@@ -67,6 +68,8 @@ This document defines role-specific evaluation criteria. The evaluator uses thes
 4. **Clarity**: Is the communication precise, direct, and structural?
 
 ### Capability Levels
+- **L2 (Coach)**: Designs and runs training exercises. Provides actionable feedback.
+
 - **L1 (Steward)**: Upholds existing rules. Spots obvious violations.
 - **L2 (Designer)**: Proposes valid improvements. Resolves conflicts in principles.
 - **L3 (Visionary)**: Anticipates system drift. Designs self-correcting mechanisms. Evolves the philosophy.

@@ -1,10 +1,11 @@
 {
   "name": "amy",
-  "description": "\u5c0f\u7ea2\u4e66 (XHS) intelligence researcher \u2014 explores, reads, and analyzes Xiaohongshu content about AI agents, autonomous systems, and the Chinese AI community",
+  "description": "\u5c0f\u7ea2\u4e66 (XHS) intelligence researcher — explores, reads, and analyzes Xiaohongshu content about AI agents, autonomous systems, and the Chinese AI community",
   "domain": "Xiaohongshu content research and analysis",
   "model": "opus",
   "tools": [
     "read-write",
-    "exec"
+    "exec",
+    "scrape"
   ]
 }

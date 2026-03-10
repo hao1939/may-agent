@@ -108,3 +108,20 @@ All commands return JSON:
 | `threads.md` | Community discussions |
 | `openclaw-mentions.md` | OpenClaw mentions |
 | `posts/<id>.md` | Deep-archived post full text |
+
+## scrape_webpage (for non-XHS web pages)
+
+For reading **non-XHS** web pages (blogs, docs, articles), use the `scrape_webpage` tool instead of `curl`. It handles User-Agent headers and bot-detection automatically, and returns clean text.
+
+```
+scrape_webpage(url: "https://example.com/article")
+scrape_webpage(url: "https://some-blog.com/post", maxLength: 30000)
+scrape_webpage(url: "https://some-site.com/page", raw: true)  # raw HTML
+```
+
+**Parameters:**
+- `url` (required) — Full URL starting with http:// or https://
+- `raw` (optional, default: false) — Return raw HTML instead of cleaned text
+- `maxLength` (optional, default: 20000) — Max characters returned
+
+**Note:** For XHS content, always use the CDP tool (`xhs-browse.mjs`). `scrape_webpage` is for general web pages.

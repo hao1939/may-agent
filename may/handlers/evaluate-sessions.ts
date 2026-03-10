@@ -9,11 +9,11 @@
 
 import { readdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
-import { loadAllSessionMetas } from "../../../src/persistence.js";
-import { evaluateTask, writeSkippedEvaluations } from "../../../src/evaluator.js";
-import { appendToTodoSection } from "../../../run/todo-utils.js";
-import type { HandlerContext, HandlerModule } from "../../../run/handler-context.js";
-import type { CronEntry } from "../../../src/cron-tool.js";
+import { loadAllSessionMetas } from "../../../src/lib/persistence.js";
+import { evaluateTask, writeSkippedEvaluations } from "../../../src/lib/evaluator.js";
+import { appendToTodoSection } from "../../../src/lib/todo-utils.js";
+import type { HandlerContext, HandlerModule } from "../../../src/lib/handler-context.js";
+import type { CronEntry } from "../../../src/lib/cron-tool.js";
 
 export interface EvaluateSessionsResult {
   skipped: number;

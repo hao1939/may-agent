@@ -13,9 +13,9 @@
 
 import { readFileSync, writeFileSync, existsSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
-import type { HandlerContext, HandlerModule } from "../../../run/handler-context.js";
-import type { CronEntry } from "../../../src/cron-tool.js";
-import { appendToTodoSection } from "../../../run/todo-utils.js";
+import type { HandlerContext, HandlerModule } from "../../../src/lib/handler-context.js";
+import type { CronEntry } from "../../../src/lib/cron-tool.js";
+import { appendToTodoSection } from "../../../src/lib/todo-utils.js";
 
 // ── Config ────────────────────────────────────────────────────────────
 
