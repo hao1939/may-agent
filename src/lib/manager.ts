@@ -94,6 +94,16 @@ function formatMemoryTimestamp(ts: number): string {
 const MEMORY_TASK_MAX = 200;
 const MEMORY_SUMMARY_MAX = 500;
 
+/** Check if a process with the given PID is still running. */
+function isProcessAlive(pid: number | undefined): boolean {
+  if (pid === undefined) return false;
+  try {
+    process.kill(pid, 0); // signal 0: existence check, no actual signal
+    return true;
+  } catch {
+    return false;
+  }
+}
 /** Truncate text to maxLen chars for prompt injection.
  *  Strips newlines (compact single-line) and appends "…" if truncated. */
 export function truncateForPrompt(text: string, maxLen: number): string {
@@ -996,6 +1006,9 @@ export class SubagentManager {
    * Marks them as "interrupted" and returns a summary.
    * Also cleans up stale workflow runs.
    *
+   * Detached sessions (separate OS processes) are skipped if their process
+   * is still alive — they survive the parent's restart by design.
+   *
    * Chat+Task model: task sessions should never be "idle" on disk. If found,
    * they are interrupted the same as stale "running" sessions.
    */
@@ -1005,6 +1018,9 @@ export class SubagentManager {
 
     for (const [sessionId, persisted] of Object.entries(registryData.sessions)) {
       if (persisted.status !== "running" && persisted.status !== "idle") continue;
+
+      // Detached sessions live in a separate OS process — skip if still alive
+      if (persisted.detached && isProcessAlive(persisted.pid)) continue;
 
       this.registry.updateSessionStatus(sessionId, "interrupted", "Process restarted");
 
@@ -1071,8 +1087,11 @@ export class SubagentManager {
     }
 
     // Target found and registered — now interrupt other running sessions
+    // (but skip detached sessions whose process is still alive)
     const interrupted: SessionInfo[] = [];
     for (const { sessionId, persisted } of otherRunning) {
+      if (persisted.detached && isProcessAlive(persisted.pid)) continue;
+
       this.registry.updateSessionStatus(sessionId, "interrupted", "Process restarted");
       interrupted.push({
         sessionId,
