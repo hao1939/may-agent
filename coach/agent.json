@@ -8,8 +8,7 @@
     "exec-readonly",
     "socket-watch",
     "subagents",
-    "workflow",
-    "validate-workflow"
+    "workflow"
   ],
   "memoryLimit": 10,
   "compaction": true,
