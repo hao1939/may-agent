@@ -1,2 +1,0 @@
-- [ ] Delegate to Tech Lead: Refactor `agents/shared/system-design.md` agent descriptions to be EASYTOOL-style (Input, Output, Capabilities) per paper-2601.12538 review.
-- [ ] Delegate to May: Instruct to check `agents/shared/skills/patterns/` before complex planning.

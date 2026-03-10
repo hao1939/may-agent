@@ -1,4 +1,7 @@
 .state/
 *.log
-bob/workspace/ralph-demo/
-bob/workspace/ralph-loop/
+
+# Workspace is scratch — ephemeral analysis, journals, todos.
+# Knowledge is preserved (curated agent output).
+*/workspace/*
+!*/workspace/.gitkeep
