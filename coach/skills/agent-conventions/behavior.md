@@ -147,3 +147,32 @@ This enables:
 - **Human oversight**: user can redirect before tokens are wasted
 
 See philosophy.md #46.
+
+## B12: Pattern-Based Sed for Edits (Required, Builder)
+
+When using sed for file edits, always use pattern-based addressing, never
+line-number addressing. Line numbers shift after any modification, making
+line-number edits fragile and error-prone.
+
+Good:
+```
+exec("sed -i 's/function oldName/function newName/' src/utils.ts")
+exec("sed -i '/class MyClass/,/^}$/s/private count/private _count/' src/utils.ts")
+```
+
+Bad:
+```
+exec("sed -i '42s/oldName/newName/' src/utils.ts")   // line 42 may shift
+exec("sed -i '85 a\\newline' file.md")                // fragile line reference
+```
+
+Pattern-based sed is self-documenting (the pattern explains *what* is being
+changed, not just *where*) and robust across file modifications within the
+same session.
+
+Also avoid GNU-sed-specific features (`e` command, etc.) — stick to
+POSIX-compatible sed for portability.
+
+**Evidence:** 5 evaluator violations from Coder sessions using line-number
+sed during COACHEES.md split (2026-03-10). Pattern-based sed exercises
+(Coder graduation, QA exercises) consistently PASS.

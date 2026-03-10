@@ -232,3 +232,30 @@ Write to `agents/coach/workspace/sessions/<agent>-<date>.md`:
 - ❌ Never skip the report
 - ❌ Never guess at design intent — if SOUL is unclear, ask
 - ❌ Never accept research/analysis tasks — redirect to the appropriate agent
+
+## Correction Limits (discovered 2026-03-10)
+
+### Correction Saturation Rule
+After **3 correction iterations** targeting the same root behavior without convergence, STOP correcting. Choose one of:
+1. **Accept the limitation** — ensure production tasks avoid triggering the behavior
+2. **Structural intervention** — add tool-level guards (e.g., file existence check before edit)
+3. **Model change** — different model may not have the limitation
+
+Evidence: Bob adversity exercises #3-#6. Each correction closed one failure mode (wrong-file → freeze → file-creation) but opened another. The underlying completion drive is model-level, not instructional.
+
+### Model Upgrade Consideration
+When an agent fails **3+ exercises** on a specific behavior, check whether a model upgrade would resolve it more efficiently than additional coaching.
+
+Evidence: QA's write() habit persisted through 2 coaching sessions under GPT-4o. After upgrade to GPT-5.2, the behavior resolved spontaneously — no coaching corrections were changed.
+
+Rule: If a behavior is failing after 3 corrections, the problem may be model capability, not missing instructions.
+
+### Default Mode Awareness
+Each agent has a "default mode" that reflects its role identity:
+- **QA** → reviewer (read-only analysis, even when told to fix)
+- **May** → delegator (routes to others, even when told to self-execute)
+- **Bob** → completer (produces output for every task, even when told to skip)
+
+When designing exercises, assess default mode resistance:
+- **Low resistance**: Override with more directive framing ("you MUST fix" vs "if you find bugs, fix them")
+- **High resistance**: Accept limitation, design environment to avoid triggering it

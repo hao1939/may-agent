@@ -55,6 +55,7 @@ How agents should act — tool usage, verification, escalation.
 | B9 | Evidence-based claims — trace to files, data, or commands | Required | All |
 | B10 | Surgical file updates — grep to find, ranged read, precise write | Recommended | Builder |
 | B11 | Claim before act — state what you plan to do before doing it (philosophy #46) | Required | All |
+| B12 | Pattern-based sed — never line-number addressing (lines shift after edits) | Required | Builder |
 
 ### Knowledge Management (agents/coach/skills/agent-conventions/knowledge-mgmt.md)
 
@@ -98,6 +99,8 @@ Cron, heartbeat, runtime patterns.
 | O6 | Per-agent todo, not shared todo | Required | All |
 | O7 | Agents do cognitive work, not chores (monitoring, health checks = infra) | Required | All |
 | O8 | Evaluate before apply — test conventions/changes before pushing to agents (philosophy #47) | Required | Coach, Optimizer |
+| O9 | Correction saturation — after 3 iterations on same behavior, stop and choose: accept, structure, or model change | Required | Coach |
+| O10 | Model upgrade before extended coaching — check for model upgrade after 3+ exercise failures | Recommended | Coach |
 
 ## How to Use This Library
 

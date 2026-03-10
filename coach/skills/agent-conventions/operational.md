@@ -115,3 +115,44 @@ current data (not just historical). Problems sometimes resolve themselves
 through other changes.
 
 See philosophy.md #47.
+
+## O9: Correction Saturation (Required, Coach)
+
+After 3 correction iterations targeting the same root behavior without
+convergence, stop correcting. The model's training runs deeper than
+instruction context — further corrections produce oscillation, not improvement.
+
+Choose one of three paths:
+1. **Accept the limitation** — note it in the coachee file, design production
+   tasks that avoid triggering it (e.g., Bob: always provide valid file paths)
+2. **Structural intervention** — tool guards, pre-validation, or task design
+   that makes the failure mode impossible
+3. **Model change** — if a newer or different model doesn't have the limitation
+
+Do NOT continue the correction cycle past 3 iterations. Each additional
+iteration costs coaching turns and risks overcorrection — where fixing one
+failure mode creates a new one.
+
+**Evidence:** Bob adversity exercises #3–#6 (2026-03-10). Same root cause
+(completion bias), 4 exercises, 3 different failure modes. Corrections addressed
+each failure but the underlying drive found alternative expression paths.
+After 3 iterations, coach stopped correcting and accepted the limitation.
+
+## O10: Model Upgrade Before Extended Coaching (Recommended, Coach)
+
+When an agent fails 3+ exercises on the same behavior, check whether a model
+upgrade is available before investing further coaching sessions.
+
+Some behaviors are model-level, not instruction-level. Coaching corrections
+that fail under one model may succeed automatically under a newer one.
+
+**Evidence:** QA's write() habit persisted through 2 coaching sessions and
+3 exercises under GPT-4o. After upgrading to GPT-5.2, QA spontaneously used
+sed on a non-truncated file — behavior that never occurred before. The coaching
+corrections in DOMAIN.md were unchanged between sessions.
+
+**Decision tree:**
+1. First 2 failures → normal coaching corrections
+2. 3rd failure on same behavior → check for model upgrade
+3. If upgrade available → try it before more coaching
+4. If no upgrade → follow O9 (correction saturation)
