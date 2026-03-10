@@ -14,9 +14,9 @@ We are transitioning from "Exploration" (Phase 1) to "Hardening" (Phase 2). The 
 
 ### 1. Zero Data Loss (Blind Overwrite Prevention)
 **Goal:** Eliminate "truncated read → blind overwrite" failures entirely.
-- **Status:** Deployed (Workflow Available).
-- **Mechanism:** `safe-edit` workflow (uses `grep` + `sed` instead of read-write).
-- **Adoption:** Workflow exists (`agents/optimizer/workflows/safe-edit.ts`). Next: Roll out to Coder/Optimizer domain instructions.
+- **Status:** Structural Fix Deployed.
+- **Mechanism:** `Poisoned Path Protection` in `src/tools.ts`. Structurally blocks `write()` to any file read with truncation.
+- **Adoption:** Universal. No agent behavior change required; the environment enforces safety.
 - **Success Metric:** 0 incidents of `lessons.md` or `todo.md` corruption in 7 days.
 
 ### 2. Meta-Loop Autonomy
@@ -49,5 +49,6 @@ We are transitioning from "Exploration" (Phase 1) to "Hardening" (Phase 2). The 
 - **Vector Memory**: (Parked; file-based navigation is sufficient for current scale).
 
 ## Change Log
+- **2026-03-10**: Upgraded Zero Data Loss to "Structural Fix" (Poisoned Path).
 - **2026-03-07**: Updated status for Zero Data Loss (Deployed), Meta-Loop (Active), and Ralph Loop (Prototyping).
 - **2026-03-06**: Initial Roadmap created by Bob. Focus defined as "Robustness & Deterministic Guardrails".

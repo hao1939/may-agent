@@ -22,6 +22,8 @@ The feature team does the actual work:
 **May** (supervisor) — Receives tasks from the user. Delegates to specialized agents,
 examines their results, and makes final decisions. Typically runs as the **Chat Session** (Interface).
 
+**Tech Lead** (builder) — The senior builder. Turns designs into working code, leads Coder+QA teams, and applies philosophy during implementation.
+
 **Coder** — Implements code changes. Reads files, edits code, runs tests. Gets a task
 description from May and works independently until done. Always runs as a **Task Session**.
 
@@ -29,6 +31,14 @@ description from May and works independently until done. Always runs as a **Task
 Reports a verdict (PASS/FAIL/CONDITIONAL) with specific issues. QA can fix issues
 directly when appropriate. In the slow path, QA is advisory — May decides whether to
 act on the feedback. In workflows, QA verdicts drive retries mechanically.
+
+**Master** — CLI Power User. Leverages `claude-code` and `gemini-cli` for complex implementation tasks. Cannot write files directly — uses CLI tools to interact with the codebase.
+
+**Scout** — The Scholar. Researches AI agents, tools, papers, and emerging patterns. Builds compounding knowledge.
+
+**Amy** — XHS Researcher. Explores Xiaohongshu content about AI agents.
+
+**Amy-Kimi** — Chinese-Language Researcher. A specialized variant of Amy using the Kimi model for deep Chinese content analysis.
 
 ## How Agents Work Together
 
@@ -162,6 +172,8 @@ with the target agent as interface, connects via socket to observe and intervene
 then writes a report with findings. Coaching fills the gap between measurement
 (evaluator) and implementation (optimizer) — it provides the live evidence that
 confirms whether a problem is real and whether a fix works.
+
+**Bob** — The Architect. Holds the blueprint, designs agent cooperation, reviews designs, and drives the meta-loop.
 
 ### Agent as Feature Unit
 
@@ -331,45 +343,56 @@ Concrete details about who's on the team, what they have, and how the runner wor
 
 ## Feature Team
 
-| Agent | Model | Tools | Turn Limit | Notes |
-|-------|-------|-------|------------|-------|
-| **May** | opus | exec (read-only), subagents, workflow | — | Supervisor. No read/write tools — forces delegation for all code changes. Can read files and run shell commands for verification (cat, grep, tsc, tests, git) but cannot write files via exec. |
-| **Coder** | opus | read, write, exec | 50 | Full project access. Implements code changes. Does not commit — supervisor handles git add/commit after QA review. |
-| **QA** | gpt-5.2 | read, write, exec | 30 | Different model from coder for perspective diversity. Can fix issues directly. Uses PASS/FAIL/CONDITIONAL verdicts. |
-| **Master** | opus | claude_code, gemini_cli | 30 | Two dedicated CLI agent tools. No read, write, or exec — interacts with codebase exclusively through claude-code and gemini-cli. |
+| Agent | Role | Model | Tools | Notes |
+|-------|------|-------|-------|-------|
+| **Tech Lead** | Builder | opus | read, write, exec, workflow, subagents | The Builder. Shares Bob's vision, drives implementation. Leads coder+QA, applies philosophy in code. |
+| **May** | Supervisor | opus | read, write, exec, subagents, workflow, cron | Hao's Deputy. Orchestrates agents, tracks work end-to-end, maintains system. Delegates code changes to tech-lead/master. |
+| **Coder** | Builder | opus | read, write, exec | Full project access. Implements code changes. Does not commit — supervisor handles git add/commit after QA review. |
+| **QA** | Builder | gpt-5.2 | read, write, exec | Different model from coder for perspective diversity. Can fix issues directly. Uses PASS/FAIL/CONDITIONAL verdicts. |
+| **Master** | Builder | opus | claude-code, gemini-cli | Two dedicated CLI agent tools. No read, write, or exec — interacts with codebase exclusively through claude-code and gemini-cli. |
+| **Amy** | Researcher | opus | read, write, exec | XHS content exploration and archival. |
+| **Amy-Kimi** | Researcher | kimi | read, write, exec | Kimi-powered variant of Amy for Chinese content. |
+| **Scout** | Researcher | opus | read, write, exec | The Scholar. Takes leads and goes deep — cross-referencing, archiving, building compounding knowledge. |
 
 ## Meta Team
 
-| Agent | Model | Tools | Turn Limit | Notes |
-|-------|-------|-------|------------|-------|
-| **Evaluator** | gpt-5.2 | read, write, exec | 20 | Scores each agent in a task tree by responsibility. memoryLimit=5. |
-| **Optimizer** | opus | read, write, exec, subagents, workflow | 40 | Implements one fix per run. Can delegate to coder and QA. |
-| **Bob** | gemini-3-pro | read, write, exec, subagents | 50 | Design philosopher. Orchestrates meta-loop. Maintains philosophy.md. |
-| **Coach** | opus | read, write, exec (read-only), background-exec, socket-watch | 100 | Trains agents through live exercises. Spawns coachee in separate process, observes via socket, writes reports. |
+| Agent | Role | Model | Tools | Notes |
+|-------|------|-------|-------|-------|
+| **Evaluator** | Supervisor | gpt-5.2 | read, write, exec | Scores each agent in a task tree by responsibility. memoryLimit=5. |
+| **Optimizer** | Builder | opus | read, write, exec, subagents, workflow | Implements one fix per run. Can delegate to coder and QA. |
+| **Bob** | Philosopher | gemini-3-pro | read, write, exec, subagents | System architect. Holds the blueprint, designs agent cooperation and evolution, reviews designs, stewards philosophy.md, drives meta-loop. |
+| **Coach** | Philosopher | opus | read, write (workspace only), exec (read-only), subagents, workflow, validate-workflow, socket-watch | Trains agents through live exercises. Spawns coachee via subagents (detached), observes via socket, writes reports. |
 
 ## Model Assignment
 
-Three model families provide independent perspective. Opus for builders (May, Coder,
-Optimizer, Master, Coach). GPT-5.2 for reviewers (QA, Evaluator). Gemini 3 Pro for design
-philosophy (Bob). All are proxy-aliased labels routed through a local proxy.
+Four model families provide independent perspective.
+- **Opus**: Tech Lead, May, Coder, Optimizer, Master, Coach, Amy, Scout.
+- **GPT-5.2**: QA, Evaluator (Reviewers).
+- **Gemini 3 Pro**: Bob (Design Philosophy).
+- **Kimi**: Amy-Kimi (Chinese Language Research).
 
 ## Runner
 
-The runner is agent-agnostic but enforces the session model:
+The runner is agent-agnostic. Any registered agent can serve as the interface agent:
 
-- **Interface Agent** (defined by `AGENT` env var, default `may`) gets the single **Chat Session**.
-- **All other agents** run as **Task Sessions**.
+- **`AGENT=may`** (default) — May as persistent interface, delegates to team
+- **`AGENT=bob`** — Bob as persistent interface, for meta-loop work
+- **`AGENT=coach`** — Coach as persistent interface, for training sessions
+- **`AGENT=master`** — Master as persistent interface, for direct CLI tool work
+
+The interface agent gets a persistent session with compaction. All other agents run
+as ephemeral sessions.
 
 ### Input Routing
 
-- **Default input** goes to the interface agent's Chat Session.
-- **`@agent message`** spawns a fresh Task Session for that agent.
-- **Socket `run` command** spawns a fresh Task Session.
-- **Socket `input` command** sends to the Chat Session.
+- **Default input** goes to the interface agent's persistent session
+- **`@agent message`** runs a fresh ephemeral session on any agent directly
+- **Socket `run` command** does the same: `{"type":"run","agent":"bob","message":"..."}`
+- **Socket `input` command** sends to the interface agent
 
 ### External Scheduling
 
-No built-in timers. Use crontab or similar for recurring tasks:
+Recurring tasks use cron.json (agent-owned cron handlers) or external crontab:
 ```
 # Run meta-loop every 30 minutes
 */30 * * * * echo '{"type":"run","agent":"bob","message":"Run the meta-loop"}' | socat - UNIX-CONNECT:/path/to/.state/may.sock
@@ -377,21 +400,24 @@ No built-in timers. Use crontab or similar for recurring tasks:
 
 ## Workflows
 
-**implement-and-review** — Both May and optimizer have this. Coder implements → QA
+**implement-and-review** — Both May, Tech Lead, and Optimizer have this. Coder implements → QA
 reviews → one retry on FAIL/CONDITIONAL → escalate if still failing.
 
 **design-review** — Optimizer only. Evaluator and optimizer independently review
 shared docs, then cross-respond.
 
+**coaching-session** — Coach only. Spawns a detached session for the coachee and monitors it.
+
 ## Knowledge Hot-Reload
 
-All agent knowledge (domain.md, lessons.md) is read fresh at session start. Changes
-take effect on the next agent session without restarting.
+All agent knowledge (SOUL.md, DOMAIN.md, TOOLS.md, LESSONS.md, skills/) is read
+fresh at session start. Changes take effect on the next agent session without
+restarting.
 
 ## Constraints
 
-- **May cannot write files** — read-only exec enforced structurally
+- **May delegates code changes** — code goes through tech-lead/master, not written directly
 - **Coder never commits** — supervisor handles git add/commit after QA review
 - **Master cannot write files** — must use CLI agents (claude-code, gemini-cli)
 - **One fix per optimizer run** — isolates changes for measurable evaluation
-- **Persistent sessions use compaction** — threshold 70%, keep ratio 40% (Chat Session only)
+- **Persistent sessions use compaction** — threshold 70%, keep ratio 40%

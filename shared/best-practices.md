@@ -147,7 +147,6 @@ Don't: read SOUL.md → wait → read todo.md → wait → list workspace → wa
 **Evidence**: Coder session s_1773076135070_0 (eff=0.9) batched initial reads. Coach session s_1773072504141_15 (eff=0.35) read the same files across 12 separate turns. The high-scoring coder completed in 14 turns; the low-scoring coach took 57.
 
 ### 3.3 Drain the Queue, Then Stop
-
 **Adhoc tasks** (todo items, fix requests): drain them all. Don't stop after one.
 **Periodic tasks** (heartbeats, cron): do one cycle, then rest.
 
@@ -155,7 +154,13 @@ Don't confuse the two. A heartbeat is a wake-up — if there's work, keep workin
 
 **Evidence**: Philosophy P30 (Heartbeat Is Just a Wake-Up) + P31 (Adhoc vs Periodic). May's heartbeat sessions where she identified work but "stood down" waiting for human confirmation — 26.6% action paralysis rate. After prompt fix + coaching: 0% paralysis.
 
-### 3.4 One Fix Per Optimization Run
+### 3.4 Async by Default for Supervisors
+
+Supervisor agents (May) must use async dispatch (`subagents.run`) for all meaningful work. Blocking calls (`subagents.delegate`) are only for sub-second queries.
+
+**Evidence**: Philosophy P48 (Async by Default for Supervisors). Blocking on long-running tasks makes the supervisor unresponsive to new inputs (e.g., stopping a runaway agent) and fragile to crashes.
+
+### 3.5 One Fix Per Optimization Run
 
 When systematically improving agent behavior or system configuration, make **one** change per cycle. This applies to the Optimizer and behavioral engineers.
 

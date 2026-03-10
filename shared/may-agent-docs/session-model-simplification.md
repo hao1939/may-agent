@@ -107,5 +107,5 @@ Implemented in `run/cron.ts`:
 ## 5. Philosophy Alignment
 - **P1 Simplest Thing**: Drastically reduces state machine complexity.
 - **P11 File System as Memory**: Enforces this strictly. In-memory state is transient.
-- **P12 Context Isolation**: Fresh sessions guarantee no pollution from previous tasks.
-- **P40 Agents Do Cognitive Work**: Offloads scheduling/backpressure to infra.
+- **P30 Heartbeat Is Just a Wake-Up** / **P33 Heartbeat vs Cron**: Fresh sessions guarantee no pollution from previous tasks.
+- **P45 Agents Do Cognitive Work**: Offloads scheduling/backpressure to infra.
