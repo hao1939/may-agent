@@ -1,11 +1,11 @@
 /**
  * Tests for V2 agents tool (createAgentsTool).
  *
- * Migrated from V1 createTool tests — covers the 5 actions: call, list, peek, steer, cancel.
+ * Covers the 5 actions: call, send, list, peek, cancel.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync, existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { SubagentManager } from "../src/lib/manager.js";
@@ -54,10 +54,12 @@ function parseResult(result: { content: Array<{ type: string; text?: string }> }
 
 describe("createAgentsTool()", () => {
   let persistDir: string;
+  let agentsRoot: string;
   let manager: SubagentManager;
 
   beforeEach(() => {
     persistDir = mkdtempSync(join(tmpdir(), "may-agents-tool-"));
+    agentsRoot = mkdtempSync(join(tmpdir(), "may-agents-root-"));
     manager = new SubagentManager({ persistDir });
     registerTestAgents(manager);
   });
@@ -65,6 +67,7 @@ describe("createAgentsTool()", () => {
   afterEach(() => {
     for (const s of manager.status()) manager.cancel(s.sessionId);
     rmSync(persistDir, { recursive: true, force: true });
+    rmSync(agentsRoot, { recursive: true, force: true });
   });
 
   it("returns a tool with name 'agents'", () => {
@@ -145,6 +148,92 @@ describe("createAgentsTool()", () => {
     });
   });
 
+  describe("action: send", () => {
+    it("appends todo to target agent's workspace/todo.md", async () => {
+      const tool = manager.createAgentsTool({
+        agentsRoot,
+        getCallerAgentName: () => "may",
+      });
+
+      const result = await tool.execute("tc1", {
+        action: "send",
+        agent: "researcher",
+        message: "review the API docs",
+      });
+      const parsed = parseResult(result);
+      expect(parsed.sent).toBe("researcher");
+
+      const todoPath = join(agentsRoot, "researcher", "workspace", "todo.md");
+      expect(existsSync(todoPath)).toBe(true);
+      const content = readFileSync(todoPath, "utf-8");
+      expect(content).toContain("# TODO");
+      expect(content).toContain("review the API docs");
+      expect(content).toContain("[from:may");
+      expect(content).toContain("- [ ]");
+    });
+
+    it("appends multiple items", async () => {
+      const tool = manager.createAgentsTool({
+        agentsRoot,
+        getCallerAgentName: () => "bob",
+      });
+
+      await tool.execute("tc1", { action: "send", agent: "researcher", message: "first" });
+      await tool.execute("tc2", { action: "send", agent: "researcher", message: "second" });
+
+      const content = readFileSync(join(agentsRoot, "researcher", "workspace", "todo.md"), "utf-8");
+      expect(content).toContain("first");
+      expect(content).toContain("second");
+    });
+
+    it("calls triggerHeartbeat callback", async () => {
+      let triggered: string | null = null;
+      const tool = manager.createAgentsTool({
+        agentsRoot,
+        triggerHeartbeat: (name) => { triggered = name; return true; },
+      });
+
+      const result = await tool.execute("tc1", {
+        action: "send",
+        agent: "researcher",
+        message: "do stuff",
+      });
+      const parsed = parseResult(result);
+      expect(triggered).toBe("researcher");
+      expect(parsed.heartbeatTriggered).toBe(true);
+    });
+
+    it("returns error when agent or message missing", async () => {
+      const tool = manager.createAgentsTool({ agentsRoot });
+
+      const r1 = await tool.execute("tc1", { action: "send", agent: "researcher" });
+      expect(parseResult(r1).error).toContain("requires");
+
+      const r2 = await tool.execute("tc2", { action: "send", message: "hi" });
+      expect(parseResult(r2).error).toContain("requires");
+    });
+
+    it("returns error for unregistered agent", async () => {
+      const tool = manager.createAgentsTool({ agentsRoot });
+      const result = await tool.execute("tc1", {
+        action: "send",
+        agent: "nonexistent",
+        message: "do stuff",
+      });
+      expect(parseResult(result).error).toContain("not registered");
+    });
+
+    it("returns error when agentsRoot not configured", async () => {
+      const tool = manager.createAgentsTool(); // no agentsRoot
+      const result = await tool.execute("tc1", {
+        action: "send",
+        agent: "researcher",
+        message: "do stuff",
+      });
+      expect(parseResult(result).error).toContain("agentsRoot");
+    });
+  });
+
   describe("action: peek", () => {
     it("returns messages for a session", async () => {
       const tool = manager.createAgentsTool();
@@ -207,30 +296,6 @@ describe("createAgentsTool()", () => {
     });
   });
 
-  describe("action: steer", () => {
-    it("returns error when sessionId or message missing", async () => {
-      const tool = manager.createAgentsTool();
-
-      const r1 = await tool.execute("tc1", { action: "steer", sessionId: "s_1" });
-      expect(parseResult(r1).error).toContain("requires");
-
-      const r2 = await tool.execute("tc2", { action: "steer", message: "hi" });
-      expect(parseResult(r2).error).toContain("requires");
-    });
-
-    it("returns error for non-running session", async () => {
-      const tool = manager.createAgentsTool();
-      const result = await tool.execute("tc1", {
-        action: "steer",
-        sessionId: "nonexistent",
-        message: "hurry up",
-      });
-
-      const parsed = parseResult(result);
-      expect(parsed.error).toContain("not found");
-    });
-  });
-
   describe("callDeny", () => {
     it("blocks call to denied agent with hint", async () => {
       const tool = manager.createAgentsTool({
@@ -258,7 +323,6 @@ describe("createAgentsTool()", () => {
       });
       const parsed = parseResult(result);
       expect(parsed.sessionId).toBeDefined();
-      // May have an error from the fake model, but NOT a deny error
       if (parsed.error) {
         expect(parsed.error).not.toContain("Cannot call");
       }
@@ -271,25 +335,6 @@ describe("createAgentsTool()", () => {
       const result = await tool.execute("tc1", { action: "list" });
       const parsed = parseResult(result);
       expect(parsed.agents).toHaveLength(2);
-    });
-  });
-
-  describe("asyncCall mode", () => {
-    it("returns sessionId immediately without waiting", async () => {
-      const tool = manager.createAgentsTool({ asyncCall: true });
-      const result = await tool.execute("tc1", {
-        action: "call",
-        agent: "researcher",
-        task: "find papers",
-      });
-
-      const parsed = parseResult(result);
-      expect(parsed.sessionId).toBeDefined();
-      expect(parsed.status).toBe("started");
-
-      // Clean up
-      manager.cancel(parsed.sessionId);
-      await manager.waitFor(parsed.sessionId);
     });
   });
 

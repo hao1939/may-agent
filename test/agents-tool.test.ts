@@ -1,9 +1,9 @@
 /**
- * Tests for V2 agents tool — call, list, peek, steer, cancel.
+ * Tests for V2 agents tool — call, send, list, peek, cancel.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { getModel } from "@mariozechner/pi-ai";
@@ -39,10 +39,12 @@ async function callTool(tool: AgentTool, params: Record<string, unknown>): Promi
 
 describe("V2 agents tool", () => {
   let persistDir: string;
+  let agentsRoot: string;
   let manager: SubagentManager;
 
   beforeEach(() => {
     persistDir = mkdtempSync(join(tmpdir(), "agents-tool-"));
+    agentsRoot = mkdtempSync(join(tmpdir(), "agents-root-"));
     mkdirSync(join(persistDir, "sessions"), { recursive: true });
     mkdirSync(join(persistDir, "memory"), { recursive: true });
     manager = new SubagentManager({ persistDir });
@@ -50,6 +52,7 @@ describe("V2 agents tool", () => {
 
   afterEach(() => {
     try { rmSync(persistDir, { recursive: true, force: true }); } catch {}
+    try { rmSync(agentsRoot, { recursive: true, force: true }); } catch {}
   });
 
   it("list returns registered agents and no running sessions", async () => {
@@ -105,13 +108,19 @@ describe("V2 agents tool", () => {
     expect(result.error).toContain("requires");
   });
 
-  it("steer without sessionId or message returns error", async () => {
-    const tool = manager.createAgentsTool();
-    const result = await callTool(tool, { action: "steer", sessionId: "s_1" });
+  it("send without agent or message returns error", async () => {
+    const tool = manager.createAgentsTool({ agentsRoot });
+    const result = await callTool(tool, { action: "send", agent: "coder" });
     expect(result.error).toContain("requires");
   });
 
-  it("asyncCall mode returns sessionId immediately", async () => {
+  it("send to unregistered agent returns error", async () => {
+    const tool = manager.createAgentsTool({ agentsRoot });
+    const result = await callTool(tool, { action: "send", agent: "nonexistent", message: "do stuff" });
+    expect(result.error).toContain("not registered");
+  });
+
+  it("send appends to target agent's workspace/todo.md", async () => {
     manager.register({
       name: "coder",
       description: "Writes code",
@@ -120,17 +129,78 @@ describe("V2 agents tool", () => {
       tools: [echoTool()],
     });
 
-    const tool = manager.createAgentsTool({ asyncCall: true });
-    const result = await callTool(tool, { action: "call", agent: "coder", task: "test" });
+    const tool = manager.createAgentsTool({
+      agentsRoot,
+      getCallerAgentName: () => "may",
+    });
 
-    expect(result.sessionId).toBeDefined();
-    expect(result.status).toBe("started");
+    const result = await callTool(tool, { action: "send", agent: "coder", message: "fix the login bug" });
+    expect(result.sent).toBe("coder");
 
-    // Clean up — cancel the running session
-    const sessions = manager.status();
-    for (const s of sessions) {
-      manager.cancel(s.sessionId);
-    }
+    const todoPath = join(agentsRoot, "coder", "workspace", "todo.md");
+    expect(existsSync(todoPath)).toBe(true);
+    const content = readFileSync(todoPath, "utf-8");
+    expect(content).toContain("# TODO");
+    expect(content).toContain("fix the login bug");
+    expect(content).toContain("[from:may");
+    expect(content).toContain("- [ ]");
+  });
+
+  it("send appends multiple items to existing todo.md", async () => {
+    manager.register({
+      name: "coder",
+      description: "Writes code",
+      domain: "coding",
+      model: mockModel(),
+      tools: [echoTool()],
+    });
+
+    const tool = manager.createAgentsTool({
+      agentsRoot,
+      getCallerAgentName: () => "bob",
+    });
+
+    await callTool(tool, { action: "send", agent: "coder", message: "first task" });
+    await callTool(tool, { action: "send", agent: "coder", message: "second task" });
+
+    const todoPath = join(agentsRoot, "coder", "workspace", "todo.md");
+    const content = readFileSync(todoPath, "utf-8");
+    expect(content).toContain("first task");
+    expect(content).toContain("second task");
+  });
+
+  it("send calls triggerHeartbeat callback", async () => {
+    manager.register({
+      name: "coder",
+      description: "Writes code",
+      domain: "coding",
+      model: mockModel(),
+      tools: [echoTool()],
+    });
+
+    let triggeredAgent: string | null = null;
+    const tool = manager.createAgentsTool({
+      agentsRoot,
+      triggerHeartbeat: (name) => { triggeredAgent = name; return true; },
+    });
+
+    const result = await callTool(tool, { action: "send", agent: "coder", message: "do stuff" });
+    expect(triggeredAgent).toBe("coder");
+    expect(result.heartbeatTriggered).toBe(true);
+  });
+
+  it("send without agentsRoot returns error", async () => {
+    manager.register({
+      name: "coder",
+      description: "Writes code",
+      domain: "coding",
+      model: mockModel(),
+      tools: [echoTool()],
+    });
+
+    const tool = manager.createAgentsTool(); // no agentsRoot
+    const result = await callTool(tool, { action: "send", agent: "coder", message: "do stuff" });
+    expect(result.error).toContain("agentsRoot");
   });
 
   it("unknown action returns error", async () => {

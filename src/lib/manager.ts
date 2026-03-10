@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync, mkdirSync, existsSync, writeFileSync, unlinkSync } from "node:fs";
+import { readFileSync, readdirSync, mkdirSync, existsSync, writeFileSync, appendFileSync, unlinkSync } from "node:fs";
 import { Agent } from "@mariozechner/pi-agent-core";
 import type { AgentMessage, AgentEvent, AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
 import { Type, StringEnum } from "@mariozechner/pi-ai";
@@ -1955,12 +1955,16 @@ export class SubagentManager {
   }
 
   /**
-   * Create the V2 agents tool — 5 actions: call, list, peek, steer, cancel.
+   * Create the V2 agents tool — 5 actions: call, send, list, peek, cancel.
    *
    * `call` is synchronous: blocks until the child agent finishes and returns
-   * the result. This is the single cooperation primitive.
+   * the result. Use when you need the result to continue.
    *
-   * `peek`, `steer`, `cancel` operate on running sessions (monitoring).
+   * `send` is async fire-and-forget: appends a todo item to the target agent's
+   * workspace/todo.md and triggers their heartbeat. Use for "do this, I don't
+   * need the result now".
+   *
+   * `peek`, `cancel` operate on running sessions (monitoring).
    * `list` shows available agents and running sessions.
    */
   createAgentsTool(opts?: {
@@ -1970,15 +1974,17 @@ export class SubagentManager {
     getCallerAgentName?: () => string | undefined;
     /** Agent names that cannot be called directly. Returns error with hint. */
     callDeny?: { agents: string[]; hint: string };
-    /** If true, `call` action spawns a background session and returns immediately
-     *  instead of blocking. Used for the chat session where blocking is not allowed. */
-    asyncCall?: boolean;
+    /** Root directory of agent definitions (for send action). */
+    agentsRoot?: string;
+    /** Trigger an agent's heartbeat cron (for send action). */
+    triggerHeartbeat?: (agentName: string) => boolean;
   }): AgentTool {
     const manager = this;
     const getCallerSessionId = opts?.getCallerSessionId;
     const getCallerAgentName = opts?.getCallerAgentName;
     const callDeny = opts?.callDeny;
-    const asyncCall = opts?.asyncCall ?? false;
+    const agentsRoot = opts?.agentsRoot;
+    const triggerHeartbeat = opts?.triggerHeartbeat;
 
     function textResult(text: string): AgentToolResult<string> {
       return {
@@ -1989,22 +1995,22 @@ export class SubagentManager {
 
     const AgentsToolParams = Type.Object({
       action: StringEnum(
-        ["call", "list", "peek", "steer", "cancel"] as const,
-        { description: "Action to perform. 'call' runs an agent synchronously (blocks until done). 'list' shows agents and running sessions. 'peek'/'steer'/'cancel' operate on running sessions." },
+        ["call", "send", "list", "peek", "cancel"] as const,
+        { description: "Action to perform. 'call' runs an agent synchronously (blocks until done). 'send' adds a todo for an agent and triggers their heartbeat (fire-and-forget). 'list' shows agents and running sessions. 'peek'/'cancel' operate on running sessions." },
       ),
-      agent: Type.Optional(Type.String({ description: "Agent name (required for 'call')" })),
+      agent: Type.Optional(Type.String({ description: "Agent name (required for 'call', 'send')" })),
       task: Type.Optional(Type.String({ description: "Task description (required for 'call')" })),
-      sessionId: Type.Optional(Type.String({ description: "Session ID (required for 'peek', 'steer', 'cancel')" })),
-      message: Type.Optional(Type.String({ description: "Message to inject (required for 'steer')" })),
+      message: Type.Optional(Type.String({ description: "Todo item to send (required for 'send')" })),
+      sessionId: Type.Optional(Type.String({ description: "Session ID (required for 'peek', 'cancel')" })),
       limit: Type.Optional(Type.Number({ description: "Max messages to return (for 'peek', default: 20)" })),
     });
 
     interface AgentsToolParamsType {
-      action: "call" | "list" | "peek" | "steer" | "cancel";
+      action: "call" | "send" | "list" | "peek" | "cancel";
       agent?: string;
       task?: string;
-      sessionId?: string;
       message?: string;
+      sessionId?: string;
       limit?: number;
     }
 
@@ -2012,7 +2018,7 @@ export class SubagentManager {
       name: "agents",
       label: "Agents",
       description:
-        "Cooperate with other agents. 'call' runs an agent and returns the result (blocks). 'list' shows available agents and running sessions. 'peek'/'steer'/'cancel' monitor running sessions.",
+        "Cooperate with other agents. 'call' runs an agent and returns the result (blocks). 'send' adds a todo for an agent and triggers their heartbeat (fire-and-forget). 'list' shows available agents and running sessions. 'peek'/'cancel' monitor running sessions.",
       parameters: AgentsToolParams,
       execute: async (_toolCallId, _params) => {
         const params = _params as AgentsToolParamsType;
@@ -2027,20 +2033,7 @@ export class SubagentManager {
               }
               const parentSid = getCallerSessionId?.();
 
-              if (asyncCall) {
-                // Chat session mode: spawn and return immediately
-                const sessionId = manager.run(params.agent, params.task, {
-                  ...(parentSid ? { parentSessionId: parentSid } : {}),
-                  source: "agent",
-                });
-                return textResult(JSON.stringify({
-                  sessionId,
-                  status: "started",
-                  message: `${params.agent} session started. Use peek/steer/cancel to monitor.`,
-                }));
-              }
-
-              // Normal mode: sync call, blocks until done
+              // Sync call: blocks until done
               const result = await manager.callAgent(params.agent, params.task, {
                 parentSessionId: parentSid,
               });
@@ -2082,35 +2075,41 @@ export class SubagentManager {
               }
             }
 
-            case "steer": {
-              if (!params.sessionId || !params.message) {
-                return textResult(JSON.stringify({ error: "'steer' requires 'sessionId' and 'message'" }));
+            case "send": {
+              if (!params.agent || !params.message) {
+                return textResult(JSON.stringify({ error: "'send' requires 'agent' and 'message'" }));
               }
-              // Attached: use manager.steer
-              if (manager.hasActiveSession(params.sessionId)) {
-                try {
-                  manager.steer(params.sessionId, params.message, "steer");
-                  return textResult(JSON.stringify({ steered: params.sessionId }));
-                } catch (err) {
-                  const msg = err instanceof Error ? err.message : String(err);
-                  return textResult(JSON.stringify({ error: msg }));
-                }
+              if (!manager.agents.has(params.agent)) {
+                return textResult(JSON.stringify({ error: `Agent "${params.agent}" not registered` }));
               }
-              // Detached: try socket
-              const steerMeta = manager.registry.getSession(params.sessionId);
-              if (steerMeta?.instance) {
-                const steerIdentity = readIdentity(manager.registry.persistDir, steerMeta.instance);
-                if (steerIdentity?.socket) {
-                  try {
-                    await sendSocketCommand(steerIdentity.socket, { type: "steer", message: params.message });
-                    return textResult(JSON.stringify({ steered: params.sessionId, mode: "detached" }));
-                  } catch (socketErr) {
-                    const socketMsg = socketErr instanceof Error ? socketErr.message : String(socketErr);
-                    return textResult(JSON.stringify({ error: `Failed to steer detached session: ${socketMsg}` }));
-                  }
-                }
+              if (!agentsRoot) {
+                return textResult(JSON.stringify({ error: "send not available (agentsRoot not configured)" }));
               }
-              return textResult(JSON.stringify({ error: `Session "${params.sessionId}" not found or not running` }));
+
+              // Append to target agent's workspace/todo.md
+              const todoDir = join(agentsRoot, params.agent, "workspace");
+              mkdirSync(todoDir, { recursive: true });
+              const todoPath = join(todoDir, "todo.md");
+
+              const caller = getCallerAgentName?.() ?? "unknown";
+              const timestamp = new Date().toISOString().slice(0, 16);
+              const entry = `- [ ] [from:${caller} ${timestamp}] ${params.message}\n`;
+
+              // Create file with header if it doesn't exist, otherwise append
+              if (!existsSync(todoPath)) {
+                writeFileSync(todoPath, `# TODO\n\n${entry}`, "utf-8");
+              } else {
+                appendFileSync(todoPath, entry, "utf-8");
+              }
+
+              // Trigger target agent's heartbeat
+              const triggered = triggerHeartbeat?.(params.agent) ?? false;
+
+              return textResult(JSON.stringify({
+                sent: params.agent,
+                message: params.message,
+                heartbeatTriggered: triggered,
+              }));
             }
 
             case "cancel": {
