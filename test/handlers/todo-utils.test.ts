@@ -6,7 +6,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdtempSync, writeFileSync, readFileSync, rmSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { tmpdir } from "node:os";
-import { appendToTodoSection } from "../../run/todo-utils.js";
+import { appendToTodoSection } from "../../src/lib/todo-utils.js";
 
 describe("appendToTodoSection", () => {
   let dir: string;

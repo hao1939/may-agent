@@ -1,6 +1,6 @@
 
 import { describe, it, expect } from "vitest";
-import { SubagentManager } from "../src/manager.js";
+import { SubagentManager } from "../src/lib/manager.js";
 
 describe("System Prompt Caching", () => {
   it("should place stable context before volatile session IDs", () => {

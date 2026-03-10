@@ -2,8 +2,8 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { SubagentManager } from "../src/manager.js";
-import { writeSessionMeta, saveWorkflowRun } from "../src/persistence.js";
+import { SubagentManager } from "../src/lib/manager.js";
+import { writeSessionMeta, saveWorkflowRun } from "../src/lib/persistence.js";
 import type { Model } from "@mariozechner/pi-ai";
 
 function fakeModel(): Model<any> {

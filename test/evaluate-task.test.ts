@@ -2,8 +2,8 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { mkdirSync, writeFileSync, existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { findUnevaluatedChildren, writeSkippedEvaluations } from "../src/evaluator.js";
-import type { PersistedSession } from "../src/persistence.js";
+import { findUnevaluatedChildren, writeSkippedEvaluations } from "../src/lib/evaluator.js";
+import type { PersistedSession } from "../src/lib/persistence.js";
 
 function tmpDir(): string {
   const dir = join(tmpdir(), `eval-task-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);

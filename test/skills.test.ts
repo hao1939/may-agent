@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { parseFrontmatter, loadSkillsFromDirs, formatSkillsForPrompt } from "../src/skills.js";
+import { parseFrontmatter, loadSkillsFromDirs, formatSkillsForPrompt } from "../src/lib/skills.js";
 import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";

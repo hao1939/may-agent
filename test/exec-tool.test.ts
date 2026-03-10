@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { createExecTool, isMetaRecursionCommand } from "../src/tools.js";
+import { createExecTool, isMetaRecursionCommand } from "../src/lib/tools.js";
 
 describe("createExecTool", () => {
   it("executes a simple command and returns output", async () => {

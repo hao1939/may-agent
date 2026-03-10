@@ -18,7 +18,7 @@
 
 import { setDefaultAutoSelectFamily } from "node:net";
 import { type EventBus, eventChannel } from "../event-bus.js";
-import type { SubagentManager } from "../../src/index.js";
+import type { SubagentManager } from "../../lib/index.js";
 
 // Force IPv4 for fetch — Node 22's undici tries IPv6 first which times out
 // on some networks (e.g., when IPv6 to api.telegram.org is unreachable).

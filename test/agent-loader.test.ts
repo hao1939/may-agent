@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { validateAgentConfig, type AgentConfig } from "../run/agent-loader.js";
+import { validateAgentConfig, type AgentConfig } from "../src/app/agent-loader.js";
 import { resolve } from "node:path";
 
 const AGENTS_ROOT = resolve(import.meta.dirname, "..", "agents");

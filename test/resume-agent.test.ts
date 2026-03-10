@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdtempSync, rmSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { SubagentManager } from "../src/manager.js";
+import { SubagentManager } from "../src/lib/manager.js";
 import {
   ensureSessionDir,
   appendSessionMessage,
@@ -10,8 +10,8 @@ import {
   archiveSession,
   writeSessionMeta,
   readSessionMeta,
-} from "../src/persistence.js";
-import type { PersistedSession } from "../src/persistence.js";
+} from "../src/lib/persistence.js";
+import type { PersistedSession } from "../src/lib/persistence.js";
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { Model } from "@mariozechner/pi-ai";
 
@@ -379,7 +379,7 @@ describe("SubagentManager.resumeAgent()", () => {
 
     // Verify active dir is gone
     const { existsSync } = await import("node:fs");
-    const { sessionDir } = await import("../src/persistence.js");
+    const { sessionDir } = await import("../src/lib/persistence.js");
     expect(existsSync(sessionDir(persistDir, "session-archived"))).toBe(false);
 
     const manager = new SubagentManager({ persistDir });

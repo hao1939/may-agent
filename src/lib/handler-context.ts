@@ -5,8 +5,8 @@
  * which provides everything the handler needs from the runtime.
  */
 
-import type { SubagentManager } from "../src/index.js";
-import type { CronEntry } from "../src/cron-tool.js";
+import type { SubagentManager } from "./index.js";
+import type { CronEntry } from "./cron-tool.js";
 
 export interface HandlerContext {
   /** SubagentManager — for run(), followUp(), etc. */

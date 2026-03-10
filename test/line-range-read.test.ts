@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { createReadTool, createLinkedTools } from "../src/tools.js";
+import { createReadTool, createLinkedTools } from "../src/lib/tools.js";
 import { writeFileSync, mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 

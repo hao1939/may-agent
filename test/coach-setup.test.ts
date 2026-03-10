@@ -3,10 +3,10 @@ import { readdirSync, readFileSync, existsSync } from "node:fs";
 import { resolve, join } from "node:path";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { createWorkflowTool } from "../src/workflow-tool.js";
-import { SubagentManager } from "../src/manager.js";
-import type { WorkflowToolResult } from "../src/workflow.js";
-import { loadSkillsFromDirs } from "../src/skills.js";
+import { createWorkflowTool } from "../src/lib/workflow-tool.js";
+import { SubagentManager } from "../src/lib/manager.js";
+import type { WorkflowToolResult } from "../src/lib/workflow.js";
+import { loadSkillsFromDirs } from "../src/lib/skills.js";
 
 const AGENTS_ROOT = resolve(import.meta.dirname, "..", "agents");
 const COACH_DIR = resolve(AGENTS_ROOT, "coach");

@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { extractHandoff, summarizeForHandoff } from "../src/handoff.js";
-import type { HandoffData, HandoffOptions } from "../src/handoff.js";
-import type { TaskResult } from "../src/types.js";
+import { extractHandoff, summarizeForHandoff } from "../src/lib/handoff.js";
+import type { HandoffData, HandoffOptions } from "../src/lib/handoff.js";
+import type { TaskResult } from "../src/lib/types.js";
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 
 // ── Helpers ────────────────────────────────────────────────────────────

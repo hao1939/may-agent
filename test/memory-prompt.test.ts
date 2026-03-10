@@ -6,9 +6,9 @@ import {
   memoryPath,
   appendMemoryEntry,
   readMemoryEntries,
-} from "../src/persistence.js";
-import type { MemoryEntry } from "../src/persistence.js";
-import { SubagentManager } from "../src/manager.js";
+} from "../src/lib/persistence.js";
+import type { MemoryEntry } from "../src/lib/persistence.js";
+import { SubagentManager } from "../src/lib/manager.js";
 import type { Model } from "@mariozechner/pi-ai";
 
 function fakeModel(): Model<any> {

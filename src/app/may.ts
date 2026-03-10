@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import { resolve, dirname } from "node:path";
 import { existsSync, readFileSync, writeFileSync, unlinkSync, mkdirSync, appendFileSync } from "node:fs";
 import { getModel } from "@mariozechner/pi-ai";
-import { SubagentManager, evaluateTask, writeSkippedEvaluations } from "../src/index.js";
+import { SubagentManager, evaluateTask, writeSkippedEvaluations } from "../lib/index.js";
 import { EventBus } from "./event-bus.js";
 import { attachConsoleUI } from "./ui/console.js";
 import { attachSocketUI } from "./ui/socket.js";
@@ -118,7 +118,7 @@ const models: Record<string, any> = {
   },
 };
 
-let sid: string;
+let sid: string = "";
 
 // ── Infrastructure ─────────────────────────────────────────────────────
 
@@ -705,7 +705,7 @@ if (CRON_ENABLED) {
   // Start all crons with onFire notification
   for (const [name, cron] of getAgentCrons()) {
     cron.onFire((entry, type) => {
-      const label = type === "js" ? "JS handler" : type === "task" ? `task → ${entry.agent}` : "heartbeat";
+      const label = type === "js" ? "JS handler" : type === "detached" ? `detached → ${entry.agent}` : "heartbeat";
       bus.emit({
         type: "info",
         message: `[cron] ${entry.name} fired (${label})`,

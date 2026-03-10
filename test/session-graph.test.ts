@@ -1,12 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdirSync, writeFileSync, rmSync, existsSync, mkdtempSync } from "node:fs";
-import { readSessionMeta } from "../src/persistence.js";
+import { readSessionMeta } from "../src/lib/persistence.js";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { SubagentManager } from "../src/manager.js";
-import { createWorkflowTool } from "../src/workflow-tool.js";
-import { readWorkflowRun, listWorkflowRuns } from "../src/persistence.js";
-import type { WorkflowToolResult, WorkflowEvent, SessionTrace } from "../src/workflow.js";
+import { SubagentManager } from "../src/lib/manager.js";
+import { createWorkflowTool } from "../src/lib/workflow-tool.js";
+import { readWorkflowRun, listWorkflowRuns } from "../src/lib/persistence.js";
+import type { WorkflowToolResult, WorkflowEvent, SessionTrace } from "../src/lib/workflow.js";
 import type { Model } from "@mariozechner/pi-ai";
 
 // ── Test fixtures ──────────────────────────────────────────────────────

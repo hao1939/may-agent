@@ -5,7 +5,7 @@
  * Usage: npx tsx test/scenarios.ts
  */
 
-import { SubagentManager, createReadTool, createWriteTool, createExecTool } from "../src/index.js";
+import { SubagentManager, createReadTool, createWriteTool, createExecTool } from "../src/lib/index.js";
 import { mkdtempSync, rmSync, readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";

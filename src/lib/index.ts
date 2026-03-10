@@ -84,3 +84,5 @@ export type {
   WorkflowRun,
   WorkflowStep,
 } from "./persistence.js";
+export type { HandlerContext, HandlerModule } from "./handler-context.js";
+export { appendToTodoSection } from "./todo-utils.js";

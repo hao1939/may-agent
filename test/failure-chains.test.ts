@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { extractFailureChains, formatFailureChains } from "../src/evaluator.js";
+import { extractFailureChains, formatFailureChains } from "../src/lib/evaluator.js";
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 
 /** Helper to build a minimal assistant message with tool calls. */

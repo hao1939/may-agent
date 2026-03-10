@@ -2,11 +2,11 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdirSync, writeFileSync, rmSync, existsSync, mkdtempSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { createWorkflowTool } from "../src/workflow-tool.js";
-import { SubagentManager } from "../src/manager.js";
-import type { WorkflowToolResult } from "../src/workflow.js";
-import type { WorkflowRun } from "../src/persistence.js";
-import { saveWorkflowRun, readWorkflowRun } from "../src/persistence.js";
+import { createWorkflowTool } from "../src/lib/workflow-tool.js";
+import { SubagentManager } from "../src/lib/manager.js";
+import type { WorkflowToolResult } from "../src/lib/workflow.js";
+import type { WorkflowRun } from "../src/lib/persistence.js";
+import { saveWorkflowRun, readWorkflowRun } from "../src/lib/persistence.js";
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 
 // ── Test fixtures ──────────────────────────────────────────────────────

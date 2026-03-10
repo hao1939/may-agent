@@ -12,7 +12,7 @@ import {
   sessionJsonlPath,
   sessionMetaPath,
   memoryPath,
-} from "../src/persistence.js";
+} from "../src/lib/persistence.js";
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 
 describe("JSONL corruption handling", () => {

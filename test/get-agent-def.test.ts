@@ -2,8 +2,8 @@ import { describe, it, expect } from "vitest";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { mkdtempSync, rmSync } from "node:fs";
-import { SubagentManager } from "../src/manager.js";
-import type { SubagentDefinition } from "../src/types.js";
+import { SubagentManager } from "../src/lib/manager.js";
+import type { SubagentDefinition } from "../src/lib/types.js";
 import type { Model } from "@mariozechner/pi-ai";
 
 function fakeModel(): Model<any> {

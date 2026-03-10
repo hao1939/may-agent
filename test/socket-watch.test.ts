@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { createSocketWatchTool } from "../src/socket-watch.js";
-import { SubagentManager } from "../src/manager.js";
+import { createSocketWatchTool } from "../src/lib/socket-watch.js";
+import { SubagentManager } from "../src/lib/manager.js";
 import type { Model } from "@mariozechner/pi-ai";
 import { createServer, type Server, type Socket as NetSocket } from "node:net";
 import { tmpdir } from "node:os";

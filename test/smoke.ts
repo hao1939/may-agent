@@ -1,4 +1,4 @@
-import { SubagentManager } from "../src/index.js";
+import { SubagentManager } from "../src/lib/index.js";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { mkdtempSync, rmSync } from "node:fs";

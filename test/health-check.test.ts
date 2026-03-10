@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { createHealthCheckTool } from "../src/tools.js";
+import { createHealthCheckTool } from "../src/lib/tools.js";
 import { mkdtempSync, rmSync, writeFileSync, mkdirSync } from "node:fs";
-import { writeSessionMeta } from "../src/persistence.js";
+import { writeSessionMeta } from "../src/lib/persistence.js";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
