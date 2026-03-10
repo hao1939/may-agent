@@ -3,6 +3,7 @@ import { Agent } from "@mariozechner/pi-agent-core";
 import type { AgentMessage, AgentEvent, AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
 import { Type, StringEnum } from "@mariozechner/pi-ai";
 import type { SubagentDefinition, SessionInfo, TaskResult, SessionTreeNode, ManagerHealthReport, HealthActiveSession, AuditHealthOptions, AuditHealthReport, ReconcileReport } from "./types.js";
+import { wrapToolsForChat } from "./chat-harness.js";
 import { createCompactionTransform } from "./compaction.js";
 import type { CompactionOptions } from "./compaction.js";
 import { loadSkillsFromDirs, formatSkillsForPrompt } from "./skills.js";
@@ -900,11 +901,13 @@ export class SubagentManager {
     mkdirSync(outputDir, { recursive: true });
 
     const compactionTransform = this.buildTransformContext(def, opts?.compaction);
+    const isChatSession = opts?.autoClose === "never";
+    const tools = isChatSession ? wrapToolsForChat(def.tools) : def.tools;
     const agent = new Agent({
       initialState: {
         systemPrompt: this.resolveSystemPrompt(def, name, sessionId, persistDir),
         model: def.model,
-        tools: def.tools,
+        tools,
       },
       transformContext: compactionTransform,
       getApiKey: def.apiKey ? () => def.apiKey : undefined,
@@ -1096,11 +1099,13 @@ export class SubagentManager {
     const outputDir = sessionOutputDir(persistDir, targetSessionId);
 
     const compactionTransform = this.buildTransformContext(def, opts?.compaction);
+    const isChatSession = opts?.autoClose === "never";
+    const tools = isChatSession ? wrapToolsForChat(def.tools) : def.tools;
     const agent = new Agent({
       initialState: {
         systemPrompt,
         model: def.model,
-        tools: def.tools,
+        tools,
         messages: savedMessages,
       },
       transformContext: compactionTransform,
