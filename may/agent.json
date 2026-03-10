@@ -5,7 +5,7 @@
   "model": "opus",
   "tools": [
     "coding",
-    "subagents",
+    "agents",
     "workflow",
     "cron"
   ],
@@ -13,15 +13,17 @@
     "system-design.md",
     "team.md"
   ],
+  "maxTurns": 40,
   "delegateDeny": {
     "agents": [
       "coder",
       "qa"
     ],
-    "hint": "Use subagents.run(\"tech-lead\", task) for code changes (async). Or workflow.run(\"implement-and-review\", task) in heartbeat context (blocking)."
+    "hint": "Use agents.call(\"tech-lead\", task) for code changes. Or workflow.run(\"implement-and-review\", task) for multi-step workflows."
   },
   "skills": [
     "file-safety",
-    "error-handling"
+    "error-handling",
+    "agent-coordination"
   ]
 }

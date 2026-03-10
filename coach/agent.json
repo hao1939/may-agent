@@ -6,16 +6,18 @@
   "tools": [
     "coding",
     "socket-watch",
-    "subagents",
+    "agents",
     "workflow"
   ],
   "memoryLimit": 10,
   "compaction": true,
+  "maxTurns": 50,
   "sharedKnowledge": [
     "team.md"
   ],
   "skills": [
     "file-safety",
-    "error-handling"
+    "error-handling",
+    "agent-coordination"
   ]
 }

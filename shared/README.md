@@ -23,8 +23,11 @@ Files here are available to all agents via `sharedKnowledge` in agent.json (auto
 
 | Skill | Purpose |
 |-------|---------|
+| `skills/agent-coordination/` | How to delegate work using the `agents` tool (call, send, list, peek, cancel) |
 | `skills/knowledge-sharing/` | How agents share discoveries and reference each other's knowledge |
-| `skills/sub-agent-coordination/` | How to delegate work to other agents |
+| `skills/error-handling/` | Error escalation, retry protocols, validation patterns |
+| `skills/file-safety/` | Read-before-write, truncation awareness, file integrity |
+| `skills/patterns/` | Proven multi-agent interaction patterns (implement-review-commit, research, scraping) |
 
 ## Historical Docs
 

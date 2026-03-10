@@ -5,15 +5,17 @@
   "model": "gemini3pro",
   "tools": [
     "coding",
-    "subagents"
+    "agents"
   ],
   "sharedKnowledge": [
     "system-design.md",
     "team.md",
     "philosophy.md"
   ],
+  "maxTurns": 30,
   "skills": [
     "file-safety",
-    "error-handling"
+    "error-handling",
+    "agent-coordination"
   ]
 }

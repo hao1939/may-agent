@@ -6,15 +6,17 @@
   "tools": [
     "coding",
     "workflow",
-    "subagents"
+    "agents"
   ],
   "sharedKnowledge": [
     "system-design.md",
     "team.md",
     "philosophy.md"
   ],
+  "maxTurns": 40,
   "skills": [
     "file-safety",
-    "error-handling"
+    "error-handling",
+    "agent-coordination"
   ]
 }

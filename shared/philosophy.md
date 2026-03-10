@@ -227,8 +227,8 @@ Each agent owns its own TODO list. Global TODO = cross-agent, system-wide items 
 > "we should keep it per agent" — Hao
 
 
-### 48. Async by Default for Supervisors [hao-pattern]
-Supervisor agents (May) must use async dispatch (`subagents.run`) for all meaningful work. Blocking calls (`subagents.delegate`) are only for sub-second queries. Blocking on a long-running task makes the supervisor unresponsive to new inputs and fragile to crashes. State must be persisted to disk (`todo.md`), not held in the call stack.
+### 48. Sync for Results, Send for Independent Work [hao-pattern]
+Use `agents.call` (blocking) when you need the result to continue. Use `agents.send` (fire-and-forget) for independent work — it appends to the target agent's `workspace/todo.md` and triggers their heartbeat. Don't block on long-running tasks; it makes the supervisor unresponsive to new inputs and fragile to crashes. State must be persisted to disk (`todo.md`), not held in the call stack.
 
 ### 33. Heartbeat vs Cron: Explore Then Offload [hao-pattern]
 Agents have two operating modes:
@@ -311,3 +311,6 @@ Agents exist for reasoning, exploration, creation, and judgment — not mechanic
 If infrastructure detects a problem (crash, hang, resource issue), it writes to the affected agent's `workspace/todo.md` or `workspace/inbox.md`. The agent then responds with *cognitive* work — diagnosing, fixing, deciding — not the detection itself.
 
 **The principle:** Cron, JS handlers, and system infrastructure handle mechanical/operational concerns. Agents handle thinking. Mixing the two wastes expensive LLM turns on work that `setTimeout` can do better.
+
+### 50. Reuse Proven Patterns (Workflow Memory) [imported]
+Don't re-derive coordination strategies from scratch. If a complex multi-agent task has been solved once, capture the pattern and reuse it. Efficiency comes from executing known good paths, not constant exploration.
