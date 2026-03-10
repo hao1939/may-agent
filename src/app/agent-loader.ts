@@ -173,17 +173,6 @@ function buildTools(
         }));
         break;
 
-      case "subagents": {
-        // Check agent config for delegateDeny
-        const denyConfig = config.delegateDeny;
-        tools.push(manager.createTool({
-          getCallerSessionId: () => agentSessionIds.get(config.name),
-          getCallerAgentName: () => config.name,
-          delegateDeny: denyConfig,
-        }));
-        break;
-      }
-
       case "agents": {
         // V2 agents tool — 5 actions: call, list, peek, steer, cancel
         const denyConfig = config.delegateDeny;
@@ -378,7 +367,7 @@ function resolveSkillsDirs(
 const VALID_TOOL_PRESETS = new Set([
   "coding", "read-write", "read-only", "exec", "exec-readonly", "exec-master",
   "claude-code", "gemini-cli",
-  "subagents", "agents", "workflow", "background-exec", "socket-watch", "cron", "scrape",
+  "agents", "workflow", "background-exec", "socket-watch", "cron", "scrape",
 ]);
 
 const REQUIRED_FIELDS: (keyof AgentConfig)[] = ["name", "description", "domain", "model", "tools"];

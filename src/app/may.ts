@@ -242,7 +242,6 @@ function attachAgentEvents(label: string, sessionId: string): void {
 
 let shuttingDown = false;
 let activeRL: ReturnType<typeof createInterface> | null = null;
-let notificationDrainTimer: ReturnType<typeof setInterval> | undefined;
 /** Task-mode session ID (only set in --task mode). */
 let taskSessionId: string | undefined;
 /** Chat loop instance (only set in --chat mode). */
@@ -254,9 +253,6 @@ function gracefulShutdown() {
   }
   shuttingDown = true;
   bus.emit({ type: "info", message: `Shutting down...` });
-
-  manager.stopNotificationWatcher();
-  clearInterval(notificationDrainTimer);
 
   for (const cron of getAgentCrons().values()) {
     cron.stop();
@@ -290,8 +286,6 @@ function gracefulRestart() {
   shuttingDown = true;
   bus.emit({ type: "info", message: "Restarting (hot-reload)..." });
 
-  manager.stopNotificationWatcher();
-  clearInterval(notificationDrainTimer);
   for (const cron of getAgentCrons().values()) {
     cron.stop();
   }
@@ -550,14 +544,6 @@ if (INITIAL_TASK && !CHAT_MODE) {
   // ── Cron-only mode ───────────────────────────────────────────────
   bus.emit({ type: "info", message: `[cron-only] No chat session. Running cron jobs only.` });
 }
-
-// ── Start notification watcher ──────────────────────────────────────────
-
-manager.startNotificationWatcher();
-notificationDrainTimer = setInterval(() => {
-  try { manager.drainNotifications(); } catch { /* best-effort */ }
-}, 30_000);
-notificationDrainTimer.unref();
 
 // ── Write identity ─────────────────────────────────────────────────────
 

@@ -98,7 +98,7 @@ describe("cascading cancel", () => {
   });
 });
 
-describe("parentSessionId via createTool", () => {
+describe("parentSessionId via createAgentsTool", () => {
   let persistDir: string;
   let manager: SubagentManager;
 
@@ -120,35 +120,14 @@ describe("parentSessionId via createTool", () => {
     rmSync(persistDir, { recursive: true, force: true });
   });
 
-  it("run action sets parentSessionId from getCallerSessionId", async () => {
+  it("call action sets parentSessionId from getCallerSessionId", async () => {
     const callerSid = "caller_123";
-    const tool = manager.createTool({
+    const tool = manager.createAgentsTool({
       getCallerSessionId: () => callerSid,
     });
 
     const result = await tool.execute("tc1", {
-      action: "run" as const,
-      agent: "worker",
-      task: "do work",
-    });
-
-    const parsed = JSON.parse(result.content[0].type === "text" ? result.content[0].text : "");
-    const sessionId = parsed.sessionId;
-
-    const registry = (manager as any).registry.getRegistry();
-    expect(registry.sessions[sessionId].parentSessionId).toBe(callerSid);
-
-    await manager.waitFor(sessionId);
-  });
-
-  it("delegate action sets parentSessionId from getCallerSessionId", async () => {
-    const callerSid = "caller_456";
-    const tool = manager.createTool({
-      getCallerSessionId: () => callerSid,
-    });
-
-    const result = await tool.execute("tc1", {
-      action: "delegate" as const,
+      action: "call",
       agent: "worker",
       task: "do work",
     });
@@ -160,11 +139,11 @@ describe("parentSessionId via createTool", () => {
     expect(registry.sessions[sessionId].parentSessionId).toBe(callerSid);
   });
 
-  it("run without getCallerSessionId has no parentSessionId", async () => {
-    const tool = manager.createTool();
+  it("call without getCallerSessionId has no parentSessionId", async () => {
+    const tool = manager.createAgentsTool();
 
     const result = await tool.execute("tc1", {
-      action: "run" as const,
+      action: "call",
       agent: "worker",
       task: "do work",
     });
@@ -174,35 +153,5 @@ describe("parentSessionId via createTool", () => {
 
     const registry = (manager as any).registry.getRegistry();
     expect(registry.sessions[sessionId].parentSessionId).toBeUndefined();
-
-    await manager.waitFor(sessionId);
-  });
-
-  it("onSessionStart fires for both run and delegate", async () => {
-    const started: Array<{ agent: string; sessionId: string }> = [];
-    const tool = manager.createTool({
-      onSessionStart: (agent, sessionId) => {
-        started.push({ agent, sessionId });
-      },
-    });
-
-    const runResult = await tool.execute("tc1", {
-      action: "run" as const,
-      agent: "worker",
-      task: "run task",
-    });
-    const runParsed = JSON.parse(runResult.content[0].type === "text" ? runResult.content[0].text : "");
-    await manager.waitFor(runParsed.sessionId);
-
-    const delegateResult = await tool.execute("tc2", {
-      action: "delegate" as const,
-      agent: "worker",
-      task: "delegate task",
-    });
-    const delegateParsed = JSON.parse(delegateResult.content[0].type === "text" ? delegateResult.content[0].text : "");
-
-    expect(started).toHaveLength(2);
-    expect(started[0].sessionId).toBe(runParsed.sessionId);
-    expect(started[1].sessionId).toBe(delegateParsed.sessionId);
   });
 });

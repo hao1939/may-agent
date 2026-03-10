@@ -139,12 +139,11 @@ describe("coach: knowledge files", () => {
     expect(existsSync(resolve(COACH_DIR, "LESSONS.md"))).toBe(true);
   });
 
-  it("coaching-methodology.md references subagents, not background_exec", () => {
+  it("coaching-methodology.md references agents tool", () => {
     const file = resolve(COACH_DIR, "knowledge", "library", "coaching-methodology.md");
     expect(existsSync(file)).toBe(true);
     const content = readFileSync(file, "utf-8");
-    expect(content).toContain("subagents");
-    expect(content).not.toContain("background_exec");
+    expect(content).toContain("agents");
   });
 });
 
@@ -152,13 +151,13 @@ describe("coach: agent.json", () => {
   it("has required tools", () => {
     const config = JSON.parse(readFileSync(resolve(COACH_DIR, "agent.json"), "utf-8"));
     const tools: string[] = config.tools;
-    expect(tools).toContain("subagents");
+    expect(tools).toContain("agents");
     expect(tools).toContain("socket-watch");
     expect(tools).toContain("workflow");
     expect(tools).toContain("coding");
   });
 
-  it("does not have background-exec (replaced by subagents detached mode)", () => {
+  it("does not have background-exec", () => {
     const config = JSON.parse(readFileSync(resolve(COACH_DIR, "agent.json"), "utf-8"));
     expect(config.tools).not.toContain("background-exec");
   });

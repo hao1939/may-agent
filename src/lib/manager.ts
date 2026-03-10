@@ -1,9 +1,8 @@
-import { readFileSync, readdirSync, mkdirSync, existsSync, appendFileSync, writeFileSync, watch as fsWatch, renameSync, unlinkSync } from "node:fs";
+import { readFileSync, readdirSync, mkdirSync, existsSync, writeFileSync, unlinkSync } from "node:fs";
 import { Agent } from "@mariozechner/pi-agent-core";
 import type { AgentMessage, AgentEvent, AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
 import { Type, StringEnum } from "@mariozechner/pi-ai";
 import type { SubagentDefinition, SessionInfo, TaskResult, SessionTreeNode, ManagerHealthReport, HealthActiveSession, AuditHealthOptions, AuditHealthReport, ReconcileReport } from "./types.js";
-import { wrapToolsForChat } from "./chat-harness.js";
 import { createCompactionTransform } from "./compaction.js";
 import type { CompactionOptions } from "./compaction.js";
 import { loadSkillsFromDirs, formatSkillsForPrompt } from "./skills.js";
@@ -185,48 +184,11 @@ export interface SubagentManagerOptions {
    */
   onSessionComplete?: (info: SessionInfo) => void;
   /**
-   * Called when any new session starts (via run(), resumeAgent(), createChatSession(), or resumeChatSession()).
+   * Called when any new session starts (via run() or resumeAgent()).
    * Use to subscribe to agent events for UI streaming.
    * This is the single point where all session creation is observed.
    */
   onSessionStart?: (agentName: string, sessionId: string) => void;
-}
-
-// ── createTool() schema ────────────────────────────────────────────────
-//
-// Flat Type.Object instead of Type.Union so that all LLM providers
-// (Anthropic, OpenAI, Google) see a well-formed JSON Schema with
-// top-level `properties` and `required`.  The Anthropic provider in
-// pi-ai reads `jsonSchema.properties` directly — a Union schema has
-// `anyOf` instead, so the LLM would see zero parameters.
-//
-// Runtime validation of per-action required fields happens in execute().
-
-const SubagentToolParams = Type.Object({
-  action: StringEnum(
-    ["list", "run", "status", "progress", "result", "cancel", "waitFor", "delegate", "trace", "health", "steer"] as const,
-    { description: "Action to perform. Use 'delegate' for fire-and-forget: runs agent, waits for completion, returns result in one call. Use 'steer' to inject a message into a running session." },
-  ),
-  agent: Type.Optional(Type.String({ description: "Name of the registered agent (required for 'run', 'delegate')" })),
-  task: Type.Optional(Type.String({ description: "Task description to send to the agent (required for 'run', 'delegate')" })),
-  sessionId: Type.Optional(Type.String({ description: "Session ID or workflow run ID (required for 'status', 'progress', 'result', 'cancel', 'waitFor', 'trace', 'steer')" })),
-  limit: Type.Optional(Type.Number({ description: "Max number of recent messages to return (for 'progress', default: all)" })),
-  mode: Type.Optional(StringEnum(
-    ["attached", "detached"] as const,
-    { description: "Execution mode for 'run'. Default: attached (in-process). Detached: separate OS process, survives caller restart." },
-  )),
-  message: Type.Optional(Type.String({ description: "Message to inject (required for 'steer')" })),
-});
-
-/** Static type for SubagentToolParams — avoids TS2742 portability issue with inferred TObject. */
-interface SubagentToolParamsType {
-  action: "list" | "run" | "status" | "progress" | "result" | "cancel" | "waitFor" | "delegate" | "trace" | "health" | "steer";
-  agent?: string;
-  task?: string;
-  sessionId?: string;
-  limit?: number;
-  mode?: "attached" | "detached";
-  message?: string;
 }
 
 /** Agents whose sessions are auto-skippable for evaluation (meta-agents). */
@@ -244,7 +206,6 @@ export class SubagentManager {
   private onSessionComplete?: (info: SessionInfo) => void;
   private onSessionStart?: (agentName: string, sessionId: string) => void;
   private startedAt = Date.now();
-  private chatSessionId?: string;
   private _projectRoot: string;
   /** Maximum call depth for callAgent chains. Prevents A→B→A infinite loops. */
   private _maxCallDepth: number;
@@ -260,34 +221,6 @@ export class SubagentManager {
     this._maxCallDepth = opts.maxCallDepth ?? 10;
     this.onSessionComplete = opts.onSessionComplete;
     this.onSessionStart = opts.onSessionStart;
-  }
-
-  /**
-   * Create a new persistent chat session. Only one chat session can exist at a time.
-   * The chat session gets autoClose: "never" (stays idle instead of archiving).
-   * All other sessions created via run() default to autoClose: "immediate".
-   */
-  createChatSession(agentName: string, task: string, opts?: RunOptions): string {
-    if (this.chatSessionId) throw new Error("Chat session already exists");
-    const sid = this.run(agentName, task, { ...opts, autoClose: "never" });
-    this.chatSessionId = sid;
-    return sid;
-  }
-
-  /**
-   * Resume an existing chat session. Wraps resumeAgent() and marks the
-   * resumed session as the chat session (autoClose: "never").
-   * Throws if no running/idle session exists for the agent.
-   */
-  resumeChatSession(agentName: string, opts?: { compaction?: boolean | CompactionOptions }): { resumed: SessionInfo; interrupted: SessionInfo[] } {
-    const result = this.resumeAgent(agentName, { ...opts, autoClose: "never" });
-    this.chatSessionId = result.resumed.sessionId;
-    return result;
-  }
-
-  /** Get the current chat session ID, if one exists. */
-  getChatSessionId(): string | undefined {
-    return this.chatSessionId;
   }
 
   /** Register a feature unit. */
@@ -322,8 +255,6 @@ export class SubagentManager {
    */
   private checkTurnLimit(session: ActiveSession): void {
     if (!session.maxTurns || session.maxTurns <= 0) return;
-    // Don't enforce turn limits on persistent chat sessions (interface agents)
-    if (session.autoClose === "never") return;
 
     const warningThreshold = Math.max(1, session.maxTurns - 2);
 
@@ -640,34 +571,11 @@ export class SubagentManager {
 
   /**
    * Compact an interface session's in-memory messages after it goes idle.
-   * Replaces the agent's message array with the compacted version and
-   * saves the compacted state to disk for faster resume.
-   *
-   * The full session.jsonl on disk is never modified — it remains the
-   * source of truth. session-compact.jsonl is a separate snapshot.
-   */
-  private async compactIdleSession(session: ActiveSession): Promise<void> {
-    if (session.autoClose !== "never") return;
-    if (!session.compactionTransform) return;
-
-    const messages = session.agent.state.messages;
-    if (messages.length === 0) return;
-
-    const compacted = await session.compactionTransform(messages);
-
-    if (compacted.length < messages.length) {
-      session.agent.replaceMessages(compacted);
-      // Save compacted state to disk for faster resume
-      saveCompactedMessages(this.registry.persistDir, session.sessionId, compacted);
-    }
-  }
-
   /**
    * Common completion handler — called when the agent's prompt()/continue() settles.
    *
-   * Determines the outcome from agent state, then branches:
-   *   - Chat sessions (autoClose: "never") → idle (stays in activeSessions)
-   *   - Task sessions (autoClose: "immediate") → terminal status (done/error/interrupted) → archive + remove
+   * Determines the outcome from agent state, then:
+   *   - Task sessions → terminal status (done/error/interrupted) → archive + remove
    *
    * See docs/session-state-machine.md for the full state machine.
    */
@@ -710,32 +618,7 @@ export class SubagentManager {
       }
     }
 
-    // ── Chat session: always transition to idle ─────────────────────
-    if (session.autoClose === "never") {
-      // Persist cancellation notice so agent doesn't retry on resume/wake.
-      // Written to JSONL (survives restart) and queued as followUp (in-process wake).
-      if (wasAborted) {
-        const cancelMsg: AgentMessage = {
-          role: "user",
-          content: [{ type: "text", text: "[Task cancelled by user. Do not retry the cancelled task. Wait for new instructions.]" }],
-          timestamp: Date.now(),
-          source: "system",
-        } as AgentMessage;
-        // Queued as followUp — persisted via the message_end subscriber when
-        // the agent loop processes it on next wake. No explicit write here
-        // to avoid duplicate JSONL entries.
-        session.agent.followUp(cancelMsg);
-      }
-      // Rolling compaction: compact in-memory messages and save to disk (fire-and-forget)
-      this.compactIdleSession(session).catch((err) => {
-        console.warn(`[manager] Compaction failed for session ${session.sessionId}:`, err);
-      });
-      session.status = "idle";
-      this.registry.updateSessionStatus(session.sessionId, "idle");
-      return;
-    }
-
-    // ── Task session: determine archive status, archive, remove ─────────
+    // ── Determine archive status, archive, remove ──────────────────────
     // The live session status never transitions to done/error — those are
     // archive-only states. The session goes from running → archived+removed.
     const archiveStatus: "done" | "error" | "interrupted" = wasAborted ? "interrupted" : (session.error ? "error" : "done");
@@ -772,211 +655,10 @@ export class SubagentManager {
       };
       try { this.onSessionComplete(info); } catch { /* best-effort */ }
     }
-
-    // ── Notify parent about completion ─────────────────────────────────
-    // Send a followUp to the parent session (or its agent's interface
-    // session) so it learns about this child's completion.
-    // Skip workflow step sessions — the workflow tool coordinates those internally.
-    try {
-      if (session.parentSessionId && !session.workflowRunId) {
-        const runtime = formatDuration((session.endedAt ?? Date.now()) - session.startedAt);
-        const icon = archiveStatus === "done" ? "✅" : "❌";
-        const taskText = session.task ?? "";
-        const taskPreview = taskText.length > 80 ? taskText.slice(0, 77) + "..." : taskText;
-        const errorSuffix = session.error ? ` Error: ${session.error}` : "";
-        const notifyMsg = `[task-complete] ${icon} ${session.agentName} finished (${runtime}): "${taskPreview}" Session: ${session.sessionId}${errorSuffix}`;
-
-        let delivered = false;
-
-        // 1. Parent session still alive → notify it directly
-        if (this.activeSessions.has(session.parentSessionId)) {
-          try {
-            this.followUp(session.parentSessionId, notifyMsg, "task-notify");
-            delivered = true;
-          } catch { /* parent may have just closed */ }
-        }
-        // 2. Else: fall back to chat session (if it belongs to the parent agent)
-        if (!delivered && this.chatSessionId && this.activeSessions.has(this.chatSessionId)) {
-          const chatSession = this.activeSessions.get(this.chatSessionId)!;
-          if (chatSession.agentName === session.parentAgentName) {
-            try {
-              this.followUp(this.chatSessionId, notifyMsg, "task-notify");
-              delivered = true;
-            } catch { /* chat session may have just closed */ }
-          }
-        }
-        // 3. Fallback: write to undelivered notifications file
-        if (!delivered) {
-          try {
-            const fallbackPath = join(this.registry.persistDir, "undelivered-notifications.jsonl");
-            appendFileSync(fallbackPath, JSON.stringify({
-              ts: Date.now(),
-              sessionId: session.sessionId,
-              agent: session.agentName,
-              status: archiveStatus,
-              task: session.task,
-              runtime,
-              parentSessionId: session.parentSessionId,
-              parentAgent: session.parentAgentName ?? null,
-              error: session.error ?? null,
-              retryCount: 0,
-            }) + "\n");
-          } catch (fileErr) {
-            console.warn("[manager] Failed to write undelivered notification:", fileErr);
-          }
-        }
-      }
-    } catch { /* notification must never crash handleCompletion */ }
-  }
-
-  // ── Undelivered notification drain & watcher ─────────────────────────
-
-  /** Watcher reference for cleanup. */
-  private notificationWatcher?: ReturnType<typeof fsWatch>;
-  /** Debounce timer for fs.watch callback. */
-  private drainTimer?: ReturnType<typeof setTimeout>;
-
-  /**
-   * Drain the undelivered-notifications.jsonl fallback file.
-   *
-   * For each notification, attempt to route to the parent agent's interface session
-   * via followUp. If routing fails and retryCount < 5, re-append with
-   * incremented retryCount. If retryCount >= 5, log warning and drop (dead letter).
-   * Clears the file after processing all entries.
-   */
-  private drainUndeliveredNotifications(): void {
-    const fallbackPath = join(this.registry.persistDir, "undelivered-notifications.jsonl");
-    try {
-      if (!existsSync(fallbackPath)) return;
-
-      // Rename-then-process to avoid race: new notifications written between
-      // clear and re-append won't be lost.
-      const tmpPath = fallbackPath + ".processing";
-      try { renameSync(fallbackPath, tmpPath); } catch { return; }
-      const raw = readFileSync(tmpPath, "utf-8").trim();
-      if (!raw) {
-        try { unlinkSync(tmpPath); } catch { /* best-effort */ }
-        return;
-      }
-
-      const retryEntries: string[] = [];
-
-      for (const line of raw.split("\n")) {
-        if (!line.trim()) continue;
-        let entry: any;
-        try {
-          entry = JSON.parse(line);
-        } catch {
-          // Malformed line — skip (defensive JSON parsing per Bob's review)
-          console.warn("[manager] Skipping malformed notification line:", line.slice(0, 100));
-          continue;
-        }
-
-        const { sessionId, agent, status, task, parentSessionId, parentAgent, error, retryCount = 0 } = entry;
-
-        // Build the notification message
-        const runtime = entry.runtime ?? "?";
-        const icon = status === "done" ? "✅" : "❌";
-        const taskText = task ?? "";
-        const taskPreview = taskText.length > 80 ? taskText.slice(0, 77) + "..." : taskText;
-        const errorSuffix = error ? ` Error: ${error}` : "";
-        const notifyMsg = `[task-complete] ${icon} ${agent} finished (${runtime}): "${taskPreview}" Session: ${sessionId}${errorSuffix}`;
-
-        let delivered = false;
-
-        // Try parent session directly
-        if (parentSessionId && this.activeSessions.has(parentSessionId)) {
-          try {
-            this.followUp(parentSessionId, notifyMsg, "task-notify");
-            delivered = true;
-          } catch { /* session may have just closed */ }
-        }
-
-        // Try chat session as fallback (if it belongs to the parent agent)
-        if (!delivered && parentAgent && this.chatSessionId && this.activeSessions.has(this.chatSessionId)) {
-          const chatSession = this.activeSessions.get(this.chatSessionId)!;
-          if (chatSession.agentName === parentAgent) {
-            try {
-              this.followUp(this.chatSessionId, notifyMsg, "task-notify");
-              delivered = true;
-            } catch { /* chat session may have just closed */ }
-          }
-        }
-
-        // If still undelivered, re-queue with incremented retryCount or drop
-        if (!delivered) {
-          if (retryCount >= 5) {
-            console.warn(`[manager] Dropping dead-letter notification after ${retryCount} retries: session=${sessionId} agent=${agent} task="${taskPreview}"`);
-          } else {
-            retryEntries.push(JSON.stringify({ ...entry, retryCount: retryCount + 1 }));
-          }
-        }
-      }
-
-      // Re-append any entries that still couldn't be delivered
-      if (retryEntries.length > 0) {
-        appendFileSync(fallbackPath, retryEntries.join("\n") + "\n");
-      }
-      // Clean up temp file
-      try { unlinkSync(tmpPath); } catch { /* best-effort */ }
-    } catch (err) {
-      console.warn("[manager] Error draining undelivered notifications:", err);
-    }
-  }
-
-  /**
-   * Start watching the undelivered-notifications.jsonl file for changes.
-   * fs.watch is treated as a latency optimization — heartbeat polling is the
-   * reliability layer (per Bob's review: fs.watch is flaky across platforms).
-   *
-   * Call AFTER resumeAgent completes (startup order: Load Registry → Resume Agents → Start Watcher/Drain).
-   */
-  startNotificationWatcher(): void {
-    // Initial drain of any notifications accumulated while we were down
-    this.drainUndeliveredNotifications();
-
-    // Set up fs.watch as optimization (may miss events on some platforms)
-    try {
-      const fallbackPath = join(this.registry.persistDir, "undelivered-notifications.jsonl");
-      // Ensure file exists so fs.watch doesn't error
-      if (!existsSync(fallbackPath)) {
-        writeFileSync(fallbackPath, "");
-      }
-      this.notificationWatcher = fsWatch(fallbackPath, () => {
-        // Debounce: clear previous timer so rapid writes don't cause multiple drains
-        clearTimeout(this.drainTimer);
-        this.drainTimer = setTimeout(() => this.drainUndeliveredNotifications(), 200);
-      });
-    } catch (err) {
-      // fs.watch failure is non-fatal — heartbeat drain is the reliability layer
-      console.warn("[manager] Could not watch undelivered-notifications.jsonl:", err);
-    }
-  }
-
-  /**
-   * Drain undelivered notifications (call from heartbeat as safety net).
-   * Public so callers (e.g. heartbeat handler) can trigger periodic drain.
-   */
-  drainNotifications(): void {
-    this.drainUndeliveredNotifications();
-  }
-
-  /** Stop the notification file watcher (cleanup). */
-  stopNotificationWatcher(): void {
-    try {
-      clearTimeout(this.drainTimer);
-      this.drainTimer = undefined;
-      this.notificationWatcher?.close();
-      this.notificationWatcher = undefined;
-    } catch { /* best-effort cleanup */ }
   }
 
   /** Start a new session for a registered agent. Returns sessionId. Non-blocking.
-   *  Optionally pass RunOptions to link this session into a session graph.
-   *
-   *  Chat+Task model:
-   *  - Chat session (autoClose: "never") → created via createChatSession(), stays idle on completion
-   *  - Task session (autoClose: "immediate", default) → spawn → work → finish → archive
+   *  Task sessions archive on completion (autoClose: "immediate").
    */
   run(name: string, task: string, opts?: RunOptions): string {
     const registered = this.agents.get(name);
@@ -994,13 +676,11 @@ export class SubagentManager {
     mkdirSync(outputDir, { recursive: true });
 
     const compactionTransform = this.buildTransformContext(def, opts?.compaction);
-    const isChatSession = opts?.autoClose === "never";
-    const tools = isChatSession ? wrapToolsForChat(def.tools) : def.tools;
     const agent = new Agent({
       initialState: {
         systemPrompt: this.resolveSystemPrompt(def, name, sessionId, persistDir),
         model: def.model,
-        tools,
+        tools: def.tools,
       },
       transformContext: compactionTransform,
       getApiKey: def.apiKey ? () => def.apiKey : undefined,
@@ -1182,9 +862,6 @@ export class SubagentManager {
    * Resume the interface agent's most recent session from a previous process.
    * All other "running"/"idle" sessions are marked as interrupted.
    *
-   * Chat+Task model: resumeAgent is a low-level method. Use resumeChatSession() for the chat session.
-   * Task sessions are ephemeral — they die on process exit and are never resumed.
-   *
    * Returns the resumed session info (with the agent running), plus a list
    * of interrupted sessions so the caller can inform the resumed agent.
    *
@@ -1255,13 +932,11 @@ export class SubagentManager {
     const outputDir = sessionOutputDir(persistDir, targetSessionId);
 
     const compactionTransform = this.buildTransformContext(def, opts?.compaction);
-    const isChatSession = opts?.autoClose === "never";
-    const tools = isChatSession ? wrapToolsForChat(def.tools) : def.tools;
     const agent = new Agent({
       initialState: {
         systemPrompt,
         model: def.model,
-        tools,
+        tools: def.tools,
         messages: savedMessages,
       },
       transformContext: compactionTransform,
@@ -1782,35 +1457,23 @@ export class SubagentManager {
   }
 
   /**
-   * Inject a non-interrupting message into a session.
+   * Inject a non-interrupting message into a running session.
    *
    * Unlike steer(), this never interrupts mid-turn — the message is queued
    * via agent.followUp() and delivered at the next natural turn boundary.
    *
-   * If the session is idle (interface agent), wakes it: queues the message,
-   * calls continue(), and wires handleCompletion. Does NOT wait for
-   * processing to finish — returns immediately after queueing.
-   *
    * Use for automated event injection (socket_watch, coaching events, etc.)
    * where the caller doesn't need to wait for a response.
    *
-   * Chat+Task model: only the interface agent supports followUp (idle wake).
-   * Task sessions are fire-and-forget — use cancel + re-run instead of steering.
-   *
-   * Throws if session not found, in a terminal state, or if a non-interface
-   * session is idle (which should never happen under the Chat+Task model).
+   * Throws if session not found or not running.
    */
   followUp(sessionId: string, message: string, source?: string): void {
     const session = this.activeSessions.get(sessionId);
     if (!session) {
       throw new Error(`Session "${sessionId}" not found`);
     }
-    if (session.status !== "running" && session.status !== "idle") {
-      throw new Error(`Session "${sessionId}" is in terminal state: ${session.status}`);
-    }
-    // Reject waking an idle task session — only interface sessions support followUp wake
-    if (session.status === "idle" && session.autoClose !== "never") {
-      throw new Error(`Cannot wake task session "${sessionId}" — task sessions do not support followUp`);
+    if (session.status !== "running") {
+      throw new Error(`Session "${sessionId}" is not running (status: ${session.status})`);
     }
 
     const msg: AgentMessage = {
@@ -1821,25 +1484,6 @@ export class SubagentManager {
     };
 
     session.agent.followUp(msg);
-    // Message is persisted via the message_end subscriber when the agent
-    // loop processes it. No explicit appendSessionMessage here to avoid
-    // duplicate JSONL entries.
-
-    // If idle interface session, wake it up.
-    // Only the interface agent can be idle (Chat+Task model).
-    if (session.status === "idle") {
-      session.status = "running";
-      this.registry.updateSessionStatus(sessionId, "running");
-
-      session.promise = session.agent.continue()
-        .then(() => {
-          this.handleCompletion(session);
-        })
-        .catch((err) => {
-          session.error = err?.message ?? String(err);
-          this.handleCompletion(session);
-        });
-    }
   }
 
   /** Subscribe to agent events for a running session. Returns unsubscribe function.
@@ -2327,312 +1971,6 @@ export class SubagentManager {
       audit: auditReport,
       discrepancies,
       healthy: discrepancies.length === 0,
-    };
-  }
-
-  // ── Parent agent tool ────────────────────────────────────────────────
-
-  /** Create an AgentTool that exposes sub-agent management to a parent agent. */
-  createTool(opts?: {
-    onSessionStart?: (agent: string, sessionId: string) => void;
-    /** Returns the current caller's session ID for parent→child linking. */
-    getCallerSessionId?: () => string | undefined;
-    /** Returns the current caller's agent name (for detached parent tracking). */
-    getCallerAgentName?: () => string | undefined;
-    /** Agent names that cannot be delegated to directly. Returns error with hint message. */
-    delegateDeny?: { agents: string[]; hint: string };
-  }): AgentTool {
-    const manager = this;
-    const onSessionStart = opts?.onSessionStart;
-    const getCallerSessionId = opts?.getCallerSessionId;
-    const getCallerAgentName = opts?.getCallerAgentName;
-    const delegateDeny = opts?.delegateDeny;
-
-    function textResult(text: string): AgentToolResult<string> {
-      return {
-        content: [{ type: "text", text }],
-        details: text,
-      };
-    }
-
-    return {
-      name: "subagents",
-      label: "Sub-Agents",
-      description:
-        "Manage sub-agents: list registered agents, run tasks, check status/progress, get results, cancel sessions, or run a health check.",
-      parameters: SubagentToolParams,
-      execute: async (_toolCallId, _params) => {
-        const params = _params as SubagentToolParamsType;
-        try {
-          switch (params.action) {
-            case "list": {
-              const agents = Array.from(manager.agents.values()).map((a) => {
-                const def = a.definition;
-                return {
-                  name: def.name,
-                  description: def.description,
-                  domain: def.domain,
-                  sessions: manager.sessions(def.name),
-                };
-              });
-              return textResult(JSON.stringify(agents, null, 2));
-            }
-
-            case "run": {
-              if (!params.agent || !params.task) {
-                return textResult(JSON.stringify({ error: "action 'run' requires 'agent' and 'task'" }));
-              }
-              if (delegateDeny && delegateDeny.agents.includes(params.agent)) {
-                return textResult(JSON.stringify({ error: `Cannot delegate directly to "${params.agent}". ${delegateDeny.hint}` }));
-              }
-              const parentSid = getCallerSessionId?.();
-
-              // Detached mode: spawn a separate OS process
-              if (params.mode === "detached") {
-                const registered = manager.agents.get(params.agent);
-                if (!registered) {
-                  return textResult(JSON.stringify({ error: `Agent "${params.agent}" not registered` }));
-                }
-                const sessionId = generateId(registered.definition.sessionIdPrefix);
-                const callerAgentName = getCallerAgentName?.();
-                const projectRoot = manager.projectRoot;
-
-                // Register in registry as detached before spawning
-                manager.registry.saveSession(sessionId, {
-                  agent: params.agent,
-                  task: params.task,
-                  status: "running",
-                  startedAt: Date.now(),
-                  parentSessionId: parentSid,
-                  detached: true,
-                  instance: `job-${sessionId}`,
-                });
-
-                try {
-                  const { pid } = spawnDetachedAgent({
-                    projectRoot,
-                    agentName: params.agent,
-                    task: params.task,
-                    sessionId,
-                    parentSessionId: parentSid,
-                    parentAgentName: callerAgentName,
-                  });
-
-                  // Update registry with pid in one save
-                  const existingMeta = manager.registry.getSession(sessionId);
-                  if (existingMeta) {
-                    manager.registry.saveSession(sessionId, { ...existingMeta, pid });
-                  }
-
-                  return textResult(JSON.stringify({ sessionId, mode: "detached", pid }));
-                } catch (err) {
-                  const errMsg = err instanceof Error ? err.message : String(err);
-                  manager.registry.saveSession(sessionId, {
-                    agent: params.agent,
-                    task: params.task,
-                    status: "error",
-                    startedAt: Date.now(),
-                    parentSessionId: parentSid,
-                    detached: true,
-                    instance: `job-${sessionId}`,
-                    error: errMsg,
-                  });
-                  return textResult(JSON.stringify({ error: `Failed to spawn detached agent: ${errMsg}`, sessionId }));
-                }
-              }
-
-              // Attached mode (default): run in-process
-              const sessionId = manager.run(params.agent, params.task, { ...(parentSid ? { parentSessionId: parentSid } : {}), source: "agent" });
-              onSessionStart?.(params.agent, sessionId);
-              return textResult(JSON.stringify({ sessionId }));
-            }
-
-            case "status": {
-              if (!params.sessionId) {
-                return textResult(JSON.stringify({ error: "action 'status' requires 'sessionId'" }));
-              }
-              // Check active sessions first
-              const allSessions = manager.status();
-              const session = allSessions.find((s) => s.sessionId === params.sessionId);
-              if (session) {
-                return textResult(JSON.stringify(session, null, 2));
-              }
-              // Fall back to registry for completed/archived sessions
-              const persisted = manager.registry.getSession(params.sessionId);
-              if (persisted) {
-                const endedAt = persisted.endedAt ?? Date.now();
-                const info: SessionInfo = {
-                  sessionId: params.sessionId,
-                  agent: persisted.agent,
-                  task: persisted.task,
-                  status: persisted.status,
-                  startedAt: persisted.startedAt,
-                  endedAt: persisted.endedAt,
-                  runtime: formatDuration(endedAt - persisted.startedAt),
-                  outputDir: sessionOutputDir(manager.registry.persistDir, params.sessionId),
-                  error: persisted.error,
-                  parentSessionId: persisted.parentSessionId,
-                  workflowRunId: persisted.workflowRunId,
-                  stepLabel: persisted.stepLabel,
-                };
-                return textResult(JSON.stringify(info, null, 2));
-              }
-              return textResult(JSON.stringify({ error: `Session "${params.sessionId}" not found` }));
-            }
-
-            case "progress": {
-              if (!params.sessionId) {
-                return textResult(JSON.stringify({ error: "action 'progress' requires 'sessionId'" }));
-              }
-              const messages = manager.progress(params.sessionId, params.limit);
-              // Return a simplified view of messages for the parent agent
-              const simplified = messages.map((m) => ({
-                role: m.role,
-                content: m.content,
-              }));
-              return textResult(JSON.stringify(simplified, null, 2));
-            }
-
-            case "result": {
-              if (!params.sessionId) {
-                return textResult(JSON.stringify({ error: "action 'result' requires 'sessionId'" }));
-              }
-              const taskResult = manager.result(params.sessionId);
-              // Return result without the full messages array (too large for tool output)
-              const { messages: _msgs, ...resultWithoutMessages } = taskResult;
-              return textResult(JSON.stringify(resultWithoutMessages, null, 2));
-            }
-
-            case "cancel": {
-              if (!params.sessionId) {
-                return textResult(JSON.stringify({ error: "action 'cancel' requires 'sessionId'" }));
-              }
-              // Attached: in-memory cancel
-              if (manager.hasActiveSession(params.sessionId)) {
-                manager.cancel(params.sessionId);
-                return textResult(JSON.stringify({ cancelled: params.sessionId }));
-              }
-              // Detached: try graceful socket cancel, fall back to SIGTERM
-              const cancelMeta = manager.registry.getSession(params.sessionId);
-              if (cancelMeta?.detached) {
-                // Try socket-based graceful cancel first
-                if (cancelMeta.instance) {
-                  const cancelIdentity = readIdentity(manager.registry.persistDir, cancelMeta.instance);
-                  if (cancelIdentity?.socket) {
-                    try {
-                      await sendSocketCommand(cancelIdentity.socket, { type: "cancel", sessionId: params.sessionId });
-                      manager.registry.updateSessionStatus(params.sessionId, "interrupted", "Cancelled (socket)");
-                      return textResult(JSON.stringify({ cancelled: params.sessionId, mode: "detached", method: "socket" }));
-                    } catch {
-                      // Socket dead, fall back to SIGTERM
-                    }
-                  }
-                }
-                // Fall back to SIGTERM
-                if (cancelMeta.pid) {
-                  try { process.kill(cancelMeta.pid, "SIGTERM"); } catch { /* process may be gone */ }
-                  manager.registry.updateSessionStatus(params.sessionId, "interrupted", "Cancelled (SIGTERM)");
-                  return textResult(JSON.stringify({ cancelled: params.sessionId, mode: "detached", method: "sigterm" }));
-                }
-                return textResult(JSON.stringify({ error: `Detached session "${params.sessionId}" has no PID or socket to cancel` }));
-              }
-              // Not found anywhere — try manager.cancel anyway (no-op if missing)
-              manager.cancel(params.sessionId);
-              return textResult(JSON.stringify({ cancelled: params.sessionId }));
-            }
-
-            case "waitFor": {
-              if (!params.sessionId) {
-                return textResult(JSON.stringify({ error: "action 'waitFor' requires 'sessionId'" }));
-              }
-              // Attached: use in-process waitFor
-              if (manager.hasActiveSession(params.sessionId)) {
-                const taskResult = await manager.waitFor(params.sessionId);
-                const { messages: _msgs, ...resultWithoutMessages } = taskResult;
-                return textResult(JSON.stringify(resultWithoutMessages, null, 2));
-              }
-              // Detached: poll meta.json + identity.json for completion
-              const waitMeta = manager.registry.getSession(params.sessionId);
-              if (waitMeta?.detached) {
-                const taskResult = await manager.waitForDetached(params.sessionId);
-                const { messages: _msgs, ...resultWithoutMessages } = taskResult;
-                return textResult(JSON.stringify(resultWithoutMessages, null, 2));
-              }
-              // Fallback: try normal waitFor (checks sessionResults + archive)
-              const taskResult = await manager.waitFor(params.sessionId);
-              const { messages: _msgs, ...resultWithoutMessages } = taskResult;
-              return textResult(JSON.stringify(resultWithoutMessages, null, 2));
-            }
-
-            case "delegate": {
-              if (!params.agent) {
-                return textResult(JSON.stringify({ error: "action 'delegate' requires 'agent'" }));
-              }
-              if (!params.task) {
-                return textResult(JSON.stringify({ error: "action 'delegate' requires 'task'" }));
-              }
-              if (delegateDeny && delegateDeny.agents.includes(params.agent)) {
-                return textResult(JSON.stringify({ error: `Cannot delegate directly to "${params.agent}". ${delegateDeny.hint}` }));
-              }
-              const delegateParentSid = getCallerSessionId?.();
-              const delegateSessionId = manager.run(params.agent, params.task, { ...(delegateParentSid ? { parentSessionId: delegateParentSid } : {}), source: "agent" });
-              onSessionStart?.(params.agent, delegateSessionId);
-              const delegateResult = await manager.waitFor(delegateSessionId);
-              const { messages: _delegateMsgs, ...delegateWithoutMessages } = delegateResult;
-              return textResult(JSON.stringify(delegateWithoutMessages, null, 2));
-            }
-
-            case "trace": {
-              if (!params.sessionId) {
-                return textResult(JSON.stringify({ error: "action 'trace' requires 'sessionId' (session ID or workflow run ID)" }));
-              }
-              const traceResult = manager.trace(params.sessionId);
-              if (!traceResult) {
-                return textResult(JSON.stringify({ error: `No trace found for "${params.sessionId}". Requires persistence (persistDir) and a valid session or workflow run ID.` }));
-              }
-              return textResult(JSON.stringify(traceResult, null, 2));
-            }
-
-            case "health": {
-              const report = manager.reconcileHealth();
-              return textResult(JSON.stringify(report, null, 2));
-            }
-
-            case "steer": {
-              if (!params.sessionId || !params.message) {
-                return textResult(JSON.stringify({ error: "action 'steer' requires 'sessionId' and 'message'" }));
-              }
-              // Attached: use manager.steer (handles running vs idle)
-              if (manager.hasActiveSession(params.sessionId)) {
-                manager.steer(params.sessionId, params.message, "steer");
-                return textResult(JSON.stringify({ steered: params.sessionId }));
-              }
-              // Detached: send via socket
-              const steerMeta = manager.registry.getSession(params.sessionId);
-              if (steerMeta?.instance) {
-                const steerIdentity = readIdentity(manager.registry.persistDir, steerMeta.instance);
-                if (steerIdentity?.socket) {
-                  try {
-                    await sendSocketCommand(steerIdentity.socket, { type: "steer", message: params.message });
-                    return textResult(JSON.stringify({ steered: params.sessionId, mode: "detached" }));
-                  } catch (socketErr) {
-                    const socketMsg = socketErr instanceof Error ? socketErr.message : String(socketErr);
-                    return textResult(JSON.stringify({ error: `Failed to steer detached session: ${socketMsg}` }));
-                  }
-                }
-              }
-              return textResult(JSON.stringify({ error: `Session "${params.sessionId}" not found or not running` }));
-            }
-
-            default: {
-              return textResult(JSON.stringify({ error: `Unknown action: ${params.action}` }));
-            }
-          }
-        } catch (err: unknown) {
-          const msg = err instanceof Error ? err.message : String(err);
-          return textResult(JSON.stringify({ error: msg }));
-        }
-      },
     };
   }
 

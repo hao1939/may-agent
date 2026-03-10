@@ -68,39 +68,4 @@ describe("silent error detection", () => {
     expect(result.error).toBeTruthy();
     expect(result.error).toContain("without producing a response");
   });
-
-  it("chat session detects silent failure on initial prompt", async () => {
-    manager.register(baseDef());
-    const sid = manager.createChatSession("bot", "hello");
-    await manager.waitForIdle(sid);
-
-    const status = manager.status();
-    expect(status.length).toBe(1);
-    expect(status[0].status).toBe("idle");
-
-    // The last message should still be user (no assistant response)
-    const messages = manager.progress(sid);
-    const lastMsg = messages[messages.length - 1];
-    expect(lastMsg.role).toBe("user");
-
-    // The error should be surfaced (no assistant messages at all)
-    const assistantMsgs = messages.filter(m => m.role === "assistant");
-    expect(assistantMsgs.length).toBe(0);
-  });
-
-  it("chat session detects silent failure on followUp", async () => {
-    manager.register(baseDef());
-    const sid = manager.createChatSession("bot", "hello");
-    await manager.waitForIdle(sid);
-
-    // First prompt failed — followUp
-    manager.followUp(sid, "try again");
-    await manager.waitForIdle(sid);
-
-    // Should have user messages but no assistant
-    const messages = manager.progress(sid);
-    expect(messages.length).toBeGreaterThan(0);
-    const assistantMsgs = messages.filter(m => m.role === "assistant");
-    expect(assistantMsgs.length).toBe(0);
-  });
 });
