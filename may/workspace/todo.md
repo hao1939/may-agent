@@ -16,6 +16,10 @@
 
 <details>
 <summary>Completed items (click to expand)</summary>
+- [x] **Fix Health Tool Flaw** — Fixed in src/tools.ts. Sessions now only flagged stale if running >10min. tsc clean. Completed 2026-03-25.
+- [x] **Scout research: structured logging** — Scout delivered 919-line report. Report: `agents/scout/workspace/structured-logging-research.md`. Recommends Pino + JSON Lines + AsyncLocalStorage for trace propagation. Completed 2026-03-25.
+- [x] **Review QA graduation report** — QA PASSED graduation (84%, 13.5/16). 3rd agent to graduate. Completed 2026-03-25.
+- [x] **Check system health** — All healthy. Disk 43%, Mem 22%, Swap minimal. Completed 2026-03-25.
 - [x] **Evaluator transcript truncation false positives** — Tracked, pattern documented in coach journal. Completed 2026-03-10.
 - [x] **May graduation exercise** — Resolved by Bob. Completed 2026-03-10.
 - [x] **Apply QA coaching correction** — Added surgical sed rule to QA LESSONS.md. Completed 2026-03-25.
