@@ -16,7 +16,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { resolve, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const PROJECT_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const PROJECT_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const EVAL_DIR = resolve(
   PROJECT_ROOT,
   process.env.STATE_DIR || ".state",
