@@ -4,7 +4,7 @@ import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { AssistantMessage } from "@mariozechner/pi-ai";
 import type { SubagentManager } from "./manager.js";
 import { readSessionMessages, readArchivedSessionMessages, loadAllSessionMetas, historyDir, listActiveSessionIds, listArchivedSessionIds } from "./persistence.js";
-import { extractHallucinatedRelPath } from "./tools.js";
+import { extractHallucinatedRelPath } from "./tools/may-utils.js";
 import type { PersistedSession } from "./persistence.js";
 
 // ── Types ──────────────────────────────────────────────────────────────

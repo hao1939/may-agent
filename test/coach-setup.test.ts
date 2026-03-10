@@ -155,8 +155,7 @@ describe("coach: agent.json", () => {
     expect(tools).toContain("subagents");
     expect(tools).toContain("socket-watch");
     expect(tools).toContain("workflow");
-    expect(tools).toContain("read-write");
-    expect(tools).toContain("exec-readonly");
+    expect(tools).toContain("coding");
   });
 
   it("does not have background-exec (replaced by subagents detached mode)", () => {

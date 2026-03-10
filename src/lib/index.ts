@@ -1,7 +1,17 @@
 export { SubagentManager, generateId, truncateForPrompt } from "./manager.js";
 export type { SubagentManagerOptions, RunOptions } from "./manager.js";
-export { createReadTool, createWriteTool, createExecTool, createHealthCheckTool, createLearnTool, createLinkedTools, TruncationTracker, resolveHallucinatedPath, buildProjectStructure } from "./tools.js";
-export type { HealthReport, ReadToolOptions, WriteToolOptions } from "./tools.js";
+// Core coding tools (synced from pi-coding-agent)
+export { createReadTool, createBashTool, createEditTool, createWriteTool, createCodingTools } from "./tools/index.js";
+export type { ReadToolOptions, BashToolOptions, EditToolOptions, WriteToolOptions, CodingToolsOptions } from "./tools/index.js";
+export { DEFAULT_MAX_BYTES, DEFAULT_MAX_LINES, formatSize, truncateHead, truncateTail, truncateLine } from "./tools/index.js";
+export type { TruncationResult, TruncationOptions } from "./tools/index.js";
+export { resolveToCwd, resolveReadPath, expandPath } from "./tools/index.js";
+// May-agent-specific tools
+export { createHealthCheckTool } from "./tools/index.js";
+export type { HealthReport } from "./tools/index.js";
+export { createLearnTool } from "./tools/index.js";
+export { buildProjectStructure } from "./tools/index.js";
+export { resolveHallucinatedPath, extractHallucinatedRelPath, isMetaRecursionCommand } from "./tools/index.js";
 export { createScrapeTool } from "./scrape.js";
 export type { ScrapeToolOptions } from "./scrape.js";
 export { createWorkflowTool } from "./workflow-tool.js";

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdtempSync, rmSync, existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { createLearnTool } from "../src/lib/tools.js";
+import { createLearnTool } from "../src/lib/tools/learn.js";
 
 describe("createLearnTool()", () => {
   let knowledgeDir: string;

@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { resolveHallucinatedPath, extractHallucinatedRelPath, createReadTool } from "../src/lib/tools.js";
+import { resolveHallucinatedPath, extractHallucinatedRelPath } from "../src/lib/tools/may-utils.js";
+import { createReadTool } from "../src/lib/tools/read.js";
 import { mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -95,57 +96,17 @@ describe("resolveHallucinatedPath", () => {
   });
 });
 
-// ── Integration: read tool with hallucinated path rewriting ────────────
-
-describe("read tool hallucinated path rewriting", () => {
-  const testDir = join(tmpdir(), `hallucinated-read-test-${Date.now()}`);
-  const ROOT = testDir;
-
-  it("rewrites /home/user/repo/<file> to project root and reads successfully", async () => {
-    mkdirSync(join(ROOT, "src"), { recursive: true });
-    writeFileSync(join(ROOT, "src/test.txt"), "hello world", "utf-8");
-
-    const tool = createReadTool({ projectRoot: ROOT });
-    const result = await tool.execute("id", { path: "/home/user/repo/src/test.txt" });
-    expect(result.content[0].text).toBe("hello world");
-
-    rmSync(ROOT, { recursive: true, force: true });
-  });
-
-  it("still returns error if rewritten path also doesn't exist", async () => {
-    mkdirSync(ROOT, { recursive: true });
-
-    const tool = createReadTool({ projectRoot: ROOT });
-    const result = await tool.execute("id", { path: "/home/user/repo/nonexistent.ts" });
-    expect(result.content[0].text).toContain("Error");
-    expect(result.content[0].text).toContain("not found");
-
-    rmSync(ROOT, { recursive: true, force: true });
-  });
-
-  it("reads actual project root path without rewriting", async () => {
-    mkdirSync(join(ROOT, "src"), { recursive: true });
-    writeFileSync(join(ROOT, "src/real.txt"), "real content", "utf-8");
-
-    const tool = createReadTool({ projectRoot: ROOT });
-    const result = await tool.execute("id", { path: join(ROOT, "src/real.txt") });
-    expect(result.content[0].text).toBe("real content");
-
-    rmSync(ROOT, { recursive: true, force: true });
-  });
-});
-
 // ── Integration: read tool with relative path resolution ───────────────
 
 describe("read tool relative path resolution", () => {
   const testDir = join(tmpdir(), `relative-read-test-${Date.now()}`);
   const ROOT = testDir;
 
-  it("reads file via relative path when projectRoot is set", async () => {
+  it("reads file via relative path", async () => {
     mkdirSync(join(ROOT, "src"), { recursive: true });
     writeFileSync(join(ROOT, "src/hello.txt"), "relative works", "utf-8");
 
-    const tool = createReadTool({ projectRoot: ROOT });
+    const tool = createReadTool(ROOT);
     const result = await tool.execute("id", { path: "src/hello.txt" });
     expect(result.content[0].text).toBe("relative works");
 
@@ -156,21 +117,28 @@ describe("read tool relative path resolution", () => {
     mkdirSync(ROOT, { recursive: true });
     writeFileSync(join(ROOT, "readme.md"), "dot-slash works", "utf-8");
 
-    const tool = createReadTool({ projectRoot: ROOT });
+    const tool = createReadTool(ROOT);
     const result = await tool.execute("id", { path: "./readme.md" });
     expect(result.content[0].text).toBe("dot-slash works");
 
     rmSync(ROOT, { recursive: true, force: true });
   });
 
-  it("reads bare filename against projectRoot", async () => {
+  it("reads bare filename against cwd", async () => {
     mkdirSync(ROOT, { recursive: true });
     writeFileSync(join(ROOT, "package.json"), '{"name":"test"}', "utf-8");
 
-    const tool = createReadTool({ projectRoot: ROOT });
+    const tool = createReadTool(ROOT);
     const result = await tool.execute("id", { path: "package.json" });
     expect(result.content[0].text).toBe('{"name":"test"}');
 
+    rmSync(ROOT, { recursive: true, force: true });
+  });
+
+  it("returns error for non-existent file", async () => {
+    mkdirSync(ROOT, { recursive: true });
+    const tool = createReadTool(ROOT);
+    await expect(tool.execute("id", { path: "nonexistent.ts" })).rejects.toThrow();
     rmSync(ROOT, { recursive: true, force: true });
   });
 });

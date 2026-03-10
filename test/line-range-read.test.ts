@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { createReadTool, createLinkedTools } from "../src/lib/tools.js";
+import { createReadTool } from "../src/lib/tools/read.js";
 import { writeFileSync, mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 
@@ -13,116 +13,88 @@ function cleanup() {
   try { rmSync(tmpDir, { recursive: true }); } catch { /* ignore */ }
 }
 
-describe("createReadTool with line ranges", () => {
+describe("read tool with offset/limit", () => {
   beforeEach(setup);
   afterEach(cleanup);
 
-  it("returns specific line range when startLine and endLine are set", async () => {
+  it("returns specific line range when offset and limit are set", async () => {
     const filePath = join(tmpDir, "lines.txt");
     const lines = Array.from({ length: 100 }, (_, i) => `line ${i + 1} content`);
     writeFileSync(filePath, lines.join("\n"));
 
-    const tool = createReadTool({ maxFileLength: 500 });
+    const tool = createReadTool(tmpDir);
     const result = await tool.execute("test-id", {
       path: filePath,
-      startLine: 10,
-      endLine: 15,
+      offset: 10,
+      limit: 6,
     });
 
-    const text = result.content[0].type === "text" ? result.content[0].text : "";
+    const text = result.content[0].text;
     expect(text).toContain("line 10 content");
     expect(text).toContain("line 15 content");
     expect(text).not.toContain("line 9 content");
     expect(text).not.toContain("line 16 content");
   });
 
-  it("does not truncate line-range reads even when maxFileLength is set", async () => {
-    const filePath = join(tmpDir, "big.txt");
-    const lines = Array.from({ length: 1000 }, (_, i) => `big line ${i + 1} with padding ${"x".repeat(50)}`);
-    writeFileSync(filePath, lines.join("\n"));
-
-    const tool = createReadTool({ maxFileLength: 500 });
-    const result = await tool.execute("test-id", {
-      path: filePath,
-      startLine: 100,
-      endLine: 200,
-    });
-
-    const text = result.content[0].type === "text" ? result.content[0].text : "";
-    // Should NOT contain truncation warnings
-    expect(text).not.toContain("FILE TRUNCATED");
-    expect(text).not.toContain("truncated");
-    // Should contain requested lines
-    expect(text).toContain("big line 100");
-    expect(text).toContain("big line 200");
-  });
-
-  it("returns from startLine to end of file when only startLine is set", async () => {
+  it("returns from offset to end when only offset is set", async () => {
     const filePath = join(tmpDir, "partial.txt");
     writeFileSync(filePath, "a\nb\nc\nd\ne");
 
-    const tool = createReadTool({});
+    const tool = createReadTool(tmpDir);
     const result = await tool.execute("test-id", {
       path: filePath,
-      startLine: 3,
+      offset: 3,
     });
 
-    const text = result.content[0].type === "text" ? result.content[0].text : "";
+    const text = result.content[0].text;
     expect(text).toContain("c");
     expect(text).toContain("d");
     expect(text).toContain("e");
-    expect(text).not.toContain("a\n");
-    expect(text).not.toContain("b\n");
+    expect(text).not.toMatch(/^a\n/);
+    expect(text).not.toMatch(/^b\n/);
   });
 
-  it("returns lines from start when only endLine is set", async () => {
+  it("returns first N lines when only limit is set", async () => {
     const filePath = join(tmpDir, "partial2.txt");
     writeFileSync(filePath, "a\nb\nc\nd\ne");
 
-    const tool = createReadTool({});
+    const tool = createReadTool(tmpDir);
     const result = await tool.execute("test-id", {
       path: filePath,
-      endLine: 3,
+      limit: 3,
     });
 
-    const text = result.content[0].type === "text" ? result.content[0].text : "";
+    const text = result.content[0].text;
     expect(text).toContain("a");
     expect(text).toContain("b");
     expect(text).toContain("c");
-    // d is line 4, should not be present
-    const lines = text.split("\n");
-    expect(lines.length).toBe(3);
+    // Should show continuation hint
+    expect(text).toContain("more lines in file");
   });
 
-  it("does not trigger truncation tracker for line-range reads", async () => {
-    const filePath = join(tmpDir, "tracked.txt");
-    const bigContent = "x\n".repeat(5000);
-    writeFileSync(filePath, bigContent);
+  it("returns error for offset beyond end of file", async () => {
+    const filePath = join(tmpDir, "short.txt");
+    writeFileSync(filePath, "a\nb\nc");
 
-    const { read, truncationTracker } = createLinkedTools({
-      projectRoot: tmpDir,
-      maxFileLength: 500,
-    });
-
-    // Line-range read should NOT record in tracker
-    await read.execute("test-id", {
-      path: filePath,
-      startLine: 1,
-      endLine: 10,
-    });
-
-    expect(truncationTracker.has(filePath)).toBe(false);
+    const tool = createReadTool(tmpDir);
+    await expect(
+      tool.execute("test-id", { path: filePath, offset: 100 })
+    ).rejects.toThrow(/beyond end of file/);
   });
 
-  it("handles line-range read on ENOENT gracefully", async () => {
-    const tool = createReadTool({ projectRoot: tmpDir });
-    const result = await tool.execute("test-id", {
-      path: join(tmpDir, "nonexistent.txt"),
-      startLine: 1,
-      endLine: 10,
-    });
+  it("returns error for non-existent file", async () => {
+    const tool = createReadTool(tmpDir);
+    await expect(
+      tool.execute("test-id", { path: join(tmpDir, "nonexistent.txt") })
+    ).rejects.toThrow();
+  });
 
-    const text = result.content[0].type === "text" ? result.content[0].text : "";
-    expect(text).toContain("Error");
+  it("handles single-line file", async () => {
+    const filePath = join(tmpDir, "single.txt");
+    writeFileSync(filePath, "only line");
+
+    const tool = createReadTool(tmpDir);
+    const result = await tool.execute("test-id", { path: filePath });
+    expect(result.content[0].text).toBe("only line");
   });
 });
