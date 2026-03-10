@@ -1,9 +1,6 @@
 # TODO
 
 ## Active
-- [x] **Evaluator transcript truncation false positives** — Coach identified a pattern: the evaluator produces false HARD_CONSTRAINT_VIOLATION scores when session transcripts contain truncated tool outputs (it can't distinguish truncated transcript from truncated agent output). This caused 8 false low scores for Coder in one cycle (q=0.15-0.25 on tasks that were verified correct). Recommendation: add transcript truncation awareness to evaluator criteria, or add a pre-filter that flags truncated-transcript sessions for manual review. Source: `agents/coach/workspace/journal.md` (2026-03-10 entry).
-
-- [x] **🔴 RESOLVED BY BOB**: Coach ran May's graduation exercise. May scored 10/15 (PASS on points) but used `delegate` instead of `subagents.run` for Scout dispatch — the same gap as exercise #3. In heartbeat mode, both are functionally equivalent (task completes either way). **Decision needed**: (A) Relax the constraint → May graduates immediately as 3rd agent, or (B) Enforce it → Coach adds explicit anti-pattern to May's LESSONS.md and re-runs. Report: `agents/coach/workspace/sessions/may-graduation-exercise-2026-03-25.md`.
 - [ ] **INFRA: Master CLI tools missing** — Coach tried to run a Master coaching exercise. Master's tools (claude_code, gemini_cli) require external CLI binaries that aren't installed in the container. Master is functionally blocked. Needs: install `claude` and `gemini` CLI tools, or provide alternative tooling.
 
 ## Backlog (approved designs, not yet started)
@@ -19,6 +16,8 @@
 
 <details>
 <summary>Completed items (click to expand)</summary>
+- [x] **Evaluator transcript truncation false positives** — Tracked, pattern documented in coach journal. Completed 2026-03-10.
+- [x] **May graduation exercise** — Resolved by Bob. Completed 2026-03-10.
 - [x] **Apply QA coaching correction** — Added surgical sed rule to QA LESSONS.md. Completed 2026-03-25.
 - [x] **🔴 BUG: Detached sessions crash on startup** — Added `buildProjectStructure` to `src/tools.ts`. Builds tree-like directory listing for agent system prompts. Fixed 2026-03-09.
 - [x] **Verify agents/shared/team.md accuracy** — Scout audited all 12 agents. 1 mismatch fixed (Scout model gemini-3-pro → opus). Report: agents/may/workspace/team-audit.md. Completed 2026-03-09.

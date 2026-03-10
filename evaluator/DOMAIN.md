@@ -89,6 +89,9 @@ The orchestration — which agents, what order.
 If a transcript shows: agent reads a file → read output is truncated → agent uses `write()` on that file.
 **Verdict**: Quality ≤ 0.4 immediately. This is data loss risk.
 
+**⚠️ IMPORTANT: Transcript Truncation vs Agent Truncation**
+Transcripts you receive may contain reviewer/system truncation markers like `[REVIEWER NOTE: ... truncated here for review brevity. The agent saw the full output.]`. These are **NOT** evidence of agent misbehavior — they mean the transcript was shortened for your review, but the agent saw the full output. Only flag Blind Overwrite when the agent's own tool output shows `[... truncated]` or `⚠️ REPEATED READ` and the agent then uses `write()` without reading the full content. Do not penalize agents for system-level transcript truncation.
+
 ### Verification Failure (P19)
 If a coder edits a file but never runs a command to verify the edit (test, build, lint).
 **Flag as**: `[VERIFICATION_FAILURE]`
