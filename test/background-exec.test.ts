@@ -133,7 +133,7 @@ describe("background_exec tool", () => {
 
   it("blocks meta-recursion commands", async () => {
     const tool = makeTool({ cwd: "/tmp" });
-    const result = await exec(tool, { action: "spawn", command: "npx tsx run/may.ts" });
+    const result = await exec(tool, { action: "spawn", command: "npx may-agent --agent coder" });
     expect(result.error).toContain("Blocked");
   });
 

@@ -22,13 +22,12 @@ import {
   createLinkedTools,
   createExecTool,
   createWorkflowTool,
-  createValidateWorkflowTool,
   createBackgroundExecTool,
   createSocketWatchTool,
   createClaudeCodeTool,
   createGeminiCliTool,
   createCronTool,
-  stripCliPromptContent,
+  createScrapeTool,
 } from "../src/index.js";
 import type { EventBus } from "./event-bus.js";
 import { Cron } from "./cron.js";
@@ -114,41 +113,6 @@ function buildTools(
   const agentDir = resolve(opts.agentsRoot, config.name);
   const tools: AgentTool[] = [];
 
-  // Standard deny patterns for all exec tools
-  // `cd /absolute` is allowed only when the target is under projectRoot.
-  // Stale-path rewrites are handled by rewriteHallucinatedCommand in createExecTool.
-  const allowedRoots = [projectRoot, opts.agentsRoot, persistDir];
-  const baseDenyPatterns = [
-    /^\s*find\s+\/\s/,
-    /^\s*ls\s+\/\s*$/,
-    {
-      test: (cmd: string) => {
-        const m = cmd.match(/^\s*cd\s+(["']?)(\/\S+)\1/);
-        if (!m) return false;
-        const target = m[2];
-        return !allowedRoots.some(r => target === r || target.startsWith(r + '/'));
-      },
-    },
-  ];
-
-  // File-write deny patterns for read-only exec
-  const writeDenyPatterns = [
-    /\bsed\s+-i\b/,
-    /\bcat\s*>[^&]/,
-    /<<\s*['"]?\w+['"]?/,
-    /\btee\s/,
-    /\b(echo|printf)\b[^;|]*(?<![0-9])>{1,2}[^&]/,
-    /\bmv\s|\bcp\s|\brm\s/,
-    /\bmkdir\b/,
-    /\btouch\b/,
-    /\bchmod\b|\bchown\b/,
-    /\bpython3?\s+-c\b[\s\S]*open\(/,
-    /\bnode\s+-e\b/,
-    /\bperl\s+-e\b/,
-    /\bruby\s+-e\b/,
-    /\bgit\s+(reset|checkout)\b/,
-  ];
-
   for (const preset of config.tools) {
     switch (preset) {
       case "read-write": {
@@ -170,38 +134,9 @@ function buildTools(
       }
 
       case "exec":
-        tools.push(createExecTool({
-          cwd: projectRoot,
-          echoCwd: true,
-          warnOutsideRoot: projectRoot,
-          denyPatterns: baseDenyPatterns,
-          denyMessage: "Do not explore outside the project root. Use relative paths.",
-        }));
-        break;
-
       case "exec-readonly":
-        tools.push(createExecTool({
-          cwd: projectRoot,
-          echoCwd: true,
-          warnOutsideRoot: projectRoot,
-          denyPatterns: [...baseDenyPatterns, ...writeDenyPatterns],
-          denyMessage: 'You cannot write files. Delegate code changes to coder: subagents.delegate("coder", task)',
-        }));
-        break;
-
       case "exec-master":
-        tools.push(createExecTool({
-          cwd: projectRoot,
-          echoCwd: true,
-          warnOutsideRoot: projectRoot,
-          maxOutputLength: 80_000,
-          stripForDenyCheck: stripCliPromptContent,
-          denyPatterns: [
-            ...baseDenyPatterns,
-            ...writeDenyPatterns,
-          ],
-          denyMessage: "You cannot write files directly. Use claude-code or gemini-cli to implement changes.",
-        }));
+        tools.push(createExecTool({ projectRoot }));
         break;
 
       case "claude-code":
@@ -256,9 +191,6 @@ function buildTools(
         break;
       }
 
-      case "validate-workflow":
-        tools.push(createValidateWorkflowTool());
-        break;
 
       case "background-exec": {
         const bgExec = createBackgroundExecTool({
@@ -311,6 +243,10 @@ function buildTools(
         break;
       }
 
+      case "scrape":
+        tools.push(createScrapeTool());
+        break;
+
       default:
         bus.emit({ type: "info", message: `[loader] Unknown tool preset "${preset}" for agent "${config.name}" — skipping` });
     }
@@ -347,7 +283,7 @@ function resolvePromptFiles(config: AgentConfig, agentsRoot: string): string[] {
 const VALID_TOOL_PRESETS = new Set([
   "read-write", "read-only", "exec", "exec-readonly", "exec-master",
   "claude-code", "gemini-cli",
-  "subagents", "workflow", "validate-workflow", "background-exec", "socket-watch", "cron",
+  "subagents", "workflow", "background-exec", "socket-watch", "cron", "scrape",
 ]);
 
 const REQUIRED_FIELDS: (keyof AgentConfig)[] = ["name", "description", "domain", "model", "tools"];
@@ -487,7 +423,7 @@ export function loadAgents(opts: AgentLoaderOptions): LoadResult {
       workflowDir: existsSync(workflowDir) ? workflowDir : undefined,
       skillsDirs: existsSync(sharedSkillsDir) ? [sharedSkillsDir] : undefined,
       projectRoot,
-      apiKey: "not-needed",
+      apiKey: model.apiKey || "not-needed",
       memoryLimit: config.memoryLimit,
     });
 

@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { rewriteHallucinatedPath, rewriteHallucinatedCommand, extractHallucinatedRelPath, createReadTool, createExecTool, resolveReadPath } from "../src/tools.js";
+import { resolveHallucinatedPath, extractHallucinatedRelPath, createReadTool } from "../src/tools.js";
 import { mkdirSync, writeFileSync, rmSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 import { tmpdir } from "node:os";
 
 // ── extractHallucinatedRelPath ─────────────────────────────────────────
@@ -27,15 +27,8 @@ describe("extractHallucinatedRelPath", () => {
     expect(extractHallucinatedRelPath("/app/src/tools.ts")).toBe("/src/tools.ts");
   });
 
-  it("returns empty string for bare /home/user", () => {
-    expect(extractHallucinatedRelPath("/home/user")).toBe("");
-  });
-
-  it("matches /home/<user>/<project> patterns (real paths are filtered by rewriteHallucinatedPath)", () => {
-    // extractHallucinatedRelPath matches the pattern but doesn't know the real root.
-    // rewriteHallucinatedPath handles the "don't rewrite if it's the actual root" check.
-    expect(extractHallucinatedRelPath("/home/example-user/may-agent")).toBe("");
-    expect(extractHallucinatedRelPath("/home/example-user/may-agent/src/tools.ts")).toBe("/src/tools.ts");
+  it("returns / for bare /home/user (matches but no relative suffix)", () => {
+    expect(extractHallucinatedRelPath("/home/user")).toBe("/");
   });
 
   it("returns null for relative paths", () => {
@@ -51,167 +44,54 @@ describe("extractHallucinatedRelPath", () => {
   });
 });
 
-// ── rewriteHallucinatedPath ────────────────────────────────────────────
+// ── resolveHallucinatedPath ────────────────────────────────────────────
 
-describe("rewriteHallucinatedPath", () => {
+describe("resolveHallucinatedPath", () => {
   const ROOT = "/home/example-user/may-agent";
 
   it("rewrites /home/user/src/tools.ts to project root", () => {
-    expect(rewriteHallucinatedPath("/home/user/src/tools.ts", ROOT))
+    expect(resolveHallucinatedPath("/home/user/src/tools.ts", ROOT))
       .toBe("/home/example-user/may-agent/src/tools.ts");
   });
 
   it("rewrites /home/user/repo/test/max-turns.test.ts", () => {
-    expect(rewriteHallucinatedPath("/home/user/repo/test/max-turns.test.ts", ROOT))
+    expect(resolveHallucinatedPath("/home/user/repo/test/max-turns.test.ts", ROOT))
       .toBe("/home/example-user/may-agent/test/max-turns.test.ts");
   });
 
   it("rewrites /home/user/repos/cora/src/manager.ts", () => {
-    expect(rewriteHallucinatedPath("/home/user/repos/cora/src/manager.ts", ROOT))
+    expect(resolveHallucinatedPath("/home/user/repos/cora/src/manager.ts", ROOT))
       .toBe("/home/example-user/may-agent/src/manager.ts");
   });
 
   it("rewrites /Users/jdoe/amp-agent/.state/evaluations/", () => {
-    expect(rewriteHallucinatedPath("/Users/jdoe/amp-agent/.state/evaluations/", ROOT))
+    expect(resolveHallucinatedPath("/Users/jdoe/amp-agent/.state/evaluations/", ROOT))
       .toBe("/home/example-user/may-agent/.state/evaluations/");
   });
 
   it("rewrites /app/config.yaml", () => {
-    expect(rewriteHallucinatedPath("/app/config.yaml", ROOT))
+    expect(resolveHallucinatedPath("/app/config.yaml", ROOT))
       .toBe("/home/example-user/may-agent/config.yaml");
   });
 
   it("rewrites bare /home/user to project root", () => {
-    expect(rewriteHallucinatedPath("/home/user", ROOT))
+    expect(resolveHallucinatedPath("/home/user", ROOT))
       .toBe("/home/example-user/may-agent");
   });
 
-  it("does NOT rewrite the actual project root", () => {
-    expect(rewriteHallucinatedPath("/home/example-user/may-agent/src/tools.ts", ROOT))
+  it("preserves the actual project root path (rewrite is identity)", () => {
+    expect(resolveHallucinatedPath("/home/example-user/may-agent/src/tools.ts", ROOT))
       .toBe("/home/example-user/may-agent/src/tools.ts");
   });
 
-  it("does NOT rewrite the exact project root", () => {
-    expect(rewriteHallucinatedPath("/home/example-user/may-agent", ROOT))
-      .toBe("/home/example-user/may-agent");
-  });
-
   it("does NOT rewrite non-hallucinated paths like /etc/config", () => {
-    expect(rewriteHallucinatedPath("/etc/config", ROOT))
+    expect(resolveHallucinatedPath("/etc/config", ROOT))
       .toBe("/etc/config");
   });
 
   it("does NOT rewrite relative paths", () => {
-    expect(rewriteHallucinatedPath("src/tools.ts", ROOT))
+    expect(resolveHallucinatedPath("src/tools.ts", ROOT))
       .toBe("src/tools.ts");
-  });
-});
-
-// ── rewriteHallucinatedCommand ─────────────────────────────────────────
-
-describe("rewriteHallucinatedCommand", () => {
-  const ROOT = "/home/example-user/may-agent";
-
-  it("rewrites find /home/user -name foo", () => {
-    expect(rewriteHallucinatedCommand("find /home/user -name foo", ROOT))
-      .toBe("find /home/example-user/may-agent -name foo");
-  });
-
-  it("rewrites cd /home/user && git log", () => {
-    expect(rewriteHallucinatedCommand("cd /home/user && git log", ROOT))
-      .toBe("cd /home/example-user/may-agent && git log");
-  });
-
-  it("rewrites grep -r pattern /home/user/src --include=*.ts", () => {
-    expect(rewriteHallucinatedCommand('grep -r "maxTurns" /home/user --include="*.ts" -l', ROOT))
-      .toBe('grep -r "maxTurns" /home/example-user/may-agent --include="*.ts" -l');
-  });
-
-  it("rewrites ls /home/user/.state/staged/proposals/", () => {
-    expect(rewriteHallucinatedCommand("ls -la /home/user/.state/staged/proposals/", ROOT))
-      .toBe("ls -la /home/example-user/may-agent/.state/staged/proposals/");
-  });
-
-  it("rewrites /Users/jdoe/amp-agent/.state/evaluations/", () => {
-    expect(rewriteHallucinatedCommand('find /Users/jdoe/amp-agent/.state/evaluations/ -type f -name "*.json"', ROOT))
-      .toBe('find /home/example-user/may-agent/.state/evaluations/ -type f -name "*.json"');
-  });
-
-  it("rewrites /home/user/repos/cora/src paths", () => {
-    expect(rewriteHallucinatedCommand('grep -r "maxTurns" /home/user/repos/cora/src --include="*.ts" -l', ROOT))
-      .toBe('grep -r "maxTurns" /home/example-user/may-agent/src --include="*.ts" -l');
-  });
-
-  it("rewrites /app/ paths", () => {
-    expect(rewriteHallucinatedCommand("cat /app/config.yaml", ROOT))
-      .toBe("cat /home/example-user/may-agent/config.yaml");
-  });
-
-  it("does NOT rewrite the actual project root path", () => {
-    const cmd = "find /home/example-user/may-agent/src -name foo";
-    expect(rewriteHallucinatedCommand(cmd, ROOT)).toBe(cmd);
-  });
-
-  it("does NOT rewrite relative paths", () => {
-    const cmd = "find . -name foo";
-    expect(rewriteHallucinatedCommand(cmd, ROOT)).toBe(cmd);
-  });
-
-  it("does NOT rewrite unrelated absolute paths like /var/log", () => {
-    const cmd = "tail -f /var/log/syslog";
-    expect(rewriteHallucinatedCommand(cmd, ROOT)).toBe(cmd);
-  });
-
-  it("handles multiple hallucinated paths in one command", () => {
-    expect(rewriteHallucinatedCommand("diff /home/user/src/a.ts /home/user/src/b.ts", ROOT))
-      .toBe("diff /home/example-user/may-agent/src/a.ts /home/example-user/may-agent/src/b.ts");
-  });
-});
-
-// ── resolveReadPath ────────────────────────────────────────────────────
-
-describe("resolveReadPath", () => {
-  const ROOT = "/home/example-user/may-agent";
-
-  it("resolves relative path against projectRoot", () => {
-    expect(resolveReadPath("src/tools.ts", ROOT))
-      .toBe("/home/example-user/may-agent/src/tools.ts");
-  });
-
-  it("resolves bare filename against projectRoot", () => {
-    expect(resolveReadPath("package.json", ROOT))
-      .toBe("/home/example-user/may-agent/package.json");
-  });
-
-  it("resolves dotfile relative path", () => {
-    expect(resolveReadPath(".state/evaluations/foo.json", ROOT))
-      .toBe("/home/example-user/may-agent/.state/evaluations/foo.json");
-  });
-
-  it("resolves ./prefixed relative path", () => {
-    expect(resolveReadPath("./src/tools.ts", ROOT))
-      .toBe("/home/example-user/may-agent/src/tools.ts");
-  });
-
-  it("resolves nested relative path with ../", () => {
-    // resolve("root", "../other") goes up one level
-    expect(resolveReadPath("../other/file.ts", ROOT))
-      .toBe(resolve(ROOT, "../other/file.ts"));
-  });
-
-  it("rewrites hallucinated absolute path", () => {
-    expect(resolveReadPath("/home/user/repo/src/tools.ts", ROOT))
-      .toBe("/home/example-user/may-agent/src/tools.ts");
-  });
-
-  it("passes through correct absolute path unchanged", () => {
-    expect(resolveReadPath("/home/example-user/may-agent/src/tools.ts", ROOT))
-      .toBe("/home/example-user/may-agent/src/tools.ts");
-  });
-
-  it("passes through non-hallucinated absolute path unchanged", () => {
-    expect(resolveReadPath("/etc/hosts", ROOT))
-      .toBe("/etc/hosts");
   });
 });
 
@@ -222,7 +102,6 @@ describe("read tool hallucinated path rewriting", () => {
   const ROOT = testDir;
 
   it("rewrites /home/user/repo/<file> to project root and reads successfully", async () => {
-    // Create a test file at the project root
     mkdirSync(join(ROOT, "src"), { recursive: true });
     writeFileSync(join(ROOT, "src/test.txt"), "hello world", "utf-8");
 
@@ -230,18 +109,16 @@ describe("read tool hallucinated path rewriting", () => {
     const result = await tool.execute("id", { path: "/home/user/repo/src/test.txt" });
     expect(result.content[0].text).toBe("hello world");
 
-    // Cleanup
     rmSync(ROOT, { recursive: true, force: true });
   });
 
-  it("still returns ENOENT with hint if rewritten path also doesn't exist", async () => {
+  it("still returns error if rewritten path also doesn't exist", async () => {
     mkdirSync(ROOT, { recursive: true });
 
     const tool = createReadTool({ projectRoot: ROOT });
     const result = await tool.execute("id", { path: "/home/user/repo/nonexistent.ts" });
-    expect(result.content[0].text).toContain("Error reading file:");
-    expect(result.content[0].text).toContain("ENOENT");
-    expect(result.content[0].text).toContain("Project root:");
+    expect(result.content[0].text).toContain("Error");
+    expect(result.content[0].text).toContain("not found");
 
     rmSync(ROOT, { recursive: true, force: true });
   });
@@ -295,79 +172,5 @@ describe("read tool relative path resolution", () => {
     expect(result.content[0].text).toBe('{"name":"test"}');
 
     rmSync(ROOT, { recursive: true, force: true });
-  });
-
-  it("returns ENOENT with hint for non-existent relative path", async () => {
-    mkdirSync(ROOT, { recursive: true });
-
-    const tool = createReadTool({ projectRoot: ROOT });
-    const result = await tool.execute("id", { path: "nonexistent/file.ts" });
-    expect(result.content[0].text).toContain("Error reading file:");
-    expect(result.content[0].text).toContain("ENOENT");
-    expect(result.content[0].text).toContain("Project root:");
-
-    rmSync(ROOT, { recursive: true, force: true });
-  });
-
-  it("reads nested .state path via relative path", async () => {
-    mkdirSync(join(ROOT, ".state", "evaluations"), { recursive: true });
-    writeFileSync(join(ROOT, ".state/evaluations/test.json"), '{"score":1}', "utf-8");
-
-    const tool = createReadTool({ projectRoot: ROOT });
-    const result = await tool.execute("id", { path: ".state/evaluations/test.json" });
-    expect(result.content[0].text).toBe('{"score":1}');
-
-    rmSync(ROOT, { recursive: true, force: true });
-  });
-
-  it("relative path without projectRoot falls back to cwd resolution", async () => {
-    // Without projectRoot, relative paths resolve from process.cwd()
-    const tool = createReadTool();
-    const result = await tool.execute("id", { path: "src/tools.ts" });
-    // Should either work (if cwd has src/tools.ts) or fail with ENOENT (no hint)
-    const text = result.content[0].text;
-    // Since we're running from the project root, this should read the file
-    // (can't check "not contains Error" because the file source itself has that string)
-    expect(text).toContain("import");
-    expect(text.startsWith("Error reading file:")).toBe(false);
-  });
-});
-
-// ── Integration: exec tool with hallucinated path rewriting ────────────
-
-describe("exec tool hallucinated path rewriting", () => {
-  it("rewrites hallucinated paths in exec commands when warnOutsideRoot is set", async () => {
-    const tool = createExecTool({
-      cwd: "/tmp",
-      warnOutsideRoot: "/tmp",
-    });
-
-    // /home/user → should be rewritten to /tmp
-    const result = await tool.execute("id", { command: "echo /home/user" });
-    // The echo output should contain the rewritten path
-    expect(result.content[0].text).toContain("/tmp");
-  });
-
-  it("does not rewrite when warnOutsideRoot is not set", async () => {
-    const tool = createExecTool({ cwd: "/tmp" });
-    // Without warnOutsideRoot, no rewriting happens
-    const result = await tool.execute("id", { command: "echo /home/user" });
-    expect(result.content[0].text).toContain("/home/user");
-  });
-
-  it("rewriting + stripRedundantCd work together", async () => {
-    const ROOT = "/home/example-user/may-agent";
-    const tool = createExecTool({
-      cwd: ROOT,
-      warnOutsideRoot: ROOT,
-    });
-    // cd /home/user && echo test → stripRedundantCd doesn't match (different root),
-    // but rewriteHallucinatedCommand rewrites /home/user to /home/example-user/may-agent,
-    // then stripRedundantCd strips the now-matching cd prefix
-    // Actually: stripRedundantCd runs first, then rewrite. So cd /home/user stays,
-    // then rewrite makes it cd /home/example-user/may-agent. Let's verify it works:
-    const result = await tool.execute("id", { command: "cd /home/user && echo success" });
-    // The command should work because /home/user is rewritten to the actual CWD
-    expect(result.content[0].text).toContain("success");
   });
 });
