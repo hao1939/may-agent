@@ -541,8 +541,8 @@ function formatTranscript(messages: AgentMessage[]): string {
       const fullText = msg.content
         ?.map((c) => c.type === "text" ? c.text : "")
         .join("") ?? "";
-      const truncated = fullText.length > 500;
-      const text = fullText.slice(0, 500);
+      const truncated = fullText.length > 2000;
+      const text = fullText.slice(0, 2000);
       const suffix = truncated ? ` [REVIEWER NOTE: this tool result was ${fullText.length} chars total — truncated here for review brevity. The agent saw the full output.]` : "";
       lines.push(`[tool_result: ${msg.toolName}] ${text}${suffix}`);
     } else if (typeof msg.content === "string") {
@@ -785,6 +785,8 @@ export async function evaluateTask(opts: EvaluateTaskOptions): Promise<TaskEvalu
     ``,
     `Evaluate each agent's behavior by its responsibility. Score each agent independently.`,
     `See your domain.md for scoring criteria and output format.`,
+    ``,
+    `IMPORTANT: When you see '[REVIEWER NOTE: this tool result was N chars total — truncated here for review brevity. The agent saw the full output.]', this means the TRANSCRIPT was shortened for your review — the agent received and processed the complete output. Do NOT penalize the agent for incomplete output in these cases. Do NOT flag these as HARD_CONSTRAINT_VIOLATION.`,
     ``,
     `---`,
     ...perAgentTranscripts,

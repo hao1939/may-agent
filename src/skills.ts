@@ -20,6 +20,7 @@ export interface SkillEntry {
  * Expects content starting with `---\n`, followed by YAML lines, closed by `---\n`.
  * Only handles simple `key: value` pairs (string values). Arrays and nested YAML are not supported.
  * @returns An object of key-value pairs from the YAML block, or an empty object if no valid frontmatter is found.
+ * @param content - The raw markdown string to extract frontmatter from.
  */
 export function parseFrontmatter(content: string): Frontmatter {
   const trimmed = content.trimStart();
@@ -164,6 +165,7 @@ function tryLoadSkill(filePath: string): SkillEntry | null {
  *   </skill>
  * </available_skills>
  * ```
+ * @returns XML string of available skills, or empty string if no skills.
  */
 export function formatSkillsForPrompt(skills: SkillEntry[]): string {
   if (skills.length === 0) return "";
