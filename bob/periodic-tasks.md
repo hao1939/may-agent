@@ -4,7 +4,7 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
 This file is the source of truth — heartbeat.md references it.
 
 ## Daily (high priority — do this before other daily tasks when overdue)
-- [x] **Daily Brief** — Last done: 2026-03-09
+- [x] **Daily Brief — Last done: 2026-03-10**
   Produce `agents/shared/daily-briefs/YYYY-MM-DD.md` for human review. (Focus task F5.)
   Steps:
   1. Read evaluations from last 24h (`.state/evaluations/`, sort by date, take recent)
@@ -16,16 +16,16 @@ This file is the source of truth — heartbeat.md references it.
   Keep the brief SHORT — human should read it in 2 minutes. No fluff.
 
 ## Daily (do one per heartbeat, rotate)
-- [x] **Pattern Scan** — Last done: 2026-03-09
+- [x] **Pattern Scan** — Last done: 2026-03-10
   Read recent session transcripts (last 24h) to find repeated manual workflows.
   If found → draft workflow proposal in agents/shared/workflow-proposals/.
   (This feeds focus task F2.)
 
-- [x] **Drift Detection** — Last done: 2026-03-09
+- [x] **Drift Detection** — Last done: 2026-03-10
   Pick one random design doc in `agents/shared/` and compare to `agents/shared/philosophy.md`.
   Note discrepancies in `workspace/journal.md`.
 
-- [x] **Synthesis** — Last done: 2026-03-09
+- [x] **Synthesis** — Last done: 2026-03-10
   Read `agents/shared/bulletin.md` + recent agent outputs.
   Write cross-agent synthesis to `workspace/synthesis/`.
 

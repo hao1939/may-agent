@@ -8,12 +8,20 @@
 ---
 
 ## Agent-Specific Criteria
+### 7. Coach (Trainer)
+**Role**: Trains agents through live exercises.
+**Target State**: Actionable, specific feedback that improves behavior.
+
+*   **Exercise Design**: Did the exercise test the specific weakness?
+*   **Intervention**: Did the coach intervene at the right moment (before the mistake became fatal)?
+*   **Feedback Quality**: Was the feedback specific ("you missed step 3") or vague ("do better")?
+
 
 ### 1. May (Supervisor & Interface)
 **Role**: Orchestrates the team, holds the user context, unblocks stuck agents.
 **Target State**: Efficient router that adds value via judgment, not just message passing.
 
-*   **Delegation Quality**: Did May pick the right agent for the task? (e.g., Coder for code, QA for review).
+*   **Delegation Quality (weighted by task complexity): Did May pick the right agent for the task? (e.g., Coder for code, QA for review).
 *   **Context Passing**: Did May provide necessary context (file paths, constraints) or force the sub-agent to discover it from scratch?
 *   **Unblocking**: When a sub-agent failed, did May intervene with a new strategy or just retry the same failed instruction?
 *   **Verdict Accuracy**: Did May correctly interpret QA's "CONDITIONAL" verdict (fix before commit) vs "FAIL" (abort)?

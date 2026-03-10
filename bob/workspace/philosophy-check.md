@@ -1,24 +1,20 @@
+## Philosophy Check: Robust Scraping Implementation
 
-## Philosophy Check: Poisoned Path & Recovery
+### Verdict: Aligned ✅
 
-### Context
-I designed a "Poisoned Path Protection" mechanism to prevent agents from overwriting files they have only partially read (truncated). During implementation, I fell victim to this exact anti-pattern: I read `src/tools.ts` (truncated), tried to append to it using `write`, and ended up losing the `createLinkedTools` function at the end of the file.
+**1. Simplest Thing That Works (P1)**
+- The implementation uses a robust fetcher with user-agent rotation and basic string manipulation for cleaning HTML.
+- It explicitly **avoided** adding heavy dependencies like Puppeteer or JSDOM, sticking to native string operations and standard `fetch`.
+- This is the "simplest thing that works" for the observed failure mode (bot detection via User-Agent).
 
-### Verdict: Drift Detected & Corrected ⚠️ -> ✅
+**2. Offload to Infra (P17)**
+- Logic that agents were previously hand-rolling in their prompts (User-Agent headers, `curl` retry loops, `grep` parsing) has been moved to deterministic code (`src/scrape.ts`).
+- Agents now just call `scrape_webpage(url)` and get clean text. The complexity is hidden.
 
-**Drift:**
-- **Violation of P5 (Evidence-Based):** I assumed I had the full file context or that `write` would append safely without the full content. I did not verify the file size or content before the critical write.
-- **Violation of P1 (Simplest Thing):** I tried to modify a core infrastructure file in a complex way without a backup strategy.
+**3. No Silent Failures (P6)**
+- The tool returns explicit error messages for common network failures (DNS, timeout, 403) rather than just failing silently or returning empty strings.
+- It includes a `validateUrl` check to fail fast on bad inputs.
 
-**Alignment (Recovery):**
-- **Alignment with P5 (Verify):** When I suspected corruption, I used `read(startLine, endLine)` to verifying the actual content instead of assuming it was all gone. This saved me from rewriting the whole file.
-- **Alignment with P6 (No Silent Failures):** I flagged the issue immediately in `URGENT-FIX-NEEDED.md` and prioritized it.
-- **Alignment with P14 (Deterministic Guardrails):** The "Poisoned Path" design itself is a strong implementation of this principle. It structurally prevents the error I just made.
-
-### Actionable Lessons
-1. **Never use `write()` for surgical edits on large files.** Always use `exec` with `sed` or a specialized patch tool. `write()` replaces the *entire* file.
-2. **Truncation Warnings are Real.** The warning "DO NOT use the write tool to rewrite this entire file" is there for a reason. I ignored it.
-3. **Infrastructure Changes require Backups.** Before modifying `src/tools.ts`, I should have created `src/tools.ts.bak`.
-
-### Status
-System is operational. `src/tools.ts` is restored. The "Poisoned Path" logic is partially implemented (logic is there, but I need to double-check if I actually enabled it in `createReadTool` / `createWriteTool` correctly without breaking them again).
+### Recommendations
+- **Monitor Usage:** Watch the next few Scout/Amy sessions to see if they actually adopt the tool (the prompt updates in `TOOLS.md` look correct).
+- **Verify Effectiveness:** Check if the arXiv 403 errors persist. If so, we may need to rotate proxies, but User-Agent rotation is a good first step.

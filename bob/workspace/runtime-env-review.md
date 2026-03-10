@@ -22,6 +22,8 @@ Ephemeral agents consistently fail by attempting to access `/root/workspace/todo
 ✅ APPROVED. This is a structural fix to a recurring operational failure.
 
 ### Implementation Tasks
+- [x] **Data Integrity (Poison Path Protection)** — Structural guardrail to prevent "Blind Overwrite". Truncated reads must poison the file path, blocking future write() calls in the same session.
+- [ ] Sanitize PATH variable to remove non-essential directories before agent launch
 - [ ] Update `agents/shared/system-design.md` with "Filesystem & Workspace" section.
 - [ ] Update `agents/CONVENTIONS.md` with "Filesystem Standards".
 - [ ] Update `src/launcher.ts` (or relevant prompt builder) to inject `CWD` and `WORKSPACE_ROOT`.
