@@ -184,7 +184,7 @@ export interface SubagentManagerOptions {
    */
   onSessionComplete?: (info: SessionInfo) => void;
   /**
-   * Called when any new session starts (via run() or resumeAgent()).
+   * Called when any new session starts (via run()).
    * Use to subscribe to agent events for UI streaming.
    * This is the single point where all session creation is observed.
    */
@@ -756,7 +756,7 @@ export class SubagentManager {
   }
 
   /** Mark any workflow runs stuck at "running" as "interrupted".
-   *  Called during startup cleanup (both cleanupStaleSessions and resumeAgent). */
+   *  Called during startup (resumeStaleSessions). */
   private cleanupStaleWorkflowRuns(): void {
     const persistDir = this.registry.persistDir;
     const runIds = listWorkflowRuns(persistDir);
@@ -772,57 +772,33 @@ export class SubagentManager {
   }
 
   /**
-   * Clean up sessions left in "running" or "idle" state from a previous process.
-   * Marks them as "interrupted" and returns a summary.
+   * Resume sessions left in "running" or "idle" state from a previous process.
+   * Reloads their JSONL, repairs broken message sequences, and continues the agent loop.
+   * Sessions whose agent is not registered are marked as "interrupted".
    * Also cleans up stale workflow runs.
    *
    * Detached sessions (separate OS processes) are skipped if their process
    * is still alive — they survive the parent's restart by design.
-   *
-   * Chat+Task model: task sessions should never be "idle" on disk. If found,
-   * they are interrupted the same as stale "running" sessions.
    */
-  cleanupStaleSessions(): SessionInfo[] {
+  resumeStaleSessions(): { resumed: SessionInfo[]; interrupted: SessionInfo[] } {
     const registryData = this.registry.getRegistry();
-    const cleaned: SessionInfo[] = [];
-    const interruptedSessionIds = new Set<string>();
+    const persistDir = this.registry.persistDir;
+    const staleSessionIds: Array<{ sessionId: string; persisted: (typeof registryData.sessions)[string] }> = [];
 
     // Scan for orphan [STARTED] sentinels in session directories
-    const sessionsDir = join(this.registry.persistDir, "sessions");
+    const sessionsDir = join(persistDir, "sessions");
     if (existsSync(sessionsDir)) {
       try {
         const sessionDirs = readdirSync(sessionsDir);
         for (const dirName of sessionDirs) {
           const sentinelPath = join(sessionsDir, dirName, "[STARTED]");
           if (existsSync(sentinelPath)) {
-            // Found a session that crashed or was killed abruptly
             const sessionId = dirName;
-            // Ensure registry matches reality (if registry says "running" but process is gone, it's stale)
             const persisted = registryData.sessions[sessionId];
-            
-            // If there's a sentinel, but no registry entry or it's not "running", it's weird but not active.
-            // If it IS "running" in registry, check if PID is alive.
             if (persisted && persisted.status === "running" && !isProcessAlive(persisted.pid)) {
-               // Mark as interrupted
-               this.registry.updateSessionStatus(sessionId, "interrupted", "Crash detected ([STARTED] sentinel found)");
-               
-               // Clean up sentinel
-               try { unlinkSync(sentinelPath); } catch {}
-
-               cleaned.push({
-                 sessionId,
-                 agent: persisted.agent,
-                 task: persisted.task,
-                 status: "interrupted",
-                 startedAt: persisted.startedAt,
-                 endedAt: Date.now(),
-                 runtime: formatDuration(Date.now() - persisted.startedAt),
-                 outputDir: sessionOutputDir(this.registry.persistDir, sessionId),
-                 error: "Crash detected",
-               });
-               interruptedSessionIds.add(sessionId);
+              try { unlinkSync(sentinelPath); } catch {}
+              staleSessionIds.push({ sessionId, persisted });
             } else if (!persisted) {
-              // Sentinel exists but no registry entry? Just delete sentinel.
               try { unlinkSync(sentinelPath); } catch {}
             }
           }
@@ -832,106 +808,82 @@ export class SubagentManager {
       }
     }
 
+    // Collect remaining stale sessions from registry
+    const alreadyFound = new Set(staleSessionIds.map((s) => s.sessionId));
     for (const [sessionId, persisted] of Object.entries(registryData.sessions)) {
-      if (interruptedSessionIds.has(sessionId)) continue; // Already handled by sentinel check
+      if (alreadyFound.has(sessionId)) continue;
       if (persisted.status !== "running" && persisted.status !== "idle") continue;
-
-      // Detached sessions live in a separate OS process — skip if still alive
       if (persisted.detached && isProcessAlive(persisted.pid)) continue;
-
-      this.registry.updateSessionStatus(sessionId, "interrupted", "Process restarted");
-
-      cleaned.push({
-        sessionId,
-        agent: persisted.agent,
-        task: persisted.task,
-        status: "interrupted",
-        startedAt: persisted.startedAt,
-        endedAt: Date.now(),
-        runtime: formatDuration(Date.now() - persisted.startedAt),
-        outputDir: sessionOutputDir(this.registry.persistDir, sessionId),
-        error: "Process restarted",
-      });
+      staleSessionIds.push({ sessionId, persisted });
     }
 
-    this.cleanupStaleWorkflowRuns();
-    return cleaned;
-  }
+    const resumed: SessionInfo[] = [];
+    const interrupted: SessionInfo[] = [];
 
-  /**
-   * Resume the interface agent's most recent session from a previous process.
-   * All other "running"/"idle" sessions are marked as interrupted.
-   *
-   * Returns the resumed session info (with the agent running), plus a list
-   * of interrupted sessions so the caller can inform the resumed agent.
-   *
-   * Throws if the agent has no "running" or "idle" session to resume.
-   */
-  resumeAgent(agentName: string, opts?: { compaction?: boolean | CompactionOptions; autoClose?: "immediate" | "never" }): { resumed: SessionInfo; interrupted: SessionInfo[] } {
-    const registryData = this.registry.getRegistry();
-    const persistDir = this.registry.persistDir;
+    for (const { sessionId, persisted } of staleSessionIds) {
+      const registered = this.agents.get(persisted.agent);
+      if (!registered) {
+        // Agent not registered — can't resume, mark interrupted
+        this.registry.updateSessionStatus(sessionId, "interrupted", "Process restarted (agent not registered)");
+        interrupted.push({
+          sessionId,
+          agent: persisted.agent,
+          task: persisted.task,
+          status: "interrupted",
+          startedAt: persisted.startedAt,
+          endedAt: Date.now(),
+          runtime: formatDuration(Date.now() - persisted.startedAt),
+          outputDir: sessionOutputDir(persistDir, sessionId),
+          error: "Process restarted (agent not registered)",
+        });
+        continue;
+      }
 
-    // Find all running/idle sessions, separate the target agent from the rest
-    let targetSessionId: string | null = null;
-    let targetPersisted: (typeof registryData.sessions)[string] | null = null;
-    const otherRunning: Array<{ sessionId: string; persisted: (typeof registryData.sessions)[string] }> = [];
-
-    for (const [sessionId, persisted] of Object.entries(registryData.sessions)) {
-      if (persisted.status !== "running" && persisted.status !== "idle") continue;
-      if (persisted.agent === agentName && !targetSessionId) {
-        targetSessionId = sessionId;
-        targetPersisted = persisted;
-      } else {
-        otherRunning.push({ sessionId, persisted });
+      try {
+        const info = this.resumeSession(sessionId, persisted, registered);
+        resumed.push(info);
+      } catch (err) {
+        const errMsg = err instanceof Error ? err.message : String(err);
+        this.registry.updateSessionStatus(sessionId, "interrupted", `Resume failed: ${errMsg}`);
+        interrupted.push({
+          sessionId,
+          agent: persisted.agent,
+          task: persisted.task,
+          status: "interrupted",
+          startedAt: persisted.startedAt,
+          endedAt: Date.now(),
+          runtime: formatDuration(Date.now() - persisted.startedAt),
+          outputDir: sessionOutputDir(persistDir, sessionId),
+          error: `Resume failed: ${errMsg}`,
+        });
       }
     }
 
-    if (!targetSessionId || !targetPersisted) {
-      // No running session for this agent — don't touch other sessions
-      this.cleanupStaleWorkflowRuns();
-      throw new Error(`No running/idle session for "${agentName}" in registry`);
-    }
+    this.cleanupStaleWorkflowRuns();
+    return { resumed, interrupted };
+  }
 
-    // Find matching registered agent
-    const registered = this.agents.get(agentName);
-    if (!registered) {
-      this.registry.updateSessionStatus(targetSessionId, "interrupted", "Agent not registered");
-      this.cleanupStaleWorkflowRuns();
-      throw new Error(`Agent "${agentName}" has session "${targetSessionId}" in registry but is not registered in this process`);
-    }
-
-    // Target found and registered — now interrupt other running sessions
-    // (but skip detached sessions whose process is still alive)
-    const interrupted: SessionInfo[] = [];
-    for (const { sessionId, persisted } of otherRunning) {
-      if (persisted.detached && isProcessAlive(persisted.pid)) continue;
-
-      this.registry.updateSessionStatus(sessionId, "interrupted", "Process restarted");
-      interrupted.push({
-        sessionId,
-        agent: persisted.agent,
-        task: persisted.task,
-        status: "interrupted",
-        startedAt: persisted.startedAt,
-        endedAt: Date.now(),
-        runtime: formatDuration(Date.now() - persisted.startedAt),
-        outputDir: sessionOutputDir(persistDir, sessionId),
-        error: "Process restarted",
-      });
-    }
-
+  /**
+   * Resume a single stale session from disk.
+   * Reloads JSONL, repairs broken messages, injects a restart notice, and continues the agent loop.
+   */
+  private resumeSession(
+    sessionId: string,
+    persisted: PersistedSession,
+    registered: { definition: SubagentDefinition },
+  ): SessionInfo {
+    const persistDir = this.registry.persistDir;
     const def = registered.definition;
-    // Restore session JSONL from history archive if it was archived by a previous process
-    ensureSessionDir(persistDir, targetSessionId);
-    restoreSessionFromArchive(persistDir, targetSessionId);
-    // Load compacted messages if available (faster resume).
-    // Falls back to full JSONL if no compacted state exists.
-    const compactedMessages = readCompactedMessages(persistDir, targetSessionId);
-    const savedMessages = compactedMessages ?? readSessionMessages(persistDir, targetSessionId);
-    const systemPrompt = this.resolveSystemPrompt(def, agentName, targetSessionId, persistDir);
-    const outputDir = sessionOutputDir(persistDir, targetSessionId);
 
-    const compactionTransform = this.buildTransformContext(def, opts?.compaction);
+    ensureSessionDir(persistDir, sessionId);
+    restoreSessionFromArchive(persistDir, sessionId);
+
+    const compactedMessages = readCompactedMessages(persistDir, sessionId);
+    const savedMessages = compactedMessages ?? readSessionMessages(persistDir, sessionId);
+    const systemPrompt = this.resolveSystemPrompt(def, persisted.agent, sessionId, persistDir);
+    const outputDir = sessionOutputDir(persistDir, sessionId);
+
+    const compactionTransform = this.buildTransformContext(def);
     const agent = new Agent({
       initialState: {
         systemPrompt,
@@ -943,82 +895,13 @@ export class SubagentManager {
       getApiKey: def.apiKey ? () => def.apiKey : undefined,
     });
 
-    // Build restart message with interrupted sub-agent context
-    const interruptedSummary = interrupted.length > 0
-      ? `\n\nInterrupted sub-agent sessions from previous run:\n` +
-        interrupted.map((s) => `- ${s.agent} (${s.sessionId}): "${s.task.slice(0, 100)}"`).join("\n") +
-        `\n\nThese sessions are no longer running. Re-delegate if the work is still needed.`
-      : "";
-
-    // ── Reconcile children: completed + stale-running ────────────────
-    // Build a set of ALL session IDs belonging to the target agent, so we
-    // can find children whose parentSessionId points to any session of this
-    // agent — not just the current targetSessionId.  This handles the case
-    // where a process restart creates a new chat session ID while children
-    // still reference the old (now archived) parent session.
-    let childrenSummary = "";
-    try {
-      const agentSessionIds = new Set<string>();
-      for (const [sid, s] of Object.entries(registryData.sessions)) {
-        if (s.agent === agentName) agentSessionIds.add(sid);
-      }
-
-      // Sessions already reported in the interrupted array — exclude from
-      // children reconciliation to avoid duplicate reporting.
-      const interruptedIds = new Set(interrupted.map((s) => s.sessionId));
-
-      const isChildOfAgent = (s: PersistedSession) =>
-        !!s.parentSessionId && agentSessionIds.has(s.parentSessionId);
-
-      const completedChildren = Object.entries(registryData.sessions)
-        .filter(([sid, s]) => isChildOfAgent(s) && !interruptedIds.has(sid) && (s.status === "done" || s.status === "error"));
-
-      // Detect stale-running: registry says "running" but no ActiveSession exists
-      const staleRunning = Object.entries(registryData.sessions)
-        .filter(([sid, s]) => isChildOfAgent(s) && !interruptedIds.has(sid) && s.status === "running" && !this.activeSessions.has(sid));
-
-      // Mark stale as interrupted
-      for (const [sid] of staleRunning) {
-        this.registry.updateSessionStatus(sid, "interrupted", "Process restarted (stale)");
-      }
-
-      const completedLines = completedChildren.map(([sid, s]) => {
-        const icon = s.status === "done" ? "✅" : "❌";
-        const taskPreview = (s.task ?? "").slice(0, 100);
-        const errorInfo = s.error ? ` Error: ${s.error}` : "";
-        return `- ${icon} ${s.agent} (${sid}): "${taskPreview}"${errorInfo}`;
-      });
-      const staleLine = staleRunning.map(([sid, s]) => {
-        const taskPreview = (s.task ?? "").slice(0, 100);
-        return `- ⚠️ ${s.agent} (${sid}): "${taskPreview}" — was running, now interrupted (stale)`;
-      });
-      const allChildLines = [...completedLines, ...staleLine];
-      if (allChildLines.length > 0) {
-        childrenSummary = `\n\nCompleted/stale child sessions since last run:\n` +
-          allChildLines.join("\n") +
-          `\nReview results if needed (use subagents status/result).`;
-      }
-    } catch { /* reconciliation must not crash resume */ }
-
-    const resumeMessage: AgentMessage = {
-      role: "user",
-      content: [{
-        type: "text",
-        text: `Process restarted. Your session has been restored with your previous conversation history. Continue where you left off.${interruptedSummary}${childrenSummary}`,
-      }],
-      timestamp: Date.now(),
-      source: "system",
-    } as AgentMessage;
-
-    // Repair broken message sequences before resuming.
-    // If the process died mid-tool-execution, the last assistant message has
-    // tool calls with no corresponding tool results. Inject synthetic error
-    // results so the conversation is well-formed for the LLM API.
+    // Repair broken message sequences (mid-tool-call crash).
     const lastMsg = savedMessages.length > 0 ? savedMessages[savedMessages.length - 1] : null;
     let lastRole = lastMsg?.role;
+
     if (lastRole === "assistant" && lastMsg && Array.isArray(lastMsg.content)) {
-      const toolCalls = (lastMsg.content as any[]).filter(
-        (b: any) => b.type === "toolCall",
+      const toolCalls = (lastMsg.content as Array<{ type: string }>).filter(
+        (b) => b.type === "toolCall",
       );
       if (toolCalls.length > 0) {
         // Inject error tool results for each pending tool call
@@ -1035,90 +918,67 @@ export class SubagentManager {
         }
       } else if ((lastMsg as any).stopReason === "toolUse") {
         // Malformed response: stopReason says "toolUse" but no tool call content
-        // blocks exist (proxy/network glitch). Remove the broken message so the
-        // agent can resume cleanly from the previous user/toolResult message.
         savedMessages.pop();
         agent.replaceMessages(savedMessages);
         lastRole = savedMessages.length > 0 ? savedMessages[savedMessages.length - 1].role : undefined;
       }
     }
 
-    // Determine whether the agent needs to be prompted.
-    // If the agent was idle (last msg = assistant, stopReason = stop) and there's
-    // nothing to reconcile (no interrupted sessions, no completed/stale children,
-    // no broken tool calls), restore silently to idle — no LLM call needed.
-    const hasBrokenToolCalls = lastRole === "assistant" && lastMsg && Array.isArray(lastMsg.content) &&
-      (lastMsg.content as any[]).some((b: any) => b.type === "toolCall");
-    const needsPrompt = lastRole === "user" || hasBrokenToolCalls ||
-      interruptedSummary.length > 0 || childrenSummary.length > 0;
-
-    const initialStatus = needsPrompt ? "running" as const : "idle" as const;
-    this.registry.updateSessionStatus(targetSessionId, initialStatus);
+    this.registry.updateSessionStatus(sessionId, "running");
 
     const session: ActiveSession = {
-      sessionId: targetSessionId,
-      agentName,
+      sessionId,
+      agentName: persisted.agent,
       agent,
       promise: null!,
-      task: targetPersisted.task,
-      startedAt: targetPersisted.startedAt,
-      status: initialStatus,
+      task: persisted.task,
+      startedAt: persisted.startedAt,
+      status: "running",
       outputDir,
+      parentSessionId: persisted.parentSessionId,
       turnCount: savedMessages.filter((m) => m.role === "assistant").length,
       maxTurns: def.maxTurns,
       compactionTransform,
       closed: false,
-      autoClose: opts?.autoClose ?? "immediate",
+      autoClose: "immediate",
     };
 
     this.subscribeForPersistence(session);
     this.setupTimeout(session, def.timeoutMs);
+    this.activeSessions.set(sessionId, session);
+    this.onSessionStart?.(persisted.agent, sessionId);
 
-    // Add to activeSessions before notifying listener (subscribe() needs it)
-    this.activeSessions.set(targetSessionId, session);
+    // Continue the agent — either resume from a pending user message or
+    // inject a restart notice and let the agent continue its task.
+    const resumeMessage: AgentMessage = {
+      role: "user",
+      content: [{ type: "text", text: "Process restarted. Your session has been restored. Continue where you left off." }],
+      timestamp: Date.now(),
+      source: "system",
+    } as AgentMessage;
 
-    // Notify listener that a session has been resumed
-    this.onSessionStart?.(agentName, targetSessionId);
+    const startPromise = lastRole === "user"
+      ? agent.continue()
+      : agent.prompt(resumeMessage);
 
-    if (needsPrompt) {
-      // Something to reconcile — prompt the agent
-      const sid = targetSessionId;
-      const startPromise = lastRole === "user"
-        ? agent.continue()
-        : agent.prompt(resumeMessage);
+    session.promise = startPromise
+      .then(() => { this.handleCompletion(session); })
+      .catch((err) => {
+        session.error = err?.message ?? String(err);
+        this.handleCompletion(session);
+      });
 
-      session.promise = startPromise
-        .then(() => {
-          this.handleCompletion(session);
-        })
-        .catch((err) => {
-          session.error = err?.message ?? String(err);
-          this.handleCompletion(session);
-        });
+    this.sessionResults.set(sessionId, session.promise.then(() => this.buildResultFromSession(session)));
 
-      this.sessionResults.set(targetSessionId, session.promise.then(() => this.buildResultFromSession(session)));
-    } else if (session.autoClose === "immediate") {
-      // Task session with nothing to reconcile — complete immediately
-      session.promise = Promise.resolve();
-      this.handleCompletion(session);
-      this.sessionResults.set(targetSessionId, Promise.resolve(this.buildResultFromSession(session)));
-    } else {
-      // Chat session with nothing to reconcile — restore to idle silently
-      session.promise = Promise.resolve();
-    }
-
-    const resumedInfo: SessionInfo = {
-      sessionId: targetSessionId,
-      agent: agentName,
-      task: targetPersisted.task,
-      status: initialStatus,
-      startedAt: targetPersisted.startedAt,
-      runtime: formatDuration(Date.now() - targetPersisted.startedAt),
+    return {
+      sessionId,
+      agent: persisted.agent,
+      task: persisted.task,
+      status: "running",
+      startedAt: persisted.startedAt,
+      runtime: formatDuration(Date.now() - persisted.startedAt),
       outputDir,
     };
-
-    this.cleanupStaleWorkflowRuns();
-    return { resumed: resumedInfo, interrupted };
   }
 
   /** Get all active (running) sessions. Completed sessions are not listed — use result() or progress(). */

@@ -30,6 +30,9 @@ export interface HandlerContext {
   /** Log a diagnostic message (routed through EventBus as info). */
   log: (msg: string) => void;
 
+  /** Send a message to the human (routed through EventBus on the chat channel, visible in Telegram). */
+  notify: (msg: string) => void;
+
   /** Trigger a cron entry immediately (reactive trigger). Returns true if fired/latched. */
   triggerNow: (entryName: string) => boolean;
 }

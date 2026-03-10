@@ -20,6 +20,8 @@ export interface ChatLoopOptions {
   agentName: string;
   /** Max transcript entries to include as context (default: 10). */
   maxTranscript?: number;
+  /** Context from startup (e.g., interrupted sessions). Automatically sent as the first session. */
+  startupContext?: string;
   /** Callback when a session finishes (for prompt display). */
   onSessionDone?: (sessionId: string) => void;
   /** Event routing: subscribe to session for UI streaming. */
@@ -66,6 +68,11 @@ export class ChatLoop {
     this.onReload = opts.onReload;
     this.onClose = opts.onClose;
     this.onRestart = opts.onRestart;
+
+    // Auto-send startup context as the first session (if provided)
+    if (opts.startupContext) {
+      this.launchSession(this.agentName, opts.startupContext, "[startup reconciliation]");
+    }
   }
 
   /**
