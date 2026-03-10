@@ -1,45 +1,52 @@
 import { describe, it, expect } from "vitest";
-import { createExecTool, isMetaRecursionCommand } from "../src/lib/tools.js";
+import { createBashTool } from "../src/lib/tools/bash.js";
+import { isMetaRecursionCommand } from "../src/lib/tools/may-utils.js";
 
-describe("createExecTool", () => {
+describe("createBashTool", () => {
   it("executes a simple command and returns output", async () => {
-    const tool = createExecTool({ projectRoot: "/tmp" });
+    const tool = createBashTool("/tmp");
     const result = await tool.execute("id", { command: "echo hello" });
     expect(result.content[0].text).toContain("hello");
   });
 
-  it("works with no options (defaults)", async () => {
-    const tool = createExecTool();
-    const result = await tool.execute("id", { command: "echo ok" });
-    expect(result.content[0].text).toContain("ok");
-  });
-
-  it("returns exit code on non-zero exit", async () => {
-    const tool = createExecTool({ projectRoot: "/tmp" });
-    const result = await tool.execute("id", { command: "ls /nonexistent_path_xyz_12345" });
-    const text = result.content[0].text;
-    expect(text).toContain("Exit code");
-  });
-
-  it("includes CWD in error output", async () => {
-    const tool = createExecTool({ projectRoot: "/tmp" });
-    const result = await tool.execute("id", { command: "ls /nonexistent_path_xyz_12345" });
-    const text = result.content[0].text;
-    expect(text).toContain("CWD: /tmp");
+  it("returns non-zero exit code as error", async () => {
+    const tool = createBashTool("/tmp");
+    await expect(
+      tool.execute("id", { command: "ls /nonexistent_path_xyz_12345" })
+    ).rejects.toThrow(/exited with code/);
   });
 
   it("returns (no output) for empty stdout", async () => {
-    const tool = createExecTool({ projectRoot: "/tmp" });
+    const tool = createBashTool("/tmp");
     const result = await tool.execute("id", { command: "true" });
     expect(result.content[0].text).toBe("(no output)");
   });
 
   it("respects timeout parameter", async () => {
-    const tool = createExecTool({ projectRoot: "/tmp" });
-    const result = await tool.execute("id", { command: "sleep 30", timeout: 1 });
-    const text = result.content[0].text;
-    // Timeout results in either an error message or a non-zero/null exit code
-    expect(text).toMatch(/Error|Exit code/);
+    const tool = createBashTool("/tmp");
+    await expect(
+      tool.execute("id", { command: "sleep 30", timeout: 1 })
+    ).rejects.toThrow(/timed out/);
+  });
+
+  it("captures stderr in output", async () => {
+    const tool = createBashTool("/tmp");
+    await expect(
+      tool.execute("id", { command: "echo error >&2; exit 1" })
+    ).rejects.toThrow(/error/);
+  });
+
+  it("handles multi-line script", async () => {
+    const tool = createBashTool("/tmp");
+    const result = await tool.execute("id", {
+      command: `
+        for i in 1 2 3; do
+          echo "line \$i"
+        done
+      `,
+    });
+    expect(result.content[0].text).toContain("line 1");
+    expect(result.content[0].text).toContain("line 3");
   });
 });
 

@@ -33,7 +33,7 @@ import { join, dirname, relative, resolve } from "node:path";
 import { isOverflowError, extractProgress, writeProgressFile } from "./overflow.js";
 import { spawnDetachedAgent, readIdentity } from "./detached.js";
 import { sendSocketCommand } from "./socket-client.js";
-import { buildProjectStructure } from "./tools.js";
+import { buildProjectStructure } from "./tools/project-structure.js";
 
 let nextId = 0;
 /**

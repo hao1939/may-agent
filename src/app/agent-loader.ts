@@ -10,7 +10,17 @@
  *   agents/<name>/knowledge/   → knowledgeDir
  *   agents/<name>/workspace/   → workspace
  *   agents/<name>/workflows/   → workflowDir (if exists)
- *   agents/<name>/skills/      → skillsDirs
+ *   agents/<name>/skills/      → skillsDirs (per-agent skills, always included)
+ *
+ * Skill resolution:
+ *   When agent.json includes `"skills": ["file-safety", "error-handling"]`, each
+ *   skill name is resolved to `agents/shared/skills/{name}/` and added to skillsDirs.
+ *   This gives agents explicit, opt-in control over which shared skills they receive.
+ *
+ *   Backward compatibility: if `skills` is absent (undefined), ALL shared skills
+ *   are loaded (the entire `agents/shared/skills/` directory), preserving the
+ *   pre-Phase-1 behavior. An empty array (`"skills": []`) means *no* shared
+ *   skills — only per-agent skills from `agents/<name>/skills/`.
  */
 
 import { readFileSync, existsSync, readdirSync } from "node:fs";
@@ -19,8 +29,8 @@ import type { Model } from "@mariozechner/pi-ai";
 import type { AgentTool } from "@mariozechner/pi-agent-core";
 import {
   SubagentManager,
-  createLinkedTools,
-  createExecTool,
+  createCodingTools,
+  createReadTool,
   createWorkflowTool,
   createBackgroundExecTool,
   createSocketWatchTool,
@@ -45,6 +55,14 @@ export interface AgentConfig {
   memoryLimit?: number;
   /** Block direct delegation to specific agents via subagents tool. */
   delegateDeny?: { agents: string[]; hint: string };
+  /**
+   * Explicit list of shared skills to load from agents/shared/skills/{name}/.
+   *
+   * - Present + non-empty: only listed skills are loaded (selective opt-in).
+   * - Present + empty (`[]`): no shared skills loaded (per-agent skills only).
+   * - Absent (undefined): ALL shared skills loaded (backward-compatible default).
+   */
+  skills?: string[];
 }
 
 // ── Loader options ──────────────────────────────────────────────────────
@@ -115,28 +133,28 @@ function buildTools(
 
   for (const preset of config.tools) {
     switch (preset) {
+      case "coding":
+        // Full coding toolset: read + bash + edit + write
+        tools.push(...createCodingTools(projectRoot));
+        break;
+
       case "read-write": {
-        const linked = createLinkedTools({
-          projectRoot,
-          maxFileLength: 20_000,
-        });
-        tools.push(linked.read, linked.write);
+        // Legacy preset — maps to coding tools (read + bash + edit + write)
+        tools.push(...createCodingTools(projectRoot));
         break;
       }
 
       case "read-only": {
-        const linked = createLinkedTools({
-          projectRoot,
-          maxFileLength: 20_000,
-        });
-        tools.push(linked.read);
+        tools.push(createReadTool(projectRoot) as any);
         break;
       }
 
       case "exec":
       case "exec-readonly":
       case "exec-master":
-        tools.push(createExecTool({ projectRoot }));
+        // Legacy exec presets — now no-ops (bash is included in coding tools)
+        // Agents should use "coding" preset instead
+        bus.emit({ type: "info", message: `[loader] Preset "${preset}" for agent "${config.name}" is deprecated — bash is included in "coding" preset` });
         break;
 
       case "claude-code":
@@ -277,10 +295,75 @@ function resolvePromptFiles(config: AgentConfig, agentsRoot: string): string[] {
   return files;
 }
 
+// ── Skill resolution ────────────────────────────────────────────────────
+
+/**
+ * Resolve skill directories for an agent based on its `skills` config.
+ *
+ * Resolution strategy:
+ *   1. If `config.skills` is undefined (absent from agent.json):
+ *      → Load ALL shared skills: [agents/shared/skills/]
+ *      This preserves backward compatibility for agents that haven't
+ *      adopted the explicit skills array yet.
+ *
+ *   2. If `config.skills` is an array (even empty):
+ *      → Load ONLY the named skills: [agents/shared/skills/file-safety/, ...]
+ *      An empty array means "no shared skills" — the agent only gets
+ *      its per-agent skills from agents/<name>/skills/ (handled by manager.ts).
+ *
+ * Per-agent skills (agents/<name>/skills/) are always included by
+ * manager.ts's resolveSystemPrompt(), independent of this function.
+ *
+ * @returns Array of absolute directory paths to pass as skillsDirs, or undefined
+ *          if no directories should be added.
+ */
+function resolveSkillsDirs(
+  config: AgentConfig,
+  agentsRoot: string,
+  bus: EventBus,
+): string[] | undefined {
+  const sharedSkillsDir = resolve(agentsRoot, "shared", "skills");
+
+  // Case 1: No skills field → backward-compatible: load ALL shared skills
+  if (config.skills === undefined) {
+    return existsSync(sharedSkillsDir) ? [sharedSkillsDir] : undefined;
+  }
+
+  // Case 2: Explicit skills array → resolve each to its specific directory
+  if (!Array.isArray(config.skills)) {
+    bus.emit({
+      type: "info",
+      message: `[loader] Agent "${config.name}" has invalid "skills" (expected array) — falling back to all shared skills`,
+    });
+    return existsSync(sharedSkillsDir) ? [sharedSkillsDir] : undefined;
+  }
+
+  // Empty array: agent explicitly opts out of shared skills
+  if (config.skills.length === 0) {
+    return undefined;
+  }
+
+  // Resolve each skill name to agents/shared/skills/{name}/
+  const dirs: string[] = [];
+  for (const skillName of config.skills) {
+    const skillDir = resolve(sharedSkillsDir, skillName);
+    if (existsSync(skillDir)) {
+      dirs.push(skillDir);
+    } else {
+      bus.emit({
+        type: "info",
+        message: `[loader] Agent "${config.name}" references skill "${skillName}" but ${skillDir} does not exist — skipping`,
+      });
+    }
+  }
+
+  return dirs.length > 0 ? dirs : undefined;
+}
+
 // ── Validation ──────────────────────────────────────────────────────────
 
 const VALID_TOOL_PRESETS = new Set([
-  "read-write", "read-only", "exec", "exec-readonly", "exec-master",
+  "coding", "read-write", "read-only", "exec", "exec-readonly", "exec-master",
   "claude-code", "gemini-cli",
   "subagents", "workflow", "background-exec", "socket-watch", "cron", "scrape",
 ]);
@@ -350,6 +433,25 @@ export function validateAgentConfig(
     }
   }
 
+  // Validate skill names reference existing directories
+  if (config.skills !== undefined) {
+    if (!Array.isArray(config.skills)) {
+      errors.push({ agent: name, field: "skills", message: `"skills" must be an array of skill names` });
+    } else {
+      const sharedSkillsDir = resolve(agentsRoot, "shared", "skills");
+      for (const skillName of config.skills) {
+        if (typeof skillName !== "string") {
+          errors.push({ agent: name, field: "skills", message: `Skill name must be a string, got ${typeof skillName}` });
+          continue;
+        }
+        const skillDir = resolve(sharedSkillsDir, skillName);
+        if (!existsSync(skillDir)) {
+          errors.push({ agent: name, field: "skills", message: `Shared skill not found: ${skillName} (expected ${skillDir})` });
+        }
+      }
+    }
+  }
+
   return errors;
 }
 
@@ -407,8 +509,9 @@ export function loadAgents(opts: AgentLoaderOptions): LoadResult {
     const model = models[config.model];
     const knowledgeDir = resolve(agentDir, "knowledge");
     const workspace = resolve(agentDir, "workspace");
-    const workflowDir = resolve(agentDir, "workflows");
-    const sharedSkillsDir = resolve(agentsRoot, "shared", "skills");
+
+    // Resolve shared skills: explicit list or all-shared fallback
+    const skillsDirs = resolveSkillsDirs(config, agentsRoot, opts.bus);
 
     manager.register({
       name: config.name,
@@ -419,7 +522,7 @@ export function loadAgents(opts: AgentLoaderOptions): LoadResult {
       systemPromptFiles: resolvePromptFiles(config, agentsRoot),
       knowledgeDir: existsSync(knowledgeDir) ? knowledgeDir : undefined,
       workspace: existsSync(workspace) ? workspace : undefined,
-      skillsDirs: existsSync(sharedSkillsDir) ? [sharedSkillsDir] : undefined,
+      skillsDirs,
       projectRoot,
       apiKey: (model as any).apiKey,
       memoryLimit: config.memoryLimit,
