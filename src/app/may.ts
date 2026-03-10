@@ -91,22 +91,27 @@ const ENV_PARENT_AGENT = process.env.PARENT_AGENT || undefined;
 
 const MODEL_BASE_URL = process.env.MODEL_BASE_URL || "http://localhost:4000";
 
+const LITELLM_API_KEY = process.env.LITELLM_API_KEY || process.env.ANTHROPIC_API_KEY || "not-needed";
+
 const models: Record<string, any> = {
   opus: {
     ...getModel("anthropic", "claude-sonnet-4-20250514"),
     id: "claude-opus-4.6",
     contextWindow: 128000,
     baseUrl: MODEL_BASE_URL,
+    apiKey: LITELLM_API_KEY,
   },
   gpt52: {
     ...getModel("openai", "gpt-5.2"),
     baseUrl: MODEL_BASE_URL,
+    apiKey: LITELLM_API_KEY,
   },
   gemini3pro: {
     ...getModel("openai", "gpt-4o"),
     api: "openai-completions" as const,
     id: "gemini-3-pro-preview",
     baseUrl: MODEL_BASE_URL,
+    apiKey: LITELLM_API_KEY,
   },
   kimi: {
     ...getModel("openai", "gpt-4o"),
