@@ -1102,14 +1102,31 @@ export class SubagentManager {
       : "";
 
     // ── Reconcile children: completed + stale-running ────────────────
+    // Build a set of ALL session IDs belonging to the target agent, so we
+    // can find children whose parentSessionId points to any session of this
+    // agent — not just the current targetSessionId.  This handles the case
+    // where a process restart creates a new chat session ID while children
+    // still reference the old (now archived) parent session.
     let childrenSummary = "";
     try {
+      const agentSessionIds = new Set<string>();
+      for (const [sid, s] of Object.entries(registryData.sessions)) {
+        if (s.agent === agentName) agentSessionIds.add(sid);
+      }
+
+      // Sessions already reported in the interrupted array — exclude from
+      // children reconciliation to avoid duplicate reporting.
+      const interruptedIds = new Set(interrupted.map((s) => s.sessionId));
+
+      const isChildOfAgent = (s: PersistedSession) =>
+        !!s.parentSessionId && agentSessionIds.has(s.parentSessionId);
+
       const completedChildren = Object.entries(registryData.sessions)
-        .filter(([_, s]) => s.parentSessionId === targetSessionId && (s.status === "done" || s.status === "error"));
+        .filter(([sid, s]) => isChildOfAgent(s) && !interruptedIds.has(sid) && (s.status === "done" || s.status === "error"));
 
       // Detect stale-running: registry says "running" but no ActiveSession exists
       const staleRunning = Object.entries(registryData.sessions)
-        .filter(([sid, s]) => s.parentSessionId === targetSessionId && s.status === "running" && !this.activeSessions.has(sid));
+        .filter(([sid, s]) => isChildOfAgent(s) && !interruptedIds.has(sid) && s.status === "running" && !this.activeSessions.has(sid));
 
       // Mark stale as interrupted
       for (const [sid] of staleRunning) {
