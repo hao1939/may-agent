@@ -112,6 +112,7 @@ Agents are the minimum unit of product features. Each feature is an agent with a
 ### 16. Spec-File Coordination [imported]
 When agents share a well-structured state/spec file, you don't need an orchestrator. The file IS the coordination. Each agent reads the spec, executes its slice, writes back its result. No polling, no message passing, no central coordinator.
 
+
 ### 17. Offload Routing to Infra, Agents Audit [hao-direct]
 Fixed routing, scheduling, and dispatch belong in infrastructure code — not in agent prompts. Once offloaded, the agent's role shifts to periodic auditing: verify the infra works as designed, catch gaps, fix drift. This is a continuous process that maintains system health and efficiency.
 
@@ -224,6 +225,9 @@ Each agent owns its own TODO list. Global TODO = cross-agent, system-wide items 
 
 > "we should keep it per agent" — Hao
 
+
+### 48. Async by Default for Supervisors [hao-pattern]
+Supervisor agents (May) must use async dispatch (`subagents.run`) for all meaningful work. Blocking calls (`subagents.delegate`) are only for sub-second queries. Blocking on a long-running task makes the supervisor unresponsive to new inputs and fragile to crashes. State must be persisted to disk (`todo.md`), not held in the call stack.
 
 ### 33. Heartbeat vs Cron: Explore Then Offload [hao-pattern]
 Agents have two operating modes:

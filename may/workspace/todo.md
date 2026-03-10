@@ -1,10 +1,12 @@
 # TODO
 
 ## Active
+- [x] **Evaluator transcript truncation false positives** — Coach identified a pattern: the evaluator produces false HARD_CONSTRAINT_VIOLATION scores when session transcripts contain truncated tool outputs (it can't distinguish truncated transcript from truncated agent output). This caused 8 false low scores for Coder in one cycle (q=0.15-0.25 on tasks that were verified correct). Recommendation: add transcript truncation awareness to evaluator criteria, or add a pre-filter that flags truncated-transcript sessions for manual review. Source: `agents/coach/workspace/journal.md` (2026-03-10 entry).
+
+- [x] **🔴 RESOLVED BY BOB**: Coach ran May's graduation exercise. May scored 10/15 (PASS on points) but used `delegate` instead of `subagents.run` for Scout dispatch — the same gap as exercise #3. In heartbeat mode, both are functionally equivalent (task completes either way). **Decision needed**: (A) Relax the constraint → May graduates immediately as 3rd agent, or (B) Enforce it → Coach adds explicit anti-pattern to May's LESSONS.md and re-runs. Report: `agents/coach/workspace/sessions/may-graduation-exercise-2026-03-25.md`.
+- [ ] **INFRA: Master CLI tools missing** — Coach tried to run a Master coaching exercise. Master's tools (claude_code, gemini_cli) require external CLI binaries that aren't installed in the container. Master is functionally blocked. Needs: install `claude` and `gemini` CLI tools, or provide alternative tooling.
 
 ## Backlog (approved designs, not yet started)
-
-- [ ] **Cleanup stale principle references** — session-model-simplification.md cites wrong P-numbers. Low priority. See: `agents/bob/workspace/drift-detection-2026-03-09.md`.
 
 ## Ideas (need investigation)
 
@@ -17,20 +19,17 @@
 
 <details>
 <summary>Completed items (click to expand)</summary>
+- [x] **Apply QA coaching correction** — Added surgical sed rule to QA LESSONS.md. Completed 2026-03-25.
 - [x] **🔴 BUG: Detached sessions crash on startup** — Added `buildProjectStructure` to `src/tools.ts`. Builds tree-like directory listing for agent system prompts. Fixed 2026-03-09.
-
 - [x] **Verify agents/shared/team.md accuracy** — Scout audited all 12 agents. 1 mismatch fixed (Scout model gemini-3-pro → opus). Report: agents/may/workspace/team-audit.md. Completed 2026-03-09.
-- [x] **Implement [Agent Evaluation Framework Upgrade]** — Already implemented. `agents/evaluator/knowledge/criteria.md` and `agents/evaluator/DOMAIN.md` both exist with role-specific criteria. Verified 2026-03-23.
-- [x] **Implement [Runtime Environment Standardization]** — Already implemented in `src/manager.ts` lines 318-354. Project root, container constraints, workspace paths all injected into system prompt. Verified 2026-03-23.
-- [x] **Review + Implement [Detached Sub-Agent Design]** — Phase 1 & 2 complete. `src/detached.ts`, `src/socket-client.ts` implemented. `mode` param wired in `manager.ts`. Run/cancel/steer all work for detached sessions. Verified 2026-03-23.
-- [x] **Review + Implement [Agent Cooperation Design]** — `parentSessionId` notification implemented in `manager.ts` handleCompletion. Verified 2026-03-23.
-- [x] **Implement [Session Simplification]** — `autoClose` field replaces `persistent`. Fully implemented in `manager.ts`. Bob approved 2026-03-08. Verified 2026-03-23.
-- [x] **Fix agent identity in heartbeat prompts** — Updated all heartbeat cron prompts to include explicit agent name and path prefix (e.g., "You are Scout. Your files are in agents/scout/."). Fixed 2026-03-09.
-- [x] **Rolling Compaction (Option C)** — Already implemented. `compactIdleSession` in manager.ts (line 560-574), called from handleCompletion (line 628). QA PASS. Verified 2026-03-23.
-- [x] **[ESCALATION] Optimizer corrections blocking graduation** — Applied directly by May 2026-03-23:
-  - Scout coaching corrections #11-13 added to `agents/scout/knowledge/coaching.md`
-  - Scout DOMAIN.md paths fixed (all `knowledge/` → `agents/scout/knowledge/`)
-  - Coder `agents/coder/knowledge/lessons.md` created with pattern-sed rules, side-by-side examples, multi-edit guidance
+- [x] **Implement [Agent Evaluation Framework Upgrade]** — Already implemented. Verified 2026-03-23.
+- [x] **Implement [Runtime Environment Standardization]** — Already implemented. Verified 2026-03-23.
+- [x] **Review + Implement [Detached Sub-Agent Design]** — Phase 1 & 2 complete. Verified 2026-03-23.
+- [x] **Review + Implement [Agent Cooperation Design]** — Implemented. Verified 2026-03-23.
+- [x] **Implement [Session Simplification]** — Implemented. Verified 2026-03-23.
+- [x] **Fix agent identity in heartbeat prompts** — Fixed 2026-03-09.
+- [x] **Rolling Compaction (Option C)** — Implemented. Verified 2026-03-23.
+- [x] **[ESCALATION] Optimizer corrections blocking graduation** — Applied directly by May 2026-03-23.
 - [x] BUG FIX: Add `hasAgent()` to SubagentManager (2026-03-09)
 - [x] Review [Remove Evaluator Hardcoded Skip] (2026-03-22)
 - [x] Review [Drift Detection: System Design] — Fixed by Bob 2026-03-08
@@ -40,34 +39,39 @@
 - [x] Event-Driven Task Completion — Implemented
 - [x] Fixed META_AGENTS exclusion (2026-03-22)
 - [x] Launcher (2026-03-06, 355724d)
-- [x] Session Architecture: Three Types (bf7aa7f, 78e1039, 9fdb3f9)
-- [x] Agent cooperation notifications — manager.ts handleCompletion
-- [x] philosophy.md restoration (278 lines, P0-P39)
+- [x] Session Architecture: Three Types
+- [x] Agent cooperation notifications
+- [x] philosophy.md restoration
 - [x] SOUL.md principle references updated
-- [x] Unified Cron System (785a273)
+- [x] Unified Cron System
 - [x] Chat Flag & Explicit Session Design
-- [x] Philosophy Check — Bob completed, 2 drifts found
-- [x] Watchdog Handler — stale session detection
-- [x] Fix: Broken Cron Task Jobs → run-agent-task handler
-- [x] Bob Design Reviews — Rolling Compaction + Detached Sub-Agent approved
-- [x] OpenClaw philosophy import analysis — Bob completed
-- [x] XHS Tool Integration — all 3 commands working
-- [x] Proactive autonomy review — all agents have heartbeat + drain-todo
-- [x] Agent Architecture Alignment — configs standardized
-- [x] Human input collection (069ec3d)
+- [x] Philosophy Check — Bob completed
+- [x] Watchdog Handler
+- [x] Fix: Broken Cron Task Jobs
+- [x] Bob Design Reviews
+- [x] OpenClaw philosophy import analysis
+- [x] XHS Tool Integration
+- [x] Proactive autonomy review
+- [x] Agent Architecture Alignment
+- [x] Human input collection
 - [x] Score Distribution Analysis (2026-03-22)
-- [x] **Review [Cross-Agent Knowledge Schema]** — APPROVED Phase 1. Hot tier already implemented. Deferred Phase 2. Reviewed 2026-03-25.
-- [x] **Review [Shared Agent Behavior Contract]** — DEFERRED. Overlaps existing docs. Reviewed 2026-03-25.
-- [x] **Review [Structured Failure Analysis]** — CLOSED. Coach already handled. Reviewed 2026-03-25.
-- [x] **Review [IPI Defense Patterns]** — APPROVED Layer 2 (context framing). Reviewed 2026-03-25.
-- [x] **Review [User Input Archive Upgrade]** — APPROVED. Ready for implementation. Reviewed 2026-03-25.
-- [x] **Check optimizer todo completion** — Bob coaching corrections were the last blocking item. Created `agents/bob/knowledge/coaching.md` with 3 adversity-handling corrections (#1 file existence check, #2 post-sed verification, #3 diagnose before retry). Completed 2026-03-25.
-- [x] **Scout research: agent self-improvement loops** — Scout delivered 10 entries with URLs/dates/summaries covering DSPy, TextGrad, ADAS, EvoAgentX, AgentOptimizer, Promptbreeder, Voyager, LangSmith, EvoAgent, and a survey paper. Report: `agents/scout/workspace/self-improvement-loops-research.md`. Completed 2026-03-25.
+- [x] **Review [Cross-Agent Knowledge Schema]** — APPROVED Phase 1. Reviewed 2026-03-25.
+- [x] **Review [Shared Agent Behavior Contract]** — DEFERRED. Reviewed 2026-03-25.
+- [x] **Review [Structured Failure Analysis]** — CLOSED. Reviewed 2026-03-25.
+- [x] **Review [IPI Defense Patterns]** — APPROVED Layer 2. Reviewed 2026-03-25.
+- [x] **Review [User Input Archive Upgrade]** — APPROVED. Reviewed 2026-03-25.
+- [x] **Check optimizer todo completion** — Completed 2026-03-25.
+- [x] **Scout research: agent self-improvement loops** — Completed 2026-03-25.
+- [x] **Health log cleanup** — All entries 2026-03-06+, none stale. Completed 2026-03-25.
+- [x] **Research: structured output best practices** — Scout delivered 8 papers. Report: `agents/scout/workspace/structured-output-research.md`. Completed 2026-03-25.
+- [x] **Check Bob exercise status** — Bob FAILED adversity exercise #3 (57%). Streak reset 0/3. Completed 2026-03-25.
+- [x] **Fix TSC build errors (20 errors)** — Stale re-exports in index.ts, missing `parameters` in health check tool, missing `extractHallucinatedRelPath`/`isMetaRecursionCommand` functions, wrong import extension in test. Fixed 2026-03-10.
+- [x] **Cleanup stale principle references** — Fixed P12→P30/P33, P40→P45 in session-model-simplification.md. Completed 2026-03-10.
 </details>
 
 ## Stale (closed without action)
 
 - ~~🔴 CRITICAL: Restore src/manager.ts~~ — Was a corruption incident. manager.ts is fully functional now.
-- ~~Bug: Agent shrink-write after compaction~~ — Shrink guard removed. B7 (read before overwrite) addresses root cause.
+- ~~Bug: Agent shrink-write after compaction~~ — Shrink guard removed. B7 addresses root cause.
 - ~~SubagentManager status API~~ — Health API implemented.
-- ~~Cleanup [Session Simplification] vestigial idle checks~~ — No vestigial code found; autoClose model is clean.
+- ~~Cleanup [Session Simplification] vestigial idle checks~~ — No vestigial code found.
