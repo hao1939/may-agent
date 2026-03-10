@@ -174,12 +174,22 @@ function buildTools(
         break;
 
       case "agents": {
-        // V2 agents tool — 5 actions: call, list, peek, steer, cancel
+        // V2 agents tool — 5 actions: call, send, list, peek, cancel
         const denyConfig = config.delegateDeny;
         tools.push(manager.createAgentsTool({
           getCallerSessionId: () => agentSessionIds.get(config.name),
           getCallerAgentName: () => config.name,
           callDeny: denyConfig ? { agents: denyConfig.agents, hint: denyConfig.hint } : undefined,
+          agentsRoot: opts.agentsRoot,
+          triggerHeartbeat: (agentName: string) => {
+            // All heartbeat entries live in May's cron.json
+            // Entry names: "heartbeat" (for may), "heartbeat-{agent}" (for others)
+            for (const cron of agentCrons.values()) {
+              if (cron.triggerNow(`heartbeat-${agentName}`)) return true;
+              if (cron.triggerNow("heartbeat") && agentName === "may") return true;
+            }
+            return false;
+          },
         }));
         break;
       }
