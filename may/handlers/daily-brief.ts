@@ -22,7 +22,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
       agentsRoot: ctx.agentsRoot,
       projectRoot: ctx.projectRoot,
     });
-    ctx.log(brief);
+    ctx.notify(brief);
   };
 };
 
