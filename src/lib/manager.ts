@@ -229,6 +229,12 @@ export class SubagentManager {
     this.registry.saveAgent(def);
   }
 
+  /** Unregister an agent (used for cleaning up temporary/forked agents). */
+  unregister(name: string): void {
+    this.agents.delete(name);
+    this.registry.removeAgent(name);
+  }
+
   /** Subscribe to message_end events and persist messages to session JSONL. */
   private subscribeForPersistence(session: ActiveSession): void {
     const persistDir = this.registry.persistDir;
