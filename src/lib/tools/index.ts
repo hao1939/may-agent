@@ -10,3 +10,4 @@ export * from "./project-structure.js";
 export * from "./read.js";
 export * from "./truncate.js";
 export * from "./write.js";
+export * from "./agent-growth.js";

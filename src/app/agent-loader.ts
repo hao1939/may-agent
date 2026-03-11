@@ -39,6 +39,7 @@ import {
   createCronTool,
   createScrapeTool,
 } from "../lib/index.js";
+import { createAgentGrowthTools } from "../lib/tools/agent-growth.js";
 import type { EventBus } from "./event-bus.js";
 import { Cron } from "./cron.js";
 
@@ -276,6 +277,63 @@ function buildTools(
         tools.push(createScrapeTool());
         break;
 
+      case "agent-growth": {
+        tools.push(...createAgentGrowthTools({
+          agentsRoot: opts.agentsRoot,
+          manager,
+          loadAgent: (agentDir) => {
+            const config = loadAgentConfig(agentDir, opts.bus);
+            if (!config) return;
+            const model = opts.models[config.model];
+            const knowledgeDir = resolve(agentDir, "knowledge");
+            const workspace = resolve(agentDir, "workspace");
+            const skillsDirs = resolveSkillsDirs(config, opts.agentsRoot, opts.bus);
+            
+            manager.register({
+              name: config.name,
+              description: config.description,
+              domain: config.domain,
+              model,
+              tools: buildTools(config, opts),
+              systemPromptFiles: resolvePromptFiles(config, opts.agentsRoot),
+              knowledgeDir: existsSync(knowledgeDir) ? knowledgeDir : undefined,
+              workspace: existsSync(workspace) ? workspace : undefined,
+              skillsDirs,
+              projectRoot: opts.projectRoot,
+              apiKey: (model as any).apiKey,
+              memoryLimit: config.memoryLimit,
+              maxTurns: config.maxTurns,
+            });
+          },
+          reloadAgent: (name) => {
+            const agentDir = resolve(opts.agentsRoot, name);
+            const config = loadAgentConfig(agentDir, opts.bus);
+            if (!config) return;
+            const model = opts.models[config.model];
+            const knowledgeDir = resolve(agentDir, "knowledge");
+            const workspace = resolve(agentDir, "workspace");
+            const skillsDirs = resolveSkillsDirs(config, opts.agentsRoot, opts.bus);
+
+            manager.register({
+              name: config.name,
+              description: config.description,
+              domain: config.domain,
+              model,
+              tools: buildTools(config, opts),
+              systemPromptFiles: resolvePromptFiles(config, opts.agentsRoot),
+              knowledgeDir: existsSync(knowledgeDir) ? knowledgeDir : undefined,
+              workspace: existsSync(workspace) ? workspace : undefined,
+              skillsDirs,
+              projectRoot: opts.projectRoot,
+              apiKey: (model as any).apiKey,
+              memoryLimit: config.memoryLimit,
+              maxTurns: config.maxTurns,
+            });
+          }
+        }));
+        break;
+      }
+
       default:
         bus.emit({ type: "info", message: `[loader] Unknown tool preset "${preset}" for agent "${config.name}" — skipping` });
     }
@@ -377,7 +435,7 @@ function resolveSkillsDirs(
 const VALID_TOOL_PRESETS = new Set([
   "coding", "read-write", "read-only", "exec", "exec-readonly", "exec-master",
   "claude-code", "gemini-cli",
-  "agents", "workflow", "background-exec", "socket-watch", "cron", "scrape",
+  "agents", "workflow", "background-exec", "socket-watch", "cron", "scrape", "agent-growth",
 ]);
 
 const REQUIRED_FIELDS: (keyof AgentConfig)[] = ["name", "description", "domain", "model", "tools"];

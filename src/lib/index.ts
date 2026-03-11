@@ -1,8 +1,8 @@
 export { SubagentManager, generateId, truncateForPrompt } from "./manager.js";
 export type { SubagentManagerOptions, RunOptions } from "./manager.js";
 // Core coding tools (synced from pi-coding-agent)
-export { createReadTool, createBashTool, createEditTool, createWriteTool, createCodingTools } from "./tools/index.js";
-export type { ReadToolOptions, BashToolOptions, EditToolOptions, WriteToolOptions, CodingToolsOptions } from "./tools/index.js";
+export { createReadTool, createBashTool, createEditTool, createWriteTool, createCodingTools, createAgentGrowthTools } from "./tools/index.js";
+export type { ReadToolOptions, BashToolOptions, EditToolOptions, WriteToolOptions, CodingToolsOptions, AgentGrowthToolOptions } from "./tools/index.js";
 export { DEFAULT_MAX_BYTES, DEFAULT_MAX_LINES, formatSize, truncateHead, truncateTail, truncateLine } from "./tools/index.js";
 export type { TruncationResult, TruncationOptions } from "./tools/index.js";
 export { resolveToCwd, resolveReadPath, expandPath } from "./tools/index.js";
@@ -96,3 +96,5 @@ export type {
 } from "./persistence.js";
 export type { HandlerContext, HandlerModule } from "./handler-context.js";
 export { appendToTodoSection } from "./todo-utils.js";
+export { loadAgents, reloadAgents, validateAgentConfig } from "../app/agent-loader.js";
+export type { AgentConfig, AgentLoaderOptions, LoadResult, ValidationError } from "../app/agent-loader.js";

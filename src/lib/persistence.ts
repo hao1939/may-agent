@@ -334,6 +334,11 @@ export class RegistryStore {
     this.agents[def.name] = toPersistedConfig(def);
   }
 
+  /** Remove an agent config from memory. */
+  removeAgent(name: string): void {
+    delete this.agents[name];
+  }
+
   /** Record a new session (writes meta.json to the session dir). */
   saveSession(sessionId: string, entry: PersistedSession): void {
     writeSessionMeta(this.persistDir, sessionId, entry);
