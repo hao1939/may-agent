@@ -1268,9 +1268,7 @@ export class SubagentManager {
     if (session.status === "running") {
       this.steer(sessionId, text, "user");
       // Return a promise that resolves when the *current* session promise resolves.
-      // This is slightly weird semantics (input() on running session returns result of session),
-      // but consistent with blocking workflow.
-      return session.promise.then(() => this.buildResultFromSession(session));
+      return this.sessionResults.get(sessionId)!;
     }
 
     // Case 2: Session is IDLE — wake it up
@@ -1285,7 +1283,7 @@ export class SubagentManager {
       } catch { /* best-effort */ }
 
       // Prompt the agent with new input
-      session.promise = session.agent.prompt(text)
+      const p = session.agent.prompt(text)
         .then(() => {
           this.handleCompletion(session);
         })
@@ -1294,8 +1292,11 @@ export class SubagentManager {
           this.handleCompletion(session);
         });
       
-      this.sessionResults.set(sessionId, session.promise.then(() => this.buildResultFromSession(session)));
-      return session.promise.then(() => this.buildResultFromSession(session));
+      session.promise = p;
+      const resultPromise = p.then(() => this.buildResultFromSession(session));
+      this.sessionResults.set(sessionId, resultPromise);
+      
+      return resultPromise;
     }
 
     throw new Error(`Session "${sessionId}" is in terminal state (${session.status}) — cannot accept input`);
