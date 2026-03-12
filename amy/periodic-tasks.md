@@ -21,7 +21,7 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Update research interests based on system needs.
 
 ## Weekly
-- [ ] **Archive maintenance** — Last done: 2026-05-14 (signals 152→90 lines, journal 67→30 lines; insights 93 lines unchanged; archives: signals-archive-20260514.md, journal-archive-20260514.md)
+- [ ] **Archive maintenance** — Last done: 2026-07-07 (signals 540→110 lines, journal 140→35 lines; insights 119 lines unchanged; archives: signals-archive-20260707.md, journal-archive-20260707.md)
   Review workspace/insights.md. Move older entries to knowledge/insights-archive-YYYYMMDD.md.
   Keep workspace/insights.md focused on recent, actionable findings.
 
