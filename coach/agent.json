@@ -7,17 +7,9 @@
     "coding",
     "socket-watch",
     "agents",
+    "agent-growth",
     "workflow"
   ],
   "memoryLimit": 10,
-  "compaction": true,
-  "maxTurns": 50,
-  "sharedKnowledge": [
-    "team.md"
-  ],
-  "skills": [
-    "file-safety",
-    "error-handling",
-    "agent-coordination"
-  ]
+  "maxTurns": 50
 }

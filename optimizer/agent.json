@@ -8,14 +8,5 @@
     "agents",
     "workflow"
   ],
-  "sharedKnowledge": [
-    "system-design.md",
-    "team.md"
-  ],
-  "maxTurns": 30,
-  "skills": [
-    "file-safety",
-    "error-handling",
-    "agent-coordination"
-  ]
+  "maxTurns": 30
 }

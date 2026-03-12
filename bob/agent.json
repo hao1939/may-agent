@@ -1,21 +1,11 @@
 {
   "name": "bob",
-  "description": "System architect \u2014 holds the blueprint, designs agent cooperation and evolution, reviews designs, stewards philosophy, drives meta-loop",
+  "description": "System architect — holds the blueprint, designs agent cooperation and evolution, reviews designs, stewards philosophy, drives meta-loop",
   "domain": "system architecture, design philosophy, agent evolution, meta-loop orchestration",
   "model": "gemini3pro",
   "tools": [
     "coding",
     "agents"
   ],
-  "sharedKnowledge": [
-    "system-design.md",
-    "team.md",
-    "philosophy.md"
-  ],
-  "maxTurns": 30,
-  "skills": [
-    "file-safety",
-    "error-handling",
-    "agent-coordination"
-  ]
+  "maxTurns": 30
 }

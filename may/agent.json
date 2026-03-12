@@ -1,6 +1,6 @@
 {
   "name": "may",
-  "description": "Hao's Deputy \u2014 handles tasks, orchestrates agents, maintains the system",
+  "description": "Hao's Deputy — handles tasks, orchestrates agents, maintains the system",
   "domain": "may-agent coordination",
   "model": "opus",
   "tools": [
@@ -9,10 +9,6 @@
     "workflow",
     "cron"
   ],
-  "sharedKnowledge": [
-    "system-design.md",
-    "team.md"
-  ],
   "maxTurns": 40,
   "delegateDeny": {
     "agents": [
@@ -20,10 +16,5 @@
       "qa"
     ],
     "hint": "Use agents.call(\"tech-lead\", task) for code changes. Or workflow.run(\"implement-and-review\", task) for multi-step workflows."
-  },
-  "skills": [
-    "file-safety",
-    "error-handling",
-    "agent-coordination"
-  ]
+  }
 }

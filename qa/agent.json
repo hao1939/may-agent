@@ -6,8 +6,5 @@
   "tools": [
     "coding"
   ],
-  "skills": [
-    "file-safety",
-    "error-handling"
-  ]
+  "maxTurns": 20
 }
