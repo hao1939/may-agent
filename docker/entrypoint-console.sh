@@ -20,7 +20,8 @@ x11vnc -display :${DISPLAY_NUM} -forever -shared -rfbport ${VNC_PORT} -nopw -qui
 websockify --web /usr/share/novnc ${NOVNC_PORT} localhost:${VNC_PORT} &>/dev/null &
 
 # Start Chrome (call binary directly to avoid wrapper info bar noise)
-/opt/google/chrome/chrome --no-sandbox --disable-gpu --no-first-run --disable-dev-shm-usage --start-maximized --user-data-dir=/tmp/chrome-profile &>/dev/null &
+mkdir -p /app/.state/chrome-profile
+/opt/google/chrome/chrome --no-sandbox --disable-gpu --no-first-run --disable-dev-shm-usage --start-maximized --user-data-dir=/app/.state/chrome-profile &>/dev/null &
 
 # Run may-agent via launcher (handles crash recovery + hot-reload).
 # To restart may-agent without killing the container:
