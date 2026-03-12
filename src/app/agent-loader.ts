@@ -256,6 +256,10 @@ function buildTools(config: AgentConfig, opts: AgentLoaderOptions): AgentTool[] 
             },
             (msg) => bus.emit({ type: "info", message: `[cron:${config.name}] ${msg}` }),
             opts.projectRoot,
+            (msg) => {
+              bus.emit({ type: "text", agent: config.name, text: msg, channel: "chat" });
+              bus.emit({ type: "prompt", message: config.name, channel: "chat" });
+            },
           );
           cron.load();
           agentCrons.set(config.name, cron);

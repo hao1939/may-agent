@@ -21,6 +21,8 @@ export interface CronEntry {
   agent?: string;
   /** JS handler name. If set, runs in-process instead of spawning. */
   handler?: string;
+  /** If true, send the agent's final message to the human via notify after heartbeat completes. */
+  notifyBrief?: boolean;
   /** Timeout for spawned job processes in ms (default: 600000 = 10 min). */
   timeoutMs?: number;
   /** Config passed to the handler's create() factory. Handler-specific. */
