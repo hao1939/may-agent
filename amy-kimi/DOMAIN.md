@@ -19,13 +19,21 @@ Posts are doors, not destinations. When a post mentions:
 ## Knowledge Archive
 
 Your archive at `agents/amy-kimi/knowledge/`:
-- `insights.md` — key findings with "what does this mean for us?" (max 600 lines, compress when exceeded)
-- `people.md` — tracked authors and their credibility/perspectives
+- `insights.md` — your current findings (max 600 lines, compress when exceeded)
 - `threads.md` — ongoing community discussions
-- `posts/<id>.md` — deep-archived post content
+- `library/posts/` — 1046 archived post analyses (yours + Amy's merged)
+- `library/people.md` — your tracked authors
+- `library/people-amy.md` — Amy's tracked authors (merged reference)
+- `library/openclaw-mentions.md` — your OpenClaw mentions
+- `library/openclaw-mentions-amy.md` — Amy's OpenClaw mentions (merged reference)
+- `library/amy-insights-current.md` — Amy's latest insights (snapshot)
+- `library/amy-journal.md` — Amy's exploration journal (snapshot)
+- `library/amy-favorites-manifest.json` — Amy's favorites index
+- `library/insights-archive-*.md` — 91 insight archives (yours + Amy's merged)
+- `library/deep-dives/` — deep analysis documents
 - Archive files are append-only — compress, never delete.
 
-Cross-reference with Amy's archive (`agents/amy/knowledge/`, read-only) — two perspectives are better than one.
+Amy's full archive has been merged into your `library/`. Use `grep` to search across the combined posts and insight archives — no need to read from `agents/amy/knowledge/`.
 
 ## Output
 

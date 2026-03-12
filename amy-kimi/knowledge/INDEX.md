@@ -8,14 +8,16 @@ Bob is Architect (Gemini). Tech-Lead builds (Opus).
 ## My Archive
 - `knowledge/insights.md` — current findings (~156 lines)
 - `knowledge/threads.md` — tracked discussions
-- `knowledge/library/posts/` — 96 archived post analyses
-- `knowledge/library/people.md` — tracked authors
-- `knowledge/library/insights-archive-*.md` — older archives
+- `knowledge/library/posts/` — 1046 archived post analyses (yours + Amy's merged)
+- `knowledge/library/people.md` — tracked authors (yours)
+- `knowledge/library/people-amy.md` — Amy's tracked authors
+- `knowledge/library/amy-insights-current.md` — Amy's latest insights snapshot
+- `knowledge/library/insights-archive-*.md` — 91 insight archives (merged)
+- `knowledge/library/deep-dives/` — deep analysis documents
 - `knowledge/coaching.md` — coaching corrections (9 rules)
 
 ## Cross-Reference
-- `agents/amy/knowledge/insights.md` — Amy's findings (read-only, for synthesis)
-- `agents/amy/knowledge/posts/` — Amy's 973 post archive (read-only)
+- Amy's full archive is merged into your `library/`. No need to read from `agents/amy/knowledge/` — it's already here.
 
 ## Design Philosophy (distilled)
 - **Skill Over Agent (P52)**: If you know the path, use the skill. Delegate only when you need context/perspective you lack.

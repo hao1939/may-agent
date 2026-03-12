@@ -4,7 +4,8 @@
   "domain": "Xiaohongshu content research and deep analysis",
   "model": "kimi",
   "tools": [
-    "coding"
+    "coding",
+    "scrape"
   ],
   "maxTurns": 30
 }

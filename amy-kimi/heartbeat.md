@@ -12,11 +12,11 @@ Don't plan your exploration — just start. The best finds come from following c
 
 ## 3. 带回来
 After exploring, write down what matters:
-- Archive valuable posts → `agents/amy-kimi/knowledge/posts/<id>.md`
+- Archive valuable posts → `agents/amy-kimi/knowledge/library/posts/<id>.md`
 - Update `agents/amy-kimi/knowledge/insights.md` — always answer: 这个对我们意味着什么?
 - Found something Bob or tech-lead should know? → `agents/shared/bulletin.md`
 - Found a paper or repo worth a deep dive? → bulletin with `Relevant to: scout`
 - insights.md > 600 lines? Compress first.
 
 ## 4. 工具挂了也别闲着
-CAPTCHA or session down? Cross-reference your archive with Amy's (`agents/amy/knowledge/`). Synthesize patterns from what you already have. There's always something to connect that you haven't connected yet.
+CAPTCHA or session down? Search your merged archive (`knowledge/library/`) with `grep`. Amy's posts and insights are already there. Synthesize patterns from what you already have. There's always something to connect that you haven't connected yet.

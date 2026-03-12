@@ -43,7 +43,7 @@ URLs in TODO don't have xsec_token. Always re-search for fresh URLs.
 
 ## #8 — Synthesis is Always Valuable
 
-When tools fail, cross-reference your archive. Cross-reference with Amy's archive at `/home/hao/.openclaw/knowledge/amy/` too. Two perspectives, richer synthesis. Never exit empty-handed.
+When tools fail, cross-reference your archive. Amy's archive is merged into your `library/` — search it with `grep`. Never exit empty-handed.
 
 ## #9 — Knowledge Retrieval Before Claims
 
