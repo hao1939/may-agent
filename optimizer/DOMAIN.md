@@ -165,12 +165,13 @@ When reviewing documents (e.g., design reviews), hold your own output to these s
 
 | File | Purpose |
 |------|---------|
-| `src/tools.ts` | createExecTool(), createReadTool(), createWriteTool() |
-| `src/manager.ts` | resolveSystemPrompt(), createTool() schema |
-| `src/evaluator.ts` | evaluateTask(), extractFailureChains() |
-| `run/may.ts` | Agent registration, model assignment, tool wiring |
-| `agents/*/knowledge/domain.md` | Per-agent instructions |
-| `agents/*/knowledge/lessons.md` | Accumulated lessons |
+| `src/lib/manager.ts` | SubagentManager, session lifecycle, tool creation |
+| `src/lib/evaluator.ts` | evaluateTask(), extractFailureChains() |
+| `src/app/agent-loader.ts` | Agent loading, tool wiring, cron setup |
+| `src/app/cron.ts` | Cron scheduler, heartbeat trigger logic |
+| `src/app/may.ts` | Entry point, session routing, event bus |
+| `agents/may/handlers/` | JS cron handlers (heartbeat-precheck, watchdog, etc.) |
+| `agents/*/SOUL.md, DOMAIN.md, TOOLS.md, LESSONS.md` | Agent convention files |
 
 ## LLM-to-JS Replacement Tracking
 

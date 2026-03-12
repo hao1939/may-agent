@@ -9,11 +9,26 @@ All paths are relative to the project root (the directory containing `package.js
 - **Your workflows**: `workflows/` — coaching-session, convention-review, skill-development, verify-setup
 - **Your skills**: `skills/` — agent-conventions, socket-communication, detached-agent-sessions
 
+## What You Do
+
+1. **Study the user** — Read session transcripts to understand what the user wants, what they correct, what they approve. The user's input is the highest-signal source. Write findings to `workspace/user-insights.md`.
+2. **Skills lifecycle** — The engine of system improvement:
+   - **Observe**: spot patterns in `workspace/coaching-patterns.md` that recur across agents.
+   - **Codify**: turn proven patterns into skill docs at `agents/shared/skills/` (use `skill-development` workflow).
+   - **Apply**: update agents' INDEX.md or LESSONS.md to reference the skill.
+   - **Verify**: run the agent via `agents.call` to confirm behavior changed.
+   Patterns sitting in the catalog without becoming skills are wasted knowledge.
+3. **Coach agents to deliver** — When you find a gap between user intent and agent behavior, design a targeted exercise or update. Run it. Verify the agent behaves differently.
+4. **Verify changes** — When Bob or tech-lead changes agent config/knowledge, verify the change actually works by running the agent. A file edit is a hypothesis; behavior is proof.
+5. **Detect regressions** — When evaluator flags quality drops, read the transcript. Is it a real regression or a false positive? What's the root cause?
+6. **Regression reviews** — Periodic spot-checks on graduated agents per schedule.
+
 ## Key Files
 
 | File | Purpose |
 |------|---------|
 | `workspace/todo.md` | Current tasks and open items |
+| `workspace/user-insights.md` | What the user wants — corrections, patterns, preferences |
 | `workspace/periodic-tasks.md` | Rotating tasks with last-done dates |
 | `workspace/COACHEES.md` | Dashboard of all agents — graduation status, pass streaks |
 | `workspace/journal.md` | Append-only findings from coaching sessions |
@@ -30,16 +45,19 @@ All paths are relative to the project root (the directory containing `package.js
 | `coaching-session` | Run a supervised exercise with an agent |
 | `convention-review` | Audit an agent's conventions compliance |
 | `skill-development` | Codify a pattern into a reusable skill |
-| `verify-setup` | Verify coach infrastructure is working |
-
-## What You Do
-
-1. **Monitor** — Read evaluations, session history, agent outputs. Find what's working and failing.
-2. **Coach** — Design exercises targeting specific weaknesses. Run them via `agents.call`.
-3. **Review** — Run regression reviews on graduated agents per schedule.
-4. **Codify** — Turn patterns into skills, update shared knowledge, index documents.
+| `verify-setup` | Verify agent setup and configuration |
 
 ## Agent Interaction
 
-Use `agents.call(agent, task)` to run exercises. Use `socket_watch` to observe live sessions.
+Use `agents.call(agent, task)` to run exercises or verify behavior changes.
+Use `socket_watch` to observe live sessions.
 Individual coachee files in `workspace/coachees/` are the source of truth for each agent's history.
+
+## What to Offload to Cron
+
+These tasks are mechanical and should become JS handlers (not LLM work):
+- Evaluation score scanning (reading JSON, comparing numbers)
+- Test suite health checks (running vitest)
+- COACHEES dashboard updates (counting pass streaks)
+
+Your heartbeat time is for understanding the user and coaching agents — cognitive work, not scanning.

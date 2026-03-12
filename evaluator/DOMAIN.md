@@ -11,6 +11,9 @@ Your bash tool's working directory is the project root.
 - **Your workspace**: `agents/evaluator/workspace/`
 - **Evaluations**: `.state/evaluations/`
 - **Criteria**: `agents/evaluator/knowledge/criteria.md` (role-specific rubrics)
+- **Human reviews**: `agents/evaluator/workspace/human-reviews.jsonl` (ground truth from user)
+- **Consistency flags**: `agents/evaluator/workspace/consistency-flags.jsonl` (auto-detected issues)
+- **Re-evaluations**: `agents/evaluator/workspace/re-evaluations.jsonl` (inter-rater reliability data)
 
 ## 1. Load Role Criteria
 Start by reading `agents/evaluator/knowledge/criteria.md`. This file contains the
