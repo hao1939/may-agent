@@ -90,6 +90,7 @@ export type {
   Registry,
   PersistedAgentConfig,
   PersistedSession,
+  SessionKind,
   MemoryEntry,
   WorkflowRun,
   WorkflowStep,

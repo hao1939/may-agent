@@ -27,7 +27,7 @@ import {
   saveCompactedMessages,
   readCompactedMessages,
 } from "./persistence.js";
-import type { MemoryEntry, WorkflowRun, PersistedSession, Registry } from "./persistence.js";
+import type { MemoryEntry, WorkflowRun, PersistedSession, Registry, SessionKind } from "./persistence.js";
 import type { TraceNode, SessionTrace } from "./workflow.js";
 import { join, dirname, relative, resolve } from "node:path";
 import { isOverflowError, extractProgress, writeProgressFile } from "./overflow.js";
@@ -146,6 +146,8 @@ interface ActiveSession {
   closed: boolean;
   /** Session lifecycle policy. "never" = chat session (stays idle), "immediate" = task session (archives on completion). */
   autoClose: "immediate" | "never";
+  /** Session kind: chat (human-owned), job (fire-and-forget, auto-resumed), call (parent-owned). */
+  kind: SessionKind;
   /** Terminal status for archive/result reporting. Set before archival so the promise chain can read it after the session is removed from activeSessions. */
   archiveStatus?: "done" | "error" | "interrupted";
 }
@@ -167,6 +169,11 @@ export interface RunOptions {
    *  - "immediate": archive on completion (task sessions)
    *  - "never": stay idle on completion (interface/chat session) */
   autoClose?: "immediate" | "never";
+  /** Session kind. Default: "job".
+   *  - "chat": human-owned, not auto-resumed
+   *  - "job": fire-and-forget, auto-resumed on restart
+   *  - "call": parent-owned, not resumed independently */
+  kind?: SessionKind;
 }
 
 export interface SubagentManagerOptions {
@@ -576,8 +583,6 @@ export class SubagentManager {
   }
 
   /**
-   * Compact an interface session's in-memory messages after it goes idle.
-  /**
    * Common completion handler — called when the agent's prompt()/continue() settles.
    *
    * Determines the outcome from agent state, then:
@@ -724,6 +729,7 @@ export class SubagentManager {
       compactionTransform,
       closed: false,
       autoClose: opts?.autoClose ?? "immediate",
+      kind: opts?.kind ?? "job",
     };
 
     // Write [STARTED] sentinel
@@ -747,6 +753,8 @@ export class SubagentManager {
       parentSessionId: opts?.parentSessionId ?? existingMeta?.parentSessionId,
       workflowRunId: opts?.workflowRunId ?? existingMeta?.workflowRunId,
       stepLabel: opts?.stepLabel ?? existingMeta?.stepLabel,
+      kind: session.kind,
+      autoClose: session.autoClose,
     });
 
     // Set up timeout if configured
@@ -800,10 +808,11 @@ export class SubagentManager {
    * Detached sessions (separate OS processes) are skipped if their process
    * is still alive — they survive the parent's restart by design.
    */
-  resumeStaleSessions(): { resumed: SessionInfo[]; interrupted: SessionInfo[] } {
+  resumeStaleSessions(opts?: { abort?: boolean; kinds?: SessionKind[] }): { resumed: SessionInfo[]; interrupted: SessionInfo[] } {
     const registryData = this.registry.getRegistry();
     const persistDir = this.registry.persistDir;
     const staleSessionIds: Array<{ sessionId: string; persisted: (typeof registryData.sessions)[string] }> = [];
+    const kindFilter = opts?.kinds ? new Set(opts.kinds) : null;
 
     // Scan for orphan [STARTED] sentinels in session directories
     const sessionsDir = join(persistDir, "sessions");
@@ -816,6 +825,8 @@ export class SubagentManager {
             const sessionId = dirName;
             const persisted = registryData.sessions[sessionId];
             if (persisted && persisted.status === "running" && !isProcessAlive(persisted.pid)) {
+              const kind = persisted.kind ?? "job";
+              if (kindFilter && !kindFilter.has(kind)) continue; // not our concern — leave untouched
               try { unlinkSync(sentinelPath); } catch {}
               staleSessionIds.push({ sessionId, persisted });
             } else if (!persisted) {
@@ -834,6 +845,8 @@ export class SubagentManager {
       if (alreadyFound.has(sessionId)) continue;
       if (persisted.status !== "running" && persisted.status !== "idle") continue;
       if (persisted.detached && isProcessAlive(persisted.pid)) continue;
+      const kind = persisted.kind ?? "job";
+      if (kindFilter && !kindFilter.has(kind)) continue; // not our concern — leave untouched
       staleSessionIds.push({ sessionId, persisted });
     }
 
@@ -841,9 +854,24 @@ export class SubagentManager {
     const interrupted: SessionInfo[] = [];
 
     for (const { sessionId, persisted } of staleSessionIds) {
+      if (opts?.abort) {
+        this.registry.updateSessionStatus(sessionId, "interrupted", "Clean start (fresh)");
+        interrupted.push({
+          sessionId,
+          agent: persisted.agent,
+          task: persisted.task,
+          status: "interrupted",
+          startedAt: persisted.startedAt,
+          endedAt: Date.now(),
+          runtime: formatDuration(Date.now() - persisted.startedAt),
+          outputDir: sessionOutputDir(persistDir, sessionId),
+          error: "Clean start (fresh)",
+        });
+        continue;
+      }
+
       const registered = this.agents.get(persisted.agent);
       if (!registered) {
-        // Agent not registered — can't resume, mark interrupted
         this.registry.updateSessionStatus(sessionId, "interrupted", "Process restarted (agent not registered)");
         interrupted.push({
           sessionId,
@@ -966,7 +994,8 @@ export class SubagentManager {
       maxTurns: def.maxTurns,
       compactionTransform,
       closed: false,
-      autoClose: "immediate",
+      autoClose: persisted.autoClose ?? "immediate",
+      kind: persisted.kind ?? "job",
     };
 
     this.subscribeForPersistence(session);
@@ -1023,6 +1052,7 @@ export class SubagentManager {
       workflowRunId: s.workflowRunId,
       stepLabel: s.stepLabel,
       autoClose: s.autoClose,
+      kind: s.kind,
     }));
   }
 
@@ -1973,6 +2003,7 @@ export class SubagentManager {
         workflowRunId: opts?.workflowRunId,
         stepLabel: opts?.stepLabel,
         source: opts?.source ?? "callAgent",
+        kind: "call",
       });
 
       // Subscribe for streaming events if requested
