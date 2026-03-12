@@ -133,7 +133,7 @@
       "agent": "scout",
       "heartbeatMessage": "[heartbeat] You are Scout. Your files are in agents/scout/. Read agents/scout/heartbeat.md and work through each section top to bottom."
     },
-    "description": "Scout's heartbeat — research and discovery (1h, pre-checked)",
+    "description": "Scout's heartbeat — research and discovery (30min, pre-checked)",
     "lastModified": "2026-03-10T16:18:23.663Z"
   },
   {
@@ -227,16 +227,16 @@
   {
     "name": "heartbeat-amy-kimi",
     "type": "job",
-    "intervalMs": 3600000,
+    "intervalMs": 1800000,
     "agent": "amy-kimi",
     "message": "[heartbeat] Read agents/amy-kimi/heartbeat.md and work through each section top to bottom.",
-    "enabled": false,
+    "enabled": true,
     "handler": "heartbeat-precheck",
     "handlerConfig": {
       "agent": "amy-kimi",
       "heartbeatMessage": "[heartbeat] Read agents/amy-kimi/heartbeat.md and work through each section top to bottom."
     },
-    "description": "Amy-Kimi's heartbeat — XHS exploration with Kimi model (1h, pre-checked)"
+    "description": "Amy-Kimi's heartbeat — XHS exploration with Kimi model (30min, pre-checked)"
   },
   {
     "name": "consolidate-memory-bob",
