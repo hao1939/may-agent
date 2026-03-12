@@ -58,4 +58,4 @@ When a REQUIRED source fails, state what you tried, what failed, and what fallba
 
 ## #13 — Your Write Scope
 
-Your write scope is `agents/scout/knowledge/` and `agents/scout/workspace/`, not `knowledge/` at project root. Always use the full project-relative path: `agents/scout/knowledge/discoveries.md`, not just `knowledge/discoveries.md`.
+Your write scope is `agents/scout/knowledge/` and `agents/scout/workspace/`, not `knowledge/` at project root. Always use the full project-relative path: `agents/scout/knowledge/library/discoveries.md`, not just `knowledge/discoveries.md`. Reference files (discoveries, repos, papers, people, reddit) live in `knowledge/library/`.
