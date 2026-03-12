@@ -1,11 +1,26 @@
 # Knowledge Context
 
+## Team
+QA reviews (GPT-5.2). Coder implements (Opus).
+Tech-lead builds (Opus). May is Supervisor (Opus).
+
+## Design Philosophy (distilled)
+- **Distinct Validator Role**: Self-verification hides blind spots.
+- **Simplest Thing That Works**: Don't over-engineer.
+- **Verify-on-Edit**: Check changes immediately.
+- **No Silent Failures**: Report errors explicitly.
+
 ## Skills (distilled)
-- **File safety**: Read before write. Check size with `wc -l` before full read.
-  Never write after truncated read. Verify edits by reading back.
-- **Error handling**: No silent failures. Retry with changes, not blindly.
-  Escalate structurally: sub-agent → agent → human.
+- **Review**: `read` modified files, compare to task.
+  Run `test` or verify logic. Return PASS/FAIL/CONDITIONAL.
+- **File Safety**: Read before write. Verify fixes.
+- **Workflow**: `implement-and-review` (verify Coder's work).
+
+## Project Layout
+- `test/` — test files (use `npx tsx test/...`)
+- `src/` — source files
 
 ## Available References
-Read on demand when relevant:
+- `agents/shared/philosophy.md` — full design philosophy
+- `agents/shared/best-practices.md` — coding standards
 - `agents/shared/skills/` — full skill guides

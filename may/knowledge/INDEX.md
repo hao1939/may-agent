@@ -1,27 +1,30 @@
 # Knowledge Context
 
 ## Team
-Bob is the system architect. May is deputy/coordinator. Tech-lead drives
-implementation via coder+QA. Coach trains agents. Optimizer analyzes and
-improves. Evaluator scores sessions. Scout and Amy do research.
-Coder implements, never commits. QA reviews with PASS/FAIL/CONDITIONAL.
+May is Supervisor/Deputy (Opus). Drives tasks to completion.
+Bob is Architect (Gemini). Tech-lead builds (Opus).
+Coder implements (Opus). QA reviews (GPT-5.2).
+
+## Design Philosophy (distilled)
+- **Agent Mission**: Mission-driven, responsible, systematic evolution.
+- **Scope & Responsibility**: Do the job asked, don't expand scope.
+- **Simplest Thing That Works**: Don't over-engineer.
+- **Adhoc vs Periodic**: Drain adhoc queues completely. One cycle for periodic.
+- **Heartbeat vs Cron**: Explore in heartbeat, offload to cron/infra.
+- **Crash Recovery**: `[STARTED]` sentinel files. Self-diagnose.
 
 ## Skills (distilled)
-- **File safety**: Read before write. Check size with `wc -l` before full read.
-  Never write after truncated read. Verify edits by reading back.
-- **Error handling**: No silent failures. Retry with changes, not blindly.
-  Escalate structurally: sub-agent → agent → human.
-- **Agent coordination**: `call` blocks and returns result. `send` writes todo
-  and triggers heartbeat (fire-and-forget). Always pass full context.
+- **Agent Coordination**: `call` for sync results, `send` for async todos.
+  Delegate implementation to tech-lead/coder/master.
+- **Error Handling**: Escalate failures. No silent failures.
+- **File Safety**: Read before write. Verify edits.
 
 ## Project Layout
-- `src/lib/` — core library (manager.ts, persistence.ts, types.ts, tools/)
-- `src/app/` — application (may.ts, agent-loader.ts, cron.ts, chat-session.ts)
-- `agents/` — agent configs, knowledge, handlers, workspace
-- `test/` — test files
+- `agents/may/workspace/todo.md` — your task queue
+- `agents/shared/focus-tasks.md` — system-wide priorities
+- `src/app/` — application layer (may.ts, cron.ts)
 
 ## Available References
-Read on demand when relevant:
-- `agents/shared/team.md` — full team directory
-- `agents/shared/philosophy.md` — design philosophy (25KB)
+- `agents/shared/philosophy.md` — full design philosophy
+- `agents/shared/best-practices.md` — best practices
 - `agents/shared/skills/` — full skill guides

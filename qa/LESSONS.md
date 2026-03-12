@@ -1,13 +1,5 @@
 # Lessons
 
-## ⛔ CRITICAL: Blind Overwrite Prevention
-
-**The #1 cause of failure is writing a file after a truncated read.**
-1. **Rule**: If `read()` output contains `[... truncated]`, you **MUST NOT** use `write()`.
-2. **Rule**: Never guess what was in the missing text.
-3. **Fix**: Use `read(path, startLine=N, endLine=M)` to get the full content.
-4. **Fix**: Use `sed` for surgical edits (avoids full-file overwrite risks).
-
 ## Surgical Edit Rule
 
 For surgical fixes (1-3 lines), ALWAYS use `sed` — never `write()`. This applies regardless of truncation state. Even when the full file is known, sed is safer for small changes because it avoids accidental content loss.

@@ -1,6 +1,6 @@
 ---
 name: coachee-sessions
-description: Use when spawning a coachee agent process, connecting to it for observation, sending tasks and corrections, or cleaning up after coaching. Covers the full lifecycle using subagents (detached mode) + socket_watch.
+description: Use when spawning a coachee agent process, connecting to it for observation, sending tasks and corrections, or cleaning up after coaching. Covers the full lifecycle using agents tool (detached mode) + socket_watch.
 ---
 
 # Coachee Sessions
@@ -10,7 +10,7 @@ How to start, observe, control, and shut down a coachee process for coaching.
 ## Overview
 
 Coach uses two tools together:
-- **subagents** — spawn and manage the coachee as a detached process
+- **agents** — spawn and manage the coachee as a detached process
 - **socket_watch** — connect to the coachee's socket for real-time observation and commands
 
 The coachee runs as an independent OS process (survives coach restart).
@@ -18,7 +18,7 @@ The coachee runs as an independent OS process (survives coach restart).
 ## Step 1: Spawn the Coachee
 
 ```javascript
-subagents.run({
+agents.call({
   agent: "<agent-name>",
   task: "<exercise-task>",
   mode: "detached"
@@ -86,7 +86,7 @@ socket_watch.send(watchId, { "type": "cancel_task" })
 
 ### Check status
 ```javascript
-subagents.status({ sessionId: "<sessionId>" })
+agents.peek({ sessionId: "<sessionId>" })
 ```
 
 ## Step 5: Verify Results
@@ -103,7 +103,7 @@ exec("git diff")
 
 ```javascript
 socket_watch.disconnect(watchId)
-subagents.cancel({ sessionId: "<sessionId>" })
+agents.cancel({ sessionId: "<sessionId>" })
 ```
 
 Always clean up, even if exercises failed or were aborted.
@@ -124,7 +124,7 @@ The coachee retains context from previous exercises within the same session.
 | Problem | Diagnosis | Fix |
 |---------|-----------|-----|
 | No socket file | Process failed to start | Check detached log: `exec("cat .state/logs/detached-<sessionId>.log")` |
-| Socket connection refused | Process crashed after start | Check `subagents.status()`, re-spawn |
-| No events arriving | debounceMs too high, or coachee stuck | Lower debounceMs, check `subagents.progress()` |
+| Socket connection refused | Process crashed after start | Check `agents.peek()`, re-spawn |
+| No events arriving | debounceMs too high, or coachee stuck | Lower debounceMs, check `agents.peek()` |
 | Coachee ignores steer | Agent mid-tool-call | Wait for current tool to finish, steer again |
 | identity.json missing | Session ID wrong | `exec("ls .state/instances/")` to find instance dir |

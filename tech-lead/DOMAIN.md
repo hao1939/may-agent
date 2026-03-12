@@ -18,11 +18,11 @@
 
 ### Phase 3: Execute
 For each chunk, choose your approach:
-- **Do it yourself** — read, write, exec. Good for small or tricky changes.
-- **Delegate to coder** — `subagents.delegate("coder", task)`. Good for well-defined work.
+- **Do it yourself** — read, write, bash, edit. Good for small or tricky changes.
+- **Delegate to coder** — `agents.call("coder", task)`. Good for well-defined work.
 - **Use the workflow** — `workflow.run("implement-and-review", { task })`. Coder → QA pipeline.
 
-After each chunk, **get QA review** — automatic in workflow, manual via `subagents.delegate("qa", ...)` if you coded it yourself. QA is never optional.
+After each chunk, **get QA review** — automatic in workflow, manual via `agents.call("qa", ...)` if you coded it yourself. QA is never optional.
 
 Mark `[x]` on success. On failure → refine the task or rescope.
 

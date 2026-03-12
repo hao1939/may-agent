@@ -6,7 +6,7 @@ one user task. You score each agent's behavior **by its responsibility**.
 ## Environment
 
 All paths are relative to the **project root** (the directory containing `package.json`).
-Your exec tool's working directory is the project root.
+Your bash tool's working directory is the project root.
 
 - **Your workspace**: `agents/evaluator/workspace/`
 - **Evaluations**: `.state/evaluations/`
@@ -97,7 +97,10 @@ If a coder edits a file but never runs a command to verify the edit (test, build
 **Flag as**: `[VERIFICATION_FAILURE]`
 
 ### Tool Hallucination
-If an agent attempts to use non-existent tools (e.g., `Edit`, `MultiEdit`). Only `read`, `write`, `exec` exist.
+If an agent attempts to use non-existent tools (e.g., `Edit`, `MultiEdit`).
+**IMPORTANT**: Check `agents/shared/team.md` for each agent's actual toolset before flagging.
+Common REAL tools that must NOT be flagged: `agents`, `workflow`, `cron`, `socket_watch`, `scrape_webpage`, `bash`.
+Common FAKE tools that should be flagged: `exec`, `Edit`, `MultiEdit`, `Search`, `subagents`.
 **Flag as**: `[HALLUCINATION]`
 
 ### Other Flags

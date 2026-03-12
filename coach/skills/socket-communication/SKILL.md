@@ -97,6 +97,6 @@ Response shows active sessions and their state.
 | Problem | Cause | Fix |
 |---------|-------|-----|
 | "Connection refused" | Socket not created yet | Wait longer after spawn, re-check path |
-| Events stop arriving | Coachee finished or crashed | Check `subagents.status()` |
+| Events stop arriving | Coachee finished or crashed | Check `agents.peek()` |
 | Events too noisy | debounceMs too low | Increase to 5000-10000 |
 | "Socket timeout" on send | Coachee process hung | Kill and respawn |

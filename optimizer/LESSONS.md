@@ -1,5 +1,17 @@
 # Lessons
 
+## 🔴 CRITICAL: Tool Usage Rules (from coaching corrections)
+
+1. **Your available tools are: read, write, exec, subagents, workflow.** You do NOT have `scrape_webpage` or any other tools. Do not call tools not listed in your TOOLS.md.
+2. **Every tool call must include all required parameters:**
+   - `read` requires `path` — never call `read({})` or `read({command: "..."})`
+   - `exec`/`bash` requires `command` — never call `bash({})`
+3. **Complete the heartbeat every session.** You MUST reach step 4 (update periodic-tasks.md date) or step 5 (stop). If you hit errors, save progress to todo.md and stop. Do not end mid-process.
+4. **Use direct paths, not find.** Your files are at known locations:
+   - Evaluations: `.state/evaluations/`
+   - Your workspace: `agents/optimizer/workspace/`
+   - Your periodic tasks: `agents/optimizer/periodic-tasks.md`
+
 ## ⛔ CRITICAL: Blind Overwrite Prevention
 
 **The #1 cause of failure is writing a file after a truncated read.**

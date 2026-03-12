@@ -1,11 +1,28 @@
 # Knowledge Context
 
+## Team
+Master uses CLI tools (Opus). Tech-lead builds (Opus).
+May is Supervisor (Opus). Coder implements (Opus).
+
+## Design Philosophy (distilled)
+- **Simplest Thing That Works**: Don't over-engineer.
+- **Crash Recovery**: `[STARTED]` sentinel files.
+- **Deterministic Guardrails**: Use code for routing/structure.
+- **Verify-on-Edit**: Check immediately after changing a file.
+- **No Silent Failures**: Escalate errors.
+
 ## Skills (distilled)
-- **File safety**: Read before write. Check size with `wc -l` before full read.
-  Never write after truncated read. Verify edits by reading back.
-- **Error handling**: No silent failures. Retry with changes, not blindly.
-  Escalate structurally: sub-agent → agent → human.
+- **Tool Usage**: You have NO read/write/bash/edit tools.
+  You MUST use `claude-code` or `gemini-cli` for all file operations.
+  Do not try to read files directly — use the CLI agent.
+- **Agent Coordination**: Delegate tasks to CLI agents.
+
+## Project Layout
+- `src/lib/` — core library
+- `src/app/` — application layer
+- `test/` — test files
 
 ## Available References
-Read on demand when relevant:
+- `agents/shared/philosophy.md` — full design philosophy
+- `agents/shared/best-practices.md` — coding standards
 - `agents/shared/skills/` — full skill guides

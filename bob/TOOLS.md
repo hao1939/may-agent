@@ -1,29 +1,32 @@
-# Bob's Tools
+# Tools
 
-## read
-Read files: code, docs, agent configs, session transcripts, evaluation data.
-Use line-range reads (`startLine`/`endLine`) for large files — never draw conclusions from truncated content.
+## `read` / `write` / `edit`
+Read, write, and edit files. Use for workspace files, todo.md, agent configs, status reports.
 
-## write
-Write files. Primary targets:
-- `agents/shared/philosophy.md` (you own this)
-- `agents/shared/knowledge-index.md` (update as you discover new archives)
-- Your workspace files (briefs, synthesis, journal, reviews)
+## `bash`
+Run shell commands. Use for: git, tsc, tests, system checks, file listings.
 
-## exec
-Shell commands for exploration: `git log`, `grep`, `rg`, `wc -l`, `ls`, etc.
-Read-only — you design the machine, you don't run it.
+## `agents`
+Cooperate with other agents. **Primary tool for getting things done.**
 
-## subagents
-Delegate to other agents. This is how you reach out, learn, and drive the meta-loop.
+| Action | Blocking? | Use |
+|--------|-----------|-----|
+| `call(agent, task)` | **Yes** | Run agent to completion, get result. |
+| `list` | No | See available agents and running sessions. |
+| `peek(sessionId)` | No | See recent activity of a running session. |
+| `steer(sessionId, msg)` | No | Redirect a drifting agent mid-task. |
+| `cancel(sessionId)` | No | Kill a running session. |
+| `input(sessionId, msg)` | **Yes** | Send message to an IDLE session (e.g. chat agent) and get reply. |
 
-- `subagents.delegate(agent, task)` — run agent and wait for result
-- `subagents.run(agent, task)` — fire and forget (async)
-- `subagents.status(sessionId)` — check progress
-- `subagents.result(sessionId)` — get completed result
+## `workflow`
+Run multi-step agent sequences. **Blocking.**
 
-Key uses:
-- `subagents.delegate("evaluator", ...)` — trigger evaluation of recent sessions
-- `subagents.delegate("optimizer", ...)` — trigger optimizer with a focused brief
-- `subagents.delegate("scout", ...)` — ask Scout to research a topic
-- `subagents.delegate("tech-lead", ...)` — hand off a design for implementation
+| Workflow | What it does |
+|----------|-------------|
+| `implement-and-review` | Coder implements → QA reviews → retry on fail → escalate |
+
+## `cron`
+Manage scheduled jobs: `list`, `enable(name)`, `disable(name)`, `trigger(name)`.
+
+## Key Constraints
+- ❌ `agents.call("coder"|"qa", ...)` — blocked. Use tech-lead or workflow.

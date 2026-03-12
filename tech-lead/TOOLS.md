@@ -1,32 +1,32 @@
-# TOOLS — Tech Lead
+# Tools
 
-## read
-Read any file in the project: source code, design docs, agent configs, test files, evaluations.
-Use line-range reads for large files — truncated reads = no data.
+## `read` / `write` / `edit`
+Read, write, and edit files. Use for workspace files, todo.md, agent configs, status reports.
 
-## write
-Write files:
-- **Code** when implementing directly — you're a builder, not just a delegator
-- **Plans** — `workspace/implementation-plan.md`, `workspace/status.md`
-- **Feedback** — `workspace/pending-decisions.md` for design questions to Bob or May
+## `bash`
+Run shell commands. Use for: git, tsc, tests, system checks, file listings.
 
-## exec
-Shell commands for recon and verification:
-- `tsc --noEmit` — type check after changes
-- `npx vitest --run` — run tests
-- `git log`, `git diff`, `git status` — understand recent changes
-- `grep`, `rg`, `find` — explore the codebase
-- `wc -l` — verify file sizes before reading
+## `agents`
+Cooperate with other agents. **Primary tool for getting things done.**
 
-## workflow
-The coder → QA pipeline:
-- `workflow.run("implement-and-review", { task })` — coder implements, QA reviews, one retry on fixable issues, escalates otherwise.
-Use for standard chunks. Handles delegation + review automatically.
+| Action | Blocking? | Use |
+|--------|-----------|-----|
+| `call(agent, task)` | **Yes** | Run agent to completion, get result. |
+| `list` | No | See available agents and running sessions. |
+| `peek(sessionId)` | No | See recent activity of a running session. |
+| `steer(sessionId, msg)` | No | Redirect a drifting agent mid-task. |
+| `cancel(sessionId)` | No | Kill a running session. |
+| `input(sessionId, msg)` | **Yes** | Send message to an IDLE session (e.g. chat agent) and get reply. |
 
-## subagents
-Direct delegation for when you need control:
-- `subagents.delegate("coder", task)` — implement something specific
-- `subagents.delegate("qa", task)` — independent code review (never skip this)
-- `subagents.delegate("bob", question)` — ask about design intent or philosophy
-- `subagents.run(agent, task)` — fire and forget (async)
-- `subagents.status(id)` / `subagents.result(id)` — check progress
+## `workflow`
+Run multi-step agent sequences. **Blocking.**
+
+| Workflow | What it does |
+|----------|-------------|
+| `implement-and-review` | Coder implements → QA reviews → retry on fail → escalate |
+
+## `cron`
+Manage scheduled jobs: `list`, `enable(name)`, `disable(name)`, `trigger(name)`.
+
+## Key Constraints
+- ❌ `agents.call("coder"|"qa", ...)` — blocked. Use tech-lead or workflow.

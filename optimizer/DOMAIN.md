@@ -6,7 +6,7 @@ Your goal: find the highest-impact problem and fix it.
 ## Environment
 
 All paths are relative to the **project root** (the directory containing `package.json`).
-Your exec tool's working directory is the project root.
+Your bash tool's working directory is the project root.
 
 - **Your workspace**: `agents/optimizer/workspace/`
 - **Evaluations**: `.state/evaluations/` — per-session JSON with agent name, scores, failure chains
@@ -147,7 +147,7 @@ You can delegate to:
 | **qa** | Reviewing implementations (called by workflow) |
 | **evaluator** | Scoring sessions to verify fixes |
 
-Use `subagents.run()` / `subagents.waitFor()` for direct delegation.
+Use `agents.call()` for direct delegation.
 Use `workflow.run("implement-and-review", task)` for the standard fix path.
 
 ## Review Quality Standards

@@ -74,7 +74,7 @@ Cross-agent or system-wide items go in `agents/may/workspace/todo.md`.
 Don't pollute the global space with agent-specific tasks.
 
 When one agent needs another to do something, add it to the target agent's
-todo.md (or delegate via subagents if it's urgent).
+todo.md (or delegate via agents tool if it's urgent).
 
 ## O7: Cognitive Work Only (Required, All)
 

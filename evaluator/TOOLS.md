@@ -11,7 +11,7 @@ Write evaluation output, scores, and lessons. Primary targets:
 - `.state/evaluations/` — evaluation results
 - `agents/evaluator/workspace/` — working files
 
-### `exec` — Run shell commands
+### `bash` — Run shell commands
 Run commands to inspect project state:
 - `ls`, `find`, `cat`, `grep` — navigate and search files
 - `wc -l` — check file sizes before reading

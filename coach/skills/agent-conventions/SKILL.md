@@ -18,7 +18,7 @@ classifying them, and designing exercises to verify compliance.
 
 **Scope** — which agents it applies to:
 - **All** — every agent in the system.
-- **Power** — agents with subagents, workflows, or delegation tools.
+- **Power** — agents with agents tool, workflows, or delegation tools.
 - **Builder** — agents that write code or edit files (coder, optimizer, master).
 - **Specialist** — specific to a role (noted per convention).
 
@@ -77,13 +77,14 @@ Delegation, workflows, async patterns.
 
 | ID | Convention | Level | Scope |
 |----|-----------|-------|-------|
-| C1 | Use subagents for delegation, not exec-spawned processes | Required | Power |
+| C1 | Use agents tool for delegation, not exec-spawned processes | Required | Power |
 | C2 | Use detached mode for long-running coachee/worker sessions | Required | Coach |
 | C3 | socket_watch events arrive as follow-ups — don't poll with sleep | Required | Coach |
 | C4 | Short chains: 2-agent default, 3 only when stakes justify cost | Recommended | Power |
 | C5 | Acceptance criteria before decomposition | Recommended | Power |
 | C6 | When blocked on one task, pivot to parallel work | Recommended | Power |
-| C7 | subagents.status/result to check completion, not sleep loops | Required | Power |
+| C7 | agents.peek/result to check completion, not sleep loops | Required | Power |
+| C8 | Task boundedness — prefer bounded tasks with one action and verifiable end state | Required | Power |
 
 ### Operational (agents/coach/skills/agent-conventions/operational.md)
 
@@ -114,6 +115,27 @@ are failures; recommended violations are inefficiencies.
 convention, classify it, add an ID, and reference it from the index. Then design an
 exercise that tests it.
 
+### Model-Specific (agents/coach/skills/agent-conventions/model-specific.md)
+
+Behavioral patterns and coaching recommendations per model family.
+
+| ID | Convention | Level | Scope |
+|----|-----------|-------|-------|
+| M1 | Path convention in every Opus exercise rubric | Required | Opus |
+| M2 | edit() is acceptable for Opus builders | Recommended | Opus Builder |
+| M3 | Scope anchoring in Opus task prompts | Required | Opus |
+| M4 | Opus agents graduate in 3-5 exercises (fast arcs) | Recommended | Coach |
+| M5 | Unconditional rules only for GPT-5.2 | Required | GPT-5.2 |
+| M6 | Explicit action verbs in GPT-5.2 tasks | Required | Coach → GPT-5.2 |
+| M7 | Model upgrade as first intervention | Recommended | Coach |
+| M8 | Accept Gemini adversity limitation | Required | Coach |
+| M9 | Production tasks for Gemini must reference existing files | Required | Power → Gemini |
+| M10 | Structural intervention over instruction for Gemini | Required | Coach |
+| M11 | Monitor Gemini for safety bypass | Required | Evaluator |
+| M12 | Backup before multi-file Kimi tasks | Required | Coach |
+| M13 | Search limit enforcement for Kimi | Required | Coach → Kimi |
+| M14 | Accept write() regression under multi-file pressure | Recommended | Coach |
+
 ## Convention Files
 
 Detailed docs for each category — read on demand:
@@ -123,3 +145,4 @@ Detailed docs for each category — read on demand:
 - `agents/coach/skills/agent-conventions/knowledge-mgmt.md`
 - `agents/coach/skills/agent-conventions/coordination.md`
 - `agents/coach/skills/agent-conventions/operational.md`
+- `agents/coach/skills/agent-conventions/model-specific.md`

@@ -18,7 +18,7 @@ Use relative paths: `ls src/`, `cat test/foo.test.ts`, `npx vitest --run`.
 
 - **Always read a file fully before modifying it** — never edit blind
 - **Safe Large-File Edits**: If a file is > 100 lines, DO NOT use `write()`. Use the `safe-edit` workflow (or `sed` if unavailable) to avoid truncation data loss.
-- **Never use `cat >` or heredocs** via exec to write files — use the `write` tool
+- **Never use `cat >` or heredocs** via `bash` to write files — use the `write` tool
 - When modifying a file, write the entire file content — not a patch or fragment
 - If a file is very large, read it first, then write it back with your changes applied
 - **Surgical edits**: When asked to add a section to an existing file, preserve all existing content. Read the file, understand its structure, and insert/append your addition — do not rewrite or reorganize sections you weren't asked to change
@@ -35,11 +35,22 @@ Use relative paths: `ls src/`, `cat test/foo.test.ts`, `npx vitest --run`.
 3. Only after seeing the complete file, use `write()` with the full content.
 4. For small changes to large files, prefer `sed` with pattern matching — it only touches what you specify.
 
+### File Reading Protocol
+
+Before reading any file, gauge its size:
+- Run `wc -l <file>` first (via `bash`)
+- Files ≤ 200 lines: `read(path)` is safe — you'll get the full file
+- Files > 200 lines: use `read(path, offset=N, limit=M)` for the relevant section
+- If a read is truncated: **STOP.** Do NOT proceed with partial data.
+  Use line-range reads to get the specific section you need.
+- Never read the same file twice in full. Read once, note the structure,
+  then use targeted reads for specific sections.
+
 ## Available Tools
 
-You have: `read`, `write`, `exec`. These are your ONLY tools.
-- There is no `Edit` tool. There is no `MultiEdit` tool.
-- For surgical text changes, use `exec` with `sed -i "s/old/new/" file`.
+You have: `read`, `write`, `bash`, `edit`. These are your ONLY tools.
+- There is no `Edit` tool (capitalized). There is no `MultiEdit` tool. There is no `exec` tool.
+- For surgical text changes, use `bash` with `sed -i "s/old/new/" file`, or use the `edit` tool.
 - For full-file updates, use `write`.
 
 ## Code Rules
@@ -68,4 +79,4 @@ agents/       — agent configs (separate git repo)
 ```
 
 ## Reference Files
-- `knowledge/codebase.md` — file map and architecture reference
+- `knowledge/library/codebase.md` — file map and architecture reference

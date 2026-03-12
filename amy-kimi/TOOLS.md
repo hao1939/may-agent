@@ -1,54 +1,30 @@
-# Amy-Kimi — Tools
+# Tools
 
-## XHS Tool
+## `read` / `write` / `edit`
+Read, write, and edit files. Use for workspace files, knowledge archives, todo.md.
 
-Location: `agents/amy-kimi/tools/xhs-browse.mjs`
-Uses CDP (Chrome DevTools Protocol) to connect to Chrome on `localhost:9222`.
+## `bash`
+Run shell commands. Use for: file listings, grep, xhs-browse tool, system checks.
 
-### Commands
+## XHS Browse Tool
+Your custom tool at `agents/amy-kimi/tools/xhs-browse.mjs`. Requires Chrome running with `--remote-debugging-port=9222`.
 
 ```bash
-# Feed — browse /explore page, ~15-20 items
-node agents/amy-kimi/tools/xhs-browse.mjs feed
-
-# Search — returns results with xsec_token
-node agents/amy-kimi/tools/xhs-browse.mjs search "<keyword>"
-
-# Read — open a note, extract full content
-node agents/amy-kimi/tools/xhs-browse.mjs read "<full_url_with_xsec_token>"
-
-# Scroll — scroll feed page for more items
-node agents/amy-kimi/tools/xhs-browse.mjs scroll
+node agents/amy-kimi/tools/xhs-browse.mjs feed              # Get explore feed
+node agents/amy-kimi/tools/xhs-browse.mjs search "<keyword>" # Search posts
+node agents/amy-kimi/tools/xhs-browse.mjs read "<url>"       # Read a post (needs xsec_token)
+node agents/amy-kimi/tools/xhs-browse.mjs scroll             # Scroll feed for more
 ```
 
-### xsec_token is Required for `read`
-Always use the full URL from feed/search results — they include the token.
-```bash
-# ✅ Works — full URL from search result
-node xhs-browse.mjs read "https://www.xiaohongshu.com/explore/698dc...?xsec_token=AB81...&xsec_source="
-```
+### Constraints
+- Max 3 searches per run, 5+ seconds between operations
+- Always use full URLs from search/feed results (xsec_token required)
+- CAPTCHA → stop all XHS operations immediately, switch to synthesis
+- `ECONNREFUSED` → Chrome not running with debug port, switch to synthesis
+- Never use old URLs from TODO — always re-search for fresh tokens
 
-### Result Fields
-
-**Feed/Search**: `id`, `title`, `author`, `likes`, `cover`, `link` (use `link` for read)
-
-**Read**: `noteType`, `title`, `description`, `author`, `date`, `likes`, `collects`, `commentCount`, `tags`, `comments` (up to 20), `images` (up to 10)
-
-### Error Handling
-
-| Output | Action |
-|--------|--------|
-| `CAPTCHA` or login modal | Stop all XHS ops. Report and wait. |
-| `status: "error"` | Try once more, then switch to synthesis |
-| Empty results | Re-search for fresh tokens |
-
-## Standard Tools
-
-### read
-Read any file. Use for your archive, Amy's archive (cross-reference), shared docs.
-
-### write
-Write to your workspace and knowledge archive only.
-
-### exec
-Shell commands. Primary use: run `xhs-browse.mjs`. Also: `grep`, `ls`, `wc -l` for archive management.
+## Key Constraints
+- ❌ No `agents` tool — you cannot call or coordinate with other agents
+- ❌ No `workflow` tool — you cannot run multi-step workflows
+- ❌ No `cron` tool — you cannot manage scheduled jobs
+- When you find something for another agent, write to `agents/shared/bulletin.md`

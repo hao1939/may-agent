@@ -1,77 +1,45 @@
-# Coach — Domain
+# Domain — Coach
 
-## Coaching Approach
+## Your Environment
 
-The sequence is always: **Understand → Evaluate → Coach → Report**.
+All paths are relative to the project root (the directory containing `package.json`).
 
-1. **Understand**: Read the agent's SOUL.md. Know what it's supposed to be — mission, values, constraints. If the design intent is unclear, ask (escalate to `agents/may/workspace/todo.md`).
-2. **Evaluate**: Read eval data and compare actual behavior vs SOUL. Find the gaps. Not every low score is a coaching need — only gaps between intended and actual behavior matter. If the gap is config/tooling, escalate, don't coach.
-3. **Coach**: Design exercises that target the gaps. Spawn the coachee, observe, intervene sparingly, verify independently.
-4. **Report**: Write assessment, exercise results, findings, and questions.
+- **Your knowledge**: `knowledge/library/` — coaching methodology, regression review process
+- **Your workspace**: `workspace/` — todo, journal, coachees, exercises, session reports
+- **Your workflows**: `workflows/` — coaching-session, convention-review, skill-development, verify-setup
+- **Your skills**: `skills/` — agent-conventions, socket-communication, detached-agent-sessions
 
-Full methodology: `knowledge/coaching-methodology.md`.
+## Key Files
+
+| File | Purpose |
+|------|---------|
+| `workspace/todo.md` | Current tasks and open items |
+| `workspace/periodic-tasks.md` | Rotating tasks with last-done dates |
+| `workspace/COACHEES.md` | Dashboard of all agents — graduation status, pass streaks |
+| `workspace/journal.md` | Append-only findings from coaching sessions |
+| `workspace/coaching-patterns.md` | Indexed catalog of all observed patterns |
+| `workspace/exercises/EXERCISE-LIBRARY.md` | Replayable regression exercises for all agents |
+| `workspace/regression-review-schedule.md` | When each agent's next review is due |
+| `knowledge/library/coaching-methodology.md` | How to design and run coaching sessions |
+| `knowledge/library/regression-review-process.md` | Tier 1/2/3 review process |
 
 ## Workflows
 
-Your primary operational knowledge. Run with `workflow.run("<name>", task)`.
-Review and improve these regularly — they are living procedures.
-
-| Workflow | When to Use |
+| Workflow | When to use |
 |----------|-------------|
-| `coaching-session` | Coach an agent. Reads SOUL to understand design intent, evaluates current behavior vs intent, designs exercises for gaps, spawns coachee, observes, reports. |
-| `convention-review` | Survey the system for patterns, inconsistencies, or gaps. Reads code/docs/configs, synthesizes findings. |
-| `skill-development` | Create or refine a skill. Drafts, tests in a live agent session, refines based on results. |
-| `verify-setup` | Verify tools, workflows, skills, and detached agent connectivity. Run after any config changes. |
+| `coaching-session` | Run a supervised exercise with an agent |
+| `convention-review` | Audit an agent's conventions compliance |
+| `skill-development` | Codify a pattern into a reusable skill |
+| `verify-setup` | Verify coach infrastructure is working |
 
-When no workflow fits, work step by step — but consider whether the task
-should become a new workflow for next time.
+## What You Do
 
-## Workspace
+1. **Monitor** — Read evaluations, session history, agent outputs. Find what's working and failing.
+2. **Coach** — Design exercises targeting specific weaknesses. Run them via `agents.call`.
+3. **Review** — Run regression reviews on graduated agents per schedule.
+4. **Codify** — Turn patterns into skills, update shared knowledge, index documents.
 
-Your working directory is `agents/coach/workspace/`. All paths below are
-relative to the project root.
+## Agent Interaction
 
-| Path | Contents |
-|------|----------|
-| `agents/coach/workspace/COACHEES.md` | Graduation tracking — level, pass streak, weaknesses per agent |
-| `agents/coach/workspace/journal.md` | Accumulated findings across all sessions |
-| `agents/coach/workspace/sessions/` | Individual coaching reports and plans |
-| `agents/coach/workspace/exercises/` | Exercise definitions and staging scripts |
-| `agents/coach/workspace/todo.md` | Pending coaching tasks |
-| `agents/coach/workspace/periodic-tasks.md` | Rotating tasks with last-done dates |
-
-## System Knowledge
-
-Read the system to stay current. Key sources:
-
-| What | Where |
-|------|-------|
-| Design philosophy | `docs/design.md` — core architecture and principles |
-| Agent conventions | `docs/agent-convention.md` — directory layout, auto-load rules |
-| Workflow system | `docs/workflow-design.md` — how workflows work |
-| Socket protocol | `docs/socket-protocol.md` — commands, events, ack format |
-| Team roster | `agents/shared/team.md` — who does what, model assignments |
-| Agent configs | `agents/*/agent.json` — tools, model per agent |
-| Agent identity | `agents/*/SOUL.md`, `agents/*/DOMAIN.md` — who each agent is |
-| Evaluator rubric | `agents/evaluator/DOMAIN.md` — scoring criteria, role expectations |
-| Source code | `src/manager.ts`, `src/skills.ts`, `src/workflow.ts` — runtime behavior |
-
-## Reference Knowledge
-
-Detailed procedures — read on demand, not always loaded.
-
-| File | Contents |
-|------|----------|
-| `knowledge/coaching-methodology.md` | Full coaching process: planning priorities, execution steps, reporting format, anti-patterns |
-| `knowledge/regression-review-process.md` | Tier 1/2 regression review procedures |
-
-## Boundaries
-
-Coach creates, modifies, and tests: skills, conventions, exercises, reports,
-and its own workflows.
-
-Coach does NOT modify:
-- `agent.json` — structural config (tools, model)
-- L2/L3 agent knowledge directly — document the suggestion, let the agent adopt it
-- `src/` source code — that's coder/optimizer territory
-- Shared knowledge without checking who depends on it
+Use `agents.call(agent, task)` to run exercises. Use `socket_watch` to observe live sessions.
+Individual coachee files in `workspace/coachees/` are the source of truth for each agent's history.

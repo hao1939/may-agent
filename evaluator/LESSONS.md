@@ -1,12 +1,20 @@
 # Lessons
 
-## ⛔ CRITICAL: Blind Overwrite Prevention
+## 🔴 CRITICAL: Tool Name Accuracy — Check team.md Before Flagging
 
-**The #1 cause of failure is writing a file after a truncated read.**
-1. **Rule**: If `read()` output contains `[... truncated]`, you **MUST NOT** use `write()`.
-2. **Rule**: Never guess what was in the missing text.
-3. **Fix**: Use `read(path, startLine=N, endLine=M)` to get the full content.
-4. **Fix**: Use `sed` for surgical edits (avoids full-file overwrite risks).
+### `scrape_webpage` is a REAL tool — DO NOT flag it
+`scrape_webpage` is provided by the `scrape` tool preset. Agents with `scrape_webpage` in their
+tools (Scout) have access to it. It is NOT a hallucination.
+
+### `agents` is a REAL tool — DO NOT flag it
+`agents` is the delegation/coordination tool used by supervisors (May, Tech Lead, Optimizer, Bob, Coach).
+It provides actions: call, list, peek, steer, cancel. If an agent calls `agents` with an action like
+`{"action":"call","agent":"scout",...}`, this is correct behavior. DO NOT flag it as a hallucination
+or hard constraint violation.
+
+### General Rule
+Always check `agents/shared/team.md` for each agent's actual toolset before flagging any tool
+as hallucinated or non-existent. The tool names in team.md are the ground truth.
 
 ## ⚠️ Transcript Truncation Awareness
 
@@ -28,7 +36,7 @@
 
 ### Detection
 - **Blind Overwrites**: Flag this aggressively. If an agent writes after a truncated read, max quality score is 40/100.
-- **Tool Hallucinations**: Flag attempts to use `Edit`, `MultiEdit`, `Search`.
+- **Tool Hallucinations**: Flag attempts to use `Edit`, `MultiEdit`, `Search`, `exec`. **Do NOT flag `scrape_webpage` or `agents`** — these are REAL tools. Check `agents/shared/team.md` for each agent's actual toolset before flagging tool hallucination.
 
 ## Operational
 - **Incremental Parsing**: Don't load 50 sessions into memory. Process one, score it, clear memory, process next.

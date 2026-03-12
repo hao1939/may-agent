@@ -14,7 +14,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     `## Checks\n` +
     `1. List your available workflows: workflow.list() — confirm they all load without errors\n` +
     `2. Read agents/coach/workspace/COACHEES.md — confirm it exists\n` +
-    `3. Read agents/coach/knowledge/coaching-methodology.md — confirm it references subagents (not background_exec)\n` +
+    `3. Read agents/coach/knowledge/library/coaching-methodology.md — confirm it references subagents (not background_exec)\n` +
     `4. List agents/coach/skills/ — confirm skill directories exist and each has a SKILL.md\n` +
     `5. Test subagents: subagents.status() — confirm it returns without error\n` +
     `6. Test exec: exec("echo ok") — confirm read-only exec works\n\n` +

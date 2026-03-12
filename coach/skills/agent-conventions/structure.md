@@ -72,7 +72,7 @@ DOMAIN.md should include a section listing what's available in `knowledge/` and
 
 ```markdown
 ## Reference Files
-- `knowledge/coaching-methodology.md` — full coaching process
+- `knowledge/library/coaching-methodology.md` — full coaching process
 - `workspace/COACHEES.md` — graduation tracking per agent
 - `workspace/journal.md` — accumulated findings
 ```

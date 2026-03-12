@@ -1,35 +1,28 @@
 # Coordination Conventions
 
 Delegation, workflows, async patterns. These apply primarily to power agents
-(those with subagents, workflows, or delegation tools) and coach.
+(those with agents tool, workflows, or delegation tools) and coach.
 
-## C1: Use subagents for Delegation (Required, Power)
+## C1: Use agents tool for Delegation (Required, Power)
 
-Always delegate to other agents via the `subagents` tool, never by spawning
-processes through `exec`. The subagents tool provides:
+Always delegate to other agents via the `agents` tool, never by spawning
+processes through `bash`. The agents tool provides:
 - Session lifecycle management
 - Result capture and error propagation
 - Resource cleanup on timeout or cancellation
 - Integration with the persistence layer
 
-Bad: `exec("node run/launcher.ts --agent coder ...")`
-Good: `subagents.run({ agent: "coder", task: "..." })`
+Bad: `bash("node run/launcher.ts --agent coder ...")`
+Good: `agents.call("coder", task)`
 
 ## C2: Detached Mode for Long-Running Sessions (Required, Coach)
 
-When coach spawns a coachee for exercises, use detached mode:
+When coach spawns a coachee for exercises, use detached mode via
+the background_exec tool or the bash tool with process management.
+Detached processes run as independent OS processes that survive
+coach restarts.
 
-```
-subagents.run({ agent: "<name>", task: "...", mode: "detached" })
-```
-
-Detached processes:
-- Run as independent OS processes
-- Survive coach restarts or compaction
-- Create a socket for real-time observation
-- Must be explicitly cancelled when done
-
-Always clean up: `subagents.cancel({ sessionId: "..." })` after exercises.
+Always clean up: `agents.cancel(sessionId)` after exercises.
 
 ## C3: socket_watch Events Are Follow-Ups (Required, Coach)
 
@@ -39,9 +32,9 @@ your turns automatically. You do NOT need to poll.
 Bad (wastes 6+ tool calls):
 ```
 socket_watch.send(watchId, task)
-exec("sleep 15")     // waste
-exec("sleep 20")     // waste
-exec("sleep 25")     // waste
+bash("sleep 15")     // waste
+bash("sleep 20")     // waste
+bash("sleep 25")     // waste
 ```
 
 Good (0 wasted calls):
@@ -81,10 +74,40 @@ the entire workflow. Good multi-agent systems route around partial failures.
 
 Example: "Amy needs a token refresh but we can keep working on Bob's task."
 
-## C7: Check Status, Don't Poll (Required, Power)
+## C7: Check Status via peek (Required, Power)
 
-Use `subagents.status({ sessionId })` or `subagents.result({ sessionId })`
-to check on delegated sessions. Don't loop with sleep waiting for completion.
+Use `agents.peek(sessionId)` to check on running sessions.
+Don't loop with sleep waiting for completion.
 
 For detached sessions that need real-time observation, use socket_watch (C3).
-For synchronous delegation, the subagents tool blocks until completion.
+For synchronous delegation, `agents.call()` blocks until completion.
+
+## C8: Task Boundedness (Required, Power)
+
+When delegating to coder or any execution agent, prefer **bounded tasks** —
+tasks with one clear action and a verifiable end state.
+
+### Rules
+
+1. **Prefer bounded tasks**: "Add function X to file Y" over "refactor module Z"
+2. **Pre-survey for unbounded tasks**: Before asking an agent to "read everything",
+   run `wc -l` / `find` / `grep -c` yourself and decompose:
+   - BAD: "Read all test files and count test cases"
+   - GOOD: "Run `grep -c 'it(' test/*.test.ts` and format as a table"
+3. **Include file paths and line ranges**: If you know where the change goes,
+   say "Edit lines 235-276 of agents/bob/knowledge/domain.md" not "Edit domain.md"
+4. **One file = one task**: Don't ask an agent to edit 6 files in one session.
+   Each file edit is a separate bounded task.
+
+### Why
+
+Good sessions have **one clear action** with a **verifiable end state** (2 turns, ~$0.01).
+Bad sessions require the agent to **build context** before acting, triggering a
+read-re-read spiral (10+ turns, 10-17x cost multiplier). The spiral is worse when
+reads are truncated — the agent tries to recover by reading again with line ranges,
+burning turns without making progress.
+
+### Evidence
+- Bounded sessions: avg 2-3 turns, $0.01-0.02, quality ≥ 0.95
+- Unbounded sessions: avg 7-10+ turns, $0.10-0.25, quality ≤ 0.20
+- See optimizer improvement-proposals.md Finding 2

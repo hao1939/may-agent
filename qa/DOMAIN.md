@@ -23,7 +23,7 @@ Use relative paths.
 
 ## File Reading Rules
 
-- **Use the `read` tool** to read files — not `cat` via exec
+- **Use the `read` tool** to read files — not `cat` via `bash`
 - Always read the actual source files, don't rely on grep output alone
 - Read the full file to understand context, not just the changed lines
 
@@ -43,6 +43,15 @@ Use relative paths.
   5. Only then form your verdict based on what you actually observed.
   6. **If you need to fix code:** use `sed` with pattern matching for surgical fixes. Do NOT use `write()` on a file you only partially read.
 
+### ⛔ Surgical Edits: Always Use sed, Never write()
+
+**This rule applies regardless of whether the file was truncated.**
+
+- For surgical fixes (1-3 lines), **ALWAYS** use `sed` via `bash` — never `write()`.
+- Reserve `write()` for creating **new files** or **complete rewrites** where you are the original author.
+- Even if you have read the full file, `sed` is safer for small changes because it avoids accidental content loss.
+- Example: To fix `>` to `>=` on a specific line, use: `sed -i 's/> maxRetries/>=  maxRetries/' path/to/file.ts`
+
 ## Mandatory Steps (non-negotiable)
 
 Every review MUST include these steps, in order. A review that skips any
@@ -51,8 +60,8 @@ coder's summary looks complete.
 
 1. **Read at least one changed file** with the `read` tool. Not grep, not
    the coder's summary — the actual file. **If the read is truncated, use line-range reads to see the relevant sections — do not proceed with a partial view.**
-2. **Run `npx tsc --noEmit`** via exec. Report the result.
-3. **Run `npx vitest --run`** via exec. Report pass/fail and test count.
+2. **Run `npx tsc --noEmit`** via `bash`. Report the result.
+3. **Run `npx vitest --run`** via `bash`. Report pass/fail and test count.
 4. **Produce a verdict** (PASS/FAIL/CONDITIONAL) with specific rationale
    based on what YOU observed, not what the coder reported.
 
@@ -146,5 +155,5 @@ One of:
 
 - Be specific — cite file names, function names, line content
 - Run the checks yourself — don't assume they pass
-- If you find issues, you may fix them directly — you have write and exec tools
+- If you find issues, you may fix them directly — you have `read`, `write`, `bash`, and `edit` tools
 - If it works correctly and is maintainable, pass it

@@ -1,15 +1,25 @@
 # Knowledge Context
 
+## Team
+Amy explores XHS (Opus). Amy-Kimi explores XHS (Kimi).
+Scout researches (Opus). Bob is Architect (Gemini).
+
+## Design Philosophy (distilled)
+- **User Input as Primary Signal**: Listen to subtext and pattern.
+- **Redundancy + Independent Thought**: Duplicate for emphasis/resilience.
+- **Agent Mission**: Mission-driven, responsible, systematic evolution.
+- **Scope & Responsibility**: Do the job asked, don't expand scope.
+
 ## Skills (distilled)
-- **File safety**: Read before write. Check size with `wc -l` before full read.
-  Never write after truncated read. Verify edits by reading back.
-- **Error handling**: No silent failures. Retry with changes, not blindly.
-  Escalate structurally: sub-agent → agent → human.
+- **Research**: Use `scrape_webpage` for XHS.
+- **File Safety**: Read before write. Verify edits.
+- **Error Handling**: Escalate failures. No silent failures.
+
+## Project Layout
+- `agents/amy/knowledge/library/` — your research archives
+- `agents/amy/workspace/todo.md` — your task queue
 
 ## Available References
-Read on demand when relevant:
-- `knowledge/coaching.md` — coaching session notes
-- `knowledge/JOURNAL.md` — research journal
-- `knowledge/SIGNALS.md` — signal tracking
-- `knowledge/deep-dives/` — deep dive analyses
+- `agents/shared/philosophy.md` — full design philosophy
+- `agents/shared/best-practices.md` — research standards
 - `agents/shared/skills/` — full skill guides

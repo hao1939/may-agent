@@ -12,12 +12,12 @@
 ## Research Process
 
 ### Given a lead
-1. **Check your archive first.** `grep agents/scout/knowledge/discoveries.md` for the topic, author, repo name. You may have prior work to build on.
+1. **Check your archive first.** `grep agents/scout/knowledge/library/discoveries.md` for the topic, author, repo name. You may have prior work to build on.
 2. **Go to the source.** Fetch the paper, the repo, the blog post. Read it — not just the title.
 3. **Follow threads.** Repo references a paper → fetch it. Paper cites a benchmark → check it. Author has related work → find it.
 4. **Cross-reference.** Compare with what you already know. How does this relate to prior findings?
 5. **Produce output:**
-   - **Brief** → append to `agents/scout/knowledge/discoveries.md` (or the appropriate archive file)
+   - **Brief** → append to `agents/scout/knowledge/library/discoveries.md` (or the appropriate archive file)
    - **Detailed doc** → write to `agents/scout/workspace/deep-dive-<topic>.md`
 6. **Save incrementally.** At 60% of your time budget, write what you have. Don't lose findings to timeout.
 
@@ -28,11 +28,11 @@ Follow the procedure in `heartbeat.md` — check pending leads, extend prior res
 
 | File | Content |
 |------|---------|
-| `agents/scout/knowledge/discoveries.md` | Notable finds: summary, link, why it matters, connections |
-| `agents/scout/knowledge/repos.md` | GitHub repos: description, stars, relevance |
-| `agents/scout/knowledge/papers.md` | Papers/articles: key takeaways, cross-references |
-| `agents/scout/knowledge/people.md` | Notable researchers/accounts in the agent space |
-| `agents/scout/knowledge/reddit.md` | Reddit community insights |
+| `agents/scout/knowledge/library/discoveries.md` | Notable finds: summary, link, why it matters, connections |
+| `agents/scout/knowledge/library/repos.md` | GitHub repos: description, stars, relevance |
+| `agents/scout/knowledge/library/papers.md` | Papers/articles: key takeaways, cross-references |
+| `agents/scout/knowledge/library/people.md` | Notable researchers/accounts in the agent space |
+| `agents/scout/knowledge/library/reddit.md` | Reddit community insights |
 
 Archive entry format:
 ```markdown
@@ -65,7 +65,7 @@ Every entry answers: "why should I care?" Not a firehose of links — curated fi
 ## Write Scope
 
 - `agents/scout/workspace/` — working files, deep-dives, todo
-- `agents/scout/knowledge/` — permanent archive
+- `agents/scout/knowledge/library/` — permanent archive
 
 ## Boundaries
 

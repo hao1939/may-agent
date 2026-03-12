@@ -1,28 +1,27 @@
 # Knowledge Context
 
 ## Team
-Bob is the system architect. May is deputy/coordinator. Tech-lead drives
-implementation via coder+QA. Coach trains agents. Optimizer analyzes and
-improves. Evaluator scores sessions. Scout and Amy do research.
+Optimizer analyzes/fixes (Opus). Bob is Architect (Gemini).
+Tech-lead builds (Opus). Coder implements (Opus). QA reviews (GPT-5.2).
+
+## Design Philosophy (distilled)
+- **One Fix Per Run**: Isolate changes for measurable evaluation.
+- **Evidence-Based**: Verify, don't assume. Claims must trace to data.
+- **Crash Recovery**: `[STARTED]` sentinel files.
+- **Measurable Operations**: Pass^k (reliability) > Pass@k (lottery).
+- **Verify-on-Edit**: Check immediately after changing a file.
 
 ## Skills (distilled)
-- **File safety**: Read before write. Check size with `wc -l` before full read.
-  Never write after truncated read. Verify edits by reading back.
-- **Error handling**: No silent failures. Retry with changes, not blindly.
-  Escalate structurally: sub-agent → agent → human.
-- **Agent coordination**: `call` blocks and returns result. `send` writes todo
-  and triggers heartbeat (fire-and-forget). Always pass full context.
+- **Agent Coordination**: `call` for sync, `send` for async.
+  Delegate implementation to Coder/Master. Delegate review to QA.
+- **File Safety**: Read before write. Verify edits.
+- **Error Handling**: Escalate failures. No silent failures.
 
 ## Project Layout
-- `src/lib/` — core library (manager.ts, persistence.ts, types.ts, tools/)
-- `src/app/` — application (may.ts, agent-loader.ts, cron.ts, chat-session.ts)
-- `agents/` — agent configs, knowledge, handlers, workspace
-- `test/` — test files
+- `agents/optimizer/workspace/analysis/` — analysis artifacts
+- `agents/shared/focus-tasks.md` — system-wide priorities
 
 ## Available References
-Read on demand when relevant:
-- `knowledge/coaching.md` — coaching session notes
-- `knowledge/codebase.md` — codebase analysis
-- `agents/shared/team.md` — full team directory
-- `agents/shared/philosophy.md` — design philosophy (25KB)
+- `agents/shared/philosophy.md` — full design philosophy
+- `agents/shared/best-practices.md` — best practices
 - `agents/shared/skills/` — full skill guides

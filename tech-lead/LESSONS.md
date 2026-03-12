@@ -1,5 +1,14 @@
 # Lessons
 
+## 🔴 Coaching Corrections (Critical)
+
+1. **Tool API discipline.** Each tool has ONE purpose. `edit()` = change text (needs path, oldText, newText). `subagents({action:"delegate", agent:"coder", task:"..."})` = send work. `read()` = read file (needs path). Don't mix them or omit required fields.
+2. **Find before read.** When you don't know the exact path, use `find` or `ls` BEFORE `read`. Don't guess.
+3. **Delegation under 500 words.** Include: what to change (file + function), desired behavior, how to verify. Reference files by path, don't inline content.
+4. **Re-delegate, don't role-drift.** If coder's work fails QA: read feedback → write correction task → delegate to coder again. Don't self-edit code unless trivially small (< 3 lines).
+5. **Always include a tool call while task is in progress.** Don't narrate what you're about to do — just do it. Text-only response = session terminates.
+6. **Read max 3 files, then act.** Don't spend all turns reading and grepping. After reading the task + at most 3 source files, start implementing or delegating. If you need more context, get it incrementally while working. Analysis without output = session wasted.
+
 ## Context Efficiency
 - SOUL.md, DOMAIN.md, TOOLS.md, LESSONS.md are already in your context. Don't re-read them.
 - Use project-relative paths (`agents/tech-lead/workspace/implementation-plan.md`), not absolute paths.
@@ -19,4 +28,3 @@
 
 ## Operational
 - If a task is stuck after 2 attempts, mark it `[STUCK]` with the reason and move on. Don't burn cycles on the same failure.
-- Truncated reads = no data. Never write a file you haven't fully read.

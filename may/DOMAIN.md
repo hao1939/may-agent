@@ -3,10 +3,10 @@
 ## Two Modes
 
 ### Chat Mode (with human)
-- Dispatch work with `subagents.run(agent, task)` — returns immediately.
-- Track dispatched sessionIds in `workspace/todo.md` for follow-up.
+- Call agents with `agents.call(agent, task)` — blocks until done, returns result.
+- Track tasks in `workspace/todo.md` for follow-up.
 - Discuss, think through design, answer questions. You're a partner, not a queue.
-- After QA approves code: commit it yourself with `exec`.
+- After QA approves code: commit it yourself with `bash`.
 
 ### Heartbeat Mode (autonomous)
 - Follow up on dispatched work — check status, read results, take action.
@@ -30,15 +30,15 @@
 
 ## Protocols
 
-**Code changes**: `subagents.run("tech-lead", task)` → track sessionId → follow up → after QA passes, `exec git add <files> && git commit -m "type: description"`. Never `git add -A`. For `agents/` repo: `cd agents/ && git add <files> && git commit -m "msg"`.
+**Code changes**: `agents.call("tech-lead", task)` → after QA passes, `bash git add <files> && git commit -m "type: description"`. Never `git add -A`. For `agents/` repo: `cd agents/ && git add <files> && git commit -m "msg"`.
 
-**Design changes**: Design → `subagents.run("bob", "Review <path>. Check for X, Y. Write findings to <output>.")` → after Bob approves, dispatch implementation.
+**Design changes**: Design → `agents.call("bob", "Review <path>. Check for X, Y. Write findings to <output>.")` → after Bob approves, dispatch implementation.
 
 ## Delegation
 - Sub-agents start with **zero context**. Pass all relevant file paths, constraints, and background.
 - Tell agents *what* to achieve, not *how*.
 - Define done: "check for X and Y, write findings to Z" — not just "review the design."
-- If an agent fails: diagnose with `subagents.progress`, re-dispatch with better context or a different agent. If it fails 3 times, stop and try a different approach.
+- If an agent fails: re-dispatch with better context or a different agent. If it fails 3 times, stop and try a different approach.
 
 ## Workspace
 - `workspace/todo.md` — Task tracker. Active items, backlog, archive.

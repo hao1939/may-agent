@@ -10,6 +10,13 @@ This document defines role-specific evaluation criteria. The evaluator uses thes
 
 ---
 
+## Special Instructions: Agent-Specific Criteria
+
+When evaluating an agent, the Evaluator MUST check the target agent's `SOUL.md` for a section titled `## Evaluation Criteria`.
+
+- **If found**: Use those criteria as the primary grading rubric, in addition to the generic Core Metrics.
+- **If not found**: Use the Role-Based Core Metrics defined below.
+
 ## Role: Builder
 **Agents**: Coder, Tech Lead, Master
 
@@ -58,6 +65,22 @@ This document defines role-specific evaluation criteria. The evaluator uses thes
 
 ---
 
+## Role: Evaluator
+**Agents**: Evaluator
+
+### Core Metrics
+1. **Objectivity**: Is the score based on evidence, not vibes?
+2. **Specificity**: Does it cite specific lines or actions?
+3. **Consistency**: Do similar failures get similar scores?
+4. **Actionability**: Can the target agent use this feedback?
+
+### Capability Levels
+- **L1 (Auditor)**: Spots failures. Writes accurate scores.
+- **L2 (Reviewer)**: Provides actionable feedback. Identifies patterns.
+- **L3 (Assessor)**: Designs evaluation systems. Calibrates standards.
+
+---
+
 ## Role: Philosopher/Architect
 **Agents**: Bob, Coach
 
@@ -76,10 +99,33 @@ This document defines role-specific evaluation criteria. The evaluator uses thes
 
 ---
 
+## Tool Awareness — Known Valid Tools
+
+Before flagging `[HALLUCINATION]` for tool usage, check `agents/shared/team.md`.
+Some agents have tool presets that provide sub-tools:
+
+- **`scrape` preset** → provides `scrape_webpage`. Used by Scout and Amy.
+  `scrape_webpage` is a REAL tool. Do NOT flag it as hallucination.
+- **`coding` preset** → provides `read`, `bash`, `edit`, `write`. Used by most agents.
+- **`agents` tool** → provides delegation/coordination with actions: call, list, peek, steer, cancel.
+  Used by May, Tech Lead, Optimizer, Bob, Coach. `agents` is a REAL tool. Do NOT flag it.
+- **`workflow` tool** → provides workflow execution. Used by May, Tech Lead, Optimizer, Coach.
+- **`cron` tool** → provides cron job management. Used by May.
+- **`socket_watch` tool** → provides socket observation. Used by Coach.
+- **`agent-growth` preset** → provides `fork_agent`, `verify_agent`, `promote_agent`, `discard_agent`.
+  Used by Coach. These are REAL tools for agent lifecycle management (forking to .lab/,
+  running verification, promoting changes, cleanup). Do NOT flag them as hallucination.
+
+**Rule**: If an agent uses a tool and it returns results (not an error), it is real.
+Only flag `[HALLUCINATION]` for tools that return errors like "tool not found" or
+that the agent clearly invented (no result returned).
+
+---
+
 ## General Evaluation Flags
 *Apply to all roles*
 
-- **[HALLUCINATION]**: Inventing files, functions, or facts that don't exist.
+- **[HALLUCINATION]**: Inventing files, functions, or facts that don't exist. **Exception**: Check Tool Awareness section above before flagging tool usage.
 - **[LOOPING]**: Repeating the same failed action more than once.
 - **[LAZY]**: Asking the user for information it could have found itself.
 - **[BLIND]**: Editing files without reading them first.

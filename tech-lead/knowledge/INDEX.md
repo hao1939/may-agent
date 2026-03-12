@@ -1,38 +1,32 @@
 # Knowledge Context
 
 ## Team
-Bob is the system architect (Gemini 3 Pro). May is deputy/coordinator (Opus).
-Tech-lead drives implementation via coder+QA (Opus). Coach trains agents (Opus).
-Optimizer analyzes and improves (Opus). Evaluator scores sessions (GPT-5.2).
-Scout and Amy do research (Opus). Amy-Kimi handles Chinese content (Kimi).
-Coder implements, never commits. QA reviews with PASS/FAIL/CONDITIONAL.
-Master uses CLI agents only (claude-code, gemini-cli).
+Tech-lead is the Builder (Opus). Drives implementation via coder+QA.
+Bob is Architect (Gemini). May is Supervisor (Opus).
+Coder implements (Opus). QA reviews (GPT-5.2). Master uses CLI tools (Opus).
 
 ## Design Philosophy (distilled)
-- Filesystem is truth. Sessions are ephemeral, knowledge persists in files.
-- Agents own their context. No shared mutable state.
-- Sync `call` for cooperation, async `send` for todo assignment.
-- The human is ground truth. Evidence over theory.
-- No silent failures. Escalate structurally.
-- Read `agents/shared/philosophy.md` for the full 50+ principles.
+- **Harness Over Model**: System prompt + tools + middleware > model size.
+- **Simplest Thing That Works**: Don't over-engineer. Build for observed failures.
+- **Crash Recovery**: Write state to disk. Recover from `[STARTED]` sentinel.
+- **Deterministic Guardrails**: Use code for routing/structure, LLM for reasoning.
+- **File System as Memory**: Files are context. Directories are indexes.
 
 ## Skills (distilled)
-- **File safety**: Read before write. Check size with `wc -l` before full read.
-  Never write after truncated read. Verify edits by reading back.
-- **Error handling**: No silent failures. Retry with changes, not blindly.
-  Escalate structurally: sub-agent → agent → human.
-- **Agent coordination**: `call` blocks and returns result. `send` writes todo
-  and triggers heartbeat (fire-and-forget). Always pass full context.
+- **Agent Coordination**: Use `agents.call` to block/sync, `agents.send` to async/todo.
+  Delegate implementation to Coder/Master. Delegate review to QA.
+- **File Safety**: Read before write. Verify edits. Don't edit outside workspace
+  unless explicitly tasked.
+- **Error Handling**: Escalate failures. Don't retry blindly.
+- **Workflow**: Use `implement-and-review` for code changes.
 
 ## Project Layout
-- `src/lib/` — core library (manager.ts, persistence.ts, types.ts, tools/)
-- `src/app/` — application (may.ts, agent-loader.ts, cron.ts, chat-session.ts)
-- `agents/` — agent configs, knowledge, handlers, workspace
-- `test/` — test files
+- `src/lib/` — core library
+- `src/app/` — application layer
+- `agents/` — agent configs
+- `test/` — test files (use `npm test` or `npx tsx test/...`)
 
 ## Available References
-Read on demand when relevant:
-- `knowledge/coaching.md` — coaching session notes
-- `agents/shared/philosophy.md` — full design philosophy (25KB)
-- `agents/shared/best-practices.md` — full best practices (24KB)
+- `agents/shared/philosophy.md` — full design philosophy
+- `agents/shared/best-practices.md` — coding standards
 - `agents/shared/skills/` — full skill guides

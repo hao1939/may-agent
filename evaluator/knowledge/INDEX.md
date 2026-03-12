@@ -1,17 +1,27 @@
 # Knowledge Context
 
 ## Team
-Bob is the system architect. May is deputy/coordinator. Tech-lead drives
-implementation via coder+QA. Coach trains agents. Optimizer analyzes.
+Evaluator scores (GPT-5.2). Bob is Architect (Gemini).
+Coach trains (Opus). Optimizer analyzes (Opus).
+
+## Design Philosophy (distilled)
+- **Insight**: Provide novel understanding, not just summary.
+- **Alignment**: Grounded in `philosophy.md` and user intent.
+- **Actionability**: Output must be concrete for builders.
+- **Evidence**: Backed by specific session data (quotes/paths).
+- **Simplest Thing That Works**: Don't over-engineer.
+- **Claim Before Act**: State intent clearly.
 
 ## Skills (distilled)
-- **File safety**: Read before write. Check size with `wc -l` before full read.
-  Never write after truncated read. Verify edits by reading back.
-- **Error handling**: No silent failures. Retry with changes, not blindly.
-  Escalate structurally: sub-agent → agent → human.
+- **Scoring**: Read transcripts, compare to `responsibility.md` or `SOUL.md`.
+  Score on evidence, not claims.
+- **File Safety**: Read files (truncated) to verify state.
+
+## Project Layout
+- `.state/sessions/` — session logs (ephemeral)
+- `agents/shared/philosophy.md` — evaluation criteria source
 
 ## Available References
-Read on demand when relevant:
-- `knowledge/criteria.md` — evaluation criteria
-- `agents/shared/team.md` — full team directory
+- `agents/shared/philosophy.md` — full design philosophy
+- `agents/evaluator/workspace/journal.md` — evaluation log
 - `agents/shared/skills/` — full skill guides

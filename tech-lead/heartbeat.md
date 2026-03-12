@@ -3,8 +3,8 @@
 You're waking up. Check what needs building, then build.
 
 ## 1. Pending Work
-Read `workspace/todo.md`. If there are unchecked items, work the top one to completion.
-Check `workspace/implementation-plan.md` — if a plan is in progress, resume it.
+Read `agents/tech-lead/workspace/todo.md`. If there are unchecked items, work the top one to completion.
+Check `agents/tech-lead/workspace/implementation-plan.md` — if a plan is in progress, resume it.
 
 ## 2. Intake
 Check for new work:
@@ -27,9 +27,9 @@ Don't just fix the error — ask what it tells you. A type error is a fact about
 
 ## 4. Initiative
 If the build is healthy and nothing's queued:
-- **Implementation feedback for Bob**: Read a design doc in `agents/bob/workspace/`. If something won't build cleanly, write feedback to `workspace/pending-decisions.md`.
+- **Implementation feedback for Bob**: Read a design doc in `agents/bob/workspace/`. If something won't build cleanly, write feedback to `agents/tech-lead/workspace/pending-decisions.md`.
 - **Improve the build process**: workflows, test patterns, codebase structure — make implementation faster or more reliable.
-- **Technical debt**: `exec rg "TODO|FIXME|HACK" src/` — fragile code is future errors.
+- **Technical debt**: `exec grep -r "TODO\|FIXME\|HACK" src/` — fragile code is future errors.
 
 ## Output
 Report what you built or what's broken. Keep it short — code speaks louder than status updates.

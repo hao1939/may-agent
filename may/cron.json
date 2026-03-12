@@ -193,11 +193,11 @@
     "type": "job",
     "agent": "bob",
     "intervalMs": 3600000,
-    "message": "[cron:focus-task-driver] Read agents/shared/focus-tasks.md. Pick the focus task most needing attention. Work on it — do actual work, not just docs. Keep iterating until resolved or blocked. Update focus-tasks.md with progress.",
+    "message": "[cron:focus-task-driver] Read agents/shared/focus-tasks.md. Pick the focus task most needing attention. Work on it — do actual work, not just docs. Keep iterating until resolved or blocked. Update focus-tasks.md with progress. SCOPE GUARDRAILS: Do NOT edit any agent's SOUL.md, agent.json, or LESSONS.md files. Those are owned by their respective agents and May/Coach. Stay within your own workspace and shared/ files.",
     "enabled": true,
     "description": "Bob drives focus tasks forward (via run-agent-task, 1h)",
     "handler": "run-agent-task",
-    "lastModified": "2026-03-10T11:17:47.909Z"
+    "lastModified": "2026-03-11T15:01:01.029Z"
   },
   {
     "name": "iraq-conflict-monitor",
@@ -237,5 +237,55 @@
       "heartbeatMessage": "[heartbeat] Read agents/amy-kimi/heartbeat.md and work through each section top to bottom."
     },
     "description": "Amy-Kimi's heartbeat — XHS exploration with Kimi model (1h, pre-checked)"
+  },
+  {
+    "name": "consolidate-memory-bob",
+    "type": "job",
+    "intervalMs": 604800000,
+    "agent": "bob",
+    "message": "[cron:consolidate-memory] Read agents/shared/tasks/consolidate-memory.md and execute it. Your journal is at agents/bob/workspace/journal.md, your knowledge is at agents/bob/knowledge/, your archive is at agents/bob/workspace/archive/.",
+    "enabled": true,
+    "handler": "run-agent-task",
+    "description": "Weekly memory consolidation for Bob — journal → knowledge → archive (7d)"
+  },
+  {
+    "name": "consolidate-memory-scout",
+    "type": "job",
+    "intervalMs": 604800000,
+    "agent": "scout",
+    "message": "[cron:consolidate-memory] Read agents/shared/tasks/consolidate-memory.md and execute it. Your journal is at agents/scout/workspace/journal.md, your knowledge is at agents/scout/knowledge/, your archive is at agents/scout/workspace/archive/.",
+    "enabled": true,
+    "handler": "run-agent-task",
+    "description": "Weekly memory consolidation for Scout — journal → knowledge → archive (7d)"
+  },
+  {
+    "name": "consolidate-memory-coach",
+    "type": "job",
+    "intervalMs": 604800000,
+    "agent": "coach",
+    "message": "[cron:consolidate-memory] Read agents/shared/tasks/consolidate-memory.md and execute it. Your journal is at agents/coach/workspace/journal.md, your knowledge is at agents/coach/knowledge/, your archive is at agents/coach/workspace/archive/.",
+    "enabled": true,
+    "handler": "run-agent-task",
+    "description": "Weekly memory consolidation for Coach — journal → knowledge → archive (7d)"
+  },
+  {
+    "name": "consolidate-memory-optimizer",
+    "type": "job",
+    "intervalMs": 604800000,
+    "agent": "optimizer",
+    "message": "[cron:consolidate-memory] Read agents/shared/tasks/consolidate-memory.md and execute it. Your journal is at agents/optimizer/workspace/journal.md, your knowledge is at agents/optimizer/knowledge/, your archive is at agents/optimizer/workspace/archive/.",
+    "enabled": true,
+    "handler": "run-agent-task",
+    "description": "Weekly memory consolidation for Optimizer — journal → knowledge → archive (7d)"
+  },
+  {
+    "name": "consolidate-memory-amy",
+    "type": "job",
+    "intervalMs": 604800000,
+    "agent": "amy",
+    "message": "[cron:consolidate-memory] Read agents/shared/tasks/consolidate-memory.md and execute it. Your journal is at agents/amy/workspace/journal.md, your knowledge is at agents/amy/knowledge/, your archive is at agents/amy/workspace/archive/.",
+    "enabled": true,
+    "handler": "run-agent-task",
+    "description": "Weekly memory consolidation for Amy — journal → knowledge → archive (7d)"
   }
 ]

@@ -3,23 +3,23 @@
 Track when each task was last done. Pick the most overdue one during heartbeat step 4.
 
 ## Per heartbeat (do one, rotate)
-- [x] **Score distribution check** — Last done: 2026-03-22
+- [x] **Score distribution check** — Last done: 2026-03-12
   Read last 20 evaluations. What's the distribution?
   All "meets_expectations"? That's a red flag — either we're too lenient or agents are perfect.
   Write observations to workspace/progress.md.
 
-- [ ] **Calibration check** — Last done: never
+- [x] **Calibration check** — Last done: 2026-03-12
   Re-read 3 recent evaluations. Are scores consistent? Are verdicts well-justified?
   Compare your scoring across similar sessions — would you give the same score again?
   If drift detected → write calibration note to workspace/calibration.md.
 
-- [ ] **Criteria review** — Last done: never
-  Read the evaluation rubric in knowledge/domain.md.
+- [x] **Criteria review** — Last done: 2026-03-12 (reviewed 2026-03-10)
+  Read the evaluation rubric in agents/evaluator/knowledge/criteria.md.
   Are the criteria still relevant? Any new failure modes not covered?
-  If changes needed → update domain.md.
+  If changes needed → update criteria.md.
 
 ## Monthly
-- [ ] **Full rubric audit** — Last done: never
+- [x] **Full rubric audit** — Last done: 2026-03-10
   Deep review of all evaluation criteria.
   Check against recent philosophy.md changes.
   Are we measuring what matters?
