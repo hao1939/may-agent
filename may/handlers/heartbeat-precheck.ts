@@ -33,6 +33,10 @@ interface PrecheckConfig {
   agent: string;
   heartbeatMessage: string;
   overdueThresholdDays?: number;
+  /** If true, wait for the heartbeat session to finish and send the agent's
+   *  final message to the human via Telegram (ctx.notify). Non-blocking —
+   *  the handler returns immediately, notification is sent async. */
+  notifyBrief?: boolean;
 }
 
 interface PrecheckResult {
@@ -62,6 +66,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
   const agentName = config.agent;
   const heartbeatMessage = config.heartbeatMessage || entry.message;
   const overdueThresholdDays = config.overdueThresholdDays ?? 7;
+  const notifyBrief = config.notifyBrief === true;
 
   return async () => {
     let result: PrecheckResult;
@@ -71,7 +76,8 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
       // Pre-check failed — fire heartbeat to be safe
       const errMsg = err instanceof Error ? err.message : String(err);
       ctx.log(`[heartbeat-precheck:${agentName}] Pre-check error: ${errMsg} — firing heartbeat`);
-      ctx.manager.run(agentName, heartbeatMessage, { source: "cron" });
+      const sessionId = ctx.manager.run(agentName, heartbeatMessage, { source: "cron" });
+      if (notifyBrief) waitAndNotify(ctx, agentName, sessionId);
       return;
     }
 
@@ -83,12 +89,37 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
       if (result.hasTodoItems) reasons.push(`${result.todoCount} todo item(s)`);
       if (result.hasOverdueTasks) reasons.push(`overdue: ${result.overdueTasks.join(", ")}`);
       ctx.log(`[heartbeat-precheck:${agentName}] Work found (${reasons.join("; ")}) — firing heartbeat`);
-      ctx.manager.run(agentName, heartbeatMessage, { source: "cron" });
+      const sessionId = ctx.manager.run(agentName, heartbeatMessage, { source: "cron" });
+      if (notifyBrief) waitAndNotify(ctx, agentName, sessionId);
     } else {
       ctx.log(`[heartbeat-precheck:${agentName}] No work — skipping heartbeat`);
     }
   };
 };
+
+// ── Async brief notification ──────────────────────────────────────────
+
+/**
+ * Wait for a heartbeat session to finish, then send the agent's last
+ * assistant message to the human via ctx.notify(). Non-blocking — runs
+ * in background, errors are logged and swallowed.
+ */
+function waitAndNotify(ctx: HandlerContext, agentName: string, sessionId: string): void {
+  ctx.manager.waitFor(sessionId).then((taskResult) => {
+    const text = taskResult.lastAssistantText?.trim();
+    if (!text) {
+      ctx.log(`[heartbeat-precheck:${agentName}] Session finished but no assistant text — skipping brief`);
+      return;
+    }
+    // Prefix with agent name so the human knows who's reporting
+    const brief = `📋 *${agentName}* heartbeat brief:\n\n${text}`;
+    ctx.notify(brief);
+    ctx.log(`[heartbeat-precheck:${agentName}] Brief sent (${text.length} chars)`);
+  }).catch((err: unknown) => {
+    const errMsg = err instanceof Error ? err.message : String(err);
+    ctx.log(`[heartbeat-precheck:${agentName}] Failed to get brief: ${errMsg}`);
+  });
+}
 
 // ── Pre-check logic ───────────────────────────────────────────────────
 
