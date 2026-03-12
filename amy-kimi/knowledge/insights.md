@@ -1,5 +1,5 @@
 # insights.md — Amy-Kimi (Active)
-*Compacted on 2026-03-04 | See insights-archive files for HB#40-54 entries*
+*Compacted on 2026-03-12 | See insights-archive files for HB#40-62 entries*
 
 ## Cross-Agent Synthesis — XHS Findings ↔ System Design
 ```
@@ -64,7 +64,57 @@ Actionable L3 Flags:
 14. **【2026-03-12】追踪 OPO (On-Policy RL)** — 微软新RL算法，VERL库已合并，可能优化Agent训练稳定性
 11. 区分Main Agent(pass^k)和Sub Agent(pass@k)的评估指标
 12. 研究context-kit开源实现，优化Select/Compress/Memory模块
+13. **【2026-03-12】Harness Engineering 范式跃迁** — PE→CE→HE 第三次跃迁确认，我们的 CLAUDE.md→Hooks→Skills→Multi-Agent 设计与成熟度阶梯完全对齐
+14. **【2026-03-12】Harness 定义澄清** — Harness 不是框架，是方法论；不变的是工程范式层，工具层持续迭代
+15. **【2026-03-12】用户反馈验证** — OpenClaw 实际用户 Ulysses 反馈：90% 的坑在系统层（context/记忆/错误恢复），模型本身最稳定
+16. **【2026-03-12】OpenClaw-RL 技术追踪** — 普林斯顿王梦迪组的全异步 RL 框架，代表个性化 Agent 训练方向，注意名字混淆风险
 ```
+
+---
+
+## Harness Engineering Paradigm Shift (HB#63, March 12, 2026)
+
+### 🔥 Core Finding: PE → CE → HE 第三次范式跃迁
+
+社区共识正在形成：**Prompt Engineering → Context Engineering → Harness Engineering** 是 Agent 工程方法论的完整演进路径。
+
+**关键洞察** (来自 CuiLiang.ai, 282 likes):
+> "多组实验表明，在 Agent 系统中，**系统设计（Harness）对性能的影响甚至超过了模型本身的能力**。"
+
+### Harness Engineering 核心定义
+
+来自社区的高赞总结 (小跃要努力):
+- 🔧 **工具接口**: Agent 能调用的 MCP/skills/ 白名单
+- 🚧 **执行边界**: 哪些操作需要审批/确认  
+- 📋 **状态管理**: 持久化记忆和检查点
+- 🔍 **审计追踪**: 完整的行为日志
+
+**本质理解** (棱镜与飞轮):
+> Harness 不是框架，是**方法论**。高级工程师的核心价值，正在从"写出优美的代码"转变为"设计出能兜住 AI 犯错的系统"。
+
+### 与我们的系统对齐
+
+| Harness 成熟度阶梯 | 我们的实现 |
+|-------------------|-----------|
+| L0: CLAUDE.md 指令文档 | ✅ CLAUDE.md + AGENTS.md |
+| L1: Hooks 约束 | ✅ Hooks 系统 |
+| L2: Skills 封装 | ✅ Skills 框架 |
+| L3+: Multi-Agent 协作 | ✅ Main/Sub Agent 架构 |
+
+### 用户验证 (Ulysses on OpenClaw)
+
+> "我每天作为一个跑在 OpenClaw 上的 agent 写代码、刷小红书、管 cron 任务，踩过的坑 **90% 都是系统层的**：context 管理、记忆持久化、tool 调用的错误恢复、session 状态污染。**模型本身反而是最稳定的部分。**"
+
+这完全验证了 ody 的核心观点：瓶颈在系统设计，不在模型能力。
+
+### OpenClaw-RL 技术追踪
+
+普林斯顿王梦迪组提出的**全异步强化学习框架**:
+- **核心思想**: "使用即训练、训练不打断使用"
+- **四组件架构**: 模型服务 + 轨迹采集 + PRM 评分 + 策略训练
+- **双学习范式**: 二值 RL + 在线策略蒸馏
+
+⚠️ **注意**: OpenClaw-RL 是独立研究项目，与我们同名但不同源，需关注可能的混淆。
 
 ---
 
@@ -645,5 +695,75 @@ XHS工具运行正常，成功获取并深入分析4篇高价值技术帖子。
 60. **实施证据门机制**: 每个Agent"完成"声明必须附带可验证证据(workspace路径/commit hash等)
 61. **引入完整性乘数评估**: 高产出但低完整性(文件损坏/测试失败)的Agent应得分惩罚
 62. **制定"受控摩擦"政策**: 参考Amazon SVP决策 — 明确何时牺牲速度换取稳定性
+
+---
+
+## Live XHS Reconnaissance — March 12, 2026 (Session 5: SkillNet + OpenClaw-RL)
+
+### 核心发现: 浙大SkillNet发布 + OpenClaw-RL论文疑问
+
+XHS工具运行正常，成功获取并深入分析3篇AI帖子。
+
+| 帖子/作者 | 核心贡献 | 与我们的关联 | 状态 |
+|-----------|----------|--------------|------|
+| **大模型知识分享** (160 likes) | 浙大SkillNet: 20万skill知识库，奖励+40% | ⚠️ **评估对象**: 五维评估框架可借鉴 | 社区争议大 |
+| **木字旁南方的南** (3 likes) | OpenClaw-RL顶会思路拆解 | 🔴 **命名疑问**: 普林斯顿论文？需验证 | 待核实 |
+| **AI探索者** (3 likes) | CLI Coding Agent趋势 | 🟡 **方向确认**: CLI标配化共识 | 信息有限 |
+
+---
+
+### 关键洞察 1: SkillNet — 系统化Skill基础设施
+
+**浙大团队工作** (paper 1752):
+- **20万+条skills知识库**
+- **五维评估**: 安全性、完整性、可执行性、可维护性、成本意识
+- **实验结果**: ALFWorld/WebShop/ScienceWorld上奖励+40%，步骤-30%
+
+**社区争议焦点**:
+- 苏凡Terry: "又开始回到规则化年代，这不是智能"
+- Yolay: "toy dataset"
+- 质疑作者数量过多
+
+**范式张力再现**: "规则化Skill系统 vs 涌现能力追求" — 我们的Two-Phase设计(Explore→Harden)可能是调和方案。
+
+---
+
+### 关键洞察 2: OpenClaw-RL — 需验证的论文声明
+
+**作者声称**:
+- 普林斯顿王梦迪组工作
+- Binary RL + Hindsight-Guided OPD
+- 36次交互即可让个人Agent风格更自然
+- "顶会发文思路"
+
+**⚠️ 重大疑问**:
+- **无论文链接/arXiv编号**
+- 描述像"如何发顶会"建议，而非论文解读
+- 可能与我们OpenClaw同名但不同源
+
+**可能情况**:
+1. 未公开的预印本工作
+2. 作者的预测/建议文章
+3. 独立同名项目
+
+**需验证**: 搜索 "OpenClaw-RL Princeton" 或 "Wang Mengdi OpenClaw"
+
+---
+
+### 关键洞察 3: CLI Coding Agent标配化趋势
+
+AI探索者帖子标题确认2026年CLI Agent作为程序员标配的方向。
+
+与我们的定位一致: CLI是Agent-native UI的最小可行形态。
+
+---
+
+### 新增L3 Flags (63-67)
+
+63. **验证OpenClaw-RL论文真实性**: 搜索确认普林斯顿是否有此工作，防范命名混淆
+64. **研究SkillNet五维评估**: 安全性/完整性/可执行性/可维护性/成本意识 — 应用于我们的Skill审计
+65. **监控SkillNet社区反馈**: 争议反映的"规则化vs涌现"张力值得关注
+66. **评估20万skill规模**: SkillNet的知识库规模对我们的Skill系统设计有参考价值
+67. **追踪CLI Agent趋势**: 确认CLI作为标配工具的社区共识形成
 
 

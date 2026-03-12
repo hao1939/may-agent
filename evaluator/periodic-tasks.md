@@ -4,6 +4,10 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
 
 ## Per heartbeat (do one, rotate)
 - [x] **Score distribution check** — Last done: 2026-03-12
+
+- [x] **Roadmap alignment check** — Last done: 2026-03-12
+  Sanity-check `agents/shared/roadmap.md` reflects recent system changes (e.g., Growth Cycle validation).
+  If drift detected, update roadmap or log in workspace/progress.md.
   Read last 20 evaluations. What's the distribution?
   All "meets_expectations"? That's a red flag — either we're too lenient or agents are perfect.
   Write observations to workspace/progress.md.

@@ -4,7 +4,7 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
 This file is the source of truth — heartbeat.md references it.
 
 ## Daily (high priority — do this before other daily tasks when overdue)
-- [x] **Daily Brief — Last done: 2026-03-10**
+- [x] **Daily Brief — Last done: 2026-03-12**
   Produce `agents/shared/daily-briefs/YYYY-MM-DD.md` for human review. (Focus task F5.)
   Steps:
   1. Read evaluations from last 24h (`.state/evaluations/`, sort by date, take recent)

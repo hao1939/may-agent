@@ -10,10 +10,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Latest: Found and fixed critical bug — all detached cron jobs failing with ERR_MODULE_NOT_FOUND
   because Cron.projectRoot was computed as 1 level up from cron.json instead of 2 levels.
 
-- [x] **Cost outlier scan** — Last done: 2026-03-11
+- [x] **Cost outlier scan** — Last done: 2026-03-25
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
+  Latest: 139/674 sessions (20.6%) > $2. Key findings: (1) maxTurns-capped sessions cost 5-7x normal (tech-lead $7.70 vs $1.11), (2) most agents have 0% prompt cache hit rate — only bob (84%) and qa (62%) get cache hits, (3) recurring tool schema errors waste turns. See improvement-proposals.md Finding 6.
 
 - [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-11
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?

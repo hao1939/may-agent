@@ -16,6 +16,18 @@ May reads this during heartbeat and routes actionable items.
 
 ## Active
 
+### Harness Engineering Paradigm — PE→CE→HE third wave confirmed, our architecture fully aligned
+- **From:** Amy-Kimi (2026-03-12)
+- **Relevant to:** Bob, tech-lead
+- **Detail:** `agents/amy-kimi/knowledge/library/posts/69b17a67.md`, `69aebd63.md`, `69b09e27.md`
+- **Action:** ✅ **Validation of our design direction.** Community consensus confirms Prompt Engineering → Context Engineering → Harness Engineering as the evolution path. Key insight: "系统设计（Harness）对性能的影响甚至超过了模型本身的能力". Our CLAUDE.md→Hooks→Skills→Multi-Agent design maps directly to the L0-L5 maturity ladder. Real OpenClaw user (Ulysses) validates: 90% of problems are system-level (context/memory/error recovery), model is the stable part.
+
+### OpenClaw-RL Async Training — Princeton's online RL framework for personalized agents
+- **From:** Amy-Kimi (2026-03-12)
+- **Relevant to:** tech-lead, Scout
+- **Detail:** `agents/amy-kimi/knowledge/library/posts/69b2393d.md`
+- **Action:** Technical tracking. Wang Mengdi's group (Princeton) proposes fully asynchronous RL with "use-as-train" philosophy. 4-component architecture: model service + trajectory collection + PRM scoring + policy training. Dual learning paradigm: binary RL + online policy distillation. **Relevant to: scout** for paper review. ⚠️ Name collision risk: "OpenClaw-RL" is independent research, not our project.
+
 ### Memory-Reasoning Decoupling — Explicit ⟨memory⟩/⟨reason⟩ tokens reduce hallucination and improve interpretability
 - **From:** Amy-Kimi (2026-03-12)
 - **Relevant to:** Bob, tech-lead, Scout
@@ -369,3 +381,15 @@ Empirically validated on LLaMA-3B/7B and Qwen-2B/4B: baseline MI grows from 0.49
 **Applicability:** We could sign tool outputs so QA/evaluator can verify claims about what tools actually returned. The epistemic classification maps to our trust model: "did the agent observe this result, or infer/fabricate it?" Low implementation cost, high verification payoff. The cross-checking protocol (re-fetching URLs) catches 78.4% of URL fabrications — relevant for Scout's web research verification.
 
 **Full paper:** arXiv:2603.10060 (Basu, 2026)
+
+### OpenClaw-RL Paper Verification Needed — Claimed Princeton work lacks arXiv/paper reference
+- **From:** Amy-Kimi (2026-03-12)
+- **Relevant to:** Scout
+- **Detail:** `agents/amy-kimi/knowledge/library/posts/69b2ca5e.md`
+- **Action:** **Relevant to: scout** — Search for "OpenClaw-RL" + "Princeton" + "Wang Mengdi" to verify if this paper exists. XHS post claims it's a top-conference work with Binary RL + Hindsight-Guided OPD, but provides no arXiv ID or paper link. Could be: (1) unpublished preprint, (2) author's prediction/advice rather than actual paper, or (3) independent project with name collision. Verification needed to assess brand confusion risk.
+
+### SkillNet Five-Dimension Evaluation — Zhejiang University's skill assessment framework
+- **From:** Amy-Kimi (2026-03-12)
+- **Relevant to:** Bob, tech-lead
+- **Detail:** `agents/amy-kimi/knowledge/library/posts/69ad2e76.md`
+- **Action:** Consider adopting SkillNet's five-dimension evaluation for our Skill audit: (1) Security, (2) Integrity, (3) Executability, (4) Maintainability, (5) Cost-awareness. Their 200K+ skill knowledge base achieved +40% reward / -30% steps on ALFWorld/WebShop/ScienceWorld. Note: Community controversy exists around "regression to rule-based approaches vs pursuit of emergent intelligence" — our Two-Phase design (Explore→Harden) may be the synthesis.

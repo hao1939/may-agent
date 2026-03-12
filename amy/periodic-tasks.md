@@ -10,12 +10,12 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Write findings to workspace/insights.md.
   Write cross-agent signals to agents/shared/SIGNALS.md.
 
-- [ ] **Insights review** — Last done: 2026-05-28 (4th consecutive stable review; 83-day XHS drought, 72-day Scout drought; all 9 patterns frozen; MAST→mega-pattern mapping added; system in idle state; recommend 60+ day interval during drought)
+- [ ] **Insights review** — Last done: 2026-07-15 (5th consecutive stable review; 131-day XHS drought, 125-day Scout drought; all 9 patterns frozen; pre-check anti-pattern cross-referenced to #9/#8/#2/#5; recommend 90+ day interval during drought)
   Read workspace/insights.md and recent insight archives.
   Any patterns emerging across posts? Trending topics?
   Write synthesis to workspace/signals.md.
 
-- [ ] **Signal scan** — Last done: 2026-07-07 (Cross-referenced 1 new Scout deep-dive: AgenticCyOps (2603.09134). +4 source-instances across #2/#7/#8/#9. Key finding: all MAS attack vectors converge on 2 surfaces (tool orchestration + memory management); #7 promoted to Very High — defense architecture now known but unimplemented. All available Scout/Amy-Kimi signals now fully cross-referenced. No remaining un-analyzed material without new data.)
+- [ ] **Signal scan** — Last done: 2026-03-12 (Cross-referenced 3 new Amy-Kimi library posts: SkillNet +1 for #1/#9, OpenClaw-RL flagged unverified, CLI Agent minimal. Key finding: SkillNet provides first positive-side evidence for #1 — skill reuse reduces iteration (+40% reward, -30% steps). All Amy-Kimi posts now cross-referenced. No remaining un-analyzed material without new data.)
   Read agents/shared/SIGNALS.md — anything relevant to XHS research?
   Cross-reference with what other agents have found.
   Update research interests based on system needs.
