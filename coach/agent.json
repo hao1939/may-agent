@@ -10,6 +10,5 @@
     "agent-growth",
     "workflow"
   ],
-  "memoryLimit": 10,
-  "maxTurns": 50
+  "memoryLimit": 10
 }

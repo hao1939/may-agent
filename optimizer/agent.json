@@ -7,6 +7,5 @@
     "coding",
     "agents",
     "workflow"
-  ],
-  "maxTurns": 30
+  ]
 }

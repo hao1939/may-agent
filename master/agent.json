@@ -6,6 +6,5 @@
   "tools": [
     "claude-code",
     "gemini-cli"
-  ],
-  "maxTurns": 40
+  ]
 }

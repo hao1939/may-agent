@@ -1,10 +1,9 @@
 {
   "name": "coder",
-  "description": "Writes code, runs tests — does not commit",
+  "description": "Writes code, runs tests \u2014 does not commit",
   "domain": "may-agent implementation",
   "model": "opus",
   "tools": [
     "coding"
-  ],
-  "maxTurns": 30
+  ]
 }

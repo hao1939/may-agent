@@ -5,6 +5,5 @@
   "model": "gpt52",
   "tools": [
     "coding"
-  ],
-  "maxTurns": 20
+  ]
 }
