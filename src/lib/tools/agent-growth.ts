@@ -1,4 +1,3 @@
-
 import { Type } from "@mariozechner/pi-ai";
 import { type AgentTool } from "@mariozechner/pi-agent-core";
 import { resolve, join } from "node:path";
@@ -52,14 +51,19 @@ export function createAgentGrowthTools(opts: AgentGrowthToolOptions): AgentTool[
           config.name = dest;
           writeFileSync(configPath, JSON.stringify(config, null, 2));
           loadAgent(destDir);
-          return { 
-            content: [{ type: "text", text: `Forked "${source}" to "${dest}" in .lab/\n` +
-                    `- Source: ${sourceDir}\n` +
-                    `- Dest: ${destDir}\n` +
-                    `- Registered as: ${dest}\n` +
-                    `You can now edit files in agents/.lab/${dest}/ and use call("${dest}", ...) to verify.`
-            }],
-            details: undefined
+          return {
+            content: [
+              {
+                type: "text",
+                text:
+                  `Forked "${source}" to "${dest}" in .lab/\n` +
+                  `- Source: ${sourceDir}\n` +
+                  `- Dest: ${destDir}\n` +
+                  `- Registered as: ${dest}\n` +
+                  `You can now edit files in agents/.lab/${dest}/ and use call("${dest}", ...) to verify.`,
+              },
+            ],
+            details: undefined,
           };
         } catch (err: any) {
           throw new Error(`Failed to fork: ${err.message}`);
@@ -73,7 +77,9 @@ export function createAgentGrowthTools(opts: AgentGrowthToolOptions): AgentTool[
       parameters: Type.Object({
         agent: Type.String({ description: "Name of the agent to test (e.g. 'coder-v2')" }),
         task: Type.String({ description: "The prompt/instruction to send" }),
-        expected: Type.Optional(Type.String({ description: "Optional specific success criteria to check (for logging)" })),
+        expected: Type.Optional(
+          Type.String({ description: "Optional specific success criteria to check (for logging)" }),
+        ),
       }),
       execute: async (toolCallId, args: unknown) => {
         const { agent, task } = args as { agent: string; task: string; expected?: string };
@@ -84,12 +90,17 @@ export function createAgentGrowthTools(opts: AgentGrowthToolOptions): AgentTool[
           const result = await manager.callAgent(agent, task);
           const output = result.lastAssistantText || "No output";
           return {
-            content: [{ type: "text", text: `Verification run for ${agent}:\n` +
-                    `Task: "${task.slice(0, 100)}..."\n` +
-                    `Output: ${output.slice(0, 500)}...\n` +
-                    `(Full output omitted for brevity)`
-            }],
-            details: undefined
+            content: [
+              {
+                type: "text",
+                text:
+                  `Verification run for ${agent}:\n` +
+                  `Task: "${task.slice(0, 100)}..."\n` +
+                  `Output: ${output.slice(0, 500)}...\n` +
+                  `(Full output omitted for brevity)`,
+              },
+            ],
+            details: undefined,
           };
         } catch (err: any) {
           throw new Error(`Verification failed: ${err.message}`);
@@ -138,13 +149,18 @@ export function createAgentGrowthTools(opts: AgentGrowthToolOptions): AgentTool[
           rmSync(sourceDir, { recursive: true, force: true });
           reloadAgent(target);
           return {
-            content: [{ type: "text", text: `Promoted "${source}" to "${target}".\n` +
-                    `- Copied: ${promoted.join(", ")}\n` +
-                    `- Deleted: ${sourceDir}\n` +
-                    `- Reloaded: ${target}\n` +
-                    `Changes are now live.`
-            }],
-            details: undefined
+            content: [
+              {
+                type: "text",
+                text:
+                  `Promoted "${source}" to "${target}".\n` +
+                  `- Copied: ${promoted.join(", ")}\n` +
+                  `- Deleted: ${sourceDir}\n` +
+                  `- Reloaded: ${target}\n` +
+                  `Changes are now live.`,
+              },
+            ],
+            details: undefined,
           };
         } catch (err: any) {
           throw new Error(`Promote failed: ${err.message}`);
@@ -168,7 +184,10 @@ export function createAgentGrowthTools(opts: AgentGrowthToolOptions): AgentTool[
         try {
           manager.unregister(agent);
           rmSync(agentDir, { recursive: true, force: true });
-          return { content: [{ type: "text", text: `Discarded experiment "${agent}". Directory deleted.` }], details: undefined };
+          return {
+            content: [{ type: "text", text: `Discarded experiment "${agent}". Directory deleted.` }],
+            details: undefined,
+          };
         } catch (err: any) {
           throw new Error(`Discard failed: ${err.message}`);
         }

@@ -74,7 +74,9 @@ describe("collectCoachingReport", () => {
 
   it("reads coach todo backlog count", () => {
     writeEval("s_1", "coder", 0.8, 0.7, "good");
-    writeFileSync(resolve(agentsRoot, "coach", "workspace", "todo.md"), `# TODO
+    writeFileSync(
+      resolve(agentsRoot, "coach", "workspace", "todo.md"),
+      `# TODO
 
 - [ ] Coach scout graduation
 - [ ] Coach bob safe-edit
@@ -82,7 +84,8 @@ describe("collectCoachingReport", () => {
 
 # Tracking
 - [ ] This should not count
-`);
+`,
+    );
 
     const report = collectCoachingReport({ persistDir, agentsRoot });
     expect(report).toContain("Coach backlog: 2");

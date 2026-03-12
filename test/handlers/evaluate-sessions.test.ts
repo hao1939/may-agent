@@ -109,13 +109,17 @@ describe("findParentsWithUnevaluatedChildren", () => {
   });
 
   it("skips sessions without transcript", () => {
-    createSession("s_no_transcript", {
-      agent: "coder",
-      status: "complete",
-      startedAt: Date.now(),
-      task: "empty session",
-      parentSessionId: "s_parent_1",
-    }, false); // no transcript
+    createSession(
+      "s_no_transcript",
+      {
+        agent: "coder",
+        status: "complete",
+        startedAt: Date.now(),
+        task: "empty session",
+        parentSessionId: "s_parent_1",
+      },
+      false,
+    ); // no transcript
 
     expect(findParentsWithUnevaluatedChildren(persistDir)).toEqual([]);
   });

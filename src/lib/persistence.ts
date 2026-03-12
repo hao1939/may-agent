@@ -1,4 +1,14 @@
-import { readFileSync, writeFileSync, appendFileSync, mkdirSync, existsSync, renameSync, rmSync, copyFileSync, readdirSync } from "node:fs";
+import {
+  readFileSync,
+  writeFileSync,
+  appendFileSync,
+  mkdirSync,
+  existsSync,
+  renameSync,
+  rmSync,
+  copyFileSync,
+  readdirSync,
+} from "node:fs";
 import { join, dirname } from "node:path";
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { SubagentDefinition } from "./types.js";
@@ -187,7 +197,12 @@ export function appendMemoryEntry(persistDir: string, name: string, entry: Memor
 
 /** Read the last N memory entries (or all if limit is not specified).
  *  Corrupted lines are skipped with a warning. */
-export function readMemoryEntries(persistDir: string, name: string, limit?: number, includeCorrupted: boolean = false): MemoryEntry[] {
+export function readMemoryEntries(
+  persistDir: string,
+  name: string,
+  limit?: number,
+  includeCorrupted: boolean = false,
+): MemoryEntry[] {
   const entries = readJsonlFile<MemoryEntry>(memoryPath(persistDir, name));
   if (limit !== undefined) {
     if (limit <= 0) return [];
@@ -353,7 +368,11 @@ export class RegistryStore {
 
   /** Update session status (running/done/error/interrupted/idle).
    *  Reads the current meta.json, updates in place, writes back. */
-  updateSessionStatus(sessionId: string, status: "running" | "done" | "error" | "interrupted" | "idle", error?: string): void {
+  updateSessionStatus(
+    sessionId: string,
+    status: "running" | "done" | "error" | "interrupted" | "idle",
+    error?: string,
+  ): void {
     const session = readSessionMeta(this.persistDir, sessionId);
     if (!session) return;
     session.status = status;

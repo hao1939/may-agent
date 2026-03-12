@@ -87,7 +87,9 @@ function formatEventBatch(label: string, events: ParsedEvent[]): string {
       }
       case "connected": {
         const raw = event.raw as { maySession?: string; activeAgents?: unknown[] };
-        lines.push(`[connected] session: ${raw.maySession ?? "?"}, active agents: ${JSON.stringify(raw.activeAgents ?? [])}`);
+        lines.push(
+          `[connected] session: ${raw.maySession ?? "?"}, active agents: ${JSON.stringify(raw.activeAgents ?? [])}`,
+        );
         break;
       }
       case "session_start": {
@@ -143,20 +145,50 @@ export interface SocketWatchToolOptions {
 // ── Tool params ─────────────────────────────────────────────────────────
 
 const SocketWatchParams: TSchema = Type.Object({
-  action: StringEnum(
-    ["connect", "send", "disconnect", "list"] as const,
-    { description: "Action to perform on socket connections." },
-  ),
+  action: StringEnum(["connect", "send", "disconnect", "list"] as const, {
+    description: "Action to perform on socket connections.",
+  }),
   socketPath: Type.Optional(Type.String({ description: "Path to Unix domain socket (required for 'connect')" })),
-  watchId: Type.Optional(Type.String({ description: "Watch ID returned by connect (required for 'send', 'disconnect')" })),
-  data: Type.Optional(Type.Unknown({ description: "JSON data to send to the socket (required for 'send'). Must be a valid socket protocol command object." })),
-  label: Type.Optional(Type.String({ description: "Human-readable label for this connection (optional for 'connect')" })),
-  debounceMs: Type.Optional(Type.Number({ description: "Debounce interval in ms — events are batched and delivered after this much silence (default: 3000)" })),
-  interrupt: Type.Optional(Type.Boolean({ description: "If true, use steer (interrupting) instead of followUp (non-interrupting) for event injection (default: false)" })),
-  filter: Type.Optional(Type.Array(Type.String(), { description: "Event types to forward. Default: text, tool_call, tool_result, info, session_start, session_end, connected. Use ['*'] for all." })),
+  watchId: Type.Optional(
+    Type.String({ description: "Watch ID returned by connect (required for 'send', 'disconnect')" }),
+  ),
+  data: Type.Optional(
+    Type.Unknown({
+      description:
+        "JSON data to send to the socket (required for 'send'). Must be a valid socket protocol command object.",
+    }),
+  ),
+  label: Type.Optional(
+    Type.String({ description: "Human-readable label for this connection (optional for 'connect')" }),
+  ),
+  debounceMs: Type.Optional(
+    Type.Number({
+      description: "Debounce interval in ms — events are batched and delivered after this much silence (default: 3000)",
+    }),
+  ),
+  interrupt: Type.Optional(
+    Type.Boolean({
+      description:
+        "If true, use steer (interrupting) instead of followUp (non-interrupting) for event injection (default: false)",
+    }),
+  ),
+  filter: Type.Optional(
+    Type.Array(Type.String(), {
+      description:
+        "Event types to forward. Default: text, tool_call, tool_result, info, session_start, session_end, connected. Use ['*'] for all.",
+    }),
+  ),
 });
-interface SocketWatchInput { action: "connect" | "send" | "disconnect" | "list"; socketPath?: string; watchId?: string; data?: unknown; label?: string; debounceMs?: number; interrupt?: boolean; filter?: string[]; }
-
+interface SocketWatchInput {
+  action: "connect" | "send" | "disconnect" | "list";
+  socketPath?: string;
+  watchId?: string;
+  data?: unknown;
+  label?: string;
+  debounceMs?: number;
+  interrupt?: boolean;
+  filter?: string[];
+}
 
 /**
  * Create a socket watch tool for connecting to Unix domain sockets.
@@ -164,9 +196,7 @@ interface SocketWatchInput { action: "connect" | "send" | "disconnect" | "list";
  * Returns the tool and a cleanup function. The cleanup function disconnects
  * all active socket connections — call it when the agent's session ends.
  */
-export function createSocketWatchTool(
-  opts: SocketWatchToolOptions,
-): { tool: AgentTool; cleanup: () => void } {
+export function createSocketWatchTool(opts: SocketWatchToolOptions): { tool: AgentTool; cleanup: () => void } {
   const { manager } = opts;
   const watches = new Map<string, WatchEntry>();
 
@@ -205,7 +235,11 @@ export function createSocketWatchTool(
       if (entry.debounceTimer) clearTimeout(entry.debounceTimer);
       // Flush remaining events before disconnecting
       flushEvents(entry);
-      try { entry.socket.destroy(); } catch { /* ignore */ }
+      try {
+        entry.socket.destroy();
+      } catch {
+        /* ignore */
+      }
     }
     watches.clear();
   }
@@ -238,9 +272,7 @@ export function createSocketWatchTool(
             const debounceMs = params.debounceMs ?? 3000;
             const interrupt = params.interrupt ?? false;
             const filterArray = params.filter;
-            const filter = filterArray?.includes("*")
-              ? new Set(["*"])
-              : new Set(filterArray ?? [...DEFAULT_FILTER]);
+            const filter = filterArray?.includes("*") ? new Set(["*"]) : new Set(filterArray ?? [...DEFAULT_FILTER]);
 
             const socket = new Socket();
 
@@ -314,7 +346,9 @@ export function createSocketWatchTool(
               socket.on("error", (err) => {
                 // If connection failed before we resolved, resolve with error
                 if (!entry.connected) {
-                  resolve(textResult(JSON.stringify({ error: `Failed to connect to ${params.socketPath}: ${err.message}` })));
+                  resolve(
+                    textResult(JSON.stringify({ error: `Failed to connect to ${params.socketPath}: ${err.message}` })),
+                  );
                 }
               });
 

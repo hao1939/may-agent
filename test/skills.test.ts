@@ -253,9 +253,7 @@ describe("formatSkillsForPrompt", () => {
   });
 
   it("escapes XML special characters", () => {
-    const skills = [
-      { name: "test&skill", description: 'Has <special> "chars"', filePath: "/path/to/file.md" },
-    ];
+    const skills = [{ name: "test&skill", description: 'Has <special> "chars"', filePath: "/path/to/file.md" }];
 
     const output = formatSkillsForPrompt(skills);
     expect(output).toContain("<name>test&amp;skill</name>");
@@ -263,9 +261,7 @@ describe("formatSkillsForPrompt", () => {
   });
 
   it("produces valid structure for single skill", () => {
-    const skills = [
-      { name: "solo", description: "Only one", filePath: "/solo/SKILL.md" },
-    ];
+    const skills = [{ name: "solo", description: "Only one", filePath: "/solo/SKILL.md" }];
 
     const expected = `<available_skills>
   <skill>

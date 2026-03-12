@@ -110,13 +110,8 @@ describe("SubagentManager.resumeStaleSessions()", () => {
       },
     });
 
-    setupSession(persistDir, "session-a", [
-      userMessage("task A"),
-      assistantMessage("Working on A..."),
-    ]);
-    setupSession(persistDir, "session-b", [
-      userMessage("task B"),
-    ]);
+    setupSession(persistDir, "session-a", [userMessage("task A"), assistantMessage("Working on A...")]);
+    setupSession(persistDir, "session-b", [userMessage("task B")]);
 
     const manager = new SubagentManager({ persistDir });
     registerAgent(manager, "agent-a");
@@ -228,8 +223,21 @@ describe("SubagentManager.resumeStaleSessions()", () => {
   it("does not touch done/error/interrupted sessions", () => {
     writeRegistryState(persistDir, {
       "s-done": { agent: "a", task: "t", status: "done", startedAt: Date.now() - 60000, endedAt: Date.now() - 55000 },
-      "s-error": { agent: "a", task: "t", status: "error", startedAt: Date.now() - 50000, endedAt: Date.now() - 45000, error: "err" },
-      "s-int": { agent: "a", task: "t", status: "interrupted", startedAt: Date.now() - 40000, endedAt: Date.now() - 35000 },
+      "s-error": {
+        agent: "a",
+        task: "t",
+        status: "error",
+        startedAt: Date.now() - 50000,
+        endedAt: Date.now() - 45000,
+        error: "err",
+      },
+      "s-int": {
+        agent: "a",
+        task: "t",
+        status: "interrupted",
+        startedAt: Date.now() - 40000,
+        endedAt: Date.now() - 35000,
+      },
     });
 
     const manager = new SubagentManager({ persistDir });
@@ -244,7 +252,7 @@ describe("SubagentManager.resumeStaleSessions()", () => {
 
   it("runtime formatting: seconds", () => {
     writeRegistryState(persistDir, {
-      "s": { agent: "a", task: "t", status: "running", startedAt: Date.now() - 5000 },
+      s: { agent: "a", task: "t", status: "running", startedAt: Date.now() - 5000 },
     });
     setupSession(persistDir, "s");
 
@@ -256,7 +264,7 @@ describe("SubagentManager.resumeStaleSessions()", () => {
 
   it("runtime formatting: minutes", () => {
     writeRegistryState(persistDir, {
-      "s": { agent: "a", task: "t", status: "running", startedAt: Date.now() - 125000 },
+      s: { agent: "a", task: "t", status: "running", startedAt: Date.now() - 125000 },
     });
     setupSession(persistDir, "s");
 

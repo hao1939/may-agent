@@ -23,7 +23,9 @@ function textResult(text: string): AgentToolResult<string> {
 const ScrapeParams: TSchema = Type.Object({
   url: Type.String({ description: "URL of the web page to fetch" }),
   raw: Type.Optional(Type.Boolean({ description: "If true, return raw HTML instead of cleaned text. Default: false" })),
-  maxLength: Type.Optional(Type.Number({ description: "Maximum character length of returned content. Default: 20000" })),
+  maxLength: Type.Optional(
+    Type.Number({ description: "Maximum character length of returned content. Default: 20000" }),
+  ),
 });
 
 interface ScrapeInput {
@@ -74,7 +76,10 @@ function htmlToText(html: string): string {
   text = text.replace(/<!--[\s\S]*?-->/g, "");
 
   // 2. Block-level tags → newlines (headings, paragraphs, divs, list items, etc.)
-  text = text.replace(/<\/?(?:div|p|br|hr|h[1-6]|li|ul|ol|table|tr|blockquote|section|article|aside|main|figure|figcaption|details|summary)\b[^>]*>/gi, "\n");
+  text = text.replace(
+    /<\/?(?:div|p|br|hr|h[1-6]|li|ul|ol|table|tr|blockquote|section|article|aside|main|figure|figcaption|details|summary)\b[^>]*>/gi,
+    "\n",
+  );
 
   // Table cells → tab separator
   text = text.replace(/<\/?(?:td|th)\b[^>]*>/gi, "\t");
@@ -134,11 +139,11 @@ async function robustFetch(url: string, timeoutMs: number = 15000): Promise<Fetc
       redirect: "follow",
       headers: {
         "User-Agent": randomUserAgent(),
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "Accept-Language": "en-US,en;q=0.9",
         "Accept-Encoding": "identity", // Avoid compressed responses that need decompression
         "Cache-Control": "no-cache",
-        "DNT": "1",
+        DNT: "1",
       },
     });
 
@@ -173,11 +178,7 @@ export interface ScrapeToolOptions {
 // ── Tool factory ────────────────────────────────────────────────────────
 
 export function createScrapeTool(options: ScrapeToolOptions = {}): AgentTool {
-  const {
-    timeoutMs = 15000,
-    maxBodyLength = 200_000,
-    defaultMaxLength = 20_000,
-  } = options;
+  const { timeoutMs = 15000, maxBodyLength = 200_000, defaultMaxLength = 20_000 } = options;
 
   return {
     name: "scrape_webpage",
@@ -227,7 +228,9 @@ export function createScrapeTool(options: ScrapeToolOptions = {}): AgentTool {
         let body = result.body;
         if (body.length > maxBodyLength) {
           body = body.slice(0, maxBodyLength);
-          meta.push(`Warning: Response truncated from ${result.body.length.toLocaleString()} to ${maxBodyLength.toLocaleString()} chars before processing`);
+          meta.push(
+            `Warning: Response truncated from ${result.body.length.toLocaleString()} to ${maxBodyLength.toLocaleString()} chars before processing`,
+          );
         }
 
         // Convert HTML to text (unless raw requested or non-HTML content)
@@ -259,7 +262,9 @@ export function createScrapeTool(options: ScrapeToolOptions = {}): AgentTool {
 
         // Provide actionable hints for common failures
         if (msg.includes("abort") || msg.includes("AbortError")) {
-          return textResult(`Error: Request timed out after ${timeoutMs}ms for ${params.url}. The site may be slow or blocking automated requests.`);
+          return textResult(
+            `Error: Request timed out after ${timeoutMs}ms for ${params.url}. The site may be slow or blocking automated requests.`,
+          );
         }
         if (msg.includes("ENOTFOUND")) {
           return textResult(`Error: DNS resolution failed for ${params.url}. Check the URL for typos.`);
@@ -268,7 +273,9 @@ export function createScrapeTool(options: ScrapeToolOptions = {}): AgentTool {
           return textResult(`Error: Connection refused by ${params.url}. The server may be down.`);
         }
         if (msg.includes("ETIMEDOUT")) {
-          return textResult(`Error: Connection timed out for ${params.url}. The server may not support IPv6 — this is a known issue in this environment.`);
+          return textResult(
+            `Error: Connection timed out for ${params.url}. The server may not support IPv6 — this is a known issue in this environment.`,
+          );
         }
 
         return textResult(`Error fetching ${params.url}: ${msg}`);

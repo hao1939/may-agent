@@ -41,34 +41,43 @@ describe("collectDailyBrief", () => {
 
   it("counts cron jobs from may/cron.json", () => {
     mkdirSync(resolve(agentsRoot, "may"), { recursive: true });
-    writeFileSync(resolve(agentsRoot, "may", "cron.json"), JSON.stringify([
-      { name: "a", intervalMs: 60000, message: "a" },
-      { name: "b", intervalMs: 60000, message: "b" },
-    ]));
+    writeFileSync(
+      resolve(agentsRoot, "may", "cron.json"),
+      JSON.stringify([
+        { name: "a", intervalMs: 60000, message: "a" },
+        { name: "b", intervalMs: 60000, message: "b" },
+      ]),
+    );
 
     const brief = collectDailyBrief({ persistDir, agentsRoot, projectRoot });
     expect(brief).toContain("Cron jobs: 2");
   });
 
   it("reports agent backlogs from todo.md", () => {
-    writeFileSync(resolve(agentsRoot, "bob", "workspace", "todo.md"), `# TODO
+    writeFileSync(
+      resolve(agentsRoot, "bob", "workspace", "todo.md"),
+      `# TODO
 
 - [ ] Fix performance issue
 - [ ] Write docs
 - [x] Already done
-`);
+`,
+    );
 
     const brief = collectDailyBrief({ persistDir, agentsRoot, projectRoot });
     expect(brief).toContain("bob: 2 pending");
   });
 
   it("reads top issue from bob analysis.md", () => {
-    writeFileSync(resolve(agentsRoot, "bob", "workspace", "analysis.md"), `## Executive Summary
+    writeFileSync(
+      resolve(agentsRoot, "bob", "workspace", "analysis.md"),
+      `## Executive Summary
 
 Tool call efficiency remains the primary bottleneck.
 
 ## Top Findings
-`);
+`,
+    );
 
     const brief = collectDailyBrief({ persistDir, agentsRoot, projectRoot });
     expect(brief).toContain("Tool call efficiency");

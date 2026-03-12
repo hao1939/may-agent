@@ -43,8 +43,12 @@ describe("shutdown", () => {
 
     let stdoutBuf = "";
     let stderrBuf = "";
-    proc.stdout!.on("data", (d) => { stdoutBuf += d.toString(); });
-    proc.stderr!.on("data", (d) => { stderrBuf += d.toString(); });
+    proc.stdout!.on("data", (d) => {
+      stdoutBuf += d.toString();
+    });
+    proc.stderr!.on("data", (d) => {
+      stderrBuf += d.toString();
+    });
 
     return {
       proc,
@@ -69,7 +73,8 @@ describe("shutdown", () => {
       const start = Date.now();
       const check = () => {
         if (getter().includes(match)) return resolve(undefined);
-        if (Date.now() - start > timeoutMs) return reject(new Error(`Timeout waiting for "${match}" in output: ${getter()}`));
+        if (Date.now() - start > timeoutMs)
+          return reject(new Error(`Timeout waiting for "${match}" in output: ${getter()}`));
         setTimeout(check, 50);
       };
       check();

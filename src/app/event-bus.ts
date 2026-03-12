@@ -23,9 +23,40 @@ export type RunnerEvent =
   | { type: "tool_call"; agent: string; tool: string; args: unknown; channel?: EventChannel }
   | { type: "tool_result"; agent: string; tool: string; preview: string; isError: boolean; channel?: EventChannel }
   | { type: "session_start"; agent: string; sessionId: string; task: string; channel?: EventChannel }
-  | { type: "session_end"; agent: string; sessionId: string; status: string; duration?: string; error?: string; channel?: EventChannel }
-  | { type: "workflow"; agent: string; workflow: string; event: "start" | "step_start" | "step_done" | "done" | "escalated"; step?: string; sessionId?: string; status?: string; duration?: string; reason?: string; task?: string; channel?: EventChannel }
-  | { type: "eval"; verdict: string; efficiency: number; quality: number; tokens?: number; cost?: number; turns?: number; failureChains?: number; wastedCalls?: number; channel?: EventChannel }
+  | {
+      type: "session_end";
+      agent: string;
+      sessionId: string;
+      status: string;
+      duration?: string;
+      error?: string;
+      channel?: EventChannel;
+    }
+  | {
+      type: "workflow";
+      agent: string;
+      workflow: string;
+      event: "start" | "step_start" | "step_done" | "done" | "escalated";
+      step?: string;
+      sessionId?: string;
+      status?: string;
+      duration?: string;
+      reason?: string;
+      task?: string;
+      channel?: EventChannel;
+    }
+  | {
+      type: "eval";
+      verdict: string;
+      efficiency: number;
+      quality: number;
+      tokens?: number;
+      cost?: number;
+      turns?: number;
+      failureChains?: number;
+      wastedCalls?: number;
+      channel?: EventChannel;
+    }
   | { type: "info"; message: string; channel?: EventChannel }
   | { type: "prompt"; message: string; channel?: EventChannel };
 
@@ -66,7 +97,9 @@ export class EventBus {
   /** Subscribe to all runner events. Returns unsubscribe function. */
   on(listener: EventListener): () => void {
     this.listeners.add(listener);
-    return () => { this.listeners.delete(listener); };
+    return () => {
+      this.listeners.delete(listener);
+    };
   }
 
   /** Emit an event to all subscribers. */
@@ -74,7 +107,9 @@ export class EventBus {
     for (const listener of this.listeners) {
       try {
         listener(event);
-      } catch { /* UI errors shouldn't crash the runner */ }
+      } catch {
+        /* UI errors shouldn't crash the runner */
+      }
     }
   }
 

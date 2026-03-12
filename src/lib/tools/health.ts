@@ -39,15 +39,13 @@ export function createHealthCheckTool(stateDir: string): AgentTool {
         const sessions = loadAllSessionMetas(stateDir);
         const STALE_THRESHOLD_MS = 10 * 60 * 1000;
         const now = Date.now();
-        const stale = Object.entries(sessions).filter(([, s]) =>
-          s.status === "running" && (now - (s.startedAt ?? now)) > STALE_THRESHOLD_MS
+        const stale = Object.entries(sessions).filter(
+          ([, s]) => s.status === "running" && now - (s.startedAt ?? now) > STALE_THRESHOLD_MS,
         );
         if (stale.length === 0) {
           checks.push({ name: "stale_sessions", ok: true, detail: "No sessions stuck in running state" });
         } else {
-          const details = stale
-            .map(([id, s]) => `  ${id}: agent=${s.agent ?? "?"}, task=${s.task ?? "?"}`)
-            .join("\n");
+          const details = stale.map(([id, s]) => `  ${id}: agent=${s.agent ?? "?"}, task=${s.task ?? "?"}`).join("\n");
           checks.push({
             name: "stale_sessions",
             ok: false,

@@ -120,8 +120,21 @@ export interface SessionTrace {
 
 export type WorkflowToolResult =
   | { type: "done"; workflow: string; workflowRunId: string; summary: string; steps: WorkflowStepSummary[] }
-  | { type: "escalated"; workflow: string; workflowRunId: string; reason: string; context?: unknown; steps: WorkflowStepSummary[] }
-  | { type: "interrupted"; workflow: string; workflowRunId: string; completedSteps: CompletedStep[]; steeringMessage: string }
+  | {
+      type: "escalated";
+      workflow: string;
+      workflowRunId: string;
+      reason: string;
+      context?: unknown;
+      steps: WorkflowStepSummary[];
+    }
+  | {
+      type: "interrupted";
+      workflow: string;
+      workflowRunId: string;
+      completedSteps: CompletedStep[];
+      steeringMessage: string;
+    }
   | { type: "error"; workflow: string; error: string }
   | { type: "list"; workflows: Array<{ name: string; description: string }> };
 

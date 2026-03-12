@@ -44,7 +44,7 @@ describe("JSONL corruption handling", () => {
       JSON.stringify(validMsg),
       "this is not valid json {{{",
       JSON.stringify({ ...validMsg, content: [{ type: "text", text: "world" }] }),
-      "",  // empty line after trim won't appear
+      "", // empty line after trim won't appear
     ];
     writeFileSync(filePath, lines.join("\n"), "utf-8");
 
@@ -118,13 +118,15 @@ describe("JSONL corruption handling", () => {
     const filePath = memoryPath(persistDir, agentName);
     const entries = [];
     for (let i = 0; i < 5; i++) {
-      entries.push(JSON.stringify({
-        task: `task-${i}`,
-        status: "done",
-        duration: "1s",
-        summary: null,
-        timestamp: Date.now() + i,
-      }));
+      entries.push(
+        JSON.stringify({
+          task: `task-${i}`,
+          status: "done",
+          duration: "1s",
+          summary: null,
+          timestamp: Date.now() + i,
+        }),
+      );
     }
     // Insert corruption in the middle
     entries.splice(2, 0, "corrupt!");

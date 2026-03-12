@@ -129,13 +129,16 @@ describe("session graph: parent links on run()", () => {
 
 describe("workflow run persistence", () => {
   it("workflow.run() creates a workflow run record on disk", async () => {
-    writeWorkflow("simple.ts", `
+    writeWorkflow(
+      "simple.ts",
+      `
       export const name = "simple";
       export const description = "Simple workflow";
       export async function execute(ctx) {
         return ctx.done("completed");
       }
-    `);
+    `,
+    );
 
     const manager = new SubagentManager({ persistDir });
     const tool = createWorkflowTool({ manager, workflowDir, persistDir });
@@ -164,13 +167,16 @@ describe("workflow run persistence", () => {
     // This workflow calls runAgent which requires a registered agent.
     // Since we can't actually run an LLM, we'll test with a simple
     // workflow that doesn't call runAgent.
-    writeWorkflow("no-steps.ts", `
+    writeWorkflow(
+      "no-steps.ts",
+      `
       export const name = "no-steps";
       export const description = "No agent steps";
       export async function execute(ctx) {
         return ctx.done("done without steps: " + ctx.task);
       }
-    `);
+    `,
+    );
 
     const manager = new SubagentManager({ persistDir });
     const tool = createWorkflowTool({ manager, workflowDir, persistDir });
@@ -185,13 +191,16 @@ describe("workflow run persistence", () => {
   });
 
   it("escalated workflow persists with escalated status", async () => {
-    writeWorkflow("esc.ts", `
+    writeWorkflow(
+      "esc.ts",
+      `
       export const name = "esc";
       export const description = "Escalates";
       export async function execute(ctx) {
         return ctx.escalate("too hard");
       }
-    `);
+    `,
+    );
 
     const manager = new SubagentManager({ persistDir });
     const tool = createWorkflowTool({ manager, workflowDir, persistDir });
@@ -207,13 +216,16 @@ describe("workflow run persistence", () => {
   });
 
   it("crashed workflow persists with error status", async () => {
-    writeWorkflow("crash.ts", `
+    writeWorkflow(
+      "crash.ts",
+      `
       export const name = "crash";
       export const description = "Crashes";
       export async function execute(ctx) {
         throw new Error("kaboom");
       }
-    `);
+    `,
+    );
 
     const manager = new SubagentManager({ persistDir });
     const tool = createWorkflowTool({ manager, workflowDir, persistDir });
@@ -230,13 +242,16 @@ describe("workflow run persistence", () => {
   });
 
   it("listWorkflowRuns returns all run IDs sorted", async () => {
-    writeWorkflow("list-test.ts", `
+    writeWorkflow(
+      "list-test.ts",
+      `
       export const name = "list-test";
       export const description = "For listing";
       export async function execute(ctx) {
         return ctx.done("ok");
       }
-    `);
+    `,
+    );
 
     const manager = new SubagentManager({ persistDir });
     const tool = createWorkflowTool({ manager, workflowDir, persistDir });
@@ -254,13 +269,16 @@ describe("workflow run persistence", () => {
 
 describe("workflow result: step summaries", () => {
   it("done result includes empty steps array when no agents ran", async () => {
-    writeWorkflow("no-agents.ts", `
+    writeWorkflow(
+      "no-agents.ts",
+      `
       export const name = "no-agents";
       export const description = "No agent calls";
       export async function execute(ctx) {
         return ctx.done("just done");
       }
-    `);
+    `,
+    );
 
     const manager = new SubagentManager({ persistDir });
     const tool = createWorkflowTool({ manager, workflowDir, persistDir });
@@ -275,13 +293,16 @@ describe("workflow result: step summaries", () => {
   });
 
   it("escalated result includes workflowRunId and steps", async () => {
-    writeWorkflow("esc-steps.ts", `
+    writeWorkflow(
+      "esc-steps.ts",
+      `
       export const name = "esc-steps";
       export const description = "Escalates with info";
       export async function execute(ctx) {
         return ctx.escalate("nope", { detail: "x" });
       }
-    `);
+    `,
+    );
 
     const manager = new SubagentManager({ persistDir });
     const tool = createWorkflowTool({ manager, workflowDir, persistDir });
@@ -300,7 +321,9 @@ describe("workflow result: step summaries", () => {
 
 describe("workflow nesting depth cap", () => {
   it("sub-workflow at depth 2 works", async () => {
-    writeWorkflow("outer.ts", `
+    writeWorkflow(
+      "outer.ts",
+      `
       export const name = "outer";
       export const description = "Calls inner";
       export async function execute(ctx) {
@@ -308,14 +331,18 @@ describe("workflow nesting depth cap", () => {
         if (inner.type === "done") return ctx.done("outer+inner: " + inner.summary);
         return ctx.escalate("inner failed");
       }
-    `);
-    writeWorkflow("inner.ts", `
+    `,
+    );
+    writeWorkflow(
+      "inner.ts",
+      `
       export const name = "inner";
       export const description = "Inner workflow";
       export async function execute(ctx) {
         return ctx.done("inner done");
       }
-    `);
+    `,
+    );
 
     const manager = new SubagentManager({ persistDir });
     const tool = createWorkflowTool({ manager, workflowDir, persistDir, maxDepth: 3 });
@@ -328,7 +355,9 @@ describe("workflow nesting depth cap", () => {
   });
 
   it("exceeding max depth escalates", async () => {
-    writeWorkflow("recursive.ts", `
+    writeWorkflow(
+      "recursive.ts",
+      `
       export const name = "recursive";
       export const description = "Calls itself";
       export async function execute(ctx) {
@@ -336,7 +365,8 @@ describe("workflow nesting depth cap", () => {
         if (sub.type === "escalate") return ctx.escalate("hit depth: " + sub.reason);
         return ctx.done("should not get here");
       }
-    `);
+    `,
+    );
 
     const manager = new SubagentManager({ persistDir });
     const tool = createWorkflowTool({ manager, workflowDir, persistDir, maxDepth: 2 });
@@ -349,7 +379,9 @@ describe("workflow nesting depth cap", () => {
   });
 
   it("nested workflow runs create linked records", async () => {
-    writeWorkflow("parent-wf.ts", `
+    writeWorkflow(
+      "parent-wf.ts",
+      `
       export const name = "parent-wf";
       export const description = "Parent";
       export async function execute(ctx) {
@@ -357,14 +389,18 @@ describe("workflow nesting depth cap", () => {
         if (sub.type === "done") return ctx.done("parent+child");
         return ctx.escalate("child failed");
       }
-    `);
-    writeWorkflow("child-wf.ts", `
+    `,
+    );
+    writeWorkflow(
+      "child-wf.ts",
+      `
       export const name = "child-wf";
       export const description = "Child";
       export async function execute(ctx) {
         return ctx.done("child done");
       }
-    `);
+    `,
+    );
 
     const manager = new SubagentManager({ persistDir });
     const tool = createWorkflowTool({ manager, workflowDir, persistDir });
@@ -428,17 +464,22 @@ describe("trace()", () => {
   });
 
   it("traces a workflow run by its runId", async () => {
-    writeWorkflow("traceable.ts", `
+    writeWorkflow(
+      "traceable.ts",
+      `
       export const name = "traceable";
       export const description = "Traceable";
       export async function execute(ctx) {
         return ctx.done("traced");
       }
-    `);
+    `,
+    );
 
     const manager = new SubagentManager({ persistDir });
     const tool = createWorkflowTool({
-      manager, workflowDir, persistDir,
+      manager,
+      workflowDir,
+      persistDir,
       callerSessionId: "s_caller_1",
     });
 
@@ -463,25 +504,33 @@ describe("trace()", () => {
   });
 
   it("traces a session within a workflow — shows position in tree", async () => {
-    writeWorkflow("nested-trace.ts", `
+    writeWorkflow(
+      "nested-trace.ts",
+      `
       export const name = "nested-trace";
       export const description = "Calls inner";
       export async function execute(ctx) {
         const sub = await ctx.runWorkflow("inner-trace", "inner task");
         return sub.type === "done" ? ctx.done("outer: " + sub.summary) : ctx.escalate("fail");
       }
-    `);
-    writeWorkflow("inner-trace.ts", `
+    `,
+    );
+    writeWorkflow(
+      "inner-trace.ts",
+      `
       export const name = "inner-trace";
       export const description = "Inner";
       export async function execute(ctx) {
         return ctx.done("inner done");
       }
-    `);
+    `,
+    );
 
     const manager = new SubagentManager({ persistDir });
     const tool = createWorkflowTool({
-      manager, workflowDir, persistDir,
+      manager,
+      workflowDir,
+      persistDir,
       callerSessionId: "s_may_1",
     });
 
@@ -506,17 +555,22 @@ describe("trace()", () => {
   });
 
   it("path shows exact position from root to target", async () => {
-    writeWorkflow("path-test.ts", `
+    writeWorkflow(
+      "path-test.ts",
+      `
       export const name = "path-test";
       export const description = "Path test";
       export async function execute(ctx) {
         return ctx.done("done");
       }
-    `);
+    `,
+    );
 
     const manager = new SubagentManager({ persistDir });
     const tool = createWorkflowTool({
-      manager, workflowDir, persistDir,
+      manager,
+      workflowDir,
+      persistDir,
       callerSessionId: "s_may_42",
     });
 
@@ -535,17 +589,22 @@ describe("trace()", () => {
   });
 
   it("trace via subagents tool returns the same data", async () => {
-    writeWorkflow("tool-trace.ts", `
+    writeWorkflow(
+      "tool-trace.ts",
+      `
       export const name = "tool-trace";
       export const description = "Tool trace test";
       export async function execute(ctx) {
         return ctx.done("done");
       }
-    `);
+    `,
+    );
 
     const manager = new SubagentManager({ persistDir });
     const tool = createWorkflowTool({
-      manager, workflowDir, persistDir,
+      manager,
+      workflowDir,
+      persistDir,
       callerSessionId: "s_caller_99",
     });
 
@@ -575,17 +634,22 @@ describe("trace()", () => {
 
 describe("callerSessionId", () => {
   it("workflow sets parentSessionId from callerSessionId", async () => {
-    writeWorkflow("caller-test.ts", `
+    writeWorkflow(
+      "caller-test.ts",
+      `
       export const name = "caller-test";
       export const description = "Caller test";
       export async function execute(ctx) {
         return ctx.done("done");
       }
-    `);
+    `,
+    );
 
     const manager = new SubagentManager({ persistDir });
     const tool = createWorkflowTool({
-      manager, workflowDir, persistDir,
+      manager,
+      workflowDir,
+      persistDir,
       callerSessionId: "s_may_session",
     });
 
@@ -599,13 +663,16 @@ describe("callerSessionId", () => {
   });
 
   it("workflow without callerSessionId uses 'unknown'", async () => {
-    writeWorkflow("no-caller.ts", `
+    writeWorkflow(
+      "no-caller.ts",
+      `
       export const name = "no-caller";
       export const description = "No caller";
       export async function execute(ctx) {
         return ctx.done("done");
       }
-    `);
+    `,
+    );
 
     const manager = new SubagentManager({ persistDir });
     const tool = createWorkflowTool({ manager, workflowDir, persistDir });

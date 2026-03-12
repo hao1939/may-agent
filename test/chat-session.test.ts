@@ -62,7 +62,9 @@ describe("ChatSession", () => {
     // Give sessions a tick to clean up
     return new Promise<void>((resolve) => {
       setTimeout(() => {
-        try { rmSync(persistDir, { recursive: true, force: true }); } catch {}
+        try {
+          rmSync(persistDir, { recursive: true, force: true });
+        } catch {}
         resolve();
       }, 100);
     });
@@ -147,7 +149,9 @@ describe("ChatSession", () => {
       manager,
       bus,
       agentName: "may",
-      onDone: () => { doneCalled = true; },
+      onDone: () => {
+        doneCalled = true;
+      },
     });
 
     session.handleInput("test task");
@@ -159,8 +163,12 @@ describe("ChatSession", () => {
   it("delegates reload to onReload callback", () => {
     let reloadCalled = false;
     const session = new ChatSession({
-      manager, bus, agentName: "may",
-      onReload: () => { reloadCalled = true; },
+      manager,
+      bus,
+      agentName: "may",
+      onReload: () => {
+        reloadCalled = true;
+      },
     });
 
     session.handleInput("reload");
@@ -171,8 +179,12 @@ describe("ChatSession", () => {
   it("delegates close to onClose callback", () => {
     let closeCalled = false;
     const session = new ChatSession({
-      manager, bus, agentName: "may",
-      onClose: () => { closeCalled = true; },
+      manager,
+      bus,
+      agentName: "may",
+      onClose: () => {
+        closeCalled = true;
+      },
     });
 
     session.handleInput("close");
@@ -182,8 +194,12 @@ describe("ChatSession", () => {
   it("delegates restart to onRestart callback", () => {
     let restartCalled = false;
     const session = new ChatSession({
-      manager, bus, agentName: "may",
-      onRestart: () => { restartCalled = true; },
+      manager,
+      bus,
+      agentName: "may",
+      onRestart: () => {
+        restartCalled = true;
+      },
     });
 
     session.handleInput("restart");
@@ -294,7 +310,9 @@ describe("Session kind in resumeStaleSessions", () => {
     }
     return new Promise<void>((resolve) => {
       setTimeout(() => {
-        try { rmSync(persistDir, { recursive: true, force: true }); } catch {}
+        try {
+          rmSync(persistDir, { recursive: true, force: true });
+        } catch {}
         resolve();
       }, 100);
     });

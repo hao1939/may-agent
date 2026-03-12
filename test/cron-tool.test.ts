@@ -10,14 +10,18 @@ function makeToolCtx(cronEnabled = false) {
   let reloadCount = 0;
   const tool = createCronTool({
     configPath,
-    onConfigChange: () => { reloadCount++; },
+    onConfigChange: () => {
+      reloadCount++;
+    },
     cronEnabled,
   });
   return {
     dir,
     configPath,
     tool,
-    get reloadCount() { return reloadCount; },
+    get reloadCount() {
+      return reloadCount;
+    },
     cleanup: () => rmSync(dir, { recursive: true, force: true }),
   };
 }
@@ -30,8 +34,12 @@ async function exec(tool: ReturnType<typeof createCronTool>, input: Record<strin
 describe("cron tool", () => {
   let ctx: ReturnType<typeof makeToolCtx>;
 
-  beforeEach(() => { ctx = makeToolCtx(); });
-  afterEach(() => { ctx.cleanup(); });
+  beforeEach(() => {
+    ctx = makeToolCtx();
+  });
+  afterEach(() => {
+    ctx.cleanup();
+  });
 
   it("list returns empty when no cron.json", async () => {
     const out = await exec(ctx.tool, { action: "list" });
@@ -158,9 +166,7 @@ describe("cron tool", () => {
   });
 
   it("reads existing cron.json on first list", async () => {
-    writeFileSync(ctx.configPath, JSON.stringify([
-      { name: "pre", intervalMs: 30000, message: "preloaded" },
-    ]));
+    writeFileSync(ctx.configPath, JSON.stringify([{ name: "pre", intervalMs: 30000, message: "preloaded" }]));
     const out = await exec(ctx.tool, { action: "list" });
     expect(out).toContain("pre: every 30s");
   });

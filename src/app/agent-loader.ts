@@ -121,15 +121,16 @@ export function runAgentCleanup(agentName: string): void {
   const fns = agentCleanups.get(agentName);
   if (!fns) return;
   for (const fn of fns) {
-    try { fn(); } catch { /* best-effort */ }
+    try {
+      fn();
+    } catch {
+      /* best-effort */
+    }
   }
   agentCleanups.delete(agentName);
 }
 
-function buildTools(
-  config: AgentConfig,
-  opts: AgentLoaderOptions,
-): AgentTool[] {
+function buildTools(config: AgentConfig, opts: AgentLoaderOptions): AgentTool[] {
   const { projectRoot, persistDir, manager, bus } = opts;
   const agentDir = resolve(opts.agentsRoot, config.name);
   const tools: AgentTool[] = [];
@@ -157,71 +158,81 @@ function buildTools(
       case "exec-master":
         // Legacy exec presets — now no-ops (bash is included in coding tools)
         // Agents should use "coding" preset instead
-        bus.emit({ type: "info", message: `[loader] Preset "${preset}" for agent "${config.name}" is deprecated — bash is included in "coding" preset` });
+        bus.emit({
+          type: "info",
+          message: `[loader] Preset "${preset}" for agent "${config.name}" is deprecated — bash is included in "coding" preset`,
+        });
         break;
 
       case "claude-code":
-        tools.push(createClaudeCodeTool({
-          cwd: projectRoot,
-          maxOutputLength: 80_000,
-        }));
+        tools.push(
+          createClaudeCodeTool({
+            cwd: projectRoot,
+            maxOutputLength: 80_000,
+          }),
+        );
         break;
 
       case "gemini-cli":
-        tools.push(createGeminiCliTool({
-          cwd: projectRoot,
-          maxOutputLength: 80_000,
-        }));
+        tools.push(
+          createGeminiCliTool({
+            cwd: projectRoot,
+            maxOutputLength: 80_000,
+          }),
+        );
         break;
 
       case "agents": {
         // V2 agents tool — 5 actions: call, send, list, peek, cancel
         const denyConfig = config.delegateDeny;
-        tools.push(manager.createAgentsTool({
-          getCallerSessionId: () => agentSessionIds.get(config.name),
-          getCallerAgentName: () => config.name,
-          callDeny: denyConfig ? { agents: denyConfig.agents, hint: denyConfig.hint } : undefined,
-          agentsRoot: opts.agentsRoot,
-          triggerHeartbeat: (agentName: string) => {
-            // All heartbeat entries live in May's cron.json
-            // Entry names: "heartbeat" (for may), "heartbeat-{agent}" (for others)
-            for (const cron of agentCrons.values()) {
-              if (cron.triggerNow(`heartbeat-${agentName}`)) return true;
-              if (cron.triggerNow("heartbeat") && agentName === "may") return true;
-            }
-            return false;
-          },
-        }));
+        tools.push(
+          manager.createAgentsTool({
+            getCallerSessionId: () => agentSessionIds.get(config.name),
+            getCallerAgentName: () => config.name,
+            callDeny: denyConfig ? { agents: denyConfig.agents, hint: denyConfig.hint } : undefined,
+            agentsRoot: opts.agentsRoot,
+            triggerHeartbeat: (agentName: string) => {
+              // All heartbeat entries live in May's cron.json
+              // Entry names: "heartbeat" (for may), "heartbeat-{agent}" (for others)
+              for (const cron of agentCrons.values()) {
+                if (cron.triggerNow(`heartbeat-${agentName}`)) return true;
+                if (cron.triggerNow("heartbeat") && agentName === "may") return true;
+              }
+              return false;
+            },
+          }),
+        );
         break;
       }
 
       case "workflow": {
         const workflowDir = resolve(agentDir, "workflows");
-        tools.push(createWorkflowTool({
-          manager,
-          workflowDir,
-          persistDir,
-          callerSessionId: () => {
-            const sid = agentSessionIds.get(config.name);
-            if (!sid) throw new Error(`No active ${config.name} session`);
-            return sid;
-          },
-          onEvent: (event) => {
-            const label = `workflow:${config.name}`;
-            if (event.type === "workflow_start") {
-              bus.emit({ type: "info", message: `[${label}] Starting: ${event.workflow}` });
-            } else if (event.type === "workflow_done") {
-              bus.emit({ type: "info", message: `[${label}] Done: ${event.summary.slice(0, 100)}` });
-            } else if (event.type === "workflow_escalate") {
-              bus.emit({ type: "info", message: `[${label}] Escalated: ${event.reason}` });
-            } else if (event.type === "step_start") {
-              bus.emit({ type: "info", message: `[${label}] Step: ${event.step}` });
-            }
-          },
-        }));
+        tools.push(
+          createWorkflowTool({
+            manager,
+            workflowDir,
+            persistDir,
+            callerSessionId: () => {
+              const sid = agentSessionIds.get(config.name);
+              if (!sid) throw new Error(`No active ${config.name} session`);
+              return sid;
+            },
+            onEvent: (event) => {
+              const label = `workflow:${config.name}`;
+              if (event.type === "workflow_start") {
+                bus.emit({ type: "info", message: `[${label}] Starting: ${event.workflow}` });
+              } else if (event.type === "workflow_done") {
+                bus.emit({ type: "info", message: `[${label}] Done: ${event.summary.slice(0, 100)}` });
+              } else if (event.type === "workflow_escalate") {
+                bus.emit({ type: "info", message: `[${label}] Escalated: ${event.reason}` });
+              } else if (event.type === "step_start") {
+                bus.emit({ type: "info", message: `[${label}] Step: ${event.step}` });
+              }
+            },
+          }),
+        );
         break;
       }
-
 
       case "background-exec": {
         const bgExec = createBackgroundExecTool({
@@ -261,15 +272,18 @@ function buildTools(
               return sid;
             },
             (msg) => bus.emit({ type: "info", message: `[cron:${config.name}] ${msg}` }),
+            opts.projectRoot,
           );
           cron.load();
           agentCrons.set(config.name, cron);
         }
-        tools.push(createCronTool({
-          configPath: cronPath,
-          onConfigChange: () => cron!.reload(),
-          cronEnabled: opts.cronEnabled,
-        }));
+        tools.push(
+          createCronTool({
+            configPath: cronPath,
+            onConfigChange: () => cron!.reload(),
+            cronEnabled: opts.cronEnabled,
+          }),
+        );
         break;
       }
 
@@ -278,64 +292,69 @@ function buildTools(
         break;
 
       case "agent-growth": {
-        tools.push(...createAgentGrowthTools({
-          agentsRoot: opts.agentsRoot,
-          manager,
-          loadAgent: (agentDir) => {
-            const config = loadAgentConfig(agentDir, opts.bus);
-            if (!config) return;
-            const model = opts.models[config.model];
-            const knowledgeDir = resolve(agentDir, "knowledge");
-            const workspace = resolve(agentDir, "workspace");
-            const skillsDirs = resolveSkillsDirs(config, opts.agentsRoot, opts.bus);
-            
-            manager.register({
-              name: config.name,
-              description: config.description,
-              domain: config.domain,
-              model,
-              tools: buildTools(config, opts),
-              systemPromptFiles: resolvePromptFiles(config, opts.agentsRoot),
-              knowledgeDir: existsSync(knowledgeDir) ? knowledgeDir : undefined,
-              workspace: existsSync(workspace) ? workspace : undefined,
-              skillsDirs,
-              projectRoot: opts.projectRoot,
-              apiKey: (model as any).apiKey,
-              memoryLimit: config.memoryLimit,
-              maxTurns: config.maxTurns,
-            });
-          },
-          reloadAgent: (name) => {
-            const agentDir = resolve(opts.agentsRoot, name);
-            const config = loadAgentConfig(agentDir, opts.bus);
-            if (!config) return;
-            const model = opts.models[config.model];
-            const knowledgeDir = resolve(agentDir, "knowledge");
-            const workspace = resolve(agentDir, "workspace");
-            const skillsDirs = resolveSkillsDirs(config, opts.agentsRoot, opts.bus);
+        tools.push(
+          ...createAgentGrowthTools({
+            agentsRoot: opts.agentsRoot,
+            manager,
+            loadAgent: (agentDir) => {
+              const config = loadAgentConfig(agentDir, opts.bus);
+              if (!config) return;
+              const model = opts.models[config.model];
+              const knowledgeDir = resolve(agentDir, "knowledge");
+              const workspace = resolve(agentDir, "workspace");
+              const skillsDirs = resolveSkillsDirs(config, opts.agentsRoot, opts.bus);
 
-            manager.register({
-              name: config.name,
-              description: config.description,
-              domain: config.domain,
-              model,
-              tools: buildTools(config, opts),
-              systemPromptFiles: resolvePromptFiles(config, opts.agentsRoot),
-              knowledgeDir: existsSync(knowledgeDir) ? knowledgeDir : undefined,
-              workspace: existsSync(workspace) ? workspace : undefined,
-              skillsDirs,
-              projectRoot: opts.projectRoot,
-              apiKey: (model as any).apiKey,
-              memoryLimit: config.memoryLimit,
-              maxTurns: config.maxTurns,
-            });
-          }
-        }));
+              manager.register({
+                name: config.name,
+                description: config.description,
+                domain: config.domain,
+                model,
+                tools: buildTools(config, opts),
+                systemPromptFiles: resolvePromptFiles(config, opts.agentsRoot),
+                knowledgeDir: existsSync(knowledgeDir) ? knowledgeDir : undefined,
+                workspace: existsSync(workspace) ? workspace : undefined,
+                skillsDirs,
+                projectRoot: opts.projectRoot,
+                apiKey: (model as any).apiKey,
+                memoryLimit: config.memoryLimit,
+                maxTurns: config.maxTurns,
+              });
+            },
+            reloadAgent: (name) => {
+              const agentDir = resolve(opts.agentsRoot, name);
+              const config = loadAgentConfig(agentDir, opts.bus);
+              if (!config) return;
+              const model = opts.models[config.model];
+              const knowledgeDir = resolve(agentDir, "knowledge");
+              const workspace = resolve(agentDir, "workspace");
+              const skillsDirs = resolveSkillsDirs(config, opts.agentsRoot, opts.bus);
+
+              manager.register({
+                name: config.name,
+                description: config.description,
+                domain: config.domain,
+                model,
+                tools: buildTools(config, opts),
+                systemPromptFiles: resolvePromptFiles(config, opts.agentsRoot),
+                knowledgeDir: existsSync(knowledgeDir) ? knowledgeDir : undefined,
+                workspace: existsSync(workspace) ? workspace : undefined,
+                skillsDirs,
+                projectRoot: opts.projectRoot,
+                apiKey: (model as any).apiKey,
+                memoryLimit: config.memoryLimit,
+                maxTurns: config.maxTurns,
+              });
+            },
+          }),
+        );
         break;
       }
 
       default:
-        bus.emit({ type: "info", message: `[loader] Unknown tool preset "${preset}" for agent "${config.name}" — skipping` });
+        bus.emit({
+          type: "info",
+          message: `[loader] Unknown tool preset "${preset}" for agent "${config.name}" — skipping`,
+        });
     }
   }
 
@@ -387,11 +406,7 @@ function resolvePromptFiles(config: AgentConfig, agentsRoot: string): string[] {
  * @returns Array of absolute directory paths to pass as skillsDirs, or undefined
  *          if no directories should be added.
  */
-function resolveSkillsDirs(
-  config: AgentConfig,
-  agentsRoot: string,
-  bus: EventBus,
-): string[] | undefined {
+function resolveSkillsDirs(config: AgentConfig, agentsRoot: string, bus: EventBus): string[] | undefined {
   const sharedSkillsDir = resolve(agentsRoot, "shared", "skills");
 
   // Case 1: No skills field → backward-compatible: load ALL shared skills
@@ -433,9 +448,21 @@ function resolveSkillsDirs(
 // ── Validation ──────────────────────────────────────────────────────────
 
 const VALID_TOOL_PRESETS = new Set([
-  "coding", "read-write", "read-only", "exec", "exec-readonly", "exec-master",
-  "claude-code", "gemini-cli",
-  "agents", "workflow", "background-exec", "socket-watch", "cron", "scrape", "agent-growth",
+  "coding",
+  "read-write",
+  "read-only",
+  "exec",
+  "exec-readonly",
+  "exec-master",
+  "claude-code",
+  "gemini-cli",
+  "agents",
+  "workflow",
+  "background-exec",
+  "socket-watch",
+  "cron",
+  "scrape",
+  "agent-growth",
 ]);
 
 const REQUIRED_FIELDS: (keyof AgentConfig)[] = ["name", "description", "domain", "model", "tools"];
@@ -511,12 +538,20 @@ export function validateAgentConfig(
       const sharedSkillsDir = resolve(agentsRoot, "shared", "skills");
       for (const skillName of config.skills) {
         if (typeof skillName !== "string") {
-          errors.push({ agent: name, field: "skills", message: `Skill name must be a string, got ${typeof skillName}` });
+          errors.push({
+            agent: name,
+            field: "skills",
+            message: `Skill name must be a string, got ${typeof skillName}`,
+          });
           continue;
         }
         const skillDir = resolve(sharedSkillsDir, skillName);
         if (!existsSync(skillDir)) {
-          errors.push({ agent: name, field: "skills", message: `Shared skill not found: ${skillName} (expected ${skillDir})` });
+          errors.push({
+            agent: name,
+            field: "skills",
+            message: `Shared skill not found: ${skillName} (expected ${skillDir})`,
+          });
         }
       }
     }
@@ -608,9 +643,7 @@ export function loadAgents(opts: AgentLoaderOptions): LoadResult {
 
   // Report validation errors as warnings — skip bad agents, don't crash
   if (allErrors.length > 0) {
-    const report = allErrors
-      .map((e) => `  ${e.agent}.${e.field}: ${e.message}`)
-      .join("\n");
+    const report = allErrors.map((e) => `  ${e.agent}.${e.field}: ${e.message}`).join("\n");
     opts.bus.emit({ type: "info", message: `[loader] Skipped agents with config errors:\n${report}` });
   }
 
@@ -646,17 +679,19 @@ import type { CronEntry } from "../lib/cron-tool.js";
  *
  * Call this after loadAgents() completes.
  */
-export async function loadAgentHandlers(opts: AgentLoaderOptions & {
-  /** Function to get an agent's active session ID (for followUp). */
-  getSessionId: (agentName: string) => string | null;
-}): Promise<{ registered: string[]; errors: string[] }> {
+export async function loadAgentHandlers(
+  opts: AgentLoaderOptions & {
+    /** Function to get an agent's active session ID (for followUp). */
+    getSessionId: (agentName: string) => string | null;
+  },
+): Promise<{ registered: string[]; errors: string[] }> {
   const { agentsRoot, persistDir, projectRoot, manager, bus } = opts;
   const registered: string[] = [];
   const errors: string[] = [];
 
   for (const [agentName, cron] of agentCrons) {
     const entries = cron.getEntries();
-    const handlersNeeded = entries.filter(e => e.handler);
+    const handlersNeeded = entries.filter((e) => e.handler);
 
     if (handlersNeeded.length === 0) continue;
 
@@ -685,7 +720,7 @@ export async function loadAgentHandlers(opts: AgentLoaderOptions & {
     }
 
     for (const [handlerFile, fileEntries] of byFile) {
-      // Resolve handler: look for .js (compiled) first, then .ts  
+      // Resolve handler: look for .js (compiled) first, then .ts
       const handlerDir = resolve(agentsRoot, agentName, "handlers");
       const jsPath = resolve(handlerDir, `${handlerFile}.js`);
       const tsPath = resolve(handlerDir, `${handlerFile}.ts`);

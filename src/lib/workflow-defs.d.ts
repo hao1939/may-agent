@@ -34,9 +34,7 @@ type WorkflowEvent =
   | { type: "workflow_escalate"; reason: string };
 
 /** Workflow result — either done or escalated to slow mode. */
-type WorkflowResult =
-  | { type: "done"; summary: string }
-  | { type: "escalate"; reason: string; context?: unknown };
+type WorkflowResult = { type: "done"; summary: string } | { type: "escalate"; reason: string; context?: unknown };
 
 /** Options for customizing the handoff summary. */
 interface HandoffOptions {

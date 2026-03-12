@@ -61,7 +61,11 @@ function createTestServer(socketPath: string): {
     broadcast: (data) => {
       const line = JSON.stringify(data) + "\n";
       for (const c of clients) {
-        try { c.write(line); } catch { /* ignore */ }
+        try {
+          c.write(line);
+        } catch {
+          /* ignore */
+        }
       }
     },
     received,

@@ -11,9 +11,7 @@ describe("createBashTool", () => {
 
   it("returns non-zero exit code as error", async () => {
     const tool = createBashTool("/tmp");
-    await expect(
-      tool.execute("id", { command: "ls /nonexistent_path_xyz_12345" })
-    ).rejects.toThrow(/exited with code/);
+    await expect(tool.execute("id", { command: "ls /nonexistent_path_xyz_12345" })).rejects.toThrow(/exited with code/);
   });
 
   it("returns (no output) for empty stdout", async () => {
@@ -24,16 +22,12 @@ describe("createBashTool", () => {
 
   it("respects timeout parameter", async () => {
     const tool = createBashTool("/tmp");
-    await expect(
-      tool.execute("id", { command: "sleep 30", timeout: 1 })
-    ).rejects.toThrow(/timed out/);
+    await expect(tool.execute("id", { command: "sleep 30", timeout: 1 })).rejects.toThrow(/timed out/);
   });
 
   it("captures stderr in output", async () => {
     const tool = createBashTool("/tmp");
-    await expect(
-      tool.execute("id", { command: "echo error >&2; exit 1" })
-    ).rejects.toThrow(/error/);
+    await expect(tool.execute("id", { command: "echo error >&2; exit 1" })).rejects.toThrow(/error/);
   });
 
   it("handles multi-line script", async () => {

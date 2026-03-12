@@ -60,7 +60,10 @@ async function scenario1_singleAgent() {
 
   assert(result.status === "done", `status is done (got: ${result.status})`);
   assert(result.lastAssistantText !== null, "got a response");
-  assert(result.lastAssistantText!.includes("56"), `response mentions 56 (got: ${result.lastAssistantText?.slice(0, 100)})`);
+  assert(
+    result.lastAssistantText!.includes("56"),
+    `response mentions 56 (got: ${result.lastAssistantText?.slice(0, 100)})`,
+  );
   assert(result.turnsUsed !== undefined && result.turnsUsed > 0, `turns used > 0 (got: ${result.turnsUsed})`);
 }
 
@@ -116,7 +119,7 @@ async function scenario3_delegation() {
     domain: "supervision",
     systemPrompt:
       "You are a supervisor. You CANNOT write files yourself. " +
-      "For any file-writing task, use agents.call(\"coder\", task). " +
+      'For any file-writing task, use agents.call("coder", task). ' +
       "After the call, report what the coder did.",
     model,
     tools: [manager.createAgentsTool()],
@@ -155,7 +158,10 @@ async function scenario3_delegation() {
   }
 
   // Verify supervisor used the subagents tool
-  assert(events.some(e => e.includes("subagents")), `supervisor used subagents tool`);
+  assert(
+    events.some((e) => e.includes("subagents")),
+    `supervisor used subagents tool`,
+  );
 
   rmSync(workDir, { recursive: true, force: true });
 }
@@ -223,13 +229,16 @@ async function scenario5_cancel() {
   const sid = manager.run("slow", "Count from 1 to 1000, one per line.");
 
   // Give it a moment to start streaming
-  await new Promise(r => setTimeout(r, 2000));
+  await new Promise((r) => setTimeout(r, 2000));
 
   // Cancel
   manager.cancel(sid);
 
   const result = await manager.waitFor(sid);
-  assert(result.status === "error" || result.status === "done", `status is error or done after cancel (got: ${result.status})`);
+  assert(
+    result.status === "error" || result.status === "done",
+    `status is error or done after cancel (got: ${result.status})`,
+  );
 }
 
 // ── Scenario 6: Multiple concurrent sessions ──────────────────────────
@@ -255,11 +264,7 @@ async function scenario6_concurrent() {
 
   assert(manager.getSessionCount() >= 1, `at least 1 active session (some may finish fast)`);
 
-  const [r1, r2, r3] = await Promise.all([
-    manager.waitFor(s1),
-    manager.waitFor(s2),
-    manager.waitFor(s3),
-  ]);
+  const [r1, r2, r3] = await Promise.all([manager.waitFor(s1), manager.waitFor(s2), manager.waitFor(s3)]);
 
   assert(r1.status === "done", `session 1 done`);
   assert(r2.status === "done", `session 2 done`);
@@ -362,11 +367,7 @@ async function scenario10_coderTools() {
     domain: "coding",
     systemPrompt: `You are a coder. Your working directory is ${workDir}. Use absolute paths with that prefix.`,
     model,
-    tools: [
-      createReadTool(),
-      createWriteTool(),
-      createExecTool({ cwd: workDir }),
-    ],
+    tools: [createReadTool(), createWriteTool(), createExecTool({ cwd: workDir })],
     apiKey: "not-needed",
   });
 

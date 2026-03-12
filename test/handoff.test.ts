@@ -27,7 +27,14 @@ function assistantMsg(text: string, ts = Date.now()): AgentMessage {
     api: "openai-chat",
     provider: "test",
     model: "test-model",
-    usage: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, totalTokens: 0, cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } },
+    usage: {
+      input: 0,
+      output: 0,
+      cacheRead: 0,
+      cacheWrite: 0,
+      totalTokens: 0,
+      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+    },
     stopReason: "stop",
     timestamp: ts,
   } as AgentMessage;
@@ -41,7 +48,14 @@ function toolCallMsg(name: string, args: Record<string, any>, ts = Date.now()): 
     api: "openai-chat",
     provider: "test",
     model: "test-model",
-    usage: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, totalTokens: 0, cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } },
+    usage: {
+      input: 0,
+      output: 0,
+      cacheRead: 0,
+      cacheWrite: 0,
+      totalTokens: 0,
+      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+    },
     stopReason: "toolUse",
     timestamp: ts,
   } as AgentMessage;
@@ -55,7 +69,14 @@ function toolCallMsgWithId(id: string, name: string, args: Record<string, any>, 
     api: "openai-chat",
     provider: "test",
     model: "test-model",
-    usage: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, totalTokens: 0, cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } },
+    usage: {
+      input: 0,
+      output: 0,
+      cacheRead: 0,
+      cacheWrite: 0,
+      totalTokens: 0,
+      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+    },
     stopReason: "toolUse",
     timestamp: ts,
   } as AgentMessage;
@@ -658,10 +679,7 @@ describe("summarizeForHandoff", () => {
   });
 
   it("handles only user messages (no tool calls)", () => {
-    const messages: AgentMessage[] = [
-      userMsg("Hello"),
-      assistantMsg("Hi, how can I help?"),
-    ];
+    const messages: AgentMessage[] = [userMsg("Hello"), assistantMsg("Hi, how can I help?")];
     const result = makeResult({
       messages,
       lastAssistantText: "Hi, how can I help?",

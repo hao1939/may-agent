@@ -1,5 +1,12 @@
 import { describe, it, expect, vi } from "vitest";
-import { createCompactionTransform, trimAccumulatedSummary, extractKeyFacts, mergeKeyFacts, formatKeyFacts, extractOriginalTask } from "../src/lib/compaction.js";
+import {
+  createCompactionTransform,
+  trimAccumulatedSummary,
+  extractKeyFacts,
+  mergeKeyFacts,
+  formatKeyFacts,
+  extractOriginalTask,
+} from "../src/lib/compaction.js";
 import type { CompactionInfo, KeyFacts } from "../src/lib/compaction.js";
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { Model } from "@mariozechner/pi-ai";
@@ -31,7 +38,14 @@ function assistantMsg(text: string, ts = Date.now()): AgentMessage {
     api: "openai-chat",
     provider: "test",
     model: "test-model",
-    usage: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, totalTokens: 0, cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } },
+    usage: {
+      input: 0,
+      output: 0,
+      cacheRead: 0,
+      cacheWrite: 0,
+      totalTokens: 0,
+      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+    },
     stopReason: "stop",
     timestamp: ts,
   } as AgentMessage;
@@ -45,7 +59,14 @@ function toolCallMsg(name: string, args: Record<string, any>, ts = Date.now()): 
     api: "openai-chat",
     provider: "test",
     model: "test-model",
-    usage: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, totalTokens: 0, cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } },
+    usage: {
+      input: 0,
+      output: 0,
+      cacheRead: 0,
+      cacheWrite: 0,
+      totalTokens: 0,
+      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+    },
     stopReason: "toolUse",
     timestamp: ts,
   } as AgentMessage;
@@ -86,10 +107,7 @@ describe("createCompactionTransform", () => {
     const transform = createCompactionTransform(model, { threshold: 0.7 });
 
     // Short conversation — well under 7000 token threshold
-    const messages = [
-      userMsg("Hello"),
-      assistantMsg("Hi there"),
-    ];
+    const messages = [userMsg("Hello"), assistantMsg("Hi there")];
 
     const result = await transform(messages);
     expect(result).toBe(messages); // same reference, not modified
@@ -149,12 +167,7 @@ describe("createCompactionTransform", () => {
     const recentUser = userMsg("What is the status?");
     const recentAssistant = assistantMsg("Here is the status report.");
 
-    const messages = [
-      userMsg(longText(200)),
-      assistantMsg(longText(200)),
-      recentUser,
-      recentAssistant,
-    ];
+    const messages = [userMsg(longText(200)), assistantMsg(longText(200)), recentUser, recentAssistant];
 
     const result = await transform(messages);
     // Recent messages should be preserved at the end
@@ -183,11 +196,7 @@ describe("createCompactionTransform", () => {
     expect(onCompact).toHaveBeenCalledTimes(1);
 
     // Simulate more conversation: take result1 and add more messages
-    const messages2 = [
-      ...result1,
-      userMsg(longText(100)),
-      assistantMsg(longText(100)),
-    ];
+    const messages2 = [...result1, userMsg(longText(100)), assistantMsg(longText(100))];
 
     const result2 = await transform(messages2);
     expect(onCompact).toHaveBeenCalledTimes(2);
@@ -373,7 +382,8 @@ describe("createCompactionTransform", () => {
     const model = fakeModel(1000);
     const transform = createCompactionTransform(model, { threshold: 0.3, keepRatio: 0.1 });
 
-    const reasoning = "The test failure is caused by using toBe for object comparison. " +
+    const reasoning =
+      "The test failure is caused by using toBe for object comparison. " +
       "The assertion should use toEqual instead, because toBe checks reference equality " +
       "while toEqual performs deep structural comparison. I will update the test file.";
 
@@ -396,9 +406,11 @@ describe("createCompactionTransform", () => {
     const model = fakeModel(1000);
     const transform = createCompactionTransform(model, { threshold: 0.3, keepRatio: 0.1 });
 
-    const earlyReasoning = "First I need to read the config file to understand the setup. " +
+    const earlyReasoning =
+      "First I need to read the config file to understand the setup. " +
       "This will help me determine the correct approach for fixing the integration issue.";
-    const laterReasoning = "After reading the config, I see the problem is in the database " +
+    const laterReasoning =
+      "After reading the config, I see the problem is in the database " +
       "connection string. The host is wrong — it should be localhost not 127.0.0.1 for IPv6.";
 
     const messages = [
@@ -459,7 +471,8 @@ describe("createCompactionTransform", () => {
     const model = fakeModel(1000);
     const transform = createCompactionTransform(model, { threshold: 0.3, keepRatio: 0.1 });
 
-    const reasoning = "The ENOENT error on config.json means the file was moved. " +
+    const reasoning =
+      "The ENOENT error on config.json means the file was moved. " +
       "Based on the find output, it's now at src/config/config.json. I'll update the import path.";
 
     const messages = [
@@ -604,7 +617,8 @@ describe("createCompactionTransform", () => {
     const model = fakeModel(1000);
     const transform = createCompactionTransform(model, { threshold: 0.3, keepRatio: 0.1 });
 
-    const task = "Implement the FrobnicatorService class with methods for encoding, " +
+    const task =
+      "Implement the FrobnicatorService class with methods for encoding, " +
       "decoding, and validating frobnicated data streams. The service should handle " +
       "both synchronous and asynchronous pipelines. Include proper error handling " +
       "and unit tests for all edge cases.";
@@ -745,10 +759,7 @@ describe("createCompactionTransform", () => {
 
 describe("extractOriginalTask", () => {
   it("extracts text from first user message with array content", () => {
-    const messages: AgentMessage[] = [
-      userMsg("Implement the new feature"),
-      assistantMsg("Sure thing"),
-    ];
+    const messages: AgentMessage[] = [userMsg("Implement the new feature"), assistantMsg("Sure thing")];
     expect(extractOriginalTask(messages)).toBe("Implement the new feature");
   });
 
@@ -761,17 +772,12 @@ describe("extractOriginalTask", () => {
   });
 
   it("returns null when first user message is empty", () => {
-    const messages: AgentMessage[] = [
-      userMsg(""),
-      assistantMsg("OK"),
-    ];
+    const messages: AgentMessage[] = [userMsg(""), assistantMsg("OK")];
     expect(extractOriginalTask(messages)).toBeNull();
   });
 
   it("returns null when no user messages exist", () => {
-    const messages: AgentMessage[] = [
-      assistantMsg("Hello"),
-    ];
+    const messages: AgentMessage[] = [assistantMsg("Hello")];
     expect(extractOriginalTask(messages)).toBeNull();
   });
 
@@ -863,10 +869,7 @@ describe("extractKeyFacts", () => {
   });
 
   it("returns empty facts for messages with no tool calls", () => {
-    const messages: AgentMessage[] = [
-      userMsg("hello"),
-      assistantMsg("hi"),
-    ];
+    const messages: AgentMessage[] = [userMsg("hello"), assistantMsg("hi")];
 
     const facts = extractKeyFacts(messages);
     expect(facts.filesRead.size).toBe(0);
@@ -933,7 +936,7 @@ describe("mergeKeyFacts", () => {
     const merged = mergeKeyFacts(a, b);
     expect(merged.execCommands.length).toBeLessThanOrEqual(15);
     // Should keep the newest commands (from b)
-    expect(merged.execCommands.some(c => c.command === "cmd_b_9")).toBe(true);
+    expect(merged.execCommands.some((c) => c.command === "cmd_b_9")).toBe(true);
   });
 });
 
@@ -967,7 +970,7 @@ describe("formatKeyFacts", () => {
     };
 
     const lines = formatKeyFacts(facts);
-    const cmdLine = lines.find(l => l.includes("[ok]"))!;
+    const cmdLine = lines.find((l) => l.includes("[ok]"))!;
     expect(cmdLine.length).toBeLessThan(200);
     expect(cmdLine).toContain("…");
   });

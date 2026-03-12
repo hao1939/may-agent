@@ -48,10 +48,7 @@ export function parseFrontmatter(content: string): Frontmatter {
     let value: string = trimmedLine.slice(colonIdx + 1).trim();
 
     // Strip surrounding quotes if present
-    if (
-      (value.startsWith('"') && value.endsWith('"')) ||
-      (value.startsWith("'") && value.endsWith("'"))
-    ) {
+    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
       value = value.slice(1, -1);
     }
 
@@ -144,10 +141,7 @@ function tryLoadSkill(filePath: string): SkillEntry | null {
   const fm = parseFrontmatter(content);
   if (!fm.description || typeof fm.description !== "string") return null;
 
-  const name =
-    typeof fm.name === "string" && fm.name
-      ? fm.name
-      : basename(filePath, ".md");
+  const name = typeof fm.name === "string" && fm.name ? fm.name : basename(filePath, ".md");
 
   return { name, description: fm.description, filePath };
 }
@@ -187,4 +181,3 @@ function escapeXml(str: string): string {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "\&apos;");
 }
-

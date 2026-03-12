@@ -202,7 +202,10 @@ describe("Session JSONL persistence", () => {
       expect(existsSync(archivedJsonl)).toBe(true);
 
       const raw = readFileSync(archivedJsonl, "utf-8");
-      const messages = raw.trim().split("\n").map((line) => JSON.parse(line) as AgentMessage);
+      const messages = raw
+        .trim()
+        .split("\n")
+        .map((line) => JSON.parse(line) as AgentMessage);
 
       // Should have at least the user message (the task).
       expect(messages.length).toBeGreaterThanOrEqual(1);

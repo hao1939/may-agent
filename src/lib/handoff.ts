@@ -122,15 +122,17 @@ function extractErrors(messages: AgentMessage[]): Array<{ tool: string; preview:
     const tr = msg as ToolResultMessage;
 
     // Check for explicit error flag or tool-specific error patterns
-    const text = tr.content
-      ?.filter((b): b is { type: "text"; text: string } => b.type === "text")
-      .map((b) => b.text)
-      .join(" ") ?? "";
+    const text =
+      tr.content
+        ?.filter((b): b is { type: "text"; text: string } => b.type === "text")
+        .map((b) => b.text)
+        .join(" ") ?? "";
 
-    const isError = tr.isError
-      || text.startsWith("Error reading file:")
-      || text.startsWith("Error writing file:")
-      || /^(?:CWD:[^\n]*\n)?Exit code [^0]/.test(text);
+    const isError =
+      tr.isError ||
+      text.startsWith("Error reading file:") ||
+      text.startsWith("Error writing file:") ||
+      /^(?:CWD:[^\n]*\n)?Exit code [^0]/.test(text);
 
     if (isError && text.trim()) {
       errors.push({
@@ -166,7 +168,7 @@ function extractWriteContents(messages: AgentMessage[]): Array<{ path: string; p
       // Keep only the latest write to each path
       if (seen.has(path)) {
         // Remove the old entry — we'll add the new one
-        const idx = contents.findIndex(c => c.path === path);
+        const idx = contents.findIndex((c) => c.path === path);
         if (idx >= 0) contents.splice(idx, 1);
       }
       seen.add(path);
@@ -227,7 +229,7 @@ export function summarizeForHandoff(result: TaskResult, opts?: HandoffOptions): 
 
     if (data.filesRead.length > 0) {
       // Only show files that were read but NOT written (written files are more important)
-      const readOnly = data.filesRead.filter(f => !data.filesWritten.includes(f));
+      const readOnly = data.filesRead.filter((f) => !data.filesWritten.includes(f));
       if (readOnly.length > 0) {
         sections.push(`\n**Files read (not modified):**`);
         for (const f of readOnly) {
@@ -241,9 +243,8 @@ export function summarizeForHandoff(result: TaskResult, opts?: HandoffOptions): 
     if (cmds.length > 0) {
       sections.push(`\n**Commands run:**`);
       for (const cmd of cmds) {
-        const display = cmd.command.length > MAX_COMMAND_LENGTH
-          ? cmd.command.slice(0, MAX_COMMAND_LENGTH) + "…"
-          : cmd.command;
+        const display =
+          cmd.command.length > MAX_COMMAND_LENGTH ? cmd.command.slice(0, MAX_COMMAND_LENGTH) + "…" : cmd.command;
         const status = cmd.failed ? "❌" : "✓";
         sections.push(`- ${status} \`${display}\``);
       }
@@ -268,9 +269,10 @@ export function summarizeForHandoff(result: TaskResult, opts?: HandoffOptions): 
 
   // Agent's final response
   if (includeResponse && data.response) {
-    const response = data.response.length > MAX_RESPONSE_LENGTH
-      ? data.response.slice(0, MAX_RESPONSE_LENGTH) + "\n\n_(response truncated)_"
-      : data.response;
+    const response =
+      data.response.length > MAX_RESPONSE_LENGTH
+        ? data.response.slice(0, MAX_RESPONSE_LENGTH) + "\n\n_(response truncated)_"
+        : data.response;
     sections.push(`\n**Agent response:**\n${response}`);
   }
 
