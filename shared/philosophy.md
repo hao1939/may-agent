@@ -91,8 +91,8 @@ The file system IS the agent's memory and context infrastructure, not just a sto
 - **File = context host.** Opening a file loads a context. Memory and work-object are unified.
 - **Task switch = file switch.** Redirecting an agent to a different file IS the context switch.
 - **Filename = semantic index.** A well-structured file tree with meaningful names is itself a retrieval system. Resist adding a vector DB until file-based navigation genuinely breaks down.
+- **The Write-Manage-Read Loop:** Memory isn't just storage; it requires active management. Agents must have a distinct "Consolidation" phase (the "Manage" step) where they distill episodic logs into semantic knowledge. Without this, the file system becomes a swamp.
 - **Memory tiers:** Long-term (persistent, curated files) and episodic (session/task-level files, daily journals).
-- **Memory consolidation is agent work:** Hot → Warm → Cold → Distilled.
 
 ### 12. Every Agent Owns a Domain [hao-pattern]
 Route work to the agent whose domain matches the task; specialists should compound knowledge over time. Task decomposition is routing to **whoever has the knowledge**, not breaking work into steps. An agent's quality = the richness of its context (tools, docs, archives, domain knowledge).
@@ -107,7 +107,7 @@ Put constraints and invariants in code/tools where possible (structural fixes) r
 *Example:* `TruncationTracker` prevents data loss from partial reads structurally, rather than relying on agent vigilance.
 
 ### 15. Agent as Feature Unit [hao-pattern]
-Agents are the minimum unit of product features. Each feature is an agent with a well-defined execution loop. Non-agent concerns (routing, auth, message delivery, tool execution) stay as raw JS — deterministic infra that shouldn't have judgment in the loop. When adding new functionality, prefer a new dedicated agent over extending an existing one — especially when the capability is exploratory or could destabilize working features.
+Agents are the unit of product features. Each feature is an agent with a well-defined execution loop. Non-agent concerns (routing, auth, message delivery, tool execution) stay as raw JS — deterministic infra that shouldn't have judgment in the loop. A new agent is justified when the capability needs its own domain context, a different model perspective, or parallel execution. If the capability is just a procedure any agent could follow, it's a skill, not an agent (see P52).
 
 ### 16. Spec-File Coordination [imported]
 When agents share a well-structured state/spec file, you don't need an orchestrator. The file IS the coordination. Each agent reads the spec, executes its slice, writes back its result. No polling, no message passing, no central coordinator.
@@ -131,6 +131,29 @@ A smaller model with good memory outperforms a larger model with no memory. Memo
 
 ### 42. Minimalism as Force Multiplier [imported]
 Precise information density beats feature accumulation. Large contexts cause over-exploration. The expert practitioner's skill is removal, not addition. Remove noise to improve signal.
+
+### 52. Skill Over Agent [hao-direct]
+Three mechanisms for reusable capability, in order of preference:
+
+| Mechanism | What | Cost | Shareable |
+|-----------|------|------|-----------|
+| **Skill** (doc) | Instructions an agent reads and follows | Zero — just context | Any agent can learn it |
+| **Workflow** (code) | Deterministic multi-step orchestration | Low — infra code | Agents with the workflow tool |
+| **Agent** (entity) | Identity + model + tools + accumulated context | High — LLM session | N/A (called, not shared) |
+
+**Default to skill.** If an agent knows the exact path, it reads the skill guide and executes directly — no delegation overhead. A skill is the simplest, cheapest, most shareable mechanism.
+
+**Use an agent when you need what a skill can't provide:**
+- **Domain context** — the agent has accumulated knowledge you don't have (Scout's research archive, Amy's community insights). An agent is a *combination* of skills and context; that context is what makes delegation worthwhile.
+- **Cooperation under uncertainty** — when you're not sure of the path, delegate to the specialist who is. If you know the path, use the skill yourself.
+- **Parallelism** — multiple LLM sessions running simultaneously. Skills execute sequentially within one session.
+- **Independent perspective** — a different model reasons differently. QA on GPT-5.2 catches what Coder on Opus misses. This is the basis of the Coder/QA split (P49).
+
+**Use a workflow** when a multi-agent coordination pattern is proven and the sequencing is fixed. The workflow calls agents (who carry context and use skills), but the orchestration is deterministic code — no LLM turns wasted re-deriving "call coder, then call QA, then check."
+
+**The anti-pattern:** Calling an agent to do something you could do yourself with a skill doc. Every delegation has overhead (context loss, session cost, coordination). Only delegate when the gain (context, parallelism, perspective) exceeds that overhead.
+
+> "skill over agent, which is simple and more easy to share. agent make sense because it's combination of skill and context — it provides the ability for agent to cooperate when facing something not sure. if the agent knows the exact path, it can use skill directly. agents also serve the purpose of parallelism and can provide different opinion via different llm provider." — Hao
 
 ---
 
@@ -186,6 +209,14 @@ Nothing is set-and-forget. Every artifact — specs, knowledge files, design pri
 Every agent evolves the same way: same workspace structure, same quality bar, same process for noticing gaps and fixing them. No first-class or second-class agents. **But: an agent shouldn't evolve itself.** Self-evolution creates blind spots. Have a different agent do it.
 
 > "sometimes it's complicated to ask agents to work on itself, it's some kind of infinite loop issue. In the case we could ask other agents to do it" — Hao
+
+### 51. The Growth Cycle (Blue/Green Cognition) [imported+validated]
+Evolution requires isolation. Never upgrade a live agent in-place ("brain transplant while awake"). Instead, follow the Growth Cycle:
+1. **Fork** — Create an isolated clone (sandbox).
+2. **Train** — Modify the clone's soul/knowledge.
+3. **Verify** — Test the clone against criteria.
+4. **Promote** — Atomically replace the live agent.
+This separates *execution* (stable, live) from *evolution* (experimental, forked). Validated by the Scout V2 upgrade (March 2026).
 
 ### 27. Self-Sufficient Agents [hao-direct]
 An agent should carry enough context internally that the heartbeat is just a trigger, not a script. A well-designed agent should "just know" what to do. If an agent needs a detailed heartbeat prompt to function, its internal knowledge is insufficient.
@@ -312,5 +343,10 @@ If infrastructure detects a problem (crash, hang, resource issue), it writes to 
 
 **The principle:** Cron, JS handlers, and system infrastructure handle mechanical/operational concerns. Agents handle thinking. Mixing the two wastes expensive LLM turns on work that `setTimeout` can do better.
 
-### 50. Reuse Proven Patterns (Workflow Memory) [imported]
-Don't re-derive coordination strategies from scratch. If a complex multi-agent task has been solved once, capture the pattern and reuse it. Efficiency comes from executing known good paths, not constant exploration.
+### 50. Reuse Proven Patterns [imported+hao-pattern]
+Don't re-derive coordination strategies from scratch. Three reuse mechanisms, from lightest to heaviest:
+1. **Skill** (markdown guide) — agent reads it and executes the pattern itself. Zero overhead. Use when the knowledge is the bottleneck, not the execution.
+2. **Workflow** (TypeScript steps) — code orchestrates agents in a fixed sequence. Deterministic coordination. Use when the multi-agent pattern is proven and the sequencing shouldn't be re-derived.
+3. **Agent delegation** — call a specialist who carries domain context. Use when the task needs knowledge, perspective, or parallelism you don't have (see P52).
+
+Efficiency comes from executing known good paths, not constant exploration.

@@ -12,33 +12,40 @@ We are transitioning from "Exploration" (Phase 1) to "Hardening" (Phase 2). The 
 
 ## Active Initiatives
 
-### 1. Zero Data Loss (Blind Overwrite Prevention)
+### 1. Agent Growth Cycle (Meta-Loop)
+**Goal:** The system systematically improves its own agents through a "Fork -> Train -> Verify -> Promote" cycle.
+- **Status:** **VALIDATED** (Scout V2).
+- **Mechanism:** `coach` agent + `agent-growth` tools (`fork`, `promote`, `discard`).
+- **Next Steps:** Apply to other agents (Coder, Bob). Automate the trigger (drift detection -> auto-upgrade).
+
+### 2. V2 Hardening & Observability
+**Goal:** Stabilize the new ephemeral session architecture and ensure deep visibility into agent behavior.
+- **Status:** Active.
+- **Mechanism:** `may.sh` improvements, structured logging, session recovery.
+- **Success Metric:** < 1% crash rate on long-running tasks.
+
+## Completed / Maintained
+
+### V2 Architecture (Stability)
+**Goal:** Migrate system to ephemeral sessions and synchronous cooperation.
+- **Status:** **DONE** (March 2026).
+- **Mechanism:** `scripts/v2.ts`, `src/v2/chat-loop.ts`, `agents.call`.
+
+### Zero Data Loss (Blind Overwrite Prevention)
 **Goal:** Eliminate "truncated read → blind overwrite" failures entirely.
-- **Status:** Structural Fix Deployed.
-- **Mechanism:** `Poisoned Path Protection` in `src/tools.ts`. Structurally blocks `write()` to any file read with truncation.
-- **Adoption:** Universal. No agent behavior change required; the environment enforces safety.
-- **Success Metric:** 0 incidents of `lessons.md` or `todo.md` corruption in 7 days.
+- **Status:** **DONE** (Structural Fix).
+- **Mechanism:** `Poisoned Path Protection` in `src/tools.ts`.
 
-### 2. Meta-Loop Autonomy
-**Goal:** The system self-diagnoses and self-repairs without human initiation.
-- **Status:** Active (Daily Cycle Established).
-- **Mechanism:**
-    - **Detection:** Pattern Recognition Pipeline (F2) scans for recurring issues.
-    - **Reporting:** Daily Brief (F5) summarizes health for human.
-    - **Fixing:** Ralph Loop (F4) drives discoveries to implementation.
-- **Success Metric:** Optimizer successfully implements a fix that survives 3 subsequent sessions without regression.
-
-### 3. Hard-Gated Coder (RALPH Loop)
+### Hard-Gated Coder (RALPH Loop)
 **Goal:** A Coder workflow that *structurally disables* the `finish` tool until a verification command (test/lint) returns exit code 0.
-- **Status:** Prototyping (Experiment 1 Complete).
-- **Progress:** `vet-skill` workflow successfully used the loop.
-- **Next:** Apply this pattern to general coding tasks.
+- **Status:** **DONE** (March 2026).
+- **Mechanism:** `verified-coder` workflow.
 
 ## Feature Backlog
 
 ### High Priority
-- **Modular Skill Registry**: Refactor giant system prompts into small `SKILL.md` files that are lazy-loaded only when needed (Progressive Disclosure pattern).
-- **Crash Recovery State**: `[STARTED]` state tracking to auto-resume orphaned sessions after a process restart.
+- **Modular Skill Registry**: Refactor giant system prompts into small `SKILL.md` files that are lazy-loaded only when needed (Progressive Disclosure pattern). **(DONE)**
+- **Crash Recovery State**: `[STARTED]` state tracking to auto-resume orphaned sessions after a process restart. **(DONE)**
 
 ### Medium Priority
 - **Agent-Specific Evaluation**: Custom scorecards for each agent (e.g., Coder = correctness/tests; Bob = insight/alignment) instead of generic "Quality". (Partially done with L1/L2/L3 criteria).
@@ -49,6 +56,7 @@ We are transitioning from "Exploration" (Phase 1) to "Hardening" (Phase 2). The 
 - **Vector Memory**: (Parked; file-based navigation is sufficient for current scale).
 
 ## Change Log
+- **2026-03-11**: Marked V2 Architecture, Hard-Gated Coder, Modular Skill Registry, and Crash Recovery State as DONE.
 - **2026-03-10**: Upgraded Zero Data Loss to "Structural Fix" (Poisoned Path).
 - **2026-03-07**: Updated status for Zero Data Loss (Deployed), Meta-Loop (Active), and Ralph Loop (Prototyping).
 - **2026-03-06**: Initial Roadmap created by Bob. Focus defined as "Robustness & Deterministic Guardrails".

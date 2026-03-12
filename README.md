@@ -13,8 +13,7 @@ Each agent has its own directory:
 - `workspace/` — working directory for scratch files
 
 Shared knowledge lives in `shared/`:
-- `shared/system-design.md` — conceptual architecture (what agents are, principles, evaluation model)
-- `shared/team.md` — concrete team roster (who, what tools, models, automation)
+- `shared/team.md` — concrete team roster (who, what tools, models, runner design, automation)
 
 ## Agents
 

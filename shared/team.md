@@ -6,23 +6,23 @@ Concrete details about who's on the team, what they have, and how the runner wor
 
 | Agent | Role | Model | Tools | Notes |
 |-------|------|-------|-------|-------|
-| **Tech Lead** | Builder | opus | read, write, exec, workflow, subagents | The Builder. Shares Bob's vision, drives implementation. Leads coder+QA, applies philosophy in code. |
-| **May** | Supervisor | opus | read, write, exec, subagents, workflow, cron | Hao's Deputy. Orchestrates agents, tracks work end-to-end, maintains system. Delegates code changes to tech-lead/master. |
-| **Coder** | Builder | opus | read, write, exec | Full project access. Implements code changes. Does not commit — supervisor handles git add/commit after QA review. |
-| **QA** | Builder | gpt-5.2 | read, write, exec | Different model from coder for perspective diversity. Can fix issues directly. Uses PASS/FAIL/CONDITIONAL verdicts. |
-| **Master** | Builder | opus | claude-code, gemini-cli | Two dedicated CLI agent tools. No read, write, or exec — interacts with codebase exclusively through claude-code and gemini-cli. |
-| **Amy** | Researcher | opus | read, write, exec | XHS content exploration and archival. |
-| **Amy-Kimi** | Researcher | kimi | read, write, exec | Kimi-powered variant of Amy for Chinese content. |
-| **Scout** | Researcher | opus | read, write, exec | The Scholar. Takes leads and goes deep — cross-referencing, archiving, building compounding knowledge. |
+| **Tech Lead** | Builder | opus | read, bash, edit, write, workflow, agents | The Builder. Shares Bob's vision, drives implementation. Leads coder+QA, applies philosophy in code. |
+| **May** | Supervisor | opus | read, bash, edit, write, agents, workflow, cron | Hao's Deputy. Orchestrates agents, tracks work end-to-end, maintains system. Delegates code changes to tech-lead/master. |
+| **Coder** | Builder | opus | read, bash, edit, write | Full project access. Implements code changes. Does not commit — supervisor handles git add/commit after QA review. |
+| **QA** | Builder | gpt-5.2 | read, bash, edit, write | Different model from coder for perspective diversity. Can fix issues directly. Uses PASS/FAIL/CONDITIONAL verdicts. |
+| **Master** | Builder | opus | claude-code, gemini-cli | Two dedicated CLI agent tools. No read, bash, edit, or write — interacts with codebase exclusively through claude-code and gemini-cli. |
+| **Amy** | Researcher | opus | read, bash, edit, write, scrape_webpage | XHS content exploration and archival. `scrape` preset provides `scrape_webpage` for web fetching. |
+| **Amy-Kimi** | Researcher | kimi | read, bash, edit, write | Kimi-powered variant of Amy for Chinese content. |
+| **Scout** | Researcher | opus | read, bash, edit, write, scrape_webpage | The Scholar. Takes leads and goes deep — cross-referencing, archiving, building compounding knowledge. `scrape` preset provides the `scrape_webpage` tool for web fetching. |
 
 ## Meta Team
 
 | Agent | Role | Model | Tools | Notes |
 |-------|------|-------|-------|-------|
-| **Evaluator** | Supervisor | gpt-5.2 | read, write, exec | Scores each agent in a task tree by responsibility. memoryLimit=5. |
-| **Optimizer** | Builder | opus | read, write, exec, subagents, workflow | Implements one fix per run. Can delegate to coder and QA. |
-| **Bob** | Philosopher | gemini-3-pro | read, write, exec, subagents | System architect. Holds the blueprint, designs agent cooperation and evolution, reviews designs, stewards philosophy.md, drives meta-loop. |
-| **Coach** | Philosopher | opus | read, write (workspace only), exec (read-only), subagents, workflow, validate-workflow, socket-watch | Trains agents through live exercises. Spawns coachee via subagents (detached), observes via socket, writes reports. |
+| **Evaluator** | Supervisor | gpt-5.2 | read, bash, edit, write | Scores each agent in a task tree by responsibility. memoryLimit=5. |
+| **Optimizer** | Builder | opus | read, bash, edit, write, agents, workflow | Implements one fix per run. Can delegate to coder and QA. |
+| **Bob** | Philosopher | gemini-3-pro | read, bash, edit, write, agents | System architect. Holds the blueprint, designs agent cooperation and evolution, reviews designs, stewards philosophy.md, drives meta-loop. |
+| **Coach** | Philosopher | opus | read, bash, edit, write, agents, workflow, socket_watch, fork_agent, verify_agent, promote_agent, discard_agent | Trains agents through live exercises. Spawns coachee via agents (detached), observes via socket_watch, writes reports. Uses agent-growth tools to fork/verify/promote agents. |
 
 ## Model Assignment
 
@@ -33,29 +33,28 @@ research (Amy-Kimi). All are proxy-aliased labels routed through a local proxy.
 
 ## Runner
 
-The runner is agent-agnostic. Any registered agent can serve as the interface agent:
+The system runs on the **V2 Runner**, which uses **ephemeral sessions** for everything.
+There are no persistent sessions.
 
-- **`AGENT=may`** (default) — May as persistent interface, delegates to team
-- **`AGENT=bob`** — Bob as persistent interface, for meta-loop work
-- **`AGENT=coach`** — Coach as persistent interface, for training sessions
-- **`AGENT=master`** — Master as persistent interface, for direct CLI tool work
-
-The interface agent gets a persistent session with compaction. All other agents run
-as ephemeral sessions.
+- **Interface Agent**: Default is **May**.
+- **Chat Loop**: The runner spawns a *fresh* session for every user message.
+- **Context**: The chat loop injects a rolling transcript of the conversation into each new session.
 
 ### Input Routing
 
-- **Default input** goes to the interface agent's persistent session
-- **`@agent message`** runs a fresh ephemeral session on any agent directly
-- **Socket `run` command** does the same: `{"type":"run","agent":"bob","message":"..."}`
-- **Socket `input` command** sends to the interface agent
+- **Default input** spawns a fresh session for the interface agent (May).
+- **`@agent message`** spawns a fresh session for the target agent.
+- **Socket `run` command**: `{"type":"run","agent":"bob","message":"..."}` spawns a fresh session.
+- **Interactive Console**: Supports `/status`, `/cancel`, `/exit` commands natively.
 
 ### External Scheduling
 
-Recurring tasks use cron.json (agent-owned cron handlers) or external crontab:
+Recurring tasks use `cron.json` (agent-owned cron handlers).
+The runner spawns **detached sessions** (separate processes) for these tasks.
+
 ```
-# Run meta-loop every 30 minutes
-*/30 * * * * echo '{"type":"run","agent":"bob","message":"Run the meta-loop"}' | socat - UNIX-CONNECT:/path/to/.state/may.sock
+# Example cron entry
+"monitor-feeds": "0 * * * *",
 ```
 
 ## Workflows
@@ -78,4 +77,4 @@ restarting.
 - **Coder never commits** — supervisor handles git add/commit after QA review
 - **Master cannot write files** — must use CLI agents (claude-code, gemini-cli)
 - **One fix per optimizer run** — isolates changes for measurable evaluation
-- **Persistent sessions use compaction** — threshold 70%, keep ratio 40%
+- **No persistent state in memory** — agents must write to `workspace/` or `.state/` to persist data between runs.

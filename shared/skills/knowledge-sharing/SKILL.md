@@ -55,13 +55,13 @@ Example:
 
 ```bash
 # Find Scout's work on "verification"
-grep -i "verification" agents/scout/knowledge/discoveries.md | head -20
+grep -i "verification" agents/scout/knowledge/library/discoveries.md | head -20
 
 # Find Amy's insights on "memory"
 grep -i "memory" agents/amy/knowledge/insights.md
 
 # Find Bob's synthesis on a topic
-grep -rli "verification" agents/bob/knowledge/synthesis/
+grep -rli "verification" agents/bob/knowledge/library/synthesis/
 ```
 
 ## Who Does What
