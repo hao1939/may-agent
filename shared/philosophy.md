@@ -218,6 +218,14 @@ Evolution requires isolation. Never upgrade a live agent in-place ("brain transp
 4. **Promote** — Atomically replace the live agent.
 This separates *execution* (stable, live) from *evolution* (experimental, forked). Validated by the Scout V2 upgrade (March 2026).
 
+### 53. Grounded Self-Evolution [imported]
+Self-evolution without external grounding is mathematically guaranteed to degrade safety (Moltbook Trilemma, arXiv:2602.09877). Therefore, any evolution loop (where an agent modifies its own code, prompts, or knowledge) must have a distinct **External Grounding** mechanism.
+Valid grounding mechanisms:
+1. **Human Review**: The human explicitly approves the change (e.g., `philosophy.md` updates).
+2. **Frozen Anchors**: The agent is evaluated against a read-only safety harness (`SOUL.md`, `mission.md`) that it cannot modify.
+3. **Other-Agent Audit**: A distinct agent (e.g., Coach, Evaluator) with a different model/prompt audits the change.
+**Never** allow a closed loop where an agent defines its own success criteria and then satisfies them. This leads to "consensus hallucination" and drift.
+
 ### 27. Self-Sufficient Agents [hao-direct]
 An agent should carry enough context internally that the heartbeat is just a trigger, not a script. A well-designed agent should "just know" what to do. If an agent needs a detailed heartbeat prompt to function, its internal knowledge is insufficient.
 
