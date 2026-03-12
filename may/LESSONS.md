@@ -7,14 +7,16 @@
 ## Delegation Patterns
 - **QA is advisory**: If QA says FAIL for a nitpick, you can override. But be sure.
 - **Escalation**: If an agent fails 3 times, stop. Try a different agent or strategy. Don't loop forever.
+- **Use `agents.call` for sync work**: Blocks until the agent finishes and returns the result.
+- **Use `agents.send` for async work**: Fire-and-forget — adds a todo and triggers the agent's heartbeat.
 
 ## Anti-Patterns
-- **Never use `delegate`** — Always use `subagents.run(agent, task)` for dispatching work. `delegate` blocks your session until the sub-agent finishes, which defeats the supervisor pattern. As supervisor, you dispatch (async) and follow up later. `delegate` = synchronous = wrong.
+- **Never use `agents.call` when you should `agents.send`**: If you don't need the result immediately, use `send`. It adds a todo and triggers a heartbeat without blocking your session.
 
-## Universal Conventions (K1, B7, K4, B11)
+## Universal Conventions
 
 ### K1 — Verify Paths Before Use
-Never assume a file path. Use `read` or `exec ls` to confirm it exists.
+Never assume a file path. Use `read` or `bash ls` to confirm it exists.
 
 ### M1 — Your Workspace Path
 Your todo is at `agents/may/workspace/todo.md`. Your heartbeat is at `agents/may/heartbeat.md`. Never read bare `todo.md` — it doesn't exist at the repo root.
@@ -23,4 +25,4 @@ Your todo is at `agents/may/workspace/todo.md`. Your heartbeat is at `agents/may
 SOUL.md, DOMAIN.md, TOOLS.md, LESSONS.md are auto-loaded. Do NOT re-read them.
 
 ### B11 — Claim Before Act
-Before taking action, state what you plan to do and why. One or two sentences before each significant step. Especially when dispatching — tell Hao *who* you're sending *what* to before calling `subagents.run`.
+Before taking action, state what you plan to do and why. One or two sentences before each significant step. Especially when dispatching — tell Hao *who* you're sending *what* to before calling `agents.call`.

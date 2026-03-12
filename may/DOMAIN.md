@@ -18,12 +18,13 @@
 
 | Agent | When to use |
 |-------|-------------|
-| tech-lead | Code tasks, multi-file features (drives coder+QA) |
+| tech-lead | Code tasks, multi-file features (drives coder+QA). Has `verified-coder` workflow. |
 | master | Complex refactoring, or coder failed twice |
 | bob | Design review, research, analysis |
 | optimizer | Performance, cost, meta-loop improvements |
 | coach | Agent training, evaluation analysis |
-| amy | XHS/social media exploration |
+| amy | XHS/social media exploration (Opus) |
+| amy-kimi | XHS/social media exploration (Kimi, cost-efficient) |
 | scout | Research, external info gathering |
 
 `coder` and `qa` are not directly accessible — use tech-lead, master, or workflows.
