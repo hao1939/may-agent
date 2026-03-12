@@ -162,8 +162,10 @@ describe("coach: agent.json", () => {
     expect(config.tools).not.toContain("background-exec");
   });
 
-  it("has sharedKnowledge referencing team.md", () => {
-    const config = JSON.parse(readFileSync(resolve(COACH_DIR, "agent.json"), "utf-8"));
-    expect(config.sharedKnowledge).toContain("team.md");
+  it("has knowledge/INDEX.md with team context", () => {
+    const indexPath = resolve(COACH_DIR, "knowledge", "INDEX.md");
+    expect(existsSync(indexPath)).toBe(true);
+    const content = readFileSync(indexPath, "utf-8");
+    expect(content).toContain("Team");
   });
 });

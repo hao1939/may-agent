@@ -2,7 +2,7 @@
  * Dynamic agent loader.
  *
  * Scans agents/ for agent.json configs and registers them with SubagentManager.
- * Tool presets map strings like "read-write", "exec", "subagents" to actual tool
+ * Tool presets map strings like "coding", "agents", "workflow" to actual tool
  * constructors. Adding a new agent = create agents/<name>/agent.json + restart
  * (or send reload_agents command).
  *
@@ -10,17 +10,10 @@
  *   agents/<name>/knowledge/   → knowledgeDir
  *   agents/<name>/workspace/   → workspace
  *   agents/<name>/workflows/   → workflowDir (if exists)
- *   agents/<name>/skills/      → skillsDirs (per-agent skills, always included)
  *
- * Skill resolution:
- *   When agent.json includes `"skills": ["file-safety", "error-handling"]`, each
- *   skill name is resolved to `agents/shared/skills/{name}/` and added to skillsDirs.
- *   This gives agents explicit, opt-in control over which shared skills they receive.
- *
- *   Backward compatibility: if `skills` is absent (undefined), ALL shared skills
- *   are loaded (the entire `agents/shared/skills/` directory), preserving the
- *   pre-Phase-1 behavior. An empty array (`"skills": []`) means *no* shared
- *   skills — only per-agent skills from `agents/<name>/skills/`.
+ * System prompt is assembled from convention files:
+ *   agents/<name>/SOUL.md, DOMAIN.md, TOOLS.md, LESSONS.md, knowledge/INDEX.md
+ * No config-driven prompt injection — agent.json is purely operational.
  */
 
 import { readFileSync, existsSync, readdirSync } from "node:fs";
@@ -50,22 +43,12 @@ export interface AgentConfig {
   description: string;
   domain: string;
   model: string; // key into models map
-  tools: string[]; // preset names: "read-write", "exec", "subagents", etc.
-  systemPromptFiles?: string[]; // relative to agent dir
-  sharedKnowledge?: string[]; // filenames in agents/shared/
+  tools: string[]; // preset names: "coding", "agents", "workflow", etc.
   memoryLimit?: number;
   /** Maximum assistant turns before session is forcibly wrapped up. */
   maxTurns?: number;
-  /** Block direct delegation to specific agents via subagents tool. */
+  /** Block direct delegation to specific agents via agents tool. */
   delegateDeny?: { agents: string[]; hint: string };
-  /**
-   * Explicit list of shared skills to load from agents/shared/skills/{name}/.
-   *
-   * - Present + non-empty: only listed skills are loaded (selective opt-in).
-   * - Present + empty (`[]`): no shared skills loaded (per-agent skills only).
-   * - Absent (undefined): ALL shared skills loaded (backward-compatible default).
-   */
-  skills?: string[];
 }
 
 // ── Loader options ──────────────────────────────────────────────────────
@@ -302,7 +285,6 @@ function buildTools(config: AgentConfig, opts: AgentLoaderOptions): AgentTool[] 
               const model = opts.models[config.model];
               const knowledgeDir = resolve(agentDir, "knowledge");
               const workspace = resolve(agentDir, "workspace");
-              const skillsDirs = resolveSkillsDirs(config, opts.agentsRoot, opts.bus);
 
               manager.register({
                 name: config.name,
@@ -310,10 +292,8 @@ function buildTools(config: AgentConfig, opts: AgentLoaderOptions): AgentTool[] 
                 domain: config.domain,
                 model,
                 tools: buildTools(config, opts),
-                systemPromptFiles: resolvePromptFiles(config, opts.agentsRoot),
                 knowledgeDir: existsSync(knowledgeDir) ? knowledgeDir : undefined,
                 workspace: existsSync(workspace) ? workspace : undefined,
-                skillsDirs,
                 projectRoot: opts.projectRoot,
                 apiKey: (model as any).apiKey,
                 memoryLimit: config.memoryLimit,
@@ -327,7 +307,6 @@ function buildTools(config: AgentConfig, opts: AgentLoaderOptions): AgentTool[] 
               const model = opts.models[config.model];
               const knowledgeDir = resolve(agentDir, "knowledge");
               const workspace = resolve(agentDir, "workspace");
-              const skillsDirs = resolveSkillsDirs(config, opts.agentsRoot, opts.bus);
 
               manager.register({
                 name: config.name,
@@ -335,10 +314,8 @@ function buildTools(config: AgentConfig, opts: AgentLoaderOptions): AgentTool[] 
                 domain: config.domain,
                 model,
                 tools: buildTools(config, opts),
-                systemPromptFiles: resolvePromptFiles(config, opts.agentsRoot),
                 knowledgeDir: existsSync(knowledgeDir) ? knowledgeDir : undefined,
                 workspace: existsSync(workspace) ? workspace : undefined,
-                skillsDirs,
                 projectRoot: opts.projectRoot,
                 apiKey: (model as any).apiKey,
                 memoryLimit: config.memoryLimit,
@@ -359,90 +336,6 @@ function buildTools(config: AgentConfig, opts: AgentLoaderOptions): AgentTool[] 
   }
 
   return tools;
-}
-
-// ── Resolve system prompt files ─────────────────────────────────────────
-
-function resolvePromptFiles(config: AgentConfig, agentsRoot: string): string[] {
-  const agentDir = resolve(agentsRoot, config.name);
-  const files: string[] = [];
-
-  // Shared knowledge files first
-  if (config.sharedKnowledge) {
-    for (const filename of config.sharedKnowledge) {
-      files.push(resolve(agentsRoot, "shared", filename));
-    }
-  }
-
-  // Agent-specific system prompt files (relative to agent dir)
-  if (config.systemPromptFiles) {
-    for (const relPath of config.systemPromptFiles) {
-      files.push(resolve(agentDir, relPath));
-    }
-  }
-
-  return files;
-}
-
-// ── Skill resolution ────────────────────────────────────────────────────
-
-/**
- * Resolve skill directories for an agent based on its `skills` config.
- *
- * Resolution strategy:
- *   1. If `config.skills` is undefined (absent from agent.json):
- *      → Load ALL shared skills: [agents/shared/skills/]
- *      This preserves backward compatibility for agents that haven't
- *      adopted the explicit skills array yet.
- *
- *   2. If `config.skills` is an array (even empty):
- *      → Load ONLY the named skills: [agents/shared/skills/file-safety/, ...]
- *      An empty array means "no shared skills" — the agent only gets
- *      its per-agent skills from agents/<name>/skills/ (handled by manager.ts).
- *
- * Per-agent skills (agents/<name>/skills/) are always included by
- * manager.ts's resolveSystemPrompt(), independent of this function.
- *
- * @returns Array of absolute directory paths to pass as skillsDirs, or undefined
- *          if no directories should be added.
- */
-function resolveSkillsDirs(config: AgentConfig, agentsRoot: string, bus: EventBus): string[] | undefined {
-  const sharedSkillsDir = resolve(agentsRoot, "shared", "skills");
-
-  // Case 1: No skills field → backward-compatible: load ALL shared skills
-  if (config.skills === undefined) {
-    return existsSync(sharedSkillsDir) ? [sharedSkillsDir] : undefined;
-  }
-
-  // Case 2: Explicit skills array → resolve each to its specific directory
-  if (!Array.isArray(config.skills)) {
-    bus.emit({
-      type: "info",
-      message: `[loader] Agent "${config.name}" has invalid "skills" (expected array) — falling back to all shared skills`,
-    });
-    return existsSync(sharedSkillsDir) ? [sharedSkillsDir] : undefined;
-  }
-
-  // Empty array: agent explicitly opts out of shared skills
-  if (config.skills.length === 0) {
-    return undefined;
-  }
-
-  // Resolve each skill name to agents/shared/skills/{name}/
-  const dirs: string[] = [];
-  for (const skillName of config.skills) {
-    const skillDir = resolve(sharedSkillsDir, skillName);
-    if (existsSync(skillDir)) {
-      dirs.push(skillDir);
-    } else {
-      bus.emit({
-        type: "info",
-        message: `[loader] Agent "${config.name}" references skill "${skillName}" but ${skillDir} does not exist — skipping`,
-      });
-    }
-  }
-
-  return dirs.length > 0 ? dirs : undefined;
 }
 
 // ── Validation ──────────────────────────────────────────────────────────
@@ -509,54 +402,6 @@ export function validateAgentConfig(
     }
   }
 
-  // System prompt files should exist
-  if (config.systemPromptFiles) {
-    const agentDir = resolve(agentsRoot, config.name);
-    for (const relPath of config.systemPromptFiles) {
-      const absPath = resolve(agentDir, relPath);
-      if (!existsSync(absPath)) {
-        errors.push({ agent: name, field: "systemPromptFiles", message: `File not found: ${relPath}` });
-      }
-    }
-  }
-
-  // Shared knowledge files should exist
-  if (config.sharedKnowledge) {
-    for (const filename of config.sharedKnowledge) {
-      const absPath = resolve(agentsRoot, "shared", filename);
-      if (!existsSync(absPath)) {
-        errors.push({ agent: name, field: "sharedKnowledge", message: `Shared file not found: ${filename}` });
-      }
-    }
-  }
-
-  // Validate skill names reference existing directories
-  if (config.skills !== undefined) {
-    if (!Array.isArray(config.skills)) {
-      errors.push({ agent: name, field: "skills", message: `"skills" must be an array of skill names` });
-    } else {
-      const sharedSkillsDir = resolve(agentsRoot, "shared", "skills");
-      for (const skillName of config.skills) {
-        if (typeof skillName !== "string") {
-          errors.push({
-            agent: name,
-            field: "skills",
-            message: `Skill name must be a string, got ${typeof skillName}`,
-          });
-          continue;
-        }
-        const skillDir = resolve(sharedSkillsDir, skillName);
-        if (!existsSync(skillDir)) {
-          errors.push({
-            agent: name,
-            field: "skills",
-            message: `Shared skill not found: ${skillName} (expected ${skillDir})`,
-          });
-        }
-      }
-    }
-  }
-
   return errors;
 }
 
@@ -615,19 +460,14 @@ export function loadAgents(opts: AgentLoaderOptions): LoadResult {
     const knowledgeDir = resolve(agentDir, "knowledge");
     const workspace = resolve(agentDir, "workspace");
 
-    // Resolve shared skills: explicit list or all-shared fallback
-    const skillsDirs = resolveSkillsDirs(config, agentsRoot, opts.bus);
-
     manager.register({
       name: config.name,
       description: config.description,
       domain: config.domain,
       model,
       tools: buildTools(config, opts),
-      systemPromptFiles: resolvePromptFiles(config, agentsRoot),
       knowledgeDir: existsSync(knowledgeDir) ? knowledgeDir : undefined,
       workspace: existsSync(workspace) ? workspace : undefined,
-      skillsDirs,
       projectRoot,
       apiKey: (model as any).apiKey,
       memoryLimit: config.memoryLimit,

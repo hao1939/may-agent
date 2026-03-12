@@ -58,14 +58,13 @@ describe("Registry persistence", () => {
     expect(registry.agents["test-agent"].model).toEqual({ provider: "anthropic", id: "test-model" });
   });
 
-  it("persists new fields (domain, systemPromptFiles, workspace, timeoutMs, memoryLimit)", () => {
+  it("persists fields (domain, workspace, timeoutMs, memoryLimit)", () => {
     const manager = new SubagentManager({ persistDir });
 
     manager.register({
       name: "full-agent",
       description: "Full config agent",
       domain: "research",
-      systemPromptFiles: ["/path/to/knowledge.md", "/path/to/tools/INDEX.md"],
       workspace: "/path/to/workspace",
       model: fakeModel(),
       tools: [],
@@ -76,7 +75,6 @@ describe("Registry persistence", () => {
     const registry = (manager as any).registry.getRegistry();
     const agent = registry.agents["full-agent"];
     expect(agent.domain).toBe("research");
-    expect(agent.systemPromptFiles).toEqual(["/path/to/knowledge.md", "/path/to/tools/INDEX.md"]);
     expect(agent.workspace).toBe("/path/to/workspace");
     expect(agent.timeoutMs).toBe(600000);
     expect(agent.memoryLimit).toBe(30);
@@ -204,7 +202,6 @@ describe("Registry persistence", () => {
     const agent = registry.agents["minimal"];
     expect(agent.domain).toBe("minimal");
     expect(agent.systemPrompt).toBeUndefined();
-    expect(agent.systemPromptFiles).toBeUndefined();
     expect(agent.workspace).toBeUndefined();
     expect(agent.timeoutMs).toBeUndefined();
     expect(agent.memoryLimit).toBeUndefined();

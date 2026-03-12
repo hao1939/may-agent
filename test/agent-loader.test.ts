@@ -59,32 +59,6 @@ describe("validateAgentConfig", () => {
     expect(errors.some((e) => e.field === "tools" && e.message.includes("fly-to-moon"))).toBe(true);
   });
 
-  it("rejects missing system prompt files", () => {
-    const config: AgentConfig = {
-      name: "coder",
-      description: "test",
-      domain: "test",
-      model: "opus",
-      tools: ["exec"],
-      systemPromptFiles: ["knowledge/nonexistent.md"],
-    };
-    const errors = validateAgentConfig(config, fakeModels, AGENTS_ROOT);
-    expect(errors.some((e) => e.field === "systemPromptFiles")).toBe(true);
-  });
-
-  it("rejects missing shared knowledge files", () => {
-    const config: AgentConfig = {
-      name: "coder",
-      description: "test",
-      domain: "test",
-      model: "opus",
-      tools: ["exec"],
-      sharedKnowledge: ["nonexistent.md"],
-    };
-    const errors = validateAgentConfig(config, fakeModels, AGENTS_ROOT);
-    expect(errors.some((e) => e.field === "sharedKnowledge")).toBe(true);
-  });
-
   it("validates all existing agent.json files", () => {
     // This test ensures all committed agent.json files are valid
     const { readdirSync, readFileSync, existsSync } = require("node:fs");
