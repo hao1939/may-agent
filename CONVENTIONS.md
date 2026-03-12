@@ -19,6 +19,17 @@ The canonical convention docs are now maintained in two places:
 
 ---
 
+## Knowledge Library Tier
+
+Agents can place large reference material in `knowledge/library/` instead of the
+`knowledge/` root. Library files are **not** auto-loaded into the system prompt.
+Instead, the manager lists available `.md` files in a "Reference Library" footer so
+the agent knows what's available and can `read` them on demand.
+
+See `docs/agent-convention.md` → "Library tier" section for full details.
+
+---
+
 *This file previously contained the full folder layout conventions. That content
 was split into the convention library (maintained by coach) and the directory
 convention doc (maintained by optimizer/human). See the links above.*
