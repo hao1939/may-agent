@@ -1,7 +1,7 @@
 import type { AgentTool } from "@mariozechner/pi-agent-core";
 import { Type } from "@mariozechner/pi-ai";
 import type { TSchema } from "@mariozechner/pi-ai";
-import { mkdir as fsMkdir, writeFile as fsWriteFile } from "fs/promises";
+import { mkdir as fsMkdir, writeFile as fsWriteFile, stat as fsStat } from "fs/promises";
 import { dirname } from "path";
 import { resolveToCwd } from "./path-utils.js";
 
@@ -21,20 +21,40 @@ export interface WriteOperations {
 	writeFile: (absolutePath: string, content: string) => Promise<void>;
 	/** Create directory (recursively) */
 	mkdir: (dir: string) => Promise<void>;
+	/** Get file size in bytes. Returns null if file doesn't exist. */
+	fileSize?: (absolutePath: string) => Promise<number | null>;
 }
 
 const defaultWriteOperations: WriteOperations = {
 	writeFile: (path, content) => fsWriteFile(path, content, "utf-8"),
 	mkdir: (dir) => fsMkdir(dir, { recursive: true }).then(() => {}),
+	fileSize: async (path) => {
+		try {
+			const s = await fsStat(path);
+			return s.size;
+		} catch {
+			return null;
+		}
+	},
 };
 
 export interface WriteToolOptions {
 	/** Custom operations for file writing. Default: local filesystem */
 	operations?: WriteOperations;
+	/** Allow writing content smaller than 50% of existing file. Default: false */
+	allowShrink?: boolean;
 }
+
+/** Minimum existing file size (bytes) for the shrink guard to apply */
+const SHRINK_GUARD_MIN_SIZE = 500;
+/** Below this ratio, block the write entirely */
+const SHRINK_BLOCK_RATIO = 0.5;
+/** Below this ratio, warn but allow */
+const SHRINK_WARN_RATIO = 0.8;
 
 export function createWriteTool(cwd: string, options?: WriteToolOptions): AgentTool<TSchema> {
 	const ops = options?.operations ?? defaultWriteOperations;
+	const allowShrink = options?.allowShrink ?? false;
 
 	return {
 		name: "write",
@@ -82,6 +102,29 @@ export function createWriteTool(cwd: string, options?: WriteToolOptions): AgentT
 								return;
 							}
 
+							// Shrink guard: check if new content is significantly smaller than existing file
+							let shrinkWarning = "";
+							if (!allowShrink && ops.fileSize) {
+								const existingSize = await ops.fileSize(absolutePath);
+								if (existingSize !== null && existingSize >= SHRINK_GUARD_MIN_SIZE) {
+									const newSize = Buffer.byteLength(content, "utf-8");
+									const ratio = newSize / existingSize;
+									if (ratio < SHRINK_BLOCK_RATIO) {
+										// Clean up abort handler before resolving
+										if (signal) {
+											signal.removeEventListener("abort", onAbort);
+										}
+										resolve({
+											content: [{ type: "text", text: `⚠️ WRITE BLOCKED: New content (${newSize} bytes) is ${Math.round(ratio * 100)}% of existing file (${existingSize} bytes). This looks like a truncated rewrite that would lose data. Use edit() for surgical changes, or read the full file first to ensure you have all content. If you're sure, use bash to write directly.` }],
+											details: undefined,
+										});
+										return;
+									} else if (ratio < SHRINK_WARN_RATIO) {
+										shrinkWarning = ` ⚠️ WARNING: New content is ${Math.round(ratio * 100)}% of previous size (${existingSize} → ${newSize} bytes). Verify no data was lost.`;
+									}
+								}
+							}
+
 							// Write the file
 							await ops.writeFile(absolutePath, content);
 
@@ -96,7 +139,7 @@ export function createWriteTool(cwd: string, options?: WriteToolOptions): AgentT
 							}
 
 							resolve({
-								content: [{ type: "text", text: `Successfully wrote ${content.length} bytes to ${path}` }],
+								content: [{ type: "text", text: `Successfully wrote ${content.length} bytes to ${path}${shrinkWarning}` }],
 								details: undefined,
 							});
 						} catch (error: any) {

@@ -282,7 +282,7 @@ export function listArchivedSessionIds(persistDir: string): string[] {
 }
 
 /** Scan all session meta.json files (active + archived) and return a map.
- *  This is the replacement for reading the sessions section of registry.json.
+ *  Reads session metadata from per-session meta.json files in the persist directory.
  *  @returns Record mapping session IDs to their persisted metadata. */
 export function loadAllSessionMetas(persistDir: string): Record<string, PersistedSession> {
   const result: Record<string, PersistedSession> = {};
@@ -317,36 +317,6 @@ export class RegistryStore {
   constructor(persistDir: string) {
     this.persistDir = persistDir;
     mkdirSync(persistDir, { recursive: true });
-    this.migrateFromRegistryJson();
-  }
-
-  /** One-time migration: if a legacy registry.json exists, write individual
-   *  meta.json files for any sessions that don't already have one, then
-   *  rename the old file so it's not loaded again.
-   *  TODO: Remove this method once all deployments have migrated (no registry.json files remain). */
-  private migrateFromRegistryJson(): void {
-    const legacyPath = join(this.persistDir, "registry.json");
-    if (!existsSync(legacyPath)) return;
-    try {
-      const raw = readFileSync(legacyPath, "utf-8");
-      const legacy = JSON.parse(raw) as Registry;
-      let migrated = 0;
-      for (const [sid, meta] of Object.entries(legacy.sessions ?? {})) {
-        // Only write if no meta.json exists yet (active or archived)
-        if (!readSessionMeta(this.persistDir, sid)) {
-          writeSessionMeta(this.persistDir, sid, meta);
-          migrated++;
-        }
-      }
-      // Rename legacy file so migration doesn't run again
-      const backupPath = legacyPath + ".migrated";
-      renameSync(legacyPath, backupPath);
-      if (migrated > 0) {
-        console.log(`[registry] Migrated ${migrated} sessions from registry.json to per-session meta.json`);
-      }
-    } catch (err) {
-      console.warn(`[registry] Failed to migrate registry.json: ${err}`);
-    }
   }
 
   /** Store an agent config (in-memory only — not persisted to disk). */

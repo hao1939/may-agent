@@ -47,22 +47,18 @@ function createArchivedSession(sessionId: string, agentName: string, task: strin
   mkdirSync(join(historySessionDir, "output"), { recursive: true });
 }
 
-/** Create a fake registry entry for a session. */
+/** Create a fake registry entry for a session using per-session meta.json. */
 function addToRegistry(sessionId: string, agentName: string, task: string, status: string): void {
-  const registryPath = join(persistDir, "registry.json");
-  let registry: Record<string, unknown> = { agents: {}, sessions: {} };
-  if (existsSync(registryPath)) {
-    registry = JSON.parse(readFileSync(registryPath, "utf-8"));
-  }
-  const sessions = registry.sessions as Record<string, unknown>;
-  sessions[sessionId] = {
+  const historySessionDir = join(persistDir, "sessions", "history", sessionId);
+  mkdirSync(historySessionDir, { recursive: true });
+  const meta = {
     agent: agentName,
     task,
     status,
     startedAt: Date.now() - 10000,
     endedAt: Date.now() - 4000,
   };
-  writeFileSync(registryPath, JSON.stringify(registry, null, 2), "utf-8");
+  writeFileSync(join(historySessionDir, "meta.json"), JSON.stringify(meta, null, 2), "utf-8");
 }
 
 beforeEach(() => {

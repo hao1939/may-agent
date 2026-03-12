@@ -57,6 +57,12 @@ export class Cron {
   /** Minimum ms between reactive triggers for same entry. */
   readonly triggerCooldownMs = 60_000;
 
+  /** Tracks consecutive re-trigger count per entry (drains todo list). */
+  private retriggerCounts = new Map<string, number>();
+
+  /** Maximum consecutive re-triggers before waiting for next scheduled interval. */
+  readonly maxRetriggers = 3;
+
   private projectRoot: string;
   private persistDir: string;
 
@@ -147,13 +153,13 @@ export class Cron {
   }
 
   /** Trigger a cron entry immediately. Returns true if fired or latched, false if debounced/unknown. */
-  triggerNow(entryName: string): boolean {
+  triggerNow(entryName: string, opts?: { force?: boolean }): boolean {
     const entry = this.entries.find((e) => e.name === entryName);
     if (!entry) return false;
 
-    // Debounce: skip if triggered too recently
+    // Debounce: skip if triggered too recently (unless forced by re-trigger)
     const lastTrigger = this.lastTriggerTime.get(entryName) ?? 0;
-    if (Date.now() - lastTrigger < this.triggerCooldownMs) return false;
+    if (!opts?.force && Date.now() - lastTrigger < this.triggerCooldownMs) return false;
     this.lastTriggerTime.set(entryName, Date.now());
 
     const mode = this.resolveMode(entry);
@@ -255,6 +261,10 @@ export class Cron {
           this.heartbeatRunning.delete(heartbeatKey);
           // Check latch: re-fire if a trigger arrived while busy
           this.checkPendingTrigger(entry);
+          // Post-heartbeat re-trigger: drain todo list if work remains
+          if (!this.heartbeatRunning.has(heartbeatKey)) {
+            this.checkRetrigger(entry);
+          }
           this.appendJobResult({
             jobName: entry.name,
             type: "heartbeat",
@@ -276,6 +286,8 @@ export class Cron {
         })
         .catch((err) => {
           this.heartbeatRunning.delete(heartbeatKey);
+          // Reset re-trigger count on failure (don't fast-loop on errors)
+          this.retriggerCounts.set(entry.name, 0);
           // Check latch: re-fire if a trigger arrived while busy
           this.checkPendingTrigger(entry);
           const errMsg = err instanceof Error ? err.message : String(err);
@@ -324,6 +336,39 @@ export class Cron {
       if (mode === "heartbeat") this.fireHeartbeat(entry);
       else if (mode === "job-handler") this.fireHandler(entry);
       else if (mode === "job-detached") this.fireDetachedJob(entry);
+    }
+  }
+
+  /** Post-heartbeat re-trigger: if agent has remaining work in todo.md, fire again (up to maxRetriggers). */
+  private checkRetrigger(entry: CronEntry): void {
+    const agentName = entry.agent || "may";
+    const heartbeatKey = `heartbeat:${agentName}`;
+    const count = this.retriggerCounts.get(entry.name) ?? 0;
+
+    if (this.hasRemainingWork(agentName)) {
+      if (count < this.maxRetriggers) {
+        this.retriggerCounts.set(entry.name, count + 1);
+        this.triggerNow(entry.name, { force: true });
+      } else {
+        // Max re-triggers reached — reset and wait for next scheduled interval
+        this.retriggerCounts.set(entry.name, 0);
+        this.onError?.(`Cron re-trigger "${entry.name}" max reached (${this.maxRetriggers}) — waiting for next interval`);
+      }
+    } else {
+      // No remaining work — reset count
+      this.retriggerCounts.set(entry.name, 0);
+    }
+  }
+
+  /** Check if an agent has unchecked tasks in their todo.md. */
+  private hasRemainingWork(agentName: string): boolean {
+    try {
+      const todoPath = resolve(this.projectRoot, "agents", agentName, "workspace", "todo.md");
+      if (!existsSync(todoPath)) return false;
+      const content = readFileSync(todoPath, "utf-8");
+      return content.includes("- [ ]");
+    } catch {
+      return false;
     }
   }
 

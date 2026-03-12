@@ -1,4 +1,5 @@
 import { readFileSync, readdirSync, mkdirSync, existsSync, writeFileSync, appendFileSync, unlinkSync } from "node:fs";
+import { randomUUID, createHmac, createHash } from "node:crypto";
 import { Agent } from "@mariozechner/pi-agent-core";
 import type { AgentMessage, AgentEvent, AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
 import { Type, StringEnum } from "@mariozechner/pi-ai";
@@ -78,7 +79,7 @@ function extractLastAssistantText(messages: AgentMessage[]): string | null {
     const msg = messages[i];
     if (msg.role === "assistant") {
       for (const block of msg.content) {
-        if (block.type === "text" && block.text.trim()) {
+        if (block?.type === "text" && block.text?.trim()) {
           return block.text;
         }
       }
@@ -101,6 +102,11 @@ function formatMemoryTimestamp(ts: number): string {
  *  Full data is preserved in the JSONL — this only affects the prompt injection. */
 const MEMORY_TASK_MAX = 200;
 const MEMORY_SUMMARY_MAX = 500;
+
+/** Runtime-generated HMAC secret for tool receipt signing.
+ *  Generated once per process — receipts are verifiable within the same runtime.
+ *  For cross-process verification, replace with a persisted secret. */
+const RUNTIME_RECEIPT_SECRET = randomUUID();
 
 /** Check if a process with the given PID is still running. */
 function isProcessAlive(pid: number | undefined): boolean {
@@ -282,9 +288,6 @@ export class SubagentManager {
    */
   private resolveSystemPrompt(
     def: SubagentDefinition,
-    agentName: string,
-    sessionId: string,
-    persistDir: string,
   ): string {
     if (def.systemPrompt) return def.systemPrompt;
 
@@ -356,26 +359,42 @@ export class SubagentManager {
       sections.push(envLines.join("\n"));
     }
 
-    // 7. Session Context — session ID + recent task history
-    {
-      const ctxLines = [`# Session Context`, `- Session ID: ${sessionId}`];
-      const memoryLimit = def.memoryLimit ?? 20;
-      if (memoryLimit > 0) {
-        const entries = readMemoryEntries(persistDir, agentName, memoryLimit);
-        if (entries.length > 0) {
-          ctxLines.push(``, `## Recent Task History`);
-          for (const e of entries) {
-            const ts = formatMemoryTimestamp(e.timestamp);
-            const taskText = truncateForPrompt(e.task, MEMORY_TASK_MAX);
-            const summary = e.summary ? ` — ${truncateForPrompt(e.summary, MEMORY_SUMMARY_MAX)}` : "";
-            ctxLines.push(`- ${ts}: "${taskText}" — ${e.status} (${e.duration})${summary}`);
-          }
-        }
-      }
-      sections.push(ctxLines.join("\n"));
-    }
+    // 7. Session Context is now delivered via the first user message
+    //    (see buildSessionContext) to keep the system prompt stable for
+    //    Anthropic prompt caching.  The system prompt must be identical
+    //    across sessions so the cache_control: ephemeral marker on the
+    //    system block produces cache *reads* instead of only cache writes.
 
     return sections.join("\n\n");
+  }
+
+  /**
+   * Build the per-session context block (session ID + recent task history).
+   * This is prepended to the first user message instead of living in the
+   * system prompt, so that the system prompt stays identical across sessions
+   * and Anthropic prompt caching can produce cache reads.
+   */
+  private buildSessionContext(
+    def: SubagentDefinition,
+    agentName: string,
+    sessionId: string,
+    persistDir: string,
+  ): string {
+    const ctxLines = [`# Session Context`, `- Session ID: ${sessionId}`];
+    const memoryLimit = def.memoryLimit ?? 20;
+    if (memoryLimit > 0) {
+      const entries = readMemoryEntries(persistDir, agentName, memoryLimit);
+      if (entries.length > 0) {
+        ctxLines.push(``, `## Recent Task History`);
+        for (const e of entries) {
+          const ts = formatMemoryTimestamp(e.timestamp);
+          const taskText = truncateForPrompt(e.task, MEMORY_TASK_MAX);
+          const summary = e.summary ? ` — ${truncateForPrompt(e.summary, MEMORY_SUMMARY_MAX)}` : "";
+          ctxLines.push(`- ${ts}: "${taskText}" — ${e.status} (${e.duration})${summary}`);
+        }
+      }
+    }
+    return ctxLines.join("\n");
   }
 
   /** Append a memory entry after session completion. */
@@ -454,8 +473,8 @@ export class SubagentManager {
       const content = Array.isArray(lastMsg.content) ? lastMsg.content : [];
       const hasSubstance = content.some(
         (block: any) =>
-          (block.type === "text" && block.text?.trim()) ||
-          block.type === "toolCall",
+          (block?.type === "text" && block.text?.trim()) ||
+          block?.type === "toolCall",
       );
       if (!hasSubstance) {
         session.error = "Model returned an empty response (0 output tokens). This usually indicates a model/API issue — try again or switch models.";
@@ -571,9 +590,9 @@ export class SubagentManager {
     const compactionTransform = this.buildTransformContext(def, opts?.compaction);
     const agent = new Agent({
       initialState: {
-        systemPrompt: this.resolveSystemPrompt(def, name, sessionId, persistDir),
+        systemPrompt: this.resolveSystemPrompt(def),
         model: def.model,
-        tools: def.tools,
+        tools: this.wrapToolsWithReceipts(def.tools, sessionId),
       },
       transformContext: compactionTransform,
       getApiKey: def.apiKey ? () => def.apiKey : undefined,
@@ -641,8 +660,14 @@ export class SubagentManager {
     // when agentLoop emits it (before any LLM call). No explicit write here
     // to avoid duplicate JSONL entries.
 
+    // Prepend session context (session ID + task history) to the first user
+    // message.  This keeps the system prompt stable across sessions so that
+    // Anthropic prompt caching produces cache reads.
+    const sessionContext = this.buildSessionContext(def, name, sessionId, persistDir);
+    const promptText = `${sessionContext}\n\n---\n\n${task}`;
+
     session.promise = agent
-      .prompt(task)
+      .prompt(promptText)
       .then(() => {
         this.handleCompletion(session);
       })
@@ -810,7 +835,7 @@ export class SubagentManager {
 
     const compactedMessages = readCompactedMessages(persistDir, sessionId);
     const savedMessages = compactedMessages ?? readSessionMessages(persistDir, sessionId);
-    const systemPrompt = this.resolveSystemPrompt(def, persisted.agent, sessionId, persistDir);
+    const systemPrompt = this.resolveSystemPrompt(def);
     const outputDir = sessionOutputDir(persistDir, sessionId);
 
     const compactionTransform = this.buildTransformContext(def);
@@ -818,7 +843,7 @@ export class SubagentManager {
       initialState: {
         systemPrompt,
         model: def.model,
-        tools: def.tools,
+        tools: this.wrapToolsWithReceipts(def.tools, sessionId),
         messages: savedMessages,
       },
       transformContext: compactionTransform,
@@ -830,7 +855,7 @@ export class SubagentManager {
     let lastRole = lastMsg?.role;
 
     if (lastRole === "assistant" && lastMsg && Array.isArray(lastMsg.content)) {
-      const toolCalls = (lastMsg.content as Array<{ type: string }>).filter((b) => b.type === "toolCall");
+      const toolCalls = (lastMsg.content as Array<{ type: string }>).filter((b) => b?.type === "toolCall");
       if (toolCalls.length > 0) {
         // Inject error tool results for each pending tool call.
         // Use appendMessage (not followUp) so they appear in the message
@@ -1838,6 +1863,183 @@ export class SubagentManager {
     };
   }
 
+  // ── Tool receipt signing (HMAC receipts — see specs/hmac-receipts.md) ──
+
+  /**
+   * Sign a tool output string with HMAC-SHA256.
+   *
+   * Algorithm (from spec):
+   *   1. Generate `timestamp` (Unix epoch seconds).
+   *   2. Compute `H = HMAC_SHA256(output + timestamp, RUNTIME_RECEIPT_SECRET)`.
+   *   3. Truncate `H` to 8 hex chars.
+   *   4. Return `output + "\n[SIG: <timestamp>:<H>]"`.
+   *
+   * The secret never leaves the runtime — agents see only the signature tag.
+   */
+  signToolOutput(output: string): string {
+    const timestamp = Math.floor(Date.now() / 1000);
+    const hmac = createHmac("sha256", RUNTIME_RECEIPT_SECRET)
+      .update(output + timestamp)
+      .digest("hex")
+      .slice(0, 8);
+    return `${output}\n[SIG: ${timestamp}:${hmac}]`;
+  }
+
+  /**
+   * Verify a tool output signature.
+   *
+   * @param content   - The exact text content (everything before the `[SIG: ...]` tag).
+   * @param signature - The `timestamp:hash` string extracted from the `[SIG: ...]` tag.
+   * @returns `true` if the signature is valid, `false` otherwise.
+   */
+  verifyToolOutput(content: string, signature: string): boolean {
+    const sepIdx = signature.indexOf(":");
+    if (sepIdx === -1) return false;
+    const timestamp = signature.slice(0, sepIdx);
+    const hash = signature.slice(sepIdx + 1);
+    if (!timestamp || !hash) return false;
+
+    const expected = createHmac("sha256", RUNTIME_RECEIPT_SECRET)
+      .update(content + timestamp)
+      .digest("hex")
+      .slice(0, 8);
+    return expected === hash;
+  }
+
+  /**
+   * Create the `verify_receipt` built-in tool.
+   *
+   * Agents (Evaluator, QA, Manager) use this to verify that a tool output
+   * is authentic and was not hallucinated. The tool recomputes the HMAC
+   * using the process-internal secret and returns "VALID" or "INVALID".
+   */
+  createVerifyReceiptTool(): AgentTool {
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
+    const manager = this;
+
+    const VerifyReceiptParams = Type.Object({
+      content: Type.String({ description: "The exact content of the tool output (everything before the [SIG: ...] line)." }),
+      signature: Type.String({ description: "The signature string (e.g., '1741789000:a1b2c3d4')." }),
+    });
+
+    return {
+      name: "verify_receipt",
+      label: "Verify Receipt",
+      description: "Verify that a tool output is authentic and not hallucinated. Returns VALID or INVALID.",
+      parameters: VerifyReceiptParams,
+      execute: async (_toolCallId, params) => {
+        const { content, signature } = params as { content: string; signature: string };
+        const valid = manager.verifyToolOutput(content, signature);
+        const text = valid ? "VALID" : "INVALID";
+        return {
+          content: [{ type: "text", text }],
+          details: text,
+        };
+      },
+    };
+  }
+
+  /**
+   * Wrap an array of tools with HMAC receipt signing.
+   *
+   * Every tool's execute function is intercepted: after the original tool
+   * returns, the text output is signed with `signToolOutput()` which appends
+   * `\n[SIG: <timestamp>:<hash>]` to the output. A receipt log entry is also
+   * written to `receipts.jsonl` in the session directory (best-effort).
+   *
+   * The LLM never sees the signing key — only the signature tag.
+   */
+  private wrapToolsWithReceipts(tools: AgentTool[], sessionId: string): AgentTool[] {
+    const persistDir = this.registry.persistDir;
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
+    const manager = this;
+
+    return tools.map((tool) => ({
+      ...tool,
+      execute: async (
+        toolCallId: string,
+        params: any,
+        signal?: AbortSignal,
+        onUpdate?: any,
+      ): Promise<AgentToolResult<any>> => {
+        // Execute the original tool
+        const result = await tool.execute(toolCallId, params, signal, onUpdate);
+
+        // Extract the plain text output from all text blocks
+        const outputText = result.content
+          .map((block: any) => (block?.type === "text" ? block.text : ""))
+          .join("");
+
+        // Sign the output using the spec's HMAC scheme
+        const signed = manager.signToolOutput(outputText);
+
+        // The signed string = outputText + "\n[SIG: ts:hash]"
+        // Extract just the SIG tag to log it
+        const sigMatch = signed.match(/\[SIG: ([^\]]+)\]$/);
+        const signature = sigMatch ? sigMatch[1] : "";
+
+        // Log to receipts.jsonl (best-effort)
+        try {
+          const receiptEntry = {
+            toolName: tool.name,
+            toolCallId,
+            signature,
+            timestamp: new Date().toISOString(),
+          };
+          const receiptsPath = join(
+            sessionDir(persistDir, sessionId),
+            "receipts.jsonl",
+          );
+          appendFileSync(receiptsPath, JSON.stringify(receiptEntry) + "\n", "utf-8");
+        } catch {
+          /* best-effort — never block tool execution for logging */
+        }
+
+        // Append the [SIG: ...] tag as a text block to the tool output
+        const sigTag = signed.slice(outputText.length); // "\n[SIG: ts:hash]"
+        const receiptSuffix = { type: "text" as const, text: sigTag };
+        return {
+          ...result,
+          content: [...result.content, receiptSuffix],
+        };
+      },
+    }));
+  }
+
+  // ── Delegation metrics logging ──────────────────────────────────────
+
+  /**
+   * Append a structured delegation event to `.state/delegations.jsonl`.
+   * Best-effort — never throws.
+   */
+  private logDelegation(entry: {
+    parent: string;
+    child: string;
+    method: "call" | "send";
+    status: "success" | "error" | "timeout" | "sent";
+    sessionId?: string;
+    durationMs?: number | null;
+    error?: string;
+  }): void {
+    try {
+      const logEntry = {
+        timestamp: new Date().toISOString(),
+        traceId: randomUUID(),
+        sessionId: entry.sessionId ?? null,
+        parent: entry.parent,
+        child: entry.child,
+        method: entry.method,
+        status: entry.status,
+        durationMs: entry.durationMs ?? null,
+        error: entry.error ?? null,
+      };
+      const logPath = join(this.registry.persistDir, "delegations.jsonl");
+      appendFileSync(logPath, JSON.stringify(logEntry) + "\n", "utf-8");
+    } catch {
+      /* best-effort — never block agent operations for logging */
+    }
+  }
+
   // ── V2: callAgent + agents tool ──────────────────────────────────────
 
   /**
@@ -1894,6 +2096,12 @@ export class SubagentManager {
       this.callDepths.set(rootSessionId, currentDepth + 1);
     }
 
+    // Determine parent agent name for delegation logging
+    const parentAgentName = opts?.parentSessionId
+      ? (this.activeSessions.get(opts.parentSessionId)?.agentName ?? "unknown")
+      : "unknown";
+    const delegationStart = Date.now();
+
     try {
       // ── Start session ──────────────────────────────────────────────────
       const sessionId = this.run(name, task, {
@@ -1943,6 +2151,18 @@ export class SubagentManager {
       // Cleanup
       if (timeoutTimer) clearTimeout(timeoutTimer);
       unsubscribe?.();
+
+      // ── Log delegation result ──────────────────────────────────────────
+      const durationMs = Date.now() - delegationStart;
+      this.logDelegation({
+        parent: parentAgentName,
+        child: name,
+        method: "call",
+        status: result.status === "error" ? "error" : "success",
+        sessionId,
+        durationMs,
+        error: result.error,
+      });
 
       return result;
     } finally {
@@ -2122,6 +2342,18 @@ export class SubagentManager {
 
               // Trigger target agent's heartbeat
               const triggered = triggerHeartbeat?.(params.agent) ?? false;
+
+              // Log delegation event
+              const senderName = getCallerAgentName?.() ?? "unknown";
+              const senderSessionId = getCallerSessionId?.();
+              manager.logDelegation({
+                parent: senderName,
+                child: params.agent,
+                method: "send",
+                status: "sent",
+                sessionId: senderSessionId,
+                durationMs: null,
+              });
 
               return textResult(
                 JSON.stringify({

@@ -124,7 +124,7 @@ function extractErrors(messages: AgentMessage[]): Array<{ tool: string; preview:
     // Check for explicit error flag or tool-specific error patterns
     const text =
       tr.content
-        ?.filter((b): b is { type: "text"; text: string } => b.type === "text")
+        ?.filter((b): b is { type: "text"; text: string } => b?.type === "text")
         .map((b) => b.text)
         .join(" ") ?? "";
 
@@ -159,7 +159,7 @@ function extractWriteContents(messages: AgentMessage[]): Array<{ path: string; p
   for (const msg of messages) {
     if (msg.role !== "assistant" || !Array.isArray(msg.content)) continue;
     for (const block of msg.content) {
-      if (block.type !== "toolCall" || block.name !== "write") continue;
+      if (!block || block.type !== "toolCall" || block.name !== "write") continue;
       const args = block.arguments as Record<string, unknown>;
       const path = typeof args.path === "string" ? args.path : null;
       const content = typeof args.content === "string" ? args.content : null;
