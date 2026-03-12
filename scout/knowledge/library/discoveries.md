@@ -4189,3 +4189,28 @@ This synchronized acceleration suggests a broader wave of multi-agent tool adopt
 **Source:** arXiv:2603.08852 (Prakash — LDP Protocol)
 **Finding:** The LLM Delegate Protocol introduces identity cards, provenance tracking, and trust domains for multi-agent communication. **Key negative result: adding confidence/provenance metadata without verification DEGRADES synthesis quality below the no-provenance baseline.** Identity-aware routing achieves ~12x lower latency through specialization. Semantic frames reduce tokens by 37%.
 **Relevance to us:** ★★★ — Warning for our system: adding metadata (confidence scores, uncertainty estimates) to agent communications is only helpful if the metadata is verified/calibrated. Unverified confidence scores may be actively harmful — agents may trust them inappropriately.
+
+### Discovery 10: All MAS Attack Vectors Converge on Two Integration Surfaces
+**Source:** arXiv:2603.09134 (Mitra et al. — AgenticCyOps)
+**Finding:** Systematic decomposition of MAS attack vectors across component, coordination, and protocol layers reveals they **consistently trace back to two integration surfaces**: tool orchestration (how agents invoke external capabilities) and memory management (how agents store/share knowledge). Five defensive principles derived from this observation reduce trust boundaries by 72%. Each documented vector is addressed by ≥2 complementary principles.
+**Relevance to us:** ★★★★ — Immediately applicable security checklist. Our system has: (a) unscoped tool access per agent role — Gap #1; (b) no write mediation for shared files — Gap #2; (c) no phase-partitioned memory access — Gap #3. The two-surface model provides the right lens for auditing our architecture. Vertical topology (May as host) is already correct; tool scoping and memory isolation are the gaps.
+
+### Discovery 11: Causal Attribution Defeats Prompt Injection at the Action Level
+**Source:** arXiv:2603.10749 (He et al. — AttriGuard)
+**Finding:** Instead of detecting malicious inputs semantically, AttriGuard asks "why was this tool call produced?" by running counterfactual tests — re-executing the agent under a control-attenuated view of external observations. If the tool call disappears when untrusted observations are attenuated, it was causally driven by those observations (= injection). **0% attack success rate under static attacks.** Remains resilient under adaptive optimization-based attacks.
+**Relevance to us:** ★★★ — Novel defense paradigm complementing architectural defenses (AgenticCyOps P3). For our system: before executing a sensitive action recommended by an agent that processed external input (Scout processing web content, QA processing untrusted code output), run a counterfactual: would the agent recommend this action without the external input? High cost (2x inference) but applicable to high-stakes actions.
+
+### Discovery 12: OpenClaw Native Defense Rate Is Only 17%
+**Source:** arXiv:2603.10387 (Shan et al.)
+**Finding:** Security audit of OpenClaw with 47 adversarial scenarios across 6 MITRE attack categories. Native defense rate: **only 17%**, primarily relying on backend LLM capabilities. Highly susceptible to sandbox escape. HITL defense layer improves to 19-92% depending on attack type.
+**Relevance to us:** ★★★ — Confirms agent skill ecosystems (OpenClaw/agentskills.io) have severe security gaps. Our skills format convergence research (ClawHavoc: 26.1% community skills have vulns) now has independent confirmation from a different angle. Any agent consuming external skills needs defense layers beyond what the platform provides.
+
+### Discovery 13: Exponential Privacy Leakage Amplification in Sequential Agent Pipelines
+**Source:** arXiv:2603.05520 (Asif & Amiri, 2026)
+**Finding:** Per-agent privacy leakage ε amplifies to (2ᴺ−1)ε in N-agent sequential pipelines. Early agents contribute exponentially more leakage than later ones (2^{N-i} factor). A 5-agent pipeline with ε=0.1 per agent can leak up to 3.1 total — 31× amplification. MINE-Reg training reduces MI by 87-92% with ~6% utility cost.
+**Relevance to us:** ★★★★ — Our May→Agent→May pipeline has 3+ hops for most tasks. May's context window is the highest-risk surface (it's always "Agent 1"). Design principle: minimize delegation payloads, frontload privacy controls at May, prefer shallow pipelines for sensitive operations. Universal insight regardless of whether we control training.
+
+### Discovery 14: HMAC-Signed Tool Receipts as Practical Agent Verification
+**Source:** arXiv:2603.10060 — NabaOS (Basu, 2026)
+**Finding:** HMAC-signed tool execution receipts + epistemic source classification detect 94.2% of fabricated tool references with <15ms overhead. Classifies claims as: direct observation, inference, testimony, absence, or ungrounded opinion. Orders of magnitude faster than cryptographic proof approaches (zkLLM: 180s/query).
+**Relevance to us:** ★★★★ — Directly applicable. We could HMAC-sign tool outputs so downstream agents can verify claims about what tools returned. The epistemic classification (did the agent observe this, infer it, or make it up?) maps directly to our QA/evaluator trust model. Low implementation cost, high verification value.

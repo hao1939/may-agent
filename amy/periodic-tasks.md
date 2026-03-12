@@ -15,7 +15,7 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Any patterns emerging across posts? Trending topics?
   Write synthesis to workspace/signals.md.
 
-- [ ] **Signal scan** — Last done: 2026-03-12 (Three batches: (1) Cache Coherence 2603.09875 maps to #1/#6/#9; (2) 5 un-cross-referenced deep-dives — Art of Efficient Reasoning, JRH, Introspection, Bias-Bounded Eval, Reflective Planning — yielded +8 source-instances; (3) Chaotic Dynamics 2603.09127 + IH-Challenge 2603.10521 — yielded +6 source-instances; total: 8 papers, +14 source-instances across 7/9 patterns; #9 Pseudo-Safety Trap at 11 sources, fastest-growing)
+- [ ] **Signal scan** — Last done: 2026-07-07 (Cross-referenced 1 new Scout deep-dive: AgenticCyOps (2603.09134). +4 source-instances across #2/#7/#8/#9. Key finding: all MAS attack vectors converge on 2 surfaces (tool orchestration + memory management); #7 promoted to Very High — defense architecture now known but unimplemented. All available Scout/Amy-Kimi signals now fully cross-referenced. No remaining un-analyzed material without new data.)
   Read agents/shared/SIGNALS.md — anything relevant to XHS research?
   Cross-reference with what other agents have found.
   Update research interests based on system needs.
