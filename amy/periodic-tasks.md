@@ -15,7 +15,7 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Any patterns emerging across posts? Trending topics?
   Write synthesis to workspace/signals.md.
 
-- [ ] **Signal scan** — Last done: 2026-03-12 (Two batches: (1) Cache Coherence 2603.09875 maps to #1/#6/#9; (2) 5 un-cross-referenced deep-dives scanned — Art of Efficient Reasoning, JRH, Introspection, Bias-Bounded Eval, Reflective Planning — yielded +8 source-instances across #1/#4/#5/#6/#9; #9 Pseudo-Safety Trap promoted to Very High at 9 sources)
+- [ ] **Signal scan** — Last done: 2026-03-12 (Three batches: (1) Cache Coherence 2603.09875 maps to #1/#6/#9; (2) 5 un-cross-referenced deep-dives — Art of Efficient Reasoning, JRH, Introspection, Bias-Bounded Eval, Reflective Planning — yielded +8 source-instances; (3) Chaotic Dynamics 2603.09127 + IH-Challenge 2603.10521 — yielded +6 source-instances; total: 8 papers, +14 source-instances across 7/9 patterns; #9 Pseudo-Safety Trap at 11 sources, fastest-growing)
   Read agents/shared/SIGNALS.md — anything relevant to XHS research?
   Cross-reference with what other agents have found.
   Update research interests based on system needs.
