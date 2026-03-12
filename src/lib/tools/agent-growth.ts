@@ -128,7 +128,7 @@ export function createAgentGrowthTools(opts: AgentGrowthToolOptions): AgentTool[
         }
 
         try {
-          const artifacts = ["SOUL.md", "DOMAIN.md", "TOOLS.md", "LESSONS.md", "knowledge", "skills", "agent.json"];
+          const artifacts = ["SOUL.md", "DOMAIN.md", "TOOLS.md", "LESSONS.md", "knowledge", "agent.json"];
           const promoted: string[] = [];
           for (const artifact of artifacts) {
             const srcPath = join(sourceDir, artifact);

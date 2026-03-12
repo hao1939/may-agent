@@ -6,7 +6,7 @@ export * from "./health.js";
 export * from "./learn.js";
 export * from "./may-utils.js";
 export * from "./path-utils.js";
-export * from "./project-structure.js";
+
 export * from "./read.js";
 export * from "./truncate.js";
 export * from "./write.js";

@@ -6,7 +6,6 @@ import { tmpdir } from "node:os";
 import { createWorkflowTool } from "../src/lib/workflow-tool.js";
 import { SubagentManager } from "../src/lib/manager.js";
 import type { WorkflowToolResult } from "../src/lib/workflow.js";
-import { loadSkillsFromDirs } from "../src/lib/skills.js";
 
 const AGENTS_ROOT = resolve(import.meta.dirname, "..", "agents");
 const COACH_DIR = resolve(AGENTS_ROOT, "coach");
@@ -83,18 +82,6 @@ describe("coach: skill discovery", () => {
       const frontmatter = content.slice(3, endIdx);
       expect(frontmatter).toContain("name:");
       expect(frontmatter).toContain("description:");
-    }
-  });
-
-  it("skills load via loadSkillsFromDirs", () => {
-    const skillsDir = resolve(COACH_DIR, "skills");
-    const skills = loadSkillsFromDirs([skillsDir]);
-    expect(skills.length).toBeGreaterThanOrEqual(1);
-
-    for (const skill of skills) {
-      expect(skill.name.length).toBeGreaterThan(0);
-      expect(skill.description.length).toBeGreaterThan(0);
-      expect(existsSync(skill.filePath), `skill file ${skill.filePath} must exist`).toBe(true);
     }
   });
 });
