@@ -19,7 +19,6 @@ export interface PersistedAgentConfig {
   description: string;
   domain: string;
   systemPrompt?: string;
-  systemPromptFiles?: string[];
   workspace?: string;
   model: { provider: string; id: string };
   timeoutMs?: number;
@@ -75,7 +74,6 @@ export function toPersistedConfig(def: SubagentDefinition): PersistedAgentConfig
     model: { provider: (def.model as any).provider ?? "unknown", id: def.model.id },
   };
   if (def.systemPrompt !== undefined) config.systemPrompt = def.systemPrompt;
-  if (def.systemPromptFiles !== undefined) config.systemPromptFiles = def.systemPromptFiles;
   if (def.workspace !== undefined) config.workspace = def.workspace;
   if (def.timeoutMs !== undefined) config.timeoutMs = def.timeoutMs;
   if (def.memoryLimit !== undefined) config.memoryLimit = def.memoryLimit;

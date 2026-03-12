@@ -9,38 +9,16 @@ export interface SubagentDefinition {
   description: string;
   domain: string;
 
-  // System prompt: if systemPrompt is provided, it takes precedence over systemPromptFiles.
-  // systemPromptFiles are loaded and concatenated at session start.
+  /** If set, used as-is for the system prompt (bypasses convention file loading). */
   systemPrompt?: string;
-  systemPromptFiles?: string[];
 
   // Caller-managed paths (persisted for resume)
   workspace?: string;
-  /** Directory containing agent knowledge files (domain.md, lessons.md, etc.). */
+  /** Directory containing agent knowledge files (INDEX.md, etc.). */
   knowledgeDir?: string;
-
-  /** Directories to scan for skills (SKILL.md files). Per-agent skills dir is auto-added from knowledgeDir. */
-  skillsDirs?: string[];
 
   /** Project root / exec cwd. Injected into system prompt as a concrete runtime fact. */
   projectRoot?: string;
-
-  /**
-   * Include a project directory structure tree in the system prompt.
-   *
-   * When projectRoot is set and this is not `false`, the system prompt
-   * will include an indented tree of the project's files and directories.
-   * This eliminates the need for agents to run `find`/`ls` commands to
-   * orient themselves — a major source of wasted tool calls.
-   *
-   * - `true` or `undefined` (default): include structure at depth 2
-   * - `false`: disable structure injection
-   * - `number`: include structure at the specified depth (0 = top-level only)
-   *
-   * Noise directories (node_modules, .git, dist, etc.) are always excluded.
-   * Maximum 200 entries to prevent bloating the prompt for large repos.
-   */
-  projectStructure?: boolean | number;
 
   // Capabilities
   tools: AgentTool[];

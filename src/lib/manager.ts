@@ -15,7 +15,6 @@ import type {
 } from "./types.js";
 import { createCompactionTransform } from "./compaction.js";
 import type { CompactionOptions } from "./compaction.js";
-import { loadSkillsFromDirs, formatSkillsForPrompt } from "./skills.js";
 import {
   RegistryStore,
   sessionDir,
@@ -43,7 +42,6 @@ import { join, dirname, relative, resolve } from "node:path";
 import { isOverflowError, extractProgress, writeProgressFile } from "./overflow.js";
 import { spawnDetachedAgent, readIdentity } from "./detached.js";
 import { sendSocketCommand } from "./socket-client.js";
-import { buildProjectStructure } from "./tools/project-structure.js";
 
 let nextId = 0;
 /**
@@ -322,11 +320,11 @@ export class SubagentManager {
   }
 
   /** Resolve the system prompt from a definition.
-   *  - If systemPrompt is set, use it directly.
-   *  - If systemPromptFiles is set, read each file and concatenate with separator.
-   *  - If knowledgeDir has a lessons.md, append it.
-   *  - If persistDir exists and memoryLimit > 0, append recent memory entries.
-   *  - Append workspace and output sections.
+   *  Convention files are auto-loaded from the agent directory if present:
+   *    SOUL.md → DOMAIN.md → TOOLS.md → LESSONS.md → knowledge/INDEX.md
+   *  Then: Runtime Environment (generated), Session Context (generated).
+   *
+   *  If systemPrompt is set directly, it takes precedence over everything.
    */
   private resolveSystemPrompt(
     def: SubagentDefinition,
@@ -337,225 +335,91 @@ export class SubagentManager {
     if (def.systemPrompt) return def.systemPrompt;
 
     const sections: string[] = [];
+    const agentDir = def.knowledgeDir ? dirname(def.knowledgeDir) : def.workspace ? dirname(def.workspace) : undefined;
 
-    // Static environment FIRST — stable prefix for LLM cache hits (Principle 36)
-    if (def.projectRoot) {
-      const relPath = (abs: string) => relative(def.projectRoot!, abs) || ".";
-      const agentDir = def.knowledgeDir
-        ? dirname(def.knowledgeDir)
-        : def.workspace
-          ? dirname(def.workspace)
-          : undefined;
-      const envLines = [`# Runtime Environment`, `- Project root (exec cwd): ${def.projectRoot}`];
-      envLines.push(
-        `- Container: Docker (there is NO /home/, /Users/, /root/, or ~ directory — all work happens under ${def.projectRoot})`,
-      );
+    // Helper: read a file if it exists, return trimmed content or undefined
+    const loadFile = (path: string | undefined): string | undefined => {
+      if (!path || !existsSync(path)) return undefined;
+      const content = readFileSync(path, "utf-8").trim();
+      return content || undefined;
+    };
+
+    // ── Convention files (stable, cached by LLM) ────────────────────
+
+    // 1. SOUL.md — identity, mission, values
+    const soul = loadFile(agentDir ? join(agentDir, "SOUL.md") : undefined);
+    if (soul) sections.push(soul);
+
+    // 2. DOMAIN.md — domain expertise
+    const domain = loadFile(agentDir ? join(agentDir, "DOMAIN.md") : undefined);
+    if (domain) sections.push(domain);
+
+    // 3. TOOLS.md — tool usage guide
+    const tools = loadFile(agentDir ? join(agentDir, "TOOLS.md") : undefined);
+    if (tools) sections.push(tools);
+
+    // 4. LESSONS.md — accumulated learnings
+    const lessons = loadFile(agentDir ? join(agentDir, "LESSONS.md") : undefined);
+    if (lessons) sections.push(lessons);
+
+    // 5. knowledge/INDEX.md — curated context (team, skills, references)
+    const index = loadFile(def.knowledgeDir ? join(def.knowledgeDir, "INDEX.md") : undefined);
+    if (index) sections.push(index);
+
+    // ── Generated sections (volatile) ───────────────────────────────
+
+    // 6. Runtime Environment — paths and workspace
+    {
+      const relPath = def.projectRoot ? (abs: string) => relative(def.projectRoot!, abs) || "." : (abs: string) => abs;
+      const envLines = [`# Runtime Environment`];
+      if (def.projectRoot) {
+        envLines.push(`- Project root: ${def.projectRoot}`);
+      }
       if (agentDir) {
         envLines.push(`- Agent directory: ${relPath(agentDir)}`);
-        // List agent-level files (heartbeat.md, periodic-tasks.md, etc.)
-        try {
-          const agentFiles = readdirSync(agentDir, { withFileTypes: true })
-            .filter((e) => e.isFile() && !["agent.json"].includes(e.name))
-            .map((e) => e.name)
-            .sort();
-          if (agentFiles.length > 0) {
-            envLines.push(`- Agent files: ${agentFiles.join(", ")}`);
-          }
-        } catch {
-          /* best-effort */
-        }
       }
       if (def.workspace) {
-        envLines.push(`- Workspace: ${relPath(def.workspace)}`);
-        if (def.knowledgeDir) {
-          envLines.push(`- Knowledge directory: ${relPath(def.knowledgeDir)}`);
-        }
+        envLines.push(`- Workspace: ${relPath(def.workspace)} (ephemeral scratch)`);
       }
-      // Tell the agent which files are already in this prompt (prevents re-reading)
+      if (def.knowledgeDir) {
+        envLines.push(`- Knowledge: ${relPath(def.knowledgeDir)}`);
+      }
+      // List which convention files are already in this prompt
       const loaded: string[] = [];
       if (agentDir) {
         for (const name of ["SOUL.md", "DOMAIN.md", "TOOLS.md", "LESSONS.md"]) {
           if (existsSync(join(agentDir, name))) loaded.push(name);
         }
       }
+      if (index) loaded.push("knowledge/INDEX.md");
       if (loaded.length > 0) {
-        envLines.push(`- Already in context (do NOT read): ${loaded.join(", ")}, skills, shared knowledge, memory`);
+        envLines.push(`- Already in context (do NOT re-read): ${loaded.join(", ")}`);
       }
       envLines.push(
         ``,
-        `IMPORTANT: All paths are relative to project root. Example: agents/${def.name}/workspace/todo.md (NOT /home/user/..., /Users/hao/..., or /root/...). Tools resolve relative paths automatically. Your workspace is the ONLY directory you should write to.`,
+        `All paths are relative to project root. Your workspace is the ONLY directory you should write to.`,
       );
       sections.push(envLines.join("\n"));
     }
 
-    // Identity — tells the agent who it is, what it can do, and what files it owns
+    // 7. Session Context — session ID + recent task history
     {
-      const idLines = [`# Identity`, `- Name: ${def.name}`, `- Role: ${def.description}`, `- Domain: ${def.domain}`];
-      // Tool names
-      const toolNames = def.tools.map((t) => t.name);
-      if (toolNames.length > 0) {
-        idLines.push(`- Tools: ${toolNames.join(", ")}`);
-      }
-      // Workspace file listing (auto-discovered)
-      if (def.workspace && existsSync(def.workspace)) {
-        try {
-          const wsFiles = readdirSync(def.workspace, { withFileTypes: true })
-            .filter((e) => e.isFile())
-            .map((e) => e.name)
-            .sort();
-          if (wsFiles.length > 0) {
-            idLines.push(`- Workspace files: ${wsFiles.join(", ")}`);
+      const ctxLines = [`# Session Context`, `- Session ID: ${sessionId}`];
+      const memoryLimit = def.memoryLimit ?? 20;
+      if (memoryLimit > 0) {
+        const entries = readMemoryEntries(persistDir, agentName, memoryLimit);
+        if (entries.length > 0) {
+          ctxLines.push(``, `## Recent Task History`);
+          for (const e of entries) {
+            const ts = formatMemoryTimestamp(e.timestamp);
+            const taskText = truncateForPrompt(e.task, MEMORY_TASK_MAX);
+            const summary = e.summary ? ` — ${truncateForPrompt(e.summary, MEMORY_SUMMARY_MAX)}` : "";
+            ctxLines.push(`- ${ts}: "${taskText}" — ${e.status} (${e.duration})${summary}`);
           }
-        } catch {
-          /* best-effort — workspace may not be readable */
         }
       }
-      sections.push(idLines.join("\n"));
+      sections.push(ctxLines.join("\n"));
     }
-
-    // Project structure — eliminates find/ls discovery calls
-    if (def.projectRoot && def.projectStructure !== false) {
-      const depth = typeof def.projectStructure === "number" ? def.projectStructure : 2;
-      const structure = buildProjectStructure(def.projectRoot, depth);
-      if (structure) {
-        sections.push(`# Project Structure\n\`\`\`\n${structure}\n\`\`\``);
-      }
-    }
-    // ── Always-loaded files (UPPERCASE at agent root, convention-driven) ──
-    // Order: SOUL → DOMAIN → TOOLS → systemPromptFiles → LESSONS
-    // Fallback: also checks knowledge/ for backward compat during migration.
-    const agentDir = def.knowledgeDir ? dirname(def.knowledgeDir) : undefined;
-
-    const autoLoadFile = (primary: string | undefined, fallback: string | undefined): string | undefined => {
-      for (const p of [primary, fallback]) {
-        if (p && existsSync(p)) {
-          const content = readFileSync(p, "utf-8").trim();
-          if (content) return content;
-        }
-      }
-      return undefined;
-    };
-
-    // 1. SOUL.md — identity & mission
-    const soul = autoLoadFile(
-      agentDir ? join(agentDir, "SOUL.md") : undefined,
-      def.knowledgeDir ? join(def.knowledgeDir, "SOUL.md") : undefined,
-    );
-    if (soul) sections.push(soul);
-
-    // 2. DOMAIN.md — domain expertise (references knowledge/ files for on-demand reading)
-    const domain = autoLoadFile(
-      agentDir ? join(agentDir, "DOMAIN.md") : undefined,
-      def.knowledgeDir ? join(def.knowledgeDir, "domain.md") : undefined,
-    );
-    if (domain) sections.push(domain);
-
-    // 3. TOOLS.md — tool usage guide
-    const tools = autoLoadFile(
-      agentDir ? join(agentDir, "TOOLS.md") : undefined,
-      agentDir ? join(agentDir, "tools", "INDEX.md") : undefined,
-    );
-    if (tools) sections.push(tools);
-
-    // Load systemPromptFiles (skip any that overlap with auto-loaded paths)
-    if (def.systemPromptFiles && def.systemPromptFiles.length > 0) {
-      const autoLoaded = new Set<string>();
-      if (def.knowledgeDir) {
-        autoLoaded.add(join(def.knowledgeDir, "SOUL.md"));
-        autoLoaded.add(join(def.knowledgeDir, "domain.md"));
-        autoLoaded.add(join(def.knowledgeDir, "lessons.md"));
-      }
-      if (agentDir) {
-        autoLoaded.add(join(agentDir, "SOUL.md"));
-        autoLoaded.add(join(agentDir, "DOMAIN.md"));
-        autoLoaded.add(join(agentDir, "TOOLS.md"));
-        autoLoaded.add(join(agentDir, "LESSONS.md"));
-        autoLoaded.add(join(agentDir, "tools", "INDEX.md"));
-      }
-      const fileContents = def.systemPromptFiles
-        .filter((filePath) => !autoLoaded.has(filePath))
-        .map((filePath) => readFileSync(filePath, "utf-8"));
-      if (fileContents.length > 0) {
-        sections.push(fileContents.join("\n\n---\n\n"));
-      }
-    }
-
-    // 4. LESSONS.md — accumulated learnings (near end, changes often)
-    const lessons = autoLoadFile(
-      agentDir ? join(agentDir, "LESSONS.md") : undefined,
-      def.knowledgeDir ? join(def.knowledgeDir, "lessons.md") : undefined,
-    );
-    if (lessons) sections.push(lessons);
-
-    // 5. Knowledge library index — list available reference material (not auto-loaded)
-    if (def.knowledgeDir) {
-      const libraryDir = join(def.knowledgeDir, "library");
-      if (existsSync(libraryDir)) {
-        try {
-          const libraryFiles = readdirSync(libraryDir, { withFileTypes: true })
-            .filter((e) => e.isFile() && e.name.endsWith(".md"))
-            .map((e) => e.name)
-            .sort();
-          if (libraryFiles.length > 0) {
-            const relLib = def.projectRoot ? relative(def.projectRoot, libraryDir) : libraryDir;
-            const fileList = libraryFiles.map((f) => `- ${f}`).join("\n");
-            sections.push(
-              `# Reference Library\nAdditional reference material available on demand (use \`read\` tool to access):\nDirectory: ${relLib}/\n${fileList}`,
-            );
-          }
-        } catch {
-          /* best-effort — library may not be readable */
-        }
-      }
-    }
-    // Load skills from per-agent skills/ dir + shared skillsDirs
-    {
-      const skillDirs: string[] = [];
-      if (agentDir) {
-        skillDirs.push(join(agentDir, "skills"));
-      }
-      if (def.skillsDirs) {
-        skillDirs.push(...def.skillsDirs);
-      }
-      if (skillDirs.length > 0) {
-        const skills = loadSkillsFromDirs(skillDirs);
-        const block = formatSkillsForPrompt(skills);
-        if (block) {
-          sections.push(block);
-        }
-      }
-    }
-
-    // Session context (volatile) — placed after stable content for cache efficiency
-    sections.push(`# Session Context\n- Session ID: ${sessionId}`);
-
-    // Load memory entries
-    const memoryLimit = def.memoryLimit ?? 20;
-    if (memoryLimit > 0) {
-      const entries = readMemoryEntries(persistDir, agentName, memoryLimit);
-      if (entries.length > 0) {
-        const lines = entries.map((e) => {
-          const ts = formatMemoryTimestamp(e.timestamp);
-          const taskText = truncateForPrompt(e.task, MEMORY_TASK_MAX);
-          const summary = e.summary ? ` — ${truncateForPrompt(e.summary, MEMORY_SUMMARY_MAX)}` : "";
-          return `- ${ts}: "${taskText}" — ${e.status} (${e.duration})${summary}`;
-        });
-        sections.push(`# Recent Task History\n${lines.join("\n")}`);
-      }
-    }
-
-    // Workspace section
-    if (def.workspace) {
-      const wsRel = def.projectRoot ? relative(def.projectRoot, def.workspace) : def.workspace;
-      sections.push(
-        `# Workspace\nYour persistent workspace is: ${wsRel}\nALL file writes (journal.md, todo.md, analysis, archives) MUST go here. Never create files in the project root or other directories.`,
-      );
-    }
-
-    // Output section
-    const outputPath = sessionOutputDir(persistDir, sessionId);
-    const outputRel = def.projectRoot ? relative(def.projectRoot, outputPath) : outputPath;
-    sections.push(`# Output\nWrite deliverables for this task to: ${outputRel}`);
 
     return sections.join("\n\n");
   }
@@ -626,6 +490,23 @@ export class SubagentManager {
     if (!session.agent.state.error && !session.error && lastMsg?.role === "user") {
       session.error = "Agent completed without producing a response (possible stream/API error)";
       session.agent.state.error = session.error;
+    }
+
+    // ── Detect empty assistant response ──────────────────────────────
+    // Some models (especially via LiteLLM proxies) return stopReason="stop"
+    // with empty content and 0 output tokens — effectively a silent no-op.
+    // The agent finishes without error but produces no useful output.
+    if (!session.agent.state.error && !session.error && lastMsg?.role === "assistant") {
+      const content = Array.isArray(lastMsg.content) ? lastMsg.content : [];
+      const hasSubstance = content.some(
+        (block: any) =>
+          (block.type === "text" && block.text?.trim()) ||
+          block.type === "toolCall",
+      );
+      if (!hasSubstance) {
+        session.error = "Model returned an empty response (0 output tokens). This usually indicates a model/API issue — try again or switch models.";
+        session.agent.state.error = session.error;
+      }
     }
 
     // ── Determine outcome from agent state ─────────────────────────────
@@ -1362,6 +1243,7 @@ export class SubagentManager {
     // Case 2: Session is IDLE — wake it up
     if (session.status === "idle") {
       session.status = "running";
+      session.error = undefined; // Clear previous turn's error
       this.registry.updateSessionStatus(sessionId, "running");
 
       // Write [STARTED] sentinel

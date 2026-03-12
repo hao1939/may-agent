@@ -240,7 +240,7 @@ describe("System prompt assembly", () => {
     expect(result).not.toBeNull();
   });
 
-  it("loads and concatenates systemPromptFiles", async () => {
+  it("runs with convention files (no systemPromptFiles)", async () => {
     // Create knowledge files
     const file1 = join(knowledgeDir, "domain.md");
     const file2 = join(knowledgeDir, "patterns.md");
@@ -253,7 +253,6 @@ describe("System prompt assembly", () => {
       name: "files-agent",
       description: "Test",
       domain: "test",
-      systemPromptFiles: [file1, file2],
       model: fakeModel(),
       tools: [],
       apiKey: "fake-key",
@@ -285,7 +284,6 @@ describe("System prompt assembly", () => {
       name: "memory-agent",
       description: "Test",
       domain: "test",
-      systemPromptFiles: [file1],
       workspace: "/test/workspace",
       model: fakeModel(),
       tools: [],
@@ -319,7 +317,6 @@ describe("System prompt assembly", () => {
       name: "no-memory-agent",
       description: "Test",
       domain: "test",
-      systemPromptFiles: [file1],
       model: fakeModel(),
       tools: [],
       apiKey: "fake-key",
