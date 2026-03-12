@@ -5,7 +5,7 @@ import { existsSync, readFileSync, writeFileSync, unlinkSync, mkdirSync } from "
 import { getModel } from "@mariozechner/pi-ai";
 import { SubagentManager, evaluateTask, writeSkippedEvaluations } from "../lib/index.js";
 import { EventBus } from "./event-bus.js";
-import { ChatLoop } from "./chat-loop.js";
+import { ChatSession } from "./chat-session.js";
 import { attachConsoleUI } from "./ui/console.js";
 import { attachSocketUI } from "./ui/socket.js";
 import { attachTelegramBot } from "./ui/telegram.js";
@@ -245,8 +245,8 @@ let activeRL: ReturnType<typeof createInterface> | null = null;
 /** Track whether Ctrl+C cancel has been issued (second Ctrl+C force-quits). */
 let cancelledOnce = false;
 let taskSessionId: string | undefined;
-/** Chat loop instance (only set in --chat mode). */
-let chatLoop: ChatLoop | undefined;
+/** Chat session instance (only set in --chat mode). */
+let chatSession: ChatSession | undefined;
 
 function gracefulShutdown() {
   if (shuttingDown) {
@@ -267,7 +267,7 @@ function gracefulShutdown() {
   }
 
   // Cancel all running sessions
-  chatLoop?.cancelAll();
+  chatSession?.cancelAll();
   for (const s of manager.status()) {
     if (s.status === "running") {
       manager.cancel(s.sessionId);
@@ -295,7 +295,7 @@ function gracefulRestart() {
     activeRL.close();
     activeRL = null;
   }
-  chatLoop?.cancelAll();
+  chatSession?.cancelAll();
   for (const s of manager.status()) {
     if (s.status === "running") {
       manager.cancel(s.sessionId);
@@ -351,12 +351,12 @@ process.on("exit", (code) => {
 
 /**
  * Unified input handler. All channels (terminal, socket, telegram) route here.
- * In chat mode, delegates to ChatLoop. In task/cron mode, handles commands directly.
+ * In chat mode, delegates to ChatSession. In task/cron mode, handles commands directly.
  */
 function handleInput(message: string): void {
   cancelledOnce = false;
-  if (chatLoop) {
-    chatLoop.handleInput(message);
+  if (chatSession) {
+    chatSession.handleInput(message);
     return;
   }
 
@@ -426,10 +426,10 @@ bus.onCommand((cmd) => {
       return { ok: true };
     case "run": {
       // Direct agent invocation from socket
-      if (chatLoop) {
-        chatLoop.handleInput(`@${cmd.agent} ${cmd.message}`);
+      if (chatSession) {
+        chatSession.handleInput(`@${cmd.agent} ${cmd.message}`);
       } else {
-        const sessionId = manager.run(cmd.agent, cmd.message);
+        const sessionId = manager.run(cmd.agent, cmd.message, { kind: "job" });
         bus.emit({ type: "info", message: `[direct] Started ${cmd.agent} session: ${sessionId}` });
       }
       return { ok: true };
@@ -506,6 +506,7 @@ if (!CHAT_MODE && !INITIAL_TASK && !CRON_ENABLED) {
 if (INITIAL_TASK && !CHAT_MODE) {
   // ── Task mode: single session, run to completion ─────────────────
   taskSessionId = manager.run(interfaceAgent, INITIAL_TASK, {
+    kind: "job",
     ...(ENV_SESSION_ID ? { sessionId: ENV_SESSION_ID } : {}),
     ...(ENV_PARENT_SESSION_ID ? { parentSessionId: ENV_PARENT_SESSION_ID } : {}),
     ...(ENV_PARENT_AGENT ? { parentAgentName: ENV_PARENT_AGENT } : {}),
@@ -513,38 +514,14 @@ if (INITIAL_TASK && !CHAT_MODE) {
   bus.emit({ type: "info", message: `[task] Started ${interfaceAgent} task session: ${taskSessionId}` });
   await manager.waitForIdle(taskSessionId);
 } else if (CHAT_MODE) {
-  // ── V2 Chat mode: ephemeral sessions via ChatLoop ────────────────
-  // Resume any sessions from a previous process crash
-  const { resumed, interrupted } = manager.resumeStaleSessions();
-  if (resumed.length > 0) {
-    bus.emit({ type: "info", message: `[startup] Resumed ${resumed.length} session(s): ${resumed.map((s) => `${s.agent}/${s.sessionId}`).join(", ")}` });
-  }
-  if (interrupted.length > 0) {
-    bus.emit({ type: "info", message: `[startup] Could not resume ${interrupted.length} session(s): ${interrupted.map((s) => `${s.agent}/${s.sessionId}`).join(", ")}` });
-  }
-
-  // Build startup context for the agent: report what couldn't be resumed
-  let startupContext: string | undefined;
-  if (interrupted.length > 0) {
-    const lines = interrupted.map((s) =>
-      `- ${s.agent} (${s.sessionId}): "${(s.task ?? "").slice(0, 120)}" — ${s.error ?? "unknown"}`
-    );
-    startupContext =
-      `Process restarted. ${resumed.length} session(s) were automatically resumed. ` +
-      `The following ${interrupted.length} session(s) could NOT be resumed:\n` +
-      lines.join("\n") +
-      `\n\nThese sessions are lost. Check if any work needs to be re-dispatched.`;
-  }
-
-  chatLoop = new ChatLoop({
+  // ── Chat mode: persistent session via ChatSession ────────────────
+  chatSession = new ChatSession({
     manager,
     bus,
     agentName: interfaceAgent,
-    startupContext,
-    onSessionDone: () => {
+    onDone: () => {
       emitPrompt();
     },
-    onSessionStart: undefined, // handled by manager.onSessionStart
     onReload: handleReload,
     onClose: () => {
       bus.emit({ type: "info", message: "[cmd] Closing..." });
@@ -556,17 +533,9 @@ if (INITIAL_TASK && !CHAT_MODE) {
     },
   });
 
-  bus.emit({ type: "info", message: `[chat] V2 chat loop ready. Agent: ${interfaceAgent}` });
+  bus.emit({ type: "info", message: `[chat] Chat session ready. Agent: ${interfaceAgent}` });
 } else {
   // ── Cron-only mode ───────────────────────────────────────────────
-  // Resume any sessions from a previous process crash
-  const { resumed: cronResumed, interrupted: cronInterrupted } = manager.resumeStaleSessions();
-  if (cronResumed.length > 0) {
-    bus.emit({ type: "info", message: `[startup] Resumed ${cronResumed.length} session(s)` });
-  }
-  if (cronInterrupted.length > 0) {
-    bus.emit({ type: "info", message: `[startup] Could not resume ${cronInterrupted.length} session(s)` });
-  }
   bus.emit({ type: "info", message: `[cron-only] No chat session. Running cron jobs only.` });
 }
 
@@ -587,6 +556,16 @@ writeIdentity({
 // ── Start cron jobs (--cron to enable) ──────────────────────────────────
 
 if (CRON_ENABLED) {
+  // Resume stale job sessions from a previous process crash.
+  // Only job sessions — chat and call sessions are left untouched.
+  const { resumed, interrupted } = manager.resumeStaleSessions({ kinds: ["job"] });
+  if (resumed.length > 0) {
+    bus.emit({ type: "info", message: `[startup] Resumed ${resumed.length} session(s): ${resumed.map((s) => `${s.agent}/${s.sessionId}`).join(", ")}` });
+  }
+  if (interrupted.length > 0) {
+    bus.emit({ type: "info", message: `[startup] ${interrupted.length} session(s) could not resume: ${interrupted.map((s) => `${s.agent}/${s.sessionId}`).join(", ")}` });
+  }
+
   const handlerResult = await loadAgentHandlers({
     ...loaderOpts,
     getSessionId: (agentName: string) => {
@@ -636,7 +615,7 @@ if (!CHAT_MODE && !CRON_ENABLED) {
   process.exit(0);
 } else if (process.stdin.isTTY) {
   // Interactive mode: readline for human input
-  if (chatLoop) emitPrompt();
+  if (chatSession) emitPrompt();
 
   const rl = createInterface({ input: process.stdin, output: process.stdout });
   activeRL = rl;
@@ -644,12 +623,11 @@ if (!CHAT_MODE && !CRON_ENABLED) {
   // Moved to module scope for handleInput() reset access
 
   rl.on("SIGINT", () => {
-    if (chatLoop && chatLoop.getActiveCount() > 0 && !cancelledOnce) {
+    if (chatSession && chatSession.isRunning() && !cancelledOnce) {
       // First Ctrl+C while sessions are running: cancel all
       cancelledOnce = true;
       bus.emit({ type: "info", message: "\n[ctrl+c] Cancelling active sessions... (press again to force quit)" });
-      chatLoop.cancelAll();
-      // Also cancel any resumed sessions not tracked by chatLoop
+      chatSession.cancelAll();
       for (const s of manager.status()) {
         if (s.status === "running") manager.cancel(s.sessionId);
       }

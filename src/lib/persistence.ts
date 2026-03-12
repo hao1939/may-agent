@@ -16,6 +16,9 @@ export interface PersistedAgentConfig {
   memoryLimit?: number;
 }
 
+/** Session kind: chat (human-owned), job (fire-and-forget, auto-resumed), call (parent-owned). */
+export type SessionKind = "chat" | "job" | "call";
+
 /** Serializable session record stored as meta.json per session directory. */
 export interface PersistedSession {
   agent: string;
@@ -30,6 +33,10 @@ export interface PersistedSession {
   detached?: boolean;
   pid?: number;
   instance?: string;
+  /** Session kind. Defaults to "job" for backward compat with old meta.json files. */
+  kind?: SessionKind;
+  /** Session lifecycle policy. "never" = stays idle on completion, "immediate" = archives on completion. */
+  autoClose?: "immediate" | "never";
 }
 
 /** Shape of the registry data (in-memory view).

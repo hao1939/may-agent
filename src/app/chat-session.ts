@@ -1,0 +1,238 @@
+/**
+ * ChatSession — persistent chat session for the human-facing agent.
+ *
+ * Uses a single persistent session (autoClose: "never") that stays idle
+ * between messages. Subsequent messages wake the session via manager.input().
+ *
+ * Session state is persisted to JSONL automatically by the manager's
+ * subscribeForPersistence(). On restart, the user can resume an old
+ * session or start fresh.
+ *
+ * Design: docs/session-model.md
+ */
+
+import type { SubagentManager } from "../lib/manager.js";
+import type { EventBus } from "./event-bus.js";
+
+export interface ChatSessionOptions {
+  manager: SubagentManager;
+  bus: EventBus;
+  /** The agent to run for human messages (default: "may"). */
+  agentName: string;
+  /** Callback when the agent finishes responding (for prompt display). */
+  onDone?: () => void;
+  /** Handle "reload" command. */
+  onReload?: () => void;
+  /** Handle "close" command. */
+  onClose?: () => void;
+  /** Handle "restart" command. */
+  onRestart?: () => void;
+}
+
+/**
+ * Manages the human↔agent conversation via a single persistent session.
+ *
+ * First message creates the session. Subsequent messages wake it from idle.
+ * Built-in commands (status, cancel, reload, etc.) are handled directly.
+ * @agent prefix routes to ephemeral direct agent sessions.
+ */
+export class ChatSession {
+  private manager: SubagentManager;
+  private bus: EventBus;
+  private agentName: string;
+  private sessionId: string | null = null;
+  private onDone?: () => void;
+  private onReload?: () => void;
+  private onClose?: () => void;
+  private onRestart?: () => void;
+
+  constructor(opts: ChatSessionOptions) {
+    this.manager = opts.manager;
+    this.bus = opts.bus;
+    this.agentName = opts.agentName;
+    this.onDone = opts.onDone;
+    this.onReload = opts.onReload;
+    this.onClose = opts.onClose;
+    this.onRestart = opts.onRestart;
+  }
+
+  /**
+   * Handle human input. Returns immediately.
+   *
+   * Built-in commands are handled directly (no LLM call).
+   * @agent prefixes route to direct agent invocation.
+   * Everything else goes to the persistent session.
+   */
+  handleInput(message: string): void {
+    const trimmed = message.trim();
+    if (!trimmed) return;
+
+    const lower = trimmed.toLowerCase();
+
+    // ── Built-in commands (no LLM) ───────────────────────────────────
+    if (lower === "status") { this.handleStatus(); return; }
+    if (lower === "cancel all") { this.handleCancelAll(); return; }
+    if (lower === "cancel") { this.handleCancel(); return; }
+    if (lower === "reload") { this.onReload?.(); return; }
+    if (lower === "close") { this.onClose?.(); return; }
+    if (lower === "restart") { this.onRestart?.(); return; }
+    if (lower === "/new") { this.handleNew(); return; }
+
+    // ── @agent prefix — direct agent invocation (ephemeral) ──────────
+    const [targetAgent, agentMessage] = parseAgentPrefix(trimmed);
+    if (targetAgent) {
+      this.startDirectSession(targetAgent, agentMessage);
+      return;
+    }
+
+    // ── Normal message → persistent session ──────────────────────────
+    this.sendMessage(trimmed);
+  }
+
+  /**
+   * Send a message to the persistent chat session.
+   * Creates the session on first call, wakes from idle on subsequent calls.
+   */
+  private sendMessage(message: string): void {
+    if (!this.sessionId) {
+      // First message: create the persistent session
+      this.sessionId = this.manager.run(this.agentName, message, {
+        kind: "chat",
+        autoClose: "never",
+        compaction: true,
+        source: "chat",
+      });
+      this.trackCompletion(this.sessionId);
+      return;
+    }
+
+    // Subsequent messages: wake the idle session or steer the running one
+    this.manager.input(this.sessionId, message)
+      .catch((err) => {
+        const msg = err instanceof Error ? err.message : String(err);
+        // Session gone (closed, archived, etc.) — create a fresh one
+        if (msg.includes("not found") || msg.includes("terminal state")) {
+          this.sessionId = null;
+          this.sendMessage(message);
+          return;
+        }
+        this.bus.emit({ type: "info", message: `[chat] Error: ${msg}` });
+      });
+  }
+
+  /**
+   * Track session completion for the onDone callback.
+   * For autoClose: "never", the session goes idle (not archived).
+   */
+  private trackCompletion(sessionId: string): void {
+    this.manager.waitForIdle(sessionId)
+      .then(() => { this.onDone?.(); })
+      .catch((err) => {
+        const msg = err instanceof Error ? err.message : String(err);
+        this.bus.emit({ type: "info", message: `[chat] Session error: ${msg}` });
+        this.onDone?.();
+      });
+  }
+
+  /** List running sessions. */
+  private handleStatus(): void {
+    const sessions = this.manager.status();
+    if (sessions.length === 0) {
+      this.bus.emit({ type: "info", message: "[status] No active sessions" });
+    } else {
+      const lines = sessions.map((s) =>
+        `  ${s.agent} (${s.sessionId}): ${s.status} — "${s.task.slice(0, 80)}" [${s.runtime}]`
+      );
+      this.bus.emit({ type: "info", message: `[status] ${sessions.length} session(s):\n${lines.join("\n")}` });
+    }
+  }
+
+  /** Cancel the current chat session's run (if running). */
+  private handleCancel(): void {
+    if (this.sessionId) {
+      const session = this.manager.status().find((s) => s.sessionId === this.sessionId);
+      if (session?.status === "running") {
+        this.bus.emit({ type: "info", message: `[cancel] Cancelling ${this.sessionId}` });
+        this.manager.cancel(this.sessionId);
+        return;
+      }
+    }
+    // Fall back to cancelling the most recent running session
+    const running = this.manager.status().filter((s) => s.status === "running");
+    if (running.length > 0) {
+      const latest = running.sort((a, b) => b.startedAt - a.startedAt)[0];
+      this.bus.emit({ type: "info", message: `[cancel] Cancelling ${latest.sessionId}` });
+      this.manager.cancel(latest.sessionId);
+    } else {
+      this.bus.emit({ type: "info", message: "[cancel] No active sessions to cancel" });
+    }
+  }
+
+  /** Cancel all active sessions. */
+  private handleCancelAll(): void {
+    const sessions = this.manager.status();
+    let cancelled = 0;
+    for (const s of sessions) {
+      if (s.status === "running") {
+        this.manager.cancel(s.sessionId);
+        cancelled++;
+      }
+    }
+    this.bus.emit({ type: "info", message: `[cancel] Cancelled ${cancelled} session(s)` });
+  }
+
+  /** Start a fresh chat session. Archives the current one. */
+  private handleNew(): void {
+    if (this.sessionId) {
+      this.manager.close(this.sessionId);
+      this.bus.emit({ type: "info", message: `[chat] Closed session ${this.sessionId}` });
+    }
+    this.sessionId = null;
+    this.bus.emit({ type: "info", message: "[chat] Ready for new conversation. Type your message." });
+    this.onDone?.();
+  }
+
+  /** Start an ephemeral direct agent session (from @agent prefix). */
+  private startDirectSession(agentName: string, task: string): void {
+    this.bus.emit({ type: "info", message: `[direct] Running ${agentName}...` });
+    const sessionId = this.manager.run(agentName, task, {
+      kind: "job",
+      source: "chat",
+    });
+    this.manager.waitFor(sessionId)
+      .then(() => { this.onDone?.(); })
+      .catch((err) => {
+        const msg = err instanceof Error ? err.message : String(err);
+        this.bus.emit({ type: "info", message: `[direct] Session ${sessionId} error: ${msg}` });
+        this.onDone?.();
+      });
+  }
+
+  /** Cancel the chat session and all running sessions (for shutdown). */
+  cancelAll(): void {
+    for (const s of this.manager.status()) {
+      if (s.status === "running") {
+        try { this.manager.cancel(s.sessionId); } catch { /* may already be done */ }
+      }
+    }
+  }
+
+  /** Get the active chat session ID. */
+  getSessionId(): string | null {
+    return this.sessionId;
+  }
+
+  /** Check if the chat session is currently processing. */
+  isRunning(): boolean {
+    if (!this.sessionId) return false;
+    const session = this.manager.status().find((s) => s.sessionId === this.sessionId);
+    return session?.status === "running";
+  }
+}
+
+/** Parse @agent prefix from input. Returns [agentName, message] or [null, original]. */
+function parseAgentPrefix(input: string): [string | null, string] {
+  const match = input.match(/^@(\w+)\s+([\s\S]+)/);
+  if (match) return [match[1], match[2]];
+  return [null, input];
+}

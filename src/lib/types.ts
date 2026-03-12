@@ -1,6 +1,7 @@
 import type { AgentTool, AgentMessage } from "@mariozechner/pi-agent-core";
 import type { Model } from "@mariozechner/pi-ai";
 import type { CompactionOptions } from "./compaction.js";
+import type { SessionKind } from "./persistence.js";
 
 /** Minimal definition for registering a feature unit. */
 export interface SubagentDefinition {
@@ -102,6 +103,8 @@ export interface SessionInfo {
   stepLabel?: string;
   /** Session lifecycle policy. "never" = persistent/chat session, "immediate" = task session. */
   autoClose?: "immediate" | "never";
+  /** Session kind: chat, job, or call. */
+  kind?: SessionKind;
 }
 
 /** Result of a completed session. */

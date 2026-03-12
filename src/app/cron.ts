@@ -232,7 +232,7 @@ export class Cron {
     try {
       // Always spawn a fresh task session — no persistent heartbeat sessions.
       // The agent reads todo.md/SOUL.md for context. Memory is the filesystem.
-      const sessionId = this.manager.run(agentName, entry.message);
+      const sessionId = this.manager.run(agentName, entry.message, { kind: "job" });
       this.heartbeatSessions.set(agentName, sessionId);
 
       // Wait for completion then record result
