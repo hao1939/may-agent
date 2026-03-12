@@ -45,6 +45,8 @@ export interface AgentConfig {
   model: string; // key into models map
   tools: string[]; // preset names: "coding", "agents", "workflow", etc.
   memoryLimit?: number;
+  /** Enable automatic context compaction for long-running sessions. */
+  compaction?: boolean;
   /** Block direct delegation to specific agents via agents tool. */
   delegateDeny?: { agents: string[]; hint: string };
 }
@@ -471,6 +473,7 @@ export function loadAgents(opts: AgentLoaderOptions): LoadResult {
       projectRoot,
       apiKey: (model as any).apiKey,
       memoryLimit: config.memoryLimit,
+      compaction: config.compaction,
     });
 
     if (isUpdate) {

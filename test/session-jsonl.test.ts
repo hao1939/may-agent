@@ -210,9 +210,9 @@ describe("Session JSONL persistence", () => {
       // Should have at least the user message (the task).
       expect(messages.length).toBeGreaterThanOrEqual(1);
 
-      // The first message should be the user's task
+      // The first message should be the user's task (with session context prefix)
       expect(messages[0].role).toBe("user");
-      expect((messages[0] as any).content[0].text).toBe("do something");
+      expect((messages[0] as any).content[0].text).toContain("do something");
     });
 
     it("archives session directory to history after completion", async () => {

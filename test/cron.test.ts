@@ -838,4 +838,176 @@ describe("Cron", () => {
 
     c.stop();
   });
+
+  // ── Re-trigger mechanism ─────────────────────────────────────────────
+
+  it("re-trigger: fires again when agent has remaining todo items", async () => {
+    writeFileSync(
+      configPath,
+      JSON.stringify([{ name: "hb-retrigger", type: "heartbeat", intervalMs: 300000, agent: "bob", message: "hb" }]),
+    );
+    const mgr = makeMockManager();
+
+    // Create agent workspace with unchecked tasks
+    const todoDir = resolve(dir, "agents", "bob", "workspace");
+    mkdirSync(todoDir, { recursive: true });
+    writeFileSync(resolve(todoDir, "todo.md"), "# TODO\n\n- [ ] Task 1\n- [ ] Task 2\n");
+
+    const c = new Cron(configPath, mgr as any, () => "sid-1", undefined, dir);
+    c.start();
+
+    // First fire + completion → should re-trigger because todo has unchecked items
+    await vi.advanceTimersByTimeAsync(300000);
+    await flush();
+
+    // Should have fired at least twice (first + one re-trigger)
+    const runCalls = mgr.calls.filter((c) => c.method === "run");
+    expect(runCalls.length).toBeGreaterThanOrEqual(2);
+    // All calls should be for agent "bob"
+    for (const call of runCalls) {
+      expect(call.args[0]).toBe("bob");
+    }
+
+    c.stop();
+  });
+
+  it("re-trigger: stops after maxRetriggers consecutive re-triggers", async () => {
+    writeFileSync(
+      configPath,
+      JSON.stringify([{ name: "hb-max", type: "heartbeat", intervalMs: 300000, agent: "bob", message: "hb" }]),
+    );
+    const mgr = makeMockManager();
+
+    // Create agent workspace with unchecked task that never gets cleared
+    const todoDir = resolve(dir, "agents", "bob", "workspace");
+    mkdirSync(todoDir, { recursive: true });
+    writeFileSync(resolve(todoDir, "todo.md"), "# TODO\n\n- [ ] Persistent task\n");
+
+    const errors: string[] = [];
+    const c = new Cron(configPath, mgr as any, () => "sid-1", (msg) => errors.push(msg), dir);
+    c.start();
+
+    // Fire + maxRetriggers re-triggers = 1 + maxRetriggers total runs
+    await vi.advanceTimersByTimeAsync(300000);
+    await flush();
+
+    const runCalls = mgr.calls.filter((c) => c.method === "run");
+    // 1 initial + maxRetriggers re-fires = 1 + 3 = 4
+    expect(runCalls).toHaveLength(1 + c.maxRetriggers);
+    // Should have logged max-reached error
+    expect(errors.some((e) => e.includes("max reached"))).toBe(true);
+
+    c.stop();
+  });
+
+  it("re-trigger: does not re-trigger when no unchecked tasks in todo", async () => {
+    writeFileSync(
+      configPath,
+      JSON.stringify([{ name: "hb-empty", type: "heartbeat", intervalMs: 300000, agent: "bob", message: "hb" }]),
+    );
+    const mgr = makeMockManager();
+
+    // Create agent workspace with all tasks completed
+    const todoDir = resolve(dir, "agents", "bob", "workspace");
+    mkdirSync(todoDir, { recursive: true });
+    writeFileSync(resolve(todoDir, "todo.md"), "# TODO\n\n- [x] Done task\n");
+
+    const c = new Cron(configPath, mgr as any, () => "sid-1", undefined, dir);
+    c.start();
+
+    await vi.advanceTimersByTimeAsync(300000);
+    await flush();
+
+    // Should have fired exactly once — no re-trigger
+    const runCalls = mgr.calls.filter((c) => c.method === "run");
+    expect(runCalls).toHaveLength(1);
+
+    c.stop();
+  });
+
+  it("re-trigger: does not re-trigger when todo.md does not exist", async () => {
+    writeFileSync(
+      configPath,
+      JSON.stringify([{ name: "hb-notodo", type: "heartbeat", intervalMs: 300000, agent: "bob", message: "hb" }]),
+    );
+    const mgr = makeMockManager();
+    // Don't create any todo.md
+
+    const c = new Cron(configPath, mgr as any, () => "sid-1", undefined, dir);
+    c.start();
+
+    await vi.advanceTimersByTimeAsync(300000);
+    await flush();
+
+    // Should have fired exactly once — no re-trigger
+    const runCalls = mgr.calls.filter((c) => c.method === "run");
+    expect(runCalls).toHaveLength(1);
+
+    c.stop();
+  });
+
+  it("re-trigger: resets count on failure", async () => {
+    writeFileSync(
+      configPath,
+      JSON.stringify([{ name: "hb-failreset", type: "heartbeat", intervalMs: 300000, agent: "bob", message: "hb" }]),
+    );
+    const mgr = makeMockManager();
+
+    // Create unchecked tasks
+    const todoDir = resolve(dir, "agents", "bob", "workspace");
+    mkdirSync(todoDir, { recursive: true });
+    writeFileSync(resolve(todoDir, "todo.md"), "# TODO\n\n- [ ] Task\n");
+
+    // First call succeeds (triggers re-trigger), second call fails (should reset count)
+    let callIndex = 0;
+    mgr.setWaitFor(() => {
+      callIndex++;
+      if (callIndex === 2) {
+        return Promise.reject(new Error("session failed"));
+      }
+      return Promise.resolve();
+    });
+
+    const errors: string[] = [];
+    const c = new Cron(configPath, mgr as any, () => "sid-1", (msg) => errors.push(msg), dir);
+    c.start();
+
+    await vi.advanceTimersByTimeAsync(300000);
+    await flush();
+
+    // First run succeeds → re-triggers → second run fails → count resets, no more re-triggers
+    const runCalls = mgr.calls.filter((c) => c.method === "run");
+    expect(runCalls).toHaveLength(2);
+
+    c.stop();
+  });
+
+  it("re-trigger: triggerNow with force bypasses debounce", async () => {
+    writeFileSync(
+      configPath,
+      JSON.stringify([{ name: "force-test", type: "job", intervalMs: 300000, message: "go", handler: "force-test" }]),
+    );
+    const mgr = makeMockManager();
+    let callCount = 0;
+    const c = new Cron(configPath, mgr as any, () => "sid-1", undefined, dir);
+    c.registerHandler("force-test", async () => {
+      callCount++;
+    });
+    c.start();
+
+    // First trigger — works
+    expect(c.triggerNow("force-test")).toBe(true);
+    await flush();
+    expect(callCount).toBe(1);
+
+    // Second trigger without force — debounced
+    expect(c.triggerNow("force-test")).toBe(false);
+
+    // Third trigger with force — bypasses debounce
+    expect(c.triggerNow("force-test", { force: true })).toBe(true);
+    await flush();
+    expect(callCount).toBe(2);
+
+    c.stop();
+  });
 });

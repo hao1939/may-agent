@@ -17,6 +17,7 @@ function messageTokens(msg: AgentMessage): number {
   if (Array.isArray(msg.content)) {
     let total = 0;
     for (const block of msg.content) {
+      if (!block) continue;
       if (block.type === "text") {
         total += estimateTokens(block.text);
       } else if (block.type === "toolCall") {
@@ -124,7 +125,7 @@ export function extractKeyFacts(messages: AgentMessage[]): KeyFacts {
   for (const msg of messages) {
     if (msg.role === "assistant" && Array.isArray(msg.content)) {
       for (const block of msg.content) {
-        if (block.type !== "toolCall") continue;
+        if (!block || block.type !== "toolCall") continue;
         const args = block.arguments as Record<string, any>;
 
         if (block.name === "read" && args.path) {
@@ -231,7 +232,7 @@ export function extractOriginalTask(messages: AgentMessage[]): string | null {
       if (typeof msg.content === "string") return msg.content.trim() || null;
       if (Array.isArray(msg.content)) {
         const text = msg.content
-          .filter((b): b is { type: "text"; text: string } => b.type === "text")
+          .filter((b): b is { type: "text"; text: string } => b?.type === "text")
           .map((b) => b.text)
           .join(" ")
           .trim();
@@ -262,7 +263,7 @@ function summarizeMessages(messages: AgentMessage[]): string {
         typeof msg.content === "string"
           ? msg.content
           : msg.content
-              .filter((b): b is { type: "text"; text: string } => b.type === "text")
+              .filter((b): b is { type: "text"; text: string } => b?.type === "text")
               .map((b) => b.text)
               .join(" ");
       if (text.trim()) {
@@ -294,7 +295,7 @@ function summarizeMessages(messages: AgentMessage[]): string {
     } else if (msg.role === "toolResult") {
       const trMsg = msg as ToolResultMessage;
       const text = trMsg.content
-        .filter((b): b is { type: "text"; text: string } => b.type === "text")
+        .filter((b): b is { type: "text"; text: string } => b?.type === "text")
         .map((b) => b.text)
         .join(" ");
       // Errors get more preview space — they're critical for debugging
