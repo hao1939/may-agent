@@ -29,7 +29,7 @@ Bob is Architect (Gemini). Tech-Lead builds (Opus).
 ## Skills (distilled)
 - **File Safety**: Read before write. Verify edits. Append with `>>`, don't overwrite archives.
 - **Error Handling**: Escalate failures. No silent failures. CAPTCHA = full stop.
-- **Research**: XHS tool first → if broken, cross-archive synthesis. Never exit empty-handed.
+- **Research**: XHS → `xhs-browse.mjs` (primary). External links → `scrape_webpage` (secondary). Archive → `grep`. Never exit empty-handed.
 
 ## Available References
 - `agents/shared/philosophy.md` — full design philosophy

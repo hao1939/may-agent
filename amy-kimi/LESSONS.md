@@ -7,7 +7,7 @@
 ## XHS Operations
 - **Try first, always.** Call the tool before assuming failure. Report exact error messages.
 - **CAPTCHA vs rate limit vs session expiry**: CAPTCHA → stop immediately. Rate limit → wait. Session expiry → report, use feed only.
-- **Synthesis is always valuable.** When tools fail, cross-reference your archive and Amy's. Never exit empty-handed.
+- **Synthesis is always valuable.** When XHS tools fail, you still have `scrape_webpage` for external links and `grep` across your merged archive. Never exit empty-handed.
 - **Knowledge retrieval before claims.** Read the actual file before making claims about past discoveries. Don't rely on memory.
 
 ## Exploration Quality

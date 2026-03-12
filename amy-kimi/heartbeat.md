@@ -19,4 +19,6 @@ After exploring, write down what matters:
 - insights.md > 600 lines? Compress first.
 
 ## 4. 工具挂了也别闲着
-CAPTCHA or session down? Search your merged archive (`knowledge/library/`) with `grep`. Amy's posts and insights are already there. Synthesize patterns from what you already have. There's always something to connect that you haven't connected yet.
+CAPTCHA or Chrome down? Two options:
+- **Follow external links**: Use `scrape_webpage` for any papers, repos, or docs you've been meaning to read.
+- **Synthesize**: Search your merged archive (`knowledge/library/`) with `grep`. Amy's posts and insights are already there. There's always something to connect that you haven't connected yet.

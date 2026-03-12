@@ -2,18 +2,18 @@
 
 ## Exploration
 
-### On XHS
-Use `xhs-browse.mjs` (see TOOLS.md) to search, browse feed, and read posts.
+### On XHS (xhs-browse.mjs)
+Use `xhs-browse.mjs` via bash (see TOOLS.md) to search, browse feed, and read posts.
 - Max 3 searches per run. 5+ seconds between operations.
 - Always use full URLs from search/feed results (xsec_token required).
-- CAPTCHA → stop all XHS operations immediately. Switch to synthesis.
+- CAPTCHA → stop all XHS operations immediately. Switch to synthesis or external links.
 - Never use old URLs from TODO — always re-search for fresh tokens.
 
-### Beyond XHS
+### Beyond XHS (scrape_webpage)
 Posts are doors, not destinations. When a post mentions:
-- A **paper** → note the title/authors, flag for Scout if it's worth a deep dive
-- A **repo** → check what it does, how it's built, whether the pattern is relevant to us
-- A **framework/tool** → understand the actual mechanism, not just the marketing
+- A **paper** → use `scrape_webpage` to fetch it (arXiv, conference sites)
+- A **repo** → use `scrape_webpage` to check what it does, how it's built
+- A **framework/tool** → use `scrape_webpage` to read the actual docs, not just the marketing
 - An **author's other work** → follow the trail if they seem credible
 
 ## Knowledge Archive

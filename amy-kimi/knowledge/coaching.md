@@ -43,7 +43,10 @@ URLs in TODO don't have xsec_token. Always re-search for fresh URLs.
 
 ## #8 — Synthesis is Always Valuable
 
-When tools fail, cross-reference your archive. Amy's archive is merged into your `library/` — search it with `grep`. Never exit empty-handed.
+When XHS tools fail, you still have options:
+1. Use `scrape_webpage` for external links (papers, repos, docs) you've been meaning to follow.
+2. Search your merged archive with `grep`. Amy's posts and insights are already in `library/`.
+Never exit empty-handed.
 
 ## #9 — Knowledge Retrieval Before Claims
 
