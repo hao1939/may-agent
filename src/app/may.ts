@@ -389,10 +389,10 @@ process.on("exit", (code) => {
  * Unified input handler. All channels (terminal, socket, telegram) route here.
  * In chat mode, delegates to ChatSession. In task/cron mode, handles commands directly.
  */
-function handleInput(message: string): void {
+function handleInput(message: string, source?: string): void {
   cancelledOnce = false;
   if (chatSession) {
-    chatSession.handleInput(message);
+    chatSession.handleInput(message, source);
     return;
   }
 
@@ -436,7 +436,7 @@ function handleInput(message: string): void {
 bus.onCommand((cmd) => {
   switch (cmd.type) {
     case "input":
-      handleInput(cmd.message);
+      handleInput(cmd.message, cmd.source);
       return { ok: true };
     case "steer": {
       // Steer a specific session by ID (for programmatic control from socket).
@@ -472,7 +472,7 @@ bus.onCommand((cmd) => {
     case "run": {
       // Direct agent invocation from socket
       if (chatSession) {
-        chatSession.handleInput(`@${cmd.agent} ${cmd.message}`);
+        chatSession.handleInput(`@${cmd.agent} ${cmd.message}`, "socket");
       } else {
         const sessionId = manager.run(cmd.agent, cmd.message, { kind: "job" });
         bus.emit({ type: "info", message: `[direct] Started ${cmd.agent} session: ${sessionId}` });
@@ -569,6 +569,7 @@ if (INITIAL_TASK && !CHAT_MODE) {
     manager,
     bus,
     agentName: interfaceAgent,
+    persistDir: PERSIST_DIR,
     onDone: () => {
       emitPrompt();
     },
@@ -717,7 +718,7 @@ if (!CHAT_MODE && !CRON_ENABLED) {
       rl.close();
       return;
     }
-    handleInput(joined);
+    handleInput(joined, "console");
   };
 
   rl.on("line", (line: string) => {

@@ -69,7 +69,7 @@ export type RunnerCommand =
   | { type: "cancel_task" }
   | { type: "close" }
   | { type: "status" }
-  | { type: "input"; message: string }
+  | { type: "input"; message: string; source?: string }
   | { type: "run"; agent: string; message: string }
   | { type: "reload_agents" }
   | { type: "restart" };

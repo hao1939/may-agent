@@ -11,6 +11,8 @@
  * Design: docs/session-model.md
  */
 
+import { appendFileSync } from "node:fs";
+import { join } from "node:path";
 import type { SubagentManager } from "../lib/manager.js";
 import type { EventBus } from "./event-bus.js";
 
@@ -19,6 +21,8 @@ export interface ChatSessionOptions {
   bus: EventBus;
   /** The agent to run for human messages (default: "may"). */
   agentName: string;
+  /** Directory for persistent state (JSONL logs, etc.). Optional — logging is skipped when unset. */
+  persistDir?: string;
   /** Callback when the agent finishes responding (for prompt display). */
   onDone?: () => void;
   /** Handle "reload" command. */
@@ -40,6 +44,7 @@ export class ChatSession {
   private manager: SubagentManager;
   private bus: EventBus;
   private agentName: string;
+  private persistDir?: string;
   private sessionId: string | null = null;
   private onDone?: () => void;
   private onReload?: () => void;
@@ -50,6 +55,7 @@ export class ChatSession {
     this.manager = opts.manager;
     this.bus = opts.bus;
     this.agentName = opts.agentName;
+    this.persistDir = opts.persistDir;
     this.onDone = opts.onDone;
     this.onReload = opts.onReload;
     this.onClose = opts.onClose;
@@ -63,7 +69,7 @@ export class ChatSession {
    * @agent prefixes route to direct agent invocation.
    * Everything else goes to the persistent session.
    */
-  handleInput(message: string): void {
+  handleInput(message: string, source?: string): void {
     const trimmed = message.trim();
     if (!trimmed) return;
 
@@ -102,11 +108,13 @@ export class ChatSession {
     // ── @agent prefix — direct agent invocation (ephemeral) ──────────
     const [targetAgent, agentMessage] = parseAgentPrefix(trimmed);
     if (targetAgent) {
+      this.logHumanInput(trimmed, source, targetAgent);
       this.startDirectSession(targetAgent, agentMessage);
       return;
     }
 
     // ── Normal message → persistent session ──────────────────────────
+    this.logHumanInput(trimmed, source, this.agentName);
     this.sendMessage(trimmed);
   }
 
@@ -173,6 +181,32 @@ export class ChatSession {
         this.bus.emit({ type: "info", message: `[chat] Session error: ${msg}` });
         this.onDone?.();
       });
+  }
+
+  /**
+   * Append a human input entry to the JSONL log.
+   *
+   * One line per message: { ts, source, sessionId, agent, text }.
+   * SessionId provides full conversation context — the session JSONL
+   * has the complete message history for deeper analysis.
+   */
+  private logHumanInput(text: string, source?: string, agent?: string): void {
+    if (!this.persistDir) return;
+    try {
+      const entry = {
+        ts: Date.now(),
+        source: source ?? "unknown",
+        sessionId: this.sessionId,
+        agent: agent ?? this.agentName,
+        text,
+      };
+      appendFileSync(
+        join(this.persistDir, "human-inputs.jsonl"),
+        JSON.stringify(entry) + "\n",
+      );
+    } catch {
+      /* best-effort — don't break chat over logging */
+    }
   }
 
   /** List running sessions. */

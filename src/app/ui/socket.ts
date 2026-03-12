@@ -164,6 +164,11 @@ export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
           continue;
         }
 
+        // Inject source for input commands from socket (if not already set)
+        if (cmdType === "input" && !cmd.source) {
+          cmd.source = "socket";
+        }
+
         // Dispatch and propagate handler result (L5)
         const result = bus.command(cmd as Parameters<typeof bus.command>[0]);
         if (result && !result.ok) {

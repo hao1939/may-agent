@@ -76,7 +76,7 @@ describe("ChatSession", () => {
       if (event.type === "info") messages.push(event.message);
     });
 
-    const session = new ChatSession({ manager, bus, agentName: "may" });
+    const session = new ChatSession({ manager, bus, agentName: "may", persistDir });
     session.handleInput("status");
 
     expect(messages.some((m) => m.includes("No active sessions"))).toBe(true);
@@ -88,14 +88,14 @@ describe("ChatSession", () => {
       if (event.type === "info") messages.push(event.message);
     });
 
-    const session = new ChatSession({ manager, bus, agentName: "may" });
+    const session = new ChatSession({ manager, bus, agentName: "may", persistDir });
     session.handleInput("cancel");
 
     expect(messages.some((m) => m.includes("No active sessions to cancel"))).toBe(true);
   });
 
   it("creates a persistent session on first message", () => {
-    const session = new ChatSession({ manager, bus, agentName: "may" });
+    const session = new ChatSession({ manager, bus, agentName: "may", persistDir });
     session.handleInput("fix the login bug");
 
     expect(session.getSessionId()).toBeTruthy();
@@ -108,7 +108,7 @@ describe("ChatSession", () => {
   });
 
   it("reuses the same session for subsequent messages", async () => {
-    const session = new ChatSession({ manager, bus, agentName: "may" });
+    const session = new ChatSession({ manager, bus, agentName: "may", persistDir });
     session.handleInput("first message");
 
     const firstId = session.getSessionId();
@@ -122,7 +122,7 @@ describe("ChatSession", () => {
   });
 
   it("ignores empty input", () => {
-    const session = new ChatSession({ manager, bus, agentName: "may" });
+    const session = new ChatSession({ manager, bus, agentName: "may", persistDir });
     session.handleInput("");
     session.handleInput("   ");
 
@@ -136,7 +136,7 @@ describe("ChatSession", () => {
       if (event.type === "info") messages.push(event.message);
     });
 
-    const session = new ChatSession({ manager, bus, agentName: "may" });
+    const session = new ChatSession({ manager, bus, agentName: "may", persistDir });
     session.handleInput("fix something");
     session.handleInput("cancel all");
 
@@ -220,7 +220,7 @@ describe("ChatSession", () => {
       if (event.type === "info") messages.push(event.message);
     });
 
-    const session = new ChatSession({ manager, bus, agentName: "may" });
+    const session = new ChatSession({ manager, bus, agentName: "may", persistDir });
     session.handleInput("@coder fix the type error");
 
     // Direct sessions should be kind: "job", not "chat"
@@ -240,7 +240,7 @@ describe("ChatSession", () => {
       if (event.type === "info") messages.push(event.message);
     });
 
-    const session = new ChatSession({ manager, bus, agentName: "may" });
+    const session = new ChatSession({ manager, bus, agentName: "may", persistDir });
     session.handleInput("first conversation");
 
     const firstId = session.getSessionId();
@@ -261,7 +261,7 @@ describe("ChatSession", () => {
   });
 
   it("cancelAll cancels all tracked sessions", async () => {
-    const session = new ChatSession({ manager, bus, agentName: "may" });
+    const session = new ChatSession({ manager, bus, agentName: "may", persistDir });
     session.handleInput("task one");
 
     session.cancelAll();
@@ -273,7 +273,7 @@ describe("ChatSession", () => {
   });
 
   it("isRunning reflects session state", async () => {
-    const session = new ChatSession({ manager, bus, agentName: "may" });
+    const session = new ChatSession({ manager, bus, agentName: "may", persistDir });
     expect(session.isRunning()).toBe(false);
 
     session.handleInput("do something");
