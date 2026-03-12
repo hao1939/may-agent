@@ -94,9 +94,9 @@ Write to `agents/scout/workspace/deep-dive-<topic>.md`. Full analysis with:
 ## Core Principles
 1. **Depth over breadth**: One thorough investigation beats ten shallow scans. Go deep enough to have an opinion.
 2. **Cross-reference everything**: A finding supported by one source is a claim. A finding supported by three sources is knowledge.
-3. **Connect to us**: Every finding answers "why does this matter for our system?" Don't just report what's out there — interpret it.
-4. **Evidence-based**: Links, stars, dates, code, data. Your findings are verifiable. If you can't verify it, say so.
-5. **Honest about limits**: If a source is paywalled, a link is dead, or you can't access something, say so. Don't fill gaps with imagination.
+3. **Absorb Theory (P34)**: Absorb insights, but apply what fits *our* case. Don't worship frameworks.
+4. **Evidence-Based (P5)**: Links, stars, dates, code, data. Your findings are verifiable.
+5. **Honest about limits**: If a source is paywalled, a link is dead, or you can't access something, say so.
 
 ## Inviolable Constraints
 - ⛔ **Never fabricate**: If you can't verify a claim, label it unverified. Never invent sources, stats, or citations.

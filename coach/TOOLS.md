@@ -1,33 +1,62 @@
 # TOOLS — Coach
 
-## Usage Guidelines
+## `read` / `write` / `edit`
+Read, write, and edit files. Use for workspace files, agent configs, coaching reports.
 
-### `fork_agent`
+## `bash`
+Run shell commands. Use for: system checks, file listings, running tests.
+
+## `agents`
+Cooperate with other agents.
+
+| Action | Blocking? | Use |
+|--------|-----------|-----|
+| `call(agent, task)` | **Yes** | Run agent to completion, get result. |
+| `send(agent, message)` | No | Add todo for agent + trigger their heartbeat. Fire-and-forget. |
+| `list` | No | See available agents and running sessions. |
+| `peek(sessionId)` | No | See recent activity of a running session. |
+| `cancel(sessionId)` | No | Kill a running session. |
+
+## Agent Growth Tools
+
+### `fork_agent(source, forkName)`
 Create a safe copy of an agent to experiment with.
 `fork_agent("coder", "coder-v2")` creates `agents/.lab/coder-v2`.
-- **Why**: Protect the live agent from breaking changes.
-- **When**: Before attempting to improve an agent's behavior.
+- Use before attempting to improve an agent's behavior.
 
-### `verify_agent`
-Run a test task on an agent and get a result.
+### `verify_agent(forkName, taskFile)`
+Run a test task on a forked agent and get a result.
 `verify_agent("coder-v2", "tests/fix-type-error.md")` runs the task and returns a score.
-- **Why**: Confirm the change works as expected.
-- **When**: After modifying the fork (e.g., editing LESSONS.md).
+- Use after modifying the fork.
 
-### `promote_agent`
+### `promote_agent(forkName, target)`
 Copy successful changes back to the live agent.
 `promote_agent("coder-v2", "coder")` copies config/knowledge files.
-- **Why**: Apply verified improvements.
-- **When**: The fork passes verification tests.
+- Use when the fork passes verification tests.
 
-### `discard_agent`
+### `discard_agent(forkName)`
 Clean up a failed experiment or temporary fork.
 `discard_agent("coder-v2")` deletes the fork.
-- **Why**: Keep the workspace clean.
-- **When**: The experiment failed or is complete.
+- Use when the experiment failed or is complete.
 
-### `learn`
-Record your own learnings about coaching.
-`learn("Forking is safer than editing live agents")`.
-- **Why**: Remember what works and what doesn't.
-- **When**: You discover a new pattern or principle.
+## `socket_watch`
+Monitor Unix domain sockets for live coaching sessions.
+
+| Action | Use |
+|--------|-----|
+| `connect(socketPath)` | Connect to a running agent's socket |
+| `send(watchId, message)` | Send a message through the socket |
+| `disconnect(watchId)` | Disconnect from the socket |
+
+## `workflow`
+Run multi-step agent sequences. **Blocking.**
+
+| Workflow | What it does |
+|----------|-------------|
+| `coaching-session` | Structured coaching interaction with an agent |
+| `convention-review` | Review agent convention files for correctness |
+| `skill-development` | Develop and test new skills |
+| `verify-setup` | Verify agent setup and configuration |
+
+## Key Constraints
+- ❌ No `cron` tool.

@@ -8,7 +8,7 @@ tools (Scout) have access to it. It is NOT a hallucination.
 
 ### `agents` is a REAL tool — DO NOT flag it
 `agents` is the delegation/coordination tool used by supervisors (May, Tech Lead, Optimizer, Bob, Coach).
-It provides actions: call, list, peek, steer, cancel. If an agent calls `agents` with an action like
+It provides actions: call, send, list, peek, cancel. If an agent calls `agents` with an action like
 `{"action":"call","agent":"scout",...}`, this is correct behavior. DO NOT flag it as a hallucination
 or hard constraint violation.
 

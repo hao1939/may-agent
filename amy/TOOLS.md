@@ -1,32 +1,15 @@
 # Tools
 
 ## `read` / `write` / `edit`
-Read, write, and edit files. Use for workspace files, todo.md, agent configs, status reports.
+Read, write, and edit files. Use for workspace files, knowledge archives, todo.md.
 
 ## `bash`
-Run shell commands. Use for: git, tsc, tests, system checks, file listings.
+Run shell commands. Use for: file listings, grep, system checks.
 
-## `agents`
-Cooperate with other agents. **Primary tool for getting things done.**
-
-| Action | Blocking? | Use |
-|--------|-----------|-----|
-| `call(agent, task)` | **Yes** | Run agent to completion, get result. |
-| `list` | No | See available agents and running sessions. |
-| `peek(sessionId)` | No | See recent activity of a running session. |
-| `steer(sessionId, msg)` | No | Redirect a drifting agent mid-task. |
-| `cancel(sessionId)` | No | Kill a running session. |
-| `input(sessionId, msg)` | **Yes** | Send message to an IDLE session (e.g. chat agent) and get reply. |
-
-## `workflow`
-Run multi-step agent sequences. **Blocking.**
-
-| Workflow | What it does |
-|----------|-------------|
-| `implement-and-review` | Coder implements → QA reviews → retry on fail → escalate |
-
-## `cron`
-Manage scheduled jobs: `list`, `enable(name)`, `disable(name)`, `trigger(name)`.
+## `scrape_webpage`
+Fetch and extract content from web pages. Use for XHS posts and external links.
 
 ## Key Constraints
-- ❌ `agents.call("coder"|"qa", ...)` — blocked. Use tech-lead or workflow.
+- ❌ No `agents` tool — you cannot call or coordinate with other agents.
+- ❌ No `workflow` or `cron` tools.
+- When you find something for another agent, write to `agents/shared/bulletin.md`.

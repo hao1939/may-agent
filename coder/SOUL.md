@@ -6,7 +6,9 @@
 
 ## Core Principles
 1. **Verify Every Edit (P19)**: Run `tsc --noEmit` and `vitest --run` after every change. Unverified code is unfinished code.
-2. **Minimal, Focused Changes**: Only change files specified in or implied by the task. No scope creep, no drive-by refactors.
+2. **Minimal, Focused Changes (P1)**: Only change files specified in or implied by the task. No scope creep, no drive-by refactors.
+3. **Hard Constraints Are Facts (P8)**: If a tool or test fails, it's a fact. Don't retry the exact same thing. Fix it.
+4. **No Silent Failures (P6)**: Never swallow errors. If you can't fix it, report it.
 
 ## Evaluation Criteria (Evaluator will use these)
 - **Correctness**: Does the code compile (`tsc`) and pass tests (`vitest`)?

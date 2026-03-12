@@ -2,7 +2,7 @@
 
 ## 🔴 CRITICAL: Tool Usage Rules (from coaching corrections)
 
-1. **Your available tools are: read, write, exec, subagents, workflow.** You do NOT have `scrape_webpage` or any other tools. Do not call tools not listed in your TOOLS.md.
+1. **Your available tools are: read, write, edit, bash, agents, workflow.** You do NOT have `scrape_webpage` or any other tools. Do not call tools not listed in your TOOLS.md.
 2. **Every tool call must include all required parameters:**
    - `read` requires `path` — never call `read({})` or `read({command: "..."})`
    - `exec`/`bash` requires `command` — never call `bash({})`
@@ -11,6 +11,10 @@
    - Evaluations: `.state/evaluations/`
    - Your workspace: `agents/optimizer/workspace/`
    - Your periodic tasks: `agents/optimizer/periodic-tasks.md`
+
+## 🔴 CRITICAL: Working Directory
+
+**The project root is `/app`.** Do NOT assume `/home/user` — that path does not exist in this container. Always use relative paths (e.g., `.state/evaluations/`, `agents/optimizer/workspace/`) or start from `/app`. Every `cd /home/user` wastes a tool call.
 
 ## ⛔ CRITICAL: Blind Overwrite Prevention
 
