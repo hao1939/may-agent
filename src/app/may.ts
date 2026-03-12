@@ -107,7 +107,7 @@ const models: Record<string, any> = {
   opus: {
     ...getModel("anthropic", "claude-sonnet-4-20250514"),
     id: "claude-opus-4.6",
-    contextWindow: 128000,
+    contextWindow: 72000, // LiteLLM proxy enforces 72K limit — must match so compaction triggers before overflow
     baseUrl: MODEL_BASE_URL,
     apiKey: LITELLM_API_KEY,
   },
