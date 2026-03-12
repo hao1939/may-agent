@@ -45,8 +45,6 @@ export interface AgentConfig {
   model: string; // key into models map
   tools: string[]; // preset names: "coding", "agents", "workflow", etc.
   memoryLimit?: number;
-  /** Maximum assistant turns before session is forcibly wrapped up. */
-  maxTurns?: number;
   /** Block direct delegation to specific agents via agents tool. */
   delegateDeny?: { agents: string[]; hint: string };
 }
@@ -301,7 +299,6 @@ function buildTools(config: AgentConfig, opts: AgentLoaderOptions): AgentTool[] 
                 projectRoot: opts.projectRoot,
                 apiKey: (model as any).apiKey,
                 memoryLimit: config.memoryLimit,
-                maxTurns: config.maxTurns,
               });
             },
             reloadAgent: (name) => {
@@ -323,7 +320,6 @@ function buildTools(config: AgentConfig, opts: AgentLoaderOptions): AgentTool[] 
                 projectRoot: opts.projectRoot,
                 apiKey: (model as any).apiKey,
                 memoryLimit: config.memoryLimit,
-                maxTurns: config.maxTurns,
               });
             },
           }),
@@ -475,7 +471,6 @@ export function loadAgents(opts: AgentLoaderOptions): LoadResult {
       projectRoot,
       apiKey: (model as any).apiKey,
       memoryLimit: config.memoryLimit,
-      maxTurns: config.maxTurns,
     });
 
     if (isUpdate) {

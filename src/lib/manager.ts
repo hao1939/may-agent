@@ -144,10 +144,6 @@ interface ActiveSession {
   workflowRunId?: string;
   stepLabel?: string;
   turnCount: number;
-  /** Maximum turns before forced wrap-up. Undefined = no limit. */
-  maxTurns?: number;
-  /** Set when the turn-limit warning has been injected (prevents duplicate warnings). */
-  turnLimitWarned?: boolean;
   /** Compaction transform for the interface session (rolling compaction). */
   compactionTransform?: (messages: AgentMessage[], signal?: AbortSignal) => Promise<AgentMessage[]>;
   /** Set by close() — prevents handleCompletion from acting on an already-archived session. */
@@ -261,51 +257,9 @@ export class SubagentManager {
         appendSessionMessage(persistDir, sessionId, event.message);
         if (event.message.role === "assistant") {
           session.turnCount++;
-          this.checkTurnLimit(session);
         }
       }
     });
-  }
-
-  /**
-   * Enforce maxTurns limit on a session.
-   *
-   * When turnCount reaches (maxTurns - 2): inject a warning message.
-   * When turnCount reaches maxTurns: abort the session.
-   *
-   * The warning gives the agent 2 turns to save state (write workspace/todo.md,
-   * commit partial work) before the hard cutoff.
-   */
-  private checkTurnLimit(session: ActiveSession): void {
-    if (!session.maxTurns || session.maxTurns <= 0) return;
-
-    const warningThreshold = Math.max(1, session.maxTurns - 2);
-
-    // Warning at (maxTurns - 2)
-    if (session.turnCount >= warningThreshold && !session.turnLimitWarned) {
-      session.turnLimitWarned = true;
-      const remaining = session.maxTurns - session.turnCount;
-      const warnMsg = `⚠️ TURN LIMIT WARNING: ${remaining} turn(s) remaining (limit: ${session.maxTurns}). Wrap up immediately: save any partial work to workspace/todo.md and stop.`;
-      try {
-        session.agent.followUp({
-          role: "user",
-          content: [{ type: "text", text: warnMsg }],
-          timestamp: Date.now(),
-          source: "system:turn-limit",
-        } as AgentMessage);
-      } catch {
-        // Session may have ended between the check and followUp — safe to ignore
-      }
-    }
-
-    // Hard cutoff at maxTurns
-    if (session.turnCount >= session.maxTurns) {
-      try {
-        session.agent.abort();
-      } catch {
-        // Already ended — safe to ignore
-      }
-    }
   }
 
   /** Build a transformContext function if compaction is enabled for this agent. */
@@ -641,7 +595,6 @@ export class SubagentManager {
       workflowRunId: opts?.workflowRunId,
       stepLabel: opts?.stepLabel,
       turnCount: 0,
-      maxTurns: def.maxTurns,
       compactionTransform,
       closed: false,
       autoClose: opts?.autoClose ?? "immediate",
@@ -918,7 +871,6 @@ export class SubagentManager {
       outputDir,
       parentSessionId: persisted.parentSessionId,
       turnCount: savedMessages.filter((m) => m.role === "assistant").length,
-      maxTurns: def.maxTurns,
       compactionTransform,
       closed: false,
       autoClose: persisted.autoClose ?? "immediate",
