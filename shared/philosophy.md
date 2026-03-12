@@ -190,6 +190,11 @@ Define and agree on the *done condition* before breaking work into subtasks. The
 ### 49. Distinct Validator Role [imported]
 Self-verification often fails because the blind spots that caused the error also hide it. Use a distinct agent (QA, Critic) for verification. The validator must have a different perspective (different model, different instructions) to be effective. This validates our Coder/QA split.
 
+### 54. Adversarial Pairs as Fast/Slow Thinking [hao-direct]
+The system's adversarial pairs mirror fast and slow thinking. Coach (slow path) pushes capability — more exploration, richer skills, deeper user understanding. Optimizer (fast path) pushes efficiency — fewer turns, tighter constraints, lower cost. Bob (slow path) generates vision and design. Tech-lead (fast path) tests it against implementation reality. Neither path is correct alone. The slow path without the fast path produces beautiful designs that never ship. The fast path without the slow path produces cheap systems that never improve. The conflict between them is the system's thinking process, not a bug to resolve.
+
+> "coach vs optimizer is the fast path vs slow path of thinking" — Hao
+
 ## D. Growth: Agent Evolution (owner: coach)
 
 How agents develop, get coached, and mature. Coach is responsible for
@@ -249,7 +254,7 @@ Artifacts can look "finished" even when wrong. Treat artifacts with the same ske
 Day-to-day operational conventions. May enforces these as the system supervisor.
 
 ### 30. Heartbeat Is Just a Wake-Up [hao-direct]
-A heartbeat is nothing special — just a chance for the agent to wake up and process. When an agent has a task, it keeps working until finished. Not stop at heartbeat boundary, not restart next cycle. Just keep going.
+A heartbeat is nothing special — just a chance for the agent to wake up and process. When an agent has a task, it keeps working until finished. Not stop at heartbeat boundary, not restart next cycle. Just keep going. No artificial turn limits — if there's work, the agent works until it's done. External turn caps gate autonomy the same way heartbeat-precheck did. The agent decides when it's finished.
 
 > "heartbeat is a wake up, not how we do job. we keep working on it until finish" — Hao
 
