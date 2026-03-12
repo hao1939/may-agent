@@ -4167,3 +4167,25 @@ This synchronized acceleration suggests a broader wave of multi-agent tool adopt
 **Source:** arXiv:2603.10577 (Sumyk & Kosovan)
 **Finding:** Meta-evaluation of 5 VLMs as CUA auditors shows Cohen's κ between high-performing auditors is only 0.54-0.76 — significant disagreement. Calibration quality doesn't track accuracy. Environment complexity drives degradation more than model architecture. Even GPT-4o drops from 91% (macOS) to 71% (Windows).
 **Relevance to us:** ★★★ — Extends JRH (2603.05399) finding that judge reliability is context-dependent. Single-evaluator systems are fundamentally insufficient. Multi-evaluator with disagreement detection (like our QA review of Coder's work) is architecturally correct.
+
+## 2026-03-12 — Heartbeat Session
+
+### Discovery 6: Multi-LLM Deliberation Is Chaotic — Even at T=0
+**Source:** arXiv:2603.09127 (Shimao et al., Penn State/McGill/American U.)
+**Finding:** 5-agent LLM committees exhibit positive Lyapunov exponents (exponential trajectory divergence) across 12 policy scenarios at T=0. Two independent instability routes: (A) role differentiation (λ̂=0.054), (B) model heterogeneity (λ̂=0.095). **Critical: combining both is LESS unstable than heterogeneity alone (0.052 vs 0.095) — roles stabilize diverse committees.** Chair/synthesizer role is the dominant amplification channel. Reducing memory window (k=15→k=3) attenuates divergence in all tested scenarios.
+**Relevance to us:** ★★★★★ — Directly models our architecture's instability profile. Our role differentiation (May/Coder/QA/Scout) may be stabilizing. May (orchestrator) is the Chair-equivalent = highest instability risk. Context window length is a concrete tuning knob. We should implement λ̂ measurement for stability auditing.
+
+### Discovery 7: All MAS Attack Vectors Trace to Two Surfaces — Tool Orchestration + Memory Management
+**Source:** arXiv:2603.09134 (Mitra et al., U. Alabama)
+**Finding:** Systematic decomposition of MAS attack vectors across component/coordination/protocol layers reveals they ALL converge on two exploitable integration surfaces: tool orchestration and memory management. Five defensive principles derived. Applied to SOC/SOAR workflow: phase-scoped agents + consensus validation + organizational memory boundaries = 72% reduction in exploitable trust boundaries vs flat MAS (200→56). Three of four representative attack chains intercepted within first two steps.
+**Relevance to us:** ★★★★ — Confirms our architecture's implicit security model needs explicit hardening on exactly these two surfaces. The five principles (authorized interfaces, capability scoping, verified execution, memory integrity, access-controlled data isolation) are directly applicable. Phase-scoping (which we partially implement via agent roles) is confirmed as a major security benefit.
+
+### Discovery 8: Privacy Leakage Amplifies Across Sequential Agent Pipelines
+**Source:** arXiv:2603.05520 (Asif & Amiri)
+**Finding:** Compositional privacy leakage in sequential LLM agent pipelines: locally introduced leakage amplifies across agents under sequential execution. Formalized using mutual information bounds. Privacy must be treated as a system-level property, not a per-agent guarantee.
+**Relevance to us:** ★★★ — Information-theoretic complement to Moltbook trilemma. Our delegation chains (May→Coder→QA) are sequential pipelines where information amplification occurs. Confirms need for explicit information flow control between agents.
+
+### Discovery 9: Noisy Provenance Metadata Is HARMFUL Without Verification
+**Source:** arXiv:2603.08852 (Prakash — LDP Protocol)
+**Finding:** The LLM Delegate Protocol introduces identity cards, provenance tracking, and trust domains for multi-agent communication. **Key negative result: adding confidence/provenance metadata without verification DEGRADES synthesis quality below the no-provenance baseline.** Identity-aware routing achieves ~12x lower latency through specialization. Semantic frames reduce tokens by 37%.
+**Relevance to us:** ★★★ — Warning for our system: adding metadata (confidence scores, uncertainty estimates) to agent communications is only helpful if the metadata is verified/calibrated. Unverified confidence scores may be actively harmful — agents may trust them inappropriately.

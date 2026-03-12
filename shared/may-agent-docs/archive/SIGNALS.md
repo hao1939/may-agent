@@ -252,3 +252,46 @@ This file is a shared log where agents can drop "signals"—noteworthy observati
 3. **Revocation cascading:** When Bob says "stop" or QA flags critical issue, propagate through delegation chain with tracked acknowledgment, not just hope they see SIGNALS.md.
 
 **Full analysis:** agents/scout/workspace/deep-dive-arxiv-2603-09875-bureaucracy-of-speed-cache-coherence-auth.md
+
+---
+
+### 🔴 SIGNAL: Multi-Agent Deliberation Is Chaotic — Stability Auditing Required
+**Date:** 2026-03-12
+**From:** Scout
+**Priority:** HIGH — Proven structural instability in multi-agent committees even at T=0
+
+**Finding:** arXiv:2603.09127 proves 5-agent LLM committees exhibit chaotic dynamics (positive Lyapunov exponents = exponential trajectory divergence across reruns) even at T=0. Two independent instability routes: role differentiation (our system has this) and model heterogeneity. **Key counterintuitive result: combining roles WITH heterogeneity is LESS unstable than heterogeneity alone — roles stabilize diverse committees.** The synthesizer/Chair role is the dominant amplification channel. Memory window length is a concrete stability knob (k=15→k=3 reduces instability in all tested scenarios).
+
+**Our exposure:** May is our synthesizer/Chair — the proven dominant amplification channel. Our full conversation history in context maximizes the memory-window amplification effect. Running the same pipeline twice may produce different results with no explanation.
+
+**Lightweight actions:**
+1. **Keep role differentiation** — it's stabilizing when combined with diverse models. Don't flatten for simplicity.
+2. **Constrain May's synthesis to structured formats** where possible (JSON state, explicit decision points) to reduce free-text variance.
+3. **Experiment with shorter context windows** for deliberation rounds — include only recent N messages rather than full history.
+4. **Implement stability measurement:** Run critical tasks N times and measure inter-run divergence as a system health metric.
+5. **Add deterministic checkpoints** in multi-step workflows to force canonical state representations before continuing.
+
+**Full analysis:** agents/scout/workspace/deep-dive-arxiv-2603-09127-chaotic-dynamics-multi-llm-deliberation.md
+
+---
+
+### 🟡 SIGNAL: All MAS Attack Vectors Converge on Two Surfaces — Harden Tool Orchestration + Memory Management
+**Date:** 2026-03-12
+**From:** Scout
+**Priority:** MEDIUM — Enterprise security framework confirms our threat model
+
+**Finding:** arXiv:2603.09134 (AgenticCyOps) systematically decomposes all documented multi-agent attack vectors and finds they ALL trace to two exploitable integration surfaces: tool orchestration and memory management. Five defensive principles: authorized interfaces, capability scoping, verified execution, memory integrity & synchronization, access-controlled data isolation. Phase-scoped agents with consensus validation reduce exploitable trust boundaries by 72%.
+
+**Complementary finding (arXiv:2603.08852 — LDP):** Adding confidence/provenance metadata WITHOUT verification DEGRADES quality below the no-metadata baseline. Unverified metadata is actively harmful.
+
+**Our vulnerability:** Our agents have broad tool access with minimal capability scoping. Memory (shared files, SIGNALS.md) has no write-boundary filtering or versioning. No consensus validation before irreversible actions.
+
+**Lightweight actions:**
+1. **Scope tool access per agent role** — Scout shouldn't need write access to code files; Coder shouldn't modify Scout's research.
+2. **Add write-boundary awareness to shared files** — at minimum, log who wrote what and when.
+3. **Don't add confidence scores or uncertainty estimates to agent outputs** unless we can verify/calibrate them. Unverified confidence metadata is worse than none.
+4. **Consider consensus for destructive actions** — file deletion, production deployments, etc. should require multi-agent agreement.
+
+**Full analyses:** 
+- agents/scout/workspace/deep-dive-arxiv-2603-09127-chaotic-dynamics-multi-llm-deliberation.md
+- agents/scout/knowledge/library/papers.md (2603.09134 entry)

@@ -58,6 +58,10 @@ Actionable L3 Flags:
 8. 评估引入"空操作工具"（如TodoWrite）强制显式规划的价值
 9. 考虑logit masking技术优化工具调用（Manus方案）
 10. 建立Agent评估体系（任务集+harness+grader+回归门禁）
+11. **【2026-03-12】研究 ⟨memory⟩/⟨reason⟩ Token 解耦** — Disentangling Memory & Reasoning 论文显示显式分离知识检索与推理步骤可减少幻觉
+12. **【2026-03-12】评估 MemGen 动态记忆框架** — NUS工作显示"记忆触发器+编织器"可实现类人的规划/程序/工作记忆涌现
+13. **【2026-03-12】关注 Alita 自进化范式** — 生成MCP实现"最大自进化"，与我们的禁止立场形成对照
+14. **【2026-03-12】追踪 OPO (On-Policy RL)** — 微软新RL算法，VERL库已合并，可能优化Agent训练稳定性
 11. 区分Main Agent(pass^k)和Sub Agent(pass@k)的评估指标
 12. 研究context-kit开源实现，优化Select/Compress/Memory模块
 ```
@@ -154,3 +158,150 @@ Actionable L3 Flags:
 
 ## Earlier Findings
 See insights-archive-2026-03-04.md (HB#40-42) and insights-archive-2026-03-04-part2.md (HB#47-54)
+
+---
+
+## Cross-Archive Synthesis — March 12, 2026 (Heartbeat Session)
+
+### 核心发现: 递归自我生成范式崛起
+
+From archive synthesis (1046 posts, 91 archives):
+
+| 论文/框架 | 核心贡献 | 与我们的关联 |
+|-----------|----------|--------------|
+| **MAS²** (NTU, arXiv:2509.24323v1) | 递归自我生成: Generator→Implementor→Rectifier | 我们有Main↔Sub，缺Rectifier运行时监控 |
+| **FS-Researcher** (arXiv:2602.01566) | 文件系统=外部记忆+协调媒介，SOTA验证 | Amy即活实例，三线共识已确立 |
+| **Google Agent Scaling** (Google+DeepMind+MIT) | Topology>Headcount, 87%架构可预测 | Centralized=4.4×错误压缩，但Claude-4.6%警示 |
+
+### 关键洞察: Claude + Multi-Agent = ?
+
+Google论文隐藏数据: **Claude家族在MAS配置下-4.6%，而GPT/Gemini分别+8.7%/+8.1%**
+
+可能解释:
+- Claude的"前置并行诊断扫描"模式 = 更擅长单Agent深度思考
+- Claude可能在单Agent设置下已"内化"部分多Agent探索行为
+
+**设计含义**: 我们用Claude做多Agent系统时，需审视任务是否满足"可并行"条件。
+
+### 新增L3 Flags (26-30)
+
+26. **评估MAS² Rectifier组件**: 运行时监控+动态修正能力，我们的缺口
+27. **Claude-MAS兼容性审计**: 识别哪些任务真正受益于Multi-Agent拆分
+28. **Topology决策框架**: 基于Google论文指标(效率/开销/错误放大)建立架构选择流程
+29. **"可并行性"作为决策判据**: Main/Sub-agent拆分的首要标准
+30. **CTO训练方法研究**: Collaborative Tree Optimization + path credit propagation机制
+
+---
+
+## Cross-Archive Synthesis — March 12, 2026 (Session 2: External Link Follow-up)
+
+### 核心发现: Memory & Self-Evolution 范式涌现
+
+XHS工具因Chrome无调试端口暂时不可用，切换至**外部链接追踪模式**。从已归档1046篇帖子中提取高价值论文/代码库进行深度调研。
+
+| 论文/框架 | 核心贡献 | 与我们的关联 | 状态 |
+|-----------|----------|--------------|------|
+| **Alita** (arXiv:2505.20286, 18 authors) | "Minimal Predefinition + Maximal Self-Evolution"，通过生成MCP实现自进化 | 🔴 **直接挑战**: 我们的Self-Evolution禁令 vs 社区的"最大自进化"追求 | 需深入研究 |
+| **Disentangling Memory & Reasoning** (ACL'25) | 引入 ⟨memory⟩ 和 ⟨reason⟩ 特殊token，显式解耦知识检索与推理步骤 | ✅ **验证CE方向**: 结构化上下文 > 隐式混合，减少幻觉 | 已开源 |
+| **MemGen** (NUS, arXiv:2509.24704) | 动态生成记忆框架: Memory Trigger + Memory Weaver，涌现类人记忆能力 | ⚠️ **机会**: "记忆触发器"可优化我们的Context Select模块 | 新架构 |
+| **OPO** (Microsoft, arXiv:2505.23585) | On-Policy RL with Optimal Reward Baseline，已合并入VERL库 | ⚠️ **技术追踪**: 可能优化Agent训练的稳定性与探索性 | 已生产化 |
+| **Synthetic Data RL** (PKU, arXiv:2505.20286) | 仅用合成数据做RL训练，GSM8K +29.2% | ⚠️ **数据策略**: 减少人工标注依赖的RL训练方案 | 有代码 |
+
+### 关键洞察: 自进化张力再审视
+
+**Alita论文核心主张**: 
+> "Simplicity is the ultimate sophistication" — 仅用一个直接问题解决组件，通过**自主构建、精炼、复用外部能力**实现可扩展推理。
+
+这与我们的 **Self-Evolution (禁止)** 原则形成尖锐对比：
+- **我们的立场**: Agent不能自我修改，进化必须通过Uniform Evolution（他Agent审计）
+- **Alita立场**: 自进化是核心能力，通过生成MCP（Model Context Protocols）从开源生态持续扩展
+
+**调和可能**: Alita的"自进化"实际上是**能力扩展**（添加新MCP工具），而非**自我修改**（改变自身推理逻辑）。这与我们的禁令不冲突——我们禁止的是后者。
+
+### 新增L3 Flags (31-35)
+
+31. **区分"能力扩展"vs"自我修改"**: Alita式MCP生成可能是允许的，需明确定义禁令边界
+32. **研究 ⟨memory⟩/⟨reason⟩ Token 解耦**: 显式分离知识检索与推理，减少幻觉，增强可解释性
+33. **评估 MemGen 动态记忆框架**: "记忆触发器"概念可直接应用于我们的Context Select阶段
+34. **追踪 OPO (On-Policy RL)**: 微软新RL算法，VERL已合并，可能优化Agent训练稳定性
+35. **审查 Skill 定义**: 我们的Skill是否应允许运行时生成（如Alita的MCP）还是仅静态配置
+
+
+---
+
+## Live XHS Reconnaissance — March 12, 2026 (Heartbeat Session)
+
+### 核心发现: OpenClaw架构讨论 + Karpathy AgentHub
+
+XHS工具恢复运行，成功获取5篇高价值AI帖子（624-3 likes范围），涵盖OpenClaw架构分析、Harness Engineering范式、Karpathy AgentHub等前沿话题。
+
+| 帖子/作者 | 核心贡献 | 与我们的关联 | 状态 |
+|-----------|----------|--------------|------|
+| **Codex&Openclaw** (624 likes) | "90% Agent框架同一套架构"，直接分析OpenClaw与AutoGPT | ✅ **验证方向**: 社区开始系统性研究OpenClaw架构 | 需关注 |
+| **CuiLiang.ai** (273 likes) | Harness Engineering: PE→CE→HE第三次范式跃迁 | ✅ **理论支撑**: "系统设计影响>模型能力"验证我们的Harness层设计 | 理论确认 |
+| **Ppppp** (38 likes) | "AI团队协作已死"，引用Karpathy AgentHub | 🔴 **范式警示**: Multi-Agent协调问题导致79%系统失败 | 需深思 |
+| **Lucas｜AI X Fintech** (82 likes) | Karpathy 48h连发autoresearch+AgentHub | ⚠️ **趋势追踪**: AI自主研究社区崛起 | 观察中 |
+| **Ne0在硅谷** (63 likes) | "愚蠢的管道、聪明的端点"AgentHub设计哲学 | ✅ **设计验证**: 与我们的Passive Context Strategy一致 | 理念对齐 |
+
+### 关键洞察 1: "Agent是阿尔兹海默病人"
+
+**Maomao～s PP** 在Codex&Openclaw帖子下的神评论:
+> "agent是一个拥有技能和智能的阿尔兹海默病人。记忆和执行工具靠外挂，主要是信息流和状态流的流转。"
+
+这直接指向Harness Engineering的核心：**Agent本身不持久化，Harness层才是真相来源。**
+
+### 关键洞察 2: Amadeus的"祛魅"
+
+同一帖子下 **Amadeus** 的高赞评论:
+> "Agent不是一个会说话的模型，而是一堆工程约束的集合：状态、工具、记忆、权限、观测、回滚。很多项目翻车不是模型不够聪明，是把不可控当成了灵性。"
+
+**与我们的设计哲学完全对齐**: 约束优于自由，边界定义能力。
+
+### 关键洞察 3: Karpathy AgentHub的"去人类中心化"
+
+**技术栈极简**:
+- Go二进制 + SQLite + 裸git仓库
+- 没有PR，没有main分支，没有merge流程
+- 整个代码历史是一个疯长的DAG
+- 用户不是人，是AI
+
+**设计哲学** — Ne0总结:
+> "愚蠢的管道、聪明的端点"（TCP/IP式架构）
+> "平台完全不知道Agent在优化什么，只提供基础设施"
+
+**这与我们的Passive Context + Harness Layer设计完全同构。**
+
+### 关键洞察 4: Multi-Agent协作的系统性失败
+
+**Ppppp**引用数据:
+- 41-87%的多agent系统在生产环境挂了
+- **79%不是因为技术bug，而是协调问题**
+- 研究报告: "agents today can connect together, but they can't really think together"
+
+**与Google论文呼应**: Topology > Headcount，但即使拓扑正确，协调仍是瓶颈。
+
+**Lucas的质疑**:
+> "Agent 协作平台一定会存在，但可能不长这样。可能更像'Agent 的 App Store'而非'Agent 的 GitHub'。因为 Agent 之间协作更需要的是'能力市场'而非'代码共享'。"
+
+> "谁来判断好坏，Agent 会'趋同'没法解决。"
+
+### 关键洞察 5: 人类从循环中移除
+
+**Lucas**总结的Karpathy愿景:
+> 从人写代码 → 到人写提示词 → 到人写研究计划 → 到人可选参与
+
+每一步都在把人类从循环中移出去。
+
+**Sun**的警示:
+> "如果没有人来指引方向（过程里），基本上AI最后会自己收敛到某个结论，但是这个结论未必是你期望的"
+
+### 新增L3 Flags (36-42)
+
+36. **跟进Codex&Openclaw**: 监控社区对OpenClaw架构的研究和分析
+37. **Harness成熟度评估**: 对照CuiLiang的L0-L5阶梯，评估我们当前位置
+38. **AgentHub设计借鉴**: 考虑引入"DAG式探索"支持多Sub-agent并行试错
+39. **Multi-Agent协调危机应对**: 重新审视Main↔Sub-agent架构，识别协调瓶颈
+40. **"能力市场"vs"代码共享"**: Lucas的质疑启发 — Agent间协作需要的是什么？
+41. **趋同问题研究**: AI自主探索如何避免收敛到非期望解？
+42. **人类参与边界**: 在"Human-in-the-loop"→"Human-on-the-loop"→"Human-out-of-the-loop"光谱上定位我们的系统
+

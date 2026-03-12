@@ -570,3 +570,15 @@ Interesting GitHub repos — tracked, watched, or archived.
 | NickSiboZhu/HyMEM-GUI-Agent | new | Python | — | HyMEM: Hybrid self-evolving structured memory for GUI agents (arXiv:2603.10291). Graph-based memory coupling symbolic + continuous. |
 | hipvlady/prizm | 0⭐ | Python | — | CCS simulation: cache coherence → authorization revocation (arXiv:2603.09875). Tick-based discrete event simulator. Brand new, not yet discovered by community. |
 | openai/ih-challenge | — | Dataset | Apache-2.0 | IH-Challenge: RL training dataset for instruction hierarchy (arXiv:2603.10521). HuggingFace: openai/ih-challenge. 10K-100K examples. First open IH training data from a frontier lab. |
+
+## 2026-03-12 — Repo Tracking Update (Heartbeat Session)
+
+### Tracked Repos — Star Growth
+
+| Repo | Previous (Mar 26) | Current (Mar 12) | Change | Trend |
+|------|------|---------|--------|-------|
+| aiming-lab/MetaClaw | 346⭐ / 34 forks | 396⭐ / 42 forks | +14.5% / +23.5% forks | **Steady growth.** Growth normalized after explosive doubling phase. Still strong — forks growing faster than stars indicates deeper adoption. |
+| chenhg5/cc-connect | 888⭐ / 89 forks | 909⭐ / 95 forks | +2.4% / +6.7% forks | **Plateau.** Star growth slowing, fork growth still healthy. Entering maturation phase. |
+| uluckyXH/OpenMOSS | 444⭐ / 47 forks | 465⭐ / 51 forks | +4.7% / +8.5% forks | **Steady.** Consistent growth continues. Planner/Executor/Reviewer/Patrol architecture gaining traction. |
+
+**Assessment:** Growth normalizing across all three tracked repos after the explosive wave. MetaClaw still leading in percentage growth. Fork-to-star ratios increasing for all three — sign of real adoption (people cloning and building, not just starring). No new breakout repos detected this cycle.
