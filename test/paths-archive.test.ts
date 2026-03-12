@@ -215,11 +215,7 @@ describe("SubagentManager.sessions()", () => {
     expect(sessionsB[0].task).toBe("task 2");
 
     // Wait for all to finish
-    await Promise.all([
-      manager.waitFor(s1),
-      manager.waitFor(s2),
-      manager.waitFor(s3),
-    ]);
+    await Promise.all([manager.waitFor(s1), manager.waitFor(s2), manager.waitFor(s3)]);
   });
 
   it("returns empty array for unknown agent", () => {

@@ -2,7 +2,17 @@ import { readFileSync, readdirSync, mkdirSync, existsSync, writeFileSync, append
 import { Agent } from "@mariozechner/pi-agent-core";
 import type { AgentMessage, AgentEvent, AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
 import { Type, StringEnum } from "@mariozechner/pi-ai";
-import type { SubagentDefinition, SessionInfo, TaskResult, SessionTreeNode, ManagerHealthReport, HealthActiveSession, AuditHealthOptions, AuditHealthReport, ReconcileReport } from "./types.js";
+import type {
+  SubagentDefinition,
+  SessionInfo,
+  TaskResult,
+  SessionTreeNode,
+  ManagerHealthReport,
+  HealthActiveSession,
+  AuditHealthOptions,
+  AuditHealthReport,
+  ReconcileReport,
+} from "./types.js";
 import { createCompactionTransform } from "./compaction.js";
 import type { CompactionOptions } from "./compaction.js";
 import { loadSkillsFromDirs, formatSkillsForPrompt } from "./skills.js";
@@ -220,7 +230,9 @@ export class SubagentManager {
   private callDepths = new Map<string, number>();
 
   /** Project root directory. Used for detached agent spawning. */
-  get projectRoot(): string { return this._projectRoot; }
+  get projectRoot(): string {
+    return this._projectRoot;
+  }
 
   constructor(opts: SubagentManagerOptions) {
     this.registry = new RegistryStore(opts.persistDir);
@@ -329,9 +341,15 @@ export class SubagentManager {
     // Static environment FIRST — stable prefix for LLM cache hits (Principle 36)
     if (def.projectRoot) {
       const relPath = (abs: string) => relative(def.projectRoot!, abs) || ".";
-      const agentDir = def.knowledgeDir ? dirname(def.knowledgeDir) : def.workspace ? dirname(def.workspace) : undefined;
+      const agentDir = def.knowledgeDir
+        ? dirname(def.knowledgeDir)
+        : def.workspace
+          ? dirname(def.workspace)
+          : undefined;
       const envLines = [`# Runtime Environment`, `- Project root (exec cwd): ${def.projectRoot}`];
-      envLines.push(`- Container: Docker (there is NO /home/, /Users/, /root/, or ~ directory — all work happens under ${def.projectRoot})`);
+      envLines.push(
+        `- Container: Docker (there is NO /home/, /Users/, /root/, or ~ directory — all work happens under ${def.projectRoot})`,
+      );
       if (agentDir) {
         envLines.push(`- Agent directory: ${relPath(agentDir)}`);
         // List agent-level files (heartbeat.md, periodic-tasks.md, etc.)
@@ -343,7 +361,9 @@ export class SubagentManager {
           if (agentFiles.length > 0) {
             envLines.push(`- Agent files: ${agentFiles.join(", ")}`);
           }
-        } catch { /* best-effort */ }
+        } catch {
+          /* best-effort */
+        }
       }
       if (def.workspace) {
         envLines.push(`- Workspace: ${relPath(def.workspace)}`);
@@ -361,18 +381,16 @@ export class SubagentManager {
       if (loaded.length > 0) {
         envLines.push(`- Already in context (do NOT read): ${loaded.join(", ")}, skills, shared knowledge, memory`);
       }
-      envLines.push(``, `IMPORTANT: All paths are relative to project root. Example: agents/${def.name}/workspace/todo.md (NOT /home/user/..., /Users/example-user/..., or /root/...). Tools resolve relative paths automatically. Your workspace is the ONLY directory you should write to.`);
+      envLines.push(
+        ``,
+        `IMPORTANT: All paths are relative to project root. Example: agents/${def.name}/workspace/todo.md (NOT /home/user/..., /Users/example-user/..., or /root/...). Tools resolve relative paths automatically. Your workspace is the ONLY directory you should write to.`,
+      );
       sections.push(envLines.join("\n"));
     }
 
     // Identity — tells the agent who it is, what it can do, and what files it owns
     {
-      const idLines = [
-        `# Identity`,
-        `- Name: ${def.name}`,
-        `- Role: ${def.description}`,
-        `- Domain: ${def.domain}`,
-      ];
+      const idLines = [`# Identity`, `- Name: ${def.name}`, `- Role: ${def.description}`, `- Domain: ${def.domain}`];
       // Tool names
       const toolNames = def.tools.map((t) => t.name);
       if (toolNames.length > 0) {
@@ -388,7 +406,9 @@ export class SubagentManager {
           if (wsFiles.length > 0) {
             idLines.push(`- Workspace files: ${wsFiles.join(", ")}`);
           }
-        } catch { /* best-effort — workspace may not be readable */ }
+        } catch {
+          /* best-effort — workspace may not be readable */
+        }
       }
       sections.push(idLines.join("\n"));
     }
@@ -467,7 +487,6 @@ export class SubagentManager {
     );
     if (lessons) sections.push(lessons);
 
-
     // 5. Knowledge library index — list available reference material (not auto-loaded)
     if (def.knowledgeDir) {
       const libraryDir = join(def.knowledgeDir, "library");
@@ -481,10 +500,12 @@ export class SubagentManager {
             const relLib = def.projectRoot ? relative(def.projectRoot, libraryDir) : libraryDir;
             const fileList = libraryFiles.map((f) => `- ${f}`).join("\n");
             sections.push(
-              `# Reference Library\nAdditional reference material available on demand (use \`read\` tool to access):\nDirectory: ${relLib}/\n${fileList}`
+              `# Reference Library\nAdditional reference material available on demand (use \`read\` tool to access):\nDirectory: ${relLib}/\n${fileList}`,
             );
           }
-        } catch { /* best-effort — library may not be readable */ }
+        } catch {
+          /* best-effort — library may not be readable */
+        }
       }
     }
     // Load skills from per-agent skills/ dir + shared skillsDirs
@@ -534,9 +555,7 @@ export class SubagentManager {
     // Output section
     const outputPath = sessionOutputDir(persistDir, sessionId);
     const outputRel = def.projectRoot ? relative(def.projectRoot, outputPath) : outputPath;
-    sections.push(
-      `# Output\nWrite deliverables for this task to: ${outputRel}`,
-    );
+    sections.push(`# Output\nWrite deliverables for this task to: ${outputRel}`);
 
     return sections.join("\n\n");
   }
@@ -625,7 +644,9 @@ export class SubagentManager {
       if (workspace) {
         try {
           writeProgressFile(workspace, extractProgress(session.task, session.agent.state.messages, session.error));
-        } catch { /* best-effort */ }
+        } catch {
+          /* best-effort */
+        }
       }
     }
 
@@ -633,15 +654,17 @@ export class SubagentManager {
     if (session.autoClose === "never" && !wasAborted) {
       // Interface session (Chat) — stays alive in "idle" state
       session.status = "idle";
-      session.turnCount = 0; 
-      
+      session.turnCount = 0;
+
       this.registry.updateSessionStatus(session.sessionId, "idle", session.error);
-      
+
       // Remove [STARTED] sentinel (session is not running)
       try {
         const sentinelPath = join(sessionDir(this.registry.persistDir, session.sessionId), "[STARTED]");
         if (existsSync(sentinelPath)) unlinkSync(sentinelPath);
-      } catch { /* best-effort */ }
+      } catch {
+        /* best-effort */
+      }
 
       // Do NOT remove from activeSessions
       // Do NOT unsubscribe (we want to catch next turn's events)
@@ -649,7 +672,11 @@ export class SubagentManager {
     }
 
     // Task sessions (or aborted interface sessions) → archive and remove
-    const archiveStatus: "done" | "error" | "interrupted" = wasAborted ? "interrupted" : (session.error ? "error" : "done");
+    const archiveStatus: "done" | "error" | "interrupted" = wasAborted
+      ? "interrupted"
+      : session.error
+        ? "error"
+        : "done";
     session.archiveStatus = archiveStatus;
     this.registry.updateSessionStatus(session.sessionId, archiveStatus, session.error);
 
@@ -660,7 +687,9 @@ export class SubagentManager {
     try {
       const sentinelPath = join(sessionDir(this.registry.persistDir, session.sessionId), "[STARTED]");
       if (existsSync(sentinelPath)) unlinkSync(sentinelPath);
-    } catch { /* best-effort */ }
+    } catch {
+      /* best-effort */
+    }
 
     this.appendMemory(session);
     this.archiveSessionDir(session);
@@ -681,7 +710,11 @@ export class SubagentManager {
         workflowRunId: session.workflowRunId,
         stepLabel: session.stepLabel,
       };
-      try { this.onSessionComplete(info); } catch { /* best-effort */ }
+      try {
+        this.onSessionComplete(info);
+      } catch {
+        /* best-effort */
+      }
     }
   }
 
@@ -721,7 +754,9 @@ export class SubagentManager {
       status: "running",
       outputDir,
       parentSessionId: opts?.parentSessionId,
-      parentAgentName: opts?.parentAgentName ?? (opts?.parentSessionId ? this.activeSessions.get(opts.parentSessionId)?.agentName : undefined),
+      parentAgentName:
+        opts?.parentAgentName ??
+        (opts?.parentSessionId ? this.activeSessions.get(opts.parentSessionId)?.agentName : undefined),
       workflowRunId: opts?.workflowRunId,
       stepLabel: opts?.stepLabel,
       turnCount: 0,
@@ -736,7 +771,9 @@ export class SubagentManager {
     try {
       const sentinelPath = join(sessionDir(persistDir, sessionId), "[STARTED]");
       writeFileSync(sentinelPath, new Date().toISOString());
-    } catch { /* best-effort */ }
+    } catch {
+      /* best-effort */
+    }
 
     // Subscribe for JSONL persistence before starting the prompt
     this.subscribeForPersistence(session);
@@ -770,7 +807,8 @@ export class SubagentManager {
     // when agentLoop emits it (before any LLM call). No explicit write here
     // to avoid duplicate JSONL entries.
 
-    session.promise = agent.prompt(task)
+    session.promise = agent
+      .prompt(task)
       .then(() => {
         this.handleCompletion(session);
       })
@@ -779,7 +817,10 @@ export class SubagentManager {
         this.handleCompletion(session);
       });
 
-    this.sessionResults.set(sessionId, session.promise.then(() => this.buildResultFromSession(session)));
+    this.sessionResults.set(
+      sessionId,
+      session.promise.then(() => this.buildResultFromSession(session)),
+    );
     return sessionId;
   }
 
@@ -808,7 +849,10 @@ export class SubagentManager {
    * Detached sessions (separate OS processes) are skipped if their process
    * is still alive — they survive the parent's restart by design.
    */
-  resumeStaleSessions(opts?: { abort?: boolean; kinds?: SessionKind[] }): { resumed: SessionInfo[]; interrupted: SessionInfo[] } {
+  resumeStaleSessions(opts?: { abort?: boolean; kinds?: SessionKind[] }): {
+    resumed: SessionInfo[];
+    interrupted: SessionInfo[];
+  } {
     const registryData = this.registry.getRegistry();
     const persistDir = this.registry.persistDir;
     const staleSessionIds: Array<{ sessionId: string; persisted: (typeof registryData.sessions)[string] }> = [];
@@ -827,10 +871,14 @@ export class SubagentManager {
             if (persisted && persisted.status === "running" && !isProcessAlive(persisted.pid)) {
               const kind = persisted.kind ?? "job";
               if (kindFilter && !kindFilter.has(kind)) continue; // not our concern — leave untouched
-              try { unlinkSync(sentinelPath); } catch {}
+              try {
+                unlinkSync(sentinelPath);
+              } catch {}
               staleSessionIds.push({ sessionId, persisted });
             } else if (!persisted) {
-              try { unlinkSync(sentinelPath); } catch {}
+              try {
+                unlinkSync(sentinelPath);
+              } catch {}
             }
           }
         }
@@ -948,9 +996,7 @@ export class SubagentManager {
     let lastRole = lastMsg?.role;
 
     if (lastRole === "assistant" && lastMsg && Array.isArray(lastMsg.content)) {
-      const toolCalls = (lastMsg.content as Array<{ type: string }>).filter(
-        (b) => b.type === "toolCall",
-      );
+      const toolCalls = (lastMsg.content as Array<{ type: string }>).filter((b) => b.type === "toolCall");
       if (toolCalls.length > 0) {
         // Inject error tool results for each pending tool call.
         // Use appendMessage (not followUp) so they appear in the message
@@ -1007,23 +1053,29 @@ export class SubagentManager {
     // inject a restart notice and let the agent continue its task.
     const resumeMessage: AgentMessage = {
       role: "user",
-      content: [{ type: "text", text: "Process restarted. Your session has been restored. Continue where you left off." }],
+      content: [
+        { type: "text", text: "Process restarted. Your session has been restored. Continue where you left off." },
+      ],
       timestamp: Date.now(),
       source: "system",
     } as AgentMessage;
 
-    const startPromise = (lastRole === "user" || lastRole === "toolResult")
-      ? agent.continue()
-      : agent.prompt(resumeMessage);
+    const startPromise =
+      lastRole === "user" || lastRole === "toolResult" ? agent.continue() : agent.prompt(resumeMessage);
 
     session.promise = startPromise
-      .then(() => { this.handleCompletion(session); })
+      .then(() => {
+        this.handleCompletion(session);
+      })
       .catch((err) => {
         session.error = err?.message ?? String(err);
         this.handleCompletion(session);
       });
 
-    this.sessionResults.set(sessionId, session.promise.then(() => this.buildResultFromSession(session)));
+    this.sessionResults.set(
+      sessionId,
+      session.promise.then(() => this.buildResultFromSession(session)),
+    );
 
     return {
       sessionId,
@@ -1191,7 +1243,6 @@ export class SubagentManager {
     return buildNode(sessionId);
   }
 
-
   /** Get sessions filtered by agent name. */
   sessions(name: string): SessionInfo[] {
     return this.status().filter((s) => s.agent === name);
@@ -1242,9 +1293,10 @@ export class SubagentManager {
     const messages = session.agent.state.messages;
     return {
       sessionId: session.sessionId,
-      status: (session.archiveStatus === "interrupted" || session.status === "interrupted")
-        ? "error"
-        : (session.archiveStatus ?? session.status) as "done" | "error",
+      status:
+        session.archiveStatus === "interrupted" || session.status === "interrupted"
+          ? "error"
+          : ((session.archiveStatus ?? session.status) as "done" | "error"),
       lastAssistantText: extractLastAssistantText(messages),
       messages: messages.slice(),
       duration: formatDuration((session.endedAt ?? Date.now()) - session.startedAt),
@@ -1271,7 +1323,7 @@ export class SubagentManager {
       : formatDuration(Date.now() - persisted.startedAt);
     return {
       sessionId,
-      status: persisted.status === "interrupted" ? "error" : persisted.status as "done" | "error",
+      status: persisted.status === "interrupted" ? "error" : (persisted.status as "done" | "error"),
       lastAssistantText: extractLastAssistantText(messages),
       messages,
       duration,
@@ -1316,10 +1368,13 @@ export class SubagentManager {
       try {
         const sentinelPath = join(sessionDir(this.registry.persistDir, session.sessionId), "[STARTED]");
         writeFileSync(sentinelPath, new Date().toISOString());
-      } catch { /* best-effort */ }
+      } catch {
+        /* best-effort */
+      }
 
       // Prompt the agent with new input
-      const p = session.agent.prompt(text)
+      const p = session.agent
+        .prompt(text)
         .then(() => {
           this.handleCompletion(session);
         })
@@ -1327,11 +1382,11 @@ export class SubagentManager {
           session.error = err?.message ?? String(err);
           this.handleCompletion(session);
         });
-      
+
       session.promise = p;
       const resultPromise = p.then(() => this.buildResultFromSession(session));
       this.sessionResults.set(sessionId, resultPromise);
-      
+
       return resultPromise;
     }
 
@@ -1500,7 +1555,6 @@ export class SubagentManager {
     await session.promise;
   }
 
-
   /**
    * Wait for a detached session to complete by polling its meta.json on disk.
    * Returns a TaskResult built from the persisted session data.
@@ -1513,7 +1567,10 @@ export class SubagentManager {
    * @param opts.pollIntervalMs - Polling interval (default: 2000ms)
    * @param opts.timeoutMs - Overall timeout (default: 600_000ms = 10 min)
    */
-  async waitForDetached(sessionId: string, opts?: { pollIntervalMs?: number; timeoutMs?: number }): Promise<TaskResult> {
+  async waitForDetached(
+    sessionId: string,
+    opts?: { pollIntervalMs?: number; timeoutMs?: number },
+  ): Promise<TaskResult> {
     const pollInterval = opts?.pollIntervalMs ?? 2000;
     const timeoutMs = opts?.timeoutMs ?? 600_000;
 
@@ -1539,7 +1596,7 @@ export class SubagentManager {
         const identity = readIdentity(this.registry.persistDir, initialMeta.instance);
         if (identity && identity.status !== "running") {
           // Process exited — give meta.json a moment to flush, then check
-          await new Promise(r => setTimeout(r, 500));
+          await new Promise((r) => setTimeout(r, 500));
           const finalMeta = this.registry.getSession(sessionId);
           if (finalMeta && finalMeta.status !== "running" && finalMeta.status !== "idle") {
             return this.resultFromArchive(sessionId);
@@ -1549,7 +1606,7 @@ export class SubagentManager {
           return this.resultFromArchive(sessionId);
         }
       }
-      await new Promise(r => setTimeout(r, pollInterval));
+      await new Promise((r) => setTimeout(r, pollInterval));
     }
     throw new Error(`Timeout waiting for detached session "${sessionId}" (${timeoutMs}ms)`);
   }
@@ -1711,12 +1768,7 @@ export class SubagentManager {
     return { targetId, path, tree: rootNode };
   }
 
-  private buildWorkflowNode(
-    run: WorkflowRun,
-    targetId: string,
-    persistDir: string,
-    registryData: Registry,
-  ): TraceNode {
+  private buildWorkflowNode(run: WorkflowRun, targetId: string, persistDir: string, registryData: Registry): TraceNode {
     const node: TraceNode = {
       type: "workflow",
       id: run.runId,
@@ -1844,7 +1896,9 @@ export class SubagentManager {
         for (const f of readdirSync(evalDir)) {
           if (f.endsWith(".json")) evaluatedIds.add(f.replace(".json", ""));
         }
-      } catch { /* best-effort */ }
+      } catch {
+        /* best-effort */
+      }
     }
 
     const META_AGENTS = EVAL_SKIP_AGENTS;
@@ -1918,14 +1972,18 @@ export class SubagentManager {
     // 1. Stale sessions: running in filesystem but not in activeSessions
     if (auditReport.staleSessions.length > 0) {
       for (const s of auditReport.staleSessions) {
-        discrepancies.push(`Stale session: ${s.sessionId} (agent=${s.agent}) is "running" on disk but not active in memory`);
+        discrepancies.push(
+          `Stale session: ${s.sessionId} (agent=${s.agent}) is "running" on disk but not active in memory`,
+        );
       }
     }
 
     // 2. Active in memory but missing from filesystem
     for (const active of healthReport.activeSessions) {
       if (!auditReport.persistedSessionIds.has(active.sessionId)) {
-        discrepancies.push(`Lost persistence: ${active.sessionId} (agent=${active.agent}) is active in memory but has no meta.json on disk`);
+        discrepancies.push(
+          `Lost persistence: ${active.sessionId} (agent=${active.agent}) is active in memory but has no meta.json on disk`,
+        );
       }
     }
 
@@ -1933,7 +1991,9 @@ export class SubagentManager {
     // (We can only check in-memory vs in-memory here since agents are not persisted to disk
     //  as separate files, but we flag if there are 0 registered agents as suspicious)
     if (healthReport.registeredAgents.count === 0 && auditReport.totalPersistedSessions > 0) {
-      discrepancies.push(`No agents registered but ${auditReport.totalPersistedSessions} persisted sessions exist — agents may not have been re-registered after restart`);
+      discrepancies.push(
+        `No agents registered but ${auditReport.totalPersistedSessions} persisted sessions exist — agents may not have been re-registered after restart`,
+      );
     }
 
     return {
@@ -1962,18 +2022,22 @@ export class SubagentManager {
    * @param opts.signal - AbortSignal for cancellation
    * @param opts.timeout - Timeout in ms (aborts child if exceeded)
    */
-  async callAgent(name: string, task: string, opts?: {
-    parentSessionId?: string;
-    onEvent?: (event: AgentEvent) => void;
-    signal?: AbortSignal;
-    timeout?: number;
-    /** Workflow run ID — passed through to the spawned session for tracking. */
-    workflowRunId?: string;
-    /** Step label — passed through to the spawned session for tracking. */
-    stepLabel?: string;
-    /** Message source tag (default: "callAgent"). */
-    source?: string;
-  }): Promise<TaskResult> {
+  async callAgent(
+    name: string,
+    task: string,
+    opts?: {
+      parentSessionId?: string;
+      onEvent?: (event: AgentEvent) => void;
+      signal?: AbortSignal;
+      timeout?: number;
+      /** Workflow run ID — passed through to the spawned session for tracking. */
+      workflowRunId?: string;
+      /** Step label — passed through to the spawned session for tracking. */
+      stepLabel?: string;
+      /** Message source tag (default: "callAgent"). */
+      source?: string;
+    },
+  ): Promise<TaskResult> {
     // ── Depth check ────────────────────────────────────────────────────
     // Find the root session by walking up parentSessionId chain
     const rootSessionId = this.findRootSession(opts?.parentSessionId);
@@ -2011,7 +2075,9 @@ export class SubagentManager {
       if (opts?.onEvent) {
         try {
           unsubscribe = this.subscribe(sessionId, opts.onEvent);
-        } catch { /* session may have already completed */ }
+        } catch {
+          /* session may have already completed */
+        }
       }
 
       // Set up timeout
@@ -2027,9 +2093,13 @@ export class SubagentManager {
         if (opts.signal.aborted) {
           this.cancel(sessionId);
         } else {
-          opts.signal.addEventListener("abort", () => {
-            this.cancel(sessionId);
-          }, { once: true });
+          opts.signal.addEventListener(
+            "abort",
+            () => {
+              this.cancel(sessionId);
+            },
+            { once: true },
+          );
         }
       }
 
@@ -2090,6 +2160,7 @@ export class SubagentManager {
     /** Trigger an agent's heartbeat cron (for send action). */
     triggerHeartbeat?: (agentName: string) => boolean;
   }): AgentTool {
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
     const manager = this;
     const getCallerSessionId = opts?.getCallerSessionId;
     const getCallerAgentName = opts?.getCallerAgentName;
@@ -2105,10 +2176,10 @@ export class SubagentManager {
     }
 
     const AgentsToolParams = Type.Object({
-      action: StringEnum(
-        ["call", "send", "list", "peek", "cancel"] as const,
-        { description: "Action to perform. 'call' runs an agent synchronously (blocks until done). 'send' adds a todo for an agent and triggers their heartbeat (fire-and-forget). 'list' shows agents and running sessions. 'peek'/'cancel' operate on running sessions." },
-      ),
+      action: StringEnum(["call", "send", "list", "peek", "cancel"] as const, {
+        description:
+          "Action to perform. 'call' runs an agent synchronously (blocks until done). 'send' adds a todo for an agent and triggers their heartbeat (fire-and-forget). 'list' shows agents and running sessions. 'peek'/'cancel' operate on running sessions.",
+      }),
       agent: Type.Optional(Type.String({ description: "Agent name (required for 'call', 'send')" })),
       task: Type.Optional(Type.String({ description: "Task description (required for 'call')" })),
       message: Type.Optional(Type.String({ description: "Todo item to send (required for 'send')" })),
@@ -2140,7 +2211,9 @@ export class SubagentManager {
                 return textResult(JSON.stringify({ error: "'call' requires 'agent' and 'task'" }));
               }
               if (callDeny && callDeny.agents.includes(params.agent)) {
-                return textResult(JSON.stringify({ error: `Cannot call "${params.agent}" directly. ${callDeny.hint}` }));
+                return textResult(
+                  JSON.stringify({ error: `Cannot call "${params.agent}" directly. ${callDeny.hint}` }),
+                );
               }
               const parentSid = getCallerSessionId?.();
 
@@ -2216,11 +2289,13 @@ export class SubagentManager {
               // Trigger target agent's heartbeat
               const triggered = triggerHeartbeat?.(params.agent) ?? false;
 
-              return textResult(JSON.stringify({
-                sent: params.agent,
-                message: params.message,
-                heartbeatTriggered: triggered,
-              }));
+              return textResult(
+                JSON.stringify({
+                  sent: params.agent,
+                  message: params.message,
+                  heartbeatTriggered: triggered,
+                }),
+              );
             }
 
             case "cancel": {
@@ -2242,11 +2317,17 @@ export class SubagentManager {
                       await sendSocketCommand(cancelIdentity.socket, { type: "cancel", sessionId: params.sessionId });
                       manager.registry.updateSessionStatus(params.sessionId, "interrupted", "Cancelled (socket)");
                       return textResult(JSON.stringify({ cancelled: params.sessionId, method: "socket" }));
-                    } catch { /* fall through to SIGTERM */ }
+                    } catch {
+                      /* fall through to SIGTERM */
+                    }
                   }
                 }
                 if (cancelMeta.pid) {
-                  try { process.kill(cancelMeta.pid, "SIGTERM"); } catch { /* process gone */ }
+                  try {
+                    process.kill(cancelMeta.pid, "SIGTERM");
+                  } catch {
+                    /* process gone */
+                  }
                   manager.registry.updateSessionStatus(params.sessionId, "interrupted", "Cancelled (SIGTERM)");
                   return textResult(JSON.stringify({ cancelled: params.sessionId, method: "sigterm" }));
                 }

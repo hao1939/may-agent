@@ -58,5 +58,5 @@ export function isMetaRecursionCommand(command: string): boolean {
     /\bts-node\s+.*src\/cli/,
     /\btsx\s+.*src\/cli/,
   ];
-  return patterns.some(p => p.test(command));
+  return patterns.some((p) => p.test(command));
 }

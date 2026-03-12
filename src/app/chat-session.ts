@@ -70,13 +70,34 @@ export class ChatSession {
     const lower = trimmed.toLowerCase();
 
     // ── Built-in commands (no LLM) ───────────────────────────────────
-    if (lower === "status") { this.handleStatus(); return; }
-    if (lower === "cancel all") { this.handleCancelAll(); return; }
-    if (lower === "cancel") { this.handleCancel(); return; }
-    if (lower === "reload") { this.onReload?.(); return; }
-    if (lower === "close") { this.onClose?.(); return; }
-    if (lower === "restart") { this.onRestart?.(); return; }
-    if (lower === "/new") { this.handleNew(); return; }
+    if (lower === "status") {
+      this.handleStatus();
+      return;
+    }
+    if (lower === "cancel all") {
+      this.handleCancelAll();
+      return;
+    }
+    if (lower === "cancel") {
+      this.handleCancel();
+      return;
+    }
+    if (lower === "reload") {
+      this.onReload?.();
+      return;
+    }
+    if (lower === "close") {
+      this.onClose?.();
+      return;
+    }
+    if (lower === "restart") {
+      this.onRestart?.();
+      return;
+    }
+    if (lower === "/new") {
+      this.handleNew();
+      return;
+    }
 
     // ── @agent prefix — direct agent invocation (ephemeral) ──────────
     const [targetAgent, agentMessage] = parseAgentPrefix(trimmed);
@@ -107,17 +128,16 @@ export class ChatSession {
     }
 
     // Subsequent messages: wake the idle session or steer the running one
-    this.manager.input(this.sessionId, message)
-      .catch((err) => {
-        const msg = err instanceof Error ? err.message : String(err);
-        // Session gone (closed, archived, etc.) — create a fresh one
-        if (msg.includes("not found") || msg.includes("terminal state")) {
-          this.sessionId = null;
-          this.sendMessage(message);
-          return;
-        }
-        this.bus.emit({ type: "info", message: `[chat] Error: ${msg}` });
-      });
+    this.manager.input(this.sessionId, message).catch((err) => {
+      const msg = err instanceof Error ? err.message : String(err);
+      // Session gone (closed, archived, etc.) — create a fresh one
+      if (msg.includes("not found") || msg.includes("terminal state")) {
+        this.sessionId = null;
+        this.sendMessage(message);
+        return;
+      }
+      this.bus.emit({ type: "info", message: `[chat] Error: ${msg}` });
+    });
   }
 
   /**
@@ -125,8 +145,11 @@ export class ChatSession {
    * For autoClose: "never", the session goes idle (not archived).
    */
   private trackCompletion(sessionId: string): void {
-    this.manager.waitForIdle(sessionId)
-      .then(() => { this.onDone?.(); })
+    this.manager
+      .waitForIdle(sessionId)
+      .then(() => {
+        this.onDone?.();
+      })
       .catch((err) => {
         const msg = err instanceof Error ? err.message : String(err);
         this.bus.emit({ type: "info", message: `[chat] Session error: ${msg}` });
@@ -140,8 +163,8 @@ export class ChatSession {
     if (sessions.length === 0) {
       this.bus.emit({ type: "info", message: "[status] No active sessions" });
     } else {
-      const lines = sessions.map((s) =>
-        `  ${s.agent} (${s.sessionId}): ${s.status} — "${s.task.slice(0, 80)}" [${s.runtime}]`
+      const lines = sessions.map(
+        (s) => `  ${s.agent} (${s.sessionId}): ${s.status} — "${s.task.slice(0, 80)}" [${s.runtime}]`,
       );
       this.bus.emit({ type: "info", message: `[status] ${sessions.length} session(s):\n${lines.join("\n")}` });
     }
@@ -199,8 +222,11 @@ export class ChatSession {
       kind: "job",
       source: "chat",
     });
-    this.manager.waitFor(sessionId)
-      .then(() => { this.onDone?.(); })
+    this.manager
+      .waitFor(sessionId)
+      .then(() => {
+        this.onDone?.();
+      })
       .catch((err) => {
         const msg = err instanceof Error ? err.message : String(err);
         this.bus.emit({ type: "info", message: `[direct] Session ${sessionId} error: ${msg}` });
@@ -212,7 +238,11 @@ export class ChatSession {
   cancelAll(): void {
     for (const s of this.manager.status()) {
       if (s.status === "running") {
-        try { this.manager.cancel(s.sessionId); } catch { /* may already be done */ }
+        try {
+          this.manager.cancel(s.sessionId);
+        } catch {
+          /* may already be done */
+        }
       }
     }
   }

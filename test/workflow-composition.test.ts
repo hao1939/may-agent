@@ -33,15 +33,20 @@ afterEach(() => {
 
 describe("workflow composition: runWorkflow", () => {
   it("runs a sub-workflow via ctx.runWorkflow()", async () => {
-    writeWorkflow("sub.ts", `
+    writeWorkflow(
+      "sub.ts",
+      `
       export const name = "sub";
       export const description = "Sub-workflow";
       export async function execute(ctx) {
         return ctx.done("sub completed: " + ctx.task);
       }
-    `);
+    `,
+    );
 
-    writeWorkflow("parent.ts", `
+    writeWorkflow(
+      "parent.ts",
+      `
       export const name = "parent";
       export const description = "Parent workflow that calls sub";
       export async function execute(ctx) {
@@ -51,7 +56,8 @@ describe("workflow composition: runWorkflow", () => {
         }
         return ctx.escalate("sub-workflow failed");
       }
-    `);
+    `,
+    );
 
     const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
     const tool = createWorkflowTool({ manager, workflowDir });
@@ -70,15 +76,20 @@ describe("workflow composition: runWorkflow", () => {
   });
 
   it("handles sub-workflow escalation", async () => {
-    writeWorkflow("failing-sub.ts", `
+    writeWorkflow(
+      "failing-sub.ts",
+      `
       export const name = "failing-sub";
       export const description = "Always escalates";
       export async function execute(ctx) {
         return ctx.escalate("can't do it");
       }
-    `);
+    `,
+    );
 
-    writeWorkflow("parent-esc.ts", `
+    writeWorkflow(
+      "parent-esc.ts",
+      `
       export const name = "parent-esc";
       export const description = "Parent that handles sub escalation";
       export async function execute(ctx) {
@@ -88,7 +99,8 @@ describe("workflow composition: runWorkflow", () => {
         }
         return ctx.done("should not reach");
       }
-    `);
+    `,
+    );
 
     const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
     const tool = createWorkflowTool({ manager, workflowDir });
@@ -107,7 +119,9 @@ describe("workflow composition: runWorkflow", () => {
   });
 
   it("returns escalate when sub-workflow is not found", async () => {
-    writeWorkflow("parent-missing.ts", `
+    writeWorkflow(
+      "parent-missing.ts",
+      `
       export const name = "parent-missing";
       export const description = "Calls nonexistent sub";
       export async function execute(ctx) {
@@ -117,7 +131,8 @@ describe("workflow composition: runWorkflow", () => {
         }
         return ctx.done("should not reach");
       }
-    `);
+    `,
+    );
 
     const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
     const tool = createWorkflowTool({ manager, workflowDir });
@@ -136,23 +151,29 @@ describe("workflow composition: runWorkflow", () => {
   });
 
   it("emits workflow events for sub-workflows", async () => {
-    writeWorkflow("sub-events.ts", `
+    writeWorkflow(
+      "sub-events.ts",
+      `
       export const name = "sub-events";
       export const description = "Sub with events";
       export async function execute(ctx) {
         ctx.emit({ type: "step_start", step: "sub-step" });
         return ctx.done("sub done");
       }
-    `);
+    `,
+    );
 
-    writeWorkflow("parent-events.ts", `
+    writeWorkflow(
+      "parent-events.ts",
+      `
       export const name = "parent-events";
       export const description = "Parent with sub events";
       export async function execute(ctx) {
         const result = await ctx.runWorkflow("sub-events", "task");
         return ctx.done("parent done");
       }
-    `);
+    `,
+    );
 
     const events: WorkflowEvent[] = [];
     const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
@@ -185,7 +206,9 @@ describe("workflow composition: runWorkflow", () => {
 
   it("sub-workflow shares steering queue with parent", async () => {
     // Write a sub that yields then calls runAgent (which checks steering)
-    writeWorkflow("sub-steerable.ts", `
+    writeWorkflow(
+      "sub-steerable.ts",
+      `
       export const name = "sub-steerable";
       export const description = "Sub that can be steered";
       export async function execute(ctx) {
@@ -195,16 +218,20 @@ describe("workflow composition: runWorkflow", () => {
         const result = await ctx.runAgent("coder", "something");
         return ctx.done("should not reach");
       }
-    `);
+    `,
+    );
 
-    writeWorkflow("parent-steerable.ts", `
+    writeWorkflow(
+      "parent-steerable.ts",
+      `
       export const name = "parent-steerable";
       export const description = "Parent that delegates to steerable sub";
       export async function execute(ctx) {
         const result = await ctx.runWorkflow("sub-steerable", "task");
         return ctx.done("done");
       }
-    `);
+    `,
+    );
 
     const events: WorkflowEvent[] = [];
     const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
@@ -216,7 +243,10 @@ describe("workflow composition: runWorkflow", () => {
 
     function waitForEvent(predicate: (e: WorkflowEvent) => boolean): Promise<void> {
       return new Promise((resolve) => {
-        if (events.some(predicate)) { resolve(); return; }
+        if (events.some(predicate)) {
+          resolve();
+          return;
+        }
         const interval = setInterval(() => {
           if (events.some(predicate)) {
             clearInterval(interval);
@@ -232,9 +262,7 @@ describe("workflow composition: runWorkflow", () => {
       task: "task",
     });
 
-    await waitForEvent((e) =>
-      e.type === "step_start" && "step" in e && e.step === "ready-for-steering"
-    );
+    await waitForEvent((e) => e.type === "step_start" && "step" in e && e.step === "ready-for-steering");
 
     // Steer the parent — should propagate to sub-workflow since they share the queue
     expect(tool.isRunning).toBe(true);

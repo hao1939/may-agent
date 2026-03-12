@@ -2,11 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdtempSync, rmSync, writeFileSync, mkdirSync, readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import {
-  memoryPath,
-  appendMemoryEntry,
-  readMemoryEntries,
-} from "../src/lib/persistence.js";
+import { memoryPath, appendMemoryEntry, readMemoryEntries } from "../src/lib/persistence.js";
 import type { MemoryEntry } from "../src/lib/persistence.js";
 import { SubagentManager } from "../src/lib/manager.js";
 import type { Model } from "@mariozechner/pi-ai";

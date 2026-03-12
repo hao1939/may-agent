@@ -51,12 +51,15 @@ describe("runSystemStatus", () => {
     const sid = "s_recent_1";
     const sessionDir = resolve(persistDir, "sessions", sid);
     mkdirSync(sessionDir, { recursive: true });
-    writeFileSync(resolve(sessionDir, "meta.json"), JSON.stringify({
-      agent: "coder",
-      status: "complete",
-      startedAt: Date.now() - 3600000, // 1 hour ago
-      task: "fix bug",
-    }));
+    writeFileSync(
+      resolve(sessionDir, "meta.json"),
+      JSON.stringify({
+        agent: "coder",
+        status: "complete",
+        startedAt: Date.now() - 3600000, // 1 hour ago
+        task: "fix bug",
+      }),
+    );
 
     const result = runSystemStatus({
       persistDir,
@@ -74,13 +77,16 @@ describe("runSystemStatus", () => {
     const sid = "s_uneval_1";
     const sessionDir = resolve(persistDir, "sessions", sid);
     mkdirSync(sessionDir, { recursive: true });
-    writeFileSync(resolve(sessionDir, "meta.json"), JSON.stringify({
-      agent: "coder",
-      status: "complete",
-      startedAt: Date.now() - 7200000,
-      task: "implement feature",
-      parentSessionId: "parent-1",
-    }));
+    writeFileSync(
+      resolve(sessionDir, "meta.json"),
+      JSON.stringify({
+        agent: "coder",
+        status: "complete",
+        startedAt: Date.now() - 7200000,
+        task: "implement feature",
+        parentSessionId: "parent-1",
+      }),
+    );
     writeFileSync(resolve(sessionDir, "session.jsonl"), '{"role":"user"}\n');
 
     const result = runSystemStatus({
@@ -100,13 +106,16 @@ describe("runSystemStatus", () => {
     const sid = "s_eval_1";
     const sessionDir = resolve(persistDir, "sessions", sid);
     mkdirSync(sessionDir, { recursive: true });
-    writeFileSync(resolve(sessionDir, "meta.json"), JSON.stringify({
-      agent: "evaluator",
-      status: "complete",
-      startedAt: Date.now() - 7200000,
-      task: "evaluate",
-      parentSessionId: "parent-1",
-    }));
+    writeFileSync(
+      resolve(sessionDir, "meta.json"),
+      JSON.stringify({
+        agent: "evaluator",
+        status: "complete",
+        startedAt: Date.now() - 7200000,
+        task: "evaluate",
+        parentSessionId: "parent-1",
+      }),
+    );
     writeFileSync(resolve(sessionDir, "session.jsonl"), '{"role":"user"}\n');
 
     const result = runSystemStatus({
@@ -122,10 +131,7 @@ describe("runSystemStatus", () => {
   });
 
   it("counts lesson lines per agent", () => {
-    writeFileSync(
-      resolve(agentsRoot, "may", "knowledge", "lessons.md"),
-      "Line 1\nLine 2\nLine 3\n",
-    );
+    writeFileSync(resolve(agentsRoot, "may", "knowledge", "lessons.md"), "Line 1\nLine 2\nLine 3\n");
 
     const result = runSystemStatus({
       persistDir,
@@ -149,19 +155,22 @@ describe("runSystemStatus", () => {
     });
 
     expect(result.analysisAge).toBe("missing");
-    expect(result.anomalies.some(a => a.includes("Bob analysis"))).toBe(true);
+    expect(result.anomalies.some((a) => a.includes("Bob analysis"))).toBe(true);
   });
 
   it("detects stale running sessions as anomalies", () => {
     const sid = "s_stale_1";
     const sessionDir = resolve(persistDir, "sessions", sid);
     mkdirSync(sessionDir, { recursive: true });
-    writeFileSync(resolve(sessionDir, "meta.json"), JSON.stringify({
-      agent: "coder",
-      status: "running",
-      startedAt: Date.now() - 45 * 60 * 1000, // 45 min — over 30 min threshold
-      task: "stuck task",
-    }));
+    writeFileSync(
+      resolve(sessionDir, "meta.json"),
+      JSON.stringify({
+        agent: "coder",
+        status: "running",
+        startedAt: Date.now() - 45 * 60 * 1000, // 45 min — over 30 min threshold
+        task: "stuck task",
+      }),
+    );
 
     const result = runSystemStatus({
       persistDir,
@@ -171,20 +180,23 @@ describe("runSystemStatus", () => {
       skipBuildChecks: true,
     });
 
-    expect(result.anomalies.some(a => a.includes("may be stuck"))).toBe(true);
+    expect(result.anomalies.some((a) => a.includes("may be stuck"))).toBe(true);
   });
 
   it("does not flag may sessions as stale", () => {
     const sid = "s_may_long_1";
     const sessionDir = resolve(persistDir, "sessions", sid);
     mkdirSync(sessionDir, { recursive: true });
-    writeFileSync(resolve(sessionDir, "meta.json"), JSON.stringify({
-      agent: "may",
-      status: "running",
-      startedAt: Date.now() - 120 * 60 * 1000, // 2 hours
-      task: "main session",
-      autoClose: "never",
-    }));
+    writeFileSync(
+      resolve(sessionDir, "meta.json"),
+      JSON.stringify({
+        agent: "may",
+        status: "running",
+        startedAt: Date.now() - 120 * 60 * 1000, // 2 hours
+        task: "main session",
+        autoClose: "never",
+      }),
+    );
 
     const result = runSystemStatus({
       persistDir,
@@ -194,7 +206,7 @@ describe("runSystemStatus", () => {
       skipBuildChecks: true,
     });
 
-    expect(result.anomalies.filter(a => a.includes("may be stuck"))).toHaveLength(0);
+    expect(result.anomalies.filter((a) => a.includes("may be stuck"))).toHaveLength(0);
   });
 });
 

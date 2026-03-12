@@ -52,7 +52,10 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
   }
 
   if (allowedChatIds.length === 0) {
-    bus.emit({ type: "info", message: "[telegram] TELEGRAM_CHAT_ID not set — bot disabled (security: must specify allowed chat IDs)" });
+    bus.emit({
+      type: "info",
+      message: "[telegram] TELEGRAM_CHAT_ID not set — bot disabled (security: must specify allowed chat IDs)",
+    });
     return { close: () => {} };
   }
 
@@ -69,7 +72,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       headers: { "Content-Type": "application/json" },
       body: body ? JSON.stringify(body) : undefined,
     });
-    const data = await resp.json() as any;
+    const data = (await resp.json()) as any;
     if (!data.ok) {
       throw new Error(`Telegram API ${method}: ${data.description || "unknown error"}`);
     }
@@ -162,19 +165,20 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         "/status": "status",
         "/reload": "reload",
         "/close": "close",
-        "/agents": "status",  // status shows agents
+        "/agents": "status", // status shows agents
       };
       const [cmd, ...rest] = text.split(/\s+/);
       if (cmd === "/start" || cmd === "/help") {
-        await sendMessage(chatIdStr,
+        await sendMessage(
+          chatIdStr,
           "🤖 *May Agent Bot*\n\n" +
-          "Send any message to interact with May.\n\n" +
-          "*Commands:*\n" +
-          "/status — Show active sessions\n" +
-          "/cancel — Cancel current task\n" +
-          "/reload — Reload agent configs\n" +
-          "/help — Show this message\n\n" +
-          "Prefix with @agent to run directly: @coder fix the bug",
+            "Send any message to interact with May.\n\n" +
+            "*Commands:*\n" +
+            "/status — Show active sessions\n" +
+            "/cancel — Cancel current task\n" +
+            "/reload — Reload agent configs\n" +
+            "/help — Show this message\n\n" +
+            "Prefix with @agent to run directly: @coder fix the bug",
           "Markdown",
         );
         return;
@@ -195,7 +199,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
   // ── Outbound: accumulate assistant text, send on turn end ────────
 
   let pendingText = "";
-  let pendingChatId: string | null = allowedChatIds[0] || null;
+  const pendingChatId: string | null = allowedChatIds[0] || null;
 
   const unsubBus = bus.on((event) => {
     const ch = eventChannel(event);
@@ -227,7 +231,10 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
   // ── Long-polling loop ───────────────────────────────────────────
 
   async function pollLoop(): Promise<void> {
-    bus.emit({ type: "info", message: `[telegram] Bot started (polling). Allowed chats: ${allowedChatIds.join(", ")}` });
+    bus.emit({
+      type: "info",
+      message: `[telegram] Bot started (polling). Allowed chats: ${allowedChatIds.join(", ")}`,
+    });
 
     // Verify token
     try {

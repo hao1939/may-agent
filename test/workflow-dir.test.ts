@@ -50,9 +50,7 @@ describe("getWorkflowDir", () => {
       model: fakeModel(),
       tools: [],
     });
-    expect(manager.getWorkflowDir("coder")).toBe(
-      "/home/user/agents/coder/workflows",
-    );
+    expect(manager.getWorkflowDir("coder")).toBe("/home/user/agents/coder/workflows");
   });
 
   it("works for different workspace paths", () => {
@@ -66,8 +64,6 @@ describe("getWorkflowDir", () => {
       model: fakeModel(),
       tools: [],
     });
-    expect(manager.getWorkflowDir("myagent")).toBe(
-      "/tmp/myagent/workflows",
-    );
+    expect(manager.getWorkflowDir("myagent")).toBe("/tmp/myagent/workflows");
   });
 });

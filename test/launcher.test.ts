@@ -18,9 +18,12 @@ const launcherTs = resolve(projectRoot, "src/app/launcher.ts");
 // Helper: create a temp script that exits with a specific code
 function createExitScript(exitCode: number, delayMs = 0): string {
   const path = resolve(__dirname, `_test-child-${exitCode}-${Date.now()}.ts`);
-  writeFileSync(path, `
+  writeFileSync(
+    path,
+    `
     setTimeout(() => process.exit(${exitCode}), ${delayMs});
-  `);
+  `,
+  );
   return path;
 }
 
@@ -28,7 +31,9 @@ function createExitScript(exitCode: number, delayMs = 0): string {
 function createTwoRunScript(firstCode: number, secondCode: number): string {
   const markerPath = resolve(__dirname, `_marker-${Date.now()}.tmp`);
   const path = resolve(__dirname, `_test-tworun-${Date.now()}.ts`);
-  writeFileSync(path, `
+  writeFileSync(
+    path,
+    `
     import { existsSync, writeFileSync } from "node:fs";
     const marker = ${JSON.stringify(markerPath)};
     if (!existsSync(marker)) {
@@ -37,12 +42,17 @@ function createTwoRunScript(firstCode: number, secondCode: number): string {
     } else {
       setTimeout(() => process.exit(${secondCode}), 100);
     }
-  `);
+  `,
+  );
   return path;
 }
 
 // Spawn launcher with a custom child script instead of may.ts
-function spawnLauncher(childScript: string): { proc: ChildProcess; output: string[]; waitForExit: () => Promise<number | null> } {
+function spawnLauncher(childScript: string): {
+  proc: ChildProcess;
+  output: string[];
+  waitForExit: () => Promise<number | null>;
+} {
   const output: string[] = [];
 
   const proc = spawn("npx", ["tsx", launcherTs], {
@@ -101,7 +111,7 @@ describe("launcher module structure", () => {
   it("launcher.ts imports spawn from child_process", async () => {
     const { readFileSync } = await import("node:fs");
     const content = readFileSync(launcherTs, "utf-8");
-    expect(content).toContain('import { spawn');
+    expect(content).toContain("import { spawn");
     expect(content).toContain('"node:child_process"');
   });
 

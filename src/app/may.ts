@@ -9,9 +9,21 @@ import { ChatSession } from "./chat-session.js";
 import { attachConsoleUI } from "./ui/console.js";
 import { attachSocketUI } from "./ui/socket.js";
 import { attachTelegramBot } from "./ui/telegram.js";
-import { loadAgents, reloadAgents, setAgentSessionId, getAgentSessionId, runAgentCleanup, getAgentCrons, loadAgentHandlers, type AgentLoaderOptions } from "./agent-loader.js";
+import {
+  loadAgents,
+  reloadAgents,
+  setAgentSessionId,
+  getAgentSessionId,
+  runAgentCleanup,
+  getAgentCrons,
+  loadAgentHandlers,
+  type AgentLoaderOptions,
+} from "./agent-loader.js";
 
-const PROJECT_ROOT = resolve(process.env.PROJECT_ROOT || dirname(fileURLToPath(import.meta.url)), process.env.PROJECT_ROOT ? "." : "../..");
+const PROJECT_ROOT = resolve(
+  process.env.PROJECT_ROOT || dirname(fileURLToPath(import.meta.url)),
+  process.env.PROJECT_ROOT ? "." : "../..",
+);
 const AGENTS_ROOT = resolve(process.env.AGENTS_ROOT || resolve(PROJECT_ROOT, "agents"));
 const PERSIST_DIR = resolve(process.env.STATE_DIR || resolve(PROJECT_ROOT, ".state"));
 
@@ -43,7 +55,9 @@ function writeIdentity(data: Partial<InstanceIdentity>): void {
   const dir = resolve(INSTANCES_DIR, INSTANCE_LABEL);
   mkdirSync(dir, { recursive: true });
   let existing: Partial<InstanceIdentity> = {};
-  try { existing = JSON.parse(readFileSync(IDENTITY_PATH, "utf-8")); } catch {}
+  try {
+    existing = JSON.parse(readFileSync(IDENTITY_PATH, "utf-8"));
+  } catch {}
   const merged = { ...existing, ...data };
   writeFileSync(IDENTITY_PATH, JSON.stringify(merged, null, 2));
 }
@@ -124,7 +138,10 @@ const models: Record<string, any> = {
 const bus = new EventBus();
 if (CONSOLE_ENABLED) attachConsoleUI(bus);
 
-bus.emit({ type: "info", message: `[may.ts] Starting (pid=${process.pid}, instance=${INSTANCE_LABEL}, root=${PROJECT_ROOT})` });
+bus.emit({
+  type: "info",
+  message: `[may.ts] Starting (pid=${process.pid}, instance=${INSTANCE_LABEL}, root=${PROJECT_ROOT})`,
+});
 
 const manager = new SubagentManager({
   persistDir: PERSIST_DIR,
@@ -148,7 +165,10 @@ const manager = new SubagentManager({
           if (result) {
             const agentNames = Object.keys(result.agents).join(", ");
             const verdict = result.overall.verdict;
-            bus.emit({ type: "info", message: `[eval] Auto-evaluated ${result.sessionIds.length} session(s) (${agentNames}): ${verdict}` });
+            bus.emit({
+              type: "info",
+              message: `[eval] Auto-evaluated ${result.sessionIds.length} session(s) (${agentNames}): ${verdict}`,
+            });
           }
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err);
@@ -175,7 +195,11 @@ const loadResult = loadAgents(loaderOpts);
 bus.emit({ type: "info", message: `Loaded ${loadResult.added.length} agent(s): ${loadResult.added.join(", ")}` });
 
 const skipped = writeSkippedEvaluations(PERSIST_DIR);
-if (skipped > 0) bus.emit({ type: "info", message: `[eval] Wrote ${skipped} skipped evaluation(s) (meta-agents/no-transcript) — no LLM needed` });
+if (skipped > 0)
+  bus.emit({
+    type: "info",
+    message: `[eval] Wrote ${skipped} skipped evaluation(s) (meta-agents/no-transcript) — no LLM needed`,
+  });
 
 // ── Event routing ──────────────────────────────────────────────────────
 
@@ -231,7 +255,14 @@ function attachAgentEvents(label: string, sessionId: string): void {
         break;
       case "tool_execution_end": {
         const text = event.result?.content?.[0]?.text ?? "";
-        bus.emit({ type: "tool_result", agent: label, tool: event.toolName, preview: text.slice(0, 200), isError: !!event.isError, channel });
+        bus.emit({
+          type: "tool_result",
+          agent: label,
+          tool: event.toolName,
+          preview: text.slice(0, 200),
+          isError: !!event.isError,
+          channel,
+        });
         break;
       }
     }
@@ -367,8 +398,8 @@ function handleInput(message: string): void {
     if (sessions.length === 0) {
       bus.emit({ type: "info", message: "[status] No active sessions" });
     } else {
-      const lines = sessions.map((s) =>
-        `  ${s.agent} (${s.sessionId}): ${s.status} — "${s.task.slice(0, 80)}" [${s.runtime}]`
+      const lines = sessions.map(
+        (s) => `  ${s.agent} (${s.sessionId}): ${s.status} — "${s.task.slice(0, 80)}" [${s.runtime}]`,
       );
       bus.emit({ type: "info", message: `[status] ${sessions.length} active session(s):\n${lines.join("\n")}` });
     }
@@ -381,9 +412,18 @@ function handleInput(message: string): void {
     bus.emit({ type: "info", message: "[cmd] Cancelled all running sessions" });
     return;
   }
-  if (lower === "reload") { handleReload(); return; }
-  if (lower === "restart") { gracefulRestart(); return; }
-  if (lower === "close") { gracefulShutdown(); return; }
+  if (lower === "reload") {
+    handleReload();
+    return;
+  }
+  if (lower === "restart") {
+    gracefulRestart();
+    return;
+  }
+  if (lower === "close") {
+    gracefulShutdown();
+    return;
+  }
 
   bus.emit({ type: "info", message: `[cmd] Input ignored (no chat session). Use --chat for interactive mode.` });
 }
@@ -465,7 +505,9 @@ writeFileSync(PID_PATH, String(process.pid), "utf-8");
 const cleanupPid = () => {
   try {
     if (existsSync(PID_PATH)) unlinkSync(PID_PATH);
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 };
 process.on("exit", cleanupPid);
 
@@ -483,7 +525,10 @@ const socketUI = SOCKET_ENABLED
 if (SOCKET_ENABLED) {
   bus.emit({ type: "info", message: `[instance:${INSTANCE_LABEL}] PID ${process.pid}, socket ${sockName}` });
 } else {
-  bus.emit({ type: "info", message: `[instance:${INSTANCE_LABEL}] PID ${process.pid}, socket disabled (use --socket to enable)` });
+  bus.emit({
+    type: "info",
+    message: `[instance:${INSTANCE_LABEL}] PID ${process.pid}, socket disabled (use --socket to enable)`,
+  });
 }
 
 // ── Prompt helper ──────────────────────────────────────────────────────
@@ -547,7 +592,7 @@ writeIdentity({
   instance: INSTANCE_LABEL,
   socket: SOCKET_ENABLED ? SOCKET_PATH : "",
   startedAt: new Date().toISOString(),
-  startedBy: CHAT_MODE ? "human" : (INSTANCE.startsWith("job-") ? "cron:" + INSTANCE.replace("job-", "") : "task"),
+  startedBy: CHAT_MODE ? "human" : INSTANCE.startsWith("job-") ? "cron:" + INSTANCE.replace("job-", "") : "task",
   task: INITIAL_TASK,
   status: "running",
   sessionId: taskSessionId,
@@ -560,10 +605,16 @@ if (CRON_ENABLED) {
   // Only job sessions — chat and call sessions are left untouched.
   const { resumed, interrupted } = manager.resumeStaleSessions({ kinds: ["job"] });
   if (resumed.length > 0) {
-    bus.emit({ type: "info", message: `[startup] Resumed ${resumed.length} session(s): ${resumed.map((s) => `${s.agent}/${s.sessionId}`).join(", ")}` });
+    bus.emit({
+      type: "info",
+      message: `[startup] Resumed ${resumed.length} session(s): ${resumed.map((s) => `${s.agent}/${s.sessionId}`).join(", ")}`,
+    });
   }
   if (interrupted.length > 0) {
-    bus.emit({ type: "info", message: `[startup] ${interrupted.length} session(s) could not resume: ${interrupted.map((s) => `${s.agent}/${s.sessionId}`).join(", ")}` });
+    bus.emit({
+      type: "info",
+      message: `[startup] ${interrupted.length} session(s) could not resume: ${interrupted.map((s) => `${s.agent}/${s.sessionId}`).join(", ")}`,
+    });
   }
 
   const handlerResult = await loadAgentHandlers({
@@ -573,10 +624,16 @@ if (CRON_ENABLED) {
     },
   });
   if (handlerResult.registered.length > 0) {
-    bus.emit({ type: "info", message: `[handlers] Registered ${handlerResult.registered.length}: ${handlerResult.registered.join(", ")}` });
+    bus.emit({
+      type: "info",
+      message: `[handlers] Registered ${handlerResult.registered.length}: ${handlerResult.registered.join(", ")}`,
+    });
   }
   if (handlerResult.errors.length > 0) {
-    bus.emit({ type: "info", message: `[handlers] ⚠️ ${handlerResult.errors.length} error(s): ${handlerResult.errors.join("; ")}` });
+    bus.emit({
+      type: "info",
+      message: `[handlers] ⚠️ ${handlerResult.errors.length} error(s): ${handlerResult.errors.join("; ")}`,
+    });
   }
 
   for (const [name, cron] of getAgentCrons()) {
@@ -647,7 +704,10 @@ if (!CHAT_MODE && !CRON_ENABLED) {
     pasteTimer = null;
     const joined = pasteBuffer.join("\n").trim();
     pasteBuffer = [];
-    if (!joined) { emitPrompt(); return; }
+    if (!joined) {
+      emitPrompt();
+      return;
+    }
     if (joined === "exit" || joined === "quit") {
       rl.close();
       return;
@@ -663,7 +723,10 @@ if (!CHAT_MODE && !CRON_ENABLED) {
 
   await new Promise<void>((resolve) => {
     rl.on("close", () => {
-      if (pasteTimer) { clearTimeout(pasteTimer); flushPaste(); }
+      if (pasteTimer) {
+        clearTimeout(pasteTimer);
+        flushPaste();
+      }
       socketUI.close();
       telegramBot.close();
       resolve();
@@ -671,7 +734,10 @@ if (!CHAT_MODE && !CRON_ENABLED) {
   });
 } else {
   // Daemon mode: no TTY, keep alive via socket + keepalive timer.
-  bus.emit({ type: "info", message: `[daemon] Running in daemon mode (no TTY). Interface agent: ${interfaceAgent}.${SOCKET_ENABLED ? " Use socket for control." : " Socket disabled — no external control available."}` });
+  bus.emit({
+    type: "info",
+    message: `[daemon] Running in daemon mode (no TTY). Interface agent: ${interfaceAgent}.${SOCKET_ENABLED ? " Use socket for control." : " Socket disabled — no external control available."}`,
+  });
 
   setInterval(() => {}, 30_000);
 

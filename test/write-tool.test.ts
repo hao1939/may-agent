@@ -54,7 +54,7 @@ describe("write tool", () => {
   it("overwrites existing file", async () => {
     const filePath = join(testDir, "src/overwrite.ts");
     writeFileSync(filePath, "old content");
-    
+
     const tool = createWriteTool(testDir);
     await tool.execute("test-id", {
       path: "src/overwrite.ts",

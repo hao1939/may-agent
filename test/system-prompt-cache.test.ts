@@ -1,4 +1,3 @@
-
 import { describe, it, expect } from "vitest";
 import { SubagentManager } from "../src/lib/manager.js";
 
@@ -9,7 +8,7 @@ describe("System Prompt Caching", () => {
     const manager = new SubagentManager({ persistDir: "/tmp/test" });
 
     // Mock the private method by binding it
-    // @ts-ignore
+    // @ts-expect-error Accessing private method for testing
     const resolveSystemPrompt = manager.resolveSystemPrompt.bind(manager);
 
     const mockDef = {
@@ -39,7 +38,7 @@ describe("System Prompt Caching", () => {
 
     // The stable prefix should contain the heavy context (Project Structure)
     // The volatile part (Session ID) should come AFTER.
-    
+
     // Current implementation puts Session ID at the very top:
     // "Runtime Environment... Session ID: session_123"
     // Then Project Structure comes later.
@@ -50,9 +49,11 @@ describe("System Prompt Caching", () => {
 
     // Expectation: The stable prefix should be LONG (contain structure) and NOT contain the session ID.
     // If this fails, it proves the cache-busting behavior.
-    
+
     if (stablePrefix.length < 100) {
-      throw new Error(`Stable prefix is too short (${diffIndex} chars). Session ID appears too early, breaking cache for all subsequent content.`);
+      throw new Error(
+        `Stable prefix is too short (${diffIndex} chars). Session ID appears too early, breaking cache for all subsequent content.`,
+      );
     }
   });
 });

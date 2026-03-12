@@ -40,10 +40,7 @@ describe("readIdentity", () => {
       status: "running",
       sessionId: "s_123",
     };
-    writeFileSync(
-      resolve(tmpDir, "instances", instanceName, "identity.json"),
-      JSON.stringify(identity, null, 2),
-    );
+    writeFileSync(resolve(tmpDir, "instances", instanceName, "identity.json"), JSON.stringify(identity, null, 2));
 
     const result = readIdentity(tmpDir, instanceName);
     expect(result).toEqual(identity);
@@ -58,10 +55,7 @@ describe("readIdentity", () => {
   });
 
   it("returns null for invalid JSON", () => {
-    writeFileSync(
-      resolve(tmpDir, "instances", instanceName, "identity.json"),
-      "not valid json {{{",
-    );
+    writeFileSync(resolve(tmpDir, "instances", instanceName, "identity.json"), "not valid json {{{");
     const result = readIdentity(tmpDir, instanceName);
     expect(result).toBeNull();
   });
@@ -81,10 +75,7 @@ describe("readIdentity", () => {
       duration: "5m0s",
       sessionId: "s_123",
     };
-    writeFileSync(
-      resolve(tmpDir, "instances", instanceName, "identity.json"),
-      JSON.stringify(identity, null, 2),
-    );
+    writeFileSync(resolve(tmpDir, "instances", instanceName, "identity.json"), JSON.stringify(identity, null, 2));
 
     const result = readIdentity(tmpDir, instanceName);
     expect(result!.status).toBe("done");
@@ -167,15 +158,13 @@ describe("sendSocketCommand", () => {
 
     await new Promise<void>((resolve) => server!.listen(socketPath, () => resolve()));
 
-    await expect(
-      sendSocketCommand(socketPath, { type: "status" }, { timeoutMs: 200 }),
-    ).rejects.toThrow("Socket timeout");
+    await expect(sendSocketCommand(socketPath, { type: "status" }, { timeoutMs: 200 })).rejects.toThrow(
+      "Socket timeout",
+    );
   });
 
   it("rejects on connection error (no server)", async () => {
-    await expect(
-      sendSocketCommand("/tmp/nonexistent-socket.sock", { type: "status" }),
-    ).rejects.toThrow();
+    await expect(sendSocketCommand("/tmp/nonexistent-socket.sock", { type: "status" })).rejects.toThrow();
   });
 
   it("skips broadcast events and only resolves on ok/error", async () => {
@@ -259,8 +248,14 @@ describe("waitForSocketEvent", () => {
       socket.write(JSON.stringify({ type: "connected" }) + "\n");
       // Only send irrelevant events
       let destroyed = false;
-      socket.on("close", () => { destroyed = true; clearInterval(timer); });
-      socket.on("error", () => { destroyed = true; clearInterval(timer); });
+      socket.on("close", () => {
+        destroyed = true;
+        clearInterval(timer);
+      });
+      socket.on("error", () => {
+        destroyed = true;
+        clearInterval(timer);
+      });
       const timer = setInterval(() => {
         if (!destroyed) socket.write(JSON.stringify({ type: "info", message: "tick" }) + "\n");
       }, 50);
@@ -268,9 +263,9 @@ describe("waitForSocketEvent", () => {
 
     await new Promise<void>((resolve) => server!.listen(socketPath, () => resolve()));
 
-    await expect(
-      waitForSocketEvent(socketPath, "session_end", { timeoutMs: 300 }),
-    ).rejects.toThrow("Timeout waiting for session_end");
+    await expect(waitForSocketEvent(socketPath, "session_end", { timeoutMs: 300 })).rejects.toThrow(
+      "Timeout waiting for session_end",
+    );
   });
 
   it("rejects when socket closes before event", async () => {
@@ -283,9 +278,9 @@ describe("waitForSocketEvent", () => {
 
     await new Promise<void>((resolve) => server!.listen(socketPath, () => resolve()));
 
-    await expect(
-      waitForSocketEvent(socketPath, "session_end", { timeoutMs: 5000 }),
-    ).rejects.toThrow("Socket closed before event received");
+    await expect(waitForSocketEvent(socketPath, "session_end", { timeoutMs: 5000 })).rejects.toThrow(
+      "Socket closed before event received",
+    );
   });
 
   it("ignores non-matching event types", async () => {
@@ -339,7 +334,7 @@ describe("waitForDetached", () => {
     // Write session.jsonl in history dir (for readArchivedSessionMessages)
     const histDir = resolve(tmpDir, "sessions", "history", sessionId);
     mkdirSync(histDir, { recursive: true });
-    const jsonlContent = messages.map(m => JSON.stringify(m)).join("\n") + "\n";
+    const jsonlContent = messages.map((m) => JSON.stringify(m)).join("\n") + "\n";
     writeFileSync(resolve(histDir, "session.jsonl"), jsonlContent);
   }
 
@@ -353,18 +348,22 @@ describe("waitForDetached", () => {
     const manager = new SubagentManager({ persistDir: tmpDir });
     const sessionId = "s_done_1";
 
-    writeArchivedSession(sessionId, {
-      agent: "bob",
-      task: "test",
-      status: "done",
-      startedAt: Date.now() - 5000,
-      endedAt: Date.now(),
-      detached: true,
-      instance: "job-" + sessionId,
-    }, [
-      { role: "user", content: [{ type: "text", text: "Do it" }], timestamp: Date.now() - 5000 },
-      { role: "assistant", content: [{ type: "text", text: "Done!" }], timestamp: Date.now() },
-    ]);
+    writeArchivedSession(
+      sessionId,
+      {
+        agent: "bob",
+        task: "test",
+        status: "done",
+        startedAt: Date.now() - 5000,
+        endedAt: Date.now(),
+        detached: true,
+        instance: "job-" + sessionId,
+      },
+      [
+        { role: "user", content: [{ type: "text", text: "Do it" }], timestamp: Date.now() - 5000 },
+        { role: "assistant", content: [{ type: "text", text: "Done!" }], timestamp: Date.now() },
+      ],
+    );
 
     const result = await manager.waitForDetached(sessionId);
     expect(result.status).toBe("done");
@@ -392,17 +391,19 @@ describe("waitForDetached", () => {
 
     // After 500ms, update meta to "done" and write archive
     setTimeout(() => {
-      writeArchivedSession(sessionId, {
-        agent: "bob",
-        task: "test",
-        status: "done",
-        startedAt: Date.now() - 1000,
-        endedAt: Date.now(),
-        detached: true,
-        instance: "job-" + sessionId,
-      }, [
-        { role: "assistant", content: [{ type: "text", text: "Working..." }], timestamp: Date.now() },
-      ]);
+      writeArchivedSession(
+        sessionId,
+        {
+          agent: "bob",
+          task: "test",
+          status: "done",
+          startedAt: Date.now() - 1000,
+          endedAt: Date.now(),
+          detached: true,
+          instance: "job-" + sessionId,
+        },
+        [{ role: "assistant", content: [{ type: "text", text: "Working..." }], timestamp: Date.now() }],
+      );
     }, 500);
 
     const result = await manager.waitForDetached(sessionId, { pollIntervalMs: 200 });
@@ -470,9 +471,9 @@ describe("waitForDetached", () => {
       socket: "",
     });
 
-    await expect(
-      manager.waitForDetached(sessionId, { pollIntervalMs: 100, timeoutMs: 400 }),
-    ).rejects.toThrow("Timeout waiting for detached session");
+    await expect(manager.waitForDetached(sessionId, { pollIntervalMs: 100, timeoutMs: 400 })).rejects.toThrow(
+      "Timeout waiting for detached session",
+    );
   });
 
   it("throws for unknown session", async () => {

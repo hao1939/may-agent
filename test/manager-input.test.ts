@@ -50,23 +50,27 @@ describe("SubagentManager.input()", () => {
   it("wakes up an idle session", async () => {
     // Start a session that stays idle (autoClose: "never")
     const sessionId = manager.run("chat-agent", "start", { autoClose: "never" });
-    
+
     // Wait for it to go idle
     // (fake model will error or finish fast)
-    try { await manager.waitFor(sessionId); } catch {}
-    
+    try {
+      await manager.waitFor(sessionId);
+    } catch {}
+
     const session = manager.sessions("chat-agent")[0];
     expect(session.status).toBe("idle");
 
     // Input should wake it up
     const promise = manager.input(sessionId, "hello");
-    
+
     const active = manager.sessions("chat-agent")[0];
     expect(active.status).toBe("running");
 
     // Wait for the turn to complete
-    try { await promise; } catch {}
-    
+    try {
+      await promise;
+    } catch {}
+
     // Should be idle again
     const final = manager.sessions("chat-agent")[0];
     expect(final.status).toBe("idle");
@@ -75,7 +79,7 @@ describe("SubagentManager.input()", () => {
   it("steers a running session", async () => {
     // Start a session
     const sessionId = manager.run("chat-agent", "start", { autoClose: "never" });
-    
+
     // Input while running should act as steer
     // (hard to test timing deterministically with fake model, but we check call succeeds)
     await expect(manager.input(sessionId, "interrupt")).resolves.not.toThrow();

@@ -30,7 +30,7 @@ function mockModel() {
 }
 
 async function callTool(tool: AgentTool, params: Record<string, unknown>): Promise<any> {
-  const result = await tool.execute("tc_1", params) as AgentToolResult<string>;
+  const result = (await tool.execute("tc_1", params)) as AgentToolResult<string>;
   const text = (result.content as any[])[0]?.text ?? "";
   return JSON.parse(text);
 }
@@ -51,8 +51,12 @@ describe("V2 agents tool", () => {
   });
 
   afterEach(() => {
-    try { rmSync(persistDir, { recursive: true, force: true }); } catch {}
-    try { rmSync(agentsRoot, { recursive: true, force: true }); } catch {}
+    try {
+      rmSync(persistDir, { recursive: true, force: true });
+    } catch {}
+    try {
+      rmSync(agentsRoot, { recursive: true, force: true });
+    } catch {}
   });
 
   it("list returns registered agents and no running sessions", async () => {
@@ -181,7 +185,10 @@ describe("V2 agents tool", () => {
     let triggeredAgent: string | null = null;
     const tool = manager.createAgentsTool({
       agentsRoot,
-      triggerHeartbeat: (name) => { triggeredAgent = name; return true; },
+      triggerHeartbeat: (name) => {
+        triggeredAgent = name;
+        return true;
+      },
     });
 
     const result = await callTool(tool, { action: "send", agent: "coder", message: "do stuff" });
@@ -220,7 +227,9 @@ describe("callAgent depth limit", () => {
   });
 
   afterEach(() => {
-    try { rmSync(persistDir, { recursive: true, force: true }); } catch {}
+    try {
+      rmSync(persistDir, { recursive: true, force: true });
+    } catch {}
   });
 
   it("respects maxCallDepth setting", async () => {

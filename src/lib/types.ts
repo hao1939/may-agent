@@ -81,7 +81,6 @@ export interface SubagentDefinition {
    * Only recommended for supervisor/long-running agents, not scoped sub-agents.
    */
   compaction?: boolean | CompactionOptions;
-
 }
 
 /** Runtime info about a session. */
@@ -152,6 +151,7 @@ export interface ManagerHealthReport {
 }
 
 /** Options for auditHealth(). */
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface AuditHealthOptions {
   // Reserved for future options (e.g., agentsRoot, skipBuildChecks).
   // Currently unused — kept as extension point.

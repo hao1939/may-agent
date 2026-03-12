@@ -146,7 +146,9 @@ describe("workflow tool: resume", () => {
     // On resume, step 1 should be replayed from archive, step 2 should run fresh.
 
     // Write a two-step workflow
-    writeWorkflow("two-step.ts", `
+    writeWorkflow(
+      "two-step.ts",
+      `
       export const name = "two-step";
       export const description = "Two step: coder then done";
       export async function execute(ctx) {
@@ -154,7 +156,8 @@ describe("workflow tool: resume", () => {
         const step2 = await ctx.runAgent("reviewer", "review: " + (step1.lastAssistantText ?? ""));
         return ctx.done("step1=" + (step1.lastAssistantText ?? "") + " step2=" + (step2.lastAssistantText ?? ""));
       }
-    `);
+    `,
+    );
 
     // Create the crashed workflow run with 1 completed step
     const prevRun: WorkflowRun = {
@@ -211,14 +214,17 @@ describe("workflow tool: resume", () => {
     // This verifies the core replay logic without needing a real model.
 
     // Update: make it a 1-step workflow where step 1 completed, workflow just returns
-    writeWorkflow("one-step.ts", `
+    writeWorkflow(
+      "one-step.ts",
+      `
       export const name = "one-step";
       export const description = "One step then done";
       export async function execute(ctx) {
         const step1 = await ctx.runAgent("coder", "implement " + ctx.task);
         return ctx.done("result=" + (step1.lastAssistantText ?? ""));
       }
-    `);
+    `,
+    );
 
     const prevRunOneStep: WorkflowRun = {
       runId: "wr_crashed_one",
@@ -273,13 +279,16 @@ describe("workflow tool: resume", () => {
   });
 
   it("new workflow run records resumedFromRunId", async () => {
-    writeWorkflow("simple-resume.ts", `
+    writeWorkflow(
+      "simple-resume.ts",
+      `
       export const name = "simple-resume";
       export const description = "Simple for resume test";
       export async function execute(ctx) {
         return ctx.done("done without steps");
       }
-    `);
+    `,
+    );
 
     const prevRun: WorkflowRun = {
       runId: "wr_prev",
@@ -315,7 +324,9 @@ describe("workflow tool: resume", () => {
   it("detects agent name mismatch and runs all steps fresh", async () => {
     // Previous run had step 1 as "coder", but the updated workflow calls "developer" first.
     // The replay should detect the mismatch, stop replaying, and run all steps live.
-    writeWorkflow("changed.ts", `
+    writeWorkflow(
+      "changed.ts",
+      `
       export const name = "changed";
       export const description = "Changed workflow";
       export async function execute(ctx) {
@@ -323,7 +334,8 @@ describe("workflow tool: resume", () => {
         // Since we can't run a real agent in tests, just return done immediately
         return ctx.done("workflow changed, no steps");
       }
-    `);
+    `,
+    );
 
     const prevRun: WorkflowRun = {
       runId: "wr_old",

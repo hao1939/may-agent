@@ -15,7 +15,7 @@ describe("coach: workflow discovery", () => {
   it("workflows directory exists and contains .ts files", () => {
     const wfDir = resolve(COACH_DIR, "workflows");
     expect(existsSync(wfDir), "agents/coach/workflows/ must exist").toBe(true);
-    const files = readdirSync(wfDir).filter(f => f.endsWith(".ts"));
+    const files = readdirSync(wfDir).filter((f) => f.endsWith(".ts"));
     expect(files.length).toBeGreaterThanOrEqual(1);
   });
 
@@ -45,7 +45,7 @@ describe("coach: workflow discovery", () => {
 
   it("each workflow exports name, description, and execute", async () => {
     const wfDir = resolve(COACH_DIR, "workflows");
-    const files = readdirSync(wfDir).filter(f => f.endsWith(".ts"));
+    const files = readdirSync(wfDir).filter((f) => f.endsWith(".ts"));
 
     for (const file of files) {
       const mod = await import(resolve(wfDir, file));
@@ -61,14 +61,14 @@ describe("coach: skill discovery", () => {
     const skillsDir = resolve(COACH_DIR, "skills");
     expect(existsSync(skillsDir), "agents/coach/skills/ must exist").toBe(true);
     const entries = readdirSync(skillsDir, { withFileTypes: true });
-    const dirs = entries.filter(e => e.isDirectory());
+    const dirs = entries.filter((e) => e.isDirectory());
     expect(dirs.length).toBeGreaterThanOrEqual(1);
   });
 
   it("each skill directory has a SKILL.md with valid frontmatter", () => {
     const skillsDir = resolve(COACH_DIR, "skills");
     const entries = readdirSync(skillsDir, { withFileTypes: true });
-    const dirs = entries.filter(e => e.isDirectory());
+    const dirs = entries.filter((e) => e.isDirectory());
 
     for (const dir of dirs) {
       const skillFile = resolve(skillsDir, dir.name, "SKILL.md");

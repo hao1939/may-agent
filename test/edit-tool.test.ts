@@ -17,7 +17,7 @@ describe("edit tool", () => {
 
   it("replaces exact text match", async () => {
     const filePath = join(tmpDir, "test.ts");
-    writeFileSync(filePath, 'const x = 1;\nconst y = 2;\n');
+    writeFileSync(filePath, "const x = 1;\nconst y = 2;\n");
 
     const tool = createEditTool(tmpDir);
     const result = await tool.execute("id", {
@@ -26,12 +26,12 @@ describe("edit tool", () => {
       newText: "const x = 42;",
     });
     expect(result.content[0].text).toContain("Successfully replaced");
-    expect(readFileSync(filePath, "utf-8")).toBe('const x = 42;\nconst y = 2;\n');
+    expect(readFileSync(filePath, "utf-8")).toBe("const x = 42;\nconst y = 2;\n");
   });
 
   it("rejects when old text not found", async () => {
     const filePath = join(tmpDir, "test.ts");
-    writeFileSync(filePath, 'const x = 1;\n');
+    writeFileSync(filePath, "const x = 1;\n");
 
     const tool = createEditTool(tmpDir);
     await expect(
@@ -39,13 +39,13 @@ describe("edit tool", () => {
         path: "test.ts",
         oldText: "nonexistent text",
         newText: "replacement",
-      })
+      }),
     ).rejects.toThrow(/Could not find/);
   });
 
   it("rejects when multiple occurrences found", async () => {
     const filePath = join(tmpDir, "test.ts");
-    writeFileSync(filePath, 'foo\nbar\nfoo\n');
+    writeFileSync(filePath, "foo\nbar\nfoo\n");
 
     const tool = createEditTool(tmpDir);
     await expect(
@@ -53,13 +53,13 @@ describe("edit tool", () => {
         path: "test.ts",
         oldText: "foo",
         newText: "baz",
-      })
+      }),
     ).rejects.toThrow(/2 occurrences/);
   });
 
   it("handles multi-line replacement", async () => {
     const filePath = join(tmpDir, "test.ts");
-    writeFileSync(filePath, 'function foo() {\n  return 1;\n}\n');
+    writeFileSync(filePath, "function foo() {\n  return 1;\n}\n");
 
     const tool = createEditTool(tmpDir);
     await tool.execute("id", {
@@ -67,7 +67,7 @@ describe("edit tool", () => {
       oldText: "function foo() {\n  return 1;\n}",
       newText: "function foo() {\n  return 42;\n}",
     });
-    expect(readFileSync(filePath, "utf-8")).toBe('function foo() {\n  return 42;\n}\n');
+    expect(readFileSync(filePath, "utf-8")).toBe("function foo() {\n  return 42;\n}\n");
   });
 
   it("rejects when file does not exist", async () => {
@@ -77,13 +77,13 @@ describe("edit tool", () => {
         path: "nonexistent.ts",
         oldText: "x",
         newText: "y",
-      })
+      }),
     ).rejects.toThrow(/not found/i);
   });
 
   it("handles fuzzy matching (trailing whitespace)", async () => {
     const filePath = join(tmpDir, "test.ts");
-    writeFileSync(filePath, 'const x = 1;   \n');
+    writeFileSync(filePath, "const x = 1;   \n");
 
     const tool = createEditTool(tmpDir);
     // oldText without trailing spaces should still match via fuzzy
@@ -97,7 +97,7 @@ describe("edit tool", () => {
 
   it("returns diff in details", async () => {
     const filePath = join(tmpDir, "test.ts");
-    writeFileSync(filePath, 'const x = 1;\n');
+    writeFileSync(filePath, "const x = 1;\n");
 
     const tool = createEditTool(tmpDir);
     const result = await tool.execute("id", {

@@ -189,7 +189,9 @@ export function formatKeyFacts(facts: KeyFacts): string[] {
 
   if (facts.filesRead.size > 0) {
     lines.push(`Files read: ${[...facts.filesRead].join(", ")}`);
-    lines.push(`⚠️ File contents from before compaction are SUMMARIZED, not exact. Re-read any file before overwriting it.`);
+    lines.push(
+      `⚠️ File contents from before compaction are SUMMARIZED, not exact. Re-read any file before overwriting it.`,
+    );
   }
   if (facts.filesWritten.size > 0) {
     lines.push(`Files written: ${[...facts.filesWritten].join(", ")}`);
@@ -197,9 +199,10 @@ export function formatKeyFacts(facts: KeyFacts): string[] {
   if (facts.execCommands.length > 0) {
     lines.push(`Exec commands run:`);
     for (const cmd of facts.execCommands) {
-      const display = cmd.command.length > EXEC_COMMAND_DISPLAY_LENGTH
-        ? cmd.command.slice(0, EXEC_COMMAND_DISPLAY_LENGTH) + "…"
-        : cmd.command;
+      const display =
+        cmd.command.length > EXEC_COMMAND_DISPLAY_LENGTH
+          ? cmd.command.slice(0, EXEC_COMMAND_DISPLAY_LENGTH) + "…"
+          : cmd.command;
       const status = cmd.failed ? "FAILED" : "ok";
       lines.push(`  [${status}] ${display}`);
     }
@@ -255,12 +258,13 @@ function summarizeMessages(messages: AgentMessage[]): string {
 
   for (const msg of messages) {
     if (msg.role === "user") {
-      const text = typeof msg.content === "string"
-        ? msg.content
-        : msg.content
-          .filter((b): b is { type: "text"; text: string } => b.type === "text")
-          .map((b) => b.text)
-          .join(" ");
+      const text =
+        typeof msg.content === "string"
+          ? msg.content
+          : msg.content
+              .filter((b): b is { type: "text"; text: string } => b.type === "text")
+              .map((b) => b.text)
+              .join(" ");
       if (text.trim()) {
         parts.push(`[User] ${text.slice(0, 200)}`);
       }
@@ -305,9 +309,10 @@ function summarizeMessages(messages: AgentMessage[]): string {
   // This preserves the model's most recent diagnosis, plan, or decision
   // that would otherwise be truncated to 200 chars in the structural log.
   if (lastSubstantialText) {
-    const capped = lastSubstantialText.length > REASONING_MAX_LENGTH
-      ? lastSubstantialText.slice(0, REASONING_MAX_LENGTH) + "\n\n_(reasoning truncated)_"
-      : lastSubstantialText;
+    const capped =
+      lastSubstantialText.length > REASONING_MAX_LENGTH
+        ? lastSubstantialText.slice(0, REASONING_MAX_LENGTH) + "\n\n_(reasoning truncated)_"
+        : lastSubstantialText;
     parts.push("");
     parts.push("[Last reasoning before compaction]");
     parts.push(capped);
@@ -557,17 +562,17 @@ export function createCompactionTransform(
       // without it, agents can lose track of what they were asked to do.
       let originalTaskBlock = "";
       if (cachedOriginalTask) {
-        const taskText = cachedOriginalTask.length > ORIGINAL_TASK_MAX_LENGTH
-          ? cachedOriginalTask.slice(0, ORIGINAL_TASK_MAX_LENGTH) + "…"
-          : cachedOriginalTask;
+        const taskText =
+          cachedOriginalTask.length > ORIGINAL_TASK_MAX_LENGTH
+            ? cachedOriginalTask.slice(0, ORIGINAL_TASK_MAX_LENGTH) + "…"
+            : cachedOriginalTask;
         originalTaskBlock = `[Original task]\n${taskText}\n\n`;
       }
 
       // Build the key facts header (always preserved, not subject to trimming)
       const keyFactLines = formatKeyFacts(accumulatedKeyFacts);
-      const keyFactsBlock = keyFactLines.length > 0
-        ? `[Key facts across compaction rounds]\n${keyFactLines.join("\n")}\n\n`
-        : "";
+      const keyFactsBlock =
+        keyFactLines.length > 0 ? `[Key facts across compaction rounds]\n${keyFactLines.join("\n")}\n\n` : "";
 
       // Create a synthetic user message with the compacted context
       const summaryMessage: UserMessage = {

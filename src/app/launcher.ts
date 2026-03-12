@@ -56,15 +56,12 @@ function spawnChild(): void {
   // process.execPath = node, process.execArgv has the tsx --import/--require flags.
   // We filter out any --eval/--print flags from execArgv (they're for our own invocation).
   const execArgv = process.execArgv.filter(
-    (a, i, arr) => !["--eval", "--print", "-e", "-p"].includes(a) &&
-      (i === 0 || !["--eval", "--print", "-e", "-p"].includes(arr[i - 1]))
+    (a, i, arr) =>
+      !["--eval", "--print", "-e", "-p"].includes(a) &&
+      (i === 0 || !["--eval", "--print", "-e", "-p"].includes(arr[i - 1])),
   );
 
-  child = spawn(process.execPath, [
-    ...execArgv,
-    MAY_TS,
-    ...args,
-  ], {
+  child = spawn(process.execPath, [...execArgv, MAY_TS, ...args], {
     stdio: "inherit",
     env: process.env,
     cwd: process.cwd(),
@@ -98,7 +95,9 @@ function spawnChild(): void {
     const jitter = backoffMs * (0.5 + Math.random());
     const delay = Math.min(jitter, BACKOFF_MAX);
 
-    log(`may.ts exited (code ${code}, signal ${signal}, ran ${Math.round(runtime / 1000)}s). Restarting in ${Math.round(delay)}ms...`);
+    log(
+      `may.ts exited (code ${code}, signal ${signal}, ran ${Math.round(runtime / 1000)}s). Restarting in ${Math.round(delay)}ms...`,
+    );
     setTimeout(spawnChild, delay);
 
     // Increase backoff for next crash

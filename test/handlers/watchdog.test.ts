@@ -6,28 +6,33 @@ import { describe, it, expect } from "vitest";
 import { runWatchdog } from "../../agents/may/handlers/watchdog.js";
 import type { HandlerContext } from "../../src/lib/handler-context.js";
 
-function makeContext(sessions: Array<{
-  agent: string;
-  sessionId: string;
-  status: string;
-  startedAt: number;
-  parentSessionId?: string;
-  autoClose?: "immediate" | "never";
-}>): HandlerContext {
+function makeContext(
+  sessions: Array<{
+    agent: string;
+    sessionId: string;
+    status: string;
+    startedAt: number;
+    parentSessionId?: string;
+    autoClose?: "immediate" | "never";
+  }>,
+): HandlerContext {
   const cancelled: string[] = [];
   return {
     manager: {
-      status: () => sessions.map(s => ({
-        agent: s.agent,
-        sessionId: s.sessionId,
-        status: s.status,
-        startedAt: s.startedAt,
-        parentSessionId: s.parentSessionId,
-        autoClose: s.autoClose,
-        task: "some task",
-        runtime: "1m",
-      })),
-      cancel: (sid: string) => { cancelled.push(sid); },
+      status: () =>
+        sessions.map((s) => ({
+          agent: s.agent,
+          sessionId: s.sessionId,
+          status: s.status,
+          startedAt: s.startedAt,
+          parentSessionId: s.parentSessionId,
+          autoClose: s.autoClose,
+          task: "some task",
+          runtime: "1m",
+        })),
+      cancel: (sid: string) => {
+        cancelled.push(sid);
+      },
       _cancelled: cancelled,
     } as any,
     persistDir: "/tmp/test",
@@ -43,9 +48,7 @@ function makeContext(sessions: Array<{
 describe("runWatchdog", () => {
   it("cancels sessions exceeding default timeout (30 min)", () => {
     const now = Date.now();
-    const ctx = makeContext([
-      { agent: "coder", sessionId: "s1", status: "running", startedAt: now - 35 * 60 * 1000 },
-    ]);
+    const ctx = makeContext([{ agent: "coder", sessionId: "s1", status: "running", startedAt: now - 35 * 60 * 1000 }]);
     const result = runWatchdog(ctx, {});
 
     expect(result.checked).toBe(1);
@@ -57,9 +60,7 @@ describe("runWatchdog", () => {
 
   it("does not cancel sessions under timeout", () => {
     const now = Date.now();
-    const ctx = makeContext([
-      { agent: "coder", sessionId: "s1", status: "running", startedAt: now - 10 * 60 * 1000 },
-    ]);
+    const ctx = makeContext([{ agent: "coder", sessionId: "s1", status: "running", startedAt: now - 10 * 60 * 1000 }]);
     const result = runWatchdog(ctx, {});
 
     expect(result.checked).toBe(1);
@@ -70,9 +71,7 @@ describe("runWatchdog", () => {
   it("warns sessions at >75% of timeout", () => {
     const now = Date.now();
     // 24 min = 80% of 30 min default
-    const ctx = makeContext([
-      { agent: "coder", sessionId: "s1", status: "running", startedAt: now - 24 * 60 * 1000 },
-    ]);
+    const ctx = makeContext([{ agent: "coder", sessionId: "s1", status: "running", startedAt: now - 24 * 60 * 1000 }]);
     const result = runWatchdog(ctx, {});
 
     expect(result.warned).toHaveLength(1);
@@ -106,7 +105,13 @@ describe("runWatchdog", () => {
   it("does NOT skip may's child sessions (with parentSessionId)", () => {
     const now = Date.now();
     const ctx = makeContext([
-      { agent: "may", sessionId: "s1", status: "running", startedAt: now - 60 * 60 * 1000, parentSessionId: "parent-1" },
+      {
+        agent: "may",
+        sessionId: "s1",
+        status: "running",
+        startedAt: now - 60 * 60 * 1000,
+        parentSessionId: "parent-1",
+      },
     ]);
     const result = runWatchdog(ctx, {});
 
@@ -130,9 +135,7 @@ describe("runWatchdog", () => {
 
   it("respects custom config overrides", () => {
     const now = Date.now();
-    const ctx = makeContext([
-      { agent: "coder", sessionId: "s1", status: "running", startedAt: now - 35 * 60 * 1000 },
-    ]);
+    const ctx = makeContext([{ agent: "coder", sessionId: "s1", status: "running", startedAt: now - 35 * 60 * 1000 }]);
     // Custom: coder gets 60 min timeout
     const result = runWatchdog(ctx, { agentTimeouts: { coder: 60 * 60 * 1000 } });
 
@@ -141,9 +144,7 @@ describe("runWatchdog", () => {
 
   it("dryRun mode does not cancel", () => {
     const now = Date.now();
-    const ctx = makeContext([
-      { agent: "coder", sessionId: "s1", status: "running", startedAt: now - 60 * 60 * 1000 },
-    ]);
+    const ctx = makeContext([{ agent: "coder", sessionId: "s1", status: "running", startedAt: now - 60 * 60 * 1000 }]);
     const result = runWatchdog(ctx, { dryRun: true });
 
     expect(result.cancelled).toHaveLength(1); // Still reported

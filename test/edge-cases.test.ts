@@ -3,9 +3,7 @@ import { mkdtempSync, rmSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { SubagentManager } from "../src/lib/manager.js";
-import {
-  historyDir,
-} from "../src/lib/persistence.js";
+import { historyDir } from "../src/lib/persistence.js";
 import type { Model } from "@mariozechner/pi-ai";
 
 function fakeModel(): Model<any> {
@@ -135,10 +133,7 @@ describe("Edge cases", () => {
       const sessionId = manager.run("agent-w", "task");
 
       // Two concurrent waiters
-      const [result1, result2] = await Promise.all([
-        manager.waitFor(sessionId),
-        manager.waitFor(sessionId),
-      ]);
+      const [result1, result2] = await Promise.all([manager.waitFor(sessionId), manager.waitFor(sessionId)]);
 
       expect(result1.sessionId).toBe(result2.sessionId);
     });
@@ -152,9 +147,7 @@ describe("Edge cases", () => {
 
   describe("run() with unregistered agent", () => {
     it("throws an Error with a useful message", () => {
-      expect(() => manager.run("nonexistent", "task")).toThrow(
-        'Agent "nonexistent" not registered',
-      );
+      expect(() => manager.run("nonexistent", "task")).toThrow('Agent "nonexistent" not registered');
     });
   });
 

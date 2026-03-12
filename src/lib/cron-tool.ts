@@ -47,21 +47,33 @@ function textResult(text: string): AgentToolResult<string> {
 }
 
 const CronParams: TSchema = Type.Object({
-  action: Type.Union([
-    Type.Literal("list"),
-    Type.Literal("add"),
-    Type.Literal("remove"),
-    Type.Literal("update"),
-    Type.Literal("status"),
-  ], { description: "list | add | remove | update | status" }),
+  action: Type.Union(
+    [Type.Literal("list"), Type.Literal("add"), Type.Literal("remove"), Type.Literal("update"), Type.Literal("status")],
+    { description: "list | add | remove | update | status" },
+  ),
   name: Type.Optional(Type.String({ description: "Job name (required for add/remove/update)" })),
-  intervalMs: Type.Optional(Type.Number({ description: "Interval in milliseconds (required for add, optional for update). Minimum 10000 (10s)." })),
-  message: Type.Optional(Type.String({ description: "Message to send on each interval (required for add, optional for update)" })),
-  enabled: Type.Optional(Type.Boolean({ description: "Whether the job is enabled (default true). Disabled jobs won't fire." })),
+  intervalMs: Type.Optional(
+    Type.Number({
+      description: "Interval in milliseconds (required for add, optional for update). Minimum 10000 (10s).",
+    }),
+  ),
+  message: Type.Optional(
+    Type.String({ description: "Message to send on each interval (required for add, optional for update)" }),
+  ),
+  enabled: Type.Optional(
+    Type.Boolean({ description: "Whether the job is enabled (default true). Disabled jobs won't fire." }),
+  ),
   description: Type.Optional(Type.String({ description: "Optional description for the job" })),
 });
 
-interface CronInput { action: "list" | "add" | "remove" | "update" | "status"; name?: string; intervalMs?: number; message?: string; enabled?: boolean; description?: string; }
+interface CronInput {
+  action: "list" | "add" | "remove" | "update" | "status";
+  name?: string;
+  intervalMs?: number;
+  message?: string;
+  enabled?: boolean;
+  description?: string;
+}
 
 export interface CronToolOptions {
   /** Path to the agent's cron.json */
@@ -116,9 +128,11 @@ export function createCronTool(opts: CronToolOptions): AgentTool {
       switch (input.action) {
         case "list": {
           const entries = readEntries();
-          const status = opts.cronEnabled ? "Status: ACTIVE" : "Status: DISABLED (jobs defined but won't fire until --cron flag is set)";
+          const status = opts.cronEnabled
+            ? "Status: ACTIVE"
+            : "Status: DISABLED (jobs defined but won't fire until --cron flag is set)";
           if (entries.length === 0) return textResult(`no cron jobs configured\n${status}`);
-          const lines = entries.map(e => {
+          const lines = entries.map((e) => {
             const prefix = e.enabled ? "" : "[DISABLED] ";
             const desc = e.description ? ` — ${e.description.slice(0, 50)}` : "";
             return `- ${prefix}${e.name}: every ${(e.intervalMs / 1000).toFixed(0)}s → "${e.message.slice(0, 100)}"${desc}`;
@@ -135,8 +149,10 @@ export function createCronTool(opts: CronToolOptions): AgentTool {
           if (input.message.length > 500) return textResult("Error: message must be <= 500 characters");
           if (input.intervalMs < 10_000) return textResult("Error: intervalMs must be >= 10000 (10 seconds)");
           const entries = readEntries();
-          if (entries.some(e => e.name === input.name)) {
-            return textResult(`Error: job "${input.name}" already exists. Use 'update' to modify it, or 'remove' first to replace it.`);
+          if (entries.some((e) => e.name === input.name)) {
+            return textResult(
+              `Error: job "${input.name}" already exists. Use 'update' to modify it, or 'remove' first to replace it.`,
+            );
           }
           const newEntry: CronEntry = {
             name: input.name,
@@ -144,7 +160,9 @@ export function createCronTool(opts: CronToolOptions): AgentTool {
             message: input.message,
             enabled: input.enabled !== undefined ? input.enabled : true,
           };
-          if (input.description !== undefined) newEntry.description = input.description.length > 200 ? input.description.slice(0, 200) + "..." : input.description;
+          if (input.description !== undefined)
+            newEntry.description =
+              input.description.length > 200 ? input.description.slice(0, 200) + "..." : input.description;
           entries.push(newEntry);
           writeEntries(entries);
           return textResult(`Added job "${input.name}": every ${(input.intervalMs / 1000).toFixed(0)}s`);
@@ -153,7 +171,7 @@ export function createCronTool(opts: CronToolOptions): AgentTool {
         case "remove": {
           if (!input.name) return textResult("Error: 'name' is required for remove");
           const entries = readEntries();
-          const idx = entries.findIndex(e => e.name === input.name);
+          const idx = entries.findIndex((e) => e.name === input.name);
           if (idx === -1) return textResult(`Error: job "${input.name}" not found`);
           entries.splice(idx, 1);
           writeEntries(entries);
@@ -164,14 +182,16 @@ export function createCronTool(opts: CronToolOptions): AgentTool {
           if (!input.name) return textResult("Error: 'name' is required for update");
           if (input.name.length > 50) return textResult("Error: name must be <= 50 characters");
           const entries = readEntries();
-          const entry = entries.find(e => e.name === input.name);
+          const entry = entries.find((e) => e.name === input.name);
           if (!entry) return textResult(`Error: job "${input.name}" not found`);
           if (input.intervalMs !== undefined) {
             if (input.intervalMs < 10_000) return textResult("Error: intervalMs must be >= 10000 (10 seconds)");
             entry.intervalMs = input.intervalMs;
           }
           if (input.message !== undefined) entry.message = input.message;
-          if (input.description !== undefined) entry.description = input.description.length > 200 ? input.description.slice(0, 200) + "..." : input.description;
+          if (input.description !== undefined)
+            entry.description =
+              input.description.length > 200 ? input.description.slice(0, 200) + "..." : input.description;
           if (input.enabled !== undefined) entry.enabled = input.enabled;
           entry.lastModified = new Date().toISOString();
           writeEntries(entries);
@@ -180,23 +200,21 @@ export function createCronTool(opts: CronToolOptions): AgentTool {
 
         case "status": {
           const entries = readEntries();
-          const status = opts.cronEnabled ? "Status: ACTIVE" : "Status: DISABLED (jobs defined but won't fire until --cron flag is set)";
+          const status = opts.cronEnabled
+            ? "Status: ACTIVE"
+            : "Status: DISABLED (jobs defined but won't fire until --cron flag is set)";
           if (entries.length === 0) {
             return textResult(`No cron jobs configured.\n${status}`);
           }
-          const enabledEntries = entries.filter(e => e.enabled);
+          const enabledEntries = entries.filter((e) => e.enabled);
           let nextToFire: string;
           if (enabledEntries.length === 0) {
             nextToFire = "Next to fire: none (all jobs disabled)";
           } else {
-            const shortest = enabledEntries.reduce((a, b) => a.intervalMs <= b.intervalMs ? a : b);
+            const shortest = enabledEntries.reduce((a, b) => (a.intervalMs <= b.intervalMs ? a : b));
             nextToFire = `Next to fire: "${shortest.name}" (every ${(shortest.intervalMs / 1000).toFixed(0)}s)`;
           }
-          return textResult(
-            `${entries.length} job(s) configured\n` +
-            `${nextToFire}\n\n` +
-            status
-          );
+          return textResult(`${entries.length} job(s) configured\n` + `${nextToFire}\n\n` + status);
         }
 
         default:
@@ -205,4 +223,3 @@ export function createCronTool(opts: CronToolOptions): AgentTool {
     },
   };
 }
-

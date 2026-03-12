@@ -59,7 +59,10 @@ describe("background_exec tool", () => {
     await new Promise((r) => setTimeout(r, 200));
 
     const result = await exec(tool, { action: "output", pid, lines: 3 });
-    const lines = result.output.trim().split("\n").filter((l: string) => l.length > 0);
+    const lines = result.output
+      .trim()
+      .split("\n")
+      .filter((l: string) => l.length > 0);
     expect(lines.length).toBe(3);
     expect(lines[lines.length - 1]).toBe("line10");
   });

@@ -1,9 +1,30 @@
 export { SubagentManager, generateId, truncateForPrompt } from "./manager.js";
 export type { SubagentManagerOptions, RunOptions } from "./manager.js";
 // Core coding tools (synced from pi-coding-agent)
-export { createReadTool, createBashTool, createEditTool, createWriteTool, createCodingTools, createAgentGrowthTools } from "./tools/index.js";
-export type { ReadToolOptions, BashToolOptions, EditToolOptions, WriteToolOptions, CodingToolsOptions, AgentGrowthToolOptions } from "./tools/index.js";
-export { DEFAULT_MAX_BYTES, DEFAULT_MAX_LINES, formatSize, truncateHead, truncateTail, truncateLine } from "./tools/index.js";
+export {
+  createReadTool,
+  createBashTool,
+  createEditTool,
+  createWriteTool,
+  createCodingTools,
+  createAgentGrowthTools,
+} from "./tools/index.js";
+export type {
+  ReadToolOptions,
+  BashToolOptions,
+  EditToolOptions,
+  WriteToolOptions,
+  CodingToolsOptions,
+  AgentGrowthToolOptions,
+} from "./tools/index.js";
+export {
+  DEFAULT_MAX_BYTES,
+  DEFAULT_MAX_LINES,
+  formatSize,
+  truncateHead,
+  truncateTail,
+  truncateLine,
+} from "./tools/index.js";
 export type { TruncationResult, TruncationOptions } from "./tools/index.js";
 export { resolveToCwd, resolveReadPath, expandPath } from "./tools/index.js";
 // May-agent-specific tools
@@ -32,8 +53,28 @@ export { summarizeForHandoff, extractHandoff } from "./handoff.js";
 export type { HandoffOptions, HandoffData } from "./handoff.js";
 export { createCompactionTransform } from "./compaction.js";
 export type { CompactionOptions, CompactionInfo } from "./compaction.js";
-export { evaluateTask, findUnevaluatedChildren, maintainAgent, extractFailureChains, extractUsage, formatFailureChains, getAgentScoreSummary, writeSkippedEvaluations } from "./evaluator.js";
-export type { EvaluateTaskOptions, TaskEvaluationResult, AgentScores, ChildSessionInfo, MaintainAgentOptions, MaintenanceResult, UsageSummary, FailureChain, FailureStep, AgentScoreSummary } from "./evaluator.js";
+export {
+  evaluateTask,
+  findUnevaluatedChildren,
+  maintainAgent,
+  extractFailureChains,
+  extractUsage,
+  formatFailureChains,
+  getAgentScoreSummary,
+  writeSkippedEvaluations,
+} from "./evaluator.js";
+export type {
+  EvaluateTaskOptions,
+  TaskEvaluationResult,
+  AgentScores,
+  ChildSessionInfo,
+  MaintainAgentOptions,
+  MaintenanceResult,
+  UsageSummary,
+  FailureChain,
+  FailureStep,
+  AgentScoreSummary,
+} from "./evaluator.js";
 export { parseFrontmatter, loadSkillsFromDirs, formatSkillsForPrompt } from "./skills.js";
 export type { Frontmatter, SkillEntry } from "./skills.js";
 export { isOverflowError, extractProgress, writeProgressFile } from "./overflow.js";

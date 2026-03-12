@@ -64,10 +64,7 @@ describe("Rolling Compaction - persistence", () => {
   });
 
   it("saveCompactedMessages writes and readCompactedMessages reads back", () => {
-    const messages: AgentMessage[] = [
-      makeUserMessage("hello"),
-      makeAssistantMessage("hi there"),
-    ];
+    const messages: AgentMessage[] = [makeUserMessage("hello"), makeAssistantMessage("hi there")];
 
     saveCompactedMessages(persistDir, sessionId, messages);
 
@@ -133,10 +130,7 @@ describe("Rolling Compaction - persistence", () => {
   });
 
   it("compact file is valid JSONL format", () => {
-    const messages: AgentMessage[] = [
-      makeUserMessage("line 1"),
-      makeAssistantMessage("line 2"),
-    ];
+    const messages: AgentMessage[] = [makeUserMessage("line 1"), makeAssistantMessage("line 2")];
     saveCompactedMessages(persistDir, sessionId, messages);
 
     const path = sessionCompactPath(persistDir, sessionId);
@@ -176,10 +170,7 @@ describe("Rolling Compaction - resume prefers compacted messages", () => {
     expect(savedMessages.length).toBe(10);
 
     // Now write a compacted snapshot with fewer messages
-    const compactedMsgs: AgentMessage[] = [
-      makeUserMessage("[COMPACTED CONTEXT]"),
-      makeUserMessage("msg 9"),
-    ];
+    const compactedMsgs: AgentMessage[] = [makeUserMessage("[COMPACTED CONTEXT]"), makeUserMessage("msg 9")];
     saveCompactedMessages(persistDir, sessionId, compactedMsgs);
 
     // Now compacted is preferred

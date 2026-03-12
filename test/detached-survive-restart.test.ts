@@ -87,14 +87,14 @@ describe("detached sessions survive restart", () => {
     const { resumed, interrupted } = manager.resumeStaleSessions();
 
     // The attached session should be resumed (agent is registered)
-    const attachedResumed = resumed.find(s => s.sessionId === "s_attached_1");
+    const attachedResumed = resumed.find((s) => s.sessionId === "s_attached_1");
     expect(attachedResumed).toBeTruthy();
     expect(attachedResumed!.status).toBe("running");
 
     // The detached session should NOT appear in either list (process is alive, skipped)
-    const detachedResumed = resumed.find(s => s.sessionId === "s_detached_1");
+    const detachedResumed = resumed.find((s) => s.sessionId === "s_detached_1");
     expect(detachedResumed).toBeUndefined();
-    const detachedInterrupted = interrupted.find(s => s.sessionId === "s_detached_1");
+    const detachedInterrupted = interrupted.find((s) => s.sessionId === "s_detached_1");
     expect(detachedInterrupted).toBeUndefined();
 
     // Verify the detached session is still "running" in the registry
@@ -121,7 +121,7 @@ describe("detached sessions survive restart", () => {
     const { resumed, interrupted } = manager.resumeStaleSessions();
 
     // Dead detached process should be resumed (agent is registered)
-    const detachedResumed = resumed.find(s => s.sessionId === "s_detached_dead");
+    const detachedResumed = resumed.find((s) => s.sessionId === "s_detached_dead");
     expect(detachedResumed).toBeTruthy();
 
     await manager.waitFor("s_detached_dead");

@@ -10,7 +10,11 @@ function setup() {
 }
 
 function cleanup() {
-  try { rmSync(tmpDir, { recursive: true }); } catch { /* ignore */ }
+  try {
+    rmSync(tmpDir, { recursive: true });
+  } catch {
+    /* ignore */
+  }
 }
 
 describe("read tool with offset/limit", () => {
@@ -77,16 +81,12 @@ describe("read tool with offset/limit", () => {
     writeFileSync(filePath, "a\nb\nc");
 
     const tool = createReadTool(tmpDir);
-    await expect(
-      tool.execute("test-id", { path: filePath, offset: 100 })
-    ).rejects.toThrow(/beyond end of file/);
+    await expect(tool.execute("test-id", { path: filePath, offset: 100 })).rejects.toThrow(/beyond end of file/);
   });
 
   it("returns error for non-existent file", async () => {
     const tool = createReadTool(tmpDir);
-    await expect(
-      tool.execute("test-id", { path: join(tmpDir, "nonexistent.txt") })
-    ).rejects.toThrow();
+    await expect(tool.execute("test-id", { path: join(tmpDir, "nonexistent.txt") })).rejects.toThrow();
   });
 
   it("handles single-line file", async () => {

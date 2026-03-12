@@ -17,11 +17,25 @@ function textResult(text: string): AgentToolResult<string> {
 }
 
 const LearnParams: TSchema = Type.Object({
-  lesson: Type.Optional(Type.String({ description: "What you learned. Be specific and actionable. Required when adding a lesson." })),
-  category: Type.Optional(Type.String({ description: "Category for the lesson (e.g. 'testing', 'architecture', 'debugging'). Default: 'general'." })),
-  listLessons: Type.Optional(Type.Boolean({ description: "When true, return current lessons instead of adding. The 'lesson' param is ignored." })),
+  lesson: Type.Optional(
+    Type.String({ description: "What you learned. Be specific and actionable. Required when adding a lesson." }),
+  ),
+  category: Type.Optional(
+    Type.String({
+      description: "Category for the lesson (e.g. 'testing', 'architecture', 'debugging'). Default: 'general'.",
+    }),
+  ),
+  listLessons: Type.Optional(
+    Type.Boolean({
+      description: "When true, return current lessons instead of adding. The 'lesson' param is ignored.",
+    }),
+  ),
 });
-interface LearnInput { lesson?: string; category?: string; listLessons?: boolean; }
+interface LearnInput {
+  lesson?: string;
+  category?: string;
+  listLessons?: boolean;
+}
 
 function parseLessons(content: string): Map<string, string[]> {
   const categories = new Map<string, string[]>();

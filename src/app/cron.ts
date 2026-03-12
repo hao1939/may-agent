@@ -65,8 +65,10 @@ export class Cron {
     private manager: SubagentManager,
     private getSessionId: () => string,
     private onError?: (msg: string) => void,
+    projectRoot?: string,
   ) {
-    this.projectRoot = resolve(dirname(configPath), "..");
+    // configPath is <projectRoot>/agents/<name>/cron.json → go up 2 levels
+    this.projectRoot = projectRoot ?? resolve(dirname(configPath), "../..");
     this.persistDir = resolve(this.projectRoot, ".state");
   }
 
@@ -145,7 +147,7 @@ export class Cron {
 
   /** Trigger a cron entry immediately. Returns true if fired or latched, false if debounced/unknown. */
   triggerNow(entryName: string): boolean {
-    const entry = this.entries.find(e => e.name === entryName);
+    const entry = this.entries.find((e) => e.name === entryName);
     if (!entry) return false;
 
     // Debounce: skip if triggered too recently
@@ -236,45 +238,48 @@ export class Cron {
       this.heartbeatSessions.set(agentName, sessionId);
 
       // Wait for completion then record result
-      this.manager.waitFor(sessionId).then(() => {
-        this.heartbeatRunning.delete(heartbeatKey);
-        // Check latch: re-fire if a trigger arrived while busy
-        this.checkPendingTrigger(entry);
-        this.appendJobResult({
-          jobName: entry.name,
-          type: "heartbeat",
-          status: "success",
-          summary: `Heartbeat for ${agentName} completed`,
-          startedAt,
-          endedAt: new Date().toISOString(),
-          durationMs: Date.now() - startMs,
-          agent: agentName,
-          sessionId,
-        });
-      }).catch((err) => {
-        this.heartbeatRunning.delete(heartbeatKey);
-        // Check latch: re-fire if a trigger arrived while busy
-        this.checkPendingTrigger(entry);
-        const errMsg = err instanceof Error ? err.message : String(err);
+      this.manager
+        .waitFor(sessionId)
+        .then(() => {
+          this.heartbeatRunning.delete(heartbeatKey);
+          // Check latch: re-fire if a trigger arrived while busy
+          this.checkPendingTrigger(entry);
+          this.appendJobResult({
+            jobName: entry.name,
+            type: "heartbeat",
+            status: "success",
+            summary: `Heartbeat for ${agentName} completed`,
+            startedAt,
+            endedAt: new Date().toISOString(),
+            durationMs: Date.now() - startMs,
+            agent: agentName,
+            sessionId,
+          });
+        })
+        .catch((err) => {
+          this.heartbeatRunning.delete(heartbeatKey);
+          // Check latch: re-fire if a trigger arrived while busy
+          this.checkPendingTrigger(entry);
+          const errMsg = err instanceof Error ? err.message : String(err);
 
-        // Any heartbeat error → hard reset session to recover
-        this.onError?.(`Cron heartbeat "${entry.name}" failed — resetting session for next fire`);
-        this.heartbeatSessions.delete(agentName);
+          // Any heartbeat error → hard reset session to recover
+          this.onError?.(`Cron heartbeat "${entry.name}" failed — resetting session for next fire`);
+          this.heartbeatSessions.delete(agentName);
 
-        this.appendJobResult({
-          jobName: entry.name,
-          type: "heartbeat",
-          status: "failure",
-          summary: `Heartbeat for ${agentName} failed`,
-          startedAt,
-          endedAt: new Date().toISOString(),
-          durationMs: Date.now() - startMs,
-          agent: agentName,
-          sessionId,
-          error: errMsg,
+          this.appendJobResult({
+            jobName: entry.name,
+            type: "heartbeat",
+            status: "failure",
+            summary: `Heartbeat for ${agentName} failed`,
+            startedAt,
+            endedAt: new Date().toISOString(),
+            durationMs: Date.now() - startMs,
+            agent: agentName,
+            sessionId,
+            error: errMsg,
+          });
+          this.onError?.(`Cron heartbeat "${entry.name}" failed: ${errMsg}`);
         });
-        this.onError?.(`Cron heartbeat "${entry.name}" failed: ${errMsg}`);
-      });
     } catch (err) {
       this.heartbeatRunning.delete(heartbeatKey);
       const errMsg = err instanceof Error ? err.message : String(err);
@@ -308,7 +313,7 @@ export class Cron {
   private isSessionAlive(sessionId: string): boolean {
     try {
       const sessions = this.manager.status();
-      return sessions.some(s => s.sessionId === sessionId);
+      return sessions.some((s) => s.sessionId === sessionId);
     } catch {
       return false;
     }
@@ -336,34 +341,36 @@ export class Cron {
     const startedAt = new Date().toISOString();
     const startMs = Date.now();
 
-    handler().then(() => {
-      this.handlerRunning.delete(entry.name);
-      this.checkPendingTrigger(entry);
-      this.appendJobResult({
-        jobName: entry.name,
-        type: "job",
-        status: "success",
-        summary: `JS handler "${entry.name}" completed`,
-        startedAt,
-        endedAt: new Date().toISOString(),
-        durationMs: Date.now() - startMs,
+    handler()
+      .then(() => {
+        this.handlerRunning.delete(entry.name);
+        this.checkPendingTrigger(entry);
+        this.appendJobResult({
+          jobName: entry.name,
+          type: "job",
+          status: "success",
+          summary: `JS handler "${entry.name}" completed`,
+          startedAt,
+          endedAt: new Date().toISOString(),
+          durationMs: Date.now() - startMs,
+        });
+      })
+      .catch((err) => {
+        this.handlerRunning.delete(entry.name);
+        this.checkPendingTrigger(entry);
+        const errMsg = err instanceof Error ? err.message : String(err);
+        this.appendJobResult({
+          jobName: entry.name,
+          type: "job",
+          status: "failure",
+          summary: `JS handler "${entry.name}" failed`,
+          startedAt,
+          endedAt: new Date().toISOString(),
+          durationMs: Date.now() - startMs,
+          error: errMsg,
+        });
+        this.onError?.(`Cron handler "${entry.name}" failed: ${errMsg}`);
       });
-    }).catch((err) => {
-      this.handlerRunning.delete(entry.name);
-      this.checkPendingTrigger(entry);
-      const errMsg = err instanceof Error ? err.message : String(err);
-      this.appendJobResult({
-        jobName: entry.name,
-        type: "job",
-        status: "failure",
-        summary: `JS handler "${entry.name}" failed`,
-        startedAt,
-        endedAt: new Date().toISOString(),
-        durationMs: Date.now() - startMs,
-        error: errMsg,
-      });
-      this.onError?.(`Cron handler "${entry.name}" failed: ${errMsg}`);
-    });
   }
 
   // ── Detached agent job: spawn separate OS process ───────────────────
@@ -387,7 +394,9 @@ export class Cron {
         // Process still running — skip this fire
         const result = this.makeSkipResult(entry, "job");
         this.appendJobResult(result);
-        this.onError?.(`Cron detached job "${entry.name}" skipped — detached process still running (pid=${tracked.pid})`);
+        this.onError?.(
+          `Cron detached job "${entry.name}" skipped — detached process still running (pid=${tracked.pid})`,
+        );
         return;
       }
       // Process is no longer running — clear tracking and allow re-fire

@@ -3,7 +3,14 @@ import { join, dirname } from "node:path";
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { AssistantMessage } from "@mariozechner/pi-ai";
 import type { SubagentManager } from "./manager.js";
-import { readSessionMessages, readArchivedSessionMessages, loadAllSessionMetas, historyDir, listActiveSessionIds, listArchivedSessionIds } from "./persistence.js";
+import {
+  readSessionMessages,
+  readArchivedSessionMessages,
+  loadAllSessionMetas,
+  historyDir,
+  listActiveSessionIds,
+  listArchivedSessionIds,
+} from "./persistence.js";
 import { extractHallucinatedRelPath } from "./tools/may-utils.js";
 import type { PersistedSession } from "./persistence.js";
 
@@ -57,17 +64,17 @@ export interface TaskEvaluationResult {
 
 export interface MaintainAgentOptions {
   manager: SubagentManager;
-  agentName: string;        // which agent to maintain
-  knowledgeDir: string;     // path to agent's knowledge/
-  persistDir: string;       // path to .state/ (reserved for future performance tracking)
-  workflowDir?: string;     // path to agent's workflows/ (reserved for future tool health checks)
+  agentName: string; // which agent to maintain
+  knowledgeDir: string; // path to agent's knowledge/
+  persistDir: string; // path to .state/ (reserved for future performance tracking)
+  workflowDir?: string; // path to agent's workflows/ (reserved for future tool health checks)
 }
 
 export interface MaintenanceResult {
-  lessonsPruned: number;        // how many lessons were consolidated/removed
-  suggestions: string[];        // suggested changes for domain.md (human reviews)
-  staleItems: string[];         // stale knowledge detected
-  toolIssues: string[];         // broken/missing tools detected
+  lessonsPruned: number; // how many lessons were consolidated/removed
+  suggestions: string[]; // suggested changes for domain.md (human reviews)
+  staleItems: string[]; // stale knowledge detected
+  toolIssues: string[]; // broken/missing tools detected
 }
 
 // ── Usage extraction ───────────────────────────────────────────────────
@@ -104,18 +111,18 @@ export function extractUsage(messages: AgentMessage[]): UsageSummary {
 /** A single step in a failure chain: a tool call and its result. */
 export interface FailureStep {
   tool: string;
-  args: string;      // compact JSON of arguments
-  result: string;    // first 200 chars of result text
+  args: string; // compact JSON of arguments
+  result: string; // first 200 chars of result text
   isError: boolean;
 }
 
 /** A causal failure chain: trigger error → recovery attempts → eventual resolution. */
 export interface FailureChain {
-  trigger: FailureStep;       // the tool call that started the chain
-  recovery: FailureStep[];    // subsequent attempts to recover
-  resolution: FailureStep | null;  // the call that finally succeeded (null if never resolved)
-  wastedCalls: number;        // number of calls wasted in this chain
-  rootCause: string;          // short description of why the chain started
+  trigger: FailureStep; // the tool call that started the chain
+  recovery: FailureStep[]; // subsequent attempts to recover
+  resolution: FailureStep | null; // the call that finally succeeded (null if never resolved)
+  wastedCalls: number; // number of calls wasted in this chain
+  rootCause: string; // short description of why the chain started
 }
 
 /**
@@ -255,7 +262,10 @@ function isExpectedNonZeroExit(command: string, exitCode: string, resultText: st
 
   // Commands with 2>/dev/null that exit 1 with empty output are intentional.
   if (code === 1 && /2>\/dev\/null/.test(command)) {
-    const output = resultText.replace(/^CWD:[^\n]*\n?/, "").replace(/^Exit code \d+\n?/, "").trim();
+    const output = resultText
+      .replace(/^CWD:[^\n]*\n?/, "")
+      .replace(/^Exit code \d+\n?/, "")
+      .trim();
     if (output === "") return true;
   }
 
@@ -361,21 +371,28 @@ export function extractFailureChains(messages: AgentMessage[]): FailureChain[] {
     }
 
     if (msg.role === "toolResult") {
-      const tr = msg as { toolCallId: string; toolName: string; content?: Array<{ type: string; text?: string }>; isError: boolean };
+      const tr = msg as {
+        toolCallId: string;
+        toolName: string;
+        content?: Array<{ type: string; text?: string }>;
+        isError: boolean;
+      };
       const call = pendingCalls.get(tr.toolCallId);
       const toolName = call?.name ?? tr.toolName;
       const callArgs = call?.arguments ?? {};
-      const resultText = tr.content
-        ?.map((c) => c.type === "text" ? (c.text ?? "") : "")
-        .join("")
-        .slice(0, 500) ?? "";
+      const resultText =
+        tr.content
+          ?.map((c) => (c.type === "text" ? (c.text ?? "") : ""))
+          .join("")
+          .slice(0, 500) ?? "";
       pairs.push({
         tool: toolName,
         args: callArgs,
         resultText,
-        isError: tr.isError
-          || isToolOwnError(toolName, resultText, callArgs)
-          || isFindWithNoResults(toolName, callArgs, resultText),
+        isError:
+          tr.isError ||
+          isToolOwnError(toolName, resultText, callArgs) ||
+          isFindWithNoResults(toolName, callArgs, resultText),
       });
       if (call) pendingCalls.delete(tr.toolCallId);
     }
@@ -386,7 +403,10 @@ export function extractFailureChains(messages: AgentMessage[]): FailureChain[] {
 
   while (i < pairs.length) {
     const p = pairs[i];
-    if (!p.isError) { i++; continue; }
+    if (!p.isError) {
+      i++;
+      continue;
+    }
 
     const trigger = pairToStep(p);
     const recovery: FailureStep[] = [];
@@ -420,7 +440,12 @@ export function extractFailureChains(messages: AgentMessage[]): FailureChain[] {
   return chains;
 }
 
-function pairToStep(p: { tool: string; args: Record<string, unknown>; resultText: string; isError: boolean }): FailureStep {
+function pairToStep(p: {
+  tool: string;
+  args: Record<string, unknown>;
+  resultText: string;
+  isError: boolean;
+}): FailureStep {
   return {
     tool: p.tool,
     args: JSON.stringify(p.args).slice(0, 200),
@@ -429,7 +454,10 @@ function pairToStep(p: { tool: string; args: Record<string, unknown>; resultText
   };
 }
 
-function detectIntent(p: { tool: string; args: Record<string, unknown>; resultText: string }): { type: string; path?: string } {
+function detectIntent(p: { tool: string; args: Record<string, unknown>; resultText: string }): {
+  type: string;
+  path?: string;
+} {
   if (p.tool === "read" && typeof p.args.path === "string") {
     return { type: "read-file", path: p.args.path };
   }
@@ -439,7 +467,10 @@ function detectIntent(p: { tool: string; args: Record<string, unknown>; resultTe
   return { type: "unknown" };
 }
 
-function isRecoveryAttempt(p: { tool: string; args: Record<string, unknown> }, intent: { type: string; path?: string }): boolean {
+function isRecoveryAttempt(
+  p: { tool: string; args: Record<string, unknown> },
+  intent: { type: string; path?: string },
+): boolean {
   const cmd = typeof p.args.command === "string" ? p.args.command : "";
   const path = typeof p.args.path === "string" ? p.args.path : "";
 
@@ -461,7 +492,10 @@ function isRecoveryAttempt(p: { tool: string; args: Record<string, unknown> }, i
   return false;
 }
 
-function matchesOriginalIntent(p: { tool: string; args: Record<string, unknown>; isError: boolean }, intent: { type: string; path?: string }): boolean {
+function matchesOriginalIntent(
+  p: { tool: string; args: Record<string, unknown>; isError: boolean },
+  intent: { type: string; path?: string },
+): boolean {
   if (p.isError) return false;
 
   if (intent.type === "read-file" && p.tool === "read" && intent.path) {
@@ -487,7 +521,11 @@ function diagnoseRootCause(trigger: FailureStep, recovery: FailureStep[], resolu
   if (trigger.tool === "exec") {
     const cmd = trigger.args.slice(0, 80);
     let cmdStr = "";
-    try { cmdStr = (JSON.parse(trigger.args) as { command?: string }).command ?? ""; } catch { /* ignore */ }
+    try {
+      cmdStr = (JSON.parse(trigger.args) as { command?: string }).command ?? "";
+    } catch {
+      /* ignore */
+    }
     if (/\b(find|locate)\b/.test(cmdStr) && (!trigger.result.trim() || trigger.result.includes("(no output)"))) {
       return `blind filesystem search returned empty: ${cmd} — agent is guessing paths instead of using cwd`;
     }
@@ -538,12 +576,12 @@ function formatTranscript(messages: AgentMessage[]): string {
     lines.push(`## ${msg.role}`);
 
     if (msg.role === "toolResult") {
-      const fullText = msg.content
-        ?.map((c) => c.type === "text" ? c.text : "")
-        .join("") ?? "";
+      const fullText = msg.content?.map((c) => (c.type === "text" ? c.text : "")).join("") ?? "";
       const truncated = fullText.length > 2000;
       const text = fullText.slice(0, 2000);
-      const suffix = truncated ? ` [REVIEWER NOTE: this tool result was ${fullText.length} chars total — truncated here for review brevity. The agent saw the full output.]` : "";
+      const suffix = truncated
+        ? ` [REVIEWER NOTE: this tool result was ${fullText.length} chars total — truncated here for review brevity. The agent saw the full output.]`
+        : "";
       lines.push(`[tool_result: ${msg.toolName}] ${text}${suffix}`);
     } else if (typeof msg.content === "string") {
       lines.push(msg.content);
@@ -570,12 +608,32 @@ function formatTranscript(messages: AgentMessage[]): string {
 
 /** Parse per-agent task evaluation response from evaluator. */
 function parseTaskEvaluation(text: string): {
-  agents: Record<string, { efficiency: number; quality: number; productive_calls: number; wasted_calls: number; verdict: string; issues: string[] }>;
+  agents: Record<
+    string,
+    {
+      efficiency: number;
+      quality: number;
+      productive_calls: number;
+      wasted_calls: number;
+      verdict: string;
+      issues: string[];
+    }
+  >;
   overall: { efficiency: number; quality: number; verdict: string; result_delivered: boolean };
   lessons: string | null;
 } {
   const defaultResult = {
-    agents: {} as Record<string, { efficiency: number; quality: number; productive_calls: number; wasted_calls: number; verdict: string; issues: string[] }>,
+    agents: {} as Record<
+      string,
+      {
+        efficiency: number;
+        quality: number;
+        productive_calls: number;
+        wasted_calls: number;
+        verdict: string;
+        issues: string[];
+      }
+    >,
     overall: { efficiency: 0, quality: 0, verdict: "needs_improvement", result_delivered: false },
     lessons: null as string | null,
   };
@@ -593,7 +651,7 @@ function parseTaskEvaluation(text: string): {
             productive_calls: typeof s.productive_calls === "number" ? s.productive_calls : 0,
             wasted_calls: typeof s.wasted_calls === "number" ? s.wasted_calls : 0,
             verdict: typeof s.verdict === "string" ? s.verdict : "needs_improvement",
-            issues: Array.isArray(s.issues) ? s.issues as string[] : [],
+            issues: Array.isArray(s.issues) ? (s.issues as string[]) : [],
           };
         }
       }
@@ -745,7 +803,15 @@ export async function evaluateTask(opts: EvaluateTaskOptions): Promise<TaskEvalu
   // Build per-agent failure chains and transcripts
   const perAgentChains: Record<string, FailureChain[]> = {};
   const perAgentTranscripts: string[] = [];
-  let totalUsage: UsageSummary = { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, totalTokens: 0, cost: 0, turns: 0 };
+  let totalUsage: UsageSummary = {
+    inputTokens: 0,
+    outputTokens: 0,
+    cacheReadTokens: 0,
+    cacheWriteTokens: 0,
+    totalTokens: 0,
+    cost: 0,
+    turns: 0,
+  };
 
   for (const child of children) {
     const chains = extractFailureChains(child.messages);
@@ -764,14 +830,18 @@ export async function evaluateTask(opts: EvaluateTaskOptions): Promise<TaskEvalu
 
     const transcript = formatTranscript(child.messages);
     const chainsSection = formatFailureChains(chains);
-    perAgentTranscripts.push([
-      `\n# Agent: ${child.agent} (session ${child.sessionId})`,
-      `## Task: ${child.task}`,
-      `## Status: ${child.status}`,
-      `## Usage: $${usage.cost.toFixed(3)}, ${usage.turns} turns`,
-      chainsSection ? `\n${chainsSection}` : "",
-      `\n## Transcript\n${transcript}`,
-    ].filter(Boolean).join("\n"));
+    perAgentTranscripts.push(
+      [
+        `\n# Agent: ${child.agent} (session ${child.sessionId})`,
+        `## Task: ${child.task}`,
+        `## Status: ${child.status}`,
+        `## Usage: $${usage.cost.toFixed(3)}, ${usage.turns} turns`,
+        chainsSection ? `\n${chainsSection}` : "",
+        `\n## Transcript\n${transcript}`,
+      ]
+        .filter(Boolean)
+        .join("\n"),
+    );
   }
 
   // Build the evaluation prompt
@@ -795,20 +865,20 @@ export async function evaluateTask(opts: EvaluateTaskOptions): Promise<TaskEvalu
   // Run evaluator agent with retry on malformed output
   let responseText = "";
   let parsed = parseTaskEvaluation("");
-  
+
   const evalSessionId = manager.run("evaluator", prompt);
   const evalResult = await manager.waitFor(evalSessionId);
   responseText = evalResult?.lastAssistantText ?? "";
   parsed = parseTaskEvaluation(responseText);
-  
+
   // Retry once if evaluator produced no agent scores (malformed or missing JSON)
   const hasAgentScores = Object.keys(parsed.agents).length > 0;
   if (!hasAgentScores && children.length > 0) {
-    const retryPrompt = 
+    const retryPrompt =
       `Your previous response did not contain a valid JSON scores block. ` +
       `Please output ONLY the JSON scores block in a \`\`\`json code fence, ` +
       `followed by a ### Lessons section. No other text.\n\n` +
-      `Agents to score: ${[...new Set(children.map(c => c.agent))].join(", ")}\n\n` +
+      `Agents to score: ${[...new Set(children.map((c) => c.agent))].join(", ")}\n\n` +
       `Your previous response was:\n${responseText.slice(0, 2000)}`;
     const retrySessionId = manager.run("evaluator", retryPrompt);
     const retryResult = await manager.waitFor(retrySessionId);
@@ -871,19 +941,27 @@ export async function evaluateTask(opts: EvaluateTaskOptions): Promise<TaskEvalu
   for (const child of children) {
     const agentScore = result.agents[child.agent];
     const scoresPath = join(evalDir, `${child.sessionId}.json`);
-    writeFileSync(scoresPath, JSON.stringify({
-      agent: child.agent,
-      sessionId: child.sessionId,
-      efficiency: agentScore?.efficiency ?? 0,
-      quality: agentScore?.quality ?? 0,
-      productive_calls: agentScore?.productive_calls ?? 0,
-      wasted_calls: agentScore?.wasted_calls ?? 0,
-      verdict: agentScore?.verdict ?? "needs_improvement",
-      issues: agentScore?.issues ?? [],
-      overall: result.overall,
-      usage: extractUsage(child.messages),
-      failureChains: perAgentChains[child.agent] ?? [],
-    }, null, 2), "utf-8");
+    writeFileSync(
+      scoresPath,
+      JSON.stringify(
+        {
+          agent: child.agent,
+          sessionId: child.sessionId,
+          efficiency: agentScore?.efficiency ?? 0,
+          quality: agentScore?.quality ?? 0,
+          productive_calls: agentScore?.productive_calls ?? 0,
+          wasted_calls: agentScore?.wasted_calls ?? 0,
+          verdict: agentScore?.verdict ?? "needs_improvement",
+          issues: agentScore?.issues ?? [],
+          overall: result.overall,
+          usage: extractUsage(child.messages),
+          failureChains: perAgentChains[child.agent] ?? [],
+        },
+        null,
+        2,
+      ),
+      "utf-8",
+    );
   }
 
   // Append lessons to per-agent knowledge/lessons.md
@@ -1025,16 +1103,22 @@ export interface AgentScoreSummary {
   trend: "improving" | "declining" | "stable";
 }
 
-export function getAgentScoreSummary(
-  persistDir: string,
-): Record<string, AgentScoreSummary> {
+export function getAgentScoreSummary(persistDir: string): Record<string, AgentScoreSummary> {
   const evalsDir = join(persistDir, "evaluations");
   if (!existsSync(evalsDir)) return {};
 
-  const files = readdirSync(evalsDir).filter((f) => f.endsWith(".json")).sort();
+  const files = readdirSync(evalsDir)
+    .filter((f) => f.endsWith(".json"))
+    .sort();
   const accum: Record<
     string,
-    { totalEfficiency: number; totalQuality: number; count: number; verdicts: Record<string, number>; orderedEfficiencies: number[] }
+    {
+      totalEfficiency: number;
+      totalQuality: number;
+      count: number;
+      verdicts: Record<string, number>;
+      orderedEfficiencies: number[];
+    }
   > = {};
 
   for (const file of files) {
@@ -1112,10 +1196,7 @@ function computeTrend(efficiencies: number[]): "improving" | "declining" | "stab
  *
  * Returns the number of evaluation files written.
  */
-export function writeSkippedEvaluations(
-  persistDir: string,
-  skipAgents: Set<string> = new Set(["evaluator"]),
-): number {
+export function writeSkippedEvaluations(persistDir: string, skipAgents: Set<string> = new Set(["evaluator"])): number {
   const evalDir = join(persistDir, "evaluations");
   mkdirSync(evalDir, { recursive: true });
 
@@ -1184,10 +1265,7 @@ export function writeSkippedEvaluations(
   // because they have no meta.json. They can never be LLM-evaluated
   // (evaluator needs agent info), so write a deterministic skip.
   const knownSessionIds = new Set(Object.keys(allSessions));
-  const allDirIds = new Set([
-    ...listActiveSessionIds(persistDir),
-    ...listArchivedSessionIds(persistDir),
-  ]);
+  const allDirIds = new Set([...listActiveSessionIds(persistDir), ...listArchivedSessionIds(persistDir)]);
 
   for (const sessionId of allDirIds) {
     // Already handled in the meta-based loop above

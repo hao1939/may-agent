@@ -22,13 +22,21 @@ import { summarizeForHandoff } from "./handoff.js";
 // ── Tool schema ────────────────────────────────────────────────────────
 
 const WorkflowToolParams: TSchema = Type.Object({
-  action: StringEnum(["list", "run", "resume"] as const, { description: "Action to perform. Use 'resume' to continue a workflow that was interrupted by a crash." }),
+  action: StringEnum(["list", "run", "resume"] as const, {
+    description: "Action to perform. Use 'resume' to continue a workflow that was interrupted by a crash.",
+  }),
   name: Type.Optional(Type.String({ description: "Workflow name to execute (required for 'run')" })),
   task: Type.Optional(Type.String({ description: "Task to pass to the workflow (required for 'run')" })),
-  workflowRunId: Type.Optional(Type.String({ description: "Previous workflow run ID to resume from (required for 'resume')" })),
+  workflowRunId: Type.Optional(
+    Type.String({ description: "Previous workflow run ID to resume from (required for 'resume')" }),
+  ),
 });
-interface WorkflowInput { action: "list" | "run" | "resume"; name?: string; task?: string; workflowRunId?: string; }
-
+interface WorkflowInput {
+  action: "list" | "run" | "resume";
+  name?: string;
+  task?: string;
+  workflowRunId?: string;
+}
 
 // ── Helpers ────────────────────────────────────────────────────────────
 
@@ -61,7 +69,7 @@ function buildStepSummaries(completedSteps: CompletedStep[]): WorkflowStepSummar
 }
 
 async function loadWorkflow(filePath: string): Promise<WorkflowModule> {
-  const mod = await import(filePath + "?t=" + (++importCounter));
+  const mod = await import(filePath + "?t=" + ++importCounter);
   if (typeof mod.name !== "string") {
     throw new Error(`Workflow file ${filePath} must export a 'name' string`);
   }
@@ -86,7 +94,10 @@ function listWorkflowFiles(workflowDir: string): string[] {
   }
 }
 
-async function findWorkflow(workflowDir: string, name: string): Promise<{ workflow: WorkflowModule | null; error: string | null }> {
+async function findWorkflow(
+  workflowDir: string,
+  name: string,
+): Promise<{ workflow: WorkflowModule | null; error: string | null }> {
   const files = listWorkflowFiles(workflowDir);
   let loadError: string | null = null;
 
@@ -101,9 +112,7 @@ async function findWorkflow(workflowDir: string, name: string): Promise<{ workfl
     }
   }
 
-  const error = loadError
-    ? `Workflow "${name}" not found (load error: ${loadError})`
-    : `Workflow "${name}" not found`;
+  const error = loadError ? `Workflow "${name}" not found (load error: ${loadError})` : `Workflow "${name}" not found`;
   return { workflow: null, error };
 }
 
@@ -294,8 +303,13 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
         onEvent?.({ type: "workflow_start", workflow: subWf.name, task: wfTask });
 
         const sub = await executeWorkflow(
-          subWf, wfTask, depth + 1, parentSessionId, runId,
-          completedSteps, steeringQueue,
+          subWf,
+          wfTask,
+          depth + 1,
+          parentSessionId,
+          runId,
+          completedSteps,
+          steeringQueue,
         );
 
         if (sub.result.type === "done") {
@@ -317,9 +331,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
       // Finalize the workflow run
       run.endedAt = Date.now();
       run.status = result.type === "done" ? "done" : "escalated";
-      run.result = result.type === "done"
-        ? { summary: result.summary }
-        : { reason: result.reason };
+      run.result = result.type === "done" ? { summary: result.summary } : { reason: result.reason };
       if (persistDir) saveWorkflowRun(persistDir, run);
 
       return { result, runId, steps: localSteps };
@@ -355,8 +367,14 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
 
     try {
       const { result, runId } = await executeWorkflow(
-        workflow, task, depth, parentSessionId, parentWorkflowRunId,
-        completedSteps, steeringQueue, previousRun,
+        workflow,
+        task,
+        depth,
+        parentSessionId,
+        parentWorkflowRunId,
+        completedSteps,
+        steeringQueue,
+        previousRun,
       );
 
       activeSteeringQueue = null;
@@ -367,16 +385,23 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
       if (result.type === "done") {
         onEvent?.({ type: "workflow_done", summary: result.summary });
         const toolResult: WorkflowToolResult = {
-          type: "done", workflow: workflow.name, workflowRunId: runId,
-          summary: result.summary, steps: stepSummaries,
+          type: "done",
+          workflow: workflow.name,
+          workflowRunId: runId,
+          summary: result.summary,
+          steps: stepSummaries,
         };
         return textResult(JSON.stringify(toolResult, null, 2));
       }
 
       onEvent?.({ type: "workflow_escalate", reason: result.reason });
       const toolResult: WorkflowToolResult = {
-        type: "escalated", workflow: workflow.name, workflowRunId: runId,
-        reason: result.reason, context: result.context, steps: stepSummaries,
+        type: "escalated",
+        workflow: workflow.name,
+        workflowRunId: runId,
+        reason: result.reason,
+        context: result.context,
+        steps: stepSummaries,
       };
       return textResult(JSON.stringify(toolResult, null, 2));
     } catch (err) {
@@ -468,7 +493,9 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
 
           const prevRun = readWorkflowRun(persistDir, params.workflowRunId);
           if (!prevRun) {
-            return textResult(JSON.stringify({ type: "error", error: `Workflow run "${params.workflowRunId}" not found` }));
+            return textResult(
+              JSON.stringify({ type: "error", error: `Workflow run "${params.workflowRunId}" not found` }),
+            );
           }
 
           const { workflow: resumeWf, error: resumeFindError } = await findWorkflow(workflowDir, prevRun.workflow);
@@ -477,8 +504,12 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
           }
 
           return runOrResume(
-            resumeWf, prevRun.task, prevRun.depth,
-            prevRun.parentSessionId, prevRun.parentWorkflowRunId, prevRun,
+            resumeWf,
+            prevRun.task,
+            prevRun.depth,
+            prevRun.parentSessionId,
+            prevRun.parentWorkflowRunId,
+            prevRun,
           );
         }
 

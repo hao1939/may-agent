@@ -22,8 +22,16 @@ import type { SubagentManager } from "../../lib/index.js";
 // ── Valid command types (for validation) ────────────────────────────────
 
 const VALID_COMMAND_TYPES = new Set([
-  "steer", "cancel", "cancel_all", "cancel_task", "close",
-  "status", "input", "run", "reload_agents", "restart",
+  "steer",
+  "cancel",
+  "cancel_all",
+  "cancel_task",
+  "close",
+  "status",
+  "input",
+  "run",
+  "reload_agents",
+  "restart",
 ]);
 
 export interface SocketUIOptions {
@@ -73,7 +81,10 @@ export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
     const alive = await isSocketAlive(socketPath);
     if (alive) {
       // Another instance owns this socket — run without one
-      bus.emit({ type: "info", message: `[control] Socket ${socketPath} is owned by another instance. Running WITHOUT a control socket. Set INSTANCE=<name> to use a separate socket.` });
+      bus.emit({
+        type: "info",
+        message: `[control] Socket ${socketPath} is owned by another instance. Running WITHOUT a control socket. Set INSTANCE=<name> to use a separate socket.`,
+      });
       return {
         close: () => {},
         clientCount: () => 0,
@@ -103,21 +114,23 @@ export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
 
     // Welcome message with process metadata and current state (L6)
     const status = manager.status();
-    socket.write(JSON.stringify({
-      type: "connected",
-      pid: process.pid,
-      agent: agentName,
-      instance,
-      sessionId: getSessionId(),
-      activeAgents: status
-        .filter((s) => s.status === "running" || s.status === "idle")
-        .map((s) => ({
-          agent: s.agent,
-          sessionId: s.sessionId,
-          status: s.status,
-          task: s.task.slice(0, 100),
-        })),
-    }) + "\n");
+    socket.write(
+      JSON.stringify({
+        type: "connected",
+        pid: process.pid,
+        agent: agentName,
+        instance,
+        sessionId: getSessionId(),
+        activeAgents: status
+          .filter((s) => s.status === "running" || s.status === "idle")
+          .map((s) => ({
+            agent: s.agent,
+            sessionId: s.sessionId,
+            status: s.status,
+            task: s.task.slice(0, 100),
+          })),
+      }) + "\n",
+    );
 
     // Handle incoming commands
     let buffer = "";
@@ -141,30 +154,38 @@ export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
         // Validate command type (L4)
         const cmdType = cmd.type;
         if (typeof cmdType !== "string" || !VALID_COMMAND_TYPES.has(cmdType)) {
-          socket.write(JSON.stringify({
-            type: "error",
-            command: cmdType ?? null,
-            message: `Unknown command type: ${String(cmdType)}`,
-          }) + "\n");
+          socket.write(
+            JSON.stringify({
+              type: "error",
+              command: cmdType ?? null,
+              message: `Unknown command type: ${String(cmdType)}`,
+            }) + "\n",
+          );
           continue;
         }
 
         // Dispatch and propagate handler result (L5)
         const result = bus.command(cmd as Parameters<typeof bus.command>[0]);
         if (result && !result.ok) {
-          socket.write(JSON.stringify({
-            type: "error",
-            command: cmdType,
-            message: result.message ?? "Command failed",
-          }) + "\n");
+          socket.write(
+            JSON.stringify({
+              type: "error",
+              command: cmdType,
+              message: result.message ?? "Command failed",
+            }) + "\n",
+          );
         } else {
           socket.write(JSON.stringify({ type: "ok", command: cmdType }) + "\n");
         }
       }
     });
 
-    socket.on("close", () => { clients.delete(socket); });
-    socket.on("error", () => { clients.delete(socket); });
+    socket.on("close", () => {
+      clients.delete(socket);
+    });
+    socket.on("error", () => {
+      clients.delete(socket);
+    });
   });
 
   server.listen(socketPath, () => {
@@ -184,7 +205,9 @@ export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
     try {
       server.close();
       if (existsSync(socketPath)) unlinkSync(socketPath);
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   };
   process.on("exit", cleanup);
 

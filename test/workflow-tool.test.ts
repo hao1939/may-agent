@@ -86,16 +86,22 @@ describe("workflow tool: list", () => {
   });
 
   it("lists workflows from .ts files", async () => {
-    writeWorkflow("alpha.ts", `
+    writeWorkflow(
+      "alpha.ts",
+      `
       export const name = "alpha";
       export const description = "Alpha workflow";
       export async function execute(ctx) { return ctx.done("ok"); }
-    `);
-    writeWorkflow("beta.ts", `
+    `,
+    );
+    writeWorkflow(
+      "beta.ts",
+      `
       export const name = "beta";
       export const description = "Beta workflow";
       export async function execute(ctx) { return ctx.done("ok"); }
-    `);
+    `,
+    );
     // Non-.ts file should be ignored
     writeFileSync(join(workflowDir, "README.md"), "ignored", "utf-8");
 
@@ -132,10 +138,13 @@ describe("workflow tool: list", () => {
   });
 
   it("uses default description when not exported", async () => {
-    writeWorkflow("minimal.ts", `
+    writeWorkflow(
+      "minimal.ts",
+      `
       export const name = "minimal";
       export async function execute(ctx) { return ctx.done("ok"); }
-    `);
+    `,
+    );
 
     const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
     const tool = createWorkflowTool({ manager, workflowDir });
@@ -169,13 +178,16 @@ describe("workflow tool: run", () => {
   });
 
   it("executes a simple workflow that returns done", async () => {
-    writeWorkflow("simple.ts", `
+    writeWorkflow(
+      "simple.ts",
+      `
       export const name = "simple";
       export const description = "A simple workflow";
       export async function execute(ctx) {
         return ctx.done("completed: " + ctx.task);
       }
-    `);
+    `,
+    );
 
     const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
     const tool = createWorkflowTool({ manager, workflowDir });
@@ -195,13 +207,16 @@ describe("workflow tool: run", () => {
   });
 
   it("executes a workflow that escalates", async () => {
-    writeWorkflow("escalating.ts", `
+    writeWorkflow(
+      "escalating.ts",
+      `
       export const name = "escalating";
       export const description = "Always escalates";
       export async function execute(ctx) {
         return ctx.escalate("can't handle this", { reason: "too complex" });
       }
-    `);
+    `,
+    );
 
     const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
     const tool = createWorkflowTool({ manager, workflowDir });
@@ -222,13 +237,16 @@ describe("workflow tool: run", () => {
   });
 
   it("catches workflow crashes and returns error", async () => {
-    writeWorkflow("crashing.ts", `
+    writeWorkflow(
+      "crashing.ts",
+      `
       export const name = "crashing";
       export const description = "Throws an error";
       export async function execute(ctx) {
         throw new Error("boom!");
       }
-    `);
+    `,
+    );
 
     const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
     const tool = createWorkflowTool({ manager, workflowDir });
@@ -248,7 +266,9 @@ describe("workflow tool: run", () => {
   });
 
   it("emits workflow events via onEvent callback", async () => {
-    writeWorkflow("evented.ts", `
+    writeWorkflow(
+      "evented.ts",
+      `
       export const name = "evented";
       export const description = "Emits custom events";
       export async function execute(ctx) {
@@ -256,7 +276,8 @@ describe("workflow tool: run", () => {
         ctx.emit({ type: "step_done", step: "custom-step" });
         return ctx.done("done with events");
       }
-    `);
+    `,
+    );
 
     const events: WorkflowEvent[] = [];
     const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
@@ -281,13 +302,16 @@ describe("workflow tool: run", () => {
   });
 
   it("emits workflow_escalate event on escalation", async () => {
-    writeWorkflow("esc-event.ts", `
+    writeWorkflow(
+      "esc-event.ts",
+      `
       export const name = "esc-event";
       export const description = "Escalates with event";
       export async function execute(ctx) {
         return ctx.escalate("nope");
       }
-    `);
+    `,
+    );
 
     const events: WorkflowEvent[] = [];
     const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
@@ -330,13 +354,16 @@ describe("workflow tool: steering", () => {
   });
 
   it("isRunning is false after a workflow completes", async () => {
-    writeWorkflow("quick.ts", `
+    writeWorkflow(
+      "quick.ts",
+      `
       export const name = "quick";
       export const description = "Quick workflow";
       export async function execute(ctx) {
         return ctx.done("done");
       }
-    `);
+    `,
+    );
 
     const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
     const tool = createWorkflowTool({ manager, workflowDir });
@@ -352,13 +379,16 @@ describe("workflow tool: steering", () => {
   });
 
   it("isRunning is false after a workflow crashes", async () => {
-    writeWorkflow("crasher.ts", `
+    writeWorkflow(
+      "crasher.ts",
+      `
       export const name = "crasher";
       export const description = "Crashes";
       export async function execute(ctx) {
         throw new Error("crash");
       }
-    `);
+    `,
+    );
 
     const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
     const tool = createWorkflowTool({ manager, workflowDir });
@@ -374,13 +404,16 @@ describe("workflow tool: steering", () => {
   });
 
   it("isRunning is false after a workflow escalates", async () => {
-    writeWorkflow("esc.ts", `
+    writeWorkflow(
+      "esc.ts",
+      `
       export const name = "esc";
       export const description = "Escalates";
       export async function execute(ctx) {
         return ctx.escalate("nope");
       }
-    `);
+    `,
+    );
 
     const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
     const tool = createWorkflowTool({ manager, workflowDir });
@@ -399,7 +432,9 @@ describe("workflow tool: steering", () => {
     // This workflow calls runAgent but we pre-queue a steering signal.
     // Since runAgent checks the queue before running the agent, it should
     // throw WorkflowInterrupted immediately without ever calling manager.run().
-    writeWorkflow("steerable.ts", `
+    writeWorkflow(
+      "steerable.ts",
+      `
       export const name = "steerable";
       export const description = "Workflow that can be steered";
       export async function execute(ctx) {
@@ -407,7 +442,8 @@ describe("workflow tool: steering", () => {
         const result = await ctx.runAgent("coder", "do something");
         return ctx.done("should not reach here");
       }
-    `);
+    `,
+    );
 
     const events: WorkflowEvent[] = [];
     const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
@@ -457,7 +493,9 @@ describe("workflow tool: steering", () => {
   it("pre-queued steering signal interrupts workflow before first runAgent", async () => {
     // Write a workflow that uses a global signal to indicate it's ready,
     // then waits for a signal to proceed. This avoids flaky setTimeout timing.
-    writeWorkflow("delayed.ts", `
+    writeWorkflow(
+      "delayed.ts",
+      `
       export const name = "delayed";
       export const description = "Delays then calls runAgent";
       export async function execute(ctx) {
@@ -470,7 +508,8 @@ describe("workflow tool: steering", () => {
         const result = await ctx.runAgent("coder", "do something");
         return ctx.done("should not reach here");
       }
-    `);
+    `,
+    );
 
     const events: WorkflowEvent[] = [];
     const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
@@ -517,7 +556,9 @@ describe("workflow tool: steering", () => {
   it("steering after one completed step includes that step in completedSteps", async () => {
     // Write a workflow that emits a signal when it's past the first step
     // and ready for the steering signal
-    writeWorkflow("two-step.ts", `
+    writeWorkflow(
+      "two-step.ts",
+      `
       export const name = "two-step";
       export const description = "Two step workflow";
       export async function execute(ctx) {
@@ -534,7 +575,8 @@ describe("workflow tool: steering", () => {
         const result = await ctx.runAgent("coder", "implement");
         return ctx.done("done");
       }
-    `);
+    `,
+    );
 
     const events: WorkflowEvent[] = [];
     const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
@@ -570,7 +612,9 @@ describe("workflow tool: steering", () => {
   });
 
   it("multiple steer() calls queue multiple signals, first one wins", async () => {
-    writeWorkflow("multi-steer.ts", `
+    writeWorkflow(
+      "multi-steer.ts",
+      `
       export const name = "multi-steer";
       export const description = "Multi-steer test";
       export async function execute(ctx) {
@@ -580,7 +624,8 @@ describe("workflow tool: steering", () => {
         const result = await ctx.runAgent("coder", "first");
         return ctx.done("done");
       }
-    `);
+    `,
+    );
 
     const events: WorkflowEvent[] = [];
     const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });

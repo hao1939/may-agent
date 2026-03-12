@@ -14,11 +14,15 @@ describe("isOverflowError", () => {
   });
 
   it("detects Google overflow", () => {
-    expect(isOverflowError("The input token count (1196265) exceeds the maximum number of tokens allowed (1048575)")).toBe(true);
+    expect(
+      isOverflowError("The input token count (1196265) exceeds the maximum number of tokens allowed (1048575)"),
+    ).toBe(true);
   });
 
   it("detects xAI overflow", () => {
-    expect(isOverflowError("This model's maximum prompt length is 131072 but the request contains 537812 tokens")).toBe(true);
+    expect(isOverflowError("This model's maximum prompt length is 131072 but the request contains 537812 tokens")).toBe(
+      true,
+    );
   });
 
   it("detects generic overflow", () => {
@@ -44,15 +48,21 @@ describe("extractProgress", () => {
   it("produces markdown with task, actions, and error", () => {
     const messages: any[] = [
       { role: "user", content: [{ type: "text", text: "do something" }] },
-      { role: "assistant", content: [
-        { type: "text", text: "I'll read the file first." },
-        { type: "toolCall", name: "read", arguments: { path: "/foo/bar.ts" } },
-      ]},
+      {
+        role: "assistant",
+        content: [
+          { type: "text", text: "I'll read the file first." },
+          { type: "toolCall", name: "read", arguments: { path: "/foo/bar.ts" } },
+        ],
+      },
       { role: "toolResult", content: [{ type: "text", text: "file contents here" }] },
-      { role: "assistant", content: [
-        { type: "text", text: "Now I'll write the fix." },
-        { type: "toolCall", name: "write", arguments: { path: "/foo/bar.ts", content: "fixed" } },
-      ]},
+      {
+        role: "assistant",
+        content: [
+          { type: "text", text: "Now I'll write the fix." },
+          { type: "toolCall", name: "write", arguments: { path: "/foo/bar.ts", content: "fixed" } },
+        ],
+      },
     ];
 
     const result = extractProgress("Fix the bug", messages, "prompt is too long");
@@ -77,11 +87,7 @@ describe("extractProgress", () => {
 
   it("truncates long action args", () => {
     const longArgs = { data: "x".repeat(500) };
-    const messages: any[] = [
-      { role: "assistant", content: [
-        { type: "toolCall", name: "exec", arguments: longArgs },
-      ]},
-    ];
+    const messages: any[] = [{ role: "assistant", content: [{ type: "toolCall", name: "exec", arguments: longArgs }] }];
     const result = extractProgress("task", messages, "overflow");
     expect(result).toContain("...");
     // Should not contain the full 500-char string
@@ -90,14 +96,21 @@ describe("extractProgress", () => {
 
   it("redacts sensitive keys from tool arguments", () => {
     const messages: any[] = [
-      { role: "assistant", content: [
-        { type: "toolCall", name: "exec", arguments: {
-          command: "curl -H 'Authorization: Bearer secret'",
-          apiKey: "sk-secret-123",
-          token: "my-token",
-          path: "/safe/path",
-        }},
-      ]},
+      {
+        role: "assistant",
+        content: [
+          {
+            type: "toolCall",
+            name: "exec",
+            arguments: {
+              command: "curl -H 'Authorization: Bearer secret'",
+              apiKey: "sk-secret-123",
+              token: "my-token",
+              path: "/safe/path",
+            },
+          },
+        ],
+      },
     ];
     const result = extractProgress("task", messages, "overflow");
     expect(result).not.toContain("sk-secret-123");
@@ -110,11 +123,7 @@ describe("extractProgress", () => {
 
   it("truncates long assistant text from the beginning", () => {
     const longText = "START_MARKER " + "x".repeat(3000) + " END_MARKER";
-    const messages: any[] = [
-      { role: "assistant", content: [
-        { type: "text", text: longText },
-      ]},
-    ];
+    const messages: any[] = [{ role: "assistant", content: [{ type: "text", text: longText }] }];
     const result = extractProgress("task", messages, "overflow");
     // Should keep the beginning (with START_MARKER) and truncate the end
     expect(result).toContain("START_MARKER");

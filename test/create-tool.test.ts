@@ -190,7 +190,10 @@ describe("createAgentsTool()", () => {
       let triggered: string | null = null;
       const tool = manager.createAgentsTool({
         agentsRoot,
-        triggerHeartbeat: (name) => { triggered = name; return true; },
+        triggerHeartbeat: (name) => {
+          triggered = name;
+          return true;
+        },
       });
 
       const result = await tool.execute("tc1", {

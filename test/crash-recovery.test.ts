@@ -69,9 +69,7 @@ function assistantMessage(text: string): AgentMessage {
 function toolCallMessage(toolCallId: string, toolName: string): AgentMessage {
   return {
     role: "assistant",
-    content: [
-      { type: "toolCall", id: toolCallId, name: toolName, input: {} },
-    ],
+    content: [{ type: "toolCall", id: toolCallId, name: toolName, input: {} }],
     timestamp: Date.now(),
     stopReason: "toolUse",
   } as unknown as AgentMessage;
@@ -199,17 +197,14 @@ describe("Crash Recovery: Sentinel-Driven Crash Detection", () => {
   it("resumeStaleSessions() detects orphan [STARTED] sentinel and resumes session", async () => {
     // Simulate crash: sentinel exists + registry says "running" + no live process
     writeRegistryState(persistDir, {
-      "s_crashed": {
+      s_crashed: {
         agent: "worker",
         task: "important task",
         status: "running",
         startedAt: Date.now() - 30000,
       },
     });
-    setupSession(persistDir, "s_crashed", [
-      userMessage("important task"),
-      assistantMessage("Working on it..."),
-    ]);
+    setupSession(persistDir, "s_crashed", [userMessage("important task"), assistantMessage("Working on it...")]);
     writeSentinel(persistDir, "s_crashed");
 
     const manager = new SubagentManager({ persistDir });
@@ -246,7 +241,7 @@ describe("Crash Recovery: Sentinel-Driven Crash Detection", () => {
 
   it("resumeStaleSessions() interrupts sentinel session with unregistered agent", () => {
     writeRegistryState(persistDir, {
-      "s_unknown": {
+      s_unknown: {
         agent: "nonexistent-agent",
         task: "some task",
         status: "running",
@@ -354,7 +349,7 @@ describe("Crash Recovery: JSONL Rehydration", () => {
     // The session should have the original messages rehydrated
     const messages = manager.progress(sessionId);
     // At minimum, original user + assistant messages should be present
-    const texts = messages.map(m => {
+    const texts = messages.map((m) => {
       if (m.content && Array.isArray(m.content)) {
         return m.content
           .filter((b: any) => b.type === "text")
@@ -380,10 +375,7 @@ describe("Crash Recovery: JSONL Rehydration", () => {
       },
     });
     // Last message is assistant (not user), so resumeSession injects restart notice
-    setupSession(persistDir, sessionId, [
-      userMessage("build module"),
-      assistantMessage("Working on the module..."),
-    ]);
+    setupSession(persistDir, sessionId, [userMessage("build module"), assistantMessage("Working on the module...")]);
 
     const manager = new SubagentManager({ persistDir });
     registerAgent(manager, "worker");
@@ -398,9 +390,9 @@ describe("Crash Recovery: JSONL Rehydration", () => {
     // Read from the session's messages (may be in history now)
     const result = await manager.waitFor(sessionId);
     const allTexts = result.messages
-      .filter(m => m.role === "user")
-      .flatMap(m => (m.content as any[]).filter(b => b.type === "text").map(b => b.text));
-    expect(allTexts.some(t => t.includes("Process restarted"))).toBe(true);
+      .filter((m) => m.role === "user")
+      .flatMap((m) => (m.content as any[]).filter((b) => b.type === "text").map((b) => b.text));
+    expect(allTexts.some((t) => t.includes("Process restarted"))).toBe(true);
   });
 
   it("resumed session with last message=user calls continue() (no extra injection)", async () => {
@@ -414,9 +406,7 @@ describe("Crash Recovery: JSONL Rehydration", () => {
       },
     });
     // Last message is user — resumeSession calls agent.continue() without injecting a new message
-    setupSession(persistDir, sessionId, [
-      userMessage("fix bug"),
-    ]);
+    setupSession(persistDir, sessionId, [userMessage("fix bug")]);
 
     const manager = new SubagentManager({ persistDir });
     registerAgent(manager, "worker");
@@ -428,8 +418,8 @@ describe("Crash Recovery: JSONL Rehydration", () => {
     // because the last message was already a user message (continue() is used)
     const result = await manager.waitFor(sessionId);
     const restartMessages = result.messages
-      .filter(m => m.role === "user")
-      .filter(m => (m.content as any[]).some(b => b.type === "text" && b.text.includes("Process restarted")));
+      .filter((m) => m.role === "user")
+      .filter((m) => (m.content as any[]).some((b) => b.type === "text" && b.text.includes("Process restarted")));
     expect(restartMessages).toHaveLength(0);
   });
 });
@@ -456,10 +446,7 @@ describe("Crash Recovery: Mid-Tool-Call Repair", () => {
       },
     });
     // Session crashed mid-tool-call: last message is assistant with a toolCall
-    setupSession(persistDir, sessionId, [
-      userMessage("run tests"),
-      toolCallMessage("tc_1", "exec"),
-    ]);
+    setupSession(persistDir, sessionId, [userMessage("run tests"), toolCallMessage("tc_1", "exec")]);
 
     const manager = new SubagentManager({ persistDir });
     registerAgent(manager, "worker");
@@ -471,17 +458,15 @@ describe("Crash Recovery: Mid-Tool-Call Repair", () => {
 
     // Verify: the resumed session should have an error toolResult injected
     const result = await manager.waitFor(sessionId);
-    const toolResults = result.messages.filter(m => m.role === "toolResult");
+    const toolResults = result.messages.filter((m) => m.role === "toolResult");
     expect(toolResults.length).toBeGreaterThanOrEqual(1);
 
     // The first toolResult should be an error for the crashed tool call
-    const errorResult = toolResults.find(m =>
-      (m as any).toolCallId === "tc_1" && (m as any).isError === true
-    );
+    const errorResult = toolResults.find((m) => (m as any).toolCallId === "tc_1" && (m as any).isError === true);
     expect(errorResult).toBeDefined();
     const errorText = (errorResult!.content as any[])
-      .filter(b => b.type === "text")
-      .map(b => b.text)
+      .filter((b) => b.type === "text")
+      .map((b) => b.text)
       .join("");
     expect(errorText).toContain("process restarted");
   });
@@ -500,7 +485,7 @@ describe("Crash Recovery: Registry Status Updates", () => {
 
   it("interrupted (unregistered agent) sessions get status=interrupted in registry", () => {
     writeRegistryState(persistDir, {
-      "s_unreg": {
+      s_unreg: {
         agent: "gone-agent",
         task: "lost task",
         status: "running",
@@ -521,7 +506,7 @@ describe("Crash Recovery: Registry Status Updates", () => {
 
   it("resumed sessions get status=running in registry during recovery", async () => {
     writeRegistryState(persistDir, {
-      "s_resuming": {
+      s_resuming: {
         agent: "worker",
         task: "task",
         status: "running",
@@ -545,9 +530,22 @@ describe("Crash Recovery: Registry Status Updates", () => {
 
   it("does not touch done/error/interrupted sessions during recovery", () => {
     writeRegistryState(persistDir, {
-      "s_done": { agent: "a", task: "t", status: "done", startedAt: Date.now() - 60000, endedAt: Date.now() - 55000 },
-      "s_error": { agent: "a", task: "t", status: "error", startedAt: Date.now() - 50000, endedAt: Date.now() - 45000, error: "boom" },
-      "s_int": { agent: "a", task: "t", status: "interrupted", startedAt: Date.now() - 40000, endedAt: Date.now() - 35000 },
+      s_done: { agent: "a", task: "t", status: "done", startedAt: Date.now() - 60000, endedAt: Date.now() - 55000 },
+      s_error: {
+        agent: "a",
+        task: "t",
+        status: "error",
+        startedAt: Date.now() - 50000,
+        endedAt: Date.now() - 45000,
+        error: "boom",
+      },
+      s_int: {
+        agent: "a",
+        task: "t",
+        status: "interrupted",
+        startedAt: Date.now() - 40000,
+        endedAt: Date.now() - 35000,
+      },
     });
 
     const manager = new SubagentManager({ persistDir });

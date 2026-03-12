@@ -17,21 +17,11 @@ import { resolve, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const PROJECT_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
-const EVAL_DIR = resolve(
-  PROJECT_ROOT,
-  process.env.STATE_DIR || ".state",
-  "evaluations",
-);
+const EVAL_DIR = resolve(PROJECT_ROOT, process.env.STATE_DIR || ".state", "evaluations");
 
 // Parse --days argument (default: 7)
 const daysArg = process.argv.find((a) => a.startsWith("--days"));
-const days = daysArg
-  ? parseInt(
-      daysArg.split("=")[1] ||
-        process.argv[process.argv.indexOf(daysArg) + 1] ||
-        "7",
-    )
-  : 7;
+const days = daysArg ? parseInt(daysArg.split("=")[1] || process.argv[process.argv.indexOf(daysArg) + 1] || "7") : 7;
 const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
 
 /** Normalised shape we work with internally. */
@@ -71,55 +61,32 @@ function agentFromFilename(filename: string): string {
 }
 
 /** Normalise either schema into a common shape. */
-function normalise(
-  raw: Record<string, unknown>,
-  filename: string,
-): NormalisedEval {
+function normalise(raw: Record<string, unknown>, filename: string): NormalisedEval {
   // Determine agent
-  const agent =
-    (raw.agent as string) ||
-    agentFromFilename(filename);
+  const agent = (raw.agent as string) || agentFromFilename(filename);
 
   // Determine sessionId
-  const sessionId =
-    (raw.sessionId as string) || filename.replace(/\.json$/, "");
+  const sessionId = (raw.sessionId as string) || filename.replace(/\.json$/, "");
 
   // Scores: nested (modern) or flat (legacy)
-  const scores = raw.scores as
-    | { efficiency?: number; quality?: number; verdict?: string }
-    | undefined;
-  const efficiency =
-    scores?.efficiency ?? (raw.efficiency as number | undefined) ?? 0;
-  const quality =
-    scores?.quality ?? (raw.quality as number | undefined) ?? 0;
-  const verdict =
-    scores?.verdict ?? (raw.verdict as string | undefined) ?? "unknown";
+  const scores = raw.scores as { efficiency?: number; quality?: number; verdict?: string } | undefined;
+  const efficiency = scores?.efficiency ?? (raw.efficiency as number | undefined) ?? 0;
+  const quality = scores?.quality ?? (raw.quality as number | undefined) ?? 0;
+  const verdict = scores?.verdict ?? (raw.verdict as string | undefined) ?? "unknown";
 
   // Counts: nested (modern) or flat (legacy)
-  const counts = raw.counts as
-    | { productive_calls?: number; wasted_calls?: number }
-    | undefined;
-  const productiveCalls =
-    counts?.productive_calls ??
-    (raw.productive_calls as number | undefined) ??
-    0;
-  const wastedCalls =
-    counts?.wasted_calls ?? (raw.wasted_calls as number | undefined) ?? 0;
+  const counts = raw.counts as { productive_calls?: number; wasted_calls?: number } | undefined;
+  const productiveCalls = counts?.productive_calls ?? (raw.productive_calls as number | undefined) ?? 0;
+  const wastedCalls = counts?.wasted_calls ?? (raw.wasted_calls as number | undefined) ?? 0;
 
   // Usage
-  const usage = raw.usage as
-    | { cost?: number; turns?: number }
-    | undefined;
+  const usage = raw.usage as { cost?: number; turns?: number } | undefined;
   const cost = usage?.cost ?? 0;
   const turns = usage?.turns ?? 0;
 
   // Issues & lessons
-  const issues = Array.isArray(raw.issues)
-    ? (raw.issues as string[])
-    : [];
-  const lessons = Array.isArray(raw.lessons)
-    ? (raw.lessons as string[])
-    : [];
+  const issues = Array.isArray(raw.issues) ? (raw.issues as string[]) : [];
+  const lessons = Array.isArray(raw.lessons) ? (raw.lessons as string[]) : [];
 
   return {
     agent,
@@ -161,9 +128,7 @@ try {
 
   for (const file of recentFiles) {
     try {
-      const raw = JSON.parse(
-        readFileSync(join(EVAL_DIR, file), "utf-8"),
-      ) as Record<string, unknown>;
+      const raw = JSON.parse(readFileSync(join(EVAL_DIR, file), "utf-8")) as Record<string, unknown>;
       const data = normalise(raw, file);
       totalSessions++;
       totalCost += data.cost;
@@ -191,8 +156,7 @@ try {
       stats.totalProductive += data.productiveCalls;
       stats.totalCost += data.cost;
       stats.totalTurns += data.turns;
-      stats.verdicts[data.verdict] =
-        (stats.verdicts[data.verdict] || 0) + 1;
+      stats.verdicts[data.verdict] = (stats.verdicts[data.verdict] || 0) + 1;
       if (data.issues.length) stats.issues.push(...data.issues);
       if (data.lessons.length) stats.lessons.push(...data.lessons);
     } catch {
@@ -203,10 +167,8 @@ try {
   // Compute averages
   for (const stats of agentStats.values()) {
     if (stats.sessions > 0) {
-      stats.avgEfficiency =
-        Math.round((stats.avgEfficiency / stats.sessions) * 100) / 100;
-      stats.avgQuality =
-        Math.round((stats.avgQuality / stats.sessions) * 100) / 100;
+      stats.avgEfficiency = Math.round((stats.avgEfficiency / stats.sessions) * 100) / 100;
+      stats.avgQuality = Math.round((stats.avgQuality / stats.sessions) * 100) / 100;
     }
   }
 
@@ -219,45 +181,30 @@ try {
     `║${`Agent Performance — Last ${days} Day(s)`.padStart(Math.ceil((W + `Agent Performance — Last ${days} Day(s)`.length) / 2)).padEnd(W)}║`,
   );
   console.log(`╠${line}╣`);
-  console.log(
-    `║  ${totalSessions} sessions evaluated  |  $${totalCost.toFixed(2)} total cost`.padEnd(W) + `║`,
-  );
+  console.log(`║  ${totalSessions} sessions evaluated  |  $${totalCost.toFixed(2)} total cost`.padEnd(W) + `║`);
   console.log(`╠${line}╣`);
 
   // Sort by sessions (most active first)
-  const sorted = [...agentStats.entries()].sort(
-    (a, b) => b[1].sessions - a[1].sessions,
-  );
+  const sorted = [...agentStats.entries()].sort((a, b) => b[1].sessions - a[1].sessions);
 
   for (const [agent, stats] of sorted) {
-    const effBar = "█"
-      .repeat(Math.round(stats.avgEfficiency * 10))
-      .padEnd(10, "░");
-    const qualBar = "█"
-      .repeat(Math.round(stats.avgQuality * 10))
-      .padEnd(10, "░");
+    const effBar = "█".repeat(Math.round(stats.avgEfficiency * 10)).padEnd(10, "░");
+    const qualBar = "█".repeat(Math.round(stats.avgQuality * 10)).padEnd(10, "░");
     const totalCalls = stats.totalProductive + stats.totalWasted;
-    const wasteRatio =
-      totalCalls > 0
-        ? Math.round((stats.totalWasted / totalCalls) * 100)
-        : 0;
+    const wasteRatio = totalCalls > 0 ? Math.round((stats.totalWasted / totalCalls) * 100) : 0;
 
     console.log(`║`.padEnd(W + 1) + `║`);
     console.log(
-      `║  ${agent.toUpperCase().padEnd(14)} (${stats.sessions} sessions, $${stats.totalCost.toFixed(2)})`.padEnd(W + 1) + `║`,
+      `║  ${agent.toUpperCase().padEnd(14)} (${stats.sessions} sessions, $${stats.totalCost.toFixed(2)})`.padEnd(
+        W + 1,
+      ) + `║`,
     );
-    console.log(
-      `║    Efficiency: ${effBar} ${stats.avgEfficiency.toFixed(2)}`.padEnd(W + 1) + `║`,
-    );
-    console.log(
-      `║    Quality:    ${qualBar} ${stats.avgQuality.toFixed(2)}`.padEnd(W + 1) + `║`,
-    );
+    console.log(`║    Efficiency: ${effBar} ${stats.avgEfficiency.toFixed(2)}`.padEnd(W + 1) + `║`);
+    console.log(`║    Quality:    ${qualBar} ${stats.avgQuality.toFixed(2)}`.padEnd(W + 1) + `║`);
     console.log(
       `║    Waste:      ${wasteRatio}% (${stats.totalWasted} wasted / ${totalCalls} total calls)`.padEnd(W + 1) + `║`,
     );
-    console.log(
-      `║    Turns:      ${stats.totalTurns}`.padEnd(W + 1) + `║`,
-    );
+    console.log(`║    Turns:      ${stats.totalTurns}`.padEnd(W + 1) + `║`);
 
     const verdictStr = Object.entries(stats.verdicts)
       .map(([v, n]) => `${v}:${n}`)
@@ -272,17 +219,12 @@ try {
       const normalised = issue.toLowerCase().trim();
       if (normalised.length > 10) {
         // skip trivially short
-        issueCounts.set(
-          normalised,
-          (issueCounts.get(normalised) || 0) + 1,
-        );
+        issueCounts.set(normalised, (issueCounts.get(normalised) || 0) + 1);
       }
     }
   }
 
-  const topIssues = [...issueCounts.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 10);
+  const topIssues = [...issueCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10);
 
   if (topIssues.length > 0) {
     console.log(`║`.padEnd(W + 1) + `║`);
@@ -290,13 +232,8 @@ try {
     console.log(`║  TOP ISSUES`.padEnd(W + 1) + `║`);
     for (const [issue, count] of topIssues) {
       const maxLen = W - 8; // "║    NNx  " prefix
-      const truncated =
-        issue.length > maxLen
-          ? issue.slice(0, maxLen - 3) + "..."
-          : issue;
-      console.log(
-        `║    ${String(count).padStart(2)}x  ${truncated}`.padEnd(W + 1) + `║`,
-      );
+      const truncated = issue.length > maxLen ? issue.slice(0, maxLen - 3) + "..." : issue;
+      console.log(`║    ${String(count).padStart(2)}x  ${truncated}`.padEnd(W + 1) + `║`);
     }
   }
 
@@ -306,17 +243,12 @@ try {
     for (const lesson of stats.lessons) {
       const normalised = lesson.toLowerCase().trim();
       if (normalised.length > 10) {
-        lessonCounts.set(
-          normalised,
-          (lessonCounts.get(normalised) || 0) + 1,
-        );
+        lessonCounts.set(normalised, (lessonCounts.get(normalised) || 0) + 1);
       }
     }
   }
 
-  const topLessons = [...lessonCounts.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5);
+  const topLessons = [...lessonCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
 
   if (topLessons.length > 0) {
     console.log(`║`.padEnd(W + 1) + `║`);
@@ -324,13 +256,8 @@ try {
     console.log(`║  TOP LESSONS`.padEnd(W + 1) + `║`);
     for (const [lesson, count] of topLessons) {
       const maxLen = W - 8;
-      const truncated =
-        lesson.length > maxLen
-          ? lesson.slice(0, maxLen - 3) + "..."
-          : lesson;
-      console.log(
-        `║    ${String(count).padStart(2)}x  ${truncated}`.padEnd(W + 1) + `║`,
-      );
+      const truncated = lesson.length > maxLen ? lesson.slice(0, maxLen - 3) + "..." : lesson;
+      console.log(`║    ${String(count).padStart(2)}x  ${truncated}`.padEnd(W + 1) + `║`);
     }
   }
 

@@ -22,11 +22,19 @@ function textResult(text: string): AgentToolResult<string> {
 // ── Shared params ──────────────────────────────────────────────────────
 
 const CliAgentParams: TSchema = Type.Object({
-  prompt: Type.String({ description: "The task/prompt to send to the CLI agent. Be specific: include file paths, constraints, what to change, and what to verify." }),
-  timeout: Type.Optional(Type.Number({ description: "Timeout in seconds (default: 180). Increase for complex tasks." })),
+  prompt: Type.String({
+    description:
+      "The task/prompt to send to the CLI agent. Be specific: include file paths, constraints, what to change, and what to verify.",
+  }),
+  timeout: Type.Optional(
+    Type.Number({ description: "Timeout in seconds (default: 180). Increase for complex tasks." }),
+  ),
 });
 
-interface CliAgentInput { prompt: string; timeout?: number; }
+interface CliAgentInput {
+  prompt: string;
+  timeout?: number;
+}
 
 // ── Options ────────────────────────────────────────────────────────────
 
@@ -82,7 +90,9 @@ export function createClaudeCodeTool(opts: CliAgentToolOptions): AgentTool {
       } catch (err: any) {
         const output = (err.stdout ?? "") + (err.stderr ?? "");
         if (err.killed || err.signal === "SIGTERM") {
-          return textResult(`TIMEOUT after ${input.timeout ?? 180}s. Partial output:\n${truncateOutput(output, maxOutput)}`);
+          return textResult(
+            `TIMEOUT after ${input.timeout ?? 180}s. Partial output:\n${truncateOutput(output, maxOutput)}`,
+          );
         }
         const exitCode = err.status ?? "unknown";
         return textResult(`Exit code ${exitCode}:\n${truncateOutput(output || err.message, maxOutput)}`);
@@ -138,7 +148,9 @@ export function createGeminiCliTool(opts: GeminiCliToolOptions): AgentTool {
       } catch (err: any) {
         const output = (err.stdout ?? "") + (err.stderr ?? "");
         if (err.killed || err.signal === "SIGTERM") {
-          return textResult(`TIMEOUT after ${input.timeout ?? 180}s. Partial output:\n${truncateOutput(output, maxOutput)}`);
+          return textResult(
+            `TIMEOUT after ${input.timeout ?? 180}s. Partial output:\n${truncateOutput(output, maxOutput)}`,
+          );
         }
         const exitCode = err.status ?? "unknown";
         return textResult(`Exit code ${exitCode}:\n${truncateOutput(output || err.message, maxOutput)}`);

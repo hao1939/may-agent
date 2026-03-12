@@ -23,7 +23,7 @@ export interface AgentSummary {
   totalSessions: number;
   meanQuality: number;
   meanEfficiency: number;
-  recentTrend: 'improving' | 'declining' | 'stable';
+  recentTrend: "improving" | "declining" | "stable";
   topIssues: string[];
   totalCost: number;
 }
@@ -34,11 +34,11 @@ export interface AgentSummary {
 export function computeAgentSummary(evals: EvalRecord[]): AgentSummary {
   if (evals.length === 0) {
     return {
-      agent: 'unknown',
+      agent: "unknown",
       totalSessions: 0,
       meanQuality: 0,
       meanEfficiency: 0,
-      recentTrend: 'stable',
+      recentTrend: "stable",
       topIssues: [],
       totalCost: 0,
     };
@@ -62,13 +62,13 @@ export function computeAgentSummary(evals: EvalRecord[]): AgentSummary {
   const earlyMean = early.reduce((sum, e) => sum + e.quality, 0) / windowSize;
   const recentMean = recent.reduce((sum, e) => sum + e.quality, 0) / windowSize;
 
-  let recentTrend: 'improving' | 'declining' | 'stable';
+  let recentTrend: "improving" | "declining" | "stable";
   if (recentMean - earlyMean > 0.1) {
-    recentTrend = 'improving';
+    recentTrend = "improving";
   } else if (earlyMean - recentMean > 0.1) {
-    recentTrend = 'declining';
+    recentTrend = "declining";
   } else {
-    recentTrend = 'stable';
+    recentTrend = "stable";
   }
 
   // Top issues — aggregate across all evals, count frequency by issue type
@@ -105,11 +105,7 @@ export function computeAgentSummary(evals: EvalRecord[]): AgentSummary {
  * Find agents that need coaching intervention.
  * Returns agents with meanQuality < threshold on recent N sessions.
  */
-export function findCoachingTargets(
-  allEvals: EvalRecord[],
-  threshold = 0.5,
-  recentWindow = 10,
-): AgentSummary[] {
+export function findCoachingTargets(allEvals: EvalRecord[], threshold = 0.5, recentWindow = 10): AgentSummary[] {
   // Group by agent
   const byAgent = new Map<string, EvalRecord[]>();
   for (const e of allEvals) {

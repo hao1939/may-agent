@@ -57,7 +57,6 @@ class OutputBuffer {
 
     return unread;
   }
-
 }
 
 // ── Process tracking ────────────────────────────────────────────────────
@@ -87,19 +86,27 @@ export interface BackgroundExecToolOptions {
 }
 
 const BackgroundExecParams: TSchema = Type.Object({
-  action: StringEnum(
-    ["spawn", "output", "input", "kill", "list"] as const,
-    { description: "Action to perform on background processes." },
-  ),
+  action: StringEnum(["spawn", "output", "input", "kill", "list"] as const, {
+    description: "Action to perform on background processes.",
+  }),
   command: Type.Optional(Type.String({ description: "Shell command to spawn (required for 'spawn')" })),
   label: Type.Optional(Type.String({ description: "Human-readable label for the process (optional for 'spawn')" })),
   pid: Type.Optional(Type.Number({ description: "Process ID (required for 'output', 'input', 'kill')" })),
   text: Type.Optional(Type.String({ description: "Text to write to stdin (required for 'input')" })),
-  lines: Type.Optional(Type.Number({ description: "Max lines to return (optional for 'output', default: all unread)" })),
+  lines: Type.Optional(
+    Type.Number({ description: "Max lines to return (optional for 'output', default: all unread)" }),
+  ),
   signal: Type.Optional(Type.String({ description: "Signal to send (optional for 'kill', default: SIGTERM)" })),
 });
-interface BackgroundExecInput { action: "spawn" | "output" | "input" | "kill" | "list"; command?: string; label?: string; pid?: number; text?: string; lines?: number; signal?: string; }
-
+interface BackgroundExecInput {
+  action: "spawn" | "output" | "input" | "kill" | "list";
+  command?: string;
+  label?: string;
+  pid?: number;
+  text?: string;
+  lines?: number;
+  signal?: string;
+}
 
 /**
  * Create a background exec tool for managing long-lived child processes.
@@ -107,9 +114,7 @@ interface BackgroundExecInput { action: "spawn" | "output" | "input" | "kill" | 
  * Returns the tool and a cleanup function. The cleanup function kills all
  * tracked processes — call it when the agent's session ends.
  */
-export function createBackgroundExecTool(
-  opts?: BackgroundExecToolOptions,
-): { tool: AgentTool; cleanup: () => void } {
+export function createBackgroundExecTool(opts?: BackgroundExecToolOptions): { tool: AgentTool; cleanup: () => void } {
   const cwd = opts?.cwd ?? process.cwd();
   const denyPatterns = opts?.denyPatterns ?? [];
   const denyMessage = opts?.denyMessage ?? "Command blocked by deny pattern.";
@@ -120,7 +125,11 @@ export function createBackgroundExecTool(
   function cleanup(): void {
     for (const entry of processes.values()) {
       if (entry.alive) {
-        try { entry.process.kill("SIGTERM"); } catch { /* ignore */ }
+        try {
+          entry.process.kill("SIGTERM");
+        } catch {
+          /* ignore */
+        }
       }
     }
     processes.clear();
@@ -150,11 +159,18 @@ export function createBackgroundExecTool(
 
             // Deny pattern check
             if (!allowAgentSpawn && isMetaRecursionCommand(command)) {
-              return textResult(JSON.stringify({ error: "Blocked: command would recursively start the agent runtime. Use socket_watch to interact with other agent processes." }));
+              return textResult(
+                JSON.stringify({
+                  error:
+                    "Blocked: command would recursively start the agent runtime. Use socket_watch to interact with other agent processes.",
+                }),
+              );
             }
             for (const pattern of denyPatterns) {
               if (pattern.test(command)) {
-                return textResult(JSON.stringify({ error: `Blocked: command matches a denied pattern.\n${denyMessage}` }));
+                return textResult(
+                  JSON.stringify({ error: `Blocked: command matches a denied pattern.\n${denyMessage}` }),
+                );
               }
             }
 
@@ -207,19 +223,23 @@ export function createBackgroundExecTool(
             const entry = getProcess(params.pid);
             const text = entry.output.drain(params.lines);
             if (!text) {
-              return textResult(JSON.stringify({
+              return textResult(
+                JSON.stringify({
+                  pid: entry.pid,
+                  alive: entry.alive,
+                  exitCode: entry.exitCode,
+                  output: "(no new output)",
+                }),
+              );
+            }
+            return textResult(
+              JSON.stringify({
                 pid: entry.pid,
                 alive: entry.alive,
                 exitCode: entry.exitCode,
-                output: "(no new output)",
-              }));
-            }
-            return textResult(JSON.stringify({
-              pid: entry.pid,
-              alive: entry.alive,
-              exitCode: entry.exitCode,
-              output: text,
-            }));
+                output: text,
+              }),
+            );
           }
 
           case "input": {
@@ -231,7 +251,9 @@ export function createBackgroundExecTool(
             }
             const entry = getProcess(params.pid);
             if (!entry.alive) {
-              return textResult(JSON.stringify({ error: `Process ${params.pid} is not alive (exit code: ${entry.exitCode})` }));
+              return textResult(
+                JSON.stringify({ error: `Process ${params.pid} is not alive (exit code: ${entry.exitCode})` }),
+              );
             }
             if (!entry.process.stdin) {
               return textResult(JSON.stringify({ error: `Process ${params.pid} has no stdin` }));

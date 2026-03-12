@@ -26,7 +26,12 @@ export function sendSocketCommand(
 ): Promise<SocketResponse> {
   return new Promise((resolve, reject) => {
     let settled = false;
-    const settle = (fn: () => void) => { if (!settled) { settled = true; fn(); } };
+    const settle = (fn: () => void) => {
+      if (!settled) {
+        settled = true;
+        fn();
+      }
+    };
     const client = connect(socketPath);
     const timeoutMs = opts?.timeoutMs ?? 5000;
     const timeout = setTimeout(() => {
@@ -122,7 +127,12 @@ export function waitForSocketEvent(
 ): Promise<SocketEvent> {
   return new Promise((resolve, reject) => {
     let settled = false;
-    const settle = (fn: () => void) => { if (!settled) { settled = true; fn(); } };
+    const settle = (fn: () => void) => {
+      if (!settled) {
+        settled = true;
+        fn();
+      }
+    };
     const client = connect(socketPath);
     const timeoutMs = opts?.timeoutMs ?? 600_000;
     const timeout = setTimeout(() => {
@@ -165,4 +175,3 @@ export function waitForSocketEvent(
     });
   });
 }
-
