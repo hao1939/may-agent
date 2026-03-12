@@ -153,6 +153,11 @@ const manager = new SubagentManager({
   onSessionComplete: (info) => {
     runAgentCleanup(info.agent);
 
+    // Surface errors for completed task sessions
+    if (info.error && info.status === "error") {
+      bus.emit({ type: "info", message: `[${info.agent}] ⚠️ Session ${info.status}: ${info.error}` });
+    }
+
     // Auto-evaluate completed task trees (children of task-mode sessions)
     if (info.parentSessionId && taskSessionId && info.parentSessionId === taskSessionId) {
       setTimeout(async () => {

@@ -128,26 +128,44 @@ export class ChatSession {
     }
 
     // Subsequent messages: wake the idle session or steer the running one
-    this.manager.input(this.sessionId, message).catch((err) => {
-      const msg = err instanceof Error ? err.message : String(err);
-      // Session gone (closed, archived, etc.) — create a fresh one
-      if (msg.includes("not found") || msg.includes("terminal state")) {
-        this.sessionId = null;
-        this.sendMessage(message);
-        return;
-      }
-      this.bus.emit({ type: "info", message: `[chat] Error: ${msg}` });
-    });
+    this.manager
+      .input(this.sessionId, message)
+      .then(() => {
+        // Surface session errors on subsequent messages too
+        const session = this.manager.status().find((s) => s.sessionId === this.sessionId);
+        if (session?.error) {
+          this.bus.emit({ type: "info", message: `[${this.agentName}] ⚠️ ${session.error}` });
+        }
+        this.onDone?.();
+      })
+      .catch((err) => {
+        const msg = err instanceof Error ? err.message : String(err);
+        // Session gone (closed, archived, etc.) — create a fresh one
+        if (msg.includes("not found") || msg.includes("terminal state")) {
+          this.sessionId = null;
+          this.sendMessage(message);
+          return;
+        }
+        this.bus.emit({ type: "info", message: `[chat] Error: ${msg}` });
+        this.onDone?.();
+      });
   }
 
   /**
    * Track session completion for the onDone callback.
    * For autoClose: "never", the session goes idle (not archived).
+   * Surfaces any errors (empty responses, API failures, etc.) to the user.
    */
   private trackCompletion(sessionId: string): void {
     this.manager
       .waitForIdle(sessionId)
       .then(() => {
+        // Surface session errors that would otherwise be silent
+        // (e.g., empty model response, stream errors on idle sessions)
+        const session = this.manager.status().find((s) => s.sessionId === sessionId);
+        if (session?.error) {
+          this.bus.emit({ type: "info", message: `[${this.agentName}] ⚠️ ${session.error}` });
+        }
         this.onDone?.();
       })
       .catch((err) => {
