@@ -48,97 +48,67 @@
   },
   {
     "name": "heartbeat-bob",
-    "type": "job",
+    "type": "heartbeat",
     "intervalMs": 1200000,
     "agent": "bob",
     "message": "[heartbeat] You are Bob. Your files are in agents/bob/. Read agents/bob/heartbeat.md and work through each section top to bottom. End with a 2-3 sentence brief of what you did and found.",
     "enabled": true,
-    "handler": "heartbeat-precheck",
-    "handlerConfig": {
-      "agent": "bob",
-      "heartbeatMessage": "[heartbeat] You are Bob. Your files are in agents/bob/. Read agents/bob/heartbeat.md and work through each section top to bottom. End with a 2-3 sentence brief of what you did and found.",
-      "notifyBrief": true
-    },
     "description": "Bob's mission heartbeat — design, todo drain, philosophy audit (30min, pre-checked)",
-    "lastModified": "2026-03-10T16:18:23.655Z"
+    "lastModified": "2026-03-10T16:18:23.655Z",
+    "notifyBrief": true
   },
   {
     "name": "heartbeat-optimizer",
-    "type": "job",
+    "type": "heartbeat",
     "intervalMs": 1200000,
     "agent": "optimizer",
     "message": "[heartbeat] You are Optimizer. Your files are in agents/optimizer/. Read agents/optimizer/heartbeat.md and work through each section top to bottom.",
     "enabled": true,
-    "handler": "heartbeat-precheck",
-    "handlerConfig": {
-      "agent": "optimizer",
-      "heartbeatMessage": "[heartbeat] You are Optimizer. Your files are in agents/optimizer/. Read agents/optimizer/heartbeat.md and work through each section top to bottom."
-    },
     "description": "Optimizer's heartbeat — find highest-impact improvement (30min, pre-checked)",
     "lastModified": "2026-03-10T16:18:23.657Z"
   },
   {
     "name": "heartbeat-coach",
-    "type": "job",
+    "type": "heartbeat",
     "intervalMs": 1200000,
     "agent": "coach",
     "message": "[heartbeat] You are Coach. Your files are in agents/coach/. Read agents/coach/heartbeat.md and work through each section top to bottom.",
     "enabled": true,
-    "handler": "heartbeat-precheck",
-    "handlerConfig": {
-      "agent": "coach",
-      "heartbeatMessage": "[heartbeat] You are Coach. Your files are in agents/coach/. Read agents/coach/heartbeat.md and work through each section top to bottom.",
-      "notifyBrief": true
-    },
     "description": "Coach heartbeat — triage, coaching, long-term mission work (30min, pre-checked)",
-    "lastModified": "2026-03-10T16:18:23.658Z"
+    "lastModified": "2026-03-10T16:18:23.658Z",
+    "notifyBrief": true
   },
   {
     "name": "heartbeat-evaluator",
-    "type": "job",
+    "type": "heartbeat",
     "intervalMs": 1200000,
     "agent": "evaluator",
     "message": "[heartbeat] You are Evaluator. Your files are in agents/evaluator/. Read agents/evaluator/heartbeat.md and work through each section top to bottom. End with a 2-3 sentence brief of what you evaluated or calibrated.",
     "enabled": true,
-    "handler": "heartbeat-precheck",
-    "handlerConfig": {
-      "agent": "evaluator",
-      "heartbeatMessage": "[heartbeat] You are Evaluator. Your files are in agents/evaluator/. Read agents/evaluator/heartbeat.md and work through each section top to bottom. End with a 2-3 sentence brief of what you evaluated or calibrated.",
-      "notifyBrief": true
-    },
     "description": "Evaluator's heartbeat — review eval quality, calibrate (30min, pre-checked)",
-    "lastModified": "2026-03-10T16:18:23.659Z"
+    "lastModified": "2026-03-10T16:18:23.659Z",
+    "notifyBrief": true
   },
   {
     "name": "heartbeat-amy",
-    "type": "job",
+    "type": "heartbeat",
     "intervalMs": 1800000,
     "agent": "amy",
     "message": "[heartbeat] You are Amy. Your files are in agents/amy/. Read agents/amy/heartbeat.md and work through each section top to bottom.",
     "enabled": true,
-    "handler": "heartbeat-precheck",
-    "handlerConfig": {
-      "agent": "amy",
-      "heartbeatMessage": "[heartbeat] You are Amy. Your files are in agents/amy/. Read agents/amy/heartbeat.md and work through each section top to bottom."
-    },
     "description": "Amy's heartbeat — XHS exploration and insight synthesis (1h, pre-checked)",
     "lastModified": "2026-03-10T16:18:23.661Z"
   },
   {
     "name": "heartbeat-scout",
-    "type": "job",
+    "type": "heartbeat",
     "intervalMs": 1800000,
     "agent": "scout",
     "message": "[heartbeat] You are Scout. Your files are in agents/scout/. Read agents/scout/heartbeat.md and work through each section top to bottom. End with a 2-3 sentence brief of what you researched and found.",
     "enabled": true,
-    "handler": "heartbeat-precheck",
-    "handlerConfig": {
-      "agent": "scout",
-      "heartbeatMessage": "[heartbeat] You are Scout. Your files are in agents/scout/. Read agents/scout/heartbeat.md and work through each section top to bottom. End with a 2-3 sentence brief of what you researched and found.",
-      "notifyBrief": true
-    },
     "description": "Scout's heartbeat — research and discovery (30min, pre-checked)",
-    "lastModified": "2026-03-10T16:18:23.663Z"
+    "lastModified": "2026-03-10T16:18:23.663Z",
+    "notifyBrief": true
   },
   {
     "name": "analyze-failures",
@@ -215,34 +185,24 @@
   },
   {
     "name": "heartbeat-tech-lead",
-    "type": "job",
+    "type": "heartbeat",
     "intervalMs": 1200000,
     "agent": "tech-lead",
     "message": "[heartbeat] Read agents/tech-lead/heartbeat.md and work through each section top to bottom. End with a 2-3 sentence brief of what you built or reviewed.",
     "enabled": true,
-    "handler": "heartbeat-precheck",
-    "handlerConfig": {
-      "agent": "tech-lead",
-      "heartbeatMessage": "[heartbeat] Read agents/tech-lead/heartbeat.md and work through each section top to bottom. End with a 2-3 sentence brief of what you built or reviewed.",
-      "notifyBrief": true
-    },
     "description": "Tech-lead's heartbeat — build pending work, intake new designs, code health (30min, pre-checked)",
-    "lastModified": "2026-03-10T16:18:23.665Z"
+    "lastModified": "2026-03-10T16:18:23.665Z",
+    "notifyBrief": true
   },
   {
     "name": "heartbeat-amy-kimi",
-    "type": "job",
+    "type": "heartbeat",
     "intervalMs": 1800000,
     "agent": "amy-kimi",
     "message": "[heartbeat] Read agents/amy-kimi/heartbeat.md and work through each section top to bottom. End with a 2-3 sentence brief of what you explored and discovered.",
     "enabled": true,
-    "handler": "heartbeat-precheck",
-    "handlerConfig": {
-      "agent": "amy-kimi",
-      "heartbeatMessage": "[heartbeat] Read agents/amy-kimi/heartbeat.md and work through each section top to bottom. End with a 2-3 sentence brief of what you explored and discovered.",
-      "notifyBrief": true
-    },
-    "description": "Amy-Kimi's heartbeat — XHS exploration with Kimi model (30min, pre-checked)"
+    "description": "Amy-Kimi's heartbeat — XHS exploration with Kimi model (30min, pre-checked)",
+    "notifyBrief": true
   },
   {
     "name": "consolidate-memory-bob",
