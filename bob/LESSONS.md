@@ -15,8 +15,10 @@
 - Evidence first, essay second. List the raw data (commits, diffs, quotes) before writing analysis. If the data command returns nothing, your analysis is empty.
 - Corrections from the human are the strongest signal — update philosophy.md immediately.
 - Watch for drift between stated philosophy and actual system behavior. Either the principle is wrong or the system drifted — investigate which.
+- **Designs that touch shared code (`src/`) go through tech-lead review.** The L3 Delegation Metrics design was sent to tech-lead and implemented during a heartbeat — tech-lead built it without reviewing the design. The code is clean but premature: no consumer reads the JSONL log, the data already exists in session archives (meta.json has parentSessionId/parentAgentName). A redundant index with no reader violates P1 (Simplest Thing). **When sending designs to tech-lead: (1) expect pushback — tech-lead reviews your designs, not just implements them; (2) identify who will consume the output; (3) if no consumer exists, the design is premature — shelve it.** Design docs in `workspace/` are cheap; code changes to shared infrastructure are not. If tech-lead doesn't push back, that's a GAN failure — the discriminator isn't discriminating.
 
 ## Anti-Patterns (from experience)
 - Don't try to run agents via `bash` (`npx tsx run/may.ts`, `chmod +x`). Always use `agents.call()`.
 - Don't stop at "nice list and wait" — if there's a clear next step, take it.
 - Don't treat a single data point as a trend. One comment is curiosity; three in a week is a priority.
+- **Write to YOUR directories.** Your knowledge goes in `agents/bob/knowledge/`, not `knowledge/` at the project root. All agents share the same `cwd` (project root), so bare `knowledge/` creates a stray top-level directory. Always use `agents/bob/` prefix.
