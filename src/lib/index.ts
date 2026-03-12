@@ -31,7 +31,6 @@ export { resolveToCwd, resolveReadPath, expandPath } from "./tools/index.js";
 export { createHealthCheckTool } from "./tools/index.js";
 export type { HealthReport } from "./tools/index.js";
 export { createLearnTool } from "./tools/index.js";
-export { buildProjectStructure } from "./tools/index.js";
 export { resolveHallucinatedPath, extractHallucinatedRelPath, isMetaRecursionCommand } from "./tools/index.js";
 export { createScrapeTool } from "./scrape.js";
 export type { ScrapeToolOptions } from "./scrape.js";
@@ -75,8 +74,6 @@ export type {
   FailureStep,
   AgentScoreSummary,
 } from "./evaluator.js";
-export { parseFrontmatter, loadSkillsFromDirs, formatSkillsForPrompt } from "./skills.js";
-export type { Frontmatter, SkillEntry } from "./skills.js";
 export { isOverflowError, extractProgress, writeProgressFile } from "./overflow.js";
 export {
   RegistryStore,
