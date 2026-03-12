@@ -1,0 +1,268 @@
+# How to Use may-agent
+
+## Starting an Instance
+
+```bash
+# Interactive chat with May
+./may.sh --chat --console --socket
+
+# Interactive chat with a different agent
+AGENT=bob ./may.sh --chat --console --socket
+
+# Full production mode (chat + cron + telegram)
+./may.sh --chat --console --socket --cron --telegram
+
+# Cron-only daemon (no interactive chat)
+./may.sh --cron --socket
+
+# One-off task (runs and exits)
+./may.sh task "run the daily review"
+AGENT=bob ./may.sh task "check your periodic tasks"
+```
+
+### Flags
+
+| Flag | Description |
+|------|-------------|
+| `--chat` | Enable interactive chat session (persistent) |
+| `--console` | Enable terminal UI (readline prompt) |
+| `--socket` | Enable Unix socket for external control |
+| `--cron` | Enable cron jobs (heartbeats, JS handlers, scheduled tasks) |
+| `--telegram` | Enable Telegram bot for notifications |
+
+At least one of `--chat`, `--cron`, or `--task` is required.
+
+### Instance Management (may.sh)
+
+```bash
+./may.sh [name] [flags]        # Interactive foreground
+./may.sh start [name] [flags]  # Background (tmux)
+./may.sh stop [name]           # Stop instance
+./may.sh restart [name]        # Hot-reload
+./may.sh list                  # List instances
+./may.sh logs [name]           # Tail logs
+./may.sh attach [name]         # Attach to tmux
+./may.sh send [name] "msg"     # Send message to running instance
+./may.sh task "msg"            # One-off task (foreground, exits on completion)
+```
+
+## Chat Session
+
+When `--chat` is enabled, may-agent creates a **persistent chat session** (`ChatSession`).
+The session survives across messages — the LLM sees full conversation history, not summaries.
+
+```
+you> implement a retry mechanism for failed API calls
+      ↓
+  ChatSession sends to interface agent's persistent session
+  Agent processes, delegates to sub-agents, returns to idle
+  
+you> now add tests for it
+      ↓
+  Same session — agent has full context from previous request
+```
+
+### Built-in Commands
+
+| Command | Action |
+|---------|--------|
+| `status` | List all active sessions |
+| `cancel` | Cancel current task (session stays alive) |
+| `cancel all` | Cancel all running sessions |
+| `/new` | Close current session, start fresh on next message |
+| `reload` | Scan for new agent.json files and register them |
+| `close` | Permanently destroy session + shutdown |
+| `restart` | Graceful restart (exit code 100) |
+| `Ctrl+C` | Cancel task if running, shutdown if idle |
+
+### @agent Prefix
+
+```
+you> @coder fix the failing test in test/retry.test.ts
+```
+
+Creates an **ephemeral session** directly on the named agent, bypassing the
+interface agent. The interface agent's persistent session stays idle and
+untouched. When the direct session finishes, control returns to the prompt.
+
+| | Normal input | `@agent` prefix |
+|---|---|---|
+| Routes through | Interface agent's persistent session | Direct ephemeral session on target |
+| Interface agent sees result? | Yes | No |
+| Session kind | `chat` | `job` |
+| Use case | Coordinated multi-agent work | Quick one-off tasks |
+
+## Agents
+
+### Built-in agents
+
+| Agent | Model | Role |
+|-------|-------|------|
+| **may** | opus | Supervisor — delegates, coordinates |
+| **bob** | gemini-3-pro | System architect, philosophy, meta-loop |
+| **tech-lead** | opus | Designs and delegates implementation |
+| **coder** | opus | Writes code, runs tests |
+| **qa** | gpt-5.2 | Reviews code |
+| **evaluator** | gpt-5.2 | Scores sessions, extracts lessons |
+| **optimizer** | opus | Implements system improvements |
+| **coach** | opus | Trains agents via fork/verify cycle |
+| **master** | opus | Uses CLI agents for complex tasks |
+| **scout** | opus | Research and discovery |
+| **amy** | opus | XHS exploration |
+| **amy-kimi** | kimi | XHS exploration (Kimi model) |
+
+### agent.json Format
+
+```json
+{
+  "name": "coder",
+  "description": "Writes code, runs tests — does not commit",
+  "domain": "may-agent implementation",
+  "model": "opus",
+  "tools": ["coding", "agents"],
+  "maxTurns": 30,
+  "memoryLimit": 20,
+  "delegateDeny": { "agents": ["coder"], "hint": "Use agents.call instead" }
+}
+```
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `name` | Yes | Must match directory name |
+| `description` | Yes | Role summary (visible to other agents) |
+| `domain` | Yes | Domain of expertise |
+| `model` | Yes | Model key: `opus`, `gpt52`, `gemini3pro`, etc. |
+| `tools` | Yes | Tool presets (see below) |
+| `maxTurns` | No | Max assistant turns before auto-abort |
+| `memoryLimit` | No | Number of recent memory entries in prompt (default: 20) |
+| `delegateDeny` | No | Block delegation to specific agents |
+
+agent.json is **purely operational** — model, tools, limits, delegation rules.
+All prompt content lives in convention files (SOUL.md, DOMAIN.md, TOOLS.md,
+LESSONS.md, knowledge/INDEX.md).
+
+### Tool Presets
+
+| Preset | Description |
+|--------|-------------|
+| `coding` | Read + write files, shell execution (aliased from `read-write` + `exec`) |
+| `read-write` | Read and write files |
+| `read-only` | Read files only |
+| `exec` | Shell execution |
+| `exec-readonly` | Shell execution, no file writes |
+| `exec-master` | Shell execution with higher output limits |
+| `claude-code` | Spawn Claude Code subprocess |
+| `gemini-cli` | Spawn Gemini CLI subprocess |
+| `agents` | Agent cooperation (call/send/list/peek/cancel) |
+| `workflow` | Multi-step workflow recipes |
+| `background-exec` | Spawn background processes |
+| `socket-watch` | Watch agent sessions via socket |
+| `cron` | Schedule and manage cron jobs |
+| `scrape` | Web scraping |
+| `agent-growth` | Fork/verify/promote agents |
+
+### Adding a New Agent
+
+1. Create `agents/<name>/agent.json`
+2. Create `agents/<name>/SOUL.md` — identity and mission
+3. Create `agents/<name>/DOMAIN.md` — domain expertise
+4. Optionally: `TOOLS.md`, `LESSONS.md`, `knowledge/INDEX.md`
+5. Restart or type `reload` in chat
+
+See [Agent Convention](agent-convention.md) for full directory layout.
+
+## Agent Cooperation (V2)
+
+Agents cooperate through 5 actions on the `agents` tool:
+
+| Action | Type | Description |
+|--------|------|-------------|
+| `call` | Sync | Block until child agent completes, get result |
+| `send` | Async | Write todo to target's `workspace/todo.md`, trigger heartbeat |
+| `list` | Query | List available agents and active sessions |
+| `peek` | Query | Read a running session's progress |
+| `cancel` | Control | Stop a running session |
+
+`call` is the primary cooperation primitive — synchronous, simple, debuggable.
+`send` is for async work assignment — the target picks it up on next heartbeat.
+
+## Session Kinds
+
+| Kind | Created by | Lifecycle |
+|------|-----------|-----------|
+| `chat` | ChatSession | Persistent — stays idle between messages. User owns. |
+| `job` | Cron, heartbeat, send, task mode | Ephemeral — auto-resumed on restart if stale. |
+| `call` | `agents.call` | Ephemeral — parent re-dispatches on its own resume. |
+
+See [Session Model](../architecture/session-model.md) for details.
+
+## Socket Protocol
+
+Control a running instance via Unix socket:
+
+```bash
+# Watch events
+socat - UNIX-CONNECT:.state/instances/default/may.sock
+
+# Send input
+echo '{"type":"input","message":"check status"}' | socat - UNIX-CONNECT:.state/instances/default/may.sock
+
+# Run a specific agent
+echo '{"type":"run","agent":"coder","message":"fix the test"}' | socat - UNIX-CONNECT:.state/instances/default/may.sock
+
+# Status
+echo '{"type":"status"}' | socat - UNIX-CONNECT:.state/instances/default/may.sock
+```
+
+See [Socket Protocol](../architecture/socket-protocol.md) for full command reference.
+
+## Cron System
+
+Cron is enabled with `--cron`. Each agent can have a `cron.json` defining jobs:
+
+- **Heartbeat jobs**: Fire into a persistent agent session (`type: "heartbeat"`)
+- **JS handlers**: Run in-process functions (`handler: "evaluate-sessions"`)
+- **Agent tasks**: Dispatch to agent via `run-agent-task` handler
+- **Pre-checked heartbeats**: Check if work exists before spawning LLM session
+
+Handlers live in `agents/<name>/handlers/` and are auto-discovered.
+
+See [Cron System](../architecture/cron-system.md) for details.
+
+## State Directory
+
+```
+.state/
+  instances/<name>/
+    <agent>.sock              # Unix socket
+    <agent>.pid               # PID file
+    identity.json             # Instance metadata
+  memory/
+    <agent>.jsonl             # Task outcomes per agent
+  sessions/
+    <id>/
+      meta.json               # Session metadata (status, kind, agent, task)
+      session.jsonl            # Conversation history
+      output/                 # Task deliverables
+    history/
+      <id>/                   # Archived sessions
+  evaluations/
+    <sessionId>.json          # Session evaluation scores
+  workflows/
+    <runId>.json              # Workflow execution records
+```
+
+## Docker
+
+```bash
+# Start background instance
+docker compose -f docker/docker-compose.yml up -d
+
+# Attach
+./may.sh attach
+
+# View logs
+./may.sh logs
+```
+
+Docker uses `INSTANCE=background` to avoid collision with interactive instances.
