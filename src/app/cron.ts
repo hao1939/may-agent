@@ -66,6 +66,7 @@ export class Cron {
     private getSessionId: () => string,
     private onError?: (msg: string) => void,
     projectRoot?: string,
+    private notify?: (msg: string) => void,
   ) {
     // configPath is <projectRoot>/agents/<name>/cron.json → go up 2 levels
     this.projectRoot = projectRoot ?? resolve(dirname(configPath), "../..");
@@ -240,7 +241,7 @@ export class Cron {
       // Wait for completion then record result
       this.manager
         .waitFor(sessionId)
-        .then(() => {
+        .then((taskResult) => {
           this.heartbeatRunning.delete(heartbeatKey);
           // Check latch: re-fire if a trigger arrived while busy
           this.checkPendingTrigger(entry);
@@ -255,6 +256,13 @@ export class Cron {
             agent: agentName,
             sessionId,
           });
+          // Send brief to human if configured
+          if (entry.notifyBrief && this.notify) {
+            const text = taskResult?.lastAssistantText?.trim();
+            if (text) {
+              this.notify(`📋 *${agentName}* heartbeat brief:\n\n${text}`);
+            }
+          }
         })
         .catch((err) => {
           this.heartbeatRunning.delete(heartbeatKey);
