@@ -6,6 +6,7 @@ services:
       context: ..
       dockerfile: docker/Dockerfile
     container_name: may-agent
+    hostname: may-agent
     restart: unless-stopped
     init: true
     user: "${UID:-1000}:${GID:-1000}"
@@ -28,6 +29,7 @@ services:
   console:
     image: may-agent-may
     container_name: may-console
+    hostname: may-console
     profiles: ["console"]
     init: true
     stdin_open: true
