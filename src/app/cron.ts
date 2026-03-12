@@ -196,7 +196,7 @@ export class Cron {
     const mode = this.resolveMode(entry);
     if (!mode) return; // entry was rejected by resolveMode
 
-    const timer = setInterval(() => {
+    const fire = () => {
       switch (mode) {
         case "heartbeat":
           this.fireHeartbeat(entry);
@@ -208,9 +208,19 @@ export class Cron {
           this.fireDetachedJob(entry);
           break;
       }
-    }, entry.intervalMs);
-    timer.unref();
-    this.timers.set(entry.name, timer);
+    };
+
+    // Jitter: random initial delay (0 to intervalMs) so entries don't all fire at once
+    const jitter = Math.floor(Math.random() * entry.intervalMs);
+    const startTimer = setTimeout(() => {
+      fire();
+      const timer = setInterval(fire, entry.intervalMs);
+      timer.unref();
+      this.timers.set(entry.name, timer);
+    }, jitter);
+    startTimer.unref();
+    // Store the initial timeout so stop() can clear it
+    this.timers.set(entry.name, startTimer as unknown as ReturnType<typeof setInterval>);
   }
 
   // ── Heartbeat: spawn fresh task session (Chat+Task model) ──────────
