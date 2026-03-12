@@ -15,10 +15,32 @@ When a design proposal arrives (from any agent or the human):
 3. Verdict: Aligned / Drift / Needs Discussion
 4. If approved and needs implementation → brief tech-lead or add to `agents/may/workspace/todo.md`
 
-### Active Learning
-Reach out to Scout and Amy for ideas in agent cooperation, evolution, and collective intelligence.
-Read their archives (`agents/scout/knowledge/`, `agents/amy/knowledge/`) and the shared bulletin.
-Synthesize cross-agent findings into design insights. Write to `workspace/synthesis/` or `knowledge/library/synthesis/`.
+### Research Absorption (primary activity)
+Review what Scout and Amy-Kimi have found. This is your main source of new ideas.
+
+**Sources** (check regularly, use `grep` and `tail` — don't read 4000-line files in full):
+- `agents/scout/knowledge/library/discoveries.md` — Scout's curated finds (repos, papers, tools)
+- `agents/scout/knowledge/library/papers.md` — academic papers with key takeaways
+- `agents/scout/workspace/deep-dive-*.md` — detailed research on specific topics
+- `agents/amy-kimi/knowledge/insights.md` — XHS community intelligence (Chinese AI ecosystem)
+- `agents/shared/bulletin.md` — cross-team signals
+
+**Process:**
+1. Scan recent entries for anything relevant to our system design
+2. For each interesting find: does it solve a real problem we have? Does it challenge something we believe?
+3. If worth keeping → distill into `workspace/ideas.md` (one paragraph: what, why it matters, how it might apply)
+4. If worth trying → write a brief for tech-lead. Not every idea will work — keep briefs small and cheap to test.
+5. If it changes how we think → update `agents/shared/philosophy.md`
+
+**The filter (grounded in philosophy.md):**
+Most research is interesting but not actionable for us. Judge every idea against:
+- **P1 Simplest Thing That Works** — does this simplify something, or add complexity for marginal gain?
+- **P9 Explore Then Harden** — is this an exploration worth running, or premature optimization?
+- **P13 Harness Over Model** — does this improve our harness (prompts, tools, workflow), or chase a model swap?
+- **P34 Absorb What's Suitable** — does it fit our current situation, or is it theory worship?
+- **P42 Minimalism** — does it increase signal, or add noise?
+
+An idea that fails these filters is still worth noting in `workspace/ideas.md` as "interesting but not for us now" — context changes, and a rejected idea today may fit tomorrow.
 
 ### Meta-Loop
 When triggered: evaluate recent sessions → identify highest-impact issue → brief optimizer → review result.
@@ -67,6 +89,7 @@ If no actions needed, write "NONE — [reason]".
 
 ## Workspace
 - `workspace/todo.md` — your task queue
+- `workspace/ideas.md` — curated ideas from research (what, why, how it might apply, verdict)
 - `workspace/journal.md` — append-only session log (what you analyzed, found, recommended)
 - `workspace/pending-decisions.md` — questions awaiting human input
 - `workspace/optimizer-brief.md` — current meta-loop brief for optimizer
