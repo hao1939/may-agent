@@ -1,5 +1,6 @@
 export * from "./bash.js";
 export * from "./coding.js";
+export * from "./cross-edit-guard.js";
 export * from "./edit.js";
 export * from "./edit-diff.js";
 export * from "./health.js";
@@ -11,3 +12,4 @@ export * from "./read.js";
 export * from "./truncate.js";
 export * from "./write.js";
 export * from "./agent-growth.js";
+export * from "./finish.js";

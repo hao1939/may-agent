@@ -1,29 +1,46 @@
+/**
+ * Agent Growth Tools — Tool wrappers for the growth cycle.
+ *
+ * Wraps the pure logic from growth.ts in AgentTool format.
+ * Handles manager registration/unregistration as side effects.
+ */
+
 import { Type } from "@mariozechner/pi-ai";
 import { type AgentTool } from "@mariozechner/pi-agent-core";
 import { resolve, join } from "node:path";
-import { existsSync, mkdirSync, cpSync, rmSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { SubagentManager } from "../manager.js";
+import {
+  forkAgent,
+  promoteAgent,
+  discardAgent,
+  type GrowthConfig,
+} from "../growth.js";
 
 export interface AgentGrowthToolOptions {
   agentsRoot: string;
   manager: SubagentManager;
+  /** Register a newly forked agent with the manager. */
   loadAgent: (agentDir: string) => void;
+  /** Re-register a live agent after promotion. */
   reloadAgent: (name: string) => void;
+  /** Optional persist directory for memory copy/cleanup. */
+  persistDir?: string;
 }
 
 /**
  * Creates the agent growth toolset: fork, verify, promote, discard.
  */
 export function createAgentGrowthTools(opts: AgentGrowthToolOptions): AgentTool[] {
-  const { agentsRoot, manager, loadAgent, reloadAgent } = opts;
-  const labDir = resolve(agentsRoot, ".lab");
+  const { agentsRoot, manager, loadAgent, reloadAgent, persistDir } = opts;
 
-  // Ensure lab dir exists
-  if (!existsSync(labDir)) {
-    mkdirSync(labDir, { recursive: true });
-  }
+  const growthConfig: GrowthConfig = {
+    agentsRoot,
+    persistDir,
+  };
 
   return [
+    // ── Fork ─────────────────────────────────────────────────────────
     {
       name: "fork_agent",
       label: "fork_agent",
@@ -34,31 +51,21 @@ export function createAgentGrowthTools(opts: AgentGrowthToolOptions): AgentTool[
       }),
       execute: async (toolCallId, args: unknown) => {
         const { source, dest } = args as { source: string; dest: string };
-        const sourceDir = resolve(agentsRoot, source);
-        const destDir = resolve(labDir, dest);
-
-        if (!existsSync(sourceDir)) {
-          throw new Error(`Source agent "${source}" not found at ${sourceDir}`);
-        }
-        if (existsSync(destDir)) {
-          throw new Error(`Destination "${dest}" already exists at ${destDir}`);
-        }
 
         try {
-          cpSync(sourceDir, destDir, { recursive: true });
-          const configPath = join(destDir, "agent.json");
-          const config = JSON.parse(readFileSync(configPath, "utf-8"));
-          config.name = dest;
-          writeFileSync(configPath, JSON.stringify(config, null, 2));
-          loadAgent(destDir);
+          const result = forkAgent(growthConfig, source, dest);
+
+          // Register the fork with the manager so it can be called
+          loadAgent(result.destDir);
+
           return {
             content: [
               {
                 type: "text",
                 text:
                   `Forked "${source}" to "${dest}" in .lab/\n` +
-                  `- Source: ${sourceDir}\n` +
-                  `- Dest: ${destDir}\n` +
+                  `- Source: ${result.sourceDir}\n` +
+                  `- Dest: ${result.destDir}\n` +
                   `- Registered as: ${dest}\n` +
                   `You can now edit files in agents/.lab/${dest}/ and use call("${dest}", ...) to verify.`,
               },
@@ -70,6 +77,8 @@ export function createAgentGrowthTools(opts: AgentGrowthToolOptions): AgentTool[
         }
       },
     },
+
+    // ── Verify ───────────────────────────────────────────────────────
     {
       name: "verify_agent",
       label: "verify_agent",
@@ -107,6 +116,8 @@ export function createAgentGrowthTools(opts: AgentGrowthToolOptions): AgentTool[
         }
       },
     },
+
+    // ── Promote ──────────────────────────────────────────────────────
     {
       name: "promote_agent",
       label: "promote_agent",
@@ -117,45 +128,24 @@ export function createAgentGrowthTools(opts: AgentGrowthToolOptions): AgentTool[
       }),
       execute: async (toolCallId, args: unknown) => {
         const { source, target } = args as { source: string; target: string };
-        const sourceDir = resolve(labDir, source);
-        const targetDir = resolve(agentsRoot, target);
-
-        if (!existsSync(sourceDir)) {
-          throw new Error(`Source "${source}" not found in .lab/`);
-        }
-        if (!existsSync(targetDir)) {
-          throw new Error(`Target "${target}" not found in agents/`);
-        }
 
         try {
-          const artifacts = ["SOUL.md", "DOMAIN.md", "TOOLS.md", "LESSONS.md", "knowledge", "skills", "agent.json"];
-          const promoted: string[] = [];
-          for (const artifact of artifacts) {
-            const srcPath = join(sourceDir, artifact);
-            const destPath = join(targetDir, artifact);
-            if (existsSync(srcPath)) {
-              if (artifact === "agent.json") {
-                const srcConfig = JSON.parse(readFileSync(srcPath, "utf-8"));
-                const destConfig = JSON.parse(readFileSync(destPath, "utf-8"));
-                const newConfig = { ...srcConfig, name: destConfig.name };
-                writeFileSync(destPath, JSON.stringify(newConfig, null, 2));
-              } else {
-                cpSync(srcPath, destPath, { recursive: true, force: true });
-              }
-              promoted.push(artifact);
-            }
-          }
+          const result = promoteAgent(growthConfig, source, target);
+
+          // Unregister the fork from the manager
           manager.unregister(source);
-          rmSync(sourceDir, { recursive: true, force: true });
+
+          // Reload the target agent to pick up changes
           reloadAgent(target);
+
           return {
             content: [
               {
                 type: "text",
                 text:
                   `Promoted "${source}" to "${target}".\n` +
-                  `- Copied: ${promoted.join(", ")}\n` +
-                  `- Deleted: ${sourceDir}\n` +
+                  `- Copied: ${result.promoted.join(", ")}\n` +
+                  `- Deleted: ${result.sourceDir}\n` +
                   `- Reloaded: ${target}\n` +
                   `Changes are now live.`,
               },
@@ -167,6 +157,8 @@ export function createAgentGrowthTools(opts: AgentGrowthToolOptions): AgentTool[
         }
       },
     },
+
+    // ── Discard ──────────────────────────────────────────────────────
     {
       name: "discard_agent",
       label: "discard_agent",
@@ -176,16 +168,15 @@ export function createAgentGrowthTools(opts: AgentGrowthToolOptions): AgentTool[
       }),
       execute: async (toolCallId, args: unknown) => {
         const { agent } = args as { agent: string };
-        const agentDir = resolve(labDir, agent);
 
-        if (!existsSync(agentDir)) {
-          throw new Error(`Agent "${agent}" not found in .lab/`);
-        }
         try {
+          discardAgent(growthConfig, agent);
+
+          // Unregister from manager
           manager.unregister(agent);
-          rmSync(agentDir, { recursive: true, force: true });
+
           return {
-            content: [{ type: "text", text: `Discarded experiment "${agent}". Directory deleted.` }],
+            content: [{ type: "text", text: `Discarded experiment "${agent}". Directory and memory deleted.` }],
             details: undefined,
           };
         } catch (err: any) {

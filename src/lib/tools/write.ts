@@ -4,6 +4,7 @@ import type { TSchema } from "@mariozechner/pi-ai";
 import { mkdir as fsMkdir, writeFile as fsWriteFile, stat as fsStat } from "fs/promises";
 import { dirname } from "path";
 import { resolveToCwd } from "./path-utils.js";
+import { checkCrossEditGuard } from "./cross-edit-guard.js";
 
 const writeSchema: TSchema = Type.Object({
 	path: Type.String({ description: "Path to the file to write (relative or absolute)" }),
@@ -43,6 +44,10 @@ export interface WriteToolOptions {
 	operations?: WriteOperations;
 	/** Allow writing content smaller than 50% of existing file. Default: false */
 	allowShrink?: boolean;
+	/** Agent name for cross-edit protection. If set, blocks writes to other agents' protected files. */
+	agentName?: string;
+	/** Project root directory (needed for cross-edit guard path resolution). Defaults to cwd. */
+	projectRoot?: string;
 }
 
 /** Minimum existing file size (bytes) for the shrink guard to apply */
@@ -55,6 +60,8 @@ const SHRINK_WARN_RATIO = 0.8;
 export function createWriteTool(cwd: string, options?: WriteToolOptions): AgentTool<TSchema> {
 	const ops = options?.operations ?? defaultWriteOperations;
 	const allowShrink = options?.allowShrink ?? false;
+	const agentName = options?.agentName;
+	const projectRoot = options?.projectRoot ?? cwd;
 
 	return {
 		name: "write",
@@ -70,6 +77,15 @@ export function createWriteTool(cwd: string, options?: WriteToolOptions): AgentT
 			const { path, content } = _params as WriteToolInput;
 			const absolutePath = resolveToCwd(path, cwd);
 			const dir = dirname(absolutePath);
+
+			// Cross-edit guard: block writes to other agents' protected files
+			const guard = checkCrossEditGuard(absolutePath, agentName, projectRoot);
+			if (guard.blocked) {
+				return {
+					content: [{ type: "text", text: guard.message! }],
+					details: undefined,
+				};
+			}
 
 			return new Promise<{ content: Array<{ type: "text"; text: string }>; details: undefined }>(
 				(resolve, reject) => {

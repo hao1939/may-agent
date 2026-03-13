@@ -2035,8 +2035,10 @@ export class SubagentManager {
       };
       const logPath = join(this.registry.persistDir, "delegations.jsonl");
       appendFileSync(logPath, JSON.stringify(logEntry) + "\n", "utf-8");
-    } catch {
-      /* best-effort — never block agent operations for logging */
+    } catch (err) {
+      /* best-effort — never block agent operations for logging, but surface the error */
+      const logPath = join(this.registry.persistDir, "delegations.jsonl");
+      console.error(`[manager] Failed to write delegation log to ${logPath}:`, err);
     }
   }
 

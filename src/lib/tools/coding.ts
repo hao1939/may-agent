@@ -8,17 +8,20 @@ import { createWriteTool } from "./write.js";
 export interface CodingToolsOptions {
   /** Working directory for all tools */
   cwd?: string;
+  /** Agent name for cross-edit protection */
+  agentName?: string;
 }
 
 /**
  * Creates the full coding toolset: read + bash + edit + write.
  * Convenience function used by agent-loader for the "coding" preset.
  */
-export function createCodingTools(projectRoot: string): AgentTool<TSchema>[] {
+export function createCodingTools(projectRoot: string, options?: CodingToolsOptions): AgentTool<TSchema>[] {
+  const agentName = options?.agentName;
   return [
     createReadTool(projectRoot),
     createBashTool(projectRoot),
-    createEditTool(projectRoot),
-    createWriteTool(projectRoot),
+    createEditTool(projectRoot, { agentName, projectRoot }),
+    createWriteTool(projectRoot, { agentName, projectRoot }),
   ];
 }
