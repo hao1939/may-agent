@@ -26,7 +26,7 @@ describe("cascading cancel", () => {
 
   beforeEach(() => {
     persistDir = mkdtempSync(join(tmpdir(), "may-cascade-"));
-    manager = new SubagentManager({ persistDir });
+    manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
     manager.register({
       name: "agent",
       description: "Test agent",
@@ -104,7 +104,7 @@ describe("parentSessionId via createAgentsTool", () => {
 
   beforeEach(() => {
     persistDir = mkdtempSync(join(tmpdir(), "may-parent-"));
-    manager = new SubagentManager({ persistDir });
+    manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
     manager.register({
       name: "worker",
       description: "Worker agent",

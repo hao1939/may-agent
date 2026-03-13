@@ -84,7 +84,7 @@ describe("SubagentManager path accessors", () => {
   });
 
   it("getWorkspacePath returns workspace from definition", () => {
-    const manager = new SubagentManager({ persistDir });
+    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
     manager.register({
       name: "ws-agent",
       description: "Test",
@@ -98,7 +98,7 @@ describe("SubagentManager path accessors", () => {
   });
 
   it("getWorkspacePath returns undefined for agent without workspace", () => {
-    const manager = new SubagentManager({ persistDir });
+    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
     manager.register({
       name: "no-ws",
       description: "Test",
@@ -111,18 +111,18 @@ describe("SubagentManager path accessors", () => {
   });
 
   it("getWorkspacePath returns undefined for unknown agent", () => {
-    const manager = new SubagentManager({ persistDir });
+    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
     expect(manager.getWorkspacePath("nonexistent")).toBeUndefined();
   });
 
   it("getMemoryPath returns memory file path when persistDir is set", () => {
-    const manager = new SubagentManager({ persistDir });
+    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
     const expected = join(persistDir, "memory", "my-agent.jsonl");
     expect(manager.getMemoryPath("my-agent")).toBe(expected);
   });
 
   it("getOutputPath returns outputDir for active session", () => {
-    const manager = new SubagentManager({ persistDir });
+    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
     manager.register({
       name: "out-agent",
       description: "Test",
@@ -139,7 +139,7 @@ describe("SubagentManager path accessors", () => {
   });
 
   it("getOutputPath returns archived outputDir after completion", async () => {
-    const manager = new SubagentManager({ persistDir });
+    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
     manager.register({
       name: "arch-agent",
       description: "Test",
@@ -162,7 +162,7 @@ describe("SubagentManager path accessors", () => {
   });
 
   it("getOutputPath returns undefined for unknown session", () => {
-    const manager = new SubagentManager({ persistDir });
+    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
     expect(manager.getOutputPath("nonexistent")).toBeUndefined();
   });
 });
@@ -179,7 +179,7 @@ describe("SubagentManager.sessions()", () => {
   });
 
   it("filters sessions by agent name", async () => {
-    const manager = new SubagentManager({ persistDir });
+    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
 
     manager.register({
       name: "agent-a",
@@ -219,7 +219,7 @@ describe("SubagentManager.sessions()", () => {
   });
 
   it("returns empty array for unknown agent", () => {
-    const manager = new SubagentManager({ persistDir });
+    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
     expect(manager.sessions("unknown")).toEqual([]);
   });
 });

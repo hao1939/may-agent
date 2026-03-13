@@ -36,7 +36,7 @@ describe("stale workflow run cleanup", () => {
     const run = makeStaleRun("wr_stale_1");
     saveWorkflowRun(persistDir, run);
 
-    const manager = new SubagentManager({ persistDir });
+    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
     manager.resumeStaleSessions();
 
     const updated = readWorkflowRun(persistDir, "wr_stale_1");
@@ -55,7 +55,7 @@ describe("stale workflow run cleanup", () => {
     };
     saveWorkflowRun(persistDir, run);
 
-    const manager = new SubagentManager({ persistDir });
+    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
     manager.resumeStaleSessions();
 
     const updated = readWorkflowRun(persistDir, "wr_done");
@@ -72,7 +72,7 @@ describe("stale workflow run cleanup", () => {
       endedAt: Date.now(),
     });
 
-    const manager = new SubagentManager({ persistDir });
+    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
     manager.resumeStaleSessions();
 
     expect(readWorkflowRun(persistDir, "wr_a")!.status).toBe("interrupted");
@@ -81,7 +81,7 @@ describe("stale workflow run cleanup", () => {
   });
 
   it("no-op when no workflow runs exist", () => {
-    const manager = new SubagentManager({ persistDir });
+    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
     // Should not throw
     manager.resumeStaleSessions();
   });

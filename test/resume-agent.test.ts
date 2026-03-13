@@ -113,7 +113,7 @@ describe("SubagentManager.resumeStaleSessions()", () => {
     setupSession(persistDir, "session-a", [userMessage("task A"), assistantMessage("Working on A...")]);
     setupSession(persistDir, "session-b", [userMessage("task B")]);
 
-    const manager = new SubagentManager({ persistDir });
+    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
     registerAgent(manager, "agent-a");
     registerAgent(manager, "agent-b");
 
@@ -151,7 +151,7 @@ describe("SubagentManager.resumeStaleSessions()", () => {
     });
     setupSession(persistDir, "session-x");
 
-    const manager = new SubagentManager({ persistDir });
+    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
     // Do NOT register unknown-agent
 
     const { resumed, interrupted } = manager.resumeStaleSessions();
@@ -183,7 +183,7 @@ describe("SubagentManager.resumeStaleSessions()", () => {
     setupSession(persistDir, "session-reg", [userMessage("task")]);
     setupSession(persistDir, "session-unreg");
 
-    const manager = new SubagentManager({ persistDir });
+    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
     registerAgent(manager, "agent-a");
 
     const { resumed, interrupted } = manager.resumeStaleSessions();
@@ -207,14 +207,14 @@ describe("SubagentManager.resumeStaleSessions()", () => {
       },
     });
 
-    const manager = new SubagentManager({ persistDir });
+    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
     const { resumed, interrupted } = manager.resumeStaleSessions();
     expect(resumed).toEqual([]);
     expect(interrupted).toEqual([]);
   });
 
   it("returns empty when no sessions exist at all", () => {
-    const manager = new SubagentManager({ persistDir });
+    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
     const { resumed, interrupted } = manager.resumeStaleSessions();
     expect(resumed).toEqual([]);
     expect(interrupted).toEqual([]);
@@ -240,7 +240,7 @@ describe("SubagentManager.resumeStaleSessions()", () => {
       },
     });
 
-    const manager = new SubagentManager({ persistDir });
+    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
     const { resumed, interrupted } = manager.resumeStaleSessions();
     expect(resumed).toEqual([]);
     expect(interrupted).toEqual([]);
@@ -256,7 +256,7 @@ describe("SubagentManager.resumeStaleSessions()", () => {
     });
     setupSession(persistDir, "s");
 
-    const manager = new SubagentManager({ persistDir });
+    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
     registerAgent(manager, "a");
     const { resumed } = manager.resumeStaleSessions();
     expect(resumed[0].runtime).toMatch(/^\d+s$/);
@@ -268,7 +268,7 @@ describe("SubagentManager.resumeStaleSessions()", () => {
     });
     setupSession(persistDir, "s");
 
-    const manager = new SubagentManager({ persistDir });
+    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
     registerAgent(manager, "a");
     const { resumed } = manager.resumeStaleSessions();
     expect(resumed[0].runtime).toMatch(/^\d+m\d+s$/);

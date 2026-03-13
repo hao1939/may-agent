@@ -25,7 +25,7 @@ describe("SubagentManager.input()", () => {
 
   beforeEach(() => {
     persistDir = mkdtempSync(join(tmpdir(), "may-input-"));
-    manager = new SubagentManager({ persistDir });
+    manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
     manager.register({
       name: "chat-agent",
       description: "Chat agent",

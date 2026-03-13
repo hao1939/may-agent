@@ -94,7 +94,7 @@ describe("Memory truncation in system prompt", () => {
       timestamp: Date.now(),
     });
 
-    const manager = new SubagentManager({ persistDir });
+    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
 
     // We can't directly access the system prompt, but we can verify
     // the manager doesn't crash and the session starts successfully
@@ -129,7 +129,7 @@ describe("Memory truncation in system prompt", () => {
       timestamp: Date.now(),
     });
 
-    const manager = new SubagentManager({ persistDir });
+    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
     const domainFile = join(knowledgeDir, "domain.md");
     writeFileSync(domainFile, "# Test Agent\nYou are a test.", "utf-8");
 

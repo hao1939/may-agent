@@ -39,7 +39,7 @@ describe("manager.followUp()", () => {
 
   beforeEach(() => {
     dir = mkdtempSync(join(tmpdir(), "followup-test-"));
-    manager = new SubagentManager({ persistDir: dir });
+    manager = new SubagentManager({ persistDir: dir , infraRetryMax: 0 });
   });
 
   afterEach(() => {

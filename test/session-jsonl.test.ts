@@ -139,7 +139,7 @@ describe("Session JSONL persistence", () => {
 
   describe("manager integration", () => {
     it("creates session directory on run()", () => {
-      const manager = new SubagentManager({ persistDir });
+      const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
 
       manager.register({
         name: "test-agent",
@@ -159,7 +159,7 @@ describe("Session JSONL persistence", () => {
     });
 
     it("creates output subdirectory on run()", () => {
-      const manager = new SubagentManager({ persistDir });
+      const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
 
       manager.register({
         name: "test-agent",
@@ -179,7 +179,7 @@ describe("Session JSONL persistence", () => {
     });
 
     it("persists messages to session.jsonl via message_end events", async () => {
-      const manager = new SubagentManager({ persistDir });
+      const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
 
       manager.register({
         name: "test-agent",
@@ -216,7 +216,7 @@ describe("Session JSONL persistence", () => {
     });
 
     it("archives session directory to history after completion", async () => {
-      const manager = new SubagentManager({ persistDir });
+      const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
 
       manager.register({
         name: "test-agent",

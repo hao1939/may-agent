@@ -318,6 +318,7 @@ describe("Agent Growth Tools (wrappers)", () => {
     manager = new SubagentManager({
       persistDir: PERSIST_DIR,
       projectRoot: TEST_DIR,
+      infraRetryMax: 0,
     });
 
     createTestAgent("coder");
