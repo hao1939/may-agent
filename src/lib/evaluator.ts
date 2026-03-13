@@ -779,7 +779,7 @@ export function findUnevaluatedChildren(
 // ── Structured Error Logging (P109) ────────────────────────────────────
 
 /** Extract FM-X.Y codes from an issue string. */
-function extractErrorCodes(issue: string): string[] {
+export function extractErrorCodes(issue: string): string[] {
   const matches = issue.match(/FM-\d+\.\d+/g);
   return matches ?? [];
 }
@@ -790,7 +790,7 @@ function extractErrorCodes(issue: string): string[] {
  * Issue format: "[FM-X.Y / FC-X.Y][LABEL] Description text"
  * The text after the bracket tags is used as both trigger and critique.
  */
-function parseIssueToErrorEntry(
+export function parseIssueToErrorEntry(
   issue: string,
   sessionId: string,
   date: string,
@@ -830,7 +830,7 @@ function parseIssueToErrorEntry(
  *
  * @see agents/shared/knowledge/error-log-schema.md
  */
-function appendErrorLogs(result: TaskEvaluationResult, children: ChildSessionInfo[]): void {
+export function appendErrorLogs(result: TaskEvaluationResult, children: ChildSessionInfo[]): void {
   const date = new Date().toISOString().slice(0, 10);
 
   for (const child of children) {
