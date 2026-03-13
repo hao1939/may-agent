@@ -227,6 +227,8 @@ interface ActiveSession {
   opCount: number;
   /** Number of infrastructure retries attempted in the current agent loop run. */
   infraRetryCount: number;
+  /** Tracks identical failed tool calls for pivot heuristic. Key: "toolName:argsHash", Value: consecutive error count. */
+  toolErrorHistory: Map<string, number>;
 }
 
 /** Options for spawning a session with parent/workflow context. */
@@ -824,6 +826,7 @@ export class SubagentManager {
       opBudget: opts?.opBudget ?? def.opBudget ?? 0,
       opCount: 0,
       infraRetryCount: 0,
+      toolErrorHistory: new Map(),
     };
 
     // Write [STARTED] sentinel
@@ -1101,6 +1104,7 @@ export class SubagentManager {
       opBudget: def.opBudget ?? 0,
       opCount: 0,
       infraRetryCount: 0,
+      toolErrorHistory: new Map(),
     };
 
     this.subscribeForPersistence(session);
