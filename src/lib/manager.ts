@@ -2164,6 +2164,12 @@ export class SubagentManager {
           if (session && session.opBudget > 0 && session.opCount >= session.opBudget) {
             console.error(`OpBudgetExceeded: Agent ${session.agentName} consumed ${session.opCount} ops (limit ${session.opBudget}). Stopping.`);
             console.log(JSON.stringify({ type: 'OpBudgetExceeded', agent: session.agentName, sessionId, limit: session.opBudget, opCount: session.opCount }));
+
+            // P85: Mark session as errored so handleCompletion archives it
+            // with status "error" instead of "done". This makes OpBudget
+            // exhaustion visible in delegation-metrics (ISR/TSR).
+            session.error = `OpBudgetExceeded: Limit ${session.opBudget} reached.`;
+
             return {
               content: [{ type: "text" as const, text: `OpBudgetExceeded: Agent ${session.agentName} consumed ${session.opCount}/${session.opBudget} state-changing operations. Further writes are blocked. Use read-only tools or request re-authorization.` }],
               details: undefined,
