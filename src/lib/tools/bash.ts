@@ -202,7 +202,7 @@ export function createBashTool(cwd: string, options?: BashToolOptions): AgentToo
 			// Block shell redirection, file utils, and common interpreters that could perform inline writes
 			const writeIndicators = [
 				">", "sed -i", "mv ", "cp ",
-				"python", "node", "ruby", "perl", "tee", "dd"
+				"python", "node", "ruby", "perl", "php", "awk", "tee", "dd"
 			];
 			const looksLikeWrite = writeIndicators.some(op => command.includes(op));
 			const targetsProtected = protectedFiles.some(file => command.includes(file));
