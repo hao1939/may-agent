@@ -188,6 +188,44 @@ export const INFRA_RETRY_MAX = 3;
 /** Base delay (ms) between infrastructure retries. Multiplied by attempt number. */
 const INFRA_RETRY_BASE_DELAY_MS = 1000;
 
+/** Maximum identical failed tool calls before blocking. */
+export const TOOL_PIVOT_LIMIT = 3;
+
+/**
+ * Detect whether tool output text indicates an error.
+ * Used by the pivot heuristic to track consecutive failures.
+ */
+export function isToolError(outputText: string): boolean {
+  // Non-zero exit code patterns (bash tools)
+  if (/exit\s*(code\s*)?\d*[1-9]\d*/i.test(outputText)) return true;
+  // Common error markers
+  if (outputText.startsWith("❌")) return true;
+  if (/\bENOENT\b/.test(outputText)) return true;
+  if (/\bEACCES\b/.test(outputText)) return true;
+  if (/\bPermission denied\b/i.test(outputText)) return true;
+  if (/\bcommand not found\b/i.test(outputText)) return true;
+  if (/\bNo such file or directory\b/.test(outputText)) return true;
+  if (/\bCould not find the exact text\b/.test(outputText)) return true;
+  if (/\bFile not found\b/.test(outputText)) return true;
+  if (/\bOpBudgetExceeded\b/.test(outputText)) return true;
+  if (/\bE_RETRY_LIMIT\b/.test(outputText)) return true;
+  // Edit tool: multiple occurrences
+  if (/\bFound \d+ occurrences\b/.test(outputText)) return true;
+  return false;
+}
+
+/**
+ * Compute a stable key for a tool+args combination.
+ * Used to track identical consecutive tool calls.
+ */
+export function computeToolArgsKey(toolName: string, params: any): string {
+  const argsHash = createHash("sha256")
+    .update(JSON.stringify(params ?? {}))
+    .digest("hex")
+    .slice(0, 16);
+  return `${toolName}:${argsHash}`;
+}
+
 interface RegisteredAgent {
   definition: SubagentDefinition;
 }
@@ -2181,6 +2219,22 @@ export class SubagentManager {
           }
         }
 
+        // P110: Tool Pivot Heuristic — block after TOOL_PIVOT_LIMIT identical failures
+        const pivotKey = computeToolArgsKey(tool.name, params);
+        const session = manager.activeSessions.get(sessionId);
+        if (session) {
+          const failCount = session.toolErrorHistory.get(pivotKey) ?? 0;
+          if (failCount >= TOOL_PIVOT_LIMIT) {
+            const agentName = session.agentName;
+            console.error(`E_RETRY_LIMIT: Agent ${agentName} repeated ${tool.name} with identical args ${failCount} times. Blocked.`);
+            console.log(JSON.stringify({ type: 'E_RETRY_LIMIT', agent: agentName, sessionId, tool: tool.name, argsHash: pivotKey, attempts: failCount }));
+            return {
+              content: [{ type: "text" as const, text: `🚫 E_RETRY_LIMIT: This exact tool call (${tool.name}) has failed ${failCount} times with identical arguments. Execution blocked. You MUST use a different approach — change the tool, change the arguments, or change your strategy entirely.` }],
+              details: undefined,
+            };
+          }
+        }
+
         // Execute the original tool
         const result = await tool.execute(toolCallId, params, signal, onUpdate);
 
@@ -2196,6 +2250,21 @@ export class SubagentManager {
         const outputText = result.content
           .map((block: any) => (block?.type === "text" ? block.text : ""))
           .join("");
+
+        // P110: Tool Pivot Heuristic — track errors and inject critique
+        let pivotCritique = "";
+        if (session) {
+          if (isToolError(outputText)) {
+            const currentCount = (session.toolErrorHistory.get(pivotKey) ?? 0) + 1;
+            session.toolErrorHistory.set(pivotKey, currentCount);
+            if (currentCount < TOOL_PIVOT_LIMIT) {
+              pivotCritique = `\n\n⚠️ PIVOT REQUIRED: This exact tool call has failed ${currentCount} time(s). You must change your approach — use a different tool, different arguments, or a different strategy. Do NOT retry the same command.`;
+            }
+          } else {
+            // Success — clear the counter for this key
+            session.toolErrorHistory.delete(pivotKey);
+          }
+        }
 
         // Sign the output using the spec's HMAC scheme
         const signed = manager.signToolOutput(outputText);
@@ -2226,10 +2295,14 @@ export class SubagentManager {
         const sigTag = signed.slice(outputText.length); // "\n[SIG: ts:hash]"
         const openTag = { type: "text" as const, text: `<tool_output name="${tool.name}">` };
         const receiptSuffix = { type: "text" as const, text: sigTag };
+        const critiqueBlock = pivotCritique ? { type: "text" as const, text: pivotCritique } : null;
         const closeTag = { type: "text" as const, text: "</tool_output>" };
+        const contentBlocks = [openTag, ...result.content, receiptSuffix];
+        if (critiqueBlock) contentBlocks.push(critiqueBlock);
+        contentBlocks.push(closeTag);
         return {
           ...result,
-          content: [openTag, ...result.content, receiptSuffix, closeTag],
+          content: contentBlocks,
         };
       },
     }));
