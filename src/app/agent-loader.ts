@@ -146,6 +146,10 @@ export function checkProtectedPath(
   if (targetAgent === agentName) return null;
   // Allow writes to shared/ directory
   if (targetAgent === "shared") return null;
+  // Allow writes to .lab/ directory (sandbox/fork for agent growth system)
+  if (targetAgent === ".lab") return null;
+  // Allow writes to .lab/ directory (growth fork sandbox — coach needs to write identity files there)
+  if (targetAgent === ".lab") return null;
 
   // Block writes to protected files in other agents' directories
   if (PROTECTED_FILENAMES.has(fileName)) {

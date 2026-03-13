@@ -86,4 +86,31 @@ describe("checkProtectedPath (P53 cross-agent protection)", () => {
     expect(result).toContain('"optimizer"');
     expect(result).toContain("agents/optimizer/");
   });
+
+  it("allows writes to .lab/ fork LESSONS.md (growth system sandbox)", () => {
+    const result = checkProtectedPath(
+      "/app/agents/.lab/bob-growth-test/LESSONS.md",
+      "coach",
+      AGENTS_ROOT,
+    );
+    expect(result).toBeNull();
+  });
+
+  it("allows writes to .lab/ fork SOUL.md", () => {
+    const result = checkProtectedPath(
+      "/app/agents/.lab/bob-growth-test/SOUL.md",
+      "coach",
+      AGENTS_ROOT,
+    );
+    expect(result).toBeNull();
+  });
+
+  it("allows writes to .lab/ fork agent.json", () => {
+    const result = checkProtectedPath(
+      "/app/agents/.lab/bob-growth-test/agent.json",
+      "coach",
+      AGENTS_ROOT,
+    );
+    expect(result).toBeNull();
+  });
 });
