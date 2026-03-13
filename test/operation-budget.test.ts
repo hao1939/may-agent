@@ -166,6 +166,40 @@ describe("P85: Operation Budget", () => {
     expect(session!.opCount).toBe(2);
   });
 
+  it("sets session.error on OpBudget exhaustion so handleCompletion marks status as error", async () => {
+    manager.register({
+      name: "error-budget-agent",
+      description: "Test",
+      domain: "test",
+      systemPrompt: "Test agent",
+      model: fakeModel(),
+      tools: [fakeTool("write", "ok")],
+      apiKey: "fake-key",
+      opBudget: 1,
+    });
+
+    const sessionId = manager.run("error-budget-agent", "test task");
+
+    // @ts-expect-error Accessing private property
+    const session = manager.activeSessions.get(sessionId);
+    const writeTool = session!.agent.state.tools[0];
+
+    // First write succeeds — no error yet
+    await writeTool.execute("tc1", {});
+    expect(session!.opCount).toBe(1);
+    expect(session!.error).toBeUndefined();
+
+    // Second write triggers OpBudgetExceeded — session.error must be set
+    const result2 = await writeTool.execute("tc2", {});
+    const text2 = result2.content.map((b: any) => b.text || "").join("");
+    expect(text2).toContain("OpBudgetExceeded");
+    expect(session!.error).toBe("OpBudgetExceeded: Limit 1 reached.");
+
+    // Verify the error message contains enough info for metrics parsing
+    expect(session!.error).toContain("OpBudgetExceeded");
+    expect(session!.error).toContain("Limit 1");
+  });
+
   it("zero opBudget means unlimited operations", async () => {
     manager.register({
       name: "unlimited-agent",
