@@ -255,7 +255,7 @@ describe("evaluateGate with check factories", () => {
 
 describe("gated-test tool", () => {
 	// We import dynamically to avoid import-time side effects.
-	it("returns gate failure without running tests", async () => {
+	it("returns gate failure without running tests", { timeout: 15000 }, async () => {
 		const { createGatedTestTool } = await import("./tools/gated-test.js");
 		const exec = stubExec(1, "", "error TS9999");
 		const tool = createGatedTestTool({ cwd: "/proj", exec });

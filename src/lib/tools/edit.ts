@@ -13,6 +13,7 @@ import {
 	stripBom,
 } from "./edit-diff.js";
 import { resolveToCwd } from "./path-utils.js";
+import { checkCrossEditGuard } from "./cross-edit-guard.js";
 
 const editSchema: TSchema = Type.Object({
 	path: Type.String({ description: "Path to the file to edit (relative or absolute)" }),
@@ -51,10 +52,16 @@ const defaultEditOperations: EditOperations = {
 export interface EditToolOptions {
 	/** Custom operations for file editing. Default: local filesystem */
 	operations?: EditOperations;
+	/** Agent name for cross-edit protection. If set, blocks edits to other agents' protected files. */
+	agentName?: string;
+	/** Project root directory (needed for cross-edit guard path resolution). Defaults to cwd. */
+	projectRoot?: string;
 }
 
 export function createEditTool(cwd: string, options?: EditToolOptions): AgentTool<TSchema> {
 	const ops = options?.operations ?? defaultEditOperations;
+	const agentName = options?.agentName;
+	const projectRoot = options?.projectRoot ?? cwd;
 
 	return {
 		name: "edit",
@@ -69,6 +76,15 @@ export function createEditTool(cwd: string, options?: EditToolOptions): AgentToo
 		) => {
 			const { path, oldText, newText } = _params as EditToolInput;
 			const absolutePath = resolveToCwd(path, cwd);
+
+			// Cross-edit guard: block edits to other agents' protected files
+			const guard = checkCrossEditGuard(absolutePath, agentName, projectRoot);
+			if (guard.blocked) {
+				return {
+					content: [{ type: "text", text: guard.message! }],
+					details: undefined,
+				};
+			}
 
 			return new Promise<{
 				content: Array<{ type: "text"; text: string }>;

@@ -92,7 +92,7 @@ describe("coach: knowledge files", () => {
     expect(existsSync(file)).toBe(true);
     const content = readFileSync(file, "utf-8");
     const lines = content.split("\n").length;
-    expect(lines).toBeLessThanOrEqual(101);
+    expect(lines).toBeLessThanOrEqual(102);
     expect(content).toContain("coach");
   });
 

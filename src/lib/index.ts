@@ -1,5 +1,8 @@
 export { SubagentManager, generateId, truncateForPrompt } from "./manager.js";
 export type { SubagentManagerOptions, RunOptions } from "./manager.js";
+// Agent growth core logic
+export { forkAgent, promoteAgent, discardAgent, listLabAgents } from "./growth.js";
+export type { GrowthConfig, ForkResult, PromoteResult } from "./growth.js";
 // Core coding tools (synced from pi-coding-agent)
 export {
   createReadTool,
@@ -31,6 +34,8 @@ export { resolveToCwd, resolveReadPath, expandPath } from "./tools/index.js";
 export { createHealthCheckTool } from "./tools/index.js";
 export type { HealthReport } from "./tools/index.js";
 export { createLearnTool } from "./tools/index.js";
+export { createFinishTool } from "./tools/index.js";
+export type { FinishToolOptions, FinishInput, LessonEntry } from "./tools/index.js";
 export { resolveHallucinatedPath, extractHallucinatedRelPath, isMetaRecursionCommand } from "./tools/index.js";
 export { createScrapeTool } from "./scrape.js";
 export type { ScrapeToolOptions } from "./scrape.js";

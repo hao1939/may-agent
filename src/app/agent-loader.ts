@@ -17,7 +17,7 @@
  */
 
 import { readFileSync, existsSync, readdirSync } from "node:fs";
-import { resolve } from "node:path";
+import { resolve, relative, sep } from "node:path";
 import type { Model } from "@mariozechner/pi-ai";
 import type { AgentTool } from "@mariozechner/pi-agent-core";
 import {
@@ -31,6 +31,7 @@ import {
   createGeminiCliTool,
   createCronTool,
   createScrapeTool,
+  createFinishTool,
 } from "../lib/index.js";
 import { createAgentGrowthTools } from "../lib/tools/agent-growth.js";
 import type { EventBus } from "./event-bus.js";
@@ -113,6 +114,87 @@ export function runAgentCleanup(agentName: string): void {
   agentCleanups.delete(agentName);
 }
 
+// ── Protected path guard (P53 enforcement) ─────────────────────────────
+
+/**
+ * Files that agents may NOT write/edit in other agents' directories.
+ * These are identity-critical files — only the owning agent (or human) may modify them.
+ */
+const PROTECTED_FILENAMES = new Set(["SOUL.md", "agent.json", "LESSONS.md"]);
+
+/**
+ * Check whether a resolved absolute path targets a protected file in another agent's directory.
+ * Returns a block message if the write should be denied, or null if allowed.
+ */
+export function checkProtectedPath(
+  absolutePath: string,
+  agentName: string,
+  agentsRoot: string,
+): string | null {
+  const rel = relative(agentsRoot, absolutePath);
+  // Path must be inside agentsRoot and not escape it
+  if (rel.startsWith("..") || rel.startsWith(sep + sep)) return null;
+
+  const parts = rel.split(sep);
+  // Must be at least agents/<name>/<file>
+  if (parts.length < 2) return null;
+
+  const targetAgent = parts[0];
+  const fileName = parts[parts.length - 1];
+
+  // Allow writes to own agent directory
+  if (targetAgent === agentName) return null;
+  // Allow writes to shared/ directory
+  if (targetAgent === "shared") return null;
+
+  // Block writes to protected files in other agents' directories
+  if (PROTECTED_FILENAMES.has(fileName)) {
+    return `⚠️ WRITE BLOCKED (P53): Cannot modify ${fileName} in agents/${targetAgent}/. ` +
+      `Only the owning agent or a human may edit identity-critical files ` +
+      `(${[...PROTECTED_FILENAMES].join(", ")}). ` +
+      `You are "${agentName}" — you may only modify these files in agents/${agentName}/.`;
+  }
+
+  return null;
+}
+
+/**
+ * Wrap write and edit tools with a path guard that blocks cross-agent
+ * modifications to identity-critical files (SOUL.md, agent.json, LESSONS.md).
+ */
+function wrapToolsWithPathGuard(
+  tools: AgentTool[],
+  agentName: string,
+  agentsRoot: string,
+  projectRoot: string,
+): AgentTool[] {
+  return tools.map((tool) => {
+    if (tool.name !== "write" && tool.name !== "edit") return tool;
+
+    return {
+      ...tool,
+      execute: async (
+        toolCallId: string,
+        params: unknown,
+        signal?: AbortSignal,
+      ) => {
+        const p = params as { path?: string };
+        if (p.path) {
+          const absolutePath = resolve(projectRoot, p.path);
+          const blockMessage = checkProtectedPath(absolutePath, agentName, agentsRoot);
+          if (blockMessage) {
+            return {
+              content: [{ type: "text" as const, text: blockMessage }],
+              details: undefined,
+            };
+          }
+        }
+        return tool.execute(toolCallId, params, signal);
+      },
+    };
+  });
+}
+
 function buildTools(config: AgentConfig, opts: AgentLoaderOptions): AgentTool[] {
   const { projectRoot, persistDir, manager, bus } = opts;
   const agentDir = resolve(opts.agentsRoot, config.name);
@@ -122,12 +204,12 @@ function buildTools(config: AgentConfig, opts: AgentLoaderOptions): AgentTool[] 
     switch (preset) {
       case "coding":
         // Full coding toolset: read + bash + edit + write
-        tools.push(...createCodingTools(projectRoot));
+        tools.push(...createCodingTools(projectRoot, { agentName: config.name }));
         break;
 
       case "read-write": {
         // Legacy preset — maps to coding tools (read + bash + edit + write)
-        tools.push(...createCodingTools(projectRoot));
+        tools.push(...createCodingTools(projectRoot, { agentName: config.name }));
         break;
       }
 
@@ -278,11 +360,28 @@ function buildTools(config: AgentConfig, opts: AgentLoaderOptions): AgentTool[] 
         tools.push(createScrapeTool());
         break;
 
+      case "finish": {
+        const sharedDir = resolve(opts.agentsRoot, "shared");
+        const lessonsPath = resolve(sharedDir, "lessons.jsonl");
+        tools.push(
+          createFinishTool({
+            lessonsPath,
+            agentName: config.name,
+            getTask: () => {
+              const sid = agentSessionIds.get(config.name);
+              return sid ?? "unknown-task";
+            },
+          }),
+        );
+        break;
+      }
+
       case "agent-growth": {
         tools.push(
           ...createAgentGrowthTools({
             agentsRoot: opts.agentsRoot,
             manager,
+            persistDir: opts.persistDir,
             loadAgent: (agentDir) => {
               const config = loadAgentConfig(agentDir, opts.bus);
               if (!config) return;
@@ -337,7 +436,7 @@ function buildTools(config: AgentConfig, opts: AgentLoaderOptions): AgentTool[] 
     }
   }
 
-  return tools;
+  return wrapToolsWithPathGuard(tools, config.name, opts.agentsRoot, projectRoot);
 }
 
 // ── Validation ──────────────────────────────────────────────────────────
@@ -358,6 +457,7 @@ const VALID_TOOL_PRESETS = new Set([
   "cron",
   "scrape",
   "agent-growth",
+  "finish",
 ]);
 
 const REQUIRED_FIELDS: (keyof AgentConfig)[] = ["name", "description", "domain", "model", "tools"];
