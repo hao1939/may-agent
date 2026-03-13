@@ -237,4 +237,47 @@ describe("checkBashCommand (P53 bash guard)", () => {
     const result = checkBashCommand("", "coder");
     expect(result).toBeNull();
   });
+
+  // --- Blocked: interpreter-based write bypass (P53 hardening) ---
+
+  it("blocks python3 write targeting SOUL.md", () => {
+    const result = checkBashCommand('python3 -c "open(\'SOUL.md\',\'w\').write(\'evil\')"', "coder");
+    expect(result).not.toBeNull();
+    expect(result).toContain("BASH BLOCKED");
+    expect(result).toContain("SOUL.md");
+  });
+
+  it("blocks node -e write targeting agent.json", () => {
+    const result = checkBashCommand('node -e "require(\'fs\').writeFileSync(\'agents/bob/agent.json\',\'{}\')"', "coder");
+    expect(result).not.toBeNull();
+    expect(result).toContain("BASH BLOCKED");
+    expect(result).toContain("agent.json");
+  });
+
+  it("blocks php write targeting LESSONS.md", () => {
+    const result = checkBashCommand('php -r "file_put_contents(\'LESSONS.md\',\'evil\');"', "coder");
+    expect(result).not.toBeNull();
+    expect(result).toContain("BASH BLOCKED");
+    expect(result).toContain("LESSONS.md");
+  });
+
+  it("blocks awk write targeting philosophy.md", () => {
+    const result = checkBashCommand('awk \'BEGIN{print "evil"}\' > philosophy.md', "coder");
+    expect(result).not.toBeNull();
+    expect(result).toContain("BASH BLOCKED");
+    expect(result).toContain("philosophy.md");
+  });
+
+  it("blocks ruby write targeting SOUL.md", () => {
+    const result = checkBashCommand('ruby -e "File.write(\'SOUL.md\',\'evil\')"', "coder");
+    expect(result).not.toBeNull();
+    expect(result).toContain("BASH BLOCKED");
+    expect(result).toContain("SOUL.md");
+  });
+
+  it("blocks dd targeting LESSONS.md", () => {
+    const result = checkBashCommand('dd if=/dev/zero of=LESSONS.md bs=1 count=10', "coder");
+    expect(result).not.toBeNull();
+    expect(result).toContain("BASH BLOCKED");
+  });
 });

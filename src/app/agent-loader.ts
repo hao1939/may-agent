@@ -189,6 +189,14 @@ const BASH_WRITE_OPERATORS = [
   "mv ",   // move/rename
   "rm ",   // delete
   "chmod ", // permission change
+  "python",  // interpreter-based write bypass
+  "python3", // interpreter-based write bypass
+  "node ",   // interpreter-based write bypass (trailing space to avoid false positives)
+  "node -e", // interpreter-based write bypass
+  "ruby",    // interpreter-based write bypass
+  "php",     // interpreter-based write bypass
+  "awk",     // interpreter-based write bypass
+  "dd ",     // low-level copy
 ];
 
 /**
