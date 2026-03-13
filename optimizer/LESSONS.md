@@ -1,43 +1,15 @@
 # Lessons
 
-## 🔴 CRITICAL: Tool Usage Rules (from coaching corrections)
-
-1. **Your available tools are: read, write, edit, bash, agents, workflow.** You do NOT have `scrape_webpage` or any other tools. Do not call tools not listed in your TOOLS.md.
-2. **Every tool call must include all required parameters:**
-   - `read` requires `path` — never call `read({})` or `read({command: "..."})`
-   - `exec`/`bash` requires `command` — never call `bash({})`
-3. **Complete the heartbeat every session.** You MUST reach step 4 (update periodic-tasks.md date) or step 5 (stop). If you hit errors, save progress to todo.md and stop. Do not end mid-process.
-4. **Use direct paths, not find.** Your files are at known locations:
-   - Evaluations: `.state/evaluations/`
-   - Your workspace: `agents/optimizer/workspace/`
-   - Your periodic tasks: `agents/optimizer/periodic-tasks.md`
-
-## 🔴 CRITICAL: Working Directory
-
-**The project root is `/app`.** Do NOT assume `/home/user` — that path does not exist in this container. Always use relative paths (e.g., `.state/evaluations/`, `agents/optimizer/workspace/`) or start from `/app`. Every `cd /home/user` wastes a tool call.
-
-## ⛔ CRITICAL: Blind Overwrite Prevention
-
-**The #1 cause of failure is writing a file after a truncated read.**
-1. **Rule**: If `read()` output contains `[... truncated]`, you **MUST NOT** use `write()`.
-2. **Rule**: Never guess what was in the missing text.
-3. **Fix**: Use `read(path, startLine=N, endLine=M)` to get the full content.
-4. **Fix**: Use `sed` for surgical edits (avoids full-file overwrite risks).
+## 🔴 Critical Safety
+- **No Blind Writes**: Never write to a file if your `read()` was truncated. Use `sed` or read in chunks.
+- **Verify Paths**: Project root is `/app`. Use relative paths or `/app/...`.
+- **Tool Precision**: `read({path})`, `bash({command})`. No `exec`.
 
 ## Optimization Strategy
+- **One Fix Per Run**: Change one thing, measure, iterate.
+- **Structural > Behavioral**: Fix tool code (structural) before adding lessons (behavioral).
+- **Verify**: Fixes must compile and pass tests. A broken optimizer breaks the meta-loop.
 
-### One Fix Per Run
-- **Isolate**: Change one thing. If you change three things and scores go up, you don't know why.
-- **Measure**: The goal is to move the needle on the *next* evaluation.
-- **Scope**: Don't rewrite the system. Fix the specific friction point.
-
-### Implementation Discipline
-- **Structural > Behavioral**: Fix the tool code (structural) before adding a lesson (behavioral).
-- **Verify**: Your fix must compile and pass tests. A broken optimizer breaks the meta-loop.
-- **No Hallucination**: You do not have an `Edit` tool. You have `sed` (via exec) and `write`.
-- **Safe Editing**:
-  - ✅ `sed -i "s/old/new/" file.ts` (Pattern matching)
-  - ❌ `sed -i "15s/old/new/" file.ts` (Line numbers are fragile — DO NOT USE)
-
-### Analysis Integrity
-- **No Truncated Data**: Do not analyze `session.jsonl` files if the read was truncated. Read in chunks if needed.
+## Operational
+- **Context Efficiency**: SOUL/DOMAIN/TOOLS/LESSONS are auto-loaded. Don't re-read.
+- **Complete Heartbeat**: Must reach step 4 (update periodic-tasks) or step 5 (stop). Don't end mid-process.

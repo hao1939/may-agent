@@ -1,3 +1,10 @@
+---
+name: agent-growth
+description: Agent growth lifecycle management — fork, verify, promote experimental agents.
+version: 1.0.0
+tools: []
+---
+
 # Agent Growth Skill
 
 This skill allows an agent (typically the `coach`) to execute the agent growth

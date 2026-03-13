@@ -1,6 +1,8 @@
 ---
 name: agent-coordination
 description: Use when you need to delegate work to other agents. Covers the `agents` tool (call, send, list, peek, cancel) and best practices for inter-agent cooperation.
+version: 1.0.0
+tools: [agents]
 ---
 
 # Agent Coordination

@@ -186,7 +186,21 @@ When delegating to a sub-agent, include:
 
 **Evidence**: The highest-scoring coder session (s_1773076135070_0, eff=0.9) received a task with exact file paths, code snippets, constraints, and done criteria. Coder sessions receiving vague tasks consistently score "needs_improvement."
 
-### 4.2 Describe Edits by Content, Not Line Numbers
+### 4.2 Use the "Pointer Protocol" (Memory Layer 2)
+
+**Goal**: Stop "Context Dumping". Don't paste 500 lines of code into a chat.
+
+**Protocol**:
+1. **Pointer over Payload**: If the data is in a file, send the *path*, not the content.
+2. **Explicit Intent**: State *why* the recipient should read the file.
+3. **Artifact Return**: The result isn't "I done it". It is "I wrote the result to `path`".
+
+**Example**:
+"I need you to refactor the `process` function. Context is in `agents/coder/target.ts`. Constraints are: no signature changes. Write output to `agents/bob/workspace/refactor-result.ts`."
+
+**Evidence**: Philosophy P72 (Memory as Architecture). Sessions that pass file paths instead of content reduce token usage by ~60% and eliminate "stale context" errors where the pasted code drifts from the file state.
+
+### 4.3 Describe Edits by Content, Not Line Numbers
 
 When delegating file modifications, describe what to change using the **text content** around the edit site, not line numbers.
 

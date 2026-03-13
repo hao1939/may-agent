@@ -17,26 +17,30 @@ Cooperate with other agents.
 | `peek(sessionId)` | No | See recent activity of a running session. |
 | `cancel(sessionId)` | No | Kill a running session. |
 
-## Agent Growth Tools
+## Agent Growth Tools (The "Lab")
 
-### `fork_agent(source, forkName)`
+### `fork_agent`
 Create a safe copy of an agent to experiment with.
-`fork_agent("coder", "coder-v2")` creates `agents/.lab/coder-v2`.
-- Use before attempting to improve an agent's behavior.
+- `fork_agent("coder", "coder-v2")` → creates `agents/.lab/coder-v2`
+- Use before ANY attempt to improve an agent's behavior.
+- **Note:** Also copies memory, so the fork remembers what the source knew.
 
-### `verify_agent(forkName, taskFile)`
+### `verify_agent`
 Run a test task on a forked agent and get a result.
-`verify_agent("coder-v2", "tests/fix-type-error.md")` runs the task and returns a score.
-- Use after modifying the fork.
+- `verify_agent("coder-v2", "tests/fix-type-error.md")` → runs the task
+- Returns a score/result. Use to prove your changes worked.
 
-### `promote_agent(forkName, target)`
+### `promote_agent`
 Copy successful changes back to the live agent.
-`promote_agent("coder-v2", "coder")` copies config/knowledge files.
-- Use when the fork passes verification tests.
+- `promote_agent("coder-v2", "coder")` → copies:
+  - `SOUL.md`, `DOMAIN.md`, `TOOLS.md`, `LESSONS.md`
+  - `knowledge/*`, `skills/*`
+- **Does NOT copy:** `agent.json` (identity/tools), `workspace/`, memory.
+- Use only when `verify_agent` passes.
 
-### `discard_agent(forkName)`
+### `discard_agent`
 Clean up a failed experiment or temporary fork.
-`discard_agent("coder-v2")` deletes the fork.
+- `discard_agent("coder-v2")` → deletes the fork and its memory.
 - Use when the experiment failed or is complete.
 
 ## `socket_watch`

@@ -1,18 +1,18 @@
-# May — Lessons Learned
+# Lessons
 
-## Environment
-- **K1**: You're in a Docker container at `/app`. There is no git repo, no `.git` directory, no home directory at `/Users/...` or `/root/`. Don't try git commands.
-- **K2**: Your files live at `agents/may/` — SOUL.md, DOMAIN.md, heartbeat.md, workspace/todo.md. Never guess `/app/SOUL.md` or `/app/workspace/todo.md`.
+## 🔴 Critical Safety
+- **No Blind Writes**: Never write to a file if your `read()` was truncated.
+- **Verify Paths**: Project root is `/app`. Relative paths or `/app/...`.
+- **Identity**: Files at `agents/may/`.
 
-## Auto-loaded Files
-- **K3**: SOUL.md, DOMAIN.md, TOOLS.md, and LESSONS.md are injected into your system prompt automatically. Do NOT re-read them — it wastes a turn.
+## Operational Discipline
+- **Action Over Reporting**: Dispatch approved todos immediately. Don't list backlog.
+- **Brevity**: Heartbeats ≤ 200 tokens. Actions + Failures only.
+- **Proactive Reporting**: Report results to Hao immediately upon task completion.
 
-## File Paths
-- **K4**: Never assume a file path. Use `read` or `bash ls` to confirm. But for your own agent files, use `agents/may/...` — that's always correct.
+## Cooperation
+- **Call vs Send**: Use `agents.call` for blocking work (results needed now). Use `agents.send` for background work.
+- **Fallback**: If coder callDeny, use `workflow.run("implement-and-review", task)`.
 
-## Behavior
-- **K5**: Action over reporting. When you find approved work in the todo, dispatch it immediately. Don't list the backlog and say "needs human prioritization."
-- **K6**: Brevity in heartbeats. Report only: (1) actions you took, (2) exceptions/failures. Skip healthy-status tables. Target ≤200 tokens.
-- **K7**: When dispatching to coder fails with callDeny, fall back to `workflow.run("implement-and-review", task)`.
-- **K8**: **Always report results proactively.** When Hao assigns a task, report back with the actual results as soon as it completes — don't wait for him to ask. Include: what was done, key findings, files produced.
-- **K9**: Use `agents.call(agent, task)` — the single cooperation primitive. It blocks until done and returns the result.
+## Operational
+- **Context Efficiency**: SOUL/DOMAIN/TOOLS/LESSONS are auto-loaded. Don't re-read.

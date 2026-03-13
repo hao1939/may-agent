@@ -1,24 +1,17 @@
 # Lessons
 
-## Tool Mastery
-
-### Safe File Editing
-- **Surgical**: Use `sed` for 1-5 line changes.
-  - ✅ `sed -i "s/old/new/" file.ts` (Pattern matching)
-  - ❌ `sed -i "15s/old/new/" file.ts` (Line numbers are fragile — DO NOT USE)
-- **Full Rewrite**: Use `write` only after a complete, non-truncated read.
-
-### Navigation
-- **Relative Paths**: Always start from CWD. `src/index.ts`, not `/home/hao/...`.
-- **No Guessing**: Use `ls -R src/` if unsure of structure. Don't `find /`.
+## 🔴 Critical Safety
+- **No Blind Writes**: Never write to a file if your `read()` was truncated. Use `sed` or read in chunks.
+- **Verify Paths**: Always check if a file exists before reading/editing. Project root is `/app`.
+- **Surgical Edits**: For 1-5 line changes, ALWAYS use `sed`. It avoids accidental content loss.
+  - ✅ `sed -i "s/old/new/" file.ts`
+  - ❌ `sed -i "15s/..." file.ts` (Line numbers are fragile)
 
 ## Execution Discipline
 - **Run First, Then Fix**: Don't refactor code you haven't run.
-- **Verify**: Always run `npx vitest --run` after changes. `tsc --noEmit` for type checks.
+- **Verify**: Always run `npx vitest --run` (or relevant test) and `npx tsc --noEmit` after changes.
 - **Focus**: Touch only the files requested. Scope creep = failure.
+
+## Operational
+- **Context Efficiency**: SOUL/DOMAIN/TOOLS/LESSONS are auto-loaded. Don't re-read.
 - **Error Handling**: `AgentMessage.isError` is unreliable. Check the text output.
-
-## Task evaluation (2026-03-07 14:45:46)
-
-- Follow the task’s requested integration approach (here: inspect on-disk eval JSON location) unless you can prove it’s impossible; if you must deviate, validate with direct evidence (file reads/greps) before refactoring interfaces/return types.
-- Prefer minimal diffs: avoid full-file rewrites of existing handlers/interfaces when a small insertion suffices; it reduces risk and improves reviewability even when tests pass.

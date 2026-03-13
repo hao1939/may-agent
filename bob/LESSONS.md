@@ -1,24 +1,20 @@
-# Lessons Learned
+# Lessons
 
-## 🔴 Coaching Corrections (Critical)
-
-1. **Verify file exists before editing.** Use `ls` or `find` to confirm the EXACT filename. If it does NOT exist: skip it, continue to next task. Do NOT create it, do NOT edit a similarly-named file.
-2. **Post-sed verification.** After running sed, `grep` for the expected new text. If grep finds nothing, the sed failed silently.
-3. **Diagnose before retry.** If sed produces no output and the file is unchanged, read the target line with `cat -n` to see exact characters before retrying.
-4. **Stay in scope.** Only edit files within `agents/bob/workspace/` unless the task explicitly names a file outside it.
+## 🔴 Critical Safety
+- **No Blind Writes**: Never write to a file if your `read()` was truncated. Use `sed` or read in chunks.
+- **Verify Paths**: Always check if a file exists (`ls` or `find`) before reading/editing. Project root is `/app`.
+- **Tool Precision**: `read({path})`, `bash({command})`. Do not mix parameters.
 
 ## Meta-Loop Discipline
-- Verify before briefing: `read` the actual file before requesting a change to it. Don't assume codebase state from secondary metrics.
-- The brief is step 3 of 5. Don't stop to report "I have written the brief." Call the optimizer immediately after writing.
+- **Verify before briefing**: `read` the actual file before requesting a change. Don't assume codebase state.
+- **Brief = Step 3 of 5**: Don't stop at "I wrote the brief." Call the optimizer immediately.
 
-## Design Work
-- Evidence first, essay second. List the raw data (commits, diffs, quotes) before writing analysis. If the data command returns nothing, your analysis is empty.
-- Corrections from the human are the strongest signal — update philosophy.md immediately.
-- Watch for drift between stated philosophy and actual system behavior. Either the principle is wrong or the system drifted — investigate which.
-- **Designs that touch shared code (`src/`) go through tech-lead review.** The L3 Delegation Metrics design was sent to tech-lead and implemented during a heartbeat — tech-lead built it without reviewing the design. The code is clean but premature: no consumer reads the JSONL log, the data already exists in session archives (meta.json has parentSessionId/parentAgentName). A redundant index with no reader violates P1 (Simplest Thing). **When sending designs to tech-lead: (1) expect pushback — tech-lead reviews your designs, not just implements them; (2) identify who will consume the output; (3) if no consumer exists, the design is premature — shelve it.** Design docs in `workspace/` are cheap; code changes to shared infrastructure are not. If tech-lead doesn't push back, that's a GAN failure — the discriminator isn't discriminating.
+## Design Protocol
+- **Evidence First**: List raw data (commits, diffs, quotes) before analysis. No data = no analysis.
+- **Tech-Lead is the Discriminator**: Designs touching `src/` must be reviewed by tech-lead. Expect pushback. If tech-lead accepts blindly, it's a failure.
+- **Philosophy is Law**: Watch for drift between `philosophy.md` and system behavior.
 
-## Anti-Patterns (from experience)
-- Don't try to run agents via `bash` (`npx tsx run/may.ts`, `chmod +x`). Always use `agents.call()`.
-- Don't stop at "nice list and wait" — if there's a clear next step, take it.
-- Don't treat a single data point as a trend. One comment is curiosity; three in a week is a priority.
-- **Write to YOUR directories.** Your knowledge goes in `agents/bob/knowledge/`, not `knowledge/` at the project root. All agents share the same `cwd` (project root), so bare `knowledge/` creates a stray top-level directory. Always use `agents/bob/` prefix.
+## Operational
+- **Context Efficiency**: SOUL/DOMAIN/TOOLS/LESSONS are auto-loaded. Don't re-read.
+- **Own Your Path**: Your files are in `agents/bob/`. Don't write to root `knowledge/`.
+- **Async vs Sync**: Use `agents.send` for fire-and-forget (todos). Use `agents.call` when you need the result now.

@@ -1,6 +1,8 @@
 ---
 name: error-handling
 description: Core protocols for escalating failures, reporting errors, and avoiding silent failures.
+version: 1.1.0
+tools: []
 ---
 
 # Error Handling & Escalation
@@ -44,6 +46,77 @@ Verify the success of an action immediately.
 - **Edit Code** -> `tsc` to check syntax.
 - **Install Pkg** -> `ls node_modules` to confirm presence.
 
+> **📖 See also**: `agents/shared/skills/verification/SKILL.md` for the full verification protocol, anti-patterns, and inviolable constraints. Verification failure is the #1 systemic issue.
+
+### The "Tool Grounding" Pattern
+Only use tools you **know exist**. Your available tools are listed in your system prompt.
+
+- ❌ Calling `fork_agent`, `verify_agent`, `promote_agent` — these don't exist in most sessions
+- ❌ Calling `Bash` (capital B) — tool names are lowercase: `bash`
+- ❌ Calling `exec({})` or `edit({})` with empty/missing required params
+- ❌ Calling `agents({action: "call"})` when your toolset is `read, write, bash, edit`
+- ✅ Check your system prompt for the exact tool names and required parameters
+- ✅ If a tool call returns "Tool X not found", **stop** — don't retry the same tool name
+
+**Why this matters**: Tool hallucination wastes entire turns and causes cascading failures.
+When agents use non-existent tools for verification, they claim "verified" without actually verifying.
+Three agents (coach, tech-lead, scout) have independently hallucinated tools — this is systemic.
+
+**Evidence**: coach session s_0 used `fork_agent`/`verify_agent`/`promote_agent` (none exist);
+tech-lead session s_35 used `Bash` (capital B, should be `bash`) and `exec({})` (empty params);
+tech-lead session s_36 used `agents` tool (not in its toolset).
+
+## Anti-Patterns
+
+### Tool Abort → Silent Abandon
+**Pattern**: A tool returns an error ("Command aborted", exit code ≠ 0, file not found), and the agent silently moves on — neither retrying with a different approach nor reporting the failure. The step is just skipped.
+
+**Why it's dangerous**: The agent appears to complete the workflow, but a critical step was never done. Downstream work is built on a missing foundation.
+
+**Evidence**: 10 SILENT_FAIL occurrences across 4 agents (master, may, optimizer, amy) in 300 recent evals. Common triggers:
+- `bash` returns "Command aborted" → agent doesn't retry with smaller/simpler command
+- `read` fails on wrong path → agent doesn't search for correct path
+- Tool returns exit 127 (command not found) → agent doesn't try available alternatives
+
+**Correct response to any tool failure**:
+1. **Acknowledge**: State what failed and why (read the error output)
+2. **Pivot**: Try a different approach (smaller command, different path, different tool)
+3. **Escalate**: If pivot also fails, report the failure explicitly — never silently continue
+
+### Exploration Without Output (Non-Delivery)
+**Pattern**: Agent spends the session reading files, fetching URLs, or running commands but **never writes a deliverable** — no `write()`, no `edit()`, no persisted artifact. Session ends with exploration but zero saved output.
+
+**Why it's dangerous**: All the work is lost. The session consumed tokens and time but produced nothing durable. From the system's perspective, the agent did nothing.
+
+**Evidence**: 15 NON_DELIVERY occurrences across 7 agents (scout, coach, bob, amy-kimi, optimizer, master, coder) in 200 recent evals. Typical pattern: agent reads 5-10 files or fetches 3-5 URLs, then session ends without any `write()` or `edit()` call.
+
+**Correct response**:
+1. **Persist early**: If you've gathered useful information, write a summary/brief before continuing exploration. Don't wait until the end.
+2. **Budget for output**: Reserve the last 10-20% of your session for writing deliverables. If you've been exploring for many turns, stop and synthesize.
+3. **Minimum viable output**: Even if exploration is incomplete, write what you found so far. A partial summary is infinitely more valuable than nothing.
+
+### Planning Without Executing
+**Pattern**: Agent spends the entire session reading requirements, inspecting files, and describing what it plans to do — but never performs the actual work (`write()`, `edit()`, `bash` with a real command). Session ends with zero modifications. Distinct from "Exploration Without Output" (which is about data gathering); this is about reading the task, planning the approach, and then running out of context before the first real action.
+
+**Why it's dangerous**: 33 INCOMPLETE_TASK / NON_DELIVERY / TASK_NONCOMPLETION occurrences across 7 agents in 500 recent evals. The most common variant: agent reads 3-8 files to understand the task, mentally plans the approach, then the session ends (interrupted or context exhausted) before any write/edit. All planning was wasted — the next session starts from scratch.
+
+**Sub-variants**:
+- **Read-plan-expire**: Reads requirements, reads target files, plans edits... session ends. (tech-lead: 6 occurrences)
+- **Temp-file detour**: Writes output to `/tmp/` instead of the target file, session ends before copying back. (tech-lead: 1 occurrence)
+- **Claims done with zero work**: Agent says "done" or "nothing to do" without reading todo or performing any tool calls. (tech-lead: 2 occurrences)
+
+**Correct response**:
+1. **Act within 3 turns**: After reading the task, start executing within 3 tool calls. If you need to read the target file, read it — then immediately edit it. Don't read 5 more files "for context."
+2. **Write to the real target**: Never write deliverables to `/tmp/`. Always write directly to the path the task specifies.
+3. **Incremental delivery**: For large tasks, make the first edit quickly (even if partial), then refine. A file with 60% of the changes is better than a plan with 0% of the changes.
+4. **Never claim "done" without evidence**: If your session has zero `write()`/`edit()` calls, you are NOT done. Read your todo and do the work.
+
+**Evidence**: tech-lead 14 occurrences (6× INCOMPLETE_TASK, 2× TASK_NONCOMPLETION, 2× INCOMPLETE_EXECUTION, 2× HEARTBEAT_INCOMPLETE, 1× INCOMPLETE_WORKFLOW, 1× INCOMPLETE_TASK /tmp detour); bob 5 occurrences (2× NON_DELIVERY, 2× INCOMPLETE_SCOPE, 1× INCOMPLETE_DELIVERABLE); optimizer 3, scout 2, coder 2, amy-kimi 2, may 1.
+
 ## Inviolable Constraints
 - ⛔ **Never Retry Blindly**: Same input = same error. Change something before retrying.
 - ⛔ **Never Swallow Errors**: If a tool fails, report it. Don't pretend it succeeded.
+- ⛔ **Never Silently Abandon**: If a tool fails and you can't fix it, you MUST report the failure. Never skip a step and continue as if it succeeded.
+- ⛔ **Never Hallucinate Tools**: Only call tools listed in your system prompt. If "Tool X not found" → it doesn't exist.
+- ⛔ **Never end a session with zero persisted output**: If you did any work, write it somewhere before stopping.
+- ⛔ **Never spend more than 3 turns planning before the first real action**: Read the task, read the target, then start editing. Extended planning without execution leads to incomplete sessions.

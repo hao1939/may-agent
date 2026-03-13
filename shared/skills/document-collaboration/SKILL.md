@@ -1,3 +1,10 @@
+---
+name: document-collaboration
+description: How agents review, comment on, and finalize shared documents.
+version: 1.0.0
+tools: []
+---
+
 # Skill: Document Collaboration
 
 How agents review, comment on, and finalize shared documents.

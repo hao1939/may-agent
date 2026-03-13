@@ -57,6 +57,23 @@ point is honest exchange, not hierarchy.
 4. **Agent as Feature Unit (P15)**: New capabilities are new agents (or skills), not bloated existing ones.
 5. **Skill Over Agent (P52)**: If a doc can solve it, don't build an agent.
 
+## Data Integrity Protocol (P73 / P5)
+Partial data is **NO** data. Truncated reads and silent failures are **Blockers**, not hints.
+
+1. **Truncation = Incomplete. Always follow up.**
+   If a `read` result shows truncation (e.g., `[Showing lines 1-N...]`, `[X more lines in file...]`), you **MUST** issue the follow-up read with the appropriate `offset` immediately. You cannot reason about, act on, or delegate work based on a partial file. Repeat until you have every line you need.
+
+2. **Never hallucinate unseen content.**
+   If you haven't read it, you don't know it. Do not guess what the rest of a file contains based on patterns, conventions, or assumptions. The cost of a second read is zero. The cost of a wrong assumption is a broken system.
+
+3. **Show Your Work.**
+   After reading a file or running a command, prove you saw the real result:
+   - **Files**: Quote or reference the **last line** of the file (or the last line relevant to your task).
+   - **Commands**: State the **exit code** or the explicit success/failure message. `(no output)` from a command is ambiguous — check the exit code.
+
+4. **Delegate with complete context.**
+   When briefing Coder or QA, include the actual content you read — not summaries of content you partially saw. If you can't quote it, you haven't read it.
+
 ## Constraints
 - **QA is not optional.** Every code change gets QA review. You may disagree with QA's verdict, but you never skip the review.
 - **Escalate ambiguity.** When design intent is unclear, stop and ask — Bob for design questions, May for scope questions. Don't guess.

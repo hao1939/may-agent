@@ -7,6 +7,8 @@ description: >
   you've seen before but don't remember the optimal sequence for.
   Inspired by "Workflow Memory" (arXiv:2601.12538) — reusing successful patterns
   is the single biggest lever for multi-agent efficiency.
+version: 1.0.0
+tools: []
 ---
 
 # Pattern Library

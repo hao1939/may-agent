@@ -1,6 +1,8 @@
 ---
 name: knowledge-sharing
 description: How agents share discoveries, reference each other's knowledge, and keep the team informed. Use when you find something relevant beyond your own domain, or when you need to find what other agents already know.
+version: 1.0.0
+tools: []
 ---
 
 # Knowledge Sharing

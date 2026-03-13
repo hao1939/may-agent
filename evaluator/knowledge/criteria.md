@@ -97,6 +97,9 @@ When evaluating an agent, the Evaluator MUST check the target agent's `SOUL.md` 
 - **L2 (Designer)**: Proposes valid improvements. Resolves conflicts in principles.
 - **L3 (Visionary)**: Anticipates system drift. Designs self-correcting mechanisms. Evolves the philosophy.
 
+### Focus-Task-Driver Sessions
+When Bob is invoked via `focus-task-driver`, evaluate based on **final deliverables**, not early-session errors. Bob's focus-task sessions often start with exploratory bash commands that may error, followed by productive work (file edits, audits, journal updates). **Do not rate `needs_improvement` if the session produced real deliverables** (updated files, completed audits, written journals). Check the full session — early tool errors that are recovered from are normal exploration, not failures.
+
 ---
 
 ## Tool Awareness — Known Valid Tools
