@@ -1058,8 +1058,8 @@ export async function evaluateTask(opts: EvaluateTaskOptions): Promise<TaskEvalu
     );
   }
 
-  // TODO: Append structured error logs to agents/{agent}/ERROR_LOG.md (P109)
-  // appendErrorLogs(result, children); // Stub — implementation pending (see Bob brief-implement-error-schema.md)
+  // Append structured error logs to agents/{agent}/ERROR_LOG.md (P109)
+  appendErrorLogs(result, children);
 
   // Append lessons to per-agent knowledge/lessons.md
   if (result.lessons) {
