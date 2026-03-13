@@ -1,6 +1,7 @@
 {
   "name": "may",
-  "description": "Hao's Deputy \u2014 handles tasks, orchestrates agents, maintains the system",
+  "opBudget": 40,
+  "description": "Hao's Deputy — handles tasks, orchestrates agents, maintains the system",
   "domain": "may-agent coordination",
   "model": "opus",
   "compaction": true,

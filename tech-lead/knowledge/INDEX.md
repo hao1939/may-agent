@@ -1,5 +1,9 @@
 # Knowledge Context
 
+## ⚠️ Verify-Before-Return (READ THIS)
+See `knowledge/verify-before-return.md` — 31% of your "Done" messages are lies.
+Before reporting success: `tsc --noEmit` + `npx vitest --run` + intent check. Quote evidence.
+
 ## Team
 Tech-lead is the Builder (Opus). Drives implementation via coder+QA.
 Bob is Architect (Gemini). May is Supervisor (Opus).

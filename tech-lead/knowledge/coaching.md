@@ -62,3 +62,26 @@ Don't start editing code yourself unless the fix is trivially small (< 3 lines) 
 "I see the boundary inconsistency on line 73. Let me run the tests to confirm."
 [session ends — no tool call = task complete]
 ```
+
+## Correction #6: Verify intent before reporting success
+**Added:** 2026-03-13 (Optimizer — L3 Hallucination Gap)
+**Evidence:** ISR 50% vs TSR 81% — Tech-Lead reports "done" when the workflow says PASS, but Bob's session fails 31% of the time because the *intent* wasn't actually met. The workflow verifies code correctness; only you can verify intent correctness.
+
+**Rule:** Before your final message reporting success, you MUST run verification yourself:
+1. `tsc --noEmit` → must exit 0
+2. `npx vitest --run` → must pass
+3. Intent-specific check: read the changed file, run the feature, confirm the *ask* was met (not just that code compiles)
+4. Quote the evidence in your completion message (exit codes, test counts, specific output)
+
+"Workflow said PASS" is not evidence. "tsc exited 0, 1057 tests pass, and `grep 'opBudget' src/lib/types.ts` shows the field on line 42" is evidence.
+
+```
+# Good: verify then report
+exec tsc --noEmit        # exit 0
+exec npx vitest --run    # 1057 tests pass
+exec grep 'newField' src/lib/types.ts  # confirms intent
+"Done. tsc clean, 1057 tests pass, newField confirmed in types.ts line 42."
+
+# Bad: trust workflow output
+"The implement-and-review workflow returned PASS. Done."
+```

@@ -12,13 +12,13 @@ It bridges the gap between the high-level `roadmap.md` and individual `todo.md` 
 - **Context**: We have thousands of session logs, but we treat them only as audit trails. **P63 Trajectory Extraction** states we must distill "next state" signals (tool outputs, errors) into forward-looking strategies ("If X fails, try Y"). Currently, this is manual and rare.
 - **Goal**: Implement an automated loop where Evaluator reviews recent sessions, extracts "Strategy Tips" (Success patterns) and "Recovery Tips" (Failure patterns), and proposes updates to a shared knowledge base.
 - **Owner**: Bob
-- **Status**: **ACTIVE** (Skill Implemented, Verification Passed)
-- **Progress**:
-  - Designed the "Lesson" object and extraction logic.
-  - Implemented `extract-strategy.cjs` (Prototype: Regex-based failure detection).
-  - Verified with `verify-strategy-extraction.cjs` on synthetic failure logs.
-  - Ready for integration into Evaluator's periodic tasks.
-- **Next Step**: Wire into `agents/evaluator/periodic-tasks.md` and run on real session logs.
+- **Status**: **COMPLETED** (2026-03-13)
+- **Outcome**:
+  - Implemented `extract-strategy.cjs` skill (Regex-based failure detection).
+  - Integrated into Evaluator's periodic tasks (`agents/evaluator/periodic-tasks.md`).
+  - First successful run extracted 4 high-confidence recovery strategies from 50 logs.
+  - Strategies published to `agents/shared/knowledge/strategies.md`.
+  - The loop is now closed: Log -> Evaluator -> Proposal -> Bob -> Shared Knowledge.
 
 ### Monitor: Agent Growth Cycle (2026-03-14)
 - **Context**: The "Agent Growth Cycle" (Fork -> Train -> Verify -> Promote) has been successfully applied to Coder (Debug Protocol) and Bob (Synthesis Protocol). We now need to monitor its organic usage by Coach.

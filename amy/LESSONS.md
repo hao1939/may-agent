@@ -17,3 +17,8 @@
 
 ## Operational
 - **Context Efficiency**: SOUL/DOMAIN/TOOLS/LESSONS are auto-loaded. Don't re-read.
+
+## ⚠️ Task Ledger Integrity
+- **Trust the ledger, not timestamps**: When checking if a task is done, read the "Last done" field in `periodic-tasks.md` or the checkbox state in `todo.md`. Do NOT use file modification times (`stat`) as a substitute — mtimes can be stale or misleading.
+- **Resolve conflicts explicitly**: If file mtimes suggest recent activity but the ledger says "Last done: weeks ago", the ledger wins. State the discrepancy and act on the ledger date.
+- **Blocked ≠ Empty**: If todo items are blocked (e.g., missing tokens/tools), say "blocked on X" — don't say "no actionable items". The distinction matters for tracking.

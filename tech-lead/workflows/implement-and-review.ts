@@ -33,13 +33,16 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const reviewUpper = reviewText.toUpperCase();
   if (reviewUpper.includes("PASS") && !reviewUpper.includes("FAIL")) {
     return ctx.done(
-      `## QA Verdict: PASS — ready to commit\n\n` +
+      `## QA Verdict: PASS\n\n` +
       `## Implementation\n${coder.lastAssistantText}\n\n` +
       `## Review\n${reviewText}\n\n` +
-      `## ACTION REQUIRED\n` +
-      `Run: git diff --stat\n` +
-      `Then: git add <changed files> && git commit -m "<type>: <description>"\n` +
-      `Do this NOW. Do not summarize, do not explain — just commit.`
+      `## ⚠️ PHASE 4 REQUIRED — DO NOT SKIP\n` +
+      `QA PASS is not proof. You MUST verify intent yourself before reporting success:\n` +
+      `1. Run \`tsc --noEmit\` — must exit 0\n` +
+      `2. Run \`npx vitest --run\` — must pass\n` +
+      `3. Verify the *specific ask* was met (read the file, check the output)\n` +
+      `4. Only then: git add + commit with evidence\n\n` +
+      `"Workflow said PASS" without your own verification = hallucinated success.`
     );
   }
 
@@ -96,12 +99,15 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   }
 
   return ctx.done(
-    `## QA Verdict: PASS (after one iteration) — ready to commit\n\n` +
+    `## QA Verdict: PASS (after one iteration)\n\n` +
     `## Implementation (after one iteration)\n${fix.lastAssistantText}\n\n` +
     `## Final Review\n${review2Text}\n\n` +
-    `## ACTION REQUIRED\n` +
-    `Run: git diff --stat\n` +
-    `Then: git add <changed files> && git commit -m "<type>: <description>"\n` +
-    `Do this NOW. Do not summarize, do not explain — just commit.`
+    `## ⚠️ PHASE 4 REQUIRED — DO NOT SKIP\n` +
+    `QA PASS is not proof. You MUST verify intent yourself before reporting success:\n` +
+    `1. Run \`tsc --noEmit\` — must exit 0\n` +
+    `2. Run \`npx vitest --run\` — must pass\n` +
+    `3. Verify the *specific ask* was met (read the file, check the output)\n` +
+    `4. Only then: git add + commit with evidence\n\n` +
+    `"Workflow said PASS" without your own verification = hallucinated success.`
   );
 }

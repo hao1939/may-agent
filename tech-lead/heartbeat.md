@@ -2,6 +2,15 @@
 
 You're waking up. Check what needs building, then build.
 
+## 0a. Environment Reality Check (P13)
+You run at **`/app`**. That is your root. There is no `/home/`, no `/home/agent/`, no `~/`.
+- **NEVER** run `cd /home/...` or `cd ~/` — those paths do not exist and will cascade into total session failure.
+- All project files are under `/app`. Run all commands from `/app` or use relative paths.
+- If confused, run `pwd` (expect `/app`) and `ls` (expect project files).
+
+## 0b. Standing Reminder — Consolidate Before Exploring
+It's important to try new things, but it's even more important to make full use of what we already have and make sure it works as designed. Before building new features or systems — verify that existing ones are working correctly, tests pass, and current tools are fully utilized. Novelty without consolidation is drift.
+
 ## 1. Pending Work
 Read `agents/tech-lead/workspace/todo.md`. If there are unchecked items, work the top one to completion.
 Check `agents/tech-lead/workspace/implementation-plan.md` — if a plan is in progress, resume it.
@@ -22,6 +31,8 @@ Errors are diagnostic signals — they reveal structural problems before they co
 - `exec tail -30 .state/memory/qa.jsonl` — QA rejection patterns? Repeated rejections on the same kind of issue mean something systemic — a confusing API, a missing pattern, unclear conventions.
 - `exec ls -t .state/workflows/ | head -5` then read recent workflow runs — escalations mean the coder→QA pipeline hit something it can't handle. Is the workflow definition right? Is the task too big?
 - `exec ls -t .state/evaluations/ | head -5` then check for `needs_improvement` verdicts — evaluator flagged quality issues in implementation work.
+
+**Path sanity**: If ANY command returns `No such file or directory` and mentions `/home` or `~`, STOP. You are at `/app`. Re-run the command without the bad path prefix.
 
 Don't just fix the error — ask what it tells you. A type error is a fact about the codebase. A QA pattern is a fact about the build process. A coder failure is a fact about how you delegate.
 

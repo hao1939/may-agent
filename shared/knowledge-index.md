@@ -52,6 +52,7 @@ Read this before starting research — someone may have already covered your top
 - `agents/shared/philosophy.md` — Design philosophy
 - `agents/shared/roadmap.md` — Product direction
 - `agents/shared/bulletin.md` — Cross-agent findings needing attention
+- `agents/shared/knowledge/strategies.md` — Common failure recovery patterns (P63)
 - `docs/` — Design docs, architecture, proposals, operations. See `docs/README.md`.
 
 ## Shared Tools

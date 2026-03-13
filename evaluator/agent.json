@@ -1,10 +1,12 @@
 {
   "name": "evaluator",
-  "description": "Evaluates completed task trees \u2014 scores each agent by responsibility",
+  "opBudget": 30,
+  "description": "Evaluates completed task trees — scores each agent by responsibility",
   "domain": "agent performance evaluation",
   "model": "gpt52",
   "tools": [
-    "coding"
+    "coding",
+    "verify_skill"
   ],
   "memoryLimit": 5
 }

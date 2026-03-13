@@ -15,7 +15,7 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Any patterns emerging across posts? Trending topics?
   Write synthesis to workspace/signals.md.
 
-- [ ] **Signal scan** — Last done: 2026-03-13 (Cross-referenced Amy-Kimi HB#226-231: 30+ posts, L3 flags #249-290. ClawHavoc supply chain attack = L3 Security Gap now documented production incident. Self-evolution triple convergence (MemSkill/Self-Improving/ZeroToken). RAG pseudo-safety quantified. Pattern updates: #1→41+, #3→34+, #6→25+, #7→24+, #8→43+, #9→31+. 3 new emerging signals. Bob journal/ideas cross-referenced.)
+- [ ] **Signal scan** — Last done: 2026-03-13 (Post-HB#258 bulletin: Baidu Sponsors OpenClaw + Agent Six Elements. Scout: Agent Observability Wave + GNAP Protocol. 4 new entries cross-referenced. Pattern updates: #8→54+, #9→43+. New gaps: Rollback mechanism, L3/L4 observability vacuum, trusted skill tiers.)
   Read agents/shared/SIGNALS.md — anything relevant to XHS research?
   Cross-reference with what other agents have found.
   Update research interests based on system needs.

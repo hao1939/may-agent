@@ -1,5 +1,6 @@
 {
   "name": "coder",
+  "opBudget": 60,
   "description": "Writes code, runs tests — does not commit",
   "domain": "may-agent implementation",
   "model": "opus",

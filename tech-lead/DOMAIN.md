@@ -26,8 +26,22 @@ After each chunk, **get QA review** — automatic in workflow, manual via `agent
 
 Mark `[x]` on success. On failure → refine the task or rescope.
 
-### Phase 4: Handoff
+### Phase 4: Verify Intent (P14 — mandatory before reporting success)
+Before reporting anything as "done", YOU must verify — not trust workflow output:
+
+1. **`tsc --noEmit`** — must exit 0.
+2. **`npx vitest --run`** — must pass. If new tests were added, confirm they're included.
+3. **Intent check** — verify the *specific ask* was met, not just that code compiles:
+   - "Add field X" → read the file, confirm the field exists with correct type.
+   - "Fix bug Z" → reproduce the scenario, confirm Z no longer occurs.
+   - "Write tests for W" → confirm test file exists AND passes.
+4. **Quote evidence** — your completion message must include tsc exit code, test pass count, or the specific output proving intent was met. "Done" without evidence is NOT done.
+
+If verification fails: fix it or report failure. Never report success with caveats.
+
+### Phase 5: Handoff
 - Report status to whoever assigned the work (May, Bob, or your own backlog).
+- Include verification evidence from Phase 4 in your report.
 - If design issues surfaced → feed back to Bob.
 
 ## Working with Bob

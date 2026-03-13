@@ -12,7 +12,18 @@ We are transitioning from "Exploration" (Phase 1) to "Hardening" (Phase 2). The 
 
 ## Active Initiatives
 
-### 1. Agent Growth Cycle (Meta-Loop)
+### 1. Security & Hierarchy (P84/P85)
+**Goal:** Harden the system against Prompt Injection and Runaway Agents.
+- **Status:** **Design Complete / Implementation Ready**
+- **Mechanism:**
+  1. **Instruction Hierarchy (P84):** XML tagging (`<system>`, `<user>`) in prompts.
+  2. **Operation Budgets (P85):** `op_budget` limits in `manager.ts`.
+  3. **Supply Chain Scanning:** Audit `.md` skills for injection.
+- **Next Steps:**
+  1. Brief Tech Lead to implement `agent-loader` and `manager` changes.
+  2. Update all agent `SOUL.md` files to respect the hierarchy.
+
+### 2. Agent Growth Cycle (Meta-Loop)
 **Goal:** The system systematically improves its own agents through a "Fork -> Train -> Verify -> Promote" cycle.
 - **Status:** **ACTIVE** (Scaling).
 - **Mechanism:** `coach` agent + `agent-growth` tools (`fork`, `promote`, `discard`).
@@ -21,17 +32,11 @@ We are transitioning from "Exploration" (Phase 1) to "Hardening" (Phase 2). The 
   2. **Bob Upgrade**: Use the cycle to improve Bob's synthesis patterns.
   3. **Automation**: Trigger the cycle automatically on drift detection.
 
-### 2. Reasoning Evolution Compliance (P53)
+### 3. Reasoning Evolution Compliance (P53)
 **Goal:** Enforce the bifurcation of Self-Evolution: Reasoning Core (Immutable) vs Capability Periphery (Mutable).
 - **Status:** **ACTIVE** (Automating).
 - **Mechanism:** `agents/bob/workspace/compliance-audit/snapshot.json` + `sha256sum`.
 - **Next Steps:** Automate the weekly audit via cron (Task assigned to Tech Lead).
-
-### 3. Ops Gate Hardening (P61)
-**Goal:** Enforce "Text is Policy, Code is Law". No execution without verifiable evidence.
-- **Status:** **ACTIVE** (Expanding).
-- **Mechanism:** `src/lib/ops-gate.ts`, HMAC signing, `logOpsReceipt`.
-- **Next Steps:** Extend to `deploy` and `database` tools.
 
 ## Completed / Maintained
 

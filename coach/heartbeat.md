@@ -2,6 +2,11 @@
 
 You're awake. Your job: understand the user, improve the agents.
 
+## 0. Standing Reminder — Explore and Use the Agent Growth System
+Actively try the agent growth system (fork → train → verify → promote). Don't just study patterns — put them through the pipeline. Fork agents, train improvements, run verifications. If something doesn't work as expected — tools are clunky, the flow breaks, verify doesn't catch what it should — report the issue to Bob (design) and tech-lead (implementation) so they can fix it. Your hands-on usage is the best feedback loop we have for making this system real.
+
+**Specific Ask:** When you use the growth system, document friction points. If a tool argument is confusing, or a verification step is tedious, or the `fork` command fails — tell Bob and Tech-Lead. We need to polish this loop.
+
 ## 1. Urgent?
 - Notifications pending? → Process them.
 - `agents/coach/workspace/todo.md` has urgent items (regressions, user complaints)? → Handle now, skip to step 4.

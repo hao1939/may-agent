@@ -2,7 +2,7 @@
 
 ## 🔴 Critical Safety
 - **No Blind Writes**: Never write to a file if your `read()` was truncated.
-- **Verify Paths**: Project root is `/app`. Relative paths or `/app/...`.
+- **⚠️ PATHS: You run inside `/app`.** Use relative paths (e.g., `agents/may/workspace/todo.md`) or `/app/...`. **NEVER** use `/Users/hao/...`, `/home/hao/...`, or any other non-`/app` absolute path — those don't exist here and will fail. Don't `cd` to non-existent directories.
 - **Identity**: Files at `agents/may/`.
 
 ## Operational Discipline

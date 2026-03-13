@@ -259,7 +259,7 @@
     "type": "job",
     "intervalMs": 604800000,
     "agent": "evaluator",
-    "message": "[cron:compliance-audit] Run the P53 compliance audit: execute `node agents/evaluator/skills/detect-p53-drift.cjs`. If drift is found, post a WARNING to agents/shared/bulletin.md. If clean, post a PASS report to agents/bob/workspace/compliance-audit/reports/.",
+    "message": "[cron:compliance-audit] Run the P53 compliance audit: execute `node agents/evaluator/skills/detect-p53-drift/detect-p53-drift.cjs`. If drift is found, post a WARNING to agents/shared/bulletin.md. If clean, post a PASS report to agents/bob/workspace/compliance-audit/reports/.",
     "enabled": true,
     "handler": "run-agent-task",
     "description": "Weekly P53 compliance audit — verify SOUL.md and agent.json integrity (Mondays, 7d)"
