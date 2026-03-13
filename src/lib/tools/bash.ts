@@ -196,6 +196,16 @@ export function createBashTool(cwd: string, options?: BashToolOptions): AgentToo
 			onUpdate?,
 		) => {
 			const { command, timeout } = _params as BashToolInput;
+
+			// P53 (Identity Protection): block bash commands that write to protected files
+			const protectedFiles = ["SOUL.md", "DOMAIN.md", "TOOLS.md", "LESSONS.md"];
+			const writeIndicators = [">", "sed -i", "mv ", "cp "];
+			const looksLikeWrite = writeIndicators.some(op => command.includes(op));
+			const targetsProtected = protectedFiles.some(file => command.includes(file));
+			if (looksLikeWrite && targetsProtected) {
+				throw new Error("P53 Violation: modifying SOUL.md/DOMAIN.md/TOOLS.md/LESSONS.md via bash is forbidden.");
+			}
+
 			// Apply command prefix if configured (e.g., "shopt -s expand_aliases" for alias support)
 			const resolvedCommand = commandPrefix ? `${commandPrefix}\n${command}` : command;
 			const spawnContext = resolveSpawnContext(resolvedCommand, cwd, spawnHook);
