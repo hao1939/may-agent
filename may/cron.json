@@ -3,11 +3,11 @@
     "name": "heartbeat",
     "type": "heartbeat",
     "agent": "may",
-    "intervalMs": 1200000,
+    "intervalMs": 600000,
     "message": "[heartbeat] Read agents/may/heartbeat.md and work through it. You have full authority to act — dispatch approved work, fix issues, don't wait for permission.",
     "enabled": true,
     "description": "May's heartbeat — follow-up, system health, initiative (30min)",
-    "lastModified": "2026-03-10T16:18:23.654Z"
+    "lastModified": "2026-03-12T15:11:46.791Z"
   },
   {
     "name": "watchdog",
@@ -49,44 +49,44 @@
   {
     "name": "heartbeat-bob",
     "type": "heartbeat",
-    "intervalMs": 1200000,
+    "intervalMs": 600000,
     "agent": "bob",
     "message": "[heartbeat] You are Bob. Your files are in agents/bob/. Read agents/bob/heartbeat.md and work through each section top to bottom. End with a 2-3 sentence brief of what you did and found.",
     "enabled": true,
-    "description": "Bob's mission heartbeat — design, todo drain, philosophy audit (30min, pre-checked)",
-    "lastModified": "2026-03-10T16:18:23.655Z",
+    "description": "Bob's mission heartbeat — design, todo drain, philosophy audit (30min)",
+    "lastModified": "2026-03-12T15:11:42.304Z",
     "notifyBrief": true
   },
   {
     "name": "heartbeat-optimizer",
     "type": "heartbeat",
-    "intervalMs": 1200000,
+    "intervalMs": 600000,
     "agent": "optimizer",
     "message": "[heartbeat] You are Optimizer. Your files are in agents/optimizer/. Read agents/optimizer/heartbeat.md and work through each section top to bottom.",
     "enabled": true,
-    "description": "Optimizer's heartbeat — find highest-impact improvement (30min, pre-checked)",
-    "lastModified": "2026-03-10T16:18:23.657Z"
+    "description": "Optimizer's heartbeat — find highest-impact improvement (30min)",
+    "lastModified": "2026-03-12T15:11:42.303Z"
   },
   {
     "name": "heartbeat-coach",
     "type": "heartbeat",
-    "intervalMs": 1200000,
+    "intervalMs": 600000,
     "agent": "coach",
     "message": "[heartbeat] You are Coach. Your files are in agents/coach/. Read agents/coach/heartbeat.md and work through each section top to bottom.",
     "enabled": true,
-    "description": "Coach heartbeat — triage, coaching, long-term mission work (30min, pre-checked)",
-    "lastModified": "2026-03-10T16:18:23.658Z",
+    "description": "Coach heartbeat — triage, coaching, long-term mission work (30min)",
+    "lastModified": "2026-03-12T15:11:42.304Z",
     "notifyBrief": true
   },
   {
     "name": "heartbeat-evaluator",
     "type": "heartbeat",
-    "intervalMs": 1200000,
+    "intervalMs": 2700000,
     "agent": "evaluator",
     "message": "[heartbeat] You are Evaluator. Your files are in agents/evaluator/. Read agents/evaluator/heartbeat.md and work through each section top to bottom. End with a 2-3 sentence brief of what you evaluated or calibrated.",
     "enabled": true,
-    "description": "Evaluator's heartbeat — review eval quality, calibrate (30min, pre-checked)",
-    "lastModified": "2026-03-10T16:18:23.659Z",
+    "description": "Evaluator's heartbeat — review eval quality, calibrate (30min)",
+    "lastModified": "2026-03-12T15:11:42.302Z",
     "notifyBrief": true
   },
   {
@@ -96,7 +96,7 @@
     "agent": "amy",
     "message": "[heartbeat] You are Amy. Your files are in agents/amy/. Read agents/amy/heartbeat.md and work through each section top to bottom.",
     "enabled": true,
-    "description": "Amy's heartbeat — XHS exploration and insight synthesis (1h, pre-checked)",
+    "description": "Amy's heartbeat — XHS exploration and insight synthesis (1h)",
     "lastModified": "2026-03-10T16:18:23.661Z"
   },
   {
@@ -106,7 +106,7 @@
     "agent": "scout",
     "message": "[heartbeat] You are Scout. Your files are in agents/scout/. Read agents/scout/heartbeat.md and work through each section top to bottom. End with a 2-3 sentence brief of what you researched and found.",
     "enabled": true,
-    "description": "Scout's heartbeat — research and discovery (30min, pre-checked)",
+    "description": "Scout's heartbeat — research and discovery (30min)",
     "lastModified": "2026-03-10T16:18:23.663Z",
     "notifyBrief": true
   },
@@ -171,7 +171,7 @@
     "enabled": true,
     "description": "Bob drives focus tasks forward (via run-agent-task, 1h)",
     "handler": "run-agent-task",
-    "lastModified": "2026-03-11T15:01:01.029Z"
+    "lastModified": "2026-03-12T21:26:00.000Z"
   },
   {
     "name": "iraq-conflict-monitor",
@@ -186,12 +186,12 @@
   {
     "name": "heartbeat-tech-lead",
     "type": "heartbeat",
-    "intervalMs": 1200000,
+    "intervalMs": 600000,
     "agent": "tech-lead",
     "message": "[heartbeat] Read agents/tech-lead/heartbeat.md and work through each section top to bottom. End with a 2-3 sentence brief of what you built or reviewed.",
     "enabled": true,
-    "description": "Tech-lead's heartbeat — build pending work, intake new designs, code health (30min, pre-checked)",
-    "lastModified": "2026-03-10T16:18:23.665Z",
+    "description": "Tech-lead's heartbeat — build pending work, intake new designs, code health (30min)",
+    "lastModified": "2026-03-12T15:11:42.304Z",
     "notifyBrief": true
   },
   {
@@ -201,7 +201,7 @@
     "agent": "amy-kimi",
     "message": "[heartbeat] Read agents/amy-kimi/heartbeat.md and work through each section top to bottom. End with a 2-3 sentence brief of what you explored and discovered.",
     "enabled": true,
-    "description": "Amy-Kimi's heartbeat — XHS exploration with Kimi model (30min, pre-checked)",
+    "description": "Amy-Kimi's heartbeat — XHS exploration with Kimi model (30min)",
     "notifyBrief": true
   },
   {
@@ -253,5 +253,15 @@
     "enabled": true,
     "handler": "run-agent-task",
     "description": "Weekly memory consolidation for Amy — journal → knowledge → archive (7d)"
+  },
+  {
+    "name": "compliance-audit",
+    "type": "job",
+    "intervalMs": 604800000,
+    "agent": "evaluator",
+    "message": "[cron:compliance-audit] Run the P53 compliance audit: execute `node agents/evaluator/skills/detect-p53-drift.cjs`. If drift is found, post a WARNING to agents/shared/bulletin.md. If clean, post a PASS report to agents/bob/workspace/compliance-audit/reports/.",
+    "enabled": true,
+    "handler": "run-agent-task",
+    "description": "Weekly P53 compliance audit — verify SOUL.md and agent.json integrity (Mondays, 7d)"
   }
 ]
