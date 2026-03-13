@@ -43,6 +43,12 @@ export interface SubagentDefinition {
    * Only recommended for supervisor/long-running agents, not scoped sub-agents.
    */
   compaction?: boolean | CompactionOptions;
+
+  /**
+   * Operation budget: max number of state-changing tool calls (bash, write, edit, commit)
+   * allowed per session. 0 or undefined = unlimited.
+   */
+  opBudget?: number;
 }
 
 /** Runtime info about a session. */
@@ -66,6 +72,10 @@ export interface SessionInfo {
   autoClose?: "immediate" | "never";
   /** Session kind: chat, job, or call. */
   kind?: SessionKind;
+  /** Number of state-changing tool calls executed so far. */
+  opCount?: number;
+  /** Operation budget (0 = unlimited). */
+  opBudget?: number;
 }
 
 /** Result of a completed session. */

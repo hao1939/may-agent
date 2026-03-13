@@ -123,6 +123,16 @@ export function runAgentCleanup(agentName: string): void {
 const PROTECTED_FILENAMES = new Set(["SOUL.md", "agent.json", "LESSONS.md"]);
 
 /**
+ * Strings that trigger bash command blocking (P53 bash guard).
+ * Any bash command containing these substrings is blocked to prevent
+ * bypassing write/edit protections via shell commands (e.g. echo "..." > SOUL.md).
+ */
+const BASH_PROTECTED_STRINGS = ["SOUL.md", "agent.json", "LESSONS.md", "philosophy.md"];
+
+/** Agents exempt from bash command P53 blocking (system supervisors). */
+const BASH_GUARD_EXEMPT_AGENTS = new Set(["may"]);
+
+/**
  * Check whether a resolved absolute path targets a protected file in another agent's directory.
  * Returns a block message if the write should be denied, or null if allowed.
  */
@@ -148,8 +158,6 @@ export function checkProtectedPath(
   if (targetAgent === "shared") return null;
   // Allow writes to .lab/ directory (sandbox/fork for agent growth system)
   if (targetAgent === ".lab") return null;
-  // Allow writes to .lab/ directory (growth fork sandbox — coach needs to write identity files there)
-  if (targetAgent === ".lab") return null;
 
   // Block writes to protected files in other agents' directories
   if (PROTECTED_FILENAMES.has(fileName)) {
@@ -163,8 +171,29 @@ export function checkProtectedPath(
 }
 
 /**
- * Wrap write and edit tools with a path guard that blocks cross-agent
- * modifications to identity-critical files (SOUL.md, agent.json, LESSONS.md).
+ * Check if a bash command references protected identity files.
+ * Returns a block message if the command should be denied, or null if allowed.
+ */
+export function checkBashCommand(command: string, agentName: string): string | null {
+  // Exempt agents (system supervisors) bypass bash guard
+  if (BASH_GUARD_EXEMPT_AGENTS.has(agentName)) return null;
+
+  for (const protectedStr of BASH_PROTECTED_STRINGS) {
+    if (command.includes(protectedStr)) {
+      return `⚠️ BASH BLOCKED (P53): Command references identity file "${protectedStr}". ` +
+        `Agents cannot mention identity files (${BASH_PROTECTED_STRINGS.join(", ")}) in bash commands. ` +
+        `This prevents bypassing write protections via shell. ` +
+        `Use the read() tool to read these files. You may NOT edit them via bash.`;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Wrap write, edit, and bash tools with guards that enforce P53/P70 protections.
+ * - write/edit: blocks cross-agent modifications to identity-critical files.
+ * - bash: blocks commands that reference identity file names (prevents shell bypass).
  */
 function wrapToolsWithPathGuard(
   tools: AgentTool[],
@@ -173,6 +202,31 @@ function wrapToolsWithPathGuard(
   projectRoot: string,
 ): AgentTool[] {
   return tools.map((tool) => {
+    // Wrap bash tool with P53 command scanner
+    if (tool.name === "bash") {
+      return {
+        ...tool,
+        execute: async (
+          toolCallId: string,
+          params: unknown,
+          signal?: AbortSignal,
+        ) => {
+          const p = params as { command?: string };
+          if (p.command) {
+            const blockMessage = checkBashCommand(p.command, agentName);
+            if (blockMessage) {
+              return {
+                content: [{ type: "text" as const, text: blockMessage }],
+                details: undefined,
+              };
+            }
+          }
+          return tool.execute(toolCallId, params, signal);
+        },
+      };
+    }
+
+    // Wrap write/edit tools with P53 path guard
     if (tool.name !== "write" && tool.name !== "edit") return tool;
 
     return {
@@ -461,6 +515,7 @@ const VALID_TOOL_PRESETS = new Set([
   "cron",
   "scrape",
   "agent-growth",
+  "verify_skill",
   "finish",
 ]);
 
