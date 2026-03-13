@@ -199,7 +199,11 @@ export function createBashTool(cwd: string, options?: BashToolOptions): AgentToo
 
 			// P53 (Identity Protection): block bash commands that write to protected files
 			const protectedFiles = ["SOUL.md", "DOMAIN.md", "TOOLS.md", "LESSONS.md"];
-			const writeIndicators = [">", "sed -i", "mv ", "cp "];
+			// Block shell redirection, file utils, and common interpreters that could perform inline writes
+			const writeIndicators = [
+				">", "sed -i", "mv ", "cp ",
+				"python", "node", "ruby", "perl", "tee", "dd"
+			];
 			const looksLikeWrite = writeIndicators.some(op => command.includes(op));
 			const targetsProtected = protectedFiles.some(file => command.includes(file));
 			if (looksLikeWrite && targetsProtected) {
