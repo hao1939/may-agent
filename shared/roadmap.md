@@ -14,17 +14,32 @@ We are transitioning from "Exploration" (Phase 1) to "Hardening" (Phase 2). The 
 
 ### 1. Agent Growth Cycle (Meta-Loop)
 **Goal:** The system systematically improves its own agents through a "Fork -> Train -> Verify -> Promote" cycle.
-- **Status:** **VALIDATED** (Scout V2).
+- **Status:** **ACTIVE** (Scaling).
 - **Mechanism:** `coach` agent + `agent-growth` tools (`fork`, `promote`, `discard`).
-- **Next Steps:** Apply to other agents (Coder, Bob). Automate the trigger (drift detection -> auto-upgrade).
+- **Next Steps:**
+  1. **Coder Upgrade**: Use the cycle to upgrade Coder's test-running workflow. **(DONE)**
+  2. **Bob Upgrade**: Use the cycle to improve Bob's synthesis patterns.
+  3. **Automation**: Trigger the cycle automatically on drift detection.
 
-### 2. V2 Hardening & Observability
-**Goal:** Stabilize the new ephemeral session architecture and ensure deep visibility into agent behavior.
-- **Status:** Active.
-- **Mechanism:** `may.sh` improvements, structured logging, session recovery.
-- **Success Metric:** < 1% crash rate on long-running tasks.
+### 2. Reasoning Evolution Compliance (P53)
+**Goal:** Enforce the bifurcation of Self-Evolution: Reasoning Core (Immutable) vs Capability Periphery (Mutable).
+- **Status:** **ACTIVE** (Automating).
+- **Mechanism:** `agents/bob/workspace/compliance-audit/snapshot.json` + `sha256sum`.
+- **Next Steps:** Automate the weekly audit via cron (Task assigned to Tech Lead).
+
+### 3. Ops Gate Hardening (P61)
+**Goal:** Enforce "Text is Policy, Code is Law". No execution without verifiable evidence.
+- **Status:** **ACTIVE** (Expanding).
+- **Mechanism:** `src/lib/ops-gate.ts`, HMAC signing, `logOpsReceipt`.
+- **Next Steps:** Extend to `deploy` and `database` tools.
 
 ## Completed / Maintained
+
+### L3 Collective Defense (Self-Monitoring)
+**Goal:** The system detects its own degradation ("Boiling Frog" effect) and self-heals.
+- **Status:** **DONE** (March 2026).
+- **Mechanism:** `agents/evaluator/skills/detect-drift.md` + `manage-backups.md` + `cron:drift-check`.
+
 
 ### V2 Architecture (Stability)
 **Goal:** Migrate system to ephemeral sessions and synchronous cooperation.
@@ -56,6 +71,7 @@ We are transitioning from "Exploration" (Phase 1) to "Hardening" (Phase 2). The 
 - **Vector Memory**: (Parked; file-based navigation is sufficient for current scale).
 
 ## Change Log
+- **2026-03-13**: **L3 Collective Defense** is fully deployed. The system now automatically reverts toxic changes (drift > 15%).
 - **2026-03-11**: Marked V2 Architecture, Hard-Gated Coder, Modular Skill Registry, and Crash Recovery State as DONE.
 - **2026-03-10**: Upgraded Zero Data Loss to "Structural Fix" (Poisoned Path).
 - **2026-03-07**: Updated status for Zero Data Loss (Deployed), Meta-Loop (Active), and Ralph Loop (Prototyping).

@@ -14,7 +14,7 @@ Scout researches (Opus).
 
 ## Skills (distilled)
 - **Agent Growth**: Use `fork_agent` to isolate, `verify_agent` to test,
-  `promote_agent` to deploy.
+  `promote_agent` to deploy. See `agents/coach/knowledge/growth-cycle.md`.
 - **Socket Watch**: Use `socket_watch` to observe live sessions.
 - **File Safety**: Read before write. Verify edits.
 - **Agent Coordination**: `call` for sync, `send` for async.

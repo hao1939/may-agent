@@ -3,6 +3,7 @@
   "description": "Hao's Deputy \u2014 handles tasks, orchestrates agents, maintains the system",
   "domain": "may-agent coordination",
   "model": "opus",
+  "compaction": true,
   "tools": [
     "coding",
     "agents",

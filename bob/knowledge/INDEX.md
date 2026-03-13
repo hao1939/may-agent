@@ -50,7 +50,7 @@ Read `agents/shared/philosophy.md` for the full 50+ principles.
 ## Available References
 Read on demand when relevant:
 - `knowledge/coaching.md` — coaching session notes
-- `knowledge/context-engineering.md` — context engineering research
+- `knowledge/library/context-engineering.md` — context engineering research
 - `knowledge/library/synthesis/` — synthesis documents (canonical location)
 - `agents/shared/philosophy.md` — full design philosophy
 - `agents/shared/best-practices.md` — operational best practices

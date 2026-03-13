@@ -1,37 +1,36 @@
-# Evaluator's Periodic Tasks
+# Periodic Tasks (Evaluator)
 
-Track when each task was last done. Pick the most overdue one during heartbeat step 4.
+These tasks are run by `cron:evaluator` every hour.
+See `agents/evaluator/periodic-tasks.md` for the definitions.
 
-## Per heartbeat (do one, rotate)
-- [x] **Score distribution check** — Last done: 2026-03-12
+## 1. Score Recent Sessions
+**Goal**: Ensure quality feedback loop.
+- Filter sessions from last 24h.
+- Pick 5 random non-evaluated sessions.
+- Run `score_session` on each.
 
-- [x] **Roadmap alignment check** — Last done: 2026-03-12
-  Sanity-check `agents/shared/roadmap.md` reflects recent system changes (e.g., Growth Cycle validation).
-  If drift detected, update roadmap or log in workspace/progress.md.
-  Read last 20 evaluations. What's the distribution?
-  All "meets_expectations"? That's a red flag — either we're too lenient or agents are perfect.
-  Write observations to workspace/progress.md.
+## 2. Detect Statistical Drift (L3 Defense)
+**Goal**: Catch "Boiling Frog" degradation (P30) and "Consensus Hallucination".
+- **Detect**: Run `detect-p53-drift.cjs` (Skill) to generate `drift-responses/`.
+- **Respond**: Run `trigger-response.cjs` (Skill) to dispatch tasks (Growth Cycle / Revert).
+- **Log**: Append findings to `agents/shared/bulletin.md`.
 
-- [x] **Calibration check** — Last done: 2026-03-12
-  Re-read 3 recent evaluations. Are scores consistent? Are verdicts well-justified?
-  Compare your scoring across similar sessions — would you give the same score again?
-  If drift detected → write calibration note to workspace/calibration.md.
+## 3. Analyze Delegation Metrics (L3 Collective Defense)
+**Goal**: Catch "Integration Drift" (P71) where agents succeed individually but fail collectively.
+- Run `delegation_metrics` (Skill).
+- Check for **Integration Success Rate < 80%** on core pairs (May->Coder, Coder->QA).
+- If critical drift found, log to `agents/shared/bulletin.md` with 🚨 alert.
 
-- [x] **Criteria review** — Last done: 2026-03-12 (reviewed 2026-03-10)
-  Read the evaluation rubric in agents/evaluator/knowledge/criteria.md.
-  Are the criteria still relevant? Any new failure modes not covered?
-  If changes needed → update criteria.md.
+## 4. Backup Agent Configs
+**Goal**: Maintain restore points for "Time Machine" (P69).
+- Run `manage_backups` with action=`backup`.
+- Keeps a daily snapshot of all agent configs/prompts.
 
-## Monthly
-- [x] **Full rubric audit** — Last done: 2026-03-10
-  Deep review of all evaluation criteria.
-  Check against recent philosophy.md changes.
-  Are we measuring what matters?
+## 5. Extract Strategies from Logs (P63)
+**Goal**: Turn recent session logs into reusable, high-confidence strategies.
+- Run `extract-strategy.cjs` on recent sessions (last 24h).
+- Write findings to `agents/evaluator/workspace/proposed-strategies.md`.
+- Do NOT update `agents/shared/knowledge/strategies.md` directly (Bob reviews first).
+- **After running**: update this file with the last-run timestamp (YYYY-MM-DD HH:MM) and how many logs/lessons were produced.
 
----
-
-## How to use this file
-1. Read this file during heartbeat step 4
-2. Find the most overdue task
-3. Do it
-4. Update "Last done" date
+**Last run**: 2026-03-13 08:23 — logs: 1, lessons: 0 (prototype currently not compatible with session JSONL schema)

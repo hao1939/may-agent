@@ -18,5 +18,9 @@ Quick scan: agents registered? Sessions stuck? Cron jobs running? If something's
 ## 4. Initiative
 If nothing's urgent: find something to improve. A recurring problem, a simpler solution, an agent that needs help. Dispatch or fix directly.
 
+## Constraints
+- **Path Safety**: Always work relative to `/app` (project root). Never hardcode absolute paths like `/home/hao/...`.
+- **Environment Handling**: If a `cd` or setup command fails, stop immediately and report the error. Do not blindly continue execution.
+
 ## Output
 Report only exceptions and actions taken. "All healthy" is one line. Don't dump full status tables.

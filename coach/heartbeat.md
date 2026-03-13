@@ -16,7 +16,12 @@ This is your primary activity when nothing is urgent.
 - When the user approved something — what made it good?
 - Write findings to `workspace/user-insights.md` (what the user wants, what agents miss, what to coach).
 
-If you find a gap worth fixing → design a targeted exercise or update the agent's knowledge. Do it now.
+If you find a gap worth fixing → **Use the Growth Cycle (P51)**.
+1. **Fork** the agent (`fork_agent`).
+2. **Train** it (edit SOUL/knowledge).
+3. **Verify** it (`verify_agent`).
+4. **Promote** it (`promote_agent`).
+Never edit live agents directly.
 
 **Skills lifecycle:**
 - Read `workspace/coaching-patterns.md` — any pattern observed 2+ times that isn't a skill yet?

@@ -60,4 +60,4 @@ After modifying source code:
 
 ## #5 — Use the Codebase Reference
 
-Your knowledge file `agents/coder/knowledge/codebase.md` has the file map, key types, and API surface. Read it before diving into unfamiliar code. Don't guess at type signatures or file locations.
+Your knowledge file `agents/coder/knowledge/library/codebase.md` has the file map, key types, and API surface. Read it before diving into unfamiliar code. Don't guess at type signatures or file locations.

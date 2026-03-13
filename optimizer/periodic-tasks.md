@@ -3,32 +3,37 @@
 Track when each task was last done. Pick the most overdue one during heartbeat step 3.
 
 ## Per heartbeat (do one, rotate)
-- [x] **Analysis review** — Last done: 2026-03-25
+- [x] **Analysis review** — Last done: 2026-05-08
   Read agents/bob/workspace/analysis.md or recent Bob synthesis outputs.
   Any findings that need optimization work? Cost issues? Efficiency problems?
   If found → add specific task to workspace/todo.md.
-  Latest: Found and fixed critical bug — all detached cron jobs failing with ERR_MODULE_NOT_FOUND
-  because Cron.projectRoot was computed as 1 level up from cron.json instead of 2 levels.
+  Latest (2026-05-08): System idle since 2026-03-13, no new agent sessions. 1049/1049 tests pass (87 files, down from 88 — orphaned `run-agent-task-precheck.test.ts` properly removed in commit 85de6e7). tsc clean. Git clean, 5 commits ahead of origin. 1664 evals (up from 1651): 194 good, 295 acceptable, 288 needs_improvement, 871 skipped. **Bob's analysis unchanged** — same two patterns (Partial Data Acceptance, Environment Hallucination). Bob's recent synthesis outputs (2026-03-25) cover AgentOS memory architecture, minimal loop patterns, and self-evolution trilemma — all architectural/philosophical, no optimization code work. **Top issue types**: HARD_CONSTRAINT_VIOLATION (20), EFFICIENCY (19), HALLUCINATION (18), VERIFICATION_GAP (17), VERIFICATION_FAILURE (16) — unchanged pattern from prior scans. **Cost**: $895.75 total, 712 sessions with cost, $1.26 mean, $0.30 median, 145 outliers >$2. **Prompt caching**: 14.6% overall (39M cache read / 267M input) — still dominated by non-Anthropic agents; Opus agents remain at 0% (LiteLLM proxy blocker). **exec tool dominates failure chains** (694 of 1156 triggers) — known, coaching-level. **No new optimization code work items identified.** System needs active operation to generate new patterns.
 
-- [x] **Cost outlier scan** — Last done: 2026-03-25
+- [x] **Cost outlier scan** — Last done: 2026-05-09
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest: 139/674 sessions (20.6%) > $2. Key findings: (1) maxTurns-capped sessions cost 5-7x normal (tech-lead $7.70 vs $1.11), (2) most agents have 0% prompt cache hit rate — only bob (84%) and qa (62%) get cache hits, (3) recurring tool schema errors waste turns. See improvement-proposals.md Finding 6.
+  Latest (2026-05-09): 1656 total evals (1664 files, 8 parse errors), 712 with nonzero cost. Total spend: $895.75, mean $1.26, median $0.30, P90 $3.91, P95 $6.24, max $16.42. **145 outliers >$2 (20.4%)** totaling $669.63 (74.8% of spend). 43 expensive failures ($181.43 wasted). **System still idle since 2026-03-13** — 0 files modified since last scan, no new agent sessions. Per-agent leaders unchanged: `unknown` $199, `coder` $192, `coach` $110, `tech-lead` $110, `optimizer` $78. **Prompt cache**: 12.8% overall — Opus agents all 0%, bob 84.1% (Gemini), qa 62.4% (GPT), amy-kimi 72.2%. 138/145 outliers have 0% prompt cache — LiteLLM proxy blocker confirmed, not code-level. **Failure chain patterns in outliers**: empty-args 77, path hallucination 146 (in chain strings). 1049/1049 tests pass (87 files), tsc clean. **No new optimization code work items** — all patterns pre-existing. System needs active operation to generate new data.
 
-- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-11
+- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-13
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
   Could it be replaced with a JS handler? (See cron-graduation-process.md Stage 3.)
   If found → write proposal in workspace/improvement-proposals.md.
+  Latest (2026-03-13): 26 cron entries, 0 job-history entries (cleared), 1049/1049 tests pass (87 files), tsc clean. Git clean (5 commits ahead). System idle since 2026-03-13, no new sessions. 10 enabled `run-agent-task` entries, 1 disabled (iraq-conflict-monitor). 9/10 require genuine LLM cognitive work: pattern analysis (analyze-failures), optimization (optimize), semantic dedup (lesson-consolidation), task driving (focus-task-driver), memory consolidation (5×consolidate-memory). **1 marginal candidate: `compliance-audit`** — the CJS script (`detect-p53-drift.cjs`) handles all logic (hash comparison, report writing, bulletin posting, drift-response JSON). LLM agent (evaluator) just runs the script. However, evaluator uses `gpt52` model with $0.00 tracked cost — savings would be negligible. Not worth the handler development effort. No new source files contain LLM API calls. 7 handlers present, all wired correctly. **No actionable conversion candidates.**
 
-- [x] **Handler health check** — Last done: 2026-03-25
+- [x] **Handler health check** — Last done: 2026-05-09
   Review existing JS handlers in agents/may/handlers/.
   Any errors in recent logs? Any handler that's not firing?
   If issues → add fix to workspace/todo.md.
-  Latest: All 8 handlers present. 44/44 handler tests pass (6 test files). Log errors found are all transient/resolved: (1) ENOENT session.jsonl errors from ~06:16-06:23 Mar 12 — likely restart/migration event, not handler bug. (2) Old `buildProjectStructure`/`createValidateWorkflowTool` import errors from Mar 9-10 — already fixed by refactors. (3) "LLM returned stopReason toolUse but no tool call" — network/proxy issue, not handler code. No handler-specific issues found.
+  Latest (2026-05-09): 7 handler `.ts` files present (coaching-report, daily-brief, evaluate-sessions, focus-task-tracker, run-agent-task, system-status, watchdog). All 17 cron `handler` references resolve to existing `.ts` files — ✅ no broken wiring. 26 total cron entries (24 enabled, 2 disabled: focus-task-tracker, iraq-conflict-monitor — intentional). 6 handler test files (44 tests), all pass. Missing test coverage: `run-agent-task` and `focus-task-tracker` still have no dedicated test files (unchanged). Full suite: 1049/1049 tests pass (87 files), tsc clean. Job history: 0 entries (data cleared). Git clean, 0 uncommitted changes. **No issues found. System healthy.**
 
 ## Weekly
-- [x] **Improvement proposals review** — Last done: 2026-03-24. Reviewed all proposals. P2, P3, P4 done. O1 (heartbeat pre-check) done. Remaining: P1/P5 (metadata backfill — medium/low priority), O4 (periodic task scheduler — medium), O2 (lesson consolidation hybrid — medium). No proposals ready for immediate implementation without new analysis work.
+- [x] **Improvement proposals review** — Last done: 2026-05-09 (Finding 18, Cycle 12). **2 new commits since last review**: agent-growth refactor committed (3a6d51e — 16 files, +1725/-168), orphaned test cleanup (85de6e7). Git now clean (0 uncommitted changes — resolved 7+ week risk). 1049/1049 tests pass (87 files), tsc clean. New cross-edit guard (P53) prevents cross-agent identity file modification. Finish tool wired but unadopted. System idle — 0 sessions, evals, job history. Compaction 8/12, prompt caching still 0% for Opus (LiteLLM proxy blocker). **No new optimization work items identified.**
+
+- [x] **Refine-Skill loop (EvoSkill)** — Last done: 2026-03-13
+  Run the `agents/shared/tasks/refine-skill.md` protocol: scan recent evals for failure patterns,
+  attribute to a skill, make one atomic evidence-based improvement to the skill library.
+  Latest (2026-03-13): Scanned 500 most recent evals (1668 total, system idle since 2026-03-13). Top failure modes: VERIFICATION_FAILURE (11), SILENT_FAIL (10), TOOL_MISUSE (6), INCOMPLETE_TASK (6), VERIFICATION_GAP (5), DATA_LOSS_RISK (5). Verification cluster (16 total) still #1 but fully covered by AP-1–AP-9 in verification SKILL.md. **New finding: DATA_LOSS cluster** — 12 occurrences across 4 agents (tech-lead, amy-kimi, bob, may) from write-side content truncation (model output cut mid-write) and shrink guard bypass. Evolved `file-safety/SKILL.md` v1.0.0→v1.1.0: added Core Principle #4 (Prefer Surgical Edits), AP-1 (Output-Truncated Write), AP-2 (Shrink Guard Bypass via Shell), 2 new constraints.
 
 ---
 

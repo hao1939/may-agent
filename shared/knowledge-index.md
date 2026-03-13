@@ -56,6 +56,6 @@ Read this before starting research — someone may have already covered your top
 
 ## Shared Tools
 - `scrape_webpage` — Robust web page fetcher (handles headers, redirects, HTML cleaning).
-  - Used by: Scout, Amy
+  - Used by: Scout, Amy, Amy-Kimi
   - Implementation: `src/lib/scrape.ts`
-  - Docs: `agents/shared/skills/patterns/robust-scraping.md`
+  - Docs: `agents/shared/skills/web-scraping/SKILL.md`
