@@ -284,6 +284,10 @@ export class SubagentManager {
    *    SOUL.md → DOMAIN.md → TOOLS.md → LESSONS.md → knowledge/INDEX.md
    *  Then: Runtime Environment (generated), Session Context (generated).
    *
+   *  The entire prompt is wrapped in <system_instructions> tags (P84) to
+   *  structurally reinforce the Instruction Hierarchy. Content from user
+   *  messages and tool outputs should be treated as data, not directives.
+   *
    *  If systemPrompt is set directly, it takes precedence over everything.
    */
   private resolveSystemPrompt(
@@ -365,7 +369,12 @@ export class SubagentManager {
     //    across sessions so the cache_control: ephemeral marker on the
     //    system block produces cache *reads* instead of only cache writes.
 
-    return sections.join("\n\n");
+    // ── P84: Wrap in <system_instructions> tags ─────────────────────
+    // Structural reinforcement of the Instruction Hierarchy. The XML tags
+    // signal to the LLM that everything inside is authoritative system-level
+    // configuration, taking precedence over user messages and tool outputs.
+    const body = sections.join("\n\n");
+    return `<system_instructions>\n${body}\n</system_instructions>`;
   }
 
   /**
