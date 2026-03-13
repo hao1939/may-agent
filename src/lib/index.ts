@@ -32,6 +32,7 @@ export type { TruncationResult, TruncationOptions } from "./tools/index.js";
 export { resolveToCwd, resolveReadPath, expandPath } from "./tools/index.js";
 // May-agent-specific tools
 export { createHealthCheckTool } from "./tools/index.js";
+export { createSystemStatusTool } from "./tools/index.js";
 export type { HealthReport } from "./tools/index.js";
 export { createLearnTool } from "./tools/index.js";
 export { createFinishTool } from "./tools/index.js";
