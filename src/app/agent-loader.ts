@@ -32,6 +32,7 @@ import {
   createCronTool,
   createScrapeTool,
   createFinishTool,
+  createSystemStatusTool,
 } from "../lib/index.js";
 import { createAgentGrowthTools } from "../lib/tools/agent-growth.js";
 import type { EventBus } from "./event-bus.js";
@@ -171,7 +172,30 @@ export function checkProtectedPath(
 }
 
 /**
- * Check if a bash command references protected identity files.
+ * Write-operator patterns that indicate a bash command is mutating a file.
+ * A command is only blocked when it references a protected filename AND
+ * contains one of these write operators. Read-only commands (cat, grep,
+ * head, wc, diff, etc.) are allowed through.
+ */
+const BASH_WRITE_OPERATORS = [
+  ">>",   // append redirect (check before single >)
+  ">",    // redirect / truncate
+  "tee ", // write via tee
+  "cp ",   // copy (overwrites target)
+  "sed -i",         // in-place edit
+  "sed --in-place", // in-place edit (long form)
+  "perl -i",  // perl in-place
+  "perl -pi", // perl in-place (common variant)
+  "mv ",   // move/rename
+  "rm ",   // delete
+  "chmod ", // permission change
+];
+
+/**
+ * Check if a bash command attempts to WRITE to protected identity files.
+ * Read-only commands (cat, grep, head, etc.) that mention protected files
+ * are allowed. Only commands containing write operators alongside a
+ * protected filename are blocked.
  * Returns a block message if the command should be denied, or null if allowed.
  */
 export function checkBashCommand(command: string, agentName: string): string | null {
@@ -179,11 +203,15 @@ export function checkBashCommand(command: string, agentName: string): string | n
   if (BASH_GUARD_EXEMPT_AGENTS.has(agentName)) return null;
 
   for (const protectedStr of BASH_PROTECTED_STRINGS) {
-    if (command.includes(protectedStr)) {
-      return `⚠️ BASH BLOCKED (P53): Command references identity file "${protectedStr}". ` +
-        `Agents cannot mention identity files (${BASH_PROTECTED_STRINGS.join(", ")}) in bash commands. ` +
+    if (!command.includes(protectedStr)) continue;
+
+    // The command mentions a protected file — check for write operators
+    const hasWriteOp = BASH_WRITE_OPERATORS.some((op) => command.includes(op));
+    if (hasWriteOp) {
+      return `⚠️ BASH BLOCKED (P53): Command writes to identity file "${protectedStr}". ` +
+        `Agents cannot write to identity files (${BASH_PROTECTED_STRINGS.join(", ")}) via bash. ` +
         `This prevents bypassing write protections via shell. ` +
-        `Use the read() tool to read these files. You may NOT edit them via bash.`;
+        `Read-only access (cat, grep, head, etc.) is allowed. You may NOT edit them via bash.`;
     }
   }
 
@@ -434,6 +462,12 @@ function buildTools(config: AgentConfig, opts: AgentLoaderOptions): AgentTool[] 
         break;
       }
 
+      case "system-status":
+      case "system_status": {
+        tools.push(createSystemStatusTool(opts.persistDir, opts.agentsRoot));
+        break;
+      }
+
       case "agent-growth": {
         tools.push(
           ...createAgentGrowthTools({
@@ -515,8 +549,11 @@ const VALID_TOOL_PRESETS = new Set([
   "cron",
   "scrape",
   "agent-growth",
-  "verify_skill",
+  // TODO: implement verify_skill tool preset when skill verification is integrated
+  // "verify_skill",
   "finish",
+  "system-status",
+  "system_status",
 ]);
 
 const REQUIRED_FIELDS: (keyof AgentConfig)[] = ["name", "description", "domain", "model", "tools"];

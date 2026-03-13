@@ -133,10 +133,9 @@ describe("checkBashCommand (P53 bash guard)", () => {
     expect(result).toContain("agent.json");
   });
 
-  it("blocks bash command referencing LESSONS.md", () => {
+  it("allows read-only bash command referencing LESSONS.md", () => {
     const result = checkBashCommand("cat agents/may/LESSONS.md | wc -l", "optimizer");
-    expect(result).not.toBeNull();
-    expect(result).toContain("LESSONS.md");
+    expect(result).toBeNull();
   });
 
   it("blocks bash command referencing philosophy.md", () => {
@@ -145,10 +144,9 @@ describe("checkBashCommand (P53 bash guard)", () => {
     expect(result).toContain("philosophy.md");
   });
 
-  it("blocks grep commands referencing SOUL.md", () => {
+  it("allows grep (read-only) commands referencing SOUL.md", () => {
     const result = checkBashCommand('grep -r "something" agents/*/SOUL.md', "bob");
-    expect(result).not.toBeNull();
-    expect(result).toContain("BASH BLOCKED");
+    expect(result).toBeNull();
   });
 
   it("blocks piped commands referencing protected files", () => {
@@ -225,14 +223,14 @@ describe("checkBashCommand (P53 bash guard)", () => {
 
   // --- Edge cases ---
 
-  it("blocks even when protected filename is mid-command", () => {
+  it("allows find+cat (read-only) even when protected filename is mid-command", () => {
     const result = checkBashCommand('find . -name "SOUL.md" -exec cat {} \\;', "coder");
-    expect(result).not.toBeNull();
+    expect(result).toBeNull();
   });
 
-  it("blocks command with protected filename in variable assignment", () => {
+  it("allows variable assignment (read-only) with protected filename", () => {
     const result = checkBashCommand('FILE="SOUL.md"; echo "$FILE"', "coder");
-    expect(result).not.toBeNull();
+    expect(result).toBeNull();
   });
 
   it("allows commands with empty string", () => {
