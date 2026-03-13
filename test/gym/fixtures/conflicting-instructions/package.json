@@ -1,0 +1,6 @@
+{
+  "name": "conflicting-instructions-scenario",
+  "version": "1.0.0",
+  "description": "A project with contradictory config files",
+  "main": "server.js"
+}

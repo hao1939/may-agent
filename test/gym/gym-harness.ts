@@ -171,3 +171,112 @@ export function detectInfiniteLoop(workDir: string, entryFile: string, timeoutMs
   // exitCode 124 indicates the process was killed due to timeout
   return result.exitCode === 124;
 }
+
+/**
+ * Detect permission-denied errors by checking if a file is read-only
+ * when the program needs to write to it.
+ * Returns { hasPermissionIssue, file } if the target file is not writable.
+ */
+export function detectPermissionDenied(
+  workDir: string,
+  entryFile: string
+): { hasPermissionIssue: boolean; file: string; error: string } {
+  const result = runWithTimeout(workDir, entryFile, 3000);
+  if (result.exitCode !== 0 && result.stderr.includes("EACCES")) {
+    // Extract the file path from the error message
+    const match = result.stderr.match(/open '([^']+)'/);
+    return {
+      hasPermissionIssue: true,
+      file: match ? match[1] : "unknown",
+      error: result.stderr.trim(),
+    };
+  }
+  return { hasPermissionIssue: false, file: "", error: "" };
+}
+
+/**
+ * Detect a broken/flaky tool by running the build and checking for
+ * tool-specific error patterns (SEGFAULT, internal compiler error, etc).
+ * Returns { isBroken, errorPattern, failedSource }.
+ */
+export function detectBrokenTool(
+  workDir: string,
+  entryFile: string
+): { isBroken: boolean; errorPattern: string; failedSource: string } {
+  const result = runWithTimeout(workDir, entryFile, 3000);
+  if (result.exitCode !== 0) {
+    const errText = result.stderr;
+    const match = errText.match(/Build failed on (\S+): (.+)/);
+    if (match) {
+      return { isBroken: true, errorPattern: match[2], failedSource: match[1] };
+    }
+    // Check for generic flaky patterns
+    if (errText.includes("SEGFAULT") || errText.includes("internal compiler error")) {
+      return { isBroken: true, errorPattern: "SEGFAULT", failedSource: "" };
+    }
+  }
+  return { isBroken: false, errorPattern: "", failedSource: "" };
+}
+
+/**
+ * Detect resource exhaustion (e.g., too many temp files, disk full simulation).
+ * Returns { isExhausted, resource, message }.
+ */
+export function detectResourceExhaustion(
+  workDir: string,
+  entryFile: string
+): { isExhausted: boolean; resource: string; message: string } {
+  const result = runWithTimeout(workDir, entryFile, 3000);
+  if (result.exitCode !== 0) {
+    const errText = result.stderr;
+    if (errText.includes("DISK_FULL") || errText.includes("storage exhausted")) {
+      return { isExhausted: true, resource: "disk", message: errText.trim() };
+    }
+    if (errText.includes("RATE_LIMIT") || errText.includes("Too Many Requests")) {
+      return { isExhausted: true, resource: "api", message: errText.trim() };
+    }
+  }
+  return { isExhausted: false, resource: "", message: "" };
+}
+
+/**
+ * Detect conflicting configuration by checking if two config sources
+ * have contradictory values for the same keys.
+ * Returns { hasConflict, conflicts } with details of each mismatch.
+ */
+export function detectConfigConflict(
+  workDir: string
+): { hasConflict: boolean; conflicts: Array<{ key: string; valueA: unknown; valueB: unknown }> } {
+  const conflicts: Array<{ key: string; valueA: unknown; valueB: unknown }> = [];
+
+  // Look for pairs of config-like JSON files
+  const jsonFiles = readdirSync(workDir).filter(
+    (f) => f.endsWith(".json") && f !== "package.json"
+  );
+  if (jsonFiles.length < 2) return { hasConflict: false, conflicts };
+
+  const configs: Array<{ name: string; data: Record<string, unknown> }> = [];
+  for (const f of jsonFiles) {
+    try {
+      const data = JSON.parse(readFileSync(join(workDir, f), "utf-8"));
+      configs.push({ name: f, data });
+    } catch {
+      // Skip unparseable files
+    }
+  }
+
+  // Compare all pairs
+  for (let i = 0; i < configs.length; i++) {
+    for (let j = i + 1; j < configs.length; j++) {
+      const a = configs[i].data;
+      const b = configs[j].data;
+      for (const key of Object.keys(a)) {
+        if (key in b && JSON.stringify(a[key]) !== JSON.stringify(b[key])) {
+          conflicts.push({ key, valueA: a[key], valueB: b[key] });
+        }
+      }
+    }
+  }
+
+  return { hasConflict: conflicts.length > 0, conflicts };
+}

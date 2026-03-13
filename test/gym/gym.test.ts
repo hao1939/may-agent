@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, afterEach } from "vitest";
-import { existsSync, readFileSync, writeFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync, readdirSync, chmodSync } from "node:fs";
 import { join } from "node:path";
 import {
   forkScenario,
@@ -20,6 +20,10 @@ import {
   detectCircularDependency,
   detectMissingFiles,
   detectInfiniteLoop,
+  detectPermissionDenied,
+  detectBrokenTool,
+  detectResourceExhaustion,
+  detectConfigConflict,
 } from "./gym-harness.js";
 
 describe("Agent Gym", () => {
@@ -216,11 +220,248 @@ if (require.main === module) {
     });
   });
 
+  describe("Scenario: Permission Denied", () => {
+    it("detects the permission error when config is read-only", () => {
+      const workDir = forkScenario("permission-denied");
+      tempDirs.push(workDir);
+
+      // Make config.json read-only
+      chmodSync(join(workDir, "config.json"), 0o444);
+
+      const result = detectPermissionDenied(workDir, "app.js");
+      expect(result.hasPermissionIssue).toBe(true);
+      expect(result.error).toContain("EACCES");
+    });
+
+    it("confirms the project fails at runtime with read-only config", () => {
+      const workDir = forkScenario("permission-denied");
+      tempDirs.push(workDir);
+
+      chmodSync(join(workDir, "config.json"), 0o444);
+
+      const result = runWithTimeout(workDir, "app.js", 3000);
+      expect(result.exitCode).not.toBe(0);
+      expect(result.stderr).toContain("EACCES");
+    });
+
+    it("fix: make config writable before writing", () => {
+      const workDir = forkScenario("permission-denied");
+      tempDirs.push(workDir);
+
+      chmodSync(join(workDir, "config.json"), 0o444);
+
+      // Fix: chmod the file to be writable
+      chmodSync(join(workDir, "config.json"), 0o644);
+
+      // After fix, no permission issue
+      const detection = detectPermissionDenied(workDir, "app.js");
+      expect(detection.hasPermissionIssue).toBe(false);
+
+      // And the project should run successfully
+      const result = runWithTimeout(workDir, "app.js", 3000);
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("Config updated:");
+    });
+  });
+
+  describe("Scenario: Broken Tool", () => {
+    it("detects the flaky compiler failure", () => {
+      const workDir = forkScenario("broken-tool");
+      tempDirs.push(workDir);
+
+      const result = detectBrokenTool(workDir, "build.js");
+      expect(result.isBroken).toBe(true);
+      expect(result.errorPattern).toContain("SEGFAULT");
+      expect(result.failedSource).toBe("main.src");
+    });
+
+    it("confirms the build fails at runtime", () => {
+      const workDir = forkScenario("broken-tool");
+      tempDirs.push(workDir);
+
+      const result = runWithTimeout(workDir, "build.js", 3000);
+      expect(result.exitCode).not.toBe(0);
+      expect(result.stderr).toContain("SEGFAULT");
+    });
+
+    it("fix: add retry logic to handle flaky compiler", () => {
+      const workDir = forkScenario("broken-tool");
+      tempDirs.push(workDir);
+
+      // Fix: rewrite build.js with retry logic
+      writeFileSync(
+        join(workDir, "build.js"),
+        `const { compile } = require("./compiler");
+
+function buildWithRetry(maxRetries) {
+  const sources = ["main.src", "utils.src"];
+  const results = [];
+  for (const src of sources) {
+    let lastError;
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      const result = compile(src);
+      if (!result.error) {
+        results.push(result.output);
+        lastError = null;
+        break;
+      }
+      lastError = result.error;
+    }
+    if (lastError) throw new Error("Build failed after retries: " + lastError);
+  }
+  return results.join("\\n");
+}
+
+module.exports = { build: buildWithRetry };
+
+if (require.main === module) {
+  try {
+    const output = buildWithRetry(3);
+    console.log("Build succeeded:", output);
+  } catch (err) {
+    console.error("Error:", err.message);
+    process.exit(1);
+  }
+}`
+      );
+
+      // After fix with retries, should succeed
+      const result = runWithTimeout(workDir, "build.js", 3000);
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("Build succeeded:");
+    });
+  });
+
+  describe("Scenario: Resource Exhaustion", () => {
+    it("detects storage exhaustion after too many temp files", () => {
+      const workDir = forkScenario("resource-exhaustion");
+      tempDirs.push(workDir);
+
+      const result = detectResourceExhaustion(workDir, "processor.js");
+      expect(result.isExhausted).toBe(true);
+      expect(result.resource).toBe("disk");
+      expect(result.message).toContain("DISK_FULL");
+    });
+
+    it("confirms the processor fails at runtime", () => {
+      const workDir = forkScenario("resource-exhaustion");
+      tempDirs.push(workDir);
+
+      const result = runWithTimeout(workDir, "processor.js", 3000);
+      expect(result.exitCode).not.toBe(0);
+      expect(result.stderr).toContain("storage exhausted");
+    });
+
+    it("fix: add cleanup of old temp files before processing", () => {
+      const workDir = forkScenario("resource-exhaustion");
+      tempDirs.push(workDir);
+
+      // Fix: rewrite processor.js with cleanup logic
+      writeFileSync(
+        join(workDir, "processor.js"),
+        `const fs = require("fs");
+const path = require("path");
+const STORAGE_LIMIT = 5;
+
+function cleanup(tmpDir) {
+  if (!fs.existsSync(tmpDir)) return;
+  const files = fs.readdirSync(tmpDir)
+    .map(f => ({ name: f, time: fs.statSync(path.join(tmpDir, f)).mtimeMs }))
+    .sort((a, b) => a.time - b.time);
+  // Remove oldest files when at limit
+  while (files.length >= STORAGE_LIMIT) {
+    const old = files.shift();
+    fs.unlinkSync(path.join(tmpDir, old.name));
+  }
+}
+
+function process_batch(items) {
+  const tmpDir = path.join(__dirname, "tmp");
+  if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir);
+  cleanup(tmpDir);
+  const results = [];
+  for (const item of items) {
+    const tmpFile = path.join(tmpDir, "tmp_" + Date.now() + "_" + Math.random().toString(36).slice(2) + ".dat");
+    fs.writeFileSync(tmpFile, "processed: " + item);
+    results.push(tmpFile);
+  }
+  return results;
+}
+
+module.exports = { process_batch, STORAGE_LIMIT };
+
+if (require.main === module) {
+  for (let batch = 0; batch < 10; batch++) {
+    const files = process_batch(["item_" + batch]);
+    console.log("Batch " + batch + ": created " + files.length + " files");
+  }
+  console.log("All batches processed");
+}`
+      );
+
+      // After fix, should complete all batches
+      const result = runWithTimeout(workDir, "processor.js", 5000);
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("All batches processed");
+    });
+  });
+
+  describe("Scenario: Conflicting Instructions", () => {
+    it("detects the config conflict between config.json and env.json", () => {
+      const workDir = forkScenario("conflicting-instructions");
+      tempDirs.push(workDir);
+
+      const result = detectConfigConflict(workDir);
+      expect(result.hasConflict).toBe(true);
+      expect(result.conflicts.length).toBeGreaterThanOrEqual(2);
+
+      const portConflict = result.conflicts.find((c) => c.key === "port");
+      expect(portConflict).toBeDefined();
+      expect(portConflict!.valueA).toBe(3000);
+      expect(portConflict!.valueB).toBe(8080);
+
+      const modeConflict = result.conflicts.find((c) => c.key === "mode");
+      expect(modeConflict).toBeDefined();
+    });
+
+    it("confirms the server fails at runtime due to conflict", () => {
+      const workDir = forkScenario("conflicting-instructions");
+      tempDirs.push(workDir);
+
+      const result = runWithTimeout(workDir, "server.js", 3000);
+      expect(result.exitCode).not.toBe(0);
+      expect(result.stderr).toContain("CONFIG_CONFLICT");
+    });
+
+    it("fix: resolve conflicts by choosing env.json as override", () => {
+      const workDir = forkScenario("conflicting-instructions");
+      tempDirs.push(workDir);
+
+      // Fix: update config.json to match env.json (env overrides main)
+      writeFileSync(
+        join(workDir, "config.json"),
+        JSON.stringify({ port: 8080, mode: "debug", logLevel: "error" }, null, 2)
+      );
+
+      // After fix, no config conflict on port/mode
+      const detection = detectConfigConflict(workDir);
+      const portConflict = detection.conflicts.find((c) => c.key === "port");
+      expect(portConflict).toBeUndefined();
+      const modeConflict = detection.conflicts.find((c) => c.key === "mode");
+      expect(modeConflict).toBeUndefined();
+
+      // And the server should load config successfully
+      const result = runWithTimeout(workDir, "server.js", 3000);
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("Config loaded:");
+    });
+  });
+
   describe("Scenario Coverage", () => {
     it("all fixture directories have package.json", () => {
       const fixturesDir = join(import.meta.dirname, "fixtures");
       const scenarios = readdirSync(fixturesDir);
-      expect(scenarios.length).toBeGreaterThanOrEqual(3);
+      expect(scenarios.length).toBeGreaterThanOrEqual(7);
 
       for (const scenario of scenarios) {
         const pkgPath = join(fixturesDir, scenario, "package.json");
