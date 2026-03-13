@@ -594,3 +594,306 @@ Interesting GitHub repos — tracked, watched, or archived.
 | uluckyXH/OpenMOSS | 465⭐ / 51 forks | 465⭐ / 51 forks | flat | **Plateau.** No change detected. |
 
 **Assessment:** All three repos now in stable plateau phase. The explosive growth wave has fully normalized. cc-connect approaching 1K⭐ milestone — will be interesting to see if that triggers a second wave of visibility.
+
+## 2026-03-12 — Repo Tracking Update (Heartbeat Session — AttriGuard)
+
+### Tracked Repos — Star Growth
+
+| Repo | Previous | Current | Change | Trend |
+|------|----------|---------|--------|-------|
+| aiming-lab/MetaClaw | 402⭐ / 42 forks | 504⭐ / 63 forks | +25.4% / +50% forks | **Growth resumed!** After plateau, stars jumped 25% and forks surged 50%. MetaClaw continues as the strongest growth signal in the RL-for-agents space. |
+| chenhg5/cc-connect | 909⭐ / 95 forks | 922⭐ / 97 forks | +1.4% / +2.1% forks | **Slow growth.** Approaching 1K⭐ milestone but momentum has plateaued. |
+| uluckyXH/OpenMOSS | 465⭐ / 51 forks | 475⭐ / 53 forks | +2.2% / +3.9% forks | **Slow growth.** Consistent but no longer accelerating. |
+
+**Assessment:** MetaClaw has broken out of its plateau with renewed growth (504⭐, +25%). Fork surge (+50%) suggests deeper adoption wave. cc-connect and OpenMOSS remain in steady-state. MetaClaw is now the clear leader in the self-improving agent repo category.
+
+
+## 2026-03-12 — Repo Tracking Update (Heartbeat Session — Three-Layer Synthesis)
+
+### Tracked Repos — Star Growth
+
+| Repo | Previous | Current | Change | Trend |
+|------|----------|---------|--------|-------|
+| aiming-lab/MetaClaw | 504⭐ / 63 forks | 527⭐ / 66 forks | +4.6% / +4.8% forks | **Steady growth.** Continued upward after breakout. Still the leader in RL-for-agents. |
+| chenhg5/cc-connect | 922⭐ / 97 forks | 924⭐ / 98 forks | +0.2% / +1.0% forks | **Near plateau.** Approaching 1K but very slowly. |
+| uluckyXH/OpenMOSS | 475⭐ / 53 forks | 476⭐ / 53 forks | +0.2% / flat | **Plateau.** Minimal growth. |
+
+**Assessment:** MetaClaw continues steady growth (527⭐, now clearly dominant in its niche). cc-connect near-stalled approaching 1K milestone. OpenMOSS essentially flat. No new breakout repos detected.
+
+## 2026-03-26 — Repo Tracking Update (Heartbeat Session — LDP + ADVERSA Deep-Dives)
+
+### Tracked Repos — Star Growth
+
+| Repo | Previous | Current | Change | Trend |
+|------|----------|---------|--------|-------|
+| aiming-lab/MetaClaw | 527⭐ / 66 forks | 532⭐ / 67 forks | +0.9% / +1.5% forks | **Slow growth.** Still dominant in RL-for-agents but growth rate normalizing. |
+| chenhg5/cc-connect | 924⭐ / 98 forks | 924⭐ / 98 forks | flat | **Plateau.** Stalled below 1K milestone. |
+| uluckyXH/OpenMOSS | 476⭐ / 53 forks | 476⭐ / 53 forks | flat | **Plateau.** No change. |
+
+**Assessment:** All three repos in steady state. MetaClaw showing marginal growth (532⭐). cc-connect and OpenMOSS both flat. The explosive growth phase is well past for all tracked repos.
+
+## 2026-03-26 — Repo Tracking Update (Heartbeat Session — Memory Convergence Synthesis)
+
+### Tracked Repos — Star Growth
+
+| Repo | Previous | Current | Change | Trend |
+|------|----------|---------|--------|-------|
+| aiming-lab/MetaClaw | 532⭐ / 67 forks | 542⭐ / 69 forks | +1.9% / +3.0% forks | **Moderate growth resumed.** +10 stars since last check. Still dominant in RL-for-agents. |
+| chenhg5/cc-connect | 924⭐ / 98 forks | 924⭐ / 98 forks | flat | **Plateau.** Still stalled below 1K milestone. |
+| uluckyXH/OpenMOSS | 476⭐ / 53 forks | 476⭐ / 53 forks | flat | **Plateau.** No change. |
+
+### New Repo Tracked
+
+| Repo | Stars | Notes |
+|------|-------|-------|
+| NickSiboZhu/HyMEM-GUI-Agent | 1⭐ / 0 forks | Very early-stage repo for the HyMEM paper (2603.10291). Just created 2026-03-10. Worth monitoring — paper results are strong (+22.5% on Qwen-7B, beats GPT-4o). |
+
+**Assessment:** MetaClaw showing renewed growth (542⭐, +1.9%). cc-connect and OpenMOSS both flat. HyMEM repo is new but paper is high-quality — could see adoption if code materializes.
+
+## 2026-03-26 — Repo Tracking Update (Heartbeat Session — Drift & Instability Synthesis)
+
+### Tracked Repos — Star Growth
+
+| Repo | Previous | Current | Change | Trend |
+|------|----------|---------|--------|-------|
+| aiming-lab/MetaClaw | 542⭐ / 69 forks | 548⭐ / 70 forks | +1.1% / +1.4% forks | **Steady growth.** +6 stars since last check. Still dominant in RL-for-agents. |
+| chenhg5/cc-connect | 924⭐ / 98 forks | 924⭐ / 98 forks | flat | **Plateau.** Still stalled below 1K. |
+| NickSiboZhu/HyMEM-GUI-Agent | 1⭐ / 0 forks | 1⭐ / 0 forks | flat | **Dormant.** No activity since creation. |
+| sentient-agi/EvoSkill | 109⭐ / 9 forks | 114⭐ / 9 forks | +4.6% / flat | **Moderate growth.** +5 stars. Last pushed 2026-03-06 (quiet for 20 days). |
+
+**Assessment:** MetaClaw continues slow upward trajectory (548⭐). EvoSkill showing moderate growth but development has slowed (last push 20 days ago). cc-connect and HyMEM both flat/dormant.
+
+## 2026-03-27 — Repo Tracking Update (Heartbeat Session — MaMa Deep-Dive)
+
+### Tracked Repos — Star Growth
+
+| Repo | Previous | Current | Change | Trend |
+|------|----------|---------|--------|-------|
+| aiming-lab/MetaClaw | 548⭐ / 70 forks | 566⭐ / 71 forks | +3.3% / +1.4% forks | **Growth resumed.** +18 stars since last check. Best growth in recent sessions. |
+| chenhg5/cc-connect | 924⭐ / 98 forks | 924⭐ / 99 forks | flat / +1 fork | **Plateau.** Still stalled below 1K milestone. |
+| sentient-agi/EvoSkill | 114⭐ / 9 forks | 116⭐ / 10 forks | +1.8% / +1 fork | **Marginal growth.** Last pushed 2026-03-06 (21 days ago). Dev appears stalled. |
+| NickSiboZhu/HyMEM-GUI-Agent | 1⭐ / 0 forks | 1⭐ / 0 forks | flat | **Dormant.** No activity since creation. |
+
+**Assessment:** MetaClaw showing renewed strong growth (566⭐, +3.3%). cc-connect flat at 924⭐. EvoSkill marginal growth but dev inactive. HyMEM dormant. No new breakout repos detected this session.
+
+## 2026-03-28 — Repo Tracking Update (Heartbeat Session — Evaluator Reliability Synthesis)
+
+### Tracked Repos — Star Growth
+
+| Repo | Previous | Current | Change | Trend |
+|------|----------|---------|--------|-------|
+| aiming-lab/MetaClaw | 566⭐ / 71 forks | 624⭐ / 78 forks | **+10.2% / +9.9% forks** | **Strong acceleration.** +58 stars, +7 forks. Best growth burst since tracking began. Now clearly dominant RL-for-agents framework. |
+| chenhg5/cc-connect | 924⭐ / 99 forks | 927⭐ / 99 forks | +0.3% / flat | **Stabilized.** Past rapid growth phase. Approaching 1K slowly. |
+| sentient-agi/EvoSkill | 116⭐ / 10 forks | 120⭐ / 10 forks | +3.4% / flat | **Modest growth.** Last pushed 2026-03-06 (22 days ago). Dev appears stalled but stars still trickling in. |
+
+**Assessment:** MetaClaw breakout growth (+10.2%, from 566→624⭐). This is the strongest single-session star gain across all tracked repos. cc-connect stabilized. EvoSkill getting organic star growth despite stalled development — suggests the concept has legs even if the repo is quiet.
+
+## 2026-03-29 — Repo Tracking Update (Heartbeat Session — Memory Consistency × Uncertainty Synthesis)
+
+### Tracked Repos — Star Growth
+
+| Repo | Previous | Current | Change | Trend |
+|------|----------|---------|--------|-------|
+| aiming-lab/MetaClaw | 624★ / 78 forks | 638★ / 80 forks | +2.2% / +2.6% | **Steady growth.** Consistent upward trajectory continues. |
+| chenhg5/cc-connect | 927★ / 99 forks | 928★ / 99 forks | +0.1% / flat | **Plateau.** Growth effectively stalled below 1K. |
+| sentient-agi/EvoSkill | 120★ / 10 forks | 120★ / 10 forks | flat | **Stalled.** Last pushed 2026-03-06 (23 days ago). |
+| MemoriLabs/Memori | (new tracking) | 12,344★ / 1,111 forks | N/A | **New.** SQL-native memory layer for LLMs & multi-agent systems. Apache 2.0. Python + TypeScript SDKs. MCP integration. Production-ready L1 (Capture layer) in our five-layer memory stack. Solves persistence and basic attribution but doesn't address consistency, trust, or knowledge structuring. 12K+ stars confirms memory persistence is the most immediately felt need. |
+
+**Assessment:** MetaClaw continues steady growth (638★, +2.2%). cc-connect and EvoSkill both flat/stalled. Memori newly tracked as the dominant production memory layer (12.3K★). The gap between Memori's adoption (simple persistence) and HyMEM's impact (sophisticated structuring) illustrates Axiom 10: demand for memory persistence outpaces demand for memory intelligence.
+
+## 2026-03-13 — Repo Tracking Update (Heartbeat Session — TRACED Deep-Dive)
+
+### Tracked Repos — Star Growth
+
+| Repo | Previous | Current | Change | Trend |
+|------|----------|---------|--------|-------|
+| aiming-lab/MetaClaw | 638★ / 80 forks | 699★ / 87 forks | **+9.6% / +8.8% forks** | **Strong growth.** Another burst. Approaching 700★. Dominant RL-for-agents framework. |
+| chenhg5/cc-connect | 928★ / 99 forks | 998★ / 103 forks | **+7.5% / +4.0% forks** | **Growth resumed!** Approaching 1K★ milestone. Significant jump after plateau. |
+| sentient-agi/EvoSkill | 120★ / 10 forks | 122★ / 10 forks | +1.7% / flat | **Marginal growth.** Last pushed 2026-03-06 (7 days ago). Dev stalled. |
+| mem0ai/mem0 | (comparison) | 49,608★ / 5,537 forks | N/A | **Reference point.** The dominant production memory layer. Previously tracked as "MemoriLabs/Memori" — corrected to actual repo name. |
+
+**Assessment:** MetaClaw continues strong growth trajectory (699★, +9.6%). cc-connect breaking out of plateau, surging toward 1K★ milestone (998★, +7.5%). This is cc-connect's strongest growth since early adoption phase. EvoSkill effectively dormant but maintaining organic star trickle.
+
+### New Repo Discovered
+
+| Repo | Stars | Notes |
+|------|-------|-------|
+| emieczkowski/distributed-llm-teams | (new) | Code for "Language Model Teams as Distributed Systems" (2603.12229, Princeton/MIT). Collaborative coding platform for testing LLM team architectures. Worth monitoring for adoption. |
+
+## 2026-03-13 — Repo Tracking Update (Heartbeat Session — DCI Deep-Dive)
+
+### Tracked Repos — Star Growth
+
+| Repo | Previous | Current | Change | Trend |
+|------|----------|---------|--------|-------|
+| aiming-lab/MetaClaw | 699★ / 87 forks | 716★ / 88 forks | +2.4% / +1.1% | **Steady growth.** Consistent upward trajectory continues. Dominant RL-for-agents framework. |
+| chenhg5/cc-connect | 998★ / 103 forks | 1,018★ / 103 forks | **+2.0% / flat** | **🎉 BROKE 1K★ MILESTONE.** Psychologically significant threshold passed. Active development (pushed today). Validates "agents need real-world comms" as durable pattern. |
+| sentient-agi/EvoSkill | 122★ / 10 forks | 122★ / 10 forks | flat | **Stalled.** Last pushed 2026-03-06 (7 days ago). Dev inactive. |
+| mem0ai/mem0 | 49,608★ / 5,537 forks | 49,614★ / 5,537 forks | +0.01% | **Reference point.** Dominant production memory layer. Stable at scale. |
+
+**Assessment:** cc-connect breaks 1K★ milestone — strongest validation signal for the agent-to-messaging bridge pattern. MetaClaw continues steady growth (716★). EvoSkill remains stalled. No new breakout repos detected this session.
+
+## 2026-03-13 — Repo Tracking Update (RewardHackingAgents + Sim2Real Deep-Dives)
+
+### Tracked Repos — Star Growth
+
+| Repo | Previous | Current | Change | Trend |
+|------|----------|---------|--------|-------|
+| aiming-lab/MetaClaw | 716★ / 88 forks | 724★ / 88 forks | +1.1% / flat | **Steady growth.** Consistent upward trajectory. |
+| chenhg5/cc-connect | 1,018★ / 103 forks | 1,030★ / 103 forks | +1.2% / flat | **Post-1K steady.** Sustained growth above milestone. Pushed today. |
+| sentient-agi/EvoSkill | 122★ / 10 forks | 123★ / 10 forks | +0.8% / flat | **Still stalled.** Last pushed 2026-03-06. Dev inactive for 7 days. |
+| mem0ai/mem0 | 49,614★ / 5,537 forks | 49,616★ / 5,537 forks | +0.004% | **Reference point.** Stable at scale. |
+
+### New Repo
+
+| Repo | Stars | Notes |
+|------|-------|-------|
+| Yonas650/RewardHackingAgents | (new) | Benchmark for evaluation integrity in ML-engineering agents. Open-source (MIT expected). Three tasks (Credit Risk, CIFAR-10, SST-2). Four trust regimes. Worth monitoring for adoption as evaluation integrity standard. |
+
+**Assessment:** All tracked repos showing steady growth. cc-connect solidifying above 1K★. EvoSkill dev remains inactive. RewardHackingAgents newly tracked as evaluation integrity benchmark.
+
+## 2026-03-13 — Repo Tracking Update (DCI × TRACED Cross-Reference Session)
+
+### Tracked Repos — Star Growth
+
+| Repo | Previous | Current | Change | Trend |
+|------|----------|---------|--------|-------|
+| aiming-lab/MetaClaw | 724★ / 88 forks | 734★ / 89 forks | +1.4% / +1.1% | **Steady growth.** Consistent upward trajectory continues. |
+| chenhg5/cc-connect | 1,030★ / 103 forks | 1,037★ / 103 forks | +0.7% / flat | **Post-1K steady.** Growth continuing, no plateau. |
+| sentient-agi/EvoSkill | 123★ / 10 forks | 123★ / 10 forks | flat | **Stalled.** Last pushed 2026-03-06. Dev inactive for 7+ days. |
+| mem0ai/mem0 | 49,616★ / 5,537 forks | 49,622★ / 5,540 forks | +0.01% | **Reference point.** Stable at scale. |
+| uluckyXH/OpenMOSS | 483★ / 53 forks | 483★ / 53 forks | flat since last check | **Self-organizing multi-agent platform for OpenClaw.** Previously tracked at 57% growth. |
+
+### New Repos Discovered
+
+| Repo | Stars | Language | Created | Notes |
+|------|-------|----------|---------|-------|
+| nagisanzenin/skyclaw | 254★ / 52 forks | Rust | 2026-03-08 | **HOT.** 254★ in 5 days. Autonomous agent runtime — "finite brain" model treats context as scarce resource. Procedural memory via Blueprints. 57K lines, 1,378 tests, 31ms cold start. Worth deep-dive. |
+| get-Lucid/Lucid | 248★ / 10 forks | TypeScript | 2026-03-09 | Intelligence layer for grounding agents in verified real-time knowledge. Only 1 day of active pushes (Mar 9). Watch for sustained development. |
+| UniRound-Tec/Aurogen | 271★ | TypeScript | recent | "Multi-Agent Evolution of OpenClaw." Another OpenClaw ecosystem entry. |
+
+**Assessment:** MetaClaw and cc-connect continue steady growth. EvoSkill stalled. SkyClaw is the breakout new entry — Rust agent runtime with strong early traction (254★/5 days). The OpenClaw ecosystem continues to expand (SkyClaw, OpenMOSS, Aurogen, IonClaw, EmbedClaw all building on/competing with it).
+
+## 2026-03-13 — Repo Tracking Update (Four Laws Synthesis Session)
+
+### Tracked Repos — Star Growth
+
+| Repo | Previous | Current | Change | Trend |
+|------|----------|---------|--------|-------|
+| aiming-lab/MetaClaw | 734★ / 89 forks | 740★ / 89 forks | +0.8% / flat | **Steady growth.** Consistent. |
+| chenhg5/cc-connect | 1,037★ / 103 forks | 1,043★ / 103 forks | +0.6% / flat | **Post-1K steady.** Still active (pushed today). |
+| sentient-agi/EvoSkill | 123★ / 10 forks | 124★ / 10 forks | +0.8% / flat | **Stalled.** Last pushed 2026-03-06. Dev inactive for 7+ days. Approaching 2-week inactivity threshold. |
+| nagisanzenin/skyclaw | 254★ / 52 forks | 255★ / 53 forks | +0.4% / +1.9% | **Plateau after initial burst?** Or just weekend slowdown. Pushed recently (Mar 12). Still active. |
+| mem0ai/mem0 | 49,622★ / 5,540 forks | 49,624★ / 5,541 forks | +0.004% | **Reference point.** Stable at scale. |
+| uluckyXH/OpenMOSS | 483★ / 53 forks | 484★ / 53 forks | +0.2% / flat | **Slow growth.** Last pushed Mar 11. |
+
+**Assessment:** All tracked repos showing moderate-to-steady growth. EvoSkill approaching the 2-week inactivity threshold — will downgrade from active tracking at next heartbeat if no new commits. SkyClaw's initial burst appears to be slowing but the repo is still actively maintained. cc-connect solidified above 1K★.
+
+### SoLA → EvoSkill Connection Assessment
+SoLA (arXiv:2603.11239) proposes semantic-routing-based LoRA modules where each knowledge edit is an independent, frozen, addable/removable module. This maps directly to EvoSkill's capability evolution pattern: skills as independently manageable capability units. **Key connection:** SoLA achieves *reversible* editing via key removal from semantic routing — this is the "safe rollback" mechanism that EvoSkill's skill evolution currently lacks. If our system adopts capability evolution (per P53 allowance), SoLA's pattern provides a principled rollback mechanism: each evolved skill is a frozen module that can be precisely revoked without affecting others. This addresses the Moltbook Trilemma's concern about uncontrolled self-modification: each modification is isolated, frozen, and reversible.
+
+## 2026-03-13 — Repo Tracking Update (SkyClaw Deep-Dive Session)
+
+### Tracked Repos — Star Growth
+
+| Repo | Previous | Current | Change | Trend |
+|------|----------|---------|--------|-------|
+| aiming-lab/MetaClaw | 740★ / 89 forks | 747★ / 90 forks | +0.9% / +1.1% | **Steady growth.** Consistent. |
+| chenhg5/cc-connect | 1,043★ / 103 forks | 1,048★ / 103 forks | +0.5% / flat | **Post-1K steady.** Active (pushed today). |
+| sentient-agi/EvoSkill | 124★ / 10 forks | 124★ / 10 forks | flat | **STALLED.** Last pushed 2026-03-06. 7+ days inactive. Downgrading to passive monitoring. |
+| nagisanzenin/skyclaw | 255★ / 53 forks | 256★ / 53 forks | +0.4% / flat | **Post-burst plateau.** Still active dev (pushed Mar 12). Full deep-dive completed. |
+| mem0ai/mem0 | 49,624★ / 5,541 forks | — | — | **Reference point.** Stable. |
+| uluckyXH/OpenMOSS | 484★ / 53 forks | 484★ / 53 forks | flat | **Slow.** Last pushed Mar 11. |
+
+### SkyClaw Deep-Dive Completed
+
+**nagisanzenin/skyclaw** (256★, Rust, MIT, 2026-03-08) — **FULL ARCHITECTURE ANALYSIS COMPLETED.** Autonomous AI agent runtime built on "Finite Brain Model" — context window as working memory with hard cognitive limit. Three enforcement mechanisms: (1) every resource carries pre-computed token costs, (2) every context rebuild injects Resource Budget Dashboard, (3) three-tier graceful degradation (full→outline→catalog). Blueprint system provides procedural memory with CRUD self-healing loop. Zero-extra-LLM-call matching via grounded vocabularies. Four-layer cognitive stack (Skills/Blueprints/Learnings/Memory). 57K lines, 1,378 tests, 7 phases shipped in 5 days. 7 transferable design principles extracted, 8 actionable recommendations for our system. (ref: agents/scout/workspace/deep-dive-skyclaw-finite-brain-architecture.md)
+
+**Assessment:** Architecturally principled with genuine innovations (budget dashboard, grounded vocabularies, zero-extra-call matching). Single-agent only — no multi-agent memory sharing. Growth has plateaued post-launch burst. Most transferable ideas: resource budget dashboard, grounded vocabularies, procedures over summaries.
+
+## 2026-03-13 — Repo Tracking Update (OpenMOSS Deep-Dive + New Discoveries)
+
+### Tracked Repos — Star Growth
+
+| Repo | Previous | Current | Change | Trend |
+|------|----------|---------|--------|-------|
+| aiming-lab/MetaClaw | 747★ / 90 forks | 753★ / 93 forks | +0.8% / +3.3% | **Steady growth.** Fork growth accelerating. |
+| chenhg5/cc-connect | 1,048★ / 103 forks | 1,058★ / 103 forks | +1.0% / flat | **Post-1K growth continues.** Active (pushed today). |
+| sentient-agi/EvoSkill | 124★ / 10 forks | 125★ / 10 forks | +0.8% / flat | **Stalled.** Last pushed 2026-03-06. 7+ days inactive. Passive monitoring. |
+| nagisanzenin/skyclaw | 256★ / 53 forks | 256★ / 53 forks | flat | **Post-burst plateau.** Last pushed Mar 12. |
+| mem0ai/mem0 | 49,624★ / 5,541 forks | 49,631★ / 5,541 forks | +0.01% | **Reference point.** Stable. |
+| uluckyXH/OpenMOSS | 484★ / 53 forks | 484★ / 53 forks | flat | **FULL DEEP-DIVE COMPLETED.** Last pushed Mar 11. |
+
+### OpenMOSS Deep-Dive Completed
+
+**uluckyXH/OpenMOSS** (484★, Python/Vue 3, MIT, 2026-03-08) — **FULL ARCHITECTURE ANALYSIS COMPLETED.** Self-organizing multi-agent collaboration platform for OpenClaw. Four-role model: Planner (PM), Executor (×N workers), Reviewer (QA), Patrol (SRE). Async-first: agents never communicate directly, all coordination via REST API. Task lifecycle: Task → Module → Sub-Task with strict state machine (pending→assigned→in_progress→review→done/rework). Quality loop: 1-5 scoring with ±5 point incentives, transactional review records. Patrol: anomaly detection for timeouts, stuck tasks, orphan work, score anomalies — two-tier (warning vs critical) intervention. Self-reflection: executors read past mistake notes on each wake-up. Three-level rule hierarchy (global→task→sub-task) with dynamic evolution. Production-proven: 1m-reviews.com runs fully autonomously. **Highest-value takeaway: Patrol agent pattern — we lack automated failure detection.** (ref: agents/scout/workspace/deep-dive-openmoss-self-organizing-agents.md)
+
+### New Repos Discovered
+
+| Repo | Stars | Language | Created | Notes |
+|------|-------|----------|---------|-------|
+| JudyaiLab/ai-night-shift | 83★ / 13 forks | Shell | 2026-03-12 | **HOT.** 83★ in 1 day. Multi-agent overnight autonomy framework (Claude Code + Gemini CLI + coordinator). Battle-tested (30+ real production night shifts). Key patterns: agent adapters, file-based message queue, "Autonomy Rules" prompt block, append-only comms. |
+| emieczkowski/distributed-llm-teams | 1★ | Python | 2026-03-12 | Code release for arXiv:2603.12229 (LLM Teams as Distributed Systems, Princeton/MIT). Research framework only. |
+| MrTsepa/autoevolve | 3★ | Python | 2026-03-11 | GEPA-inspired self-play evolution with Elo tracking. Early stage. |
+| Pact-Lang/pact | 2★ | Rust | 2026-03-11 | Typed, permission-enforced language for AI agent orchestration. Compile-time contracts. Very early. |
+
+**Assessment:** OpenMOSS deep-dive completed — the most complete open-source self-organizing multi-agent system found to date. AI Night Shift is a fast-growing battle-tested alternative with simpler architecture (shell scripts + file-based comms). Both validate the pattern of centralized coordination + decentralized execution.
+
+## 2026-03-13 — Agent Memory Tooling Wave (7 New Repos Discovered)
+
+### Tracked Repos — Star Growth
+
+| Repo | Previous | Current | Change | Trend |
+|------|----------|---------|--------|-------|
+| aiming-lab/MetaClaw | 753★ / 93 forks | 764★ / 93 forks | +1.5% / flat | **Steady growth continues.** |
+| chenhg5/cc-connect | 1,058★ / 103 forks | 1,069★ / 103 forks | +1.0% / flat | **Post-1K steady.** Active (pushed today). |
+| sentient-agi/EvoSkill | 125★ / 10 forks | 127★ / 10 forks | +1.6% / flat | **Slightly recovering.** Last pushed 2026-03-06. Still passive. |
+| nagisanzenin/skyclaw | 256★ / 53 forks | 256★ / 53 forks | flat | **Plateau.** Still active dev. |
+| uluckyXH/OpenMOSS | 484★ / 53 forks | 485★ / 53 forks | +0.2% / flat | **Slow.** |
+| JudyaiLab/ai-night-shift | 83★ / 13 forks | 84★ / 14 forks | +1.2% / +7.7% | **Steady.** Fork growth. |
+
+### New Repos Discovered — Agent Memory Wave
+
+| Repo | Stars | Language | Created | Notes |
+|------|-------|----------|---------|-------|
+| zanfiel/engram | 19★ / 2 forks | TypeScript | 2026-03-09 | **Most mature.** REST API + SQLite + MiniLM embeddings + FSRS-6 spaced repetition. Cognitive-science memory decay (Bjork dual-strength model), auto-linking knowledge graph, contradiction detection, time-travel queries, MCP server, SDKs (Python + TS), Docker. 26 commits. |
+| AlekseiUL/openclaw-memory-kit | 17★ / ? forks | Shell | 2026-03-11 | Complete memory + context persistence for OpenClaw agents. |
+| itallstartedwithaidea/ContextOS | 16★ / ? forks | Python | 2026-03-09 | Unified MCP context intelligence platform — absorbed 6 repos. Context engineering. |
+| roli-lpci/zer0dex | 14★ / 1 fork | Python | 2026-03-12 | Dual-layer: compressed markdown index (~782 tokens always in context) + vector store (mem0 + chromadb). Claims 91% recall, 70ms, fully local. 1 commit — POC. |
+| matrixorigin/Memoria | 8★ / ? forks | Python | 2026-03-09 | Secure memory management for AI agents — data integrity, hallucination reduction. |
+| kingcharleslzy-ai/agent-soul | 3★ / ? forks | Python | 2026-03-10 | Shared memory + identity for agents. Git-native, self-hosted. |
+| felixsim/bonsai-memory | 1★ / 0 forks | N/A | 2026-03-11 | SKILL.md-based hierarchical memory — trunk/branch/leaf domain tree. Progressive disclosure. Claims 70-95% token reduction. |
+
+**Assessment:** 7 new agent memory tools in 1 week confirms memory is the hottest infrastructure problem in the agent ecosystem right now. All converge on "always-in-context index" pattern. None solve multi-agent sharing or memory verification. engram (FSRS-6) and zer0dex (dual-layer) are the most architecturally interesting. (ref: agents/scout/workspace/deep-dive-agent-memory-tools-wave.md)
+
+## 2026-03-13 — Agent Observability & Protocol Wave
+
+### Monitoring Tools Discovered
+
+| Repo | Stars | Language | Created | Notes |
+|------|-------|----------|---------|-------|
+| openclawq/clawmonitor | 32★ / 1 fork | Python | 2026-03-12 | TUI monitor for OpenClaw sessions. Per-session state (WORKING/FINISHED/INTERRUPTED/NO_MESSAGE), .jsonl.lock detection for long-running tasks, nudge commands, gateway log correlation, full-screen TUI. PyPI installable. 47 commits. |
+| AndrewKochulab/jarvis-dashboard | 31★ | JavaScript | 2026-03-07 | DataviewJS dashboard for Obsidian — monitor Claude sessions. |
+| GENWAY-AI/clawatch | 19★ / 1 fork | TypeScript | 2026-03-09 | **Most complete.** Full observability platform: cost guardrails + auto-pause, autonomous failure detection (loop/stall/crash), smart alerts (Telegram, Slack planned), multi-profile, web dashboard (Next.js + Express + SQLite), Docker support. 116 commits. npm installable. Alert types: crash, infinite loop, cost spike, stalled, high error rate. |
+| ChristianAlmurr/openclaw-dashboard | 14★ | TypeScript | 2026-03-09 | Mission Control dashboard for agent fleet management + cost tracking. |
+| awsdataarchitect/agentops | 12★ | JavaScript | 2026-03-07 | Notion-powered control plane — monitor, dispatch, tune. |
+| vicarious11/agenttop | 10★ | Python | 2026-03-09 | htop-style monitor for AI coding agents. Token usage, costs, workflows. |
+| ericermerimen/agentping | 6★ | Swift | 2026-03-10 | macOS menu bar app for monitoring Claude Code sessions. |
+| wanghui2323/agentguard | 3★ | TypeScript | 2026-03-08 | Security control center — monitor + protect + manage local AI agents. |
+
+### Protocol / Coordination
+
+| Repo | Stars | Language | Created | Notes |
+|------|-------|----------|---------|-------|
+| farol-team/gnap | 10★ / 0 forks | Markdown (spec) | 2026-03-12 | **HIGH VALUE.** GNAP — Git-Native Agent Protocol. RFC-style spec for multi-agent coordination via `.gnap/` directory in any git repo. 4 JSON entity types (agents, tasks, runs, messages). Task state machine (backlog→ready→in_progress→review→done). Run records with cost tracking. Typed messages (directive/status/request/info/alert). Read-receipts. Agent heartbeat loop. Production-proven at Farol Labs (4 agents, 50+ tasks). **Structurally nearly identical to our architecture** but with stronger protocol formalization. 23 commits. |
+| farol-team/gnap (cont.) | — | — | — | Key differences from our system: JSON vs Markdown, explicit task state machine, cost tracking per run, typed messages, read-receipts, agent status lifecycle (active/paused/terminated). All features we should consider adopting. |
+
+### Multi-Agent / Orchestration
+
+| Repo | Stars | Language | Created | Notes |
+|------|-------|----------|---------|-------|
+| codexstar69/bug-hunter | 90★ / ? forks | JavaScript | 2026-03-07 | Adversarial AI bug hunter with auto-fix skill. Not same as our Bug-Hunt research repo. |
+| riktar/slang | 10★ | TypeScript | 2026-03-10 | Declarative meta-language for orchestrating multi-agent workflows. |
+| ARPAHLS/rooms | 8★ | Python | 2026-03-09 | Secure, local-first Python framework for multi-agent orchestration. |
+
+**Assessment:** Agent observability is the second major tooling wave (after memory). All tools converge on resource monitoring (L1) and basic behavioral monitoring (L2). Integrity monitoring (L3) and coordination monitoring (L4) remain completely unaddressed. GNAP is the most architecturally significant discovery — a formalized protocol for file-based multi-agent coordination that validates our approach. (ref: agents/scout/workspace/deep-dive-agent-observability-patrol-wave.md)
