@@ -40,7 +40,7 @@ describe("P85: Operation Budget", () => {
 
   beforeEach(() => {
     persistDir = mkdtempSync(join(tmpdir(), "may-opbudget-test-"));
-    manager = new SubagentManager({ persistDir });
+    manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
   });
 
   afterEach(() => {
@@ -238,7 +238,7 @@ describe("P84: Tool output wrapping", () => {
 
   beforeEach(() => {
     persistDir = mkdtempSync(join(tmpdir(), "may-toolwrap-test-"));
-    manager = new SubagentManager({ persistDir });
+    manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
   });
 
   afterEach(() => {

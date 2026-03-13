@@ -35,7 +35,7 @@ describe("Registry persistence", () => {
   });
 
   it("stores agent config in-memory on register", () => {
-    const manager = new SubagentManager({ persistDir });
+    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
 
     manager.register({
       name: "test-agent",
@@ -59,7 +59,7 @@ describe("Registry persistence", () => {
   });
 
   it("persists fields (domain, workspace, timeoutMs, memoryLimit)", () => {
-    const manager = new SubagentManager({ persistDir });
+    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
 
     manager.register({
       name: "full-agent",
@@ -81,7 +81,7 @@ describe("Registry persistence", () => {
   });
 
   it("persists multiple agents", () => {
-    const manager = new SubagentManager({ persistDir });
+    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
 
     manager.register({
       name: "agent-a",
@@ -109,7 +109,7 @@ describe("Registry persistence", () => {
 
   it("agent configs are in-memory only — not shared across instances", () => {
     // First manager registers
-    const manager1 = new SubagentManager({ persistDir });
+    const manager1 = new SubagentManager({ persistDir, infraRetryMax: 0 });
     manager1.register({
       name: "persisted-agent",
       description: "Survives restart",
@@ -120,7 +120,7 @@ describe("Registry persistence", () => {
     });
 
     // Second manager reads from same persistDir — agents are in-memory only
-    const manager2 = new SubagentManager({ persistDir });
+    const manager2 = new SubagentManager({ persistDir, infraRetryMax: 0 });
     const registry2 = (manager2 as any).registry.getRegistry();
     // Agent configs don't survive restart (by design — re-registered on every startup)
     expect(registry2.agents["persisted-agent"]).toBeUndefined();
@@ -139,7 +139,7 @@ describe("Registry persistence", () => {
   });
 
   it("records session as meta.json on run and updates on completion", async () => {
-    const manager = new SubagentManager({ persistDir });
+    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
 
     manager.register({
       name: "runner",
@@ -171,7 +171,7 @@ describe("Registry persistence", () => {
   });
 
   it("works with a fresh persistDir (no prior state)", () => {
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) , infraRetryMax: 0 });
 
     // Should work fine, just no file created
     manager.register({
@@ -188,7 +188,7 @@ describe("Registry persistence", () => {
   });
 
   it("does not persist optional fields when not provided", () => {
-    const manager = new SubagentManager({ persistDir });
+    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
 
     manager.register({
       name: "minimal",

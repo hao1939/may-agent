@@ -14,7 +14,7 @@ const proxyModel = {
   baseUrl: "http://localhost:4000",
 };
 
-const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
+const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) , infraRetryMax: 0 });
 
 manager.register({
   name: "greeter",

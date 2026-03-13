@@ -48,7 +48,7 @@ describe("health()", () => {
 
   beforeEach(() => {
     persistDir = mkdtempSync(join(tmpdir(), "health-api-"));
-    manager = new SubagentManager({ persistDir });
+    manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
   });
 
   afterEach(() => {
@@ -120,7 +120,7 @@ describe("auditHealth()", () => {
 
   beforeEach(() => {
     persistDir = mkdtempSync(join(tmpdir(), "health-audit-"));
-    manager = new SubagentManager({ persistDir });
+    manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
     registerTestAgents(manager);
   });
 
@@ -232,7 +232,7 @@ describe("reconcileHealth()", () => {
 
   beforeEach(() => {
     persistDir = mkdtempSync(join(tmpdir(), "health-reconcile-"));
-    manager = new SubagentManager({ persistDir });
+    manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
     registerTestAgents(manager);
   });
 
@@ -276,7 +276,7 @@ describe("health via reconcileHealth()", () => {
 
   beforeEach(() => {
     persistDir = mkdtempSync(join(tmpdir(), "health-tool-"));
-    manager = new SubagentManager({ persistDir });
+    manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
     registerTestAgents(manager);
   });
 

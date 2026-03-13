@@ -36,7 +36,7 @@ describe("SubagentManager timeout enforcement", () => {
   });
 
   it("cancels a session after timeoutMs elapses", async () => {
-    const manager = new SubagentManager({ persistDir });
+    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
 
     // Create a mock agent that hangs forever
     // We'll register with a timeout and verify cancel is called
@@ -78,7 +78,7 @@ describe("SubagentManager timeout enforcement", () => {
   });
 
   it("does not set a timeout when timeoutMs is not configured", () => {
-    const manager = new SubagentManager({ persistDir });
+    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
     const cancelSpy = vi.spyOn(manager, "cancel");
 
     manager.register({
@@ -103,7 +103,7 @@ describe("SubagentManager timeout enforcement", () => {
   });
 
   it("does not set a timeout when timeoutMs is 0", () => {
-    const manager = new SubagentManager({ persistDir });
+    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
     const cancelSpy = vi.spyOn(manager, "cancel");
 
     manager.register({

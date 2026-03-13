@@ -27,7 +27,7 @@ describe("session archival on completion", () => {
 
   beforeEach(() => {
     persistDir = mkdtempSync(join(tmpdir(), "may-archive-"));
-    manager = new SubagentManager({ persistDir });
+    manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
 
     manager.register({
       name: "echo-agent",

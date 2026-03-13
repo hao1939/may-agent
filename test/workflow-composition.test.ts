@@ -59,7 +59,7 @@ describe("workflow composition: runWorkflow", () => {
     `,
     );
 
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) , infraRetryMax: 0 });
     const tool = createWorkflowTool({ manager, workflowDir });
 
     const result = await tool.execute("tc1", {
@@ -102,7 +102,7 @@ describe("workflow composition: runWorkflow", () => {
     `,
     );
 
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) , infraRetryMax: 0 });
     const tool = createWorkflowTool({ manager, workflowDir });
 
     const result = await tool.execute("tc1", {
@@ -134,7 +134,7 @@ describe("workflow composition: runWorkflow", () => {
     `,
     );
 
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) , infraRetryMax: 0 });
     const tool = createWorkflowTool({ manager, workflowDir });
 
     const result = await tool.execute("tc1", {
@@ -176,7 +176,7 @@ describe("workflow composition: runWorkflow", () => {
     );
 
     const events: WorkflowEvent[] = [];
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) , infraRetryMax: 0 });
     const tool = createWorkflowTool({
       manager,
       workflowDir,
@@ -234,7 +234,7 @@ describe("workflow composition: runWorkflow", () => {
     );
 
     const events: WorkflowEvent[] = [];
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) , infraRetryMax: 0 });
     const tool = createWorkflowTool({
       manager,
       workflowDir,

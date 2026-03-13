@@ -35,7 +35,7 @@ function assert(condition: boolean, msg: string) {
 
 function makeManager() {
   const persistDir = mkdtempSync(join(tmpdir(), "may-scenario-"));
-  return { manager: new SubagentManager({ persistDir }), persistDir };
+  return { manager: new SubagentManager({ persistDir, infraRetryMax: 0 }), persistDir };
 }
 
 // ── Scenario 1: Simple single agent ────────────────────────────────────

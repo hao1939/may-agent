@@ -44,6 +44,54 @@ import { isOverflowError, extractProgress, writeProgressFile } from "./overflow.
 import { spawnDetachedAgent, readIdentity } from "./detached.js";
 import { sendSocketCommand } from "./socket-client.js";
 
+/**
+ * P93 Infrastructure Resilience — Automatic Retry for Transient Errors
+ *
+ * The SubagentManager implements an automatic retry loop (see `runAgentWithRetry`)
+ * that detects and recovers from transient infrastructure errors during agent execution.
+ *
+ * ## Errors That Trigger Retries
+ *
+ *   1. **Empty response** — The LLM stream completes with `stopReason="stop"` but the
+ *      assistant message contains no text and no tool calls (0 output tokens). This
+ *      typically indicates a model/API/proxy issue (e.g., LiteLLM dropping the response).
+ *
+ *   2. **Silent stream error** — The agent loop finishes without error, but the last
+ *      message is still a `user` message (no assistant reply was produced at all).
+ *      This happens when the stream function throws before yielding any events.
+ *
+ *   3. **ToolUse mismatch** — The response has `stopReason="toolUse"` but the assistant
+ *      message contains no `toolCall` content blocks (malformed model output).
+ *
+ * ## Errors That Are NOT Retried
+ *
+ *   - Aborted sessions (user/system cancellation)
+ *   - Context overflow errors (retrying won't reduce context size)
+ *   - Closed sessions
+ *   - Non-running sessions
+ *
+ * ## Max Retry Count
+ *
+ *   Default: `INFRA_RETRY_MAX` (3). Configurable per-manager via
+ *   `SubagentManagerOptions.infraRetryMax`. Set to 0 to disable retries (useful in tests).
+ *
+ * ## Backoff Strategy
+ *
+ *   Linear backoff: `attempt * INFRA_RETRY_BASE_DELAY_MS` (1s base).
+ *     - Retry 1: 1s delay
+ *     - Retry 2: 2s delay
+ *     - Retry 3: 3s delay
+ *
+ *   Before each retry, the malformed assistant message (if any) is removed from the
+ *   message history and the agent's error state is cleared. The retry is issued via
+ *   `agent.continue()`.
+ *
+ * ## Detection
+ *
+ *   See `isRetryableInfraError()` for the full detection logic.
+ *   See `runAgentWithRetry()` for the retry loop implementation.
+ */
+
 let nextId = 0;
 /**
  * Generate a unique session ID.
@@ -265,7 +313,7 @@ export class SubagentManager {
     this.registry = new RegistryStore(opts.persistDir);
     this._projectRoot = opts.projectRoot ?? resolve(opts.persistDir, "..");
     this._maxCallDepth = opts.maxCallDepth ?? 10;
-    this._infraRetryMax = opts.infraRetryMax ?? 0;
+    this._infraRetryMax = opts.infraRetryMax ?? INFRA_RETRY_MAX;
     this.onSessionComplete = opts.onSessionComplete;
     this.onSessionStart = opts.onSessionStart;
   }

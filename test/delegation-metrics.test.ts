@@ -26,7 +26,7 @@ describe("delegation metrics logging", () => {
 
   beforeEach(() => {
     persistDir = mkdtempSync(join(tmpdir(), "may-delegation-"));
-    manager = new SubagentManager({ persistDir });
+    manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
 
     manager.register({
       name: "child-agent",

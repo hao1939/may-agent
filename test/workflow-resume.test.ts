@@ -79,7 +79,7 @@ afterEach(() => {
 
 describe("workflow tool: resume", () => {
   it("returns error when workflowRunId is missing", async () => {
-    const manager = new SubagentManager({ persistDir });
+    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
     const tool = createWorkflowTool({ manager, workflowDir, persistDir });
 
     const result = await tool.execute("tc1", { action: "resume" });
@@ -92,7 +92,7 @@ describe("workflow tool: resume", () => {
   });
 
   it("returns error when workflow run not found", async () => {
-    const manager = new SubagentManager({ persistDir });
+    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
     const tool = createWorkflowTool({ manager, workflowDir, persistDir });
 
     const result = await tool.execute("tc1", {
@@ -121,7 +121,7 @@ describe("workflow tool: resume", () => {
     };
     saveWorkflowRun(persistDir, run);
 
-    const manager = new SubagentManager({ persistDir });
+    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
     const tool = createWorkflowTool({ manager, workflowDir, persistDir });
 
     const result = await tool.execute("tc1", {
@@ -184,7 +184,7 @@ describe("workflow tool: resume", () => {
 
     // Register agents with the manager — coder is a no-op since step 1 is replayed,
     // reviewer needs to be a real (mock) agent
-    const manager = new SubagentManager({ persistDir });
+    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
 
     // Register coder (should not actually be called — replayed from archive)
     manager.register({
@@ -298,7 +298,7 @@ describe("workflow tool: resume", () => {
     };
     saveWorkflowRun(persistDir, prevRun);
 
-    const manager = new SubagentManager({ persistDir });
+    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
     const tool = createWorkflowTool({ manager, workflowDir, persistDir });
 
     const result = await tool.execute("tc1", {
@@ -355,7 +355,7 @@ describe("workflow tool: resume", () => {
     };
     saveWorkflowRun(persistDir, prevRun);
 
-    const manager = new SubagentManager({ persistDir });
+    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
     const tool = createWorkflowTool({ manager, workflowDir, persistDir });
 
     const result = await tool.execute("tc1", {
@@ -375,7 +375,7 @@ describe("workflow tool: resume", () => {
   });
 
   it("returns error when persistDir is not configured", async () => {
-    const manager = new SubagentManager({ persistDir });
+    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
     const tool = createWorkflowTool({ manager, workflowDir }); // no persistDir
 
     const result = await tool.execute("tc1", {

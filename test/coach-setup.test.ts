@@ -20,7 +20,7 @@ describe("coach: workflow discovery", () => {
 
   it("workflow tool can list all coach workflows without load errors", async () => {
     const wfDir = resolve(COACH_DIR, "workflows");
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "coach-test-")) });
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "coach-test-")) , infraRetryMax: 0 });
     const tool = createWorkflowTool({ manager, workflowDir: wfDir });
 
     const result = await tool.execute("tc1", { action: "list" });

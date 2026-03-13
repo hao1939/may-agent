@@ -39,7 +39,7 @@ describe("SubagentManager.steer()", () => {
 
   beforeEach(() => {
     persistDir = mkdtempSync(join(tmpdir(), "may-steer-"));
-    manager = new SubagentManager({ persistDir });
+    manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
     registerAgent(manager);
   });
 
@@ -80,7 +80,7 @@ describe("SubagentManager.subscribe()", () => {
 
   beforeEach(() => {
     persistDir = mkdtempSync(join(tmpdir(), "may-subscribe-"));
-    manager = new SubagentManager({ persistDir });
+    manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
     registerAgent(manager);
   });
 
@@ -141,7 +141,7 @@ describe("SubagentManager.sessions()", () => {
   let manager: SubagentManager;
 
   beforeEach(() => {
-    manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
+    manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) , infraRetryMax: 0 });
     registerAgent(manager, "agent-a");
     registerAgent(manager, "agent-b");
   });

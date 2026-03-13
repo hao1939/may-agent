@@ -47,7 +47,7 @@ describe("V2 agents tool", () => {
     agentsRoot = mkdtempSync(join(tmpdir(), "agents-root-"));
     mkdirSync(join(persistDir, "sessions"), { recursive: true });
     mkdirSync(join(persistDir, "memory"), { recursive: true });
-    manager = new SubagentManager({ persistDir });
+    manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
   });
 
   afterEach(() => {
@@ -233,7 +233,7 @@ describe("callAgent depth limit", () => {
   });
 
   it("respects maxCallDepth setting", async () => {
-    const manager = new SubagentManager({ persistDir, maxCallDepth: 2 });
+    const manager = new SubagentManager({ persistDir, maxCallDepth: 2, infraRetryMax: 0 });
 
     // Manually test depth tracking
     // Set depth to 2 for a fake root session
