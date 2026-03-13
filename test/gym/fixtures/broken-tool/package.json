@@ -1,0 +1,6 @@
+{
+  "name": "broken-tool-scenario",
+  "version": "1.0.0",
+  "description": "A project that depends on a broken build tool",
+  "main": "build.js"
+}
