@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Session Log Viewer</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --bg-secondary: #161b22;
+    --bg-tertiary: #21262d;
+    --border: #30363d;
+    --text: #e6edf3;
+    --text-muted: #8b949e;
+    --green: #3fb950;
+    --green-bg: #0d2818;
+    --green-border: #196c2e;
+    --red: #f85149;
+    --red-bg: #2d1117;
+    --red-border: #6e2b2b;
+    --yellow: #d29922;
+    --yellow-bg: #2e1f00;
+    --yellow-border: #5c4300;
+    --blue: #58a6ff;
+    --blue-bg: #0c2d6b;
+    --purple: #bc8cff;
+    --cyan: #39d2c0;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    font-size: 13px;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+  }
+
+  /* ── Header ── */
+  #header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  #header h1 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--blue);
+    white-space: nowrap;
+  }
+
+  #header .meta {
+    color: var(--text-muted);
+    font-size: 12px;
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  #header .meta span { white-space: nowrap; }
+  #header .meta .label { color: var(--text-muted); }
+  #header .meta .value { color: var(--text); font-weight: 500; }
+
+  .controls {
+    margin-left: auto;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .controls button {
+    background: var(--bg-tertiary);
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: 4px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-family: inherit;
+  }
+
+  .controls button:hover { background: var(--border); }
+
+  /* ── Drop Zone ── */
+  #drop-zone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 80vh;
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    margin: 40px;
+    padding: 60px;
+    text-align: center;
+    transition: border-color 0.2s, background 0.2s;
+  }
+
+  #drop-zone.dragover {
+    border-color: var(--blue);
+    background: var(--blue-bg);
+  }
+
+  #drop-zone h2 {
+    font-size: 24px;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+
+  #drop-zone p {
+    color: var(--text-muted);
+    margin-bottom: 20px;
+  }
+
+  #drop-zone label {
+    display: inline-block;
+    padding: 10px 24px;
+    background: var(--blue);
+    color: #fff;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    transition: opacity 0.2s;
+  }
+
+  #drop-zone label:hover { opacity: 0.85; }
+  #file-input { display: none; }
+
+  /* ── Timeline ── */
+  #timeline {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+
+  /* ── Turn Block ── */
+  .turn {
+    margin-bottom: 2px;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  /* ── Message ── */
+  .message {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    margin: 4px 0;
+    overflow: hidden;
+  }
+
+  .message.user {
+    border-left: 3px solid var(--blue);
+  }
+
+  .message.assistant {
+    border-left: 3px solid var(--purple);
+  }
+
+  .message.tool-result {
+    border-left: 3px solid var(--cyan);
+  }
+
+  .message.tool-result.error {
+    border-left: 3px solid var(--red);
+    background: var(--red-bg);
+  }
+
+  /* ── Message Header ── */
+  .msg-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: var(--bg-secondary);
+    cursor: pointer;
+    user-select: none;
+    min-height: 32px;
+  }
+
+  .msg-header:hover { background: var(--bg-tertiary); }
+
+  .msg-header .chevron {
+    color: var(--text-muted);
+    font-size: 10px;
+    width: 14px;
+    transition: transform 0.15s;
+    flex-shrink: 0;
+  }
+
+  .msg-header .chevron.open { transform: rotate(90deg); }
+
+  .msg-header .role-badge {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+
+  .role-badge.user { background: var(--blue-bg); color: var(--blue); border: 1px solid #1a4b8c; }
+  .role-badge.assistant { background: #2a1a4e; color: var(--purple); border: 1px solid #4a2e7a; }
+  .role-badge.tool { background: #0a2a28; color: var(--cyan); border: 1px solid #1a5c52; }
+  .role-badge.error { background: var(--red-bg); color: var(--red); border: 1px solid var(--red-border); }
+
+  .msg-header .summary {
+    color: var(--text-muted);
+    font-size: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .msg-header .summary .tool-name {
+    color: var(--yellow);
+    font-weight: 600;
+  }
+
+  .msg-header .summary .error-text {
+    color: var(--red);
+  }
+
+  .msg-header .timestamp {
+    color: var(--text-muted);
+    font-size: 11px;
+    flex-shrink: 0;
+    opacity: 0.7;
+  }
+
+  .msg-header .cost-badge {
+    font-size: 10px;
+    color: var(--green);
+    background: var(--green-bg);
+    border: 1px solid var(--green-border);
+    padding: 0 5px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+
+  .msg-header .tokens-badge {
+    font-size: 10px;
+    color: var(--text-muted);
+    padding: 0 5px;
+    flex-shrink: 0;
+  }
+
+  /* ── Message Body ── */
+  .msg-body {
+    display: none;
+    padding: 12px 16px;
+    background: var(--bg);
+    border-top: 1px solid var(--border);
+    overflow-x: auto;
+  }
+
+  .msg-body.open { display: block; }
+
+  .msg-body pre {
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-size: 12px;
+    line-height: 1.6;
+  }
+
+  .msg-body .content-block {
+    margin-bottom: 12px;
+  }
+
+  .msg-body .content-block:last-child { margin-bottom: 0; }
+
+  .msg-body .block-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+  }
+
+  /* Tool call styling */
+  .tool-call-block {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin: 6px 0;
+  }
+
+  .tool-call-block .tc-name {
+    color: var(--yellow);
+    font-weight: 700;
+    font-size: 13px;
+  }
+
+  .tool-call-block .tc-args {
+    margin-top: 6px;
+    color: var(--text);
+    font-size: 12px;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .tool-call-block .tc-id {
+    color: var(--text-muted);
+    font-size: 10px;
+    float: right;
+  }
+
+  /* Thinking block */
+  .thinking-block {
+    background: #1a1520;
+    border: 1px solid #3a2855;
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin: 6px 0;
+    color: #c8a8e8;
+    font-style: italic;
+    font-size: 12px;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  /* Truncation */
+  .truncated-notice {
+    color: var(--yellow);
+    font-size: 11px;
+    cursor: pointer;
+    margin-top: 4px;
+    display: inline-block;
+  }
+
+  .truncated-notice:hover { text-decoration: underline; }
+
+  /* ── Stats Bar ── */
+  #stats-bar {
+    position: sticky;
+    bottom: 0;
+    z-index: 100;
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border);
+    padding: 6px 20px;
+    display: flex;
+    gap: 20px;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  #stats-bar .stat-value {
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  /* ── Turn group ── */
+  .turn-group {
+    margin-bottom: 16px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .turn-group-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: var(--bg-tertiary);
+    cursor: pointer;
+    user-select: none;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .turn-group-header:hover { background: var(--border); }
+
+  .turn-group-header .turn-num {
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 400;
+  }
+
+  .turn-group-header .turn-summary {
+    color: var(--text-muted);
+    font-weight: 400;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .turn-group-header .turn-badges {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .turn-group-header .turn-badges .tool-pill {
+    font-size: 10px;
+    padding: 0 5px;
+    border-radius: 3px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--yellow);
+  }
+
+  .turn-group-header .turn-badges .error-pill {
+    font-size: 10px;
+    padding: 0 5px;
+    border-radius: 3px;
+    background: var(--red-bg);
+    border: 1px solid var(--red-border);
+    color: var(--red);
+  }
+
+  .turn-group-body {
+    display: none;
+  }
+
+  .turn-group-body.open {
+    display: block;
+    padding: 4px;
+  }
+
+  .turn-group .message { margin: 2px 0; }
+
+  /* ── Search ── */
+  #search-input {
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-family: inherit;
+    width: 180px;
+  }
+
+  #search-input:focus { outline: none; border-color: var(--blue); }
+
+  .highlight { background: var(--yellow-bg); color: var(--yellow); border-radius: 2px; padding: 0 1px; }
+
+  /* ── Filter Pills ── */
+  .filter-pills {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+  }
+
+  .filter-pill {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text-muted);
+    font-family: inherit;
+    transition: all 0.15s;
+  }
+
+  .filter-pill.active {
+    background: var(--blue-bg);
+    border-color: var(--blue);
+    color: var(--blue);
+  }
+
+  .filter-pill:hover { border-color: var(--blue); }
+</style>
+</head>
+<body>
+
+<div id="drop-zone">
+  <h2>📋 Session Log Viewer</h2>
+  <p>Drop a <code>session.jsonl</code> file here, or click to browse</p>
+  <label for="file-input">Choose File</label>
+  <input type="file" id="file-input" accept=".jsonl,.json,.txt">
+</div>
+
+<div id="app" style="display: none;">
+  <div id="header">
+    <h1>📋 Session Viewer</h1>
+    <div class="meta" id="session-meta"></div>
+    <div class="controls">
+      <input type="text" id="search-input" placeholder="Search…">
+      <div class="filter-pills">
+        <button class="filter-pill active" data-filter="all">All</button>
+        <button class="filter-pill" data-filter="errors">Errors</button>
+        <button class="filter-pill" data-filter="tools">Tools</button>
+      </div>
+      <button id="btn-expand-all">Expand All</button>
+      <button id="btn-collapse-all">Collapse All</button>
+    </div>
+  </div>
+  <div id="timeline"></div>
+  <div id="stats-bar"></div>
+</div>
+
+<script>
+// ── Globals ──
+let allMessages = [];
+let turns = [];
+
+// ── File Input ──
+const dropZone = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
+
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  if (e.dataTransfer.files.length) loadFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', e => { if (e.target.files.length) loadFile(e.target.files[0]); });
+
+function loadFile(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    const text = e.target.result;
+    parseAndRender(text, file.name);
+  };
+  reader.readAsText(file);
+}
+
+// ── Parse ──
+function parseAndRender(text, filename) {
+  const lines = text.trim().split('\n');
+  allMessages = [];
+  for (const line of lines) {
+    try {
+      const msg = JSON.parse(line);
+      allMessages.push(msg);
+    } catch (e) { /* skip malformed lines */ }
+  }
+  if (!allMessages.length) { alert('No valid JSON lines found.'); return; }
+
+  // Group into turns: user → assistant → toolResults → assistant → ...
+  turns = groupTurns(allMessages);
+
+  dropZone.style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+
+  renderMeta(filename);
+  renderTimeline(turns);
+  renderStats();
+}
+
+function groupTurns(messages) {
+  const turns = [];
+  let current = null;
+
+  for (const msg of messages) {
+    if (msg.role === 'user') {
+      // Start a new turn
+      if (current) turns.push(current);
+      current = { user: msg, steps: [], messages: [msg] };
+    } else if (msg.role === 'assistant') {
+      if (!current) current = { user: null, steps: [], messages: [] };
+      current.steps.push({ assistant: msg, results: [] });
+      current.messages.push(msg);
+    } else if (msg.role === 'toolResult') {
+      if (!current) current = { user: null, steps: [], messages: [] };
+      if (current.steps.length > 0) {
+        current.steps[current.steps.length - 1].results.push(msg);
+      }
+      current.messages.push(msg);
+    }
+  }
+  if (current) turns.push(current);
+  return turns;
+}
+
+// ── Meta ──
+function renderMeta(filename) {
+  const metaEl = document.getElementById('session-meta');
+  const firstTs = allMessages[0]?.timestamp;
+  const lastTs = allMessages[allMessages.length - 1]?.timestamp;
+  const duration = firstTs && lastTs ? formatDuration(lastTs - firstTs) : '—';
+  const totalCost = allMessages.reduce((s, m) => s + (m.usage?.cost?.total || 0), 0);
+  const totalTokens = allMessages.reduce((s, m) => s + (m.usage?.totalTokens || 0), 0);
+  const models = [...new Set(allMessages.filter(m => m.model).map(m => m.model))];
+  const errorCount = allMessages.filter(m => m.isError).length;
+
+  let html = '';
+  html += `<span><span class="label">File: </span><span class="value">${esc(filename)}</span></span>`;
+  if (firstTs) html += `<span><span class="label">Start: </span><span class="value">${formatTime(firstTs)}</span></span>`;
+  html += `<span><span class="label">Duration: </span><span class="value">${duration}</span></span>`;
+  html += `<span><span class="label">Turns: </span><span class="value">${turns.length}</span></span>`;
+  if (totalCost > 0) html += `<span><span class="label">Cost: </span><span class="value">$${totalCost.toFixed(4)}</span></span>`;
+  if (totalTokens > 0) html += `<span><span class="label">Tokens: </span><span class="value">${totalTokens.toLocaleString()}</span></span>`;
+  if (models.length) html += `<span><span class="label">Model: </span><span class="value">${esc(models.join(', '))}</span></span>`;
+  if (errorCount) html += `<span><span class="label">Errors: </span><span class="value" style="color:var(--red)">${errorCount}</span></span>`;
+
+  metaEl.innerHTML = html;
+}
+
+// ── Timeline ──
+function renderTimeline(turns) {
+  const timeline = document.getElementById('timeline');
+  timeline.innerHTML = '';
+  const frag = document.createDocumentFragment();
+
+  turns.forEach((turn, i) => {
+    const turnEl = createTurnGroup(turn, i);
+    frag.appendChild(turnEl);
+  });
+
+  timeline.appendChild(frag);
+}
+
+function createTurnGroup(turn, index) {
+  const group = document.createElement('div');
+  group.className = 'turn-group';
+  group.dataset.turnIndex = index;
+
+  // Header
+  const header = document.createElement('div');
+  header.className = 'turn-group-header';
+
+  const turnNum = document.createElement('span');
+  turnNum.className = 'turn-num';
+  turnNum.textContent = `#${index + 1}`;
+
+  // Build summary
+  const summaryText = turnSummary(turn);
+  const summary = document.createElement('span');
+  summary.className = 'turn-summary';
+  summary.textContent = summaryText;
+
+  // Badges
+  const badges = document.createElement('span');
+  badges.className = 'turn-badges';
+  const toolNames = [];
+  let hasError = false;
+  for (const step of turn.steps) {
+    for (const c of (step.assistant?.content || [])) {
+      if (c.type === 'toolCall') toolNames.push(c.name);
+    }
+    for (const r of step.results) {
+      if (r.isError) hasError = true;
+    }
+  }
+  const uniqueTools = [...new Set(toolNames)];
+  for (const t of uniqueTools.slice(0, 4)) {
+    const pill = document.createElement('span');
+    pill.className = 'tool-pill';
+    pill.textContent = t;
+    badges.appendChild(pill);
+  }
+  if (uniqueTools.length > 4) {
+    const pill = document.createElement('span');
+    pill.className = 'tool-pill';
+    pill.textContent = `+${uniqueTools.length - 4}`;
+    badges.appendChild(pill);
+  }
+  if (hasError) {
+    const pill = document.createElement('span');
+    pill.className = 'error-pill';
+    pill.textContent = '✗ error';
+    badges.appendChild(pill);
+  }
+
+  // Timestamp
+  const tsEl = document.createElement('span');
+  tsEl.className = 'turn-num';
+  const ts = turn.user?.timestamp || turn.messages[0]?.timestamp;
+  tsEl.textContent = ts ? formatTime(ts) : '';
+
+  header.appendChild(turnNum);
+  header.appendChild(summary);
+  header.appendChild(badges);
+  header.appendChild(tsEl);
+
+  // Body
+  const body = document.createElement('div');
+  body.className = 'turn-group-body';
+
+  // Add all messages
+  for (const msg of turn.messages) {
+    body.appendChild(createMessage(msg));
+  }
+
+  header.addEventListener('click', () => {
+    const isOpen = body.classList.toggle('open');
+    // Expand all inner messages on first open if turn has errors
+    if (isOpen && hasError) {
+      body.querySelectorAll('.message.error .msg-body').forEach(b => b.classList.add('open'));
+      body.querySelectorAll('.message.error .chevron').forEach(c => c.classList.add('open'));
+    }
+  });
+
+  group.appendChild(header);
+  group.appendChild(body);
+  return group;
+}
+
+function turnSummary(turn) {
+  // Prefer user message text
+  if (turn.user) {
+    const textContent = (turn.user.content || []).filter(c => c.type === 'text').map(c => c.text).join(' ');
+    if (textContent) return textContent.slice(0, 120);
+  }
+  // Fallback: assistant text
+  for (const step of turn.steps) {
+    const texts = (step.assistant?.content || []).filter(c => c.type === 'text').map(c => c.text).join(' ');
+    if (texts) return texts.slice(0, 120);
+  }
+  return '(empty)';
+}
+
+function createMessage(msg) {
+  const el = document.createElement('div');
+
+  if (msg.role === 'user') {
+    el.className = 'message user';
+    const textContent = extractText(msg.content);
+    el.appendChild(createMsgHeader('USER', 'user', truncateStr(textContent, 150), msg.timestamp));
+    el.appendChild(createMsgBody(renderUserContent(msg)));
+  } else if (msg.role === 'assistant') {
+    el.className = 'message assistant';
+    const summary = assistantSummary(msg);
+    const extras = [];
+    if (msg.usage?.cost?.total) extras.push({ type: 'cost', value: '$' + msg.usage.cost.total.toFixed(4) });
+    if (msg.usage?.totalTokens) extras.push({ type: 'tokens', value: msg.usage.totalTokens.toLocaleString() + ' tok' });
+    el.appendChild(createMsgHeader('ASSISTANT', 'assistant', summary, msg.timestamp, extras));
+    el.appendChild(createMsgBody(renderAssistantContent(msg)));
+  } else if (msg.role === 'toolResult') {
+    const isError = msg.isError;
+    el.className = 'message tool-result' + (isError ? ' error' : '');
+    const textContent = extractText(msg.content);
+    const badge = isError ? 'ERROR' : 'RESULT';
+    const badgeClass = isError ? 'error' : 'tool';
+    const namePrefix = msg.toolName ? `${msg.toolName}: ` : '';
+    const summaryText = namePrefix + truncateStr(textContent, 120);
+    el.appendChild(createMsgHeader(badge, badgeClass, summaryText, msg.timestamp));
+    el.appendChild(createMsgBody(renderToolResult(msg)));
+  }
+
+  return el;
+}
+
+function createMsgHeader(roleName, roleClass, summary, timestamp, extras) {
+  const header = document.createElement('div');
+  header.className = 'msg-header';
+
+  const chevron = document.createElement('span');
+  chevron.className = 'chevron';
+  chevron.textContent = '▶';
+
+  const badge = document.createElement('span');
+  badge.className = `role-badge ${roleClass}`;
+  badge.textContent = roleName;
+
+  const summaryEl = document.createElement('span');
+  summaryEl.className = 'summary';
+  summaryEl.innerHTML = summary; // may contain tool-name spans
+
+  const parts = [chevron, badge, summaryEl];
+
+  if (extras) {
+    for (const ex of extras) {
+      const el = document.createElement('span');
+      el.className = ex.type === 'cost' ? 'cost-badge' : 'tokens-badge';
+      el.textContent = ex.value;
+      parts.push(el);
+    }
+  }
+
+  if (timestamp) {
+    const ts = document.createElement('span');
+    ts.className = 'timestamp';
+    ts.textContent = formatTime(timestamp);
+    parts.push(ts);
+  }
+
+  for (const p of parts) header.appendChild(p);
+
+  header.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const body = header.nextElementSibling;
+    if (body) {
+      body.classList.toggle('open');
+      chevron.classList.toggle('open');
+    }
+  });
+
+  return header;
+}
+
+function createMsgBody(html) {
+  const body = document.createElement('div');
+  body.className = 'msg-body';
+  body.innerHTML = html;
+  return body;
+}
+
+// ── Content Renderers ──
+function renderUserContent(msg) {
+  const parts = [];
+  for (const block of (msg.content || [])) {
+    if (block.type === 'text') {
+      parts.push(`<div class="content-block"><pre>${esc(block.text)}</pre></div>`);
+    }
+  }
+  return parts.join('') || '<em style="color:var(--text-muted)">(empty)</em>';
+}
+
+function renderAssistantContent(msg) {
+  const parts = [];
+  for (const block of (msg.content || [])) {
+    if (block.type === 'thinking') {
+      const text = block.text || '';
+      if (text.trim()) {
+        parts.push(`<div class="content-block"><div class="block-label">💭 Thinking</div><div class="thinking-block">${renderTruncatable(esc(text), 2000)}</div></div>`);
+      }
+    } else if (block.type === 'text') {
+      parts.push(`<div class="content-block"><pre>${renderTruncatable(esc(block.text), 3000)}</pre></div>`);
+    } else if (block.type === 'toolCall') {
+      let argsStr;
+      try {
+        argsStr = typeof block.arguments === 'string'
+          ? JSON.stringify(JSON.parse(block.arguments), null, 2)
+          : JSON.stringify(block.arguments, null, 2);
+      } catch {
+        argsStr = typeof block.arguments === 'string' ? block.arguments : JSON.stringify(block.arguments);
+      }
+      parts.push(`<div class="content-block"><div class="tool-call-block">
+        <span class="tc-id">${esc(block.id || '').slice(-8)}</span>
+        <span class="tc-name">${esc(block.name)}</span>(
+        <div class="tc-args">${renderTruncatable(esc(argsStr), 2000)}</div>)
+      </div></div>`);
+    }
+  }
+  if (msg.model) {
+    parts.push(`<div style="margin-top:8px;font-size:11px;color:var(--text-muted)">Model: ${esc(msg.model)} · Stop: ${esc(msg.stopReason || '—')}</div>`);
+  }
+  return parts.join('') || '<em style="color:var(--text-muted)">(empty)</em>';
+}
+
+function renderToolResult(msg) {
+  const parts = [];
+  const header = [];
+  if (msg.toolName) header.push(`<strong style="color:var(--cyan)">${esc(msg.toolName)}</strong>`);
+  if (msg.toolCallId) header.push(`<span style="color:var(--text-muted);font-size:11px">ID: ${esc(msg.toolCallId).slice(-8)}</span>`);
+  if (msg.isError) header.push(`<span style="color:var(--red);font-weight:700">ERROR</span>`);
+  if (header.length) parts.push(`<div style="margin-bottom:8px">${header.join(' · ')}</div>`);
+
+  for (const block of (msg.content || [])) {
+    if (block.type === 'text') {
+      const text = block.text || '';
+      parts.push(`<div class="content-block"><pre>${renderTruncatable(esc(text), 3000)}</pre></div>`);
+    }
+  }
+  return parts.join('') || '<em style="color:var(--text-muted)">(empty result)</em>';
+}
+
+// ── Utilities ──
+function esc(str) {
+  if (!str) return '';
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function extractText(content) {
+  if (!content) return '';
+  if (typeof content === 'string') return content;
+  return content.filter(c => c.type === 'text').map(c => c.text).join(' ');
+}
+
+function truncateStr(str, len) {
+  if (!str) return '';
+  if (str.length <= len) return esc(str);
+  return esc(str.slice(0, len)) + '…';
+}
+
+function renderTruncatable(escapedText, charLimit) {
+  if (escapedText.length <= charLimit) return escapedText;
+  const id = 'trunc-' + Math.random().toString(36).slice(2, 10);
+  const truncated = escapedText.slice(0, charLimit);
+  const remaining = escapedText.slice(charLimit);
+  return `${truncated}<span id="${id}-rest" style="display:none">${remaining}</span><span id="${id}-btn" class="truncated-notice" onclick="document.getElementById('${id}-rest').style.display='inline';this.style.display='none'"> ▸ Show ${(remaining.length).toLocaleString()} more chars</span>`;
+}
+
+function formatTime(ts) {
+  if (!ts) return '';
+  const d = new Date(ts);
+  return d.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+function formatDuration(ms) {
+  if (ms < 1000) return ms + 'ms';
+  const s = Math.floor(ms / 1000);
+  if (s < 60) return s + 's';
+  const m = Math.floor(s / 60);
+  const remainS = s % 60;
+  if (m < 60) return `${m}m ${remainS}s`;
+  const h = Math.floor(m / 60);
+  const remainM = m % 60;
+  return `${h}h ${remainM}m`;
+}
+
+function assistantSummary(msg) {
+  const parts = [];
+  for (const block of (msg.content || [])) {
+    if (block.type === 'text' && block.text?.trim()) {
+      parts.push(truncateStr(block.text.trim(), 80));
+    } else if (block.type === 'toolCall') {
+      parts.push(`<span class="tool-name">${esc(block.name)}</span>`);
+    }
+  }
+  return parts.join(' ') || '<em>(empty)</em>';
+}
+
+// ── Stats ──
+function renderStats() {
+  const bar = document.getElementById('stats-bar');
+  const totalMsgs = allMessages.length;
+  const assistantMsgs = allMessages.filter(m => m.role === 'assistant').length;
+  const toolCalls = allMessages.reduce((s, m) => s + (m.content || []).filter(c => c.type === 'toolCall').length, 0);
+  const errors = allMessages.filter(m => m.isError).length;
+  const totalInput = allMessages.reduce((s, m) => s + (m.usage?.input || 0), 0);
+  const totalOutput = allMessages.reduce((s, m) => s + (m.usage?.output || 0), 0);
+
+  bar.innerHTML = `
+    <span>Messages: <span class="stat-value">${totalMsgs}</span></span>
+    <span>LLM Calls: <span class="stat-value">${assistantMsgs}</span></span>
+    <span>Tool Calls: <span class="stat-value">${toolCalls}</span></span>
+    <span>Errors: <span class="stat-value" style="${errors ? 'color:var(--red)' : ''}">${errors}</span></span>
+    <span>Input Tokens: <span class="stat-value">${totalInput.toLocaleString()}</span></span>
+    <span>Output Tokens: <span class="stat-value">${totalOutput.toLocaleString()}</span></span>
+  `;
+}
+
+// ── Controls ──
+document.getElementById('btn-expand-all').addEventListener('click', () => {
+  document.querySelectorAll('.turn-group-body').forEach(b => b.classList.add('open'));
+  document.querySelectorAll('.msg-body').forEach(b => b.classList.add('open'));
+  document.querySelectorAll('.chevron').forEach(c => c.classList.add('open'));
+});
+
+document.getElementById('btn-collapse-all').addEventListener('click', () => {
+  document.querySelectorAll('.turn-group-body').forEach(b => b.classList.remove('open'));
+  document.querySelectorAll('.msg-body').forEach(b => b.classList.remove('open'));
+  document.querySelectorAll('.chevron').forEach(c => c.classList.remove('open'));
+});
+
+// ── Search ──
+document.getElementById('search-input').addEventListener('input', (e) => {
+  const query = e.target.value.toLowerCase().trim();
+  document.querySelectorAll('.turn-group').forEach(group => {
+    if (!query) {
+      group.style.display = '';
+      return;
+    }
+    const text = group.textContent.toLowerCase();
+    group.style.display = text.includes(query) ? '' : 'none';
+  });
+});
+
+// ── Filters ──
+document.querySelectorAll('.filter-pill').forEach(pill => {
+  pill.addEventListener('click', () => {
+    document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+    pill.classList.add('active');
+    const filter = pill.dataset.filter;
+
+    document.querySelectorAll('.turn-group').forEach(group => {
+      if (filter === 'all') {
+        group.style.display = '';
+      } else if (filter === 'errors') {
+        const hasError = group.querySelector('.error-pill') !== null;
+        group.style.display = hasError ? '' : 'none';
+      } else if (filter === 'tools') {
+        const hasTools = group.querySelector('.tool-pill') !== null;
+        group.style.display = hasTools ? '' : 'none';
+      }
+    });
+  });
+});
+</script>
+</body>
+</html>
