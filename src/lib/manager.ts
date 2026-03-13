@@ -2162,9 +2162,10 @@ export class SubagentManager {
         if (isStateChanging) {
           const session = manager.activeSessions.get(sessionId);
           if (session && session.opBudget > 0 && session.opCount >= session.opBudget) {
-            console.log(JSON.stringify({ type: 'OpBudgetExceeded', sessionId, limit: session.opBudget, opCount: session.opCount }));
+            console.error(`OpBudgetExceeded: Agent ${session.agentName} consumed ${session.opCount} ops (limit ${session.opBudget}). Stopping.`);
+            console.log(JSON.stringify({ type: 'OpBudgetExceeded', agent: session.agentName, sessionId, limit: session.opBudget, opCount: session.opCount }));
             return {
-              content: [{ type: "text" as const, text: `OpBudgetExceeded: ${session.opCount}/${session.opBudget} state-changing operations used. Further writes are blocked. Use read-only tools or request re-authorization.` }],
+              content: [{ type: "text" as const, text: `OpBudgetExceeded: Agent ${session.agentName} consumed ${session.opCount}/${session.opBudget} state-changing operations. Further writes are blocked. Use read-only tools or request re-authorization.` }],
               details: undefined,
             };
           }
