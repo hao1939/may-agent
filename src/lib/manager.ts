@@ -127,6 +127,19 @@ export function truncateForPrompt(text: string, maxLen: number): string {
   return oneLine.slice(0, maxLen) + "…";
 }
 
+/**
+ * Set of tool names that count as state-changing operations for P85 operation budgets.
+ * read/agents/workflow are free; bash/write/edit/commit mutate state.
+ */
+export const STATE_CHANGING_TOOLS = new Set(["bash", "write", "edit", "commit"]);
+
+/** Maximum number of automatic retries for transient infrastructure errors
+ *  (empty responses, missing tool calls). See P93 Resilience Pattern. */
+export const INFRA_RETRY_MAX = 3;
+
+/** Base delay (ms) between infrastructure retries. Multiplied by attempt number. */
+const INFRA_RETRY_BASE_DELAY_MS = 1000;
+
 interface RegisteredAgent {
   definition: SubagentDefinition;
 }
@@ -160,6 +173,12 @@ interface ActiveSession {
   kind: SessionKind;
   /** Terminal status for archive/result reporting. Set before archival so the promise chain can read it after the session is removed from activeSessions. */
   archiveStatus?: "done" | "error" | "interrupted";
+  /** Operation budget: max state-changing tool calls allowed. 0 = unlimited. */
+  opBudget: number;
+  /** Number of state-changing tool calls executed so far. */
+  opCount: number;
+  /** Number of infrastructure retries attempted in the current agent loop run. */
+  infraRetryCount: number;
 }
 
 /** Options for spawning a session with parent/workflow context. */
@@ -184,6 +203,8 @@ export interface RunOptions {
    *  - "job": fire-and-forget, auto-resumed on restart
    *  - "call": parent-owned, not resumed independently */
   kind?: SessionKind;
+  /** Runtime override for opBudget (overrides agent definition). */
+  opBudget?: number;
 }
 
 export interface SubagentManagerOptions {
@@ -194,6 +215,10 @@ export interface SubagentManagerOptions {
   /** Maximum call depth for nested callAgent chains (default: 10).
    *  Prevents infinite loops like A→B→A→B→... */
   maxCallDepth?: number;
+  /** Maximum automatic retries for transient infrastructure errors
+   *  (empty responses, missing tool calls). Default: INFRA_RETRY_MAX (3).
+   *  Set to 0 to disable retries (useful in tests). */
+  infraRetryMax?: number;
   /**
    * Called after a task session completes (done/error/interrupted).
    * Fires after archival. Use for post-session tasks like evaluation.
@@ -226,6 +251,8 @@ export class SubagentManager {
   private _projectRoot: string;
   /** Maximum call depth for callAgent chains. Prevents A→B→A infinite loops. */
   private _maxCallDepth: number;
+  /** Maximum infrastructure retries per session turn. */
+  private _infraRetryMax: number;
   /** Current call depth per root session (tracks nested callAgent chains). */
   private callDepths = new Map<string, number>();
 
@@ -238,6 +265,7 @@ export class SubagentManager {
     this.registry = new RegistryStore(opts.persistDir);
     this._projectRoot = opts.projectRoot ?? resolve(opts.persistDir, "..");
     this._maxCallDepth = opts.maxCallDepth ?? 10;
+    this._infraRetryMax = opts.infraRetryMax ?? 0;
     this.onSessionComplete = opts.onSessionComplete;
     this.onSessionStart = opts.onSessionStart;
   }
@@ -448,6 +476,124 @@ export class SubagentManager {
   }
 
   /**
+   * Detect whether the current agent state indicates a transient infrastructure error
+   * that can be retried (P93 Resilience Pattern).
+   *
+   * Retryable patterns:
+   *   1. Empty response — stopReason="stop" but assistant content is empty (0 output tokens).
+   *   2. Silent stream error — agent completed but last message is still user (no assistant reply).
+   *   3. ToolUse mismatch — stopReason="toolUse" but no tool call content in the assistant message.
+   *
+   * NOT retryable: aborted sessions, context overflow, closed sessions, non-running sessions.
+   */
+  private isRetryableInfraError(session: ActiveSession): string | null {
+    if (session.closed) return null;
+    if (session.status !== "running") return null;
+
+    const messages = session.agent.state.messages;
+    const lastMsg = messages.length > 0 ? messages[messages.length - 1] : null;
+    if (!lastMsg) return null;
+
+    // Check if error was an abort — never retry aborts
+    const agentError = session.agent.state.error ?? session.error;
+    if (agentError?.includes("aborted")) return null;
+
+    // Check for context overflow — never retry, won't help
+    if (agentError && isOverflowError(agentError)) return null;
+
+    // Pattern 1: Silent stream error — last message is user (no assistant reply at all)
+    if (!agentError && lastMsg.role === "user") {
+      return "empty_response";
+    }
+
+    // Pattern 2: Empty assistant response (0 output tokens)
+    if (lastMsg.role === "assistant") {
+      const content = Array.isArray(lastMsg.content) ? lastMsg.content : [];
+      const hasSubstance = content.some(
+        (block: any) =>
+          (block?.type === "text" && block.text?.trim()) ||
+          block?.type === "toolCall",
+      );
+      if (!hasSubstance) {
+        return "empty_response";
+      }
+
+      // Pattern 3: stopReason toolUse but no tool calls
+      if ((lastMsg as any).stopReason === "toolUse") {
+        const toolCalls = content.filter((b: any) => b?.type === "toolCall");
+        if (toolCalls.length === 0) {
+          return "tool_use_missing";
+        }
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Run an agent call (prompt or continue) with automatic retry on transient
+   * infrastructure errors (P93 Resilience Pattern).
+   *
+   * On retryable failure: removes the bad assistant message (if any), clears
+   * error state, waits with linear backoff, and calls agent.continue().
+   * After INFRA_RETRY_MAX failures, falls through to handleCompletion().
+   */
+  private async runAgentWithRetry(
+    session: ActiveSession,
+    initialCall: Promise<void>,
+  ): Promise<void> {
+    // Run the initial call
+    try {
+      await initialCall;
+    } catch (err) {
+      session.error = (err as Error)?.message ?? String(err);
+    }
+
+    // Retry loop for transient infrastructure errors
+    while (session.infraRetryCount < this._infraRetryMax) {
+      const retryReason = this.isRetryableInfraError(session);
+      if (!retryReason) break;
+
+      session.infraRetryCount++;
+      const attempt = session.infraRetryCount;
+
+      // Log the retry
+      console.warn(
+        `[manager] Infrastructure retry ${attempt}/${this._infraRetryMax} for session ${session.sessionId} (${retryReason})`,
+      );
+
+      // Clean up bad state: remove empty/malformed assistant message
+      const messages = session.agent.state.messages;
+      const lastMsg = messages.length > 0 ? messages[messages.length - 1] : null;
+      if (lastMsg?.role === "assistant") {
+        messages.pop();
+        session.agent.replaceMessages(messages);
+      }
+
+      // Clear error state for the retry
+      session.error = undefined;
+      session.agent.state.error = undefined;
+
+      // Backoff: attempt * base delay (1s, 2s, 3s)
+      const delayMs = attempt * INFRA_RETRY_BASE_DELAY_MS;
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+
+      // Guard: session may have been closed/aborted during the delay
+      if (session.closed) return;
+
+      // Retry via agent.continue()
+      try {
+        await session.agent.continue();
+      } catch (err) {
+        session.error = (err as Error)?.message ?? String(err);
+      }
+    }
+
+    // All retries exhausted (or no retry needed) — run normal completion
+    this.handleCompletion(session);
+  }
+
+  /**
    * Common completion handler — called when the agent's prompt()/continue() settles.
    *
    * Determines the outcome from agent state, then:
@@ -627,6 +773,9 @@ export class SubagentManager {
       closed: false,
       autoClose: opts?.autoClose ?? "immediate",
       kind: opts?.kind ?? "job",
+      opBudget: opts?.opBudget ?? def.opBudget ?? 0,
+      opCount: 0,
+      infraRetryCount: 0,
     };
 
     // Write [STARTED] sentinel
@@ -675,15 +824,7 @@ export class SubagentManager {
     const sessionContext = this.buildSessionContext(def, name, sessionId, persistDir);
     const promptText = `${sessionContext}\n\n---\n\n${task}`;
 
-    session.promise = agent
-      .prompt(promptText)
-      .then(() => {
-        this.handleCompletion(session);
-      })
-      .catch((err) => {
-        session.error = err?.message ?? String(err);
-        this.handleCompletion(session);
-      });
+    session.promise = this.runAgentWithRetry(session, agent.prompt(promptText));
 
     this.sessionResults.set(
       sessionId,
@@ -909,6 +1050,9 @@ export class SubagentManager {
       closed: false,
       autoClose: persisted.autoClose ?? "immediate",
       kind: persisted.kind ?? "job",
+      opBudget: def.opBudget ?? 0,
+      opCount: 0,
+      infraRetryCount: 0,
     };
 
     this.subscribeForPersistence(session);
@@ -930,14 +1074,7 @@ export class SubagentManager {
     const startPromise =
       lastRole === "user" || lastRole === "toolResult" ? agent.continue() : agent.prompt(resumeMessage);
 
-    session.promise = startPromise
-      .then(() => {
-        this.handleCompletion(session);
-      })
-      .catch((err) => {
-        session.error = err?.message ?? String(err);
-        this.handleCompletion(session);
-      });
+    session.promise = this.runAgentWithRetry(session, startPromise);
 
     this.sessionResults.set(
       sessionId,
@@ -972,6 +1109,8 @@ export class SubagentManager {
       stepLabel: s.stepLabel,
       autoClose: s.autoClose,
       kind: s.kind,
+      opCount: s.opCount,
+      opBudget: s.opBudget,
     }));
   }
 
@@ -1230,6 +1369,7 @@ export class SubagentManager {
     if (session.status === "idle") {
       session.status = "running";
       session.error = undefined; // Clear previous turn's error
+      session.infraRetryCount = 0; // Reset retry counter for new turn
       this.registry.updateSessionStatus(sessionId, "running");
 
       // Write [STARTED] sentinel
@@ -1241,15 +1381,7 @@ export class SubagentManager {
       }
 
       // Prompt the agent with new input
-      const p = session.agent
-        .prompt(text)
-        .then(() => {
-          this.handleCompletion(session);
-        })
-        .catch((err) => {
-          session.error = err?.message ?? String(err);
-          this.handleCompletion(session);
-        });
+      const p = this.runAgentWithRetry(session, session.agent.prompt(text));
 
       session.promise = p;
       const resultPromise = p.then(() => this.buildResultFromSession(session));
@@ -1957,6 +2089,12 @@ export class SubagentManager {
    * written to `receipts.jsonl` in the session directory (best-effort).
    *
    * The LLM never sees the signing key — only the signature tag.
+   *
+   * P85: Also enforces operation budgets — state-changing tools (bash, write, edit, commit)
+   * are counted and blocked when the budget is exceeded.
+   *
+   * P84: Tool outputs are wrapped in `<tool_output name="...">...</tool_output>` tags
+   * to structurally contain tool output and prevent prompt injection.
    */
   private wrapToolsWithReceipts(tools: AgentTool[], sessionId: string): AgentTool[] {
     const persistDir = this.registry.persistDir;
@@ -1971,8 +2109,29 @@ export class SubagentManager {
         signal?: AbortSignal,
         onUpdate?: any,
       ): Promise<AgentToolResult<any>> => {
+        // P85: Operation budget enforcement — check before executing state-changing tools
+        const isStateChanging = STATE_CHANGING_TOOLS.has(tool.name);
+        if (isStateChanging) {
+          const session = manager.activeSessions.get(sessionId);
+          if (session && session.opBudget > 0 && session.opCount >= session.opBudget) {
+            console.log(JSON.stringify({ type: 'OpBudgetExceeded', sessionId, limit: session.opBudget, opCount: session.opCount }));
+            return {
+              content: [{ type: "text" as const, text: `OpBudgetExceeded: ${session.opCount}/${session.opBudget} state-changing operations used. Further writes are blocked. Use read-only tools or request re-authorization.` }],
+              details: undefined,
+            };
+          }
+        }
+
         // Execute the original tool
         const result = await tool.execute(toolCallId, params, signal, onUpdate);
+
+        // P85: Increment opCount for state-changing tools after successful execution
+        if (isStateChanging) {
+          const session = manager.activeSessions.get(sessionId);
+          if (session) {
+            session.opCount++;
+          }
+        }
 
         // Extract the plain text output from all text blocks
         const outputText = result.content
@@ -2004,15 +2163,27 @@ export class SubagentManager {
           /* best-effort — never block tool execution for logging */
         }
 
-        // Append the [SIG: ...] tag as a text block to the tool output
+        // P84: Wrap in <tool_output> tags with SIG receipt inside
         const sigTag = signed.slice(outputText.length); // "\n[SIG: ts:hash]"
+        const openTag = { type: "text" as const, text: `<tool_output name="${tool.name}">` };
         const receiptSuffix = { type: "text" as const, text: sigTag };
+        const closeTag = { type: "text" as const, text: "</tool_output>" };
         return {
           ...result,
-          content: [...result.content, receiptSuffix],
+          content: [openTag, ...result.content, receiptSuffix, closeTag],
         };
       },
     }));
+  }
+
+  /**
+   * P85: Get current operation usage for a session.
+   * Returns { opBudget, opCount } or null if session doesn't exist.
+   */
+  getOpUsage(sessionId: string): { opBudget: number; opCount: number } | null {
+    const session = this.activeSessions.get(sessionId);
+    if (!session) return null;
+    return { opBudget: session.opBudget, opCount: session.opCount };
   }
 
   // ── Delegation metrics logging ──────────────────────────────────────
