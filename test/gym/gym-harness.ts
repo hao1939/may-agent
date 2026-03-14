@@ -75,7 +75,7 @@ export function runWithTimeout(
   } catch (err: any) {
     // execSync throws on non-zero exit or timeout
     // When killed by timeout: status=null, signal=SIGTERM
-    const timedOut = err.signal === "SIGTERM" || err.killed === true;
+    const timedOut = err.signal === "SIGTERM" || err.killed === true || err.code === "ETIMEDOUT";
     return {
       stdout: err.stdout || "",
       stderr: err.stderr || "",
