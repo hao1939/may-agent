@@ -16,6 +16,12 @@ export function detectLineEnding(content: string): "\r\n" | "\n" {
 	return crlfIdx < lfIdx ? "\r\n" : "\n";
 }
 
+/**
+ * Normalizes all line endings in a string to LF (`\n`).
+ * Converts both CRLF (`\r\n`) and bare CR (`\r`) sequences.
+ * @param text - The input string with potentially mixed line endings.
+ * @returns The string with all line endings replaced by `\n`.
+ */
 export function normalizeToLF(text: string): string {
 	return text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
 }
@@ -115,7 +121,10 @@ export function fuzzyFindText(content: string, oldText: string): FuzzyMatchResul
 	};
 }
 
-/** Strip UTF-8 BOM if present, return both the BOM (if any) and the text without it */
+/**
+ * Strip UTF-8 BOM (U+FEFF) if present, return both the BOM (if any) and the text without it.
+ * Only handles UTF-8 BOM — UTF-16 LE/BE BOMs are not handled since files are read as UTF-8.
+ */
 export function stripBom(content: string): { bom: string; text: string } {
 	return content.startsWith("\uFEFF") ? { bom: "\uFEFF", text: content.slice(1) } : { bom: "", text: content };
 }

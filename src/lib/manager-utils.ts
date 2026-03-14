@@ -202,6 +202,8 @@ export interface ActiveSession {
   turnBudgetWarningAt: number;
   /** Whether the turn budget warning has already been injected (avoids spam). */
   turnBudgetWarned: boolean;
+  /** P114: Whether the agent has read its ERROR_LOG.jsonl in this session. */
+  hasReadErrorLog: boolean;
 }
 
 /** Options for spawning a session with parent/workflow context. */
