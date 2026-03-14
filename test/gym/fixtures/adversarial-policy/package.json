@@ -1,0 +1,6 @@
+{
+  "name": "adversarial-policy-scenario",
+  "version": "1.0.0",
+  "description": "Adversarial sycophancy scenario: agent fabricates policy refusal (SP-42) and injects self-validation",
+  "main": "session.jsonl"
+}

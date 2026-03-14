@@ -43,6 +43,7 @@ import { join, dirname, relative, resolve } from "node:path";
 import { isOverflowError, extractProgress, writeProgressFile } from "./overflow.js";
 import { spawnDetachedAgent, readIdentity } from "./detached.js";
 import { sendSocketCommand } from "./socket-client.js";
+import { runActiveRecall, formatRecallWarnings } from "./active-recall.js";
 
 /**
  * P93 Infrastructure Resilience — Automatic Retry for Transient Errors
@@ -191,6 +192,9 @@ const INFRA_RETRY_BASE_DELAY_MS = 1000;
 /** Maximum identical failed tool calls before blocking. */
 export const TOOL_PIVOT_LIMIT = 3;
 
+/** Default turn count at which a budget warning is injected. */
+export const TURN_BUDGET_WARNING_DEFAULT = 40;
+
 /**
  * Detect whether tool output text indicates an error.
  * Used by the pivot heuristic to track consecutive failures.
@@ -267,6 +271,12 @@ interface ActiveSession {
   infraRetryCount: number;
   /** Tracks identical failed tool calls for pivot heuristic. Key: "toolName:argsHash", Value: consecutive error count. */
   toolErrorHistory: Map<string, number>;
+  /** Total number of tool calls that returned errors in this session (P20 Tainted Handoffs). */
+  toolErrorCount: number;
+  /** Turn count at which a budget warning is injected. 0 = disabled. */
+  turnBudgetWarningAt: number;
+  /** Whether the turn budget warning has already been injected (avoids spam). */
+  turnBudgetWarned: boolean;
 }
 
 /** Options for spawning a session with parent/workflow context. */
@@ -519,6 +529,14 @@ export class SubagentManager {
         }
       }
     }
+
+    // P110 Active Recall: check failure history and inject warnings
+    const recall = runActiveRecall(agentName, this._projectRoot);
+    const recallBlock = formatRecallWarnings(recall);
+    if (recallBlock) {
+      ctxLines.push(``, recallBlock);
+    }
+
     return ctxLines.join("\n");
   }
 
@@ -865,6 +883,9 @@ export class SubagentManager {
       opCount: 0,
       infraRetryCount: 0,
       toolErrorHistory: new Map(),
+      toolErrorCount: 0,
+      turnBudgetWarningAt: def.turnBudgetWarningAt ?? TURN_BUDGET_WARNING_DEFAULT,
+      turnBudgetWarned: false,
     };
 
     // Write [STARTED] sentinel
@@ -1143,6 +1164,9 @@ export class SubagentManager {
       opCount: 0,
       infraRetryCount: 0,
       toolErrorHistory: new Map(),
+      toolErrorCount: 0,
+      turnBudgetWarningAt: def.turnBudgetWarningAt ?? TURN_BUDGET_WARNING_DEFAULT,
+      turnBudgetWarned: false,
     };
 
     this.subscribeForPersistence(session);
@@ -1387,6 +1411,16 @@ export class SubagentManager {
   /** Build a TaskResult from an ActiveSession object (which may have been removed from the map). */
   private buildResultFromSession(session: ActiveSession): TaskResult {
     const messages = session.agent.state.messages;
+    const retries = session.infraRetryCount;
+    const toolErrors = session.toolErrorCount;
+    const turns = session.turnCount;
+    // P20 Tainted Handoffs: mark results as unreliable when too many retries or
+    // tool errors occurred. Thresholds chosen empirically:
+    //   retries > 2: three infra retries means persistent instability (network, rate limits)
+    //   toolErrors > 1: two+ tool errors suggests the agent is struggling with the environment
+    // Downstream consumers (evaluator, parent agents) can use this signal to
+    // discount results or request re-execution.
+    const tainted = retries > 2 || toolErrors > 1;
     return {
       sessionId: session.sessionId,
       status:
@@ -1399,6 +1433,7 @@ export class SubagentManager {
       outputDir: session.outputDir,
       error: session.error,
       turnsUsed: session.turnCount,
+      instability: { retries, toolErrors, turns, verdict: tainted ? "tainted" : "clean" },
     };
   }
 
@@ -2257,6 +2292,7 @@ export class SubagentManager {
           if (isToolError(outputText)) {
             const currentCount = (session.toolErrorHistory.get(pivotKey) ?? 0) + 1;
             session.toolErrorHistory.set(pivotKey, currentCount);
+            session.toolErrorCount++; // P20 Tainted Handoffs: total error count
             if (currentCount < TOOL_PIVOT_LIMIT) {
               pivotCritique = `\n\n⚠️ PIVOT REQUIRED: This exact tool call has failed ${currentCount} time(s). You must change your approach — use a different tool, different arguments, or a different strategy. Do NOT retry the same command.`;
             }
@@ -2299,7 +2335,16 @@ export class SubagentManager {
         const closeTag = { type: "text" as const, text: "</tool_output>" };
         const contentBlocks = [openTag, ...result.content, receiptSuffix];
         if (critiqueBlock) contentBlocks.push(critiqueBlock);
+
+        // Turn Budget Warning: inject once when turn count reaches threshold
+        if (session && session.turnBudgetWarningAt > 0 && !session.turnBudgetWarned && session.turnCount >= session.turnBudgetWarningAt) {
+          session.turnBudgetWarned = true;
+          const warningText = `\n\n⚠️ [SYSTEM WARNING: Turn Budget ${session.turnCount}/${session.turnBudgetWarningAt}] You have used ${session.turnCount} turns. Wrap up your current task — summarize progress, write any pending output, and finish. Do NOT start new exploratory work.`;
+          contentBlocks.push({ type: "text" as const, text: warningText });
+        }
+
         contentBlocks.push(closeTag);
+
         return {
           ...result,
           content: contentBlocks,
