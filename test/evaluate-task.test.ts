@@ -195,7 +195,7 @@ describe("writeSkippedEvaluations – orphaned sessions (no meta.json)", () => {
     persistDir = tmpDir();
   });
 
-  it("handles sessions without meta.json", () => {
+  it("handles sessions without meta.json", async () => {
     // Create an orphaned session directory with a session.jsonl but NO meta.json
     const sessionId = "orphan-session-1";
     const sessionDirPath = join(persistDir, "sessions", "history", sessionId);
@@ -207,7 +207,7 @@ describe("writeSkippedEvaluations – orphaned sessions (no meta.json)", () => {
     );
     // No meta.json written — this is the orphan scenario
 
-    const written = writeSkippedEvaluations(persistDir);
+    const written = await writeSkippedEvaluations(persistDir);
     expect(written).toBeGreaterThanOrEqual(1);
 
     const evalPath = join(persistDir, "evaluations", `${sessionId}.json`);
@@ -222,7 +222,7 @@ describe("writeSkippedEvaluations – orphaned sessions (no meta.json)", () => {
     expect(evaluation.verdict).toBe("skipped");
   });
 
-  it("skips already-evaluated orphaned sessions", () => {
+  it("skips already-evaluated orphaned sessions", async () => {
     // Create an orphaned session directory
     const sessionId = "orphan-session-2";
     const sessionDirPath = join(persistDir, "sessions", sessionId);
@@ -240,7 +240,7 @@ describe("writeSkippedEvaluations – orphaned sessions (no meta.json)", () => {
     const existingEval = { agent: "previously-evaluated", custom: true };
     writeFileSync(join(evalDir, `${sessionId}.json`), JSON.stringify(existingEval), "utf-8");
 
-    const written = writeSkippedEvaluations(persistDir);
+    const written = await writeSkippedEvaluations(persistDir);
     // Should NOT have written a new evaluation for this session
     expect(written).toBe(0);
 

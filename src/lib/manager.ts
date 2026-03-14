@@ -1536,12 +1536,12 @@ export class SubagentManager {
    * Filesystem-based ground-truth scan. Inspects persisted session data on disk.
    * Intentionally synchronous — this is a diagnostic endpoint, not a hot path.
    */
-  auditHealth(opts?: AuditHealthOptions): AuditHealthReport {
+  async auditHealth(opts?: AuditHealthOptions): Promise<AuditHealthReport> {
     return computeAuditHealth(this.healthContext(), opts);
   }
 
   /** Compare in-memory state vs filesystem and flag discrepancies. */
-  reconcileHealth(opts?: AuditHealthOptions): ReconcileReport {
+  async reconcileHealth(opts?: AuditHealthOptions): Promise<ReconcileReport> {
     return computeReconcileHealth(this.healthContext(), opts);
   }
 

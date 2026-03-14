@@ -9,7 +9,7 @@ import { readdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { formatDuration } from "./manager-utils.js";
 import type { RegisteredAgent, ActiveSession } from "./manager-utils.js";
-import { loadAllSessionMetas, listWorkflowRuns, readWorkflowRun } from "./persistence.js";
+import { loadAllSessionMetasAsync, listWorkflowRuns, readWorkflowRun } from "./persistence.js";
 import type {
   ManagerHealthReport,
   HealthActiveSession,
@@ -61,16 +61,15 @@ export function computeHealth(ctx: HealthContext): ManagerHealthReport {
 
 /**
  * Filesystem-based ground-truth scan. Inspects persisted session data on disk.
- * Intentionally synchronous — this is a diagnostic endpoint, not a hot path.
- * For large state directories, consider running in a worker thread if latency matters.
+ * Uses async I/O to avoid blocking the event loop with 6K+ session directories.
  */
-export function computeAuditHealth(ctx: HealthContext, _opts?: AuditHealthOptions): AuditHealthReport {
+export async function computeAuditHealth(ctx: HealthContext, _opts?: AuditHealthOptions): Promise<AuditHealthReport> {
   const persistDir = ctx.persistDir;
   const now = Date.now();
   const oneDayAgo = now - 24 * 60 * 60 * 1000;
 
-  // Load all persisted session metas
-  const allSessions = loadAllSessionMetas(persistDir);
+  // Load all persisted session metas (async — non-blocking for large state dirs)
+  const allSessions = await loadAllSessionMetasAsync(persistDir);
   const allSessionEntries = Object.entries(allSessions);
 
   // 1. Sessions in last 24h
@@ -155,9 +154,9 @@ export function computeAuditHealth(ctx: HealthContext, _opts?: AuditHealthOption
 }
 
 /** Compare in-memory state vs filesystem and flag discrepancies. */
-export function computeReconcileHealth(ctx: HealthContext, opts?: AuditHealthOptions): ReconcileReport {
+export async function computeReconcileHealth(ctx: HealthContext, opts?: AuditHealthOptions): Promise<ReconcileReport> {
   const healthReport = computeHealth(ctx);
-  const auditReport = computeAuditHealth(ctx, opts);
+  const auditReport = await computeAuditHealth(ctx, opts);
   const discrepancies: string[] = [];
 
   // 1. Stale sessions: running in filesystem but not in activeSessions

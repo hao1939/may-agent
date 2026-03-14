@@ -7,6 +7,9 @@ import {
   readSessionMessages,
   readArchivedSessionMessages,
   loadAllSessionMetas,
+  loadAllSessionMetasAsync,
+  listActiveSessionIdsAsync,
+  listArchivedSessionIdsAsync,
   historyDir,
   listActiveSessionIds,
   listArchivedSessionIds,
@@ -741,17 +744,19 @@ function computeTrend(efficiencies: number[]): "improving" | "declining" | "stab
  *
  * Returns the number of evaluation files written.
  */
-export function writeSkippedEvaluations(persistDir: string, skipAgents: Set<string> = new Set(["evaluator"])): number {
+export async function writeSkippedEvaluations(persistDir: string, skipAgents: Set<string> = new Set(["evaluator"])): Promise<number> {
+  const { mkdir, writeFile, access } = await import("node:fs/promises");
+  const fileExists = async (p: string) => { try { await access(p); return true; } catch { return false; } };
   const evalDir = join(persistDir, "evaluations");
-  mkdirSync(evalDir, { recursive: true });
+  await mkdir(evalDir, { recursive: true });
 
-  const allSessions: Record<string, PersistedSession> = loadAllSessionMetas(persistDir);
+  const allSessions: Record<string, PersistedSession> = await loadAllSessionMetasAsync(persistDir);
   let written = 0;
 
   for (const [sessionId, session] of Object.entries(allSessions)) {
     // Skip if already evaluated
     const evalPath = join(evalDir, `${sessionId}.json`);
-    if (existsSync(evalPath)) continue;
+    if (await fileExists(evalPath)) continue;
 
     // Skip sessions still running
     if (session.status === "running" || session.status === "idle") continue;
@@ -765,7 +770,7 @@ export function writeSkippedEvaluations(persistDir: string, skipAgents: Set<stri
       // Check if transcript exists anywhere
       const activeJsonl = join(persistDir, "sessions", sessionId, "session.jsonl");
       const archivedJsonl = join(historyDir(persistDir), sessionId, "session.jsonl");
-      if (!existsSync(activeJsonl) && !existsSync(archivedJsonl)) {
+      if (!await fileExists(activeJsonl) && !await fileExists(archivedJsonl)) {
         skipReason = "no_transcript";
       }
     }

@@ -200,12 +200,13 @@ const loaderOpts: AgentLoaderOptions = {
 const loadResult = loadAgents(loaderOpts);
 bus.emit({ type: "info", message: `Loaded ${loadResult.added.length} agent(s): ${loadResult.added.join(", ")}` });
 
-const skipped = writeSkippedEvaluations(PERSIST_DIR);
-if (skipped > 0)
-  bus.emit({
-    type: "info",
-    message: `[eval] Wrote ${skipped} skipped evaluation(s) (meta-agents/no-transcript) — no LLM needed`,
-  });
+writeSkippedEvaluations(PERSIST_DIR).then((skipped) => {
+  if (skipped > 0)
+    bus.emit({
+      type: "info",
+      message: `[eval] Wrote ${skipped} skipped evaluation(s) (meta-agents/no-transcript) — no LLM needed`,
+    });
+});
 
 // ── Event routing ──────────────────────────────────────────────────────
 
