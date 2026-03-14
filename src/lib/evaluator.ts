@@ -344,8 +344,7 @@ export async function evaluateTask(opts: EvaluateTaskOptions): Promise<TaskEvalu
   const { manager, persistDir, parentSessionId, skipAgents = new Set(["evaluator"]) } = opts;
 
   // Get registry to find child sessions
-  const registryStore = (manager as any).registry as { getRegistry(): { sessions: Record<string, PersistedSession> } };
-  const registry = registryStore.getRegistry().sessions;
+  const registry = manager.registryStore.getRegistry().sessions;
 
   // Find unevaluated children
   const children = findUnevaluatedChildren(persistDir, registry, parentSessionId, skipAgents);

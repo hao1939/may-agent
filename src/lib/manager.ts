@@ -173,6 +173,11 @@ export class SubagentManager {
     return this._projectRoot;
   }
 
+  /** Public accessor for the registry store. Used by evaluator to find child sessions. */
+  get registryStore(): RegistryStore {
+    return this.registry;
+  }
+
   constructor(opts: SubagentManagerOptions) {
     this.registry = new RegistryStore(opts.persistDir);
     this._projectRoot = opts.projectRoot ?? resolve(opts.persistDir, "..");
