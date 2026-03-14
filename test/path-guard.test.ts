@@ -33,10 +33,9 @@ describe("checkProtectedPath (P53 cross-agent protection)", () => {
     expect(result).toContain("agent.json");
   });
 
-  it("blocks writes to another agent's LESSONS.md", () => {
+  it("allows writes to another agent's LESSONS.md (not identity-critical)", () => {
     const result = checkProtectedPath("/app/agents/tech-lead/LESSONS.md", "bob", AGENTS_ROOT);
-    expect(result).not.toBeNull();
-    expect(result).toContain("LESSONS.md");
+    expect(result).toBeNull();
   });
 
   it("allows writes to another agent's workspace files", () => {
@@ -111,6 +110,22 @@ describe("checkProtectedPath (P53 cross-agent protection)", () => {
       "coach",
       AGENTS_ROOT,
     );
+    expect(result).toBeNull();
+  });
+
+  // May exemption — May can edit any agent's protected files
+  it("allows May to write to another agent's SOUL.md", () => {
+    const result = checkProtectedPath("/app/agents/bob/SOUL.md", "may", AGENTS_ROOT);
+    expect(result).toBeNull();
+  });
+
+  it("allows May to write to another agent's agent.json", () => {
+    const result = checkProtectedPath("/app/agents/coder/agent.json", "may", AGENTS_ROOT);
+    expect(result).toBeNull();
+  });
+
+  it("allows May to write to another agent's LESSONS.md", () => {
+    const result = checkProtectedPath("/app/agents/tech-lead/LESSONS.md", "may", AGENTS_ROOT);
     expect(result).toBeNull();
   });
 });

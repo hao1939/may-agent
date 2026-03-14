@@ -31,8 +31,8 @@ import {
   createGeminiCliTool,
   createCronTool,
   createScrapeTool,
-  createFinishTool,
   createSystemStatusTool,
+  createHandoffTool,
 } from "../lib/index.js";
 import { createAgentGrowthTools } from "../lib/tools/agent-growth.js";
 import type { EventBus } from "./event-bus.js";
@@ -120,8 +120,14 @@ export function runAgentCleanup(agentName: string): void {
 /**
  * Files that agents may NOT write/edit in other agents' directories.
  * These are identity-critical files — only the owning agent (or human) may modify them.
+ *
+ * LESSONS.md is intentionally NOT protected: it's learned behavior, not identity.
+ * Coach needs to edit any agent's LESSONS.md (Growth Cycle + direct edits).
+ * Bob's consolidation cron needs cross-agent LESSONS.md access for cleanup.
+ * Protecting LESSONS.md blocked Coach 31+ times and forced heavyweight
+ * fork-verify-promote cycles for single-line lesson additions.
  */
-const PROTECTED_FILENAMES = new Set(["SOUL.md", "agent.json", "LESSONS.md"]);
+const PROTECTED_FILENAMES = new Set(["SOUL.md", "agent.json"]);
 
 // ── Bash command guard removed ──────────────────────────────────────────
 // P53 bash command scanning was removed per Hao's directive (2026-03-14):
@@ -138,6 +144,9 @@ export function checkProtectedPath(
   agentName: string,
   agentsRoot: string,
 ): string | null {
+  // May is exempt — she's the CEO and executes Hao's directives across all agents
+  if (agentName.toLowerCase() === "may") return null;
+
   const rel = relative(agentsRoot, absolutePath);
   // Path must be inside agentsRoot and not escape it
   if (rel.startsWith("..") || rel.startsWith(sep + sep)) return null;
@@ -277,6 +286,22 @@ function buildTools(config: AgentConfig, opts: AgentLoaderOptions): AgentTool[] 
             },
           }),
         );
+
+        // Handoff tool — P82-compliant structured handoffs via SIGNALS.md
+        tools.push(
+          createHandoffTool({
+            agentName: config.name,
+            agentsRoot: opts.agentsRoot,
+            projectRoot,
+            triggerHeartbeat: (target: string) => {
+              for (const cron of agentCrons.values()) {
+                if (cron.triggerNow(`heartbeat-${target}`)) return true;
+                if (cron.triggerNow("heartbeat") && target === "may") return true;
+              }
+              return false;
+            },
+          }),
+        );
         break;
       }
 
@@ -369,22 +394,6 @@ function buildTools(config: AgentConfig, opts: AgentLoaderOptions): AgentTool[] 
       case "scrape":
         tools.push(createScrapeTool());
         break;
-
-      case "finish": {
-        const sharedDir = resolve(opts.agentsRoot, "shared");
-        const lessonsPath = resolve(sharedDir, "lessons.jsonl");
-        tools.push(
-          createFinishTool({
-            lessonsPath,
-            agentName: config.name,
-            getTask: () => {
-              const sid = agentSessionIds.get(config.name);
-              return sid ?? "unknown-task";
-            },
-          }),
-        );
-        break;
-      }
 
       case "system-status":
       case "system_status": {

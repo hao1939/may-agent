@@ -152,6 +152,11 @@ const defaultBashOperations: BashOperations = {
 	},
 };
 
+// ── P53 bash command guard REMOVED ──────────────────────────────────────
+// Removed per Hao's directive (2026-03-14): "bash guard is against our idea
+// of freedom and creativity." Cross-edit protection for SOUL.md/agent.json
+// remains via write/edit tool path guards (checkProtectedPath, checkCrossEditGuard).
+
 export interface BashSpawnContext {
 	command: string;
 	cwd: string;

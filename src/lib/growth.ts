@@ -49,6 +49,7 @@ const PROMOTABLE_ARTIFACTS = [
   "DOMAIN.md",
   "TOOLS.md",
   "LESSONS.md",
+  "heartbeat.md",
   "knowledge",
   "skills",
 ];

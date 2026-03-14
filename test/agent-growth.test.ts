@@ -205,6 +205,23 @@ describe("Growth Core Logic", () => {
       ).toBe(true);
     });
 
+    it("should promote heartbeat.md (C14)", () => {
+      // Create agent with heartbeat.md
+      writeFileSync(join(AGENTS_ROOT, "coder", "heartbeat.md"), "# Original Heartbeat");
+      forkAgent(config, "coder", "coder-v2");
+
+      // Modify heartbeat in the fork
+      const forkDir = join(AGENTS_ROOT, ".lab", "coder-v2");
+      writeFileSync(join(forkDir, "heartbeat.md"), "# Improved Heartbeat\n\n## Mandatory Gate\nCheck X before Y.");
+
+      const result = promoteAgent(config, "coder-v2", "coder");
+
+      expect(result.promoted).toContain("heartbeat.md");
+      expect(
+        readFileSync(join(AGENTS_ROOT, "coder", "heartbeat.md"), "utf-8"),
+      ).toBe("# Improved Heartbeat\n\n## Mandatory Gate\nCheck X before Y.");
+    });
+
     it("should delete the lab fork after promote", () => {
       forkAgent(config, "coder", "coder-v2");
       promoteAgent(config, "coder-v2", "coder");

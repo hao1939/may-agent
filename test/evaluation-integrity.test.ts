@@ -103,10 +103,9 @@ describe("P98 Evaluation Integrity — Immutable Ruler", () => {
 			expect(result.message).toContain("SOUL.md");
 		});
 
-		it("still blocks cross-agent LESSONS.md edits", () => {
+		it("allows cross-agent LESSONS.md edits (not identity-critical)", () => {
 			const result = guardPath("agents/evaluator/LESSONS.md", "bob");
-			expect(result.blocked).toBe(true);
-			expect(result.message).toContain("LESSONS.md");
+			expect(result.blocked).toBe(false);
 		});
 
 		it("still blocks cross-agent agent.json edits", () => {
