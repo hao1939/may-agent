@@ -35,8 +35,8 @@ export function createHealthCheckTool(stateDir: string): AgentTool {
 
       // Stale sessions
       try {
-        const { loadAllSessionMetas } = await import("../persistence.js");
-        const sessions = loadAllSessionMetas(stateDir);
+        const { loadAllSessionMetasAsync } = await import("../persistence.js");
+        const sessions = await loadAllSessionMetasAsync(stateDir);
         const STALE_THRESHOLD_MS = 10 * 60 * 1000;
         const now = Date.now();
         const stale = Object.entries(sessions).filter(

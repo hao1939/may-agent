@@ -128,7 +128,7 @@ describe("auditHealth()", () => {
     rmSync(persistDir, { recursive: true, force: true });
   });
 
-  it("returns correct session counts from filesystem", () => {
+  it("returns correct session counts from filesystem", async () => {
     // Create a recent session
     writeSessionMeta(persistDir, "s_recent_0", {
       agent: "coder",
@@ -144,13 +144,13 @@ describe("auditHealth()", () => {
       startedAt: Date.now() - 48 * 3600_000, // 2 days ago
     });
 
-    const report = manager.auditHealth();
+    const report = await manager.auditHealth();
     expect(report.sessionsLast24h).toBe(1);
     expect(report.totalPersistedSessions).toBe(2);
     expect(report.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T/);
   });
 
-  it("detects unevaluated sessions", () => {
+  it("detects unevaluated sessions", async () => {
     // Session with transcript but no evaluation
     writeSessionMeta(persistDir, "s_uneval_0", {
       agent: "coder",
@@ -161,13 +161,13 @@ describe("auditHealth()", () => {
     // Create a session JSONL so it's actionable
     writeFileSync(join(persistDir, "sessions", "s_uneval_0", "session.jsonl"), '{"role":"user"}\n');
 
-    const report = manager.auditHealth();
+    const report = await manager.auditHealth();
     expect(report.unevaluated.total).toBe(1);
     expect(report.unevaluated.actionable).toBe(1);
     expect(report.unevaluated.autoSkippable).toBe(0);
   });
 
-  it("classifies meta-agent sessions as auto-skippable", () => {
+  it("classifies meta-agent sessions as auto-skippable", async () => {
     writeSessionMeta(persistDir, "s_eval_0", {
       agent: "evaluator",
       task: "eval task",
@@ -175,13 +175,13 @@ describe("auditHealth()", () => {
       startedAt: Date.now() - 3600_000,
     });
 
-    const report = manager.auditHealth();
+    const report = await manager.auditHealth();
     expect(report.unevaluated.total).toBe(1);
     expect(report.unevaluated.autoSkippable).toBe(1);
     expect(report.unevaluated.actionable).toBe(0);
   });
 
-  it("detects stale sessions (running on disk but not in memory)", () => {
+  it("detects stale sessions (running on disk but not in memory)", async () => {
     writeSessionMeta(persistDir, "s_stale_0", {
       agent: "coder",
       task: "stuck task",
@@ -189,13 +189,13 @@ describe("auditHealth()", () => {
       startedAt: Date.now() - 7200_000,
     });
 
-    const report = manager.auditHealth();
+    const report = await manager.auditHealth();
     expect(report.staleSessions).toHaveLength(1);
     expect(report.staleSessions[0].sessionId).toBe("s_stale_0");
     expect(report.staleSessions[0].agent).toBe("coder");
   });
 
-  it("counts workflow runs correctly", () => {
+  it("counts workflow runs correctly", async () => {
     saveWorkflowRun(persistDir, {
       runId: "wf_1",
       workflow: "code-review",
@@ -218,7 +218,7 @@ describe("auditHealth()", () => {
       steps: [],
     });
 
-    const report = manager.auditHealth();
+    const report = await manager.auditHealth();
     expect(report.workflowRuns.total).toBe(2);
     expect(report.workflowRuns.completed).toBe(1);
     expect(report.workflowRuns.running).toBe(1);
@@ -240,15 +240,15 @@ describe("reconcileHealth()", () => {
     rmSync(persistDir, { recursive: true, force: true });
   });
 
-  it("returns healthy: true when everything matches", () => {
-    const report = manager.reconcileHealth();
+  it("returns healthy: true when everything matches", async () => {
+    const report = await manager.reconcileHealth();
     expect(report.healthy).toBe(true);
     expect(report.discrepancies).toEqual([]);
     expect(report.health).toBeDefined();
     expect(report.audit).toBeDefined();
   });
 
-  it("detects stale sessions (in filesystem but not in memory)", () => {
+  it("detects stale sessions (in filesystem but not in memory)", async () => {
     writeSessionMeta(persistDir, "s_orphan_0", {
       agent: "coder",
       task: "orphaned task",
@@ -256,15 +256,15 @@ describe("reconcileHealth()", () => {
       startedAt: Date.now() - 7200_000,
     });
 
-    const report = manager.reconcileHealth();
+    const report = await manager.reconcileHealth();
     expect(report.healthy).toBe(false);
     expect(report.discrepancies.length).toBeGreaterThan(0);
     expect(report.discrepancies.some((d) => d.includes("s_orphan_0"))).toBe(true);
     expect(report.discrepancies.some((d) => d.includes("Stale session"))).toBe(true);
   });
 
-  it("includes both health and audit sub-reports", () => {
-    const report = manager.reconcileHealth();
+  it("includes both health and audit sub-reports", async () => {
+    const report = await manager.reconcileHealth();
     expect(report.health.registeredAgents.count).toBe(2);
     expect(report.audit.totalPersistedSessions).toBe(0);
   });
@@ -284,8 +284,8 @@ describe("health via reconcileHealth()", () => {
     rmSync(persistDir, { recursive: true, force: true });
   });
 
-  it("returns reconcile report", () => {
-    const parsed = manager.reconcileHealth();
+  it("returns reconcile report", async () => {
+    const parsed = await manager.reconcileHealth();
 
     expect(parsed.health).toBeDefined();
     expect(parsed.audit).toBeDefined();

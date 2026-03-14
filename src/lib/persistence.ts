@@ -9,6 +9,7 @@ import {
   copyFileSync,
   readdirSync,
 } from "node:fs";
+import { readFile, readdir } from "node:fs/promises";
 import { join, dirname } from "node:path";
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { SubagentDefinition } from "./types.js";
@@ -295,6 +296,68 @@ export function loadAllSessionMetas(persistDir: string): Record<string, Persiste
   for (const sid of listArchivedSessionIds(persistDir)) {
     if (result[sid]) continue;
     const meta = readSessionMeta(persistDir, sid);
+    if (meta) result[sid] = meta;
+  }
+  return result;
+}
+
+// ── Async variants (non-blocking I/O for large state directories) ────
+
+/** Async version of readSessionMeta. Uses fs/promises for non-blocking I/O. */
+export async function readSessionMetaAsync(persistDir: string, sessionId: string): Promise<PersistedSession | null> {
+  const activePath = sessionMetaPath(persistDir, sessionId);
+  try {
+    const data = await readFile(activePath, "utf-8");
+    return JSON.parse(data) as PersistedSession;
+  } catch {
+    // Not in active dir — try history archive
+  }
+  const archivePath = archivedSessionMetaPath(persistDir, sessionId);
+  try {
+    const data = await readFile(archivePath, "utf-8");
+    return JSON.parse(data) as PersistedSession;
+  } catch {
+    return null;
+  }
+}
+
+/** Async version of listActiveSessionIds. */
+export async function listActiveSessionIdsAsync(persistDir: string): Promise<string[]> {
+  const sessionsRoot = join(persistDir, "sessions");
+  try {
+    const entries = await readdir(sessionsRoot, { withFileTypes: true });
+    return entries.filter((d) => d.isDirectory() && d.name !== "history").map((d) => d.name);
+  } catch {
+    return [];
+  }
+}
+
+/** Async version of listArchivedSessionIds. */
+export async function listArchivedSessionIdsAsync(persistDir: string): Promise<string[]> {
+  const histDir = historyDir(persistDir);
+  try {
+    const entries = await readdir(histDir, { withFileTypes: true });
+    return entries.filter((d) => d.isDirectory()).map((d) => d.name);
+  } catch {
+    return [];
+  }
+}
+
+/** Async version of loadAllSessionMetas. Uses non-blocking I/O for large state directories.
+ *  Reads session metadata from per-session meta.json files without blocking the event loop. */
+export async function loadAllSessionMetasAsync(persistDir: string): Promise<Record<string, PersistedSession>> {
+  const result: Record<string, PersistedSession> = {};
+  // Active sessions
+  const activeIds = await listActiveSessionIdsAsync(persistDir);
+  const activeMetas = await Promise.all(activeIds.map((sid) => readSessionMetaAsync(persistDir, sid).then((meta) => [sid, meta] as const)));
+  for (const [sid, meta] of activeMetas) {
+    if (meta) result[sid] = meta;
+  }
+  // Archived sessions (don't overwrite active — active takes precedence)
+  const archivedIds = await listArchivedSessionIdsAsync(persistDir);
+  const archivedMetas = await Promise.all(archivedIds.map((sid) => readSessionMetaAsync(persistDir, sid).then((meta) => [sid, meta] as const)));
+  for (const [sid, meta] of archivedMetas) {
+    if (result[sid]) continue;
     if (meta) result[sid] = meta;
   }
   return result;
