@@ -6,13 +6,10 @@ import type { SubagentManager } from "./manager.js";
 import {
   readSessionMessages,
   readArchivedSessionMessages,
-  loadAllSessionMetas,
   loadAllSessionMetasAsync,
   listActiveSessionIdsAsync,
   listArchivedSessionIdsAsync,
   historyDir,
-  listActiveSessionIds,
-  listArchivedSessionIds,
 } from "./persistence.js";
 import { extractHallucinatedRelPath } from "./tools/may-utils.js";
 import type { PersistedSession } from "./persistence.js";
@@ -815,7 +812,7 @@ export async function writeSkippedEvaluations(persistDir: string, skipAgents: Se
   // because they have no meta.json. They can never be LLM-evaluated
   // (evaluator needs agent info), so write a deterministic skip.
   const knownSessionIds = new Set(Object.keys(allSessions));
-  const allDirIds = new Set([...listActiveSessionIds(persistDir), ...listArchivedSessionIds(persistDir)]);
+  const allDirIds = new Set([...await listActiveSessionIdsAsync(persistDir), ...await listArchivedSessionIdsAsync(persistDir)]);
 
   for (const sessionId of allDirIds) {
     // Already handled in the meta-based loop above
