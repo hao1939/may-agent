@@ -7,6 +7,7 @@
   "compaction": true,
   "tools": [
     "coding",
-    "agents"
+    "agents",
+    "system_status"
   ]
 }

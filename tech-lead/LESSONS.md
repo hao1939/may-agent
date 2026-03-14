@@ -17,3 +17,4 @@
 ## Operational
 - **Context Efficiency**: SOUL/DOMAIN/TOOLS/LESSONS are auto-loaded. Don't re-read.
 - **Sync vs Async**: Use `agents.call` for blocking work (results needed now). Use `agents.send` for background work.
+- **Working Directory Is `/app` (3x recurrence)**: The working directory is always `/app` (the repo root). Do NOT prefix bash commands with `cd /home/user`, `cd /home/hao/c3`, or any other assumed path — these directories do not exist and will fail. Just run commands directly: `npx vitest --run`, `npx tsc --noEmit`, etc. This wrong-directory assumption has caused FM-3.1 failures 3 times.

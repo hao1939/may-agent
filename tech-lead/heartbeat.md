@@ -33,6 +33,7 @@ Errors are diagnostic signals — they reveal structural problems before they co
 - `exec ls -t .state/evaluations/ | head -5` then check for `needs_improvement` verdicts — evaluator flagged quality issues in implementation work.
 
 **Path sanity**: If ANY command returns `No such file or directory` and mentions `/home` or `~`, STOP. You are at `/app`. Re-run the command without the bad path prefix.
+**Config over Guessing**: Your todos are in `workspace/todo.md`. NEVER try to read `agents/tech-lead/todo.md` — it does not exist. Always check file structure with `ls -R agents/tech-lead/` if unsure.
 
 Don't just fix the error — ask what it tells you. A type error is a fact about the codebase. A QA pattern is a fact about the build process. A coder failure is a fact about how you delegate.
 

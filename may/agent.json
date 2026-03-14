@@ -9,7 +9,8 @@
     "coding",
     "agents",
     "workflow",
-    "cron"
+    "cron",
+    "system-status"
   ],
   "delegateDeny": {
     "agents": [

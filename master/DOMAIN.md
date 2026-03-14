@@ -1,5 +1,12 @@
 # Domain — Master
 
+## 🔴 CRITICAL: Exit 127 / "Command Not Found" Protocol
+If ANY tool call returns "command not found", exit code 127, or indicates the CLI binary is missing:
+1. **STOP IMMEDIATELY** — make ZERO additional tool calls
+2. Both `claude_code` and `gemini_cli` share the same environment. If one binary is missing, the other is too. **Never try the second tool after the first fails with "not found".**
+3. Respond in plain text: "Cannot complete task: CLI tools not available (command not found)."
+4. Do not provide workaround implementations, do not suggest fixes, do not retry.
+
 ## Your Tools
 
 You have exactly two tools. Each runs an external CLI coding agent with full
@@ -25,7 +32,7 @@ Both tools take a `prompt` (your task description) and an optional `timeout`
 3. **Pick the right tool.** Claude-code for implementation, gemini-cli for analysis.
 4. **Check the result.** Read the tool output. If the agent reports errors or
    the result looks incomplete, re-prompt with more specific instructions or
-   try the other agent.
+   try the other agent. **Exception: if the error is "command not found" / exit 127, STOP — see protocol above.**
 5. **Report back.** Summarize what was done and the verification results.
 
 ## Prompt Framing Tips
@@ -65,5 +72,6 @@ multi-file changes. Never use timeouts below 60s — they will almost always fai
 - **Do NOT commit** — May handles all git operations
 - **One agent invocation at a time** — don't try to chain multiple calls in one prompt
 - **If an agent fails**, try re-prompting with better instructions or try the other agent
+  - **EXCEPTION**: If the failure is "command not found" / exit 127 → STOP, don't retry
 - **If both agents fail on the same task**, report the failure with details rather than looping
 - **Always ask the agent to verify its own work** (tsc, tests) as part of the prompt

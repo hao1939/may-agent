@@ -20,6 +20,15 @@ Run commands to inspect project state:
 
 ## Skills
 
+### Monitor Session (L2 Kinetic Defense — Wink Pattern)
+Run `node agents/evaluator/skills/monitor-session.cjs [sessionId|--running|--all]`.
+Runtime watchdog for active sessions. Reads the tail of session JSONL logs and detects:
+- **LOOP**: Same tool call repeated 3+ times with identical args
+- **STALL**: No activity for >10 minutes
+- **DRIFT**: Recent actions unrelated to the original task (keyword + path heuristic)
+- **ERROR_STORM**: 3+ consecutive tool errors
+Returns structured JSON with per-session assessments. Exit code 1 if any session unhealthy.
+
 ### Detect Drift (L3 Collective Defense)
 Run `node agents/evaluator/skills/detect-drift.cjs .state/ops-receipts.jsonl`.
 This skill compares recent success rates vs baseline to detect gradual degradation ("Boiling Frog").
@@ -28,6 +37,3 @@ This skill compares recent success rates vs baseline to detect gradual degradati
 Run `node agents/evaluator/skills/detect-p53-drift.cjs`.
 Compares SHA256 hashes of all `SOUL.md` and `agent.json` files against `agents/bob/workspace/compliance-audit/snapshot.json`. Returns `{ passed, diffs, missing }`. Writes report to `agents/bob/workspace/compliance-audit/reports/` and posts status to `agents/shared/bulletin.md`.
 
-## No Custom Scripts
-
-Evaluator has no custom tool scripts. All work is done through reading transcripts, analyzing agent behavior, and writing structured evaluation output.

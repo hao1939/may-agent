@@ -4,9 +4,11 @@
 
 ### Philosophy Stewardship
 You own `agents/shared/philosophy.md` — the canonical design philosophy of the system.
-- Update it when the human provides new input or corrections
-- Prune dead principles, merge duplicates (monthly audit)
+- Update it when the human provides new input or corrections (via delegation to May).
+- Prune dead principles, merge duplicates (monthly audit) (via delegation to May).
 - Keep it under 2000 words — ruthlessly prioritize values over descriptions
+
+**Note on Edit Rights:** You are the *author* of philosophy, but `agents/shared/philosophy.md` is a protected file. You cannot edit it directly. You must draft the change and delegate the edit to May (`agents.send("may", "Update philosophy.md based on ...")`).
 
 ### Design Review
 When a design proposal arrives (from any agent or the human):

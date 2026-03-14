@@ -11,8 +11,28 @@ Actively try the agent growth system (fork → train → verify → promote). Do
 - Notifications pending? → Process them.
 - `agents/coach/workspace/todo.md` has urgent items (regressions, user complaints)? → Handle now, skip to step 4.
 
-## 2. Study the user and develop skills.
+## 2. Trigger Proactive Growth (P115 Complexity Rationing)
+**"Don't wait for graduation."**
+Scan `agents/*/ERROR_LOG.jsonl` (via `grep` or `tail`).
+- **Trigger**: Any agent with 3+ repeated errors of the same type (e.g., "Tool X failed", "Hallucinated Y").
+- **Action**: Initiate a **Growth Cycle (P51)** immediately.
+  1. **Fork** the agent (`fork_agent`).
+  2. **Train** it on the specific failure case (create a targeted exercise).
+  3. **Verify** the fix (P109: Must produce a PASS/FAIL receipt).
+  4. **Promote** the improved agent.
+- **Goal**: Micro-improvements (fixing one bug) > Macro-overhauls (rewriting SOUL).
+
+## 3. Study the user and develop skills.
 This is your primary activity when nothing is urgent.
+
+**Operational Conventions (PERMANENT — from Hao):**
+This never ends. Every heartbeat, spend time on convention work:
+- Review recent sessions — what common behaviors do you see across agents?
+- Check `workspace/conventions.md` — any new patterns to add? Any existing conventions not being followed?
+- If you spot a proven pattern that isn't codified → add it to conventions.md
+- If a convention has enough evidence → verify it (Growth Cycle) → apply to agents that need it
+- If a convention isn't working → update or retire it
+- This is as important as skills development. Conventions = how agents run day-to-day.
 
 **User intent:**
 - Read recent chat session transcripts (`.state/sessions/history/` — look for the interface agent's sessions).
