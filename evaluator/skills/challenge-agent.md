@@ -55,7 +55,7 @@ that your implementation handles this case correctly by checking {specific_file}
 ```bash
 # Inject a challenge into a running session
 # The script reads the session's recent context and crafts an appropriate challenge
-node agents/evaluator/skills/challenge-agent.js <sessionId> [challenge-type]
+node agents/evaluator/skills/challenge-agent.cjs <sessionId> [challenge-type]
 
 # Types: regret, authority, counterfactual, custom
 # If custom, reads challenge text from stdin

@@ -38,8 +38,8 @@ This skill analyzes system operation receipts to detect gradual performance degr
 ## Example Usage
 ```bash
 # Analyze default receipts
-node agents/evaluator/skills/detect-drift.js
+node agents/evaluator/skills/detect-drift.cjs
 
 # Analyze specific file
-node agents/evaluator/skills/detect-drift.js .state/ops-receipts-test.jsonl
+node agents/evaluator/skills/detect-drift.cjs .state/ops-receipts-test.jsonl
 ```

@@ -775,6 +775,7 @@ Agents are incentivized to guess (Binary Reward +1/-1). This creates hallucinati
 Sub-agents must not be "Yes Men." A "Zone of Indifference" — where instructions are executed without question — is a single point of failure. When a request is technically valid but contextually ambiguous, destructive, or high-risk, the agent must trigger **friction** (ask for confirmation or reject) rather than blindly executing. We value system integrity over immediate obedience.
 - **The Law**: Agents must challenge requests that are ambiguous, destructive, or conflict with known constraints — even when the request comes from a trusted source.
 - **The Mechanism**: Before executing a high-impact action, verify preconditions and flag uncertainty. Rejection is cheaper than rollback.
+- **LABSHIELD Integration**: Adopts LABSHIELD S0-S3 nomenclature: S0 (Harmless/Auto), S1 (Low-Risk/Verify), S2 (Moderate/Stop&Alert), S3 (High/Refuse). Map L0-L3 defenses to these standards.
 *Validation:* Google DeepMind arXiv:2602.11865 (Intelligent Delegation), Amy-Kimi synthesis.
 
 ### 105. Typed Coordination (The ACP Protocol) (P105) [imported+validated]
@@ -948,3 +949,11 @@ When a tool fails, the error message is a symptom. The cause is often hidden in 
 - **Why**: "File not found" (Output) is less useful than "Directory was empty" (State). Combined Control-Flow + Data-Flow signals improve reasoning accuracy by ~10% (ExecVerify).
 - **Connection**: Complements P109 (Directional Critique) and P61 (Ops Gates).
 *Source: ExecVerify (arXiv:2603.11226).*
+
+### 124. Skill Wraps Tool (P124) [imported]
+**"The tool is the hand; the skill is the technique."**
+A raw tool (API/CLI) is dumb. A Skill (Markdown) provides the context, strategy, and governance. Never ship a tool without a wrapping Skill. Prefer simple CLI tools + rich Markdown over complex MCP servers.
+- **The Law**: Every tool must have a corresponding Skill document that defines when, why, and how to use it — plus failure handling and governance rules.
+- **The Mechanism**: Skill = Markdown wrapper (context + strategy + constraints) around a Tool (CLI/API). The Skill is the unit of capability, not the tool.
+- **Why**: MCP servers add complexity; a CLI tool + Markdown skill achieves the same capability with less overhead and better auditability.
+*Validates: HB#403, HB#415, HB#366.*

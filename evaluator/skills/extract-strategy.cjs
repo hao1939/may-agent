@@ -84,28 +84,127 @@ async function extractStrategy({ logPath, type = 'recovery' }) {
 
   const lessons = [];
   
-  // Updated Regex logic for new format
-  const errorRegex = /\[TOOL_ERROR\] (.*?): (.*)/g;
-  let match;
-  while ((match = errorRegex.exec(snippet)) !== null) {
-      const toolName = match[1];
-      const errorMsg = match[2];
-      
-      let correction = `Check tool '${toolName}' arguments or state before calling.`;
-      
-      if (errorMsg.includes('ENOENT') || errorMsg.includes('No such file')) {
-          correction = `Verify file existence with 'ls' or 'find' before reading/editing.`;
-      } else if (errorMsg.includes('Command failed') || errorMsg.includes('code 1')) {
-          correction = `Check command syntax or dependencies.`;
+  if (type === 'recovery' || type === 'strategy') {
+      // Updated Regex logic for new format
+      const errorRegex = /\[TOOL_ERROR\] (.*?): (.*)/g;
+      let match;
+      while ((match = errorRegex.exec(snippet)) !== null) {
+          const toolName = match[1];
+          const errorMsg = match[2];
+          
+          let correction = `Check tool '${toolName}' arguments or state before calling.`;
+          
+          if (errorMsg.includes('ENOENT') || errorMsg.includes('No such file')) {
+              correction = `Verify file existence with 'ls' or 'find' before reading/editing.`;
+          } else if (errorMsg.includes('Command failed') || errorMsg.includes('code 1')) {
+              correction = `Check command syntax or dependencies.`;
+          }
+
+          lessons.push({
+              trigger: errorMsg.trim(),
+              correction: correction,
+              context: toolName,
+              confidence: 0.8,
+              type: 'recovery',
+              source_session: path.basename(logPath, '.jsonl')
+          });
+      }
+  }
+
+  // Optimization Tips: Detect successful-but-wasteful patterns (HB#398, HB#399-403)
+  if (type === 'optimization' || type === 'strategy') {
+      const toolCallLines = snippet.split('\n').filter(l => l.startsWith('[TOOL_CALL]'));
+      const totalCalls = toolCallLines.length;
+
+      // 1. Detect repetitive sequential tool calls (same tool 5+ times in a row)
+      let currentTool = null;
+      let currentCount = 0;
+      const sequences = [];
+      for (const call of toolCallLines) {
+          const toolMatch = call.match(/\[TOOL_CALL\] (\w+)\(/);
+          const tool = toolMatch ? toolMatch[1] : null;
+          if (tool === currentTool) {
+              currentCount++;
+          } else {
+              if (currentCount >= 5) {
+                  sequences.push({ tool: currentTool, count: currentCount });
+              }
+              currentTool = tool;
+              currentCount = 1;
+          }
+      }
+      if (currentCount >= 5) {
+          sequences.push({ tool: currentTool, count: currentCount });
       }
 
-      lessons.push({
-          trigger: errorMsg.trim(),
-          correction: correction,
-          context: toolName,
-          confidence: 0.8,
-          source_session: path.basename(logPath, '.jsonl')
-      });
+      for (const seq of sequences) {
+          lessons.push({
+              trigger: `Repetitive ${seq.tool} calls (${seq.count}x in sequence)`,
+              correction: `Consider batching operations or using a more targeted approach. ${seq.count} sequential calls to '${seq.tool}' suggests circular reasoning or trial-and-error.`,
+              context: seq.tool,
+              confidence: 0.7,
+              type: 'optimization',
+              source_session: path.basename(logPath, '.jsonl')
+          });
+      }
+
+      // 2. High total tool count (potential inefficiency)
+      if (totalCalls > 50) {
+          lessons.push({
+              trigger: `High tool call count (${totalCalls} calls)`,
+              correction: `Session used ${totalCalls} tool calls. Review for unnecessary reads, redundant searches, or circular patterns.`,
+              context: 'session',
+              confidence: 0.6,
+              type: 'optimization',
+              source_session: path.basename(logPath, '.jsonl')
+          });
+      } else if (totalCalls > 10) {
+          lessons.push({
+              trigger: `Elevated tool usage (${totalCalls} calls)`,
+              correction: "Consider batching operations or using a more specific tool.",
+              context: "General",
+              confidence: 0.5,
+              type: 'optimization',
+              source_session: path.basename(logPath, '.jsonl')
+          });
+      }
+
+      // 3. Check for ignored tool outputs (tool result followed immediately by same tool call)
+      const lines = snippet.split('\n');
+      let ignoredOutputs = 0;
+      for (let i = 0; i < lines.length - 2; i++) {
+          if (lines[i].startsWith('[TOOL_RESULT]') && lines[i+1].startsWith('[TOOL_CALL]')) {
+              const resultTool = lines[i].match(/\[TOOL_RESULT\] (\w+):/);
+              const callTool = lines[i+1].match(/\[TOOL_CALL\] (\w+)\(/);
+              if (resultTool && callTool && resultTool[1] === callTool[1]) {
+                  ignoredOutputs++;
+              }
+          }
+      }
+      if (ignoredOutputs >= 3) {
+          lessons.push({
+              trigger: `Ignored tool outputs (${ignoredOutputs} instances)`,
+              correction: `Agent appears to ignore tool results and retry the same tool. This suggests the agent is not processing outputs before acting.`,
+              context: 'reasoning',
+              confidence: 0.7,
+              type: 'optimization',
+              source_session: path.basename(logPath, '.jsonl')
+          });
+      }
+
+      // 4. Check for repeated navigation (ls/find) without converging
+      const lsCount = (snippet.match(/ls[ \-]/g) || []).length;
+      const findCount = (snippet.match(/\bfind /g) || []).length;
+      if (lsCount > 5) {
+          lessons.push({
+              trigger: `Repeated 'ls' calls (${lsCount}x)`,
+              correction: "Use 'find' or 'ls -R' for recursive search instead of crawling directories one at a time.",
+              context: "Navigation",
+              confidence: 0.7,
+              type: 'optimization',
+              source_session: path.basename(logPath, '.jsonl')
+          });
+      }
   }
 
   return { 

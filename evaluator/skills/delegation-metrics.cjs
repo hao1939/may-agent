@@ -87,7 +87,11 @@ module.exports = async function(params) {
           success: 0, 
           integrated: 0,
           parentResolved: 0,
-          durations: [] 
+          durations: [],
+          callTotal: 0,
+          callSuccess: 0,
+          sendTotal: 0,
+          sendSuccess: 0,
         };
       }
       
@@ -102,17 +106,25 @@ module.exports = async function(params) {
           pairs[key].durations.push(e.durationMs);
         }
       }
+
+      // Track per-method counts for accurate gap calculation
+      if (e.method === 'call') {
+        pairs[key].callTotal++;
+        if (calleeSuccess) pairs[key].callSuccess++;
+      } else {
+        pairs[key].sendTotal++;
+        if (calleeSuccess) pairs[key].sendSuccess++;
+      }
       
       // ISR: check if the parent session ultimately succeeded
-      // Only meaningful for 'call' method (synchronous — parent waits for result)
-      // For 'send' (fire-and-forget), we can't determine ISR from the delegation alone
-      if (e.method === 'call') {
-        const parentStatus = getSessionStatus(e.sessionId);
-        if (parentStatus && parentStatus !== 'active') {
-          pairs[key].parentResolved++;
-          if (parentStatus === 'done') {
-            pairs[key].integrated++;
-          }
+      // For 'call': sessionId IS the parent session (parent waits for result)
+      // For 'send': sessionId is ALSO the parent session (fire-and-forget, but
+      //   we can still check if the parent's overall session succeeded)
+      const parentStatus = getSessionStatus(e.sessionId);
+      if (parentStatus && parentStatus !== 'active' && parentStatus !== 'running') {
+        pairs[key].parentResolved++;
+        if (parentStatus === 'done') {
+          pairs[key].integrated++;
         }
       }
     }
@@ -148,15 +160,23 @@ module.exports = async function(params) {
       p90 = data.durations[Math.min(idx90, data.durations.length - 1)];
     }
 
+    // Flag low-confidence ISR (N < 5 resolved parent sessions)
+    const isrLowN = data.parentResolved > 0 && data.parentResolved < 5;
+    const isrSuffix = isrLowN ? ` (n=${data.parentResolved})` : '';
+
     results.push({
       pair: key,
       total: data.total,
       successCount: data.success,
       tsr: `${tsr.toFixed(1)}%`,
-      isr: isr !== null ? `${isr.toFixed(1)}%` : 'n/a',
+      isr: isr !== null ? `${isr.toFixed(1)}%${isrSuffix}` : 'n/a',
       gap: gap !== null ? `${gap.toFixed(1)}%` : 'n/a',
       p50: `${(p50/1000).toFixed(1)}s`,
-      p90: `${(p90/1000).toFixed(1)}s`
+      p90: `${(p90/1000).toFixed(1)}s`,
+      callTotal: data.callTotal,
+      sendTotal: data.sendTotal,
+      parentResolved: data.parentResolved,
+      isrLowN,
     });
   }
 
@@ -191,11 +211,12 @@ module.exports = async function(params) {
   output += `\n`;
 
   // Per-pair table
-  output += `| Pair | Total | TSR | ISR | Gap | P50 | P90 |\n`;
-  output += `|---|---|---|---|---|---|---|\n`;
+  output += `| Pair | Total | Calls/Sends | TSR | ISR | Gap | P50 | P90 |\n`;
+  output += `|---|---:|---:|---:|---:|---:|---:|---:|\n`;
   
   for (const r of results) {
-    output += `| ${r.pair} | ${r.total} | ${r.tsr} | ${r.isr} | ${r.gap} | ${r.p50} | ${r.p90} |\n`;
+    const methodBreakdown = `${r.callTotal}/${r.sendTotal}`;
+    output += `| ${r.pair} | ${r.total} | ${methodBreakdown} | ${r.tsr} | ${r.isr} | ${r.gap} | ${r.p50} | ${r.p90} |\n`;
   }
   
   if (results.length === 0) {
@@ -203,8 +224,8 @@ module.exports = async function(params) {
   }
 
   // ISR methodology note
-  output += `\n_ISR is computed for synchronous \`call\` delegations only (not fire-and-forget \`send\`). `;
-  output += `It measures whether the **caller's session** succeeded after receiving the callee's result. `;
+  output += `\n_ISR is computed for both \`call\` and \`send\` delegations by checking whether the **caller's parent session** ultimately succeeded. `;
+  output += `The "Calls/Sends" column shows the method breakdown. ISR values with (n=N) have low sample size (N<5) and should be treated as unreliable. `;
   output += `A high TSR but low ISR indicates consensus hallucination (L3 Collective Drift)._\n`;
 
   return output;
