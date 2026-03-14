@@ -1762,6 +1762,6 @@ export class SubagentManager {
 
   /** Return a snapshot of all sessions tracked by the internal registry. */
   getRegistrySessions(): Record<string, any> {
-    return (this as any).registry.getRegistry();
+    return this.registry.getRegistry();
   }
 }

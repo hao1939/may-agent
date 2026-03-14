@@ -13,6 +13,7 @@ import { readFile, readdir } from "node:fs/promises";
 import { join, dirname } from "node:path";
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { SubagentDefinition } from "./types.js";
+import { sanitizeMemory } from "./security/memory-sanitizer.js";
 
 /** Serializable agent config (no tools, no apiKey, no full model object). */
 export interface PersistedAgentConfig {
@@ -186,11 +187,32 @@ export function memoryPath(persistDir: string, name: string): string {
   return join(persistDir, "memory", `${name}.jsonl`);
 }
 
-/** Append a memory entry as a JSON line. Creates the file and directory if needed. */
+/** Append a memory entry as a JSON line. Creates the file and directory if needed.
+ *  Sanitizes the task and summary fields to prevent memory poisoning (P72). */
 export function appendMemoryEntry(persistDir: string, name: string, entry: MemoryEntry): void {
   const filePath = memoryPath(persistDir, name);
   mkdirSync(dirname(filePath), { recursive: true });
-  const line = JSON.stringify(entry) + "\n";
+
+  // Sanitize agent-generated content before persisting to long-term memory
+  const sanitized = { ...entry };
+  if (sanitized.summary) {
+    const result = sanitizeMemory(sanitized.summary, { agentName: name });
+    if (result.action === "rejected") {
+      sanitized.summary = `[SANITIZED — prompt injection blocked: ${result.issues.join("; ")}]`;
+    } else if (result.action === "redacted") {
+      sanitized.summary = result.content;
+    }
+  }
+  if (sanitized.task) {
+    const result = sanitizeMemory(sanitized.task, { agentName: name });
+    if (result.action === "rejected") {
+      sanitized.task = `[SANITIZED — prompt injection blocked]`;
+    } else if (result.action === "redacted") {
+      sanitized.task = result.content;
+    }
+  }
+
+  const line = JSON.stringify(sanitized) + "\n";
   appendFileSync(filePath, line, "utf-8");
 }
 

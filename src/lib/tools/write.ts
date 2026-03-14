@@ -6,6 +6,7 @@ import { dirname } from "path";
 import { resolveToCwd } from "./path-utils.js";
 import { checkCrossEditGuard } from "./cross-edit-guard.js";
 import { withAbortSignal } from "./abort-utils.js";
+import { isMemoryFile, sanitizeMemory, formatSanitizeWarning } from "../security/memory-sanitizer.js";
 
 const writeSchema: TSchema = Type.Object({
 	path: Type.String({ description: "Path to the file to write (relative or absolute)" }),
@@ -49,6 +50,8 @@ export interface WriteToolOptions {
 	agentName?: string;
 	/** Project root directory (needed for cross-edit guard path resolution). Defaults to cwd. */
 	projectRoot?: string;
+	/** Enable memory sanitization on writes to JOURNAL.md, MEMORY.md, LESSONS.md, etc. Default: true */
+	enableMemorySanitizer?: boolean;
 }
 
 /** Minimum existing file size (bytes) for the shrink guard to apply */
@@ -63,6 +66,7 @@ export function createWriteTool(cwd: string, options?: WriteToolOptions): AgentT
 	const allowShrink = options?.allowShrink ?? false;
 	const agentName = options?.agentName;
 	const projectRoot = options?.projectRoot ?? cwd;
+	const memorySanitizer = options?.enableMemorySanitizer ?? true;
 
 	return {
 		name: "write",
@@ -88,6 +92,24 @@ export function createWriteTool(cwd: string, options?: WriteToolOptions): AgentT
 				};
 			}
 
+			// Memory sanitizer: detect prompt injection and PII in memory files
+			let sanitizedContent = content;
+			let sanitizeWarning = "";
+			if (memorySanitizer && isMemoryFile(absolutePath)) {
+				const result = sanitizeMemory(content, { filePath: absolutePath, agentName });
+				if (result.action === "rejected") {
+					const warning = formatSanitizeWarning(result)!;
+					return {
+						content: [{ type: "text" as const, text: warning }],
+						details: undefined,
+					};
+				}
+				if (result.action === "redacted") {
+					sanitizedContent = result.content;
+					sanitizeWarning = ` ${formatSanitizeWarning(result)}`;
+				}
+			}
+
 			return withAbortSignal(signal, async (isAborted) => {
 				// Create parent directories if needed
 				await ops.mkdir(dir);
@@ -99,7 +121,7 @@ export function createWriteTool(cwd: string, options?: WriteToolOptions): AgentT
 				if (!allowShrink && ops.fileSize) {
 					const existingSize = await ops.fileSize(absolutePath);
 					if (existingSize !== null && existingSize >= SHRINK_GUARD_MIN_SIZE) {
-						const newSize = Buffer.byteLength(content, "utf-8");
+						const newSize = Buffer.byteLength(sanitizedContent, "utf-8");
 						const ratio = newSize / existingSize;
 						if (ratio < SHRINK_BLOCK_RATIO) {
 							return {
@@ -113,12 +135,12 @@ export function createWriteTool(cwd: string, options?: WriteToolOptions): AgentT
 				}
 
 				// Write the file
-				await ops.writeFile(absolutePath, content);
+				await ops.writeFile(absolutePath, sanitizedContent);
 
 				if (isAborted()) return { content: [{ type: "text" as const, text: "" }], details: undefined };
 
 				return {
-					content: [{ type: "text" as const, text: `Successfully wrote ${content.length} bytes to ${path}${shrinkWarning}` }],
+					content: [{ type: "text" as const, text: `Successfully wrote ${sanitizedContent.length} bytes to ${path}${shrinkWarning}${sanitizeWarning}` }],
 					details: undefined,
 				};
 			});
