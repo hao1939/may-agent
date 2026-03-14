@@ -11,6 +11,26 @@ import { resolve, relative, sep } from "node:path";
 
 const PROTECTED_FILENAMES = new Set(["SOUL.md", "LESSONS.md", "agent.json"]);
 
+/**
+ * P98 Evaluation Integrity — Immutable Ruler Principle.
+ *
+ * These evaluator paths are read-only to ALL agents except "may" and "evaluator" itself.
+ * Prevents reward hacking (RewardHackingAgents: agents tamper with evaluation logic 50% of the time).
+ *
+ * Protected paths (relative to agents/evaluator/):
+ *   - knowledge/criteria.md — scoring rubric
+ *   - skills/score.md — scoring execution skill
+ *   - skills/monitor-session.md — session review skill
+ *   - knowledge/adversarial-evaluation.md — adversarial evaluation guidance
+ */
+const EVALUATOR_PROTECTED_PATHS = new Set([
+	"knowledge/criteria.md",
+	"skills/score.md",
+	"skills/monitor-session.md",
+	"knowledge/adversarial-evaluation.md",
+	"knowledge/INDEX.md",
+]);
+
 export interface CrossEditGuardResult {
 	blocked: boolean;
 	message?: string;
@@ -58,6 +78,19 @@ export function checkCrossEditGuard(
 			blocked: true,
 			message: `⚠️ WRITE BLOCKED: Agent '${agentName}' cannot modify agents/shared/philosophy.md. Only May can edit this file. Use agents.send() to request changes from May instead.`,
 		};
+	}
+
+	// P98 Evaluation Integrity — Immutable Ruler
+	// Evaluator criteria/scoring files are read-only to all agents except evaluator itself (and may, already exempt above)
+	if (targetDir === "evaluator" && agentName !== "evaluator") {
+		// Get the path relative to agents/evaluator/
+		const evalRelPath = parts.slice(1).join(sep);
+		if (EVALUATOR_PROTECTED_PATHS.has(evalRelPath)) {
+			return {
+				blocked: true,
+				message: `⚠️ WRITE BLOCKED (P98 Evaluation Integrity): Agent '${agentName}' cannot modify agents/evaluator/${evalRelPath}. Evaluation criteria and scoring logic are read-only to prevent reward hacking. Only the evaluator or May can modify evaluation files.`,
+			};
+		}
 	}
 
 	// Guard agents/<other-agent>/SOUL.md, LESSONS.md, agent.json
