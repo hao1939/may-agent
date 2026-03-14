@@ -1,3 +1,10 @@
+---
+name: growth-cycle
+description: Standard workflow for evolving agents (Fork-Train-Verify-Promote).
+version: 1.1.0
+tools: [agent-growth]
+---
+
 # Skill: Agent Growth Cycle
 
 **Status**: Verified (2026-03-14)
@@ -34,11 +41,13 @@ Modify the fork.
 - **Focus**: Make *one* specific change. Don't overhaul everything at once.
 
 ### 4. Verify (`verify_agent`)
-Run a test to prove the change worked.
+Run a test to prove the change worked. **You must generate a verification receipt.**
 ```javascript
 // Run a task and check the output/result
 const result = await agents.call("coach", "verify_agent('coder-v2', 'Fix the bug in tests/trap.ts')");
 ```
+- **Requirement**: The task must output a clear PASS/FAIL signal (e.g., `test-results.txt` or a specific log entry).
+- **Prohibited**: Do not just "look around" or say "it looks good". If you cannot point to a specific file or log line that proves success, you cannot promote.
 - **Pass Criteria**: The agent must succeed *and* follow the new protocol.
 - **Fail**: If it fails, iterate on step 3 or discard.
 
@@ -67,4 +76,5 @@ await agents.call("coach", "discard_agent('coder-v2')");
 ## Constraints
 - **Never edit live agents** for behavioral changes. Trivial typos are fine, but logic changes must be forked.
 - **Verification is mandatory**. You cannot promote without a passing `verify_agent` run.
+- **Reasoning Verification**: For reasoning changes (e.g., Bob's synthesis), verification must use a **Test Case + Judge** pattern. Create a test file with a scenario, run the agent, and have a Judge (Coach/Evaluator) confirm the output matches the new protocol.
 - **Clean up**. Always promote or discard.

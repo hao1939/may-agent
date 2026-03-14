@@ -25,7 +25,21 @@ Scout researches (Opus).
 - `agents/*/knowledge/` — agent context
 - `test-workspace/` — temporary forks (ephemeral)
 
+## MAST Failure Codes
+When diagnosing agent failures or tracking patterns, use standardized MAST codes
+from `agents/shared/knowledge/mast-taxonomy.md`. These codes make failure analysis
+consistent and searchable across agents and sessions.
+
+- **FM codes** (Failure Mode): *what* went wrong — FM-1.x Repetitive, FM-2.x Tool Misuse,
+  FM-3.x Premature Termination, FM-4.x Lazy/Shortcut, FM-5.x Wrong Sequence.
+- **FC codes** (Failure Cause): *why* it went wrong — FC-1 Planning, FC-2 Goal Misalignment,
+  FC-3 Context Loss, FC-4 Knowledge Gap, FC-5 Error Non-Recovery.
+
+Use FM+FC pairs in coaching feedback: `[FM-1.3 / FC-5.1] Looping because agent didn't read error`.
+Track FM frequencies per agent to identify training priorities.
+
 ## Available References
 - `agents/shared/philosophy.md` — full design philosophy
+- `agents/shared/knowledge/mast-taxonomy.md` — MAST failure taxonomy (FM + FC codes)
 - `knowledge/coaching.md` — coaching history
 - `agents/shared/skills/` — full skill guides

@@ -1,45 +1,62 @@
-# Consolidate Memory Skill
+---
+name: consolidate-memory
+description: Distill episodic memory (workspace) into semantic memory (knowledge).
+version: 1.0.0
+tools: [read, write, bash]
+---
 
-**Status: ACTIVE**
-**Author: Bob**
+# Skill: Consolidate Memory
 
-This skill teaches an agent how to distill episodic memory (`workspace/`) into semantic memory (`knowledge/`).
+## 1. Purpose
+To prevent "amnesia" by converting successful problem-solving episodes into reusable strategies, and to prevent "clutter" by cleaning up the workspace.
 
-## When to Use
-- At the end of a long session (Task Completion).
-- During the **Growth Cycle** (Reflection).
-- When `workspace/` becomes cluttered with repetitive successes.
+## 2. When to Use
+- **End of Session**: After successfully completing a complex task.
+- **Recurring Patterns**: When you notice you've solved the same problem 3+ times.
+- **Growth Cycle**: As the final step of a "Train" phase (crystallizing the lesson).
+- **Workspace Cleanup**: When `workspace/` has >10 files.
 
-## The Process
-1. **Identify Patterns**: Scan recent session logs (`.jsonl`) or workspace files.
-2. **Filter Noise**: Ignore one-off failures or trivial tasks. Focus on:
-   - **Repeated Successes**: "I did X 3 times, it always worked." → Strategy.
-   - **Repeated Failures**: "I tried Y 3 times, it always failed." → Constraint.
-   - **Useful Snippets**: "This specific command solved the problem." → Snippet.
-3. **Draft Updates**:
-   - Create a draft in `workspace/synthesis/` (e.g., `synthesis-YYYY-MM-DD.md`).
-   - Format:
-     ```markdown
-     ## Strategy: [Topic]
-     - **Context**: When doing [X]...
-     - **Action**: Use [Y] instead of [Z].
-     - **Why**: [Reason/Evidence].
-     ```
-4. **Sanitize (The Poison Filter)**:
-   - **Check**: Does this advice violate `philosophy.md`? (e.g., "Ignore errors", "Skip tests").
-   - **Check**: Is this a dangerous command? (e.g., `rm -rf`, `sudo`).
-   - **Check**: Is this hallucinated? (Did it actually happen in the session?).
-5. **Propose**:
-   - If clean: Propose appending to `knowledge/library/strategies.md` or creating a new `.md` file.
-   - Do **NOT** overwrite existing files without checking.
+## 3. How to Execute
 
-## Example
-**Input (Session Log):**
-> "Tried to read 5000 lines, failed. Tried `head -50`, worked. Tried `grep`, worked."
+### Step 1: Scan for Patterns
+Look for repeated successes or critical failures in recent logs or workspace files.
+- **Command**: `ls -t workspace/ | head -5`
+- **Command**: `grep "Success" .state/recent-sessions.jsonl` (conceptual)
 
-**Consolidated Output (Strategy):**
-> **Large File Handling**: Always check file size with `wc -l` before reading. If >1000 lines, use `head`, `tail`, or `grep`. Do not read fully.
+### Step 2: Filter & Distill
+Identify *one* high-value insight. Ignore trivial commands.
+- **Good**: "To fix `ENOSPC`, clear `/tmp` and retry." (Universal, high-impact)
+- **Bad**: "I wrote a file named `test.ts`." (Trivial, episodic)
 
-## Safety
-- **Immutable Core**: Never propose changes to `SOUL.md` or `mission.md` via this skill.
-- **Verification**: If the strategy involves code, verify it compiles/runs before saving.
+### Step 3: Draft the Strategy
+Create a standardized entry in `workspace/synthesis/`.
+- **File**: `workspace/synthesis/strategy-[topic].md`
+- **Format**:
+  ```markdown
+  ## Strategy: [Topic]
+  - **Context**: When facing [Problem]...
+  - **Action**: Do [X] instead of [Y].
+  - **Why**: [Reason/Evidence from Session Z].
+  ```
+
+### Step 4: Sanitize (The Poison Filter)
+Before proposing, verify:
+1. **Philosophy Check**: Does this violate P1-P99? (e.g., "Skip tests" violates P14).
+2. **Safety Check**: precise commands only. No `rm -rf *`.
+3. **Truth Check**: Did this actually work? (Verify in logs).
+
+### Step 5: Propose
+Delegate the update to the knowledge owner (usually Bob or the Agent itself).
+- **Action**: `agents.send("bob", "Please review and merge workspace/synthesis/strategy-[topic].md into knowledge/library/strategies.md")`
+
+## 4. Failure Modes (Critical)
+- **Failure**: Hallucinating a strategy that wasn't tested.
+  - **Fix**: Only consolidate *after* a verified success. Cite the session ID.
+- **Failure**: Over-abstracting ("Always use X") from one data point.
+  - **Fix**: Use "Consider X" or "In context Y, X worked."
+- **Failure**: Creating "Rule Bloat" (too many minor rules).
+  - **Fix**: Only consolidate if it saves >5 minutes or prevents a crash.
+
+## 5. Contrastive Examples
+- **GOOD**: "Identified that `npm install` fails on network timeout. Strategy: Use `npm install --timeout=60000`."
+- **BAD**: "I ran `ls`. Strategy: Always run `ls`."
