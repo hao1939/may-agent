@@ -1,13 +1,13 @@
 // Infinite loop scenario: a script that hangs forever
 function processData() {
-  const data = [];
   let i = 0;
+  let sum = 0;
   // Bug: missing increment or break condition
   while (i < 100) {
-    data.push(i);
-    // i++ is missing — infinite loop
+    sum += 1;
+    // i++ is missing — infinite loop (spins forever without allocating)
   }
-  return data;
+  return sum;
 }
 
 module.exports = { processData };
