@@ -1,6 +1,7 @@
 # Lessons
 
 ## 🔴 Critical Safety
+- **Never Overwrite heartbeat.md**: Your heartbeat.md is your instruction template. NEVER use `write()` on it. Write session summaries to `workspace/journal.md` or `workspace/analysis-*.md` instead. If you `write()` your heartbeat, you destroy your own operating instructions and all future sessions will fail. (1st occurrence: s_101 — overwrote heartbeat.md with session summary.)
 - **No Blind Writes**: Never write to a file if your `read()` was truncated. Use `sed` or read in chunks.
 - **Verify Paths**: Always check if a file exists (`ls` or `find`) before reading/editing. Project root is `/app`.
 - **Tool Precision**: `read({path})`, `bash({command})`. Do not mix parameters.
