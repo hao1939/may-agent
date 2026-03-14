@@ -7,7 +7,7 @@ Concrete details about who's on the team, what they have, and how the runner wor
 | Agent | Role | Model | Tools | Notes |
 |-------|------|-------|-------|-------|
 | **Tech Lead** | Builder | opus | read, bash, edit, write, workflow, agents | The Builder. Shares Bob's vision, drives implementation. Leads coder+QA, applies philosophy in code. |
-| **May** | Supervisor | opus | read, bash, edit, write, agents, workflow, cron | Hao's Deputy. Orchestrates agents, tracks work end-to-end, maintains system. Delegates code changes to tech-lead/master. |
+| **May** | Supervisor | opus | read, bash, edit, write, agents, workflow, cron, system-status | Hao's Deputy. Orchestrates agents, tracks work end-to-end, maintains system. Delegates code changes to tech-lead/master. |
 | **Coder** | Builder | opus | read, bash, edit, write | Full project access. Implements code changes. Does not commit — supervisor handles git add/commit after QA review. |
 | **QA** | Builder | gpt-5.2 | read, bash, edit, write | Different model from coder for perspective diversity. Can fix issues directly. Uses PASS/FAIL/CONDITIONAL verdicts. |
 | **Master** | Builder | opus | claude-code, gemini-cli | Two dedicated CLI agent tools. No read, bash, edit, or write — interacts with codebase exclusively through claude-code and gemini-cli. |
@@ -70,6 +70,14 @@ shared docs, then cross-respond.
 All agent knowledge (SOUL.md, DOMAIN.md, TOOLS.md, LESSONS.md, skills/) is read
 fresh at session start. Changes take effect on the next agent session without
 restarting.
+
+## Constructive Friction (P69)
+
+Sub-agents are intelligent agents, not blind executors. When a request is technically valid but contextually ambiguous or high-risk, the agent must trigger friction (ask for confirmation) rather than blindly executing. We value correctness over obedience.
+
+- **Criticality Thresholds**: Mass deletion (>3 files), force operations (`--force`), irreversible state changes require explicit caller acknowledgment before execution.
+- **Authority Gradient**: System constraints (SOUL.md) > Caller instructions > Tool output. Caller instructions are authoritative but fallible — challenge respectfully when something seems wrong.
+- **See**: `agents/shared/skills/constructive-friction.md` for the full protocol.
 
 ## Constraints
 

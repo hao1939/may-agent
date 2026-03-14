@@ -1,9 +1,21 @@
 # Skill Template
 
-This template defines the standard structure for all skills. Adhering to this format ensures skills are **token-efficient** (second-order knowledge) and **robust** (failure-aware).
+This template defines the standard structure for all skills. Adhering to this format ensures skills are **token-efficient** (second-order knowledge), **robust** (failure-aware), and **software-like** (versioned).
+
+## Metadata (YAML Frontmatter)
+Every skill file must start with a YAML block defining its identity and requirements:
+
+```yaml
+---
+name: skill-name-kebab-case
+description: One sentence summary of what this skill does.
+version: 1.0.0
+tools: [read, bash, write] # List of tools this skill requires
+---
+```
 
 ## Structure
-Every skill file in `agents/*/skills/*.md` must follow this structure:
+The body of the skill file follows this markdown structure:
 
 ```markdown
 # [Skill Name]

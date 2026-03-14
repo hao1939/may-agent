@@ -1,0 +1,20 @@
+{
+  "timestamp": "2026-03-14T07:45:00Z",
+  "files": [
+    { "path": "agents/shared/philosophy.md", "hash": "f2c79aba46b8445e11a2b6ac9e736c130eb4851ba589fd498760a6d443507b87" },
+    { "path": "agents/amy-kimi/SOUL.md", "hash": "e0fe4beebd89d1eb080f0b71e01c6dd2320c33228d05a60f40c5f043815956b0" },
+    { "path": "agents/amy/SOUL.md", "hash": "d227ddaeb6542b3042e46c2fc90db59429eb0ef25317cb03961399c0f965d96e" },
+    { "path": "agents/bob/SOUL.md", "hash": "e27767389c01368103dbb46fa5250395462d2a50c3676872137181f15baee589" },
+    { "path": "agents/coach/SOUL.md", "hash": "9f78c9eecb68d84271f853715fbdd298ad4505e2c5cadd92432ba42049a82dc4" },
+    { "path": "agents/coder/SOUL.md", "hash": "779ce78b7318b5ad0cd7b7cc3f5b16bef976c5defa15d82ce211892f6feb9db4" },
+    { "path": "agents/evaluator/SOUL.md", "hash": "770f02b957f05f9a4d21d13caa35bc3c5e2c7223c9d4fd605f12e67099def3df" },
+    { "path": "agents/master/SOUL.md", "hash": "b21a5c6e590b9eae64c5572059542f0db2b5316cd23ba43b03cc27477e8d89a4" },
+    { "path": "agents/may/SOUL.md", "hash": "84e36862e0b7906971a9958930cede943aa5d988a20787c1d009b3054fe6f4c9" },
+    { "path": "agents/optimizer/SOUL.md", "hash": "4762c4f50c08235a77cfac85393e9786ed41e04f011f9dc0bdcbefd2373813c6" },
+    { "path": "agents/qa/SOUL.md", "hash": "de88fc793e16aadbb0c7fe49799180bef5260a8d5070f67c42e08f64aa2b6af4" },
+    { "path": "agents/scout/SOUL.md", "hash": "66e07ef2504274dd682eebc5f91dea8fdafb69fbc54177b272085f43fdc23409" },
+    { "path": "agents/tech-lead/SOUL.md", "hash": "ff49b8f3a2e5702785b94c19eaa74dcbf213028b04f798530478140937df6876" },
+    { "path": "agents/tech-lead/SOUL.md", "hash": "ff49b8f3a2e5702785b94c19eaa74dcbf213028b04f798530478140937df6876" },
+    { "path": "agents/test-agent/SOUL.md", "hash": "eccc22baa79708de56644e6c86b45d015b781a9a71b95bfbbfb1aa109e28eef7" }
+  ]
+}
