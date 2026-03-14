@@ -21,6 +21,8 @@ import {
 	type GateCheckResult,
 	type OpsReceipt,
 } from "./ops-gate.js";
+import { createGatedTestTool } from "./tools/gated-test.js";
+import { createGatedCommitTool } from "./tools/gated-commit.js";
 
 // ── Helper: deterministic exec stub ────────────────────────────────────
 
@@ -254,9 +256,9 @@ describe("evaluateGate with check factories", () => {
 // ── Gated tool integration (lightweight) ───────────────────────────────
 
 describe("gated-test tool", () => {
-	// We import dynamically to avoid import-time side effects.
-	it("returns gate failure without running tests", { timeout: 15000 }, async () => {
-		const { createGatedTestTool } = await import("./tools/gated-test.js");
+	// Static import at top of file — no import-time side effects.
+	it("returns gate failure without running tests", async () => {
+		
 		const exec = stubExec(1, "", "error TS9999");
 		const tool = createGatedTestTool({ cwd: "/proj", exec });
 		const result = await tool.execute("t1", {});
@@ -266,7 +268,7 @@ describe("gated-test tool", () => {
 	});
 
 	it("runs tests when gate passes", async () => {
-		const { createGatedTestTool } = await import("./tools/gated-test.js");
+		
 		// First call: tsc (pass). Second call: test command (pass).
 		let callCount = 0;
 		const exec = async (_cmd: string, _cwd: string) => {
@@ -281,7 +283,7 @@ describe("gated-test tool", () => {
 	});
 
 	it("skips gate when skipGate is true", async () => {
-		const { createGatedTestTool } = await import("./tools/gated-test.js");
+		
 		let callCount = 0;
 		const exec = async (_cmd: string, _cwd: string) => {
 			callCount++;
@@ -295,7 +297,7 @@ describe("gated-test tool", () => {
 	});
 
 	it("reports test failure after gate passes", async () => {
-		const { createGatedTestTool } = await import("./tools/gated-test.js");
+		
 		let callCount = 0;
 		const exec = async (_cmd: string, _cwd: string) => {
 			callCount++;
@@ -312,7 +314,7 @@ describe("gated-test tool", () => {
 
 describe("gated-commit tool", () => {
 	it("blocks commit when gate fails", async () => {
-		const { createGatedCommitTool } = await import("./tools/gated-commit.js");
+		
 		const exec = async (cmd: string, _cwd: string) => {
 			if (cmd.includes("git diff")) return { stdout: "dirty.ts", stderr: "", exitCode: 0 };
 			return { stdout: "", stderr: "", exitCode: 0 };
@@ -325,7 +327,7 @@ describe("gated-commit tool", () => {
 	});
 
 	it("commits when all gates pass", async () => {
-		const { createGatedCommitTool } = await import("./tools/gated-commit.js");
+		
 		const exec = async (cmd: string, _cwd: string) => {
 			if (cmd.includes("git commit")) {
 				return { stdout: "[main abc1234] fix: stuff\n 1 file changed", stderr: "", exitCode: 0 };
@@ -340,7 +342,7 @@ describe("gated-commit tool", () => {
 	});
 
 	it("rejects empty commit message", async () => {
-		const { createGatedCommitTool } = await import("./tools/gated-commit.js");
+		
 		const tool = createGatedCommitTool({ cwd: "/repo", exec: stubExec(0) });
 		const result = await tool.execute("t3", { message: "" });
 		const text = result.content[0].type === "text" ? result.content[0].text : "";
@@ -348,7 +350,7 @@ describe("gated-commit tool", () => {
 	});
 
 	it("escapes single quotes in commit message", async () => {
-		const { createGatedCommitTool } = await import("./tools/gated-commit.js");
+		
 		let capturedCmd = "";
 		const exec = async (cmd: string, _cwd: string) => {
 			if (cmd.includes("git commit")) capturedCmd = cmd;
@@ -367,7 +369,7 @@ describe("gated-commit tool", () => {
 	});
 
 	it("skips gate when skipGate is true", async () => {
-		const { createGatedCommitTool } = await import("./tools/gated-commit.js");
+		
 		let gateRan = false;
 		const exec = async (cmd: string, _cwd: string) => {
 			if (cmd.includes("tsc") || cmd.includes("npm test") || cmd.includes("git diff")) {
@@ -503,7 +505,7 @@ describe("logOpsReceipt", () => {
 
 describe("gated-test tool OpsReceipt", () => {
 	it("returns OpsReceipt on gate failure", async () => {
-		const { createGatedTestTool } = await import("./tools/gated-test.js");
+		
 		const exec = stubExec(1, "", "error TS9999");
 		const tool = createGatedTestTool({ cwd: "/proj", exec });
 		const result = await tool.execute("r1", {});
@@ -517,7 +519,7 @@ describe("gated-test tool OpsReceipt", () => {
 	});
 
 	it("returns OpsReceipt with test counts on success", async () => {
-		const { createGatedTestTool } = await import("./tools/gated-test.js");
+		
 		let callCount = 0;
 		const exec = async (_cmd: string, _cwd: string) => {
 			callCount++;
@@ -534,7 +536,7 @@ describe("gated-test tool OpsReceipt", () => {
 	});
 
 	it("returns OpsReceipt on test failure", async () => {
-		const { createGatedTestTool } = await import("./tools/gated-test.js");
+		
 		let callCount = 0;
 		const exec = async (_cmd: string, _cwd: string) => {
 			callCount++;
@@ -551,7 +553,7 @@ describe("gated-test tool OpsReceipt", () => {
 	});
 
 	it("returns OpsReceipt with skipGate", async () => {
-		const { createGatedTestTool } = await import("./tools/gated-test.js");
+		
 		const exec = async (_cmd: string, _cwd: string) => {
 			return { stdout: "10 passed", stderr: "", exitCode: 0 };
 		};
@@ -569,7 +571,7 @@ describe("gated-test tool OpsReceipt", () => {
 
 describe("gated-commit tool OpsReceipt", () => {
 	it("returns OpsReceipt on gate failure", async () => {
-		const { createGatedCommitTool } = await import("./tools/gated-commit.js");
+		
 		const exec = async (cmd: string, _cwd: string) => {
 			if (cmd.includes("git diff")) return { stdout: "dirty.ts", stderr: "", exitCode: 0 };
 			return { stdout: "", stderr: "", exitCode: 0 };
@@ -584,7 +586,7 @@ describe("gated-commit tool OpsReceipt", () => {
 	});
 
 	it("returns OpsReceipt with commit metadata on success", async () => {
-		const { createGatedCommitTool } = await import("./tools/gated-commit.js");
+		
 		const exec = async (cmd: string, _cwd: string) => {
 			if (cmd.includes("git commit")) {
 				return { stdout: "[main abc1234] fix: stuff\n 2 files changed, 10 insertions(+)", stderr: "", exitCode: 0 };
@@ -602,7 +604,7 @@ describe("gated-commit tool OpsReceipt", () => {
 	});
 
 	it("returns OpsReceipt on empty message", async () => {
-		const { createGatedCommitTool } = await import("./tools/gated-commit.js");
+		
 		const tool = createGatedCommitTool({ cwd: "/repo", exec: stubExec(0) });
 		const result = await tool.execute("r3", { message: "" });
 		const receipt = result.details as OpsReceipt;
@@ -612,7 +614,7 @@ describe("gated-commit tool OpsReceipt", () => {
 	});
 
 	it("returns OpsReceipt on git commit failure", async () => {
-		const { createGatedCommitTool } = await import("./tools/gated-commit.js");
+		
 		const exec = async (cmd: string, _cwd: string) => {
 			if (cmd.includes("git commit")) {
 				return { stdout: "", stderr: "nothing to commit", exitCode: 1 };

@@ -83,7 +83,7 @@ describe("P85: Operation Budget", () => {
     expect(manager.getOpUsage("nonexistent")).toBeNull();
   });
 
-  it("tools wrapped with receipts include <tool_output> tags", () => {
+  it("tools wrapped with receipts include <tool_output> tags", async () => {
     // Register agent with a read tool
     manager.register({
       name: "wrap-agent",
@@ -110,13 +110,12 @@ describe("P85: Operation Budget", () => {
 
     // Execute the wrapped tool and check for <tool_output> tags
     const wrappedRead = wrappedTools[0];
-    wrappedRead.execute("tc1", {}).then((result: AgentToolResult<any>) => {
-      const fullText = result.content.map((b: any) => b.text || "").join("");
-      expect(fullText).toContain("<tool_output");
-      expect(fullText).toContain("</tool_output>");
-      expect(fullText).toContain("file contents here");
-      expect(fullText).toContain("[SIG:");
-    });
+    const result = await wrappedRead.execute("tc1", {});
+    const fullText = result.content.map((b: any) => b.text || "").join("");
+    expect(fullText).toContain("<tool_output");
+    expect(fullText).toContain("</tool_output>");
+    expect(fullText).toContain("file contents here");
+    expect(fullText).toContain("[SIG:");
   });
 
   it("budget enforcement blocks state-changing tools when exceeded", async () => {
@@ -218,16 +217,26 @@ describe("P85: Operation Budget", () => {
     const session = manager.activeSessions.get(sessionId);
     const writeTool = session!.agent.state.tools[0];
 
-    // Execute several writes — all should succeed since budget is 0 (unlimited)
+    // Execute writes and track how many succeed.
+    // The model connection may fail asynchronously, removing the session from activeSessions.
+    // The wrapped tool only increments opCount while the session is in the map.
+    // So we track successes ourselves and verify opCount matches.
+    let successCount = 0;
     for (let i = 0; i < 10; i++) {
       const result = await writeTool.execute(`tc${i}`, {});
       const text = result.content.map((b: any) => b.text || "").join("");
       expect(text).not.toContain("OpBudgetExceeded");
+      // Check if the session is still tracked (opCount increments only while in activeSessions)
+      // @ts-expect-error Accessing private property
+      if (manager.activeSessions.get(sessionId)) {
+        successCount++;
+      }
     }
 
-    // opCount should track all executions regardless of whether session is still active
-    // (session may get cleaned up by background promise, so check that at least some were counted)
+    // opCount should match the number of tool executions that completed while session was active.
+    // At minimum, several should have been tracked (proves unlimited budget works).
     expect(session!.opCount).toBeGreaterThanOrEqual(1);
+    expect(session!.opCount).toBe(successCount);
   });
 
   it("undefined opBudget defaults to unlimited", async () => {
