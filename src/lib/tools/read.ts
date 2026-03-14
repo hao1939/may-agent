@@ -13,13 +13,13 @@
  */
 
 import type { AgentTool } from "@mariozechner/pi-agent-core";
-import type { TextContent } from "@mariozechner/pi-ai";
 import { Type } from "@mariozechner/pi-ai";
 import type { TSchema } from "@mariozechner/pi-ai";
 import { constants } from "fs";
 import { access as fsAccess, readFile as fsReadFile } from "fs/promises";
 import { resolveReadPath } from "./path-utils.js";
 import { DEFAULT_MAX_BYTES, DEFAULT_MAX_LINES, formatSize, type TruncationResult, truncateHead } from "./truncate.js";
+import { withAbortSignal } from "./abort-utils.js";
 
 const readSchema: TSchema = Type.Object({
   path: Type.String({ description: "Path to the file to read (relative or absolute)" }),
@@ -63,86 +63,63 @@ export function createReadTool(cwd: string, options?: ReadToolOptions): AgentToo
       const { path, offset, limit } = _params as ReadToolInput;
       const absolutePath = resolveReadPath(path, cwd);
 
-      return new Promise<{ content: TextContent[]; details: ReadToolDetails | undefined }>((resolve, reject) => {
-        if (signal?.aborted) {
-          reject(new Error("Operation aborted"));
-          return;
+      return withAbortSignal(signal, async (isAborted) => {
+        await ops.access(absolutePath);
+        if (isAborted()) return { content: [{ type: "text" as const, text: "" }], details: undefined };
+
+        const buffer = await ops.readFile(absolutePath);
+        const textContent = buffer.toString("utf-8");
+        const allLines = textContent.split("\n");
+        const totalFileLines = allLines.length;
+
+        const startLine = offset ? Math.max(0, offset - 1) : 0;
+        const startLineDisplay = startLine + 1;
+
+        if (startLine >= allLines.length) {
+          throw new Error(`Offset ${offset} is beyond end of file (${allLines.length} lines total)`);
         }
 
-        let aborted = false;
-        const onAbort = () => {
-          aborted = true;
-          reject(new Error("Operation aborted"));
-        };
-
-        if (signal) {
-          signal.addEventListener("abort", onAbort, { once: true });
+        let selectedContent: string;
+        let userLimitedLines: number | undefined;
+        if (limit !== undefined) {
+          const endLine = Math.min(startLine + limit, allLines.length);
+          selectedContent = allLines.slice(startLine, endLine).join("\n");
+          userLimitedLines = endLine - startLine;
+        } else {
+          selectedContent = allLines.slice(startLine).join("\n");
         }
 
-        (async () => {
-          try {
-            await ops.access(absolutePath);
-            if (aborted) return;
+        const truncation = truncateHead(selectedContent);
+        let outputText: string;
+        let details: ReadToolDetails | undefined;
 
-            const buffer = await ops.readFile(absolutePath);
-            const textContent = buffer.toString("utf-8");
-            const allLines = textContent.split("\n");
-            const totalFileLines = allLines.length;
+        if (truncation.firstLineExceedsLimit) {
+          const firstLineSize = formatSize(Buffer.byteLength(allLines[startLine], "utf-8"));
+          outputText = `[Line ${startLineDisplay} is ${firstLineSize}, exceeds ${formatSize(DEFAULT_MAX_BYTES)} limit. Use bash: sed -n '${startLineDisplay}p' ${path} | head -c ${DEFAULT_MAX_BYTES}]`;
+          details = { truncation };
+        } else if (truncation.truncated) {
+          const endLineDisplay = startLineDisplay + truncation.outputLines - 1;
+          const nextOffset = endLineDisplay + 1;
+          outputText = truncation.content;
 
-            const startLine = offset ? Math.max(0, offset - 1) : 0;
-            const startLineDisplay = startLine + 1;
-
-            if (startLine >= allLines.length) {
-              throw new Error(`Offset ${offset} is beyond end of file (${allLines.length} lines total)`);
-            }
-
-            let selectedContent: string;
-            let userLimitedLines: number | undefined;
-            if (limit !== undefined) {
-              const endLine = Math.min(startLine + limit, allLines.length);
-              selectedContent = allLines.slice(startLine, endLine).join("\n");
-              userLimitedLines = endLine - startLine;
-            } else {
-              selectedContent = allLines.slice(startLine).join("\n");
-            }
-
-            const truncation = truncateHead(selectedContent);
-            let outputText: string;
-            let details: ReadToolDetails | undefined;
-
-            if (truncation.firstLineExceedsLimit) {
-              const firstLineSize = formatSize(Buffer.byteLength(allLines[startLine], "utf-8"));
-              outputText = `[Line ${startLineDisplay} is ${firstLineSize}, exceeds ${formatSize(DEFAULT_MAX_BYTES)} limit. Use bash: sed -n '${startLineDisplay}p' ${path} | head -c ${DEFAULT_MAX_BYTES}]`;
-              details = { truncation };
-            } else if (truncation.truncated) {
-              const endLineDisplay = startLineDisplay + truncation.outputLines - 1;
-              const nextOffset = endLineDisplay + 1;
-              outputText = truncation.content;
-
-              if (truncation.truncatedBy === "lines") {
-                outputText += `\n\n[Showing lines ${startLineDisplay}-${endLineDisplay} of ${totalFileLines}. Use offset=${nextOffset} to continue.]`;
-              } else {
-                outputText += `\n\n[Showing lines ${startLineDisplay}-${endLineDisplay} of ${totalFileLines} (${formatSize(DEFAULT_MAX_BYTES)} limit). Use offset=${nextOffset} to continue.]`;
-              }
-              details = { truncation };
-            } else if (userLimitedLines !== undefined && startLine + userLimitedLines < allLines.length) {
-              const remaining = allLines.length - (startLine + userLimitedLines);
-              const nextOffset = startLine + userLimitedLines + 1;
-              outputText = truncation.content;
-              outputText += `\n\n[${remaining} more lines in file. Use offset=${nextOffset} to continue.]`;
-            } else {
-              outputText = truncation.content;
-            }
-
-            if (aborted) return;
-            if (signal) signal.removeEventListener("abort", onAbort);
-
-            resolve({ content: [{ type: "text", text: outputText }], details });
-          } catch (error: any) {
-            if (signal) signal.removeEventListener("abort", onAbort);
-            if (!aborted) reject(error);
+          if (truncation.truncatedBy === "lines") {
+            outputText += `\n\n[Showing lines ${startLineDisplay}-${endLineDisplay} of ${totalFileLines}. Use offset=${nextOffset} to continue.]`;
+          } else {
+            outputText += `\n\n[Showing lines ${startLineDisplay}-${endLineDisplay} of ${totalFileLines} (${formatSize(DEFAULT_MAX_BYTES)} limit). Use offset=${nextOffset} to continue.]`;
           }
-        })();
+          details = { truncation };
+        } else if (userLimitedLines !== undefined && startLine + userLimitedLines < allLines.length) {
+          const remaining = allLines.length - (startLine + userLimitedLines);
+          const nextOffset = startLine + userLimitedLines + 1;
+          outputText = truncation.content;
+          outputText += `\n\n[${remaining} more lines in file. Use offset=${nextOffset} to continue.]`;
+        } else {
+          outputText = truncation.content;
+        }
+
+        if (isAborted()) return { content: [{ type: "text" as const, text: "" }], details: undefined };
+
+        return { content: [{ type: "text" as const, text: outputText }], details };
       });
     },
   };

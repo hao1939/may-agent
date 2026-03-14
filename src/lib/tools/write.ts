@@ -5,6 +5,7 @@ import { mkdir as fsMkdir, writeFile as fsWriteFile, stat as fsStat } from "fs/p
 import { dirname } from "path";
 import { resolveToCwd } from "./path-utils.js";
 import { checkCrossEditGuard } from "./cross-edit-guard.js";
+import { withAbortSignal } from "./abort-utils.js";
 
 const writeSchema: TSchema = Type.Object({
 	path: Type.String({ description: "Path to the file to write (relative or absolute)" }),
@@ -82,95 +83,45 @@ export function createWriteTool(cwd: string, options?: WriteToolOptions): AgentT
 			const guard = checkCrossEditGuard(absolutePath, agentName, projectRoot);
 			if (guard.blocked) {
 				return {
-					content: [{ type: "text", text: guard.message! }],
+					content: [{ type: "text" as const, text: guard.message! }],
 					details: undefined,
 				};
 			}
 
-			return new Promise<{ content: Array<{ type: "text"; text: string }>; details: undefined }>(
-				(resolve, reject) => {
-					// Check if already aborted
-					if (signal?.aborted) {
-						reject(new Error("Operation aborted"));
-						return;
-					}
+			return withAbortSignal(signal, async (isAborted) => {
+				// Create parent directories if needed
+				await ops.mkdir(dir);
 
-					let aborted = false;
+				if (isAborted()) return { content: [{ type: "text" as const, text: "" }], details: undefined };
 
-					// Set up abort handler
-					const onAbort = () => {
-						aborted = true;
-						reject(new Error("Operation aborted"));
-					};
-
-					if (signal) {
-						signal.addEventListener("abort", onAbort, { once: true });
-					}
-
-					// Perform the write operation
-					(async () => {
-						try {
-							// Create parent directories if needed
-							await ops.mkdir(dir);
-
-							// Check if aborted before writing
-							if (aborted) {
-								return;
-							}
-
-							// Shrink guard: check if new content is significantly smaller than existing file
-							let shrinkWarning = "";
-							if (!allowShrink && ops.fileSize) {
-								const existingSize = await ops.fileSize(absolutePath);
-								if (existingSize !== null && existingSize >= SHRINK_GUARD_MIN_SIZE) {
-									const newSize = Buffer.byteLength(content, "utf-8");
-									const ratio = newSize / existingSize;
-									if (ratio < SHRINK_BLOCK_RATIO) {
-										// Clean up abort handler before resolving
-										if (signal) {
-											signal.removeEventListener("abort", onAbort);
-										}
-										resolve({
-											content: [{ type: "text", text: `⚠️ WRITE BLOCKED: New content (${newSize} bytes) is ${Math.round(ratio * 100)}% of existing file (${existingSize} bytes). This looks like a truncated rewrite that would lose data. Use edit() for surgical changes, or read the full file first to ensure you have all content. If you're sure, use bash to write directly.` }],
-											details: undefined,
-										});
-										return;
-									} else if (ratio < SHRINK_WARN_RATIO) {
-										shrinkWarning = ` ⚠️ WARNING: New content is ${Math.round(ratio * 100)}% of previous size (${existingSize} → ${newSize} bytes). Verify no data was lost.`;
-									}
-								}
-							}
-
-							// Write the file
-							await ops.writeFile(absolutePath, content);
-
-							// Check if aborted after writing
-							if (aborted) {
-								return;
-							}
-
-							// Clean up abort handler
-							if (signal) {
-								signal.removeEventListener("abort", onAbort);
-							}
-
-							resolve({
-								content: [{ type: "text", text: `Successfully wrote ${content.length} bytes to ${path}${shrinkWarning}` }],
+				// Shrink guard: check if new content is significantly smaller than existing file
+				let shrinkWarning = "";
+				if (!allowShrink && ops.fileSize) {
+					const existingSize = await ops.fileSize(absolutePath);
+					if (existingSize !== null && existingSize >= SHRINK_GUARD_MIN_SIZE) {
+						const newSize = Buffer.byteLength(content, "utf-8");
+						const ratio = newSize / existingSize;
+						if (ratio < SHRINK_BLOCK_RATIO) {
+							return {
+								content: [{ type: "text" as const, text: `⚠️ WRITE BLOCKED: New content (${newSize} bytes) is ${Math.round(ratio * 100)}% of existing file (${existingSize} bytes). This looks like a truncated rewrite that would lose data. Use edit() for surgical changes, or read the full file first to ensure you have all content. If you're sure, use bash to write directly.` }],
 								details: undefined,
-							});
-						} catch (error: any) {
-							// Clean up abort handler
-							if (signal) {
-								signal.removeEventListener("abort", onAbort);
-							}
-
-							if (!aborted) {
-								reject(error);
-							}
+							};
+						} else if (ratio < SHRINK_WARN_RATIO) {
+							shrinkWarning = ` ⚠️ WARNING: New content is ${Math.round(ratio * 100)}% of previous size (${existingSize} → ${newSize} bytes). Verify no data was lost.`;
 						}
-					})();
-				},
-			);
+					}
+				}
+
+				// Write the file
+				await ops.writeFile(absolutePath, content);
+
+				if (isAborted()) return { content: [{ type: "text" as const, text: "" }], details: undefined };
+
+				return {
+					content: [{ type: "text" as const, text: `Successfully wrote ${content.length} bytes to ${path}${shrinkWarning}` }],
+					details: undefined,
+				};
+			});
 		},
 	};
 }
