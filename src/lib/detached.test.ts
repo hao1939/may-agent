@@ -7,7 +7,7 @@
  * 3. src/manager.ts — waitForDetached(), detached cancel, detached waitFor tool action
  */
 
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeAll, beforeEach, afterEach } from "vitest";
 import { mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { resolve, join } from "node:path";
 import { createServer, type Server } from "node:net";
@@ -309,13 +309,17 @@ describe("waitForDetached", () => {
   // We need to create a minimal SubagentManager to test waitForDetached.
   let SubagentManager: typeof import("./manager.js").SubagentManager;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
+    // Heavy dynamic import — do once, not per-test (avoids 10s hook timeout)
+    const mod = await import("./manager.js");
+    SubagentManager = mod.SubagentManager;
+  }, 30_000);
+
+  beforeEach(() => {
     mkdirSync(resolve(tmpDir, "sessions"), { recursive: true });
     mkdirSync(resolve(tmpDir, "instances"), { recursive: true });
     // History dir for archived sessions
     mkdirSync(resolve(tmpDir, "sessions", "history"), { recursive: true });
-    const mod = await import("./manager.js");
-    SubagentManager = mod.SubagentManager;
   });
 
   afterEach(() => {

@@ -76,7 +76,7 @@ describe("parseIssueToErrorEntry", () => {
 
 describe("appendErrorLogs", () => {
   const testAgentDir = join("agents", "_test_error_log_agent");
-  const errorLogPath = join(testAgentDir, "ERROR_LOG.md");
+  const errorLogPath = join(testAgentDir, "ERROR_LOG.jsonl");
 
   beforeEach(() => {
     mkdirSync(testAgentDir, { recursive: true });
@@ -145,15 +145,18 @@ describe("appendErrorLogs", () => {
     expect(lines).toHaveLength(2);
 
     const entry1 = JSON.parse(lines[0]);
-    expect(entry1.error_code).toBe("FM-2.6");
-    expect(entry1.task_id).toBe("s_test_001");
-    expect(entry1.trigger).toBe("DRIFT");
+    expect(entry1.tool).toBe("evaluator");
+    expect(entry1.context).toBe("s_test_001");
+    expect(entry1.error).toContain("FM-2.6");
     expect(entry1.critique).toBe("Agent drifted from task");
+    expect(entry1).toHaveProperty("timestamp");
+    expect(entry1).toHaveProperty("state_snapshot");
 
     const entry2 = JSON.parse(lines[1]);
-    expect(entry2.error_code).toBe("FM-1.3");
-    expect(entry2.trigger).toBe("LOOP");
+    expect(entry2.error).toContain("FM-1.3");
     expect(entry2.critique).toBe("Agent looped on same command 5 times");
+    expect(entry2.context).toBe("s_test_001");
+    expect(entry2).toHaveProperty("state_snapshot");
   });
 
   it("skips issues without FM codes", () => {
@@ -210,12 +213,12 @@ describe("appendErrorLogs", () => {
   it("appends to existing error log", () => {
     // Write an initial entry
     const initialEntry = JSON.stringify({
-      date: "2026-03-12",
-      task_id: "s_old",
-      error_code: "FM-4.1",
-      trigger: "OLD_ISSUE",
+      timestamp: "2026-03-12T00:00:00Z",
+      tool: "evaluator",
+      error: "FM-4.1: OLD_ISSUE",
       critique: "Previous failure",
       correction: "Fix it",
+      context: "s_old",
     });
     mkdirSync(testAgentDir, { recursive: true });
     require("node:fs").writeFileSync(errorLogPath, initialEntry + "\n", "utf-8");
@@ -272,13 +275,12 @@ describe("appendErrorLogs", () => {
 
     // First line is the initial entry
     const old = JSON.parse(lines[0]);
-    expect(old.error_code).toBe("FM-4.1");
+    expect(old.error).toContain("FM-4.1");
 
     // Second line is the new entry
     const newEntry = JSON.parse(lines[1]);
-    expect(newEntry.error_code).toBe("FM-3.3");
-    expect(newEntry.task_id).toBe("s_test_003");
-    expect(newEntry.trigger).toBe("INCORRECT_VERIFICATION");
+    expect(newEntry.error).toContain("FM-3.3");
+    expect(newEntry.context).toBe("s_test_003");
     expect(newEntry.critique).toBe("Declared success without evidence");
   });
 
@@ -341,12 +343,13 @@ describe("appendErrorLogs", () => {
     for (const line of lines) {
       expect(() => JSON.parse(line)).not.toThrow();
       const entry = JSON.parse(line);
-      expect(entry).toHaveProperty("date");
-      expect(entry).toHaveProperty("task_id");
-      expect(entry).toHaveProperty("error_code");
-      expect(entry).toHaveProperty("trigger");
+      expect(entry).toHaveProperty("timestamp");
+      expect(entry).toHaveProperty("tool");
+      expect(entry).toHaveProperty("error");
       expect(entry).toHaveProperty("critique");
       expect(entry).toHaveProperty("correction");
+      expect(entry).toHaveProperty("context");
+      expect(entry).toHaveProperty("state_snapshot");
     }
   });
 });
