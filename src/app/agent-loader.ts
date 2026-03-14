@@ -123,15 +123,11 @@ export function runAgentCleanup(agentName: string): void {
  */
 const PROTECTED_FILENAMES = new Set(["SOUL.md", "agent.json", "LESSONS.md"]);
 
-/**
- * Strings that trigger bash command blocking (P53 bash guard).
- * Any bash command containing these substrings is blocked to prevent
- * bypassing write/edit protections via shell commands (e.g. echo "..." > SOUL.md).
- */
-const BASH_PROTECTED_STRINGS = ["SOUL.md", "agent.json", "LESSONS.md", "philosophy.md"];
-
-/** Agents exempt from bash command P53 blocking (system supervisors). */
-const BASH_GUARD_EXEMPT_AGENTS = new Set(["may"]);
+// ── Bash command guard removed ──────────────────────────────────────────
+// P53 bash command scanning was removed per Hao's directive (2026-03-14):
+// "bash guard is against our idea of freedom and creativity. Instead, give
+//  agents free bash access. For safety, create specialist agents without bash."
+// Cross-edit protection remains via write/edit tool path guards (checkProtectedPath).
 
 /**
  * Check whether a resolved absolute path targets a protected file in another agent's directory.
@@ -172,64 +168,8 @@ export function checkProtectedPath(
 }
 
 /**
- * Write-operator patterns that indicate a bash command is mutating a file.
- * A command is only blocked when it references a protected filename AND
- * contains one of these write operators. Read-only commands (cat, grep,
- * head, wc, diff, etc.) are allowed through.
- */
-const BASH_WRITE_OPERATORS = [
-  ">>",   // append redirect (check before single >)
-  ">",    // redirect / truncate
-  "tee ", // write via tee
-  "cp ",   // copy (overwrites target)
-  "sed -i",         // in-place edit
-  "sed --in-place", // in-place edit (long form)
-  "perl -i",  // perl in-place
-  "perl -pi", // perl in-place (common variant)
-  "mv ",   // move/rename
-  "rm ",   // delete
-  "chmod ", // permission change
-  "python",  // interpreter-based write bypass
-  "python3", // interpreter-based write bypass
-  "node ",   // interpreter-based write bypass (trailing space to avoid false positives)
-  "node -e", // interpreter-based write bypass
-  "ruby",    // interpreter-based write bypass
-  "php",     // interpreter-based write bypass
-  "awk",     // interpreter-based write bypass
-  "dd ",     // low-level copy
-];
-
-/**
- * Check if a bash command attempts to WRITE to protected identity files.
- * Read-only commands (cat, grep, head, etc.) that mention protected files
- * are allowed. Only commands containing write operators alongside a
- * protected filename are blocked.
- * Returns a block message if the command should be denied, or null if allowed.
- */
-export function checkBashCommand(command: string, agentName: string): string | null {
-  // Exempt agents (system supervisors) bypass bash guard
-  if (BASH_GUARD_EXEMPT_AGENTS.has(agentName)) return null;
-
-  for (const protectedStr of BASH_PROTECTED_STRINGS) {
-    if (!command.includes(protectedStr)) continue;
-
-    // The command mentions a protected file — check for write operators
-    const hasWriteOp = BASH_WRITE_OPERATORS.some((op) => command.includes(op));
-    if (hasWriteOp) {
-      return `⚠️ BASH BLOCKED (P53): Command writes to identity file "${protectedStr}". ` +
-        `Agents cannot write to identity files (${BASH_PROTECTED_STRINGS.join(", ")}) via bash. ` +
-        `This prevents bypassing write protections via shell. ` +
-        `Read-only access (cat, grep, head, etc.) is allowed. You may NOT edit them via bash.`;
-    }
-  }
-
-  return null;
-}
-
-/**
- * Wrap write, edit, and bash tools with guards that enforce P53/P70 protections.
- * - write/edit: blocks cross-agent modifications to identity-critical files.
- * - bash: blocks commands that reference identity file names (prevents shell bypass).
+ * Wrap write and edit tools with guards that enforce P53/P70 cross-edit protections.
+ * Blocks cross-agent modifications to identity-critical files via write/edit tools.
  */
 function wrapToolsWithPathGuard(
   tools: AgentTool[],
@@ -238,31 +178,7 @@ function wrapToolsWithPathGuard(
   projectRoot: string,
 ): AgentTool[] {
   return tools.map((tool) => {
-    // Wrap bash tool with P53 command scanner
-    if (tool.name === "bash") {
-      return {
-        ...tool,
-        execute: async (
-          toolCallId: string,
-          params: unknown,
-          signal?: AbortSignal,
-        ) => {
-          const p = params as { command?: string };
-          if (p.command) {
-            const blockMessage = checkBashCommand(p.command, agentName);
-            if (blockMessage) {
-              return {
-                content: [{ type: "text" as const, text: blockMessage }],
-                details: undefined,
-              };
-            }
-          }
-          return tool.execute(toolCallId, params, signal);
-        },
-      };
-    }
-
-    // Wrap write/edit tools with P53 path guard
+    // Only wrap write/edit tools with P53 path guard
     if (tool.name !== "write" && tool.name !== "edit") return tool;
 
     return {

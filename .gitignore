@@ -8,3 +8,4 @@ pi-deps/
 .claude/
 .env
 temp-*.cjs
+tsconfig.tsbuildinfo
