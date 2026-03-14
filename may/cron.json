@@ -163,17 +163,6 @@
     "description": "Track focus task progress — remind, check signals, escalate if stuck (JS handler, 1h)"
   },
   {
-    "name": "focus-task-driver",
-    "type": "job",
-    "agent": "bob",
-    "intervalMs": 3600000,
-    "message": "[cron:focus-task-driver] Read agents/shared/focus-tasks.md. Pick the focus task most needing attention. Work on it — do actual work, not just docs. Keep iterating until resolved or blocked. Update focus-tasks.md with progress. SCOPE GUARDRAILS: Do NOT edit any agent's SOUL.md, agent.json, or LESSONS.md files. Those are owned by their respective agents and May/Coach. Stay within your own workspace and shared/ files.",
-    "enabled": true,
-    "description": "Bob drives focus tasks forward (via run-agent-task, 1h)",
-    "handler": "run-agent-task",
-    "lastModified": "2026-03-12T21:26:00.000Z"
-  },
-  {
     "name": "iraq-conflict-monitor",
     "type": "job",
     "agent": "scout",
@@ -260,8 +249,9 @@
     "intervalMs": 604800000,
     "agent": "evaluator",
     "message": "[cron:compliance-audit] Run the P53 compliance audit: execute `node agents/evaluator/skills/detect-p53-drift/detect-p53-drift.cjs`. If drift is found, post a WARNING to agents/shared/bulletin.md. If clean, post a PASS report to agents/bob/workspace/compliance-audit/reports/.",
-    "enabled": true,
+    "enabled": false,
     "handler": "run-agent-task",
-    "description": "Weekly P53 compliance audit — verify SOUL.md and agent.json integrity (Mondays, 7d)"
+    "description": "Weekly P53 compliance audit — verify SOUL.md and agent.json integrity (Mondays, 7d)",
+    "lastModified": "2026-03-14T15:02:47.299Z"
   }
 ]
