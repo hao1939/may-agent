@@ -215,6 +215,21 @@ function detectHighEntropyStrings(content: string): string[] {
   return threats;
 }
 
+// ── Quote-splitting normalization (P53 hardening) ───────────────────────
+
+/**
+ * Normalize content by stripping embedded quotes and backslash escapes
+ * that could be used to split dangerous function names and evade regex
+ * detection. For example, `ev""al(...)` becomes `eval(...)`.
+ *
+ * This runs patterns against both the original and normalized content
+ * to catch quote-splitting evasion while preserving original match indices.
+ */
+function normalizeForP53(content: string): string {
+  // Strip single quotes, double quotes, backticks, and backslash escapes
+  return content.replace(/["'`\\]/g, "");
+}
+
 // ── Domain allow-list check for fetch/curl/wget ─────────────────────────
 
 /**
@@ -257,10 +272,19 @@ export function checkSkillSafety(content: string, options?: SkillSafetyOptions):
 
   const severityRank = { critical: 3, high: 2, medium: 1 };
 
-  // Check each dangerous pattern
+  // Normalize content to defeat quote-splitting evasion (P53 hardening).
+  // Patterns are checked against both the original and normalized forms.
+  const normalized = normalizeForP53(content);
+
+  // Check each dangerous pattern against original and normalized content
+  const alreadyMatched = new Set<string>();
   for (const dp of DANGEROUS_PATTERNS) {
-    const match = dp.pattern.exec(content);
+    const match = dp.pattern.exec(content) || dp.pattern.exec(normalized);
     if (!match) continue;
+
+    // Deduplicate — don't report the same pattern twice if both original and normalized match
+    if (alreadyMatched.has(dp.description)) continue;
+    alreadyMatched.add(dp.description);
 
     // For data-exfiltration patterns, check domain allow-list
     if (dp.category === "data-exfiltration" && isAllowedDomain(content, match.index, allowedDomains)) {

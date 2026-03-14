@@ -572,7 +572,7 @@ export class SubagentManager {
       initialState: {
         systemPrompt: this.resolveSystemPrompt(def),
         model: def.model,
-        tools: wrapToolsWithReceipts(def.tools, sessionId, { activeSessions: this.activeSessions, persistDir: this.registry.persistDir }),
+        tools: wrapToolsWithReceipts(def.tools, sessionId, { activeSessions: this.activeSessions, persistDir: this.registry.persistDir, projectRoot: this._projectRoot }),
       },
       transformContext: compactionTransform,
       getApiKey: def.apiKey ? () => def.apiKey : undefined,
@@ -605,6 +605,7 @@ export class SubagentManager {
       toolErrorCount: 0,
       turnBudgetWarningAt: def.turnBudgetWarningAt ?? TURN_BUDGET_WARNING_DEFAULT,
       turnBudgetWarned: false,
+      hasReadErrorLog: false,
     };
 
     // Write [STARTED] sentinel
@@ -822,7 +823,7 @@ export class SubagentManager {
       initialState: {
         systemPrompt,
         model: def.model,
-        tools: wrapToolsWithReceipts(def.tools, sessionId, { activeSessions: this.activeSessions, persistDir: this.registry.persistDir }),
+        tools: wrapToolsWithReceipts(def.tools, sessionId, { activeSessions: this.activeSessions, persistDir: this.registry.persistDir, projectRoot: this._projectRoot }),
         messages: savedMessages,
       },
       transformContext: compactionTransform,
@@ -886,6 +887,7 @@ export class SubagentManager {
       toolErrorCount: 0,
       turnBudgetWarningAt: def.turnBudgetWarningAt ?? TURN_BUDGET_WARNING_DEFAULT,
       turnBudgetWarned: false,
+      hasReadErrorLog: false,
     };
 
     this.subscribeForPersistence(session);
