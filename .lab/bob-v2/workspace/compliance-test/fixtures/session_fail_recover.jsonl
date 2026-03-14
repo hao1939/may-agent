@@ -1,7 +1,0 @@
-{"type": "user", "content": "Fix the bug in main.ts"}
-{"type": "assistant", "content": "I will check the file."}
-{"type": "tool_call", "tool": "read", "args": {"path": "main.ts"}}
-{"type": "tool_result", "tool": "read", "error": "File not found: main.ts"}
-{"type": "assistant", "content": "Ah, I need to check src/main.ts instead."}
-{"type": "tool_call", "tool": "read", "args": {"path": "src/main.ts"}}
-{"type": "tool_result", "tool": "read", "result": "console.log('hello');"}
