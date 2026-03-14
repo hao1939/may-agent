@@ -286,8 +286,13 @@ function buildTools(config: AgentConfig, opts: AgentLoaderOptions): AgentTool[] 
             },
           }),
         );
+        break;
+      }
 
+      case "coordination": {
         // Handoff tool — P82-compliant structured handoffs via SIGNALS.md
+        // Unbundled from "agents" preset so ALL agents (including leaf nodes)
+        // can deliver work via explicit handoff (Protocol P82).
         tools.push(
           createHandoffTool({
             agentName: config.name,
@@ -476,6 +481,7 @@ const VALID_TOOL_PRESETS = new Set([
   "claude-code",
   "gemini-cli",
   "agents",
+  "coordination",
   "workflow",
   "background-exec",
   "socket-watch",
