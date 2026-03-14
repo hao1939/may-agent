@@ -1754,4 +1754,9 @@ export class SubagentManager {
     // function needs read access. The shape matches at runtime.
     return createAgentsToolFn(this as unknown as import("./manager-agents-tool.js").AgentsToolManagerDeps, opts);
   }
+
+  /** Return a snapshot of all sessions tracked by the internal registry. */
+  getRegistrySessions(): Record<string, any> {
+    return (this as any).registry.getRegistry();
+  }
 }
