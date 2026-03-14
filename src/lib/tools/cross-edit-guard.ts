@@ -1,7 +1,8 @@
 /**
  * Cross-edit guard: prevents agents from modifying other agents' protected files.
  *
- * Protected files (per agent): SOUL.md, LESSONS.md, agent.json
+ * Protected files (per agent): SOUL.md, agent.json
+ * LESSONS.md is NOT protected — Coach and Bob need cross-agent access for Growth Cycle and consolidation.
  * Also protected: agents/shared/philosophy.md (only "may" can write)
  *
  * Exception: Agent "may" is exempt from all restrictions.
@@ -9,7 +10,7 @@
 
 import { resolve, relative, sep } from "node:path";
 
-const PROTECTED_FILENAMES = new Set(["SOUL.md", "LESSONS.md", "agent.json"]);
+const PROTECTED_FILENAMES = new Set(["SOUL.md", "agent.json"]);
 
 /**
  * P98 Evaluation Integrity — Immutable Ruler Principle.
@@ -100,7 +101,7 @@ export function checkCrossEditGuard(
 		if (parts.length === 2 && PROTECTED_FILENAMES.has(fileName)) {
 			return {
 				blocked: true,
-				message: `⚠️ WRITE BLOCKED: Agent '${agentName}' cannot modify agents/${targetDir}/${fileName}. Only the owning agent or May can edit another agent's SOUL.md/LESSONS.md/agent.json. Use agents.send() to request changes from the target agent instead.`,
+				message: `⚠️ WRITE BLOCKED: Agent '${agentName}' cannot modify agents/${targetDir}/${fileName}. Only the owning agent or May can edit another agent's SOUL.md/agent.json. Use agents.send() to request changes from the target agent instead.`,
 			};
 		}
 	}

@@ -57,7 +57,7 @@ export function runActiveRecall(agentName: string, projectRoot: string): ActiveR
     const tailLines = lines.slice(-100);
 
     const threeDaysAgo = Date.now() - 3 * 24 * 60 * 60 * 1000;
-    const matchingEntries: Array<{ failure_type?: string; correction?: string; timestamp?: string }> = [];
+    const matchingEntries: Array<{ failure_type?: string; error?: string; correction?: string; timestamp?: string }> = [];
 
     for (const line of tailLines) {
       try {
@@ -81,16 +81,39 @@ export function runActiveRecall(agentName: string, projectRoot: string): ActiveR
     const warnings: string[] = [];
     const failureTypes = new Set<string>();
 
+    // Deduplicate by failure type to avoid flooding context with 80+ identical warnings
+    const seenTypes = new Map<string, { count: number; correction: string; daysLabel: string }>();
+
     for (const entry of matchingEntries) {
-      if (entry.failure_type) failureTypes.add(entry.failure_type);
+      // Support both 'failure_type' and 'error' field names (evaluator uses 'error')
+      const failureType = entry.failure_type || entry.error || "unknown";
+      failureTypes.add(failureType);
 
       const daysAgo = entry.timestamp
         ? Math.round((Date.now() - new Date(entry.timestamp).getTime()) / (24 * 60 * 60 * 1000))
         : 0;
       const daysLabel = daysAgo === 0 ? "today" : `${daysAgo} day${daysAgo > 1 ? "s" : ""} ago`;
 
+      const existing = seenTypes.get(failureType);
+      if (existing) {
+        existing.count++;
+        // Keep the most recent correction and daysLabel
+        if (entry.correction) existing.correction = entry.correction;
+        existing.daysLabel = daysLabel;
+      } else {
+        seenTypes.set(failureType, {
+          count: 1,
+          correction: entry.correction || "Double-check your tool outputs.",
+          daysLabel,
+        });
+      }
+    }
+
+    // Generate one warning per failure type (with count) instead of one per entry
+    for (const [failureType, info] of seenTypes) {
+      const countNote = info.count > 1 ? ` (${info.count}x)` : "";
       warnings.push(
-        `⚠️ RECALL: ${agentName} failed ${daysLabel} due to ${entry.failure_type || "unknown"}. ${entry.correction || "Double-check your tool outputs."}`
+        `⚠️ RECALL: ${agentName} failed ${info.daysLabel} due to ${failureType}${countNote}. ${info.correction}`
       );
     }
 

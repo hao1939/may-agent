@@ -1,15 +1,45 @@
 import { readFileSync, readdirSync, mkdirSync, existsSync, writeFileSync, appendFileSync, unlinkSync } from "node:fs";
-import { randomUUID, createHmac, createHash } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import { Agent } from "@mariozechner/pi-agent-core";
 import type { AgentMessage, AgentEvent, AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
 import { Type, StringEnum } from "@mariozechner/pi-ai";
+import {
+  generateId,
+  formatDuration,
+  extractLastAssistantText,
+  formatMemoryTimestamp,
+  isProcessAlive,
+  truncateForPrompt,
+  isToolError,
+  computeToolArgsKey,
+  MEMORY_TASK_MAX,
+  MEMORY_SUMMARY_MAX,
+  STATE_CHANGING_TOOLS,
+  INFRA_RETRY_MAX,
+  INFRA_RETRY_BASE_DELAY_MS,
+  TOOL_PIVOT_LIMIT,
+  TURN_BUDGET_WARNING_DEFAULT,
+} from "./manager-utils.js";
+import type { RegisteredAgent, ActiveSession, RunOptions, SubagentManagerOptions } from "./manager-utils.js";
+
+// Re-export everything from manager-utils so existing import paths don't break
+export {
+  generateId,
+  truncateForPrompt,
+  isToolError,
+  computeToolArgsKey,
+  STATE_CHANGING_TOOLS,
+  INFRA_RETRY_MAX,
+  TOOL_PIVOT_LIMIT,
+  TURN_BUDGET_WARNING_DEFAULT,
+} from "./manager-utils.js";
+export type { RegisteredAgent, ActiveSession, RunOptions, SubagentManagerOptions } from "./manager-utils.js";
 import type {
   SubagentDefinition,
   SessionInfo,
   TaskResult,
   SessionTreeNode,
   ManagerHealthReport,
-  HealthActiveSession,
   AuditHealthOptions,
   AuditHealthReport,
   ReconcileReport,
@@ -33,17 +63,39 @@ import {
   readWorkflowRun,
   listWorkflowRuns,
   saveWorkflowRun,
-  loadAllSessionMetas,
   saveCompactedMessages,
   readCompactedMessages,
 } from "./persistence.js";
 import type { MemoryEntry, WorkflowRun, PersistedSession, Registry, SessionKind } from "./persistence.js";
-import type { TraceNode, SessionTrace } from "./workflow.js";
+import type { SessionTrace } from "./workflow.js";
 import { join, dirname, relative, resolve } from "node:path";
 import { isOverflowError, extractProgress, writeProgressFile } from "./overflow.js";
 import { spawnDetachedAgent, readIdentity } from "./detached.js";
 import { sendSocketCommand } from "./socket-client.js";
 import { runActiveRecall, formatRecallWarnings } from "./active-recall.js";
+import { buildTrace } from "./manager-trace.js";
+import { isRetryableInfraError, runAgentWithRetry } from "./manager-retry.js";
+export { isRetryableInfraError, runAgentWithRetry } from "./manager-retry.js";
+export { buildTrace, findPathToTarget } from "./manager-trace.js";
+export type { TraceContext } from "./manager-trace.js";
+import { computeHealth, computeAuditHealth, computeReconcileHealth, EVAL_SKIP_AGENTS } from "./manager-health.js";
+export { EVAL_SKIP_AGENTS } from "./manager-health.js";
+export type { HealthContext } from "./manager-health.js";
+import {
+  signToolOutput,
+  verifyToolOutput,
+  createVerifyReceiptTool,
+  wrapToolsWithReceipts,
+  getOpUsage,
+} from "./manager-receipts.js";
+export {
+  signToolOutput,
+  verifyToolOutput,
+  createVerifyReceiptTool,
+  wrapToolsWithReceipts,
+  getOpUsage,
+} from "./manager-receipts.js";
+export type { ReceiptWrapContext } from "./manager-receipts.js";
 
 /**
  * P93 Infrastructure Resilience — Automatic Retry for Transient Errors
@@ -93,246 +145,7 @@ import { runActiveRecall, formatRecallWarnings } from "./active-recall.js";
  *   See `runAgentWithRetry()` for the retry loop implementation.
  */
 
-let nextId = 0;
-/**
- * Generate a unique session ID.
- *
- * Format: `{prefix}_{timestamp}_{counter}` — e.g. `s_1700000000000_0`.
- *
- * @param prefix - String prefix for the ID (default: `"s"`).
- * @returns A unique ID string.
- */
-export function generateId(prefix = "s"): string {
-  return `${prefix}_${Date.now()}_${nextId++}`;
-}
 
-/**
- * Converts a duration in milliseconds to a human-readable string.
- *
- * Returns seconds only for durations under a minute (e.g. `"42s"`),
- * or minutes and seconds for longer durations (e.g. `"2m30s"`).
- *
- * @param ms - Duration in milliseconds.
- * @returns A formatted duration string such as `"42s"` or `"2m30s"`.
- */
-function formatDuration(ms: number): string {
-  const seconds = Math.floor(ms / 1000);
-  if (seconds < 60) return `${seconds}s`;
-  const minutes = Math.floor(seconds / 60);
-  const remaining = seconds % 60;
-  return `${minutes}m${remaining}s`;
-}
-
-function extractLastAssistantText(messages: AgentMessage[]): string | null {
-  for (let i = messages.length - 1; i >= 0; i--) {
-    const msg = messages[i];
-    if (msg.role === "assistant") {
-      for (const block of msg.content) {
-        if (block?.type === "text" && block.text?.trim()) {
-          return block.text;
-        }
-      }
-    }
-  }
-  return null;
-}
-
-function formatMemoryTimestamp(ts: number): string {
-  const d = new Date(ts);
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  const hh = String(d.getHours()).padStart(2, "0");
-  const min = String(d.getMinutes()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd} ${hh}:${min}`;
-}
-
-/** Maximum characters for task/summary text in the system-prompt memory section.
- *  Full data is preserved in the JSONL — this only affects the prompt injection. */
-const MEMORY_TASK_MAX = 200;
-const MEMORY_SUMMARY_MAX = 500;
-
-/** Runtime-generated HMAC secret for tool receipt signing.
- *  Generated once per process — receipts are verifiable within the same runtime.
- *  For cross-process verification, replace with a persisted secret. */
-const RUNTIME_RECEIPT_SECRET = randomUUID();
-
-/** Check if a process with the given PID is still running. */
-function isProcessAlive(pid: number | undefined): boolean {
-  if (pid === undefined) return false;
-  try {
-    process.kill(pid, 0); // signal 0: existence check, no actual signal
-    return true;
-  } catch {
-    return false;
-  }
-}
-/** Truncate text to maxLen chars for prompt injection.
- *  Strips newlines (compact single-line) and appends "…" if truncated. */
-export function truncateForPrompt(text: string, maxLen: number): string {
-  // Collapse newlines to spaces for compact single-line display
-  const oneLine = text.replace(/\n+/g, " ").replace(/\s+/g, " ").trim();
-  if (oneLine.length <= maxLen) return oneLine;
-  return oneLine.slice(0, maxLen) + "…";
-}
-
-/**
- * Set of tool names that count as state-changing operations for P85 operation budgets.
- * read/agents/workflow are free; bash/write/edit/commit mutate state.
- */
-export const STATE_CHANGING_TOOLS = new Set(["bash", "write", "edit", "commit"]);
-
-/** Maximum number of automatic retries for transient infrastructure errors
- *  (empty responses, missing tool calls). See P93 Resilience Pattern. */
-export const INFRA_RETRY_MAX = 3;
-
-/** Base delay (ms) between infrastructure retries. Multiplied by attempt number. */
-const INFRA_RETRY_BASE_DELAY_MS = 1000;
-
-/** Maximum identical failed tool calls before blocking. */
-export const TOOL_PIVOT_LIMIT = 3;
-
-/** Default turn count at which a budget warning is injected. */
-export const TURN_BUDGET_WARNING_DEFAULT = 40;
-
-/**
- * Detect whether tool output text indicates an error.
- * Used by the pivot heuristic to track consecutive failures.
- */
-export function isToolError(outputText: string): boolean {
-  // Non-zero exit code patterns (bash tools)
-  if (/exit\s*(code\s*)?\d*[1-9]\d*/i.test(outputText)) return true;
-  // Common error markers
-  if (outputText.startsWith("❌")) return true;
-  if (/\bENOENT\b/.test(outputText)) return true;
-  if (/\bEACCES\b/.test(outputText)) return true;
-  if (/\bPermission denied\b/i.test(outputText)) return true;
-  if (/\bcommand not found\b/i.test(outputText)) return true;
-  if (/\bNo such file or directory\b/.test(outputText)) return true;
-  if (/\bCould not find the exact text\b/.test(outputText)) return true;
-  if (/\bFile not found\b/.test(outputText)) return true;
-  if (/\bOpBudgetExceeded\b/.test(outputText)) return true;
-  if (/\bE_RETRY_LIMIT\b/.test(outputText)) return true;
-  // Edit tool: multiple occurrences
-  if (/\bFound \d+ occurrences\b/.test(outputText)) return true;
-  return false;
-}
-
-/**
- * Compute a stable key for a tool+args combination.
- * Used to track identical consecutive tool calls.
- */
-export function computeToolArgsKey(toolName: string, params: any): string {
-  const argsHash = createHash("sha256")
-    .update(JSON.stringify(params ?? {}))
-    .digest("hex")
-    .slice(0, 16);
-  return `${toolName}:${argsHash}`;
-}
-
-interface RegisteredAgent {
-  definition: SubagentDefinition;
-}
-
-interface ActiveSession {
-  sessionId: string;
-  agentName: string;
-  agent: Agent;
-  promise: Promise<void>;
-  task: string;
-  startedAt: number;
-  endedAt?: number;
-  status: "running" | "interrupted" | "idle";
-  error?: string;
-  outputDir: string;
-  unsubscribe?: () => void;
-  timeoutTimer?: ReturnType<typeof setTimeout>;
-  parentSessionId?: string;
-  /** Agent name of the parent session (cached at creation for notification after parent may be gone). */
-  parentAgentName?: string;
-  workflowRunId?: string;
-  stepLabel?: string;
-  turnCount: number;
-  /** Compaction transform for the interface session (rolling compaction). */
-  compactionTransform?: (messages: AgentMessage[], signal?: AbortSignal) => Promise<AgentMessage[]>;
-  /** Set by close() — prevents handleCompletion from acting on an already-archived session. */
-  closed: boolean;
-  /** Session lifecycle policy. "never" = chat session (stays idle), "immediate" = task session (archives on completion). */
-  autoClose: "immediate" | "never";
-  /** Session kind: chat (human-owned), job (fire-and-forget, auto-resumed), call (parent-owned). */
-  kind: SessionKind;
-  /** Terminal status for archive/result reporting. Set before archival so the promise chain can read it after the session is removed from activeSessions. */
-  archiveStatus?: "done" | "error" | "interrupted";
-  /** Operation budget: max state-changing tool calls allowed. 0 = unlimited. */
-  opBudget: number;
-  /** Number of state-changing tool calls executed so far. */
-  opCount: number;
-  /** Number of infrastructure retries attempted in the current agent loop run. */
-  infraRetryCount: number;
-  /** Tracks identical failed tool calls for pivot heuristic. Key: "toolName:argsHash", Value: consecutive error count. */
-  toolErrorHistory: Map<string, number>;
-  /** Total number of tool calls that returned errors in this session (P20 Tainted Handoffs). */
-  toolErrorCount: number;
-  /** Turn count at which a budget warning is injected. 0 = disabled. */
-  turnBudgetWarningAt: number;
-  /** Whether the turn budget warning has already been injected (avoids spam). */
-  turnBudgetWarned: boolean;
-}
-
-/** Options for spawning a session with parent/workflow context. */
-export interface RunOptions {
-  parentSessionId?: string;
-  /** Name of the parent agent (for cross-process notification routing). */
-  parentAgentName?: string;
-  workflowRunId?: string;
-  stepLabel?: string;
-  /** Runtime override: enable compaction for this session. */
-  compaction?: boolean | CompactionOptions;
-  /** Message source tag for the initial task message. */
-  source?: string;
-  /** Pre-assigned session ID (used by detached sub-agents). If set, skips generateId(). */
-  sessionId?: string;
-  /** Session lifecycle policy. Default: "immediate" (task sessions).
-   *  - "immediate": archive on completion (task sessions)
-   *  - "never": stay idle on completion (interface/chat session) */
-  autoClose?: "immediate" | "never";
-  /** Session kind. Default: "job".
-   *  - "chat": human-owned, not auto-resumed
-   *  - "job": fire-and-forget, auto-resumed on restart
-   *  - "call": parent-owned, not resumed independently */
-  kind?: SessionKind;
-  /** Runtime override for opBudget (overrides agent definition). */
-  opBudget?: number;
-}
-
-export interface SubagentManagerOptions {
-  persistDir: string;
-  /** Root of the project. Used for detached agent spawning.
-   *  Falls back to resolve(persistDir, "..") if not set. */
-  projectRoot?: string;
-  /** Maximum call depth for nested callAgent chains (default: 10).
-   *  Prevents infinite loops like A→B→A→B→... */
-  maxCallDepth?: number;
-  /** Maximum automatic retries for transient infrastructure errors
-   *  (empty responses, missing tool calls). Default: INFRA_RETRY_MAX (3).
-   *  Set to 0 to disable retries (useful in tests). */
-  infraRetryMax?: number;
-  /**
-   * Called after a task session completes (done/error/interrupted).
-   * Fires after archival. Use for post-session tasks like evaluation.
-   * NOT called for the chat session transitioning to "idle".
-   */
-  onSessionComplete?: (info: SessionInfo) => void;
-  /**
-   * Called when any new session starts (via run()).
-   * Use to subscribe to agent events for UI streaming.
-   * This is the single point where all session creation is observed.
-   */
-  onSessionStart?: (agentName: string, sessionId: string) => void;
-}
-
-/** Agents whose sessions are auto-skippable for evaluation (meta-agents). */
-const EVAL_SKIP_AGENTS = new Set(["evaluator", "optimizer", "may"]);
 
 export class SubagentManager {
   private agents = new Map<string, RegisteredAgent>();
@@ -446,6 +259,8 @@ export class SubagentManager {
     if (tools) sections.push(tools);
 
     // 4. LESSONS.md — accumulated learnings
+    const sharedLessons = loadFile(def.projectRoot ? join(def.projectRoot, "agents", "shared", "LESSONS.md") : undefined);
+    if (sharedLessons) sections.push(sharedLessons);
     const lessons = loadFile(agentDir ? join(agentDir, "LESSONS.md") : undefined);
     if (lessons) sections.push(lessons);
 
@@ -582,124 +397,6 @@ export class SubagentManager {
   }
 
   /**
-   * Detect whether the current agent state indicates a transient infrastructure error
-   * that can be retried (P93 Resilience Pattern).
-   *
-   * Retryable patterns:
-   *   1. Empty response — stopReason="stop" but assistant content is empty (0 output tokens).
-   *   2. Silent stream error — agent completed but last message is still user (no assistant reply).
-   *   3. ToolUse mismatch — stopReason="toolUse" but no tool call content in the assistant message.
-   *
-   * NOT retryable: aborted sessions, context overflow, closed sessions, non-running sessions.
-   */
-  private isRetryableInfraError(session: ActiveSession): string | null {
-    if (session.closed) return null;
-    if (session.status !== "running") return null;
-
-    const messages = session.agent.state.messages;
-    const lastMsg = messages.length > 0 ? messages[messages.length - 1] : null;
-    if (!lastMsg) return null;
-
-    // Check if error was an abort — never retry aborts
-    const agentError = session.agent.state.error ?? session.error;
-    if (agentError?.includes("aborted")) return null;
-
-    // Check for context overflow — never retry, won't help
-    if (agentError && isOverflowError(agentError)) return null;
-
-    // Pattern 1: Silent stream error — last message is user (no assistant reply at all)
-    if (!agentError && lastMsg.role === "user") {
-      return "empty_response";
-    }
-
-    // Pattern 2: Empty assistant response (0 output tokens)
-    if (lastMsg.role === "assistant") {
-      const content = Array.isArray(lastMsg.content) ? lastMsg.content : [];
-      const hasSubstance = content.some(
-        (block: any) =>
-          (block?.type === "text" && block.text?.trim()) ||
-          block?.type === "toolCall",
-      );
-      if (!hasSubstance) {
-        return "empty_response";
-      }
-
-      // Pattern 3: stopReason toolUse but no tool calls
-      if ((lastMsg as any).stopReason === "toolUse") {
-        const toolCalls = content.filter((b: any) => b?.type === "toolCall");
-        if (toolCalls.length === 0) {
-          return "tool_use_missing";
-        }
-      }
-    }
-
-    return null;
-  }
-
-  /**
-   * Run an agent call (prompt or continue) with automatic retry on transient
-   * infrastructure errors (P93 Resilience Pattern).
-   *
-   * On retryable failure: removes the bad assistant message (if any), clears
-   * error state, waits with linear backoff, and calls agent.continue().
-   * After INFRA_RETRY_MAX failures, falls through to handleCompletion().
-   */
-  private async runAgentWithRetry(
-    session: ActiveSession,
-    initialCall: Promise<void>,
-  ): Promise<void> {
-    // Run the initial call
-    try {
-      await initialCall;
-    } catch (err) {
-      session.error = (err as Error)?.message ?? String(err);
-    }
-
-    // Retry loop for transient infrastructure errors
-    while (session.infraRetryCount < this._infraRetryMax) {
-      const retryReason = this.isRetryableInfraError(session);
-      if (!retryReason) break;
-
-      session.infraRetryCount++;
-      const attempt = session.infraRetryCount;
-
-      // Log the retry
-      console.warn(
-        `[manager] Infrastructure retry ${attempt}/${this._infraRetryMax} for session ${session.sessionId} (${retryReason})`,
-      );
-
-      // Clean up bad state: remove empty/malformed assistant message
-      const messages = session.agent.state.messages;
-      const lastMsg = messages.length > 0 ? messages[messages.length - 1] : null;
-      if (lastMsg?.role === "assistant") {
-        messages.pop();
-        session.agent.replaceMessages(messages);
-      }
-
-      // Clear error state for the retry
-      session.error = undefined;
-      session.agent.state.error = undefined;
-
-      // Backoff: attempt * base delay (1s, 2s, 3s)
-      const delayMs = attempt * INFRA_RETRY_BASE_DELAY_MS;
-      await new Promise((resolve) => setTimeout(resolve, delayMs));
-
-      // Guard: session may have been closed/aborted during the delay
-      if (session.closed) return;
-
-      // Retry via agent.continue()
-      try {
-        await session.agent.continue();
-      } catch (err) {
-        session.error = (err as Error)?.message ?? String(err);
-      }
-    }
-
-    // All retries exhausted (or no retry needed) — run normal completion
-    this.handleCompletion(session);
-  }
-
-  /**
    * Common completion handler — called when the agent's prompt()/continue() settles.
    *
    * Determines the outcome from agent state, then:
@@ -786,6 +483,22 @@ export class SubagentManager {
       return;
     }
 
+    // ── Detect shallow heartbeats (zero tool calls) ────────────────────
+    // Heartbeat sessions MUST read files (heartbeat.md, todo.md, etc.).
+    // If an agent completes a heartbeat with zero tool calls, it responded
+    // from compacted context without actually checking anything — flag it.
+    if (
+      !wasAborted &&
+      !session.error &&
+      session.opCount === 0 &&
+      session.task.startsWith("[heartbeat]")
+    ) {
+      session.error =
+        "Shallow heartbeat: completed with zero tool calls. " +
+        "Heartbeat sessions MUST use tools (read heartbeat.md, check health, etc.).";
+      session.agent.state.error = session.error;
+    }
+
     // Task sessions (or aborted interface sessions) → archive and remove
     const archiveStatus: "done" | "error" | "interrupted" = wasAborted
       ? "interrupted"
@@ -853,7 +566,7 @@ export class SubagentManager {
       initialState: {
         systemPrompt: this.resolveSystemPrompt(def),
         model: def.model,
-        tools: this.wrapToolsWithReceipts(def.tools, sessionId),
+        tools: wrapToolsWithReceipts(def.tools, sessionId, { activeSessions: this.activeSessions, persistDir: this.registry.persistDir }),
       },
       transformContext: compactionTransform,
       getApiKey: def.apiKey ? () => def.apiKey : undefined,
@@ -934,7 +647,7 @@ export class SubagentManager {
     const sessionContext = this.buildSessionContext(def, name, sessionId, persistDir);
     const promptText = `${sessionContext}\n\n---\n\n${task}`;
 
-    session.promise = this.runAgentWithRetry(session, agent.prompt(promptText));
+    session.promise = runAgentWithRetry(session, agent.prompt(promptText), this._infraRetryMax, (s) => this.handleCompletion(s));
 
     this.sessionResults.set(
       sessionId,
@@ -1103,7 +816,7 @@ export class SubagentManager {
       initialState: {
         systemPrompt,
         model: def.model,
-        tools: this.wrapToolsWithReceipts(def.tools, sessionId),
+        tools: wrapToolsWithReceipts(def.tools, sessionId, { activeSessions: this.activeSessions, persistDir: this.registry.persistDir }),
         messages: savedMessages,
       },
       transformContext: compactionTransform,
@@ -1188,7 +901,7 @@ export class SubagentManager {
     const startPromise =
       lastRole === "user" || lastRole === "toolResult" ? agent.continue() : agent.prompt(resumeMessage);
 
-    session.promise = this.runAgentWithRetry(session, startPromise);
+    session.promise = runAgentWithRetry(session, startPromise, this._infraRetryMax, (s) => this.handleCompletion(s));
 
     this.sessionResults.set(
       sessionId,
@@ -1506,7 +1219,7 @@ export class SubagentManager {
       }
 
       // Prompt the agent with new input
-      const p = this.runAgentWithRetry(session, session.agent.prompt(text));
+      const p = runAgentWithRetry(session, session.agent.prompt(text), this._infraRetryMax, (s) => this.handleCompletion(s));
 
       session.promise = p;
       const resultPromise = p.then(() => this.buildResultFromSession(session));
@@ -1782,585 +1495,66 @@ export class SubagentManager {
     return undefined;
   }
 
-  // ── Session graph: trace ─────────────────────────────────────────────
+  // ── Session graph: trace (delegated to manager-trace.ts) ──────────────
 
   /** Build a session trace from any session or workflow run ID.
    *  Walks parent pointers up to the root, loads workflow run records,
    *  and builds a tree showing the position of the target in the graph.
    */
   trace(targetId: string): SessionTrace | null {
-    const persistDir = this.registry.persistDir;
-    const registryData = this.registry.getRegistry();
-
-    // Check if targetId is a workflow run
-    const targetRun = readWorkflowRun(persistDir, targetId);
-    if (targetRun) {
-      return this.buildTraceFromWorkflowRun(targetRun, targetId, persistDir, registryData);
-    }
-
-    // Check if targetId is a session
-    const persistedSession = registryData.sessions[targetId];
-    const activeSession = this.activeSessions.get(targetId);
-    if (persistedSession || activeSession) {
-      const sessionData: PersistedSession = persistedSession ?? {
-        agent: activeSession!.agentName,
-        task: activeSession!.task,
-        status: activeSession!.status,
-        startedAt: activeSession!.startedAt,
-        parentSessionId: activeSession!.parentSessionId,
-        workflowRunId: activeSession!.workflowRunId,
-        stepLabel: activeSession!.stepLabel,
-      };
-      return this.buildTraceFromSession(targetId, sessionData, targetId, persistDir, registryData);
-    }
-
-    return null;
+    return buildTrace(targetId, {
+      persistDir: this.registry.persistDir,
+      registryData: this.registry.getRegistry(),
+      activeSessions: this.activeSessions,
+    });
   }
 
-  private buildTraceFromSession(
-    sessionId: string,
-    session: PersistedSession,
-    targetId: string,
-    persistDir: string,
-    registryData: Registry,
-  ): SessionTrace {
-    // If this session belongs to a workflow run, build from the workflow
-    if (session.workflowRunId) {
-      const run = readWorkflowRun(persistDir, session.workflowRunId);
-      if (run) {
-        return this.buildTraceFromWorkflowRun(run, targetId, persistDir, registryData);
-      }
-    }
+  // ── Health API (delegated to manager-health.ts) ────────────────────────
 
-    // Standalone session — just return it as a single node
-    const node: TraceNode = {
-      type: "session",
-      id: sessionId,
-      label: session.stepLabel ?? ("agent" in session ? session.agent : "unknown"),
-      status: session.status,
-      task: session.task,
-      depth: 0,
-      isTarget: sessionId === targetId,
-      children: [],
-    };
-
+  /** Build the HealthContext for delegation to standalone health functions. */
+  private healthContext(): import("./manager-health.js").HealthContext {
     return {
-      targetId,
-      path: [`${sessionId}/${node.label}`],
-      tree: node,
+      agents: this.agents,
+      activeSessions: this.activeSessions,
+      startedAt: this.startedAt,
+      persistDir: this.registry.persistDir,
     };
   }
-
-  private buildTraceFromWorkflowRun(
-    run: WorkflowRun,
-    targetId: string,
-    persistDir: string,
-    registryData: Registry,
-  ): SessionTrace {
-    // Walk up the parent chain to find the root workflow
-    const chain: WorkflowRun[] = [run];
-    let current = run;
-    while (current.parentWorkflowRunId) {
-      const parent = readWorkflowRun(persistDir, current.parentWorkflowRunId);
-      if (!parent) break;
-      chain.unshift(parent);
-      current = parent;
-    }
-
-    // The root is chain[0]. Build the tree from the root.
-    const rootRun = chain[0];
-
-    // Build the root's parent session node (May's session)
-    const parentSession = registryData.sessions[rootRun.parentSessionId];
-    const rootNode: TraceNode = {
-      type: "session",
-      id: rootRun.parentSessionId,
-      label: parentSession?.agent ?? "caller",
-      status: parentSession?.status ?? "unknown",
-      task: parentSession?.task ?? "(unknown)",
-      depth: 0,
-      isTarget: rootRun.parentSessionId === targetId,
-      children: [],
-    };
-
-    // Build workflow tree recursively
-    const wfNode = this.buildWorkflowNode(rootRun, targetId, persistDir, registryData);
-    rootNode.children.push(wfNode);
-
-    // Build path from root to target
-    const path = this.findPathToTarget(rootNode, targetId);
-
-    return { targetId, path, tree: rootNode };
-  }
-
-  private buildWorkflowNode(run: WorkflowRun, targetId: string, persistDir: string, registryData: Registry): TraceNode {
-    const node: TraceNode = {
-      type: "workflow",
-      id: run.runId,
-      label: run.workflow,
-      status: run.status,
-      task: run.task,
-      depth: run.depth,
-      isTarget: run.runId === targetId,
-      children: [],
-    };
-
-    // Add steps as children
-    for (const step of run.steps) {
-      const stepNode: TraceNode = {
-        type: "session",
-        id: step.sessionId,
-        label: step.agent,
-        status: step.status,
-        task: step.task,
-        depth: run.depth,
-        isTarget: step.sessionId === targetId,
-        children: [],
-      };
-      node.children.push(stepNode);
-    }
-
-    // Find sub-workflow runs (children of this run)
-    const allRunIds = listWorkflowRuns(persistDir);
-    for (const runId of allRunIds) {
-      if (runId === run.runId) continue;
-      const subRun = readWorkflowRun(persistDir, runId);
-      if (subRun && subRun.parentWorkflowRunId === run.runId) {
-        // Insert the sub-workflow node at the right position
-        // (after the last step that started before the sub-workflow)
-        const subNode = this.buildWorkflowNode(subRun, targetId, persistDir, registryData);
-        // Find insertion point: after the last step whose sessionId
-        // appears in run.steps before the sub-workflow's first step
-        let insertIdx = node.children.length;
-        if (subRun.steps.length > 0) {
-          const firstSubStepId = subRun.steps[0].sessionId;
-          for (let i = 0; i < node.children.length; i++) {
-            if (node.children[i].id === firstSubStepId) {
-              insertIdx = i;
-              break;
-            }
-          }
-        }
-        node.children.splice(insertIdx, 0, subNode);
-      }
-    }
-
-    return node;
-  }
-
-  private findPathToTarget(node: TraceNode, targetId: string): string[] {
-    if (node.id === targetId) {
-      return [`${node.id}/${node.label}`];
-    }
-    for (const child of node.children) {
-      const childPath = this.findPathToTarget(child, targetId);
-      if (childPath.length > 0) {
-        return [`${node.id}/${node.label}`, ...childPath];
-      }
-    }
-    return [];
-  }
-
-  // ── Health API ────────────────────────────────────────────────────────
 
   /** Fast, in-memory health snapshot. Returns data the manager already knows. */
   health(): ManagerHealthReport {
-    const now = Date.now();
-    const names = [...this.agents.keys()];
-
-    const activeList: HealthActiveSession[] = [];
-    let running = 0;
-    let idle = 0;
-    for (const s of this.activeSessions.values()) {
-      activeList.push({
-        sessionId: s.sessionId,
-        agent: s.agentName,
-        status: s.status,
-        startedAt: s.startedAt,
-        runtime: formatDuration((s.endedAt ?? now) - s.startedAt),
-        turnCount: s.turnCount,
-      });
-      if (s.status === "running") running++;
-      if (s.status === "idle") idle++;
-    }
-
-    return {
-      registeredAgents: { count: names.length, names },
-      activeSessions: activeList,
-      sessionCounts: { running, idle, total: this.activeSessions.size },
-      uptime: formatDuration(now - this.startedAt),
-      timestamp: new Date(now).toISOString(),
-    };
+    return computeHealth(this.healthContext());
   }
 
   /**
    * Filesystem-based ground-truth scan. Inspects persisted session data on disk.
    * Intentionally synchronous — this is a diagnostic endpoint, not a hot path.
-   * For large state directories, consider running in a worker thread if latency matters.
    */
   auditHealth(opts?: AuditHealthOptions): AuditHealthReport {
-    const persistDir = this.registry.persistDir;
-    const now = Date.now();
-    const oneDayAgo = now - 24 * 60 * 60 * 1000;
-
-    // Load all persisted session metas
-    const allSessions = loadAllSessionMetas(persistDir);
-    const allSessionEntries = Object.entries(allSessions);
-
-    // 1. Sessions in last 24h
-    let sessionsLast24h = 0;
-    for (const session of Object.values(allSessions)) {
-      if (session.startedAt >= oneDayAgo) sessionsLast24h++;
-    }
-
-    // 2. Unevaluated sessions
-    const evalDir = join(persistDir, "evaluations");
-    const evaluatedIds = new Set<string>();
-    if (existsSync(evalDir)) {
-      try {
-        for (const f of readdirSync(evalDir)) {
-          if (f.endsWith(".json")) evaluatedIds.add(f.replace(".json", ""));
-        }
-      } catch {
-        /* best-effort */
-      }
-    }
-
-    const META_AGENTS = EVAL_SKIP_AGENTS;
-    let unevalTotal = 0;
-    let unevalActionable = 0;
-    let unevalAutoSkippable = 0;
-
-    for (const [sid, session] of allSessionEntries) {
-      if (evaluatedIds.has(sid)) continue;
-      if (session.status === "running" || session.status === "idle") continue;
-      unevalTotal++;
-
-      if (META_AGENTS.has(session.agent)) {
-        unevalAutoSkippable++;
-        continue;
-      }
-
-      // Check if transcript exists
-      const activeJsonl = join(persistDir, "sessions", sid, "session.jsonl");
-      const archivedJsonl = join(persistDir, "sessions", "history", sid, "session.jsonl");
-      if (!existsSync(activeJsonl) && !existsSync(archivedJsonl)) {
-        unevalAutoSkippable++;
-        continue;
-      }
-
-      unevalActionable++;
-    }
-
-    // 3. Stale sessions: status "running" in filesystem but not in activeSessions
-    const staleSessions: Array<{ sessionId: string; agent: string; task: string }> = [];
-    for (const [sid, session] of allSessionEntries) {
-      if (session.status === "running" && !this.activeSessions.has(sid)) {
-        staleSessions.push({ sessionId: sid, agent: session.agent, task: session.task });
-      }
-    }
-
-    // 4. Total persisted sessions
-    const totalPersistedSessions = allSessionEntries.length;
-
-    // 5. Workflow runs
-    const runIds = listWorkflowRuns(persistDir);
-    let wfRunning = 0;
-    let wfCompleted = 0;
-    let wfInterrupted = 0;
-    for (const runId of runIds) {
-      const run = readWorkflowRun(persistDir, runId);
-      if (!run) continue;
-      if (run.status === "running") wfRunning++;
-      else if (run.status === "done") wfCompleted++;
-      else if (run.status === "interrupted" || run.status === "error") wfInterrupted++;
-      else wfCompleted++; // escalated counts as completed
-    }
-
-    return {
-      sessionsLast24h,
-      unevaluated: { total: unevalTotal, actionable: unevalActionable, autoSkippable: unevalAutoSkippable },
-      staleSessions,
-      totalPersistedSessions,
-      workflowRuns: { total: runIds.length, running: wfRunning, completed: wfCompleted, interrupted: wfInterrupted },
-      persistedSessionIds: new Set(Object.keys(allSessions)),
-      timestamp: new Date(now).toISOString(),
-    };
+    return computeAuditHealth(this.healthContext(), opts);
   }
 
   /** Compare in-memory state vs filesystem and flag discrepancies. */
   reconcileHealth(opts?: AuditHealthOptions): ReconcileReport {
-    const healthReport = this.health();
-    const auditReport = this.auditHealth(opts);
-    const discrepancies: string[] = [];
-
-    // 1. Stale sessions: running in filesystem but not in activeSessions
-    if (auditReport.staleSessions.length > 0) {
-      for (const s of auditReport.staleSessions) {
-        discrepancies.push(
-          `Stale session: ${s.sessionId} (agent=${s.agent}) is "running" on disk but not active in memory`,
-        );
-      }
-    }
-
-    // 2. Active in memory but missing from filesystem
-    for (const active of healthReport.activeSessions) {
-      if (!auditReport.persistedSessionIds.has(active.sessionId)) {
-        discrepancies.push(
-          `Lost persistence: ${active.sessionId} (agent=${active.agent}) is active in memory but has no meta.json on disk`,
-        );
-      }
-    }
-
-    // 3. Agent count mismatch: if filesystem has agent configs that aren't registered
-    // (We can only check in-memory vs in-memory here since agents are not persisted to disk
-    //  as separate files, but we flag if there are 0 registered agents as suspicious)
-    if (healthReport.registeredAgents.count === 0 && auditReport.totalPersistedSessions > 0) {
-      discrepancies.push(
-        `No agents registered but ${auditReport.totalPersistedSessions} persisted sessions exist — agents may not have been re-registered after restart`,
-      );
-    }
-
-    return {
-      health: healthReport,
-      audit: auditReport,
-      discrepancies,
-      healthy: discrepancies.length === 0,
-    };
+    return computeReconcileHealth(this.healthContext(), opts);
   }
 
-  // ── Tool receipt signing (HMAC receipts — see specs/hmac-receipts.md) ──
+  // ── Tool receipt signing (delegated to manager-receipts.ts) ──
 
-  /**
-   * Sign a tool output string with HMAC-SHA256.
-   *
-   * Algorithm (from spec):
-   *   1. Generate `timestamp` (Unix epoch seconds).
-   *   2. Compute `H = HMAC_SHA256(output + timestamp, RUNTIME_RECEIPT_SECRET)`.
-   *   3. Truncate `H` to 8 hex chars.
-   *   4. Return `output + "\n[SIG: <timestamp>:<H>]"`.
-   *
-   * The secret never leaves the runtime — agents see only the signature tag.
-   */
   signToolOutput(output: string): string {
-    const timestamp = Math.floor(Date.now() / 1000);
-    const hmac = createHmac("sha256", RUNTIME_RECEIPT_SECRET)
-      .update(output + timestamp)
-      .digest("hex")
-      .slice(0, 8);
-    return `${output}\n[SIG: ${timestamp}:${hmac}]`;
+    return signToolOutput(output);
   }
 
-  /**
-   * Verify a tool output signature.
-   *
-   * @param content   - The exact text content (everything before the `[SIG: ...]` tag).
-   * @param signature - The `timestamp:hash` string extracted from the `[SIG: ...]` tag.
-   * @returns `true` if the signature is valid, `false` otherwise.
-   */
   verifyToolOutput(content: string, signature: string): boolean {
-    const sepIdx = signature.indexOf(":");
-    if (sepIdx === -1) return false;
-    const timestamp = signature.slice(0, sepIdx);
-    const hash = signature.slice(sepIdx + 1);
-    if (!timestamp || !hash) return false;
-
-    const expected = createHmac("sha256", RUNTIME_RECEIPT_SECRET)
-      .update(content + timestamp)
-      .digest("hex")
-      .slice(0, 8);
-    return expected === hash;
+    return verifyToolOutput(content, signature);
   }
 
-  /**
-   * Create the `verify_receipt` built-in tool.
-   *
-   * Agents (Evaluator, QA, Manager) use this to verify that a tool output
-   * is authentic and was not hallucinated. The tool recomputes the HMAC
-   * using the process-internal secret and returns "VALID" or "INVALID".
-   */
   createVerifyReceiptTool(): AgentTool {
-    // eslint-disable-next-line @typescript-eslint/no-this-alias
-    const manager = this;
-
-    const VerifyReceiptParams = Type.Object({
-      content: Type.String({ description: "The exact content of the tool output (everything before the [SIG: ...] line)." }),
-      signature: Type.String({ description: "The signature string (e.g., '1741789000:a1b2c3d4')." }),
-    });
-
-    return {
-      name: "verify_receipt",
-      label: "Verify Receipt",
-      description: "Verify that a tool output is authentic and not hallucinated. Returns VALID or INVALID.",
-      parameters: VerifyReceiptParams,
-      execute: async (_toolCallId, params) => {
-        const { content, signature } = params as { content: string; signature: string };
-        const valid = manager.verifyToolOutput(content, signature);
-        const text = valid ? "VALID" : "INVALID";
-        return {
-          content: [{ type: "text", text }],
-          details: text,
-        };
-      },
-    };
+    return createVerifyReceiptTool();
   }
 
-  /**
-   * Wrap an array of tools with HMAC receipt signing.
-   *
-   * Every tool's execute function is intercepted: after the original tool
-   * returns, the text output is signed with `signToolOutput()` which appends
-   * `\n[SIG: <timestamp>:<hash>]` to the output. A receipt log entry is also
-   * written to `receipts.jsonl` in the session directory (best-effort).
-   *
-   * The LLM never sees the signing key — only the signature tag.
-   *
-   * P85: Also enforces operation budgets — state-changing tools (bash, write, edit, commit)
-   * are counted and blocked when the budget is exceeded.
-   *
-   * P84: Tool outputs are wrapped in `<tool_output name="...">...</tool_output>` tags
-   * to structurally contain tool output and prevent prompt injection.
-   */
-  private wrapToolsWithReceipts(tools: AgentTool[], sessionId: string): AgentTool[] {
-    const persistDir = this.registry.persistDir;
-    // eslint-disable-next-line @typescript-eslint/no-this-alias
-    const manager = this;
-
-    return tools.map((tool) => ({
-      ...tool,
-      execute: async (
-        toolCallId: string,
-        params: any,
-        signal?: AbortSignal,
-        onUpdate?: any,
-      ): Promise<AgentToolResult<any>> => {
-        // P85: Operation budget enforcement — check before executing state-changing tools
-        const isStateChanging = STATE_CHANGING_TOOLS.has(tool.name);
-        if (isStateChanging) {
-          const session = manager.activeSessions.get(sessionId);
-          if (session && session.opBudget > 0 && session.opCount >= session.opBudget) {
-            console.error(`OpBudgetExceeded: Agent ${session.agentName} consumed ${session.opCount} ops (limit ${session.opBudget}). Stopping.`);
-            console.log(JSON.stringify({ type: 'OpBudgetExceeded', agent: session.agentName, sessionId, limit: session.opBudget, opCount: session.opCount }));
-
-            // P85: Mark session as errored so handleCompletion archives it
-            // with status "error" instead of "done". This makes OpBudget
-            // exhaustion visible in delegation-metrics (ISR/TSR).
-            session.error = `OpBudgetExceeded: Limit ${session.opBudget} reached.`;
-
-            return {
-              content: [{ type: "text" as const, text: `OpBudgetExceeded: Agent ${session.agentName} consumed ${session.opCount}/${session.opBudget} state-changing operations. Further writes are blocked. Use read-only tools or request re-authorization.` }],
-              details: undefined,
-            };
-          }
-        }
-
-        // P110: Tool Pivot Heuristic — block after TOOL_PIVOT_LIMIT identical failures
-        const pivotKey = computeToolArgsKey(tool.name, params);
-        const session = manager.activeSessions.get(sessionId);
-        if (session) {
-          const failCount = session.toolErrorHistory.get(pivotKey) ?? 0;
-          if (failCount >= TOOL_PIVOT_LIMIT) {
-            const agentName = session.agentName;
-            console.error(`E_RETRY_LIMIT: Agent ${agentName} repeated ${tool.name} with identical args ${failCount} times. Blocked.`);
-            console.log(JSON.stringify({ type: 'E_RETRY_LIMIT', agent: agentName, sessionId, tool: tool.name, argsHash: pivotKey, attempts: failCount }));
-            return {
-              content: [{ type: "text" as const, text: `🚫 E_RETRY_LIMIT: This exact tool call (${tool.name}) has failed ${failCount} times with identical arguments. Execution blocked. You MUST use a different approach — change the tool, change the arguments, or change your strategy entirely.` }],
-              details: undefined,
-            };
-          }
-        }
-
-        // Execute the original tool
-        const result = await tool.execute(toolCallId, params, signal, onUpdate);
-
-        // P85: Increment opCount for state-changing tools after successful execution
-        if (isStateChanging) {
-          const session = manager.activeSessions.get(sessionId);
-          if (session) {
-            session.opCount++;
-          }
-        }
-
-        // Extract the plain text output from all text blocks
-        const outputText = result.content
-          .map((block: any) => (block?.type === "text" ? block.text : ""))
-          .join("");
-
-        // P110: Tool Pivot Heuristic — track errors and inject critique
-        let pivotCritique = "";
-        if (session) {
-          if (isToolError(outputText)) {
-            const currentCount = (session.toolErrorHistory.get(pivotKey) ?? 0) + 1;
-            session.toolErrorHistory.set(pivotKey, currentCount);
-            session.toolErrorCount++; // P20 Tainted Handoffs: total error count
-            if (currentCount < TOOL_PIVOT_LIMIT) {
-              pivotCritique = `\n\n⚠️ PIVOT REQUIRED: This exact tool call has failed ${currentCount} time(s). You must change your approach — use a different tool, different arguments, or a different strategy. Do NOT retry the same command.`;
-            }
-          } else {
-            // Success — clear the counter for this key
-            session.toolErrorHistory.delete(pivotKey);
-          }
-        }
-
-        // Sign the output using the spec's HMAC scheme
-        const signed = manager.signToolOutput(outputText);
-
-        // The signed string = outputText + "\n[SIG: ts:hash]"
-        // Extract just the SIG tag to log it
-        const sigMatch = signed.match(/\[SIG: ([^\]]+)\]$/);
-        const signature = sigMatch ? sigMatch[1] : "";
-
-        // Log to receipts.jsonl (best-effort)
-        try {
-          const receiptEntry = {
-            toolName: tool.name,
-            toolCallId,
-            signature,
-            timestamp: new Date().toISOString(),
-          };
-          const receiptsPath = join(
-            sessionDir(persistDir, sessionId),
-            "receipts.jsonl",
-          );
-          appendFileSync(receiptsPath, JSON.stringify(receiptEntry) + "\n", "utf-8");
-        } catch {
-          /* best-effort — never block tool execution for logging */
-        }
-
-        // P84: Wrap in <tool_output> tags with SIG receipt inside
-        const sigTag = signed.slice(outputText.length); // "\n[SIG: ts:hash]"
-        const openTag = { type: "text" as const, text: `<tool_output name="${tool.name}">` };
-        const receiptSuffix = { type: "text" as const, text: sigTag };
-        const critiqueBlock = pivotCritique ? { type: "text" as const, text: pivotCritique } : null;
-        const closeTag = { type: "text" as const, text: "</tool_output>" };
-        const contentBlocks = [openTag, ...result.content, receiptSuffix];
-        if (critiqueBlock) contentBlocks.push(critiqueBlock);
-
-        // Turn Budget Warning: inject once when turn count reaches threshold
-        if (session && session.turnBudgetWarningAt > 0 && !session.turnBudgetWarned && session.turnCount >= session.turnBudgetWarningAt) {
-          session.turnBudgetWarned = true;
-          const warningText = `\n\n⚠️ [SYSTEM WARNING: Turn Budget ${session.turnCount}/${session.turnBudgetWarningAt}] You have used ${session.turnCount} turns. Wrap up your current task — summarize progress, write any pending output, and finish. Do NOT start new exploratory work.`;
-          contentBlocks.push({ type: "text" as const, text: warningText });
-        }
-
-        contentBlocks.push(closeTag);
-
-        return {
-          ...result,
-          content: contentBlocks,
-        };
-      },
-    }));
-  }
-
-  /**
-   * P85: Get current operation usage for a session.
-   * Returns { opBudget, opCount } or null if session doesn't exist.
-   */
   getOpUsage(sessionId: string): { opBudget: number; opCount: number } | null {
-    const session = this.activeSessions.get(sessionId);
-    if (!session) return null;
-    return { opBudget: session.opBudget, opCount: session.opCount };
+    return getOpUsage(this.activeSessions, sessionId);
   }
 
   // ── Delegation metrics logging ──────────────────────────────────────
