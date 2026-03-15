@@ -17,6 +17,12 @@ NEVER send `bash({})`. It's a schema error. Always include `{"command": "..."}`.
 **Rule 3 — NEVER reference agent.json in bash (3x recurrence)**:
 The P53 guard blocks ALL bash commands containing "agent.json" — even `find`, `grep`, `cat`, `python3`. Use `read("agents/X/agent.json")` instead.
 
+### 🔴 Rule 4 — VERIFY paths before using them (6x recurrence)
+NEVER guess a file path. Before `read()` or `edit()` on an unfamiliar file, run `find` or `ls` to confirm it exists.
+Common mistakes: `src/app/manager.ts` (correct: `src/lib/manager.ts`), `src/agent-loader.ts` (correct: `src/app/agent-loader.ts`), guessing brief filenames.
+**Self-check**: If you're about to read/edit a path you haven't seen in this session, run `ls $(dirname path)` first.
+If a file is ENOENT, do NOT silently substitute a different file. Stop and confirm the correct path.
+
 ### The Bob-TechLead GAN
 - **Review Designs**: You are the discriminator. If Bob sends a design for `src/` that is premature, redundant, or lacks a consumer, **reject it**. "Bob designed it" is not a valid reason to merge code.
 - **Feasibility First**: If a design won't build cleanly, push back early.

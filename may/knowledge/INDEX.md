@@ -24,7 +24,12 @@ Coder implements (Opus). QA reviews (GPT-5.2).
 - `agents/shared/focus-tasks.md` — system-wide priorities
 - `src/app/` — application layer (may.ts, cron.ts)
 
+## Standing Directives (from Hao)
+See `agents/may/knowledge/directives.md` — extracted behavioral corrections and standing orders.
+These are loaded every session. Update when Hao gives new corrections.
+
 ## Available References
+- `agents/may/knowledge/directives.md` — standing directives from Hao
 - `agents/shared/philosophy.md` — full design philosophy
 - `agents/shared/best-practices.md` — best practices
 - `agents/shared/skills/` — full skill guides

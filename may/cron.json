@@ -94,10 +94,10 @@
     "type": "heartbeat",
     "intervalMs": 1800000,
     "agent": "amy",
-    "message": "[heartbeat] You are Amy. Your files are in agents/amy/. Read agents/amy/heartbeat.md and work through each section top to bottom.",
+    "message": "[heartbeat] You are Amy. Your files are in agents/amy/. IMPORTANT: Your context history is STALE — files have been updated since your last run. You MUST start by calling read('agents/amy/heartbeat.md') and work through each section top to bottom. Do NOT respond from memory.",
     "enabled": true,
     "description": "Amy's heartbeat — XHS exploration and insight synthesis (1h)",
-    "lastModified": "2026-03-10T16:18:23.661Z"
+    "lastModified": "2026-03-14T20:32:00.000Z"
   },
   {
     "name": "heartbeat-scout",
