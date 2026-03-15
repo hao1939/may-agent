@@ -273,7 +273,14 @@ function attachAgentEvents(label: string, sessionId: string): void {
         bus.emit({ type: "tool_call", agent: label, tool: event.toolName, args: event.args, channel });
         break;
       case "tool_execution_end": {
-        const text = event.result?.content?.[0]?.text ?? "";
+        // P84 wrapping prepends <tool_output name="..."> as content[0] and appends
+        // </tool_output> as the last block. Skip those wrapper blocks to get the
+        // actual tool output for the preview.
+        const blocks = event.result?.content ?? [];
+        const firstReal = blocks.find(
+          (b: any) => b?.type === "text" && !b.text?.startsWith("<tool_output") && b.text !== "</tool_output>",
+        );
+        const text = firstReal?.text ?? "";
         bus.emit({
           type: "tool_result",
           agent: label,
