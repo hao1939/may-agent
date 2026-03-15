@@ -720,7 +720,7 @@ export async function loadAgentHandlers(
       if (existsSync(jsPath)) {
         modulePath = jsPath;
       } else if (existsSync(tsPath)) {
-        // Try tsx import via the .ts path — Node with tsx loader can handle it
+        // Bun handles .ts imports natively
         modulePath = tsPath;
       } else {
         const msg = `Handler file not found: ${handlerDir}/${handlerFile}.(js|ts)`;

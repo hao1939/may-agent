@@ -3,3 +3,6 @@ node_modules
 *.sock
 *.pid
 .git
+dist
+pi-deps
+bundle

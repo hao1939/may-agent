@@ -55,7 +55,7 @@ function spawnLauncher(childScript: string): {
 } {
   const output: string[] = [];
 
-  const proc = spawn("npx", ["tsx", launcherTs], {
+  const proc = spawn("bun", [launcherTs], {
     env: {
       ...process.env,
       // We can't change MAY_TS inside launcher.ts easily, so we'll test

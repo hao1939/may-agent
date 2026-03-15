@@ -79,7 +79,7 @@ export interface BackgroundExecToolOptions {
   /** Message shown when a command is blocked by a deny pattern. */
   denyMessage?: string;
   /**
-   * Skip the meta-recursion guard (which normally blocks npx tsx run/may.ts etc.).
+   * Skip the meta-recursion guard (which normally blocks bun src/app/may.ts etc.).
    * Enable this for the coach agent, which legitimately needs to spawn coachee processes.
    */
   allowAgentSpawn?: boolean;

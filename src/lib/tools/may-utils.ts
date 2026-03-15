@@ -57,6 +57,7 @@ export function isMetaRecursionCommand(command: string): boolean {
     /\bnpx\s+may-agent\b/,
     /\bts-node\s+.*src\/cli/,
     /\btsx\s+.*src\/cli/,
+    /\bbun\s+src\/app\/(may|launcher)\.ts\b/,
   ];
   return patterns.some((p) => p.test(command));
 }
