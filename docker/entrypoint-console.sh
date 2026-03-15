@@ -28,4 +28,4 @@ mkdir -p /app/.state/chrome-profile
 #   docker exec <container> /usr/local/bin/restart-may.sh
 
 # Launcher handles signals, backoff, and exit codes — no bash loop needed
-exec tsx src/app/launcher.ts --chat --cron --telegram --console --socket
+exec bun src/app/launcher.ts --chat --cron --telegram --console --socket

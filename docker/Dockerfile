@@ -8,7 +8,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     jq \
     procps \
     socat \
+    unzip \
     && rm -rf /var/lib/apt/lists/*
+
+# Install Bun (runs .ts natively, replaces tsx + npm)
+RUN curl -fsSL https://bun.sh/install | bash && \
+    ln -s /root/.bun/bin/bun /usr/local/bin/bun
 
 # Install Google Chrome stable
 RUN curl -fsSL https://dl.google.com/linux/linux_signing_key.pub \
@@ -34,20 +39,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# Copy local dependencies (file: links in package.json)
-COPY pi-deps/agent /pi-deps/agent
-COPY pi-deps/ai /pi-deps/ai
-
-# Install dependencies
-COPY package.json package-lock.json ./
-RUN sed -i 's|file:/home/hao/pi-mono/packages/agent|file:/pi-deps/agent|' package.json && \
-    sed -i 's|file:/home/hao/pi-mono/packages/ai|file:/pi-deps/ai|' package.json && \
-    npm install --ignore-scripts && \
-    npm install -g tsx
+# Install dependencies (packages come from npm registry)
+COPY package.json bun.lock ./
+RUN bun install --frozen-lockfile
 
 # Copy source (lib + app are both under src/)
 COPY src/ src/
-COPY tsconfig.json tsconfig.build.json ./
+COPY tsconfig.json ./
 
 # Copy entrypoints and helpers
 COPY docker/entrypoint.sh docker/entrypoint-console.sh docker/restart-may.sh /usr/local/bin/
