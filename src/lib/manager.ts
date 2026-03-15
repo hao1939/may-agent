@@ -300,7 +300,11 @@ export class SubagentManager {
     const sharedIndex = loadFile(def.projectRoot ? join(def.projectRoot, "agents", "shared", "INDEX.md") : undefined);
     if (sharedIndex) sections.push(sharedIndex);
 
-    // ── Generated sections (volatile) ───────────────────────────────
+    // ── Generated sections (per-agent stable — safe for KV-cache) ──
+    // These are deterministic per agent config; same agent produces the
+    // same output across sessions.  True volatile data (session ID,
+    // time, task history) lives in the first user message — see
+    // buildSessionContext() — so the system prompt stays cache-friendly.
 
     // 6. Runtime Environment — paths and workspace
     {
@@ -351,10 +355,10 @@ export class SubagentManager {
   }
 
   /**
-   * Build the per-session context block (session ID + recent task history).
+   * Build the per-session context block (session ID, time, recent task history).
    * This is prepended to the first user message instead of living in the
    * system prompt, so that the system prompt stays identical across sessions
-   * and Anthropic prompt caching can produce cache reads.
+   * and Anthropic prompt caching can produce cache reads (P147 KV-Cache Discipline).
    */
   private buildSessionContext(
     def: SubagentDefinition,
@@ -362,7 +366,11 @@ export class SubagentManager {
     sessionId: string,
     persistDir: string,
   ): string {
-    const ctxLines = [`# Session Context`, `- Session ID: ${sessionId}`];
+    const ctxLines = [
+      `# Session Context`,
+      `- Session ID: ${sessionId}`,
+      `- Current Time: ${new Date().toISOString()}`,
+    ];
     const memoryLimit = def.memoryLimit ?? 20;
     if (memoryLimit > 0) {
       const entries = readMemoryEntries(persistDir, agentName, memoryLimit);
