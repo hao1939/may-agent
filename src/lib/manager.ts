@@ -98,6 +98,7 @@ export {
 } from "./manager-receipts.js";
 export type { ReceiptWrapContext } from "./manager-receipts.js";
 import { appendActivity, truncateSummary, PROGRESS_INTERVAL, type ActivityEvent } from "./activity.js";
+import { ConcurrencyGate, getDefaultGate } from "./concurrency-gate.js";
 
 /**
  * P93 Infrastructure Resilience — Automatic Retry for Transient Errors
@@ -169,6 +170,8 @@ export class SubagentManager {
   private _infraRetryMax: number;
   /** Current call depth per root session (tracks nested callAgent chains). */
   private callDepths = new Map<string, number>();
+  /** P162: Concurrency gate for serializing high-impact tool execution. */
+  private _concurrencyGate: ConcurrencyGate;
 
   /** Project root directory. Used for detached agent spawning. */
   get projectRoot(): string {
@@ -188,6 +191,7 @@ export class SubagentManager {
     this.onSessionComplete = opts.onSessionComplete;
     this.onSessionStart = opts.onSessionStart;
     this.onSessionBlocked = opts.onSessionBlocked;
+    this._concurrencyGate = getDefaultGate();
   }
 
   /** Register a feature unit. */
@@ -633,7 +637,7 @@ export class SubagentManager {
       initialState: {
         systemPrompt: this.resolveSystemPrompt(def),
         model: def.model,
-        tools: wrapToolsWithReceipts(def.tools, sessionId, { activeSessions: this.activeSessions, persistDir: this.registry.persistDir, projectRoot: this._projectRoot }),
+        tools: wrapToolsWithReceipts(def.tools, sessionId, { activeSessions: this.activeSessions, persistDir: this.registry.persistDir, projectRoot: this._projectRoot, concurrencyGate: this._concurrencyGate }),
       },
       transformContext: compactionTransform,
       getApiKey: def.apiKey ? () => def.apiKey : undefined,
@@ -890,7 +894,7 @@ export class SubagentManager {
       initialState: {
         systemPrompt,
         model: def.model,
-        tools: wrapToolsWithReceipts(def.tools, sessionId, { activeSessions: this.activeSessions, persistDir: this.registry.persistDir, projectRoot: this._projectRoot }),
+        tools: wrapToolsWithReceipts(def.tools, sessionId, { activeSessions: this.activeSessions, persistDir: this.registry.persistDir, projectRoot: this._projectRoot, concurrencyGate: this._concurrencyGate }),
         messages: savedMessages,
       },
       transformContext: compactionTransform,
