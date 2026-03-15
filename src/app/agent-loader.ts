@@ -17,7 +17,7 @@
  */
 
 import { readFileSync, existsSync, readdirSync } from "node:fs";
-import { resolve, relative, sep } from "node:path";
+import { resolve } from "node:path";
 import type { Model } from "@mariozechner/pi-ai";
 import type { AgentTool } from "@mariozechner/pi-agent-core";
 import {
@@ -127,105 +127,13 @@ export function runAgentCleanup(agentName: string): void {
  * Protecting LESSONS.md blocked Coach 31+ times and forced heavyweight
  * fork-verify-promote cycles for single-line lesson additions.
  */
-const PROTECTED_FILENAMES = new Set(["SOUL.md", "agent.json"]);
 
 // ── Bash command guard removed ──────────────────────────────────────────
 // P53 bash command scanning was removed per Hao's directive (2026-03-14):
 // "bash guard is against our idea of freedom and creativity. Instead, give
 //  agents free bash access. For safety, create specialist agents without bash."
-// Cross-edit protection remains via write/edit tool path guards (checkProtectedPath).
+// Cross-edit protection remains via write/edit tool path guards (checkCrossEditGuard in cross-edit-guard.ts).
 
-/**
- * Check whether a resolved absolute path targets a protected file in another agent's directory.
- * Returns a block message if the write should be denied, or null if allowed.
- */
-export function checkProtectedPath(
-  absolutePath: string,
-  agentName: string,
-  agentsRoot: string,
-): string | null {
-  // May is exempt — she's the CEO and executes Hao's directives across all agents
-  if (agentName.toLowerCase() === "may") return null;
-
-  const rel = relative(agentsRoot, absolutePath);
-  // Path must be inside agentsRoot and not escape it
-  if (rel.startsWith("..") || rel.startsWith(sep + sep)) return null;
-
-  const parts = rel.split(sep);
-  // Must be at least agents/<name>/<file>
-  if (parts.length < 2) return null;
-
-  const targetAgent = parts[0];
-  const fileName = parts[parts.length - 1];
-
-  // Allow writes to own agent directory — EXCEPT agent.json (P70: Immutable Self-Config)
-  // An agent editing its own agent.json can persist a jailbreak across restarts.
-  // Only May (exempt above) or tech-lead may edit agent.json files.
-  if (targetAgent === agentName) {
-    if (fileName === "agent.json") {
-      if (agentName === "tech-lead") return null; // tech-lead manages agent configs
-      return `⚠️ WRITE BLOCKED (P70): Agent "${agentName}" cannot modify its own agent.json. ` +
-        `agent.json defines immutable agent identity/configuration. ` +
-        `Self-edits could persist a jailbreak across restarts. ` +
-        `Only May or tech-lead may modify agent.json files.`;
-    }
-    return null;
-  }
-  // Allow writes to shared/ directory
-  if (targetAgent === "shared") return null;
-  // Allow writes to .lab/ directory (sandbox/fork for agent growth system)
-  if (targetAgent === ".lab") return null;
-
-  // Block writes to protected files in other agents' directories
-  if (PROTECTED_FILENAMES.has(fileName)) {
-    // P70: tech-lead may edit other agents' agent.json (manages agent configs)
-    if (fileName === "agent.json" && agentName === "tech-lead") return null;
-    return `⚠️ WRITE BLOCKED (P53): Cannot modify ${fileName} in agents/${targetAgent}/. ` +
-      `Only the owning agent or a human may edit identity-critical files ` +
-      `(${[...PROTECTED_FILENAMES].join(", ")}). ` +
-      `You are "${agentName}" — you may only modify these files in agents/${agentName}/.`;
-  }
-
-  return null;
-}
-
-/**
- * Wrap write and edit tools with guards that enforce P53/P70 cross-edit protections.
- * Blocks cross-agent modifications to identity-critical files via write/edit tools.
- */
-function wrapToolsWithPathGuard(
-  tools: AgentTool[],
-  agentName: string,
-  agentsRoot: string,
-  projectRoot: string,
-): AgentTool[] {
-  return tools.map((tool) => {
-    // Only wrap write/edit tools with P53 path guard
-    if (tool.name !== "write" && tool.name !== "edit") return tool;
-
-    return {
-      ...tool,
-      execute: async (
-        toolCallId: string,
-        params: unknown,
-        signal?: AbortSignal,
-      ) => {
-        const p = params as { path?: string };
-        if (p.path) {
-          const absolutePath = resolve(projectRoot, p.path);
-          const blockMessage = checkProtectedPath(absolutePath, agentName, agentsRoot);
-          if (blockMessage) {
-            return {
-              content: [{ type: "text" as const, text: blockMessage }],
-              details: undefined,
-            };
-          }
-        }
-        return tool.execute(toolCallId, params, signal);
-      },
-    };
-  });
-}
 
 function buildTools(config: AgentConfig, opts: AgentLoaderOptions): AgentTool[] {
   const { projectRoot, persistDir, manager, bus } = opts;
@@ -479,7 +387,7 @@ function buildTools(config: AgentConfig, opts: AgentLoaderOptions): AgentTool[] 
     }
   }
 
-  return wrapToolsWithPathGuard(tools, config.name, opts.agentsRoot, projectRoot);
+  return tools;
 }
 
 // ── Validation ──────────────────────────────────────────────────────────
