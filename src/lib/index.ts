@@ -3,6 +3,9 @@ export type { SubagentManagerOptions, RunOptions } from "./manager.js";
 // Session recovery (Ambulance Protocol — P62)
 export { classifyError, logRecoveryNeeded, logRecovered, getPendingRecoveries } from "./manager.js";
 export type { RecoveryEntry } from "./session-recovery.js";
+// Order persistence (P209: Intent Persistence)
+export { logOrder, updateOrderStatus, getPendingOrders, resetStaleOrders } from "./manager.js";
+export type { OrderTicket, OrderStatus } from "./orders.js";
 // Agent growth core logic
 export { forkAgent, promoteAgent, discardAgent, listLabAgents } from "./growth.js";
 export type { GrowthConfig, ForkResult, PromoteResult } from "./growth.js";
