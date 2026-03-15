@@ -12,8 +12,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Bun (runs .ts natively, replaces tsx + npm)
+# Copy binary instead of symlink — /root/ is not traversable by non-root users
 RUN curl -fsSL https://bun.sh/install | bash && \
-    ln -s /root/.bun/bin/bun /usr/local/bin/bun
+    cp /root/.bun/bin/bun /usr/local/bin/bun
 
 # Install Google Chrome stable
 RUN curl -fsSL https://dl.google.com/linux/linux_signing_key.pub \
