@@ -4,12 +4,14 @@ What each agent knows and where to find it.
 Read this before starting research — someone may have already covered your topic.
 
 ## Scout — External Research (AI Agents)
-- `agents/scout/knowledge/library/discoveries.md` — 300+ curated findings (3300 lines). **Use `grep`, don't read in full.**
+- `agents/scout/knowledge/library/discoveries.md` — 400+ curated findings (4200+ lines). **Use `grep`, don't read in full.**
 - `agents/scout/knowledge/library/repos.md` — GitHub repos: description, stars, relevance (440 lines)
 - `agents/scout/knowledge/library/papers.md` — Academic papers with key takeaways
 - `agents/scout/knowledge/library/people.md` — Notable researchers and accounts
 - `agents/scout/knowledge/library/reddit.md` — Reddit community insights
-- `agents/scout/workspace/deep-dive-*.md` — 6 detailed research reports
+- `agents/scout/workspace/deep-dive-*.md` — 220 detailed research reports + 54 cross-reference syntheses
+  - Used by: Scout, Amy, Amy-Kimi, Bob
+- `agents/scout/workspace/GRAND-UNIFIED-SYNTHESIS-*.md` — Grand Unified Synthesis (v1 + v2 + v3 + v3.1 + v3.2 + v4 deltas). 19 Laws + 1 corollary, 16 Mechanisms, 7 Trilemmas, 45 Principles, 47 Predictions, 7 Architecture Stacks. ~122KB total.
 - **Topics:** agent architecture, skills/tools, context engineering, memory systems, evaluation, RL for agents, MCP protocol, agent security
 - **Best for:** "What's the state of the art in X?" or "Any repos doing Y?"
 

@@ -514,6 +514,9 @@ This document implements principles from `philosophy.md` as **actionable practic
 | 9.1 (Transient skills) | P53 Controlled Evolution (Evolution without Mutation) |
 | 12.1 (Treat external input as data) | IPI Defense Layer 2 (Context Framing) |
 | 14.1 (Default to Single Agent) | P52 Skill Over Agent, P115 Complexity Rationing |
+| 19.1 (Text protocols fail) | P131 Text is Policy Code is Law |
+| 19.2 (Tool enforcement) | P14 Deterministic Guardrails, P82 Explicit Acks |
+| 19.3 (Deprecations) | P82 Explicit Acks, P114 Experience Replay |
 
 ---
 
@@ -569,10 +572,30 @@ Silence is ambiguous (busy? dead? ignored? crashed?).
 2. **Receiver**: Writes `read_by: ["agent_name"]` metadata or a specific "I am working on X" confirmation.
 3. **Timeout**: If no Ack within N cycles, Sender escalates/retries.
 
-**SIGNALS.md Enforcement** [HB#366]: When updating `SIGNALS.md`, every entry **MUST** include `read_by: []`. When an agent reads and acts on a signal, it appends its name: `read_by: ["agent_name"]`. This prevents Information Cascades (HB#366) — unverified signals spreading as if they were confirmed facts.
+**SIGNALS.md Enforcement** [HB#366]: **Use the `handoff` tool** (not the legacy skill protocol) for all cross-agent artifact transfers. The tool is available in every agent session as a first-class tool call:
+
+```
+handoff({
+  target: "qa",
+  artifact_path: "src/lib/feature.ts",
+  context: "Bug fix for #123 ready for review",
+  expectations: "Run tests, approve if passing"
+})
+```
+
+The `handoff` tool enforces P82 by construction:
+- Validates the artifact exists before writing (prevents phantom handoffs)
+- Writes a structured, P82-compliant entry to SIGNALS.md with `read_by: []` and `Status: PENDING_ACK`
+- Appends a todo item to the target agent's `workspace/todo.md`
+- Triggers the target agent's heartbeat (if configured)
+- Validates the target is a known agent
+
+**Do NOT manually write to SIGNALS.md for handoffs** — the 0% P82 compliance rate with manual writes proves text-based protocols fail under cognitive load (P131: Text is Policy, Code is Law). The legacy `handoff` skill protocol (`agents/shared/skills/handoff/SKILL.md`) is **DEPRECATED** in favor of the `handoff` tool.
+
+When an agent reads and acts on a signal, it updates `read_by: ["agent_name"]` and changes `Status` from `PENDING_ACK` to `ACKED`. This prevents Information Cascades (HB#366) — unverified signals spreading as if they were confirmed facts.
 
 **Why**: Prevents "Black Hole" failures where work vanishes. Also prevents Information Cascades — if a signal has `read_by: []`, it has NOT been verified by any agent and must not be treated as confirmed.
-**Evidence**: Bureaucracy of Speed (2603.09875) & GNAP. Information Cascades (HB#366) — poison spreads when signals are assumed consumed without verification. Transient states (sent but not acked) are where failures accumulate.
+**Evidence**: Bureaucracy of Speed (2603.09875) & GNAP. Information Cascades (HB#366) — poison spreads when signals are assumed consumed without verification. Transient states (sent but not acked) are where failures accumulate. P82 failure analysis (2026-05-15) showed 0% compliance with manual protocol. The `handoff` tool (`src/lib/tools/handoff-tool.ts`) was built to make compliance structural and automatic.
 
 ### 13.2 Typed Coordination (GNAP)
 
@@ -604,6 +627,9 @@ In a distributed system, you cannot assume a message was received. You must veri
 - **The Standard**: When processing a shared file (e.g., `SIGNALS.md`, `bulletin.md`), append an acknowledgment.
 - **The Format**: `[ACK: <agent_name> <timestamp>]`.
 - **The Rule**: Do not act on a directive until you have acknowledged it. Do not assume a directive is active until you see the ACK.
+
+> ⚠️ **DEPRECATED (2026-03-14)**: The manual `[ACK: ...]` text format above is deprecated. Use the **`handoff` tool** (a first-class tool call available in every session) which enforces read receipts by construction. The legacy `handoff` skill protocol (`agents/shared/skills/handoff/SKILL.md`) is also deprecated — use the tool, not the skill. Manual text-based acks showed **0% compliance** under cognitive load (P131). See **Part 19: Harness Engineering**.
+
 *Validation:* GNAP Read Receipts, Scout's GUS Law 5 (Topology).
 
 ## 17. The Adaptation Protocol (Transient Skills) [P53] [imported+validated]
@@ -613,3 +639,109 @@ For complex tasks, generate a temporary **Strategy File** (`workspace/strategy.m
 - **Mechanism**: Create `workspace/strategy.md` -> Read -> Execute -> Delete.
 - **Why**: This aligns the agent's context without polluting the long-term knowledge base.
 *Validation:* Test-Time Training (TTT), Scout's GUS Law 6 (Memory).
+
+## 18. Risk Classification (S0-S3 Taxonomy) [P134] [imported+validated]
+**"Safety is Structural, Not Polite."**
+Classify all actions by risk level before execution. Do not ask permission for harmless actions; do not act without it for dangerous ones.
+
+| Level | Name | Policy | Examples |
+|-------|------|--------|----------|
+| **S0** | Harmless | Autonomous — no gate | Read files, run tests, list directories, grep |
+| **S1** | Low-Risk | Auto-verify via diff review | Edit owned files, write to workspace/ |
+| **S2** | Moderate | Stop & alert — requires approval | Edit shared files (philosophy.md, best-practices.md), deploy, cross-agent writes |
+| **S3** | High-Risk | Refuse outright | Delete data, external API calls with side effects, modify identity files (SOUL.md) |
+
+**In Practice**: When writing implementation plans, explicitly state `Risk Level: S[0-3]` for each step. This makes reviewers (human and automated) immediately understand the blast radius.
+
+**Anti-Pattern — Permission Theater**: Asking for approval on S0 actions (reading a file, running tests) wastes human attention and erodes trust. Equally bad: failing to gate S2 actions and hoping nothing breaks.
+
+*Validation:* LABSHIELD S0-S3 nomenclature, P134 Safety Taxonomy in philosophy.md.
+
+---
+
+## Part 19: Harness Engineering (Code > Text) [P131]
+
+**Source**: P131 (Text is Policy, Code is Law), P82 failure analysis (0% manual compliance), P114 (0% usage)
+**Principle**: "If you want a behavior, build a tool that requires it. Do not just ask for it."
+
+### 19.1 Why Text-Based Protocols Fail
+
+Text instructions ("please ack", "remember to replay experience", "include a read receipt") have **0% compliance under cognitive load**. Evidence:
+
+| Protocol | Mechanism | Compliance |
+|----------|-----------|------------|
+| P82 (Explicit Acks) | Text instruction in best-practices.md | **0%** in SIGNALS.md |
+| P114 (Experience Replay) | Text instruction in best-practices.md | **0%** in recent sessions |
+| Manual `[ACK: agent timestamp]` | Text format in §16 | **0%** under load |
+
+Agents under load optimize for task completion and shed text-based suggestions first. This is not a training problem — it's a design problem. **"Text is Policy, Code is Law" (P131).**
+
+### 19.2 The Harness Engineering Mandate
+
+**Rule**: Protocol compliance MUST be enforced by **tool interfaces**, not prompt instructions.
+
+A tool that *requires* the correct inputs structurally prevents the protocol violation:
+
+| Protocol | Text-Based (DEPRECATED) | Tool-Enforced (REQUIRED) |
+|----------|------------------------|--------------------------|
+| **P82 Read Receipts** | "Please add `read_by` when you read a signal" | `handoff(target, artifact_path, context, expectations)` — all four parameters required; tool validates artifact exists, writes SIGNALS.md entry, notifies target |
+| **P114 Experience Replay** | "Remember to check past failures before planning" | `experience-replay()` — loads error log and injects context automatically |
+| **P82 Acknowledgment** | "Append `[ACK: agent timestamp]` to the file" | `handoff` tool writes structured `read_by: []` metadata and `PENDING_ACK` status by construction |
+
+### 19.3 Deprecations
+
+The following text-based protocols are **DEPRECATED** in favor of tool-enforced equivalents:
+
+| Deprecated | Replacement | Reason |
+|------------|-------------|--------|
+| Manual SIGNALS.md writes for handoffs | `handoff` tool (`src/lib/tools/handoff-tool.ts`) | 0% compliance; tool validates artifact, writes structured entry, notifies target — all by construction |
+| Manual `[ACK: agent timestamp]` (§16) | `handoff` tool — writes `read_by: []` and `PENDING_ACK` automatically | 0% compliance with manual format |
+| `handoff` skill protocol (`agents/shared/skills/handoff/SKILL.md`) | `handoff` tool | Skill was a text protocol (step-by-step instructions); tool is a single call. Text protocols fail under load (P131) |
+| "Suggested Acks" in delegation text | `handoff(target, artifact_path, context, expectations)` — all required | Suggestions are ignored under load |
+| Manual experience replay lookback | `experience-replay` skill (when implemented) | Agents skip text-based "check your error log" |
+
+**Migration**: Agents MUST use the `handoff` tool for all cross-agent artifact transfers. The tool is a first-class tool call available in every session — call it directly like `read`, `write`, or `bash`. Manual SIGNALS.md writes, the legacy `handoff` skill protocol, and text-based ack formats are all **no longer valid**. See §13.1 for enforcement details.
+
+**SIGNALS.md template** (generated automatically by the `handoff` tool — do not write manually):
+```markdown
+---
+
+## Handoff: {YYYY-MM-DD HH:MM}
+- **From**: {sender_agent}
+- **To**: {target_agent}
+- **Artifact**: `{artifact_path}`
+- **Context**: {why this is being handed off}
+- **Expectations**: {what the receiver should do}
+- **Status**: PENDING_ACK
+- **read_by**: []
+```
+
+**Receiving a handoff** (this part is still manual — update the entry when you process it):
+1. Read the artifact specified in the entry
+2. Update `read_by: []` → `read_by: ["{your_name}"]` and `Status` → `ACKED`
+3. Do the work specified in `Expectations`
+
+### 19.4 How to Apply Harness Engineering
+
+When designing a new protocol or observing a compliance failure:
+
+1. **Don't**: Add another text rule to best-practices.md.
+2. **Do**: Build a **skill package** (tool) that makes the protocol structurally unavoidable.
+3. **Test**: The tool's interface should make non-compliance impossible — required parameters, validation gates, automatic metadata.
+
+**Design checklist for new protocols**:
+- [ ] Can the protocol be violated by simply forgetting? → **Needs a tool.**
+- [ ] Does compliance require remembering a format? → **Needs a tool.**
+- [ ] Has a text-based version been tried and failed? → **Definitely needs a tool.**
+- [ ] Is compliance binary (did/didn't) not gradual? → **Tool can enforce it.**
+
+### 19.5 Alignment
+
+| Practice | Philosophy |
+|----------|-----------|
+| 19.1 (Text protocols fail) | P131 (Text is Policy, Code is Law) |
+| 19.2 (Tool enforcement) | P14 (Deterministic Guardrails) |
+| 19.3 (Deprecations) | P82 (Explicit Acks), P114 (Experience Replay) — manual SIGNALS.md edits and legacy skill protocol both deprecated in favor of `handoff` tool |
+| 19.4 (Design checklist) | P52 (Skill Over Agent) |
+
+*Validation:* P82 failure analysis (0% manual compliance, 2026-05-15). P114 usage data (0% in recent sessions). Architect design brief (agents/bob/workspace/optimizer-brief-harness.md).

@@ -1,62 +1,110 @@
+# Skill: Memory Consolidation
+
+**Status:** TESTED (Bob-approved H579, refinement applied)
+**Owner:** Coach
+**Source:** Bob brief (`agents/bob/workspace/brief-memory-consolidation.md`)
+**Purpose:** Compress append-only logs (journals, error logs) into durable knowledge, archive raw data, reduce context rot.
+
 ---
-name: consolidate-memory
-description: Distill episodic memory (workspace) into semantic memory (knowledge).
-version: 1.0.0
-tools: [read, write, bash]
----
 
-# Skill: Consolidate Memory
+## Trigger Conditions
 
-## 1. Purpose
-To prevent "amnesia" by converting successful problem-solving episodes into reusable strategies, and to prevent "clutter" by cleaning up the workspace.
+Run this skill when ANY of:
+1. An agent's `workspace/journal.md` exceeds 500 lines
+2. An agent's `ERROR_LOG.jsonl` exceeds 100 entries
+3. Periodic: every 50 heartbeats (check `workspace/periodic-tasks.md`)
 
-## 2. When to Use
-- **End of Session**: After successfully completing a complex task.
-- **Recurring Patterns**: When you notice you've solved the same problem 3+ times.
-- **Growth Cycle**: As the final step of a "Train" phase (crystallizing the lesson).
-- **Workspace Cleanup**: When `workspace/` has >10 files.
+## Input
 
-## 3. How to Execute
+- `agents/{agent}/workspace/journal.md`
+- `agents/{agent}/ERROR_LOG.jsonl`
 
-### Step 1: Scan for Patterns
-Look for repeated successes or critical failures in recent logs or workspace files.
-- **Command**: `ls -t workspace/ | head -5`
-- **Command**: `grep "Success" .state/recent-sessions.jsonl` (conceptual)
+## Process
 
-### Step 2: Filter & Distill
-Identify *one* high-value insight. Ignore trivial commands.
-- **Good**: "To fix `ENOSPC`, clear `/tmp` and retry." (Universal, high-impact)
-- **Bad**: "I wrote a file named `test.ts`." (Trivial, episodic)
+### Step 1: Survey
+```bash
+wc -l agents/*/workspace/journal.md agents/*/ERROR_LOG.jsonl 2>/dev/null | sort -rn | head -20
+```
+Pick the largest file. Process ONE agent per consolidation run (avoid token explosion).
 
-### Step 3: Draft the Strategy
-Create a standardized entry in `workspace/synthesis/`.
-- **File**: `workspace/synthesis/strategy-[topic].md`
-- **Format**:
-  ```markdown
-  ## Strategy: [Topic]
-  - **Context**: When facing [Problem]...
-  - **Action**: Do [X] instead of [Y].
-  - **Why**: [Reason/Evidence from Session Z].
-  ```
+### Step 2: Extract Durable Facts
+Read the target file. For each section/entry, classify:
+- **DURABLE FACT**: Something true about the system that won't change soon (e.g., "P53 blocks bash commands containing SOUL.md", "Optimizer's bash({}) is infrastructure truncation, not behavioral")
+- **RESOLVED INCIDENT**: A one-time issue that was fixed (e.g., "H516: evaluator session-ID confusion fixed by excluding self-evaluation")
+- **NOISE**: Routine heartbeat entries, timestamps without insights, WIP notes
 
-### Step 4: Sanitize (The Poison Filter)
-Before proposing, verify:
-1. **Philosophy Check**: Does this violate P1-P99? (e.g., "Skip tests" violates P14).
-2. **Safety Check**: precise commands only. No `rm -rf *`.
-3. **Truth Check**: Did this actually work? (Verify in logs).
+Rules:
+- Extract ONLY facts with lasting value
+- Each fact must be 1-2 sentences, atomic
+- Include the source heartbeat number for traceability
+- Do NOT fabricate or generalize beyond what the text says
 
-### Step 5: Propose
-Delegate the update to the knowledge owner (usually Bob or the Agent itself).
-- **Action**: `agents.send("bob", "Please review and merge workspace/synthesis/strategy-[topic].md into knowledge/library/strategies.md")`
+### Step 3: Deduplicate Against Existing Knowledge
+Before writing any extracted fact, select 2-3 **high-entropy keywords** from the fact (e.g., specific heartbeat numbers like 'H516', protocol names like 'P53', unique filenames, or error codes). Do NOT use generic stopwords like 'error', 'session', 'agent', or 'fixed'.
+```bash
+grep -l "H516" agents/{agent}/knowledge/*.md agents/shared/knowledge/*.md
+grep -l "P53" agents/{agent}/knowledge/*.md agents/shared/knowledge/*.md
+```
+If the fact already exists in knowledge files, SKIP IT.
 
-## 4. Failure Modes (Critical)
-- **Failure**: Hallucinating a strategy that wasn't tested.
-  - **Fix**: Only consolidate *after* a verified success. Cite the session ID.
-- **Failure**: Over-abstracting ("Always use X") from one data point.
-  - **Fix**: Use "Consider X" or "In context Y, X worked."
-- **Failure**: Creating "Rule Bloat" (too many minor rules).
-  - **Fix**: Only consolidate if it saves >5 minutes or prevents a crash.
+### Step 4: Update Knowledge
+Write durable facts to the appropriate location:
+- Agent-specific facts → `agents/{agent}/knowledge/consolidated-{date}.md`
+- System-wide facts → `agents/shared/knowledge/strategies.md`
 
-## 5. Contrastive Examples
-- **GOOD**: "Identified that `npm install` fails on network timeout. Strategy: Use `npm install --timeout=60000`."
-- **BAD**: "I ran `ls`. Strategy: Always run `ls`."
+Format:
+```markdown
+## Consolidated from {agent} journal ({date})
+
+- **[H{num}]** Fact text here.
+- **[H{num}]** Another fact here.
+```
+
+### Step 5: Archive Raw Content
+```bash
+# Copy journal to archive first (safety)
+cp agents/{agent}/workspace/journal.md agents/{agent}/knowledge/library/archives/{date}-journal.md
+
+# Verify archive exists and matches
+wc -l agents/{agent}/knowledge/library/archives/{date}-journal.md
+
+# Only then truncate active journal to last 50 lines
+tail -50 agents/{agent}/workspace/journal.md > /tmp/journal-tail.md
+cp /tmp/journal-tail.md agents/{agent}/workspace/journal.md
+```
+
+### Step 6: Verify
+1. Confirm archive file exists and has content: `wc -l agents/{agent}/knowledge/library/archives/{date}-journal.md`
+2. Confirm new journal has 50 or fewer lines: `wc -l agents/{agent}/workspace/journal.md`
+3. Confirm knowledge file has new entries: `tail -5 agents/{agent}/knowledge/consolidated-{date}.md`
+
+### Step 7: Post Receipt
+Write a consolidation receipt to `agents/shared/bulletin.md`:
+```markdown
+**[{date}] Memory Consolidation — {agent}**
+- Source: journal.md ({N} lines → {M} lines)
+- Extracted: {X} durable facts
+- Archived to: knowledge/library/archives/{date}-journal.md
+- Skipped (dedup): {Y} facts already in knowledge
+```
+
+## Output
+
+- Archived journal in `knowledge/library/archives/`
+- New knowledge entries in `knowledge/consolidated-{date}.md`
+- Fresh journal.md with 50 or fewer lines
+- Bulletin receipt
+
+## Safety Rules
+
+1. **NEVER delete without archiving first** — always `cp` then verify the archive exists before clearing
+2. **Idempotent** — running twice should not duplicate knowledge entries (Step 3 dedup)
+3. **Atomic facts only** — no narratives, no speculation, no summaries-of-summaries
+4. **Preserve last 50 lines** — always keep recent context in the active journal
+
+## Anti-Patterns
+
+- Do not archive everything without extracting knowledge (just moving files accomplishes nothing)
+- Do not extract too many facts (more than 20 per run means your threshold is too low)
+- Do not delete journal.md without archiving first
+- Do not write facts that are already in LESSONS.md, conventions.md, or knowledge files

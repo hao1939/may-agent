@@ -163,6 +163,10 @@ assert_valid_yaml() {
 assert_exit_zero() {
   local cmd="$*"
   local rc=0
+  # SECURITY NOTE (P78 audit): eval is required here to support shell operators
+  # (pipes, redirects, &&/||) in checklist commands. Input is safe because:
+  # 1. $cmd comes from agent-authored checklist files, not user input
+  # 2. P53 bash guard validates all commands before reaching this script
   eval "$cmd" >/dev/null 2>&1 || rc=$?
   if [ "$rc" -eq 0 ]; then pass "exit_zero" "$cmd"
   else fail "exit_zero" "$cmd" "exit:$rc"; fi
@@ -175,6 +179,7 @@ assert_exit_code() {
   unset 'args[-1]'
   local cmd="${args[*]}"
   local actual=0
+  # SECURITY NOTE (P78 audit): eval required for shell operators — see assert_exit_zero
   eval "$cmd" >/dev/null 2>&1 || actual=$?
   if [ "$actual" -eq "$expected" ]; then pass "exit_code" "$cmd" "got:$actual"
   else fail "exit_code" "$cmd" "expected:$expected,got:$actual"; fi
