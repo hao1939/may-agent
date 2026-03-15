@@ -74,7 +74,7 @@ function formatDurationMs(ms: number): string {
 // CLI args
 const CRON_ENABLED = process.argv.includes("--cron");
 const TELEGRAM_ENABLED = process.argv.includes("--telegram");
-const CONSOLE_ENABLED = process.argv.includes("--console");
+const CONSOLE_ENABLED = process.argv.includes("--console") || process.argv.includes("--chat");
 const SOCKET_ENABLED = process.argv.includes("--socket");
 const CHAT_MODE = process.argv.includes("--chat");
 const ONESHOT_MODE = process.argv.includes("--oneshot");
