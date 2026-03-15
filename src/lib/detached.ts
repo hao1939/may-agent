@@ -61,12 +61,10 @@ export function spawnDetachedAgent(opts: SpawnDetachedOpts): { pid: number | und
   mkdirSync(logDir, { recursive: true });
   const logFd = openSync(join(logDir, `detached-${opts.sessionId}.log`), "a");
 
-  // Filter out --inspect flags to avoid port conflicts with child processes
-  const execArgv = process.execArgv.filter((a) => !a.startsWith("--inspect"));
-
+  // Bun handles .ts natively — no execArgv propagation needed.
   const proc = spawn(
     process.execPath,
-    [...execArgv, resolve(opts.projectRoot, "src/app/may.ts"), "--task", opts.task, "--socket"],
+    [resolve(opts.projectRoot, "src/app/may.ts"), "--task", opts.task, "--socket"],
     {
       cwd: opts.projectRoot,
       stdio: ["ignore", logFd, logFd],

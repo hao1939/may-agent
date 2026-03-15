@@ -52,16 +52,8 @@ function spawnChild(): void {
 
   log(`Starting may.ts (args: ${args.join(" ") || "(none)"})`);
 
-  // Spawn may.ts using the same tsx loader we're running under.
-  // process.execPath = node, process.execArgv has the tsx --import/--require flags.
-  // We filter out any --eval/--print flags from execArgv (they're for our own invocation).
-  const execArgv = process.execArgv.filter(
-    (a, i, arr) =>
-      !["--eval", "--print", "-e", "-p"].includes(a) &&
-      (i === 0 || !["--eval", "--print", "-e", "-p"].includes(arr[i - 1])),
-  );
-
-  child = spawn(process.execPath, [...execArgv, MAY_TS, ...args], {
+  // Bun handles .ts natively — no execArgv propagation needed.
+  child = spawn(process.execPath, [MAY_TS, ...args], {
     stdio: "inherit",
     env: process.env,
     cwd: process.cwd(),
