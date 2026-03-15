@@ -202,8 +202,6 @@ export interface ActiveSession {
   turnBudgetWarningAt: number;
   /** Whether the turn budget warning has already been injected (avoids spam). */
   turnBudgetWarned: boolean;
-  /** P114: Whether the agent has read its ERROR_LOG.jsonl in this session. */
-  hasReadErrorLog: boolean;
   /** File paths modified (write/edit) during this session, for activity tracking. */
   filesModified: Set<string>;
 }

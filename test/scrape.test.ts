@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { createScrapeTool } from "./scrape.js";
+import { createScrapeTool } from "../src/lib/scrape.js";
 
 describe("scrape_webpage tool", () => {
   const tool = createScrapeTool({ timeoutMs: 10000, defaultMaxLength: 5000 });

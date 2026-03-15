@@ -60,7 +60,6 @@ export type { CompactionOptions, CompactionInfo } from "./compaction.js";
 export {
   evaluateTask,
   findUnevaluatedChildren,
-  maintainAgent,
   extractFailureChains,
   extractUsage,
   formatFailureChains,
@@ -72,8 +71,6 @@ export type {
   TaskEvaluationResult,
   AgentScores,
   ChildSessionInfo,
-  MaintainAgentOptions,
-  MaintenanceResult,
   UsageSummary,
   FailureChain,
   FailureStep,

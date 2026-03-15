@@ -17,7 +17,7 @@ import {
   type DoneEvent,
   type ErrorEvent,
   type BlockedEvent,
-} from "./activity.js";
+} from "../src/lib/activity.js";
 
 describe("activity", () => {
   let agentsRoot: string;

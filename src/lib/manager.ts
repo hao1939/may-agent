@@ -670,7 +670,6 @@ export class SubagentManager {
       toolErrorCount: 0,
       turnBudgetWarningAt: def.turnBudgetWarningAt ?? TURN_BUDGET_WARNING_DEFAULT,
       turnBudgetWarned: false,
-      hasReadErrorLog: false,
       filesModified: new Set(),
     };
 
@@ -958,7 +957,6 @@ export class SubagentManager {
       toolErrorCount: 0,
       turnBudgetWarningAt: def.turnBudgetWarningAt ?? TURN_BUDGET_WARNING_DEFAULT,
       turnBudgetWarned: false,
-      hasReadErrorLog: false,
       filesModified: new Set(),
     };
 
