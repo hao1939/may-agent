@@ -11,6 +11,7 @@
 import { spawn } from "node:child_process";
 import { openSync, closeSync, mkdirSync, readFileSync } from "node:fs";
 import { resolve, join } from "node:path";
+import { getWorkerCommand } from "../app/bundle-mode.js";
 
 export interface SpawnDetachedOpts {
   projectRoot: string;
@@ -61,16 +62,21 @@ export function spawnDetachedAgent(opts: SpawnDetachedOpts): { pid: number | und
   mkdirSync(logDir, { recursive: true });
   const logFd = openSync(join(logDir, `detached-${opts.sessionId}.log`), "a");
 
-  // Bun handles .ts natively — no execArgv propagation needed.
+  // Use getWorkerCommand for bundle-mode compatibility.
+  // Do NOT set MAY_ROLE=child — detached agents need supervisor mode for crash recovery.
+  const mayTsPath = resolve(opts.projectRoot, "src/app/may.ts");
+  const workerArgs = ["--task", opts.task, "--socket"];
+  const cmd = getWorkerCommand(workerArgs, mayTsPath);
+
   const proc = spawn(
-    process.execPath,
-    [resolve(opts.projectRoot, "src/app/may.ts"), "--task", opts.task, "--socket"],
+    cmd.cmd,
+    cmd.args,
     {
       cwd: opts.projectRoot,
       stdio: ["ignore", logFd, logFd],
       detached: true,
       env: {
-        ...process.env,
+        ...cmd.env,
         AGENT: opts.agentName,
         INSTANCE: instanceName,
         SESSION_ID: opts.sessionId,

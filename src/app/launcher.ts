@@ -19,6 +19,7 @@
 import { spawn, type ChildProcess } from "node:child_process";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { getWorkerCommand } from "./bundle-mode.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const MAY_TS = resolve(__dirname, "may.ts");
@@ -52,10 +53,11 @@ function spawnChild(): void {
 
   log(`Starting may.ts (args: ${args.join(" ") || "(none)"})`);
 
-  // Bun handles .ts natively — no execArgv propagation needed.
-  child = spawn(process.execPath, [MAY_TS, ...args], {
+  // Use getWorkerCommand for bundle-mode compatibility.
+  const cmd = getWorkerCommand(args, MAY_TS);
+  child = spawn(cmd.cmd, cmd.args, {
     stdio: "inherit",
-    env: process.env,
+    env: cmd.env,
     cwd: process.cwd(),
   });
 

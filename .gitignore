@@ -9,3 +9,4 @@ pi-deps/
 .env
 temp-*.cjs
 tsconfig.tsbuildinfo
+bundle/
