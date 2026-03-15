@@ -227,6 +227,8 @@ export class SubagentManager {
   /** Resolve the system prompt from a definition.
    *  Convention files are auto-loaded from the agent directory if present:
    *    SOUL.md → DOMAIN.md → TOOLS.md → LESSONS.md → knowledge/INDEX.md
+   *  Shared files loaded for all agents:
+   *    agents/shared/LESSONS.md, agents/shared/INDEX.md
    *  Then: Runtime Environment (generated), Session Context (generated).
    *
    *  The entire prompt is wrapped in <system_instructions> tags (P84) to
@@ -273,6 +275,10 @@ export class SubagentManager {
     // 5. knowledge/INDEX.md — curated context (team, skills, references)
     const index = loadFile(def.knowledgeDir ? join(def.knowledgeDir, "INDEX.md") : undefined);
     if (index) sections.push(index);
+
+    // 5b. agents/shared/INDEX.md — knowledge index for all agents (Memex L1)
+    const sharedIndex = loadFile(def.projectRoot ? join(def.projectRoot, "agents", "shared", "INDEX.md") : undefined);
+    if (sharedIndex) sections.push(sharedIndex);
 
     // ── Generated sections (volatile) ───────────────────────────────
 
