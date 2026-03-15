@@ -158,8 +158,19 @@ export function checkProtectedPath(
   const targetAgent = parts[0];
   const fileName = parts[parts.length - 1];
 
-  // Allow writes to own agent directory
-  if (targetAgent === agentName) return null;
+  // Allow writes to own agent directory — EXCEPT agent.json (P70: Immutable Self-Config)
+  // An agent editing its own agent.json can persist a jailbreak across restarts.
+  // Only May (exempt above) or tech-lead may edit agent.json files.
+  if (targetAgent === agentName) {
+    if (fileName === "agent.json") {
+      if (agentName === "tech-lead") return null; // tech-lead manages agent configs
+      return `⚠️ WRITE BLOCKED (P70): Agent "${agentName}" cannot modify its own agent.json. ` +
+        `agent.json defines immutable agent identity/configuration. ` +
+        `Self-edits could persist a jailbreak across restarts. ` +
+        `Only May or tech-lead may modify agent.json files.`;
+    }
+    return null;
+  }
   // Allow writes to shared/ directory
   if (targetAgent === "shared") return null;
   // Allow writes to .lab/ directory (sandbox/fork for agent growth system)
@@ -167,6 +178,8 @@ export function checkProtectedPath(
 
   // Block writes to protected files in other agents' directories
   if (PROTECTED_FILENAMES.has(fileName)) {
+    // P70: tech-lead may edit other agents' agent.json (manages agent configs)
+    if (fileName === "agent.json" && agentName === "tech-lead") return null;
     return `⚠️ WRITE BLOCKED (P53): Cannot modify ${fileName} in agents/${targetAgent}/. ` +
       `Only the owning agent or a human may edit identity-critical files ` +
       `(${[...PROTECTED_FILENAMES].join(", ")}). ` +

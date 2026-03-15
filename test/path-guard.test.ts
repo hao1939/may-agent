@@ -9,8 +9,15 @@ describe("checkProtectedPath (P53 cross-agent protection)", () => {
     expect(result).toBeNull();
   });
 
-  it("allows writes to own agent agent.json", () => {
+  it("blocks writes to own agent agent.json (P70: immutable self-config)", () => {
     const result = checkProtectedPath("/app/agents/bob/agent.json", "bob", AGENTS_ROOT);
+    expect(result).not.toBeNull();
+    expect(result).toContain("P70");
+    expect(result).toContain("agent.json");
+  });
+
+  it("allows tech-lead to write own agent.json", () => {
+    const result = checkProtectedPath("/app/agents/tech-lead/agent.json", "tech-lead", AGENTS_ROOT);
     expect(result).toBeNull();
   });
 
@@ -127,5 +134,16 @@ describe("checkProtectedPath (P53 cross-agent protection)", () => {
   it("allows May to write to another agent's LESSONS.md", () => {
     const result = checkProtectedPath("/app/agents/tech-lead/LESSONS.md", "may", AGENTS_ROOT);
     expect(result).toBeNull();
+  });
+
+  it("allows tech-lead to write to another agent's agent.json (P70 config management)", () => {
+    const result = checkProtectedPath("/app/agents/coder/agent.json", "tech-lead", AGENTS_ROOT);
+    expect(result).toBeNull();
+  });
+
+  it("blocks tech-lead from writing to another agent's SOUL.md", () => {
+    const result = checkProtectedPath("/app/agents/coder/SOUL.md", "tech-lead", AGENTS_ROOT);
+    expect(result).not.toBeNull();
+    expect(result).toContain("WRITE BLOCKED");
   });
 });

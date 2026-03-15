@@ -99,9 +99,13 @@ export function checkCrossEditGuard(
 		// It's another agent's directory — check if it's a protected file
 		// Protected files are directly under agents/<name>/, i.e. parts.length === 2
 		if (parts.length === 2 && PROTECTED_FILENAMES.has(fileName)) {
+			// P70: tech-lead may edit other agents' agent.json (manages agent configs)
+			if (fileName === "agent.json" && agentName.toLowerCase() === "tech-lead") {
+				return { blocked: false };
+			}
 			return {
 				blocked: true,
-				message: `⚠️ WRITE BLOCKED: Agent '${agentName}' cannot modify agents/${targetDir}/${fileName}. Only the owning agent or May can edit another agent's SOUL.md/agent.json. Use agents.send() to request changes from the target agent instead.`,
+				message: `⚠️ WRITE BLOCKED: Agent '${agentName}' cannot modify agents/${targetDir}/${fileName}. Only the owning agent (for SOUL.md), May, or tech-lead (for agent.json) can edit another agent's identity files. Use agents.send() to request changes instead.`,
 			};
 		}
 	}
