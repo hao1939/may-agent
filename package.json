@@ -3,25 +3,9 @@
   "version": "0.1.0",
   "description": "Persistent feature-unit sub-agent system built on pi-agent-core",
   "type": "module",
-  "main": "./dist/lib/index.js",
-  "types": "./dist/lib/index.d.ts",
-  "files": [
-    "dist",
-    "README.md"
-  ],
-  "bin": {
-    "may-agent": "./dist/app/may.js"
-  },
-  "exports": {
-    ".": "./dist/lib/index.js"
-  },
   "scripts": {
-    "clean": "rm -rf dist",
-    "sync-tools": "./scripts/sync-pi-tools.sh",
-    "prebuild": "npm run sync-tools",
-    "build": "tsc -p tsconfig.build.json",
     "check": "tsc --noEmit",
-    "test": "vitest --run",
+    "test": "bun vitest --run",
     "restart": "kill $(cat .state/instances/default/may.pid 2>/dev/null) 2>/dev/null || echo 'no may-agent process found'",
     "docker:build": "./docker/docker-build.sh",
     "docker:up": "docker compose -f docker/docker-compose.yml up -d",
@@ -30,7 +14,7 @@
     "docker:console": "docker compose -f docker/docker-compose.yml run --rm -it --name may-console --service-ports console",
     "docker:reload": "docker exec may-agent /usr/local/bin/restart-may.sh",
     "docker:reload:console": "docker exec may-console /usr/local/bin/restart-may.sh",
-    "v2": "tsx scripts/v2.ts",
+    "bundle": "./scripts/bundle.sh",
     "lint": "eslint src/ test/",
     "lint:fix": "eslint src/ test/ --fix",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
