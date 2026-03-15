@@ -37,8 +37,8 @@
     "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\""
   },
   "dependencies": {
-    "@mariozechner/pi-agent-core": "file:/home/hao/pi-mono/packages/agent",
-    "@mariozechner/pi-ai": "file:/home/hao/pi-mono/packages/ai",
+    "@mariozechner/pi-agent-core": "^0.58.1",
+    "@mariozechner/pi-ai": "^0.58.1",
     "diff": "^8.0.3"
   },
   "devDependencies": {
