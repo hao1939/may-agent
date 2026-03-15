@@ -192,6 +192,8 @@ export interface ActiveSession {
   opBudget: number;
   /** Number of state-changing tool calls executed so far. */
   opCount: number;
+  /** Total tool calls (including read-only). Used for shallow heartbeat detection. */
+  totalToolCalls: number;
   /** Number of infrastructure retries attempted in the current agent loop run. */
   infraRetryCount: number;
   /** Tracks identical failed tool calls for pivot heuristic. Key: "toolName:argsHash", Value: consecutive error count. */

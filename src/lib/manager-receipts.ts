@@ -213,6 +213,15 @@ export function wrapToolsWithReceipts(
         }
       }
 
+      // Increment totalToolCalls for ALL tool calls (including read-only)
+      // Used for shallow heartbeat detection (P110)
+      {
+        const session = ctx.activeSessions.get(sessionId);
+        if (session) {
+          session.totalToolCalls++;
+        }
+      }
+
       // Extract the plain text output from all text blocks
       const outputText = result.content
         .map((block: any) => (block?.type === "text" ? block.text : ""))
