@@ -77,8 +77,11 @@ import { buildTrace } from "./manager-trace.js";
 import { isRetryableInfraError, runAgentWithRetry } from "./manager-retry.js";
 import { createAgentsTool as createAgentsToolFn, type CreateAgentsToolOptions } from "./manager-agents-tool.js";
 import { logRecoveryNeeded } from "./session-recovery.js";
+import { updateOrderStatus } from "./orders.js";
 export { isRetryableInfraError, runAgentWithRetry } from "./manager-retry.js";
 export { logRecoveryNeeded, classifyError, getPendingRecoveries, logRecovered } from "./session-recovery.js";
+export { logOrder, updateOrderStatus, getPendingOrders, resetStaleOrders } from "./orders.js";
+export type { OrderTicket, OrderStatus } from "./orders.js";
 export { buildTrace, findPathToTarget } from "./manager-trace.js";
 export type { TraceContext } from "./manager-trace.js";
 import { computeHealth, computeAuditHealth, computeReconcileHealth, EVAL_SKIP_AGENTS } from "./manager-health.js";
@@ -620,6 +623,19 @@ export class SubagentManager {
       }
     }
 
+    // ── Update order status (P209: Intent Persistence) ─────────────────
+    if (session.orderId) {
+      try {
+        updateOrderStatus(this.registry.persistDir, session.orderId, {
+          status: archiveStatus === "done" ? "COMPLETED" : "FAILED",
+          sessionId: session.sessionId,
+          error: session.error,
+        });
+      } catch {
+        /* best-effort — don't block completion for order tracking */
+      }
+    }
+
     if (this.onSessionComplete) {
       const info: SessionInfo = {
         sessionId: session.sessionId,
@@ -697,6 +713,7 @@ export class SubagentManager {
       turnBudgetWarningAt: def.turnBudgetWarningAt ?? TURN_BUDGET_WARNING_DEFAULT,
       turnBudgetWarned: false,
       filesModified: new Set(),
+      orderId: opts?.orderId,
     };
 
     // Write [STARTED] sentinel

@@ -204,6 +204,8 @@ export interface ActiveSession {
   turnBudgetWarned: boolean;
   /** File paths modified (write/edit) during this session, for activity tracking. */
   filesModified: Set<string>;
+  /** Order ID linking this session to a persisted human order (P209). */
+  orderId?: string;
 }
 
 /** Options for spawning a session with parent/workflow context. */
@@ -230,6 +232,8 @@ export interface RunOptions {
   kind?: SessionKind;
   /** Runtime override for opBudget (overrides agent definition). */
   opBudget?: number;
+  /** Order ID linking this session to a persisted human order (P209). */
+  orderId?: string;
 }
 
 export interface SubagentManagerOptions {
