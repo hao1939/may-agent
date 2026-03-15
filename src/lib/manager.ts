@@ -547,7 +547,7 @@ export class SubagentManager {
     if (
       !wasAborted &&
       !session.error &&
-      session.opCount === 0 &&
+      session.totalToolCalls === 0 &&
       session.task.startsWith("[heartbeat]")
     ) {
       session.error =
@@ -707,6 +707,7 @@ export class SubagentManager {
       kind: opts?.kind ?? "job",
       opBudget: opts?.opBudget ?? def.opBudget ?? 0,
       opCount: 0,
+      totalToolCalls: 0,
       infraRetryCount: 0,
       toolErrorHistory: new Map(),
       toolErrorCount: 0,
@@ -995,6 +996,7 @@ export class SubagentManager {
       kind: persisted.kind ?? "job",
       opBudget: def.opBudget ?? 0,
       opCount: 0,
+      totalToolCalls: 0,
       infraRetryCount: 0,
       toolErrorHistory: new Map(),
       toolErrorCount: 0,
