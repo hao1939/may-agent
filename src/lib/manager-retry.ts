@@ -38,6 +38,18 @@ export function isRetryableInfraError(session: ActiveSession): string | null {
   // Check for context overflow — never retry, won't help
   if (agentError && isOverflowError(agentError)) return null;
 
+  // Pattern 4: JSON parse / stream corruption errors — transient proxy/network issues
+  if (agentError) {
+    const isJsonStreamError =
+      agentError.includes("Unexpected end of JSON") ||
+      agentError.includes("JSON Parse error") ||
+      agentError.includes("Unexpected non-whitespace character after JSON") ||
+      agentError.includes("Unexpected event order");
+    if (isJsonStreamError) {
+      return "json_stream_error";
+    }
+  }
+
   // Pattern 1: Silent stream error — last message is user (no assistant reply at all)
   if (!agentError && lastMsg.role === "user") {
     return "empty_response";
