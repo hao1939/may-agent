@@ -51,6 +51,8 @@ export interface AgentConfig {
   compaction?: boolean;
   /** Block direct delegation to specific agents via agents tool. */
   delegateDeny?: { agents: string[]; hint: string };
+  /** Additional context files to include in system prompt (relative to agent dir). */
+  context_files?: string[];
 }
 
 // ── Loader options ──────────────────────────────────────────────────────
@@ -530,6 +532,7 @@ export function loadAgents(opts: AgentLoaderOptions): LoadResult {
       apiKey: (model as any).apiKey,
       memoryLimit: config.memoryLimit,
       compaction: config.compaction,
+      contextFiles: config.context_files?.map((f) => resolve(agentDir, f)),
     });
 
     if (isUpdate) {
