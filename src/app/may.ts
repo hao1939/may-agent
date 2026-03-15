@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import { resolve, dirname } from "node:path";
 import { existsSync, readFileSync, writeFileSync, unlinkSync, mkdirSync } from "node:fs";
 import { getModel } from "@mariozechner/pi-ai";
-import { SubagentManager, evaluateTask, writeSkippedEvaluations } from "../lib/index.js";
+import { SubagentManager, evaluateTask, writeSkippedEvaluations, classifyError, logRecovered } from "../lib/index.js";
 import { EventBus } from "./event-bus.js";
 import { ChatSession } from "./chat-session.js";
 import { attachConsoleUI } from "./ui/console.js";
@@ -152,6 +152,17 @@ bus.emit({
   message: `[may.ts] Starting (pid=${process.pid}, instance=${INSTANCE_LABEL}, root=${PROJECT_ROOT})`,
 });
 
+// ── Session Recovery Tracking (Ambulance Protocol — P62) ────────────────
+// Track how many times a task has been auto-recovered to prevent infinite loops.
+// Key: "agent:taskHash", Value: recovery attempt count.
+const recoveryAttempts = new Map<string, number>();
+const MAX_RECOVERY_ATTEMPTS = 2;
+
+function recoveryKey(agent: string, task: string): string {
+  // Use first 100 chars of task to create a stable key
+  return `${agent}:${task.slice(0, 100)}`;
+}
+
 const manager = new SubagentManager({
   persistDir: PERSIST_DIR,
   projectRoot: PROJECT_ROOT,
@@ -166,6 +177,37 @@ const manager = new SubagentManager({
     // Surface errors for completed task sessions
     if (info.error && info.status === "error") {
       bus.emit({ type: "info", message: `[${info.agent}] ⚠️ Session ${info.status}: ${info.error}` });
+
+      // ── Session Drop Recovery (Ambulance Protocol — P62) ──
+      // If error is transient infrastructure failure, auto-requeue the task.
+      // logRecoveryNeeded() already ran in handleCompletion; here we consume it.
+      const errorClass = classifyError(info.error);
+      if (errorClass === "infra") {
+        const rKey = recoveryKey(info.agent, info.task);
+        const attempts = recoveryAttempts.get(rKey) || 0;
+        if (attempts < MAX_RECOVERY_ATTEMPTS) {
+          try {
+            recoveryAttempts.set(rKey, attempts + 1);
+            const newSessionId = manager.run(info.agent, info.task, { kind: "job" });
+            logRecovered(PERSIST_DIR, info.sessionId, newSessionId);
+            bus.emit({
+              type: "info",
+              message: `[recovery] 🚑 Requeued ${info.agent} session ${info.sessionId} → ${newSessionId} (infra error, attempt ${attempts + 1}/${MAX_RECOVERY_ATTEMPTS})`,
+            });
+          } catch (requeueErr) {
+            const msg = requeueErr instanceof Error ? requeueErr.message : String(requeueErr);
+            bus.emit({
+              type: "info",
+              message: `[recovery] ❌ Failed to requeue ${info.agent}: ${msg}`,
+            });
+          }
+        } else {
+          bus.emit({
+            type: "info",
+            message: `[recovery] ⛔ ${info.agent} exhausted ${MAX_RECOVERY_ATTEMPTS} recovery attempts for task — escalating`,
+          });
+        }
+      }
     }
 
     // Auto-evaluate completed task trees (children of task-mode sessions)
