@@ -204,6 +204,8 @@ export interface ActiveSession {
   turnBudgetWarned: boolean;
   /** P114: Whether the agent has read its ERROR_LOG.jsonl in this session. */
   hasReadErrorLog: boolean;
+  /** File paths modified (write/edit) during this session, for activity tracking. */
+  filesModified: Set<string>;
 }
 
 /** Options for spawning a session with parent/workflow context. */
@@ -256,4 +258,9 @@ export interface SubagentManagerOptions {
    * This is the single point where all session creation is observed.
    */
   onSessionStart?: (agentName: string, sessionId: string) => void;
+  /**
+   * Called when an agent reports being blocked (via report_blocked tool).
+   * Used to route escalations to May's session.
+   */
+  onSessionBlocked?: (agentName: string, sessionId: string, reason: string) => void;
 }

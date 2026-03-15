@@ -97,6 +97,7 @@ export {
   getOpUsage,
 } from "./manager-receipts.js";
 export type { ReceiptWrapContext } from "./manager-receipts.js";
+import { appendActivity, truncateSummary, PROGRESS_INTERVAL, type ActivityEvent } from "./activity.js";
 
 /**
  * P93 Infrastructure Resilience — Automatic Retry for Transient Errors
@@ -159,6 +160,7 @@ export class SubagentManager {
   private registry: RegistryStore;
   private onSessionComplete?: (info: SessionInfo) => void;
   private onSessionStart?: (agentName: string, sessionId: string) => void;
+  private onSessionBlocked?: (agentName: string, sessionId: string, reason: string) => void;
   private startedAt = Date.now();
   private _projectRoot: string;
   /** Maximum call depth for callAgent chains. Prevents A→B→A infinite loops. */
@@ -185,6 +187,7 @@ export class SubagentManager {
     this._infraRetryMax = opts.infraRetryMax ?? INFRA_RETRY_MAX;
     this.onSessionComplete = opts.onSessionComplete;
     this.onSessionStart = opts.onSessionStart;
+    this.onSessionBlocked = opts.onSessionBlocked;
   }
 
   /** Register a feature unit. */
@@ -208,6 +211,23 @@ export class SubagentManager {
         appendSessionMessage(persistDir, sessionId, event.message);
         if (event.message.role === "assistant") {
           session.turnCount++;
+
+          // Activity tracking: emit progress event every N turns
+          if (session.turnCount > 0 && session.turnCount % PROGRESS_INTERVAL === 0) {
+            const lastText = event.message.content
+              ? (Array.isArray(event.message.content)
+                  ? event.message.content.filter((b: any) => b.type === "text").map((b: any) => b.text).join(" ")
+                  : String(event.message.content))
+              : "";
+            appendActivity(this._projectRoot, {
+              ts: Date.now(),
+              event: "progress",
+              sid: sessionId,
+              agent: session.agentName,
+              turns: session.turnCount,
+              summary: truncateSummary(lastText),
+            });
+          }
         }
       }
     });
@@ -532,6 +552,33 @@ export class SubagentManager {
     }
 
     this.appendMemory(session);
+
+    // Activity tracking: log session completion
+    {
+      const duration = formatDuration(session.endedAt! - session.startedAt);
+      const lastText = session.agent.state.messages
+        .filter((m: any) => m.role === "assistant")
+        .pop()?.content;
+      const summaryText = Array.isArray(lastText)
+        ? lastText.filter((b: any) => b.type === "text").map((b: any) => b.text).join(" ")
+        : typeof lastText === "string" ? lastText : "";
+      if (archiveStatus === "error") {
+        appendActivity(this._projectRoot, {
+          ts: Date.now(), event: "error", sid: session.sessionId,
+          agent: session.agentName, turns: session.turnCount,
+          duration, summary: truncateSummary(summaryText),
+          error: truncateSummary(session.error),
+        });
+      } else {
+        appendActivity(this._projectRoot, {
+          ts: Date.now(), event: "done", sid: session.sessionId,
+          agent: session.agentName, turns: session.turnCount,
+          duration, summary: truncateSummary(summaryText),
+          files: [...session.filesModified],
+        });
+      }
+    }
+
     this.archiveSessionDir(session);
     this.activeSessions.delete(session.sessionId);
 
@@ -612,6 +659,7 @@ export class SubagentManager {
       turnBudgetWarningAt: def.turnBudgetWarningAt ?? TURN_BUDGET_WARNING_DEFAULT,
       turnBudgetWarned: false,
       hasReadErrorLog: false,
+      filesModified: new Set(),
     };
 
     // Write [STARTED] sentinel
@@ -649,6 +697,11 @@ export class SubagentManager {
 
     // Notify listener that a new session has started
     this.onSessionStart?.(name, sessionId);
+
+    // Activity tracking: log session start
+    appendActivity(this._projectRoot, {
+      ts: Date.now(), event: "start", sid: sessionId, agent: name, task,
+    });
 
     // The initial user message is persisted via the message_end subscriber
     // when agentLoop emits it (before any LLM call). No explicit write here
@@ -894,6 +947,7 @@ export class SubagentManager {
       turnBudgetWarningAt: def.turnBudgetWarningAt ?? TURN_BUDGET_WARNING_DEFAULT,
       turnBudgetWarned: false,
       hasReadErrorLog: false,
+      filesModified: new Set(),
     };
 
     this.subscribeForPersistence(session);
