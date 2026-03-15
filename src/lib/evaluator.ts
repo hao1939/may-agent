@@ -63,21 +63,6 @@ export interface TaskEvaluationResult {
   raw: string;
 }
 
-export interface MaintainAgentOptions {
-  manager: SubagentManager;
-  agentName: string; // which agent to maintain
-  knowledgeDir: string; // path to agent's knowledge/
-  persistDir: string; // path to .state/ (reserved for future performance tracking)
-  workflowDir?: string; // path to agent's workflows/ (reserved for future tool health checks)
-}
-
-export interface MaintenanceResult {
-  lessonsPruned: number; // how many lessons were consolidated/removed
-  suggestions: string[]; // suggested changes for domain.md (human reviews)
-  staleItems: string[]; // stale knowledge detected
-  toolIssues: string[]; // broken/missing tools detected
-}
-
 // ── Usage extraction ───────────────────────────────────────────────────
 
 export function extractUsage(messages: AgentMessage[]): UsageSummary {
@@ -222,39 +207,6 @@ function parseTaskEvaluation(text: string): {
   }
 
   return defaultResult;
-}
-
-// ── Maintenance response parsing ───────────────────────────────────────
-
-function parseMaintenanceResponse(text: string): {
-  updatedLessons: string | null;
-  report: { lessonsPruned: number; suggestions: string[]; staleItems: string[]; toolIssues: string[] };
-} {
-  const defaultReport = {
-    lessonsPruned: 0,
-    suggestions: [] as string[],
-    staleItems: [] as string[],
-    toolIssues: [] as string[],
-  };
-
-  let updatedLessons: string | null = null;
-  const lessonsMatch = text.match(/###\s+[Uu]pdated\s+lessons\.md\s*\n[\s\S]*?```(?:markdown|md)?\s*\n([\s\S]*?)```/);
-  if (lessonsMatch) {
-    updatedLessons = lessonsMatch[1].replace(/\n$/, "");
-  }
-
-  let report = { ...defaultReport };
-  const reportMatch = text.match(/###\s+[Mm]aintenance\s+[Rr]eport\s*\n[\s\S]*?```json\s*\n([\s\S]*?)```/);
-  if (reportMatch) {
-    try {
-      const parsed = JSON.parse(reportMatch[1].trim());
-      report = { ...defaultReport, ...parsed };
-    } catch {
-      // Keep defaults
-    }
-  }
-
-  return { updatedLessons, report };
 }
 
 // ── Task-tree evaluation ───────────────────────────────────────────────
@@ -547,98 +499,6 @@ export async function evaluateTask(opts: EvaluateTaskOptions): Promise<TaskEvalu
   return result;
 }
 
-// ── Maintenance function ───────────────────────────────────────────────
-
-const DEFAULT_MAINTENANCE_RESULT: MaintenanceResult = {
-  lessonsPruned: 0,
-  suggestions: [],
-  staleItems: [],
-  toolIssues: [],
-};
-
-/**
- * Prune and consolidate an agent's lessons.md using the evaluator agent.
- *
- * Does NOT modify domain.md — that's human-authored and stable.
- * Instead, returns suggestions for domain.md changes that a human can review.
- */
-export async function maintainAgent(opts: MaintainAgentOptions): Promise<MaintenanceResult> {
-  const { manager, agentName, knowledgeDir } = opts;
-
-  const lessonsPath = join(knowledgeDir, "lessons.md");
-  const domainPath = join(knowledgeDir, "domain.md");
-
-  if (!existsSync(lessonsPath)) {
-    return { ...DEFAULT_MAINTENANCE_RESULT };
-  }
-
-  const lessonsContent = readFileSync(lessonsPath, "utf-8");
-  if (!lessonsContent.trim()) {
-    return { ...DEFAULT_MAINTENANCE_RESULT };
-  }
-
-  let domainContent = "(no domain.md exists)";
-  if (existsSync(domainPath)) {
-    domainContent = readFileSync(domainPath, "utf-8");
-  }
-
-  const prompt = [
-    `# Lessons Maintenance for agent: ${agentName}\n`,
-    `## Current domain.md (READ-ONLY — do not rewrite this)\n\`\`\`markdown\n${domainContent}\n\`\`\`\n`,
-    `## Current lessons.md (this is what you're pruning)\n\`\`\`markdown\n${lessonsContent}\n\`\`\`\n`,
-    [
-      `## Instructions`,
-      ``,
-      `Prune and consolidate the lessons.md for the "${agentName}" agent.`,
-      ``,
-      `1. Remove duplicate/redundant lessons`,
-      `2. Remove lessons already covered in domain.md`,
-      `3. Merge similar lessons into single entries`,
-      `4. Remove obsolete lessons (references to things that no longer exist)`,
-      `5. Keep recent and important lessons`,
-      `6. Identify lessons that SHOULD be in domain.md — list as suggestions (human will review)`,
-      `7. Check for stale knowledge in domain.md (references to files/APIs that may have changed)`,
-      ``,
-      `**Do NOT output an updated domain.md.** Domain.md is human-authored.`,
-      ``,
-      `Respond with exactly these two sections:`,
-      ``,
-      `### Updated lessons.md`,
-      `(fenced markdown block with pruned lessons.md)`,
-      ``,
-      `### Maintenance Report`,
-      `\`\`\`json`,
-      `{`,
-      `  "lessonsPruned": <number of lessons removed/merged>,`,
-      `  "suggestions": ["suggestion for domain.md change", ...],`,
-      `  "staleItems": ["stale reference in domain.md", ...],`,
-      `  "toolIssues": ["broken/missing tool", ...]`,
-      `}`,
-      `\`\`\``,
-    ].join("\n"),
-  ].join("\n");
-
-  const evalSessionId = manager.run("evaluator", prompt);
-  const evalResult = await manager.waitFor(evalSessionId);
-
-  const responseText = evalResult?.lastAssistantText;
-  if (!responseText) {
-    return { ...DEFAULT_MAINTENANCE_RESULT };
-  }
-
-  const parsed = parseMaintenanceResponse(responseText);
-
-  if (parsed.updatedLessons !== null) {
-    writeFileSync(lessonsPath, parsed.updatedLessons, "utf-8");
-  }
-
-  return {
-    lessonsPruned: parsed.report.lessonsPruned,
-    suggestions: parsed.report.suggestions,
-    staleItems: parsed.report.staleItems,
-    toolIssues: parsed.report.toolIssues,
-  };
-}
 
 export interface AgentScoreSummary {
   avgEfficiency: number;

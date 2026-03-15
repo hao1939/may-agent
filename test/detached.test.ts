@@ -11,8 +11,8 @@ import { describe, it, expect, beforeAll, beforeEach, afterEach } from "vitest";
 import { mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { resolve, join } from "node:path";
 import { createServer, type Server } from "node:net";
-import { readIdentity, type InstanceIdentity } from "./detached.js";
-import { sendSocketCommand, waitForSocketEvent } from "./socket-client.js";
+import { readIdentity, type InstanceIdentity } from "../src/lib/detached.js";
+import { sendSocketCommand, waitForSocketEvent } from "../src/lib/socket-client.js";
 
 // ── readIdentity() tests ───────────────────────────────────────────────
 
@@ -307,11 +307,11 @@ describe("waitForDetached", () => {
   const tmpDir = resolve("/tmp/test-manager-" + process.pid);
 
   // We need to create a minimal SubagentManager to test waitForDetached.
-  let SubagentManager: typeof import("./manager.js").SubagentManager;
+  let SubagentManager: typeof import("../src/lib/manager.js").SubagentManager;
 
   beforeAll(async () => {
     // Heavy dynamic import — do once, not per-test (avoids 10s hook timeout)
-    const mod = await import("./manager.js");
+    const mod = await import("../src/lib/manager.js");
     SubagentManager = mod.SubagentManager;
   }, 30_000);
 

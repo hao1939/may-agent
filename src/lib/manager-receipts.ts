@@ -10,7 +10,7 @@
  */
 
 import { randomUUID, createHmac } from "node:crypto";
-import { appendFileSync, existsSync, statSync } from "node:fs";
+import { appendFileSync } from "node:fs";
 import { join } from "node:path";
 import type { AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
 import { Type } from "@mariozechner/pi-ai";
@@ -180,32 +180,6 @@ export function wrapToolsWithReceipts(
       }
 
       // Execute the original tool (with timing for P113 Cost Signal)
-      // But first: P114 Experience Replay Enforcer — track reads and block edits
-      if (session) {
-        // Track: if this is a "read" call that targets ERROR_LOG, mark the session
-        if (tool.name === "read") {
-          const readPath = (params as any)?.path ?? "";
-          if (/ERROR_LOG/i.test(readPath)) {
-            session.hasReadErrorLog = true;
-          }
-        }
-
-        // Enforce: if this is an "edit" (or "write") and they haven't read ERROR_LOG
-        if ((tool.name === "edit" || tool.name === "write") && !session.hasReadErrorLog) {
-          // Only enforce if the agent actually has an ERROR_LOG to read
-          const errorLogPath = join(ctx.projectRoot, "agents", session.agentName, "ERROR_LOG.jsonl");
-          const hasErrorLog = existsSync(errorLogPath) && statSync(errorLogPath).size > 0;
-          if (hasErrorLog) {
-            console.error(`P114_BLOCKED: Agent ${session.agentName} attempted ${tool.name} without reading ERROR_LOG.jsonl first.`);
-            console.log(JSON.stringify({ type: "P114_BLOCKED", agent: session.agentName, sessionId, tool: tool.name }));
-            return {
-              content: [{ type: "text" as const, text: `🚫 BLOCKED (P114 Safety Protocol): You must read \`ERROR_LOG.jsonl\` before making edits. Identify previous failures to avoid repeating them. Run: read("agents/${session.agentName}/ERROR_LOG.jsonl")` }],
-              details: undefined,
-            };
-          }
-        }
-      }
-
       const execStartMs = Date.now();
 
       // P162: Concurrency Gate — serialize high-impact tool execution

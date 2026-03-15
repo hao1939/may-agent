@@ -17,7 +17,7 @@ import {
   ensureSessionDir,
   appendSessionMessage,
   readSessionMessages,
-} from "./persistence.js";
+} from "../src/lib/persistence.js";
 
 // ── Helpers ─────────────────────────────────────────────────────────────
 
