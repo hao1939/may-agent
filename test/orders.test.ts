@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach, afterEach } from "bun:test";
+import { describe, test, expect, beforeEach, afterEach } from "vitest";
 import { mkdtempSync, rmSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -71,7 +71,7 @@ describe("orders (P209: Intent Persistence)", () => {
     // Last line should have COMPLETED status
     const last = JSON.parse(lines[2]);
     expect(last.status).toBe("COMPLETED");
-    expect(last.completedAt).toBeNumber();
+    expect(last.completedAt).toBeTypeOf("number");
   });
 
   test("getPendingOrders returns only PENDING/IN_PROGRESS", () => {
@@ -126,8 +126,8 @@ describe("orders (P209: Intent Persistence)", () => {
       sessionId: "s_old",
     });
 
-    // With maxAge=0 (instant staleness), should reset
-    const count = resetStaleOrders(persistDir, 0);
+    // With maxAge=-1 (any order is immediately stale), should reset
+    const count = resetStaleOrders(persistDir, -1);
     expect(count).toBe(1);
 
     const pending = getPendingOrders(persistDir);
