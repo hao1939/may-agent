@@ -76,7 +76,9 @@ import { runActiveRecall, formatRecallWarnings } from "./active-recall.js";
 import { buildTrace } from "./manager-trace.js";
 import { isRetryableInfraError, runAgentWithRetry } from "./manager-retry.js";
 import { createAgentsTool as createAgentsToolFn, type CreateAgentsToolOptions } from "./manager-agents-tool.js";
+import { logRecoveryNeeded } from "./session-recovery.js";
 export { isRetryableInfraError, runAgentWithRetry } from "./manager-retry.js";
+export { logRecoveryNeeded, classifyError, getPendingRecoveries, logRecovered } from "./session-recovery.js";
 export { buildTrace, findPathToTarget } from "./manager-trace.js";
 export type { TraceContext } from "./manager-trace.js";
 import { computeHealth, computeAuditHealth, computeReconcileHealth, EVAL_SKIP_AGENTS } from "./manager-health.js";
@@ -593,6 +595,22 @@ export class SubagentManager {
 
     this.archiveSessionDir(session);
     this.activeSessions.delete(session.sessionId);
+
+    // ── Log recovery-needed for failed sessions (P62: No Silent Failures) ──
+    if (archiveStatus === "error" && session.error) {
+      try {
+        logRecoveryNeeded(this.registry.persistDir, {
+          sessionId: session.sessionId,
+          agent: session.agentName,
+          task: session.task,
+          error: session.error,
+          startedAt: session.startedAt,
+          parentSessionId: session.parentSessionId,
+        });
+      } catch {
+        /* best-effort — never block completion for recovery logging */
+      }
+    }
 
     if (this.onSessionComplete) {
       const info: SessionInfo = {
