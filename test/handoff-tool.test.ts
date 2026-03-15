@@ -182,10 +182,10 @@ describe("createHandoffTool", () => {
       expect(signals).toContain("- **Context**: Bug fix ready for review");
       expect(signals).toContain("- **Expectations**: Run tests and approve");
       expect(signals).toContain("- **Status**: PENDING_ACK");
-      expect(signals).toContain("- **read_by**: []");
+      expect(signals).toContain('- **read_by**: ["qa"]');
     });
 
-    it("always includes read_by (P82 compliance)", async () => {
+    it("auto-populates read_by with target when not provided (P82 compliance)", async () => {
       await execute(makeOpts(), {
         target: "qa",
         artifact_path: "src/lib/feature.ts",
@@ -194,8 +194,34 @@ describe("createHandoffTool", () => {
       });
 
       const signals = readFileSync(signalsPath, "utf-8");
-      // Bold markdown: **read_by**: []
-      expect(signals).toMatch(/read_by\*?\*?\s*:\s*\[\]/);
+      // P82: read_by is auto-populated with [target] when omitted
+      expect(signals).toMatch(/read_by\*?\*?\s*:\s*\["qa"\]/);
+    });
+
+    it("uses explicit read_by when provided", async () => {
+      await execute(makeOpts(), {
+        target: "qa",
+        artifact_path: "src/lib/feature.ts",
+        context: "test",
+        expectations: "test",
+        read_by: ["may", "tech-lead"],
+      });
+
+      const signals = readFileSync(signalsPath, "utf-8");
+      expect(signals).toContain('- **read_by**: ["may","tech-lead"]');
+    });
+
+    it("falls back to [target] when read_by is empty array", async () => {
+      await execute(makeOpts(), {
+        target: "bob",
+        artifact_path: "src/lib/feature.ts",
+        context: "test",
+        expectations: "test",
+        read_by: [],
+      });
+
+      const signals = readFileSync(signalsPath, "utf-8");
+      expect(signals).toContain('- **read_by**: ["bob"]');
     });
 
     it("includes --- separator before entry", async () => {
@@ -223,7 +249,7 @@ describe("createHandoffTool", () => {
       expect(existsSync(signalsPath)).toBe(true);
       const signals = readFileSync(signalsPath, "utf-8");
       expect(signals).toContain("# Signals");
-      expect(signals).toContain("- **read_by**: []");
+      expect(signals).toContain('- **read_by**: ["qa"]');
     });
 
     it("preserves existing SIGNALS.md content", async () => {
@@ -427,11 +453,11 @@ describe("createHandoffTool", () => {
       });
 
       const signals = readFileSync(signalsPath, "utf-8");
-      // The entry uses **read_by**: [] (bold markdown).
+      // P82: read_by auto-populated with [target] when not provided
       // The evaluator regex /read_by\s*:/i would match the plain text inside.
       // Verify the field is present in the structured entry.
       expect(signals).toContain("**read_by**:");
-      expect(signals).toContain("[]");
+      expect(signals).toContain('["qa"]');
     });
 
     it("entry format is evaluator-parseable", async () => {
@@ -449,7 +475,7 @@ describe("createHandoffTool", () => {
       expect(signals).toMatch(/\*\*To\*\*:\s*\w+/);
       expect(signals).toMatch(/\*\*Artifact\*\*:\s*`[^`]+`/);
       expect(signals).toMatch(/\*\*Status\*\*:\s*PENDING_ACK/);
-      expect(signals).toMatch(/\*\*read_by\*\*:\s*\[\]/);
+      expect(signals).toMatch(/\*\*read_by\*\*:\s*\["qa"\]/);
     });
   });
 
@@ -505,7 +531,7 @@ describe("createHandoffTool", () => {
 
       expect(existsSync(customPath)).toBe(true);
       const signals = readFileSync(customPath, "utf-8");
-      expect(signals).toContain("- **read_by**: []");
+      expect(signals).toContain('- **read_by**: ["qa"]');
     });
 
     it("uses different agentName correctly", async () => {
