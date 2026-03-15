@@ -39,6 +39,7 @@ const EXIT_RELOAD = 100;
 const BACKOFF_INITIAL = 2000;
 const BACKOFF_MAX = 30_000;
 const STABLE_RUN_THRESHOLD = 60_000; // Reset backoff if child ran > 60s
+const INSTANT_FAILURE_THRESHOLD = 5_000; // Don't retry if child dies within 5s
 
 // ── Shutdown config ───────────────────────────────────────────────────────
 const SHUTDOWN_TIMEOUT = 5000; // SIGKILL if child doesn't exit within 5s
@@ -79,8 +80,15 @@ function spawnChild(): void {
     }
 
     // Case 3: Crash — restart with backoff
-    // Reset backoff if child ran long enough (not a crash loop)
     const runtime = Date.now() - lastStartTime;
+
+    // Instant failure (< 5s) = startup/config error, not transient. Don't retry.
+    if (runtime < INSTANT_FAILURE_THRESHOLD) {
+      log(`may.ts failed immediately (code ${code}, ran ${Math.round(runtime / 1000)}s). Not retrying — fix the error and restart.`);
+      process.exit(code ?? 1);
+    }
+
+    // Reset backoff if child ran long enough (not a crash loop)
     if (runtime > STABLE_RUN_THRESHOLD) {
       backoffMs = BACKOFF_INITIAL;
     }
