@@ -14,6 +14,7 @@
 import { appendFileSync } from "node:fs";
 import { join } from "node:path";
 import type { SubagentManager } from "../lib/manager.js";
+import { logOrder } from "../lib/orders.js";
 import type { EventBus } from "./event-bus.js";
 
 export interface ChatSessionOptions {
@@ -124,12 +125,22 @@ export class ChatSession {
    */
   private sendMessage(message: string): void {
     if (!this.sessionId) {
+      // P209: Persist order BEFORE spawning session (survive crashes)
+      const order = this.persistDir
+        ? logOrder(this.persistDir, {
+            text: message,
+            assignedTo: this.agentName,
+            source: "chat",
+          })
+        : undefined;
+
       // First message: create the persistent session
       this.sessionId = this.manager.run(this.agentName, message, {
         kind: "chat",
         autoClose: "never",
         compaction: true,
         source: "chat",
+        orderId: order?.id,
       });
       this.trackCompletion(this.sessionId);
       return;
@@ -270,9 +281,20 @@ export class ChatSession {
   /** Start an ephemeral direct agent session (from @agent prefix). */
   private startDirectSession(agentName: string, task: string): void {
     this.bus.emit({ type: "info", message: `[direct] Running ${agentName}...` });
+
+    // P209: Persist order BEFORE spawning session (survive crashes)
+    const order = this.persistDir
+      ? logOrder(this.persistDir, {
+          text: task,
+          assignedTo: agentName,
+          source: "chat",
+        })
+      : undefined;
+
     const sessionId = this.manager.run(agentName, task, {
       kind: "job",
       source: "chat",
+      orderId: order?.id,
     });
     this.manager
       .waitFor(sessionId)
