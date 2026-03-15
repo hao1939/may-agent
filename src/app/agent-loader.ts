@@ -18,7 +18,7 @@
 
 import { readFileSync, existsSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
-import type { Model } from "@mariozechner/pi-ai";
+import type { ModelWithApiKey } from "../lib/types.js";
 import type { AgentTool } from "@mariozechner/pi-agent-core";
 import {
   SubagentManager,
@@ -61,7 +61,7 @@ export interface AgentLoaderOptions {
   agentsRoot: string;
   projectRoot: string;
   persistDir: string;
-  models: Record<string, Model<any>>;
+  models: Record<string, ModelWithApiKey>;
   manager: SubagentManager;
   bus: EventBus;
   cronEnabled: boolean;
@@ -351,7 +351,7 @@ function buildTools(config: AgentConfig, opts: AgentLoaderOptions): AgentTool[] 
                 knowledgeDir: existsSync(knowledgeDir) ? knowledgeDir : undefined,
                 workspace: existsSync(workspace) ? workspace : undefined,
                 projectRoot: opts.projectRoot,
-                apiKey: (model as any).apiKey,
+                apiKey: model.apiKey,
                 memoryLimit: config.memoryLimit,
               });
             },
@@ -372,7 +372,7 @@ function buildTools(config: AgentConfig, opts: AgentLoaderOptions): AgentTool[] 
                 knowledgeDir: existsSync(knowledgeDir) ? knowledgeDir : undefined,
                 workspace: existsSync(workspace) ? workspace : undefined,
                 projectRoot: opts.projectRoot,
-                apiKey: (model as any).apiKey,
+                apiKey: model.apiKey,
                 memoryLimit: config.memoryLimit,
               });
             },
@@ -431,7 +431,7 @@ export interface ValidationError {
  */
 export function validateAgentConfig(
   config: AgentConfig,
-  models: Record<string, any>,
+  models: Record<string, ModelWithApiKey>,
   agentsRoot: string,
 ): ValidationError[] {
   const errors: ValidationError[] = [];
@@ -529,7 +529,7 @@ export function loadAgents(opts: AgentLoaderOptions): LoadResult {
       knowledgeDir: existsSync(knowledgeDir) ? knowledgeDir : undefined,
       workspace: existsSync(workspace) ? workspace : undefined,
       projectRoot,
-      apiKey: (model as any).apiKey,
+      apiKey: model.apiKey,
       memoryLimit: config.memoryLimit,
       compaction: config.compaction,
       contextFiles: config.context_files?.map((f) => resolve(agentDir, f)),

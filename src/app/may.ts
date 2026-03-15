@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 import { resolve, dirname } from "node:path";
 import { existsSync, readFileSync, writeFileSync, unlinkSync, mkdirSync } from "node:fs";
 import { getModel } from "@mariozechner/pi-ai";
+import type { ModelWithApiKey } from "../lib/types.js";
 import { SubagentManager, evaluateTask, writeSkippedEvaluations, classifyError, logRecovered } from "../lib/index.js";
 import { EventBus } from "./event-bus.js";
 import { ChatSession } from "./chat-session.js";
@@ -112,7 +113,7 @@ const MODEL_BASE_URL = process.env.MODEL_BASE_URL || "http://localhost:4000";
 
 const LITELLM_API_KEY = process.env.LITELLM_API_KEY || process.env.ANTHROPIC_API_KEY || "not-needed";
 
-const models: Record<string, any> = {
+const models: Record<string, ModelWithApiKey> = {
   opus: {
     ...getModel("anthropic", "claude-sonnet-4-20250514"),
     id: "claude-opus-4.6",
