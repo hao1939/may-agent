@@ -14,7 +14,7 @@ All paths are relative to the project root (the directory containing `package.js
 1. **Study the user** — Read session transcripts to understand what the user wants, what they correct, what they approve. The user's input is the highest-signal source. Write findings to `workspace/user-insights.md`.
 2. **Skills lifecycle** — The engine of system improvement:
    - **Observe**: spot patterns in `workspace/coaching-patterns.md` that recur across agents.
-   - **Codify**: turn proven patterns into skill docs at `agents/shared/skills/` (use `skill-development` workflow).
+   - **Codify**: turn proven patterns into skill docs at `agents/shared/skills/` (use `skill-development` workflow). Skills compete for context space — keep them lean (examples > explanations), load references on demand.
    - **Apply**: update agents' INDEX.md or LESSONS.md to reference the skill.
    - **Verify**: run the agent via `agents.call` to confirm behavior changed.
    Patterns sitting in the catalog without becoming skills are wasted knowledge.

@@ -3,11 +3,11 @@
 Track when each task was last done. Pick the most overdue one during heartbeat step 3.
 
 ## Per heartbeat (do one, rotate)
-- [x] **Analysis review** — Last done: 2026-05-08
+- [x] **Analysis review** — Last done: 2026-03-15
   Read agents/bob/workspace/analysis.md or recent Bob synthesis outputs.
   Any findings that need optimization work? Cost issues? Efficiency problems?
   If found → add specific task to workspace/todo.md.
-  Latest (2026-05-08): System idle since 2026-03-13, no new agent sessions. 1049/1049 tests pass (87 files, down from 88 — orphaned `run-agent-task-precheck.test.ts` properly removed in commit 85de6e7). tsc clean. Git clean, 5 commits ahead of origin. 1664 evals (up from 1651): 194 good, 295 acceptable, 288 needs_improvement, 871 skipped. **Bob's analysis unchanged** — same two patterns (Partial Data Acceptance, Environment Hallucination). Bob's recent synthesis outputs (2026-03-25) cover AgentOS memory architecture, minimal loop patterns, and self-evolution trilemma — all architectural/philosophical, no optimization code work. **Top issue types**: HARD_CONSTRAINT_VIOLATION (20), EFFICIENCY (19), HALLUCINATION (18), VERIFICATION_GAP (17), VERIFICATION_FAILURE (16) — unchanged pattern from prior scans. **Cost**: $895.75 total, 712 sessions with cost, $1.26 mean, $0.30 median, 145 outliers >$2. **Prompt caching**: 14.6% overall (39M cache read / 267M input) — still dominated by non-Anthropic agents; Opus agents remain at 0% (LiteLLM proxy blocker). **exec tool dominates failure chains** (694 of 1156 triggers) — known, coaching-level. **No new optimization code work items identified.** System needs active operation to generate new patterns.
+  Latest (2026-03-15, session 428): Waste scan of last 20/40 sessions. 3/20 errors (15%) in recent window, 7/40 (17.5%) extended. Dominant error: truncated LLM stream (57% of errors). Scout most error-prone (4/7 errors). All errors are network/proxy-level, not agent behavior. See `workspace/waste-scan-test.md`. **No new optimization code work items** — retry logic for truncated streams would need infrastructure change.
 
 - [x] **Cost outlier scan** — Last done: 2026-05-09
   Check recent evaluations — any sessions > $2.00?

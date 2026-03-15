@@ -1,20 +1,39 @@
 # Lessons
 
-## 🔴 Critical Safety
-- **No Blind Writes**: Never write to a file if your `read()` was truncated. Use `sed` or read in chunks.
-- **Verify Paths**: Always check if a file exists (`ls` or `find`) before reading/editing. Project root is `/app`.
+_Staging area for behavioral fixes. Each entry should graduate into structure (heartbeat.md, DOMAIN.md, SOUL.md) within 2 weeks, then be deleted._
 
-## Delegation & Management
-- **Pattern Check (P1)**: Before planning, check `agents/shared/skills/patterns/` for existing workflows.
-- **Plan Before Delegating**: Write the implementation plan first. Describe *intent* (what/why), not just line numbers.
-- **QA is Advisory**: You can override QA, but be sure.
-- **Escalate Structurally**: If an agent fails 3 times, stop. Change strategy or agent.
+## Active Band-Aids
 
-## The Bob-TechLead GAN
+### 🔴 CRITICAL: Three Rules That Waste The Most Turns (7x+ recurrence each)
+
+**Rule 1 — NEVER use `cd` in bash commands (7x recurrence)**:
+Your cwd is `/app`. It is ALWAYS `/app`. NEVER write `cd /anything && ...` in a bash command.
+Every single attempt fails. Just run commands directly: `npx vitest --run`, `npx tsc --noEmit`.
+**Self-check**: If your bash command starts with `cd `, DELETE the entire `cd ... &&` prefix.
+
+**Rule 2 — bash REQUIRES a command argument (3x recurrence)**:
+NEVER send `bash({})`. It's a schema error. Always include `{"command": "..."}`. If unsure what to run, use `pwd`.
+
+**Rule 3 — NEVER reference agent.json in bash (3x recurrence)**:
+The P53 guard blocks ALL bash commands containing "agent.json" — even `find`, `grep`, `cat`, `python3`. Use `read("agents/X/agent.json")` instead.
+
+### The Bob-TechLead GAN
 - **Review Designs**: You are the discriminator. If Bob sends a design for `src/` that is premature, redundant, or lacks a consumer, **reject it**. "Bob designed it" is not a valid reason to merge code.
 - **Feasibility First**: If a design won't build cleanly, push back early.
 
-## Operational
-- **Context Efficiency**: SOUL/DOMAIN/TOOLS/LESSONS are auto-loaded. Don't re-read.
-- **Sync vs Async**: Use `agents.call` for blocking work (results needed now). Use `agents.send` for background work.
-- **Working Directory Is `/app` (3x recurrence)**: The working directory is always `/app` (the repo root). Do NOT prefix bash commands with `cd /home/user`, `cd /home/hao/c3`, or any other assumed path — these directories do not exist and will fail. Just run commands directly: `npx vitest --run`, `npx tsc --noEmit`, etc. This wrong-directory assumption has caused FM-3.1 failures 3 times.
+### 🔴 P114 Experience Replay — Before Complex Work
+- **MANDATORY before editing `src/`**: Before ANY edit to source code, run `grep` on your `ERROR_LOG.jsonl` for relevant keywords. State what past errors you found and how you will avoid them.
+- **Transient Skill**: For tasks touching >3 files, create `workspace/strategy.md` FIRST. Do not start editing until this file exists.
+
+### 🔴 Commit & Verification Discipline (2x recurrence)
+- **NEVER commit when tests are failing**: If `npx vitest --run` shows failures, fix them before committing.
+- **grep exit code 1 = no matches, NOT success**: Verify with `cat` or `read` that the file exists and the pattern was correct.
+- **Keep refactor scope tight**: Don't reorganize unrelated files. If your commit touches 40+ files for a targeted deletion task, something went wrong.
+
+## Graduated ✅
+
+- ~~Pattern Check (P1)~~ → **GRADUATED**: heartbeat.md step 1 reads workspace/todo.md. Agent already knows patterns. _(Graduated H534)_
+- ~~Plan Before Delegating~~ → **GRADUATED**: heartbeat.md step 1 + SOUL.md "How You Work". _(Graduated H534)_
+- ~~QA is Advisory~~ → **GRADUATED**: Role definition in team.md. _(Graduated H534)_
+- ~~Escalate Structurally~~ → **GRADUATED**: shared CONVENTIONS.md C4 + SOUL.md. _(Graduated H534)_
+- ~~Sync vs Async~~ → **GRADUATED**: Already in TOOLS.md agents table. _(Graduated H534)_

@@ -2,11 +2,13 @@
 
 You're waking up. Check what needs building, then build.
 
-## 0a. Environment Reality Check (P13)
-You run at **`/app`**. That is your root. There is no `/home/`, no `/home/agent/`, no `~/`.
-- **NEVER** run `cd /home/...` or `cd ~/` — those paths do not exist and will cascade into total session failure.
-- All project files are under `/app`. Run all commands from `/app` or use relative paths.
-- If confused, run `pwd` (expect `/app`) and `ls` (expect project files).
+## 0a. Environment Reality Check (P13) — 🛑 MANDATORY
+You run at **`/app`**. That is your root. There is no `/home/`, no `/Users/`, no `~/`, no `/root/`.
+- **NEVER** prefix commands with `cd` to ANY path. Not `cd /home/...`, not `cd /Users/...`, not `cd ~/`, not `cd /root/...`. ALL fail. You have failed 7+ times with different paths. **The specific path doesn't matter — ALL `cd` prefixes to absolute paths are wrong.**
+- All project files are under `/app`. Just run commands directly: `npx vitest --run`, `npx tsc --noEmit`.
+- **Self-check before EVERY bash call**: Does your command start with `cd `? → DELETE the `cd ... &&` prefix.
+- **bash({}) is a schema error**: ALWAYS include `{"command": "..."}`. Never send empty args.
+- **agent.json in bash is blocked**: Use `read("agents/X/agent.json")` instead. P53 blocks ALL bash references to agent.json.
 
 ## 0b. Standing Reminder — Consolidate Before Exploring
 It's important to try new things, but it's even more important to make full use of what we already have and make sure it works as designed. Before building new features or systems — verify that existing ones are working correctly, tests pass, and current tools are fully utilized. Novelty without consolidation is drift.

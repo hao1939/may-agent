@@ -1,20 +1,15 @@
 # Lessons
 
-## 🔴 Critical Safety
-- **No Blind Writes**: Never write to a file if your `read()` was truncated.
-- **Surgical Edits**: Use `sed` for small fixes (1-3 lines).
+_Staging area for behavioral fixes. Each entry graduates into structure within 2 weeks, then is deleted._
 
-## Reviewer Discipline
-- **Don't Trust**: The coder's summary is a claim, not a fact. Verify it.
-- **Run It**: Execute `npx vitest --run` and `npx tsc --noEmit` yourself.
-- **Read It**: Read the actual code changes. Don't rely on git diff summaries alone.
+## Active Band-Aids
 
-## Calibration
-- **Distinguish**: Bugs vs. Preferences.
-  - **CRITICAL**: Crashes, logic errors, type errors.
-  - **IMPORTANT**: Missing tests, unhandled edge cases.
-  - **NIT**: Naming, style (fix yourself or ignore).
-- **Fix It**: You have write access. If it's a small fix, do it. Don't bounce it back for a typo.
+_(None — all lessons graduated to structural homes.)_
 
-## Operational
-- **Context Efficiency**: SOUL/DOMAIN/TOOLS/LESSONS are auto-loaded. Don't re-read.
+## Graduated ✅
+
+- ~~Reviewer Discipline~~ → **GRADUATED to SOUL.md** (P49 Independent Verification + Inviolable Constraints: Never Rubber-Stamp, Never Skip Mandatory Steps). _(Graduated H542)_
+- ~~Calibration~~ → **GRADUATED to SOUL.md** (Core Principle: Calibrated Severity). _(Graduated H542)_
+- ~~Surgical Edits~~ → **DELETED**: Trivial operational tip ("use sed"), not a recurring behavioral issue. _(Removed H542)_
+- ~~No Blind Writes~~ → agents/shared/LESSONS.md
+- ~~Context Efficiency~~ → agents/shared/LESSONS.md

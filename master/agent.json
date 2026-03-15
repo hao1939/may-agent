@@ -5,6 +5,7 @@
   "domain": "complex implementation via external coding agents",
   "model": "opus",
   "tools": [
+    "coordination",
     "claude-code",
     "gemini-cli"
   ]

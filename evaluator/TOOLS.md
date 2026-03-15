@@ -12,6 +12,10 @@ Write evaluation output, scores, and lessons. Primary targets:
 - `agents/evaluator/workspace/` — working files
 
 ### `bash` — Run shell commands
+
+### `handoff` — Transfer artifacts
+Transfer ownership or request review of an artifact. Writes a P82-compliant entry to SIGNALS.md.
+
 Run commands to inspect project state:
 - `ls`, `find`, `cat`, `grep` — navigate and search files
 - `wc -l` — check file sizes before reading

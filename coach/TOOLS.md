@@ -43,6 +43,9 @@ Clean up a failed experiment or temporary fork.
 - `discard_agent("coder-v2")` → deletes the fork and its memory.
 - Use when the experiment failed or is complete.
 
+## `handoff`
+Transfer ownership or request review of an artifact. Writes a P82-compliant entry to SIGNALS.md with automatic read_by tracking, notifies the target agent, and validates the artifact exists.
+
 ## `socket_watch`
 Monitor Unix domain sockets for live coaching sessions.
 
@@ -64,3 +67,4 @@ Run multi-step agent sequences. **Blocking.**
 
 ## Key Constraints
 - ❌ No `cron` tool.
+- ⚠️ **P53 Bash Guard**: Bash commands touching protected files (SOUL.md, LESSONS.md, DOMAIN.md, TOOLS.md, heartbeat.md, agent.json) via `>`, `cat`, `python`, `sed` with write intent trigger P53 violations. Recovery: switch to `read()` for reads, `edit()` or `write()` for writes. Don't retry the blocked command — change the tool.

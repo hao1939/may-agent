@@ -17,6 +17,9 @@ Cooperate with other agents. **Primary tool for getting things done.**
 | `peek(sessionId)` | No | See recent activity of a running session. |
 | `cancel(sessionId)` | No | Kill a running session. |
 
+## `handoff`
+Transfer ownership or request review of an artifact. Writes a P82-compliant entry to SIGNALS.md with automatic read_by tracking, notifies the target agent, and validates the artifact exists.
+
 ## `workflow`
 Run multi-step agent sequences. **Blocking.**
 

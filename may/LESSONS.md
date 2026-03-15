@@ -1,46 +1,27 @@
 # Lessons
 
-## 🔴🔴🔴 STOP — READ THIS FIRST (3x failure, mandatory compliance)
+_Staging area for behavioral fixes. Each entry should graduate into structure (heartbeat.md, DOMAIN.md, tool code) within 2 weeks, then be deleted._
 
-**YOU HAVE FAILED YOUR HEARTBEAT 3 TIMES (s_331, s_446, s_602) BY DOING THIS:**
-1. Read heartbeat.md ✓
-2. Read todo.md ✓
-3. See items are blocked on Hao
-4. Say "All healthy. Nothing actionable." ← **THIS IS THE BUG**
-5. STOP without running Steps 3 or 4 ← **THIS IS WRONG**
+## Active Band-Aids
 
-**"Blocked on Hao" does NOT mean "nothing to do."**
+- **Heartbeat is NOT auto-loaded**: You MUST `read()` heartbeat.md at the start of every heartbeat. _(Added 2026-03-14. Keep until infrastructure auto-loads heartbeat.)_
 
-**After reading todo.md, you MUST CONTINUE to Steps 3 and 4. Here is exactly what to do:**
+- 🔴 **No Fabricated Metrics (3x recurrence)**: NEVER report statistics, percentages, or counts in your summary that you did not directly compute from tool output in this session. If you didn't run a command that produced "91%", don't write "91%". If `ls` returned empty output, say "empty" — don't say "0 sessions" unless you verified. **Self-check before final output**: for every number or metric in your summary, can you point to the exact tool output it came from? If not, remove it. _(Added 2026-03-14. Graduates to heartbeat.md Output section after verification.)_
 
-**Step 3 — Run these commands (copy-paste them):**
-```
-ls -lt .state/sessions/active/ 2>/dev/null | head -10
-ls -lt .state/cron/ 2>/dev/null | head -5
-df -h / | tail -1
-```
+- 🔴 **Correct TODO Path (14x recurrence)**: Your todo file is at `agents/may/workspace/todo.md` — NOT `agents/may/todo.md`. Do NOT attempt `agents/may/todo.md` first. This ENOENT wastes a tool call every heartbeat. Go directly to `agents/may/workspace/todo.md`. _(Added 2026-03-15. 14 evals flagged this same ENOENT. Graduates when 5 consecutive heartbeats have zero todo.md path errors.)_
 
-**Step 4 — Do at least ONE of these:**
-- `ls -lt .state/sessions/history/ | head -5` and peek at a recent session
-- Check agents/.lab/ for stale experiments
-- Archive completed todo items
+- 🔴 **Correct SIGNALS.md Path (14x recurrence)**: The signals file is at `agents/shared/SIGNALS.md` — NOT `SIGNALS.md` at repo root. Your P82 check MUST use `agents/shared/SIGNALS.md`. Using `grep ... SIGNALS.md` without the full path causes ENOENT every heartbeat. Use: `grep -n "PENDING_ACK" agents/shared/SIGNALS.md | grep -i may | tail -20` or `cat agents/shared/SIGNALS.md`. _(Added 2026-03-15. 14 evals flagged this wrong-path ENOENT. Graduates when 5 consecutive heartbeats use the correct path on first attempt.)_
 
-**NEVER output "All healthy" unless you ran the Step 3 commands above.**
-**NEVER end your heartbeat after only 2-3 tool calls. Minimum is 5.**
+- **No Re-Cancellation Waste (C20)**: `agents.cancel()` on idle sessions does NOT remove them from `system_status` active listings. If you cancelled sessions in a previous heartbeat and they still appear as "idle" in `system_status`, do NOT cancel them again. Only cancel sessions you haven't seen before. Check your recent task history summaries — if they mention "cancelled 14 stale sessions", those same sessions will still appear but are already handled. _(Added 2026-03-15. Saves ~14 wasted tool calls per heartbeat.)_
 
-## 🔴 Critical Safety
-- **No Blind Writes**: Never write to a file if your `read()` was truncated.
-- **⚠️ PATHS: You run inside `/app`.** Use relative paths (e.g., `agents/may/workspace/todo.md`) or `/app/...`. **NEVER** use `/Users/hao/...`, `/home/hao/...`, or any other non-`/app` absolute path — those don't exist here and will fail. Don't `cd` to non-existent directories.
-- **Identity**: Files at `agents/may/`.
+## Graduated ✅
 
-## Operational Discipline
-- **Action Over Reporting**: Dispatch approved todos immediately. Don't list backlog.
-- **Brevity in output**: Heartbeat REPORTS should be ≤ 200 tokens. But you MUST still do the work — read heartbeat.md, follow each step, run actual checks. Brevity applies to your final summary, not to skipping steps.
-- **Proactive Reporting**: Report results to Hao immediately upon task completion.
+- ~~P114 Experience Replay~~ → **GRADUATED to heartbeat.md step 1** (P114 MANDATORY gate). _(Graduated H534)_
+- ~~P82 Read Receipts~~ → **GRADUATED to heartbeat.md step 1** (P82 MANDATORY gate). _(Graduated H534)_
 
-## Cooperation
-- **Call vs Send**: Use `agents.call` for blocking work (results needed now). Use `agents.send` for background work.
-- **Fallback**: If coder callDeny, use `workflow.run("implement-and-review", task)`.
+## Graduated (remove after confirming structural fix works)
 
-## Operational
-- **Context Efficiency**: SOUL/DOMAIN/TOOLS/LESSONS are auto-loaded. Don't re-read them. But `heartbeat.md` is NOT auto-loaded — you MUST `read()` it at the start of every heartbeat and follow its steps in order.
+- ~~Shallow heartbeat (🔴🔴🔴)~~ → **GRADUATED to heartbeat.md** Steps 3-5 (mandatory health checks + initiative). Lesson measured as FAILED (5%→11% worse). Structure is the fix, not the lesson. _(Removed 2026-03-14)_
+- ~~No Blind Writes~~ → **GRADUATED to agents/shared/LESSONS.md**. _(Removed 2026-03-14)_
+- ~~Verify Paths~~ → **GRADUATED to agents/shared/LESSONS.md**. _(Removed 2026-03-14)_
+- ~~Context Efficiency~~ → **GRADUATED to agents/shared/LESSONS.md**. _(Removed 2026-03-14)_

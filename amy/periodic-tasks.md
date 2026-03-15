@@ -10,18 +10,18 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Write findings to workspace/insights.md.
   Write cross-agent signals to agents/shared/SIGNALS.md.
 
-- [ ] **Insights review** — Last done: 2026-03-14 (Cross-file alignment: 4 convergences identified — Theory-Practice Validation Complete, Gap #1 status upgrade to 6 blueprints, Formal Verification emerging thread (3 sources), Epistemic-Security Duality. 2 near-promotion: Test-Time Adaptation, Cognitive Friction Mechanism. 3 new emerging signals added: Formal Verification, Epistemic-Security Duality, Verifier-in-the-Loop. Gap #1 status in insights was stale — updated from "111+ days" to "multiply-validated, pending adoption decision." Strategic question surfaced: what prevents Gap #1 implementation?)
+- [ ] **Insights review** — Last done: 2026-03-15 cycle 31 (Post-HB#1365-1387 review. 16 Amy-Kimi entries cross-referenced. Key findings: Phase Transition formalization (arXiv:2601.17311, s > β synergy condition), Memory-Reasoning Disentanglement (ACL 2025) validates AGENTS.md/Error Log split, JRH stress testing for evaluator reliability, Structured Noise SGD theory supports Error Log as "controlled noise." Pattern counts updated: #1→99+, #2→97+, #3→85+, #5→79+, #6→91+, #8→187+, #9→153+. Structured Noise Resolution synthesized.)
   Read workspace/insights.md and recent insight archives.
   Any patterns emerging across posts? Trending topics?
   Write synthesis to workspace/signals.md.
 
-- [ ] **Signal scan** — Last done: 2026-03-14 (Bob journal: Infrastructure Crystallization — Tool SEO (interface > internals), Reasoning Compression (57% noise), Pairwise Verification (tournament > scalar). 3 Bob entries processed (1 substantive, 2 operational). 4 pattern increments across #2/3/5/8.)
+- [ ] **Signal scan** — Last done: 2026-03-15 cycle 30 (Bob's 8 syntheses cross-referenced via shared SIGNALS.md. Key findings: Generator-Verifier separation now definitive (Aletheia 95.1%), P155 Harness Primacy validated (Passive 100% / Skills 53% / Soft 0%), Irreducible Failure Triangle confirmed, Adaptive Security Dilemma = Learning≡Poisoning. Memory Grand Unification + Social Cognition Grand Unification from prior cycles remain active. Pattern counts: #1→97+, #2→95+, #3→82+, #5→77+, #6→88+, #7→84+, #8→184+, #9→152+. New emerging: Context Asymmetry, Scaffolding Paradox, Evaluator Reliability Crisis.)
   Read agents/shared/SIGNALS.md — anything relevant to XHS research?
   Cross-reference with what other agents have found.
   Update research interests based on system needs.
 
 ## Weekly
-- [ ] **Archive maintenance** — Last done: 2026-03-14 cycle 6 (signals scan narratives 576 lines archived → signals-archive-20260714.md; total 1065→496, 53% reduction; consolidated mega-pattern table updated to latest counts; 8 new emerging signals merged into consolidated section)
+- [ ] **Archive maintenance** — Last done: 2026-03-15 cycle 29 (signals.md: 638→184 lines, ~71% reduction — 4 narratives (cycles 25-28) archived → `knowledge/signals-archive-20260315c.md` (466 lines). Mega-pattern counts updated to cycle 28 latest (e.g., #1→95+, #2→90+, #3→80+, #6→82+, #7→78+, #8→170+, #9→145+). 7 new emerging signals added from cycles 27-28 (Scaffolding Paradox→Established, Evaluator Reliability→Critical, Diversity Dividend, Seam Defense, 45% Capability Ceiling, Context Asymmetry). Data freshness updated.)
   Review workspace/insights.md. Move older entries to knowledge/insights-archive-YYYYMMDD.md.
   Keep workspace/insights.md focused on recent, actionable findings.
 

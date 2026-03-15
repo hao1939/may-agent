@@ -11,16 +11,21 @@ Actively try the agent growth system (fork → train → verify → promote). Do
 - Notifications pending? → Process them.
 - `agents/coach/workspace/todo.md` has urgent items (regressions, user complaints)? → Handle now, skip to step 4.
 
-## 2. Trigger Proactive Growth (P115 Complexity Rationing)
+## 2. Trigger Proactive Growth (P115 Complexity Rationing + P155 Learning Filter)
 **"Don't wait for graduation."**
 Scan `agents/*/ERROR_LOG.jsonl` (via `grep` or `tail`).
-- **Trigger**: Any agent with 3+ repeated errors of the same type (e.g., "Tool X failed", "Hallucinated Y").
+- **Trigger**: Any agent with 3+ repeated errors of the same type — BUT only **Partial Failures** (agent knows the tool/pattern but uses it wrong). Skip **Total Failures** (hallucination, model-level attractors, refusal) — those need infrastructure fixes, not coaching.
+  - ✅ Partial Failure examples: wrong path, wrong tool args, missing verification step, skipped heartbeat step
+  - ❌ Total Failure examples: fabricated data despite lessons, zero tool calls despite all prompt fixes, P114 skip despite SOUL.md rules
 - **Action**: Initiate a **Growth Cycle (P51)** immediately.
   1. **Fork** the agent (`fork_agent`).
   2. **Train** it on the specific failure case (create a targeted exercise).
-  3. **Verify** the fix (P109: Must produce a PASS/FAIL receipt).
-  4. **Promote** the improved agent.
+  3. **Verify** the fix (`verify_agent`). Read the FULL verify output and quote the specific line that proves PASS or FAIL.
+  4. **If PASS** → `promote_agent`. If heartbeat.md was changed, manually reapply edits to live agent (C14).
+  5. **If FAIL** → Fix the fork and re-verify (max 2 retries). If still failing → `discard_agent` and log the FAIL reason.
+  6. 🛑 **MANDATORY GATE**: Every Growth Cycle MUST reach a terminal state (promoted OR discarded) in the SAME session. NEVER leave a fork in `.lab/` without resolution.
 - **Goal**: Micro-improvements (fixing one bug) > Macro-overhauls (rewriting SOUL).
+- **Escalation**: If a behavioral fix fails 3+ times → investigate the DATA layer (memory, context, agent.json) before trying more prompt fixes. If that fails too → classify as model-level and close (see C16, C17).
 
 ## 3. Study the user and develop skills.
 This is your primary activity when nothing is urgent.
@@ -44,8 +49,10 @@ This never ends. Every heartbeat, spend time on convention work:
 If you find a gap worth fixing → **Use the Growth Cycle (P51)**.
 1. **Fork** the agent (`fork_agent`).
 2. **Train** it (edit SOUL/knowledge).
-3. **Verify** it (`verify_agent`).
-4. **Promote** it (`promote_agent`).
+3. **Verify** it (`verify_agent`). Read FULL output, quote the specific evidence of PASS or FAIL.
+4. **If PASS** → `promote_agent` (reapply heartbeat.md changes manually per C14).
+5. **If FAIL** → Fix and re-verify (max 2 retries), or `discard_agent` with logged reason.
+6. 🛑 **MANDATORY GATE**: Cycle MUST reach terminal state (promoted/discarded) in same session.
 Never edit live agents directly.
 
 **Skills lifecycle:**

@@ -14,11 +14,17 @@ Check `agents/bob/workspace/todo.md` for pending items. Process the top one.
 ## 2. Focus Tasks
 Read `agents/shared/focus-tasks.md`. Work on the highest-priority open item.
 
+**Before writing any brief or requesting any change**: `read` the actual target file first. Never assume codebase state from memory.
+
 ## 3. Periodic Tasks
 Check `agents/bob/periodic-tasks.md` and do the most overdue task. Update dates after completion.
 
 ## 4. Initiative
 If nothing's urgent: explore Scout/Amy research, synthesize insights, review system health, or propose designs.
+
+**Delegation Discipline:**
+- A brief is not a deliverable — it's the START of delegation. After writing a brief, delegate it immediately (call optimizer/tech-lead).
+- **Rule of Two**: If an agent fails the same task twice, STOP. Do not retry with the same brief. Decompose into smaller steps or route to a different agent.
 
 ## 5. Close Out
 Write findings to your workspace files (`workspace/journal.md`, `workspace/analysis-*.md`). Do NOT overwrite this file — it's your instruction template.

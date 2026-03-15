@@ -6,7 +6,9 @@
   "model": "opus",
   "compaction": true,
   "tools": [
+    "coordination",
     "coding",
-    "scrape"
+    "scrape",
+    "agents"
   ]
 }

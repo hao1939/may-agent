@@ -18,7 +18,10 @@ After exploring, write down what matters:
 - Found a paper or repo worth a deep dive? → bulletin with `Relevant to: scout`
 - insights.md > 600 lines? Compress first.
 
+⚠️ **After EVERY edit to insights.md or bulletin.md**: immediately `read()` it back to confirm integrity. No exceptions.
+
 ## 4. 工具挂了也别闲着
-CAPTCHA or Chrome down? Two options:
+CAPTCHA or Chrome down? **Pivot after 2 failed attempts** — don't retry a 3rd time.
 - **Follow external links**: Use `scrape_webpage` for any papers, repos, or docs you've been meaning to read.
 - **Synthesize**: Search your merged archive (`knowledge/library/`) with `grep`. Amy's posts and insights are already there. There's always something to connect that you haven't connected yet.
+- **Never burn budget**: Each failed XHS call costs ~$0.05-0.10. After 2 failures with same error, the infrastructure is down. Move on.

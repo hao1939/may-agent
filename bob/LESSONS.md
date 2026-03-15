@@ -1,24 +1,20 @@
 # Lessons
 
-## 🔴 Critical Safety
-- **Never Overwrite heartbeat.md**: Your heartbeat.md is your instruction template. NEVER use `write()` on it. Write session summaries to `workspace/journal.md` or `workspace/analysis-*.md` instead. If you `write()` your heartbeat, you destroy your own operating instructions and all future sessions will fail. (1st occurrence: s_101 — overwrote heartbeat.md with session summary.)
-- **No Blind Writes**: Never write to a file if your `read()` was truncated. Use `sed` or read in chunks.
-- **Verify Paths**: Always check if a file exists (`ls` or `find`) before reading/editing. Project root is `/app`.
-- **Tool Precision**: `read({path})`, `bash({command})`. Do not mix parameters.
+_Staging area for behavioral fixes. Each entry should graduate into structure (heartbeat.md, DOMAIN.md, SOUL.md) within 2 weeks, then be deleted._
 
-## Meta-Loop Discipline
-- **Verify before briefing**: `read` the actual file before requesting a change. Don't assume codebase state.
-- **Brief = Step 3 of 5**: Don't stop at "I wrote the brief." Call the optimizer immediately.
+## Active Band-Aids
 
-## Design Protocol
-- **Evidence First**: List raw data (commits, diffs, quotes) before analysis. No data = no analysis.
-- **Tech-Lead is the Discriminator**: Designs touching `src/` must be reviewed by tech-lead. Expect pushback. If tech-lead accepts blindly, it's a failure.
-- **Philosophy is Law**: Watch for drift between `philosophy.md` and system behavior.
+_(None — all entries graduated.)_
 
-## Delegation Discipline
-- **Rule of Two (Pattern D12)**: If an agent fails the same task twice, STOP. Do not retry with the same brief. Decompose the task into smaller steps or route to a different agent.
+## Graduated (delete after confirming structural fix works)
 
-## Operational
-- **Context Efficiency**: SOUL/DOMAIN/TOOLS/LESSONS are auto-loaded. Don't re-read.
-- **Own Your Path**: Your files are in `agents/bob/`. Don't write to root `knowledge/`.
-- **Async vs Sync**: Use `agents.send` for fire-and-forget (todos). Use `agents.call` when you need the result now.
+- ~~Verify before briefing~~ → **GRADUATED H535**: heartbeat.md step 2 now requires `read` of target file before requesting changes.
+- ~~Brief = Step 3 of 5~~ → **GRADUATED H535**: heartbeat.md step 4 Delegation Discipline — brief is not a deliverable, delegate immediately.
+- ~~Philosophy is Law~~ → **GRADUATED H535**: Already in SOUL.md Core Principle #3 — "Philosophy is Law."
+- ~~Rule of Two (D12)~~ → **GRADUATED H535**: heartbeat.md step 4 Delegation Discipline — 2 failures = decompose or reroute.
+- ~~Never Overwrite heartbeat.md~~ → **GRADUATED**: Already structural in heartbeat.md (⛔ warning at top). _(Removed H522)_
+- ~~Tool Precision~~ → **GRADUATED**: Already in shared LESSONS.md. _(Removed H522)_
+- ~~Evidence First~~ → **GRADUATED**: Already in SOUL.md "How You Think" — "Evidence over theory." _(Removed H522)_
+- ~~Tech-Lead is the Discriminator~~ → **GRADUATED**: Already in SOUL.md "Brief tech-lead to land ideas" with adversarial partner framing. _(Removed H522)_
+- ~~Own Your Path~~ → **GRADUATED**: Already in shared LESSONS.md "Verify Paths". _(Removed H522)_
+- ~~Async vs Sync~~ → **GRADUATED**: Already in TOOLS.md agents table (call=blocking, send=fire-and-forget). _(Removed H522)_
