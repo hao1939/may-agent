@@ -19,11 +19,9 @@ import {
   loadAgentHandlers,
   type AgentLoaderOptions,
 } from "./agent-loader.js";
+import { resolveProjectRoot } from "./bundle-mode.js";
 
-const PROJECT_ROOT = resolve(
-  process.env.PROJECT_ROOT || dirname(fileURLToPath(import.meta.url)),
-  process.env.PROJECT_ROOT ? "." : "../..",
-);
+const PROJECT_ROOT = resolveProjectRoot(import.meta.url);
 const AGENTS_ROOT = resolve(process.env.AGENTS_ROOT || resolve(PROJECT_ROOT, "agents"));
 const PERSIST_DIR = resolve(process.env.STATE_DIR || resolve(PROJECT_ROOT, ".state"));
 
@@ -79,6 +77,7 @@ const TELEGRAM_ENABLED = process.argv.includes("--telegram");
 const CONSOLE_ENABLED = process.argv.includes("--console");
 const SOCKET_ENABLED = process.argv.includes("--socket");
 const CHAT_MODE = process.argv.includes("--chat");
+const ONESHOT_MODE = process.argv.includes("--oneshot");
 const INITIAL_TASK = (() => {
   const idx = process.argv.indexOf("--task");
   if (idx !== -1 && process.argv[idx + 1]) return process.argv[idx + 1];
@@ -90,6 +89,16 @@ const INITIAL_TASK = (() => {
     process.exit(1);
   }
   return null;
+})();
+
+// --oneshot CLI parameters
+const ONESHOT_TIMEOUT_MINUTES = (() => {
+  const arg = process.argv.find((a) => a.startsWith("--timeout="));
+  if (arg) {
+    const val = parseInt(arg.split("=")[1]!, 10);
+    return isNaN(val) ? 5 : val;
+  }
+  return 5;
 })();
 
 // ── Detached sub-agent env vars ──────────────────────────────────────────
@@ -211,6 +220,9 @@ writeSkippedEvaluations(PERSIST_DIR).then((skipped) => {
 // ── Event routing ──────────────────────────────────────────────────────
 
 const interfaceAgent = (() => {
+  // Support both --agent <name> and --agent=<name>
+  const eqArg = process.argv.find((a) => a.startsWith("--agent="));
+  if (eqArg) return eqArg.split("=")[1]!;
   const idx = process.argv.indexOf("--agent");
   if (idx !== -1 && process.argv[idx + 1]) return process.argv[idx + 1];
   return process.env.AGENT || "may";
@@ -550,12 +562,55 @@ function emitPrompt(): void {
 
 // ── Startup ────────────────────────────────────────────────────────────
 
-if (!CHAT_MODE && !INITIAL_TASK && !CRON_ENABLED) {
-  console.error("Error: need --chat, --task, or --cron.");
+if (!CHAT_MODE && !INITIAL_TASK && !CRON_ENABLED && !ONESHOT_MODE) {
+  console.error("Error: need --chat, --task, --oneshot, or --cron.");
   process.exit(1);
 }
 
-if (INITIAL_TASK && !CHAT_MODE) {
+if (ONESHOT_MODE) {
+  // ── Oneshot mode: single session, JSON result to stdout, then exit ──
+  const oneshotTask = INITIAL_TASK;
+  if (!oneshotTask) {
+    console.error("Error: --oneshot requires --task <description>");
+    process.exit(1);
+  }
+
+  const oneshotStart = Date.now();
+  const timeoutMs = ONESHOT_TIMEOUT_MINUTES * 60 * 1000;
+
+  taskSessionId = manager.run(interfaceAgent, oneshotTask, { kind: "job" });
+
+  // Set up timeout
+  const timeoutTimer = setTimeout(() => {
+    manager.cancel(taskSessionId!);
+    const result = {
+      sessionId: taskSessionId,
+      status: "timeout",
+      duration: `${ONESHOT_TIMEOUT_MINUTES}m`,
+      result: `Session timed out after ${ONESHOT_TIMEOUT_MINUTES} minutes`,
+    };
+    console.log(JSON.stringify(result));
+    process.exit(1);
+  }, timeoutMs);
+  timeoutTimer.unref();
+
+  await manager.waitForIdle(taskSessionId);
+  clearTimeout(timeoutTimer);
+
+  const durationMs = Date.now() - oneshotStart;
+  const sessions = manager.status();
+  const session = sessions.find((s) => s.sessionId === taskSessionId);
+  const status = session?.status === "error" ? "error" : "success";
+
+  const result = {
+    sessionId: taskSessionId,
+    status,
+    duration: formatDurationMs(durationMs),
+    result: session ? `Agent ${interfaceAgent} completed (${session.status})` : `Agent ${interfaceAgent} completed`,
+  };
+  console.log(JSON.stringify(result));
+  process.exit(status === "success" ? 0 : 1);
+} else if (INITIAL_TASK && !CHAT_MODE) {
   // ── Task mode: single session, run to completion ─────────────────
   taskSessionId = manager.run(interfaceAgent, INITIAL_TASK, {
     kind: "job",

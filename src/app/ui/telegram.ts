@@ -22,7 +22,7 @@ import type { SubagentManager } from "../../lib/index.js";
 
 // Force IPv4 for fetch — Node 22's undici tries IPv6 first which times out
 // on some networks (e.g., when IPv6 to api.telegram.org is unreachable).
-setDefaultAutoSelectFamily(false);
+try { setDefaultAutoSelectFamily(false); } catch { /* noop — bun may not support */ }
 
 export interface TelegramBotOptions {
   bus: EventBus;
