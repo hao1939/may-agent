@@ -1,149 +1,136 @@
 import { describe, it, expect } from "vitest";
-import { checkProtectedPath } from "../src/app/agent-loader.js";
+import { checkCrossEditGuard } from "../src/lib/tools/cross-edit-guard.js";
 
-const AGENTS_ROOT = "/app/agents";
+const PROJECT_ROOT = "/app";
 
-describe("checkProtectedPath (P53 cross-agent protection)", () => {
+/** Helper: returns true if write is allowed */
+function isAllowed(absolutePath: string, agentName: string): boolean {
+  return !checkCrossEditGuard(absolutePath, agentName, PROJECT_ROOT).blocked;
+}
+
+/** Helper: returns the block message (or undefined if allowed) */
+function blockMessage(absolutePath: string, agentName: string): string | undefined {
+  return checkCrossEditGuard(absolutePath, agentName, PROJECT_ROOT).message;
+}
+
+describe("checkCrossEditGuard (P53/P70 cross-agent protection)", () => {
   it("allows writes to own agent SOUL.md", () => {
-    const result = checkProtectedPath("/app/agents/bob/SOUL.md", "bob", AGENTS_ROOT);
-    expect(result).toBeNull();
+    expect(isAllowed("/app/agents/bob/SOUL.md", "bob")).toBe(true);
   });
 
   it("blocks writes to own agent agent.json (P70: immutable self-config)", () => {
-    const result = checkProtectedPath("/app/agents/bob/agent.json", "bob", AGENTS_ROOT);
-    expect(result).not.toBeNull();
-    expect(result).toContain("P70");
-    expect(result).toContain("agent.json");
+    const result = checkCrossEditGuard("/app/agents/bob/agent.json", "bob", PROJECT_ROOT);
+    expect(result.blocked).toBe(true);
+    expect(result.message).toContain("P70");
+    expect(result.message).toContain("agent.json");
   });
 
   it("allows tech-lead to write own agent.json", () => {
-    const result = checkProtectedPath("/app/agents/tech-lead/agent.json", "tech-lead", AGENTS_ROOT);
-    expect(result).toBeNull();
+    expect(isAllowed("/app/agents/tech-lead/agent.json", "tech-lead")).toBe(true);
   });
 
   it("allows writes to own agent LESSONS.md", () => {
-    const result = checkProtectedPath("/app/agents/bob/LESSONS.md", "bob", AGENTS_ROOT);
-    expect(result).toBeNull();
+    expect(isAllowed("/app/agents/bob/LESSONS.md", "bob")).toBe(true);
   });
 
   it("blocks writes to another agent's SOUL.md", () => {
-    const result = checkProtectedPath("/app/agents/coder/SOUL.md", "bob", AGENTS_ROOT);
-    expect(result).not.toBeNull();
-    expect(result).toContain("WRITE BLOCKED");
-    expect(result).toContain("P53");
-    expect(result).toContain("SOUL.md");
+    const result = checkCrossEditGuard("/app/agents/coder/SOUL.md", "bob", PROJECT_ROOT);
+    expect(result.blocked).toBe(true);
+    expect(result.message).toContain("WRITE BLOCKED");
+    expect(result.message).toContain("SOUL.md");
   });
 
   it("blocks writes to another agent's agent.json", () => {
-    const result = checkProtectedPath("/app/agents/may/agent.json", "bob", AGENTS_ROOT);
-    expect(result).not.toBeNull();
-    expect(result).toContain("agent.json");
+    const result = checkCrossEditGuard("/app/agents/may/agent.json", "bob", PROJECT_ROOT);
+    expect(result.blocked).toBe(true);
+    expect(result.message).toContain("agent.json");
   });
 
   it("allows writes to another agent's LESSONS.md (not identity-critical)", () => {
-    const result = checkProtectedPath("/app/agents/tech-lead/LESSONS.md", "bob", AGENTS_ROOT);
-    expect(result).toBeNull();
+    expect(isAllowed("/app/agents/tech-lead/LESSONS.md", "bob")).toBe(true);
   });
 
   it("allows writes to another agent's workspace files", () => {
-    const result = checkProtectedPath("/app/agents/coder/workspace/notes.md", "bob", AGENTS_ROOT);
-    expect(result).toBeNull();
+    expect(isAllowed("/app/agents/coder/workspace/notes.md", "bob")).toBe(true);
   });
 
   it("allows writes to another agent's knowledge files", () => {
-    const result = checkProtectedPath("/app/agents/coder/knowledge/coaching.md", "bob", AGENTS_ROOT);
-    expect(result).toBeNull();
+    expect(isAllowed("/app/agents/coder/knowledge/coaching.md", "bob")).toBe(true);
   });
 
   it("allows writes to shared/ directory", () => {
-    const result = checkProtectedPath("/app/agents/shared/bulletin.md", "bob", AGENTS_ROOT);
-    expect(result).toBeNull();
+    expect(isAllowed("/app/agents/shared/bulletin.md", "bob")).toBe(true);
   });
 
   it("allows writes outside agents/ entirely", () => {
-    const result = checkProtectedPath("/app/src/lib/manager.ts", "bob", AGENTS_ROOT);
-    expect(result).toBeNull();
+    expect(isAllowed("/app/src/lib/manager.ts", "bob")).toBe(true);
   });
 
   it("blocks writes to nested protected files (SOUL.md in subdirectory)", () => {
     // agents/coder/knowledge/SOUL.md — the filename matches, so it blocks
     // This is conservative: better to block too aggressively than allow leaks
-    const result = checkProtectedPath("/app/agents/coder/knowledge/SOUL.md", "bob", AGENTS_ROOT);
-    expect(result).not.toBeNull();
+    const result = checkCrossEditGuard("/app/agents/coder/knowledge/SOUL.md", "bob", PROJECT_ROOT);
+    expect(result.blocked).toBe(true);
   });
 
   it("allows own agent's nested protected files", () => {
-    const result = checkProtectedPath("/app/agents/bob/knowledge/SOUL.md", "bob", AGENTS_ROOT);
-    expect(result).toBeNull();
+    expect(isAllowed("/app/agents/bob/knowledge/SOUL.md", "bob")).toBe(true);
   });
 
   it("handles deeply nested agent workspace paths", () => {
-    const result = checkProtectedPath(
+    expect(isAllowed(
       "/app/agents/coach/workspace/exercises/tech-lead-regression/session-cleanup.ts",
       "tech-lead",
-      AGENTS_ROOT,
-    );
-    expect(result).toBeNull();
+    )).toBe(true);
   });
 
-  it("includes the blocked agent name and caller name in the message", () => {
-    const result = checkProtectedPath("/app/agents/coder/SOUL.md", "optimizer", AGENTS_ROOT);
-    expect(result).toContain("agents/coder/");
-    expect(result).toContain('"optimizer"');
-    expect(result).toContain("agents/optimizer/");
+  it("includes the blocked agent dir and caller name in the message", () => {
+    const msg = blockMessage("/app/agents/coder/SOUL.md", "optimizer");
+    expect(msg).toContain("agents/coder/");
+    expect(msg).toContain("optimizer");
   });
 
   it("allows writes to .lab/ fork LESSONS.md (growth system sandbox)", () => {
-    const result = checkProtectedPath(
+    expect(isAllowed(
       "/app/agents/.lab/bob-growth-test/LESSONS.md",
       "coach",
-      AGENTS_ROOT,
-    );
-    expect(result).toBeNull();
+    )).toBe(true);
   });
 
   it("allows writes to .lab/ fork SOUL.md", () => {
-    const result = checkProtectedPath(
+    expect(isAllowed(
       "/app/agents/.lab/bob-growth-test/SOUL.md",
       "coach",
-      AGENTS_ROOT,
-    );
-    expect(result).toBeNull();
+    )).toBe(true);
   });
 
   it("allows writes to .lab/ fork agent.json", () => {
-    const result = checkProtectedPath(
+    expect(isAllowed(
       "/app/agents/.lab/bob-growth-test/agent.json",
       "coach",
-      AGENTS_ROOT,
-    );
-    expect(result).toBeNull();
+    )).toBe(true);
   });
 
   // May exemption — May can edit any agent's protected files
   it("allows May to write to another agent's SOUL.md", () => {
-    const result = checkProtectedPath("/app/agents/bob/SOUL.md", "may", AGENTS_ROOT);
-    expect(result).toBeNull();
+    expect(isAllowed("/app/agents/bob/SOUL.md", "may")).toBe(true);
   });
 
   it("allows May to write to another agent's agent.json", () => {
-    const result = checkProtectedPath("/app/agents/coder/agent.json", "may", AGENTS_ROOT);
-    expect(result).toBeNull();
+    expect(isAllowed("/app/agents/coder/agent.json", "may")).toBe(true);
   });
 
   it("allows May to write to another agent's LESSONS.md", () => {
-    const result = checkProtectedPath("/app/agents/tech-lead/LESSONS.md", "may", AGENTS_ROOT);
-    expect(result).toBeNull();
+    expect(isAllowed("/app/agents/tech-lead/LESSONS.md", "may")).toBe(true);
   });
 
   it("allows tech-lead to write to another agent's agent.json (P70 config management)", () => {
-    const result = checkProtectedPath("/app/agents/coder/agent.json", "tech-lead", AGENTS_ROOT);
-    expect(result).toBeNull();
+    expect(isAllowed("/app/agents/coder/agent.json", "tech-lead")).toBe(true);
   });
 
   it("blocks tech-lead from writing to another agent's SOUL.md", () => {
-    const result = checkProtectedPath("/app/agents/coder/SOUL.md", "tech-lead", AGENTS_ROOT);
-    expect(result).not.toBeNull();
-    expect(result).toContain("WRITE BLOCKED");
+    const result = checkCrossEditGuard("/app/agents/coder/SOUL.md", "tech-lead", PROJECT_ROOT);
+    expect(result.blocked).toBe(true);
+    expect(result.message).toContain("WRITE BLOCKED");
   });
 });

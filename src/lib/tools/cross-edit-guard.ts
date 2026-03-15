@@ -94,11 +94,29 @@ export function checkCrossEditGuard(
 		}
 	}
 
-	// Guard agents/<other-agent>/SOUL.md, LESSONS.md, agent.json
+	// P70: Block self-edits to agent.json (Immutable Self-Config).
+	// An agent editing its own agent.json can persist a jailbreak across restarts.
+	// Only May (exempt above) or tech-lead may edit agent.json files.
+	if (targetDir === agentName && fileName === "agent.json") {
+		if (agentName.toLowerCase() !== "tech-lead") {
+			return {
+				blocked: true,
+				message: `⚠️ WRITE BLOCKED (P70): Agent "${agentName}" cannot modify its own agent.json. ` +
+					`agent.json defines immutable agent identity/configuration. ` +
+					`Self-edits could persist a jailbreak across restarts. ` +
+					`Only May or tech-lead may modify agent.json files.`,
+			};
+		}
+	}
+
+	// Allow writes to .lab/ directory (sandbox/fork for agent growth system)
+	if (targetDir === ".lab") return { blocked: false };
+
+	// Guard agents/<other-agent>/SOUL.md, agent.json (at any depth)
+	// Conservative: block protected filenames even in subdirectories to prevent leaks
 	if (targetDir !== "shared" && targetDir !== agentName) {
-		// It's another agent's directory — check if it's a protected file
-		// Protected files are directly under agents/<name>/, i.e. parts.length === 2
-		if (parts.length === 2 && PROTECTED_FILENAMES.has(fileName)) {
+		// It's another agent's directory — check if it's a protected filename
+		if (PROTECTED_FILENAMES.has(fileName)) {
 			// P70: tech-lead may edit other agents' agent.json (manages agent configs)
 			if (fileName === "agent.json" && agentName.toLowerCase() === "tech-lead") {
 				return { blocked: false };
