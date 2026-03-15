@@ -1,7 +1,16 @@
 import type { AgentTool, AgentMessage } from "@mariozechner/pi-agent-core";
-import type { Model } from "@mariozechner/pi-ai";
+import type { Model, Api } from "@mariozechner/pi-ai";
 import type { CompactionOptions } from "./compaction.js";
 import type { SessionKind } from "./persistence.js";
+
+/**
+ * Model with an optional apiKey attached at runtime.
+ * The upstream pi-ai `Model` interface doesn't include `apiKey` (it lives in `StreamOptions`),
+ * but our agent loader attaches it to model objects for convenience.
+ */
+export interface ModelWithApiKey<TApi extends Api = Api> extends Model<TApi> {
+  apiKey?: string;
+}
 
 /** Minimal definition for registering a feature unit. */
 export interface SubagentDefinition {

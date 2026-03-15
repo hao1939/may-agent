@@ -127,6 +127,7 @@ export { sendSocketCommand, waitForSocketEvent } from "./socket-client.js";
 export type { SocketResponse, SocketEvent } from "./socket-client.js";
 export type {
   SubagentDefinition,
+  ModelWithApiKey,
   SessionInfo,
   SessionTreeNode,
   ManagerHealthReport,
