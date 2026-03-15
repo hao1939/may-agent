@@ -36,6 +36,9 @@ const handoffSchema: TSchema = Type.Object({
   expectations: Type.String({
     description: "What is expected from the receiver (e.g., 'Run tests', 'Review and approve')",
   }),
+  read_by: Type.Optional(Type.Array(Type.String(), {
+    description: "List of agents who must read this artifact (e.g., ['may', 'tech-lead']). Auto-populated with [target] if omitted.",
+  })),
 });
 
 interface HandoffToolParams {
@@ -43,6 +46,7 @@ interface HandoffToolParams {
   artifact_path: string;
   context: string;
   expectations: string;
+  read_by?: string[];
 }
 
 // ── Tool factory ───────────────────────────────────────────────────────
@@ -86,7 +90,7 @@ export function createHandoffTool(options: HandoffToolOptions): AgentTool<TSchem
     parameters: handoffSchema,
     execute: async (_toolCallId: string, _params: unknown) => {
       const params = _params as HandoffToolParams;
-      const { target, artifact_path, context, expectations } = params;
+      const { target, artifact_path, context, expectations, read_by } = params;
 
       // ── Validate target ────────────────────────────────────────
       if (!target || !target.trim()) {
@@ -144,6 +148,10 @@ export function createHandoffTool(options: HandoffToolOptions): AgentTool<TSchem
       const now = new Date();
       const timestamp = now.toISOString().slice(0, 16).replace("T", " ");
 
+      // P82: Auto-populate read_by with [target] if not explicitly provided
+      const resolvedReadBy = (read_by && read_by.length > 0) ? read_by : [target];
+      const readByStr = JSON.stringify(resolvedReadBy);
+
       const entry = [
         "",
         "---",
@@ -155,7 +163,7 @@ export function createHandoffTool(options: HandoffToolOptions): AgentTool<TSchem
         `- **Context**: ${context}`,
         `- **Expectations**: ${expectations}`,
         `- **Status**: PENDING_ACK`,
-        `- **read_by**: []`,
+        `- **read_by**: ${readByStr}`,
       ].join("\n");
 
       // ── Write to SIGNALS.md ────────────────────────────────────
