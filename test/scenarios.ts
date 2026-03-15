@@ -2,7 +2,7 @@
  * End-to-end scenarios for the sub-agent system.
  * Runs against the real model proxy at localhost:4000.
  *
- * Usage: npx tsx test/scenarios.ts
+ * Usage: bun test/scenarios.ts
  */
 
 import { SubagentManager, createReadTool, createWriteTool, createExecTool } from "../src/lib/index.js";

@@ -61,6 +61,14 @@ describe("isMetaRecursionCommand", () => {
     expect(isMetaRecursionCommand("tsx src/cli.ts")).toBe(true);
   });
 
+  it("detects bun src/app/may.ts", () => {
+    expect(isMetaRecursionCommand("bun src/app/may.ts --chat")).toBe(true);
+  });
+
+  it("detects bun src/app/launcher.ts", () => {
+    expect(isMetaRecursionCommand("bun src/app/launcher.ts --console")).toBe(true);
+  });
+
   it("detects ts-node src/cli", () => {
     expect(isMetaRecursionCommand("ts-node src/cli.ts")).toBe(true);
   });

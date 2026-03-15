@@ -197,7 +197,7 @@ export function typescriptCheck(
 	return {
 		name: "typescript",
 		check: async () => {
-			const { stderr, exitCode } = await exec("npx tsc --noEmit 2>&1", cwd);
+			const { stderr, exitCode } = await exec("tsc --noEmit 2>&1", cwd);
 			if (exitCode === 0) return { pass: true };
 			// Trim to first 800 chars to keep error messages agent-friendly.
 			const trimmed = stderr.slice(0, 800) || "(no stderr — check stdout for errors)";

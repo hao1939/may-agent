@@ -19,7 +19,7 @@ test/gym/
 ## Running
 
 ```bash
-npx vitest --run test/gym/gym.test.ts
+bun vitest --run test/gym/gym.test.ts
 ```
 
 ## Design (P80 Environment Diversity)

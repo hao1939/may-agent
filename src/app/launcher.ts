@@ -1,7 +1,7 @@
 /**
  * Launcher — minimal wrapper that keeps may.ts running.
  *
- * Replaces the bash while-true restart loops in may.sh and Docker entrypoints.
+ * Supervisor for the may-agent process. Handles crash recovery, hot-reload (exit 100), and backoff.
  *
  * Exit code protocol:
  *   0   — Clean shutdown. Launcher exits.

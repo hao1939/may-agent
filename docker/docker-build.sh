@@ -11,4 +11,4 @@ cd "$PROJECT_ROOT"
 echo "Building Docker image..."
 docker compose -f docker/docker-compose.yml build "$@"
 
-echo "Done. Run with: npm run docker:up"
+echo "Done. Run with: bun run docker:up"
