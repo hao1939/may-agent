@@ -45,6 +45,14 @@ export interface SubagentDefinition {
   compaction?: boolean | CompactionOptions;
 
   /**
+   * Additional context files to include in the system prompt.
+   * Paths are relative to the agent directory (e.g., "conversation-state.md").
+   * Loaded after convention files (SOUL.md, DOMAIN.md, etc.) but before
+   * the Runtime Environment section.
+   */
+  contextFiles?: string[];
+
+  /**
    * Operation budget: max number of state-changing tool calls (bash, write, edit, commit)
    * allowed per session. 0 or undefined = unlimited.
    */

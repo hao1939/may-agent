@@ -306,6 +306,14 @@ export class SubagentManager {
     const sharedIndex = loadFile(def.projectRoot ? join(def.projectRoot, "agents", "shared", "INDEX.md") : undefined);
     if (sharedIndex) sections.push(sharedIndex);
 
+    // 5c. context_files — additional per-agent context files (e.g., conversation-state.md)
+    if (def.contextFiles) {
+      for (const cfPath of def.contextFiles) {
+        const cfContent = loadFile(cfPath);
+        if (cfContent) sections.push(cfContent);
+      }
+    }
+
     // ── Generated sections (per-agent stable — safe for KV-cache) ──
     // These are deterministic per agent config; same agent produces the
     // same output across sessions.  True volatile data (session ID,
