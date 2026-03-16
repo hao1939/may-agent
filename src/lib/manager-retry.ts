@@ -125,8 +125,10 @@ export async function runAgentWithRetry(
     session.error = undefined;
     session.agent.state.error = undefined;
 
-    // Backoff: attempt * base delay (1s, 2s, 3s)
-    const delayMs = attempt * INFRA_RETRY_BASE_DELAY_MS;
+    // Exponential backoff with jitter: 1s, 2s, 4s (+ 0-500ms random jitter)
+    const exponentialDelay = INFRA_RETRY_BASE_DELAY_MS * Math.pow(2, attempt - 1);
+    const jitter = Math.floor(Math.random() * 500);
+    const delayMs = exponentialDelay + jitter;
     await new Promise((resolve) => setTimeout(resolve, delayMs));
 
     // Guard: session may have been closed/aborted during the delay
