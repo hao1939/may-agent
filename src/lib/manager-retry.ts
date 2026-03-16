@@ -264,7 +264,9 @@ export async function runAgentWithRetry(
     // Check for silent stream error (last message is user = no assistant reply)
     const isSilentStream = !agentError && lastMsg?.role === "user";
 
-    if (isEmptyAssistant || isSilentStream) {
+    // Skip retry if the agent already called `finish` — empty responses
+    // after finish are normal (model has nothing left to say).
+    if ((isEmptyAssistant || isSilentStream) && !hasFinishToolCall(messages)) {
       const reason = isEmptyAssistant ? "empty_response" : "silent_stream";
       session.infraRetryCount++;
       const attempt = session.infraRetryCount;
