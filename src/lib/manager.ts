@@ -74,7 +74,7 @@ import { spawnDetachedAgent, readIdentity } from "./detached.js";
 import { sendSocketCommand } from "./socket-client.js";
 import { runActiveRecall, formatRecallWarnings } from "./active-recall.js";
 import { buildTrace } from "./manager-trace.js";
-import { isRetryableInfraError, runAgentWithRetry } from "./manager-retry.js";
+import { hasFinishToolCall, isRetryableInfraError, runAgentWithRetry } from "./manager-retry.js";
 import { createAgentsTool as createAgentsToolFn, type CreateAgentsToolOptions } from "./manager-agents-tool.js";
 import { logRecoveryNeeded } from "./session-recovery.js";
 import { updateOrderStatus } from "./orders.js";
@@ -484,6 +484,8 @@ export class SubagentManager {
     // Some models (especially via LiteLLM proxies) return stopReason="stop"
     // with empty content and 0 output tokens — effectively a silent no-op.
     // The agent finishes without error but produces no useful output.
+    // Exception: if the agent called `finish`, the empty response after it
+    // is normal (model has nothing left to say after structured completion).
     if (!session.agent.state.error && !session.error && lastMsg?.role === "assistant") {
       const content = Array.isArray(lastMsg.content) ? lastMsg.content : [];
       const hasSubstance = content.some(
@@ -491,7 +493,7 @@ export class SubagentManager {
           (block?.type === "text" && block.text?.trim()) ||
           block?.type === "toolCall",
       );
-      if (!hasSubstance) {
+      if (!hasSubstance && !hasFinishToolCall(messages)) {
         session.error = "Model returned an empty response (0 output tokens). This usually indicates a model/API issue — try again or switch models.";
         session.agent.state.error = session.error;
       }

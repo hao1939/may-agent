@@ -21,6 +21,23 @@ export function isRateLimitError(error: string): boolean {
 }
 
 /**
+ * Check if the `finish` tool was called successfully in the session.
+ * After `finish`, empty responses are normal — the model has nothing left to say.
+ */
+export function hasFinishToolCall(messages: any[]): boolean {
+  for (const msg of messages) {
+    if (msg.role === "assistant" && Array.isArray(msg.content)) {
+      for (const block of msg.content) {
+        if (block?.type === "toolCall" && block.name === "finish") {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+/**
  * Detect whether a session's last exchange indicates a transient infra error
  * that is safe to retry (vs. a real agent failure or context overflow).
  *
@@ -43,6 +60,10 @@ export function isRetryableInfraError(session: ActiveSession): string | null {
   const messages = session.agent.state.messages;
   const lastMsg = messages.length > 0 ? messages[messages.length - 1] : null;
   if (!lastMsg) return null;
+
+  // If the agent already called the `finish` tool successfully, empty responses
+  // afterward are normal (the model has nothing left to say). Don't retry.
+  if (hasFinishToolCall(messages)) return null;
 
   // Check if error was an abort — never retry aborts
   const agentError = session.agent.state.error ?? session.error;
