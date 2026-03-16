@@ -246,6 +246,19 @@ describe("P93 Infrastructure Resilience — Infra Retry", () => {
     expect(isRetryableInfraError(session)).toBe(expected);
   });
 
+  // ------ Pattern 6: Unhandled stop reason from pi-ai ------
+  it.each([
+    ["Unhandled stop reason: unexpected_state", "unhandled_stop_reason"],
+    ["Unhandled stop reason: some_new_reason", "unhandled_stop_reason"],
+  ])('returns "%s" → "%s"', (errorMsg, expected) => {
+    const session = mockSession({
+      status: "running",
+      messages: [{ role: "user" }],
+      agentError: errorMsg,
+    });
+    expect(isRetryableInfraError(session)).toBe(expected);
+  });
+
   // ------ Non-matching errors do NOT trigger retry ------
   it.each([
     "API key invalid",
