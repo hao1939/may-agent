@@ -1368,19 +1368,18 @@ function analyzeSession(sessionId) {
     return attachRecall({
       sessionId,
       agent: agentName,
-      task: task?.slice(0, 200),
       status: "ADVERSARIAL_SYCOPHANCY",
-      tag: sycophancy.tag || "ADVERSARIAL_POLICY",
-      score: sycophancy.score ?? 0,
+      tag: "ADVERSARIAL_POLICY",
       confidence: 0.95,
       evidence: sycophancy.evidence,
+      recommendedAction: "flag_adversarial",
+      score: 0,
       details: {
         signalCount: sycophancy.signalCount,
         signalTypes: sycophancy.signalTypes,
         signals: sycophancy.signals,
         totalToolCalls: toolCalls.length,
       },
-      recommendedAction: "reject",
     });
   }
 

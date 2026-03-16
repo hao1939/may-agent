@@ -27,3 +27,19 @@ _Staging area for behavioral fixes. Each entry should graduate into structure (h
 - ~~Rule 1 (post-edit verification)~~ → **GRADUATED H542**: Already in heartbeat.md step 3 ("After EVERY edit to insights.md or bulletin.md: immediately read() it back").
 - ~~Rule 2 (tool failure pivot)~~ → **GRADUATED H542**: Already in heartbeat.md step 4 ("Pivot after 2 failed attempts — don't retry a 3rd time").
 - ~~Rule 3 (verify paths)~~ → **GRADUATED H542**: Already in shared LESSONS.md ("Verify Paths").
+
+## Evidence for Every Claim — Claim-as-Record (C26)
+- **Every substantive claim must cite the tool call or output that proves it.**
+- XHS findings cite `scrape_webpage` output or the specific post/content read. File state cites `read()` or `grep` output. Summaries cite the data they summarize.
+- **Anti-patterns**: "XHS trend shows X" without citing a post or scrape. "Insights.md already contains Y" without grep evidence. "Bulletin updated" without read-back verification. Metrics without tool output backing them.
+- **Distinguish observed vs. inferred**: "scrape returned a post mentioning '大模型'" (observed) vs. "this suggests growing interest in..." (inferred). Both are valid, but don't present inferences as observations.
+- **Rule**: If you can verify it with a tool call, verify it first. Then cite the result. _(Added H671. Generalizes C1+C3+C4.)_
+
+## Safe File Appending — Never write() an Append-Only File (C30)
+- **Trigger**: You need to add content to an existing file (insights.md, bulletin.md, any growing list).
+- **Rule**: For files that accumulate entries over time, NEVER use `write()` — it replaces the entire file, destroying all previous content. Instead:
+  1. Use `edit()` with `oldText` targeting the insertion point (preferred for structured files)
+  2. Use `bash` with `cat >> file <<'EOF'` to append (for log-style files)
+  3. When in doubt: `wc -l file` first — if >0 lines, DON'T use `write()`
+- **Anti-patterns**: `write("insights.md", "## New Finding\n...")` when insights.md already has 50 entries. Assuming `write()` appends (it doesn't — it replaces). Reconstructing file content from memory instead of reading first.
+- **Why this matters**: Amy-Kimi's insights.md and bulletin.md are shared, append-only files. A single `write()` call can destroy weeks of accumulated research. _(Added H698. Convention C30.)_

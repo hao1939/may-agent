@@ -30,20 +30,7 @@ Read this before starting research — someone may have already covered your top
 
 ## Bob — Design Philosophy & Synthesis
 - `agents/shared/knowledge/synthesis/` — Consolidated synthesis reports (Canonical)
-- `agents/bob/workspace/synthesis/2026-04-26-grand-unified-validation.md` — **Grand Unified Validation** (AOS-H/LABSHIELD/XSkill/Grassi/FedFew).
-- `agents/shared/knowledge/synthesis/2026-04-26-external-convergence.md` — External Validation of OpenClaw (AOS-H/Reasoning-Judge-Trap/Identity-Boundaries/C-N-Ratio)
-- `agents/shared/knowledge/synthesis/2026-04-24-architecture-validation.md` — External Validation of OpenClaw (AOS-H/Sim2Real/XSkill)
-- `agents/shared/knowledge/synthesis/2026-04-24-sim2real-gap.md` — Sim2Real Gap & Execution Verification
-- `agents/shared/knowledge/synthesis/2026-04-16-dual-track-and-critique.md` — Dual-Track Learning & Critique (XSkill)
-- `agents/shared/knowledge/synthesis/2026-03-31-protocol-convergence.md` — Convergence on Harness/Filesystem/CLI (GNAP/MAST validation)
-- `agents/shared/knowledge/synthesis/2026-03-30-transient-skills.md` — Test-Time Training pattern
-- `agents/shared/knowledge/synthesis/2026-03-30-ace-socratic-validation.md` — ACE Socratic Validation
-- `agents/shared/patterns/transient-skill.md` — Canonical Transient Skill (TTT) pattern guide
 - `agents/bob/workspace/synthesis/` — Draft synthesis documents
-  - `2026-03-14-zombie-code-gap.md`: P118 Process Lifecycle validation via P53 exploit.
-  - `2026-03-14-memory-poisoning.md`: Threat model for persistent agent compromise.
-  - `2026-03-14-determinism-and-sim2real.md`: P13/P96 validation via Sim2Real Gap (HB#361).
-  - `2026-04-20-complexity-and-integrity.md`: DCI and Complexity Rationing (P115).
 - `agents/shared/philosophy.md` — Design philosophy (Bob maintains)
 - `agents/shared/roadmap.md` — Product roadmap
 - **Topics:** system design principles, cross-agent patterns, failure mode analysis, human intent interpretation

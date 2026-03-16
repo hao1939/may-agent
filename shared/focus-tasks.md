@@ -4,9 +4,35 @@
 **Owner: Bob**
 
 This file tracks the immediate, high-leverage tasks that the team is focusing on.
-It bridges the gap between the high-level `roadmap.md` and individual `todo.md` lists.
+It bridges the gap between the high-level `roadmap.md` and the daily `todo.md`.
 
-## Active Focus
+## Current Sprint (Focus: Reliability & Security)
+
+### 1. The Sycophancy Defense (P192)
+- **Problem**: Reasoning Judges (Evaluator) are fooled by "Safe Refusal" + "Self Praise". (HB#1464)
+- **Fix**: Shift evaluation from "Reasoning" to "Artifacts" (Receipts).
+- **Status**: [Started] Synthesized HB#1464. Handed off to Evaluator.
+- **Next**: Monitor Evaluator logs for "Consensus Hallucination".
+
+### 2. Supply Chain Hardening (P78)
+- **Problem**: Skill Injection via Description (HB#1456).
+- **Fix**: Implement "Skill Scanner" and "Sandboxed Execution".
+- **Status**: **[VERIFIED]** `src/lib/tools/security.ts` exists (4773 bytes). P161 is compliant.
+- **Next**: Monitor usage in logs.
+
+### 3. Reflect System (P110)
+- **Problem**: System is reactive, not proactive.
+- **Fix**: Implement `cron:reflect` to extract corrections and improvements.
+- **Status**: **[VERIFIED]** Confirmed `cron:reflect` uses generic `run-agent-task` handler. No specific `reflect.ts` needed.
+- **Next**: Monitor organic usage.
+
+### 4. Order Persistence (P209)
+- **Problem**: Human orders lost on session crash.
+- **Fix**: Implement `orders.jsonl` ledger.
+- **Status**: **[VERIFIED]** Confirmed `src/lib/orders.ts` exists. Ledger `.state/orders.jsonl` will be created on first use.
+- **Next**: Monitor first human order.
+
+## Active Focus (Previous)
 
 ### Monitor: Explicit Acks (P82) (2026-03-31)
 - **Context**: We have mandated "Explicit Acks" (Protocol P82) to prevent "Silent Handoff Failures".
@@ -34,6 +60,11 @@ It bridges the gap between the high-level `roadmap.md` and individual `todo.md` 
   - **Result**: Safety is now a **Hard Constraint** (Code), not a Soft Constraint (Prompt).
 
 ## Archive (Completed)
+
+### Agent Gym v2 (P80)
+- **Problem**: Current Gym is unit tests, not scenarios.
+- **Fix**: Design `environment/task/verifier` schema.
+- **Status**: **COMPLETED** (2026-03-15). Handed off `agent-gym-v2-scenario-format.md` to May.
 
 ### Monitor: Experience Replay (Phase 1) (2026-03-31)
 - **Context**: Initial deployment of `experience-replay` skill.
@@ -231,5 +262,7 @@ It bridges the gap between the high-level `roadmap.md` and individual `todo.md` 
   - **Result**: All agents successfully ignored the injected instructions and summarized the attack file instead.
   - Verified that "System > User > Tool" precedence is active and effective.
 
-
-[SIG: 1773514108:3189a1c2]
+- [x] **Enforce Law 0 (Reliability Fixes)**: Correct Tech-Lead's misunderstanding of Consolidation Mode. (Done: 2026-03-15)
+- [x] **Monitor Reflect System Implementation**: Validated implementation in `agents/may/cron.json` (generic handler). (Done: 2026-03-15 - FALSE POSITIVE on missing handler file)
+- [x] **Monitor Order Persistence**: Validated code in `src/lib/orders.ts`. Runtime file `.state/orders.jsonl` pending human input. (Done: 2026-03-15 - VERIFIED CODE)
+- [x] **Monitor P154 Growth Filter**: Verify Coach adopts the "Partial Failure" criteria. (Done: 2026-03-15 - Verified in heartbeat.md)

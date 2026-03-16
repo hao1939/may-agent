@@ -517,6 +517,8 @@ This document implements principles from `philosophy.md` as **actionable practic
 | 19.1 (Text protocols fail) | P131 Text is Policy Code is Law |
 | 19.2 (Tool enforcement) | P14 Deterministic Guardrails, P82 Explicit Acks |
 | 19.3 (Deprecations) | P82 Explicit Acks, P114 Experience Replay |
+| 20.1 (Knowledge pipeline) | P11 File System as Memory, P53 Controlled Evolution |
+| 21.1 (RAEV protocol) | P82 Explicit Acks, P206 Coordination Contracts, P131 Text is Policy Code is Law |
 
 ---
 
@@ -745,3 +747,212 @@ When designing a new protocol or observing a compliance failure:
 | 19.4 (Design checklist) | P52 (Skill Over Agent) |
 
 *Validation:* P82 failure analysis (0% manual compliance, 2026-05-15). P114 usage data (0% in recent sessions). Architect design brief (agents/bob/workspace/optimizer-brief-harness.md).
+
+---
+
+## Part 20: Knowledge Lifecycle (Draft → Review → Canon)
+
+**Source**: Bob's P4 External Knowledge Integration design (`agents/bob/workspace/brief-knowledge-integration-flow.md`)
+
+Knowledge produced by Scout and Amy-Kimi (deep dives, cross-references, research) must follow a promotion pipeline — not sit in workspaces indefinitely.
+
+### 20.1 The Pipeline
+
+| Stage | Action | Owner |
+|-------|--------|-------|
+| **1. Draft** | Scout/Amy write research to `workspace/deep-dive-X.md` | Producer (Scout, Amy-Kimi) |
+| **2. Handoff** | Producer uses `handoff` tool to send to Bob (design) or May (ops) | Producer |
+| **3. Review** | Reviewer gates on: (a) Relevance — does it solve a current problem? (b) Actionability — does it imply a P-rule or Skill change? | Bob (Editor-in-Chief) or May (Librarian) |
+| **4. Promote** | General knowledge → `agents/shared/knowledge/library/`. Skill → `agents/shared/skills/`. Philosophy → `philosophy.md` (requires Hao approval). | Bob decides category, May moves files + updates indices |
+| **5. Broadcast** | Add entry to `agents/shared/bulletin.md` | Promoter |
+
+### 20.2 Roles
+
+- **Scout / Amy-Kimi**: Producers. Responsible for synthesis (connecting dots, not just summarizing).
+- **Bob**: Editor-in-Chief. Decides what becomes Philosophy, Standard, or Skill.
+- **May**: Librarian. Moves files, updates `knowledge-index.md`, maintains directory structure.
+
+### 20.3 Pruning (Garbage Collection)
+
+- **TTL**: Knowledge drafts in `workspace/` older than 14 days are auto-archived by May during monthly maintenance.
+- **Deep Clean**: Monthly periodic task — check `library/` for dead links, outdated research, and files with zero references.
+
+### 20.4 Anti-Patterns
+
+| Anti-Pattern | Consequence | Fix |
+|--------------|-------------|-----|
+| Research stays in producer's workspace forever | Knowledge bloat — files exist but aren't read | Use `handoff` immediately after completing research |
+| Writing directly to `library/` without review | Unvetted knowledge pollutes shared memory | Always go through Review gate (Bob or May) |
+| Skipping broadcast after promotion | Other agents don't know new knowledge exists | Always add bulletin.md entry |
+
+**Alignment**: P11 (File System as Memory), P53 (Controlled Evolution), P72 (Memory as Architecture).
+
+---
+
+## Part 21: RAEV Coordination Protocol
+
+**Source**: Bob's P206 Coordination Contracts design (`agents/bob/workspace/brief-raev-coordination.md`), Scout CR#98 (Coordination Theory)
+
+All inter-agent handoffs follow the **RAEV** state machine: **Request → Ack → Execute → Verify**. This replaces "fire and forget" delegation with a contract handshake.
+
+### 21.1 The Protocol
+
+| Step | Actor | Action | State Transition |
+|------|-------|--------|-----------------|
+| **R — Request** | Sender | Uses `handoff` tool with artifact path, context, and **success criteria** | → `PENDING` |
+| **A — Ack** | Receiver | Reads the handoff. Confirms understanding before starting work. | → `ACKED` |
+| **E — Execute** | Receiver | Does the work. Uses `handoff` back to sender when done. | → `EXECUTED` |
+| **V — Verify** | Sender | Confirms result meets success criteria. Closes or returns. | → `VERIFIED` or `RETURNED` |
+
+### 21.2 Key Rules
+
+1. **Success Criteria are mandatory.** Every Request must include what "done" looks like. Without criteria, verification is impossible.
+2. **Ack before Execute.** The receiver must confirm understanding before starting work. This catches "silent misunderstandings" where the receiver misinterprets the request.
+3. **Verify, don't assume.** The sender checks the result against the success criteria. Don't assume completion from a status message alone.
+4. **RETURNED means retry.** If verification fails, sender returns the work with specific failure reasons. Receiver re-executes.
+
+### 21.3 State Diagram
+
+```
+PENDING → ACKED → EXECUTED → VERIFIED (closed)
+                          ↘ RETURNED → ACKED → EXECUTED → ...
+```
+
+### 21.4 Practical Example
+
+```
+1. May: handoff(target="coder", artifact="src/lib/manager.ts",
+         context="Add compaction method",
+         expectations="Add compactSession(). Must pass tsc + vitest.")     → PENDING
+
+2. Coder: "ACK — understood, adding compactSession to manager.ts"          → ACKED
+
+3. Coder: [implements, tests pass]
+   handoff(target="may", artifact="src/lib/manager.ts",
+           context="compactSession added, tests pass",
+           expectations="Verify against original criteria")                → EXECUTED
+
+4. May: [runs tsc + vitest, confirms method exists]
+   "VERIFIED — compactSession works, closing"                             → VERIFIED
+```
+
+### 21.5 Anti-Patterns
+
+| Anti-Pattern | Problem | Fix |
+|--------------|---------|-----|
+| No success criteria in request | Receiver guesses at "done" | Always include measurable criteria |
+| Skip Ack, jump to Execute | Misunderstandings surface late | Confirm understanding first |
+| Sender never verifies | "Fire and forget" — failures go undetected | Always close the loop |
+| Vague RETURN ("it's wrong") | Receiver can't fix what isn't specified | Include specific failure reasons |
+
+**Alignment**: P82 (Explicit Acks), P206 (Coordination Contracts), P131 (Text is Policy, Code is Law), P6 (No Silent Failures).
+
+---
+
+## Part 22: Silence is a Signal (P89)
+
+**Source**: Bob's synthesis of CR-Bench (arXiv:2603.11078) — iterative forced-critique degrades SNR by 62%.
+
+In review tasks, **"No findings" is a valid and high-value output.** Do not force agents to generate critique when the artifact under review is correct.
+
+### 22.1 The Problem: The Hallucination of Effort
+
+When agents are prompted to "review and find issues," they feel implicit pressure to find *something*. If no real issue exists, they fabricate one — inventing nitpicks, suggesting unnecessary refactors, or flagging correct code as suspicious. CR-Bench measured this: iterative refinement increased recall by ~6% but degraded signal-to-noise ratio by **62%** (5.11 → 1.95). Small models collapse entirely (SNR 0.91).
+
+### 22.2 Rules
+
+1. **Allow "PASS — no issues found."** Review prompts must explicitly state that finding zero issues is a valid, valued outcome. Never frame review as "find problems" — frame it as "assess correctness."
+2. **Don't iterate reviews without new evidence.** A second review pass on the same artifact without new context (a failing test, a user complaint, changed requirements) is noise generation. P88 (Iteration Noise Tax) applies.
+3. **Separate Detection from Generation.** If you must iterate, use a distinct detection step first ("Is there a real issue? Yes/No") before generating critique. This gates the critique generation on actual signal.
+
+### 22.3 How to Prompt Reviews
+
+**Do**: "Review this code for correctness. If everything is correct, respond with PASS and a one-line summary. Only flag genuine issues."
+
+**Don't**: "Review this code and list all issues, improvements, and suggestions."
+
+### 22.4 Anti-Patterns
+
+| Anti-Pattern | Problem | Fix |
+|--------------|---------|-----|
+| "Find at least 3 issues" | Forces hallucinated critique | Allow zero findings |
+| Iterating review without new signal | SNR degrades 62% per iteration | Gate iteration on new evidence |
+| Confusing nitpicks with bugs | Noise drowns real issues | Separate severity: bug vs. style vs. opinion |
+| Penalizing "no findings" | Agent learns to always fabricate | Treat clean reviews as high-quality output |
+
+**Alignment**: P89 (Silence is a Signal), P88 (Iteration Noise Tax), P5 (Evidence-Based), P84 (Context Independence).
+
+---
+
+## Part 23: Pre-Flight Diagnostic Stack (P140-P147)
+
+**Source**: Bob's Agent Construction Stack synthesis — a 7-layer hierarchy of MAS reliability derived from Scout's deep dives on GUS and prediction accuracy.
+
+When an agent fails at a complex task, the root cause almost always lives in a lower layer than where the symptom appears. **"The agent is stupid" usually means "the agent forgot who it is" or "the agent can't find its files."** Debug bottom-up.
+
+### 23.1 The 7-Layer Stack
+
+| Layer | Name | Question | Failure Mode |
+|-------|------|----------|-------------|
+| 1 | **Identity** (P141) | Who am I? | Role confusion, scope creep, hallucinated capabilities |
+| 2 | **Context** (P142) | Where am I? | Wrong paths, stale state, self-referential loops |
+| 3 | **Tooling** (P143) | What can I do? | TOOLS.md mismatch, using unavailable tools, missing capabilities |
+| 4 | **Protocol** (P144) | How do I communicate? | Wrong formats, missed handshakes, broken signals |
+| 5 | **Memory** (P145) | What have I learned? | Ignoring LESSONS.md, repeating fixed mistakes, stale knowledge |
+| 6 | **Reasoning** (P146) | Why do I act? | Bad logic, wrong strategy, overcomplicated solutions |
+| 7 | **Reliability** (P147) | Does it work? | Missing tests, no monitoring, entropy |
+
+### 23.2 Pre-Flight Checks (Layers 1-3)
+
+Before attempting any complex reasoning task, verify the bottom three layers:
+
+1. **Identity check**: Read SOUL.md. Confirm your role, boundaries, and what you should NOT do.
+2. **Context check**: Read your workspace state (todo.md, SIGNALS.md). Confirm file paths exist.
+3. **Tooling check**: Confirm your tools match your task. Don't claim capabilities you lack.
+
+If any of layers 1-3 fail, fix them before proceeding. Do not attempt Layer 6 (Reasoning) work on a broken foundation.
+
+### 23.3 Diagnostic Order
+
+When debugging failures:
+1. Start at Layer 1 and work upward
+2. At each layer, ask: "Is this layer correctly configured?"
+3. Stop at the first broken layer — that's your root cause
+4. Do not blame Reasoning (Layer 6) until Layers 1-5 are verified clean
+
+### 23.4 Evidence from Production
+
+| Incident | Apparent Layer | Actual Layer | Root Cause |
+|----------|---------------|-------------|------------|
+| Scout VERIFICATION_FAILURE (22 errors) | 6 (Reasoning) | 3 (Tooling) | TOOLS.md said "no agents tool" but agent.json had it |
+| Evaluator self-referential loops (5 NI) | 6 (Reasoning) | 2 (Context) | Read own session ID as evaluation target |
+| Tech-lead path confusion (7 errors) | 6 (Reasoning) | 2 (Context) | Used wrong directory paths for workspace files |
+| Amy zero tool calls (8+ occurrences) | 3 (Tooling) | 1 (Identity) | Model-level attractor — identity layer collapsed |
+
+**Alignment**: P140-P147 (Agent Construction Stack), P112 (Constraint First), P5 (Evidence-Based), P96 (Execution Over Reading).
+
+---
+
+## Part 24: Semantic-Numerical Duality (Mechanism 39)
+
+**Source**: Bob's synthesis of Scout Deep-Dive #259 (Su et al., NYU/Lerna AI) — "The End of Reward Engineering."
+
+Task specifications and completion criteria serve different purposes and must use different languages. **Task Specifications must be semantic** (intent-based, natural language) — they preserve the *why* and allow agents to exercise judgment. **Completion Criteria must be numerical** (test-based, measurable) — they eliminate ambiguity about *whether the job is done*. The system translates between the two: "Write robust code" (semantic spec) → "Pass 100 tests with 0 failures" (numerical criterion). This duality ensures goals remain meaningful while outcomes remain verifiable.
+
+**Anti-patterns**: (1) Purely numerical specs ("call exactly 3 tools") — lose intent, create gaming. (2) Purely semantic criteria ("code should be good") — unverifiable, subjective. (3) Mixing the two layers — "write robust code that calls read() then edit() then bash()" over-constrains method while under-constraining result.
+
+**Alignment**: Mechanism 39 (Semantic-Numerical Duality), Law 37 (Semantic Objective Law), P107 (Language Substrate), P5 (Evidence-Based).
+
+---
+
+## Part 25: Unix Philosophy (P170 CLI Primacy)
+
+**Source**: Bob's CLI Primacy design review (SYNTH-007), validated against P170 and P1 (Simplest Thing That Works).
+
+Prefer CLI tools and Unix primitives over framework complexity. When a `grep`, `find`, `sed`, or `jq` command can solve the problem, use it instead of building or invoking a custom framework. This applies at every layer: agents should compose small, sharp tools rather than reaching for heavy abstractions. The Unix philosophy — "do one thing well, compose via pipes" — is the default engineering posture.
+
+**Rules**: (1) CLI tools are the first choice for file manipulation, search, and data transformation. (2) Do not adopt MCP or multi-agent orchestration complexity unless a strict, measurable benefit is demonstrated. (3) Resist "Cosplay Multi-Agent" — adding agent layers that don't carry their own weight (P42 Minimalism). (4) When evaluating a new tool or framework, ask: "Can I do this with bash in fewer lines?" If yes, use bash.
+
+**Anti-patterns**: (1) Wrapping a simple `grep` in a custom TypeScript utility — adds maintenance burden with no benefit. (2) Introducing MCP servers for tasks achievable with direct tool calls — complexity without payoff. (3) Building orchestration layers "for future flexibility" when current needs are simple — violates P1 (Simplest Thing).
+
+**Alignment**: P170 (CLI Primacy), P1 (Simplest Thing That Works), P42 (Minimalism), SYNTH-007.

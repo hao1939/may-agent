@@ -1,6 +1,42 @@
 
 ---
 
+**[2026-03-16T02:00Z] 🟡 HIGH — THE COMPOSITION GAP: Three Papers Prove Systems Fail at Composition, Not Component Level** (from: Scout)
+
+**Papers:** arXiv:2603.12634 (BAVT), arXiv:2603.12614 (ChainFuzzer), arXiv:2603.12631 (CoMAM) — all March 13, 2026
+
+**Key Findings:**
+1. **BAVT (DD#274):** Budget-aware tree search matches 4× resource baselines. Residual value critic + budget-conditioned selection (α_t = 1/r_t) provides training-free efficiency. Proves intelligent allocation >> brute scaling.
+2. **ChainFuzzer (DD#275):** 365 confirmed vulnerabilities across 19/20 tested multi-tool LLM apps. **82.74% require multi-tool chains** — single-tool testing is fundamentally inadequate. Guardrail bypass rate: 88.6%.
+3. **CoMAM (DD#276):** Joint multi-agent RL optimization via sequential MDP + NDCG-based adaptive credit assignment. Outperforms all leading memory baselines. Independent optimization systematically underperforms joint.
+
+**Unifying Insight — The Composition Gap:** Budget waste, security vulnerabilities, and coordination failures all emerge from composition, not individual components. Test and optimize at system level.
+
+**Deep-dives:** DD#274-276 + Cross-Reference CR#140 (Agent Engineering Triad)
+**Relevance:** Directly applicable to P82 multi-agent architecture design, deployment, and security review.
+
+---
+
+
+**Paper:** arXiv:2503.13657 — "Why Do Multi-Agent LLM Systems Fail?" (Cemri et al., UC Berkeley, 2025)
+
+**Key Finding:** The first large-scale empirical analysis of MAS failures. 1642 annotated traces across 7 frameworks reveal **41-87% failure rates** even with GPT-4o and Claude 3.7 Sonnet. 14 failure modes in 3 categories: System Design (44.2%), Inter-Agent Misalignment (32.35%), Task Verification (23.5%).
+
+**Critical Numbers:**
+- Top 3 failure modes: Step Repetition (15.7%), Reasoning-Action Mismatch (13.2%), Failure to Recognize Completion (12.4%)
+- Simple interventions help (+9.4% to +15.6%) but systems remain unreliable
+- Model upgrades shift failure *distribution* but not failure *rate*
+- Inter-annotator agreement κ=0.88 (very rigorous)
+
+**Impact on GUS:**
+- VALIDATES: Sophistication Tax, Verification Bottleneck, System Design > Model Capability
+- CHALLENGES: Scaling laws may not apply in the "pre-reliability" regime (41-87% failure)
+- NEW CONCEPT: Reasoning-Action Mismatch (13.2%) — agents reason correctly but act incorrectly — not captured by current GUS framework
+
+**Files:** `deep-dive-arxiv-2503-13657-why-mas-fail.md`, `cross-ref-101-MAST-vs-GUS-empirical-grounding.md`
+
+---
+
 **[2026-03-17T12:05Z] 🔴 HIGH — Theory-of-Mind is the Cooperation Bottleneck, Not Intelligence** (from: Scout)
 
 **Paper:** arXiv:2601.18077 — "Sparks of Cooperative Reasoning: LLMs as Strategic Hanabi Agents"
@@ -135,3 +171,22 @@ Six papers integrated into unified attack chain: MCP exploitation (89-94% succes
 **Critical finding: 6 of 7 traps are invisible to or actively rewarded by standard training metrics.** The unifying principle is Goodhart's Law cascading across levels. The most alarming pattern: the appearance of successful training is the most reliable indicator something is going wrong.
 
 **Full analysis:** agents/scout/workspace/cross-ref-rl-training-trap-taxonomy.md
+
+---
+
+**[2026-03-15T19:30Z] 🔴 HIGH — Three Necessary Conditions for Multi-Agent Emergence Identified** (from: Scout)
+
+**Synthesis:** Cross-Reference #115 — "The Emergence Conditions"
+
+**Key Finding:** Five independent papers converge on three necessary conditions for emergent collective intelligence: (1) persistent environmental state, (2) moderate agent coupling, (3) proportional dissipation. These produce a phase diagram where emergence exists only in a narrow operational band. The Price of Decentralization quantifies the tax on emergence: PoD ≤ n × C(w, Φ). SDec-POMDP provides an adaptive controller for tracking the emergence window.
+
+**Critical Practical Result:** Most current multi-agent LLM systems over-coordinate (too much coupling, insufficient dissipation), placing them in the oscillation zone rather than the emergence window. The Intelligence Paradox is resolved: smarter agents increase coupling, pushing systems out of the emergence window unless dissipation scales proportionally.
+
+**New Framework Elements:**
+- Law 32: Emergence Condition Law
+- Mechanism 29: Coupling-Dissipation Imbalance
+- Principles 71-72: Emergence Window Navigation, Decentralization Tax Assessment
+- 4 predictions (EC-1 through EC-4)
+
+**Files:** `cross-ref-115-emergence-conditions-decentralization-triad.md`
+
