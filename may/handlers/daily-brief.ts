@@ -11,7 +11,7 @@ import { execSync } from "node:child_process";
 import { readdirSync, readFileSync, statSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import type { HandlerContext, HandlerModule } from "../../../src/lib/handler-context.js";
-import type { CronEntry } from "../../../src/lib/cron-tool.js";
+import type { CronEntry, JobResult } from "../../../src/lib/cron-tool.js";
 
 // ── Factory ───────────────────────────────────────────────────────────
 
@@ -121,6 +121,9 @@ export function collectDailyBrief(opts: DailyBriefOptions): string {
     agentScores.get(e.agent)!.qual.push(e.quality);
   }
 
+  // 8. Cron job health from job-history.jsonl
+  const cronHealth = collectCronHealth(persistDir, oneDayAgo);
+
   // Format
   const dateStr = new Date().toISOString().split("T")[0];
   const lines: string[] = [];
@@ -150,6 +153,115 @@ export function collectDailyBrief(opts: DailyBriefOptions): string {
     lines.push(``);
   }
 
-  lines.push(`*Top Issue*`, topIssue);
+  lines.push(`*Top Issue*`, topIssue, ``);
+
+  // Cron job health
+  if (cronHealth.jobs.length > 0) {
+    lines.push(`*Cron Jobs (24h)*`);
+    for (const job of cronHealth.jobs) {
+      const failRate = job.total > 0 ? job.failures / job.total : 0;
+      const icon = job.failures === 0 ? "✅" : failRate > 0.3 ? "🔴" : "🟡";
+      const avgDur = job.total > 0 ? Math.round(job.totalDurationMs / job.total / 1000) : 0;
+      let detail = `${icon} ${job.name}: ${job.successes}/${job.total} ok`;
+      if (job.failures > 0) detail += `, ${job.failures} fail`;
+      if (job.skipped > 0) detail += `, ${job.skipped} skip`;
+      detail += ` (avg ${avgDur}s)`;
+      if (job.agent) detail += ` [${job.agent}]`;
+      lines.push(`  ${detail}`);
+    }
+    if (cronHealth.issues.length > 0) {
+      lines.push(``);
+      lines.push(`*Cron Issues*`);
+      for (const issue of cronHealth.issues) {
+        lines.push(`  ⚠️ ${issue}`);
+      }
+    }
+  }
+
   return lines.join("\n");
+}
+
+// ── Cron health analysis ──────────────────────────────────────────────
+
+interface CronJobStats {
+  name: string;
+  agent?: string;
+  total: number;
+  successes: number;
+  failures: number;
+  skipped: number;
+  totalDurationMs: number;
+  lastError?: string;
+  lastRunAt?: string;
+}
+
+interface CronHealthResult {
+  jobs: CronJobStats[];
+  issues: string[];
+}
+
+function collectCronHealth(persistDir: string, since: number): CronHealthResult {
+  const historyPath = join(persistDir, "job-history.jsonl");
+  const jobMap = new Map<string, CronJobStats>();
+  const issues: string[] = [];
+
+  if (!existsSync(historyPath)) {
+    return { jobs: [], issues: [] };
+  }
+
+  try {
+    const content = readFileSync(historyPath, "utf-8");
+    for (const line of content.split("\n")) {
+      if (!line.trim()) continue;
+      try {
+        const result = JSON.parse(line) as JobResult;
+        const startedAt = new Date(result.startedAt).getTime();
+        if (startedAt < since) continue;
+
+        if (!jobMap.has(result.jobName)) {
+          jobMap.set(result.jobName, {
+            name: result.jobName,
+            agent: result.agent,
+            total: 0,
+            successes: 0,
+            failures: 0,
+            skipped: 0,
+            totalDurationMs: 0,
+          });
+        }
+        const stats = jobMap.get(result.jobName)!;
+        stats.total++;
+        stats.lastRunAt = result.endedAt;
+        if (result.status === "success") {
+          stats.successes++;
+          stats.totalDurationMs += result.durationMs;
+        } else if (result.status === "failure" || result.status === "timeout") {
+          stats.failures++;
+          stats.lastError = result.error || result.summary;
+        } else if (result.status === "skipped") {
+          stats.skipped++;
+        }
+      } catch { /* skip malformed lines */ }
+    }
+  } catch { /* best-effort */ }
+
+  const jobs = Array.from(jobMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+
+  // Detect issues
+  for (const job of jobs) {
+    if (job.total > 0 && job.failures / job.total > 0.5) {
+      issues.push(`${job.name}: >50% failure rate (${job.failures}/${job.total})${job.lastError ? ` — last: ${job.lastError.slice(0, 80)}` : ""}`);
+    }
+    if (job.skipped > job.total * 0.5 && job.skipped > 3) {
+      issues.push(`${job.name}: ${job.skipped} skipped — may be running too frequently or sessions stuck`);
+    }
+    if (job.total > 0 && job.successes > 0) {
+      const avgMs = job.totalDurationMs / job.successes;
+      if (avgMs > 300_000) { // > 5 min average
+        issues.push(`${job.name}: avg ${Math.round(avgMs / 1000)}s — may be too slow`);
+      }
+    }
+  }
+
+  return { jobs, issues };
 }

@@ -152,14 +152,10 @@ export function runSystemStatus(opts: SystemStatusOptions): SystemStatusResult {
     catch (err: any) { const output = err.stderr?.toString() || err.stdout?.toString() || "unknown error"; tscResult = `FAIL: ${output.slice(0, 200)}`; anomalies.push("tsc --noEmit failed"); }
   }
 
-  let testResult: string | null = null;
-  if (!opts.skipBuildChecks && tscResult === "PASS") {
-    try {
-      const output = execSync("npx vitest --run 2>&1 | tail -5", { cwd: projectRoot, timeout: 120_000, stdio: "pipe" }).toString();
-      const match = output.match(/(\d+)\s+tests?\s+passed/i) || output.match(/Tests\s+(\d+)\s+passed/i);
-      testResult = match ? `${match[1]} tests pass` : output.trim().slice(0, 100);
-    } catch (err: any) { const output = err.stdout?.toString() || err.stderr?.toString() || "unknown"; testResult = `FAIL: ${output.slice(0, 200)}`; anomalies.push("Test suite failed"); }
-  }
+  // vitest intentionally removed — spawns 15+ worker processes that orphan
+  // on timeout, consuming 20+ GB RAM and crashing the container. Test suite
+  // validation belongs in CI or explicit QA review, not automated health checks.
+  const testResult: string | null = null;
 
   if (unevalActionable > 150) anomalies.push(`${unevalActionable} actionable unevaluated sessions — evaluation may be falling behind`);
   if (unevalAutoSkippable > 150) anomalies.push(`${unevalAutoSkippable} auto-skippable sessions — writeSkippedEvaluations may need to run`);
