@@ -100,11 +100,18 @@ export function isRetryableInfraError(session: ActiveSession): string | null {
 }
 
 /**
+ * Maximum delay (ms) for any single retry. Caps exponential growth.
+ * Without this, attempt 10 would be 512s (~8.5 minutes).
+ */
+const MAX_RETRY_DELAY_MS = 30_000;
+
+/**
  * Run an agent call (prompt or continue) with automatic retry on transient
  * infrastructure errors (P93 Resilience Pattern).
  *
  * On retryable failure: removes the bad assistant message (if any), clears
  * error state, waits with exponential backoff + jitter, and calls agent.continue().
+ * Rate limit errors (429) use longer base delays (15s vs 1s).
  * After infraRetryMax failures, falls through to onComplete().
  */
 export async function runAgentWithRetry(
@@ -167,7 +174,7 @@ export async function runAgentWithRetry(
     session.agent.state.error = undefined;
 
     const baseDelay = isRateLimit ? 15_000 : INFRA_RETRY_BASE_DELAY_MS;
-    const exponentialDelay = baseDelay * Math.pow(2, attempt - 1);
+    const exponentialDelay = Math.min(baseDelay * Math.pow(2, attempt - 1), MAX_RETRY_DELAY_MS);
     const jitter = Math.floor(Math.random() * (isRateLimit ? 5000 : 500));
     const delayMs = exponentialDelay + jitter;
     await new Promise((resolve) => setTimeout(resolve, delayMs));
