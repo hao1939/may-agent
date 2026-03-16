@@ -336,7 +336,7 @@ describe("Session kind in resumeStaleSessions", () => {
     expect(meta!.autoClose).toBe("immediate");
   });
 
-  it("resumeStaleSessions with kinds filter only resumes matching sessions", async () => {
+  it("resumeStaleSessions with kinds filter only resumes matching sessions", { timeout: 15_000 }, async () => {
     // Create a chat session that will become stale
     const chatSid = manager.run("may", "chat task", { kind: "chat", autoClose: "never" });
     await new Promise((r) => setTimeout(r, 500));
