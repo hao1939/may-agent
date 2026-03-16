@@ -422,7 +422,8 @@ export class Cron {
       })
       .catch((err) => {
         this.handlerRunning.delete(entry.name);
-        this.checkPendingTrigger(entry);
+        // Don't drain pending triggers on failure — prevents tight error loops
+        this.pendingTriggers.delete(entry.name);
         const errMsg = err instanceof Error ? err.message : String(err);
         this.appendJobResult({
           jobName: entry.name,
