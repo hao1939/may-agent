@@ -135,22 +135,23 @@ function sleep(ms: number, signal?: AbortSignal): Promise<void> {
       return;
     }
 
-    const timer = setTimeout(resolve, ms);
+    let done = false;
+
+    const timer = setTimeout(() => {
+      done = true;
+      if (signal) signal.removeEventListener("abort", onAbort);
+      resolve();
+    }, ms);
+
+    const onAbort = () => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      reject(signal!.reason ?? new Error("Retry aborted"));
+    };
 
     if (signal) {
-      const onAbort = () => {
-        clearTimeout(timer);
-        reject(signal.reason ?? new Error("Retry aborted"));
-      };
       signal.addEventListener("abort", onAbort, { once: true });
-
-      // Clean up the abort listener when timer fires normally
-      const wrappedResolve = () => {
-        signal.removeEventListener("abort", onAbort);
-        resolve();
-      };
-      clearTimeout(timer);
-      setTimeout(wrappedResolve, ms);
     }
   });
 }

@@ -742,6 +742,7 @@ export class SubagentManager {
       stepLabel: opts?.stepLabel ?? existingMeta?.stepLabel,
       kind: session.kind,
       autoClose: session.autoClose,
+      orderId: session.orderId,
     });
 
     // Set up timeout if configured
@@ -995,7 +996,7 @@ export class SubagentManager {
       autoClose: persisted.autoClose ?? "immediate",
       kind: persisted.kind ?? "job",
       opBudget: def.opBudget ?? 0,
-      opCount: 0,
+      opCount: persisted.opCount ?? 0,
       totalToolCalls: 0,
       infraRetryCount: 0,
       toolErrorHistory: new Map(),
@@ -1003,6 +1004,7 @@ export class SubagentManager {
       turnBudgetWarningAt: def.turnBudgetWarningAt ?? TURN_BUDGET_WARNING_DEFAULT,
       turnBudgetWarned: false,
       filesModified: new Set(),
+      orderId: persisted.orderId,
     };
 
     this.subscribeForPersistence(session);
