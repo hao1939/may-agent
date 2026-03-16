@@ -235,7 +235,7 @@ export class SubagentManager {
               agent: session.agentName,
               turns: session.turnCount,
               summary: truncateSummary(lastText),
-            });
+        }, this.getWorkspacePath(session.agentName));
           }
         }
       }
@@ -593,14 +593,14 @@ export class SubagentManager {
           agent: session.agentName, turns: session.turnCount,
           duration, summary: truncateSummary(summaryText),
           error: truncateSummary(session.error),
-        });
+        }, this.getWorkspacePath(session.agentName));
       } else {
         appendActivity(this._projectRoot, {
           ts: Date.now(), event: "done", sid: session.sessionId,
           agent: session.agentName, turns: session.turnCount,
           duration, summary: truncateSummary(summaryText),
           files: [...session.filesModified],
-        });
+        }, this.getWorkspacePath(session.agentName));
       }
     }
 
@@ -757,7 +757,7 @@ export class SubagentManager {
     // Activity tracking: log session start
     appendActivity(this._projectRoot, {
       ts: Date.now(), event: "start", sid: sessionId, agent: name, task,
-    });
+    }, this.getWorkspacePath(name));
 
     // The initial user message is persisted via the message_end subscriber
     // when agentLoop emits it (before any LLM call). No explicit write here
