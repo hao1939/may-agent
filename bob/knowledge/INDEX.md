@@ -52,7 +52,7 @@ Read on demand when relevant:
 - `knowledge/coaching.md` — coaching session notes
 - `knowledge/l3-collective-defense.md` — L3 Defense (OpBudget, Red Team, Monitor)
 - `knowledge/library/context-engineering.md` — context engineering research
-- `knowledge/library/synthesis/` — synthesis documents (canonical location)
+- `knowledge/library/archives/` — archives of old synthesis documents
 - `agents/shared/philosophy.md` — full design philosophy
 - `agents/shared/best-practices.md` — operational best practices
 - `agents/shared/skills/` — full skill guides
