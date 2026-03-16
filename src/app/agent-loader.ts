@@ -33,6 +33,7 @@ import {
   createScrapeTool,
   createSystemStatusTool,
   createHandoffTool,
+  createFinishTool,
 } from "../lib/index.js";
 import { createAgentGrowthTools } from "../lib/tools/agent-growth.js";
 import type { EventBus } from "./event-bus.js";
@@ -326,6 +327,17 @@ function buildTools(config: AgentConfig, opts: AgentLoaderOptions): AgentTool[] 
       case "system-status":
       case "system_status": {
         tools.push(createSystemStatusTool(opts.persistDir, opts.agentsRoot));
+        break;
+      }
+
+      case "finish": {
+        tools.push(
+          createFinishTool({
+            agentName: config.name,
+            projectRoot,
+            persistDir,
+          }),
+        );
         break;
       }
 

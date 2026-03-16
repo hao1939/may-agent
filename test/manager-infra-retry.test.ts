@@ -48,8 +48,8 @@ function mockSession(overrides: {
 
 describe("P93 Infrastructure Resilience — Infra Retry", () => {
   // ------ INFRA_RETRY_MAX constant ------
-  it("exports INFRA_RETRY_MAX constant with value 3", () => {
-    expect(INFRA_RETRY_MAX).toBe(3);
+  it("exports INFRA_RETRY_MAX constant with value 5", () => {
+    expect(INFRA_RETRY_MAX).toBe(5);
     expect(Number.isInteger(INFRA_RETRY_MAX)).toBe(true);
     expect(INFRA_RETRY_MAX).toBeGreaterThan(0);
   });
