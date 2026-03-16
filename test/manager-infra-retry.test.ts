@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { isRetryableInfraError } from "../src/lib/manager-retry.ts";
+import { isRetryableInfraError, isRateLimitError } from "../src/lib/manager-retry.ts";
 import { INFRA_RETRY_MAX } from "../src/lib/manager.ts";
 import type { ActiveSession } from "../src/lib/manager-utils.ts";
 
@@ -223,9 +223,31 @@ describe("P93 Infrastructure Resilience — Infra Retry", () => {
     expect(isRetryableInfraError(session)).toBeNull();
   });
 
+  // ------ Pattern 5: HTTP/rate limit errors ------
+  it.each([
+    ["429 Too Many Requests", "http_retryable"],
+    ["litellm.RateLimitError: rate limit exceeded", "http_retryable"],
+    ["Rate limit exceeded", "http_retryable"],
+    ["rate limit exceeded", "http_retryable"],
+    ["throttling_error: too many requests", "http_retryable"],
+    ["Throttled by upstream", "http_retryable"],
+    ["502 Bad Gateway", "http_retryable"],
+    ["503 Service Unavailable", "http_retryable"],
+    ["500 Internal Server Error", "http_retryable"],
+    ["ECONNRESET", "http_retryable"],
+    ["ETIMEDOUT", "http_retryable"],
+    ["socket hang up", "http_retryable"],
+  ])('returns "%s" → "%s"', (errorMsg, expected) => {
+    const session = mockSession({
+      status: "running",
+      messages: [{ role: "user" }],
+      agentError: errorMsg,
+    });
+    expect(isRetryableInfraError(session)).toBe(expected);
+  });
+
   // ------ Non-matching errors do NOT trigger retry ------
   it.each([
-    "Rate limit exceeded",
     "API key invalid",
     "Internal server error",
     "Connection refused",
@@ -281,5 +303,32 @@ describe("P93 Infrastructure Resilience — Infra Retry", () => {
     expect(src).toContain('from "./manager-retry.js"');
     expect(src).toContain("isRetryableInfraError");
     expect(src).toContain("runAgentWithRetry");
+  });
+});
+
+describe("isRateLimitError — case-insensitive detection", () => {
+  it.each([
+    "429 Too Many Requests",
+    "429",
+    "litellm.RateLimitError: rate limit exceeded",
+    "Rate limit exceeded",
+    "rate limit exceeded",
+    "RATE LIMIT",
+    "RateLimit error from provider",
+    "throttling_error",
+    "Throttled by upstream",
+    "Request was throttled",
+  ])("detects rate limit: %s", (msg) => {
+    expect(isRateLimitError(msg)).toBe(true);
+  });
+
+  it.each([
+    "API key invalid",
+    "Connection refused",
+    "ECONNRESET",
+    "500 Internal Server Error",
+    "timeout exceeded",
+  ])("does not match: %s", (msg) => {
+    expect(isRateLimitError(msg)).toBe(false);
   });
 });

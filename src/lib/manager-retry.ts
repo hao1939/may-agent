@@ -12,6 +12,14 @@ import { isOverflowError } from "./overflow.js";
 import { INFRA_RETRY_BASE_DELAY_MS } from "./manager-utils.js";
 import type { ActiveSession } from "./manager-utils.js";
 
+/** Case-insensitive rate limit / throttle detection. */
+const RATE_LIMIT_RE = /rate.?limit|throttl/i;
+
+/** Check whether an error string indicates a rate limit or throttling issue. */
+export function isRateLimitError(error: string): boolean {
+  return error.includes("429") || RATE_LIMIT_RE.test(error);
+}
+
 /**
  * Detect whether a session's last exchange indicates a transient infra error
  * that is safe to retry (vs. a real agent failure or context overflow).
@@ -55,10 +63,7 @@ export function isRetryableInfraError(session: ActiveSession): string | null {
   // Also catch 502/503/500 gateway errors, connection resets, and timeouts.
   if (agentError) {
     const isHttpRetryable =
-      agentError.includes("429") ||
-      agentError.includes("RateLimitError") ||
-      agentError.includes("rate limit") ||
-      agentError.includes("throttling") ||
+      isRateLimitError(agentError) ||
       agentError.includes("502") ||
       agentError.includes("503") ||
       agentError.includes("500 ") ||
@@ -162,20 +167,18 @@ export async function runAgentWithRetry(
 
     // Rate-limit errors (429) need much longer backoff than stream errors.
     // Capture error text BEFORE clearing it for the rate-limit check.
-    // 429 = "system-wide throttling" → need 15s, 30s, 60s, 120s, 240s
-    // Stream errors = "momentary glitch" → need 1s, 2s, 4s, 8s, 16s
+    // Rate limit: 15s, 30s, 30s, 30s, 30s (capped at MAX_RETRY_DELAY_MS)
+    // Stream errors: 1s, 2s, 4s, 8s, 16s
     const errorText = session.error ?? session.agent.state.error ?? "";
-    const isRateLimit = retryReason === "http_retryable" &&
-      (errorText.includes("429") || errorText.includes("RateLimitError") ||
-       errorText.includes("rate limit") || errorText.includes("throttling"));
+    const rateLimit = retryReason === "http_retryable" && isRateLimitError(errorText);
 
     // Clear error state for the retry
     session.error = undefined;
     session.agent.state.error = undefined;
 
-    const baseDelay = isRateLimit ? 15_000 : INFRA_RETRY_BASE_DELAY_MS;
+    const baseDelay = rateLimit ? 15_000 : INFRA_RETRY_BASE_DELAY_MS;
     const exponentialDelay = Math.min(baseDelay * Math.pow(2, attempt - 1), MAX_RETRY_DELAY_MS);
-    const jitter = Math.floor(Math.random() * (isRateLimit ? 5000 : 500));
+    const jitter = Math.floor(Math.random() * (rateLimit ? 5000 : 500));
     const delayMs = exponentialDelay + jitter;
     await new Promise((resolve) => setTimeout(resolve, delayMs));
 

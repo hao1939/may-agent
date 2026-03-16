@@ -342,52 +342,34 @@ function buildTools(config: AgentConfig, opts: AgentLoaderOptions): AgentTool[] 
       }
 
       case "agent-growth": {
+        const registerAgentFromDir = (agentDir: string) => {
+          const config = loadAgentConfig(agentDir, opts.bus);
+          if (!config) return;
+          const model = opts.models[config.model];
+          const knowledgeDir = resolve(agentDir, "knowledge");
+          const workspace = resolve(agentDir, "workspace");
+
+          manager.register({
+            name: config.name,
+            description: config.description,
+            domain: config.domain,
+            model,
+            tools: buildTools(config, opts),
+            knowledgeDir: existsSync(knowledgeDir) ? knowledgeDir : undefined,
+            workspace: existsSync(workspace) ? workspace : undefined,
+            projectRoot: opts.projectRoot,
+            apiKey: model.apiKey,
+            memoryLimit: config.memoryLimit,
+          });
+        };
+
         tools.push(
           ...createAgentGrowthTools({
             agentsRoot: opts.agentsRoot,
             manager,
             persistDir: opts.persistDir,
-            loadAgent: (agentDir) => {
-              const config = loadAgentConfig(agentDir, opts.bus);
-              if (!config) return;
-              const model = opts.models[config.model];
-              const knowledgeDir = resolve(agentDir, "knowledge");
-              const workspace = resolve(agentDir, "workspace");
-
-              manager.register({
-                name: config.name,
-                description: config.description,
-                domain: config.domain,
-                model,
-                tools: buildTools(config, opts),
-                knowledgeDir: existsSync(knowledgeDir) ? knowledgeDir : undefined,
-                workspace: existsSync(workspace) ? workspace : undefined,
-                projectRoot: opts.projectRoot,
-                apiKey: model.apiKey,
-                memoryLimit: config.memoryLimit,
-              });
-            },
-            reloadAgent: (name) => {
-              const agentDir = resolve(opts.agentsRoot, name);
-              const config = loadAgentConfig(agentDir, opts.bus);
-              if (!config) return;
-              const model = opts.models[config.model];
-              const knowledgeDir = resolve(agentDir, "knowledge");
-              const workspace = resolve(agentDir, "workspace");
-
-              manager.register({
-                name: config.name,
-                description: config.description,
-                domain: config.domain,
-                model,
-                tools: buildTools(config, opts),
-                knowledgeDir: existsSync(knowledgeDir) ? knowledgeDir : undefined,
-                workspace: existsSync(workspace) ? workspace : undefined,
-                projectRoot: opts.projectRoot,
-                apiKey: model.apiKey,
-                memoryLimit: config.memoryLimit,
-              });
-            },
+            loadAgent: registerAgentFromDir,
+            reloadAgent: (name) => registerAgentFromDir(resolve(opts.agentsRoot, name)),
           }),
         );
         break;
