@@ -139,9 +139,10 @@ describe("coach: agent.json", () => {
     const config = JSON.parse(readFileSync(resolve(COACH_DIR, "agent.json"), "utf-8"));
     const tools: string[] = config.tools;
     expect(tools).toContain("agents");
-    expect(tools).toContain("socket-watch");
     expect(tools).toContain("workflow");
     expect(tools).toContain("coding");
+    expect(tools).not.toContain("socket-watch");
+    expect(tools).not.toContain("agent-growth");
   });
 
   it("does not have background-exec", () => {
