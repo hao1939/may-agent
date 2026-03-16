@@ -141,8 +141,10 @@ export const MEMORY_SUMMARY_MAX = 500;
 export const STATE_CHANGING_TOOLS = new Set(["bash", "write", "edit", "commit"]);
 
 /** Maximum number of automatic retries for transient infrastructure errors
- *  (empty responses, missing tool calls). See P93 Resilience Pattern. */
-export const INFRA_RETRY_MAX = 3;
+ *  (empty responses, missing tool calls). See P93 Resilience Pattern.
+ *  Increased from 3→5 per error-rate-reduction-plan: 3 retries recovered 80%,
+ *  5 retries should recover 95%+ of transient failures. */
+export const INFRA_RETRY_MAX = 5;
 
 /** Base delay (ms) between infrastructure retries. Multiplied by attempt number. */
 export const INFRA_RETRY_BASE_DELAY_MS = 1000;
@@ -247,7 +249,7 @@ export interface SubagentManagerOptions {
    *  Prevents infinite loops like A→B→A→B→... */
   maxCallDepth?: number;
   /** Maximum automatic retries for transient infrastructure errors
-   *  (empty responses, missing tool calls). Default: INFRA_RETRY_MAX (3).
+   *  (empty responses, missing tool calls). Default: INFRA_RETRY_MAX (5).
    *  Set to 0 to disable retries (useful in tests). */
   infraRetryMax?: number;
   /**
