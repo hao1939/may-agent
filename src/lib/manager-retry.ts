@@ -32,6 +32,8 @@ export function isRateLimitError(error: string): boolean {
  *   - "tool_use_missing": stopReason=toolUse but no tool calls in content.
  *   - "json_stream_error": JSON parse/EOF/stream corruption.
  *   - "http_retryable": 429/502/503/500/ECONNRESET/ETIMEDOUT/socket hang up.
+ *   - "empty_response" (5b): error text contains "empty response" / "0 output tokens"
+ *     (thrown exception variant — complements Pattern 2's structural detection).
  *   - "unhandled_stop_reason": pi-ai provider got unexpected stop reason from model.
  */
 export function isRetryableInfraError(session: ActiveSession): string | null {
@@ -75,6 +77,21 @@ export function isRetryableInfraError(session: ActiveSession): string | null {
       agentError.includes("socket hang up");
     if (isHttpRetryable) {
       return "http_retryable";
+    }
+  }
+
+  // Pattern 5b: Empty response thrown as error — the model or proxy returned
+  // an empty response (0 output tokens) and the provider threw it as an exception
+  // rather than returning an empty assistant message. This bypasses the structural
+  // detection in Pattern 2 below because no assistant message is added to the context.
+  // Transient and safe to retry — the model typically responds on the next attempt.
+  if (agentError) {
+    const isEmptyResponseError =
+      agentError.includes("empty response") ||
+      agentError.includes("0 output tokens") ||
+      agentError.includes("without producing a response");
+    if (isEmptyResponseError) {
+      return "empty_response";
     }
   }
 
@@ -200,6 +217,78 @@ export async function runAgentWithRetry(
       await session.agent.continue();
     } catch (err) {
       session.error = (err as Error)?.message ?? String(err);
+    }
+  }
+
+  // ── Post-loop empty-response catch ─────────────────────────────────
+  // Defense-in-depth: detect empty responses that slipped through the
+  // retry loop (e.g., agent-core completed normally with stopReason="stop"
+  // but 0 output tokens). If we still have retries left, retry here
+  // before falling through to onComplete which would mark it as error.
+  if (!session.closed && session.infraRetryCount < infraRetryMax) {
+    const messages = session.agent.state.messages;
+    const lastMsg = messages.length > 0 ? messages[messages.length - 1] : null;
+    const agentError = session.agent.state.error ?? session.error;
+
+    // Check for empty assistant response (no text, no tool calls)
+    const isEmptyAssistant = !agentError && lastMsg?.role === "assistant" && (() => {
+      const content = Array.isArray(lastMsg.content) ? lastMsg.content : [];
+      return !content.some(
+        (block: any) =>
+          (block?.type === "text" && block.text?.trim()) ||
+          block?.type === "toolCall",
+      );
+    })();
+
+    // Check for silent stream error (last message is user = no assistant reply)
+    const isSilentStream = !agentError && lastMsg?.role === "user";
+
+    if (isEmptyAssistant || isSilentStream) {
+      const reason = isEmptyAssistant ? "empty_response" : "silent_stream";
+      session.infraRetryCount++;
+      const attempt = session.infraRetryCount;
+      console.warn(
+        `[manager] Post-loop retry ${attempt}/${infraRetryMax} for session ${session.sessionId} (${reason})`,
+      );
+
+      // Clean up: remove empty assistant message if present
+      if (isEmptyAssistant && lastMsg?.role === "assistant") {
+        messages.pop();
+        session.agent.replaceMessages(messages);
+      }
+
+      // Ensure we end on a user message for agent.continue()
+      const lastAfterClean = messages.length > 0 ? messages[messages.length - 1] : null;
+      if (!lastAfterClean || lastAfterClean.role === "assistant") {
+        session.agent.appendMessage({
+          role: "user",
+          content: [{ type: "text", text: "Please continue." }],
+          timestamp: Date.now(),
+        });
+      }
+
+      session.error = undefined;
+      session.agent.state.error = undefined;
+
+      const delayMs = Math.min(INFRA_RETRY_BASE_DELAY_MS * Math.pow(2, attempt - 1), MAX_RETRY_DELAY_MS)
+        + Math.floor(Math.random() * 500);
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+
+      if (!session.closed) {
+        try {
+          await session.agent.continue();
+        } catch (err) {
+          session.error = (err as Error)?.message ?? String(err);
+        }
+
+        // After retry, re-enter the main retry loop for any further issues
+        return runAgentWithRetry(
+          session,
+          Promise.resolve(), // initialCall already done
+          infraRetryMax,
+          onComplete,
+        );
+      }
     }
   }
 
