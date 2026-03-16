@@ -4,9 +4,9 @@
     "type": "heartbeat",
     "agent": "may",
     "intervalMs": 600000,
-    "message": "[heartbeat] Read agents/may/heartbeat.md and work through it. You have full authority to act — dispatch approved work, fix issues, don't wait for permission.",
+    "message": "[heartbeat] Read agents/may/heartbeat.md and work through it. You have full authority to act \u2014 dispatch approved work, fix issues, don't wait for permission.",
     "enabled": true,
-    "description": "May's heartbeat — follow-up, system health, initiative (30min)",
+    "description": "May's heartbeat \u2014 follow-up, system health, initiative (30min)",
     "lastModified": "2026-03-12T15:11:46.791Z"
   },
   {
@@ -49,43 +49,43 @@
   {
     "name": "heartbeat-bob",
     "type": "heartbeat",
-    "intervalMs": 600000,
+    "intervalMs": 660000,
     "agent": "bob",
     "message": "[heartbeat] You are Bob. Your files are in agents/bob/. Read agents/bob/heartbeat.md and work through each section top to bottom. End with a 2-3 sentence brief of what you did and found.",
     "enabled": true,
-    "description": "Bob's mission heartbeat — design, todo drain, philosophy audit (30min)",
+    "description": "Bob's mission heartbeat \u2014 design, todo drain, philosophy audit (30min)",
     "lastModified": "2026-03-12T15:11:42.304Z",
     "notifyBrief": true
   },
   {
     "name": "heartbeat-optimizer",
     "type": "heartbeat",
-    "intervalMs": 600000,
+    "intervalMs": 540000,
     "agent": "optimizer",
     "message": "[heartbeat] You are Optimizer. Your files are in agents/optimizer/. Read agents/optimizer/heartbeat.md and work through each section top to bottom.",
     "enabled": true,
-    "description": "Optimizer's heartbeat — find highest-impact improvement (30min)",
+    "description": "Optimizer's heartbeat \u2014 find highest-impact improvement (30min)",
     "lastModified": "2026-03-12T15:11:42.303Z"
   },
   {
     "name": "heartbeat-coach",
     "type": "heartbeat",
-    "intervalMs": 600000,
+    "intervalMs": 720000,
     "agent": "coach",
     "message": "[heartbeat] You are Coach. Your files are in agents/coach/. Read agents/coach/heartbeat.md and work through each section top to bottom.",
     "enabled": true,
-    "description": "Coach heartbeat — triage, coaching, long-term mission work (30min)",
+    "description": "Coach heartbeat \u2014 triage, coaching, long-term mission work (30min)",
     "lastModified": "2026-03-12T15:11:42.304Z",
     "notifyBrief": true
   },
   {
     "name": "heartbeat-evaluator",
     "type": "heartbeat",
-    "intervalMs": 2700000,
+    "intervalMs": 7200000,
     "agent": "evaluator",
     "message": "[heartbeat] You are Evaluator. Your files are in agents/evaluator/. Read agents/evaluator/heartbeat.md and work through each section top to bottom. End with a 2-3 sentence brief of what you evaluated or calibrated.",
     "enabled": true,
-    "description": "Evaluator's heartbeat — review eval quality, calibrate (30min)",
+    "description": "Evaluator's heartbeat \u2014 calibration, criteria evolution, signal quality (2h)",
     "lastModified": "2026-03-12T15:11:42.302Z",
     "notifyBrief": true
   },
@@ -94,9 +94,9 @@
     "type": "heartbeat",
     "intervalMs": 1800000,
     "agent": "amy",
-    "message": "[heartbeat] You are Amy. Your files are in agents/amy/. IMPORTANT: Your context history is STALE — files have been updated since your last run. You MUST start by calling read('agents/amy/heartbeat.md') and work through each section top to bottom. Do NOT respond from memory.",
+    "message": "[heartbeat] You are Amy. Your files are in agents/amy/. IMPORTANT: Your context history is STALE \u2014 files have been updated since your last run. You MUST start by calling read('agents/amy/heartbeat.md') and work through each section top to bottom. Do NOT respond from memory.",
     "enabled": true,
-    "description": "Amy's heartbeat — XHS exploration and insight synthesis (1h)",
+    "description": "Amy's heartbeat \u2014 XHS exploration and insight synthesis (1h)",
     "lastModified": "2026-03-14T20:32:00.000Z"
   },
   {
@@ -106,7 +106,7 @@
     "agent": "scout",
     "message": "[heartbeat] You are Scout. Your files are in agents/scout/. Read agents/scout/heartbeat.md and work through each section top to bottom. End with a 2-3 sentence brief of what you researched and found.",
     "enabled": true,
-    "description": "Scout's heartbeat — research and discovery (30min)",
+    "description": "Scout's heartbeat \u2014 research and discovery (30min)",
     "lastModified": "2026-03-10T16:18:23.663Z",
     "notifyBrief": true
   },
@@ -115,7 +115,7 @@
     "type": "job",
     "intervalMs": 86400000,
     "agent": "bob",
-    "message": "[cron:analyze-failures] Analyze the last 10 evaluations in .state/evaluations/. Identify the top recurring pattern. Write findings to agents/bob/workspace/analysis.md. Compare recent evaluations against previous ones — did targeted fixes help? If same issue persists, recommend a different approach.",
+    "message": "[cron:analyze-failures] Analyze the last 10 evaluations in .state/evaluations/. Identify the top recurring pattern. Write findings to agents/bob/workspace/analysis.md. Compare recent evaluations against previous ones \u2014 did targeted fixes help? If same issue persists, recommend a different approach.",
     "enabled": true,
     "description": "Bob analyzes evaluation patterns daily (via run-agent-task)",
     "handler": "run-agent-task",
@@ -150,36 +150,17 @@
     "message": "[cron:coaching-report] Generate daily coaching quality report.",
     "enabled": true,
     "handler": "coaching-report",
-    "description": "Daily coaching quality report — per-agent scores, trends (JS handler, 24h)",
+    "description": "Daily coaching quality report \u2014 per-agent scores, trends (JS handler, 24h)",
     "lastModified": "2026-03-10T10:16:35.641Z"
-  },
-  {
-    "name": "focus-task-tracker",
-    "type": "job",
-    "intervalMs": 3600000,
-    "message": "[cron:focus-task-tracker] Check active focus tasks for progress.",
-    "enabled": false,
-    "handler": "focus-task-tracker",
-    "description": "Track focus task progress — remind, check signals, escalate if stuck (JS handler, 1h)"
-  },
-  {
-    "name": "iraq-conflict-monitor",
-    "type": "job",
-    "agent": "scout",
-    "intervalMs": 3600000,
-    "message": "[cron:iraq-conflict-monitor] Search Reddit and news for latest Iraq conflict updates. Write brief to agents/shared/daily-briefs/iraq-conflict-latest.md. Fact vs emotion. Keep it short. If nothing new, say so and stop.",
-    "enabled": false,
-    "description": "Hourly Iraq conflict brief — fact vs emotion (via run-agent-task)",
-    "handler": "run-agent-task"
   },
   {
     "name": "heartbeat-tech-lead",
     "type": "heartbeat",
-    "intervalMs": 600000,
+    "intervalMs": 780000,
     "agent": "tech-lead",
     "message": "[heartbeat] Read agents/tech-lead/heartbeat.md and work through each section top to bottom. End with a 2-3 sentence brief of what you built or reviewed.",
     "enabled": true,
-    "description": "Tech-lead's heartbeat — build pending work, intake new designs, code health (30min)",
+    "description": "Tech-lead's heartbeat \u2014 build pending work, intake new designs, code health (30min)",
     "lastModified": "2026-03-12T15:11:42.304Z",
     "notifyBrief": true
   },
@@ -190,7 +171,7 @@
     "agent": "amy-kimi",
     "message": "[heartbeat] Read agents/amy-kimi/heartbeat.md and work through each section top to bottom. End with a 2-3 sentence brief of what you explored and discovered.",
     "enabled": true,
-    "description": "Amy-Kimi's heartbeat — XHS exploration with Kimi model (30min)",
+    "description": "Amy-Kimi's heartbeat \u2014 XHS exploration with Kimi model (30min)",
     "notifyBrief": true
   },
   {
@@ -201,7 +182,7 @@
     "message": "[cron:consolidate-memory] Read agents/shared/tasks/consolidate-memory.md and execute it. Your journal is at agents/bob/workspace/journal.md, your knowledge is at agents/bob/knowledge/, your archive is at agents/bob/workspace/archive/.",
     "enabled": true,
     "handler": "run-agent-task",
-    "description": "Weekly memory consolidation for Bob — journal → knowledge → archive (7d)"
+    "description": "Weekly memory consolidation for Bob \u2014 journal \u2192 knowledge \u2192 archive (7d)"
   },
   {
     "name": "consolidate-memory-scout",
@@ -211,7 +192,7 @@
     "message": "[cron:consolidate-memory] Read agents/shared/tasks/consolidate-memory.md and execute it. Your journal is at agents/scout/workspace/journal.md, your knowledge is at agents/scout/knowledge/, your archive is at agents/scout/workspace/archive/.",
     "enabled": true,
     "handler": "run-agent-task",
-    "description": "Weekly memory consolidation for Scout — journal → knowledge → archive (7d)"
+    "description": "Weekly memory consolidation for Scout \u2014 journal \u2192 knowledge \u2192 archive (7d)"
   },
   {
     "name": "consolidate-memory-coach",
@@ -221,7 +202,7 @@
     "message": "[cron:consolidate-memory] Read agents/shared/tasks/consolidate-memory.md and execute it. Your journal is at agents/coach/workspace/journal.md, your knowledge is at agents/coach/knowledge/, your archive is at agents/coach/workspace/archive/.",
     "enabled": true,
     "handler": "run-agent-task",
-    "description": "Weekly memory consolidation for Coach — journal → knowledge → archive (7d)"
+    "description": "Weekly memory consolidation for Coach \u2014 journal \u2192 knowledge \u2192 archive (7d)"
   },
   {
     "name": "consolidate-memory-optimizer",
@@ -231,7 +212,7 @@
     "message": "[cron:consolidate-memory] Read agents/shared/tasks/consolidate-memory.md and execute it. Your journal is at agents/optimizer/workspace/journal.md, your knowledge is at agents/optimizer/knowledge/, your archive is at agents/optimizer/workspace/archive/.",
     "enabled": true,
     "handler": "run-agent-task",
-    "description": "Weekly memory consolidation for Optimizer — journal → knowledge → archive (7d)"
+    "description": "Weekly memory consolidation for Optimizer \u2014 journal \u2192 knowledge \u2192 archive (7d)"
   },
   {
     "name": "consolidate-memory-amy",
@@ -241,17 +222,55 @@
     "message": "[cron:consolidate-memory] Read agents/shared/tasks/consolidate-memory.md and execute it. Your journal is at agents/amy/workspace/journal.md, your knowledge is at agents/amy/knowledge/, your archive is at agents/amy/workspace/archive/.",
     "enabled": true,
     "handler": "run-agent-task",
-    "description": "Weekly memory consolidation for Amy — journal → knowledge → archive (7d)"
+    "description": "Weekly memory consolidation for Amy \u2014 journal \u2192 knowledge \u2192 archive (7d)"
   },
   {
-    "name": "compliance-audit",
+    "name": "reflect",
     "type": "job",
-    "intervalMs": 604800000,
-    "agent": "evaluator",
-    "message": "[cron:compliance-audit] Run the P53 compliance audit: execute `node agents/evaluator/skills/detect-p53-drift/detect-p53-drift.cjs`. If drift is found, post a WARNING to agents/shared/bulletin.md. If clean, post a PASS report to agents/bob/workspace/compliance-audit/reports/.",
-    "enabled": false,
+    "intervalMs": 21600000,
+    "agent": "coach",
+    "message": "[cron:reflect] Run the reflection procedure defined in agents/coach/workspace/reflect-prompt.md. Analyze recent human inputs from .state/human-inputs.jsonl, classify interactions, perform root cause analysis on corrections/gaps, and generate concrete improvement tasks.",
+    "enabled": true,
     "handler": "run-agent-task",
-    "description": "Weekly P53 compliance audit — verify SOUL.md and agent.json integrity (Mondays, 7d)",
-    "lastModified": "2026-03-14T15:02:47.299Z"
+    "description": "Coach reflects on human interactions every 6h \u2014 extract corrections, generate improvement tasks (via run-agent-task)"
+  },
+  {
+    "name": "evaluate-session-llm",
+    "type": "job",
+    "handler": "run-agent-task",
+    "agent": "evaluator",
+    "intervalMs": 2700000,
+    "message": "[cron:evaluate-session] You are the evaluator. Evaluate ONE session. Run this selector to find your target:\n\nnode -e \"\nconst fs=require('fs');\nconst h=fs.readdirSync('.state/sessions/history').filter(n=>n.startsWith('s_'));\nconst e=new Set(fs.readdirSync('.state/evaluations').filter(n=>n.endsWith('.json')).map(n=>n.slice(0,-5)));\nconst unevaluated=h.filter(s=>!e.has(s));\nconst candidates=unevaluated.filter(s=>{\n  try{const m=JSON.parse(fs.readFileSync('.state/sessions/history/'+s+'/meta.json'));\n    return m.agent!=='evaluator' && (m.status==='done'||m.status==='error');\n  }catch(e){return false;}\n}).sort();\nconsole.log('UNEVALUATED:',candidates.length);\nif(candidates.length>0){\n  const t=candidates[candidates.length-1];\n  const m=JSON.parse(fs.readFileSync('.state/sessions/history/'+t+'/meta.json'));\n  console.log('TARGET='+t);\n  console.log('AGENT='+m.agent);\n  console.log('STATUS='+m.status);\n} else { console.log('NONE'); }\n\"\n\nIf NONE, stop. Otherwise: read the target session's meta.json and transcript (session.jsonl). Score based on evidence. Write evaluation JSON to .state/evaluations/<TARGET>.json. Verify the file was written correctly.",
+    "enabled": true,
+    "description": "LLM evaluation of one session (45min, graduated from evaluator heartbeat)"
+  },
+  {
+    "name": "heartbeat-qa",
+    "type": "heartbeat",
+    "agent": "qa",
+    "intervalMs": 1800000,
+    "message": "[heartbeat] You are QA. Your files are in agents/qa/. Read agents/qa/heartbeat.md and work through each section.",
+    "enabled": true,
+    "description": "QA proactive quality check (30min)"
+  },
+  {
+    "name": "common-sense-verify",
+    "type": "job",
+    "handler": "run-agent-task",
+    "agent": "coach",
+    "intervalMs": 14400000,
+    "message": "[cron:common-sense-verify] Pick ONE behavioral item from agents/shared/common-sense.md that you haven't verified recently (check workspace/common-sense-tracker.md). Find a recent session transcript where this item is relevant. Did the agent follow it? Quote evidence. If NO \u2014 add to your Growth Cycle queue in workspace/todo.md. If YES \u2014 mark as verified in workspace/common-sense-tracker.md with today's date.",
+    "enabled": true,
+    "description": "Verify one common-sense behavioral item against real behavior (4h, graduated from coach heartbeat)"
+  },
+  {
+    "name": "common-sense-infra",
+    "type": "job",
+    "handler": "run-agent-task",
+    "agent": "bob",
+    "intervalMs": 86400000,
+    "message": "[cron:common-sense-infra] Review agents/shared/common-sense.md. For infra-owned items: what is the highest priority unbuilt mechanism? Has Coach flagged any behavioral items as needing infra help? If you find something to design, write a brief to agents/bob/workspace/. If an item was recently built, update ownership in the doc.",
+    "enabled": true,
+    "description": "Bob reviews common-sense infra gaps (daily, graduated from bob heartbeat)"
   }
 ]

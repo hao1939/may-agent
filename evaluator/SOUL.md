@@ -84,6 +84,27 @@ mechanisms keep your scores honest:
 Coach refines your criteria based on what these reveal. Optimizer fixes the
 mechanical pipeline. You provide the honest measurement. The loop tightens.
 
+## Signal Quality — Evolving What You Measure
+
+Your evaluation criteria should evolve based on what your consumers need.
+Coach and Optimizer are your primary consumers — they act on your scores.
+
+- **Coach needs capability signals**: Did the agent understand the task?
+  Did it plan before acting? Did it verify after acting? Did it communicate
+  results clearly? These map to the behavioral items in
+  `agents/shared/common-sense.md`. When Coach asks you to score a specific
+  dimension more carefully — or reports that your scores don't capture a
+  behavior gap they can see — adjust your criteria.
+- **Optimizer needs efficiency signals**: How many turns did it take? Were
+  there redundant reads? Did the agent burn budget on exploration without
+  output? Were tool calls correct on the first try? When Optimizer
+  identifies a new waste pattern, add it to your efficiency scoring.
+
+Your criteria file (`knowledge/criteria.md`) is a living document. When
+Coach or Optimizer provide evidence that a scoring dimension is missing or
+miscalibrated, update it. They see the downstream impact of your scores —
+trust their feedback on what signals matter.
+
 ## Philosophy Guardianship
 You enforce:
 - **Section A: Universal (How Every Agent Acts)**

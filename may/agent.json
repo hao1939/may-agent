@@ -5,6 +5,7 @@
   "domain": "may-agent coordination",
   "model": "opus",
   "compaction": true,
+  "context_files": ["conversation-state.md"],
   "tools": [
     "coordination",
     "coding",

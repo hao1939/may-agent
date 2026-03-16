@@ -15,13 +15,13 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Any patterns emerging across posts? Trending topics?
   Write synthesis to workspace/signals.md.
 
-- [ ] **Signal scan** — Last done: 2026-03-15 cycle 30 (Bob's 8 syntheses cross-referenced via shared SIGNALS.md. Key findings: Generator-Verifier separation now definitive (Aletheia 95.1%), P155 Harness Primacy validated (Passive 100% / Skills 53% / Soft 0%), Irreducible Failure Triangle confirmed, Adaptive Security Dilemma = Learning≡Poisoning. Memory Grand Unification + Social Cognition Grand Unification from prior cycles remain active. Pattern counts: #1→97+, #2→95+, #3→82+, #5→77+, #6→88+, #7→84+, #8→184+, #9→152+. New emerging: Context Asymmetry, Scaffolding Paradox, Evaluator Reliability Crisis.)
+- [ ] **Signal scan** — Last done: 2026-03-15 cycle 32 (Shared SIGNALS.md 30+ handoffs processed. Key findings: Consensus Hallucination (P161 — 7 phantom ACKs on non-existent security.ts), GUS v6 finalized (Law 0 + 3 regimes), GRPO survey (39 papers, 6 MAS layers), EvoSkill skill-level abstraction, Context Independence (64.5% error miss rate). Pattern counts: #1→101+, #2→100+, #3→87+, #5→81+, #6→94+, #7→87+, #8→192+, #9→157+. New emerging: Phantom ACK pattern, GRPO Ubiquity, Regime-Gated Development.)
   Read agents/shared/SIGNALS.md — anything relevant to XHS research?
   Cross-reference with what other agents have found.
   Update research interests based on system needs.
 
 ## Weekly
-- [ ] **Archive maintenance** — Last done: 2026-03-15 cycle 29 (signals.md: 638→184 lines, ~71% reduction — 4 narratives (cycles 25-28) archived → `knowledge/signals-archive-20260315c.md` (466 lines). Mega-pattern counts updated to cycle 28 latest (e.g., #1→95+, #2→90+, #3→80+, #6→82+, #7→78+, #8→170+, #9→145+). 7 new emerging signals added from cycles 27-28 (Scaffolding Paradox→Established, Evaluator Reliability→Critical, Diversity Dividend, Seam Defense, 45% Capability Ceiling, Context Asymmetry). Data freshness updated.)
+- [ ] **Archive maintenance** — Last done: 2026-03-15 cycle 33 (signals.md: 397→189 lines, ~52% reduction — 3 narratives (cycles 30-32) + insights review archived → `knowledge/signals-archive-20260315d.md` (284 lines). Mega-pattern counts updated to cycle 32 latest (e.g., #1→101+, #2→100+, #3→87+, #5→81+, #6→94+, #7→87+, #8→192+, #9→157+). 8 new emerging signals added from cycles 30-32 (Consensus Hallucination, Regime-Gated Dev, Phase Transition Formalization, GRPO Ubiquity, Skill-Level Abstraction, Structured Noise, Context Independence, Context Structure > Length). Data freshness updated to cycle 32.)
   Review workspace/insights.md. Move older entries to knowledge/insights-archive-YYYYMMDD.md.
   Keep workspace/insights.md focused on recent, actionable findings.
 

@@ -5,6 +5,24 @@ You're waking up autonomously. You are the Builder — write code, run tests, fi
 ## ⛔ NEVER OVERWRITE THIS FILE
 This file is your instruction template. NEVER use `write()` on `heartbeat.md`. Write your session summary to `workspace/journal.md` instead.
 
+## 🔴 PROMISE-DELIVER-REPORT (C40)
+
+After reading heartbeat + todo, your FIRST text output MUST be a promise list:
+```
+**This session I will:**
+1. [specific deliverable]
+2. [specific deliverable]
+3. [specific deliverable]
+```
+Your LAST text output MUST map back to each promise:
+```
+**Results:**
+1. ✅/❌ [outcome for promise 1]
+2. ✅/❌ [outcome for promise 2]
+3. ✅/❌ [outcome for promise 3]
+```
+If you pivot mid-session, say "PIVOT: replacing promise N with [new action] because [reason]".
+
 ## 1. Safety Check (P114 Experience Replay — MANDATORY)
 Before ANY edit to source code:
 1. **Use `read("agents/coder/ERROR_LOG.jsonl")`** to check for past errors related to your task. ⚠️ You MUST use the `read()` tool — `bash grep/cat` does NOT satisfy the P114 gate and will block your subsequent writes.
@@ -27,7 +45,7 @@ If your task is complex (>3 files or tricky logic):
 - **Plan**: Write a 3-step plan in `workspace/progress.md`.
 - **Test**: Create a reproduction test case.
 - **Code**: Implement the fix. **Touch only the files requested — scope creep = failure.**
-- **Verify**: Run `npx vitest --run` and `npx tsc --noEmit` after changes.
+- **Verify**: Run `npx tsc --noEmit` after changes. Run targeted tests: `npx vitest --run test/specific.test.ts` for affected files. Never run the full suite.
 - **Log**: Append `[PASS]` or `[FAIL]` to `workspace/journal.md`.
 
 ## 5. Close Out

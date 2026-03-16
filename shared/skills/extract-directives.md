@@ -1,7 +1,7 @@
 ---
 name: extract-directives
-description: Extract correction-directives from human sessions and route them to agent knowledge files.
-version: 1.0.0
+description: Extract correction-directives from human sessions and route them to agent knowledge files. Also extracts conversation state (Mechanism C) into agents/may/conversation-state.md.
+version: 1.1.0
 tools: [read, bash, edit, write]
 ---
 
@@ -120,13 +120,94 @@ After extraction, produce a report:
 - **False positive rate**: [filtered / (filtered + real)] 
 ```
 
+## Conversation State Extraction (Mechanism C)
+
+**Scope**: May only. Other agents receive context via delegation briefs.
+**Output**: `agents/may/conversation-state.md`
+**Trigger**: Same as directive extraction — after sessions with `parentAgent: null` and `user_turns > 2`.
+
+### What to Extract
+
+From the human conversation, extract these 5 fields and write them to `agents/may/conversation-state.md`:
+
+| Field | Source | Update Policy |
+|---|---|---|
+| **Current Focus (The Stack)** | What Hao is currently working on. Look for: task descriptions, "let's work on X", "fix Y" | Overwrite on every update |
+| **Pending Human Input** | Questions or blockers awaiting Hao. Look for: agent questions Hao hasn't answered, explicit "waiting on you" | Overwrite on every update; clear if Focus changes |
+| **Interaction Mode** | Hao's communication style in this session. Look for: "be brief", "just do it", tone cues | Overwrite on every update |
+| **Recent Decisions (Last 5)** | Explicit choices Hao made. Look for: "use X not Y", "let's go with Z", approvals/rejections | Rolling window — keep last 5, drop oldest |
+| **Session Memory (Last 3)** | 1-line summary of what happened in this session | Rolling window — keep last 3 |
+
+### Extraction Procedure
+
+#### Step 1: Read current state
+```bash
+cat agents/may/conversation-state.md
+```
+Parse existing Recent Decisions and Session Memory lists for rolling-window merge.
+
+#### Step 2: Scan the session transcript
+```bash
+# Extract user messages for focus/mode/decisions
+grep '"role":"user"' "$jsonl" | jq -r '.content'
+```
+
+Look for:
+- **Focus signals**: "let's", "I want", "work on", "fix", "build", task descriptions
+- **Decision signals**: "use X", "go with Y", "approved", "rejected", "don't use", "switch to"
+- **Mode signals**: "be brief", "concise", "stop suggesting", "just do it", tone indicators
+- **Pending signals**: unanswered questions from the agent, "I'll get back to you", explicit blockers
+
+#### Step 3: Compose the updated state
+```markdown
+# Conversation State
+*Auto-updated. Do not edit manually unless correcting errors.*
+
+## 🎯 Current Focus (The Stack)
+- **Primary**: [High-level goal from session]
+- **Immediate**: [Current step being worked on]
+- **Context**: [Why — business reason or chain of reasoning]
+
+## ⏳ Pending Human Input
+- [Specific question or blocker]
+- *Status*: [Blocked / Asynchronous]
+
+## 🌡️ Interaction Mode
+- **Tone**: [e.g., Concise, Technical, Exploratory]
+- **Constraint**: [e.g., "No new features, focus on bug"]
+
+## 📝 Recent Decisions (Last 5)
+- [YYYY-MM-DD]: [Decision]
+... (merge with existing, keep newest 5)
+
+## 📚 Session Memory (Last 3)
+- **[YYYY-MM-DD HH:MM]**: [1-line summary]
+... (merge with existing, keep newest 3)
+```
+
+#### Step 4: Write the file
+```bash
+write agents/may/conversation-state.md "[composed content]"
+```
+
+### Anti-Patterns
+- **Do NOT duplicate todo.md**: Todo is for tasks; State is for context. If Hao says "add a task to do X", that goes in todo.md, not here.
+- **Do NOT invent state**: If the session doesn't clearly indicate a focus change, keep the existing focus. Only update fields where the session provides clear signal.
+- **Do NOT include all agents**: This file is for May only (P111 Context Pollution). Other agents get context via delegation briefs.
+
+### Relationship to Other Files
+- **`directives.md`** = ROM (Permanent Constitution) — "Always use TypeScript"
+- **`conversation-state.md`** = RAM (Transient Context) — "Fix the P82 bug right now"  
+- **`todo.md`** = Disk (Work Queue) — "Task #123"
+
 ## Integration with Post-Session Hook (Future)
 
 When tech-lead implements the post-session hook:
 1. Hook fires after sessions with `parentAgent: null` and `user_turns > 2`
 2. Hook calls Coach with: `"Extract directives from session [session_id]"`
-3. Coach runs this skill and produces the report
+3. Coach runs this skill and produces the directive extraction report
 4. High-confidence new directives trigger a Growth Cycle automatically
+5. Conversation state is updated in `agents/may/conversation-state.md` (Mechanism C)
 
 ## Constraints
 - **Conservative**: Better to miss a correction than fabricate one. When in doubt, classify as "low-confidence" and log for human review.

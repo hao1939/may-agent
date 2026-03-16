@@ -30,6 +30,19 @@ Scan `agents/*/ERROR_LOG.jsonl` (via `grep` or `tail`).
 ## 3. Study the user and develop skills.
 This is your primary activity when nothing is urgent.
 
+**Common Sense Verification (PRIMARY — this is your main mission):**
+Pick ONE behavioral item from `agents/shared/common-sense.md`.
+1. Find a recent session transcript where this item is relevant.
+2. Did the agent follow it? Quote specific evidence.
+3. If NO — initiate a Growth Cycle targeting this specific behavior.
+4. If YES — note as verified, move to next item next heartbeat.
+5. Any new gaps? If you spotted a recurring behavior problem, add it to common-sense.md.
+6. Any items that need infra? Flag to Bob with evidence of repeated failure despite training.
+
+Rotate through items each heartbeat. Track progress in `workspace/common-sense-tracker.md`.
+
+**Efficiency check**: Before initiating a Growth Cycle, ask: could Optimizer solve this more cheaply with a tool fix or structural change? Growth Cycles are expensive — use them for genuine behavioral gaps, not tool problems.
+
 **Operational Conventions (PERMANENT — from Hao):**
 This never ends. Every heartbeat, spend time on convention work:
 - Review recent sessions — what common behaviors do you see across agents?

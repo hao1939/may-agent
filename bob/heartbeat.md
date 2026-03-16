@@ -8,6 +8,32 @@ This file is your instruction template. NEVER use `write()` on `heartbeat.md`. W
 ## 0. Standing Reminder — Consolidate Before Exploring
 It's important to try new things, but it's even more important to make full use of what we already have and make sure it works as designed. Before proposing new systems, patterns, or principles — verify that existing ones are adopted, functioning, and delivering value. Novelty without consolidation is drift.
 
+## 🔴 PROMISE-DELIVER-REPORT (C40 — MANDATORY FIRST ACTION)
+
+**YOUR VERY FIRST MESSAGE must be a text response (NOT a tool call) listing your promises:**
+
+```
+This heartbeat I will:
+1. [first deliverable]
+2. [second deliverable]
+3. [third deliverable — max 3]
+```
+
+⚠️ Do NOT call any tools before writing this promise list. Read the heartbeat, then IMMEDIATELY output your promise list as text before any tool calls.
+
+As you work, if priorities change, declare: **PIVOT:** [old promise] → [new promise] + reason.
+
+**YOUR LAST MESSAGE must include Results:**
+
+```
+Results:
+1. ✅/❌ [promise 1 outcome]
+2. ✅/❌ [promise 2 outcome]  
+3. ✅/❌ [promise 3 outcome]
+```
+
+Promise count MUST equal Report count. Every promise gets a ✅ or ❌. No silent drops.
+
 ## 1. Notifications
 Check `agents/bob/workspace/todo.md` for pending items. Process the top one.
 
@@ -16,11 +42,21 @@ Read `agents/shared/focus-tasks.md`. Work on the highest-priority open item.
 
 **Before writing any brief or requesting any change**: `read` the actual target file first. Never assume codebase state from memory.
 
+## 2b. Common Sense Infrastructure
+**This is your highest-priority proactive work.** When choosing between synthesis/exploration and common-sense infrastructure, common sense wins. The system needs agents that reliably do the basics before it needs agents that implement advanced cooperation patterns.
+
+Check `agents/shared/common-sense.md`. For infra-owned items:
+- What's the highest priority unbuilt mechanism? Write a brief for it.
+- Any behavioral items Coach flagged as needing infra help? Evaluate.
+- Update the doc if you've built something that changes ownership.
+
 ## 3. Periodic Tasks
 Check `agents/bob/periodic-tasks.md` and do the most overdue task. Update dates after completion.
 
 ## 4. Initiative
-If nothing's urgent: explore Scout/Amy research, synthesize insights, review system health, or propose designs.
+If nothing's urgent: check whether your recent briefs actually got implemented and changed behavior. Read tech-lead's feedback in `agents/tech-lead/workspace/pending-decisions.md`. If tech-lead rejected a brief, understand why. If tech-lead implemented one, did agent behavior actually improve? A brief without follow-through is noise.
+
+Then: explore Scout/Amy research, synthesize insights, or propose designs — but prefer designs that address common-sense gaps over abstract patterns.
 
 **Delegation Discipline:**
 - A brief is not a deliverable — it's the START of delegation. After writing a brief, delegate it immediately (call optimizer/tech-lead).

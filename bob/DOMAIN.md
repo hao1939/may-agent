@@ -96,7 +96,7 @@ If no actions needed, write "NONE — [reason]".
 - `workspace/pending-decisions.md` — questions awaiting human input
 - `workspace/optimizer-brief.md` — current meta-loop brief for optimizer
 - `workspace/synthesis/` — cross-agent synthesis documents
-- `knowledge/library/synthesis/` — consolidated synthesis archive
+- `knowledge/library/archives/` — archives of old synthesis documents
 
 ## Key Files You Own
 - `agents/shared/philosophy.md` — design philosophy (you are the sole editor)

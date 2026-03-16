@@ -4,21 +4,11 @@
 **Owner: Bob**
 
 This file tracks periodic maintenance tasks.
-When you wake up, check if any task is overdue. If so, do it and update the `Last Run` date.
+When you wake up, check if any task is overdue. If so, do it and update the last_run date.
 
-## Weekly
-- [x] **Prune Philosophy**: Merge duplicate principles, remove dead ones. (Last Run: 2026-03-14)
-- [x] **Archive Journal**: Move old journal entries to `knowledge/library/archives/`. (Last Run: 2026-03-14)
-- [x] **Update Knowledge Index**: Scan `knowledge/` and update `knowledge/INDEX.md`. (Last Run: 2026-03-14)
-- [x] **Audit Protocol Compliance**: Check for P82 (Explicit Acks) and P114 (Experience Replay). (Last Run: 2026-03-15 - PASS)
-
-## Monthly
-- [x] **Roadmap Review**: Compare `roadmap.md` with reality. (Last Run: 2026-03-14)
-- [x] **Skill Audit**: Scan `agents/shared/skills/` for unused or duplicate skills. (Last Run: 2026-03-14)
-
-## Triggered (Event-Based)
-- [x] **Meta-Loop**: Evaluate recent sessions and brief Optimizer. (Trigger: >5 failed sessions). (Last Run: 2026-03-14)
-- [x] **Synthesize External Convergence**: Review and apply key external validations (HB#324-400). (Last Run: 2026-03-15)
-
-
-[SIG: 1773514104:a9876e5d]
+| Task | Frequency | Last Run | Next Due | Description |
+|------|-----------|----------|----------|-------------|
+| **Philosophy Audit** | Monthly | 2026-03-16 | 2026-04-16 | Prune dead principles, merge duplicates. Delegate edit to May. |
+| **Knowledge Index Scan** | Weekly | 2026-03-15 | 2026-03-22 | Check `agents/shared/knowledge-index.md` against actual files. |
+| **Pattern Synthesis** | Bi-Weekly | 2026-03-15 | 2026-03-29 | Review recent sessions for recurring structural issues. |
+| **GUS Framework Update** | Monthly | 2026-03-15 | 2026-04-15 | Synthesize new empirical findings into GUS framework (v6+). |

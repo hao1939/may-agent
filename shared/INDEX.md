@@ -5,6 +5,7 @@
 
 ## 🗺️ Core Maps
 - `agents/shared/team.md`: Who does what (Roles, Tools, Models).
+- `agents/shared/common-sense.md`: What every agent must know (behavioral + infra). Co-owned by Coach + Bob.
 - `agents/shared/philosophy.md`: How we think (Design Principles).
 - `agents/shared/roadmap.md`: Where we are going (Features, Milestones).
 - `agents/shared/knowledge-index.md`: Detailed map of agent knowledge.
@@ -26,6 +27,11 @@
 - `agents/shared/skills/growth-cycle.md`: Fork-Train-Verify-Promote.
 - `agents/shared/skills/file-safety/SKILL.md`: Safe reading/writing.
 - `agents/shared/skills/check-state/SKILL.md`: Ops Gates.
+
+**Tasks & Processes**:
+- `agents/shared/tasks/work-maturity-ladder.md`: How work graduates from heartbeat → cron job → JS handler → built-in. Optimizer owns graduation.
+- `agents/shared/tasks/consolidate-memory.md`: Workspace cleanup.
+- `agents/shared/tasks/refine-skill.md`: EvoSkill loop.
 
 **Coordination**:
 - `agents/shared/skills/agent-coordination/SKILL.md`: Call vs Send.
