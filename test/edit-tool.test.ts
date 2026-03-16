@@ -25,7 +25,8 @@ describe("edit tool", () => {
       oldText: "const x = 1;",
       newText: "const x = 42;",
     });
-    expect(result.content[0].text).toContain("Successfully replaced");
+    expect(result.content[0].text).toContain("✅ Edit applied to");
+    expect(result.content[0].text).toContain("```diff");
     expect(readFileSync(filePath, "utf-8")).toBe("const x = 42;\nconst y = 2;\n");
   });
 
@@ -92,7 +93,7 @@ describe("edit tool", () => {
       oldText: "const x = 1;",
       newText: "const x = 2;",
     });
-    expect(result.content[0].text).toContain("Successfully replaced");
+    expect(result.content[0].text).toContain("✅ Edit applied to");
   });
 
   it("returns diff in details", async () => {

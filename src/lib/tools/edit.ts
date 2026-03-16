@@ -154,11 +154,32 @@ export function createEditTool(cwd: string, options?: EditToolOptions): AgentToo
 				if (isAborted()) return { content: [{ type: "text" as const, text: "" }], details: undefined };
 
 				const diffResult = generateDiffString(baseContent, newContent);
+
+				// Smart Edit: include diff context in response so agents can verify
+				// without a separate read() call (saves 1 turn per edit)
+				const diffPreview = diffResult.diff;
+				const lineInfo = diffResult.firstChangedLine
+					? ` (line ${diffResult.firstChangedLine})`
+					: "";
+				const diffLines = diffPreview.split("\n");
+				const isTruncated = diffLines.length > 40;
+				const shownDiff = isTruncated
+					? diffLines.slice(0, 40).join("\n") + "\n... (diff truncated, " + diffLines.length + " total lines changed)"
+					: diffPreview;
+
+				const smartResponse = [
+					`✅ Edit applied to ${path}${lineInfo}`,
+					"```diff",
+					shownDiff,
+					"```",
+					"Verify the diff above. If incorrect, re-edit immediately.",
+				].join("\n");
+
 				return {
 					content: [
 						{
 							type: "text" as const,
-							text: `Successfully replaced text in ${path}.`,
+							text: smartResponse,
 						},
 					],
 					details: { diff: diffResult.diff, firstChangedLine: diffResult.firstChangedLine } as EditToolDetails,
