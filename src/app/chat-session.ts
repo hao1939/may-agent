@@ -51,6 +51,8 @@ export class ChatSession {
   private onReload?: () => void;
   private onClose?: () => void;
   private onRestart?: () => void;
+  /** Recursion guard for sendMessage retry (session-gone → create fresh). */
+  private sendRetryDepth = 0;
 
   constructor(opts: ChatSessionOptions) {
     this.manager = opts.manager;
@@ -116,6 +118,7 @@ export class ChatSession {
 
     // ── Normal message → persistent session ──────────────────────────
     this.logHumanInput(trimmed, source, this.agentName);
+    this.sendRetryDepth = 0;
     this.sendMessage(trimmed);
   }
 
@@ -162,15 +165,14 @@ export class ChatSession {
         // Session gone (closed, archived, etc.) — create a fresh one
         if (msg.includes("not found") || msg.includes("terminal state")) {
           // Guard against infinite recursion (e.g., persistent "not found" error)
-          if ((this as any)._sendRetryDepth >= 2) {
+          if (this.sendRetryDepth >= 2) {
             this.bus.emit({ type: "info", message: `[chat] Session lost after retries: ${msg}` });
             this.onDone?.();
             return;
           }
-          (this as any)._sendRetryDepth = ((this as any)._sendRetryDepth ?? 0) + 1;
+          this.sendRetryDepth++;
           this.sessionId = null;
           this.sendMessage(message);
-          (this as any)._sendRetryDepth = 0;
           return;
         }
         this.bus.emit({ type: "info", message: `[chat] Error: ${msg}` });
