@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { isRetryableInfraError, isRateLimitError } from "../src/lib/manager-retry.ts";
+import { isRetryableInfraError, isRateLimitError, hasFinishToolCall } from "../src/lib/manager-retry.ts";
 import { INFRA_RETRY_MAX } from "../src/lib/manager.ts";
 import type { ActiveSession } from "../src/lib/manager-utils.ts";
 
@@ -343,5 +343,69 @@ describe("isRateLimitError — case-insensitive detection", () => {
     "timeout exceeded",
   ])("does not match: %s", (msg) => {
     expect(isRateLimitError(msg)).toBe(false);
+  });
+});
+
+describe("hasFinishToolCall — detects finish tool in message history", () => {
+  it("returns true when finish tool was called", () => {
+    const messages = [
+      { role: "user", content: [{ type: "text", text: "do work" }] },
+      { role: "assistant", content: [{ type: "toolCall", name: "finish", id: "t1", input: {} }] },
+      { role: "toolResult", content: [{ type: "text", text: "done" }] },
+      { role: "assistant", content: [{ type: "text", text: "" }] },
+    ];
+    expect(hasFinishToolCall(messages)).toBe(true);
+  });
+
+  it("returns false when no finish tool was called", () => {
+    const messages = [
+      { role: "user", content: [{ type: "text", text: "do work" }] },
+      { role: "assistant", content: [{ type: "toolCall", name: "read", id: "t1", input: {} }] },
+      { role: "toolResult", content: [{ type: "text", text: "file content" }] },
+      { role: "assistant", content: [{ type: "text", text: "" }] },
+    ];
+    expect(hasFinishToolCall(messages)).toBe(false);
+  });
+
+  it("returns false for empty messages", () => {
+    expect(hasFinishToolCall([])).toBe(false);
+  });
+
+  it("returns true even when finish is not the last tool call", () => {
+    const messages = [
+      { role: "assistant", content: [{ type: "toolCall", name: "finish", id: "t1", input: {} }] },
+      { role: "toolResult", content: [{ type: "text", text: "done" }] },
+      { role: "assistant", content: [{ type: "text", text: "" }] },
+      { role: "assistant", content: [{ type: "text", text: "" }] },
+    ];
+    expect(hasFinishToolCall(messages)).toBe(true);
+  });
+});
+
+describe("isRetryableInfraError — finish tool guard", () => {
+  it("returns null when finish was called and response is empty", () => {
+    const session = mockSession({
+      status: "running",
+      messages: [
+        { role: "user", content: [{ type: "text", text: "task" }] },
+        { role: "assistant", content: [{ type: "toolCall", name: "finish", id: "t1" }] },
+        { role: "toolResult", content: [{ type: "text", text: "success" }] },
+        { role: "assistant", content: [{ type: "text", text: "" }] },
+      ] as any,
+    });
+    expect(isRetryableInfraError(session)).toBeNull();
+  });
+
+  it("returns 'empty_response' when finish was NOT called and response is empty", () => {
+    const session = mockSession({
+      status: "running",
+      messages: [
+        { role: "user", content: [{ type: "text", text: "task" }] },
+        { role: "assistant", content: [{ type: "toolCall", name: "read", id: "t1" }] },
+        { role: "toolResult", content: [{ type: "text", text: "content" }] },
+        { role: "assistant", content: [{ type: "text", text: "" }] },
+      ] as any,
+    });
+    expect(isRetryableInfraError(session)).toBe("empty_response");
   });
 });
