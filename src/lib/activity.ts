@@ -81,18 +81,31 @@ export function truncateSummary(text: string | null | undefined, maxLen: number 
   return cleaned.slice(0, maxLen - 1) + "\u2026";
 }
 
-/** Resolve the activity.jsonl path for a given agent. */
-export function activityPath(projectRoot: string, agentName: string): string {
+/**
+ * Resolve the activity.jsonl path for a given agent.
+ * If `workspacePath` is provided, writes to `{workspacePath}/activity.jsonl`
+ * instead of the default `agents/{name}/workspace/activity.jsonl`.
+ * This prevents ghost directory creation when fork agents (e.g. bob-c40)
+ * have a workspace that differs from the `agents/{name}/workspace/` convention.
+ */
+export function activityPath(projectRoot: string, agentName: string, workspacePath?: string): string {
+  if (workspacePath) {
+    return join(workspacePath, "activity.jsonl");
+  }
   return join(projectRoot, "agents", agentName, "workspace", "activity.jsonl");
 }
 
 /**
  * Append an activity event to the agent's activity.jsonl.
  * Creates the directory if it doesn't exist. Best-effort — never throws.
+ *
+ * @param workspacePath - If provided, write to this workspace instead of
+ *   deriving it from the agent name. Fixes ghost directory creation for
+ *   fork agents whose workspace lives under a different path.
  */
-export function appendActivity(projectRoot: string, event: ActivityEvent): void {
+export function appendActivity(projectRoot: string, event: ActivityEvent, workspacePath?: string): void {
   try {
-    const filePath = activityPath(projectRoot, event.agent);
+    const filePath = activityPath(projectRoot, event.agent, workspacePath);
     mkdirSync(dirname(filePath), { recursive: true });
     appendFileSync(filePath, JSON.stringify(event) + "\n", "utf-8");
   } catch {

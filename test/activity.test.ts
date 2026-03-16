@@ -35,6 +35,16 @@ describe("activity", () => {
       const path = activityPath("/app", "tech-lead");
       expect(path).toBe("/app/agents/tech-lead/workspace/activity.jsonl");
     });
+
+    it("uses workspacePath when provided instead of constructing from agent name", () => {
+      const path = activityPath("/app", "bob-c40", "/app/agents/bob/workspace");
+      expect(path).toBe("/app/agents/bob/workspace/activity.jsonl");
+    });
+
+    it("falls back to default when workspacePath is undefined", () => {
+      const path = activityPath("/app", "bob-c40", undefined);
+      expect(path).toBe("/app/agents/bob-c40/workspace/activity.jsonl");
+    });
   });
 
   describe("appendActivity", () => {
@@ -162,6 +172,31 @@ describe("activity", () => {
           ts: 1, event: "start", sid: "s_1", agent: "test", task: "test",
         });
       }).not.toThrow();
+    });
+
+    it("writes to custom workspace path instead of ghost directory (fork agents)", () => {
+      // Simulate a fork agent "bob-c40" whose workspace is agents/bob/workspace
+      const bobWorkspace = join(agentsRoot, "agents", "bob", "workspace");
+      const event: StartEvent = {
+        ts: 1773574054,
+        event: "start",
+        sid: "s_fork_1",
+        agent: "bob-c40",
+        task: "Fork task",
+      };
+      appendActivity(agentsRoot, event, bobWorkspace);
+
+      // Should write to bob's workspace, NOT create agents/bob-c40/workspace/
+      const expectedPath = join(bobWorkspace, "activity.jsonl");
+      expect(existsSync(expectedPath)).toBe(true);
+
+      const ghostPath = join(agentsRoot, "agents", "bob-c40", "workspace", "activity.jsonl");
+      expect(existsSync(ghostPath)).toBe(false);
+
+      const content = readFileSync(expectedPath, "utf-8");
+      const parsed = JSON.parse(content.trim());
+      expect(parsed.agent).toBe("bob-c40");
+      expect(parsed.task).toBe("Fork task");
     });
   });
 

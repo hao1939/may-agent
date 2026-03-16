@@ -50,6 +50,26 @@ export function isRetryableInfraError(session: ActiveSession): string | null {
     }
   }
 
+  // Pattern 5: HTTP/rate limit errors — transient server or throttling issues
+  // 429 rate limits are the #1 error source (~53% of all session errors).
+  // Also catch 502/503/500 gateway errors, connection resets, and timeouts.
+  if (agentError) {
+    const isHttpRetryable =
+      agentError.includes("429") ||
+      agentError.includes("RateLimitError") ||
+      agentError.includes("rate limit") ||
+      agentError.includes("throttling") ||
+      agentError.includes("502") ||
+      agentError.includes("503") ||
+      agentError.includes("500 ") ||
+      agentError.includes("ECONNRESET") ||
+      agentError.includes("ETIMEDOUT") ||
+      agentError.includes("socket hang up");
+    if (isHttpRetryable) {
+      return "http_retryable";
+    }
+  }
+
   // Pattern 1: Silent stream error — last message is user (no assistant reply at all)
   if (!agentError && lastMsg.role === "user") {
     return "empty_response";
@@ -133,13 +153,22 @@ export async function runAgentWithRetry(
       });
     }
 
+    // Rate-limit errors (429) need much longer backoff than stream errors.
+    // Capture error text BEFORE clearing it for the rate-limit check.
+    // 429 = "system-wide throttling" → need 15s, 30s, 60s, 120s, 240s
+    // Stream errors = "momentary glitch" → need 1s, 2s, 4s, 8s, 16s
+    const errorText = session.error ?? session.agent.state.error ?? "";
+    const isRateLimit = retryReason === "http_retryable" &&
+      (errorText.includes("429") || errorText.includes("RateLimitError") ||
+       errorText.includes("rate limit") || errorText.includes("throttling"));
+
     // Clear error state for the retry
     session.error = undefined;
     session.agent.state.error = undefined;
 
-    // Exponential backoff with jitter: 1s, 2s, 4s (+ 0-500ms random jitter)
-    const exponentialDelay = INFRA_RETRY_BASE_DELAY_MS * Math.pow(2, attempt - 1);
-    const jitter = Math.floor(Math.random() * 500);
+    const baseDelay = isRateLimit ? 15_000 : INFRA_RETRY_BASE_DELAY_MS;
+    const exponentialDelay = baseDelay * Math.pow(2, attempt - 1);
+    const jitter = Math.floor(Math.random() * (isRateLimit ? 5000 : 500));
     const delayMs = exponentialDelay + jitter;
     await new Promise((resolve) => setTimeout(resolve, delayMs));
 
