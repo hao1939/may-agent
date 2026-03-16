@@ -504,9 +504,11 @@ export class SubagentManager {
     const wasAborted = agentError?.includes("aborted") ?? false;
 
     // Set error field — but if finish was called successfully, don't treat
-    // subsequent empty responses as errors (the model has nothing to say after finish)
+    // subsequent empty responses or transient model errors as session failures
+    // (the agent completed its work; the model just had a post-finish hiccup)
     if (agentError && hasFinishToolCall(messages) &&
-        (agentError.includes("empty response") || agentError.includes("0 output tokens"))) {
+        (agentError.includes("empty response") || agentError.includes("0 output tokens") ||
+         agentError.includes("Unhandled stop reason"))) {
       session.error = undefined;
       session.agent.state.error = undefined;
     } else if (agentError) {
