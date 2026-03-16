@@ -73,6 +73,9 @@ export function checkCrossEditGuard(
 	const targetDir = parts[0];
 	const fileName = parts[parts.length - 1];
 
+	const targetDirLower = targetDir.toLowerCase();
+	const agentNameLower = agentName.toLowerCase();
+
 	// Guard agents/shared/philosophy.md — only may can write (and may is already exempt above)
 	if (targetDir === "shared" && relPath === ["shared", "philosophy.md"].join(sep)) {
 		return {
@@ -83,7 +86,7 @@ export function checkCrossEditGuard(
 
 	// P98 Evaluation Integrity — Immutable Ruler
 	// Evaluator criteria/scoring files are read-only to all agents except evaluator itself (and may, already exempt above)
-	if (targetDir === "evaluator" && agentName !== "evaluator") {
+	if (targetDir === "evaluator" && agentNameLower !== "evaluator") {
 		// Get the path relative to agents/evaluator/
 		const evalRelPath = parts.slice(1).join(sep);
 		if (EVALUATOR_PROTECTED_PATHS.has(evalRelPath)) {
@@ -97,8 +100,8 @@ export function checkCrossEditGuard(
 	// P70: Block self-edits to agent.json (Immutable Self-Config).
 	// An agent editing its own agent.json can persist a jailbreak across restarts.
 	// Only May (exempt above) or tech-lead may edit agent.json files.
-	if (targetDir === agentName && fileName === "agent.json") {
-		if (agentName.toLowerCase() !== "tech-lead") {
+	if (targetDirLower === agentNameLower && fileName === "agent.json") {
+		if (agentNameLower !== "tech-lead") {
 			return {
 				blocked: true,
 				message: `⚠️ WRITE BLOCKED (P70): Agent "${agentName}" cannot modify its own agent.json. ` +
@@ -114,11 +117,11 @@ export function checkCrossEditGuard(
 
 	// Guard agents/<other-agent>/SOUL.md, agent.json (at any depth)
 	// Conservative: block protected filenames even in subdirectories to prevent leaks
-	if (targetDir !== "shared" && targetDir !== agentName) {
+	if (targetDirLower !== "shared" && targetDirLower !== agentNameLower) {
 		// It's another agent's directory — check if it's a protected filename
 		if (PROTECTED_FILENAMES.has(fileName)) {
 			// P70: tech-lead may edit other agents' agent.json (manages agent configs)
-			if (fileName === "agent.json" && agentName.toLowerCase() === "tech-lead") {
+			if (fileName === "agent.json" && agentNameLower === "tech-lead") {
 				return { blocked: false };
 			}
 			return {

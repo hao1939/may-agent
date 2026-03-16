@@ -161,8 +161,16 @@ export class ChatSession {
         const msg = err instanceof Error ? err.message : String(err);
         // Session gone (closed, archived, etc.) — create a fresh one
         if (msg.includes("not found") || msg.includes("terminal state")) {
+          // Guard against infinite recursion (e.g., persistent "not found" error)
+          if ((this as any)._sendRetryDepth >= 2) {
+            this.bus.emit({ type: "info", message: `[chat] Session lost after retries: ${msg}` });
+            this.onDone?.();
+            return;
+          }
+          (this as any)._sendRetryDepth = ((this as any)._sendRetryDepth ?? 0) + 1;
           this.sessionId = null;
           this.sendMessage(message);
+          (this as any)._sendRetryDepth = 0;
           return;
         }
         this.bus.emit({ type: "info", message: `[chat] Error: ${msg}` });

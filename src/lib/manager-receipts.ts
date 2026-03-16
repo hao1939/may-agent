@@ -21,7 +21,7 @@ import {
   TOOL_PIVOT_LIMIT,
 } from "./manager-utils.js";
 import type { ActiveSession } from "./manager-utils.js";
-import { sessionDir } from "./persistence.js";
+import { sessionDir, readSessionMeta, writeSessionMeta } from "./persistence.js";
 import { ConcurrencyGate, HIGH_IMPACT_TOOLS } from "./concurrency-gate.js";
 
 /** Runtime-generated HMAC secret for tool receipt signing.
@@ -210,6 +210,14 @@ export function wrapToolsWithReceipts(
         const session = ctx.activeSessions.get(sessionId);
         if (session) {
           session.opCount++;
+          // Persist opCount to meta.json for crash recovery
+          try {
+            const meta = readSessionMeta(ctx.persistDir, sessionId);
+            if (meta) {
+              meta.opCount = session.opCount;
+              writeSessionMeta(ctx.persistDir, sessionId, meta);
+            }
+          } catch { /* best-effort */ }
         }
       }
 

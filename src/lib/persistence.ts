@@ -48,6 +48,10 @@ export interface PersistedSession {
   kind?: SessionKind;
   /** Session lifecycle policy. "never" = stays idle on completion, "immediate" = archives on completion. */
   autoClose?: "immediate" | "never";
+  /** Number of state-changing tool calls executed so far (persisted for crash recovery). */
+  opCount?: number;
+  /** Order ID linking this session to a persisted human order (P209). */
+  orderId?: string;
 }
 
 /** Shape of the registry data (in-memory view).

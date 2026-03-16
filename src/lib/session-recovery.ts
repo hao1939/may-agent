@@ -58,7 +58,7 @@ const INFRA_ERROR_PATTERNS = [
 
 /** Patterns that indicate non-retryable logic/permission errors. */
 const LOGIC_ERROR_PATTERNS = [
-  "Tool", // Tool X not found, etc.
+  "Tool not found",  // Tool X not found, etc.
   "not registered",
   "Permission denied",
   "WRITE BLOCKED",
