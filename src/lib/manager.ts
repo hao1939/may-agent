@@ -503,8 +503,13 @@ export class SubagentManager {
     const agentError = session.agent.state.error ?? session.error;
     const wasAborted = agentError?.includes("aborted") ?? false;
 
-    // Set error field
-    if (agentError) {
+    // Set error field — but if finish was called successfully, don't treat
+    // subsequent empty responses as errors (the model has nothing to say after finish)
+    if (agentError && hasFinishToolCall(messages) &&
+        (agentError.includes("empty response") || agentError.includes("0 output tokens"))) {
+      session.error = undefined;
+      session.agent.state.error = undefined;
+    } else if (agentError) {
       session.error = agentError;
     }
 
