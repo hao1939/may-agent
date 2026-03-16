@@ -1,12 +1,16 @@
 #!/bin/bash
-# Health check script: runs BOTH tsc and vitest, reports combined results.
-# Purpose: Infrastructure solution for C36 (tech-lead skips vitest when running tsc separately).
+# Health check script: runs tsc type checking.
+#
+# vitest intentionally removed — spawns 15+ worker processes consuming
+# >1GB RAM each. Workers survive process timeouts as orphans and
+# accumulate until the container is OOM killed. Test suite validation
+# belongs in CI or explicit QA review, not automated health checks.
+#
 # Usage: bash scripts/health-check.sh
-# Agents should run this single command instead of separate tsc/vitest calls.
 
 set -o pipefail
 
-TIMEOUT=${1:-120}  # Default 120s per command (tsc ~35s, vitest ~75s)
+TIMEOUT=${1:-120}
 
 echo "=== HEALTH CHECK ==="
 echo ""
@@ -27,32 +31,13 @@ else
 fi
 echo ""
 
-# --- Vitest ---
-echo "--- vitest --run ---"
-vitest_output=$(timeout ${TIMEOUT}s npx vitest --run 2>&1)
-vitest_exit=$?
-if [ $vitest_exit -eq 124 ]; then
-  echo "⚠️ vitest: TIMEOUT (>${TIMEOUT}s)"
-  vitest_exit=1
-fi
-if [ $vitest_exit -eq 0 ]; then
-  # Extract summary line
-  summary=$(echo "$vitest_output" | grep -E "Tests\s+" | tail -1)
-  echo "✅ vitest: PASS${summary:+ — $summary}"
-else
-  echo "❌ vitest: FAIL (exit $vitest_exit)"
-  echo "$vitest_output" | grep -E "FAIL|Error|✗|×|expected|received" | head -15
-fi
-echo ""
-
-# --- Combined verdict ---
+# --- Verdict ---
 echo "=== VERDICT ==="
-if [ $tsc_exit -eq 0 ] && [ $vitest_exit -eq 0 ]; then
+if [ $tsc_exit -eq 0 ]; then
   echo "✅ BUILD HEALTHY"
   exit 0
 else
   echo "❌ BUILD UNHEALTHY"
-  [ $tsc_exit -ne 0 ] && echo "  - tsc failed"
-  [ $vitest_exit -ne 0 ] && echo "  - vitest failed"
+  echo "  - tsc failed"
   exit 1
 fi
