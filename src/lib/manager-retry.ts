@@ -84,7 +84,7 @@ export function isRetryableInfraError(session: ActiveSession): string | null {
  * infrastructure errors (P93 Resilience Pattern).
  *
  * On retryable failure: removes the bad assistant message (if any), clears
- * error state, waits with linear backoff, and calls agent.continue().
+ * error state, waits with exponential backoff + jitter, and calls agent.continue().
  * After infraRetryMax failures, falls through to onComplete().
  */
 export async function runAgentWithRetry(
@@ -119,6 +119,18 @@ export async function runAgentWithRetry(
     if (lastMsg?.role === "assistant") {
       messages.pop();
       session.agent.replaceMessages(messages);
+    }
+
+    // Guard: after popping, ensure we don't end on an assistant message
+    // (would cause "Cannot continue from message role: assistant" error).
+    // If the list is empty or still ends with assistant, inject a retry prompt.
+    const lastAfterPop = messages.length > 0 ? messages[messages.length - 1] : null;
+    if (!lastAfterPop || lastAfterPop.role === "assistant") {
+      session.agent.appendMessage({
+        role: "user",
+        content: [{ type: "text", text: "Please continue." }],
+        timestamp: Date.now(),
+      });
     }
 
     // Clear error state for the retry
