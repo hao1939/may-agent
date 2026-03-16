@@ -30,6 +30,9 @@ export function isRateLimitError(error: string): boolean {
  *   - "empty_response": last message is user (silent stream error) or
  *     assistant with no text/toolCall content (0 output tokens).
  *   - "tool_use_missing": stopReason=toolUse but no tool calls in content.
+ *   - "json_stream_error": JSON parse/EOF/stream corruption.
+ *   - "http_retryable": 429/502/503/500/ECONNRESET/ETIMEDOUT/socket hang up.
+ *   - "unhandled_stop_reason": pi-ai provider got unexpected stop reason from model.
  */
 export function isRetryableInfraError(session: ActiveSession): string | null {
   if (session.closed) return null;
@@ -73,6 +76,13 @@ export function isRetryableInfraError(session: ActiveSession): string | null {
     if (isHttpRetryable) {
       return "http_retryable";
     }
+  }
+
+  // Pattern 6: Unhandled stop reason from pi-ai provider — the model returned
+  // a stop reason the provider doesn't recognize (e.g. "unexpected_state" from Kimi).
+  // Transient and safe to retry — the model may respond normally on next attempt.
+  if (agentError?.includes("Unhandled stop reason")) {
+    return "unhandled_stop_reason";
   }
 
   // Pattern 1: Silent stream error — last message is user (no assistant reply at all)
