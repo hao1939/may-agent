@@ -119,6 +119,15 @@ export function createHandoffTool(options: HandoffToolOptions): AgentTool<TSchem
       }
 
       const resolvedArtifact = resolve(projectRoot, artifact_path);
+
+      // Retry loop: tolerate write+handoff race when both run in the same
+      // parallel tool-call batch (the write may not have flushed yet).
+      let retries = 0;
+      while (!existsSync(resolvedArtifact) && retries < 5) {
+        await new Promise(r => setTimeout(r, 200));
+        retries++;
+      }
+
       if (!existsSync(resolvedArtifact)) {
         return {
           content: [{
