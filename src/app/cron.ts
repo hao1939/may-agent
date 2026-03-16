@@ -288,8 +288,10 @@ export class Cron {
           this.heartbeatRunning.delete(heartbeatKey);
           // Reset re-trigger count on failure (don't fast-loop on errors)
           this.retriggerCounts.set(entry.name, 0);
-          // Check latch: re-fire if a trigger arrived while busy
-          this.checkPendingTrigger(entry);
+          // Don't drain pending triggers on failure — prevents tight error loops
+          // where a latched trigger causes immediate re-fire after each failure.
+          // Wait for the next scheduled interval instead.
+          this.pendingTriggers.delete(entry.name);
           const errMsg = err instanceof Error ? err.message : String(err);
 
           // Any heartbeat error → hard reset session to recover
