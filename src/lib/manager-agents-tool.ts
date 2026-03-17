@@ -200,7 +200,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
               try {
                 const req = await getRequestsModule();
                 const durationMs = Date.now() - startTime;
-                const hasError = result.status === "error";
+                const hasError = result.status === "error" || result.status === "interrupted";
                 req.updateRequest(manager.registry.persistDir, requestId, {
                   status: hasError ? "FAILED" : "COMPLETED",
                   sessionId: result.sessionId,

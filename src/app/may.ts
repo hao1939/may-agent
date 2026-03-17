@@ -717,7 +717,7 @@ if (ONESHOT_MODE) {
   const durationMs = Date.now() - oneshotStart;
   const sessions = manager.status();
   const session = sessions.find((s) => s.sessionId === taskSessionId);
-  const status = session?.status === "error" ? "error" : "success";
+  const status = (session?.status === "error" || session?.status === "interrupted") ? "error" : "success";
 
   const result = {
     sessionId: taskSessionId,

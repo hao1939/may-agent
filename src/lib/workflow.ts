@@ -143,7 +143,7 @@ export type WorkflowToolResult =
 export interface WorkflowStepSummary {
   agent: string;
   sessionId: string;
-  status: "done" | "error";
+  status: "done" | "error" | "interrupted";
   /** Truncated key output. */
   output: string;
   duration: string;

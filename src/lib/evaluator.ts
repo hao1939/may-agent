@@ -839,14 +839,14 @@ function computeHeuristicScores(session: PersistedSession, transcript: string): 
   const assistantTurns = (transcript.match(/"role":"assistant"/g) || []).length;
 
   // 1. Session status
-  if (session.status === "error") {
+  if (session.status === "error" || session.status === "interrupted") {
     quality -= 1;
     issues.push("session_error");
   }
 
   // 2. OpBudget exhaustion
   const hasOpBudgetError = transcript.includes("opBudget") || transcript.includes("operation budget");
-  if (hasOpBudgetError && session.status === "error") {
+  if (hasOpBudgetError && (session.status === "error" || session.status === "interrupted")) {
     efficiency -= 1;
     issues.push("opBudget_exhaustion");
   }
