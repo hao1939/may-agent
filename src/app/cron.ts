@@ -60,8 +60,10 @@ export class Cron {
   /** Tracks consecutive re-trigger count per entry (drains todo list). */
   private retriggerCounts = new Map<string, number>();
 
-  /** Maximum consecutive re-triggers before waiting for next scheduled interval. */
-  readonly maxRetriggers = 3;
+  /** Maximum consecutive re-triggers before waiting for next scheduled interval.
+   *  Set to 0 to disable retrigger entirely — agents process todo items at their
+   *  natural heartbeat interval instead of bursting 4x per cycle. */
+  readonly maxRetriggers = 0;
 
   private projectRoot: string;
   private persistDir: string;
