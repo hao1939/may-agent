@@ -14,6 +14,20 @@ import type { TSchema } from "@mariozechner/pi-ai";
 import { existsSync, appendFileSync, mkdirSync } from "fs";
 import { resolve, dirname } from "path";
 
+// Lazy import for requests.ts (uses bun:sqlite, not available in vitest)
+let _updateRequestFn: ((dir: string, id: string, update: any) => void) | null = null;
+async function getUpdateRequest() {
+  if (!_updateRequestFn) {
+    try {
+      const mod = await import("../requests.js");
+      _updateRequestFn = mod.updateRequest;
+    } catch {
+      /* bun:sqlite not available */
+    }
+  }
+  return _updateRequestFn;
+}
+
 // ── Types ──────────────────────────────────────────────────────────────
 
 export interface FinishToolOptions {
@@ -23,6 +37,8 @@ export interface FinishToolOptions {
   projectRoot: string;
   /** Directory for .state/ files. Default: projectRoot/.state */
   persistDir?: string;
+  /** Request ID for unified request tracking (if session has one). */
+  requestId?: string;
 }
 
 // ── Schema ─────────────────────────────────────────────────────────────
@@ -170,6 +186,25 @@ export function createFinishTool(options: FinishToolOptions): AgentTool<TSchema>
           }],
           details: undefined,
         };
+      }
+
+      // ── Update unified request tracker (if requestId available) ──
+      if (options.requestId && stateDir) {
+        getUpdateRequest().then((updateReq) => {
+          if (!updateReq) return;
+          try {
+            const requestStatus = status === "success" ? "COMPLETED"
+              : status === "failure" ? "FAILED"
+              : "BLOCKED";
+            updateReq(stateDir, options.requestId!, {
+              status: requestStatus,
+              summary,
+              completedAt: Date.now(),
+            });
+          } catch {
+            /* non-fatal — JSONL is the primary record */
+          }
+        });
       }
 
       // ── Build formatted output ─────────────────────────────────

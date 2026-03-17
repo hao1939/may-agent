@@ -15,6 +15,19 @@ import { appendFileSync } from "node:fs";
 import { join } from "node:path";
 import type { SubagentManager } from "../lib/manager.js";
 import { logOrder } from "../lib/orders.js";
+
+// Lazy import for requests.ts (uses bun:sqlite, not available in vitest)
+let _trackRequest: typeof import("../lib/requests.js").trackRequest | null = null;
+let _trackRequestLoaded = false;
+function trackRequest(dir: string, opts: any): string | undefined {
+  if (!_trackRequestLoaded) {
+    _trackRequestLoaded = true;
+    // Eager load — will be cached after first call
+    import("../lib/requests.js").then(mod => { _trackRequest = mod.trackRequest; }).catch(() => {});
+  }
+  return _trackRequest?.(dir, opts);
+}
+
 import type { EventBus } from "./event-bus.js";
 
 export interface ChatSessionOptions {
@@ -137,6 +150,21 @@ export class ChatSession {
           })
         : undefined;
 
+      // Track request in SQLite (dual-write alongside orders.jsonl)
+      let requestId: string | undefined;
+      if (this.persistDir) {
+        try {
+          requestId = trackRequest(this.persistDir, {
+            fromEntity: "human",
+            toAgent: this.agentName,
+            task: message,
+            method: "chat",
+          });
+        } catch {
+          /* non-fatal — don't break chat over tracking */
+        }
+      }
+
       // First message: create the persistent session
       this.sessionId = this.manager.run(this.agentName, message, {
         kind: "chat",
@@ -144,6 +172,7 @@ export class ChatSession {
         compaction: true,
         source: "chat",
         orderId: order?.id,
+        requestId,
       });
       this.trackCompletion(this.sessionId);
       return;
@@ -301,10 +330,26 @@ export class ChatSession {
         })
       : undefined;
 
+    // Track request in SQLite (dual-write alongside orders.jsonl)
+    let requestId: string | undefined;
+    if (this.persistDir) {
+      try {
+        requestId = trackRequest(this.persistDir, {
+          fromEntity: "human",
+          toAgent: agentName,
+          task,
+          method: "chat",
+        });
+      } catch {
+        /* non-fatal — don't break chat over tracking */
+      }
+    }
+
     const sessionId = this.manager.run(agentName, task, {
       kind: "job",
       source: "chat",
       orderId: order?.id,
+      requestId,
     });
     this.manager
       .waitFor(sessionId)

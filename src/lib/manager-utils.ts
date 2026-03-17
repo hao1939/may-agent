@@ -210,6 +210,8 @@ export interface ActiveSession {
   filesModified: Set<string>;
   /** Order ID linking this session to a persisted human order (P209). */
   orderId?: string;
+  /** Request ID linking this session to the unified request tracker. */
+  requestId?: string;
 }
 
 /** Options for spawning a session with parent/workflow context. */
@@ -238,6 +240,8 @@ export interface RunOptions {
   opBudget?: number;
   /** Order ID linking this session to a persisted human order (P209). */
   orderId?: string;
+  /** Request ID linking this session to the unified request tracker. */
+  requestId?: string;
 }
 
 export interface SubagentManagerOptions {
