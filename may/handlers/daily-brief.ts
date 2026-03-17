@@ -127,7 +127,7 @@ export function collectDailyBrief(opts: DailyBriefOptions): string {
     agentScores.get(e.agent)!.qual.push(e.quality);
   }
 
-  // 8. Cron job health from job-history.jsonl
+  // 8. Cron job health from request tracking DB
   const cronHealth = collectCronHealth(persistDir, oneDayAgo);
 
   // Format

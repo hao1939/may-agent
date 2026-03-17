@@ -15,17 +15,17 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If pattern found → design fix, add to workspace/todo.md.
   Latest (2026-03-17T22:18): **Major finding: Session overtriggering across all agents.** Full 13,167-session analysis. Most agents fire 2-12x more sessions than configured intervals allow: May 8.5x (30min interval but fires every 10min), Evaluator 11.9x (2h interval but 143 sessions/day), Coach 3.6x (cascade from evaluate-sessions). 202 interrupted sessions in 24h. ~1,500 unnecessary sessions/day. Root cause likely in cron timer restart behavior + dual evaluator triggers + coach request cascading. Brief at `workspace/brief-session-waste-analysis.md`, sent to tech-lead (req:e03c2e4c). Prior findings: low-ops waste (req:b0d3b894), Anthropic cache 0% (req:8b05a3a4).
 
-- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-17
+- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-17T22:30
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
   Could it be replaced with a JS handler? (See cron-graduation-process.md Stage 3.)
   If found → write proposal in workspace/improvement-proposals.md.
-  Latest (2026-03-17): No new candidates. Also completed **Tool Efficiency Audit** (Focus Area #3): analyzed 9,790 sessions, found 5 unused tool bundles to remove (optimizer/workflow, tech-lead/workflow, amy/scrape, may/workflow, scout/agents). Brief at `workspace/brief-tool-efficiency-audit.md`, sent to May for execution. Est. ~$264 historical waste in input tokens.
+  Latest (2026-03-17T22:30): **Major finding: Heartbeat interval mismatch.** 4 agents (bob 660s, optimizer 540s, coach 720s, tech-lead 780s) have intervalMs 3-4x shorter than their "30min" descriptions. 344 heartbeats/day = $27.52/day waste. Also: idle-skip code (848ebf1) deployed but server not restarted — 0 idle skips in 24h. Combined fix potential: ~$24/day = $720/month savings. Brief at `workspace/brief-heartbeat-waste-v2.md`, sent to tech-lead (req:127a5dc2). Prior: Tool Efficiency Audit at `workspace/brief-tool-efficiency-audit.md`.
 
-- [x] **Handler health check** — Last done: 2026-05-09
+- [x] **Handler health check** — Last done: 2026-03-17T22:27
   Review existing JS handlers in agents/may/handlers/.
   Any errors in recent logs? Any handler that's not firing?
   If issues → add fix to workspace/todo.md.
-  Latest (2026-03-17): 10 handler `.ts` files present. 8 referenced by cron entries (coaching-report, daily-brief, error-log-scanner, evaluate-sessions, lessons-graduation, run-agent-task, system-status, watchdog) — all wired correctly ✅. **2 orphan handlers** on disk with NO cron reference: `audit-requests.ts` (106 LOC), `focus-task-tracker.ts` (159 LOC) — 265 lines dead code. 32 cron entries total. **error-log-scanner wired today** (was orphaned). Job history healthy. Full test suite passes.
+  Latest (2026-03-17T22:27): 12 handler `.ts` files present (incl. agents-auto-commit, audit-requests). 32 cron entries, all wired. **Key finding:** `.state/job-history.jsonl` is a dead 2.9MB legacy file — nothing writes to it since cron moved to SQLite (`may.db`). All consumers already updated. Fixed stale comment in daily-brief.ts. Finding at `workspace/finding-dead-job-history.md`. Orphan handlers (audit-requests, focus-task-tracker) now wired to cron — no longer orphaned.
 
 ## Weekly
 - [x] **Improvement proposals review** — Last done: 2026-05-09 (Finding 18, Cycle 12). **2 new commits since last review**: agent-growth refactor committed (3a6d51e — 16 files, +1725/-168), orphaned test cleanup (85de6e7). Git now clean (0 uncommitted changes — resolved 7+ week risk). 1049/1049 tests pass (87 files), tsc clean. New cross-edit guard (P53) prevents cross-agent identity file modification. Finish tool wired but unadopted. System idle — 0 sessions, evals, job history. Compaction 8/12, prompt caching still 0% for Opus (LiteLLM proxy blocker). **No new optimization work items identified.**
