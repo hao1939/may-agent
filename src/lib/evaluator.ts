@@ -769,8 +769,22 @@ export async function writeHeuristicEvaluations(persistDir: string): Promise<num
       continue; // Can't read → skip
     }
 
+    // Parse transcript into messages for usage extraction
+    const messages: AgentMessage[] = [];
+    for (const line of transcriptText.trim().split("\n")) {
+      try {
+        const msg = JSON.parse(line);
+        if (msg && typeof msg === "object") messages.push(msg as AgentMessage);
+      } catch {
+        // skip malformed lines
+      }
+    }
+
     // Compute heuristic scores
     const scores = computeHeuristicScores(session, transcriptText);
+
+    // Extract real usage from transcript (instead of hardcoded zeros)
+    const usage = extractUsage(messages);
 
     const evaluation = {
       agent: session.agent,
@@ -787,15 +801,7 @@ export async function writeHeuristicEvaluations(persistDir: string): Promise<num
         verdict: scores.verdict,
         result_delivered: scores.resultDelivered,
       },
-      usage: {
-        inputTokens: 0,
-        outputTokens: 0,
-        cacheReadTokens: 0,
-        cacheWriteTokens: 0,
-        totalTokens: 0,
-        cost: 0,
-        turns: 0,
-      },
+      usage,
       failureChains: [],
       evaluatedByHeuristic: true,
     };
