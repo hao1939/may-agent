@@ -155,6 +155,12 @@ export const TOOL_PIVOT_LIMIT = 3;
 /** Default turn count at which a budget warning is injected. */
 export const TURN_BUDGET_WARNING_DEFAULT = 40;
 
+/** Consecutive error turns before injecting a stuck warning. */
+export const STUCK_WARNING_THRESHOLD = 3;
+
+/** Consecutive error turns after warning before auto-termination. */
+export const STUCK_TERMINATE_THRESHOLD = 5;
+
 // ── Interfaces ─────────────────────────────────────────────────────────
 
 export interface RegisteredAgent {
@@ -214,6 +220,14 @@ export interface ActiveSession {
   requestId?: string;
   /** Structured finish() data extracted from the agent's completion. */
   finishResult?: import("./types.js").FinishResult;
+  /** Number of consecutive turns where every tool call errored (Stuck Detection). */
+  consecutiveErrorTurns: number;
+  /** Whether a stuck warning has been injected (avoids duplicate warnings). */
+  stuckWarningInjected: boolean;
+  /** Tool errors in the current turn (reset each assistant message). */
+  currentTurnErrors: number;
+  /** Tool successes in the current turn (reset each assistant message). */
+  currentTurnSuccesses: number;
 }
 
 /** Options for spawning a session with parent/workflow context. */

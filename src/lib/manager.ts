@@ -19,6 +19,8 @@ import {
   INFRA_RETRY_BASE_DELAY_MS,
   TOOL_PIVOT_LIMIT,
   TURN_BUDGET_WARNING_DEFAULT,
+  STUCK_WARNING_THRESHOLD,
+  STUCK_TERMINATE_THRESHOLD,
 } from "./manager-utils.js";
 import type { RegisteredAgent, ActiveSession, RunOptions, SubagentManagerOptions } from "./manager-utils.js";
 
@@ -32,6 +34,8 @@ export {
   INFRA_RETRY_MAX,
   TOOL_PIVOT_LIMIT,
   TURN_BUDGET_WARNING_DEFAULT,
+  STUCK_WARNING_THRESHOLD,
+  STUCK_TERMINATE_THRESHOLD,
 } from "./manager-utils.js";
 export type { RegisteredAgent, ActiveSession, RunOptions, SubagentManagerOptions } from "./manager-utils.js";
 import type {
@@ -236,6 +240,34 @@ export class SubagentManager {
         appendSessionMessage(persistDir, sessionId, event.message);
         if (event.message.role === "assistant") {
           session.turnCount++;
+
+          // ── Stuck Detection ──────────────────────────────────────────
+          // At each turn boundary, check if the previous turn had only errors.
+          // If so, increment consecutiveErrorTurns. If it had any success, reset.
+          if (session.currentTurnErrors > 0 && session.currentTurnSuccesses === 0) {
+            session.consecutiveErrorTurns++;
+          } else if (session.currentTurnSuccesses > 0) {
+            session.consecutiveErrorTurns = 0;
+            session.stuckWarningInjected = false; // Reset warning if agent recovered
+          }
+          // Reset per-turn counters for the next turn
+          session.currentTurnErrors = 0;
+          session.currentTurnSuccesses = 0;
+
+          // Inject stuck warning at threshold
+          if (session.consecutiveErrorTurns >= STUCK_WARNING_THRESHOLD && !session.stuckWarningInjected) {
+            session.stuckWarningInjected = true;
+            console.error(`STUCK_WARNING: Agent ${session.agentName} (${sessionId}) has ${session.consecutiveErrorTurns} consecutive error turns. Warning injected.`);
+            console.log(JSON.stringify({ type: "STUCK_WARNING", agent: session.agentName, sessionId, consecutiveErrorTurns: session.consecutiveErrorTurns }));
+          }
+
+          // Auto-terminate at terminate threshold
+          if (session.consecutiveErrorTurns >= STUCK_TERMINATE_THRESHOLD) {
+            console.error(`STUCK_TERMINATE: Agent ${session.agentName} (${sessionId}) has ${session.consecutiveErrorTurns} consecutive error turns. Auto-terminating.`);
+            console.log(JSON.stringify({ type: "STUCK_TERMINATE", agent: session.agentName, sessionId, consecutiveErrorTurns: session.consecutiveErrorTurns }));
+            session.error = `Stuck Detection: ${session.consecutiveErrorTurns} consecutive turns with only errors. Session auto-terminated.`;
+            session.agent.abort();
+          }
 
           // Activity tracking: emit progress event every N turns
           if (session.turnCount > 0 && session.turnCount % PROGRESS_INTERVAL === 0) {
@@ -869,6 +901,10 @@ export class SubagentManager {
       filesModified: new Set(),
       orderId: opts?.orderId,
       requestId: opts?.requestId,
+      consecutiveErrorTurns: 0,
+      stuckWarningInjected: false,
+      currentTurnErrors: 0,
+      currentTurnSuccesses: 0,
     };
 
     // Write [STARTED] sentinel
@@ -1159,6 +1195,10 @@ export class SubagentManager {
       turnBudgetWarned: false,
       filesModified: new Set(),
       orderId: persisted.orderId,
+      consecutiveErrorTurns: 0,
+      stuckWarningInjected: false,
+      currentTurnErrors: 0,
+      currentTurnSuccesses: 0,
     };
 
     this.subscribeForPersistence(session);
