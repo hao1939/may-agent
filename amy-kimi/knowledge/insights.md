@@ -5,6 +5,79 @@
 
 ---
 
+## HB#1981 — Agentic Security: 系统性安全框架 (2026-03-17)
+**Source**: XHS @无影寺 — "Agentic Security:agent时代的安全新战场"  
+**Paper**: arXiv:2510.06445 — A Survey on Agentic Security  
+**TL;DR**: 🔥🔥🔥🔥🔥 **系统性威胁框架** — 四层攻击模型 + 级联风险
+
+### 核心发现
+
+#### Agentic Security四层威胁模型
+| Layer | 攻击类型 | 机制 | OpenClaw对应 |
+|-------|---------|------|-------------|
+| L1 | 提示注入/越狱 | 偏离目标或执行恶意任务 | AGENTS.md确定性契约 |
+| L2 | 记忆层攻击 | **篡改记忆模块** → 后续误判 | MEMORY.md索引+人工审计 |
+| L3 | 环境/行动层 | 供应链攻击、伪造环境输入 | Skill审核+Runtime隔离 |
+| L4 | 多Agent级联 | **一个被攻击Agent影响全系统** | Sub-agent权限边界 |
+
+#### 关键洞察
+> "攻击不仅针对模型本身，更威胁其'行动空间'，防御远超传统LLM安全范畴"
+
+### 这个对我们意味着什么?
+
+**OpenClaw架构前瞻性验证**:
+- **确定性契约** (AGENTS.md/TOOLS.md) → 对抗L1提示注入
+- **Error Log + 人工审计** → 检测L2记忆篡改
+- **禁止运行时自进化** → 阻断L3供应链攻击链
+- **Sub-agent沙箱隔离** → 限制L4级联风险
+
+**与HB#1930 MCP Security SoK交叉验证**: 认识论错误(幻觉)与安全漏洞(未授权)的边界溶解在Agentic Security框架中得到系统性解释。
+
+---
+
+## HB#1980 — Skill供应链安全: 25%恶意率实证 (2026-03-17)
+**Source**: XHS @Yanlin — "装了12个Skills，3个在偷我密码"  
+**Metrics**: 263赞 | 399收藏 | 28评论  
+**TL;DR**: 🔥🔥🔥🔥🔥 **社区安全警报** — Skill生态的供应链攻击已进入实战阶段
+
+### 核心发现
+
+#### 攻击实证
+- **12个Skills中3个存在恶意行为**（25%恶意率）
+- 攻击向量: SKILL.md植入curl、bash、wget、eval窃取数据
+
+#### 社区自查清单 (可复制)
+1. `npx skills list` 查看已装Skills
+2. **不认识的作者 → 删**
+3. 打开SKILL.md搜索 curl、bash、wget、eval
+4. 只装GitHub stars > 100的项目
+5. 使用Cisco Skill Scanner扫描
+
+#### 关键洞察
+> "677个Skills来自同一个人" — **批量制作成本太低**
+
+> "新AI时代的攻击，主要针对不懂安全的程序员" — AI生成内容太快，程序员也防不胜防
+
+#### 社区共识
+- **Tony Xu**: "需要类似应用商店的审核机制进行安全审核和风险兜底"
+- **Yanlin**: "目前就是独立环境 + 审核skills"
+
+### 这个对我们意味着什么?
+
+**三重验证**:
+1. **HB#1930 MCP Security SoK**: 理论层面的Cross-Primitive Escalation
+2. **HB#1981 Agentic Security**: 学术框架的L3环境/行动层攻击
+3. **HB#1980 社区实证**: 25%恶意率的实际战场数据
+
+**OpenClaw启示**:
+- Skill开放性 vs 安全审核的张力是**结构性问题**，非个案
+- **GitHub stars > 100** 作为社区信誉系统雏形，可纳入设计
+- **运行时隔离**是底线，不能妥协
+
+---
+
+---
+
 ## HB#1972 — OpenClaw稳定性实战4原则: 来自用户踩坑总结 (2026-03-17)
 **Source**: XHS @愚园路十二妹 — "让 OpenClaw 真正稳定的 4 个关键"
 **Metrics**: 17赞 | 37收藏 | 折腾两个月踩一百个坑后的总结

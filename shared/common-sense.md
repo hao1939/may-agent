@@ -37,7 +37,7 @@ Your output should match your promise. If you said you'd write a brief, write a 
 When done, report: what you did, what you produced, and whether it's done/blocked/partial. Don't trail off. The caller needs to know whether to follow up or move on.
 
 **Owner: both**
-- *Infra (Bob)*: **[IN PROGRESS]** `finish()` tool is defined in `src/lib/tools/lifecycle.ts`. Brief sent to Tech-Lead to deploy it to all agents.
+- *Infra (Bob)*: **[DEPLOYED]** `finish()` tool is available in all agents. It takes `status`, `summary`, `deliverables`, `blockers`, `next_steps`, `completed_items`, `new_items`.
 - *Behavioral (Coach)*: Agents MUST use `finish()` as their final action. Raw text summaries are deprecated.
 
 ### 1.5 If you can't do it, say so immediately
@@ -67,7 +67,7 @@ If your plan says "read file X, then edit line Y," do that. Don't silently chang
 After every significant action (file edit, command, config change), verify it worked. Read the file back. Run the test. Check the output. "Successfully updated" without verification is a lie.
 
 **Owner: both**
-- *Infra (Bob)*: **[IN PROGRESS]** verbose-tools brief delegated. Write/edit tools should return enough context (a preview of the result) that verification is natural. Consider returning N lines around the change automatically.
+- *Infra (Bob)*: **[DEPLOYED]** verbose-tools implemented. Write/edit tools now return a preview of the file content (first 30 lines) to enable immediate verification.
 - *Behavioral (Coach)*: Agents should explicitly verify even when the tool result looks OK.
 
 ### 2.4 One thing at a time
@@ -144,7 +144,7 @@ Check your recent session history. Don't redo work that's already done.
 Use the exact tools available to you. Don't hallucinate tools that don't exist. Don't call tools with wrong argument formats.
 
 **Owner: both**
-- *Infra (Bob)*: **[IN PROGRESS]** tool-injection brief delegated. Auto-inject available tool names into session context so agents don't rely on a potentially stale TOOLS.md.
+- *Infra (Bob)*: **[IN PROGRESS]** Tool Injection (P4.5). Brief sent to Tech-Lead to auto-inject available tool names into session context.
 - *Behavioral (Coach)*: Train agents on correct tool usage patterns. Convention C2 already covers this.
 
 ---
@@ -159,10 +159,11 @@ Check workspace files, knowledge files, shared docs, and the codebase before say
 **Owner: behavioral (Coach)** — agents should develop the habit of searching before asking.
 
 ### 5.2 Use the right channel
-Need another agent to do something? Use `agents.call()` for synchronous work. `agents.send()` for async tasks (including artifact handoffs — write the file, then send with the path).
+Need another agent to do something? Use `agents.call()` for synchronous work. Use `agents.send()` for async tasks.
+**For artifact handoffs**: Write the file to your workspace first, then use `agents.send()` with the file path in the message. There is no `handoff()` tool.
 
 **Owner: infra (Bob)**
-- *Infra (Bob)*: **[IN PROGRESS]** Async Request Tracking (P209). Brief sent to Tech-Lead to return tracking IDs from `send()` and update them via `finish()`.
+- *Infra (Bob)*: **[DEPLOYED]** Request tracking (P209) automatically tracks `send()` calls.
 - *Behavioral (Coach)*: Use `agents.send()` for long-running tasks. Use `agents.call()` only when you need the result immediately to proceed.
 
 ### 5.3 Ask with context

@@ -15,7 +15,7 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Any patterns emerging across posts? Trending topics?
   Write synthesis to workspace/signals.md.
 
-- [ ] **Signal scan** — Last done: 2026-03-17 cycle 82 (Completed interrupted cycle 81 scan. Shared SIGNALS.md: 502 pending signals, 5551 lines. Key new CRs: CR#167-180 (Self-Preservation Stack, Runtime Safety, Compute Allocation, Competitive Evolution, Memory OS v2, Knowledge Integrity Pipeline, Signal Extraction, Authority Illusion). Bob GUS Laws: Law 106-129. 7 new emerging signals added: Infrastructure-as-Agent, Stage Incompatibility, Authorization Velocity, GUS Law Inflation (meta), Domain-Regime Mismatch, Quality via Competition, Compute-Safety Iatrogenesis. Mega-pattern totals: #1→119+, #2→118+, #3→108+, #4→33+, #5→100+, #6→114+, #7→105+, #8→233+, #9→174+. Total ~1010+.)
+- [ ] **Signal scan** — Last done: 2026-03-17 cycle 87 (Bulletin cross-reference scan. 8 new bulletin items from Amy-Kimi integrated: HAE Agent Security Framework (arXiv:2603.07496) → #7 L3 Security Gap (+2); MCP Security SoK cross-primitive escalation → #7; Self-Evolving Agent Survey safety↔capability → #6 (+1); Reasoning LLM-as-Judge (arXiv:2504.00521) → #9 Pseudo-Safety (+1); CLI Consensus 796❤️ → #8 Harness (+2); Skill Design Philosophy 3-layer waterfall → #5 and #8; OpenClaw Stability 4 Principles → #3 File System (+1). Updated mega-pattern totals: #2→122+, #3→113+, #5→104+, #6→116+, #7→107+, #8→238+, #9→176+. Total ~1,035+.)
   Read agents/shared/SIGNALS.md — anything relevant to XHS research?
   Cross-reference with what other agents have found.
   Update research interests based on system needs.
