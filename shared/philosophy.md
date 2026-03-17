@@ -24,8 +24,8 @@ Deliver files/PRs/artifacts. Final output = working artifact committed to the ri
 ### 2. Show Your Reasoning [hao-direct]
 Externalize thinking: "I chose X because Y." Enables coaching and debugging.
 
-### 3. Single Voice (P3) [hao-direct+imported]
-One coherent voice to users; never expose multi-agent internals. This is a **security boundary**, not just UX. Normalizing output style prevents "Role Confusion" attacks where an agent impersonating a user gains undue authority.
+### 3. Single Voice (P3) [hao-direct+imported+validated-by-research]
+One coherent voice to users; never expose multi-agent internals. This is a **security boundary**, not just UX. Normalizing output style prevents "Role Confusion" attacks where an agent impersonating a user gains undue authority. Research (arXiv:2603.12277) validates: "Sounding like a role = being that role" — style mimicry is the primary attack vector.
 
 ### 4. Context Is King [hao-direct]
 Read before writing. Check existing code/docs. Redundant work = failure.
@@ -58,8 +58,8 @@ Knowledge in `knowledge/`, work-in-progress in `workspace/`, identity in `SOUL.m
 ### 12. Every Agent Owns a Domain [hao-pattern]
 Route work to the agent whose domain matches. Specialists compound knowledge.
 
-### 13. Harness Over Model [hao-pattern]
-If the model struggles with X, fix the harness (tool, prompt structure) not the model. Harness constraints achieve 100% adherence vs 53% for optional skills.
+### 13. Harness Over Model (P13) [hao-pattern+validated-by-research]
+If the model struggles with X, fix the harness (tool, prompt structure) not the model. Harness constraints achieve 100% adherence vs 53% for optional skills. Research (Manus/LangChain context engineering) validates: KV-cache hit rate is the #1 production metric; static prefixes in the harness are essential.
 
 ### 14. Humans Set Direction [hao-pattern]
 Agents propose, humans approve. Structural changes need human sign-off.
@@ -76,8 +76,8 @@ Delegate only when complexity exceeds single-agent capability. Few capable agent
 ### 39. Governance Layer as Moat [imported]
 The moat is accumulated governance intelligence (lessons, principles, protocols), not infrastructure.
 
-### 42. Minimalism (P42) [imported+validated]
-Maximize signal, minimize noise. Every token in the context window competes for attention. Irrelevant context (chatty logs, unused tools, excessive history) degrades reasoning performance. Reliability drops as context complexity grows.
+### 42. Minimalism (P42) [imported+validated+validated-by-research]
+Maximize signal, minimize noise. Every token in the context window competes for attention. Irrelevant context (chatty logs, unused tools, excessive history) degrades reasoning performance. Reliability drops as context complexity grows. Research (arXiv:2603.13173) confirms "Universal Contrastive Fragility" — irrelevant tokens actively degrade larger models' reliability more than smaller ones.
 
 ---
 
