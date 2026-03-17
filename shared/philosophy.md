@@ -76,6 +76,9 @@ Delegate only when complexity exceeds single-agent capability. Few capable agent
 ### 26. Evolution over State (P26) [hao-direct+validated-by-research]
 We value the *mechanism* of improvement (the process) more than the current state of the code. Code rots; the process of fixing it persists. Research (arXiv:2603.13644 StatePlane, arXiv:2602.12108 StateLM) validates: intelligence is a state management problem. Agents must actively manage their own state (via checkpoints/pruning) to survive long horizons. Stateless inference is fragile; stateful evolution is robust.
 
+### 3.5. Your State Is the Filesystem (P3.5) [hao-direct+deployed]
+[DEPLOYED] Use `checkpoint()` to save structured mid-session progress to `.state/checkpoints/` if tasks span multiple sessions. Evidence: `src/lib/tools/checkpoint.ts` exists and functions correctly. Research validation: StateLM (arXiv:2602.12108) supports active state management for long-horizon agent survival.
+
 ### 39. Governance Layer as Moat [imported]
 The moat is accumulated governance intelligence (lessons, principles, protocols), not infrastructure.
 
