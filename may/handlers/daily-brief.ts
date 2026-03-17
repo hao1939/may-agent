@@ -74,16 +74,21 @@ export function collectDailyBrief(opts: DailyBriefOptions): string {
     }
   } catch { /* best-effort */ }
 
-  // 3. Agent workspace status
+  // 3. Agent pending task counts (from DB)
   const agentSummaries: AgentSummary[] = [];
   try {
-    for (const d of readdirSync(agentsRoot, { withFileTypes: true }).filter(d => d.isDirectory() && d.name !== "shared")) {
-      const todoPath = join(agentsRoot, d.name, "workspace", "todo.md");
-      const journalPath = join(agentsRoot, d.name, "workspace", "journal.md");
-      let todoCount = 0, journalLines = 0;
-      try { if (existsSync(todoPath)) { todoCount = (readFileSync(todoPath, "utf-8").split("# Tracking")[0].match(/^- \[ \]/gm) || []).length; } } catch { /* best-effort */ }
-      try { if (existsSync(journalPath)) { journalLines = readFileSync(journalPath, "utf-8").split("\n").length; } } catch { /* best-effort */ }
-      if (todoCount > 0 || journalLines > 0) agentSummaries.push({ name: d.name, todoCount, journalLines });
+    const db = getDb(persistDir);
+    const rows = db
+      .query(
+        `SELECT toAgent, COUNT(*) as count FROM requests
+         WHERE status IN ('CREATED', 'IN_PROGRESS') AND method = 'send'
+         GROUP BY toAgent`
+      )
+      .all() as { toAgent: string; count: number }[];
+    for (const row of rows) {
+      if (row.toAgent !== "shared") {
+        agentSummaries.push({ name: row.toAgent, todoCount: row.count, journalLines: 0 });
+      }
     }
   } catch { /* best-effort */ }
 

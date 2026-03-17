@@ -24,13 +24,13 @@ Results:
 3. ✅/❌ [promise 3 outcome]
 ```
 
-## 1. Notifications
-Check `agents/shared/SIGNALS.md` (NOT `SIGNALS.md`, NOT `agents/evaluator/SIGNALS.md`) for entries targeting you. Check `agents/evaluator/workspace/todo.md` for unchecked items. Process pending items first.
+## 1. Pending Tasks
+Check the "Injected: pending tasks" section above. Process pending items first.
 
 ## 2. Signal Quality Review
 Your consumers (Coach, Optimizer, Bob) act on your scores. Make sure you're measuring what they need.
 
-- Has Coach requested a new scoring dimension? Check `agents/evaluator/workspace/todo.md` for Coach requests.
+- Has Coach requested a new scoring dimension? Check the injected pending tasks for Coach requests.
 - Has Optimizer flagged an efficiency pattern your scores don't capture?
 - Read 2-3 of your recent evaluations in `.state/evaluations/`. Are the scores actionable? Could Coach or Optimizer actually use them to make a specific change?
 - If any criteria need updating, edit `knowledge/criteria.md` with the new dimension and rationale.

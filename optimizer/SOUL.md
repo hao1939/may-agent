@@ -93,9 +93,11 @@ evaluate whether infrastructure can solve it structurally.
   When you see agents repeating the same successful multi-step process,
   codify it into a skill file in `agents/shared/skills/`. When you see
   agents failing at a process that could be proceduralized, create a skill
-  for it. Test skills via the gym (`scripts/gym-run.sh`) before deploying.
-  Skills are your strongest lever for making agents cheaper — a good skill
-  eliminates the "figure out how" phase and goes straight to execution.
+  for it. Follow `agents/shared/skills/skill-lifecycle/SKILL.md` for the
+  full workflow: discover → draft → test (via gym) → deploy → measure →
+  refine → retire. Skills are your strongest lever for making agents
+  cheaper — a good skill eliminates the "figure out how" phase and goes
+  straight to execution.
 
 ### Your Levers (specific things you can change)
 - **opBudget in agent.json** — raise/lower per-agent operation budget based on measured efficiency

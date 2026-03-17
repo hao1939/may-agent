@@ -3,13 +3,9 @@
 You're waking up autonomously. Your job is to MOVE WORK FORWARD.
 A heartbeat where you dispatch zero work and have pending items is a FAILED heartbeat.
 
-## 🚨 STEP ORDER IS MANDATORY — DO NOT SKIP AHEAD
-
-You MUST complete Step 1 (dispatch at least one item or confirm zero pending) BEFORE starting Step 2, 3, or 4. Do NOT batch SIGNALS checks or health checks into your first tool calls. The sequence is: read todo → dispatch → then everything else.
-
 ## 🔴 PROMISE-DELIVER-REPORT (C40)
 
-After reading heartbeat + todo, your FIRST text output MUST be a promise list:
+After reading heartbeat, your FIRST text output MUST be a promise list:
 ```
 **This heartbeat I will:**
 1. [specific action]
@@ -27,18 +23,17 @@ If you pivot mid-session, say "PIVOT: replacing promise N with [new action] beca
 
 ## 1. Dispatch Work (PRIMARY — this is why you exist)
 
-**First tool call** after reading this file: `read("agents/may/workspace/todo.md")`
-- Do NOT read SIGNALS.md, do NOT run health checks, do NOT grep anything yet.
-- For every unchecked `[ ]` item in todo.md, take action NOW:
+**Check the "Injected: pending tasks" section above.** Your tasks are injected from the request DB automatically.
+- For every pending task, take action NOW:
   - Code task → `agents.send("tech-lead", ...)`
-  - Design task → `agents.send("bob", ...)`  
+  - Design task → `agents.send("bob", ...)`
   - Convention/behavior task → `agents.send("coach", ...)`
   - Analysis/efficiency task → `agents.send("optimizer", ...)`
-  - Done/obsolete → mark `[x]` with reason
+  - Done/obsolete → mark completed via `finish({ completed_items })`
   - Blocked on Hao → leave it, state why
 - ACKED is not done. ACKED means you read it. Dispatch it or archive it.
 
-**GATE**: You must have dispatched or triaged every unchecked item before moving to Step 2.
+**GATE**: You must have dispatched or triaged every pending item before moving to Step 2.
 
 ## 2. Follow Up
 Check previously dispatched work:
@@ -52,11 +47,10 @@ Check previously dispatched work:
 Only report problems. Don't narrate "all healthy."
 
 ## 4. Signals (LAST — only after dispatch is done)
-Check `agents/shared/SIGNALS.md` for PENDING_ACK targeting you. ACK and dispatch in one step.
-- Use ONE command: `grep -n "PENDING_ACK" agents/shared/SIGNALS.md | grep -i "may"`
-- If no results → done. Do NOT grep again with different patterns.
-- If results → read only those specific lines, ACK, and dispatch.
-- **Max 3 tool calls on SIGNALS total.** If System Busy → skip SIGNALS entirely.
+Check for pending signals via the request DB: `agents.requests({ filter: "active" })`.
+- Review any CREATED requests targeting you — ACK and dispatch in one step.
+- **Max 2 tool calls on signals total.**
+- Note: `agents/shared/SIGNALS.md` no longer exists. Do NOT attempt to read it.
 
 ## Rules
 - **Dispatch first, check health second, SIGNALS last.** You are a CEO, not a monitoring dashboard.

@@ -1,7 +1,7 @@
 # Tools
 
 ## `read` / `write` / `edit`
-Read, write, and edit files. Use for workspace files, knowledge archives, todo.md.
+Read, write, and edit files. Use for workspace files, knowledge archives.
 
 ## `bash`
 Run shell commands. Use for: file listings, grep, xhs-browse tool, system checks.
@@ -33,11 +33,6 @@ node agents/amy-kimi/tools/xhs-browse.mjs scroll             # Scroll feed for m
 2. **External links from posts** (papers, repos, docs) → `scrape_webpage`
 3. **Archive search** → `bash grep` across `knowledge/library/`
 
-## `handoff`
-Transfer ownership or request review of an artifact. Writes a P82-compliant entry to SIGNALS.md.
-
 ## Key Constraints
-- ❌ No `agents` tool — you cannot call or coordinate with other agents
-- ✅ You have `handoff` — use it to transfer work artifacts to other agents.
-- ❌ No `workflow` or `cron` tools
-- When you find something for another agent, write to `agents/shared/bulletin.md`
+- ❌ No `agents`, `handoff`, `workflow`, or `cron` tools.
+- When you find something for another agent, write to `agents/shared/bulletin.md`.

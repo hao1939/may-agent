@@ -18,8 +18,7 @@ agents/<name>/
     *.md                  # Referenced from INDEX.md, read on demand.
 
   workspace/              # Ephemeral scratch (gitignored, not in prompt).
-    todo.md               # Incoming tasks from `send` action.
-    *.md                  # Working documents.
+    *.md                  # Working documents (journal, notes, etc.).
 
   handlers/               # JS cron handlers (optional).
   workflows/              # Workflow definitions (optional).

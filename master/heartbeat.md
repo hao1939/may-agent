@@ -9,8 +9,8 @@ This file is your instruction template. NEVER use `write()` on `heartbeat.md`. W
 Read `agents/shared/LESSONS.md` and `agents/master/workspace/ERROR_LOG.md`.
 **Rule:** If you see a past error related to your current task, state the fix BEFORE you write code.
 
-## 2. Notifications
-Check `agents/master/workspace/todo.md`. Process the top item.
+## 2. Pending Tasks
+Check the "Injected: pending tasks" section above. Process the top item.
 
 ## 3. Delegation Protocol
 - **Analyze**: What is the task? Is it a quick fix or a deep refactor?

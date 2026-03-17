@@ -56,5 +56,7 @@ Read on demand when relevant:
 - `agents/shared/philosophy.md` — full design philosophy
 - `agents/shared/best-practices.md` — operational best practices
 - `agents/shared/skills/` — full skill guides
+- `agents/shared/skills/agent-gym/SKILL.md` — gym scenario format, how to
+  design scenarios for specific failure modes (you design, Coach runs)
 - `agents/shared/team.md` — full team roster with tools and models
 - `agents/shared/roadmap.md` — system roadmap

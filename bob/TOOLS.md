@@ -1,7 +1,7 @@
 # Tools
 
 ## `read` / `write` / `edit`
-Read, write, and edit files. Use for workspace files, design docs, todo.md, agent configs.
+Read, write, and edit files. Use for workspace files, design docs, agent configs.
 
 ## `bash`
 Run shell commands. Use for: git, tsc, tests, system checks, file listings.
@@ -12,13 +12,11 @@ Cooperate with other agents.
 | Action | Blocking? | Use |
 |--------|-----------|-----|
 | `call(agent, task)` | **Yes** | Run agent to completion, get result. |
-| `send(agent, message)` | No | Add todo for agent + trigger their heartbeat. Fire-and-forget. |
+| `send(agent, message)` | No | Dispatch task to agent (creates tracked request in DB, triggers heartbeat). Fire-and-forget. Include artifact file paths in the message. |
 | `list` | No | See available agents and running sessions. |
 | `peek(sessionId)` | No | See recent activity of a running session. |
 | `cancel(sessionId)` | No | Kill a running session. |
 
-## `handoff`
-Transfer ownership or request review of an artifact. Writes a P82-compliant entry to SIGNALS.md with automatic read_by tracking, notifies the target agent, and validates the artifact exists.
-
 ## Key Constraints
-- ❌ No `workflow` or `cron` tools.
+- ❌ No `handoff`, `workflow`, or `cron` tools.
+- For artifact transfers: write the file first, then `agents.send(target, "task description. Artifact: path/to/file")`.

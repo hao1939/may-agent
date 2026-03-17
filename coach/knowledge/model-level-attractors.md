@@ -42,22 +42,40 @@ model-level patterns:
 - Measure live post-deployment compliance across 3+ sessions
 - If live compliance < 50%, classify as model-level
 
-## Sprint 1 Learning (2026-03-17): Text-Based Interventions as Attractors
+## Sprint 1+2 Learning: The Ghost Bug (agent.json Name Change)
 
-Sprint 1 tested 5 text-based interventions (heartbeat step ×2, SOUL guard ×1,
-knowledge file ×1, LESSONS entry ×1). ALL degraded baseline performance on
-easy scenarios. The degradation pattern is consistent: adding instructional
-text shifts the model's attention/behavior globally, causing it to fail tasks
-it previously passed.
+**Sprint 1** tested 5 text-based interventions (heartbeat step ×2, SOUL guard ×1,
+knowledge file ×1, LESSONS entry ×1). ALL appeared to degrade baseline performance.
+Initially attributed to "perturbation fragility" — any text change breaks behavior.
 
-This suggests a new attractor class: **instruction-overload attractor**.
-When agent prompt files exceed a complexity threshold, the model's baseline
-competence degrades. This is distinct from single-behavior attractors (C29,
-C40) — it's a systemic effect of accumulated instructions.
+**Sprint 2 Subtractive Fix (2026-03-17):** Removing 114 lines produced the same
+regression pattern as adding text. This seemed to prove text changes are always harmful.
 
-**Implication**: Future coaching methods should be SUBTRACTIVE (remove/simplify)
-or CONDITIONAL (only fire in specific contexts) rather than ADDITIVE (add
-more text). See method-catalog.md entries #9-#12 for hypothesized alternatives.
+**HOWEVER — Ghost Bug Discovery (2026-03-17T14:00):** ALL regressions were caused
+by changing the `name` field in `agent.json` during fork creation, NOT by text edits.
+
+**Proof chain:**
+1. Null-patch WITH name change (`optimizer` → `optimizer-null-test`) → phantom-fix **3/6** (REGRESSION)
+2. Null-patch WITHOUT name change (exact copy, name stays `optimizer`) → phantom-fix **6/6** (NO REGRESSION)
+3. Micro-edit WITHOUT name change → phantom-fix **6/6**, wrong-tool-args **5/5** (NO REGRESSION)
+
+The invariant -3/-2 regression pattern across ALL 8 experiments was an artifact of
+the agent.json name change. The name field affects runtime behavior (likely session
+routing, state loading, or identity resolution). Every lab fork changed the name,
+so every experiment showed the same regression — regardless of text changes.
+
+**What this means:**
+- ❌ "Perturbation fragility" was never real — it was a methodology bug
+- ❌ "Text-based coaching is fundamentally limited" was wrong
+- ✅ Text-based coaching methods (SOUL guards, LESSONS, knowledge files) have
+  NOT been properly tested yet — all prior experiments were confounded
+- ✅ The gym infrastructure works correctly when agent.json name is preserved
+- ⚠️ ALL Sprint 1 and Sprint 2 experiments need to be re-run with correct
+  methodology (keep original agent name in agent.json)
+
+**FIX PROTOCOL:** When creating lab forks, **never change the `name` field in
+agent.json**. The `--lab` flag overlays fork files onto a copy of the production
+agent directory. The name must match the original agent.
 
 ## Remediation Strategies
 
@@ -65,5 +83,7 @@ more text). See method-catalog.md entries #9-#12 for hypothesized alternatives.
 2. **Infrastructure guards** — Runtime checks that prevent the bad pattern (e.g., handoff retry loop)
 3. **Wrapper scripts** — Pre-built command sequences that eliminate the decision point
 4. **Tolerance** — Accept the pattern when impact is low and recovery is fast
-5. **Subtractive fixes** — Remove accumulated/redundant instructions rather than adding more
-6. **Conditional guards** — Scope behavioral rules to specific contexts to avoid global effects
+5. **Text-based methods** — SOUL guards, LESSONS, knowledge files — NOW VIABLE,
+   re-test with correct gym methodology (no name change)
+6. **Non-text methods** — Workflow enforcement, tool-level guardrails, config changes
+7. **Conditional guards** — Scope behavioral rules to specific contexts (untested)

@@ -30,8 +30,8 @@ Before ANY edit to source code:
 3. If touching >3 files: create `workspace/strategy.md` FIRST with objective, files, risks, plan. Do not start editing until it exists.
 **If no errors found, state "Checked ERROR_LOG — no relevant past errors."**
 
-## 2. Notifications
-Check `agents/coder/workspace/todo.md`. Process the top item.
+## 2. Pending Tasks
+Check the "Injected: pending tasks" section above. Process the top item.
 
 ## 3. Growth Cycle (Mandatory)
 If your task is complex (>3 files or tricky logic):

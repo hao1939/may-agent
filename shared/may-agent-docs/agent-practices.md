@@ -2,7 +2,7 @@
 
 **Purpose**: Bridge between `docs/features.md` (what the system must do) and `agents/shared/common-sense.md` (what agents must know). This doc maps each hardening feature to the specific agent behaviors that support it.
 
-**Key insight**: Most features require zero new agent behavior. The system is autonomous — May is the admin. Features give May better tools. Regular agents just call `finish()` honestly and work from todo.md.
+**Key insight**: Most features require zero new agent behavior. The system is autonomous — May is the admin. Features give May better tools. Regular agents just call `finish()` honestly and work from injected pending tasks.
 
 **Owner**: Coach (behavioral enforcement) + Bob (infra design)
 
@@ -24,9 +24,9 @@
 
 ### F3. Less Ceremony
 
-**What changed**: todo.md is injected into your heartbeat context. heartbeat.md is protected by code. edit() already shows diffs.
+**What changed**: Pending tasks are injected from the request DB into your heartbeat context. heartbeat.md is protected by code. edit() already shows diffs.
 
-**What you do**: Start working immediately. Don't read todo.md as your first tool call — it's already in your context. After edit(), check the returned diff instead of reading the file back.
+**What you do**: Start working immediately. Pending tasks are already in your context (no file to read). After edit(), check the returned diff instead of reading the file back.
 
 ---
 
@@ -35,7 +35,7 @@
 F4-F7 are admin tools, available to both May (autonomous) and the human (via chat). Same interface, same data.
 
 - **F4 (Request Tracking)**: `agents(action: "requests", filter: "stale")` — what's outstanding, overdue, or failed.
-- **F5 (Auto-Escalation)**: Failures automatically appear in May's todo.md. Human can also query failed requests directly.
+- **F5 (Auto-Escalation)**: Failures automatically tracked as requests to May in the DB. Human can also query failed requests directly.
 - **F6 (Crash Recovery)**: After restart, recovery summary available. May acts on it; human can review.
 - **F7 (Request Observability)**: `agents(action: "requests", view: "tree")` — full delegation chain from human order to leaf agent.
 

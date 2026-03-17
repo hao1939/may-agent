@@ -152,9 +152,9 @@ never touches stale sessions.
 ## `send` and Heartbeat Integration
 
 The `agents.send` action:
-1. Appends `- [ ] [from:{caller} {timestamp}] {message}` to `agents/{target}/workspace/todo.md`
+1. Creates a tracked request in the request DB for the target agent
 2. Triggers the target's heartbeat via `triggerNow("heartbeat-{target}")`
-3. The heartbeat creates a `kind: "job"` session, agent reads todo.md
+3. The heartbeat creates a `kind: "job"` session, agent sees injected pending tasks from DB
 
 ## What Changed from V1
 

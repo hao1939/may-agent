@@ -11,7 +11,7 @@ import { readdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { loadAllSessionMetas } from "../../../src/lib/persistence.js";
 import { evaluateTask, writeSkippedEvaluations } from "../../../src/lib/evaluator.js";
-import { appendToTodoSection } from "../../../src/lib/todo-utils.js";
+import { trackRequest } from "../../../src/lib/requests.js";
 import type { HandlerContext, HandlerModule } from "../../../src/lib/handler-context.js";
 import type { CronEntry } from "../../../src/lib/cron-tool.js";
 
@@ -42,11 +42,14 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     for (const parentId of result.parentsEvaluated) {
       const verdict = result.parentVerdicts[parentId];
       if (verdict === "needs_improvement") {
-        const todoPath = join(ctx.agentsRoot, "coach", "workspace", "todo.md");
-        const item = `- Review session ${parentId} (verdict: needs_improvement). ` +
-          `Check .state/evaluations/ for details. ` +
-          `Identify which agent needs coaching and run a targeted exercise.`;
-        appendToTodoSection(todoPath, item);
+        try {
+          trackRequest(ctx.persistDir, {
+            fromEntity: "evaluate-sessions",
+            toAgent: "coach",
+            task: `Review session ${parentId} (verdict: needs_improvement). Check .state/evaluations/ for details. Identify which agent needs coaching and run a targeted exercise.`,
+            method: "send",
+          });
+        } catch { /* best-effort */ }
         triggered = true;
         ctx.log(`[evaluate-sessions] Bad score for ${parentId} → queued coaching item`);
       }

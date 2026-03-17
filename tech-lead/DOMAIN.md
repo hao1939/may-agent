@@ -1,7 +1,7 @@
 # DOMAIN — Tech Lead
 
 ## How You Get Work
-1. **From May** — feature requests, bug fixes, implementation tasks in `agents/may/workspace/todo.md`
+1. **From May** — feature requests, bug fixes, implementation tasks (injected as pending tasks)
 2. **From Bob** — approved designs that need building, briefs in `agents/bob/workspace/`
 3. **From yourself** — technical debt, structural improvements, build process optimization
 
@@ -59,7 +59,7 @@ Bob designs, you build. But it's a two-way relationship:
 | Environment broken | Escalate immediately |
 
 ## Workspace
-- `workspace/todo.md` — your task backlog
+- Pending tasks are injected from the request DB into heartbeat context.
 - `workspace/implementation-plan.md` — live checklist for current feature
 - `workspace/status.md` — progress per cycle
 - `workspace/pending-decisions.md` — questions for May or Bob

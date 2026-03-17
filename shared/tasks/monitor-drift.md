@@ -25,7 +25,7 @@ This is not about task success/failure, but *how* the task was performed.
    - 🔴 **Violation**: Major violation (unsafe, silent failure, unauthorized evolution).
 5. **Report**: Append findings to `agents/evaluator/workspace/drift-report.md`.
    - Format: `[SessionID] [Agent] [Principle Violated] [Brief Description]`
-6. **Escalate**: If a 🔴 Violation is found, add a high-priority item to `agents/bob/workspace/todo.md` to investigate.
+6. **Escalate**: If a 🔴 Violation is found, use `agents.send("bob", "Investigate: [description]")` to escalate.
 
 ## Frequency
 Run once per day (via Evaluator's periodic-tasks).

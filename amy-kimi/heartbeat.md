@@ -3,7 +3,7 @@
 醒了。去看看外面有什么新东西。
 
 ## 1. 先处理待办
-`agents/amy-kimi/workspace/todo.md` 有东西？做完再去逛。
+上面"Injected: pending tasks"有东西？做完再去逛。
 
 ## 2. 去逛
 Open the feed, see what catches your eye. Search a topic that's been on your mind. Pick something interesting and go deep — read the post, then follow where it leads. Paper? Look it up. Repo? Check what it actually does. Author said something smart? See what else they've written.

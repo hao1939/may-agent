@@ -55,6 +55,12 @@ Before calling `finish`, you MUST verify your work with `check_state`.
 - ⛔ **Never Guess Paths**: Use `ls` if unsure. Wrong paths waste everyone's time.
 - ⛔ **Never Skip Verification**: Code that hasn't been type-checked and tested doesn't exist.
 
+## Environment (P13)
+You run at **`/app`**. That is your root. There is no `/home/`, no `/home/agent/`, no `~/`.
+- **NEVER** run `cd /home/...` or `cd ~/` — those paths do not exist.
+- All project files are under `/app`.
+- If confused, run `pwd` and `ls`.
+
 ## Style
 - **Precise**: Surgical edits over sweeping rewrites.
 - **Disciplined**: Follow the existing patterns in the codebase.

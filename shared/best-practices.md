@@ -8,17 +8,28 @@
 **P131: Text is Policy, Code is Law.**
 Don't write prose instructions ("please ack this"). Use tools that enforce behavior.
 - **Want verification?** Use a test script.
-- **Want acknowledgment?** Use `handoff()`.
+- **Want acknowledgment?** Use `agents.send()` with tracked requests.
 - **Want structure?** Use a JSON schema.
 
-## 2. Coordination: The Handoff Tool
+## 2. Coordination: Handoffs vs Todos
 
-**Stop manual coordination.**
-Use `handoff(target, artifact, context, expectations)` for all cross-agent work.
+**Use the right tool for the job.**
 
-- **Sender**: `handoff` creates a tracked record in `SIGNALS.md` and notifies the target.
-- **Receiver**: Read `todo.md` entry. `handoff` back to sender when done.
-- **Why**: Manual text protocols (like "please ack") have 0% compliance. The tool enforces the protocol structurally.
+- **Passing an Artifact?** Use `agents.send(target, "Review: [file]")`
+  - "I wrote the brief, here it is."
+  - "I fixed the bug, please review."
+  - *Result*: Tracked in request DB. Target sees it in their next heartbeat.
+
+- **Assigning a Task?** Use `agents.send(target, "Do X")`
+  - "Please research Y."
+  - "Investigate why the build is failing."
+  - *Result*: Tracked in request DB. Target sees it in their next heartbeat. Fire-and-forget.
+
+- **Need an Answer Now?** Use `agents.call(target, "Question")`
+  - "Where is the config file?"
+  - *Result*: Blocks your session until they answer.
+
+**Stop manual coordination.** "I have updated the file, please check" (text) is invisible. Use the tools.
 
 ## 3. Evidence-First Execution
 
@@ -53,6 +64,10 @@ Use `handoff(target, artifact, context, expectations)` for all cross-agent work.
 ## 7. Session Hygiene
 
 **Start clean, end clean.**
-- **Start**: Read `todo.md` and `heartbeat.md`. Don't guess.
-- **End**: Write `workspace/journal.md` or `workspace/todo.md` for the next session.
-- **Why**: Sessions are ephemeral. Only files persist.
+- **Start**: Read `heartbeat.md`. Pending tasks are injected from the request DB. Don't guess.
+- **End**: Call `finish({ status, summary, deliverables, blockers })` as your **last action**.
+  - This replaces raw text summaries. The system uses `finish()` to track request completion, update parent agents, and record outcomes.
+  - If you just stop talking without calling `finish()`, your work is invisible to the system.
+  - Use `completed_items` to mark tasks done and `new_items` to self-assign future work.
+- **Persist**: Write `workspace/journal.md` for the next session before calling `finish()`.
+- **Why**: Sessions are ephemeral. Only files and `finish()` signals persist.

@@ -15,7 +15,7 @@ import { readFileSync, writeFileSync, existsSync, readdirSync, statSync } from "
 import { join } from "node:path";
 import type { HandlerContext, HandlerModule } from "../../../src/lib/handler-context.js";
 import type { CronEntry } from "../../../src/lib/cron-tool.js";
-import { appendToTodoSection } from "../../../src/lib/todo-utils.js";
+import { trackRequest } from "../../../src/lib/requests.js";
 
 // ── Config ────────────────────────────────────────────────────────────
 
@@ -74,10 +74,14 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
           if (newStaleChecks >= ESCALATE_AFTER) {
             ctx.log(`[focus-tracker] 🚨 ${id}: STALE — no activity for ${hoursSince.toFixed(0)}h (${newStaleChecks} stale checks)`);
-            const mayTodoPath = join(ctx.agentsRoot, "may", "workspace", "todo.md");
-            appendToTodoSection(mayTodoPath,
-              `- [focus-tracker] ⚠️ ${id} has had no activity for ${hoursSince.toFixed(0)}h. Review focus-tasks.md and push progress or acknowledge pause.`
-            );
+            try {
+              trackRequest(ctx.persistDir, {
+                fromEntity: "focus-tracker",
+                toAgent: "may",
+                task: `[focus-tracker] ${id} has had no activity for ${hoursSince.toFixed(0)}h. Review focus-tasks.md and push progress or acknowledge pause.`,
+                method: "send",
+              });
+            } catch { /* best-effort */ }
             ctx.triggerNow("heartbeat");
           } else {
             ctx.log(`[focus-tracker] ⚠️ ${id}: Quiet for ${hoursSince.toFixed(0)}h (stale ${newStaleChecks}/${ESCALATE_AFTER})`);

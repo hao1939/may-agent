@@ -25,7 +25,7 @@ Results:
 ```
 
 ## 1. Pending Leads
-Read `agents/scout/workspace/todo.md`. If there are leads, work on the top one. Go deep — produce a brief and a detailed doc.
+Check the "Injected: pending tasks" section above. If there are leads, work on the top one. Go deep — produce a brief and a detailed doc.
 
 ## 2. Extend Prior Research
 No pending leads? Your archive is full of threads worth pulling. Pick one:

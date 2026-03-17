@@ -15,27 +15,26 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If pattern found → design fix, add to workspace/todo.md.
   Latest (2026-03-17): Over 7.5h window (500 sessions): 4.0% error rate (down from 29.5% yesterday). **Biggest finding: Heartbeat overtriggering wastes $435/day.** May=2.79x, tech-lead=3.26x, coach=2.36x expected rate. 160 extra sessions + 19 skipped. Root cause: 60s cooldown in cron.ts `triggerNow()` + `checkPendingTrigger` latch bypass. Design brief at `workspace/brief-overtrigger-fix.md`, handed off to tech-lead.
 
-- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-16
+- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-17
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
   Could it be replaced with a JS handler? (See cron-graduation-process.md Stage 3.)
   If found → write proposal in workspace/improvement-proposals.md.
-  Latest (2026-03-16): Scanned 30 most recent sessions plus cron.json (26 entries). All `run-agent-task` cron entries do genuinely cognitive work (pattern analysis, semantic dedup, memory consolidation, coaching). 7 JS handlers present, all wired. **Cost scan insight**: Coach $5.20/session (50t, 1.68M input), Optimizer $3.46 (46t, 1.1M), May $3.65 (41t, 1.19M) — highest-cost sessions are long heartbeats, not cron jobs. All Opus agents still 0% cache; evaluator/bob/amy-kimi get 275-2047% cache read. **No new LLM-to-JS candidates.** The remaining cost lever is still prompt caching (LiteLLM proxy config change needed from Hao).
+  Latest (2026-03-17): No new candidates. Also completed **Tool Efficiency Audit** (Focus Area #3): analyzed 9,790 sessions, found 5 unused tool bundles to remove (optimizer/workflow, tech-lead/workflow, amy/scrape, may/workflow, scout/agents). Brief at `workspace/brief-tool-efficiency-audit.md`, sent to May for execution. Est. ~$264 historical waste in input tokens.
 
 - [x] **Handler health check** — Last done: 2026-05-09
   Review existing JS handlers in agents/may/handlers/.
   Any errors in recent logs? Any handler that's not firing?
   If issues → add fix to workspace/todo.md.
-  Latest (2026-05-09): 7 handler `.ts` files present (coaching-report, daily-brief, evaluate-sessions, focus-task-tracker, run-agent-task, system-status, watchdog). All 17 cron `handler` references resolve to existing `.ts` files — ✅ no broken wiring. 26 total cron entries (24 enabled, 2 disabled: focus-task-tracker, iraq-conflict-monitor — intentional). 6 handler test files (44 tests), all pass. Missing test coverage: `run-agent-task` and `focus-task-tracker` still have no dedicated test files (unchanged). Full suite: 1049/1049 tests pass (87 files), tsc clean. Job history: 0 entries (data cleared). Git clean, 0 uncommitted changes. **No issues found. System healthy.**
+  Latest (2026-03-17): 9 handler `.ts` files present (1603 LOC total). 6 referenced by cron entries (coaching-report, daily-brief, evaluate-sessions, run-agent-task, system-status, watchdog) — all wired correctly ✅. **3 orphan handlers** on disk with NO cron reference: `audit-requests.ts` (106 LOC), `error-log-scanner.ts` (240 LOC), `focus-task-tracker.ts` (159 LOC) — 505 lines of dead code, never loaded. 29 cron entries total, all enabled. **4 new entries** since last check: `common-sense-verify` (4h, coach — 8 successful runs ✅), `common-sense-infra` (daily, bob — 1 run ✅), `training-sprint` (6h, coach — newly added, not yet fired), `research-intake` (12h, coach — newly added, not yet fired). Job history: 93 success, 7 skipped, **0 errors** in last 100 entries. Full test suite: 1375/1375 pass (102 files). **Finding: 3 orphaned handler files should be cleaned up by May.**
 
 ## Weekly
 - [x] **Improvement proposals review** — Last done: 2026-05-09 (Finding 18, Cycle 12). **2 new commits since last review**: agent-growth refactor committed (3a6d51e — 16 files, +1725/-168), orphaned test cleanup (85de6e7). Git now clean (0 uncommitted changes — resolved 7+ week risk). 1049/1049 tests pass (87 files), tsc clean. New cross-edit guard (P53) prevents cross-agent identity file modification. Finish tool wired but unadopted. System idle — 0 sessions, evals, job history. Compaction 8/12, prompt caching still 0% for Opus (LiteLLM proxy blocker). **No new optimization work items identified.**
 
 - [x] **Refine-Skill loop (EvoSkill)** — Last done: 2026-03-17
-  Run the `agents/shared/tasks/refine-skill.md` protocol: scan recent evals for failure patterns,
-  attribute to a skill, make one atomic evidence-based improvement to the skill library.
-  Also look for NEW skill opportunities: agents repeating multi-step processes that could be
-  codified. Test new/updated skills via gym (`scripts/gym-run.sh`) before deploying.
-  Latest (2026-03-17): Scanned 300 most recent evals (22 `needs_improvement`). Top FM codes: FM-2.6 (13), FM-5.3 (8), FM-3.3 (8), FM-2.1 (8), FM-3.1 (7), FM-3.2 (5), FM-2.5 (5), FM-1.3 (3). Coach dominates (12/22 NI evals, 55%). **Key finding**: FM-2.6 (REASONING_ACTION_MISMATCH) is #1 failure mode with NO skill coverage. Three sub-variants identified: fabrication (claiming work from prior sessions), substitution (replacing failed actions with easier ones), requirement drift (doing different steps than prescribed). **Action taken**: Added FM-2.6 anti-pattern section to `agents/shared/skills/error-handling/SKILL.md` (v1.1.0 → v1.2.0) with 3 sub-variants, evidence from 8 specific sessions, 4 corrective actions, and 1 new inviolable constraint.
+  Follow `agents/shared/skills/skill-lifecycle/SKILL.md` — the full workflow:
+  discover skill gaps from evals, draft or refine skills, test via gym, deploy,
+  measure effectiveness. One atomic improvement per cycle.
+  Latest (2026-03-17, 14:09 update): **Anthropic skill-creator methodology fully integrated.** Updated `skill-lifecycle/SKILL.md` v2.0.0 → v2.1.0. New additions: (1) **Assertions guidance** — expanded with 2-purpose explanation, 3-7 per skill, process-over-output principle, (2) **Multi-run in Step 3** — explained stochastic reasoning and journal tracking format, (3) **Transcript review in Step 6** — 4-point checklist before editing skills (skipped steps, dead ends, improvised solutions, dead weight), (4) **Iteration workspace structure** — `skill-refine/<name>/iteration-N/` with findings/changes/gym-results. Assessment doc at `workspace/anthropic-skill-creator-assessment.md`. Prior: v1.0→v2.0 added Step 3.5 (grading), Step 7 (blind A/B), multi-run table in Step 4.
 
 ---
 
@@ -51,6 +50,14 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   workspace/graduation-log.md. See `agents/shared/tasks/work-maturity-ladder.md`.
 
 ---
+
+- [x] **LESSONS.md graduation audit** — Last done: 2026-03-17
+  Scan all agents' LESSONS.md files. For each entry, check:
+  1. Is it a duplicate of a shared convention? → Remove (should be in shared/LESSONS.md)
+  2. Has it been active for 2+ weeks? → Graduate to structural home or delete
+  3. Is the agent-specific example still needed? → Keep if yes, trim if bloated
+  Target: each agent's LESSONS.md under 2,000 bytes.
+  Latest (2026-03-17): Full analysis at `workspace/memory-redesign-analysis.md`. Found 52% duplication (8,750 tokens wasted). 6 conventions (C26, C40, C24, C23, C25, C22) duplicated across 3-8 files each. Drafted consolidated `shared/LESSONS.md` at `workspace/shared-lessons-draft.md`. Implementation sent to May (req:7ab3ea00).
 
 ## How to use this file
 1. Read this file during heartbeat step 3

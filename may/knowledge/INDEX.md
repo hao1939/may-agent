@@ -20,7 +20,7 @@ Coder implements (Opus). QA reviews (GPT-5.2).
 - **File Safety**: Read before write. Verify edits.
 
 ## Project Layout
-- `agents/may/workspace/todo.md` — your task queue
+- Pending tasks are injected from the request DB — no file to read
 - `agents/shared/focus-tasks.md` — system-wide priorities
 - `src/app/` — application layer (may.ts, cron.ts)
 

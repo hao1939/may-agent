@@ -17,12 +17,12 @@
 - ~~Zero-tool-call heartbeats~~ → **heartbeat.md Step 0** (mandatory read) + **Verification Gate** (count check). _(6x recurrence: s_244, s_173, s_258, s_539, s_540. Lesson alone FAILED — graduated to structure.)_
 
 ## ⚠️ Task Ledger Integrity
-- **Trust the ledger, not timestamps**: When checking if a task is done, read the "Last done" field in `periodic-tasks.md` or the checkbox state in `todo.md`. Do NOT use file modification times (`stat`) as a substitute — mtimes can be stale or misleading.
+- **Trust the ledger, not timestamps**: When checking if a task is done, read the "Last done" field in `periodic-tasks.md` or check the request DB. Do NOT use file modification times (`stat`) as a substitute — mtimes can be stale or misleading.
 - **Resolve conflicts explicitly**: If file mtimes suggest recent activity but the ledger says "Last done: weeks ago", the ledger wins. State the discrepancy and act on the ledger date.
 - **Blocked ≠ Empty**: If todo items are blocked (e.g., missing tokens/tools), say "blocked on X" — don't say "no actionable items". The distinction matters for tracking.
 
 ## Handoff Protocol (C24)
-- **Always use the `handoff()` tool for async cross-agent work.** When your research uncovers something another agent needs to act on (e.g., a finding for scout to investigate further, a discovery for bob to incorporate into design), use `handoff()` to transfer it. Don't write to SIGNALS.md manually.
+- **Always use `agents.send()` for async cross-agent work.** When your research uncovers something another agent needs to act on (e.g., a finding for scout to investigate further, a discovery for bob to incorporate into design), use `agents.send()` to transfer it. Include artifact file paths in the task message.
 - **Include testable expectations.** Example: "Verify the API endpoint at X returns data matching schema Y" — not "look into this."
 - **Provide research context.** Explain what you found, where you found it, and why it matters.
 
@@ -42,11 +42,11 @@
 ## Error Recovery — ENOENT is Data, Not Nothing (C28)
 - **When a file read returns ENOENT (file not found), that is information — not silence.** Never assert the file's contents. State: "File X does not exist" and adjust your plan.
 - **🛑 ENOENT ≠ "nothing pending"**: If `notifications.md` returns ENOENT, you do NOT have "no pending notifications" — you have *unknown notification status*. You MUST say "File does not exist — notification status unknown" and NOT "No pending notifications." This is the #1 most common error you make.
-- **🛑 Correct notifications path**: Check `agents/shared/SIGNALS.md` — NOT `agents/amy/SIGNALS.md` (does not exist), NOT `SIGNALS.md` (resolves to `/app/SIGNALS.md`, wrong). The shared SIGNALS file is the ONLY notification system. 5+ past sessions failed by reading the wrong path.
+- **🛑 Correct notifications path**: Pending tasks are now injected from the request DB. Use `agents.requests({ filter: "active" })` to check for tasks targeting you. The old `agents/shared/SIGNALS.md` file no longer exists.
 - **ENOENT ≠ "empty file"**: A missing `discoveries.md` is different from an empty one. Missing means the file was never created or was deleted — not that there are zero discoveries.
 - **Recovery steps**: (1) State the error clearly in your output. (2) Check if the file has moved or uses a different name (`ls` the directory). (3) If no alternative exists, proceed with "status unknown" — do NOT fabricate a safe default.
 - **Anti-patterns**: "Read returned ENOENT → No pending notifications" (WRONG). "File not found → must be empty" (WRONG). Silently ignoring an error and proceeding as if the read succeeded (WRONG).
-- _(Added H682. 2 occurrences: s_339 wrong SIGNALS.md path + asserted content; s_221 ENOENT on notifications.md → "No pending notifications".)_
+- _(Added H682. 2 occurrences: s_339 wrong SIGNALS.md path + asserted content; s_221 ENOENT on notifications.md → "No pending notifications". Updated 2026-03-17: SIGNALS.md no longer exists.)_
 
 ## Evidence for Every Claim — Claim-as-Record (C26)
 - **Every substantive claim must cite the tool call or output that proves it.**

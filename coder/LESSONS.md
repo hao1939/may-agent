@@ -18,7 +18,7 @@
 - **`AgentMessage.isError` is unreliable**: Check the text output for actual error indicators, not the flag.
 
 ### Handoff Protocol (C24)
-- **Always use the `handoff()` tool for async cross-agent work.** When you finish a coding task that needs review or testing by another agent (QA, tech-lead), use `handoff()` to transfer the work. Don't write to SIGNALS.md manually or add items to other agents' todo files directly.
+- **Always use `agents.send()` for async cross-agent work.** When you finish a coding task that needs review or testing by another agent (QA, tech-lead), use `agents.send()` to transfer the work. Include artifact file paths in the task message.
 - **Expectations must be testable.** Example: "Run `npm test` and verify 0 failures, then run `tsc --noEmit` and verify 0 type errors" — not "please review this."
 - **Include what you changed in context.** The receiver needs to know which files were modified and why.
 

@@ -19,7 +19,7 @@ Agents start with **zero context**. They do not see your conversation history.
 | Action | Usage |
 |---|---|
 | `call` | **Blocking.** Runs an agent to completion and returns the result. Use when you need the result to continue. |
-| `send` | **Fire-and-forget.** Appends a todo to the target agent's `workspace/todo.md` and triggers their heartbeat. Use for "do this, I don't need the result now." |
+| `send` | **Fire-and-forget.** Creates a tracked request in the DB for the target agent. They see it in their next heartbeat. Use for "do this, I don't need the result now." |
 | `list` | Show available agents and running sessions. |
 | `peek` | Read recent messages from a running session. |
 | `cancel` | Terminate a running session. |

@@ -15,7 +15,6 @@ Scout researches (Opus). Optimizer makes agents cheaper/more robust.
 - `knowledge/method-catalog.md` — improvement methods with evidence
 - `knowledge/growth-cycle.md` — the fork-train-test skill
 - `workspace/experiments.jsonl` — all experiment results
-- `workspace/todo.md` — queued growth targets
 - `agents/shared/common-sense.md` — behavioral items you co-own with Bob
 
 ## Agent Growth Tools

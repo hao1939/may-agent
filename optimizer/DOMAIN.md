@@ -185,7 +185,7 @@ replaced with deterministic JS code. This reduces cost, latency, and unpredictab
 - Simple validation or routing that could be a function instead of a prompt
 
 **When you find a pattern:**
-1. Log it in your workspace/todo.md Tracking section with: agent name, what the LLM does, proposed JS replacement
+1. Log it in your workspace/journal.md with: agent name, what the LLM does, proposed JS replacement
 2. When you have enough confidence, propose it as a structural fix using the normal proposal format
 3. Implement the JS replacement and remove the LLM call path
 
@@ -201,8 +201,7 @@ replaced with deterministic JS code. This reduces cost, latency, and unpredictab
 
 ## Workspace Conventions
 
-- **todo.md**: `# TODO` for pending items, `# Tracking` for completed items
-  (✅ pass, ⚠️ partial, ❌ fail). Move items from TODO to Tracking when done.
+- **Pending tasks**: Injected from the request DB into your heartbeat context automatically. Use `finish({ completed_items, new_items })` to mark done or self-assign follow-ups.
 - **journal.md**: After each run, append a dated entry: what you analyzed,
   what you fixed, what you learned. This feeds the meta-loop — coach and
   bob read your journal to understand your reasoning.

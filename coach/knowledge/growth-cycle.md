@@ -84,6 +84,7 @@ Always clean up. Don't leave dead forks.
 - **Gym verification is mandatory.** No promotion without a passing gym run.
 - **One method per experiment.** For interpretable results.
 - **Clean up.** Always promote or discard.
+- **Check shared LESSONS before writing agent LESSONS.** Before adding a convention (C26, C40, C24, C23, C25, C22, etc.) to an agent's LESSONS.md, check `agents/shared/LESSONS.md` first. If the convention already exists there, don't duplicate it — shared LESSONS apply to all agents automatically.
 
 ## Lessons Learned (2026-03-17)
 
@@ -98,20 +99,28 @@ Always clean up. Don't leave dead forks.
    and the gym runner produces valid output. Wasting experiments on infra
    failures is costly.
 
-3. **All text-based additions degrade baseline performance.** Sprint 1 tested
-   5 methods (heartbeat step ×2, SOUL guard, knowledge file, LESSONS entry).
-   ALL caused regressions on previously-passing scenarios. Adding text
-   shifts model behavior globally — even well-targeted additions cause
-   collateral damage. Future methods should be SUBTRACTIVE or CONDITIONAL.
+3. **NEVER change agent.json name in lab forks (Ghost Bug).** ALL Sprint 1
+   and Sprint 2 regressions were caused by changing the `name` field in
+   agent.json (e.g., `optimizer` → `optimizer-micro-edit`), NOT by text edits.
+   The name change causes runtime behavior changes (session routing, state
+   loading, identity resolution). When creating forks, keep the original name.
+   This was the single most important methodology discovery — it invalidated
+   8 experiments' regression conclusions.
 
-4. **Null-patch test proves forks are clean.** Forking an agent with zero
-   changes produces identical gym results to baseline. Regressions in
-   experiments are caused by the patches, not infrastructure.
+4. **Text-based coaching methods remain UNTESTED.** Because all prior
+   experiments were confounded by the Ghost Bug, we don't yet have valid
+   evidence that SOUL guards, LESSONS entries, heartbeat steps, or knowledge
+   files degrade performance. They need re-testing with correct methodology.
 
 5. **Test on BOTH target AND non-target scenarios.** Sprint 1's key failure
    was that methods improved the target scenario but regressed others. Always
    test the full scenario suite, not just the target.
 
-6. **"Coercive" language causes premature action.** SOUL guards with "MUST
+6. **Advisory language over coercive language.** SOUL guards with "MUST
    do X within N steps" forced the agent to rush. Use advisory language
-   ("prefer X", "consider Y") instead of mandates.
+   ("prefer X", "consider Y") instead of mandates. (Note: this lesson
+   was from a confounded experiment — re-verify with correct methodology.)
+
+7. **Interrupted gym runs produce unreliable data.** Completed re-runs
+   of the same experiment showed different results from interrupted ones.
+   Always run experiments to completion. Discard interrupted session data.

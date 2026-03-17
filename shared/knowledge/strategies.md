@@ -20,7 +20,7 @@ Agents should consult this file when encountering specific error patterns.
 
 ### 2. Missing Optional Workspace Files
 **Trigger Pattern**: `ENOENT: no such file or directory.../workspace/...`
-**Diagnosis**: The agent is trying to read a state file (e.g., `todo.md`, `journal.md`) that hasn't been created yet.
+**Diagnosis**: The agent is trying to read a state file (e.g., `journal.md`, workspace notes) that hasn't been created yet.
 **Strategy**:
 1. **Treat as Empty**. If the file is documented as optional/state-tracking, assume it has no content.
 2. **Create on Write**. Do not crash. Initialize the data structure in memory and proceed.

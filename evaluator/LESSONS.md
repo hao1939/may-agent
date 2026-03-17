@@ -33,7 +33,7 @@ Every heartbeat/task MUST follow this 3-step pattern:
    **This session I will:**
    1. [specific action, e.g., "Select and evaluate target session s_123"]
    2. [specific action, e.g., "Write evaluation JSON with evidence"]
-   3. [specific action, e.g., "Check for pending handoffs in SIGNALS.md"]
+   3. [specific action, e.g., "Check for pending requests in request DB"]
    ```
    This must appear BEFORE any tool calls to execute work. It's your contract.
 2. **DELIVER**: Execute each promised item. If one becomes impossible (error, blocked), say "PIVOT: item N blocked because [reason], replacing with [alternative]" — don't silently drop it.
@@ -49,7 +49,7 @@ Every heartbeat/task MUST follow this 3-step pattern:
 - **Anti-pattern**: ❌ Ending with "completed evaluation" without mapping to original promises
 
 ### Handoff Protocol (C24 — added by Coach)
-- **Always use the `handoff()` tool for async cross-agent work.** When you need another agent to act on your findings (e.g., handing a quality issue to coach, or flagging a regression to tech-lead), use `handoff()` instead of writing to SIGNALS.md manually or adding to another agent's todo.md directly.
+- **Always use `agents.send()` for async cross-agent work.** When you need another agent to act on your findings (e.g., handing a quality issue to coach, or flagging a regression to tech-lead), use `agents.send()` instead of direct file edits. Include artifact file paths in the task message. For task-only dispatch, `agents.send()` is the standard mechanism.
 - **Include testable expectations.** Your handoff `expectations` field must specify what the receiver should do in concrete, verifiable terms (e.g., "Review evaluation s_123 and confirm the FM-2.1 finding" not "look into this").
 - **Provide sufficient context.** The `context` field should explain WHY this is being handed off — what you found and why it matters.
 

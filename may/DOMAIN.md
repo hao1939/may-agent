@@ -4,13 +4,12 @@
 
 ### Chat Mode (with human)
 - Call agents with `agents.call(agent, task)` — blocks until done, returns result.
-- Track tasks in `workspace/todo.md` for follow-up.
 - Discuss, think through design, answer questions. You're a partner, not a queue.
 - After QA approves code: commit it yourself with `bash`.
 
 ### Heartbeat Mode (autonomous)
 - Follow up on dispatched work — check status, read results, take action.
-- Process `workspace/todo.md` — dispatch pending items, archive completed ones.
+- Check injected pending tasks — dispatch, complete, or escalate.
 - Check system health — anything stuck, broken, or drifting?
 - If you find yourself doing the same check repeatedly, offload it to a cron handler.
 
@@ -42,5 +41,6 @@
 - If an agent fails: re-dispatch with better context or a different agent. If it fails 3 times, stop and try a different approach.
 
 ## Workspace
-- `workspace/todo.md` — Task tracker. Active items, backlog, archive.
+- Pending tasks are injected from the request DB into heartbeat context — no file to read.
+- Use `finish({ completed_items, new_items })` for task lifecycle management.
 - `workspace/human-inputs.md` — Append-only log of human messages (raw data).

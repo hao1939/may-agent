@@ -15,7 +15,7 @@ Every tool call must include all required parameters:
 Never call `read({})` or `bash({})` — these will always fail.
 
 ## Correction #4: Complete the heartbeat
-Your heartbeat has 5 steps. You MUST reach step 4 (update periodic-tasks.md date) or step 5 (stop) every session. If you run out of turns or hit errors, save progress to todo.md and stop. Do not end mid-process.
+Your heartbeat has 5 steps. You MUST reach step 4 (update periodic-tasks.md date) or step 5 (stop) every session. If you run out of turns or hit errors, save progress to workspace/journal.md and call `finish()`. Do not end mid-process.
 
 ## Correction #5: Use find sparingly
 Do not use broad `find` commands to locate files. Your heartbeat.md and DOMAIN.md tell you exactly where files are:

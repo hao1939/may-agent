@@ -27,7 +27,7 @@
 
 **Problem**: Agents have 3 communication tools (call, send, handoff), 2 files to check (todo.md + SIGNALS.md), manual ACK ceremony, 28-line dedup protocol. SIGNALS.md grew to 8K+ lines. handoff is used 1 time total. This is too much machinery for what agents actually do: delegate work (call/send) and report completion (finish).
 
-**Requirement**: 2 communication tools (call, send), 1 file to check (todo.md), zero ceremony. Delete handoff, SIGNALS.md, and dedup protocol. Merge handoff's useful fields (artifact, context, expectations) into send() as optional parameters.
+**Requirement**: 2 communication tools (call, send), zero files to check manually, zero ceremony. Delete handoff, SIGNALS.md, and dedup protocol. Merge handoff's useful fields (artifact, context, expectations) into send() as optional parameters. Tasks tracked in request DB, injected into heartbeat context automatically.
 
 **Status**: `[x]` — All phases shipped including Phase 7 cleanup
 
@@ -67,8 +67,8 @@
 
 | Layer | What exists | What's missing |
 |-------|------------|---------------|
-| Infra | heartbeat.md, todo.md, common-sense.md auto-injected into heartbeat context. heartbeat.md in cross-edit-guard. edit() returns inline diff. write() returns content preview. finish() accepts completed_items/new_items — infra auto-updates todo.md post-session. Memory system uses finish() structured data instead of raw last-assistant-text. | Journal removal from heartbeat instructions (behavioral). |
-| Agent | C44 simplified — agents check returned diff/preview instead of re-reading. Agents declare completed/new items in finish() instead of manually editing todo.md. | Agents must adopt finish(completed_items, new_items) pattern. Journal writing can stop. |
+| Infra | heartbeat.md, common-sense.md auto-injected into heartbeat context. Pending tasks injected from request DB. heartbeat.md in cross-edit-guard. edit() returns inline diff. write() returns content preview. finish() accepts completed_items/new_items — infra marks DB requests complete post-session. Memory system uses finish() structured data instead of raw last-assistant-text. | Journal removal from heartbeat instructions (behavioral). |
+| Agent | C44 simplified — agents check returned diff/preview instead of re-reading. Agents declare completed/new items in finish() instead of manual task tracking. | Agents must adopt finish(completed_items, new_items) pattern. Journal writing can stop. |
 
 **Design doc**: None needed — individual items are small code changes
 **Convention**: `agents/shared/common-sense.md` §2.3

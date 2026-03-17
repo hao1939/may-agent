@@ -7,10 +7,11 @@
  * Exports create() conforming to HandlerModule.
  */
 
-import { readdirSync, readFileSync, statSync, existsSync } from "node:fs";
+import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import type { HandlerContext, HandlerModule } from "../../../src/lib/handler-context.js";
 import type { CronEntry } from "../../../src/lib/cron-tool.js";
+import { getDb } from "../../../src/lib/requests.js";
 
 // ── Factory ───────────────────────────────────────────────────────────
 
@@ -149,15 +150,13 @@ export function collectCoachingReport(opts: CoachingReportOptions): string {
   const recentAvgQ = recentAll.length > 0 ? recentAll.reduce((s, e) => s + e.quality, 0) / recentAll.length : 0;
   const recentAvgE = recentAll.length > 0 ? recentAll.reduce((s, e) => s + e.efficiency, 0) / recentAll.length : 0;
 
-  // 5. Coaching todo count
+  // 5. Coaching pending count from DB
   let coachTodoCount = 0;
   try {
-    const todoPath = join(agentsRoot, "coach", "workspace", "todo.md");
-    if (existsSync(todoPath)) {
-      const content = readFileSync(todoPath, "utf-8").split("# Tracking")[0];
-      coachTodoCount = (content.match(/^- \[ \]/gm) || []).length;
-    }
-  } catch { /* best-effort */ }
+    const db = getDb(persistDir);
+    const row = db.query("SELECT COUNT(*) as cnt FROM requests WHERE toAgent = 'coach' AND status IN ('CREATED','IN_PROGRESS') AND method = 'send'").get() as { cnt: number } | null;
+    coachTodoCount = row?.cnt ?? 0;
+  } catch { /* best-effort — DB may not be available */ }
 
   // 6. Format report
   const dateStr = new Date().toISOString().split("T")[0];

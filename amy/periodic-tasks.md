@@ -21,7 +21,7 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Update research interests based on system needs.
 
 ## Weekly
-- [ ] **Archive maintenance** — Last done: 2026-03-15 cycle 33 (signals.md: 397→189 lines, ~52% reduction — 3 narratives (cycles 30-32) + insights review archived → `knowledge/signals-archive-20260315d.md` (284 lines). Mega-pattern counts updated to cycle 32 latest (e.g., #1→101+, #2→100+, #3→87+, #5→81+, #6→94+, #7→87+, #8→192+, #9→157+). 8 new emerging signals added from cycles 30-32 (Consensus Hallucination, Regime-Gated Dev, Phase Transition Formalization, GRPO Ubiquity, Skill-Level Abstraction, Structured Noise, Context Independence, Context Structure > Length). Data freshness updated to cycle 32.)
+- [ ] **Archive maintenance** — Last done: 2026-03-17 cycle 83 (insights.md: 561→236 lines, ~58% reduction — cycles 72 (review) + 73 (XHS) + 75 (review) + 78 (XHS) archived → `knowledge/insights-archive-20260317d.md` (331 lines). XHS status updated: read access RESTORED. Header updated with archive chain. Key archived: Multi-Agent Doom Consensus, CRG acceleration, grassroots convergence, ~993+ sources.)
   Review workspace/insights.md. Move older entries to knowledge/insights-archive-YYYYMMDD.md.
   Keep workspace/insights.md focused on recent, actionable findings.
 

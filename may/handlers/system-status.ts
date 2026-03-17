@@ -11,7 +11,7 @@ import { readdirSync, readFileSync, existsSync, statSync, appendFileSync, mkdirS
 import { join, dirname } from "node:path";
 import { execSync } from "node:child_process";
 import { loadAllSessionMetas } from "../../../src/lib/persistence.js";
-import { appendToTodoSection } from "../../../src/lib/todo-utils.js";
+import { trackRequest } from "../../../src/lib/requests.js";
 import type { HandlerContext, HandlerModule } from "../../../src/lib/handler-context.js";
 import type { CronEntry } from "../../../src/lib/cron-tool.js";
 
@@ -58,10 +58,14 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
     // Reactive trigger: anomalies → write to May's todo + trigger heartbeat
     if (result.anomalies.length > 0) {
-      const todoPath = join(ctx.agentsRoot, "may", "workspace", "todo.md");
-      const item = `- [system-status] ${result.anomalies.length} anomaly(ies) detected: ` +
-        result.anomalies.map(a => a.slice(0, 80)).join("; ").slice(0, 300);
-      appendToTodoSection(todoPath, item);
+      try {
+        trackRequest(ctx.persistDir, {
+          fromEntity: "system-status",
+          toAgent: "may",
+          task: `[system-status] ${result.anomalies.length} anomaly(ies) detected: ${result.anomalies.map(a => a.slice(0, 80)).join("; ").slice(0, 300)}`,
+          method: "send",
+        });
+      } catch { /* best-effort */ }
       ctx.triggerNow("heartbeat");
       ctx.log(`[system-status] ${result.anomalies.length} anomalies → triggered May heartbeat`);
     }

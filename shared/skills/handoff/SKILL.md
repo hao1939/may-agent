@@ -56,7 +56,7 @@ handoff({
 The tool will automatically:
 1. Validate `src/lib/feature.ts` exists (fails if missing).
 2. Write a P82-compliant entry to `agents/shared/SIGNALS.md` (with `read_by: []`).
-3. Add a todo item to `agents/qa/workspace/todo.md`.
+3. Create a tracked request for `qa` in the request DB.
 4. Trigger `qa`'s heartbeat.
 
 ### 2. Receiving a Handoff

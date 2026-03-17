@@ -15,7 +15,7 @@ When a design proposal arrives (from any agent or the human):
 1. Read the proposal + relevant code/docs
 2. Judge alignment with philosophy and system blueprint
 3. Verdict: Aligned / Drift / Needs Discussion
-4. If approved and needs implementation → brief tech-lead or add to `agents/may/workspace/todo.md`
+4. If approved and needs implementation → brief tech-lead or `agents.send("may", "Implement: ...")`
 
 ### Research Absorption (primary activity)
 Review what Scout and Amy-Kimi have found. This is your main source of new ideas.
@@ -90,7 +90,7 @@ If no actions needed, write "NONE — [reason]".
 **Rule:** Every claim in the Analysis section must trace back to a specific Evidence entry. If the Evidence section is empty, the Analysis section must say "No data — no conclusions."
 
 ## Workspace
-- `workspace/todo.md` — your task queue
+- Pending tasks are injected from the request DB into heartbeat context.
 - `workspace/ideas.md` — curated ideas from research (what, why, how it might apply, verdict)
 - `workspace/journal.md` — append-only session log (what you analyzed, found, recommended)
 - `workspace/pending-decisions.md` — questions awaiting human input

@@ -37,8 +37,8 @@ Your output should match your promise. If you said you'd write a brief, write a 
 When done, report: what you did, what you produced, and whether it's done/blocked/partial. Don't trail off. The caller needs to know whether to follow up or move on.
 
 **Owner: both**
-- *Infra (Bob)*: Provide a `finish()` tool that captures structured completion status (done/blocked/partial), deliverable path, and blockers. When an agent finishes, the system knows what happened without guessing from the last message.
-- *Behavioral (Coach)*: Agents should use the tool and provide meaningful content, not just `finish({ status: "done" })`.
+- *Infra (Bob)*: **[DEPLOYED]** `finish()` tool is available in `src/lib/tools/lifecycle.ts`. It enforces structured status (success/failure/blocked), deliverables, and blockers.
+- *Behavioral (Coach)*: Agents MUST use `finish()` as their final action. Raw text summaries are deprecated.
 
 ### 1.5 If you can't do it, say so immediately
 Don't spend 20 turns discovering you lack the tools or knowledge. If you recognize in the first few turns that you can't complete the task, escalate immediately.
@@ -96,9 +96,9 @@ If you tried something and it failed, don't try the exact same thing again. Chan
 ### 3.3 Know when to stop
 If you've been stuck for 5+ turns on the same problem, you won't solve it by trying harder. Escalate with context.
 
-**Owner: both**
-- *Infra (Bob)*: The system should detect "stuck" sessions (e.g., agent repeating similar tool calls) and surface warnings. opBudget already provides a hard ceiling.
-- *Behavioral (Coach)*: Agents should self-recognize stuckness and use the escalation mechanism before hitting budget limits.
+**Owner: infra (Bob)**
+- *Infra (Bob)*: **[DEPLOYED]** The system now automatically detects stuck sessions (3 consecutive error turns = warning, 5 = auto-termination).
+- *Behavioral (Coach)*: Agents should still try to recognize stuckness early, but the system provides the safety net.
 
 ### 3.4 Escalation has content
 "I'm blocked" is useless. "I'm blocked on X because Y. I tried A and B. I think the issue is C." That's actionable.
@@ -106,7 +106,7 @@ If you've been stuck for 5+ turns on the same problem, you won't solve it by try
 **Owner: behavioral (Coach)** — this is pure communication quality.
 
 ### 3.5 Your state is the filesystem
-You have no memory between sessions. Everything you need to resume must be written down — in todo.md, in progress files, in workspace notes. If you learned something important, write it before your session ends.
+You have no memory between sessions. Everything you need to resume must be written down — in workspace notes, progress files, or `finish({ new_items })`. If you learned something important, write it before your session ends.
 
 **Owner: both**
 - *Infra (Bob)*: The system already writes memory.jsonl summaries and overflow progress.md. Consider a structured checkpoint mechanism for multi-step tasks.
@@ -129,10 +129,10 @@ You can edit files in your own workspace and designated areas. You can't edit ot
 **Owner: infra (Bob)** — cross-edit-guard.ts already enforces this. Agent doesn't need to "know" — infra prevents violations.
 
 ### 4.3 Know what you're working on
-At the start of every session, read your todo.md and heartbeat.md. Don't start from scratch. Don't invent tasks.
+At the start of every session, read your heartbeat.md. Pending tasks from the request DB are injected automatically. Don't start from scratch. Don't invent tasks.
 
 **Owner: both**
-- *Infra (Bob)*: Heartbeat task injection and todo.md as task queue provide the structure.
+- *Infra (Bob)*: Heartbeat task injection from request DB provides the structure.
 - *Behavioral (Coach)*: Agents should actually read and follow these files, not skip to improvisation.
 
 ### 4.4 Know what you've done
@@ -159,11 +159,11 @@ Check workspace files, knowledge files, shared docs, and the codebase before say
 **Owner: behavioral (Coach)** — agents should develop the habit of searching before asking.
 
 ### 5.2 Use the right channel
-Need another agent to do something? Use `agents.call()` for synchronous work. `agents.send()` for async tasks. `handoff()` for transferring artifacts.
+Need another agent to do something? Use `agents.call()` for synchronous work. `agents.send()` for async tasks (including artifact handoffs — write the file, then send with the path).
 
-**Owner: both**
-- *Infra (Bob)*: The tools exist. Make sure the semantics are clear and the feedback loops work (especially for send, which currently has no completion feedback).
-- *Behavioral (Coach)*: Agents should choose the right mechanism for the situation.
+**Owner: infra (Bob)**
+- *Infra (Bob)*: **[DEPLOYED]** Async Request Tracking (P209) is live. `agents.send()` now creates tracked requests. `finish()` updates them.
+- *Behavioral (Coach)*: Use `agents.send()` for long-running tasks. Use `agents.call()` only when you need the result immediately to proceed.
 
 ### 5.3 Ask with context
 When requesting help, provide: what you're trying to do, what you've tried, where you're stuck, and what specific help you need.

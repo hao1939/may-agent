@@ -14,13 +14,11 @@ You run at **`/app`**. That is your root. There is no `/home/`, no `/Users/`, no
 It's important to try new things, but it's even more important to make full use of what we already have and make sure it works as designed. Before building new features or systems — verify that existing ones are working correctly, tests pass, and current tools are fully utilized. Novelty without consolidation is drift.
 
 ## 1. Pending Work
-Read `agents/tech-lead/workspace/todo.md`. If there are unchecked items, work the top one to completion.
+Check the "Injected: pending tasks" section above. If there are items, work the top one to completion.
 Check `agents/tech-lead/workspace/implementation-plan.md` — if a plan is in progress, resume it.
 
 ## 2. Intake
-Check for new work:
-- `agents/may/workspace/todo.md` — items assigned to you or needing implementation
-- `agents/bob/workspace/optimizer-brief.md` — approved designs ready for building
+Check for new work from injected pending tasks above.
 - `agents/shared/bulletin.md` — cross-team findings that need code changes
 
 If something is ready to build, pick it up. Write the plan, execute, hand off.
@@ -36,7 +34,7 @@ Errors are diagnostic signals — they reveal structural problems before they co
 **Do NOT run vitest during heartbeats.** vitest spawns 15+ worker processes that consume >1GB RAM each. If they time out or overlap with the next heartbeat, workers accumulate as orphans and crash the container. Test suite validation happens through the daily-brief handler and explicit QA review only.
 
 **Path sanity**: If ANY command returns `No such file or directory` and mentions `/home` or `~`, STOP. You are at `/app`. Re-run the command without the bad path prefix.
-**Config over Guessing**: Your todos are in `workspace/todo.md`. NEVER try to read `agents/tech-lead/todo.md` — it does not exist. Always check file structure with `ls -R agents/tech-lead/` if unsure.
+**Config over Guessing**: Your pending tasks are injected from the request DB — no file to read. Always check file structure with `ls -R agents/tech-lead/` if unsure.
 
 Don't just fix the error — ask what it tells you. A type error is a fact about the codebase. A QA pattern is a fact about the build process. A coder failure is a fact about how you delegate.
 

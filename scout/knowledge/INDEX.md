@@ -17,7 +17,6 @@ Bob is Architect (Gemini). Coach trains (Opus).
 - **Error Handling**: Escalate failures. No silent failures.
 
 ## Project Layout
-- `agents/scout/workspace/todo.md` — your task queue
 - `agents/scout/knowledge/library/` — your research archives
 
 ## Available References

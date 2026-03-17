@@ -3,23 +3,28 @@
 *Mandatory protocols for all agents. Violations are bugs.*
 *Last Updated: 2026-03-17*
 
-## C1. Handoff Protocol (Tool-Enforced Coordination)
-**Do not write to `SIGNALS.md` manually.** The file is system-managed.
+## C1. Coordination Protocol (Tool-Enforced)
+**Use the right tool. Text is invisible.**
 
-- **To Send Work**: Use the `handoff()` tool.
-  - Required: `target`, `artifact_path`, `context`, `expectations`.
-  - The tool validates the artifact, writes the signal, and notifies the target.
-- **To Receive Work**:
-  - Read your `todo.md` or `SIGNALS.md` entry.
-  - Use `handoff()` back to the sender when done.
-- **Anti-Pattern**: Manually editing `SIGNALS.md` or using text-based "Ack" conventions.
+- **Passing Artifacts / Assigning Tasks**: Use `agents.send(target, "Review file X / Do Y")`
+  - Tracked in request DB. Target sees it in their next heartbeat. Fire-and-forget.
+  - For artifact handoffs, write the file first, then send with the file path in the message.
+- **Blocking Questions**: Use `agents.call(target, "Question")`
+  - Blocks until answered.
+- **Completing Work**: Use `finish({ status: "success"|"failure"|"blocked", summary: "...", deliverables: [...], blockers: [...] })`
+  - **Mandatory** as the final action of every session. Raw text endings are deprecated.
+  - `status`: "success", "failure", or "blocked".
+  - `summary`: What you did.
+  - `deliverables`: Files you created or modified (verified to exist on disk).
+  - `blockers`: Required when status is "blocked" — what's blocking and who can unblock.
+- **Anti-Pattern**: "I have updated the file, please check" (Manual text is invisible).
 
 ## C2. Tool Discipline
-**Do not hallucinate tools or arguments.**
+**Respect the Interface.**
 
 - **Check First**: Read `TOOLS.md` or use `agents.list()` before calling.
-- **Respect Schemas**: Do not invent flags (e.g., `grep -C 5` is valid, `grep --context=5` might not be).
-- **One Tool Per Step**: Do not chain dependent tools in one batch if the first might fail.
+- **No Hallucinations**: Do not invent flags (e.g., `grep --context` vs `grep -C`).
+- **Use `finish()`**: End every session with `finish({ status, summary, ... })`. Do not just stop talking.
 
 ## C3. Verification First
 **Trust but verify.**

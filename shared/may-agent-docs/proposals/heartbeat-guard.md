@@ -22,7 +22,7 @@ Add a **turn budget checkpoint** to heartbeat logic:
 ### Rules
 1. **Heartbeat tasks should complete in ≤15 turns.** If a task will take more, the agent should:
    - Write a partial result to workspace
-   - Add a continuation item to todo.md
+   - Add a continuation item via `finish({ new_items: ["Continue: ..."] })`
    - Stop and yield the session
 2. **No iterative full-file rewrites in heartbeats.** Use surgical edits (sed) or defer to a dedicated session.
 3. **Identity bootstrap must be instant.** Agent's own paths should be in its system prompt or agent.json, not discovered at runtime.

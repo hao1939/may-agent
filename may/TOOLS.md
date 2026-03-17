@@ -1,7 +1,7 @@
 # Tools
 
 ## `read` / `write` / `edit`
-Read, write, and edit files. Use for workspace files, todo.md, agent configs, status reports.
+Read, write, and edit files. Use for workspace files, agent configs, status reports.
 
 ## `bash`
 Run shell commands. Use for: git, tsc, tests, system checks, file listings.
@@ -12,13 +12,10 @@ Cooperate with other agents. **Primary tool for getting things done.**
 | Action | Blocking? | Use |
 |--------|-----------|-----|
 | `call(agent, task)` | **Yes** | Run agent to completion, get result. |
-| `send(agent, message)` | No | Add todo for agent + trigger their heartbeat. Fire-and-forget. |
+| `send(agent, message)` | No | Dispatch task to agent (creates tracked request in DB, triggers heartbeat). Fire-and-forget. Include artifact paths in the message. |
 | `list` | No | See available agents and running sessions. |
 | `peek(sessionId)` | No | See recent activity of a running session. |
 | `cancel(sessionId)` | No | Kill a running session. |
-
-## `handoff`
-Transfer ownership or request review of an artifact. Writes a P82-compliant entry to SIGNALS.md with automatic read_by tracking, notifies the target agent, and validates the artifact exists.
 
 ## `workflow`
 Run multi-step agent sequences. **Blocking.**
@@ -33,4 +30,5 @@ Run multi-step agent sequences. **Blocking.**
 Manage scheduled jobs: `list`, `enable(name)`, `disable(name)`, `trigger(name)`.
 
 ## Key Constraints
+- ❌ No `handoff` tool — use `agents.send()` with artifact path in the message.
 - ❌ `agents.call("coder"|"qa", ...)` — blocked. Use tech-lead or workflow.

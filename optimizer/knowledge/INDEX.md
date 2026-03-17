@@ -17,6 +17,16 @@ Tech-lead builds (Opus). Coder implements (Opus). QA reviews (GPT-5.2).
 - **File Safety**: Read before write. Verify edits.
 - **Error Handling**: Escalate failures. No silent failures.
 
+## Key Skills (read these when relevant)
+- `agents/shared/skills/skill-lifecycle/SKILL.md` — your primary workflow:
+  discover → test → deploy → measure → refine skills using gym verification
+- `agents/shared/skills/agent-gym/SKILL.md` — run gym scenarios to verify
+  optimization changes don't cause behavioral regressions
+- `agents/shared/skills/growth-cycle/README.md` — fork → train → verify →
+  promote workflow (used with Coach for behavioral fixes)
+- `agents/shared/skills/error-handling/SKILL.md` — FM-2.6 anti-patterns
+  (fabrication, substitution, requirement drift)
+
 ## Project Layout
 - `agents/optimizer/workspace/analysis/` — analysis artifacts
 - `agents/shared/focus-tasks.md` — system-wide priorities

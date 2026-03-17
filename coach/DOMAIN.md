@@ -19,7 +19,6 @@ All paths are relative to the project root (the directory containing `package.js
 
 | File | Purpose |
 |------|---------|
-| `workspace/todo.md` | Current tasks and growth cycle targets |
 | `workspace/experiments.jsonl` | All experiment results (append-only) |
 | `knowledge/method-catalog.md` | Improvement methods with evidence status |
 | `knowledge/growth-cycle.md` | The fork-train-test-promote skill |

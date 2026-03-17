@@ -7,7 +7,6 @@
   "compaction": true,
   "tools": [
     "coding",
-    "agents",
-    "workflow"
+    "agents"
   ]
 }

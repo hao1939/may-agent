@@ -169,3 +169,23 @@ Key structural insights:
 ### Session Stats
 - 2 new outputs (DD#342 + CR#180) = ~28KB new analysis
 - 1 superseded DD identified (DD#294)
+
+---
+
+### 2026-03-17 Session (s_1773758093537_42) — DD#399: Boltzmann Covariance Hypergradient for Bi-Level RL
+
+**Focus:** Deep-dive on arXiv:2603.14867 "Sample-Efficient Hypergradient Estimation for Decentralized Bi-Level RL" (Tsukuba/RIKEN AIP/NTT, ICAPS 2026).
+
+**New outputs (1 total):**
+1. **DD#399: Sample-Efficient Hypergradient Estimation for Decentralized Bi-Level RL** (~9KB, ★★★★). Paper introduces the Boltzmann covariance trick to eliminate the oracle/same-state-revisit requirement of prior hypergradient methods (HPGD, SoBiRL) for bi-level RL. First method enabling hypergradient-based optimization for 2-player Markov games in decentralized settings. BC-HG outperforms all baselines including oracle-assisted HPGD across 4 experimental domains (discrete/continuous × configurable MDPs/Markov games).
+
+**Key technical insight:** Prior hypergradient estimation requires computing E_b[Q_L · ∇ log g†(b|s)] — averaging across different follower actions at the *same* state — which demands either oracle trajectory generation or small state spaces. The Boltzmann covariance trick reformulates this as B_L†(s,b)/β · ∇Q_F†(s,b), estimable from a single trajectory sample per state. The "Benefit function" B_L† captures how much a follower's action helps the leader relative to average behavior.
+
+**Relevance to portfolio:** Connects to DD#397 (language model teams as distributed systems) — bi-level optimization between orchestrator and workers is structurally identical to the leader-follower framework here. Also connects to the mechanism design theme (CR#180 authority, CR#128 autonomy trap) — how to design incentives for autonomous agents you can't directly control.
+
+**Remaining uncovered from Tuesday batch:** ~8 papers below ★★★★ threshold (ClimateAgents, MedPriv-Bench, particle physics, EARCP coherence, Co-Design, PMAx, EcoFair-CH-MARL, forecast-aware planning). None warranting full deep-dive.
+
+### Session Stats
+- 1 new output (DD#399) = ~9KB new analysis
+- DD count: 399 total
+- Tuesday batch coverage: ~85% of high-relevance papers covered

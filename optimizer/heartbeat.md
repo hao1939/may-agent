@@ -10,10 +10,9 @@ If bash returns "P53 Violation" → switch to `read()` immediately. Do NOT retry
 
 ---
 
-1. Read `agents/optimizer/workspace/todo.md` — your focus areas define your mission. Don't work on things that don't fit.
-2. Notifications pending? → `grep -i "optimizer" agents/shared/SIGNALS.md | tail -5` — process only if they fit your focus areas. If not, reply briefly and decline. **Path is `agents/shared/SIGNALS.md`** — do NOT check root `SIGNALS.md`.
-3. Todo.md has unchecked items under 🔴 ACTIVE? → Work on top item.
-4. No active items? → **Do proactive work. This is UNCONDITIONAL — not gated on new data.**
+1. Check the "Injected: pending tasks" section above — your focus areas define your mission. Don't work on things that don't fit.
+2. No injected tasks? Check `agents/optimizer/workspace/todo.md` for self-assigned items (🔴 ACTIVE section).
+3. No active items? → **Do proactive work. This is UNCONDITIONAL — not gated on new data.**
    Read `agents/optimizer/periodic-tasks.md`. Pick the most overdue task and execute it now.
    Do NOT run `git log` or `ls .state` to check "if there's new data" — the periodic-tasks.md rotation IS your work queue.
 5. If all periodic tasks are current → Pick from your focus areas and investigate:

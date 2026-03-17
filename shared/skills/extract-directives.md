@@ -191,14 +191,14 @@ write agents/may/conversation-state.md "[composed content]"
 ```
 
 ### Anti-Patterns
-- **Do NOT duplicate todo.md**: Todo is for tasks; State is for context. If Hao says "add a task to do X", that goes in todo.md, not here.
+- **Do NOT duplicate task tracking**: Tasks are tracked in the request DB. If Hao says "add a task to do X", use `agents.send()` — not this file.
 - **Do NOT invent state**: If the session doesn't clearly indicate a focus change, keep the existing focus. Only update fields where the session provides clear signal.
 - **Do NOT include all agents**: This file is for May only (P111 Context Pollution). Other agents get context via delegation briefs.
 
 ### Relationship to Other Files
 - **`directives.md`** = ROM (Permanent Constitution) — "Always use TypeScript"
-- **`conversation-state.md`** = RAM (Transient Context) — "Fix the P82 bug right now"  
-- **`todo.md`** = Disk (Work Queue) — "Task #123"
+- **`conversation-state.md`** = RAM (Transient Context) — "Fix the P82 bug right now"
+- **Request DB** = Disk (Work Queue) — tasks tracked via `agents.send()`
 
 ## Integration with Post-Session Hook (Future)
 

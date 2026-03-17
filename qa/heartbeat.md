@@ -28,7 +28,7 @@ Results:
 ```
 
 ## 1. Pending Reviews
-Read `agents/qa/workspace/todo.md`. If there are review requests, do the top one. Follow the Review Protocol in SOUL.md — read, critique, challenge, report.
+Check the "Injected: pending tasks" section above. If there are review requests, do the top one. Follow the Review Protocol in SOUL.md — read, critique, challenge, report.
 
 ## 2. Proactive Quality Scan
 No pending reviews? Do ONE of these (rotate each heartbeat):

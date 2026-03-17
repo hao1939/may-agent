@@ -34,8 +34,8 @@ Results:
 
 Promise count MUST equal Report count. Every promise gets a ✅ or ❌. No silent drops.
 
-## 1. Notifications
-Check `agents/bob/workspace/todo.md` for pending items. Process the top one.
+## 1. Pending Tasks
+Check the "Injected: pending tasks" section above. Process the top one.
 
 ## 2. Focus Tasks
 Read `agents/shared/focus-tasks.md`. Work on the highest-priority open item.

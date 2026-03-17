@@ -51,8 +51,8 @@ If a file is ENOENT, do NOT silently substitute a different file. Stop and confi
 When you hit a blocker you can't resolve:
 1. **Self-fix** (2 retries, each with a DIFFERENT approach — not the same command). Example: file not found? Search for similar files with `find` or `grep`. Wrong path? Try `ls` on parent directories.
 2. **Peer consult** via `agents.call()` (ask the agent with relevant expertise)
-3. **Supervisor report** — write to `agents/may/workspace/todo.md` or use `handoff()` 
-4. **Human escalation** — add `[HUMAN-NEEDED]` tag to May's todo
+3. **Supervisor report** — use `agents.send("may", "description")`
+4. **Human escalation** — use `agents.send("may", "[HUMAN-NEEDED] description")`
 
 **Anti-pattern**: Being asked to fix a file, finding it doesn't exist, and stopping with "nothing to do." Instead: search for files related to the described functionality (e.g. `grep -r "retry" src/` to find the actual retry module). The task-giver may have the wrong filename but the right intent.
 
@@ -60,19 +60,19 @@ When you hit a blocker you can't resolve:
 
 **Format when escalating**: What failed + What I tried + What I need + What's blocked.
 
-### Handoff Protocol — Use the Tool (C24, 0% P82 compliance)
+### Handoff Protocol — Use agents.send() (C24)
 When handing off work to another agent (e.g., passing completed code back to Bob, requesting evaluator review, sending artifacts to May):
-- **Always use the `handoff()` tool** — never write to SIGNALS.md manually or just mention the handoff in text
+- **Always use `agents.send()`** — the old `handoff()` tool no longer exists. Include artifact file paths in the task message.
 - **Include testable expectations** — "Run `bun vitest --run`, verify 0 failures" not just "review this"
 - **Max 2-hop delegation depth** — if you delegate to X who delegates to Y, that's the limit
-- **Verify receipt** — after handoff, confirm the target agent acknowledged
+- **Verify receipt** — check request DB (`agents.requests()`) to confirm the target agent acknowledged
 
-**Why**: P82 compliance audit found 0% compliance across all agents. The `handoff()` tool creates P82-compliant tracking entries automatically. Manual SIGNALS.md writes or text-only mentions are invisible to the coordination system.
+**Why**: `agents.send()` creates tracked requests in the request DB automatically. Use `agents.requests()` to check status.
 
 **Anti-patterns to avoid**:
-- Completing an implementation and ending your session without handing off (use handoff to notify the requester)
+- Completing an implementation and ending your session without notifying the requester via `agents.send()`
 - Writing a status update in your summary but never formally notifying the requesting agent
-- Using agents.send() for work that needs tracking (send is fire-and-forget, handoff creates a record)
+- Forgetting to include artifact file paths in the task message when sending work to another agent
 
 ### 🔴 Resource Awareness — 3-3-3 Budget (C25, 14x plan-expire)
 Your #1 failure mode is reading files endlessly without producing output (14 "Planning Without Executing" occurrences).
@@ -162,7 +162,7 @@ npx tsc --noEmit; echo "EXIT:$?"
 
 ## Graduated ✅
 
-- ~~Pattern Check (P1)~~ → **GRADUATED**: heartbeat.md step 1 reads workspace/todo.md. Agent already knows patterns. _(Graduated H534)_
+- ~~Pattern Check (P1)~~ → **GRADUATED**: heartbeat.md step 1 checks pending tasks. Agent already knows patterns. _(Graduated H534)_
 - ~~Plan Before Delegating~~ → **GRADUATED**: heartbeat.md step 1 + SOUL.md "How You Work". _(Graduated H534)_
 - ~~QA is Advisory~~ → **GRADUATED**: Role definition in team.md. _(Graduated H534)_
 - ~~Escalate Structurally~~ → **GRADUATED**: shared CONVENTIONS.md C4 + SOUL.md. _(Graduated H534)_

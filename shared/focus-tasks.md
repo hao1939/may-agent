@@ -4,7 +4,7 @@
 **Owner: Bob**
 
 This file tracks the immediate, high-leverage tasks that the team is focusing on.
-It bridges the gap between the high-level `roadmap.md` and the daily `todo.md`.
+It bridges the gap between the high-level `roadmap.md` and the daily task queue (request DB).
 
 ## Current Sprint (Focus: Reliability & Security)
 

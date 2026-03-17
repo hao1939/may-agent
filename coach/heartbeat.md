@@ -9,15 +9,15 @@ Every session MUST end with a `finish()` call:
 finish({
   status: "success" | "blocked" | "partial",
   summary: "What I accomplished",
-  completed_items: ["items from todo.md I finished"],
+  completed_items: ["tasks I finished"],
   new_items: ["follow-up items for next session"]
 })
 ```
 **Your first text output** should be a brief plan (1-3 items). Then execute. Then `finish()`.
 
 ## 1. Urgent?
-- Notifications pending? → Process them.
-- `workspace/todo.md` has urgent items? → Handle now, skip to step 5.
+- Pending tasks injected above? → Process them.
+- Something urgent? → Handle now, skip to step 5.
 
 ## 2. Error-Driven Growth (quick scan)
 Scan `agents/*/ERROR_LOG.jsonl` for agents with 3+ repeated errors of the
@@ -48,7 +48,7 @@ Read `workspace/experiments.jsonl` and review accumulated results:
 4. **Coach's own process** — are your growth cycles producing promotions?
    If not, what's blocking? Update your own heartbeat or SOUL if needed.
 5. **Scenario gaps** — are baseline agents already passing all scenarios?
-   If so, you need harder scenarios. Add to `workspace/todo.md`.
+   If so, you need harder scenarios. Use `finish({ new_items: ["Design harder gym scenarios"] })`.
 
 ### 3b. Knowledge Maintenance
 Review your `knowledge/` files for staleness or gaps:
@@ -72,7 +72,7 @@ work? If your experiments have taught you something fundamental (e.g., "SOUL
 guards never work for procedural behavior"), update your SOUL to reflect it.
 Your SOUL should evolve with your evidence, not stay frozen.
 
-Track when you last did self-evolve in `workspace/todo.md`. Aim for once
+Track when you last did self-evolve in `workspace/journal.md`. Aim for once
 every 5 heartbeats or after 5 new experiments.
 
 ## 4. Method Invention (when 3+ experiments failed for same reason)
@@ -137,9 +137,8 @@ then methods with only negative evidence that might work with a different
 framing.
 
 ## 6. Close out.
-- Update `workspace/todo.md` with follow-ups.
-- If blocked or outside your scope → add to `agents/may/workspace/todo.md`.
 - Call `finish()` with summary, completed_items, and new_items.
+- If blocked or outside your scope → `agents.send("may", "description of what's needed")`.
 
 ---
 

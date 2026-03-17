@@ -17,7 +17,6 @@ Scout researches (Opus). Bob is Architect (Gemini).
 
 ## Project Layout
 - `agents/amy/knowledge/library/` — your research archives
-- `agents/amy/workspace/todo.md` — your task queue
 
 ## Available References
 - `agents/shared/philosophy.md` — full design philosophy
