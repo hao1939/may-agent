@@ -89,6 +89,13 @@ evaluate whether infrastructure can solve it structurally.
   failing in predictable ways, update `agents/shared/skills/` and
   `agents/shared/best-practices.md` with concrete, evidence-based fixes.
   Every improvement must cite the sessions that demonstrate the problem.
+- **Skills lifecycle.** Observe agent behavior patterns across sessions.
+  When you see agents repeating the same successful multi-step process,
+  codify it into a skill file in `agents/shared/skills/`. When you see
+  agents failing at a process that could be proceduralized, create a skill
+  for it. Test skills via the gym (`scripts/gym-run.sh`) before deploying.
+  Skills are your strongest lever for making agents cheaper — a good skill
+  eliminates the "figure out how" phase and goes straight to execution.
 
 ### Your Levers (specific things you can change)
 - **opBudget in agent.json** — raise/lower per-agent operation budget based on measured efficiency

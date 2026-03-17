@@ -3,17 +3,17 @@
 Track when each task was last done. Pick the most overdue one during heartbeat step 3.
 
 ## Per heartbeat (do one, rotate)
-- [x] **Analysis review** — Last done: 2026-03-16
+- [x] **Analysis review** — Last done: 2026-03-17
   Read agents/bob/workspace/analysis.md or recent Bob synthesis outputs.
   Any findings that need optimization work? Cost issues? Efficiency problems?
   If found → add specific task to workspace/todo.md.
-  Latest (2026-03-16, cron run): Bob's analysis.md "Over-Refusal" finding: agents told to manually read ERROR_LOG, but `active-recall.ts` already auto-injects it. **Fix**: removed redundant ERROR_LOG instruction from own SOUL.md; wrote brief for 5 remaining files across 4 agents (coder, coach, tech-lead, master); handed off to May. This eliminates ~1 wasted turn/session + over-refusal risk. See `workspace/p114-error-log-dedup-brief.md`.
+  Latest (2026-03-17, 11:37 update): Reviewed Bob's 5 new briefs: (1) **DPIR Pattern** — philosophy, not optimization-relevant, (2) **Pressure-Safety Inversion** — validates infra approach, no action, (3) **OpBudget Visibility** — `turnBudgetWarningAt` configured but not wired to inject per-turn counter into context, (4) **Tool Name Injection** — not yet implemented, (5) **Stuck Detection** — already in `src/lib/stuck-detector.ts` ✅. **Overtrigger fix verified**: both cron.ts fixes deployed (proportional cooldown interval/2 + pending trigger no-op). Rates: May 1.56x (was 2.79x), tech-lead 1.75x (was 3.26x), coach 1.27x (was 2.36x). **~55% reduction**, waste down from ~$435/day to ~$126/day. Remaining opportunity: increase cooldown from interval/2 to interval×0.75 could save another ~$60/day. Briefs 3-4 are in tech-lead's queue. No new optimizer-owned action items.
 
-- [x] **Cost outlier scan** — Last done: 2026-03-16
+- [x] **Cost outlier scan** — Last done: 2026-03-17
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-16): Analyzed 200 sessions (1.8hr window). Avg cost **$0.85/session** (↓24% from $1.12 last scan). Outlier rate **8.0%** (↓ from 14.9%). **BUT error rate spiked to 29.5%** — 429 rate limits account for 73% of errors (41/58). Error sessions waste 32.5% of total cost ($56.25). 429 errors are accelerating (5→17→19 per hour). Differential backoff fix deployed today (15:34 UTC) — should reduce 429 impact when process reloads. All Opus agents still 0% prompt cache (biggest remaining lever). See `workspace/cost-outlier-scan-2026-03-16.md`.
+  Latest (2026-03-17): Over 7.5h window (500 sessions): 4.0% error rate (down from 29.5% yesterday). **Biggest finding: Heartbeat overtriggering wastes $435/day.** May=2.79x, tech-lead=3.26x, coach=2.36x expected rate. 160 extra sessions + 19 skipped. Root cause: 60s cooldown in cron.ts `triggerNow()` + `checkPendingTrigger` latch bypass. Design brief at `workspace/brief-overtrigger-fix.md`, handed off to tech-lead.
 
 - [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-16
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
@@ -30,10 +30,12 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
 ## Weekly
 - [x] **Improvement proposals review** — Last done: 2026-05-09 (Finding 18, Cycle 12). **2 new commits since last review**: agent-growth refactor committed (3a6d51e — 16 files, +1725/-168), orphaned test cleanup (85de6e7). Git now clean (0 uncommitted changes — resolved 7+ week risk). 1049/1049 tests pass (87 files), tsc clean. New cross-edit guard (P53) prevents cross-agent identity file modification. Finish tool wired but unadopted. System idle — 0 sessions, evals, job history. Compaction 8/12, prompt caching still 0% for Opus (LiteLLM proxy blocker). **No new optimization work items identified.**
 
-- [x] **Refine-Skill loop (EvoSkill)** — Last done: 2026-03-16
+- [x] **Refine-Skill loop (EvoSkill)** — Last done: 2026-03-17
   Run the `agents/shared/tasks/refine-skill.md` protocol: scan recent evals for failure patterns,
   attribute to a skill, make one atomic evidence-based improvement to the skill library.
-  Latest (2026-03-16): Scanned 30 most recent `needs_improvement` evals (684 total needs_improvement out of 3034 evals). Top FM codes: FM-3.3 (4), FM-2.6 (4), FM-2.5 (4), FM-3.2 (3), FM-3.1 (3), FM-2.2 (3). May dominates failures (22/41 issues, 54%) — almost all heartbeat step-order violations. VERIFICATION_FAILURE dropped from 11→4 (skill v1.1.0 may be helping). No skill evolution this cycle — May's failures are structural (context pressure from 50KB todo.md), not skill gaps. Recommendation: truncate/archive completed todo items to reduce context pressure. See `workspace/evoskill-refinement-2026-03-16.md`.
+  Also look for NEW skill opportunities: agents repeating multi-step processes that could be
+  codified. Test new/updated skills via gym (`scripts/gym-run.sh`) before deploying.
+  Latest (2026-03-17): Scanned 300 most recent evals (22 `needs_improvement`). Top FM codes: FM-2.6 (13), FM-5.3 (8), FM-3.3 (8), FM-2.1 (8), FM-3.1 (7), FM-3.2 (5), FM-2.5 (5), FM-1.3 (3). Coach dominates (12/22 NI evals, 55%). **Key finding**: FM-2.6 (REASONING_ACTION_MISMATCH) is #1 failure mode with NO skill coverage. Three sub-variants identified: fabrication (claiming work from prior sessions), substitution (replacing failed actions with easier ones), requirement drift (doing different steps than prescribed). **Action taken**: Added FM-2.6 anti-pattern section to `agents/shared/skills/error-handling/SKILL.md` (v1.1.0 → v1.2.0) with 3 sub-variants, evidence from 8 specific sessions, 4 corrective actions, and 1 new inviolable constraint.
 
 ---
 
