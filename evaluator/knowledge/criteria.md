@@ -160,6 +160,8 @@ Full taxonomy with all codes: `agents/shared/knowledge/mast-taxonomy.md`
 
 When evaluating a session where an agent made errors, the Evaluator **MUST** generate structured critique data in the evaluation output. This enables Coach to append directional feedback to the agent's `ERROR_LOG.md`.
 
+**Schema note (consistency):** Prefer a consistent top-level structure in `.state/evaluations/`: `agents -> {agentName} -> sessions -> {sessionId}`. Place `critiques` inside the session object (next to `issues/metrics`). Avoid emitting a different top-level schema (e.g., `{agent, sessionId, failureChains...}`) because it breaks downstream aggregation and comparisons.
+
 ### Requirements
 For each significant error observed in a session:
 1. **Identify the trigger**: The specific tool call or action that failed.

@@ -9,11 +9,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If found → add specific task to workspace/todo.md.
   Latest (2026-03-17, 11:37 update): Reviewed Bob's 5 new briefs: (1) **DPIR Pattern** — philosophy, not optimization-relevant, (2) **Pressure-Safety Inversion** — validates infra approach, no action, (3) **OpBudget Visibility** — `turnBudgetWarningAt` configured but not wired to inject per-turn counter into context, (4) **Tool Name Injection** — not yet implemented, (5) **Stuck Detection** — already in `src/lib/stuck-detector.ts` ✅. **Overtrigger fix verified**: both cron.ts fixes deployed (proportional cooldown interval/2 + pending trigger no-op). Rates: May 1.56x (was 2.79x), tech-lead 1.75x (was 3.26x), coach 1.27x (was 2.36x). **~55% reduction**, waste down from ~$435/day to ~$126/day. Remaining opportunity: increase cooldown from interval/2 to interval×0.75 could save another ~$60/day. Briefs 3-4 are in tech-lead's queue. No new optimizer-owned action items.
 
-- [x] **Cost outlier scan** — Last done: 2026-03-17
+- [x] **Cost outlier scan** — Last done: 2026-03-17T16:37
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-17): Over 7.5h window (500 sessions): 4.0% error rate (down from 29.5% yesterday). **Biggest finding: Heartbeat overtriggering wastes $435/day.** May=2.79x, tech-lead=3.26x, coach=2.36x expected rate. 160 extra sessions + 19 skipped. Root cause: 60s cooldown in cron.ts `triggerNow()` + `checkPendingTrigger` latch bypass. Design brief at `workspace/brief-overtrigger-fix.md`, handed off to tech-lead.
+  Latest (2026-03-17T16:37): 137 sessions since container restart. 22.6% error rate (31 errors). **Biggest finding: QA Shallow Heartbeat Bug — 60% error rate (3/5 sessions).** C40 text-first instruction + shallow heartbeat detector conflict causes GPT-5.2 QA to die in 2-8s with zero tool calls. Also: tech-lead highest ops consumer (766 total, 34.8 avg/session), optimizer 56% error rate (all opBudget exhaustion). Brief at `workspace/brief-qa-shallow-heartbeat-fix.md`, sent to May (req:59f7c254).
 
 - [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-17
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?

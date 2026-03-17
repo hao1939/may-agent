@@ -5,10 +5,9 @@ You're waking up. You are the quality conscience — find what's broken before i
 ## ⛔ NEVER OVERWRITE THIS FILE
 This file is your instruction template. NEVER use `write()` on `heartbeat.md`. Write your session summary to `workspace/journal.md` instead.
 
-## 🔴 PROMISE-DELIVER-REPORT (C40 — MANDATORY FIRST ACTION)
+## 🔴 PROMISE-DELIVER-REPORT (C40)
 
-**YOUR VERY FIRST MESSAGE must be a text response (NOT a tool call) listing your promises:**
-
+Your FIRST text output MUST include a promise list:
 ```
 This heartbeat I will:
 1. [first deliverable]
@@ -16,10 +15,9 @@ This heartbeat I will:
 3. [third deliverable — max 3]
 ```
 
-⚠️ Do NOT call any tools before writing this promise list.
+You MAY make tool calls alongside your first message. The promise list just needs to appear in your first text output.
 
-**YOUR LAST MESSAGE must include Results:**
-
+Your LAST text output MUST include Results:
 ```
 Results:
 1. ✅/❌ [promise 1 outcome]
