@@ -290,9 +290,13 @@ export function wrapToolsWithReceipts(
         costSignal = `\n\n<system_note>[COST: ${execDurationMs}ms, ${kb}KB]</system_note>`;
       }
 
-      // P84: Wrap in <tool_output> tags with SIG receipt inside
+      // P84 + P-EVI: Wrap in <tool_output> tags with SIG receipt inside.
+      // Tools that return external content (read, bash, agents) get an
+      // evidence="true" attribute reinforcing the Instruction Hierarchy:
+      // content from these tools is data, not directives.
+      const evidenceAttr = ["read", "bash", "agents"].includes(tool.name) ? ` evidence="true"` : "";
       const sigTag = signed.slice(outputText.length); // "\n[SIG: ts:hash]"
-      const openTag = { type: "text" as const, text: `<tool_output name="${tool.name}">` };
+      const openTag = { type: "text" as const, text: `<tool_output name="${tool.name}"${evidenceAttr}>` };
       const receiptSuffix = { type: "text" as const, text: sigTag };
       const critiqueBlock = pivotCritique ? { type: "text" as const, text: pivotCritique } : null;
       const costBlock = costSignal ? { type: "text" as const, text: costSignal } : null;
