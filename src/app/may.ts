@@ -1,7 +1,7 @@
 import { createInterface } from "node:readline";
 import { fileURLToPath } from "node:url";
 import { resolve, dirname } from "node:path";
-import { existsSync, readFileSync, writeFileSync, unlinkSync, mkdirSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync, appendFileSync, unlinkSync, mkdirSync } from "node:fs";
 import { getModel } from "@mariozechner/pi-ai";
 import type { ModelWithApiKey } from "../lib/types.js";
 import { SubagentManager, evaluateTask, writeSkippedEvaluations, classifyError } from "../lib/index.js";
@@ -235,6 +235,19 @@ const manager = new SubagentManager({
         }
       }, 3000);
     }
+  },
+  onSessionBlocked: (agentName, sessionId, reason) => {
+    bus.emit({ type: "info", message: `[escalation] ⚠️ ${agentName} session ${sessionId} blocked/failed: ${reason}` });
+    // Write to May's todo.md so it shows up in the next heartbeat
+    const mayTodoPath = resolve(AGENTS_ROOT, "may", "workspace", "todo.md");
+    const escalationLine = `- [ ] [escalation ${new Date().toISOString().slice(0, 16)}] ${agentName} session ${sessionId} — ${reason}\n`;
+    try {
+      if (existsSync(mayTodoPath)) {
+        appendFileSync(mayTodoPath, escalationLine, "utf-8");
+      } else {
+        writeFileSync(mayTodoPath, `# May — Todo\n\n${escalationLine}`, "utf-8");
+      }
+    } catch { /* best-effort */ }
   },
 });
 
