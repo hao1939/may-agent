@@ -270,5 +270,5 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 ### 3. Structured Checkpoints (Common Sense P3.5)
 - **Problem**: Agents lose context between sessions and re-do work.
 - **Fix**: Implement `checkpoint()` tool (StatePlane pattern).
-- **Status**: [Proposal] Brief sent to Tech-Lead.
-- **Next**: Wait for Tech-Lead implementation.
+- **Status**: **[VERIFIED]** `src/lib/tools/checkpoint.ts` deployed to 7 agents. Verified by Bob.
+- **Next**: Coach to train usage.

@@ -3,7 +3,7 @@
     "name": "heartbeat",
     "type": "heartbeat",
     "agent": "may",
-    "intervalMs": 600000,
+    "intervalMs": 1800000,
     "message": "[heartbeat] Read agents/may/heartbeat.md and work through it. You have full authority to act — dispatch approved work, fix issues, don't wait for permission.",
     "enabled": true,
     "description": "May's heartbeat — follow-up, system health, initiative (30min)",
