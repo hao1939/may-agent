@@ -25,12 +25,12 @@ The only valid experiments are the two post-discovery micro-edit runs
 
 ## Aggregate Evidence Summary (updated 2026-03-17, self-evolve H1400+)
 
-**38 experiments total** across 13 methods. Key findings:
+**39 experiments total** across 13 methods. Key findings:
 
 | Method | # Experiments | Regressions? | Improvements? | Verdict |
 |--------|-------------|-------------|--------------|---------|
 | #1 SOUL Guard | 2 (1 confounded) | Ghost Bug only | 0 | SAFE, INEFFECTIVE |
-| #2 Heartbeat Step | 2 (both confounded) | Ghost Bug only | untested clean | NEEDS RE-TEST |
+| #2 Heartbeat Step | 3 (2 confounded, 1 clean) | 0 (Ghost Bug confirmed) | 0 | SAFE, INEFFECTIVE |
 | #3 LESSONS Entry | 2 (1 confounded, 1 inconclusive) | 0 (clean test safe) | Unknown (scenario bug) | SAFE, NEEDS VALID SCENARIO |
 | #4 Skill File | 2 | 0 | 0 | SAFE, blocked on scenarios |
 | #6 Knowledge File | 1 (confounded) | Ghost Bug only | untested clean | NEEDS RE-TEST |
@@ -42,15 +42,15 @@ The only valid experiments are the two post-discovery micro-edit runs
 | Identity Exception | 1 | 0 | 0 | SAFE, INEFFECTIVE |
 
 **Core finding**: Text-based coaching is SAFE (Ghost Bug was the only cause of
-regressions) but 0/7 clean experiments improved judgment behavior. Either:
+regressions) but 0/8 clean experiments improved judgment behavior. Either:
 - (a) Text can't override model judgment priors → need structural methods
 - (b) Current gym scenarios don't measure the improvement → need better scenarios
 - (c) The specific text content hasn't been right yet → need different framing
 
-**Priority for next experiments**: Re-test confounded methods (#2, #3, #6, #12)
-with clean methodology. If those also show INEFFECTIVE, the "text can't fix
-judgment" conclusion strengthens. Try structural/non-text methods for the 4
-unsolved judgment patterns.
+**Priority for next experiments**: Re-test confounded methods (#6, #12)
+with clean methodology. #2 re-tested (exp-037) — SAFE, INEFFECTIVE.
+If those also show INEFFECTIVE, the "text can't fix judgment" conclusion
+strengthens. Try structural/non-text methods for the 4 unsolved judgment patterns.
 
 ## Methods
 
@@ -133,6 +133,22 @@ at session start.
 showed regression, but both were caused by the agent.json name change. The
 hypothesis about cognitive overhead was never properly tested. Re-run with
 correct methodology (keep original agent name) to determine true effect.
+
+**Clean re-test (exp-037, 2026-03-17):** Optimizer on skip-verification
+(FM-3.3 — hidden bug pattern). Added step 6: "REVIEW CODE BEYOND TESTS —
+Read through ALL functions looking for latent issues that tests don't catch."
+Agent.json name verified unchanged. Result: **4/5 baseline, 4/5 patched**
+(both missed hidden truncation bug). Regression check: phantom-fix 6/6→6/6.
+**ZERO regression, ZERO improvement.** Confirms Ghost Bug was sole cause
+of Sprint 1 regressions. Heartbeat step is SAFE but INEFFECTIVE — the
+task's "exactly 2 bugs" framing anchors the agent to stop after 2 fixes
+regardless of heartbeat reminders. Same anchoring effect as Method #9.
+
+**Updated Status**: **3 experiments (2 confounded, 1 clean). SAFE but
+INEFFECTIVE.** Heartbeat steps don't cause regressions (when name preserved)
+but also don't override task-anchoring behavior. Text reminders in heartbeat
+have the same limitation as SOUL guards — model follows task framing over
+procedural advice.
 
 ---
 

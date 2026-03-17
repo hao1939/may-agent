@@ -10,7 +10,7 @@
 import { readdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { loadAllSessionMetas } from "../../../src/lib/persistence.js";
-import { evaluateTask, writeSkippedEvaluations } from "../../../src/lib/evaluator.js";
+import { evaluateTask, writeSkippedEvaluations, writeHeuristicEvaluations } from "../../../src/lib/evaluator.js";
 import { trackRequest } from "../../../src/lib/requests.js";
 import type { HandlerContext, HandlerModule } from "../../../src/lib/handler-context.js";
 import type { CronEntry } from "../../../src/lib/cron-tool.js";
@@ -102,12 +102,23 @@ export async function handleEvaluateSessions(opts: {
   const result: EvaluateSessionsResult = { skipped: 0, parentsEvaluated: [], parentVerdicts: {}, sessionsEvaluated: 0, errors: [] };
 
   try {
-    result.skipped = writeSkippedEvaluations(persistDir);
+    result.skipped = await writeSkippedEvaluations(persistDir);
     if (result.skipped > 0) onLog?.(`[eval] Wrote ${result.skipped} skip evaluation(s)`);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     result.errors.push(`writeSkippedEvaluations failed: ${msg}`);
     onLog?.(`[eval] writeSkippedEvaluations failed: ${msg}`);
+  }
+
+  // Heuristic evaluation for root sessions (no parent)
+  try {
+    const heuristic = await writeHeuristicEvaluations(persistDir);
+    if (heuristic > 0) onLog?.(`[eval] Wrote ${heuristic} heuristic evaluation(s) for root sessions`);
+    result.skipped += heuristic; // Count in skipped bucket for reporting
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    result.errors.push(`writeHeuristicEvaluations failed: ${msg}`);
+    onLog?.(`[eval] writeHeuristicEvaluations failed: ${msg}`);
   }
 
   const parents = findParentsWithUnevaluatedChildren(persistDir);
