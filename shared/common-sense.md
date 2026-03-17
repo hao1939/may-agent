@@ -228,3 +228,10 @@ An error isn't a failure — it's data. Report it accurately. Don't hide errors,
 ## Success Metric
 
 **Hao's corrections per day should decrease over time.** If agents have good common sense (behavioral + infrastructural), Hao shouldn't need to repeat the same corrections. Track via the Reflect system.
+
+### 3.5 Your state is the filesystem
+You have no memory between sessions. Everything you need to resume must be written down — in workspace notes, progress files, or `checkpoint()`. If you learned something important, write it before your session ends.
+
+**Owner: both**
+- *Infra (Bob)*: **[IN PROGRESS]** `checkpoint()` tool designed and briefed to Tech-Lead.
+- *Behavioral (Coach)*: Agents should proactively write progress notes, not rely on the system to capture everything.
