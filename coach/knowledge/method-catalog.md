@@ -45,7 +45,7 @@ Key findings across 13+ methods:
 | Identity Exception | 1 | 0 | 0 | SAFE, INEFFECTIVE |
 
 **Core finding**: Text-based coaching is SAFE (Ghost Bug was the only cause of
-regressions) but **0/11 clean experiments improved judgment behavior**. The
+regressions) but **0/12 clean experiments improved judgment behavior**. The
 "delivery mechanism" hypothesis is now closed — exp-041 proved that inline
 content in the Pre-Task Checklist (highest-visibility SOUL location) also
 fails against task-anchoring. The agent has the instruction, reads it, and
@@ -53,6 +53,13 @@ ignores it when the task says "exactly 2 bugs." Remaining paths:
 - (a) Structural methods (tool guards, post-fix hooks) — force behavior mechanically
 - (b) Scenario redesign — remove count-anchoring to test if coaching works on open-ended tasks
 - (c) Different agent architectures — multi-step workflows that enforce review passes
+
+**DEFINITIVE FINDING (exp-042/043, 2026-03-17T19:26):** Open-ended scenario
+variant ALSO failed. Removed "exactly 2 bugs" from task, added "review all code
+for other issues," AND applied inline SOUL coaching. Still 4/5. Count-anchoring
+was NOT the cause — the model's natural behavior is fix-test-failures-then-stop.
+Text coaching cannot override this. **Path (b) is now closed. Only structural
+methods (a) or architectural changes (c) remain viable.**
 
 **Critical delivery mechanism insight (exp-038, CORRECTED 2026-03-17T19:10)**:
 Knowledge file #6 content was present but never actively consumed. Code review
