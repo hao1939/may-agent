@@ -112,6 +112,10 @@ export function isToolError(outputText: string): boolean {
   if (/\bE_RETRY_LIMIT\b/.test(outputText)) return true;
   // Edit tool: multiple occurrences
   if (/\bFound \d+ occurrences\b/.test(outputText)) return true;
+  // Validation errors (empty args, missing required params)
+  if (/\bValidation failed for tool\b/.test(outputText)) return true;
+  // Write blocked by cross-edit guard
+  if (/\bWRITE BLOCKED\b/.test(outputText)) return true;
   return false;
 }
 
