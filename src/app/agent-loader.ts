@@ -54,6 +54,8 @@ export interface AgentConfig {
   delegateDeny?: { agents: string[]; hint: string };
   /** Additional context files to include in system prompt (relative to agent dir). */
   context_files?: string[];
+  /** Maximum state-changing operations (bash, write, edit, commit) per session. */
+  opBudget?: number;
 }
 
 // ── Loader options ──────────────────────────────────────────────────────
@@ -360,6 +362,7 @@ function buildTools(config: AgentConfig, opts: AgentLoaderOptions): AgentTool[] 
             projectRoot: opts.projectRoot,
             apiKey: model.apiKey,
             memoryLimit: config.memoryLimit,
+            opBudget: config.opBudget,
           });
         };
 
@@ -527,6 +530,7 @@ export function loadAgents(opts: AgentLoaderOptions): LoadResult {
       memoryLimit: config.memoryLimit,
       compaction: config.compaction,
       contextFiles: config.context_files?.map((f) => resolve(agentDir, f)),
+      opBudget: config.opBudget,
     });
 
     if (isUpdate) {

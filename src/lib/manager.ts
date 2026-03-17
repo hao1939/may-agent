@@ -528,6 +528,21 @@ export class SubagentManager {
       }
     }
 
+    // ── Final safety net: finish() clears empty-response errors ────────
+    // Defense-in-depth: if the agent successfully called finish(), any
+    // empty-response / 0-output-token / unhandled-stop-reason error is
+    // a post-finish model hiccup, not a real failure. Clear it.
+    // This catches cases where the error was set by a code path that
+    // the earlier checks (lines 509-512) didn't cover.
+    if (session.error && hasFinishToolCall(messages)) {
+      const e = session.error;
+      if (e.includes("empty response") || e.includes("0 output tokens") ||
+          e.includes("Unhandled stop reason")) {
+        session.error = undefined;
+        session.agent.state.error = undefined;
+      }
+    }
+
     // ── Determine archive status, archive, remove ──────────────────────
     if (session.autoClose === "never" && !wasAborted) {
       // Interface session (Chat) — stays alive in "idle" state
