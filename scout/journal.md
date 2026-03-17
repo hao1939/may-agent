@@ -222,3 +222,33 @@ Key structural insights:
 - 2 new outputs (DD#404 + CR#145) = ~15.3KB new analysis
 - DD count: 404 total
 - CR count: 145 total
+
+
+---
+
+### 2026-03-17 Session (s_1773772495441_239) — DD#409-410, CR#150: State-Trust Duality
+
+**Focus:** Deep-dives on StatePlane (cognitive state plane for bounded-context agents) and CESA-LinUCB (contextual trust boundaries in multi-evaluator systems), plus cross-reference synthesizing the "Gated Agent" architecture pattern.
+
+**Wednesday batch still not available** — arXiv still showing Tuesday's papers. Pivoted to covering high-value uncovered papers from cs.AI cross-listings.
+
+**New outputs (3 total):**
+1. **DD#409: StatePlane — Cognitive State Plane for Long-Horizon AI Under Bounded Context** (~8KB, ★★★★★). arXiv:2603.13644. Model-agnostic cognitive architecture with five components: event boundary detection (KL-divergence), episodic encoding (structured tuples), tripartite state store (episodic/semantic/procedural), goal-conditioned retrieval, and bounded state reconstruction. Formalizes selective encoding via information bottleneck (min I(S;H) - β·I(S;Y_future)). Introduces "evidence not instruction" security rule — retrieved state informs but never commands. Two-call integration API (PrepareContext/CommitOutcome). Directly mirrors our heartbeat/journal/workspace architecture. Conceptual framework only — benchmarks proposed but no experiments run.
+
+2. **DD#410: CESA-LinUCB — Learning When to Trust via Contextual Trust Boundaries** (~8.5KB, ★★★★★). arXiv:2603.13356 (U. Waterloo). First formal treatment of contextual sycophancy — evaluators truthful in some contexts but adversarial in others. Proves COD impossibility: standard robust methods suffer linear regret under hostile majority. CESA-LinUCB learns context-dependent trust boundaries, recovers ground truth from 80% hostile majority using only ~5% sparse ground-truth probes. Key asymmetry: false distrust costs O(√T), false trust costs O(T) — conservative defaults are strictly better. Generalizes CR#145's pruning insight to continuous, context-dependent trust.
+
+3. **CR#150: The State-Trust Duality — Bounded Memory Meets Contextual Reliability** (~6.5KB, ★★★★★). Synthesizes DD#409 and DD#410 into unified framework. Identifies duality: StatePlane solves "what to remember," CESA solves "who to believe." Both independently discover asymmetric error costs (forgetting < retaining toxic state; false distrust < false trust). Proposes four-layer Trusted Bounded State architecture (state management → trust modeling → write gating → read filtering). Identifies emergent meta-pattern: **The Gated Agent** — unified architecture where every information flow (inputs, memory, actions, team membership) passes through context-dependent gates with conservative defaults. Connects DD#408 (action gates), DD#409 (state gates), DD#410 (input gates), CR#145 (team gates).
+
+**Key multi-agent insights:**
+- **State ≠ Storage**: Preserving constraints/commitments/rationale vs. preserving text is the core design distinction
+- **"When to trust" > "Who to trust"**: Context-dependent trust boundaries strictly dominate global trust scores
+- **Asymmetric error costs**: Both memory and trust exhibit same pattern — conservative defaults (forget/distrust) are strictly better than permissive defaults (retain/trust)
+- **Sparse supervision sufficiency**: ~5% ground-truth checkpoints prevent consensus traps and state poisoning
+- **The Gated Agent**: Emerging meta-pattern unifying input gates, state gates, action gates, and team gates under conservative-default principle
+
+**Connections:** DD#405 (TrinityGuard safety taxonomy), DD#408 (ILION execution gates), DD#400 (Seven Laws), DD#379 (Orla), DD#404 (A4VL), DD#375 (ASVO), DD#377 (REDEREF), CR#145 (Pruning Over Voting), CR#146 (Safety-Coordination Feedback Loop)
+
+### Session Stats
+- 3 new outputs (DD#409 + DD#410 + CR#150) = ~23.5KB new analysis
+- DD count: 410 total
+- CR count: 150 total
