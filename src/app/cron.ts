@@ -210,6 +210,16 @@ export class Cron {
     if (!mode) return; // entry was rejected by resolveMode
 
     const fire = () => {
+      // For heartbeats, update lastTriggerTime only if the heartbeat actually fires
+      // (not skipped due to heartbeatRunning). This prevents agents.send() triggers
+      // arriving shortly after a scheduled fire from creating back-to-back sessions.
+      if (mode === "heartbeat") {
+        const agentName = entry.agent || "may";
+        const hbKey = `heartbeat:${agentName}`;
+        if (!this.heartbeatRunning.has(hbKey)) {
+          this.lastTriggerTime.set(entry.name, Date.now());
+        }
+      }
       switch (mode) {
         case "heartbeat":
           this.fireHeartbeat(entry);
