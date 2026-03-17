@@ -2,9 +2,9 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-BUN="${HOME}/.bun/bin/bun"
-if ! command -v "$BUN" &>/dev/null; then
-  echo "Error: bun not found at $BUN. Install with: curl -fsSL https://bun.sh/install | bash"
+BUN="$(command -v bun 2>/dev/null || echo "${HOME}/.bun/bin/bun")"
+if ! [ -x "$BUN" ]; then
+  echo "Error: bun not found. Install with: curl -fsSL https://bun.sh/install | bash"
   exit 1
 fi
 

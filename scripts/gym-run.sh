@@ -104,6 +104,18 @@ Work in this directory: $GYM_WORK
 $(cat "$SCENARIO_DIR/task.md")
 EOF
 
+# ── Resolve binary ─────────────────────────────────────────────────
+
+# Use the compiled binary if available, fall back to source.
+# MAY_BIN env var overrides both.
+if [[ -n "${MAY_BIN:-}" ]]; then
+  MAY_CMD=("$MAY_BIN")
+elif [[ -x "$PROJECT_ROOT/bundle/may-agent" ]]; then
+  MAY_CMD=("$PROJECT_ROOT/bundle/may-agent")
+else
+  MAY_CMD=(bun "$PROJECT_ROOT/src/app/may.ts")
+fi
+
 # ── Run agent ──────────────────────────────────────────────────────
 
 ONESHOT_OUT="$GYM_ROOT/oneshot-result.json"
@@ -111,7 +123,7 @@ ONESHOT_OUT="$GYM_ROOT/oneshot-result.json"
 ONESHOT_EXIT=0
 AGENTS_ROOT="$GYM_AGENTS" \
 STATE_DIR="$GYM_STATE" \
-  bun "$PROJECT_ROOT/src/app/may.ts" \
+  "${MAY_CMD[@]}" \
     --oneshot \
     --agent "$AGENT_NAME" \
     --task-file "$TASK_FILE" \
@@ -132,13 +144,18 @@ fi
 
 SCORE_OUT="$GYM_ROOT/score-result.json"
 SCORE_EXIT=0
-node "$SCENARIO_DIR/success_criteria.js" "$GYM_WORK" > "$SCORE_OUT" 2>/dev/null || SCORE_EXIT=$?
+bun "$SCENARIO_DIR/success_criteria.js" "$GYM_WORK" > "$SCORE_OUT" 2>/dev/null || SCORE_EXIT=$?
 
 # ── Build combined result ──────────────────────────────────────────
 
 SESSION_PATH=""
-if [[ -n "$SESSION_ID" && -d "$GYM_STATE/sessions/$SESSION_ID" ]]; then
-  SESSION_PATH="$GYM_STATE/sessions/$SESSION_ID"
+if [[ -n "$SESSION_ID" ]]; then
+  for candidate in "$GYM_STATE/sessions/$SESSION_ID" "$GYM_STATE/sessions/history/$SESSION_ID"; do
+    if [[ -d "$candidate" ]]; then
+      SESSION_PATH="$candidate"
+      break
+    fi
+  done
 fi
 
 python3 << PYEOF
