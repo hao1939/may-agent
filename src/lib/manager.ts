@@ -38,6 +38,7 @@ import type {
   SubagentDefinition,
   SessionInfo,
   TaskResult,
+  FinishResult,
   SessionTreeNode,
   ManagerHealthReport,
   AuditHealthOptions,
@@ -700,6 +701,20 @@ export class SubagentManager {
       }
     }
 
+    // ── Extract structured finish data (F2: Structured Result Passing) ──
+    {
+      const finishParams = extractFinishParams(messages);
+      if (finishParams) {
+        session.finishResult = {
+          status: finishParams.status as "success" | "failure" | "blocked" | "partial",
+          summary: finishParams.summary,
+          deliverables: finishParams.deliverables,
+          blockers: finishParams.blockers,
+          next_steps: finishParams.next_steps,
+        };
+      }
+    }
+
     if (this.onSessionComplete) {
       const info: SessionInfo = {
         sessionId: session.sessionId,
@@ -1337,6 +1352,7 @@ export class SubagentManager {
       error: session.error,
       turnsUsed: session.turnCount,
       instability: { retries, toolErrors, turns, verdict: tainted ? "tainted" : "clean" },
+      finishResult: session.finishResult,
     };
   }
 
@@ -1363,6 +1379,17 @@ export class SubagentManager {
       duration,
       outputDir: sessionOutputDir(this.registry.persistDir, sessionId),
       error: persisted.error,
+      finishResult: (() => {
+        const fp = extractFinishParams(messages);
+        if (!fp) return undefined;
+        return {
+          status: fp.status as "success" | "failure" | "blocked" | "partial",
+          summary: fp.summary,
+          deliverables: fp.deliverables,
+          blockers: fp.blockers,
+          next_steps: fp.next_steps,
+        };
+      })(),
     };
   }
   /** Check if a session is currently active in-memory. */

@@ -212,6 +212,8 @@ export interface ActiveSession {
   orderId?: string;
   /** Request ID linking this session to the unified request tracker. */
   requestId?: string;
+  /** Structured finish() data extracted from the agent's completion. */
+  finishResult?: import("./types.js").FinishResult;
 }
 
 /** Options for spawning a session with parent/workflow context. */
