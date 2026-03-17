@@ -38,6 +38,7 @@ export { createHealthCheckTool } from "./tools/index.js";
 export { createSystemStatusTool } from "./tools/index.js";
 export type { HealthReport } from "./tools/index.js";
 export { createFinishTool } from "./tools/index.js";
+export { createCheckpointTool, readCheckpoints, readLatestCheckpoint } from "./tools/index.js";
 export type { FinishToolOptions } from "./tools/index.js";
 export { resolveHallucinatedPath, extractHallucinatedRelPath, isMetaRecursionCommand } from "./tools/index.js";
 export { createScrapeTool } from "./scrape.js";

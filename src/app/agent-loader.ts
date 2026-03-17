@@ -33,6 +33,7 @@ import {
   createScrapeTool,
   createSystemStatusTool,
   createFinishTool,
+  createCheckpointTool,
 } from "../lib/index.js";
 import { createAgentGrowthTools } from "../lib/tools/agent-growth.js";
 import { createSendTool } from "../lib/tools/send-tool.js";
@@ -342,6 +343,25 @@ function buildTools(config: AgentConfig, opts: AgentLoaderOptions): AgentTool[] 
         break;
       }
 
+      case "checkpoint": {
+        // Session ID is not known at registration time — use a placeholder
+        // that gets resolved at runtime. The wrapToolsWithReceipts wrapper
+        // in manager.ts operates on the same tools array, so the checkpoint
+        // tool will be wrapped alongside all other tools.
+        // The sessionId is injected via a mutable ref that the manager sets.
+        let currentSessionId = "unknown";
+        tools.push(
+          createCheckpointTool({
+            sessionId: () => currentSessionId,
+            persistDir,
+          }),
+        );
+        // Store setter on the tool for the manager to call at session start
+        const cpTool = tools[tools.length - 1] as any;
+        cpTool._setSessionId = (id: string) => { currentSessionId = id; };
+        break;
+      }
+
       case "agent-growth": {
         const registerAgentFromDir = (agentDir: string) => {
           const config = loadAgentConfig(agentDir, opts.bus);
@@ -409,6 +429,7 @@ const VALID_TOOL_PRESETS = new Set([
   // TODO: implement verify_skill tool preset when skill verification is integrated
   // "verify_skill",
   "finish",
+  "checkpoint",
   "system-status",
   "system_status",
   "send-only",
