@@ -19,6 +19,7 @@ import {
   computeToolArgsKey,
   STATE_CHANGING_TOOLS,
   TOOL_PIVOT_LIMIT,
+  STUCK_WARNING_THRESHOLD,
 } from "./manager-utils.js";
 import type { ActiveSession } from "./manager-utils.js";
 import { sessionDir, readSessionMeta, writeSessionMeta } from "./persistence.js";
@@ -302,6 +303,13 @@ export function wrapToolsWithReceipts(
         session.turnBudgetWarned = true;
         const warningText = `\n\n⚠️ [SYSTEM WARNING: Turn Budget ${session.turnCount}/${session.turnBudgetWarningAt}] You have used ${session.turnCount} turns. Wrap up your current task — summarize progress, write any pending output, and finish. Do NOT start new exploratory work.`;
         contentBlocks.push({ type: "text" as const, text: warningText });
+      }
+
+      // Stuck Detection Warning: inject once when consecutive error turns hit threshold
+      if (session && session.consecutiveErrorTurns >= STUCK_WARNING_THRESHOLD && !session.stuckWarningInjected) {
+        session.stuckWarningInjected = true;
+        const stuckWarningText = `\n\n🚨 SYSTEM ALERT: You are in a repetitive failure loop. You have had ${session.consecutiveErrorTurns} consecutive turns where every tool call errored. Stop. Pivot to a completely different approach or use finish({ status: "blocked" }) to report what is blocking you.`;
+        contentBlocks.push({ type: "text" as const, text: stuckWarningText });
       }
 
       contentBlocks.push(closeTag);
