@@ -82,6 +82,12 @@ describe("V2 agents tool", () => {
     expect(result.error).toContain("requires");
   });
 
+  it("call to unregistered agent returns error", async () => {
+    const tool = manager.createAgentsTool();
+    const result = await callTool(tool, { action: "call", agent: "nonexistent", task: "test" });
+    expect(result.error).toContain("not registered");
+  });
+
   it("call with denied agent returns error", async () => {
     manager.register({
       name: "coder",
