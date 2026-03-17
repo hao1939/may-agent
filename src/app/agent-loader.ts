@@ -435,6 +435,7 @@ const VALID_TOOL_PRESETS = new Set([
   "finish",
   "system-status",
   "system_status",
+  "send-only",
 ]);
 
 const REQUIRED_FIELDS: (keyof AgentConfig)[] = ["name", "description", "domain", "model", "tools"];
