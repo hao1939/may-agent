@@ -38,6 +38,15 @@ Major categories:
 - Model-level attractors (C17, C29, C33, C35-C36, C40)
 - Security/safety (covered by security-audit.md)
 
+## Infrastructure Deployments (tracking for behavioral impact)
+
+| Tool/Feature | Deployed | Agents | Common Sense | Behavioral Training Needed? |
+|---|---|---|---|---|
+| `finish()` | Yes | All | P1.4 | No — already habitual via heartbeat/cron injection |
+| `checkpoint()` | 2026-03-17 | 7 (bob, coach, coder, optimizer, qa, scout, tech-lead) | P3.5 | **Monitor** — tool is self-describing; watch for non-usage patterns |
+| verbose-tools | Yes | All | P2.3 | No — automatic (tool returns preview) |
+| stuck-detection | Yes | All | P3.3 | No — automatic (system detects) |
+
 ## Metrics (as of 2026-03-17)
 
 - Total evaluations: 2738+
