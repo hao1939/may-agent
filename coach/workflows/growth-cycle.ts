@@ -49,6 +49,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   if (step1.status === "error") {
     return ctx.escalate("step 1 failed", { error: step1.error });
   }
+  // Interrupted sessions may still have useful partial output — proceed
+  // with whatever the agent produced before being cut off.
 
   // Step 2: Fork and apply
   const patch = await ctx.runAgent("coach",
