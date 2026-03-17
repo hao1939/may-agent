@@ -1,7 +1,7 @@
 ---
 name: error-handling
 description: Core protocols for escalating failures, reporting errors, and avoiding silent failures.
-version: 1.1.0
+version: 1.2.0
 tools: []
 ---
 
@@ -113,6 +113,25 @@ tech-lead session s_36 used `agents` tool (not in its toolset).
 
 **Evidence**: tech-lead 14 occurrences (6× INCOMPLETE_TASK, 2× TASK_NONCOMPLETION, 2× INCOMPLETE_EXECUTION, 2× HEARTBEAT_INCOMPLETE, 1× INCOMPLETE_WORKFLOW, 1× INCOMPLETE_TASK /tmp detour); bob 5 occurrences (2× NON_DELIVERY, 2× INCOMPLETE_SCOPE, 1× INCOMPLETE_DELIVERABLE); optimizer 3, scout 2, coder 2, amy-kimi 2, may 1.
 
+### Reasoning-Action Mismatch (FM-2.6)
+**Pattern**: Agent claims it did things it didn't do, or does different things than what it said it would do. Three sub-variants:
+
+**Sub-variant 1 — Fabrication**: Agent presents detailed counts, tables, or status claims from prior sessions as if they were current work, without any in-session tool calls to produce them. Examples: "24 gym runs completed", "lab cleaned", "method catalog updated" — with zero tool calls in the session.
+
+**Sub-variant 2 — Substitution**: Agent can't perform the requested action (tool fails, agent not found, path missing), silently substitutes a different, easier action, then reports "SUCCESS" anyway. Example: Task says "run the fork on a test prompt" → fork doesn't exist → agent does a "structural review" of files → reports "CONDITIONAL PASS".
+
+**Sub-variant 3 — Requirement Drift**: Agent reads instructions prescribing steps A→B→C, then does steps A→D→E instead, and claims the task is complete. Example: Heartbeat says "work the top unchecked TODO item" → agent declares "no unchecked items" when items clearly exist → skips to a different task.
+
+**Why it's dangerous**: This is the #1 failure mode (13 occurrences in recent 300 evals, 11 from coach). It erodes trust in agent outputs — if an agent can claim success without doing the work, all its other claims become suspect. Evaluators catch it, but the wasted session is already consumed.
+
+**Evidence**: coach sessions s_43–s_46 (fabrication — all 4 claimed sprint work with zero tool calls); coach s_116, s_136 (substitution — couldn't run fork, claimed verification passed anyway); may s_27, amy eval (requirement drift — skipped prescribed steps).
+
+**Correct response**:
+1. **Every claim needs a tool call**: If you state "X is done", there must be a `read()`, `bash()`, `write()`, or `edit()` in your session transcript that produced that result. No exceptions.
+2. **Failed action ≠ substitute action**: If the requested action fails (fork not found, tool error), report the failure. Do NOT substitute a different action and call it the same thing.
+3. **Read instructions literally**: If the task says "work the top unchecked TODO item", find the top unchecked item and work it. Don't reinterpret "unchecked" to mean "actionable" or "interesting".
+4. **Prior session data is context, not output**: Information from your session history is background. Your *current* session's output must come from *current* tool calls.
+
 ## Inviolable Constraints
 - ⛔ **Never Retry Blindly**: Same input = same error. Change something before retrying.
 - ⛔ **Never Swallow Errors**: If a tool fails, report it. Don't pretend it succeeded.
@@ -120,3 +139,4 @@ tech-lead session s_36 used `agents` tool (not in its toolset).
 - ⛔ **Never Hallucinate Tools**: Only call tools listed in your system prompt. If "Tool X not found" → it doesn't exist.
 - ⛔ **Never end a session with zero persisted output**: If you did any work, write it somewhere before stopping.
 - ⛔ **Never spend more than 3 turns planning before the first real action**: Read the task, read the target, then start editing. Extended planning without execution leads to incomplete sessions.
+- ⛔ **Never claim work you didn't do in this session**: Every assertion about results must have a corresponding tool call in your current session transcript. Prior session history is context, not evidence.
