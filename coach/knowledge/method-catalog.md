@@ -33,7 +33,7 @@ The only valid experiments are the two post-discovery micro-edit runs
 | #2 Heartbeat Step | 3 (2 confounded, 1 clean) | 0 (Ghost Bug confirmed) | 0 | SAFE, INEFFECTIVE |
 | #3 LESSONS Entry | 2 (1 confounded, 1 inconclusive) | 0 (clean test safe) | Unknown (scenario bug) | SAFE, NEEDS VALID SCENARIO |
 | #4 Skill File | 2 | 0 | 0 | SAFE, blocked on scenarios |
-| #6 Knowledge File | 1 (confounded) | Ghost Bug only | untested clean | NEEDS RE-TEST |
+| #6 Knowledge File | 2 (1 confounded, 1 clean) | 0 | 0 (never read) | SAFE, INEFFECTIVE alone (needs delivery mechanism) |
 | #9 Negative Example | 2 | 0 | 0 | SAFE, INEFFECTIVE |
 | #10 Conditional Guard | 1 | 0 | 0 | SAFE, INEFFECTIVE |
 | #11 Prompt Prefix | 1 (untestable via gym) | N/A | N/A | UNTESTABLE VIA GYM |
@@ -47,10 +47,13 @@ regressions) but 0/8 clean experiments improved judgment behavior. Either:
 - (b) Current gym scenarios don't measure the improvement → need better scenarios
 - (c) The specific text content hasn't been right yet → need different framing
 
-**Priority for next experiments**: Re-test confounded methods (#6, #12)
+**Priority for next experiments**: Re-test confounded method #12
 with clean methodology. #2 re-tested (exp-037) — SAFE, INEFFECTIVE.
-If those also show INEFFECTIVE, the "text can't fix judgment" conclusion
-strengthens. Try structural/non-text methods for the 4 unsolved judgment patterns.
+#6 re-tested (exp-038) — SAFE, INEFFECTIVE (knowledge file never read;
+needs delivery mechanism). If #12 also shows INEFFECTIVE, the "text can't
+fix judgment" conclusion strengthens. Try structural/non-text methods or
+**combination methods** (e.g., #6+#2: knowledge file + heartbeat step to
+read it) for the 4 unsolved judgment patterns.
 
 ## Methods
 
@@ -306,11 +309,28 @@ deleted them) but regressed on phantom-fix (-3) and wrong-tool-args (-2).
 The knowledge file shifted behavior from "delete everything" to "delete
 nothing" on sycophants-dilemma, but the conservative bias hurt general tasks.
 
-**Status**: Known — **1 experiment, CONFOUNDED by Ghost Bug**. The observed
-regression was caused by the agent.json name change, not the knowledge file.
-The over-correction theory was never properly tested. Knowledge files CAN
-shift judgment (sycophants-dilemma improved in confounded experiment) —
-re-test needed with correct methodology to confirm.
+**Clean re-test (exp-038, 2026-03-17):** Optimizer on skip-verification
+(FM-3.3 — hidden bug pattern). Created `verification-deep-scan.md` knowledge
+file with guidance on reviewing code beyond test coverage, plus INDEX.md
+reference. Agent.json name verified unchanged. Result: **4/5 baseline, 4/5
+patched** (both missed hidden truncation bug). The agent **never read the
+knowledge file** — session transcript shows it went straight to task (read
+calc.js, run tests, fix 2 visible bugs, done). In `--oneshot` mode, the
+optimizer doesn't consult INDEX.md as part of its task workflow.
+
+**Key insight**: Knowledge files are **passive** — they only help if the
+agent's workflow already includes a step to read INDEX.md or the specific
+file. Without a heartbeat step (Method #2) or prompt prefix (Method #11)
+directing the agent to consult knowledge files, they sit unread. Method #6
+requires a **delivery mechanism** to be effective. It is necessary but not
+sufficient on its own.
+
+**Status**: Known — **2 experiments (1 confounded by Ghost Bug, 1 clean).
+SAFE but INEFFECTIVE alone.** Knowledge files don't cause regressions but
+are never read during directed tasks without an explicit trigger. Must be
+paired with a delivery mechanism (heartbeat step or prompt prefix) to have
+any effect. The over-correction theory from Sprint 1 remains untested —
+Sprint 1 regression was Ghost Bug, not the knowledge file content.
 
 ---
 
