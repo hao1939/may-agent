@@ -1,33 +1,122 @@
 /**
- * Cron tests — tests the current Cron class behavior.
+ * Cron tests — tests the Cron class behavior.
  *
  * Execution modes:
  *   1. heartbeat: manager.run() + waitFor() — fresh task session each fire
  *   2. job-handler: registered JS function runs in-process
  *   3. job-detached: spawnDetachedAgent() in separate OS process
  *
- * No legacy followUp mode — that was removed in the Chat+Task refactor.
+ * Results are tracked via the requests table (SQLite).
+ * Since vitest runs under Node.js (no bun:sqlite), we mock the request functions.
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { mkdtempSync, writeFileSync, readFileSync, rmSync, existsSync, mkdirSync } from "node:fs";
+import { mkdtempSync, writeFileSync, rmSync, mkdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { Cron } from "../src/app/cron.js";
-import type { JobResult } from "../src/lib/cron-tool.js";
 
-// Mock spawnDetachedAgent — we don't want real child processes in tests
+// ── Mocks ─────────────────────────────────────────────────────────────
+
+// Mock spawnDetachedAgent — no real child processes in tests
 vi.mock("../src/lib/detached.js", () => ({
   spawnDetachedAgent: vi.fn(() => ({ pid: 99999 })),
 }));
-
 import { spawnDetachedAgent } from "../src/lib/detached.js";
 const mockSpawn = vi.mocked(spawnDetachedAgent);
 
-/**
- * Flush microtask queue so async .then() chains in fireHandler / fireHeartbeat
- * complete. Advancing by 0ms async processes pending microtasks.
- */
+// Mock request tracking — no bun:sqlite in vitest
+// We track calls and provide a simple in-memory store for overlap queries.
+const requestStore = new Map<string, { requestId: string; artifact: string; status: string; fromEntity: string; createdAt: number; context: string | null; sessionId: string | null }>();
+let requestCounter = 0;
+
+const mockTrackRequest = vi.fn((_persistDir: string, opts: any) => {
+  const requestId = `req-${++requestCounter}`;
+  requestStore.set(requestId, {
+    requestId,
+    artifact: opts.artifact ?? "",
+    status: "CREATED",
+    fromEntity: opts.fromEntity ?? "cron",
+    createdAt: Date.now(),
+    context: opts.context ?? null,
+    sessionId: opts.sessionId ?? null,
+  });
+  return requestId;
+});
+
+const mockUpdateRequest = vi.fn((_persistDir: string, requestId: string, update: any) => {
+  const entry = requestStore.get(requestId);
+  if (entry && update.status) entry.status = update.status;
+  if (entry && update.sessionId) entry.sessionId = update.sessionId;
+});
+
+// Mock getDb — returns an object with .query() and .run() that read from requestStore
+function makeMockDb() {
+  return {
+    query(sql: string) {
+      return {
+        get(...args: any[]) {
+          // Overlap check: SELECT 1 FROM requests WHERE artifact = ? AND status IN (...)
+          if (sql.includes("artifact") && sql.includes("IN ('CREATED', 'IN_PROGRESS')")) {
+            const artifact = args[0];
+            for (const entry of requestStore.values()) {
+              if (entry.artifact === artifact && (entry.status === "CREATED" || entry.status === "IN_PROGRESS")) {
+                return { 1: 1 };
+              }
+            }
+            return null;
+          }
+          // Last fire time: SELECT MAX(createdAt)
+          if (sql.includes("MAX(createdAt)")) {
+            const artifact = args[0];
+            let maxTime: number | null = null;
+            for (const entry of requestStore.values()) {
+              if (entry.artifact === artifact) {
+                if (maxTime === null || entry.createdAt > maxTime) maxTime = entry.createdAt;
+              }
+            }
+            return maxTime !== null ? { lastFire: maxTime } : null;
+          }
+          // PID check: SELECT context FROM requests WHERE artifact = ?
+          if (sql.includes("context") && sql.includes("artifact")) {
+            const artifact = args[0];
+            for (const entry of requestStore.values()) {
+              if (entry.artifact === artifact && (entry.status === "CREATED" || entry.status === "IN_PROGRESS")) {
+                return { context: entry.context };
+              }
+            }
+            return null;
+          }
+          return null;
+        },
+        all(..._args: any[]) {
+          return [];
+        },
+      };
+    },
+    run(_sql: string, _args?: any[]) {
+      // For failOrphans: UPDATE requests SET status = 'FAILED' WHERE artifact = ?
+      if (_sql.includes("status = 'FAILED'") && _args) {
+        const artifact = _args[_args.length - 1];
+        for (const entry of requestStore.values()) {
+          if (entry.artifact === artifact && (entry.status === "CREATED" || entry.status === "IN_PROGRESS")) {
+            entry.status = "FAILED";
+          }
+        }
+      }
+      return { changes: 0 };
+    },
+  };
+}
+
+vi.mock("../src/lib/requests.js", () => ({
+  getDb: vi.fn(() => makeMockDb()),
+  trackRequest: (...args: any[]) => mockTrackRequest(...args),
+  updateRequest: (...args: any[]) => mockUpdateRequest(...args),
+}));
+
+// ── Helpers ───────────────────────────────────────────────────────────
+
 const flush = async () => {
   for (let i = 0; i < 5; i++) {
     await vi.advanceTimersByTimeAsync(0);
@@ -38,8 +127,6 @@ const flush = async () => {
 function makeMockManager() {
   const calls: Array<{ method: string; args: any[] }> = [];
   let sessionCounter = 0;
-
-  // Default: waitFor resolves immediately
   let waitForResolver: ((sid: string) => Promise<void>) | null = null;
 
   return {
@@ -57,39 +144,38 @@ function makeMockManager() {
       return Promise.resolve({ status: "complete" });
     },
 
-    status() {
-      return [];
-    },
+    status() { return []; },
+    hasAgent(_name: string) { return true; },
+    agentNames() { return ["may", "bob", "optimizer"]; },
 
-    hasAgent(_name: string) {
-      return true;
-    },
-    agentNames() {
-      return ["may", "bob", "optimizer"];
-    },
-
-    /** Override waitFor behavior for testing overlap/blocking. */
     setWaitFor(fn: (sid: string) => Promise<void>) {
       waitForResolver = fn;
     },
   };
 }
 
+/** Get tracked requests by artifact name. */
+function getRequestsByArtifact(artifact: string) {
+  return [...requestStore.values()].filter((r) => r.artifact === artifact);
+}
+
+// ── Tests ─────────────────────────────────────────────────────────────
+
 describe("Cron", () => {
   let dir: string;
   let configPath: string;
-  let stateDir: string;
 
   beforeEach(() => {
     dir = mkdtempSync(resolve(tmpdir(), "cron-"));
-    // Cron derives projectRoot = resolve(dirname(configPath), "../..")
-    // so configPath must be at <dir>/agents/may/cron.json → projectRoot = <dir>
     configPath = resolve(dir, "agents", "may", "cron.json");
-    stateDir = resolve(dir, ".state");
     mkdirSync(resolve(dir, "agents", "may"), { recursive: true });
-    mkdirSync(stateDir, { recursive: true });
+    mkdirSync(resolve(dir, ".state"), { recursive: true });
     vi.useFakeTimers();
     mockSpawn.mockClear();
+    mockTrackRequest.mockClear();
+    mockUpdateRequest.mockClear();
+    requestStore.clear();
+    requestCounter = 0;
   });
 
   afterEach(() => {
@@ -125,12 +211,7 @@ describe("Cron", () => {
       ]),
     );
     const mgr = makeMockManager();
-    const c = new Cron(
-      configPath,
-      mgr as any,
-      () => "sid-1",
-      (msg) => errors.push(msg),
-    );
+    const c = new Cron(configPath, mgr as any, () => "sid-1", (msg) => errors.push(msg));
     const entries = c.load();
     expect(entries).toHaveLength(1);
     expect(entries[0].name).toBe("ok");
@@ -141,20 +222,16 @@ describe("Cron", () => {
     writeFileSync(
       configPath,
       JSON.stringify([
-        { name: "active", type: "job", intervalMs: 10000, message: "yes", enabled: true, handler: "active" },
-        { name: "disabled", type: "job", intervalMs: 10000, message: "no", enabled: false, handler: "disabled" },
+        { name: "active", type: "job", intervalMs: 10000, message: "yes", enabled: true },
+        { name: "disabled", type: "job", intervalMs: 10000, message: "no", enabled: false },
       ]),
     );
     const mgr = makeMockManager();
     let activeCalled = false;
     let disabledCalled = false;
     const c = new Cron(configPath, mgr as any, () => "sid-1");
-    c.registerHandler("active", async () => {
-      activeCalled = true;
-    });
-    c.registerHandler("disabled", async () => {
-      disabledCalled = true;
-    });
+    c.registerHandler("active", async () => { activeCalled = true; });
+    c.registerHandler("disabled", async () => { disabledCalled = true; });
     c.start();
 
     await vi.advanceTimersByTimeAsync(10000);
@@ -168,14 +245,12 @@ describe("Cron", () => {
   it("treats entries without enabled field as enabled", async () => {
     writeFileSync(
       configPath,
-      JSON.stringify([{ name: "implicit", type: "job", intervalMs: 10000, message: "go", handler: "implicit" }]),
+      JSON.stringify([{ name: "implicit", type: "job", intervalMs: 10000, message: "go" }]),
     );
     const mgr = makeMockManager();
     let called = false;
     const c = new Cron(configPath, mgr as any, () => "sid-1");
-    c.registerHandler("implicit", async () => {
-      called = true;
-    });
+    c.registerHandler("implicit", async () => { called = true; });
     c.start();
 
     await vi.advanceTimersByTimeAsync(10000);
@@ -188,14 +263,12 @@ describe("Cron", () => {
   it("stop clears all jobs", async () => {
     writeFileSync(
       configPath,
-      JSON.stringify([{ name: "a", type: "job", intervalMs: 10000, message: "m1", handler: "a" }]),
+      JSON.stringify([{ name: "a", type: "job", intervalMs: 10000, message: "m1" }]),
     );
     const mgr = makeMockManager();
     let callCount = 0;
     const c = new Cron(configPath, mgr as any, () => "sid-1");
-    c.registerHandler("a", async () => {
-      callCount++;
-    });
+    c.registerHandler("a", async () => { callCount++; });
     c.start();
 
     c.stop();
@@ -207,23 +280,18 @@ describe("Cron", () => {
   it("reload picks up new entries", async () => {
     writeFileSync(
       configPath,
-      JSON.stringify([{ name: "old", type: "job", intervalMs: 10000, message: "old", handler: "old" }]),
+      JSON.stringify([{ name: "old", type: "job", intervalMs: 10000, message: "old" }]),
     );
     const mgr = makeMockManager();
     const calls: string[] = [];
     const c = new Cron(configPath, mgr as any, () => "sid-1");
-    c.registerHandler("old", async () => {
-      calls.push("old");
-    });
-    c.registerHandler("new", async () => {
-      calls.push("new");
-    });
+    c.registerHandler("old", async () => { calls.push("old"); });
+    c.registerHandler("new", async () => { calls.push("new"); });
     c.start();
 
-    // Replace config
     writeFileSync(
       configPath,
-      JSON.stringify([{ name: "new", type: "job", intervalMs: 15000, message: "new", handler: "new" }]),
+      JSON.stringify([{ name: "new", type: "job", intervalMs: 15000, message: "new" }]),
     );
     c.reload();
 
@@ -291,19 +359,16 @@ describe("Cron", () => {
 
     const runCalls = mgr.calls.filter((c) => c.method === "run");
     expect(runCalls).toHaveLength(2);
-    // Each run returns a different session ID
     const sids = mgr.calls.filter((c) => c.method === "waitFor").map((c) => c.args[0]);
     expect(sids[0]).not.toBe(sids[1]);
 
     c.stop();
   });
 
-  it("heartbeat: records success in job-history", async () => {
+  it("heartbeat: tracks request on fire", async () => {
     writeFileSync(
       configPath,
-      JSON.stringify([
-        { name: "hb-may", type: "heartbeat", intervalMs: 30000, agent: "may", message: "heartbeat check" },
-      ]),
+      JSON.stringify([{ name: "hb-may", type: "heartbeat", intervalMs: 30000, agent: "may", message: "heartbeat check" }]),
     );
     const mgr = makeMockManager();
     const c = new Cron(configPath, mgr as any, () => "sid-1");
@@ -312,14 +377,16 @@ describe("Cron", () => {
     await vi.advanceTimersByTimeAsync(30000);
     await flush();
 
-    const historyPath = resolve(stateDir, "job-history.jsonl");
-    expect(existsSync(historyPath)).toBe(true);
-    const lines = readFileSync(historyPath, "utf-8").trim().split("\n");
-    const result: JobResult = JSON.parse(lines[0]);
-    expect(result.jobName).toBe("hb-may");
-    expect(result.type).toBe("heartbeat");
-    expect(result.status).toBe("success");
-    expect(result.agent).toBe("may");
+    expect(mockTrackRequest).toHaveBeenCalled();
+    const trackCall = mockTrackRequest.mock.calls[0];
+    expect(trackCall[1].fromEntity).toBe("cron");
+    expect(trackCall[1].toAgent).toBe("may");
+    expect(trackCall[1].artifact).toBe("hb-may");
+
+    // Should have been updated to COMPLETED
+    const updateCalls = mockUpdateRequest.mock.calls;
+    const completedUpdate = updateCalls.find((c) => c[2].status === "COMPLETED");
+    expect(completedUpdate).toBeDefined();
 
     c.stop();
   });
@@ -332,28 +399,21 @@ describe("Cron", () => {
     const mgr = makeMockManager();
     mgr.setWaitFor(() => Promise.reject(new Error("session exploded")));
     const errors: string[] = [];
-    const c = new Cron(
-      configPath,
-      mgr as any,
-      () => "sid-1",
-      (msg) => errors.push(msg),
-    );
+    const c = new Cron(configPath, mgr as any, () => "sid-1", (msg) => errors.push(msg));
     c.start();
 
     await vi.advanceTimersByTimeAsync(30000);
     await flush();
 
-    const historyPath = resolve(stateDir, "job-history.jsonl");
-    const lines = readFileSync(historyPath, "utf-8").trim().split("\n");
-    const result: JobResult = JSON.parse(lines[0]);
-    expect(result.status).toBe("failure");
-    expect(result.error).toContain("session exploded");
+    const failUpdate = mockUpdateRequest.mock.calls.find((c) => c[2].status === "FAILED");
+    expect(failUpdate).toBeDefined();
+    expect(failUpdate![2].error).toContain("session exploded");
     expect(errors.some((e) => e.includes("session exploded"))).toBe(true);
 
     c.stop();
   });
 
-  it("heartbeat: skips if previous heartbeat still processing", async () => {
+  it("heartbeat: cron timer skips if previous heartbeat still running", async () => {
     writeFileSync(
       configPath,
       JSON.stringify([{ name: "hb-slow", type: "heartbeat", intervalMs: 10000, agent: "bob", message: "hb" }]),
@@ -361,41 +421,22 @@ describe("Cron", () => {
     const mgr = makeMockManager();
     const errors: string[] = [];
     let resolveWait!: () => void;
-    mgr.setWaitFor(
-      () =>
-        new Promise<void>((r) => {
-          resolveWait = r;
-        }),
-    );
+    mgr.setWaitFor(() => new Promise<void>((r) => { resolveWait = r; }));
 
-    const c = new Cron(
-      configPath,
-      mgr as any,
-      () => "sid-1",
-      (msg) => errors.push(msg),
-    );
+    const c = new Cron(configPath, mgr as any, () => "sid-1", (msg) => errors.push(msg));
     c.start();
 
     // First fire — starts, hangs on waitFor
     await vi.advanceTimersByTimeAsync(10000);
     await flush();
 
-    // Second fire — should skip
+    // Second fire — should skip (request is still IN_PROGRESS)
     await vi.advanceTimersByTimeAsync(10000);
     await flush();
 
     expect(errors.some((e) => e.includes("skipped"))).toBe(true);
-    // Only one run() call — the second was skipped
     const runCalls = mgr.calls.filter((c) => c.method === "run");
     expect(runCalls).toHaveLength(1);
-
-    // Check skip recorded in history
-    const historyPath = resolve(stateDir, "job-history.jsonl");
-    expect(existsSync(historyPath)).toBe(true);
-    const lines = readFileSync(historyPath, "utf-8").trim().split("\n");
-    const skipResult: JobResult = JSON.parse(lines[0]);
-    expect(skipResult.status).toBe("skipped");
-    expect(skipResult.type).toBe("heartbeat");
 
     resolveWait();
     await flush();
@@ -425,30 +466,27 @@ describe("Cron", () => {
   it("job-handler: runs registered JS handler", async () => {
     writeFileSync(
       configPath,
-      JSON.stringify([{ name: "eval", type: "job", intervalMs: 30000, message: "evaluate", handler: "eval" }]),
+      JSON.stringify([{ name: "eval", type: "job", intervalMs: 30000, message: "evaluate" }]),
     );
     const mgr = makeMockManager();
     let handlerCalled = false;
     const c = new Cron(configPath, mgr as any, () => "sid-1");
-    c.registerHandler("eval", async () => {
-      handlerCalled = true;
-    });
+    c.registerHandler("eval", async () => { handlerCalled = true; });
     c.start();
 
     await vi.advanceTimersByTimeAsync(30000);
     await flush();
 
     expect(handlerCalled).toBe(true);
-    // Should NOT have called manager.run() — handler takes priority
     expect(mgr.calls.filter((c) => c.method === "run")).toHaveLength(0);
 
     c.stop();
   });
 
-  it("job-handler: records success in job-history", async () => {
+  it("job-handler: tracks request on success", async () => {
     writeFileSync(
       configPath,
-      JSON.stringify([{ name: "eval", type: "job", intervalMs: 30000, message: "evaluate", handler: "eval" }]),
+      JSON.stringify([{ name: "eval", type: "job", intervalMs: 30000, message: "evaluate" }]),
     );
     const mgr = makeMockManager();
     const c = new Cron(configPath, mgr as any, () => "sid-1");
@@ -458,15 +496,13 @@ describe("Cron", () => {
     await vi.advanceTimersByTimeAsync(30000);
     await flush();
 
-    const historyPath = resolve(stateDir, "job-history.jsonl");
-    expect(existsSync(historyPath)).toBe(true);
-    const lines = readFileSync(historyPath, "utf-8").trim().split("\n");
-    expect(lines).toHaveLength(1);
-    const result: JobResult = JSON.parse(lines[0]);
-    expect(result.jobName).toBe("eval");
-    expect(result.type).toBe("job");
-    expect(result.status).toBe("success");
-    expect(result.durationMs).toBeGreaterThanOrEqual(0);
+    expect(mockTrackRequest).toHaveBeenCalled();
+    const trackCall = mockTrackRequest.mock.calls[0];
+    expect(trackCall[1].artifact).toBe("eval");
+    expect(trackCall[1].fromEntity).toBe("cron");
+
+    const completedUpdate = mockUpdateRequest.mock.calls.find((c) => c[2].status === "COMPLETED");
+    expect(completedUpdate).toBeDefined();
 
     c.stop();
   });
@@ -474,107 +510,57 @@ describe("Cron", () => {
   it("job-handler: records failure on error", async () => {
     writeFileSync(
       configPath,
-      JSON.stringify([{ name: "fail-job", type: "job", intervalMs: 30000, message: "fail", handler: "fail-job" }]),
+      JSON.stringify([{ name: "fail-job", type: "job", intervalMs: 30000, message: "fail" }]),
     );
     const mgr = makeMockManager();
     const errors: string[] = [];
-    const c = new Cron(
-      configPath,
-      mgr as any,
-      () => "sid-1",
-      (msg) => errors.push(msg),
-    );
-    c.registerHandler("fail-job", async () => {
-      throw new Error("handler broke");
-    });
+    const c = new Cron(configPath, mgr as any, () => "sid-1", (msg) => errors.push(msg));
+    c.registerHandler("fail-job", async () => { throw new Error("handler broke"); });
     c.start();
 
     await vi.advanceTimersByTimeAsync(30000);
     await flush();
 
-    const historyPath = resolve(stateDir, "job-history.jsonl");
-    const lines = readFileSync(historyPath, "utf-8").trim().split("\n");
-    const result: JobResult = JSON.parse(lines[0]);
-    expect(result.status).toBe("failure");
-    expect(result.error).toContain("handler broke");
+    const failUpdate = mockUpdateRequest.mock.calls.find((c) => c[2].status === "FAILED");
+    expect(failUpdate).toBeDefined();
+    expect(failUpdate![2].error).toContain("handler broke");
     expect(errors.some((e) => e.includes("handler broke"))).toBe(true);
 
     c.stop();
   });
 
-  it("job-handler: skips if previous handler still running", async () => {
+  it("job-handler: cron timer skips if previous handler still running", async () => {
     writeFileSync(
       configPath,
-      JSON.stringify([{ name: "slow", type: "job", intervalMs: 10000, message: "slow", handler: "slow" }]),
+      JSON.stringify([{ name: "slow", type: "job", intervalMs: 10000, message: "slow" }]),
     );
     const mgr = makeMockManager();
     const errors: string[] = [];
     let resolveHandler!: () => void;
     let callCount = 0;
 
-    const c = new Cron(
-      configPath,
-      mgr as any,
-      () => "sid-1",
-      (msg) => errors.push(msg),
-    );
+    const c = new Cron(configPath, mgr as any, () => "sid-1", (msg) => errors.push(msg));
     c.registerHandler("slow", () => {
       callCount++;
-      return new Promise<void>((r) => {
-        resolveHandler = r;
-      });
+      return new Promise<void>((r) => { resolveHandler = r; });
     });
     c.start();
 
-    // First fire: starts handler (doesn't complete)
     await vi.advanceTimersByTimeAsync(10000);
     await flush();
 
-    // Second fire: should be skipped
     await vi.advanceTimersByTimeAsync(10000);
     await flush();
 
     expect(callCount).toBe(1);
     expect(errors.some((e) => e.includes("skipped"))).toBe(true);
 
-    const historyPath = resolve(stateDir, "job-history.jsonl");
-    const lines = readFileSync(historyPath, "utf-8").trim().split("\n");
-    const skipResult: JobResult = JSON.parse(lines[0]);
-    expect(skipResult.status).toBe("skipped");
-
     resolveHandler();
     await flush();
     c.stop();
   });
 
-  it("job-handler: appends multiple results to job-history", async () => {
-    writeFileSync(
-      configPath,
-      JSON.stringify([{ name: "multi", type: "job", intervalMs: 10000, message: "run", handler: "multi" }]),
-    );
-    const mgr = makeMockManager();
-    const c = new Cron(configPath, mgr as any, () => "sid-1");
-    c.registerHandler("multi", async () => {});
-    c.start();
-
-    for (let i = 0; i < 3; i++) {
-      await vi.advanceTimersByTimeAsync(10000);
-      await flush();
-    }
-
-    const historyPath = resolve(stateDir, "job-history.jsonl");
-    const lines = readFileSync(historyPath, "utf-8").trim().split("\n");
-    expect(lines).toHaveLength(3);
-    for (const line of lines) {
-      const result: JobResult = JSON.parse(line);
-      expect(result.jobName).toBe("multi");
-      expect(result.status).toBe("success");
-    }
-
-    c.stop();
-  });
-
-  // ── Job-detached mode (agent without handler) ───────────────────────
+  // ── Job-detached mode ───────────────────────────────────────────────
 
   it("job-detached: spawns detached agent for entry with agent but no handler", async () => {
     writeFileSync(
@@ -596,7 +582,7 @@ describe("Cron", () => {
     c.stop();
   });
 
-  it("job-detached: records spawn result in job-history", async () => {
+  it("job-detached: tracks request on spawn", async () => {
     writeFileSync(
       configPath,
       JSON.stringify([{ name: "analyze", intervalMs: 60000, agent: "bob", message: "do analysis" }]),
@@ -608,58 +594,47 @@ describe("Cron", () => {
     await vi.advanceTimersByTimeAsync(60000);
     await flush();
 
-    const historyPath = resolve(stateDir, "job-history.jsonl");
-    const lines = readFileSync(historyPath, "utf-8").trim().split("\n");
-    const result: JobResult = JSON.parse(lines[0]);
-    expect(result.jobName).toBe("analyze");
-    expect(result.type).toBe("job");
-    expect(result.status).toBe("success");
-    expect(result.agent).toBe("bob");
-    expect(result.summary).toContain("pid=99999");
+    expect(mockTrackRequest).toHaveBeenCalled();
+    const trackCall = mockTrackRequest.mock.calls[0];
+    expect(trackCall[1].artifact).toBe("analyze");
+    expect(trackCall[1].fromEntity).toBe("cron");
+    expect(trackCall[1].toAgent).toBe("bob");
+    const ctx = JSON.parse(trackCall[1].context);
+    expect(ctx.type).toBe("detached");
+    expect(ctx.pid).toBe(99999);
 
     c.stop();
   });
 
   it("job-detached: records failure when spawn throws", async () => {
-    mockSpawn.mockImplementation(() => {
-      throw new Error("spawn failed");
-    });
+    mockSpawn.mockImplementation(() => { throw new Error("spawn failed"); });
     writeFileSync(
       configPath,
       JSON.stringify([{ name: "fail-spawn", intervalMs: 60000, agent: "bob", message: "boom" }]),
     );
     const mgr = makeMockManager();
     const errors: string[] = [];
-    const c = new Cron(
-      configPath,
-      mgr as any,
-      () => "sid-1",
-      (msg) => errors.push(msg),
-    );
+    const c = new Cron(configPath, mgr as any, () => "sid-1", (msg) => errors.push(msg));
     c.start();
 
     await vi.advanceTimersByTimeAsync(60000);
     await flush();
 
-    const historyPath = resolve(stateDir, "job-history.jsonl");
-    const lines = readFileSync(historyPath, "utf-8").trim().split("\n");
-    const result: JobResult = JSON.parse(lines[0]);
-    expect(result.status).toBe("failure");
-    expect(result.error).toContain("spawn failed");
+    const failUpdate = mockUpdateRequest.mock.calls.find((c) => c[2].status === "FAILED");
+    expect(failUpdate).toBeDefined();
+    expect(failUpdate![2].error).toContain("spawn failed");
 
     c.stop();
   });
 
-  // ── Mode resolution (no type field) ─────────────────────────────────
+  // ── Mode resolution ─────────────────────────────────────────────────
 
   it("entry with handler but no type: resolves as job-handler", async () => {
     writeFileSync(configPath, JSON.stringify([{ name: "js-job", intervalMs: 30000, message: "run handler" }]));
     const mgr = makeMockManager();
     let handlerCalled = false;
     const c = new Cron(configPath, mgr as any, () => "sid-1");
-    c.registerHandler("js-job", async () => {
-      handlerCalled = true;
-    });
+    c.registerHandler("js-job", async () => { handlerCalled = true; });
     c.start();
 
     await vi.advanceTimersByTimeAsync(30000);
@@ -675,16 +650,10 @@ describe("Cron", () => {
     writeFileSync(configPath, JSON.stringify([{ name: "orphan", intervalMs: 30000, message: "nobody" }]));
     const mgr = makeMockManager();
     const errors: string[] = [];
-    const c = new Cron(
-      configPath,
-      mgr as any,
-      () => "sid-1",
-      (msg) => errors.push(msg),
-    );
+    const c = new Cron(configPath, mgr as any, () => "sid-1", (msg) => errors.push(msg));
     c.start();
 
     vi.advanceTimersByTime(30000);
-    // Entry rejected at startEntry — no timer registered, no fire
     expect(errors.some((e) => e.includes("no handler and no agent"))).toBe(true);
 
     c.stop();
@@ -697,7 +666,7 @@ describe("Cron", () => {
       configPath,
       JSON.stringify([
         { name: "hb", type: "heartbeat", intervalMs: 30000, agent: "bob", message: "heartbeat" },
-        { name: "js", type: "job", intervalMs: 30000, message: "js job", handler: "js" },
+        { name: "js", type: "job", intervalMs: 30000, message: "js job" },
         { name: "det", intervalMs: 30000, agent: "optimizer", message: "detached job" },
       ]),
     );
@@ -724,14 +693,12 @@ describe("Cron", () => {
   it("triggerNow: fires entry immediately", async () => {
     writeFileSync(
       configPath,
-      JSON.stringify([{ name: "trigger-me", type: "job", intervalMs: 300000, message: "go", handler: "trigger-me" }]),
+      JSON.stringify([{ name: "trigger-me", type: "job", intervalMs: 300000, message: "go" }]),
     );
     const mgr = makeMockManager();
     let called = false;
     const c = new Cron(configPath, mgr as any, () => "sid-1");
-    c.registerHandler("trigger-me", async () => {
-      called = true;
-    });
+    c.registerHandler("trigger-me", async () => { called = true; });
     c.start();
 
     const result = c.triggerNow("trigger-me");
@@ -757,20 +724,73 @@ describe("Cron", () => {
   it("triggerNow: debounces rapid re-triggers", () => {
     writeFileSync(
       configPath,
-      JSON.stringify([{ name: "debounced", type: "job", intervalMs: 300000, message: "go", handler: "debounced" }]),
+      JSON.stringify([{ name: "debounced", type: "job", intervalMs: 300000, message: "go" }]),
     );
     const mgr = makeMockManager();
     let callCount = 0;
     const c = new Cron(configPath, mgr as any, () => "sid-1");
-    c.registerHandler("debounced", async () => {
-      callCount++;
-    });
+    c.registerHandler("debounced", async () => { callCount++; });
     c.start();
 
     expect(c.triggerNow("debounced")).toBe(true);
-    // Second trigger within cooldown window — should be debounced
+    // Second trigger within cooldown — debounced
     expect(c.triggerNow("debounced")).toBe(false);
 
+    c.stop();
+  });
+
+  it("triggerNow: force bypasses debounce", async () => {
+    writeFileSync(
+      configPath,
+      JSON.stringify([{ name: "force-test", type: "job", intervalMs: 300000, message: "go" }]),
+    );
+    const mgr = makeMockManager();
+    let callCount = 0;
+    const c = new Cron(configPath, mgr as any, () => "sid-1");
+    c.registerHandler("force-test", async () => { callCount++; });
+    c.start();
+
+    expect(c.triggerNow("force-test")).toBe(true);
+    await flush();
+    expect(callCount).toBe(1);
+
+    // Debounced
+    expect(c.triggerNow("force-test")).toBe(false);
+
+    // Force bypasses
+    expect(c.triggerNow("force-test", { force: true })).toBe(true);
+    await flush();
+    expect(callCount).toBe(2);
+
+    c.stop();
+  });
+
+  it("triggerNow: always fires even if job is already running (no overlap check for manual)", async () => {
+    writeFileSync(
+      configPath,
+      JSON.stringify([{ name: "hb-manual", type: "heartbeat", intervalMs: 300000, agent: "bob", message: "hb" }]),
+    );
+    const mgr = makeMockManager();
+    let resolveWait!: () => void;
+    mgr.setWaitFor(() => new Promise<void>((r) => { resolveWait = r; }));
+
+    const c = new Cron(configPath, mgr as any, () => "sid-1");
+    c.start();
+
+    // First trigger
+    expect(c.triggerNow("hb-manual")).toBe(true);
+    await flush();
+
+    // Advance past cooldown
+    vi.advanceTimersByTime(150001);
+
+    // Second trigger while first still running — should still fire (manual = no overlap check)
+    expect(c.triggerNow("hb-manual")).toBe(true);
+    const runCalls = mgr.calls.filter((c) => c.method === "run");
+    expect(runCalls).toHaveLength(2);
+
+    resolveWait();
+    await flush();
     c.stop();
   });
 
@@ -778,8 +798,8 @@ describe("Cron", () => {
     writeFileSync(
       configPath,
       JSON.stringify([
-        { name: "short", type: "job", intervalMs: 60000, message: "go", handler: "short" },
-        { name: "long", type: "job", intervalMs: 600000, message: "go", handler: "long" },
+        { name: "short", type: "job", intervalMs: 60000, message: "go" },
+        { name: "long", type: "job", intervalMs: 600000, message: "go" },
       ]),
     );
     const mgr = makeMockManager();
@@ -790,255 +810,18 @@ describe("Cron", () => {
     c.registerHandler("long", async () => { longCount++; });
     c.start();
 
-    // First triggers succeed
     expect(c.triggerNow("short")).toBe(true);
     expect(c.triggerNow("long")).toBe(true);
 
-    // Advance 31s — still within both cooldowns (short=60s min, long=300s)
+    // Advance 31s — still within both cooldowns
     vi.advanceTimersByTime(31_000);
-    expect(c.triggerNow("short")).toBe(false); // 60s cooldown not met
-    expect(c.triggerNow("long")).toBe(false);  // 300s cooldown not met
+    expect(c.triggerNow("short")).toBe(false);
+    expect(c.triggerNow("long")).toBe(false);
 
-    // Advance to 61s total — short cooldown met, long still not
+    // Advance to 61s total — short cooldown (60s) met, long (300s) not
     vi.advanceTimersByTime(30_000);
-    expect(c.triggerNow("short")).toBe(true);  // 60s cooldown met
-    expect(c.triggerNow("long")).toBe(false);  // 300s cooldown not met
-
-    c.stop();
-  });
-
-  it("triggerNow: latches heartbeat when agent is busy, but doesn't re-fire on completion", async () => {
-    writeFileSync(
-      configPath,
-      JSON.stringify([{ name: "hb-latch", type: "heartbeat", intervalMs: 300000, agent: "bob", message: "hb" }]),
-    );
-    const mgr = makeMockManager();
-    let resolveWait!: () => void;
-    mgr.setWaitFor(
-      () =>
-        new Promise<void>((r) => {
-          resolveWait = r;
-        }),
-    );
-
-    const c = new Cron(configPath, mgr as any, () => "sid-1");
-    c.start();
-
-    // First fire via triggerNow — starts heartbeat, hangs on waitFor
-    expect(c.triggerNow("hb-latch")).toBe(true);
-    await flush();
-
-    // Advance past cooldown so debounce doesn't block
-    // Per-entry cooldown = intervalMs/2 = 150000ms
-    vi.advanceTimersByTime(150001);
-
-    // Second trigger while busy — should latch (return true) but not run
-    expect(c.triggerNow("hb-latch")).toBe(true);
-    const runCalls = mgr.calls.filter((c) => c.method === "run");
-    expect(runCalls).toHaveLength(1); // Only the first run
-
-    // Complete first heartbeat — latch is cleared but does NOT re-fire
-    // (work is in todo.md, picked up at next scheduled interval)
-    resolveWait();
-    await flush();
-
-    const runCallsAfter = mgr.calls.filter((c) => c.method === "run");
-    expect(runCallsAfter).toHaveLength(1); // No second run — latch neutered
-
-    c.stop();
-  });
-
-  // ── Mode resolution ────────────────────────────────────────────────
-
-  it("resolves mode correctly for all entry combinations", async () => {
-    writeFileSync(
-      configPath,
-      JSON.stringify([
-        { name: "explicit-hb", type: "heartbeat", intervalMs: 30000, agent: "bob", message: "hb" },
-        { name: "explicit-job-h", type: "job", intervalMs: 30000, message: "jh", handler: "explicit-job-h" },
-      ]),
-    );
-    const mgr = makeMockManager();
-    const c = new Cron(configPath, mgr as any, () => "sid-1");
-    c.registerHandler("explicit-job-h", async () => {});
-    c.start();
-
-    await vi.advanceTimersByTimeAsync(30000);
-    await flush();
-
-    // Heartbeat → run() called
-    const runCalls = mgr.calls.filter((c) => c.method === "run");
-    expect(runCalls.length).toBeGreaterThanOrEqual(1);
-    expect(runCalls[0].args[0]).toBe("bob");
-
-    c.stop();
-  });
-
-  // ── Re-trigger mechanism ─────────────────────────────────────────────
-
-  it("re-trigger: fires again when agent has remaining todo items", async () => {
-    writeFileSync(
-      configPath,
-      JSON.stringify([{ name: "hb-retrigger", type: "heartbeat", intervalMs: 300000, agent: "bob", message: "hb" }]),
-    );
-    const mgr = makeMockManager();
-
-    // Create agent workspace with unchecked tasks
-    const todoDir = resolve(dir, "agents", "bob", "workspace");
-    mkdirSync(todoDir, { recursive: true });
-    writeFileSync(resolve(todoDir, "todo.md"), "# TODO\n\n- [ ] Task 1\n- [ ] Task 2\n");
-
-    const c = new Cron(configPath, mgr as any, () => "sid-1", undefined, dir);
-    c.start();
-
-    // First fire + completion — maxRetriggers=0 means no re-trigger even with unchecked items
-    await vi.advanceTimersByTimeAsync(300000);
-    await flush();
-
-    // With maxRetriggers=0 (disabled), should fire exactly once — agents process todos at their natural heartbeat interval
-    const runCalls = mgr.calls.filter((c) => c.method === "run");
-    expect(runCalls).toHaveLength(1);
-    expect(runCalls[0].args[0]).toBe("bob");
-
-    c.stop();
-  });
-
-  it("re-trigger: stops after maxRetriggers consecutive re-triggers", async () => {
-    writeFileSync(
-      configPath,
-      JSON.stringify([{ name: "hb-max", type: "heartbeat", intervalMs: 300000, agent: "bob", message: "hb" }]),
-    );
-    const mgr = makeMockManager();
-
-    // Create agent workspace with unchecked task that never gets cleared
-    const todoDir = resolve(dir, "agents", "bob", "workspace");
-    mkdirSync(todoDir, { recursive: true });
-    writeFileSync(resolve(todoDir, "todo.md"), "# TODO\n\n- [ ] Persistent task\n");
-
-    const errors: string[] = [];
-    const c = new Cron(configPath, mgr as any, () => "sid-1", (msg) => errors.push(msg), dir);
-    c.start();
-
-    // Fire + maxRetriggers re-triggers = 1 + maxRetriggers total runs
-    await vi.advanceTimersByTimeAsync(300000);
-    await flush();
-
-    const runCalls = mgr.calls.filter((c) => c.method === "run");
-    // 1 initial + maxRetriggers re-fires = 1 + 3 = 4
-    expect(runCalls).toHaveLength(1 + c.maxRetriggers);
-    // Should have logged max-reached error
-    expect(errors.some((e) => e.includes("max reached"))).toBe(true);
-
-    c.stop();
-  });
-
-  it("re-trigger: does not re-trigger when no unchecked tasks in todo", async () => {
-    writeFileSync(
-      configPath,
-      JSON.stringify([{ name: "hb-empty", type: "heartbeat", intervalMs: 300000, agent: "bob", message: "hb" }]),
-    );
-    const mgr = makeMockManager();
-
-    // Create agent workspace with all tasks completed
-    const todoDir = resolve(dir, "agents", "bob", "workspace");
-    mkdirSync(todoDir, { recursive: true });
-    writeFileSync(resolve(todoDir, "todo.md"), "# TODO\n\n- [x] Done task\n");
-
-    const c = new Cron(configPath, mgr as any, () => "sid-1", undefined, dir);
-    c.start();
-
-    await vi.advanceTimersByTimeAsync(300000);
-    await flush();
-
-    // Should have fired exactly once — no re-trigger
-    const runCalls = mgr.calls.filter((c) => c.method === "run");
-    expect(runCalls).toHaveLength(1);
-
-    c.stop();
-  });
-
-  it("re-trigger: does not re-trigger when todo.md does not exist", async () => {
-    writeFileSync(
-      configPath,
-      JSON.stringify([{ name: "hb-notodo", type: "heartbeat", intervalMs: 300000, agent: "bob", message: "hb" }]),
-    );
-    const mgr = makeMockManager();
-    // Don't create any todo.md
-
-    const c = new Cron(configPath, mgr as any, () => "sid-1", undefined, dir);
-    c.start();
-
-    await vi.advanceTimersByTimeAsync(300000);
-    await flush();
-
-    // Should have fired exactly once — no re-trigger
-    const runCalls = mgr.calls.filter((c) => c.method === "run");
-    expect(runCalls).toHaveLength(1);
-
-    c.stop();
-  });
-
-  it("re-trigger: resets count on failure", async () => {
-    writeFileSync(
-      configPath,
-      JSON.stringify([{ name: "hb-failreset", type: "heartbeat", intervalMs: 300000, agent: "bob", message: "hb" }]),
-    );
-    const mgr = makeMockManager();
-
-    // Create unchecked tasks
-    const todoDir = resolve(dir, "agents", "bob", "workspace");
-    mkdirSync(todoDir, { recursive: true });
-    writeFileSync(resolve(todoDir, "todo.md"), "# TODO\n\n- [ ] Task\n");
-
-    // First call succeeds (triggers re-trigger), second call fails (should reset count)
-    let callIndex = 0;
-    mgr.setWaitFor(() => {
-      callIndex++;
-      if (callIndex === 2) {
-        return Promise.reject(new Error("session failed"));
-      }
-      return Promise.resolve();
-    });
-
-    const errors: string[] = [];
-    const c = new Cron(configPath, mgr as any, () => "sid-1", (msg) => errors.push(msg), dir);
-    c.start();
-
-    await vi.advanceTimersByTimeAsync(300000);
-    await flush();
-
-    // With maxRetriggers=0, no re-trigger happens — only the initial run fires
-    const runCalls = mgr.calls.filter((c) => c.method === "run");
-    expect(runCalls).toHaveLength(1);
-
-    c.stop();
-  });
-
-  it("re-trigger: triggerNow with force bypasses debounce", async () => {
-    writeFileSync(
-      configPath,
-      JSON.stringify([{ name: "force-test", type: "job", intervalMs: 300000, message: "go", handler: "force-test" }]),
-    );
-    const mgr = makeMockManager();
-    let callCount = 0;
-    const c = new Cron(configPath, mgr as any, () => "sid-1", undefined, dir);
-    c.registerHandler("force-test", async () => {
-      callCount++;
-    });
-    c.start();
-
-    // First trigger — works
-    expect(c.triggerNow("force-test")).toBe(true);
-    await flush();
-    expect(callCount).toBe(1);
-
-    // Second trigger without force — debounced
-    expect(c.triggerNow("force-test")).toBe(false);
-
-    // Third trigger with force — bypasses debounce
-    expect(c.triggerNow("force-test", { force: true })).toBe(true);
-    await flush();
-    expect(callCount).toBe(2);
+    expect(c.triggerNow("short")).toBe(true);
+    expect(c.triggerNow("long")).toBe(false);
 
     c.stop();
   });

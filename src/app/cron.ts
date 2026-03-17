@@ -1,33 +1,41 @@
 /**
- * Cron — manages periodic jobs.
+ * Cron — manages periodic jobs with persistent state via request tracking.
  *
  * Three execution modes (determined by entry fields):
  *
  * 1. **heartbeat** — `manager.run()` spawns a fresh in-process task session.
- *    Overlap protection: if the previous heartbeat is still running, skip.
- *
  * 2. **job** (with JS handler) — runs a registered JS function in-process.
- *    This is the optimized path for mature patterns (e.g., watchdog, evaluate-sessions).
- *
  * 3. **job** (agent task) — `spawnDetachedAgent()` in a separate OS process.
- *    Default for agent work. Does not compete with the main event loop.
- *    Overlap protection: if the previous PID is still alive, skip.
  *
- * Every completed execution appends a JobResult to `.state/job-history.jsonl`.
+ * Each job execution is tracked as a request in `.state/may.db`.
+ * On restart, jobs resume based on when they actually last ran — not from zero.
+ * The cron timer skips if a previous execution is still IN_PROGRESS.
+ * Manual triggers (`triggerNow`) always fire regardless of overlap.
+ *
+ * Design: docs/design/cron-sqlite.md
  */
 
-import { readFileSync, existsSync, appendFileSync, mkdirSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import type { SubagentManager } from "../lib/index.js";
 import { generateId } from "../lib/index.js";
+import {
+  getDb,
+  trackRequest,
+  updateRequest,
+} from "../lib/requests.js";
 import { spawnDetachedAgent } from "../lib/detached.js";
-import type { CronEntry, JobResult } from "../lib/cron-tool.js";
+import type { CronEntry } from "../lib/cron-tool.js";
+
+// ── Types ─────────────────────────────────────────────────────────────
 
 /** A JS function that replaces the LLM for a specific cron job. */
 export type CronHandler = () => Promise<void>;
 
 /** Callback when a job fires (for notifications). */
 export type CronJobCallback = (entry: CronEntry, type: "js" | "heartbeat" | "detached") => void;
+
+// ── Cron class ────────────────────────────────────────────────────────
 
 export class Cron {
   private timers = new Map<string, ReturnType<typeof setInterval>>();
@@ -36,36 +44,9 @@ export class Cron {
   private handlers = new Map<string, CronHandler>();
   private onJobFire?: CronJobCallback;
 
-  /** Track running heartbeat sessions (sessionId per agent). */
-  private heartbeatSessions = new Map<string, string>();
-
-  /** Track whether a heartbeat is currently processing (prevents overlap). */
-  private heartbeatRunning = new Set<string>();
-
-  /** Track whether a JS handler is currently running (prevents overlap). */
-  private handlerRunning = new Set<string>();
-
-  /** Track running detached agent tasks: name → { sessionId, pid, startedAt }. */
-  private detachedRunning = new Map<string, { sessionId: string; pid: number | undefined; startedAt: string }>();
-
-  /** Tracks entry names that need re-fire after the current run completes (latch). */
-  private pendingTriggers = new Set<string>();
-
-  /** Per-entry last trigger timestamp for debounce. */
-  private lastTriggerTime = new Map<string, number>();
-
   /** Default minimum ms between reactive triggers for same entry.
-   *  Per-entry cooldown = half the entry's intervalMs (min 60s).
-   *  This prevents agents.send() from retriggering heartbeats at 2-3x their intended rate. */
+   *  Per-entry cooldown = half the entry's intervalMs (min 60s). */
   readonly defaultCooldownMs = 60_000;
-
-  /** Tracks consecutive re-trigger count per entry (drains todo list). */
-  private retriggerCounts = new Map<string, number>();
-
-  /** Maximum consecutive re-triggers before waiting for next scheduled interval.
-   *  Set to 0 to disable retrigger entirely — agents process todo items at their
-   *  natural heartbeat interval instead of bursting 4x per cycle. */
-  readonly maxRetriggers = 0;
 
   private projectRoot: string;
   private persistDir: string;
@@ -78,7 +59,6 @@ export class Cron {
     projectRoot?: string,
     private notify?: (msg: string) => void,
   ) {
-    // configPath is <projectRoot>/agents/<name>/cron.json → go up 2 levels
     this.projectRoot = projectRoot ?? resolve(dirname(configPath), "../..");
     this.persistDir = resolve(this.projectRoot, ".state");
   }
@@ -156,36 +136,29 @@ export class Cron {
     return [...this.entries];
   }
 
-  /** Trigger a cron entry immediately. Returns true if fired or latched, false if debounced/unknown. */
+  /** Trigger a cron entry immediately. Always fires (no overlap check).
+   *  Returns false only if entry not found or debounced. */
   triggerNow(entryName: string, opts?: { force?: boolean }): boolean {
     const entry = this.entries.find((e) => e.name === entryName);
     if (!entry) return false;
 
-    // Per-entry cooldown: half the entry's interval (min 60s).
-    // A 19-min heartbeat (tech-lead) gets a 9.5-min cooldown instead of flat 60s.
-    // This prevents agents.send() from triggering extra sessions at 2-3x rate.
-    const cooldownMs = Math.max(entry.intervalMs / 2, this.defaultCooldownMs);
-    const lastTrigger = this.lastTriggerTime.get(entryName) ?? 0;
-    if (!opts?.force && Date.now() - lastTrigger < cooldownMs) return false;
-    this.lastTriggerTime.set(entryName, Date.now());
+    // Debounce rapid re-triggers (unless forced)
+    if (!opts?.force) {
+      const cooldownMs = Math.max(entry.intervalMs / 2, this.defaultCooldownMs);
+      try {
+        const lastFire = this.getLastFireTime(entryName);
+        if (lastFire && Date.now() - lastFire < cooldownMs) return false;
+      } catch { /* db unavailable — allow trigger */ }
+    }
 
     const mode = this.resolveMode(entry);
-    if (mode === "heartbeat") {
-      const key = `heartbeat:${entry.agent || "may"}`;
-      if (this.heartbeatRunning.has(key)) {
-        // Agent busy — latch for re-run after completion (Task 2 handles drain)
-        this.pendingTriggers.add(entryName);
-        return true;
-      }
-      this.fireHeartbeat(entry);
-    } else if (mode === "job-handler") {
-      if (this.handlerRunning.has(entryName)) {
-        this.pendingTriggers.add(entryName);
-        return true;
-      }
-      this.fireHandler(entry);
-    } else if (mode === "job-detached") {
-      this.fireDetachedJob(entry);
+    if (!mode) return false;
+
+    // Manual trigger — always fire, no overlap check
+    switch (mode) {
+      case "heartbeat": this.fireHeartbeat(entry); break;
+      case "job-handler": this.fireHandler(entry); break;
+      case "job-detached": this.fireDetachedJob(entry); break;
     }
     return true;
   }
@@ -196,96 +169,220 @@ export class Cron {
 
     if (entry.type === "heartbeat") return "heartbeat";
 
-    // type: "job" or no type — both resolve the same way
     if (handler) return "job-handler";
     if (entry.agent) return "job-detached";
 
-    // No handler, no agent — can't execute
     this.onError?.(`Cron entry "${entry.name}" has no handler and no agent — skipping`);
     return null;
   }
 
+  // ── Request-based state queries ─────────────────────────────────────
+
+  /** Check if a job (by artifact name) has an active request. */
+  private isRunning(entryName: string): boolean {
+    try {
+      const db = getDb(this.persistDir);
+      const row = db
+        .query(
+          `SELECT 1 FROM requests
+           WHERE artifact = ? AND status IN ('CREATED', 'IN_PROGRESS')
+           LIMIT 1`,
+        )
+        .get(entryName);
+      return row !== null;
+    } catch {
+      return false;
+    }
+  }
+
+  /** Check if any heartbeat for a given agent is currently active. */
+  private isAgentHeartbeatRunning(agentName: string): boolean {
+    try {
+      const db = getDb(this.persistDir);
+      // Find all heartbeat entry names for this agent
+      const heartbeatNames = this.entries
+        .filter((e) => e.type === "heartbeat" && (e.agent || "may") === agentName)
+        .map((e) => e.name);
+      if (heartbeatNames.length === 0) return false;
+
+      const placeholders = heartbeatNames.map(() => "?").join(",");
+      const row = db
+        .query(
+          `SELECT 1 FROM requests
+           WHERE artifact IN (${placeholders})
+           AND status IN ('CREATED', 'IN_PROGRESS')
+           LIMIT 1`,
+        )
+        .get(...heartbeatNames);
+      return row !== null;
+    } catch {
+      return false;
+    }
+  }
+
+  /** Get the last fire time for a job (epoch ms). */
+  private getLastFireTime(entryName: string): number | null {
+    try {
+      const db = getDb(this.persistDir);
+      const row = db
+        .query("SELECT MAX(createdAt) as lastFire FROM requests WHERE artifact = ?")
+        .get(entryName) as { lastFire: number | null } | null;
+      return row?.lastFire ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  /** Get PID from a running detached job's context. */
+  private getRunningPid(entryName: string): number | null {
+    try {
+      const db = getDb(this.persistDir);
+      const row = db
+        .query(
+          `SELECT context FROM requests
+           WHERE artifact = ? AND status IN ('CREATED', 'IN_PROGRESS')
+           ORDER BY createdAt DESC LIMIT 1`,
+        )
+        .get(entryName) as { context: string | null } | null;
+      if (!row?.context) return null;
+      const ctx = JSON.parse(row.context);
+      return ctx.pid ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  /** Fail any orphaned running requests for a job (from a previous crashed process). */
+  private failOrphans(entryName: string): void {
+    try {
+      const db = getDb(this.persistDir);
+      const now = Date.now();
+      db.run(
+        `UPDATE requests SET status = 'FAILED', error = 'orphaned by restart', updatedAt = ?, completedAt = ?
+         WHERE artifact = ? AND status IN ('CREATED', 'IN_PROGRESS')`,
+        [now, now, entryName],
+      );
+    } catch { /* ignore */ }
+  }
+
+  // ── Scheduling with resume ──────────────────────────────────────────
+
   private startEntry(entry: CronEntry): void {
     const mode = this.resolveMode(entry);
-    if (!mode) return; // entry was rejected by resolveMode
+    if (!mode) return;
 
     const fire = () => {
-      // For heartbeats, update lastTriggerTime only if the heartbeat actually fires
-      // (not skipped due to heartbeatRunning). This prevents agents.send() triggers
-      // arriving shortly after a scheduled fire from creating back-to-back sessions.
+      // Cron timer: skip if already running (overlap protection)
       if (mode === "heartbeat") {
         const agentName = entry.agent || "may";
-        const hbKey = `heartbeat:${agentName}`;
-        if (!this.heartbeatRunning.has(hbKey)) {
-          this.lastTriggerTime.set(entry.name, Date.now());
+        if (this.isAgentHeartbeatRunning(agentName)) {
+          this.onError?.(`Cron "${entry.name}" skipped — ${agentName} heartbeat still running`);
+          return;
+        }
+      } else if (mode === "job-detached") {
+        // For detached: check if process is actually alive
+        const pid = this.getRunningPid(entry.name);
+        if (pid && this.isProcessAlive(pid)) {
+          this.onError?.(`Cron "${entry.name}" skipped — detached process still running (pid=${pid})`);
+          return;
+        }
+        // PID dead but request still active → fail the orphan
+        if (this.isRunning(entry.name)) {
+          this.failOrphans(entry.name);
+        }
+      } else {
+        if (this.isRunning(entry.name)) {
+          this.onError?.(`Cron "${entry.name}" skipped — still running`);
+          return;
         }
       }
+
       switch (mode) {
-        case "heartbeat":
-          this.fireHeartbeat(entry);
-          break;
-        case "job-handler":
-          this.fireHandler(entry);
-          break;
-        case "job-detached":
-          this.fireDetachedJob(entry);
-          break;
+        case "heartbeat": this.fireHeartbeat(entry); break;
+        case "job-handler": this.fireHandler(entry); break;
+        case "job-detached": this.fireDetachedJob(entry); break;
       }
     };
 
-    // Jitter: random initial delay (0 to intervalMs) so entries don't all fire at once
-    const jitter = Math.floor(Math.random() * entry.intervalMs);
+    const delay = this.computeResumeDelay(entry, mode);
+
     const startTimer = setTimeout(() => {
       fire();
       const timer = setInterval(fire, entry.intervalMs);
       timer.unref();
       this.timers.set(entry.name, timer);
-    }, jitter);
+    }, delay);
     startTimer.unref();
-    // Store the initial timeout so stop() can clear it
     this.timers.set(entry.name, startTimer as unknown as ReturnType<typeof setInterval>);
   }
 
-  // ── Heartbeat: spawn fresh task session (Chat+Task model) ──────────
+  /** Compute the initial delay for an entry based on when it last ran. */
+  private computeResumeDelay(entry: CronEntry, mode: string): number {
+    // Clean up orphaned running requests from previous instance
+    if (mode === "job-detached") {
+      // For detached: only fail if the PID is dead
+      const pid = this.getRunningPid(entry.name);
+      if (pid && this.isProcessAlive(pid)) {
+        // Process survived restart — schedule normally from when it started
+        const lastFire = this.getLastFireTime(entry.name);
+        if (lastFire) {
+          const elapsed = Date.now() - lastFire;
+          return elapsed >= entry.intervalMs ? 0 : entry.intervalMs - elapsed;
+        }
+      } else if (this.isRunning(entry.name)) {
+        this.failOrphans(entry.name);
+      }
+    } else if (this.isRunning(entry.name)) {
+      // In-process job from previous instance — it's dead
+      this.failOrphans(entry.name);
+    }
+
+    const lastFire = this.getLastFireTime(entry.name);
+    if (lastFire == null) {
+      // Never ran — jitter so entries don't all fire at once
+      return Math.floor(Math.random() * entry.intervalMs);
+    }
+
+    const elapsed = Date.now() - lastFire;
+    if (elapsed >= entry.intervalMs) {
+      return 0; // overdue
+    }
+    return entry.intervalMs - elapsed;
+  }
+
+  // ── Heartbeat: spawn fresh task session ─────────────────────────────
 
   private fireHeartbeat(entry: CronEntry): void {
     const agentName = entry.agent || "may";
-    const heartbeatKey = `heartbeat:${agentName}`;
-
-    // Skip if still processing
-    if (this.heartbeatRunning.has(heartbeatKey)) {
-      const result = this.makeSkipResult(entry, "heartbeat");
-      this.appendJobResult(result);
-      this.onError?.(`Cron heartbeat "${entry.name}" skipped — ${agentName} still processing`);
-      return;
-    }
-
     this.onJobFire?.(entry, "heartbeat");
-    this.heartbeatRunning.add(heartbeatKey);
-    const startedAt = new Date().toISOString();
+
+    // Track as a request
+    const requestId = trackRequest(this.persistDir, {
+      fromEntity: "cron",
+      toAgent: agentName,
+      task: entry.message.slice(0, 500),
+      method: "call",
+      artifact: entry.name,
+      context: JSON.stringify({ type: "heartbeat" }),
+    });
+
+    updateRequest(this.persistDir, requestId, { status: "IN_PROGRESS" });
     const startMs = Date.now();
 
     try {
-      // Always spawn a fresh task session — no persistent heartbeat sessions.
-      // The agent reads todo.md/SOUL.md for context. Memory is the filesystem.
-
       // F3: Auto-inject context files into heartbeat task message.
-      // Eliminates mechanical read() calls that every agent does at the start of every heartbeat.
-      // Agent still makes all decisions — infra just pre-loads the context.
       let taskMessage = entry.message;
       const injections: string[] = [];
 
       try {
         const agentDir = resolve(this.projectRoot, "agents", agentName);
 
-        // 1. heartbeat.md — the file the task message literally says "Read heartbeat.md"
         const heartbeatPath = resolve(agentDir, "heartbeat.md");
         if (existsSync(heartbeatPath)) {
           const content = readFileSync(heartbeatPath, "utf-8").trim();
           if (content) injections.push(`## Injected: heartbeat.md\n\n${content}`);
         }
 
-        // 2. workspace/todo.md — active items only
         const todoPath = resolve(agentDir, "workspace", "todo.md");
         if (existsSync(todoPath)) {
           const todoContent = readFileSync(todoPath, "utf-8");
@@ -295,18 +392,13 @@ export class Cron {
           }
         }
 
-        // 3. common-sense.md — shared conventions every agent should follow
         const commonSensePath = resolve(this.projectRoot, "agents", "shared", "common-sense.md");
         if (existsSync(commonSensePath)) {
           const content = readFileSync(commonSensePath, "utf-8").trim();
           if (content) injections.push(`## Injected: shared/common-sense.md\n\n${content}`);
         }
-
-        // NOTE: periodic-tasks.md is NOT injected — it's a reference doc with task
-        // descriptions, methodology, and historical notes that agents need to read
-        // and understand, not just a schedule to check dates on.
       } catch {
-        // Non-fatal: if any file read fails, proceed with what we have
+        // Non-fatal
       }
 
       if (injections.length > 0) {
@@ -314,34 +406,17 @@ export class Cron {
       }
 
       const sessionId = this.manager.run(agentName, taskMessage, { kind: "job" });
-      this.heartbeatSessions.set(agentName, sessionId);
+      updateRequest(this.persistDir, requestId, { sessionId });
 
-      // Wait for completion then record result
       this.manager
         .waitFor(sessionId)
         .then((taskResult) => {
-          this.heartbeatRunning.delete(heartbeatKey);
-          // Check latch: re-fire if a trigger arrived while busy
-          this.checkPendingTrigger(entry);
-          // Post-heartbeat re-trigger: drain todo list if work remains
-          // Only re-trigger after successful sessions — error sessions should
-          // wait for the next scheduled interval to avoid error-chaining loops
-          // (e.g., May firing every 45s instead of every 10min).
-          if (!this.heartbeatRunning.has(heartbeatKey) && taskResult?.status !== "error") {
-            this.checkRetrigger(entry);
-          }
-          this.appendJobResult({
-            jobName: entry.name,
-            type: "heartbeat",
-            status: "success",
-            summary: `Heartbeat for ${agentName} completed`,
-            startedAt,
-            endedAt: new Date().toISOString(),
+          updateRequest(this.persistDir, requestId, {
+            status: "COMPLETED",
+            completedAt: Date.now(),
             durationMs: Date.now() - startMs,
-            agent: agentName,
-            sessionId,
+            summary: `Heartbeat for ${agentName} completed`,
           });
-          // Send brief to human if configured
           if (entry.notifyBrief && this.notify) {
             const text = taskResult?.lastAssistantText?.trim();
             if (text) {
@@ -350,103 +425,25 @@ export class Cron {
           }
         })
         .catch((err) => {
-          this.heartbeatRunning.delete(heartbeatKey);
-          // Reset re-trigger count on failure (don't fast-loop on errors)
-          this.retriggerCounts.set(entry.name, 0);
-          // Don't drain pending triggers on failure — prevents tight error loops
-          // where a latched trigger causes immediate re-fire after each failure.
-          // Wait for the next scheduled interval instead.
-          this.pendingTriggers.delete(entry.name);
           const errMsg = err instanceof Error ? err.message : String(err);
-
-          // Any heartbeat error → hard reset session to recover
           this.onError?.(`Cron heartbeat "${entry.name}" failed — resetting session for next fire`);
-          this.heartbeatSessions.delete(agentName);
-
-          this.appendJobResult({
-            jobName: entry.name,
-            type: "heartbeat",
-            status: "failure",
-            summary: `Heartbeat for ${agentName} failed`,
-            startedAt,
-            endedAt: new Date().toISOString(),
+          updateRequest(this.persistDir, requestId, {
+            status: "FAILED",
+            completedAt: Date.now(),
             durationMs: Date.now() - startMs,
-            agent: agentName,
-            sessionId,
             error: errMsg,
           });
           this.onError?.(`Cron heartbeat "${entry.name}" failed: ${errMsg}`);
         });
     } catch (err) {
-      this.heartbeatRunning.delete(heartbeatKey);
       const errMsg = err instanceof Error ? err.message : String(err);
-      this.appendJobResult({
-        jobName: entry.name,
-        type: "heartbeat",
-        status: "failure",
-        summary: `Heartbeat for ${agentName} failed to start`,
-        startedAt,
-        endedAt: new Date().toISOString(),
+      updateRequest(this.persistDir, requestId, {
+        status: "FAILED",
+        completedAt: Date.now(),
         durationMs: Date.now() - startMs,
-        agent: agentName,
         error: errMsg,
       });
       this.onError?.(`Cron heartbeat "${entry.name}" failed: ${errMsg}`);
-    }
-  }
-
-  /** Check latch: if a trigger arrived while entry was busy, DON'T re-fire immediately.
-   *  The work is already in the agent's todo.md (written by agents.send()) and will be
-   *  picked up at the next scheduled heartbeat interval. Immediate re-fire was causing
-   *  160 extra sessions per 7.5 hours ($435/day waste). */
-  private checkPendingTrigger(entry: CronEntry): void {
-    if (this.pendingTriggers.has(entry.name)) {
-      this.pendingTriggers.delete(entry.name);
-      // Previously this would immediately re-fire the entry.
-      // Now we just clear the latch — the next scheduled interval handles the work.
-    }
-  }
-
-  /** Post-heartbeat re-trigger: if agent has remaining work in todo.md, fire again (up to maxRetriggers). */
-  private checkRetrigger(entry: CronEntry): void {
-    const agentName = entry.agent || "may";
-    const heartbeatKey = `heartbeat:${agentName}`;
-    const count = this.retriggerCounts.get(entry.name) ?? 0;
-
-    if (this.hasRemainingWork(agentName)) {
-      if (count < this.maxRetriggers) {
-        this.retriggerCounts.set(entry.name, count + 1);
-        this.triggerNow(entry.name, { force: true });
-      } else {
-        // Max re-triggers reached — reset and wait for next scheduled interval
-        this.retriggerCounts.set(entry.name, 0);
-        this.onError?.(`Cron re-trigger "${entry.name}" max reached (${this.maxRetriggers}) — waiting for next interval`);
-      }
-    } else {
-      // No remaining work — reset count
-      this.retriggerCounts.set(entry.name, 0);
-    }
-  }
-
-  /** Check if an agent has unchecked tasks in their todo.md. */
-  private hasRemainingWork(agentName: string): boolean {
-    try {
-      const todoPath = resolve(this.projectRoot, "agents", agentName, "workspace", "todo.md");
-      if (!existsSync(todoPath)) return false;
-      const content = readFileSync(todoPath, "utf-8");
-      return content.includes("- [ ]");
-    } catch {
-      return false;
-    }
-  }
-
-  /** Check if a session is still in the manager (includes idle persistent sessions). */
-  private isSessionAlive(sessionId: string): boolean {
-    try {
-      const sessions = this.manager.status();
-      return sessions.some((s) => s.sessionId === sessionId);
-    } catch {
-      return false;
     }
   }
 
@@ -459,45 +456,34 @@ export class Cron {
       return;
     }
 
-    // Skip if still running
-    if (this.handlerRunning.has(entry.name)) {
-      const result = this.makeSkipResult(entry, "job");
-      this.appendJobResult(result);
-      this.onError?.(`Cron handler "${entry.name}" skipped — still running`);
-      return;
-    }
-
     this.onJobFire?.(entry, "js");
-    this.handlerRunning.add(entry.name);
-    const startedAt = new Date().toISOString();
+
+    const requestId = trackRequest(this.persistDir, {
+      fromEntity: "cron",
+      toAgent: entry.agent || "may",
+      task: entry.message.slice(0, 500),
+      method: "call",
+      artifact: entry.name,
+      context: JSON.stringify({ type: "handler" }),
+    });
+
+    updateRequest(this.persistDir, requestId, { status: "IN_PROGRESS" });
     const startMs = Date.now();
 
     handler()
       .then(() => {
-        this.handlerRunning.delete(entry.name);
-        this.checkPendingTrigger(entry);
-        this.appendJobResult({
-          jobName: entry.name,
-          type: "job",
-          status: "success",
-          summary: `JS handler "${entry.name}" completed`,
-          startedAt,
-          endedAt: new Date().toISOString(),
+        updateRequest(this.persistDir, requestId, {
+          status: "COMPLETED",
+          completedAt: Date.now(),
           durationMs: Date.now() - startMs,
+          summary: `JS handler "${entry.name}" completed`,
         });
       })
       .catch((err) => {
-        this.handlerRunning.delete(entry.name);
-        // Don't drain pending triggers on failure — prevents tight error loops
-        this.pendingTriggers.delete(entry.name);
         const errMsg = err instanceof Error ? err.message : String(err);
-        this.appendJobResult({
-          jobName: entry.name,
-          type: "job",
-          status: "failure",
-          summary: `JS handler "${entry.name}" failed`,
-          startedAt,
-          endedAt: new Date().toISOString(),
+        updateRequest(this.persistDir, requestId, {
+          status: "FAILED",
+          completedAt: Date.now(),
           durationMs: Date.now() - startMs,
           error: errMsg,
         });
@@ -507,11 +493,10 @@ export class Cron {
 
   // ── Detached agent job: spawn separate OS process ───────────────────
 
-  /** Check if a process with the given pid is still running. */
-  private isProcessAlive(pid: number | undefined): boolean {
-    if (pid === undefined) return false;
+  private isProcessAlive(pid: number | undefined | null): boolean {
+    if (pid == null) return false;
     try {
-      process.kill(pid, 0); // signal 0: check existence without killing
+      process.kill(pid, 0);
       return true;
     } catch {
       return false;
@@ -519,34 +504,15 @@ export class Cron {
   }
 
   private fireDetachedJob(entry: CronEntry): void {
-    // If a detached process for this entry is tracked, check if it's still alive
-    if (this.detachedRunning.has(entry.name)) {
-      const tracked = this.detachedRunning.get(entry.name)!;
-      if (this.isProcessAlive(tracked.pid)) {
-        // Process still running — skip this fire
-        const result = this.makeSkipResult(entry, "job");
-        this.appendJobResult(result);
-        this.onError?.(
-          `Cron detached job "${entry.name}" skipped — detached process still running (pid=${tracked.pid})`,
-        );
-        return;
-      }
-      // Process is no longer running — clear tracking and allow re-fire
-      this.detachedRunning.delete(entry.name);
-    }
-
     this.onJobFire?.(entry, "detached");
-    const startedAt = new Date().toISOString();
+
+    const sessionId = generateId("cron");
+    let parentSessionId: string | undefined;
+    try {
+      parentSessionId = this.getSessionId();
+    } catch { /* no active parent session */ }
 
     try {
-      const sessionId = generateId("cron");
-      let parentSessionId: string | undefined;
-      try {
-        parentSessionId = this.getSessionId();
-      } catch {
-        // No active parent session — that's fine for detached spawn
-      }
-
       const { pid } = spawnDetachedAgent({
         projectRoot: this.projectRoot,
         agentName: entry.agent ?? "may",
@@ -555,30 +521,32 @@ export class Cron {
         parentSessionId,
       });
 
-      this.detachedRunning.set(entry.name, { sessionId, pid, startedAt });
-
-      this.appendJobResult({
-        jobName: entry.name,
-        type: "job",
-        status: "success",
-        summary: `Detached agent spawned (pid=${pid ?? "unknown"}, session=${sessionId})`,
-        startedAt,
-        endedAt: new Date().toISOString(),
-        durationMs: 0,
-        agent: entry.agent ?? "may",
+      trackRequest(this.persistDir, {
+        fromEntity: "cron",
+        toAgent: entry.agent ?? "may",
+        task: entry.message.slice(0, 500),
+        method: "call",
+        artifact: entry.name,
         sessionId,
+        context: JSON.stringify({ type: "detached", pid: pid ?? null }),
       });
+
+      // Detached jobs are IN_PROGRESS immediately — they complete when the
+      // process finishes and calls clearDetachedTask(), or get cleaned up
+      // as orphans on next restart.
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err);
-      this.appendJobResult({
-        jobName: entry.name,
-        type: "job",
-        status: "failure",
-        summary: `Failed to spawn detached agent for "${entry.name}"`,
-        startedAt,
-        endedAt: new Date().toISOString(),
-        durationMs: 0,
-        agent: entry.agent,
+      // Track the failed spawn attempt
+      const requestId = trackRequest(this.persistDir, {
+        fromEntity: "cron",
+        toAgent: entry.agent ?? "may",
+        task: entry.message.slice(0, 500),
+        method: "call",
+        artifact: entry.name,
+      });
+      updateRequest(this.persistDir, requestId, {
+        status: "FAILED",
+        completedAt: Date.now(),
         error: errMsg,
       });
       this.onError?.(`Cron job "${entry.name}" detached spawn failed: ${errMsg}`);
@@ -587,37 +555,44 @@ export class Cron {
 
   /** Clear tracking for a detached task (called when process completes). */
   clearDetachedTask(jobName: string): void {
-    this.detachedRunning.delete(jobName);
-  }
-
-  /** Get info about running detached tasks. */
-  getDetachedRunning(): Map<string, { sessionId: string; pid: number | undefined; startedAt: string }> {
-    return new Map(this.detachedRunning);
-  }
-
-  // ── JobResult tracking ──────────────────────────────────────────────
-
-  private makeSkipResult(entry: CronEntry, type: "heartbeat" | "job"): JobResult {
-    const now = new Date().toISOString();
-    return {
-      jobName: entry.name,
-      type,
-      status: "skipped",
-      summary: `Skipped — previous execution still running`,
-      startedAt: now,
-      endedAt: now,
-      durationMs: 0,
-      agent: entry.agent,
-    };
-  }
-
-  private appendJobResult(result: JobResult): void {
     try {
-      mkdirSync(this.persistDir, { recursive: true });
-      const historyPath = resolve(this.persistDir, "job-history.jsonl");
-      appendFileSync(historyPath, JSON.stringify(result) + "\n");
-    } catch (err) {
-      this.onError?.(`Failed to write job history: ${err}`);
-    }
+      const db = getDb(this.persistDir);
+      const now = Date.now();
+      db.run(
+        `UPDATE requests SET status = 'COMPLETED', updatedAt = ?, completedAt = ?
+         WHERE artifact = ? AND status IN ('CREATED', 'IN_PROGRESS')`,
+        [now, now, jobName],
+      );
+    } catch { /* ignore */ }
+  }
+
+  /** Get info about running detached tasks (from requests table). */
+  getDetachedRunning(): Map<string, { sessionId: string; pid: number | undefined; startedAt: string }> {
+    const result = new Map<string, { sessionId: string; pid: number | undefined; startedAt: string }>();
+    try {
+      const db = getDb(this.persistDir);
+      const rows = db
+        .query(
+          `SELECT artifact, sessionId, context, createdAt FROM requests
+           WHERE fromEntity = 'cron' AND status IN ('CREATED', 'IN_PROGRESS')
+           AND context LIKE '%"type":"detached"%'`,
+        )
+        .all() as Array<{ artifact: string; sessionId: string | null; context: string | null; createdAt: number }>;
+      for (const row of rows) {
+        let pid: number | undefined;
+        try {
+          const ctx = JSON.parse(row.context ?? "{}");
+          pid = ctx.pid ?? undefined;
+        } catch { /* ignore */ }
+        if (pid && this.isProcessAlive(pid)) {
+          result.set(row.artifact, {
+            sessionId: row.sessionId ?? "",
+            pid,
+            startedAt: new Date(row.createdAt).toISOString(),
+          });
+        }
+      }
+    } catch { /* ignore */ }
+    return result;
   }
 }

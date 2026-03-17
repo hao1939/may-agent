@@ -10,7 +10,7 @@
 
 import type { Database } from "bun:sqlite";
 import { join } from "node:path";
-import { mkdirSync } from "node:fs";
+import { mkdirSync, existsSync, renameSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 
 // Lazy-load bun:sqlite to avoid breaking vitest (which runs under Node.js)
@@ -129,7 +129,19 @@ export function getDb(persistDir: string): Database {
   if (cached) return cached;
 
   mkdirSync(persistDir, { recursive: true });
-  const dbPath = join(persistDir, "requests.db");
+
+  // Auto-migrate: rename requests.db → may.db on first access
+  const oldPath = join(persistDir, "requests.db");
+  const dbPath = join(persistDir, "may.db");
+  if (existsSync(oldPath) && !existsSync(dbPath)) {
+    renameSync(oldPath, dbPath);
+    // Also migrate WAL/SHM files if they exist
+    const oldWal = oldPath + "-wal";
+    const oldShm = oldPath + "-shm";
+    if (existsSync(oldWal)) renameSync(oldWal, dbPath + "-wal");
+    if (existsSync(oldShm)) renameSync(oldShm, dbPath + "-shm");
+  }
+
   const db = new (getDatabaseClass())(dbPath);
 
   db.run("PRAGMA journal_mode = WAL");

@@ -30,20 +30,6 @@ export interface CronEntry {
   lastModified?: string;
 }
 
-export interface JobResult {
-  jobName: string;
-  type: "heartbeat" | "job";
-  status: "success" | "failure" | "skipped" | "timeout";
-  summary: string;
-  startedAt: string;
-  endedAt: string;
-  durationMs: number;
-  agent?: string;
-  sessionId?: string;
-  artifacts?: string[];
-  error?: string;
-}
-
 function textResult(text: string): AgentToolResult<string> {
   return { content: [{ type: "text", text }], details: text };
 }
