@@ -79,6 +79,7 @@ const CONSOLE_ENABLED = process.argv.includes("--console") || process.argv.inclu
 const SOCKET_ENABLED = process.argv.includes("--socket");
 const CHAT_MODE = process.argv.includes("--chat");
 const ONESHOT_MODE = process.argv.includes("--oneshot");
+const STATUS_MODE = process.argv.includes("--status");
 const INITIAL_TASK = (() => {
   const idx = process.argv.indexOf("--task");
   if (idx !== -1 && process.argv[idx + 1]) return process.argv[idx + 1];
@@ -612,8 +613,15 @@ function emitPrompt(): void {
 
 // ── Startup ────────────────────────────────────────────────────────────
 
+if (STATUS_MODE) {
+  // ── Status mode: print request DB status and exit ──────────────────
+  const { printRequestStatus } = await import("../lib/tools/request-status.js");
+  console.log(printRequestStatus(PERSIST_DIR));
+  process.exit(0);
+}
+
 if (!CHAT_MODE && !INITIAL_TASK && !CRON_ENABLED && !ONESHOT_MODE) {
-  console.error("Error: need --chat, --task, --oneshot, or --cron.");
+  console.error("Error: need --chat, --task, --oneshot, --status, or --cron.");
   process.exit(1);
 }
 
