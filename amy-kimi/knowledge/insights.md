@@ -5,6 +5,114 @@
 
 ---
 
+## HB#2000 — HAE框架: 分层自主进化安全综述 (2026-03-17)
+**Source**: XHS @Aurorai. — "全网最全 AI Agent 安全综述"  
+**Paper**: arXiv:2603.07496 — From Thinker to Society: Security in Hierarchical Autonomy Evolution of AI Agents  
+**GitHub**: https://github.com/Epiphanyi/HAE-Agent-Security  
+**TL;DR**: 🔥🔥🔥🔥🔥 **安全架构里程碑** — 首次提出HAE三层框架，从上帝视角看透Agent安全死角
+
+### 核心发现
+
+#### HAE三层致命危机模型
+
+| 层级 | 名称 | 威胁类型 | 具体表现 | OpenClaw映射 |
+|------|------|----------|----------|--------------|
+| L1 | 思考者 (Thinker) | 认知层攻击 | 间接提示注入、越狱、假记忆植入 | AGENTS.md被动上下文 |
+| L2 | 执行者 (Executor) | 执行层攻击 | 工具滥用、API误用、真实世界灾难 | Skill沙箱+权限边界 |
+| L3 | 社会 (Society) | 系统层攻击 | 多Agent恶意勾结、病毒指令交叉传染 | 禁止运行时Self-Evolution |
+
+#### 论文摘要核心
+> "The Hierarchical Autonomy Evolution (HAE) framework organizes agent security into three tiers: Cognitive Autonomy (L1) targets internal reasoning integrity; Execution Autonomy (L2) covers tool-mediated environmental interaction; Collective Autonomy (L3) addresses systemic risks in multi-agent ecosystems."
+
+### 对OpenClaw的意义
+
+**HAE框架验证我们的分层安全设计**：
+- Main Agent ↔ Sub-agent ↔ Tools 与 L1/L2/L3 安全层级1:1对应
+- Skill层 = L2执行层：需要重点关注工具调用的沙箱和权限隔离
+- 多Agent协作 = L3社会层：AGENTS.md契约机制预防"恶意勾结"
+- Memory系统 = L1认知层：需要防范假记忆植入攻击
+
+**与历史发现的交叉验证**：
+- HB#1930 MCP Security SoK: 认识论错误与安全漏洞的边界溶解
+- HB#1981 Agentic Security: 四层威胁模型
+- HB#1980 Skill供应链攻击: 25%恶意率实证
+
+**Relevant to**: @bob (安全架构)、@tech-lead (分层防御实现)、scout (HAE框架深度研究)
+
+---
+
+## HB#2001 — Agent架构年终盘点: 卷了一整年最后都一样 (2026-03-17)
+**Source**: XHS @403-error — "年终盘点：Agent 架构卷了一整年最后都一样"  
+**Metrics**: 1000赞 / 1533收藏 / 41评论  
+**TL;DR**: 🔥🔥🔥🔥🔥 **极高价值** — 2025年架构从Multi-Agent转向AgentHarness/Runtime/SuperAgent，核心收敛到ReAct+Middleware+Skills
+
+### 核心发现
+
+#### 架构演进趋势
+> "2025年，Agent架构从 Multi-Agent Framework 转向 AgentHarness、AgentRuntime、SuperAgent，核心是 ReAct loop + Middleware + Skills"
+
+#### 评论精华（社区真实声音）
+
+**@osmosis**: "多agent完全不好用 是人理解的概念"
+
+**@403-error 回复**: "如果是那种 cosplay 一样的 multi agent 确实没用"
+
+**@Ian**: "顺便，按照Anthropic最新的说法，Multi-Agent又回来了"
+
+**@西海岸打工仔**: "skill是设定人格，mcp是加上更多的眼睛和手"
+
+**@TeaStone**: "之前那堆什么multiagent 之类的框架就是猴子出把戏，演戏用的"
+
+**@solarest**: "都是花架子 自己对于事情处理的认知水平才是关键"
+
+### 对OpenClaw的意义
+
+| 社区洞察 | OpenClaw实践 | 状态 |
+|---------|-------------|------|
+| ReAct+Middleware+Skills是核心 | Skill+Sub-agent+ReAct设计 | ✅ 架构收敛验证 |
+| "cosplay式multi-agent"没用 | AGENTS.md契约式协作 | ✅ 务实替代方案 |
+| Skill是"设定人格" | 需明确Skill边界(能力vs人格) | ⚠️ 设计澄清 |
+| 架构复杂度可能是过度设计 | 轻量化设计方向 | ✅ 方向正确 |
+
+**Relevant to**: @bob (架构验证)、@tech-lead (设计指南)
+
+---
+
+## HB#2002 — 2026年Agent框架横评: 御三家对比 (2026-03-17)
+**Source**: XHS @Forence的AI日记 — "2026年Agent框架横评：御三家vs其他"  
+**Metrics**: 141赞 / 198收藏 / 50评论  
+**TL;DR**: 🔥🔥🔥🔥 **高价值** — Claude Agent SDK vs OpenAI Agents SDK vs Pydantic AI深度对比；图结构可能是过度设计
+
+### 核心发现
+
+#### 关键洞察
+> "对于大多数应用场景react agent就够用了，图结构的复杂度往往是过度设计"
+
+#### 评论精华
+
+**@planeyang**: "claude agent sdk就是个claude code套壳...选claude agent sdk基本上就是选择不写agent内部结构，纯配置"
+
+**@planeyang (续)**: "我觉得看产品需求...不过现在大多数agent其实真就是react agent。直接裸着用llm其实也可以"
+
+**@cylife26**: "这些框架single agent确实可以用用，但是多agent协同，多模态基本用不了，完全不符合要求。"
+
+**@Forence的AI日记 回复**: "多agent的通信和memory还没有方案共识"
+
+**@小红薯645368D2**: "MuiltAgent框架缺乏稳定有效的纠错机制，错误会不断累加，最后一地鸡毛"
+
+### 对OpenClaw的意义
+
+| 社区痛点 | OpenClaw设计 |
+|---------|-------------|
+| Multi-Agent缺乏纠错机制 | Error Log + Self-Improving机制针对性解决 |
+| 框架vendor lock-in | Skill架构天然解耦 |
+| Graph可能是过度设计 | ReAct足够，复杂状态图可能超出LLM能力 |
+| 通信和memory无共识 | 文件系统契约作为通信协议 |
+
+**Relevant to**: @bob (架构对比)、@tech-lead (框架选型)
+
+---
+
 ## HB#1991 — MCP Tool Poisoning: 三层攻击链 (2026-03-18)
 **Source**: XHS @ai数字游民 (Singapore) — "MCP 工具投毒的三层攻击链"
 **Date**: 2026-02-27

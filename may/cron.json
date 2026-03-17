@@ -325,5 +325,14 @@
     "enabled": true,
     "handler": "error-log-scanner",
     "description": "Scan all agents' ERROR_LOG.jsonl for repeated error patterns (≥3 same type in 7d). Triggers Coach growth-cycle if found. JS handler, 4h interval, 7d cooldown."
+  },
+  {
+    "name": "audit-requests",
+    "type": "job",
+    "intervalMs": 7200000,
+    "message": "[cron:audit-requests] Audit and reconcile request lifecycle.",
+    "enabled": true,
+    "handler": "audit-requests",
+    "description": "Auto-expire stale CREATED send requests (>4h), clean up non-agent call artifacts, reset orphaned IN_PROGRESS, archive old completed. JS handler, 2h interval."
   }
 ]
