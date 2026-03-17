@@ -9,11 +9,15 @@
  * Phase 5 of request-tracking plan.
  */
 
-import {
-  getDb,
-  getActiveRequests,
-  getStaleRequests,
-} from "../requests.js";
+// Lazy-load requests module to avoid pulling bun:sqlite at module level (vitest compat)
+let _requestsModule: typeof import("../requests.js") | null = null;
+function getRequestsModule() {
+  if (!_requestsModule) {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    _requestsModule = require("../requests.js") as typeof import("../requests.js");
+  }
+  return _requestsModule;
+}
 
 const HOUR = 60 * 60 * 1000;
 const DAY = 24 * HOUR;
@@ -32,9 +36,10 @@ function truncate(s: string, max: number): string {
 
 export function printRequestStatus(persistDir: string): string {
   const lines: string[] = [];
+  const req = getRequestsModule();
 
   // ── Active requests ────────────────────────────────────────────────
-  const active = getActiveRequests(persistDir);
+  const active = req.getActiveRequests(persistDir);
   lines.push(`\n📋 Active Requests: ${active.length}`);
   if (active.length > 0) {
     lines.push("─".repeat(70));
@@ -49,7 +54,7 @@ export function printRequestStatus(persistDir: string): string {
   }
 
   // ── Stale requests (>2h) ───────────────────────────────────────────
-  const stale = getStaleRequests(persistDir, 2 * HOUR);
+  const stale = req.getStaleRequests(persistDir, 2 * HOUR);
   if (stale.length > 0) {
     lines.push(`\n⚠️  Stale Requests (>2h): ${stale.length}`);
     lines.push("─".repeat(70));
@@ -62,7 +67,7 @@ export function printRequestStatus(persistDir: string): string {
   }
 
   // ── Completion rates (last 24h) ────────────────────────────────────
-  const db = getDb(persistDir);
+  const db = req.getDb(persistDir);
   const cutoff = Date.now() - DAY;
   const stats = db
     .query(
