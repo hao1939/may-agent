@@ -69,6 +69,12 @@ export interface MemoryEntry {
   duration: string;
   summary: string | null;
   timestamp: number;
+  /** Items the agent completed (from finish() completed_items). */
+  completed?: string[];
+  /** New items the agent identified (from finish() new_items). */
+  newItems?: string[];
+  /** Files modified during the session. */
+  files?: string[];
 }
 
 /** Extract persistable fields from a SubagentDefinition. */

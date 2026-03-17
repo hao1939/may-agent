@@ -413,7 +413,11 @@ export class SubagentManager {
           const ts = formatMemoryTimestamp(e.timestamp);
           const taskText = truncateForPrompt(e.task, MEMORY_TASK_MAX);
           const summary = e.summary ? ` — ${truncateForPrompt(e.summary, MEMORY_SUMMARY_MAX)}` : "";
-          ctxLines.push(`- ${ts}: "${taskText}" — ${e.status} (${e.duration})${summary}`);
+          let extra = "";
+          if (e.completed?.length) extra += ` | done: ${e.completed.join(", ")}`;
+          if (e.newItems?.length) extra += ` | added: ${e.newItems.join(", ")}`;
+          if (e.files?.length) extra += ` | files: ${e.files.slice(0, 5).join(", ")}${e.files.length > 5 ? "..." : ""}`;
+          ctxLines.push(`- ${ts}: "${taskText}" — ${e.status} (${e.duration})${summary}${extra}`);
         }
       }
     }
@@ -428,18 +432,85 @@ export class SubagentManager {
     return ctxLines.join("\n");
   }
 
-  /** Append a memory entry after session completion. */
+  /** Append a memory entry after session completion.
+   *  Uses finish() structured data when available for richer summaries.
+   *  Falls back to extractLastAssistantText for unstructured sessions. */
   private appendMemory(session: ActiveSession): void {
     const messages = session.agent.state.messages;
     const endTime = session.endedAt ?? Date.now();
+
+    // Prefer finish() structured data over raw last-assistant-text
+    const finishData = extractFinishParams(messages);
+    const summary = finishData?.summary ?? extractLastAssistantText(messages);
+
     const entry: MemoryEntry = {
       task: session.task,
-      status: session.archiveStatus ?? session.status,
+      status: finishData?.status ?? session.archiveStatus ?? session.status,
       duration: formatDuration(endTime - session.startedAt),
-      summary: extractLastAssistantText(messages),
+      summary,
       timestamp: endTime,
     };
+
+    // Enrich with finish() structured fields when available
+    if (finishData?.completed_items?.length) entry.completed = finishData.completed_items;
+    if (finishData?.new_items?.length) entry.newItems = finishData.new_items;
+    if (session.filesModified.size > 0) entry.files = [...session.filesModified];
+
     appendMemoryEntry(this.registry.persistDir, session.agentName, entry);
+  }
+
+  /** Auto-update agent's todo.md based on finish() completed_items and new_items.
+   *  Marks completed items as [x] and appends new items as [ ].
+   *  Best-effort — never throws. */
+  private updateTodoFromFinish(session: ActiveSession): void {
+    try {
+      const finishData = extractFinishParams(session.agent.state.messages);
+      if (!finishData) return;
+
+      const completed = finishData.completed_items;
+      const newItems = finishData.new_items;
+      if ((!completed || completed.length === 0) && (!newItems || newItems.length === 0)) return;
+
+      const todoPath = join(this._projectRoot, "agents", session.agentName, "workspace", "todo.md");
+      if (!existsSync(todoPath) && (!newItems || newItems.length === 0)) return;
+
+      let content = existsSync(todoPath) ? readFileSync(todoPath, "utf-8") : "";
+
+      // Mark completed items: fuzzy match against unchecked items
+      if (completed && completed.length > 0) {
+        for (const item of completed) {
+          // Normalize for matching: trim, lowercase
+          const needle = item.trim().toLowerCase();
+          const lines = content.split("\n");
+          let bestIdx = -1;
+          let bestScore = 0;
+          for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            if (!line.startsWith("- [ ]")) continue;
+            const lineText = line.slice(5).trim().toLowerCase();
+            // Simple substring match — if the completed item text appears in the todo line
+            if (lineText.includes(needle) || needle.includes(lineText)) {
+              const score = Math.min(lineText.length, needle.length) / Math.max(lineText.length, needle.length);
+              if (score > bestScore) { bestScore = score; bestIdx = i; }
+            }
+          }
+          if (bestIdx >= 0 && bestScore > 0.3) {
+            lines[bestIdx] = lines[bestIdx].replace("- [ ]", "- [x]");
+            content = lines.join("\n");
+          }
+        }
+      }
+
+      // Append new items
+      if (newItems && newItems.length > 0) {
+        const additions = newItems.map(item => `- [ ] ${item}`).join("\n");
+        content = content.trimEnd() + "\n" + additions + "\n";
+      }
+
+      writeFileSync(todoPath, content);
+    } catch {
+      /* best-effort — todo update should never break session lifecycle */
+    }
   }
 
   /** Archive a session after completion: move to history. */
@@ -617,6 +688,9 @@ export class SubagentManager {
     }
 
     this.appendMemory(session);
+
+    // Auto-update todo.md from finish() data (eliminates manual edit chore)
+    this.updateTodoFromFinish(session);
 
     // Activity tracking: log session completion
     {
