@@ -8,10 +8,20 @@
  * Plan: agents/tech-lead/workspace/plan-request-tracking.md
  */
 
-import { Database } from "bun:sqlite";
+import type { Database } from "bun:sqlite";
 import { join } from "node:path";
 import { mkdirSync } from "node:fs";
 import { randomUUID } from "node:crypto";
+
+// Lazy-load bun:sqlite to avoid breaking vitest (which runs under Node.js)
+let _DatabaseClass: typeof import("bun:sqlite").Database | null = null;
+function getDatabaseClass(): typeof import("bun:sqlite").Database {
+  if (!_DatabaseClass) {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    _DatabaseClass = require("bun:sqlite").Database;
+  }
+  return _DatabaseClass!;
+}
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -118,7 +128,7 @@ export function getDb(persistDir: string): Database {
 
   mkdirSync(persistDir, { recursive: true });
   const dbPath = join(persistDir, "requests.db");
-  const db = new Database(dbPath);
+  const db = new (getDatabaseClass())(dbPath);
 
   db.run("PRAGMA journal_mode = WAL");
   db.run("PRAGMA busy_timeout = 5000");
