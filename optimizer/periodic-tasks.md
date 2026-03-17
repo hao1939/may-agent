@@ -57,7 +57,7 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   2. Has it been active for 2+ weeks? → Graduate to structural home or delete
   3. Is the agent-specific example still needed? → Keep if yes, trim if bloated
   Target: each agent's LESSONS.md under 2,000 bytes.
-  Latest (2026-03-17, 15:00 update): **Phase 1 complete.** Graduated strikethrough sections from all 11 agent LESSONS.md files into HTML comments (preserves history for Coach without consuming system prompt tokens). Total bytes: 67,648 → 28,219 → 23,326 (65.5% total reduction). Only 2 files over 2K (tech-lead 4,049 and may 2,246 — all agent-specific content). Dead references cleaned (SIGNALS.md, todo.md, handoff()). Universal conventions consolidated in shared/LESSONS.md (4,079 bytes). Delegations to May (cleanup) and Coach (dedup gate) already sent.
+  Latest (2026-03-17, 15:25 update): **Phase 2 automated.** Built `agents/may/handlers/lessons-graduation.ts` (259 lines, pure JS handler). Added daily cron entry. Scans: size budget (2K), stale entries (>14d), strikethrough, GRADUATED/OBSOLETE markers, shared duplicates. Reports to `workspace/graduation-report.md`, triggers May heartbeat on issues. Sent dedup gate to Coach (req:e0040e2c). All 1375 tests pass, tsc clean. Stats: total ~19.7KB (was 67.6KB), all agent files under 2K. **This periodic task is now automated via daily JS handler.**
 
 ## How to use this file
 1. Read this file during heartbeat step 3

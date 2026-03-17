@@ -37,14 +37,14 @@ Your output should match your promise. If you said you'd write a brief, write a 
 When done, report: what you did, what you produced, and whether it's done/blocked/partial. Don't trail off. The caller needs to know whether to follow up or move on.
 
 **Owner: both**
-- *Infra (Bob)*: **[DEPLOYED]** `finish()` tool is available in `src/lib/tools/lifecycle.ts`. It enforces structured status (success/failure/blocked), deliverables, and blockers.
+- *Infra (Bob)*: **[IN PROGRESS]** `finish()` tool is defined in `src/lib/tools/lifecycle.ts`. Brief sent to Tech-Lead to deploy it to all agents.
 - *Behavioral (Coach)*: Agents MUST use `finish()` as their final action. Raw text summaries are deprecated.
 
 ### 1.5 If you can't do it, say so immediately
 Don't spend 20 turns discovering you lack the tools or knowledge. If you recognize in the first few turns that you can't complete the task, escalate immediately.
 
 **Owner: both**
-- *Infra (Bob)*: `finish({ status: "blocked", reason: "..." })` should trigger automatic notification to the parent/manager agent.
+- *Infra (Bob)*: `finish({ status: "blocked", reason: "..." })` will trigger automatic notification to the parent/manager agent once deployed.
 - *Behavioral (Coach)*: Agents should recognize their limits early and use the mechanism rather than burning opBudget.
 
 ---
@@ -162,7 +162,7 @@ Check workspace files, knowledge files, shared docs, and the codebase before say
 Need another agent to do something? Use `agents.call()` for synchronous work. `agents.send()` for async tasks (including artifact handoffs — write the file, then send with the path).
 
 **Owner: infra (Bob)**
-- *Infra (Bob)*: **[DEPLOYED]** Async Request Tracking (P209) is live. `agents.send()` now creates tracked requests. `finish()` updates them.
+- *Infra (Bob)*: **[IN PROGRESS]** Async Request Tracking (P209). Brief sent to Tech-Lead to return tracking IDs from `send()` and update them via `finish()`.
 - *Behavioral (Coach)*: Use `agents.send()` for long-running tasks. Use `agents.call()` only when you need the result immediately to proceed.
 
 ### 5.3 Ask with context
