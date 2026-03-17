@@ -746,7 +746,9 @@ export class SubagentManager {
     }
 
     // Task sessions (or aborted interface sessions) → archive and remove
-    const archiveStatus: "done" | "error" | "interrupted" = wasAborted
+    // If finish() was called and the error was cleared (post-finish abort),
+    // treat as "done" — the abort was just the session cleanup, not a failure.
+    const archiveStatus: "done" | "error" | "interrupted" = wasAborted && session.error
       ? "interrupted"
       : session.error
         ? "error"
@@ -924,6 +926,15 @@ export class SubagentManager {
     mkdirSync(outputDir, { recursive: true });
 
     const compactionTransform = this.buildTransformContext(def, opts?.compaction);
+
+    // Inject sessionId into checkpoint tools (they're created at registration
+    // time before the sessionId is known)
+    for (const tool of def.tools) {
+      if (tool.name === "checkpoint" && (tool as any)._setSessionId) {
+        (tool as any)._setSessionId(sessionId);
+      }
+    }
+
     const agent = new Agent({
       initialState: {
         systemPrompt: this.resolveSystemPrompt(def),
@@ -1188,6 +1199,14 @@ export class SubagentManager {
     const outputDir = sessionOutputDir(persistDir, sessionId);
 
     const compactionTransform = this.buildTransformContext(def);
+
+    // Inject sessionId into checkpoint tools (same as in run())
+    for (const tool of def.tools) {
+      if (tool.name === "checkpoint" && (tool as any)._setSessionId) {
+        (tool as any)._setSessionId(sessionId);
+      }
+    }
+
     const agent = new Agent({
       initialState: {
         systemPrompt,
