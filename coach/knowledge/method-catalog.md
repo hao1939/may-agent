@@ -23,9 +23,10 @@ the Ghost Bug. These methods need **re-testing with correct methodology**
 The only valid experiments are the two post-discovery micro-edit runs
 (Method #13), which kept the original name and showed 0 regression.
 
-## Aggregate Evidence Summary (updated 2026-03-17, self-evolve H1400+)
+## Aggregate Evidence Summary (updated 2026-03-17, self-evolve H1900)
 
-**39 experiments total** across 13 methods. Key findings:
+**42 experiment entries total** (~21 unique IDs in new format, plus legacy).
+Key findings across 13+ methods:
 
 | Method | # Experiments | Regressions? | Improvements? | Verdict |
 |--------|-------------|-------------|--------------|---------|
@@ -34,6 +35,7 @@ The only valid experiments are the two post-discovery micro-edit runs
 | #3 LESSONS Entry | 2 (1 confounded, 1 inconclusive) | 0 (clean test safe) | Unknown (scenario bug) | SAFE, NEEDS VALID SCENARIO |
 | #4 Skill File | 2 | 0 | 0 | SAFE, blocked on scenarios |
 | #6 Knowledge File | 2 (1 confounded, 1 clean) | 0 | 0 (never read) | SAFE, INEFFECTIVE alone (needs delivery mechanism) |
+| #6+#2 Combo | 0 (fork ready) | — | — | **NEXT EXPERIMENT** |
 | #9 Negative Example | 2 | 0 | 0 | SAFE, INEFFECTIVE |
 | #10 Conditional Guard | 1 | 0 | 0 | SAFE, INEFFECTIVE |
 | #11 Prompt Prefix | 1 (untestable via gym) | N/A | N/A | UNTESTABLE VIA GYM |
@@ -42,20 +44,32 @@ The only valid experiments are the two post-discovery micro-edit runs
 | Identity Exception | 1 | 0 | 0 | SAFE, INEFFECTIVE |
 
 **Core finding**: Text-based coaching is SAFE (Ghost Bug was the only cause of
-regressions) but 0/8 clean experiments improved judgment behavior. Either:
+regressions) but 0/10 clean experiments improved judgment behavior. Either:
 - (a) Text can't override model judgment priors → need structural methods
 - (b) Current gym scenarios don't measure the improvement → need better scenarios
 - (c) The specific text content hasn't been right yet → need different framing
 
-**Priority for next experiments**: All confounded methods now re-tested:
-#2 (exp-037) SAFE/INEFFECTIVE, #6 (exp-038) SAFE/INEFFECTIVE (passive),
-#12 (exp-039) SAFE/INEFFECTIVE. The "text can't fix judgment" conclusion
-is strong — 0/10 clean experiments improved target behavior. Remaining
-paths: (a) **combination methods** (e.g., #6+#2: knowledge file + heartbeat
-step to read it), (b) **structural methods** (workflow, agent.json config),
-(c) **different scenarios** that may respond to text coaching, (d) **prompt
-content quality** — all experiments used informational/advisory text; try
-stronger framing (worked examples, chain-of-thought scaffolding).
+**Critical delivery mechanism insight (exp-038)**: Knowledge file #6 was
+never read during gym --oneshot. System prompt loads INDEX.md but NOT
+individual knowledge files. During directed tasks, agents don't voluntarily
+consult INDEX.md. Knowledge files need an **active delivery mechanism** —
+heartbeat step, prompt prefix, or workflow step — to ensure the agent reads
+them. This is the rationale for the #6+#2 combination experiment.
+
+**Priority for next experiments (ranked)**:
+1. **Combination #6+#2** (knowledge file + heartbeat step) — Fork ready in
+   `.lab/optimizer-combo-6-2`. Tests whether active delivery (heartbeat step
+   directing agent to read knowledge file) overcomes the passivity problem.
+   This is the first experiment testing whether the *delivery mechanism* is
+   the bottleneck, not the *content quality*.
+2. **Structural methods** (workflow, agent.json config) — if #6+#2 fails,
+   text-based coaching is conclusively ineffective, and we need to move to
+   methods that mechanically enforce behavior.
+3. **Different scenarios** — current skip-verification scenario may have a
+   ceiling effect (task framing says "exactly 2 bugs" which anchors behavior).
+   Need scenarios with open-ended verification requirements.
+4. **Prompt content quality** — try worked examples, chain-of-thought
+   scaffolding, or fear-based framing instead of informational/advisory text.
 
 ## Methods
 

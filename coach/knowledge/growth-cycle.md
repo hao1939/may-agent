@@ -129,3 +129,26 @@ Always clean up. Don't leave dead forks.
 7. **Interrupted gym runs produce unreliable data.** Completed re-runs
    of the same experiment showed different results from interrupted ones.
    Always run experiments to completion. Discard interrupted session data.
+
+8. **Knowledge files need active delivery mechanisms.** System prompt loads
+   `knowledge/INDEX.md` into context but NOT individual knowledge files.
+   During `--oneshot` gym runs, agents go straight to the task and never
+   voluntarily consult INDEX.md or read knowledge files. Knowledge files
+   are necessary (content) but not sufficient (delivery). Pair Method #6
+   with Method #2 (heartbeat step directing agent to read the file) or
+   Method #11 (prompt prefix) to ensure the content is actually consumed.
+
+9. **Task framing anchors behavior more than coaching text.** When a gym
+   scenario says "fix exactly 2 bugs," agents stop after 2 fixes regardless
+   of heartbeat reminders, negative examples, or knowledge files about
+   looking deeper. The task prompt overwhelms coaching prompts. To test
+   verification behavior, use open-ended scenarios ("fix all bugs") rather
+   than bounded ones ("fix exactly N bugs").
+
+10. **0/10 clean experiments = strong null result.** After eliminating the
+    Ghost Bug confound, 10 clean experiments across 7 methods (SOUL Guard,
+    Heartbeat Step, Knowledge File, Negative Example, Conditional Guard,
+    Subtractive Fix, Micro-Edit) show ZERO behavioral improvements on
+    judgment scenarios. Text-based coaching is confirmed SAFE but the
+    improvement signal is consistently zero. Next phase: combination methods
+    and structural methods.
