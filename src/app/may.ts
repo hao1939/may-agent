@@ -259,15 +259,15 @@ const manager = new SubagentManager({
   },
   onSessionBlocked: (agentName, sessionId, reason) => {
     bus.emit({ type: "info", message: `[escalation] ⚠️ ${agentName} session ${sessionId} blocked/failed: ${reason}` });
-    // Write to May's todo.md so it shows up in the next heartbeat
-    const mayTodoPath = resolve(AGENTS_ROOT, "may", "workspace", "todo.md");
-    const escalationLine = `- [ ] [escalation ${new Date().toISOString().slice(0, 16)}] ${agentName} session ${sessionId} — ${reason}\n`;
+    // Track escalation as a request targeting May
     try {
-      if (existsSync(mayTodoPath)) {
-        appendFileSync(mayTodoPath, escalationLine, "utf-8");
-      } else {
-        writeFileSync(mayTodoPath, `# May — Todo\n\n${escalationLine}`, "utf-8");
-      }
+      trackRequest(PERSIST_DIR, {
+        fromEntity: agentName,
+        toAgent: "may",
+        task: `[escalation] ${agentName} session ${sessionId} — ${reason}`,
+        method: "send",
+        sessionId,
+      });
     } catch { /* best-effort */ }
 
     // Push notification to human via Telegram

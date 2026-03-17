@@ -155,21 +155,6 @@ function createTestState() {
 `,
   );
 
-  // Create todo.md
-  writeFileSync(
-    join(agentsRoot, "may", "workspace", "todo.md"),
-    `# TODO
-
-## Active
-
-- [ ] **INFRA: GPT-5.2 auth token expired**
-- [ ] **INFRA: Master CLI tools missing**
-- [ ] **Auto-commit after QA approval**
-
-## Archive
-`,
-  );
-
   return { root, stateDir, agentsRoot };
 }
 
@@ -278,7 +263,8 @@ describe("system-status tool", () => {
 
     expect(text).toContain("Security & Hierarchy (P84/P85)");
     expect(text).toContain("Monitor: Agent Growth Cycle");
-    expect(text).toContain("3 active item(s)");
+    // todo/ops queue comes from DB (mocked as unavailable under vitest)
+    expect(text).toMatch(/pending task|DB unavailable/);
   });
 
   it("returns structured details", async () => {

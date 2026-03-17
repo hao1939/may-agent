@@ -7,16 +7,16 @@
  *   bun src/app/may.ts --send bob --message "review this" --artifact docs/design/foo.md
  *
  * Delivery:
- *   1. Finds a live socket (scans .state/instances/ for may.sock)
- *   2. Sends via socket as "@agent message"
- *   3. If no socket found, falls back to writing directly to agent's todo.md
- *   4. Tracks the request in the SQLite DB
+ *   1. Tracks the request in the SQLite DB (always)
+ *   2. Finds a live socket (scans .state/instances/ for may.sock)
+ *   3. Sends via socket as "@agent message" (triggers immediate heartbeat)
+ *   4. If no socket found, task is still tracked in DB and will appear in next heartbeat
  *
  * Exits 0 on success, 1 on error.
  */
 
 import { resolve } from "node:path";
-import { existsSync, readFileSync, appendFileSync, readdirSync, statSync, writeFileSync, mkdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { sendSocketCommand } from "../lib/socket-client.js";
 import { trackRequest } from "../lib/requests.js";
 
@@ -57,24 +57,6 @@ function findSocket(persistDir: string): string | null {
     // Can't read instances dir
   }
   return null;
-}
-
-/**
- * Write directly to agent's todo.md as fallback when no socket is available.
- */
-function writeTodoFallback(agentsRoot: string, agent: string, message: string, requestId?: string): void {
-  const todoPath = resolve(agentsRoot, agent, "workspace", "todo.md");
-  const tag = requestId ? ` [req:${requestId}]` : "";
-  const line = `- [ ]${tag} ${message.split("\n")[0]!.slice(0, 200)} (from: human, ${new Date().toISOString()})\n`;
-
-  if (!existsSync(todoPath)) {
-    // Create minimal todo.md
-    const content = `# TODO\n\n${line}`;
-    mkdirSync(resolve(agentsRoot, agent, "workspace"), { recursive: true });
-    writeFileSync(todoPath, content);
-  } else {
-    appendFileSync(todoPath, line);
-  }
 }
 
 /**
@@ -133,17 +115,18 @@ export async function cliSend(opts: SendOptions): Promise<void> {
         if (requestId) console.log(`Request: ${requestId}`);
         return;
       }
-      // Fall through to todo.md
-      console.error(`Socket returned error: ${result.message}. Falling back to todo.md`);
+      // Fall through — task is already tracked in DB
+      console.error(`Socket returned error: ${result.message}. Task tracked in DB, will appear in next heartbeat.`);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      console.error(`Socket delivery failed: ${msg}. Falling back to todo.md`);
+      console.error(`Socket delivery failed: ${msg}. Task tracked in DB, will appear in next heartbeat.`);
     }
   }
 
-  // Fallback: write directly to todo.md
-  writeTodoFallback(agentsRoot, agent, fullMessage, requestId);
-  console.log(`Written to ${agent}'s todo.md (no live socket found)`);
+  // No socket available — task is tracked in DB and will show up in agent's next heartbeat
+  if (!socketPath) {
+    console.log(`No live socket found. Task tracked in DB, will appear in ${agent}'s next heartbeat.`);
+  }
   if (requestId) console.log(`Request: ${requestId}`);
 }
 

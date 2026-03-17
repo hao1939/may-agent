@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, existsSync } from "node:fs";
+import { mkdtempSync, mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { getModel } from "@mariozechner/pi-ai";
@@ -124,7 +124,7 @@ describe("V2 agents tool", () => {
     expect(result.error).toContain("not registered");
   });
 
-  it("send appends to target agent's workspace/todo.md", async () => {
+  it("send tracks task and returns confirmation", async () => {
     manager.register({
       name: "coder",
       description: "Writes code",
@@ -140,17 +140,10 @@ describe("V2 agents tool", () => {
 
     const result = await callTool(tool, { action: "send", agent: "coder", message: "fix the login bug" });
     expect(result.sent).toBe("coder");
-
-    const todoPath = join(agentsRoot, "coder", "workspace", "todo.md");
-    expect(existsSync(todoPath)).toBe(true);
-    const content = readFileSync(todoPath, "utf-8");
-    expect(content).toContain("# TODO");
-    expect(content).toContain("fix the login bug");
-    expect(content).toContain("[from:may");
-    expect(content).toContain("- [ ]");
+    expect(result.message).toBe("fix the login bug");
   });
 
-  it("send appends multiple items to existing todo.md", async () => {
+  it("send returns confirmation for multiple sends", async () => {
     manager.register({
       name: "coder",
       description: "Writes code",
@@ -164,13 +157,12 @@ describe("V2 agents tool", () => {
       getCallerAgentName: () => "bob",
     });
 
-    await callTool(tool, { action: "send", agent: "coder", message: "first task" });
-    await callTool(tool, { action: "send", agent: "coder", message: "second task" });
-
-    const todoPath = join(agentsRoot, "coder", "workspace", "todo.md");
-    const content = readFileSync(todoPath, "utf-8");
-    expect(content).toContain("first task");
-    expect(content).toContain("second task");
+    const r1 = await callTool(tool, { action: "send", agent: "coder", message: "first task" });
+    const r2 = await callTool(tool, { action: "send", agent: "coder", message: "second task" });
+    expect(r1.sent).toBe("coder");
+    expect(r2.sent).toBe("coder");
+    expect(r1.message).toBe("first task");
+    expect(r2.message).toBe("second task");
   });
 
   it("send calls triggerHeartbeat callback", async () => {

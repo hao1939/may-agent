@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdtempSync, rmSync, existsSync, readFileSync } from "node:fs";
+import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { SubagentManager } from "../src/lib/manager.js";
@@ -149,7 +149,7 @@ describe("createAgentsTool()", () => {
   });
 
   describe("action: send", () => {
-    it("appends todo to target agent's workspace/todo.md", async () => {
+    it("tracks task and returns confirmation", async () => {
       const tool = manager.createAgentsTool({
         agentsRoot,
         getCallerAgentName: () => "may",
@@ -162,28 +162,19 @@ describe("createAgentsTool()", () => {
       });
       const parsed = parseResult(result);
       expect(parsed.sent).toBe("researcher");
-
-      const todoPath = join(agentsRoot, "researcher", "workspace", "todo.md");
-      expect(existsSync(todoPath)).toBe(true);
-      const content = readFileSync(todoPath, "utf-8");
-      expect(content).toContain("# TODO");
-      expect(content).toContain("review the API docs");
-      expect(content).toContain("[from:may");
-      expect(content).toContain("- [ ]");
+      expect(parsed.message).toBe("review the API docs");
     });
 
-    it("appends multiple items", async () => {
+    it("returns confirmation for multiple sends", async () => {
       const tool = manager.createAgentsTool({
         agentsRoot,
         getCallerAgentName: () => "bob",
       });
 
-      await tool.execute("tc1", { action: "send", agent: "researcher", message: "first" });
-      await tool.execute("tc2", { action: "send", agent: "researcher", message: "second" });
-
-      const content = readFileSync(join(agentsRoot, "researcher", "workspace", "todo.md"), "utf-8");
-      expect(content).toContain("first");
-      expect(content).toContain("second");
+      const r1 = parseResult(await tool.execute("tc1", { action: "send", agent: "researcher", message: "first" }));
+      const r2 = parseResult(await tool.execute("tc2", { action: "send", agent: "researcher", message: "second" }));
+      expect(r1.sent).toBe("researcher");
+      expect(r2.sent).toBe("researcher");
     });
 
     it("calls triggerHeartbeat callback", async () => {

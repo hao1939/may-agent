@@ -73,12 +73,12 @@ const finishSchema: TSchema = Type.Object({
     description: "Recommended next actions if partial or blocked",
   })),
   completed_items: Type.Optional(Type.Array(
-    Type.String({ description: "A todo.md item that was completed this session" }),
-    { description: "Items from todo.md completed during this session. Infra will auto-mark them [x]." },
+    Type.String({ description: "A task completed this session (fuzzy-matched against pending requests)" }),
+    { description: "Tasks completed during this session. Infra marks matching requests as COMPLETED." },
   )),
   new_items: Type.Optional(Type.Array(
-    Type.String({ description: "A new todo item to add" }),
-    { description: "New items to append to todo.md. Infra will auto-add them as [ ]." },
+    Type.String({ description: "A new task to track" }),
+    { description: "New self-assigned tasks. Infra tracks them as pending requests." },
   )),
 });
 
