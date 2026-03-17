@@ -151,6 +151,34 @@ describe("error-log-scanner — scanErrorLogs", () => {
     expect(result.triggered[0].count).toBe(3);
   });
 
+  it("excludes agents listed in excludeAgents", () => {
+    const now = new Date().toISOString();
+    // Coach has errors above threshold but is excluded
+    const coachDir = join(agentsRoot, "coach");
+    mkdirSync(coachDir);
+    writeFileSync(
+      join(coachDir, "ERROR_LOG.jsonl"),
+      Array(5).fill(JSON.stringify({ timestamp: now, error: "FM-2.1: TOOL" })).join("\n"),
+    );
+    // Bob has errors and is NOT excluded
+    const bobDir = join(agentsRoot, "bob");
+    mkdirSync(bobDir);
+    writeFileSync(
+      join(bobDir, "ERROR_LOG.jsonl"),
+      Array(3).fill(JSON.stringify({ timestamp: now, error: "FM-2.5: SCHEMA" })).join("\n"),
+    );
+
+    const result = scanErrorLogs({
+      agentsRoot,
+      threshold: 3,
+      lookbackMs: 7 * 24 * 60 * 60 * 1000,
+      excludeAgents: ["coach"],
+    });
+    expect(result.agentsScanned).toBe(1); // Only bob scanned
+    expect(result.triggered).toHaveLength(1);
+    expect(result.triggered[0].agent).toBe("bob");
+  });
+
   it("skips entries without timestamp", () => {
     const agentDir = join(agentsRoot, "bob");
     mkdirSync(agentDir);
