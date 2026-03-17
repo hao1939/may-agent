@@ -36,6 +36,7 @@ import {
   createFinishTool,
 } from "../lib/index.js";
 import { createAgentGrowthTools } from "../lib/tools/agent-growth.js";
+import { createSendTool } from "../lib/tools/send-tool.js";
 import type { EventBus } from "./event-bus.js";
 import { Cron } from "./cron.js";
 
@@ -229,6 +230,26 @@ function buildTools(config: AgentConfig, opts: AgentLoaderOptions): AgentTool[] 
               for (const cron of agentCrons.values()) {
                 if (cron.triggerNow(`heartbeat-${target}`)) return true;
                 if (cron.triggerNow("heartbeat") && target === "may") return true;
+              }
+              return false;
+            },
+          }),
+        );
+        break;
+      }
+
+      case "send-only": {
+        // Lightweight send-only tool for leaf agents — no call/peek/cancel
+        tools.push(
+          createSendTool({
+            agentName: config.name,
+            agentsRoot: opts.agentsRoot,
+            persistDir,
+            getCallerSessionId: () => agentSessionIds.get(config.name),
+            triggerHeartbeat: (agentName: string) => {
+              for (const cron of agentCrons.values()) {
+                if (cron.triggerNow(`heartbeat-${agentName}`)) return true;
+                if (cron.triggerNow("heartbeat") && agentName === "may") return true;
               }
               return false;
             },
