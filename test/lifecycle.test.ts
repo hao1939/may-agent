@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { createFinishTool } from "../src/lib/tools/lifecycle.js";
 import type { FinishToolOptions } from "../src/lib/tools/lifecycle.js";
-import { mkdirSync, writeFileSync, readFileSync, existsSync, rmSync } from "fs";
+import { mkdirSync, writeFileSync, rmSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
 
@@ -67,29 +67,6 @@ describe("createFinishTool", () => {
     expect(text).toContain("Implemented the widget feature.");
     expect(text).toContain("src/lib/feature.ts");
     expect(text).toContain("Widget implementation");
-  });
-
-  it("logs outcome to session-outcomes.jsonl", async () => {
-    const tool = createTool();
-    await callFinish(tool, {
-      status: "success",
-      summary: "Built the thing.",
-      deliverables: [{ path: "README.md", description: "Updated readme" }],
-    });
-
-    const outcomesPath = join(stateDir, "session-outcomes.jsonl");
-    expect(existsSync(outcomesPath)).toBe(true);
-
-    const lines = readFileSync(outcomesPath, "utf-8").trim().split("\n");
-    expect(lines.length).toBe(1);
-
-    const outcome = JSON.parse(lines[0]);
-    expect(outcome.agent).toBe("tech-lead");
-    expect(outcome.status).toBe("success");
-    expect(outcome.summary).toBe("Built the thing.");
-    expect(outcome.deliverables).toHaveLength(1);
-    expect(outcome.deliverables[0].path).toBe("README.md");
-    expect(outcome.timestamp).toBeDefined();
   });
 
   it("rejects success with missing deliverables", async () => {
@@ -179,22 +156,6 @@ describe("createFinishTool", () => {
 
     expect(text).toContain("error");
     expect(text).toContain("summary");
-  });
-
-  it("appends multiple outcomes to same file", async () => {
-    const tool = createTool();
-
-    await callFinish(tool, { status: "success", summary: "First." });
-    await callFinish(tool, { status: "partial", summary: "Second.", next_steps: "Do more." });
-
-    const outcomesPath = join(stateDir, "session-outcomes.jsonl");
-    const lines = readFileSync(outcomesPath, "utf-8").trim().split("\n");
-    expect(lines.length).toBe(2);
-
-    const first = JSON.parse(lines[0]);
-    const second = JSON.parse(lines[1]);
-    expect(first.status).toBe("success");
-    expect(second.status).toBe("partial");
   });
 
   it("works without deliverables for success", async () => {

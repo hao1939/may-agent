@@ -215,12 +215,6 @@ function buildTools(config: AgentConfig, opts: AgentLoaderOptions): AgentTool[] 
         break;
       }
 
-      case "coordination": {
-        // DEPRECATED — handoff tool removed. Use "send-only" or "agents" preset instead.
-        // Keep case to avoid crash on old agent.json files with "coordination" preset.
-        break;
-      }
-
       case "send-only": {
         // Lightweight send-only tool for leaf agents — no call/peek/cancel
         tools.push(
@@ -406,7 +400,6 @@ const VALID_TOOL_PRESETS = new Set([
   "claude-code",
   "gemini-cli",
   "agents",
-  "coordination",
   "workflow",
   "background-exec",
   "socket-watch",

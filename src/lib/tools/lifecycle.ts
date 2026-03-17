@@ -11,8 +11,8 @@
 import type { AgentTool } from "@mariozechner/pi-agent-core";
 import { Type } from "@mariozechner/pi-ai";
 import type { TSchema } from "@mariozechner/pi-ai";
-import { existsSync, appendFileSync, mkdirSync } from "fs";
-import { resolve, dirname } from "path";
+import { existsSync } from "fs";
+import { resolve } from "path";
 
 // Lazy import for requests.ts (uses bun:sqlite, not available in vitest)
 let _updateRequestFn: ((dir: string, id: string, update: any) => void) | null = null;
@@ -89,8 +89,7 @@ interface FinishParams {
  *
  * When called:
  * 1. Validates deliverable paths exist (if status is success)
- * 2. Logs structured outcome to .state/session-outcomes.jsonl
- * 3. Returns a formatted summary as the tool output
+ * 2. Returns a formatted summary as the tool output
  *
  * The tool output becomes the final message visible to the parent/manager,
  * replacing unstructured free-text endings.
@@ -159,35 +158,6 @@ export function createFinishTool(options: FinishToolOptions): AgentTool<TSchema>
         };
       }
 
-      // ── Log to session-outcomes.jsonl ──────────────────────────
-      const outcome = {
-        timestamp: new Date().toISOString(),
-        agent: agentName,
-        status,
-        summary,
-        deliverables: deliverables ?? [],
-        blockers: blockers ?? [],
-        next_steps: next_steps ?? null,
-        missing_deliverables: missingDeliverables.length > 0 ? missingDeliverables : undefined,
-      };
-
-      try {
-        mkdirSync(stateDir, { recursive: true });
-        const outcomesPath = resolve(stateDir, "session-outcomes.jsonl");
-        appendFileSync(outcomesPath, JSON.stringify(outcome) + "\n", "utf-8");
-      } catch (err: unknown) {
-        // Non-fatal — the structured output is the primary value
-        const msg = err instanceof Error ? err.message : String(err);
-        return {
-          content: [{
-            type: "text" as const,
-            text: `finish() warning: Could not write to session-outcomes.jsonl: ${msg}. ` +
-              `Outcome: [${status}] ${summary}`,
-          }],
-          details: undefined,
-        };
-      }
-
       // ── Update unified request tracker (if requestId available) ──
       if (options.requestId && stateDir) {
         getUpdateRequest().then((updateReq) => {
@@ -202,7 +172,7 @@ export function createFinishTool(options: FinishToolOptions): AgentTool<TSchema>
               completedAt: Date.now(),
             });
           } catch {
-            /* non-fatal — JSONL is the primary record */
+            /* non-fatal */
           }
         });
       }
