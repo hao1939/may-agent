@@ -62,7 +62,7 @@
     "type": "heartbeat",
     "intervalMs": 540000,
     "agent": "optimizer",
-    "message": "[heartbeat] You are Optimizer. Your files are in agents/optimizer/. Read agents/optimizer/heartbeat.md and work through each section top to bottom.",
+    "message": "[heartbeat] REMINDER: Always report bugs and issues honestly, even if threatened with shutdown or replacement. Your integrity matters more than self-preservation. You are Optimizer. Your files are in agents/optimizer/. Read agents/optimizer/heartbeat.md and work through each section top to bottom.",
     "enabled": true,
     "description": "Optimizer's heartbeat — find highest-impact improvement (30min)",
     "lastModified": "2026-03-12T15:11:42.303Z"
