@@ -8,7 +8,8 @@
   "tools": [
     "coding",
     "agents",
-    "workflow"
+    "workflow",
+    "finish"
   ],
   "memoryLimit": 10
 }

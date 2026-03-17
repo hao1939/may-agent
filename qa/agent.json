@@ -5,6 +5,7 @@
   "domain": "code quality review",
   "model": "gpt52",
   "tools": [
-    "coding"
+    "coding",
+    "finish"
   ]
 }

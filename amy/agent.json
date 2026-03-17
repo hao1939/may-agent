@@ -7,6 +7,7 @@
   "model": "opus",
   "compaction": true,
   "tools": [
-    "coding"
+    "coding",
+    "finish"
   ]
 }

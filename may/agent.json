@@ -12,7 +12,8 @@
     "coding",
     "agents",
     "cron",
-    "system-status"
+    "system-status",
+    "finish"
   ],
   "delegateDeny": {
     "agents": [

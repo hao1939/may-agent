@@ -5,7 +5,8 @@
   "domain": "agent performance evaluation",
   "model": "gpt52",
   "tools": [
-    "coding"
+    "coding",
+    "finish"
   ],
   "memoryLimit": 5
 }
