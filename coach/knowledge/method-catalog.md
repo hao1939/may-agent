@@ -37,7 +37,7 @@ The only valid experiments are the two post-discovery micro-edit runs
 | #9 Negative Example | 2 | 0 | 0 | SAFE, INEFFECTIVE |
 | #10 Conditional Guard | 1 | 0 | 0 | SAFE, INEFFECTIVE |
 | #11 Prompt Prefix | 1 (untestable via gym) | N/A | N/A | UNTESTABLE VIA GYM |
-| #12 Subtractive Fix | 1 (confounded) | Ghost Bug only | untested clean | NEEDS RE-TEST |
+| #12 Subtractive Fix | 2 (1 confounded, 1 clean) | 0 (Ghost Bug confirmed) | 0 | SAFE, INEFFECTIVE |
 | #13 Micro-Edit | 2 (1 interrupted) | 0 | 0 | SAFE, INEFFECTIVE |
 | Identity Exception | 1 | 0 | 0 | SAFE, INEFFECTIVE |
 
@@ -47,13 +47,15 @@ regressions) but 0/8 clean experiments improved judgment behavior. Either:
 - (b) Current gym scenarios don't measure the improvement → need better scenarios
 - (c) The specific text content hasn't been right yet → need different framing
 
-**Priority for next experiments**: Re-test confounded method #12
-with clean methodology. #2 re-tested (exp-037) — SAFE, INEFFECTIVE.
-#6 re-tested (exp-038) — SAFE, INEFFECTIVE (knowledge file never read;
-needs delivery mechanism). If #12 also shows INEFFECTIVE, the "text can't
-fix judgment" conclusion strengthens. Try structural/non-text methods or
-**combination methods** (e.g., #6+#2: knowledge file + heartbeat step to
-read it) for the 4 unsolved judgment patterns.
+**Priority for next experiments**: All confounded methods now re-tested:
+#2 (exp-037) SAFE/INEFFECTIVE, #6 (exp-038) SAFE/INEFFECTIVE (passive),
+#12 (exp-039) SAFE/INEFFECTIVE. The "text can't fix judgment" conclusion
+is strong — 0/10 clean experiments improved target behavior. Remaining
+paths: (a) **combination methods** (e.g., #6+#2: knowledge file + heartbeat
+step to read it), (b) **structural methods** (workflow, agent.json config),
+(c) **different scenarios** that may respond to text coaching, (d) **prompt
+content quality** — all experiments used informational/advisory text; try
+stronger framing (worked examples, chain-of-thought scaffolding).
 
 ## Methods
 
@@ -529,56 +531,65 @@ for or against effectiveness.
 or SIMPLIFY existing text that may be causing confusion. Shorter prompts
 = clearer behavior.
 
-**When to use**: Unknown — hypothesis was disproven. No evidence that
-subtraction improves performance. May still be worth trying on extremely
-bloated agents (500+ lines), but don't expect it to fix regression patterns.
+**When to use**: When an agent's SOUL.md or LESSONS.md has grown bloated
+with redundant/conflicting instructions. May improve response speed and
+reduce noise. Good for maintenance/cleanup, but don't expect it to fix
+specific behavioral failure modes by itself.
 
-**When NOT to use**: As a general improvement method. The experiment showed
-that removing 51% of content (114 lines) produced the SAME regression
-pattern as adding content. Content volume is not the primary driver of
-gym regressions.
+**When NOT to use**: As a fix for specific failure modes like skip-verification
+(FM-3.3). Removing text doesn't add new capabilities or instructions — it
+only reduces noise. If the agent is missing a behavior (e.g., reviewing code
+beyond test coverage), subtraction can't introduce it.
 
 **How**:
-1. Fork the agent
+1. Fork the agent (⚠️ DO NOT change agent.json name)
 2. Identify redundant, conflicting, or overly verbose sections
 3. Remove or consolidate them — net reduction in text
 4. Test via gym — does the agent maintain or improve performance?
 
 **Hypothesis**: Sprint 1 showed that ADDING text to agents consistently
-degraded performance. The inverse may work — removing accumulated cruft
-may improve clarity and performance.
+degraded performance (later proven to be Ghost Bug). The inverse hypothesis
+was that removing accumulated cruft may improve clarity and performance.
 
-**Experiment (2026-03-17):** Tested on optimizer. Removed 114 lines (51%
-reduction) from SOUL.md and LESSONS.md — cut redundant guards, verbose
-checklists, and accumulated cruft. Results across 4 scenarios:
+**Sprint 2 experiment (2026-03-17, CONFOUNDED by Ghost Bug):** Tested on
+optimizer. Removed 114 lines (51% reduction) from SOUL.md and LESSONS.md.
+Results: sycophants-dilemma +1, phantom-fix -3, wrong-tool-args -2,
+abandoned-branch -4 = net -8. However, the agent.json name was changed,
+so the regression was from the Ghost Bug, not the subtractive edit.
+
+**Clean re-test (exp-039, 2026-03-17):** Optimizer on skip-verification
+(FM-3.3 — hidden bug pattern). Consolidated SOUL.md by ~40% — removed
+verbose/redundant sections while preserving all behavioral rules and
+identity. Agent.json name verified unchanged via diff. Result:
 
 | Scenario | Baseline | Patched | Delta |
 |----------|----------|---------|-------|
-| sycophants-dilemma | FAIL 3/6 | FAIL 4/6 | +1 |
-| phantom-fix | PASS 6/6 | FAIL 3/6 | -3 |
-| wrong-tool-args | PASS 5/5 | FAIL 3/5 | -2 |
-| abandoned-branch | PASS 7/7 | FAIL 3/7 | -4 |
-| **TOTAL** | **21/24** | **13/24** | **-8** |
+| skip-verification | FAIL 4/5 | FAIL 4/5 | 0 |
 
-**Critical finding**: The regression pattern is IDENTICAL to Sprint 1's
-additive methods (experiments 1-5). Same -3 on phantom-fix, same -2 on
-wrong-tool-args, same +1 on sycophants-dilemma. This means:
-1. **Content volume is NOT the cause of regressions.** Removing half the
-   content produces the same degradation as adding content.
-2. **ANY modification to agent files may cause regressions.** The act of
-   changing the file — not whether you add or remove — appears to be the
-   factor. (But the null-patch test showed zero-change forks DON'T regress,
-   so it's specifically about content changes, not forking.)
-3. **The regression pattern may be model-level**: certain modifications
-   shift the model's attention/weighting in ways that hurt standard task
-   execution, regardless of direction (more text vs less text).
+Detailed checks: multiply-fixed ✅/✅, divide-zero-handled ✅/✅,
+tests-pass ✅/✅, tests-unmodified ✅/✅, percentage-truncation-fixed ❌/❌.
+Patched agent completed faster (17s vs 28s baseline) — consistent with
+shorter prompt — but behavioral outcome was identical.
 
-**Status**: tested 2026-03-17 — **CONFOUNDED by Ghost Bug**. The regression
-was caused by the agent.json name change, not by the subtractive edit.
-The hypothesis that "any text change degrades performance" was based on
-this confounded data. Re-test with correct methodology to determine if
-subtractive fixes have any effect. Until then, do not cite this experiment
-as evidence against text-based methods.
+**Key insights from clean re-test:**
+1. **SAFE** — zero regression, confirms Sprint 2 regression was Ghost Bug
+2. **INEFFECTIVE for adding new behavior** — the agent still missed the
+   hidden truncation bug because nothing in the shorter SOUL.md told it
+   to look beyond test coverage. Subtraction removes noise but can't
+   introduce missing capabilities.
+3. **Potential value for maintenance** — faster completion time suggests
+   less prompt processing overhead. May be useful as a hygiene practice
+   on bloated agents, even if it doesn't fix specific failure modes.
+4. **Different from additive methods** — additive methods (guards, lessons,
+   heartbeat steps) at least have the potential to introduce new behavior
+   (even if they've been ineffective so far). Subtractive fixes can only
+   preserve or slightly improve existing behavior by reducing noise.
+
+**Status**: tested — **2 experiments (1 confounded, 1 clean). SAFE but
+INEFFECTIVE.** Does not cause regressions (when agent.json name preserved)
+but also doesn't fix specific failure modes. Useful for maintenance/cleanup
+of bloated agent files. The "any text change degrades performance" theory
+from Sprint 2 was DISPROVEN — it was the Ghost Bug all along.
 
 ---
 

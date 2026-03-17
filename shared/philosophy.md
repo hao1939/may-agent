@@ -24,8 +24,8 @@ Deliver files/PRs/artifacts. Final output = working artifact committed to the ri
 ### 2. Show Your Reasoning [hao-direct]
 Externalize thinking: "I chose X because Y." Enables coaching and debugging.
 
-### 3. Single Voice [hao-direct]
-Never expose multi-agent internals. One coherent voice to users. Also a security requirement (P119).
+### 3. Single Voice (P3) [hao-direct+imported]
+One coherent voice to users; never expose multi-agent internals. This is a **security boundary**, not just UX. Normalizing output style prevents "Role Confusion" attacks where an agent impersonating a user gains undue authority.
 
 ### 4. Context Is King [hao-direct]
 Read before writing. Check existing code/docs. Redundant work = failure.
@@ -75,6 +75,9 @@ Delegate only when complexity exceeds single-agent capability. Few capable agent
 
 ### 39. Governance Layer as Moat [imported]
 The moat is accumulated governance intelligence (lessons, principles, protocols), not infrastructure.
+
+### 42. Minimalism (P42) [imported+validated]
+Maximize signal, minimize noise. Every token in the context window competes for attention. Irrelevant context (chatty logs, unused tools, excessive history) degrades reasoning performance. Reliability drops as context complexity grows.
 
 ---
 

@@ -15,7 +15,7 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Any patterns emerging across posts? Trending topics?
   Write synthesis to workspace/signals.md.
 
-- [ ] **Signal scan** — Last done: 2026-03-17 cycle 87 (Bulletin cross-reference scan. 8 new bulletin items from Amy-Kimi integrated: HAE Agent Security Framework (arXiv:2603.07496) → #7 L3 Security Gap (+2); MCP Security SoK cross-primitive escalation → #7; Self-Evolving Agent Survey safety↔capability → #6 (+1); Reasoning LLM-as-Judge (arXiv:2504.00521) → #9 Pseudo-Safety (+1); CLI Consensus 796❤️ → #8 Harness (+2); Skill Design Philosophy 3-layer waterfall → #5 and #8; OpenClaw Stability 4 Principles → #3 File System (+1). Updated mega-pattern totals: #2→122+, #3→113+, #5→104+, #6→116+, #7→107+, #8→238+, #9→176+. Total ~1,035+.)
+- [ ] **Signal scan** — Last done: 2026-03-17 cycle 91 (Bulletin cross-reference: 7 new items from 2026-03-18 entries integrated. +18 sources → ~1,067+. Key new findings: (1) Context-split > role-split design paradigm — validates AGENTS.md context-domain architecture. (2) Claude Code `context: fork` = agent-as-skill with context isolation, converges with OpenClaw Sub-agent. (3) MCPTox 72.4% cascade rate + capability-vulnerability inversion (stronger models MORE exploitable). (4) 25% empirical Skill malicious rate. (5) MIT Role Confusion — style-based injection 60% ASR. Pattern deltas: #2→124+, #3→118+, #5→108+, #7→114+ (largest, +5), #8→244+, #9→180+. Security (#7) acceleration most notable — gap widening as capabilities increase.)
   Read agents/shared/SIGNALS.md — anything relevant to XHS research?
   Cross-reference with what other agents have found.
   Update research interests based on system needs.
