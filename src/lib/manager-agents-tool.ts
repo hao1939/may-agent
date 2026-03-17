@@ -13,6 +13,7 @@ import { Type, StringEnum } from "@mariozechner/pi-ai";
 import type { RegisteredAgent } from "./manager-utils.js";
 import type { SessionInfo, TaskResult } from "./types.js";
 import type { PersistedSession } from "./persistence.js";
+import type { RequestRecord } from "./requests.js";
 
 // ── Lazy-loaded request tracking ───────────────────────────────────────
 // Loaded lazily to avoid pulling bun:sqlite at module level (vitest compat).
@@ -96,24 +97,28 @@ function textResult(text: string): AgentToolResult<string> {
 }
 
 const AgentsToolParams = Type.Object({
-  action: StringEnum(["call", "send", "list", "peek", "cancel"] as const, {
+  action: StringEnum(["call", "send", "list", "peek", "cancel", "requests"] as const, {
     description:
-      "Action to perform. 'call' runs an agent synchronously (blocks until done). 'send' adds a todo for an agent and triggers their heartbeat (fire-and-forget). 'list' shows agents and running sessions. 'peek'/'cancel' operate on running sessions.",
+      "Action to perform. 'call' runs an agent synchronously (blocks until done). 'send' adds a todo for an agent and triggers their heartbeat (fire-and-forget). 'list' shows agents and running sessions. 'peek'/'cancel' monitor running sessions. 'requests' queries the request tracking database.",
   }),
-  agent: Type.Optional(Type.String({ description: "Agent name (required for 'call', 'send')" })),
+  agent: Type.Optional(Type.String({ description: "Agent name (required for 'call', 'send'; optional filter for 'requests')" })),
   task: Type.Optional(Type.String({ description: "Task description (required for 'call')" })),
   message: Type.Optional(Type.String({ description: "Todo item to send (required for 'send')" })),
   sessionId: Type.Optional(Type.String({ description: "Session ID (required for 'peek', 'cancel')" })),
   limit: Type.Optional(Type.Number({ description: "Max messages to return (for 'peek', default: 20)" })),
+  filter: Type.Optional(StringEnum(["active", "stale", "failed", "all"] as const, {
+    description: "Request filter (for 'requests' action, default: 'active')",
+  })),
 });
 
 interface AgentsToolParamsType {
-  action: "call" | "send" | "list" | "peek" | "cancel";
+  action: "call" | "send" | "list" | "peek" | "cancel" | "requests";
   agent?: string;
   task?: string;
   message?: string;
   sessionId?: string;
   limit?: number;
+  filter?: "active" | "stale" | "failed" | "all";
 }
 
 /**
@@ -133,7 +138,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
     name: "agents",
     label: "Agents",
     description:
-      "Cooperate with other agents. 'call' runs an agent and returns the result (blocks). 'send' adds a todo for an agent and triggers their heartbeat (fire-and-forget). 'list' shows available agents and running sessions. 'peek'/'cancel' monitor running sessions.",
+      "Cooperate with other agents. 'call' runs an agent and returns the result (blocks). 'send' adds a todo for an agent and triggers their heartbeat (fire-and-forget). 'list' shows available agents and running sessions. 'peek'/'cancel' monitor running sessions. 'requests' queries the request tracking database.",
     parameters: AgentsToolParams,
     execute: async (_toolCallId, _params) => {
       const params = _params as AgentsToolParamsType;
@@ -340,6 +345,75 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
             }
             manager.cancel(params.sessionId);
             return textResult(JSON.stringify({ cancelled: params.sessionId }));
+          }
+
+          case "requests": {
+            try {
+              const req = await getRequestsModule();
+              const persistDir = manager.registry.persistDir;
+              const filter = params.filter ?? "active";
+
+              let requests: RequestRecord[];
+              switch (filter) {
+                case "active":
+                  requests = params.agent
+                    ? req.getRequestsByAgent(persistDir, params.agent).filter(
+                        (r) => r.status === "CREATED" || r.status === "IN_PROGRESS",
+                      )
+                    : req.getActiveRequests(persistDir);
+                  break;
+                case "stale":
+                  requests = req.getStaleRequests(persistDir, 2 * 60 * 60 * 1000); // 2h
+                  if (params.agent) requests = requests.filter((r) => r.toAgent === params.agent);
+                  break;
+                case "failed": {
+                  // getActiveRequests only returns active — need direct query for failed
+                  const db = req.getDb(persistDir);
+                  const query = params.agent
+                    ? "SELECT * FROM requests WHERE status = 'FAILED' AND toAgent = ? ORDER BY createdAt DESC LIMIT 50"
+                    : "SELECT * FROM requests WHERE status = 'FAILED' ORDER BY createdAt DESC LIMIT 50";
+                  requests = params.agent
+                    ? (db.query(query).all(params.agent) as RequestRecord[])
+                    : (db.query(query).all() as RequestRecord[]);
+                  break;
+                }
+                case "all":
+                  requests = params.agent
+                    ? req.getRequestsByAgent(persistDir, params.agent)
+                    : req.getActiveRequests(persistDir);
+                  if (!params.agent) {
+                    // For "all" without agent filter, get everything (limited)
+                    const db = req.getDb(persistDir);
+                    requests = db
+                      .query("SELECT * FROM requests ORDER BY createdAt DESC LIMIT 100")
+                      .all() as RequestRecord[];
+                  }
+                  break;
+              }
+
+              // Format for readability
+              const formatted = requests.map((r) => ({
+                id: r.requestId.slice(0, 8),
+                from: r.fromEntity,
+                to: r.toAgent,
+                task: r.task.slice(0, 120),
+                status: r.status,
+                method: r.method,
+                age: `${Math.round((Date.now() - r.createdAt) / 60000)}m`,
+                error: r.error?.slice(0, 80),
+              }));
+
+              return textResult(
+                JSON.stringify(
+                  { filter, count: formatted.length, requests: formatted },
+                  null,
+                  2,
+                ),
+              );
+            } catch (err) {
+              const msg = err instanceof Error ? err.message : String(err);
+              return textResult(JSON.stringify({ error: `requests query failed: ${msg}` }));
+            }
           }
 
           default:
