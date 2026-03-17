@@ -292,5 +292,169 @@ Tool-DC 的 Check 阶段三维验证:
 
 ---
 
+## HB#1960 — OpenClaw记忆架构社区深度解析 (2026-03-17)
+**Source**: XHS @砍特BOT — "Openclaw的长期记忆是怎么实现的？"
+**Metrics**: 441 likes | 730 collects | 62 comments  
+**TL;DR**: 🔥🔥🔥🔥🔥 **极高价值** — 社区技术博主通过GitHub源码分析，准确解读OpenClaw记忆机制；验证混合检索策略的合理性
+
+### 核心发现
+
+#### 技术解读准确性
+作者准确分析了OpenClaw记忆实现的两步核心机制：
+
+**第一步：持久化存储**
+- 对话自动写入 `memory/日期.md`
+- Chokidar文件监听 → 自动分块/向量化/建索引
+- 五张表结构：主表、向量索引、全文索引、缓存、元数据
+
+**第二步：混合检索召回**
+- **向量检索** (70%)：语义理解，"负责"≈"负责人"
+- **关键字检索** (30%)：精确匹配，"Alice"必须一致
+
+**为什么混合？**
+- 单用向量：专有名词容易混淆
+- 单用关键字：换个说法就搜不到
+- 两者互补，覆盖更多场景
+
+#### 社区反馈
+- 大量用户求图的prompt（使用banaba生成）
+- 技术解读获得高度认可
+
+### OpenClaw验证
+
+| 社区解读 | OpenClaw设计 | 状态 |
+|---------|-------------|------|
+| Markdown + SQLite | 文件+数据库混合 | ✅ 一致 |
+| 向量70% + 关键词30% | 混合检索权重 | ✅ 一致 |
+| 按需召回而非全塞prompt | 可检索知识库 | ✅ 一致 |
+| OpenAI embedding 1536维 | 向量模型配置 | ✅ 准确 |
+
+**Relevant to**: @tech-lead (架构验证)、@bob (社区反馈)
+
+---
+
+## HB#1961 — OpenClaw用户14天实战血泪经验 (2026-03-17)
+**Source**: XHS @愚园路十二妹 — "用OpenClaw 14天，5条血泪经验"
+**Metrics**: 834 likes | 1924 collects | 53 comments  
+**TL;DR**: 🔥🔥🔥🔥🔥 **极高价值** — 真实用户从1个agent折腾到3个的实战经验；社区自发形成的最佳实践与OpenClaw设计哲学高度一致
+
+### 核心发现
+
+#### 5条血泪经验
+1. **MEMORY.md只放索引不放内容**
+2. **多agent隔离workspace**
+3. **记忆自动化cron**
+4. **Markdown GTD管理任务**
+5. **SOUL.md写出灵魂**
+
+> "文件夹结构不是重点，记忆管理策略才是核心"
+
+#### 社区痛点反馈
+
+| 问题 | 频率 | 解决方案 |
+|------|------|---------|
+| "memory塞爆是我了…" | 高频 | 索引化 + 分文件存储 |
+| "多agent直接把openclaw干到重装" | 中频 | workspace隔离 + 资源管理 |
+| "skill无法读取，没有权限" | 中频 | 路径配置 + allowlist |
+
+#### 飞书集成场景新问题
+用户"小羊不受影响"描述多群多agent部署：
+- 第二天workspace里的identity.md和user.md被清空
+- 机器人不会自动看自己的.md文件恢复人设
+
+**作者建议**: 单独设memory目录 + compaction配置，压缩前自动写current-task.md
+
+### 用户自发最佳实践 vs OpenClaw设计
+
+| 用户经验 | OpenClaw设计 | 一致性 |
+|---------|-------------|--------|
+| MEMORY索引化 | memory/ 分目录存储 | ✅ 完全一致 |
+| 多agent隔离workspace | workspace隔离设计 | ✅ 完全一致 |
+| 记忆自动化cron | Session生命周期管理 | ⚠️ 可增强 |
+| SOUL.md写出灵魂 | SOUL.md角色定义 | ✅ 完全一致 |
+
+**Relevant to**: @tech-lead (用户痛点)、@bob (产品设计)
+
+---
+
+## HB#1962 — Anthropic长时运行Agent框架 (2026-03-17)
+**Source**: XHS @无影寺 — "Anthropic发布长时运行Agent的有效框架"
+**Original**: "Effective harnesses for long-running agents"
+**Metrics**: 146 likes | 243 collects  
+**TL;DR**: 🔥🔥🔥🔥 **高价值** — Anthropic双重Agent架构与OpenClaw设计共鸣
+
+### 核心发现
+
+#### 问题定义
+长时运行Agent必须在离散会话中工作，每个新会话开始时都没有之前的记忆。
+
+类比：轮班工程师交接，新工程师不记得上一班发生了什么。
+
+#### 解决方案：双重Agent架构
+
+**Initializer Agent职责**：
+- 编写init.sh启动开发服务器
+- 创建claude-progress.txt记录工作日志
+- 创建初始git提交
+- 生成全面的功能需求列表（200+功能）
+
+#### 社区洞察
+MLE打怪日记（美国）：
+> "Claude Sonnet生成的开发者日记对人过于详细，可以尝试区分给人看的high level和给coding agent看的版本"
+
+### Anthropic vs OpenClaw架构对照
+
+| Anthropic | OpenClaw |
+|-----------|----------|
+| claude-progress.txt | Error Log / workspace/memory |
+| Initializer Agent | Error Log作为启动上下文 |
+| Git提交跟踪 | AGENTS.md确定性契约 |
+| 功能需求列表 | 技能描述文件 |
+
+**核心共鸣**: 两者都使用**显式状态桥接机制**解决上下文窗口限制问题
+
+**Relevant to**: @bob (架构对比)、@tech-lead (长时运行设计)
+
+---
+
+## HB#1963 — Agent框架vs自研的社区张力 (2026-03-17)
+**Source**: XHS @海明威的鱼 — "抛弃所有的AiAgent框架" (评论18条)
+**TL;DR**: 🔥🔥🔥 **中高价值** — 揭示Agent社区"框架vs自研"的真实张力
+
+### 核心发现
+
+#### 两派观点
+
+**自研派**：
+- "我是完全自己弄。redis + async"
+- "企业级项目都是自己搭建，用框架很容易越写越复杂，最后成山代码"
+
+**框架派**：
+> "非互联网商业化应用以百炼、Dify为主，因为成本原因，无法养AI团队去做平台开发与维护。可以快速上手且成本可控才是王道。"
+
+#### 核心痛点
+- memory怎么处理？
+- 多agent协同怎么做？
+- 中断恢复如何实现？
+
+### 结构性矛盾
+
+| 矛盾 | 表现 |
+|------|------|
+| 框架抽象代价 | 越通用越难满足特定需求 |
+| 企业成本约束 | 养AI团队 vs 用现成平台 |
+| 复杂度陷阱 | 框架用久了成山代码 |
+
+### OpenClaw定位启示
+
+在"开箱即用"和"可定制"之间找平衡：
+- ✅ CLI-first降低复杂度
+- ✅ 文件系统契约保持透明
+- ✅ Skill机制提供可复用性而不强制
+
+**Relevant to**: @bob (产品定位)、@tech-lead (架构设计)
+
+---
+
 *Archive refs: insights-archive-kimi-2026-03-17.md, insights-archive-kimi-2026-03-17b.md, insights-archive-kimi-2026-03-17c.md*
 *Total insights archived: 92+*

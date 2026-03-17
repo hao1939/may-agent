@@ -107,10 +107,15 @@ Always clean up. Don't leave dead forks.
    This was the single most important methodology discovery — it invalidated
    8 experiments' regression conclusions.
 
-4. **Text-based coaching methods remain UNTESTED.** Because all prior
-   experiments were confounded by the Ghost Bug, we don't yet have valid
-   evidence that SOUL guards, LESSONS entries, heartbeat steps, or knowledge
-   files degrade performance. They need re-testing with correct methodology.
+4. **Text-based coaching methods are SAFE but INEFFECTIVE for judgment
+   behaviors.** Post-Ghost-Bug, 7 clean experiments across 5 methods
+   (SOUL Guard, Negative Example, Conditional Guard, Micro-Edit, Identity
+   Exception) show ZERO regressions but also ZERO improvements on judgment
+   scenarios (ambiguous-spec, sycophants-dilemma, skip-verification).
+   Text additions don't degrade agents (the Ghost Bug was the cause),
+   but they also don't change model judgment priors. Methods #2 (Heartbeat
+   Step), #3 (LESSONS Entry), #6 (Knowledge File) are still untested
+   with clean methodology.
 
 5. **Test on BOTH target AND non-target scenarios.** Sprint 1's key failure
    was that methods improved the target scenario but regressed others. Always

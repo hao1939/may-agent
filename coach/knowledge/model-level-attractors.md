@@ -66,12 +66,13 @@ so every experiment showed the same regression — regardless of text changes.
 
 **What this means:**
 - ❌ "Perturbation fragility" was never real — it was a methodology bug
-- ❌ "Text-based coaching is fundamentally limited" was wrong
-- ✅ Text-based coaching methods (SOUL guards, LESSONS, knowledge files) have
-  NOT been properly tested yet — all prior experiments were confounded
 - ✅ The gym infrastructure works correctly when agent.json name is preserved
-- ⚠️ ALL Sprint 1 and Sprint 2 experiments need to be re-run with correct
-  methodology (keep original agent name in agent.json)
+- ✅ Text-based edits are SAFE — they don't cause regressions (Ghost Bug was the cause)
+- ⚠️ But 7 post-Ghost-Bug experiments show text edits are also INEFFECTIVE for
+  judgment behaviors. SOUL guards, negative examples, conditional guards, micro-edits,
+  and identity exceptions all produced zero improvement on judgment scenarios
+  (ambiguous-spec, sycophants-dilemma, skip-verification). Text can't override
+  model judgment priors. New approaches needed (structural, tool-level, or scenario design).
 
 **FIX PROTOCOL:** When creating lab forks, **never change the `name` field in
 agent.json**. The `--lab` flag overlays fork files onto a copy of the production

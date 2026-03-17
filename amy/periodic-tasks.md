@@ -10,7 +10,7 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Write findings to workspace/insights.md.
   Write cross-agent signals to agents/shared/SIGNALS.md.
 
-- [ ] **Insights review** — Last done: 2026-03-17 cycle 80 (Synthesis of cycles 74-78. Key findings: File System = Memory (#3) had strongest-ever grassroots convergence in cycle 78 (3 independent XHS posts in single cycle). CRG Stage 6 emerging — "Convergence-Resistance Gap" where research community independently converges on our patterns but academia/industry resist unification. Pattern counts updated: #1→116+, #2→113+, #3→104+, #4→33+, #5→97+, #6→111+, #7→99+, #8→223+, #9→169+. Total ~965+.)
+- [ ] **Insights review** — Last done: 2026-03-17 cycle 86 (Cross-synthesis of cycles 82-85. 1,000-source milestone crossed (~1,017+). Key findings: (1) Meta acquired Manus AI — corporate-level validation of Harness Engineering #8 at capital-allocation level. (2) Context Engineering named as discipline by Manus blog — production validation of DP#24. (3) Framework growth risk — 50+ emerging signals need triage. 7 stale signals recommended for archival, 3 for promotion (Natural Kinds→DP#25, CRG→framework concept, Trained Critique→HOLD). GUS Law Inflation parallel identified. Source counts: #3→110+, #5→101+, #8→236+, #9→175+. New predictions P9 (Big Tech acqui-hires) and P10 (Chinese IDE consolidation). XHS status 🟡 Conditional.)
   Read workspace/insights.md and recent insight archives.
   Any patterns emerging across posts? Trending topics?
   Write synthesis to workspace/signals.md.

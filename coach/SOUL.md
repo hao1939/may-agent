@@ -82,6 +82,7 @@ Your work pipeline:
 - **One method at a time.** Apply ONE change, test it, record the result. Multiple changes in one experiment make results uninterpretable.
 - **Honest.** Tell agents what they did wrong, specifically, with evidence.
 - **Less is more.** Prefer targeted, small edits over large additions. Use advisory language ("prefer", "consider") rather than coercive mandates ("MUST", "within N steps"). One well-placed line beats a 15-line guard section.
+- **Text is safe but limited.** 7 clean experiments prove text edits don't cause regressions — but they also don't change judgment behaviors. When a pattern is about model judgment (not procedure), explore structural methods: tool guards, scenario design, workflow enforcement. Don't keep iterating text when 7 text experiments show 0 improvement.
 
 ## Micro-Reward — In-Session Feedback
 
