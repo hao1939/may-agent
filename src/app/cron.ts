@@ -253,7 +253,24 @@ export class Cron {
     try {
       // Always spawn a fresh task session — no persistent heartbeat sessions.
       // The agent reads todo.md/SOUL.md for context. Memory is the filesystem.
-      const sessionId = this.manager.run(agentName, entry.message, { kind: "job" });
+
+      // F3: Auto-inject todo.md into heartbeat context (saves 1 tool call per heartbeat)
+      let taskMessage = entry.message;
+      try {
+        const todoPath = resolve(this.projectRoot, "agents", agentName, "workspace", "todo.md");
+        if (existsSync(todoPath)) {
+          const todoContent = readFileSync(todoPath, "utf-8");
+          // Only inject if there's meaningful content (not just headers)
+          const activeLines = todoContent.split("\n").filter(l => l.startsWith("- [ ]"));
+          if (activeLines.length > 0) {
+            taskMessage = `${entry.message}\n\n---\n## Injected: workspace/todo.md (${activeLines.length} active items)\n\n${activeLines.join("\n")}`;
+          }
+        }
+      } catch {
+        // Non-fatal: if todo.md read fails, proceed with original message
+      }
+
+      const sessionId = this.manager.run(agentName, taskMessage, { kind: "job" });
       this.heartbeatSessions.set(agentName, sessionId);
 
       // Wait for completion then record result
