@@ -175,6 +175,31 @@ export function createHandoffTool(options: HandoffToolOptions): AgentTool<TSchem
         `- **read_by**: ${readByStr}`,
       ].join("\n");
 
+      // ── Deduplication check (P131: Code is Law — C27 fix) ─────
+      try {
+        if (existsSync(signalsPath)) {
+          const existing = readFileSync(signalsPath, "utf-8");
+          // Check for an existing entry with same from + artifact + target
+          const escapedPath = artifact_path.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const pattern = new RegExp(
+            `From.*${agentName}[\\s\\S]*?To.*${target}[\\s\\S]*?Artifact.*${escapedPath}`,
+            'i'
+          );
+          if (pattern.test(existing)) {
+            return {
+              content: [{
+                type: "text" as const,
+                text: `Handoff skipped (duplicate): ${artifact_path} → ${target} already exists in SIGNALS.md. ` +
+                      `This handoff was already sent. No action needed.`,
+              }],
+              details: undefined,
+            };
+          }
+        }
+      } catch {
+        // Non-fatal: proceed with handoff if dedup check fails
+      }
+
       // ── Write to SIGNALS.md ────────────────────────────────────
       try {
         const signalsDir = resolve(signalsPath, "..");
