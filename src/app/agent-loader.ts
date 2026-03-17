@@ -224,6 +224,7 @@ function buildTools(config: AgentConfig, opts: AgentLoaderOptions): AgentTool[] 
             agentName: config.name,
             agentsRoot: opts.agentsRoot,
             projectRoot,
+            persistDir,
             triggerHeartbeat: (target: string) => {
               for (const cron of agentCrons.values()) {
                 if (cron.triggerNow(`heartbeat-${target}`)) return true;
