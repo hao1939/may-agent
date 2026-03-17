@@ -53,3 +53,11 @@ When you hit a blocker, follow the 4-tier ladder:
 - **After each major step**: write checkpoint to workspace with what's done + what's next
 - **Self-check**: If 5+ tool calls and no workspace writes, STOP and write a checkpoint NOW
 - Anti-pattern: Entire analysis in transcript with no persistence
+
+### Safe File Appending — Never write() an Append-Only File (C30)
+When adding content to an existing file (journal.md, changelog, discoveries.md, any growing document):
+1. **Use `edit()`**: with `oldText` targeting the insertion point, `newText` = those lines + new content
+2. **Or use `bash`**: `cat >> file <<'EOF'` to append new content
+3. **NEVER use `write()`** on a file that already has content you want to keep — `write()` replaces the entire file
+- **Quick check**: Before writing to ANY file, ask: "Does this file already exist with content I want to keep?" If yes → `edit()` or `cat >>`. If no (new file) → `write()` is fine.
+- Anti-patterns: `write("journal.md", "## New Entry\n...")` destroys entire journal. Assuming `write()` appends (it doesn't).
