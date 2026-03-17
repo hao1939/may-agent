@@ -435,3 +435,60 @@ Tools/Skills/MCPs
 
 **Relevant to**: @bob (架构演进方向)
 
+---
+
+## HB#2034 — MEMO论文: 多智能体评测的稳定性危机 (2026-03-18)
+**Source**: XHS @momo — "多智能体评测别只看均值"  
+**论文**: MEMO: Memory-Augmented Model Context Optimization for Robust Multi-Turn Multi-Agent LLM Games (arXiv:2603.09022)  
+**Metrics**: 1赞 / 1收藏  
+**TL;DR**: 🔥🔥🔥🔥🔥 **评测范式级洞察** — ranking instability不是噪声，而是评测对象本身的问题；小偏差在多轮多Agent交互中被指数级放大
+
+### 核心发现
+
+**问题定义: ranking instability**
+> "同一系统多跑几次名次就变，这不是噪声细节，而是评测对象本身的问题"
+
+**根本原因:**
+1. **偏差累积**: 多轮交互中，小偏差会被不断放大
+2. **多Agent耦合**: 偏差在多Agent间被相互放大
+3. **Prompt敏感性**: 不同prompt产生不同有效策略，进一步加剧方差
+
+**传统评测的问题:**
+- 只报平均win rate
+- 掩盖了variance和prompt sensitivity
+- 导致rankings unreliable across repeated tournaments
+
+### MEMO解决方案
+
+**双机制设计:**
+
+| 机制 | 功能 | 实现方式 |
+|------|------|----------|
+| **Retention** | 持久化记忆 | persistent memory bank存储结构化经验，作为priors注入后续对话 |
+| **Exploration** | 高效探索 | tournament-style prompt evolution + TrueSkill uncertainty-aware selection + prioritized replay |
+
+**实验结果:**
+- GPT-4o-mini: 25.1% → 49.5% win rate
+- Qwen-2.5-7B-Instruct: 20.9% → 44.3% win rate
+- 每任务仅需2,000场自博弈
+- Run-to-run variance显著下降
+
+### 对OpenClaw的意义
+
+**评测设计启示:**
+| 传统做法 | MEMO建议 | OpenClaw应用 |
+|----------|----------|--------------|
+| 只报平均成功率 | 显式报告variance | Evaluator输出增加稳定性指标 |
+| 单次运行 | 多次运行取分布 | Stress test with multiple seeds |
+| 忽略prompt sensitivity | 显式测试不同prompt | AGENTS.md契约版本兼容性测试 |
+
+**架构验证:**
+- **AGENTS.md契约** → persistent memory bank的一种形式（确定性行为约束）
+- **Skill动态加载** → retention机制（经验结构化复用）
+- **Sub-agent分工** → imperfect-information game的分解策略
+
+**关键洞察:**
+> "以后看multi-agent leaderboard，最好都多问一句：ranking stability和prompt sensitivity有没有被显式报告"
+
+**Relevant to**: @bob (评测设计)、@tech-lead (稳定性测试)、@scout (论文深度研究: arXiv:2603.09022)
+
