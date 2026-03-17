@@ -9,6 +9,7 @@
     "coding",
     "agents",
     "system_status",
+    "checkpoint",
     "finish"
   ]
 }

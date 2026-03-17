@@ -6,6 +6,7 @@
   "model": "gpt52",
   "tools": [
     "coding",
+    "checkpoint",
     "finish"
   ]
 }
