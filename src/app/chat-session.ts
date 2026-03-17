@@ -14,19 +14,8 @@
 import { appendFileSync } from "node:fs";
 import { join } from "node:path";
 import type { SubagentManager } from "../lib/manager.js";
-import { logOrder } from "../lib/orders.js";
 
-// Lazy import for requests.ts (uses bun:sqlite, not available in vitest)
-let _trackRequest: typeof import("../lib/requests.js").trackRequest | null = null;
-let _trackRequestLoaded = false;
-function trackRequest(dir: string, opts: any): string | undefined {
-  if (!_trackRequestLoaded) {
-    _trackRequestLoaded = true;
-    // Eager load — will be cached after first call
-    import("../lib/requests.js").then(mod => { _trackRequest = mod.trackRequest; }).catch(() => {});
-  }
-  return _trackRequest?.(dir, opts);
-}
+import { trackRequest } from "../lib/requests.js";
 
 import type { EventBus } from "./event-bus.js";
 
@@ -141,16 +130,7 @@ export class ChatSession {
    */
   private sendMessage(message: string): void {
     if (!this.sessionId) {
-      // P209: Persist order BEFORE spawning session (survive crashes)
-      const order = this.persistDir
-        ? logOrder(this.persistDir, {
-            text: message,
-            assignedTo: this.agentName,
-            source: "chat",
-          })
-        : undefined;
-
-      // Track request in SQLite (dual-write alongside orders.jsonl)
+      // Track request in SQLite
       let requestId: string | undefined;
       if (this.persistDir) {
         try {
@@ -171,7 +151,6 @@ export class ChatSession {
         autoClose: "never",
         compaction: true,
         source: "chat",
-        orderId: order?.id,
         requestId,
       });
       this.trackCompletion(this.sessionId);
@@ -321,16 +300,7 @@ export class ChatSession {
   private startDirectSession(agentName: string, task: string): void {
     this.bus.emit({ type: "info", message: `[direct] Running ${agentName}...` });
 
-    // P209: Persist order BEFORE spawning session (survive crashes)
-    const order = this.persistDir
-      ? logOrder(this.persistDir, {
-          text: task,
-          assignedTo: agentName,
-          source: "chat",
-        })
-      : undefined;
-
-    // Track request in SQLite (dual-write alongside orders.jsonl)
+    // Track request in SQLite
     let requestId: string | undefined;
     if (this.persistDir) {
       try {
@@ -348,7 +318,6 @@ export class ChatSession {
     const sessionId = this.manager.run(agentName, task, {
       kind: "job",
       source: "chat",
-      orderId: order?.id,
       requestId,
     });
     this.manager

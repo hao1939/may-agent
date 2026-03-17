@@ -32,7 +32,6 @@ import {
   createCronTool,
   createScrapeTool,
   createSystemStatusTool,
-  createHandoffTool,
   createFinishTool,
 } from "../lib/index.js";
 import { createAgentGrowthTools } from "../lib/tools/agent-growth.js";
@@ -217,24 +216,8 @@ function buildTools(config: AgentConfig, opts: AgentLoaderOptions): AgentTool[] 
       }
 
       case "coordination": {
-        // Handoff tool — P82-compliant structured handoffs via SIGNALS.md
-        // Unbundled from "agents" preset so ALL agents (including leaf nodes)
-        // can deliver work via explicit handoff (Protocol P82).
-        tools.push(
-          createHandoffTool({
-            agentName: config.name,
-            agentsRoot: opts.agentsRoot,
-            projectRoot,
-            persistDir,
-            triggerHeartbeat: (target: string) => {
-              for (const cron of agentCrons.values()) {
-                if (cron.triggerNow(`heartbeat-${target}`)) return true;
-                if (cron.triggerNow("heartbeat") && target === "may") return true;
-              }
-              return false;
-            },
-          }),
-        );
+        // DEPRECATED — handoff tool removed. Use "send-only" or "agents" preset instead.
+        // Keep case to avoid crash on old agent.json files with "coordination" preset.
         break;
       }
 

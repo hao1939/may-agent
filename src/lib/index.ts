@@ -1,11 +1,7 @@
 export { SubagentManager, generateId, truncateForPrompt } from "./manager.js";
 export type { SubagentManagerOptions, RunOptions } from "./manager.js";
 // Session recovery (Ambulance Protocol — P62)
-export { classifyError, logRecoveryNeeded, logRecovered, getPendingRecoveries } from "./manager.js";
-export type { RecoveryEntry } from "./session-recovery.js";
-// Order persistence (P209: Intent Persistence)
-export { logOrder, updateOrderStatus, getPendingOrders, resetStaleOrders } from "./manager.js";
-export type { OrderTicket, OrderStatus } from "./orders.js";
+export { classifyError } from "./manager.js";
 // Agent growth core logic
 export { forkAgent, promoteAgent, discardAgent, listLabAgents } from "./growth.js";
 export type { GrowthConfig, ForkResult, PromoteResult } from "./growth.js";
@@ -40,8 +36,6 @@ export { resolveToCwd, resolveReadPath, expandPath } from "./tools/index.js";
 export { createHealthCheckTool } from "./tools/index.js";
 export { createSystemStatusTool } from "./tools/index.js";
 export type { HealthReport } from "./tools/index.js";
-export { createHandoffTool } from "./tools/index.js";
-export type { HandoffToolOptions } from "./tools/index.js";
 export { createFinishTool } from "./tools/index.js";
 export type { FinishToolOptions } from "./tools/index.js";
 export { resolveHallucinatedPath, extractHallucinatedRelPath, isMetaRecursionCommand } from "./tools/index.js";
