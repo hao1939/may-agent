@@ -373,6 +373,7 @@ export class Cron {
       // F3: Auto-inject context files into heartbeat task message.
       let taskMessage = entry.message;
       const injections: string[] = [];
+      let injectedRequestIds: string[] = [];
 
       try {
         const agentDir = resolve(this.projectRoot, "agents", agentName);
@@ -394,6 +395,7 @@ export class Cron {
             )
             .all(agentName) as { task: string; fromEntity: string; createdAt: number; requestId: string }[];
           if (pending.length > 0) {
+            injectedRequestIds = pending.map(r => r.requestId);
             const lines = pending.map(r => {
               const ts = new Date(r.createdAt).toISOString().slice(0, 16);
               return `- [from:${r.fromEntity} ${ts}] [req:${r.requestId.slice(0, 8)}] ${r.task}`;
@@ -429,6 +431,16 @@ export class Cron {
             durationMs: Date.now() - startMs,
             summary: `Heartbeat for ${agentName} completed`,
           });
+          // Auto-complete injected send() requests that the agent saw
+          for (const reqId of injectedRequestIds) {
+            try {
+              updateRequest(this.persistDir, reqId, {
+                status: "COMPLETED",
+                completedAt: Date.now(),
+                summary: `Auto-completed: injected into ${agentName} heartbeat session ${sessionId}`,
+              });
+            } catch { /* best-effort */ }
+          }
           if (entry.notifyBrief && this.notify) {
             const text = taskResult?.lastAssistantText?.trim();
             if (text) {
