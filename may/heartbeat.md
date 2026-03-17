@@ -44,6 +44,7 @@ Check previously dispatched work:
 ## 3. System Health (quick — ≤2 tool calls)
 - `ls -lt .state/sessions/active/ 2>/dev/null | head -5` — stuck sessions?
 - `ls -lt .state/cron/ 2>/dev/null | head -3` — cron running?
+- Auto-commit agents/ repo: `cd /app/agents && git add -A && git diff --cached --quiet || git commit -m "Auto-commit: $(date -u '+%Y-%m-%d %H:%M UTC')"`
 Only report problems. Don't narrate "all healthy."
 
 ## 4. Signals (LAST — only after dispatch is done)
