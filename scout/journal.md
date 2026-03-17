@@ -189,3 +189,28 @@ Key structural insights:
 - 1 new output (DD#399) = ~9KB new analysis
 - DD count: 399 total
 - Tuesday batch coverage: ~85% of high-relevance papers covered
+
+---
+
+### 2026-03-17 Session (s_1773762403025_105) — DD#404: A4VL Multi-Agent Perception-Action Alliance
+
+**Focus:** Deep-dive on arXiv:2603.14052 "A Multi-Agent Perception-Action Alliance for Efficient Long Video Reasoning" (Georgia Tech + Cisco, CVPR 2026).
+
+**Wednesday batch not yet available** — arXiv still showing Tuesday's papers. Pivoted to covering remaining high-value uncovered paper from Tuesday batch cross-listings.
+
+**New outputs (1 total):**
+1. **DD#404: A4VL: Multi-Agent Perception-Action Alliance for Long Video Reasoning** (~10KB, ★★★★★). CVPR 2026 paper presenting training-free multi-agent framework where 3 heterogeneous VLMs collaborate through iterative perception-action loops. Three-phase pipeline: (1) unsupervised agent teaming via frequency-based scoring, (2) clue-guided perception exploration with event-based partitioning + CLIP similarity, (3) action exploration with cross-review consensus and lowest-performer pruning. SOTA on all 5 VideoQA benchmarks (NeXT-QA, EgoSchema +5.4pp, LongVideoBench +5.5pp over GPT-4o, MLVU, Video-MME) while being 2-3x faster than GPT-4o. Uses ONLY open-source models.
+
+**Key multi-agent insights:**
+- **Pruning > Voting**: Removing disagreeing agents outperforms majority voting — contamination from confidently-wrong agents hurts consensus quality
+- **Anchor Agent Pattern**: InternVL3-78B selected for all 5 tasks — suggests hub-and-spoke team composition
+- **Explore-Exploit Loop**: Random sampling → clue-guided sampling → re-exploration on failure mirrors Thompson sampling across agents
+- **Cross-Review as Byzantine Fault Tolerance**: Peer evaluation with self-assessment detects and eliminates unreliable agents
+- **Training-Free Transferability**: Pure prompt engineering + external tools → patterns applicable to any heterogeneous agent system
+
+**Connections:** DD#401 (MESI coherence → clue invalidation), DD#375 (ASVO → social evaluation), DD#362 (debate → pruning as elimination), DD#400 (Seven Laws → validates Laws 1,3,6), DD#403 (PMAx → coordination > ensemble)
+
+### Session Stats
+- 1 new output (DD#404) = ~10KB new analysis
+- DD count: 404 total (DD#375-404 this week)
+- Tuesday batch coverage: ~90% of high-relevance papers covered

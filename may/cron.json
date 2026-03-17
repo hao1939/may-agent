@@ -314,5 +314,14 @@
     "enabled": true,
     "handler": "lessons-graduation",
     "description": "Daily LESSONS.md health scan — flag oversized files, stale entries, duplicates (JS handler, 24h)"
+  },
+  {
+    "name": "error-log-scanner",
+    "type": "job",
+    "intervalMs": 14400000,
+    "message": "[cron:error-log-scanner] Scan ERROR_LOG.jsonl files for repeated patterns.",
+    "enabled": true,
+    "handler": "error-log-scanner",
+    "description": "Scan all agents' ERROR_LOG.jsonl for repeated error patterns (≥3 same type in 7d). Triggers Coach growth-cycle if found. JS handler, 4h interval, 7d cooldown."
   }
 ]

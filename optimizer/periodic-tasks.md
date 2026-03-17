@@ -25,7 +25,7 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Review existing JS handlers in agents/may/handlers/.
   Any errors in recent logs? Any handler that's not firing?
   If issues → add fix to workspace/todo.md.
-  Latest (2026-03-17): 9 handler `.ts` files present (1603 LOC total). 6 referenced by cron entries (coaching-report, daily-brief, evaluate-sessions, run-agent-task, system-status, watchdog) — all wired correctly ✅. **3 orphan handlers** on disk with NO cron reference: `audit-requests.ts` (106 LOC), `error-log-scanner.ts` (240 LOC), `focus-task-tracker.ts` (159 LOC) — 505 lines of dead code, never loaded. 29 cron entries total, all enabled. **4 new entries** since last check: `common-sense-verify` (4h, coach — 8 successful runs ✅), `common-sense-infra` (daily, bob — 1 run ✅), `training-sprint` (6h, coach — newly added, not yet fired), `research-intake` (12h, coach — newly added, not yet fired). Job history: 93 success, 7 skipped, **0 errors** in last 100 entries. Full test suite: 1375/1375 pass (102 files). **Finding: 3 orphaned handler files should be cleaned up by May.**
+  Latest (2026-03-17): 10 handler `.ts` files present. 8 referenced by cron entries (coaching-report, daily-brief, error-log-scanner, evaluate-sessions, lessons-graduation, run-agent-task, system-status, watchdog) — all wired correctly ✅. **2 orphan handlers** on disk with NO cron reference: `audit-requests.ts` (106 LOC), `focus-task-tracker.ts` (159 LOC) — 265 lines dead code. 32 cron entries total. **error-log-scanner wired today** (was orphaned). Job history healthy. Full test suite passes.
 
 ## Weekly
 - [x] **Improvement proposals review** — Last done: 2026-05-09 (Finding 18, Cycle 12). **2 new commits since last review**: agent-growth refactor committed (3a6d51e — 16 files, +1725/-168), orphaned test cleanup (85de6e7). Git now clean (0 uncommitted changes — resolved 7+ week risk). 1049/1049 tests pass (87 files), tsc clean. New cross-edit guard (P53) prevents cross-agent identity file modification. Finish tool wired but unadopted. System idle — 0 sessions, evals, job history. Compaction 8/12, prompt caching still 0% for Opus (LiteLLM proxy blocker). **No new optimization work items identified.**
@@ -39,8 +39,8 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
 ---
 
 ## Bi-Weekly
-- [x] **Heartbeat graduation review** — Last done: 2026-03-16
-  Latest (2026-03-16): First full review. Reviewed 12 heartbeat.md files, identified 3 graduation candidates: (1) Coach ERROR_LOG scanning → JS pre-check handler (highest value), (2) May Step 3 health checks → remove (redundant with watchdog+system-status handlers), (3) Tech-Lead health-check.sh → JS pre-flight (deferred — embedded in broader step). 11 existing graduated items catalogued. Full report at `workspace/graduation-log.md`. Proposals handed off to May.
+- [x] **Heartbeat graduation review** — Last done: 2026-03-17
+  Latest (2026-03-17): Follow-up on 3 proposals from Review #1. **Proposal 1 GRADUATED**: `error-log-scanner.ts` was already built (258 LOC) but orphaned — wired it to cron.json (4h interval, 7d cooldown). Coach's ERROR_LOG scanning is now automated. Proposals 2-3 still pending (low priority). No new graduation candidates — remaining heartbeat steps all require LLM judgment. 2 orphaned handlers remain (audit-requests, focus-task-tracker). Full log at `workspace/graduation-log.md`.
   Review all agents' heartbeat.md files. For each step, ask:
   1. Has this step been running for 1+ weeks?
   2. Is the pattern stable (same structure, same inputs/outputs)?

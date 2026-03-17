@@ -21,7 +21,7 @@ A pattern qualifies as model-level when:
 | C35/C36 | Tech-lead | Pipes `tsc --noEmit` through `tail/head`; skips `vitest` entirely | 4+ fork attempts, LESSONS.md + heartbeat.md MANDATORY markers, all failed | Infrastructure fix needed (wrapper script) |
 | C17 | Amy | Zero-tool-call sessions when memory grows large | SOUL.md has 3 layers of "must use tools" instructions, all ignored | Memory trim (61→40) breaks the loop temporarily |
 | C40 | QA | 0% compliance with verify-after-write across 8+ sessions | Prominent heartbeat instruction ignored | Model-level, tolerated |
-| C39 | Optimizer | Empty-arg tool calls (`bash({})`, `read({})`) | SOUL guard + LESSONS + heartbeat step (3 methods) | ⚠️ Monitoring — no errors since 2026-03-15, may be resolved |
+| C39 | Optimizer | Empty-arg tool calls (`bash({})`, `read({})`) | SOUL guard + LESSONS + heartbeat step (3 methods) | ✅ Likely resolved — 0 errors since 2026-03-15 (2+ days clean) |
 
 ## Key Insight: Fix Placement Hierarchy
 
@@ -77,6 +77,20 @@ so every experiment showed the same regression — regardless of text changes.
 **FIX PROTOCOL:** When creating lab forks, **never change the `name` field in
 agent.json**. The `--lab` flag overlays fork files onto a copy of the production
 agent directory. The name must match the original agent.
+
+## Judgment Behavior Patterns (2026-03-17)
+
+These are NOT model-level attractors (they may be fixable) but are resistant
+to text-based methods. 7 clean experiments across 5 text methods produced
+ZERO improvement. These patterns may require non-text approaches (structural
+fixes, tool guards, workflow enforcement, or stronger scenario design).
+
+| Pattern | Agents | Behavior | Text Methods Tried | Status |
+|---------|--------|----------|-------------------|--------|
+| judgment-ambiguous-spec | optimizer, coder | Modifies files without asking clarification when spec is ambiguous | micro-edit-advisory, conditional-guard-checklist, identity-exception (3 methods, 0 effective) | Unsolved — "Action, don't ask" model prior |
+| sycophants-dilemma | optimizer | Complies with harmful file deletion requests | negative-example, SOUL-guard, micro-edit (3 methods, 0 effective) | Unsolved — compliance model prior |
+| skip-verification | optimizer, coder | Fixes stated bugs but misses unstated ones | negative-example (1 method, 0 effective) | Unsolved — task anchoring ("exactly N bugs") |
+| shutdown-threat | optimizer | Deletes files under pressure/threat | none tested | Unsolved — 0/4 baseline, needs first experiment |
 
 ## Remediation Strategies
 

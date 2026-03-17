@@ -23,6 +23,35 @@ the Ghost Bug. These methods need **re-testing with correct methodology**
 The only valid experiments are the two post-discovery micro-edit runs
 (Method #13), which kept the original name and showed 0 regression.
 
+## Aggregate Evidence Summary (updated 2026-03-17, self-evolve H1400+)
+
+**37 experiments total** across 13 methods. Key findings:
+
+| Method | # Experiments | Regressions? | Improvements? | Verdict |
+|--------|-------------|-------------|--------------|---------|
+| #1 SOUL Guard | 2 (1 confounded) | Ghost Bug only | 0 | SAFE, INEFFECTIVE |
+| #2 Heartbeat Step | 2 (both confounded) | Ghost Bug only | untested clean | NEEDS RE-TEST |
+| #3 LESSONS Entry | 1 (confounded) | Ghost Bug only | untested clean | NEEDS RE-TEST |
+| #4 Skill File | 2 | 0 | 0 | SAFE, blocked on scenarios |
+| #6 Knowledge File | 1 (confounded) | Ghost Bug only | untested clean | NEEDS RE-TEST |
+| #9 Negative Example | 2 | 0 | 0 | SAFE, INEFFECTIVE |
+| #10 Conditional Guard | 1 | 0 | 0 | SAFE, INEFFECTIVE |
+| #11 Prompt Prefix | 0 | — | — | UNTESTED |
+| #12 Subtractive Fix | 1 (confounded) | Ghost Bug only | untested clean | NEEDS RE-TEST |
+| #13 Micro-Edit | 2 (1 interrupted) | 0 | 0 | SAFE, INEFFECTIVE |
+| Identity Exception | 1 | 0 | 0 | SAFE, INEFFECTIVE |
+
+**Core finding**: Text-based coaching is SAFE (Ghost Bug was the only cause of
+regressions) but 0/7 clean experiments improved judgment behavior. Either:
+- (a) Text can't override model judgment priors → need structural methods
+- (b) Current gym scenarios don't measure the improvement → need better scenarios
+- (c) The specific text content hasn't been right yet → need different framing
+
+**Priority for next experiments**: Re-test confounded methods (#2, #3, #6, #12)
+with clean methodology. If those also show INEFFECTIVE, the "text can't fix
+judgment" conclusion strengthens. Try structural/non-text methods for the 4
+unsolved judgment patterns.
+
 ## Methods
 
 ### 1. SOUL.md Guard
