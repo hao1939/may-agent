@@ -76,8 +76,7 @@ import { runActiveRecall, formatRecallWarnings } from "./active-recall.js";
 import { buildTrace } from "./manager-trace.js";
 import { hasFinishToolCall, isRetryableInfraError, runAgentWithRetry } from "./manager-retry.js";
 import { createAgentsTool as createAgentsToolFn, type CreateAgentsToolOptions } from "./manager-agents-tool.js";
-import { logRecoveryNeeded } from "./session-recovery.js";
-import { updateOrderStatus } from "./orders.js";
+
 
 // Lazy import for requests.ts (uses bun:sqlite, not available in vitest)
 let _updateRequest: typeof import("./requests.js").updateRequest | null = null;
@@ -96,9 +95,8 @@ async function getRequestFns() {
 }
 
 export { isRetryableInfraError, runAgentWithRetry } from "./manager-retry.js";
-export { logRecoveryNeeded, classifyError, getPendingRecoveries, logRecovered } from "./session-recovery.js";
-export { logOrder, updateOrderStatus, getPendingOrders, resetStaleOrders } from "./orders.js";
-export type { OrderTicket, OrderStatus } from "./orders.js";
+// classifyError re-exported via lazy import from requests.ts (bun:sqlite compat)
+export { classifyError } from "./requests.js";
 export { buildTrace, findPathToTarget } from "./manager-trace.js";
 export type { TraceContext } from "./manager-trace.js";
 import { computeHealth, computeAuditHealth, computeReconcileHealth, EVAL_SKIP_AGENTS } from "./manager-health.js";
@@ -647,35 +645,6 @@ export class SubagentManager {
 
     this.archiveSessionDir(session);
     this.activeSessions.delete(session.sessionId);
-
-    // ── Log recovery-needed for failed sessions (P62: No Silent Failures) ──
-    if (archiveStatus === "error" && session.error) {
-      try {
-        logRecoveryNeeded(this.registry.persistDir, {
-          sessionId: session.sessionId,
-          agent: session.agentName,
-          task: session.task,
-          error: session.error,
-          startedAt: session.startedAt,
-          parentSessionId: session.parentSessionId,
-        });
-      } catch {
-        /* best-effort — never block completion for recovery logging */
-      }
-    }
-
-    // ── Update order status (P209: Intent Persistence) ─────────────────
-    if (session.orderId) {
-      try {
-        updateOrderStatus(this.registry.persistDir, session.orderId, {
-          status: archiveStatus === "done" ? "COMPLETED" : "FAILED",
-          sessionId: session.sessionId,
-          error: session.error,
-        });
-      } catch {
-        /* best-effort — don't block completion for order tracking */
-      }
-    }
 
     // ── Update request status (unified request tracking) ───────────────
     if (session.requestId) {
@@ -1744,42 +1713,6 @@ export class SubagentManager {
     return getOpUsage(this.activeSessions, sessionId);
   }
 
-  // ── Delegation metrics logging ──────────────────────────────────────
-
-  /**
-   * Append a structured delegation event to `.state/delegations.jsonl`.
-   * Best-effort — never throws.
-   */
-  private logDelegation(entry: {
-    parent: string;
-    child: string;
-    method: "call" | "send";
-    status: "success" | "error" | "timeout" | "sent";
-    sessionId?: string;
-    durationMs?: number | null;
-    error?: string;
-  }): void {
-    try {
-      const logEntry = {
-        timestamp: new Date().toISOString(),
-        traceId: randomUUID(),
-        sessionId: entry.sessionId ?? null,
-        parent: entry.parent,
-        child: entry.child,
-        method: entry.method,
-        status: entry.status,
-        durationMs: entry.durationMs ?? null,
-        error: entry.error ?? null,
-      };
-      const logPath = join(this.registry.persistDir, "delegations.jsonl");
-      appendFileSync(logPath, JSON.stringify(logEntry) + "\n", "utf-8");
-    } catch (err) {
-      /* best-effort — never block agent operations for logging, but surface the error */
-      const logPath = join(this.registry.persistDir, "delegations.jsonl");
-      console.error(`[manager] Failed to write delegation log to ${logPath}:`, err);
-    }
-  }
-
   // ── V2: callAgent + agents tool ──────────────────────────────────────
 
   /**
@@ -1836,11 +1769,6 @@ export class SubagentManager {
       this.callDepths.set(rootSessionId, currentDepth + 1);
     }
 
-    // Determine parent agent name for delegation logging
-    const parentAgentName = opts?.parentSessionId
-      ? (this.activeSessions.get(opts.parentSessionId)?.agentName ?? "unknown")
-      : "unknown";
-    const delegationStart = Date.now();
 
     try {
       // ── Start session ──────────────────────────────────────────────────
@@ -1891,18 +1819,6 @@ export class SubagentManager {
       // Cleanup
       if (timeoutTimer) clearTimeout(timeoutTimer);
       unsubscribe?.();
-
-      // ── Log delegation result ──────────────────────────────────────────
-      const durationMs = Date.now() - delegationStart;
-      this.logDelegation({
-        parent: parentAgentName,
-        child: name,
-        method: "call",
-        status: result.status === "error" ? "error" : "success",
-        sessionId,
-        durationMs,
-        error: result.error,
-      });
 
       return result;
     } finally {

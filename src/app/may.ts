@@ -4,7 +4,7 @@ import { resolve, dirname } from "node:path";
 import { existsSync, readFileSync, writeFileSync, unlinkSync, mkdirSync } from "node:fs";
 import { getModel } from "@mariozechner/pi-ai";
 import type { ModelWithApiKey } from "../lib/types.js";
-import { SubagentManager, evaluateTask, writeSkippedEvaluations, classifyError, logRecovered } from "../lib/index.js";
+import { SubagentManager, evaluateTask, writeSkippedEvaluations, classifyError } from "../lib/index.js";
 import { EventBus } from "./event-bus.js";
 import { ChatSession } from "./chat-session.js";
 import { attachConsoleUI } from "./ui/console.js";
@@ -80,6 +80,7 @@ const SOCKET_ENABLED = process.argv.includes("--socket");
 const CHAT_MODE = process.argv.includes("--chat");
 const ONESHOT_MODE = process.argv.includes("--oneshot");
 const STATUS_MODE = process.argv.includes("--status");
+const SEND_MODE = process.argv.includes("--send");
 const INITIAL_TASK = (() => {
   const idx = process.argv.indexOf("--task");
   if (idx !== -1 && process.argv[idx + 1]) return process.argv[idx + 1];
@@ -182,7 +183,6 @@ const manager = new SubagentManager({
 
       // ── Session Drop Recovery (Ambulance Protocol — P62) ──
       // If error is transient infrastructure failure, auto-requeue the task.
-      // logRecoveryNeeded() already ran in handleCompletion; here we consume it.
       const errorClass = classifyError(info.error);
       if (errorClass === "infra") {
         const rKey = recoveryKey(info.agent, info.task);
@@ -191,7 +191,6 @@ const manager = new SubagentManager({
           try {
             recoveryAttempts.set(rKey, attempts + 1);
             const newSessionId = manager.run(info.agent, info.task, { kind: "job" });
-            logRecovered(PERSIST_DIR, info.sessionId, newSessionId);
             bus.emit({
               type: "info",
               message: `[recovery] 🚑 Requeued ${info.agent} session ${info.sessionId} → ${newSessionId} (infra error, attempt ${attempts + 1}/${MAX_RECOVERY_ATTEMPTS})`,
@@ -620,8 +619,20 @@ if (STATUS_MODE) {
   process.exit(0);
 }
 
+if (SEND_MODE) {
+  // ── Send mode: deliver message to agent and exit ───────────────────
+  const { parseSendArgs, cliSend } = await import("./cli-send.js");
+  const sendOpts = parseSendArgs(process.argv);
+  if (sendOpts) {
+    sendOpts.persistDir = PERSIST_DIR;
+    sendOpts.agentsRoot = AGENTS_ROOT;
+    await cliSend(sendOpts);
+  }
+  process.exit(0);
+}
+
 if (!CHAT_MODE && !INITIAL_TASK && !CRON_ENABLED && !ONESHOT_MODE) {
-  console.error("Error: need --chat, --task, --oneshot, --status, or --cron.");
+  console.error("Error: need --chat, --task, --oneshot, --status, --send, or --cron.");
   process.exit(1);
 }
 
