@@ -114,21 +114,21 @@ export class ChatSession {
     const [targetAgent, agentMessage] = parseAgentPrefix(trimmed);
     if (targetAgent) {
       this.logHumanInput(trimmed, source, targetAgent);
-      this.startDirectSession(targetAgent, agentMessage);
+      this.startDirectSession(targetAgent, agentMessage, source);
       return;
     }
 
     // ── Normal message → persistent session ──────────────────────────
     this.logHumanInput(trimmed, source, this.agentName);
     this.sendRetryDepth = 0;
-    this.sendMessage(trimmed);
+    this.sendMessage(trimmed, source);
   }
 
   /**
    * Send a message to the persistent chat session.
    * Creates the session on first call, wakes from idle on subsequent calls.
    */
-  private sendMessage(message: string): void {
+  private sendMessage(message: string, source?: string): void {
     if (!this.sessionId) {
       // Track request in SQLite
       let requestId: string | undefined;
@@ -150,7 +150,7 @@ export class ChatSession {
         kind: "chat",
         autoClose: "never",
         compaction: true,
-        source: "chat",
+        source: source ?? "chat",
         requestId,
       });
       this.trackCompletion(this.sessionId);
@@ -297,7 +297,7 @@ export class ChatSession {
   }
 
   /** Start an ephemeral direct agent session (from @agent prefix). */
-  private startDirectSession(agentName: string, task: string): void {
+  private startDirectSession(agentName: string, task: string, source?: string): void {
     this.bus.emit({ type: "info", message: `[direct] Running ${agentName}...` });
 
     // Track request in SQLite
@@ -317,7 +317,7 @@ export class ChatSession {
 
     const sessionId = this.manager.run(agentName, task, {
       kind: "job",
-      source: "chat",
+      source: source ?? "chat",
       requestId,
     });
     this.manager

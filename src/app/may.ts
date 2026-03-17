@@ -21,6 +21,7 @@ import {
   type AgentLoaderOptions,
 } from "./agent-loader.js";
 import { resolveProjectRoot } from "./bundle-mode.js";
+import { trackRequest } from "../lib/requests.js";
 
 const PROJECT_ROOT = resolveProjectRoot(import.meta.url);
 const AGENTS_ROOT = resolve(process.env.AGENTS_ROOT || resolve(PROJECT_ROOT, "agents"));
@@ -538,7 +539,17 @@ bus.onCommand((cmd) => {
       if (chatSession) {
         chatSession.handleInput(`@${cmd.agent} ${cmd.message}`, "socket");
       } else {
-        const sessionId = manager.run(cmd.agent, cmd.message, { kind: "job" });
+        // Track request before spawning (P209)
+        let requestId: string | undefined;
+        try {
+          requestId = trackRequest(PERSIST_DIR, {
+            fromEntity: "human",
+            toAgent: cmd.agent,
+            task: cmd.message,
+            method: "call",
+          });
+        } catch { /* non-fatal */ }
+        const sessionId = manager.run(cmd.agent, cmd.message, { kind: "job", requestId });
         bus.emit({ type: "info", message: `[direct] Started ${cmd.agent} session: ${sessionId}` });
       }
       return { ok: true };
