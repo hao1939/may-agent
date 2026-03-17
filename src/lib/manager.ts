@@ -100,7 +100,7 @@ async function getRequestFns() {
 }
 
 export { isRetryableInfraError, runAgentWithRetry } from "./manager-retry.js";
-// classifyError re-exported via lazy import from requests.ts (bun:sqlite compat)
+// classifyError is pure string-matching (no bun:sqlite dependency), safe to re-export eagerly
 export { classifyError } from "./requests.js";
 export { buildTrace, findPathToTarget } from "./manager-trace.js";
 export type { TraceContext } from "./manager-trace.js";
