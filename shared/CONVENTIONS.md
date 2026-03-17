@@ -1,44 +1,50 @@
-# Conventions & Standards
+# Conventions
 
-**Status**: Active
-**Owner**: Coach / Bob
+*Mandatory protocols for all agents. Violations are bugs.*
+*Last Updated: 2026-03-17*
 
-This file documents the **mandatory conventions** that all agents must follow. Unlike `best-practices.md` (which are guidelines), these are **hard rules**.
+## C1. Handoff Protocol (Tool-Enforced Coordination)
+**Do not write to `SIGNALS.md` manually.** The file is system-managed.
 
-## C1. Artifact Handoff (P82)
-**Rule**: Any cross-agent artifact delivery MUST use the `handoff` skill format in `SIGNALS.md`.
-**Why**: Text-based handoffs ("I left the file here") have 0% compliance. The `handoff` skill enforces the protocol structurally.
-**Mechanism**:
-1. Load `agents/shared/skills/handoff/SKILL.md`.
-2. Follow the `Protocol` section exactly.
-3. This guarantees `read_by: []` is present (P82).
+- **To Send Work**: Use the `handoff()` tool.
+  - Required: `target`, `artifact_path`, `context`, `expectations`.
+  - The tool validates the artifact, writes the signal, and notifies the target.
+- **To Receive Work**:
+  - Read your `todo.md` or `SIGNALS.md` entry.
+  - Use `handoff()` back to the sender when done.
+- **Anti-Pattern**: Manually editing `SIGNALS.md` or using text-based "Ack" conventions.
 
-## C2. Transient Strategy (P53)
-**Rule**: For any multi-step task (>5 steps) or cross-file edit (>3 files), create `workspace/strategy.md` FIRST.
-**Why**: Context window is ephemeral. `strategy.md` is persistent.
-**Mechanism**:
-1. Load `agents/shared/skills/transient-skill.md`.
-2. Create `workspace/strategy.md` with: Objective, Key Findings, Decision Log, Current Plan.
-3. Update it before every major step.
-4. Delete it when the task is done.
+## C2. Tool Discipline
+**Do not hallucinate tools or arguments.**
 
-## C3. Deterministic Verification (P14)
-**Rule**: Verification must use **deterministic checks** (grep, test, json parse), not LLM judgment ("looks good").
-**Why**: LLMs hallucinate success (AP-9 Artifact Seduction). Code doesn't.
-**Mechanism**:
-- **Bad**: `read(file)` -> "The content looks correct."
-- **Good**: `exec("grep 'expected_string' file")` -> Exit code 0.
+- **Check First**: Read `TOOLS.md` or use `agents.list()` before calling.
+- **Respect Schemas**: Do not invent flags (e.g., `grep -C 5` is valid, `grep --context=5` might not be).
+- **One Tool Per Step**: Do not chain dependent tools in one batch if the first might fail.
 
-## C4. Skill Compliance Trigger (P82/P114)
-**Rule**: When a mandatory skill (e.g., experience-replay, transient-strategy) shows **0% organic usage across all agents for >24 hours**, Coach must initiate a targeted compliance drill.
-**Why**: Skills with 0% adoption are dead weight. Ritualistic Policy Failure (FM-2.6) means agents acknowledge rules but never execute them. Drills force execution, which builds muscle memory.
-**Trigger Protocol**:
-1. **Detection** (Coach heartbeat): Scan recent session transcripts for evidence of skill execution (e.g., `grep -r "ERROR_LOG" .state/sessions/history/` for P114, `grep -r "strategy.md" .state/sessions/history/` for C2).
-2. **If 0% usage detected**: Coach runs a **Growth Cycle drill** for each affected agent:
-   - Fork the agent.
-   - Give it a task that REQUIRES the skill (e.g., "edit src/X — you MUST use experience-replay first").
-   - Verify: did the agent execute the skill? PASS = tool call evidence. FAIL = no evidence.
-   - Promote if passed; add structural enforcement (C13) if failed.
-3. **Escalation**: If an agent fails the drill 2x, embed the skill as a MANDATORY gate in the agent's heartbeat.md (per C13 — structural > behavioral).
-4. **Measurement**: Track drill results in `agents/coach/workspace/drill-results.md`.
-**Evidence**: P114 experience-replay had 0% organic adoption for 24h+ despite being documented in SOUL.md, LESSONS.md, and skills/. Only structural embedding in heartbeat.md (H513) and direct drills produced compliance. Amy's C17 fix required data-layer intervention (memoryLimit) after 6 behavioral fixes failed.
+## C3. Verification First
+**Trust but verify.**
+
+- **Read Before Write**: Never overwrite a file without reading it first.
+- **Verify After Write**: Always read back your edit or run a test to confirm it worked.
+- **No Blind Assumptions**: Do not assume a file exists or has specific content. Check.
+
+## C4. Evidence Discipline (Claim-as-Record)
+**Every claim must be backed by a tool call in the current session.**
+
+- **Citation**: "I fixed the bug" is invalid. "I fixed the bug, verified by `npm test` output in step 3" is valid.
+- **State**: "The file is empty" is invalid. "The `read` output shows the file is empty" is valid.
+- **No Memory**: Do not rely on memory of previous sessions. If you didn't read it *this* session, you don't know it.
+
+## C5. Path Safety
+**Stay within bounds.**
+
+- **Root**: Project root is `/app`. Use relative paths or `/app/...`.
+- **No Home**: Do not access `/home/`, `/Users/`, or `~/`. They do not exist.
+- **Workspace**: Use your agent's `workspace/` for temporary files.
+
+## C6. Error Handling
+**No silent failures.**
+
+- **Report**: If a tool fails, report it. Do not pretend it worked.
+- **Retry Smart**: If blocked, change approach. Do not retry the exact same failing call.
+- **Escalate**: If you can't fix it, hand off to an agent who can (or to human).

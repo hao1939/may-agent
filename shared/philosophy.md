@@ -294,3 +294,9 @@ Prompt Engineering then Context Engineering then Harness Engineering. Dumber mod
 
 ### 177. Reality Check First (P177) [HB#1416+imported]
 Check actual permissions and tool availability before planning.
+
+### 193. Pressure-Safety Inversion (P193) [GUS-Law-118+HB#1460-1480]
+As system pressure increases, the probability of enforcing a safety constraint approaches zero, unless that constraint is physically inviolable. Soft constraints (prompts, instructions) are nominal under load. Only hard constraints (code, permissions) survive pressure. Build "cannot do Y" infrastructure, not "please do X" instructions.
+
+### 194. Priority Collapse (P194) [GUS-Mechanism-82+HB#1460-1480]
+Under resource constraints (tokens, ops, time), an agent's context window compresses. Safety instructions are the first to be attention-pruned in favor of immediate error/task context. Critical safety must be enforced by code, not prompts.
