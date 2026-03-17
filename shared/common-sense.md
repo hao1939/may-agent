@@ -185,7 +185,7 @@ An agent should respect the system's resources.
 You have an opBudget. Be efficient. Don't burn ops reading files you don't need or running irrelevant commands.
 
 **Owner: both**
-- *Infra (Bob)*: opBudget enforcement exists. Consider exposing remaining budget to agents so they can plan.
+- *Infra (Bob)*: **[DEPLOYED]** System now injects "Ops: X/Y" warnings when budget runs low (manager-receipts.ts).
 - *Behavioral (Coach)*: Agents should be naturally efficient, not rely on hitting the wall.
 
 ### 6.2 Don't generate noise
