@@ -27,7 +27,7 @@ const mockSpawn = vi.mocked(spawnDetachedAgent);
 
 // Mock request tracking — no bun:sqlite in vitest
 // We track calls and provide a simple in-memory store for overlap queries.
-const requestStore = new Map<string, { requestId: string; artifact: string; status: string; fromEntity: string; createdAt: number; context: string | null; sessionId: string | null }>();
+const requestStore = new Map<string, { requestId: string; artifact: string; status: string; fromEntity: string; createdAt: number; context: string | null; sessionId: string | null; toAgent: string | null; method: string | null }>();
 let requestCounter = 0;
 
 const mockTrackRequest = vi.fn((_persistDir: string, opts: any) => {
@@ -40,6 +40,8 @@ const mockTrackRequest = vi.fn((_persistDir: string, opts: any) => {
     createdAt: Date.now(),
     context: opts.context ?? null,
     sessionId: opts.sessionId ?? null,
+    toAgent: opts.toAgent ?? null,
+    method: opts.method ?? null,
   });
   return requestId;
 });
@@ -56,6 +58,40 @@ function makeMockDb() {
     query(sql: string) {
       return {
         get(...args: any[]) {
+          // hasPendingWork: SELECT 1 FROM requests WHERE toAgent = ? AND status IN (...) AND method = 'send'
+          if (sql.includes("toAgent") && sql.includes("method = 'send'")) {
+            const toAgent = args[0];
+            for (const entry of requestStore.values()) {
+              if (entry.toAgent === toAgent && (entry.status === "CREATED" || entry.status === "IN_PROGRESS") && entry.method === "send") {
+                return { 1: 1 };
+              }
+            }
+            return null;
+          }
+          // shouldSkipIdleHeartbeat: COUNT completed with idle_skip in context
+          if (sql.includes("COUNT(*)") && sql.includes("idle_skip")) {
+            const artifact = args[0];
+            const cutoff = args[1] as number;
+            let cnt = 0;
+            for (const entry of requestStore.values()) {
+              if (entry.artifact === artifact && entry.status === "COMPLETED" && entry.context?.includes('"idle_skip":true') && entry.createdAt > cutoff) {
+                cnt++;
+              }
+            }
+            return { cnt };
+          }
+          // shouldSkipIdleHeartbeat: COUNT completed requests
+          if (sql.includes("COUNT(*)") && sql.includes("COMPLETED")) {
+            const artifact = args[0];
+            const cutoff = args[1] as number;
+            let cnt = 0;
+            for (const entry of requestStore.values()) {
+              if (entry.artifact === artifact && entry.status === "COMPLETED" && entry.createdAt > cutoff) {
+                cnt++;
+              }
+            }
+            return { cnt };
+          }
           // Overlap check: SELECT 1 FROM requests WHERE artifact = ? AND status IN (...)
           if (sql.includes("artifact") && sql.includes("IN ('CREATED', 'IN_PROGRESS')")) {
             const artifact = args[0];
@@ -346,7 +382,7 @@ describe("Cron", () => {
   it("heartbeat: spawns fresh session each fire (no reuse)", async () => {
     writeFileSync(
       configPath,
-      JSON.stringify([{ name: "hb", type: "heartbeat", intervalMs: 10000, agent: "bob", message: "go" }]),
+      JSON.stringify([{ name: "hb", type: "heartbeat", intervalMs: 10000, agent: "bob", message: "go", skipIfIdle: false }]),
     );
     const mgr = makeMockManager();
     const c = new Cron(configPath, mgr as any, () => "sid-1");
@@ -457,6 +493,98 @@ describe("Cron", () => {
 
     const runCalls = mgr.calls.filter((c) => c.method === "run");
     expect(runCalls[0].args[0]).toBe("may");
+
+    c.stop();
+  });
+
+  // ── Idle heartbeat skipping (pre-flight) ────────────────────────────
+
+  it("heartbeat: skips when no pending send() requests (idle skip)", async () => {
+    writeFileSync(
+      configPath,
+      JSON.stringify([{ name: "hb-idle", type: "heartbeat", intervalMs: 10000, agent: "bob", message: "hb" }]),
+    );
+    const mgr = makeMockManager();
+    const c = new Cron(configPath, mgr as any, () => "sid-1");
+    c.start();
+
+    // First heartbeat: no prior history, so it should fire (no recent completed heartbeats → initiative fires)
+    await vi.advanceTimersByTimeAsync(10000);
+    await flush();
+
+    const runCalls1 = mgr.calls.filter((c) => c.method === "run");
+    expect(runCalls1).toHaveLength(1);
+
+    // Second heartbeat: no pending send() requests, recent completed heartbeat exists → should skip
+    await vi.advanceTimersByTimeAsync(10000);
+    await flush();
+
+    const runCalls2 = mgr.calls.filter((c) => c.method === "run");
+    // Should still be 1 (second was skipped)
+    expect(runCalls2).toHaveLength(1);
+
+    // The skip should be tracked in requests
+    const skipTracked = mockTrackRequest.mock.calls.find(
+      (call) => call[1].task?.includes("skipped"),
+    );
+    expect(skipTracked).toBeDefined();
+
+    c.stop();
+  });
+
+  it("heartbeat: fires when pending send() requests exist despite idle", async () => {
+    writeFileSync(
+      configPath,
+      JSON.stringify([{ name: "hb-busy", type: "heartbeat", intervalMs: 10000, agent: "bob", message: "hb" }]),
+    );
+    const mgr = makeMockManager();
+    const c = new Cron(configPath, mgr as any, () => "sid-1");
+    c.start();
+
+    // First heartbeat fires (initiative)
+    await vi.advanceTimersByTimeAsync(10000);
+    await flush();
+
+    // Add a pending send() request for bob
+    requestStore.set("pending-send-1", {
+      requestId: "pending-send-1",
+      artifact: "some-task",
+      status: "CREATED",
+      fromEntity: "may",
+      createdAt: Date.now(),
+      context: null,
+      sessionId: null,
+      toAgent: "bob",
+      method: "send",
+    });
+
+    // Second heartbeat: pending send() exists → should fire
+    await vi.advanceTimersByTimeAsync(10000);
+    await flush();
+
+    const runCalls = mgr.calls.filter((c) => c.method === "run");
+    expect(runCalls).toHaveLength(2);
+
+    c.stop();
+  });
+
+  it("heartbeat: skipIfIdle=false disables idle skipping", async () => {
+    writeFileSync(
+      configPath,
+      JSON.stringify([{ name: "hb-always", type: "heartbeat", intervalMs: 10000, agent: "bob", message: "hb", skipIfIdle: false }]),
+    );
+    const mgr = makeMockManager();
+    const c = new Cron(configPath, mgr as any, () => "sid-1");
+    c.start();
+
+    // Both heartbeats should fire even with no pending work
+    await vi.advanceTimersByTimeAsync(10000);
+    await flush();
+    await vi.advanceTimersByTimeAsync(10000);
+    await flush();
+
+    const runCalls = mgr.calls.filter((c) => c.method === "run");
+    expect(runCalls).toHaveLength(2);
 
     c.stop();
   });

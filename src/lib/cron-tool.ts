@@ -28,6 +28,17 @@ export interface CronEntry {
   /** Config passed to the handler's create() factory. Handler-specific. */
   handlerConfig?: Record<string, unknown>;
   lastModified?: string;
+  /**
+   * Skip heartbeat if no pending send() requests for this agent.
+   * Set to false to disable (always fire). Default: true for heartbeats.
+   * Even when skipping, every Nth beat fires for initiative work (see initiativeCadence).
+   */
+  skipIfIdle?: boolean;
+  /**
+   * When skipIfIdle is active, fire every Nth heartbeat regardless for
+   * initiative/health-check work. Default: 3 (skip 2, fire 1).
+   */
+  initiativeCadence?: number;
 }
 
 function textResult(text: string): AgentToolResult<string> {
