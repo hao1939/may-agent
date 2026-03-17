@@ -116,6 +116,8 @@ export interface TaskResult {
   turnsUsed?: number;
   /** P20 Tainted Handoffs: instability metrics for downstream verification decisions. */
   instability?: InstabilityMetrics;
+  /** Structured data from the agent's finish() tool call, if one was made. */
+  finishResult?: FinishResult;
 }
 
 /** P20 Tainted Handoffs: signals indicating result reliability. */
@@ -124,6 +126,15 @@ export interface InstabilityMetrics {
   toolErrors: number;
   turns: number;
   verdict: "clean" | "tainted";
+}
+
+/** Structured finish() data from the agent's explicit completion signal. */
+export interface FinishResult {
+  status: "success" | "failure" | "blocked" | "partial";
+  summary: string;
+  deliverables?: { path: string; description: string }[];
+  blockers?: { reason: string; context: string }[];
+  next_steps?: string;
 }
 
 /** Recursive tree node representing a session and its children in the session hierarchy. */
