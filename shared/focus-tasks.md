@@ -266,3 +266,9 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 - [x] **Monitor Reflect System Implementation**: Validated implementation in `agents/may/cron.json` (generic handler). (Done: 2026-03-15 - FALSE POSITIVE on missing handler file)
 - [x] **Monitor Order Persistence**: Validated code in `src/lib/orders.ts`. Runtime file `.state/orders.jsonl` pending human input. (Done: 2026-03-15 - VERIFIED CODE)
 - [x] **Monitor P154 Growth Filter**: Verify Coach adopts the "Partial Failure" criteria. (Done: 2026-03-15 - Verified in heartbeat.md)
+
+### 3. Structured Checkpoints (Common Sense P3.5)
+- **Problem**: Agents lose context between sessions and re-do work.
+- **Fix**: Implement `checkpoint()` tool (StatePlane pattern).
+- **Status**: [Proposal] Brief sent to Tech-Lead.
+- **Next**: Wait for Tech-Lead implementation.
