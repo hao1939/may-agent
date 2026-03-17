@@ -306,6 +306,19 @@ export function wrapToolsWithReceipts(
 
       contentBlocks.push(closeTag);
 
+      // finish() tool termination: schedule an abort so the agent loop
+      // stops after processing this tool result. Without this, the model
+      // may keep calling finish() repeatedly (observed: 15+ calls) until
+      // opBudget is exhausted. The abort fires on the next microtask,
+      // allowing the current tool result to be recorded first.
+      if (tool.name === "finish" && session) {
+        queueMicrotask(() => {
+          if (!session.closed) {
+            session.agent.abort();
+          }
+        });
+      }
+
       return {
         ...result,
         content: contentBlocks,
