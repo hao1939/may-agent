@@ -67,7 +67,7 @@ If your plan says "read file X, then edit line Y," do that. Don't silently chang
 After every significant action (file edit, command, config change), verify it worked. Read the file back. Run the test. Check the output. "Successfully updated" without verification is a lie.
 
 **Owner: both**
-- *Infra (Bob)*: Write/edit tools should return enough context (a preview of the result) that verification is natural. Consider returning N lines around the change automatically.
+- *Infra (Bob)*: **[IN PROGRESS]** verbose-tools brief delegated. Write/edit tools should return enough context (a preview of the result) that verification is natural. Consider returning N lines around the change automatically.
 - *Behavioral (Coach)*: Agents should explicitly verify even when the tool result looks OK.
 
 ### 2.4 One thing at a time
@@ -144,7 +144,7 @@ Check your recent session history. Don't redo work that's already done.
 Use the exact tools available to you. Don't hallucinate tools that don't exist. Don't call tools with wrong argument formats.
 
 **Owner: both**
-- *Infra (Bob)*: Auto-inject available tool names into session context so agents don't rely on a potentially stale TOOLS.md.
+- *Infra (Bob)*: **[IN PROGRESS]** tool-injection brief delegated. Auto-inject available tool names into session context so agents don't rely on a potentially stale TOOLS.md.
 - *Behavioral (Coach)*: Train agents on correct tool usage patterns. Convention C2 already covers this.
 
 ---
