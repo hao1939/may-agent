@@ -13,7 +13,6 @@ _Staging area for behavioral fixes. Each entry should graduate into structure (h
 2. **Total Failure** (agent cannot do it regardless of instruction) → Escalate to infrastructure/data layer
 3. If 3+ behavioral fix attempts fail → investigate DATA (memory, context, agent.json) before more prompt engineering
 
-### Growth Cycle Completion (3x recurrence — FM-2.2, FM-3.3, FM-2.6)
-**Status**: ✅ GRADUATED H612 → Embedded as MANDATORY GATE in heartbeat.md Steps 2 and 3.
+<!-- Growth Cycle Completion: GRADUATED H612 → heartbeat.md Steps 2 and 3 -->
 
 <!-- Graduated: P53 Guard→TOOLS.md, Skill Writing→DOMAIN.md, Use The Lab→SOUL.md, Evidence First→SOUL.md, Small Steps→SOUL.md, Verify Tools→SOUL.md, read/bash→shared/LESSONS.md, Growth Cycle→heartbeat.md -->

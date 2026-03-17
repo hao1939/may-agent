@@ -11,15 +11,6 @@
 ### Error Handling
 - **`AgentMessage.isError` is unreliable**: Check the text output for actual error indicators, not the flag.
 
-## Graduated ✅
-- "No Blind Writes" → agents/shared/LESSONS.md
-- "Verify Paths" → agents/shared/LESSONS.md
-- "Context Efficiency" → agents/shared/LESSONS.md
-- "Surgical Edits" → TOOLS.md
-- "P114 Experience Replay" → heartbeat.md step 1
-- "Run First, Then Fix" → heartbeat.md step 4
-- "Focus" → SOUL.md identity boundaries
-- ~~C40 (Promise-Deliver-Report)~~ → **GRADUATED to shared/LESSONS.md**
-- ~~C24 (Handoff Protocol)~~ → **GRADUATED to shared/LESSONS.md**
+<!-- Graduated: No Blind Writes/Verify Paths/Context Efficiency→shared/LESSONS.md, Surgical Edits→TOOLS.md, P114→heartbeat, Run First→heartbeat, Focus→SOUL.md, C40/C24→shared/LESSONS.md -->
 
 # Last reviewed: 2026-03-17

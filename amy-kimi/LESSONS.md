@@ -20,9 +20,4 @@ _Staging area for behavioral fixes. Each entry should graduate into structure (h
 - **edit() > write()**: For existing files, ALWAYS use `edit()` with exact `oldText`.
 - **Precise Matching**: Copy exact text for `oldText` from a recent `read()` output.
 
-## Graduated ✅
-- ~~Rule 1 (post-edit verification)~~ → **GRADUATED H542**: heartbeat.md step 3.
-- ~~Rule 2 (tool failure pivot)~~ → **GRADUATED H542**: heartbeat.md step 4.
-- ~~Rule 3 (verify paths)~~ → **GRADUATED H542**: shared LESSONS.md.
-- ~~C26 (Claim-as-Record)~~ → **GRADUATED to shared/LESSONS.md**
-- ~~C30 (Safe File Appending)~~ → **GRADUATED to shared/LESSONS.md**
+<!-- Graduated: Rule 1(post-edit)→heartbeat, Rule 2(tool pivot)→heartbeat, Rule 3(paths)→shared/LESSONS.md, C26/C30→shared/LESSONS.md -->

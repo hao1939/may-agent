@@ -18,7 +18,4 @@ _Staging area for behavioral fixes. Each entry graduates into structure within 2
 - **Stuck Tasks**: If stuck after 2 attempts, mark `[STUCK]` and move on.
 - **Generous Timeouts**: Use 180s+ for implementation tasks.
 
-## Graduated ✅
-- "No Blind Writes" → agents/shared/LESSONS.md
-- "Verify Paths" → agents/shared/LESSONS.md
-- "Context Efficiency" → agents/shared/LESSONS.md
+<!-- Graduated: No Blind Writes/Verify Paths/Context Efficiency→shared/LESSONS.md -->

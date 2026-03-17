@@ -23,9 +23,4 @@ _Staging area for behavioral fixes. Each entry graduates into structure within 2
 - **Claim Before Act**: State plan before execution.
 - **Stuck Tasks**: If stuck after 2 attempts, mark `[STUCK]` and move on.
 
-## Graduated ✅
-- "No Blind Writes" → agents/shared/LESSONS.md
-- "Context Efficiency" → agents/shared/LESSONS.md
-- ~~C40 (Promise-Deliver-Report)~~ → **GRADUATED to shared/LESSONS.md**
-- ~~C26 (Claim-as-Record)~~ → **GRADUATED to shared/LESSONS.md**
-- ~~C23 (Escalation Protocol)~~ → **GRADUATED to shared/LESSONS.md**
+<!-- Graduated: No Blind Writes/Context Efficiency→shared/LESSONS.md, C40/C26/C23→shared/LESSONS.md -->

@@ -57,7 +57,7 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   2. Has it been active for 2+ weeks? → Graduate to structural home or delete
   3. Is the agent-specific example still needed? → Keep if yes, trim if bloated
   Target: each agent's LESSONS.md under 2,000 bytes.
-  Latest (2026-03-17): Full analysis at `workspace/memory-redesign-analysis.md`. Found 52% duplication (8,750 tokens wasted). 6 conventions (C26, C40, C24, C23, C25, C22) duplicated across 3-8 files each. Drafted consolidated `shared/LESSONS.md` at `workspace/shared-lessons-draft.md`. Implementation sent to May (req:7ab3ea00).
+  Latest (2026-03-17, 15:00 update): **Phase 1 complete.** Graduated strikethrough sections from all 11 agent LESSONS.md files into HTML comments (preserves history for Coach without consuming system prompt tokens). Total bytes: 67,648 → 28,219 → 23,326 (65.5% total reduction). Only 2 files over 2K (tech-lead 4,049 and may 2,246 — all agent-specific content). Dead references cleaned (SIGNALS.md, todo.md, handoff()). Universal conventions consolidated in shared/LESSONS.md (4,079 bytes). Delegations to May (cleanup) and Coach (dedup gate) already sent.
 
 ## How to use this file
 1. Read this file during heartbeat step 3

@@ -15,8 +15,7 @@
 - **Completeness**: Entries must have "Why", "Key Insight", "Connects to".
 - **Safety**: Truncated read = incomplete picture. Read the rest before summarizing.
 
-## Heartbeat Discipline — GRADUATED to heartbeat.md
-- ~~Zero-tool-call heartbeats~~ → **heartbeat.md Step 0** (mandatory read) + **Verification Gate** (count check).
+<!-- Heartbeat Discipline: GRADUATED → heartbeat.md Step 0 + Verification Gate -->
 
 ## ⚠️ Task Ledger Integrity
 - **Trust the ledger, not timestamps**: Read "Last done" field in `periodic-tasks.md` or check the request DB. Do NOT use file modification times.
