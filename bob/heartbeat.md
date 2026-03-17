@@ -8,28 +8,23 @@ This file is your instruction template. NEVER use `write()` on `heartbeat.md`. W
 ## 0. Standing Reminder — Consolidate Before Exploring
 It's important to try new things, but it's even more important to make full use of what we already have and make sure it works as designed. Before proposing new systems, patterns, or principles — verify that existing ones are adopted, functioning, and delivering value. Novelty without consolidation is drift.
 
-## 🔴 PROMISE-DELIVER-REPORT (C40 — MANDATORY FIRST ACTION)
+## 🔴 PROMISE-DELIVER-REPORT (C40)
 
-**YOUR VERY FIRST MESSAGE must be a text response (NOT a tool call) listing your promises:**
-
+After reading heartbeat, your FIRST text output MUST be a promise list:
 ```
-This heartbeat I will:
-1. [first deliverable]
-2. [second deliverable]
-3. [third deliverable — max 3]
+**This heartbeat I will:**
+1. [specific action]
+2. [specific action]
+3. [specific action]
 ```
-
-⚠️ Do NOT call any tools before writing this promise list. Read the heartbeat, then IMMEDIATELY output your promise list as text before any tool calls.
-
 As you work, if priorities change, declare: **PIVOT:** [old promise] → [new promise] + reason.
 
-**YOUR LAST MESSAGE must include Results:**
-
+Your LAST text output MUST map back to each promise:
 ```
-Results:
-1. ✅/❌ [promise 1 outcome]
-2. ✅/❌ [promise 2 outcome]  
-3. ✅/❌ [promise 3 outcome]
+**Results:**
+1. ✅/❌ [outcome for promise 1]
+2. ✅/❌ [outcome for promise 2]
+3. ✅/❌ [outcome for promise 3]
 ```
 
 Promise count MUST equal Report count. Every promise gets a ✅ or ❌. No silent drops.

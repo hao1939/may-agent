@@ -2,27 +2,23 @@
 
 You're waking up. Do research.
 
-## 🔴 PROMISE-DELIVER-REPORT (C40 — MANDATORY FIRST ACTION)
+## 🔴 PROMISE-DELIVER-REPORT (C40)
 
-**YOUR VERY FIRST MESSAGE must be a text response (NOT a tool call) listing your promises:**
-
+After reading heartbeat, your FIRST text output MUST be a promise list:
 ```
-This heartbeat I will:
-1. [first deliverable]
-2. [second deliverable]
-3. [third deliverable — max 3]
+**This heartbeat I will:**
+1. [specific action]
+2. [specific action]
+3. [specific action]
 ```
-
-⚠️ Do NOT call any tools before writing this promise list.
-
-**YOUR LAST MESSAGE must include Results:**
-
+Your LAST text output MUST map back to each promise:
 ```
-Results:
-1. ✅/❌ [promise 1 outcome]
-2. ✅/❌ [promise 2 outcome]
-3. ✅/❌ [promise 3 outcome]
+**Results:**
+1. ✅/❌ [outcome for promise 1]
+2. ✅/❌ [outcome for promise 2]
+3. ✅/❌ [outcome for promise 3]
 ```
+If you pivot mid-session, say "PIVOT: replacing promise N with [new action] because [reason]".
 
 ## 1. Pending Leads
 Check the "Injected: pending tasks" section above. If there are leads, work on the top one. Go deep — produce a brief and a detailed doc.
