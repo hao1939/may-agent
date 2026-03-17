@@ -37,6 +37,24 @@ export function hasFinishToolCall(messages: any[]): boolean {
   return false;
 }
 
+/** Extract the params from the last finish() tool call, if any. */
+export function extractFinishParams(messages: any[]): { status: string; summary: string; blockers?: { reason: string; context: string }[] } | null {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const msg = messages[i];
+    if (msg.role === "assistant" && Array.isArray(msg.content)) {
+      for (const block of msg.content) {
+        if (block?.type === "toolCall" && block.name === "finish" && block.args) {
+          try {
+            const args = typeof block.args === "string" ? JSON.parse(block.args) : block.args;
+            return { status: args.status, summary: args.summary, blockers: args.blockers };
+          } catch { return null; }
+        }
+      }
+    }
+  }
+  return null;
+}
+
 /**
  * Detect whether a session's last exchange indicates a transient infra error
  * that is safe to retry (vs. a real agent failure or context overflow).
