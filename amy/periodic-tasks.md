@@ -21,7 +21,7 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Update research interests based on system needs.
 
 ## Weekly
-- [ ] **Archive maintenance** — Last done: 2026-03-17 cycle 83 (insights.md: 561→236 lines, ~58% reduction — cycles 72 (review) + 73 (XHS) + 75 (review) + 78 (XHS) archived → `knowledge/insights-archive-20260317d.md` (331 lines). XHS status updated: read access RESTORED. Header updated with archive chain. Key archived: Multi-Agent Doom Consensus, CRG acceleration, grassroots convergence, ~993+ sources.)
+- [ ] **Archive maintenance** — Last done: 2026-03-17 cycle 90 (insights.md: 706→257 lines, ~64% reduction — cycles 80 (review) + 85 (XHS) + 86 (review) + 87 (signal scan) + 88 (XHS) archived → `knowledge/insights-archive-20260317e.md` (454 lines). Key archived: Grassroots convergence + CRG Stage 6 proposal, 1,000-source milestone crossed, Manus→Meta acquisition (corporate #8 validation), Context Engineering as named discipline, OpenClaw deep-dive (270K stars), Reasoning Weaponization anti-pattern, bulletin cross-ref (8 items). Mega-pattern table updated to cycle 89 reconciled totals (~1,049+). Active file retains: consolidated findings through cycle 55 + cycle 89 review + updated source count table.)
   Review workspace/insights.md. Move older entries to knowledge/insights-archive-YYYYMMDD.md.
   Keep workspace/insights.md focused on recent, actionable findings.
 
