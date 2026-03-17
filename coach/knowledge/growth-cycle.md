@@ -33,6 +33,7 @@ fork_agent('coder', 'coder-v2')
 # Creates agents/.lab/coder-v2/
 ```
 - The fork inherits the parent's config, so it has all current context.
+- ⚠️ **NEVER change the `name` field in agent.json.** The Ghost Bug (exp-001 through exp-008) proved that renaming the agent in the fork causes invariant regressions unrelated to your edit. Keep the original name.
 
 ### 3. Train (Edit the Fork)
 Modify the fork — one method at a time.

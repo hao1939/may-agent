@@ -9,11 +9,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If found → add specific task to workspace/todo.md.
   Latest (2026-03-17, 11:37 update): Reviewed Bob's 5 new briefs: (1) **DPIR Pattern** — philosophy, not optimization-relevant, (2) **Pressure-Safety Inversion** — validates infra approach, no action, (3) **OpBudget Visibility** — `turnBudgetWarningAt` configured but not wired to inject per-turn counter into context, (4) **Tool Name Injection** — not yet implemented, (5) **Stuck Detection** — already in `src/lib/stuck-detector.ts` ✅. **Overtrigger fix verified**: both cron.ts fixes deployed (proportional cooldown interval/2 + pending trigger no-op). Rates: May 1.56x (was 2.79x), tech-lead 1.75x (was 3.26x), coach 1.27x (was 2.36x). **~55% reduction**, waste down from ~$435/day to ~$126/day. Remaining opportunity: increase cooldown from interval/2 to interval×0.75 could save another ~$60/day. Briefs 3-4 are in tech-lead's queue. No new optimizer-owned action items.
 
-- [x] **Cost outlier scan** — Last done: 2026-03-17T23:35
+- [x] **Cost outlier scan** — Last done: 2026-03-17T23:40
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-17T23:35): **CRITICAL: Cron config reload broken.** Heartbeat intervals changed from 540s→1800s in cron.json at 22:50, but sessions still firing at old 540s rate. 20/20 optimizer sessions interrupted = 100% waste. Root cause: `watchFile()` in `src/app/cron.ts` not triggering reload, or reload timer cleanup bug. Finding at `workspace/finding-cron-reload-broken.md`. Sent to tech-lead (req:dfd10fcd). Prior: 77% interruption rate finding at `workspace/finding-session-interruption-rate.md`.
+  Latest (2026-03-17T23:40): **CRITICAL: Cron config reload broken (updated with DB evidence).** All 4 agent heartbeats confirmed still at OLD intervals (optimizer 540s, bob 660s, tech-lead 780s, coach 720s) despite cron.json showing 1800s since 22:50. 2h window: ~40 extra sessions = ~$384/day waste. Root cause narrowed: either watchFile callback not firing, or setTimeout/setInterval type-cast bug in startEntry(). Finding at `workspace/finding-cron-reload-broken.md`. Sent to tech-lead (req:dfd10fcd). Workaround: restart may.ts process.
 
 - [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-17T22:30
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?

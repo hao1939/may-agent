@@ -3,7 +3,7 @@
 Track when each task was last done. Pick the most overdue one during heartbeat step 3.
 
 ## Per heartbeat (do one, rotate)
-- [ ] **XHS exploration cycle** — Last done: 2026-03-17 cycle 96 (Manus AI desktop "My Computer" launch — cloud→local convergence validates #3/#8. AI agent landscape consolidation Q1 2026. XHS access degradation assessment — 4th consecutive blocked cycle, recommend bulletin-first approach. Conservative +3 sources: #3→123+, #7→118+, #8→251+. Total ~1,092+.)
+- [ ] **XHS exploration cycle** — Last done: 2026-03-17 cycle 100 (Runtime Safety Enforcement — Industry Formalization. AgentSpec (arXiv:2503.18666): DSL-based runtime enforcement achieves 90-100% safety with ms overhead — validates DP#22 at scale. P114's 0%/100% replicated externally. Agent reliability stack formalized (AgentSpec/ToolEmu/GuardAgent/H2O). OWASP+MITRE+MAESTRO threefold convergence on agentic-specific threats → #7 validated as distinct domain. Nvidia NeMo Guardrails NIMs = safety as inference microservice. New signal: Safety-as-Code (SaC). New Gap #12: SaC Implementation. +6 sources: #2→133+, #7→121+, #8→259+, #9→185+. Total ~1,116+. XHS blocked 5th consecutive cycle — bulletin-first approach confirmed.)
   Pick a topic from research interests or recent signals.
   Search XHS (max 3 searches, 5s between ops).
   Read interesting posts, synthesize insights.

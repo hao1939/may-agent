@@ -23,10 +23,10 @@ the Ghost Bug. These methods need **re-testing with correct methodology**
 The only valid experiments are the two post-discovery micro-edit runs
 (Method #13), which kept the original name and showed 0 regression.
 
-## Aggregate Evidence Summary (updated 2026-03-17, self-evolve H2032)
+## Aggregate Evidence Summary (updated 2026-03-17, self-evolve H3000)
 
-**50 experiment entries total** (~26 unique IDs in new format, plus legacy).
-Key findings across 15+ methods:
+**57 experiment entries total** (~30 unique IDs in new format, plus legacy).
+Key findings across 16 methods:
 
 | Method | # Experiments | Regressions? | Improvements? | Verdict |
 |--------|-------------|-------------|--------------|---------|
