@@ -262,7 +262,10 @@ export class Cron {
           // Check latch: re-fire if a trigger arrived while busy
           this.checkPendingTrigger(entry);
           // Post-heartbeat re-trigger: drain todo list if work remains
-          if (!this.heartbeatRunning.has(heartbeatKey)) {
+          // Only re-trigger after successful sessions — error sessions should
+          // wait for the next scheduled interval to avoid error-chaining loops
+          // (e.g., May firing every 45s instead of every 10min).
+          if (!this.heartbeatRunning.has(heartbeatKey) && taskResult?.status !== "error") {
             this.checkRetrigger(entry);
           }
           this.appendJobResult({
