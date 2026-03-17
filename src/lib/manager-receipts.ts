@@ -316,15 +316,18 @@ export function wrapToolsWithReceipts(
       }
 
       // OpBudget Visibility: show ops used/remaining for state-changing tools
+      // Only inject when remaining ops is meaningful — avoid noise when budget is plentiful (QA finding 2026-03-17)
       if (isStateChanging && session && session.opBudget > 0) {
         const remaining = session.opBudget - session.opCount;
         if (remaining <= OP_BUDGET_LOW_THRESHOLD) {
           const warningText = `\n\n⚠️ [Ops: ${session.opCount}/${session.opBudget} — ${remaining} remaining] Finish up. Save progress and call finish().`;
           contentBlocks.push({ type: "text" as const, text: warningText });
-        } else {
+        } else if (remaining <= Math.ceil(session.opBudget * 0.5)) {
+          // Show status when >50% consumed but not yet critical
           const statusText = `\n\n<system_note>[Ops: ${session.opCount}/${session.opBudget}]</system_note>`;
           contentBlocks.push({ type: "text" as const, text: statusText });
         }
+        // When >50% remaining: no injection (avoid noise)
       }
 
       contentBlocks.push(closeTag);
