@@ -2,31 +2,30 @@
 #
 # gym-run.sh — Run an agent against a gym scenario and score the result.
 #
-# Uses git worktrees from the agents/ repo for isolation. Coach creates a
-# branch with config changes (SOUL.md, workflows, skills, etc.), and this
-# script checks it out in a worktree to test against a scenario.
+# Tests an agent (optionally with experimental changes from a .lab/ fork)
+# against a scenario with automated scoring.
 #
 # Usage:
 #   scripts/gym-run.sh <scenario> [options]
 #
 # Options:
 #   --agent <name>        Agent to run (default: coder)
-#   --branch <name>       Branch in agents/ repo to test. If omitted, uses
-#                         current HEAD (baseline run).
+#   --lab <fork>          Test a .lab/ fork instead of production agent.
+#                         Copies production agents/ and overlays the fork.
+#                         If omitted, runs baseline (production agent).
 #   --timeout <min>       Timeout in minutes (default: 5)
 #
 # Examples:
 #   # Baseline: run production coder against phantom-fix
 #   scripts/gym-run.sh phantom-fix --agent coder
 #
-#   # Test a branch: Coach created gym/coder-fm33-heartbeat-fix with changes
-#   scripts/gym-run.sh phantom-fix --agent coder --branch gym/coder-fm33-heartbeat-fix
+#   # Test a fork: Coach forked coder to .lab/coder-fm33-fix with changes
+#   scripts/gym-run.sh phantom-fix --agent coder --lab coder-fm33-fix
 #
 # Output: JSON to stdout with score, checks, session path, and cleanup info.
 #
 # Temp dirs are preserved for transcript analysis. Caller cleans up via:
 #   rm -rf <gym_root>
-#   git -C agents worktree remove <worktree_path>  (if branch was used)
 
 set -euo pipefail
 
@@ -39,13 +38,13 @@ AGENTS_REPO="$PROJECT_ROOT/agents"
 
 SCENARIO=""
 AGENT_NAME="coder"
-BRANCH=""
+LAB_FORK=""
 TIMEOUT=5
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --agent)    AGENT_NAME="$2"; shift 2 ;;
-    --branch)   BRANCH="$2"; shift 2 ;;
+    --lab)      LAB_FORK="$2"; shift 2 ;;
     --timeout)  TIMEOUT="$2"; shift 2 ;;
     -*)         echo "Unknown flag: $1" >&2; exit 1 ;;
     *)          SCENARIO="$1"; shift ;;
@@ -53,7 +52,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ -z "$SCENARIO" ]]; then
-  echo "Usage: gym-run.sh <scenario> [--agent <name>] [--branch <name>] [--timeout <min>]" >&2
+  echo "Usage: gym-run.sh <scenario> [--agent <name>] [--lab <fork>] [--timeout <min>]" >&2
   echo "" >&2
   echo "Available scenarios:" >&2
   ls "$GYM_DIR" 2>/dev/null | sed 's/^/  /' >&2
@@ -75,12 +74,20 @@ GYM_STATE="$GYM_ROOT/state"
 GYM_WORK="$GYM_ROOT/work"
 mkdir -p "$GYM_STATE" "$GYM_WORK"
 
-# Determine agents root: worktree for branch, production for baseline
-WORKTREE_PATH=""
-if [[ -n "$BRANCH" ]]; then
-  WORKTREE_PATH="$GYM_ROOT/agents-wt"
-  git -C "$AGENTS_REPO" worktree add "$WORKTREE_PATH" "$BRANCH" 2>"$GYM_ROOT/git-stderr.log"
-  GYM_AGENTS="$WORKTREE_PATH"
+# Determine agents root:
+#   --lab <fork>: copy production agents, overlay .lab/<fork> files
+#   (no --lab):   baseline run using production agents/ directly
+if [[ -n "$LAB_FORK" ]]; then
+  LAB_DIR="$AGENTS_REPO/.lab/$LAB_FORK"
+  if [[ ! -d "$LAB_DIR" ]]; then
+    echo "Lab fork not found: $LAB_DIR" >&2
+    exit 1
+  fi
+  GYM_AGENTS="$GYM_ROOT/agents-lab"
+  cp -r "$AGENTS_REPO" "$GYM_AGENTS"
+  rm -rf "$GYM_AGENTS/.lab" "$GYM_AGENTS/.git"
+  # Overlay fork files onto the target agent
+  cp -r "$LAB_DIR/." "$GYM_AGENTS/$AGENT_NAME/"
 else
   # Baseline: use production agents/ directly (read-only — isolated via STATE_DIR)
   GYM_AGENTS="$AGENTS_REPO"
@@ -170,7 +177,7 @@ except:
 result = {
     "scenario": "$SCENARIO",
     "agent": "$AGENT_NAME",
-    "branch": "$BRANCH" or None,
+    "lab_fork": "$LAB_FORK" or None,
     "passed": score.get("passed", False),
     "checks": score.get("checks", []),
     "summary": score.get("summary", ""),
@@ -180,7 +187,6 @@ result = {
     "session_path": "$SESSION_PATH",
     "work_dir": "$GYM_WORK",
     "gym_root": "$GYM_ROOT",
-    "worktree": "$WORKTREE_PATH" or None,
 }
 
 print(json.dumps(result, indent=2))
