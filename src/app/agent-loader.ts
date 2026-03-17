@@ -344,21 +344,22 @@ function buildTools(config: AgentConfig, opts: AgentLoaderOptions): AgentTool[] 
       }
 
       case "checkpoint": {
-        // Session ID is not known at registration time — use a placeholder
-        // that gets resolved at runtime. The wrapToolsWithReceipts wrapper
-        // in manager.ts operates on the same tools array, so the checkpoint
-        // tool will be wrapped alongside all other tools.
-        // The sessionId is injected via a mutable ref that the manager sets.
+        // Session ID and agent name are not known at registration time —
+        // use placeholders that get resolved at runtime. The manager
+        // injects both via mutable refs before each session starts.
         let currentSessionId = "unknown";
+        let currentAgentName = "unknown";
         tools.push(
           createCheckpointTool({
             sessionId: () => currentSessionId,
+            agentName: () => currentAgentName,
             persistDir,
           }),
         );
-        // Store setter on the tool for the manager to call at session start
+        // Store setters on the tool for the manager to call at session start
         const cpTool = tools[tools.length - 1] as any;
         cpTool._setSessionId = (id: string) => { currentSessionId = id; };
+        cpTool._setAgentName = (name: string) => { currentAgentName = name; };
         break;
       }
 

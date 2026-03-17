@@ -78,6 +78,7 @@ import { isOverflowError, extractProgress, writeProgressFile } from "./overflow.
 import { spawnDetachedAgent, readIdentity } from "./detached.js";
 import { sendSocketCommand } from "./socket-client.js";
 import { runActiveRecall, formatRecallWarnings } from "./active-recall.js";
+import { readLatestCheckpointForAgent } from "./tools/checkpoint.js";
 import { buildTrace } from "./manager-trace.js";
 import { hasFinishToolCall, extractFinishParams, isRetryableInfraError, runAgentWithRetry } from "./manager-retry.js";
 import { createAgentsTool as createAgentsToolFn, type CreateAgentsToolOptions } from "./manager-agents-tool.js";
@@ -486,6 +487,25 @@ export class SubagentManager {
     const recallBlock = formatRecallWarnings(recall);
     if (recallBlock) {
       ctxLines.push(``, recallBlock);
+    }
+
+    // P3.5 Checkpoint injection: if this agent has a previous checkpoint,
+    // inject it so the agent can resume where it left off.
+    const lastCheckpoint = readLatestCheckpointForAgent(persistDir, agentName);
+    if (lastCheckpoint) {
+      const age = Date.now() - lastCheckpoint.timestamp;
+      const ageStr = age < 3_600_000
+        ? `${Math.round(age / 60_000)}m ago`
+        : `${Math.round(age / 3_600_000)}h ago`;
+      const dataStr = Object.keys(lastCheckpoint.data).length > 0
+        ? `\n- Data: ${JSON.stringify(lastCheckpoint.data)}`
+        : "";
+      ctxLines.push(
+        ``,
+        `## Last Checkpoint (from session ${lastCheckpoint.sessionId}, step #${lastCheckpoint.step}, ${ageStr})`,
+        `- Summary: ${lastCheckpoint.summary}${dataStr}`,
+        `- Next steps and context above may help you resume work efficiently.`,
+      );
     }
 
     return ctxLines.join("\n");
@@ -927,11 +947,12 @@ export class SubagentManager {
 
     const compactionTransform = this.buildTransformContext(def, opts?.compaction);
 
-    // Inject sessionId into checkpoint tools (they're created at registration
-    // time before the sessionId is known)
+    // Inject sessionId and agentName into checkpoint tools (they're created
+    // at registration time before these values are known)
     for (const tool of def.tools) {
-      if (tool.name === "checkpoint" && (tool as any)._setSessionId) {
-        (tool as any)._setSessionId(sessionId);
+      if (tool.name === "checkpoint") {
+        if ((tool as any)._setSessionId) (tool as any)._setSessionId(sessionId);
+        if ((tool as any)._setAgentName) (tool as any)._setAgentName(name);
       }
     }
 
@@ -1200,10 +1221,11 @@ export class SubagentManager {
 
     const compactionTransform = this.buildTransformContext(def);
 
-    // Inject sessionId into checkpoint tools (same as in run())
+    // Inject sessionId and agentName into checkpoint tools (same as in run())
     for (const tool of def.tools) {
-      if (tool.name === "checkpoint" && (tool as any)._setSessionId) {
-        (tool as any)._setSessionId(sessionId);
+      if (tool.name === "checkpoint") {
+        if ((tool as any)._setSessionId) (tool as any)._setSessionId(sessionId);
+        if ((tool as any)._setAgentName) (tool as any)._setAgentName(name);
       }
     }
 
