@@ -121,13 +121,50 @@ export class Cron {
   }
 
   reload(): void {
+    const oldEntries = new Map(this.entries.map((e) => [e.name, e]));
     this.load();
     if (this.started) {
-      this.stop();
-      this.started = true;
+      // Smart reload: only restart entries whose config actually changed.
+      // This prevents the "timer reset" bug where reload() resets all
+      // timers and long-interval entries fire early (P-cron-overtrigger).
+      const newNames = new Set(this.entries.map((e) => e.name));
+
+      // Stop entries that were removed or disabled
+      for (const [name, _old] of oldEntries) {
+        if (!newNames.has(name)) {
+          const timer = this.timers.get(name);
+          if (timer) clearInterval(timer);
+          this.timers.delete(name);
+        }
+      }
+
       for (const entry of this.entries) {
-        if (entry.enabled === false) continue;
-        this.startEntry(entry);
+        const old = oldEntries.get(entry.name);
+        const configChanged =
+          !old ||
+          old.intervalMs !== entry.intervalMs ||
+          old.message !== entry.message ||
+          old.agent !== entry.agent ||
+          old.handler !== entry.handler ||
+          old.type !== entry.type ||
+          (old.enabled === false) !== (entry.enabled === false);
+
+        if (entry.enabled === false) {
+          // Newly disabled — stop timer
+          const timer = this.timers.get(entry.name);
+          if (timer) clearInterval(timer);
+          this.timers.delete(entry.name);
+          continue;
+        }
+
+        if (configChanged) {
+          // Config changed — restart this entry's timer
+          const timer = this.timers.get(entry.name);
+          if (timer) clearInterval(timer);
+          this.timers.delete(entry.name);
+          this.startEntry(entry);
+        }
+        // Unchanged entries keep their existing timer — no reset
       }
     }
   }
