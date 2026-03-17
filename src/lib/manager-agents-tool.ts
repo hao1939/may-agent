@@ -41,15 +41,6 @@ export interface AgentsToolManagerDeps {
   progress(sessionId: string, limit?: number): AgentMessage[];
   hasActiveSession(sessionId: string): boolean;
   cancel(sessionId: string): void;
-  logDelegation(entry: {
-    parent: string;
-    child: string;
-    method: "call" | "send";
-    status: "success" | "error" | "timeout" | "sent";
-    sessionId?: string;
-    durationMs?: number | null;
-    error?: string;
-  }): void;
   registry: {
     persistDir: string;
     getSession(sessionId: string): PersistedSession | null;
@@ -301,17 +292,6 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
 
             // Trigger target agent's heartbeat
             const triggered = triggerHeartbeat?.(params.agent) ?? false;
-
-            // Log delegation event (kept for backward compat during transition)
-            const senderSessionId = getCallerSessionId?.();
-            manager.logDelegation({
-              parent: caller,
-              child: params.agent,
-              method: "send",
-              status: "sent",
-              sessionId: senderSessionId,
-              durationMs: null,
-            });
 
             return textResult(
               JSON.stringify({
