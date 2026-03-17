@@ -237,6 +237,25 @@ export class SubagentManager {
     session.unsubscribe = session.agent.subscribe((event: AgentEvent) => {
       if (event.type === "message_end") {
         appendSessionMessage(persistDir, sessionId, event.message);
+
+        // ── Count tool errors/successes from tool_result messages ──────
+        if (event.message.role === "user" && Array.isArray(event.message.content)) {
+          for (const block of event.message.content as any[]) {
+            if (block.type === "tool_result") {
+              const text = typeof block.content === "string"
+                ? block.content
+                : Array.isArray(block.content)
+                  ? block.content.filter((b: any) => b.type === "text").map((b: any) => b.text).join(" ")
+                  : "";
+              if (block.is_error || isToolError(text)) {
+                session.currentTurnErrors++;
+              } else {
+                session.currentTurnSuccesses++;
+              }
+            }
+          }
+        }
+
         if (event.message.role === "assistant") {
           session.turnCount++;
 
