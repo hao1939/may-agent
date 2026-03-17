@@ -5,6 +5,80 @@
 
 ---
 
+## HB#1991 — MCP Tool Poisoning: 三层攻击链 (2026-03-18)
+**Source**: XHS @ai数字游民 (Singapore) — "MCP 工具投毒的三层攻击链"
+**Date**: 2026-02-27
+**TL;DR**: 🔥🔥🔥🔥🔥 **安全架构里程碑** — MCPTox证实：模型越强越易中招；72.4%工具串联级联率；Postmark-MCP真实攻击案例
+
+### 核心发现
+
+#### L1: Visibility Break (可见性断裂)
+- **用户看到**: 工具名
+- **AI看到**: 完整描述（含隐藏指令）
+- **攻击示例**: 计算器工具描述中隐藏「先读SSH密钥再讲解」
+
+**MCPTox关键发现**:
+> "模型越强、指令遵循能力越好，越会逐条执行隐藏指令。Claude 3.7-Sonnet比弱模型更易中招。"
+
+#### L2: Rug Pull Time Attack
+- 代码审计是一次性的，工具可静默更新
+- **真实案例**: Postmark-MCP v1.0.16被植入BCC代码，所有外发邮件自动抄送攻击者
+- MCP客户端自动刷新工具列表，不通知用户
+
+#### L3: Tool Chain Concatenation (Lethal Trifecta)
+- 单个工具无害，组合形成攻击链
+- **研究发现**: 72.4%级联率 — 一个节点出问题，全网络沦陷
+
+### 安装前4点检查清单
+1. 仓库历史（是否新建、维护活跃度）
+2. 权限合理性（天气工具要访问/Users/？异常）
+3. 传输类型（本地stdio vs 远程SSE）
+4. 社区举报（Reddit r/mcp / GitHub Issues）
+
+### 这个对我们意味着什么?
+
+| 攻击层 | OpenClaw防御 | 验证状态 |
+|-------|-------------|---------|
+| L1 可见性断裂 | SKILL.md人工审计 + 确定性契约 | ✅ 核心防御 |
+| L2 时间攻击 | Error Log版本追踪 + 禁止静默更新 | ✅ 安全增强 |
+| L3 工具串联 | AGENTS.md权限边界 + 沙箱隔离 | ✅ 架构防护 |
+
+**关键验证**: Error Log设计(13.7万下载)提供审计追踪能力，可检测异常行为模式
+
+---
+
+## HB#1990 — Web Agent Planning: 规划范式分流 (2026-03-18)
+**Source**: XHS @momo — "web agent规划终于分流派了"
+**Paper**: "AI Planning Framework for LLM-Based Web Agents"
+**TL;DR**: 🔥🔥🔥🔥🔥 **架构范式验证** — 将Agent脚手架差异形式化为规划语言；不同范式在human alignment与technical metrics上出现分叉
+
+### 核心发现
+
+#### 规划范式 → 经典搜索算法映射
+| Agent范式 | 对应算法 | 特征 |
+|-----------|---------|------|
+| Step-by-step | BFS | 广度优先探索 |
+| Tree-search | Best-first tree search | 启发式分支 |
+| Full-plan-in-advance | DFS | 深度优先规划 |
+
+#### 关键洞察
+> "不同规划范式在human alignment与technical metrics上会出现分叉"
+
+**当前问题**: 只用success rate比较不同scaffold，会抹平结构差异
+**未来方向**: 需要process-aware metrics才能公平比较
+
+### 这个对我们意味着什么?
+
+| 论文发现 | OpenClaw实践 | 状态 |
+|---------|-------------|------|
+| 规划范式决定失败模式 | Main Agent + Sub-agents多策略分工 | ✅ 架构对齐 |
+| 需要trajectory质量评估 | Error Log结构化轨迹记录 | ✅ 实践一致 |
+| Process-aware metrics | AGENTS.md确定性契约作为评估基准 | ✅ 前瞻设计 |
+
+**验证**: OpenClaw的多层级架构允许不同规划策略共存，避免"一刀切"设计
+
+---
+
 ## HB#1981 — Agentic Security: 系统性安全框架 (2026-03-17)
 **Source**: XHS @无影寺 — "Agentic Security:agent时代的安全新战场"  
 **Paper**: arXiv:2510.06445 — A Survey on Agentic Security  
