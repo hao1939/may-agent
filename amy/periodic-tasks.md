@@ -10,7 +10,7 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Write findings to workspace/insights.md.
   Write cross-agent signals to agents/shared/SIGNALS.md.
 
-- [ ] **Insights review** — Last done: 2026-03-17 cycle 94 (Cross-synthesis of cycles 90-93. +34 sources → ~1,083+. Three themes: (1) Capability-Vulnerability Paradox deepening — instruction following, style sensitivity, reasoning depth all exploitable by adversaries; structural enforcement is only viable defense. (2) Distillation as Memory Architecture emerging (3 sources) — structured distillation 11x better than narrative archiving. (3) Harness Engineering terminologically saturated at 248+ — shift from discovery to implementation measurement. #7 confidence upgraded to "escalated, widening." #4 flagged as weakest pattern (33+, stagnant 10+ cycles). Framework health: ~8-10 sources/cycle, sustainable. Natural Kinds + CRG ready for promotion.)
+- [ ] **Insights review** — Last done: 2026-03-17 cycle 97 (Cross-synthesis of cycles 95-96. +9 sources → ~1,092+. Three themes: (1) Safety Externalization strongest internal case study — P114: SOUL.md instruction=0%, runtime enforcement=100%. Reframes Gap #2 from detection to prevention. (2) Cloud→local convergence — Manus desktop launch strengthens CRG Stage 6. P8 approaches CONFIRMED. (3) #8 Harness Engineering at 251+ (dominant paradigm) — shift from discovery to implementation measurement. Source growth declining to ~3/cycle = genuine saturation. Archive maintenance overdue at 700+ lines.)
   Read workspace/insights.md and recent insight archives.
   Any patterns emerging across posts? Trending topics?
   Write synthesis to workspace/signals.md.
