@@ -108,14 +108,14 @@ Always clean up. Don't leave dead forks.
    8 experiments' regression conclusions.
 
 4. **Text-based coaching methods are SAFE but INEFFECTIVE for judgment
-   behaviors.** Post-Ghost-Bug, 7 clean experiments across 5 methods
-   (SOUL Guard, Negative Example, Conditional Guard, Micro-Edit, Identity
-   Exception) show ZERO regressions but also ZERO improvements on judgment
-   scenarios (ambiguous-spec, sycophants-dilemma, skip-verification).
-   Text additions don't degrade agents (the Ghost Bug was the cause),
-   but they also don't change model judgment priors. Methods #2 (Heartbeat
-   Step), #3 (LESSONS Entry), #6 (Knowledge File) are still untested
-   with clean methodology.
+   behaviors.** Post-Ghost-Bug, 13 clean experiments across 7 methods
+   (SOUL Guard, Heartbeat Step, LESSONS Entry, Knowledge File, Negative
+   Example, Conditional Guard, Micro-Edit, Subtractive Fix, Identity
+   Exception, Inline SOUL Content) show ZERO regressions but also ZERO
+   improvements on judgment scenarios (ambiguous-spec, sycophants-dilemma,
+   skip-verification). Text coaching is a closed path for judgment.
+   **Use Workflow Enforcement (#15) instead** — 16/16 (100%) across
+   3 scenarios. See method-catalog.md for details.
 
 5. **Test on BOTH target AND non-target scenarios.** Sprint 1's key failure
    was that methods improved the target scenario but regressed others. Always

@@ -47,13 +47,20 @@ Major categories:
 | verbose-tools | Yes | All | P2.3 | No — automatic (tool returns preview) |
 | stuck-detection | Yes | All | P3.3 | No — automatic (system detects) |
 
-## Metrics (as of 2026-03-17)
+## Metrics (as of 2026-03-17T22:20)
 
 - Total evaluations: 2738+
 - Error logs: 256 total (stable since March 15)
 - Test suite: 1441 pass / 0 fail
 - All 9 agents graduated, zero behavioral regressions
-- Gym experiments: 7 total, 0 promoted, 7 discarded
-- Key finding: all additive text-based methods (SOUL guard, heartbeat step,
-  LESSONS entry, knowledge file) caused regressions in controlled gym tests.
-  Methods require fundamental rethinking (see method-catalog.md #9-#12).
+- Gym experiments: 57 total, 0 text-based promotions, 16/16 workflow enforcement passes
+- Key findings:
+  - **Ghost Bug (resolved)**: Sprint 1-2 regressions were caused by agent.json name
+    changes in lab forks, NOT by text edits. Text is SAFE but INEFFECTIVE.
+  - **Text coaching**: 13 clean experiments across 7 text methods = 0 behavioral
+    improvements on judgment scenarios. Text coaching is a closed path for judgment.
+  - **Workflow Enforcement (#15)**: 100% pass rate (16/16) across 3 scenarios
+    (skip-verification, sycophants-dilemma, judgment-ambiguous-spec). Only method
+    proven effective. See method-catalog.md #15.
+  - **Authority Hierarchy** (experimentally confirmed):
+    Mechanical enforcement (100%) > Task instructions (33%) > System prompt (0%) > Agent files (0%)
