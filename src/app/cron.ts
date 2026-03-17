@@ -54,8 +54,10 @@ export class Cron {
   /** Per-entry last trigger timestamp for debounce. */
   private lastTriggerTime = new Map<string, number>();
 
-  /** Minimum ms between reactive triggers for same entry. */
-  readonly triggerCooldownMs = 60_000;
+  /** Default minimum ms between reactive triggers for same entry.
+   *  Per-entry cooldown = half the entry's intervalMs (min 60s).
+   *  This prevents agents.send() from retriggering heartbeats at 2-3x their intended rate. */
+  readonly defaultCooldownMs = 60_000;
 
   /** Tracks consecutive re-trigger count per entry (drains todo list). */
   private retriggerCounts = new Map<string, number>();
@@ -159,9 +161,12 @@ export class Cron {
     const entry = this.entries.find((e) => e.name === entryName);
     if (!entry) return false;
 
-    // Debounce: skip if triggered too recently (unless forced by re-trigger)
+    // Per-entry cooldown: half the entry's interval (min 60s).
+    // A 19-min heartbeat (tech-lead) gets a 9.5-min cooldown instead of flat 60s.
+    // This prevents agents.send() from triggering extra sessions at 2-3x rate.
+    const cooldownMs = Math.max(entry.intervalMs / 2, this.defaultCooldownMs);
     const lastTrigger = this.lastTriggerTime.get(entryName) ?? 0;
-    if (!opts?.force && Date.now() - lastTrigger < this.triggerCooldownMs) return false;
+    if (!opts?.force && Date.now() - lastTrigger < cooldownMs) return false;
     this.lastTriggerTime.set(entryName, Date.now());
 
     const mode = this.resolveMode(entry);
@@ -380,14 +385,15 @@ export class Cron {
     }
   }
 
-  /** Check latch: if a trigger arrived while entry was busy, re-fire it now. */
+  /** Check latch: if a trigger arrived while entry was busy, DON'T re-fire immediately.
+   *  The work is already in the agent's todo.md (written by agents.send()) and will be
+   *  picked up at the next scheduled heartbeat interval. Immediate re-fire was causing
+   *  160 extra sessions per 7.5 hours ($435/day waste). */
   private checkPendingTrigger(entry: CronEntry): void {
     if (this.pendingTriggers.has(entry.name)) {
       this.pendingTriggers.delete(entry.name);
-      const mode = this.resolveMode(entry);
-      if (mode === "heartbeat") this.fireHeartbeat(entry);
-      else if (mode === "job-handler") this.fireHandler(entry);
-      else if (mode === "job-detached") this.fireDetachedJob(entry);
+      // Previously this would immediately re-fire the entry.
+      // Now we just clear the latch — the next scheduled interval handles the work.
     }
   }
 
