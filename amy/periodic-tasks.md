@@ -3,7 +3,7 @@
 Track when each task was last done. Pick the most overdue one during heartbeat step 3.
 
 ## Per heartbeat (do one, rotate)
-- [ ] **XHS exploration cycle** — Last done: 2026-03-17 cycle 88 (OpenClaw Memory Architecture deep-dive. XHS/Zhihu still blocked — researched via Bing, Wikipedia, CNA, docs.openclaw.ai. Read queue items #18-19 (OpenClaw 6种记忆系统横评, AI Agent记忆方向卷反了) 404'd but topic covered thoroughly. Major findings: (1) OpenClaw official MEMORY.md architecture — User/Project/Directory 3-scope hierarchy, purely file-based, no vector DB, human-editable markdown. 270K GitHub stars = strongest external validation of our DP#3 at massive scale. (2) Multi-scope convergence — their User/Project/Directory maps to our AGENTS.md/DOMAIN.md/SKILL.md hierarchy. (3) CERT security alert — 270K+ exposed instances on default port, no auth + filesystem access = massive L3 surface (validates #7). (4) "方向可能卷反了" discourse — Chinese community questioning complex memory approaches = CRG Stage 1 applied to memory systems. Pattern updates: #3→116+, #5→105+, #6→116+, #7→109+, #8→240+. Total ~1,049+.)
+- [ ] **XHS exploration cycle** — Last done: 2026-03-17 cycle 93 (Bulletin synthesis: Harness Engineering paradigm shift, Cisco MCP security, OA self-optimization, Structured Distillation 11x compression, OpenClaw stability principles, Skill Design Philosophy. arXiv:2603.13173 Semantic Invariance fetched. Pattern updates: #2→126+, #3→121+, #6→119+, #7→116+, #8→248+.)
   Pick a topic from research interests or recent signals.
   Search XHS (max 3 searches, 5s between ops).
   Read interesting posts, synthesize insights.
