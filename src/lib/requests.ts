@@ -34,7 +34,9 @@ export type RequestStatus =
 
 export type RequestMethod = "chat" | "call" | "send" | "workflow";
 
-export type ErrorClass = "infra" | "logic" | "abort" | "overflow";
+// ErrorClass and classifyError are now in classify-error.ts (pure, no bun:sqlite deps)
+export type { ErrorClass } from "./classify-error.js";
+import type { ErrorClass } from "./classify-error.js";
 
 export interface TrackRequestOpts {
   fromEntity: string;
@@ -364,55 +366,5 @@ export function archiveOld(
 
 // ── Error Classification ───────────────────────────────────────────────
 
-/**
- * Classify an error string into a recovery category.
- * Migrated from session-recovery.ts for unified tracking.
- */
-export function classifyError(error: string | undefined | null): ErrorClass {
-  if (!error) return "infra";
-  const e = error.toLowerCase();
-
-  // Infrastructure errors (retryable)
-  if (
-    e.includes("empty response") ||
-    e.includes("0 output tokens") ||
-    e.includes("stream") ||
-    e.includes("502") ||
-    e.includes("503") ||
-    e.includes("econnreset") ||
-    e.includes("rate limit") ||
-    e.includes("timeout") ||
-    e.includes("connection") ||
-    e.includes("network")
-  ) {
-    return "infra";
-  }
-
-  // Context overflow (not retryable without modification)
-  if (
-    e.includes("context window") ||
-    e.includes("max tokens") ||
-    e.includes("context_length_exceeded") ||
-    e.includes("too many tokens")
-  ) {
-    return "overflow";
-  }
-
-  // Abort (user or system initiated)
-  if (e.includes("abort") || e.includes("cancel")) {
-    return "abort";
-  }
-
-  // Logic errors (not retryable — bug or permission issue)
-  if (
-    e.includes("tool not found") ||
-    e.includes("permission denied") ||
-    e.includes("call depth exceeded") ||
-    e.includes("not allowed")
-  ) {
-    return "logic";
-  }
-
-  // Default to infra (conservative — retry by default)
-  return "infra";
-}
+// classifyError moved to classify-error.ts — re-export for backward compat
+export { classifyError } from "./classify-error.js";
