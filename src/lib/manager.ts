@@ -78,6 +78,23 @@ import { hasFinishToolCall, isRetryableInfraError, runAgentWithRetry } from "./m
 import { createAgentsTool as createAgentsToolFn, type CreateAgentsToolOptions } from "./manager-agents-tool.js";
 import { logRecoveryNeeded } from "./session-recovery.js";
 import { updateOrderStatus } from "./orders.js";
+
+// Lazy import for requests.ts (uses bun:sqlite, not available in vitest)
+let _updateRequest: typeof import("./requests.js").updateRequest | null = null;
+let _classifyRequestError: typeof import("./requests.js").classifyError | null = null;
+async function getRequestFns() {
+  if (!_updateRequest) {
+    try {
+      const mod = await import("./requests.js");
+      _updateRequest = mod.updateRequest;
+      _classifyRequestError = mod.classifyError;
+    } catch {
+      /* bun:sqlite not available (e.g., vitest) */
+    }
+  }
+  return { updateRequest: _updateRequest, classifyError: _classifyRequestError };
+}
+
 export { isRetryableInfraError, runAgentWithRetry } from "./manager-retry.js";
 export { logRecoveryNeeded, classifyError, getPendingRecoveries, logRecovered } from "./session-recovery.js";
 export { logOrder, updateOrderStatus, getPendingOrders, resetStaleOrders } from "./orders.js";
@@ -660,6 +677,26 @@ export class SubagentManager {
       }
     }
 
+    // ── Update request status (unified request tracking) ───────────────
+    if (session.requestId) {
+      getRequestFns().then(({ updateRequest: updateReq, classifyError: classErr }) => {
+        if (!updateReq) return;
+        try {
+          const durationMs = session.endedAt ? session.endedAt - session.startedAt : undefined;
+          updateReq(this.registry.persistDir, session.requestId!, {
+            status: archiveStatus === "done" ? "COMPLETED" : "FAILED",
+            sessionId: session.sessionId,
+            error: session.error ?? undefined,
+            errorClass: session.error && classErr ? classErr(session.error) : undefined,
+            durationMs,
+            completedAt: Date.now(),
+          });
+        } catch {
+          /* non-fatal — don't block completion for request tracking */
+        }
+      });
+    }
+
     if (this.onSessionComplete) {
       const info: SessionInfo = {
         sessionId: session.sessionId,
@@ -739,6 +776,7 @@ export class SubagentManager {
       turnBudgetWarned: false,
       filesModified: new Set(),
       orderId: opts?.orderId,
+      requestId: opts?.requestId,
     };
 
     // Write [STARTED] sentinel
