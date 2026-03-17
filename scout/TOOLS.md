@@ -12,6 +12,16 @@ Fetch and extract content from web pages. Use for papers, repos, documentation, 
 ## `agents`
 Coordinate with other agents. Use `agents.call()` to run sub-tasks synchronously, `agents.send()` to dispatch tasks (fire-and-forget, include artifact paths in message). `agents.list()` to see who's available.
 
+## `checkpoint`
+Save progress during long-running tasks. Call it directly — it's a native tool like `read`/`write`/`bash`.
+
+```
+checkpoint({ summary: "What I accomplished so far", data: { key: "value" } })
+```
+
+⚠️ **NOT a shell command** — `bash("checkpoint ...")` will fail (exit code 127).
+⚠️ **NOT an agent** — `agents.call("checkpoint", ...)` will fail (not registered).
+
 ## Key Constraints
 - ❌ No `handoff`, `workflow`, `cron`, or `fork_agent` tools.
 - For artifact transfers: write the file first, then `agents.send(target, "task. Artifact: path/to/file")`.

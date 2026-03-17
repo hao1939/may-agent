@@ -25,6 +25,16 @@ Run multi-step agent sequences. **Blocking.**
 | `implement-and-review` | Coder implements → QA reviews → retry on fail → escalate |
 | `verified-coder` | Coder implements → run verify command → retry on fail (up to 3x) |
 
+## `checkpoint`
+Save progress during long-running tasks. Call it directly — it's a native tool like `read`/`write`/`bash`.
+
+```
+checkpoint({ summary: "What I accomplished so far", data: { key: "value" } })
+```
+
+⚠️ **NOT a shell command** — `bash("checkpoint ...")` will fail (exit code 127).
+⚠️ **NOT an agent** — `agents.call("checkpoint", ...)` will fail (not registered).
+
 ## Key Constraints
 - ❌ No `handoff` or `cron` tools.
 - For artifact transfers: write the file first, then `agents.send(target, "task. Artifact: path/to/file")`.

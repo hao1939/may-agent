@@ -25,7 +25,7 @@ The only valid experiments are the two post-discovery micro-edit runs
 
 ## Aggregate Evidence Summary (updated 2026-03-17, self-evolve H2032)
 
-**48 experiment entries total** (~25 unique IDs in new format, plus legacy).
+**50 experiment entries total** (~26 unique IDs in new format, plus legacy).
 Key findings across 15+ methods:
 
 | Method | # Experiments | Regressions? | Improvements? | Verdict |
@@ -45,6 +45,7 @@ Key findings across 15+ methods:
 | Identity Exception | 1 | 0 | 0 | SAFE, INEFFECTIVE |
 | #14 Task Structuring | 1 (6 runs + 3 control) | 0 | 33% (2/6) | SAFE, PARTIALLY EFFECTIVE |
 | **#15 Workflow Enforcement** | **4 (16 runs + 3 controls)** | **0** | **100% (16/16)** | **🏆 CONFIRMED EFFECTIVE + GENERALIZABLE (3 scenarios)** |
+| **#16 Structural Documentation** | **1 (systemic, 7 agents)** | **N/A** | **Pending** | **DEPLOYED, awaiting production verification** |
 
 ### Core Finding (updated 2026-03-17T21:10)
 
@@ -905,3 +906,55 @@ is the THIRD judgment failure type confirmed: "restraint under ambiguity"
 across 3 different scenarios (skip-verification + sycophants-dilemma +
 judgment-ambiguous-spec). FIRST AND ONLY method to reliably improve judgment
 behavior. GENERALIZABLE across three different judgment failure types.**
+
+---
+
+### 16. Structural Documentation
+
+**What**: Ensure that tools listed in agent.json are properly documented
+in TOOLS.md with correct invocation syntax, parameter format, and explicit
+anti-patterns (what NOT to do).
+
+**When to use**: When FM-2.6 (TOOL_INTERFACE_MISUSE) errors show an agent
+calling a tool incorrectly — as a bash command, as an agents.call, or with
+wrong parameters. If TOOLS.md doesn't document the tool, the agent has to
+guess the interface. This is a root-cause fix, not a behavioral coaching fix.
+
+**When NOT to use**: When the tool IS documented but the agent ignores the
+docs (that's a behavioral problem — use Method #3 LESSONS or #15 Workflow
+Enforcement). When the error is about tool choice, not tool invocation.
+
+**How**:
+1. Audit: compare agent.json `tools` list against TOOLS.md sections
+2. For each undocumented tool, add a section with:
+   - Correct invocation syntax with example
+   - ⚠️ Anti-patterns (common mistakes like `bash("tool ...")`)
+3. Deploy directly — no gym testing needed (this is a documentation fix)
+4. Monitor production for FM-2.6 recurrence over 5+ sessions
+
+**Evidence**:
+
+**Experiment exp-050 (2026-03-17T21:50, systemic):**
+Root cause analysis of Bob's 5 FM-2.6 errors (all calling `checkpoint` via
+bash or agents.call). Found: `checkpoint` is in agent.json for 7 agents
+(bob, coach, coder, optimizer, qa, scout, tech-lead) but documented in
+TOOLS.md for ZERO of them. Bob had no reference for correct invocation.
+
+Fix: Added checkpoint documentation with correct syntax and explicit
+anti-patterns to all 7 TOOLS.md files. Combined with exp-049 LESSONS entry
+as defense-in-depth.
+
+**Verification**: Production monitoring. No gym scenario tests meta-tool
+usage (checkpoint is an agent lifecycle tool, not a coding tool). All 5
+FM-2.6 errors occurred pre-fix (before 21:24Z). Post-fix monitoring pending.
+
+**Key insight**: This is a DIFFERENT category from Methods #1-15. Those
+methods try to change agent BEHAVIOR through coaching/prompting/structure.
+Method #16 fixes a CONFIGURATION GAP — the agent literally didn't have
+the information needed to use the tool correctly. It's the equivalent of
+fixing a missing API doc, not coaching someone to read better.
+
+**Status**: deployed — **1 experiment (systemic fix across 7 agents).
+Awaiting production verification (5+ sessions per agent without FM-2.6
+recurrence).** Theoretically high confidence — documentation fixes for
+known information gaps should be effective.

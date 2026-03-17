@@ -56,6 +56,16 @@ Run multi-step agent sequences. **Blocking.**
 | `convention-review` | Review agent convention files for correctness |
 | `verify-setup` | Verify agent setup and configuration |
 
+## `checkpoint`
+Save progress during long-running tasks. Call it directly — it's a native tool like `read`/`write`/`bash`.
+
+```
+checkpoint({ summary: "What I accomplished so far", data: { key: "value" } })
+```
+
+⚠️ **NOT a shell command** — `bash("checkpoint ...")` will fail (exit code 127).
+⚠️ **NOT an agent** — `agents.call("checkpoint", ...)` will fail (not registered).
+
 ## Key Constraints
 - ❌ No `cron` tool.
 - ⚠️ **P53 Bash Guard**: Bash commands touching protected files (SOUL.md, LESSONS.md, DOMAIN.md, TOOLS.md, heartbeat.md, agent.json) via `>`, `cat`, `python`, `sed` with write intent trigger P53 violations. Use `read()` for reads, `edit()` or `write()` for writes.

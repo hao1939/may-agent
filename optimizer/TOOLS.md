@@ -27,8 +27,18 @@ Run multi-step agent sequences. **Blocking.**
 | `implement-and-review` | Coder implements → QA reviews → retry on fail → escalate |
 | `safe-edit` | Safe file editing with rollback |
 
+## `checkpoint`
+Save progress during long-running tasks. Call it directly — it's a native tool like `read`/`write`/`bash`.
+
+```
+checkpoint({ summary: "What I accomplished so far", data: { key: "value" } })
+```
+
+⚠️ **NOT a shell command** — `bash("checkpoint ...")` will fail (exit code 127).
+⚠️ **NOT an agent** — `agents.call("checkpoint", ...)` will fail (not registered).
+
 ## Key Constraints
 - ❌ No `handoff`, `cron`, `scrape_webpage`, `scrape`, `exec`, or `discard_agent` tools. These do NOT exist.
 - For artifact transfers: write the file first, then `agents.send(target, "task. Artifact: path/to/file")`.
 - If you need web content, use `bash` with `curl`.
-- ✅ Your ONLY tools are: `read`, `write`, `edit`, `bash`, `agents`, `workflow`.
+- ✅ Your ONLY tools are: `read`, `write`, `edit`, `bash`, `agents`, `workflow`, `checkpoint`.

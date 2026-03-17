@@ -41,4 +41,34 @@ checkpoint({ summary: "What I accomplished", data: { key: "value" } })
 
 **Why**: You've hit this exact error in 5+ sessions. The checkpoint tool is loaded into your session just like bash/read/write/edit/finish — it appears in your tool list. It is not a CLI program and not an agent.
 
+### Verify Writes Landed — Never Claim Unverified Deliverables (6x FM-2.4 NON_DELIVERY)
+After every `write()` or `edit()` call, **check the tool output** before moving on:
+1. If output says "Operation aborted" or shows an error → **retry with a different approach** (use `bash` with `cat >` or `echo >>`, or try `edit()` with a smaller oldText match)
+2. If output says "No changes made" → your oldText didn't match. Read the file again, copy the exact text, retry.
+3. **Never call `finish()` with deliverables you haven't verified.** If a write failed and you couldn't recover, report `status: "partial"` and list what failed.
+
+**Pattern**: In 6 sessions, write/edit operations failed silently (aborted, no-match) and you claimed success anyway. The evaluator flagged every one.
+
+**Recovery sequence when write/edit fails**:
+```
+write() → "Operation aborted" → read file → edit() with exact match → verify → if still fails → bash cat > approach → verify
+```
+
+### Never Mark [DEPLOYED] or [VERIFIED] Without Running Verification Commands (6x FM-3.3 VERIFICATION_FAILURE)
+Before marking ANY item as [DEPLOYED], [VERIFIED], or claiming "verified X":
+1. **Run the actual verification command** — `checkpoint()`, `bash("ls .state/checkpoints/")`, or whatever proves the thing works
+2. **Check the tool output** — did it succeed? Does the output show what you expected?
+3. **Only then claim verification** — with the evidence in your notes
+
+**WRONG pattern (6 sessions)**:
+- `ls ... | grep checkpoint` → no output → "Verified checkpoint tool availability" ❌
+- Reads about deployment → "Checkpoint is [DEPLOYED]" without ever calling `checkpoint()` ❌
+- Writes fail silently → "Synthesized into workspace/ideas.md" ❌
+
+**RIGHT pattern**:
+- Call `checkpoint({ summary: "test", data: {} })` → see `.state/checkpoints/chk_xxx.json` → "Verified: checkpoint works (chk_xxx created)" ✅
+- Run the verification script → see PASS → mark as [VERIFIED] with the output ✅
+
+**Root cause**: You're an architect and tend to reason about whether something *should* work rather than *confirming* it works. Verification means running the command and reading the output, every time.
+
 <!-- Graduated: Verify before briefing→heartbeat, C40/C26/C23/C24/C30→shared/LESSONS.md -->
