@@ -14,6 +14,18 @@ import type { RegisteredAgent } from "./manager-utils.js";
 import type { SessionInfo, TaskResult } from "./types.js";
 import type { PersistedSession } from "./persistence.js";
 
+// ── Lazy-loaded request tracking ───────────────────────────────────────
+// Loaded lazily to avoid pulling bun:sqlite at module level (vitest compat).
+
+let _requestsModule: typeof import("./requests.js") | undefined;
+
+async function getRequestsModule() {
+  if (!_requestsModule) {
+    _requestsModule = await import("./requests.js");
+  }
+  return _requestsModule;
+}
+
 // ── Manager interface ──────────────────────────────────────────────────
 // Instead of importing the full SubagentManager class (circular dependency),
 // we define only the methods/properties the agents tool needs.
@@ -146,11 +158,48 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
               );
             }
             const parentSid = getCallerSessionId?.();
+            const callerName = getCallerAgentName?.() ?? "unknown";
+
+            // Track the request in SQLite
+            const startTime = Date.now();
+            let requestId: string | undefined;
+            try {
+              const req = await getRequestsModule();
+              requestId = req.trackRequest(manager.registry.persistDir, {
+                fromEntity: callerName,
+                toAgent: params.agent,
+                task: params.task,
+                method: "call",
+                sessionId: parentSid,
+              });
+            } catch {
+              // Non-fatal: tracking failure shouldn't block the call
+            }
 
             // Sync call: blocks until done
             const result = await manager.callAgent(params.agent, params.task, {
               parentSessionId: parentSid,
             });
+
+            // Update request with outcome
+            if (requestId) {
+              try {
+                const req = await getRequestsModule();
+                const durationMs = Date.now() - startTime;
+                const hasError = result.status === "error";
+                req.updateRequest(manager.registry.persistDir, requestId, {
+                  status: hasError ? "FAILED" : "COMPLETED",
+                  sessionId: result.sessionId,
+                  error: hasError ? result.error : undefined,
+                  errorClass: hasError ? req.classifyError(result.error) : undefined,
+                  durationMs,
+                  completedAt: Date.now(),
+                });
+              } catch {
+                // Non-fatal
+              }
+            }
+
             // Return result without full messages array (too large for tool output)
             const { messages: _msgs, ...resultWithoutMessages } = result;
             return textResult(JSON.stringify(resultWithoutMessages, null, 2));
@@ -200,14 +249,48 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
               return textResult(JSON.stringify({ error: "send not available (agentsRoot not configured)" }));
             }
 
+            const caller = getCallerAgentName?.() ?? "unknown";
+
+            // Dedup check: skip if identical active request exists
+            try {
+              const req = await getRequestsModule();
+              if (req.isDuplicate(manager.registry.persistDir, caller, params.agent, params.message.slice(0, 500))) {
+                return textResult(
+                  JSON.stringify({
+                    sent: params.agent,
+                    message: params.message,
+                    deduplicated: true,
+                    heartbeatTriggered: false,
+                  }),
+                );
+              }
+            } catch {
+              // Non-fatal: dedup failure shouldn't block send
+            }
+
+            // Track the request in SQLite
+            let requestId: string | undefined;
+            try {
+              const req = await getRequestsModule();
+              requestId = req.trackRequest(manager.registry.persistDir, {
+                fromEntity: caller,
+                toAgent: params.agent,
+                task: params.message,
+                method: "send",
+                sessionId: getCallerSessionId?.(),
+              });
+            } catch {
+              // Non-fatal: tracking failure shouldn't block send
+            }
+
             // Append to target agent's workspace/todo.md
             const todoDir = join(agentsRoot, params.agent, "workspace");
             mkdirSync(todoDir, { recursive: true });
             const todoPath = join(todoDir, "todo.md");
 
-            const caller = getCallerAgentName?.() ?? "unknown";
             const timestamp = new Date().toISOString().slice(0, 16);
-            const entry = `- [ ] [from:${caller} ${timestamp}] ${params.message}\n`;
+            const reqTag = requestId ? ` [req:${requestId.slice(0, 8)}]` : "";
+            const entry = `- [ ] [from:${caller} ${timestamp}]${reqTag} ${params.message}\n`;
 
             // Create file with header if it doesn't exist, otherwise append
             if (!existsSync(todoPath)) {
@@ -219,11 +302,10 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
             // Trigger target agent's heartbeat
             const triggered = triggerHeartbeat?.(params.agent) ?? false;
 
-            // Log delegation event
-            const senderName = getCallerAgentName?.() ?? "unknown";
+            // Log delegation event (kept for backward compat during transition)
             const senderSessionId = getCallerSessionId?.();
             manager.logDelegation({
-              parent: senderName,
+              parent: caller,
               child: params.agent,
               method: "send",
               status: "sent",
@@ -236,6 +318,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
                 sent: params.agent,
                 message: params.message,
                 heartbeatTriggered: triggered,
+                requestId: requestId?.slice(0, 8),
               }),
             );
           }
