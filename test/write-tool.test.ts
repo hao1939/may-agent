@@ -22,7 +22,7 @@ describe("write tool", () => {
       content: "export const x = 1;\n",
     });
     const text = result.content[0].text;
-    expect(text).toContain("Successfully wrote");
+    expect(text).toContain("Wrote");
     const content = readFileSync(join(testDir, "src/output.ts"), "utf-8");
     expect(content).toBe("export const x = 1;\n");
   });
@@ -35,7 +35,7 @@ describe("write tool", () => {
       content: "// correct absolute\n",
     });
     const text = result.content[0].text;
-    expect(text).toContain("Successfully wrote");
+    expect(text).toContain("Wrote");
     const content = readFileSync(filePath, "utf-8");
     expect(content).toBe("// correct absolute\n");
   });
@@ -47,7 +47,7 @@ describe("write tool", () => {
       content: "// nested\n",
     });
     const text = result.content[0].text;
-    expect(text).toContain("Successfully wrote");
+    expect(text).toContain("Wrote");
     expect(existsSync(join(testDir, "deep/nested/dir/file.ts"))).toBe(true);
   });
 
@@ -118,7 +118,7 @@ describe("write tool shrink guard", () => {
     });
 
     // Write should succeed but with a warning
-    expect(result.content[0].text).toContain("Successfully wrote");
+    expect(result.content[0].text).toContain("Wrote");
     expect(result.content[0].text).toContain("WARNING");
     expect(result.content[0].text).toContain("65%");
     // File should be updated
@@ -138,7 +138,7 @@ describe("write tool shrink guard", () => {
     });
 
     // Write should succeed without warning
-    expect(result.content[0].text).toContain("Successfully wrote");
+    expect(result.content[0].text).toContain("Wrote");
     expect(result.content[0].text).not.toContain("WARNING");
     expect(result.content[0].text).not.toContain("BLOCKED");
     expect(readFileSync(filePath, "utf-8")).toBe(newContent);
@@ -158,7 +158,7 @@ describe("write tool shrink guard", () => {
     });
 
     // Should succeed without blocking or warning
-    expect(result.content[0].text).toContain("Successfully wrote");
+    expect(result.content[0].text).toContain("Wrote");
     expect(result.content[0].text).not.toContain("BLOCKED");
     expect(result.content[0].text).not.toContain("WARNING");
     expect(readFileSync(filePath, "utf-8")).toBe(newContent);
@@ -171,7 +171,7 @@ describe("write tool shrink guard", () => {
       content: "hello",
     });
 
-    expect(result.content[0].text).toContain("Successfully wrote");
+    expect(result.content[0].text).toContain("Wrote");
     expect(result.content[0].text).not.toContain("BLOCKED");
     expect(readFileSync(join(testDir, "brand-new-file.md"), "utf-8")).toBe("hello");
   });
@@ -189,7 +189,7 @@ describe("write tool shrink guard", () => {
     });
 
     // Should succeed without blocking
-    expect(result.content[0].text).toContain("Successfully wrote");
+    expect(result.content[0].text).toContain("Wrote");
     expect(result.content[0].text).not.toContain("BLOCKED");
     expect(readFileSync(filePath, "utf-8")).toBe(newContent);
   });
@@ -205,7 +205,7 @@ describe("write tool shrink guard", () => {
       content: newContent,
     });
 
-    expect(result.content[0].text).toContain("Successfully wrote");
+    expect(result.content[0].text).toContain("Wrote");
     expect(result.content[0].text).not.toContain("BLOCKED");
     expect(result.content[0].text).not.toContain("WARNING");
     expect(readFileSync(filePath, "utf-8")).toBe(newContent);
@@ -238,7 +238,7 @@ describe("write tool shrink guard", () => {
     });
 
     // 50% is >= BLOCK threshold (0.5), so NOT blocked, but < WARN threshold (0.8)
-    expect(result.content[0].text).toContain("Successfully wrote");
+    expect(result.content[0].text).toContain("Wrote");
     expect(result.content[0].text).toContain("WARNING");
     expect(readFileSync(filePath, "utf-8")).toBe(newContent);
   });
