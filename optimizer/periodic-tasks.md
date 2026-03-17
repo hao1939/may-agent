@@ -9,11 +9,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If found → add specific task to workspace/todo.md.
   Latest (2026-03-17, 11:37 update): Reviewed Bob's 5 new briefs: (1) **DPIR Pattern** — philosophy, not optimization-relevant, (2) **Pressure-Safety Inversion** — validates infra approach, no action, (3) **OpBudget Visibility** — `turnBudgetWarningAt` configured but not wired to inject per-turn counter into context, (4) **Tool Name Injection** — not yet implemented, (5) **Stuck Detection** — already in `src/lib/stuck-detector.ts` ✅. **Overtrigger fix verified**: both cron.ts fixes deployed (proportional cooldown interval/2 + pending trigger no-op). Rates: May 1.56x (was 2.79x), tech-lead 1.75x (was 3.26x), coach 1.27x (was 2.36x). **~55% reduction**, waste down from ~$435/day to ~$126/day. Remaining opportunity: increase cooldown from interval/2 to interval×0.75 could save another ~$60/day. Briefs 3-4 are in tech-lead's queue. No new optimizer-owned action items.
 
-- [x] **Cost outlier scan** — Last done: 2026-03-17T19:30
+- [x] **Cost outlier scan** — Last done: 2026-03-17T19:36
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-17T19:30): **FIX: Test suite broken by evidence tag commit.** Commit b28c09a (P-EVI evidence="true" tag on tool_output) broke 3 tests in `test/operation-budget.test.ts` — tests expected exact `<tool_output name="read">` but got `<tool_output name="read" evidence="true">`. Fixed by updating test expectations to use regex accepting optional attribute. All 1371 tests pass (101 files). Prior: false "interrupted" status bug fix (19:10).
+  Latest (2026-03-17T19:36): **Finding: Heuristic evaluator error regex too broad.** `Error:` in transcript regex matches evidence data (file contents, code, logs) not just tool errors. 41% of sessions falsely tagged `multiple_tool_errors`, wastedCalls metric unreliable. Fix sent to tech-lead (req:deab92c6): replace broad `Error:` pattern with specific `Command exited with code`, `Validation failed for tool`, etc. Full analysis at `workspace/finding-heuristic-evaluator-false-positives.md`.
 
 - [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-17
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?

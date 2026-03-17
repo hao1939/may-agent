@@ -109,7 +109,7 @@ If you've been stuck for 5+ turns on the same problem, you won't solve it by try
 You have no memory between sessions. Everything you need to resume must be written down — in workspace notes, progress files, or `finish({ new_items })`. If you learned something important, write it before your session ends.
 
 **Owner: both**
-- *Infra (Bob)*: **[IN PROGRESS]** `brief-infra-structured-checkpoints.md` sent to Tech-Lead. Will provide `checkpoint()` tool for granular state saving.
+- *Infra (Bob)*: **[DEPLOYED]** `checkpoint()` tool available in 7 agents (bob, coach, coder, optimizer, qa, scout, tech-lead). Saves structured state to `.state/checkpoints/` — auto-injected into next session context.
 - *Behavioral (Coach)*: Agents should proactively write progress notes, not rely on the system to capture everything.
 
 ---
