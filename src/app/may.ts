@@ -167,6 +167,26 @@ function recoveryKey(agent: string, task: string): string {
   return `${agent}:${task.slice(0, 100)}`;
 }
 
+// Late-bound Telegram alert function — set after telegramBot is created (line order constraint).
+// When Telegram is absent, alerts are still persisted to escalations.jsonl (see below).
+let telegramAlert: (text: string) => void = () => {};
+
+/** Persist an escalation event and push to Telegram if available. */
+function escalateToHuman(agent: string, reason: string): void {
+  // 1. Always persist — survives restarts, Telegram outages, etc.
+  const escalationPath = resolve(PERSIST_DIR, "escalations.jsonl");
+  const entry = JSON.stringify({
+    ts: new Date().toISOString(),
+    agent,
+    reason,
+    notified: TELEGRAM_ENABLED,
+  });
+  try { appendFileSync(escalationPath, entry + "\n", "utf-8"); } catch { /* best-effort */ }
+
+  // 2. Push to Telegram if available (best-effort, non-blocking)
+  telegramAlert(`⚠️ *Agent Blocked*\n${agent} — ${reason}`);
+}
+
 const manager = new SubagentManager({
   persistDir: PERSIST_DIR,
   projectRoot: PROJECT_ROOT,
@@ -208,6 +228,7 @@ const manager = new SubagentManager({
             type: "info",
             message: `[recovery] ⛔ ${info.agent} exhausted ${MAX_RECOVERY_ATTEMPTS} recovery attempts for task — escalating`,
           });
+          escalateToHuman(info.agent, `exhausted ${MAX_RECOVERY_ATTEMPTS} recovery retries`);
         }
       }
     }
@@ -248,6 +269,9 @@ const manager = new SubagentManager({
         writeFileSync(mayTodoPath, `# May — Todo\n\n${escalationLine}`, "utf-8");
       }
     } catch { /* best-effort */ }
+
+    // Push notification to human via Telegram
+    escalateToHuman(agentName, reason);
   },
 });
 
@@ -826,7 +850,10 @@ const telegramBot = TELEGRAM_ENABLED
       getSessionId: () => taskSessionId ?? "",
       interfaceAgent,
     })
-  : { close: () => {} };
+  : { close: () => {}, sendAlert: () => {} };
+
+// Wire late-bound Telegram alert now that telegramBot is initialized
+telegramAlert = (text: string) => telegramBot.sendAlert(text);
 
 // ── Main loop ──────────────────────────────────────────────────────────
 
