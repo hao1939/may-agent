@@ -23,76 +23,75 @@ the Ghost Bug. These methods need **re-testing with correct methodology**
 The only valid experiments are the two post-discovery micro-edit runs
 (Method #13), which kept the original name and showed 0 regression.
 
-## Aggregate Evidence Summary (updated 2026-03-17, self-evolve H1900)
+## Aggregate Evidence Summary (updated 2026-03-17, self-evolve H2000)
 
-**42 experiment entries total** (~21 unique IDs in new format, plus legacy).
-Key findings across 13+ methods:
+**47 experiment entries total** (~24 unique IDs in new format, plus legacy).
+Key findings across 15+ methods:
 
 | Method | # Experiments | Regressions? | Improvements? | Verdict |
 |--------|-------------|-------------|--------------|---------|
 | #1 SOUL Guard | 2 (1 confounded) | Ghost Bug only | 0 | SAFE, INEFFECTIVE |
-| #2 Heartbeat Step | 3 (2 confounded, 1 clean) | 0 (Ghost Bug confirmed) | 0 | SAFE, INEFFECTIVE |
-| #3 LESSONS Entry | 2 (1 confounded, 1 inconclusive) | 0 (clean test safe) | Unknown (scenario bug) | SAFE, NEEDS VALID SCENARIO |
+| #2 Heartbeat Step | 3 (2 confounded, 1 clean) | 0 | 0 | SAFE, INEFFECTIVE |
+| #3 LESSONS Entry | 2 (1 confounded, 1 inconclusive) | 0 | Unknown | SAFE, NEEDS VALID SCENARIO |
 | #4 Skill File | 2 | 0 | 0 | SAFE, blocked on scenarios |
-| #6 Knowledge File | 2 (1 confounded, 1 clean) | 0 | 0 (never read) | SAFE, INEFFECTIVE alone (needs delivery mechanism) |
-| #6+#2 Combo | 0 (fork exists, OBSOLETE) | — | — | POINTLESS — heartbeat invisible in oneshot, INDEX.md already visible |
+| #6 Knowledge File | 2 (1 confounded, 1 clean) | 0 | 0 | SAFE, INEFFECTIVE alone |
+| #6+#2 Combo | 1 (discarded pre-test) | — | — | POINTLESS — INDEX.md already visible |
 | #9 Negative Example | 2 | 0 | 0 | SAFE, INEFFECTIVE |
 | #10 Conditional Guard | 1 | 0 | 0 | SAFE, INEFFECTIVE |
 | #11 Prompt Prefix | 1 (untestable via gym) | N/A | N/A | UNTESTABLE VIA GYM |
-| #12 Subtractive Fix | 2 (1 confounded, 1 clean) | 0 (Ghost Bug confirmed) | 0 | SAFE, INEFFECTIVE |
+| #12 Subtractive Fix | 2 (1 confounded, 1 clean) | 0 | 0 | SAFE, INEFFECTIVE |
 | #13 Micro-Edit | 2 (1 interrupted) | 0 | 0 | SAFE, INEFFECTIVE |
-| #1-variant Inline SOUL | 1 | 0 | 0 | SAFE, INEFFECTIVE |
+| #1-variant Inline SOUL | 2 | 0 | 0 | SAFE, INEFFECTIVE |
 | Identity Exception | 1 | 0 | 0 | SAFE, INEFFECTIVE |
+| **#14 Task Structuring** | **1 (6 runs + 3 control)** | **0** | **33% (2/6)** | **⭐ FIRST POSITIVE SIGNAL** |
 
-**Core finding**: Text-based coaching is SAFE (Ghost Bug was the only cause of
-regressions) but **0/12 clean experiments improved judgment behavior**. The
-"delivery mechanism" hypothesis is now closed — exp-041 proved that inline
-content in the Pre-Task Checklist (highest-visibility SOUL location) also
-fails against task-anchoring. The agent has the instruction, reads it, and
-ignores it when the task says "exactly 2 bugs." Remaining paths:
-- (a) Structural methods (tool guards, post-fix hooks) — force behavior mechanically
-- (b) Scenario redesign — remove count-anchoring to test if coaching works on open-ended tasks
-- (c) Different agent architectures — multi-step workflows that enforce review passes
+### Core Finding (updated 2026-03-17T20:00)
 
-**DEFINITIVE FINDING (exp-042/043, 2026-03-17T19:26):** Open-ended scenario
-variant ALSO failed. Removed "exactly 2 bugs" from task, added "review all code
-for other issues," AND applied inline SOUL coaching. Still 4/5. Count-anchoring
-was NOT the cause — the model's natural behavior is fix-test-failures-then-stop.
-Text coaching cannot override this. **Path (b) is now closed. Only structural
-methods (a) or architectural changes (c) remain viable.**
+**Text-based coaching is SAFE but INEFFECTIVE: 0/13 clean text experiments
+improved judgment behavior.** All text methods — SOUL guards, heartbeat steps,
+LESSONS entries, knowledge files, inline content, negative examples, conditional
+guards, micro-edits, subtractive fixes — fail against task-anchoring. The agent
+has the instruction, reads it, and ignores it.
 
-**Critical delivery mechanism insight (exp-038, CORRECTED 2026-03-17T19:10)**:
-Knowledge file #6 content was present but never actively consumed. Code review
-of `resolveSystemPrompt()` in agent-loader.ts confirms **INDEX.md IS loaded
-into the system prompt** for ALL sessions including oneshot. The combo fork's
-INDEX.md said "READ THIS before finishing any bug-fix task" with a path to
-`verification-deep-scan.md`. The agent SAW this directive in its system prompt
-but **chose not to read** the referenced file. This is WORSE than "invisible" —
-the agent's task-anchoring is strong enough to override explicit system prompt
-directives. The #6+#2 combo is therefore pointless: heartbeat.md steps are
-invisible in oneshot mode (only the task prompt matters), and INDEX.md was
-already visible.
+**BREAKTHROUGH (exp-044, 2026-03-17T19:37): Task Structuring achieves 33%
+improvement.** By restructuring the task itself into explicit phases (Phase 1:
+fix tests, Phase 2: manual code review), the optimizer found the hidden bug in
+2/6 runs (vs 0/9+ on all other variants). This is the ONLY method to show
+measurable improvement after 47 experiments.
 
-**PRIOR CLAIM (RETRACTED)**: "agents don't voluntarily consult INDEX.md" was
-wrong — INDEX.md content is IN the system prompt, not a separate file to consult.
-The agent ignores the directive WITHIN the system prompt, not a separate file.
+### Authority Hierarchy (discovered experimentally)
 
-**Priority for next experiments (ranked)**:
-1. ✅ ~~**Inline knowledge content**~~ — TESTED (exp-041). Added step 4 to
-   Pre-Task Checklist: "After fixing: review every function in modified files."
-   Result: 4/5, identical to baseline. Delivery mechanism is NOT the problem.
-2. ✅ ~~**Different scenario design**~~ — TESTED (exp-042/043). Open-ended
-   variant without count-anchoring: baseline 4/5, patched 4/5. Even with
-   explicit "review all code" in task AND inline SOUL coaching, agent still
-   misses hidden bug. Count-anchoring was not the cause.
-3. **Structural methods** (workflow enforcement, tool-level guards) — the
-   only remaining viable path. Need to mechanically force a code review
-   pass after test-fixing. E.g., a workflow that runs the agent in two
-   phases: (1) fix test failures, (2) review every function for correctness.
-4. **context_files in agent.json** — the `context_files` config option lets
-   you inject additional files into the system prompt. Could inject the full
-   knowledge file content without needing INDEX.md references at all.
-   LOW PRIORITY — delivery mechanism is proven irrelevant.
+The model's behavior is influenced by these layers, in decreasing order:
+1. **Task instructions** (direct task text) — measurable influence (33%)
+2. **System prompt** (SOUL.md, context_files, INDEX.md) — no measurable influence
+3. **Agent files** (LESSONS, heartbeat, knowledge) — no measurable influence
+
+This hierarchy explains why all text coaching fails: coaching modifies layers
+2-3, but the model follows layer 1 (the task) above all else. Task structuring
+works because it modifies layer 1.
+
+### Closed Paths
+
+- ~~(a) Delivery mechanism hypothesis~~ — CLOSED. exp-041 proved inline SOUL
+  content (highest-visibility location) also fails. INDEX.md is visible in
+  system prompt but ignored (exp-038 corrected).
+- ~~(b) Count-anchoring hypothesis~~ — CLOSED. exp-042/043 removed "exactly 2
+  bugs" and added "review all code." Still 4/5. The model's natural behavior
+  is fix-test-failures-then-stop regardless of task framing.
+
+### Active Paths (ranked)
+
+1. **🔥 Workflow enforcement** — use `agents.call()` to run the agent TWICE:
+   once for fixes, once for review. Mechanically forces a review pass. This is
+   the highest-priority experiment. Task structuring (exp-044) proves the model
+   CAN find hidden bugs when explicitly told to review — but only 33% of the
+   time when self-structuring. A workflow removes self-structuring by running
+   two separate sessions.
+2. **Task structuring refinement** — iterate on the phased task format to
+   improve the 33% rate. Possible improvements: stronger phase separation,
+   explicit "do NOT stop after Phase 1" language, different phase ordering.
+3. **#11 Prompt Prefix (production-only)** — still untestable via gym. Low
+   priority given that system prompt content has zero measurable effect.
 
 ## Methods
 
@@ -737,3 +736,104 @@ small. Larger edits would ALSO show zero regression if the name is kept.
 **FIX PROTOCOL**: When creating lab forks, NEVER change the agent.json name.
 This invalidates the "perturbation threshold" theory — there was never a
 size-dependent threshold. The only requirement is keeping the original name.
+
+---
+
+### 14. Task Structuring ⭐
+
+**What**: Instead of modifying agent files (SOUL, LESSONS, heartbeat,
+knowledge), restructure the **task itself** to mechanically guide the
+agent through phases. The task text explicitly defines Phase 1 (primary
+work) and Phase 2 (review/verification) as separate steps.
+
+**When to use**: When the target behavior is "do X after Y" and text
+coaching has failed to make the agent do X. Task structuring has higher
+authority than coaching because the model prioritizes task instructions
+over system prompt content. Especially useful for behaviors where the
+agent naturally stops too early (e.g., "fix tests → done" without
+reviewing broader code quality).
+
+**When NOT to use**: When the task structure is controlled by callers
+(not Coach). When the behavior needs to be consistent across all task
+types (task structuring only works for tasks Coach can modify).
+
+**How**:
+1. Identify the behavior gap (e.g., agent fixes test failures but doesn't
+   review broader code quality)
+2. Create a scenario variant with explicit phases in task.md:
+   - Phase 1: the natural task (fix tests, implement feature, etc.)
+   - Phase 2: the missing behavior (review all code, check edge cases, etc.)
+3. Use clear structural markers ("## Phase 1", "## Phase 2")
+4. Include explicit completion criteria: "Do NOT mark task complete until
+   BOTH phases are finished"
+5. Test via gym with multiple runs (≥6) to measure reliability
+
+**Hypothesis**: The model follows task instructions with higher priority
+than system prompt / coaching content. By putting the desired behavior
+IN the task itself, we bypass the authority hierarchy that makes text
+coaching ineffective.
+
+**Evidence**:
+
+**Experiment exp-044 (2026-03-17, skip-verification-phased):** Created a
+two-phase variant of the skip-verification scenario. Task explicitly
+structures work into Phase 1 (fix the 2 failing tests) + Phase 2 (review
+every function in calc.js for correctness issues that tests don't catch).
+
+Results:
+| Variant | Runs | Pass Rate | Notes |
+|---------|------|-----------|-------|
+| Original task (0% control) | 9+ | 0/9 (0%) | 12 text methods all failed |
+| Open-ended (no count anchor) | 2 | 0/2 (0%) | Count-anchoring not the cause |
+| **Phased task** | **6** | **2/6 (33%)** | ⭐ **FIRST POSITIVE SIGNAL** |
+
+This is the ONLY method in 47 experiments to show any improvement. The model
+occasionally follows the explicit Phase 2 instruction and reviews the code,
+finding the hidden Math.floor truncation bug. However, 4/6 times it still
+skips or superficially executes Phase 2.
+
+**Key insights:**
+1. **Task-level authority works** — the model does respond to task structure,
+   proving the authority hierarchy (task > system prompt > agent files)
+2. **33% is not enough for promotion** — need higher reliability
+3. **Next step: workflow enforcement** — instead of asking the agent to
+   self-structure across phases, use `agents.call()` to run two separate
+   sessions. Phase 1 session: fix tests. Phase 2 session: review all code
+   for issues. The agent cannot skip Phase 2 because it's a separate call.
+
+**Status**: tested — **1 experiment (6 runs + 3 control). SAFE, PARTIALLY
+EFFECTIVE (33%).** First method to show improvement. Not yet promotable.
+Highest priority for refinement and workflow escalation.
+
+---
+
+### 15. Workflow Enforcement (UNTESTED)
+
+**What**: Use `agents.call()` or a workflow to run the agent in multiple
+separate sessions — one per phase. Unlike task structuring (#14), which
+asks the agent to self-manage phases within one session, workflow enforcement
+mechanically forces each phase by running them as independent calls.
+
+**When to use**: When task structuring (#14) shows the behavior CAN work
+but isn't reliable (agent sometimes skips phases). Workflow enforcement
+removes the agent's ability to skip by making each phase a separate
+invocation.
+
+**When NOT to use**: When single-session performance is required (workflow
+adds overhead). When the phases can't be meaningfully separated.
+
+**How**:
+1. Design a workflow with ≥2 steps (phases)
+2. Each step calls the agent with a focused task (only that phase's work)
+3. Phase 2 gets the output/artifacts of Phase 1 as context
+4. Success requires ALL phases to complete
+5. Test via gym or production monitoring
+
+**Hypothesis**: If the model responds to task instructions 33% of the time
+when phases are in the same task (#14), it should respond ~100% when each
+phase is an independent task (the Phase 2 task literally says "review this
+code" with no other work to do).
+
+**Evidence**: None yet. This is the #1 priority for next experiments.
+
+**Status**: hypothesis — **0 experiments. HIGHEST PRIORITY for testing.**
