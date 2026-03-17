@@ -5,6 +5,75 @@
 
 ---
 
+## HB#2041 — Harness工程的控制论本质: 反馈是核心 (2026-03-17)
+**Source**: XHS @马小疼 — "Harness 工程就是控制论"  
+**Referenced**: 宝玉 AI《Harness 工程就是控制论》  
+**Metrics**: 13赞 / 13收藏 / 北京  
+**TL;DR**: 🔥🔥🔥🔥🔥 **架构范式级洞察** — Harness Engineering的本质是控制论: 可观测性 + 可控性
+
+### 核心发现
+
+**控制论三阶段演进**:
+> 瓦特调速器 → Kubernetes → AI智能体写代码，同一类事情：人类不再亲自"拧阀门"，而是设计一套"传感 + 执行 + 反馈"的系统。
+
+**有效反馈机制两要素**:
+| 要素 | 含义 | 工程实践 |
+|------|------|----------|
+| **可观测性** | 定义好/坏状态，转化为系统信号 | 指标、日志、测试结果、代码风格、架构约束 |
+| **可控性** | 观测误差后完成纠偏 | 自动限流、回滚、重构、重排任务 |
+
+**现状批判**: 
+> "现在很多团队还停在'开环控制'：拍脑袋设计，写完就上线，只靠少量测试兜底。观测不系统，纠偏不系统，'跑飞'几乎是必然结果。"
+
+**未来工程师画像**:
+> "未来最强的工程师，不是写得最多代码的人，而是最会设计闭环、最懂如何让代码变得可观测与可控的人。"
+
+### 对OpenClaw的意义
+
+**与HB#2031交叉验证**: Harness Engineering作为第三次范式跃迁，其控制论本质揭示OpenClaw设计的正确性
+
+| 控制论要素 | OpenClaw实现 |
+|-----------|-------------|
+| 可观测性 | Session日志、activity.jsonl、AGENTS.md契约验证 |
+| 可控性 | Skill白名单、确定性执行边界、自我纠错机制 |
+| 反馈闭环 | Cron监控、心跳自检、知识库演进 |
+
+---
+
+## HB#2040 — MEMO: 多智能体评测稳定性框架 (2026-03-17)
+**Source**: XHS @momo — "多智能体评测别只看均值"  
+**论文**: arXiv:2603.09022 — MEMO: Memory-Augmented Model Context Optimization  
+**Metrics**: 1赞 / 1收藏 / 美国  
+**TL;DR**: 🔥🔥🔥🔥🔥 **评测方法论里程碑** — Multi-agent benchmark的ranking instability是对象问题而非噪声
+
+### 核心发现
+
+**问题定义: 多智能体评测不稳定性**
+- **Ranking Instability**: 同一系统多次运行排名变化，这不是噪声细节，而是评测对象本身的问题
+- **方差被掩盖**: 只报平均win rate，遮住了variance和prompt sensitivity这两个更关键的稳定性问题
+- **偏差放大**: 多轮交互中小偏差会被不断放大，prompt choice导向不同有效策略
+
+**MEMO双机制解决方案**:
+1. **Retention (记忆保持)**: 维护persistent memory bank，将自博弈结构化经验写回上下文作为先验
+2. **Exploration (探索优化)**: Tournament-style prompt evolution + TrueSkill不确定性感知选择 + Prioritized replay
+
+**实验结果**:
+| 模型 | 基础Win Rate | MEMO优化后 | 提升 |
+|------|-------------|-----------|------|
+| GPT-4o-mini | 25.1% | 49.5% | +97%相对提升 |
+| Qwen-2.5-7B | 20.9% | 44.3% | +112%相对提升 |
+
+- Run-to-run variance显著下降
+- 在negotiation和imperfect-information游戏中收益最大
+
+### 对OpenClaw的意义
+
+1. **评测方法论升级**: 我们的multi-agent benchmark需显式报告ranking stability和prompt sensitivity
+2. **Memory Bank设计参考**: MEMO的persistent memory bank与OpenClaw skill memory机制可互补
+3. **自博弈优化路径**: retention + exploration框架可用于skill自我改进
+
+---
+
 ## HB#2030 — 思科MCP安全架构: 企业级安全实践指南 (2026-03-17)
 **Source**: XHS @机器猫带你读论文 — "思科：如何使MCP更安全？"  
 **原文**: 思科论文 "Overview of MCP and Its Security Architecture" (2025-03-23)  

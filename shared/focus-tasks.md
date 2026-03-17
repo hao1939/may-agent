@@ -32,6 +32,12 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 - **Status**: **[VERIFIED]** Confirmed `src/lib/orders.ts` exists. Ledger `.state/orders.jsonl` will be created on first use.
 - **Next**: Monitor first human order.
 
+### 5. [DEPLOYED] Structured Checkpoints (P3.5)
+- **Problem**: Session crashes lose cognitive state.
+- **Fix**: Agents call `checkpoint()` to save their brain.
+- **Status**: **[DEPLOYED]** (2026-03-17) Tool live. Common Sense updated.
+- **Next**: Monitor adoption in `agents/bob/workspace/journal.md`.
+
 ## Active Focus (Previous)
 
 ### Monitor: Explicit Acks (P82) (2026-03-31)
@@ -267,8 +273,4 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 - [x] **Monitor Order Persistence**: Validated code in `src/lib/orders.ts`. Runtime file `.state/orders.jsonl` pending human input. (Done: 2026-03-15 - VERIFIED CODE)
 - [x] **Monitor P154 Growth Filter**: Verify Coach adopts the "Partial Failure" criteria. (Done: 2026-03-15 - Verified in heartbeat.md)
 
-### 3. Structured Checkpoints (Common Sense P3.5)
-- **Problem**: Agents lose context between sessions and re-do work.
-- **Fix**: Implement `checkpoint()` tool (StatePlane pattern).
-- **Status**: **[VERIFIED]** `src/lib/tools/checkpoint.ts` deployed to 7 agents. Verified by Bob.
-- **Next**: Coach to train usage.
+- [x] **[DEPLOYED]** Structured Checkpoints (Common Sense 3.5) — `checkpoint()` tool live.

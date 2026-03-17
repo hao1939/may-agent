@@ -9,16 +9,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If found → add specific task to workspace/todo.md.
   Latest (2026-03-17, 11:37 update): Reviewed Bob's 5 new briefs: (1) **DPIR Pattern** — philosophy, not optimization-relevant, (2) **Pressure-Safety Inversion** — validates infra approach, no action, (3) **OpBudget Visibility** — `turnBudgetWarningAt` configured but not wired to inject per-turn counter into context, (4) **Tool Name Injection** — not yet implemented, (5) **Stuck Detection** — already in `src/lib/stuck-detector.ts` ✅. **Overtrigger fix verified**: both cron.ts fixes deployed (proportional cooldown interval/2 + pending trigger no-op). Rates: May 1.56x (was 2.79x), tech-lead 1.75x (was 3.26x), coach 1.27x (was 2.36x). **~55% reduction**, waste down from ~$435/day to ~$126/day. Remaining opportunity: increase cooldown from interval/2 to interval×0.75 could save another ~$60/day. Briefs 3-4 are in tech-lead's queue. No new optimizer-owned action items.
 
-- [x] **Cost outlier scan** — Last done: 2026-03-17T20:18
+- [x] **Cost outlier scan** — Last done: 2026-03-17T20:32
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-17T20:04): **THREE findings total:**
-  (3) **May no-op heartbeat waste** (NEW, HIGH 🔴) — 80% of May's 465 sessions are empty no-ops. May fires 31x/hour avg (peak 49x/hour), costing ~$18/day. Fix: increase May's heartbeat interval from 10min to 30min in cron.json. Sent to tech-lead (req:46094a1b). Full analysis: `workspace/finding-may-noop-waste.md`.
-  Prior findings from 2026-03-17T19:56:
-  (1) **Heuristic evaluator usage data always zero** (NEW, HIGH) — `writeHeuristicEvaluations()` hardcodes `cost: 0, turns: 0`. `extractUsage()` exists but is never called for the heuristic path. Fix: parse JSONL → call `extractUsage()`. Sent to tech-lead (req:03be9c20). Full analysis: `workspace/finding-heuristic-evaluator-missing-usage.md`.
-  (2) **Error regex too broad** (prior finding, req:deab92c6) — `Error:` matches evidence data. Full analysis: `workspace/finding-heuristic-evaluator-false-positives.md`.
-  **Live cost data** (from transcripts, bypassing broken evals): Top cost sessions: May $21.83 (184 turns!), May $15.59 (132 turns), May $3.85 (39 turns). Also found 22 "interrupted" sessions never archived — `archiveSession()` exists but wasn't called for interrupted sessions. History dir is empty.
+  Latest (2026-03-17T20:32): **Bob checkpoint request loop** — Bob sent 8 duplicate `agents.send()` requests to tech-lead re: checkpoint() implementation in 79 minutes, plus 3 failed self-calls. Root cause: stale duplicate section 3.5 in `agents/shared/common-sense.md` said `[IN PROGRESS]` while correct section said `[DEPLOYED]`. Fixed by removing stale duplicate. Notified Bob (req:48493684). Full analysis: `workspace/finding-bob-checkpoint-loop.md`. Prior findings still tracked.
 
 - [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-17
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
