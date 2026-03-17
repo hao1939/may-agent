@@ -383,13 +383,25 @@ export class Cron {
           if (content) injections.push(`## Injected: heartbeat.md\n\n${content}`);
         }
 
-        const todoPath = resolve(agentDir, "workspace", "todo.md");
-        if (existsSync(todoPath)) {
-          const todoContent = readFileSync(todoPath, "utf-8");
-          const activeLines = todoContent.split("\n").filter(l => l.startsWith("- [ ]"));
-          if (activeLines.length > 0) {
-            injections.push(`## Injected: workspace/todo.md (${activeLines.length} active items)\n\n${activeLines.join("\n")}`);
+        // Inject pending tasks from DB (replaces todo.md parsing)
+        try {
+          const db = getDb(this.persistDir);
+          const pending = db
+            .query(
+              `SELECT task, fromEntity, createdAt, requestId FROM requests
+               WHERE toAgent = ? AND status IN ('CREATED', 'IN_PROGRESS') AND method = 'send'
+               ORDER BY createdAt ASC`
+            )
+            .all(agentName) as { task: string; fromEntity: string; createdAt: number; requestId: string }[];
+          if (pending.length > 0) {
+            const lines = pending.map(r => {
+              const ts = new Date(r.createdAt).toISOString().slice(0, 16);
+              return `- [from:${r.fromEntity} ${ts}] [req:${r.requestId.slice(0, 8)}] ${r.task}`;
+            });
+            injections.push(`## Injected: pending tasks (${pending.length} items)\n\n${lines.join("\n")}`);
           }
+        } catch {
+          // Non-fatal: fall back silently if DB unavailable
         }
 
         const commonSensePath = resolve(this.projectRoot, "agents", "shared", "common-sense.md");

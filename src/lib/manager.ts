@@ -85,17 +85,17 @@ import { classifyError as classifyErrorFn } from "./classify-error.js";
 
 
 // Lazy import for requests.ts (uses bun:sqlite, not available in vitest)
-let _updateRequest: typeof import("./requests.js").updateRequest | null = null;
+let _requestsMod: typeof import("./requests.js") | null = null;
 async function getRequestFns() {
-  if (!_updateRequest) {
+  if (!_requestsMod) {
     try {
       const mod = await import("./requests.js");
-      _updateRequest = mod.updateRequest;
+      _requestsMod = mod;
     } catch {
       /* bun:sqlite not available (e.g., vitest) */
     }
   }
-  return { updateRequest: _updateRequest };
+  return _requestsMod;
 }
 
 export { isRetryableInfraError, runAgentWithRetry } from "./manager-retry.js";
@@ -490,10 +490,10 @@ export class SubagentManager {
     appendMemoryEntry(this.registry.persistDir, session.agentName, entry);
   }
 
-  /** Auto-update agent's todo.md based on finish() completed_items and new_items.
-   *  Marks completed items as [x] and appends new items as [ ].
-   *  Best-effort — never throws. */
-  private updateTodoFromFinish(session: ActiveSession): void {
+  /** Update request DB based on finish() completed_items and new_items.
+   *  Marks matching pending requests as COMPLETED and tracks new items as
+   *  self-assigned requests. Best-effort — never throws. */
+  private async updateTodoFromFinish(session: ActiveSession): Promise<void> {
     try {
       const finishData = extractFinishParams(session.agent.state.messages);
       if (!finishData) return;
@@ -502,43 +502,58 @@ export class SubagentManager {
       const newItems = finishData.new_items;
       if ((!completed || completed.length === 0) && (!newItems || newItems.length === 0)) return;
 
-      const todoPath = join(this._projectRoot, "agents", session.agentName, "workspace", "todo.md");
-      if (!existsSync(todoPath) && (!newItems || newItems.length === 0)) return;
+      const mod = await getRequestFns();
+      if (!mod) return;
 
-      let content = existsSync(todoPath) ? readFileSync(todoPath, "utf-8") : "";
+      const persistDir = this.registry.persistDir;
 
-      // Mark completed items: fuzzy match against unchecked items
+      // Mark completed items: fuzzy-match against pending requests for this agent
       if (completed && completed.length > 0) {
-        for (const item of completed) {
-          // Normalize for matching: trim, lowercase
-          const needle = item.trim().toLowerCase();
-          const lines = content.split("\n");
-          let bestIdx = -1;
-          let bestScore = 0;
-          for (let i = 0; i < lines.length; i++) {
-            const line = lines[i];
-            if (!line.startsWith("- [ ]")) continue;
-            const lineText = line.slice(5).trim().toLowerCase();
-            // Simple substring match — if the completed item text appears in the todo line
-            if (lineText.includes(needle) || needle.includes(lineText)) {
-              const score = Math.min(lineText.length, needle.length) / Math.max(lineText.length, needle.length);
-              if (score > bestScore) { bestScore = score; bestIdx = i; }
+        try {
+          const db = mod.getDb(persistDir);
+          const pending = db
+            .query(
+              `SELECT requestId, task FROM requests
+               WHERE toAgent = ? AND status IN ('CREATED', 'IN_PROGRESS') AND method = 'send'`
+            )
+            .all(session.agentName) as { requestId: string; task: string }[];
+
+          for (const item of completed) {
+            const needle = item.trim().toLowerCase();
+            let bestId: string | null = null;
+            let bestScore = 0;
+            for (const req of pending) {
+              const reqText = req.task.toLowerCase();
+              if (reqText.includes(needle) || needle.includes(reqText)) {
+                const score = Math.min(reqText.length, needle.length) / Math.max(reqText.length, needle.length);
+                if (score > bestScore) { bestScore = score; bestId = req.requestId; }
+              }
+            }
+            if (bestId && bestScore > 0.3) {
+              mod.updateRequest(persistDir, bestId, {
+                status: "COMPLETED",
+                summary: item,
+                completedAt: Date.now(),
+              });
             }
           }
-          if (bestIdx >= 0 && bestScore > 0.3) {
-            lines[bestIdx] = lines[bestIdx].replace("- [ ]", "- [x]");
-            content = lines.join("\n");
-          }
+        } catch { /* best-effort */ }
+      }
+
+      // Track new self-assigned items as requests
+      if (newItems && newItems.length > 0) {
+        for (const item of newItems) {
+          try {
+            mod.trackRequest(persistDir, {
+              fromEntity: session.agentName,
+              toAgent: session.agentName,
+              task: item,
+              method: "send",
+              sessionId: session.sessionId,
+            });
+          } catch { /* best-effort */ }
         }
       }
-
-      // Append new items
-      if (newItems && newItems.length > 0) {
-        const additions = newItems.map(item => `- [ ] ${item}`).join("\n");
-        content = content.trimEnd() + "\n" + additions + "\n";
-      }
-
-      writeFileSync(todoPath, content);
     } catch {
       /* best-effort — todo update should never break session lifecycle */
     }
@@ -687,7 +702,7 @@ export class SubagentManager {
     }
 
     // ── Detect shallow heartbeats (zero tool calls) ────────────────────
-    // Heartbeat sessions MUST read files (heartbeat.md, todo.md, etc.).
+    // Heartbeat sessions MUST read files (heartbeat.md, etc.).
     // If an agent completes a heartbeat with zero tool calls, it responded
     // from compacted context without actually checking anything — flag it.
     if (
@@ -724,7 +739,7 @@ export class SubagentManager {
 
     this.appendMemory(session);
 
-    // Auto-update todo.md from finish() data (eliminates manual edit chore)
+    // Update request DB from finish() data (mark completed, track new items)
     this.updateTodoFromFinish(session);
 
     // Activity tracking: log session completion
@@ -758,11 +773,11 @@ export class SubagentManager {
 
     // ── Update request status (unified request tracking) ───────────────
     if (session.requestId) {
-      getRequestFns().then(({ updateRequest: updateReq }) => {
-        if (!updateReq) return;
+      getRequestFns().then((mod) => {
+        if (!mod) return;
         try {
           const durationMs = session.endedAt ? session.endedAt - session.startedAt : undefined;
-          updateReq(this.registry.persistDir, session.requestId!, {
+          mod.updateRequest(this.registry.persistDir, session.requestId!, {
             status: archiveStatus === "done" ? "COMPLETED" : "FAILED",
             sessionId: session.sessionId,
             error: session.error ?? undefined,
@@ -777,28 +792,29 @@ export class SubagentManager {
     }
 
     // ── Auto-escalation: notify parent on blocked/failure (F5) ─────────
-    // When a session ends with finish(blocked) or finish(failure), write a
-    // todo item to the parent agent's workspace/todo.md (or fire onSessionBlocked).
+    // When a session ends with finish(blocked) or finish(failure), track an
+    // escalation request to the parent agent (or fire onSessionBlocked for May).
     {
       const finishParams = extractFinishParams(messages);
       if (finishParams && (finishParams.status === "blocked" || finishParams.status === "failure")) {
         const blockerText = finishParams.blockers?.map(b => `${b.reason}: ${b.context}`).join("; ") ?? "";
-        const escalationMsg = `- [ ] [escalation ${new Date().toISOString().slice(0, 16)}] ${session.agentName} session ${session.sessionId} ended ${finishParams.status}: ${finishParams.summary}${blockerText ? ` | Blockers: ${blockerText}` : ""}\n`;
+        const escalationTask = `[escalation] ${session.agentName} session ${session.sessionId} ended ${finishParams.status}: ${finishParams.summary}${blockerText ? ` | Blockers: ${blockerText}` : ""}`;
 
         // Try parent agent first, fall back to onSessionBlocked (May)
         const parentName = session.parentAgentName;
         if (parentName) {
-          try {
-            const parentWorkspace = this.getWorkspacePath(parentName);
-            if (parentWorkspace) {
-              const todoPath = join(parentWorkspace, "todo.md");
-              if (existsSync(todoPath)) {
-                appendFileSync(todoPath, escalationMsg, "utf-8");
-              } else {
-                writeFileSync(todoPath, `# TODO\n\n${escalationMsg}`, "utf-8");
-              }
-            }
-          } catch { /* best-effort */ }
+          getRequestFns().then((mod) => {
+            if (!mod) return;
+            try {
+              mod.trackRequest(this.registry.persistDir, {
+                fromEntity: session.agentName,
+                toAgent: parentName,
+                task: escalationTask,
+                method: "send",
+                sessionId: session.sessionId,
+              });
+            } catch { /* best-effort */ }
+          });
         }
 
         // Always fire onSessionBlocked so May can track it

@@ -9,8 +9,7 @@
  * Phase 6 of request-tracking plan.
  */
 
-import { mkdirSync, existsSync, writeFileSync, appendFileSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync } from "node:fs";
 import { Type, type Static } from "@mariozechner/pi-ai";
 import type { AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
 
@@ -40,7 +39,7 @@ export interface SendToolOptions {
 
 const sendParams = Type.Object({
   agent: Type.String({ description: "Target agent name" }),
-  message: Type.String({ description: "Message to send (appears in target's todo.md)" }),
+  message: Type.String({ description: "Message to send (tracked in request DB, injected into target's heartbeat)" }),
   artifact: Type.Optional(
     Type.String({ description: "Path to an artifact file to reference in the message" }),
   ),
@@ -61,7 +60,7 @@ export function createSendTool(opts: SendToolOptions): AgentTool {
     name: "send",
     label: "Send",
     description:
-      "Send a message or artifact to another agent. The message is appended to their todo.md and their heartbeat is triggered. You cannot call, peek, or cancel — only send.",
+      "Send a message or artifact to another agent. The message is tracked in the request DB and injected into the target's next heartbeat. You cannot call, peek, or cancel — only send.",
     parameters: sendParams,
     execute: async (_toolCallId: string, _params: unknown): Promise<AgentToolResult<undefined>> => {
       const params = _params as SendParams;
@@ -117,22 +116,6 @@ export function createSendTool(opts: SendToolOptions): AgentTool {
         });
       } catch {
         // Non-fatal
-      }
-
-      // Write to target's todo.md
-      const todoDir = join(opts.agentsRoot, params.agent, "workspace");
-      mkdirSync(todoDir, { recursive: true });
-      const todoPath = join(todoDir, "todo.md");
-
-      const timestamp = new Date().toISOString().slice(0, 16);
-      const reqTag = requestId ? ` [req:${requestId.slice(0, 8)}]` : "";
-      const artifactNote = params.artifact ? ` Artifact: ${params.artifact}.` : "";
-      const entry = `- [ ] [from:${caller} ${timestamp}]${reqTag} ${params.message}${artifactNote}\n`;
-
-      if (!existsSync(todoPath)) {
-        writeFileSync(todoPath, `# TODO\n\n${entry}`, "utf-8");
-      } else {
-        appendFileSync(todoPath, entry, "utf-8");
       }
 
       // Trigger heartbeat

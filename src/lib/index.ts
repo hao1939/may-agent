@@ -144,7 +144,6 @@ export type {
   WorkflowStep,
 } from "./persistence.js";
 export type { HandlerContext, HandlerModule } from "./handler-context.js";
-export { appendToTodoSection } from "./todo-utils.js";
 export { retryWithBackoff } from "./retry-with-backoff.js";
 export type { RetryWithBackoffOptions } from "./retry-with-backoff.js";
 export { loadAgents, reloadAgents, validateAgentConfig } from "../app/agent-loader.js";

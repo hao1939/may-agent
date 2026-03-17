@@ -16,7 +16,16 @@ import type { AgentTool } from "@mariozechner/pi-agent-core";
 import { existsSync, readdirSync, readFileSync, statSync, openSync, readSync, closeSync } from "node:fs";
 import { join } from "node:path";
 import type { PersistedSession } from "../persistence.js";
-import { getDb } from "../requests.js";
+
+// Lazy-load requests module to avoid pulling bun:sqlite at module level (vitest compat)
+let _getDbFn: typeof import("../requests.js").getDb | null = null;
+function getDbLazy(persistDir: string) {
+  if (!_getDbFn) {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    _getDbFn = require("../requests.js").getDb;
+  }
+  return _getDbFn!(persistDir);
+}
 
 // ── Tail utility ────────────────────────────────────────────────────────
 
@@ -88,7 +97,7 @@ interface JobHistoryEntry {
 
 function getRecentJobs(stateDir: string, count: number): JobHistoryEntry[] {
   try {
-    const db = getDb(stateDir);
+    const db = getDbLazy(stateDir);
     const rows = db
       .query(
         `SELECT artifact as jobName,
@@ -208,22 +217,18 @@ function readFocusTasks(agentsRoot: string): string {
   }
 }
 
-function readTodoSummary(agentsRoot: string): string {
-  const todoPath = join(agentsRoot, "may", "workspace", "todo.md");
-  if (!existsSync(todoPath)) return "(no todo.md found)";
+function readTodoSummary(stateDir: string): string {
   try {
-    const content = readFileSync(todoPath, "utf-8");
-    // Count active items (lines starting with "- [ ]" under ## Active)
-    const activeSection = content.match(/## Active\s*\n([\s\S]*?)(?=\n## |$)/);
-    if (activeSection) {
-      const items = activeSection[1]
-        .split("\n")
-        .filter((l) => l.trim().startsWith("- [ ]"));
-      return `${items.length} active item(s)`;
-    }
-    return "(could not parse todo.md)";
+    const db = getDbLazy(stateDir);
+    const row = db
+      .query(
+        `SELECT COUNT(*) as count FROM requests
+         WHERE toAgent = 'may' AND status IN ('CREATED', 'IN_PROGRESS') AND method = 'send'`
+      )
+      .get() as { count: number } | null;
+    return `${row?.count ?? 0} pending task(s)`;
   } catch {
-    return "(error reading todo.md)";
+    return "(DB unavailable)";
   }
 }
 
@@ -420,7 +425,7 @@ export function createSystemStatusTool(stateDir: string, agentsRoot: string): Ag
       const delegations = getRecentDelegations(stateDir, 50);
       const jobs = getRecentJobs(stateDir, 50);
       const focus = readFocusTasks(agentsRoot);
-      const todoSummary = readTodoSummary(agentsRoot);
+      const todoSummary = readTodoSummary(stateDir);
 
       const markdown = formatMarkdown(active, history, delegations, jobs, focus, todoSummary, windowMinutes);
 

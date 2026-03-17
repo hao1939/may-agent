@@ -6,8 +6,6 @@
  * dependencies as parameters (same pattern as manager-retry.ts).
  */
 
-import { mkdirSync, existsSync, writeFileSync, appendFileSync } from "node:fs";
-import { join } from "node:path";
 import type { AgentMessage, AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
 import { Type, StringEnum } from "@mariozechner/pi-ai";
 import type { RegisteredAgent } from "./manager-utils.js";
@@ -277,22 +275,6 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
               });
             } catch {
               // Non-fatal: tracking failure shouldn't block send
-            }
-
-            // Append to target agent's workspace/todo.md
-            const todoDir = join(agentsRoot, params.agent, "workspace");
-            mkdirSync(todoDir, { recursive: true });
-            const todoPath = join(todoDir, "todo.md");
-
-            const timestamp = new Date().toISOString().slice(0, 16);
-            const reqTag = requestId ? ` [req:${requestId.slice(0, 8)}]` : "";
-            const entry = `- [ ] [from:${caller} ${timestamp}]${reqTag} ${params.message}\n`;
-
-            // Create file with header if it doesn't exist, otherwise append
-            if (!existsSync(todoPath)) {
-              writeFileSync(todoPath, `# TODO\n\n${entry}`, "utf-8");
-            } else {
-              appendFileSync(todoPath, entry, "utf-8");
             }
 
             // Trigger target agent's heartbeat
