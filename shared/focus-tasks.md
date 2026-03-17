@@ -32,11 +32,8 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 - **Status**: **[VERIFIED]** Confirmed `src/lib/orders.ts` exists. Ledger `.state/orders.jsonl` will be created on first use.
 - **Next**: Monitor first human order.
 
-### 5. [VERIFIED] Structured Checkpoints (P3.5)
-- **Problem**: Session crashes lose cognitive state.
-- **Fix**: Agents call `checkpoint()` to save their brain.
-- **Status**: **[VERIFIED]** (2026-03-17) Tool live. Verified via `checkpoint()` call. Validated against StateLM/StatePlane research.
-- **Next**: Monitor organic adoption.
+### 5. ~~[ARCHIVED] Structured Checkpoints (P3.5)~~
+- **Status**: **DONE** — Moved to Archive below. Tool is live and verified. No further work needed.
 
 ## Active Focus (Previous)
 

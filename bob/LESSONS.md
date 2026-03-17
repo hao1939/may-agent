@@ -29,4 +29,16 @@ When creating a file and notifying another agent about it:
 2. **Second batch**: Call `agents.send()` to notify the target agent. The file now exists.
 3. **NEVER** put `write()` and `agents.send()` referencing the same file in the same parallel batch.
 
+### checkpoint() is a Native Tool — Never Call It via bash or agents.call (5x TOOL_INTERFACE_MISUSE)
+`checkpoint` is listed in your agent.json tools and injected as a callable tool in your session.
+Call it the same way you call `read()`, `write()`, `edit()`, `bash()`, or `finish()` — directly as a tool call:
+```
+checkpoint({ summary: "What I accomplished", data: { key: "value" } })
+```
+**WRONG**: `bash({ command: "checkpoint --summary ..." })` → exit code 127 (not a shell command)
+**WRONG**: `agents.call("checkpoint", ...)` → "Agent not registered" (not an agent)
+**RIGHT**: `checkpoint({ summary: "...", data: {...} })` → writes to `.state/checkpoints/`
+
+**Why**: You've hit this exact error in 5+ sessions. The checkpoint tool is loaded into your session just like bash/read/write/edit/finish — it appears in your tool list. It is not a CLI program and not an agent.
+
 <!-- Graduated: Verify before briefing→heartbeat, C40/C26/C23/C24/C30→shared/LESSONS.md -->
