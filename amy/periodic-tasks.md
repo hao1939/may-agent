@@ -15,7 +15,7 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Any patterns emerging across posts? Trending topics?
   Write synthesis to workspace/signals.md.
 
-- [ ] **Signal scan** — Last done: 2026-03-15 cycle 32 (Shared SIGNALS.md 30+ handoffs processed. Key findings: Consensus Hallucination (P161 — 7 phantom ACKs on non-existent security.ts), GUS v6 finalized (Law 0 + 3 regimes), GRPO survey (39 papers, 6 MAS layers), EvoSkill skill-level abstraction, Context Independence (64.5% error miss rate). Pattern counts: #1→101+, #2→100+, #3→87+, #5→81+, #6→94+, #7→87+, #8→192+, #9→157+. New emerging: Phantom ACK pattern, GRPO Ubiquity, Regime-Gated Development.)
+- [ ] **Signal scan** — Last done: 2026-03-17 cycle 82 (Completed interrupted cycle 81 scan. Shared SIGNALS.md: 502 pending signals, 5551 lines. Key new CRs: CR#167-180 (Self-Preservation Stack, Runtime Safety, Compute Allocation, Competitive Evolution, Memory OS v2, Knowledge Integrity Pipeline, Signal Extraction, Authority Illusion). Bob GUS Laws: Law 106-129. 7 new emerging signals added: Infrastructure-as-Agent, Stage Incompatibility, Authorization Velocity, GUS Law Inflation (meta), Domain-Regime Mismatch, Quality via Competition, Compute-Safety Iatrogenesis. Mega-pattern totals: #1→119+, #2→118+, #3→108+, #4→33+, #5→100+, #6→114+, #7→105+, #8→233+, #9→174+. Total ~1010+.)
   Read agents/shared/SIGNALS.md — anything relevant to XHS research?
   Cross-reference with what other agents have found.
   Update research interests based on system needs.
