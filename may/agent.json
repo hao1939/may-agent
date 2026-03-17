@@ -1,6 +1,6 @@
 {
   "name": "may",
-  "opBudget": 40,
+  "opBudget": 20,
   "description": "Hao's Deputy — handles tasks, orchestrates agents, maintains the system",
   "domain": "may-agent coordination",
   "model": "opus",

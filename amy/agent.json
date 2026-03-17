@@ -1,6 +1,6 @@
 {
   "name": "amy",
-  "opBudget": 20,
+  "opBudget": 25,
   "memoryLimit": 3,
   "description": "小红书 (XHS) intelligence researcher — explores, reads, and analyzes Xiaohongshu content about AI agents, autonomous systems, and the Chinese AI community",
   "domain": "Xiaohongshu content research and analysis",

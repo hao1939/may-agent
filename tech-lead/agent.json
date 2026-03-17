@@ -1,6 +1,6 @@
 {
   "name": "tech-lead",
-  "opBudget": 60,
+  "opBudget": 70,
   "description": "The Builder — turns design into working code, leads coder+QA team, applies philosophy during implementation",
   "domain": "implementation, feature decomposition, supervised execution",
   "model": "opus",
