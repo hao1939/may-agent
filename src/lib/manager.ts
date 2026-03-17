@@ -429,6 +429,15 @@ export class SubagentManager {
     //    across sessions so the cache_control: ephemeral marker on the
     //    system block produces cache *reads* instead of only cache writes.
 
+    // 8. Available Tools (C4.5) — auto-inject tool names so agents
+    //    know exactly what they can call without guessing or hallucinating.
+    if (def.tools.length > 0) {
+      const toolNames = def.tools.map((t) => t.label);
+      sections.push(
+        `## Available Tools\nYou have access to these tools (and ONLY these): ${toolNames.join(", ")}.\nDo not attempt to call any tool not in this list.`,
+      );
+    }
+
     // ── P84: Wrap in <system_instructions> tags ─────────────────────
     // Structural reinforcement of the Instruction Hierarchy. The XML tags
     // signal to the LLM that everything inside is authoritative system-level
