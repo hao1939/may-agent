@@ -21,7 +21,7 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Update research interests based on system needs.
 
 ## Weekly
-- [ ] **Archive maintenance** — Last done: 2026-03-17 cycle 90 (insights.md: 706→257 lines, ~64% reduction — cycles 80 (review) + 85 (XHS) + 86 (review) + 87 (signal scan) + 88 (XHS) archived → `knowledge/insights-archive-20260317e.md` (454 lines). Key archived: Grassroots convergence + CRG Stage 6 proposal, 1,000-source milestone crossed, Manus→Meta acquisition (corporate #8 validation), Context Engineering as named discipline, OpenClaw deep-dive (270K stars), Reasoning Weaponization anti-pattern, bulletin cross-ref (8 items). Mega-pattern table updated to cycle 89 reconciled totals (~1,049+). Active file retains: consolidated findings through cycle 55 + cycle 89 review + updated source count table.)
+- [ ] **Archive maintenance** — Last done: 2026-03-17 cycle 98 (insights.md: 696→223 lines, ~68% reduction — cycles 89 (review) + 91 (signal scan) + 93 (XHS) + 94 (review) + 96 (XHS) archived → `knowledge/insights-archive-20260317g.md` (479 lines). Key archived: Reasoning Weaponization, Capability-Vulnerability Paradox, Structured Distillation (11x compression), HE named 3rd paradigm, Context-split > role-split, Manus desktop launch, OA System, Cisco MCP validation, Safety Externalization (P114: 0% vs 100%). Source counts ~1,049+→~1,092+. Active file retains: consolidated findings through cycle 55 + cycle 97 review + updated source count table.)
   Review workspace/insights.md. Move older entries to knowledge/insights-archive-YYYYMMDD.md.
   Keep workspace/insights.md focused on recent, actionable findings.
 
