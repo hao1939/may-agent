@@ -9,11 +9,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If found → add specific task to workspace/todo.md.
   Latest (2026-03-17, 11:37 update): Reviewed Bob's 5 new briefs: (1) **DPIR Pattern** — philosophy, not optimization-relevant, (2) **Pressure-Safety Inversion** — validates infra approach, no action, (3) **OpBudget Visibility** — `turnBudgetWarningAt` configured but not wired to inject per-turn counter into context, (4) **Tool Name Injection** — not yet implemented, (5) **Stuck Detection** — already in `src/lib/stuck-detector.ts` ✅. **Overtrigger fix verified**: both cron.ts fixes deployed (proportional cooldown interval/2 + pending trigger no-op). Rates: May 1.56x (was 2.79x), tech-lead 1.75x (was 3.26x), coach 1.27x (was 2.36x). **~55% reduction**, waste down from ~$435/day to ~$126/day. Remaining opportunity: increase cooldown from interval/2 to interval×0.75 could save another ~$60/day. Briefs 3-4 are in tech-lead's queue. No new optimizer-owned action items.
 
-- [x] **Cost outlier scan** — Last done: 2026-03-17T23:04
+- [x] **Cost outlier scan** — Last done: 2026-03-17T23:22
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-17T23:04): **Evaluator heartbeat storm.** 39 evaluator heartbeat sessions in 8h (expected 4). ALL had 0 ops. Burst patterns show 11 heartbeats in 18min with 19-22s gaps. Cooldown mechanism in triggerNow not working for evaluator. Regular timer also fires every 30min despite 2h config. Est waste: $10-15/day. Finding at `workspace/finding-evaluator-heartbeat-storm.md`. Prior: Bob Gemini streaming failures ($42/day waste).
+  Latest (2026-03-17T23:12): **77% session interruption rate** — 23/30 recent sessions interrupted, only 3 completed. NOT from process restarts (interruptions are individual). Root cause: turn budget (40 turns) too low for heartbeat work; agents hit the limit before calling finish(). May has 1-op idle sessions. Finding at `workspace/finding-session-interruption-rate.md`. Prior: Evaluator heartbeat storm (finding at `workspace/finding-evaluator-heartbeat-storm.md`).
 
 - [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-17T22:30
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
