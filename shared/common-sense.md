@@ -144,7 +144,7 @@ Check your recent session history. Don't redo work that's already done.
 Use the exact tools available to you. Don't hallucinate tools that don't exist. Don't call tools with wrong argument formats.
 
 **Owner: both**
-- *Infra (Bob)*: **[IN PROGRESS]** Tool Injection (P4.5). Brief sent to Tech-Lead to auto-inject available tool names into session context.
+- *Infra (Bob)*: **[NATIVE]** Tool Injection (P4.5). Tech-Lead confirmed LLM API receives tool schemas natively. No extra text injection needed.
 - *Behavioral (Coach)*: Train agents on correct tool usage patterns. Convention C2 already covers this.
 
 ---
