@@ -156,8 +156,11 @@ export const INFRA_RETRY_BASE_DELAY_MS = 1000;
 /** Maximum identical failed tool calls before blocking. */
 export const TOOL_PIVOT_LIMIT = 3;
 
-/** Default turn count at which a budget warning is injected. */
-export const TURN_BUDGET_WARNING_DEFAULT = 40;
+/** Default turn count at which a budget warning is injected.
+ * Lowered from 40→35 (2026-03-17) to give agents more buffer before
+ * process restarts or other interrupts kill the session.  See
+ * agents/optimizer/workspace/brief-turn-budget-increase.md */
+export const TURN_BUDGET_WARNING_DEFAULT = 35;
 
 /** Consecutive error turns before injecting a stuck warning. */
 export const STUCK_WARNING_THRESHOLD = 3;
