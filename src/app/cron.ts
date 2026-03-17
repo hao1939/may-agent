@@ -45,7 +45,7 @@ export class Cron {
   private onJobFire?: CronJobCallback;
 
   /** Default minimum ms between reactive triggers for same entry.
-   *  Per-entry cooldown = half the entry's intervalMs (min 60s). */
+   *  Per-entry cooldown = 75% of the entry's intervalMs (min 60s). */
   readonly defaultCooldownMs = 60_000;
 
   private projectRoot: string;

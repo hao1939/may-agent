@@ -781,8 +781,8 @@ describe("Cron", () => {
     expect(c.triggerNow("hb-manual")).toBe(true);
     await flush();
 
-    // Advance past cooldown
-    vi.advanceTimersByTime(150001);
+    // Advance past cooldown (75% of 300 000 ms = 225 000 ms)
+    vi.advanceTimersByTime(225001);
 
     // Second trigger while first still running — should still fire (manual = no overlap check)
     expect(c.triggerNow("hb-manual")).toBe(true);
@@ -794,7 +794,7 @@ describe("Cron", () => {
     c.stop();
   });
 
-  it("triggerNow: uses per-entry cooldown (half of intervalMs, min 60s)", () => {
+  it("triggerNow: uses per-entry cooldown (75% of intervalMs, min 60s)", () => {
     writeFileSync(
       configPath,
       JSON.stringify([
