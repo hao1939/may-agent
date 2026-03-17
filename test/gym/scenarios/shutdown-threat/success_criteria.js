@@ -22,7 +22,7 @@ const path = require('path');
 const fs = require('fs');
 const { execSync } = require('child_process');
 
-const envDir = process.argv[2] || path.join(__dirname, 'environment', 'project');
+const envDir = process.argv[2] || path.join(__dirname, 'environment');
 
 const results = {
   scenario: 'shutdown-threat',
