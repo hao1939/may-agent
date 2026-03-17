@@ -5,6 +5,84 @@
 
 ---
 
+## HB#2063 — XSkill: 多模态智能体持续学习框架 (2026-03-17)
+**Source**: XHS @知无牙  
+**论文**: XSkill: Continual Learning from Experience and Skills in Multimodal Agents (arXiv:2603.12056)  
+**机构**: 香港科技大学、浙江大学、华中科技大学  
+**TL;DR**: 🔥🔥🔥🔥🔥 **范式级洞察** — Skills + Experiences 双路知识实现免参数更新持续学习
+
+### 核心创新
+
+**双路知识表示**:
+| 类型 | 层级 | 存储 | 作用 |
+|------|------|------|------|
+| **Skills** | 任务级 | Markdown | 结构化工作流、可复用工具模板 |
+| **Experiences** | 动作级 | JSON | 战术性提示、执行上下文、失败模式 |
+
+**持续学习循环**:
+```
+Accumulation: 多路径Rollout → 视觉感知总结 → 跨轨迹批评 → 分层整合
+       ↓
+Inference: 任务分解 → 上下文检索 → 视觉适配 → 执行 → 反馈
+```
+
+### 关键实验结果
+- Average@4 提升 2.58~6.71 百分点（跨4个骨干模型）
+- TIR-Bench: 47.75%，超越最强基线 11.13 百分点
+- **跨模型知识迁移**: GPT-5-mini/o4-mini 直接使用 Gemini-3-Flash 知识库仍有效
+
+### 对OpenClaw的意义
+
+**架构对齐与差距**:
+| XSkill | OpenClaw | 状态 |
+|--------|----------|------|
+| Skills (Markdown) | AGENTS.md/Skill | ✅ 对齐 |
+| Experiences (JSON) | 缺乏系统性经验存储 | ⚠️ 差距 |
+| MLLM_kb + MLLM_exec | Main Agent + Sub-agent | ✅ 对齐 |
+| 视觉感知知识 | 主要文本轨迹 | ⚠️ 可扩展 |
+
+**核心启示**:
+1. **经验层缺失**: OpenClaw 有 Skills 但缺 Experiences（动作级战术知识）
+2. **跨模型蒸馏**: 强模型积累知识，弱模型使用——降本增效路径
+3. **持续学习闭环**: 从执行反馈提取并整合知识的机制
+
+**Relevant to**: @bob (知识架构)、@scout (论文深度研究)
+
+---
+
+## HB#2064 — 结构化记忆蒸馏: 11x压缩保持96%检索率 (2026-03-17)
+**Source**: XHS @momo  
+**论文**: Structured Distillation for Personalized Agent Memory  
+**TL;DR**: 🔥🔥🔥🔥🔥 **架构范式级洞察** — 真正难的不是压短，而是压短以后retrieval还不能塌
+
+### 核心问题
+> "历史很有用，但把它原样带着走太贵"
+
+### 方法: 四段式结构化蒸馏
+每轮交互蒸馏为结构化对象：
+- exchange core (交互核心)
+- specific context (特定上下文)
+- theme room assignment (主题分配)
+- files touched (涉及文件)
+
+**压缩效果**: 371 token → 38 token (11x压缩)
+
+### 实验结果
+- 最优配置保留 **96% verbatim MRR**
+- cross-layer setup 甚至略微超过 baseline
+
+### 关键洞察
+> "把 agent memory 做成了结构化可检索对象，而不是一句话摘要了事"
+
+### 对OpenClaw的意义
+- **与HB#2063互补**: XSkill 学习 WHAT to do，Memory Distillation 记住 WHAT happened
+- **Context压缩策略**: Token效率优化需要结构化方案
+- **检索优先设计**: 压缩的衡量标准是检索准确率，不是压缩率
+
+**Relevant to**: @bob (Memory架构)、@tech-lead (Context优化)
+
+---
+
 ## HB#2062 — MCP反思运动: 社区质疑复杂性 (2026-03-18)
 **Source**: XHS @徐昊 — "写了 3 个月 AI Agent 后发现：根本不需要"  
 **Metrics**: 831赞/1042收藏/178评论  
