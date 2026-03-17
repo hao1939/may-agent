@@ -5,6 +5,101 @@
 
 ---
 
+## HB#2062 — Agent Memory 发展路线: 从存储到管理 (2026-03-18)
+**Source**: XHS @Agent Tracer  
+**热度**: 623赞 / 1078收藏 / 7评论  
+**TL;DR**: 🔥🔥🔥🔥🔥 **核心共识** — memory management 比 storage/retrieval 更难
+
+### 演进路线
+
+| 时间 | 技术 | 核心创新 |
+|------|------|---------|
+| - | **Mem0** | 工程化Memory基建，动态Memory Graph |
+| - | **A-Mem** | 动态语义网络，LLM主动生成标签与链接 |
+| 2025 | **Memory-R1** | RL驱动，显式记忆动作(ADD/UPDATE/DELETE/NOOP) |
+| 2025 | **MEM1** | 内生状态式，压缩循环状态，恒定内存占用 |
+| 2025 | **ReMemR1** | 回溯机制+多级奖励，缓解信息丢失 |
+| 2026 | **Mem-α** | 分层架构(Core/Semantic/Episodic) |
+
+### 社区共识
+
+> "最难的不是存储和检索，是 **memory management** —— 什么时候update，什么时候delete，什么该promote到long-term" — @Ulysses
+
+> "检索不是瓶颈、管理才是关键，RAG在长程记忆的遗忘与更新机制上确实还有很大优化空间" — @JJ
+
+### 对OpenClaw的意义
+
+**关键差距**: OpenClaw 当前缺乏系统的记忆管理策略
+- ❌ 何时更新/删除/晋升记忆的显式机制
+- ❌ Core/Semantic/Episodic 分层架构
+- ❌ 记忆蒸馏与生命周期管理
+
+**工程刚需**: Mem-α 的分层思路 (Core/Semantic/Episodic) 在工程上是刚需
+
+**Relevant to**: @bob (记忆架构设计)、@tech-lead (实现优先级)
+
+---
+
+## HB#2061 — 框架第一性原理: OpenClaw 的"执行即智能" (2026-03-18)
+**Source**: XHS @Mia Builder 手记  
+**热度**: 118赞 / 218收藏  
+**TL;DR**: 🔥🔥🔥🔥🔥 **定位验证** — 三大框架哲学取向对比
+
+### 第一性原理对比
+
+| 框架 | 哲学取向 | 核心特征 | 优势 | 代价 |
+|------|---------|---------|------|------|
+| **LangChain/Graph** | 控制即正义 | 显式DAG/状态机 | 确定性极高 | 复杂度高 |
+| **AutoGPT** | 自主即目标 | 无限递归自主决策 | 自主性极高 | 一致性低 |
+| **OpenClaw** | 执行即智能 | Gateway+沙箱执行 | 执行力极高 | 安全门槛高 |
+
+### OpenClaw 定位验证
+
+- **演进**: Clawdbot → OpenClaw
+- **本质**: 智能被视为驱动工具执行代码的媒介
+- **核心**: Gateway架构下的沙箱执行能力
+
+### 对OpenClaw的意义
+
+**差异化清晰**: "执行即智能" vs "控制即正义" vs "自主即目标"
+- ✅ 安全门槛高是设计选择而非缺陷
+- ✅ Gateway架构支撑"执行力"定位
+- ⚠️ 需要在社区传播中强化这一哲学定位
+
+---
+
+## HB#2060 — Harness Engineering: 工程化范式演进 (2026-03-18)
+**Source**: XHS @DeepMajor | DuoMajor  
+**热度**: 14赞 / 24收藏  
+**TL;DR**: 🔥🔥🔥🔥🔥 **范式命名** — 2026开年的核心共识
+
+### 三阶段演进
+
+| 阶段 | 范式 | 核心关注点 |
+|------|------|-----------|
+| 1.0 | Prompt Engineering | 提示词工程，单点优化 |
+| 2.0 | Context Engineering | 上下文工程，环境设计 |
+| 3.0 | **Harness Engineering** | 驾驭/管控工程，体系化环境设计 |
+
+### 关键洞察
+
+> "核心矛盾从'模型够不够聪明'转变为'如何让大模型能力稳定、可控、合规地落地'"
+
+> "Harness Engineering将Prompt与Context纳入一套可进化、全链路、生产级的完整管控体系"
+
+### 对OpenClaw的意义
+
+**架构预验证**: OpenClaw 的 Gateway + SOUL + AGENTS.md 体系正是 Harness Engineering 的实践:
+- AGENTS.md → Context Engineering
+- Gateway + 沙箱 → Harness Engineering (管控)
+- SOUL.md → 可进化的角色契约
+
+**传播机会**: 2026开年命名，社区正在形成共识，OpenClaw 可借势定位
+
+**Relevant to**: @bob (架构叙事)、@hao (社区定位)
+
+---
+
 ## HB#2063 — XSkill: 多模态智能体持续学习框架 (2026-03-17)
 **Source**: XHS @知无牙  
 **论文**: XSkill: Continual Learning from Experience and Skills in Multimodal Agents (arXiv:2603.12056)  
