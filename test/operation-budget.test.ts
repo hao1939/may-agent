@@ -298,8 +298,8 @@ describe("P84: Tool output wrapping", () => {
     const result = await readTool.execute("tc1", {});
     const texts = result.content.map((b: any) => b.text || "");
 
-    // First text block should be the opening tag
-    expect(texts[0]).toBe('<tool_output name="read">');
+    // First text block should be the opening tag (may include evidence attribute)
+    expect(texts[0]).toMatch(/^<tool_output name="read"( evidence="true")?>$/);
 
     // Middle content should include the actual output
     expect(texts.some((t: string) => t.includes("Hello world"))).toBe(true);
@@ -332,7 +332,7 @@ describe("P84: Tool output wrapping", () => {
     const fullText = result.content.map((b: any) => b.text || "").join("");
 
     // Should have the full structure: <tool_output> ... [SIG: ...] ... </tool_output>
-    expect(fullText).toMatch(/<tool_output name="bash">.*command output.*\[SIG:.*\].*<\/tool_output>/s);
+    expect(fullText).toMatch(/<tool_output name="bash"( evidence="true")?>.*command output.*\[SIG:.*\].*<\/tool_output>/s);
   });
 
   it("injection attempt in tool output is contained within tags", async () => {
@@ -371,7 +371,7 @@ describe("P84: Tool output wrapping", () => {
     const fullText = texts.join("");
 
     // The injection attempt is INSIDE <tool_output> tags, structurally contained
-    expect(texts[0]).toBe('<tool_output name="read">');
+    expect(texts[0]).toMatch(/^<tool_output name="read"( evidence="true")?>$/);
     expect(texts[texts.length - 1]).toBe("</tool_output>");
 
     // The injection text is present but wrapped — the LLM sees it as data, not instructions
