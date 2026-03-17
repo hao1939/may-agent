@@ -9,11 +9,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If found → add specific task to workspace/todo.md.
   Latest (2026-03-17, 11:37 update): Reviewed Bob's 5 new briefs: (1) **DPIR Pattern** — philosophy, not optimization-relevant, (2) **Pressure-Safety Inversion** — validates infra approach, no action, (3) **OpBudget Visibility** — `turnBudgetWarningAt` configured but not wired to inject per-turn counter into context, (4) **Tool Name Injection** — not yet implemented, (5) **Stuck Detection** — already in `src/lib/stuck-detector.ts` ✅. **Overtrigger fix verified**: both cron.ts fixes deployed (proportional cooldown interval/2 + pending trigger no-op). Rates: May 1.56x (was 2.79x), tech-lead 1.75x (was 3.26x), coach 1.27x (was 2.36x). **~55% reduction**, waste down from ~$435/day to ~$126/day. Remaining opportunity: increase cooldown from interval/2 to interval×0.75 could save another ~$60/day. Briefs 3-4 are in tech-lead's queue. No new optimizer-owned action items.
 
-- [x] **Cost outlier scan** — Last done: 2026-03-17T22:18
+- [x] **Cost outlier scan** — Last done: 2026-03-17T22:50
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-17T22:18): **Major finding: Session overtriggering across all agents.** Full 13,167-session analysis. Most agents fire 2-12x more sessions than configured intervals allow: May 8.5x (30min interval but fires every 10min), Evaluator 11.9x (2h interval but 143 sessions/day), Coach 3.6x (cascade from evaluate-sessions). 202 interrupted sessions in 24h. ~1,500 unnecessary sessions/day. Root cause likely in cron timer restart behavior + dual evaluator triggers + coach request cascading. Brief at `workspace/brief-session-waste-analysis.md`, sent to tech-lead (req:e03c2e4c). Prior findings: low-ops waste (req:b0d3b894), Anthropic cache 0% (req:8b05a3a4).
+  Latest (2026-03-17T22:50): **Found evaluator session cascade waste.** 33 evaluator sessions in 4h (8/hr), 73% with ≤3 ops. Three overlapping triggers: (1) `evaluate-sessions` JS handler spawning LLM children, (2) duplicate `evaluate-session-llm` cron, (3) heartbeat. Fixed: disabled duplicate cron, added MAX_PARENTS_PER_RUN=3 limit. Savings: ~15-20 fewer sessions/day. Finding at `workspace/finding-evaluator-session-waste.md`.
 
 - [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-17T22:30
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?

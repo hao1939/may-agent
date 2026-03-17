@@ -241,8 +241,8 @@
     "agent": "evaluator",
     "intervalMs": 2700000,
     "message": "[cron:evaluate-session] You are the evaluator. Evaluate ONE session. Run this selector to find your target:\n\nnode -e \"\nconst fs=require('fs');\nconst h=fs.readdirSync('.state/sessions/history').filter(n=>n.startsWith('s_'));\nconst e=new Set(fs.readdirSync('.state/evaluations').filter(n=>n.endsWith('.json')).map(n=>n.slice(0,-5)));\nconst unevaluated=h.filter(s=>!e.has(s));\nconst candidates=unevaluated.filter(s=>{\n  try{const m=JSON.parse(fs.readFileSync('.state/sessions/history/'+s+'/meta.json'));\n    return m.agent!=='evaluator' && (m.status==='done'||m.status==='error');\n  }catch(e){return false;}\n}).sort();\nconsole.log('UNEVALUATED:',candidates.length);\nif(candidates.length>0){\n  const t=candidates[candidates.length-1];\n  const m=JSON.parse(fs.readFileSync('.state/sessions/history/'+t+'/meta.json'));\n  console.log('TARGET='+t);\n  console.log('AGENT='+m.agent);\n  console.log('STATUS='+m.status);\n} else { console.log('NONE'); }\n\"\n\nIf NONE, stop. Otherwise: read the target session's meta.json and transcript (session.jsonl). Score based on evidence. Write evaluation JSON to .state/evaluations/<TARGET>.json. Verify the file was written correctly.",
-    "enabled": true,
-    "description": "LLM evaluation of one session (45min, graduated from evaluator heartbeat)"
+    "enabled": false,
+    "description": "DISABLED 2026-03-17: Redundant with evaluate-sessions JS handler which already does LLM evaluation via evaluateTask(). Was creating duplicate evaluator sessions (see optimizer finding-evaluator-session-waste.md)."
   },
   {
     "name": "heartbeat-qa",

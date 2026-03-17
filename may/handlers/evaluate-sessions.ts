@@ -121,9 +121,17 @@ export async function handleEvaluateSessions(opts: {
     onLog?.(`[eval] writeHeuristicEvaluations failed: ${msg}`);
   }
 
-  const parents = findParentsWithUnevaluatedChildren(persistDir);
-  if (parents.length === 0) { onLog?.("[eval] No unevaluated sessions — all caught up"); return result; }
-  onLog?.(`[eval] Found ${parents.length} parent(s) with unevaluated children`);
+  const allParents = findParentsWithUnevaluatedChildren(persistDir);
+  if (allParents.length === 0) { onLog?.("[eval] No unevaluated sessions — all caught up"); return result; }
+  // Limit to 3 parents per run to prevent cascade when many sessions are pending.
+  // Remaining parents will be picked up in subsequent runs (every 30min).
+  const MAX_PARENTS_PER_RUN = 3;
+  const parents = allParents.slice(0, MAX_PARENTS_PER_RUN);
+  if (allParents.length > MAX_PARENTS_PER_RUN) {
+    onLog?.(`[eval] Found ${allParents.length} parent(s) — limiting to ${MAX_PARENTS_PER_RUN} this run`);
+  } else {
+    onLog?.(`[eval] Found ${parents.length} parent(s) with unevaluated children`);
+  }
 
   for (const parentId of parents) {
     try {
