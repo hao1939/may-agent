@@ -4,7 +4,7 @@
  * Extracted from manager.ts for maintainability. Contains:
  * - HMAC signing/verification (P84)
  * - Tool wrapping with receipt signing, OpBudget enforcement (P85),
- *   Tool Pivot Heuristic (P110), and Turn Budget Warning
+ *   Tool Pivot Heuristic (P110), Turn Budget Warning, and OpBudget Visibility
  * - verify_receipt built-in tool
  * - Operation usage query
  */
@@ -33,6 +33,9 @@ const RUNTIME_RECEIPT_SECRET = randomUUID();
 /** P113: Cost Signal thresholds — inject cost metadata when exceeded. */
 export const COST_SIGNAL_DURATION_MS = 2000;
 export const COST_SIGNAL_BYTES = 10000;
+
+/** OpBudget visibility: warn when this many ops remain. */
+const OP_BUDGET_LOW_THRESHOLD = 5;
 
 /**
  * Sign a tool output string with HMAC-SHA256.
@@ -310,6 +313,18 @@ export function wrapToolsWithReceipts(
         session.stuckWarningInjected = true;
         const stuckWarningText = `\n\n🚨 SYSTEM ALERT: You are in a repetitive failure loop. You have had ${session.consecutiveErrorTurns} consecutive turns where every tool call errored. Stop. Pivot to a completely different approach or use finish({ status: "blocked" }) to report what is blocking you.`;
         contentBlocks.push({ type: "text" as const, text: stuckWarningText });
+      }
+
+      // OpBudget Visibility: show ops used/remaining for state-changing tools
+      if (isStateChanging && session && session.opBudget > 0) {
+        const remaining = session.opBudget - session.opCount;
+        if (remaining <= OP_BUDGET_LOW_THRESHOLD) {
+          const warningText = `\n\n⚠️ [Ops: ${session.opCount}/${session.opBudget} — ${remaining} remaining] Finish up. Save progress and call finish().`;
+          contentBlocks.push({ type: "text" as const, text: warningText });
+        } else {
+          const statusText = `\n\n<system_note>[Ops: ${session.opCount}/${session.opBudget}]</system_note>`;
+          contentBlocks.push({ type: "text" as const, text: statusText });
+        }
       }
 
       contentBlocks.push(closeTag);
