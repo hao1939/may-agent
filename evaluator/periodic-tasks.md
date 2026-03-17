@@ -46,6 +46,6 @@ See `agents/evaluator/periodic-tasks.md` for the definitions.
 - Do NOT update `agents/shared/knowledge/strategies.md` directly (Bob reviews first).
 - **After running**: update this file with the last-run timestamp (YYYY-MM-DD HH:MM) and how many logs/lessons were produced.
 
-**Last run**: 2026-03-17 14:46 — monitor-session (--running) executed; alerts: 2 (bob LOOP, optimizer P114)
+**Last run**: 2026-03-17 20:45 — monitor-session (--running) executed; alerts: 2 (bob LOOP, bob P114)
 
 **P63 Extract Strategies — Last run**: 2026-03-13 19:28 — logs: 50, lessons: 4 (P63 Automated Extraction Live)

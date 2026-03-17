@@ -35,7 +35,7 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 ### 5. [DEPLOYED] Structured Checkpoints (P3.5)
 - **Problem**: Session crashes lose cognitive state.
 - **Fix**: Agents call `checkpoint()` to save their brain.
-- **Status**: **[DEPLOYED]** (2026-03-17) Tool live. Common Sense updated.
+- **Status**: **[DEPLOYED]** (2026-03-17) Tool live. Common Sense updated. Validated against StateLM/StatePlane research.
 - **Next**: Monitor adoption in `agents/bob/workspace/journal.md`.
 
 ## Active Focus (Previous)
