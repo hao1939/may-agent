@@ -72,6 +72,14 @@ const finishSchema: TSchema = Type.Object({
   next_steps: Type.Optional(Type.String({
     description: "Recommended next actions if partial or blocked",
   })),
+  completed_items: Type.Optional(Type.Array(
+    Type.String({ description: "A todo.md item that was completed this session" }),
+    { description: "Items from todo.md completed during this session. Infra will auto-mark them [x]." },
+  )),
+  new_items: Type.Optional(Type.Array(
+    Type.String({ description: "A new todo item to add" }),
+    { description: "New items to append to todo.md. Infra will auto-add them as [ ]." },
+  )),
 });
 
 interface FinishParams {
@@ -80,6 +88,8 @@ interface FinishParams {
   deliverables?: { path: string; description: string }[];
   blockers?: { reason: string; context: string }[];
   next_steps?: string;
+  completed_items?: string[];
+  new_items?: string[];
 }
 
 // ── Tool factory ───────────────────────────────────────────────────────

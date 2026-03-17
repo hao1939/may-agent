@@ -242,12 +242,14 @@ export function wrapToolsWithReceipts(
           const currentCount = (session.toolErrorHistory.get(pivotKey) ?? 0) + 1;
           session.toolErrorHistory.set(pivotKey, currentCount);
           session.toolErrorCount++; // P20 Tainted Handoffs: total error count
+          session.currentTurnErrors++; // Stuck Detection: per-turn error tracking
           if (currentCount < TOOL_PIVOT_LIMIT) {
             pivotCritique = `\n\n⚠️ PIVOT REQUIRED: This exact tool call has failed ${currentCount} time(s). You must change your approach — use a different tool, different arguments, or a different strategy. Do NOT retry the same command.`;
           }
         } else {
           // Success — clear the counter for this key
           session.toolErrorHistory.delete(pivotKey);
+          session.currentTurnSuccesses++; // Stuck Detection: per-turn success tracking
         }
       }
 
