@@ -15,7 +15,7 @@
  * Design: docs/design/cron-sqlite.md
  */
 
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync, watchFile, unwatchFile, type StatWatcher } from "node:fs";
 import { resolve, dirname } from "node:path";
 import type { SubagentManager } from "../lib/index.js";
 import { generateId } from "../lib/index.js";
@@ -43,6 +43,7 @@ export class Cron {
   private started = false;
   private handlers = new Map<string, CronHandler>();
   private onJobFire?: CronJobCallback;
+  private configWatcher?: StatWatcher;
 
   /** Default minimum ms between reactive triggers for same entry.
    *  Per-entry cooldown = 75% of the entry's intervalMs (min 60s). */
@@ -69,6 +70,26 @@ export class Cron {
 
   onFire(cb: CronJobCallback): void {
     this.onJobFire = cb;
+  }
+
+  /** Watch cron.json for changes and auto-reload when modified. */
+  watchConfig(): void {
+    if (this.configWatcher) return; // already watching
+    if (!existsSync(this.configPath)) return;
+    this.configWatcher = watchFile(this.configPath, { interval: 30_000 }, (curr, prev) => {
+      if (curr.mtimeMs !== prev.mtimeMs) {
+        this.onError?.(`Config file changed on disk — auto-reloading`);
+        this.reload();
+      }
+    });
+  }
+
+  /** Stop watching cron.json. */
+  unwatchConfig(): void {
+    if (this.configWatcher) {
+      unwatchFile(this.configPath);
+      this.configWatcher = undefined;
+    }
   }
 
   load(): CronEntry[] {
@@ -112,12 +133,14 @@ export class Cron {
       if (entry.enabled === false) continue;
       this.startEntry(entry);
     }
+    this.watchConfig();
   }
 
   stop(): void {
     for (const timer of this.timers.values()) clearInterval(timer);
     this.timers.clear();
     this.started = false;
+    this.unwatchConfig();
   }
 
   reload(): void {
