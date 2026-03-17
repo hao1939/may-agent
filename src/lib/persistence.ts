@@ -477,7 +477,7 @@ export interface WorkflowStep {
   sessionId: string;
   agent: string;
   task: string;
-  status: "done" | "error";
+  status: "done" | "error" | "interrupted";
   startedAt: number;
   endedAt: number;
   lastAssistantText: string | null;

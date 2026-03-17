@@ -72,16 +72,41 @@ export class Cron {
     this.onJobFire = cb;
   }
 
+  private lastKnownMtimeMs = 0;
+  private configPollTimer?: ReturnType<typeof setInterval>;
+
   /** Watch cron.json for changes and auto-reload when modified. */
   watchConfig(): void {
     if (this.configWatcher) return; // already watching
     if (!existsSync(this.configPath)) return;
+
+    // Record current mtime so we can detect changes
+    try {
+      const { mtimeMs } = require("node:fs").statSync(this.configPath);
+      this.lastKnownMtimeMs = mtimeMs;
+    } catch {}
+
+    // Primary: fs.watchFile (stat-based polling every 30s)
     this.configWatcher = watchFile(this.configPath, { interval: 30_000 }, (curr, prev) => {
       if (curr.mtimeMs !== prev.mtimeMs) {
-        this.onError?.(`Config file changed on disk — auto-reloading`);
+        this.lastKnownMtimeMs = curr.mtimeMs;
+        this.onError?.(`Config file changed on disk — auto-reloading (watchFile)`);
         this.reload();
       }
     });
+
+    // Fallback: explicit stat poll every 15s (watchFile can be unreliable in containers)
+    this.configPollTimer = setInterval(() => {
+      try {
+        if (!existsSync(this.configPath)) return;
+        const { mtimeMs } = require("node:fs").statSync(this.configPath);
+        if (this.lastKnownMtimeMs > 0 && mtimeMs !== this.lastKnownMtimeMs) {
+          this.lastKnownMtimeMs = mtimeMs;
+          this.onError?.(`Config file changed on disk — auto-reloading (poll fallback)`);
+          this.reload();
+        }
+      } catch {}
+    }, 15_000);
   }
 
   /** Stop watching cron.json. */
@@ -89,6 +114,10 @@ export class Cron {
     if (this.configWatcher) {
       unwatchFile(this.configPath);
       this.configWatcher = undefined;
+    }
+    if (this.configPollTimer) {
+      clearInterval(this.configPollTimer);
+      this.configPollTimer = undefined;
     }
   }
 

@@ -106,7 +106,7 @@ export interface SessionInfo {
 /** Result of a completed session. */
 export interface TaskResult {
   sessionId: string;
-  status: "done" | "error";
+  status: "done" | "error" | "interrupted";
   lastAssistantText: string | null;
   messages: AgentMessage[];
   duration: string;

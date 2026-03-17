@@ -1562,7 +1562,7 @@ export class SubagentManager {
       sessionId: session.sessionId,
       status:
         session.archiveStatus === "interrupted" || session.status === "interrupted"
-          ? "error"
+          ? "interrupted"
           : ((session.archiveStatus ?? session.status) as "done" | "error"),
       lastAssistantText: extractLastAssistantText(messages),
       messages: messages.slice(),
@@ -1592,7 +1592,7 @@ export class SubagentManager {
       : formatDuration(Date.now() - persisted.startedAt);
     return {
       sessionId,
-      status: persisted.status === "interrupted" ? "error" : (persisted.status as "done" | "error"),
+      status: persisted.status === "interrupted" ? "interrupted" : (persisted.status as "done" | "error"),
       lastAssistantText: extractLastAssistantText(messages),
       messages,
       duration,
