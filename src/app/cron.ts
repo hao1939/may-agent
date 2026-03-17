@@ -144,7 +144,7 @@ export class Cron {
 
     // Debounce rapid re-triggers (unless forced)
     if (!opts?.force) {
-      const cooldownMs = Math.max(entry.intervalMs / 2, this.defaultCooldownMs);
+      const cooldownMs = Math.max(entry.intervalMs * 0.75, this.defaultCooldownMs);
       try {
         const lastFire = this.getLastFireTime(entryName);
         if (lastFire && Date.now() - lastFire < cooldownMs) return false;
