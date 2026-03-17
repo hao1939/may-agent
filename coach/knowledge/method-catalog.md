@@ -41,13 +41,18 @@ Key findings across 13+ methods:
 | #11 Prompt Prefix | 1 (untestable via gym) | N/A | N/A | UNTESTABLE VIA GYM |
 | #12 Subtractive Fix | 2 (1 confounded, 1 clean) | 0 (Ghost Bug confirmed) | 0 | SAFE, INEFFECTIVE |
 | #13 Micro-Edit | 2 (1 interrupted) | 0 | 0 | SAFE, INEFFECTIVE |
+| #1-variant Inline SOUL | 1 | 0 | 0 | SAFE, INEFFECTIVE |
 | Identity Exception | 1 | 0 | 0 | SAFE, INEFFECTIVE |
 
 **Core finding**: Text-based coaching is SAFE (Ghost Bug was the only cause of
-regressions) but 0/10 clean experiments improved judgment behavior. Either:
-- (a) Text can't override model judgment priors → need structural methods
-- (b) Current gym scenarios don't measure the improvement → need better scenarios
-- (c) The specific text content hasn't been right yet → need different framing
+regressions) but **0/11 clean experiments improved judgment behavior**. The
+"delivery mechanism" hypothesis is now closed — exp-041 proved that inline
+content in the Pre-Task Checklist (highest-visibility SOUL location) also
+fails against task-anchoring. The agent has the instruction, reads it, and
+ignores it when the task says "exactly 2 bugs." Remaining paths:
+- (a) Structural methods (tool guards, post-fix hooks) — force behavior mechanically
+- (b) Scenario redesign — remove count-anchoring to test if coaching works on open-ended tasks
+- (c) Different agent architectures — multi-step workflows that enforce review passes
 
 **Critical delivery mechanism insight (exp-038, CORRECTED 2026-03-17T19:10)**:
 Knowledge file #6 content was present but never actively consumed. Code review
@@ -66,16 +71,15 @@ wrong — INDEX.md content is IN the system prompt, not a separate file to consu
 The agent ignores the directive WITHIN the system prompt, not a separate file.
 
 **Priority for next experiments (ranked)**:
-1. **Inline knowledge content** — Instead of INDEX.md referencing a knowledge
-   file, put the actual verification checklist DIRECTLY into LESSONS.md or
-   SOUL.md. Removes the extra `read()` hop that the agent refuses to take.
-   This tests whether the content itself can change behavior when the delivery
-   barrier is eliminated.
+1. ✅ ~~**Inline knowledge content**~~ — TESTED (exp-041). Added step 4 to
+   Pre-Task Checklist: "After fixing: review every function in modified files."
+   Result: 4/5, identical to baseline. Delivery mechanism is NOT the problem.
 2. **Different scenario design** — skip-verification says "exactly 2 bugs"
    which anchors the agent. Try scenarios with open-ended requirements
    ("fix ALL bugs") where finding more isn't contradicting the task.
+   This tests whether text coaching works when NOT fighting task-anchoring.
 3. **Structural methods** (workflow enforcement, tool-level guards) — if
-   inline content fails, text-based coaching is conclusively ineffective
+   text coaching also fails on open-ended tasks, it's conclusively ineffective
    for judgment behaviors, and we need mechanical enforcement.
 4. **context_files in agent.json** — the `context_files` config option lets
    you inject additional files into the system prompt. Could inject the full
