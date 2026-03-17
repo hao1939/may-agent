@@ -15,37 +15,20 @@ processes through `bash`. The agents tool provides:
 Bad: `bash("node run/launcher.ts --agent coder ...")`
 Good: `agents.call("coder", task)`
 
-## C2: Detached Mode for Long-Running Sessions (Required, Coach)
+## C2: Fork for Experiments (Required, Coach)
 
-When coach spawns a coachee for exercises, use detached mode via
-the background_exec tool or the bash tool with process management.
-Detached processes run as independent OS processes that survive
-coach restarts.
+When Coach improves an agent, always fork first via `fork_agent()`.
+Never edit live agent files for behavioral changes.
+Test forks via gym runner (`scripts/gym-run.sh --lab <fork>`).
+Promote or discard — don't leave dead forks.
 
-Always clean up: `agents.cancel(sessionId)` after exercises.
+## C3: One Method Per Experiment (Required, Coach)
 
-## C3: socket_watch Events Are Follow-Ups (Required, Coach)
+When running a growth cycle, apply exactly ONE improvement method per
+experiment. Multiple changes make gym results uninterpretable.
 
-When connected via socket_watch, events arrive as follow-up messages between
-your turns automatically. You do NOT need to poll.
-
-Bad (wastes 6+ tool calls):
-```
-socket_watch.send(watchId, task)
-bash("sleep 15")     // waste
-bash("sleep 20")     // waste
-bash("sleep 25")     // waste
-```
-
-Good (0 wasted calls):
-```
-socket_watch.send(watchId, task)
-// Events arrive automatically as follow-up messages after debounceMs of silence
-// Process them when they arrive
-```
-
-Set `debounceMs: 5000` for coaching observation — enough time for the coachee
-to complete multi-step operations before you evaluate.
+If you need to test multiple methods for the same error pattern, run
+separate experiments for each.
 
 ## C4: Short Chains, 2-Agent Default (Recommended, Power)
 
@@ -79,7 +62,6 @@ Example: "Amy needs a token refresh but we can keep working on Bob's task."
 Use `agents.peek(sessionId)` to check on running sessions.
 Don't loop with sleep waiting for completion.
 
-For detached sessions that need real-time observation, use socket_watch (C3).
 For synchronous delegation, `agents.call()` blocks until completion.
 
 ## C8: Task Boundedness (Required, Power)

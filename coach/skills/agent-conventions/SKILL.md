@@ -78,8 +78,8 @@ Delegation, workflows, async patterns.
 | ID | Convention | Level | Scope |
 |----|-----------|-------|-------|
 | C1 | Use agents tool for delegation, not exec-spawned processes | Required | Power |
-| C2 | Use detached mode for long-running coachee/worker sessions | Required | Coach |
-| C3 | socket_watch events arrive as follow-ups — don't poll with sleep | Required | Coach |
+| C2 | Fork before experimenting — never edit live agents | Required | Coach |
+| C3 | One method per experiment — multiple changes are uninterpretable | Required | Coach |
 | C4 | Short chains: 2-agent default, 3 only when stakes justify cost | Recommended | Power |
 | C5 | Acceptance criteria before decomposition | Recommended | Power |
 | C6 | When blocked on one task, pivot to parallel work | Recommended | Power |
