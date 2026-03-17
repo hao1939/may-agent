@@ -9,11 +9,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If found → add specific task to workspace/todo.md.
   Latest (2026-03-17, 11:37 update): Reviewed Bob's 5 new briefs: (1) **DPIR Pattern** — philosophy, not optimization-relevant, (2) **Pressure-Safety Inversion** — validates infra approach, no action, (3) **OpBudget Visibility** — `turnBudgetWarningAt` configured but not wired to inject per-turn counter into context, (4) **Tool Name Injection** — not yet implemented, (5) **Stuck Detection** — already in `src/lib/stuck-detector.ts` ✅. **Overtrigger fix verified**: both cron.ts fixes deployed (proportional cooldown interval/2 + pending trigger no-op). Rates: May 1.56x (was 2.79x), tech-lead 1.75x (was 3.26x), coach 1.27x (was 2.36x). **~55% reduction**, waste down from ~$435/day to ~$126/day. Remaining opportunity: increase cooldown from interval/2 to interval×0.75 could save another ~$60/day. Briefs 3-4 are in tech-lead's queue. No new optimizer-owned action items.
 
-- [x] **Cost outlier scan** — Last done: 2026-03-17T18:24
+- [x] **Cost outlier scan** — Last done: 2026-03-17T19:10
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-17T18:24): **Evaluation backlog cleared** — ran writeHeuristicEvaluations() directly, cleared 10,124 sessions in 30s. Now at 13,513 evaluations / 13,413 sessions (100% coverage). Cost analysis of last 500 sessions: Coach is top spender ($38.98, 109 sessions), coder had single $4.34 failure (42 turns). QA "needs_improvement" rate highest at 33% — all from opBudget exhaustion + shallow sessions (0 productive calls). QA fix from 16:46 confirmed working: 5 consecutive successes since 16:24. OpBudget hot-reload fix [req:e041fe12] confirmed deployed by tech-lead (commit 86f07c1).
+  Latest (2026-03-17T19:10): **CRITICAL FIX: False "interrupted" status bug.** Server restarted at 19:00 UTC (my restart request [req:55dbf1e4] fulfilled). Post-restart analysis found 91% (10/11) of "interrupted" sessions in last 100 actually called finish() successfully. Root cause: `wasAborted` flag in manager.ts L665 was computed BEFORE error-clearing logic (L671-710) runs, but used AFTER at L749. Fix: changed `wasAborted` to `wasAborted && session.error` at L751. Tests pass (13/13). Impact: all evaluations scoring "interrupted" sessions as failures were wrong — affects agent performance metrics systemwide.
 
 - [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-17
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?

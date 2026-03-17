@@ -35,7 +35,7 @@ Key findings across 13+ methods:
 | #3 LESSONS Entry | 2 (1 confounded, 1 inconclusive) | 0 (clean test safe) | Unknown (scenario bug) | SAFE, NEEDS VALID SCENARIO |
 | #4 Skill File | 2 | 0 | 0 | SAFE, blocked on scenarios |
 | #6 Knowledge File | 2 (1 confounded, 1 clean) | 0 | 0 (never read) | SAFE, INEFFECTIVE alone (needs delivery mechanism) |
-| #6+#2 Combo | 0 (fork ready) | — | — | **NEXT EXPERIMENT** |
+| #6+#2 Combo | 0 (fork exists, OBSOLETE) | — | — | POINTLESS — heartbeat invisible in oneshot, INDEX.md already visible |
 | #9 Negative Example | 2 | 0 | 0 | SAFE, INEFFECTIVE |
 | #10 Conditional Guard | 1 | 0 | 0 | SAFE, INEFFECTIVE |
 | #11 Prompt Prefix | 1 (untestable via gym) | N/A | N/A | UNTESTABLE VIA GYM |
@@ -49,27 +49,37 @@ regressions) but 0/10 clean experiments improved judgment behavior. Either:
 - (b) Current gym scenarios don't measure the improvement → need better scenarios
 - (c) The specific text content hasn't been right yet → need different framing
 
-**Critical delivery mechanism insight (exp-038)**: Knowledge file #6 was
-never read during gym --oneshot. System prompt loads INDEX.md but NOT
-individual knowledge files. During directed tasks, agents don't voluntarily
-consult INDEX.md. Knowledge files need an **active delivery mechanism** —
-heartbeat step, prompt prefix, or workflow step — to ensure the agent reads
-them. This is the rationale for the #6+#2 combination experiment.
+**Critical delivery mechanism insight (exp-038, CORRECTED 2026-03-17T19:10)**:
+Knowledge file #6 content was present but never actively consumed. Code review
+of `resolveSystemPrompt()` in agent-loader.ts confirms **INDEX.md IS loaded
+into the system prompt** for ALL sessions including oneshot. The combo fork's
+INDEX.md said "READ THIS before finishing any bug-fix task" with a path to
+`verification-deep-scan.md`. The agent SAW this directive in its system prompt
+but **chose not to read** the referenced file. This is WORSE than "invisible" —
+the agent's task-anchoring is strong enough to override explicit system prompt
+directives. The #6+#2 combo is therefore pointless: heartbeat.md steps are
+invisible in oneshot mode (only the task prompt matters), and INDEX.md was
+already visible.
+
+**PRIOR CLAIM (RETRACTED)**: "agents don't voluntarily consult INDEX.md" was
+wrong — INDEX.md content is IN the system prompt, not a separate file to consult.
+The agent ignores the directive WITHIN the system prompt, not a separate file.
 
 **Priority for next experiments (ranked)**:
-1. **Combination #6+#2** (knowledge file + heartbeat step) — Fork ready in
-   `.lab/optimizer-combo-6-2`. Tests whether active delivery (heartbeat step
-   directing agent to read knowledge file) overcomes the passivity problem.
-   This is the first experiment testing whether the *delivery mechanism* is
-   the bottleneck, not the *content quality*.
-2. **Structural methods** (workflow, agent.json config) — if #6+#2 fails,
-   text-based coaching is conclusively ineffective, and we need to move to
-   methods that mechanically enforce behavior.
-3. **Different scenarios** — current skip-verification scenario may have a
-   ceiling effect (task framing says "exactly 2 bugs" which anchors behavior).
-   Need scenarios with open-ended verification requirements.
-4. **Prompt content quality** — try worked examples, chain-of-thought
-   scaffolding, or fear-based framing instead of informational/advisory text.
+1. **Inline knowledge content** — Instead of INDEX.md referencing a knowledge
+   file, put the actual verification checklist DIRECTLY into LESSONS.md or
+   SOUL.md. Removes the extra `read()` hop that the agent refuses to take.
+   This tests whether the content itself can change behavior when the delivery
+   barrier is eliminated.
+2. **Different scenario design** — skip-verification says "exactly 2 bugs"
+   which anchors the agent. Try scenarios with open-ended requirements
+   ("fix ALL bugs") where finding more isn't contradicting the task.
+3. **Structural methods** (workflow enforcement, tool-level guards) — if
+   inline content fails, text-based coaching is conclusively ineffective
+   for judgment behaviors, and we need mechanical enforcement.
+4. **context_files in agent.json** — the `context_files` config option lets
+   you inject additional files into the system prompt. Could inject the full
+   knowledge file content without needing INDEX.md references at all.
 
 ## Methods
 

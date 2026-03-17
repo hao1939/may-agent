@@ -109,7 +109,7 @@ If you've been stuck for 5+ turns on the same problem, you won't solve it by try
 You have no memory between sessions. Everything you need to resume must be written down — in workspace notes, progress files, or `finish({ new_items })`. If you learned something important, write it before your session ends.
 
 **Owner: both**
-- *Infra (Bob)*: The system already writes memory.jsonl summaries and overflow progress.md. Consider a structured checkpoint mechanism for multi-step tasks.
+- *Infra (Bob)*: **[IN PROGRESS]** `brief-infra-structured-checkpoints.md` sent to Tech-Lead. Will provide `checkpoint()` tool for granular state saving.
 - *Behavioral (Coach)*: Agents should proactively write progress notes, not rely on the system to capture everything.
 
 ---

@@ -130,13 +130,16 @@ Always clean up. Don't leave dead forks.
    of the same experiment showed different results from interrupted ones.
    Always run experiments to completion. Discard interrupted session data.
 
-8. **Knowledge files need active delivery mechanisms.** System prompt loads
-   `knowledge/INDEX.md` into context but NOT individual knowledge files.
-   During `--oneshot` gym runs, agents go straight to the task and never
-   voluntarily consult INDEX.md or read knowledge files. Knowledge files
-   are necessary (content) but not sufficient (delivery). Pair Method #6
-   with Method #2 (heartbeat step directing agent to read the file) or
-   Method #11 (prompt prefix) to ensure the content is actually consumed.
+8. **System prompt directives are ignored when task-anchoring is strong.**
+   Code review of `resolveSystemPrompt()` confirms INDEX.md IS loaded into
+   the system prompt for ALL sessions including oneshot. The combo fork's
+   INDEX.md contained "READ THIS before finishing any bug-fix task" pointing
+   to `verification-deep-scan.md`. The agent SAW this in its system prompt
+   but chose not to read the referenced file. This is task-anchoring: the
+   explicit task ("fix these 2 bugs") overrides system prompt directives.
+   Prior claim that "agents don't consult INDEX.md" was WRONG — the content
+   was visible, just ignored. Implication: the bottleneck is not delivery
+   mechanism but the agent's prioritization of task over coaching.
 
 9. **Task framing anchors behavior more than coaching text.** When a gym
    scenario says "fix exactly 2 bugs," agents stop after 2 fixes regardless
@@ -150,5 +153,9 @@ Always clean up. Don't leave dead forks.
     Heartbeat Step, Knowledge File, Negative Example, Conditional Guard,
     Subtractive Fix, Micro-Edit) show ZERO behavioral improvements on
     judgment scenarios. Text-based coaching is confirmed SAFE but the
-    improvement signal is consistently zero. Next phase: combination methods
-    and structural methods.
+    improvement signal is consistently zero. The combination approach (#6+#2)
+    was invalidated by the discovery that INDEX.md content was already
+    visible in the system prompt. **Next phase**: (a) inline content directly
+    into LESSONS.md/SOUL.md (no file reference hop), (b) design scenarios
+    without count-anchoring ("fix all bugs" not "fix exactly N"), (c)
+    structural/workflow enforcement if text remains ineffective.

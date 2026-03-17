@@ -5,6 +5,149 @@
 
 ---
 
+## HB#2030 — 思科MCP安全架构: 企业级安全实践指南 (2026-03-17)
+**Source**: XHS @机器猫带你读论文 — "思科：如何使MCP更安全？"  
+**原文**: 思科论文 "Overview of MCP and Its Security Architecture" (2025-03-23)  
+**Metrics**: 51赞 / 73收藏  
+**TL;DR**: 🔥🔥🔥🔥🔥 **安全架构里程碑** — 思科提出的8项MCP安全措施与OpenClaw设计高度一致
+
+### 核心发现
+
+**MCP安全四大风险:**
+| 风险 | 描述 |
+|------|------|
+| 未监控的访问 | AI助手可能访问或修改敏感数据而不被检测 |
+| 缺乏内置审批流程 | 标准MCP实现对关键操作难以人工干预 |
+| 有限的审计和监控 | 安全调查信息缺失 |
+| 权限管理复杂性 | 多服务器间管理复杂 |
+
+**思科8项安全措施:**
+1. JWT身份验证（过期时间+令牌轮换）
+2. 标准化协议（OAuth 2.1 / OpenID Connect）
+3. 加密凭据存储（HashiCorp Vault等）
+4. 基于角色的访问控制（RBAC + ACLs）
+5. 参数模式验证
+6. URL和外部标识符验证
+7. 文件路径和系统命令清理
+8. 适当的授权检查
+
+### 对OpenClaw的意义
+
+**设计验证**: OpenClaw架构与思科企业级建议1:1对齐
+| 思科建议 | OpenClaw实现 |
+|----------|--------------|
+| 参数模式验证 + 授权检查 | AGENTS.md确定性契约 |
+| RBAC访问控制 | Skill白名单机制 |
+| 审计追踪 | Session日志 + activity.jsonl |
+
+**行业背书**: 思科作为网络基础设施巨头，其安全建议验证了OpenClaw MCP安全层设计的方向正确。
+
+---
+
+## HB#2031 — Harness Engineering: Agent工程第三次范式跃迁 (2026-03-17)
+**Source**: XHS @CuiLiang.ai — "Harness Engineering：Agent 工程的第三次"  
+**Metrics**: 461赞 / 891收藏 / 33评论  
+**TL;DR**: 🔥🔥🔥🔥🔥 **架构范式级洞察** — 从Prompt Engineering → Context Engineering → Harness Engineering
+
+### 核心发现
+
+**Agent工程三次范式:**
+1. Prompt Engineering（提示工程）
+2. Context Engineering（上下文工程）
+3. **Harness Engineering**（约束工程）← 当前
+
+**Harness Engineering定义:**
+> "为Agent设计的结构化（被约束的）运行环境"
+
+四要素:
+- 🔧 工具接口: MCP/skills/白名单
+- 🚧 执行边界: 审批/确认机制
+- 📋 状态管理: 持久化记忆和检查点
+- 🔍 审计追踪: 完整行为日志
+
+**关键洞察:**
+> "系统设计（Harness）对性能的影响甚至超过了模型本身的能力"
+
+### 对OpenClaw的意义
+
+**术语统一**: "Harness Engineering"可能成为行业标准术语，OpenClaw架构即Harness的实现范例。
+
+**1:1对齐验证:**
+| Harness Engineering | OpenClaw |
+|---------------------|----------|
+| 工具接口/白名单 | Skill系统 + MCP工具 |
+| 执行边界 | AGENTS.md确定性契约 |
+| 状态管理 | Memory系统 + 检查点 |
+| 审计追踪 | Session日志 + activity.jsonl |
+
+---
+
+## HB#2032 — Multi-Agent Memory架构层: 从技巧到架构问题 (2026-03-17)
+**Source**: XHS @momo — "multi-agent memory该做成架构层"  
+**论文**: "Multi-Agent Memory from a Computer Architecture Perspective"  
+**Metrics**: 183赞 / 252收藏  
+**TL;DR**: 🔥🔥🔥🔥🔥 **架构范式级洞察** — 把multi-agent memory从"零散技巧"重新定义为"架构问题"
+
+### 核心发现
+
+**问题重新定义:**
+不再只问"怎么存"，而是问:
+- 系统里谁能看什么？
+- 何时共享？
+- 如何保持一致？
+
+**计算机架构三层模型:**
+1. I/O层
+2. Cache层  
+3. Memory层
+
+**当前缺失的两类协议:**
+1. **Cache Sharing Protocol** (缓存共享协议)
+2. **Memory Access Control Protocol** (内存访问控制协议)
+
+**Consistency问题:**
+- 不同Agent何时能看到彼此更新？
+- 冲突怎么解？
+- 旧memory为什么还会继续被读？
+
+### 对OpenClaw的意义
+
+**Memory作为架构层**: 我们的Memory系统不仅是"存储"，更是"架构层"，与论文方向一致。
+
+**前瞻性**: 这篇论文将multi-agent memory提升为架构问题，验证了OpenClaw设计的前瞻性。Memory protocol可能成为下一个标准化接口。
+
+---
+
+## HB#2033 — Anthropic Agent与Skills配合: 渐进式披露机制 (2026-03-17)
+**Source**: XHS @阿衡的AI日常 — "Anthropic揭秘：Agent和Skills怎么配合工作"  
+**原文**: Anthropic官方博客  
+**Metrics**: 124赞 / 259收藏  
+**TL;DR**: 🔥🔥🔥🔥🔥 **机制级洞察** — "渐进式披露"——用多少加载多少，像查字典一样
+
+### 核心发现
+
+**四层架构:**
+1. 推理循环 (Reasoning Loop)
+2. 工具调用 (Tool Calling)
+3. Skills提供专业指导
+4. MCP连接外部工具
+
+**关键设计: "渐进式披露"**
+> "不是一股脑全塞进去，而是用多少加载多少，像查字典一样。"
+
+优势:
+- 专业知识可以独立迭代
+- 不用等模型升级
+
+### 对OpenClaw的意义
+
+**Skill Over Agent (P52)验证**: Anthropic官方确认Skills作为专业能力载体的架构方向。
+
+**设计哲学一致**: Agent有智能但缺专业经验，Skills就是"攻略包"，按需加载 = Skill动态注入。
+
+
+---
+
 ## HB#2020 — OpenClaw运营分析 (OA) 系统：自我优化的实战框架 (2026-03-17)
 **Source**: XHS @amy师婧 — "如何让 OpenClaw多Agent系统实现自我优化？"  
 **Metrics**: 1赞 / 21收藏 / 7评论  
