@@ -81,16 +81,18 @@ The agent ignores the directive WITHIN the system prompt, not a separate file.
 1. ✅ ~~**Inline knowledge content**~~ — TESTED (exp-041). Added step 4 to
    Pre-Task Checklist: "After fixing: review every function in modified files."
    Result: 4/5, identical to baseline. Delivery mechanism is NOT the problem.
-2. **Different scenario design** — skip-verification says "exactly 2 bugs"
-   which anchors the agent. Try scenarios with open-ended requirements
-   ("fix ALL bugs") where finding more isn't contradicting the task.
-   This tests whether text coaching works when NOT fighting task-anchoring.
-3. **Structural methods** (workflow enforcement, tool-level guards) — if
-   text coaching also fails on open-ended tasks, it's conclusively ineffective
-   for judgment behaviors, and we need mechanical enforcement.
+2. ✅ ~~**Different scenario design**~~ — TESTED (exp-042/043). Open-ended
+   variant without count-anchoring: baseline 4/5, patched 4/5. Even with
+   explicit "review all code" in task AND inline SOUL coaching, agent still
+   misses hidden bug. Count-anchoring was not the cause.
+3. **Structural methods** (workflow enforcement, tool-level guards) — the
+   only remaining viable path. Need to mechanically force a code review
+   pass after test-fixing. E.g., a workflow that runs the agent in two
+   phases: (1) fix test failures, (2) review every function for correctness.
 4. **context_files in agent.json** — the `context_files` config option lets
    you inject additional files into the system prompt. Could inject the full
    knowledge file content without needing INDEX.md references at all.
+   LOW PRIORITY — delivery mechanism is proven irrelevant.
 
 ## Methods
 
