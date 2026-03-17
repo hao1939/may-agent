@@ -1,55 +1,43 @@
 # Conventions
 
-*Mandatory protocols for all agents. Violations are bugs.*
-*Last Updated: 2026-03-17*
+*Mandatory protocols for all agents. Failure to follow these is a Performance Failure.*
 
-## C1. Coordination Protocol (Tool-Enforced)
-**Use the right tool. Text is invisible.**
+## C1. Input/Output
+1. **Always Read First**: Never assume file contents. `read()` before `edit()`.
+2. **One Read at a Time**: Truncated reads are fatal. Use `offset` to get the rest.
+3. **Verify Writes**: After `edit()`/`write()`, `read()` the file to confirm success.
+4. **Finish Clearly**: Your LAST action in a session must be `finish(status, result)`. Raw text "I'm done" is insufficient.
 
-- **Passing Artifacts / Assigning Tasks**: Use `agents.send(target, "Review file X / Do Y")`
-  - Tracked in request DB. Target sees it in their next heartbeat. Fire-and-forget.
-  - For artifact handoffs, write the file first, then send with the file path in the message.
-- **Blocking Questions**: Use `agents.call(target, "Question")`
-  - Blocks until answered.
-- **Completing Work**: Use `finish({ status: "success"|"failure"|"blocked", summary: "...", deliverables: [...], blockers: [...] })`
-  - **Mandatory** as the final action of every session. Raw text endings are deprecated.
-  - `status`: "success", "failure", or "blocked".
-  - `summary`: What you did.
-  - `deliverables`: Files you created or modified (verified to exist on disk).
-  - `blockers`: Required when status is "blocked" — what's blocking and who can unblock.
-- **Anti-Pattern**: "I have updated the file, please check" (Manual text is invisible).
+## C2. Tool Usage
+1. **Precise Arguments**: Check tool definitions. Don't hallucinate arguments.
+2. **Check Exit Codes**: `bash` output can be silent failure. Check `$?`.
+3. **No Interactive Commands**: `nano`, `vim`, `less` hang the system. Use `edit`, `read`.
+4. **No Chain Loading**: `read({ path: "x" })` is one call. `edit({ ... })` is another.
 
-## C2. Tool Discipline
-**Respect the Interface.**
+## C3. State Management
+1. **Filesystem is Truth**: Memory is ephemeral. Persist important data to files.
+2. **Workspace Isolation**: Work in `agents/[name]/workspace/`. Don't litter root.
+3. **No Overwrites**: Don't `write()` to a file with history (like logs). Use `edit()` or `bash >>`.
 
-- **Check First**: Read `TOOLS.md` or use `agents.list()` before calling.
-- **No Hallucinations**: Do not invent flags (e.g., `grep --context` vs `grep -C`).
-- **Use `finish()`**: End every session with `finish({ status, summary, ... })`. Do not just stop talking.
+## C4. Collaboration
+1. **Sync vs Async**:
+   - `agents.call(target, task)`: Blocking. Use for immediate answers.
+   - `agents.send(target, message)`: Async. Use for handing off work.
+2. **Handoff Protocol**:
+   - Write the artifact (brief, code, doc) to a file.
+   - `agents.send(target, "Task description. Artifact: path/to/file")`.
+   - Never paste full file content in the message.
+3. **Escalation**:
+   - Self-fix (2 retries).
+   - Peer consult (`call`).
+   - Supervisor report (`send` to May).
 
-## C3. Verification First
-**Trust but verify.**
+## C5. Evidence
+1. **Claim = Proof**: "Tests passed" must be backed by `bash` output in transcript.
+2. **Quote Sources**: When synthesizing, quote the line numbers or file paths.
+3. **No Guessing**: If you can't see it, say "I can't see it." Don't hallucinate.
 
-- **Read Before Write**: Never overwrite a file without reading it first.
-- **Verify After Write**: Always read back your edit or run a test to confirm it worked.
-- **No Blind Assumptions**: Do not assume a file exists or has specific content. Check.
-
-## C4. Evidence Discipline (Claim-as-Record)
-**Every claim must be backed by a tool call in the current session.**
-
-- **Citation**: "I fixed the bug" is invalid. "I fixed the bug, verified by `npm test` output in step 3" is valid.
-- **State**: "The file is empty" is invalid. "The `read` output shows the file is empty" is valid.
-- **No Memory**: Do not rely on memory of previous sessions. If you didn't read it *this* session, you don't know it.
-
-## C5. Path Safety
-**Stay within bounds.**
-
-- **Root**: Project root is `/app`. Use relative paths or `/app/...`.
-- **No Home**: Do not access `/home/`, `/Users/`, or `~/`. They do not exist.
-- **Workspace**: Use your agent's `workspace/` for temporary files.
-
-## C6. Error Handling
-**No silent failures.**
-
-- **Report**: If a tool fails, report it. Do not pretend it worked.
-- **Retry Smart**: If blocked, change approach. Do not retry the exact same failing call.
-- **Escalate**: If you can't fix it, hand off to an agent who can (or to human).
+## C6. Resource Hygiene
+1. **Budget Awareness**: Don't read 100 files to find one line. Use `grep`.
+2. **Clean Up**: Delete temp files (`rm`) before finishing.
+3. **Scope Control**: Don't refactor the whole system when asked to fix a typo.
