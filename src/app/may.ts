@@ -715,8 +715,10 @@ writeIdentity({
 
 if (CRON_ENABLED) {
   // Resume stale job sessions from a previous process crash.
-  // Only job sessions — chat and call sessions are left untouched.
   const { resumed, interrupted } = manager.resumeStaleSessions({ kinds: ["job"] });
+  // Clean up orphaned non-job sessions (chat/call) — these have no trigger to self-resume,
+  // so they accumulate forever if not interrupted on startup.
+  const { interrupted: orphansCleaned } = manager.resumeStaleSessions({ abort: true, kinds: ["chat", "call"] });
   if (resumed.length > 0) {
     bus.emit({
       type: "info",
@@ -727,6 +729,12 @@ if (CRON_ENABLED) {
     bus.emit({
       type: "info",
       message: `[startup] ${interrupted.length} session(s) could not resume: ${interrupted.map((s) => `${s.agent}/${s.sessionId}`).join(", ")}`,
+    });
+  }
+  if (orphansCleaned.length > 0) {
+    bus.emit({
+      type: "info",
+      message: `[startup] Cleaned up ${orphansCleaned.length} orphaned session(s): ${orphansCleaned.map((s) => `${s.agent}/${s.sessionId}`).join(", ")}`,
     });
   }
 
