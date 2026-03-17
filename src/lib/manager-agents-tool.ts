@@ -146,6 +146,11 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
             if (!params.agent || !params.task) {
               return textResult(JSON.stringify({ error: "'call' requires 'agent' and 'task'" }));
             }
+            if (!manager.agents.has(params.agent)) {
+              return textResult(
+                JSON.stringify({ error: `Agent "${params.agent}" not registered. Use 'list' to see available agents.` }),
+              );
+            }
             if (callDeny && callDeny.agents.includes(params.agent)) {
               return textResult(
                 JSON.stringify({ error: `Cannot call "${params.agent}" directly. ${callDeny.hint}` }),
