@@ -774,7 +774,40 @@ describe("Cron", () => {
     c.stop();
   });
 
-  it("triggerNow: latches heartbeat when agent is busy", async () => {
+  it("triggerNow: uses per-entry cooldown (half of intervalMs, min 60s)", () => {
+    writeFileSync(
+      configPath,
+      JSON.stringify([
+        { name: "short", type: "job", intervalMs: 60000, message: "go", handler: "short" },
+        { name: "long", type: "job", intervalMs: 600000, message: "go", handler: "long" },
+      ]),
+    );
+    const mgr = makeMockManager();
+    let shortCount = 0;
+    let longCount = 0;
+    const c = new Cron(configPath, mgr as any, () => "sid-1");
+    c.registerHandler("short", async () => { shortCount++; });
+    c.registerHandler("long", async () => { longCount++; });
+    c.start();
+
+    // First triggers succeed
+    expect(c.triggerNow("short")).toBe(true);
+    expect(c.triggerNow("long")).toBe(true);
+
+    // Advance 31s — still within both cooldowns (short=60s min, long=300s)
+    vi.advanceTimersByTime(31_000);
+    expect(c.triggerNow("short")).toBe(false); // 60s cooldown not met
+    expect(c.triggerNow("long")).toBe(false);  // 300s cooldown not met
+
+    // Advance to 61s total — short cooldown met, long still not
+    vi.advanceTimersByTime(30_000);
+    expect(c.triggerNow("short")).toBe(true);  // 60s cooldown met
+    expect(c.triggerNow("long")).toBe(false);  // 300s cooldown not met
+
+    c.stop();
+  });
+
+  it("triggerNow: latches heartbeat when agent is busy, but doesn't re-fire on completion", async () => {
     writeFileSync(
       configPath,
       JSON.stringify([{ name: "hb-latch", type: "heartbeat", intervalMs: 300000, agent: "bob", message: "hb" }]),
@@ -796,19 +829,21 @@ describe("Cron", () => {
     await flush();
 
     // Advance past cooldown so debounce doesn't block
-    vi.advanceTimersByTime(c.triggerCooldownMs + 1);
+    // Per-entry cooldown = intervalMs/2 = 150000ms
+    vi.advanceTimersByTime(150001);
 
     // Second trigger while busy — should latch (return true) but not run
     expect(c.triggerNow("hb-latch")).toBe(true);
     const runCalls = mgr.calls.filter((c) => c.method === "run");
     expect(runCalls).toHaveLength(1); // Only the first run
 
-    // Complete first heartbeat — latch fires second
+    // Complete first heartbeat — latch is cleared but does NOT re-fire
+    // (work is in todo.md, picked up at next scheduled interval)
     resolveWait();
     await flush();
 
     const runCallsAfter = mgr.calls.filter((c) => c.method === "run");
-    expect(runCallsAfter).toHaveLength(2); // Latch caused second run
+    expect(runCallsAfter).toHaveLength(1); // No second run — latch neutered
 
     c.stop();
   });
