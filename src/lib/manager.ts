@@ -74,7 +74,7 @@ import { spawnDetachedAgent, readIdentity } from "./detached.js";
 import { sendSocketCommand } from "./socket-client.js";
 import { runActiveRecall, formatRecallWarnings } from "./active-recall.js";
 import { buildTrace } from "./manager-trace.js";
-import { hasFinishToolCall, isRetryableInfraError, runAgentWithRetry } from "./manager-retry.js";
+import { hasFinishToolCall, extractFinishParams, isRetryableInfraError, runAgentWithRetry } from "./manager-retry.js";
 import { createAgentsTool as createAgentsToolFn, type CreateAgentsToolOptions } from "./manager-agents-tool.js";
 
 
@@ -664,6 +664,40 @@ export class SubagentManager {
           /* non-fatal — don't block completion for request tracking */
         }
       });
+    }
+
+    // ── Auto-escalation: notify parent on blocked/failure (F5) ─────────
+    // When a session ends with finish(blocked) or finish(failure), write a
+    // todo item to the parent agent's workspace/todo.md (or fire onSessionBlocked).
+    {
+      const finishParams = extractFinishParams(messages);
+      if (finishParams && (finishParams.status === "blocked" || finishParams.status === "failure")) {
+        const blockerText = finishParams.blockers?.map(b => `${b.reason}: ${b.context}`).join("; ") ?? "";
+        const escalationMsg = `- [ ] [escalation ${new Date().toISOString().slice(0, 16)}] ${session.agentName} session ${session.sessionId} ended ${finishParams.status}: ${finishParams.summary}${blockerText ? ` | Blockers: ${blockerText}` : ""}\n`;
+
+        // Try parent agent first, fall back to onSessionBlocked (May)
+        const parentName = session.parentAgentName;
+        if (parentName) {
+          try {
+            const parentWorkspace = this.getWorkspacePath(parentName);
+            if (parentWorkspace) {
+              const todoPath = join(parentWorkspace, "todo.md");
+              if (existsSync(todoPath)) {
+                appendFileSync(todoPath, escalationMsg, "utf-8");
+              } else {
+                writeFileSync(todoPath, `# TODO\n\n${escalationMsg}`, "utf-8");
+              }
+            }
+          } catch { /* best-effort */ }
+        }
+
+        // Always fire onSessionBlocked so May can track it
+        if (this.onSessionBlocked) {
+          try {
+            this.onSessionBlocked(session.agentName, session.sessionId, `${finishParams.status}: ${finishParams.summary}`);
+          } catch { /* best-effort */ }
+        }
+      }
     }
 
     if (this.onSessionComplete) {
