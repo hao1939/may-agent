@@ -896,6 +896,23 @@ export class SubagentManager {
     if (!registered) throw new Error(`Agent "${name}" not registered`);
 
     const def = registered.definition;
+
+    // Hot-reload mutable config (opBudget, memoryLimit) from agent.json on disk.
+    // Agent configs are loaded once at startup and cached. Without this, changes
+    // to agent.json (e.g. opBudget rebalancing) don't take effect until restart.
+    const agentDir = def.knowledgeDir ? dirname(def.knowledgeDir) : def.workspace ? dirname(def.workspace) : undefined;
+    if (agentDir) {
+      try {
+        const freshConfig = JSON.parse(readFileSync(join(agentDir, "agent.json"), "utf-8"));
+        if (typeof freshConfig.opBudget === "number" && freshConfig.opBudget !== def.opBudget) {
+          def.opBudget = freshConfig.opBudget;
+        }
+        if (typeof freshConfig.memoryLimit === "number" && freshConfig.memoryLimit !== def.memoryLimit) {
+          def.memoryLimit = freshConfig.memoryLimit;
+        }
+      } catch { /* best-effort — fall back to cached definition */ }
+    }
+
     const sessionId = opts?.sessionId ?? generateId(def.sessionIdPrefix);
     const persistDir = this.registry.persistDir;
 
