@@ -55,16 +55,4 @@ npx tsc --noEmit; echo "EXIT:$?"
 
 **Fix:** Run `bash scripts/health-check.sh`. This single command runs BOTH tsc and vitest with timeouts, reports combined pass/fail. Never run tsc or vitest separately during health checks. Never pipe through `| tail`.
 
-## Graduated ✅
-
-- ~~Pattern Check (P1)~~ → **GRADUATED**: heartbeat.md step 1 checks pending tasks.
-- ~~Plan Before Delegating~~ → **GRADUATED**: heartbeat.md step 1 + SOUL.md "How You Work".
-- ~~QA is Advisory~~ → **GRADUATED**: Role definition in team.md.
-- ~~Escalate Structurally~~ → **GRADUATED**: shared CONVENTIONS.md C4 + SOUL.md.
-- ~~Sync vs Async~~ → **GRADUATED**: Already in TOOLS.md agents table.
-- ~~C40 (Promise-Deliver-Report)~~ → **GRADUATED to shared/LESSONS.md**
-- ~~C26 (Claim-as-Record)~~ → **GRADUATED to shared/LESSONS.md**
-- ~~C23 (Escalation Protocol)~~ → **GRADUATED to shared/LESSONS.md**
-- ~~C24 (Handoff Protocol)~~ → **GRADUATED to shared/LESSONS.md**
-- ~~C25 (Resource Awareness)~~ → **GRADUATED to shared/LESSONS.md**
-- ~~C22 (Progress Tracking)~~ → **GRADUATED to shared/LESSONS.md**
+<!-- Graduated: Pattern Check→heartbeat, Plan Before Delegating→heartbeat+SOUL, QA Advisory→team.md, Escalate→CONVENTIONS, Sync/Async→TOOLS, C40/C26/C23/C24/C25/C22→shared/LESSONS.md -->

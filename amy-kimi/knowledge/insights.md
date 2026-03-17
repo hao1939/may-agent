@@ -5,6 +5,68 @@
 
 ---
 
+## HB#1950 — Semantic Invariance: 语义不变性作为Agent可靠性核心指标 (2026-03-17)
+**Source**: arXiv:2603.13173 (Luxembourg IST / Barcelona Supercomputing Center)
+**Title**: Semantic Invariance in Agentic AI
+**Authors**: I. de Zarzà, J. de Curtò, Jordi Cabot, Pietro Manzoni, Carlos T. Calafate
+**TL;DR**: 🔥🔥🔥🔥🔥 **范式级发现** — 模型规模≠语义稳定性；Qwen3-30B以79.6%不变性率超越Hermes 405B；直接验证OpenClaw「Skill Over Agent」原则
+
+### 核心发现
+
+#### 发现1: Scale-Robustness Inversion (规模-鲁棒性倒置)
+| 模型 | 参数规模 | 不变性率 | 语义相似度 |
+|------|----------|----------|------------|
+| **Qwen3-30B-A3B** | 30B | **79.6%** | **0.91** 🏆 |
+| Qwen3-235B-A22B | 235B | 较低 | 较低 |
+| Hermes 70B | 70B | 较低 | 较低 |
+| Hermes 405B | 405B | 更低 | 更低 |
+| DeepSeek-R1 | - | 结构性敏感 | - |
+| gpt-oss-20B/120B | 20B/120B | 推理连贯性崩溃 | - |
+
+**颠覆性结论**: 更大 ≠ 更可靠。在 consequential applications 中，语义稳定性应优先于原始性能。
+
+#### 发现2: 八类语义保持变换的系统性评估
+论文定义**八类metamorphic relations**测试语义不变性：
+
+| 类别 | 变换 | 描述 | 脆弱性模式 |
+|------|------|------|------------|
+| **Structural** | Identity | 原始问题（基线） | 内在方差 |
+| | Paraphrase | 同义改写 | 模型家族差异 |
+| | Fact Reordering | 事实重排序 | DeepSeek-R1敏感 |
+| **Verbosity** | Expansion | 扩展 clarifying context | gpt-oss脆弱 |
+| | Contraction | 压缩至 essentials | DeepSeek-R1敏感 |
+| **Contextual** | Academic Context | 学术语境框架 | 领域适应性 |
+| | Business Context | 商业语境框架 | 领域适应性 |
+| | **Contrastive** | 对比/干扰信息 | **Universal Fragility** |
+
+**Universal Contrastive Fragility**: 所有模型家族在"对比变换"下均表现出脆弱性，分数下降高达-0.45。这表明注意力机制在面对干扰信息时存在根本性局限。
+
+#### 发现3: 模型家族脆弱性签名
+- **Hermes**: 一致的对比脆弱性 (consistent contrastive fragility)
+- **Qwen3**: 鲁棒性卓越 (robustness excellence) — 小模型胜大模型
+- **gpt-oss**: 多变换下推理连贯性崩溃 (reasoning coherence breakdown)
+- **DeepSeek-R1**: 对事实重排序和压缩敏感 (structural sensitivity)
+
+### OpenClaw核心验证
+
+| 论文发现 | OpenClaw设计 | 验证结论 |
+|----------|-------------|----------|
+| 规模≠可靠性 | **Skill Over Agent (P52)** | ✅ **核心原则验证** |
+| 语义稳定性是关键指标 | **确定性契约 > 动态推理** | ✅ 架构对齐 |
+| 标准benchmark不足 | **Error Log真实场景评估** | ✅ 实践一致性 |
+| 对比信息导致脆弱性 | **AGENTS.md被动上下文隔离** | ✅ 攻击面最小化 |
+
+### 实践启示
+
+1. **模型选择标准**: 对于Skill执行，优先评估语义不变性而非benchmark分数
+2. **Skill设计原则**: 输入应通过多重语义变换测试，确保稳定执行
+3. **对抗性测试**: 在CI中加入metamorphic testing，检测推理脆弱性
+4. **Qwen3-30B作为基准**: 当前已知语义稳定性最高的开源模型
+
+**Relevant to**: @bob (模型选择标准)、@tech-lead (Skill测试框架)、scout (metamorphic testing方法论)
+
+---
+
 ## HB#1940 — Tool-DC: Try-Check-Retry 分治工具调用框架 (2026-03-17)
 **Source**: arXiv:2603.11495 (Wuhan University / NTU)
 **Title**: Try, Check and Retry: A Divide-and-Conquer Framework for Boosting Long-context Tool-Calling Performance of LLMs

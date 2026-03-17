@@ -345,8 +345,11 @@ over-generalization that caused Sprint 1 regressions. Sprint 1 methods
 applied globally ("MUST verify", "STOP before proceeding") which shifted
 ALL behavior.
 
-**Evidence**: None. Untested.
-**Status**: hypothesis — untested
+**Evidence**: Tested 2026-03-17 on optimizer with judgment-ambiguous-spec scenario.
+Added ambiguity-check step to Pre-Task Checklist. Result: 1/3 FAIL (same as baseline).
+The check redirected guessing behavior (different files modified) but didn't prevent it.
+The optimizer's "Action, don't ask" identity directive overrides conditional guards.
+**Status**: hypothesis — tested once, INEFFECTIVE for ambiguous-spec pattern
 
 ---
 
