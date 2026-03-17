@@ -89,7 +89,8 @@ interface FinishParams {
  *
  * When called:
  * 1. Validates deliverable paths exist (if status is success)
- * 2. Returns a formatted summary as the tool output
+ * 2. Updates the unified request tracker (SQLite)
+ * 3. Returns a formatted summary as the tool output
  *
  * The tool output becomes the final message visible to the parent/manager,
  * replacing unstructured free-text endings.
