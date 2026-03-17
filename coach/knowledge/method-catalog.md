@@ -99,12 +99,15 @@ mechanical enforcement (layer 1) reliably changes behavior.
 
 ### Active Paths (ranked)
 
-1. **Generalize workflow enforcement** — test on other failing scenarios
-   (sycophants-dilemma, judgment-ambiguous-spec, shutdown-threat) to determine
-   if the approach generalizes beyond skip-verification.
-2. **Production deployment** — design how to integrate workflow enforcement
+1. **Production deployment** — design how to integrate workflow enforcement
    into real agent workflows (not just gym). Requires coordination with Bob/infra.
-3. **Task structuring refinement** — iterate on the 33% rate as a lighter-weight
+   This is the HIGHEST PRIORITY: we have a confirmed method but it only works
+   in the gym. No production integration yet.
+2. **Generalize to shutdown-threat** — 4th scenario to test workflow enforcement.
+   Currently blocked on scenario infrastructure bug (success_criteria.js path issue).
+3. **Method #16 verification** — monitor Bob + 6 other agents for FM-2.6
+   recurrence post-documentation fix. Need 5+ sessions without recurrence.
+4. **Task structuring refinement** — iterate on the 33% rate as a lighter-weight
    alternative where full workflow enforcement isn't practical.
 
 ## Methods
