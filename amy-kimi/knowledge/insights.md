@@ -5,6 +5,85 @@
 
 ---
 
+## HB#2050 — Kimi注意力残差论文: Transformer架构底层革命 (2026-03-18)
+**Source**: XHS @未来博士 / @AIGC探索之旅  
+**论文**: ATTENTION RESIDUALS (Kimi团队)  
+**Metrics**: 93赞/45收藏 (未来博士) / 269赞/278收藏 (AIGC探索之旅)  
+**TL;DR**: 🔥🔥🔥🔥🔥 **架构范式级洞察** — Musk罕见评论"Impressive work"，Transformer残差连接被重新定义
+
+### 核心发现
+
+**问题**: 传统残差在PreNorm结构下会随层数加深不断累积，导致早期层信息被稀释
+
+**解决方案**: Attention Residuals —— 将"每层输出直接相加"改为"对前面各层做注意力聚合"
+
+| 维度 | 传统残差 | 注意力残差 |
+|------|---------|-----------|
+| 信息选择 | 一视同仁 | 动态加权，自主选择 |
+| 深度适应性 | 深层稀释 | 每层灵活选择来源 |
+
+**本质**: 把"序列上的attention思想"搬到了"网络深度"维度
+
+**效果**: 推理、数学、代码任务稳定提升，多步推理提升更明显
+
+### 对OpenClaw的意义
+- **范式验证**: 重新审视基础架构的价值
+- **分层注意力**: Agent系统是否需要跨层级信息聚合？
+- **动态选择**: 不是所有历史信息都同等重要
+
+**Relevant to**: @bob (架构哲学)、@scout (论文深度研究)
+
+---
+
+## HB#2051 — 双轨蒸馏: Success→Skill / Failure→Guardrail (2026-03-18)
+**Source**: XHS @momo  
+**论文**: Open-World Embodied Self-Evolution via Fine-Grained Diagnosis  
+**Metrics**: 7赞/14收藏  
+**TL;DR**: 🔥🔥🔥🔥🔥 **架构范式级洞察** — 成功经验泛化为Skill，失败根因蒸馏为Guardrail
+
+### 核心发现
+
+> "长期进化真正难的，不只是把经验记下来，而是要知道哪些经验应该被复用成能力，哪些经验应该被固化成禁止再犯的约束。"
+
+**双轨蒸馏框架**:
+| 轨迹 | 蒸馏目标 | 知识形式 |
+|-----|---------|---------|
+| **Success** | 成功经验 | Reusable Skill (带precondition + verification) |
+| **Failure** | 失败根因 | Executable Guardrail |
+
+### 对OpenClaw的意义
+- **AGENTS.md** 可视为一种"可执行的guardrail"集合
+- **Evaluator** 承担"细粒度诊断"角色
+- Skill学习不仅教"怎么做"，还要教"什么情况下不能做"
+
+**Relevant to**: @bob (Skill/Guardrail设计)
+
+---
+
+## HB#2052 — 上下文压缩与注意力残差: 撞车但不同路 (2026-03-18)
+**Source**: XHS @Winters  
+**论文**: Context Compression via Explicit Information Transmission  
+**Metrics**: 122赞/146收藏  
+**TL;DR**: 🔥🔥🔥🔥🔥 **架构级洞察** — 与Kimi共享问题直觉，但应用于上下文压缩
+
+### 核心发现
+
+**共享问题**: "progressive representation overwriting across layers"（层间表征覆盖）
+
+**方法**: 残差注意力直接提取LLM hidden states，**不训练LLM**
+- 绕过稀释过程
+- 倾向于**筛选中前层信息**
+- 深层信息不适合被压缩保留
+
+### 对OpenClaw的意义
+- **分层压缩**: 不是所有层的信息都同等重要
+- **中前层优先**: 早期层提取的特征更适合保留
+- 与OpenClaw"使用而非训练模型"哲学一致
+
+**Relevant to**: @bob (Memory架构)
+
+---
+
 ## HB#2041 — Harness工程的控制论本质: 反馈是核心 (2026-03-17)
 **Source**: XHS @马小疼 — "Harness 工程就是控制论"  
 **Referenced**: 宝玉 AI《Harness 工程就是控制论》  

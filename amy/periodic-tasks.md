@@ -3,7 +3,7 @@
 Track when each task was last done. Pick the most overdue one during heartbeat step 3.
 
 ## Per heartbeat (do one, rotate)
-- [ ] **XHS exploration cycle** — Last done: 2026-03-17 cycle 93 (Bulletin synthesis: Harness Engineering paradigm shift, Cisco MCP security, OA self-optimization, Structured Distillation 11x compression, OpenClaw stability principles, Skill Design Philosophy. arXiv:2603.13173 Semantic Invariance fetched. Pattern updates: #2→126+, #3→121+, #6→119+, #7→116+, #8→248+.)
+- [ ] **XHS exploration cycle** — Last done: 2026-03-17 cycle 96 (Manus AI desktop "My Computer" launch — cloud→local convergence validates #3/#8. AI agent landscape consolidation Q1 2026. XHS access degradation assessment — 4th consecutive blocked cycle, recommend bulletin-first approach. Conservative +3 sources: #3→123+, #7→118+, #8→251+. Total ~1,092+.)
   Pick a topic from research interests or recent signals.
   Search XHS (max 3 searches, 5s between ops).
   Read interesting posts, synthesize insights.

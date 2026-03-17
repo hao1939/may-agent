@@ -9,11 +9,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If found → add specific task to workspace/todo.md.
   Latest (2026-03-17, 11:37 update): Reviewed Bob's 5 new briefs: (1) **DPIR Pattern** — philosophy, not optimization-relevant, (2) **Pressure-Safety Inversion** — validates infra approach, no action, (3) **OpBudget Visibility** — `turnBudgetWarningAt` configured but not wired to inject per-turn counter into context, (4) **Tool Name Injection** — not yet implemented, (5) **Stuck Detection** — already in `src/lib/stuck-detector.ts` ✅. **Overtrigger fix verified**: both cron.ts fixes deployed (proportional cooldown interval/2 + pending trigger no-op). Rates: May 1.56x (was 2.79x), tech-lead 1.75x (was 3.26x), coach 1.27x (was 2.36x). **~55% reduction**, waste down from ~$435/day to ~$126/day. Remaining opportunity: increase cooldown from interval/2 to interval×0.75 could save another ~$60/day. Briefs 3-4 are in tech-lead's queue. No new optimizer-owned action items.
 
-- [x] **Cost outlier scan** — Last done: 2026-03-17T21:16
+- [x] **Cost outlier scan** — Last done: 2026-03-17T21:39
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-17T21:16): **Follow-up on Coach Cost Crisis.** Processed tech-lead response (req:56625ae9): Bob's cache hits are Gemini implicit caching (not Anthropic), our app code already requests caching correctly, LiteLLM proxy is likely stripping cache_control headers. Updated finding. **Also found Bob checkpoint loop** — 13 stuck CREATED requests to non-existent "checkpoint" agent, wasting ~$5-10 across sessions. Expired all 13 stuck requests. Wrote finding: `workspace/finding-bob-checkpoint-loop.md`. Fix request to tech-lead (req:8e9f3e88) pending.
+  Latest (2026-03-17T21:39): **Verified caching completely non-functional for Anthropic Opus agents.** Scanned actual transcripts (not evals, which report 0). Coach/tech-lead/optimizer/scout/amy all show 0% cache. Evaluator has 73.9% cache (anomaly — needs investigation). Bob 52.2%. Actual pricing: $3/M input (not $15 as initially assumed). Revised cache savings estimate: $15-25/day (down from $190/day). Coach still top spender: $11.24 across 5 sessions. Updated `workspace/finding-coach-cost-crisis.md` with full tech-lead response, verified cache data, and revised estimates. New action item: investigate why evaluator has caching but other Anthropic agents don't.
 
 - [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-17
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
