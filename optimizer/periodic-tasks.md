@@ -9,11 +9,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If found → add specific task to workspace/todo.md.
   Latest (2026-03-17, 11:37 update): Reviewed Bob's 5 new briefs: (1) **DPIR Pattern** — philosophy, not optimization-relevant, (2) **Pressure-Safety Inversion** — validates infra approach, no action, (3) **OpBudget Visibility** — `turnBudgetWarningAt` configured but not wired to inject per-turn counter into context, (4) **Tool Name Injection** — not yet implemented, (5) **Stuck Detection** — already in `src/lib/stuck-detector.ts` ✅. **Overtrigger fix verified**: both cron.ts fixes deployed (proportional cooldown interval/2 + pending trigger no-op). Rates: May 1.56x (was 2.79x), tech-lead 1.75x (was 3.26x), coach 1.27x (was 2.36x). **~55% reduction**, waste down from ~$435/day to ~$126/day. Remaining opportunity: increase cooldown from interval/2 to interval×0.75 could save another ~$60/day. Briefs 3-4 are in tech-lead's queue. No new optimizer-owned action items.
 
-- [x] **Cost outlier scan** — Last done: 2026-03-17T22:50
+- [x] **Cost outlier scan** — Last done: 2026-03-17T22:55
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-17T22:50): **Found evaluator session cascade waste.** 33 evaluator sessions in 4h (8/hr), 73% with ≤3 ops. Three overlapping triggers: (1) `evaluate-sessions` JS handler spawning LLM children, (2) duplicate `evaluate-session-llm` cron, (3) heartbeat. Fixed: disabled duplicate cron, added MAX_PARENTS_PER_RUN=3 limit. Savings: ~15-20 fewer sessions/day. Finding at `workspace/finding-evaluator-session-waste.md`.
+  Latest (2026-03-17T22:55): **Found Bob Gemini 3 Pro streaming failures.** 14/32 Bob sessions error (44%), 0 completions in 4h. All due to `litellm.MidStreamFallbackError` with `finish_reason: error`. No fallback configured. Bob is only gemini3pro agent. Est. waste: ~$42/day. Finding at `workspace/finding-bob-gemini-errors.md`. Recommend switching Bob model to opus.
 
 - [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-17T22:30
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
