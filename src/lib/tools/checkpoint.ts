@@ -13,7 +13,7 @@
 import type { AgentTool } from "@mariozechner/pi-agent-core";
 import { Type } from "@mariozechner/pi-ai";
 import type { TSchema } from "@mariozechner/pi-ai";
-import { mkdirSync, appendFileSync, readFileSync, existsSync } from "fs";
+import { mkdirSync, appendFileSync, readFileSync, writeFileSync, existsSync } from "fs";
 import { resolve } from "path";
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -24,12 +24,17 @@ export interface CheckpointToolOptions {
    *  When used with wrapToolsWithReceipts, the manager injects
    *  the session ID dynamically. */
   sessionId: string | (() => string);
+  /** Agent name — used for the per-agent latest-checkpoint pointer.
+   *  Can be a string (fixed) or a function (resolved at call time).
+   *  Injected by the manager alongside sessionId. */
+  agentName: string | (() => string);
   /** Directory for .state/ files. */
   persistDir: string;
 }
 
 export interface CheckpointEntry {
   sessionId: string;
+  agentName: string;
   step: number;
   summary: string;
   data: Record<string, unknown>;
@@ -97,6 +102,24 @@ export function readLatestCheckpoint(
   return entries.length > 0 ? entries[entries.length - 1] : null;
 }
 
+/**
+ * Read the latest checkpoint for an agent (across all sessions).
+ * Uses the per-agent latest pointer at `.state/checkpoints/latest/<agentName>.json`.
+ * Returns null if no checkpoints exist for this agent.
+ */
+export function readLatestCheckpointForAgent(
+  persistDir: string,
+  agentName: string,
+): CheckpointEntry | null {
+  const filePath = resolve(persistDir, "checkpoints", "latest", `${agentName}.json`);
+  if (!existsSync(filePath)) return null;
+  try {
+    return JSON.parse(readFileSync(filePath, "utf-8"));
+  } catch {
+    return null;
+  }
+}
+
 // ── Step counter ───────────────────────────────────────────────────────
 
 /** Track step counters per session (in-memory, resets on process restart) */
@@ -122,7 +145,12 @@ export function createCheckpointTool(
     typeof options.sessionId === "function"
       ? options.sessionId()
       : options.sessionId;
+  const resolveAgentName = () =>
+    typeof options.agentName === "function"
+      ? options.agentName()
+      : options.agentName;
   const checkpointDir = resolve(persistDir, "checkpoints");
+  const latestDir = resolve(checkpointDir, "latest");
 
   return {
     name: "checkpoint",
@@ -157,6 +185,7 @@ export function createCheckpointTool(
       // Build checkpoint entry
       const entry: CheckpointEntry = {
         sessionId: sid,
+        agentName: resolveAgentName(),
         step: currentStep,
         summary: summary.trim(),
         data: data ?? {},
@@ -168,6 +197,13 @@ export function createCheckpointTool(
         mkdirSync(checkpointDir, { recursive: true });
         appendFileSync(
           resolve(checkpointDir, `${sid}.jsonl`),
+          JSON.stringify(entry) + "\n",
+          "utf-8",
+        );
+        // Write per-agent latest pointer for session injection
+        mkdirSync(latestDir, { recursive: true });
+        writeFileSync(
+          resolve(latestDir, `${entry.agentName}.json`),
           JSON.stringify(entry) + "\n",
           "utf-8",
         );
