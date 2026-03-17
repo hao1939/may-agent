@@ -856,17 +856,14 @@ describe("Cron", () => {
     const c = new Cron(configPath, mgr as any, () => "sid-1", undefined, dir);
     c.start();
 
-    // First fire + completion → should re-trigger because todo has unchecked items
+    // First fire + completion — maxRetriggers=0 means no re-trigger even with unchecked items
     await vi.advanceTimersByTimeAsync(300000);
     await flush();
 
-    // Should have fired at least twice (first + one re-trigger)
+    // With maxRetriggers=0 (disabled), should fire exactly once — agents process todos at their natural heartbeat interval
     const runCalls = mgr.calls.filter((c) => c.method === "run");
-    expect(runCalls.length).toBeGreaterThanOrEqual(2);
-    // All calls should be for agent "bob"
-    for (const call of runCalls) {
-      expect(call.args[0]).toBe("bob");
-    }
+    expect(runCalls).toHaveLength(1);
+    expect(runCalls[0].args[0]).toBe("bob");
 
     c.stop();
   });
@@ -975,9 +972,9 @@ describe("Cron", () => {
     await vi.advanceTimersByTimeAsync(300000);
     await flush();
 
-    // First run succeeds → re-triggers → second run fails → count resets, no more re-triggers
+    // With maxRetriggers=0, no re-trigger happens — only the initial run fires
     const runCalls = mgr.calls.filter((c) => c.method === "run");
-    expect(runCalls).toHaveLength(2);
+    expect(runCalls).toHaveLength(1);
 
     c.stop();
   });
