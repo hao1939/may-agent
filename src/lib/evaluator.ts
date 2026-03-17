@@ -716,3 +716,180 @@ export async function writeSkippedEvaluations(persistDir: string, skipAgents: Se
 
   return written;
 }
+
+// ── Heuristic evaluations for root sessions ────────────────────────────
+
+/**
+ * Write heuristic (deterministic) evaluations for root sessions that have
+ * transcripts but no parentSessionId. These sessions are invisible to the
+ * task-tree evaluation path (evaluateTask) and would otherwise accumulate
+ * as an ever-growing backlog.
+ *
+ * Scoring heuristic based on available metadata and transcript patterns:
+ * - Session status (done vs error)
+ * - Turn count and tool call count
+ * - OpBudget exhaustion pattern
+ * - finish() tool usage
+ *
+ * Returns the number of evaluation files written.
+ */
+export async function writeHeuristicEvaluations(persistDir: string): Promise<number> {
+  const evalDir = join(persistDir, "evaluations");
+  mkdirSync(evalDir, { recursive: true });
+
+  const allSessions: Record<string, PersistedSession> = await loadAllSessionMetasAsync(persistDir);
+  let written = 0;
+
+  for (const [sessionId, session] of Object.entries(allSessions)) {
+    // Only root sessions (no parent)
+    if (session.parentSessionId) continue;
+
+    // Skip if already evaluated
+    const evalPath = join(evalDir, `${sessionId}.json`);
+    if (existsSync(evalPath)) continue;
+
+    // Skip sessions still running
+    if (session.status === "running" || session.status === "idle") continue;
+
+    // Skip evaluator sessions (already handled by writeSkippedEvaluations)
+    if (session.agent === "evaluator") continue;
+
+    // Must have a transcript
+    const activeJsonl = join(persistDir, "sessions", sessionId, "session.jsonl");
+    const archivedJsonl = join(historyDir(persistDir), sessionId, "session.jsonl");
+    const transcriptPath = existsSync(activeJsonl) ? activeJsonl :
+                           existsSync(archivedJsonl) ? archivedJsonl : null;
+    if (!transcriptPath) continue;
+
+    // Read transcript for heuristic analysis
+    let transcriptText = "";
+    try {
+      transcriptText = readFileSync(transcriptPath, "utf-8");
+    } catch {
+      continue; // Can't read → skip
+    }
+
+    // Compute heuristic scores
+    const scores = computeHeuristicScores(session, transcriptText);
+
+    const evaluation = {
+      agent: session.agent,
+      sessionId,
+      efficiency: scores.efficiency,
+      quality: scores.quality,
+      productive_calls: scores.productiveCalls,
+      wasted_calls: scores.wastedCalls,
+      verdict: scores.verdict,
+      issues: scores.issues,
+      overall: {
+        efficiency: scores.efficiency,
+        quality: scores.quality,
+        verdict: scores.verdict,
+        result_delivered: scores.resultDelivered,
+      },
+      usage: {
+        inputTokens: 0,
+        outputTokens: 0,
+        cacheReadTokens: 0,
+        cacheWriteTokens: 0,
+        totalTokens: 0,
+        cost: 0,
+        turns: 0,
+      },
+      failureChains: [],
+      evaluatedByHeuristic: true,
+    };
+
+    writeFileSync(evalPath, JSON.stringify(evaluation, null, 2), "utf-8");
+    written++;
+  }
+
+  return written;
+}
+
+/**
+ * Deterministic scoring based on session metadata and transcript patterns.
+ */
+function computeHeuristicScores(session: PersistedSession, transcript: string): {
+  efficiency: number;
+  quality: number;
+  productiveCalls: number;
+  wastedCalls: number;
+  verdict: "good" | "acceptable" | "needs_improvement";
+  issues: string[];
+  resultDelivered: boolean;
+} {
+  let efficiency = 3;
+  let quality = 3;
+  let productiveCalls = 0;
+  let wastedCalls = 0;
+  const issues: string[] = [];
+
+  // Count tool calls from transcript
+  const toolCallMatches = transcript.match(/"type":"toolCall"/g);
+  const totalToolCalls = toolCallMatches?.length ?? 0;
+
+  // Count assistant turns
+  const assistantTurns = (transcript.match(/"role":"assistant"/g) || []).length;
+
+  // 1. Session status
+  if (session.status === "error") {
+    quality -= 1;
+    issues.push("session_error");
+  }
+
+  // 2. OpBudget exhaustion
+  const hasOpBudgetError = transcript.includes("opBudget") || transcript.includes("operation budget");
+  if (hasOpBudgetError && session.status === "error") {
+    efficiency -= 1;
+    issues.push("opBudget_exhaustion");
+  }
+
+  // 3. Very shallow sessions (< 2 assistant turns with few tool calls)
+  if (assistantTurns <= 1 && totalToolCalls === 0) {
+    quality -= 2;
+    issues.push("shallow_session");
+  }
+
+  // 4. finish() tool usage
+  const hasFinishCall = transcript.includes('"finish"') || transcript.includes('"name":"finish"');
+  if (hasFinishCall) {
+    quality += 1; // Good completion practice
+  } else if (session.status === "done" && assistantTurns > 2) {
+    issues.push("no_finish_call");
+  }
+
+  // 5. Successful session with reasonable tool usage
+  if (session.status === "done" && totalToolCalls >= 3) {
+    efficiency += 1;
+    quality += 1;
+  }
+
+  // 6. High error count suggests wasteful retries
+  const errorResults = (transcript.match(/P53 Violation|Error:|ENOENT|Cannot find/gi) || []).length;
+  if (errorResults > 3) {
+    efficiency -= 1;
+    wastedCalls = Math.min(errorResults, totalToolCalls);
+    issues.push("multiple_tool_errors");
+  }
+
+  productiveCalls = Math.max(0, totalToolCalls - wastedCalls);
+
+  // Clamp scores to 1-5 range
+  efficiency = Math.max(1, Math.min(5, efficiency));
+  quality = Math.max(1, Math.min(5, quality));
+
+  // Determine verdict
+  let verdict: "good" | "acceptable" | "needs_improvement";
+  if (quality >= 4 && efficiency >= 4) {
+    verdict = "good";
+  } else if (quality >= 2 && efficiency >= 2) {
+    verdict = "acceptable";
+  } else {
+    verdict = "needs_improvement";
+  }
+
+  const resultDelivered = session.status === "done" && (hasFinishCall || totalToolCalls >= 2);
+
+  return { efficiency, quality, productiveCalls, wastedCalls, verdict, issues, resultDelivered };
+}
