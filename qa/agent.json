@@ -5,7 +5,6 @@
   "domain": "code quality review",
   "model": "gpt52",
   "tools": [
-    "coordination",
     "coding"
   ]
 }

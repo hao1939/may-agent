@@ -6,7 +6,6 @@
   "model": "gemini3pro",
   "compaction": true,
   "tools": [
-    "coordination",
     "coding",
     "agents",
     "system_status"

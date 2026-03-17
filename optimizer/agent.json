@@ -6,7 +6,6 @@
   "model": "opus",
   "compaction": true,
   "tools": [
-    "coordination",
     "coding",
     "agents",
     "workflow"

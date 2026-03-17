@@ -5,7 +5,6 @@
   "domain": "may-agent implementation",
   "model": "opus",
   "tools": [
-    "coordination",
     "coding"
   ]
 }

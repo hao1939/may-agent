@@ -6,7 +6,6 @@
   "model": "kimi",
   "compaction": true,
   "tools": [
-    "coordination",
     "coding",
     "scrape"
   ]

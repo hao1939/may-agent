@@ -8,7 +8,6 @@
   "tools": [
     "coding",
     "workflow",
-    "agents",
-    "coordination"
+    "agents"
   ]
 }

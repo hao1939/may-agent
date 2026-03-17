@@ -6,11 +6,8 @@
   "model": "opus",
   "compaction": true,
   "tools": [
-    "coordination",
     "coding",
-    "socket-watch",
     "agents",
-    "agent-growth",
     "workflow"
   ],
   "memoryLimit": 10
