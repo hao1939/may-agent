@@ -1,7 +1,8 @@
 export { SubagentManager, generateId, truncateForPrompt } from "./manager.js";
 export type { SubagentManagerOptions, RunOptions } from "./manager.js";
 // Session recovery (Ambulance Protocol — P62)
-export { classifyError } from "./manager.js";
+export { classifyError } from "./classify-error.js";
+export type { ErrorClass } from "./classify-error.js";
 // Agent growth core logic
 export { forkAgent, promoteAgent, discardAgent, listLabAgents } from "./growth.js";
 export type { GrowthConfig, ForkResult, PromoteResult } from "./growth.js";

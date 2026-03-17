@@ -81,27 +81,26 @@ import { runActiveRecall, formatRecallWarnings } from "./active-recall.js";
 import { buildTrace } from "./manager-trace.js";
 import { hasFinishToolCall, extractFinishParams, isRetryableInfraError, runAgentWithRetry } from "./manager-retry.js";
 import { createAgentsTool as createAgentsToolFn, type CreateAgentsToolOptions } from "./manager-agents-tool.js";
+import { classifyError as classifyErrorFn } from "./classify-error.js";
 
 
 // Lazy import for requests.ts (uses bun:sqlite, not available in vitest)
 let _updateRequest: typeof import("./requests.js").updateRequest | null = null;
-let _classifyRequestError: typeof import("./requests.js").classifyError | null = null;
 async function getRequestFns() {
   if (!_updateRequest) {
     try {
       const mod = await import("./requests.js");
       _updateRequest = mod.updateRequest;
-      _classifyRequestError = mod.classifyError;
     } catch {
       /* bun:sqlite not available (e.g., vitest) */
     }
   }
-  return { updateRequest: _updateRequest, classifyError: _classifyRequestError };
+  return { updateRequest: _updateRequest };
 }
 
 export { isRetryableInfraError, runAgentWithRetry } from "./manager-retry.js";
-// classifyError is pure string-matching (no bun:sqlite dependency), safe to re-export eagerly
-export { classifyError } from "./requests.js";
+// classifyError is pure string-matching — imported from classify-error.ts (no bun:sqlite deps)
+export { classifyError } from "./classify-error.js";
 export { buildTrace, findPathToTarget } from "./manager-trace.js";
 export type { TraceContext } from "./manager-trace.js";
 import { computeHealth, computeAuditHealth, computeReconcileHealth, EVAL_SKIP_AGENTS } from "./manager-health.js";
@@ -759,7 +758,7 @@ export class SubagentManager {
 
     // ── Update request status (unified request tracking) ───────────────
     if (session.requestId) {
-      getRequestFns().then(({ updateRequest: updateReq, classifyError: classErr }) => {
+      getRequestFns().then(({ updateRequest: updateReq }) => {
         if (!updateReq) return;
         try {
           const durationMs = session.endedAt ? session.endedAt - session.startedAt : undefined;
@@ -767,7 +766,7 @@ export class SubagentManager {
             status: archiveStatus === "done" ? "COMPLETED" : "FAILED",
             sessionId: session.sessionId,
             error: session.error ?? undefined,
-            errorClass: session.error && classErr ? classErr(session.error) : undefined,
+            errorClass: session.error ? classifyErrorFn(session.error) : undefined,
             durationMs,
             completedAt: Date.now(),
           });
