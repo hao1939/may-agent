@@ -33,6 +33,8 @@ export interface TelegramBotOptions {
 
 export interface TelegramBot {
   close: () => void;
+  /** Send a proactive alert to the primary chat (first allowed chat ID). */
+  sendAlert: (text: string) => void;
 }
 
 const TELEGRAM_MAX_LENGTH = 4096;
@@ -48,7 +50,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
 
   if (!token) {
     bus.emit({ type: "info", message: "[telegram] TELEGRAM_BOT_TOKEN not set — bot disabled" });
-    return { close: () => {} };
+    return { close: () => {}, sendAlert: () => {} };
   }
 
   if (allowedChatIds.length === 0) {
@@ -56,7 +58,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       type: "info",
       message: "[telegram] TELEGRAM_CHAT_ID not set — bot disabled (security: must specify allowed chat IDs)",
     });
-    return { close: () => {} };
+    return { close: () => {}, sendAlert: () => {} };
   }
 
   const baseUrl = `https://api.telegram.org/bot${token}`;
@@ -288,6 +290,13 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     close: () => {
       running = false;
       unsubBus();
+    },
+    sendAlert: (text: string) => {
+      if (!pendingChatId) return;
+      sendMessage(pendingChatId, text).catch((err) => {
+        const msg = err instanceof Error ? err.message : String(err);
+        bus.emit({ type: "info", message: `[telegram] Alert send failed: ${msg}` });
+      });
     },
   };
 }
