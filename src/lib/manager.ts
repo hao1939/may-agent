@@ -624,10 +624,12 @@ export class SubagentManager {
 
     // Set error field — but if finish was called successfully, don't treat
     // subsequent empty responses or transient model errors as session failures
-    // (the agent completed its work; the model just had a post-finish hiccup)
+    // (the agent completed its work; the model just had a post-finish hiccup,
+    //  or we deliberately aborted after finish() to prevent re-invocation loops)
     if (agentError && hasFinishToolCall(messages) &&
         (agentError.includes("empty response") || agentError.includes("0 output tokens") ||
-         agentError.includes("Unhandled stop reason") || agentError.includes("OpBudgetExceeded"))) {
+         agentError.includes("Unhandled stop reason") || agentError.includes("OpBudgetExceeded") ||
+         agentError.includes("aborted"))) {
       session.error = undefined;
       session.agent.state.error = undefined;
     } else if (agentError) {
@@ -647,16 +649,18 @@ export class SubagentManager {
       }
     }
 
-    // ── Final safety net: finish() clears empty-response errors ────────
+    // ── Final safety net: finish() clears post-finish errors ────────
     // Defense-in-depth: if the agent successfully called finish(), any
-    // empty-response / 0-output-token / unhandled-stop-reason error is
-    // a post-finish model hiccup, not a real failure. Clear it.
+    // empty-response / 0-output-token / unhandled-stop-reason / abort error is
+    // a post-finish artifact, not a real failure. Clear it.
     // This catches cases where the error was set by a code path that
-    // the earlier checks (lines 509-512) didn't cover.
+    // the earlier checks didn't cover (including the deliberate abort
+    // triggered by the finish-termination logic in manager-receipts.ts).
     if (session.error && hasFinishToolCall(messages)) {
       const e = session.error;
       if (e.includes("empty response") || e.includes("0 output tokens") ||
-          e.includes("Unhandled stop reason") || e.includes("OpBudgetExceeded")) {
+          e.includes("Unhandled stop reason") || e.includes("OpBudgetExceeded") ||
+          e.includes("aborted")) {
         session.error = undefined;
         session.agent.state.error = undefined;
       }
