@@ -287,12 +287,9 @@ export class Cron {
           if (content) injections.push(`## Injected: shared/common-sense.md\n\n${content}`);
         }
 
-        // 4. periodic-tasks.md — if agent has one, inject so they can decide what's due
-        const periodicPath = resolve(agentDir, "periodic-tasks.md");
-        if (existsSync(periodicPath)) {
-          const content = readFileSync(periodicPath, "utf-8").trim();
-          if (content) injections.push(`## Injected: periodic-tasks.md\n\n${content}`);
-        }
+        // NOTE: periodic-tasks.md is NOT injected — it's a reference doc with task
+        // descriptions, methodology, and historical notes that agents need to read
+        // and understand, not just a schedule to check dates on.
       } catch {
         // Non-fatal: if any file read fails, proceed with what we have
       }
