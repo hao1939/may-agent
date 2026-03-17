@@ -73,6 +73,9 @@ Coach reviews sessions, identifies patterns, updates agent instructions. The pri
 ### 24. Scaling Decision Function [imported]
 Delegate only when complexity exceeds single-agent capability. Few capable agents > many specialists. Coordination cost grows O(k²).
 
+### 26. Evolution over State (P26) [hao-direct+validated-by-research]
+We value the *mechanism* of improvement (the process) more than the current state of the code. Code rots; the process of fixing it persists. Research (arXiv:2603.13644 StatePlane, arXiv:2602.12108 StateLM) validates: intelligence is a state management problem. Agents must actively manage their own state (via checkpoints/pruning) to survive long horizons. Stateless inference is fragile; stateful evolution is robust.
+
 ### 39. Governance Layer as Moat [imported]
 The moat is accumulated governance intelligence (lessons, principles, protocols), not infrastructure.
 
