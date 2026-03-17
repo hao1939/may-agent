@@ -10,7 +10,7 @@
 
 import { resolve, relative, sep } from "node:path";
 
-const PROTECTED_FILENAMES = new Set(["SOUL.md", "agent.json"]);
+const PROTECTED_FILENAMES = new Set(["SOUL.md", "agent.json", "heartbeat.md"]);
 
 /**
  * P98 Evaluation Integrity — Immutable Ruler Principle.
