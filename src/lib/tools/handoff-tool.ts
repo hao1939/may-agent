@@ -4,6 +4,19 @@ import type { TSchema } from "@mariozechner/pi-ai";
 import { existsSync, readFileSync, writeFileSync, mkdirSync, appendFileSync } from "fs";
 import { resolve, join } from "path";
 
+// Lazy import for request tracking (dual-write during Phase 3 transition)
+let _requestsModule: typeof import("../requests.js") | null = null;
+async function getRequestsModule() {
+  if (!_requestsModule) {
+    try {
+      _requestsModule = await import("../requests.js");
+    } catch {
+      // Non-fatal: request tracking is optional during transition
+    }
+  }
+  return _requestsModule;
+}
+
 // ── Types ──────────────────────────────────────────────────────────────
 
 export interface HandoffToolOptions {
@@ -13,6 +26,8 @@ export interface HandoffToolOptions {
   agentsRoot: string;
   /** Project root for resolving artifact paths. */
   projectRoot: string;
+  /** Persist directory for request tracking DB. */
+  persistDir?: string;
   /** Path to SIGNALS.md. Default: agents/shared/SIGNALS.md */
   signalsPath?: string;
   /** Callback to trigger target agent's heartbeat. */
@@ -72,6 +87,7 @@ export function createHandoffTool(options: HandoffToolOptions): AgentTool<TSchem
     agentName,
     agentsRoot,
     projectRoot,
+    persistDir,
     signalsPath: customSignalsPath,
     triggerHeartbeat,
     knownAgents,
@@ -267,8 +283,30 @@ export function createHandoffTool(options: HandoffToolOptions): AgentTool<TSchem
         }
       }
 
+      // ── Dual-write: track in request DB (Phase 3 transition) ──
+      let requestId: string | undefined;
+      if (persistDir) {
+        try {
+          const req = await getRequestsModule();
+          if (req) {
+            requestId = req.trackRequest(persistDir, {
+              fromEntity: agentName,
+              toAgent: target,
+              task: `${expectations} — Artifact: ${artifact_path}`,
+              method: "send", // handoff is functionally a send
+              artifact: artifact_path,
+              context: context,
+              expectations: expectations,
+            });
+          }
+        } catch {
+          // Non-fatal: SIGNALS.md is still the primary record
+        }
+      }
+
       // ── Return confirmation ────────────────────────────────────
       const parts = [
+        `⚠️ handoff() is deprecated — use agents.send() with artifact details instead.`,
         `Handoff complete: ${artifact_path} → ${target}.`,
         `Entry written to SIGNALS.md with PENDING_ACK status.`,
       ];
