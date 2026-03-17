@@ -252,7 +252,7 @@ export class SubagentManager {
               agent: session.agentName,
               turns: session.turnCount,
               summary: truncateSummary(lastText),
-        }, this.getWorkspacePath(session.agentName));
+            }, this.getWorkspacePath(session.agentName));
           }
         }
       }
