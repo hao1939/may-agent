@@ -213,6 +213,97 @@ describe("V2 agents tool", () => {
     const result = await callTool(tool, { action: "unknown" as any });
     expect(result.error).toContain("Unknown action");
   });
+
+  it("call rejects when target matches a tool in caller's toolset", async () => {
+    // Register a "bob" agent that has a tool named "checkpoint"
+    const checkpointTool: AgentTool = {
+      name: "checkpoint",
+      label: "Checkpoint",
+      description: "Save checkpoint",
+      parameters: {},
+      execute: async () => ({
+        content: [{ type: "text" as const, text: "ok" }],
+        details: "ok",
+      }),
+    };
+
+    manager.register({
+      name: "bob",
+      description: "Architect",
+      domain: "design",
+      model: mockModel(),
+      tools: [echoTool(), checkpointTool],
+    });
+
+    const tool = manager.createAgentsTool({
+      getCallerAgentName: () => "bob",
+    });
+
+    // "checkpoint" is NOT a registered agent, but IS a tool in bob's toolset
+    const result = await callTool(tool, { action: "call", agent: "checkpoint", task: "save state" });
+    expect(result.error).toContain("is a tool, not an agent");
+    expect(result.error).toContain("checkpoint({ ... })");
+  });
+
+  it("send rejects when target matches a tool in caller's toolset", async () => {
+    const checkpointTool: AgentTool = {
+      name: "checkpoint",
+      label: "Checkpoint",
+      description: "Save checkpoint",
+      parameters: {},
+      execute: async () => ({
+        content: [{ type: "text" as const, text: "ok" }],
+        details: "ok",
+      }),
+    };
+
+    manager.register({
+      name: "bob",
+      description: "Architect",
+      domain: "design",
+      model: mockModel(),
+      tools: [echoTool(), checkpointTool],
+    });
+
+    const tool = manager.createAgentsTool({
+      agentsRoot,
+      getCallerAgentName: () => "bob",
+    });
+
+    // "checkpoint" is NOT a registered agent, but IS a tool in bob's toolset
+    const result = await callTool(tool, { action: "send", agent: "checkpoint", message: "save state" });
+    expect(result.error).toContain("is a tool, not an agent");
+    expect(result.error).toContain("checkpoint({ ... })");
+  });
+
+  it("call allows when target is an agent, not a tool", async () => {
+    // Register "coder" agent — its name is not a tool in bob's toolset
+    manager.register({
+      name: "coder",
+      description: "Writes code",
+      domain: "coding",
+      model: mockModel(),
+      tools: [echoTool()],
+    });
+
+    manager.register({
+      name: "bob",
+      description: "Architect",
+      domain: "design",
+      model: mockModel(),
+      tools: [echoTool()],
+    });
+
+    const tool = manager.createAgentsTool({
+      getCallerAgentName: () => "bob",
+    });
+
+    // "coder" is a registered agent and not in bob's tools — should pass the guard
+    // (will fail at actual callAgent since no LLM, but that's past the guard)
+    const result = await callTool(tool, { action: "call", agent: "coder", task: "test" });
+    // Should NOT contain "is a tool" — it should get past the guard
+    expect(result.error ?? "").not.toContain("is a tool");
+  });
 });
 
 describe("callAgent depth limit", () => {

@@ -146,6 +146,21 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
             if (!params.agent || !params.task) {
               return textResult(JSON.stringify({ error: "'call' requires 'agent' and 'task'" }));
             }
+            // Guard: reject if target matches a tool in caller's toolset
+            const callerAgentCall = getCallerAgentName?.();
+            if (callerAgentCall) {
+              const callerReg = manager.agents.get(callerAgentCall);
+              if (callerReg) {
+                const toolNames = callerReg.definition.tools.map((t) => t.name);
+                if (toolNames.includes(params.agent)) {
+                  return textResult(
+                    JSON.stringify({
+                      error: `"${params.agent}" is a tool, not an agent. Call it directly as: ${params.agent}({ ... }) — do NOT use agents.call("${params.agent}", ...).`,
+                    }),
+                  );
+                }
+              }
+            }
             if (!manager.agents.has(params.agent)) {
               return textResult(
                 JSON.stringify({ error: `Agent "${params.agent}" not registered. Use 'list' to see available agents.` }),
@@ -241,14 +256,30 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
             if (!params.agent || !params.message) {
               return textResult(JSON.stringify({ error: "'send' requires 'agent' and 'message'" }));
             }
+
+            const caller = getCallerAgentName?.() ?? "unknown";
+
+            // Guard: reject if target matches a tool in caller's toolset
+            if (caller !== "unknown") {
+              const callerRegSend = manager.agents.get(caller);
+              if (callerRegSend) {
+                const toolNames = callerRegSend.definition.tools.map((t) => t.name);
+                if (toolNames.includes(params.agent)) {
+                  return textResult(
+                    JSON.stringify({
+                      error: `"${params.agent}" is a tool, not an agent. Call it directly as: ${params.agent}({ ... }) — do NOT use agents.send("${params.agent}", ...).`,
+                    }),
+                  );
+                }
+              }
+            }
+
             if (!manager.agents.has(params.agent)) {
               return textResult(JSON.stringify({ error: `Agent "${params.agent}" not registered` }));
             }
             if (!agentsRoot) {
               return textResult(JSON.stringify({ error: "send not available (agentsRoot not configured)" }));
             }
-
-            const caller = getCallerAgentName?.() ?? "unknown";
 
             // Dedup check: skip if identical active request exists
             try {
