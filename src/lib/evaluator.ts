@@ -872,16 +872,20 @@ function computeHeuristicScores(session: PersistedSession, transcript: string): 
   }
 
   // 6. High error count suggests wasteful retries
-  // Use precise patterns that match actual tool/runtime errors, not content being read.
-  // Previous regex `Error:|ENOENT|Cannot find` was too broad — matched file contents,
-  // error logs being analyzed, and code being reviewed (41% false positive rate).
-  const errorResults = (transcript.match(
-    /P53 Violation|⚠️ PIVOT REQUIRED|ENOENT: no such file|Error: ENOENT|Cannot find module/gi
+  // Only count actual tool failures — not informational messages or content being analyzed.
+  // PIVOT REQUIRED is informational (warns about repeated calls) — not an actual error.
+  // Count only hard failures: P53 violations, ENOENT file errors, module resolution failures,
+  // and validation errors from bad tool args.
+  const hardErrors = (transcript.match(
+    /P53 Violation|ENOENT: no such file|Error: ENOENT|Cannot find module|Validation failed for tool/gi
   ) || []).length;
-  if (errorResults > 3) {
+  // Cap wasted calls: each hard error wastes ~1 tool call, not more
+  if (hardErrors > 3) {
     efficiency -= 1;
-    wastedCalls = Math.min(errorResults, totalToolCalls);
+    wastedCalls = Math.min(hardErrors, Math.ceil(totalToolCalls * 0.5));
     issues.push("multiple_tool_errors");
+  } else if (hardErrors > 0) {
+    wastedCalls = hardErrors;
   }
 
   productiveCalls = Math.max(0, totalToolCalls - wastedCalls);
