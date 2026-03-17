@@ -139,8 +139,25 @@ export function createWriteTool(cwd: string, options?: WriteToolOptions): AgentT
 
 				if (isAborted()) return { content: [{ type: "text" as const, text: "" }], details: undefined };
 
+				// Smart Write: include content preview so agents can verify
+				// without a separate read() call (saves 1 turn per write — C44)
+				const lines = sanitizedContent.split("\n");
+				const previewLines = 30;
+				const isTruncated = lines.length > previewLines;
+				const preview = isTruncated
+					? lines.slice(0, previewLines).join("\n") + `\n... (${lines.length} total lines, showing first ${previewLines})`
+					: sanitizedContent;
+
+				const responseText = [
+					`✅ Wrote ${sanitizedContent.length} bytes to ${path} (${lines.length} lines)${shrinkWarning}${sanitizeWarning}`,
+					"```",
+					preview,
+					"```",
+					isTruncated ? "Verify the preview above. If incorrect, re-write immediately." : "Verify the content above matches your intent.",
+				].join("\n");
+
 				return {
-					content: [{ type: "text" as const, text: `Successfully wrote ${sanitizedContent.length} bytes to ${path}${shrinkWarning}${sanitizeWarning}` }],
+					content: [{ type: "text" as const, text: responseText }],
 					details: undefined,
 				};
 			});
