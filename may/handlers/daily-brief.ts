@@ -11,7 +11,8 @@ import { execSync } from "node:child_process";
 import { readdirSync, readFileSync, statSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import type { HandlerContext, HandlerModule } from "../../../src/lib/handler-context.js";
-import type { CronEntry, JobResult } from "../../../src/lib/cron-tool.js";
+import type { CronEntry } from "../../../src/lib/cron-tool.js";
+import { getDb } from "../../../src/lib/requests.js";
 
 // ── Factory ───────────────────────────────────────────────────────────
 
@@ -201,49 +202,57 @@ interface CronHealthResult {
 }
 
 function collectCronHealth(persistDir: string, since: number): CronHealthResult {
-  const historyPath = join(persistDir, "job-history.jsonl");
   const jobMap = new Map<string, CronJobStats>();
   const issues: string[] = [];
 
-  if (!existsSync(historyPath)) {
-    return { jobs: [], issues: [] };
-  }
-
   try {
-    const content = readFileSync(historyPath, "utf-8");
-    for (const line of content.split("\n")) {
-      if (!line.trim()) continue;
-      try {
-        const result = JSON.parse(line) as JobResult;
-        const startedAt = new Date(result.startedAt).getTime();
-        if (startedAt < since) continue;
+    const db = getDb(persistDir);
+    const rows = db
+      .query(
+        `SELECT artifact, toAgent as agent, status, summary, error,
+                createdAt, completedAt, durationMs
+         FROM requests
+         WHERE fromEntity = 'cron' AND artifact IS NOT NULL AND createdAt >= ?
+         ORDER BY createdAt ASC`,
+      )
+      .all(since) as Array<{
+        artifact: string;
+        agent: string | null;
+        status: string;
+        summary: string | null;
+        error: string | null;
+        createdAt: number;
+        completedAt: number | null;
+        durationMs: number | null;
+      }>;
 
-        if (!jobMap.has(result.jobName)) {
-          jobMap.set(result.jobName, {
-            name: result.jobName,
-            agent: result.agent,
-            total: 0,
-            successes: 0,
-            failures: 0,
-            skipped: 0,
-            totalDurationMs: 0,
-          });
-        }
-        const stats = jobMap.get(result.jobName)!;
-        stats.total++;
-        stats.lastRunAt = result.endedAt;
-        if (result.status === "success") {
-          stats.successes++;
-          stats.totalDurationMs += result.durationMs;
-        } else if (result.status === "failure" || result.status === "timeout") {
-          stats.failures++;
-          stats.lastError = result.error || result.summary;
-        } else if (result.status === "skipped") {
-          stats.skipped++;
-        }
-      } catch { /* skip malformed lines */ }
+    for (const row of rows) {
+      if (!jobMap.has(row.artifact)) {
+        jobMap.set(row.artifact, {
+          name: row.artifact,
+          agent: row.agent ?? undefined,
+          total: 0,
+          successes: 0,
+          failures: 0,
+          skipped: 0,
+          totalDurationMs: 0,
+        });
+      }
+      const stats = jobMap.get(row.artifact)!;
+      stats.total++;
+      if (row.completedAt) {
+        stats.lastRunAt = new Date(row.completedAt).toISOString();
+      }
+      if (row.status === "COMPLETED") {
+        stats.successes++;
+        stats.totalDurationMs += row.durationMs ?? 0;
+      } else if (row.status === "FAILED") {
+        stats.failures++;
+        stats.lastError = row.error || row.summary || undefined;
+      }
+      // CREATED/IN_PROGRESS requests aren't counted as skipped — they're still running
     }
-  } catch { /* best-effort */ }
+  } catch { /* best-effort — db may not be available */ }
 
   const jobs = Array.from(jobMap.values()).sort((a, b) => a.name.localeCompare(b.name));
 

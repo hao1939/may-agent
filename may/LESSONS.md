@@ -58,6 +58,15 @@ _Staging area for behavioral fixes. Each entry should graduate into structure (h
 
 - 🔴 **System Busy = Pivot to Dispatch, Don't Loop (FM-1.3)**: When bash/system commands return "⏳ System Busy" or similar infrastructure blocks, do NOT retry the same command. You have a maximum of **1 retry** on any System Busy response. After that, pivot immediately to your PRIMARY job: dispatching TODO items. System health checks are secondary to dispatch. If you can't check system health, skip it and process todo.md instead. Never burn 3+ turns on commands that keep failing. _(Added 2026-03-15. s_72 q=0.25: 4 turns wasted on System Busy retries while unchecked TODO items sat undispatched.)_
 
+- 🔴 **Tool Argument Schemas — bash vs read (C39)**: You swap argument schemas between `bash` and `read`, or send empty args:
+  - ❌ `bash({})` — bash requires `command`, not empty
+  - ❌ `bash({"path": "file.md"})` — bash takes `command`, not `path`
+  - ❌ `read({"command": "git log"})` — read takes `path`, not `command`
+  - ✅ `bash({"command": "git log"})` — correct
+  - ✅ `read({"path": "file.md"})` — correct
+  - **Quick check**: If the value is a filepath → use `read`. If the value is a shell command → use `bash`. Never send `{}` to any tool.
+  _(Added 2026-03-17. 6 FM-2.5 validation failures. Fix proven effective for Optimizer (C39, 0 errors since deployment).)_
+
 - 🔴 **Verify Tool Output Before Claiming Results (C36, 3x FM-3.1)**: When a bash command exits with nonzero code or produces empty/separator-only output, do NOT assert a conclusion from it. Specific rules:
   - **grep exit code 1** = "no matches found" — this is valid, but you MUST say "grep returned no matches (exit 1)" not just "0 results". Exit code 1 ≠ success.
   - **Empty output / just `---`** from `ls` or similar = could mean empty directory, wrong path, or command failure. State what the output actually was: "ls returned empty output, which could mean no files OR wrong path."
