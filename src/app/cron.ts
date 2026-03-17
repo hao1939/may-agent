@@ -254,20 +254,51 @@ export class Cron {
       // Always spawn a fresh task session — no persistent heartbeat sessions.
       // The agent reads todo.md/SOUL.md for context. Memory is the filesystem.
 
-      // F3: Auto-inject todo.md into heartbeat context (saves 1 tool call per heartbeat)
+      // F3: Auto-inject context files into heartbeat task message.
+      // Eliminates mechanical read() calls that every agent does at the start of every heartbeat.
+      // Agent still makes all decisions — infra just pre-loads the context.
       let taskMessage = entry.message;
+      const injections: string[] = [];
+
       try {
-        const todoPath = resolve(this.projectRoot, "agents", agentName, "workspace", "todo.md");
+        const agentDir = resolve(this.projectRoot, "agents", agentName);
+
+        // 1. heartbeat.md — the file the task message literally says "Read heartbeat.md"
+        const heartbeatPath = resolve(agentDir, "heartbeat.md");
+        if (existsSync(heartbeatPath)) {
+          const content = readFileSync(heartbeatPath, "utf-8").trim();
+          if (content) injections.push(`## Injected: heartbeat.md\n\n${content}`);
+        }
+
+        // 2. workspace/todo.md — active items only
+        const todoPath = resolve(agentDir, "workspace", "todo.md");
         if (existsSync(todoPath)) {
           const todoContent = readFileSync(todoPath, "utf-8");
-          // Only inject if there's meaningful content (not just headers)
           const activeLines = todoContent.split("\n").filter(l => l.startsWith("- [ ]"));
           if (activeLines.length > 0) {
-            taskMessage = `${entry.message}\n\n---\n## Injected: workspace/todo.md (${activeLines.length} active items)\n\n${activeLines.join("\n")}`;
+            injections.push(`## Injected: workspace/todo.md (${activeLines.length} active items)\n\n${activeLines.join("\n")}`);
           }
         }
+
+        // 3. common-sense.md — shared conventions every agent should follow
+        const commonSensePath = resolve(this.projectRoot, "agents", "shared", "common-sense.md");
+        if (existsSync(commonSensePath)) {
+          const content = readFileSync(commonSensePath, "utf-8").trim();
+          if (content) injections.push(`## Injected: shared/common-sense.md\n\n${content}`);
+        }
+
+        // 4. periodic-tasks.md — if agent has one, inject so they can decide what's due
+        const periodicPath = resolve(agentDir, "periodic-tasks.md");
+        if (existsSync(periodicPath)) {
+          const content = readFileSync(periodicPath, "utf-8").trim();
+          if (content) injections.push(`## Injected: periodic-tasks.md\n\n${content}`);
+        }
       } catch {
-        // Non-fatal: if todo.md read fails, proceed with original message
+        // Non-fatal: if any file read fails, proceed with what we have
+      }
+
+      if (injections.length > 0) {
+        taskMessage = `${entry.message}\n\n---\n${injections.join("\n\n---\n")}`;
       }
 
       const sessionId = this.manager.run(agentName, taskMessage, { kind: "job" });
