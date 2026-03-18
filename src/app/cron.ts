@@ -16,6 +16,7 @@
  */
 
 import { readFileSync, existsSync, watchFile, unwatchFile, type StatWatcher } from "node:fs";
+import { createHash } from "node:crypto";
 import { resolve, dirname } from "node:path";
 import type { SubagentManager } from "../lib/index.js";
 import { generateId } from "../lib/index.js";
@@ -74,36 +75,45 @@ export class Cron {
     this.onJobFire = cb;
   }
 
-  private lastKnownMtimeMs = 0;
+  private lastConfigHash = "";
   private configPollTimer?: ReturnType<typeof setInterval>;
 
-  /** Watch cron.json for changes and auto-reload when modified. */
+  /** Compute MD5 hash of file content for change detection. */
+  private hashFileContent(path: string): string {
+    try {
+      const content = readFileSync(path, "utf-8");
+      return createHash("md5").update(content).digest("hex");
+    } catch {
+      return "";
+    }
+  }
+
+  /** Watch cron.json for changes and auto-reload when modified.
+   *  Uses content-hash comparison (not mtime) for reliability in containers. */
   watchConfig(): void {
     if (this.configWatcher) return; // already watching
     if (!existsSync(this.configPath)) return;
 
-    // Record current mtime so we can detect changes
-    try {
-      const { mtimeMs } = require("node:fs").statSync(this.configPath);
-      this.lastKnownMtimeMs = mtimeMs;
-    } catch {}
+    // Record current content hash so we can detect changes
+    this.lastConfigHash = this.hashFileContent(this.configPath);
 
     // Primary: fs.watchFile (stat-based polling every 30s)
-    this.configWatcher = watchFile(this.configPath, { interval: 30_000 }, (curr, prev) => {
-      if (curr.mtimeMs !== prev.mtimeMs) {
-        this.lastKnownMtimeMs = curr.mtimeMs;
+    this.configWatcher = watchFile(this.configPath, { interval: 30_000 }, () => {
+      const newHash = this.hashFileContent(this.configPath);
+      if (newHash && newHash !== this.lastConfigHash) {
+        this.lastConfigHash = newHash;
         this.onError?.(`Config file changed on disk — auto-reloading (watchFile)`);
         this.reload();
       }
     });
 
-    // Fallback: explicit stat poll every 15s (watchFile can be unreliable in containers)
+    // Fallback: explicit content-hash poll every 15s (watchFile can be unreliable in containers)
     this.configPollTimer = setInterval(() => {
       try {
         if (!existsSync(this.configPath)) return;
-        const { mtimeMs } = require("node:fs").statSync(this.configPath);
-        if (this.lastKnownMtimeMs > 0 && mtimeMs !== this.lastKnownMtimeMs) {
-          this.lastKnownMtimeMs = mtimeMs;
+        const newHash = this.hashFileContent(this.configPath);
+        if (this.lastConfigHash && newHash && newHash !== this.lastConfigHash) {
+          this.lastConfigHash = newHash;
           this.onError?.(`Config file changed on disk — auto-reloading (poll fallback)`);
           this.reload();
         }
@@ -514,7 +524,9 @@ export class Cron {
     }, delay);
     startTimer.unref();
     this.pendingStartTimers.set(entry.name, startTimer);
-    this.timers.set(entry.name, startTimer as unknown as ReturnType<typeof setInterval>);
+    // Note: only store in pendingStartTimers during initial delay.
+    // The setInterval handle is stored in this.timers once the setTimeout fires.
+    // Do NOT store the setTimeout in this.timers — reload() clears both maps.
   }
 
   /** Compute the initial delay for an entry based on when it last ran. */
