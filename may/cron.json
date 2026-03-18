@@ -119,7 +119,12 @@
     "enabled": true,
     "description": "Bob analyzes evaluation patterns daily (via run-agent-task)",
     "handler": "run-agent-task",
-    "lastModified": "2026-03-10T10:16:35.640Z"
+    "lastModified": "2026-03-18T05:49:00.000Z",
+    "preflight": {
+      "type": "new-entries-since",
+      "path": ".state/evaluations",
+      "stateKey": "analyze-failures-last-checked"
+    }
   },
   {
     "name": "optimize",
@@ -182,7 +187,12 @@
     "message": "[cron:consolidate-memory] Read agents/shared/tasks/consolidate-memory.md and execute it. Your journal is at agents/bob/workspace/journal.md, your knowledge is at agents/bob/knowledge/, your archive is at agents/bob/workspace/archive/.",
     "enabled": true,
     "handler": "run-agent-task",
-    "description": "Weekly memory consolidation for Bob — journal → knowledge → archive (7d)"
+    "description": "Weekly memory consolidation for Bob — journal → knowledge → archive (7d)",
+    "preflight": {
+      "type": "file-has-content",
+      "path": "agents/bob/workspace/journal.md",
+      "minLines": 3
+    }
   },
   {
     "name": "consolidate-memory-scout",
@@ -192,7 +202,12 @@
     "message": "[cron:consolidate-memory] Read agents/shared/tasks/consolidate-memory.md and execute it. Your journal is at agents/scout/workspace/journal.md, your knowledge is at agents/scout/knowledge/, your archive is at agents/scout/workspace/archive/.",
     "enabled": true,
     "handler": "run-agent-task",
-    "description": "Weekly memory consolidation for Scout — journal → knowledge → archive (7d)"
+    "description": "Weekly memory consolidation for Scout — journal → knowledge → archive (7d)",
+    "preflight": {
+      "type": "file-has-content",
+      "path": "agents/scout/workspace/journal.md",
+      "minLines": 3
+    }
   },
   {
     "name": "consolidate-memory-coach",
@@ -202,7 +217,12 @@
     "message": "[cron:consolidate-memory] Read agents/shared/tasks/consolidate-memory.md and execute it. Your journal is at agents/coach/workspace/journal.md, your knowledge is at agents/coach/knowledge/, your archive is at agents/coach/workspace/archive/.",
     "enabled": true,
     "handler": "run-agent-task",
-    "description": "Weekly memory consolidation for Coach — journal → knowledge → archive (7d)"
+    "description": "Weekly memory consolidation for Coach — journal → knowledge → archive (7d)",
+    "preflight": {
+      "type": "file-has-content",
+      "path": "agents/coach/workspace/journal.md",
+      "minLines": 3
+    }
   },
   {
     "name": "consolidate-memory-optimizer",
@@ -212,7 +232,12 @@
     "message": "[cron:consolidate-memory] Read agents/shared/tasks/consolidate-memory.md and execute it. Your journal is at agents/optimizer/workspace/journal.md, your knowledge is at agents/optimizer/knowledge/, your archive is at agents/optimizer/workspace/archive/.",
     "enabled": true,
     "handler": "run-agent-task",
-    "description": "Weekly memory consolidation for Optimizer — journal → knowledge → archive (7d)"
+    "description": "Weekly memory consolidation for Optimizer — journal → knowledge → archive (7d)",
+    "preflight": {
+      "type": "file-has-content",
+      "path": "agents/optimizer/workspace/journal.md",
+      "minLines": 3
+    }
   },
   {
     "name": "consolidate-memory-amy",
@@ -222,7 +247,12 @@
     "message": "[cron:consolidate-memory] Read agents/shared/tasks/consolidate-memory.md and execute it. Your journal is at agents/amy/workspace/journal.md, your knowledge is at agents/amy/knowledge/, your archive is at agents/amy/workspace/archive/.",
     "enabled": true,
     "handler": "run-agent-task",
-    "description": "Weekly memory consolidation for Amy — journal → knowledge → archive (7d)"
+    "description": "Weekly memory consolidation for Amy — journal → knowledge → archive (7d)",
+    "preflight": {
+      "type": "file-has-content",
+      "path": "agents/amy/workspace/journal.md",
+      "minLines": 3
+    }
   },
   {
     "name": "reflect",
@@ -232,7 +262,12 @@
     "message": "[cron:reflect] Run the reflection procedure defined in agents/coach/workspace/reflect-prompt.md. Analyze recent human inputs from .state/human-inputs.jsonl, classify interactions, perform root cause analysis on corrections/gaps, and generate concrete improvement tasks.",
     "enabled": true,
     "handler": "run-agent-task",
-    "description": "Coach reflects on human interactions every 6h — extract corrections, generate improvement tasks (via run-agent-task)"
+    "description": "Coach reflects on human interactions every 6h — extract corrections, generate improvement tasks (via run-agent-task)",
+    "preflight": {
+      "type": "new-entries-since",
+      "path": ".state/human-inputs.jsonl",
+      "stateKey": "reflect-last-checked"
+    }
   },
   {
     "name": "evaluate-session-llm",

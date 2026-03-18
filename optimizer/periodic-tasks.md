@@ -21,11 +21,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If found → write proposal in workspace/improvement-proposals.md.
   Latest (2026-03-18T05:22): **run-agent-task pre-flight checks.** Surveyed all 10 `run-agent-task` cron entries. 4 can skip LLM sessions when nothing to process: reflect (no new human inputs), consolidate-memory-* (empty journals), analyze-failures (no new evals). Disabled `lesson-consolidation` cron (redundant with lessons-graduation.ts JS handler). Sent pre-flight hook design to tech-lead (req:dbb14f27). Savings: $3-5/day ($90-150/month). Finding at `workspace/finding-run-agent-task-preflight.md`.
 
-- [x] **Handler health check** — Last done: 2026-03-18T04:28
+- [x] **Handler health check** — Last done: 2026-03-18T05:52
   Review existing JS handlers in agents/may/handlers/.
   Any errors in recent logs? Any handler that's not firing?
   If issues → add fix to workspace/todo.md.
-  Latest (2026-03-18T05:42): **Same 3 handlers still unfired** (daily-brief, lessons-graduation, workspace-compaction). Jitter cap fix committed (2b972c0) but undeployed. New observation: 34 cron entries total, 10 heartbeats at 30min = 18+ sessions/hr. Bob 100% idle (6/6 error/idle), Coach 57% idle (4/7 ≤3 ops), May 57% idle (4/7 ≤1 op). Combined with skipIfIdle DB bug (queries empty requests.db instead of may.db), zero idle skips occurring. Finding at `workspace/finding-handler-health-check-0318.md`.
+  Latest (2026-03-18T05:52): **Pre-flight checks wired up.** Configured `preflight` for 7 cron entries: `reflect` (new-entries-since human-inputs.jsonl), `analyze-failures` (new-entries-since evaluations dir), and 5× `consolidate-memory-*` (file-has-content journal.md ≥3 lines). Infrastructure built by tech-lead (4abbc07). All 14 preflight tests pass. Still blocked on process restart. Same 3 handlers unfired (daily-brief, lessons-graduation, workspace-compaction).
 
 ## Weekly
 - [x] **Improvement proposals review** — Last done: 2026-03-18T05:42
