@@ -55,6 +55,14 @@ export class Cron {
   private projectRoot: string;
   private persistDir: string;
 
+  // ── Circuit breaker: track consecutive errors per agent ──────────────
+  private agentErrors = new Map<string, { count: number; lastErrorAt: number }>();
+
+  /** Max consecutive errors before the circuit breaker trips. */
+  private static readonly CB_TRIP_THRESHOLD = 3;
+  /** How long (ms) to wait after circuit trips before trying a probe. */
+  private static readonly CB_PROBE_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
+
   constructor(
     private configPath: string,
     private manager: SubagentManager,
@@ -440,6 +448,49 @@ export class Cron {
     }
   }
 
+  // ── Circuit breaker helpers ─────────────────────────────────────────
+
+  /**
+   * Check if an agent's circuit breaker is tripped (too many consecutive errors).
+   * After tripping, allows one probe every CB_PROBE_INTERVAL_MS.
+   */
+  private isCircuitBroken(agentName: string): boolean {
+    const state = this.agentErrors.get(agentName);
+    if (!state) return false;
+    if (state.count < Cron.CB_TRIP_THRESHOLD) return false;
+
+    // Circuit is tripped — check if enough time has passed for a probe
+    const elapsed = Date.now() - state.lastErrorAt;
+    if (elapsed >= Cron.CB_PROBE_INTERVAL_MS) {
+      // Allow one probe through. The probe will either reset the counter
+      // (on success via recordAgentSuccess) or update lastErrorAt (on failure
+      // via recordAgentError).
+      return false;
+    }
+
+    return true;
+  }
+
+  /** Record a successful session for an agent — resets circuit breaker. */
+  private recordAgentSuccess(agentName: string): void {
+    this.agentErrors.delete(agentName);
+  }
+
+  /** Record a failed session for an agent — increments circuit breaker counter. */
+  private recordAgentError(agentName: string): void {
+    const state = this.agentErrors.get(agentName);
+    if (state) {
+      state.count++;
+      state.lastErrorAt = Date.now();
+    } else {
+      this.agentErrors.set(agentName, { count: 1, lastErrorAt: Date.now() });
+    }
+    const current = this.agentErrors.get(agentName)!;
+    if (current.count === Cron.CB_TRIP_THRESHOLD) {
+      this.onError?.(`Circuit breaker TRIPPED for ${agentName} — ${current.count} consecutive errors. Backing off for ${Cron.CB_PROBE_INTERVAL_MS / 60000}m.`);
+    }
+  }
+
   /** Fail any orphaned running requests for a job (from a previous crashed process). */
   private failOrphans(entryName: string): void {
     try {
@@ -486,6 +537,11 @@ export class Cron {
               summary: `Idle skip — no pending send() requests for ${agentName}`,
             });
           } catch { /* best-effort tracking */ }
+          return;
+        }
+        // Circuit breaker: skip if agent has too many consecutive errors
+        if (this.isCircuitBroken(agentName)) {
+          this.onError?.(`Cron "${entry.name}" skipped — circuit breaker tripped for ${agentName} (${this.agentErrors.get(agentName)?.count ?? 0} consecutive errors)`);
           return;
         }
       } else if (mode === "job-detached") {
@@ -648,6 +704,8 @@ export class Cron {
             durationMs: Date.now() - startMs,
             summary: `Heartbeat for ${agentName} completed`,
           });
+          // Circuit breaker: reset on success
+          this.recordAgentSuccess(agentName);
           // Auto-complete injected send() requests that the agent saw
           for (const reqId of injectedRequestIds) {
             try {
@@ -674,6 +732,8 @@ export class Cron {
             durationMs: Date.now() - startMs,
             error: errMsg,
           });
+          // Circuit breaker: track consecutive errors
+          this.recordAgentError(agentName);
           this.onError?.(`Cron heartbeat "${entry.name}" failed: ${errMsg}`);
         });
     } catch (err) {
