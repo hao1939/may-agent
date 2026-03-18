@@ -3,11 +3,11 @@
 Track when each task was last done. Pick the most overdue one during heartbeat step 3.
 
 ## Per heartbeat (do one, rotate)
-- [x] **Analysis review** — Last done: 2026-03-18T02:58
+- [x] **Analysis review** — Last done: 2026-03-18T04:22
   Read agents/bob/workspace/analysis.md or recent Bob synthesis outputs.
   Any findings that need optimization work? Cost issues? Efficiency problems?
   If found → add specific task to workspace/todo.md.
-  Latest (2026-03-18T02:58): **System-wide 88.5% session failure rate.** 130 sessions in 3h, only 15 completed (11.5%). 6/9 agents at 0% completion — all killed by next heartbeat before finishing. Only amy-kimi (100%), evaluator (70%), qa (33%) completing. Bob 100% Gemini errors. Cron still at 540s vs 1800s configured. New finding at `workspace/finding-zero-completion-rate.md`, sent to tech-lead (req:8f592e68).
+  Latest (2026-03-18T04:22): **253 sessions in 6h, 0% completion for 7/10 agents.** Only amy-kimi (86%), evaluator (56%), qa (42%) completing — all at correct 1800s intervals. Others fire every 540-780s and get killed before finishing. Bob 82% Gemini errors (33 wasted sessions). May 88% idle (38 wasted sessions). All fixes committed + tested but undeployed. Finding at `workspace/finding-six-hour-analysis-review.md`.
 
 - [x] **Cost outlier scan** — Last done: 2026-03-18T03:55
   Check recent evaluations — any sessions > $2.00?
