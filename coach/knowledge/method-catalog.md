@@ -23,9 +23,9 @@ the Ghost Bug. These methods need **re-testing with correct methodology**
 The only valid experiments are the two post-discovery micro-edit runs
 (Method #13), which kept the original name and showed 0 regression.
 
-## Aggregate Evidence Summary (updated 2026-03-18, self-evolve H5600)
+## Aggregate Evidence Summary (updated 2026-03-18, self-evolve H6100)
 
-**65 experiment entries total** (~47 unique IDs in new format, plus legacy).
+**66 experiment entries total** (~48 unique IDs in new format, plus legacy).
 Key findings across 16 methods:
 
 | Method | # Experiments | Regressions? | Improvements? | Verdict |
@@ -47,7 +47,7 @@ Key findings across 16 methods:
 | **#15 Workflow Enforcement** | **6 (18 runs + 3 controls)** | **0** | **100% (18/18)** | **🏆 CONFIRMED EFFECTIVE + GENERALIZABLE (4 scenarios)** |
 | **#16 Structural Documentation** | **2 (systemic + monitoring)** | **N/A** | **0/5 (exp-053)** | **SAFE, INEFFECTIVE — reclassified as model-level attractor fix needed** |
 
-### Core Finding (updated 2026-03-18, self-evolve H5600)
+### Core Finding (updated 2026-03-18, self-evolve H6100)
 
 **Text-based coaching is SAFE but INEFFECTIVE: 0/13 clean text experiments
 improved judgment behavior, AND 0/5 sessions improved procedural behavior

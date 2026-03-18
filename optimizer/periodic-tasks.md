@@ -9,10 +9,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If found → add specific task to workspace/todo.md.
   Latest (2026-03-18T06:07): **finish() status overwritten by interrupt.** 77/100 recent sessions call finish() but are marked "interrupted" in meta.json. autoClose interrupt handler overwrites status after finish() completes. Breaks all completion tracking, evaluations, and agent metrics. Sent to tech-lead (req:f253e958). Finding at `workspace/finding-finish-status-overwritten.md`.
 
-- [x] **Cost outlier scan** — Last done: 2026-03-18T06:20
+- [x] **Cost outlier scan** — Last done: 2026-03-18T06:27
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
+  Latest (2026-03-18T06:27): **Full burn rate analysis: $1,139/day.** Verified from actual 2h session data: 81 sessions, $94.91 cost. 0% prompt cache hits on all 6 Opus agents (28.5M input tokens uncached). 5 agents over-triggering 2-3.3×. Combined fix (restart PID 7): $1,139→$232/day = 80% reduction ($27K/month savings). Finding at `workspace/finding-cost-burn-rate-analysis.md`.
   Latest (2026-03-18T06:20): **Deep session cost analysis.** Analyzed exact token usage from session.jsonl transcripts. Coach idle heartbeat: $0.125/session (3 LLM calls, cacheRead=0 everywhere). May idle: $0.078/session. Confirmed prompt caching fully broken (ANTHROPIC_API_KEY not set, LiteLLM strips cache_control). Total estimated waste: $61-91/day. Finding at `workspace/finding-session-cost-deep-dive.md`.
 
 - [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-18T05:22
