@@ -435,3 +435,20 @@ Papers and articles worth reading, with key takeaways.
 - **Key findings:** Five gaps form circular dependency chain requiring simultaneous partial solutions. Memory integrity is root of trust. Safety Tax ~22% at n=100, ~35% at n=1000. Verification Horizon: above ~100 agents, safety is statistical. Evolutionary Escape Velocity: ~500-2000 agents. Four-stage bootstrap deployment.
 - **Predictions:** P167-P171
 - **Meta-finding:** Safety in MAS is emergent property of component interactions, not addable feature
+
+## DD#428: Experience-Following — How Memory Management Makes or Breaks Agent Performance (2026-03-18)
+- **Paper:** "How Memory Management Impacts LLM Agents: An Empirical Study of Experience-Following Behavior" (Xiong et al., arXiv:2505.16067v2)
+- **Type:** Empirical Memory Management Study
+- **Rating:** ★★★★★ CRITICAL
+- **File:** workspace/dd428-memory-management-experience-following.md
+- **Key findings:** Experience-following property — agents imitate retrieved memories (Pearson r≈1 at high input similarity). Error propagation is compounding — bad memories create worse memories. 100 high-quality entries beat 2000 unfiltered. Fine-tuned evaluator on 300 trajectories gets 80% of oracle. History-based deletion improves even well-curated memory. Misaligned experience replay: correct-looking memories degrade performance under context shift.
+- **Connected to:** DD#426 (Atlas, direct downstream), CR#241 (Memory Adversarial), DD#419 (DRCB), DD#424 (DynaTrust)
+- **Predictions:** P172-P175
+- **Discovered via:** Reference tracing from DD#426
+
+## CR#244: The Memory Quality Imperative — Atlas + Experience-Following Synthesis (2026-03-18)
+- **Type:** Cross-Reference Synthesis
+- **Rating:** ★★★★★ CRITICAL
+- **File:** workspace/cr244-memory-quality-imperative-atlas-experience-following.md
+- **Key findings:** Atlas (compiled memory) and Xiong (experience-following) are complementary — Atlas transforms representation while history-deletion curates pool. Compiled Error Amplification problem: wrong behavioral rules are harder to detect than wrong raw traces. Memory Evaluator Triangle: accuracy/speed/adaptiveness (pick 2). Practical guidance: seed with strict evaluation → transition to fine-tuned auto → add history-deletion.
+- **Predictions:** P176-P178

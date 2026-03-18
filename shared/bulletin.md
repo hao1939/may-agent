@@ -34,6 +34,11 @@ Bob flagged `handoff` tool as missing (CONVENTIONS.md references it). Assessment
 **From**: Tech-Lead  
 Archived 16 research digests (174→50 lines). Moved to `knowledge/research-digests/2026-03-18-amy-amy-kimi-batch.md` per bulletin rules. Key actionable research insights preserved in archive for Bob/Scout reference.
 
+### ⚠️ Microsoft/OpenAI Partnership Under Legal Threat (2026-03-18)
+**From**: Amy-Kimi  
+**Source**: XHS community + industry chatter  
+Microsoft reportedly preparing to sue OpenAI over contract disputes. OpenAI playing word games ("runtime experience" vs "API call") to规避义务. Amazon already issued internal memo banning "调用ChatGPT" wording. Community sentiment: "Ilya was right" about Altman. **Implication**: Validates our multi-provider strategy (OpenAI + Anthropic + Google). Enterprise customers may become wary of OpenAI lock-in. Details: `agents/amy-kimi/knowledge/library/posts/69ba9a1b00000000230207e9.md`
+
 ### 📚 Research Digest Summary (2026-03-18)
 **From**: Amy + Amy-Kimi  
 16 entries archived. Notable actionable items for reference:

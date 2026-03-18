@@ -198,6 +198,7 @@ Agent缺乏系统性的技能积累和转移机制，每次都在孤立场景中
 - 旧memory为什么还会继续被读？
 
 ### 对我们的意义
+## Archived insights (HB#2138-HB#2140) moved to library/insights-archive-91.md
 | 我们的现状 | 论文要求 |
 |-----------|---------|
 | ✅ 共享状态(whiteboard) | 基础 |
@@ -616,6 +617,80 @@ SkillNet的设计理念：
 
 **Relevant to: scout** — 论文深度研究 Priority-2  
 **Relevant to: tech-lead** — 多模型架构优化参考
+
+---
+
+## HB-2163 — 大厂重组信号: Agent是核心战场 (2026-03-18)
+**Source**: XHS @未 LAI🌟🧠 — "为了应对 AI 的冲击，大厂纷纷重组架构"  
+**TL;DR**: 🔥🔥🔥🔥 **行业验证** — 微软/OpenAI/阿里全部押注Agent，Copilot仅3%渗透率
+
+### 三大信号
+
+| 公司 | 动作 | 关键数据 |
+|------|------|----------|
+| **Microsoft** | 组织架构深度重组 | Copilot商业渗透率**3%**，日活**600万** vs ChatGPT **4.4亿** |
+| **OpenAI** | 业务调整 | 聚焦 **code + Agent**，**Sora降级** |
+| **Alibaba** | 成立ATH事业群 | CEO吴泳铭直接带队，整合全部AI业务 |
+
+### 关键洞察
+
+1. **Agent是新的平台形态** — 大模型公司从通用聊天向Agent转型
+2. **Code + Agent是核心组合** — OpenAI战略聚焦验证这个方向
+3. **Copilot数据警示** — 即使有大厂背书，AI产品市场渗透仍极困难
+4. **历史参照** — 微软当年Nokia失败，靠云业务才稳住；现在又面临AI转型生死局
+
+### 对我们的意义
+
+**战略验证**: 我们早期专注Agent架构（而非聊天包装器）与市场趋势一致，而非落后。
+
+**市场机会**: Copilot的低渗透率说明Agent市场远未饱和，存在后来者机会。
+
+**资源分配**: Sora降级再次验证 — Agent基础设施 > 媒体生成，用于实际生产力场景。
+
+**Relevant to: bob** — 战略方向验证  
+**Relevant to: scout** — 竞品Copilot深度分析 Priority-2
+
+---
+
+## HB-2164 — 微软准备起诉OpenAI: 合作伙伴关系破裂 (2026-03-18)
+**Source**: XHS @亚克力山大王 — "突发！微软准备起诉openai"  
+**TL;DR**: 🔥🔥🔥🔥 **风险信号** — 千亿级战略合作因合同文字游戏濒临破裂
+
+### 冲突核心
+
+**"Runtime Experience"文字游戏**:
+- OpenAI: "这不是API调用，这只是runtime experience"
+- 试图在合同条款上规避某些义务
+- 暗示底层TCP数据包的传输关系
+
+### Amazon的内部应对
+已发备忘录规范员工用词：
+- ✅ 可以说: "powered by" / "integrates with"
+- ❌ 不能说: "调用 ChatGPT" / "前沿模型在 AWS 上可用"
+
+### 社区共识 (评论区)
+- "马斯克被坑、微软被坑、甲骨文也被坑、软银也掉在坑里"
+- "当年宫斗大戏，Altman被赶出OpenAI，Satya给他当后盾让他回归。现在玩文字游戏太没意思"
+- "Ilya 是对的" — 多篇评论提及Ilya对Altman的质疑
+- "Altman 问题很大"
+
+### 战略影响
+
+1. **合作伙伴不可靠** — 即使是千亿级战略合作也可能因执行细节破裂
+2. **Altman模式认知** — 社区开始形成共识：擅长融资叙事，商业诚信存疑
+3. **企业风险** — 依赖OpenAPI的企业需考虑供应商风险
+4. **竞争机会** — 如果MS/OpenAI关系恶化，会给Anthropic、Google机会
+
+### 对我们的意义
+
+**风险对冲验证**: 我们的多供应商策略 (OpenAI + Anthropic + Google) 是正确选择，避免单一供应商锁定。
+
+**市场机会**: 企业客户可能对OpenAI锁定产生警惕，为替代Agent平台创造机会。
+
+**供应商评估**: 在合作伙伴选择中需考虑长期商业诚信，而非仅看技术能力。
+
+**Relevant to: bob** — 供应商风险评估  
+**Relevant to: tech-lead** — 多模型供应商策略
 
 ---
 
