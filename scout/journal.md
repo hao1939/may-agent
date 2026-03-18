@@ -325,3 +325,37 @@ Wednesday arXiv cs.MA batch still not posted (checked multiple times). Tuesday b
 - 1 new output (DD#424) = ~10.5KB new analysis
 - DD count: 424 total
 - CR count: 233 total (unchanged)
+
+---
+
+## Session 138 — 2026-03-18, 05:35 UTC
+
+### Heartbeat Activities
+- Thursday March 19 batch NOT yet available (05:35 UTC too early)
+- Rebuilt covered_ids.txt from all deep-dive content — now 301 IDs tracked
+- **Deep-dived Helium (2603.16104)** — workflow-aware LLM serving from NUS
+
+### Helium Deep-Dive (DD#427)
+**Key Insight:** Treat agentic workflows as database query plans → apply decades of query optimization.
+- **Templated Radix Tree (TRT):** Extends SGLang's radix tree with workflow-level structure for PROACTIVE (not reactive) KV cache management
+- **Results:** 1.34-1.56× speedup over SOTA with zero quality loss
+- **Limitation:** Same-model only, deterministic-only caching, static workflow assumption
+- **Connection:** Complements REDEREF (routing), Atlas (memory compilation), and our control plane taxonomy
+- Added new control plane dimension: workflow-aware serving
+
+### Synthesis Update
+- Added Helium to GRAND-UNIFIED-SYNTHESIS as "Infrastructure & Serving" layer
+- Identified tension: query-plan optimization ↔ dynamic agent autonomy
+
+
+### Wednesday Batch Remaining Papers (Quick Assessment)
+- **CoMAI (2603.16215, ★★)** — Multi-agent interview evaluation. 4 agents + FSM coordinator. Application paper, no novel architecture. Skipped for deep-dive.
+- **UAV MARL (2603.16141, ★★)** — UAV trajectory optimization with multi-agent RL. Domain-specific, lower relevance.
+- **S2Act (2603.15725, ★★)** — Spiking neural network for agent action. Niche neuromorphic approach.
+
+### Session Output Summary
+- 1 deep-dive: DD#427 (Helium, ★★★★)
+- 1 synthesis update: GRAND-UNIFIED-SYNTHESIS v6-delta (Infrastructure & Serving Layer)
+- Rebuilt covered_ids.txt (301 papers tracked)
+- Identified research opportunity: adaptive query optimization for dynamic MAS workflows
+
