@@ -793,7 +793,7 @@ export async function writeHeuristicEvaluations(persistDir: string): Promise<num
     }
 
     // Compute heuristic scores
-    const scores = computeHeuristicScores(session, transcriptText);
+    const scores = computeHeuristicScores(session, transcriptText, messages);
 
     // Extract real usage from transcript (instead of hardcoded zeros)
     const usage = extractUsage(messages);
@@ -828,7 +828,7 @@ export async function writeHeuristicEvaluations(persistDir: string): Promise<num
 /**
  * Deterministic scoring based on session metadata and transcript patterns.
  */
-function computeHeuristicScores(session: PersistedSession, transcript: string): {
+export function computeHeuristicScores(session: PersistedSession, transcript: string, messages?: AgentMessage[]): {
   efficiency: number;
   quality: number;
   productiveCalls: number;
@@ -885,12 +885,38 @@ function computeHeuristicScores(session: PersistedSession, transcript: string): 
 
   // 6. High error count suggests wasteful retries
   // Only count actual tool failures — not informational messages or content being analyzed.
-  // PIVOT REQUIRED is informational (warns about repeated calls) — not an actual error.
-  // Count only hard failures: P53 violations, ENOENT file errors, module resolution failures,
-  // and validation errors from bad tool args.
-  const hardErrors = (transcript.match(
-    /P53 Violation|ENOENT: no such file|Error: ENOENT|Cannot find module|Validation failed for tool/gi
-  ) || []).length;
+  // BUG FIX: Previously matched error strings anywhere in the transcript, including inside
+  // file contents being read/analyzed. An agent reading error logs would get penalized.
+  // Now we only count errors in short toolResult messages (actual tool errors are brief;
+  // file contents being analyzed are long).
+  const hardErrorPattern = /P53 Violation|ENOENT: no such file|Error: ENOENT|Cannot find module|Validation failed for tool/gi;
+  let hardErrors = 0;
+  if (messages && messages.length > 0) {
+    // Message-aware counting: only count errors in short toolResult content (< 500 chars)
+    // Long content = file reads/command output being analyzed, not actual tool failures
+    for (const msg of messages) {
+      if ((msg as any).role !== "toolResult") continue;
+      const content = (msg as any).content;
+      if (!content) continue;
+      // Extract text from content array or string
+      let text = "";
+      if (typeof content === "string") {
+        text = content;
+      } else if (Array.isArray(content)) {
+        text = content
+          .filter((c: any) => c.type === "text")
+          .map((c: any) => c.text || "")
+          .join(" ");
+      }
+      // Only count errors in short results (actual failures are concise)
+      if (text.length > 500) continue;
+      const matches = text.match(hardErrorPattern);
+      if (matches) hardErrors += matches.length;
+    }
+  } else {
+    // Fallback: no parsed messages available, use transcript matching (legacy behavior)
+    hardErrors = (transcript.match(hardErrorPattern) || []).length;
+  }
   // Cap wasted calls: each hard error wastes ~1 tool call, not more
   if (hardErrors > 3) {
     efficiency -= 1;
