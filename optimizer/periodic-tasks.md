@@ -9,11 +9,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If found → add specific task to workspace/todo.md.
   Latest (2026-03-18T02:58): **System-wide 88.5% session failure rate.** 130 sessions in 3h, only 15 completed (11.5%). 6/9 agents at 0% completion — all killed by next heartbeat before finishing. Only amy-kimi (100%), evaluator (70%), qa (33%) completing. Bob 100% Gemini errors. Cron still at 540s vs 1800s configured. New finding at `workspace/finding-zero-completion-rate.md`, sent to tech-lead (req:8f592e68).
 
-- [x] **Cost outlier scan** — Last done: 2026-03-18T03:27
+- [x] **Cost outlier scan** — Last done: 2026-03-18T03:55
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-18T03:27): **System-wide idle session waste: 81.2% of 13,890 sessions do ≤3 ops.** May 97.8% idle (3,376/3,452), $2,155 wasted. Root cause: cron fires heartbeats regardless of pending work. Proposed JS pre-flight check to skip LLM when no work exists. Finding at `workspace/finding-idle-session-waste.md`. Sent to tech-lead (req:089b19d3).
+  Latest (2026-03-18T03:55): **Consolidated restart-delay cost analysis.** 68 sessions today, 12% completion, 47% idle. 6 committed fixes undeployed for 1-4 hours. Estimated waste: $5.50-7.50/hour ($20-28 total since first fix). Finding at `workspace/finding-restart-cost-per-hour.md`.
 
 - [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-18T02:49
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
