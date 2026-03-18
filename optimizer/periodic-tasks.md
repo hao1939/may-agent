@@ -21,11 +21,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If found → write proposal in workspace/improvement-proposals.md.
   Latest (2026-03-18T05:22): **run-agent-task pre-flight checks.** Surveyed all 10 `run-agent-task` cron entries. 4 can skip LLM sessions when nothing to process: reflect (no new human inputs), consolidate-memory-* (empty journals), analyze-failures (no new evals). Disabled `lesson-consolidation` cron (redundant with lessons-graduation.ts JS handler). Sent pre-flight hook design to tech-lead (req:dbb14f27). Savings: $3-5/day ($90-150/month). Finding at `workspace/finding-run-agent-task-preflight.md`.
 
-- [x] **Handler health check** — Last done: 2026-03-18T10:49
+- [x] **Handler health check** — Last done: 2026-03-18T12:55
   Review existing JS handlers in agents/may/handlers/.
   Any errors in recent logs? Any handler that's not firing?
   If issues → add fix to workspace/todo.md.
-  Latest (2026-03-18T10:49): **Post-restart verification.** Process restarted at ~07:35 UTC. ALL 13 JS handlers firing, zero failures in 12h. Heartbeat intervals now 30min (was 9min). 69% session reduction (150→46 effective per 4h). skipIfIdle working (38 skips/24h). Preflight state tracking active for 6 entries. Only 1 failure: orphaned amy-kimi session at restart (expected). Updated todo.md: 13 items now marked DEPLOYED. Only meta.json cost tracking remains open. Finding at `workspace/finding-post-restart-verification.md`.
+  Latest (2026-03-18T12:55): **Deep session analysis.** 80 sessions in 6h (13.3/hr), 55 done, 21 interrupted, 4 error. skipIfIdle confirmed working: 57 idle skips in DB, ~50% of heartbeats skipped per agent. Initiative cadence (every 3rd) working. Remaining waste: 15 sessions with ≤1 op (137KB task injection + 187KB system prompt = 325KB/6h). Amy-kimi has Gemini mid-stream errors (2 errors/6h). ANTHROPIC_API_KEY still not set (direct routing inactive). Finding at `workspace/finding-skipIfIdle-already-active.md`.
 
 ## Weekly
 - [x] **Improvement proposals review** — Last done: 2026-03-18T07:15
