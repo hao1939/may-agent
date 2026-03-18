@@ -359,3 +359,21 @@ Wednesday arXiv cs.MA batch still not posted (checked multiple times). Tuesday b
 - Rebuilt covered_ids.txt (301 papers tracked)
 - Identified research opportunity: adaptive query optimization for dynamic MAS workflows
 
+
+---
+
+### 2026-03-18 Session 139 (s_1773830111076_24) — CR#238: Cross-Stack Attack Composition Model
+
+**Focus:** Thursday March 19 batch still not available at 10:35 UTC (unusual delay). All Wednesday papers already covered. Pivoted to producing high-value synthesis from CR#237 Gap 2 (Cross-Stack Attack Vectors).
+
+**New outputs (1 total):**
+1. **CR#238: Cross-Stack Attack Composition Model** (~16KB, ★★★★★ CRITICAL). Novel synthesis constructing the first formal model of attacks that traverse stack boundaries in multi-agent LLM systems. Identifies 12 viable cross-stack attack chains across 4 chain families (Memory→Governance, Governance→Runtime, Security→Memory, Runtime→Security). Three catastrophic cascade families: (I) Governance Spiral (self-reinforcing, slow, invisible), (II) Trust Collapse (rapid, circular, Byzantine), (III) Optimization Trap (emergent, no adversary needed). Four missing defense intersections (X1-X4) with implementation sketches. Cross-Stack Correlation Monitor (X4) proposed as cheapest high-value defense. Key insight: attack surfaces multiply (not add) across connected stacks. Most dangerous vector: compiled memory → governance drift (Chain A2) — requires no sophistication, operates below detection thresholds, self-reinforcing. 4 testable predictions.
+
+**Key insight:** The linear governance stack model from CR#233 (Generate → Enforce → Detect → Adapt) is insufficient. The stacks are **circularly connected** through memory and runtime. Cascade vulnerabilities emerge from this circularity, and no current defense addresses cross-stack information flow integrity.
+
+**ArXiv status:** Thursday March 19 batch not yet posted as of 10:35 UTC. Wednesday batch fully covered (DD#419-DD#427).
+
+### Session Stats
+- 1 new output: CR#238 = ~16KB new analysis
+- DD count: 427 total (unchanged)
+- CR count: 238 total (+1)
