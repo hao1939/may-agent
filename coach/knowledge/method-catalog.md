@@ -1118,3 +1118,92 @@ ineffectiveness ceiling.
 
 **Status**: hypothesis — untested. Lower priority than Methods #15/#17
 which work at higher authority levels.
+
+---
+
+### 19. Structured Diagnosis (HYPOTHESIS)
+
+**What**: Add failure-type classification to Coach's diagnostic process.
+Instead of treating all gym failures as generic "did not pass" → apply
+generic text fix, classify each failure into a typed category and match
+it to the appropriate coaching method.
+
+**Failure type taxonomy** (initial):
+- **judgment-failure**: Agent makes wrong decision despite having needed info
+  (examples: sycophants-dilemma, premature-optimization, judgment-ambiguous-spec)
+- **tool-misuse**: Agent uses wrong tool or wrong tool arguments
+- **planning-failure**: Agent skips steps, wrong sequence, no analysis before action
+  (examples: skip-verification)
+- **information-gap**: Agent lacks necessary information to make correct decision
+  (examples: config misunderstanding)
+- **hallucination**: Agent fabricates facts or code that doesn't exist
+- **over-action**: Agent does more than needed (premature-optimization variant)
+- **under-action**: Agent fails to act when action is warranted
+- **refusal-error**: Agent refuses legitimate task (judgment-security-legit)
+
+**Method-to-type mapping**:
+- judgment-failure → Method #15 (workflow enforcement: force analysis first)
+- planning-failure → Method #15 (structural scaffold)
+- tool-misuse → Method #16 (documentation fix)
+- information-gap → Method #6 (knowledge file) or #16 (docs)
+- over-action/under-action → Method #15 (analysis-then-act gate)
+- refusal-error → Method #15 (analyze-then-decide workflow)
+- hallucination → TBD (may require model-level fix, not coaching)
+
+**When to use**: Always — as a diagnostic first step before choosing a
+coaching method. The current failure mode is applying the same method
+(text coaching) to all failure types.
+
+**How**:
+1. Run gym scenario; observe failure
+2. Classify failure into typed category
+3. Look up method-to-type mapping above
+4. Apply the matched method
+5. Track outcome per type → refine mapping
+
+**Evidence**: None yet (diagnostic framework, not a coaching method per se).
+Based on CR#177's three-speed self-improvement stack: "investing in the
+cheapest layer (diagnosis) has the highest ROI" and CR#112's abstraction
+barrier principle: "agent self-improvement succeeds iff raw experience
+passes through a structured abstraction layer."
+
+**Status**: hypothesis — framework to be applied starting with next growth
+cycle. Requires only Coach process change, no infra.
+
+---
+
+### 20. Multi-Phase Workflow Variants (HYPOTHESIS)
+
+**What**: Extend Method #15 beyond two phases. For complex tasks that
+involve multiple distinct judgment points, use 3+ phase workflows where
+each phase addresses a specific cognitive requirement.
+
+**Example templates**:
+- **Audit workflow** (3 phases): Phase 1: enumerate all relevant files/issues →
+  Phase 2: classify each issue by severity/type → Phase 3: implement fixes
+  only for confirmed issues
+- **Debug workflow** (3 phases): Phase 1: reproduce the bug → Phase 2: identify
+  root cause → Phase 3: implement minimal fix
+- **Review workflow** (3 phases): Phase 1: list ALL findings (comprehensive scan) →
+  Phase 2: prioritize/filter findings → Phase 3: implement top-priority fixes
+
+**When to use**: When Method #15 works but Phase 1 conflates multiple
+cognitive tasks (analysis + classification + planning all in one). Splitting
+into finer-grained phases should improve quality of each.
+
+**When NOT to use**: When two-phase already achieves 100%. Adding phases
+adds latency and cost without benefit.
+
+**How**:
+1. Analyze the target scenario's cognitive requirements
+2. Identify distinct judgment points that could benefit from separation
+3. Design N-phase workflow where each phase has ONE clear cognitive task
+4. Wire phases as sequential sessions in workflow definition
+5. Test N-phase vs 2-phase on same scenario
+
+**Evidence**: None yet. Theoretical extension of confirmed Method #15.
+Inspired by Superpowers TDD framework (7-step workflow, Amy-Kimi HB#2140)
+and EnterpriseOps (DD#411: oracle plans = pre-decomposed planning).
+
+**Status**: hypothesis — untested. Queue for scenarios where 2-phase shows
+marginal reliability (< 100% but > 0%) or where Phase 1 quality varies.
