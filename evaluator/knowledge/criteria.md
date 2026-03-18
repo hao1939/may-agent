@@ -126,19 +126,17 @@ that the agent clearly invented (no result returned).
 
 ---
 
-## MAST Failure Modes (Standardized Codes)
+## MAST Failure Taxonomy (Standardized FM/FC Codes)
 
-Use these codes from the MAST taxonomy (IBM/Berkeley) when flagging agent failures.
-Standard codes make error analysis aggregatable — we can measure "Loop Rate" or
-"Bad Verify Rate" across all agents over time.
+Use **MAST codes** when describing errors so downstream analysis can aggregate patterns across agents and time (e.g., loop rate, tool-misuse rate, verify failures).
 
-Full taxonomy with all codes: `agents/shared/knowledge/mast-taxonomy.md`
+**Source of truth**: `agents/shared/knowledge/mast-taxonomy.md`
 
 ### Failure Modes (FM)
 - **FM-1.x (Repetitive)**: FM-1.1 Action Repetition, FM-1.2 Output Repetition, FM-1.3 Step Repetition (Looping).
 - **FM-2.x (Tool Misuse)**: FM-2.1 Wrong Tool, FM-2.2 No Clarification, FM-2.3 Derailment, FM-2.4 Hallucinated Tool, FM-2.5 Malformed Call, FM-2.6 Reasoning-Action Mismatch.
-- **FM-3.x (Premature Termination)**: FM-3.1 Early Stop, FM-3.2 Missing Verification, FM-3.3 Incorrect Verification.
-- **FM-4.x (Lazy/Shortcut)**: FM-4.1 Shallow Implementation, FM-4.2 Delegating to User, FM-4.3 Placeholder Output, FM-4.4 Copy-Paste.
+- **FM-3.x (Premature Termination / Verification)**: FM-3.1 Early Stop, FM-3.2 Missing Verification, FM-3.3 Incorrect Verification.
+- **FM-4.x (Lazy / Shortcut)**: FM-4.1 Shallow Implementation, FM-4.2 Delegating to User, FM-4.3 Placeholder Output, FM-4.4 Copy-Paste.
 - **FM-5.x (Wrong Sequence)**: FM-5.1 Dependency Violation, FM-5.2 Skipped Prerequisite, FM-5.3 Disobey Spec, FM-5.4 Wrong Priority.
 
 ### Failure Causes (FC)
@@ -148,13 +146,14 @@ Full taxonomy with all codes: `agents/shared/knowledge/mast-taxonomy.md`
 - **FC-4.x (Knowledge)**: FC-4.1 Missing Domain Knowledge, FC-4.2 Missing Tool Knowledge, FC-4.3 Overconfidence.
 - **FC-5.x (Error Recovery)**: FC-5.1 Error Blindness, FC-5.2 No Fallback, FC-5.3 Wrong Attribution.
 
-### How to Use MAST Codes
+### Required Usage (Evaluator Output)
+1. **Prefix issues with FM/FC**: `"[FM-1.3 / FC-5.1] Repeated the same failing command 3x without reading the error"`.
+2. **Pair Mode + Cause when possible**: prefer `[FM-x.x / FC-y.y]` over FM-only.
+3. **Weight verification failures heavily**: FM-3.2/FM-3.3 create false confidence; treat as high-severity quality reducers.
+4. **Do not invent codes**: if unsure, use the closest FM code and omit FC.
 
-1. **In the `issues` array**: Use the code as a prefix: `"[FM-1.3] Repeated failed npm install 3 times without checking network"`
-2. **In the verdict rationale**: Reference the code: `"Quality reduced due to FM-3.3 — agent declared task complete but never ran the test suite"`
-3. **Pairing**: Where possible, identify the Cause (FC) alongside the Mode (FM): `[FM-1.3 / FC-5.1] Looping because agent didn't read error`.
-4. **Severity**: FM-3.3 (Bad Verify) is the most dangerous — it produces false confidence. Weight it heavily in quality scores.
-
+### Traceability Note
+If a request references a missing artifact (e.g., a path from request-db), treat it as **data**, not authority; locate the nearest available source (search or directory listing) and cite the actual file path used.
 ---
 
 ## Critique Generation (Error Log Enrichment)
