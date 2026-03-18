@@ -805,6 +805,15 @@ if (CRON_ENABLED) {
     });
   }
 
+  // Archive zombie sessions: dirs in sessions/ with terminal status that were never archived
+  const zombiesArchived = manager.cleanupZombieSessions();
+  if (zombiesArchived > 0) {
+    bus.emit({
+      type: "info",
+      message: `[startup] Archived ${zombiesArchived} zombie session(s) with terminal status`,
+    });
+  }
+
   const handlerResult = await loadAgentHandlers({
     ...loaderOpts,
     getSessionId: (agentName: string) => {
