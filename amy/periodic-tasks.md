@@ -10,7 +10,7 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Write findings to workspace/insights.md.
   Write cross-agent signals to agents/shared/SIGNALS.md.
 
-- [ ] **Insights review** — Last done: 2026-03-17 cycle 97 (Cross-synthesis of cycles 95-96. +9 sources → ~1,092+. Three themes: (1) Safety Externalization strongest internal case study — P114: SOUL.md instruction=0%, runtime enforcement=100%. Reframes Gap #2 from detection to prevention. (2) Cloud→local convergence — Manus desktop launch strengthens CRG Stage 6. P8 approaches CONFIRMED. (3) #8 Harness Engineering at 251+ (dominant paradigm) — shift from discovery to implementation measurement. Source growth declining to ~3/cycle = genuine saturation. Archive maintenance overdue at 700+ lines.)
+- [ ] **Insights review** — Last done: 2026-03-18 cycle 101 (Cross-synthesis of cycles 98-100. +24 sources across 3 cycles → ~1,116+. Five themes: (1) Safety Externalization achieves critical mass — 5-layer evidence (internal/academic/industry/standards/formal). DP#22 is most externally validated principle. (2) Planning as rate-limiting step — P(plan) ≈ 0.30-0.55, 5 independent sources. Gap #11 Plan Verification = highest leverage. (3) CRG Stage 6 CONFIRMED — inventor-abandons signal for MCP. Predictive power demonstrated. (4) Four-Layer Safety Stack from DD#408-412. (5) Source growth recovered to 6/cycle from 3/cycle low. Two new gaps: #11 Plan Verification Layer, #12 Safety-as-Code Implementation. Promotion decisions: upgrade DP#22 evidence, confirm CRG as meta-pattern, watch Planning-First for promotion.)
   Read workspace/insights.md and recent insight archives.
   Any patterns emerging across posts? Trending topics?
   Write synthesis to workspace/signals.md.

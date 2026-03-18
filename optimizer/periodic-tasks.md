@@ -21,7 +21,7 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If found → write proposal in workspace/improvement-proposals.md.
   Latest (2026-03-17T22:30): **Major finding: Heartbeat interval mismatch.** 4 agents (bob 660s, optimizer 540s, coach 720s, tech-lead 780s) have intervalMs 3-4x shorter than their "30min" descriptions. 344 heartbeats/day = $27.52/day waste. Also: idle-skip code (848ebf1) deployed but server not restarted — 0 idle skips in 24h. Combined fix potential: ~$24/day = $720/month savings. Brief at `workspace/brief-heartbeat-waste-v2.md`, sent to tech-lead (req:127a5dc2). Prior: Tool Efficiency Audit at `workspace/brief-tool-efficiency-audit.md`.
 
-- [x] **Handler health check** — Last done: 2026-03-17T22:27
+- [x] **Handler health check** — Last done: 2026-03-18T00:07
   Review existing JS handlers in agents/may/handlers/.
   Any errors in recent logs? Any handler that's not firing?
   If issues → add fix to workspace/todo.md.
