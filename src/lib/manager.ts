@@ -23,6 +23,7 @@ import {
   STUCK_TERMINATE_THRESHOLD,
 } from "./manager-utils.js";
 import type { RegisteredAgent, ActiveSession, RunOptions, SubagentManagerOptions } from "./manager-utils.js";
+import { createFinishGuard } from "./tools/finish-guard.js";
 
 // Re-export everything from manager-utils so existing import paths don't break
 export {
@@ -966,6 +967,7 @@ export class SubagentManager {
       },
       transformContext: compactionTransform,
       getApiKey: def.apiKey ? () => def.apiKey : undefined,
+      beforeToolCall: createFinishGuard(),
     });
 
     const session: ActiveSession = {
@@ -1274,6 +1276,7 @@ export class SubagentManager {
       },
       transformContext: compactionTransform,
       getApiKey: def.apiKey ? () => def.apiKey : undefined,
+      beforeToolCall: createFinishGuard(),
     });
 
     // Repair broken message sequences (mid-tool-call crash).
