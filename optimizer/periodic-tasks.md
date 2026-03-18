@@ -3,11 +3,11 @@
 Track when each task was last done. Pick the most overdue one during heartbeat step 3.
 
 ## Per heartbeat (do one, rotate)
-- [x] **Analysis review** — Last done: 2026-03-18T06:07
+- [x] **Analysis review** — Last done: 2026-03-18T06:52
   Read agents/bob/workspace/analysis.md or recent Bob synthesis outputs.
   Any findings that need optimization work? Cost issues? Efficiency problems?
   If found → add specific task to workspace/todo.md.
-  Latest (2026-03-18T06:07): **finish() status overwritten by interrupt.** 77/100 recent sessions call finish() but are marked "interrupted" in meta.json. autoClose interrupt handler overwrites status after finish() completes. Breaks all completion tracking, evaluations, and agent metrics. Sent to tech-lead (req:f253e958). Finding at `workspace/finding-finish-status-overwritten.md`.
+  Latest (2026-03-18T06:52): **meta.json cost tracking structurally broken.** `PersistedSession` interface has no `usage` field — every session reports $0.00 cost. Real burn rate: $1,173/day ($35K/month). Optimizer+tech-lead = 71.6% of cost. Prompt cache hit rate 3.7%. Sent to tech-lead (req:0f5e25e7). Finding at `workspace/finding-meta-json-cost-gap.md`.
 
 - [x] **Cost outlier scan** — Last done: 2026-03-18T06:27
   Check recent evaluations — any sessions > $2.00?
