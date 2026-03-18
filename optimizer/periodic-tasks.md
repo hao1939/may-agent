@@ -3,11 +3,11 @@
 Track when each task was last done. Pick the most overdue one during heartbeat step 3.
 
 ## Per heartbeat (do one, rotate)
-- [x] **Analysis review** — Last done: 2026-03-18T02:35
+- [x] **Analysis review** — Last done: 2026-03-18T02:58
   Read agents/bob/workspace/analysis.md or recent Bob synthesis outputs.
   Any findings that need optimization work? Cost issues? Efficiency problems?
   If found → add specific task to workspace/todo.md.
-  Latest (2026-03-18T02:35): Fresh quantitative waste analysis. 317 sessions in 6h (52.8/hr), 104 (33%) completely wasteful (Bob 31 errors, May 37 ≤2-op sessions). All agents still firing at old intervals (540-780s vs configured 1800s). Consolidated finding with cost estimate: $394-441/day waste, $12.5-13.2K/month. All 6 committed fixes blocked on process restart. Finding at `workspace/finding-restart-urgency-quantified.md`.
+  Latest (2026-03-18T02:58): **System-wide 88.5% session failure rate.** 130 sessions in 3h, only 15 completed (11.5%). 6/9 agents at 0% completion — all killed by next heartbeat before finishing. Only amy-kimi (100%), evaluator (70%), qa (33%) completing. Bob 100% Gemini errors. Cron still at 540s vs 1800s configured. New finding at `workspace/finding-zero-completion-rate.md`, sent to tech-lead (req:8f592e68).
 
 - [x] **Cost outlier scan** — Last done: 2026-03-18T01:55
   Check recent evaluations — any sessions > $2.00?
