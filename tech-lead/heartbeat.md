@@ -46,3 +46,4 @@ If the build is healthy and nothing's queued:
 
 ## Output
 Report what you built or what's broken. Keep it short — code speaks louder than status updates.
+**Workspace hygiene**: If `workspace/journal.md` exceeds ~500 lines, run the consolidation task (`agents/shared/tasks/consolidate-memory.md`) before finishing.

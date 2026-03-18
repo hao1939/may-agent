@@ -255,6 +255,66 @@
     }
   },
   {
+    "name": "consolidate-memory-tech-lead",
+    "type": "job",
+    "intervalMs": 604800000,
+    "agent": "tech-lead",
+    "message": "[cron:consolidate-memory] Read agents/shared/tasks/consolidate-memory.md and execute it. Your journal is at agents/tech-lead/workspace/journal.md, your knowledge is at agents/tech-lead/knowledge/, your archive is at agents/tech-lead/workspace/archive/.",
+    "enabled": true,
+    "handler": "run-agent-task",
+    "description": "Weekly memory consolidation for Tech-Lead — journal → knowledge → archive (7d)",
+    "preflight": {
+      "type": "file-has-content",
+      "path": "agents/tech-lead/workspace/journal.md",
+      "minLines": 3
+    }
+  },
+  {
+    "name": "consolidate-memory-evaluator",
+    "type": "job",
+    "intervalMs": 604800000,
+    "agent": "evaluator",
+    "message": "[cron:consolidate-memory] Read agents/shared/tasks/consolidate-memory.md and execute it. Your journal is at agents/evaluator/workspace/journal.md, your knowledge is at agents/evaluator/knowledge/, your archive is at agents/evaluator/workspace/archive/.",
+    "enabled": true,
+    "handler": "run-agent-task",
+    "description": "Weekly memory consolidation for Evaluator — journal → knowledge → archive (7d)",
+    "preflight": {
+      "type": "file-has-content",
+      "path": "agents/evaluator/workspace/journal.md",
+      "minLines": 3
+    }
+  },
+  {
+    "name": "consolidate-memory-qa",
+    "type": "job",
+    "intervalMs": 604800000,
+    "agent": "qa",
+    "message": "[cron:consolidate-memory] Read agents/shared/tasks/consolidate-memory.md and execute it. Your journal is at agents/qa/workspace/journal.md, your knowledge is at agents/qa/knowledge/, your archive is at agents/qa/workspace/archive/.",
+    "enabled": true,
+    "handler": "run-agent-task",
+    "description": "Weekly memory consolidation for QA — journal → knowledge → archive (7d)",
+    "preflight": {
+      "type": "file-has-content",
+      "path": "agents/qa/workspace/journal.md",
+      "minLines": 3
+    }
+  },
+  {
+    "name": "consolidate-memory-amy-kimi",
+    "type": "job",
+    "intervalMs": 604800000,
+    "agent": "amy-kimi",
+    "message": "[cron:consolidate-memory] Read agents/shared/tasks/consolidate-memory.md and execute it. Your journal is at agents/amy-kimi/workspace/journal.md, your knowledge is at agents/amy-kimi/knowledge/, your archive is at agents/amy-kimi/workspace/archive/.",
+    "enabled": true,
+    "handler": "run-agent-task",
+    "description": "Weekly memory consolidation for Amy-Kimi — journal → knowledge → archive (7d)",
+    "preflight": {
+      "type": "file-has-content",
+      "path": "agents/amy-kimi/workspace/journal.md",
+      "minLines": 3
+    }
+  },
+  {
     "name": "reflect",
     "type": "job",
     "intervalMs": 21600000,

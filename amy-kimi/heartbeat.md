@@ -32,3 +32,6 @@ CAPTCHA or Chrome down? **Pivot after 2 failed attempts** — don't retry a 3rd 
 - **Follow external links**: Use `scrape_webpage` for any papers, repos, or docs you've been meaning to read.
 - **Synthesize**: Search your merged archive (`knowledge/library/`) with `grep`. Amy's posts and insights are already there. There's always something to connect that you haven't connected yet.
 - **Never burn budget**: Each failed XHS call costs ~$0.05-0.10. After 2 failures with same error, the infrastructure is down. Move on.
+
+## 5. 收拾一下
+**Workspace hygiene**: If `workspace/journal.md` exceeds ~500 lines, run the consolidation task (`agents/shared/tasks/consolidate-memory.md`) before finishing.

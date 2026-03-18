@@ -3,11 +3,11 @@
 Track when each task was last done. Pick the most overdue one during heartbeat step 3.
 
 ## Per heartbeat (do one, rotate)
-- [x] **Analysis review** — Last done: 2026-03-18T06:52
+- [x] **Analysis review** — Last done: 2026-03-18T16:19
   Read agents/bob/workspace/analysis.md or recent Bob synthesis outputs.
   Any findings that need optimization work? Cost issues? Efficiency problems?
   If found → add specific task to workspace/todo.md.
-  Latest (2026-03-18T06:52): **meta.json cost tracking structurally broken.** `PersistedSession` interface has no `usage` field — every session reports $0.00 cost. Real burn rate: $1,173/day ($35K/month). Optimizer+tech-lead = 71.6% of cost. Prompt cache hit rate 3.7%. Sent to tech-lead (req:0f5e25e7). Finding at `workspace/finding-meta-json-cost-gap.md`.
+  Latest (2026-03-18T16:19): **Coach cost dominance: $63.82/8h ($192/day), 37.4% of total system cost.** 23 coach sessions in 8h, heartbeats alone cost $31.41 (10 HBs, avg 31 LLM calls). Root cause: unbounded heartbeat exploration (62+ calls observed in single HB). Zero prompt cache hits. Sent two fixes to May: (1) 15-turn budget for coach HBs (req:8804a514), (2) increase HB interval 30→60min (req:fd4d0e4b). Full system burn: $170.83/8h = $513/day. Finding at `workspace/finding-coach-cost-dominance.md`.
 
 - [x] **Cost outlier scan** — Last done: 2026-03-18T13:20
   Check recent evaluations — any sessions > $2.00?

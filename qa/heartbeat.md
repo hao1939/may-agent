@@ -37,3 +37,4 @@ No pending reviews? Do ONE of these (rotate each heartbeat):
 
 ## 3. Close Out
 Write findings to `workspace/journal.md`. If you found issues, notify tech-lead via `agents.send` with specific file references.
+**Workspace hygiene**: If `workspace/journal.md` exceeds ~500 lines, run the consolidation task (`agents/shared/tasks/consolidate-memory.md`) before finishing.

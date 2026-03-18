@@ -27,8 +27,14 @@ Coder implements (Opus). QA reviews (GPT-5.2). Master uses CLI tools (Opus).
 ## Project Layout
 - `src/lib/` — core library
 - `src/app/` — application layer
-- `agents/` — agent configs
+- `agents/` — agent configs (**gitignored** — changes are on disk only, not committed)
 - `test/` — test files (use `npm test` or `npx tsx test/...`)
+
+## Project Evolution (Key Decisions)
+- **`handoff()` removed** (commit `fd5bda9`): Replaced by `agents.send()` + request tracking. No handoff tool exists.
+- **`classifyError` default**: Changed from `"infra"` to `"logic"` (commit `36d4642`). Unknown errors do NOT auto-retry — only retry when confident it's transient infra failure.
+- **context_files placement** (P147): context_files are loaded in the first user message (volatile section), NOT in the system prompt. This was an intentional move.
+- **P209 (Request Tracking)**: Fully implemented and deployed.
 
 ## MAST Failure Codes
 When reporting implementation failures, use standardized MAST codes from `agents/shared/knowledge/mast-taxonomy.md`.

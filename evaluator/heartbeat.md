@@ -41,6 +41,7 @@ Check `agents/evaluator/periodic-tasks.md`. Do the most overdue task. Update dat
 
 ## 5. Close Out
 End with a 2-3 sentence brief of what you calibrated, improved, or found.
+**Workspace hygiene**: If `workspace/journal.md` exceeds ~500 lines, run the consolidation task (`agents/shared/tasks/consolidate-memory.md`) before finishing.
 
 ---
 

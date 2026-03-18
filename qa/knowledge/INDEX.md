@@ -24,3 +24,6 @@ Tech-lead builds (Opus). May is Supervisor (Opus).
 - `agents/shared/philosophy.md` — full design philosophy
 - `agents/shared/best-practices.md` — coding standards
 - `agents/shared/skills/` — full skill guides
+
+## Consolidated Memory
+- `agents/qa/knowledge/consolidated-memory-2026-03.md`: Durable facts/patterns extracted from QA journal (2026-03-16..2026-03-18).
