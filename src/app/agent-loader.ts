@@ -29,6 +29,7 @@ import {
   createSocketWatchTool,
   createClaudeCodeTool,
   createGeminiCliTool,
+  createCodexTool,
   createCronTool,
   createScrapeTool,
   createSystemStatusTool,
@@ -187,6 +188,15 @@ function buildTools(config: AgentConfig, opts: AgentLoaderOptions): AgentTool[] 
       case "gemini-cli":
         tools.push(
           createGeminiCliTool({
+            cwd: projectRoot,
+            maxOutputLength: 80_000,
+          }),
+        );
+        break;
+
+      case "codex":
+        tools.push(
+          createCodexTool({
             cwd: projectRoot,
             maxOutputLength: 80_000,
           }),
@@ -420,6 +430,7 @@ const VALID_TOOL_PRESETS = new Set([
   "exec-master",
   "claude-code",
   "gemini-cli",
+  "codex",
   "agents",
   "workflow",
   "background-exec",

@@ -1,16 +1,24 @@
 /**
- * Dedicated tools for invoking CLI coding agents (claude-code, gemini-cli).
+ * Dedicated tools for invoking CLI coding agents (claude-code, gemini-cli, codex).
  *
- * These are the master agent's only way to interact with the codebase.
- * Each tool constructs the exact CLI invocation with all required flags
- * and returns the output. No general exec, no read, no write — just
- * prompt in, result out.
+ * These are the master agent's primary way to interact with the codebase.
+ * Each tool spawns the CLI binary asynchronously, streams output via the
+ * onUpdate callback so the orchestrating agent can observe progress, and
+ * returns the full result when the process exits.
+ *
+ * Key design decisions (inspired by OpenClaw's skill architecture):
+ *   - Async spawn, NOT execSync — agent context is not blocked
+ *   - Streaming partial output via onUpdate — agent sees progress
+ *   - Configurable model — not hardcoded
+ *   - Session continuity — --continue/--resume support
+ *   - Structured JSON output where supported (--output-format stream-json)
+ *   - Generous default timeout (300s) with proper cleanup
  */
 
-import { Type, type Static } from "@mariozechner/pi-ai";
+import { Type } from "@mariozechner/pi-ai";
 import type { TSchema } from "@mariozechner/pi-ai";
-import type { AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
-import { execSync } from "node:child_process";
+import type { AgentTool, AgentToolResult, AgentToolUpdateCallback } from "@mariozechner/pi-agent-core";
+import { spawn, type ChildProcess } from "node:child_process";
 
 function textResult(text: string): AgentToolResult<string> {
   return {
@@ -21,19 +29,77 @@ function textResult(text: string): AgentToolResult<string> {
 
 // ── Shared params ──────────────────────────────────────────────────────
 
-const CliAgentParams: TSchema = Type.Object({
+const ClaudeCodeParams: TSchema = Type.Object({
   prompt: Type.String({
     description:
-      "The task/prompt to send to the CLI agent. Be specific: include file paths, constraints, what to change, and what to verify.",
+      "The task/prompt to send to Claude Code. Be specific: include file paths, constraints, what to change, and what to verify.",
   }),
   timeout: Type.Optional(
-    Type.Number({ description: "Timeout in seconds (default: 180). Increase for complex tasks." }),
+    Type.Number({ description: "Timeout in seconds (default: 300). Increase for complex tasks." }),
+  ),
+  continue_session: Type.Optional(
+    Type.Boolean({ description: "Continue the most recent conversation in the current directory." }),
+  ),
+  resume_session_id: Type.Optional(
+    Type.String({ description: "Resume a specific conversation by session ID." }),
+  ),
+  model: Type.Optional(
+    Type.String({ description: "Model override for this invocation (e.g. 'sonnet', 'opus'). Uses tool default if not set." }),
   ),
 });
 
-interface CliAgentInput {
+interface ClaudeCodeInput {
   prompt: string;
   timeout?: number;
+  continue_session?: boolean;
+  resume_session_id?: string;
+  model?: string;
+}
+
+const GeminiCliParams: TSchema = Type.Object({
+  prompt: Type.String({
+    description:
+      "The task/prompt to send to Gemini CLI. Be specific: include file paths, constraints, what to analyze/change, and what output you expect.",
+  }),
+  timeout: Type.Optional(
+    Type.Number({ description: "Timeout in seconds (default: 300). Increase for complex tasks." }),
+  ),
+  resume_session: Type.Optional(
+    Type.String({ description: "Resume a previous session. Use 'latest' for most recent or an index number." }),
+  ),
+  model: Type.Optional(
+    Type.String({ description: "Model override for this invocation. Uses tool default if not set." }),
+  ),
+});
+
+interface GeminiCliInput {
+  prompt: string;
+  timeout?: number;
+  resume_session?: string;
+  model?: string;
+}
+
+const CodexParams: TSchema = Type.Object({
+  prompt: Type.String({
+    description:
+      "The task/prompt to send to Codex. Be specific: include file paths, constraints, what to change, and what to verify.",
+  }),
+  timeout: Type.Optional(
+    Type.Number({ description: "Timeout in seconds (default: 300). Increase for complex tasks." }),
+  ),
+  reasoning_effort: Type.Optional(
+    Type.String({ description: "Reasoning effort: 'low', 'medium', 'high'. Default: 'high'." }),
+  ),
+  model: Type.Optional(
+    Type.String({ description: "Model override (e.g. 'gpt-5.1-codex-max'). Uses tool default if not set." }),
+  ),
+});
+
+interface CodexInput {
+  prompt: string;
+  timeout?: number;
+  reasoning_effort?: string;
+  model?: string;
 }
 
 // ── Options ────────────────────────────────────────────────────────────
@@ -43,6 +109,19 @@ export interface CliAgentToolOptions {
   cwd: string;
   /** Maximum output length before truncation. Default: 80_000. */
   maxOutputLength?: number;
+  /** Model to use. */
+  model?: string;
+}
+
+export interface GeminiCliToolOptions extends CliAgentToolOptions {
+  /** API key for the proxy. Default: "dummy". */
+  apiKey?: string;
+  /** Base URL for the Gemini proxy. Default: "http://localhost:4000". */
+  baseUrl?: string;
+}
+
+export interface CodexToolOptions extends CliAgentToolOptions {
+  // Codex uses OPENAI_API_KEY from env, no extra config needed
 }
 
 // ── Output truncation ──────────────────────────────────────────────────
@@ -56,46 +135,212 @@ function truncateOutput(output: string, maxLen: number): string {
   return `${head}\n\n--- TRUNCATED (${omitted} chars omitted) ---\n\n${tail}`;
 }
 
+// ── Shared async spawn helper ──────────────────────────────────────────
+
+/** Default timeout for CLI agent invocations (seconds). */
+const DEFAULT_TIMEOUT = 300;
+
+/** How often to push partial output updates (ms). */
+const UPDATE_INTERVAL_MS = 3000;
+
+interface SpawnResult {
+  output: string;
+  exitCode: number | null;
+  timedOut: boolean;
+}
+
+/**
+ * Spawn a CLI agent process asynchronously with streaming output.
+ *
+ * - Collects stdout+stderr into a single buffer
+ * - Periodically calls onUpdate with the latest output so the orchestrating
+ *   agent can see progress without waiting for completion
+ * - Respects AbortSignal for cancellation
+ * - Returns full output when process exits
+ */
+function spawnCliAgent(
+  command: string,
+  args: string[],
+  opts: {
+    cwd: string;
+    env?: NodeJS.ProcessEnv;
+    timeoutMs: number;
+    maxOutput: number;
+    signal?: AbortSignal;
+    onUpdate?: AgentToolUpdateCallback<string>;
+  },
+): Promise<SpawnResult> {
+  return new Promise((resolve, reject) => {
+    const { cwd, env, timeoutMs, maxOutput, signal, onUpdate } = opts;
+
+    let child: ChildProcess;
+    try {
+      child = spawn(command, args, {
+        cwd,
+        env: env ?? { ...process.env },
+        stdio: ["ignore", "pipe", "pipe"],
+        detached: false,
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      reject(new Error(`Failed to spawn ${command}: ${msg}`));
+      return;
+    }
+
+    let output = "";
+    let timedOut = false;
+    let exited = false;
+
+    // Collect output
+    const appendOutput = (data: Buffer) => {
+      output += data.toString();
+      // Cap in-memory buffer at 2x maxOutput to prevent OOM
+      if (output.length > maxOutput * 2) {
+        output = output.slice(-maxOutput * 2);
+      }
+    };
+
+    child.stdout?.on("data", appendOutput);
+    child.stderr?.on("data", appendOutput);
+
+    // Periodic progress updates
+    let updateTimer: ReturnType<typeof setInterval> | undefined;
+    if (onUpdate) {
+      updateTimer = setInterval(() => {
+        if (output.length > 0) {
+          onUpdate(textResult(truncateOutput(output, maxOutput)));
+        }
+      }, UPDATE_INTERVAL_MS);
+    }
+
+    // Timeout
+    const timeoutHandle = setTimeout(() => {
+      timedOut = true;
+      try {
+        child.kill("SIGTERM");
+        // Give it 5s to clean up, then SIGKILL
+        setTimeout(() => {
+          if (!exited) {
+            try { child.kill("SIGKILL"); } catch { /* already dead */ }
+          }
+        }, 5000);
+      } catch { /* already dead */ }
+    }, timeoutMs);
+
+    // Abort signal
+    const onAbort = () => {
+      try { child.kill("SIGTERM"); } catch { /* already dead */ }
+    };
+    if (signal) {
+      if (signal.aborted) {
+        onAbort();
+      } else {
+        signal.addEventListener("abort", onAbort, { once: true });
+      }
+    }
+
+    // Cleanup helper
+    const cleanup = () => {
+      clearTimeout(timeoutHandle);
+      if (updateTimer) clearInterval(updateTimer);
+      if (signal) signal.removeEventListener("abort", onAbort);
+    };
+
+    child.on("error", (err) => {
+      exited = true;
+      cleanup();
+      reject(new Error(`${command} process error: ${err.message}`));
+    });
+
+    child.on("close", (code) => {
+      exited = true;
+      cleanup();
+
+      if (signal?.aborted) {
+        reject(new Error(`${command} aborted. Partial output:\n${truncateOutput(output, maxOutput)}`));
+        return;
+      }
+
+      resolve({ output, exitCode: code, timedOut });
+    });
+  });
+}
+
+// ── Strip ANSI escape codes ────────────────────────────────────────────
+
+function stripAnsi(text: string): string {
+  // eslint-disable-next-line no-control-regex
+  return text.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, "");
+}
+
 // ── Claude Code tool ───────────────────────────────────────────────────
 
 export function createClaudeCodeTool(opts: CliAgentToolOptions): AgentTool {
   const maxOutput = opts.maxOutputLength ?? 80_000;
+  const defaultModel = opts.model; // undefined = let Claude Code use its own configured default
 
   return {
     name: "claude_code",
     label: "claude_code",
     description:
-      "Run claude-code to implement code changes. Best for: multi-file changes, debugging, refactoring, writing tests. " +
-      "Claude-code has full read/write access to the project and runs with auto-approval. " +
+      "Run Claude Code to implement code changes. Best for: multi-file changes, debugging, refactoring, writing tests. " +
+      "Claude Code has full read/write access to the project and runs with auto-approval. " +
+      "Supports session continuity — use continue_session to resume the last conversation, " +
+      "or resume_session_id to resume a specific one. " +
       "Frame your prompt carefully — include specific file paths, what to change, constraints, and verification steps.",
-    parameters: CliAgentParams,
-    execute: async (_toolCallId: string, _input: unknown) => {
-      const input = _input as CliAgentInput;
-      const timeout = (input.timeout ?? 180) * 1000;
-      const prompt = input.prompt;
+    parameters: ClaudeCodeParams,
+    execute: async (_toolCallId: string, _input: unknown, signal?: AbortSignal, onUpdate?: AgentToolUpdateCallback<string>) => {
+      const input = _input as ClaudeCodeInput;
+      const timeoutSecs = input.timeout ?? DEFAULT_TIMEOUT;
+      const model = input.model ?? defaultModel;
 
-      // Escape single quotes in the prompt for shell safety
-      const escapedPrompt = prompt.replace(/'/g, "'\\''");
-      const command = `claude --print --dangerously-skip-permissions --model claude-opus-4.6 -p '${escapedPrompt}' 2>&1`;
+      const args: string[] = [
+        "--print",
+        "--dangerously-skip-permissions",
+        "--output-format", "text",
+      ];
+
+      // Only pass --model if explicitly specified; otherwise Claude Code uses its own config
+      if (model) {
+        args.push("--model", model);
+      }
+
+      if (input.continue_session) {
+        args.push("--continue");
+      } else if (input.resume_session_id) {
+        args.push("--resume", input.resume_session_id);
+      }
+
+      // Prompt goes last as a positional argument
+      args.push("-p", input.prompt);
 
       try {
-        const result = execSync(command, {
+        const result = await spawnCliAgent("claude", args, {
           cwd: opts.cwd,
-          timeout,
-          maxBuffer: 10 * 1024 * 1024,
-          encoding: "utf-8",
-          env: { ...process.env },
+          timeoutMs: timeoutSecs * 1000,
+          maxOutput,
+          signal,
+          onUpdate,
         });
-        return textResult(truncateOutput(result, maxOutput));
-      } catch (err: any) {
-        const output = (err.stdout ?? "") + (err.stderr ?? "");
-        if (err.killed || err.signal === "SIGTERM") {
+
+        const cleanOutput = stripAnsi(result.output);
+
+        if (result.timedOut) {
           return textResult(
-            `TIMEOUT after ${input.timeout ?? 180}s. Partial output:\n${truncateOutput(output, maxOutput)}`,
+            `TIMEOUT after ${timeoutSecs}s. Partial output:\n${truncateOutput(cleanOutput, maxOutput)}`,
           );
         }
-        const exitCode = err.status ?? "unknown";
-        return textResult(`Exit code ${exitCode}:\n${truncateOutput(output || err.message, maxOutput)}`);
+
+        if (result.exitCode !== 0 && result.exitCode !== null) {
+          return textResult(
+            `Exit code ${result.exitCode}:\n${truncateOutput(cleanOutput, maxOutput)}`,
+          );
+        }
+
+        return textResult(truncateOutput(cleanOutput, maxOutput));
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        return textResult(`Error: ${msg}`);
       }
     },
   };
@@ -103,57 +348,141 @@ export function createClaudeCodeTool(opts: CliAgentToolOptions): AgentTool {
 
 // ── Gemini CLI tool ────────────────────────────────────────────────────
 
-export interface GeminiCliToolOptions extends CliAgentToolOptions {
-  /** API key for the proxy. Default: "dummy". */
-  apiKey?: string;
-  /** Base URL for the Gemini proxy. Default: "http://localhost:4000". */
-  baseUrl?: string;
-  /** Model to use. Default: "gemini-3.1-pro-preview". */
-  model?: string;
-}
-
 export function createGeminiCliTool(opts: GeminiCliToolOptions): AgentTool {
   const maxOutput = opts.maxOutputLength ?? 80_000;
   const apiKey = opts.apiKey ?? "dummy";
   const baseUrl = opts.baseUrl ?? "http://localhost:4000";
-  const model = opts.model ?? "gemini-3.1-pro-preview";
+  const defaultModel = opts.model; // undefined = let Gemini CLI use its own default
 
   return {
     name: "gemini_cli",
     label: "gemini_cli",
     description:
-      "Run gemini-cli for analysis, exploration, or code changes with very large context. " +
+      "Run Gemini CLI for analysis, exploration, or code changes with very large context. " +
       "Best for: codebase analysis, architectural reasoning, large-context tasks. " +
-      "Gemini-cli has full read/write access to the project and runs with auto-approval. " +
+      "Gemini CLI has full read/write access to the project and runs with auto-approval. " +
+      "Supports session resumption via resume_session. " +
       "Frame your prompt carefully — include specific file paths, what to analyze/change, and what output you expect.",
-    parameters: CliAgentParams,
-    execute: async (_toolCallId: string, _input: unknown) => {
-      const input = _input as CliAgentInput;
-      const timeout = (input.timeout ?? 180) * 1000;
-      const prompt = input.prompt;
+    parameters: GeminiCliParams,
+    execute: async (_toolCallId: string, _input: unknown, signal?: AbortSignal, onUpdate?: AgentToolUpdateCallback<string>) => {
+      const input = _input as GeminiCliInput;
+      const timeoutSecs = input.timeout ?? DEFAULT_TIMEOUT;
+      const model = input.model ?? defaultModel;
 
-      // Escape single quotes in the prompt for shell safety
-      const escapedPrompt = prompt.replace(/'/g, "'\\''");
-      const command = `GEMINI_API_KEY=${apiKey} GOOGLE_GEMINI_BASE_URL=${baseUrl} gemini --prompt '${escapedPrompt}' --model ${model} --yolo 2>&1`;
+      const args: string[] = [
+        "--prompt", input.prompt,
+        "--yolo",
+      ];
+
+      // Only pass --model if explicitly specified
+      if (model) {
+        args.push("--model", model);
+      }
+
+      if (input.resume_session) {
+        args.push("--resume", input.resume_session);
+      }
+
+      const env: NodeJS.ProcessEnv = {
+        ...process.env,
+        GEMINI_API_KEY: apiKey,
+        GOOGLE_GEMINI_BASE_URL: baseUrl,
+      };
 
       try {
-        const result = execSync(command, {
+        const result = await spawnCliAgent("gemini", args, {
           cwd: opts.cwd,
-          timeout,
-          maxBuffer: 10 * 1024 * 1024,
-          encoding: "utf-8",
-          env: { ...process.env, GEMINI_API_KEY: apiKey, GOOGLE_GEMINI_BASE_URL: baseUrl },
+          env,
+          timeoutMs: timeoutSecs * 1000,
+          maxOutput,
+          signal,
+          onUpdate,
         });
-        return textResult(truncateOutput(result, maxOutput));
-      } catch (err: any) {
-        const output = (err.stdout ?? "") + (err.stderr ?? "");
-        if (err.killed || err.signal === "SIGTERM") {
+
+        const cleanOutput = stripAnsi(result.output);
+
+        if (result.timedOut) {
           return textResult(
-            `TIMEOUT after ${input.timeout ?? 180}s. Partial output:\n${truncateOutput(output, maxOutput)}`,
+            `TIMEOUT after ${timeoutSecs}s. Partial output:\n${truncateOutput(cleanOutput, maxOutput)}`,
           );
         }
-        const exitCode = err.status ?? "unknown";
-        return textResult(`Exit code ${exitCode}:\n${truncateOutput(output || err.message, maxOutput)}`);
+
+        if (result.exitCode !== 0 && result.exitCode !== null) {
+          return textResult(
+            `Exit code ${result.exitCode}:\n${truncateOutput(cleanOutput, maxOutput)}`,
+          );
+        }
+
+        return textResult(truncateOutput(cleanOutput, maxOutput));
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        return textResult(`Error: ${msg}`);
+      }
+    },
+  };
+}
+
+// ── Codex CLI tool ─────────────────────────────────────────────────────
+
+export function createCodexTool(opts: CodexToolOptions): AgentTool {
+  const maxOutput = opts.maxOutputLength ?? 80_000;
+  const defaultModel = opts.model; // undefined = use codex default
+
+  return {
+    name: "codex_cli",
+    label: "codex_cli",
+    description:
+      "Run Codex CLI (OpenAI) to implement code changes or perform analysis. " +
+      "Best for: implementation tasks, code review (read-only mode), large refactors. " +
+      "Codex runs with full auto-approval and high reasoning effort by default. " +
+      "Frame your prompt carefully — include specific file paths, what to change, constraints, and verification steps.",
+    parameters: CodexParams,
+    execute: async (_toolCallId: string, _input: unknown, signal?: AbortSignal, onUpdate?: AgentToolUpdateCallback<string>) => {
+      const input = _input as CodexInput;
+      const timeoutSecs = input.timeout ?? DEFAULT_TIMEOUT;
+      const effort = input.reasoning_effort ?? "high";
+      const model = input.model ?? defaultModel;
+
+      const args: string[] = [
+        "exec",
+        "--full-auto",
+        "-c", `model_reasoning_effort=${effort}`,
+      ];
+
+      if (model) {
+        args.push("-m", model);
+      }
+
+      // Prompt goes last as positional
+      args.push(input.prompt);
+
+      try {
+        const result = await spawnCliAgent("codex", args, {
+          cwd: opts.cwd,
+          timeoutMs: timeoutSecs * 1000,
+          maxOutput,
+          signal,
+          onUpdate,
+        });
+
+        const cleanOutput = stripAnsi(result.output);
+
+        if (result.timedOut) {
+          return textResult(
+            `TIMEOUT after ${timeoutSecs}s. Partial output:\n${truncateOutput(cleanOutput, maxOutput)}`,
+          );
+        }
+
+        if (result.exitCode !== 0 && result.exitCode !== null) {
+          return textResult(
+            `Exit code ${result.exitCode}:\n${truncateOutput(cleanOutput, maxOutput)}`,
+          );
+        }
+
+        return textResult(truncateOutput(cleanOutput, maxOutput));
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        return textResult(`Error: ${msg}`);
       }
     },
   };
