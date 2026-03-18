@@ -80,11 +80,21 @@ fi
 # Copy scenario environment to work dir
 cp -r "$SCENARIO_DIR/environment/." "$GYM_WORK/"
 
-# Resolve binary
+# Resolve binary (with staleness check)
 if [[ -n "${MAY_BIN:-}" ]]; then
   MAY_CMD=("$MAY_BIN")
 elif [[ -x "$PROJECT_ROOT/bundle/may-agent" ]]; then
-  MAY_CMD=("$PROJECT_ROOT/bundle/may-agent")
+  BINARY="$PROJECT_ROOT/bundle/may-agent"
+  STALE=false
+  if [[ -n "$(find "$PROJECT_ROOT/src" -name '*.ts' -newer "$BINARY" -print -quit 2>/dev/null)" ]]; then
+    STALE=true
+  fi
+  if $STALE; then
+    echo "⚠️  Compiled binary is stale (source is newer). Using bun instead." >&2
+    MAY_CMD=(bun "$PROJECT_ROOT/src/app/may.ts")
+  else
+    MAY_CMD=("$BINARY")
+  fi
 else
   MAY_CMD=(bun "$PROJECT_ROOT/src/app/may.ts")
 fi
