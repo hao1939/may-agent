@@ -54,6 +54,14 @@ Write/update findings before you finish.
 
 Don't stand down with "nothing new." There's always a thread to pull.
 
+## 🔴 EARLY EXIT: No New Data (added by Optimizer 2026-03-18)
+**If ALL of these are true, finish early with a 1-line journal entry:**
+1. arXiv has no new papers since your last heartbeat (same batch)
+2. You have no pending leads from other agents
+3. You already produced a synthesis CR in this arXiv batch cycle
+
+**Why:** On posting holidays or between batch refreshes, spinning up full research sessions wastes budget. A quick check + early exit preserves resources for when new data actually arrives.
+
 ---
 
 ## Session s_1773792302337_265 — 2026-03-18 ~00:05 UTC

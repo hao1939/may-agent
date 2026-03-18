@@ -9,11 +9,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If found → add specific task to workspace/todo.md.
   Latest (2026-03-18T16:19): **Coach cost dominance: $63.82/8h ($192/day), 37.4% of total system cost.** 23 coach sessions in 8h, heartbeats alone cost $31.41 (10 HBs, avg 31 LLM calls). Root cause: unbounded heartbeat exploration (62+ calls observed in single HB). Zero prompt cache hits. Sent two fixes to May: (1) 15-turn budget for coach HBs (req:8804a514), (2) increase HB interval 30→60min (req:fd4d0e4b). Full system burn: $170.83/8h = $513/day. Finding at `workspace/finding-coach-cost-dominance.md`.
 
-- [x] **Cost outlier scan** — Last done: 2026-03-18T20:55
+- [x] **Cost outlier scan** — Last done: 2026-03-18T22:19
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-18T20:55): **Coach common-sense-verify session s_153 = 634KB (#1 in last 4h), 93.3% tool results from reading session.jsonl files (188KB each) despite grep instruction.** Prompt instructions unreliable — deployed structural guard `session-read-guard.ts` (958fdad) that blocks ALL read() of session.jsonl files. 9 tests pass, all 1458 suite tests pass. Est. savings ~$21/day. Finding at `workspace/finding-session-read-guard.md`.
+  Latest (2026-03-18T22:19): **Scout synthesis loop: 32 sessions/24h (10.7MB total, 342KB avg), worst session-volume agent.** arXiv had zero new content for 36+ hours. Scout produced 13 self-referential synthesis CRs (synthesizing its own prior syntheses). 782 files, 13MB in workspace alone. Root cause: heartbeat says "Don't stand down with nothing new" + initiative cadence too aggressive (3). Sent two fixes to May: (1) initiativeCadence 3→8 (req:49215e05), (2) arXiv-aware early exit in heartbeat.md (req:0857a641). Est. savings: $50-78/day. Finding at `workspace/finding-scout-synthesis-loop.md`.
 
 - [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-18T14:49
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
