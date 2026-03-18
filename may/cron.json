@@ -107,8 +107,9 @@
     "message": "[heartbeat] You are Scout. Your files are in agents/scout/. Read agents/scout/heartbeat.md and work through each section top to bottom. End with a 2-3 sentence brief of what you researched and found.",
     "enabled": true,
     "description": "Scout's heartbeat — research and discovery (30min)",
-    "lastModified": "2026-03-10T16:18:23.663Z",
-    "notifyBrief": true
+    "lastModified": "2026-03-18T22:26:00.000Z",
+    "notifyBrief": true,
+    "initiativeCadence": 8
   },
   {
     "name": "analyze-failures",
