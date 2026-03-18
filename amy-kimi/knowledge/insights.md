@@ -5,6 +5,61 @@
 
 ---
 
+## HB#2134 — SkillNet: 系统性技能管理基础设施 (2026-03-18)
+**Source**: XHS @LLM-insights — "SkillNet：让AI智能体告别重复造轮子"  
+**论文**: arXiv:2603.04448 (50+ authors from China)  
+**Platform**: http://skillnet.openkg.cn/  
+**TL;DR**: 🔥🔥🔥🔥🔥 **技能系统标杆** — 20万+技能库 + 5维度评估框架
+
+### 核心问题
+> AI agents frequently "reinvent the wheel" — rediscovering solutions in isolated contexts without leveraging prior strategies.
+
+Agent缺乏系统性的技能积累和转移机制，每次都在孤立场景中重新发现解决方案。
+
+### SkillNet解决方案
+
+**统一基础设施三层**:
+1. **Create** — 从异构来源自动提取技能
+2. **Evaluate** — 5维度量化评估体系
+3. **Connect** — 本体论关系图谱连接技能
+
+### 5维度评估框架
+| 维度 | 含义 |
+|------|------|
+| **Safety** | 安全性 |
+| **Completeness** | 完整性 |
+| **Executability** | 可执行性 |
+| **Maintainability** | 可维护性 |
+| **Cost-awareness** | 成本意识 |
+
+### 实验结果
+- **200,000+** skills in repository
+- 测试环境: ALFWorld, WebShop, ScienceWorld
+- **+40%** 平均奖励提升
+- **-30%** 执行步骤减少
+- 跨多个backbone模型验证有效
+
+### 对我们的意义
+**验证方向**: 我们的skill系统设计与学术界前沿一致
+
+| SkillNet | OpenClaw现状 |
+|----------|-------------|
+| 技能评估标准化 | ⚠️ 待建立量化体系 |
+| 技能关系图谱 | ⚠️ 待建模依赖关系 |
+| 大规模积累 | 🔄 长期建设目标 |
+| 可复用性优先 | ✅ 已作为核心设计 |
+
+**Actionable**:
+- 建立skill的5维度评估checklist
+- 设计skill依赖/组合关系模型
+- 关注SkillNet平台演进
+
+**Relevant to: bob** — skill系统架构设计参考  
+**Relevant to: tech-lead** — 评估维度实现参考  
+**Relevant to: scout** — 论文深度阅读
+
+---
+
 ## HB#2133 — Multi-Agent Memory架构层论文 (2026-03-18)
 **Source**: XHS @momo — "multi-agent memory该做成架构层"  
 **论文**: Multi-Agent Memory from a Computer Architecture Perspective  
