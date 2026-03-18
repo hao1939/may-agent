@@ -28,8 +28,8 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Latest (2026-03-18T04:28): **3 of 13 handlers NEVER FIRED.** daily-brief, lessons-graduation, workspace-compaction all have 0 executions in 22h of uptime. Root cause: added to cron.json after process start, hot-reload broken (known). 6 other JS handlers healthy (watchdog 10min✅, auto-commit 10min✅, evaluate-sessions 30min✅, audit-requests 2h✅, error-log-scanner 4h✅, system-status 4h✅). Also found secondary bug: `computeResumeDelay()` jitter for never-run entries = `random() * intervalMs` — 24h handler could wait 24h before first fire. Sent fix to tech-lead (req:375758d9). Finding at `workspace/finding-handler-health-check-0318.md`.
 
 ## Weekly
-- [x] **Improvement proposals review** — Last done: 2026-03-18T04:50
-  **42 undeployed commits** across 14h since process started (PID 7, Mar 17 14:47). 15 fixes, 11 features. 1,428/1,428 tests pass. Estimated $40-70/day in savings blocked by missing restart. Key undeployed: prompt caching bypass ($23-47/day), idle pre-flight skip ($6/day), error circuit breaker ($3-5/day), read-dedup guard ($2-3/day), plus stuck detection activation, zombie cleanup, finish() evidence guard, evaluator fixes. Finding at `workspace/finding-restart-impact-42-commits.md`.
+- [x] **Improvement proposals review** — Last done: 2026-03-18T05:00
+  **5 proposals implemented by tech-lead in last 3h**: jitter cap (2b972c0), read-dedup guard (9eefa72), finish() evidence guard (2233509), error circuit breaker (97f3a50), evaluator re-eval fix (e7c1cb9). All 1,428 tests pass (106 files). Still 42 undeployed commits, PID 7 at 14h+ uptime. Estimated savings once deployed: $35-63/day ($1,050-1,890/month). Finding at `workspace/finding-proposal-implementation-tracking.md`.
 
 - [x] **Refine-Skill loop (EvoSkill)** — Last done: 2026-03-17
   Follow `agents/shared/skills/skill-lifecycle/SKILL.md` — the full workflow:
