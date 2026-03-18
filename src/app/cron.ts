@@ -633,7 +633,7 @@ export class Cron {
     const requestId = trackRequest(this.persistDir, {
       fromEntity: "cron",
       toAgent: agentName,
-      task: entry.message.slice(0, 500),
+      task: (entry.message ?? "").slice(0, 500),
       method: "call",
       artifact: entry.name,
       context: JSON.stringify({ type: "heartbeat" }),
@@ -644,7 +644,7 @@ export class Cron {
 
     try {
       // F3: Auto-inject context files into heartbeat task message.
-      let taskMessage = entry.message;
+      let taskMessage = entry.message ?? "";
       const injections: string[] = [];
       let injectedRequestIds: string[] = [];
 
@@ -690,7 +690,7 @@ export class Cron {
       }
 
       if (injections.length > 0) {
-        taskMessage = `${entry.message}\n\n---\n${injections.join("\n\n---\n")}`;
+        taskMessage = `${entry.message ?? ""}\n\n---\n${injections.join("\n\n---\n")}`;
       }
 
       const sessionId = this.manager.run(agentName, taskMessage, { kind: "job" });
@@ -763,7 +763,7 @@ export class Cron {
     const requestId = trackRequest(this.persistDir, {
       fromEntity: "cron",
       toAgent: entry.agent || "may",
-      task: entry.message.slice(0, 500),
+      task: (entry.message ?? "").slice(0, 500),
       method: "call",
       artifact: entry.name,
       context: JSON.stringify({ type: "handler" }),
@@ -818,7 +818,7 @@ export class Cron {
       const { pid } = spawnDetachedAgent({
         projectRoot: this.projectRoot,
         agentName: entry.agent ?? "may",
-        task: entry.message,
+        task: entry.message ?? "",
         sessionId,
         parentSessionId,
       });
@@ -826,7 +826,7 @@ export class Cron {
       trackRequest(this.persistDir, {
         fromEntity: "cron",
         toAgent: entry.agent ?? "may",
-        task: entry.message.slice(0, 500),
+        task: (entry.message ?? "").slice(0, 500),
         method: "call",
         artifact: entry.name,
         sessionId,
@@ -842,7 +842,7 @@ export class Cron {
       const requestId = trackRequest(this.persistDir, {
         fromEntity: "cron",
         toAgent: entry.agent ?? "may",
-        task: entry.message.slice(0, 500),
+        task: (entry.message ?? "").slice(0, 500),
         method: "call",
         artifact: entry.name,
       });

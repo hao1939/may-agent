@@ -84,7 +84,7 @@ import { isOverflowError, extractProgress, writeProgressFile } from "./overflow.
 import { spawnDetachedAgent, readIdentity } from "./detached.js";
 import { sendSocketCommand } from "./socket-client.js";
 import { runActiveRecall, formatRecallWarnings } from "./active-recall.js";
-import { readLatestCheckpointForAgent } from "./tools/checkpoint.js";
+import { readLatestCheckpointForAgent, cleanupStepCounter } from "./tools/checkpoint.js";
 import { buildTrace } from "./manager-trace.js";
 import { hasFinishToolCall, extractFinishParams, isRetryableInfraError, runAgentWithRetry } from "./manager-retry.js";
 import { createAgentsTool as createAgentsToolFn, type CreateAgentsToolOptions } from "./manager-agents-tool.js";
@@ -622,6 +622,7 @@ export class SubagentManager {
   /** Archive a session after completion: move to history. */
   private archiveSessionDir(session: ActiveSession): void {
     try {
+      cleanupStepCounter(session.sessionId);
       archiveSession(this.registry.persistDir, session.sessionId);
     } catch {
       // Session dir may not exist (e.g. no persistDir or already archived)
@@ -1273,7 +1274,7 @@ export class SubagentManager {
     for (const tool of def.tools) {
       if (tool.name === "checkpoint") {
         if ((tool as any)._setSessionId) (tool as any)._setSessionId(sessionId);
-        if ((tool as any)._setAgentName) (tool as any)._setAgentName(name);
+        if ((tool as any)._setAgentName) (tool as any)._setAgentName(def.name);
       }
     }
 

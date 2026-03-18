@@ -10,6 +10,7 @@
  */
 
 import { existsSync } from "node:fs";
+import { resolve } from "node:path";
 import { Type, type Static } from "@mariozechner/pi-ai";
 import type { AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
 
@@ -78,9 +79,16 @@ export function createSendTool(opts: SendToolOptions): AgentTool {
         );
       }
 
-      // Validate artifact exists if provided
-      if (params.artifact && !existsSync(params.artifact)) {
-        return textResult(JSON.stringify({ error: `Artifact not found: ${params.artifact}` }));
+      // Validate artifact exists if provided, with path traversal protection
+      if (params.artifact) {
+        const resolvedArtifact = resolve(params.artifact);
+        const projectRoot = resolve(opts.persistDir, "..");
+        if (!resolvedArtifact.startsWith(projectRoot)) {
+          return textResult(JSON.stringify({ error: `Artifact path outside project root: ${params.artifact}` }));
+        }
+        if (!existsSync(resolvedArtifact)) {
+          return textResult(JSON.stringify({ error: `Artifact not found: ${params.artifact}` }));
+        }
       }
 
       const caller = opts.agentName;

@@ -12,14 +12,15 @@ export type ErrorClass = "infra" | "logic" | "abort" | "overflow";
  * Pure function — no IO, no database, no Bun-specific deps.
  */
 export function classifyError(error: string | undefined | null): ErrorClass {
-  if (!error) return "infra";
+  if (!error) return "logic";
   const e = error.toLowerCase();
 
   // Infrastructure errors (retryable)
   if (
     e.includes("empty response") ||
     e.includes("0 output tokens") ||
-    e.includes("stream") ||
+    e.includes("stream error") ||
+    e.includes("stream closed") ||
     e.includes("502") ||
     e.includes("503") ||
     e.includes("econnreset") ||
@@ -51,11 +52,15 @@ export function classifyError(error: string | undefined | null): ErrorClass {
     e.includes("tool not found") ||
     e.includes("permission denied") ||
     e.includes("call depth exceeded") ||
-    e.includes("not allowed")
+    e.includes("not allowed") ||
+    e.includes("401") ||
+    e.includes("403") ||
+    e.includes("unauthorized") ||
+    e.includes("forbidden")
   ) {
     return "logic";
   }
 
-  // Default to infra (conservative — retry by default)
-  return "infra";
+  // Default to logic (conservative — unknown errors shouldn't auto-retry)
+  return "logic";
 }

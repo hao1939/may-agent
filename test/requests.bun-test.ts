@@ -244,10 +244,10 @@ describe("classifyError", () => {
     expect(classifyError("Permission denied")).toBe("logic");
   });
 
-  test("defaults to infra for unknown", () => {
-    expect(classifyError("weird error")).toBe("infra");
-    expect(classifyError(null)).toBe("infra");
-    expect(classifyError(undefined)).toBe("infra");
+  test("defaults to logic for unknown", () => {
+    expect(classifyError("weird error")).toBe("logic");
+    expect(classifyError(null)).toBe("logic");
+    expect(classifyError(undefined)).toBe("logic");
   });
 });
 
