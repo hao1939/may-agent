@@ -750,7 +750,11 @@ export async function writeHeuristicEvaluations(persistDir: string): Promise<num
       try {
         const existing = JSON.parse(readFileSync(evalPath, "utf-8"));
         if (existing.usage?.totalTokens > 0 || existing.usage?.turns > 0) continue;
-        // Fall through: re-evaluate because existing eval has zero usage data
+        // Only re-evaluate recent sessions (last 48h). Older sessions with zero
+        // usage genuinely lack data — re-evaluating reads their transcript again
+        // but extractUsage() returns 0 again, creating an infinite loop.
+        const sessionAge = Date.now() - (session.startedAt || 0);
+        if (sessionAge > 48 * 60 * 60 * 1000) continue;
       } catch {
         continue; // Can't parse existing eval → skip
       }
