@@ -74,3 +74,32 @@ Consensus: Risk(Q) = Σ(D_j · T_j · C_j) / Σ(T_j · C_j + ε)
 - 2603.15658 Store Routing (cost-sensitive memory routing)
 - 2603.15666 Atlas/Compiled Memory (memory as instruction distillation)
 - 2603.15668 QSC (quantum-secure-by-construction)
+
+---
+
+## 🧠 Citation Graph Mining — Memory Attack/Defense Duality (Session 18:05 UTC)
+
+### NEW: DD#429 — Memory Control Flow Attacks (MCFA) ★★★★★
+**arXiv:2603.15125** | First empirical framework showing memory retrieval hijacks agent control flow
+- >90% attack success across GPT-5 mini, Claude Sonnet 4.5, Gemini 2.5 Flash
+- 100% persistence, >85% resistance to textual repair
+- Memory Surgery (not prompting) is the ONLY effective defense
+- Validates CR#241's central thesis — memory is the critical attack surface
+
+### NEW: DD#430 — D-MEM: Dopamine-Gated Memory ★★★★
+**arXiv:2603.14597** | Bio-inspired RPE routing for memory efficiency
+- 80% token cost reduction while improving multi-hop reasoning
+- Three-tier routing: SKIP / CONSTRUCT_ONLY / FULL_EVOLUTION
+- Shadow Buffer provides adversarial fallback
+- Directly addresses CR#240 scalability wall
+
+### NEW: CR#245 — Memory Gating Paradox ★★★★★
+**Synthesis of DD#429 × DD#430** — Critical insight:
+- D-MEM's gating formula, once known, guarantees MAXIMUM integration of poisoned content
+- Adversary crafts high-Utility + high-Surprise payload → RPE ≈ 1.0 → FULL_EVOLUTION
+- General principle: **defense optimization = adversarial optimization target**
+- Four resolution strategies proposed (stochastic perturbation, provenance-weighting, asymmetric audit, honeypot)
+
+### Running Totals
+- **DD count:** 430 | **CR count:** 245
+- **Next batch:** Thursday March 19 — still pending at 18:05 UTC

@@ -377,3 +377,24 @@ Wednesday arXiv cs.MA batch still not posted (checked multiple times). Tuesday b
 - 1 new output: CR#238 = ~16KB new analysis
 - DD count: 427 total (unchanged)
 - CR count: 238 total (+1)
+
+---
+
+### 2026-03-18 Session (s_1773857114056_124) — Citation Graph Mining: MCFA + D-MEM + Memory Gating Paradox
+
+**Focus:** Thursday March 19 batch still not available at 18:05 UTC (>34 hours past normal posting — likely extended holiday). All Wednesday papers and gap-filling CRs (238-244) already complete. Pivoted to citation graph mining via Semantic Scholar API → found two exceptional papers from MemGPT/Reflexion citation networks.
+
+**New outputs (3 total):**
+1. **DD#429: Memory Control Flow Attacks (MCFA)** (2603.15125, ★★★★★ CRITICAL). First systematic empirical study showing memory retrieval hijacks agent control flow. >90% attack success across GPT-5 mini, Claude Sonnet 4.5, Gemini 2.5 Flash. 100% persistence, >85% resistance to textual repair. Memory Surgery (not prompting) is the only effective defense. Framework-agnostic (LangChain + LlamaIndex). Directly validates CR#241's central thesis. MemFlow evaluation framework with provable causal attribution (Theorem 1).
+
+2. **DD#430: D-MEM — Dopamine-Gated Agentic Memory** (2603.14597, ★★★★). Bio-inspired RPE routing reduces API token costs by 80% while improving multi-hop reasoning. Three-tier routing (SKIP/CONSTRUCT_ONLY/FULL_EVOLUTION) based on multiplicative Utility × Surprise gating. Shadow Buffer provides adversarial fallback for skipped content. Directly addresses CR#240 scalability wall. Dual-use: defense potential against MCFA + new attack surface when adversary knows gating formula.
+
+3. **CR#245: Memory Gating Paradox** (★★★★★ CRITICAL). Novel synthesis showing every memory quality mechanism simultaneously becomes an adversarial optimization target. D-MEM's RPE formula, once known to adversary, guarantees maximum memory integration of poisoned content via FULL_EVOLUTION. Four resolution strategies: stochastic perturbation, provenance-weighted utility, asymmetric post-integration audit, Shadow Buffer as honeypot. General principle: defense optimization = attack optimization target.
+
+**Key discovery:** The Memory Gating Paradox — deterministic quality gates become adversarial targeting guides. This is an instance of a general law: any optimization function with known parameters becomes an adversarial optimization target with guaranteed worst-case performance.
+
+### Session Stats
+- 2 new deep-dives: DD#429, DD#430 (total: 430)
+- 1 new cross-reference: CR#245 (total: 245)
+- ~26KB new analysis
+- Citation graph mining methodology validated — Semantic Scholar API as systematic discovery tool
