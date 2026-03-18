@@ -1,11 +1,153 @@
 /// <reference path="../../../src/lib/workflow-defs.d.ts" />
 
+import { execSync } from "node:child_process";
+import { readdirSync, existsSync } from "node:fs";
+import { join, resolve } from "node:path";
+
 export const name: string = "growth-cycle";
 
 export const description: string =
   "Evidence-based agent improvement. Diagnose a problem (or pick a method " +
   "to learn), fork agent, apply one change, test via gym, record results. " +
   "Pass 'learn:<method>' as the task to run in learning mode (always discards).";
+
+// ── Gym runner helpers (replaces LLM session for mechanical test step) ─
+
+const PROJECT_ROOT = resolve(join(import.meta.dirname ?? ".", "../../.."));
+const SCENARIOS_DIR = join(PROJECT_ROOT, "test/gym/scenarios");
+const LAB_DIR = join(PROJECT_ROOT, "agents/.lab");
+
+interface GymResult {
+  scenario: string;
+  agent: string;
+  lab_fork: string | null;
+  passed: boolean;
+  checks: Array<{ name: string; passed: boolean; message?: string }>;
+  summary: string;
+  agent_status: string;
+  duration: string;
+  gym_root: string;
+}
+
+/** Run a single gym scenario and parse the JSON result. */
+function runGym(scenario: string, agent: string, labFork?: string): GymResult {
+  const args = [scenario, "--agent", agent, "--timeout", "3"];
+  if (labFork) args.push("--lab", labFork);
+  const cmd = `scripts/gym-run.sh ${args.map(a => `'${a}'`).join(" ")}`;
+
+  try {
+    const stdout = execSync(cmd, {
+      encoding: "utf-8",
+      timeout: 4 * 60 * 1000, // 4 min timeout
+      cwd: PROJECT_ROOT,
+      stdio: ["pipe", "pipe", "pipe"],
+    });
+    return JSON.parse(stdout.trim());
+  } catch (err: any) {
+    // gym-run.sh may exit non-zero on score failure but still produce JSON
+    const stdout = (err.stdout ?? "").trim();
+    try {
+      return JSON.parse(stdout);
+    } catch {
+      return {
+        scenario,
+        agent,
+        lab_fork: labFork ?? null,
+        passed: false,
+        checks: [],
+        summary: `gym-run error: ${(err.stderr ?? err.message ?? "unknown").toString().slice(0, 500)}`,
+        agent_status: "error",
+        duration: "0s",
+        gym_root: "",
+      };
+    }
+  }
+}
+
+/** List known gym scenario names. */
+function listScenarios(): string[] {
+  try {
+    return readdirSync(SCENARIOS_DIR).filter(d =>
+      existsSync(join(SCENARIOS_DIR, d, "task.md"))
+    );
+  } catch { return []; }
+}
+
+/** Find lab forks currently in .lab/ directory. */
+function findLabForks(): string[] {
+  try {
+    return readdirSync(LAB_DIR).filter(d =>
+      existsSync(join(LAB_DIR, d, "agent.json")) ||
+      existsSync(join(LAB_DIR, d, "SOUL.md"))
+    );
+  } catch { return []; }
+}
+
+/** Extract scenario names mentioned in text by matching against known scenarios. */
+function extractScenarios(text: string): string[] {
+  const known = listScenarios();
+  return known.filter(s => text.includes(s));
+}
+
+/** Extract agent name from fork name (e.g., "coder-sprint-1" → "coder"). */
+function agentFromFork(forkName: string): string {
+  // Common pattern: <agent>-<experiment-suffix>
+  const knownAgents = ["coder", "tech-lead", "optimizer", "evaluator", "coach", "qa", "may"];
+  for (const agent of knownAgents) {
+    if (forkName.startsWith(agent + "-") || forkName === agent) return agent;
+  }
+  // Fallback: first segment before hyphen
+  return forkName.split("-")[0];
+}
+
+/** Format gym results into a readable summary string. */
+function formatGymResults(
+  baselineResults: GymResult[],
+  patchedResults: GymResult[],
+  forkName: string,
+): string {
+  const lines: string[] = ["## Gym Test Results (automated — no LLM session)", ""];
+  lines.push(`Fork: ${forkName}`);
+  lines.push(`Agent: ${agentFromFork(forkName)}`);
+  lines.push("");
+
+  // Build a map of scenario → { baseline, patched }
+  const byScenario = new Map<string, { baseline?: GymResult; patched?: GymResult }>();
+
+  for (const r of baselineResults) {
+    const entry = byScenario.get(r.scenario) ?? {};
+    entry.baseline = r;
+    byScenario.set(r.scenario, entry);
+  }
+  for (const r of patchedResults) {
+    const entry = byScenario.get(r.scenario) ?? {};
+    entry.patched = r;
+    byScenario.set(r.scenario, entry);
+  }
+
+  for (const [scenario, { baseline, patched }] of byScenario) {
+    const bStatus = baseline ? (baseline.passed ? "PASS" : "FAIL") : "N/A";
+    const pStatus = patched ? (patched.passed ? "PASS" : "FAIL") : "N/A";
+    const bChecks = baseline ? `${baseline.checks.filter(c => c.passed).length}/${baseline.checks.length}` : "-";
+    const pChecks = patched ? `${patched.checks.filter(c => c.passed).length}/${patched.checks.length}` : "-";
+    lines.push(`- ${scenario}: baseline=${bStatus} (${bChecks}), patched=${pStatus} (${pChecks})`);
+
+    // Show individual check details for patched
+    if (patched) {
+      for (const check of patched.checks) {
+        lines.push(`  - [${check.passed ? "✓" : "✗"}] ${check.name}${check.message ? ": " + check.message : ""}`);
+      }
+    }
+  }
+
+  lines.push("");
+  lines.push("### Raw JSON Results");
+  lines.push("```json");
+  lines.push(JSON.stringify({ baseline: baselineResults, patched: patchedResults }, null, 2));
+  lines.push("```");
+
+  return lines.join("\n");
+}
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const isLearning = ctx.task.startsWith("learn:");
@@ -120,35 +262,56 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     return ctx.escalate("fork/patch failed", { error: patch.error });
   }
 
-  // Step 3: Gym test
-  const test = await ctx.runAgent("coach",
-    `Test the forked agent against gym scenarios using the gym runner.\n\n` +
-    `## Patch Summary\n${ctx.summarize(patch)}\n\n` +
-    `## Instructions\n` +
-    `The gym runner can test .lab/ forks directly. Use \`--lab <fork-name>\`.\n\n` +
-    `1. Run the gym for each relevant scenario with the fork:\n` +
-    `   \`\`\`bash\n` +
-    `   scripts/gym-run.sh <scenario> --agent <agent> --lab <fork-name> --timeout 3\n` +
-    `   \`\`\`\n\n` +
-    `2. Parse the JSON output. Record pass/fail for each scenario.\n\n` +
-    `3. Also run baseline (no --lab) for comparison if no baseline exists yet:\n` +
-    `   \`\`\`bash\n` +
-    `   scripts/gym-run.sh <scenario> --agent <agent> --timeout 3\n` +
-    `   \`\`\`\n\n` +
-    `4. Report: per-scenario pass/fail for both baseline and patched agent.\n` +
-    `   Format: "scenario: baseline=PASS/FAIL, patched=PASS/FAIL"\n\n` +
-    `IMPORTANT: Do NOT use git stash, git checkout, or git branch in the agents/ repo.\n` +
-    `The --lab flag handles everything. If the gym runner exits non-zero, capture and\n` +
-    `report the JSON output anyway.`
-  );
-  if (test.status === "error") {
-    return ctx.escalate("gym testing failed", { error: test.error });
+
+  // Step 3: Gym test (direct script execution — no LLM session needed)
+  ctx.emit({ type: "step_start", step: "gym-test" });
+
+  // Discover fork from .lab/ directory (Step 2 should have created one)
+  const forks = findLabForks();
+  const patchText = patch.lastAssistantText ?? "";
+  // Find the fork that was just created — prefer one mentioned in patch output
+  let forkName = forks.find(f => patchText.includes(f)) ?? forks[0];
+  if (!forkName) {
+    return ctx.escalate("No fork found in agents/.lab/ after patch step", {
+      labDir: LAB_DIR,
+      patchOutput: patchText.slice(0, 500),
+    });
   }
+
+  // Extract agent name from the fork
+  const agentName = agentFromFork(forkName);
+
+  // Extract scenarios from Step 1 + Step 1b + patch output
+  const combinedText =
+    (step1.lastAssistantText ?? "") + "\n" +
+    (baselineGate.lastAssistantText ?? "") + "\n" +
+    patchText;
+  let scenarios = extractScenarios(combinedText);
+  if (scenarios.length === 0) {
+    // Fallback: use first 3 scenarios to keep runtime reasonable
+    scenarios = listScenarios().slice(0, 3);
+  }
+
+  // Run baseline tests
+  const baselineResults: GymResult[] = [];
+  for (const scenario of scenarios) {
+    baselineResults.push(runGym(scenario, agentName));
+  }
+
+  // Run patched (fork) tests
+  const patchedResults: GymResult[] = [];
+  for (const scenario of scenarios) {
+    patchedResults.push(runGym(scenario, agentName, forkName));
+  }
+
+  const gymResultsText = formatGymResults(baselineResults, patchedResults, forkName);
+
+  ctx.emit({ type: "step_done", step: "gym-test" });
 
   // Step 4: Record and decide
   const decidePrompt = isLearning
     ? `Record what you learned about this method.\n\n` +
-      `## Test Results\n${ctx.summarize(test)}\n\n` +
+      `## Test Results\n${gymResultsText}\n\n` +
       `## Instructions (Learning Mode — always discard)\n` +
       `1. Update \`agents/coach/knowledge/method-catalog.md\`:\n` +
       `   - Update the Evidence section for this method\n` +
@@ -159,10 +322,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       `   \`\`\`json\n` +
       `   {"timestamp":"<ISO>","type":"learn-method","method":"<method>","agent":"<agent>","scenario":"<scenario>","baseline_passed":<bool>,"patched_passed":<bool>,"observations":"<what you learned>"}\n` +
       `   \`\`\`\n` +
-      `3. Discard the fork: \`discard_agent({ fork: "<fork-name>" })\`\n` +
+      `3. Discard the fork: \`discard_agent({ fork: "${forkName}" })\`\n` +
       `4. Report: updated catalog entry, key insights about this method.`
     : `Record experiment results and decide whether to promote or discard.\n\n` +
-      `## Test Results\n${ctx.summarize(test)}\n\n` +
+      `## Test Results\n${gymResultsText}\n\n` +
       `## Instructions\n` +
       `1. Evaluate the gym results:\n` +
       `   - If patched agent passed MORE scenarios than baseline → PROMOTE\n` +
@@ -174,12 +337,12 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       `   {"timestamp":"<ISO>","error_pattern":"<FM-X.X>","agent":"<name>","method":"<method>","scenarios":[{"name":"<s>","baseline":<bool>,"patched":<bool>}],"decision":"promote|discard","reason":"<why>"}\n` +
       `   \`\`\`\n\n` +
       `3. If PROMOTE:\n` +
-      `   - Run \`promote_agent({ fork: "<fork-name>", target: "<agent>" })\`\n` +
+      `   - Run \`promote_agent({ fork: "${forkName}", target: "${agentName}" })\`\n` +
       `   - Update \`agents/coach/knowledge/method-catalog.md\` with evidence\n\n` +
       `4. If DISCARD:\n` +
-      `   - Run \`discard_agent({ fork: "<fork-name>" })\`\n` +
-      `   - Update method-catalog.md noting this method didn't work for this pattern\n\n` +
-      `5. Clean up: verify .lab/<fork-name> is removed.\n\n` +
+      `   - Run \`discard_agent({ fork: "${forkName}" })\`\n` +
+      `   - Update method-catalog.md noting this method didn\'t work for this pattern\n\n` +
+      `5. Clean up: verify .lab/${forkName} is removed.\n\n` +
       `6. Report: decision, evidence summary, catalog updates made.`;
 
   const decide = await ctx.runAgent("coach", decidePrompt);
@@ -190,7 +353,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   return ctx.done(
     `Growth cycle completed (${isLearning ? "learning" : "fix"} mode).\n\n` +
     `## ${isLearning ? "Study" : "Diagnosis"}\n${step1.lastAssistantText}\n\n` +
-    `## Results\n${test.lastAssistantText}\n\n` +
+    `## Results\n${gymResultsText}\n\n` +
     `## Decision\n${decide.lastAssistantText}`
   );
 }
