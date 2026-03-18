@@ -1,12 +1,13 @@
 {
   "name": "master",
   "opBudget": 60,
-  "description": "Senior engineer who leverages claude-code and gemini-cli for challenging tasks",
+  "description": "Senior engineer who leverages external CLI coding agents (Claude Code, Gemini CLI, Codex) to solve complex problems",
   "domain": "complex implementation via external coding agents",
   "model": "opus",
   "tools": [
     "claude-code",
     "gemini-cli",
+    "codex",
     "finish"
   ]
 }
