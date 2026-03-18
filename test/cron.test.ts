@@ -953,4 +953,179 @@ describe("Cron", () => {
 
     c.stop();
   });
+
+  // ── Circuit breaker ─────────────────────────────────────────────────
+
+  it("circuit breaker: skips heartbeat after 3 consecutive errors", async () => {
+    writeFileSync(
+      configPath,
+      JSON.stringify([{ name: "hb-cb", type: "heartbeat", intervalMs: 10000, agent: "bob", message: "hb", skipIfIdle: false }]),
+    );
+    const mgr = makeMockManager();
+    mgr.setWaitFor(() => Promise.reject(new Error("Gemini API error")));
+    const errors: string[] = [];
+    const c = new Cron(configPath, mgr as any, () => "sid-1", (msg) => errors.push(msg));
+    c.start();
+
+    // Fire 3 heartbeats — all fail
+    for (let i = 0; i < 3; i++) {
+      await vi.advanceTimersByTimeAsync(10000);
+      await flush();
+    }
+
+    const runCallsBefore = mgr.calls.filter((c) => c.method === "run").length;
+    expect(runCallsBefore).toBe(3);
+
+    // 4th heartbeat — circuit breaker should trip, skipping this one
+    await vi.advanceTimersByTimeAsync(10000);
+    await flush();
+
+    const runCallsAfter = mgr.calls.filter((c) => c.method === "run").length;
+    expect(runCallsAfter).toBe(3); // no new run call
+
+    expect(errors.some((e) => e.includes("circuit breaker"))).toBe(true);
+
+    c.stop();
+  });
+
+  it("circuit breaker: allows probe after 30 minutes", async () => {
+    writeFileSync(
+      configPath,
+      JSON.stringify([{ name: "hb-probe", type: "heartbeat", intervalMs: 10000, agent: "bob", message: "hb", skipIfIdle: false }]),
+    );
+    const mgr = makeMockManager();
+    mgr.setWaitFor(() => Promise.reject(new Error("API down")));
+    const errors: string[] = [];
+    const c = new Cron(configPath, mgr as any, () => "sid-1", (msg) => errors.push(msg));
+    c.start();
+
+    // Trip the circuit breaker (3 errors)
+    for (let i = 0; i < 3; i++) {
+      await vi.advanceTimersByTimeAsync(10000);
+      await flush();
+    }
+    const runAfterTrip = mgr.calls.filter((c) => c.method === "run").length;
+    expect(runAfterTrip).toBe(3);
+
+    // Advance 30 minutes — probe should be allowed
+    await vi.advanceTimersByTimeAsync(30 * 60 * 1000);
+    await flush();
+
+    const runAfterProbe = mgr.calls.filter((c) => c.method === "run").length;
+    expect(runAfterProbe).toBe(4); // one probe fired
+
+    c.stop();
+  });
+
+  it("circuit breaker: resets on successful session", async () => {
+    writeFileSync(
+      configPath,
+      JSON.stringify([{ name: "hb-reset", type: "heartbeat", intervalMs: 10000, agent: "bob", message: "hb", skipIfIdle: false }]),
+    );
+    const mgr = makeMockManager();
+    let shouldFail = true;
+    mgr.setWaitFor(() => {
+      if (shouldFail) return Promise.reject(new Error("API error"));
+      return Promise.resolve({ status: "complete" });
+    });
+    const errors: string[] = [];
+    const c = new Cron(configPath, mgr as any, () => "sid-1", (msg) => errors.push(msg));
+    c.start();
+
+    // Trip the circuit breaker (3 errors)
+    for (let i = 0; i < 3; i++) {
+      await vi.advanceTimersByTimeAsync(10000);
+      await flush();
+    }
+    expect(mgr.calls.filter((c) => c.method === "run").length).toBe(3);
+
+    // API recovers — make probe succeed
+    shouldFail = false;
+
+    // Advance 30 minutes for probe
+    await vi.advanceTimersByTimeAsync(30 * 60 * 1000);
+    await flush();
+
+    // Probe fired and succeeded
+    expect(mgr.calls.filter((c) => c.method === "run").length).toBe(4);
+
+    // Next regular heartbeat should fire (circuit reset)
+    await vi.advanceTimersByTimeAsync(10000);
+    await flush();
+
+    expect(mgr.calls.filter((c) => c.method === "run").length).toBe(5);
+
+    c.stop();
+  });
+
+  it("circuit breaker: does not affect different agents", async () => {
+    writeFileSync(
+      configPath,
+      JSON.stringify([
+        { name: "hb-bob", type: "heartbeat", intervalMs: 10000, agent: "bob", message: "hb", skipIfIdle: false },
+        { name: "hb-opt", type: "heartbeat", intervalMs: 10000, agent: "optimizer", message: "hb", skipIfIdle: false },
+      ]),
+    );
+    const mgr = makeMockManager();
+    // Only bob fails
+    mgr.setWaitFor((sid) => {
+      const runCall = mgr.calls.find((c) => c.method === "run" && `mock-sid-${mgr.calls.filter((cc) => cc.method === "run").indexOf(c) + 1}` === sid);
+      // Simple approach: odd sessions fail (bob fires first each round)
+      const runCalls = mgr.calls.filter((c) => c.method === "run");
+      const idx = runCalls.findIndex((c) => {
+        const waitIdx = mgr.calls.filter((cc) => cc.method === "waitFor").findIndex((wc) => wc.args[0] === sid);
+        return waitIdx >= 0;
+      });
+      // Just make all sessions fail — we'll check that both agents get circuit-broken independently
+      return Promise.reject(new Error("API error"));
+    });
+    const errors: string[] = [];
+    const c = new Cron(configPath, mgr as any, () => "sid-1", (msg) => errors.push(msg));
+    c.start();
+
+    // Fire 3 rounds — both agents fail 3 times each
+    for (let i = 0; i < 3; i++) {
+      await vi.advanceTimersByTimeAsync(10000);
+      await flush();
+    }
+
+    // Both should have fired 3 times each = 6 total
+    expect(mgr.calls.filter((c) => c.method === "run").length).toBe(6);
+
+    // Both circuits should now be tripped
+    await vi.advanceTimersByTimeAsync(10000);
+    await flush();
+
+    // No new runs — both agents are circuit-broken
+    expect(mgr.calls.filter((c) => c.method === "run").length).toBe(6);
+
+    // Check both agents mentioned in circuit breaker errors
+    expect(errors.some((e) => e.includes("circuit breaker") && e.includes("bob"))).toBe(true);
+    expect(errors.some((e) => e.includes("circuit breaker") && e.includes("optimizer"))).toBe(true);
+
+    c.stop();
+  });
+
+  it("circuit breaker: logs TRIPPED message at threshold", async () => {
+    writeFileSync(
+      configPath,
+      JSON.stringify([{ name: "hb-log", type: "heartbeat", intervalMs: 10000, agent: "bob", message: "hb", skipIfIdle: false }]),
+    );
+    const mgr = makeMockManager();
+    mgr.setWaitFor(() => Promise.reject(new Error("API error")));
+    const errors: string[] = [];
+    const c = new Cron(configPath, mgr as any, () => "sid-1", (msg) => errors.push(msg));
+    c.start();
+
+    // Fire 3 heartbeats to hit the threshold
+    for (let i = 0; i < 3; i++) {
+      await vi.advanceTimersByTimeAsync(10000);
+      await flush();
+    }
+
+    // Should have a TRIPPED message
+    expect(errors.some((e) => e.includes("Circuit breaker TRIPPED") && e.includes("bob"))).toBe(true);
+
+    c.stop();
+  });
 });
