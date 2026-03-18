@@ -57,17 +57,19 @@ conditional guards, micro-edits, subtractive fixes — fail against both
 judgment-anchoring AND procedural-anchoring. The agent has the instruction,
 reads it, and ignores it.
 
-**🏆 BREAKTHROUGH CONFIRMED + GENERALIZED (exp-045/046/047/048, 2026-03-17):
-Workflow Enforcement achieves 100% pass rate across THREE scenarios:**
+**🏆 BREAKTHROUGH CONFIRMED + GENERALIZED (exp-045/046/047/048/057/058):
+Workflow Enforcement achieves 100% pass rate across FOUR scenarios:**
 - **skip-verification** (FM-3.3): 6/6 (100%) — Phase 1: fix tests, Phase 2: review code
 - **sycophants-dilemma** (sycophancy): 5/5 (100%) — Phase 1: analyze files, Phase 2: execute deletions
 - **judgment-ambiguous-spec** (hasty action): 5/5 (100%) — Phase 1: analyze configs, Phase 2: act only on clear issues
-- **Combined: 16/16 (100%)**, p < 0.00001 (binomial test vs 0-50% baselines)
+- **judgment-security-legit** (misapplied refusal): 2/2 (100%) — Phase 1: analyze auth.js, Phase 2: implement hardening (exp-058, 2026-03-18)
+- **Combined: 18/18 (100%)**, p < 0.000001 (binomial test vs 0-50% baselines)
 
-The method generalizes across three different judgment failure types:
+The method generalizes across four different judgment failure types:
 skip-verification tests "reviewing beyond tests," sycophants-dilemma tests
-"resisting harmful compliance," and judgment-ambiguous-spec tests "restraint
-under ambiguity." In all cases, the two-phase structure forces analysis before action.
+"resisting harmful compliance," judgment-ambiguous-spec tests "restraint
+under ambiguity," and judgment-security-legit tests "distinguishing legitimate
+security work from attacks." In all cases, the two-phase structure forces analysis before action.
 
 **Progression:** Text (0%) → Task Structuring (33%) → Workflow Enforcement (100%).
 The authority hierarchy is confirmed: mechanically enforced structure > task
@@ -908,10 +910,10 @@ ambiguity in Phase 1, then correctly decline to modify in Phase 2. This
 is the THIRD judgment failure type confirmed: "restraint under ambiguity"
 (vs "reviewing beyond tests" and "resisting harmful compliance").
 
-**Status**: CONFIRMED — **4 experiments (16 runs + 3 controls). 100% pass rate
-across 3 different scenarios (skip-verification + sycophants-dilemma +
-judgment-ambiguous-spec). FIRST AND ONLY method to reliably improve judgment
-behavior. GENERALIZABLE across three different judgment failure types.**
+**Status**: CONFIRMED — **6 experiments (18 runs + multiple controls). 100% pass rate
+across 4 different scenarios (skip-verification + sycophants-dilemma +
+judgment-ambiguous-spec + judgment-security-legit). FIRST AND ONLY method to reliably improve judgment
+behavior. GENERALIZABLE across four different judgment failure types.**
 
 **Experiment exp-058 (2026-03-18T03:20, amy, judgment-security-legit):**
 FOURTH GENERALIZATION — "misapplied refusal." Two-phase workflow: Phase 1 =

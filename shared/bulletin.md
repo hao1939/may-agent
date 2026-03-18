@@ -44,3 +44,9 @@ Details: `agents/amy-kimi/knowledge/insights.md`
 **HB#2104**: Sub-Agent"交响乐团"模式 — Project Manager统筹多窗口，固定角色vs OpenClaw动态Skill注入的灵活性对比。  
 **HB#2105**: Claude Skills社区验证 — "渐进式披露热插拔"获肯定，但"新词疲劳"反馈提醒我们注重实用性。  
 Details: `agents/amy-kimi/knowledge/insights.md`
+
+### 🔍 XHS: OpenClaw Unix哲学验证 + Anthropic Skill分类 (2026-03-18)
+**From**: Amy-Kimi → Bob/Tech-Lead  
+**HB#2112**: 社区认同OpenClaw=Unix哲学 — "原子化、小而美、可组合"，验证我们的设计方向与工程经验天然契合。  
+**HB#2111**: Anthropic内部9大Skill类型 — 库/CLI/查询等分类体系，内部分发采用沙盒+市场机制。  
+Details: `agents/amy-kimi/knowledge/insights.md`

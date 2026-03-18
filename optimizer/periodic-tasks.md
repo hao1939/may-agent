@@ -9,11 +9,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If found → add specific task to workspace/todo.md.
   Latest (2026-03-18T02:58): **System-wide 88.5% session failure rate.** 130 sessions in 3h, only 15 completed (11.5%). 6/9 agents at 0% completion — all killed by next heartbeat before finishing. Only amy-kimi (100%), evaluator (70%), qa (33%) completing. Bob 100% Gemini errors. Cron still at 540s vs 1800s configured. New finding at `workspace/finding-zero-completion-rate.md`, sent to tech-lead (req:8f592e68).
 
-- [x] **Cost outlier scan** — Last done: 2026-03-18T01:55
+- [x] **Cost outlier scan** — Last done: 2026-03-18T03:20
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-18T01:55): **Re-eval infinite loop reconfirmed with fresh data.** 13,896 total eval files, 10,747 modified in 24h (77%). 49/50 recent evals have totalTokens=0. Sessions range Feb 28-Mar 14 but 290 "created" in last 6h = phantom re-eval writes. Root cause: evaluator.ts line 752 re-evaluates zero-usage sessions that will always return zero. Finding updated at `workspace/finding-eval-reeval-loop.md`. Previously sent to tech-lead (req:41afb34f).
+  Latest (2026-03-18T03:20): **All-time cost data: $1,211.75 across 1,003 sessions, 12.3% cache rate.** Coach session s_1773802424817_389 was cost outlier at $2.82 (900K input, 36 turns, 0% cached). Last 3h: 4 sessions, $4.39, 0% cache hits — confirms prompt caching still completely broken for Opus. Top 10 most expensive sessions (up to $16.42) all 0% cached. Updated `workspace/finding-prompt-caching-broken-opus.md` with all-time totals. Fix committed (7c86665) but NOT DEPLOYED — blocked on restart.
 
 - [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-18T02:49
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
