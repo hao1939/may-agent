@@ -16,6 +16,7 @@
 | Current burn rate | **$43/hour = $1,042/day** |
 | Session rate | ~40 sessions/hour |
 | Prompt cache hit rate | **0%** (broken — LiteLLM strips cache_control headers) |
+| Avg input tokens/session | **600K** (optimizer: 912K, amy: 773K, coach: 607K) |
 
 ## Cost Breakdown by Agent (last 30 sessions, 43 mins)
 
