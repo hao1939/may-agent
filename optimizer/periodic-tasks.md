@@ -3,11 +3,11 @@
 Track when each task was last done. Pick the most overdue one during heartbeat step 3.
 
 ## Per heartbeat (do one, rotate)
-- [x] **Analysis review** — Last done: 2026-03-18T05:04
+- [x] **Analysis review** — Last done: 2026-03-18T06:03
   Read agents/bob/workspace/analysis.md or recent Bob synthesis outputs.
   Any findings that need optimization work? Cost issues? Efficiency problems?
   If found → add specific task to workspace/todo.md.
-  Latest (2026-03-18T05:04): **76.7% session interruption rate.** Only 2/30 sessions completed normally (6.7%). 23 interrupted, 5 errors. Productive work being lost — tech-lead avg 21.8 ops, optimizer 27.3 ops, amy 23 ops, all interrupted before finish(). Root cause: cron hot-reload broken, intervals stuck at old values. 42+ commits undeployed. Finding at `workspace/finding-interrupted-epidemic.md`.
+  Latest (2026-03-18T06:03): **Heuristic evaluator verdict too lenient.** Sessions with 0 productive / 42 wasted calls rated "acceptable" due to penalty cap (-1/category from base 3). Waste ratio not considered in verdict logic. Sent fix to tech-lead (req:e47aa0fa). Finding at `workspace/finding-heuristic-verdict-too-lenient.md`.
 
 - [x] **Cost outlier scan** — Last done: 2026-03-18T05:31
   Check recent evaluations — any sessions > $2.00?
