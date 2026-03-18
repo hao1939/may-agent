@@ -284,7 +284,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
             // Dedup check: skip if identical active request exists
             try {
               const req = await getRequestsModule();
-              if (req.isDuplicate(manager.registry.persistDir, caller, params.agent, params.message.slice(0, 500))) {
+              if (req.isDuplicate(manager.registry.persistDir, caller, params.agent, params.message)) {
                 return textResult(
                   JSON.stringify({
                     sent: params.agent,
