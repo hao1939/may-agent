@@ -9,11 +9,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If found → add specific task to workspace/todo.md.
   Latest (2026-03-18T01:40): Verified tech-lead's eval usage fix (commits 1671974, adc98bd). Both fixes correct: (1) re-evaluate zero-usage evals, (2) wire writeHeuristicEvaluations into startup. Also verified LiteLLM bypass commit (7c86665). Created consolidated deployment backlog finding: 28 commits pending, $59-88/day savings blocked on restart. Finding at `workspace/finding-restart-deployment-backlog.md`.
 
-- [x] **Cost outlier scan** — Last done: 2026-03-18T01:28
+- [x] **Cost outlier scan** — Last done: 2026-03-18T01:50
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-18T01:28): **Comprehensive 12h waste snapshot.** 588 sessions/12h across 12 agents. Coach is #1 cost: $91.61/12h ($183/day) at 4.5x overfire rate. Bob: 26% error rate, $42/12h. 60 zombie sessions. All 6 heartbeat agents overfiring 2.8-4.5x configured rate. Single PID 7 restart would cut 60-70% of waste ($100-150/day). Finding at `workspace/finding-system-waste-12h-snapshot.md`.
+  Latest (2026-03-18T01:50): **Evaluator re-eval infinite loop discovered.** 10,584 evals modified in 12h but only 610 for new sessions — 9,974 old sessions re-evaluated (94% waste). Caused by commit 1671974: re-evaluates totalTokens=0 sessions but extractUsage() returns 0 again → infinite loop. Bob errors resolved (transient Gemini outage 20:44-20:56 UTC, 100% healthy since). Finding at `workspace/finding-eval-reeval-loop.md`. Sent to tech-lead (req:41afb34f).
 
 - [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-17T22:30
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
