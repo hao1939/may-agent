@@ -1128,4 +1128,30 @@ describe("Cron", () => {
 
     c.stop();
   });
+
+  // ── Initial jitter cap ──────────────────────────────────────────────
+
+  it("initial jitter for never-run jobs is capped at 5 minutes", async () => {
+    // A 24h interval job should NOT wait up to 24h before first fire.
+    // With the jitter cap, max initial delay is 5 minutes (300000ms).
+    writeFileSync(
+      configPath,
+      JSON.stringify([
+        { name: "daily-job", type: "job", intervalMs: 86400000, message: "daily" },
+      ]),
+    );
+    const mgr = makeMockManager();
+    let fired = false;
+    const c = new Cron(configPath, mgr as any, () => "sid-1");
+    c.registerHandler("daily-job", async () => { fired = true; });
+    c.start();
+
+    // Advance past the max jitter cap (5 minutes + 1s buffer)
+    await vi.advanceTimersByTimeAsync(301_000);
+    await flush();
+
+    expect(fired).toBe(true);
+
+    c.stop();
+  });
 });

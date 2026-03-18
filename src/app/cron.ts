@@ -608,8 +608,12 @@ export class Cron {
 
     const lastFire = this.getLastFireTime(entry.name);
     if (lastFire == null) {
-      // Never ran — jitter so entries don't all fire at once
-      return Math.floor(Math.random() * entry.intervalMs);
+      // Never ran — jitter so entries don't all fire at once.
+      // Cap jitter to 5 minutes to prevent long-interval jobs (24h, 7d)
+      // from waiting hours/days before their first fire.
+      const MAX_INITIAL_JITTER_MS = 5 * 60 * 1000; // 5 minutes
+      const jitterWindow = Math.min(entry.intervalMs, MAX_INITIAL_JITTER_MS);
+      return Math.floor(Math.random() * jitterWindow);
     }
 
     const elapsed = Date.now() - lastFire;
