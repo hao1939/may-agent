@@ -116,13 +116,20 @@ const MODEL_BASE_URL = process.env.MODEL_BASE_URL || "http://localhost:4000";
 
 const LITELLM_API_KEY = process.env.LITELLM_API_KEY || process.env.ANTHROPIC_API_KEY || "not-needed";
 
+// Bypass LiteLLM for Anthropic when ANTHROPIC_API_KEY is set.
+// LiteLLM strips cache_control fields, breaking prompt caching (~40% cost savings).
+// When ANTHROPIC_API_KEY is available, route directly to Anthropic's API.
+const ANTHROPIC_DIRECT = process.env.ANTHROPIC_API_KEY
+  ? { baseUrl: "https://api.anthropic.com", apiKey: process.env.ANTHROPIC_API_KEY }
+  : { baseUrl: MODEL_BASE_URL, apiKey: LITELLM_API_KEY };
+
 const models: Record<string, ModelWithApiKey> = {
   opus: {
     ...getModel("anthropic", "claude-sonnet-4-20250514"),
     id: "claude-opus-4.6",
-    contextWindow: 72000, // LiteLLM proxy enforces 72K limit — must match so compaction triggers before overflow
-    baseUrl: MODEL_BASE_URL,
-    apiKey: LITELLM_API_KEY,
+    contextWindow: process.env.ANTHROPIC_API_KEY ? 200000 : 72000, // Direct API: full 200K; LiteLLM: 72K proxy limit
+    baseUrl: ANTHROPIC_DIRECT.baseUrl,
+    apiKey: ANTHROPIC_DIRECT.apiKey,
   },
   gpt52: {
     ...getModel("openai", "gpt-5.2"),
@@ -155,6 +162,18 @@ bus.emit({
   type: "info",
   message: `[may.ts] Starting (pid=${process.pid}, instance=${INSTANCE_LABEL}, root=${PROJECT_ROOT})`,
 });
+
+if (process.env.ANTHROPIC_API_KEY) {
+  bus.emit({
+    type: "info",
+    message: `[may.ts] Anthropic direct mode: opus routing to api.anthropic.com (prompt caching enabled)`,
+  });
+} else {
+  bus.emit({
+    type: "info",
+    message: `[may.ts] LiteLLM proxy mode: all models via ${MODEL_BASE_URL} (prompt caching may be limited)`,
+  });
+}
 
 // ── Session Recovery Tracking (Ambulance Protocol — P62) ────────────────
 // Track how many times a task has been auto-recovered to prevent infinite loops.
