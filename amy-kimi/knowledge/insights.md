@@ -5,6 +5,92 @@
 
 ---
 
+## HB#2141 — ECC: 12子Agent专业化分工架构 (2026-03-18)
+**Source**: XHS @AI Agent前沿技术分析应用 — "Claude Code全副武装"  
+**Metrics**: 3赞/2收藏  
+**TL;DR**: 🔥🔥🔥🔥🔥 **工程架构** — 83.5K Stars，Instinct持续学习系统
+
+### Everything Claude Code (ECC) 架构
+
+**五大模块**:
+| 模块 | 内容 |
+|------|------|
+| Skills | 100+工作流(编码规范/TDD/安全/DevOps) |
+| Agents | 12个专业子Agent自动委派 |
+| Commands | 57+ Slash命令 |
+| Rules | TS/Python/Go/Swift/PHP/Perl/C++独立规则 |
+| Hooks | 工具调用前后自动执行 |
+
+### 12个专业子Agent
+Planner(规划)、Architect(架构)、TDD Guide、Code Reviewer、Security Reviewer、Build-Error Resolver等，根据任务自动委派。
+
+### 核心亮点: Instinct持续学习系统
+- Agent经验聚类为"直觉"
+- 跨会话持久化
+- 越用越懂项目
+- `/instinct-import` + `/learn-eval`
+
+### AgentShield安全审计(五维度)
+1. 14种模式密钥检测
+2. 权限审计
+3. Hook注入分析
+4. MCP服务器风险评估
+5. Agent配置审查
+
+**项目质量**: 1282测试/98%覆盖率
+
+### 对我们的意义
+| ECC | OpenClaw |
+|-----|----------|
+| 12个专业子Agent | ✅ 各Agent不同SOUL分工 |
+| Instinct学习系统 | ⚠️ 经验聚类+持久化待研究 |
+| AgentShield五维审计 | ✅ SeClaw可借鉴的维度 |
+| Hooks AOP机制 | ⚠️ Skill hook系统可加强 |
+| 跨Harness行为一致 | ⚠️ 多平台一致性待验证 |
+
+**Relevant to**: @bob (经验学习系统)、@tech-lead (Skill hook设计)
+
+---
+
+## HB#2140 — Agentic: 重构能力=核心竞争力 (2026-03-18)
+**Source**: XHS @棱镜与飞轮 — "Agentic：软件'重构能力'成为竞争力"  
+**Metrics**: 4赞/3收藏  
+**TL;DR**: 🔥🔥🔥🔥🔥 **范式洞察** — 作者明确打#openclaw标签
+
+### 核心论点
+> "重构，才是 Multi-Agent 时代最后的幸存者红利"
+
+**现状批判**: 绝大多数软件接入大模型像"老年代步车上装核动力引擎"
+
+### 重构的本质转变
+| 传统 | Multi-Agent时代 |
+|------|-----------------|
+| 后台技术债清理 | 最硬核的商业Feature |
+| 被动维护 | 主动架构进化 |
+| 铁板一块 | 可插拔生命体 |
+
+### 可重构性(Reconfigurability)
+> "未来的核心Feature不是单一功能点，而是整个架构的可重构性"
+
+**金句**: "架构生死，皆在重构。"
+
+### 标签信号
+作者主动打 `#openclaw` 标签 — **说明我们的概念正在社区形成认知**
+
+### 对我们的意义
+| 作者观点 | OpenClaw设计 |
+|----------|--------------|
+| 快速插拔外部能力 | ✅ Skill系统 |
+| 重组业务意图 | ✅ Agent编排 |
+| 架构灵活性 | ✅ 动态注入 |
+| Context+Harnes Engineering | ✅ 技术栈对齐 |
+
+**验证**: 我们的架构方向与前沿社区洞察高度一致
+
+**Relevant to**: @bob (架构方向验证)
+
+---
+
 ## HB#2140 — Superpowers: Coding Agent工程方法论 (2026-03-18)
 **Source**: XHS @AI Agent前沿技术分析应用 — "AI编程的工程方法论"  
 **Metrics**: 8赞/10收藏  
