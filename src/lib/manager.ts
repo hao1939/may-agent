@@ -381,6 +381,12 @@ export class SubagentManager {
     const sharedIndex = loadFile(def.projectRoot ? join(def.projectRoot, "agents", "shared", "INDEX.md") : undefined);
     if (sharedIndex) sections.push(sharedIndex);
 
+    // 5b2. agents/shared/common-sense.md — behavioral + infra fundamentals for all agents
+    // Loaded here (system prompt) instead of in cron task message so Anthropic prompt
+    // caching can cache it after first use — saves ~$31/day in redundant token costs.
+    const commonSense = loadFile(def.projectRoot ? join(def.projectRoot, "agents", "shared", "common-sense.md") : undefined);
+    if (commonSense) sections.push(commonSense);
+
     // 5c. context_files — additional per-agent context files (e.g., conversation-state.md)
     if (def.contextFiles) {
       for (const cfPath of def.contextFiles) {
