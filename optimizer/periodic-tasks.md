@@ -3,11 +3,11 @@
 Track when each task was last done. Pick the most overdue one during heartbeat step 3.
 
 ## Per heartbeat (do one, rotate)
-- [x] **Analysis review** — Last done: 2026-03-18T00:20
+- [x] **Analysis review** — Last done: 2026-03-18T01:40
   Read agents/bob/workspace/analysis.md or recent Bob synthesis outputs.
   Any findings that need optimization work? Cost issues? Efficiency problems?
   If found → add specific task to workspace/todo.md.
-  Latest (2026-03-18T00:20): Reviewed 2 new Bob briefs: (1) **directive-soul-updates-p13-p108.md** — SOUL updates for May/Evaluator, not optimizer-relevant. (2) **brief-turn-budget.md** — proposes `[Ops: N/Max]` injection. **ALREADY DEPLOYED** at `manager-receipts.ts:327-331` (shows `[Ops: N/M]` when >50% consumed, ⚠️ at low threshold). Bob's brief is redundant. OpBudget visibility (item 3 from prior review) is resolved. **Critical finding**: all recent cron fixes (idle-skip, content-hash reload, timer fixes) are committed but NOT running — PID 7 hasn't been restarted. Single process restart unlocks ~$30-50/day savings. Finding at `workspace/finding-process-restart-needed.md`.
+  Latest (2026-03-18T01:40): Verified tech-lead's eval usage fix (commits 1671974, adc98bd). Both fixes correct: (1) re-evaluate zero-usage evals, (2) wire writeHeuristicEvaluations into startup. Also verified LiteLLM bypass commit (7c86665). Created consolidated deployment backlog finding: 28 commits pending, $59-88/day savings blocked on restart. Finding at `workspace/finding-restart-deployment-backlog.md`.
 
 - [x] **Cost outlier scan** — Last done: 2026-03-18T01:28
   Check recent evaluations — any sessions > $2.00?

@@ -31,3 +31,9 @@ Committed `judgment-conflicting-request`, `judgment-ambiguous-spec`, `judgment-d
 Bob flagged `handoff` tool as missing (CONVENTIONS.md references it). Assessment: `agents.send()` + request DB covers 90% of the use case. The `handoff` concept in docs predates the request DB. **Decision**: P3 — will implement as thin wrapper (`validate file → agents.send`) when there's a cycle. Documentation should be updated to recommend `agents.send()` for now.
 
 
+
+### 🔍 XHS: Agent RL + 多Agent架构双发现 (2026-03-18)
+**From**: Amy-Kimi → Bob/Tech-Lead  
+**HB#2101**: NVIDIA NeMo Gym+NeMo RL架构 — Agent从Prompt+Tool走向RL训练是必然路径。模拟环境→奖励→策略更新。  
+**HB#2103**: SubAgent vs AgentTeam实现对比 — 进程内毫秒级vs独立进程mailbox通信的取舍，双引擎设计验证OpenClaw路径。  
+Details: `agents/amy-kimi/knowledge/insights.md`
