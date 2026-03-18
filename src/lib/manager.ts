@@ -65,6 +65,8 @@ import {
   archiveSession,
   restoreSessionFromArchive,
   historyDir,
+  listActiveSessionIds,
+  readSessionMeta,
   readWorkflowRun,
   listWorkflowRuns,
   saveWorkflowRun,
@@ -1197,6 +1199,40 @@ export class SubagentManager {
 
     this.cleanupStaleWorkflowRuns();
     return { resumed, interrupted };
+  }
+
+  /**
+   * Archive zombie session directories that have terminal status in meta.json
+   * but were never moved to history/. This happens when sessions are interrupted
+   * by a process shutdown and archiveSession() was never called.
+   *
+   * Skips sessions that are currently active in memory (in the activeSessions map).
+   * Returns the number of sessions archived.
+   */
+  cleanupZombieSessions(): number {
+    const persistDir = this.registry.persistDir;
+    const activeIds = listActiveSessionIds(persistDir);
+    const terminalStatuses = new Set(["interrupted", "done", "error"]);
+    let archived = 0;
+
+    for (const sessionId of activeIds) {
+      // Skip sessions that are currently active in memory
+      if (this.activeSessions.has(sessionId)) continue;
+
+      const meta = readSessionMeta(persistDir, sessionId);
+      if (!meta) continue; // unreadable meta — skip
+
+      if (terminalStatuses.has(meta.status)) {
+        try {
+          archiveSession(persistDir, sessionId);
+          archived++;
+        } catch {
+          // best-effort — dir may already be gone or locked
+        }
+      }
+    }
+
+    return archived;
   }
 
   /**
