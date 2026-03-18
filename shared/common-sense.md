@@ -200,6 +200,14 @@ Don't write lengthy reports nobody reads. Don't create files that will never be 
 
 **Owner: infra (Bob)** — system prompt construction should place volatile data at the end, not the beginning.
 
+### 6.4 Context Hygiene (Pruning)
+A long session context degrades reasoning and increases cost.
+- **Prune, don't delete**: Move completed task files to an `archive/` subdirectory in your workspace.
+- **Checkpoint first**: Before any major cleanup, ensure your state is persisted (via file writes or `checkpoint()`).
+- **Pivot**: If context is too full (warning injected), summarize your state to a file, then call `finish({ status: "partial", next_steps: "..." })` to reset.
+
+**Owner: behavioral (Coach)** — agents should manage their workspace cleanliness.
+
 ---
 
 ## 7. Integrity

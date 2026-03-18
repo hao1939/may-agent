@@ -9,11 +9,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If found → add specific task to workspace/todo.md.
   Latest (2026-03-18T16:19): **Coach cost dominance: $63.82/8h ($192/day), 37.4% of total system cost.** 23 coach sessions in 8h, heartbeats alone cost $31.41 (10 HBs, avg 31 LLM calls). Root cause: unbounded heartbeat exploration (62+ calls observed in single HB). Zero prompt cache hits. Sent two fixes to May: (1) 15-turn budget for coach HBs (req:8804a514), (2) increase HB interval 30→60min (req:fd4d0e4b). Full system burn: $170.83/8h = $513/day. Finding at `workspace/finding-coach-cost-dominance.md`.
 
-- [x] **Cost outlier scan** — Last done: 2026-03-18T13:20
+- [x] **Cost outlier scan** — Last done: 2026-03-18T16:50
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-18T13:20): **$37.03 in 20 sessions (1.9h span), $456/day projected.** Top offenders: optimizer $10.90 (29%), coach $9.97 (27%), tech-lead $5.69 (15%). Coach common-sense-verify reads full session.jsonl files (550KB in one session, $2.78/run). Updated cron message to instruct grep-based search. Finding at `workspace/finding-cost-analysis-4h-window.md`.
+  Latest (2026-03-18T16:50): **50 sessions in 2.75h. Coach still dominates: 15 sessions (30%), avg 291KB, 4.47MB total.** Applied direct fix: changed coach HB interval 30→60min in cron.json. Evaluator task injections up to 368KB — driven by large heartbeat context injection. Session distribution post-restart: 7-16/hour (down from 46/hr pre-restart). Finding at `workspace/finding-coach-interval-change.md`.
 
 - [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-18T14:49
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
