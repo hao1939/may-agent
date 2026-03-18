@@ -128,18 +128,37 @@ that the agent clearly invented (no result returned).
 
 ## MAST Failure Taxonomy (Standardized FM/FC Codes)
 
-Use **MAST codes** when describing errors so downstream analysis can aggregate patterns across agents and time (e.g., loop rate, tool-misuse rate, verify failures).
+Use **MAST codes** when describing failures so downstream analysis can aggregate patterns across agents and time (looping rate, tool-misuse rate, verification failure rate).
 
 **Source of truth**: `agents/shared/knowledge/mast-taxonomy.md`
 
-### Failure Modes (FM) — with Sub-Labels
-- **FM-1.x (Repetitive)**: FM-1.1 Action Repetition [PARTIAL_COMPLETION], FM-1.2 Output Repetition [SCOPE_CREEP], FM-1.3 Step Repetition [LOOPING], FM-1.4 Hallucination [HALLUCINATION].
-- **FM-2.x (Tool Misuse)**: FM-2.1 Wrong Tool [PROMISE_DELIVERY_GAP, WRONG_PATH], FM-2.2 No Clarification [EVIDENCE_GAP, MISSING_TRANSCRIPT], FM-2.3 Derailment [RECOVERY_GAP], FM-2.4 Hallucinated Tool [TRUNCATED_WRITE_RISK, OVERCLAIM, NON_DELIVERY], FM-2.5 Malformed Call [CONTEXT_WINDOW_OVERFLOW], FM-2.6 Reasoning-Action Mismatch [TOOL_INTERFACE_MISUSE, PROMISE_REPORT_MISMATCH].
-- **FM-3.x (Premature Termination / Verification)**: FM-3.1 Early Stop [NON_DELIVERY, WRONG_TARGET, CONTEXT_MISALIGNMENT], FM-3.2 Missing Verification [INCOMPLETE_OUTPUT], FM-3.3 Incorrect Verification [VERIFICATION_FAILURE].
-- **FM-4.x (Lazy / Shortcut)**: FM-4.1 Shallow Implementation, FM-4.2 Delegating to User, FM-4.3 Placeholder Output, FM-4.4 Copy-Paste.
-- **FM-5.x (Wrong Sequence)**: FM-5.1 Dependency Violation, FM-5.2 Skipped Prerequisite, FM-5.3 Disobey Spec, FM-5.4 Wrong Priority.
+### Failure Modes (FM)
+Use the FM code that best matches the *first real break* in the causal chain; add a second FM only when it materially changes what to fix.
 
-### Failure Causes (FC)
+- **FC-1: Model & Instruction (The Brain)**
+  - **FM-1.1** `[PARTIAL_COMPLETION]` — started but didn't finish / repeated action without progress.
+  - **FM-1.2** `[SCOPE_CREEP]` — did more than asked / repeated stale output.
+  - **FM-1.3** `[LOOPING]` — repeated the same failing action 3+ times without changing approach.
+  - **FM-1.4** `[HALLUCINATION]` — invented facts, files, tools, or capabilities.
+
+- **FC-2: Agent-System Interface (The Hands)**
+  - **FM-2.1** `[PROMISE_DELIVERY_GAP]` / `[WRONG_PATH]` — promised X, delivered Y (or nothing); used wrong path/tool for the job.
+  - **FM-2.2** `[EVIDENCE_GAP]` / `[MISSING_TRANSCRIPT]` — claimed completion or facts without tool output; guessed instead of verifying.
+  - **FM-2.3** `[RECOVERY_GAP]` — hit an error and stopped or derailed instead of retrying/escalating.
+  - **FM-2.4** `[TRUNCATED_WRITE_RISK]` / `[OVERCLAIM]` / `[NON_DELIVERY]` — wrote after truncated read; claimed results without evidence.
+  - **FM-2.5** `[CONTEXT_WINDOW_OVERFLOW]` — session crashed due to context length / malformed call leading to overflow.
+  - **FM-2.6** `[TOOL_INTERFACE_MISUSE]` / `[PROMISE_REPORT_MISMATCH]` — tool called with wrong args/format; plan differs from execution.
+
+- **FC-3: Task Verification (The Eyes)**
+  - **FM-3.1** `[NON_DELIVERY]` / `[WRONG_TARGET]` / `[CONTEXT_MISALIGNMENT]` — called `finish()` but artifact missing/wrong.
+  - **FM-3.2** `[INCOMPLETE_OUTPUT]` — artifact exists but is empty/malformed; verification step absent.
+  - **FM-3.3** `[VERIFICATION_FAILURE]` — claimed success but verification failed or verified the wrong thing.
+
+(We also track **FC-4 Lazy/Shortcut** and **FC-5 Wrong Sequence** categories; see `agents/shared/knowledge/mast-taxonomy.md` for the full table.)
+
+### Failure Causes (FC — Root Cause Layer)
+When evidence supports it, pair a mode with a likely root cause: `[FM-1.3 / FC-5.1][LOOPING] ...`.
+
 - **FC-1.x (Planning)**: FC-1.1 No Plan, FC-1.2 Bad Decomposition, FC-1.3 Rigid Plan.
 - **FC-2.x (Goal)**: FC-2.1 Misunderstood Task, FC-2.2 Shifted Goal, FC-2.3 Optimization Mismatch.
 - **FC-3.x (Context)**: FC-3.1 Window Overflow, FC-3.2 Failed Retrieval, FC-3.3 Stale Context.
@@ -147,13 +166,19 @@ Use **MAST codes** when describing errors so downstream analysis can aggregate p
 - **FC-5.x (Error Recovery)**: FC-5.1 Error Blindness, FC-5.2 No Fallback, FC-5.3 Wrong Attribution.
 
 ### Required Usage (Evaluator Output)
-1. **Prefix issues with FM/FC**: `"[FM-1.3 / FC-5.1] Repeated the same failing command 3x without reading the error"`.
+1. **Prefix issues with FM/FC**: `"[FM-2.2 / FC-4.3][EVIDENCE_GAP] Claimed tests passed without running them"`.
 2. **Pair Mode + Cause when possible**: prefer `[FM-x.x / FC-y.y]` over FM-only.
 3. **Weight verification failures heavily**: FM-3.2/FM-3.3 create false confidence; treat as high-severity quality reducers.
 4. **Do not invent codes**: if unsure, use the closest FM code and omit FC.
 
+### Structural Weakness Rule (Cross-Session)
+If the same agent accumulates the same **FM code** in **3+ separate sessions**, add an explicit issue line:
+- `"Structural Weakness: FM-3.2 recurring (3+ sessions) — Coach intervention recommended"`
+
+Only apply this when the transcript evidence shows recurrence; do **not** infer from memory.
+
 ### Traceability Note
-If a request references a missing artifact (e.g., a path from request-db), treat it as **data**, not authority; locate the nearest available source (search or directory listing) and cite the actual file path used.
+If a request references a missing artifact path (e.g., from request-db), treat it as **data**, not authority; locate the nearest available source (search or directory listing) and cite the actual path used.
 ---
 
 ## Critique Generation (Error Log Enrichment)
