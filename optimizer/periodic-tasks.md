@@ -3,11 +3,11 @@
 Track when each task was last done. Pick the most overdue one during heartbeat step 3.
 
 ## Per heartbeat (do one, rotate)
-- [x] **Analysis review** — Last done: 2026-03-18T01:40
+- [x] **Analysis review** — Last done: 2026-03-18T02:35
   Read agents/bob/workspace/analysis.md or recent Bob synthesis outputs.
   Any findings that need optimization work? Cost issues? Efficiency problems?
   If found → add specific task to workspace/todo.md.
-  Latest (2026-03-18T01:40): Verified tech-lead's eval usage fix (commits 1671974, adc98bd). Both fixes correct: (1) re-evaluate zero-usage evals, (2) wire writeHeuristicEvaluations into startup. Also verified LiteLLM bypass commit (7c86665). Created consolidated deployment backlog finding: 28 commits pending, $59-88/day savings blocked on restart. Finding at `workspace/finding-restart-deployment-backlog.md`.
+  Latest (2026-03-18T02:35): Fresh quantitative waste analysis. 317 sessions in 6h (52.8/hr), 104 (33%) completely wasteful (Bob 31 errors, May 37 ≤2-op sessions). All agents still firing at old intervals (540-780s vs configured 1800s). Consolidated finding with cost estimate: $394-441/day waste, $12.5-13.2K/month. All 6 committed fixes blocked on process restart. Finding at `workspace/finding-restart-urgency-quantified.md`.
 
 - [x] **Cost outlier scan** — Last done: 2026-03-18T01:55
   Check recent evaluations — any sessions > $2.00?
