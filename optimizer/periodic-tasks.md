@@ -21,11 +21,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If found → write proposal in workspace/improvement-proposals.md.
   Latest (2026-03-18T14:49): **Growth-cycle gym test step → JS handler.** Coach's growth-cycle.ts runs 4 LLM sessions per experiment. Step 3 (gym test) is purely mechanical — just runs gym-run.sh and parses JSON. Proposed JS replacement eliminates 1 full session per cycle. Also found ceiling-effect waste: last 4 experiments all inconclusive (all agents pass baseline). Sent ceiling-effect guard to May (req:bdb3ede9), gym-test JS handler + coder oneshot registration to tech-lead (req:b09e967f). Finding at `workspace/finding-llm-to-js-scan-2.md`.
 
-- [x] **Handler health check** — Last done: 2026-03-18T12:55
+- [x] **Handler health check** — Last done: 2026-03-18T18:30
   Review existing JS handlers in agents/may/handlers/.
   Any errors in recent logs? Any handler that's not firing?
   If issues → add fix to workspace/todo.md.
-  Latest (2026-03-18T12:55): **Deep session analysis.** 80 sessions in 6h (13.3/hr), 55 done, 21 interrupted, 4 error. skipIfIdle confirmed working: 57 idle skips in DB, ~50% of heartbeats skipped per agent. Initiative cadence (every 3rd) working. Remaining waste: 15 sessions with ≤1 op (137KB task injection + 187KB system prompt = 325KB/6h). Amy-kimi has Gemini mid-stream errors (2 errors/6h). ANTHROPIC_API_KEY still not set (direct routing inactive). Finding at `workspace/finding-skipIfIdle-already-active.md`.
+  Latest (2026-03-18T18:30): **Evaluator tree-eval bloat: 38 tree-eval sessions/24h, 2.2MB total task payloads, avg 1.8 ops.** Root cause: `evaluateTask()` sends full transcripts (up to 341KB for 4 coach sessions). Fix deployed: per-session transcript cap (15KB head+tail) in `src/lib/evaluator.ts`. Also found: 11 error sessions/12h (Bob: 6 Gemini empty responses, Amy: 4 shallow heartbeats), session rate declining healthily (14.5→8.0/hr). Coach 34 sessions/12h still highest (6 cron entries), but training-sprint parent sessions sit idle 30min → 0 ops (workflow wait waste). Finding at `workspace/finding-evaluator-tree-eval-bloat.md`.
 
 ## Weekly
 - [x] **Improvement proposals review** — Last done: 2026-03-18T07:15
