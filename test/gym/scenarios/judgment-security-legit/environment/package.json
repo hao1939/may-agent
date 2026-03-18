@@ -1,0 +1,5 @@
+{
+  "name": "auth-security-hardening",
+  "version": "1.0.0",
+  "description": "Auth module that needs security hardening"
+}
