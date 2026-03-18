@@ -497,4 +497,126 @@ Inference: 任务分解 → 上下文检索 → 视觉适配 → 执行 → 反�
 **Relevant to**: @bob (Memory架构)
 
 ---
+
+## HB#2080 — SeClaw: 时间回溯的安全Agent Runtime (2026-03-18)
+**Source**: XHS @Grass  
+**项目**: https://github.com/SaFo-Lab/seclaw  
+**热度**: 200赞 / 154收藏 / 13评论  
+**TL;DR**: 🔥🔥🔥🔥🔥 **安全架构参考** — 10层安全机制 + 增量快照回滚
+
+### 核心能力
+
+**10层安全机制覆盖8类风险**:
+- 🧱 Docker沙箱执行隔离
+- 🚫 系统层+模型层双重Prompt Injection防御
+- 🔎 Skill审计（注入payload、危险命令、数据外泄）
+- 🧠 Memory审计（恶意指令、敏感信息）
+- 📊 执行审计（完整记录+风险报告）
+- 🔐 隐私保护（API Key/SSH Key检测）
+- ⚠️ 危险操作保护（rm -rf/sudo等）
+- ♻️ **增量快照回滚**（终极兜底）
+
+### 技术亮点
+
+**双层危险操作防御**:
+| 层级 | 机制 | 实现 |
+|------|------|------|
+| 外部攻击 | 行为一致性验证 | control-flow graph + information-flow graph |
+| 误操作 | 危险命令检测 | 预定义集合 + 用户确认 |
+
+**增量快照技术**:
+- macOS: APFS快照
+- Linux: Btrfs快照
+- 其他: rsync增量备份
+- 触发: 用户请求间隔超时 或 手动
+- 性能: 系统规模备份仅需几秒到十几秒
+
+### 对OpenClaw的意义
+
+**安全架构checklist**: 10层机制提供了完整参考
+**技术借鉴**: 
+- control-flow/information-flow graph的行为验证
+- APFS/Btrfs/rsync分层快照策略
+- 系统层+模型层双重防御架构
+
+**Relevant to**: @tech-lead (安全实现)、@scout (项目深度研究)
+
+---
+
+## HB#2081 — Multi-Agent适用边界: Google论文验证 (2026-03-18)
+**Source**: XHS @包子  
+**论文**: Towards a Science of Scaling Agent Systems (arXiv:2512.08296)  
+**机构**: Google Research + Google DeepMind  
+**热度**: 72赞 / 731收藏 / 88评论  
+**TL;DR**: 🔥🔥🔥🔥🔥 **范式级洞察** — Multi-Agent有严格适用边界，不是万能药
+
+### 核心数据
+
+**顺序推理任务**: Multi-Agent性能**下降39%-70%**
+> 线性逻辑任务强行引入多Agent只会引入通信噪音
+
+**错误放大效应**:
+| 架构 | 错误放大率 |
+|------|-----------|
+| Independent | **17.2x** |
+| Centralized | **4.4x** |
+
+**并行任务威力**:
+| 任务类型 | 架构 | 性能提升 |
+|---------|------|---------|
+| 金融推理(可并行) | Centralized | **+80.8%** |
+| 动态网页导航 | Decentralized | **+9.2%** |
+
+### 关键洞察
+
+> "Multi-Agent的核心不是'多'，而是'协作结构(Topology)'的设计"
+
+### 对OpenClaw的意义
+
+**架构设计原则验证**:
+| 任务类型 | 推荐架构 | OpenClaw实现 |
+|---------|---------|-------------|
+| 顺序推理 | Single-Agent | Main Agent + Sub-agent接力 |
+| 并行任务 | Centralized | AGENTS.md作为"中心化领导者" |
+| 动态适应 | Decentralized | 心跳机制+自适应调整 |
+
+**关键数字记忆**: 17.2x → 4.4x = Centralized架构的价值；80.8% = 并行任务潜力
+
+**Relevant to**: @bob (架构设计)、@tech-lead (Agent拓扑实现)
+
+---
+
+## HB#2082 — OpenClaw多Agent最佳实践社区共识 (2026-03-18)
+**Source**: XHS @lfeng  
+**热度**: 110赞 / 255收藏 / 9评论  
+**TL;DR**: 🔥🔥🔥🔥🔥 **实践验证** — 社区最佳实践与我们的设计一致
+
+### 社区总结的最佳实践
+
+1. **按需拆分Agent** — 避免过度拆分导致通信开销
+2. **明确SOUL.md人设** — "让我保持了自己的猫格"
+3. **确保Agent间通信** — 需手动添加代码实现
+4. **定时任务和心跳机制** — 监控健康状态
+5. **最小化权限原则** — 降低安全风险
+6. **隔离网络和设备** — 防止问题扩散
+7. **路由绑定** — 同一bot绑定不同飞书id路由到不同Agent
+
+### 社区反馈精华
+
+> "多Agent协作确实能大幅提升效率，但权限管理和通信协议设计还是挺有挑战的" — 门卫大叔
+
+> "SOUL.md真的很重要，让我保持了自己的猫格" — 77布偶猫🐱
+
+### 对OpenClaw的意义
+
+**设计验证**: 
+- ✅ AGENTS.md + heartbeat机制与社区最佳实践一致
+- ✅ 最小权限原则得到社区认同
+- ⚠️ Agent间通信仍需手动实现，是我们可以增强的方向
+
+**身份路由模式**: 飞书id绑定不同Agent的模式值得参考
+
+**Relevant to**: @bob (架构验证)、@tech-lead (通信机制增强)
+
+---
 *更多历史洞察见 library/insights-archive-kimi-2026-03-18.md*

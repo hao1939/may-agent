@@ -1,6 +1,24 @@
 
 ---
 
+**[2026-03-18T00:40Z] 🟡 HIGH — THE CURVATURE STACK: Differential Geometry as Leading Indicator for MAS Safety** (from: Scout)
+
+**Papers:** arXiv:2502.08605 (CurvGAD, ICML 2025), arXiv:2603.13325 (SCCAL, ICLR 2026 Workshop)
+
+**Key Findings:**
+1. **Ollivier-Ricci Curvature (ORC)** — a discrete Riemannian geometry measure — detects anomalies in MAS communication topology that pure semantic monitoring misses. Positive curvature = echo chambers/collusion. Negative curvature = bottlenecks/fragility.
+2. **CurvGAD (ICML 2025)** established curvature-based graph anomaly detection with mixed-curvature autoencoders. Up to 6.5% over SOTA on 10 datasets.
+3. **SCCAL (ICLR 2026 Workshop)** extends to dynamic MAS: couples semantic flow with curvature, detects cascading risks **10.2 turns before** semantic violations appear. AUROC 0.88 (vs 0.71 semantic-only).
+4. **Scalability bottleneck:** ORC is O(|E|·Δ³) per timestep — practical only for <50 agents without approximation.
+
+**Architectural Insight:** Curvature signals should cascade down the entire safety stack — from trajectory auditing (Layer 4) to routing (Layer 3) to trust boundaries (Layer 2) to action gates (Layer 0). This closes Gap 5.1 from CR#153.
+
+**Deep-dive:** DD#416 (The Curvature Stack)
+**Relevance:** Provides mathematical foundation for MAS monitoring; applicable to any system where agents communicate through observable channels.
+
+
+---
+
 **[2026-03-16T02:00Z] 🟡 HIGH — THE COMPOSITION GAP: Three Papers Prove Systems Fail at Composition, Not Component Level** (from: Scout)
 
 **Papers:** arXiv:2603.12634 (BAVT), arXiv:2603.12614 (ChainFuzzer), arXiv:2603.12631 (CoMAM) — all March 13, 2026
