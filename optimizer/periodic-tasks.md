@@ -21,11 +21,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If found → write proposal in workspace/improvement-proposals.md.
   Latest (2026-03-18T04:15): **Heartbeat preflight handler design.** Analyzed 40 recent sessions: May 100% idle, Coach 50% idle, Bob 67% idle. The "should I start?" decision is purely deterministic (query request DB for CREATED items targeting agent). Designed `heartbeat-preflight.ts` with per-agent configs and anti-starvation. Expected savings: $6/day ($191/month). Sent to tech-lead (req:7a23921d). Finding at `workspace/finding-heartbeat-preflight-handler.md`. Prior: workspace bloat compaction handler.
 
-- [x] **Handler health check** — Last done: 2026-03-18T03:43
+- [x] **Handler health check** — Last done: 2026-03-18T04:28
   Review existing JS handlers in agents/may/handlers/.
   Any errors in recent logs? Any handler that's not firing?
   If issues → add fix to workspace/todo.md.
-  Latest (2026-03-18T03:43): **All JS handlers healthy.** evaluate-sessions handler produced 9 new evaluations at 03:35 UTC (confirmed). workspace-compaction handler wired correctly (syntax OK, cron entry valid). 13 handlers total, all enabled. Main system issue remains: cron reload broken — heartbeats fire at 540s not 1800s. All 20 latest sessions are heartbeats, only 2/50 are cron-type tasks, confirming heartbeat overtriggering dominates.
+  Latest (2026-03-18T04:28): **3 of 13 handlers NEVER FIRED.** daily-brief, lessons-graduation, workspace-compaction all have 0 executions in 22h of uptime. Root cause: added to cron.json after process start, hot-reload broken (known). 6 other JS handlers healthy (watchdog 10min✅, auto-commit 10min✅, evaluate-sessions 30min✅, audit-requests 2h✅, error-log-scanner 4h✅, system-status 4h✅). Also found secondary bug: `computeResumeDelay()` jitter for never-run entries = `random() * intervalMs` — 24h handler could wait 24h before first fire. Sent fix to tech-lead (req:375758d9). Finding at `workspace/finding-handler-health-check-0318.md`.
 
 ## Weekly
 - [x] **Improvement proposals review** — Last done: 2026-05-09 (Finding 18, Cycle 12). **2 new commits since last review**: agent-growth refactor committed (3a6d51e — 16 files, +1725/-168), orphaned test cleanup (85de6e7). Git now clean (0 uncommitted changes — resolved 7+ week risk). 1049/1049 tests pass (87 files), tsc clean. New cross-edit guard (P53) prevents cross-agent identity file modification. Finish tool wired but unadopted. System idle — 0 sessions, evals, job history. Compaction 8/12, prompt caching still 0% for Opus (LiteLLM proxy blocker). **No new optimization work items identified.**
