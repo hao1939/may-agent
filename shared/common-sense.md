@@ -200,6 +200,13 @@ Don't write lengthy reports nobody reads. Don't create files that will never be 
 
 **Owner: behavioral (Coach)** — agents should ask "who will read this?" before writing.
 
+### 6.3 KV-Cache Discipline (P147)
+- **Static First**: Never inject timestamps, session IDs, or volatile data into the system prompt prefix.
+- **Append Only**: Do not modify past message history. Only append new messages.
+- **Why**: Modifying the prefix invalidates the KV-cache for the entire session, increasing cost and latency by 10x.
+
+**Owner: infra (Bob)** — system prompt construction should place volatile data at the end, not the beginning.
+
 ---
 
 ## 7. Integrity

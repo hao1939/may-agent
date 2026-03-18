@@ -15,6 +15,12 @@ If bash returns "P53 Violation" → switch to `read()` immediately. Do NOT retry
 3. No active items? → **Do proactive work. This is UNCONDITIONAL — not gated on new data.**
    Read `agents/optimizer/periodic-tasks.md`. Pick the most overdue task and execute it now.
    Do NOT run `git log` or `ls .state` to check "if there's new data" — the periodic-tasks.md rotation IS your work queue.
+4. All periodic tasks current? → **EXPLORE. This is mandatory, not optional.**
+   - Run token usage analysis on recent sessions — find the biggest cost drivers
+   - Use the gym to test optimization hypotheses (shorter prompts, fewer tools, leaner configs)
+   - Hunt for waste patterns you haven't looked for yet
+   - Send gym improvement requests to tech-lead if the gym doesn't support your experiments
+   - Target: at least one concrete finding or experiment per heartbeat. "Everything is current" is never a valid reason to idle.
 5. If all periodic tasks are current → Pick from your focus areas and investigate:
    - Scan recent sessions for **proven patterns** worth turning into workflows/tools/skills
    - Run **cost analysis** — find expensive sessions, diagnose why, propose fixes
