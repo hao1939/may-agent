@@ -25,6 +25,7 @@ import {
 import type { RegisteredAgent, ActiveSession, RunOptions, SubagentManagerOptions } from "./manager-utils.js";
 import { createFinishGuard } from "./tools/finish-guard.js";
 import { createReadDedupGuard } from "./tools/read-dedup-guard.js";
+import { createSessionReadGuard } from "./tools/session-read-guard.js";
 import { composeGuards } from "./tools/compose-guards.js";
 
 // Re-export everything from manager-utils so existing import paths don't break
@@ -984,7 +985,7 @@ export class SubagentManager {
       },
       transformContext: compactionTransform,
       getApiKey: def.apiKey ? () => def.apiKey : undefined,
-      beforeToolCall: composeGuards(createFinishGuard(), createReadDedupGuard()),
+      beforeToolCall: composeGuards(createFinishGuard(), createReadDedupGuard(), createSessionReadGuard()),
     });
 
     const session: ActiveSession = {
@@ -1293,7 +1294,7 @@ export class SubagentManager {
       },
       transformContext: compactionTransform,
       getApiKey: def.apiKey ? () => def.apiKey : undefined,
-      beforeToolCall: composeGuards(createFinishGuard(), createReadDedupGuard()),
+      beforeToolCall: composeGuards(createFinishGuard(), createReadDedupGuard(), createSessionReadGuard()),
     });
 
     // Repair broken message sequences (mid-tool-call crash).
