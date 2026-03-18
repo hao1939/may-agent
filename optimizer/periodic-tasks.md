@@ -9,11 +9,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If found → add specific task to workspace/todo.md.
   Latest (2026-03-18T00:20): Reviewed 2 new Bob briefs: (1) **directive-soul-updates-p13-p108.md** — SOUL updates for May/Evaluator, not optimizer-relevant. (2) **brief-turn-budget.md** — proposes `[Ops: N/Max]` injection. **ALREADY DEPLOYED** at `manager-receipts.ts:327-331` (shows `[Ops: N/M]` when >50% consumed, ⚠️ at low threshold). Bob's brief is redundant. OpBudget visibility (item 3 from prior review) is resolved. **Critical finding**: all recent cron fixes (idle-skip, content-hash reload, timer fixes) are committed but NOT running — PID 7 hasn't been restarted. Single process restart unlocks ~$30-50/day savings. Finding at `workspace/finding-process-restart-needed.md`.
 
-- [x] **Cost outlier scan** — Last done: 2026-03-18T00:25
+- [x] **Cost outlier scan** — Last done: 2026-03-18T00:43
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-18T00:25): **Cron fix verified committed (440bc6a, f8a481c) but NOT deployed.** PID 7 still running since Mar17 14:29. Optimizer still firing at 9min gaps (old 540s). Session rate: 59.8/hr (last 6h) — at $0.80/session = ~$48/hr = ~$1,152/day. Optimizer alone: 6.5/hr (should be 2/hr). Process restart is the single highest-impact action remaining. Sent follow-up to tech-lead (req:5f37ae3c).
+  Latest (2026-03-18T00:43): **Definitive proof cron reload broken.** Measured optimizer session gaps over 2 hours: perfectly consistent 540s intervals (12 consecutive gaps). cron.json says 1800s. Process ignores config changes entirely. System-wide: 37 sessions/hr actual vs ~12/hr expected (3.33x multiplier). Bob session s_1773794495977_290 errored with Gemini streaming failure (confirming ongoing Bob reliability issue). All savings blocked on process restart.
 
 - [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-17T22:30
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
