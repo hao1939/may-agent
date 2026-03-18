@@ -22,6 +22,7 @@ A pattern qualifies as model-level when:
 | C17 | Amy | Zero-tool-call sessions when memory grows large | SOUL.md has 3 layers of "must use tools" instructions, all ignored | Memory trim (61→40) breaks the loop temporarily |
 | C40 | QA | 0% compliance with verify-after-write across 8+ sessions | Prominent heartbeat instruction ignored | Model-level, tolerated |
 | C39 | Optimizer | Empty-arg tool calls (`bash({})`, `read({})`) | SOUL guard + LESSONS + heartbeat step (3 methods) | ✅ VERIFIED — 0 errors since 2026-03-15 (3+ days clean, 2026-03-17) |
+| NEW | Bob | Calls `agents.call("checkpoint")` instead of `checkpoint()` tool | LESSONS entry (exp-049) + TOOLS.md (exp-050) + heartbeat reminder (exp-052) — 3 layers, ALL FAILED | **MODEL-LEVEL** — 5/5 post-deployment sessions still misuse. Needs infra guard (exp-052 escalation). |
 
 ## Key Insight: Authority Hierarchy (experimentally confirmed 2026-03-17)
 
