@@ -744,9 +744,17 @@ export async function writeHeuristicEvaluations(persistDir: string): Promise<num
     // Only root sessions (no parent)
     if (session.parentSessionId) continue;
 
-    // Skip if already evaluated
+    // Skip if already evaluated (but re-evaluate if usage data is missing/zero)
     const evalPath = join(evalDir, `${sessionId}.json`);
-    if (existsSync(evalPath)) continue;
+    if (existsSync(evalPath)) {
+      try {
+        const existing = JSON.parse(readFileSync(evalPath, "utf-8"));
+        if (existing.usage?.totalTokens > 0 || existing.usage?.turns > 0) continue;
+        // Fall through: re-evaluate because existing eval has zero usage data
+      } catch {
+        continue; // Can't parse existing eval → skip
+      }
+    }
 
     // Skip sessions still running
     if (session.status === "running" || session.status === "idle") continue;
