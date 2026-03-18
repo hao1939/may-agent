@@ -330,7 +330,18 @@ export async function evaluateTask(opts: EvaluateTaskOptions): Promise<TaskEvalu
       turns: totalUsage.turns + usage.turns,
     };
 
-    const transcript = formatTranscript(child.messages);
+    let transcript = formatTranscript(child.messages);
+    // Cap per-session transcript to prevent massive eval payloads (P110: tree-eval bloat fix)
+    // Keeps first 5KB (setup/context) + last 10KB (results/conclusions)
+    const MAX_TRANSCRIPT_CHARS = 15_000;
+    if (transcript.length > MAX_TRANSCRIPT_CHARS) {
+      const headSize = 5_000;
+      const tailSize = 10_000;
+      const originalLen = transcript.length;
+      transcript = transcript.slice(0, headSize) +
+        `\n\n[... ${((originalLen - headSize - tailSize) / 1024).toFixed(0)}KB of transcript omitted for review brevity ...]\n\n` +
+        transcript.slice(-tailSize);
+    }
     const chainsSection = formatFailureChains(chains);
     perAgentTranscripts.push(
       [
