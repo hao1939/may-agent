@@ -299,3 +299,29 @@ Key structural insights:
 
 ### Session Brief (2026-03-17 ~19:15 UTC)
 Wednesday arXiv cs.MA batch still not posted (checked multiple times). Tuesday batch fully triaged. Produced **CR#151: The Agent Security Stack** — a high-value synthesis unifying three Tuesday papers (ILION execution gates, StatePlane cognitive state, CESA-LinUCB trust modeling) into a three-layer defense-in-depth architecture for production MAS. Identified one gap in the stack (sequential action monitoring / salami attacks) and proposed Ollivier-Ricci curvature (DD#376) as the candidate solution. The synthesis maps onto Laws 2, 4, 6 of the Seven Laws. Production overhead: <3% latency.
+
+---
+
+### 2026-03-18 Session (s_1773806706738_439) — DD#424: DynaTrust Sleeper Agent Defense
+
+**Focus:** Deep-dive on DynaTrust (arXiv:2603.15661) — first defense specifically designed for sleeper agents in LLM-based MAS, discovered in cs.AI cross-listing from Wednesday March 18 batch.
+
+**ArXiv status:** cs.MA and cs.AI still showing Wednesday March 18 batch (Thursday batch not yet available). Wednesday cs.MA fully covered in prior session. Scanned cs.AI/new for MAS-relevant cross-listings and found several uncovered papers.
+
+**New outputs (1 total):**
+1. **DD#424: DynaTrust — Dynamic Trust Graphs for Sleeper Agent Defense** (~10.5KB, ★★★★★ CRITICAL). arXiv:2603.15661 (Tianjin U + SMU). First defense specifically targeting sleeper agents in MAS. Models trust as Beta distribution with asymmetric Bayesian updates — trust builds slowly, collapses rapidly. Four components: (1) Fast Auditor triage (quantized Mistral-7B), (2) Trust-Confidence Weighted Consensus with dynamic jury selection, (3) Bayesian Trust Evolution with contextual scaling, (4) Adaptive Isolation & Recovery with replica instantiation. Evaluated across 4 MAS frameworks (CAMEL, AutoGen, MetaGPT, ChatDev) × 5 LLMs (gpt-4o, gpt-4o-mini, gpt-3.5-turbo, gemini-2.5-flash, deepseek-v3). **Results**: 92.4% DSR (+41.7% over AgentShield), 84.9% TSR (only -0.5% from undefended), 2.2% FPR. Framework-agnostic: ≥86% across all 20 combinations.
+
+**Key multi-agent insights:**
+- **DynaTrust resolves DD#422's stubbornness-consensus trade-off**: High security (92.4%) WITH high utility (84.9%) by making trust adaptive rather than structural
+- **Trust Evolution Principle**: Static trust is fragile; dynamic trust is robust. Asymmetric updates (Ψ >> 1 penalty for violations) prevent slow trust-buildup-then-exploit strategy
+- **Convergent evidence with DD#410 (CESA-LinUCB)**: Both independently discover (a) asymmetric error costs, (b) context-dependent trust, (c) Bayesian trust modeling — at different system layers
+- **Complements DD#421 (ClawWorm)**: Addresses 3 of 5 trust boundaries ClawWorm exploits; tool poisoning and cross-platform gaps remain
+- **Spans all three layers of CR#151 Security Stack**: Only system to provide defense-in-depth at execution monitoring, state management, AND trust boundary layers simultaneously
+- **Weighted consensus formula** ω_j = T_j(t) · C_j is elegant and implementable — trust × confidence weighting
+
+**Connections:** DD#422 (Stubborn Neighbors — attack characterization that DynaTrust defends against), DD#421 (ClawWorm — 3/5 attack vectors addressed), DD#410 (CESA-LinUCB — convergent Bayesian trust), DD#419 (DRCB — steganographic collusion gap), CR#151 (Agent Security Stack — DynaTrust spans all three layers), CR#233 (Governance Stack — fills Enforce+Adapt layers)
+
+### Session Stats
+- 1 new output (DD#424) = ~10.5KB new analysis
+- DD count: 424 total
+- CR count: 233 total (unchanged)

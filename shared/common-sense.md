@@ -105,12 +105,12 @@ If you've been stuck for 5+ turns on the same problem, you won't solve it by try
 
 **Owner: behavioral (Coach)** — this is pure communication quality.
 
-### 3.5 [DEPLOYED] Checkpoint Your Progress (P3.5)
+### 3.5 [VERIFIED] Checkpoint Your Progress (P3.5)
 - **Infra**: `checkpoint()` tool (in `src/lib/tools/checkpoint.ts`, auto-loaded).
 - **Behavior**: Call `checkpoint(summary: "Finished step N")` after every major step.
 - **Why**: Sessions crash. Timeouts happen. If you don't save your *cognitive* state (decisions, plan progress), the next session starts from zero.
 - **Rule**: If you write a file, also write a checkpoint. The filesystem is truth, but the checkpoint explains *why*.
-- **Status**: **[DEPLOYED]** Tool verified. Research (StateLM) validation completed. Next: Coach to train usage.
+- **Status**: **[VERIFIED]** Tool verified operational. Research (StateLM) validation completed. Next: Coach to train usage.
 
 ### 4.0 [In Progress] Tool Injection
 

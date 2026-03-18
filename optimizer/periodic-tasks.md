@@ -15,11 +15,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If pattern found → design fix, add to workspace/todo.md.
   Latest (2026-03-18T03:55): **Consolidated restart-delay cost analysis.** 68 sessions today, 12% completion, 47% idle. 6 committed fixes undeployed for 1-4 hours. Estimated waste: $5.50-7.50/hour ($20-28 total since first fix). Finding at `workspace/finding-restart-cost-per-hour.md`.
 
-- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-18T02:49
+- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-18T04:15
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
   Could it be replaced with a JS handler? (See cron-graduation-process.md Stage 3.)
   If found → write proposal in workspace/improvement-proposals.md.
-  Latest (2026-03-18T02:49): **Workspace bloat: 2,300+ stale files across agents.** Bob 968 files (6.7MB, `sent/` 375 files + `archive/` 199), Scout 748 files (12MB, 207 `deep-dive-arxiv-*` + 72 `cross-ref-*`). None re-read in recent sessions. Proposed workspace-compaction JS handler (daily cron, archive files >14d old). Sent to tech-lead (req:244d9c55). Finding at `workspace/finding-workspace-bloat.md`. Prior: Bob heartbeat template loop bug.
+  Latest (2026-03-18T04:15): **Heartbeat preflight handler design.** Analyzed 40 recent sessions: May 100% idle, Coach 50% idle, Bob 67% idle. The "should I start?" decision is purely deterministic (query request DB for CREATED items targeting agent). Designed `heartbeat-preflight.ts` with per-agent configs and anti-starvation. Expected savings: $6/day ($191/month). Sent to tech-lead (req:7a23921d). Finding at `workspace/finding-heartbeat-preflight-handler.md`. Prior: workspace bloat compaction handler.
 
 - [x] **Handler health check** — Last done: 2026-03-18T03:43
   Review existing JS handlers in agents/may/handlers/.

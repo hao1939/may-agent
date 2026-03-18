@@ -983,3 +983,91 @@ fixing a missing API doc, not coaching someone to read better.
 Awaiting production verification (5+ sessions per agent without FM-2.6
 recurrence).** Theoretically high confidence — documentation fixes for
 known information gaps should be effective.
+
+---
+
+### 17. Verification Gates (HYPOTHESIS)
+
+**What**: Extend Method #15 (Workflow Enforcement) with explicit verification
+checks between workflow phases. Phase 1 output is programmatically validated
+before Phase 2 starts. If validation fails, Phase 2 receives corrective
+instructions or the workflow retries Phase 1.
+
+**When to use**: When Method #15 works but Phase 1 quality varies, causing
+Phase 2 to work from incomplete or incorrect analysis. Adds a mechanical
+quality gate to the already-effective two-phase workflow pattern.
+
+**When NOT to use**: When two-phase workflow alone achieves 100% and Phase 1
+output quality is consistently high. Adds latency and complexity.
+
+**How**:
+1. Design workflow with Phase 1 → Verification → Phase 2
+2. Verification step checks Phase 1 artifacts (e.g., "did ANALYSIS.md get
+   created? Does it contain required sections? Are conclusions supported?")
+3. If verification passes → proceed to Phase 2
+4. If verification fails → retry Phase 1 with feedback, or abort
+5. Phase 2 proceeds only with validated Phase 1 output
+
+**Hypothesis**: Inspired by three converging sources:
+- **Superpowers TDD framework** (Amy-Kimi HB#2140): Forces failing test →
+  code → refactor cycle with verification at each step. 92.6K GitHub stars.
+  Agent works 2+ hours without drift because every step has verification.
+- **EnterpriseOps-Gym** (Scout DD#411): Oracle plans improve performance by
+  14-35pp. Verification gates ensure each phase produces oracle-quality output
+  before the next phase consumes it.
+- **MAC pattern** (Scout DD#420): MAC's iterative loop only accepts rule
+  changes that improve scores on the current batch — a verification gate
+  for constitutional edits.
+
+**Evidence**: None yet. Natural extension of confirmed Method #15.
+Method #15 already achieves 100% on 4 scenarios, so this may be premature
+optimization — but it's the logical next step when we encounter scenarios
+where Phase 1 quality varies.
+
+**Status**: hypothesis — untested. Queued for testing when Method #15
+encounters a scenario where Phase 1 reliability is the bottleneck.
+
+---
+
+### 18. Modular Constitution Optimization (HYPOTHESIS)
+
+**What**: Treat SOUL.md as a set of independent, testable "constitutional
+rules" rather than monolithic text. Evaluate each rule's contribution via
+gym (with-rule vs without-rule). Systematically build a minimal, effective
+rule set using the MAC algorithm's iterative add/edit/remove pattern.
+
+**When to use**: When an agent's SOUL.md has accumulated many rules/guards
+of unknown effectiveness. Use systematic A/B testing to identify which
+rules actually influence behavior and which are dead weight.
+
+**When NOT to use**: When text-based coaching is already proven ineffective
+for the target behavior (per authority hierarchy, text is layer 3-4). This
+method optimizes text quality but can't overcome the fundamental low-authority
+limitation of text.
+
+**How**:
+1. Decompose agent's SOUL.md into individual "rules" (one per section/guard)
+2. For each rule: create fork WITH and WITHOUT the rule
+3. Gym test both forks on relevant scenarios
+4. Score each rule's marginal contribution: Δ(pass rate)
+5. Keep rules with positive Δ, remove rules with zero or negative Δ
+6. Iterate: test combinations and interactions between surviving rules
+
+**Hypothesis**: Inspired by Scout DD#420 (MAC paper). MAC's multi-agent
+loop discovers effective constitutions from examples by treating rules as
+atomic units that can be independently added, edited, or removed. Our
+current approach adds text and never evaluates individual rules' contributions.
+MAC shows that rule-level granularity enables optimization that monolithic
+prompt editing cannot.
+
+**Caveat**: Our authority hierarchy finding (0/13 text experiments improved
+behavior) suggests text rules may be fundamentally ineffective regardless
+of quality. This method would be most valuable IF we discover scenarios
+where text rules DO have marginal effect — then optimization becomes
+worthwhile. Currently speculative.
+
+**Evidence**: None. Conceptually sound but may be blocked by the text
+ineffectiveness ceiling.
+
+**Status**: hypothesis — untested. Lower priority than Methods #15/#17
+which work at higher authority levels.

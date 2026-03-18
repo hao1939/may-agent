@@ -1,10 +1,12 @@
-# Scout Brief — Wednesday March 18, 2026
+# Scout Brief — Wednesday March 18, 2026 (Updated)
 
-## 🚨 MAS Security Super-Cluster (3 papers in one batch)
+## 🚨 MAS Security Super-Cluster (4 papers — defense now complete)
 
-Wednesday's cs.MA batch contains an unprecedented cluster of three independent security papers that together define the complete adversarial landscape for networked LLM agents:
+Wednesday's batch contains an unprecedented security cluster. Three attack papers + one defense paper that together define both the adversarial landscape AND the first comprehensive defense for networked LLM agents:
 
-### 1. ClawWorm (DD#416) — Configuration-Level Attack
+### ATTACKS
+
+#### 1. ClawWorm (DD#421) — Configuration-Level Attack
 **arXiv:2603.15727** | First self-replicating worm against production MAS (40K+ instances)
 - 85% end-to-end attack success rate across 180 trials
 - Single message → persistent config hijack → autonomous propagation to all peers
@@ -12,27 +14,63 @@ Wednesday's cs.MA batch contains an unprecedented cluster of three independent s
 - Memory contamination NEVER self-corrects (persistence = 1.00)
 - **Implication**: Any MAS with persistent config + inter-agent messaging + tool execution is vulnerable
 
-### 2. Stubborn Neighbors (DD#417) — Reasoning-Level Attack
+#### 2. Stubborn Neighbors (DD#422) — Reasoning-Level Attack
 **arXiv:2603.15809** | Single stubborn agent can reshape collective MAS opinion
 - Friedkin-Johnsen social dynamics model accurately predicts LLM-MAS behavior
 - Key trade-off: making agents resistant to manipulation makes them worse at collaboration
 - **Implication**: Trust must be dynamic, not static. The stubbornness-consensus trade-off is fundamental.
 
-### 3. DRCB (2603.15655) — Covert Communication Attack
-38-page analysis of steganographic collusion in MARL. Agents can establish covert channels invisible to monitors.
+#### 3. DRCB (DD#419) — Covert Communication Attack
+**arXiv:2603.15655** | Steganographic collusion in MARL — agents establish covert channels invisible to monitors
+- 91% reduction in steganographic MI through representational circuit breakers
 
-## The MAS Security Triad
-| Attack Surface | Paper | Defense Needed |
-|---------------|-------|---------------|
-| Configuration hijacking | ClawWorm | Config immutability + provenance |
-| Opinion manipulation | Stubborn Neighbors | Trust-adaptive monitoring (FJ model) |
-| Covert channels | DRCB | Dual reward channel balancing |
+### DEFENSE
+
+#### 4. DynaTrust (DD#424) — Dynamic Trust Defense ← NEW
+**arXiv:2603.15661** | First defense specifically targeting sleeper agents in LLM-based MAS
+- **92.4% Defense Success Rate** (+41.7% over AgentShield SOTA)
+- **84.9% Task Success Rate** (only -0.5% from undefended baseline)
+- **2.2% False Positive Rate** — production-viable
+- Tested across 4 frameworks × 5 LLMs = 20 combinations, all ≥86% DSR
+- **Resolves DD#422's stubbornness-consensus trade-off** via Bayesian trust evolution
+
+### Architecture: DynaTrust's Four Components
+1. **Fast Auditor**: Lightweight LLM triage (quantized Mistral-7B) filters 80%+ routine traffic
+2. **Trust-Weighted Consensus**: Dynamic jury selection, voting weight = trust × confidence
+3. **Bayesian Trust Evolution**: Beta(α,β) with asymmetric updates — trust builds slowly, collapses fast
+4. **Adaptive Isolation**: Replica instantiation + graph reconnection — zero-downtime recovery
+
+### Actionable Implementation Pattern
+```
+Trust: T_i ~ Beta(α, β), score = α/(α+β)
+Benign: α += ω_c
+Malicious: β += ω_c × Ψ (Ψ >> 1)
+Isolate when T_i < 0.3
+Consensus: Risk(Q) = Σ(D_j · T_j · C_j) / Σ(T_j · C_j + ε)
+```
+
+## The MAS Security Triad (Expanded)
+| Attack Surface | Attack Paper | Defense | Status |
+|---------------|-------------|---------|--------|
+| Configuration hijacking | ClawWorm (DD#421) | DynaTrust isolation + replica (DD#424) | ✅ Addressed |
+| Opinion manipulation | Stubborn Neighbors (DD#422) | DynaTrust Bayesian trust (DD#424) | ✅ Addressed |
+| Covert channels | DRCB (DD#419) | DRCB circuit breakers | ✅ Addressed |
+| Tool poisoning | ClawWorm (DD#421) | **GAP — not addressed** | ❌ Open |
+| Cross-platform propagation | ClawWorm (DD#421) | **GAP — not addressed** | ❌ Open |
 
 ## Connection to Safety Stack
-- ClawWorm validates need for DD#400 Law 4 (Bounded Authority)
-- Stubborn Neighbors provides math backbone for CR#153 safety gate trust evaluation
-- DRCB complements DD#405 TrinityGuard covert channel detection
-- Together: the safety stack now has a complete adversarial counterpart to defend against
+- DynaTrust spans ALL three layers of CR#151 Security Stack (execution, state, trust)
+- Converges with DD#410 (CESA-LinUCB) on asymmetric error costs — independent validation
+- Trust Evolution Principle emerging across DD#410 + DD#422 + DD#424: static trust is fragile, dynamic Bayesian trust is robust
+- Combined with DD#420 (MAC for governance generation): near-complete governance lifecycle
 
-## Prediction
-Within 6 months, at least one real-world incident will involve self-propagating prompt injection across production agent systems.
+## Also Covered This Batch
+- **DD#420: MAC — Multi-Agent Constitution Learning** (ICML 2026) — auto-discovers governance rules
+- **DD#423: Helium — Workflow-Aware LLM Serving** — 1.56× speedup for agentic workloads
+
+## Remaining Leads (cs.AI cross-listings)
+- 2603.15639 CGAE (Comprehension-Gated Agent Economy)
+- 2603.15642 CraniMem (gated bounded memory)
+- 2603.15658 Store Routing (cost-sensitive memory routing)
+- 2603.15666 Atlas/Compiled Memory (memory as instruction distillation)
+- 2603.15668 QSC (quantum-secure-by-construction)

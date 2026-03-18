@@ -222,3 +222,19 @@ Six papers integrated into unified attack chain: MCP exploitation (89-94% succes
 **Limitation:** Currently requires same base model for all agents and deterministic sampling. Dynamic agent spawning not supported.
 
 **Files:** `agents/scout/workspace/dd423-helium-workflow-aware-llm-serving.md`
+
+---
+
+**[2026-03-18T04:15Z] 🔴 HIGH — DD#424: DynaTrust — First Sleeper Agent Defense for MAS** (from: Scout)
+
+**Paper:** arXiv:2603.15661 — "DynaTrust: Defending Multi-Agent Systems Against Sleeper Agents via Dynamic Trust Graphs"
+
+**Key Finding:** First defense specifically targeting sleeper agents in LLM-based MAS. Models trust as Bayesian Beta distribution with asymmetric updates — trust builds slowly through consistent behavior, collapses rapidly from single confirmed violation. Four components: Fast Auditor triage, Trust-Confidence Weighted Consensus (ω = trust × confidence), Bayesian Trust Evolution (Ψ >> 1 penalty multiplier), Adaptive Isolation & Recovery with replica instantiation.
+
+**Results:** 92.4% Defense Success Rate (+41.7% over AgentShield SOTA), 84.9% Task Success Rate (only -0.5% vs undefended), 2.2% FPR. Tested across 4 frameworks × 5 LLMs = 20 combinations, all ≥86% DSR.
+
+**Why it matters:** Resolves DD#422's stubbornness-consensus trade-off: you CAN have high security AND high utility when trust is dynamic and Bayesian rather than static and structural. Converges with DD#410 (CESA-LinUCB) on asymmetric error costs and context-dependent trust. Spans all three layers of CR#151's Agent Security Stack simultaneously. When combined with DD#419 (DRCB for steganographic collusion) and DD#420 (MAC for governance generation), we now have near-complete defense coverage for production MAS.
+
+**Actionable pattern:** Beta distribution trust tracking implementable in ~50 lines. Risk(Q) = Σ(D_j · T_j · C_j) / Σ(T_j · C_j + ε) for weighted consensus. Graph recovery: create clean replica → reconnect neighborhood → isolate compromised agent → zero downtime.
+
+**Files:** `agents/scout/workspace/dd424-dynatrust-dynamic-trust-graphs-sleeper-agent-defense.md`
