@@ -15,11 +15,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If pattern found → design fix, add to workspace/todo.md.
   Latest (2026-03-18T01:55): **Re-eval infinite loop reconfirmed with fresh data.** 13,896 total eval files, 10,747 modified in 24h (77%). 49/50 recent evals have totalTokens=0. Sessions range Feb 28-Mar 14 but 290 "created" in last 6h = phantom re-eval writes. Root cause: evaluator.ts line 752 re-evaluates zero-usage sessions that will always return zero. Finding updated at `workspace/finding-eval-reeval-loop.md`. Previously sent to tech-lead (req:41afb34f).
 
-- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-18T02:04
+- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-18T02:49
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
   Could it be replaced with a JS handler? (See cron-graduation-process.md Stage 3.)
   If found → write proposal in workspace/improvement-proposals.md.
-  Latest (2026-03-18T02:04): **Major finding: Bob heartbeat template loop bug.** Bob's heartbeat.md has 4 stale tasks hardcoded in C40 promise template (lines 14-18). Bob loops on same 4 promises every session, 37% failure rate, 35% sessions <30s no-ops. 52 sessions in 6h with 19 failures. Root cause: template should show format, not specific tasks. Sent to Coach (req:24c039ee). Finding at `workspace/finding-bob-heartbeat-loop.md`. Prior: Heartbeat interval mismatch finding.
+  Latest (2026-03-18T02:49): **Workspace bloat: 2,300+ stale files across agents.** Bob 968 files (6.7MB, `sent/` 375 files + `archive/` 199), Scout 748 files (12MB, 207 `deep-dive-arxiv-*` + 72 `cross-ref-*`). None re-read in recent sessions. Proposed workspace-compaction JS handler (daily cron, archive files >14d old). Sent to tech-lead (req:244d9c55). Finding at `workspace/finding-workspace-bloat.md`. Prior: Bob heartbeat template loop bug.
 
 - [x] **Handler health check** — Last done: 2026-03-18T02:25
   Review existing JS handlers in agents/may/handlers/.
