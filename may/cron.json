@@ -70,12 +70,12 @@
   {
     "name": "heartbeat-coach",
     "type": "heartbeat",
-    "intervalMs": 1800000,
+    "intervalMs": 3600000,
     "agent": "coach",
     "message": "[heartbeat] You are Coach. Your files are in agents/coach/. Read agents/coach/heartbeat.md and work through each section top to bottom.",
     "enabled": true,
-    "description": "Coach heartbeat — triage, coaching, long-term mission work (30min)",
-    "lastModified": "2026-03-12T15:11:42.304Z",
+    "description": "Coach heartbeat — triage, coaching, long-term mission work (60min, was 30min — cost optimization 2026-03-18)",
+    "lastModified": "2026-03-18T16:50:00.000Z",
     "notifyBrief": true
   },
   {
