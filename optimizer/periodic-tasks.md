@@ -9,11 +9,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If found → add specific task to workspace/todo.md.
   Latest (2026-03-18T02:58): **System-wide 88.5% session failure rate.** 130 sessions in 3h, only 15 completed (11.5%). 6/9 agents at 0% completion — all killed by next heartbeat before finishing. Only amy-kimi (100%), evaluator (70%), qa (33%) completing. Bob 100% Gemini errors. Cron still at 540s vs 1800s configured. New finding at `workspace/finding-zero-completion-rate.md`, sent to tech-lead (req:8f592e68).
 
-- [x] **Cost outlier scan** — Last done: 2026-03-18T03:20
+- [x] **Cost outlier scan** — Last done: 2026-03-18T03:27
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-18T03:20): **All-time cost data: $1,211.75 across 1,003 sessions, 12.3% cache rate.** Coach session s_1773802424817_389 was cost outlier at $2.82 (900K input, 36 turns, 0% cached). Last 3h: 4 sessions, $4.39, 0% cache hits — confirms prompt caching still completely broken for Opus. Top 10 most expensive sessions (up to $16.42) all 0% cached. Updated `workspace/finding-prompt-caching-broken-opus.md` with all-time totals. Fix committed (7c86665) but NOT DEPLOYED — blocked on restart.
+  Latest (2026-03-18T03:27): **System-wide idle session waste: 81.2% of 13,890 sessions do ≤3 ops.** May 97.8% idle (3,376/3,452), $2,155 wasted. Root cause: cron fires heartbeats regardless of pending work. Proposed JS pre-flight check to skip LLM when no work exists. Finding at `workspace/finding-idle-session-waste.md`. Sent to tech-lead (req:089b19d3).
 
 - [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-18T02:49
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
