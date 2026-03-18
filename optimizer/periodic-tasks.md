@@ -3,11 +3,11 @@
 Track when each task was last done. Pick the most overdue one during heartbeat step 3.
 
 ## Per heartbeat (do one, rotate)
-- [x] **Analysis review** — Last done: 2026-03-18T16:19
+- [x] **Analysis review** — Last done: 2026-03-18T23:19
   Read agents/bob/workspace/analysis.md or recent Bob synthesis outputs.
   Any findings that need optimization work? Cost issues? Efficiency problems?
   If found → add specific task to workspace/todo.md.
-  Latest (2026-03-18T16:19): **Coach cost dominance: $63.82/8h ($192/day), 37.4% of total system cost.** 23 coach sessions in 8h, heartbeats alone cost $31.41 (10 HBs, avg 31 LLM calls). Root cause: unbounded heartbeat exploration (62+ calls observed in single HB). Zero prompt cache hits. Sent two fixes to May: (1) 15-turn budget for coach HBs (req:8804a514), (2) increase HB interval 30→60min (req:fd4d0e4b). Full system burn: $170.83/8h = $513/day. Finding at `workspace/finding-coach-cost-dominance.md`.
+  Latest (2026-03-18T23:19): **Memory file bloat: 129MB total, evaluator alone 29.3MB.** `readMemoryEntries()` reads entire file to get last N entries (311:1 waste ratio for evaluator). Session count: 80/12h (~160/day), improved from prior 150/4h. Session-read-guard NOT active (committed after process start, needs restart). Bob's analysis shows system stable (100% success rate, 0 tool misuse failures). Sent memory file rotation + tail-read optimization to tech-lead. Finding at `workspace/finding-memory-file-bloat.md`.
 
 - [x] **Cost outlier scan** — Last done: 2026-03-18T22:19
   Check recent evaluations — any sessions > $2.00?
