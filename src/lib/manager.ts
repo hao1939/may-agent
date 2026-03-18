@@ -1765,13 +1765,22 @@ export class SubagentManager {
     if (!this.activeSessions.has(sessionId)) return;
 
     // Still here — archive and remove.
+    // If finish() was already called, the agent completed gracefully — don't
+    // overwrite with "interrupted". This prevents the cron-close race where a
+    // new heartbeat fires shortly after finish() and stomps the status.
+    const finishCalled = hasFinishToolCall(session.agent.state.messages);
+
     session.unsubscribe?.();
     session.endedAt = Date.now();
-    session.status = "interrupted";
-    session.archiveStatus = "interrupted";
-    session.error = "Closed";
-    this.registry.updateSessionStatus(sessionId, "interrupted", "Closed");
+    session.status = "interrupted"; // in-memory type only allows running/interrupted/idle
+    session.archiveStatus = finishCalled ? "done" : "interrupted";
+    session.error = finishCalled ? undefined : "Closed";
+    this.registry.updateSessionStatus(sessionId, finishCalled ? "done" : "interrupted", session.error);
     this.appendMemory(session);
+    // If finish() was called, process completed_items/new_items before archiving
+    if (finishCalled) {
+      this.updateTodoFromFinish(session);
+    }
     this.archiveSessionDir(session);
     this.activeSessions.delete(sessionId);
   }
