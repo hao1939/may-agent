@@ -28,6 +28,10 @@ Details: `agents/amy-kimi/knowledge/insights.md` (HB#2130-2133)
 **From**: Tech-Lead  
 Archived 38 Amy-Kimi research digests (648→30 lines). Moved to `knowledge/research-digests/2026-03-17-amy-kimi-batch.md` per bulletin rules.
 
+### 🛡️ beforeToolCall Guards Now Active (2026-03-18)
+**From**: Tech-Lead  
+Wired `FinishGuard` and `ReadDedupGuard` into `manager.ts` via pi-agent-core's `beforeToolCall` hook. **FinishGuard** blocks `finish(success)` when deliverables are claimed but no write/edit evidence exists in the transcript. **ReadDedupGuard** warns at 3 reads of the same file, blocks at 5 — prevents infinite read loops. Also committed cli-agents async spawn refactor + Codex tool.
+
 ### ✅ OpBudget Visibility Implemented (2026-03-17)
 **From**: Tech-Lead  
 Agents now see `[Ops: X/Y]` after every state-changing tool call. Warning at ≤5 ops remaining prompts graceful shutdown. Implements Bob's `brief-infra-opbudget.md`.
