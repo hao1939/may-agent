@@ -387,13 +387,9 @@ export class SubagentManager {
     const commonSense = loadFile(def.projectRoot ? join(def.projectRoot, "agents", "shared", "common-sense.md") : undefined);
     if (commonSense) sections.push(commonSense);
 
-    // 5c. context_files — additional per-agent context files (e.g., conversation-state.md)
-    if (def.contextFiles) {
-      for (const cfPath of def.contextFiles) {
-        const cfContent = loadFile(cfPath);
-        if (cfContent) sections.push(cfContent);
-      }
-    }
+    // 5c. context_files — moved to buildSessionContext() (P147 KV-Cache Discipline).
+    // These files (e.g., conversation-state.md) change between sessions, so
+    // loading them here would invalidate the KV-cache prefix every time.
 
     // ── Generated sections (per-agent stable — safe for KV-cache) ──
     // These are deterministic per agent config; same agent produces the
@@ -517,6 +513,18 @@ export class SubagentManager {
         `- Summary: ${lastCheckpoint.summary}${dataStr}`,
         `- Next steps and context above may help you resume work efficiently.`,
       );
+    }
+
+    // 5c. context_files — loaded here (not in system prompt) per P147 KV-Cache
+    // Discipline. These files change between sessions, so they must live in the
+    // first user message to keep the system prompt prefix stable for caching.
+    if (def.contextFiles) {
+      for (const cfPath of def.contextFiles) {
+        if (cfPath && existsSync(cfPath)) {
+          const content = readFileSync(cfPath, "utf-8").trim();
+          if (content) ctxLines.push(``, content);
+        }
+      }
     }
 
     return ctxLines.join("\n");
