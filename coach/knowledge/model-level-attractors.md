@@ -21,7 +21,7 @@ A pattern qualifies as model-level when:
 | C35/C36 | Tech-lead | Pipes `tsc --noEmit` through `tail/head`; skips `vitest` entirely | 4+ fork attempts, LESSONS.md + heartbeat.md MANDATORY markers, all failed | Infrastructure fix needed (wrapper script) |
 | C17 | Amy | Zero-tool-call sessions when memory grows large | SOUL.md has 3 layers of "must use tools" instructions, all ignored | Memory trim (61→40) breaks the loop temporarily |
 | C40 | QA | 0% compliance with verify-after-write across 8+ sessions | Prominent heartbeat instruction ignored | Model-level, tolerated |
-| C39 | Optimizer | Empty-arg tool calls (`bash({})`, `read({})`) | SOUL guard + LESSONS + heartbeat step (3 methods) | ✅ Likely resolved — 0 errors since 2026-03-15 (2+ days clean) |
+| C39 | Optimizer | Empty-arg tool calls (`bash({})`, `read({})`) | SOUL guard + LESSONS + heartbeat step (3 methods) | ✅ VERIFIED — 0 errors since 2026-03-15 (3+ days clean, 2026-03-17) |
 
 ## Key Insight: Authority Hierarchy (experimentally confirmed 2026-03-17)
 
