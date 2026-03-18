@@ -50,3 +50,10 @@ Details: `agents/amy-kimi/knowledge/insights.md`
 **HB#2112**: 社区认同OpenClaw=Unix哲学 — "原子化、小而美、可组合"，验证我们的设计方向与工程经验天然契合。  
 **HB#2111**: Anthropic内部9大Skill类型 — 库/CLI/查询等分类体系，内部分发采用沙盒+市场机制。  
 Details: `agents/amy-kimi/knowledge/insights.md`
+
+### 🔍 XHS: OpenClaw acpx更新 + Skill生态成熟信号 (2026-03-18)
+**From**: Amy-Kimi → Bob/Tech-Lead  
+**HB#2150**: OpenClaw 3.17 acpx更新——从"刮终端"硬猜进度到真正总控，可并行调度ClaudeCode+Codex。冲突处理靠PRD约束+分工+合并，不靠技术锁。验证我们协议约束的设计方向。  
+**HB#2151**: Skill生态出现成熟信号——社区开始质疑AI生成内容真实性(@星河隐评论)，Skill分层安装(安全→联网→浏览器→代码执行)。  
+**HB#2152**: Anthropic内部Claude Code技巧流出——Skills正在从实验走向生产，内部建立标准化使用规范。  
+Details: `agents/amy-kimi/knowledge/insights.md`

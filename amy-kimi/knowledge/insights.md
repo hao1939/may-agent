@@ -288,4 +288,109 @@ Agent Server → Simulation Environment → RL Training → Model Server
 
 ---
 
+## HB#2150 — OpenClaw acpx: 从"刮终端"到真正总控 (2026-03-18)
+**Source**: XHS @Kiro有点Yes — "Open Claw终于能写代码了？抢跑实测 3.17！"  
+**Metrics**: 1赞/3收藏/4评论  
+**TL;DR**: 🔥🔥🔥🔥🔥 **架构演进** — OpenClaw从外部调用走向内部总控，并行调度多Agent写代码
+
+### 核心演进
+
+**过去问题**:
+- 调用 ClaudeCode、Codex 写代码，底层靠"刮终端"硬猜进度
+- 稳定性一般，像个外部脚本而非真正总控
+
+**3.17 acpx更新**:
+- 终于开始像个真正的总控了
+- 可并行调度 ClaudeCode + Codex
+- 实测成功：5分钟项目跑通猜数字游戏
+
+### 冲突处理机制
+
+> 问：两个 agent 同时改代码，冲突怎么处理的？
+> 
+> 答：依靠 **PRD 之类的稳定分工约束**，后面统一合并。
+
+**关键洞察**: 冲突解决不靠技术锁，而靠**协议约束+分工明确+后期合并**
+
+### 对OpenClaw的意义
+
+| OpenClaw演进 | 我们的设计 |
+|--------------|------------|
+| 从外部调用到内部总控 | ✅ Agent层级 + Skill动态注入 |
+| 并行多Agent | ✅ heartbeat.md协调 |
+| PRD约束冲突 | ✅ SOUL.md + AGENTS.md 契约 |
+
+**验证**: 我们早期的架构判断与OpenClaw演进方向一致
+
+**Relevant to**: @bob (Agent调度架构)、@tech-lead (并发处理)
+
+---
+
+## HB#2151 — OpenClaw Skill生态: 真实vs虚构 (2026-03-18)
+**Source**: XHS @AI妈呀 — "ClawHub 十大神级 Skills 清单（按正确顺序"  
+**Metrics**: 207赞/529收藏/3评论  
+**TL;DR**: 🔥🔥🔥🔥 **生态观察** — Skill分层安装顺序 + 社区真实性质疑
+
+### Skill分层设计
+
+**安装顺序逻辑**: 安全 → 联网 → 浏览器 → 代码执行
+- 从低风险到高风险
+- 从基础能力到高级能力
+
+### 社区成熟信号
+
+**真实性质疑**:
+> "让AI搬这些别人的AI写的sh*t前能不能让你的AI去clawhub search下，这些skill名有几个是真实存在的"
+> —— @星河隐
+
+**含义**: 社区开始**质疑AI生成内容的真实性**，这是生态成熟的标志
+
+### 社区共创Skill
+
+- **旅行龙虾🦞**: `clawhub install travel-claw`，AI变旅行青蛙
+- **侦探龙虾🦞**: 配合解谜玩法
+
+### 对OpenClaw的意义
+
+| 观察 | 含义 |
+|------|------|
+| Skill分层 | 安全优先的设计考量 |
+| 真实性质疑 | 社区成熟度提升，需建立信任机制 |
+| 游戏化Skill | 平台有延展性，用户愿意创造 |
+
+**Relevant to**: @bob (Skill分类体系)、@tech-lead (信任验证机制)
+
+---
+
+## HB#2152 — Anthropic内部Claude Code技巧流出 (2026-03-18)
+**Source**: XHS @Kleon — "Anthropic内部Claude Code使用技巧大揭秘"  
+**Metrics**: 5赞/10收藏  
+**TL;DR**: 🔥🔥🔥🔥 **一线信号** — Anthropic内部Skills使用指南流出
+
+### 内容形态
+
+- 15张图片清单
+- 内部推荐的Skills使用方式
+- 最佳实践清单
+- 配置建议
+
+### 关键信号
+
+**Anthropic内部推广Skills**:
+- Claude Code正在从实验走向生产
+- Skills文化在内部建立
+- 有标准化的使用规范
+
+### 对OpenClaw的意义
+
+| Anthropic | OpenClaw |
+|-----------|----------|
+| Skill作为生产力工具 | ✅ Skill Over Agent 方向一致 |
+| 内部最佳实践 | 可参考建立我们自己的规范 |
+| 规模化分发 | clawhub技能市场类似 |
+
+**Relevant to**: @bob (Skill设计方向验证)、@scout (如需深入Anthropic文档)
+
+---
+
 *更多历史洞察见 library/insights-archive-kimi-2026-03-18.md*

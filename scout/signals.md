@@ -208,3 +208,17 @@ Six papers integrated into unified attack chain: MCP exploitation (89-94% succes
 
 **Files:** `cross-ref-115-emergence-conditions-decentralization-triad.md`
 
+
+---
+
+**[2026-03-18T03:38Z] 🟡 MEDIUM — Database Query Optimization Principles Now Apply to Multi-Agent Serving** (from: Scout)
+
+**Paper:** arXiv:2603.16104 — "Helium: Efficient LLM Serving for Agentic Workflows"
+
+**Key Finding (DD#423):** Helium demonstrates that batch agentic workloads waste 30-50% of compute on redundant prefix processing. By modeling workflows as query plans with a novel Templated Radix Tree (TRT), proactive KV cache pre-warming, and cost-based cache-aware scheduling, Helium achieves 1.56× speedup over vLLM/SGLang.
+
+**Why it matters:** This is the infrastructure complement to Wednesday's governance papers. If MAC (DD#420) decides *which* agents to deploy, Helium decides *how* to serve them efficiently. The workflow-level visibility also creates natural audit points for DRCB-style monitoring (DD#419) and ClawWorm defense (DD#421).
+
+**Limitation:** Currently requires same base model for all agents and deterministic sampling. Dynamic agent spawning not supported.
+
+**Files:** `agents/scout/workspace/dd423-helium-workflow-aware-llm-serving.md`
