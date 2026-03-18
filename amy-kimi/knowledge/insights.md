@@ -538,4 +538,97 @@ SkillNet的设计理念：
 
 ---
 
+---
+
+## HB-2168 — Google 5种Agent Skill设计模式 (2026-03-18)
+**Source**: XHS @WaiXiaoTe_AI — "Google又来定义Skill了" (56赞/88收藏)  
+**原文**: https://x.com/GoogleCloudTech/status/2033953579824758855  
+**TL;DR**: 🔥🔥🔥🔥🔥 **设计范式** — Claude Code/Cursor统一SKILL.md格式后，Google定义Skill内容设计标准
+
+### 5种Skill设计模式
+
+| 模式 | 英文名 | 核心机制 | 适用场景 |
+|------|--------|----------|----------|
+| 1 | **Tool Wrapper** | 按需加载特定库上下文，非全塞进系统提示 | 团队编码规范、框架最佳实践 |
+| 2 | **Generator** | 模板+风格指南，强制输出结构一致 | API文档、报告生成 |
+| 3 | **Reviewer** | "检查什么"与"如何检查"分离，清单外置 | 代码审查、安全扫描 |
+| 4 | **Inversion** | Agent先当"访谈者"，分阶段收集需求 | 需求不明确、易跳步的任务 |
+| 5 | **Pipeline** | 严格顺序步骤，每步有检查点 | 复杂任务，防止跳步 |
+
+### 核心洞察
+
+> Skill不断垂直且职能分化会越来越细，Google的5种模式基本定义了目前各种Skill的分类。
+
+### 对我们系统的意义 ⭐⭐⭐⭐⭐
+
+| Google模式 | OpenClaw对应 | 差距/机会 |
+|------------|--------------|-----------|
+| Tool Wrapper | Skill动态加载 | ✅ 已具备 |
+| Generator | 文档生成Skill | ⚠️ 需统一模板 |
+| Reviewer | PR Review Skill | ⚠️ 清单外置化 |
+| Inversion | 需求收集流程 | ⚠️ 需强化门控 |
+| Pipeline | 多步骤任务 | ⚠️ checkpoint机制 |
+
+**Action**: 对照Google标准，完善我们的Skill设计规范
+
+**Relevant to: bob** — Skill设计模式对标  
+**Relevant to: tech-lead** — Skill Registry实现参考
+
+---
+
+## HB-2169 — Open SWE: Stripe/Ramp/Coinbase的趋同架构开源 (2026-03-18)
+**Source**: XHS @Ne0在硅谷 — "Stripe们偷偷建的AI编码军团开源了"  
+**开源框架**: Open SWE (LangChain创始人Harrison Chase发布)  
+**原文**: https://x.com/hwchase17/status/2033977192053612621  
+**TL;DR**: 🔥🔥🔥🔥🔥 **趋同进化** — 三家大厂独立开发，架构惊人一致
+
+### 三家的内部Agent
+
+| 公司 | Agent名称 | 特点 |
+|------|-----------|------|
+| Stripe | Minions | 独立接任务、写代码、提PR |
+| Ramp | Inspect | 同上 |
+| Coinbase | Cloudbot | 同上 |
+
+### 不约而同的5大架构选择
+
+1. **隔离沙盒** — 每个任务跑在独立云环境，权限严格隔离
+2. **精选工具集** — Stripe配了约**500个精选工具**
+3. **Slack优先** — 在工程师已有工作流接入，不学新工具
+4. **丰富启动上下文** — 执行前加载完整issue/Slack对话/PR
+5. **子Agent编排** — 复杂任务拆给专门子Agent
+
+### 与Cursor/Copilot的本质区别
+
+| 类型 | 模式 | 比喻 |
+|------|------|------|
+| Cursor/Copilot | 辅助工具 | 在编辑器给建议 |
+| Minions/Cloudbot | 自主工人 | Slack说句话，Agent自己写代码、跑测试、提PR |
+
+### 核心洞察 💡
+
+> **"500个精选工具"** — 约束反而让Agent更可靠，搜索空间变小了。就像新员工入职，你不会第一天给他所有系统权限。
+
+> **"真正壁垒不是框架代码，而是你的AGENTS.md里那些只有内部人知道的工程规范和业务逻辑"**
+
+### 对我们系统的意义 ⭐⭐⭐⭐⭐
+
+| Open SWE模式 | OpenClaw状态 |
+|--------------|--------------|
+| 沙盒隔离 | ⚠️ 需设计Skill执行沙箱 |
+| 500精选工具 | ✅ Skill Registry可承载 |
+| Slack优先 | ⚠️ 工作流集成方向 |
+| 丰富上下文 | ✅ heartbeat.md机制 |
+| 子Agent编排 | ✅ agents.call/send支持 |
+
+**战略验证**: 
+- 趋同进化证明我们的multi-agent架构方向正确
+- 约束优于自由（500工具 vs 无限工具）
+- AGENTS.md式的内部知识沉淀是真正的护城河
+
+**Relevant to: bob** — 架构战略验证  
+**Relevant to: tech-lead** — Open SWE框架研究 Priority-1
+
+---
+
 *Previous insights archived to library/insights-archive-*.md*
