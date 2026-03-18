@@ -9,11 +9,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If found → add specific task to workspace/todo.md.
   Latest (2026-03-18T01:40): Verified tech-lead's eval usage fix (commits 1671974, adc98bd). Both fixes correct: (1) re-evaluate zero-usage evals, (2) wire writeHeuristicEvaluations into startup. Also verified LiteLLM bypass commit (7c86665). Created consolidated deployment backlog finding: 28 commits pending, $59-88/day savings blocked on restart. Finding at `workspace/finding-restart-deployment-backlog.md`.
 
-- [x] **Cost outlier scan** — Last done: 2026-03-18T01:50
+- [x] **Cost outlier scan** — Last done: 2026-03-18T01:55
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-18T01:50): **Evaluator re-eval infinite loop discovered.** 10,584 evals modified in 12h but only 610 for new sessions — 9,974 old sessions re-evaluated (94% waste). Caused by commit 1671974: re-evaluates totalTokens=0 sessions but extractUsage() returns 0 again → infinite loop. Bob errors resolved (transient Gemini outage 20:44-20:56 UTC, 100% healthy since). Finding at `workspace/finding-eval-reeval-loop.md`. Sent to tech-lead (req:41afb34f).
+  Latest (2026-03-18T01:55): **Re-eval infinite loop reconfirmed with fresh data.** 13,896 total eval files, 10,747 modified in 24h (77%). 49/50 recent evals have totalTokens=0. Sessions range Feb 28-Mar 14 but 290 "created" in last 6h = phantom re-eval writes. Root cause: evaluator.ts line 752 re-evaluates zero-usage sessions that will always return zero. Finding updated at `workspace/finding-eval-reeval-loop.md`. Previously sent to tech-lead (req:41afb34f).
 
 - [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-17T22:30
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
