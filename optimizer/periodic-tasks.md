@@ -9,11 +9,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If found → add specific task to workspace/todo.md.
   Latest (2026-03-18T00:20): Reviewed 2 new Bob briefs: (1) **directive-soul-updates-p13-p108.md** — SOUL updates for May/Evaluator, not optimizer-relevant. (2) **brief-turn-budget.md** — proposes `[Ops: N/Max]` injection. **ALREADY DEPLOYED** at `manager-receipts.ts:327-331` (shows `[Ops: N/M]` when >50% consumed, ⚠️ at low threshold). Bob's brief is redundant. OpBudget visibility (item 3 from prior review) is resolved. **Critical finding**: all recent cron fixes (idle-skip, content-hash reload, timer fixes) are committed but NOT running — PID 7 hasn't been restarted. Single process restart unlocks ~$30-50/day savings. Finding at `workspace/finding-process-restart-needed.md`.
 
-- [x] **Cost outlier scan** — Last done: 2026-03-18T01:19
+- [x] **Cost outlier scan** — Last done: 2026-03-18T01:28
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-18T01:19): **ROOT CAUSE CONFIRMED for zero-usage bug.** Two issues: (1) Historical evals pre-date `extractUsage` fix (commit 6c44f0e). (2) Fix committed but process not restarted — 75 evals written AFTER fix still have zeros. Manual simulation confirms code logic works (extracts 732K tokens/$2.25 from transcript). Same blocker as all other pending fixes: PID 7 restart. Also need backfill to regenerate 10,382 stale heuristic evals. Finding updated at `workspace/finding-eval-usage-zero.md`.
+  Latest (2026-03-18T01:28): **Comprehensive 12h waste snapshot.** 588 sessions/12h across 12 agents. Coach is #1 cost: $91.61/12h ($183/day) at 4.5x overfire rate. Bob: 26% error rate, $42/12h. 60 zombie sessions. All 6 heartbeat agents overfiring 2.8-4.5x configured rate. Single PID 7 restart would cut 60-70% of waste ($100-150/day). Finding at `workspace/finding-system-waste-12h-snapshot.md`.
 
 - [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-17T22:30
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
