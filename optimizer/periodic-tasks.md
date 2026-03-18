@@ -9,11 +9,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If found → add specific task to workspace/todo.md.
   Latest (2026-03-18T05:04): **76.7% session interruption rate.** Only 2/30 sessions completed normally (6.7%). 23 interrupted, 5 errors. Productive work being lost — tech-lead avg 21.8 ops, optimizer 27.3 ops, amy 23 ops, all interrupted before finish(). Root cause: cron hot-reload broken, intervals stuck at old values. 42+ commits undeployed. Finding at `workspace/finding-interrupted-epidemic.md`.
 
-- [x] **Cost outlier scan** — Last done: 2026-03-18T03:55
+- [x] **Cost outlier scan** — Last done: 2026-03-18T05:13
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-18T03:55): **Consolidated restart-delay cost analysis.** 68 sessions today, 12% completion, 47% idle. 6 committed fixes undeployed for 1-4 hours. Estimated waste: $5.50-7.50/hour ($20-28 total since first fix). Finding at `workspace/finding-restart-cost-per-hour.md`.
+  Latest (2026-03-18T05:13): **Evaluator false positive bug found.** 72 sessions in last 2h. Coach 110 "wasted" calls, tech-lead 98 — but evaluator regex matches error strings in file *content* being analyzed, not actual tool failures. 100% of non-idle sessions falsely flagged as `multiple_tool_errors`. Coach session scored 0 productive / 22 wasted despite having 20 real tool calls. Sent fix to tech-lead (req:ce67a751). Finding at `workspace/finding-evaluator-false-positives.md`.
 
 - [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-18T04:15
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
