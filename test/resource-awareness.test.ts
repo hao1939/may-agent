@@ -67,8 +67,8 @@ describe("Resource Awareness (Agent-RRM)", () => {
 
   describe("Turn Budget Warning", () => {
     describe("TURN_BUDGET_WARNING_DEFAULT", () => {
-      it("is 40", () => {
-        expect(TURN_BUDGET_WARNING_DEFAULT).toBe(40);
+      it("is 55", () => {
+        expect(TURN_BUDGET_WARNING_DEFAULT).toBe(55);
       });
     });
 
@@ -132,7 +132,7 @@ describe("Resource Awareness (Agent-RRM)", () => {
         const defWithoutOverride = { turnBudgetWarningAt: undefined as number | undefined };
 
         expect(defWithOverride.turnBudgetWarningAt ?? TURN_BUDGET_WARNING_DEFAULT).toBe(20);
-        expect(defWithoutOverride.turnBudgetWarningAt ?? TURN_BUDGET_WARNING_DEFAULT).toBe(40);
+        expect(defWithoutOverride.turnBudgetWarningAt ?? TURN_BUDGET_WARNING_DEFAULT).toBe(55);
       });
     });
 
