@@ -12,7 +12,7 @@
  * Source: exp-056 via Coach → Optimizer → Tech Lead
  */
 
-import type { BeforeToolCallContext, BeforeToolCallResult } from "@mariozechner/pi-agent-core";
+import type { BeforeToolCallContext, BeforeToolCallResult } from "./compose-guards.js";
 
 /** Tool names that produce file artifacts. */
 const WRITE_TOOL_NAMES = new Set(["write", "edit"]);

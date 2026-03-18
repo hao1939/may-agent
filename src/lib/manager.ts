@@ -23,9 +23,10 @@ import {
   STUCK_TERMINATE_THRESHOLD,
 } from "./manager-utils.js";
 import type { RegisteredAgent, ActiveSession, RunOptions, SubagentManagerOptions } from "./manager-utils.js";
-import { createFinishGuard } from "./tools/finish-guard.js";
-import { createReadDedupGuard } from "./tools/read-dedup-guard.js";
-import { composeGuards } from "./tools/compose-guards.js";
+// TODO: Wire guards when pi-agent-core adds beforeToolCall hook to AgentOptions
+// import { createFinishGuard } from "./tools/finish-guard.js";
+// import { createReadDedupGuard } from "./tools/read-dedup-guard.js";
+// import { composeGuards } from "./tools/compose-guards.js";
 
 // Re-export everything from manager-utils so existing import paths don't break
 export {
@@ -975,7 +976,8 @@ export class SubagentManager {
       },
       transformContext: compactionTransform,
       getApiKey: def.apiKey ? () => def.apiKey : undefined,
-      beforeToolCall: composeGuards(createFinishGuard(), createReadDedupGuard()),
+      // TODO: Wire guards when pi-agent-core adds beforeToolCall hook to AgentOptions
+      // beforeToolCall: composeGuards(createFinishGuard(), createReadDedupGuard()),
     });
 
     const session: ActiveSession = {
@@ -1284,7 +1286,8 @@ export class SubagentManager {
       },
       transformContext: compactionTransform,
       getApiKey: def.apiKey ? () => def.apiKey : undefined,
-      beforeToolCall: composeGuards(createFinishGuard(), createReadDedupGuard()),
+      // TODO: Wire guards when pi-agent-core adds beforeToolCall hook to AgentOptions
+      // beforeToolCall: composeGuards(createFinishGuard(), createReadDedupGuard()),
     });
 
     // Repair broken message sequences (mid-tool-call crash).

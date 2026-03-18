@@ -13,7 +13,7 @@
  * Source: Optimizer cost finding 2026-03-18.
  */
 
-import type { BeforeToolCallContext, BeforeToolCallResult } from "@mariozechner/pi-agent-core";
+import type { BeforeToolCallContext, BeforeToolCallResult } from "./compose-guards.js";
 
 /** After this many reads of the same path, inject a warning into the response. */
 export const READ_WARN_THRESHOLD = 3;

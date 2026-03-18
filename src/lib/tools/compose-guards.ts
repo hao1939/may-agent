@@ -9,7 +9,23 @@
  * If no guard returns a result, returns undefined (allow the tool call).
  */
 
-import type { BeforeToolCallContext, BeforeToolCallResult } from "@mariozechner/pi-agent-core";
+// Local type definitions — the core package doesn't export these yet.
+// When @mariozechner/pi-agent-core adds beforeToolCall support, switch to its types.
+export interface BeforeToolCallContext {
+  toolCall: { name: string; id?: string };
+  args: Record<string, unknown>;
+  context: {
+    messages: Array<{
+      role: string;
+      content: unknown;
+    }>;
+  };
+}
+
+export interface BeforeToolCallResult {
+  block: boolean;
+  reason: string;
+}
 
 type BeforeToolCallHook = (
   context: BeforeToolCallContext,
