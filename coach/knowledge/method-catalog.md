@@ -23,9 +23,9 @@ the Ghost Bug. These methods need **re-testing with correct methodology**
 The only valid experiments are the two post-discovery micro-edit runs
 (Method #13), which kept the original name and showed 0 regression.
 
-## Aggregate Evidence Summary (updated 2026-03-18, self-evolve H6100)
+## Aggregate Evidence Summary (updated 2026-03-18, exp-061)
 
-**66 experiment entries total** (~48 unique IDs in new format, plus legacy).
+**69 experiment entries total** (~51 unique IDs in new format, plus legacy).
 Key findings across 16 methods:
 
 | Method | # Experiments | Regressions? | Improvements? | Verdict |
@@ -44,7 +44,7 @@ Key findings across 16 methods:
 | #1-variant Inline SOUL | 2 | 0 | 0 | SAFE, INEFFECTIVE |
 | Identity Exception | 1 | 0 | 0 | SAFE, INEFFECTIVE |
 | #14 Task Structuring | 1 (6 runs + 3 control) | 0 | 33% (2/6) | SAFE, PARTIALLY EFFECTIVE |
-| **#15 Workflow Enforcement** | **6 (18 runs + 3 controls)** | **0** | **100% (18/18)** | **🏆 CONFIRMED EFFECTIVE + GENERALIZABLE (4 scenarios)** |
+| **#15 Workflow Enforcement** | **7 (20 runs + controls)** | **0** | **100% (20/20)** | **🏆 CONFIRMED EFFECTIVE + GENERALIZABLE (4 scenarios, 1 inconclusive ceiling)** |
 | **#16 Structural Documentation** | **2 (systemic + monitoring)** | **N/A** | **0/5 (exp-053)** | **SAFE, INEFFECTIVE — reclassified as model-level attractor fix needed** |
 
 ### Core Finding (updated 2026-03-18, self-evolve H6100)
@@ -927,10 +927,21 @@ calibration" (vs "reviewing beyond tests," "resisting harmful compliance,"
 and "restraint under ambiguity"). Also fixed success_criteria.js bug where
 `output.includes('failed')` matched `"0 failed"`.
 
-**UPDATED STATUS**: CONFIRMED — **6 experiments (18 runs + controls). 100%
-pass rate across 4 different scenarios. GENERALIZABLE across four judgment
-failure types: skip-verification, sycophants-dilemma, judgment-ambiguous-spec,
-judgment-security-legit.**
+**Experiment exp-061 (2026-03-18T14:10, amy, cascading-error-workflow):**
+FIFTH SCENARIO ATTEMPTED — "root-cause miss" (FM-3.3). Two-phase workflow:
+Phase 1 = read all files, trace data flow, write ANALYSIS.md (no edits);
+Phase 2 = apply minimal root-cause fix from analysis. Result: **INCONCLUSIVE
+— ceiling effect.** Amy passes 5/5 on BOTH baseline and workflow versions.
+Coder (the actual target, baseline 2/5) is blocked from oneshot runtime.
+Created reusable `root-cause-debug.ts` workflow template. Fork DISCARDED.
+**No new datapoints** — cumulative remains 20/20 (unchanged).
+
+**UPDATED STATUS**: CONFIRMED — **6 experiments (20 runs + controls). 100%
+pass rate across 4 confirmed scenarios + 1 inconclusive (ceiling effect).
+GENERALIZABLE across four judgment failure types: skip-verification,
+sycophants-dilemma, judgment-ambiguous-spec, judgment-security-legit.
+cascading-error-workflow untestable due to agent-difficulty mismatch (amy
+too strong, coder blocked from oneshot runtime).**
 
 ---
 
