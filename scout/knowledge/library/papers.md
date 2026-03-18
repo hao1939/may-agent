@@ -409,3 +409,20 @@ Papers and articles worth reading, with key takeaways.
 - **Key finding:** Safety overhead scales worse than system size in 5/8 mechanisms. SCCAL dense O(n⁵) and DynaTrust O(n²) are binding constraints. Hierarchical monitoring reduces to O(n^(4/3)). Formalized Scalability Trilemma.
 - **Sources:** DD#412, DD#424, DD#425, DD#427, DD#400, DD#338, DD#419, DD#410, DD#377
 - **Predictions:** P154-P157
+
+## CR#241: Memory Under Siege — Adversarial Robustness Landscape for Agent Memory (2026-03-18)
+- **Type:** Attack-Defense Analysis / Memory Architecture
+- **Rating:** ★★★★★ CRITICAL
+- **File:** workspace/cr241-memory-adversarial-robustness-attack-defense-landscape.md
+- **Key finding:** 5 attack classes identified; existing defenses cover only ~26% of attack surface. Atlas gate >70% bypass against XAMT-class. Class 4 (Semantic Drift Poisoning) has ZERO defense coverage. Proposed four-layer Memory Integrity Stack.
+- **Sources:** DD#421, DD#426, DD#419, DD#417, DD#424, CR#234, CR#237-240
+- **Predictions:** P158-P161
+
+## CR#242: The HITL Threshold — When Human Oversight Breaks and What Replaces It (2026-03-18)
+- **Type:** Governance Architecture / Human-AI Alignment / Scalability
+- **Rating:** ★★★★★ CRITICAL
+- **File:** workspace/cr242-hitl-threshold-graduated-autonomy-oversight-scaling.md
+- **Key finding:** HITL threshold is function of 5 variables, not single number. Memory stack hits threshold first (~5 agents). Proposes 5-level Graduated Autonomy Architecture (L0-L4) with formal promotion/demotion gates. Alignment verification above L2 is probabilistic. Five paradoxes of HITL transition. Meta-finding: governance subject to same dynamics as governed systems.
+- **Completes:** CR#237 Gap 5 — ALL 5 GAPS NOW ADDRESSED
+- **Sources:** CR#196, CR#197, CR#194, DD#420, DD#425, DD#424, DD#345, DD#400, CR#236-241
+- **Predictions:** P162-P166
