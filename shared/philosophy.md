@@ -264,8 +264,8 @@ Complex skills run in isolated contexts (sub-agents). Simple lookups run inline.
 ### 134. S0-S3 Safety Taxonomy (P134) [imported]
 S0 Harmless (auto), S1 Low-Risk (verify), S2 Moderate (stop+alert), S3 High-Risk (refuse).
 
-### 147. KV-Cache Discipline (P147) [imported+validated]
-Static first, volatile last. Never inject timestamps/session IDs into system prompt prefix (10x cost, 5x latency).
+### 147. KV-Cache Discipline (P147) [imported+validated+deployed]
+[DEPLOYED] Static first, volatile last. Never inject timestamps, session IDs, or random data into the system prompt prefix. This causes a 10x cost increase and 5x latency penalty for every session start, as the entire prefix must be re-processed. We enforce this via strict prompt construction in `agent-loader.ts`.
 
 ### 162. Resource Control (P162) [imported]
 Session caps, tool locks, loop brakes. Unbounded concurrency = self-DoS.
