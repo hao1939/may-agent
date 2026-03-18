@@ -39,6 +39,8 @@ export type CronJobCallback = (entry: CronEntry, type: "js" | "heartbeat" | "det
 
 export class Cron {
   private timers = new Map<string, ReturnType<typeof setInterval>>();
+  /** Pending setTimeout handles from startEntry (not yet promoted to setInterval). */
+  private pendingStartTimers = new Map<string, ReturnType<typeof setTimeout>>();
   private entries: CronEntry[] = [];
   private started = false;
   private handlers = new Map<string, CronHandler>();
@@ -168,6 +170,8 @@ export class Cron {
   stop(): void {
     for (const timer of this.timers.values()) clearInterval(timer);
     this.timers.clear();
+    for (const timer of this.pendingStartTimers.values()) clearTimeout(timer);
+    this.pendingStartTimers.clear();
     this.started = false;
     this.unwatchConfig();
   }
@@ -187,9 +191,13 @@ export class Cron {
           const timer = this.timers.get(name);
           if (timer) clearInterval(timer);
           this.timers.delete(name);
+          const pending = this.pendingStartTimers.get(name);
+          if (pending) clearTimeout(pending);
+          this.pendingStartTimers.delete(name);
         }
       }
 
+      let changedCount = 0;
       for (const entry of this.entries) {
         const old = oldEntries.get(entry.name);
         const configChanged =
@@ -206,17 +214,28 @@ export class Cron {
           const timer = this.timers.get(entry.name);
           if (timer) clearInterval(timer);
           this.timers.delete(entry.name);
+          const pending = this.pendingStartTimers.get(entry.name);
+          if (pending) clearTimeout(pending);
+          this.pendingStartTimers.delete(entry.name);
           continue;
         }
 
         if (configChanged) {
+          changedCount++;
           // Config changed — restart this entry's timer
           const timer = this.timers.get(entry.name);
           if (timer) clearInterval(timer);
           this.timers.delete(entry.name);
+          const pending = this.pendingStartTimers.get(entry.name);
+          if (pending) clearTimeout(pending);
+          this.pendingStartTimers.delete(entry.name);
           this.startEntry(entry);
+          this.onError?.(`Reloaded "${entry.name}": intervalMs=${entry.intervalMs}${old ? ` (was ${old.intervalMs})` : " (new)"}`);
         }
         // Unchanged entries keep their existing timer — no reset
+      }
+      if (changedCount === 0) {
+        this.onError?.(`Config reload: no entries changed`);
       }
     }
   }
@@ -487,12 +506,14 @@ export class Cron {
     const delay = this.computeResumeDelay(entry, mode);
 
     const startTimer = setTimeout(() => {
+      this.pendingStartTimers.delete(entry.name);
       fire();
       const timer = setInterval(fire, entry.intervalMs);
       timer.unref();
       this.timers.set(entry.name, timer);
     }, delay);
     startTimer.unref();
+    this.pendingStartTimers.set(entry.name, startTimer);
     this.timers.set(entry.name, startTimer as unknown as ReturnType<typeof setInterval>);
   }
 
