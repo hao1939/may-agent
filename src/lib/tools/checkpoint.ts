@@ -125,6 +125,11 @@ export function readLatestCheckpointForAgent(
 /** Track step counters per session (in-memory, resets on process restart) */
 const stepCounters = new Map<string, number>();
 
+/** Clean up step counter when a session ends (prevents memory leak). */
+export function cleanupStepCounter(sessionId: string): void {
+  stepCounters.delete(sessionId);
+}
+
 // ── Tool factory ───────────────────────────────────────────────────────
 
 /**

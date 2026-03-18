@@ -180,7 +180,7 @@ export class ChatSession {
           }
           this.sendRetryDepth++;
           this.sessionId = null;
-          this.sendMessage(message);
+          this.sendMessage(message, source);
           return;
         }
         this.bus.emit({ type: "info", message: `[chat] Error: ${msg}` });
