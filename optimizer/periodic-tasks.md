@@ -9,11 +9,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If found → add specific task to workspace/todo.md.
   Latest (2026-03-18T00:20): Reviewed 2 new Bob briefs: (1) **directive-soul-updates-p13-p108.md** — SOUL updates for May/Evaluator, not optimizer-relevant. (2) **brief-turn-budget.md** — proposes `[Ops: N/Max]` injection. **ALREADY DEPLOYED** at `manager-receipts.ts:327-331` (shows `[Ops: N/M]` when >50% consumed, ⚠️ at low threshold). Bob's brief is redundant. OpBudget visibility (item 3 from prior review) is resolved. **Critical finding**: all recent cron fixes (idle-skip, content-hash reload, timer fixes) are committed but NOT running — PID 7 hasn't been restarted. Single process restart unlocks ~$30-50/day savings. Finding at `workspace/finding-process-restart-needed.md`.
 
-- [x] **Cost outlier scan** — Last done: 2026-03-18T00:05
+- [x] **Cost outlier scan** — Last done: 2026-03-18T00:25
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-18T00:05): **CRITICAL: Cron config reload STILL broken after 73+ minutes.** Optimizer sessions confirmed firing every ~9min (old 540s interval) despite cron.json showing 1800s since 22:50. 39 sessions/hour observed (expected ~20). Neither watchFile nor poll-based config detection is triggering reload(). Updated finding at `workspace/finding-cron-reload-broken.md` with new evidence, root cause analysis (likely container filesystem caching), and 3 fix options. Bob Gemini API errors compound waste. Sent to tech-lead (req:dfd10fcd). **Immediate workaround: restart process.**
+  Latest (2026-03-18T00:25): **Cron fix verified committed (440bc6a, f8a481c) but NOT deployed.** PID 7 still running since Mar17 14:29. Optimizer still firing at 9min gaps (old 540s). Session rate: 59.8/hr (last 6h) — at $0.80/session = ~$48/hr = ~$1,152/day. Optimizer alone: 6.5/hr (should be 2/hr). Process restart is the single highest-impact action remaining. Sent follow-up to tech-lead (req:5f37ae3c).
 
 - [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-17T22:30
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
