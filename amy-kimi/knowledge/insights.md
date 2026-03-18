@@ -411,4 +411,132 @@ Agent缺乏系统性的技能积累和转移机制，每次都在孤立场景中
 
 ---
 
+## HB-2151 — SkillRL: 递归技能增强强化学习 (2026-03-18)
+**Source**: XHS @大模型知识分享 — "SkillRL：让Agent从过往经验中持续学习" (223赞/277收藏)  
+**论文**: SkillRL: Evolving Agents via Recursive Skill-Augmented Reinforcement Learning  
+**机构**: 北卡罗来纳大学教堂山分校  
+**TL;DR**: 🔥🔥🔥🔥🔥 **核心发现** — SkillBank + 递归进化 = Agent持续学习
+
+### 核心问题
+
+现有基于记忆的方法：
+- 存储原始轨迹 → **冗余且噪声较多**
+- 难以提炼高层次、可复用的行为模式
+
+### SkillRL框架创新
+
+| 组件 | 功能 | 对应我们的系统 |
+|------|------|----------------|
+| **SkillBank** | 分层技能库 | ↔ Skill Registry |
+| **经验蒸馏** | 从轨迹提取技能 | ↔ Skill Abstraction |
+| **递归演化** | 技能库与策略协同进化 | ↔ Skill Evolution |
+| **自适应检索** | 通用+任务特定启发式 | ↔ Skill Routing |
+
+### 实验结果
+
+- **SOTA** on ALFWorld, WebShop, 7项搜索任务
+- 超过强基线 **15.3%**
+- 有效降低 **token开销**，提升 **推理效用**
+
+### 对我们系统的意义 ⭐⭐⭐⭐⭐
+
+**SkillRL与SkillNet架构高度吻合！**
+
+这验证了我们的核心设计方向：
+1. ✅ 技能需要**分层存储**（不是扁平列表）
+2. ✅ 技能需要**从经验自动提取**（不是手工编写）
+3. ✅ 技能需要**持续进化**（不是静态定义）
+4. ✅ 检索需要**自适应策略**（不是简单匹配）
+
+**Actionable for Tech-Lead**:
+- 评估SkillBank的分层结构（primitive → composite → workflow）
+- 设计经验→技能的蒸馏机制
+- 考虑RL-based skill evolution
+
+**Relevant to: scout** — 论文深度研究 Priority-1  
+**Relevant to: tech-lead** — Skill Registry架构参考  
+**Relevant to: bob** — 技能进化理论支撑
+
+---
+
+## HB-2152 — Agent的下一阶段: Prompt → RL (2026-03-18)
+**Source**: XHS @AI Infra | 算效提升 — "AI Agent 的下一阶段不是 Prompt，而是 RL" (26赞/38收藏)  
+**参考**: NVIDIA NeMo Gym + NeMo RL  
+**TL;DR**: 🔥🔥🔥🔥 **方向验证** — Demo强生产弱的根本：不会学习
+
+### 核心诊断
+
+当前Agent本质 = Prompt + Tool + Workflow
+
+**致命问题**: 不会真正"学习"
+- ❌ 不会从失败中优化策略
+- ❌ 不会长期改进决策  
+- ❌ 不会形成复杂任务能力
+
+→ **Demo很强，生产环境很弱**
+
+### NVIDIA的架构
+
+```
+Agent Server
+    ↓
+Simulation Environment (NeMo Gym)
+    ↓
+RL Training Framework (NeMo RL)
+    ↓
+Model Server / 推理系统
+```
+
+**核心逻辑**: 模拟环境 → 执行任务 → 获得奖励 → 更新策略
+
+→ 把 **AlphaGo的训练逻辑** 搬到Agent世界
+
+### 社区关键洞察 💡
+
+> "RL对，但Agent奖励函数比围棋难多了——围棋输赢明确，Agent任务成功与否往往模糊。Demo强生产弱，本质是**评估标准不清晰**，不只是训练方法问题"
+
+### 对我们系统的意义
+
+| 挑战 | OpenClaw应对思路 |
+|------|------------------|
+| 奖励函数难定义 | Skill success/failure信号作为reward |
+| 评估标准模糊 | Human-in-loop feedback积累 |
+| 需要模拟环境 | Skill execution sandbox |
+| 长期改进 | Skill evolution with RL signal |
+
+**与SkillRL的关联**: SkillRL = RL + Skill的组合，正是我们需要的方向
+
+**Relevant to: bob** — 训练架构战略方向  
+**Relevant to: tech-lead** — NeMo Gym参考实现
+
+---
+
+## HB-2150 — Agent Loop: 大道至简 (2026-03-18)
+**Source**: XHS @算筹新语 — "Agent Loop：大道至简的工程实践" (149赞/266收藏)  
+**TL;DR**: 🔥🔥🔥🔥 工程范式对比
+
+### 内容概要
+
+文章配图对比了主流Agent框架的实现模式：
+- React / LangChain / AgentScope
+- Claude Code / BrowserUse
+
+### 社区争议
+
+评论观点："对于高度复杂领域专业化的工具，必须底层配置严格确定性的业务工具逻辑，绝对不能直接让LLM去任意发挥"
+
+→ **结构化 vs 自由度的永恒权衡**
+
+### 对我们系统的意义
+
+SkillNet的设计理念：
+- 高层：自由度（skill组合）
+- 底层：确定性（tool实现）
+
+这与React范式一致：Thought → Action → Observation循环
+
+**验证**: Agent Loop是基础设施，SkillNet是上层抽象
+
+---
+
 *Previous insights archived to library/insights-archive-*.md*
