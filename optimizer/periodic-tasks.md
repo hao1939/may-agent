@@ -3,11 +3,11 @@
 Track when each task was last done. Pick the most overdue one during heartbeat step 3.
 
 ## Per heartbeat (do one, rotate)
-- [x] **Analysis review** — Last done: 2026-03-18T06:03
+- [x] **Analysis review** — Last done: 2026-03-18T06:07
   Read agents/bob/workspace/analysis.md or recent Bob synthesis outputs.
   Any findings that need optimization work? Cost issues? Efficiency problems?
   If found → add specific task to workspace/todo.md.
-  Latest (2026-03-18T06:03): **Heuristic evaluator verdict too lenient.** Sessions with 0 productive / 42 wasted calls rated "acceptable" due to penalty cap (-1/category from base 3). Waste ratio not considered in verdict logic. Sent fix to tech-lead (req:e47aa0fa). Finding at `workspace/finding-heuristic-verdict-too-lenient.md`.
+  Latest (2026-03-18T06:07): **finish() status overwritten by interrupt.** 77/100 recent sessions call finish() but are marked "interrupted" in meta.json. autoClose interrupt handler overwrites status after finish() completes. Breaks all completion tracking, evaluations, and agent metrics. Sent to tech-lead (req:f253e958). Finding at `workspace/finding-finish-status-overwritten.md`.
 
 - [x] **Cost outlier scan** — Last done: 2026-03-18T05:31
   Check recent evaluations — any sessions > $2.00?
