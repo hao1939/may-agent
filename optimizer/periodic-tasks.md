@@ -15,11 +15,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If pattern found → design fix, add to workspace/todo.md.
   Latest (2026-03-18T01:55): **Re-eval infinite loop reconfirmed with fresh data.** 13,896 total eval files, 10,747 modified in 24h (77%). 49/50 recent evals have totalTokens=0. Sessions range Feb 28-Mar 14 but 290 "created" in last 6h = phantom re-eval writes. Root cause: evaluator.ts line 752 re-evaluates zero-usage sessions that will always return zero. Finding updated at `workspace/finding-eval-reeval-loop.md`. Previously sent to tech-lead (req:41afb34f).
 
-- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-17T22:30
+- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-18T02:04
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
   Could it be replaced with a JS handler? (See cron-graduation-process.md Stage 3.)
   If found → write proposal in workspace/improvement-proposals.md.
-  Latest (2026-03-17T22:30): **Major finding: Heartbeat interval mismatch.** 4 agents (bob 660s, optimizer 540s, coach 720s, tech-lead 780s) have intervalMs 3-4x shorter than their "30min" descriptions. 344 heartbeats/day = $27.52/day waste. Also: idle-skip code (848ebf1) deployed but server not restarted — 0 idle skips in 24h. Combined fix potential: ~$24/day = $720/month savings. Brief at `workspace/brief-heartbeat-waste-v2.md`, sent to tech-lead (req:127a5dc2). Prior: Tool Efficiency Audit at `workspace/brief-tool-efficiency-audit.md`.
+  Latest (2026-03-18T02:04): **Major finding: Bob heartbeat template loop bug.** Bob's heartbeat.md has 4 stale tasks hardcoded in C40 promise template (lines 14-18). Bob loops on same 4 promises every session, 37% failure rate, 35% sessions <30s no-ops. 52 sessions in 6h with 19 failures. Root cause: template should show format, not specific tasks. Sent to Coach (req:24c039ee). Finding at `workspace/finding-bob-heartbeat-loop.md`. Prior: Heartbeat interval mismatch finding.
 
 - [x] **Handler health check** — Last done: 2026-03-18T00:07
   Review existing JS handlers in agents/may/handlers/.
