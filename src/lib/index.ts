@@ -69,6 +69,7 @@ export {
   formatFailureChains,
   getAgentScoreSummary,
   writeSkippedEvaluations,
+  writeHeuristicEvaluations,
 } from "./evaluator.js";
 export type {
   EvaluateTaskOptions,

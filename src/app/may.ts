@@ -4,7 +4,7 @@ import { resolve, dirname } from "node:path";
 import { existsSync, readFileSync, writeFileSync, appendFileSync, unlinkSync, mkdirSync } from "node:fs";
 import { getModel } from "@mariozechner/pi-ai";
 import type { ModelWithApiKey } from "../lib/types.js";
-import { SubagentManager, evaluateTask, writeSkippedEvaluations, classifyError } from "../lib/index.js";
+import { SubagentManager, evaluateTask, writeSkippedEvaluations, writeHeuristicEvaluations, classifyError } from "../lib/index.js";
 import { EventBus } from "./event-bus.js";
 import { ChatSession } from "./chat-session.js";
 import { attachConsoleUI } from "./ui/console.js";
@@ -314,6 +314,14 @@ writeSkippedEvaluations(PERSIST_DIR).then((skipped) => {
     bus.emit({
       type: "info",
       message: `[eval] Wrote ${skipped} skipped evaluation(s) (meta-agents/no-transcript) — no LLM needed`,
+    });
+});
+
+writeHeuristicEvaluations(PERSIST_DIR).then((written) => {
+  if (written > 0)
+    bus.emit({
+      type: "info",
+      message: `[eval] Wrote ${written} heuristic evaluation(s) (deterministic scoring from transcripts)`,
     });
 });
 
