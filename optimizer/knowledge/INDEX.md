@@ -37,6 +37,13 @@ When diagnosing failures, use standardized MAST codes from `agents/shared/knowle
 - **FC codes** (Failure Cause): *why* it went wrong (e.g., FC-5.1 Error Blindness, FC-1.2 Bad Decomposition).
 Use these codes in your analysis reports to drive structural fixes.
 
+## Optimizer Knowledge Files
+- `knowledge/system-state.md` — cost metrics, compaction, prompt caching, pre-checks, LLM-to-JS status
+- `knowledge/failure-patterns.md` — top failure modes, skill coverage map, skill effectiveness data
+- `knowledge/codebase.md` — key source files and evaluation data structure
+- `knowledge/coaching.md` — corrections from Coach (periodic tasks path, tool usage, heartbeat completion)
+- `knowledge/lessons.md` — feedback from evaluator sessions
+
 ## Available References
 - `agents/shared/philosophy.md` — full design philosophy
 - `agents/shared/knowledge/mast-taxonomy.md` — MAST failure taxonomy (FM + FC codes)

@@ -160,3 +160,25 @@ Always clean up. Don't leave dead forks.
     into LESSONS.md/SOUL.md (no file reference hop), (b) design scenarios
     without count-anchoring ("fix all bugs" not "fix exactly N"), (c)
     structural/workflow enforcement if text remains ineffective.
+
+11. **Workflow enforcement (#15) is the breakthrough method.** 20/20 (100%)
+    across 4 scenarios. This is the ONLY method that reliably changes
+    judgment behavior. But it requires architect/infra coordination to
+    deploy operationally — the gym uses `agents.call()` to split phases,
+    which needs workflow orchestration in production. Production deployment
+    is the current highest priority.
+
+12. **Growth cycles for cross-cutting patterns: classify root cause first.**
+    When a cron trigger says "agent X has N errors of type Y," always read
+    the actual error sessions before starting a growth cycle. Multiple
+    FM codes may share a single root cause (e.g., coder FM-5.3: 1/3 was
+    self-edit refusal, 2/3 were MISAPPLIED_REFUSAL = same as FM-2.1).
+    Addressing the root cause is more efficient than treating each FM code
+    separately.
+
+13. **Text coaching has 0% success rate across ALL contexts now.** Updated
+    from "0/13 judgment" to "0/18 total" (adding 0/5 procedural via Bob
+    FM-2.6 exp-053). C39 (optimizer empty-args) remains the sole exception —
+    likely because it was a tool-calling pattern, not a judgment/behavioral
+    pattern. For ANY behavioral fix, skip text methods and go directly to
+    workflow enforcement or infrastructure guards.

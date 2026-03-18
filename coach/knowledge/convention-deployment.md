@@ -47,20 +47,31 @@ Major categories:
 | verbose-tools | Yes | All | P2.3 | No — automatic (tool returns preview) |
 | stuck-detection | Yes | All | P3.3 | No — automatic (system detects) |
 
-## Metrics (as of 2026-03-17T22:20)
+## Metrics (as of 2026-03-18T07:30)
 
 - Total evaluations: 2738+
 - Error logs: 256 total (stable since March 15)
 - Test suite: 1441 pass / 0 fail
 - All 9 agents graduated, zero behavioral regressions
-- Gym experiments: 57 total, 0 text-based promotions, 16/16 workflow enforcement passes
+- Gym experiments: **59 total**, 0 text-based promotions, **20/20 workflow enforcement passes**
 - Key findings:
   - **Ghost Bug (resolved)**: Sprint 1-2 regressions were caused by agent.json name
     changes in lab forks, NOT by text edits. Text is SAFE but INEFFECTIVE.
   - **Text coaching**: 13 clean experiments across 7 text methods = 0 behavioral
-    improvements on judgment scenarios. Text coaching is a closed path for judgment.
-  - **Workflow Enforcement (#15)**: 100% pass rate (16/16) across 3 scenarios
-    (skip-verification, sycophants-dilemma, judgment-ambiguous-spec). Only method
-    proven effective. See method-catalog.md #15.
+    improvements on judgment scenarios. **0/5 on procedural scenarios too** (Bob FM-2.6).
+    C39 (optimizer empty-args) is the ONLY confirmed text-coaching success.
+  - **Workflow Enforcement (#15)**: 100% pass rate (**20/20**) across **4 scenarios**
+    (skip-verification, sycophants-dilemma, judgment-ambiguous-spec, judgment-security-legit).
+    Only method proven effective. See method-catalog.md #15.
   - **Authority Hierarchy** (experimentally confirmed):
     Mechanical enforcement (100%) > Task instructions (33%) > System prompt (0%) > Agent files (0%)
+
+## Active Monitoring (post-deployment)
+
+| Deployment | Agent | Date | Expected | Check After |
+|---|---|---|---|---|
+| exp-051: LESSONS entry for FM-3.3 (verification claims) | Bob | 2026-03-17 | LOW (text coaching) | 5+ sessions |
+| exp-056: LESSONS entries for FM-2.2 + FM-3.1 | Bob | 2026-03-18 | LOW (text coaching, 0% track record) | 5+ sessions |
+| Amy READ DISCIPLINE cron injection | Amy | 2026-03-18 | MEDIUM (cron-level = mechanical) | 3+ sessions |
+| Infra guard: agents.call("checkpoint") rejection | Bob | BUILT not deployed | HIGH (mechanical) | Needs restart |
+| finish() evidence guard proposal | All | PROPOSED | HIGH (mechanical) | Needs optimizer/bob coordination |

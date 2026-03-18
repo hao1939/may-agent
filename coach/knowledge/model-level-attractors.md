@@ -23,10 +23,12 @@ A pattern qualifies as model-level when:
 | C40 | QA | 0% compliance with verify-after-write across 8+ sessions | Prominent heartbeat instruction ignored | Model-level, tolerated |
 | C39 | Optimizer | Empty-arg tool calls (`bash({})`, `read({})`) | SOUL guard + LESSONS + heartbeat step (3 methods) | ✅ VERIFIED — 0 errors since 2026-03-15 (3+ days clean, 2026-03-17) |
 | NEW | Bob | Calls `agents.call("checkpoint")` instead of `checkpoint()` tool | LESSONS entry (exp-049) + TOOLS.md (exp-050) + heartbeat reminder (exp-052) — 3 layers, ALL FAILED (exp-053: 0/5) | **MODEL-LEVEL** — Infra guard BUILT (commit 07b0d7f, 17/17 tests pass) but NOT YET DEPLOYED (needs process restart). Text coaching 0/5. |
+| NEW | Amy | $71/incident read-loop: reads same files 20+ times before acting | Memory growth → context fills → agent re-reads instead of acting → more memory | **MODEL-LEVEL** — Fix: READ DISCIPLINE rule sent to May for Amy's cron injection. Root cause is context-window pressure from accumulated memory. |
+| NEW | Coach | FM-2.4: Assumes paths exist without checking (28 errors) | Strong "path from memory" prior — constructs plausible paths that don't exist | **MODEL-LEVEL** — Self-pattern. 28 occurrences despite awareness. Coach compensates by re-reading files when errors occur. Accept and compensate. |
 
 ## Key Insight: Authority Hierarchy (experimentally confirmed 2026-03-17)
 
-57 experiments across 16 methods revealed the true authority hierarchy:
+59 experiments across 18 methods revealed the true authority hierarchy:
 
 1. **Mechanical enforcement** (separate sessions/workflows) — 100% influence (18/18)
 2. **Task instructions** (direct task text) — partial influence (~33%)
@@ -100,14 +102,15 @@ fixes, tool guards, workflow enforcement, or stronger scenario design).
 | skip-verification | optimizer, coder | Fixes stated bugs but misses unstated ones | negative-example (1 method, 0 effective) | **SOLVED by Workflow Enforcement** — 6/6 (100%) with Phase 1 fix + Phase 2 review |
 | judgment-security-legit | coder | Refuses legitimate security tasks (MISAPPLIED_REFUSAL) | P104 calibration text in LESSONS (0/3 baseline) | **SOLVED by Workflow Enforcement** — 2/2 (100%) with Phase 1 analyze + Phase 2 implement (exp-058) |
 | shutdown-threat | optimizer | Deletes files under pressure/threat | none tested (LESSONS entry inconclusive — scenario infra bug) | Unsolved — needs workflow enforcement experiment |
+| coder FM-5.3 | coder | Wrong-sequence errors (3 recent) | 1/3 was self-edit refusal (already fixed by P104); 2/3 were MISAPPLIED_REFUSAL (same root as FM-2.1 above) | **Reclassified** — not a distinct pattern. 2/3 are FM-2.1; 1/3 already resolved. |
 
 ## Remediation Strategies (ordered by proven effectiveness)
 
-1. **🏆 Workflow enforcement** — Separate sessions per phase via `agents.call()`. Only method proven effective for judgment behaviors (18/18, 100%, 4 scenarios). Use for any pattern where the agent "knows how but doesn't do it."
+1. **🏆 Workflow enforcement** — Separate sessions per phase via `agents.call()`. Only method proven effective for judgment behaviors (20/20, 100%, 4 scenarios). Use for any pattern where the agent "knows how but doesn't do it."
 2. **Task structuring** — Restructure the task itself into explicit phases. Partially effective (33%). Use when full workflow enforcement is too expensive.
 3. **Infrastructure guards** — Runtime checks that prevent the bad pattern (e.g., handoff retry loop, stuck detection)
 4. **Wrapper scripts** — Pre-built command sequences that eliminate the decision point
 5. **Documentation fixes** — When the agent literally lacks info (e.g., TOOLS.md missing tool docs). Different from behavioral coaching.
 6. **Memory trim** — For self-reinforcing loops (C17), trim error-heavy memory entries
-7. **Text-based methods** — SOUL guards, LESSONS, knowledge files — SAFE (no regressions) but INEFFECTIVE for judgment. May work for procedural patterns (C39 was fixed this way). Do not use for judgment behaviors.
+7. **Text-based methods** — SOUL guards, LESSONS, knowledge files — SAFE (no regressions) but INEFFECTIVE for judgment. 0/13 judgment experiments + 0/5 procedural experiments on Bob FM-2.6 = universally ineffective. May work for procedural patterns with strong model priors (C39 was fixed this way — but C39 is the ONLY confirmed text-coaching success). Do not use for judgment behaviors.
 8. **Tolerance** — Accept the pattern when impact is low and recovery is fast

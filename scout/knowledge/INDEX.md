@@ -19,6 +19,12 @@ Bob is Architect (Gemini). Coach trains (Opus).
 ## Project Layout
 - `agents/scout/knowledge/library/` — your research archives
 
+## Knowledge Files
+- `consolidated-2026-03-15.md` — DD#1-221, CR#1-72, GUS v1-v5 (baseline)
+- `consolidated-2026-03-18.md` — DD#222-427, CR#73-237, Seven Laws, W12 capstone (current)
+- `coaching.md` — patterns from OpenClaw system
+- `lessons.md` — evaluator feedback
+
 ## Available References
 - `agents/shared/philosophy.md` — full design philosophy
 - `agents/shared/best-practices.md` — research standards

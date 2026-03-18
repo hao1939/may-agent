@@ -7,9 +7,11 @@ Scout researches (Opus). Optimizer makes agents cheaper/more robust.
 
 ## Core Loop
 - **Growth Cycle**: Fork → Train → Gym Test → Promote/Discard.
-- **Method Catalog**: 8+ methods with evidence status. Consult before acting.
+- **Method Catalog**: 18+ methods with evidence status. Consult before acting.
 - **Gym Runner**: `scripts/gym-run.sh` — automated scoring, `--lab` for forks.
 - **Training Sprint**: Batch 3-5 experiments when you have multiple targets.
+- **🏆 Workflow Enforcement (#15)**: 20/20 (100%) across 4 scenarios. Skip text methods — go directly to workflow enforcement or infra guards for behavioral fixes.
+- **Text coaching is closed**: 0/18 total (0/13 judgment + 0/5 procedural). C39 is the sole exception. Don't waste experiments on SOUL/LESSONS/heartbeat text for behavioral patterns.
 
 ## Key Files
 - `knowledge/method-catalog.md` — improvement methods with evidence
