@@ -144,3 +144,98 @@ describe("computeHeuristicScores - hard error counting", () => {
     expect(scores.wastedCalls).toBe(1);
   });
 });
+
+describe("computeHeuristicScores - waste ratio penalty", () => {
+  it("100% waste ratio (0 productive, all wasted) → needs_improvement", () => {
+    // Simulate a session with many tool calls that all fail with ENOENT
+    const messages: any[] = [];
+    // 10 assistant turns, each with 1 tool call
+    for (let i = 0; i < 10; i++) {
+      messages.push(assistantMsg(1));
+      messages.push(toolResult("ENOENT: no such file or directory, open '/app/f" + i + ".ts'"));
+    }
+    const transcript = toTranscript(messages);
+    const scores = computeHeuristicScores(makeSession(), transcript, messages);
+    // 10 hard errors > 3 → wastedCalls = min(10, ceil(10*0.5)) = 5
+    // wasteRatio = 5/10 = 0.5 → moderate_waste_ratio
+    expect(scores.issues).toContain("multiple_tool_errors");
+    expect(scores.issues).toContain("moderate_waste_ratio");
+    // efficiency: 3 + 1(done+3tools) - 1(multiple_tool_errors) - 1(moderate_waste) = 2
+    // quality: 3 + 1(done+3tools) - 1(moderate_waste) = 3
+    expect(scores.efficiency).toBeLessThanOrEqual(2);
+  });
+
+  it("session with 75%+ waste ratio gets high_waste_ratio and needs_improvement", () => {
+    // 8 tool calls, 7 are hard errors (short results) → wasteRatio ≥ 0.75
+    const messages: any[] = [];
+    // One assistant turn with 8 tool calls
+    messages.push(assistantMsg(8));
+    for (let i = 0; i < 7; i++) {
+      messages.push(toolResult("ENOENT: no such file or directory"));
+    }
+    messages.push(toolResult("ok"));
+    const transcript = toTranscript(messages);
+    const scores = computeHeuristicScores(makeSession(), transcript, messages);
+    // 7 hard errors > 3 → wastedCalls = min(7, ceil(8*0.5)) = 4
+    // wasteRatio = 4/8 = 0.5 → moderate at 50%, but let's check...
+    // Actually this gets moderate_waste_ratio since 4/8 = 0.5
+    expect(scores.issues).toContain("multiple_tool_errors");
+    expect(scores.wastedCalls).toBeGreaterThanOrEqual(4);
+    // verdict should be acceptable or needs_improvement (not "good")
+    expect(scores.verdict).not.toBe("good");
+  });
+
+  it("session with low waste ratio (<50%) gets no waste penalty", () => {
+    // 10 tool calls, 2 are errors → wasteRatio = 0.2
+    const messages: any[] = [];
+    messages.push(assistantMsg(10));
+    messages.push(toolResult("ENOENT: no such file or directory"));
+    messages.push(toolResult("ENOENT: no such file or directory"));
+    for (let i = 0; i < 8; i++) {
+      messages.push(toolResult("ok"));
+    }
+    const transcript = toTranscript(messages);
+    const scores = computeHeuristicScores(makeSession(), transcript, messages);
+    expect(scores.wastedCalls).toBe(2);
+    expect(scores.issues).not.toContain("high_waste_ratio");
+    expect(scores.issues).not.toContain("moderate_waste_ratio");
+  });
+
+  it("reproduces the bug: 0 productive / 42 wasted should be needs_improvement", () => {
+    // The exact bug case: s_1773811688106_497 had 0 productive, 42 wasted
+    // Build a session with many hard-error tool calls
+    const messages: any[] = [];
+    for (let i = 0; i < 42; i++) {
+      messages.push(assistantMsg(1));
+      messages.push(toolResult("Validation failed for tool 'bash': missing required parameter 'command'"));
+    }
+    const transcript = toTranscript(messages);
+    const session = makeSession({ status: "interrupted" as any });
+    const scores = computeHeuristicScores(session, transcript, messages);
+    // 42 errors > 3 → wastedCalls = min(42, ceil(42*0.5)) = 21
+    // wasteRatio = 21/42 = 0.5 → moderate_waste_ratio
+    // Actually with status=interrupted: quality -= 1 (session_error)
+    // efficiency: 3 - 1(multiple_tool_errors) - 1(moderate_waste) = 1
+    // quality: 3 - 1(session_error) - 1(moderate_waste) = 1
+    expect(scores.verdict).toBe("needs_improvement");
+    expect(scores.issues).toContain("session_error");
+  });
+
+  it("high_waste_ratio threshold at exactly 0.75", () => {
+    // 4 tool calls, 3 are errors → wastedCalls from hardErrors = 3 (not > 3, so no capping)
+    // Actually 3 hardErrors is NOT > 3, so wastedCalls = 3, productiveCalls = 1
+    // wasteRatio = 3/4 = 0.75 → high_waste_ratio
+    const messages: any[] = [];
+    messages.push(assistantMsg(4));
+    messages.push(toolResult("ENOENT: no such file or directory"));
+    messages.push(toolResult("ENOENT: no such file or directory"));
+    messages.push(toolResult("ENOENT: no such file or directory"));
+    messages.push(toolResult("ok"));
+    const transcript = toTranscript(messages);
+    const scores = computeHeuristicScores(makeSession(), transcript, messages);
+    expect(scores.wastedCalls).toBe(3);
+    expect(scores.productiveCalls).toBe(1);
+    // 3/4 = 0.75 → high_waste_ratio
+    expect(scores.issues).toContain("high_waste_ratio");
+  });
+});

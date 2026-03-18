@@ -928,6 +928,22 @@ export function computeHeuristicScores(session: PersistedSession, transcript: st
 
   productiveCalls = Math.max(0, totalToolCalls - wastedCalls);
 
+  // 7. Waste ratio penalty — penalize sessions where most tool calls are wasted.
+  // Without this, per-category penalties cap at -1 each, so a session with 100%
+  // waste but base 3 scores still gets "acceptable" (3-1=2 >= threshold).
+  if (totalToolCalls > 0) {
+    const wasteRatio = wastedCalls / totalToolCalls;
+    if (wasteRatio >= 0.75) {
+      efficiency -= 2;
+      quality -= 2;
+      issues.push("high_waste_ratio");
+    } else if (wasteRatio >= 0.5) {
+      efficiency -= 1;
+      quality -= 1;
+      issues.push("moderate_waste_ratio");
+    }
+  }
+
   // Clamp scores to 1-5 range
   efficiency = Math.max(1, Math.min(5, efficiency));
   quality = Math.max(1, Math.min(5, quality));
