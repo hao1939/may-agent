@@ -132,10 +132,10 @@ Use **MAST codes** when describing errors so downstream analysis can aggregate p
 
 **Source of truth**: `agents/shared/knowledge/mast-taxonomy.md`
 
-### Failure Modes (FM)
-- **FM-1.x (Repetitive)**: FM-1.1 Action Repetition, FM-1.2 Output Repetition, FM-1.3 Step Repetition (Looping).
-- **FM-2.x (Tool Misuse)**: FM-2.1 Wrong Tool, FM-2.2 No Clarification, FM-2.3 Derailment, FM-2.4 Hallucinated Tool, FM-2.5 Malformed Call, FM-2.6 Reasoning-Action Mismatch.
-- **FM-3.x (Premature Termination / Verification)**: FM-3.1 Early Stop, FM-3.2 Missing Verification, FM-3.3 Incorrect Verification.
+### Failure Modes (FM) — with Sub-Labels
+- **FM-1.x (Repetitive)**: FM-1.1 Action Repetition [PARTIAL_COMPLETION], FM-1.2 Output Repetition [SCOPE_CREEP], FM-1.3 Step Repetition [LOOPING], FM-1.4 Hallucination [HALLUCINATION].
+- **FM-2.x (Tool Misuse)**: FM-2.1 Wrong Tool [PROMISE_DELIVERY_GAP, WRONG_PATH], FM-2.2 No Clarification [EVIDENCE_GAP, MISSING_TRANSCRIPT], FM-2.3 Derailment [RECOVERY_GAP], FM-2.4 Hallucinated Tool [TRUNCATED_WRITE_RISK, OVERCLAIM, NON_DELIVERY], FM-2.5 Malformed Call [CONTEXT_WINDOW_OVERFLOW], FM-2.6 Reasoning-Action Mismatch [TOOL_INTERFACE_MISUSE, PROMISE_REPORT_MISMATCH].
+- **FM-3.x (Premature Termination / Verification)**: FM-3.1 Early Stop [NON_DELIVERY, WRONG_TARGET, CONTEXT_MISALIGNMENT], FM-3.2 Missing Verification [INCOMPLETE_OUTPUT], FM-3.3 Incorrect Verification [VERIFICATION_FAILURE].
 - **FM-4.x (Lazy / Shortcut)**: FM-4.1 Shallow Implementation, FM-4.2 Delegating to User, FM-4.3 Placeholder Output, FM-4.4 Copy-Paste.
 - **FM-5.x (Wrong Sequence)**: FM-5.1 Dependency Violation, FM-5.2 Skipped Prerequisite, FM-5.3 Disobey Spec, FM-5.4 Wrong Priority.
 
