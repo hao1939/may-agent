@@ -9,11 +9,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If found → add specific task to workspace/todo.md.
   Latest (2026-03-18T06:52): **meta.json cost tracking structurally broken.** `PersistedSession` interface has no `usage` field — every session reports $0.00 cost. Real burn rate: $1,173/day ($35K/month). Optimizer+tech-lead = 71.6% of cost. Prompt cache hit rate 3.7%. Sent to tech-lead (req:0f5e25e7). Finding at `workspace/finding-meta-json-cost-gap.md`.
 
-- [x] **Cost outlier scan** — Last done: 2026-03-18T07:19
+- [x] **Cost outlier scan** — Last done: 2026-03-18T08:49
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-18T07:19): **Fresh interval measurement.** 5 of 10 agents still over-firing (bob 2.73×, coach 2.50×, may 2.99×, optimizer 2.98×, tech-lead 2.49×). 17.36 excess sessions/hr = $83/day waste. Combined with broken prompt caching: $106-130/day total. All 11 fixes committed, 1,457 tests pass. Finding at `workspace/finding-restart-impact-fresh-2026-03-18T07.md`.
+  Latest (2026-03-18T08:49): **3-hour cost audit from session.jsonl data.** 78 sessions = $93.16 ($745/day). 0% prompt cache for all 6 Claude agents (95.7% of cost). Idle sessions (≤3 state-changing ops) = 47% of sessions, $78/day. tech-lead+optimizer = 61.4% of cost. Single tech-lead session: $7.13. All fixes committed, blocked on restart. Finding at `workspace/finding-3hr-cost-audit-2026-03-18T08.md`.
 
 - [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-18T05:22
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
