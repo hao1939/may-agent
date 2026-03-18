@@ -9,6 +9,25 @@ import type { AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { dirname } from "node:path";
 
+/**
+ * Pre-flight check configuration for cron jobs. Runs a lightweight JS check
+ * before spawning an LLM session. If the check returns false, the session is
+ * skipped entirely — saving LLM costs when there's nothing to process.
+ */
+export interface PreflightCheck {
+  /** Check type:
+   *  - `file-has-content`: skip if file has fewer than `minLines` non-empty lines
+   *  - `new-entries-since`: skip if file has no new entries since last successful run (tracked by stateKey)
+   */
+  type: "file-has-content" | "new-entries-since";
+  /** Path to the file to check (relative to project root). */
+  path: string;
+  /** For `new-entries-since`: key in preflight state to track last-checked position. */
+  stateKey?: string;
+  /** For `file-has-content`: minimum number of non-empty lines required (default: 1). */
+  minLines?: number;
+}
+
 export interface CronEntry {
   name: string;
   intervalMs: number;
@@ -28,6 +47,11 @@ export interface CronEntry {
   /** Config passed to the handler's create() factory. Handler-specific. */
   handlerConfig?: Record<string, unknown>;
   lastModified?: string;
+  /**
+   * Pre-flight check for run-agent-task jobs. If the check fails, the LLM
+   * session is skipped entirely — saving cost when there's nothing to process.
+   */
+  preflight?: PreflightCheck;
   /**
    * Skip heartbeat if no pending send() requests for this agent.
    * Set to false to disable (always fire). Default: true for heartbeats.
