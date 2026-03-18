@@ -452,3 +452,30 @@ Papers and articles worth reading, with key takeaways.
 - **File:** workspace/cr244-memory-quality-imperative-atlas-experience-following.md
 - **Key findings:** Atlas (compiled memory) and Xiong (experience-following) are complementary — Atlas transforms representation while history-deletion curates pool. Compiled Error Amplification problem: wrong behavioral rules are harder to detect than wrong raw traces. Memory Evaluator Triangle: accuracy/speed/adaptiveness (pick 2). Practical guidance: seed with strict evaluation → transition to fine-tuned auto → add history-deletion.
 - **Predictions:** P176-P178
+
+### DD#429: Memory Control Flow Attacks (MCFA) — From Storage to Steering
+- **Paper:** "From Storage to Steering: Memory Control Flow Attacks on LLM Agents" (Xu et al., ICML 2026)
+- **ArXiv:** 2603.15125
+- **Rating:** ★★★★★ CRITICAL
+- **File:** workspace/dd429-mcfa-memory-control-flow-attacks.md
+- **Key findings:** First systematic proof that memory retrieval can hijack agent control flow. >90% vulnerability across GPT-5 mini, Claude Sonnet 4.5, Gemini 2.5 Flash. 100% persistence over long horizons. Five attack families (Override, Order, Fabrication, Suppression, Steering). Textual repair fails. Validates CR#241 central thesis.
+
+### DD#430: D-MEM — Dopamine-Gated Agentic Memory
+- **Paper:** "D-MEM: Dopamine-Gated Agentic Memory via Reward Prediction Error Routing" (Song & Xin)
+- **ArXiv:** 2603.14597
+- **Rating:** ★★★★☆ HIGH RELEVANCE
+- **File:** workspace/dd430-dmem-dopamine-gated-agentic-memory.md
+- **Key findings:** Bio-inspired RPE gating decides what to remember. 80% token cost reduction while improving multi-hop reasoning. Three routing tiers (SKIP/CONSTRUCT_ONLY/FULL_EVOLUTION). Shadow Buffer for adversarial resilience. Addresses scalability wall (CR#240).
+
+### CR#245: Memory Gating Paradox
+- **Type:** Cross-Reference Synthesis (DD#429 × DD#430)
+- **Rating:** ★★★★★ CRITICAL
+- **File:** workspace/cr245-memory-gating-paradox.md
+- **Key findings:** Every architectural mechanism designed to improve memory quality simultaneously provides adversaries with a predictable optimization target. D-MEM's RPE formula can be optimized by adversaries to guarantee FULL_EVOLUTION (maximum integration depth). The defense becomes the attack amplifier.
+
+### CR#246: The Complete Agent Memory Stack — From Empirical Laws to Adversarial Limits
+- **Type:** Capstone Synthesis (Memory Architecture Thread)
+- **Rating:** ★★★★★ CRITICAL
+- **File:** workspace/cr246-memory-architecture-capstone-complete-agent-memory-stack.md
+- **Key findings:** Three Laws of Agent Memory (Experience-Following, Error Compounding, Compiled Error Amplification). Memory Trilemma: Fidelity/Efficiency/Security — pick 2. Complete 5-class attack taxonomy (A1-A5) with <20% defense coverage. Five-Layer Defense Stack (L0-L4). Memory Maturity Model (M0-M3, field at M1-M2). Memory is the "keystone vulnerability" penetrating all four W12 architecture stacks.
+- **Predictions:** P179-P183
