@@ -138,10 +138,10 @@
     "intervalMs": 604800000,
     "agent": "bob",
     "message": "[cron:lesson-consolidation] Read all agents/*/LESSONS.md files. Deduplicate, consolidate, remove stale entries. Preserve proven lessons.",
-    "enabled": true,
-    "description": "Weekly LESSONS.md cleanup (via run-agent-task)",
+    "enabled": false,
+    "description": "DISABLED 2026-03-18: Redundant with lessons-graduation JS handler which runs daily and does size checks, stale detection, duplicate detection. See finding-run-agent-task-preflight.md.",
     "handler": "run-agent-task",
-    "lastModified": "2026-03-10T10:16:35.641Z"
+    "lastModified": "2026-03-18T05:22:00.000Z"
   },
   {
     "name": "coaching-report",

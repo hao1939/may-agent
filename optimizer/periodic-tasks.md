@@ -15,11 +15,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If pattern found → design fix, add to workspace/todo.md.
   Latest (2026-03-18T05:13): **Evaluator false positive bug found.** 72 sessions in last 2h. Coach 110 "wasted" calls, tech-lead 98 — but evaluator regex matches error strings in file *content* being analyzed, not actual tool failures. 100% of non-idle sessions falsely flagged as `multiple_tool_errors`. Coach session scored 0 productive / 22 wasted despite having 20 real tool calls. Sent fix to tech-lead (req:ce67a751). Finding at `workspace/finding-evaluator-false-positives.md`.
 
-- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-18T04:15
+- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-18T05:22
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
   Could it be replaced with a JS handler? (See cron-graduation-process.md Stage 3.)
   If found → write proposal in workspace/improvement-proposals.md.
-  Latest (2026-03-18T04:15): **Heartbeat preflight handler design.** Analyzed 40 recent sessions: May 100% idle, Coach 50% idle, Bob 67% idle. The "should I start?" decision is purely deterministic (query request DB for CREATED items targeting agent). Designed `heartbeat-preflight.ts` with per-agent configs and anti-starvation. Expected savings: $6/day ($191/month). Sent to tech-lead (req:7a23921d). Finding at `workspace/finding-heartbeat-preflight-handler.md`. Prior: workspace bloat compaction handler.
+  Latest (2026-03-18T05:22): **run-agent-task pre-flight checks.** Surveyed all 10 `run-agent-task` cron entries. 4 can skip LLM sessions when nothing to process: reflect (no new human inputs), consolidate-memory-* (empty journals), analyze-failures (no new evals). Disabled `lesson-consolidation` cron (redundant with lessons-graduation.ts JS handler). Sent pre-flight hook design to tech-lead (req:dbb14f27). Savings: $3-5/day ($90-150/month). Finding at `workspace/finding-run-agent-task-preflight.md`.
 
 - [x] **Handler health check** — Last done: 2026-03-18T04:28
   Review existing JS handlers in agents/may/handlers/.
