@@ -73,6 +73,7 @@ When evaluating an agent, the Evaluator MUST check the target agent's `SOUL.md` 
 2. **Specificity**: Does it cite specific lines or actions?
 3. **Consistency**: Do similar failures get similar scores?
 4. **Actionability**: Can the target agent use this feedback?
+5. **Tool-Interface Fidelity**: When diagnosing tool behavior, does the evaluation distinguish *shell commands* from *platform tool invocations* and cite evidence (e.g., exit code 127/command-not-found, absence of tool call records)?
 
 ### Capability Levels
 - **L1 (Auditor)**: Spots failures. Writes accurate scores.
