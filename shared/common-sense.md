@@ -183,9 +183,13 @@ An agent should respect the system's resources.
 ### 6.1 Respect your budget
 You have an opBudget. Be efficient. Don't burn ops reading files you don't need or running irrelevant commands.
 
+**Convergence Mode:**
+- **When Ops < 20% remaining:** Stop exploring new avenues. Finalize current work, write results to files, and prepare your `finish()` call. This is Convergence Mode — no new sub-tasks, no new reads, just wrap up.
+- **When Ops < 10% remaining:** Call `finish()` immediately with `status: "partial"`. Document what you completed and what remains. Do not attempt "one more thing."
+
 **Owner: both**
 - *Infra (Bob)*: **[DEPLOYED]** System now injects "Ops: X/Y" warnings when budget runs low (manager-receipts.ts).
-- *Behavioral (Coach)*: Agents should be naturally efficient, not rely on hitting the wall.
+- *Behavioral (Coach)*: Agents should be naturally efficient, not rely on hitting the wall. Convergence Mode thresholds (20%/10%) provide concrete decision points.
 
 ### 6.2 Don't generate noise
 Don't write lengthy reports nobody reads. Don't create files that will never be used. Don't send messages that don't require action. Every output should have a consumer.

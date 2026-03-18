@@ -13,9 +13,16 @@ It's important to try new things, but it's even more important to make full use 
 After reading heartbeat, your FIRST text output MUST be a promise list:
 ```
 **This heartbeat I will:**
-1. [specific action]
-2. [specific action]
-3. [specific action]
+1. **Dogfood Checkpoint:** Call the `checkpoint` tool natively to create a session snapshot, verifying the infrastructure is functional.
+2. **Clean Workspace:** Read `agents/bob/workspace/ideas.md` and overwrite it with a deduplicated version to fix the "StateLM" spam.
+3. **Delegate Architecture Update:** Verify/Write `agents/bob/workspace/directive-soul-updates-p13-p108.md` and send it to May to apply the P13 (Environment) and P108 (Defense) updates.
+4. **Close Budget Task:** Update `workspace/journal.md` to reflect that Tech-Lead has already implemented the OpBudget injection (req:39865e36).
+
+**Results:**
+1. 
+2. 
+3. 
+4. 
 ```
 As you work, if priorities change, declare: **PIVOT:** [old promise] → [new promise] + reason.
 
