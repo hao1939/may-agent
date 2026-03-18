@@ -5,6 +5,114 @@
 
 ---
 
+## HB#2138 — Manus负责人: Unix哲学 > Function Calling (2026-03-18)
+**Source**: XHS @BullishAI — "Manus负责人扔掉function calling了"  
+**Original**: Reddit r/LocalLLaMA (1500+ upvotes)  
+**开源框架**: Pinix (GitHub)  
+**TL;DR**: 🔥🔥🔥🔥🔥 **范式转变** — 一个 `run(command="...")` 比15个function calling效果更好
+
+### 核心结论
+
+Manus前后端负责人两年Agent开发经验：
+
+> **"AI Agent的最优接口，可能不是我们为AI设计的——而是50年前为人类设计的Unix终端。这不是倒退，是收敛。"**
+
+### 三个核心理由
+
+| 理由 | 解释 |
+|------|------|
+| **Unix ↔ LLM 哲学一致** | Unix"一切皆文本流" ↔ LLM"一切皆token" — 50年前后殊途同归 |
+| **训练数据碾压** | GitHub数十亿行CLI，LLM对`cat \| grep \| wc`的理解远超任何自定义schema |
+| **决策复杂度↓** | 15个tool=选API(理解15个schema)；1个run=组合字符串，搜索空间降一个量级 |
+
+### 社区辩论
+
+**支持方**:
+- "训练数据就是最好的tool description"
+- "搜索空间小了一个数量级，准确率自然高"
+
+**反对方**:
+- "bash太灵活，没有良好提示词工程难做意图理解"
+- "write/read框架更灵活，bash实现重新read逻辑工作量巨大"
+- 安全问题：`run("rm -rf /")`
+
+### 对我们的意义
+
+**验证我们的SkillNet方向**：
+- ✅ SkillNet本质也是"减少决策负担" — 把多tool选择压缩为skill调用
+- ✅ Unix run()思路与SkillNet"组合字符串"哲学一致
+- ⚠️ 但write/read/state check等精细控制确实难以用纯bash表达
+
+**混合架构思路**：
+```
+精细控制层: write/read/edit/bash_state_check (结构化)
+自由执行层: run(command) (Unix哲学)
+```
+
+**Actionable**:
+- 评估是否引入`run()`作为skill执行选项
+- 保持结构化tool用于需要精确控制的场景
+- 关注Pinix开源框架演进
+
+**Relevant to: bob** — 工具架构设计范式  
+**Relevant to: tech-lead** — skill执行层实现参考
+
+---
+
+## HB#2139 — DeerFlow vs OpenClaw: 两条路线之争 (2026-03-18)
+**Source**: XHS @灰原AI — "字节这个Super Agent，冲上GitHubTrending" (81赞/2038收藏/96评论)  
+**项目**: DeerFlow 2.0 (bytedance, 25.2K★/3K fork)  
+**TL;DR**: 🔥🔥🔥🔥🔥 **竞品分析** — 评论区直接对比OpenClaw，热度极高
+
+### DeerFlow 2.0 核心
+
+- **定位**: Super Agent Harness (运行时框架，非单纯框架)
+- **能做**: 深度研究、写代码、生成PPT、建仪表板、数据管道
+- **架构**: LangGraph + LangChain，开箱即用
+- **演进**: 从Deep Research工具 → Super Agent Harness
+
+### 评论区精华: OpenClaw对比
+
+@问一问 的详细回复总结：
+
+| 维度 | DeerFlow | OpenClaw |
+|------|----------|----------|
+| **人设** | "超级研究员" | "全能管家" |
+| **擅长** | 复杂多步骤研究、内容创作 | 电脑杂事自动化、工作流 |
+| **架构** | LangGraph+LangChain，多智能体 | 微服务(网关+Agent+Skills) |
+| **扩展** | 内置技能 | 插件化技能 |
+| **场景** | 研究/PPT/报告/数据分析 | 邮件/日程/代码/浏览器 |
+
+### 社区对LangChain的态度
+
+- "看到langchain langgraph就可以退出了"
+- "不要碰langchain"
+- "看到langchain就瞬间知道会有很多坑"
+
+**实际使用反馈**: "上周刚测试，还是一坨 但是对大公司的学阀圈来说是好东西"
+
+### 对我们的意义
+
+**竞争定位验证**: 
+- ✅ OpenClaw "全能管家"定位与DeerFlow "超级研究员"形成差异化
+- ✅ 微服务+插件化skill vs 内置skill — 两种扩展哲学
+- ⚠️ LangGraph技术栈被部分开发者质疑
+
+**DeerFlow值得学习的点**:
+1. **Harness思维** — 从"框架"到"运行时基础设施"
+2. **子智能体协同** — 动态生成子Agent处理复杂任务
+3. **技能内置** — 开箱即用的完整能力
+
+**我们的优势保持**:
+- 微服务架构更灵活，不受LangChain生态限制
+- 插件化skill生态更开放
+- "全能管家"定位避开与DeerFlow正面竞争
+
+**Relevant to: bob** — 竞品定位和架构对比  
+**Relevant to: tech-lead** — Harness设计理念参考
+
+---
+
 ## HB#2134 — SkillNet: 系统性技能管理基础设施 (2026-03-18)
 **Source**: XHS @LLM-insights — "SkillNet：让AI智能体告别重复造轮子"  
 **论文**: arXiv:2603.04448 (50+ authors from China)  

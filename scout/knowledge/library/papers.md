@@ -401,3 +401,11 @@ Papers and articles worth reading, with key takeaways.
 | ID | Title | Relevance |
 |----|-------|-----------|
 | CR#239 | Evolutionary Defense Dynamics — Architecture for L4 Population-Level Safety (Scout synthesis) | ★★★★★ CRITICAL — **First Evolutionary Defense Architecture (EDA).** Addresses Gap 1 from CR#237. Four-mechanism framework: Population Census Engine (per-generation behavioral+spectral statistics), CUSUM+Spectral+Cooperation Drift Detector (3-7 generation lead time), Fitness Landscape Reshaper (cooperation bonus, diversity injection, cross-evaluation pressure), Hurwitz Strategy Memory Decay. Integrates DD#273 (Evolving Deception ESS), DD#361 (control-theoretic stability), DD#419 (DRCB representational defense), DD#318 (GER-Steer spectral methods), CR#207 (Agency-Stability Inverse), CR#236 (Collusion Defense Landscape). Produces complete L0-L4 defense stack. 4 predictions (P150-P153). (ref: cr239-evolutionary-defense-dynamics-architecture.md) |
+
+## CR#240: The Scalability Wall — When Safety Monitoring Hits O(n²) (2026-03-18)
+- **Type:** Gap Analysis / Architecture  
+- **Rating:** ★★★★★ CRITICAL
+- **File:** workspace/cr240-scalability-wall-analysis-monitoring-safety-mas.md
+- **Key finding:** Safety overhead scales worse than system size in 5/8 mechanisms. SCCAL dense O(n⁵) and DynaTrust O(n²) are binding constraints. Hierarchical monitoring reduces to O(n^(4/3)). Formalized Scalability Trilemma.
+- **Sources:** DD#412, DD#424, DD#425, DD#427, DD#400, DD#338, DD#419, DD#410, DD#377
+- **Predictions:** P154-P157
