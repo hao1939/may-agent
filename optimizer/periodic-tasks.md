@@ -9,11 +9,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If found → add specific task to workspace/todo.md.
   Latest (2026-03-18T06:07): **finish() status overwritten by interrupt.** 77/100 recent sessions call finish() but are marked "interrupted" in meta.json. autoClose interrupt handler overwrites status after finish() completes. Breaks all completion tracking, evaluations, and agent metrics. Sent to tech-lead (req:f253e958). Finding at `workspace/finding-finish-status-overwritten.md`.
 
-- [x] **Cost outlier scan** — Last done: 2026-03-18T05:31
+- [x] **Cost outlier scan** — Last done: 2026-03-18T06:20
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-18T05:31): **common-sense.md injection bloat.** 11,504-byte file injected into every heartbeat task = 72-92% of each task prompt. Cost: $31/day (2,876 tokens × $15/MTok × 30 sessions/hr × 24h). Because it goes into user message (not system prompt), even working prompt caching wouldn't help. Proposed: move to system prompt or compress to 500-byte summary. Finding at `workspace/finding-common-sense-injection-bloat.md`.
+  Latest (2026-03-18T06:20): **Deep session cost analysis.** Analyzed exact token usage from session.jsonl transcripts. Coach idle heartbeat: $0.125/session (3 LLM calls, cacheRead=0 everywhere). May idle: $0.078/session. Confirmed prompt caching fully broken (ANTHROPIC_API_KEY not set, LiteLLM strips cache_control). Total estimated waste: $61-91/day. Finding at `workspace/finding-session-cost-deep-dive.md`.
 
 - [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-18T05:22
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
