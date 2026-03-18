@@ -9,11 +9,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If found → add specific task to workspace/todo.md.
   Latest (2026-03-18T06:52): **meta.json cost tracking structurally broken.** `PersistedSession` interface has no `usage` field — every session reports $0.00 cost. Real burn rate: $1,173/day ($35K/month). Optimizer+tech-lead = 71.6% of cost. Prompt cache hit rate 3.7%. Sent to tech-lead (req:0f5e25e7). Finding at `workspace/finding-meta-json-cost-gap.md`.
 
-- [x] **Cost outlier scan** — Last done: 2026-03-18T09:49
+- [x] **Cost outlier scan** — Last done: 2026-03-18T13:20
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-18T09:49): **Workspace compaction + Bob directive resubmission waste.** Compacted own workspace: 126→30 files, 3.5MB→1.8MB. Archived 97 files to organized subdirs. Truncated activity.jsonl: 2861→500 lines. Found Bob P13/P108 resubmission pattern: 4 duplicate requests (a41a944d, a662005e, 91d8a310, fa7fe697) each costing ~$0.03-0.06. Created finding-index.md for future session efficiency. Sent dedup convention to Coach (req:7ed6f063).
+  Latest (2026-03-18T13:20): **$37.03 in 20 sessions (1.9h span), $456/day projected.** Top offenders: optimizer $10.90 (29%), coach $9.97 (27%), tech-lead $5.69 (15%). Coach common-sense-verify reads full session.jsonl files (550KB in one session, $2.78/run). Updated cron message to instruct grep-based search. Finding at `workspace/finding-cost-analysis-4h-window.md`.
 
 - [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-18T05:22
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
