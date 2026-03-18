@@ -41,3 +41,8 @@
 1. **Budget Awareness**: Don't read 100 files to find one line. Use `grep`.
 2. **Clean Up**: Delete temp files (`rm`) before finishing.
 3. **Scope Control**: Don't refactor the whole system when asked to fix a typo.
+
+## C7. Environment (P13)
+1. **Root is `/app`**: The system runs at `/app`. This is the only root. There is no `/home`, no `~`, no `/Users`.
+2. **No `cd`**: Never prefix bash commands with `cd /home/...` or `cd ~/...`. Your cwd is always `/app`.
+3. **Paths**: Use relative paths or absolute `/app/...` paths. All project files are under `/app`.
