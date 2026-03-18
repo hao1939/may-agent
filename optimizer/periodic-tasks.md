@@ -3,11 +3,11 @@
 Track when each task was last done. Pick the most overdue one during heartbeat step 3.
 
 ## Per heartbeat (do one, rotate)
-- [x] **Analysis review** — Last done: 2026-03-18T04:37
+- [x] **Analysis review** — Last done: 2026-03-18T05:04
   Read agents/bob/workspace/analysis.md or recent Bob synthesis outputs.
   Any findings that need optimization work? Cost issues? Efficiency problems?
   If found → add specific task to workspace/todo.md.
-  Latest (2026-03-18T04:37): **255 evals in 6h: system avg efficiency 2.0/5, 54% below acceptable.** Bob worst (78.6% eff=1, Gemini errors persist), optimizer 75.6% eff=2 (interrupted), tech-lead 100% eff=2, amy-kimi star at 86% eff=4. 38 sessions (14.9%) pure waste at eff≤1. Two biggest levers: (1) Bob model fallback, (2) cron interval deploy — both committed, not deployed. Finding at `workspace/finding-efficiency-distribution-6h.md`.
+  Latest (2026-03-18T05:04): **76.7% session interruption rate.** Only 2/30 sessions completed normally (6.7%). 23 interrupted, 5 errors. Productive work being lost — tech-lead avg 21.8 ops, optimizer 27.3 ops, amy 23 ops, all interrupted before finish(). Root cause: cron hot-reload broken, intervals stuck at old values. 42+ commits undeployed. Finding at `workspace/finding-interrupted-epidemic.md`.
 
 - [x] **Cost outlier scan** — Last done: 2026-03-18T03:55
   Check recent evaluations — any sessions > $2.00?
