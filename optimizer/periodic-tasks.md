@@ -29,8 +29,8 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Latest (2026-03-18T05:52): **Pre-flight checks wired up.** Configured `preflight` for 7 cron entries: `reflect` (new-entries-since human-inputs.jsonl), `analyze-failures` (new-entries-since evaluations dir), and 5× `consolidate-memory-*` (file-has-content journal.md ≥3 lines). Infrastructure built by tech-lead (4abbc07). All 14 preflight tests pass. Still blocked on process restart. Same 3 handlers unfired (daily-brief, lessons-graduation, workspace-compaction).
 
 ## Weekly
-- [x] **Improvement proposals review** — Last done: 2026-03-18T05:42
-  **7 proposals now implemented** (up from 5). New additions: common-sense.md system prompt move (9bc3742, $31/day), evaluator false-positive fix (cb95fff). 44 total undeployed commits. Estimated savings once deployed: **$66-94/day ($1,980-2,820/month)**. Finding at `workspace/finding-proposal-implementation-tracking.md`.
+- [x] **Improvement proposals review** — Last done: 2026-03-18T07:15
+  **10 proposals now implemented** (up from 7). New additions since last review: finish-status fix (82ced56), read-dedup guard (9eefa72), finish evidence guard (2233509). **51 total undeployed commits, all 1,457 tests pass.** Estimated savings once deployed: **$80-104/day ($2,400-3,120/month)** from cron+caching fixes alone. Full deployment readiness brief at `workspace/finding-deployment-readiness-51-commits.md`.
 
 - [x] **Refine-Skill loop (EvoSkill)** — Last done: 2026-03-17
   Follow `agents/shared/skills/skill-lifecycle/SKILL.md` — the full workflow:
