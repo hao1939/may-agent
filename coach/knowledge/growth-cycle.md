@@ -182,3 +182,12 @@ Always clean up. Don't leave dead forks.
     likely because it was a tool-calling pattern, not a judgment/behavioral
     pattern. For ANY behavioral fix, skip text methods and go directly to
     workflow enforcement or infrastructure guards.
+
+14. **Ceiling-effect gate: run baseline BEFORE forking.** Experiments
+    exp-061 through exp-064 all hit ceiling effect — all agents passed all
+    scenarios at baseline, making the experiments unmeasurable. Each wasted
+    growth cycle burns ~4 LLM sessions (~1MB tokens). The gate is now
+    mandatory in both growth-cycle.ts and training-sprint.ts: run baseline
+    first, and if all scenarios pass, SKIP the experiment. When ceiling
+    effect is detected on all scenarios, the priority shifts to scenario
+    development (creating harder scenarios that expose real gaps).

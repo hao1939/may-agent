@@ -20,10 +20,13 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     `   AND check for "hypothesis" entries (invented methods) that need testing.\n` +
     `4. Read \`agents/coach/workspace/experiments.jsonl\` — skip patterns already tested.\n` +
     `   For patterns with 2+ failures: try a DIFFERENT method or an invented one.\n` +
-    `5. Check if existing gym scenarios actually fail baseline. If all pass baseline,\n` +
-    `   consider creating a new scenario that targets the specific FM pattern.\n` +
-    `   A scenario needs: task.md, environment/, success_criteria.js, and a\n` +
-    `   package.json with \`"type": "commonjs"\`. See existing scenarios for format.\n` +
+    `5. **CEILING-EFFECT GATE (MANDATORY):** For each candidate experiment, run baseline:\n` +
+    `   \`scripts/gym-run.sh <scenario> --agent <agent> --timeout 3\`\n` +
+    `   If baseline PASSES all checks → REMOVE that experiment from the plan.\n` +
+    `   Only keep experiments where baseline FAILS at least one check.\n` +
+    `   If ALL candidates are removed by this gate, your output should be:\n` +
+    `   "GATE: ALL SKIPPED — ceiling effect on all candidates. Need harder scenarios."\n` +
+    `   This gate prevents wasting ~4 LLM sessions per experiment on zero-improvement cycles.\n` +
     `6. Select 3-5 experiments. For each, specify:\n` +
     `   - Target agent\n` +
     `   - Error pattern (FM code) or method to learn\n` +
@@ -35,6 +38,29 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   );
   if (plan.status === "error") {
     return ctx.escalate("sprint planning failed", { error: plan.error });
+  }
+
+  // Check if ceiling-effect gate eliminated all experiments
+  const planText = (plan.lastAssistantText || "").toUpperCase();
+  if (planText.includes("GATE: ALL SKIPPED") || planText.includes("CEILING EFFECT ON ALL")) {
+    const skipRecord = await ctx.runAgent("coach",
+      `Record a ceiling-effect skip for the training sprint.\n\n` +
+      `## Plan Results\n${ctx.summarize(plan)}\n\n` +
+      `## Instructions\n` +
+      `The ceiling-effect gate eliminated ALL candidate experiments.\n` +
+      `All baselines pass — no room for improvement with current scenarios.\n\n` +
+      `1. Append ONE JSON line to \`agents/coach/workspace/experiments.jsonl\`:\n` +
+      `   \`\`\`json\n` +
+      `   {"timestamp":"<ISO>","type":"sprint","error_pattern":"multiple","agent":"multiple","method":"N/A","scenarios":[],"decision":"skipped","reason":"ceiling-effect gate: all sprint candidates pass baseline"}\n` +
+      `   \`\`\`\n` +
+      `2. Report: what was skipped and recommend creating harder scenarios.`
+    );
+    return ctx.done(
+      `Training sprint SKIPPED (ceiling-effect gate).\n\n` +
+      `## Plan\n${plan.lastAssistantText}\n\n` +
+      `All candidate experiments pass baseline — no room for improvement. ` +
+      `Create harder scenarios before the next sprint.`
+    );
   }
 
   // Step 2: Fork and patch all experiments

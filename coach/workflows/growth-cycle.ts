@@ -52,6 +52,53 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   // Interrupted sessions may still have useful partial output — proceed
   // with whatever the agent produced before being cut off.
 
+  // Step 1b: Ceiling-effect gate — run baseline BEFORE forking
+  const baselineGate = await ctx.runAgent("coach",
+    `Run baseline gym tests to check for ceiling effect BEFORE forking.\n\n` +
+    `## Diagnosis\n${ctx.summarize(step1)}\n\n` +
+    `## Instructions (Ceiling-Effect Gate)\n` +
+    `Before we fork and patch, we must verify the baseline actually FAILS.\n` +
+    `If all agents pass all scenarios at baseline, the experiment is pointless.\n\n` +
+    `1. Run baseline (no --lab) for each scenario identified in the diagnosis:\n` +
+    `   \`\`\`bash\n` +
+    `   scripts/gym-run.sh <scenario> --agent <agent> --timeout 3\n` +
+    `   \`\`\`\n` +
+    `2. Parse the JSON output. Record pass/fail for each.\n` +
+    `3. **DECISION:**\n` +
+    `   - If ANY scenario FAILS baseline → output "GATE: PROCEED" and list the failing scenarios.\n` +
+    `   - If ALL scenarios PASS baseline → output "GATE: SKIP — ceiling effect detected".\n` +
+    `4. Report: per-scenario baseline results and the gate decision.\n\n` +
+    `IMPORTANT: This gate saves ~3 wasted LLM sessions when experiments would show no improvement.`
+  );
+  if (baselineGate.status === "error") {
+    return ctx.escalate("baseline gate failed", { error: baselineGate.error });
+  }
+
+  // Check if the gate says SKIP
+  const gateText = (baselineGate.lastAssistantText || "").toUpperCase();
+  if (gateText.includes("GATE: SKIP") || gateText.includes("CEILING EFFECT DETECTED")) {
+    // Log the skip to experiments.jsonl via a quick recording step
+    const skipRecord = await ctx.runAgent("coach",
+      `Record a ceiling-effect skip in the experiment log.\n\n` +
+      `## Baseline Results\n${ctx.summarize(baselineGate)}\n\n` +
+      `## Instructions\n` +
+      `The baseline gate detected ceiling effect — all scenarios pass at baseline.\n` +
+      `This experiment would produce no measurable improvement.\n\n` +
+      `1. Append ONE JSON line to \`agents/coach/workspace/experiments.jsonl\`:\n` +
+      `   \`\`\`json\n` +
+      `   {"timestamp":"<ISO>","error_pattern":"<FM-X.X from diagnosis>","agent":"<name>","method":"<method from diagnosis>","scenarios":[],"decision":"skipped","reason":"ceiling-effect gate: all baseline scenarios pass"}\n` +
+      `   \`\`\`\n` +
+      `2. Report: what was skipped and why.`
+    );
+    return ctx.done(
+      `Growth cycle SKIPPED (ceiling-effect gate).\n\n` +
+      `## Diagnosis\n${step1.lastAssistantText}\n\n` +
+      `## Baseline Gate\n${baselineGate.lastAssistantText}\n\n` +
+      `All scenarios pass at baseline — no room for improvement. ` +
+      `Create harder scenarios before retrying this pattern.`
+    );
+  }
+
   // Step 2: Fork and apply
   const patch = await ctx.runAgent("coach",
     `Fork the target agent and apply exactly ONE improvement method.\n\n` +
