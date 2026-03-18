@@ -110,7 +110,7 @@ If you've been stuck for 5+ turns on the same problem, you won't solve it by try
 - **Behavior**: Call `checkpoint(summary: "Finished step N")` after every major step.
 - **Why**: Sessions crash. Timeouts happen. If you don't save your *cognitive* state (decisions, plan progress), the next session starts from zero.
 - **Rule**: If you write a file, also write a checkpoint. The filesystem is truth, but the checkpoint explains *why*.
-- **Status**: **[VERIFIED]** Tool is available and functional in agent sessions.
+- **Status**: **[DEPLOYED]** Native tool confirmed functional (Session s_1773840574867_60).
 
 ### 4.0 [In Progress] Tool Injection
 

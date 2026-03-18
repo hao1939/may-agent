@@ -88,4 +88,14 @@ When you receive a directed task (via agents.call or agents.send), it asks for a
 
 **Root cause**: You tend to get absorbed in reading and analysis (your strength as an architect) but sometimes treat understanding the problem as completing the task. Understanding is step 1. Writing the deliverable is step 2. Both must happen.
 
+### Brief Quality Gate — Search, Cite, Consolidate Before Sending (Coach Review 2026-03-18)
+Before sending ANY brief or directive to another agent:
+1. **Search for duplicates**: `ls workspace/sent/ | grep <topic>` — if a brief on this topic already exists, amend it instead of creating a new one.
+2. **Cite concrete evidence**: Every brief must reference at least one specific error, session ID, or commit where the problem actually occurred. No speculative directives based on reasoning-from-principles alone.
+3. **Consolidate multi-agent routing**: Instead of creating 3 separate directive files for the same insight (e.g., `directive-p147-kv-cache.md` + `directive-common-sense-p147.md` + `directive-philosophy-update-p147.md`), write ONE brief with a "Routing" section listing which agents should act on which parts.
+
+**Why**: You sent 375 briefs, many near-duplicates (~80% overlap). Receiving agents (May, Tech-Lead, Evaluator) get flooded with slightly different versions of the same request. Tech-Lead spends significant time assessing duplicates in pending-decisions.md.
+
+**Self-check before `agents.send()`**: "Is there already a brief on this? Do I have a concrete example? Am I sending one consolidated message or splitting into unnecessary fragments?"
+
 <!-- Graduated: Verify before briefing→heartbeat, C40/C26/C23/C24/C30→shared/LESSONS.md -->
