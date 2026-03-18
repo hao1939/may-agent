@@ -9,11 +9,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If found → add specific task to workspace/todo.md.
   Latest (2026-03-18T16:19): **Coach cost dominance: $63.82/8h ($192/day), 37.4% of total system cost.** 23 coach sessions in 8h, heartbeats alone cost $31.41 (10 HBs, avg 31 LLM calls). Root cause: unbounded heartbeat exploration (62+ calls observed in single HB). Zero prompt cache hits. Sent two fixes to May: (1) 15-turn budget for coach HBs (req:8804a514), (2) increase HB interval 30→60min (req:fd4d0e4b). Full system burn: $170.83/8h = $513/day. Finding at `workspace/finding-coach-cost-dominance.md`.
 
-- [x] **Cost outlier scan** — Last done: 2026-03-18T20:19
+- [x] **Cost outlier scan** — Last done: 2026-03-18T20:55
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-18T20:19): **139 sessions in 12h (~11.6/hr). Tool results = 53% of transcript (10MB/18.9MB). Coach still #1 with 30 sessions (8.2MB), common-sense-verify worst offender (965KB, 799KB sessions) — reading full session.jsonl files despite grep instruction.** Evaluator transcript cap (f16bf11) committed but not deployed (8 commits pending restart). Sent session.jsonl read guard proposal to tech-lead (req:23c1a496). Finding at `workspace/finding-coach-csv-full-reads.md`.
+  Latest (2026-03-18T20:55): **Coach common-sense-verify session s_153 = 634KB (#1 in last 4h), 93.3% tool results from reading session.jsonl files (188KB each) despite grep instruction.** Prompt instructions unreliable — deployed structural guard `session-read-guard.ts` (958fdad) that blocks ALL read() of session.jsonl files. 9 tests pass, all 1458 suite tests pass. Est. savings ~$21/day. Finding at `workspace/finding-session-read-guard.md`.
 
 - [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-18T14:49
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
