@@ -7,6 +7,69 @@
 
 ---
 
+## HB-2152 — Harness Engineering: OpenAI的六层AI工程框架 (2026-03-18)
+**Source**: XHS @NY Qing — "模型够聪明之后，工程师该做什么" (289赞/494收藏)  
+**Original**: OpenAI 实践 — 3工程师5个月生成100万行生产代码  
+**TL;DR**: 🔥🔥🔥🔥🔥 **核心验证** — 我们的架构方向与行业前沿完全对齐
+
+### Harness Engineering 六层架构
+
+| 层级 | 核心问题 | OpenClaw 对应机制 |
+|------|----------|-------------------|
+| **1. 持久状态** | AI"失忆" — 每次对话白纸一张 | ✅ heartbeat.md + memory.jsonl |
+| **2. 执行环境** | 给AI手和脚 — 能跑能查 | ✅ tool registry + bash execution |
+| **3. 上下文工程** | 200K窗口实际可用160K | ✅ SOUL.md 精简设计 |
+| **4. 反馈验证** | AI说做完不算，测试通过才算 | ✅ ops-receipts + verification |
+| **5. 架构约束** | 防止AI复制坏模式 | ✅ LESSONS.md + CONVENTIONS.md |
+| **6. 编排协调** | 跨会话接力 | ✅ agents.call() / agents.send() |
+
+### 关键洞察
+
+> "工具层的配置很快就能学会，真正拉开差距的是**判断力** —— 你能不能定义什么叫'好'、什么叫'做完了'。"
+
+这与 Bob 的核心理念完全共鸣：
+- **不是**构建另一个 Agent 框架
+- **而是**构建**判断力基础设施**
+
+### 社区验证
+
+- 作者使用 Claude Code 做 research 助力写作
+- 已在实践中使用 JSON 管理 feature，比写 doc 好用
+- 很多实践之前就在做，这篇文章汇总方法论
+
+### 对我们意味着什么
+
+1. **外部验证**: Harness Engineering 框架为我们的六层设计提供了行业背书
+2. **术语对齐**: 我们可以用 Harness Engineering 来描述 OpenClaw 的架构
+3. **差异化聚焦**: 别人在卷工具配置，我们在建判断体系 —— 这正是"拉开差距"的点
+
+---
+
+## HB-2153 — Understand Anything: 代码库知识图谱化 (2026-03-18)
+**Source**: XHS @王鹏LLM — "Understand Anything:可视化你的代码库" (20赞/47收藏)  
+**工具**: Claude Code 插件  
+**TL;DR**: 多智能体管道 + 知识图谱 = 代码理解新范式
+
+### 核心能力
+
+- **多智能体管道**分析项目
+- 自动构建文件/函数/类/依赖的知识图谱
+- 可视化仪表板呈现整体结构
+
+### 适用场景
+
+面对大型代码库（20万行+）难以快速理解整体架构；文档过时，新成员上手需要数周；阅读代码如同"考古"。
+
+### 对我们意味着什么
+
+1. **知识图谱化是趋势** — 与我们的 SkillNet 理念相通
+2. **多智能体管道** — 类似我们的 agent 分工模式
+3. **架构可视化需求** — 可为 OpenClaw 设计类似的 agent 关系、skill 依赖、memory 结构可视化
+
+**Relevant to:** tech-lead (工具链参考), Bob (架构可视化思路)
+
+---
+
 ## HB-2151 — SkillRL: 递归技能增强强化学习 (2026-03-18)
 **Source**: XHS @大模型知识分享 — "SkillRL：让Agent从过往经验中持续学习" (223赞/277收藏)  
 **论文**: SkillRL: Evolving Agents via Recursive Skill-Augmented Reinforcement Learning  

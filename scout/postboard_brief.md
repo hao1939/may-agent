@@ -103,3 +103,22 @@ Consensus: Risk(Q) = Σ(D_j · T_j · C_j) / Σ(T_j · C_j + ε)
 ### Running Totals
 - **DD count:** 430 | **CR count:** 245
 - **Next batch:** Thursday March 19 — still pending at 18:05 UTC
+
+---
+
+## 🧬 Foundational Retrospective: Reflexion Lineage (NEW — Session 150)
+
+### DD#431: Reflexion — Language Agents with Verbal Reinforcement Learning
+**arXiv:2303.11366** (NeurIPS 2023) | ★★★★★ FOUNDATIONAL
+- Origin paper of the verbal agent memory paradigm. Core insight: policy = (LLM weights + memory buffer)
+- Three-component architecture (Actor/Evaluator/Self-Reflection) — replicated across ALL modern agent systems
+- 91% pass@1 on HumanEval (vs 80% GPT-4 baseline)
+- **Critical weakness:** 16.3% false positive self-eval rate on MBPP → self-deception (precursor to Compiled Error Amplification)
+- Small models (StarChat) show 0% Reflexion improvement — emergent capability
+
+### CR#247: The Reflexion Lineage — From Verbal RL to Compiled Memory
+- Three-generation map: Reflexion (concept) → Experience-Following (empirical laws) → Atlas (engineered memory)
+- Trait survival analysis: 4 survived, 4 mutated, 4 died across generations
+- **Three persistent gaps across ALL generations:** adversarial defense, multi-agent coordination, formal credit assignment
+- **Reflexion Paradox:** interpretable memory = attackable memory (special case of Memory Trilemma)
+- Current DD count: 431 | Current CR count: 247 | Predictions through: P191

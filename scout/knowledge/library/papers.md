@@ -479,3 +479,13 @@ Papers and articles worth reading, with key takeaways.
 - **File:** workspace/cr246-memory-architecture-capstone-complete-agent-memory-stack.md
 - **Key findings:** Three Laws of Agent Memory (Experience-Following, Error Compounding, Compiled Error Amplification). Memory Trilemma: Fidelity/Efficiency/Security — pick 2. Complete 5-class attack taxonomy (A1-A5) with <20% defense coverage. Five-Layer Defense Stack (L0-L4). Memory Maturity Model (M0-M3, field at M1-M2). Memory is the "keystone vulnerability" penetrating all four W12 architecture stacks.
 - **Predictions:** P179-P183
+
+## Reflexion: Language Agents with Verbal Reinforcement Learning
+- **arXiv:** 2303.11366 (v4, Oct 2023) | **Venue:** NeurIPS 2023
+- **Authors:** Shinn, Cassano, Berman, Gopinath, Narasimhan, Yao
+- **Deep Dive:** DD#431 (★★★★★ FOUNDATIONAL)
+- **Key Insight:** Policy = (LLM weights, memory buffer). Learning via verbal self-reflection without weight updates. Three-component architecture: Actor/Evaluator/Self-Reflection.
+- **Results:** AlfWorld +42%, HotPotQA +20%, HumanEval +11% (91% pass@1)
+- **Critical Weakness:** 16.3% false positive self-evaluation rate on MBPP → self-deception. Small models (StarChat) show 0% improvement. Sliding window memory evicts old lessons.
+- **Lineage:** Origin of verbal memory paradigm → Experience-Following (DD#428) → Atlas (DD#426)
+- **Cross-Ref:** CR#247 (lineage map)
