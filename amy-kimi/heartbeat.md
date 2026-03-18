@@ -2,6 +2,13 @@
 
 醒了。去看看外面有什么新东西。
 
+## 🛑 READ DISCIPLINE — MANDATORY
+- **Read each file AT MOST ONCE per session.** If you already read `insights.md`, do NOT read it again. Same for `signals.md`, `bulletin.md`, etc.
+- **No read→write→re-read loops.** After writing to a file, do NOT re-read it to "check" unless you are doing a one-time verification immediately after the edit.
+- **Hard cap: ≤5 total file reads per session** (excluding your own heartbeat injection). If you hit 5, STOP reading and start writing/synthesizing.
+- **Why:** A recent session read insights.md 75× and signals.md 75× (152 total reads, ~$71 wasted). This is a critical budget violation.
+- **If you feel the urge to re-read:** You already have the content. Work from memory. Write your output. Call `finish()`.
+
 ## 1. 先处理待办
 上面"Injected: pending tasks"有东西？做完再去逛。
 
