@@ -21,11 +21,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If found → write proposal in workspace/improvement-proposals.md.
   Latest (2026-03-18T02:49): **Workspace bloat: 2,300+ stale files across agents.** Bob 968 files (6.7MB, `sent/` 375 files + `archive/` 199), Scout 748 files (12MB, 207 `deep-dive-arxiv-*` + 72 `cross-ref-*`). None re-read in recent sessions. Proposed workspace-compaction JS handler (daily cron, archive files >14d old). Sent to tech-lead (req:244d9c55). Finding at `workspace/finding-workspace-bloat.md`. Prior: Bob heartbeat template loop bug.
 
-- [x] **Handler health check** — Last done: 2026-03-18T02:25
+- [x] **Handler health check** — Last done: 2026-03-18T03:43
   Review existing JS handlers in agents/may/handlers/.
   Any errors in recent logs? Any handler that's not firing?
   If issues → add fix to workspace/todo.md.
-  Latest (2026-03-18T02:25): **Bob 93% error rate — circuit breaker needed.** 14/15 Bob sessions failed with Gemini streaming errors in last 2.5 hours (since 23:46 UTC). No circuit breaker exists — cron keeps scheduling at same rate. Proposed exponential backoff + disable after 5 errors. Finding at `workspace/finding-bob-gemini-circuit-breaker.md`. Sent to tech-lead (req:0917c641).
+  Latest (2026-03-18T03:43): **All JS handlers healthy.** evaluate-sessions handler produced 9 new evaluations at 03:35 UTC (confirmed). workspace-compaction handler wired correctly (syntax OK, cron entry valid). 13 handlers total, all enabled. Main system issue remains: cron reload broken — heartbeats fire at 540s not 1800s. All 20 latest sessions are heartbeats, only 2/50 are cron-type tasks, confirming heartbeat overtriggering dominates.
 
 ## Weekly
 - [x] **Improvement proposals review** — Last done: 2026-05-09 (Finding 18, Cycle 12). **2 new commits since last review**: agent-growth refactor committed (3a6d51e — 16 files, +1725/-168), orphaned test cleanup (85de6e7). Git now clean (0 uncommitted changes — resolved 7+ week risk). 1049/1049 tests pass (87 files), tsc clean. New cross-edit guard (P53) prevents cross-agent identity file modification. Finish tool wired but unadopted. System idle — 0 sessions, evals, job history. Compaction 8/12, prompt caching still 0% for Opus (LiteLLM proxy blocker). **No new optimization work items identified.**
