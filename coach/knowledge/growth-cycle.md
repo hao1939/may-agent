@@ -191,3 +191,13 @@ Always clean up. Don't leave dead forks.
     first, and if all scenarios pass, SKIP the experiment. When ceiling
     effect is detected on all scenarios, the priority shifts to scenario
     development (creating harder scenarios that expose real gaps).
+
+15. **Workspace size is a health signal (StateLM / Active Memory Law).**
+    Agents with growing journals (>500 lines) and unbounded workspace files
+    suffer context rot — their injected context becomes noisier each session,
+    degrading judgment. Weekly consolidation cron jobs (journal → knowledge
+    → archive) are deployed for all agents. When diagnosing an agent's
+    declining performance, check `wc -l agents/{agent}/workspace/journal.md`
+    as a potential contributing factor. High signal density (small workspace,
+    distilled knowledge) > raw volume. Source: arXiv:2602.12108 (StateLM),
+    Bob brief `agents/bob/workspace/sent/brief-gus-statelm.md`.
