@@ -23,9 +23,9 @@ the Ghost Bug. These methods need **re-testing with correct methodology**
 The only valid experiments are the two post-discovery micro-edit runs
 (Method #13), which kept the original name and showed 0 regression.
 
-## Aggregate Evidence Summary (updated 2026-03-17, self-evolve H3000)
+## Aggregate Evidence Summary (updated 2026-03-18, self-evolve H3600)
 
-**57 experiment entries total** (~30 unique IDs in new format, plus legacy).
+**58 experiment entries total** (~31 unique IDs in new format, plus legacy).
 Key findings across 16 methods:
 
 | Method | # Experiments | Regressions? | Improvements? | Verdict |
@@ -45,15 +45,17 @@ Key findings across 16 methods:
 | Identity Exception | 1 | 0 | 0 | SAFE, INEFFECTIVE |
 | #14 Task Structuring | 1 (6 runs + 3 control) | 0 | 33% (2/6) | SAFE, PARTIALLY EFFECTIVE |
 | **#15 Workflow Enforcement** | **4 (16 runs + 3 controls)** | **0** | **100% (16/16)** | **🏆 CONFIRMED EFFECTIVE + GENERALIZABLE (3 scenarios)** |
-| **#16 Structural Documentation** | **1 (systemic, 7 agents)** | **N/A** | **Pending** | **DEPLOYED, awaiting production verification** |
+| **#16 Structural Documentation** | **2 (systemic + monitoring)** | **N/A** | **0/5 (exp-053)** | **SAFE, INEFFECTIVE — reclassified as model-level attractor fix needed** |
 
-### Core Finding (updated 2026-03-17T21:10)
+### Core Finding (updated 2026-03-18, self-evolve H3600)
 
 **Text-based coaching is SAFE but INEFFECTIVE: 0/13 clean text experiments
-improved judgment behavior.** All text methods — SOUL guards, heartbeat steps,
-LESSONS entries, knowledge files, inline content, negative examples, conditional
-guards, micro-edits, subtractive fixes — fail against task-anchoring. The agent
-has the instruction, reads it, and ignores it.
+improved judgment behavior, AND 0/5 sessions improved procedural behavior
+(Bob checkpoint: exp-053).** All text methods — SOUL guards, heartbeat steps,
+LESSONS entries, knowledge files, TOOLS.md, inline content, negative examples,
+conditional guards, micro-edits, subtractive fixes — fail against both
+judgment-anchoring AND procedural-anchoring. The agent has the instruction,
+reads it, and ignores it.
 
 **🏆 BREAKTHROUGH CONFIRMED + GENERALIZED (exp-045/046/047/048, 2026-03-17):
 Workflow Enforcement achieves 100% pass rate across THREE scenarios:**

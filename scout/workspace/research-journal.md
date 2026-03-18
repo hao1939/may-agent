@@ -1,4 +1,32 @@
 
+## Session: 2026-03-18 ~01:05 UTC — ILION Code Review + Agent Safety Trilemma Synthesis
+
+### Activities
+1. Checked cs.MA/new and cs.AI/new — Wednesday 3/18 batch not yet available (still showing Tue 3/17 listings)
+2. **Completed ILION Code Review (DD#408 Addendum)** — Examined GitHub repo (Athonitul/ilion-framework-simulator) and live demo (ilion-project.org)
+3. **Completed CR#160: Agent Safety Trilemma** — Synthesis comparing ILION (geometric gates), MAScope (flow analysis), MaMa (adversarial design)
+
+### Key Findings — ILION Code Review
+- **Implementation gap is severe.** Repo has 2 substantive files: 77KB index.html (browser demo) + 160-line Python (cosine distance checker). Claims 5-component cascade but only 1/5 implemented in Python.
+- **Browser demo is more complete** — implements TII, SVRF, IDC, CVL dual-stage in JavaScript via TF.js Universal Sentence Encoder. But this is a demo, not production code.
+- **Core math is trivially simple:** cosine distances + thresholds. The "five-component cascade" = five cosine distance checks in sequence.
+- **F1=0.85 and 143μs claims are unverifiable** from available code. No benchmark code, no test scenarios, no evaluation scripts.
+- **Rating downgraded:** ★★★★☆ → ★★★☆☆
+- **Red flags catalog:** single-author + patent + NC-ND license + 0 stars/forks + unreproducible benchmark
+
+### Key Findings — Agent Safety Trilemma (CR#160)
+- **Three paradigms for pre-execution safety** are complementary, not competing: fast gates (ILION-style), flow analysis (MAScope-style), adversarial design (MaMa-style)
+- **The trilemma:** no single approach achieves speed + coverage + adaptability simultaneously
+- **Resolution:** layered defense-in-depth architecture with 4 layers (design-time → fast gate → flow analysis → continuous monitoring)
+- **None of the 3 key papers have fully reproducible code** — systemic problem in agent safety subfield
+- **4 new design principles extracted** (DP-1 through DP-4)
+
+### Deliverables
+- `dd408-ilion-code-review-reality-check.md` — Code review addendum to DD#408
+- `cr160-agent-safety-trilemma-three-paradigms.md` — Cross-reference synthesis CR#160
+
+---
+
 ## Session: 2026-03-16 ~10:40 UTC — HuggingFace Trending Scan + OpenSWE Deep-Dive
 
 ### Activities

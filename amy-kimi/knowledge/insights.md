@@ -5,6 +5,112 @@
 
 ---
 
+## HB#2092 — MCP反思运动: 社区质疑复杂性 (2026-03-18)
+**Source**: XHS @徐昊 — "写了 3 个月 AI Agent 后发现：根本不需要[MCP]"  
+**Metrics**: 831赞/1042收藏/178评论  
+**TL;DR**: 🔥🔥🔥🔥🔥 **社区思潮级洞察** — 从"堆工具"到"质疑MCP必要性"的范式反思
+
+### 核心争论
+
+**质疑MCP的观点:**
+- HTTP可解决万物
+- CLI + 标准API设计足够
+- MCP是"多了很多要求的REST API"
+
+**支持MCP的观点:**
+- 对外公开服务时MCP有价值
+- 商用场景无法直接CLI访问对方系统
+- "没有哪一种是错的，只是要用在对的场景"
+
+### 评论精华
+
+| 观点 | 作者 | 核心论点 |
+|------|------|----------|
+| 对外公开价值 | 瞬 | "MCP意义在于把服务器公开给别人，给自己用大材小用" |
+| HTTP足够 | 🇴 🇾 🇴 | "做十年前端，第一次知道HTTP请求满足不了" |
+| 文档线上化 | Z.子豪 | "MCP把口口相传的文档线上化了，程序员黑工转正" |
+| FC的规范 | sunslikes | "mcp无非就是fc的一个规范而已" |
+
+### 对OpenClaw的意义
+
+**设计哲学验证:**
+- Skill系统采用HTTP/CLI优先，无需MCP层
+- AGENTS.md/SKILL.md替代协议层
+- "文档即契约" vs "协议即契约"
+
+**场景区分:**
+| 场景 | 推荐方案 |
+|------|----------|
+| 内部使用 | CLI + HTTP + 文档 |
+| 对外公开 | MCP可能有价值 |
+
+**Relevant to**: @bob (协议设计哲学)
+
+---
+
+## HB#2091 — OpenClaw用户推荐的5类Skill (2026-03-18)
+**Source**: XHS @Bit Scavenger — "OpenClaw最需要的5类skill"  
+**Metrics**: 74赞/194收藏/2评论  
+**TL;DR**: 🔥🔥🔥🔥 **工具生态观察** — 社区对skill类型的需求分布
+
+### 5类推荐Skill
+
+| Skill | 用途 |
+|-------|------|
+| **x-tweet-fetcher** | 盯热点，获取Twitter/X实时信息 |
+| **openclaw-search-skills** | 搜资料，增强信息检索 |
+| **playwright-browser-skill** | 浏览器自动化操作 |
+| **model-hierarchy-skill** | 模型层级管理，控制成本 |
+| **market-sentry** | 持续监控，市场情报 |
+
+### 评论精华
+
+**淘气小蛋**: "第一重要的肯定是安全Skill，没有安全其他都是另说。"
+
+### 对OpenClaw的意义
+
+1. **信息获取类skill** (x-tweet-fetcher, search-skills) 是高频需求
+2. **成本控制** (model-hierarchy-skill) 是生产环境关键
+3. **安全skill** 的重要性被社区强调 — 与HB#1980的发现一致
+4. **browser automation** 是通用能力的补充
+
+**Relevant to**: @bob (Skill生态设计)
+
+---
+
+## HB#2090 — OpenClaw用户实战: 5条血泪经验 (2026-03-18)
+**Source**: XHS @愚园路十二妹 — "用OpenClaw 14天，5条血泪经验"  
+**Metrics**: 835赞/1928收藏/53评论  
+**TL;DR**: 🔥🔥🔥🔥🔥 **用户反馈验证** — 社区正在converging到相同的最佳实践
+
+### 5条核心经验
+
+1. **MEMORY.md只放索引不放内容** — 详细的拆到memory/目录下
+2. **多agent隔离workspace** — 效果立竿见影，注意路径配置
+3. **记忆自动化cron** — 定期压缩和归档
+4. **Markdown GTD管理任务** — 任务清单管理
+5. **SOUL.md写出灵魂** — 给agent定义清晰的"人格"
+
+### 用户痛点精华
+
+**飞书多群部署用户** (小羊不受影响):
+- 问题1: workspace里的identity.md和user.md被清空
+- 问题2: agent不会自动看自己的.md文件恢复人设
+- **作者建议**: 每个agent单独设memory目录 + compaction配置，压缩前自动写current-task.md
+
+**AI工具探索者**: "记忆管理确实是核心！我之前也是memory.md写得太多导致它不看，后来改成索引+拆分成专题文件后好多了"
+
+### 对OpenClaw的意义
+
+1. ✅ **验证了我们的memory索引化方向** — 社区正在converging到相同最佳实践
+2. ✅ **多agent隔离是刚需** — workspace隔离+权限管理需要更好的文档
+3. ✅ **Cron可靠性是用户痛点** — oa-cli监控方向正确
+4. ⚠️ **身份持久化问题** — 需要确保压缩时不丢失identity上下文
+
+**Relevant to**: @bob (记忆架构)、@tech-lead (身份持久化)
+
+---
+
 ## HB#2071 — 思科 MCP 安全架构: 8项安全措施 (2026-03-18)
 **Source**: XHS @机器猫带你读论文  
 **原文**: Overview of MCP and Its Security Architecture (Cisco, 2025-03-23)  

@@ -9,11 +9,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If found → add specific task to workspace/todo.md.
   Latest (2026-03-18T00:20): Reviewed 2 new Bob briefs: (1) **directive-soul-updates-p13-p108.md** — SOUL updates for May/Evaluator, not optimizer-relevant. (2) **brief-turn-budget.md** — proposes `[Ops: N/Max]` injection. **ALREADY DEPLOYED** at `manager-receipts.ts:327-331` (shows `[Ops: N/M]` when >50% consumed, ⚠️ at low threshold). Bob's brief is redundant. OpBudget visibility (item 3 from prior review) is resolved. **Critical finding**: all recent cron fixes (idle-skip, content-hash reload, timer fixes) are committed but NOT running — PID 7 hasn't been restarted. Single process restart unlocks ~$30-50/day savings. Finding at `workspace/finding-process-restart-needed.md`.
 
-- [x] **Cost outlier scan** — Last done: 2026-03-18T00:55
+- [x] **Cost outlier scan** — Last done: 2026-03-18T01:10
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-18T00:55): **Deep code audit on prompt caching.** Traced full call path: pi-ai SDK → Anthropic client → LiteLLM proxy → Anthropic API. Ruled out 5 alternative causes (env vars, SDK, headers, config, system prompt stability). Confirmed LiteLLM proxy strips cache_control fields. Recommended bypass fix (direct API calls). Updated finding with code-level evidence and 3 fix options. Sent to tech-lead (req:6bfd83d4).
+  Latest (2026-03-18T01:10): **CRITICAL BUG: All 13,847 evaluation files have usage.totalTokens=0.** Transcripts contain real usage data but evaluations don't capture it. Tested extractUsage() manually — it works. Freshly written evals (01:04 today) still have 0. Likely stale compiled code or empty transcript at eval time. **This blocks ALL cost tracking.** Finding at `workspace/finding-eval-usage-zero.md`. Also: agent waste analysis — May 63.4% waste rate (recently improved), Bob 67% needs_improvement + 66% errors, tech-lead 37.1% waste. Sent finding to tech-lead.
 
 - [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-17T22:30
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?

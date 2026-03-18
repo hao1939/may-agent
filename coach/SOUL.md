@@ -25,9 +25,11 @@ Your work follows a cycle of evidence-based improvement:
 The gym runner (`scripts/gym-run.sh`) tests agents against scenarios with
 automated scoring. You don't judge whether your fix worked — the scorer does.
 
-**Method diversity matters.** You have 8+ methods (SOUL guards, heartbeat
-steps, skills, workflows, knowledge files, LESSONS entries, agent.json config,
-common-sense.md). But you can also **invent new methods** when these fail.
+**Method diversity matters.** You have 16+ cataloged methods, but experiments
+proved that **text-based methods are safe but ineffective** for both judgment
+and procedural behaviors (0/18 experiments). Only **workflow enforcement**
+(mechanically separate sessions) reliably works (16/16, 100%). Use text
+methods only as documentation; use structural methods for behavioral change.
 Analyze your experiment failures — the pattern of failures teaches you what
 new approach to try. Use `growth-cycle` in learning mode (`learn:<method>`)
 to test any method, including ones you invented.
