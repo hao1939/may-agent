@@ -352,4 +352,111 @@ SkillNet的设计理念：
 
 ---
 
+---
+
+## HB-2165 — Agent 5-Layer Model: agno创始人的架构框架 (2026-03-18)
+**Source**: XHS @阿阿阿盒 — "agent 其实就 5 层" (8赞/589收藏)  
+**Reference**: agno founder's "5 Layers of Building Agents"  
+**TL;DR**: 🔥🔥🔥🔥🔥 **架构标准化** — 五层模型揭示Agent框架的共性结构
+
+### The 5 Layers
+
+| 层级 | 英文名 | 核心职责 | 关键问题 |
+|------|--------|----------|----------|
+| 1 | **Model Layer** | LLM foundation | 选什么模型？ |
+| 2 | **Memory Layer** | Context retention | 记住什么？遗忘什么？ |
+| 3 | **Tool Layer** | External capabilities | 能调用什么？ |
+| 4 | **Planning Layer** | Task decomposition | 如何拆解任务？ |
+| 5 | **Execution Layer** | Action execution | 如何执行并验证？ |
+
+### 框架选型对比 (来自评论区 PigBun-AI)
+
+| 框架 | 优势 | 劣势 |
+|------|------|------|
+| **LangGraph** | 功能全面 | 学习曲线陡峭 |
+| **agno** | 轻量简洁 | 生态较小 |
+| **Claude SDK** | 体验优秀 | 闭源锁定 |
+| **Google ADK** | 大厂背书 | 文档不全，刚发布 |
+
+**社区建议**: 先用 LangChain 原生 Agent 跑通流程，理解 ReAct 循环再换框架。
+
+### 关键洞察 💡
+
+> "框架只是工具，核心是理解 Agent 的决策逻辑"
+
+### 对我们系统的意义
+
+| 五层模型 | OpenClaw 对应 |
+|----------|---------------|
+| Model Layer | 多LLM支持 (Opus/Gemini/Kimi) |
+| Memory Layer | heartbeat.md + memory.jsonl + SkillNet |
+| Tool Layer | Skill Registry + Tool system |
+| Planning Layer | Task分解 (需要加强) |
+| Execution Layer | ops-receipts + verification |
+
+**验证**: 我们的架构与行业共识的五层模型高度对齐，主要在Planning Layer可进一步投入。
+
+---
+
+## HB-2166 — ByteDance DeerFlow: 企业级Agent框架 (2026-03-18)
+**Source**: XHS @云栈开源日记 — "DeerFlow：字节悄悄开源了个'真' AI 员工"  
+**GitHub**: ByteDance/DeerFlow  
+**TL;DR**: 🔥🔥🔥🔥🔥 **工程参考** — 字节跳动的LangGraph企业级Agent实践
+
+### 核心架构
+
+- **基于 LangGraph**: 复用成熟框架，专注业务层
+- **子智能体协同**: 多Agent分工处理复杂任务
+- **动态技能加载**: 按需加载，非预加载全部
+- **Docker/K8s沙箱**: 安全隔离的执行环境
+
+### 技术亮点
+
+| 特性 | 实现 | 价值 |
+|------|------|------|
+| 子Agent协同 | 主Agent调度多个专业Agent | 复杂任务分解 |
+| 动态加载 | Skill按需实例化 | 降低内存，提升启动速度 |
+| 沙箱隔离 | Docker/K8s容器化执行 | 安全、可扩展 |
+| 企业级 | 错误处理、监控、日志完整 | 生产可用 |
+
+### 对我们系统的意义
+
+1. **验证多Agent架构**: ByteDance也在采用子Agent协同模式
+2. **Skill动态加载**: 我们的Skill Registry应考虑懒加载优化
+3. **安全执行环境**: 需要为Skill执行设计沙箱机制
+4. **LangGraph生态**: 考虑是否复用LangGraph的部分能力
+
+**Relevant to: tech-lead** — 工程实现参考
+**Relevant to: bob** — 架构设计验证
+
+---
+
+## HB-2167 — Agent Engineering: 不只是模型优化 (2026-03-18)
+**Source**: XHS @少游 — "做 Agent，真正该优化的往往不只是模型" (1赞/28收藏)  
+**TL;DR**: 🔥🔥🔥🔥 **系统思维** — Agent稳定性是系统工程，非单点优化
+
+### 核心观点
+
+很多 Agent 做不稳，问题不一定出在模型本身：
+
+1. **执行闭环不够硬** — 做了≠做好，缺乏验证
+2. **失败信息没有回流** — 错了不知道为什么，下次还错
+3. **轨迹≠经验** — 保存了很多log，但没真正沉淀为知识
+
+### 工程启示
+
+> "做 Agent，不只是'让模型会做题'，还包括'让系统知道什么时候该继续做、为什么会失败、以及下次怎么少犯同样的错'"
+
+### 对我们系统的意义
+
+| 问题 | OpenClaw 应对 |
+|------|---------------|
+| 执行闭环 | ops-receipts + verification gates |
+| 失败回流 | LESSONS.md + failure taxonomy |
+| 经验沉淀 | SkillNet + insights archiving |
+
+**关键差距**: 我们的失败信息回流是手动的（通过coaching），需考虑自动化机制。
+
+---
+
 *Previous insights archived to library/insights-archive-*.md*
