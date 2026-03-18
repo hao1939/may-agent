@@ -15,11 +15,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If pattern found → design fix, add to workspace/todo.md.
   Latest (2026-03-18T13:20): **$37.03 in 20 sessions (1.9h span), $456/day projected.** Top offenders: optimizer $10.90 (29%), coach $9.97 (27%), tech-lead $5.69 (15%). Coach common-sense-verify reads full session.jsonl files (550KB in one session, $2.78/run). Updated cron message to instruct grep-based search. Finding at `workspace/finding-cost-analysis-4h-window.md`.
 
-- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-18T05:22
+- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-18T14:49
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
   Could it be replaced with a JS handler? (See cron-graduation-process.md Stage 3.)
   If found → write proposal in workspace/improvement-proposals.md.
-  Latest (2026-03-18T05:22): **run-agent-task pre-flight checks.** Surveyed all 10 `run-agent-task` cron entries. 4 can skip LLM sessions when nothing to process: reflect (no new human inputs), consolidate-memory-* (empty journals), analyze-failures (no new evals). Disabled `lesson-consolidation` cron (redundant with lessons-graduation.ts JS handler). Sent pre-flight hook design to tech-lead (req:dbb14f27). Savings: $3-5/day ($90-150/month). Finding at `workspace/finding-run-agent-task-preflight.md`.
+  Latest (2026-03-18T14:49): **Growth-cycle gym test step → JS handler.** Coach's growth-cycle.ts runs 4 LLM sessions per experiment. Step 3 (gym test) is purely mechanical — just runs gym-run.sh and parses JSON. Proposed JS replacement eliminates 1 full session per cycle. Also found ceiling-effect waste: last 4 experiments all inconclusive (all agents pass baseline). Sent ceiling-effect guard to May (req:bdb3ede9), gym-test JS handler + coder oneshot registration to tech-lead (req:b09e967f). Finding at `workspace/finding-llm-to-js-scan-2.md`.
 
 - [x] **Handler health check** — Last done: 2026-03-18T12:55
   Review existing JS handlers in agents/may/handlers/.
