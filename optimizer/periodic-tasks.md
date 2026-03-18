@@ -25,11 +25,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Review existing JS handlers in agents/may/handlers/.
   Any errors in recent logs? Any handler that's not firing?
   If issues → add fix to workspace/todo.md.
-  Latest (2026-03-18T04:28): **3 of 13 handlers NEVER FIRED.** daily-brief, lessons-graduation, workspace-compaction all have 0 executions in 22h of uptime. Root cause: added to cron.json after process start, hot-reload broken (known). 6 other JS handlers healthy (watchdog 10min✅, auto-commit 10min✅, evaluate-sessions 30min✅, audit-requests 2h✅, error-log-scanner 4h✅, system-status 4h✅). Also found secondary bug: `computeResumeDelay()` jitter for never-run entries = `random() * intervalMs` — 24h handler could wait 24h before first fire. Sent fix to tech-lead (req:375758d9). Finding at `workspace/finding-handler-health-check-0318.md`.
+  Latest (2026-03-18T05:42): **Same 3 handlers still unfired** (daily-brief, lessons-graduation, workspace-compaction). Jitter cap fix committed (2b972c0) but undeployed. New observation: 34 cron entries total, 10 heartbeats at 30min = 18+ sessions/hr. Bob 100% idle (6/6 error/idle), Coach 57% idle (4/7 ≤3 ops), May 57% idle (4/7 ≤1 op). Combined with skipIfIdle DB bug (queries empty requests.db instead of may.db), zero idle skips occurring. Finding at `workspace/finding-handler-health-check-0318.md`.
 
 ## Weekly
-- [x] **Improvement proposals review** — Last done: 2026-03-18T05:00
-  **5 proposals implemented by tech-lead in last 3h**: jitter cap (2b972c0), read-dedup guard (9eefa72), finish() evidence guard (2233509), error circuit breaker (97f3a50), evaluator re-eval fix (e7c1cb9). All 1,428 tests pass (106 files). Still 42 undeployed commits, PID 7 at 14h+ uptime. Estimated savings once deployed: $35-63/day ($1,050-1,890/month). Finding at `workspace/finding-proposal-implementation-tracking.md`.
+- [x] **Improvement proposals review** — Last done: 2026-03-18T05:42
+  **7 proposals now implemented** (up from 5). New additions: common-sense.md system prompt move (9bc3742, $31/day), evaluator false-positive fix (cb95fff). 44 total undeployed commits. Estimated savings once deployed: **$66-94/day ($1,980-2,820/month)**. Finding at `workspace/finding-proposal-implementation-tracking.md`.
 
 - [x] **Refine-Skill loop (EvoSkill)** — Last done: 2026-03-17
   Follow `agents/shared/skills/skill-lifecycle/SKILL.md` — the full workflow:
