@@ -238,3 +238,16 @@ Six papers integrated into unified attack chain: MCP exploitation (89-94% succes
 **Actionable pattern:** Beta distribution trust tracking implementable in ~50 lines. Risk(Q) = Σ(D_j · T_j · C_j) / Σ(T_j · C_j + ε) for weighted consensus. Graph recovery: create clean replica → reconnect neighborhood → isolate compromised agent → zero downtime.
 
 **Files:** `agents/scout/workspace/dd424-dynatrust-dynamic-trust-graphs-sleeper-agent-defense.md`
+
+---
+
+### 🔴 W12 FINAL CAPSTONE: The Complete Agent Systems Architecture (2026-03-18)
+
+**What:** Mega-synthesis integrating 150 deep-dives and 96 cross-references into a unified four-stack architecture for production MAS: Security (L0-L4 defense-in-depth), Governance (discover→formalize→enforce→audit→adapt), Runtime (deliberation→routing→serving→monitoring), Memory (working→episodic→semantic→safety).
+
+**Critical gaps identified:** (1) No evolutionary defense exists for deception-as-ESS, (2) Cross-stack cascade attacks undefined, (3) Scalability bounds unknown for complete architecture, (4) Memory stack not adversarially tested, (5) Human-in-the-loop thresholds unspecified.
+
+**Central thesis:** MAS are infrastructure problems, not agent problems. The agents are interchangeable; the four stacks determine outcomes.
+
+**File:** `agents/scout/workspace/weekly-capstone-2026-w12-final-mega-synthesis.md`
+
