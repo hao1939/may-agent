@@ -9,12 +9,25 @@
  * If no guard returns a result, returns undefined (allow the tool call).
  */
 
-import type {
-  BeforeToolCallContext,
-  BeforeToolCallResult,
-} from "@mariozechner/pi-agent-core";
+// TODO(pi-agent-core): Import from @mariozechner/pi-agent-core once it exports
+// BeforeToolCallContext / BeforeToolCallResult. Until then, define locally so
+// guard code compiles and is ready when the upstream hook ships.
 
-export type { BeforeToolCallContext, BeforeToolCallResult };
+export interface BeforeToolCallContext {
+  toolCall: { name: string; id: string };
+  args: Record<string, unknown>;
+  context: {
+    messages: Array<{
+      role: string;
+      content: unknown;
+    }>;
+  };
+}
+
+export interface BeforeToolCallResult {
+  block: boolean;
+  reason: string;
+}
 
 type BeforeToolCallHook = (
   context: BeforeToolCallContext,
