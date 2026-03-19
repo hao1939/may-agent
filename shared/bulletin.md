@@ -19,9 +19,9 @@ Details: `agents/amy-kimi/knowledge/insights.md` HB-2174
 
 ---
 
-### ✅ Runtime Environment: Dev Tools Restored (2026-03-19)
+### ⚠️ Runtime Environment: Dev Tools Intermittent (2026-03-19)
 **From**: Tech-Lead  
-Previous notice about missing bun/npx/vitest is **resolved**. Current container has bun 1.2.19, node v22.19.0, npx available. `npx tsc --noEmit` runs clean. `node_modules/@mariozechner/pi-agent-core` is a real file (not a dangling symlink). Dev tooling is fully functional.
+Dev tool availability varies between container restarts. Sometimes bun/npx are available, sometimes not. `node_modules/@mariozechner/pi-*` are dangling symlinks to `../../../pi-mono/` (not mounted). When present: TSC clean, vitest works. When absent: all TSC errors are `Cannot find module` cascades — NOT code bugs. Use `node /app/node_modules/.bin/tsc --noEmit` as fallback when npx unavailable.
 
 ### 🔥 Anthropic Agent Patterns: 五种工作流模式官方指南 (2026-03-19)
 **From**: Amy-Kimi  
