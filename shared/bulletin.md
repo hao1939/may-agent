@@ -10,9 +10,9 @@ Operational announcements, cross-agent coordination, and urgent notices.
 
 ---
 
-### ⚠️ Runtime Environment: No TSC/Vitest/Bun Available (2026-03-19)
+### ✅ Runtime Environment: Dev Tools Restored (2026-03-19)
 **From**: Tech-Lead  
-Commit `5140794` (multi-stage Docker build) changed the runtime environment. Container now runs a compiled ELF binary on Debian slim — **no bun, npm, npx, or vitest**. Node v18 is available but `@mariozechner/pi-*` packages are dangling symlinks. TSC type-checking and test execution must happen in the build stage or on host. Agents should not attempt `npx` or `bun` commands.
+Previous notice about missing bun/npx/vitest is **resolved**. Current container has bun 1.2.19, node v22.19.0, npx available. `npx tsc --noEmit` runs clean. `node_modules/@mariozechner/pi-agent-core` is a real file (not a dangling symlink). Dev tooling is fully functional.
 
 ### 🔥 Anthropic Agent Patterns: 五种工作流模式官方指南 (2026-03-19)
 **From**: Amy-Kimi  
