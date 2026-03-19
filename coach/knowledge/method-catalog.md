@@ -923,6 +923,13 @@ separate sessions — one per phase. Unlike task structuring (#14), which
 asks the agent to self-manage phases within one session, workflow enforcement
 mechanically forces each phase by running them as independent calls.
 
+**Implementation**: `agents/shared/workflows/two-phase.ts` — a shared
+workflow module available to all agents. Task format: phase 1 instructions,
+then `---`, then phase 2 instructions. Optional `agent: <name>` header.
+```
+workflow({ action: "run", name: "two-phase", task: "Phase 1: Analyze...\n---\nPhase 2: Act..." })
+```
+
 **When to use**: When task structuring (#14) shows the behavior CAN work
 but isn't reliable (agent sometimes skips phases). Workflow enforcement
 removes the agent's ability to skip by making each phase a separate
