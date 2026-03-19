@@ -114,6 +114,28 @@ CREATE INDEX IF NOT EXISTS idx_status    ON requests(status);
 CREATE INDEX IF NOT EXISTS idx_to_agent  ON requests(toAgent);
 CREATE INDEX IF NOT EXISTS idx_parent    ON requests(parentRequestId);
 CREATE INDEX IF NOT EXISTS idx_created   ON requests(createdAt);
+
+-- Convention checks (P1: mechanical compliance checker)
+CREATE TABLE IF NOT EXISTS convention_checks (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  session_id TEXT NOT NULL,
+  agent TEXT NOT NULL,
+  convention TEXT NOT NULL,
+  passed INTEGER NOT NULL,
+  violations TEXT,
+  checked_at INTEGER NOT NULL,
+  UNIQUE(session_id, convention)
+);
+
+CREATE TABLE IF NOT EXISTS convention_maturity (
+  convention TEXT PRIMARY KEY,
+  level TEXT NOT NULL DEFAULT 'active',
+  level_since INTEGER,
+  last_regression INTEGER
+);
+
+CREATE INDEX IF NOT EXISTS idx_cc_agent ON convention_checks(agent, convention, checked_at);
+CREATE INDEX IF NOT EXISTS idx_cc_conv  ON convention_checks(convention, checked_at);
 `;
 
 // ── Database Management ────────────────────────────────────────────────
