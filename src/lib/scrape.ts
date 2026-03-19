@@ -191,7 +191,11 @@ export function createScrapeTool(options: ScrapeToolOptions = {}): AgentTool {
     parameters: ScrapeParams,
     execute: async (_id, _params) => {
       const params = _params as ScrapeInput;
-      const maxLen = params.maxLength ?? defaultMaxLength;
+      // Cap maxLength to prevent agents from requesting 200K+ of text that bloats context.
+      // Scout sessions showed agents escalating maxLength (40K→80K→200K) after seeing truncation hints,
+      // producing 400KB+ tool results. Hard cap at 30K keeps results useful without blowing up sessions.
+      const MAX_AGENT_LENGTH = 30_000;
+      const maxLen = Math.min(params.maxLength ?? defaultMaxLength, MAX_AGENT_LENGTH);
 
       // Validate URL
       let parsedUrl: URL;
@@ -253,7 +257,7 @@ export function createScrapeTool(options: ScrapeToolOptions = {}): AgentTool {
         const header = meta.join("\n");
         const separator = "\n\n--- Content ---\n\n";
         const footer = truncated
-          ? `\n\n--- Truncated at ${maxLen.toLocaleString()} chars (use maxLength parameter for more) ---`
+          ? `\n\n--- Truncated at ${maxLen.toLocaleString()} chars. This is sufficient for analysis — summarize what you have rather than re-fetching. ---`
           : "";
 
         return textResult(header + separator + content + footer);
