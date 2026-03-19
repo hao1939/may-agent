@@ -358,6 +358,66 @@ function matchesFilters(
   return true;
 }
 
+// ── Transcript Export ──────────────────────────────────────────────────
+
+/**
+ * Copy session transcript JSONL to workDir/transcript.jsonl so that
+ * success_criteria.js scorers can inspect agent behavior.
+ *
+ * Looks for *.jsonl in the session path. If the session path is empty
+ * or no JSONL file is found, writes a minimal stub explaining why.
+ */
+function exportTranscript(sessionPath: string, workDir: string): void {
+  const transcriptDest = join(workDir, "transcript.jsonl");
+
+  if (!sessionPath || !existsSync(sessionPath)) {
+    writeFileSync(transcriptDest, JSON.stringify({ note: "no session transcript available" }) + "\n");
+    return;
+  }
+
+  // Session dirs typically contain a single .jsonl transcript file
+  // or the session path IS the jsonl file
+  if (sessionPath.endsWith(".jsonl") && existsSync(sessionPath)) {
+    cpSync(sessionPath, transcriptDest);
+    return;
+  }
+
+  // Look for .jsonl files in the session directory
+  try {
+    const files = readdirSync(sessionPath).filter((f) => f.endsWith(".jsonl"));
+    if (files.length > 0) {
+      // Use the largest JSONL file (most complete transcript)
+      let best = files[0];
+      let bestSize = 0;
+      for (const f of files) {
+        const sz = statSync(join(sessionPath, f)).size;
+        if (sz > bestSize) {
+          bestSize = sz;
+          best = f;
+        }
+      }
+      cpSync(join(sessionPath, best), transcriptDest);
+      return;
+    }
+  } catch {
+    // fall through
+  }
+
+  // Fallback: look for messages.json or similar
+  for (const candidate of ["messages.json", "messages.jsonl", "transcript.json"]) {
+    const p = join(sessionPath, candidate);
+    if (existsSync(p)) {
+      cpSync(p, transcriptDest);
+      return;
+    }
+  }
+
+  writeFileSync(
+    transcriptDest,
+    JSON.stringify({ note: "session path found but no transcript file detected", sessionPath }) + "\n"
+  );
+}
+
 // ── Scoring ────────────────────────────────────────────────────────────
 
 function scoreScenario(scenarioDir: string, workDir: string): ScoreResult {
@@ -438,6 +498,9 @@ function runScenario(
   }
 
   const durationMs = Date.now() - startMs;
+
+  // Export transcript so scorers can inspect agent behavior
+  exportTranscript(lastResult.sessionPath, workDir);
 
   // Score
   const score = scoreScenario(scenarioDir, workDir);
