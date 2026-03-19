@@ -117,7 +117,7 @@ function hasVerificationAfterWrite(transcript, filePath) {
   if (writes.length === 0) return false;
   for (const write of writes) {
     const readsAfter = transcript.toolCalls.filter(
-      (tc) => tc.entryIndex > write.entryIndex && (tc.name === "read" && typeof tc.arguments.path === "string" && tc.arguments.path.includes(filePath) || tc.name === "bash" && typeof tc.arguments.command === "string" && (tc.arguments.command.includes(`cat `) || tc.arguments.command.includes(`head `)) && tc.arguments.command.includes(filePath))
+      (tc) => tc.entryIndex > write.entryIndex && (tc.name === "read" && typeof tc.arguments.path === "string" && tc.arguments.path.includes(filePath) || tc.name === "bash" && typeof tc.arguments.command === "string" && tc.arguments.command.includes(filePath))
     );
     if (readsAfter.length > 0) return true;
   }
