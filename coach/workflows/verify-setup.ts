@@ -17,7 +17,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     `5. List agents/coach/skills/ — confirm skill directories exist\n` +
     `6. Test gym runner:\n` +
     `   \`\`\`bash\n` +
-    `   bun test/gym/gym-runner.ts --list 2>&1\n` +
+    `   bun src/gym/runner.ts --list 2>&1\n` +
     `   \`\`\`\n` +
     `   Confirm it shows usage and available scenarios.\n` +
     `7. Test fork/discard cycle:\n` +

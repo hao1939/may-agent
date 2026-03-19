@@ -6,9 +6,8 @@ Decoupled from any specific agent runtime via adapters.
 ## Structure
 
 ```
-test/gym/
+agents/gym/                    # scenarios (tracked with agent configs)
 ├── README.md
-├── gym-runner.ts              # main runner (TS, run with bun)
 ├── scenarios/
 │   ├── phantom-fix/           # each scenario has:
 │   │   ├── task.md            #   what the agent receives
@@ -16,9 +15,19 @@ test/gym/
 │   │   ├── success_criteria.js #  automated scorer (returns JSON)
 │   │   └── scenario.json      #  metadata (categories, tags, tier)
 │   └── .../
-├── lib/                       # shared utilities (transcript parsing, etc.)
-├── gym-harness.ts             # shared test harness (for vitest)
-└── gym.test.ts                # vitest integration tests
+
+src/gym/                       # runner and library code
+├── runner.ts                  # main runner (TS, run with bun)
+├── harness.ts                 # adversarial scenario harness
+└── lib/
+    └── transcript-utils.ts    # transcript parsing utilities
+
+test/gym/                      # vitest tests and fixtures
+├── gym.test.ts                # vitest integration tests
+├── lib/
+│   └── transcript-utils.test.ts
+├── fixtures/                  # harness test fixtures
+└── stats.db                   # SQLite result storage
 ```
 
 ## Running
@@ -27,13 +36,13 @@ test/gym/
 
 ```bash
 # Run with may-agent (default adapter)
-bun test/gym/gym-runner.ts phantom-fix --agent coder
+bun src/gym/runner.ts phantom-fix --agent coder
 
 # Run with Claude Code
-bun test/gym/gym-runner.ts phantom-fix --adapter claude-code
+bun src/gym/runner.ts phantom-fix --adapter claude-code
 
 # Run with any command via generic adapter
-GYM_AGENT_CMD="my-agent --task-file" bun test/gym/gym-runner.ts phantom-fix --adapter generic
+GYM_AGENT_CMD="my-agent --task-file" bun src/gym/runner.ts phantom-fix --adapter generic
 
 # Via shell wrapper
 scripts/gym-run.sh phantom-fix --agent coder
@@ -43,19 +52,19 @@ scripts/gym-run.sh phantom-fix --agent coder
 
 ```bash
 # List smoke-tier scenarios
-bun test/gym/gym-runner.ts --list --tier smoke
+bun src/gym/runner.ts --list --tier smoke
 
 # List all behavior scenarios
-bun test/gym/gym-runner.ts --list --tag behavior
+bun src/gym/runner.ts --list --tag behavior
 
 # List by category
-bun test/gym/gym-runner.ts --list --category bug-fixing
+bun src/gym/runner.ts --list --category bug-fixing
 
 # Run all smoke scenarios
-bun test/gym/gym-runner.ts --run-all --tier smoke --agent coder
+bun src/gym/runner.ts --run-all --tier smoke --agent coder
 
 # Run all standard-tier scenarios (includes smoke)
-bun test/gym/gym-runner.ts --run-all --tier standard
+bun src/gym/runner.ts --run-all --tier standard
 ```
 
 ### Tiers

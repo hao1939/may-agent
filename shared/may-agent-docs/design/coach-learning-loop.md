@@ -26,7 +26,7 @@ never learned the others, and had no way to measure results.
    Every growth cycle records: error pattern, agent, method used, gym
    scenarios tested, pass/fail per scenario, promote/discard decision.
 
-3. **Gym Scenarios** (`test/gym/scenarios/`)
+3. **Gym Scenarios** (`agents/gym/scenarios/`)
    9 scenarios with automated scoring. Each has `task.md`, `environment/`,
    and `success_criteria.js`. Scorer is deterministic — Coach doesn't
    judge its own work.
@@ -66,21 +66,21 @@ The heartbeat session pauses while the workflow runs.
 
 ### Gym Runner
 
-`test/gym/gym-runner.ts` is the TypeScript-based gym runner. It supports
+`src/gym/runner.ts` is the TypeScript-based gym runner. It supports
 multiple agent runtimes via adapters (may-agent, claude-code, generic).
 
 ```bash
 # Baseline (production agent)
-bun test/gym/gym-runner.ts phantom-fix --agent coder --timeout 3
+bun src/gym/runner.ts phantom-fix --agent coder --timeout 3
 
 # Experiment (lab fork with config changes)
-bun test/gym/gym-runner.ts phantom-fix --agent coder --lab coder-fm33-fix --timeout 3
+bun src/gym/runner.ts phantom-fix --agent coder --lab coder-fm33-fix --timeout 3
 
 # List available scenarios
-bun test/gym/gym-runner.ts --list --tier smoke
+bun src/gym/runner.ts --list --tier smoke
 
 # Batch run
-bun test/gym/gym-runner.ts --run-all --tier standard --agent coder
+bun src/gym/runner.ts --run-all --tier standard --agent coder
 ```
 
 The runner copies the scenario environment to a temp dir, runs the agent
@@ -163,7 +163,7 @@ a growth cycle experiment shows a skill is the right fix for an error.
 ## Implementation Status
 
 ### Built
-- [x] `test/gym/gym-runner.ts` — gym runner with adapter-based isolation (may-agent, claude-code, generic)
+- [x] `src/gym/runner.ts` — gym runner with adapter-based isolation (may-agent, claude-code, generic)
 - [x] `agents/coach/knowledge/method-catalog.md` — 8 methods documented
 - [x] `agents/coach/workflows/growth-cycle.ts` — evidence-based improvement
 - [x] `agents/coach/workflows/learn-method.ts` — method experimentation

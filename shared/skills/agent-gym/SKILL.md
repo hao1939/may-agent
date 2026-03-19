@@ -2,7 +2,7 @@
 
 **Status**: Active
 **Owner**: Coach (primary), shared with all agents
-**Location**: `test/gym/gym-runner.ts`, `test/gym/`
+**Location**: `src/gym/runner.ts`, `agents/gym/scenarios/`, `test/gym/`
 
 ## What it is
 
@@ -16,16 +16,16 @@ situations correctly — without relying on self-judgment.
 
 ```bash
 # Baseline: test production agent
-bun test/gym/gym-runner.ts <scenario> --agent <agent-name>
+bun src/gym/runner.ts <scenario> --agent <agent-name>
 
 # Test a .lab/ fork (experimental changes)
-bun test/gym/gym-runner.ts <scenario> --agent <agent-name> --lab <fork-name>
+bun src/gym/runner.ts <scenario> --agent <agent-name> --lab <fork-name>
 
 # With timeout (default from scenario.json, fallback 5 min)
-bun test/gym/gym-runner.ts <scenario> --agent <agent-name> --timeout 3
+bun src/gym/runner.ts <scenario> --agent <agent-name> --timeout 3
 
 # Different adapter (claude-code, generic)
-bun test/gym/gym-runner.ts <scenario> --adapter claude-code
+bun src/gym/runner.ts <scenario> --adapter claude-code
 
 # Shell wrapper (same args)
 scripts/gym-run.sh <scenario> --agent <agent-name>
@@ -35,18 +35,18 @@ scripts/gym-run.sh <scenario> --agent <agent-name>
 
 ```bash
 # List all scenarios
-bun test/gym/gym-runner.ts --list
+bun src/gym/runner.ts --list
 
 # Filter by tier (smoke < standard < full)
-bun test/gym/gym-runner.ts --list --tier smoke
+bun src/gym/runner.ts --list --tier smoke
 
 # Filter by category or tag
-bun test/gym/gym-runner.ts --list --category bug-fixing
-bun test/gym/gym-runner.ts --list --tag behavior
+bun src/gym/runner.ts --list --category bug-fixing
+bun src/gym/runner.ts --list --tag behavior
 
 # Run all matching scenarios
-bun test/gym/gym-runner.ts --run-all --tier smoke --agent coder
-bun test/gym/gym-runner.ts --run-all --tier standard --agent coder
+bun src/gym/runner.ts --run-all --tier smoke --agent coder
+bun src/gym/runner.ts --run-all --tier standard --agent coder
 ```
 
 ### Tiers
@@ -97,7 +97,7 @@ The runner supports multiple agent runtimes via adapters:
 
 ```bash
 # Generic adapter example
-GYM_AGENT_CMD='my-agent --task-file' bun test/gym/gym-runner.ts phantom-fix --adapter generic
+GYM_AGENT_CMD='my-agent --task-file' bun src/gym/runner.ts phantom-fix --adapter generic
 ```
 
 ### How `--lab` works
@@ -112,7 +112,7 @@ This means the fork only needs to contain the files that differ from production.
 
 ## Available scenarios
 
-Located in `test/gym/scenarios/`. Each has a `scenario.json` with metadata
+Located in `agents/gym/scenarios/`. Each has a `scenario.json` with metadata
 (categories, tags, tier, timeout, workflow flag).
 
 | Scenario | Categories | Tests |
@@ -143,7 +143,7 @@ decompose the task into explicit phases. These are `tier: full` only.
 ## Creating a scenario
 
 ```
-test/gym/scenarios/<name>/
+agents/gym/scenarios/<name>/
 ├── task.md              # The prompt the agent receives
 ├── environment/         # Files the agent works on (copied to temp dir)
 │   ├── app.js
@@ -225,9 +225,9 @@ Use gym to verify that optimization changes (token reduction, prompt
 compression, model swaps) don't cause behavioral regressions:
 ```bash
 # Before: baseline
-bun test/gym/gym-runner.ts phantom-fix --agent coder
+bun src/gym/runner.ts phantom-fix --agent coder
 # After: test optimized fork
-bun test/gym/gym-runner.ts phantom-fix --agent coder --lab coder-optimized
+bun src/gym/runner.ts phantom-fix --agent coder --lab coder-optimized
 ```
 
 ### Bob / Tech-Lead
