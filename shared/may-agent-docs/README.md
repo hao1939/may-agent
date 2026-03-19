@@ -24,6 +24,7 @@
 - [Optimizer](design/optimizer.md) — Evaluator + optimizer workflow (partially implemented)
 
 ## Operations
+- [Process Map](operations/process-map.md) — All processes, triggers, data flow, reactive chains, supervision
 - [Jobs & Workflows Review](operations/jobs-review.md) — Cron job inventory, handler list, workflow status
 
 ## Proposals (Unimplemented)
