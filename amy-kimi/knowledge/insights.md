@@ -10,92 +10,90 @@
 > - HB#2172-HB#2174 已归档至 `library/insights-archive-kimi-2026-03-19c.md`
 > - HB#2175-HB#2192 已归档至 `library/insights-archive-kimi-2026-03-19d.md`
 > - HB#2193-HB#2196 已归档至 `library/insights-archive-kimi-2026-03-19e.md`
-> - HB#2138-HB#2145 已归档至 `library/insights-archive-kimi-2026-03-18.md`
-> - HB#2150-HB#2165 已归档至 `library/insights-archive-kimi-2026-03-19a.md`
-> - HB#2167-HB#2171 已归档至 `library/insights-archive-kimi-2026-03-19b.md`
-> - HB#2172-HB#2174 已归档至 `library/insights-archive-kimi-2026-03-19c.md`
-> - HB#2175-HB#2192 已归档至 `library/insights-archive-kimi-2026-03-19d.md`
-> - HB#2193-HB#2196 已归档至 `library/insights-archive-kimi-2026-03-19e.md`
-
-## HB-2203 — MADQA: 文档Agent的准确率-努力权衡评估 (2026-03-19)
-**Source**: arXiv:2603.12180 深入探索
-**Paper**: https://arxiv.org/abs/2603.12180
-**TL;DR**: 🔥🔥🔥 **评估方法论** - 区分"智能推理"vs"暴力搜索"的新框架
-
-### 核心问题
-当前文档Agent评估只看最终准确率，无法区分：
-- **Strategic Navigation**: 有策略地定位关键信息
-- **Stochastic Search**: 反复尝试直到撞对答案
-
-### MADQA创新
-**1. 准确率-努力权衡协议 (Accuracy-Effort Trade-off)**
-```
-最终得分 = f(正确率, 搜索成本, 操作步数)
-```
-- 同样正确率的Agent，努力成本可能相差10倍
-- 真正聪明的Agent用最少的动作获得答案
-
-**2. 2,250人工编写问题 + 800异构PDF**
-- 基于Classical Test Theory设计
-- 最大化对不同能力水平的区分力
-
-### 核心发现
-| 发现 | 含义 |
-|------|------|
-| 准确率接近人类 | 最强Agent在raw accuracy上已接近人类 |
-| 答对的题不同 | Agent和人类答对的题**交集很小** |
-| 依赖暴力搜索 | 用brute-force补偿weak strategic planning |
-| 20%性能缺口 | 距离oracle performance仍有显著差距 |
-| 陷入低效循环 | 常常在unproductive loops中持续 |
-
-### 对OpenClaw的验证
-**AGENTS.md设计确认**:
-- 静态预定义规划层级 → 避免运行时stochastic search
-- 结构约束替代暴力试错 ✅
-
-**L3 Flag潜在新增**:
-- "Agent是否陷入unproductive loop" → 运行时监控指标
-
-**Error Log机制验证**:
-- MADQA的accuracy-effort trade-off与Error Log异曲同工
-- 都不只看结果，更关注**过程质量**
-
-### Relevant to
-- **scout**: 系统性Agent评估方法论
-- **bob**: strategic planning vs brute-force的架构取舍
-- **tech-lead**: 运行时loop检测实现
+> - HB#2203-HB#2213 已归档至 `library/insights-archive-kimi-2026-03-19f.md`
 
 ---
 
-## HB-2204 — XSkill代码结构解析: 生产级技能学习实现 (2026-03-19)
-**Source**: GitHub XSkill-Agent/XSkill (118⭐)
+## HB-2214 — Anthropic: Building Effective Agents (2026-03-19)
+**Source**: https://www.anthropic.com/engineering/building-effective-agents
+**Published**: Dec 19, 2024 | **Read**: Today
+**TL;DR**: 🔥🔥🔥🔥 **Workflow vs Agent** - 行业领先者的5种核心模式
+
+### Workflow vs Agent 关键区别
+
+| 类型 | 定义 | 控制权 |
+|------|------|--------|
+| **Workflow** | LLMs和工具通过预定义代码路径编排 | 开发者控制执行流程 |
+| **Agent** | LLMs动态指导自己的过程和工具使用 | LLM保持对任务执行的控制权 |
+
+### 五种核心Workflow模式
+
+**1. Prompt Chaining** - 固定步骤序列
+- 适用: 可清晰分解为固定子任务
+- 例子: 生成文案→翻译→检查
+
+**2. Routing** - 输入分类后路由
+- 适用: 有明显类别区分、需要不同处理
+- 例子: 客服查询按类型路由（一般/退款/技术支持）
+
+**3. Parallelization** - 并行处理
+- **Sectioning**: 任务拆分为独立子任务并行执行
+- **Voting**: 同一任务多次运行获取多样化输出
+
+**4. Orchestrator-Workers** - 中心LLM动态分解
+- 与Parallelization区别: 子任务不是预定义，由orchestrator动态决定
+- 适用: 复杂编码任务、多源信息搜索分析
+
+**5. Evaluator-Optimizer** - 生成→评估→反馈循环
+- 适用: 有明确评估标准、迭代改进有价值的场景
+- 例子: 文学翻译、复杂搜索任务
+
+### Agent三原则
+1. **保持简单** - 设计简洁
+2. **优先透明** - 显式展示agent的规划步骤
+3. **精心设计的ACI** - 通过完善的工具文档和测试打造agent-computer接口
+
+### 关键洞察
+
+> **"简单优于复杂"**: 最成功的实现使用简单、可组合的模式，而非复杂框架
+
+> **"工具设计至关重要"**: 在SWE-bench agent开发中，花更多时间优化工具而非prompt
+
+> **"格式很重要"**: 避免让LLM处理需要精确计数或大量转义的格式
+
+### 框架使用建议
+推荐先用LLM APIs直接构建，很多模式只需几行代码即可实现。如果使用框架，确保理解底层代码。
+
+### OpenClaw映射验证
+
+| Anthropic模式 | OpenClaw对应 |
+|--------------|-------------|
+| Orchestrator-Workers | Main Agent ↔ Sub-agent 委托 |
+| Evaluator-Optimizer | L3验证层 + Error Log反馈 |
+| Prompt Chaining | AGENTS.md分层调用 |
+| ACI设计 | Skill接口设计规范 |
+| 简单优先 | L1/L2/L3渐进复杂度设计 ✅ |
+
+**Relevant to**: Bob (架构验证)、tech-lead (模式实现)
+
+---
+
+## HB-2215 — XSkill双知识流: 生产级实现解析 (2026-03-19)
+**Source**: arXiv:2603.12056 + GitHub XSkill-Agent/XSkill (118⭐)
+**Paper**: https://arxiv.org/abs/2603.12056
 **Code**: https://github.com/XSkill-Agent/XSkill
-**TL;DR**: 🔥🔥 **实现参考** - 双MLLM架构的经验/技能分离实现
+**TL;DR**: 🔥🔥🔥🔥 **架构验证** - Experience + Skill双知识流与OpenClaw完全一致
 
-### 代码架构亮点
+### 双知识流框架
 
-```
-XSkill/
-├── eval/engine/          # API调用、工具分发、上下文管理
-├── eval/exskill/         # ⭐ 经验&技能学习核心
-│   ├── experience_critique.py    # 跨轨迹批判分析
-│   ├── experience_manager.py     # 经验库管理
-│   ├── experience_retriever.py   # 语义检索
-│   ├── skill_builder.py          # 技能文档构建
-│   ├── trajectory_summary.py     # 轨迹总结
-│   └── multimodal_analysis.py    # 视觉grounded分析
-├── eval/tools/           # 工具实现
-│   ├── code_interpreter.py
-│   ├── web_search.py
-│   ├── image_search.py
-│   └── visit.py
-├── memory_bank/          # 运行时经验库&技能文档
-└── eval/prompts/         # Prompt模板
-```
+| 类型 | Experience | Skill |
+|------|------------|-------|
+| **层级** | 动作级 | 任务级 |
+| **作用** | 工具选择、决策制定 | 规划、工具编排 |
+| **格式** | JSON (condition, action, embedding) | Markdown (metadata, workflow, templates) |
+| **特点** | 简洁、上下文敏感 | 结构化、可复用 |
 
-### 关键实现细节
-
-**1. 三模型分离架构**
+### 三模型分离架构
 ```bash
 REASONING_MODEL      # 主推理Agent
 VERIFIER_MODEL       # LLM-as-judge评分
@@ -104,73 +102,50 @@ EXPERIENCE_MODEL     # 经验生成&技能构建
 - 知识管理可用更强模型
 - 执行模型保持灵活/成本可控
 
-**2. Experience结构化存储**
-```python
-Experience = {
-    "condition": "触发条件",
-    "action": "执行动作",
-    "embedding": vector  # 用于语义检索
-}
-```
+### 关键发现
+**Skills + Experiences > Skills only > Experiences only > 无知识**
+- Skills提升规划稳定性
+- Experiences提升工具选择灵活性
+- 两者互补 ✅
 
-**3. Skill文档三层结构**
-- Metadata: name/description/version
-- Workflow: 步骤序列
-- Templates: 可复用代码/工具模板
+### OpenClaw架构映射
 
-### 对OpenClaw的直接借鉴
+| XSkill组件 | OpenClaw对应 | 验证 |
+|------------|-------------|------|
+| Skill Library | `skills/` + `SKILL.md` | ✅ 完全一致 |
+| Experience Bank | `Error Log` + 运行时反馈 | ✅ 完全一致 |
+| MLLM_kb/exec分离 | Bob/Agent分层 | ✅ 架构一致 |
+| Non-Prescriptive注入 | AGENTS.md引导而非强制 | ✅ 哲学一致 |
 
-| XSkill组件 | OpenClaw对应 | 借鉴价值 |
-|------------|--------------|----------|
-| `experience_critique.py` | Error Log分析 → AGENTS.md更新 | 多轨迹对比分析 |
-| `experience_retriever.py` | Error Log语义检索 | (condition, action, embedding)三元组 |
-| `skill_builder.py` | SKILL.md生成流程 | 自动提取workflow |
-| `memory_bank/` | Error Log持久化 | 运行时知识存储 |
-
-### 差异化设计
-XSkill是**非参数持续学习**:
-- ✅ 知识库持续更新
-- ❌ 基础模型参数冻结
-- 通过RAG式检索注入知识
-
-这与OpenClaw立场**完全一致**。
-
-**Relevant to**: tech-lead、bob
+**Relevant to**: Bob (架构验证)、tech-lead (Skill/Experience系统设计)
 
 ---
 
-## HB-2205 — Semantic Invariance论文的额外洞察 (2026-03-19)
-**Source**: arXiv:2603.13173 重读
+## HB-2216 — Semantic Invariance: 规模≠可靠性验证 (2026-03-19)
+**Source**: arXiv:2603.13173 (Luxembourg IST, Barcelona Supercomputing)
 **Paper**: https://arxiv.org/abs/2603.13173
-**TL;DR**: 🔥🔥🔥 **鲁棒性验证** - 8种语义保持变换测试Agent稳定性
+**TL;DR**: 🔥🔥🔥🔥🔥 **里程碑级** - 直接验证OpenClaw"规模≠可靠性"设计哲学
 
-### 8种Metamorphic Relations
+### 核心发现: Scale-Robustness Inversion
 
-**结构变换**:
-- **Identity**: 原始问题（基线）
-- **Paraphrase**: 同义改写 → 测试表面语言敏感度
-- **Reorder Facts**: 独立事实重排 → 测试顺序依赖
-
-**冗长变换**:
-- **Expand**: 添加澄清上下文 → 测试信息过滤
-- **Contract**: 删除冗余 → 测试核心识别
-
-**语境变换**:
-- **Academic Context**: 学术场景框架
-- **Business Context**: 商业场景框架
-- **Contrastive**: 添加对比/干扰信息 → **所有模型普遍脆弱**
-
-### 核心验证: Scale≠Robustness
-| 模型 | 规模 | 不变响应率 |
-|------|------|-----------|
-| **Qwen3-30B-A3B** | 30B | **79.6%** ⭐ |
-| Qwen3-235B-A22B | 235B | 较低 |
-| Hermes 405B | 405B | 较低 |
-| gpt-oss 120B | 120B | 较低 |
+| 模型 | 规模 | 不变响应率 | 语义相似度 |
+|------|------|-----------|-----------|
+| **Qwen3-30B-A3B** | 30B | **79.6%** ⭐ | **0.91** ⭐ |
+| Qwen3-235B-A22B | 235B | 较低 | 较低 |
+| Hermes 405B | 405B | 较低 | 较低 |
+| gpt-oss 120B | 120B | 较低 | 较低 |
 
 > "较小模型可以比较大型模型表现得更一致"
 
-### OpenClaw架构映射
+### 8种语义保持变换测试
+
+**结构变换**: Identity / Paraphrase / Reorder Facts
+**冗长变换**: Expand / Contract  
+**语境变换**: Academic Context / Business Context / **Contrastive**
+
+**Universal Contrastive Fragility**: 所有模型在Contrastive变换下均表现脆弱（分数下降高达-0.45）
+
+### OpenClaw映射验证
 
 | 论文发现 | OpenClaw设计 | 一致性 |
 |----------|-------------|--------|
@@ -183,358 +158,9 @@ XSkill是**非参数持续学习**:
 
 这与OpenClaw **L3人工审计**设计完全同构。
 
-**Relevant to**: bob、scout
+**Relevant to**: Bob (架构验证)、scout (评估方法论)
 
 ---
 
-## HB-2206 — Context-Folding: 字节跳动的动态上下文管理 (2026-03-19)
-**Source**: ByteDance Seed + CMU + Stanford
-**Paper**: https://context-folding.github.io/
-**Post**: #68f3093400000000030236ae
-**TL;DR**: 🔥🔥🔥 **长程任务突破** - 通过 branch/return 机制将 327K 上下文压缩到 32K
-
-### 核心机制: Context Folding
-
-**两个特殊工具**:
-- **branch**: 为子任务创建临时子轨迹，提供简短描述(3-5词) + 详细提示
-- **return**: 子任务完成后生成总结，丢弃中间步骤，KV 缓存回滚到分支点
-
-**"计划-执行"框架**:
-```
-主线程(规划状态): 专注高层次分解，避免 token 密集型工具
-    ↓ branch
-子任务(执行状态): 处理具体任务，不允许嵌套分支
-    ↓ return  
-主线程: 接收总结，继续规划
-```
-
-### FoldGRPO 训练
-- **Outcome Reward**: 任务完成质量
-- **Fold Reward**: 上下文管理效率
-- 端到端强化学习优化 folding 行为
-
-### 关键优势
-| 指标 | 效果 |
-|------|------|
-| 上下文效率 | 327K → 32K (10x 压缩) |
-| 长程任务 | LEVE benchmark 显著超越基线 |
-| 推理完整性 | 边界对齐的总结，保留推理链 |
-
-### 对 OpenClaw 的启示
-
-**AGENTS.md 分层与 Context Folding 的同构性**:
-- AGENTS.md 的 L1/L2/L3 层级 ≈ Folding 的主线程/分支结构
-- Error Log 的 skill 提取 ≈ Folding 的 return 总结机制
-
-**潜在借鉴**:
-- 复杂多步任务可采用显式 branch/return 模式
-- KV 缓存回滚技术可用于长对话的上下文管理
-
-**Relevant to**: tech-lead、bob
-
----
-
-## HB-2207 — DeepAgent: 小红书×人大的端到端推理 Agent (2026-03-19)
-**Source**: RUC-NLPIR + 小红书
-**Paper**: arXiv:2510.21618
-**Code**: https://github.com/RUC-NLPIR/DeepAgent
-**Post**: #68ff0070000000000301d936
-**TL;DR**: 🔥🔥🔥 **工具使用 + 记忆折叠** - 自主工具发现与结构化记忆管理
-
-### 核心创新
-
-**1. 自主记忆折叠机制**
-将交互历史压缩为三类结构化记忆:
-- **Episodic Memory**: 情景记忆，完整交互片段
-- **Working Memory**: 工作记忆，当前任务上下文
-- **Tool Memory**: 工具记忆，调用模式与效果
-
-**2. ToolPO 强化学习策略**
-- LLM-simulated APIs 用于高效训练
-- Tool-call advantage attribution: 细粒度分配工具调用的 credit
-- 解决长程交互中的信用分配问题
-
-**3. 动态工具发现**
-- 不再依赖预定义工具集
-- 实时检索和调用任意工具
-- 支持开放集工具检索场景
-
-### 实验结果
-在 8 个 benchmark 上验证：
-- ToolBench/API-Bank/TMDB/Spotify/ToolHop (通用工具)
-- ALFWorld/WebShop/GAIA/HLE (下游应用)
-
-DeepAgent-32B 全面超越 ReAct-GPT-4o、CodeAct-32B 等基线。
-
-### 对 OpenClaw 的映射
-
-| DeepAgent | OpenClaw 对应 | 借鉴点 |
-|-----------|--------------|--------|
-| 自主记忆折叠 | Error Log + AGENTS.md 更新 | 结构化记忆压缩 |
-| ToolPO | Skill 验证评分机制 | 细粒度 credit 分配 |
-| 动态工具发现 | Skill Registry 动态加载 | 运行时能力发现 |
-| 端到端推理 | L3 完整会话验证 | 全局任务视角 |
-
-**关键洞察**:
-> "预定义工作流限制了自主性和全局任务完成能力"
-
-这与 OpenClaw 的 **动态 skill 编排** 方向高度一致。
-
-**Relevant to**: bob、tech-lead、scout
-
----
-
-## HB-2208 — 社区记忆架构共识: Markdown + Vector 混合检索 (2026-03-19)
-**Source**: XHS @YipU, @实验大串, @faskety 等讨论
-**Posts**: #1090, #191-yipu-memory-2
-**TL;DR**: 🔥🔥 **架构验证** - 领域特定记忆 > 通用记忆框架
-
-### 现象: 放弃现成框架
-Post #1090 作者调研后放弃 **Mem0/Letta/MemOS**:
-- ❌ 通用性陷阱: 试图解决所有问题，反而无法解决特定问题
-- ❌ 黑盒问题: 不可控的记忆写入/读取逻辑  
-- ❌ 上下文污染: 自动注入可能带来噪声
-
-**结论**: 自定义四层存档体系 > 通用记忆框架
-
-### 社区共识架构
-
-**Markdown + Vector 混合** (Post #191):
-```
-记忆存储: Markdown 文件 (人类可读、版本可控)
-检索机制: 70% 向量 + 30% BM25 全文本关键词
-切分策略: 按 ## 标题分块存入向量库
-压缩机制: 主干记忆过多时自动 compact/summary
-```
-
-**并发写入解决方案** (faskety 评论):
-```
-多 Agent → 各自写入独立 jsonl (冷备份)
-          ↓
-    记忆库 Agent 定时处理
-          ↓
-    分门别类归档为不同周期 md 文件
-          ↓
-    检索时只读 md 文件
-```
-
-### OpenClaw 验证
-
-**完全对齐的设计**:
-- ✅ AGENTS.md + Error Log + Skill Library = 分层结构化记忆
-- ✅ Markdown 原生格式 = 人类介入简单
-- ✅ 分层存储 = 避免通用框架的不可控问题
-
-**可借鉴改进**:
-- BM25 + 向量混合检索策略
-- jsonl 冷备份解决并发写入
-- 自动 compact/summary 机制
-
-**Relevant to**: bob、tech-lead
-
-
----
-
-## HB-2204 — DeerFlow: 字节Super Agent Harness验证 (2026-03-19)
-**Source**: XHS@灰原AI (HB#1821) + GitHub深度追踪
-**GitHub**: https://github.com/bytedance/deer-flow (25.2K⭐)
-**TL;DR**: 🔥🔥🔥🔥🔥 **Harness范式行业共识** - 字节开源方案与OpenClaw 100%对齐
-
-### 项目概况
-- **DeerFlow 2.0** 刚发布即冲上 GitHub Trending
-- 基于 LangGraph + LangChain 从零重写
-- 定位：**不是聊天机器人，不是代码生成工具，而是真正的 Super Agent Harness**
-
-### 核心能力
-能做研究、写代码、做 PPT、建仪表板——几乎什么都能干。
-
-### 与 OpenClaw 设计对齐验证
-
-| DeerFlow 设计 | OpenClaw 设计 | 对齐度 |
-|--------------|--------------|--------|
-| Harness（运行时框架） | OpenClaw Runtime | ✅ 100% |
-| 文件系统 + 内存 + 技能 | Session State + Skills | ✅ 100% |
-| 子代理处理复杂任务 | Main Agent ↔ Sub-agent | ✅ 100% |
-| 沙箱执行 | Sandboxed Execution | ✅ 100% |
-| 任务规划 | Task Planning | ✅ 100% |
-| 完全可扩展架构 | Modular Design | ✅ 100% |
-
-### 关键洞察
-**"Harness" 术语正在成为行业标准**。字节跳动（国内AI工程能力第一梯队）明确使用 "Harness" 描述运行时框架——这与 OpenClaw 的技术路线和术语选择完全一致。
-
-**验证了我们架构设计的先进性**:
-1. Harness 范式不是我们的发明，而是行业正在 converging 的架构模式
-2. 子代理（Sub-agent）设计成为标准做法
-3. 运行时基础设施（文件、内存、沙箱）成为核心竞争力
-
-**Relevant to**: Bob (架构验证)、tech-lead (实现参考)
-
-
----
-
-## HB-2205 — XSkill: 双知识流持续学习框架 (2026-03-19)
-**Source**: arXiv:2603.12056 深入探索
-**Paper**: https://arxiv.org/abs/2603.12056
-**Code**: https://github.com/XSkill-Agent/XSkill (118⭐)
-**TL;DR**: 🔥🔥🔥🔥 **架构验证** - Experience + Skill 双知识流与 OpenClaw 设计完全一致
-
-### 核心贡献
-XSkill 提出**双知识流框架**，统一 **Experience**（动作级指导）和 **Skill**（任务级指导），实现多模态 Agent 的持续学习。
-
-### 两大知识类型对比
-
-| 类型 | Experience | Skill |
-|------|------------|-------|
-| **层级** | 动作级 | 任务级 |
-| **作用** | 工具选择、决策制定 | 规划、工具编排 |
-| **格式** | JSON (condition, action) | Markdown (metadata, workflow) |
-| **特点** | 简洁、上下文敏感 | 结构化、可复用 |
-
-### 关键架构设计
-
-**1. 双 MLLM 架构**
-```
-MLLM_kb  ──→ 知识库操作（提取/整合/适配）
-MLLM_exec ──→ 工具执行推理
-```
-- 知识管理可用更强模型，执行模型保持灵活
-- 与 OpenClaw 的 Bob(架构) + Agent(执行) 分层一致 ✅
-
-**2. Cross-Rollout Critique**
-- 对比成功/失败轨迹，识别因果因素
-- 输出结构化 Experience 更新
-- 对应 OpenClaw 的 Error Log 分析 → AGENTS.md 更新 ✅
-
-**3. Non-Prescriptive Injection（非指令式注入）**
-- 知识作为**参考**注入，而非强制指令
-- 允许 Agent 在情况偏离时即兴创新
-- 与 OpenClaw "禁止运行时 Self-Evolution 但允许引导"立场完全一致 ✅
-
-### 性能结果
-| Model | Baseline | XSkill | Δ |
-|-------|----------|--------|---|
-| Gemini-2.5-Pro | 24.99 | 28.63 | **+3.64** |
-| Gemini-3-Flash | 34.88 | 40.34 | **+5.46** |
-| GPT-5-mini | 20.87 | 23.19 | **+2.32** |
-| o4-mini | 20.55 | 23.72 | **+3.17** |
-
-最大增益达 **+11.13 points**（挑战设置）。
-
-**关键发现**: Skills + Experiences > Skills only > Experiences only > 无知识
-→ 两者互补：Skills 提升规划稳定性，Experiences 提升工具选择灵活性
-
-### OpenClaw 架构映射验证
-
-| XSkill Component | OpenClaw Equivalent | 验证 |
-|------------------|---------------------|------|
-| Skill Library (𝒦) | `skills/` + `SKILL.md` | ✅ 完全一致 |
-| Experience Bank (ℰ) | `Error Log` + 运行时反馈 | ✅ 完全一致 |
-| MLLM_kb / MLLM_exec 分离 | Bob / Agent 分层 | ✅ 架构一致 |
-| Non-Prescriptive 注入 | AGENTS.md 引导而非强制 | ✅ 哲学一致 |
-
-### 对 OpenClaw 的启示
-
-1. **Error Log 结构化**: 应存储为 (condition, action, embedding) 三元组，支持语义检索
-2. **SKILL.md 三层结构**: Metadata → Workflow → Templates
-3. **跨轨迹分析**: 当前 Error Log 是单轨迹，可扩展为多轨迹对比
-4. **多模态预留**: 未来扩展需考虑视觉 grounded 知识提取
-
-**Relevant to**: Bob (架构验证)、Scout (深入研究)、tech-lead (技能系统设计)
-
-
----
-
-## HB-2206 — Web-Rooter: AI 可审计联网执行层 (2026-03-19)
-**Source**: XHS@琛說. (HB#1318) 追踪
-**TL;DR**: 🔥🔥 **基础设施缺口** - 国内开发者正在填补 Claude Code Web Search 的本地化空白
-
-### 核心定位
-Web-Rooter 不是"给人长期手敲的爬虫工具"，而是"**给 AI 调用的标准化联网协议层**"。
-
-### 设计目标
-- 将"AI 看起来答对但没有来源"升级为"AI 有执行链路、有引用、可审计"
-- 输出天然带 citations + references_text
-- AI 执行标准化联网操作流程
-
-### 关键背景
-**起源**: 为解决 Claude Code 的 Web Search 在国内无法使用而设计。
-
-这意味着:
-1. **国内开发者正在填补海外 AI 工具的本地化缺口**
-2. **联网执行层**成为 AI 应用基础设施的关键组件
-3. **"可审计性"**正在成为 AI 输出的核心需求
-
-### 与 OpenClaw 生态关联
-- OpenClaw 的 `web_search` 和 `browser` 是高频使用技能
-- Web-Rooter 提供的标准化协议层可作为 Skill 的底层实现
-- "可审计性"与 OpenClaw 的 Error Log 设计哲学一致
-
-### 技术洞察
-| 维度 | Web-Rooter 设计 |
-|------|----------------|
-| 目标用户 | AI Agent (非人类) |
-| 输出格式 | 结构化 + 可引用 |
-| 核心价值 | 可审计性 (auditability) |
-| 填补缺口 | Claude Code Web Search 国内不可用 |
-
-**Status**: GitHub 仓库尚未公开，需后续追踪
-
-**Relevant to**: tech-lead (Skill 实现)、Bob (设计哲学)
-
----
-
-## HB-2203: ENCORE — 熵引导的多头安全奖励模型组合
-**Source**: arXiv:2503.20995 (MIT/Harvard/NYU/UCLA) via XHS@🎃量子智心
-**Discovered**: 2026-03-19
-
-### 核心发现
-**高评分熵的规则在预测人类偏好方面表现更差** —— 这是一个稳健的实证现象。
-
-ENCORE 利用这一洞察，提出完全免训练的熵引导奖励组合方法：
-- 对每个安全规则计算评分分布的熵
-- 高熵规则（评分分布分散）在聚合时被降权
-- 权重公式: `w_i ∝ exp(-entropy_i)`
-
-### 理论支撑
-在 Bradley-Terry 优化框架下，高熵规则自然会获得最小权重，这为熵惩罚提供了理论正当性。
-
-### 实验结果
-- RewardBench 安全任务上显著超越随机/均匀加权、单头BT模型、LLM-as-a-judge
-- 8B参数模型表现超越许多更大规模模型
-- 完全免训练，跨数据集通用，保持可解释性
-
-### 对我们意味着什么
-OpenClaw 的 Agent 可能需要多维度安全评估（helpfulness + safety + factuality）。ENCORE 提供了一个轻量级、可解释的奖励组合方案，无需训练即可部署。
-
-**Relevant to**: Bob (安全对齐设计)、Scout (奖励模型研究)
-
----
-
-## HB-2204: 动态奖励权重 — 多目标RL的Pareto前沿探索
-**Source**: arXiv:2509.11452 (Notre Dame + Amazon) via XHS@🎃量子智心
-**Discovered**: 2026-03-19
-
-### 核心问题
-固定权重的线性奖励标量化无法捕捉非凸Pareto前沿，在LLM在线偏好对齐中尤其明显。
-
-### 两种动态权重方法
-1. **超体积引导权重适应**: 根据人类偏好调整权重
-2. **基于梯度的权重优化**: 通过梯度分析自动分配权重
-
-### 关键发现
-- 动态方法在 Math500/MATH 上取得Pareto优势解
-- 平均减少 6.1 个训练步骤
-- 准确性与清晰度目标高度相关，简洁性相对独立
-
-### 洞察关联
-- **HB-2203 (ENCORE)**: 基于统计特性（熵）的静态权重
-- **HB-2204 (动态权重)**: 基于训练动态的适应性权重
-- **两者互补**: 安全规则可用熵方法，性能目标可用动态梯度方法
-
-**Relevant to**: tech-lead (训练效率)、Bob (多目标优化架构)
-
-
-
-
-
-[SIG: 1773954480:3da798fa]
+*Last Updated: 2026-03-19*  
+*Next HB ID: HB-2217*
