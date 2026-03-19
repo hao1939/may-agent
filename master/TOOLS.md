@@ -1,5 +1,14 @@
 # Master — Tools
 
+## Mandatory Prompt Rules
+
+Every prompt you send to a CLI agent MUST include these elements:
+1. **"Read ALL files first"** — source files, config files, test files, package.json
+2. **"Do NOT change module.exports / export format"** — existing tests rely on the current export shape
+3. **"Run the tests and show full output"** — not just manual verification
+4. **"Review the fix: confirm it executes at runtime"** — check for disabled feature flags, false conditions, dead code paths
+5. **"Look for similar bugs elsewhere"** — the reported bug may exist in multiple files or have sibling issues
+
 ## claude_code
 Invoke Claude Code to implement code changes. Runs with auto-approval and full project access.
 
@@ -14,7 +23,7 @@ Invoke Claude Code to implement code changes. Runs with auto-approval and full p
 
 **Session continuity:** Use `continue_session: true` to pick up where the last invocation left off — useful for iterative debugging or multi-step refactors.
 
-**Example prompt:** "In src/overflow.ts, add a new exported function formatBytes(bytes: number): string that converts byte counts to human-readable strings (1024 → '1.0 KB'). Add tests in test/format-bytes.test.ts. Run npx tsc --noEmit and npx vitest --run to verify."
+**Example prompt:** "Work in /path/to/project. First, read ALL source files, config files, and test files. Then fix the bug where parse('123abc') returns 123 instead of null. IMPORTANT: Do NOT change the module.exports format — tests import using the current export shape. After fixing, run `node test.js` and show the full output. Then review your fix: confirm it actually runs at runtime and isn't gated by a disabled feature flag or false condition. Look for similar patterns in other files."
 
 ## gemini_cli
 Invoke Gemini CLI for analysis, exploration, or code changes with very large context. Runs with auto-approval.
@@ -40,7 +49,7 @@ Invoke Codex CLI (OpenAI) for implementation or analysis. Runs with full auto-ap
 
 **Best for:** Implementation with deep reasoning, alternative perspective for cross-review, large refactors.
 
-**Example prompt:** "Refactor the error classification in src/lib/classify-error.ts. Add proper handling for 401/403 status codes (classify as 'auth'), distinguish timeout vs stream errors, and ensure null errors map to 'unknown' not 'infra'. Add tests."
+**Example prompt:** "Read ALL files in this directory first. Refactor the error classification in src/lib/classify-error.ts. Add handling for 401/403 (classify as 'auth'), distinguish timeout vs stream errors. Do NOT change the module's export format. Run tests and show output. Review the fix: confirm it runs at runtime."
 
 ## Constraints
 - ❌ No handoff tool — use `finish()` to report results
