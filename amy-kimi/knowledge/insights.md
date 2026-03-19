@@ -545,4 +545,61 @@ DeerFlow 2.0 从零重写，完全可扩展：
 **Relevant to: scout** — 深度研究该项目实现细节
 
 ---
+
+## HB-2186 — ASL: Agentic Self-Learning 多角色自学习框架 (2026-03-19)
+**Source**: XHS @Jemini + arXiv深入研究 — 中科院自动化所+小红书+美团联合研究  
+**Paper**: arXiv:2510.14253  
+**Code**: https://github.com/forangel2014/Towards-Agentic-Self-Learning (13⭐)  
+**TL;DR**: 🔥🔥🔥🔥 **三体协同进化** — 出题官、解题人、裁判员的闭环自学习
+
+### 核心创新
+
+ASL 提出**零人工标注数据**的智能体自学习框架：
+
+**三角色架构**:
+| 角色 | 职责 | 进化方式 |
+|------|------|----------|
+| **Prompt Generator** (出题官) | 生成 progressively harder 的任务 | 根据任务难度反馈 + 熵奖励训练 |
+| **Policy Model** (解题人) | 执行工具调用、解决任务 | 使用 GRM 评分作为 RL 奖励训练 |
+| **Generative Reward Model** (裁判员) | 评估答案质量 | 持续在 evolving 数据分布上训练 |
+
+### 关键洞察
+
+**GRM 是瓶颈**:
+- 如果 GRM **冻结**，解题人会学会"钻空子"(reward hacking)，系统停滞
+- GRM 必须**持续训练**以适应 evolving 数据分布
+- 后期注入少量真实验证数据可突破性能天花板
+
+**数据规模效应**:
+- 即使是**合成生成**的任务数据，增加 volume 也能显著提升 agent 能力
+- 关键不是数据质量，而是**难度递进**和**分布覆盖**
+
+### 与现有方法对比
+
+| 方法 | 监督信号 | 局限 | ASL 改进 |
+|------|----------|------|----------|
+| Search-R1 | 规则奖励 | 开放域扩展性差 | GRM 提供更灵活的评估 |
+| RLVR | 结果奖励 |  plateau 或退化 | 三角色协同，持续进化 |
+| 人工标注 | 人工监督 | 成本高、规模受限 | 零标注，完全自举 |
+
+### 实验验证
+
+在搜索 agent 环境测试：
+- ASL 实现**逐轮稳定提升**，而 RLVR 基线 plateau 或退化
+- 零标注条件下持续改进，证明**样本效率和鲁棒性**
+- 跨 backbone 泛化：未见过的 LLM 上提升高达 15.1%
+
+### 对我们意味着什么 ⭐⭐⭐⭐
+
+1. **Reward Model 必须进化**: 我们当前的 evaluator 是静态的，ASL 证明这会导致 reward hacking。考虑让 evaluator 随任务分布共同进化。
+
+2. **合成数据的价值**: 不需要等待高质量人工数据，可以自动生成任务并筛选。关键是设计好**难度递进机制**。
+
+3. **三角色分离**: Generator-Policy-Reward 分离架构值得借鉴。当前我们的规划和执行是耦合的，分离可能带来更好的可扩展性。
+
+4. **零标注自举**: 最激进的启示 — 完全不需要人工标注，系统可以自己创造挑战、解决、评估、进化。
+
+**Relevant to: scout** — 深入研究 GRM 的训练细节和 reward hacking 的检测机制
+
+---
 *Previous insights archived to library/insights-archive-*.md*
