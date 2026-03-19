@@ -24,13 +24,22 @@ If you pivot mid-session, say "PIVOT: replacing promise N with [new action] beca
 ## 1. Dispatch Work (PRIMARY — this is why you exist)
 
 **Check the "Injected: pending tasks" section above.** Your tasks are injected from the request DB automatically.
-- For every pending task, take action NOW:
-  - Code task → `agents.send("tech-lead", ...)`
+- For every pending task, take action NOW. **Use workflows for structured delegation:**
+  - Code task (standard) → `workflow.run("implement-and-review", task)` — coder implements, QA reviews, one retry on failure
+  - Code task (needs analysis first) → `workflow.run("two-phase", "agent: coder\n\nPhase 1: ANALYZE — ...\n\n---\n\nPhase 2: IMPLEMENT — ...")` — forces analysis before action, proven 92% effective on judgment-heavy tasks
+  - Code task (complex/architectural) → `agents.send("tech-lead", ...)` — when human judgment on decomposition is needed
   - Design task → `agents.send("bob", ...)`
   - Convention/behavior task → `agents.send("coach", ...)`
   - Analysis/efficiency task → `agents.send("optimizer", ...)`
   - Done/obsolete → mark completed via `finish({ completed_items })`
   - Blocked on Hao → leave it, state why
+
+  **Workflow selection guide:**
+  - Simple bug fix, feature addition, config change → `implement-and-review`
+  - Task involving destructive ops, ambiguous requirements, or risk of sycophantic compliance → `two-phase`
+  - Multi-step project needing decomposition → `agents.send("tech-lead", ...)`
+  - Use `workflow.run("list")` to see all available workflows
+
 - ACKED is not done. ACKED means you read it. Dispatch it or archive it.
 
 **GATE**: You must have dispatched or triaged every pending item before moving to Step 2.

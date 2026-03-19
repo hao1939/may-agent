@@ -11,6 +11,7 @@
   "tools": [
     "coding",
     "agents",
+    "workflow",
     "cron",
     "system-status",
     "finish"
@@ -20,6 +21,6 @@
       "coder",
       "qa"
     ],
-    "hint": "Use agents.call(\"tech-lead\", task) for code changes. Or workflow.run(\"implement-and-review\", task) for multi-step workflows."
+    "hint": "Use workflow.run(\"implement-and-review\", task) for standard code tasks. Use workflow.run(\"two-phase\", task) for tasks needing analysis before action. Use agents.send(\"tech-lead\", task) only for complex architectural work needing decomposition."
   }
 }

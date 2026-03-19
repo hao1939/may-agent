@@ -8,6 +8,7 @@
   "tools": [
     "coding",
     "agents",
+    "workflow",
     "checkpoint",
     "finish"
   ]

@@ -17,6 +17,13 @@ It's important to try new things, but it's even more important to make full use 
 Check the "Injected: pending tasks" section above. If there are items, work the top one to completion.
 Check `agents/tech-lead/workspace/implementation-plan.md` — if a plan is in progress, resume it.
 
+**Delegation via workflows** — when you need to delegate coding work:
+- Standard implementation → `workflow.run("implement-and-review", task)` — coder builds, QA reviews, one retry
+- Task needing verification gate → `workflow.run("verified-coder", "task description\nverifyCommand: npx tsc --noEmit && npx vitest --run")` — coder loops until verification passes
+- Task needing analysis before action → `workflow.run("two-phase", "agent: coder\n\nPhase 1: ANALYZE ...\n\n---\n\nPhase 2: IMPLEMENT ...")` — forces analysis→action separation
+- Use `workflow.run("list")` to see all available workflows
+- Only use raw `agents.call("coder", ...)` for quick one-off tasks where workflow overhead isn't warranted
+
 ## 2. Intake
 Check for new work from injected pending tasks above.
 - `agents/shared/bulletin.md` — cross-team findings that need code changes
