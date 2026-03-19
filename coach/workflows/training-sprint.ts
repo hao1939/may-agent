@@ -41,7 +41,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     `4. Read \`agents/coach/workspace/experiments.jsonl\` — skip patterns already tested.\n` +
     `   For patterns with 2+ failures: try a DIFFERENT method or an invented one.\n` +
     `5. **CEILING-EFFECT GATE (MANDATORY):** For each candidate experiment, run baseline:\n` +
-    `   \`bun src/gym/runner.ts <scenario> --agent <agent> --timeout 3\`\n` +
+    `   \`test/gym/run-gym.sh <scenario> --agent <agent> --timeout 3\`\n` +
     `   If baseline PASSES all checks → REMOVE that experiment from the plan.\n` +
     `   Only keep experiments where baseline FAILS at least one check.\n` +
     `   If ALL candidates are removed by this gate, your output should be:\n` +

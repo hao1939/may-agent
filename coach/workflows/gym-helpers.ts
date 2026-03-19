@@ -33,7 +33,7 @@ const KNOWN_AGENTS = ["coder", "tech-lead", "optimizer", "evaluator", "coach", "
 export function runGym(scenario: string, agent: string, labFork?: string): GymResult {
   const args = [scenario, "--agent", agent, "--timeout", "3"];
   if (labFork) args.push("--lab", labFork);
-  const cmd = `bun src/gym/runner.ts ${args.map(a => `'${a}'`).join(" ")}`;
+  const cmd = `test/gym/run-gym.sh ${args.map(a => `'${a}'`).join(" ")}`;
 
   try {
     const stdout = execSync(cmd, {
