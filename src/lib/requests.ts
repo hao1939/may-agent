@@ -134,8 +134,29 @@ CREATE TABLE IF NOT EXISTS convention_maturity (
   last_regression INTEGER
 );
 
+-- Evaluations (migrated from .state/evaluations/*.json files)
+CREATE TABLE IF NOT EXISTS evaluations (
+  sessionId       TEXT PRIMARY KEY,
+  agent           TEXT NOT NULL,
+  quality         REAL NOT NULL DEFAULT 0,
+  efficiency      REAL NOT NULL DEFAULT 0,
+  productiveCalls INTEGER NOT NULL DEFAULT 0,
+  wastedCalls     INTEGER NOT NULL DEFAULT 0,
+  verdict         TEXT NOT NULL DEFAULT 'needs_improvement',
+  issues          TEXT,           -- JSON array
+  overall         TEXT,           -- JSON object
+  usage           TEXT,           -- JSON object {inputTokens, outputTokens, cost, turns, ...}
+  failureChains   TEXT,           -- JSON array
+  evaluatedByHeuristic INTEGER NOT NULL DEFAULT 0,
+  skippedByJs     INTEGER NOT NULL DEFAULT 0,
+  createdAt       INTEGER NOT NULL
+);
+
 CREATE INDEX IF NOT EXISTS idx_cc_agent ON convention_checks(agent, convention, checked_at);
 CREATE INDEX IF NOT EXISTS idx_cc_conv  ON convention_checks(convention, checked_at);
+CREATE INDEX IF NOT EXISTS idx_eval_agent_ts  ON evaluations(agent, createdAt);
+CREATE INDEX IF NOT EXISTS idx_eval_verdict   ON evaluations(verdict);
+CREATE INDEX IF NOT EXISTS idx_eval_created   ON evaluations(createdAt);
 `;
 
 // ── Database Management ────────────────────────────────────────────────
@@ -169,6 +190,65 @@ export function getDb(persistDir: string): Database {
   db.run("PRAGMA journal_mode = WAL");
   db.run("PRAGMA busy_timeout = 5000");
   db.exec(SCHEMA);
+
+  // Auto-migrate evaluations from .state/evaluations/*.json on first access
+  try {
+    const count = (db.query("SELECT COUNT(*) as c FROM evaluations").get() as { c: number }).c;
+    if (count === 0) {
+      const evalsDir = join(persistDir, "evaluations");
+      if (existsSync(evalsDir)) {
+        const files = require("node:fs").readdirSync(evalsDir).filter((f: string) => f.endsWith(".json"));
+        if (files.length > 0) {
+          // Defer full migration to avoid blocking startup; import first 100 synchronously
+          // and let migrateEvaluationsFromFiles() handle the rest on explicit call
+          const insertStmt = db.query(
+            `INSERT OR IGNORE INTO evaluations (
+              sessionId, agent, quality, efficiency, productiveCalls, wastedCalls,
+              verdict, issues, overall, usage, failureChains,
+              evaluatedByHeuristic, skippedByJs, createdAt
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          );
+          db.run("BEGIN TRANSACTION");
+          let imported = 0;
+          for (const file of files) {
+            const sessionId = file.replace(".json", "");
+            const tsMatch = sessionId.match(/^(?:s|cron|e|tasktree|task.tree|task_tree)_(\d{13,})/);
+            const createdAt = tsMatch ? parseInt(tsMatch[1], 10) : 0;
+            try {
+              const raw = JSON.parse(require("node:fs").readFileSync(join(evalsDir, file), "utf-8"));
+              if (typeof raw !== "object" || raw === null) continue;
+              insertStmt.run(
+                sessionId,
+                typeof raw.agent === "string" ? raw.agent : "unknown",
+                typeof raw.quality === "number" ? raw.quality : 0,
+                typeof raw.efficiency === "number" ? raw.efficiency : 0,
+                typeof raw.productive_calls === "number" ? raw.productive_calls : 0,
+                typeof raw.wasted_calls === "number" ? raw.wasted_calls : 0,
+                typeof raw.verdict === "string" ? raw.verdict : "unknown",
+                JSON.stringify(Array.isArray(raw.issues) ? raw.issues : []),
+                raw.overall ? JSON.stringify(raw.overall) : null,
+                raw.usage ? JSON.stringify(raw.usage) : null,
+                JSON.stringify(Array.isArray(raw.failureChains) ? raw.failureChains : []),
+                raw.evaluatedByHeuristic ? 1 : 0,
+                raw.skippedByJs ? 1 : 0,
+                createdAt,
+              );
+              imported++;
+            } catch {
+              continue;
+            }
+          }
+          db.run("COMMIT");
+          if (imported > 0) {
+            // eslint-disable-next-line no-console
+            console.log(`[may.db] Migrated ${imported} evaluations from files`);
+          }
+        }
+      }
+    }
+  } catch {
+    // Migration failure is non-fatal — evaluations will be written to DB going forward
+  }
 
   dbCache.set(persistDir, db);
   return db;
@@ -402,3 +482,256 @@ export function archiveOld(
 
 // classifyError moved to classify-error.ts — re-export for backward compat
 export { classifyError } from "./classify-error.js";
+
+// ── Evaluations ────────────────────────────────────────────────────────
+
+export interface EvaluationRecord {
+  sessionId: string;
+  agent: string;
+  quality: number;
+  efficiency: number;
+  productiveCalls: number;
+  wastedCalls: number;
+  verdict: string;
+  issues: string[];
+  overall: Record<string, unknown> | null;
+  usage: Record<string, unknown> | null;
+  failureChains: unknown[];
+  evaluatedByHeuristic: boolean;
+  skippedByJs: boolean;
+  createdAt: number;
+}
+
+export interface UpsertEvaluationOpts {
+  sessionId: string;
+  agent: string;
+  quality: number;
+  efficiency: number;
+  productiveCalls?: number;
+  wastedCalls?: number;
+  verdict: string;
+  issues?: string[];
+  overall?: Record<string, unknown>;
+  usage?: Record<string, unknown>;
+  failureChains?: unknown[];
+  evaluatedByHeuristic?: boolean;
+  skippedByJs?: boolean;
+  createdAt: number;
+}
+
+/**
+ * Insert or replace an evaluation record.
+ */
+export function upsertEvaluation(persistDir: string, opts: UpsertEvaluationOpts): void {
+  const db = getDb(persistDir);
+  db.run(
+    `INSERT OR REPLACE INTO evaluations (
+      sessionId, agent, quality, efficiency, productiveCalls, wastedCalls,
+      verdict, issues, overall, usage, failureChains,
+      evaluatedByHeuristic, skippedByJs, createdAt
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      opts.sessionId,
+      opts.agent,
+      opts.quality,
+      opts.efficiency,
+      opts.productiveCalls ?? 0,
+      opts.wastedCalls ?? 0,
+      opts.verdict,
+      JSON.stringify(opts.issues ?? []),
+      opts.overall ? JSON.stringify(opts.overall) : null,
+      opts.usage ? JSON.stringify(opts.usage) : null,
+      JSON.stringify(opts.failureChains ?? []),
+      opts.evaluatedByHeuristic ? 1 : 0,
+      opts.skippedByJs ? 1 : 0,
+      opts.createdAt,
+    ],
+  );
+}
+
+/**
+ * Check if an evaluation already exists for a session.
+ */
+export function hasEvaluation(persistDir: string, sessionId: string): boolean {
+  const db = getDb(persistDir);
+  const row = db.query("SELECT 1 FROM evaluations WHERE sessionId = ?").get(sessionId);
+  return row !== null;
+}
+
+/**
+ * Get evaluation for a specific session. Returns null if not found.
+ */
+export function getEvaluation(persistDir: string, sessionId: string): EvaluationRecord | null {
+  const db = getDb(persistDir);
+  const row = db.query("SELECT * FROM evaluations WHERE sessionId = ?").get(sessionId) as Record<string, unknown> | null;
+  if (!row) return null;
+  return deserializeEvalRow(row);
+}
+
+/**
+ * Get evaluations for a specific agent within a time window.
+ */
+export function getEvaluationsByAgent(
+  persistDir: string,
+  agent: string,
+  sinceMs?: number,
+): EvaluationRecord[] {
+  const db = getDb(persistDir);
+  if (sinceMs !== undefined) {
+    return (db.query("SELECT * FROM evaluations WHERE agent = ? AND createdAt >= ? ORDER BY createdAt ASC")
+      .all(agent, sinceMs) as Record<string, unknown>[]).map(deserializeEvalRow);
+  }
+  return (db.query("SELECT * FROM evaluations WHERE agent = ? ORDER BY createdAt ASC")
+    .all(agent) as Record<string, unknown>[]).map(deserializeEvalRow);
+}
+
+/**
+ * Get all evaluations within a time window.
+ */
+export function getEvaluationsSince(persistDir: string, sinceMs: number): EvaluationRecord[] {
+  const db = getDb(persistDir);
+  return (db.query("SELECT * FROM evaluations WHERE createdAt >= ? ORDER BY createdAt ASC")
+    .all(sinceMs) as Record<string, unknown>[]).map(deserializeEvalRow);
+}
+
+/**
+ * Get all evaluations (no time filter).
+ */
+export function getAllEvaluations(persistDir: string): EvaluationRecord[] {
+  const db = getDb(persistDir);
+  return (db.query("SELECT * FROM evaluations ORDER BY createdAt ASC")
+    .all() as Record<string, unknown>[]).map(deserializeEvalRow);
+}
+
+/**
+ * Check if an evaluation exists and has real usage data.
+ * Returns { exists: boolean; hasUsage: boolean; isRecent: boolean }.
+ */
+export function getEvaluationStatus(persistDir: string, sessionId: string): {
+  exists: boolean;
+  hasUsage: boolean;
+} {
+  const db = getDb(persistDir);
+  const row = db.query("SELECT usage FROM evaluations WHERE sessionId = ?").get(sessionId) as { usage: string | null } | null;
+  if (!row) return { exists: false, hasUsage: false };
+  if (!row.usage) return { exists: true, hasUsage: false };
+  try {
+    const u = JSON.parse(row.usage);
+    return { exists: true, hasUsage: (u.totalTokens ?? 0) > 0 || (u.turns ?? 0) > 0 };
+  } catch {
+    return { exists: true, hasUsage: false };
+  }
+}
+
+/**
+ * Migrate existing .state/evaluations/*.json files into the evaluations table.
+ * Skips entries that already exist in the DB. Returns count of imported rows.
+ */
+export function migrateEvaluationsFromFiles(persistDir: string): number {
+  const { readdirSync, readFileSync } = require("node:fs") as typeof import("node:fs");
+  const { join } = require("node:path") as typeof import("node:path");
+  const evalsDir = join(persistDir, "evaluations");
+  if (!existsSync(evalsDir)) return 0;
+
+  let files: string[];
+  try {
+    files = readdirSync(evalsDir).filter((f: string) => f.endsWith(".json"));
+  } catch {
+    return 0;
+  }
+
+  const db = getDb(persistDir);
+  let imported = 0;
+
+  // Use a transaction for bulk insert performance
+  const insertStmt = db.query(
+    `INSERT OR IGNORE INTO evaluations (
+      sessionId, agent, quality, efficiency, productiveCalls, wastedCalls,
+      verdict, issues, overall, usage, failureChains,
+      evaluatedByHeuristic, skippedByJs, createdAt
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  );
+
+  db.run("BEGIN TRANSACTION");
+  try {
+    for (const file of files) {
+      const sessionId = file.replace(".json", "");
+
+      // Extract timestamp from session ID
+      const tsMatch = sessionId.match(/^(?:s|cron|e|tasktree|task.tree|task_tree)_(\d{13,})/);
+      const createdAt = tsMatch ? parseInt(tsMatch[1], 10) : 0;
+
+      try {
+        const raw = JSON.parse(readFileSync(join(evalsDir, file), "utf-8"));
+        if (typeof raw !== "object" || raw === null) continue;
+
+        // Handle flat format: { agent, quality, efficiency, verdict, ... }
+        const agent = typeof raw.agent === "string" ? raw.agent : "unknown";
+        const quality = typeof raw.quality === "number" ? raw.quality : 0;
+        const efficiency = typeof raw.efficiency === "number" ? raw.efficiency : 0;
+        const verdict = typeof raw.verdict === "string" ? raw.verdict : "unknown";
+        const productiveCalls = typeof raw.productive_calls === "number" ? raw.productive_calls : 0;
+        const wastedCalls = typeof raw.wasted_calls === "number" ? raw.wasted_calls : 0;
+        const issues = Array.isArray(raw.issues) ? raw.issues : [];
+        const overall = raw.overall && typeof raw.overall === "object" ? raw.overall : null;
+        const usage = raw.usage && typeof raw.usage === "object" ? raw.usage : null;
+        const failureChains = Array.isArray(raw.failureChains) ? raw.failureChains : [];
+
+        insertStmt.run(
+          sessionId,
+          agent,
+          quality,
+          efficiency,
+          productiveCalls,
+          wastedCalls,
+          verdict,
+          JSON.stringify(issues),
+          overall ? JSON.stringify(overall) : null,
+          usage ? JSON.stringify(usage) : null,
+          JSON.stringify(failureChains),
+          raw.evaluatedByHeuristic ? 1 : 0,
+          raw.skippedByJs ? 1 : 0,
+          createdAt,
+        );
+        imported++;
+      } catch {
+        continue;
+      }
+    }
+    db.run("COMMIT");
+  } catch (err) {
+    db.run("ROLLBACK");
+    throw err;
+  }
+
+  return imported;
+}
+
+function deserializeEvalRow(row: Record<string, unknown>): EvaluationRecord {
+  return {
+    sessionId: row.sessionId as string,
+    agent: row.agent as string,
+    quality: row.quality as number,
+    efficiency: row.efficiency as number,
+    productiveCalls: row.productiveCalls as number,
+    wastedCalls: row.wastedCalls as number,
+    verdict: row.verdict as string,
+    issues: parseJsonArray(row.issues as string | null) as string[],
+    overall: parseJsonObject(row.overall as string | null),
+    usage: parseJsonObject(row.usage as string | null),
+    failureChains: parseJsonArray(row.failureChains as string | null),
+    evaluatedByHeuristic: (row.evaluatedByHeuristic as number) === 1,
+    skippedByJs: (row.skippedByJs as number) === 1,
+    createdAt: row.createdAt as number,
+  };
+}
+
+function parseJsonArray(s: string | null): unknown[] {
+  if (!s) return [];
+  try { return JSON.parse(s); } catch { return []; }
+}
+
+function parseJsonObject(s: string | null): Record<string, unknown> | null {
+  if (!s) return null;
+  try { return JSON.parse(s); } catch { return null; }
+}
