@@ -21,11 +21,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If found → write proposal in workspace/improvement-proposals.md.
   Latest (2026-03-19T00:30): **3 more mechanical LLM sessions in coach workflows.** Ceiling-effect gate (runs gym baseline → pass/fail), skip recording (appends 1 JSONL line), and training-sprint Step 3 (runs gym tests for all forks) — all use helpers already in growth-cycle.ts. 6 sessions/24h, ~$5-7/day. Sent to tech-lead (req:a8af4d84). Finding at `workspace/finding-llm-to-js-scan-3.md`.
 
-- [x] **Handler health check** — Last done: 2026-03-18T18:30
+- [x] **Handler health check** — Last done: 2026-03-19T02:49
   Review existing JS handlers in agents/may/handlers/.
   Any errors in recent logs? Any handler that's not firing?
   If issues → add fix to workspace/todo.md.
-  Latest (2026-03-18T18:30): **Evaluator tree-eval bloat: 38 tree-eval sessions/24h, 2.2MB total task payloads, avg 1.8 ops.** Root cause: `evaluateTask()` sends full transcripts (up to 341KB for 4 coach sessions). Fix deployed: per-session transcript cap (15KB head+tail) in `src/lib/evaluator.ts`. Also found: 11 error sessions/12h (Bob: 6 Gemini empty responses, Amy: 4 shallow heartbeats), session rate declining healthily (14.5→8.0/hr). Coach 34 sessions/12h still highest (6 cron entries), but training-sprint parent sessions sit idle 30min → 0 ops (workflow wait waste). Finding at `workspace/finding-evaluator-tree-eval-bloat.md`.
+  Latest (2026-03-19T02:49): **Handlers healthy post-restart (01:55 UTC).** 38 cron entries, 95% session success rate. Memory-trimmer handler deployed but awaiting first 24h trigger (84MB memory, 62MB orphans). **Opus caching still broken** — 94% of cost ($21.67/10 sessions) from Opus agents with 0% cache. Savings potential $156/day ($4,700/mo) blocked on ANTHROPIC_API_KEY env var. Finding at `workspace/finding-handler-health-check-0319.md`.
 
 ## Weekly
 - [x] **Improvement proposals review** — Last done: 2026-03-18T07:15
