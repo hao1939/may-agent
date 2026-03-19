@@ -1,8 +1,9 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdirSync, writeFileSync, existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { findUnevaluatedChildren, writeSkippedEvaluations } from "../src/lib/evaluator.js";
+import { upsertEvaluation, hasEvaluation, getDb, closeDb } from "../src/lib/requests.js";
 import type { PersistedSession } from "../src/lib/persistence.js";
 
 function tmpDir(): string {
@@ -36,9 +37,14 @@ function writeSessionJsonl(persistDir: string, sessionId: string, messages: unkn
 }
 
 function writeEvaluation(persistDir: string, sessionId: string): void {
-  const dir = join(persistDir, "evaluations");
-  mkdirSync(dir, { recursive: true });
-  writeFileSync(join(dir, `${sessionId}.json`), "{}", "utf-8");
+  upsertEvaluation(persistDir, {
+    sessionId,
+    agent: "test",
+    quality: 0,
+    efficiency: 0,
+    verdict: "skipped",
+    createdAt: Date.now(),
+  });
 }
 
 const skipAgents = new Set(["evaluator", "optimizer", "may"]);
@@ -195,6 +201,10 @@ describe("writeSkippedEvaluations – orphaned sessions (no meta.json)", () => {
     persistDir = tmpDir();
   });
 
+  afterEach(() => {
+    try { closeDb(persistDir); } catch { /* ignore */ }
+  });
+
   it("handles sessions without meta.json", async () => {
     // Create an orphaned session directory with a session.jsonl but NO meta.json
     const sessionId = "orphan-session-1";
@@ -205,21 +215,21 @@ describe("writeSkippedEvaluations – orphaned sessions (no meta.json)", () => {
       JSON.stringify({ role: "user", content: [{ type: "text", text: "hello" }] }) + "\n",
       "utf-8",
     );
-    // No meta.json written — this is the orphan scenario
 
     const written = await writeSkippedEvaluations(persistDir);
     expect(written).toBeGreaterThanOrEqual(1);
 
-    const evalPath = join(persistDir, "evaluations", `${sessionId}.json`);
-    expect(existsSync(evalPath)).toBe(true);
-
-    const evaluation = JSON.parse(readFileSync(evalPath, "utf-8"));
-    expect(evaluation.agent).toBe("unknown");
-    expect(evaluation.issues).toContain("no_metadata");
-    expect(evaluation.skippedByJs).toBe(true);
-    expect(evaluation.efficiency).toBe(0);
-    expect(evaluation.quality).toBe(0);
-    expect(evaluation.verdict).toBe("skipped");
+    // Check DB instead of file
+    expect(hasEvaluation(persistDir, sessionId)).toBe(true);
+    const { getEvaluation } = await import("../src/lib/requests.js");
+    const evaluation = getEvaluation(persistDir, sessionId);
+    expect(evaluation).not.toBeNull();
+    expect(evaluation!.agent).toBe("unknown");
+    expect(evaluation!.issues).toContain("no_metadata");
+    expect(evaluation!.skippedByJs).toBe(true);
+    expect(evaluation!.efficiency).toBe(0);
+    expect(evaluation!.quality).toBe(0);
+    expect(evaluation!.verdict).toBe("skipped");
   });
 
   it("skips already-evaluated orphaned sessions", async () => {
@@ -232,21 +242,24 @@ describe("writeSkippedEvaluations – orphaned sessions (no meta.json)", () => {
       JSON.stringify({ role: "user", content: [{ type: "text", text: "hello" }] }) + "\n",
       "utf-8",
     );
-    // No meta.json
 
-    // Pre-existing evaluation
-    const evalDir = join(persistDir, "evaluations");
-    mkdirSync(evalDir, { recursive: true });
-    const existingEval = { agent: "previously-evaluated", custom: true };
-    writeFileSync(join(evalDir, `${sessionId}.json`), JSON.stringify(existingEval), "utf-8");
+    // Pre-existing evaluation in DB
+    upsertEvaluation(persistDir, {
+      sessionId,
+      agent: "previously-evaluated",
+      quality: 5,
+      efficiency: 5,
+      verdict: "good",
+      createdAt: Date.now(),
+    });
 
     const written = await writeSkippedEvaluations(persistDir);
-    // Should NOT have written a new evaluation for this session
     expect(written).toBe(0);
 
     // Verify original evaluation is unchanged
-    const evaluation = JSON.parse(readFileSync(join(evalDir, `${sessionId}.json`), "utf-8"));
-    expect(evaluation.agent).toBe("previously-evaluated");
-    expect(evaluation.custom).toBe(true);
+    const { getEvaluation } = await import("../src/lib/requests.js");
+    const evaluation = getEvaluation(persistDir, sessionId);
+    expect(evaluation!.agent).toBe("previously-evaluated");
+    expect(evaluation!.quality).toBe(5);
   });
 });

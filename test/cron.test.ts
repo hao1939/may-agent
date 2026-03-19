@@ -52,10 +52,10 @@ const mockUpdateRequest = vi.fn((_persistDir: string, requestId: string, update:
   if (entry && update.sessionId) entry.sessionId = update.sessionId;
 });
 
-// Mock getDb — returns an object with .query() and .run() that read from requestStore
+// Mock getDb — returns an object with .prepare() and .run() that read from requestStore
 function makeMockDb() {
   return {
-    query(sql: string) {
+    prepare(sql: string) {
       return {
         get(...args: any[]) {
           // hasPendingWork: SELECT 1 FROM requests WHERE toAgent = ? AND status IN (...) AND method = 'send'

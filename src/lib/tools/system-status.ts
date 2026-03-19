@@ -16,16 +16,7 @@ import type { AgentTool } from "@mariozechner/pi-agent-core";
 import { existsSync, readdirSync, readFileSync, statSync, openSync, readSync, closeSync } from "node:fs";
 import { join } from "node:path";
 import type { PersistedSession } from "../persistence.js";
-
-// Lazy-load requests module to avoid pulling bun:sqlite at module level (vitest compat)
-let _getDbFn: typeof import("../requests.js").getDb | null = null;
-function getDbLazy(persistDir: string) {
-  if (!_getDbFn) {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    _getDbFn = require("../requests.js").getDb;
-  }
-  return _getDbFn!(persistDir);
-}
+import { getDb } from "../requests.js";
 
 // ── Tail utility ────────────────────────────────────────────────────────
 
@@ -97,9 +88,9 @@ interface JobHistoryEntry {
 
 function getRecentJobs(stateDir: string, count: number): JobHistoryEntry[] {
   try {
-    const db = getDbLazy(stateDir);
+    const db = getDb(stateDir);
     const rows = db
-      .query(
+      .prepare(
         `SELECT artifact as jobName,
                 COALESCE(json_extract(context, '$.type'), 'job') as type,
                 CASE status
@@ -118,7 +109,7 @@ function getRecentJobs(stateDir: string, count: number): JobHistoryEntry[] {
          WHERE fromEntity = 'cron' AND artifact IS NOT NULL
          ORDER BY createdAt DESC LIMIT ?`,
       )
-      .all(count) as JobHistoryEntry[];
+      .all(count) as unknown as JobHistoryEntry[];
     return rows;
   } catch {
     return [];
@@ -219,9 +210,9 @@ function readFocusTasks(agentsRoot: string): string {
 
 function readTodoSummary(stateDir: string): string {
   try {
-    const db = getDbLazy(stateDir);
+    const db = getDb(stateDir);
     const row = db
-      .query(
+      .prepare(
         `SELECT COUNT(*) as count FROM requests
          WHERE toAgent = 'may' AND status IN ('CREATED', 'IN_PROGRESS') AND method = 'send'`
       )

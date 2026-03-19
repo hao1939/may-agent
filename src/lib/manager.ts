@@ -581,7 +581,7 @@ export class SubagentManager {
         try {
           const db = mod.getDb(persistDir);
           const pending = db
-            .query(
+            .prepare(
               `SELECT requestId, task FROM requests
                WHERE toAgent = ? AND status IN ('CREATED', 'IN_PROGRESS') AND method = 'send'`
             )

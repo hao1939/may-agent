@@ -13,23 +13,8 @@
 
 import { readdirSync, readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
-
-// Lazy-load requests module to avoid pulling bun:sqlite at module level (vitest compat)
-let _requestsModule: typeof import("../requests.js") | null = null;
-let _requestsLoadFailed = false;
-function getRequestsModule(): typeof import("../requests.js") | null {
-  if (_requestsLoadFailed) return null;
-  if (!_requestsModule) {
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      _requestsModule = require("../requests.js") as typeof import("../requests.js");
-    } catch {
-      _requestsLoadFailed = true;
-      return null;
-    }
-  }
-  return _requestsModule;
-}
+import { getEvaluationsSince, getDb, getActiveRequests, getRequestsByAgent, getStaleRequests } from "../requests.js";
+import type { RequestRecord } from "../requests.js";
 
 const HOUR = 60 * 60 * 1000;
 const DAY = 24 * HOUR;
@@ -103,73 +88,13 @@ const KEY_PROCESSES: Array<{ name: string; intervalMs: number; label: string }> 
 
 /** Load flat-format evaluations (agent, quality, efficiency, verdict) within a time window. */
 function loadEvals(persistDir: string, sinceMs: number): EvalRecord[] {
-  // DB path: fast indexed query
-  const req = getRequestsModule();
-  if (req) {
-    try {
-      return req.getEvaluationsSince(persistDir, sinceMs).map((ev) => ({
-        agent: ev.agent,
-        quality: ev.quality,
-        efficiency: ev.efficiency,
-        verdict: ev.verdict,
-        ts: ev.createdAt,
-      }));
-    } catch {
-      // fall through to file scan
-    }
-  }
-
-  // Fallback: scan .state/evaluations/ files (vitest / no bun:sqlite)
-  const evalsDir = join(persistDir, "evaluations");
-  if (!existsSync(evalsDir)) return [];
-
-  const results: EvalRecord[] = [];
-  let files: string[];
-  try {
-    files = readdirSync(evalsDir).filter((f) => f.endsWith(".json"));
-  } catch {
-    return [];
-  }
-
-  for (const file of files) {
-    const ts = sessionIdToTs(file.replace(".json", ""));
-    if (ts === null || ts < sinceMs) continue;
-
-    try {
-      const raw = JSON.parse(readFileSync(join(evalsDir, file), "utf-8"));
-      if (typeof raw !== "object" || raw === null) continue;
-
-      // Flat format (newer): { agent, quality, efficiency, verdict }
-      if (typeof raw.agent === "string" && typeof raw.quality === "number") {
-        results.push({
-          agent: raw.agent,
-          quality: raw.quality,
-          efficiency: typeof raw.efficiency === "number" ? raw.efficiency : 0,
-          verdict: typeof raw.verdict === "string" ? raw.verdict : "unknown",
-          ts: ts,
-        });
-      }
-      // Nested format (older): { agents: { name: { quality, efficiency } }, overall }
-      else if (raw.agents && typeof raw.agents === "object") {
-        for (const [name, scores] of Object.entries(raw.agents)) {
-          const s = scores as Record<string, unknown>;
-          if (typeof s.quality === "number") {
-            results.push({
-              agent: name,
-              quality: s.quality,
-              efficiency: typeof s.efficiency === "number" ? s.efficiency : 0,
-              verdict: typeof s.verdict === "string" ? s.verdict : "unknown",
-              ts: ts,
-            });
-          }
-        }
-      }
-    } catch {
-      continue;
-    }
-  }
-
-  return results;
+  return getEvaluationsSince(persistDir, sinceMs).map((ev) => ({
+    agent: ev.agent,
+    quality: ev.quality,
+    efficiency: ev.efficiency,
+    verdict: ev.verdict,
+    ts: ev.createdAt,
+  }));
 }
 
 /** Load human input counts per day from human-inputs.jsonl. */
@@ -211,15 +136,13 @@ function loadHumanInputCounts(persistDir: string, days: number): number[] {
 
 /** Load process last-fire times from requests DB. */
 function loadProcessHealth(persistDir: string): ProcessInfo[] {
-  const req = getRequestsModule();
-  if (!req) return [];
-  const db = req.getDb(persistDir);
+  const db = getDb(persistDir);
   const results: ProcessInfo[] = [];
 
   for (const proc of KEY_PROCESSES) {
     try {
       const row = db
-        .query(
+        .prepare(
           `SELECT MAX(createdAt) as lastFire, status
            FROM requests WHERE artifact = ?
            ORDER BY createdAt DESC LIMIT 1`
@@ -230,7 +153,7 @@ function loadProcessHealth(persistDir: string): ProcessInfo[] {
       let lastStatus: string | null = null;
       if (row?.lastFire) {
         const statusRow = db
-          .query(
+          .prepare(
             `SELECT status FROM requests
              WHERE artifact = ? AND createdAt = ?
              LIMIT 1`
@@ -280,18 +203,15 @@ function triageItems(
 ): AttentionItem[] {
   const items: AttentionItem[] = [];
   const now = Date.now();
-  const req = getRequestsModule();
 
   // 1. Stale human requests (>30min)
-  if (req) {
-    const active = req.getActiveRequests(persistDir);
-    for (const r of active) {
-      if (r.fromEntity === "human" && now - r.createdAt > 30 * 60_000) {
-        items.push({
-          level: "red",
-          message: `Unprocessed human request to ${r.toAgent} (${ago(r.createdAt)})`,
-        });
-      }
+  const active = getActiveRequests(persistDir);
+  for (const r of active) {
+    if (r.fromEntity === "human" && now - r.createdAt > 30 * 60_000) {
+      items.push({
+        level: "red",
+        message: `Unprocessed human request to ${r.toAgent} (${ago(r.createdAt)})`,
+      });
     }
   }
 
@@ -416,7 +336,6 @@ export function printRequestStatus(persistDir: string, opts?: Partial<StatusOpti
   const includeEvals = opts?.includeEvals ?? true;
 
   const lines: string[] = [];
-  const req = getRequestsModule(); // null if bun:sqlite unavailable
   const now = Date.now();
   const nowStr = new Date(now).toISOString().slice(0, 16).replace("T", " ");
 
@@ -429,8 +348,6 @@ export function printRequestStatus(persistDir: string, opts?: Partial<StatusOpti
 
   const evals7d = includeEvals ? loadEvals(persistDir, now - WEEK) : [];
   const evals24h = evals7d.filter((e) => e.ts >= now - DAY);
-  // Filter out "skipped" verdicts — these are auto-skipped sessions (e.g., evaluator)
-  // that have quality=0 and would distort averages and trigger false alerts
   const evals7dScored = evals7d.filter((e) => e.verdict !== "skipped");
   const evals24hScored = evals24h.filter((e) => e.verdict !== "skipped");
   const humanCounts = loadHumanInputCounts(persistDir, 7);
@@ -446,26 +363,24 @@ export function printRequestStatus(persistDir: string, opts?: Partial<StatusOpti
     avgDuration: number | null;
   }> = [];
 
-  if (req) {
-    try {
-      const db = req.getDb(persistDir);
-      const cutoff = now - DAY;
-      agentStatsRows = db
-        .query(
-          `SELECT toAgent,
-                  COUNT(*) as total,
-                  SUM(CASE WHEN status = 'COMPLETED' THEN 1 ELSE 0 END) as completed,
-                  SUM(CASE WHEN status = 'FAILED' THEN 1 ELSE 0 END) as failed,
-                  AVG(CASE WHEN durationMs IS NOT NULL THEN durationMs END) as avgDuration
-           FROM requests
-           WHERE createdAt > ?
-           GROUP BY toAgent
-           ORDER BY total DESC`
-        )
-        .all(cutoff) as typeof agentStatsRows;
-    } catch {
-      // DB unavailable — continue with empty stats
-    }
+  try {
+    const db = getDb(persistDir);
+    const cutoff = now - DAY;
+    agentStatsRows = db
+      .prepare(
+        `SELECT toAgent,
+                COUNT(*) as total,
+                SUM(CASE WHEN status = 'COMPLETED' THEN 1 ELSE 0 END) as completed,
+                SUM(CASE WHEN status = 'FAILED' THEN 1 ELSE 0 END) as failed,
+                AVG(CASE WHEN durationMs IS NOT NULL THEN durationMs END) as avgDuration
+         FROM requests
+         WHERE createdAt > ?
+         GROUP BY toAgent
+         ORDER BY total DESC`
+      )
+      .all(cutoff) as unknown as typeof agentStatsRows;
+  } catch {
+    // DB unavailable — continue with empty stats
   }
 
   const agentCompletionRates = new Map<string, AgentStats>();
@@ -668,30 +583,28 @@ export function printRequestStatus(persistDir: string, opts?: Partial<StatusOpti
     }
 
     // Coach experiments (from requests)
-    if (req) {
-      try {
-        const db = req.getDb(persistDir);
-        const coachExperimentsRow = db
-          .query(
-            `SELECT COUNT(*) as total
-             FROM requests
-             WHERE toAgent = 'coach'
-               AND task LIKE '%growth-cycle%'
-               AND createdAt > ?`
-          )
-          .get(now - WEEK) as { total: number } | null;
-        if (coachExperimentsRow && coachExperimentsRow.total > 0) {
-          lines.push(`  Coach growth cycles (7d): ${coachExperimentsRow.total}`);
-        }
-      } catch {
-        // best-effort
+    try {
+      const db = getDb(persistDir);
+      const coachExperimentsRow = db
+        .prepare(
+          `SELECT COUNT(*) as total
+           FROM requests
+           WHERE toAgent = 'coach'
+             AND task LIKE '%growth-cycle%'
+             AND createdAt > ?`
+        )
+        .get(now - WEEK) as { total: number } | null;
+      if (coachExperimentsRow && coachExperimentsRow.total > 0) {
+        lines.push(`  Coach growth cycles (7d): ${coachExperimentsRow.total}`);
       }
+    } catch {
+      // best-effort
     }
   }
 
   // ── Active requests ────────────────────────────────────────────────
 
-  const active = req ? req.getActiveRequests(persistDir) : [];
+  const active = getActiveRequests(persistDir);
   lines.push("");
   lines.push("─".repeat(62));
   lines.push(` ACTIVE REQUESTS (${active.length})`);
@@ -712,7 +625,7 @@ export function printRequestStatus(persistDir: string, opts?: Partial<StatusOpti
 
   // ── Stale requests ─────────────────────────────────────────────────
 
-  const stale = req ? req.getStaleRequests(persistDir, 2 * HOUR) : [];
+  const stale = getStaleRequests(persistDir, 2 * HOUR);
   if (stale.length > 0) {
     lines.push("");
     lines.push(`⚠️  Stale Requests (>2h): ${stale.length}`);

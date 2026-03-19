@@ -309,7 +309,7 @@ export class Cron {
     try {
       const db = getDb(this.persistDir);
       const row = db
-        .query(
+        .prepare(
           `SELECT 1 FROM requests
            WHERE artifact = ? AND status IN ('CREATED', 'IN_PROGRESS')
            LIMIT 1`,
@@ -333,7 +333,7 @@ export class Cron {
 
       const placeholders = heartbeatNames.map(() => "?").join(",");
       const row = db
-        .query(
+        .prepare(
           `SELECT 1 FROM requests
            WHERE artifact IN (${placeholders})
            AND status IN ('CREATED', 'IN_PROGRESS')
@@ -351,7 +351,7 @@ export class Cron {
     try {
       const db = getDb(this.persistDir);
       const row = db
-        .query("SELECT MAX(createdAt) as lastFire FROM requests WHERE artifact = ?")
+        .prepare("SELECT MAX(createdAt) as lastFire FROM requests WHERE artifact = ?")
         .get(entryName) as { lastFire: number | null } | null;
       return row?.lastFire ?? null;
     } catch {
@@ -364,7 +364,7 @@ export class Cron {
     try {
       const db = getDb(this.persistDir);
       const row = db
-        .query(
+        .prepare(
           `SELECT context FROM requests
            WHERE artifact = ? AND status IN ('CREATED', 'IN_PROGRESS')
            ORDER BY createdAt DESC LIMIT 1`,
@@ -390,7 +390,7 @@ export class Cron {
     try {
       const db = getDb(this.persistDir);
       const row = db
-        .query(
+        .prepare(
           `SELECT 1 FROM requests
            WHERE toAgent = ? AND status IN ('CREATED', 'IN_PROGRESS') AND method = 'send'
            LIMIT 1`,
@@ -423,7 +423,7 @@ export class Cron {
       // Count recent completed heartbeats for this entry
       const cutoff = Date.now() - (entry.intervalMs * initiativeCadence * 2);
       const row = db
-        .query(
+        .prepare(
           `SELECT COUNT(*) as cnt FROM requests
            WHERE artifact = ? AND status = 'COMPLETED' AND createdAt > ?`,
         )
@@ -433,7 +433,7 @@ export class Cron {
       if (recentCount < 1) return false; // no recent heartbeats → fire one
       // Check if the last N heartbeats were all idle-skipped
       const skippedRow = db
-        .query(
+        .prepare(
           `SELECT COUNT(*) as cnt FROM requests
            WHERE artifact = ? AND status = 'COMPLETED'
              AND context LIKE '%"idle_skip":true%'
@@ -665,7 +665,7 @@ export class Cron {
         try {
           const db = getDb(this.persistDir);
           const pending = db
-            .query(
+            .prepare(
               `SELECT task, fromEntity, createdAt, requestId FROM requests
                WHERE toAgent = ? AND status IN ('CREATED', 'IN_PROGRESS') AND method = 'send'
                ORDER BY createdAt ASC`
@@ -874,7 +874,7 @@ export class Cron {
     try {
       const db = getDb(this.persistDir);
       const rows = db
-        .query(
+        .prepare(
           `SELECT artifact, sessionId, context, createdAt FROM requests
            WHERE fromEntity = 'cron' AND status IN ('CREATED', 'IN_PROGRESS')
            AND context LIKE '%"type":"detached"%'`,

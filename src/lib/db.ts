@@ -78,7 +78,8 @@ function openNode(path: string): SqliteDb {
     prepare(sql: string): Statement {
       const stmt = db.prepare(sql);
       return {
-        get(...params: unknown[]) { return (stmt.get as (...args: unknown[]) => Record<string, unknown> | null)(...params); },
+        // node:sqlite returns undefined for missing rows; normalize to null
+        get(...params: unknown[]) { return (stmt.get as (...args: unknown[]) => Record<string, unknown> | undefined)(...params) ?? null; },
         all(...params: unknown[]) { return (stmt.all as (...args: unknown[]) => Record<string, unknown>[])(...params); },
         run(...params: unknown[]) { return (stmt.run as (...args: unknown[]) => RunResult)(...params); },
       };
