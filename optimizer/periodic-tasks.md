@@ -27,15 +27,22 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If issues → add fix to workspace/todo.md.
   Latest (2026-03-19T02:49): **Handlers healthy post-restart (01:55 UTC).** 38 cron entries, 95% session success rate. Memory-trimmer handler deployed but awaiting first 24h trigger (84MB memory, 62MB orphans). **Opus caching still broken** — 94% of cost ($21.67/10 sessions) from Opus agents with 0% cache. Savings potential $156/day ($4,700/mo) blocked on ANTHROPIC_API_KEY env var. Finding at `workspace/finding-handler-health-check-0319.md`.
 
+- [ ] **Proven pattern → Skill/Workflow** — Last done: NEVER (meta-work on 2026-03-17 doesn't count)
+  This is your MOST IMPORTANT periodic task — focus area #1. Do actual work, not meta-work:
+  1. Scan 10 recent session transcripts across different agents. Look for multi-step
+     processes that agents repeat successfully (e.g., "read file → check X → edit Y → verify").
+  2. When you find a pattern that appears 3+ times: draft a SKILL.md for it in
+     `agents/shared/skills/<name>/SKILL.md`. Include assertions.
+  3. Test it in the gym: create a scenario that exercises the skill, run 3x, require 2/3 pass.
+  4. If it passes: deploy by adding to relevant agents' knowledge INDEX.md.
+  **Deliverable**: A new or refined skill file, tested in gym. NOT a doc update, NOT an assessment,
+  NOT "updated the lifecycle template." An actual skill that agents will use.
+  If no proven pattern found after scanning 10 transcripts, write a 3-line note explaining why
+  and move on. But "I did cost analysis instead" is not acceptable.
+
 ## Weekly
 - [x] **Improvement proposals review** — Last done: 2026-03-18T07:15
   **10 proposals now implemented** (up from 7). New additions since last review: finish-status fix (82ced56), read-dedup guard (9eefa72), finish evidence guard (2233509). **51 total undeployed commits, all 1,457 tests pass.** Estimated savings once deployed: **$80-104/day ($2,400-3,120/month)** from cron+caching fixes alone. Full deployment readiness brief at `workspace/finding-deployment-readiness-51-commits.md`.
-
-- [x] **Refine-Skill loop (EvoSkill)** — Last done: 2026-03-17
-  Follow `agents/shared/skills/skill-lifecycle/SKILL.md` — the full workflow:
-  discover skill gaps from evals, draft or refine skills, test via gym, deploy,
-  measure effectiveness. One atomic improvement per cycle.
-  Latest (2026-03-17, 14:09 update): **Anthropic skill-creator methodology fully integrated.** Updated `skill-lifecycle/SKILL.md` v2.0.0 → v2.1.0. New additions: (1) **Assertions guidance** — expanded with 2-purpose explanation, 3-7 per skill, process-over-output principle, (2) **Multi-run in Step 3** — explained stochastic reasoning and journal tracking format, (3) **Transcript review in Step 6** — 4-point checklist before editing skills (skipped steps, dead ends, improvised solutions, dead weight), (4) **Iteration workspace structure** — `skill-refine/<name>/iteration-N/` with findings/changes/gym-results. Assessment doc at `workspace/anthropic-skill-creator-assessment.md`. Prior: v1.0→v2.0 added Step 3.5 (grading), Step 7 (blind A/B), multi-run table in Step 4.
 
 ---
 
