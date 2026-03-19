@@ -410,12 +410,18 @@ export async function evaluateTask(opts: EvaluateTaskOptions): Promise<TaskEvalu
   // Retry once if evaluator produced no agent scores (malformed or missing JSON)
   const hasAgentScores = Object.keys(parsed.agents).length > 0;
   if (!hasAgentScores && children.length > 0) {
-    const retryPrompt =
-      `Your previous response did not contain a valid JSON scores block. ` +
-      `Please output ONLY the JSON scores block in a \`\`\`json code fence, ` +
-      `followed by a ### Lessons section. No other text.\n\n` +
-      `Agents to score: ${[...new Set(children.map((c) => c.agent))].join(", ")}\n\n` +
-      `Your previous response was:\n${responseText.slice(0, 2000)}`;
+    // Include the original transcript so the evaluator can actually score agents
+    // (without it, the retry session has no context and produces 0/0 EVIDENCE_GAP)
+    const retryPrompt = [
+      `Your previous response did not contain a valid JSON scores block. `,
+      `Please output ONLY the JSON scores block in a \`\`\`json code fence, `,
+      `followed by a ### Lessons section. No other text.\n`,
+      `Agents to score: ${[...new Set(children.map((c) => c.agent))].join(", ")}\n`,
+      `--- ORIGINAL TRANSCRIPT (for context) ---`,
+      ...perAgentTranscripts,
+      `--- END TRANSCRIPT ---\n`,
+      `Your previous (malformed) response was:\n${responseText.slice(0, 2000)}`,
+    ].join("\n");
     const retrySessionId = manager.run("evaluator", retryPrompt);
     const retryResult = await manager.waitFor(retrySessionId);
     const retryText = retryResult?.lastAssistantText ?? "";
