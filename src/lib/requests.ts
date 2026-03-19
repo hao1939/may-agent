@@ -191,65 +191,6 @@ export function getDb(persistDir: string): Database {
   db.run("PRAGMA busy_timeout = 5000");
   db.exec(SCHEMA);
 
-  // Auto-migrate evaluations from .state/evaluations/*.json on first access
-  try {
-    const count = (db.query("SELECT COUNT(*) as c FROM evaluations").get() as { c: number }).c;
-    if (count === 0) {
-      const evalsDir = join(persistDir, "evaluations");
-      if (existsSync(evalsDir)) {
-        const files = require("node:fs").readdirSync(evalsDir).filter((f: string) => f.endsWith(".json"));
-        if (files.length > 0) {
-          // Defer full migration to avoid blocking startup; import first 100 synchronously
-          // and let migrateEvaluationsFromFiles() handle the rest on explicit call
-          const insertStmt = db.query(
-            `INSERT OR IGNORE INTO evaluations (
-              sessionId, agent, quality, efficiency, productiveCalls, wastedCalls,
-              verdict, issues, overall, usage, failureChains,
-              evaluatedByHeuristic, skippedByJs, createdAt
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          );
-          db.run("BEGIN TRANSACTION");
-          let imported = 0;
-          for (const file of files) {
-            const sessionId = file.replace(".json", "");
-            const tsMatch = sessionId.match(/^(?:s|cron|e|tasktree|task.tree|task_tree)_(\d{13,})/);
-            const createdAt = tsMatch ? parseInt(tsMatch[1], 10) : 0;
-            try {
-              const raw = JSON.parse(require("node:fs").readFileSync(join(evalsDir, file), "utf-8"));
-              if (typeof raw !== "object" || raw === null) continue;
-              insertStmt.run(
-                sessionId,
-                typeof raw.agent === "string" ? raw.agent : "unknown",
-                typeof raw.quality === "number" ? raw.quality : 0,
-                typeof raw.efficiency === "number" ? raw.efficiency : 0,
-                typeof raw.productive_calls === "number" ? raw.productive_calls : 0,
-                typeof raw.wasted_calls === "number" ? raw.wasted_calls : 0,
-                typeof raw.verdict === "string" ? raw.verdict : "unknown",
-                JSON.stringify(Array.isArray(raw.issues) ? raw.issues : []),
-                raw.overall ? JSON.stringify(raw.overall) : null,
-                raw.usage ? JSON.stringify(raw.usage) : null,
-                JSON.stringify(Array.isArray(raw.failureChains) ? raw.failureChains : []),
-                raw.evaluatedByHeuristic ? 1 : 0,
-                raw.skippedByJs ? 1 : 0,
-                createdAt,
-              );
-              imported++;
-            } catch {
-              continue;
-            }
-          }
-          db.run("COMMIT");
-          if (imported > 0) {
-            // eslint-disable-next-line no-console
-            console.log(`[may.db] Migrated ${imported} evaluations from files`);
-          }
-        }
-      }
-    }
-  } catch {
-    // Migration failure is non-fatal — evaluations will be written to DB going forward
-  }
-
   dbCache.set(persistDir, db);
   return db;
 }
@@ -657,8 +598,8 @@ export function migrateEvaluationsFromFiles(persistDir: string): number {
     for (const file of files) {
       const sessionId = file.replace(".json", "");
 
-      // Extract timestamp from session ID
-      const tsMatch = sessionId.match(/^(?:s|cron|e|tasktree|task.tree|task_tree)_(\d{13,})/);
+      // Extract timestamp from session ID (broad: any 13+ digit number)
+      const tsMatch = sessionId.match(/(\d{13,})/);
       const createdAt = tsMatch ? parseInt(tsMatch[1], 10) : 0;
 
       try {
