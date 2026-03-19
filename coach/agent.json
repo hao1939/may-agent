@@ -1,6 +1,6 @@
 {
   "name": "coach",
-  "opBudget": 200,
+  "opBudget": 60,
   "description": "Supervises and trains agents through process-isolated coaching sessions with real exercises",
   "domain": "agent coaching and training",
   "model": "opus",
