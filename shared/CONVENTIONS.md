@@ -49,13 +49,16 @@
 | C12.1 | session-start | Read heartbeat.md first | mechanical | handler |
 | C12.2 | session-end | finish() as last action | mechanical | handler |
 | C12.3 | session-persist | Write journal before finish() | mechanical | handler |
+| C13.1 | commit-own-work | git add <files> && git commit | mechanical | handler |
+| C13.2 | only-commit-yours | Never git add -A | mechanical | handler |
+| C13.3 | message-quality | Meaningful commit messages | llm-judge | gym |
 <!-- CONVENTION_REGISTRY_END -->
 
 ## C1. Input/Output
 1. **Always Read First**: Never assume file contents. `read()` before `edit()`.
 2. **One Read at a Time**: Truncated reads are fatal. Use `offset` to get the rest.
-3. **Verify Writes**: After `edit()`/`write()`, `read()` the file to confirm success.
-4. **Finish Clearly**: Your LAST action in a session must be `finish(status, result)`. Raw text "I'm done" is insufficient.
+3. **Verify Writes**: After `edit()`/`write()`, `read()` the file to confirm success. "Successfully updated" without verification is a lie.
+4. **Finish Clearly**: Your LAST action in a session must be `finish(status, result)`. Raw text "I'm done" is insufficient. Use `completed_items` to mark tasks done.
 
 ## C2. Tool Usage
 1. **Precise Arguments**: Check tool definitions. Don't hallucinate arguments.
@@ -66,7 +69,7 @@
 ## C3. State Management
 1. **Filesystem is Truth**: Memory is ephemeral. Persist important data to files.
 2. **Workspace Isolation**: Work in `agents/[name]/workspace/`. Don't litter root.
-3. **No Overwrites**: Don't `write()` to a file with history (like logs). Use `edit()` or `bash >>`.
+3. **Safe Append**: Never `write()` to an append-only file (like logs or journals) — it overwrites the whole file. Use `edit()` with `oldText` targeting the end, or `bash` with `>>`.
 
 ## C4. Collaboration
 1. **Sync vs Async**:
@@ -114,13 +117,22 @@
 2. **Ask with Context**: Provide what/tried/stuck/need.
 3. **Share Learnings**: Write discoveries to workspace files.
 
-## C11. Integrity
-1. **Safety Levels**: S0 (Harmless), S1 (Low - Workspace), S2 (Moderate - Shared), S3 (High - System).
+## C11. Integrity (Safety Levels)
+1. **Safety Levels**:
+   - **S0 (Harmless)**: Read, list, grep. Go ahead.
+   - **S1 (Low)**: Edit own workspace, write temp files. Verify locally.
+   - **S2 (Moderate)**: Edit shared code, core configuration. **Stop & Alert** on any failure.
+   - **S3 (High)**: Delete data, modify system prompts (SOUL.md). Requires explicit human approval.
 2. **Don't Lie**: No false claims about verification.
 3. **Don't Fabricate**: No invented data or tool outputs.
 4. **Errors are Information**: Report errors accurately, don't hide them.
 
 ## C12. Session Lifecycle
-1. **Start**: Read `heartbeat.md` first.
+1. **Start**: Read `heartbeat.md` first. Pending tasks are injected.
 2. **End**: `finish()` as the last action.
 3. **Persist**: Write `journal.md` before finishing.
+
+## C13. Git Discipline
+1. **Commit Your Own Work**: `git add <files> && git commit` before finishing.
+2. **Only Commit Your Files**: Never `git add -A`.
+3. **Message Quality**: Meaningful messages (feat/fix/chore).

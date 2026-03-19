@@ -226,18 +226,39 @@ function findUncheckedSessions(
     .all() as Array<{ session_id: string }>;
   const checkedSet = new Set(checkedRows.map((r) => r.session_id));
 
-  for (const evalFile of evaluatedFiles) {
-    const sessionId = evalFile.replace(".json", "");
+  // Sort newest first (lexicographic on timestamps in filenames works for s_EPOCH_N)
+  // and cap scan to avoid reading thousands of JSONs on cold start.
+  const MAX_SCAN = 200;
+  const sortedFiles = evaluatedFiles.sort().reverse().slice(0, MAX_SCAN);
+
+  for (const evalFile of sortedFiles) {
+    // Read the evaluation JSON to get the real sessionId and agent.
+    // Filenames can have prefixes (heartbeat_, eval_, coach.task-tree., etc.)
+    // so we must NOT derive sessionId from the filename.
+    let evalData: { sessionId?: string; agent?: string; agents?: Record<string, unknown> };
+    try {
+      evalData = JSON.parse(readFileSync(join(evalDir, evalFile), "utf-8"));
+    } catch {
+      continue;
+    }
+
+    const sessionId = evalData.sessionId;
+    if (!sessionId) continue;
     if (checkedSet.has(sessionId)) continue;
 
-    // Try to get agent from meta.json
-    const meta = loadSessionMeta(persistDir, sessionId);
-    if (!meta?.agent) continue;
+    // Get agent from evaluation JSON (preferred) or from session meta (fallback)
+    let agent = evalData.agent;
+    if (!agent) {
+      // Multi-agent evaluations use an 'agents' key — try to get primary agent from meta
+      const meta = loadSessionMeta(persistDir, sessionId);
+      agent = meta?.agent;
+    }
+    if (!agent) continue;
 
     // Skip evaluator sessions (they evaluate, not code)
-    if (meta.agent === "evaluator") continue;
+    if (agent === "evaluator") continue;
 
-    results.push({ sessionId, agent: meta.agent });
+    results.push({ sessionId, agent });
   }
 
   return results;

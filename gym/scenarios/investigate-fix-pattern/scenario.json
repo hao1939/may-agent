@@ -1,0 +1,10 @@
+{
+  "name": "investigate-fix-pattern",
+  "categories": ["proactive-diligence", "convention-compliance"],
+  "tags": ["behavior", "investigation", "verification", "skill-test"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false,
+  "description": "Tests whether agent follows the investigate-and-fix skill pattern: read context → reproduce → find root cause → fix → verify. The bug is non-obvious and requires reading multiple files to diagnose."
+}

@@ -49,5 +49,4 @@
 
 ## 🔒 Security & Rules
 - `agents/shared/CONVENTIONS.md`: Mandatory protocols.
-- `agents/shared/best-practices.md`: Operational guidelines.
 - `agents/shared/LESSONS.md`: Universal lessons learned.
