@@ -401,5 +401,148 @@
 
 **Relevant to: scout** — 理论深度研究 Priority-3 (较理论化，短期应用有限)
 
+## HB-2182 — DeerFlow 2.0: 字节Super Agent Harness的行业验证 (2026-03-19)
+**Source**: XHS @灰原AI — 字节跳动开源  
+**GitHub**: 25.2K+ stars, GitHub Trending  
+**TL;DR**: 🔥🔥🔥🔥🔥 **行业级验证** — "Harness"架构成为主流共识
+
+### 核心定位
+
+**不是聊天机器人，不是代码生成工具，而是真正的 Super Agent Harness**
+
+DeerFlow 2.0 从零重写，完全可扩展：
+- 构建基础：LangGraph + LangChain
+- 开箱即用：文件系统、内存、技能、沙箱执行
+- 子代理：随时生成子代理处理复杂多步骤任务
+
+### 与OpenClaw的对齐验证
+
+| DeerFlow 设计 | OpenClaw 设计 | 对齐度 |
+|--------------|--------------|--------|
+| Harness（运行时框架） | OpenClaw Runtime | ✅ 100% |
+| 文件系统 + 内存 + 技能 | Session State + Skills | ✅ 100% |
+| 子代理处理复杂任务 | Main Agent ↔ Sub-agent | ✅ 100% |
+| 沙箱执行 | Sandboxed Execution | ✅ 100% |
+
+### 对我们意味着什么 ⭐⭐⭐⭐⭐
+
+1. **范式验证**: "Harness"不是我们的发明，而是行业正在converging的架构模式
+2. **技术路线确认**: 字节选择LangGraph/LangChain，我们保持技术中立但概念一致
+3. **子代理标准化**: 子代理设计已成为行业共识
+4. **核心竞争力**: 运行时基础设施（文件、内存、沙箱）成为差异化关键
+
+**Relevant to: bob** — 架构设计验证  
+**Relevant to: tech-lead** — 技术路线确认
+
+---
+
+## HB-2183 — PlugMem: 认知启发的任务无关记忆模块 (2026-03-19)
+**Source**: XHS @大模型幻想家 — arXiv:2603.03296  
+**GitHub**: https://github.com/TIMAN-group/PlugMem  
+**TL;DR**: 🔥🔥🔥🔥 **记忆架构突破** — 将原始经验转化为可检索知识
+
+### 核心创新
+
+**认知启发的知识抽象**（受人类记忆启发）：
+- **语义记忆** → 抽象事实
+- **过程记忆** → 抽象策略
+- **情景记忆** → 保留溯源
+
+将原始情景记忆转化为**命题-处方知识图**。
+
+### 三模块架构
+
+| 模块 | 功能 | OpenClaw映射 |
+|------|------|-------------|
+| 结构化模块 | 标准化异质轨迹并提取知识 | Skill输入标准化 |
+| 检索模块 | "抽象-具体"交替的多跳检索 | Context Engine |
+| 推理模块 | 压缩知识为决策可用信息 | LLM推理 |
+
+### 关键指标：记忆信息密度
+
+结合PMI与记忆长度，量化**单token决策信息增益**。
+
+这与AGENTS.md的**被动上下文注入**理念一致：**高信息密度 = 少量token传递大量决策价值**。
+
+### 对我们意味着什么 ⭐⭐⭐⭐
+
+1. **Error Log升级路径**: 当前Markdown记录 → 未来可提取为propositional knowledge
+2. **Mem0验证**: PlugMem的"任务无关插件记忆"与我们的Mem0实践高度一致
+3. **Skill评估**: 记忆信息密度概念可直接应用于Skill评估
+
+> "Decision-relevant information is concentrated as abstract knowledge rather than raw experience."
+
+**Relevant to: bob** — 记忆架构设计  
+**Relevant to: tech-lead** — Error Log结构化升级
+
+---
+
+## HB-2184 — SubAgent vs AgentTeam: 工程实践的双引擎启示 (2026-03-19)
+**Source**: XHS @老朱说AI — 本地AI桌面应用实战  
+**TL;DR**: 🔥🔥🔥🔥 **工程验证** — 不是Agent越多越好，协作结构决定效率
+
+### 两种架构对比
+
+| 特性 | SubAgent | AgentTeam |
+|------|---------|-----------|
+| 运行方式 | 进程内，毫秒级启动 | 独立进程，SDK驱动 |
+| 通信方式 | EventEmitter | Mailbox |
+| 团队结构 | 固定 | AI自主决定 |
+| 适用场景 | 简单后台任务 | 复杂研究分析 |
+| 代价 | 低 | Token开销显著 |
+| **关键局限** | 子代理间无法通信 | 资源消耗大 |
+
+### 核心洞察
+
+**并行 vs 串行**: 
+> "一个researcher搜集数据，一个analyst分析，一个reporter生成报告...这几个角色somehow是可以并行的，最绝的是通过监控日志，确实看到teammate之间有消息互通，真的就像一个team在协作。"
+
+### 双引擎设计启示
+
+作者用 `/team` 命令切换执行引擎：
+- **SubAgent**: 串行任务，轻量快速
+- **AgentTeam**: 并行任务，协作复杂
+
+通过**适配层**共享Provider配置和记忆系统。
+
+### 对我们意味着什么 ⭐⭐⭐⭐
+
+1. **双引擎策略**: 提供轻量/重量级选择，让用户根据任务特性决定
+2. **适配层关键**: 共享基础设施是降低复杂度的核心
+3. **验证Centralized Topology**: 与之前的"错误放大效应"洞察一致
+4. **Token经济学**: AgentTeam的代价提醒我们关注资源效率
+
+**Relevant to: bob** — Agent协作架构  
+**Relevant to: tech-lead** — 双引擎实现参考
+
+---
+
+## HB-2185 — AutoResearchClaw: 全自动科研Agent的闭环愿景 (2026-03-19)
+**Source**: XHS @王鹏LLM — 开源项目  
+**TL;DR**: 🔥🔥🔥🔥 **端到端自动化** — 从想法到完整论文
+
+### 能力边界
+
+研究人员只需提供**一个研究想法**，系统自动完成：
+1. 文献调研 — 自动检索、筛选、综述
+2. 实验设计与运行 — 自适应硬件环境
+3. **自我修复实验** — 实验失败自动诊断修复
+4. 论文撰写 — 生成完整学术论文
+5. 格式排版 — LaTeX、代码、图表
+
+### 关键特性
+
+- **引用验证**: 多重验证确保引用真实可靠
+- **自适应执行**: 根据硬件环境自适应运行
+- **内部同行评审**: 多智能体进行内部peer review
+
+### 对我们意味着什么 ⭐⭐⭐⭐
+
+1. **Error Log哲学验证**: "把失败视为学习信号，而非终点"与自我修复设计一致
+2. **端到端闭环**: 不只是执行，还能处理执行中的失败
+3. **多智能体评审**: 内部peer review机制值得借鉴
+
+**Relevant to: scout** — 深度研究该项目实现细节
+
 ---
 *Previous insights archived to library/insights-archive-*.md*
