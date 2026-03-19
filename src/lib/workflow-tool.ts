@@ -83,22 +83,40 @@ async function loadWorkflow(filePath: string): Promise<WorkflowModule> {
   };
 }
 
-function listWorkflowFiles(workflowDir: string): string[] {
+function listWorkflowFiles(workflowDir: string, sharedDir?: string): string[] {
+  const files: string[] = [];
+  // Agent-specific workflows first
   try {
-    return readdirSync(workflowDir)
+    const agentFiles = readdirSync(workflowDir)
       .filter((f) => f.endsWith(".ts") && !f.includes("-helpers") && !f.includes("-utils"))
       .sort()
       .map((f) => join(workflowDir, f));
+    files.push(...agentFiles);
   } catch {
-    return [];
+    // workflowDir may not exist
   }
+  // Shared workflows (agents/shared/workflows/) — only add if not already present by name
+  if (sharedDir) {
+    try {
+      const agentNames = new Set(files.map((f) => f.split("/").pop()));
+      const sharedFiles = readdirSync(sharedDir)
+        .filter((f) => f.endsWith(".ts") && !f.includes("-helpers") && !f.includes("-utils") && !agentNames.has(f))
+        .sort()
+        .map((f) => join(sharedDir, f));
+      files.push(...sharedFiles);
+    } catch {
+      // sharedDir may not exist
+    }
+  }
+  return files;
 }
 
 async function findWorkflow(
   workflowDir: string,
   name: string,
+  sharedDir?: string,
 ): Promise<{ workflow: WorkflowModule | null; error: string | null }> {
-  const files = listWorkflowFiles(workflowDir);
+  const files = listWorkflowFiles(workflowDir, sharedDir);
   let loadError: string | null = null;
 
   for (const filePath of files) {
@@ -129,6 +147,10 @@ export interface WorkflowTool extends AgentTool {
 export interface WorkflowToolOptions {
   manager: SubagentManager;
   workflowDir: string;
+  /** Shared workflows directory (agents/shared/workflows/). Workflows here
+   *  are available to all agents, but agent-specific workflows take priority
+   *  if they share the same filename. */
+  sharedWorkflowDir?: string;
   /** Persist directory for saving workflow run records. */
   persistDir?: string;
   /** The caller's session ID — used as parentSessionId for spawned sessions.
@@ -140,7 +162,7 @@ export interface WorkflowToolOptions {
 }
 
 export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
-  const { manager, workflowDir, persistDir, onEvent } = opts;
+  const { manager, workflowDir, sharedWorkflowDir, persistDir, onEvent } = opts;
   const maxDepth = opts.maxDepth ?? 3;
 
   const resolveCallerSessionId = (): string | undefined => {
@@ -295,7 +317,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
           return { type: "escalate", reason: `Maximum workflow nesting depth (${maxDepth}) exceeded` };
         }
 
-        const { workflow: subWf, error: subErr } = await findWorkflow(workflowDir, wfName);
+        const { workflow: subWf, error: subErr } = await findWorkflow(workflowDir, wfName, sharedWorkflowDir);
         if (!subWf) {
           return { type: "escalate", reason: subErr ?? `Workflow "${wfName}" not found` };
         }
@@ -453,7 +475,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
       const params = _params as WorkflowInput;
       switch (params.action) {
         case "list": {
-          const files = listWorkflowFiles(workflowDir);
+          const files = listWorkflowFiles(workflowDir, sharedWorkflowDir);
           const workflows: Array<{ name: string; description: string }> = [];
 
           for (const filePath of files) {
@@ -475,7 +497,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
             return textResult(JSON.stringify({ type: "error", error: "action 'run' requires 'name' and 'task'" }));
           }
 
-          const { workflow, error: findError } = await findWorkflow(workflowDir, params.name);
+          const { workflow, error: findError } = await findWorkflow(workflowDir, params.name, sharedWorkflowDir);
           if (!workflow) {
             return textResult(JSON.stringify({ type: "error", workflow: params.name, error: findError }));
           }
@@ -498,7 +520,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
             );
           }
 
-          const { workflow: resumeWf, error: resumeFindError } = await findWorkflow(workflowDir, prevRun.workflow);
+          const { workflow: resumeWf, error: resumeFindError } = await findWorkflow(workflowDir, prevRun.workflow, sharedWorkflowDir);
           if (!resumeWf) {
             return textResult(JSON.stringify({ type: "error", workflow: prevRun.workflow, error: resumeFindError }));
           }
