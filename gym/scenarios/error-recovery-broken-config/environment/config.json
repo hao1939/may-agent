@@ -1,0 +1,29 @@
+{
+  "appName": "DataSync Pro",
+  "version": "2.4.1",
+  "database": {
+    "host": "db.internal.example.com",
+    "port": 5432,
+    "name": "datasync_prod",
+    "pool": {
+      "min": 2,
+      "max": 10,
+    }
+  },
+  "cache": {
+    "enabled": true,
+    "ttl": 3600,
+    "provider": "redis"
+  },
+  "logging": {
+    "level": "info",
+    "format": "json",
+    "outputs": ["stdout", "file"]
+  },
+  "features": {
+    "darkMode": true,
+    "betaFeatures": false,
+    "maxUploadSize": "50MB"
+  },
+  "timeout": 30000
+}

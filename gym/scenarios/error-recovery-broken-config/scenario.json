@@ -1,0 +1,9 @@
+{
+  "name": "error-recovery-broken-config",
+  "categories": ["error-recovery"],
+  "tags": ["behavior", "resilience"],
+  "tier": "smoke",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}
