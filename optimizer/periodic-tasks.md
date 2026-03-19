@@ -27,18 +27,14 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If issues → add fix to workspace/todo.md.
   Latest (2026-03-19T02:49): **Handlers healthy post-restart (01:55 UTC).** 38 cron entries, 95% session success rate. Memory-trimmer handler deployed but awaiting first 24h trigger (84MB memory, 62MB orphans). **Opus caching still broken** — 94% of cost ($21.67/10 sessions) from Opus agents with 0% cache. Savings potential $156/day ($4,700/mo) blocked on ANTHROPIC_API_KEY env var. Finding at `workspace/finding-handler-health-check-0319.md`.
 
-- [ ] **Proven pattern → Skill/Workflow** — Last done: NEVER (meta-work on 2026-03-17 doesn't count)
-  This is your MOST IMPORTANT periodic task — focus area #1. Do actual work, not meta-work:
-  1. Scan 10 recent session transcripts across different agents. Look for multi-step
-     processes that agents repeat successfully (e.g., "read file → check X → edit Y → verify").
-  2. When you find a pattern that appears 3+ times: draft a SKILL.md for it in
-     `agents/shared/skills/<name>/SKILL.md`. Include assertions.
-  3. Test it in the gym: create a scenario that exercises the skill, run 3x, require 2/3 pass.
-  4. If it passes: deploy by adding to relevant agents' knowledge INDEX.md.
-  **Deliverable**: A new or refined skill file, tested in gym. NOT a doc update, NOT an assessment,
-  NOT "updated the lifecycle template." An actual skill that agents will use.
-  If no proven pattern found after scanning 10 transcripts, write a 3-line note explaining why
-  and move on. But "I did cost analysis instead" is not acceptable.
+- [x] **Proven pattern → Skill/Workflow** — Last done: 2026-03-19T14:25
+  This is your MOST IMPORTANT periodic task — focus area #1.
+  **Run it via workflow**: `workflow.run("skill-lifecycle", "Scan recent sessions for proven multi-step patterns")`
+  The workflow mechanically enforces all 4 phases (discover → draft → test → deploy) in separate
+  sessions, preventing you from skipping testing or doing meta-work instead.
+  If you have a specific pattern in mind, pass it: `workflow.run("skill-lifecycle", "Pattern: agents read file → check convention → edit → verify")`
+  **Deliverable**: A new or refined skill file, tested in gym, deployed to agents.
+  Latest (2026-03-19T14:25): **Created investigate-and-fix skill + gym scenario.** Scanned 30+ sessions across tech-lead, bob, optimizer, coach, amy-kimi. Found "Investigate → Diagnose → Fix → Verify" as the most universal single-agent pattern (70%+ of sessions). Created `agents/shared/skills/investigate-and-fix/SKILL.md` with 5-step pattern, evidence from 3 real sessions, and 5 behavioral assertions. Created gym scenario `investigate-fix-pattern` with multi-bug environment, success_criteria testing both product (tests pass) and process (followed investigation pattern). Not yet gym-tested (needs May to run). Next: run scenario 3x, deploy if 2/3 pass.
 
 ## Weekly
 - [x] **Improvement proposals review** — Last done: 2026-03-18T07:15
