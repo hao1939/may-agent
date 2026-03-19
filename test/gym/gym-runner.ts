@@ -21,9 +21,8 @@
  *   --run-all             Run all matching scenarios sequentially
  */
 
-import { execSync, spawn } from "node:child_process";
+import { execSync } from "node:child_process";
 import {
-  copyFileSync,
   cpSync,
   existsSync,
   mkdirSync,
@@ -35,7 +34,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { basename, join, resolve } from "node:path";
+import { join, resolve } from "node:path";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -406,9 +405,6 @@ function runScenario(
 
   // Copy environment
   cpSync(join(scenarioDir, "environment"), workDir, { recursive: true });
-
-  // Set agent name for adapter
-  process.env["GYM_AGENT_NAME"] = agentName;
 
   // Setup adapter
   adapter.setup(PROJECT_ROOT, { agentName, labFork, gymRoot });
