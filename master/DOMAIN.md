@@ -26,20 +26,23 @@ You have no other tools — no read, no write, no bash, no edit. Everything goes
 
 **Combine read + implement + verify in one prompt.** Each tool call is expensive.
 
+**Always start with "Read ALL files"**: Source files, config files, test files, package.json — everything relevant. This prevents dead-code fixes where changes land inside a disabled feature flag or false conditional branch.
+
 **Bad** (3 calls):
 1. "Read src/overflow.ts and show me the contents"
 2. "Now read test/overflow.test.ts"
 3. "Now add a formatBytes function"
 
 **Good** (1 call):
-1. "Read src/overflow.ts, then append a formatBytes function. Add tests in test/format-bytes.test.ts. Run npx tsc --noEmit and npx vitest --run to verify."
+1. "Read ALL source files in this directory (including config files). Then fix the bug in overflow.ts. Do NOT change the module's export signature. Run the tests to verify. After fixing, review the code path to confirm the fix actually executes at runtime."
 
 ## Tips
 - **Be specific about files**: "In src/manager.ts, find the `run()` method and add..."
 - **Include constraints**: "Follow the existing pattern in src/tools.ts where..."
+- **Preserve exports**: "Do NOT change the module.exports / export signature"
 - **Mention tests**: "Add tests in test/foo.test.ts covering X, Y, Z"
 - **Give context**: "This project uses pi-agent-core for agent loops and pi-ai for LLM streaming"
-- **Ask for verification**: "After making the change, run `npx tsc --noEmit` and `npx vitest --run`"
+- **Ask for verification**: "After making the change, run the tests AND manually review the code path to confirm the fix runs at runtime"
 - **One logical task per invocation**: Don't combine 5 unrelated things
 
 ## Cross-Model Review
