@@ -9,11 +9,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If found → add specific task to workspace/todo.md.
   Latest (2026-03-19T06:49): **118 sessions/6h, 17% error rate (20 errors).** Error categories: truncated toolUse (8), "cannot continue from assistant" (4), JSON parse (4), ENOENT (2), LiteLLM (2). Worst session: s_1773899695055_13 (coach) cost $6.49 for mechanical Step 4 "Record & Decide" — 63 bash calls wandering, 2.1M input tokens. Pure-JS Step 4 now deployed in growth-cycle.ts and training-sprint.ts — no more Step 4 LLM sessions observed after fix. Coach: 34 sessions (7.6MB), tech-lead: 20 sessions (4.3MB). Finding at `workspace/finding-analysis-review-0319-0649.md`.
 
-- [x] **Cost outlier scan** — Last done: 2026-03-19T06:14
+- [x] **Cost outlier scan** — Last done: 2026-03-19T11:25
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-19T06:14): **Coach still dominant cost driver: 38 sessions in 6h, 8.7MB session data, est. $61/6h ($244/day).** 60min heartbeat interval (my earlier fix) IS active post-restart — 05:28 was last heartbeat, healthy gap. BUT each heartbeat spawns growth-cycle with 3 Opus sub-sessions (Diagnose, Fork, Record). Step 4 (Record & Decide) is 100% mechanical: compare gym baseline vs patched counts → promote or discard → append JSONL. Can be pure JS using `promoteAgent`/`discardAgent` from `src/lib/growth.ts`. Tech-lead marked my LLM-to-JS request (req:a8af4d84) COMPLETED but didn't implement it. Also: meta.json cost field always $0.000 — no usage tracking. Total system: ~$400-500/day estimated across all agents. Prompt caching still blocked on ANTHROPIC_API_KEY env var ($156/day savings potential).
+  Latest (2026-03-19T11:25): **Tech-lead is #1 cost driver: $33.26 (33%) over 7 sessions, avg $4.75.** Optimizer #2 at $23.97 (24%). Root cause: long heartbeats with 50-63 turns, context grows to 54K tokens. Later turns cost 1.5x more. Fix deployed: evaluator transcript cap 15→10KB + 20KB total budget (bdc997a). Sent opBudget reductions to May: tech-lead 70→35, optimizer 200→60 (req:db066426). Expected savings: $25-50/day. Finding at `workspace/finding-session-cost-analysis-0319.md`.
 
 - [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-19T00:30
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
