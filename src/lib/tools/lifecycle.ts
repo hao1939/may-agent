@@ -11,7 +11,7 @@
 import type { AgentTool } from "@mariozechner/pi-agent-core";
 import { Type } from "@mariozechner/pi-ai";
 import type { TSchema } from "@mariozechner/pi-ai";
-import { existsSync } from "fs";
+import { existsSync, appendFileSync } from "fs";
 import { resolve } from "path";
 
 // Lazy import for requests.ts (uses bun:sqlite, not available in vitest)
@@ -80,6 +80,17 @@ const finishSchema: TSchema = Type.Object({
     Type.String({ description: "A new task to track" }),
     { description: "New self-assigned tasks. Infra tracks them as pending requests." },
   )),
+  lessons: Type.Optional(Type.Array(
+    Type.Object({
+      category: Type.Union([
+        Type.Literal("fix"),
+        Type.Literal("pattern"),
+        Type.Literal("insight"),
+      ], { description: "Lesson category: fix (bug fix learnings), pattern (reusable approach), insight (system observation)" }),
+      content: Type.String({ description: "What was learned — specific and actionable" }),
+    }),
+    { description: "Lessons learned this session. Persisted to memory-stream.jsonl for cross-session learning." },
+  )),
 });
 
 interface FinishParams {
@@ -90,6 +101,7 @@ interface FinishParams {
   next_steps?: string;
   completed_items?: string[];
   new_items?: string[];
+  lessons?: Array<{ category: "fix" | "pattern" | "insight"; content: string }>;
 }
 
 // ── Tool factory ───────────────────────────────────────────────────────
@@ -115,7 +127,8 @@ export function createFinishTool(options: FinishToolOptions): AgentTool<TSchema>
     description:
       "Signal structured completion of a task. Call this as the LAST action in a session " +
       "to declare outcome (success/failure/blocked/partial), list deliverables, and specify blockers. " +
-      "This replaces unstructured 'I'm done' messages with machine-readable completion signals.",
+      "This replaces unstructured 'I'm done' messages with machine-readable completion signals. " +
+      "Optionally include lessons learned (fix/pattern/insight) for cross-session memory.",
     parameters: finishSchema,
     execute: async (_toolCallId: string, _params: unknown) => {
       const params = _params as FinishParams;
@@ -188,6 +201,25 @@ export function createFinishTool(options: FinishToolOptions): AgentTool<TSchema>
         });
       }
 
+      // ── Persist lessons to memory-stream.jsonl ─────────────────
+      if (params.lessons && params.lessons.length > 0 && stateDir) {
+        try {
+          const streamPath = resolve(stateDir, "memory-stream.jsonl");
+          const now = new Date().toISOString();
+          for (const lesson of params.lessons) {
+            const entry = JSON.stringify({
+              timestamp: now,
+              agent: agentName,
+              category: lesson.category,
+              content: lesson.content,
+            });
+            appendFileSync(streamPath, entry + "\n");
+          }
+        } catch {
+          /* non-fatal — lesson persistence should never break finish() */
+        }
+      }
+
       // ── Build formatted output ─────────────────────────────────
       const statusEmoji = {
         success: "✅",
@@ -220,6 +252,14 @@ export function createFinishTool(options: FinishToolOptions): AgentTool<TSchema>
       if (next_steps) {
         parts.push("");
         parts.push(`**Next steps:** ${next_steps}`);
+      }
+
+      if (params.lessons && params.lessons.length > 0) {
+        parts.push("");
+        parts.push("**Lessons recorded:**");
+        for (const l of params.lessons) {
+          parts.push(`- [${l.category}] ${l.content}`);
+        }
       }
 
       return {
