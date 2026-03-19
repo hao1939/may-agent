@@ -205,16 +205,18 @@ export function hasToolCallWithArgs(
 }
 
 /**
- * Check if a read/bash-cat happened AFTER a write to the same file.
- * Used to detect verification behavior (C3 in common-sense.md).
+ * Check if a read/bash-cat happened AFTER a write/edit to the same file.
+ * Used to detect verification behavior (C2.3 in CONVENTIONS.md).
  *
- * Returns true if any write to `filePath` is followed by a read of the same file.
+ * Returns true if any write or edit to `filePath` is followed by a read of the same file.
+ * Both write() and edit() modify file contents on disk, so both count as "writes"
+ * that should be verified.
  */
 export function hasVerificationAfterWrite(transcript: Transcript, filePath: string): boolean {
-  // Find all writes to this file
+  // Find all writes/edits to this file (edit() is also a write operation)
   const writes = transcript.toolCalls.filter(
     (tc) =>
-      tc.name === "write" &&
+      (tc.name === "write" || tc.name === "edit") &&
       typeof tc.arguments.path === "string" &&
       tc.arguments.path.includes(filePath)
   );
