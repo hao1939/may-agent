@@ -1,5 +1,17 @@
 /// <reference path="../../../src/workflow-defs.d.ts" />
 
+import { writeFileSync } from "node:fs";
+import { join } from "node:path";
+import {
+  runGym,
+  findLabForks,
+  extractScenarios,
+  agentFromFork,
+  formatGymResults,
+  type GymResult,
+  PROJECT_ROOT,
+} from "./gym-helpers.js";
+
 export const name: string = "training-sprint";
 
 export const description: string =
@@ -81,37 +93,81 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     return ctx.escalate("batch forking failed", { error: patch.error });
   }
 
-  // Step 3: Run all gym tests — use bash to run them, potentially in parallel
-  const test = await ctx.runAgent("coach",
-    `Run gym tests for all experiments from the sprint.\n\n` +
-    `## Forks Created\n${ctx.summarize(patch)}\n\n` +
-    `## Instructions\n` +
-    `Read \`agents/coach/workspace/sprint-plan.md\` for scenarios per experiment.\n\n` +
-    `For EACH experiment, run baseline and patched:\n` +
-    `\`\`\`bash\n` +
-    `# Baseline (only need one per agent+scenario combo)\n` +
-    `scripts/gym-run.sh <scenario> --agent <agent> --timeout 3\n\n` +
-    `# Patched\n` +
-    `scripts/gym-run.sh <scenario> --agent <agent> --lab <fork-name> --timeout 3\n` +
-    `\`\`\`\n\n` +
-    `Collect all results. Write them to \`agents/coach/workspace/sprint-results.md\`.\n\n` +
-    `Format per experiment:\n` +
-    `- Fork: <name>\n` +
-    `- Scenario: <name>\n` +
-    `- Baseline: PASS/FAIL (checks: X/Y)\n` +
-    `- Patched: PASS/FAIL (checks: X/Y)\n` +
-    `- Delta: +N/-N checks\n\n` +
-    `IMPORTANT: Do NOT use git stash, git checkout, or git branch.\n` +
-    `If a gym run fails, record the error and move to the next one.`
-  );
-  if (test.status === "error") {
-    return ctx.escalate("gym testing failed", { error: test.error });
+  // Step 3: Run all gym tests — direct JS execution (no LLM session needed)
+  ctx.emit({ type: "step_start", step: "sprint-gym-tests" });
+
+  // Discover forks from .lab/ and match against patch output
+  const forks = findLabForks();
+  const patchText = patch.lastAssistantText ?? "";
+  const planText2 = plan.lastAssistantText ?? "";
+  const combinedText = planText2 + "\n" + patchText;
+
+  // Build list of experiments: { forkName, agent, scenarios }
+  interface SprintExperiment {
+    forkName: string;
+    agent: string;
+    scenarios: string[];
   }
+  const experiments: SprintExperiment[] = [];
+  for (const fork of forks) {
+    if (patchText.includes(fork)) {
+      const agent = agentFromFork(fork);
+      const scenarios = extractScenarios(combinedText);
+      experiments.push({ forkName: fork, agent, scenarios: scenarios.length > 0 ? scenarios : [] });
+    }
+  }
+
+  // If no experiments detected from fork matching, try all forks
+  if (experiments.length === 0 && forks.length > 0) {
+    for (const fork of forks) {
+      const agent = agentFromFork(fork);
+      const scenarios = extractScenarios(combinedText);
+      experiments.push({ forkName: fork, agent, scenarios });
+    }
+  }
+
+  // Run baseline and patched tests for each experiment
+  interface SprintResult {
+    fork: string;
+    scenario: string;
+    baseline: GymResult;
+    patched: GymResult;
+    delta: number;
+  }
+  const sprintResults: SprintResult[] = [];
+  const resultLines: string[] = ["# Sprint Gym Test Results (automated — no LLM session)\n"];
+
+  for (const exp of experiments) {
+    resultLines.push(`## Fork: ${exp.forkName} (agent: ${exp.agent})`);
+    if (exp.scenarios.length === 0) {
+      resultLines.push("- No scenarios identified for this fork\n");
+      continue;
+    }
+
+    for (const scenario of exp.scenarios) {
+      const baseline = runGym(scenario, exp.agent);
+      const patched = runGym(scenario, exp.agent, exp.forkName);
+      const bPassed = baseline.checks.filter(c => c.passed).length;
+      const pPassed = patched.checks.filter(c => c.passed).length;
+      const delta = pPassed - bPassed;
+
+      sprintResults.push({ fork: exp.forkName, scenario, baseline, patched, delta });
+
+      resultLines.push(`- ${scenario}: baseline=${baseline.passed ? "PASS" : "FAIL"} (${bPassed}/${baseline.checks.length}), patched=${patched.passed ? "PASS" : "FAIL"} (${pPassed}/${patched.checks.length}), delta=${delta >= 0 ? "+" : ""}${delta}`);
+    }
+    resultLines.push("");
+  }
+
+  // Write results to file for Step 4 to read
+  const resultsText = resultLines.join("\n");
+  writeFileSync(join(PROJECT_ROOT, "agents/coach/workspace/sprint-results.md"), resultsText);
+
+  ctx.emit({ type: "step_done", step: "sprint-gym-tests" } as any);
 
   // Step 4: Record all results, promote winners, discard losers
   const record = await ctx.runAgent("coach",
     `Record sprint results and make promote/discard decisions.\n\n` +
-    `## Test Results\n${ctx.summarize(test)}\n\n` +
+    `## Test Results\n${resultsText}\n\n` +
     `## Instructions\n` +
     `Read \`agents/coach/workspace/sprint-results.md\` for full results.\n\n` +
     `For EACH experiment:\n` +
@@ -135,7 +191,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   return ctx.done(
     `Training sprint completed.\n\n` +
     `## Plan\n${plan.lastAssistantText}\n\n` +
-    `## Results\n${test.lastAssistantText}\n\n` +
+    `## Results\n${resultsText}\n\n` +
     `## Decisions\n${record.lastAssistantText}`
   );
 }
