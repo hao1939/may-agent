@@ -38,10 +38,16 @@ Clean up a failed experiment or temporary fork.
 Test agents (or forks) against scenarios with automated scoring:
 ```bash
 # Baseline
-scripts/gym-run.sh <scenario> --agent <agent> --timeout 3
+bun test/gym/gym-runner.ts <scenario> --agent <agent> --timeout 3
 
 # Test a .lab/ fork
-scripts/gym-run.sh <scenario> --agent <agent> --lab <fork-name> --timeout 3
+bun test/gym/gym-runner.ts <scenario> --agent <agent> --lab <fork-name> --timeout 3
+
+# List scenarios
+bun test/gym/gym-runner.ts --list --tier smoke
+
+# Run batch
+bun test/gym/gym-runner.ts --run-all --tier smoke --agent <agent>
 ```
 Output: JSON with `{ passed, checks[], summary }`.
 Do NOT use git stash/checkout/branch — `--lab` handles isolation.

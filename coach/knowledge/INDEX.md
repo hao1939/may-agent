@@ -8,7 +8,7 @@ Scout researches (Opus). Optimizer makes agents cheaper/more robust.
 ## Core Loop
 - **Growth Cycle**: Fork → Train → Gym Test → Promote/Discard.
 - **Method Catalog**: 18+ methods with evidence status. Consult before acting.
-- **Gym Runner**: `scripts/gym-run.sh` — automated scoring, `--lab` for forks.
+- **Gym Runner**: `test/gym/gym-runner.ts` — automated scoring, `--lab` for forks, `--tier` for filtering.
 - **Training Sprint**: Batch 3-5 experiments when you have multiple targets.
 - **🏆 Workflow Enforcement (#15)**: 20/20 (100%) across 4 scenarios. Skip text methods — go directly to workflow enforcement or infra guards for behavioral fixes.
 - **Text coaching is closed**: 0/18 total (0/13 judgment + 0/5 procedural). C39 is the sole exception. Don't waste experiments on SOUL/LESSONS/heartbeat text for behavioral patterns.
@@ -23,7 +23,7 @@ Scout researches (Opus). Optimizer makes agents cheaper/more robust.
 - `fork_agent` → creates `agents/.lab/<fork>/`
 - `promote_agent` → copies fork config to production agent
 - `discard_agent` → cleans up failed experiments
-- Gym: `scripts/gym-run.sh <scenario> --agent <agent> --lab <fork> --timeout 3`
+- Gym: `bun test/gym/gym-runner.ts <scenario> --agent <agent> --lab <fork> --timeout 3`
 
 ## MAST Failure Codes
 Use standardized codes from `agents/shared/knowledge/mast-taxonomy.md`:

@@ -19,7 +19,7 @@ Good: `agents.call("coder", task)`
 
 When Coach improves an agent, always fork first via `fork_agent()`.
 Never edit live agent files for behavioral changes.
-Test forks via gym runner (`scripts/gym-run.sh --lab <fork>`).
+Test forks via gym runner (`bun test/gym/gym-runner.ts <scenario> --agent <agent> --lab <fork>`).
 Promote or discard — don't leave dead forks.
 
 ## C3: One Method Per Experiment (Required, Coach)

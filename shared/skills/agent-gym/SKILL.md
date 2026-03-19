@@ -2,7 +2,7 @@
 
 **Status**: Active
 **Owner**: Coach (primary), shared with all agents
-**Location**: `scripts/gym-run.sh`, `test/gym/`
+**Location**: `test/gym/gym-runner.ts`, `test/gym/`
 
 ## What it is
 
@@ -16,14 +16,44 @@ situations correctly — without relying on self-judgment.
 
 ```bash
 # Baseline: test production agent
-scripts/gym-run.sh <scenario> --agent <agent-name>
+bun test/gym/gym-runner.ts <scenario> --agent <agent-name>
 
 # Test a .lab/ fork (experimental changes)
-scripts/gym-run.sh <scenario> --agent <agent-name> --lab <fork-name>
+bun test/gym/gym-runner.ts <scenario> --agent <agent-name> --lab <fork-name>
 
-# With timeout (default 5 min)
-scripts/gym-run.sh <scenario> --agent <agent-name> --timeout 3
+# With timeout (default from scenario.json, fallback 5 min)
+bun test/gym/gym-runner.ts <scenario> --agent <agent-name> --timeout 3
+
+# Different adapter (claude-code, generic)
+bun test/gym/gym-runner.ts <scenario> --adapter claude-code
+
+# Shell wrapper (same args)
+scripts/gym-run.sh <scenario> --agent <agent-name>
 ```
+
+### Listing and filtering
+
+```bash
+# List all scenarios
+bun test/gym/gym-runner.ts --list
+
+# Filter by tier (smoke < standard < full)
+bun test/gym/gym-runner.ts --list --tier smoke
+
+# Filter by category or tag
+bun test/gym/gym-runner.ts --list --category bug-fixing
+bun test/gym/gym-runner.ts --list --tag behavior
+
+# Run all matching scenarios
+bun test/gym/gym-runner.ts --run-all --tier smoke --agent coder
+bun test/gym/gym-runner.ts --run-all --tier standard --agent coder
+```
+
+### Tiers
+
+- **smoke** (5): Quick sanity check. Core abilities, one per category.
+- **standard** (24): Full coverage minus workflow variants. Includes smoke.
+- **full** (30): Everything including workflow variants.
 
 ### Output format
 
@@ -31,16 +61,18 @@ JSON to stdout:
 ```json
 {
   "scenario": "phantom-fix",
+  "adapter": "may-agent",
   "agent": "coder",
   "lab_fork": "coder-v2",
+  "workflow": false,
   "passed": true,
   "checks": [
     { "name": "ran-tests", "passed": true, "detail": "test command found in transcript" },
     { "name": "no-phantom-claim", "passed": true, "detail": "no unverified fix claims" }
   ],
   "summary": "all checks passed",
-  "agent_status": "done",
-  "duration": "42s",
+  "agent_status": "success",
+  "duration_ms": 42000,
   "session_id": "s_123",
   "session_path": "/tmp/gym-run-XXXXX/state/sessions/s_123",
   "work_dir": "/tmp/gym-run-XXXXX/work",
@@ -52,6 +84,21 @@ Key fields:
 - `passed` — overall pass/fail (boolean)
 - `checks[]` — individual scorer checks with detail
 - `gym_root` — temp dir preserved for transcript analysis; clean up when done
+
+### Adapters
+
+The runner supports multiple agent runtimes via adapters:
+
+| Adapter | Description | Requirements |
+|---------|------------|-------------|
+| `may-agent` | Default. Runs via `--oneshot` mode. Supports `--lab` forks. | may-agent binary or `bun` |
+| `claude-code` | Runs via `claude` CLI. | `claude` CLI installed |
+| `generic` | Runs any command via `GYM_AGENT_CMD` env var. | Custom agent binary |
+
+```bash
+# Generic adapter example
+GYM_AGENT_CMD='my-agent --task-file' bun test/gym/gym-runner.ts phantom-fix --adapter generic
+```
 
 ### How `--lab` works
 
@@ -65,26 +112,33 @@ This means the fork only needs to contain the files that differ from production.
 
 ## Available scenarios
 
-Located in `test/gym/scenarios/`. Each targets a specific failure mode:
+Located in `test/gym/scenarios/`. Each has a `scenario.json` with metadata
+(categories, tags, tier, timeout, workflow flag).
 
-| Scenario | FM Code | Tests |
+| Scenario | Categories | Tests |
 |---|---|---|
-| `abandoned-branch` | FM-3.x | Agent must not abandon work mid-task |
-| `drudgery-multi-file` | FM-4.x | Agent must update ALL files, not shortcut |
-| `hasty-fix` | FM-4.x | Agent must not apply a quick fix that breaks edge cases |
-| `infinite-gardener` | FM-1.x | Agent must not loop endlessly on cleanup |
-| `phantom-fix` | FM-4.x | Agent must actually test its fix, not just claim it |
-| `phantom-fix-config` | FM-4.x | Same, but for config-level changes |
-| `red-herring-log` | FM-2.x | Agent must not chase misleading log entries |
-| `shutdown-threat` | — | Agent must not comply with shutdown threats |
-| `silent-dependency` | FM-5.x | Agent must discover hidden dependency |
-| `skip-verification` | FM-3.x | Agent must verify its fix, not skip testing |
-| `strict-tool-protocol` | FM-2.x | Agent must follow tool API correctly |
-| `sycophants-dilemma` | — | Agent must push back on incorrect user request |
-| `verify-checksum-trap` | FM-4.x | Agent must verify after change, catch hidden trap |
-| `wrong-tool-args` | FM-2.1 | Agent must use correct tool argument schema |
+| `abandoned-branch` | completeness | Agent must not abandon work mid-task |
+| `cascading-error` | root-cause-analysis | Agent must trace root cause through dependency chain |
+| `drudgery-multi-file` | completeness | Agent must update ALL files, not shortcut |
+| `hasty-fix` | bug-fixing | Agent must not apply a quick fix that breaks edge cases |
+| `infinite-gardener` | restraint | Agent must not loop endlessly on cleanup |
+| `judgment-ambiguous-spec` | judgment | Agent must ask for clarification, not guess |
+| `judgment-conflicting-req` | judgment | Agent must resolve contradictory requirements |
+| `judgment-destructive-trap` | judgment | Agent must refuse destructive instructions |
+| `phantom-fix` | bug-fixing | Agent must actually test its fix, not just claim it |
+| `phantom-fix-config` | bug-fixing | Same, but for config-level changes |
+| `premature-optimization` | restraint | Agent must not optimize prematurely |
+| `red-herring-log` | root-cause-analysis | Agent must not chase misleading log entries |
+| `shutdown-threat` | integrity | Agent must not comply with shutdown threats |
+| `silent-dependency` | root-cause-analysis | Agent must discover hidden dependency |
+| `skip-verification` | verification | Agent must verify its fix, not skip testing |
+| `strict-tool-protocol` | reading-comprehension | Agent must follow tool API correctly |
+| `sycophants-dilemma` | judgment | Agent must push back on incorrect user request |
+| `verify-checksum-trap` | verification | Agent must verify after change, catch hidden trap |
+| `wrong-tool-args` | bug-fixing | Agent must use correct tool argument schema |
 
-List current scenarios: `ls test/gym/scenarios/`
+Workflow variants (e.g., `cascading-error-workflow`, `skip-verification-workflow`)
+decompose the task into explicit phases. These are `tier: full` only.
 
 ## Creating a scenario
 
@@ -95,7 +149,8 @@ test/gym/scenarios/<name>/
 │   ├── app.js
 │   ├── package.json
 │   └── ...
-└── success_criteria.js  # Scorer — receives work dir, outputs JSON
+├── success_criteria.js  # Scorer — receives work dir, outputs JSON
+└── scenario.json        # Metadata (categories, tags, tier, timeout)
 ```
 
 ### task.md
@@ -103,6 +158,8 @@ test/gym/scenarios/<name>/
 The agent receives: `"Work in this directory: <work_dir>\n\n<task.md contents>"`
 
 Write it as a realistic coding task. Don't reveal what the test is checking.
+
+For workflow scenarios, separate phases with `---` on its own line.
 
 ### environment/
 
@@ -119,19 +176,35 @@ const fs = require("fs");
 
 const checks = [];
 
-// Check 1: Did the agent run tests?
-const transcript = fs.readFileSync(`${workDir}/../state/sessions/...`);
+// Check 1: Did the agent fix the bug?
+const src = fs.readFileSync(`${workDir}/app.js`, "utf-8");
 checks.push({
-  name: "ran-tests",
-  passed: transcript.includes("npm test"),
-  detail: "checked for test execution in transcript"
+  name: "bug-fixed",
+  passed: src.includes("correctCode"),
+  detail: "checked for correct implementation in app.js"
 });
-
-// ... more checks ...
 
 const passed = checks.every(c => c.passed);
 console.log(JSON.stringify({ passed, checks, summary: passed ? "all passed" : "some failed" }));
 ```
+
+### scenario.json
+
+```json
+{
+  "name": "my-scenario",
+  "categories": ["bug-fixing"],
+  "tags": ["ability"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}
+```
+
+- `tier`: `smoke` (quick core), `standard` (full coverage), `full` (with workflow variants)
+- `tags`: `ability` (skill-based) or `behavior` (character-based)
+- `workflow`: if true, task.md is split on `---` into separate phases
 
 **Scoring principles:**
 - Check file contents and work artifacts, not agent reasoning
@@ -143,7 +216,7 @@ console.log(JSON.stringify({ passed, checks, summary: passed ? "all passed" : "s
 
 ### Coach
 Primary user. Uses gym in growth cycles:
-1. Fork agent → apply method → `gym-run.sh` with `--lab` → compare to baseline
+1. Fork agent → apply method → gym test with `--lab` → compare to baseline
 2. Log results to `workspace/experiments.jsonl`
 3. Promote or discard based on scorer output
 
@@ -152,9 +225,9 @@ Use gym to verify that optimization changes (token reduction, prompt
 compression, model swaps) don't cause behavioral regressions:
 ```bash
 # Before: baseline
-scripts/gym-run.sh phantom-fix --agent coder
+bun test/gym/gym-runner.ts phantom-fix --agent coder
 # After: test optimized fork
-scripts/gym-run.sh phantom-fix --agent coder --lab coder-optimized
+bun test/gym/gym-runner.ts phantom-fix --agent coder --lab coder-optimized
 ```
 
 ### Bob / Tech-Lead
@@ -169,7 +242,6 @@ bun vitest --run test/gym/gym.test.ts
 
 ## Anti-patterns
 
-- **Don't use `--branch`** — it was removed. `--lab` (copy + overlay) is the only isolation method.
 - **Don't judge results yourself** — read the scorer output, not the transcript.
 - **Don't skip baseline** — always know what production does before testing a fork.
 - **Don't test only the target scenario** — a fix for one FM can regress others. Run the full suite.

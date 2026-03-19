@@ -66,20 +66,26 @@ The heartbeat session pauses while the workflow runs.
 
 ### Gym Runner
 
-`scripts/gym-run.sh` wraps `--oneshot` mode with automated scoring.
+`test/gym/gym-runner.ts` is the TypeScript-based gym runner. It supports
+multiple agent runtimes via adapters (may-agent, claude-code, generic).
 
 ```bash
 # Baseline (production agent)
-scripts/gym-run.sh phantom-fix --agent coder --timeout 3
+bun test/gym/gym-runner.ts phantom-fix --agent coder --timeout 3
 
-# Experiment (branch with config changes)
-scripts/gym-run.sh phantom-fix --agent coder --branch gym/coder-fm33-fix --timeout 3
+# Experiment (lab fork with config changes)
+bun test/gym/gym-runner.ts phantom-fix --agent coder --lab coder-fm33-fix --timeout 3
+
+# List available scenarios
+bun test/gym/gym-runner.ts --list --tier smoke
+
+# Batch run
+bun test/gym/gym-runner.ts --run-all --tier standard --agent coder
 ```
 
-The gym runner uses git worktrees from the `agents/` repo for isolation.
-Coach creates a branch with SOUL/heartbeat/skill changes, the runner
-checks it out in a worktree, runs the agent against the scenario in a
-separate STATE_DIR, and scores the output.
+The runner copies the scenario environment to a temp dir, runs the agent
+against the task, and scores the result with `success_criteria.js`.
+Lab forks use copy+overlay isolation (no git operations).
 
 Output is structured JSON with per-check pass/fail. Session transcripts
 are preserved at `<gym_root>/state/sessions/history/` for analysis.
@@ -157,7 +163,7 @@ a growth cycle experiment shows a skill is the right fix for an error.
 ## Implementation Status
 
 ### Built
-- [x] `scripts/gym-run.sh` — gym runner with git worktree isolation
+- [x] `test/gym/gym-runner.ts` — gym runner with adapter-based isolation (may-agent, claude-code, generic)
 - [x] `agents/coach/knowledge/method-catalog.md` — 8 methods documented
 - [x] `agents/coach/workflows/growth-cycle.ts` — evidence-based improvement
 - [x] `agents/coach/workflows/learn-method.ts` — method experimentation
