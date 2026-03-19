@@ -7,85 +7,6 @@
 
 ---
 
-## HB-2155 — MCP争议: 极简派vs标准派的架构分歧 (2026-03-18)
-**Source**: XHS @徐昊 — "写了3个月AI Agent后发现：根本不需要" (835赞/1042收藏/178评论)  
-**Tags**: [AI Agent, MCP, 技术争议]  
-**TL;DR**: 🔥🔥🔥 **关键分歧** — MCP是否过度设计？
-
-### 核心争议
-
-作者激进观点：**内部使用场景根本不需要MCP**，HTTP请求或CLI调用就足够了。
-
-### 两派观点
-
-| 极简派 | 标准派 |
-|--------|--------|
-| "企业内部HTTP可解决万物" | "商用时无法通过CLI直接访问对方系统" |
-| "MCP只是多了很多要求的REST API" | "数据不在你这，你用啥HTTP？" |
-| "MCP只是规范化没维护的文档" | "MCP的意义在于把服务器公开给别人" |
-
-### 技术讨论要点
-
-- **pagination**: CLI可用 `--page 2 --limit 20` 标准API设计
-- **安全**: bash可建立专门LLM用户并设置权限
-- **本质**: "MCP无非就是Function Call的一个规范而已"
-
-### 对我们意味着什么
-
-1. **技能注册中心的抉择**: 内部技能是否必须走MCP？还是保持轻量级HTTP/CLI调用？
-2. **分层策略**: 对外接口用MCP保证兼容性，内部工具用更轻量方案
-3. **避免教条**: 技术选型应基于实际场景，而非盲目追新
-
----
-
-## HB-2156 — Harness Engineering验证: 约束框架的四大支柱 (2026-03-18)
-**Source**: XHS @CuiLiang.ai — "Harness Engineering：Agent工程的第三次" (493赞/950收藏)  
-**Tags**: [AI Agent, Harness Engineering, 架构设计]  
-**TL;DR**: 🔥🔥🔥🔥 **范式验证** — 我们的架构设计符合第三次工程跃迁
-
-### 三次范式跃迁
-
-1. **Prompt Engineering** → 调提示词
-2. **Context Engineering** → 控上下文  
-3. **Harness Engineering** → 建约束框架 ⬅️ **我们在这里**
-
-### Harness Engineering四要素
-
-> **小跃要努力**的精炼总结：
-
-| 要素 | 含义 | OpenClaw对应 |
-|------|------|--------------|
-| 🔧 工具接口 | Agent能调用的MCP/skills/白名单 | ✅ skill registry |
-| 🚧 执行边界 | 哪些操作需要审批/确认 | ✅ approval gates |
-| 📋 状态管理 | 持久化记忆和检查点 | ✅ heartbeat + memory |
-| 🔍 审计追踪 | 完整的行为日志 | ✅ ops-receipts |
-
-### 核心洞察
-
-> **"Humans steer. Agents execute."**
-> 
-> 系统设计（Harness）对性能的影响甚至超过了模型本身的能力。
-
-### 社区反馈
-
-- **智能体前沿研究**: "去年就在搞了，没什么新东西了。架构已经到顶了。"
-- **般若爱吃菠萝蜜**: "今年看过最有价值的一篇文章"
-- **Meme**: "harness很久之前就已经有了，最开始是cc那边提的"
-
-### L0-L5成熟度阶梯
-
-从CLAUDE.md → Hooks → Skills → 多Agent协作，这与我们的演进路径一致。
-
-### 对我们意味着什么
-
-1. **外部术语背书**: 可用"Harness Engineering"描述OpenClaw架构
-2. **验证核心假设**: 约束优于自由、系统重于模型
-3. **差异化聚焦**: 当别人还在 Prompt 层探索，我们已在 Harness 层深耕
-
----
-
----
-
 ## HB-2152 — Harness Engineering: OpenAI的六层AI工程框架 (2026-03-18)
 **Source**: XHS @NY Qing — "模型够聪明之后，工程师该做什么" (289赞/494收藏)  
 **Original**: OpenAI 实践 — 3工程师5个月生成100万行生产代码  
@@ -628,6 +549,53 @@ SkillNet的设计理念：
 
 **Relevant to: bob** — 架构战略验证  
 **Relevant to: tech-lead** — Open SWE框架研究 Priority-1
+
+---
+
+## HB-2170 — AT-GRPO: 多智能体RL训练的信用分配革命 (2026-03-19)
+**Source**: XHS @momo读博日记 — "ICLR26 | Multi-Agent RL训练新思路" (18赞/25收藏)  
+**Paper**: arXiv 2510.11062 — Stronger-MAS: Multi-Agent RL for Collaborative LLMs  
+**Code**: github.com/pettingllms-ai/PettingLLMs (125⭐ / 17🍴)  
+**Tags**: [Multi-Agent, RL, GRPO, ICLR2026, Credit Assignment]  
+**TL;DR**: 🔥🔥🔥🔥🔥 **核心突破** — 多智能体RL需要重新设计分组和信用分配机制，不能简单套用单智能体配方
+
+### 核心问题
+
+单智能体的GRPO在MAS中失效：
+- 不同角色、不同轮次的prompt不一致
+- 轨迹级分组导致credit assignment不公平
+- 训练不稳定，效果反而退化
+
+### AT-GRPO三大创新
+
+| 机制 | 单智能体GRPO | AT-GRPO (MAS) |
+|------|-------------|---------------|
+| **分组** | 按整条轨迹分组 | 按「角色+轮次」分组 |
+| **采样** | 单一路径 | Tree-structured: 每轮采样多个动作，选最高奖励继续rollout |
+| **信用分配** | 单一奖励 | 团队奖励 + 局部角色奖励结合 |
+
+### 惊人结果
+
+**长程规划任务**: 14%–47% → **96.0%–99.5%**  
+**代码任务**: 平均提升 3.87%–7.62%  
+**数学任务**: 平均提升 9.0%–17.93%
+
+### 关键洞察
+
+- **角色差异大** → 分角色策略更好
+- **角色功能重叠** → 共享策略可能更优
+- **直接套用单智能体RL** → 因状态不一致而退化
+
+### 对我们意味着什么
+
+1. **技能训练策略**: 如果引入RL优化技能执行，必须考虑多智能体场景的特殊性
+2. **信用分配设计**: 团队奖励 vs 个体奖励的平衡是关键
+3. **策略架构**: 支持「单策略共享」和「多策略分角色」两种模式
+4. **Tree-structured sampling**: 可用于skill执行时的多候选生成和选择
+
+**Relevant to: bob** — 多智能体协作机制设计  
+**Relevant to: tech-lead** — RL训练系统设计参考  
+**Relevant to: scout** — 论文深度研究 Priority-1
 
 ---
 
