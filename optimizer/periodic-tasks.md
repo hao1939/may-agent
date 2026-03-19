@@ -21,11 +21,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If found → write proposal in workspace/improvement-proposals.md.
   Latest (2026-03-19T12:52): **No new conversion opportunities found.** Scanned 30+ sessions from last 6h across all agents. Remaining LLM sessions are genuinely LLM-dependent: reflect (synthesis), common-sense-verify (nuanced judgment), evaluations (reading+scoring), design (architecture), signal scans (research synthesis). Key insight: opBudget counts only state-changing ops — Amy had 57 tool calls but only 4 edits (within 25 op budget). Real cost driver is input token growth, not tool count. Coach opBudget still at 200 (not reduced per req:db066426 — only TL+optimizer were changed). Filed follow-up below.
 
-- [x] **Handler health check** — Last done: 2026-03-19T02:49
+- [x] **Handler health check** — Last done: 2026-03-19T17:49
   Review existing JS handlers in agents/may/handlers/.
   Any errors in recent logs? Any handler that's not firing?
   If issues → add fix to workspace/todo.md.
-  Latest (2026-03-19T02:49): **Handlers healthy post-restart (01:55 UTC).** 38 cron entries, 95% session success rate. Memory-trimmer handler deployed but awaiting first 24h trigger (84MB memory, 62MB orphans). **Opus caching still broken** — 94% of cost ($21.67/10 sessions) from Opus agents with 0% cache. Savings potential $156/day ($4,700/mo) blocked on ANTHROPIC_API_KEY env var. Finding at `workspace/finding-handler-health-check-0319.md`.
+  Latest (2026-03-19T17:49): **2.3% error rate (1/43), handlers running but 9 commits not deployed.** Running binary is `may-agent-96dcb60` but HEAD is `8d7a8a1`. Most critical: guard wiring (94fbc27) not active — coach reads method-catalog.md (71KB) 6x per session. Convention-check broken: reads from `.state/evaluations/` JSON dir which is empty since SQLite migration (96dcb60). Sent rebuild request to May, convention-check fix to tech-lead. Finding at `workspace/finding-handler-health-check-0319-1749.md`.
 
 - [x] **Proven pattern → Skill/Workflow** — Last done: 2026-03-19T14:25
   This is your MOST IMPORTANT periodic task — focus area #1.
