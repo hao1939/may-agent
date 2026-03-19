@@ -8,20 +8,11 @@
  * Plan: agents/tech-lead/workspace/plan-request-tracking.md
  */
 
-import type { Database } from "bun:sqlite";
+import { openDatabase } from "./db.js";
+import type { SqliteDb } from "./db.js";
 import { join } from "node:path";
 import { mkdirSync, existsSync, renameSync } from "node:fs";
 import { randomUUID } from "node:crypto";
-
-// Lazy-load bun:sqlite to avoid breaking vitest (which runs under Node.js)
-let _DatabaseClass: typeof import("bun:sqlite").Database | null = null;
-function getDatabaseClass(): typeof import("bun:sqlite").Database {
-  if (!_DatabaseClass) {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    _DatabaseClass = require("bun:sqlite").Database;
-  }
-  return _DatabaseClass!;
-}
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -161,13 +152,13 @@ CREATE INDEX IF NOT EXISTS idx_eval_created   ON evaluations(createdAt);
 
 // ── Database Management ────────────────────────────────────────────────
 
-const dbCache = new Map<string, Database>();
+const dbCache = new Map<string, SqliteDb>();
 
 /**
  * Get or create a SQLite database for request tracking.
  * Uses WAL mode for concurrent read safety and busy_timeout for write contention.
  */
-export function getDb(persistDir: string): Database {
+export function getDb(persistDir: string): SqliteDb {
   const cached = dbCache.get(persistDir);
   if (cached) return cached;
 
@@ -185,10 +176,10 @@ export function getDb(persistDir: string): Database {
     if (existsSync(oldShm)) renameSync(oldShm, dbPath + "-shm");
   }
 
-  const db = new (getDatabaseClass())(dbPath);
+  const db = openDatabase(dbPath);
 
-  db.run("PRAGMA journal_mode = WAL");
-  db.run("PRAGMA busy_timeout = 5000");
+  db.exec("PRAGMA journal_mode = WAL");
+  db.exec("PRAGMA busy_timeout = 5000");
   db.exec(SCHEMA);
 
   dbCache.set(persistDir, db);
@@ -305,7 +296,7 @@ export function getRequest(
   const db = getDb(persistDir);
   return (
     (db
-      .query("SELECT * FROM requests WHERE requestId = ?")
+      .prepare("SELECT * FROM requests WHERE requestId = ?")
       .get(requestId) as RequestRecord | null) ?? null
   );
 }
@@ -316,10 +307,10 @@ export function getRequest(
 export function getActiveRequests(persistDir: string): RequestRecord[] {
   const db = getDb(persistDir);
   return db
-    .query(
+    .prepare(
       "SELECT * FROM requests WHERE status IN ('CREATED', 'IN_PROGRESS') ORDER BY createdAt ASC"
     )
-    .all() as RequestRecord[];
+    .all() as unknown as RequestRecord[];
 }
 
 /**
@@ -331,8 +322,8 @@ export function getRequestsByAgent(
 ): RequestRecord[] {
   const db = getDb(persistDir);
   return db
-    .query("SELECT * FROM requests WHERE toAgent = ? ORDER BY createdAt DESC")
-    .all(agent) as RequestRecord[];
+    .prepare("SELECT * FROM requests WHERE toAgent = ? ORDER BY createdAt DESC")
+    .all(agent) as unknown as RequestRecord[];
 }
 
 /**
@@ -345,7 +336,7 @@ export function getRequestTree(
 ): RequestRecord[] {
   const db = getDb(persistDir);
   return db
-    .query(
+    .prepare(
       `WITH RECURSIVE tree AS (
         SELECT * FROM requests WHERE requestId = ?
         UNION ALL
@@ -354,7 +345,7 @@ export function getRequestTree(
       )
       SELECT * FROM tree ORDER BY createdAt ASC`
     )
-    .all(requestId) as RequestRecord[];
+    .all(requestId) as unknown as RequestRecord[];
 }
 
 /**
@@ -367,13 +358,13 @@ export function getStaleRequests(
   const db = getDb(persistDir);
   const cutoff = Date.now() - maxAgeMs;
   return db
-    .query(
+    .prepare(
       `SELECT * FROM requests
        WHERE status IN ('CREATED', 'IN_PROGRESS')
        AND createdAt < ?
        ORDER BY createdAt ASC`
     )
-    .all(cutoff) as RequestRecord[];
+    .all(cutoff) as unknown as RequestRecord[];
 }
 
 /**
@@ -390,7 +381,7 @@ export function isDuplicate(
   const db = getDb(persistDir);
   // Check for active (non-terminal) duplicates only
   const row = db
-    .query(
+    .prepare(
       `SELECT requestId FROM requests
        WHERE fromEntity = ? AND toAgent = ?
        AND task = ? AND status IN ('CREATED', 'IN_PROGRESS')
@@ -496,7 +487,7 @@ export function upsertEvaluation(persistDir: string, opts: UpsertEvaluationOpts)
  */
 export function hasEvaluation(persistDir: string, sessionId: string): boolean {
   const db = getDb(persistDir);
-  const row = db.query("SELECT 1 FROM evaluations WHERE sessionId = ?").get(sessionId);
+  const row = db.prepare("SELECT 1 FROM evaluations WHERE sessionId = ?").get(sessionId);
   return row !== null;
 }
 
@@ -505,7 +496,7 @@ export function hasEvaluation(persistDir: string, sessionId: string): boolean {
  */
 export function getEvaluation(persistDir: string, sessionId: string): EvaluationRecord | null {
   const db = getDb(persistDir);
-  const row = db.query("SELECT * FROM evaluations WHERE sessionId = ?").get(sessionId) as Record<string, unknown> | null;
+  const row = db.prepare("SELECT * FROM evaluations WHERE sessionId = ?").get(sessionId) as Record<string, unknown> | null;
   if (!row) return null;
   return deserializeEvalRow(row);
 }
@@ -520,10 +511,10 @@ export function getEvaluationsByAgent(
 ): EvaluationRecord[] {
   const db = getDb(persistDir);
   if (sinceMs !== undefined) {
-    return (db.query("SELECT * FROM evaluations WHERE agent = ? AND createdAt >= ? ORDER BY createdAt ASC")
+    return (db.prepare("SELECT * FROM evaluations WHERE agent = ? AND createdAt >= ? ORDER BY createdAt ASC")
       .all(agent, sinceMs) as Record<string, unknown>[]).map(deserializeEvalRow);
   }
-  return (db.query("SELECT * FROM evaluations WHERE agent = ? ORDER BY createdAt ASC")
+  return (db.prepare("SELECT * FROM evaluations WHERE agent = ? ORDER BY createdAt ASC")
     .all(agent) as Record<string, unknown>[]).map(deserializeEvalRow);
 }
 
@@ -532,7 +523,7 @@ export function getEvaluationsByAgent(
  */
 export function getEvaluationsSince(persistDir: string, sinceMs: number): EvaluationRecord[] {
   const db = getDb(persistDir);
-  return (db.query("SELECT * FROM evaluations WHERE createdAt >= ? ORDER BY createdAt ASC")
+  return (db.prepare("SELECT * FROM evaluations WHERE createdAt >= ? ORDER BY createdAt ASC")
     .all(sinceMs) as Record<string, unknown>[]).map(deserializeEvalRow);
 }
 
@@ -541,7 +532,7 @@ export function getEvaluationsSince(persistDir: string, sinceMs: number): Evalua
  */
 export function getAllEvaluations(persistDir: string): EvaluationRecord[] {
   const db = getDb(persistDir);
-  return (db.query("SELECT * FROM evaluations ORDER BY createdAt ASC")
+  return (db.prepare("SELECT * FROM evaluations ORDER BY createdAt ASC")
     .all() as Record<string, unknown>[]).map(deserializeEvalRow);
 }
 
@@ -554,7 +545,7 @@ export function getEvaluationStatus(persistDir: string, sessionId: string): {
   hasUsage: boolean;
 } {
   const db = getDb(persistDir);
-  const row = db.query("SELECT usage FROM evaluations WHERE sessionId = ?").get(sessionId) as { usage: string | null } | null;
+  const row = db.prepare("SELECT usage FROM evaluations WHERE sessionId = ?").get(sessionId) as { usage: string | null } | null;
   if (!row) return { exists: false, hasUsage: false };
   if (!row.usage) return { exists: true, hasUsage: false };
   try {
@@ -586,7 +577,7 @@ export function migrateEvaluationsFromFiles(persistDir: string): number {
   let imported = 0;
 
   // Use a transaction for bulk insert performance
-  const insertStmt = db.query(
+  const insertStmt = db.prepare(
     `INSERT OR IGNORE INTO evaluations (
       sessionId, agent, quality, efficiency, productiveCalls, wastedCalls,
       verdict, issues, overall, usage, failureChains,
@@ -594,7 +585,7 @@ export function migrateEvaluationsFromFiles(persistDir: string): number {
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   );
 
-  db.run("BEGIN TRANSACTION");
+  db.exec("BEGIN TRANSACTION");
   try {
     for (const file of files) {
       const sessionId = file.replace(".json", "");
@@ -640,9 +631,9 @@ export function migrateEvaluationsFromFiles(persistDir: string): number {
         continue;
       }
     }
-    db.run("COMMIT");
+    db.exec("COMMIT");
   } catch (err) {
-    db.run("ROLLBACK");
+    db.exec("ROLLBACK");
     throw err;
   }
 

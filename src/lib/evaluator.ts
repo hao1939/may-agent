@@ -14,22 +14,17 @@ import {
 import { extractHallucinatedRelPath } from "./tools/may-utils.js";
 import type { PersistedSession } from "./persistence.js";
 import { appendErrorLogs } from "./evaluator-error-log.js";
+import {
+  upsertEvaluation,
+  hasEvaluation,
+  getAllEvaluations,
+  getEvaluationStatus,
+} from "./requests.js";
 
-// Lazy-load requests module to avoid bun:sqlite at module level (vitest compat)
-let _requestsModule: typeof import("./requests.js") | null = null;
-let _requestsLoadFailed = false;
-function getRequestsModule(): typeof import("./requests.js") | null {
-  if (_requestsLoadFailed) return null;
-  if (!_requestsModule) {
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      _requestsModule = require("./requests.js") as typeof import("./requests.js");
-    } catch {
-      _requestsLoadFailed = true;
-      return null;
-    }
-  }
-  return _requestsModule;
+/** Extract epoch ms from a session ID. Falls back to Date.now(). */
+function extractTimestamp(sessionId: string): number {
+  const m = sessionId.match(/(\d{13,})/);
+  return m ? parseInt(m[1], 10) : Date.now();
 }
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -256,7 +251,6 @@ export function findUnevaluatedChildren(
   parentSessionId: string,
   skipAgents: Set<string>,
 ): ChildSessionInfo[] {
-  const req = getRequestsModule();
   const children: ChildSessionInfo[] = [];
 
   for (const [sessionId, session] of Object.entries(registry)) {
@@ -269,13 +263,8 @@ export function findUnevaluatedChildren(
     // Skip sessions still running
     if (session.status === "running" || session.status === "idle") continue;
 
-    // Skip already evaluated — check DB first, fall back to file check
-    if (req) {
-      if (req.hasEvaluation(persistDir, sessionId)) continue;
-    } else {
-      const evalDir = join(persistDir, "evaluations");
-      if (existsSync(join(evalDir, `${sessionId}.json`))) continue;
-    }
+    // Skip already evaluated
+    if (hasEvaluation(persistDir, sessionId)) continue;
 
     // Load transcript
     let messages = readArchivedSessionMessages(persistDir, sessionId);
@@ -519,49 +508,25 @@ export async function evaluateTask(opts: EvaluateTaskOptions): Promise<TaskEvalu
   }
 
   // Save evaluation for each session ID (marks them as evaluated)
-  const req = getRequestsModule();
   for (const child of children) {
     const agentScore = result.agents[child.agent];
     const usage = extractUsage(child.messages);
-    const createdAt = child.sessionId.match(/^(?:s|cron)_(\d{13,})/) ? parseInt(child.sessionId.match(/^(?:s|cron)_(\d{13,})/)![1], 10) : Date.now();
+    const createdAt = extractTimestamp(child.sessionId);
 
-    if (req) {
-      req.upsertEvaluation(persistDir, {
-        sessionId: child.sessionId,
-        agent: child.agent,
-        quality: agentScore?.quality ?? 0,
-        efficiency: agentScore?.efficiency ?? 0,
-        productiveCalls: agentScore?.productive_calls ?? 0,
-        wastedCalls: agentScore?.wasted_calls ?? 0,
-        verdict: agentScore?.verdict ?? "needs_improvement",
-        issues: agentScore?.issues ?? [],
-        overall: result.overall,
-        usage: usage as unknown as Record<string, unknown>,
-        failureChains: perAgentChains[child.agent] ?? [],
-        createdAt,
-      });
-    } else {
-      // Fallback: write JSON file (vitest / no bun:sqlite)
-      const evalDir = join(persistDir, "evaluations");
-      mkdirSync(evalDir, { recursive: true });
-      writeFileSync(
-        join(evalDir, `${child.sessionId}.json`),
-        JSON.stringify({
-          agent: child.agent,
-          sessionId: child.sessionId,
-          efficiency: agentScore?.efficiency ?? 0,
-          quality: agentScore?.quality ?? 0,
-          productive_calls: agentScore?.productive_calls ?? 0,
-          wasted_calls: agentScore?.wasted_calls ?? 0,
-          verdict: agentScore?.verdict ?? "needs_improvement",
-          issues: agentScore?.issues ?? [],
-          overall: result.overall,
-          usage,
-          failureChains: perAgentChains[child.agent] ?? [],
-        }, null, 2),
-        "utf-8",
-      );
-    }
+    upsertEvaluation(persistDir, {
+      sessionId: child.sessionId,
+      agent: child.agent,
+      quality: agentScore?.quality ?? 0,
+      efficiency: agentScore?.efficiency ?? 0,
+      productiveCalls: agentScore?.productive_calls ?? 0,
+      wastedCalls: agentScore?.wasted_calls ?? 0,
+      verdict: agentScore?.verdict ?? "needs_improvement",
+      issues: agentScore?.issues ?? [],
+      overall: result.overall,
+      usage: usage as unknown as Record<string, unknown>,
+      failureChains: perAgentChains[child.agent] ?? [],
+      createdAt,
+    });
   }
 
   // Append structured error logs to agents/{agent}/ERROR_LOG.jsonl (P109)
@@ -584,55 +549,7 @@ export interface AgentScoreSummary {
 }
 
 export function getAgentScoreSummary(persistDir: string): Record<string, AgentScoreSummary> {
-  const req = getRequestsModule();
-
-  if (req) {
-    // DB path: fast indexed query
-    const evals = req.getAllEvaluations(persistDir);
-    const accum: Record<
-      string,
-      {
-        totalEfficiency: number;
-        totalQuality: number;
-        count: number;
-        verdicts: Record<string, number>;
-        orderedEfficiencies: number[];
-      }
-    > = {};
-
-    for (const ev of evals) {
-      if (!ev.agent || ev.agent === "") continue;
-      if (!accum[ev.agent]) {
-        accum[ev.agent] = { totalEfficiency: 0, totalQuality: 0, count: 0, verdicts: {}, orderedEfficiencies: [] };
-      }
-      const entry = accum[ev.agent];
-      entry.totalEfficiency += ev.efficiency;
-      entry.totalQuality += ev.quality;
-      entry.count += 1;
-      entry.verdicts[ev.verdict] = (entry.verdicts[ev.verdict] ?? 0) + 1;
-      entry.orderedEfficiencies.push(ev.efficiency);
-    }
-
-    const result: Record<string, AgentScoreSummary> = {};
-    for (const [agent, entry] of Object.entries(accum)) {
-      result[agent] = {
-        avgEfficiency: entry.totalEfficiency / entry.count,
-        avgQuality: entry.totalQuality / entry.count,
-        count: entry.count,
-        verdicts: entry.verdicts,
-        trend: computeTrend(entry.orderedEfficiencies),
-      };
-    }
-    return result;
-  }
-
-  // Fallback: read from files (vitest / no bun:sqlite)
-  const evalsDir = join(persistDir, "evaluations");
-  if (!existsSync(evalsDir)) return {};
-
-  const files = readdirSync(evalsDir)
-    .filter((f) => f.endsWith(".json"))
-    .sort();
+  const evals = getAllEvaluations(persistDir);
   const accum: Record<
     string,
     {
@@ -644,33 +561,17 @@ export function getAgentScoreSummary(persistDir: string): Record<string, AgentSc
     }
   > = {};
 
-  for (const file of files) {
-    let data: unknown;
-    try {
-      data = JSON.parse(readFileSync(join(evalsDir, file), "utf-8"));
-    } catch {
-      continue;
+  for (const ev of evals) {
+    if (!ev.agent || ev.agent === "") continue;
+    if (!accum[ev.agent]) {
+      accum[ev.agent] = { totalEfficiency: 0, totalQuality: 0, count: 0, verdicts: {}, orderedEfficiencies: [] };
     }
-
-    if (typeof data !== "object" || data === null) continue;
-
-    const rec = data as Record<string, unknown>;
-    const agent = rec.agent;
-    if (typeof agent !== "string" || agent === "") continue;
-
-    const efficiency = typeof rec.efficiency === "number" ? rec.efficiency : 0;
-    const quality = typeof rec.quality === "number" ? rec.quality : 0;
-    const verdict = typeof rec.verdict === "string" ? rec.verdict : "unknown";
-
-    if (!accum[agent]) {
-      accum[agent] = { totalEfficiency: 0, totalQuality: 0, count: 0, verdicts: {}, orderedEfficiencies: [] };
-    }
-    const entry = accum[agent];
-    entry.totalEfficiency += efficiency;
-    entry.totalQuality += quality;
+    const entry = accum[ev.agent];
+    entry.totalEfficiency += ev.efficiency;
+    entry.totalQuality += ev.quality;
     entry.count += 1;
-    entry.verdicts[verdict] = (entry.verdicts[verdict] ?? 0) + 1;
-    entry.orderedEfficiencies.push(efficiency);
+    entry.verdicts[ev.verdict] = (entry.verdicts[ev.verdict] ?? 0) + 1;
+    entry.orderedEfficiencies.push(ev.efficiency);
   }
 
   const result: Record<string, AgentScoreSummary> = {};
@@ -683,7 +584,6 @@ export function getAgentScoreSummary(persistDir: string): Record<string, AgentSc
       trend: computeTrend(entry.orderedEfficiencies),
     };
   }
-
   return result;
 }
 
@@ -720,125 +620,65 @@ function computeTrend(efficiencies: number[]): "improving" | "declining" | "stab
  * Returns the number of evaluation files written.
  */
 export async function writeSkippedEvaluations(persistDir: string, skipAgents: Set<string> = new Set(["evaluator"])): Promise<number> {
-  const { mkdir, access } = await import("node:fs/promises");
+  const { access } = await import("node:fs/promises");
   const fileExists = async (p: string) => { try { await access(p); return true; } catch { return false; } };
-  const req = getRequestsModule();
 
   const allSessions: Record<string, PersistedSession> = await loadAllSessionMetasAsync(persistDir);
   let written = 0;
 
   for (const [sessionId, session] of Object.entries(allSessions)) {
-    // Skip if already evaluated
-    if (req) {
-      if (req.hasEvaluation(persistDir, sessionId)) continue;
-    } else {
-      const evalDir = join(persistDir, "evaluations");
-      if (existsSync(join(evalDir, `${sessionId}.json`))) continue;
-    }
-
-    // Skip sessions still running
+    if (hasEvaluation(persistDir, sessionId)) continue;
     if (session.status === "running" || session.status === "idle") continue;
 
-    // Determine skip reason
     let skipReason: string | null = null;
-
     if (skipAgents.has(session.agent)) {
       skipReason = `meta_agent_skipped (${session.agent})`;
     } else {
-      // Check if transcript exists anywhere
       const activeJsonl = join(persistDir, "sessions", sessionId, "session.jsonl");
       const archivedJsonl = join(historyDir(persistDir), sessionId, "session.jsonl");
       if (!await fileExists(activeJsonl) && !await fileExists(archivedJsonl)) {
         skipReason = "no_transcript";
       }
     }
-
     if (!skipReason) continue;
 
-    const createdAt = sessionId.match(/^(?:s|cron)_(\d{13,})/) ? parseInt(sessionId.match(/^(?:s|cron)_(\d{13,})/)![1], 10) : Date.now();
-
-    if (req) {
-      req.upsertEvaluation(persistDir, {
-        sessionId,
-        agent: session.agent,
-        quality: 0,
-        efficiency: 0,
-        productiveCalls: 0,
-        wastedCalls: 0,
-        verdict: "skipped",
-        issues: [skipReason],
-        overall: { efficiency: 0, quality: 0, verdict: "skipped", result_delivered: false },
-        usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, totalTokens: 0, cost: 0, turns: 0 },
-        failureChains: [],
-        skippedByJs: true,
-        createdAt,
-      });
-    } else {
-      const evalDir = join(persistDir, "evaluations");
-      await mkdir(evalDir, { recursive: true });
-      writeFileSync(
-        join(evalDir, `${sessionId}.json`),
-        JSON.stringify({
-          agent: session.agent, sessionId, efficiency: 0, quality: 0,
-          productive_calls: 0, wasted_calls: 0, verdict: "skipped",
-          issues: [skipReason],
-          overall: { efficiency: 0, quality: 0, verdict: "skipped", result_delivered: false },
-          usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, totalTokens: 0, cost: 0, turns: 0 },
-          failureChains: [], skippedByJs: true,
-        }, null, 2),
-        "utf-8",
-      );
-    }
+    upsertEvaluation(persistDir, {
+      sessionId,
+      agent: session.agent,
+      quality: 0,
+      efficiency: 0,
+      verdict: "skipped",
+      issues: [skipReason],
+      overall: { efficiency: 0, quality: 0, verdict: "skipped", result_delivered: false },
+      usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, totalTokens: 0, cost: 0, turns: 0 },
+      failureChains: [],
+      skippedByJs: true,
+      createdAt: extractTimestamp(sessionId),
+    });
     written++;
   }
 
-  // ── Second pass: orphaned sessions (no meta.json) ──────────────────
+  // Second pass: orphaned sessions (no meta.json)
   const knownSessionIds = new Set(Object.keys(allSessions));
   const allDirIds = new Set([...await listActiveSessionIdsAsync(persistDir), ...await listArchivedSessionIdsAsync(persistDir)]);
 
   for (const sessionId of allDirIds) {
     if (knownSessionIds.has(sessionId)) continue;
+    if (hasEvaluation(persistDir, sessionId)) continue;
 
-    // Skip if already evaluated
-    if (req) {
-      if (req.hasEvaluation(persistDir, sessionId)) continue;
-    } else {
-      const evalDir = join(persistDir, "evaluations");
-      if (existsSync(join(evalDir, `${sessionId}.json`))) continue;
-    }
-
-    const createdAt = sessionId.match(/^(?:s|cron)_(\d{13,})/) ? parseInt(sessionId.match(/^(?:s|cron)_(\d{13,})/)![1], 10) : Date.now();
-
-    if (req) {
-      req.upsertEvaluation(persistDir, {
-        sessionId,
-        agent: "unknown",
-        quality: 0,
-        efficiency: 0,
-        verdict: "skipped",
-        issues: ["no_metadata"],
-        overall: { efficiency: 0, quality: 0, verdict: "skipped", result_delivered: false },
-        usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, totalTokens: 0, cost: 0, turns: 0 },
-        failureChains: [],
-        skippedByJs: true,
-        createdAt,
-      });
-    } else {
-      const evalDir = join(persistDir, "evaluations");
-      mkdirSync(evalDir, { recursive: true });
-      writeFileSync(
-        join(evalDir, `${sessionId}.json`),
-        JSON.stringify({
-          agent: "unknown", sessionId, efficiency: 0, quality: 0,
-          productive_calls: 0, wasted_calls: 0, verdict: "skipped",
-          issues: ["no_metadata"],
-          overall: { efficiency: 0, quality: 0, verdict: "skipped", result_delivered: false },
-          usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, totalTokens: 0, cost: 0, turns: 0 },
-          failureChains: [], skippedByJs: true,
-        }, null, 2),
-        "utf-8",
-      );
-    }
+    upsertEvaluation(persistDir, {
+      sessionId,
+      agent: "unknown",
+      quality: 0,
+      efficiency: 0,
+      verdict: "skipped",
+      issues: ["no_metadata"],
+      overall: { efficiency: 0, quality: 0, verdict: "skipped", result_delivered: false },
+      usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, totalTokens: 0, cost: 0, turns: 0 },
+      failureChains: [],
+      skippedByJs: true,
+      createdAt: extractTimestamp(sessionId),
+    });
     written++;
   }
 
@@ -862,115 +702,67 @@ export async function writeSkippedEvaluations(persistDir: string, skipAgents: Se
  * Returns the number of evaluation files written.
  */
 export async function writeHeuristicEvaluations(persistDir: string): Promise<number> {
-  const req = getRequestsModule();
-
   const allSessions: Record<string, PersistedSession> = await loadAllSessionMetasAsync(persistDir);
   let written = 0;
 
   for (const [sessionId, session] of Object.entries(allSessions)) {
-    // Only root sessions (no parent)
     if (session.parentSessionId) continue;
 
     // Skip if already evaluated (but re-evaluate if usage data is missing/zero)
-    if (req) {
-      const evalStatus = req.getEvaluationStatus(persistDir, sessionId);
-      if (evalStatus.exists) {
-        if (evalStatus.hasUsage) continue;
-        // Only re-evaluate recent sessions (last 48h)
-        const sessionAge = Date.now() - (session.startedAt || 0);
-        if (sessionAge > 48 * 60 * 60 * 1000) continue;
-      }
-    } else {
-      const evalDir = join(persistDir, "evaluations");
-      const evalPath = join(evalDir, `${sessionId}.json`);
-      if (existsSync(evalPath)) {
-        try {
-          const existing = JSON.parse(readFileSync(evalPath, "utf-8"));
-          if (existing.usage?.totalTokens > 0 || existing.usage?.turns > 0) continue;
-          const sessionAge = Date.now() - (session.startedAt || 0);
-          if (sessionAge > 48 * 60 * 60 * 1000) continue;
-        } catch {
-          continue;
-        }
-      }
+    const evalStatus = getEvaluationStatus(persistDir, sessionId);
+    if (evalStatus.exists) {
+      if (evalStatus.hasUsage) continue;
+      const sessionAge = Date.now() - (session.startedAt || 0);
+      if (sessionAge > 48 * 60 * 60 * 1000) continue;
     }
 
-    // Skip sessions still running
     if (session.status === "running" || session.status === "idle") continue;
-
-    // Skip evaluator sessions (already handled by writeSkippedEvaluations)
     if (session.agent === "evaluator") continue;
 
-    // Must have a transcript
     const activeJsonl = join(persistDir, "sessions", sessionId, "session.jsonl");
     const archivedJsonl = join(historyDir(persistDir), sessionId, "session.jsonl");
     const transcriptPath = existsSync(activeJsonl) ? activeJsonl :
                            existsSync(archivedJsonl) ? archivedJsonl : null;
     if (!transcriptPath) continue;
 
-    // Read transcript for heuristic analysis
     let transcriptText = "";
     try {
       transcriptText = readFileSync(transcriptPath, "utf-8");
     } catch {
-      continue; // Can't read → skip
+      continue;
     }
 
-    // Parse transcript into messages for usage extraction
     const messages: AgentMessage[] = [];
     for (const line of transcriptText.trim().split("\n")) {
       try {
         const msg = JSON.parse(line);
         if (msg && typeof msg === "object") messages.push(msg as AgentMessage);
-      } catch {
-        // skip malformed lines
-      }
+      } catch { /* skip */ }
     }
 
-    // Compute heuristic scores
     const scores = computeHeuristicScores(session, transcriptText, messages);
-
-    // Extract real usage from transcript (instead of hardcoded zeros)
     const usage = extractUsage(messages);
-    const createdAt = sessionId.match(/^(?:s|cron)_(\d{13,})/) ? parseInt(sessionId.match(/^(?:s|cron)_(\d{13,})/)![1], 10) : Date.now();
 
-    if (req) {
-      req.upsertEvaluation(persistDir, {
-        sessionId,
-        agent: session.agent,
-        quality: scores.quality,
+    upsertEvaluation(persistDir, {
+      sessionId,
+      agent: session.agent,
+      quality: scores.quality,
+      efficiency: scores.efficiency,
+      productiveCalls: scores.productiveCalls,
+      wastedCalls: scores.wastedCalls,
+      verdict: scores.verdict,
+      issues: scores.issues,
+      overall: {
         efficiency: scores.efficiency,
-        productiveCalls: scores.productiveCalls,
-        wastedCalls: scores.wastedCalls,
+        quality: scores.quality,
         verdict: scores.verdict,
-        issues: scores.issues,
-        overall: {
-          efficiency: scores.efficiency,
-          quality: scores.quality,
-          verdict: scores.verdict,
-          result_delivered: scores.resultDelivered,
-        },
-        usage: usage as unknown as Record<string, unknown>,
-        failureChains: [],
-        evaluatedByHeuristic: true,
-        createdAt,
-      });
-    } else {
-      const evalDir = join(persistDir, "evaluations");
-      mkdirSync(evalDir, { recursive: true });
-      writeFileSync(
-        join(evalDir, `${sessionId}.json`),
-        JSON.stringify({
-          agent: session.agent, sessionId,
-          efficiency: scores.efficiency, quality: scores.quality,
-          productive_calls: scores.productiveCalls, wasted_calls: scores.wastedCalls,
-          verdict: scores.verdict, issues: scores.issues,
-          overall: { efficiency: scores.efficiency, quality: scores.quality, verdict: scores.verdict, result_delivered: scores.resultDelivered },
-          usage, failureChains: [], evaluatedByHeuristic: true,
-        }, null, 2),
-        "utf-8",
-      );
-    }
+        result_delivered: scores.resultDelivered,
+      },
+      usage: usage as unknown as Record<string, unknown>,
+      failureChains: [],
+      evaluatedByHeuristic: true,
+      createdAt: extractTimestamp(sessionId),
+    });
     written++;
   }
 

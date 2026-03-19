@@ -398,8 +398,8 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
                     ? "SELECT * FROM requests WHERE status = 'FAILED' AND toAgent = ? ORDER BY createdAt DESC LIMIT 50"
                     : "SELECT * FROM requests WHERE status = 'FAILED' ORDER BY createdAt DESC LIMIT 50";
                   requests = params.agent
-                    ? (db.query(query).all(params.agent) as RequestRecord[])
-                    : (db.query(query).all() as RequestRecord[]);
+                    ? (db.prepare(query).all(params.agent) as unknown as RequestRecord[])
+                    : (db.prepare(query).all() as unknown as RequestRecord[]);
                   break;
                 }
                 case "all":
@@ -410,8 +410,8 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
                     // For "all" without agent filter, get everything (limited)
                     const db = req.getDb(persistDir);
                     requests = db
-                      .query("SELECT * FROM requests ORDER BY createdAt DESC LIMIT 100")
-                      .all() as RequestRecord[];
+                      .prepare("SELECT * FROM requests ORDER BY createdAt DESC LIMIT 100")
+                      .all() as unknown as RequestRecord[];
                   }
                   break;
               }

@@ -7,9 +7,6 @@
  * - Process health detection
  * - Human input trend tracking
  * - Convention compliance section (when summary.json exists)
- *
- * Note: Uses mock data in temp directories. SQLite tests require bun.
- * Under vitest/Node.js, DB-dependent sections degrade gracefully.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
@@ -17,16 +14,16 @@ import { mkdirSync, writeFileSync, rmSync, mkdtempSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
-// Import the function under test
 import { printRequestStatus } from "../src/lib/tools/request-status.js";
+import { upsertEvaluation, closeDb } from "../src/lib/requests.js";
 
 const DAY = 24 * 60 * 60 * 1000;
 
 // ── Helpers ─────────────────────────────────────────────────────────────
 
-/** Create a synthetic eval file in flat format. */
+/** Create a synthetic eval record in the DB. */
 function writeEval(
-  evalsDir: string,
+  persistDir: string,
   agent: string,
   quality: number,
   efficiency: number,
@@ -34,11 +31,16 @@ function writeEval(
   ageMs: number,
 ): void {
   const ts = Date.now() - ageMs;
-  const filename = `s_${ts}_${Math.floor(Math.random() * 1000)}.json`;
-  writeFileSync(
-    join(evalsDir, filename),
-    JSON.stringify({ agent, quality, efficiency, verdict, issues: [] }),
-  );
+  const sessionId = `s_${ts}_${Math.floor(Math.random() * 1000)}`;
+  upsertEvaluation(persistDir, {
+    sessionId,
+    agent,
+    quality,
+    efficiency,
+    verdict,
+    issues: [],
+    createdAt: ts,
+  });
 }
 
 /** Create a human input entry. */
@@ -51,12 +53,11 @@ function humanInputLine(ageMs: number, source = "telegram"): string {
 function createTestState() {
   const root = mkdtempSync(join(tmpdir(), "status-dash-test-"));
   const persistDir = join(root, ".state");
-  const evalsDir = join(persistDir, "evaluations");
 
-  mkdirSync(evalsDir, { recursive: true });
+  mkdirSync(persistDir, { recursive: true });
   mkdirSync(join(persistDir, "convention-checks"), { recursive: true });
 
-  return { root, persistDir, evalsDir };
+  return { root, persistDir };
 }
 
 // ── Tests ───────────────────────────────────────────────────────────────
@@ -64,57 +65,42 @@ function createTestState() {
 describe("printRequestStatus (enhanced dashboard)", () => {
   let root: string;
   let persistDir: string;
-  let evalsDir: string;
 
   beforeAll(() => {
     const fixtures = createTestState();
     root = fixtures.root;
     persistDir = fixtures.persistDir;
-    evalsDir = fixtures.evalsDir;
 
     // Write evaluation data for several agents
-    // bob: quality 5, good (today)
     for (let i = 0; i < 5; i++) {
-      writeEval(evalsDir, "bob", 5, 4, "good", i * 60_000);
+      writeEval(persistDir, "bob", 5, 4, "good", i * 60_000);
     }
-    // bob: quality 3, acceptable (3 days ago)
     for (let i = 0; i < 5; i++) {
-      writeEval(evalsDir, "bob", 3, 3, "acceptable", 3 * DAY + i * 60_000);
+      writeEval(persistDir, "bob", 3, 3, "acceptable", 3 * DAY + i * 60_000);
     }
-
-    // coach: quality 2, needs_improvement (today)
     for (let i = 0; i < 4; i++) {
-      writeEval(evalsDir, "coach", 2, 2, "needs_improvement", i * 60_000);
+      writeEval(persistDir, "coach", 2, 2, "needs_improvement", i * 60_000);
     }
-
-    // evaluator: skipped (should be filtered)
     for (let i = 0; i < 10; i++) {
-      writeEval(evalsDir, "evaluator", 0, 0, "skipped", i * 60_000);
+      writeEval(persistDir, "evaluator", 0, 0, "skipped", i * 60_000);
     }
-
-    // amy: quality 4.5 consistent (today + 3 days ago)
     for (let i = 0; i < 3; i++) {
-      writeEval(evalsDir, "amy", 4, 4, "good", i * 60_000);
-      writeEval(evalsDir, "amy", 5, 5, "good", 3 * DAY + i * 60_000);
+      writeEval(persistDir, "amy", 4, 4, "good", i * 60_000);
+      writeEval(persistDir, "amy", 5, 5, "good", 3 * DAY + i * 60_000);
     }
 
     // Write human inputs (7 days)
     const humanLines: string[] = [];
-    // 5 days ago: 8 inputs
     for (let i = 0; i < 8; i++) humanLines.push(humanInputLine(5 * DAY + i * 60_000));
-    // 4 days ago: 3 inputs
     for (let i = 0; i < 3; i++) humanLines.push(humanInputLine(4 * DAY + i * 60_000));
-    // 3 days ago: 1 input
     humanLines.push(humanInputLine(3 * DAY));
-    // 2 days ago: 0 inputs
-    // 1 day ago: 2 inputs
     for (let i = 0; i < 2; i++) humanLines.push(humanInputLine(1 * DAY + i * 60_000));
-    // today: 5 inputs
     for (let i = 0; i < 5; i++) humanLines.push(humanInputLine(i * 60_000));
     writeFileSync(join(persistDir, "human-inputs.jsonl"), humanLines.join("\n") + "\n");
   });
 
   afterAll(() => {
+    try { closeDb(persistDir); } catch { /* ignore */ }
     rmSync(root, { recursive: true, force: true });
   });
 
@@ -216,16 +202,15 @@ describe("printRequestStatus (enhanced dashboard)", () => {
 describe("printRequestStatus triage logic", () => {
   let root: string;
   let persistDir: string;
-  let evalsDir: string;
 
   beforeAll(() => {
     const fixtures = createTestState();
     root = fixtures.root;
     persistDir = fixtures.persistDir;
-    evalsDir = fixtures.evalsDir;
   });
 
   afterAll(() => {
+    try { closeDb(persistDir); } catch { /* ignore */ }
     rmSync(root, { recursive: true, force: true });
   });
 
@@ -233,14 +218,12 @@ describe("printRequestStatus triage logic", () => {
     const output = printRequestStatus(persistDir, {
       includeProcessHealth: false,
     });
-    // With no evals, no DB, no processes — should be all clear
     expect(output).toContain("ALL CLEAR");
   });
 
   it("shows ATTENTION for low quality agents", () => {
-    // Write many low-quality evals for one agent today
     for (let i = 0; i < 5; i++) {
-      writeEval(evalsDir, "bad-agent", 1, 1, "needs_improvement", i * 60_000);
+      writeEval(persistDir, "bad-agent", 1, 1, "needs_improvement", i * 60_000);
     }
 
     const output = printRequestStatus(persistDir, {
