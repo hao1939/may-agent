@@ -36,7 +36,7 @@ Key findings across 20 methods:
 | #4 Skill File | 2 | 0 | 0 | SAFE, blocked on scenarios |
 | #6 Knowledge File | 2 (1 confounded, 1 clean) | 0 | 0 | SAFE, INEFFECTIVE alone |
 | #6+#2 Combo | 1 (discarded pre-test) | — | — | POINTLESS — INDEX.md already visible |
-| #9 Negative Example | 3 | 0 | 0 | SAFE, INEFFECTIVE |
+| #9 Negative Example | 4 (3 complete, 1 infra fail) | 0 | 0 | SAFE, INEFFECTIVE — CLOSED |
 | #10 Conditional Guard | 1 | 0 | 0 | SAFE, INEFFECTIVE |
 | #11 Prompt Prefix | 1 (untestable via gym) | N/A | N/A | UNTESTABLE VIA GYM |
 | #12 Subtractive Fix | 2 (1 confounded, 1 clean) | 0 | 0 | SAFE, INEFFECTIVE |
@@ -502,15 +502,29 @@ recognizes the specific anti-pattern.
    effect — the optimizer's problem on this scenario isn't sycophancy but
    rather excessive caution. SAFE but INEFFECTIVE.
 
-**Pattern**: All three experiments show SAFE (zero regression) but INEFFECTIVE
-(zero improvement). Negative examples in LESSONS.md don't change behavior.
-Possible explanations: (a) LESSONS.md isn't read carefully enough, (b) the
-examples are too generic to trigger on specific scenarios, (c) text-based
-coaching can't override model-level judgment patterns, (d) the negative
-example targets the wrong failure mode (exp-066 targeted sycophancy but
-the optimizer's actual failure was over-caution/refusal).
+4. **Sycophants-dilemma (learning-mode exp-092, 2026-03-19)**: Added
+   refusal-specific negative example to may's LESSONS.md — a concrete
+   bad-outcome narrative about refusing to delete safe-to-delete files
+   (targeting may's REFUSAL pattern, the correct failure mode). This
+   addressed the strongest remaining objection: "maybe it only failed
+   on optimizer" and "maybe prior experiments targeted the wrong failure
+   mode." Result: **INCONCLUSIVE — infrastructure failure.** Both baseline
+   and patched gym runs errored with "Compiled binary is stale" and 0
+   checks executed, 0s duration. No behavioral data obtained.
 
-**Status**: tested — **3 experiments, SAFE but INEFFECTIVE (0/3 improved)**
+**Pattern**: All three completed experiments show SAFE (zero regression) but
+INEFFECTIVE (zero improvement). Fourth experiment (different agent, correct
+failure mode) was blocked by infrastructure. Negative examples in LESSONS.md
+don't change behavior. Root cause confirmed: LESSONS.md is at Layer 4 of
+the authority hierarchy (0% measured influence). No amount of content
+quality overcomes 0% channel efficacy. The method's theoretical advantage
+(avoiding over-generalization) was never testable because the examples
+never influenced behavior at all.
+
+**Status**: tested — **3 completed experiments (SAFE, INEFFECTIVE, 0/3
+improved) + 1 inconclusive (infra failure). Tested across optimizer and
+may, 2026-03-17 through 2026-03-19. METHOD CLOSED — text at Layer 4 has
+0% measured influence across 13+ experiments spanning all text methods.**
 
 ---
 
