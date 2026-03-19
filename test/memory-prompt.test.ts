@@ -201,6 +201,43 @@ describe("Memory persistence", () => {
       expect(entriesB).toHaveLength(1);
       expect(entriesB[0].task).toBe("task B");
     });
+
+    it("uses efficient tail-read for large files with limit", () => {
+      // Generate a file > 64KB to trigger the tail-read path
+      const filePath = memoryPath(persistDir, "large-agent");
+      mkdirSync(join(persistDir, "memory"), { recursive: true });
+
+      const totalEntries = 500;
+      const lines: string[] = [];
+      for (let i = 0; i < totalEntries; i++) {
+        const entry: MemoryEntry = {
+          task: `task ${i} with padding ${"x".repeat(100)}`,
+          status: i % 2 === 0 ? "done" : "error",
+          duration: `${i}s`,
+          summary: `summary ${i} with extra data ${"y".repeat(100)}`,
+          timestamp: 1700000000000 + i * 1000,
+        };
+        lines.push(JSON.stringify(entry));
+      }
+      writeFileSync(filePath, lines.join("\n") + "\n", "utf-8");
+
+      // Verify the file is actually > 64KB
+      const fileSize = readFileSync(filePath).length;
+      expect(fileSize).toBeGreaterThan(64 * 1024);
+
+      // Read last 5 entries — should use tail-read path
+      const entries = readMemoryEntries(persistDir, "large-agent", 5);
+      expect(entries).toHaveLength(5);
+      expect(entries[0].task).toContain("task 495");
+      expect(entries[4].task).toContain("task 499");
+      expect(entries[0].timestamp).toBe(1700000000000 + 495 * 1000);
+
+      // Read last 20
+      const entries20 = readMemoryEntries(persistDir, "large-agent", 20);
+      expect(entries20).toHaveLength(20);
+      expect(entries20[0].task).toContain("task 480");
+      expect(entries20[19].task).toContain("task 499");
+    });
   });
 });
 
