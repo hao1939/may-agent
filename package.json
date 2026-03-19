@@ -14,7 +14,7 @@
     "docker:console": "docker compose -f docker/docker-compose.yml run --rm -it --name may-console --service-ports console",
     "docker:reload": "docker exec may-agent /usr/local/bin/restart-may.sh",
     "docker:reload:console": "docker exec may-console /usr/local/bin/restart-may.sh",
-    "bundle": "./scripts/bundle.sh",
+    "bundle": "mkdir -p bundle && SHA=$(git rev-parse --short HEAD) && bun build --compile src/app/binary-entry.ts --outfile bundle/may-agent-$SHA && ln -sf may-agent-$SHA bundle/may-agent",
     "lint": "eslint src/ test/",
     "lint:fix": "eslint src/ test/ --fix",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",

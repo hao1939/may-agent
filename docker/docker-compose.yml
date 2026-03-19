@@ -17,7 +17,6 @@ services:
       - "${NOVNC_PORT:-6080}:6080"
     volumes:
       - ..:/app
-      - /app/node_modules
     environment:
       - INSTANCE=${INSTANCE:-background}
       - MODEL_BASE_URL=${MODEL_BASE_URL:-http://host.docker.internal:4000}
@@ -43,7 +42,6 @@ services:
       - "${CONSOLE_NOVNC_PORT:-6081}:6080"
     volumes:
       - ..:/app
-      - /app/node_modules
     environment:
       - INSTANCE=${INSTANCE:-console}
       - MODEL_BASE_URL=${MODEL_BASE_URL:-http://host.docker.internal:4000}

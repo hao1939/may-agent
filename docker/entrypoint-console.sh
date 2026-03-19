@@ -28,4 +28,7 @@ mkdir -p /app/.state/chrome-profile
 #   docker exec <container> /usr/local/bin/restart-may.sh
 
 # Launcher handles signals, backoff, and exit codes — no bash loop needed
-exec bun src/app/launcher.ts --chat --cron --telegram --console --socket
+# Prefer bind-mounted binary (dev hot-reload), fall back to baked-in
+MAY_BIN="${PROJECT_ROOT:-/app}/bundle/may-agent"
+[ -x "$MAY_BIN" ] || MAY_BIN=/usr/local/bin/may-agent
+exec "$MAY_BIN" --chat --cron --telegram --console --socket
