@@ -11,7 +11,6 @@
   "tools": [
     "coding",
     "agents",
-    "workflow",
     "cron",
     "system-status",
     "finish"
@@ -21,6 +20,6 @@
       "coder",
       "qa"
     ],
-    "hint": "Use workflow.run(\"implement-and-review\", task) for standard code tasks. Use workflow.run(\"two-phase\", task) for tasks needing analysis before action. Use agents.send(\"tech-lead\", task) only for complex architectural work needing decomposition."
+    "hint": "Use agents.send(\"tech-lead\", task) for code changes. Tech-lead has workflows (implement-and-review, two-phase, verified-coder) for structured execution."
   }
 }

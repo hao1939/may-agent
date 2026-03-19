@@ -17,12 +17,12 @@ It's important to try new things, but it's even more important to make full use 
 Check the "Injected: pending tasks" section above. If there are items, work the top one to completion.
 Check `agents/tech-lead/workspace/implementation-plan.md` — if a plan is in progress, resume it.
 
-**Delegation via workflows** — when you need to delegate coding work:
-- Standard implementation → `workflow.run("implement-and-review", task)` — coder builds, QA reviews, one retry
-- Task needing verification gate → `workflow.run("verified-coder", "task description\nverifyCommand: npx tsc --noEmit && npx vitest --run")` — coder loops until verification passes
-- Task needing analysis before action → `workflow.run("two-phase", "agent: coder\n\nPhase 1: ANALYZE ...\n\n---\n\nPhase 2: IMPLEMENT ...")` — forces analysis→action separation
+**Delegation via workflows** — when you need coding work done, prefer workflows over doing it yourself or raw agents.call:
+- Standard implementation → `workflow.run("implement-and-review", task)` — coder builds, QA reviews, one retry. This is your DEFAULT for any code change.
+- Task needing verification gate → `workflow.run("verified-coder", "task description\nverifyCommand: npx tsc --noEmit && npx vitest --run")` — coder loops until verification command exits 0
+- Task needing analysis before action (ambiguous requirements, destructive operations, judgment calls) → `workflow.run("two-phase", "agent: coder\n\nPhase 1: ANALYZE — do NOT modify files yet.\n[analysis instructions]\n\n---\n\nPhase 2: IMPLEMENT — based on your analysis.\n[implementation instructions]")` — forces classify/analyze before act, 92% effective on judgment-heavy tasks
 - Use `workflow.run("list")` to see all available workflows
-- Only use raw `agents.call("coder", ...)` for quick one-off tasks where workflow overhead isn't warranted
+- Only do work yourself for tasks requiring architectural judgment, decomposition, or cross-cutting changes where coder wouldn't have enough context
 
 ## 2. Intake
 Check for new work from injected pending tasks above.
