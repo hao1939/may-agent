@@ -107,6 +107,7 @@ const AgentsToolParams = Type.Object({
   filter: Type.Optional(StringEnum(["active", "stale", "failed", "all"] as const, {
     description: "Request filter (for 'requests' action, default: 'active')",
   })),
+  force: Type.Optional(Type.Boolean({ description: "Skip dedup check for intentional re-sends (for 'send' action)" })),
 });
 
 interface AgentsToolParamsType {
@@ -117,6 +118,7 @@ interface AgentsToolParamsType {
   sessionId?: string;
   limit?: number;
   filter?: "active" | "stale" | "failed" | "all";
+  force?: boolean;
 }
 
 /**
@@ -282,20 +284,25 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
             }
 
             // Dedup check: skip if identical active request exists
-            try {
-              const req = await getRequestsModule();
-              if (req.isDuplicate(manager.registry.persistDir, caller, params.agent, params.message)) {
-                return textResult(
-                  JSON.stringify({
-                    sent: params.agent,
-                    message: params.message,
-                    deduplicated: true,
-                    heartbeatTriggered: false,
-                  }),
-                );
+            if (!params.force) {
+              try {
+                const req = await getRequestsModule();
+                const existingReqId = req.isDuplicate(manager.registry.persistDir, caller, params.agent, params.message.slice(0, 500));
+                if (existingReqId) {
+                  return textResult(
+                    JSON.stringify({
+                      status: "skipped",
+                      reason: `Duplicate request already active (req: ${existingReqId.slice(0, 8)})`,
+                      sent: params.agent,
+                      message: params.message,
+                      deduplicated: true,
+                      heartbeatTriggered: false,
+                    }),
+                  );
+                }
+              } catch {
+                // Non-fatal: dedup failure shouldn't block send
               }
-            } catch {
-              // Non-fatal: dedup failure shouldn't block send
             }
 
             // Track the request in SQLite

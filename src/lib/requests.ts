@@ -379,24 +379,25 @@ export function getStaleRequests(
 /**
  * Check if a duplicate request exists (same from, to, task hash).
  * Used by send() to prevent duplicate handoffs/sends.
+ * Returns the existing requestId if a duplicate is found, null otherwise.
  */
 export function isDuplicate(
   persistDir: string,
   fromEntity: string,
   toAgent: string,
   taskHash: string
-): boolean {
+): string | null {
   const db = getDb(persistDir);
   // Check for active (non-terminal) duplicates only
   const row = db
     .query(
-      `SELECT 1 FROM requests
+      `SELECT requestId FROM requests
        WHERE fromEntity = ? AND toAgent = ?
        AND task = ? AND status IN ('CREATED', 'IN_PROGRESS')
        LIMIT 1`
     )
-    .get(fromEntity, toAgent, taskHash);
-  return row !== null;
+    .get(fromEntity, toAgent, taskHash) as { requestId: string } | null;
+  return row?.requestId ?? null;
 }
 
 /**

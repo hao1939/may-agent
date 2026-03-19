@@ -182,19 +182,19 @@ describe("getStaleRequests", () => {
 });
 
 describe("isDuplicate", () => {
-  test("returns true for active duplicate", () => {
-    trackRequest(testDir, { fromEntity: "bob", toAgent: "tech-lead", task: "Review", method: "send" });
-    expect(isDuplicate(testDir, "bob", "tech-lead", "Review")).toBe(true);
+  test("returns requestId for active duplicate", () => {
+    const id = trackRequest(testDir, { fromEntity: "bob", toAgent: "tech-lead", task: "Review", method: "send" });
+    expect(isDuplicate(testDir, "bob", "tech-lead", "Review")).toBe(id);
   });
 
-  test("returns false for completed duplicate", () => {
+  test("returns null for completed duplicate", () => {
     const id = trackRequest(testDir, { fromEntity: "bob", toAgent: "tech-lead", task: "Review", method: "send" });
     updateRequest(testDir, id, { status: "COMPLETED" });
-    expect(isDuplicate(testDir, "bob", "tech-lead", "Review")).toBe(false);
+    expect(isDuplicate(testDir, "bob", "tech-lead", "Review")).toBeNull();
   });
 
-  test("returns false when no match", () => {
-    expect(isDuplicate(testDir, "bob", "tech-lead", "Something")).toBe(false);
+  test("returns null when no match", () => {
+    expect(isDuplicate(testDir, "bob", "tech-lead", "Something")).toBeNull();
   });
 });
 
