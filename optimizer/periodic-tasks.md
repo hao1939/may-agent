@@ -9,17 +9,17 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If found → add specific task to workspace/todo.md.
   Latest (2026-03-19T16:18): **66 sessions/6h, 7.6% error rate (5 errors) — down from 17%.** All errors are transient API issues (3 proxy truncation, 2 empty response). Largest session: coach 1.265MB from reading method-catalog.md 6x and experiments.jsonl 3x (918KB wasted). Guard wiring code committed (94fbc27) but NOT deployed — entire guard infrastructure (4 guards) blocked on process restart. Session volume down from 118→66, skipIfIdle working. Finding at `workspace/finding-analysis-review-0319-1618.md`.
 
-- [x] **Cost outlier scan** — Last done: 2026-03-19T15:55
+- [x] **Cost outlier scan** — Last done: 2026-03-19T19:49
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-19T15:55): **Scout 837KB avg sessions (6x normal) from scrape escalation loop.** Scout scrapes same URL 5-6x with escalating maxLength (40K→200K). Fix: hard-capped scrape maxLength at 30K + removed retry-encouraging truncation hint (486932b). Coach 1.3MB sessions from reading experiments.jsonl (94KB) and method-catalog.md (68KB) 5+ times per session. Created scrape-dedup guard (10 tests). Sent guard wiring request to tech-lead (req:ddada24a). Finding at `workspace/finding-scrape-escalation-coach-reads.md`.
+  Latest (2026-03-19T19:49): **64 sessions/8h, 10.6MB total, 1.6% error rate (all-time low).** Coach still #1 cost at 33% (3.4MB, 345KB avg) — 1.2MB wasted on duplicate reads (method-catalog.md 6x, todo.md 6x per session). Tech-lead #2 at 18%. Read-dedup guard committed (94fbc27) but NOT deployed — binary 11 commits behind HEAD. Previous rebuild request (req:01bcdc57) marked completed without execution. Re-escalated to May (req:8752bd02). Guards blocking $30-43/day savings. Finding at `workspace/finding-cost-scan-0319-1949.md`.
 
-- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-19T12:52
+- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-19T19:49
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
   Could it be replaced with a JS handler? (See cron-graduation-process.md Stage 3.)
   If found → write proposal in workspace/improvement-proposals.md.
-  Latest (2026-03-19T12:52): **No new conversion opportunities found.** Scanned 30+ sessions from last 6h across all agents. Remaining LLM sessions are genuinely LLM-dependent: reflect (synthesis), common-sense-verify (nuanced judgment), evaluations (reading+scoring), design (architecture), signal scans (research synthesis). Key insight: opBudget counts only state-changing ops — Amy had 57 tool calls but only 4 edits (within 25 op budget). Real cost driver is input token growth, not tool count. Coach opBudget still at 200 (not reduced per req:db066426 — only TL+optimizer were changed). Filed follow-up below.
+  Latest (2026-03-19T19:49): **No new conversion opportunities.** 3 coach cron tasks still use LLM: training-sprint (511KB), common-sense-verify (308KB), research-intake (112KB). All require genuine LLM judgment (planning experiments, verifying behavior, synthesizing research). Waste is from duplicate reads not task type — guard deployment would cut 40-60% of these sessions' size. JS handler sessions (watchdog, convention-check, evaluate-sessions) don't appear as session files at all — handler graduation working correctly. skipIfIdle saving ~27% of heartbeats.
 
 - [x] **Handler health check** — Last done: 2026-03-19T17:49
   Review existing JS handlers in agents/may/handlers/.
