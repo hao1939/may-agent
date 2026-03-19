@@ -29,6 +29,9 @@ AGENT=bob ./may.sh task "check your periodic tasks"
 | `--socket` | Enable Unix socket for external control |
 | `--cron` | Enable cron jobs (heartbeats, JS handlers, scheduled tasks) |
 | `--telegram` | Enable Telegram bot for notifications |
+| `--status` | Print system dashboard and exit (agent quality, process health, trends) |
+| `--status --notify` | Print dashboard and also send it to Telegram |
+| `--send @agent "msg"` | Send a message to an agent and exit |
 
 At least one of `--chat`, `--cron`, or `--task` is required.
 

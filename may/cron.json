@@ -29,6 +29,20 @@
     "lastModified": "2026-03-10T10:16:46.487Z"
   },
   {
+    "name": "convention-check",
+    "type": "job",
+    "intervalMs": 1800000,
+    "message": "[cron:convention-check] Check evaluated sessions for convention compliance.",
+    "enabled": true,
+    "handler": "convention-check",
+    "description": "Mechanical convention compliance checker — runs on evaluated sessions, checks C1.1/C1.3/C1.4/C2.1/C3.2/C3.3/C6.1/C7.1/C8.2/C12.1, writes to convention_checks table. JS handler, 30min.",
+    "preflight": {
+      "type": "new-entries-since",
+      "path": ".state/evaluations",
+      "stateKey": "convention-check-last-checked"
+    }
+  },
+  {
     "name": "system-status",
     "type": "job",
     "intervalMs": 14400000,
@@ -95,9 +109,9 @@
     "intervalMs": 1800000,
     "agent": "amy",
     "message": "[heartbeat] You are Amy. Your files are in agents/amy/. IMPORTANT: Your context history is STALE — files have been updated since your last run. You MUST start by calling read('agents/amy/heartbeat.md') and work through each section top to bottom. Do NOT respond from memory.",
-    "enabled": true,
+    "enabled": false,
     "description": "Amy's heartbeat — XHS exploration and insight synthesis (1h)",
-    "lastModified": "2026-03-14T20:32:00.000Z"
+    "lastModified": "2026-03-19T12:48:38.263Z"
   },
   {
     "name": "heartbeat-scout",
@@ -246,14 +260,15 @@
     "intervalMs": 604800000,
     "agent": "amy",
     "message": "[cron:consolidate-memory] Read agents/shared/tasks/consolidate-memory.md and execute it. Your journal is at agents/amy/workspace/journal.md, your knowledge is at agents/amy/knowledge/, your archive is at agents/amy/workspace/archive/.",
-    "enabled": true,
+    "enabled": false,
     "handler": "run-agent-task",
     "description": "Weekly memory consolidation for Amy — journal → knowledge → archive (7d)",
     "preflight": {
       "type": "file-has-content",
       "path": "agents/amy/workspace/journal.md",
       "minLines": 3
-    }
+    },
+    "lastModified": "2026-03-19T12:48:38.266Z"
   },
   {
     "name": "consolidate-memory-tech-lead",

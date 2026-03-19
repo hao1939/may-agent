@@ -175,8 +175,8 @@ Who watches what.
 | Convention compliance | convention-check handler | Mechanical checks on every session |
 | Error patterns | error-log-scanner | Automated pattern detection |
 | Cost efficiency | optimizer heartbeat + coaching-report | Daily review of spend and waste |
-| System health | system-status handler + daily-brief | Metrics collection and alerting |
-| Process health | **this document** + Bob weekly review | Manual — reviewed during analyze-failures |
+| System health | system-status handler + daily-brief + **`--status` CLI** | Metrics collection, alerting, and live dashboard |
+| Process health | **`--status` CLI** (PROCESS HEALTH section) + Bob weekly review | Live last-fire times, overdue detection |
 | Agent behavior | coach (common-sense-verify + growth cycles) | Targeted audits + gym experiments |
 | Human satisfaction | reflect cron | Classifies human corrections |
 

@@ -26,6 +26,7 @@
 ## Operations
 - [Process Map](operations/process-map.md) — All processes, triggers, data flow, reactive chains, supervision
 - [Jobs & Workflows Review](operations/jobs-review.md) — Cron job inventory, handler list, workflow status
+- **CLI Status Dashboard** — `--status` flag: single pane of glass with triage (🔴/🟡/🟢), agent quality+trends, process health, human input trends, convention compliance. Add `--notify` to send to Telegram.
 
 ## Proposals (Unimplemented)
 - [Heartbeat Guard](proposals/heartbeat-guard.md) — Turn budget checkpoint for heartbeats
