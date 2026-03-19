@@ -2,7 +2,8 @@
  * Agent performance metrics dashboard.
  * Usage: bun src/app/cli/metrics.ts [--days N]
  *
- * Reads .state/evaluations/*.json and produces a summary:
+ * Reads evaluations from may.db (SQLite) with fallback to .state/evaluations/*.json.
+ * Produces a summary:
  * - Per-agent average scores (efficiency, quality)
  * - Top recurring issues
  * - Session counts and cost
@@ -17,7 +18,8 @@ import { resolve, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const PROJECT_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
-const EVAL_DIR = resolve(PROJECT_ROOT, process.env.STATE_DIR || ".state", "evaluations");
+const STATE_DIR = resolve(PROJECT_ROOT, process.env.STATE_DIR || ".state");
+const EVAL_DIR = resolve(STATE_DIR, "evaluations");
 
 // Parse --days argument (default: 7)
 const daysArg = process.argv.find((a) => a.startsWith("--days"));
@@ -104,19 +106,54 @@ function normalise(raw: Record<string, unknown>, filename: string): NormalisedEv
 }
 
 try {
-  const files = readdirSync(EVAL_DIR).filter((f) => f.endsWith(".json"));
+  // Try loading from SQLite first
+  let normalisedEvals: NormalisedEval[] = [];
+  let loadedFromDb = false;
 
-  // Filter by date (use file mtime)
-  const recentFiles = files.filter((f) => {
-    try {
-      const stat = statSync(join(EVAL_DIR, f));
-      return stat.mtimeMs >= cutoff;
-    } catch {
-      return false;
+  try {
+    const { getEvaluationsSince } = require("../../lib/requests.js") as typeof import("../../lib/requests.js");
+    const evals = getEvaluationsSince(STATE_DIR, cutoff);
+    normalisedEvals = evals.map((ev) => ({
+      agent: ev.agent,
+      sessionId: ev.sessionId,
+      efficiency: ev.efficiency,
+      quality: ev.quality,
+      verdict: ev.verdict,
+      productiveCalls: ev.productiveCalls,
+      wastedCalls: ev.wastedCalls,
+      cost: (ev.usage as Record<string, number> | null)?.cost ?? 0,
+      turns: (ev.usage as Record<string, number> | null)?.turns ?? 0,
+      issues: ev.issues as string[],
+      lessons: [],
+    }));
+    loadedFromDb = true;
+  } catch {
+    // bun:sqlite not available, fall through to file scan
+  }
+
+  if (!loadedFromDb) {
+    // Fallback: read from .state/evaluations/*.json files
+    const files = readdirSync(EVAL_DIR).filter((f) => f.endsWith(".json"));
+    const recentFiles = files.filter((f) => {
+      try {
+        const stat = statSync(join(EVAL_DIR, f));
+        return stat.mtimeMs >= cutoff;
+      } catch {
+        return false;
+      }
+    });
+
+    for (const file of recentFiles) {
+      try {
+        const raw = JSON.parse(readFileSync(join(EVAL_DIR, file), "utf-8")) as Record<string, unknown>;
+        normalisedEvals.push(normalise(raw, file));
+      } catch {
+        /* skip malformed */
+      }
     }
-  });
+  }
 
-  if (recentFiles.length === 0) {
+  if (normalisedEvals.length === 0) {
     console.log(`No evaluations found in the last ${days} day(s).`);
     process.exit(0);
   }
@@ -126,42 +163,36 @@ try {
   let totalSessions = 0;
   let totalCost = 0;
 
-  for (const file of recentFiles) {
-    try {
-      const raw = JSON.parse(readFileSync(join(EVAL_DIR, file), "utf-8")) as Record<string, unknown>;
-      const data = normalise(raw, file);
-      totalSessions++;
-      totalCost += data.cost;
+  for (const data of normalisedEvals) {
+    totalSessions++;
+    totalCost += data.cost;
 
-      const agent = data.agent;
-      if (!agentStats.has(agent)) {
-        agentStats.set(agent, {
-          sessions: 0,
-          avgEfficiency: 0,
-          avgQuality: 0,
-          totalWasted: 0,
-          totalProductive: 0,
-          totalCost: 0,
-          totalTurns: 0,
-          verdicts: {},
-          issues: [],
-          lessons: [],
-        });
-      }
-      const stats = agentStats.get(agent)!;
-      stats.sessions++;
-      stats.avgEfficiency += data.efficiency;
-      stats.avgQuality += data.quality;
-      stats.totalWasted += data.wastedCalls;
-      stats.totalProductive += data.productiveCalls;
-      stats.totalCost += data.cost;
-      stats.totalTurns += data.turns;
-      stats.verdicts[data.verdict] = (stats.verdicts[data.verdict] || 0) + 1;
-      if (data.issues.length) stats.issues.push(...data.issues);
-      if (data.lessons.length) stats.lessons.push(...data.lessons);
-    } catch {
-      /* skip malformed */
+    const agent = data.agent;
+    if (!agentStats.has(agent)) {
+      agentStats.set(agent, {
+        sessions: 0,
+        avgEfficiency: 0,
+        avgQuality: 0,
+        totalWasted: 0,
+        totalProductive: 0,
+        totalCost: 0,
+        totalTurns: 0,
+        verdicts: {},
+        issues: [],
+        lessons: [],
+      });
     }
+    const stats = agentStats.get(agent)!;
+    stats.sessions++;
+    stats.avgEfficiency += data.efficiency;
+    stats.avgQuality += data.quality;
+    stats.totalWasted += data.wastedCalls;
+    stats.totalProductive += data.productiveCalls;
+    stats.totalCost += data.cost;
+    stats.totalTurns += data.turns;
+    stats.verdicts[data.verdict] = (stats.verdicts[data.verdict] || 0) + 1;
+    if (data.issues.length) stats.issues.push(...data.issues);
+    if (data.lessons.length) stats.lessons.push(...data.lessons);
   }
 
   // Compute averages

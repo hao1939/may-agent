@@ -103,6 +103,23 @@ const KEY_PROCESSES: Array<{ name: string; intervalMs: number; label: string }> 
 
 /** Load flat-format evaluations (agent, quality, efficiency, verdict) within a time window. */
 function loadEvals(persistDir: string, sinceMs: number): EvalRecord[] {
+  // DB path: fast indexed query
+  const req = getRequestsModule();
+  if (req) {
+    try {
+      return req.getEvaluationsSince(persistDir, sinceMs).map((ev) => ({
+        agent: ev.agent,
+        quality: ev.quality,
+        efficiency: ev.efficiency,
+        verdict: ev.verdict,
+        ts: ev.createdAt,
+      }));
+    } catch {
+      // fall through to file scan
+    }
+  }
+
+  // Fallback: scan .state/evaluations/ files (vitest / no bun:sqlite)
   const evalsDir = join(persistDir, "evaluations");
   if (!existsSync(evalsDir)) return [];
 
