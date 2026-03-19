@@ -1,14 +1,25 @@
-import { describe, it, expect } from "vitest";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { describe, it, expect, afterEach } from "vitest";
+import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { getAgentScoreSummary } from "../src/lib/evaluator.js";
+import { upsertEvaluation, closeDb } from "../src/lib/requests.js";
+
+const dirs: string[] = [];
 
 function tmpDir(): string {
   const dir = join(tmpdir(), `eval-task-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
   mkdirSync(dir, { recursive: true });
+  dirs.push(dir);
   return dir;
 }
+
+afterEach(() => {
+  for (const d of dirs) {
+    try { closeDb(d); } catch { /* ignore */ }
+  }
+  dirs.length = 0;
+});
 
 describe("getAgentScoreSummary", () => {
   it("returns empty object when evaluations dir does not exist", () => {
@@ -19,44 +30,33 @@ describe("getAgentScoreSummary", () => {
 
   it("groups by agent and computes correct averages", () => {
     const dir = tmpDir();
-    const evalsDir = join(dir, "evaluations");
-    mkdirSync(evalsDir, { recursive: true });
 
-    writeFileSync(
-      join(evalsDir, "session-1.json"),
-      JSON.stringify({
-        agent: "coder",
-        sessionId: "session-1",
-        efficiency: 8,
-        quality: 9,
-        verdict: "good",
-      }),
-    );
+    upsertEvaluation(dir, {
+      sessionId: "session-1",
+      agent: "coder",
+      efficiency: 8,
+      quality: 9,
+      verdict: "good",
+      createdAt: 1000,
+    });
 
-    writeFileSync(
-      join(evalsDir, "session-2.json"),
-      JSON.stringify({
-        agent: "coder",
-        sessionId: "session-2",
-        efficiency: 6,
-        quality: 7,
-        verdict: "acceptable",
-      }),
-    );
+    upsertEvaluation(dir, {
+      sessionId: "session-2",
+      agent: "coder",
+      efficiency: 6,
+      quality: 7,
+      verdict: "acceptable",
+      createdAt: 2000,
+    });
 
-    writeFileSync(
-      join(evalsDir, "session-3.json"),
-      JSON.stringify({
-        agent: "qa",
-        sessionId: "session-3",
-        efficiency: 9,
-        quality: 10,
-        verdict: "good",
-      }),
-    );
-
-    // No agent field — should be skipped
-    writeFileSync(join(evalsDir, "session-4.json"), JSON.stringify({}));
+    upsertEvaluation(dir, {
+      sessionId: "session-3",
+      agent: "qa",
+      efficiency: 9,
+      quality: 10,
+      verdict: "good",
+      createdAt: 3000,
+    });
 
     const result = getAgentScoreSummary(dir);
 
@@ -79,28 +79,44 @@ describe("getAgentScoreSummary", () => {
     });
   });
 
-  it("skips files with invalid JSON", () => {
+  it("skips evals with no agent field", () => {
     const dir = tmpDir();
-    const evalsDir = join(dir, "evaluations");
-    mkdirSync(evalsDir, { recursive: true });
 
-    writeFileSync(join(evalsDir, "bad.json"), "not valid json{{{");
-    writeFileSync(
-      join(evalsDir, "good.json"),
-      JSON.stringify({ agent: "coder", efficiency: 5, quality: 5, verdict: "ok" }),
-    );
+    // Eval with empty agent should be skipped by getAgentScoreSummary
+    upsertEvaluation(dir, {
+      sessionId: "no-agent",
+      agent: "",
+      efficiency: 5,
+      quality: 5,
+      verdict: "ok",
+      createdAt: 1000,
+    });
+
+    upsertEvaluation(dir, {
+      sessionId: "good-one",
+      agent: "coder",
+      efficiency: 5,
+      quality: 5,
+      verdict: "ok",
+      createdAt: 2000,
+    });
 
     const result = getAgentScoreSummary(dir);
     expect(Object.keys(result)).toEqual(["coder"]);
     expect(result.coder.count).toBe(1);
   });
 
-  it("treats missing efficiency/quality as 0 and missing verdict as 'unknown'", () => {
+  it("treats zero efficiency/quality and unknown verdict correctly", () => {
     const dir = tmpDir();
-    const evalsDir = join(dir, "evaluations");
-    mkdirSync(evalsDir, { recursive: true });
 
-    writeFileSync(join(evalsDir, "minimal.json"), JSON.stringify({ agent: "bot" }));
+    upsertEvaluation(dir, {
+      sessionId: "minimal",
+      agent: "bot",
+      quality: 0,
+      efficiency: 0,
+      verdict: "unknown",
+      createdAt: 1000,
+    });
 
     const result = getAgentScoreSummary(dir);
     expect(result.bot).toEqual({
@@ -114,18 +130,15 @@ describe("getAgentScoreSummary", () => {
 
   it("returns stable trend with only 1 evaluation", () => {
     const dir = tmpDir();
-    const evalsDir = join(dir, "evaluations");
-    mkdirSync(evalsDir, { recursive: true });
 
-    writeFileSync(
-      join(evalsDir, "2024-01-01T00-00-00.json"),
-      JSON.stringify({
-        agent: "solo",
-        efficiency: 5,
-        quality: 5,
-        verdict: "acceptable",
-      }),
-    );
+    upsertEvaluation(dir, {
+      sessionId: "solo-session",
+      agent: "solo",
+      efficiency: 5,
+      quality: 5,
+      verdict: "acceptable",
+      createdAt: 1000,
+    });
 
     const result = getAgentScoreSummary(dir);
     expect(result.solo.trend).toBe("stable");
@@ -133,28 +146,24 @@ describe("getAgentScoreSummary", () => {
 
   it("returns improving trend when second half efficiency is higher", () => {
     const dir = tmpDir();
-    const evalsDir = join(dir, "evaluations");
-    mkdirSync(evalsDir, { recursive: true });
 
-    writeFileSync(
-      join(evalsDir, "2024-01-01T00-00-00.json"),
-      JSON.stringify({
-        agent: "learner",
-        efficiency: 4,
-        quality: 5,
-        verdict: "needs_improvement",
-      }),
-    );
+    upsertEvaluation(dir, {
+      sessionId: "early-session",
+      agent: "learner",
+      efficiency: 4,
+      quality: 5,
+      verdict: "needs_improvement",
+      createdAt: 1000,
+    });
 
-    writeFileSync(
-      join(evalsDir, "2024-06-01T00-00-00.json"),
-      JSON.stringify({
-        agent: "learner",
-        efficiency: 8,
-        quality: 9,
-        verdict: "good",
-      }),
-    );
+    upsertEvaluation(dir, {
+      sessionId: "late-session",
+      agent: "learner",
+      efficiency: 8,
+      quality: 9,
+      verdict: "good",
+      createdAt: 2000,
+    });
 
     const result = getAgentScoreSummary(dir);
     expect(result.learner.trend).toBe("improving");
