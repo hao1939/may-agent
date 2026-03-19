@@ -11,8 +11,9 @@ import { readdirSync, existsSync, appendFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 export const PROJECT_ROOT = resolve(join(import.meta.dirname ?? ".", "../../.."));
-export const SCENARIOS_DIR = join(PROJECT_ROOT, "test/gym/scenarios");
-export const LAB_DIR = join(PROJECT_ROOT, "agents/.lab");
+export const AGENTS_ROOT = resolve(process.env["AGENTS_ROOT"] || join(PROJECT_ROOT, "agents"));
+export const SCENARIOS_DIR = join(AGENTS_ROOT, "gym/scenarios");
+export const LAB_DIR = join(AGENTS_ROOT, ".lab");
 
 export interface GymResult {
   scenario: string;
@@ -32,7 +33,7 @@ const KNOWN_AGENTS = ["coder", "tech-lead", "optimizer", "evaluator", "coach", "
 export function runGym(scenario: string, agent: string, labFork?: string): GymResult {
   const args = [scenario, "--agent", agent, "--timeout", "3"];
   if (labFork) args.push("--lab", labFork);
-  const cmd = `scripts/gym-run.sh ${args.map(a => `'${a}'`).join(" ")}`;
+  const cmd = `bun src/gym/runner.ts ${args.map(a => `'${a}'`).join(" ")}`;
 
   try {
     const stdout = execSync(cmd, {
@@ -43,7 +44,7 @@ export function runGym(scenario: string, agent: string, labFork?: string): GymRe
     });
     return JSON.parse(stdout.trim());
   } catch (err: any) {
-    // gym-run.sh may exit non-zero on score failure but still produce JSON
+    // gym-runner.ts may exit non-zero on score failure but still produce JSON
     const stdout = (err.stdout ?? "").trim();
     try {
       return JSON.parse(stdout);
@@ -54,7 +55,7 @@ export function runGym(scenario: string, agent: string, labFork?: string): GymRe
         lab_fork: labFork ?? null,
         passed: false,
         checks: [],
-        summary: `gym-run error: ${(err.stderr ?? err.message ?? "unknown").toString().slice(0, 500)}`,
+        summary: `gym-runner error: ${(err.stderr ?? err.message ?? "unknown").toString().slice(0, 500)}`,
         agent_status: "error",
         duration: "0s",
         gym_root: "",

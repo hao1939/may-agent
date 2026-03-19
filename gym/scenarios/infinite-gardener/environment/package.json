@@ -1,0 +1,10 @@
+{
+  "name": "log-cleaner",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Log file management utility",
+  "scripts": {
+    "clean": "node clean.js",
+    "verify": "node verify.js"
+  }
+}

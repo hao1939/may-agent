@@ -1,0 +1,9 @@
+{
+  "name": "infinite-gardener",
+  "categories": ["reading-comprehension"],
+  "tags": ["ability"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}
