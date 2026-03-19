@@ -1,6 +1,6 @@
 /// <reference path="../../../src/workflow-defs.d.ts" />
 
-import { writeFileSync } from "node:fs";
+import { writeFileSync, appendFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   runGym,
@@ -55,18 +55,22 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   // Check if ceiling-effect gate eliminated all experiments
   const planText = (plan.lastAssistantText || "").toUpperCase();
   if (planText.includes("GATE: ALL SKIPPED") || planText.includes("CEILING EFFECT ON ALL")) {
-    const skipRecord = await ctx.runAgent("coach",
-      `Record a ceiling-effect skip for the training sprint.\n\n` +
-      `## Plan Results\n${ctx.summarize(plan)}\n\n` +
-      `## Instructions\n` +
-      `The ceiling-effect gate eliminated ALL candidate experiments.\n` +
-      `All baselines pass — no room for improvement with current scenarios.\n\n` +
-      `1. Append ONE JSON line to \`agents/coach/workspace/experiments.jsonl\`:\n` +
-      `   \`\`\`json\n` +
-      `   {"timestamp":"<ISO>","type":"sprint","error_pattern":"multiple","agent":"multiple","method":"N/A","scenarios":[],"decision":"skipped","reason":"ceiling-effect gate: all sprint candidates pass baseline"}\n` +
-      `   \`\`\`\n` +
-      `2. Report: what was skipped and recommend creating harder scenarios.`
+    // Record skip directly in JS — no LLM session needed for a single JSONL append
+    const skipEntry = {
+      timestamp: new Date().toISOString(),
+      type: "sprint",
+      error_pattern: "multiple",
+      agent: "multiple",
+      method: "N/A",
+      scenarios: [],
+      decision: "skipped",
+      reason: "ceiling-effect gate: all sprint candidates pass baseline",
+    };
+    appendFileSync(
+      join(PROJECT_ROOT, "agents/coach/workspace/experiments.jsonl"),
+      JSON.stringify(skipEntry) + "\n",
     );
+
     return ctx.done(
       `Training sprint SKIPPED (ceiling-effect gate).\n\n` +
       `## Plan\n${plan.lastAssistantText}\n\n` +
