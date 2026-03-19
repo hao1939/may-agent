@@ -1318,3 +1318,70 @@ and EnterpriseOps (DD#411: oracle plans = pre-decomposed planning).
 
 **Status**: hypothesis — untested. Queue for scenarios where 2-phase shows
 marginal reliability (< 100% but > 0%) or where Phase 1 quality varies.
+
+---
+
+### 21. Adaptive Scenario Generation (HYPOTHESIS)
+
+**What**: Coach creates CUSTOM gym scenarios targeting a specific agent's
+observed weakness, rather than only using pre-built scenarios. Based on
+ASL's (arXiv:2510.14253) three-role co-evolution: Examiner generates
+progressively harder tests based on the Solver's failure patterns.
+
+**When to use**: When existing gym scenarios don't cover an agent's specific
+failure mode. When an agent passes all standard scenarios but still fails
+in production on a pattern that no gym scenario tests.
+
+**How**:
+1. Analyze agent's recent production failures (from evaluations/ERROR_LOG)
+2. Identify the specific failure pattern (using Method #19 taxonomy)
+3. Write a new gym scenario that isolates and tests ONLY that pattern
+4. Run agent on new scenario to establish baseline
+5. Apply coaching method (typically #15) and re-test
+6. If scenario proves valuable, promote to standard gym suite
+
+**Evidence**: None yet. Theoretical basis from:
+- ASL's Examiner co-evolution (Amy-Kimi HB#2192)
+- Our observation that existing scenarios don't cover all production failures
+- Current gap: exp-094 found tech-lead FM-3.3 failure on convention-verify-edit,
+  but many failure modes (e.g., path assumptions FM-2.4) have no gym scenario
+
+**Status**: hypothesis — requires gym scenario authoring capability.
+Priority: medium (exploit existing scenarios first per HB#2171 meta-strategy).
+
+---
+
+### 22. External Verification Enforcement (HYPOTHESIS)
+
+**What**: Coaching intervention that mandates external/empirical verification
+rather than self-review. Based on CR#191's Compression Asymmetry Principle:
+LLMs cannot distinguish coherent falsehoods from truth via consistency
+checks alone. Verification must use external constraints (file existence,
+test execution, diff validation) that only correct output satisfies.
+
+**When to use**: For FM-3.3 (verification failure) patterns where the agent
+claims to have verified but didn't use external checks. Specifically:
+- Agent says "looks correct" without running tests
+- Agent skips file-existence checks after claimed modifications
+- Agent self-assesses quality without objective criteria
+
+**How**:
+1. Identify verification step that agent skips or does poorly
+2. Add explicit external check to agent's workflow (Method #15 phase)
+3. The check must be EMPIRICAL, not reflective:
+   - Good: "Run `cat file.md | grep 'expected_text'`"
+   - Bad: "Review your output for correctness"
+4. Wire the check as a hard gate (phase cannot complete without passing)
+
+**Evidence**: None yet directly. Strong theoretical basis:
+- CR#191: compression-truth gap → consistency ≠ correctness
+- CR#195: self-review = compression-symmetric → doesn't help
+- Sprint data: Method #15 (structural) >> Method #1 (text) suggests
+  external structure beats internal reasoning for verification
+- HB#2175 (Amazon AI disaster): "review is the bottleneck" — and review
+  must be external, not self-assessment
+
+**Status**: hypothesis — directly testable via gym. High priority target
+for tech-lead FM-3.3 failures (exp-094 baseline available). Could combine
+with Method #15: Phase 1 = do task, Phase 2 = run external verification
+commands listed in a checklist.

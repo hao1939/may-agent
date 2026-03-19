@@ -58,6 +58,7 @@ Never `write()` to an append-only file (like logs or journals) — it overwrites
 ### 4.1 Sync vs Async (C4.1)
 - `agents.call(target, task)`: Blocking. Use for immediate answers.
 - `agents.send(target, message)`: Async. Use for handing off work.
+  - `send()` auto-deduplicates: if an identical active request exists, the send is skipped. Use `force: true` to override.
 
 ### 4.2 Handoff Protocol (C4.2)
 Write the artifact (brief, code, doc) to a file first. Then `agents.send(target, "Task description. Artifact: path/to/file")`. Never paste full file content in the message.

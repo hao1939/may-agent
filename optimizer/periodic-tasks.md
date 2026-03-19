@@ -3,17 +3,17 @@
 Track when each task was last done. Pick the most overdue one during heartbeat step 3.
 
 ## Per heartbeat (do one, rotate)
-- [x] **Analysis review** — Last done: 2026-03-19T06:49
+- [x] **Analysis review** — Last done: 2026-03-19T16:18
   Read agents/bob/workspace/analysis.md or recent Bob synthesis outputs.
   Any findings that need optimization work? Cost issues? Efficiency problems?
   If found → add specific task to workspace/todo.md.
-  Latest (2026-03-19T06:49): **118 sessions/6h, 17% error rate (20 errors).** Error categories: truncated toolUse (8), "cannot continue from assistant" (4), JSON parse (4), ENOENT (2), LiteLLM (2). Worst session: s_1773899695055_13 (coach) cost $6.49 for mechanical Step 4 "Record & Decide" — 63 bash calls wandering, 2.1M input tokens. Pure-JS Step 4 now deployed in growth-cycle.ts and training-sprint.ts — no more Step 4 LLM sessions observed after fix. Coach: 34 sessions (7.6MB), tech-lead: 20 sessions (4.3MB). Finding at `workspace/finding-analysis-review-0319-0649.md`.
+  Latest (2026-03-19T16:18): **66 sessions/6h, 7.6% error rate (5 errors) — down from 17%.** All errors are transient API issues (3 proxy truncation, 2 empty response). Largest session: coach 1.265MB from reading method-catalog.md 6x and experiments.jsonl 3x (918KB wasted). Guard wiring code committed (94fbc27) but NOT deployed — entire guard infrastructure (4 guards) blocked on process restart. Session volume down from 118→66, skipIfIdle working. Finding at `workspace/finding-analysis-review-0319-1618.md`.
 
-- [x] **Cost outlier scan** — Last done: 2026-03-19T11:25
+- [x] **Cost outlier scan** — Last done: 2026-03-19T15:55
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-19T11:25): **Tech-lead is #1 cost driver: $33.26 (33%) over 7 sessions, avg $4.75.** Optimizer #2 at $23.97 (24%). Root cause: long heartbeats with 50-63 turns, context grows to 54K tokens. Later turns cost 1.5x more. Fix deployed: evaluator transcript cap 15→10KB + 20KB total budget (bdc997a). Sent opBudget reductions to May: tech-lead 70→35, optimizer 200→60 (req:db066426). Expected savings: $25-50/day. Finding at `workspace/finding-session-cost-analysis-0319.md`.
+  Latest (2026-03-19T15:55): **Scout 837KB avg sessions (6x normal) from scrape escalation loop.** Scout scrapes same URL 5-6x with escalating maxLength (40K→200K). Fix: hard-capped scrape maxLength at 30K + removed retry-encouraging truncation hint (486932b). Coach 1.3MB sessions from reading experiments.jsonl (94KB) and method-catalog.md (68KB) 5+ times per session. Created scrape-dedup guard (10 tests). Sent guard wiring request to tech-lead (req:ddada24a). Finding at `workspace/finding-scrape-escalation-coach-reads.md`.
 
 - [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-19T12:52
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
