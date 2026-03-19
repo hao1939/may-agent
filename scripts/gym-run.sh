@@ -125,13 +125,23 @@ elif [[ -x "$PROJECT_ROOT/bundle/may-agent" ]]; then
     STALE=true
   fi
   if $STALE; then
-    echo "⚠️  Compiled binary is stale (source is newer). Using bun instead." >&2
-    MAY_CMD=(bun "$PROJECT_ROOT/src/app/may.ts")
+    if command -v bun &>/dev/null; then
+      echo "⚠️  Compiled binary is stale (source is newer). Using bun instead." >&2
+      MAY_CMD=(bun "$PROJECT_ROOT/src/app/may.ts")
+    else
+      echo "⚠️  Compiled binary is stale but bun not available. Using binary anyway." >&2
+      MAY_CMD=("$BINARY")
+    fi
   else
     MAY_CMD=("$BINARY")
   fi
 else
-  MAY_CMD=(bun "$PROJECT_ROOT/src/app/may.ts")
+  if command -v bun &>/dev/null; then
+    MAY_CMD=(bun "$PROJECT_ROOT/src/app/may.ts")
+  else
+    echo "❌  No binary and no bun — cannot run agent." >&2
+    exit 1
+  fi
 fi
 
 # ── Run agent ──────────────────────────────────────────────────────
@@ -158,15 +168,10 @@ if [[ -f "$ONESHOT_OUT" ]]; then
   ONESHOT_DURATION=$(python3 -c "import json; print(json.load(open('$ONESHOT_OUT')).get('duration',''))" 2>/dev/null || true)
 fi
 
-# ── Score ───────────────────────────────────────────────────────────
-
-SCORE_OUT="$GYM_ROOT/score-result.json"
-SCORE_EXIT=0
-bun "$SCENARIO_DIR/success_criteria.js" "$GYM_WORK" > "$SCORE_OUT" 2>/dev/null || SCORE_EXIT=$?
-
-# ── Build combined result ──────────────────────────────────────────
+# ── Locate transcript ──────────────────────────────────────────────
 
 SESSION_PATH=""
+TRANSCRIPT_PATH=""
 if [[ -n "$SESSION_ID" ]]; then
   for candidate in "$GYM_STATE/sessions/$SESSION_ID" "$GYM_STATE/sessions/history/$SESSION_ID"; do
     if [[ -d "$candidate" ]]; then
@@ -174,7 +179,21 @@ if [[ -n "$SESSION_ID" ]]; then
       break
     fi
   done
+  # Session JSONL is the transcript
+  if [[ -n "$SESSION_PATH" && -f "$SESSION_PATH/session.jsonl" ]]; then
+    TRANSCRIPT_PATH="$SESSION_PATH/session.jsonl"
+  fi
 fi
+
+# ── Score ───────────────────────────────────────────────────────────
+# Pass transcript path as second argument (backward compatible —
+# existing scorers ignore argv[3], new behavioral scorers use it).
+
+SCORE_OUT="$GYM_ROOT/score-result.json"
+SCORE_EXIT=0
+node "$SCENARIO_DIR/success_criteria.js" "$GYM_WORK" "$TRANSCRIPT_PATH" > "$SCORE_OUT" 2>/dev/null || SCORE_EXIT=$?
+
+# ── Build combined result ──────────────────────────────────────────
 
 python3 << PYEOF
 import json
@@ -196,11 +215,42 @@ result = {
     "duration": "$ONESHOT_DURATION",
     "session_id": "$SESSION_ID",
     "session_path": "$SESSION_PATH",
+    "transcript_path": "$TRANSCRIPT_PATH",
     "work_dir": "$GYM_WORK",
     "gym_root": "$GYM_ROOT",
 }
 
 print(json.dumps(result, indent=2))
 PYEOF
+
+# ── Record to SQLite ──────────────────────────────────────────────
+# Best-effort: if bun is available and gym-record.ts exists, persist
+# the result. Failures here don't affect the exit code.
+
+GYM_RECORD="$SCRIPT_DIR/gym-record.ts"
+if [[ -f "$GYM_RECORD" ]] && command -v bun &>/dev/null && [[ -f "$SCORE_OUT" ]]; then
+  # Re-read the combined result from stdout would be complex;
+  # instead, record from the score output + metadata
+  python3 -c "
+import json
+try:
+    with open('$SCORE_OUT') as f:
+        score = json.load(f)
+except:
+    score = {'passed': False, 'checks': [], 'summary': 'scoring failed'}
+result = {
+    'scenario': '$SCENARIO',
+    'agent': '$AGENT_NAME',
+    'lab_fork': '$LAB_FORK' or None,
+    'passed': score.get('passed', False),
+    'checks': score.get('checks', []),
+    'summary': score.get('summary', ''),
+    'duration': '$ONESHOT_DURATION',
+    'session_id': '$SESSION_ID',
+    'method': 'oneshot',
+}
+print(json.dumps(result))
+" | bun "$GYM_RECORD" 2>/dev/null || echo "⚠️  Failed to record gym result to SQLite" >&2
+fi
 
 exit $SCORE_EXIT

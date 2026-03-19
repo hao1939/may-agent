@@ -10,3 +10,4 @@ pi-deps/
 temp-*.cjs
 tsconfig.tsbuildinfo
 bundle/
+test/gym/stats.db
