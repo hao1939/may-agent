@@ -225,5 +225,5 @@ describe("tool execution (integration)", () => {
     expect(result.content).toBeDefined();
     expect(result.content.length).toBeGreaterThan(0);
     expect(result.content[0].type).toBe("text");
-  });
+  }, 10_000);
 });

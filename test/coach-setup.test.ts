@@ -108,7 +108,7 @@ describe("coach: knowledge files", () => {
   it("DOMAIN.md references only files that exist", () => {
     const content = readFileSync(resolve(COACH_DIR, "DOMAIN.md"), "utf-8");
     // Extract paths like knowledge/foo.md and workspace/bar.md
-    const pathPattern = /(?:knowledge|workspace)\/[\w-]+(?:\.md)?/g;
+    const pathPattern = /(?:knowledge|workspace)\/[\w-]+(?:\.\w+)?/g;
     const matches = content.match(pathPattern) || [];
 
     for (const p of matches) {

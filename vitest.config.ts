@@ -5,7 +5,8 @@ export default defineConfig({
     exclude: [
       "**/node_modules/**",
       "**/dist/**",
-      // Gym scenarios live in agents/gym/scenarios/ (gitignored, not scanned).
+      // Gym scenario environment files are standalone scripts, not vitest tests
+      "agents/gym/scenarios/**/environment/**",
     ],
   },
 });
