@@ -72,6 +72,11 @@ RUN chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/entrypoint-console.sh /
 # Virtual display
 ENV DISPLAY=:99
 
+# Chrome 146+ crashpad handler needs a writable $HOME to create
+# $HOME/.config/google-chrome/Crash Reports — without it Chrome
+# SIGTRAPs immediately when running as a non-root user.
+ENV HOME=/app/.state
+
 ENV NODE_ENV=production
 ENV PROJECT_ROOT=/app
 ENV AGENTS_ROOT=/app/agents
