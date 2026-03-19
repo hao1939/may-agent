@@ -439,5 +439,14 @@
     "enabled": true,
     "handler": "workspace-compaction",
     "description": "Daily workspace compaction — move files not modified in 7+ days to archive/YYYY-MM/. Reduces workspace clutter and git bloat. JS handler, 24h."
+  },
+  {
+    "name": "memory-trimmer",
+    "type": "job",
+    "intervalMs": 86400000,
+    "message": "[cron:memory-trimmer] Trim memory files and remove orphans.",
+    "enabled": true,
+    "handler": "memory-trimmer",
+    "description": "Daily memory file trimmer — trims .state/memory/*.jsonl to last N entries per agent, removes orphaned backups >7d old. Prevents unbounded disk growth. JS handler, 24h."
   }
 ]
