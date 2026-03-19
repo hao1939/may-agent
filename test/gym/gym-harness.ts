@@ -12,7 +12,7 @@
 import { mkdtempSync, cpSync, rmSync, existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { execSync, type ExecSyncOptionsWithStringEncoding } from "node:child_process";
+import { execSync, spawnSync, type ExecSyncOptionsWithStringEncoding } from "node:child_process";
 
 const FIXTURES_DIR = join(import.meta.dirname, "fixtures");
 
@@ -56,32 +56,30 @@ export function cleanupScenario(workDir: string): void {
 /**
  * Run a Node.js file in the scenario directory with a timeout.
  * Returns { stdout, stderr, exitCode }.
+ *
+ * Uses spawnSync with SIGKILL to ensure the child process is fully killed
+ * on timeout. Previous execSync approach left orphaned node processes
+ * burning 110% CPU when the shell was killed but the child survived.
  */
 export function runWithTimeout(
   workDir: string,
   entryFile: string,
   timeoutMs: number = 3000
 ): { stdout: string; stderr: string; exitCode: number } {
-  const opts: ExecSyncOptionsWithStringEncoding = {
+  const result = spawnSync("node", [entryFile], {
     cwd: workDir,
     timeout: timeoutMs,
     encoding: "utf-8",
     stdio: ["pipe", "pipe", "pipe"],
-  };
+    killSignal: "SIGKILL",  // SIGKILL ensures process cannot ignore the signal
+  });
 
-  try {
-    const stdout = execSync(`node ${entryFile}`, opts);
-    return { stdout: stdout || "", stderr: "", exitCode: 0 };
-  } catch (err: any) {
-    // execSync throws on non-zero exit or timeout
-    // When killed by timeout: status=null, signal=SIGTERM
-    const timedOut = err.signal === "SIGTERM" || err.killed === true || err.code === "ETIMEDOUT";
-    return {
-      stdout: err.stdout || "",
-      stderr: err.stderr || "",
-      exitCode: timedOut ? 124 : (err.status ?? 1),
-    };
-  }
+  const timedOut = result.signal === "SIGKILL" || result.error?.message?.includes("ETIMEDOUT");
+  return {
+    stdout: (result.stdout as string) || "",
+    stderr: (result.stderr as string) || "",
+    exitCode: timedOut ? 124 : (result.status ?? 1),
+  };
 }
 
 /**
