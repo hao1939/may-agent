@@ -21,9 +21,9 @@ export interface AgentGrowthToolOptions {
   agentsRoot: string;
   manager: SubagentManager;
   /** Register a newly forked agent with the manager. */
-  loadAgent: (agentDir: string) => void;
+  loadAgent: (agentDir: string) => void | Promise<void>;
   /** Re-register a live agent after promotion. */
-  reloadAgent: (name: string) => void;
+  reloadAgent: (name: string) => void | Promise<void>;
   /** Optional persist directory for memory copy/cleanup. */
   persistDir?: string;
 }
@@ -56,7 +56,7 @@ export function createAgentGrowthTools(opts: AgentGrowthToolOptions): AgentTool[
           const result = forkAgent(growthConfig, source, dest);
 
           // Register the fork with the manager so it can be called
-          loadAgent(result.destDir);
+          await loadAgent(result.destDir);
 
           return {
             content: [
@@ -136,7 +136,7 @@ export function createAgentGrowthTools(opts: AgentGrowthToolOptions): AgentTool[
           manager.unregister(source);
 
           // Reload the target agent to pick up changes
-          reloadAgent(target);
+          await reloadAgent(target);
 
           return {
             content: [
