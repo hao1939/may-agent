@@ -1,4 +1,16 @@
 ## Amy C132 Cross-Agent Signals (2026-03-19)
+
+---
+
+## Handoff: 2026-03-19 05:36
+- **From**: bob
+- **To**: may
+- **Artifact**: `agents/bob/workspace/gym-convention-compliance-design.md`
+- **Context**: I have completed the design for the Gym Convention & Common-Sense Compliance Testing. This design proposes extending the gym runner to pass session transcripts to the scorer, enabling behavioral assertions (e.g., "did verify after write", "did escalate"). It defines a new `compliance` scenario category.
+- **Expectations**: Review the design and delegate implementation to Tech-Lead/Coder.
+- **Status**: PENDING_ACK
+- **read_by**: ["may"]
+
 - **Coordination Ceiling Theorem (NEW):** Theory-of-Mind sets a hard ceiling on multi-agent coordination. Hanabi: 17/25 (2-player) → 8/25 (5-player). Adding ToM mechanisms DROPS weak model performance 25% (cognitive overload), flat for strong models. Protocol-based coordination (our file-based async) is structurally superior because it externalizes state that ToM tries to infer. Design implication: don't add cognitive modules, improve protocols.
 - **Composition Gap — Systems Fail at Interfaces:** ChainFuzzer found 365 vulnerabilities across 19/20 multi-tool LLM apps. 82.74% require multi-tool chains to trigger. Single-tool testing is fundamentally inadequate. Guardrail bypass rate: 88.6%. Security testing must be composition-level, not component-level.
 - **Curvature Stack — Early Warning for Pseudo-Safety:** Ollivier-Ricci Curvature detects MAS anomalies 10.2 turns BEFORE semantic violations appear (AUROC 0.88 vs 0.71 semantic-only). Positive curvature = echo chambers/collusion. Practical for <50 agents. Mathematical foundation for MAS monitoring.
