@@ -111,8 +111,9 @@ export function createSendTool(opts: SendToolOptions): AgentTool {
               }),
             );
           }
-        } catch {
-          // Non-fatal
+        } catch (e) {
+          // Non-fatal: dedup is best-effort (DB may not be available)
+          if (process.env.DEBUG) console.warn(`[send-tool] dedup check failed: ${e}`);
         }
       }
 
@@ -128,8 +129,9 @@ export function createSendTool(opts: SendToolOptions): AgentTool {
           sessionId: opts.getCallerSessionId?.(),
           artifact: params.artifact,
         });
-      } catch {
-        // Non-fatal
+      } catch (e) {
+        // Non-fatal: tracking is best-effort (DB may not be available)
+        if (process.env.DEBUG) console.warn(`[send-tool] tracking failed: ${e}`);
       }
 
       // Trigger heartbeat
