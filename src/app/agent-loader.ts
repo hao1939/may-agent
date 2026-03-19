@@ -142,7 +142,7 @@ export function runAgentCleanup(agentName: string): void {
 // Cross-edit protection remains via write/edit tool path guards (checkCrossEditGuard in cross-edit-guard.ts).
 
 
-function buildTools(config: AgentConfig, opts: AgentLoaderOptions): AgentTool[] {
+async function buildTools(config: AgentConfig, opts: AgentLoaderOptions): Promise<AgentTool[]> {
   const { projectRoot, persistDir, manager, bus } = opts;
   const agentDir = resolve(opts.agentsRoot, config.name);
   const tools: AgentTool[] = [];
@@ -376,7 +376,7 @@ function buildTools(config: AgentConfig, opts: AgentLoaderOptions): AgentTool[] 
       }
 
       case "agent-growth": {
-        const registerAgentFromDir = (agentDir: string) => {
+        const registerAgentFromDir = async (agentDir: string) => {
           const config = loadAgentConfig(agentDir, opts.bus);
           if (!config) return;
           const model = opts.models[config.model];
@@ -388,7 +388,7 @@ function buildTools(config: AgentConfig, opts: AgentLoaderOptions): AgentTool[] 
             description: config.description,
             domain: config.domain,
             model,
-            tools: buildTools(config, opts),
+            tools: await buildTools(config, opts),
             knowledgeDir: existsSync(knowledgeDir) ? knowledgeDir : undefined,
             workspace: existsSync(workspace) ? workspace : undefined,
             projectRoot: opts.projectRoot,
@@ -415,6 +415,62 @@ function buildTools(config: AgentConfig, opts: AgentLoaderOptions): AgentTool[] 
           type: "info",
           message: `[loader] Unknown tool preset "${preset}" for agent "${config.name}" — skipping`,
         });
+    }
+  }
+
+  // Load local tools from agents/<name>/tools/
+  const localTools = await loadLocalTools(config.name, agentDir, opts);
+  tools.push(...localTools);
+
+  return tools;
+}
+
+/**
+ * Scan agents/<name>/tools/ for .ts files and dynamically import them.
+ * Each file must default-export a ToolFactory function.
+ * Errors are logged and skipped — one bad tool doesn't kill the agent.
+ */
+async function loadLocalTools(
+  agentName: string,
+  agentDir: string,
+  opts: AgentLoaderOptions,
+): Promise<AgentTool[]> {
+  const toolsDir = resolve(agentDir, "tools");
+  if (!existsSync(toolsDir)) return [];
+
+  const tools: AgentTool[] = [];
+  const entries = readdirSync(toolsDir).filter((f) => f.endsWith(".ts") || f.endsWith(".js"));
+
+  for (const file of entries) {
+    const filePath = resolve(toolsDir, file);
+    try {
+      const mod = await import(filePath);
+      const factory = mod.default;
+      if (typeof factory !== "function") {
+        opts.bus.emit({
+          type: "info",
+          message: `[loader] Skipping ${agentName}/tools/${file} — no default export function`,
+        });
+        continue;
+      }
+      const tool = await factory({
+        projectRoot: opts.projectRoot,
+        agentRoot: agentDir,
+        persistDir: opts.persistDir,
+      });
+      if (tool && typeof tool.name === "string") {
+        tools.push(tool);
+        opts.bus.emit({
+          type: "info",
+          message: `[loader] Loaded local tool "${tool.name}" for ${agentName}`,
+        });
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      opts.bus.emit({
+        type: "info",
+        message: `[loader] ⚠️ Failed to load ${agentName}/tools/${file}: ${msg}`,
+      });
     }
   }
 
@@ -523,7 +579,7 @@ export interface LoadResult {
  * take effect on next session. Active sessions keep their old config.
  * Throws on validation errors (fail-fast prevents running with broken config).
  */
-export function loadAgents(opts: AgentLoaderOptions): LoadResult {
+export async function loadAgents(opts: AgentLoaderOptions): Promise<LoadResult> {
   const { agentsRoot, projectRoot, models, manager } = opts;
   const added: string[] = [];
   const updated: string[] = [];
@@ -556,7 +612,7 @@ export function loadAgents(opts: AgentLoaderOptions): LoadResult {
       description: config.description,
       domain: config.domain,
       model,
-      tools: buildTools(config, opts),
+      tools: await buildTools(config, opts),
       knowledgeDir: existsSync(knowledgeDir) ? knowledgeDir : undefined,
       workspace: existsSync(workspace) ? workspace : undefined,
       projectRoot,
@@ -588,9 +644,9 @@ export function loadAgents(opts: AgentLoaderOptions): LoadResult {
  * Active sessions keep their old config; only new sessions use the updated definition.
  * Returns { added, updated, errors } — errors are reported but don't crash.
  */
-export function reloadAgents(opts: AgentLoaderOptions): { added: string[]; updated: string[]; errors: string[] } {
+export async function reloadAgents(opts: AgentLoaderOptions): Promise<{ added: string[]; updated: string[]; errors: string[] }> {
   try {
-    const result = loadAgents(opts);
+    const result = await loadAgents(opts);
     return { ...result, errors: [] };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);

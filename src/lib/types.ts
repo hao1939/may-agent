@@ -137,6 +137,16 @@ export interface FinishResult {
   next_steps?: string;
 }
 
+/** Context passed to local tool factories in agents/<name>/tools/. */
+export interface ToolContext {
+  projectRoot: string;
+  agentRoot: string;
+  persistDir: string;
+}
+
+/** Local tool files must default-export a factory matching this signature. */
+export type ToolFactory = (context: ToolContext) => AgentTool | Promise<AgentTool>;
+
 /** Recursive tree node representing a session and its children in the session hierarchy. */
 export interface SessionTreeNode {
   sessionId: string;

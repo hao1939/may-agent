@@ -306,7 +306,7 @@ const loaderOpts: AgentLoaderOptions = {
   cronEnabled: CRON_ENABLED,
 };
 
-const loadResult = loadAgents(loaderOpts);
+const loadResult = await loadAgents(loaderOpts);
 bus.emit({ type: "info", message: `Loaded ${loadResult.added.length} agent(s): ${loadResult.added.join(", ")}` });
 
 writeSkippedEvaluations(PERSIST_DIR).then((skipped) => {
@@ -470,8 +470,8 @@ function gracefulRestart() {
   process.exit(EXIT_RELOAD);
 }
 
-function handleReload(): void {
-  const result = reloadAgents(loaderOpts);
+async function handleReload(): Promise<void> {
+  const result = await reloadAgents(loaderOpts);
   if (result.errors.length > 0) {
     bus.emit({ type: "info", message: `[reload] Validation errors:\n${result.errors.join("\n")}` });
   } else if (result.added.length > 0 || result.updated.length > 0) {
