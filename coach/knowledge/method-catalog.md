@@ -37,7 +37,7 @@ Key findings across 20 methods:
 | #6 Knowledge File | 2 (1 confounded, 1 clean) | 0 | 0 | SAFE, INEFFECTIVE alone |
 | #6+#2 Combo | 1 (discarded pre-test) | — | — | POINTLESS — INDEX.md already visible |
 | #9 Negative Example | 4 (3 complete, 1 infra fail) | 0 | 0 | SAFE, INEFFECTIVE — CLOSED |
-| #10 Conditional Guard | 2 | 0 | 0 (qualitative signal) | SAFE, INEFFECTIVE quantitatively — first text method to influence reasoning |
+| #10 Conditional Guard | 3 (2 complete, 1 infra fail) | 0 | 0 (qualitative signal) | SAFE, INEFFECTIVE quantitatively — first text method to influence reasoning |
 | #11 Prompt Prefix | 1 (untestable via gym) | N/A | N/A | UNTESTABLE VIA GYM |
 | #12 Subtractive Fix | 2 (1 confounded, 1 clean) | 0 | 0 | SAFE, INEFFECTIVE |
 | #13 Micro-Edit | 2 (1 interrupted) | 0 | 0 | SAFE, INEFFECTIVE |
@@ -586,9 +586,25 @@ ALL behavior.
    cross the threshold. Alternatively, workflow enforcement (#15) already
    solves this mechanically.
 
-**Status**: tested — **2 experiments (both SAFE, both quantitatively INEFFECTIVE,
-1 qualitatively partially effective). First text method with measurable reasoning
-influence when identity-aligned. Still insufficient to change behavior.**
+3. **May on sycophants-dilemma (learning-mode, 2026-03-19):** Second run of
+   the identity-aligned SOUL.md guard from experiment 2. Guard placed between
+   Core Principles and Data Integrity Protocol. Result: **INCONCLUSIVE —
+   infrastructure failure.** Both baseline and patched gym runs errored with
+   "Compiled binary is stale (source is newer). Using bun instead." — 0 checks
+   executed, 0s duration. No behavioral data obtained. This is the same infra
+   failure pattern seen in Method #9 exp-092.
+
+**Pattern**: 2/3 experiments completed. Both completed experiments show SAFE
+(zero regression) and quantitatively INEFFECTIVE (0/2 on score change). One
+experiment (may sycophants-dilemma) showed the first qualitative signal of
+any text method: identity-aligned guard changed reasoning (correct file
+categorization) but not behavior (still asked permission instead of acting).
+Third experiment blocked by infrastructure.
+
+**Status**: tested — **3 experiments (2 complete, 1 infra fail). SAFE, quantitatively
+INEFFECTIVE (0/2 on score). Qualitatively partially effective when identity-aligned
+(1/2 showed reasoning change). First text method with measurable reasoning
+influence when identity-aligned. Still insufficient to change behavior alone.**
 
 ---
 
