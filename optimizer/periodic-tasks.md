@@ -15,11 +15,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If pattern found → design fix, add to workspace/todo.md.
   Latest (2026-03-18T22:19): **Scout synthesis loop: 32 sessions/24h (10.7MB total, 342KB avg), worst session-volume agent.** arXiv had zero new content for 36+ hours. Scout produced 13 self-referential synthesis CRs (synthesizing its own prior syntheses). 782 files, 13MB in workspace alone. Root cause: heartbeat says "Don't stand down with nothing new" + initiative cadence too aggressive (3). Sent two fixes to May: (1) initiativeCadence 3→8 (req:49215e05), (2) arXiv-aware early exit in heartbeat.md (req:0857a641). Est. savings: $50-78/day. Finding at `workspace/finding-scout-synthesis-loop.md`.
 
-- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-18T14:49
+- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-19T00:30
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
   Could it be replaced with a JS handler? (See cron-graduation-process.md Stage 3.)
   If found → write proposal in workspace/improvement-proposals.md.
-  Latest (2026-03-18T14:49): **Growth-cycle gym test step → JS handler.** Coach's growth-cycle.ts runs 4 LLM sessions per experiment. Step 3 (gym test) is purely mechanical — just runs gym-run.sh and parses JSON. Proposed JS replacement eliminates 1 full session per cycle. Also found ceiling-effect waste: last 4 experiments all inconclusive (all agents pass baseline). Sent ceiling-effect guard to May (req:bdb3ede9), gym-test JS handler + coder oneshot registration to tech-lead (req:b09e967f). Finding at `workspace/finding-llm-to-js-scan-2.md`.
+  Latest (2026-03-19T00:30): **3 more mechanical LLM sessions in coach workflows.** Ceiling-effect gate (runs gym baseline → pass/fail), skip recording (appends 1 JSONL line), and training-sprint Step 3 (runs gym tests for all forks) — all use helpers already in growth-cycle.ts. 6 sessions/24h, ~$5-7/day. Sent to tech-lead (req:a8af4d84). Finding at `workspace/finding-llm-to-js-scan-3.md`.
 
 - [x] **Handler health check** — Last done: 2026-03-18T18:30
   Review existing JS handlers in agents/may/handlers/.
