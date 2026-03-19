@@ -248,10 +248,12 @@ function buildTools(config: AgentConfig, opts: AgentLoaderOptions): AgentTool[] 
 
       case "workflow": {
         const workflowDir = resolve(agentDir, "workflows");
+        const sharedWorkflowDir = resolve(opts.agentsRoot, "shared", "workflows");
         tools.push(
           createWorkflowTool({
             manager,
             workflowDir,
+            sharedWorkflowDir,
             persistDir,
             callerSessionId: () => {
               const sid = agentSessionIds.get(config.name);
