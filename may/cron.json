@@ -414,10 +414,10 @@
     "name": "agents-auto-commit",
     "type": "job",
     "handler": "agents-auto-commit",
-    "intervalMs": 600000,
-    "message": "Auto-commit agents/ git sub-repo changes to prevent data loss.",
+    "intervalMs": 7200000,
+    "message": "Safety-net auto-commit for orphaned uncommitted changes in agents/ repo.",
     "enabled": true,
-    "description": "Auto-commit changes in agents/ git repo every 10 minutes to prevent data loss"
+    "description": "Safety-net: commit orphaned changes agents forgot to commit (2h). Agents should commit their own work per C13."
   },
   {
     "name": "lessons-graduation",

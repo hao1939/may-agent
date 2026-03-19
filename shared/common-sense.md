@@ -182,3 +182,25 @@ Read `heartbeat.md` first. Pending tasks are injected automatically.
 
 ### 12.3 Persist (C12.3)
 Write `workspace/journal.md` before calling `finish()`.
+
+---
+
+## 13. Git Discipline (C13)
+
+### 13.1 Commit Your Own Work (C13.1)
+Before calling `finish()`, commit the files you changed in this session to the agents/ git repo. Group related changes into one commit with a meaningful message.
+
+```bash
+cd /app/agents && git add <specific-files-you-changed> && git commit -m "<type>: <what you did and why>"
+```
+
+Types: `feat`, `fix`, `chore`, `docs`, `refactor`. Example: `feat: add error-recovery gym scenario` or `chore: archive stale workspace files`.
+
+### 13.2 Only Commit Your Files (C13.2)
+Only `git add` files you actually modified. Never `git add -A` or `git add .` — that sweeps up other agents' uncommitted work.
+
+### 13.3 Message Quality (C13.3)
+Bad: `auto: 5 files changed`. Good: `coach: add growth-cycle experiment results`. The message should tell a future reader *what* changed and *why* without looking at the diff.
+
+### 13.4 Not Required for All Agents (C13.4)
+If you're unsure about git or your changes are minor (journal updates, periodic-tasks rotation), it's fine to skip. A safety-net process will commit orphaned changes periodically. But if you made something meaningful — a new skill, a config change, a design doc — commit it yourself.

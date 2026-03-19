@@ -20,7 +20,7 @@ These run in-process. No agent session, no tokens consumed.
 | Handler | Interval | Preflight | Reads | Writes | Downstream |
 |---------|----------|-----------|-------|--------|------------|
 | watchdog | 10min | — | .state/sessions/active/ | kills stale sessions | — |
-| agents-auto-commit | 10min | — | agents/ (git status) | git commit | — |
+| agents-auto-commit | 2h | — | agents/ (git status) | git commit (grouped by agent) | — |
 | evaluate-sessions | 30min | — | .state/sessions/history/\*/meta.json, session.jsonl | .state/evaluations/\*.json | → coach (bad score) |
 | audit-requests | 2h | — | may.db requests table | may.db (expire/clean) | — |
 | error-log-scanner | 4h | — | agents/\*/ERROR_LOG.jsonl | — | → coach (growth cycle) |

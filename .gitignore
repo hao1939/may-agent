@@ -1,5 +1,6 @@
 .state/
 *.log
+*.bak
 
 # Lab experiments are ephemeral — forked, trained, promoted/discarded.
 .lab/
