@@ -17,7 +17,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     `5. List agents/coach/skills/ — confirm skill directories exist\n` +
     `6. Test gym runner:\n` +
     `   \`\`\`bash\n` +
-    `   ./node_modules/.bin/vite-node src/gym/runner.ts -- --list 2>&1\n` +
+    `   test/gym/run-gym.sh --list 2>&1\n` +
     `   \`\`\`\n` +
     `   Confirm it shows usage and available scenarios.\n` +
     `7. Test fork/discard cycle:\n` +

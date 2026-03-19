@@ -3,11 +3,11 @@
 Track when each task was last done. Pick the most overdue one during heartbeat step 3.
 
 ## Per heartbeat (do one, rotate)
-- [x] **Analysis review** — Last done: 2026-03-18T23:19
+- [x] **Analysis review** — Last done: 2026-03-19T06:49
   Read agents/bob/workspace/analysis.md or recent Bob synthesis outputs.
   Any findings that need optimization work? Cost issues? Efficiency problems?
   If found → add specific task to workspace/todo.md.
-  Latest (2026-03-18T23:19): **Memory file bloat: 129MB total, evaluator alone 29.3MB.** `readMemoryEntries()` reads entire file to get last N entries (311:1 waste ratio for evaluator). Session count: 80/12h (~160/day), improved from prior 150/4h. Session-read-guard NOT active (committed after process start, needs restart). Bob's analysis shows system stable (100% success rate, 0 tool misuse failures). Sent memory file rotation + tail-read optimization to tech-lead. Finding at `workspace/finding-memory-file-bloat.md`.
+  Latest (2026-03-19T06:49): **118 sessions/6h, 17% error rate (20 errors).** Error categories: truncated toolUse (8), "cannot continue from assistant" (4), JSON parse (4), ENOENT (2), LiteLLM (2). Worst session: s_1773899695055_13 (coach) cost $6.49 for mechanical Step 4 "Record & Decide" — 63 bash calls wandering, 2.1M input tokens. Pure-JS Step 4 now deployed in growth-cycle.ts and training-sprint.ts — no more Step 4 LLM sessions observed after fix. Coach: 34 sessions (7.6MB), tech-lead: 20 sessions (4.3MB). Finding at `workspace/finding-analysis-review-0319-0649.md`.
 
 - [x] **Cost outlier scan** — Last done: 2026-03-19T06:14
   Check recent evaluations — any sessions > $2.00?
