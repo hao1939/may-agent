@@ -966,11 +966,14 @@ Created reusable `root-cause-debug.ts` workflow template. Fork DISCARDED.
 
 **UPDATED STATUS**: CONFIRMED — **20+ experiments (38+ runs + controls). ~92%
 strict / ~97% behavioral pass rate across 5 confirmed scenarios + 1
-inconclusive (ceiling effect). GENERALIZABLE across five judgment failure
+inconclusive (ceiling effect) + 1 inconclusive (bob FM-3.3 infra failure, 2026-03-19). GENERALIZABLE across five judgment failure
 types AND five agent instances across four models (amy/gemini, may/gemini,
 coder/claude, bob/gemini3pro, amy-kimi/kimi).
 cascading-error-workflow untestable due to agent-difficulty mismatch
-(amy too strong, coder blocked from oneshot runtime).**
+(amy too strong, coder blocked from oneshot runtime).
+Bob FM-3.3 skip-verification experiment (2026-03-19): INCONCLUSIVE — all 8 gym
+runs failed with JSON parse infra error (0 checks, 0s duration). No behavioral
+data. Retry needed with working gym infrastructure.**
 
 **Sprint 4 expansion (exp-076–091, 2026-03-18–19):**
 New agents tested: amy-kimi (kimi model), may (gemini):
