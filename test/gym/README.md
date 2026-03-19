@@ -42,7 +42,7 @@ Output is JSON: `{ passed, checks[], summary, session_path, work_dir }`.
 ### Via vitest (CI)
 
 ```bash
-bun vitest --run test/gym/gym.test.ts
+npx vitest --run test/gym/gym.test.ts
 ```
 
 ---

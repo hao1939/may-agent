@@ -281,7 +281,7 @@ function createGenericAdapter(): Adapter {
       if (!agentCmd) {
         throw new Error(
           "GYM_AGENT_CMD env var required for generic adapter.\n" +
-          "Example: GYM_AGENT_CMD='my-agent --task-file' bun test/gym/gym-runner.ts phantom-fix --adapter generic"
+          "Example: GYM_AGENT_CMD='my-agent --task-file' bash test/gym/run-gym.sh phantom-fix --adapter generic"
         );
       }
     },
@@ -813,9 +813,9 @@ function main() {
   // ── Single scenario ──────────────────────────────────────────────
   if (!args.scenario) {
     console.error("Usage:");
-    console.error("  bun test/gym/gym-runner.ts <scenario> [options]");
-    console.error("  bun test/gym/gym-runner.ts --list [--tier <t>] [--category <c>] [--tag <t>]");
-    console.error("  bun test/gym/gym-runner.ts --run-all [--tier <t>] [--category <c>]");
+    console.error("  bash test/gym/run-gym.sh <scenario> [options]");
+    console.error("  bash test/gym/run-gym.sh --list [--tier <t>] [--category <c>] [--tag <t>]");
+    console.error("  bash test/gym/run-gym.sh --run-all [--tier <t>] [--category <c>]");
     console.error("");
     console.error("Adapters: may-agent (default), claude-code, generic");
     console.error("");
