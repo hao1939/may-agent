@@ -262,6 +262,53 @@ describe("hasVerificationAfterWrite", () => {
     const t = loadTranscript(writeSampleTranscript())!;
     expect(hasVerificationAfterWrite(t, "other.js")).toBe(false);
   });
+
+  it("detects bash verification with node/python/jq/grep (not just cat/head)", () => {
+    // Transcript: write config.json, then verify via `node -e 'JSON.parse(...)'`
+    const lines = [
+      JSON.stringify({
+        role: "user",
+        content: [{ type: "text", text: "Fix config.json" }],
+        timestamp: 2000,
+      }),
+      JSON.stringify({
+        role: "assistant",
+        content: [
+          { type: "text", text: "Writing fix." },
+          {
+            type: "toolCall",
+            id: "tc_w",
+            name: "write",
+            arguments: { path: "config.json", content: '{"timeout": 5000}' },
+          },
+        ],
+        timestamp: 2001,
+      }),
+      JSON.stringify({
+        role: "toolResult",
+        toolCallId: "tc_w",
+        toolName: "write",
+        content: [{ type: "text", text: "Written" }],
+        isError: false,
+        timestamp: 2002,
+      }),
+      JSON.stringify({
+        role: "assistant",
+        content: [
+          { type: "text", text: "Verifying." },
+          {
+            type: "toolCall",
+            id: "tc_v",
+            name: "bash",
+            arguments: { command: "node -e \"JSON.parse(require('fs').readFileSync('config.json','utf-8'))\"" },
+          },
+        ],
+        timestamp: 2003,
+      }),
+    ];
+    const t = loadTranscript(writeSampleTranscript(lines))!;
+    expect(hasVerificationAfterWrite(t, "config.json")).toBe(true);
+  });
 });
 
 describe("getFinishCall", () => {
