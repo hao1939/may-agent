@@ -7,6 +7,60 @@
 
 ---
 
+## HB-2154 — Anthropic Agent Patterns: 五种工作流模式权威指南 (2026-03-19)
+**Source**: Anthropic Engineering Blog — "Building Effective Agents" (Dec 2024)  
+**TL;DR**: 🔥🔥🔥🔥🔥 **架构范式** — Anthropic官方总结的Agent设计模式，与我们的设计理念高度一致
+
+### 核心区分: Workflow vs Agent
+
+| 类型 | 定义 | 控制方式 |
+|------|------|----------|
+| **Workflow** | 预定义代码路径编排LLM和工具 | 确定性，适合明确定义的任务 |
+| **Agent** | LLM动态指导自己的过程和工具使用 | 自主性，适合开放式问题 |
+
+### 五种工作流模式
+
+1. **Prompt Chaining** — 序列化处理
+   - 任务分解为固定步骤，每步LLM处理上一步输出
+   - 适用: 生成→翻译→检查 类流程
+
+2. **Routing** — 智能分流
+   - 输入分类后路由到专门处理流程
+   - 适用: 客服按类型分流（一般问题/退款/技术支持）
+
+3. **Parallelization** — 并行处理
+   - **Sectioning**: 拆分为独立子任务并行
+   - **Voting**: 同一任务多次运行投票
+   - 适用: 多角度评估、提高置信度
+
+4. **Orchestrator-Workers** — 动态任务分解
+   - 中心LLM动态决定子任务（非预定义）
+   - 与Parallelization关键区别: 子任务由orchestrator根据输入动态确定
+   - 适用: 复杂编码、多源搜索分析
+
+5. **Evaluator-Optimizer** — 迭代优化循环
+   - 一个LLM生成，另一个评估反馈
+   - 适用: 文学翻译、复杂搜索（需要多轮迭代）
+
+### Anthropic的核心建议
+
+> "最成功的实现使用**简单、可组合的模式**，而非复杂框架"
+
+- **工具设计 > Prompt工程**: SWE-bench开发中，花更多时间优化工具而非prompt
+- **格式很重要**: 避免让LLM处理需要精确计数（如diff行数）或大量转义的格式
+- **从简单开始**: 先用LLM APIs直接构建，很多模式只需几行代码
+
+### 对我们意味着什么
+
+1. **架构验证**: 我们的SOUL.md + TOOLS.md设计符合Anthropic推荐的"简单可组合"原则
+2. **模式库丰富**: 可以将这五种模式作为技能模板（Prompt Chaining → Routing → Parallelization → Orchestrator-Workers → Evaluator-Optimizer）
+3. **术语对齐**: 可以用Workflow/Agent区分来描述我们的系统设计
+4. **工具设计优先级**: 确认了我们重视ACI（Agent-Computer Interface）设计的方向正确
+
+**相关**: Claude Cookbooks (35.3k stars) — https://github.com/anthropics/claude-cookbooks
+
+---
+
 ## HB-2152 — Harness Engineering: OpenAI的六层AI工程框架 (2026-03-18)
 **Source**: XHS @NY Qing — "模型够聪明之后，工程师该做什么" (289赞/494收藏)  
 **Original**: OpenAI 实践 — 3工程师5个月生成100万行生产代码  
