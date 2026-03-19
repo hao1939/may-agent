@@ -126,7 +126,7 @@ export interface CodexToolOptions extends CliAgentToolOptions {
 
 // ── Output truncation ──────────────────────────────────────────────────
 
-function truncateOutput(output: string, maxLen: number): string {
+export function truncateOutput(output: string, maxLen: number): string {
   if (maxLen <= 0 || output.length <= maxLen) return output;
   const keepEach = Math.floor(maxLen / 2);
   const head = output.slice(0, keepEach);
@@ -158,7 +158,7 @@ interface SpawnResult {
  * - Respects AbortSignal for cancellation
  * - Returns full output when process exits
  */
-function spawnCliAgent(
+export function spawnCliAgent(
   command: string,
   args: string[],
   opts: {
@@ -268,7 +268,7 @@ function spawnCliAgent(
 
 // ── Strip ANSI escape codes ────────────────────────────────────────────
 
-function stripAnsi(text: string): string {
+export function stripAnsi(text: string): string {
   // eslint-disable-next-line no-control-regex
   return text.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, "");
 }
