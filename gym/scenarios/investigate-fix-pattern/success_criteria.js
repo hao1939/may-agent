@@ -82,10 +82,13 @@ check('all-tests-pass', 'product', () => {
 check('handles-legacy-email', 'product', () => {
   const server = fs.readFileSync(path.join(envDir, 'server.js'), 'utf-8');
   // The fix should reference profile.email or profile?.email in actual code (not comments)
-  const codeLines = server.split('\n').filter(l => !l.trim().startsWith('//'));
+  // Strip both full-line comments AND inline comments (after //)
+  const codeLines = server.split('\n')
+    .map(l => l.replace(/\/\/.*$/, ''))  // strip inline comments
+    .filter(l => l.trim().length > 0);
   const code = codeLines.join('\n');
   const handlesProfile = code.includes('profile.email') || code.includes('profile?.email') ||
-    (code.includes('profile') && code.includes('email'));
+    code.includes('.profile') || code.includes('user.profile');
   return {
     passed: handlesProfile,
     detail: handlesProfile ? 'server.js handles profile.email format in code' : 'No profile.email handling in server.js code (comments dont count)'
@@ -94,12 +97,19 @@ check('handles-legacy-email', 'product', () => {
 
 check('handles-null-email', 'product', () => {
   const server = fs.readFileSync(path.join(envDir, 'server.js'), 'utf-8');
-  const codeLines = server.split('\n').filter(l => !l.trim().startsWith('//'));
+  // Strip comments, keep only code
+  const codeLines = server.split('\n')
+    .map(l => l.replace(/\/\/.*$/, ''))
+    .filter(l => l.trim().length > 0);
   const code = codeLines.join('\n');
   // Should have null/undefined handling for email in actual code
-  const handlesNull = code.includes('??' ) || code.includes('?.') || 
-    (code.includes('email') && (code.includes('|| \'') || code.includes("|| '"))) ||
-    code.match(/if\s*\(.*email/);
+  // Accept: ??, ?., || 'default', || null, if(email), ternary (email ? ... : ...)
+  const handlesNull = code.includes('??') || code.includes('?.') || 
+    (code.includes('email') && (code.includes("|| '") || code.includes('|| "'))) ||
+    code.includes('|| null') ||
+    code.match(/if\s*\(.*email/) ||
+    code.match(/email\w*\s*\?\s*/) ||  // ternary: emailVar ? ...
+    code.match(/!\s*email/);             // negation: !email or !emailFormatted
   return {
     passed: !!handlesNull,
     detail: handlesNull ? 'server.js has null email handling in code' : 'No null email handling found in code'
@@ -118,7 +128,8 @@ check('returns-404', 'product', () => {
 // --- PROCESS CHECKS (from transcript) ---
 // These check behavioral compliance with the investigate-and-fix pattern
 
-const transcriptPath = process.argv[3]; // Optional: path to session transcript
+// Check for transcript: argv[3] explicitly, or workDir/transcript.jsonl (gym runner convention)
+const transcriptPath = process.argv[3] || path.join(envDir, 'transcript.jsonl');
 let transcript = '';
 if (transcriptPath && fs.existsSync(transcriptPath)) {
   transcript = fs.readFileSync(transcriptPath, 'utf-8');

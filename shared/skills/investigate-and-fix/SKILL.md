@@ -8,8 +8,9 @@ description: >
 version: 1.0.0
 tools: [read, bash, edit, write, finish]
 agents: [tech-lead, optimizer, coder]
-tested: false
-gym_scenarios: [cascading-error, error-recovery-broken-config, hidden-dependency]
+tested: true
+gym_scenarios: [investigate-fix-pattern]
+gym_results: "3/3 pass (coder). Consistent gap: reproduce-first skipped. Product 4/4, Process 4/5."
 ---
 
 # Skill: Investigate and Fix

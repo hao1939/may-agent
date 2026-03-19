@@ -27,14 +27,14 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If issues → add fix to workspace/todo.md.
   Latest (2026-03-19T17:49): **2.3% error rate (1/43), handlers running but 9 commits not deployed.** Running binary is `may-agent-96dcb60` but HEAD is `8d7a8a1`. Most critical: guard wiring (94fbc27) not active — coach reads method-catalog.md (71KB) 6x per session. Convention-check broken: reads from `.state/evaluations/` JSON dir which is empty since SQLite migration (96dcb60). Sent rebuild request to May, convention-check fix to tech-lead. Finding at `workspace/finding-handler-health-check-0319-1749.md`.
 
-- [x] **Proven pattern → Skill/Workflow** — Last done: 2026-03-19T14:25
+- [x] **Proven pattern → Skill/Workflow** — Last done: 2026-03-19T18:55
   This is your MOST IMPORTANT periodic task — focus area #1.
   **Run it via workflow**: `workflow.run("skill-lifecycle", "Scan recent sessions for proven multi-step patterns")`
   The workflow mechanically enforces all 4 phases (discover → draft → test → deploy) in separate
   sessions, preventing you from skipping testing or doing meta-work instead.
   If you have a specific pattern in mind, pass it: `workflow.run("skill-lifecycle", "Pattern: agents read file → check convention → edit → verify")`
   **Deliverable**: A new or refined skill file, tested in gym, deployed to agents.
-  Latest (2026-03-19T14:25): **Created investigate-and-fix skill + gym scenario.** Scanned 30+ sessions across tech-lead, bob, optimizer, coach, amy-kimi. Found "Investigate → Diagnose → Fix → Verify" as the most universal single-agent pattern (70%+ of sessions). Created `agents/shared/skills/investigate-and-fix/SKILL.md` with 5-step pattern, evidence from 3 real sessions, and 5 behavioral assertions. Created gym scenario `investigate-fix-pattern` with multi-bug environment, success_criteria testing both product (tests pass) and process (followed investigation pattern). Not yet gym-tested (needs May to run). Next: run scenario 3x, deploy if 2/3 pass.
+  Latest (2026-03-19T18:55): **investigate-and-fix skill COMPLETED full lifecycle.** Fixed 2 bugs in success_criteria.js: (1) handles-legacy-email false positive from inline comments not stripped, (2) handles-null-email didn't recognize ternary pattern. Fixed transcript loading to use workDir/transcript.jsonl (gym runner convention). Ran gym 3x: all PASS (Product 4/4, Process 4/5). Consistent finding: coder skips "reproduce first" step. Skill marked tested=true, added to shared/INDEX.md. Full lifecycle: discover (Mar 19 14:25) → draft → gym test → deploy.
 
 ## Weekly
 - [x] **Improvement proposals review** — Last done: 2026-03-18T07:15

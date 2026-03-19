@@ -27,6 +27,7 @@
 - `agents/shared/skills/growth-cycle.md`: Fork-Train-Verify-Promote.
 - `agents/shared/skills/file-safety/SKILL.md`: Safe reading/writing.
 - `agents/shared/skills/check-state/SKILL.md`: Ops Gates.
+- `agents/shared/skills/investigate-and-fix/SKILL.md`: Diagnose → Reproduce → Fix → Verify pattern (gym-tested 3/3).
 
 **Tasks & Processes**:
 - `agents/shared/tasks/work-maturity-ladder.md`: How work graduates from heartbeat → cron job → JS handler → built-in. Optimizer owns graduation.

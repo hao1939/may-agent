@@ -10,7 +10,7 @@
  * Exports create() conforming to HandlerModule.
  */
 
-import { readdirSync, readFileSync, existsSync, writeFileSync, mkdirSync } from "node:fs";
+import { readFileSync, existsSync, writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { getDb } from "../../../src/lib/requests.js";
 import type { HandlerContext, HandlerModule } from "../../../src/lib/handler-context.js";
@@ -41,12 +41,6 @@ interface CheckResult {
   convention: string;
   passed: boolean;
   violations: string[];
-}
-
-interface SessionMeta {
-  agent?: string;
-  status?: string;
-  parentSessionId?: string;
 }
 
 // ── Configuration ─────────────────────────────────────────────────────
@@ -210,77 +204,25 @@ interface UncheckedSession {
 }
 
 function findUncheckedSessions(
-  persistDir: string,
+  _persistDir: string,
   db: ReturnType<typeof getDb>
 ): UncheckedSession[] {
-  // Get all evaluated session IDs
-  const evalDir = join(persistDir, "evaluations");
-  if (!existsSync(evalDir)) return [];
-
-  const evaluatedFiles = readdirSync(evalDir).filter((f) => f.endsWith(".json"));
-  const results: UncheckedSession[] = [];
-
-  // Get already-checked session IDs from DB (any convention = checked)
-  const checkedRows = db
-    .prepare("SELECT DISTINCT session_id FROM convention_checks")
-    .all() as Array<{ session_id: string }>;
-  const checkedSet = new Set(checkedRows.map((r) => r.session_id));
-
-  // Sort newest first (lexicographic on timestamps in filenames works for s_EPOCH_N)
-  // and cap scan to avoid reading thousands of JSONs on cold start.
   const MAX_SCAN = 200;
-  const sortedFiles = evaluatedFiles.sort().reverse().slice(0, MAX_SCAN);
 
-  for (const evalFile of sortedFiles) {
-    // Read the evaluation JSON to get the real sessionId and agent.
-    // Filenames can have prefixes (heartbeat_, eval_, coach.task-tree., etc.)
-    // so we must NOT derive sessionId from the filename.
-    let evalData: { sessionId?: string; agent?: string; agents?: Record<string, unknown> };
-    try {
-      evalData = JSON.parse(readFileSync(join(evalDir, evalFile), "utf-8"));
-    } catch {
-      continue;
-    }
+  // Query evaluations table for sessions not yet convention-checked.
+  // Uses NOT IN subquery to exclude already-checked sessions.
+  const rows = db
+    .prepare(
+      `SELECT DISTINCT e.sessionId, e.agent
+       FROM evaluations e
+       WHERE e.agent != 'evaluator'
+         AND e.sessionId NOT IN (SELECT DISTINCT session_id FROM convention_checks)
+       ORDER BY e.createdAt DESC
+       LIMIT ?`
+    )
+    .all(MAX_SCAN) as Array<{ sessionId: string; agent: string }>;
 
-    const sessionId = evalData.sessionId;
-    if (!sessionId) continue;
-    if (checkedSet.has(sessionId)) continue;
-
-    // Get agent from evaluation JSON (preferred) or from session meta (fallback)
-    let agent = evalData.agent;
-    if (!agent) {
-      // Multi-agent evaluations use an 'agents' key — try to get primary agent from meta
-      const meta = loadSessionMeta(persistDir, sessionId);
-      agent = meta?.agent;
-    }
-    if (!agent) continue;
-
-    // Skip evaluator sessions (they evaluate, not code)
-    if (agent === "evaluator") continue;
-
-    results.push({ sessionId, agent });
-  }
-
-  return results;
-}
-
-function loadSessionMeta(persistDir: string, sessionId: string): SessionMeta | null {
-  // Try history first (archived sessions), then active
-  const paths = [
-    join(persistDir, "sessions", "history", sessionId, "meta.json"),
-    join(persistDir, "sessions", sessionId, "meta.json"),
-  ];
-
-  for (const p of paths) {
-    if (existsSync(p)) {
-      try {
-        return JSON.parse(readFileSync(p, "utf-8"));
-      } catch {
-        return null;
-      }
-    }
-  }
-  return null;
+  return rows.map((r) => ({ sessionId: r.sessionId, agent: r.agent }));
 }
 
 // ── Transcript parsing ────────────────────────────────────────────────
