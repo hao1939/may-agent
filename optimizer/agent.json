@@ -1,6 +1,6 @@
 {
   "name": "optimizer",
-  "opBudget": 200,
+  "opBudget": 60,
   "description": "Analyzes agent performance data, proposes and implements improvements to the agent system",
   "domain": "agent system optimization",
   "model": "opus",
