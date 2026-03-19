@@ -44,9 +44,10 @@ const sendParams = Type.Object({
   artifact: Type.Optional(
     Type.String({ description: "Path to an artifact file to reference in the message" }),
   ),
+  force: Type.Optional(Type.Boolean({ description: "Skip dedup check for intentional re-sends" })),
 });
 
-type SendParams = Static<typeof sendParams>;
+type SendParams = Static<typeof sendParams> & { force?: boolean };
 
 function textResult(text: string): AgentToolResult<undefined> {
   return { content: [{ type: "text" as const, text }], details: undefined };
@@ -94,20 +95,25 @@ export function createSendTool(opts: SendToolOptions): AgentTool {
       const caller = opts.agentName;
 
       // Dedup check
-      try {
-        const req = await getRequestsModule();
-        if (req.isDuplicate(opts.persistDir, caller, params.agent, params.message.slice(0, 500))) {
-          return textResult(
-            JSON.stringify({
-              sent: params.agent,
-              message: params.message,
-              deduplicated: true,
-              heartbeatTriggered: false,
-            }),
-          );
+      if (!params.force) {
+        try {
+          const req = await getRequestsModule();
+          const existingReqId = req.isDuplicate(opts.persistDir, caller, params.agent, params.message.slice(0, 500));
+          if (existingReqId) {
+            return textResult(
+              JSON.stringify({
+                status: "skipped",
+                reason: `Duplicate request already active (req: ${existingReqId.slice(0, 8)})`,
+                sent: params.agent,
+                message: params.message,
+                deduplicated: true,
+                heartbeatTriggered: false,
+              }),
+            );
+          }
+        } catch {
+          // Non-fatal
         }
-      } catch {
-        // Non-fatal
       }
 
       // Track in SQLite
