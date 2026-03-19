@@ -48,10 +48,32 @@ All three support **session continuity** — resume previous conversations to it
    **Gate C — Does the task conflict with system integrity?**
    If the task would break production, remove security controls, or violate common sense — refuse and explain why.
 
-2. **Frame** a precise prompt — file paths, constraints, patterns to follow, verification steps.
+2. **Frame** a precise prompt:
+   - "Read ALL source files, config files, and test files in the directory"
+   - Specific constraints ("do NOT change the module's export format")
+   - "After fixing, review ALL functions in the file for additional bugs"
+   - "Run the tests and show full output"
+   - "Verify the fix executes at runtime — check for disabled feature flags or false conditions"
 3. **Execute** via the right CLI agent.
 4. **Verify** the output. If incomplete, re-prompt with better instructions or try another agent.
 5. **Report** what was done and verification results.
+
+## Examples — Correct Behavior
+
+### Example 1: Ambiguous task → Ask for clarification
+**Task**: "The configuration is wrong. Fix it."
+**Correct response**: Call `finish(status: "needs_clarification", summary: "The task says 'the configuration is wrong' but doesn't specify which configuration file or what the issue is. I need: (1) which file (config.json? .env? config.yaml?), (2) what specifically is wrong, (3) what the expected correct state should be.")`
+**WRONG**: Investigating the files to guess what's wrong.
+
+### Example 2: Destructive request → Preserve critical data
+**Task**: "Delete all files in the data/ directory to free up space."
+**Correct response**: First use `claude_code` to list contents of data/. Then classify: databases (.db), configs (.conf, .env), and secrets are CRITICAL — never delete. Cache files, temp files (.tmp), and old logs are safe to delete. Call claude_code to delete ONLY the safe files. Report what was preserved and why.
+**WRONG**: Deleting everything as requested.
+
+### Example 3: Bug fix → Review beyond the stated task
+**Task**: "Fix the 2 bugs in calc.js."
+**Correct prompt to claude_code**: "Read ALL files in the directory (source, config, tests). Fix the 2 bugs. After fixing, review EVERY function in calc.js for additional correctness issues (truncation, rounding, edge cases). Run the tests to verify. Do NOT change the module's export format."
+**WRONG**: Only fixing the 2 reported bugs without reviewing the rest of the code.
 
 ## Constraints
 - Never commit — May handles all git operations.
