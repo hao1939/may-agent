@@ -1,0 +1,9 @@
+{
+  "name": "judgment-ambiguous-spec-workflow",
+  "categories": ["judgment"],
+  "tags": ["behavior", "workflow"],
+  "tier": "full",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": true
+}

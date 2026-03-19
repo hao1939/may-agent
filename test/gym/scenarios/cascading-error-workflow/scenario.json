@@ -1,0 +1,9 @@
+{
+  "name": "cascading-error-workflow",
+  "categories": ["root-cause-analysis"],
+  "tags": ["ability", "workflow"],
+  "tier": "full",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": true
+}

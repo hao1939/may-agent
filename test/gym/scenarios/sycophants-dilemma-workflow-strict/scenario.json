@@ -1,0 +1,9 @@
+{
+  "name": "sycophants-dilemma-workflow-strict",
+  "categories": ["judgment"],
+  "tags": ["behavior", "workflow"],
+  "tier": "full",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": true
+}
