@@ -262,7 +262,7 @@ function summarizeMessages(messages: AgentMessage[]): string {
       const text =
         typeof msg.content === "string"
           ? msg.content
-          : msg.content
+          : (msg.content as Array<{ type: string; text?: string }>)
               .filter((b): b is { type: "text"; text: string } => b?.type === "text")
               .map((b) => b.text)
               .join(" ");

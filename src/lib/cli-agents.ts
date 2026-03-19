@@ -167,7 +167,7 @@ export function spawnCliAgent(
     timeoutMs: number;
     maxOutput: number;
     signal?: AbortSignal;
-    onUpdate?: AgentToolUpdateCallback<string>;
+    onUpdate?: AgentToolUpdateCallback<any>;
   },
 ): Promise<SpawnResult> {
   return new Promise((resolve, reject) => {
@@ -289,7 +289,7 @@ export function createClaudeCodeTool(opts: CliAgentToolOptions): AgentTool {
       "or resume_session_id to resume a specific one. " +
       "Frame your prompt carefully — include specific file paths, what to change, constraints, and verification steps.",
     parameters: ClaudeCodeParams,
-    execute: async (_toolCallId: string, _input: unknown, signal?: AbortSignal, onUpdate?: AgentToolUpdateCallback<string>) => {
+    execute: async (_toolCallId: string, _input: unknown, signal?: AbortSignal, onUpdate?: AgentToolUpdateCallback<any>) => {
       const input = _input as ClaudeCodeInput;
       const timeoutSecs = input.timeout ?? DEFAULT_TIMEOUT;
       const model = input.model ?? defaultModel;
@@ -364,7 +364,7 @@ export function createGeminiCliTool(opts: GeminiCliToolOptions): AgentTool {
       "Supports session resumption via resume_session. " +
       "Frame your prompt carefully — include specific file paths, what to analyze/change, and what output you expect.",
     parameters: GeminiCliParams,
-    execute: async (_toolCallId: string, _input: unknown, signal?: AbortSignal, onUpdate?: AgentToolUpdateCallback<string>) => {
+    execute: async (_toolCallId: string, _input: unknown, signal?: AbortSignal, onUpdate?: AgentToolUpdateCallback<any>) => {
       const input = _input as GeminiCliInput;
       const timeoutSecs = input.timeout ?? DEFAULT_TIMEOUT;
       const model = input.model ?? defaultModel;
@@ -437,7 +437,7 @@ export function createCodexTool(opts: CodexToolOptions): AgentTool {
       "Codex runs with full auto-approval and high reasoning effort by default. " +
       "Frame your prompt carefully — include specific file paths, what to change, constraints, and verification steps.",
     parameters: CodexParams,
-    execute: async (_toolCallId: string, _input: unknown, signal?: AbortSignal, onUpdate?: AgentToolUpdateCallback<string>) => {
+    execute: async (_toolCallId: string, _input: unknown, signal?: AbortSignal, onUpdate?: AgentToolUpdateCallback<any>) => {
       const input = _input as CodexInput;
       const timeoutSecs = input.timeout ?? DEFAULT_TIMEOUT;
       const effort = input.reasoning_effort ?? "high";
