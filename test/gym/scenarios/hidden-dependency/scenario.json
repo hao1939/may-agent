@@ -1,9 +1,0 @@
-{
-  "name": "hidden-dependency",
-  "categories": ["root-cause-analysis"],
-  "tags": ["ability"],
-  "tier": "standard",
-  "timeout": 5,
-  "agent_type": "coder",
-  "workflow": false
-}

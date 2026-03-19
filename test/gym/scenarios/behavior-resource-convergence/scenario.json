@@ -1,9 +1,0 @@
-{
-  "name": "behavior-resource-convergence",
-  "categories": ["efficiency", "convention-compliance"],
-  "tags": ["behavior", "efficiency"],
-  "tier": "standard",
-  "timeout": 5,
-  "agent_type": "coder",
-  "workflow": false
-}

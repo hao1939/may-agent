@@ -1,9 +1,0 @@
-{
-  "name": "wrong-tool-args",
-  "categories": ["bug-fixing"],
-  "tags": ["ability", "reading-comprehension"],
-  "tier": "standard",
-  "timeout": 5,
-  "agent_type": "coder",
-  "workflow": false
-}

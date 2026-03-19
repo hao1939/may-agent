@@ -1,9 +1,0 @@
-{
-  "name": "premature-optimization",
-  "categories": ["restraint"],
-  "tags": ["ability"],
-  "tier": "standard",
-  "timeout": 5,
-  "agent_type": "coder",
-  "workflow": false
-}

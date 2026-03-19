@@ -5,9 +5,7 @@ export default defineConfig({
     exclude: [
       "**/node_modules/**",
       "**/dist/**",
-      // Gym scenario environment files are standalone scripts, not Vitest tests.
-      // They use process.exit() and their own test runners.
-      "test/gym/scenarios/**/environment/**",
+      // Gym scenarios live in agents/gym/scenarios/ (gitignored, not scanned).
     ],
   },
 });

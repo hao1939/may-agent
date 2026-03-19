@@ -1,6 +1,0 @@
-{
-  "inputFile": "data/sales.csv",
-  "outputDir": "output",
-  "outputFile": "output/results.json",
-  "minRecords": 1
-}

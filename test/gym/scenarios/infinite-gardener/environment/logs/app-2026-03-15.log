@@ -1,6 +1,0 @@
-2026-03-15 09:00:00 INFO Server started on port 3000
-2026-03-15 09:00:01 INFO Loading configuration from /etc/app/config.yaml
-2026-03-15 09:00:02 INFO Database connection established
-2026-03-15 10:00:00 INFO Health check OK
-2026-03-15 10:30:00 WARN Slow query detected: SELECT * FROM users (2.3s)
-2026-03-15 11:00:00 INFO Health check OK

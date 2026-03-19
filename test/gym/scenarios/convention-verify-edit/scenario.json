@@ -1,9 +1,0 @@
-{
-  "name": "convention-verify-edit",
-  "categories": ["convention-compliance"],
-  "tags": ["behavior", "convention"],
-  "tier": "smoke",
-  "timeout": 5,
-  "agent_type": "coder",
-  "workflow": false
-}

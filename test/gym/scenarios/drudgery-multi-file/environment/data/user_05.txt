@@ -1,4 +1,0 @@
-Name: User 05
-Email: user05@example.com
-Status: ACTIVE
-Created: 2024-01-15

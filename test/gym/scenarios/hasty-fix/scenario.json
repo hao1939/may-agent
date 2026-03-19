@@ -1,9 +1,0 @@
-{
-  "name": "hasty-fix",
-  "categories": ["bug-fixing"],
-  "tags": ["ability", "reading-comprehension"],
-  "tier": "smoke",
-  "timeout": 5,
-  "agent_type": "coder",
-  "workflow": false
-}
