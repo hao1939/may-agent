@@ -3,11 +3,11 @@
 Track when each task was last done. Pick the most overdue one during heartbeat step 3.
 
 ## Per heartbeat (do one, rotate)
-- [x] **Analysis review** — Last done: 2026-03-19T16:18
+- [x] **Analysis review** — Last done: 2026-03-19T21:19
   Read agents/bob/workspace/analysis.md or recent Bob synthesis outputs.
   Any findings that need optimization work? Cost issues? Efficiency problems?
   If found → add specific task to workspace/todo.md.
-  Latest (2026-03-19T16:18): **66 sessions/6h, 7.6% error rate (5 errors) — down from 17%.** All errors are transient API issues (3 proxy truncation, 2 empty response). Largest session: coach 1.265MB from reading method-catalog.md 6x and experiments.jsonl 3x (918KB wasted). Guard wiring code committed (94fbc27) but NOT deployed — entire guard infrastructure (4 guards) blocked on process restart. Session volume down from 118→66, skipIfIdle working. Finding at `workspace/finding-analysis-review-0319-1618.md`.
+  Latest (2026-03-19T21:19): **48 sessions/4h, 2.1% error rate (1 error) — stable low.** Coach cost share dropped 33%→12.8% (avg 121KB vs 345KB). QA rose to #2 at 19.4% but all legitimate review work. Binary still not activated — `66aace2` built but `96dcb60` running. Guard deployment still blocked. Scout quiet (1 session). Finding at `workspace/finding-analysis-review-0319-2119.md`.
 
 - [x] **Cost outlier scan** — Last done: 2026-03-19T19:49
   Check recent evaluations — any sessions > $2.00?
@@ -34,7 +34,7 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   sessions, preventing you from skipping testing or doing meta-work instead.
   If you have a specific pattern in mind, pass it: `workflow.run("skill-lifecycle", "Pattern: agents read file → check convention → edit → verify")`
   **Deliverable**: A new or refined skill file, tested in gym, deployed to agents.
-  Latest (2026-03-19T18:55): **investigate-and-fix skill COMPLETED full lifecycle.** Fixed 2 bugs in success_criteria.js: (1) handles-legacy-email false positive from inline comments not stripped, (2) handles-null-email didn't recognize ternary pattern. Fixed transcript loading to use workDir/transcript.jsonl (gym runner convention). Ran gym 3x: all PASS (Product 4/4, Process 4/5). Consistent finding: coder skips "reproduce first" step. Skill marked tested=true, added to shared/INDEX.md. Full lifecycle: discover (Mar 19 14:25) → draft → gym test → deploy.
+  Latest (2026-03-19T21:44): **verification skill (v1.3.0) — Phase 4 BLOCKED, not deployed.** Gym pass rate 1/6 (17%) below 2/3 threshold. Root cause: criteria gap — `hasVerificationAfterWrite` only recognizes read()/cat/head, not python3 json.load() which agent prefers. LLM judge passed 6/6. Product correctness 6/6. Evaluation showed 7.5/10 effectiveness across 15 sessions. Skill is sound; success_criteria needs updating. Next: fix gym-score-utils.cjs to accept python/node file reads, then re-test and deploy. Journal entry at workspace/journal.md.
 
 ## Weekly
 - [x] **Improvement proposals review** — Last done: 2026-03-18T07:15

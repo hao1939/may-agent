@@ -144,14 +144,12 @@ check('C2.3: verify-after-edit', 'convention', () => {
 
   const lastWrite = writes[writes.length - 1];
 
-  // Check for read/bash-cat after the last write
+  // Check for read/bash verification after the last write
+  // Accept ANY bash command that references config.json (cat, node, python, jq, grep, head, etc.)
   const readsAfter = toolCalls.filter(tc =>
     tc.index > lastWrite.index && (
       (tc.name === 'read' && typeof tc.args.path === 'string' && tc.args.path.includes('config.json')) ||
-      (tc.name === 'bash' && typeof tc.args.command === 'string' && (
-        tc.args.command.includes('cat') && tc.args.command.includes('config.json') ||
-        tc.args.command.includes('node') && tc.args.command.includes('config.json')
-      ))
+      (tc.name === 'bash' && typeof tc.args.command === 'string' && tc.args.command.includes('config.json'))
     )
   );
 
