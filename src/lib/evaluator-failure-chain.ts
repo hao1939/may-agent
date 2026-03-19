@@ -273,7 +273,7 @@ export function extractFailureChains(messages: AgentMessage[]): FailureChain[] {
     }
 
     if (msg.role === "toolResult") {
-      const tr = msg as {
+      const tr = msg as unknown as {
         toolCallId: string;
         toolName: string;
         content?: Array<{ type: string; text?: string }>;

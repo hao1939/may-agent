@@ -83,7 +83,7 @@ export function extractUsage(messages: AgentMessage[]): UsageSummary {
         cacheReadTokens += am.usage.cacheRead ?? 0;
         cacheWriteTokens += am.usage.cacheWrite ?? 0;
         totalTokens += am.usage.totalTokens ?? 0;
-        cost += am.usage.cost?.total ?? 0;
+        cost += (typeof am.usage.cost === 'number' ? am.usage.cost : am.usage.cost?.total) ?? 0;
       }
       turns++;
     }
@@ -107,7 +107,7 @@ function formatTranscript(messages: AgentMessage[]): string {
     lines.push(`## ${msg.role}`);
 
     if (msg.role === "toolResult") {
-      const fullText = msg.content?.map((c) => (c.type === "text" ? c.text : "")).join("") ?? "";
+      const fullText = msg.content?.map((c: { type: string; text?: string }) => (c.type === "text" ? c.text : "")).join("") ?? "";
       const truncated = fullText.length > 2000;
       const text = fullText.slice(0, 2000);
       const suffix = truncated
