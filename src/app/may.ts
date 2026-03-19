@@ -688,9 +688,13 @@ function emitPrompt(): void {
 // ── Startup ────────────────────────────────────────────────────────────
 
 if (STATUS_MODE) {
-  // ── Status mode: print request DB status and exit ──────────────────
-  const { printRequestStatus } = await import("../lib/tools/request-status.js");
-  console.log(printRequestStatus(PERSIST_DIR));
+  // ── Status mode: print dashboard and exit ──────────────────────────
+  const { printRequestStatus, notifyStatus } = await import("../lib/tools/request-status.js");
+  const statusOutput = printRequestStatus(PERSIST_DIR);
+  console.log(statusOutput);
+  if (process.argv.includes("--notify")) {
+    await notifyStatus(PERSIST_DIR);
+  }
   process.exit(0);
 }
 
