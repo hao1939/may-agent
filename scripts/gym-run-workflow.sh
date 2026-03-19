@@ -143,13 +143,34 @@ STATE_DIR="$GYM_STATE" \
     > "$PHASE2_OUT" 2>"$GYM_ROOT/phase2-stderr.log" || PHASE2_EXIT=$?
 
 PHASE2_SESSION=$(python3 -c "import json; print(json.load(open('$PHASE2_OUT')).get('sessionId',''))" 2>/dev/null || true)
+PHASE2_DURATION=$(python3 -c "import json; print(json.load(open('$PHASE2_OUT')).get('duration',''))" 2>/dev/null || true)
 echo "Phase 2 complete (session: $PHASE2_SESSION, exit: $PHASE2_EXIT)" >&2
 
+# ── Locate transcripts ─────────────────────────────────────────────
+
+# Combine both phase transcripts into a single file for scorers
+COMBINED_TRANSCRIPT="$GYM_ROOT/combined-transcript.jsonl"
+for SESS_ID in "$PHASE1_SESSION" "$PHASE2_SESSION"; do
+  if [[ -n "$SESS_ID" ]]; then
+    for candidate in "$GYM_STATE/sessions/$SESS_ID" "$GYM_STATE/sessions/history/$SESS_ID"; do
+      if [[ -d "$candidate" && -f "$candidate/session.jsonl" ]]; then
+        cat "$candidate/session.jsonl" >> "$COMBINED_TRANSCRIPT"
+        break
+      fi
+    done
+  fi
+done
+TRANSCRIPT_PATH=""
+if [[ -f "$COMBINED_TRANSCRIPT" ]]; then
+  TRANSCRIPT_PATH="$COMBINED_TRANSCRIPT"
+fi
+
 # ── Score ───────────────────────────────────────────────────────────
+# Pass transcript path as second argument (backward compatible).
 
 SCORE_OUT="$GYM_ROOT/score-result.json"
 SCORE_EXIT=0
-bun "$SCENARIO_DIR/success_criteria.js" "$GYM_WORK" > "$SCORE_OUT" 2>/dev/null || SCORE_EXIT=$?
+node "$SCENARIO_DIR/success_criteria.js" "$GYM_WORK" "$TRANSCRIPT_PATH" > "$SCORE_OUT" 2>/dev/null || SCORE_EXIT=$?
 
 # ── Build combined result ──────────────────────────────────────────
 
@@ -170,13 +191,42 @@ result = {
     "passed": score.get("passed", False),
     "checks": score.get("checks", []),
     "summary": score.get("summary", ""),
+    "duration": "$PHASE2_DURATION",
+    "session_id": "$PHASE2_SESSION",
     "phase1_session": "$PHASE1_SESSION",
     "phase2_session": "$PHASE2_SESSION",
+    "transcript_path": "$TRANSCRIPT_PATH",
     "work_dir": "$GYM_WORK",
     "gym_root": "$GYM_ROOT",
 }
 
 print(json.dumps(result, indent=2))
 PYEOF
+
+# ── Record to SQLite ──────────────────────────────────────────────
+
+GYM_RECORD="$SCRIPT_DIR/gym-record.ts"
+if [[ -f "$GYM_RECORD" ]] && command -v bun &>/dev/null && [[ -f "$SCORE_OUT" ]]; then
+  python3 -c "
+import json
+try:
+    with open('$SCORE_OUT') as f:
+        score = json.load(f)
+except:
+    score = {'passed': False, 'checks': [], 'summary': 'scoring failed'}
+result = {
+    'scenario': '$SCENARIO',
+    'agent': '$AGENT_NAME',
+    'lab_fork': '$LAB_FORK' or None,
+    'passed': score.get('passed', False),
+    'checks': score.get('checks', []),
+    'summary': score.get('summary', ''),
+    'duration': '$PHASE2_DURATION',
+    'session_id': '$PHASE2_SESSION',
+    'method': 'workflow-enforcement',
+}
+print(json.dumps(result))
+" | bun "$GYM_RECORD" 2>/dev/null || echo "⚠️  Failed to record gym result to SQLite" >&2
+fi
 
 exit $SCORE_EXIT
