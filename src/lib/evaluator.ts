@@ -304,7 +304,7 @@ export async function evaluateTask(opts: EvaluateTaskOptions): Promise<TaskEvalu
 
   // Build per-agent failure chains and transcripts
   const perAgentChains: Record<string, FailureChain[]> = {};
-  const perAgentTranscripts: string[] = [];
+  let perAgentTranscripts: string[] = [];
   let totalUsage: UsageSummary = {
     inputTokens: 0,
     outputTokens: 0,
@@ -332,11 +332,12 @@ export async function evaluateTask(opts: EvaluateTaskOptions): Promise<TaskEvalu
 
     let transcript = formatTranscript(child.messages);
     // Cap per-session transcript to prevent massive eval payloads (P110: tree-eval bloat fix)
-    // Keeps first 5KB (setup/context) + last 10KB (results/conclusions)
-    const MAX_TRANSCRIPT_CHARS = 15_000;
+    // Reduced from 15KB→10KB (P110b: optimizer cost analysis showed 30-54KB eval tasks)
+    // Keeps first 3KB (setup/context) + last 7KB (results/conclusions)
+    const MAX_TRANSCRIPT_CHARS = 10_000;
     if (transcript.length > MAX_TRANSCRIPT_CHARS) {
-      const headSize = 5_000;
-      const tailSize = 10_000;
+      const headSize = 3_000;
+      const tailSize = 7_000;
       const originalLen = transcript.length;
       transcript = transcript.slice(0, headSize) +
         `\n\n[... ${((originalLen - headSize - tailSize) / 1024).toFixed(0)}KB of transcript omitted for review brevity ...]\n\n` +
@@ -355,6 +356,24 @@ export async function evaluateTask(opts: EvaluateTaskOptions): Promise<TaskEvalu
         .filter(Boolean)
         .join("\n"),
     );
+  }
+
+  // P110b: Total transcript budget — if combined transcripts exceed 20KB,
+  // proportionally reduce each to fit. Prevents 40-50KB eval tasks when
+  // evaluating multiple sessions.
+  const MAX_TOTAL_TRANSCRIPT_CHARS = 20_000;
+  const totalTranscriptChars = perAgentTranscripts.reduce((sum, t) => sum + t.length, 0);
+  if (totalTranscriptChars > MAX_TOTAL_TRANSCRIPT_CHARS && perAgentTranscripts.length > 1) {
+    const ratio = MAX_TOTAL_TRANSCRIPT_CHARS / totalTranscriptChars;
+    perAgentTranscripts = perAgentTranscripts.map(section => {
+      const maxLen = Math.floor(section.length * ratio);
+      if (section.length <= maxLen) return section;
+      const headLen = Math.floor(maxLen * 0.4);
+      const tailLen = maxLen - headLen;
+      return section.slice(0, headLen) +
+        `\n\n[... ${((section.length - maxLen) / 1024).toFixed(0)}KB trimmed to fit total transcript budget ...]\n\n` +
+        section.slice(-tailLen);
+    });
   }
 
   // Build the evaluation prompt
