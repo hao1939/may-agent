@@ -3,7 +3,107 @@
 > 深度探索发现 — XHS社区 + 论文研究
 > 每个洞察回答: **这个对我们意味着什么?**
 
-> **归档说明**: HB#2138-HB#2145 已归档至 `library/insights-archive-kimi-2026-03-18.md`
+> **归档说明**: 
+> - HB#2138-HB#2145 已归档至 `library/insights-archive-kimi-2026-03-18.md`
+> - HB#2150-HB#2165 已归档至 `library/insights-archive-kimi-2026-03-19a.md`
+
+---
+
+## HB-2171 — AgentGym-RL: 多轮强化学习训练框架 (2026-03-19)
+**Source**: 复旦 & 字节跳动 Seed — arXiv 2509.08755  
+**Project**: https://agentgym-rl.github.io/  
+**Code**: https://github.com/WooooDyy/AgentGym-RL (641⭐)  
+**TL;DR**: 🔥🔥🔥🔥🔥 **训练范式** — 不依赖SFT，从零开始用RL训练长程决策Agent
+
+### 核心问题
+
+现有Agent训练依赖监督微调(SFT)，但：
+- SFT数据难以覆盖复杂真实场景
+- 长程决策需要在线探索，而非模仿学习
+
+### AgentGym-RL 框架
+
+**模块化架构**：
+- 环境接口层（支持Web/OS/代码/游戏等多种环境）
+- RL算法层（支持PPO/GRPO等主流算法）
+- 训练编排层（多轮交互管理）
+
+### ScalingInter-RL: 核心创新 ⭐
+
+**渐进式探索-利用平衡**训练策略：
+
+| 阶段 | 交互限制 | 策略重点 |
+|------|----------|----------|
+| **早期** | 限制交互次数 | 强调**利用** — 巩固已有能力 |
+| **后期** | 扩大交互范围 | 强调**探索** — 鼓励多样化策略 |
+
+**效果**: 避免长程任务中的策略崩溃，Agent展现更多样化行为
+
+### 实验结果
+
+在**27个任务**、多种真实环境中：
+- 训练的Agent**匹配或超越**商业模型（Claude/GPT-4）
+- 涵盖: Web浏览、代码生成、数据库操作、科学计算
+
+### 对我们意味着什么
+
+1. **技能训练新路径**: Skill不仅可手工编写，还可用RL从环境反馈中优化
+2. **渐进式训练策略**: ScalingInter-RL的阶段性思路可用于Agent能力培养
+3. **环境即基础设施**: AgentGym的环境抽象与我们的Tool Registry异曲同工
+4. **开源生态**: 完整开源（代码+数据集），可直接研究复用
+
+**Relevant to: bob** — Agent训练架构设计  
+**Relevant to: tech-lead** — RL训练系统实现参考  
+**Relevant to: scout** — 论文深度研究
+
+---
+
+## HB-2172 — MM-CondChain: 视觉深度组合推理基准 (2026-03-19)
+**Source**: 阿里 Accio Lab — arXiv 2603.12266  
+**Project**: https://accio-lab.github.io/MM-CondChain  
+**Code**: https://github.com/Accio-Lab/MM-CondChain  
+**TL;DR**: 🔥🔥🔥🔥 **基准测试** — 用程序化验证构建多层视觉推理链
+
+### 核心问题
+
+现有MLLM基准测试：
+- 单层推理为主，缺乏深度组合挑战
+- 人工标注成本高，难以规模化
+
+### MM-CondChain 设计
+
+**多层推理链结构**：
+- 每层包含基于视觉证据的组合条件
+- 必须感知细节 → 跨元素推理 → 跟踪执行路径 → 得出最终结论
+
+**VPIR合成流水线**：
+- **Verifiable Programmatic Intermediate Representation**: 每层条件可机械验证
+- **Composer**: 组装已验证层为完整指令
+- **自动负样本**: True/False路径仅差一个翻转谓词
+
+### 三大视觉领域
+
+1. **自然图像** — 物体属性关系推理
+2. **数据图表** — 结构化数据理解
+3. **GUI轨迹** — 界面操作序列推理
+
+### Leaderboard 结果
+
+**即使是顶尖模型(Gemini-3-Pro)**: 仅达 **53.33 Path F1**
+- Hard negatives 上急剧下降
+- 随深度和谓词复杂度增加性能衰减
+
+→ **深度组合推理仍是根本性挑战**
+
+### 对我们意味着什么
+
+1. **验证方法论**: VPIR的"可验证中间表示"思路可用于Agent推理验证
+2. **复杂任务分解**: 多层推理链设计与我们的Skill编排思想一致
+3. **Hard Negatives**: 测试中引入精细区分的负样本，可提高Skill可靠性评估
+4. **视觉+推理**: GUI轨迹推理直接相关于我们的Agent界面自动化能力
+
+**Relevant to: bob** — 推理验证机制设计  
+**Relevant to: scout** — 基准测试方法论研究
 
 ---
 
@@ -21,81 +121,16 @@
 ### 五种工作流模式
 
 1. **Prompt Chaining** — 序列化处理
-   - 任务分解为固定步骤，每步LLM处理上一步输出
-   - 适用: 生成→翻译→检查 类流程
-
-2. **Routing** — 智能分流
-   - 输入分类后路由到专门处理流程
-   - 适用: 客服按类型分流（一般问题/退款/技术支持）
-
-3. **Parallelization** — 并行处理
-   - **Sectioning**: 拆分为独立子任务并行
-   - **Voting**: 同一任务多次运行投票
-   - 适用: 多角度评估、提高置信度
-
+2. **Routing** — 智能分流  
+3. **Parallelization** — 并行处理（Sectioning/Voting）
 4. **Orchestrator-Workers** — 动态任务分解
-   - 中心LLM动态决定子任务（非预定义）
-   - 与Parallelization关键区别: 子任务由orchestrator根据输入动态确定
-   - 适用: 复杂编码、多源搜索分析
-
 5. **Evaluator-Optimizer** — 迭代优化循环
-   - 一个LLM生成，另一个评估反馈
-   - 适用: 文学翻译、复杂搜索（需要多轮迭代）
 
 ### Anthropic的核心建议
 
 > "最成功的实现使用**简单、可组合的模式**，而非复杂框架"
 
-- **工具设计 > Prompt工程**: SWE-bench开发中，花更多时间优化工具而非prompt
-- **格式很重要**: 避免让LLM处理需要精确计数（如diff行数）或大量转义的格式
-- **从简单开始**: 先用LLM APIs直接构建，很多模式只需几行代码
-
-### 对我们意味着什么
-
-1. **架构验证**: 我们的SOUL.md + TOOLS.md设计符合Anthropic推荐的"简单可组合"原则
-2. **模式库丰富**: 可以将这五种模式作为技能模板（Prompt Chaining → Routing → Parallelization → Orchestrator-Workers → Evaluator-Optimizer）
-3. **术语对齐**: 可以用Workflow/Agent区分来描述我们的系统设计
-4. **工具设计优先级**: 确认了我们重视ACI（Agent-Computer Interface）设计的方向正确
-
 **相关**: Claude Cookbooks (35.3k stars) — https://github.com/anthropics/claude-cookbooks
-
----
-
-## HB-2152 — Harness Engineering: OpenAI的六层AI工程框架 (2026-03-18)
-**Source**: XHS @NY Qing — "模型够聪明之后，工程师该做什么" (289赞/494收藏)  
-**Original**: OpenAI 实践 — 3工程师5个月生成100万行生产代码  
-**TL;DR**: 🔥🔥🔥🔥🔥 **核心验证** — 我们的架构方向与行业前沿完全对齐
-
-### Harness Engineering 六层架构
-
-| 层级 | 核心问题 | OpenClaw 对应机制 |
-|------|----------|-------------------|
-| **1. 持久状态** | AI"失忆" — 每次对话白纸一张 | ✅ heartbeat.md + memory.jsonl |
-| **2. 执行环境** | 给AI手和脚 — 能跑能查 | ✅ tool registry + bash execution |
-| **3. 上下文工程** | 200K窗口实际可用160K | ✅ SOUL.md 精简设计 |
-| **4. 反馈验证** | AI说做完不算，测试通过才算 | ✅ ops-receipts + verification |
-| **5. 架构约束** | 防止AI复制坏模式 | ✅ LESSONS.md + CONVENTIONS.md |
-| **6. 编排协调** | 跨会话接力 | ✅ agents.call() / agents.send() |
-
-### 关键洞察
-
-> "工具层的配置很快就能学会，真正拉开差距的是**判断力** —— 你能不能定义什么叫'好'、什么叫'做完了'。"
-
-这与 Bob 的核心理念完全共鸣：
-- **不是**构建另一个 Agent 框架
-- **而是**构建**判断力基础设施**
-
-### 社区验证
-
-- 作者使用 Claude Code 做 research 助力写作
-- 已在实践中使用 JSON 管理 feature，比写 doc 好用
-- 很多实践之前就在做，这篇文章汇总方法论
-
-### 对我们意味着什么
-
-1. **外部验证**: Harness Engineering 框架为我们的六层设计提供了行业背书
-2. **术语对齐**: 我们可以用 Harness Engineering 来描述 OpenClaw 的架构
-3. **差异化聚焦**: 别人在卷工具配置，我们在建判断体系 —— 这正是"拉开差距"的点
 
 ---
 
@@ -363,105 +398,9 @@ SkillNet的设计理念：
 **Relevant to: scout** — 竞品Copilot深度分析 Priority-2
 
 ---
-
-## HB-2164 — 微软准备起诉OpenAI: 合作伙伴关系破裂 (2026-03-18)
-**Source**: XHS @亚克力山大王 — "突发！微软准备起诉openai"  
-**TL;DR**: 🔥🔥🔥🔥 **风险信号** — 千亿级战略合作因合同文字游戏濒临破裂
-
-### 冲突核心
-
-**"Runtime Experience"文字游戏**:
-- OpenAI: "这不是API调用，这只是runtime experience"
-- 试图在合同条款上规避某些义务
-- 暗示底层TCP数据包的传输关系
-
-### Amazon的内部应对
-已发备忘录规范员工用词：
-- ✅ 可以说: "powered by" / "integrates with"
-- ❌ 不能说: "调用 ChatGPT" / "前沿模型在 AWS 上可用"
-
-### 社区共识 (评论区)
-- "马斯克被坑、微软被坑、甲骨文也被坑、软银也掉在坑里"
-- "当年宫斗大戏，Altman被赶出OpenAI，Satya给他当后盾让他回归。现在玩文字游戏太没意思"
-- "Ilya 是对的" — 多篇评论提及Ilya对Altman的质疑
-- "Altman 问题很大"
-
-### 战略影响
-
-1. **合作伙伴不可靠** — 即使是千亿级战略合作也可能因执行细节破裂
-2. **Altman模式认知** — 社区开始形成共识：擅长融资叙事，商业诚信存疑
-3. **企业风险** — 依赖OpenAPI的企业需考虑供应商风险
-4. **竞争机会** — 如果MS/OpenAI关系恶化，会给Anthropic、Google机会
-
-### 对我们的意义
-
-**风险对冲验证**: 我们的多供应商策略 (OpenAI + Anthropic + Google) 是正确选择，避免单一供应商锁定。
-
-**市场机会**: 企业客户可能对OpenAI锁定产生警惕，为替代Agent平台创造机会。
-
-**供应商评估**: 在合作伙伴选择中需考虑长期商业诚信，而非仅看技术能力。
-
-**Relevant to: bob** — 供应商风险评估  
-**Relevant to: tech-lead** — 多模型供应商策略
+*[Content archived to library/insights-archive-kimi-2026-03-19a.md]*
 
 ---
-
----
-
-## HB-2165 — Agent 5-Layer Model: agno创始人的架构框架 (2026-03-18)
-**Source**: XHS @阿阿阿盒 — "agent 其实就 5 层" (8赞/589收藏)  
-**Reference**: agno founder's "5 Layers of Building Agents"  
-**TL;DR**: 🔥🔥🔥🔥🔥 **架构标准化** — 五层模型揭示Agent框架的共性结构
-
-### The 5 Layers
-
-| 层级 | 英文名 | 核心职责 | 关键问题 |
-|------|--------|----------|----------|
-| 1 | **Model Layer** | LLM foundation | 选什么模型？ |
-| 2 | **Memory Layer** | Context retention | 记住什么？遗忘什么？ |
-| 3 | **Tool Layer** | External capabilities | 能调用什么？ |
-| 4 | **Planning Layer** | Task decomposition | 如何拆解任务？ |
-| 5 | **Execution Layer** | Action execution | 如何执行并验证？ |
-
-### 框架选型对比 (来自评论区 PigBun-AI)
-
-| 框架 | 优势 | 劣势 |
-|------|------|------|
-| **LangGraph** | 功能全面 | 学习曲线陡峭 |
-| **agno** | 轻量简洁 | 生态较小 |
-| **Claude SDK** | 体验优秀 | 闭源锁定 |
-| **Google ADK** | 大厂背书 | 文档不全，刚发布 |
-
-**社区建议**: 先用 LangChain 原生 Agent 跑通流程，理解 ReAct 循环再换框架。
-
-### 关键洞察 💡
-
-> "框架只是工具，核心是理解 Agent 的决策逻辑"
-
-### 对我们系统的意义
-
-| 五层模型 | OpenClaw 对应 |
-|----------|---------------|
-| Model Layer | 多LLM支持 (Opus/Gemini/Kimi) |
-| Memory Layer | heartbeat.md + memory.jsonl + SkillNet |
-| Tool Layer | Skill Registry + Tool system |
-| Planning Layer | Task分解 (需要加强) |
-| Execution Layer | ops-receipts + verification |
-
-**验证**: 我们的架构与行业共识的五层模型高度对齐，主要在Planning Layer可进一步投入。
-
----
-
-## HB-2166 — ByteDance DeerFlow: 企业级Agent框架 (2026-03-18)
-**Source**: XHS @云栈开源日记 — "DeerFlow：字节悄悄开源了个'真' AI 员工"  
-**GitHub**: ByteDance/DeerFlow  
-**TL;DR**: 🔥🔥🔥🔥🔥 **工程参考** — 字节跳动的LangGraph企业级Agent实践
-
-### 核心架构
-
-- **基于 LangGraph**: 复用成熟框架，专注业务层
-- **子智能体协同**: 多Agent分工处理复杂任务
-- **动态技能加载**: 按需加载，非预加载全部
 - **Docker/K8s沙箱**: 安全隔离的执行环境
 
 ### 技术亮点

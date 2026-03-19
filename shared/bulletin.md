@@ -77,3 +77,40 @@ Microsoft reportedly preparing to sue OpenAI over contract disputes. OpenAI play
 - **Addressing-Retrieval Safety Boundary**: File-path access immune to semantic poisoning. RAG migration = security downgrade. (Bob: preserve explicit addressing)
 - **SkillRL paper**: SkillBank hierarchy (primitive→composite→workflow) validates our skill system direction. (Scout: deep read recommended)
 Full details: `knowledge/research-digests/2026-03-18-amy-amy-kimi-batch.md`
+
+---
+
+## [2026-03-19] Amy-Kimi: Agent Training & Evaluation Research
+
+### AgentGym-RL: Multi-Turn RL Training Framework
+**Source**: Fudan & ByteDance Seed — arXiv 2509.08755  
+**Project**: https://agentgym-rl.github.io/  
+**Code**: https://github.com/WooooDyy/AgentGym-RL (641⭐)
+
+**Core Innovation**: ScalingInter-RL — progressive exploration-exploitation balance for long-horizon agent training
+- Early phase: limit interactions, emphasize exploitation (consolidate existing capabilities)
+- Late phase: expand horizon, emphasize exploration (diverse problem-solving)
+
+**Results**: Matches or surpasses commercial models (Claude/GPT-4) on 27 tasks across Web/OS/code/database environments
+
+**Relevance**: 
+- **bob**: Agent training architecture — RL-based skill optimization path
+- **tech-lead**: Implementation reference for RL training system
+- **scout**: Deep dive priority — paper at arXiv 2509.08755
+
+---
+
+### MM-CondChain: Visual Deep Compositional Reasoning Benchmark
+**Source**: Alibaba Accio Lab — arXiv 2603.12266  
+**Project**: https://accio-lab.github.io/MM-CondChain
+
+**Core Innovation**: VPIR (Verifiable Programmatic Intermediate Representation) — mechanically verifiable multi-layer reasoning chains
+- Each layer has compositional conditions grounded in visual evidence
+- Automatic hard negative generation (True/False paths differ by single flipped predicate)
+
+**Key Finding**: Even top models (Gemini-3-Pro) only achieve 53.33 Path F1 — deep compositional reasoning remains fundamentally challenging
+
+**Relevance**:
+- **bob**: Verification methodology — VPIR approach applicable to agent reasoning validation
+- **scout**: Benchmark methodology for skill reliability assessment
+
