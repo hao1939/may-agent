@@ -3,13 +3,21 @@
 import { writeFileSync, appendFileSync } from "node:fs";
 import { join } from "node:path";
 import {
+  promoteAgent,
+  discardAgent,
+  type GrowthConfig,
+} from "../../../src/lib/growth.js";
+import {
   runGym,
   findLabForks,
   extractScenarios,
   agentFromFork,
   formatGymResults,
+  extractFMCode,
+  extractMethod,
   type GymResult,
   PROJECT_ROOT,
+  AGENTS_ROOT,
 } from "./gym-helpers.js";
 
 export const name: string = "training-sprint";
@@ -168,34 +176,95 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
   ctx.emit({ type: "step_done", step: "sprint-gym-tests" } as any);
 
-  // Step 4: Record all results, promote winners, discard losers
-  const record = await ctx.runAgent("coach",
-    `Record sprint results and make promote/discard decisions.\n\n` +
-    `## Test Results\n${resultsText}\n\n` +
-    `## Instructions\n` +
-    `Read \`agents/coach/workspace/sprint-results.md\` for full results.\n\n` +
-    `For EACH experiment:\n` +
-    `1. Decision: PROMOTE if patched > baseline, DISCARD otherwise\n` +
-    `2. If PROMOTE: \`promote_agent({ fork: "<name>", target: "<agent>" })\`\n` +
-    `3. If DISCARD: \`discard_agent({ fork: "<name>" })\`\n` +
-    `4. Log to \`workspace/experiments.jsonl\` (one JSON line per experiment):\n` +
-    `   \`\`\`json\n` +
-    `   {"timestamp":"<ISO>","type":"sprint","error_pattern":"<FM>","agent":"<name>","method":"<method>","scenarios":[{"name":"<s>","baseline":<bool>,"patched":<bool>}],"decision":"promote|discard","reason":"<why>"}\n` +
-    `   \`\`\`\n\n` +
-    `After all decisions:\n` +
-    `5. Update \`knowledge/method-catalog.md\` with aggregate evidence\n` +
-    `6. Update \`workspace/todo.md\` — remove completed items, add follow-ups\n` +
-    `7. Clean up: verify all .lab/ forks are removed\n` +
-    `8. Report: sprint summary — N experiments, N promoted, N discarded, key learnings`
-  );
-  if (record.status === "error") {
-    return ctx.escalate("recording failed", { error: record.error });
+  // Step 4: Record results, promote winners, discard losers (pure JS — no LLM session)
+  const growthConfig: GrowthConfig = { agentsRoot: AGENTS_ROOT };
+  const decisionLines: string[] = ["# Sprint Decisions (automated — no LLM session)\n"];
+  let promoted = 0;
+  let discarded = 0;
+
+  // Group results by fork
+  const resultsByFork = new Map<string, SprintResult[]>();
+  for (const r of sprintResults) {
+    const arr = resultsByFork.get(r.fork) ?? [];
+    arr.push(r);
+    resultsByFork.set(r.fork, arr);
   }
 
+  for (const exp of experiments) {
+    const forkResults = resultsByFork.get(exp.forkName) ?? [];
+    const baselinePassed = forkResults.filter(r => r.baseline.passed).length;
+    const patchedPassed = forkResults.filter(r => r.patched.passed).length;
+    const improved = patchedPassed > baselinePassed;
+    const decision = improved ? "promote" as const : "discard" as const;
+    const reason = improved
+      ? `patched ${patchedPassed}/${forkResults.length} vs baseline ${baselinePassed}/${forkResults.length}`
+      : patchedPassed === baselinePassed
+        ? `no improvement — both ${baselinePassed}/${forkResults.length}`
+        : `regression — patched ${patchedPassed}/${forkResults.length} < baseline ${baselinePassed}/${forkResults.length}`;
+
+    // Execute promote or discard
+    try {
+      if (decision === "promote") {
+        const result = promoteAgent(growthConfig, exp.forkName, exp.agent);
+        decisionLines.push(`## ${exp.forkName} → PROMOTED`);
+        decisionLines.push(`Copied: ${result.promoted.join(", ")}. ${reason}\n`);
+        promoted++;
+      } else {
+        discardAgent(growthConfig, exp.forkName);
+        decisionLines.push(`## ${exp.forkName} → DISCARDED`);
+        decisionLines.push(`${reason}\n`);
+        discarded++;
+      }
+    } catch (err: any) {
+      decisionLines.push(`## ${exp.forkName} → ERROR`);
+      decisionLines.push(`${decision} failed: ${err.message}\n`);
+    }
+
+    // Record to experiments.jsonl
+    const diagText = planText2;  // Use plan text for FM/method extraction
+    const entry = {
+      timestamp: new Date().toISOString(),
+      type: "sprint",
+      error_pattern: extractFMCode(diagText),
+      agent: exp.agent,
+      method: extractMethod(diagText),
+      scenarios: forkResults.map(r => ({
+        name: r.scenario,
+        baseline: r.baseline.passed,
+        patched: r.patched.passed,
+      })),
+      decision,
+      reason,
+    };
+    appendFileSync(
+      join(PROJECT_ROOT, "agents/coach/workspace/experiments.jsonl"),
+      JSON.stringify(entry) + "\n",
+    );
+  }
+
+  // Handle experiments with no gym results (no scenarios matched)
+  // These weren't processed in the main loop, so discard to clean up
+  const processedForks = new Set(
+    experiments.filter(e => (resultsByFork.get(e.forkName)?.length ?? 0) > 0).map(e => e.forkName)
+  );
+  for (const exp of experiments) {
+    if (!processedForks.has(exp.forkName)) {
+      try {
+        discardAgent(growthConfig, exp.forkName);
+        decisionLines.push(`## ${exp.forkName} → DISCARDED (no test results)`);
+        discarded++;
+      } catch {
+        // Fork may already have been removed
+      }
+    }
+  }
+
+  const decisionsText = decisionLines.join("\n");
+
   return ctx.done(
-    `Training sprint completed.\n\n` +
+    `Training sprint completed: ${promoted} promoted, ${discarded} discarded.\n\n` +
     `## Plan\n${plan.lastAssistantText}\n\n` +
     `## Results\n${resultsText}\n\n` +
-    `## Decisions\n${record.lastAssistantText}`
+    `## Decisions\n${decisionsText}`
   );
 }

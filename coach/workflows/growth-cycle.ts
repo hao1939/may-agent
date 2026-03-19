@@ -1,5 +1,12 @@
 /// <reference path="../../../src/lib/workflow-defs.d.ts" />
 
+import { appendFileSync } from "node:fs";
+import { join } from "node:path";
+import {
+  promoteAgent,
+  discardAgent,
+  type GrowthConfig,
+} from "../../../src/lib/growth.js";
 import {
   runGym,
   listScenarios,
@@ -7,10 +14,14 @@ import {
   extractScenarios,
   extractAgentFromText,
   agentFromFork,
+  extractFMCode,
+  extractMethod,
   formatGymResults,
   appendSkipRecord,
   type GymResult,
   LAB_DIR,
+  AGENTS_ROOT,
+  PROJECT_ROOT,
 } from "./gym-helpers.js";
 
 export const name: string = "growth-cycle";
@@ -171,52 +182,97 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
   ctx.emit({ type: "step_done", step: "gym-test" });
 
-  // Step 4: Record and decide
-  const decidePrompt = isLearning
-    ? `Record what you learned about this method.\n\n` +
-      `## Test Results\n${gymResultsText}\n\n` +
-      `## Instructions (Learning Mode — always discard)\n` +
-      `1. Update \`agents/coach/knowledge/method-catalog.md\`:\n` +
-      `   - Update the Evidence section for this method\n` +
-      `   - Add concrete observations from your experiment\n` +
-      `   - Update "When to use" and "When NOT to use" based on what you observed\n` +
-      `   - Change Status from "untested" to "tested" with date\n` +
-      `2. Log to \`agents/coach/workspace/experiments.jsonl\`:\n` +
-      `   \`\`\`json\n` +
-      `   {"timestamp":"<ISO>","type":"learn-method","method":"<method>","agent":"<agent>","scenario":"<scenario>","baseline_passed":<bool>,"patched_passed":<bool>,"observations":"<what you learned>"}\n` +
-      `   \`\`\`\n` +
-      `3. Discard the fork: \`discard_agent({ fork: "${forkName}" })\`\n` +
-      `4. Report: updated catalog entry, key insights about this method.`
-    : `Record experiment results and decide whether to promote or discard.\n\n` +
-      `## Test Results\n${gymResultsText}\n\n` +
-      `## Instructions\n` +
-      `1. Evaluate the gym results:\n` +
-      `   - If patched agent passed MORE scenarios than baseline → PROMOTE\n` +
-      `   - If patched agent passed SAME as baseline → DISCARD (method didn't help)\n` +
-      `   - If patched agent passed FEWER → DISCARD (method made things worse)\n\n` +
-      `2. Record the experiment to \`agents/coach/workspace/experiments.jsonl\`:\n` +
-      `   Append ONE JSON line:\n` +
-      `   \`\`\`json\n` +
-      `   {"timestamp":"<ISO>","error_pattern":"<FM-X.X>","agent":"<name>","method":"<method>","scenarios":[{"name":"<s>","baseline":<bool>,"patched":<bool>}],"decision":"promote|discard","reason":"<why>"}\n` +
-      `   \`\`\`\n\n` +
-      `3. If PROMOTE:\n` +
-      `   - Run \`promote_agent({ fork: "${forkName}", target: "${agentName}" })\`\n` +
-      `   - Update \`agents/coach/knowledge/method-catalog.md\` with evidence\n\n` +
-      `4. If DISCARD:\n` +
-      `   - Run \`discard_agent({ fork: "${forkName}" })\`\n` +
-      `   - Update method-catalog.md noting this method didn\'t work for this pattern\n\n` +
-      `5. Clean up: verify .lab/${forkName} is removed.\n\n` +
-      `6. Report: decision, evidence summary, catalog updates made.`;
+  // Step 4: Record and decide (pure JS — no LLM session needed)
+  // Compare pass counts to determine promote/discard
+  const baselinePassed = baselineResults.filter(r => r.passed).length;
+  const patchedPassed = patchedResults.filter(r => r.passed).length;
+  const improved = patchedPassed > baselinePassed;
 
-  const decide = await ctx.runAgent("coach", decidePrompt);
-  if (decide.status === "error") {
-    return ctx.escalate("decision step failed", { error: decide.error });
+  // In learning mode, always discard. In fix mode, promote only if improved.
+  const decision = isLearning ? "discard" as const : (improved ? "promote" as const : "discard" as const);
+  const reason = isLearning
+    ? "learning mode — always discard after recording observations"
+    : improved
+      ? `patched passed ${patchedPassed}/${scenarios.length} vs baseline ${baselinePassed}/${scenarios.length}`
+      : patchedPassed === baselinePassed
+        ? `no improvement — patched ${patchedPassed}/${scenarios.length} same as baseline`
+        : `regression — patched ${patchedPassed}/${scenarios.length} worse than baseline ${baselinePassed}/${scenarios.length}`;
+
+  // Execute promote/discard via growth.ts pure functions
+  const growthConfig: GrowthConfig = { agentsRoot: AGENTS_ROOT };
+  let decisionReport: string;
+
+  try {
+    if (decision === "promote") {
+      const result = promoteAgent(growthConfig, forkName, agentName);
+      decisionReport = `PROMOTED "${forkName}" → "${agentName}". Copied: ${result.promoted.join(", ")}. Reason: ${reason}`;
+    } else {
+      discardAgent(growthConfig, forkName);
+      decisionReport = `DISCARDED "${forkName}". Reason: ${reason}`;
+    }
+  } catch (err: any) {
+    decisionReport = `${decision.toUpperCase()} attempted but failed: ${err.message}. Reason: ${reason}`;
+  }
+
+  // Record to experiments.jsonl
+  const diagText = step1.lastAssistantText ?? "";
+  const experimentEntry = isLearning
+    ? {
+        timestamp: new Date().toISOString(),
+        type: "learn-method",
+        method: extractMethod(diagText),
+        agent: agentName,
+        scenarios: scenarios.map(s => {
+          const b = baselineResults.find(r => r.scenario === s);
+          const p = patchedResults.find(r => r.scenario === s);
+          return { name: s, baseline: b?.passed ?? false, patched: p?.passed ?? false };
+        }),
+        decision,
+        reason,
+      }
+    : {
+        timestamp: new Date().toISOString(),
+        error_pattern: extractFMCode(diagText),
+        agent: agentName,
+        method: extractMethod(diagText),
+        scenarios: scenarios.map(s => {
+          const b = baselineResults.find(r => r.scenario === s);
+          const p = patchedResults.find(r => r.scenario === s);
+          return { name: s, baseline: b?.passed ?? false, patched: p?.passed ?? false };
+        }),
+        decision,
+        reason,
+      };
+
+  const experimentsPath = join(PROJECT_ROOT, "agents/coach/workspace/experiments.jsonl");
+  appendFileSync(experimentsPath, JSON.stringify(experimentEntry) + "\n");
+
+  // For learning mode, still use a lightweight LLM session to update method-catalog.md
+  // (this is the only part that benefits from LLM judgment — cataloging observations)
+  let catalogUpdate = "";
+  if (isLearning) {
+    const catalogPrompt =
+      `Update the method catalog with what you learned.\n\n` +
+      `## Test Results Summary\n` +
+      `Baseline passed: ${baselinePassed}/${scenarios.length}, Patched passed: ${patchedPassed}/${scenarios.length}\n` +
+      `Decision: ${decision} (${reason})\n\n` +
+      `## Instructions\n` +
+      `1. Read \`agents/coach/knowledge/method-catalog.md\`\n` +
+      `2. Find the entry for method: ${extractMethod(diagText)}\n` +
+      `3. Update its Evidence section with these concrete observations\n` +
+      `4. Change Status from "untested" to "tested" with today's date\n` +
+      `5. Report what you updated.`;
+
+    const catalogResult = await ctx.runAgent("coach", catalogPrompt);
+    catalogUpdate = catalogResult.lastAssistantText ?? "(catalog update session failed)";
   }
 
   return ctx.done(
     `Growth cycle completed (${isLearning ? "learning" : "fix"} mode).\n\n` +
     `## ${isLearning ? "Study" : "Diagnosis"}\n${step1.lastAssistantText}\n\n` +
     `## Results\n${gymResultsText}\n\n` +
-    `## Decision\n${decide.lastAssistantText}`
+    `## Decision (automated)\n${decisionReport}\n` +
+    `Recorded to experiments.jsonl.` +
+    (catalogUpdate ? `\n\n## Catalog Update\n${catalogUpdate}` : "")
   );
 }

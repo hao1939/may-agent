@@ -1,0 +1,9 @@
+{
+  "name": "convention-verify-edit",
+  "categories": ["convention-compliance"],
+  "tags": ["behavior", "verification"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}

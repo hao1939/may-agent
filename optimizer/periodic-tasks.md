@@ -9,11 +9,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If found → add specific task to workspace/todo.md.
   Latest (2026-03-18T23:19): **Memory file bloat: 129MB total, evaluator alone 29.3MB.** `readMemoryEntries()` reads entire file to get last N entries (311:1 waste ratio for evaluator). Session count: 80/12h (~160/day), improved from prior 150/4h. Session-read-guard NOT active (committed after process start, needs restart). Bob's analysis shows system stable (100% success rate, 0 tool misuse failures). Sent memory file rotation + tail-read optimization to tech-lead. Finding at `workspace/finding-memory-file-bloat.md`.
 
-- [x] **Cost outlier scan** — Last done: 2026-03-18T22:19
+- [x] **Cost outlier scan** — Last done: 2026-03-19T06:14
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-18T22:19): **Scout synthesis loop: 32 sessions/24h (10.7MB total, 342KB avg), worst session-volume agent.** arXiv had zero new content for 36+ hours. Scout produced 13 self-referential synthesis CRs (synthesizing its own prior syntheses). 782 files, 13MB in workspace alone. Root cause: heartbeat says "Don't stand down with nothing new" + initiative cadence too aggressive (3). Sent two fixes to May: (1) initiativeCadence 3→8 (req:49215e05), (2) arXiv-aware early exit in heartbeat.md (req:0857a641). Est. savings: $50-78/day. Finding at `workspace/finding-scout-synthesis-loop.md`.
+  Latest (2026-03-19T06:14): **Coach still dominant cost driver: 38 sessions in 6h, 8.7MB session data, est. $61/6h ($244/day).** 60min heartbeat interval (my earlier fix) IS active post-restart — 05:28 was last heartbeat, healthy gap. BUT each heartbeat spawns growth-cycle with 3 Opus sub-sessions (Diagnose, Fork, Record). Step 4 (Record & Decide) is 100% mechanical: compare gym baseline vs patched counts → promote or discard → append JSONL. Can be pure JS using `promoteAgent`/`discardAgent` from `src/lib/growth.ts`. Tech-lead marked my LLM-to-JS request (req:a8af4d84) COMPLETED but didn't implement it. Also: meta.json cost field always $0.000 — no usage tracking. Total system: ~$400-500/day estimated across all agents. Prompt caching still blocked on ANTHROPIC_API_KEY env var ($156/day savings potential).
 
 - [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-19T00:30
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
