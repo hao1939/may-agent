@@ -45,13 +45,13 @@ Modify the fork — one method at a time.
 Run the forked agent against gym scenarios with automated scoring.
 ```bash
 # Test the fork
-bun test/gym/gym-runner.ts <scenario> --agent coder --lab coder-v2 --timeout 3
+bash test/gym/run-gym.sh <scenario> --agent coder --lab coder-v2 --timeout 3
 
 # Baseline comparison (no --lab)
-bun test/gym/gym-runner.ts <scenario> --agent coder --timeout 3
+bash test/gym/run-gym.sh <scenario> --agent coder --timeout 3
 
 # Run all smoke-tier scenarios
-bun test/gym/gym-runner.ts --run-all --tier smoke --agent coder
+bash test/gym/run-gym.sh --run-all --tier smoke --agent coder
 ```
 
 Output is JSON: `{ passed, checks[], summary }`.
@@ -79,7 +79,7 @@ Always clean up. Don't leave dead forks.
 1. **Observe**: Coder guesses at fixes without reading errors.
 2. **Fork**: `fork_agent('coder', 'coder-strict')`.
 3. **Train**: Add "Debug Protocol" to `coder-strict/SOUL.md`.
-4. **Gym Test**: `bun test/gym/gym-runner.ts phantom-fix --agent coder --lab coder-strict`.
+4. **Gym Test**: `bash test/gym/run-gym.sh phantom-fix --agent coder --lab coder-strict`.
 5. **Compare**: Baseline fails, patched passes → promote.
 6. **Promote**: `promote_agent('coder-strict', 'coder')`.
 

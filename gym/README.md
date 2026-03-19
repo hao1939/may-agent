@@ -36,13 +36,13 @@ test/gym/                      # vitest tests and fixtures
 
 ```bash
 # Run with may-agent (default adapter)
-bun src/gym/runner.ts phantom-fix --agent coder
+bash test/gym/run-gym.sh phantom-fix --agent coder
 
 # Run with Claude Code
-bun src/gym/runner.ts phantom-fix --adapter claude-code
+bash test/gym/run-gym.sh phantom-fix --adapter claude-code
 
 # Run with any command via generic adapter
-GYM_AGENT_CMD="my-agent --task-file" bun src/gym/runner.ts phantom-fix --adapter generic
+GYM_AGENT_CMD="my-agent --task-file" bash test/gym/run-gym.sh phantom-fix --adapter generic
 
 # Via shell wrapper
 scripts/gym-run.sh phantom-fix --agent coder
@@ -52,19 +52,19 @@ scripts/gym-run.sh phantom-fix --agent coder
 
 ```bash
 # List smoke-tier scenarios
-bun src/gym/runner.ts --list --tier smoke
+bash test/gym/run-gym.sh --list --tier smoke
 
 # List all behavior scenarios
-bun src/gym/runner.ts --list --tag behavior
+bash test/gym/run-gym.sh --list --tag behavior
 
 # List by category
-bun src/gym/runner.ts --list --category bug-fixing
+bash test/gym/run-gym.sh --list --category bug-fixing
 
 # Run all smoke scenarios
-bun src/gym/runner.ts --run-all --tier smoke --agent coder
+bash test/gym/run-gym.sh --run-all --tier smoke --agent coder
 
 # Run all standard-tier scenarios (includes smoke)
-bun src/gym/runner.ts --run-all --tier standard
+bash test/gym/run-gym.sh --run-all --tier standard
 ```
 
 ### Tiers
@@ -84,7 +84,7 @@ bun src/gym/runner.ts --run-all --tier standard
 ### Via vitest (CI)
 
 ```bash
-bun vitest --run test/gym/gym.test.ts
+npx vitest --run test/gym/gym.test.ts
 ```
 
 Output is JSON: `{ passed, checks[], summary, session_path, work_dir }`.

@@ -23,7 +23,7 @@ Scout researches (Opus). Optimizer makes agents cheaper/more robust.
 - `fork_agent` → creates `agents/.lab/<fork>/`
 - `promote_agent` → copies fork config to production agent
 - `discard_agent` → cleans up failed experiments
-- Gym: `bun test/gym/gym-runner.ts <scenario> --agent <agent> --lab <fork> --timeout 3`
+- Gym: `bash test/gym/run-gym.sh <scenario> --agent <agent> --lab <fork> --timeout 3`
 
 ## MAST Failure Codes
 Use standardized codes from `agents/shared/knowledge/mast-taxonomy.md`:

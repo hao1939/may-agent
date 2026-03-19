@@ -107,16 +107,16 @@ Before deploying a new or updated skill, test it:
 
 ```bash
 # 1. Find a gym scenario that targets the skill's FM code
-bun test/gym/gym-runner.ts --list
+bash test/gym/run-gym.sh --list
 
 # 2. Run baseline (without the skill)
-bun test/gym/gym-runner.ts <scenario> --agent <agent> --timeout 3
+bash test/gym/run-gym.sh <scenario> --agent <agent> --timeout 3
 
 # 3. Fork the agent, add the skill reference to knowledge/INDEX.md
 #    (Coach can do this via fork_agent)
 
 # 4. Run the fork
-bun test/gym/gym-runner.ts <scenario> --agent <agent> --lab <fork> --timeout 3
+bash test/gym/run-gym.sh <scenario> --agent <agent> --lab <fork> --timeout 3
 
 # 5. Compare: did the skill improve the score without regressing others?
 ```
@@ -193,7 +193,7 @@ decide:
 ```bash
 # Run 3 times, collect results
 for i in 1 2 3; do
-  bun test/gym/gym-runner.ts <scenario> --agent <agent> --lab <fork> --timeout 3 \
+  bash test/gym/run-gym.sh <scenario> --agent <agent> --lab <fork> --timeout 3 \
     | tee /tmp/gym-result-$i.json
 done
 # Count passes
@@ -297,11 +297,11 @@ measurement data (step 5) is ambiguous. Not needed for small fixes.
 1. **Run both versions on the same scenario**:
    ```bash
    # Old skill (production)
-   bun test/gym/gym-runner.ts <scenario> --agent <agent> --timeout 3 \
+   bash test/gym/run-gym.sh <scenario> --agent <agent> --timeout 3 \
      | tee /tmp/ab-old.json
 
    # New skill (fork with updated skill)
-   bun test/gym/gym-runner.ts <scenario> --agent <agent> --lab <fork> --timeout 3 \
+   bash test/gym/run-gym.sh <scenario> --agent <agent> --lab <fork> --timeout 3 \
      | tee /tmp/ab-new.json
    ```
 

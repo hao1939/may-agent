@@ -16,16 +16,16 @@ situations correctly — without relying on self-judgment.
 
 ```bash
 # Baseline: test production agent
-bun test/gym/gym-runner.ts <scenario> --agent <agent-name>
+bash test/gym/run-gym.sh <scenario> --agent <agent-name>
 
 # Test a .lab/ fork (experimental changes)
-bun test/gym/gym-runner.ts <scenario> --agent <agent-name> --lab <fork-name>
+bash test/gym/run-gym.sh <scenario> --agent <agent-name> --lab <fork-name>
 
 # With timeout (default from scenario.json, fallback 5 min)
-bun test/gym/gym-runner.ts <scenario> --agent <agent-name> --timeout 3
+bash test/gym/run-gym.sh <scenario> --agent <agent-name> --timeout 3
 
 # Different adapter (claude-code, generic)
-bun test/gym/gym-runner.ts <scenario> --adapter claude-code
+bash test/gym/run-gym.sh <scenario> --adapter claude-code
 
 # Shell wrapper (same args)
 scripts/gym-run.sh <scenario> --agent <agent-name>
@@ -35,18 +35,18 @@ scripts/gym-run.sh <scenario> --agent <agent-name>
 
 ```bash
 # List all scenarios
-bun test/gym/gym-runner.ts --list
+bash test/gym/run-gym.sh --list
 
 # Filter by tier (smoke < standard < full)
-bun test/gym/gym-runner.ts --list --tier smoke
+bash test/gym/run-gym.sh --list --tier smoke
 
 # Filter by category or tag
-bun test/gym/gym-runner.ts --list --category bug-fixing
-bun test/gym/gym-runner.ts --list --tag behavior
+bash test/gym/run-gym.sh --list --category bug-fixing
+bash test/gym/run-gym.sh --list --tag behavior
 
 # Run all matching scenarios
-bun test/gym/gym-runner.ts --run-all --tier smoke --agent coder
-bun test/gym/gym-runner.ts --run-all --tier standard --agent coder
+bash test/gym/run-gym.sh --run-all --tier smoke --agent coder
+bash test/gym/run-gym.sh --run-all --tier standard --agent coder
 ```
 
 ### Tiers
@@ -109,7 +109,7 @@ The runner supports multiple agent runtimes via adapters:
 
 ```bash
 # Generic adapter example
-GYM_AGENT_CMD='my-agent --task-file' bun test/gym/gym-runner.ts phantom-fix --adapter generic
+GYM_AGENT_CMD='my-agent --task-file' bash test/gym/run-gym.sh phantom-fix --adapter generic
 ```
 
 ### How `--lab` works
@@ -237,9 +237,9 @@ Use gym to verify that optimization changes (token reduction, prompt
 compression, model swaps) don't cause behavioral regressions:
 ```bash
 # Before: baseline
-bun test/gym/gym-runner.ts phantom-fix --agent coder
+bash test/gym/run-gym.sh phantom-fix --agent coder
 # After: test optimized fork
-bun test/gym/gym-runner.ts phantom-fix --agent coder --lab coder-optimized
+bash test/gym/run-gym.sh phantom-fix --agent coder --lab coder-optimized
 ```
 
 ### Bob / Tech-Lead
@@ -249,7 +249,7 @@ format is the contribution — Coach runs the experiments.
 ### QA
 Run gym scenarios as regression tests via vitest:
 ```bash
-bun vitest --run test/gym/gym.test.ts
+npx vitest --run test/gym/gym.test.ts
 ```
 
 ## Anti-patterns

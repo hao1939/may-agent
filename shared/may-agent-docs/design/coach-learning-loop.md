@@ -71,16 +71,16 @@ multiple agent runtimes via adapters (may-agent, claude-code, generic).
 
 ```bash
 # Baseline (production agent)
-bun src/gym/runner.ts phantom-fix --agent coder --timeout 3
+bash test/gym/run-gym.sh phantom-fix --agent coder --timeout 3
 
 # Experiment (lab fork with config changes)
-bun src/gym/runner.ts phantom-fix --agent coder --lab coder-fm33-fix --timeout 3
+bash test/gym/run-gym.sh phantom-fix --agent coder --lab coder-fm33-fix --timeout 3
 
 # List available scenarios
-bun src/gym/runner.ts --list --tier smoke
+bash test/gym/run-gym.sh --list --tier smoke
 
 # Batch run
-bun src/gym/runner.ts --run-all --tier standard --agent coder
+bash test/gym/run-gym.sh --run-all --tier standard --agent coder
 ```
 
 The runner copies the scenario environment to a temp dir, runs the agent
