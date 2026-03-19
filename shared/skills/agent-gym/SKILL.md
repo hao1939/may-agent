@@ -2,7 +2,7 @@
 
 **Status**: Active
 **Owner**: Coach (primary), shared with all agents
-**Location**: `src/gym/runner.ts`, `agents/gym/scenarios/`, `test/gym/`
+**Location**: `test/gym/gym-runner.ts`, `test/gym/scenarios/`, `test/gym/`
 
 ## What it is
 
@@ -16,16 +16,16 @@ situations correctly — without relying on self-judgment.
 
 ```bash
 # Baseline: test production agent
-bun src/gym/runner.ts <scenario> --agent <agent-name>
+bun test/gym/gym-runner.ts <scenario> --agent <agent-name>
 
 # Test a .lab/ fork (experimental changes)
-bun src/gym/runner.ts <scenario> --agent <agent-name> --lab <fork-name>
+bun test/gym/gym-runner.ts <scenario> --agent <agent-name> --lab <fork-name>
 
 # With timeout (default from scenario.json, fallback 5 min)
-bun src/gym/runner.ts <scenario> --agent <agent-name> --timeout 3
+bun test/gym/gym-runner.ts <scenario> --agent <agent-name> --timeout 3
 
 # Different adapter (claude-code, generic)
-bun src/gym/runner.ts <scenario> --adapter claude-code
+bun test/gym/gym-runner.ts <scenario> --adapter claude-code
 
 # Shell wrapper (same args)
 scripts/gym-run.sh <scenario> --agent <agent-name>
@@ -35,18 +35,18 @@ scripts/gym-run.sh <scenario> --agent <agent-name>
 
 ```bash
 # List all scenarios
-bun src/gym/runner.ts --list
+bun test/gym/gym-runner.ts --list
 
 # Filter by tier (smoke < standard < full)
-bun src/gym/runner.ts --list --tier smoke
+bun test/gym/gym-runner.ts --list --tier smoke
 
 # Filter by category or tag
-bun src/gym/runner.ts --list --category bug-fixing
-bun src/gym/runner.ts --list --tag behavior
+bun test/gym/gym-runner.ts --list --category bug-fixing
+bun test/gym/gym-runner.ts --list --tag behavior
 
 # Run all matching scenarios
-bun src/gym/runner.ts --run-all --tier smoke --agent coder
-bun src/gym/runner.ts --run-all --tier standard --agent coder
+bun test/gym/gym-runner.ts --run-all --tier smoke --agent coder
+bun test/gym/gym-runner.ts --run-all --tier standard --agent coder
 ```
 
 ### Tiers
@@ -81,9 +81,21 @@ JSON to stdout:
 ```
 
 Key fields:
-- `passed` — overall pass/fail (boolean)
-- `checks[]` — individual scorer checks with detail
+- `passed` — overall pass/fail (boolean), determined by mechanical checks only
+- `checks[]` — individual mechanical scorer checks with detail
+- `judgments[]` — LLM judge verdicts per convention (if `judge_criteria.md` exists)
 - `gym_root` — temp dir preserved for transcript analysis; clean up when done
+
+### Two-layer scoring
+
+Scenarios have two scoring layers:
+
+1. **Mechanical** (`success_criteria.js`): Deterministic file/tool checks. Gates pass/fail.
+2. **LLM Judge** (`judge_criteria.md`, optional): A judge agent evaluates the transcript against convention rubrics. Advisory signal — doesn't affect `passed`.
+
+The judge agent (`agents/judge/`) runs after the mechanical scorer. It reads the transcript, checks each convention in the rubric, and outputs per-convention verdicts with evidence. Judge results appear in `judgments[]`.
+
+When a scenario has `judge_criteria.md`, the runner automatically invokes the judge. No extra flags needed.
 
 ### Adapters
 
@@ -97,7 +109,7 @@ The runner supports multiple agent runtimes via adapters:
 
 ```bash
 # Generic adapter example
-GYM_AGENT_CMD='my-agent --task-file' bun src/gym/runner.ts phantom-fix --adapter generic
+GYM_AGENT_CMD='my-agent --task-file' bun test/gym/gym-runner.ts phantom-fix --adapter generic
 ```
 
 ### How `--lab` works
@@ -112,7 +124,7 @@ This means the fork only needs to contain the files that differ from production.
 
 ## Available scenarios
 
-Located in `agents/gym/scenarios/`. Each has a `scenario.json` with metadata
+Located in `test/gym/scenarios/`. Each has a `scenario.json` with metadata
 (categories, tags, tier, timeout, workflow flag).
 
 | Scenario | Categories | Tests |
@@ -143,7 +155,7 @@ decompose the task into explicit phases. These are `tier: full` only.
 ## Creating a scenario
 
 ```
-agents/gym/scenarios/<name>/
+test/gym/scenarios/<name>/
 ├── task.md              # The prompt the agent receives
 ├── environment/         # Files the agent works on (copied to temp dir)
 │   ├── app.js
@@ -225,9 +237,9 @@ Use gym to verify that optimization changes (token reduction, prompt
 compression, model swaps) don't cause behavioral regressions:
 ```bash
 # Before: baseline
-bun src/gym/runner.ts phantom-fix --agent coder
+bun test/gym/gym-runner.ts phantom-fix --agent coder
 # After: test optimized fork
-bun src/gym/runner.ts phantom-fix --agent coder --lab coder-optimized
+bun test/gym/gym-runner.ts phantom-fix --agent coder --lab coder-optimized
 ```
 
 ### Bob / Tech-Lead

@@ -12,7 +12,7 @@ import { join, resolve } from "node:path";
 
 export const PROJECT_ROOT = resolve(join(import.meta.dirname ?? ".", "../../.."));
 export const AGENTS_ROOT = resolve(process.env["AGENTS_ROOT"] || join(PROJECT_ROOT, "agents"));
-export const SCENARIOS_DIR = join(AGENTS_ROOT, "gym/scenarios");
+export const SCENARIOS_DIR = join(PROJECT_ROOT, "test/gym/scenarios");
 export const LAB_DIR = join(AGENTS_ROOT, ".lab");
 
 export interface GymResult {

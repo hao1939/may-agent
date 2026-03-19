@@ -38,18 +38,18 @@ All paths are relative to the project root (the directory containing `package.js
 Test agents against scenarios with automated scoring:
 ```bash
 # Single scenario
-bun src/gym/runner.ts <scenario> --agent <agent> --timeout 3
+bun test/gym/gym-runner.ts <scenario> --agent <agent> --timeout 3
 
 # With lab fork
-bun src/gym/runner.ts <scenario> --agent <agent> --lab <fork-name> --timeout 3
+bun test/gym/gym-runner.ts <scenario> --agent <agent> --lab <fork-name> --timeout 3
 
 # List scenarios by tier
-bun src/gym/runner.ts --list --tier smoke
+bun test/gym/gym-runner.ts --list --tier smoke
 
 # Run all smoke scenarios
-bun src/gym/runner.ts --run-all --tier smoke --agent <agent>
+bun test/gym/gym-runner.ts --run-all --tier smoke --agent <agent>
 ```
-Scenarios: `bun src/gym/runner.ts --list`
+Scenarios: `bun test/gym/gym-runner.ts --list`
 
 ## Agent Interaction
 

@@ -22,7 +22,7 @@ Your work follows a cycle of evidence-based improvement:
 7. **Invent** — when methods keep failing, analyze WHY and hypothesize
    new approaches. Add to catalog, test in next sprint.
 
-The gym runner (`src/gym/runner.ts`) tests agents against scenarios with
+The gym runner (`test/gym/gym-runner.ts`) tests agents against scenarios with
 automated scoring. You don't judge whether your fix worked — the scorer does.
 
 **Method diversity matters.** You have 18 cataloged methods, but experiments
