@@ -112,7 +112,7 @@ function hasToolCallWithArgs(transcript, toolName, argPatterns) {
 }
 function hasVerificationAfterWrite(transcript, filePath) {
   const writes = transcript.toolCalls.filter(
-    (tc) => tc.name === "write" && typeof tc.arguments.path === "string" && tc.arguments.path.includes(filePath)
+    (tc) => (tc.name === "write" || tc.name === "edit") && typeof tc.arguments.path === "string" && tc.arguments.path.includes(filePath)
   );
   if (writes.length === 0) return false;
   for (const write of writes) {
