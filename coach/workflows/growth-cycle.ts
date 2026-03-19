@@ -80,8 +80,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   ctx.emit({ type: "step_start", step: "ceiling-gate" });
 
   const diagnosisText = step1.lastAssistantText ?? "";
-  const gateScenarios = extractScenarios(diagnosisText);
-  const gateAgent = extractAgentFromText(diagnosisText);
+  const gateScenarios = extractScenarios(ctx.task + "\n" + diagnosisText);
+  const gateAgent = extractAgentFromText(ctx.task + "\n" + diagnosisText);
 
   if (gateScenarios.length === 0 || !gateAgent) {
     // Can't run gate without scenarios/agent — fall through to fork step
@@ -156,8 +156,12 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   // Extract agent name from the fork
   const agentName = agentFromFork(forkName);
 
-  // Extract scenarios from Step 1 + patch output
+  // Extract scenarios from task description + Step 1 + patch output.
+  // Include ctx.task so the target scenario from the original request is always found —
+  // previous bug: LLM outputs sometimes omit the scenario name, causing fallback to
+  // alphabetically-first scenarios (which are unrelated to the target).
   const combinedText =
+    ctx.task + "\n" +
     (step1.lastAssistantText ?? "") + "\n" +
     patchText;
   let scenarios = extractScenarios(combinedText);
