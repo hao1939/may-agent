@@ -11,3 +11,4 @@ temp-*.cjs
 tsconfig.tsbuildinfo
 bundle/
 test/gym/stats.db
+test/gym/.gym-runner-bundle.mjs

@@ -5,9 +5,9 @@
  * Uses adapters to invoke different agent runtimes (may-agent, claude-code, generic).
  *
  * Usage:
- *   bun test/gym/gym-runner.ts <scenario> [options]
- *   bun test/gym/gym-runner.ts --list [--tier <t>] [--category <c>] [--tag <t>]
- *   bun test/gym/gym-runner.ts --run-all [--tier <t>] [--category <c>] [--tag <t>]
+ *   test/gym/run-gym.sh <scenario> [options]
+ *   test/gym/run-gym.sh --list [--tier <t>] [--category <c>] [--tag <t>]
+ *   test/gym/run-gym.sh --run-all [--tier <t>] [--category <c>] [--tag <t>]
  *
  * Options:
  *   --adapter <name>      may-agent (default), claude-code, generic
