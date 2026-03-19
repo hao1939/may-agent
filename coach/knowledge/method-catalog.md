@@ -1038,9 +1038,11 @@ types AND five agent instances across four models (amy/gemini, may/gemini,
 coder/claude, bob/gemini3pro, amy-kimi/kimi).
 cascading-error-workflow untestable due to agent-difficulty mismatch
 (amy too strong, coder blocked from oneshot runtime).
-Bob FM-3.3 skip-verification experiment (2026-03-19): INCONCLUSIVE — all 8 gym
-runs failed with JSON parse infra error (0 checks, 0s duration). No behavioral
-data. Retry needed with working gym infrastructure.**
+Bob FM-3.3 skip-verification experiment (2026-03-19): INCONCLUSIVE — 2 attempts,
+both infra failures. Attempt 1: all 8 gym runs failed with JSON parse error.
+Attempt 2: all 6 gym runs failed with 'bun: not found' (runtime missing).
+Zero behavioral data across both attempts. Fork bob-fm33-skip-ver DISCARDED
+after 2nd infra failure. Retry requires gym infrastructure fix (bun runtime).**
 
 **Sprint 4 expansion (exp-076–091, 2026-03-18–19):**
 New agents tested: amy-kimi (kimi model), may (gemini):
