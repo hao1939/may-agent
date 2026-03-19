@@ -106,9 +106,12 @@ mechanical enforcement (layer 1) reliably changes behavior.
 
 ### Confirmed Paths
 
-1. **🏆 Workflow enforcement (#15) — CONFIRMED EFFECTIVE.** 100% pass rate (22/22)
-   across 5 scenarios. p < 0.000001 vs baseline. Mechanically splitting work into
-   separate sessions forces review behavior the model naturally skips.
+1. **🏆 Workflow enforcement (#15) — CONFIRMED EFFECTIVE.** 32/34 pass rate (94.1%)
+   across 9 scenario types, 4 agents (amy, may, coder, bob). p < 0.000001 vs baseline.
+   Mechanically splitting work into separate sessions forces review behavior the model
+   naturally skips. Fixes BOTH sycophancy AND refusal (opposite failure modes) with
+   the same classify→act workflow. Sprint 4 added 6/6 new passes (amy×3, may×3).
+   Only 2 non-passes are bob artifact-skipping (6/7 behavioral).
 
 ### Active Paths (ranked)
 
