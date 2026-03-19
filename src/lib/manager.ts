@@ -23,11 +23,11 @@ import {
   STUCK_TERMINATE_THRESHOLD,
 } from "./manager-utils.js";
 import type { RegisteredAgent, ActiveSession, RunOptions, SubagentManagerOptions } from "./manager-utils.js";
-// TODO(pi-agent-core): Re-enable once Agent supports beforeToolCall hook:
-// import { createFinishGuard } from "./tools/finish-guard.js";
-// import { createReadDedupGuard } from "./tools/read-dedup-guard.js";
-// import { createSessionReadGuard } from "./tools/session-read-guard.js";
-// import { composeGuards } from "./tools/compose-guards.js";
+import { createFinishGuard } from "./tools/finish-guard.js";
+import { createReadDedupGuard } from "./tools/read-dedup-guard.js";
+import { createSessionReadGuard } from "./tools/session-read-guard.js";
+import { createScrapeDedupGuard } from "./tools/scrape-dedup-guard.js";
+import { composeGuards } from "./tools/compose-guards.js";
 
 // Re-export everything from manager-utils so existing import paths don't break
 export {
@@ -982,12 +982,21 @@ export class SubagentManager {
       initialState: {
         systemPrompt: this.resolveSystemPrompt(def),
         model: def.model,
-        tools: wrapToolsWithReceipts(def.tools, sessionId, { activeSessions: this.activeSessions, persistDir: this.registry.persistDir, projectRoot: this._projectRoot, concurrencyGate: this._concurrencyGate }),
+        tools: wrapToolsWithReceipts(def.tools, sessionId, {
+          activeSessions: this.activeSessions,
+          persistDir: this.registry.persistDir,
+          projectRoot: this._projectRoot,
+          concurrencyGate: this._concurrencyGate,
+          beforeToolCall: composeGuards(
+            createFinishGuard(),
+            createReadDedupGuard(),
+            createSessionReadGuard(),
+            createScrapeDedupGuard(),
+          ),
+        }),
       },
       transformContext: compactionTransform,
       getApiKey: def.apiKey ? () => def.apiKey : undefined,
-      // TODO(pi-agent-core): Re-enable once Agent supports beforeToolCall hook:
-      // beforeToolCall: composeGuards(createFinishGuard(), createReadDedupGuard(), createSessionReadGuard()),
     });
 
     const session: ActiveSession = {
@@ -1291,13 +1300,22 @@ export class SubagentManager {
       initialState: {
         systemPrompt,
         model: def.model,
-        tools: wrapToolsWithReceipts(def.tools, sessionId, { activeSessions: this.activeSessions, persistDir: this.registry.persistDir, projectRoot: this._projectRoot, concurrencyGate: this._concurrencyGate }),
+        tools: wrapToolsWithReceipts(def.tools, sessionId, {
+          activeSessions: this.activeSessions,
+          persistDir: this.registry.persistDir,
+          projectRoot: this._projectRoot,
+          concurrencyGate: this._concurrencyGate,
+          beforeToolCall: composeGuards(
+            createFinishGuard(),
+            createReadDedupGuard(),
+            createSessionReadGuard(),
+            createScrapeDedupGuard(),
+          ),
+        }),
         messages: savedMessages,
       },
       transformContext: compactionTransform,
       getApiKey: def.apiKey ? () => def.apiKey : undefined,
-      // TODO(pi-agent-core): Re-enable once Agent supports beforeToolCall hook:
-      // beforeToolCall: composeGuards(createFinishGuard(), createReadDedupGuard(), createSessionReadGuard()),
     });
 
     // Repair broken message sequences (mid-tool-call crash).

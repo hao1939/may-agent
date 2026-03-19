@@ -24,6 +24,7 @@ import {
 import type { ActiveSession } from "./manager-utils.js";
 import { sessionDir, readSessionMeta, writeSessionMeta } from "./persistence.js";
 import { ConcurrencyGate, HIGH_IMPACT_TOOLS } from "./concurrency-gate.js";
+import type { BeforeToolCallContext, BeforeToolCallResult } from "./tools/compose-guards.js";
 
 /** Runtime-generated HMAC secret for tool receipt signing.
  *  Generated once per process — receipts are verifiable within the same runtime.
@@ -116,6 +117,8 @@ export interface ReceiptWrapContext {
   projectRoot: string;
   /** P162: Optional concurrency gate for high-impact tools. */
   concurrencyGate?: ConcurrencyGate;
+  /** Composed beforeToolCall guard — runs before tool.execute(). */
+  beforeToolCall?: (context: BeforeToolCallContext, signal?: AbortSignal) => Promise<BeforeToolCallResult | undefined>;
 }
 
 /**
@@ -147,6 +150,46 @@ export function wrapToolsWithReceipts(
       signal?: AbortSignal,
       onUpdate?: any,
     ): Promise<AgentToolResult<any>> => {
+      let guardWarning: string | undefined;
+
+      // ── beforeToolCall guard (finish-guard, read-dedup, session-read, scrape-dedup) ──
+      if (ctx.beforeToolCall) {
+        const session = ctx.activeSessions.get(sessionId);
+        const guardCtx: BeforeToolCallContext = {
+          toolCall: { name: tool.name, id: toolCallId },
+          args: params ?? {},
+          context: {
+            messages: session?.agent?.state?.messages ?? [],
+          },
+        };
+        try {
+          const guardResult = await ctx.beforeToolCall(guardCtx, signal);
+          if (guardResult?.block) {
+            // Guard blocked — return reason as tool error without executing
+            const blockedText = guardResult.reason;
+            const signed = signToolOutput(blockedText);
+            const sigTag = signed.slice(blockedText.length);
+            // Count blocked calls for heartbeat detection
+            const blockedSession = ctx.activeSessions.get(sessionId);
+            if (blockedSession) blockedSession.totalToolCalls++;
+            return {
+              content: [
+                { type: "text" as const, text: `<tool_output name="${tool.name}">` },
+                { type: "text" as const, text: blockedText },
+                { type: "text" as const, text: sigTag },
+                { type: "text" as const, text: "</tool_output>" },
+              ],
+              details: undefined,
+            };
+          }
+          if (guardResult) {
+            guardWarning = guardResult.reason;
+          }
+        } catch {
+          /* guard errors are non-fatal — never block tool execution due to guard bugs */
+        }
+      }
+
       // P85: Operation budget enforcement — check before executing state-changing tools
       const isStateChanging = STATE_CHANGING_TOOLS.has(tool.name);
       if (isStateChanging) {
@@ -304,6 +347,11 @@ export function wrapToolsWithReceipts(
       const contentBlocks = [openTag, ...result.content, receiptSuffix];
       if (critiqueBlock) contentBlocks.push(critiqueBlock);
       if (costBlock) contentBlocks.push(costBlock);
+
+      // Inject guard warning if present (non-blocking)
+      if (guardWarning) {
+        contentBlocks.push({ type: "text" as const, text: `\n\n${guardWarning}` });
+      }
 
       // Turn Budget Warning: inject once when turn count reaches threshold
       if (session && session.turnBudgetWarningAt > 0 && !session.turnBudgetWarned && session.turnCount >= session.turnBudgetWarningAt) {
