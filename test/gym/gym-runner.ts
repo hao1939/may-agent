@@ -109,7 +109,7 @@ interface AdapterOpts {
 // ── Paths ──────────────────────────────────────────────────────────────
 
 const PROJECT_ROOT = resolve(import.meta.dirname, "../..");
-const SCENARIOS_DIR = join(PROJECT_ROOT, "test/gym/scenarios");
+const SCENARIOS_DIR = join(PROJECT_ROOT, "agents/gym/scenarios");
 
 // ── Adapter: may-agent ─────────────────────────────────────────────────
 

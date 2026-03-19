@@ -1,9 +1,0 @@
-{
-  "name": "premature-optimization-workflow",
-  "categories": ["restraint"],
-  "tags": ["ability", "workflow"],
-  "tier": "full",
-  "timeout": 5,
-  "agent_type": "coder",
-  "workflow": true
-}

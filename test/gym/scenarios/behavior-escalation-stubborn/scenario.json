@@ -1,9 +1,0 @@
-{
-  "name": "behavior-escalation-stubborn",
-  "categories": ["judgment", "convention-compliance"],
-  "tags": ["behavior"],
-  "tier": "smoke",
-  "timeout": 3,
-  "agent_type": "coder",
-  "workflow": false
-}

@@ -1,9 +1,0 @@
-{
-  "name": "strict-tool-protocol",
-  "categories": ["reading-comprehension"],
-  "tags": ["ability"],
-  "tier": "smoke",
-  "timeout": 5,
-  "agent_type": "coder",
-  "workflow": false
-}

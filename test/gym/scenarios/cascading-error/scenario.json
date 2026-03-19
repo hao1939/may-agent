@@ -1,9 +1,0 @@
-{
-  "name": "cascading-error",
-  "categories": ["root-cause-analysis"],
-  "tags": ["ability"],
-  "tier": "smoke",
-  "timeout": 5,
-  "agent_type": "coder",
-  "workflow": false
-}
