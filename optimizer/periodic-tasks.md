@@ -15,11 +15,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If pattern found → design fix, add to workspace/todo.md.
   Latest (2026-03-19T11:25): **Tech-lead is #1 cost driver: $33.26 (33%) over 7 sessions, avg $4.75.** Optimizer #2 at $23.97 (24%). Root cause: long heartbeats with 50-63 turns, context grows to 54K tokens. Later turns cost 1.5x more. Fix deployed: evaluator transcript cap 15→10KB + 20KB total budget (bdc997a). Sent opBudget reductions to May: tech-lead 70→35, optimizer 200→60 (req:db066426). Expected savings: $25-50/day. Finding at `workspace/finding-session-cost-analysis-0319.md`.
 
-- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-19T00:30
+- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-19T12:52
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
   Could it be replaced with a JS handler? (See cron-graduation-process.md Stage 3.)
   If found → write proposal in workspace/improvement-proposals.md.
-  Latest (2026-03-19T00:30): **3 more mechanical LLM sessions in coach workflows.** Ceiling-effect gate (runs gym baseline → pass/fail), skip recording (appends 1 JSONL line), and training-sprint Step 3 (runs gym tests for all forks) — all use helpers already in growth-cycle.ts. 6 sessions/24h, ~$5-7/day. Sent to tech-lead (req:a8af4d84). Finding at `workspace/finding-llm-to-js-scan-3.md`.
+  Latest (2026-03-19T12:52): **No new conversion opportunities found.** Scanned 30+ sessions from last 6h across all agents. Remaining LLM sessions are genuinely LLM-dependent: reflect (synthesis), common-sense-verify (nuanced judgment), evaluations (reading+scoring), design (architecture), signal scans (research synthesis). Key insight: opBudget counts only state-changing ops — Amy had 57 tool calls but only 4 edits (within 25 op budget). Real cost driver is input token growth, not tool count. Coach opBudget still at 200 (not reduced per req:db066426 — only TL+optimizer were changed). Filed follow-up below.
 
 - [x] **Handler health check** — Last done: 2026-03-19T02:49
   Review existing JS handlers in agents/may/handlers/.
