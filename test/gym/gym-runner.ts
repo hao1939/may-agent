@@ -56,6 +56,14 @@ interface ScoreCheck {
   code?: string;
 }
 
+interface Judgment {
+  convention: string;
+  name: string;
+  verdict: "pass" | "fail" | "partial";
+  evidence: string;
+  note: string;
+}
+
 interface ScoreResult {
   passed: boolean;
   checks: ScoreCheck[];
@@ -70,6 +78,7 @@ interface RunResult {
   workflow: boolean;
   passed: boolean;
   checks: ScoreCheck[];
+  judgments: Judgment[];
   summary: string;
   agent_status: string;
   duration_ms: number;
@@ -436,6 +445,124 @@ function scoreScenario(scenarioDir: string, workDir: string): ScoreResult {
   }
 }
 
+// ── LLM Judge ──────────────────────────────────────────────────────────
+
+/**
+ * Run the judge agent to evaluate convention compliance.
+ *
+ * The judge agent reads the transcript + rubric and outputs structured
+ * verdicts per convention. Only runs if the scenario has a judge_criteria.md.
+ *
+ * Returns empty array if no judge criteria or if judging fails.
+ */
+function judgeScenario(
+  scenarioDir: string,
+  workDir: string,
+  gymRoot: string,
+  task: string,
+): Judgment[] {
+  const rubricPath = join(scenarioDir, "judge_criteria.md");
+  if (!existsSync(rubricPath)) return [];
+
+  const transcriptPath = join(workDir, "transcript.jsonl");
+  if (!existsSync(transcriptPath)) return [];
+
+  const rubric = readFileSync(rubricPath, "utf-8");
+  const verdictPath = join(gymRoot, "judge-verdict.json");
+
+  // Build the judge task: include the rubric, point to files
+  const judgeTask = [
+    "Evaluate this agent session for convention compliance.\n",
+    "## Rubric\n",
+    rubric,
+    "\n## Task the agent was given\n",
+    task,
+    `\n## Files to read\n`,
+    `- Transcript: ${transcriptPath}`,
+    `- Conventions: ${join(PROJECT_ROOT, "agents/shared/CONVENTIONS.md")}`,
+    `- Common sense: ${join(PROJECT_ROOT, "agents/shared/common-sense.md")}`,
+    `- Lessons: ${join(PROJECT_ROOT, "agents/shared/LESSONS.md")}`,
+    `\nWrite your verdict JSON to: ${verdictPath}`,
+    `\nThen call finish() with status "success".`,
+  ].join("\n");
+
+  const judgeTaskFile = join(gymRoot, "judge-task.md");
+  writeFileSync(judgeTaskFile, judgeTask);
+
+  // Resolve judge agent
+  const agentsRoot = join(PROJECT_ROOT, "agents");
+  if (!existsSync(join(agentsRoot, "judge", "agent.json"))) {
+    console.error("  Judge agent not found at agents/judge/ — skipping LLM judge");
+    return [];
+  }
+
+  // Resolve may binary (same logic as may-agent adapter)
+  let mayCmd: string[];
+  const envBin = process.env["MAY_BIN"];
+  if (envBin) {
+    mayCmd = [envBin];
+  } else {
+    const binary = join(PROJECT_ROOT, "bundle/may-agent");
+    if (existsSync(binary) && !isStale(binary)) {
+      mayCmd = [binary];
+    } else {
+      mayCmd = [join(PROJECT_ROOT, "node_modules/.bin/vite-node"), join(PROJECT_ROOT, "src/app/may.ts")];
+    }
+  }
+
+  const judgeState = join(gymRoot, "judge-state");
+  mkdirSync(judgeState, { recursive: true });
+
+  const cmdParts = mayCmd.map(s => `"${s}"`).join(" ");
+  const fullCmd = `${cmdParts} --oneshot --agent "judge" --task-file "${judgeTaskFile}" --timeout=3`;
+
+  try {
+    execSync(fullCmd, {
+      env: {
+        ...process.env,
+        AGENTS_ROOT: agentsRoot,
+        STATE_DIR: judgeState,
+      },
+      timeout: 3 * 60 * 1000 + 15000,
+      encoding: "utf-8",
+      stdio: ["pipe", "pipe", "pipe"],
+      maxBuffer: 10 * 1024 * 1024,
+    });
+  } catch {
+    // Judge may "fail" (non-zero exit) but still produce output
+  }
+
+  // Read verdict
+  if (!existsSync(verdictPath)) {
+    console.error("  Judge produced no verdict file");
+    return [];
+  }
+
+  try {
+    const verdict = JSON.parse(readFileSync(verdictPath, "utf-8"));
+    const judgments: Judgment[] = (verdict.judgments || []).map((j: Record<string, unknown>) => ({
+      convention: String(j.convention || ""),
+      name: String(j.name || ""),
+      verdict: String(j.verdict || "unknown") as Judgment["verdict"],
+      evidence: String(j.evidence || ""),
+      note: String(j.note || ""),
+    }));
+    return judgments;
+  } catch (err) {
+    console.error(`  Failed to parse judge verdict: ${err}`);
+    return [];
+  }
+}
+
+function isStale(binaryPath: string): boolean {
+  try {
+    const binaryStat = statSync(binaryPath);
+    return findNewerFile(join(PROJECT_ROOT, "src"), binaryStat.mtimeMs) !== null;
+  } catch {
+    return false;
+  }
+}
+
 // ── Single scenario run ────────────────────────────────────────────────
 
 function runScenario(
@@ -504,8 +631,23 @@ function runScenario(
   // Export transcript so scorers can inspect agent behavior
   exportTranscript(lastResult.sessionPath, workDir);
 
-  // Score
+  // Mechanical score
   const score = scoreScenario(scenarioDir, workDir);
+
+  // LLM judge (if rubric exists)
+  const taskContent = readFileSync(join(scenarioDir, "task.md"), "utf-8");
+  let judgments: Judgment[] = [];
+  if (existsSync(join(scenarioDir, "judge_criteria.md"))) {
+    console.error("  Running LLM judge...");
+    judgments = judgeScenario(scenarioDir, workDir, gymRoot, taskContent);
+    const jPass = judgments.filter(j => j.verdict === "pass").length;
+    console.error(`  Judge: ${jPass}/${judgments.length} conventions passed`);
+  }
+
+  // Summary combines both layers
+  const judgeSummary = judgments.length > 0
+    ? ` | judge: ${judgments.filter(j => j.verdict === "pass").length}/${judgments.length}`
+    : "";
 
   return {
     scenario: scenarioName,
@@ -515,7 +657,8 @@ function runScenario(
     workflow: isWorkflow,
     passed: score.passed,
     checks: score.checks,
-    summary: score.summary,
+    judgments,
+    summary: score.summary + judgeSummary,
     agent_status: lastResult.status,
     duration_ms: durationMs,
     session_id: lastResult.sessionId,
@@ -648,6 +791,7 @@ function main() {
           workflow: false,
           passed: false,
           checks: [],
+          judgments: [],
           summary: `Error: ${err}`,
           agent_status: "error",
           duration_ms: 0,
