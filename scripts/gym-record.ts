@@ -43,6 +43,8 @@ CREATE TABLE IF NOT EXISTS checks (
   check_name TEXT NOT NULL,
   passed INTEGER NOT NULL DEFAULT 0,
   detail TEXT,
+  category TEXT,
+  code TEXT,
   FOREIGN KEY(run_id) REFERENCES runs(id) ON DELETE CASCADE
 );
 
@@ -79,7 +81,7 @@ interface GymResult {
   agent: string;
   lab_fork?: string | null;
   passed: boolean;
-  checks?: Array<{ name: string; passed: boolean; detail?: string }>;
+  checks?: Array<{ name: string; passed: boolean; detail?: string; category?: string; code?: string }>;
   summary?: string;
   agent_status?: string;
   duration?: string;
@@ -125,12 +127,12 @@ export function recordRun(db: Database, result: GymResult): number {
   // Insert individual checks
   if (result.checks && result.checks.length > 0) {
     const insertCheck = db.query(`
-      INSERT INTO checks (run_id, check_name, passed, detail)
-      VALUES (?, ?, ?, ?)
+      INSERT INTO checks (run_id, check_name, passed, detail, category, code)
+      VALUES (?, ?, ?, ?, ?, ?)
     `);
 
     for (const check of result.checks) {
-      insertCheck.run(runId, check.name, check.passed ? 1 : 0, check.detail || null);
+      insertCheck.run(runId, check.name, check.passed ? 1 : 0, check.detail || null, check.category || null, check.code || null);
     }
   }
 
