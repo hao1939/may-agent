@@ -398,3 +398,30 @@ Wednesday arXiv cs.MA batch still not posted (checked multiple times). Tuesday b
 - 1 new cross-reference: CR#245 (total: 245)
 - ~26KB new analysis
 - Citation graph mining methodology validated — Semantic Scholar API as systematic discovery tool
+
+---
+
+### 2026-03-19 Session (s_1773895023024_18) — Thursday Batch Deep-Dives: Kumiho, VeriGrey, TerraLingua
+
+**Focus:** After multiple compaction-interrupted attempts, finally produced deep-dive files for the top 3 papers from the Thursday March 19 batch. This batch was extraordinarily gap-matched — 6 papers directly hit CR#237 gaps.
+
+**New outputs (3 total):**
+1. **DD#434: Kumiho — Graph-Native Cognitive Memory** (2603.17244, ★★★★★ CRITICAL). First AGM-compliant belief revision for agent memory. 97.5% adversarial refusal, 93.3% LoCoMo-Plus SOTA. Directly fills Gap 4 (Memory Adversarial Robustness). Resolves Memory Gating Paradox (CR#245) via logical consistency criteria instead of numerical scores. Most important memory paper since MemGPT.
+
+2. **DD#435: VeriGrey — Greybox Agent Validation** (2603.17639, ★★★★★ CRITICAL). First practical greybox fuzzing methodology for LLM agents. 33% better than blackbox, real CVE discoveries. Fills Gap 1 (Security Testing). Coverage defined over agent execution traces — novel conceptual contribution. Scalability wall for MAS acknowledged but unresolved.
+
+3. **DD#436: TerraLingua — LLM Ecologies Governance** (2603.16910, ★★★★★ CRITICAL). First empirical study of emergent governance in multi-LLM ecologies. Key findings: governance emerges spontaneously but is fragile, single adversary can destabilize, dialect fragmentation creates steganographic collusion risk. Validates and challenges CR#233 Governance Stack.
+
+**New predictions:** P188-P195 (8 total across 3 deep-dives)
+
+**Remaining from batch (next session):**
+- DD for IET: Implicit Execution Tracing (2603.17445) — Gap 2 (Observability)
+- DD for ETL: Emergent Trust Learning (2603.17564) — Collusion/Cooperation
+- DD for Cascade-Aware Routing (2603.17112) — Gap 3 (Scalability)
+- Secondary papers: CRAFT, Safety Before CoT, CPMM, Noncooperative Dynamics
+
+### Session Stats
+- 3 new deep-dives: DD#434, DD#435, DD#436 (total: 433)
+- 0 new cross-references (total: 248)
+- ~13KB new analysis
+- 8 new predictions (P188-P195)
