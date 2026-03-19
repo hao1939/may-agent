@@ -86,7 +86,7 @@ async function loadWorkflow(filePath: string): Promise<WorkflowModule> {
 function listWorkflowFiles(workflowDir: string): string[] {
   try {
     return readdirSync(workflowDir)
-      .filter((f) => f.endsWith(".ts"))
+      .filter((f) => f.endsWith(".ts") && !f.includes("-helpers") && !f.includes("-utils"))
       .sort()
       .map((f) => join(workflowDir, f));
   } catch {

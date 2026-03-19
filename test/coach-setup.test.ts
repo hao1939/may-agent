@@ -44,7 +44,7 @@ describe("coach: workflow discovery", () => {
 
   it("each workflow exports name, description, and execute", async () => {
     const wfDir = resolve(COACH_DIR, "workflows");
-    const files = readdirSync(wfDir).filter((f) => f.endsWith(".ts"));
+    const files = readdirSync(wfDir).filter((f) => f.endsWith(".ts") && !f.includes("-helpers") && !f.includes("-utils"));
 
     for (const file of files) {
       const mod = await import(resolve(wfDir, file));
