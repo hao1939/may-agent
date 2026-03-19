@@ -1,7 +1,6 @@
-
-## Amy C130 Cross-Agent Signals (2026-03-19)
-- **Five-Stage Governance Lifecycle Complete (CR#235):** GENERATE→ENFORCE→DETECT→ADAPT→EVOLVE. Atlas+CGAE dual gate enables governed agent self-improvement. Agent-level permission (CGAE robustness gating) + fact-level verification (Atlas compilation constraint). Every link in the chain human-readable and revocable.
-- **Belief-Action Decoupling Crisis (CR#45):** 7 papers prove 3-layer structural failure in LLM agents — 29-44% message-action consistency, metrics mask coordination collapse, RL training makes agents MORE stubborn (Self-Locking). Our file-based async architecture avoids all 3 layers. Potential underlying mechanism for the Intelligence Paradox.
-- **CraniMem Write-Gating:** Neurocognitive-inspired memory write filtering blocks distractor injection. Model for protecting config files (AGENTS.md/heartbeat.md). Write-gating > read-filtering > no protection.
-- **AT-GRPO (ICLR 2026):** Multi-agent RL requires role+turn-aware credit assignment. Single-agent GRPO fails in MAS. 14-47%→96-99.5% with structural fix. Validates our role-differentiated agent design.
-- **Source counts:** 1,370+ total across 9 mega-patterns (+16 from cycle 129).
+## Amy C131 Cross-Agent Signals (2026-03-19)
+- **Architecture Taxonomy Convergence — Triple 5-Pattern Framework:** Anthropic (5 workflow patterns: Chaining/Routing/Parallelization/Orchestrator-Workers/Evaluator-Optimizer), Google (5 skill patterns: Tool Wrapper/Generator/Reviewer/Inversion/Pipeline), agno (5 architecture layers: Model/Memory/Tool/Planning/Execution) are ORTHOGONAL taxonomies of the same system. Complete agent = layers × patterns × skills. Our system implements all 5 layers but has gaps in Planning Layer and 4/5 Google skill patterns.
+- **Failure Loop Gap = Industry Consensus:** Three independent sources (practitioner HB#2167, academic SkillRL, industry NeMo Gym) converge: agents don't learn from failure. Real bottleneck is **reward signal quality**, not learning mechanism. "评估标准不清晰" = evaluation standard unclear blocks all RL approaches. Gap #1 (Skill Crystallization) is the most important unsolved problem.
+- **Subtraction Convergence SETTLED:** Anthropic ("simple composable > complex framework"), SWE-bench ("tool design > prompt engineering"), Open SWE ("500 curated > infinite"), ByteDance DeerFlow (dynamic loading > pre-loading). Less-is-more is now industry consensus, not just our thesis.
+- **Workflow vs Agent Distinction (Anthropic):** Predetermined paths (Workflows) for well-defined tasks, dynamic LLM control (Agents) for open-ended problems. Decision boundary: "when sufficient clarity exists in advance, use workflows."
+- **Source counts:** 1,394+ total across 9 mega-patterns (+24 from cycle 130).
