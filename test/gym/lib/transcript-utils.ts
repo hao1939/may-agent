@@ -224,7 +224,9 @@ export function hasVerificationAfterWrite(transcript: Transcript, filePath: stri
   if (writes.length === 0) return false;
 
   for (const write of writes) {
-    // Look for reads after this write
+    // Look for reads after this write.
+    // Accept read() of the file, OR any bash command that references the file
+    // (cat, head, grep, node, python, jq, etc. — agents verify in many ways).
     const readsAfter = transcript.toolCalls.filter(
       (tc) =>
         tc.entryIndex > write.entryIndex &&
@@ -233,7 +235,6 @@ export function hasVerificationAfterWrite(transcript: Transcript, filePath: stri
           tc.arguments.path.includes(filePath)) ||
           (tc.name === "bash" &&
             typeof tc.arguments.command === "string" &&
-            (tc.arguments.command.includes(`cat `) || tc.arguments.command.includes(`head `)) &&
             tc.arguments.command.includes(filePath)))
     );
 
