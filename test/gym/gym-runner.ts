@@ -52,6 +52,8 @@ interface ScoreCheck {
   name: string;
   passed: boolean;
   detail: string;
+  category?: string;
+  code?: string;
 }
 
 interface ScoreResult {
@@ -149,13 +151,13 @@ function createMayAgentAdapter(): Adapter {
           } catch { /* assume fresh */ }
 
           if (stale) {
-            console.error("Warning: compiled binary is stale. Using bun.");
-            mayCmd = ["bun", join(projectRoot, "src/app/may.ts")];
+            console.error("Warning: compiled binary is stale. Using vite-node.");
+            mayCmd = [join(projectRoot, "node_modules/.bin/vite-node"), join(projectRoot, "src/app/may.ts")];
           } else {
             mayCmd = [binary];
           }
         } else {
-          mayCmd = ["bun", join(projectRoot, "src/app/may.ts")];
+          mayCmd = [join(projectRoot, "node_modules/.bin/vite-node"), join(projectRoot, "src/app/may.ts")];
         }
       }
     },
