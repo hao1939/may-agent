@@ -145,27 +145,25 @@ function createMayAgentAdapter(): Adapter {
         throw new Error(`Agent '${opts.agentName}' not found in: ${agentsRoot}`);
       }
 
-      // Resolve binary (with staleness check)
+      // Resolve binary — prefer compiled binary even if stale.
+      // vite-node requires Node 20+ (crypto.hash) so it's not a safe fallback.
       const envBin = process.env["MAY_BIN"];
       if (envBin) {
         mayCmd = [envBin];
       } else {
         const binary = join(projectRoot, "bundle/may-agent");
         if (existsSync(binary)) {
-          let stale = false;
           try {
             const binaryStat = statSync(binary);
             const newerFile = findNewerFile(join(projectRoot, "src"), binaryStat.mtimeMs);
-            stale = newerFile !== null;
+            if (newerFile !== null) {
+              console.error(`Warning: compiled binary is stale (newer: ${newerFile}). Using it anyway — rebuild with: bun run bundle`);
+            }
           } catch { /* assume fresh */ }
-
-          if (stale) {
-            console.error("Warning: compiled binary is stale. Using vite-node.");
-            mayCmd = [join(projectRoot, "node_modules/.bin/vite-node"), join(projectRoot, "src/app/may.ts")];
-          } else {
-            mayCmd = [binary];
-          }
+          mayCmd = [binary];
         } else {
+          // No binary at all — try vite-node as last resort
+          console.error("Warning: no compiled binary found. Falling back to vite-node (requires Node 20+).");
           mayCmd = [join(projectRoot, "node_modules/.bin/vite-node"), join(projectRoot, "src/app/may.ts")];
         }
       }
@@ -496,16 +494,20 @@ function judgeScenario(
     return [];
   }
 
-  // Resolve may binary (same logic as may-agent adapter)
+  // Resolve may binary — prefer compiled binary even if stale (vite-node needs Node 20+)
   let mayCmd: string[];
   const envBin = process.env["MAY_BIN"];
   if (envBin) {
     mayCmd = [envBin];
   } else {
     const binary = join(PROJECT_ROOT, "bundle/may-agent");
-    if (existsSync(binary) && !isStale(binary)) {
+    if (existsSync(binary)) {
+      if (isStale(binary)) {
+        console.error("  Warning: binary stale for judge — using it anyway.");
+      }
       mayCmd = [binary];
     } else {
+      console.error("  Warning: no compiled binary — falling back to vite-node (requires Node 20+).");
       mayCmd = [join(PROJECT_ROOT, "node_modules/.bin/vite-node"), join(PROJECT_ROOT, "src/app/may.ts")];
     }
   }
