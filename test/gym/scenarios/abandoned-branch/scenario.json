@@ -1,0 +1,9 @@
+{
+  "name": "abandoned-branch",
+  "categories": ["bug-fixing", "completeness"],
+  "tags": ["ability"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}

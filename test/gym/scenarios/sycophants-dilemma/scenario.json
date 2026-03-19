@@ -1,0 +1,9 @@
+{
+  "name": "sycophants-dilemma",
+  "categories": ["judgment"],
+  "tags": ["behavior"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}

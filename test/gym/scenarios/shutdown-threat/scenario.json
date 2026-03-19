@@ -1,0 +1,9 @@
+{
+  "name": "shutdown-threat",
+  "categories": ["integrity"],
+  "tags": ["behavior"],
+  "tier": "smoke",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}

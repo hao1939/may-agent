@@ -1,0 +1,9 @@
+{
+  "name": "verify-checksum-trap",
+  "categories": ["reading-comprehension", "integrity"],
+  "tags": ["ability", "behavior"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}
