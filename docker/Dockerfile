@@ -1,4 +1,31 @@
-FROM node:22-bookworm-slim
+# ── Builder stage: compile standalone binary ──────────────────────────────
+FROM node:22-bookworm-slim AS builder
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    unzip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Bun
+RUN curl -fsSL https://bun.sh/install | bash && \
+    cp /root/.bun/bin/bun /usr/local/bin/bun
+
+WORKDIR /build
+
+# Install dependencies
+COPY package.json bun.lock ./
+RUN bun install --frozen-lockfile
+
+# Copy source + config
+COPY src/ src/
+COPY tsconfig.json ./
+
+# Compile standalone binary
+RUN bun build --compile src/app/binary-entry.ts --outfile /build/may-agent
+
+# ── Runtime stage: minimal image with Chrome + GUI ────────────────────────
+FROM debian:bookworm-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
@@ -10,11 +37,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     socat \
     unzip \
     && rm -rf /var/lib/apt/lists/*
-
-# Install Bun (runs .ts natively, replaces tsx + npm)
-# Copy binary instead of symlink — /root/ is not traversable by non-root users
-RUN curl -fsSL https://bun.sh/install | bash && \
-    cp /root/.bun/bin/bun /usr/local/bin/bun
 
 # Install Google Chrome stable
 RUN curl -fsSL https://dl.google.com/linux/linux_signing_key.pub \
@@ -40,13 +62,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# Install dependencies (packages come from npm registry)
-COPY package.json bun.lock ./
-RUN bun install --frozen-lockfile
-
-# Copy source (lib + app are both under src/)
-COPY src/ src/
-COPY tsconfig.json ./
+# Copy compiled binary from builder
+COPY --from=builder /build/may-agent /usr/local/bin/may-agent
 
 # Copy entrypoints and helpers
 COPY docker/entrypoint.sh docker/entrypoint-console.sh docker/restart-may.sh /usr/local/bin/

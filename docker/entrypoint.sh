@@ -35,4 +35,7 @@ mkdir -p /app/.state/chrome-profile
 # Default to "background" instance name to avoid conflict with interactive "default" sessions
 export INSTANCE="${INSTANCE:-background}"
 
-exec bun src/app/launcher.ts --chat --cron --telegram --console --socket
+# Prefer bind-mounted binary (dev hot-reload), fall back to baked-in
+MAY_BIN="${PROJECT_ROOT:-/app}/bundle/may-agent"
+[ -x "$MAY_BIN" ] || MAY_BIN=/usr/local/bin/may-agent
+exec "$MAY_BIN" --chat --cron --telegram --console --socket
