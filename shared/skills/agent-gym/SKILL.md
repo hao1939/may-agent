@@ -2,7 +2,7 @@
 
 **Status**: Active
 **Owner**: Coach (primary), shared with all agents
-**Location**: `test/gym/gym-runner.ts`, `test/gym/scenarios/`, `test/gym/`
+**Location**: `test/gym/gym-runner.ts`, `agents/gym/scenarios/`, `test/gym/`
 
 ## What it is
 
@@ -124,7 +124,7 @@ This means the fork only needs to contain the files that differ from production.
 
 ## Available scenarios
 
-Located in `test/gym/scenarios/`. Each has a `scenario.json` with metadata
+Located in `agents/gym/scenarios/`. Each has a `scenario.json` with metadata
 (categories, tags, tier, timeout, workflow flag).
 
 | Scenario | Categories | Tests |
@@ -155,7 +155,7 @@ decompose the task into explicit phases. These are `tier: full` only.
 ## Creating a scenario
 
 ```
-test/gym/scenarios/<name>/
+agents/gym/scenarios/<name>/
 ├── task.md              # The prompt the agent receives
 ├── environment/         # Files the agent works on (copied to temp dir)
 │   ├── app.js
