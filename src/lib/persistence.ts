@@ -8,6 +8,10 @@ import {
   rmSync,
   copyFileSync,
   readdirSync,
+  openSync,
+  fstatSync,
+  readSync,
+  closeSync,
 } from "node:fs";
 import { readFile, readdir } from "node:fs/promises";
 import { join, dirname } from "node:path";
@@ -108,6 +112,67 @@ function readJsonlFile<T>(filePath: string): T[] {
     }
   }
   return items;
+}
+
+/** Read only the last N JSON lines from a file by reading backwards from the end.
+ *  Much more efficient than readJsonlFile() for large files when only the tail is needed.
+ *  Falls back to full-file read if the file is small (< 64KB). */
+function readLastNJsonlLines<T>(filePath: string, n: number): T[] {
+  if (!existsSync(filePath) || n <= 0) return [];
+
+  const CHUNK_SIZE = 32 * 1024; // 32KB chunks
+  const SMALL_FILE_THRESHOLD = 64 * 1024; // Below this, just read the whole thing
+
+  const fd = openSync(filePath, "r");
+  try {
+    const stat = fstatSync(fd);
+    const fileSize = stat.size;
+    if (fileSize === 0) return [];
+
+    // For small files, fall back to full read (overhead of seeking not worth it)
+    if (fileSize <= SMALL_FILE_THRESHOLD) {
+      closeSync(fd);
+      const all = readJsonlFile<T>(filePath);
+      return all.slice(-n);
+    }
+
+    // Read backwards in chunks to find enough newlines
+    let tailText = "";
+    let newlineCount = 0;
+    let position = fileSize;
+
+    while (position > 0 && newlineCount <= n) {
+      const readSize = Math.min(CHUNK_SIZE, position);
+      position -= readSize;
+      const buf = Buffer.alloc(readSize);
+      readSync(fd, buf, 0, readSize, position);
+      const chunk = buf.toString("utf-8");
+      tailText = chunk + tailText;
+
+      // Count newlines in this chunk to know if we have enough
+      for (let i = 0; i < chunk.length; i++) {
+        if (chunk[i] === "\n") newlineCount++;
+      }
+    }
+
+    // Parse the tail text — take only the last N valid entries
+    const lines = tailText.trim().split("\n");
+    // Take at most the last N lines (there may be more due to chunk boundaries)
+    const candidateLines = lines.slice(-n);
+    const items: T[] = [];
+    for (const line of candidateLines) {
+      if (!line.trim()) continue;
+      try {
+        items.push(JSON.parse(line) as T);
+      } catch {
+        console.warn(`[persistence:jsonl] Skipping corrupted JSONL line in ${filePath}`);
+      }
+    }
+    return items;
+  } finally {
+    // fd might already be closed if we took the small-file path
+    try { closeSync(fd); } catch { /* already closed */ }
+  }
 }
 
 // ── Session JSONL helpers ──────────────────────────────────────────────
@@ -227,6 +292,7 @@ export function appendMemoryEntry(persistDir: string, name: string, entry: Memor
 }
 
 /** Read the last N memory entries (or all if limit is not specified).
+ *  When limit is specified, uses efficient tail-read to avoid parsing the entire file.
  *  Corrupted lines are skipped with a warning. */
 export function readMemoryEntries(
   persistDir: string,
@@ -234,12 +300,11 @@ export function readMemoryEntries(
   limit?: number,
   includeCorrupted: boolean = false,
 ): MemoryEntry[] {
-  const entries = readJsonlFile<MemoryEntry>(memoryPath(persistDir, name));
   if (limit !== undefined) {
     if (limit <= 0) return [];
-    return entries.slice(-limit);
+    return readLastNJsonlLines<MemoryEntry>(memoryPath(persistDir, name), limit);
   }
-  return entries;
+  return readJsonlFile<MemoryEntry>(memoryPath(persistDir, name));
 }
 
 // ── Session meta.json helpers ─────────────────────────────────────────
