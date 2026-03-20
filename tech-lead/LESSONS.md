@@ -6,6 +6,17 @@ _Staging area for behavioral fixes. Graduates into heartbeat.md/DOMAIN.md/SOUL.m
 
 ## Active Band-Aids
 
+### 🔴 Tool Call Argument Integrity (FM-2.5: 11x in Mar 14-17, Coach Growth Cycle 2026-03-20)
+Before EVERY tool call, mentally read back your arguments object. The following are SCHEMA ERRORS that waste a turn:
+- `bash({})` → WRONG. Must be `bash({"command": "..."})`.
+- `read({})` → WRONG. Must be `read({"path": "..."})`.
+- `write({})` → WRONG. Must be `write({"path": "...", "content": "..."})`.
+- `edit({"limit": ..., "offset": ...})` → WRONG. edit takes `path`, `oldText`, `newText`. Never `limit`/`offset`.
+- `bash({"path": "...", "content": "..."})` → WRONG. bash takes `command`, not `path`/`content`.
+- `agents({})` → WRONG. Must include `{"action": "..."}`.
+
+**Concrete recent failures**: Sessions s_1773515749174_562 (2x `bash({})`), s_1773575769880_1161 (4 invalid calls in one session), s_1773578929130_16 (`edit` with `limit/offset`). All wasted turns and triggered evaluator flags.
+
 ### 🔴 Path & Tool Hygiene (see also heartbeat P13)
 - NEVER guess file paths. Run `ls $(dirname path)` before read/edit on unfamiliar paths.
 - Common wrong paths: `src/app/manager.ts` → `src/lib/manager.ts`, `src/agent-loader.ts` → `src/app/agent-loader.ts`.
@@ -46,5 +57,24 @@ Before marking ANY task as [DONE], [COMPLETED], or calling `finish()` claiming s
 **If verification fails**: Mark as `[BLOCKED]` with the reason, not `[DONE]`. Call `finish(status: "partial")` explaining what failed verification. Honest partial completion > false complete.
 
 **Root cause**: You optimize for speed (18 completed items in one day — impressive throughput), but speed without verification creates rework. One verified delivery > three unverified claims.
+
+### 🔴 FM-2.2 Command Failure Recovery — Exit Codes Are Data, Not Noise (Coach Growth Cycle 2026-03-20, 11x FM-2.2)
+When a command returns non-zero or unexpected output, you MUST interpret it before proceeding:
+
+**Exit code cheat sheet:**
+| Exit code | Meaning | Correct response |
+|-----------|---------|-----------------|
+| 0 | Success | Proceed with output |
+| 1 (grep/find) | No matches found | This is INFORMATION, not failure. State "no matches" and adjust search or move on |
+| 1 (other) | General error | Read stderr, diagnose, fix |
+| 123 (xargs) | Some commands failed | Check which ones failed, don't ignore |
+| 126/127 | Command not found / not executable | The tool/command doesn't exist — do NOT retry, find alternative |
+
+**Failure→Recovery mappings (3 most common FM-2.2 patterns):**
+1. **grep returns code 1** → Say "no matches found for X" → Broaden search (`grep -ri`, different path) or conclude the pattern doesn't exist. Do NOT leave as unresolved.
+2. **Tool doesn't exist** (e.g., `system_status`, `discard_agent`) → STOP. Check `TOOLS.md` for available tools. Use `bash` + standard commands instead of hallucinated tools.
+3. **P53/safety blocks your edit** → The block is correct. Use `agents.call()` to delegate the edit to the owning agent, OR use `read()` instead of `bash` for agent.json. Do NOT retry the same blocked command.
+
+**Constraint resumption rule:** If a safety gate (P53, P114) interrupts your work mid-task, you MUST resume the original task after handling the gate. Reading ERROR_LOG for P114 is a checkpoint, not an endpoint — return to your edit/verification after the check.
 
 <!-- Graduated: cd/bash-schema/agent.json→heartbeat P13, C40/C26/C23/C24/C25/C22→shared/LESSONS.md -->
