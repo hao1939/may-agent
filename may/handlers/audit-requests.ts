@@ -8,7 +8,7 @@
  * 2. Auto-expires stale CREATED `call` requests to non-agent targets (e.g. "finish")
  *    older than 1h (these are tracking artifacts, not real requests)
  * 3. Resets IN_PROGRESS requests older than 4h with no active session → CREATED
- * 4. Archives COMPLETED/FAILED/BLOCKED requests older than 7 days
+ * 4. Archives COMPLETED/FAILED requests older than 7 days
  *
  * Exports create() conforming to HandlerModule.
  */
@@ -17,6 +17,7 @@ import { readdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import type { HandlerContext, HandlerModule } from "../../../src/lib/handler-context.js";
 import type { CronEntry } from "../../../src/lib/cron-tool.js";
+import { getDb } from "../../../src/lib/requests.js";
 
 // ── Configuration ─────────────────────────────────────────────────────
 
@@ -38,38 +39,61 @@ const KNOWN_AGENTS = new Set([
   "scout", "qa", "coder", "amy", "amy-kimi",
 ]);
 
+// ── Types ─────────────────────────────────────────────────────────────
+
+interface RequestRow {
+  requestId: string;
+  status: string;
+  method: string;
+  toAgent: string;
+  sessionId: string | null;
+  createdAt: number;
+  completedAt: number | null;
+  summary: string | null;
+}
+
 // ── Factory ───────────────────────────────────────────────────────────
 
 export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
   return async () => {
-    // Lazy import to avoid bun:sqlite issues in vitest
-    const {
-      getStaleRequests,
-      getActiveRequests,
-      updateRequest,
-      archiveOld,
-    } = await import("../../../src/lib/requests.js");
+    let db: ReturnType<typeof getDb>;
+    try {
+      db = getDb(ctx.persistDir);
+    } catch {
+      ctx.log("[audit-requests] DB not available, skipping audit.");
+      return;
+    }
 
+    const now = Date.now();
     let expiredSends = 0;
     let expiredNonAgent = 0;
 
     // 1. Auto-expire stale CREATED `send` requests (> 4h)
     //    These have been injected into enough heartbeats. Keeping them
     //    just bloats context and wastes tokens.
-    const staleSends = getStaleRequests(ctx.persistDir, STALE_SEND_MS)
-      .filter(r => r.status === "CREATED" && r.method === "send");
+    try {
+      const staleSends = db.query(
+        `SELECT * FROM requests WHERE status = 'CREATED' AND method = 'send' AND createdAt < ?`
+      ).all(now - STALE_SEND_MS) as RequestRow[];
 
-    for (const req of staleSends) {
-      try {
-        updateRequest(ctx.persistDir, req.requestId, {
-          status: "COMPLETED",
-          summary: `Auto-expired after ${Math.round((Date.now() - req.createdAt) / 3600000)}h (injected into heartbeats, presumed processed)`,
-          completedAt: Date.now(),
-        });
-        expiredSends++;
-      } catch {
-        ctx.log(`[audit-requests] Failed to expire send request ${req.requestId}`);
+      for (const req of staleSends) {
+        try {
+          db.query(
+            `UPDATE requests SET status = ?, summary = ?, completedAt = ?, updatedAt = ? WHERE requestId = ?`
+          ).run(
+            "COMPLETED",
+            `Auto-expired after ${Math.round((now - req.createdAt) / 3600000)}h (injected into heartbeats, presumed processed)`,
+            now,
+            now,
+            req.requestId,
+          );
+          expiredSends++;
+        } catch {
+          ctx.log(`[audit-requests] Failed to expire send request ${req.requestId}`);
+        }
       }
+    } catch {
+      ctx.log("[audit-requests] Failed to query stale send requests.");
     }
 
     if (expiredSends > 0) {
@@ -80,20 +104,31 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
     // 2. Auto-expire stale CREATED `call` requests to non-agent targets
     //    e.g. "bob -> finish" — these are tracking artifacts from the finish() tool
-    const staleNonAgent = getStaleRequests(ctx.persistDir, STALE_NONAGENT_CALL_MS)
-      .filter(r => r.status === "CREATED" && r.method === "call" && !KNOWN_AGENTS.has(r.toAgent));
+    try {
+      const staleCallRows = db.query(
+        `SELECT * FROM requests WHERE status = 'CREATED' AND method = 'call' AND createdAt < ?`
+      ).all(now - STALE_NONAGENT_CALL_MS) as RequestRow[];
 
-    for (const req of staleNonAgent) {
-      try {
-        updateRequest(ctx.persistDir, req.requestId, {
-          status: "COMPLETED",
-          summary: `Auto-expired: non-agent call target "${req.toAgent}" (tracking artifact)`,
-          completedAt: Date.now(),
-        });
-        expiredNonAgent++;
-      } catch {
-        ctx.log(`[audit-requests] Failed to expire non-agent request ${req.requestId}`);
+      const staleNonAgent = staleCallRows.filter(r => !KNOWN_AGENTS.has(r.toAgent));
+
+      for (const req of staleNonAgent) {
+        try {
+          db.query(
+            `UPDATE requests SET status = ?, summary = ?, completedAt = ?, updatedAt = ? WHERE requestId = ?`
+          ).run(
+            "COMPLETED",
+            `Auto-expired: non-agent call target "${req.toAgent}" (tracking artifact)`,
+            now,
+            now,
+            req.requestId,
+          );
+          expiredNonAgent++;
+        } catch {
+          ctx.log(`[audit-requests] Failed to expire non-agent request ${req.requestId}`);
+        }
       }
+    } catch {
+      ctx.log("[audit-requests] Failed to query stale non-agent call requests.");
     }
 
     if (expiredNonAgent > 0) {
@@ -103,22 +138,29 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     }
 
     // 3. Reset orphaned IN_PROGRESS requests (> 4h, no active session)
-    const activeSessions = getActiveSessionIds(ctx.persistDir);
-    const staleInProgress = getStaleRequests(ctx.persistDir, STALE_IN_PROGRESS_MS)
-      .filter(r => r.status === "IN_PROGRESS")
-      .filter(r => !r.sessionId || !activeSessions.has(r.sessionId));
-
     let resetCount = 0;
-    for (const req of staleInProgress) {
-      try {
-        updateRequest(ctx.persistDir, req.requestId, {
-          status: "CREATED",
-          sessionId: undefined,
-        });
-        resetCount++;
-      } catch {
-        ctx.log(`[audit-requests] Failed to reset request ${req.requestId}`);
+    try {
+      const activeSessions = getActiveSessionIds(ctx.persistDir);
+      const staleInProgress = db.query(
+        `SELECT * FROM requests WHERE status = 'IN_PROGRESS' AND createdAt < ?`
+      ).all(now - STALE_IN_PROGRESS_MS) as RequestRow[];
+
+      const orphaned = staleInProgress.filter(
+        r => !r.sessionId || !activeSessions.has(r.sessionId)
+      );
+
+      for (const req of orphaned) {
+        try {
+          db.query(
+            `UPDATE requests SET status = 'CREATED', sessionId = NULL, updatedAt = ? WHERE requestId = ?`
+          ).run(now, req.requestId);
+          resetCount++;
+        } catch {
+          ctx.log(`[audit-requests] Failed to reset request ${req.requestId}`);
+        }
       }
+    } catch {
+      ctx.log("[audit-requests] Failed to query stale in-progress requests.");
     }
 
     if (resetCount > 0) {
@@ -126,15 +168,32 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     }
 
     // 4. Archive old completed/failed requests (> 7 days)
-    const archived = archiveOld(ctx.persistDir, ARCHIVE_DAYS);
+    let archived = 0;
+    try {
+      const archiveCutoff = now - ARCHIVE_DAYS * 86400000;
+      const result = db.query(
+        `DELETE FROM requests WHERE status IN ('COMPLETED', 'FAILED') AND completedAt < ?`
+      ).run(archiveCutoff);
+      archived = (result as { changes: number }).changes;
+    } catch {
+      ctx.log("[audit-requests] Failed to archive old requests.");
+    }
     if (archived > 0) {
       ctx.log(`[audit-requests] Archived ${archived} completed/failed request(s) older than ${ARCHIVE_DAYS} days.`);
     }
 
     // Summary
-    const active = getActiveRequests(ctx.persistDir);
+    let activeCount = 0;
+    try {
+      const row = db.query(
+        `SELECT COUNT(*) as count FROM requests WHERE status IN ('CREATED', 'IN_PROGRESS')`
+      ).get() as { count: number } | null;
+      activeCount = row?.count ?? 0;
+    } catch {
+      // DB query failed; leave at 0
+    }
     ctx.log(
-      `[audit-requests] Audit complete. Active: ${active.length}, ` +
+      `[audit-requests] Audit complete. Active: ${activeCount}, ` +
       `Expired sends: ${expiredSends}, Expired non-agent: ${expiredNonAgent}, ` +
       `Reset: ${resetCount}, Archived: ${archived}.`
     );
