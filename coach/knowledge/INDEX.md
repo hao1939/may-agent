@@ -39,3 +39,9 @@ Use standardized codes from `agents/shared/knowledge/mast-taxonomy.md`:
 - `agents/*/knowledge/` — agent context
 - `agents/.lab/` — experimental forks
 - `agents/gym/scenarios/` — gym scenarios with automated scorers
+
+## Key Skills
+- `agents/shared/skills/error-handling/SKILL.md` — error recovery patterns:
+  tool grounding (only call tools that exist — no fork_agent/verify_agent),
+  retry loop, validation. Anti-patterns: reasoning-action mismatch (FM-2.6,
+  11 occurrences in your sessions — fabrication, substitution, requirement drift).

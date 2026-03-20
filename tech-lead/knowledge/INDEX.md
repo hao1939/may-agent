@@ -46,3 +46,7 @@ When reporting implementation failures, use standardized MAST codes from `agents
 - `agents/shared/knowledge/mast-taxonomy.md` — MAST failure taxonomy (FM + FC codes)
 - `agents/shared/best-practices.md` — coding standards
 - `agents/shared/skills/` — full skill guides
+- `agents/shared/skills/error-handling/SKILL.md` — error recovery patterns:
+  environment grounding (no `cd /home/user`), edit ambiguity recovery (expand
+  oldText context), path discovery, tool grounding. Anti-patterns: planning
+  without executing (14 occurrences in your sessions), silent abandon.

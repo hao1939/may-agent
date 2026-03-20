@@ -36,3 +36,7 @@ Bob is Architect (Gemini). Tech-Lead builds (Opus).
 - `agents/shared/best-practices.md` — operational practices
 - `agents/shared/bulletin.md` — post cross-team findings here
 - `agents/shared/skills/` — full skill guides
+- `agents/shared/skills/error-handling/SKILL.md` — error recovery patterns:
+  path discovery (use `find`/`ls`, don't guess — 4 WRONG_PATH in your logs),
+  write safety recovery, tool grounding. Anti-patterns: overclaiming without
+  evidence (cite tool output for numeric claims), malformed tool calls.

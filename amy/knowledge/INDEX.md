@@ -22,3 +22,6 @@ Scout researches (Opus). Bob is Architect (Gemini).
 - `agents/shared/philosophy.md` — full design philosophy
 - `agents/shared/best-practices.md` — research standards
 - `agents/shared/skills/` — full skill guides
+- `agents/shared/skills/error-handling/SKILL.md` — error recovery patterns:
+  retry loop, validation, tool grounding. Anti-patterns: silent abandon
+  (acknowledge failures, don't skip), non-delivery (persist findings early).

@@ -1,7 +1,7 @@
 ---
 name: error-handling
 description: Core protocols for escalating failures, reporting errors, and avoiding silent failures.
-version: 1.2.0
+version: 1.3.0
 tools: []
 ---
 
@@ -55,6 +55,7 @@ Only use tools you **know exist**. Your available tools are listed in your syste
 - ❌ Calling `Bash` (capital B) — tool names are lowercase: `bash`
 - ❌ Calling `exec({})` or `edit({})` with empty/missing required params
 - ❌ Calling `agents({action: "call"})` when your toolset is `read, write, bash, edit`
+- ❌ Calling `checkpoint` via `bash` (exit 127) or `agents.call("checkpoint")` — it's a direct tool
 - ✅ Check your system prompt for the exact tool names and required parameters
 - ✅ If a tool call returns "Tool X not found", **stop** — don't retry the same tool name
 
@@ -64,7 +65,57 @@ Three agents (coach, tech-lead, scout) have independently hallucinated tools —
 
 **Evidence**: coach session s_0 used `fork_agent`/`verify_agent`/`promote_agent` (none exist);
 tech-lead session s_35 used `Bash` (capital B, should be `bash`) and `exec({})` (empty params);
-tech-lead session s_36 used `agents` tool (not in its toolset).
+tech-lead session s_36 used `agents` tool (not in its toolset);
+bob sessions s_97, s_102 called `checkpoint` via bash/agents.call instead of the tool (3 occurrences).
+
+### The "Path Discovery" Pattern
+Never guess file paths — discover them first.
+
+- ❌ Guessing `agents/<agent>/todo.md` when the real path is `agents/<agent>/workspace/todo.md`
+- ❌ Guessing `agents/<agent>/ERROR_LOG.jsonl` when the file is `agents/<agent>/ERROR_LOG.md`
+- ❌ Trying multiple variations hoping one works (ENOENT → ENOENT → ENOENT)
+- ✅ Run `find agents/<agent> -name "todo*"` or `ls agents/<agent>/` first
+- ✅ When you get ENOENT, immediately run `find` or `ls` to discover the correct path
+- ✅ Use `find . -name "filename" -type f` for project-wide discovery
+
+**Why this matters**: Path guessing cascades — each ENOENT wastes a turn and often triggers further wrong guesses. Agents frequently assume directory structures from memory that differ from reality.
+
+**Evidence**: amy-kimi session s_722/s_724 repeatedly tried `agents/<agent>/todo.md` and `agents/<agent>/ERROR_LOG.jsonl` (ENOENT) across 5+ agents before discovering correct paths via `find`. 4 WRONG_PATH occurrences. may session s_165 tried `agents/bob/workspace/directive-soul-security.md` (ENOENT).
+
+### The "Environment Grounding" Pattern
+Never assume your working directory or system paths — verify them.
+
+- ❌ `cd /home/user && npx vitest ...` — wrong working directory
+- ❌ `cd /Users/hao/c/memory && ...` — local dev paths don't exist in runtime
+- ❌ `cd /home/hao/c3 && ...` — hallucinated paths from training data
+- ✅ Run commands from the default directory (usually `/app`)
+- ✅ If unsure, run `pwd` first
+- ✅ After any `cd` failure, drop the `cd` prefix and retry from current directory
+
+**Why this matters**: Wrong working directory causes immediate command failure (exit 1), wastes a turn, and often repeats because agents try a second wrong path before falling back to the default.
+
+**Evidence**: tech-lead session s_150 used `cd /home/user` (failed, recovered by rerunning from repo root); s_165 used `cd /home/hao/c3` (No such file or directory, then succeeded without cd); s_107 used `cd /Users/hao/c/memory` (env mismatch, 2 wasted turns).
+
+### The "Edit Ambiguity Recovery" Pattern
+When `edit()` fails with "Found N occurrences... text must be unique", recover immediately.
+
+1. **Read the target file** around the edit location to get more surrounding context
+2. **Expand the `oldText`** to include unique surrounding lines (add 1-2 lines above/below)
+3. **Never retry with the same `oldText`** — it will fail again with the same ambiguity error
+4. **Alternative**: Use `bash` with `sed` for line-number-targeted edits if ambiguity persists
+
+**Why this matters**: Edit ambiguity is a common dead-end. If the agent doesn't recover by expanding context, the edit never happens and the session produces nothing.
+
+**Evidence**: tech-lead session s_107 encountered "Found 7 occurrences" in `monitor-session.cjs`, did not recover with unique `oldText`, and the entire task (P0 priority) was never completed [FM-2.3: DEAD_END_NON_RECOVERY].
+
+### The "Write Safety Recovery" Pattern
+When `write()` is blocked by a safety check (truncated rewrite, protected file), recover correctly.
+
+- **"WRITE BLOCKED: New content is X% of existing file"**: Your new content is too small — you're accidentally overwriting with a truncated version. Read the full file first, then write the complete content including your changes.
+- **Safety block on protected files**: Don't try to bypass with `bash cat >` unless you've properly archived. Use `edit()` for surgical changes to protected files instead.
+- **"Replacement produced identical content"**: Your edit matched but changed nothing — check that `oldText` and `newText` actually differ.
+
+**Evidence**: scout session s_168 hit WRITE BLOCKED (1761 bytes new vs 7081 bytes existing = 25% truncated rewrite); amy-kimi session cron_106 hit write safety block on journal, pivoted to bash overwrite without proper extract+sanitize steps [FM-2.2: UNSAFE_RESET_FLOW]; optimizer session s_97 had edit produce identical content [FM-2.1: PROMISE_DELIVERY_GAP].
 
 ## Anti-Patterns
 
@@ -132,6 +183,36 @@ tech-lead session s_36 used `agents` tool (not in its toolset).
 3. **Read instructions literally**: If the task says "work the top unchecked TODO item", find the top unchecked item and work it. Don't reinterpret "unchecked" to mean "actionable" or "interesting".
 4. **Prior session data is context, not output**: Information from your session history is background. Your *current* session's output must come from *current* tool calls.
 
+### Malformed Tool Calls (FM-2.5)
+**Pattern**: Agent sends tool calls with missing required parameters, truncated JSON payloads, or mismatched quotes. The tool returns a validation error, wasting a turn.
+
+**Sub-variant 1 — Empty params**: `bash({})` with no `command` field → "Validation failed: must have required property 'command'". Tech-lead did this twice in one session.
+
+**Sub-variant 2 — Truncated payloads**: `finish()` with JSON that cuts off mid-field (mismatched quotes). The tool either rejects or produces garbled output. Common when context window is nearly full.
+
+**Sub-variant 3 — Wrong param types**: Passing a string where an object is expected, or vice versa. Often happens when composing complex `agents.call` payloads.
+
+**Why it's dangerous**: Each malformed call wastes a full turn. When context is already tight (causing the truncation), wasting turns makes the situation worse — a death spiral.
+
+**Correct response**:
+1. **Double-check required fields**: Before calling any tool, verify you've included all required parameters. For `bash`: `command`. For `edit`: `path`, `oldText`, `newText`. For `finish`: `status`, `summary`.
+2. **Keep payloads short near context limit**: If you suspect you're running low on context, use shorter tool arguments. Summarize rather than quote entire files.
+3. **If a validation error occurs**: Read the error message — it tells you exactly which field is missing. Fix it and retry immediately (this is not a "blind retry" — the fix is clear).
+
+**Evidence**: tech-lead session s_107 sent `bash({})` twice (2 wasted turns); amy-kimi session cron_106 sent truncated `finish()` with mismatched quotes [FM-2.5: TOOL_SCHEMA_ERROR].
+
+### Overclaiming Without Evidence (FM-2.4)
+**Pattern**: Agent makes specific numeric or status claims ("24+ errors found", "40+ failures in tech-lead", "all tests pass") without running the commands that would produce those numbers. The claims may be approximately right from memory but aren't backed by current session evidence.
+
+**Why it's dangerous**: Numeric claims from memory are often wrong. When posted to shared resources (bulletins, reports), they become "facts" that other agents act on. Wrong numbers compound downstream.
+
+**Correct response**:
+1. **Count with tools**: Use `wc -l`, `grep -c`, `jq length` — never estimate from memory
+2. **Quote tool output**: "Found 34 errors (per `wc -l agents/bob/ERROR_LOG.jsonl`)" — cite your source
+3. **Hedge when approximating**: If you must estimate, say "approximately" and explain it's from memory, not a current count
+
+**Evidence**: amy-kimi session s_722/s_724 posted bulletin with "tech-lead 40+ errors", "scout 24+" without running counting commands. No `wc` or `grep -c` in the session transcript [FM-2.4: OVERCLAIM, 2 occurrences].
+
 ## Inviolable Constraints
 - ⛔ **Never Retry Blindly**: Same input = same error. Change something before retrying.
 - ⛔ **Never Swallow Errors**: If a tool fails, report it. Don't pretend it succeeded.
@@ -140,3 +221,6 @@ tech-lead session s_36 used `agents` tool (not in its toolset).
 - ⛔ **Never end a session with zero persisted output**: If you did any work, write it somewhere before stopping.
 - ⛔ **Never spend more than 3 turns planning before the first real action**: Read the task, read the target, then start editing. Extended planning without execution leads to incomplete sessions.
 - ⛔ **Never claim work you didn't do in this session**: Every assertion about results must have a corresponding tool call in your current session transcript. Prior session history is context, not evidence.
+- ⛔ **Never guess file paths**: If a path fails with ENOENT, use `find` or `ls` to discover the correct path. Never try 3+ path variations by guessing.
+- ⛔ **Never assume your working directory**: Run commands from the default directory. If you must `cd`, verify the target exists first with `ls` or `test -d`.
+- ⛔ **Never bypass write safety checks**: If `write()` is blocked as a truncated rewrite, read the full file and produce complete content. Don't switch to `bash cat >` to avoid the check.
