@@ -13,15 +13,7 @@ import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { Type, type Static } from "@mariozechner/pi-ai";
 import type { AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
-
-// Lazy-load requests module to avoid pulling bun:sqlite at module level (vitest compat)
-let _requestsModule: typeof import("../requests.js") | undefined;
-async function getRequestsModule() {
-  if (!_requestsModule) {
-    _requestsModule = await import("../requests.js");
-  }
-  return _requestsModule;
-}
+import { isDuplicate, trackRequest } from "../requests.js";
 
 export interface SendToolOptions {
   /** Name of the calling agent */
@@ -39,12 +31,12 @@ export interface SendToolOptions {
 }
 
 const sendParams = Type.Object({
-  agent: Type.String({ description: "Target agent name" }),
-  message: Type.String({ description: "Message to send (tracked in request DB, injected into target's heartbeat)" }),
+  agent: Type.String({ description: "Target agent name. The message is injected into this agent's next heartbeat session." }),
+  message: Type.String({ description: "Message to send. Be specific: include file paths to artifacts, what you need the target to do, and any context they'll need. Tracked in the request DB." }),
   artifact: Type.Optional(
-    Type.String({ description: "Path to an artifact file to reference in the message" }),
+    Type.String({ description: "Path to an artifact file to reference. The file must exist. Write your output to a file first, then pass the path here so the target agent knows where to read it." }),
   ),
-  force: Type.Optional(Type.Boolean({ description: "Skip dedup check for intentional re-sends" })),
+  force: Type.Optional(Type.Boolean({ description: "Skip duplicate detection. Use when you intentionally want to re-send a similar message to the same agent." })),
 });
 
 type SendParams = Static<typeof sendParams> & { force?: boolean };
@@ -97,8 +89,7 @@ export function createSendTool(opts: SendToolOptions): AgentTool {
       // Dedup check
       if (!params.force) {
         try {
-          const req = await getRequestsModule();
-          const existingReqId = req.isDuplicate(opts.persistDir, caller, params.agent, params.message.slice(0, 500));
+          const existingReqId = isDuplicate(opts.persistDir, caller, params.agent, params.message.slice(0, 500));
           if (existingReqId) {
             return textResult(
               JSON.stringify({
@@ -120,8 +111,7 @@ export function createSendTool(opts: SendToolOptions): AgentTool {
       // Track in SQLite
       let requestId: string | undefined;
       try {
-        const req = await getRequestsModule();
-        requestId = req.trackRequest(opts.persistDir, {
+        requestId = trackRequest(opts.persistDir, {
           fromEntity: caller,
           toAgent: params.agent,
           task: params.message,

@@ -401,10 +401,10 @@ export function createSystemStatusTool(stateDir: string, agentsRoot: string): Ag
     name: "system_status",
     label: "System Status Dashboard",
     description:
-      "Get a high-level dashboard of system activity: active sessions, recent completions, delegation history, job health, and strategic context. Read-only.",
+      "Get a high-level dashboard of system activity: active sessions, recent completions, delegation history, job health, and strategic context. Read-only. Use this during heartbeats to understand what's happening before deciding on actions.",
     parameters: Type.Object({
       windowMinutes: Type.Optional(
-        Type.Number({ description: "Lookback window in minutes for history stats (default: 60)", default: 60 }),
+        Type.Number({ description: "Lookback window in minutes for history stats. Default: 60. Increase to 180 or 360 for a broader view of recent activity.", default: 60 }),
       ),
     }),
     execute: async (_toolCallId, params) => {
