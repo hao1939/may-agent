@@ -1,5 +1,18 @@
 # Journal
 
+## 2026-03-20T20:07Z — Common Sense Verification: C1.2 (One Read at a Time)
+
+Verified CS C1.2 (truncation handling) across 5 sessions with truncated reads.
+
+**Findings**:
+- **TL** (2 sessions): PASS — uses targeted reads (offset+limit) for section edits, and journal header reads for prepends. Never writes based on incomplete understanding.
+- **QA** (1 session): PASS — follows up truncations with offset reads.
+- **Optimizer** (1 session): ⚠️ — Read `run-agent-task.ts` incompletely (92 lines unread), then wrote a new handler file derived from patterns in the partial read. Not data-destructive but undermines C1.2's spirit.
+
+**Key insight**: Journal prepend operations are a safe exemption pattern — agents only need the header, not historical content. The real risk is source-code comprehension from partial reads, where missing the end of a file (factory exports, error handling, etc.) leads to incomplete implementations.
+
+**Tracker updated**: Added C1.2 row, now 27/40 items tracked (10 partial).
+
 ## Consolidated Knowledge (as of 2026-03-20T08:09Z, memory consolidation)
 
 ### Experiment Summary
@@ -144,3 +157,47 @@ Added heartbeat section 0d "Delivery Discipline" (6 lines) targeting the 5/8 non
 - coder: 2x FM-5.3, 1x FM-2.1, 1x FM-1.3
 - may: 2x FM-2.4
 - tech-lead: 2x FM-2.2, 2x FM-1.2, 1x FM-2.5
+
+### 2026-03-20T20:09Z — Growth Cycle: tech-lead FM-2.1 (exp-159)
+- **Trigger**: 8 FM-2.1 errors in 7 days (4x empty tool calls, 2x path guessing, 1x stale edit, 1x wrong sequence)
+- **Diagnosis**: SOUL.md already has comprehensive guard from 11x recurrence, but it's explanatory not procedural. Errors continue because guard is read-once not at point of action.
+- **Intervention**: Heartbeat section 0b: 3-step pre-flight checklist (required args? path confirmed? edit oldText fresh?). 8 new lines.
+- **Fork**: agents/.lab/tech-lead-fm21-fix/ (heartbeat.md only)
+- **Expected**: 15-25% improvement. Monitor by 2026-03-27.
+
+## 2026-03-20 20:10 — Growth Cycle: optimizer FM-3.2
+
+**Error**: 7x FM-3.2 (CONSTRAINT_MISS 2x, MISSING_EVIDENCE 2x, WRONG_SCOPE 1x, verification shortfall 2x)
+**Root cause**: No pre-flight scope check before code edits, no post-flight test targeting, no completion evidence enforcement
+**Intervention**: Heartbeat guard step 7 "SCOPE GUARD" with Rules C/D/E (pre-flight grep, post-flight test, completion evidence)
+**Fork**: agents/.lab/optimizer-fm32-fix/heartbeat.md (+9 lines)
+**Experiment**: exp-158
+**Note**: CONSTRAINT_MISS sub-pattern already covered by Rule B from FM-2.6 intervention. Gym blocked. Text-only, expected ~10-20%.
+
+---
+
+## 2026-03-20 ~20:09 UTC — Growth Cycle: Scout FM-3.3
+
+**Trigger**: cron:growth-trigger — scout has 7 FM-3.3 errors in 7 days
+**Root cause**: All 7 errors from 2026-03-14: scout asserts tool availability from memory without executing a verification tool call. Same root behavior as FM-2.1 (already treated with VERIFY-BEFORE-ASSERT in TOOLS.md+LESSONS.md).
+**Intervention**: Added `🔴 EVIDENCE-BACKED CLAIMS` heartbeat guard with DO/DON'T examples. Complements existing TOOLS.md fix at a higher-salience location.
+**Fork**: `agents/.lab/scout-fm33-verify/` — only heartbeat.md changed (+8 lines)
+**Experiment**: exp-158
+**Expected effectiveness**: 5-15% (text-only, same behavioral target)
+**Review**: 2026-03-27 — monitor for FM-3.3 recurrence
+
+### 2026-03-20T21:10Z — Heartbeat: Error Scan + Growth Cycle
+- **Hygiene**: Archived sprint-plan.md and sprint-results.md (21→19 files)
+- **Error scan results** (since Mar 13):
+  - optimizer: 17x FM-2.1, 16x FM-3.3, 12x FM-3.1 (forks exist from sprint)
+  - tech-lead: 11x FM-2.2, 11x FM-3.3, 11x FM-2.5
+  - bob: 6x FM-2.4, 6x FM-2.6, 6x FM-3.3
+  - scout: 9x FM-2.1, 7x FM-3.3
+- **Growth cycle dispatched**: tech-lead FM-2.2 (UNHANDLED_COMMAND_FAILURE pattern)
+  - Fork created: tech-lead-fm22-fix (LESSONS.md command failure handling guide)
+  - Gym result: DISCARDED — no improvement (baseline=patched on all scenarios)
+  - **Learning**: Current gym scenarios don't test command-failure-handling behavior. Need scenario that specifically triggers grep/find non-zero exits.
+- **Next priorities**: 
+  1. Create gym scenario for command-failure-handling
+  2. Review 6 pending forks from last sprint for promotion
+  3. tech-lead FM-2.5 (11x) still unaddressed

@@ -24,8 +24,8 @@ See `agents/evaluator/periodic-tasks.md` for the definitions.
 
 ## 4. Detect Statistical Drift (L3 Defense)
 **Goal**: Catch "Boiling Frog" degradation (P30) and "Consensus Hallucination".
-- **Detect**: Run `detect-p53-drift.cjs` (Skill) to generate `drift-responses/`.
-- **Respond**: Run `trigger-response.cjs` (Skill) to dispatch tasks (Growth Cycle / Revert).
+- **Detect**: Run the detect-p53-drift skill (note: the runnable entrypoint is currently not exposed as a top-level `*.cjs` script; see `agents/evaluator/skills/detect-p53-drift/SKILL.md` for current usage).
+- **Respond**: Run `node agents/evaluator/skills/trigger-response.cjs` (Skill) to dispatch tasks (Growth Cycle / Revert).
 - **Log**: Append findings to `agents/shared/bulletin.md`.
 
 ## 5. Analyze Delegation Metrics (L3 Collective Defense)

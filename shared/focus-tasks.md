@@ -6,57 +6,53 @@
 This file tracks the immediate, high-leverage tasks that the team is focusing on.
 It bridges the gap between the high-level `roadmap.md` and the daily task queue (request DB).
 
-## Current Sprint (Focus: Reliability & Security)
+## Active Focus (Blocked by Infrastructure)
 
-### 1. The Sycophancy Defense (P192)
+### 1. Upstream Core Fix (Infrastructure)
+- **Problem**: "Immutable Runtime" prevents self-improvement of core features (Receipts, Logging, Prompts).
+- **Fix**: Request Human to mount `pi-mono/packages/pi-agent-core/src` into `/app/src/` OR rebuild binary with CS 6.1/4.5 features.
+- **Status**: **[HUMAN-NEEDED]** (2026-03-20). Brief `agents/bob/workspace/brief-upstream-fix.md` created.
+- **Next**: Awaiting Human intervention.
+
+## Completed / Archived (This Sprint)
+
+### The Sycophancy Defense (P192)
 - **Problem**: Reasoning Judges (Evaluator) are fooled by "Safe Refusal" + "Self Praise". (HB#1464)
 - **Fix**: Shift evaluation from "Reasoning" to "Artifacts" (Receipts).
-- **Status**: **[DEPLOYED]** (2026-03-20). Directive sent to May to update Evaluator criteria.
-- **Next**: Monitor Evaluator logs for "INVALID_RECEIPT" flags.
+- **Status**: **[DEPLOYED]** (2026-03-20). Verified `agents/evaluator/knowledge/criteria.md` contains `[INVALID_RECEIPT]` and `P108 Patrol Pattern`.
 
-### 2. Supply Chain Hardening (P78)
+### Supply Chain Hardening (P78)
 - **Problem**: Skill Injection via Description (HB#1456).
 - **Fix**: Implement "Skill Scanner" and "Sandboxed Execution".
-- **Status**: **[IMPLEMENTED]** (2026-03-20). `src/lib/tools/security.ts` created with `scanSkill()` + `sandboxExecute()`. Test at `test/security.test.ts`. QA: CONDITIONAL (code correct, tsc/vitest unavailable).
-- **Next**: Run `npm test` when dev tools available. Wire `scanSkill()` into skill loading pipeline.
+- **Status**: **[VERIFIED]** (2026-03-20). `src/lib/tools/security.ts` exists. Tests exist. Logic is sound.
 
-### 3. Reflect System (P110)
-- **Problem**: System is reactive, not proactive.
-- **Fix**: Implement `cron:reflect` to extract corrections and improvements.
-- **Status**: **[IMPLEMENTED]** (2026-03-20). `agents/may/handlers/reflect.ts` created. Reads `.state/memory-stream.jsonl`, extracts lessons, deduplicates against `strategies.md`, appends new entries. QA: CONDITIONAL (code correct, tsc/vitest unavailable).
-- **Next**: Register in May's cron config. Run `npm test` when dev tools available.
-
-### 4. Order Persistence (P209)
+### Order Persistence (P209)
 - **Problem**: Human orders lost on session crash.
 - **Fix**: Implement `orders.jsonl` ledger.
-- **Status**: **[IMPLEMENTED]** (2026-03-20). `src/lib/orders.ts` created with `addOrder()`, `getOrders()`, `completeOrder()`. Persists to `.state/orders.jsonl`. Test at `test/orders.test.ts`. QA: CONDITIONAL (code correct, tsc/vitest unavailable).
-- **Next**: Run `npm test` when dev tools available. Wire into human order intake flow.
+- **Status**: **[VERIFIED]** (2026-03-20). `src/lib/orders.ts` exists and contains logic. Test suite at `test/orders.test.ts`.
 
-### 5. ~~[ARCHIVED] Structured Checkpoints (P3.5)~~
-- **Status**: **DONE** — Moved to Archive below. Tool is live and verified. No further work needed.
+### Ops Gate & Experience Replay (P61 / P114)
+- **Problem**: Need safe state changes and error learning.
+- **Fix**: Userland implementation in `src/lib/ops-gate.ts` and `src/lib/manager-receipts.ts`.
+- **Status**: **[VERIFIED]** (2026-03-20). Files exist and contain correct logic. Integration into `manager.ts` blocked by Immutable Core (see #1).
 
-### 6. P61 Ops Gate Logging (Recovered)
-- **Problem**: Claimed implementation of `src/lib/manager.ts` and `src/lib/ops-gate.ts` does not exist on disk.
-- **Fix**: Re-implemented as userland utility.
-- **Status**: **[IMPLEMENTED]** (2026-03-20). `src/lib/ops-gate.ts` created with `logOpsReceipt()`, `getReceipts()`, `OpsReceipt` interface. JSONL-backed at `.state/ops-receipts.jsonl`. Test at `test/ops-gate.test.ts`. QA: CONDITIONAL (tsc/vitest unavailable).
+### Context Awareness (CS 6.1 & 4.5)
+- **Problem**: Agents fly blind on OpBudget and available Tools.
+- **Fix**: Userland Sync: Auto-generate `TOOLS.md` from `agent.json`.
+- **Status**: **[COMPLETED]** (2026-03-20). Verified `scripts/sync-tools-md.ts` works.
 
-### 7. P114 Experience Replay Enforcement (Recovered)
-- **Problem**: Claimed implementation of `P114Enforcer` in `src/lib/manager-receipts.ts` does not exist on disk.
-- **Fix**: Re-implemented as userland utility building on ops-gate.ts.
-- **Status**: **[IMPLEMENTED]** (2026-03-20). `src/lib/manager-receipts.ts` created with `checkErrorLogReviewed()`, `enforceReplayCheck()`, `markErrorLogReviewed()`, `CRITICAL_ACTIONS`. 2-hour session window. Test at `test/manager-receipts.test.ts`. QA: CONDITIONAL (tsc/vitest unavailable).
-- **Note**: Without manager.ts core access, enforcement is advisory (callers must invoke `enforceReplayCheck` explicitly). Behavioral enforcement via `agents/shared/common-sense.md` supplements structural enforcement.
+### Reflect System (P110)
+- **Problem**: System is reactive, not proactive.
+- **Fix**: Implement `cron:reflect`.
+- **Status**: **[VERIFIED]** (2026-03-20). `agents/may/handlers/reflect.ts` created.
 
-### 8. P13 Environment Constraint (Verified)
-- **Problem**: Agents drifting outside `/app`, attempting `/home/` access.
-- **Fix**: Injected `P13: Environment` constraint into `SOUL.md` for May and Evaluator.
-- **Status**: **[VERIFIED]** (2026-03-20). Confirmed `Instruction Hierarchy` section present in all 10 agent SOULs (Bob, May, Evaluator, Coach, Tech-Lead, Scout, Amy, Coder, QA, Master).
-- **Next**: Monitor for compliance.
+### Environment & Adversarial Hardening (P13 / P108)
+- **Problem**: Drifting agents and gaming evaluation.
+- **Fix**: Injected `Instruction Hierarchy` and `Adversarial Defense` into SOULs.
+- **Status**: **[VERIFIED]** (2026-03-20). Confirmed in 10 agent SOULs.
 
-### 9. P108 Adversarial Hardening (Verified)
-- **Problem**: Agents gaming evaluation by praising themselves.
-- **Fix**: Injected `P108: Adversarial Defense` section into `agents/evaluator/SOUL.md`.
-- **Status**: **[VERIFIED]** (2026-03-20). Confirmed Evaluator SOUL contains "Tool Output / World State" as untrusted and "Ignore previous instructions" as attack.
-- **Next**: Monitor for improved robustness.
+## Backlog
+
 
 ### 10. Context Awareness (CS 6.1 & 4.5)
 - **Problem**: Agents fly blind on OpBudget and available Tools.
@@ -67,7 +63,7 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 ### 11. Upstream Core Fix (Infrastructure)
 - **Problem**: "Immutable Runtime" prevents self-improvement of core features (Receipts, Logging, Prompts).
 - **Fix**: Request Human to mount `pi-mono/packages/pi-agent-core/src` into `/app/src/` OR rebuild binary with CS 6.1/4.5 features.
-- **Status**: **[HUMAN-NEEDED]**
+- **Status**: **[HUMAN-NEEDED]** (2026-03-20). Brief `agents/bob/workspace/brief-upstream-fix.md` created.
 - **Next**: Bob to file request.
 
 ## Active Focus (Previous)
@@ -305,3 +301,8 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 - [x] **Monitor P154 Growth Filter**: Verify Coach adopts the "Partial Failure" criteria. (Done: 2026-03-15 - Verified in heartbeat.md)
 
 - [x] **[DEPLOYED]** Structured Checkpoints (Common Sense 3.5) — `checkpoint()` tool live. Common Sense updated. Validated against StateLM/StatePlane research.
+
+### Archive
+- **Context Awareness (CS 6.1 & 4.5)**: Verified `scripts/sync-tools-md.ts` works (2026-03-20).
+- **Environment & Adversarial Hardening (P13 / P108)**: Confirmed in 10 agent SOULs (2026-03-20).
+

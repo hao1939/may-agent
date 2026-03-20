@@ -1,6 +1,31 @@
 
 ---
 
+### 2026-03-20 Session (s_1774037339669_143) — karpathy/autoresearch Source-Code Deep-Dive
+
+**Focus:** Comprehensive code-level analysis of karpathy/autoresearch, fulfilling Hao/May's request for a deep-dive that reads the actual source code (program.md, train.py, prepare.py) rather than just the README.
+
+**Output:**
+- **Updated deep-dive** at `archive/2026-03/deep-dive-karpathy-autoresearch.md` (~30KB, 575 lines)
+  - Complete source code analysis of all three key files
+  - Architecture deep-dive: Flash Attention 3, Muon optimizer, Value Embeddings, squared ReLU, SSSL sliding window, dual residual streams, logit soft-capping
+  - Data pipeline analysis: BOS-aligned best-fit packing, rustbpe→tiktoken tokenizer, BPB evaluation
+  - Training loop analysis: time-based training (not epoch-based), GC freeze optimization, NaN fast-fail
+  - 9 transferable patterns for our system identified
+  - Community signal: Issue #57 (Codex fails), Issue #47 (novelty pressure gap)
+  - Growth tracking: 45,055 stars (14 days), 6,244 forks, 142 open issues
+
+**Key technical insights:**
+1. **Muon optimizer** — orthogonal projection via Newton-Schulz iteration, makes autonomous experiments more robust to hyperparameter variation (deliberate design for autonomous operation)
+2. **Immutable evaluation oracle** (prepare.py is read-only) — separation of "what to optimize" from "how to optimize" is THE safety pattern
+3. **No warmup, 50% warmdown** LR schedule — unusual but matches the 5-minute constraint well
+4. **GC freeze** after first step — eliminates 500ms GC stalls, significant throughput win
+5. **program.md as "skill file"** — validates our system's approach of markdown-based agent behavior specification
+
+**Growth trajectory:** 16,052 → 45,055 stars in 10 days (2.8x). 2,045 → 6,244 forks (3.1x). Unprecedented even for Karpathy.
+
+---
+
 ### 2026-03-20 Session (s_1773990317765_168) — Friday Batch: Tier 2 Deep-Dives + Full Synthesis
 
 **Focus:** Completing deep-dives on all Tier 2 papers from Friday March 20 arXiv batch, then writing the comprehensive synthesis (CR#249) covering all 7 MAS-relevant papers from this batch.
