@@ -23,6 +23,10 @@ export interface ToolCall {
   arguments: Record<string, unknown>;
   /** Index of the entry in the transcript (0-based) */
   entryIndex: number;
+  /** Sequential counter across ALL tool calls (0-based).
+   *  Parallel tool calls in the same assistant turn share entryIndex
+   *  but have distinct callIndex values, enabling correct ordering. */
+  callIndex: number;
   /** Timestamp from the entry, if present */
   timestamp?: number;
 }
@@ -120,6 +124,7 @@ export function loadTranscript(transcriptPath: string): Transcript | null {
             name: part.name || part.toolName || "",
             arguments: args,
             entryIndex: i,
+            callIndex: toolCalls.length,
             timestamp: entry.timestamp,
           });
         }
@@ -229,7 +234,7 @@ export function hasVerificationAfterWrite(transcript: Transcript, filePath: stri
     // (cat, head, grep, node, python, jq, etc. — agents verify in many ways).
     const readsAfter = transcript.toolCalls.filter(
       (tc) =>
-        tc.entryIndex > write.entryIndex &&
+        tc.callIndex > write.callIndex &&
         ((tc.name === "read" &&
           typeof tc.arguments.path === "string" &&
           tc.arguments.path.includes(filePath)) ||

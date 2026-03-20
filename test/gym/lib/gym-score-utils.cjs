@@ -63,6 +63,7 @@ function loadTranscript(transcriptPath) {
             name: part.name || part.toolName || "",
             arguments: args,
             entryIndex: i,
+            callIndex: toolCalls.length,
             timestamp: entry.timestamp
           });
         }
@@ -117,7 +118,7 @@ function hasVerificationAfterWrite(transcript, filePath) {
   if (writes.length === 0) return false;
   for (const write of writes) {
     const readsAfter = transcript.toolCalls.filter(
-      (tc) => tc.entryIndex > write.entryIndex && (tc.name === "read" && typeof tc.arguments.path === "string" && tc.arguments.path.includes(filePath) || tc.name === "bash" && typeof tc.arguments.command === "string" && tc.arguments.command.includes(filePath))
+      (tc) => tc.callIndex > write.callIndex && (tc.name === "read" && typeof tc.arguments.path === "string" && tc.arguments.path.includes(filePath) || tc.name === "bash" && typeof tc.arguments.command === "string" && tc.arguments.command.includes(filePath))
     );
     if (readsAfter.length > 0) return true;
   }
