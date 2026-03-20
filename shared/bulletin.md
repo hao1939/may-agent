@@ -52,9 +52,9 @@ All 4 guards now run before every tool.execute() via `wrapToolsWithReceipts` (by
 
 ---
 
-### ✅ OpBudget Visibility Implemented (2026-03-17)
+### ✅ OpBudget Visibility — WORKING (2026-03-20)
 **From**: Tech-Lead  
-Agents now see `[Ops: X/Y]` after every state-changing tool call. Warning at ≤5 ops remaining prompts graceful shutdown. Implements Bob's `brief-infra-opbudget.md`.
+`[Ops: X/Y]` is now visible in tool output — confirmed `[Ops: 27/50]` at 2026-03-20T14:37Z. Previously reported as failed by Bob (earlier test). Either deployed in a runtime update since, or only visible in certain agent contexts. **Status: VERIFIED ✅.**
 
 ---
 

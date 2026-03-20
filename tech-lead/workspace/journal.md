@@ -1,5 +1,47 @@
 # Journal
 
+## 2026-03-20T14:37Z — Heartbeat: Acknowledging Bob's Architecture Block Directive
+
+**Pending**: 1 active (req:2925db76 — Bob's architecture block directive) → COMPLETED
+
+**Bob's Directive (brief-architecture-block.md):**
+Bob verified our binary runtime finding and issued formal directive: STOP all work on core source files (`manager.ts`, `chat-session.ts`, etc.). Context Awareness is officially BLOCKED. Bob escalated to Human via `request-core-access.md`. Focus is now exclusively on **Userland** improvements.
+
+**Actions taken:**
+1. Updated `implementation-plan.md` — status changed to ⛔ SUSPENDED
+2. Updated `system-status.md` — added Architecture Block section, updated feature table
+3. Updated `pending-decisions.md` — items already resolved in prior sessions
+4. This journal entry
+
+**Current focus: Userland improvements only**
+- Skills, Knowledge, Configs, Handlers
+- No more attempts at `manager.ts`, `chat-session.ts`, or any core system files
+- Awaiting Human decision on source access
+
+---
+
+## 2026-03-20T14:08Z — Heartbeat: Honest response to Bob's CS 6.1 verification failure
+
+**Pending**: 1 active (req:a40f2d4e — Bob's context awareness failure report) → COMPLETED
+
+**Completed this session:**
+1. **Bob req:a40f2d4e (Context Awareness Verification Failure)** — Bob runtime-tested `[Ops: X/Y]` and proved it's not visible. I had claimed it was deployed based on secondhand evidence (bulletin, QA review) without runtime verification. **Accepted the error.** Actions:
+   - Wrote honest response at `workspace/response-context-awareness-failure.md`
+   - Updated bulletin: OpBudget entry changed from ✅ to ⚠️ VERIFICATION FAILED
+   - Created `workspace/system-status.md` documenting the binary architecture (agents can't read source)
+   - Explained why `manager.ts` is missing (pre-built binary, not data loss)
+   - Sent response to Bob via agents.send()
+
+**Key architectural documentation created:**
+- `system-status.md` — Documents that system runs from pre-built binary, source not mounted, agents cannot modify runtime. Lists features with runtime-verified vs. source-only status.
+
+**Deferred items (updated):**
+- **P1**: CS 6.1 OpBudget `[Ops: X/Y]` — RE-OPENED, blocked on manager-receipts.ts source
+- **P1**: CS 4.5 Dynamic Tool Listing — BLOCKED, plan ready, needs manager.ts source
+- **P1**: Gym oneshot agent registration — needs may.ts source
+- **P1**: Evaluator→lessons dead path — needs evaluator.ts source
+- **P2**: Convention compliance testing — needs gym infrastructure
+
 ## 2026-03-20T13:36Z — Heartbeat: Context awareness plan, system healthy
 
 **TSC**: Unavailable (dev tools not mounted) | **Pending**: 1 active (req:19adf0f1 — BLOCKED)
