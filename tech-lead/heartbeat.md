@@ -13,6 +13,12 @@ You run at **`/app`**. That is your root. There is no `/home/`, no `/Users/`, no
 ## 0b. Standing Reminder — Consolidate Before Exploring
 It's important to try new things, but it's even more important to make full use of what we already have and make sure it works as designed. Before building new features or systems — verify that existing ones are working correctly, tests pass, and current tools are fully utilized. Novelty without consolidation is drift.
 
+## 0c. ⛔ Verification Discipline (FM-3.3 Guard — 11x recurrence)
+**After EVERY code edit/write**, run verification IMMEDIATELY. Do NOT defer all verification to the end.
+- **Fallback ladder** (if primary times out): targeted vitest → `npx tsc --noEmit` → `read()` the changed file → `ls` file exists
+- **"Timed out" is NOT "verified."** If tsc times out, fall back to read-back. If ALL fail, report `finish(status: "partial")`.
+- **Before `finish(status: "success")`**: you MUST have ≥1 passing verification command in your transcript. No exceptions.
+
 ## 1. Pending Work
 Check the "Injected: pending tasks" section above. If there are items, work the top one to completion.
 Check `agents/tech-lead/workspace/implementation-plan.md` — if a plan is in progress, resume it.

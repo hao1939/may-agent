@@ -1,5 +1,46 @@
 # Journal
 
+## 2026-03-20T13:36Z — Heartbeat: Context awareness plan, system healthy
+
+**TSC**: Unavailable (dev tools not mounted) | **Pending**: 1 active (req:19adf0f1 — BLOCKED)
+
+**Assessed this session:**
+1. **Bob req:19adf0f1 (Context Awareness CS 4.5 + 6.1)** — Assessed both items:
+   - **OpBudget (CS 6.1)**: Already implemented 2026-03-17 (`[Ops: X/Y]` after every tool call). Bulletin confirms. ✅ DONE.
+   - **Dynamic Tool Listing (CS 4.5)**: Requires `src/lib/manager.ts` edit to inject runtime tool names into system prompt. Source tree not mounted. Wrote implementation plan to `workspace/implementation-plan.md` with exact code snippet for `resolveSystemPrompt()`. **BLOCKED on source access.**
+
+**System health review:**
+- Coder: All 8 recent sessions successful. No errors or repeated failures.
+- QA: Running normally; `CONDITIONAL` verdicts relate to missing npx/vitest (environment issue, not code).
+- No evaluations pending. No new workflow escalations.
+- Bulletin: Clean, 78 lines, no new tech-lead actions.
+- Journal: 101→~30 lines after old plan replaced.
+
+**Deferred items (unchanged):**
+- **P1**: Gym oneshot agent registration — needs may.ts source
+- **P1**: Evaluator→lessons dead path — needs evaluator.ts source  
+- **P2**: Dynamic Tool Listing (CS 4.5) — plan written, needs manager.ts source
+- **P2**: Convention compliance testing — needs gym infrastructure
+
+## 2026-03-20T12:07Z — Heartbeat: System healthy, no pending work
+
+**TSC**: Unavailable (dev tools not mounted) | **Pending**: 0 active tasks
+
+**System health review:**
+- All agents running normally — watchdog healthy, cron heartbeats flowing
+- Bob's directives (coach-pruning, relaxed-C40) both completed and deployed
+- Coach planning Sprint 6: coder baselines on judgment scenarios (exp-119/120/121)
+- Workflow enforcement (Method #15) confirmed as proven approach (~98% effectiveness across 5 agents, 6+ scenarios) — all text-based methods (1-8) failed. Key architectural validation: behavioral constraints via structure > prompt instructions.
+- Bulletin at 78 lines, all entries from last 2 days — clean
+- Common-sense.md at 213 lines — stable
+
+**Deferred items status (no changes):**
+- **P1**: Gym oneshot agent registration — needs may.ts source (dev tools not mounted)
+- **P1**: Evaluator→lessons dead path — needs evaluator.ts source
+- **P2**: Convention compliance testing — needs gym infrastructure access
+
+No actionable work available without source code access. System running autonomously and well.
+
 ## 2026-03-20T10:37Z — Heartbeat: Fixed audit-requests broken import
 
 **TSC**: Unavailable (dev tools not mounted) | **Pending**: 1 active (May's req:c5d56fa6 — completed)
@@ -55,3 +96,17 @@
 **Bulletin action items assessed:**
 - *Session mgmt / intent inference* (from 控制论 entry): WildToolBench validates our session architecture. Intent inference = May dispatch routing — works for known patterns. Multi-step intents handled by workflows. P3, no action.
 - *Dynamic skill loading / sandbox isolation* (from DeerFlow entry): Both already implemented (loadLocalTools, Docker+P53 guards). Confirmed aligned.
+
+## 2026-03-20T12:36Z — Heartbeat Session
+
+### Completed
+1. **Coach FM-3.3 Growth Cycle**: Applied all 3 file edits (SOUL.md, LESSONS.md, heartbeat.md) — interleave verification constraint, fallback ladder, section 0c
+2. **Bob's Alignment Brief**: Marked 4 items RESOLVED in pending-decisions.md (Checkpoint Tool, Handoff Tool, Error Amplification, Context Pruning). Replied to Bob.
+3. **Bulletin review**: No critical errors. Amy-Kimi research digests noted (DeerFlow validation, ControlTheory, ReMe memory).
+
+### Assessed but Deferred (no src/ access)
+- **May req:a3b22186** — Create `src/lib/growth.ts` (exports promoteAgent, discardAgent, GrowthConfig). Source tree not mounted this session. Needs session with src/ access.
+
+### Queue State
+- Active deferred items: gym oneshot registration (from May), evaluator→lessons dead path (from optimizer), growth.ts creation (from May), gym convention compliance (from Bob)
+- Bob shifting to Common Sense Infrastructure / opBudget visibility

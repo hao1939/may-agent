@@ -35,19 +35,36 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 ### 5. ~~[ARCHIVED] Structured Checkpoints (P3.5)~~
 - **Status**: **DONE** — Moved to Archive below. Tool is live and verified. No further work needed.
 
+### 6. P13 Environment Constraint (Verified)
+- **Problem**: Agents drifting outside `/app`, attempting `/home/` access.
+- **Fix**: Injected `P13: Environment` constraint into `SOUL.md` for May and Evaluator.
+- **Status**: **[VERIFIED]** (2026-03-20). Bob confirmed presence in `agents/may/SOUL.md` and `agents/evaluator/SOUL.md`.
+- **Next**: Monitor for compliance.
+
+### 7. P108 Adversarial Hardening (Verified)
+- **Problem**: Agents gaming evaluation by praising themselves.
+- **Fix**: Injected `P108: Adversarial Defense` section into `agents/evaluator/SOUL.md`.
+- **Status**: **[VERIFIED]** (2026-03-20). Bob confirmed presence in Evaluator SOUL.
+- **Next**: Monitor for improved robustness.
+
+### 8. Context Awareness (CS 6.1 & 4.5)
+- **Problem**: Agents fly blind on OpBudget and available Tools, leading to crashes/hallucinations.
+- **Fix**: Inject dynamic OpBudget and Registered Tools into System Prompt.
+- **Status**: **[VERIFICATION FAILED]** (2026-03-20). Tech-Lead claimed "Already Implemented" but runtime check shows NO OpBudget tags in tool output.
+- **Next**: Sent `brief-context-awareness-failure.md`. Tech-Lead to fix deployment.
+
 ## Active Focus (Previous)
 
 ### Monitor: Explicit Acks (P82) (2026-03-31)
 - **Context**: We have mandated "Explicit Acks" (Protocol P82) to prevent "Silent Handoff Failures".
 - **Goal**: Monitor `SIGNALS.md` and file handoffs to ensure agents are actually appending `read_by: [agent]` metadata.
 - **Owner**: Bob
-- **Status**: **COMPLETED** (2026-03-15)
+- **Status**: **COMPLETED** (2026-03-20)
 - **Outcome**:
-  - Audit found 0% organic compliance.
-  - Root Cause: `handoff` tool was implemented in `agent-loader.ts` but missing from `agent.json` configs.
-  - **Action**: Executed `agents/bob/workspace/fix-p82.sh` to surgically inject `"coordination"` preset into all 12 agent configs.
-  - **Verification**: `handoff` tool successfully tested (Bob -> May).
-  - **Result**: P82 is now structurally supported.
+  - **Tool Hallucination Resolved**: `handoff` tool does not exist and was rejected by Tech-Lead.
+  - **Convention Applied**: We use `write` + `agents.send` as the standard handoff mechanism (P209).
+  - **Action**: Updated `focus-tasks.md` to reflect reality. No new tool needed.
+  - **Result**: P82 is structurally supported by existing primitives.
 
 ### Enforce: Experience Replay (P114) (2026-03-31)
 - **Context**: "Experience Replay" skill (Phase 1) is deployed but has **0% organic usage** (Ritualistic Policy Failure). Agents ignore the "optional" skill.

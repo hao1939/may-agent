@@ -9,11 +9,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If found → add specific task to workspace/todo.md.
   Latest (2026-03-20T05:19): **60 sessions/6h, 8.3% error rate (5 errors) — UP from 2.1%.** Bob analysis.md still from Mar 18 (stale). Error spike is streaming truncation — 9/17 errors in 24h from "tool_use_missing". Pattern 4b fix exists in undeployed binary. Coach volume high (15 sessions/6h = 2.5/hr). All handler health details in `workspace/finding-handler-health-check-0320-0519.md`. No new optimization tasks — key action is binary restart (sent req:3150fd5a).
 
-- [x] **Cost outlier scan** — Last done: 2026-03-20T03:19
+- [x] **Cost outlier scan** — Last done: 2026-03-20T12:40
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-20T03:19): **25 sessions/2.1h, $29.95 total, 8% error rate (improved from 16.7%).** Opus agents still 89% of cost ($26.73) with 0% cache. Sonnet agents have **82% cache hit rate** — confirms caching works for Sonnet but NOT Opus. Coach error session (streaming truncation) wasted $5.55 — fixed retry logic in manager-retry.ts Pattern 4b to catch this error type. Daily rate $322, would drop to ~$100 with Opus cache fix. Coach avg $1.19/session (continued improvement). Finding at `workspace/finding-cost-scan-0320-0319.md`.
+  Latest (2026-03-20T12:40): **~$73/6h = $290/day pace.** Coach = biggest spender (14 sessions, ~4.5MB, est ~$36). Growth triggers are #1 waste: 6 triggers in 6h = ~1.7MB. Fixed experiments gate bug — `error_pattern` field often missing in experiments.jsonl, so gate was letting all triggers through. Applied two-pass fix (code-specific + agent-level fallback) and expanded infra types skip list. Expected savings ~$10-20/day. Research-intake (865KB) has Coach reading method-catalog.md 7x — read-dedup guard in undeployed commits.
 
 - [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-19T19:49
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?

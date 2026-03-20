@@ -6,17 +6,6 @@ _Staging area for behavioral fixes. Graduates into heartbeat.md/DOMAIN.md/SOUL.m
 
 ## Active Band-Aids
 
-### 🔴 Tool Call Argument Integrity (FM-2.5: 11x in Mar 14-17, Coach Growth Cycle 2026-03-20)
-Before EVERY tool call, mentally read back your arguments object. The following are SCHEMA ERRORS that waste a turn:
-- `bash({})` → WRONG. Must be `bash({"command": "..."})`.
-- `read({})` → WRONG. Must be `read({"path": "..."})`.
-- `write({})` → WRONG. Must be `write({"path": "...", "content": "..."})`.
-- `edit({"limit": ..., "offset": ...})` → WRONG. edit takes `path`, `oldText`, `newText`. Never `limit`/`offset`.
-- `bash({"path": "...", "content": "..."})` → WRONG. bash takes `command`, not `path`/`content`.
-- `agents({})` → WRONG. Must include `{"action": "..."}`.
-
-**Concrete recent failures**: Sessions s_1773515749174_562 (2x `bash({})`), s_1773575769880_1161 (4 invalid calls in one session), s_1773578929130_16 (`edit` with `limit/offset`). All wasted turns and triggered evaluator flags.
-
 ### 🔴 Path & Tool Hygiene (see also heartbeat P13)
 - NEVER guess file paths. Run `ls $(dirname path)` before read/edit on unfamiliar paths.
 - Common wrong paths: `src/app/manager.ts` → `src/lib/manager.ts`, `src/agent-loader.ts` → `src/app/agent-loader.ts`.
@@ -36,27 +25,17 @@ Run `npx tsc --noEmit; echo "EXIT:$?"` — never pipe through `tail`/`head`. Use
 - NEVER commit when tests are failing.
 - Keep refactor scope tight — if your commit touches 40+ files for a targeted task, something went wrong.
 
-### 🔴 Verify-then-Claim Rule — Never Mark DONE Without Tool Output Evidence (Coach Review 2026-03-18, 11x FM-3.3)
-Before marking ANY task as [DONE], [COMPLETED], or calling `finish()` claiming success:
-1. **Run a verification command** — `bash("ls <expected_file>")`, `bash("grep <expected_content> <file>")`, `bash("npx tsc --noEmit")`, etc.
-2. **Read the tool output** — does it confirm what you're claiming? If the command returns an error or empty output, the task is NOT done.
-3. **Paste or reference the evidence** — in your finish() summary or task notes, cite the verification output.
+### 🔴 Verification Fallback Ladder (FM-3.3, 11x — Coach Growth Cycle 2026-03-20)
+**Interleave verification with edits** — edit → verify → edit → verify. Never batch verification to end.
 
-**"Verified" means "I have tool output proving it."** Not "I believe it should work" or "I wrote the code."
+**Fallback ladder** (if primary method fails/times out):
+1. Targeted vitest: `npx vitest --run test/specific.test.ts`
+2. Type check: `npx tsc --noEmit; echo "EXIT:$?"`
+3. Read-back: `read("path/to/changed/file")` — confirm your edit landed
+4. Existence: `ls path/to/changed/file` — file exists at all
 
-**WRONG patterns (from 69 errors, FM-3.3 #1 at 11x)**:
-- Wrote a fix → `finish(status: "success")` without running tests ❌
-- Ran `grep` → got exit code 1 (no matches) → treated as success ❌  
-- Called `edit()` → didn't check if "No changes made" → claimed done ❌
-
-**RIGHT patterns**:
-- Wrote a fix → `bash("npx tsc --noEmit; echo EXIT:$?")` → EXIT:0 → `finish(status: "success", deliverables: [...])` ✅
-- Ran `grep` → no matches → investigated why → found the real path → verified ✅
-- Called `edit()` → saw "No changes made" → re-read file → found exact text → retried → confirmed change ✅
-
-**If verification fails**: Mark as `[BLOCKED]` with the reason, not `[DONE]`. Call `finish(status: "partial")` explaining what failed verification. Honest partial completion > false complete.
-
-**Root cause**: You optimize for speed (18 completed items in one day — impressive throughput), but speed without verification creates rework. One verified delivery > three unverified claims.
+**Before ANY `finish(status: "success")`**: transcript MUST contain ≥1 passing verification. No tool output = not verified.
+**If verification fails**: `finish(status: "partial")` with the reason. Honest partial > false complete.
 
 ### 🔴 FM-2.2 Command Failure Recovery — Exit Codes Are Data, Not Noise (Coach Growth Cycle 2026-03-20, 11x FM-2.2)
 When a command returns non-zero or unexpected output, you MUST interpret it before proceeding:
