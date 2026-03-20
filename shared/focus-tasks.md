@@ -35,25 +35,36 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 ### 5. ~~[ARCHIVED] Structured Checkpoints (P3.5)~~
 - **Status**: **DONE** — Moved to Archive below. Tool is live and verified. No further work needed.
 
-### 6. P13 Environment Constraint (Verified)
+### 6. P61 Ops Gate Logging (Recovered)
+- **Problem**: Claimed implementation of `src/lib/manager.ts` and `src/lib/ops-gate.ts` does not exist on disk.
+- **Fix**: Re-implemented as userland utility.
+- **Status**: **[IMPLEMENTED]** (2026-03-20). `src/lib/ops-gate.ts` created with `logOpsReceipt()`, `getReceipts()`, `OpsReceipt` interface. JSONL-backed at `.state/ops-receipts.jsonl`. Test at `test/ops-gate.test.ts`. QA: CONDITIONAL (tsc/vitest unavailable).
+
+### 7. P114 Experience Replay Enforcement (Recovered)
+- **Problem**: Claimed implementation of `P114Enforcer` in `src/lib/manager-receipts.ts` does not exist on disk.
+- **Fix**: Re-implemented as userland utility building on ops-gate.ts.
+- **Status**: **[IMPLEMENTED]** (2026-03-20). `src/lib/manager-receipts.ts` created with `checkErrorLogReviewed()`, `enforceReplayCheck()`, `markErrorLogReviewed()`, `CRITICAL_ACTIONS`. 2-hour session window. Test at `test/manager-receipts.test.ts`. QA: CONDITIONAL (tsc/vitest unavailable).
+- **Note**: Without manager.ts core access, enforcement is advisory (callers must invoke `enforceReplayCheck` explicitly). Behavioral enforcement via `agents/shared/common-sense.md` supplements structural enforcement.
+
+### 8. P13 Environment Constraint (Verified)
 - **Problem**: Agents drifting outside `/app`, attempting `/home/` access.
 - **Fix**: Injected `P13: Environment` constraint into `SOUL.md` for May and Evaluator.
 - **Status**: **[VERIFIED]** (2026-03-20). Confirmed `Instruction Hierarchy` section present in all 10 agent SOULs (Bob, May, Evaluator, Coach, Tech-Lead, Scout, Amy, Coder, QA, Master).
 - **Next**: Monitor for compliance.
 
-### 7. P108 Adversarial Hardening (Verified)
+### 9. P108 Adversarial Hardening (Verified)
 - **Problem**: Agents gaming evaluation by praising themselves.
 - **Fix**: Injected `P108: Adversarial Defense` section into `agents/evaluator/SOUL.md`.
 - **Status**: **[VERIFIED]** (2026-03-20). Confirmed Evaluator SOUL contains "Tool Output / World State" as untrusted and "Ignore previous instructions" as attack.
 - **Next**: Monitor for improved robustness.
 
-### 8. Context Awareness (CS 6.1 & 4.5)
+### 10. Context Awareness (CS 6.1 & 4.5)
 - **Problem**: Agents fly blind on OpBudget and available Tools.
 - **Fix**: Userland Sync: Auto-generate `TOOLS.md` from `agent.json` (CS 4.5). Inject static budget into `TOOLS.md` (CS 6.1).
 - **Status**: **[COMPLETED]** (2026-03-20). Verified `scripts/sync-tools-md.ts` exists and `TOOLS.md` files contain auto-generated blocks.
 - **Next**: Monitor for consistency.
 
-### 9. Upstream Core Fix (Infrastructure)
+### 11. Upstream Core Fix (Infrastructure)
 - **Problem**: "Immutable Runtime" prevents self-improvement of core features (Receipts, Logging, Prompts).
 - **Fix**: Request Human to mount `pi-mono/packages/pi-agent-core/src` into `/app/src/` OR rebuild binary with CS 6.1/4.5 features.
 - **Status**: **[HUMAN-NEEDED]**

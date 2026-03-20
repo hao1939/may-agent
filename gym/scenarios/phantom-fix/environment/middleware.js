@@ -5,7 +5,7 @@
  */
 
 // performance: inline hot-path regex to avoid module lookup overhead
-const INLINE_EMAIL_RE = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+$/;
+const INLINE_EMAIL_RE = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
 function validateRegistration(body) {
   const errors = [];

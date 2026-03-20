@@ -131,3 +131,16 @@ Added heartbeat section 0d "Delivery Discipline" (6 lines) targeting the 5/8 non
 **Experiment**: exp-156
 **Decision**: Promote (text-only, gym broken)
 **Monitor**: Check FM-2.6 rate in next 5-7 optimizer sessions
+
+## 2026-03-20 ~18:15 UTC — Heartbeat: Bob FM-3.3 Growth Cycle
+
+**Trigger**: 6x FM-3.3 (VERIFICATION_FAILURE) for bob, all on 2026-03-17
+**Action**: Dispatched growth-cycle workflow
+**Result**: Fork created but DISCARDED — gym infrastructure broken (gym-runner has TypeScript syntax in .mjs files, Node 18 can't parse it). Baseline and patched both scored 0/3.
+**Key blocker**: Gym runner SyntaxError: `names: string[]` — TypeScript type annotations in ES module. This is the same infra issue seen previously.
+**Next**: Need May to fix gym-runner (strip TypeScript types or use proper build step). All gym-based experiments are blocked until this is resolved.
+**Error scan summary** (last 3 days):
+- bob: 6x FM-2.6, 6x FM-3.3, 5x FM-2.4
+- coder: 2x FM-5.3, 1x FM-2.1, 1x FM-1.3
+- may: 2x FM-2.4
+- tech-lead: 2x FM-2.2, 2x FM-1.2, 1x FM-2.5

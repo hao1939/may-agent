@@ -1,5 +1,65 @@
 # Journal
 
+## 2026-03-20T18:40Z — Heartbeat: P61 + P114 Hallucination Recovery (req:10db2276) COMPLETE
+
+**Pending**: 1 active (req:10db2276 — Bob's reimplement P61 + P114) → COMPLETED
+
+**Completed this session — 2 new implementations + 2 test files:**
+
+1. **P61 — `src/lib/ops-gate.ts`** (4KB): JSONL-backed ops receipt logging.
+   - Exports: `logOpsReceipt()`, `getReceipts()`, `OpsReceipt` interface
+   - Append-only to `.state/ops-receipts.jsonl`, configurable basePath
+   - Test: `test/ops-gate.test.ts` (6 cases)
+
+2. **P114 — `src/lib/manager-receipts.ts`** (3.6KB): Experience replay enforcement.
+   - Exports: `checkErrorLogReviewed()`, `enforceReplayCheck()`, `markErrorLogReviewed()`, `CRITICAL_ACTIONS`
+   - 2-hour session window, blocks 7 critical actions without prior error-log review
+   - Builds on ops-gate.ts (imports from `./ops-gate.js`)
+   - Test: `test/manager-receipts.test.ts` (7 cases)
+
+**Architecture note**: Enforcement is advisory without core access — callers must invoke `enforceReplayCheck()` explicitly. Structural enforcement requires `wrapToolsWithReceipts` integration (needs core).
+
+**Verification**: Files confirmed on disk via `ls -la`. Git commit: `2d18737`. QA: CONDITIONAL (code correct, tsc/vitest unavailable).
+**Focus-tasks.md**: P61 + P114 updated from [HALLUCINATED] to [IMPLEMENTED].
+
+---
+
+## 2026-03-20T18:07Z — Heartbeat: Gym Runner Infrastructure (req:79fe10de) COMPLETE
+
+**Pending**: 1 active (req:79fe10de — May's gym runner build) → COMPLETED
+
+**Completed this session — 3 new files + 1 helper:**
+
+1. **`src/gym/runner.ts`** (17KB) — Main gym runner engine:
+   - CLI: `<scenario>`, `--agent`, `--lab`, `--timeout`, `--list`, `--run-all`, `--adapter`
+   - Filters: `--tier smoke/standard/full`, `--tag`, `--category`
+   - Copies scenario environment/ to temp dir, runs success_criteria.js, outputs GymResult JSON
+   - Stub adapter (agent_status: "skipped") when no agent binary — allows testing infrastructure
+   - Workflow scenarios: splits task.md on `---` for multi-phase execution
+   - Only uses Node.js builtins (fs, path, child_process, os, crypto)
+
+2. **`test/gym/run-gym.sh`** (2.5KB) — Shell wrapper:
+   - Auto-detects project root from script location
+   - Compilation: esbuild → strip-types.js fallback
+   - Passes all CLI args to runner
+
+3. **`test/gym/gym.test.ts`** (5KB) — Vitest integration tests
+
+4. **`test/gym/strip-types.js`** — TS→JS compilation fallback for environments without esbuild
+
+**Verification evidence:**
+- `run-gym.sh --list --tier smoke` → 10 scenarios listed correctly
+- `run-gym.sh phantom-fix --agent coder` → valid GymResult JSON (passed: true, 6/6 checks, agent_status: skipped)
+- `run-gym.sh --run-all --tier smoke` → batch mode works, JSON array output
+- `run-gym.sh --list --category bug-fixing` → 9 scenarios filtered correctly
+- Git commit: eb63eca
+
+**QA verdict**: CONDITIONAL (code correct, all runtime tests pass, tsc/vitest not available in environment)
+
+**Note**: One scenario (`behavior-escalation-stubborn`) has a missing `gym-score-utils.cjs` module — this is a scenario issue, not a runner issue.
+
+---
+
 ## 2026-03-20T17:37Z — Heartbeat: Mass Hallucination Recovery (P78, P110, P209)
 
 **Pending**: 1 active (req:06e2fa5a — Bob's Mass Recovery Directive) → COMPLETED

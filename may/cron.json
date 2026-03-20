@@ -365,12 +365,20 @@
     "description": "QA proactive quality check (30min)"
   },
   {
+    "name": "tracker-compact",
+    "type": "job",
+    "handler": "tracker-compact",
+    "intervalMs": 14400000,
+    "enabled": true,
+    "description": "Generate compact status index from common-sense tracker (saves ~42KB/run for coach)"
+  },
+  {
     "name": "common-sense-verify",
     "type": "job",
     "handler": "run-agent-task",
     "agent": "coach",
     "intervalMs": 14400000,
-    "message": "[cron:common-sense-verify] Pick ONE behavioral item from agents/shared/common-sense.md that you haven't verified recently (check workspace/common-sense-tracker.md). To check agent behavior: use `bash` with grep/jq to search session transcripts — do NOT read full session.jsonl files (they are 30-300KB and will waste tokens). Example: `grep -l 'keyword' .state/sessions/history/*/session.jsonl` to find relevant sessions, then `grep 'keyword' <file> | head -20` to extract evidence. Only read small excerpts (<5KB). Did the agent follow the rule? Quote evidence. If NO — add to Growth Cycle queue. If YES — mark verified in workspace/common-sense-tracker.md.",
+    "message": "[cron:common-sense-verify] Pick ONE behavioral item from agents/shared/common-sense.md that you haven't verified recently (check workspace/common-sense-status.md for status index — it shows which items are ❌/⚠️ and need attention). To check agent behavior: use `bash` with grep/jq to search session transcripts — do NOT read full session.jsonl files (they are 30-300KB and will waste tokens). Example: `grep -l 'keyword' .state/sessions/history/*/session.jsonl` to find relevant sessions, then `grep 'keyword' <file> | head -20` to extract evidence. Only read small excerpts (<5KB). Did the agent follow the rule? Quote evidence. If NO — add to Growth Cycle queue. If YES — update workspace/common-sense-tracker.md with your findings.",
     "enabled": true,
     "description": "Verify one common-sense behavioral item against real behavior (4h, graduated from coach heartbeat)",
     "preflight": {

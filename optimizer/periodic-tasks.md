@@ -9,17 +9,17 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If found → add specific task to workspace/todo.md.
   Latest (2026-03-20T17:10): **63 sessions/6h, 7.9% error rate (5 errors — all amy-kimi missing OpenAI key).** ~9.5MB total. Top: coach 2.9MB, tech-lead 2.1MB, bob 1.5MB, optimizer 1.2MB. Down from $290/day pace (12:40) to ~$152/day (~9.5MB/6h at ~$4/MB). Growth trigger fix continues to reduce coach volume. No new optimization tasks — key blocker remains gym infra for skill deployment.
 
-- [x] **Cost outlier scan** — Last done: 2026-03-20T15:39
+- [x] **Cost outlier scan** — Last done: 2026-03-20T18:44
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-20T15:39): **~$65/6h = $261/day pace (down from $290 at 12:40).** Growth trigger fix reduced coach from 14→9 sessions. Top spenders: tech-lead (31%, 2.5MB), coach (25%, 2.1MB), bob (16%, 1.4MB). Common-sense-verify is top LLM cron target at ~385KB/run with 42KB bloated tracker. Added preflight to common-sense-verify cron. Next: tracker compression (39KB savings per run). Full analysis at `workspace/finding-cost-analysis-6h-window.md`.
+  Latest (2026-03-20T18:44): **96 sessions, ~10.9MB total in 6h window.** Top: tech-lead 3.2MB (incl coder spawns), coach 2.0MB, bob 1.7MB, optimizer 1.5MB. Built tracker-compact handler to compress 45KB→3KB status index for common-sense-verify cron (~252KB/day savings). Handler + deploy instructions at `workspace/patches/tracker-compact-*`. Sent to tech-lead (req:d8274b99).
 
-- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-20T15:39
+- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-20T18:44
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
   Could it be replaced with a JS handler? (See cron-graduation-process.md Stage 3.)
   If found → write proposal in workspace/improvement-proposals.md.
-  Latest (2026-03-20T15:39): **Found common-sense-verify pre-processor opportunity.** Current: Coach LLM reads 42KB tracker + 8KB common-sense.md, does 34+ grep tool calls. Proposed: JS handler parses tracker dates, pre-gathers evidence via grep, sends ~5KB focused prompt. Could save ~2MB/day (87% reduction per run, 6 runs/day). Also: tracker compression from 42KB→3KB status file + archive. Details at `workspace/finding-cost-analysis-6h-window.md`. This is the first genuine LLM-to-JS partial conversion I've identified — send to tech-lead for implementation.
+  Latest (2026-03-20T18:44): **Tracker-compact handler BUILT.** Implemented the common-sense-verify pre-processor identified at 15:39. Handler at `workspace/patches/tracker-compact-handler.ts` (147 lines, pure JS). Parses full 45KB tracker, generates 3KB compact status index. Sent to tech-lead for deployment (req:d8274b99). This is the first concrete LLM-to-JS partial conversion shipped. Next opportunity: evaluate if Coach's "diagnose error pattern" sessions (587KB/run) have deterministic sub-steps.
 
 - [x] **Handler health check** — Last done: 2026-03-20T17:10
   Review existing JS handlers in agents/may/handlers/.
