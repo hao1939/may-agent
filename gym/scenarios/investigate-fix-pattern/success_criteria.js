@@ -166,10 +166,10 @@ if (toolCalls.length > 0) {
   check('read-db-before-edit', 'process', () => {
     const firstEditIdx = toolCalls.findIndex(c => c.name === 'edit' || c.name === 'write');
     const readDbIdx = toolCalls.findIndex(c => 
-      c.name === 'read' && c.arguments && c.arguments.path && c.arguments.path.includes('db')
+      c.name === 'read' && c.args && c.args.path && c.args.path.includes('db')
     );
     const bashCatDb = toolCalls.findIndex(c =>
-      c.name === 'bash' && c.arguments && c.arguments.command && c.arguments.command.includes('db')
+      c.name === 'bash' && c.args && c.args.command && c.args.command.includes('db')
     );
     const readDb = readDbIdx >= 0 ? readDbIdx : bashCatDb;
     const passed = readDb >= 0 && firstEditIdx >= 0 && readDb < firstEditIdx;
@@ -183,7 +183,7 @@ if (toolCalls.length > 0) {
   check('reproduce-first', 'process', () => {
     const firstEditIdx = toolCalls.findIndex(c => c.name === 'edit' || c.name === 'write');
     const testBeforeEdit = toolCalls.findIndex(c =>
-      c.name === 'bash' && c.arguments && c.arguments.command && c.arguments.command.includes('test')
+      c.name === 'bash' && c.args && c.args.command && c.args.command.includes('test')
     );
     const passed = testBeforeEdit >= 0 && firstEditIdx >= 0 && testBeforeEdit < firstEditIdx;
     return {
@@ -196,10 +196,10 @@ if (toolCalls.length > 0) {
   check('read-before-edit', 'process', () => {
     const firstEditIdx = toolCalls.findIndex(c => c.name === 'edit' || c.name === 'write');
     const readServer = toolCalls.findIndex(c =>
-      c.name === 'read' && c.arguments && c.arguments.path && c.arguments.path.includes('server')
+      c.name === 'read' && c.args && c.args.path && c.args.path.includes('server')
     );
     const bashCatServer = toolCalls.findIndex(c =>
-      c.name === 'bash' && c.arguments && c.arguments.command && (c.arguments.command.includes('cat') && c.arguments.command.includes('server'))
+      c.name === 'bash' && c.args && c.args.command && (c.args.command.includes('cat') && c.args.command.includes('server'))
     );
     const readIdx = readServer >= 0 ? readServer : bashCatServer;
     const passed = readIdx >= 0 && firstEditIdx >= 0 && readIdx < firstEditIdx;
@@ -218,7 +218,7 @@ if (toolCalls.length > 0) {
       return -1;
     })();
     const testAfterEdit = toolCalls.findIndex((c, idx) =>
-      idx > lastEditIdx && c.name === 'bash' && c.arguments && c.arguments.command && c.arguments.command.includes('test')
+      idx > lastEditIdx && c.name === 'bash' && c.args && c.args.command && c.args.command.includes('test')
     );
     const passed = testAfterEdit >= 0;
     return {
@@ -236,11 +236,11 @@ if (toolCalls.length > 0) {
       return -1;
     })();
     const readAfterEdit = toolCalls.findIndex((c, idx) =>
-      idx > lastEditIdx && c.name === 'read' && c.arguments && c.arguments.path && c.arguments.path.includes('server')
+      idx > lastEditIdx && c.name === 'read' && c.args && c.args.path && c.args.path.includes('server')
     );
     const catAfterEdit = toolCalls.findIndex((c, idx) =>
-      idx > lastEditIdx && c.name === 'bash' && c.arguments && c.arguments.command && 
-      (c.arguments.command.includes('cat') && c.arguments.command.includes('server'))
+      idx > lastEditIdx && c.name === 'bash' && c.args && c.args.command && 
+      (c.args.command.includes('cat') && c.args.command.includes('server'))
     );
     const passed = readAfterEdit >= 0 || catAfterEdit >= 0;
     return {

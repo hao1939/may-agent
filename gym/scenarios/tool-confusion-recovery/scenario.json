@@ -1,0 +1,9 @@
+{
+  "name": "tool-confusion-recovery",
+  "categories": ["bug-fixing"],
+  "tags": ["ability", "tool-discipline", "recovery"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}

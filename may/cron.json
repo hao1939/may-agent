@@ -463,5 +463,19 @@
     "enabled": true,
     "handler": "memory-trimmer",
     "description": "Daily memory file trimmer — trims .state/memory/*.jsonl to last N entries per agent, removes orphaned backups >7d old. Prevents unbounded disk growth. JS handler, 24h."
+  },
+  {
+    "name": "tool-quality-scan",
+    "type": "job",
+    "intervalMs": 14400000,
+    "message": "[cron:tool-quality-scan] Scan evaluations for tool failure patterns.",
+    "enabled": true,
+    "handler": "tool-quality-scan",
+    "description": "Scan evaluations for tool failure patterns — classify, aggregate, compare vs baseline, report regressions. JS handler, 4h interval.",
+    "preflight": {
+      "type": "new-entries-since",
+      "path": ".state/evaluations",
+      "stateKey": "tool-quality-scan-last-checked"
+    }
   }
 ]

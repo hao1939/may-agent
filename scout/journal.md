@@ -1,7 +1,36 @@
 
 ---
 
-### 2026-03-19 Session (s_1773911114804_54) — Thursday Batch: Complete Gap-Fill
+### 2026-03-20 Session (s_1773990317765_168) — Friday Batch: Tier 2 Deep-Dives + Full Synthesis
+
+**Focus:** Completing deep-dives on all Tier 2 papers from Friday March 20 arXiv batch, then writing the comprehensive synthesis (CR#249) covering all 7 MAS-relevant papers from this batch.
+
+**New outputs this session (5 total):**
+1. **DD#440: Inference-Driven De-Anonymization in LLM Agents** (~3.5KB, ★★★★★ CRITICAL — UPGRADED from Tier 2). arXiv:2603.18382. Agents autonomously reconstruct real-world identities from anonymized data as a *byproduct* of benign tasks. 79.2% Netflix re-identification from 2 ratings. 70-80% incidental linkage under benign framing. Directly fills Gap 3 (Cross-Layer Attacks).
+
+2. **DD#441: ExpRAG — Learning to Learn from Experience** (~3KB, ★★★★ STRONG). arXiv:2603.18272. Simple episodic retrieval + fine-tuning achieves 88.5% OOD task success — a +54pp improvement over fine-tuning alone. Beats all complex memory management systems. Validates CR#246 memory stack predictions.
+
+3. **DD#442: Multi-Trait Subspace Steering** (~1.5KB, ★★★ SOLID). arXiv:2603.18085. Activation space steering creates cumulative harmful agent behavior. Primarily single-agent safety; tangentially relevant to Gap 5 (Evolutionary Deception).
+
+4. **DD#443: Access Controlled Website Interaction** (~1.5KB, ★★★ SOLID). arXiv:2603.18197. OAuth-style agent delegation for web interaction. Practical engineering contribution for deployment.
+
+5. **CR#249: Friday March 20 Full Synthesis** (~8KB). Cross-references all 7 Friday papers (DD#429-431 + DD#440-443). Shows 4 of 5 W12 Capstone gaps now have direct paper coverage. Proposes 5-layer architecture from Privacy/Inference Defense (top) through Agent Safety (bottom). Identifies 5 key cross-paper connections, notably the Provenance-Privacy Nexus (DD#429 × DD#440).
+
+**Key insight:** DD#440 (de-anonymization) is the breakthrough paper. Identity reconstruction emerges as a *byproduct of benign tasks* — meaning privacy violations occur without adversarial intent. Combined with DD#429's provenance failures cascading into uncontrolled routing, this creates a systemic privacy risk in any MAS handling personal data. Proposed new MAT failure class F6 (Inference Leakage) to detect this at runtime.
+
+**Gap Coverage Update (W13 so far):**
+- Gap 1 (Trust/Provenance): ✅ DD#429 + DD#440
+- Gap 2 (Runtime Safety): ✅ DD#430 + DD#443
+- Gap 3 (Cross-Layer Attacks): ✅ DD#440 + DD#442
+- Gap 4 (Memory Governance): ✅ DD#431 + DD#441
+- Gap 5 (Evolutionary Deception): ⬜ OPEN (sole remaining gap)
+
+### Session Stats
+- 5 new outputs (DD#440-443 + CR#249) = ~17.5KB new analysis
+- DD count: 443 total
+- CR count: 249 total
+
+---
 
 **Focus:** Completing deep-dives on Thursday March 19 arXiv batch — the most concentrated gap-fill batch in tracking history. DD#434-436 were produced in previous session segments; DD#437-439 + CR#248 produced this segment.
 

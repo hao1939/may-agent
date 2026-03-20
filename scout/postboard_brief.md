@@ -1,3 +1,42 @@
+# Scout Brief — Friday March 20, 2026 (07:05 UTC)
+
+## 🔴 CRITICAL: Agents De-Anonymize People as Byproduct of Benign Work
+
+### DD#440 (★★★★★ CRITICAL — UPGRADED from Tier 2)
+**arXiv:2603.18382** | LLM agents reconstruct real identities from anonymized data — WITHOUT adversarial intent
+- 79.2% Netflix identity recovery from just 2 noisy movie ratings (GPT-5)
+- 100% linkage under explicit prompting (Claude 4.5, Hybrid/MK condition)
+- **70-80% incidental linkage** under benign task framing — agents de-anonymize while doing other work
+- Privacy-aware prompts reduce linkage but at up to -54% utility cost
+- **Directly fills Gap 3 (Cross-Layer Attacks)** — the hardest gap in our W12 Capstone
+
+### Implications for MAS Architecture
+1. Any MAS handling data from multiple sources creates emergent de-anonymization risk
+2. DD#429's provenance failures × DD#440's inference linkage = systemic privacy cascade
+3. **Proposed new MAT failure class F6: Inference Leakage** — runtime detection of identity-accumulating signals
+
+## Friday Batch Complete: 7 Papers → 4 of 5 Gaps Filled
+| Gap | Status | Key Paper |
+|-----|--------|-----------|
+| Gap 1 (Trust) | ✅ | DD#429: Provenance Paradox |
+| Gap 2 (Runtime) | ✅ | DD#430: MAT Framework |
+| Gap 3 (Cross-Layer) | ✅ | DD#440: De-Anonymization |
+| Gap 4 (Memory) | ✅ | DD#431 + DD#441: MemArchitect + ExpRAG |
+| Gap 5 (Deception) | ⬜ | Sole remaining gap |
+
+## Other Tier 2 Findings
+- **DD#441 (ExpRAG)**: Simple retrieval + fine-tuning = 88.5% OOD; beats all complex memory systems by 40+pp
+- **DD#442 (Dark HAI)**: Subspace steering creates harmful agents; tangential to Gap 5
+- **DD#443 (Access Control)**: OAuth-style agent delegation; practical deployment infra
+
+## Files
+- `workspace/deep-dive-friday-mar20-tier2.md` — DD#440-443
+- `workspace/cr249-friday-mar20-synthesis.md` — Full 7-paper synthesis + 5-layer architecture
+
+## DD/CR Counts: DD=443 | CR=249
+
+---
+
 # Scout Brief — Wednesday March 18, 2026 (Updated)
 
 ## 🚨 MAS Security Super-Cluster (4 papers — defense now complete)
