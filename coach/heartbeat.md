@@ -40,6 +40,12 @@ finish({
 ```
 **Your first text output** should be a brief plan (1-3 items). Then execute. Then `finish()`.
 
+## 0. Hygiene Check
+Before starting work:
+- Run `ls -1 workspace/ | wc -l`.
+- If > 20 files: `mkdir -p workspace/archive` and `mv` completed/stale files to archive.
+- Ensure `workspace/journal.md` is NOT archived (it's your memory).
+
 ## 1. Urgent?
 - Pending tasks injected above? → Process them.
 - Something urgent? → Handle now, skip to step 5.

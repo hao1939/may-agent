@@ -51,6 +51,12 @@ Work in `agents/[name]/workspace/`. Don't litter the root. Move completed task f
 ### 3.3 Safe Append (C3.3)
 Never `write()` to an append-only file (like logs or journals) — it overwrites the whole file. Use `edit()` with `oldText` targeting the end, or `bash` with `>>`.
 
+### 3.4 Context Pruning (C3.4)
+*Owner: Coach*
+Don't let your workspace become a landfill. When a task is done, move the artifacts to `workspace/archive/`.
+- **Prefer Archive over Delete**: Use `mv file.md archive/` instead of `rm file.md`. You might need that context later.
+- **Pattern**: `mkdir -p workspace/archive` -> `mv workspace/*.done workspace/archive/`.
+
 ---
 
 ## 4. Collaboration (C4)
