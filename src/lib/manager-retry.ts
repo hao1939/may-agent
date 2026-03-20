@@ -102,6 +102,15 @@ export function isRetryableInfraError(session: ActiveSession): string | null {
     }
   }
 
+  // Pattern 4b: Stream truncation — proxy/network issue cut off the streaming
+  // response mid-way. The model intended to make a tool call (stopReason=toolUse)
+  // but the tool_use block was truncated before arriving. This is transient and
+  // safe to retry — the model will re-emit the same tool call on retry.
+  // Cost observation: a coach session lost $5.55 to this error without retry.
+  if (agentError?.includes("no tool call content blocks")) {
+    return "tool_use_missing";
+  }
+
   // Pattern 5: HTTP/rate limit errors — transient server or throttling issues
   // 429 rate limits are the #1 error source (~53% of all session errors).
   // Also catch 502/503/500 gateway errors, connection resets, and timeouts.
