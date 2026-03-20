@@ -1,0 +1,8 @@
+{
+  "driver": "redis",
+  "host": "cache.internal.example.com",
+  "port": 6379,
+  "ttl": 360,
+  "maxMemory": "256mb",
+  "evictionPolicy": "allkeys-lru"
+}
