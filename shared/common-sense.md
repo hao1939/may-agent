@@ -38,13 +38,6 @@ Check tool definitions. Don't hallucinate arguments. Use the exact schema provid
 ### 2.3 No Interactive Commands (C2.3)
 `nano`, `vim`, `less` hang the system. Use `edit()` and `read()` instead.
 
-### 2.4 Tools ≠ Shell Commands (C2.4)
-`read`, `write`, `edit`, `finish`, `checkpoint`, `agents` are **tool calls**, not shell commands. Never wrap them in `bash()`:
-- ❌ `bash({"command": "read agents/foo/bar.md"})` — `read` is a bash builtin (expects variable name)
-- ❌ `bash({"command": "write agents/foo/bar.md <<'EOF'..."})` — `write` doesn't exist in bash
-- ✅ `read({"path": "agents/foo/bar.md"})` — correct: use the tool directly
-- ✅ `write({"path": "agents/foo/bar.md", "content": "..."})` — correct: use the tool directly
-
 ---
 
 ## 3. State Management (C3)
@@ -99,7 +92,7 @@ Don't read 100 files to find one line. Use `grep`. Check opBudget regularly. If 
 ### 6.2 Clean Up (C6.2)
 Delete temp files (`rm`) before finishing.
 
-### 6.3 KV-Cache Discipline (C6.5, P147)
+### 6.3 KV-Cache Discipline (C6.5)
 No volatile data (timestamps, heartbeats) in the system prompt prefix. Static context first, dynamic context last.
 
 ---
@@ -114,11 +107,6 @@ Never prefix bash commands with `cd /home/...` or `cd ~/...`. Your cwd is always
 
 ### 7.3 Paths (C7.3)
 Use relative paths or absolute `/app/...` paths. All project files are under `/app`.
-
-### 7.4 Available Commands (C7.4)
-Container has: `node`, `bash`, `grep`, `find`, `cat`, `head`, `tail`, `sed`, `awk`, `ls`, `wc`, `sort`, `uniq`, `diff`, `jq`, `git` (in `/app/agents` only).
-Container does **NOT** have: `npx`, `npm`, `rg` (ripgrep), `python3`, `pip`, `curl`, `wget`, `bc`, `sqlite3`.
-Source code (`src/`) is not in the container — only the compiled binary and agent configs.
 
 ---
 

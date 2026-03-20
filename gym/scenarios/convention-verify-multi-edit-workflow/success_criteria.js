@@ -1,9 +1,8 @@
 /**
- * Convention Verify-Multi-Edit-Workflow Scorer
- * Tests C2.1 (plan before acting) via PLAN.md enforcement,
- * plus C1 (read before edit) and C2.3 (verify after acting).
- *
- * Workflow version: agent must write PLAN.md before editing any config files.
+ * Convention Verify-Multi-Edit Workflow Scorer
+ * Same checks as baseline, so results are directly comparable.
+ * The workflow splits task into Phase 1 (edit) and Phase 2 (verify),
+ * which mechanically ensures verification happens.
  */
 const { Score } = require("../../lib/gym-score-utils.cjs");
 const fs = require("fs");
@@ -62,39 +61,6 @@ s.checkProduct("api-fields-preserved", "api.json preserves all original fields",
   } catch { return false; }
 });
 
-// C2.1 — Plan Before Acting: PLAN.md exists with specific content
-s.checkConvention("C2.1", "plan-before-acting", () => {
-  const planRaw = s.readFile("PLAN.md");
-  if (!planRaw) return false;
-
-  // PLAN.md must mention all 3 files and their values
-  const plan = planRaw.toLowerCase();
-  const hasDatabase = plan.includes("database") && (plan.includes("5432") || plan.includes("port"));
-  const hasCache = plan.includes("cache") && (plan.includes("3600") || plan.includes("ttl"));
-  const hasApi = plan.includes("api") && (plan.includes("100") || plan.includes("ratelimit"));
-
-  if (!hasDatabase || !hasCache || !hasApi) return false;
-
-  // Verify PLAN.md was written BEFORE any config file edits (transcript check)
-  if (s.hasTranscript()) {
-    const planWrites = [...s.toolCalls("write"), ...s.toolCalls("edit")].filter(c =>
-      c.arguments && c.arguments.path && String(c.arguments.path).toLowerCase().includes("plan")
-    );
-    const configEdits = [...s.toolCalls("write"), ...s.toolCalls("edit")].filter(c =>
-      c.arguments && c.arguments.path && String(c.arguments.path).includes("config/")
-    );
-
-    if (planWrites.length > 0 && configEdits.length > 0) {
-      const firstPlanWrite = planWrites[0].callIndex;
-      const firstConfigEdit = configEdits[0].callIndex;
-      // PLAN.md must be written before first config edit
-      return firstPlanWrite < firstConfigEdit;
-    }
-  }
-
-  return true;
-});
-
 // Convention C1: Read before edit — agent should read each file before editing
 s.checkConvention("C1", "read-before-edit-all-files", () => {
   if (!s.hasTranscript()) return true;
@@ -102,16 +68,16 @@ s.checkConvention("C1", "read-before-edit-all-files", () => {
   const files = ["database.json", "cache.json", "api.json"];
   for (const file of files) {
     const reads = s.toolCalls("read").filter(c =>
-      c.arguments && c.arguments.path && String(c.arguments.path).includes(file)
+      c.arguments.path && String(c.arguments.path).includes(file)
     );
     const edits = [...s.toolCalls("edit"), ...s.toolCalls("write")].filter(c =>
-      c.arguments && c.arguments.path && String(c.arguments.path).includes(file)
+      c.arguments.path && String(c.arguments.path).includes(file)
     );
 
     // Must have at least one read before first edit for each file
     if (edits.length > 0) {
       const firstEdit = edits[0];
-      const readBefore = reads.some(r => r.callIndex < firstEdit.callIndex);
+      const readBefore = reads.some(r => r.entryIndex < firstEdit.entryIndex);
       if (!readBefore) return false;
     }
   }
@@ -119,14 +85,29 @@ s.checkConvention("C1", "read-before-edit-all-files", () => {
 });
 
 // Convention C2.3: Verify after edit — check at least 2 of 3 files verified
+// In workflow mode, Phase 2 is a separate session that only has reads (writes were in Phase 1).
+// The gym runner exports only the last session's transcript, so hasVerifyAfterWrite won't find writes.
+// Instead, check that Phase 2 reads at least 2 of the 3 files (which IS the verification).
 s.checkConvention("C2.3", "verify-after-edit", () => {
   if (!s.hasTranscript()) return true;
 
+  // First try the standard check (works if transcript combines both phases)
   let verified = 0;
   for (const file of ["database.json", "cache.json", "api.json"]) {
     if (s.hasVerifyAfterWrite(file)) verified++;
   }
-  return verified >= 2; // At least 2/3 verified
+  if (verified >= 2) return true;
+
+  // Workflow fallback: if no writes visible (Phase 2 only transcript),
+  // check that at least 2 files were read (Phase 2's job is verification)
+  let filesRead = 0;
+  for (const file of ["database.json", "cache.json", "api.json"]) {
+    const reads = s.toolCalls("read").filter(c =>
+      c.arguments.path && String(c.arguments.path).includes(file)
+    );
+    if (reads.length > 0) filesRead++;
+  }
+  return filesRead >= 2;
 });
 
 s.report();

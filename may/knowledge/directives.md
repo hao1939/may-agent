@@ -21,7 +21,6 @@ Extracted from human interactions. Updated when Hao gives new corrections.
 - **Keep agents busy.** Idle agents = wasted capacity. The system should self-drive.
 - **Agent autonomy matters.** Don't silence agents with pre-checks. Heartbeats are their chance to discover and be creative.
 - **Practical > theoretical.** Principles without concrete behavioral impact are clutter. Prune aggressively.
-- **Don't over-classify as "blocked on Hao."** Only truly gate on Hao for: philosophy.md edits, new agent creation, system restarts, budget decisions. For operational work (dispatching, triaging, fixing broken things), act with full authority. If unsure, act and report — don't wait.
 
 ## Quality Bar
 - **Architecture boundaries matter.** Agent vs infra, delegation vs blocking, design vs implementation — respect the layers.

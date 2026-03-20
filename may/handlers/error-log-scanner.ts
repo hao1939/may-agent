@@ -11,6 +11,89 @@
 
 import { readdirSync, readFileSync, existsSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+
+// ── Experiments-history check (skip known-bad triggers) ───────────────
+
+/** How far back to consider experiments as "recent" (30 days). */
+const EXPERIMENTS_LOOKBACK_MS = 30 * 24 * 60 * 60 * 1000;
+
+interface ExperimentsCheckResult {
+  skip: boolean;
+  reason?: string;
+}
+
+/**
+ * Check experiments.jsonl for prior terminal experiments matching (agent, errorType).
+ * If a recent experiment was CEILING, discarded, or skipped → skip the trigger.
+ * Returns { skip: false } if the file doesn't exist or can't be read.
+ */
+export function checkExperimentsHistory(
+  experimentsPath: string,
+  agent: string,
+  errorType: string,
+): ExperimentsCheckResult {
+  let content: string;
+  try {
+    if (!existsSync(experimentsPath)) return { skip: false };
+    content = readFileSync(experimentsPath, "utf-8");
+  } catch {
+    return { skip: false };
+  }
+
+  const now = Date.now();
+  const cutoff = now - EXPERIMENTS_LOOKBACK_MS;
+
+  for (const line of content.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+
+    let entry: Record<string, unknown>;
+    try {
+      entry = JSON.parse(trimmed);
+    } catch {
+      continue;
+    }
+
+    // Must match the agent
+    if (entry.agent !== agent) continue;
+
+    // Must be recent (within last 30 days)
+    if (typeof entry.timestamp === "string") {
+      const entryTime = new Date(entry.timestamp).getTime();
+      if (isNaN(entryTime) || entryTime < cutoff) continue;
+    } else {
+      // No timestamp — skip this entry (can't determine recency)
+      continue;
+    }
+
+    // Check if errorType (FM code) appears in relevant fields
+    const fieldsToSearch = ["error_pattern", "notes", "method"].map(
+      (f) => (typeof entry[f] === "string" ? entry[f] : "") as string,
+    );
+    const matchesErrorType = fieldsToSearch.some((v) => v.includes(errorType));
+    if (!matchesErrorType) continue;
+
+    // Check for terminal outcome
+    const result = typeof entry.result === "string" ? entry.result : "";
+    const decision = typeof entry.decision === "string" ? entry.decision : "";
+    const reason = typeof entry.reason === "string" ? entry.reason : "";
+
+    const isTerminal =
+      result === "CEILING" ||
+      decision === "discard" ||
+      decision === "skipped" ||
+      reason.toLowerCase().includes("ceiling");
+
+    if (!isTerminal) continue;
+
+    // Found a matching terminal experiment — skip
+    const id = typeof entry.id === "string" ? entry.id : "(no id)";
+    const outcome = result || decision || "ceiling";
+    return { skip: true, reason: `prior experiment ${id} resulted in ${outcome}` };
+  }
+
+  return { skip: false };
+}
 import type { HandlerContext, HandlerModule } from "../../../src/lib/handler-context.js";
 import type { CronEntry } from "../../../src/lib/cron-tool.js";
 
@@ -62,15 +145,26 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       return true;
     });
 
+    // Filter out triggers with prior terminal experiments (ceiling/discard/skipped)
+    const experimentsPath = join(ctx.agentsRoot, "coach", "workspace", "experiments.jsonl");
+    const afterExperimentsCheck = eligible.filter((t) => {
+      const check = checkExperimentsHistory(experimentsPath, t.agent, t.errorType);
+      if (check.skip) {
+        ctx.log(`[error-log-scanner] Skipping ${t.agent}:${t.errorType} — ${check.reason}`);
+        return false;
+      }
+      return true;
+    });
+
     // Cap concurrent triggers to prevent resource overload
-    const toTrigger = eligible.slice(0, MAX_TRIGGERS_PER_SCAN);
+    const toTrigger = afterExperimentsCheck.slice(0, MAX_TRIGGERS_PER_SCAN);
 
     if (toTrigger.length === 0) {
-      ctx.log(`[error-log-scanner] ${results.triggered.length} patterns found but all in cooldown. Skipping.`);
+      ctx.log(`[error-log-scanner] ${results.triggered.length} patterns found but all in cooldown or previously attempted. Skipping.`);
       return;
     }
 
-    ctx.log(`[error-log-scanner] ${results.triggered.length} patterns found, ${eligible.length} eligible, triggering top ${toTrigger.length}.`);
+    ctx.log(`[error-log-scanner] ${results.triggered.length} patterns found, ${eligible.length} after cooldown, ${afterExperimentsCheck.length} after experiments check, triggering top ${toTrigger.length}.`);
 
     // Trigger Coach for eligible triggers (capped)
     for (const trigger of toTrigger) {

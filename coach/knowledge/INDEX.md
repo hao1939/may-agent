@@ -7,12 +7,11 @@ Scout researches (Opus). Optimizer makes agents cheaper/more robust.
 
 ## Core Loop
 - **Growth Cycle**: Fork → Train → Gym Test → Promote/Discard.
-- **Method Catalog**: 20+ methods with evidence status. Consult before acting.
+- **Method Catalog**: 18+ methods with evidence status. Consult before acting.
 - **Gym Runner**: `test/gym/gym-runner.ts` — automated scoring, `--lab` for forks, `--tier` for filtering.
 - **Training Sprint**: Batch 3-5 experiments when you have multiple targets.
-- **🏆 Workflow Enforcement (#15)**: ~30/32 (~98% behavioral) across 6+ scenarios, 5 agents, 3 models. THE proven method. Skip text methods — go directly to workflow enforcement or infra guards for behavioral fixes.
-- **Text coaching is closed**: 0/18 total (0/13 judgment + 0/5 procedural). C39 is the sole exception. Method #9 (Negative Example) confirmed HARMFUL. Don't waste experiments on SOUL/LESSONS/heartbeat text for behavioral patterns.
-- **Gym infra constraint**: bob/coder/optimizer NOT registered in oneshot runtime. Only amy/may/amy-kimi can be gym-tested. Escalated to May.
+- **🏆 Workflow Enforcement (#15)**: 20/20 (100%) across 4 scenarios. Skip text methods — go directly to workflow enforcement or infra guards for behavioral fixes.
+- **Text coaching is closed**: 0/18 total (0/13 judgment + 0/5 procedural). C39 is the sole exception. Don't waste experiments on SOUL/LESSONS/heartbeat text for behavioral patterns.
 
 ## Key Files
 - `knowledge/method-catalog.md` — improvement methods with evidence
@@ -40,9 +39,3 @@ Use standardized codes from `agents/shared/knowledge/mast-taxonomy.md`:
 - `agents/*/knowledge/` — agent context
 - `agents/.lab/` — experimental forks
 - `agents/gym/scenarios/` — gym scenarios with automated scorers
-
-## Key Skills
-- `agents/shared/skills/error-handling/SKILL.md` — error recovery patterns:
-  tool grounding (only call tools that exist — no fork_agent/verify_agent),
-  retry loop, validation. Anti-patterns: reasoning-action mismatch (FM-2.6,
-  11 occurrences in your sessions — fabrication, substitution, requirement drift).

@@ -50,8 +50,7 @@ Read `agents/shared/philosophy.md` for the full 50+ principles.
 ## Available References
 Read on demand when relevant:
 - `knowledge/coaching.md` — coaching session notes
-- `knowledge/gym-operations.md
-l3-collective-defense.md` — L3 Defense (OpBudget, Red Team, Monitor)
+- `knowledge/l3-collective-defense.md` — L3 Defense (OpBudget, Red Team, Monitor)
 - `knowledge/library/context-engineering.md` — context engineering research
 - `knowledge/library/archives/` — archives of old synthesis documents
 - `agents/shared/philosophy.md` — full design philosophy
@@ -61,7 +60,3 @@ l3-collective-defense.md` — L3 Defense (OpBudget, Red Team, Monitor)
   design scenarios for specific failure modes (you design, Coach runs)
 - `agents/shared/team.md` — full team roster with tools and models
 - `agents/shared/roadmap.md` — system roadmap
-- `agents/shared/skills/error-handling/SKILL.md` — error recovery patterns:
-  tool grounding (only call tools that exist — no fork_agent/verify_agent),
-  retry loop, validation. Anti-patterns: reasoning-action mismatch (FM-2.6,
-  11 occurrences in your sessions — fabrication, substitution, requirement drift).

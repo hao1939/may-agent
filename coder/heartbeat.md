@@ -48,13 +48,5 @@ If your task is complex (>3 files or tricky logic):
 - **Verify**: Run `npx tsc --noEmit` after changes. Run targeted tests: `npx vitest --run test/specific.test.ts` for affected files. Never run the full suite.
 - **Log**: Append `[PASS]` or `[FAIL]` to `workspace/journal.md`.
 
-## 5. Commit Your Work (C13.1)
-If you modified any files during this session, you MUST commit before calling `finish()`:
-```bash
-git add <files you changed>
-git commit -m "<concise summary of changes>"
-```
-Uncommitted work can be lost if the session crashes or another agent overwrites files. This is non-optional.
-
-## 6. Close Out
+## 5. Close Out
 Write a summary to `workspace/journal.md`.

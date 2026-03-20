@@ -131,9 +131,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     `3. Read back the changed file(s) to confirm the edit worked.\n` +
     `4. Do NOT apply multiple methods — one method per experiment.\n` +
     `5. Report: what you changed, the fork name, and the file(s) modified.\n\n` +
-    `IMPORTANT: The fork lives in agents/.lab/<fork-name>/. Verify it exists.\n\n` +
-    `⚠️ Do NOT delete or discard the fork — even if you discover the baseline already passes. ` +
-    `The workflow manages fork lifecycle (promote/discard) automatically after testing.`
+    `IMPORTANT: The fork lives in agents/.lab/<fork-name>/. Verify it exists.`
   );
   if (patch.status === "error") {
     return ctx.escalate("fork/patch failed", { error: patch.error });
@@ -149,20 +147,6 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   // Find the fork that was just created — prefer one mentioned in patch output
   let forkName = forks.find(f => patchText.includes(f)) ?? forks[0];
   if (!forkName) {
-    // Check if coach found ceiling effect and discarded (common pattern)
-    const lowerPatch = patchText.toLowerCase();
-    const ceilingDiscarded = lowerPatch.includes("discard") || lowerPatch.includes("ceiling") ||
-      lowerPatch.includes("baseline") && lowerPatch.includes("pass");
-
-    if (ceilingDiscarded) {
-      return ctx.done(
-        `Growth cycle ended — coach found ceiling effect during patch step.\n\n` +
-        `## Patch Step Output\n${patchText.slice(0, 1000)}\n\n` +
-        `The baseline already passes. Fork was discarded by coach. ` +
-        `Consider creating harder scenarios for this pattern.`
-      );
-    }
-
     return ctx.escalate("No fork found in agents/.lab/ after patch step", {
       labDir: LAB_DIR,
       patchOutput: patchText.slice(0, 500),

@@ -21,19 +21,6 @@ All top failure modes now have corresponding skill anti-patterns:
 - Zero recurrence of addressed failure modes after March 12, 2026.
 - Skills library: 12 SKILL.md files total as of May 2026.
 
-## Behavioral Change Effectiveness Hierarchy
-Evidence from 38+ coach experiments and gym testing (2026-03-20):
-- **Workflow enforcement (92%)**: Two-phase tasks (investigate → fix) mechanically force process compliance. Transforms 0% → 100% on process checks.
-- **Task instructions (33%)**: Inline directives in task descriptions have moderate effect.
-- **SOUL.md text (~0%)**: Editing SOUL.md has near-zero behavioral impact — the authority hierarchy problem.
-- **Skill documents (0% currently)**: Shared SKILL.md files are NOT loaded into agent runtime context. Agents don't know they exist during sessions. No skill injection mechanism exists yet.
-
-**Implication**: For behavioral fixes, create **workflow-enforced gym scenarios** (separate Phase 1/Phase 2 tasks) rather than skill documents. Skills remain useful as reference/documentation but don't directly change agent behavior.
-
-## Skill Deployment Gaps
-- **classify-then-act skill**: Failed 0/3 gym tests (2026-03-20). Pattern is correct (Method #15, backed by 92% success rate), but no runtime injection mechanism. Don't attempt skill-only deployment until a skill-loader exists.
-- **Per-agent tailoring**: INDEX.md skill entries should highlight patterns specific to each agent's failure history, not generic references. Applied to error-handling v1.3.0 across 8 agents.
-
 ## Key Insight
 - Path hallucination (146+ instances) remains the top systemic issue but is **coaching-level, not code-fixable**.
 - `exec` tool dominates failure chains (694/1156 triggers).
