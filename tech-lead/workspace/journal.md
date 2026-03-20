@@ -1,5 +1,20 @@
 # Journal
 
+## 2026-03-20T19:10Z — Heartbeat: Deployed tracker-compact handler (optimizer req:d8274b99)
+
+**Pending**: 2 active → 1 completed (optimizer's tracker-compact request)
+
+**Completed this session:**
+
+1. **Deployed `agents/may/handlers/tracker-compact.ts`** — JS handler that pre-generates a compact status index from the 44KB common-sense-tracker.md. Reduces Coach's per-run context from ~44KB to ~4.7KB (89% reduction).
+   - Copied optimizer's patch verbatim (clean code, correct handler pattern)
+   - Added `tracker-compact` cron entry to `cron.json` (4h interval, runs before common-sense-verify)
+   - Updated `common-sense-verify` message to reference `common-sense-status.md` instead of full tracker
+   - Generated initial `agents/coach/workspace/common-sense-status.md` 
+   - Committed: `a4909f31`
+
+**System health**: All recent sessions `done`, no errors, no stuck sessions. Focus tasks unchanged — most items IMPLEMENTED or VERIFIED, awaiting dev tools for `npm test`.
+
 ## 2026-03-20T18:40Z — Heartbeat: P61 + P114 Hallucination Recovery (req:10db2276) COMPLETE
 
 **Pending**: 1 active (req:10db2276 — Bob's reimplement P61 + P114) → COMPLETED
