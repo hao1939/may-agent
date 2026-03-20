@@ -573,5 +573,242 @@ Controller → spawn Sub-agent → Sub-agent executes
 
 ---
 
+## HB-2229: MAS² —— 自生成、自配置、自修正的多智能体元系统 (南洋理工)
+
+**Source**: XHS 68f4489600000000070215f6 + arXiv:2509.24323v1  
+**Code**: https://github.com/yeyeyeah2/MAS2  
+**Date**: 2026-03-20
+
+### 核心创新
+> **MAS递归自我生成：一个多智能体系统自动设计并生成适应不同任务的新多智能体系统**
+
+突破传统"generate-once-and-deploy"模式的脆弱性，实现动态自适应。
+
+### 三元元智能体架构
+| 角色 | 职责 | 类比OpenClaw |
+|------|------|-------------|
+| **Generator (生成者)** ♣ | 设计高层MAS方案（角色、协议、工具） | Meta-designer |
+| **Implementor (实现者)** ¶ | 将方案实例化，分配LLM骨干 | Agent factory |
+| **Rectifier (修正者)** ♠ | 运行时监控，动态调整配置 | Self-healing layer |
+
+### 训练方法：Collaborative Tree Optimization (CTO)
+- 三智能体协作扩展决策树
+- 路径信用传播机制归因最终 outcome
+- 角色特定的偏好数据 + 相对奖励对齐
+
+### 实验结果
+- **深度研究/代码生成**: +19.6% vs SOTA MAS
+- **跨骨干泛化**: +15.1% (未见过的LLM)
+- **成本效率**: 位于成本-性能帕累托前沿
+
+### OpenClaw启示
+1. **元层设计**: 我们需要考虑"设计设计者"的层级
+2. **运行时修正**: Rectifier角色与我们的Error Log监控直接对应
+3. **训练范式**: CTO的信用传播与DuCA双时间尺度信用分配有潜在关联
+
+---
+
+## HB-2230: AgentHub —— Karpathy的AI Agent协作基础设施
+
+**Source**: XHS 69af75d2 + GitHub: garrytan/gstack  
+**Date**: 2026-03-20
+
+### 核心概念
+> **给AI Agent用的GitHub —— 去掉复杂分支和PR，采用"科研社区"模式**
+
+### 架构特点
+| 特性 | 传统GitHub | AgentHub |
+|------|-----------|----------|
+| 分支模型 | 复杂分支/PR | 极简线性 |
+| 协作模式 | 代码审查 | "科研社区" |
+| 技术栈 | 复杂 | Go + SQLite |
+| 部署 | 重 | 极简 |
+
+### 关键洞察
+**AI-native协作需要AI-native工具** —— 不能简单套用人类工具
+
+- Agent的协作模式不同于人类开发者
+- 科研社区的"想法→实验→分享"循环更适合Agent
+- 极简架构降低认知负担和故障面
+
+### OpenClaw启示
+1. **极简架构验证**: Go+SQLite组合确认我们的技术选型方向
+2. **Agent-first设计**: 工具应该适配Agent的工作方式，而非相反
+3. **协作基础设施**: OpenClaw的Agent间协作需要专门设计，不能沿用人类模式
+
+**Relevant to**: Tech-lead (架构设计)
+
+---
+
+## HB-2231: FoldAgent Context-Folding —— 长时程任务上下文管理 (字节跳动)
+
+**Source**: arXiv:2510.11967 + GitHub: sunnweiwei/FoldAgent  
+**Date**: 2026-03-20
+
+### 核心创新
+> **从"被动上下文积累"到"主动上下文管理" —— Branch/Return/Fold 三原语**
+
+### Context-Folding机制
+1. **Branch**: 创建临时子轨迹处理局部子任务
+2. **Return**: 总结并回归主线程
+3. **Fold**: 中间步骤被"折叠"（折叠后不再保留细节）
+
+### 性能突破
+| 方法 | Peak Length | BrowseComp-Plus | SWE-Bench |
+|------|-------------|-----------------|-----------|
+| GPT-5 (327K) | 327K | 79.3% | 71.8% |
+| **Folding Agent** | **32K** | **62.0%** | **58.0%** |
+| ReAct + GRPO | 32K | 44.6% | 48.0% |
+
+**10×上下文压缩，性能保持 ~80%**
+
+### FoldGRPO训练框架
+- 密集token级过程奖励
+- 专门奖励任务分解和上下文管理
+- 可学习的分层分解能力
+
+### OpenClaw映射
+| Context-Folding | OpenClaw等价物 |
+|-----------------|---------------|
+| Branch → 子轨迹 | Main Agent → Sub-agent委派 |
+| Return → 回归主线程 | Sub-agent → Main Agent结果交接 |
+| Fold → 折叠中间步骤 | Error Log(摘要) + Detail归档 |
+| 主动上下文管理 | Working memory (AGENTS.md上下文) |
+
+### 关键洞察
+1. **过程级奖励至关重要**: 密集token级奖励是学习上下文管理的必要条件
+2. **摘要不足**: Folding显著优于基于摘要的方法
+3. **分层分解可学习**: RL可以训练Agent自我分解任务
+
+### 边界澄清
+⚠️ Context-Folding是**推理时行为**，非自我修改：
+- Agent在执行时决定何时branch/fold
+- 不修改底层模型权重或系统提示
+- 类似于我们的Main↔Sub-agent编排 —— 结构性，非演化性
+
+**Relevant to**: Bob (架构设计)、Tech-lead (实现)
+
+---
+
+---
+
+## HB-2232 — Agent设计模式：从简单到复杂的成本意识
+**Source**: XHS@大模型每日通 / 社区神评论  
+**Date**: 2026-03-20 (archive深挖)  
+**TL;DR**: 🔥🔥🔥 **五种模式本质是一个产品决策** —— 用户愿不愿为更好结果多等三秒
+
+### 五种Agent设计模式
+
+| 模式 | 核心机制 | 复杂度 |
+|------|---------|--------|
+| **ReAct** | Reasoning + Acting 循环 | 低 |
+| **Reflection** | 自我反思改进 | 中 |
+| **Tool Use** | 工具调用 | 低 |
+| **Planning** | 任务规划分解 | 中 |
+| **Multi-Agent** | 多智能体协作 | 高 |
+
+### 社区神评论
+
+> "五种模式本质是一个产品决策——让AI多想一步还是快走一步。选ReAct还是Multi-Agent不是技术问题，是你的用户愿不愿意为更好的结果多等三秒的问题。**技术选型的尽头是用户体验。**" —— 小柒
+
+> "选哪种模式不是关键，关键是知道什么时候该从简单模式切换到复杂模式。很多人一上来就搞multi-agent协作，结果发现单个ReAct agent加几个好用的tool就够了。**复杂度是有成本的，调试多agent系统的痛苦程度是指数级增长的。**建议先从最简单的模式跑通，遇到瓶颈再升级。" —— PigBun-AI
+
+> "最容易被低估的是ReAct——看起来简单，实际调试成本最高" —— Simon
+
+### 对OpenClaw的意义
+
+**✅ 验证我们的单Agent优先路线正确**
+- 与我们的Main Agent集中式设计一致
+- L1/L2 外部协调模式对应简单模式优先
+
+**⚠️ Multi-Agent切换需谨慎评估成本**
+- 复杂度成本指数级增长
+- 不是技术问题，是用户体验权衡
+
+**💡 核心洞察**
+调试成本排序：ReAct (被低估) < Reflection/Planning << Multi-Agent
+
+---
+
+## HB-2233 — Context Engineering：上下文工程7原则
+**Source**: XHS@AI技术立文  
+**Date**: 2026-03-17 (archive深挖)  
+**TL;DR**: 🔥🔥🔥🔥 **别优化prompt了，开始工程化上下文吧**
+
+### 7条上下文工程实践原则
+
+| 原则 | 核心要点 | OpenClaw映射 |
+|------|---------|-------------|
+| **1. 审计CLAUDE.md** | 应是"高级工程师入职培训"而非配置文件 | AGENTS.md部分符合，需持续优化 |
+| **2. 分离关注点** | 架构、规范、领域知识放不同文件 | ✅ 多文件AGENTS.md + Skills分离 |
+| **3. 渐进式披露** | MEMORY.md作路由文档，<200行 | ✅ AGENTS.md层级结构 |
+| **4. 观点命名** | 文件名回答"这个相关吗" | ✅ SOUL/DOMAIN/TOOLS命名 |
+| **5. 挖掘会议** | 提取隐性知识，锁在对话里是最大的上下文泄漏 | ✅ Error Log机制 |
+| **6. 让Agent维护它** | Agent在正常工作副作用下改进上下文系统 | ❌ Self-evolution禁止，需权衡 |
+| **7. 测量上下文健康** | session重解释时间、Agent漂移率、决策一致性 | ❌ 未监控，需新增 |
+
+### 关键诊断指标
+> "如果Agent问同样的问题两次，你的上下文架构有洞"
+
+### 对OpenClaw的意义
+
+**✅ 已对齐 (4/7)**
+- 多文件分离设计
+- 渐进式层级结构
+- 语义化文件命名
+- Error Log捕获隐性知识
+
+**⚠️ 差距需补 (2/7)**
+- Agent自维护 vs Self-evolution禁令 —— 需要架构层权衡
+- 上下文健康监控 —— 新增需求：Agent重复提问检测
+
+**💡 核心洞察**
+上下文工程是AI时代最重要的技术活儿。我们的AGENTS.md架构设计已被社区独立验证。
+
+---
+
+## HB-2234 — Attention Residuals：Kimi的架构底层革命
+**Source**: XHS@未来博士/@AIGC探索之旅 / Kimi团队论文  
+**Date**: 2026-03-17 (archive深挖)  
+**TL;DR**: 🔥🔥🔥🔥🔥 **范式级洞察** —— 把"序列attention"搬到"网络深度"维度
+
+### 核心创新
+
+**问题**: 传统残差连接对所有前层信息"一视同仁"
+- 深层网络早期信息被逐步覆盖
+- 后层只能靠更大输出"刷存在感"
+
+**解决方案**: Attention Residuals
+- 从"每层输出直接相加" → "对各层输出按内容选择注意力聚合"
+- 本质: 把序列上的attention思想搬到**网络深度维度**
+
+| 维度 | 传统残差 | 注意力残差 |
+|------|---------|-----------|
+| 信息选择 | 一视同仁，全部相加 | 动态加权，自主选择 |
+| 信息流动 | 单向累积 | 多路聚合 |
+| 深度适应性 | 深层稀释 | 每层灵活选择来源 |
+
+### 社区反应
+
+**Musk**: "Impressive work from Kimi." (罕见直接夸赞竞争对手)
+
+**Andrej Karpathy**: 
+> "We're not taking the Attention is All You Need part literally enough? :D"
+
+### 对OpenClaw的意义
+
+**范式验证**
+Kimi团队动的是大模型最底层的"地基"，验证了**重新思考基础架构**的价值。这与OpenClaw重新审视Agent架构的哲学一致。
+
+**Agent系统启发**
+1. **分层注意力**: Agent系统是否也需要跨层级的信息聚合机制？
+2. **动态选择**: 不是所有历史信息都同等重要，需要学会"从哪里取信息"
+3. **深度适应性**: 随着Agent执行深度增加，早期上下文不应被稀释
+
+**💡 核心洞察**
+从"一视同仁"到"动态选择"——这是架构设计的通用范式。
+
+---
+
 *Last Updated: 2026-03-20*  
-*Next HB ID: HB-2229*
+*Next HB ID: HB-2235*

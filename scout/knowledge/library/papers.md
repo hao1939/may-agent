@@ -2,6 +2,14 @@
 
 Papers and articles worth reading, with key takeaways.
 
+## 2026-03-20 Friday Batch — W13 Gap-Matching Papers
+
+| ID | Title | Relevance |
+|----|-------|-----------|
+| 2603.18043 | The Provenance Paradox in Multi-Agent LLM Routing | ★★★★★ CRITICAL — Self-reported provenance worse than random beyond n=5. Validates Gap 1. DD#429 |
+| 2603.18096 | Trace-Based Assurance Framework for Agentic AI | ★★★★★ CRITICAL — MAT traces + F1-F5 failure taxonomy + L1-L4 architecture. Validates Gap 2. DD#430 |
+| 2603.18330 | MemArchitect: Policy-Driven Memory Governance | ★★★★ Strong — Four-domain governance middleware. Managed pruning > uncontrolled hallucination. Validates Gap 4. DD#431 |
+
 ## 2026-02-26 HF Daily Papers Batch — New Entries
 
 | ID | Title | Relevance |
