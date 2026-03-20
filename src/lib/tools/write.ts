@@ -9,8 +9,8 @@ import { withAbortSignal } from "./abort-utils.js";
 import { isMemoryFile, sanitizeMemory, formatSanitizeWarning } from "../security/memory-sanitizer.js";
 
 const writeSchema: TSchema = Type.Object({
-	path: Type.String({ description: "Path to the file to write (relative or absolute)" }),
-	content: Type.String({ description: "Content to write to the file" }),
+	path: Type.String({ description: "Path to the file to write (relative or absolute). Parent directories are created automatically. For small changes to existing files, prefer edit() instead." }),
+	content: Type.String({ description: "Complete content to write to the file. This replaces the entire file — if the file exists and you only want to change part of it, use edit() instead. A preview of the written content is returned for verification." }),
 });
 
 export interface WriteToolInput { path: string; content: string; }
@@ -71,8 +71,12 @@ export function createWriteTool(cwd: string, options?: WriteToolOptions): AgentT
 	return {
 		name: "write",
 		label: "write",
-		description:
+		description: [
 			"Write content to a file. Creates the file if it doesn't exist, overwrites if it does. Automatically creates parent directories.",
+			"For small changes to existing files, prefer edit() — it's safer (no accidental data loss).",
+			"A content preview is returned so you can verify without a separate read() call.",
+			"Writes that shrink a file below 50% of its original size are blocked (use edit() or read the full file first).",
+		].join(" "),
 		parameters: writeSchema,
 		execute: async (
 			_toolCallId: string,

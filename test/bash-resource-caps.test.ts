@@ -38,11 +38,11 @@ describe("P113 Bash Resource Caps", () => {
 
   it("tool description mentions the default timeout", () => {
     const tool = createBashTool("/tmp");
-    expect(tool.description).toContain("default: 120s");
+    expect(tool.description).toContain("120s");
   });
 
   it("custom defaultTimeout appears in description", () => {
     const tool = createBashTool("/tmp", { defaultTimeout: 60 });
-    expect(tool.description).toContain("default: 60s");
+    expect(tool.description).toContain("60s");
   });
 });

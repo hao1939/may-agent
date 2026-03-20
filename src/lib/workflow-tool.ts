@@ -23,12 +23,12 @@ import { summarizeForHandoff } from "./handoff.js";
 
 const WorkflowToolParams: TSchema = Type.Object({
   action: StringEnum(["list", "run", "resume"] as const, {
-    description: "Action to perform. Use 'resume' to continue a workflow that was interrupted by a crash.",
+    description: "'list': show available workflows with descriptions. 'run': execute a workflow by name (blocks until complete). 'resume': continue a workflow that was interrupted by a crash (requires workflowRunId).",
   }),
-  name: Type.Optional(Type.String({ description: "Workflow name to execute (required for 'run')" })),
-  task: Type.Optional(Type.String({ description: "Task to pass to the workflow (required for 'run')" })),
+  name: Type.Optional(Type.String({ description: "Workflow name to execute (required for 'run'). Use 'list' first to see available workflows and their descriptions." })),
+  task: Type.Optional(Type.String({ description: "Task string to pass to the workflow (required for 'run'). Format depends on the workflow — check the workflow description from 'list' for expected format." })),
   workflowRunId: Type.Optional(
-    Type.String({ description: "Previous workflow run ID to resume from (required for 'resume')" }),
+    Type.String({ description: "ID of a previous workflow run to resume from (required for 'resume'). The ID is returned when a workflow starts." }),
   ),
 });
 interface WorkflowInput {

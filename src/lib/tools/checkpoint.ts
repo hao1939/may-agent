@@ -46,12 +46,12 @@ export interface CheckpointEntry {
 const checkpointSchema: TSchema = Type.Object({
   summary: Type.String({
     description:
-      "Brief description of what was accomplished at this checkpoint (1-2 sentences)",
+      "Brief description of what was accomplished at this checkpoint (1-2 sentences). Include what's done and what remains.",
   }),
   data: Type.Optional(
     Type.Record(Type.String(), Type.Unknown(), {
       description:
-        "Structured key-value data to persist (files modified, decisions made, next action, etc.)",
+        "Structured key-value data to persist. Useful keys: files_modified (list of paths changed), decisions (key choices made), next_steps (what to do if resumed). This data is available to the next session via readCheckpoints.",
     }),
   ),
 });

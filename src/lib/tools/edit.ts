@@ -17,9 +17,9 @@ import { checkCrossEditGuard } from "./cross-edit-guard.js";
 import { withAbortSignal } from "./abort-utils.js";
 
 const editSchema: TSchema = Type.Object({
-	path: Type.String({ description: "Path to the file to edit (relative or absolute)" }),
-	oldText: Type.String({ description: "Exact text to find and replace (must match exactly)" }),
-	newText: Type.String({ description: "New text to replace the old text with" }),
+	path: Type.String({ description: "Path to the file to edit (relative or absolute). The file must already exist." }),
+	oldText: Type.String({ description: "The exact text to find in the file. Must match character-for-character including whitespace and newlines. Read the file first to copy the exact text. If this text appears more than once in the file, include more surrounding lines to make it unique — the tool rejects ambiguous matches." }),
+	newText: Type.String({ description: "The replacement text. To delete text, pass an empty string. To insert text, include the surrounding context in oldText and add the new content in newText at the desired position." }),
 });
 
 export interface EditToolInput { path: string; oldText: string; newText: string; }
@@ -67,8 +67,14 @@ export function createEditTool(cwd: string, options?: EditToolOptions): AgentToo
 	return {
 		name: "edit",
 		label: "edit",
-		description:
-			"Edit a file by replacing exact text. The oldText must match exactly (including whitespace). Use this for precise, surgical edits.",
+		description: [
+			"Edit a file by replacing exact text with new text.",
+			"The oldText must match exactly (including whitespace and newlines).",
+			"If oldText is not found, the call fails — read the file first to get the exact text.",
+			"If oldText appears more than once, the call fails — include more surrounding context to make it unique.",
+			"A diff preview is returned so you can verify the change without a separate read() call.",
+			"For new files or full rewrites, use write() instead.",
+		].join(" "),
 		parameters: editSchema,
 		execute: async (
 			_toolCallId: string,

@@ -96,18 +96,24 @@ function textResult(text: string): AgentToolResult<string> {
 
 const AgentsToolParams = Type.Object({
   action: StringEnum(["call", "send", "list", "peek", "cancel", "requests"] as const, {
-    description:
-      "Action to perform. 'call' runs an agent synchronously (blocks until done). 'send' adds a todo for an agent and triggers their heartbeat (fire-and-forget). 'list' shows agents and running sessions. 'peek'/'cancel' monitor running sessions. 'requests' queries the request tracking database.",
+    description: [
+      "'call': run an agent synchronously and get the result (blocks your session until the agent finishes).",
+      "'send': add a todo item for an agent and trigger their heartbeat — fire-and-forget, you continue immediately.",
+      "'list': show all available agents with descriptions and any running sessions.",
+      "'peek': view recent messages from a running session (requires sessionId).",
+      "'cancel': kill a running session (requires sessionId).",
+      "'requests': query the request tracking database (optionally filter by agent or status).",
+    ].join(" "),
   }),
-  agent: Type.Optional(Type.String({ description: "Agent name (required for 'call', 'send'; optional filter for 'requests')" })),
-  task: Type.Optional(Type.String({ description: "Task description (required for 'call')" })),
-  message: Type.Optional(Type.String({ description: "Todo item to send (required for 'send')" })),
-  sessionId: Type.Optional(Type.String({ description: "Session ID (required for 'peek', 'cancel')" })),
-  limit: Type.Optional(Type.Number({ description: "Max messages to return (for 'peek', default: 20)" })),
+  agent: Type.Optional(Type.String({ description: "Target agent name. Required for 'call' and 'send'. Optional for 'requests' (filters by agent). Use 'list' first to see available agents if unsure." })),
+  task: Type.Optional(Type.String({ description: "Task description for 'call'. Be specific: include file paths, expected outcomes, and constraints. The agent runs to completion and returns a summary." })),
+  message: Type.Optional(Type.String({ description: "Message to send for 'send'. Creates a tracked request in the DB and triggers the target agent's next heartbeat. Include artifact file paths if the agent needs to read your output." })),
+  sessionId: Type.Optional(Type.String({ description: "Session ID for 'peek' or 'cancel'. Get session IDs from 'list' output." })),
+  limit: Type.Optional(Type.Number({ description: "Max messages to return for 'peek' (default: 20). Increase to see more history." })),
   filter: Type.Optional(StringEnum(["active", "stale", "failed", "all"] as const, {
-    description: "Request filter (for 'requests' action, default: 'active')",
+    description: "Filter for 'requests' action. 'active': in-progress or pending. 'stale': no progress for >2h. 'failed': completed with errors. 'all': everything. Default: 'active'.",
   })),
-  force: Type.Optional(Type.Boolean({ description: "Skip dedup check for intentional re-sends (for 'send' action)" })),
+  force: Type.Optional(Type.Boolean({ description: "For 'send' only: skip duplicate detection. Use when you intentionally want to re-send a similar message to the same agent." })),
 });
 
 interface AgentsToolParamsType {
@@ -138,7 +144,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
     name: "agents",
     label: "Agents",
     description:
-      "Cooperate with other agents. 'call' runs an agent and returns the result (blocks). 'send' adds a todo for an agent and triggers their heartbeat (fire-and-forget). 'list' shows available agents and running sessions. 'peek'/'cancel' monitor running sessions. 'requests' queries the request tracking database.",
+      "Cooperate with other agents. Use 'list' to see available agents, 'call' to run one synchronously, 'send' to dispatch async work, 'peek'/'cancel' to monitor sessions, 'requests' to query the tracking DB.",
     parameters: AgentsToolParams,
     execute: async (_toolCallId, _params) => {
       const params = _params as AgentsToolParamsType;

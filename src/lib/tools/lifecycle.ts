@@ -50,35 +50,35 @@ const finishSchema: TSchema = Type.Object({
     Type.Literal("blocked"),
     Type.Literal("partial"),
   ], {
-    description: "Outcome of the task: success, failure, blocked, or partial",
+    description: "'success': task completed fully. 'failure': task failed (include blockers). 'blocked': cannot proceed without external input. 'partial': some progress made but not complete (include next_steps).",
   }),
   summary: Type.String({
-    description: "1-2 sentence executive summary of what was accomplished",
+    description: "1-2 sentence executive summary of what was accomplished. This is shown to the calling agent, so be concrete: mention specific files changed, tests passed, or errors encountered.",
   }),
   deliverables: Type.Optional(Type.Array(
     Type.Object({
-      path: Type.String({ description: "File path (relative to project root)" }),
-      description: Type.String({ description: "What this file is/does" }),
+      path: Type.String({ description: "File path relative to project root" }),
+      description: Type.String({ description: "What this file is or what changed in it" }),
     }),
-    { description: "Artifacts produced or modified" },
+    { description: "Files produced or modified during this session. The calling agent uses these paths to review your work." },
   )),
   blockers: Type.Optional(Type.Array(
     Type.Object({
       reason: Type.String({ description: "What is blocking progress" }),
-      context: Type.String({ description: "Additional context about the blocker" }),
+      context: Type.String({ description: "Additional context: what you tried, why it failed, what's needed" }),
     }),
-    { description: "Required if status is blocked or failure" },
+    { description: "What prevented completion. Required when status is 'failure' or 'blocked'." },
   )),
   next_steps: Type.Optional(Type.String({
-    description: "Recommended next actions if partial or blocked",
+    description: "Recommended next actions for whoever picks this up. Required when status is 'partial' or 'blocked'.",
   })),
   completed_items: Type.Optional(Type.Array(
-    Type.String({ description: "A task completed this session (fuzzy-matched against pending requests)" }),
-    { description: "Tasks completed during this session. Infra marks matching requests as COMPLETED." },
+    Type.String({ description: "Description of a task completed this session. Fuzzy-matched against pending requests in the DB to auto-mark them COMPLETED." }),
+    { description: "Tasks completed during this session. Infrastructure automatically resolves matching tracked requests." },
   )),
   new_items: Type.Optional(Type.Array(
-    Type.String({ description: "A new task to track" }),
-    { description: "New self-assigned tasks. Infra tracks them as pending requests." },
+    Type.String({ description: "Description of a new task to track (self-assigned follow-up work)" }),
+    { description: "New tasks discovered during this session. Infrastructure creates tracked requests for them." },
   )),
   lessons: Type.Optional(Type.Array(
     Type.Object({
@@ -86,10 +86,10 @@ const finishSchema: TSchema = Type.Object({
         Type.Literal("fix"),
         Type.Literal("pattern"),
         Type.Literal("insight"),
-      ], { description: "Lesson category: fix (bug fix learnings), pattern (reusable approach), insight (system observation)" }),
-      content: Type.String({ description: "What was learned — specific and actionable" }),
+      ], { description: "'fix': what you learned from a bug/error. 'pattern': a reusable approach worth remembering. 'insight': an observation about the system or codebase." }),
+      content: Type.String({ description: "The lesson — specific and actionable, not generic. Bad: 'always test'. Good: 'manager.ts uses lazy DB init, must call getDb() not import db directly'." }),
     }),
-    { description: "Lessons learned this session. Persisted to memory-stream.jsonl for cross-session learning." },
+    { description: "Lessons learned this session. Persisted to memory for cross-session learning." },
   )),
 });
 
