@@ -27,3 +27,4 @@ Tech-lead builds (Opus). May is Supervisor (Opus).
 
 ## Consolidated Memory
 - `agents/qa/knowledge/consolidated-memory-2026-03.md`: Durable facts/patterns extracted from QA journal (2026-03-16..2026-03-18).
+- `agents/qa/knowledge/consolidated-memory-2026-03-20.md`: Durable facts/patterns extracted from QA journal (environment constraints + recurring risks; 2026-03-19..2026-03-20).
