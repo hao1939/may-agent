@@ -9,11 +9,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If found → add specific task to workspace/todo.md.
   Latest (2026-03-19T21:19): **48 sessions/4h, 2.1% error rate (1 error) — stable low.** Coach cost share dropped 33%→12.8% (avg 121KB vs 345KB). QA rose to #2 at 19.4% but all legitimate review work. Binary still not activated — `66aace2` built but `96dcb60` running. Guard deployment still blocked. Scout quiet (1 session). Finding at `workspace/finding-analysis-review-0319-2119.md`.
 
-- [x] **Cost outlier scan** — Last done: 2026-03-19T23:20
+- [x] **Cost outlier scan** — Last done: 2026-03-20T01:19
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-19T23:20): **38 sessions/4h, 6MB total, 2.6% error rate (1 transient).** Coach avg dropped to 158KB (was 345KB — 54% reduction from turn budget). Tech-lead now #2 cost at 226KB avg. Binary 13 commits behind HEAD. Guards still blocked on binary rebuild. Finding at `workspace/finding-cost-scan-0319-2320.md`.
+  Latest (2026-03-20T01:19): **18 sessions/2h, $24.72 total, 16.7% error rate (3 errors: 2 Bob API, 1 evaluator OpBudget).** Opus agents (optimizer/coach/tech-lead) account for 89% of cost ($21.97) with 0% prompt cache hit rate. Prompt caching fix (commit 7c86665) still blocked on ANTHROPIC_API_KEY env var — estimated $171/day savings. Evaluator opBudget=5 too low for heartbeats (fix sent to tech-lead). Coach avg $1.46/session (58% reduction from turn budget, confirmed working). Finding at `workspace/finding-cost-scan-0320-0119.md`.
 
 - [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-19T19:49
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
@@ -27,14 +27,14 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If issues → add fix to workspace/todo.md.
   Latest (2026-03-19T17:49): **2.3% error rate (1/43), handlers running but 9 commits not deployed.** Running binary is `may-agent-96dcb60` but HEAD is `8d7a8a1`. Most critical: guard wiring (94fbc27) not active — coach reads method-catalog.md (71KB) 6x per session. Convention-check broken: reads from `.state/evaluations/` JSON dir which is empty since SQLite migration (96dcb60). Sent rebuild request to May, convention-check fix to tech-lead. Finding at `workspace/finding-handler-health-check-0319-1749.md`.
 
-- [x] **Proven pattern → Skill/Workflow** — Last done: 2026-03-19T23:49
+- [x] **Proven pattern → Skill/Workflow** — Last done: 2026-03-20T01:49
   This is your MOST IMPORTANT periodic task — focus area #1.
   **Run it via workflow**: `workflow.run("skill-lifecycle", "Scan recent sessions for proven multi-step patterns")`
   The workflow mechanically enforces all 4 phases (discover → draft → test → deploy) in separate
   sessions, preventing you from skipping testing or doing meta-work instead.
   If you have a specific pattern in mind, pass it: `workflow.run("skill-lifecycle", "Pattern: agents read file → check convention → edit → verify")`
   **Deliverable**: A new or refined skill file, tested in gym, deployed to agents.
-  Latest (2026-03-19T23:49): **gym-score-utils fix VERIFIED.** hasVerificationAfterWrite now accepts python3/node/jq bash commands (commits 7d9b432 + c6e4ab0). Manual tests: 3/3 pass. baseline-before-change skill (v1.0.0) still needs gym re-run (requires bun). verification skill (v1.3.0) evaluation: 7.5/10 across 15 sessions — blocked on gym re-test before deploy. Binary at 66aace2, HEAD at c6e4ab0. Finding at workspace/finding-gym-utils-verified-0319-2349.md.
+  Latest (2026-03-20T01:49): **classify-then-act skill CREATED but BLOCKED on deployment.** Ran full skill-lifecycle workflow (4 phases). Skill captures Coach's Method #15 (92% success, 38 experiments). Gym test failed 0/3 — skill documents aren't loaded into agent context at runtime. The two-phase workflow (agents/shared/workflows/two-phase.ts) is the actual mechanism that works; the skill is reference material. Key insight: authority hierarchy is workflow enforcement (92%) > task instructions (33%) > SOUL/skills text (0%). Finding at workspace/finding-classify-then-act-skill-0320.md.
 
 ## Weekly
 - [x] **Improvement proposals review** — Last done: 2026-03-18T07:15

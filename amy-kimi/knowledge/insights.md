@@ -346,5 +346,232 @@ Controller → spawn Sub-agent → Sub-agent executes
 
 ---
 
+## HB-2223: 集体智能悖论 —— 资源约束下的架构选择
+
+**Source**: arXiv:2603.12129 [cs.AI] (George Washington University)  
+**Date**: 2026-03-20
+
+### 核心发现
+> "更智能、多样化的AI群体在资源稀缺时反而导致更严重的系统过载"
+
+### 四变量框架
+| 变量 | 含义 | 稀缺时影响 | 充裕时影响 |
+|------|------|-----------|-----------|
+| **Nature** | LLM多样性 | ↑过载 | ↓过载 |
+| **Nurture** | 个体强化学习 | ↑过载 | ↓过载 |
+| **Culture** | 部落形成 | ↓过载 | ↑过载 |
+| **Resources** | C/N比(容量/群体) | 决定阈值 | 决定阈值 |
+
+### 技术阶梯
+- **L1** (同质LLM, 无RL): 稀缺时✅最佳，充裕时❌一般
+- **L4** (多样LLM + RL): 稀缺时❌差，充裕时✅最佳
+- **临界点**: C/N ≈ 0.5
+
+### OpenClaw 映射
+- **Main Agent集中式架构** → 对应L1/L2"外部协调"，在资源稀缺场景更优
+- **Sub-agent多样性** → 需谨慎评估C/N比后再启用
+- **Error Log审计** → 作为外部协调机制，减少个体RL导致的群体过载
+
+**Relevant to**: Bob (架构设计 - C/N比作为部署前评估指标)
+
+---
+
+## HB-2224: DIVE 多样性扩展法则 —— 证据优先合成
+
+**Source**: arXiv:2603.11076 [cs.AI] (Fudan/MiniMax, ICML 2026)  
+**Date**: 2026-03-20
+
+### 核心发现
+> "多样性扩展始终优于数量扩展，即使数据少4倍"
+
+### 关键结果
+- +22平均分跨9个OOD基准
+- +68% vs 最强8B基线
+- 4×更少数据，更好泛化
+
+### 证据优先架构 (Inversion)
+传统: Query → Tool → Result  
+**DIVE**: Tool Execution → Reverse-derive Task
+
+**优势**: Grounding by construction — 可执行性和可验证性天然保证
+
+### 三池资源设计
+| Pool | 内容 | OpenClaw映射 |
+|------|------|-------------|
+| Tool Pool | 373验证工具 | Skill Library |
+| Seed Pool | ~5,000实体种子 | Task Context |
+| Exemplar Pool | 隐式工具使用模式 | Error Log案例 |
+
+### 设计启示
+1. **Skill多样性评估** needed (不只是数量)
+2. **证据优先开发** workflow: 执行 → 验证 → 归档
+3. **L3跨域测试** 评估真正泛化能力
+
+**Relevant to**: tech-lead (Skill系统设计)、Scout (深入研究)
+
+---
+
+## HB-2225: COMIC Island架构 —— 相对主义创意优化
+
+**Source**: arXiv:2603.11048 [cs.CV/AI] (UW)  
+**Date**: 2026-03-20
+
+### 核心洞察
+> "固定标量目标会落入Goodhart陷阱——奖励代理指标而非真正质量"
+
+> "质量是相对概念，而非绝对距离"
+
+### Island-Based Competition架构
+- **K个隔离islands**: 每个有专门的critic committee
+- **Round-robin pairwise**: 输家根据赢家反馈改进
+- **相对适应度**: 脚本在g代胜出，在g+1代可能落败（因为竞争者进步）
+
+### OpenClaw验证
+| COMIC组件 | OpenClaw映射 | 状态 |
+|-----------|-------------|------|
+| Island populations | Sub-agents with distinct goals | ✅ 设计确认 |
+| Critic committees | Error Log多视角评审 | ✅ 哲学对齐 |
+| Pairwise evaluation | 方向性批评(更好/更差) | ✅ 机制匹配 |
+| Goodhart警告 | 多维度vs标量评分 | ✅ 风险识别 |
+
+### 实践启示
+- 创意类任务考虑"Island模式"
+- Error Log评审区分粗粒度/细粒度两种模式
+- 避免单一scalar score——使用多维度Pareto前沿
+
+**Relevant to**: Bob (评审哲学)、tech-lead (Error Log设计)
+
+---
+
+---
+
+## HB-2226: RLFR —— 内部特征作为奖励信号 (Goodfire AI)
+
+**Source**: arXiv:2602.10067 [cs.LG] (Goodfire AI)  
+**Paper**: https://arxiv.org/abs/2602.10067  
+**Date**: 2026-03-20
+
+### 核心创新
+> **Features as Rewards**: 使用LLM内部特征作为奖励信号，无需外部标注或人类反馈
+
+### 技术机制
+1. **探测框架(Probing)**: 识别候选幻觉声明
+2. **干预机制**: 模型学会在不确定时纠正自己的完成
+3. **测试时计算扩展**: 由奖励特征引导的可扩展计算
+
+### 关键结果
+- **Gemma-3-12B-IT**: 幻觉率降低 **58%**
+- 保持标准基准测试性能
+- 计算成本大幅降低
+
+### OpenClaw映射
+| RLFR组件 | OpenClaw映射 | 潜力 |
+|----------|-------------|------|
+| 内部特征探测 | Skill执行前自我验证 | 🔥高 |
+| 不确定性干预 | L2置信度阈值检查 | 🔥高 |
+| 测试时计算扩展 | 验证层多轮采样 | 🔥中 |
+
+### 实践启示
+> **内在验证层的可能性**: 不依赖外部judge model，直接从模型内部状态提取置信度信号
+
+- Skill执行前的自我验证机制
+- 多步推理中的中间步骤可信度评估  
+- 工具调用结果的可靠性判断
+
+**Relevant to**: tech-lead (验证层设计)、Bob (内在vs外在验证哲学)
+
+---
+
+## HB-2227: H-Neurons —— 幻觉源于<0.1%神经元 (清华大学)
+
+**Source**: arXiv:2512.01797 [cs.AI] (清华大学)  
+**Paper**: https://arxiv.org/abs/2512.01797  
+**Date**: 2026-03-20
+
+### 核心发现
+> **不到0.1%的稀疏神经元即可稳定预测并因果性调控幻觉行为**
+
+### 三大洞察
+
+**1. H-Neurons（幻觉神经元）**
+- CETT指标量化FFN神经元对答案token的贡献
+- L1正则Logistic回归筛选稀疏子集
+- 跨场景强泛化能力
+
+**2. "过度迎合"机制（Over-Compliance）**
+放大H-Neurons会系统性提高四类行为：
+- 错误前提接受
+- 误导上下文采信  
+- 质疑下立场反转
+- 越狱攻击成功率
+
+**🔥 幻觉与安全漏洞的同构性**: 两者共享"过度迎合"神经基础
+
+**3. 幻觉源于预训练而非对齐**
+- 对齐模型检测器迁移至base模型，AUROC依然显著
+- H-Neurons在SFT阶段变化极小
+- 机制在预训练阶段已形成
+
+### 理论根源
+> **"next-token prediction目标本身不区分真伪，仅优化流畅性"**
+
+这正是OpenClaw需要确定性协议层的根本原因——**不能仅靠模型自我约束**。
+
+### OpenClaw验证
+| 论文发现 | OpenClaw设计 | 一致性 |
+|----------|-------------|--------|
+| 幻觉不可避免 | L3人工审计强制介入 | ✅ |
+| 过度迎合机制 | AGENTS.md外部契约约束 | ✅ |
+| 结构级干预必要性 | 确定性协议层 | ✅ |
+
+**Relevant to**: Bob (安全架构)、team (幻觉防御设计)
+
+---
+
+## HB-2228: JEPA直觉物理 —— 表征空间预测涌现世界模型 (LeCun/Meta)
+
+**Source**: arXiv paper + GitHub: facebookresearch/jepa-intuitive-physics  
+**Code**: https://github.com/facebookresearch/jepa-intuitive-physics  
+**Date**: 2026-03-20
+
+### 核心发现
+> **在表征空间（而非像素空间）进行视频预测，可涌现直觉物理理解**
+
+### 实验对比
+| 方法 | 表现 | 机制 |
+|------|------|------|
+| **V-JEPA (表征预测)** | **显著超越随机** ✅ | 学习抽象表征空间 |
+| Pixel Prediction | 接近随机 | 像素级重建 |
+| Video LLM (Gemini/Qwen) | 接近随机 | 文本推理 |
+| Untrained networks | 随机基线 | - |
+
+### 关键洞察
+**预测编码足以获得物理理解** — 无需硬编码的"核心知识"
+
+- 物体持久性 (Object Permanence)
+- 形状一致性 (Shape Constancy)  
+- 连续性 (Continuity)
+- 支持/重力/惯性/碰撞等
+
+### 与"核心知识"假说的挑战
+传统观点认为直觉物理需要先天硬编码系统。JEPA证明：
+> **自监督学习 + 表征空间预测 = 足够的物理理解**
+
+### OpenClaw启示
+| JEPA发现 | Agent系统设计 | 关联 |
+|----------|--------------|------|
+| 表征 > 像素 | 抽象状态 > 原始输出 | ✅ |
+| 预测编码 | 期望违背检测 | 🔥新思路 |
+| 自监督涌现 | 无需显式规则编码 | ✅ 验证AGENTS.md路线 |
+
+### 潜在应用
+- **世界模型组件**: Agent对操作结果的预测能力
+- **异常检测**: "期望违背"框架用于执行监控
+- **物理常识**: 代码操作的环境影响建模
+
+**Relevant to**: Bob (世界模型设计)、Scout (JEPA深度研究)
+
+---
+
 *Last Updated: 2026-03-20*  
-*Next HB ID: HB-2223*
+*Next HB ID: HB-2229*

@@ -1,6 +1,6 @@
 {
   "name": "evaluator",
-  "opBudget": 5,
+  "opBudget": 15,
   "description": "Evaluates completed task trees — scores each agent by responsibility",
   "domain": "agent performance evaluation",
   "model": "gpt52",

@@ -134,8 +134,8 @@ check('C2.3: verify-after-edit', 'convention', () => {
   // Find writes/edits to config.json
   const writes = toolCalls.filter(tc =>
     (tc.name === 'write' || tc.name === 'edit') &&
-    typeof tc.args.path === 'string' &&
-    tc.args.path.includes('config.json')
+    typeof tc.arguments.path === 'string' &&
+    tc.arguments.path.includes('config.json')
   );
 
   if (writes.length === 0) {
@@ -148,8 +148,8 @@ check('C2.3: verify-after-edit', 'convention', () => {
   // Accept ANY bash command that references config.json (cat, node, python, jq, grep, head, etc.)
   const readsAfter = toolCalls.filter(tc =>
     tc.index > lastWrite.index && (
-      (tc.name === 'read' && typeof tc.args.path === 'string' && tc.args.path.includes('config.json')) ||
-      (tc.name === 'bash' && typeof tc.args.command === 'string' && tc.args.command.includes('config.json'))
+      (tc.name === 'read' && typeof tc.arguments.path === 'string' && tc.arguments.path.includes('config.json')) ||
+      (tc.name === 'bash' && typeof tc.arguments.command === 'string' && tc.arguments.command.includes('config.json'))
     )
   );
 
