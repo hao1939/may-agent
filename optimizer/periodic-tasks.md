@@ -9,11 +9,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If found → add specific task to workspace/todo.md.
   Latest (2026-03-19T21:19): **48 sessions/4h, 2.1% error rate (1 error) — stable low.** Coach cost share dropped 33%→12.8% (avg 121KB vs 345KB). QA rose to #2 at 19.4% but all legitimate review work. Binary still not activated — `66aace2` built but `96dcb60` running. Guard deployment still blocked. Scout quiet (1 session). Finding at `workspace/finding-analysis-review-0319-2119.md`.
 
-- [x] **Cost outlier scan** — Last done: 2026-03-19T19:49
+- [x] **Cost outlier scan** — Last done: 2026-03-19T23:20
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-19T19:49): **64 sessions/8h, 10.6MB total, 1.6% error rate (all-time low).** Coach still #1 cost at 33% (3.4MB, 345KB avg) — 1.2MB wasted on duplicate reads (method-catalog.md 6x, todo.md 6x per session). Tech-lead #2 at 18%. Read-dedup guard committed (94fbc27) but NOT deployed — binary 11 commits behind HEAD. Previous rebuild request (req:01bcdc57) marked completed without execution. Re-escalated to May (req:8752bd02). Guards blocking $30-43/day savings. Finding at `workspace/finding-cost-scan-0319-1949.md`.
+  Latest (2026-03-19T23:20): **38 sessions/4h, 6MB total, 2.6% error rate (1 transient).** Coach avg dropped to 158KB (was 345KB — 54% reduction from turn budget). Tech-lead now #2 cost at 226KB avg. Binary 13 commits behind HEAD. Guards still blocked on binary rebuild. Finding at `workspace/finding-cost-scan-0319-2320.md`.
 
 - [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-19T19:49
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
@@ -27,14 +27,14 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If issues → add fix to workspace/todo.md.
   Latest (2026-03-19T17:49): **2.3% error rate (1/43), handlers running but 9 commits not deployed.** Running binary is `may-agent-96dcb60` but HEAD is `8d7a8a1`. Most critical: guard wiring (94fbc27) not active — coach reads method-catalog.md (71KB) 6x per session. Convention-check broken: reads from `.state/evaluations/` JSON dir which is empty since SQLite migration (96dcb60). Sent rebuild request to May, convention-check fix to tech-lead. Finding at `workspace/finding-handler-health-check-0319-1749.md`.
 
-- [x] **Proven pattern → Skill/Workflow** — Last done: 2026-03-19T18:55
+- [x] **Proven pattern → Skill/Workflow** — Last done: 2026-03-19T23:49
   This is your MOST IMPORTANT periodic task — focus area #1.
   **Run it via workflow**: `workflow.run("skill-lifecycle", "Scan recent sessions for proven multi-step patterns")`
   The workflow mechanically enforces all 4 phases (discover → draft → test → deploy) in separate
   sessions, preventing you from skipping testing or doing meta-work instead.
   If you have a specific pattern in mind, pass it: `workflow.run("skill-lifecycle", "Pattern: agents read file → check convention → edit → verify")`
   **Deliverable**: A new or refined skill file, tested in gym, deployed to agents.
-  Latest (2026-03-19T21:44): **verification skill (v1.3.0) — Phase 4 BLOCKED, not deployed.** Gym pass rate 1/6 (17%) below 2/3 threshold. Root cause: criteria gap — `hasVerificationAfterWrite` only recognizes read()/cat/head, not python3 json.load() which agent prefers. LLM judge passed 6/6. Product correctness 6/6. Evaluation showed 7.5/10 effectiveness across 15 sessions. Skill is sound; success_criteria needs updating. Next: fix gym-score-utils.cjs to accept python/node file reads, then re-test and deploy. Journal entry at workspace/journal.md.
+  Latest (2026-03-19T23:49): **gym-score-utils fix VERIFIED.** hasVerificationAfterWrite now accepts python3/node/jq bash commands (commits 7d9b432 + c6e4ab0). Manual tests: 3/3 pass. baseline-before-change skill (v1.0.0) still needs gym re-run (requires bun). verification skill (v1.3.0) evaluation: 7.5/10 across 15 sessions — blocked on gym re-test before deploy. Binary at 66aace2, HEAD at c6e4ab0. Finding at workspace/finding-gym-utils-verified-0319-2349.md.
 
 ## Weekly
 - [x] **Improvement proposals review** — Last done: 2026-03-18T07:15
