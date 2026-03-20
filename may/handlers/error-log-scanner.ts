@@ -14,89 +14,6 @@ import { join } from "node:path";
 import type { HandlerContext, HandlerModule } from "../../../src/lib/handler-context.js";
 import type { CronEntry } from "../../../src/lib/cron-tool.js";
 
-// ── Experiments-history check (skip known-bad triggers) ───────────────
-
-/** How far back to consider experiments as "recent" (30 days). */
-const EXPERIMENTS_LOOKBACK_MS = 30 * 24 * 60 * 60 * 1000;
-
-interface ExperimentsCheckResult {
-  skip: boolean;
-  reason?: string;
-}
-
-/**
- * Check experiments.jsonl for prior terminal experiments matching (agent, errorType).
- * If a recent experiment was CEILING, discarded, or skipped → skip the trigger.
- * Returns { skip: false } if the file doesn't exist or can't be read.
- */
-export function checkExperimentsHistory(
-  experimentsPath: string,
-  agent: string,
-  errorType: string,
-): ExperimentsCheckResult {
-  let content: string;
-  try {
-    if (!existsSync(experimentsPath)) return { skip: false };
-    content = readFileSync(experimentsPath, "utf-8");
-  } catch {
-    return { skip: false };
-  }
-
-  const now = Date.now();
-  const cutoff = now - EXPERIMENTS_LOOKBACK_MS;
-
-  for (const line of content.split("\n")) {
-    const trimmed = line.trim();
-    if (!trimmed) continue;
-
-    let entry: Record<string, unknown>;
-    try {
-      entry = JSON.parse(trimmed);
-    } catch {
-      continue;
-    }
-
-    // Must match the agent
-    if (entry.agent !== agent) continue;
-
-    // Must be recent (within last 30 days)
-    if (typeof entry.timestamp === "string") {
-      const entryTime = new Date(entry.timestamp).getTime();
-      if (isNaN(entryTime) || entryTime < cutoff) continue;
-    } else {
-      // No timestamp — skip this entry (can't determine recency)
-      continue;
-    }
-
-    // Check if errorType (FM code) appears in relevant fields
-    const fieldsToSearch = ["error_pattern", "notes", "method"].map(
-      (f) => (typeof entry[f] === "string" ? entry[f] : "") as string,
-    );
-    const matchesErrorType = fieldsToSearch.some((v) => v.includes(errorType));
-    if (!matchesErrorType) continue;
-
-    // Check for terminal outcome
-    const result = typeof entry.result === "string" ? entry.result : "";
-    const decision = typeof entry.decision === "string" ? entry.decision : "";
-    const reason = typeof entry.reason === "string" ? entry.reason : "";
-
-    const isTerminal =
-      result === "CEILING" ||
-      decision === "discard" ||
-      decision === "skipped" ||
-      reason.toLowerCase().includes("ceiling");
-
-    if (!isTerminal) continue;
-
-    // Found a matching terminal experiment — skip
-    const id = typeof entry.id === "string" ? entry.id : "(no id)";
-    const outcome = result || decision || "ceiling";
-    return { skip: true, reason: `prior experiment ${id} resulted in ${outcome}` };
-  }
-
-  return { skip: false };
-}
-
 // ── Configuration ─────────────────────────────────────────────────────
 
 /** Minimum repeated errors of the same type to trigger a growth cycle. */
@@ -111,6 +28,107 @@ const COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000; // 7 days (matches lookback window)
 
 /** Maximum growth-trigger sessions to launch per scan cycle. */
 const MAX_TRIGGERS_PER_SCAN = 3;
+
+/** Minimum prior growth-cycle attempts for an agent+errorCode before we suppress triggers.
+ *  Counts ANY prior attempt (discard, fail, ceiling, deployed), not just ceiling results. */
+const EXPERIMENTS_ATTEMPTS_THRESHOLD = 2;
+
+/** How far back to look in experiments history (14 days in milliseconds). */
+const EXPERIMENTS_LOOKBACK_MS = 14 * 24 * 60 * 60 * 1000;
+
+// ── Experiments-history gate ──────────────────────────────────────────
+
+/**
+ * Check if an agent+errorCode combination has enough recent experiments
+ * (any outcome) that further growth-trigger cycles would be wasteful.
+ *
+ * Counts ANY prior growth-cycle/sprint attempt for the same agent + error
+ * pattern — discard, fail, ceiling, deployed, etc. If ≥2 prior attempts
+ * exist in the last 14 days, skip the trigger.
+ *
+ * Returns `{ skip: true, reason }` when suppressed; `{ skip: false }` otherwise.
+ */
+export function checkExperimentsHistory(
+  agentsRoot: string,
+  agent: string,
+  errorCode?: string,
+): { skip: boolean; reason: string } {
+  const experimentsPath = join(agentsRoot, "coach", "workspace", "experiments.jsonl");
+
+  if (!existsSync(experimentsPath)) {
+    return { skip: false, reason: "" };
+  }
+
+  let content: string;
+  try {
+    content = readFileSync(experimentsPath, "utf-8");
+  } catch {
+    return { skip: false, reason: "" };
+  }
+
+  const now = Date.now();
+  const cutoff = now - EXPERIMENTS_LOOKBACK_MS;
+  let attemptCount = 0;
+  const outcomes: string[] = [];
+
+  for (const line of content.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+
+    let entry: Record<string, unknown>;
+    try {
+      entry = JSON.parse(trimmed);
+    } catch {
+      continue;
+    }
+
+    // Agent must match
+    if (entry.agent !== agent) continue;
+
+    // If errorCode provided, match against error_pattern field
+    if (errorCode) {
+      const entryPattern = typeof entry.error_pattern === "string" ? entry.error_pattern : "";
+      if (entryPattern && !entryPattern.includes(errorCode) && !errorCode.includes(entryPattern)) {
+        continue; // Different error pattern — skip
+      }
+      // If entry has no error_pattern field, still skip unless it's a generic match
+      if (!entryPattern) continue;
+    }
+
+    // Check recency — support both "date" (YYYY-MM-DD) and "timestamp" (ISO)
+    let entryTime: number;
+    if (typeof entry.date === "string") {
+      entryTime = new Date(entry.date).getTime();
+    } else if (typeof entry.timestamp === "string") {
+      entryTime = new Date(entry.timestamp).getTime();
+    } else {
+      continue; // No date info — skip
+    }
+    if (isNaN(entryTime) || entryTime < cutoff) continue;
+
+    // Only count actual coaching attempts (growth-cycle, sprint, learn-method)
+    // Skip baselines and infrastructure tests — those aren't coaching attempts
+    const entryType = typeof entry.type === "string" ? entry.type : "";
+    if (entryType === "baseline" || entryType === "infrastructure-test" || entryType === "methodology-fix") {
+      continue;
+    }
+
+    // Count this as a prior attempt regardless of outcome
+    attemptCount++;
+    const result = typeof entry.result === "string" ? entry.result : "";
+    const decision = typeof entry.decision === "string" ? entry.decision : "";
+    outcomes.push(result || decision || "unknown");
+  }
+
+  if (attemptCount >= EXPERIMENTS_ATTEMPTS_THRESHOLD) {
+    return {
+      skip: true,
+      reason: `Agent "${agent}" + error "${errorCode || 'any'}" has ${attemptCount} prior experiments in last 14 days (outcomes: ${outcomes.join(", ")}) — already investigated`,
+    };
+  }
+
+  return { skip: false, reason: "" };
+}
 
 // ── Factory ───────────────────────────────────────────────────────────
 
@@ -145,10 +163,9 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       return true;
     });
 
-    // Filter out triggers with prior terminal experiments (ceiling/discard/skipped)
-    const experimentsPath = join(ctx.agentsRoot, "coach", "workspace", "experiments.jsonl");
-    const afterExperimentsCheck = eligible.filter((t) => {
-      const check = checkExperimentsHistory(experimentsPath, t.agent, t.errorType);
+    // Filter out triggers for agents with prior investigated experiments
+    const afterExperimentsGate = eligible.filter((t) => {
+      const check = checkExperimentsHistory(ctx.agentsRoot, t.agent, t.errorType);
       if (check.skip) {
         ctx.log(`[error-log-scanner] Skipping ${t.agent}:${t.errorType} — ${check.reason}`);
         return false;
@@ -157,14 +174,14 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     });
 
     // Cap concurrent triggers to prevent resource overload
-    const toTrigger = afterExperimentsCheck.slice(0, MAX_TRIGGERS_PER_SCAN);
+    const toTrigger = afterExperimentsGate.slice(0, MAX_TRIGGERS_PER_SCAN);
 
     if (toTrigger.length === 0) {
-      ctx.log(`[error-log-scanner] ${results.triggered.length} patterns found but all in cooldown or previously attempted. Skipping.`);
+      ctx.log(`[error-log-scanner] ${results.triggered.length} patterns found but all filtered (cooldown/experiments gate). Skipping.`);
       return;
     }
 
-    ctx.log(`[error-log-scanner] ${results.triggered.length} patterns found, ${eligible.length} after cooldown, ${afterExperimentsCheck.length} after experiments check, triggering top ${toTrigger.length}.`);
+    ctx.log(`[error-log-scanner] ${results.triggered.length} patterns found, ${eligible.length} after cooldown, ${afterExperimentsGate.length} after experiments gate, triggering top ${toTrigger.length}.`);
 
     // Trigger Coach for eligible triggers (capped)
     for (const trigger of toTrigger) {

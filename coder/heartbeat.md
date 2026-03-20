@@ -7,7 +7,8 @@ This file is your instruction template. NEVER use `write()` on `heartbeat.md`. W
 
 ## 🔴 PROMISE-DELIVER-REPORT (C40)
 
-After reading heartbeat + todo, your FIRST text output MUST be a promise list:
+After reading heartbeat + todo, your FIRST **substantive** output MUST be a promise list.
+**You may read files first.** But before any `write`, `edit`, or state-changing `bash` command, you must state:
 ```
 **This session I will:**
 1. [specific deliverable]

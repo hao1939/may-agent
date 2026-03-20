@@ -10,17 +10,10 @@ It's important to try new things, but it's even more important to make full use 
 
 ## 🔴 PROMISE-DELIVER-REPORT (C40)
 
-After reading heartbeat, your FIRST text output MUST be a promise list:
+After reading heartbeat + todo, your FIRST **substantive** output MUST be a promise list.
+**You may read files first.** But before any `write`, `edit`, or state-changing `bash` command, you must state:
 ```
 **This heartbeat I will:**
-1. **Delegate SOUL Updates (P108):** Write `agents/bob/workspace/directive-evaluator-p108.md` instructing May to apply the P108 (Adversarial Defense) patch to Evaluator's SOUL, as requested by Tech-Lead, and send it.
-2. **Cleanup & Verify:** Move the sent directive to `agents/bob/workspace/sent/` and verify clean workspace state.
-3. **Journal & Finish:** Log the critical security delegation to `agents/bob/workspace/journal.md`.
-
-**Results:**
-1. ✅ Sent `directive-evaluator-p108.md` to May (req: d03898c4).
-2. ✅ Verified clean workspace (moved to sent/ and archive/).
-3. ✅ Journal updated.
 1. [specific action from injected pending tasks or focus-tasks.md]
 2. [specific action — derived from THIS session's priorities]
 3. [specific action — max 4 promises]

@@ -27,3 +27,6 @@ Master uses CLI tools (Opus).
 - `agents/shared/philosophy.md` — full design philosophy
 - `agents/shared/best-practices.md` — coding standards
 - `agents/shared/skills/` — full skill guides
+- `agents/shared/skills/error-handling/SKILL.md` — error recovery patterns:
+  retry loop, validation (read-back after edit), tool grounding, edit ambiguity
+  recovery. Anti-patterns: silent abandon, planning without executing.

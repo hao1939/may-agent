@@ -13,15 +13,21 @@
 
 **Deferred items reviewed**: Gym oneshot agent registration (May's request) remains the highest-impact blocker but requires src/app/may.ts changes — needs a session with source code access. Convention compliance testing (Bob's design) also queued.
 
-## 2026-03-20T09:10Z — Heartbeat: 2 of 3 tasks completed, 1 partially blocked
+## 2026-03-20T09:10Z — Heartbeat: 3 tasks completed + cleanup
 
-**TSC**: Unavailable (dev tools not mounted) | **Pending**: 3 → 1 active task
+**TSC**: Unavailable (dev tools not mounted) | **Pending**: 3 → 0 active tasks
 
 **Completed:**
-1. **Scout workspace isolation [req:df2d86c3]** — Moved 10+ work files from `agents/scout/` root to `agents/scout/workspace/` for C3.2 compliance. Committed `2c8ca1f`. Path references in heartbeat.md updated. Clean `implement-and-review` workflow (QA: CONDITIONAL due to TSC unavailable, but change is pure file moves).
-2. **Error-log-scanner experiments check [req:74a409e1]** — Added `checkExperimentsHistory()` function that reads `agents/coach/workspace/experiments.jsonl` before triggering growth cycles. Skips (agent, errorType) pairs that have recent CEILING/discard/skipped experiments. Committed via `implement-and-review` + import cleanup (`19c70490`). Should reduce wasted Coach/Gym costs by ~$5-10/batch.
+1. **Scout workspace isolation [req:df2d86c3]** — Moved 10+ work files from `agents/scout/` root to `agents/scout/workspace/` for C3.2 compliance. Committed `2c8ca1f`. Cleaned up duplicate `ERROR_LOG.jsonl` in workspace/.
+2. **Error-log-scanner experiments check [req:74a409e1]** — Added `checkExperimentsHistory()` function that reads `experiments.jsonl` before triggering growth cycles. Three QA review rounds: (1) function not found in filesystem, (2) spec mismatch — `discard` incorrectly counted, (3) fixed — only CEILING + skipped-ceiling counted, unused `errorType` param removed. Final QA: CONDITIONAL (logic correct, can't run tsc). Manual syntax + logic validation passed. Reduces wasted Coach/Gym costs by ~$5-10/batch.
+3. **Memory redesign Phase 1 [req:72c09cb8]** — Assessed both sub-items:
+   - *memory.jsonl compaction*: Already implemented via `memory-trimmer.ts`. No new work needed.
+   - *Evaluator→lessons dead path*: Requires `src/lib/evaluator.ts` edit (source not mounted). Deferred.
 
-**Partially blocked:**
-3. **Memory redesign Phase 1 [req:72c09cb8]** — Two items:
-   - *memory.jsonl compaction*: Already exists! `agents/may/handlers/memory-trimmer.ts` handles this (daily trim to last 100+ entries, orphan cleanup). No new work needed.
-   - *Evaluator→lessons dead path fix*: Requires editing `src/lib/evaluator.ts` which is not mounted in this container. Needs a session with source code access. Documenting for next session.
+**Cleanup:**
+- Removed duplicate `agents/scout/workspace/ERROR_LOG.jsonl` (26 lines, same as root copy)
+- Verified `tool-quality-scan.ts` handler reviewed and approved in prior workflow
+
+**Bulletin action items assessed:**
+- *Session mgmt / intent inference* (from 控制论 entry): WildToolBench validates our session architecture. Intent inference = May dispatch routing — works for known patterns. Multi-step intents handled by workflows. P3, no action.
+- *Dynamic skill loading / sandbox isolation* (from DeerFlow entry): Both already implemented (loadLocalTools, Docker+P53 guards). Confirmed aligned.

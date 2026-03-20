@@ -33,3 +33,6 @@ These are loaded every session. Update when Hao gives new corrections.
 - `agents/shared/philosophy.md` — full design philosophy
 - `agents/shared/best-practices.md` — best practices
 - `agents/shared/skills/` — full skill guides
+- `agents/shared/skills/error-handling/SKILL.md` — error recovery patterns:
+  retry loop, escalation, validation. Anti-patterns: silent abandon, requirement
+  drift (read instructions literally, don't reinterpret).

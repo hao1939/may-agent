@@ -29,3 +29,7 @@ Bob is Architect (Gemini). Coach trains (Opus).
 - `agents/shared/philosophy.md` — full design philosophy
 - `agents/shared/best-practices.md` — research standards
 - `agents/shared/skills/` — full skill guides
+- `agents/shared/skills/error-handling/SKILL.md` — error recovery patterns:
+  write safety recovery (handle WRITE BLOCKED properly — read full file first),
+  path discovery, validation. Anti-patterns: non-delivery (persist findings
+  early), planning without executing.
