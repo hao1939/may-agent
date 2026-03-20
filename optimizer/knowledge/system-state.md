@@ -34,6 +34,23 @@
 - Grew from 998 → 1068 tests (87-88 files) over Mar-May 2026.
 - tsc always clean. All tests passing.
 
+## Skill Lifecycle
+- **First cycle completed** (2026-03-20): classify-then-act skill created, gym tested 0/3, correctly blocked.
+- **Key finding**: Skills-as-documents don't change behavior (0%). Workflow enforcement is the real mechanism (92%). Skill docs are reference material only.
+- Finding: `agents/optimizer/workspace/finding-classify-then-act-skill-0320.md`
+
+## Growth-Trigger Waste (NEW)
+- Error-log-scanner re-triggers Coach for optimizer FM-2.1/FM-3.1/FM-3.3 every 7 days
+- experiments.jsonl shows these always get discarded (baseline passes or gym fails)
+- 3 sessions this batch = 914KB wasted (~$5-10)
+- Fix sent to tech-lead: add experiments.jsonl check before triggering
+
+## Binary Deployment Gap
+- Running: `may-agent-96dcb60` (built Mar 19 15:14)
+- HEAD: `97a3754` (14 commits ahead)
+- Guards, retries, and tool loading all coded but NOT active
+- Blocked on Hao restart
+
 ## Open Low-Priority Items
 - **F13**: Eval verdict format mismatch — 117/1625 evals (7.2%) invisible to coaching-report.ts/daily-brief.ts because workflow-format evals use `.overall.verdict` not `.verdict`.
 - **Uncommitted agent-growth refactor**: 7 files, +531/-160 lines, 7+ weeks uncommitted. Includes finish tool with lesson capture.

@@ -251,6 +251,14 @@ may be compacted away. Always pair with a more durable method.
 
 **Evidence**: Used frequently but never measured in isolation. Unclear
 whether agents actually read and follow LESSONS entries consistently.
+- **DD#441 (ExpRAG, 2026-03-20)**: K=2 retrieved examples is optimal for
+  OOD generalization. Training-free retrieval alone (83.6%) beats ALL
+  complex memory systems (Reflexion 42.7%, Memory Bank 40.3%). Implication:
+  for each failure pattern, curate 2 EXCELLENT LESSONS entries rather than
+  many mediocre ones. Quality > quantity is empirically validated.
+- **DD#431 (MemArchitect, 2026-03-20)**: "Managed pruning > uncontrolled
+  hallucination." Fewer, high-quality entries > many that may contradict.
+  Staleness creates "zombie memories" that degrade performance.
 
 **Sprint 1 experiment (2026-03-17):** Tested on optimizer FM-2.5 (5 errors).
 Added entry about cross-agent file permissions (P53/P98). Result: **MIXED** —
@@ -1101,6 +1109,18 @@ not a model-specific quirk.
 - **exp-114**: convention-verify-multi-edit-workflow — PASS 8/8. Workflow variant works.
 
 **Escalation insight**: Workflow enforcement fixes escalation failures the same way it fixes judgment failures — Phase 1 (assess) forces the agent to analyze before acting, preventing premature "just fix it" behavior. The coder's natural attractor is "write code to solve the problem" even when the problem requires human help. Mechanical phase separation overrides this attractor.
+
+**Theoretical validation (intake 2026-03-20 08:09Z)**:
+- **DD#441 (ExpRAG)**: Training-free retrieval (83.6%) beats ALL complex
+  memory systems. Our two-phase workflow IS "structured retrieval" — Phase 1
+  forces the agent to retrieve/analyze before Phase 2 acts on it. Validates
+  the fundamental architecture.
+- **DD#430 (MAT Framework)**: Step-level contracts raise the evaluation
+  ceiling (reinforces CR#159 Law 1). Method #15 already provides step-level
+  separation; future improvement = add per-phase verification contracts.
+- **HB#2232 (Agent Design Patterns)**: Community consensus: "start simple,
+  upgrade on bottleneck." Two-phase workflow is the sweet spot — complex
+  enough to fix judgment failures, simple enough to not add debugging pain.
 
 ---
 
