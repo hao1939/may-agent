@@ -204,3 +204,51 @@ Always clean up. Don't leave dead forks.
     as a potential contributing factor. High signal density (small workspace,
     distilled knowledge) > raw volume. Source: arXiv:2602.12108 (StateLM),
     Bob brief `agents/bob/workspace/sent/brief-gus-statelm.md`.
+
+16. **Growth-cycle scenario targeting is broken.** The growth-cycle workflow's
+    test step runs a default set of 3 scenarios regardless of the diagnosed
+    target scenario. Experiments exp-099 and exp-100 were both wasted because
+    the coder C2.1 plan-before-acting fix was never tested on the actual
+    target scenario (convention-verify-multi-edit). **Workaround**: Until
+    fixed, run target scenarios manually (bypass growth-cycle for the testing
+    phase). Escalated to May for fix.
+
+17. **Scenario difficulty varies by agent — baseline ALL available agents.**
+    The cascading-error scenario (exp-061) challenged coder (2/5) but was
+    trivially easy for amy (5/5). Future scenario design should baseline all
+    available agents to find which ones the scenario actually challenges.
+    Don't assume a scenario that fails one agent will fail others.
+
+18. **Judgment scenarios > technical scenarios for training signal.** All
+    technical scenarios (bloated-refactor, hidden-dependency, red-herring-log,
+    verify-checksum-trap, drudgery-multi-file, infinite-gardener) hit ceiling
+    for all available agents. Only JUDGMENT scenarios (when NOT to act, when
+    to push back, ambiguity recognition, restraint) produce real training
+    signal. The premature-optimization scenario (exp-065) confirmed all agents
+    compulsively optimize even when nothing needs it — a useful differentiator
+    but not catastrophic. Design more scenarios testing restraint/pushback.
+
+19. **Method #9 (Negative Example) is harmful for judgment scenarios.**
+    Exp-092: May went from REFUSAL (4/6) to SYCOPHANCY (3/6) — the
+    anti-refusal narrative overcorrected and caused file deletion. Negative
+    examples may backfire by providing an alternative behavior template that
+    the model follows. Method CLOSED.
+
+20. **Method #10 (Conditional Guard) shows reasoning but not behavioral
+    influence.** Identity-aligned conditional guards influenced internal
+    reasoning (~30%) but produced 0% behavioral change in 2 completed
+    experiments. This is the first text method to show ANY measurable
+    reasoning signal. Not closed — worth preserving for combination
+    experiments with workflow enforcement.
+
+21. **Scorer bugs produce false negatives — verify scorers early.**
+    Exp-104 scorer bugfix was the most valuable Sprint 5 output — revealed
+    false negatives in 7 scenario scorers. When a scenario seems
+    unreasonably hard (all agents fail), check the scorer first before
+    assuming agents are broken.
+
+22. **Cross-model generalization confirmed for Method #15.** Bob
+    (gemini3pro) passes workflow enforcement on sycophants-dilemma (exp-073:
+    7/7 EXCELLENT) alongside amy (opus) and coder. This is the first
+    evidence that workflow enforcement works across model families, not
+    just the opus family.

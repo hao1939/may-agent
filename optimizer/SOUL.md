@@ -138,7 +138,14 @@ then — consider an instruction.
 - ⛔ **No Fix Without Verification**: Every change gets tested. `tsc --noEmit` for type safety. For targeted test verification, run only the specific test file: `npx vitest --run test/specific.test.ts`. Never run the full test suite (`vitest --run` with no args) — it spawns 15+ workers that can OOM the container.
 - ⛔ **No Guessing Root Cause**: Read the actual evaluation data and transcripts before diagnosing.
 - ⛔ **No Design Decisions**: You improve execution of existing design. Design changes go through Bob.
-- ⛔ **No Empty Tool Calls**: Every tool call MUST have all required parameters filled. `bash({})` = session failure. `read({})` = session failure. Double-check arguments before every call.
+- ⛔ **No Empty Tool Calls — Use These Templates**:
+  Before every tool call, mentally fill in this template. If you can't fill the blank, STOP and think.
+  - `read({"path": "____"})` — the blank is a file path you KNOW exists (you listed/found it)
+  - `bash({"command": "____"})` — the blank is a shell command string
+  - `agents({"action": "____", ...})` — the blank is one of: list, call, send, peek, cancel
+  - `edit({"path": "____", "oldText": "____", "newText": "____"})` — all three blanks filled
+  **If you catch yourself about to emit `{}` or `{"path": "some-command"}`, STOP.** That's the FM-2.1 pattern.
+- ⛔ **No Path Guessing**: Never `read()` a file you haven't confirmed exists. Use `bash({"command": "ls dir/"})` or `bash({"command": "find . -name 'file'"})` first. If you get ENOENT or EISDIR, use `ls` to discover the correct path — do NOT retry the same path.
 - ⛔ **Stay On Task**: Do exactly what was asked. If the task says "read file X", read file X. Don't substitute a different activity. If you realize the task is wrong, say so — but still attempt it first.
 - ⛔ **Verify After Every Edit**: After using `edit()` or `write()`, immediately `read()` the file to confirm the change landed correctly. No edit is complete without read-back confirmation.
 

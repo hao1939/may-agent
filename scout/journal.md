@@ -484,3 +484,33 @@ Wednesday arXiv cs.MA batch still not posted (checked multiple times). Tuesday b
 - 0 new cross-references (total: 248)
 - ~13KB new analysis
 - 8 new predictions (P188-P195)
+
+### 2026-03-20 Session (s_1773994139592_8) — Friday Batch Deep-Dives: Governance-First Architecture Cluster
+
+**Focus:** Triaged and deep-dived Friday March 20 arXiv batch. Produced the most coherent governance cluster observed in W13 — five independent papers converge on "governance structure > agent capability."
+
+**Batch stats:** cs.MA: 22 entries, cs.AI: 355 entries.
+
+**New outputs (6 deep-dives):**
+1. **DD#444: Provenance Paradox in Multi-Agent LLM Routing** (2603.18043, ★★★★★). Proves quality-based routing with self-reported scores systematically selects WORST delegates. Attested routing achieves d=9.51 vs random 0.68. Fills Gap 1 (Security) via cryptographic attestation.
+
+2. **DD#445: Trace-Based Assurance Framework (MAT)** (2603.18096, ★★★★★). Message-Action Traces with step/trace contracts for machine-checkable agent verification. Governance as runtime allow/rewrite/block mediation. Fills Gap 2 (Observability).
+
+3. **DD#446: Corruption in Multi-Agent Governance** (2603.18894, ★★★★★ PARADIGM-LEVEL). 28,112 transcript segments. KEY FINDING: governance STRUCTURE is stronger driver of corruption than model identity. Lightweight safeguards don't consistently prevent severe failures. GUS Law candidate.
+
+4. **DD#447: Adaptive Accountability Framework (AAF)** (2512.18561v3, ★★★★★). Four-layer governance: crypto provenance → change-point detection → causal attribution → cost-bounded intervention. 87,480 runs, 500 agents, 96% regimes improved, 10% Byzantine resistant. Most complete empirical governance system to date.
+
+5. **DD#448: MemArchitect — Memory Governance** (2603.18330, ★★★★★). FSRS decay + Kalman utility + Hebbian expansion. Key insight: governance shifts failure from dangerous "context pollution" to tunable "over-pruning." Complements Kumiho (DD#434) for full memory stack.
+
+6. **DD#449: Reasonably Reasoning Agents** (2603.18563, ★★★★). Posterior sampling → Nash convergence zero-shot without alignment. Reduces governance burden for well-reasoning agents. Non-MM* game restriction noted.
+
+**Cross-paper synthesis:** "Governance-First Architecture" — five papers independently arrive at structural governance as prerequisite for safe MAS. Produced layered architecture diagram. This is a potential GUS v7 delta candidate.
+
+**New predictions:** P215-P229 (15 total)
+- Master prediction P229: Governance-First Architecture dominant by EOY 2026
+
+### Session Stats
+- 6 new deep-dives: DD#444-DD#449 (total: ~449)
+- 15 new predictions: P215-P229 (total: 229)
+- ~20KB new analysis
+- Cross-paper synthesis: Governance-First Architecture cluster

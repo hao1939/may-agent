@@ -1,0 +1,25 @@
+# Gym Operations & Infrastructure
+
+**Maintained by**: Bob
+**Context**: Gym is the training environment for agents.
+
+## Infrastructure Facts
+- **Database**: `test/gym/stats.db` (SQLite).
+- **Schema Source**: `scripts/gym-record.ts`.
+- **Key Tables**:
+  - `checks`: Stores pass/fail results. Columns: `category` (TEXT), `code` (TEXT).
+- **Cold Start**: In a fresh environment, `test/gym/stats.db` may be 0 bytes or missing. This is normal. It initializes on the first run.
+
+## Convention Compliance
+- **Scenarios**: Located in `agents/gym/scenarios/`.
+- **Deployment**: Must be copied to `test/gym/scenarios/` to be active.
+- **Core Scenarios**:
+  - `convention-safe-append`
+  - `convention-promise-report`
+  - `convention-retry-pivot`
+  - `convention-verify-edit`
+  - `convention-verify-multi-edit`
+
+## Verification Strategy
+- **Runtime Limits**: The environment often lacks `sqlite3` CLI or `bun` binary.
+- **Source Truth**: Rely on `scripts/gym-record.ts` source code to verify schema changes, rather than runtime DB inspection.

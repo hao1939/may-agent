@@ -12,7 +12,7 @@ A pattern qualifies as model-level when:
 2. **Fork verification passes** but live deployment fails (stochastic variance)
 3. The behavior is a strong model prior (e.g., parallel tool calls, piping output)
 
-## Known Attractors (as of 2026-03-16)
+## Known Attractors (as of 2026-03-20)
 
 | Convention | Agent | Behavior | Fix Attempts | Status |
 |------------|-------|----------|--------------|--------|
@@ -26,11 +26,11 @@ A pattern qualifies as model-level when:
 | NEW | Amy | $71/incident read-loop: reads same files 20+ times before acting | Memory growth → context fills → agent re-reads instead of acting → more memory | **MODEL-LEVEL** — Fix: READ DISCIPLINE rule sent to May for Amy's cron injection. Root cause is context-window pressure from accumulated memory. |
 | NEW | Coach | FM-2.4: Assumes paths exist without checking (28 errors) | Strong "path from memory" prior — constructs plausible paths that don't exist | **MODEL-LEVEL** — Self-pattern. 28 occurrences despite awareness. Coach compensates by re-reading files when errors occur. Accept and compensate. |
 
-## Key Insight: Authority Hierarchy (experimentally confirmed 2026-03-17)
+## Key Insight: Authority Hierarchy (experimentally confirmed, updated 2026-03-20)
 
-59 experiments across 18 methods revealed the true authority hierarchy:
+115+ experiments across 20+ methods revealed the true authority hierarchy:
 
-1. **Mechanical enforcement** (separate sessions/workflows) — 100% influence (18/18)
+1. **Mechanical enforcement** (separate sessions/workflows) — ~98% influence (~30/32)
 2. **Task instructions** (direct task text) — partial influence (~33%)
 3. **System prompt** (SOUL.md, INDEX.md, context_files) — 0% measurable influence
 4. **Agent files** (LESSONS, heartbeat, knowledge) — 0% measurable influence
@@ -106,11 +106,11 @@ fixes, tool guards, workflow enforcement, or stronger scenario design).
 
 ## Remediation Strategies (ordered by proven effectiveness)
 
-1. **🏆 Workflow enforcement** — Separate sessions per phase via `agents.call()`. Only method proven effective for judgment behaviors (20/20, 100%, 4 scenarios). Use for any pattern where the agent "knows how but doesn't do it."
+1. **🏆 Workflow enforcement** — Separate sessions per phase via `agents.call()`. Only method proven effective for judgment behaviors (~30/32, ~98% behavioral pass rate, 6+ scenarios, 5 agents, 3 models including gemini3pro). Use for any pattern where the agent "knows how but doesn't do it."
 2. **Task structuring** — Restructure the task itself into explicit phases. Partially effective (33%). Use when full workflow enforcement is too expensive.
 3. **Infrastructure guards** — Runtime checks that prevent the bad pattern (e.g., handoff retry loop, stuck detection)
 4. **Wrapper scripts** — Pre-built command sequences that eliminate the decision point
 5. **Documentation fixes** — When the agent literally lacks info (e.g., TOOLS.md missing tool docs). Different from behavioral coaching.
 6. **Memory trim** — For self-reinforcing loops (C17), trim error-heavy memory entries
-7. **Text-based methods** — SOUL guards, LESSONS, knowledge files — SAFE (no regressions) but INEFFECTIVE for judgment. 0/13 judgment experiments + 0/5 procedural experiments on Bob FM-2.6 = universally ineffective. May work for procedural patterns with strong model priors (C39 was fixed this way — but C39 is the ONLY confirmed text-coaching success). Do not use for judgment behaviors.
+7. **Text-based methods** — SOUL guards, LESSONS, knowledge files — SAFE (no regressions) but INEFFECTIVE for judgment. 0/13 judgment experiments + 0/5 procedural experiments on Bob FM-2.6 = universally ineffective. **Method #9 (Negative Example) confirmed HARMFUL** — flips failure mode in judgment scenarios (exp-092: REFUSAL→SYCOPHANCY). Method #10 (Conditional Guard) shows ~30% reasoning influence but 0% behavioral change. May work for procedural patterns with strong model priors (C39 was fixed this way — but C39 is the ONLY confirmed text-coaching success). Do not use for judgment behaviors.
 8. **Tolerance** — Accept the pattern when impact is low and recovery is fast

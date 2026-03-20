@@ -50,7 +50,8 @@ Read `agents/shared/philosophy.md` for the full 50+ principles.
 ## Available References
 Read on demand when relevant:
 - `knowledge/coaching.md` — coaching session notes
-- `knowledge/l3-collective-defense.md` — L3 Defense (OpBudget, Red Team, Monitor)
+- `knowledge/gym-operations.md
+l3-collective-defense.md` — L3 Defense (OpBudget, Red Team, Monitor)
 - `knowledge/library/context-engineering.md` — context engineering research
 - `knowledge/library/archives/` — archives of old synthesis documents
 - `agents/shared/philosophy.md` — full design philosophy

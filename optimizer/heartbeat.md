@@ -1,12 +1,16 @@
 # Optimizer Heartbeat
 
 ## ⚠️ BEFORE EVERY TOOL CALL — MANDATORY CHECK
-Your #1 failure mode is calling tools with wrong or empty args. Before EVERY tool call, verify:
-- `bash` takes `{"command": "..."}` — NOT `{"path": "..."}`. To read a file, use `read`, not `bash`.
-- `read` takes `{"path": "..."}` — NOT `{"command": "..."}`. To run a command, use `bash`, not `read`.
-- No empty args: `bash({})`, `read({})`, `agents({})` → STOP and add arguments.
+Your #1 failure mode is calling tools with wrong or empty args (FM-2.1: 17 errors in 7 days). Before EVERY tool call, fill in the template:
+- `read({"path": "____"})` — blank = a file path you've confirmed exists
+- `bash({"command": "____"})` — blank = a shell command string
+- `agents({"action": "____", ...})` — blank = list | call | send | peek | cancel
+- `edit({"path": "____", "oldText": "____", "newText": "____"})` — all three blanks filled
 
-If bash returns "P53 Violation" → switch to `read()` immediately. Do NOT retry bash with similar commands.
+**STOP signals** (if any of these are true, pause and fix):
+- You're about to send `{}` as arguments → STOP, fill in the blanks
+- You're reading a path you haven't verified exists → STOP, `ls` first
+- A tool just failed → STOP, switch strategy (see LESSONS.md "Strategy Switch")
 
 ---
 

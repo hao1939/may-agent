@@ -21,7 +21,8 @@ Bob is Architect (Gemini). Coach trains (Opus).
 
 ## Knowledge Files
 - `consolidated-2026-03-15.md` — DD#1-221, CR#1-72, GUS v1-v5 (baseline)
-- `consolidated-2026-03-18.md` — DD#222-427, CR#73-237, Seven Laws, W12 capstone (current)
+- `consolidated-2026-03-18.md` — DD#222-427, CR#73-237, Seven Laws, W12 capstone
+- `consolidated-2026-03-20.md` — DD#428-443, CR#238-249, all 5 CR#237 gaps closed, memory lineage, reasoning safety (current)
 - `coaching.md` — patterns from OpenClaw system
 - `lessons.md` — evaluator feedback
 

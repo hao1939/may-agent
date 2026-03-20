@@ -1392,6 +1392,14 @@ claims to have verified but didn't use external checks. Specifically:
   external structure beats internal reasoning for verification
 - HB#2175 (Amazon AI disaster): "review is the bottleneck" — and review
   must be external, not self-assessment
+- **DD#429 (Provenance Paradox, 2026-03-20)**: Self-reported provenance
+  signals produce WORSE routing than random when pools exceed 5 agents.
+  LLMs are systematically (not randomly) miscalibrated about own
+  capabilities. Strongest external evidence yet: self-assessment is
+  not just unreliable, it's ANTI-correlated with actual ability.
+- **HB#2240 (Anthropic Agent 3 Principles)**: "Spend more time optimizing
+  tools than prompts" — fix the verification tool/interface, don't tell
+  the agent to be more careful about verifying.
 
 **Status**: hypothesis — directly testable via gym. High priority target
 for tech-lead FM-3.3 failures (exp-094 baseline available). Could combine
