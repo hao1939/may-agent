@@ -1,0 +1,1 @@
+{"scenario":"init","agent":"bob","passed":true,"checks":[{"name":"check1","passed":true,"category":"C1","code":"passed"}]}
