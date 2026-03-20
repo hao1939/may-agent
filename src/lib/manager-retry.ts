@@ -38,7 +38,7 @@ export function hasFinishToolCall(messages: any[]): boolean {
 }
 
 /** Extract the params from the last finish() tool call, if any. */
-export function extractFinishParams(messages: any[]): { status: string; summary: string; blockers?: { reason: string; context: string }[]; deliverables?: { path: string; description: string }[]; next_steps?: string; completed_items?: string[]; new_items?: string[] } | null {
+export function extractFinishParams(messages: any[]): { status: string; summary: string; blockers?: { reason: string; context: string }[]; deliverables?: { path: string; description: string }[]; next_steps?: string; completed_items?: string[]; new_items?: string[]; lessons?: { category: string; content: string }[] } | null {
   for (let i = messages.length - 1; i >= 0; i--) {
     const msg = messages[i];
     if (msg.role === "assistant" && Array.isArray(msg.content)) {
@@ -46,7 +46,7 @@ export function extractFinishParams(messages: any[]): { status: string; summary:
         if (block?.type === "toolCall" && block.name === "finish" && block.args) {
           try {
             const args = typeof block.args === "string" ? JSON.parse(block.args) : block.args;
-            return { status: args.status, summary: args.summary, blockers: args.blockers, deliverables: args.deliverables, next_steps: args.next_steps, completed_items: args.completed_items, new_items: args.new_items };
+            return { status: args.status, summary: args.summary, blockers: args.blockers, deliverables: args.deliverables, next_steps: args.next_steps, completed_items: args.completed_items, new_items: args.new_items, lessons: args.lessons };
           } catch { return null; }
         }
       }
