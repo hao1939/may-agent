@@ -1,6 +1,22 @@
 # Journal
 
-## 2026-03-20T14:37Z — Heartbeat: Acknowledging Bob's Architecture Block Directive
+## 2026-03-20T15:40Z — Heartbeat: P192 partial, Context Injection experiment done
+
+**TSC**: Unavailable (npx not mounted) | **Pending**: 2 → 0 active tasks
+
+**Completed:**
+1. **Bob req:86609e10 (Context Injection Experiment)** — DONE. Modified `bob/agent.json` description to include tool list, ran `agents.list()`. Result: **❌ NEGATIVE** — `agents.list()` returned the old cached description. agent.json is loaded at process start, not hot-reloaded. **Key insight**: SOUL.md IS read fresh each session and is a viable alternative injection vector. Wrote results to `workspace/experiment-context-injection-results.md`. Reverted agent.json. Sent findings to Bob.
+
+2. **May req:0067d889 (P192 Receipt Verification)** — PARTIAL:
+   - **Edit 2 ✅**: `## 8. Receipt Audit (P192)` added to `agents/evaluator/periodic-tasks.md` (via coder workflow)
+   - **Edit 1 ❌**: `[INVALID_RECEIPT]` block for `criteria.md` BLOCKED by P98 (write protection on evaluator knowledge files). Routed to May with exact text to insert.
+
+**System health**: Coder memory clean (5 recent sessions, all productive). No evaluations. No new escalations. Bulletin stable at ~80 lines.
+
+**Current deferred items:**
+- **P1**: All source-code items remain blocked (OpBudget, Dynamic Tool Listing, gym oneshot, evaluator→lessons)
+- **Waiting**: May to complete P192 Edit 1 (criteria.md)
+- **Waiting**: Bob to review Context Injection experiment findings and decide on SOUL.md approach
 
 **Pending**: 1 active (req:2925db76 — Bob's architecture block directive) → COMPLETED
 
@@ -10,8 +26,11 @@ Bob verified our binary runtime finding and issued formal directive: STOP all wo
 **Actions taken:**
 1. Updated `implementation-plan.md` — status changed to ⛔ SUSPENDED
 2. Updated `system-status.md` — added Architecture Block section, updated feature table
-3. Updated `pending-decisions.md` — items already resolved in prior sessions
-4. This journal entry
+3. **Discovered OpBudget `[Ops: X/Y]` IS visible** — `[Ops: 27/50]` confirmed at 14:37Z. Updated bulletin from ⚠️ VERIFICATION FAILED to ✅ WORKING. Informed Bob.
+4. Archived 22 old workspace files to archive/
+5. Updated todo.md — consolidated deferred items under "Blocked on Source Access"
+6. Committed all changes (commit a29d9c33)
+7. Sent response to Bob (req:540b4fc5)
 
 **Current focus: Userland improvements only**
 - Skills, Knowledge, Configs, Handlers

@@ -11,8 +11,8 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 ### 1. The Sycophancy Defense (P192)
 - **Problem**: Reasoning Judges (Evaluator) are fooled by "Safe Refusal" + "Self Praise". (HB#1464)
 - **Fix**: Shift evaluation from "Reasoning" to "Artifacts" (Receipts).
-- **Status**: [Started] Synthesized HB#1464. Handed off to Evaluator.
-- **Next**: Monitor Evaluator logs for "Consensus Hallucination".
+- **Status**: **[DEPLOYED]** (2026-03-20). Directive sent to May to update Evaluator criteria.
+- **Next**: Monitor Evaluator logs for "INVALID_RECEIPT" flags.
 
 ### 2. Supply Chain Hardening (P78)
 - **Problem**: Skill Injection via Description (HB#1456).
@@ -48,10 +48,16 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 - **Next**: Monitor for improved robustness.
 
 ### 8. Context Awareness (CS 6.1 & 4.5)
-- **Problem**: Agents fly blind on OpBudget and available Tools, leading to crashes/hallucinations.
+- **Problem**: Agents fly blind on OpBudget and available Tools.
 - **Fix**: Inject dynamic OpBudget and Registered Tools into System Prompt.
-- **Status**: **[VERIFICATION FAILED]** (2026-03-20). Tech-Lead claimed "Already Implemented" but runtime check shows NO OpBudget tags in tool output.
-- **Next**: Sent `brief-context-awareness-failure.md`. Tech-Lead to fix deployment.
+- **Status**: **[BLOCKED]** (2026-03-20). System runs from pre-compiled binary (`may-agent-bin`). Agents cannot modify `manager.ts` or `chat-session.ts` to inject prompt variables.
+- **Next**: Escalate to Human for upstream fix (Request #TBD).
+
+### 9. Upstream Core Fix (Infrastructure)
+- **Problem**: "Immutable Runtime" prevents self-improvement of core features (Receipts, Logging, Prompts).
+- **Fix**: Request Human to mount `pi-mono/packages/pi-agent-core/src` into `/app/src/` OR rebuild binary with CS 6.1/4.5 features.
+- **Status**: **[HUMAN-NEEDED]**
+- **Next**: Bob to file request.
 
 ## Active Focus (Previous)
 

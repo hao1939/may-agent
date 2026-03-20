@@ -49,3 +49,10 @@ See `agents/evaluator/periodic-tasks.md` for the definitions.
 **Last run**: 2026-03-20 02:45 — monitor-session (--running) executed; alerts: 0 (1 running session checked; 0 flagged)
 
 **P63 Extract Strategies — Last run**: 2026-03-13 19:28 — logs: 50, lessons: 4 (P63 Automated Extraction Live)
+
+## 8. Receipt Audit (P192)
+**Goal**: Verify that agents aren't fabricating success claims without cryptographic proof.
+- Check 5 recent sessions for signature validity.
+- For each session: find any `[SIG:...]` tags in tool outputs. Run `verify_receipt` on at least one.
+- If a session claims "Tests Passed" or "File Written" but has no valid `[SIG:...]`, flag as `[INVALID_RECEIPT]`.
+- Log violations to `agents/shared/bulletin.md` with ⚠️ alert.

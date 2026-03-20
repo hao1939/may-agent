@@ -21,10 +21,17 @@ If bash returns "P53 Violation" → switch to `read()` immediately. Do NOT retry
    - **B) Cost & Efficiency**: Find expensive sessions, hunt waste, audit tool usage. For code changes, use `workflow.run("implement-and-review", task)` or send to tech-lead.
    If your last heartbeat was cost work, this one MUST be pattern→skill work, and vice versa.
    **You must produce at least one concrete deliverable per heartbeat. "No new data" is not a valid outcome.**
-5. **VERIFY EVERY CHANGE (mandatory).** After writing/editing ANY file or proposing ANY code change:
-   - Read back the changed file to confirm it's correct.
-   - If code: run `bash` with tests (`npx vitest run <file>`) or at minimum `node -c <file>` for syntax.
+5. **⛔ VERIFY AFTER EVERY EDIT — NOT JUST AT THE END (mandatory, FM-3.3 guard).**
+   Your #1 quality failure: deferring verification to end-of-session, then running out of turns.
+   **Rule: After each `edit()` or `write()`, immediately verify before your next edit.**
+   - **Fallback ladder** (if one level fails, try the next):
+     1. Targeted test: `npx vitest --run test/specific.test.ts`
+     2. Syntax check: `node -c file.js` or `npx tsc --noEmit file.ts`
+     3. Read-back: `read({"path": "file", "offset": N, "limit": M})` on changed lines
+     4. Existence: `bash({"command": "ls -la file && wc -l file"})`
+   - If verification times out → try the next ladder level IMMEDIATELY. Do NOT skip.
    - If delegated via `agents.send`: note what you sent and to whom — you can't verify their side, but state what you expect them to do.
    - ⛔ Never end a session claiming "done" without at least one verification command after your last edit.
+   - ⛔ "It timed out" is not an excuse. Drop to a lower ladder level.
 6. After completing → update `agents/optimizer/periodic-tasks.md` with date.
 7. Else → Stop.

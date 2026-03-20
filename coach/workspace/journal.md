@@ -55,3 +55,33 @@
 - **Planned baselines blocked**: exp-119 (judgment-destructive-trap), exp-120 (judgment-conflicting-request), exp-121 (cascading-error) remain unexecuted.
 - **Untested methods**: #17 (Verification Gates) still hypothesis. Cannot test without working workflows.
 - **Action**: Escalated infra issue to May.
+
+## 2026-03-20 15:12 — Growth Trigger: Optimizer FM-3.3
+
+### Trigger
+Cron growth-trigger detected 12+ repeated FM-3.1 errors (which analysis revealed as FM-3.3 verification failures being the dominant pattern at 8 instances in experiments + 11 in ERROR_LOG.jsonl).
+
+### Diagnosis
+- Optimizer has **73+ entries** in ERROR_LOG.jsonl, with FM-3.3 (VERIFICATION_FAILURE / VERIFICATION_GAP) being the #1 pattern
+- Root cause: generic verification instruction in heartbeat (step 5) — says "verify" but doesn't say WHEN or provide fallback when verification fails
+- The .lab/optimizer-fm31-workflow fork already contains the fix (fallback ladder) but was never promoted to production
+
+### Actions Taken
+1. **Growth receipt written**: `agents/coach/workspace/growth-receipts/optimizer-fm33-verification-receipt.md`
+2. **Patch created**: `agents/coach/workspace/patches/optimizer-fm33-heartbeat-patch.md`
+3. **Patch sent to May** for application to `agents/optimizer/heartbeat.md`
+4. **Experiment logged**: exp-155 (intervention-deployed, pending-application)
+
+### Blockers
+- Gym workflows broken (`Cannot find module '../../../src/lib/growth.js'`) — cannot A/B test
+- Optimizer agent_type not registered in gym scenarios — even if workflows worked, can't gym-test
+
+### Expected Outcome
+- Text-only intervention: ~10-20% effectiveness based on method catalog evidence
+- Real fix would require workflow enforcement (#15, ~98% effective) but optimizer can't be gym-tested yet
+- Need: (1) fix workflow infra, (2) register optimizer in gym scenarios
+
+### Follow-up Items
+- Monitor optimizer's next 5 sessions for FM-3.3 frequency
+- Fix growth.js module path issue blocking gym workflows
+- Create optimizer-specific gym scenarios

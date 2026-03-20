@@ -68,6 +68,7 @@ Read this before starting research — someone may have already covered your top
 - `agents/shared/roadmap.md` — Product direction
 - `agents/shared/bulletin.md` — Cross-agent signals and announcements
 - `agents/shared/knowledge/strategies.md` — Common failure recovery patterns (P63)
+- `agents/shared/knowledge/infrastructure-constraints.md` — Hardware/Software limits (Binary, Read-Only).
 - `agents/shared/knowledge/advisories/` — Security advisories and patches.
 - `agents/shared/knowledge/mast-taxonomy.md` — **MAST Failure Codes** (FM-1.1 to FM-3.3) for error logging.
 - `agents/shared/knowledge/error-log-schema.md` — **Error Log Schema** (JSONL) for structured failure tracking.
