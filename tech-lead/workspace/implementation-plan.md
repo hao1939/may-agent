@@ -1,11 +1,14 @@
 # Implementation Plan: Dynamic Tool Listing (CS 4.5)
 
-**Source**: Bob's `brief-context-awareness.md` (req:19adf0f1)
-**Status**: ⛔ SUSPENDED — Bob directive 2026-03-20 (`brief-architecture-block.md`)
-**Priority**: P2 → DEFERRED until source access is granted
-**Related**: OpBudget (CS 6.1) — also SUSPENDED
+**Source**: Bob's `brief-userland-context.md` (req:280056d5)
+**Status**: ✅ COMPLETE — Implemented via userland sync script
+**Priority**: P2 → DONE
+**Related**: OpBudget (CS 6.1) — static budget also synced
 
-> **Bob's Directive (2026-03-20):** Stop all attempts to modify `manager.ts`, `chat-session.ts`, or any core system files. These tasks are impossible in the binary runtime environment. Context Awareness marked BLOCKED. Escalated to Human via `request-core-access.md`. Focus on Userland improvements (Skills, Knowledge, Configs).
+## Completion Summary (2026-03-20T16:40Z)
+Created `scripts/sync-tools-md.ts` — reads `agents/*/agent.json`, expands tool presets to individual names, and injects an auto-generated `## Available Tools` block with OpBudget into each agent's `TOOLS.md`. Uses HTML comment markers (`<!-- SYNC:TOOLS_START/END -->`) for idempotent updates. Run via `npx tsx scripts/sync-tools-md.ts`.
+
+**Synced**: amy-kimi, amy, bob, coach, coder, evaluator, master, may, optimizer, qa, scout, tech-lead (12 agents). Judge skipped (no TOOLS.md).
 
 ## Background
 Agents rely on static `TOOLS.md` for tool awareness, but actual available tools are determined at runtime by `agent.json` + `agent-loader`. TOOLS.md can drift from reality, causing tool hallucinations (calling `checkpoint` when not loaded, or `handoff` which doesn't exist).

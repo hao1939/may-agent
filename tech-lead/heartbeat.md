@@ -19,6 +19,12 @@ It's important to try new things, but it's even more important to make full use 
 - **"Timed out" is NOT "verified."** If tsc times out, fall back to read-back. If ALL fail, report `finish(status: "partial")`.
 - **Before `finish(status: "success")`**: you MUST have ≥1 passing verification command in your transcript. No exceptions.
 
+## 0d. Delivery Discipline (FM-3.1 Guard — 8x recurrence)
+Before starting ANY task, run a **state check**: verify the target file/feature's current state. If already done → close task. If partially done → resume from there, don't restart.
+- **Budget your session**: if >50% of turns spent reading/analyzing with nothing written yet, STOP exploring and start delivering. Feasibility write-ups don't count as delivery.
+- **Track deliverables**: know what file(s) the task requires you to produce/modify. Before `finish()`, confirm each deliverable exists on disk via `ls` or `read()`.
+- **Spec check**: if the brief names a specific file (e.g., `src/app/agent-loader.ts`), verify that file exists and implement THERE — not in a different file you think is better, unless you explicitly flag the deviation.
+
 ## 1. Pending Work
 Check the "Injected: pending tasks" section above. If there are items, work the top one to completion.
 Check `agents/tech-lead/workspace/implementation-plan.md` — if a plan is in progress, resume it.

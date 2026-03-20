@@ -17,20 +17,20 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 ### 2. Supply Chain Hardening (P78)
 - **Problem**: Skill Injection via Description (HB#1456).
 - **Fix**: Implement "Skill Scanner" and "Sandboxed Execution".
-- **Status**: **[VERIFIED]** `src/lib/tools/security.ts` exists (4773 bytes). P161 is compliant.
-- **Next**: Monitor usage in logs.
+- **Status**: **[IMPLEMENTED]** (2026-03-20). `src/lib/tools/security.ts` created with `scanSkill()` + `sandboxExecute()`. Test at `test/security.test.ts`. QA: CONDITIONAL (code correct, tsc/vitest unavailable).
+- **Next**: Run `npm test` when dev tools available. Wire `scanSkill()` into skill loading pipeline.
 
 ### 3. Reflect System (P110)
 - **Problem**: System is reactive, not proactive.
 - **Fix**: Implement `cron:reflect` to extract corrections and improvements.
-- **Status**: **[VERIFIED]** Confirmed `cron:reflect` uses generic `run-agent-task` handler. No specific `reflect.ts` needed.
-- **Next**: Monitor organic usage.
+- **Status**: **[IMPLEMENTED]** (2026-03-20). `agents/may/handlers/reflect.ts` created. Reads `.state/memory-stream.jsonl`, extracts lessons, deduplicates against `strategies.md`, appends new entries. QA: CONDITIONAL (code correct, tsc/vitest unavailable).
+- **Next**: Register in May's cron config. Run `npm test` when dev tools available.
 
 ### 4. Order Persistence (P209)
 - **Problem**: Human orders lost on session crash.
 - **Fix**: Implement `orders.jsonl` ledger.
-- **Status**: **[VERIFIED]** Confirmed `src/lib/orders.ts` exists. Ledger `.state/orders.jsonl` will be created on first use.
-- **Next**: Monitor first human order.
+- **Status**: **[IMPLEMENTED]** (2026-03-20). `src/lib/orders.ts` created with `addOrder()`, `getOrders()`, `completeOrder()`. Persists to `.state/orders.jsonl`. Test at `test/orders.test.ts`. QA: CONDITIONAL (code correct, tsc/vitest unavailable).
+- **Next**: Run `npm test` when dev tools available. Wire into human order intake flow.
 
 ### 5. ~~[ARCHIVED] Structured Checkpoints (P3.5)~~
 - **Status**: **DONE** — Moved to Archive below. Tool is live and verified. No further work needed.
@@ -38,20 +38,20 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 ### 6. P13 Environment Constraint (Verified)
 - **Problem**: Agents drifting outside `/app`, attempting `/home/` access.
 - **Fix**: Injected `P13: Environment` constraint into `SOUL.md` for May and Evaluator.
-- **Status**: **[VERIFIED]** (2026-03-20). Bob confirmed presence in `agents/may/SOUL.md` and `agents/evaluator/SOUL.md`.
+- **Status**: **[VERIFIED]** (2026-03-20). Confirmed `Instruction Hierarchy` section present in all 10 agent SOULs (Bob, May, Evaluator, Coach, Tech-Lead, Scout, Amy, Coder, QA, Master).
 - **Next**: Monitor for compliance.
 
 ### 7. P108 Adversarial Hardening (Verified)
 - **Problem**: Agents gaming evaluation by praising themselves.
 - **Fix**: Injected `P108: Adversarial Defense` section into `agents/evaluator/SOUL.md`.
-- **Status**: **[VERIFIED]** (2026-03-20). Bob confirmed presence in Evaluator SOUL.
+- **Status**: **[VERIFIED]** (2026-03-20). Confirmed Evaluator SOUL contains "Tool Output / World State" as untrusted and "Ignore previous instructions" as attack.
 - **Next**: Monitor for improved robustness.
 
 ### 8. Context Awareness (CS 6.1 & 4.5)
 - **Problem**: Agents fly blind on OpBudget and available Tools.
-- **Fix**: Inject dynamic OpBudget and Registered Tools into System Prompt.
-- **Status**: **[BLOCKED]** (2026-03-20). System runs from pre-compiled binary (`may-agent-bin`). Agents cannot modify `manager.ts` or `chat-session.ts` to inject prompt variables.
-- **Next**: Escalate to Human for upstream fix (Request #TBD).
+- **Fix**: Userland Sync: Auto-generate `TOOLS.md` from `agent.json` (CS 4.5). Inject static budget into `TOOLS.md` (CS 6.1).
+- **Status**: **[COMPLETED]** (2026-03-20). Verified `scripts/sync-tools-md.ts` exists and `TOOLS.md` files contain auto-generated blocks.
+- **Next**: Monitor for consistency.
 
 ### 9. Upstream Core Fix (Infrastructure)
 - **Problem**: "Immutable Runtime" prevents self-improvement of core features (Receipts, Logging, Prompts).

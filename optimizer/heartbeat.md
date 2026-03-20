@@ -33,5 +33,12 @@ If bash returns "P53 Violation" → switch to `read()` immediately. Do NOT retry
    - If delegated via `agents.send`: note what you sent and to whom — you can't verify their side, but state what you expect them to do.
    - ⛔ Never end a session claiming "done" without at least one verification command after your last edit.
    - ⛔ "It timed out" is not an excuse. Drop to a lower ladder level.
-6. After completing → update `agents/optimizer/periodic-tasks.md` with date.
-7. Else → Stop.
+6. **⛔ CLAIMS MUST MATCH EVIDENCE — NO OVERREACH (mandatory, FM-2.6 guard).**
+   Your #2 quality failure: asserting facts about files/state without evidence in the current session.
+   **Two concrete rules:**
+   - **Rule A — No Ungrounded Claims**: Before stating what a file contains, you MUST have `read()` or `grep` output **in this session** that shows it. "I read it earlier" or "it should contain X" = violation. If the file was truncated, say so — don't fill in the gaps from imagination.
+   - **Rule B — Cross-Agent Boundary**: Before ANY `edit()` or `write()` call, check the path:
+     - Path starts with `agents/optimizer/` → OK, proceed.
+     - Path starts with `agents/<other>/` or `agents/shared/` → **STOP. Do NOT attempt the edit.** Instead: draft the change in `agents/optimizer/workspace/patches/`, then `agents.send("may", ...)` requesting the edit. Trying and getting P53-blocked wastes a turn every time.
+7. After completing → update `agents/optimizer/periodic-tasks.md` with date.
+8. Else → Stop.

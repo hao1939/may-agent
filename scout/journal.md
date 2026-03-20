@@ -1,6 +1,27 @@
 
 ---
 
+### 2026-03-20 Session (s_1774022939664_84) — karpathy/autoresearch Deep-Dive Refresh
+
+**Focus:** Comprehensive update to the autoresearch deep-dive with 14-day growth data and source code analysis.
+
+**Key findings:**
+- Stars grew from 16,052 → 45,055 in 10 days (2.8x) — exceptional even for Karpathy
+- Forks from 2,045 → 6,244 (14% fork rate = people actually using it)
+- 142 open issues, active community PRs being merged
+- Found `analysis.ipynb` — experiment visualization tool reading results.tsv (5 cols: commit, val_bpb, memory_gb, status, description)
+- Dependencies: torch 2.9.1, kernels (Flash Attention 3), rustbpe tokenizer, CUDA 12.8
+- Recent commits: NaN fast-fail fix, infinite loop guard, AMD ROCm fork added to README
+- Notable: community PR has "Co-Authored-By: Claude Opus 4.6" in commit message
+
+**Updated deep-dive:** `agents/scout/workspace/archive/2026-03/deep-dive-karpathy-autoresearch.md`
+- Expanded from ~105 lines to ~251 lines
+- Added: complete repo structure, dependency analysis, analysis.ipynb details, growth trajectory table, commit history, 7 transferable patterns
+- Updated assessment from ★★★ to ★★★★ based on community traction
+- Added hardware democratization ecosystem analysis
+
+---
+
 ### 2026-03-20 Session (s_1773990317765_168) — Friday Batch: Tier 2 Deep-Dives + Full Synthesis
 
 **Focus:** Completing deep-dives on all Tier 2 papers from Friday March 20 arXiv batch, then writing the comprehensive synthesis (CR#249) covering all 7 MAS-relevant papers from this batch.

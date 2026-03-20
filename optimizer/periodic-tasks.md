@@ -3,11 +3,11 @@
 Track when each task was last done. Pick the most overdue one during heartbeat step 3.
 
 ## Per heartbeat (do one, rotate)
-- [x] **Analysis review** — Last done: 2026-03-20T05:19
+- [x] **Analysis review** — Last done: 2026-03-20T17:10
   Read agents/bob/workspace/analysis.md or recent Bob synthesis outputs.
   Any findings that need optimization work? Cost issues? Efficiency problems?
   If found → add specific task to workspace/todo.md.
-  Latest (2026-03-20T05:19): **60 sessions/6h, 8.3% error rate (5 errors) — UP from 2.1%.** Bob analysis.md still from Mar 18 (stale). Error spike is streaming truncation — 9/17 errors in 24h from "tool_use_missing". Pattern 4b fix exists in undeployed binary. Coach volume high (15 sessions/6h = 2.5/hr). All handler health details in `workspace/finding-handler-health-check-0320-0519.md`. No new optimization tasks — key action is binary restart (sent req:3150fd5a).
+  Latest (2026-03-20T17:10): **63 sessions/6h, 7.9% error rate (5 errors — all amy-kimi missing OpenAI key).** ~9.5MB total. Top: coach 2.9MB, tech-lead 2.1MB, bob 1.5MB, optimizer 1.2MB. Down from $290/day pace (12:40) to ~$152/day (~9.5MB/6h at ~$4/MB). Growth trigger fix continues to reduce coach volume. No new optimization tasks — key blocker remains gym infra for skill deployment.
 
 - [x] **Cost outlier scan** — Last done: 2026-03-20T15:39
   Check recent evaluations — any sessions > $2.00?
@@ -21,20 +21,20 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If found → write proposal in workspace/improvement-proposals.md.
   Latest (2026-03-20T15:39): **Found common-sense-verify pre-processor opportunity.** Current: Coach LLM reads 42KB tracker + 8KB common-sense.md, does 34+ grep tool calls. Proposed: JS handler parses tracker dates, pre-gathers evidence via grep, sends ~5KB focused prompt. Could save ~2MB/day (87% reduction per run, 6 runs/day). Also: tracker compression from 42KB→3KB status file + archive. Details at `workspace/finding-cost-analysis-6h-window.md`. This is the first genuine LLM-to-JS partial conversion I've identified — send to tech-lead for implementation.
 
-- [x] **Handler health check** — Last done: 2026-03-20T05:19
+- [x] **Handler health check** — Last done: 2026-03-20T17:10
   Review existing JS handlers in agents/may/handlers/.
   Any errors in recent logs? Any handler that's not firing?
   If issues → add fix to workspace/todo.md.
-  Latest (2026-03-20T05:19): **6.2% error rate (17/274 in 24h) — UP from 2.1%.** 9/17 errors are streaming truncation ("tool_use_missing") — Pattern 4b fix EXISTS in 97a3754 binary but not deployed (running 96dcb60, 14 commits behind). Convention-check now fixed (queries SQLite). All 13 handlers operational. Binary `may-agent-97a3754` is built and ready. Sent CRITICAL restart request to May (req:3150fd5a). Finding at `workspace/finding-handler-health-check-0320-0519.md`.
+  Latest (2026-03-20T17:10): **5 errors in last 6h, all amy-kimi (missing OpenAI key).** No handler-related errors. 63 sessions completed. System stable. Error rate 7.9% (down from 8.3% at 05:19). No streaming truncation errors visible in latest batch — Pattern 4b fix may now be deployed.
 
-- [x] **Proven pattern → Skill/Workflow** — Last done: 2026-03-20T14:09
+- [x] **Proven pattern → Skill/Workflow** — Last done: 2026-03-20T17:15
   This is your MOST IMPORTANT periodic task — focus area #1.
   **Run it via workflow**: `workflow.run("skill-lifecycle", "Scan recent sessions for proven multi-step patterns")`
   The workflow mechanically enforces all 4 phases (discover → draft → test → deploy) in separate
   sessions, preventing you from skipping testing or doing meta-work instead.
   If you have a specific pattern in mind, pass it: `workflow.run("skill-lifecycle", "Pattern: agents read file → check convention → edit → verify")`
   **Deliverable**: A new or refined skill file, tested in gym, deployed to agents.
-  Latest (2026-03-20T14:09): **tool-discipline SKILL v1.0.0 — drafted, gym BLOCKED.** Created skill for FM-2.1 TOOL_SCHEMA_ERROR (#1 failure, 25+ occurrences). 4-step protocol (PRE-READ → ARG-CHECK → OUTPUT-CHECK → POST-VERIFY), 5 assertions, 3 anti-patterns. Gym testing blocked by missing infrastructure (no run-gym.sh, no gym-score-utils.cjs). **Next**: deploy to agents once gym infra exists or confidence is high enough from manual review.
+  Latest (2026-03-20T17:15): **grep-first-reading SKILL v1.0.0 — drafted, gym BLOCKED.** Created skill for #1 cost driver: agents full-reading large files (71-89% of session content = tool results). 4-step protocol (SIZE-CHECK → SEARCH → TARGETED-READ → AVOID-DUPLICATE-READS), 5 assertions, 3 anti-patterns (Full-Read Scan, Repeat-Read Loop, Firehose Bash). Evidence: 2.2MB wasted from top 8 files alone, sessions with targeted reads 87% smaller. Gym testing blocked by missing infrastructure. Also created tool-discipline (14:09). **Gym infra is the persistent blocker** — 3 skills now blocked on deployment.
 
 - [x] **Tool quality review** — Last done: 2026-03-20T08:14
   Read the tool-quality-report.md (generated by tool-quality-scan handler every 4h).

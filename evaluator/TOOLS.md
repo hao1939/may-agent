@@ -1,3 +1,10 @@
+<!-- SYNC:TOOLS_START -->
+## Available Tools (auto-generated from agent.json)
+`read`, `write`, `edit`, `bash`, `finish`
+
+**OpBudget**: 15 ops per session
+<!-- SYNC:TOOLS_END -->
+
 # Tools — Evaluator
 
 ## Available Tools

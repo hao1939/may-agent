@@ -1,5 +1,41 @@
 # Journal
 
+## 2026-03-20T17:37Z — Heartbeat: Mass Hallucination Recovery (P78, P110, P209)
+
+**Pending**: 1 active (req:06e2fa5a — Bob's Mass Recovery Directive) → COMPLETED
+
+**Completed this session — all 3 missing implementations recovered:**
+
+1. **P78 — Supply Chain Hardening**: Created `src/lib/tools/security.ts` with `scanSkill(code)` (regex-based static analysis detecting eval, child_process, destructive fs ops, network access, external imports) and `sandboxExecute(code)` (node:vm sandbox with 5s timeout, no process/fs/require). Test at `test/security.test.ts` (7 cases). QA: CONDITIONAL (code correct, spec issues fixed in retry, tsc/vitest unavailable). Coder→QA→fix→QA pipeline: 2 iterations.
+
+2. **P209 — Order Persistence**: Created `src/lib/orders.ts` with `addOrder()`, `getOrders(filter?)`, `completeOrder(id)`. JSONL-backed at `.state/orders.jsonl`. Configurable `basePath`. Test at `test/orders.test.ts` (8 cases). QA: CONDITIONAL (code correct, tsc/vitest unavailable).
+
+3. **P110 — Reflect System**: Created `agents/may/handlers/reflect.ts` following HandlerModule pattern. Reads last 50 lines of `.state/memory-stream.jsonl`, extracts lesson/fix/pattern/insight entries, deduplicates against `agents/shared/knowledge/strategies.md`, appends new strategies in canonical format. Writes report to `workspace/reflect-report.md`. QA: CONDITIONAL (ENOENT fix applied in retry, tsc/vitest unavailable).
+
+**Updated** `agents/shared/focus-tasks.md`: P78, P110, P209 all changed from [MISSING] to [IMPLEMENTED].
+
+**Verification evidence** (`ls -l` output):
+- `src/lib/tools/security.ts` — 7773 bytes, 2026-03-20 17:41
+- `test/security.test.ts` — 5857 bytes, 2026-03-20 17:41
+- `src/lib/orders.ts` — 4335 bytes, 2026-03-20 17:43
+- `test/orders.test.ts` — 3355 bytes, 2026-03-20 17:44
+- `agents/may/handlers/reflect.ts` — 13713 bytes, 2026-03-20 17:48
+
+**Note**: All QA verdicts are CONDITIONAL due to missing dev tools (npx/tsc/vitest not mounted). Code reviewed by inspection only. Will need `npm test` when tools are available.
+
+---
+
+## 2026-03-20T16:40Z — Heartbeat: Userland Context Injection (CS 4.5 + 6.1) COMPLETE
+
+**Pending**: 1 active (req:280056d5 — Bob's Userland Context Injection) → COMPLETED
+
+**Completed:**
+1. **Bob req:280056d5 (Userland Context Injection)** — DONE. Created `scripts/sync-tools-md.ts` that reads `agents/*/agent.json`, expands tool presets to individual tool names, and injects auto-generated `## Available Tools` + `OpBudget` block into each agent's `TOOLS.md`. Uses `<!-- SYNC:TOOLS_START/END -->` markers for idempotent re-runs. Synced 12 agents (judge skipped — no TOOLS.md). Solves both CS 4.5 (Dynamic Tool Listing) and CS 6.1 (static OpBudget visibility) via userland approach, bypassing binary constraint.
+
+**Verification**: All TOOLS.md files confirmed with correct tool lists and budget values. Script idempotent (can re-run safely). 
+
+---
+
 ## 2026-03-20T15:40Z — Heartbeat: P192 partial, Context Injection experiment done
 
 **TSC**: Unavailable (npx not mounted) | **Pending**: 2 → 0 active tasks

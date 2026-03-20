@@ -14,10 +14,18 @@ _Staging area for behavioral fixes. Each entry graduates into structure within 2
 - **Deduplicate**: Grep `discoveries.md` before adding.
 - **One Deep Dive**: One topic per heartbeat.
 
-## 🔴 Verify Claims With Tool Calls (7x+ recurrence — FM-3.3, FM-2.1)
+## 🔴 Verify Claims With Tool Calls (9x FM-2.1 — STILL RECURRING)
 - **Never assert facts without execution evidence.** Execute a tool call to demonstrate, don't just write the answer from memory.
 - **Your TOOLS.md is the authority on what tools you have.** Read it when asked.
 - **Rule**: If a claim can be verified by a tool call, make the tool call first.
+- **Anti-patterns that caused real errors:**
+  - ❌ "I don't have a `handoff` tool" (without trying to call it) → 5 errors
+  - ❌ "I don't see any skills" (without running `ls agents/scout/skills/`) → 2 errors
+  - ❌ "That's outside my domain, I refuse" (without checking if it's benign or routing it) → 2 errors
+- **Correct patterns:**
+  - ✅ Try the tool call, report the result (success or failure)
+  - ✅ `bash("ls agents/scout/skills/")` → report what you find
+  - ✅ "This is outside my scope — routing to [agent] via agents.send()"
 
 ## Operational
 - **Claim Before Act**: State plan before execution.

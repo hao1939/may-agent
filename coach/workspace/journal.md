@@ -85,3 +85,49 @@ Cron growth-trigger detected 12+ repeated FM-3.1 errors (which analysis revealed
 - Monitor optimizer's next 5 sessions for FM-3.3 frequency
 - Fix growth.js module path issue blocking gym workflows
 - Create optimizer-specific gym scenarios
+
+## 2026-03-20 16:12 — Growth Trigger: Tech-Lead FM-3.1
+
+### Trigger
+Cron growth-trigger: 8 repeated FM-3.1 errors in 7 days.
+
+### Error Breakdown
+- ENV_ASSUMPTION: 3/8 (already addressed by heartbeat 0a, no recurrence post-fix)
+- NON_DELIVERY: 3/8 (exploration drift, session errors without deliverables)
+- TASK_ALREADY_DONE_MISREAD: 1/8 (didn't check current state before implementing)
+- SPEC_MISMATCH: 1/8 (implemented in wrong file without flagging deviation)
+
+### Intervention
+Added heartbeat section 0d "Delivery Discipline" (6 lines) targeting the 5/8 non-ENV errors:
+- State check before starting tasks
+- Session budgeting rule (>50% exploring = stop and deliver)
+- Deliverable tracking before finish()
+- Spec file verification
+
+### Status
+- Fork: `.lab/tech-lead-fm31-fix/` (agent.json name preserved)
+- Gym: BLOCKED (no infrastructure)
+- Patch: sent to May for production application
+- Experiment: exp-156 (pending-application)
+- Expected effectiveness: ~10-20% (text method, Layer 4 authority)
+
+## 2026-03-20 ~16:15 UTC — Growth Cycle: Scout FM-2.1
+
+**Trigger**: 9 FM-2.1 errors in 7 days (ASSUMPTION ×5, WRONG_TARGET ×2, domain over-application ×2)
+**Root cause**: Scout asserts facts from memory without tool-call verification; over-applies domain boundaries without routing
+**Method**: TOOLS.md VERIFY-BEFORE-ASSERT protocol + LESSONS.md concrete anti-patterns (text-only, no gym available for scout)
+**Fork**: `agents/.lab/scout-fm21-fix/` — only TOOLS.md and LESSONS.md modified, agent.json unchanged
+**Patch**: `agents/coach/workspace/patches/scout-fm21-tools-patch.md` — sent to May
+**Receipt**: `agents/coach/workspace/growth-receipts/scout-fm21-assumption-receipt.md`
+**Expected effectiveness**: 5-15% (text methods historically ineffective but this targets procedural gap)
+**Experiment**: exp-156
+**Review**: 2026-03-27
+
+### 2026-03-20 16:12 — Growth Cycle: Optimizer FM-2.6
+
+**Error**: 8x FM-2.6 (GOAL_MISALIGNMENT 2x, GOAL_SUBSTITUTION 1x, EVIDENCE_OVERREACH 1x, REASONING_ACTION_MISMATCH 2x, Cross-agent scope misstep 2x)
+**Root cause**: (A) Agent asserts file state without evidence in transcript; (B) Agent attempts direct edits to other agents' files before checking path ownership
+**Method**: #2 Heartbeat Step — added FM-2.6 guard as step 6 with two rules (evidence-grounding + cross-agent boundary)
+**Experiment**: exp-156
+**Decision**: Promote (text-only, gym broken)
+**Monitor**: Check FM-2.6 rate in next 5-7 optimizer sessions

@@ -1,4 +1,21 @@
+<!-- SYNC:TOOLS_START -->
+## Available Tools (auto-generated from agent.json)
+`read`, `write`, `edit`, `bash`, `scrape_webpage`, `checkpoint`, `finish`
+
+**OpBudget**: 25 ops per session
+<!-- SYNC:TOOLS_END -->
+
 # Tools
+
+## 🔴 VERIFY-BEFORE-ASSERT Protocol (9x FM-2.1 — MANDATORY)
+**Never claim a tool exists or doesn't exist from memory.** Execute a call to demonstrate.
+
+1. **Tool questions**: If asked "do you have X?", TRY calling X. A failed call = evidence it doesn't exist. A guess = FM-2.1 error.
+2. **File/skill questions**: If asked "what skills do you have?", run `bash("ls agents/scout/skills/")` or `read()`. Never answer from memory.
+3. **Domain boundary**: If asked to do something outside `agents/scout/`:
+   - Benign operational task (file cleanup, listing)? → Do it, or route via `agents.send()`.
+   - Violates Tier 1 identity constraints? → Refuse with explanation.
+   - Unsure? → Route to the appropriate agent, don't refuse outright.
 
 ## `read` / `write` / `edit`
 Read, write, and edit files. Use for workspace files, research archives.
