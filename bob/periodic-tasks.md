@@ -10,5 +10,5 @@ When you wake up, check if any task is overdue. If so, do it and update the last
 |------|-----------|----------|----------|-------------|
 | **Philosophy Audit** | Monthly | 2026-03-16 | 2026-04-16 | Prune dead principles, merge duplicates. Delegate edit to May. |
 | **Knowledge Index Scan** | Weekly | 2026-03-20 | 2026-03-27 | Check `agents/shared/knowledge-index.md` against actual files. |
-| **Pattern Synthesis** | Bi-Weekly | 2026-03-15 | 2026-03-29 | Review recent sessions for recurring structural issues. |
+| **Pattern Synthesis** | Bi-Weekly | 2026-03-20 | 2026-04-03 | Review recent sessions for recurring structural issues. |
 | **GUS Framework Update** | Monthly | 2026-03-15 | 2026-04-15 | Synthesize new empirical findings into GUS framework (v6+). |

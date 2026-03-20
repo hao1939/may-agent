@@ -105,6 +105,16 @@ Standardized capabilities available to all agents. Read the `.md` file to learn 
 - `agents/shared/skills/web-scraping/SKILL.md` — **Web Scraping**. Robust fetching with the `scrape` tool.
 - `agents/shared/skills/error-handling/SKILL.md` — **Error Handling**. Standard failure codes (MAST) and escalation paths.
 - `agents/shared/skills/document-collaboration/SKILL.md` — **Doc Collab**. Patterns for multi-agent editing.
+- `agents/shared/skills/investigate-and-fix/SKILL.md` — **Investigate & Fix**. Standard debugging loop (Diagnose-Reproduce-Fix-Verify).
+- `agents/shared/skills/handoff/SKILL.md` — **Handoff**. (DEPRECATED: Use agents.send + write).
+- `agents/shared/skills/grep-first-reading/SKILL.md` — **Grep First**. Read efficiency protocol (C6.1).
+- `agents/shared/skills/classify-then-act/SKILL.md` — **Classify Then Act**. Reduce cognitive load by separating decision from action.
+- `agents/shared/skills/baseline-before-change/SKILL.md` — **Baseline Before Change**. Measure before modifying (Scientific Method).
+- `agents/shared/skills/knowledge-sharing/SKILL.md` — **Knowledge Sharing**. Protocol for broadcasting learnings (C10.3).
+- `agents/shared/skills/evaluator-scoring/SKILL.md` — **Evaluator Scoring**. Rubrics for self-assessment.
+- `agents/shared/skills/skill-lifecycle/SKILL.md` — **Skill Lifecycle**. How to deprecate or promote skills.
+- `agents/shared/skills/task-adherence/SKILL.md` — **Task Adherence**. Sticking to the prompt (P1).
+- `agents/shared/skills/tool-discipline/SKILL.md` — **Tool Discipline**. Precise usage (C2).
 - `agents/shared/skills/patterns/` — **Common Workflows**:
   - `robust-scraping.md`: How to scrape without getting blocked.
   - `research-and-synthesize.md`: Standard research loop.

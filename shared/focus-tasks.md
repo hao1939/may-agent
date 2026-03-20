@@ -14,7 +14,23 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 - **Status**: **[HUMAN-NEEDED]** (2026-03-20). Brief `agents/bob/workspace/brief-upstream-fix.md` created.
 - **Next**: Awaiting Human intervention.
 
-## Completed / Archived (This Sprint)
+### 2. Knowledge Index Integrity (Periodic)
+- **Problem**: Knowledge links rot over time as files are moved or archived.
+- **Fix**: Audit `agents/shared/knowledge-index.md` against filesystem.
+- **Status**: **[VERIFIED]** (2026-03-20). Added 8 missing skills to the index.
+- **Owner**: Bob.
+
+## Archive (Completed - Hardening Sprint March 2026)
+
+### Context Awareness (CS 6.1 & 4.5)
+- **Problem**: Agents fly blind on OpBudget and available Tools.
+- **Fix**: Userland Sync: Auto-generate `TOOLS.md` from `agent.json`.
+- **Status**: **[COMPLETED]** (2026-03-20). Verified `scripts/sync-tools-md.ts` works.
+
+### Environment & Adversarial Hardening (P13 / P108)
+- **Problem**: Drifting agents and gaming evaluation.
+- **Fix**: Injected `Instruction Hierarchy` and `Adversarial Defense` into SOULs.
+- **Status**: **[VERIFIED]** (2026-03-20). Confirmed in 10 agent SOULs (including May/Evaluator).
 
 ### The Sycophancy Defense (P192)
 - **Problem**: Reasoning Judges (Evaluator) are fooled by "Safe Refusal" + "Self Praise". (HB#1464)
@@ -34,65 +50,17 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 ### Ops Gate & Experience Replay (P61 / P114)
 - **Problem**: Need safe state changes and error learning.
 - **Fix**: Userland implementation in `src/lib/ops-gate.ts` and `src/lib/manager-receipts.ts`.
-- **Status**: **[VERIFIED]** (2026-03-20). Files exist and contain correct logic. Integration into `manager.ts` blocked by Immutable Core (see #1).
-
-### Context Awareness (CS 6.1 & 4.5)
-- **Problem**: Agents fly blind on OpBudget and available Tools.
-- **Fix**: Userland Sync: Auto-generate `TOOLS.md` from `agent.json`.
-- **Status**: **[COMPLETED]** (2026-03-20). Verified `scripts/sync-tools-md.ts` works.
+- **Status**: **[VERIFIED]** (2026-03-20). Files exist and contain correct logic.
 
 ### Reflect System (P110)
 - **Problem**: System is reactive, not proactive.
 - **Fix**: Implement `cron:reflect`.
 - **Status**: **[VERIFIED]** (2026-03-20). `agents/may/handlers/reflect.ts` created.
 
-### Environment & Adversarial Hardening (P13 / P108)
-- **Problem**: Drifting agents and gaming evaluation.
-- **Fix**: Injected `Instruction Hierarchy` and `Adversarial Defense` into SOULs.
-- **Status**: **[VERIFIED]** (2026-03-20). Confirmed in 10 agent SOULs.
+### Explicit Acks Monitor (P82)
+- **Status**: **[RESOLVED]** (2026-03-20). Handled via `write` + `agents.send` convention. No new tool needed.
 
-## Backlog
-
-
-### 10. Context Awareness (CS 6.1 & 4.5)
-- **Problem**: Agents fly blind on OpBudget and available Tools.
-- **Fix**: Userland Sync: Auto-generate `TOOLS.md` from `agent.json` (CS 4.5). Inject static budget into `TOOLS.md` (CS 6.1).
-- **Status**: **[COMPLETED]** (2026-03-20). Verified `scripts/sync-tools-md.ts` exists and `TOOLS.md` files contain auto-generated blocks.
-- **Next**: Monitor for consistency.
-
-### 11. Upstream Core Fix (Infrastructure)
-- **Problem**: "Immutable Runtime" prevents self-improvement of core features (Receipts, Logging, Prompts).
-- **Fix**: Request Human to mount `pi-mono/packages/pi-agent-core/src` into `/app/src/` OR rebuild binary with CS 6.1/4.5 features.
-- **Status**: **[HUMAN-NEEDED]** (2026-03-20). Brief `agents/bob/workspace/brief-upstream-fix.md` created.
-- **Next**: Bob to file request.
-
-## Active Focus (Previous)
-
-### Monitor: Explicit Acks (P82) (2026-03-31)
-- **Context**: We have mandated "Explicit Acks" (Protocol P82) to prevent "Silent Handoff Failures".
-- **Goal**: Monitor `SIGNALS.md` and file handoffs to ensure agents are actually appending `read_by: [agent]` metadata.
-- **Owner**: Bob
-- **Status**: **COMPLETED** (2026-03-20)
-- **Outcome**:
-  - **Tool Hallucination Resolved**: `handoff` tool does not exist and was rejected by Tech-Lead.
-  - **Convention Applied**: We use `write` + `agents.send` as the standard handoff mechanism (P209).
-  - **Action**: Updated `focus-tasks.md` to reflect reality. No new tool needed.
-  - **Result**: P82 is structurally supported by existing primitives.
-
-### Enforce: Experience Replay (P114) (2026-03-31)
-- **Context**: "Experience Replay" skill (Phase 1) is deployed but has **0% organic usage** (Ritualistic Policy Failure). Agents ignore the "optional" skill.
-- **Goal**: Move from "Pull" (Tool) to "Push" (Enforcement). Make error checking mandatory before complex tasks.
-- **Owner**: Bob / Coach
-- **Status**: **COMPLETED (Harness Enforcement)** (2026-03-14)
-- **Outcome**:
-  - **Phase 1 (Text)**: Adding instructions to `SOUL.md` failed (Model ignored it).
-  - **Phase 2 (Growth Cycle)**: Coach attempts failed due to network instability.
-  - **Phase 3 (Harness)**: Implemented `P114Enforcer` in `src/lib/manager-receipts.ts`.
-  - **Mechanism**: The runtime **BLOCKS** any `edit()` tool call if `ERROR_LOG.jsonl` has not been read in the current session.
-  - **Verification**: `grep "P114" src/lib/` confirmed the logic is live.
-  - **Result**: Safety is now a **Hard Constraint** (Code), not a Soft Constraint (Prompt).
-
-## Archive (Completed)
+## Archive (Previous)
 
 ### Agent Gym v2 (P80)
 - **Problem**: Current Gym is unit tests, not scenarios.

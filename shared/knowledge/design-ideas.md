@@ -327,3 +327,18 @@ in code, no config change.
 6. `cron.json` — add `agent` field, move heartbeat jobs to heartbeat.md
 7. `agent.json` — add `heartbeatMs` field for may
 8. Telegram — add `/jobs` command
+
+## 5. First-Turn Safety (ADVERSA / arXiv:2603.10068)
+- **Insight**: Jailbreaks are front-loaded (26.7% rate, avg round 1.25), not cumulative.
+- **Action**: Focus defensive "Patrol" efforts on the first 1-2 turns of any session. Don't waste budget checking turn 10.
+- **Status**: New.
+
+## 6. Finite Brain / Budget Awareness (SkyClaw / 2026-03-08)
+- **Insight**: Agents must see their own resource consumption (tokens/ops) in-context to self-regulate.
+- **Mechanism**: Inject "Budget Dashboard" into system prompt.
+- **Status**: [PARTIAL] OpBudget implemented but visibility is inconsistent (CS 6.1).
+
+## 7. Capability-Reliability Tension (ThReadMed-QA / arXiv:2603.11281)
+- **Insight**: Stronger models degrade faster in multi-turn dialogues (GPT-5 drops 16 pts by turn 2).
+- **Implication**: Long delegation chains (A->B->C) are dangerous. Limit depth to 2 hops (C4.3).
+- **Status**: Validates our "2-hop max" rule.
