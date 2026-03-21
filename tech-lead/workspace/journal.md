@@ -169,3 +169,15 @@ Optimizer requested rebuild of `bundle/may-agent` (req:8ffa0682). Investigated �
 - Phase 3 (Active Nudging/Wink): **ENDORSED** as highest priority. Direct solution for Coach growth-cycle failures (FM-1.3 loops, FM-3.1 ghost deliverables). Asked Bob for focused Phase 3 brief.
 
 **Also**: npx unavailable this session (exit 127). No TSC/QA errors to address. Recent gym scenario (exit-code-misread) scored 0/5 baseline and patched — fork discarded correctly.
+
+## 2026-03-21T15:40Z — Active Nudging Phase 2 Complete
+
+**Task**: Control Plane Phase 3 — Active Nudging handler + cron (req:0a8ba6c9 from Bob)
+**Deliverables**:
+- `agents/may/handlers/active-nudge.ts` — NEW handler (256 lines). Invokes monitor-session.cjs --running, parses intervention payloads, cancels stuck sessions or writes nudge files. 10-min cooldown via nudge-log.jsonl.
+- `agents/may/cron.json` — added active-nudge entry (5min interval, handler-based job)
+- `agents/tech-lead/workspace/implementation-plan-active-nudging.md` — marked COMPLETE
+
+**Process**: Used implement-and-review workflow. QA caught 5 issues (import mismatch, action handling, log path, dirname bug, docstring). Coder fixed 4/5. QA re-review was CONDITIONAL (remaining: string-based dirname, tail dependency). I manually fixed both: replaced substring with dirname(), replaced execSync tail with readFileSync.
+
+**Status**: ✅ Complete. Full active nudging pipeline now operational: detect (monitor-session) → act (active-nudge handler) → log (nudge-log.jsonl).

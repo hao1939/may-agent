@@ -8,7 +8,13 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 
 ## Active Focus
 
-### 1. Knowledge Index Integrity (Periodic)
+### 1. Control Plane Phase 3 (Active Nudging)
+- **Problem**: Agents spin in loops (FM-1.3) or claim ghost deliverables (FM-3.1).
+- **Fix**: Implement "Wink" pattern (Active Nudging) via `monitor-session` + `manager.inject`.
+- **Status**: **[IN-PROGRESS]** (2026-03-21). Brief `brief-active-nudging.md` sent to Tech-Lead.
+- **Owner**: Tech-Lead / Evaluator.
+
+### 2. Knowledge Index Integrity (Periodic)
 - **Problem**: Knowledge links rot over time as files are moved or archived.
 - **Fix**: Audit `agents/shared/knowledge-index.md` against filesystem.
 - **Status**: **[VERIFIED]** (2026-03-20). Added 8 missing skills to the index.

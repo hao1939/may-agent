@@ -337,3 +337,23 @@ Added heartbeat section 0d "Delivery Discipline" (6 lines) targeting the 5/8 non
 1. Create a tech-lead-specific scenario that triggers FM-2.4 SILENT_FAIL (e.g., a refactoring task where grep returns no results for an import, and the agent must verify the import is truly unused vs. grep failing)
 2. Consider text-only deployment for FM-2.4 guard (LESSONS.md already has exit code cheat sheet, exp-160 has heartbeat guard) since gym testing is blocked by scenario gap
 3. Monitor tech-lead ERROR_LOG for FM-2.4 recurrence after existing patches (exp-160) take effect
+
+## 2026-03-21T14:10 — Heartbeat: Error Scan + Growth Cycle
+
+**Error scan results** (last 7 days):
+- optimizer: FM-3.3 VERIFICATION_FAILURE (7x), FM-2.1 TOOL_MISUSE (7x), FM-3.3 VERIFICATION_GAP (4x), FM-3.1 WRONG_EXECUTION_MODE (4x)
+- bob: FM-3.3 VERIFICATION_FAILURE (5x), FM-2.6 TOOL_INTERFACE_MISUSE (5x), FM-2.4 NON_DELIVERY (4x)
+- tech-lead: FM-3.3 VERIFICATION_FAILURE (3x), FM-3.1 ENV_ASSUMPTION (3x), FM-2.5 TOOL_SCHEMA_ERROR (3x), FM-2.2 UNHANDLED_COMMAND_FAILURE (3x)
+- coder: FM-3.3 VERIFICATION_FAILURE (2x), FM-2.6 SCOPE_MISMATCH (2x) — low frequency, not actionable yet
+
+**Growth cycle attempted**: strict-tool-protocol scenario for coder
+- Result: CEILING EFFECT — baseline already passes 4/4. Previous Sprint 6 baseline (exp-130) was a false negative, likely from scorer bug that was fixed in Sprint 5.
+- Fork discarded correctly.
+
+**Key insight**: Several Sprint 6 "FAIL" baselines may be stale — the scorer fixes from Sprint 5 (exp-104, exp-107/108) might have resolved false negatives. Need to re-run baselines on the 10 failing scenarios before investing in growth cycles.
+
+**Next steps**:
+1. Re-run baselines for all 10 "failing" scenarios from Sprint 6 to check for stale false negatives
+2. Focus growth cycles on scenarios that still genuinely fail after re-baseline
+3. Optimizer remains hardest to coach — 7x FM-2.1 + 7x FM-3.3 but no optimizer-specific scenarios exist
+4. Consider creating optimizer-specific gym scenarios (optimization task where tool protocol matters)

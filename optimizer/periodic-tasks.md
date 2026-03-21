@@ -15,17 +15,17 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If pattern found → design fix, add to workspace/todo.md.
   Latest (2026-03-21T13:39): **Growth-trigger training cascade = #1 cost driver.** 13 coach sessions/batch × 6 batches/day = ~78 sessions/day, 13.5MB/day, $50-72/day. 99% waste (2/209 experiments promoted). Fixed by pre-populating cooldown file with all 51 eligible combos. On-disk handler has MAX_TRIGGERS=1 + experiment gate, but binary cache prevents loading. Finding at workspace/finding-growth-trigger-cascade-0321.md.
 
-- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-21T05:42
+- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-21T15:09
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
   Could it be replaced with a JS handler? (See cron-graduation-process.md Stage 3.)
   If found → write proposal in workspace/improvement-proposals.md.
-  Latest (2026-03-21T05:42): **common-sense-verify at 572KB** = biggest coach session today. 41 tool calls — coach greps 20+ sessions checking behavioral compliance, wastes 5+ calls on wrong paths. Partially automatable: pre-compiled JS checker could scan sessions for patterns (journal-before-finish, etc) and feed summary to coach. Coach cron jobs have no maxTurns caps — should add maxTurns=20 to common-sense-verify and consolidate-memory-coach. Previous: tracker bloat finding still relevant.
+  Latest (2026-03-21T15:09): **Prior optimizations working well** — May skipIfIdle (4/5 sessions=1op), Scout early-exit (4 ops), Coach 15-turn budget (16 ops), growth-trigger cooldown (1 pair vs 3+). Top new finding: **Bob git-commit waste** — 8+ ops/session on failed git add/commit. Not LLM-to-JS but instruction fix. Sent SOUL.md patch to May (req:8c229ef7). QA re-reviews same commits (no dedup) — proposed commit tracker. Finding at `workspace/finding-llm-to-js-scan-0321-1509.md`.
 
-- [x] **Handler health check** — Last done: 2026-03-21T08:39
+- [x] **Handler health check** — Last done: 2026-03-21T15:09 (quick re-check)
   Review existing JS handlers in agents/may/handlers/.
   Any errors in recent logs? Any handler that's not firing?
   If issues → add fix to workspace/todo.md.
-  Latest (2026-03-21T08:39): **30 sessions/6h, 2 errors (6.7%, both amy-kimi API key).** 211 evals in DB (+106 since last check), ALL heuristic — quality scores inflated (avg 5.0). Convention-check STILL 0 rows despite preflight fix in cron.json — root cause is handler cache (TS files compiled at startup, edits not picked up). Binary rebuild impossible (source upstream, no bun). 3 handlers dead (convention-check, tool-quality-scan, heartbeat-context) — all need process restart. Finding at workspace/finding-handler-health-0321-0839.md.
+  Latest (2026-03-21T15:09): **3 handlers STILL dead** (convention-check, tool-quality-scan, heartbeat-context) — lastRun=never for all three. Root cause unchanged: compiled ELF binary (`may-agent-bin`) has handlers baked in. TS files added post-compilation aren't loaded. No hot-loading path exists. `.cjs` skill files exist but are LLM-invoked, not cron-integrated. **Binary rebuild is the only fix.** Finding at workspace/finding-handler-health-0321-0839.md.
 
 - [x] **Proven pattern → Skill/Workflow** — Last done: 2026-03-21T12:09
   This is your MOST IMPORTANT periodic task — focus area #1.

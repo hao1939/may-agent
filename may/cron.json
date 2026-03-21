@@ -489,5 +489,14 @@
     "enabled": true,
     "handler": "heartbeat-context",
     "description": "Pre-compute session counts, sizes, errors for each agent. Writes heartbeat-context.md. Runs every 30min before heartbeats."
+  },
+  {
+    "name": "active-nudge",
+    "type": "job",
+    "intervalMs": 300000,
+    "message": "[cron:active-nudge] Detect loops/stalls/ghosts in running sessions and intervene.",
+    "enabled": true,
+    "handler": "active-nudge",
+    "description": "Active Nudge: monitor running sessions for behavioral issues (loops, ghost deliverables, productivity stalls) and intervene via cancel or workspace nudge. 5min interval."
   }
 ]
