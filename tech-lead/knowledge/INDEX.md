@@ -50,3 +50,9 @@ When reporting implementation failures, use standardized MAST codes from `agents
   environment grounding (no `cd /home/user`), edit ambiguity recovery (expand
   oldText context), path discovery, tool grounding. Anti-patterns: planning
   without executing (14 occurrences in your sessions), silent abandon.
+- `agents/shared/skills/obstacle-pivot/SKILL.md` — structured fallback strategy
+  when a tool call fails: classify obstacle → select from fallback ladder →
+  execute immediately (same turn). Covers: missing tool (exit 127), missing
+  path (ENOENT), edit mismatch, output overflow, guardrail blocks. Max 3
+  attempts then move on. You already do this well — this codifies your
+  implicit fallback ladders for consistency.

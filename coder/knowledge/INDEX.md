@@ -30,3 +30,8 @@ Master uses CLI tools (Opus).
 - `agents/shared/skills/error-handling/SKILL.md` — error recovery patterns:
   retry loop, validation (read-back after edit), tool grounding, edit ambiguity
   recovery. Anti-patterns: silent abandon, planning without executing.
+- `agents/shared/skills/obstacle-pivot/SKILL.md` — structured fallback strategy
+  when a tool call fails: classify obstacle → select from fallback ladder →
+  execute immediately (same turn). Especially useful for edit mismatch/ambiguity
+  recovery (read file → copy exact text → retry) and missing tool fallbacks
+  (tsc not found → node --check → grep patterns). Max 3 attempts then move on.

@@ -1,5 +1,20 @@
 # Journal
 
+## 2026-03-21T19:39 — Obstacle Pivot Skill Lifecycle (Pattern → Skill)
+
+**Task**: Proven pattern → Skill/Workflow periodic task (most overdue at 7.5h)
+**Pattern**: Obstacle Pivot (FM-2.2, 8x recurrence) — when agents hit errors, they should classify, select a fallback, execute immediately, and chain if needed.
+**Workflow**: `skill-lifecycle` — all 4 phases in separate sessions.
+
+**Results**:
+- Phase 1 (Discovery): Analyzed 50+ sessions, found 65+ pivot events. Top obstacles: npx not found (20), output truncation (12), ENOENT (10), edit match fail (5), P53 block (3). Agent quality varies: tech-lead best, bob/qa weakest.
+- Phase 2 (Draft): Created SKILL.md (237 lines, 11KB) with 4-step protocol (CLASSIFY→SELECT→EXECUTE→CHAIN), 7 fallback ladders per error category, 5 testable assertions, 3 anti-patterns.
+- Phase 3 (Test): Gym tested against `convention-retry-pivot` scenario. Baseline data collected.
+- Phase 4 (Deploy): Deployed to `agents/shared/skills/obstacle-pivot/SKILL.md`.
+- Finding: `workspace/finding-obstacle-pivot-analysis-0321.md`
+
+**Skill inventory**: 2 optimizer-created skills deployed (grep-first-reading, obstacle-pivot). Both address top FM recurrences.
+
 ## 2026-03-21T15:09 — LLM-to-JS Scan + Handler Health Re-Check
 
 **Task**: LLM-to-JS opportunity scan (most overdue at 9h) + handler health re-check (6.5h overdue)

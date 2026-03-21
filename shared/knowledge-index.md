@@ -45,7 +45,6 @@ Read this before starting research — someone may have already covered your top
 ## Coach — Agent Development
 - `agents/coach/knowledge/library/coaching-methodology.md` — Coaching process
 - `agents/coach/skills/agent-conventions/` — 33 conventions library
-- `agents/coach/workspace/COACHEES.md` — Graduation tracking per agent
 - **Topics:** agent behavior patterns, convention compliance, coaching results
 - **Best for:** "What are the common agent failure patterns?" or "How should agents handle X?"
 
@@ -62,7 +61,6 @@ Read this before starting research — someone may have already covered your top
 - **Best for:** "Is the system drifting?" or "What is the current success rate?"
 
 ## Shared Reference
-- `agents/shared/system-design.md` — System architecture (auto-loaded by most agents)
 - `agents/shared/team.md` — Agent roster and roles
 - `agents/shared/philosophy.md` — Design philosophy
 - `agents/shared/roadmap.md` — Product direction
@@ -119,3 +117,6 @@ Standardized capabilities available to all agents. Read the `.md` file to learn 
   - `robust-scraping.md`: How to scrape without getting blocked.
   - `research-and-synthesize.md`: Standard research loop.
   - `implement-review-commit.md`: Standard coding loop.
+  - `experiment-before-apply.md`: **Experimentation**. Protocol for validating changes safely.
+  - `extract-directives.md`: **Directive Extraction**. How to turn analysis into actionable tasks.
+  - `synthesis-dpir.md`: **Synthesis**. Data-Pattern-Insight-Recommendation protocol.

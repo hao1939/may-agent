@@ -33,3 +33,8 @@ Bob is Architect (Gemini). Coach trains (Opus).
   write safety recovery (handle WRITE BLOCKED properly — read full file first),
   path discovery, validation. Anti-patterns: non-delivery (persist findings
   early), planning without executing.
+- `agents/shared/skills/obstacle-pivot/SKILL.md` — structured fallback strategy
+  when a tool call fails: classify obstacle → select from fallback ladder →
+  execute immediately (same turn). Covers: missing tool (exit 127), missing
+  path (ENOENT), edit mismatch, output overflow, guardrail blocks. Max 3
+  attempts then move on.

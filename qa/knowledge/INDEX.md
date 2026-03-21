@@ -24,6 +24,11 @@ Tech-lead builds (Opus). May is Supervisor (Opus).
 - `agents/shared/philosophy.md` — full design philosophy
 - `agents/shared/best-practices.md` — coding standards
 - `agents/shared/skills/` — full skill guides
+- `agents/shared/skills/obstacle-pivot/SKILL.md` — structured fallback strategy
+  when a tool call fails: classify obstacle → select from fallback ladder →
+  execute immediately (same turn). Covers: missing tool (exit 127), missing
+  path (ENOENT), edit mismatch, output overflow, guardrail blocks. Max 3
+  attempts then move on.
 
 ## Consolidated Memory
 - `agents/qa/knowledge/consolidated-memory-2026-03.md`: Durable facts/patterns extracted from QA journal (2026-03-16..2026-03-18).

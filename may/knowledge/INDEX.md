@@ -36,3 +36,8 @@ These are loaded every session. Update when Hao gives new corrections.
 - `agents/shared/skills/error-handling/SKILL.md` — error recovery patterns:
   retry loop, escalation, validation. Anti-patterns: silent abandon, requirement
   drift (read instructions literally, don't reinterpret).
+- `agents/shared/skills/obstacle-pivot/SKILL.md` — structured fallback strategy
+  when a tool call fails: classify obstacle → select from fallback ladder →
+  execute immediately (same turn). Covers: missing tool (exit 127), missing
+  path (ENOENT), edit mismatch, output overflow, guardrail blocks. Max 3
+  attempts then move on.

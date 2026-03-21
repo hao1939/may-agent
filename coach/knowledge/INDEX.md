@@ -46,3 +46,9 @@ Use standardized codes from `agents/shared/knowledge/mast-taxonomy.md`:
   tool grounding (only call tools that exist — no fork_agent/verify_agent),
   retry loop, validation. Anti-patterns: reasoning-action mismatch (FM-2.6,
   11 occurrences in your sessions — fabrication, substitution, requirement drift).
+- `agents/shared/skills/obstacle-pivot/SKILL.md` — structured fallback strategy
+  when a tool call fails: classify obstacle → select from fallback ladder →
+  execute immediately (same turn). Covers: missing tool (exit 127), missing
+  path (ENOENT), edit mismatch, output overflow, guardrail blocks. Max 3
+  attempts then move on. Use this when coaching agents on FM-2.2 (dead-end
+  non-recovery) — the fallback ladders are the teachable intervention.

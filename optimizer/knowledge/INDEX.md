@@ -49,3 +49,9 @@ Use these codes in your analysis reports to drive structural fixes.
 - `agents/shared/knowledge/mast-taxonomy.md` — MAST failure taxonomy (FM + FC codes)
 - `agents/shared/best-practices.md` — best practices
 - `agents/shared/skills/` — full skill guides
+- `agents/shared/skills/obstacle-pivot/SKILL.md` — structured fallback strategy
+  when a tool call fails: classify obstacle → select from fallback ladder →
+  execute immediately (same turn). Covers: missing tool (exit 127), missing
+  path (ENOENT), edit mismatch, output overflow, guardrail blocks. Max 3
+  attempts then move on. You designed this skill — use it as reference when
+  analyzing pivot failures (FM-2.2) in other agents.
