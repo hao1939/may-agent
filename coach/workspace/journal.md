@@ -357,3 +357,21 @@ Added heartbeat section 0d "Delivery Discipline" (6 lines) targeting the 5/8 non
 2. Focus growth cycles on scenarios that still genuinely fail after re-baseline
 3. Optimizer remains hardest to coach — 7x FM-2.1 + 7x FM-3.3 but no optimizer-specific scenarios exist
 4. Consider creating optimizer-specific gym scenarios (optimization task where tool protocol matters)
+
+## 2026-03-21T17:10 — Heartbeat: Error Scan + Scenario Gap Analysis
+
+**Error scan results** (last 7 days, top FM codes):
+- optimizer: FM-2.1 (17x), FM-3.3 (16x), FM-3.1 (12x), FM-2.6 (11x), FM-3.2 (9x)
+- tech-lead: FM-2.5 (17x), FM-2.2 (15x), FM-3.3 (12x), FM-3.1 (11x), FM-1.1 (10x)
+- may: FM-2.1 (11x), FM-2.5 (10x), FM-2.4 (7x), FM-2.2 (7x), FM-3.1 (5x)
+- bob: FM-3.3 (7x), FM-2.4 (7x), FM-2.6 (6x), FM-3.1 (5x), FM-2.2 (4x)
+- coder: FM-5.3 (4x), FM-2.6 (4x), FM-2.2 (4x), FM-2.1 (3x)
+
+**Key finding**: Optimizer is the most error-prone agent (17x FM-2.1, 16x FM-3.3) but has ZERO gym scenarios targeting it. Only 1 scenario (exit-code-misread) has agent_type "any". All others target "coder" or specific agents.
+
+**Scenario gap is the #1 blocker** — can't coach agents without scenarios. Priority:
+1. Create optimizer-specific scenarios (config optimization task with tool protocol traps)
+2. Create tech-lead-specific scenarios (architecture review with silent failures)
+3. Re-baseline the 10 failing scenarios from Sprint 6 to clear stale false negatives
+
+**Next heartbeat**: Dispatch scenario development work or run growth cycle for coder (which has scenarios).

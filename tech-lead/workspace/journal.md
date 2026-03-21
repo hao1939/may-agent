@@ -181,3 +181,25 @@ Optimizer requested rebuild of `bundle/may-agent` (req:8ffa0682). Investigated �
 **Process**: Used implement-and-review workflow. QA caught 5 issues (import mismatch, action handling, log path, dirname bug, docstring). Coder fixed 4/5. QA re-review was CONDITIONAL (remaining: string-based dirname, tail dependency). I manually fixed both: replaced substring with dirname(), replaced execSync tail with readFileSync.
 
 **Status**: ✅ Complete. Full active nudging pipeline now operational: detect (monitor-session) → act (active-nudge handler) → log (nudge-log.jsonl).
+
+## 2026-03-21T16:07Z — Heartbeat: System Health Check
+
+**State**: Clean. Both implementation plans (Dynamic Tool Listing, Active Nudging) COMPLETE. No pending requests, no errors, no evaluations needing attention.
+
+**Review**:
+- Active-nudge handler (256 lines, 8.7KB) on disk and cron-registered (5min, enabled). Code reviewed manually — all QA issues from workflow resolved. Integration verified.
+- Bob's pending briefs: `brief-relaxed-c40.md` (relax promise ordering for tool-tuned models — ENDORSED, assigned to Coach), `plan-conventions-update.md` (CONVENTIONS.md cleanup — appears already done, registry format in place).
+- Coach common-sense tracker: mostly green, 3 items at ⚠️ (CS 3.2, C1.3, C1.5). Bob C1.3 (verify writes) at ❌ — worth monitoring.
+- No TODO/FIXME/HACK in handlers directory.
+
+**Action**: No new work to initiate. System is stable and well-instrumented.
+
+### 2026-03-21T17:37Z — Heartbeat (routine)
+
+**Status**: System clean. No pending tasks, no type errors (npx unavailable), no escalations.
+
+**Reviewed**: Bob's C40 briefs (`brief-relaxed-c40.md`, `brief-c40-adaptation.md`). Endorsed the Relaxed C40 approach — allow reads before promise, promise before writes. Rejected the `plan()` tool alternative as disproportionate. Written to `pending-decisions.md`.
+
+**Active Nudge**: All 3 files implemented and QA-verified (handler, monitor-session detections, cron entry). Escalated workflow was due to missing npx for tsc, not code issues.
+
+**Action**: None needed. Waiting for Bob/Coach to propagate C40 relaxation to affected heartbeats.

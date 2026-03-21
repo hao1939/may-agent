@@ -47,8 +47,8 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Latest (2026-03-21T08:39): **tool-quality-scan still dead** (handler cache). Manual check: 30 sessions/6h, only 2 errors (amy-kimi). Heuristic evaluator detects 0 wasted calls in 25/30 sessions (inflated). Bob had 1 wasted call, coach had 1 — both trivial. No tool-quality-report.md exists. Blocked on process restart to load handler.
 
 ## Weekly
-- [x] **Improvement proposals review** — Last done: 2026-03-18T07:15
-  **10 proposals now implemented** (up from 7). New additions since last review: finish-status fix (82ced56), read-dedup guard (9eefa72), finish evidence guard (2233509). **51 total undeployed commits, all 1,457 tests pass.** Estimated savings once deployed: **$80-104/day ($2,400-3,120/month)** from cron+caching fixes alone. Full deployment readiness brief at `workspace/finding-deployment-readiness-51-commits.md`.
+- [x] **Improvement proposals review** — Last done: 2026-03-21T16:39
+  **14 deployed improvements** verified working ($107-150/day savings realized). **8 more committed but blocked on handler cache/restart** ($94-148/day blocked). **9 proposed but not yet implemented** ($14-21/day). Grand total potential: $215-319/day ($6.4-9.6K/month). Key themes: handler cache = #1 blocker, growth-trigger cascade = #1 new cost driver (mitigated by cooldown fill), evaluator rubber-stamps fixed but blocked on restart, gym infra operational with first successful skill test. Sent coach cron cost fixes to May ($10-16/day). Full review at `workspace/improvement-proposals-review-0321.md`.
 
 ---
 

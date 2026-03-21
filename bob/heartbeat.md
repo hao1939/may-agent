@@ -81,3 +81,10 @@ Before closing out, check: did every `write()` and `edit()` call this session su
 
 ## 5. Close Out
 Write findings to your workspace files (`workspace/journal.md`, `workspace/analysis-*.md`). Do NOT overwrite this file — it's your instruction template.
+
+---
+## Inject: Context (Auto-Generated)
+<retrieved_state source="heartbeat-context" note="Situational Awareness (P42)">
+- If `workspace/heartbeat-context.md` exists, read it for system stats.
+- If `workspace/nudge-active.md` exists, **PRIORITIZE** its warning (it means you were stalled/looping).
+</retrieved_state>
