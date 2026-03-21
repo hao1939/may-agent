@@ -35,12 +35,7 @@
     "message": "[cron:convention-check] Check evaluated sessions for convention compliance.",
     "enabled": true,
     "handler": "convention-check",
-    "description": "Mechanical convention compliance checker — runs on evaluated sessions, checks C1.1/C1.3/C1.4/C2.1/C3.2/C3.3/C6.1/C7.1/C8.2/C12.1, writes to convention_checks table. JS handler, 30min.",
-    "preflight": {
-      "type": "new-entries-since",
-      "path": ".state/evaluations",
-      "stateKey": "convention-check-last-checked"
-    }
+    "description": "Mechanical convention compliance checker — runs on evaluated sessions, checks C1.1/C1.3/C1.4/C2.1/C3.2/C3.3/C6.1/C7.1/C8.2/C12.1, writes to convention_checks table. JS handler, 30min. Preflight removed 2026-03-21: was checking .state/evaluations/ dir which doesn't exist (evaluations moved to SQLite). Handler has internal empty-check."
   },
   {
     "name": "system-status",
@@ -130,16 +125,11 @@
     "type": "job",
     "intervalMs": 86400000,
     "agent": "bob",
-    "message": "[cron:analyze-failures] Analyze the last 10 evaluations in .state/evaluations/. Identify the top recurring pattern. Write findings to agents/bob/workspace/analysis.md. Compare recent evaluations against previous ones — did targeted fixes help? If same issue persists, recommend a different approach.",
+    "message": "[cron:analyze-failures] Analyze recent evaluation data. Run: node -e \"const{getDb}=require('./src/lib/requests.js');const db=getDb('.state');const rows=db.prepare('SELECT sessionId,agent,verdict,score,summary,createdAt FROM evaluations ORDER BY createdAt DESC LIMIT 10').all();console.log(JSON.stringify(rows,null,2));\" to get the last 10 evaluations from SQLite. Identify the top recurring pattern. Write findings to agents/bob/workspace/analysis.md. Compare against previous analysis — did targeted fixes help? If same issue persists, recommend a different approach.",
     "enabled": true,
-    "description": "Bob analyzes evaluation patterns daily (via run-agent-task)",
+    "description": "Bob analyzes evaluation patterns daily (via run-agent-task). Updated 2026-03-21: preflight removed and message updated — evaluations moved from .state/evaluations/ dir to SQLite DB.",
     "handler": "run-agent-task",
-    "lastModified": "2026-03-18T05:49:00.000Z",
-    "preflight": {
-      "type": "new-entries-since",
-      "path": ".state/evaluations",
-      "stateKey": "analyze-failures-last-checked"
-    }
+    "lastModified": "2026-03-21T03:06:00.000Z"
   },
   {
     "name": "optimize",
@@ -484,12 +474,7 @@
     "message": "[cron:tool-quality-scan] Scan evaluations for tool failure patterns.",
     "enabled": true,
     "handler": "tool-quality-scan",
-    "description": "Scan evaluations for tool failure patterns — classify, aggregate, compare vs baseline, report regressions. JS handler, 4h interval.",
-    "preflight": {
-      "type": "new-entries-since",
-      "path": ".state/evaluations",
-      "stateKey": "tool-quality-scan-last-checked"
-    }
+    "description": "Scan evaluations for tool failure patterns — classify, aggregate, compare vs baseline, report regressions. JS handler, 4h interval. Preflight removed 2026-03-21: was checking .state/evaluations/ dir which doesn't exist (evaluations moved to SQLite). Handler has internal empty-check."
   },
   {
     "name": "heartbeat-context",

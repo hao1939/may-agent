@@ -15,7 +15,7 @@ Use line-range reads (`read(path, startLine=N, endLine=M)`) for large transcript
 
 ### `write` — Write files
 Write evaluation output, scores, and lessons. Primary targets:
-- `.state/evaluations/` — evaluation results
+- `.state/may.db` `evaluations` table — evaluation results (SQLite)
 - `agents/evaluator/workspace/` — working files
 
 ### `bash` — Run shell commands

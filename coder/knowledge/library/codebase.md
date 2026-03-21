@@ -102,6 +102,6 @@ class SubagentManager {
 - Session messages stored as JSONL in `.state/sessions/<id>/session.jsonl`
 - History archived to `.state/sessions/history/<id>/`
 - Memory entries appended to `.state/memory/<agent>.jsonl`
-- Evaluations saved to `.state/evaluations/<sessionId>.json`
+- Evaluations saved to `evaluations` table in `.state/may.db` (SQLite)
 - Skills discovered via `SKILL.md` files with YAML frontmatter
 - Workflows are `.ts` files with `name`, `description`, `execute(ctx)` exports

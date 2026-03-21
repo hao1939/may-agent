@@ -46,7 +46,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
           trackRequest(ctx.persistDir, {
             fromEntity: "evaluate-sessions",
             toAgent: "coach",
-            task: `Review session ${parentId} (verdict: needs_improvement). Check .state/evaluations/ for details. Identify which agent needs coaching and run a targeted exercise.`,
+            task: `Review session ${parentId} (verdict: needs_improvement). Query evaluations table in .state/may.db for details. Identify which agent needs coaching and run a targeted exercise.`,
             method: "send",
           });
         } catch { /* best-effort */ }
