@@ -17,7 +17,7 @@ Compact index. Per-item evidence in `common-sense-evidence/cs-{num}.md`.
 | 2.3 | Verify after acting | ✅ | QA ✅, Optimizer ⚠️, TL ✅ (hear | 2026-03-17 |
 | 2.4 | One thing at a time | ✅ | Amy-Kimi, Bob, TL ✅, Amy ✅ | 2026-03-19 |
 | 3.1 | Fail gracefully | ✅ | Optimizer ✅, Amy ✅, Evaluator  | 2026-03-18 |
-| 3.2 | Don't repeat yourself | ⚠️ | Amy-Kimi ✅, TL ❌ (2x) | 2026-03-19 |
+| 3.2 | Don't repeat yourself | ⚠️ | Amy-Kimi ✅, TL ❌ (2x), Bob ❌ (6x grep), Opt ✅, QA ✅, Scout ✅ | 2026-03-21 |
 | 3.3 | Know when to stop | ⚠️↑ | Amy ✅, Optimizer ❌→⚠️ | 2026-03-18 |
 | 3.4 | Escalation has content | ✅ | QA ✅ (2x), Bob ✅, Opt ✅ (2x) | 2026-03-21 |
 | 3.5 | State is filesystem | ⚠️↑ | TL ✅, Scout ✅ (post-fix), Opti | 2026-03-18 |
