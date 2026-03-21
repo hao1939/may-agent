@@ -253,3 +253,12 @@ Added heartbeat section 0d "Delivery Discipline" (6 lines) targeting the 5/8 non
 **Action needed**: Add explicit journal reminder to May's heartbeat (🛑 section before finish instructions).
 
 **Tracker updated**: C12.3 added as new row. Summary counts updated to 27/41 ✅, 11/41 ⚠️. Priority #9 added for May C12.3 remediation.
+
+## 2026-03-21T04:07 — Common-Sense Verify: C1.3 (Verify Writes)
+**Item**: C1.3 — "After every significant action, verify it worked. Read the file back."
+**Method**: Searched recent sessions with edit() calls, checked if agents followed up with read() of same file.
+**Findings**:
+- Tech-Lead (s_196): 3/3 edits verified with read-back ✅
+- Bob (s_199, s_191): 0/5 edits verified — relies on edit() diff preview only ❌
+**Verdict**: ⚠️ Mixed compliance. Bob is the main offender.
+**Evidence**: `workspace/common-sense-evidence/cs-C1.3.md`
