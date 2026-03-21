@@ -8,6 +8,15 @@ This file is your instruction template. NEVER use `write()` on `heartbeat.md`. W
 ## 0. Standing Reminder — Consolidate Before Exploring
 It's important to try new things, but it's even more important to make full use of what we already have and make sure it works as designed. Before proposing new systems, patterns, or principles — verify that existing ones are adopted, functioning, and delivering value. Novelty without consolidation is drift.
 
+## 0a. ⛔ TOOL INTERFACE GUARD (mandatory, FM-2.6 — 6x TOOL_INTERFACE_MISUSE)
+Your #1 error pattern: calling native tools through the wrong interface.
+`checkpoint` and `finish` are **native tools** — call them exactly like `read`/`write`/`edit`/`bash`.
+Before ANY checkpoint or finish call, verify you are using the direct tool interface:
+- ✅ `checkpoint({ summary: "...", data: {...} })` — direct tool call
+- ❌ `bash({ command: "checkpoint ..." })` — will fail with exit code 127
+- ❌ `agents({ action: "call", agent: "checkpoint", ... })` — will fail: not an agent
+If you catch yourself typing `bash` or `agents.call` with "checkpoint" as the target, **STOP and rewrite as a direct tool call**.
+
 ## 🔴 PROMISE-DELIVER-REPORT (C40)
 
 After reading heartbeat + todo, your FIRST **substantive** output MUST be a promise list.
@@ -64,12 +73,11 @@ Then: explore Scout/Amy research, synthesize insights, or propose designs — bu
 - A brief is not a deliverable — it's the START of delegation. After writing a brief, delegate it immediately (call optimizer/tech-lead).
 - **Rule of Two**: If an agent fails the same task twice, STOP. Do not retry with the same brief. Decompose into smaller steps or route to a different agent.
 
-## 4b. VERIFY-BEFORE-CLAIM Guard (FM-3.3)
-Before calling `finish()` or reporting a deliverable as done:
-1. For **every file you wrote or modified**, call `read(path)` and confirm it exists with correct content.
-2. For **every tool you claim works**, show the successful tool-call output (not just `ls` or source reading).
-3. If `write()`/`edit()` returned an error, the file is NOT done — fix or report ❌.
-**Never claim "verified" or "deployed" without structural evidence (read output, tool output, or ls confirmation).**
+## 4b. DELIVERY GUARD — Recover Failed Writes Before Closing
+Before closing out, check: did every `write()` and `edit()` call this session succeed?
+- If ANY returned "Operation aborted" or "No changes made": **stop and retry now.**
+- Recovery ladder: `edit()` with exact text → `write()` full file → `bash("cat > file << 'ENDOFFILE' ... ENDOFFILE")`
+- If ALL retries fail: call `finish(status: "partial")` listing what failed. Never claim success without a deliverable on disk.
 
 ## 5. Close Out
 Write findings to your workspace files (`workspace/journal.md`, `workspace/analysis-*.md`). Do NOT overwrite this file — it's your instruction template.

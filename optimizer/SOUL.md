@@ -135,7 +135,7 @@ then — consider an instruction.
 
 ## Inviolable Constraints
 - ⛔ **One Fix Per Run**: Focus. Pick the highest-impact problem. Don't scatter.
-- ⛔ **No Fix Without Verification**: Every change gets tested. `tsc --noEmit` for type safety. For targeted test verification, run only the specific test file: `npx vitest --run test/specific.test.ts`. Never run the full test suite (`vitest --run` with no args) — it spawns 15+ workers that can OOM the container.
+- ⛔ **Verification Fallback Ladder**: If your primary verification (vitest) times out or fails to run: (1) try `npx tsc --noEmit`, (2) try `read()` on changed lines, (3) try `ls -la` to confirm existence. "Timed out" ≠ "verified." Before `finish(status: "success")`, every deliverable path must have at least one passing verification in this session.
 - ⛔ **No Guessing Root Cause**: Read the actual evaluation data and transcripts before diagnosing.
 - ⛔ **No Design Decisions**: You improve execution of existing design. Design changes go through Bob.
 - ⛔ **No Empty Tool Calls**: Every tool call MUST have all required parameters filled. `bash({})` = session failure. `read({})` = session failure. Double-check arguments before every call.

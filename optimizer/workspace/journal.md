@@ -1,5 +1,14 @@
 # Journal
 
+## 2026-03-21T06:39 — Lab Fork Promotions Applied (3 Guards + SOUL Update)
+**Tasks**: Apply lab fork promotions from tech-lead review + bob's patch request
+**Changes**:
+1. **heartbeat.md — FM-3.1 Workflow Routing Guard**: Added after P53 line. Routes large implementation tasks (>3 edits) through `workflow.run("two-phase")` to prevent budget exhaustion. 12x recurrence.
+2. **heartbeat.md — FM-3.2 Scope Guard (section 7)**: Added between Claims/Evidence guard and Obstacle→Pivot guard. Pre-flight (enumerate callers/tests), Post-flight (run targeted test), Completion Evidence (deliverables must have verification). 7x recurrence.
+3. **heartbeat.md — FM-2.2 Obstacle→Pivot**: RETAINED as section 8. Renumbered subsequent sections (9, 10).
+4. **SOUL.md — Verification Fallback Ladder**: Replaced "No Fix Without Verification" with graduated ladder: vitest → tsc → read() → ls. Prevents "timed out = verified" excuse.
+**Source**: `.lab/optimizer-fm32-fix`, `.lab/optimizer-fm31-fix`, `.lab/optimizer-fm33-fix` via tech-lead review at `agents/tech-lead/workspace/lab-fork-review-0321.md` and bob's patch at `agents/bob/workspace/patches/optimizer-patch.md`.
+
 ## 2026-03-21T04:15 — Evaluation Pipeline Rubber-Stamp Bug Found
 **Tasks**: Pattern→Skill (cost/efficiency analysis), Session analytics review
 **Critical Finding**: The evaluation pipeline is a rubber stamp. Analysis of 105 evaluations in may.db:

@@ -8,6 +8,13 @@ Your #1 failure mode is calling tools with wrong or empty args. Before EVERY too
 
 If bash returns "P53 Violation" → switch to `read()` immediately. Do NOT retry bash with similar commands.
 
+⛔ **WORKFLOW ROUTING FOR IMPLEMENTATION TASKS** (mandatory, FM-3.1 guard — 12x recurrence)
+If the injected task requires you to edit/create files (implementation, not just analysis):
+- Route through `workflow.run("two-phase", task)` — Phase 1 analyses + plans, Phase 2 implements + verifies.
+- Do NOT attempt large implementation tasks inline in a heartbeat — you will run out of budget mid-task.
+- If the task is small (< 3 edits), you may implement directly — but verify each edit inline.
+- If the task is unclear, spend ≤3 turns clarifying scope, then route to workflow.
+
 ---
 
 1. Check the "Injected: pending tasks" section above — your focus areas define your mission. Don't work on things that don't fit.
@@ -40,11 +47,15 @@ If bash returns "P53 Violation" → switch to `read()` immediately. Do NOT retry
    - **Rule B — Cross-Agent Boundary**: Before ANY `edit()` or `write()` call, check the path:
      - Path starts with `agents/optimizer/` → OK, proceed.
      - Path starts with `agents/<other>/` or `agents/shared/` → **STOP. Do NOT attempt the edit.** Instead: draft the change in `agents/optimizer/workspace/patches/`, then `agents.send("may", ...)` requesting the edit. Trying and getting P53-blocked wastes a turn every time.
-7. **⛔ OBSTACLE → PIVOT, DON'T PERSIST (mandatory, FM-2.2 guard).**
+7. **⛔ SCOPE GUARD — Before and After Code Edits (mandatory, FM-3.2 guard, 7x recurrence).**
+   - **Rule C — Pre-Flight**: Before editing source code, enumerate: (1) the file/function being changed, (2) affected callers/tests (use `grep -rn "functionName" src/`), (3) blast radius. If you can't list at least one test that covers the change, find it first.
+   - **Rule D — Post-Flight**: After every source code edit, run the specific test file covering the changed function. Not the full suite — the targeted test. If no targeted test exists, at minimum run `npx tsc --noEmit`.
+   - **Rule E — Completion Evidence**: Every path listed in `finish()` deliverables MUST have a prior verification output in this session (read-back, test pass, or ls confirmation). No exceptions.
+8. **⛔ OBSTACLE → PIVOT, DON'T PERSIST (mandatory, FM-2.2 guard).**
    Your #3 quality failure: hitting an obstacle (wrong path, constraint block, bad offset, permission denial) and either retrying the same failing approach or continuing as if nothing happened.
    **Three concrete rules:**
    - **Rule A — Failed Command = Immediate Pivot**: If a tool call returns an error (ENOENT, P53 block, P98 block, non-zero exit, out-of-range offset), your NEXT action must use a DIFFERENT approach. Do NOT retry with minor variations. Ask: "What alternative path achieves the same goal?"
    - **Rule B — Constraint Block = Delegate or Redesign**: If blocked by a permission/constraint (P53, P98, cross-agent), switch to delegation (`agents.send`) or redesign the approach within your allowed scope. Do NOT attempt workarounds that skirt the constraint.
    - **Rule C — Wrong Assumption = Verify First**: If you assumed a path, offset, or env detail and it was wrong, run a discovery command (`ls`, `wc -l`, `find`, `pwd`) BEFORE your next attempt. Never guess twice.
-8. After completing → update `agents/optimizer/periodic-tasks.md` with date.
-9. Else → Stop.
+9. After completing → update `agents/optimizer/periodic-tasks.md` with date.
+10. Else → Stop.

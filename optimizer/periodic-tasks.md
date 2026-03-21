@@ -9,11 +9,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If found → add specific task to workspace/todo.md.
   Latest (2026-03-21T04:15): **34 sessions/3.5h since last check, 5.1MB, 4 errors (12%).** Same error pattern: 3 amy-kimi missing key, 1 bob API error. Coach: 10 sessions, 1.7MB (33%). Tech-lead now #1 per-session cost (304KB, 296KB sessions). Growth-trigger throttle still not live (handler cache). Dead handler preflights fixed by tech-lead in s_198.
 
-- [x] **Cost outlier scan** — Last done: 2026-03-21T05:42
+- [x] **Cost outlier scan** — Last done: 2026-03-21T06:39
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-21T05:42): **57 sessions, 8.4MB today (5.8h). 14% error rate (8 errors: 6 amy-kimi missing key, 2 bob empty response).** Coach #1 (14 sessions, 2.35MB) — growth-trigger throttle (MAX=3→1) STILL NOT LIVE (handler cache). 6 extra growth-trigger sessions/day (3 per scan × 2 scans). common-sense-verify expensive (572KB single session). Amy-kimi 100% fail (6/6), should be disabled. Sent both issues to May (req:0cf22d55). Projected: ~34MB/day. Finding at workspace/finding-coach-session-triplication-0321.md.
+  Latest (2026-03-21T06:39): **13 sessions since last scan, 1.52MB total (~1h window).** Tech-lead s_216 = 620KB (53 bash calls, exploration sprawl in heartbeat). Amy-kimi still 100% fail (2 more errors, persistent API key issue). Coach throttled to 1 session (92KB) — growth-trigger throttle may be helping. Optimizer 224KB (normal). No new $2+ outliers. Day total estimate: ~10.5MB/day (improving from 34MB estimate earlier).
 
 - [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-21T05:42
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?

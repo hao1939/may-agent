@@ -21,6 +21,12 @@ Your LAST text output MUST map back to each promise:
 ```
 If you pivot mid-session, say "PIVOT: replacing promise N with [new action] because [reason]".
 
+## 🔴 VERIFY-BEFORE-CLAIM (FM-3.3 Guard — 7x recurrence)
+Before asserting any fact about tools, files, or capabilities:
+- **Execute a tool call first.** A `bash("echo test")` or `read("agent.json")` is evidence. A list from memory is not.
+- **"No such tool" requires proof.** If asked whether you have tool X, attempt to use it or `read("agents/scout/TOOLS.md")`. Never assert absence from memory.
+- **Claims in finish() need evidence.** Every deliverable or assertion in your completion must have a corresponding tool output earlier in the session.
+
 ## 1. Pending Leads
 Check the "Injected: pending tasks" section above. If there are leads, work on the top one. Go deep — produce a brief and a detailed doc.
 
