@@ -1,5 +1,37 @@
 # Journal
 
+## 2026-03-21T10:39 — Analysis Review (6h window)
+
+**Period**: 2026-03-21 04:39–10:39 UTC (6h)
+**Sessions**: 53 total, 6.2 MB, ~212 sessions/day projected
+
+**By agent (sessions / KB)**:
+- Coach: 10 / 1861KB — still #1 cost. Training sprint s_238 = 611KB (61 bash, 54 ops). Research-intake s_231 = 510KB (42 ops).
+- Tech-lead: 5 / 1562KB — s_216 = 628KB (46 bash calls in heartbeat), s_250 = 432KB (47 ops)
+- Optimizer: 6 / 1207KB — heaviest individual sessions ~230KB each
+- Bob: 5 / 892KB — s_247 = 283KB (35 ops, **45 bash calls just moving files** — workspace cleanup waste)
+- May: 8 / 294KB — 5 of 8 sessions had ≤1 ops (idle skips working)
+- QA: 4 / 177KB — 2 of 4 sessions near-idle (ops=0 or 2)
+- Coder: 7 / 142KB — workflow sub-sessions, lightweight
+- Scout: 2 / 113KB
+- Amy-kimi: 4 / 30KB — all 4 errors (API key missing)
+- Evaluator: 1 / 74KB
+
+**Errors**: 4 (all amy-kimi API key — persistent, not fixable by us)
+
+**Waste patterns identified**:
+1. **Idle sessions** — 14/53 (26%) had ≤2 ops but still cost prompt processing. skipIfIdle helps but doesn't prevent all.
+2. **Bob file-shuffling** — s_247: 45 bash calls just `mv` files between workspace dirs. Zero productive output per bash call.
+3. **Coach PATH_CONFUSION** — s_238: coach used `cd /var/lib/coach && ...` (wrong path). Known anti-pattern.
+4. **Coach volume** — 10 sessions/6h (1.7/h) still high despite interval fixes. Training sprint + research-intake are heavy.
+5. **Tech-lead bash-heavy heartbeats** — 46 bash calls in s_216 for exploration/investigation.
+
+**Positive signals**:
+- Session volume down vs earlier: 53/6h vs 150/4h pre-fix (projected ~212/day vs ~900/day)
+- Amy-kimi errors don't cascade
+- May idle-skip working (5/8 sessions idle)
+- Coder sub-sessions efficient (~20KB each)
+
 ## 2026-03-21T08:15 — Gym Infrastructure Status + Efficient-File-Reading Scenario
 
 **Task**: Pattern→Skill work (alternation from cost work)

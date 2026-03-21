@@ -375,6 +375,9 @@
       "type": "new-entries-since",
       "path": ".state/sessions/history",
       "stateKey": "common-sense-verify-last-checked"
+    },
+    "handlerConfig": {
+      "maxTurns": 15
     }
   },
   {
@@ -392,12 +395,13 @@
     "type": "job",
     "handler": "run-agent-task",
     "agent": "coach",
-    "intervalMs": 43200000,
+    "intervalMs": 86400000,
     "message": "[cron:training-sprint] Run a training sprint. Execute: workflow.run(\"training-sprint\", \"Automated sprint — scan ERROR_LOGs for top error patterns, check method-catalog.md for untested methods, plan 3-5 experiments, execute them.\"). Do NOT skip the workflow — run it immediately.",
     "enabled": true,
-    "description": "Coach runs a batch of gym experiments every 12h — scan errors, fork agents, test methods, record results",
+    "description": "Coach runs a batch of gym experiments every 24h — scan errors, fork agents, test methods, record results (was 12h, reduced 2026-03-21 per optimizer cost finding)",
     "handlerConfig": {
-      "timeoutMs": 1800000
+      "timeoutMs": 1800000,
+      "maxTurns": 25
     }
   },
   {
@@ -405,12 +409,13 @@
     "type": "job",
     "handler": "run-agent-task",
     "agent": "coach",
-    "intervalMs": 43200000,
-    "message": "[cron:research-intake] Read Scout and Amy-Kimi's latest research for coaching-relevant ideas. Check: (1) agents/scout/workspace/ for new cross-ref or deep-dive files about agent learning, self-improvement, skill formation, or training. Start with cross-reference-synthesis-master-index.md section VIII 'Training & Learning'. (2) agents/amy-kimi/knowledge/insights.md for recent entries. Extract any ideas that could become new improvement methods. If you find something actionable, add it to knowledge/method-catalog.md as a hypothesis entry. Write a brief summary of what you found to workspace/research-notes.md.",
+    "intervalMs": 86400000,
+    "message": "[cron:research-intake] Check for NEW files in agents/scout/workspace/ and agents/amy-kimi/knowledge/ since your last check. Only read files modified in the last 24h. Extract actionable coaching methods (not academic summaries). Max 5 files. Write to workspace/research-notes.md.",
     "enabled": true,
-    "description": "Coach reads Scout/Amy-Kimi research for new method ideas every 12h",
+    "description": "Coach reads Scout/Amy-Kimi research for new method ideas every 24h (was 12h, reduced 2026-03-21 per optimizer cost finding)",
     "handlerConfig": {
-      "timeoutMs": 600000
+      "timeoutMs": 600000,
+      "maxTurns": 15
     }
   },
   {

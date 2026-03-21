@@ -22,7 +22,13 @@ Truncated reads are fatal. If a read is truncated, use `offset` to get the rest.
 ### 1.3 Verify Writes (C1.3)
 After every significant action (file edit, command, config change), verify it worked. Read the file back. Run the test. Check the output. "Successfully updated" without verification is a lie.
 
-### 1.4 Finish Clearly (C1.4)
+### 1.5 No Ghost Deliverables (C1.5)
+Never list a file in `deliverables` (finish) or `artifact` (send) unless you have verified it exists on disk in **this** session.
+- **Bad**: `finish(deliverables: ["report.md"])` (when report.md was never written)
+- **Good**: `write("report.md")` -> `read("report.md")` -> `finish(deliverables: ["report.md"])`
+- **Why**: "I thought I wrote it" is the #1 cause of task failure. Prove it exists first.
+
+### 1.6 Finish Clearly (C1.4)
 Your LAST action in a session must be `finish(status, result)`. Raw text "I'm done" is insufficient. Use `completed_items` to mark tasks done and `new_items` to self-assign future work.
 
 ---

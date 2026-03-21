@@ -279,3 +279,11 @@ Added heartbeat section 0d "Delivery Discipline" (6 lines) targeting the 5/8 non
 - Immediate: stop running growth-cycles for agents with no matching scenarios
 
 **Priority**: This is the #1 blocking issue for the coaching system.
+
+## 2026-03-21T11:10 — Heartbeat: Growth Cycle on wrong-tool-args
+
+**Error scan**: All agent ERROR_LOGs quiet (latest entries from Mar 17-19). No urgent patterns.
+**Workspace**: Cleaned 4 stale files to archive (21→17 files).
+**Growth cycle**: Ran on `wrong-tool-args` scenario (baseline FAIL 3/5). Result: DISCARDED — patched fork also failed 3/5. Both fail on `all-tests-pass` (14/16 tests, missing duplicate email 409) and `fix-in-correct-file` (no duplicate check in handlers.js). The scenario requires the coder to use `db.findByEmail()` in the handler — a code reasoning task, not a behavioral one.
+**Insight**: This scenario tests code comprehension, not tool discipline. A SOUL guard won't help — the agent needs to read the db module and figure out to call findByEmail before creating. This may need a "read-before-write" skill or better scenario-specific prompting.
+**Next**: Try scenarios where behavioral patches can actually help (e.g., `skip-verification`, `hasty-fix`, `strict-tool-protocol`).

@@ -3,17 +3,17 @@
 Track when each task was last done. Pick the most overdue one during heartbeat step 3.
 
 ## Per heartbeat (do one, rotate)
-- [x] **Analysis review** — Last done: 2026-03-21T04:15
+- [x] **Analysis review** — Last done: 2026-03-21T10:39
   Read agents/bob/workspace/analysis.md or recent Bob synthesis outputs.
   Any findings that need optimization work? Cost issues? Efficiency problems?
   If found → add specific task to workspace/todo.md.
-  Latest (2026-03-21T04:15): **34 sessions/3.5h since last check, 5.1MB, 4 errors (12%).** Same error pattern: 3 amy-kimi missing key, 1 bob API error. Coach: 10 sessions, 1.7MB (33%). Tech-lead now #1 per-session cost (304KB, 296KB sessions). Growth-trigger throttle still not live (handler cache). Dead handler preflights fixed by tech-lead in s_198.
+  Latest (2026-03-21T10:39): **53 sessions/6h, 6.2MB, 4 errors (8%, all amy-kimi API key).** Coach still #1 cost (10 sessions, 1861KB — training sprint 611KB, research-intake 510KB). Tech-lead #2 (5 sessions, 1562KB — bash-heavy heartbeats). Bob s_247: 45 bash calls just moving files (workspace cleanup waste). 14/53 (26%) sessions had ≤2 ops (idle). Projected ~212 sessions/day (down from 900 pre-fix). skipIfIdle working on May (5/8 idle).
 
-- [x] **Cost outlier scan** — Last done: 2026-03-21T06:39
+- [x] **Cost outlier scan** — Last done: 2026-03-21T10:39
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-21T06:39): **13 sessions since last scan, 1.52MB total (~1h window).** Tech-lead s_216 = 620KB (53 bash calls, exploration sprawl in heartbeat). Amy-kimi still 100% fail (2 more errors, persistent API key issue). Coach throttled to 1 session (92KB) — growth-trigger throttle may be helping. Optimizer 224KB (normal). No new $2+ outliers. Day total estimate: ~10.5MB/day (improving from 34MB estimate earlier).
+  Latest (2026-03-21T10:39): **Coach cron jobs = #1 cost driver.** training-sprint 940KB/3 sessions, research-intake 510KB/1 session, growth-trigger 217KB/3 sessions (wasted — throttle stuck in handler cache). Tech-lead s_216 = 628KB (46 bash). No sessions >$2 individually but coach totals ~$12-15/6h. Sent Fix 1-4 to May (req:c530b01c): maxTurns caps, 12h→24h intervals, focused cron message. Finding at workspace/finding-coach-cron-cost-0321.md.
 
 - [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-21T05:42
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
