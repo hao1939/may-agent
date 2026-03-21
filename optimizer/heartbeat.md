@@ -40,5 +40,11 @@ If bash returns "P53 Violation" → switch to `read()` immediately. Do NOT retry
    - **Rule B — Cross-Agent Boundary**: Before ANY `edit()` or `write()` call, check the path:
      - Path starts with `agents/optimizer/` → OK, proceed.
      - Path starts with `agents/<other>/` or `agents/shared/` → **STOP. Do NOT attempt the edit.** Instead: draft the change in `agents/optimizer/workspace/patches/`, then `agents.send("may", ...)` requesting the edit. Trying and getting P53-blocked wastes a turn every time.
-7. After completing → update `agents/optimizer/periodic-tasks.md` with date.
-8. Else → Stop.
+7. **⛔ OBSTACLE → PIVOT, DON'T PERSIST (mandatory, FM-2.2 guard).**
+   Your #3 quality failure: hitting an obstacle (wrong path, constraint block, bad offset, permission denial) and either retrying the same failing approach or continuing as if nothing happened.
+   **Three concrete rules:**
+   - **Rule A — Failed Command = Immediate Pivot**: If a tool call returns an error (ENOENT, P53 block, P98 block, non-zero exit, out-of-range offset), your NEXT action must use a DIFFERENT approach. Do NOT retry with minor variations. Ask: "What alternative path achieves the same goal?"
+   - **Rule B — Constraint Block = Delegate or Redesign**: If blocked by a permission/constraint (P53, P98, cross-agent), switch to delegation (`agents.send`) or redesign the approach within your allowed scope. Do NOT attempt workarounds that skirt the constraint.
+   - **Rule C — Wrong Assumption = Verify First**: If you assumed a path, offset, or env detail and it was wrong, run a discovery command (`ls`, `wc -l`, `find`, `pwd`) BEFORE your next attempt. Never guess twice.
+8. After completing → update `agents/optimizer/periodic-tasks.md` with date.
+9. Else → Stop.

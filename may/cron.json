@@ -490,5 +490,14 @@
       "path": ".state/evaluations",
       "stateKey": "tool-quality-scan-last-checked"
     }
+  },
+  {
+    "name": "heartbeat-context",
+    "type": "job",
+    "intervalMs": 1800000,
+    "message": "[cron:heartbeat-context] Pre-compute system context for heartbeat sessions.",
+    "enabled": true,
+    "handler": "heartbeat-context",
+    "description": "Pre-compute session counts, sizes, errors for each agent. Writes heartbeat-context.md. Runs every 30min before heartbeats."
   }
 ]

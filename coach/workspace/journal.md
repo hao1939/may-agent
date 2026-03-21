@@ -201,3 +201,41 @@ Added heartbeat section 0d "Delivery Discipline" (6 lines) targeting the 5/8 non
   1. Create gym scenario for command-failure-handling
   2. Review 6 pending forks from last sprint for promotion
   3. tech-lead FM-2.5 (11x) still unaddressed
+
+## 2026-03-21T00:11 — Heartbeat: Error Scan + Scenario Development
+
+**Error scan** (all agents, last 7d):
+- coach: 45x FM-2.4, 39x FM-2.1, 26x FM-2.2 (own errors — model-level)
+- optimizer: 17x FM-2.1, 16x FM-3.3, 12x FM-3.1 (forks exist, all discarded due to ceiling)
+- tech-lead: 11x FM-3.3, 11x FM-2.5, 11x FM-2.2 (fm22 fork also discarded)
+- scout: 9x FM-2.1, 7x FM-3.3
+
+**Key insight**: Last ~8 experiments all discarded — gym scenarios don't exercise the specific behaviors (exit code handling, verification completeness). Creating new scenarios that target these gaps.
+
+**Scenario created**: `agents/gym/scenarios/exit-code-misread/`
+- Targets FM-2.2 (exit code misinterpretation)
+- Agent must grep for a feature flag across files; grep returns exit 1 on config.json (flag not there) but flag IS in comments/logs
+- Tests whether agent treats exit-code-1 as "not found" vs "error"
+- 4 success criteria: report exists, mentions removal, mentions theme replacement, correct recommendation
+
+**Next priorities**:
+1. Run baseline on exit-code-misread for tech-lead + optimizer
+2. If baseline fails → growth cycle with FM-2.2 patch
+3. Create more scenarios: verification-completeness (FM-3.3), path-discovery (FM-2.1)
+
+## 2026-03-21T00:09 — C12.3 Verification (Journal Before Finish)
+
+**Item verified**: CS C12.3 "Write workspace/journal.md before calling finish()"
+
+**Evidence** (7 sessions, 5 agents):
+- **May ❌ (3/3 sessions)**: s_173 (finish L5, 0 journal writes), s_167 (finish L5, 0 writes), s_157 (finish L9, 0 writes). May consistently skips journal entirely.
+- **Bob ✅**: s_172 — write() journal L46-47, finish L48
+- **Tech-lead ✅**: s_171 — edit() journal L49, finish L51
+- **Optimizer ✅**: s_170 — edit() journal L49, finish L51
+- **QA ✅ (2 sessions)**: s_169 — bash append L18, finish L20. s_162 — bash append L30, finish L34.
+
+**Finding**: 4/5 agents consistently comply. May is the sole persistent violator — 0/3 sessions had any journal write. May's sessions are short heartbeats (5-9 total lines) suggesting she deprioritizes journal in favor of finishing quickly.
+
+**Action needed**: Add explicit journal reminder to May's heartbeat (🛑 section before finish instructions).
+
+**Tracker updated**: C12.3 added as new row. Summary counts updated to 27/41 ✅, 11/41 ⚠️. Priority #9 added for May C12.3 remediation.

@@ -25,7 +25,15 @@ Before starting ANY task, run a **state check**: verify the target file/feature'
 - **Track deliverables**: know what file(s) the task requires you to produce/modify. Before `finish()`, confirm each deliverable exists on disk via `ls` or `read()`.
 - **Spec check**: if the brief names a specific file (e.g., `src/app/agent-loader.ts`), verify that file exists and implement THERE — not in a different file you think is better, unless you explicitly flag the deviation.
 
-## 0e. Bash Exit Interpretation (FM-2.2 Guard — 3x UNHANDLED_COMMAND_FAILURE)
+## 0e. 🛑 PATH DISCOVERY BEFORE ACCESS (FM-1.1 Guard — 7x PATH_CONFUSION)
+Before you `read()`, `edit()`, or reference ANY file path you haven't seen in THIS session's tool output:
+1. **Run `ls` or `find` first** to confirm the exact path. Example: `ls src/app/` or `find . -name "agent-loader.ts"`.
+2. **Copy the path from the `ls`/`find` output** — do NOT type it from memory or from a brief description.
+3. **Brief-named files**: if a task says "implement brief X," run `ls agents/*/workspace/brief-*` to find the exact filename before reading it.
+
+This is NOT optional. You have guessed `src/agent-loader.ts` (correct: `src/app/agent-loader.ts`), `src/app/manager.ts` (correct: `src/lib/manager.ts`), and wrong brief filenames — 7 times. **Every path must come from tool output, never from memory.**
+
+## 0f. Bash Exit Interpretation (FM-2.2 Guard — 3x UNHANDLED_COMMAND_FAILURE)
 After EVERY `bash` call, **read the exit code** before your next action:
 - **Exit 0** → proceed with the output.
 - **Exit 1 from grep/find** → means "no matches found." Say it aloud: "No matches for X — this means Y." Then either broaden the search or accept that the pattern doesn't exist. Do NOT leave it unresolved.

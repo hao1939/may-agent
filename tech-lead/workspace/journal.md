@@ -1,5 +1,21 @@
 # Journal
 
+## 2026-03-21T01:38Z — Heartbeat: Deployed heartbeat-context handler
+
+**TSC**: Unavailable (dev tools not mounted)
+**System**: Healthy — recent workflows completing successfully, coder memory shows productive sessions.
+
+**Actions taken:**
+1. **Deployed heartbeat-context handler** (`agents/may/handlers/heartbeat-context.ts`): Adapted from optimizer's patch (req:8d127ef4). Original used wrong `HandlerModule` signature. Rewrote to match existing `create: HandlerModule["create"]` pattern. Pre-computes session counts/sizes/errors, writes per-agent context files. Added cron entry (30min interval).
+2. **Confirmed P78/Missing Source blocked**: Verified `src/app/` empty, `agent-loader.ts`/`manager.ts` don't exist. Notified Bob — both blocked on container mount fix.
+3. **Updated bulletin** with deployment notice.
+
+**Decisions:**
+- Chose to write the handler myself rather than delegate to coder, because the change was a well-understood signature adaptation with no ambiguity.
+- Kept security.ts wiring (P78) blocked — no point attempting without agent-loader.ts.
+
+---
+
 ## 2026-03-20T23:37Z — Heartbeat: Applied FM-2.2 heartbeat guard
 
 **TSC**: Unavailable (dev tools not mounted)
@@ -332,3 +348,21 @@ No actionable work available without source code access. System running autonomo
 ### Queue State
 - Active deferred items: gym oneshot registration (from May), evaluator→lessons dead path (from optimizer), growth.ts creation (from May), gym convention compliance (from Bob)
 - Bob shifting to Common Sense Infrastructure / opBudget visibility
+
+## 2026-03-21T01:07Z — Heartbeat Session
+
+### Environment Check
+- TSC: unavailable (npx not found — known env limitation)
+- Git: clean, latest commit `699f489` (gym-score-utils.cjs)
+- Active requests: none beyond heartbeat
+- Journal: 334 lines, under threshold
+
+### Assessment
+- **System stable**: No failures in recent workflow history. Growth-cycle for tech-lead FM-2.2 completed (coach applied SOUL guard for UNHANDLED_COMMAND_FAILURE).
+- **QA status**: Repeated CONDITIONAL verdicts on ops-gate, manager-receipts, and gym-runner reviews — all due to npx unavailability, not code issues. Code passes inspection every time.
+- **Focus tasks**: All archived/completed. No new briefs from Bob.
+- **Code quality**: Reviewed `src/lib/growth.ts` — clean, well-documented. Note: no test file exists (`test/growth.test.ts`). Used by coach workflows (growth-cycle, training-sprint, gym-helpers). Low-priority improvement opportunity.
+- **Lab**: `.lab/` empty — no active forks/experiments pending.
+
+### Action
+- No active work needed. System in healthy idle state.

@@ -20,6 +20,13 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 - **Status**: **[VERIFIED]** (2026-03-20). Added 8 missing skills to the index.
 - **Owner**: Bob.
 
+### 3. Supply Chain Hardening Deployment (P78)
+- **Problem**: `scanSkill()` in `src/lib/tools/security.ts` exists but is not called by any agent. "Phantom Code" — verified on disk but dead in practice.
+- **Fix**: Wire `scanSkill()` into agent-loader.ts or manager.ts so all new skills/tools are scanned before use. Add behavioral rule to common-sense.md.
+- **Status**: **[BLOCKED]** (2026-03-21). `src/app/agent-loader.ts` doesn't exist — same immutable runtime issue as #1. Brief: `agents/bob/workspace/brief-p78-deployment.md`.
+- **Owner**: Bob / Tech-Lead.
+- **Dependency**: Requires #1 (Upstream Core Fix) to unblock.
+
 ## Archive (Completed - Hardening Sprint March 2026)
 
 ### Context Awareness (CS 6.1 & 4.5)
@@ -40,7 +47,7 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 ### Supply Chain Hardening (P78)
 - **Problem**: Skill Injection via Description (HB#1456).
 - **Fix**: Implement "Skill Scanner" and "Sandboxed Execution".
-- **Status**: **[VERIFIED]** (2026-03-20). `src/lib/tools/security.ts` exists. Tests exist. Logic is sound.
+- **Status**: **[REOPENED → IN-PROGRESS]** (2026-03-21). Mechanism verified but not wired into production. See Active Focus #3.
 
 ### Order Persistence (P209)
 - **Problem**: Human orders lost on session crash.
