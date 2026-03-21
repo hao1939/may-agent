@@ -249,11 +249,20 @@ function extractSessionMetrics(persistDir: string, sessionId: string): SessionMe
  */
 export function findParentsWithUnevaluatedChildren(persistDir: string): string[] {
   const allSessions = loadAllSessionMetas(persistDir);
-  const evalDir = join(persistDir, "evaluations");
+
+  // Build evaluated set from SQLite DB (primary) + legacy evaluations/ dir (fallback)
   const evaluatedIds = new Set<string>();
-  if (existsSync(evalDir)) {
-    for (const f of readdirSync(evalDir)) {
-      if (f.endsWith(".json")) evaluatedIds.add(f.replace(".json", ""));
+  try {
+    const db = getDb(persistDir);
+    const rows = db.prepare(`SELECT sessionId FROM evaluations`).all() as Array<{ sessionId: string }>;
+    for (const r of rows) evaluatedIds.add(r.sessionId);
+  } catch {
+    // DB unavailable — fall back to legacy directory
+    const evalDir = join(persistDir, "evaluations");
+    if (existsSync(evalDir)) {
+      for (const f of readdirSync(evalDir)) {
+        if (f.endsWith(".json")) evaluatedIds.add(f.replace(".json", ""));
+      }
     }
   }
 
@@ -292,15 +301,24 @@ export async function handleEvaluateSessions(opts: {
     const heuristic = await writeHeuristicEvaluations(persistDir);
     if (heuristic > 0) {
       onLog?.(`[eval] Wrote ${heuristic} heuristic evaluation(s) for root sessions`);
-      // Rescore rubber-stamp heuristic evaluations with real metrics
-      const rescored = rescoreHeuristicEvaluations(persistDir);
-      if (rescored > 0) onLog?.(`[eval] Rescored ${rescored} heuristic evaluation(s) with transcript metrics`);
     }
     result.skipped += heuristic; // Count in skipped bucket for reporting
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     result.errors.push(`writeHeuristicEvaluations failed: ${msg}`);
     onLog?.(`[eval] writeHeuristicEvaluations failed: ${msg}`);
+  }
+
+  // Always rescore rubber-stamp heuristic evaluations with real transcript metrics.
+  // This runs unconditionally to catch both newly-written AND previously-existing
+  // rubber-stamp evaluations (quality=5, efficiency=4 signature).
+  try {
+    const rescored = rescoreHeuristicEvaluations(persistDir);
+    if (rescored > 0) onLog?.(`[eval] Rescored ${rescored} rubber-stamp evaluation(s) with transcript metrics`);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    result.errors.push(`rescoreHeuristicEvaluations failed: ${msg}`);
+    onLog?.(`[eval] rescoreHeuristicEvaluations failed: ${msg}`);
   }
 
   const allParents = findParentsWithUnevaluatedChildren(persistDir);
