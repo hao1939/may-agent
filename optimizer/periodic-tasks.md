@@ -3,23 +3,23 @@
 Track when each task was last done. Pick the most overdue one during heartbeat step 3.
 
 ## Per heartbeat (do one, rotate)
-- [x] **Analysis review** — Last done: 2026-03-20T17:10
+- [x] **Analysis review** — Last done: 2026-03-21T00:39
   Read agents/bob/workspace/analysis.md or recent Bob synthesis outputs.
   Any findings that need optimization work? Cost issues? Efficiency problems?
   If found → add specific task to workspace/todo.md.
-  Latest (2026-03-20T17:10): **63 sessions/6h, 7.9% error rate (5 errors — all amy-kimi missing OpenAI key).** ~9.5MB total. Top: coach 2.9MB, tech-lead 2.1MB, bob 1.5MB, optimizer 1.2MB. Down from $290/day pace (12:40) to ~$152/day (~9.5MB/6h at ~$4/MB). Growth trigger fix continues to reduce coach volume. No new optimization tasks — key blocker remains gym infra for skill deployment.
+  Latest (2026-03-21T00:39): **32 sessions/7.5h, 12.5% error rate (4 errors: 3 amy-kimi missing OpenAI key, 1 bob error).** ~5.5MB total (~17.5MB/day pace, down from $290 peak). Coach still #1: 11 sessions, 2.6MB (47%). Largest: 740KB coach sprint plan. Tech-lead #2: 3 sessions, 992KB (330KB avg). Error rate uptick (12.5% vs 5-8% recent) driven by amy-kimi persistent key issue. No new ERROR_LOG entries since Mar 19. No new optimization tasks needed — growth trigger throttle working (coach volume steady at ~11/7.5h vs previous 14/6h).
 
-- [x] **Cost outlier scan** — Last done: 2026-03-20T23:09
+- [x] **Cost outlier scan** — Last done: 2026-03-21T01:10
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-20T23:09): **Coach = #1 cost center: 28 sessions/day, 5.8MB.** Growth-trigger pipeline fires 12 sessions/day (3/scan × 4 scans), 1.66MB direct + 2.1MB child sessions. `.lab/` has 38MB of accumulated forks, NONE deployed (gym blocked). Applied fix: MAX_TRIGGERS_PER_SCAN 3→1 in error-log-scanner.ts. Estimated savings: ~2.7MB/day. Also found: method-catalog (76KB) read twice in 714KB sprint session. Amy-kimi error sessions continue (missing OpenAI key, ~4/day, trivial cost).
+  Latest (2026-03-21T01:10): **21 sessions, 3.0MB since 23:00.** Coach still #1 (5 sessions, 1.06MB, 35%). Growth-trigger throttle (3→1) NOT LIVE — handler cache means old code still running; 3 triggers fired at 00:09 (tech-lead FM-1.1, optimizer FM-2.2, FM-2.4). Needs process restart. Tech-lead #2 (502KB, 17%). Bob had 1 empty-response API error (s_184). Amy-kimi still erroring (2x, missing OpenAI key). No new cost outliers >300KB. Overall pace: ~7.5MB/day, consistent with recent trend.
 
-- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-20T18:44
+- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-21T01:12
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
   Could it be replaced with a JS handler? (See cron-graduation-process.md Stage 3.)
   If found → write proposal in workspace/improvement-proposals.md.
-  Latest (2026-03-20T18:44): **Tracker-compact handler BUILT.** Implemented the common-sense-verify pre-processor identified at 15:39. Handler at `workspace/patches/tracker-compact-handler.ts` (147 lines, pure JS). Parses full 45KB tracker, generates 3KB compact status index. Sent to tech-lead for deployment (req:d8274b99). This is the first concrete LLM-to-JS partial conversion shipped. Next opportunity: evaluate if Coach's "diagnose error pattern" sessions (587KB/run) have deterministic sub-steps.
+  Latest (2026-03-21T01:12): **Tracker bloat finding.** Coach still reading full 50KB tracker 4x/session despite compact status existing (4.9KB). 63% of Coach's 553KB session is tracker context. Sent finding + fix proposal to Coach (req:42f9a903). Two options: (1) split evidence into per-item files, (2) instruct Coach to use compact status first + offset/limit reads. Either saves ~1.5MB/day. See finding-tracker-bloat-0321.md.
 
 - [x] **Handler health check** — Last done: 2026-03-20T20:11
   Review existing JS handlers in agents/may/handlers/.
@@ -27,14 +27,14 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If issues → add fix to workspace/todo.md.
   Latest (2026-03-20T20:11): **17 handlers in agents/may/handlers/ — all healthy.** tracker-compact.ts (newest, deployed 19:07) is producing output at agents/coach/workspace/common-sense-status.md (4.9KB, last run 19:08). No handler errors in any ERROR_LOG. Cron system running normally. reflect.ts updated at 17:48. Amy-kimi errors (4x missing OpenAI key) are not handler-related.
 
-- [x] **Proven pattern → Skill/Workflow** — Last done: 2026-03-20T21:39
+- [x] **Proven pattern → Skill/Workflow** — Last done: 2026-03-21T00:40
   This is your MOST IMPORTANT periodic task — focus area #1.
   **Run it via workflow**: `workflow.run("skill-lifecycle", "Scan recent sessions for proven multi-step patterns")`
   The workflow mechanically enforces all 4 phases (discover → draft → test → deploy) in separate
   sessions, preventing you from skipping testing or doing meta-work instead.
   If you have a specific pattern in mind, pass it: `workflow.run("skill-lifecycle", "Pattern: agents read file → check convention → edit → verify")`
   **Deliverable**: A new or refined skill file, tested in gym, deployed to agents.
-  Latest (2026-03-20T21:39): **Gym infra partially restored but agent binary missing.** `run-gym.sh --list` works (40+ scenarios), runs complete in <1s. But GYM_AGENT_BIN not set, `bundle/may-agent` doesn't exist — stub mode only. 3 skills blocked (tool-discipline, grep-first-reading, classify-then-act). New insight: "situational awareness" bash calls (40-57 per heartbeat) are the real cost driver — pre-computed context injection into cron messages would bypass the need for skills entirely. Next: build heartbeat-context handler.
+  Latest (2026-03-21T00:40): **Built heartbeat-context handler (306 lines) — pre-computes situational awareness.** Gym still blocked (no binary). Pivoted from skill files (0% deployment rate) to JS handler approach (proven mechanism). Handler scans sessions/errors, writes per-agent heartbeat-context.md. Sent to May for deployment (req:4d2c8025). Also discovered: handler edits (like growth-trigger throttle) don't take effect until process restart — loadAgentHandlers() caches at startup. Finding at workspace/finding-handler-deploy-gap.md. 3 skills still blocked (tool-discipline, grep-first-reading, classify-then-act).
 
 - [x] **Tool quality review** — Last done: 2026-03-20T20:10
   Read the tool-quality-report.md (generated by tool-quality-scan handler every 4h).

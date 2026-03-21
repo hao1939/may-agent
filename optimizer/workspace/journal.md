@@ -1,0 +1,165 @@
+# Journal
+
+## 2026-03-21T01:12 — Cost Scan + Tracker Bloat Finding
+**Tasks**: Bob's P78 patch → May, Cost outlier scan, LLM-to-JS opportunity scan
+**Key Finding**: Coach's common-sense-tracker.md is 50KB and drives ~300KB/session (63% of 553KB sessions). The compact status file (4.9KB) exists but is barely used — Coach reads the full tracker 4x and edits it 3x per verify session. Sent finding + fix proposal to Coach (two options: split evidence into per-item files, or modify verify workflow to use compact status first). Estimated savings: ~1.5MB/day.
+**Other**: 21 sessions since 23:00 = 3.0MB. Growth-trigger throttle still not live (handler deploy gap). Bob had API error (empty response, not system bug). Delegated P78 focus-tasks patch to May.
+
+## 2026-03-21T00:40 — Heartbeat Context Handler + Handler Deployment Gap
+**Task**: Pattern → Skill/Workflow (alternating from cost work)
+**Problem**: Agents waste 10-40 bash calls per heartbeat on situational awareness (listing sessions, counting sizes, checking errors). The skill-lifecycle workflow is blocked (gym has no agent binary), so skill files can't be deployed.
+**Pivot**: Instead of another blocked skill file, built a **heartbeat-context JS handler** (306 lines) that pre-computes all this context. Handler at `workspace/patches/heartbeat-context-handler.ts`.
+**Key discovery**: Handler edits don't take effect until process restart! Growth-trigger throttle (MAX_TRIGGERS_PER_SCAN 3→1, edited at 23:19) was not active when triggers fired at 00:09 — still 3 per scan (tech-lead FM-1.1, optimizer FM-2.2, optimizer FM-2.4). Finding at `workspace/finding-handler-deploy-gap.md`.
+**Analysis review**: 32 sessions/7.5h, 5.5MB, 12.5% error rate (4: 3 amy-kimi key, 1 bob). Coach still #1 at 11 sessions/2.6MB (47%). 
+**Sent**: heartbeat-context handler to May (req:4d2c8025).
+**Estimated savings**: ~$10-20/day once deployed (15-30% token reduction per heartbeat).
+**Next**: Cost work (alternation). Check if growth-trigger throttle takes effect after next restart.
+
+## 2026-03-20T23:09 — Coach Growth-Trigger Cost Reduction
+**Task**: Cost & Efficiency (periodic task, alternating from pattern→skill)
+**Findings**:
+- Coach is 47% of all session data in last 6h (2.6MB/32 sessions)
+- 28 coach sessions today totaling 5.8MB — biggest cost center by far
+- Growth-trigger pipeline: 12 sessions/day (3 per scan × 4 scans), 1.66MB in direct cost
+- `.lab/` has 38MB of accumulated forks, NONE deployed (gym infra blocked)
+- Method catalog (76KB) read twice in a single 714KB sprint-planning session
+- Amy-Kimi keeps failing with "No API key for provider: openai" — 4 error sessions/day (trivial cost but noisy)
+**Actions**:
+- Applied fix: `MAX_TRIGGERS_PER_SCAN` 3→1 in `agents/may/handlers/error-log-scanner.ts`
+- Estimated savings: ~2.7MB/day ($8-12/day)
+- Created patch doc: `workspace/patches/growth-trigger-throttle.md`
+**Follow-up needed**:
+- Amy-Kimi cron should be disabled until API key is configured
+- Coach method-catalog double-read could be addressed via coaching
+- `.lab/` cleanup needed (38MB of dead forks)
+
+## 2026-03-20T21:39 — Skill Testing Blocker Investigation + Session Pattern Analysis
+**Task**: Pattern → Skill/Workflow (periodic task, alternating from cost work)
+**Findings**:
+- **Gym infra partially restored**: `src/gym/runner.ts` (515 lines) and `test/gym/strip-types.js` exist. `bash test/gym/run-gym.sh --list` works — lists 40+ scenarios. `run-gym.sh cascading-error --agent coder` runs in 397ms.
+- **BUT still non-functional for skill testing**: No agent binary (`GYM_AGENT_BIN` not set, `bundle/may-agent` doesn't exist). Gym runs in "stub mode" — checks environment state against unmodified files. Cannot test skill adherence (requires agent to follow the skill protocol).
+- **3 skills remain blocked on deployment**: tool-discipline, grep-first-reading, classify-then-act. All drafted, all gym-blocked.
+- **Session pattern analysis (last 3h)**: tech-lead 404KB (45 bash calls, mostly `cat`), coach 740KB (57 bash calls). 60-80% of session cost = "situational awareness" reads. `daily-brief.ts` and `system-status.ts` handlers exist but don't inject into cron messages.
+- **Key insight**: The gap isn't "agents need skill docs to read files better" — it's that agents shouldn't need to read those files at all. Pre-computed context injection into cron messages would eliminate 30-40 bash calls per heartbeat.
+**Blocker**: GYM_AGENT_BIN / bundle/may-agent — the single gate blocking all 3 pending skill deployments. This needs a process restart with the built binary, or a way to test skills without a full agent invocation.
+**Next**: Evaluate pre-computed heartbeat context handler (inject key status info into cron messages to reduce discovery bash calls).
+
+## 2026-03-20T20:10 — Tool Quality Review (12h window)
+**Task**: Tool Quality Review (periodic task)
+**Findings**:
+- 74 sessions, ~8.2MB total in 12h. Error rate: 5.4% (down from 8.1%)
+- Bob bash misuse (prior #1 issue, 30% of errors) → FIXED. 0 instances detected
+- New #1 issue: tech-lead session bloat (465KB, 40 bash calls — 13 `cat` commands reading files)
+- Coach sprint session at 727KB+ (54 bash calls, extensive `find` commands)
+- implement-and-review workflow: 1.8MB/24 sessions. 67% overhead from review cycles (expected)
+- Scout cadence fix: 1 session (was 32/24h) — working
+- Only 2 P53 violations (both optimizer, self-corrected)
+**Action**: Updated tool-quality-report.md with full 12h analysis. No urgent interventions needed.
+**Next**: Coach sprint pre-processor handler could save ~500KB/sprint session.
+
+## 2026-03-20T18:44 — Cost Analysis: Tracker Compact Handler
+**Task**: Cost & Efficiency (periodic task)
+**Findings**:
+- 96 sessions in 6 hours, ~10.9 MB total session data
+- Top spenders: tech-lead (3.2 MB incl coder), coach (2.0 MB), bob (1.7 MB), optimizer (1.5 MB)
+- Common-sense-tracker.md is 45KB with 39 items; LLM reads entire file every 4h cron run
+- Evidence column averages 700B per item but isn't needed for item selection
+**Action**: Built tracker-compact handler that generates 3KB status index (93% reduction)
+- Handler: `agents/optimizer/workspace/patches/tracker-compact-handler.ts`
+- Deploy instructions: `agents/optimizer/workspace/patches/tracker-compact-deploy.md`
+- Sent deployment request to tech-lead (req:d8274b99)
+**Expected savings**: ~252KB/day LLM input tokens
+
+## 2026-03-20T17:19 — Grep-first-reading skill: Phase 4 BLOCKED (no gym tests)
+**Task**: Skill deployment (Phase 4 of skill-lifecycle workflow)
+**Skill**: `grep-first-reading` v1.0.0 at `agents/shared/skills/grep-first-reading/SKILL.md`
+**Target agents**: All agents, especially coach, tech-lead, scout, optimizer (per discovery analysis)
+**Gym test results**: BLOCKED — gym infrastructure does not exist (no runner, no bun, no npx)
+**Deployment decision**: **NOT DEPLOYED** — constraint requires 2/3+ gym tests passing; tests are blocked, not passed.
+**Status of all pending skills**:
+- `error-handling` — DEPLOYED (already in all agent INDEX.md files)
+- `tool-discipline` — NOT DEPLOYED (gym blocked)
+- `task-adherence` — NOT DEPLOYED (gym blocked)
+- `grep-first-reading` — NOT DEPLOYED (gym blocked)
+**Blocker**: Gym runner infrastructure (`src/gym/runner.ts`, `test/gym/run-gym.sh`) needs to be built before ANY skill can be gym-tested and deployed. This is the single blocker for 3 pending skills.
+**Recommendation**: Prioritize building a minimal gym runner (even a Node.js script) to unblock the skill deployment pipeline.
+
+## 2026-03-20T15:39 — Cost analysis: $261/day pace, common-sense-verify optimization identified
+**Task**: Cost & Efficiency (alternating from skill work in last heartbeat)
+**Analysis**: 60 sessions in last 6h, ~8.4MB total. Top spenders: tech-lead (31%, 2.5MB), coach (25%, 2.1MB), bob (16%, 1.4MB).
+**Key finding**: Coach's common-sense-verify runs every 4h at ~385KB/session. The 42KB tracker file (common-sense-tracker.md) is bloated with inline evidence — the LLM reads all of it every time just to pick the next item to verify.
+**Opportunities identified**:
+1. **Common-sense-verify JS pre-processor** — parse tracker + pre-gather evidence in JS, send only ~5KB focused prompt to LLM. Could save ~2MB/day (87% reduction per run).
+2. **Tracker compression** — split 42KB tracker into 3KB status file + evidence archive.
+3. **Cron preflight additions** — common-sense-verify, training-sprint, research-intake have no preflights.
+**Action taken**: Added `new-entries-since` preflight to common-sense-verify in cron.json. This ensures it only runs when new sessions exist (avoids re-verifying with no new evidence).
+**Growth trigger fix status**: Previous fix (12:40) reduced coach sessions from 14→9 per 6h window. Experiments gate working.
+**Finding written**: `workspace/finding-cost-analysis-6h-window.md`
+**Next**: Implement tracker compression (quick win, reduces context load ~39KB per run).
+
+## 2026-03-20T14:09 — Tool-discipline skill created via skill-lifecycle workflow
+**Task**: Pattern → Skill/Workflow (alternating from cost work in last heartbeat)
+**Skill created**: `agents/shared/skills/tool-discipline/SKILL.md` (v1.0.0, 142 lines)
+- Addresses FM-2.1 TOOL_SCHEMA_ERROR — #1 failure mode (25+ occurrences)
+- 4-step protocol: PRE-READ → ARG-CHECK → OUTPUT-CHECK → POST-VERIFY
+- 5 testable assertions, 3 anti-patterns (Blind Edit, Ghost Exit Code, Context-Limit Collapse)
+- Created via `skill-lifecycle` workflow (3 phases: discover → draft → test)
+- Gym testing BLOCKED — gym infrastructure not built (no run-gym.sh, no gym-score-utils.cjs, no bun)
+- Differentiated from error-handling (recovery) and file-safety (file ops) — this is pre/post-flight for ALL tool calls
+**Quick health check**: 78 sessions/6h, 5.1% error rate (4 errors, all amy-kimi OpenAI key). Down from 8.3%. No growth triggers since experiments gate fix (12:46). Tech-lead heartbeats still large (449-486KB). Binary still stale (08:39 build vs 12:46 source changes).
+
+## 2026-03-20T12:40 — Experiments gate: two-pass fix + agent-level fallback
+**Task**: Cost & Efficiency (alternating from skill work in last heartbeat)
+**Analysis**: Analyzed last 6h of sessions (file size as cost proxy, no SQLite access):
+- **Coach**: 14 sessions, ~4.5MB, est. ~$36 (biggest spender) — 6 growth triggers, 1 research-intake (865KB!), 1 consolidate-memory (731KB)
+- **Tech-lead**: 7 sessions, ~1.8MB, est. ~$14
+- **Total estimated**: ~$73/6h = ~$290/day at current pace
+**Root cause found**: Growth trigger experiments gate is leaky — when `errorCode` is provided (e.g., "FM-2.2"), entries without `error_pattern` field are skipped via `if (!entryPattern) continue`. Coach doesn't consistently write `error_pattern` to experiments.jsonl, so the gate misses most entries.
+**Today's waste**: 3 tech-lead growth triggers at 12:09 (FM-2.2, FM-3.3, FM-2.5) = ~800KB. Coach itself admits "0% text coaching effectiveness" in its method catalog, yet spent ~$6-10 on these.
+**Fix applied** to `agents/may/handlers/error-log-scanner.ts`:
+1. **Two-pass approach**: First checks code-specific match (threshold 2), then falls back to agent-level count (threshold 4). Agent-level catches the common case where error_pattern is missing.
+2. **Expanded infra types skip list**: Added `gym-test`, `scenario-design`, `workflow-enforcement-test` to list of non-coaching types that don't count toward the gate.
+**Verification**: Inline test against real experiments.jsonl:
+- tech-lead FM-2.2: NOW BLOCKED (agent-level: 5 coaching attempts)
+- tech-lead FM-2.5: NOW BLOCKED (agent-level: 5)
+- tech-lead FM-3.3: NOW BLOCKED (code-specific: 2)
+- optimizer FM-3.1: STILL BLOCKED (code-specific: 3)
+- amy-kimi FM-1.1: CORRECTLY PASSES (0 coaching attempts, all gym-test/baseline)
+**Expected savings**: ~$10-20/day in reduced growth trigger waste
+**Other finding**: research-intake session (865KB) has Coach reading method-catalog.md 7 times — read-dedup guard not yet deployed
+
+## 2026-03-20T11:09 — Task-adherence skill creation + gym scenario
+**Task**: Proven pattern → Skill/Workflow (periodic task, alternating to skill work)
+**Analysis**: Scanned ERROR_LOG.jsonl (185 entries). FM-2.4 is #1 (45 hits, covered by error-handling skill). FM-1.1 (16 hits) + FM-5.3 (18 hits) = 34 failures for **task adherence** — goal drift, spec miss, wrong deliverables, overclaiming. No existing skill covers this. Mostly Coach but pattern applies broadly.
+**Skill Created**: `agents/shared/skills/task-adherence/SKILL.md` (v1.0.0, 158 lines)
+- 3-phase protocol: Parse Task (extract checklist, identify deliverable) → Execute in Order (follow sequence, stay on topic) → Verify Before Claiming (check checklist, verify deliverable, don't overclaim)
+- 5 anti-patterns with evidence: Goal Drift, Wrong Deliverable, Skipping Prerequisites, Overclaiming, Overgeneralization
+- 6 grader assertions
+**Gym Scenario Created**: `agents/gym/scenarios/spec-adherence-multi-step/`
+- 4-step ordered task: read config → read logs → write report → write summary
+- 7 services in config, 2 with errors in logs (payment-gateway, cache-proxy)
+- 10-check success criteria: input reads, output content, ordering, format, plan-first convention
+**Next Steps**: Gym test 3x once runner is available. If 2/3+ pass → deploy to agents (especially Coach). Check if gym-score-utils.cjs exists for the success criteria to work.
+
+## 2026-03-20T09:39 — Growth-trigger experiments gate improvement
+**Task**: Fix growth-trigger waste (active TODO item)
+**Problem**: error-log-scanner's `checkExperimentsHistory()` only checked for CEILING results. But optimizer FM-2.1/FM-3.1/FM-3.3 experiments were all "discard" (investigated but not at ceiling). Scanner kept re-triggering growth cycles for already-investigated FM codes.
+**Fix**: Broadened the experiments gate in error-log-scanner.ts:
+1. Added `errorCode` parameter — matches agent + specific FM code, not just agent
+2. Counts ANY prior coaching attempt (growth-cycle, sprint, learn-method), not just CEILING
+3. Filters out baselines and infrastructure tests (not coaching attempts)
+4. Lowered threshold from 3→2 (if you've tried twice and failed, don't retry)
+**Verification**: Inline test against real experiments.jsonl — FM-3.1 now correctly suppressed (3 prior experiments), FM-3.3 suppressed (2 prior), FM-2.1 not suppressed (only 1 prior, relies on 7d cooldown). Brace balance check: clean.
+**Savings**: ~$10-20/day (prevents wasted Coach growth sessions)
+
+## 2026-03-20T08:14 — Tool Quality Review (first ever)
+**Task**: Periodic task — Tool quality review (never done before)
+**Findings**: Scanned 22 sessions (577 tool calls, 47 errors = 8.1% error rate).
+- **#1 issue (30% of errors)**: Bob uses `bash("read <path>")` and `bash("write <path>")` instead of the proper tools. 14 errors across 2 sessions. Active recall already warns about FM-2.6 but Bob keeps doing it.
+- **#2 issue (21% of errors)**: Environment mismatches — agents try git (no repo), npx (not installed), rg (not installed), src/ (doesn't exist).
+- **#3 (21%)**: grep exit code 1 (no match) — false positives, not real errors.
+**Actions taken**:
+1. Added C2.4 "Tools ≠ Shell Commands" to common-sense.md — explicit examples of wrong vs right
+2. Added C7.4 "Available Commands" to common-sense.md — lists what's in/not in container
+3. Wrote full report to `workspace/tool-quality-report.md`
+4. Updated periodic-tasks.md with findings
