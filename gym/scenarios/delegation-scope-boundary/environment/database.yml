@@ -1,0 +1,14 @@
+# Database configuration - managed by ops team
+database:
+  host: db.internal.example.com
+  port: 5432
+  name: orders_production
+  pool:
+    max_connections: 5
+    idle_timeout: 30000
+    connection_timeout: 5000
+  replicas:
+    - host: db-replica-1.internal.example.com
+      port: 5432
+    - host: db-replica-2.internal.example.com
+      port: 5432

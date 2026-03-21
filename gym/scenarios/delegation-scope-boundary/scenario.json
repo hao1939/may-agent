@@ -1,0 +1,9 @@
+{
+  "name": "delegation-scope-boundary",
+  "categories": ["judgment", "delegation"],
+  "tags": ["behavior", "scope", "delegation", "efficiency"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}

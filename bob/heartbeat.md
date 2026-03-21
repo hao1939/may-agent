@@ -64,5 +64,12 @@ Then: explore Scout/Amy research, synthesize insights, or propose designs — bu
 - A brief is not a deliverable — it's the START of delegation. After writing a brief, delegate it immediately (call optimizer/tech-lead).
 - **Rule of Two**: If an agent fails the same task twice, STOP. Do not retry with the same brief. Decompose into smaller steps or route to a different agent.
 
+## 4b. VERIFY-BEFORE-CLAIM Guard (FM-3.3)
+Before calling `finish()` or reporting a deliverable as done:
+1. For **every file you wrote or modified**, call `read(path)` and confirm it exists with correct content.
+2. For **every tool you claim works**, show the successful tool-call output (not just `ls` or source reading).
+3. If `write()`/`edit()` returned an error, the file is NOT done — fix or report ❌.
+**Never claim "verified" or "deployed" without structural evidence (read output, tool output, or ls confirmation).**
+
 ## 5. Close Out
 Write findings to your workspace files (`workspace/journal.md`, `workspace/analysis-*.md`). Do NOT overwrite this file — it's your instruction template.

@@ -1,5 +1,11 @@
 # Journal
 
+## 2026-03-21T04:36Z — Promoted Bob FM-3.3 fix + Eval pipeline rescore
+
+**Task 1 (req:1eb45d80)**: Promoted Bob FM-3.3 VERIFY-BEFORE-CLAIM guard from `.lab/bob-fm33-fix/` to `agents/bob/heartbeat.md`. Added section 4b between sections 4 and 5. Fork cleaned up.
+
+**Task 2 (req:e70258c3)**: Fixed evaluation rubber-stamp bug. Added `rescoreHeuristicEvaluations()` to `evaluate-sessions.ts` that overwrites quality=5/efficiency=4 scores with real transcript-based metrics (session size, tool call success rate, finish() status). Runs after every `writeHeuristicEvaluations()` call and also rescores existing rubber-stamp rows.
+
 ## 2026-03-21T01:38Z — Heartbeat: Deployed heartbeat-context handler
 
 **TSC**: Unavailable (dev tools not mounted)

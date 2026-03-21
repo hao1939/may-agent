@@ -1,5 +1,29 @@
 # Journal
 
+## 2026-03-21T04:15 — Evaluation Pipeline Rubber-Stamp Bug Found
+**Tasks**: Pattern→Skill (cost/efficiency analysis), Session analytics review
+**Critical Finding**: The evaluation pipeline is a rubber stamp. Analysis of 105 evaluations in may.db:
+- **87% get quality=5.0** (91/105 — maximum score)
+- **88% get efficiency=4.0** (92/105 — near-maximum)  
+- **100% are heuristic-only** (the LLM evaluator `evaluateTask()` never runs)
+- Only 8 sessions flagged "needs_improvement" (all quality=1.0, likely amy-kimi API key errors)
+- 82% show 0 wasted calls (86/105)
+
+This means the ERROR_LOGs never get meaningful error data, the growth-trigger fires based on stale pre-SQLite error data, and the convention_checks table has 0 rows. The entire evaluation → error → coaching pipeline is built on unreliable data.
+
+**Root cause**: `writeHeuristicEvaluations()` in the bundled evaluator module is too lenient — it scores everything as good/5.0/4.0 without meaningful analysis. The JS evaluator (`evaluateTask()`) apparently never triggers for root sessions, only the heuristic path runs.
+
+**Cost analysis update**:
+- 34 sessions since last check (~3.5hrs), 5.1MB total, 4 errors (12%)
+- Coach: 10 sessions, 1.7MB (33%) — growth-trigger throttle still not live (handler cache)
+- Tech-lead: largest individual sessions (up to 304KB) — now #1 for per-session cost
+- Dead handler preflights were fixed by tech-lead in s_198 (removed stale directory checks)
+
+**Recommended actions**:
+1. Fix heuristic evaluator to actually distinguish good from bad sessions (needs bundled code change)
+2. Or: add meaningful scoring to evaluate-sessions.ts handler (can be deployed via file edit)
+3. Track this as a systemic issue — the whole coaching/growth pipeline depends on evaluation quality
+
 ## 2026-03-21T02:45 — Handler Health Check: 3 Dead Handlers Found
 **Tasks**: Handler health check, Tool quality review
 **Critical Finding**: 3 cron handlers (convention-check, tool-quality-scan, analyze-failures) are DEAD — they have `preflight.type: "new-entries-since"` gates checking `.state/evaluations/` directory which doesn't exist. Evaluations were moved to SQLite DB but preflight gates weren't updated. Result: 0 convention checks ever done, tool-quality-scan can't generate reports, Bob's analysis never fires.
@@ -169,3 +193,23 @@
 2. Added C7.4 "Available Commands" to common-sense.md — lists what's in/not in container
 3. Wrote full report to `workspace/tool-quality-report.md`
 4. Updated periodic-tasks.md with findings
+
+## 2026-03-21T05:42 — Full Cost Outlier Scan & LLM-to-JS Scan (session 214)
+
+**Key finding**: Identified WHY growth-trigger fires 3 sessions per scan (handler cache) and why coach has 14 sessions/day. Full per-session breakdown of all coach sessions today:
+- common-sense-verify: 2 sessions (704KB) — one at 572KB (41 tool calls!)  
+- growth-trigger: 6 sessions (844KB) — should be MAX 2 with fix live
+- training-sprint: 2 sessions (272KB)
+- heartbeats: 4 sessions (592KB)
+
+**Actions taken**:
+1. Sent combined bug report to May (handler cache + amy-kimi disable request)
+2. Created finding doc: workspace/finding-coach-session-triplication-0321.md
+3. Updated cost outlier scan + LLM-to-JS scan periodic tasks
+
+**New optimization ideas**:
+- Add maxTurns=20 to common-sense-verify cron entry (currently unlimited → 41 tool calls)
+- JS pre-checker for common-sense verification (automate the session-grep pattern)
+- Disable amy-kimi until OpenAI key configured (120KB/day wasted)
+
+System stats: 57 sessions, 8.4MB in 5.8h, projected ~34MB/day. 14% error rate.

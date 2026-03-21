@@ -3,23 +3,23 @@
 Track when each task was last done. Pick the most overdue one during heartbeat step 3.
 
 ## Per heartbeat (do one, rotate)
-- [x] **Analysis review** — Last done: 2026-03-21T00:39
+- [x] **Analysis review** — Last done: 2026-03-21T04:15
   Read agents/bob/workspace/analysis.md or recent Bob synthesis outputs.
   Any findings that need optimization work? Cost issues? Efficiency problems?
   If found → add specific task to workspace/todo.md.
-  Latest (2026-03-21T00:39): **32 sessions/7.5h, 12.5% error rate (4 errors: 3 amy-kimi missing OpenAI key, 1 bob error).** ~5.5MB total (~17.5MB/day pace, down from $290 peak). Coach still #1: 11 sessions, 2.6MB (47%). Largest: 740KB coach sprint plan. Tech-lead #2: 3 sessions, 992KB (330KB avg). Error rate uptick (12.5% vs 5-8% recent) driven by amy-kimi persistent key issue. No new ERROR_LOG entries since Mar 19. No new optimization tasks needed — growth trigger throttle working (coach volume steady at ~11/7.5h vs previous 14/6h).
+  Latest (2026-03-21T04:15): **34 sessions/3.5h since last check, 5.1MB, 4 errors (12%).** Same error pattern: 3 amy-kimi missing key, 1 bob API error. Coach: 10 sessions, 1.7MB (33%). Tech-lead now #1 per-session cost (304KB, 296KB sessions). Growth-trigger throttle still not live (handler cache). Dead handler preflights fixed by tech-lead in s_198.
 
-- [x] **Cost outlier scan** — Last done: 2026-03-21T01:10
+- [x] **Cost outlier scan** — Last done: 2026-03-21T05:42
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-21T01:10): **21 sessions, 3.0MB since 23:00.** Coach still #1 (5 sessions, 1.06MB, 35%). Growth-trigger throttle (3→1) NOT LIVE — handler cache means old code still running; 3 triggers fired at 00:09 (tech-lead FM-1.1, optimizer FM-2.2, FM-2.4). Needs process restart. Tech-lead #2 (502KB, 17%). Bob had 1 empty-response API error (s_184). Amy-kimi still erroring (2x, missing OpenAI key). No new cost outliers >300KB. Overall pace: ~7.5MB/day, consistent with recent trend.
+  Latest (2026-03-21T05:42): **57 sessions, 8.4MB today (5.8h). 14% error rate (8 errors: 6 amy-kimi missing key, 2 bob empty response).** Coach #1 (14 sessions, 2.35MB) — growth-trigger throttle (MAX=3→1) STILL NOT LIVE (handler cache). 6 extra growth-trigger sessions/day (3 per scan × 2 scans). common-sense-verify expensive (572KB single session). Amy-kimi 100% fail (6/6), should be disabled. Sent both issues to May (req:0cf22d55). Projected: ~34MB/day. Finding at workspace/finding-coach-session-triplication-0321.md.
 
-- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-21T01:12
+- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-21T05:42
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
   Could it be replaced with a JS handler? (See cron-graduation-process.md Stage 3.)
   If found → write proposal in workspace/improvement-proposals.md.
-  Latest (2026-03-21T01:12): **Tracker bloat finding.** Coach still reading full 50KB tracker 4x/session despite compact status existing (4.9KB). 63% of Coach's 553KB session is tracker context. Sent finding + fix proposal to Coach (req:42f9a903). Two options: (1) split evidence into per-item files, (2) instruct Coach to use compact status first + offset/limit reads. Either saves ~1.5MB/day. See finding-tracker-bloat-0321.md.
+  Latest (2026-03-21T05:42): **common-sense-verify at 572KB** = biggest coach session today. 41 tool calls — coach greps 20+ sessions checking behavioral compliance, wastes 5+ calls on wrong paths. Partially automatable: pre-compiled JS checker could scan sessions for patterns (journal-before-finish, etc) and feed summary to coach. Coach cron jobs have no maxTurns caps — should add maxTurns=20 to common-sense-verify and consolidate-memory-coach. Previous: tracker bloat finding still relevant.
 
 - [x] **Handler health check** — Last done: 2026-03-21T02:45
   Review existing JS handlers in agents/may/handlers/.
@@ -27,7 +27,7 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If issues → add fix to workspace/todo.md.
   Latest (2026-03-21T02:45): **18 handlers, 3 DEAD.** Critical bug: convention-check, tool-quality-scan, analyze-failures all have preflight gates on `.state/evaluations/` which doesn't exist (evaluations moved to DB). 0 convention checks ever done, tool-quality-scan dead, Bob analysis dead. heartbeat-context.ts deployed but NOT LOADED (handler cache, needs restart). 2 orphans: focus-task-tracker, reflect. 105 evals in DB (all heuristic, 0 LLM), 124 unevaluated. Sent bug to tech-lead (req:1bfaa335). Finding at workspace/finding-dead-preflight-gates-0321.md.
 
-- [x] **Proven pattern → Skill/Workflow** — Last done: 2026-03-21T00:40
+- [x] **Proven pattern → Skill/Workflow** — Last done: 2026-03-21T04:15
   This is your MOST IMPORTANT periodic task — focus area #1.
   **Run it via workflow**: `workflow.run("skill-lifecycle", "Scan recent sessions for proven multi-step patterns")`
   The workflow mechanically enforces all 4 phases (discover → draft → test → deploy) in separate
