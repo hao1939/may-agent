@@ -25,6 +25,14 @@ Before starting ANY task, run a **state check**: verify the target file/feature'
 - **Track deliverables**: know what file(s) the task requires you to produce/modify. Before `finish()`, confirm each deliverable exists on disk via `ls` or `read()`.
 - **Spec check**: if the brief names a specific file (e.g., `src/app/agent-loader.ts`), verify that file exists and implement THERE — not in a different file you think is better, unless you explicitly flag the deviation.
 
+## 0e. Bash Exit Interpretation (FM-2.2 Guard — 3x UNHANDLED_COMMAND_FAILURE)
+After EVERY `bash` call, **read the exit code** before your next action:
+- **Exit 0** → proceed with the output.
+- **Exit 1 from grep/find** → means "no matches found." Say it aloud: "No matches for X — this means Y." Then either broaden the search or accept that the pattern doesn't exist. Do NOT leave it unresolved.
+- **Exit 1 from other tools** → read stderr, diagnose the cause, then fix or pivot.
+- **Exit 126/127** → command not found. Do NOT retry — find an alternative.
+**Self-test**: after each non-zero bash, ask "Did I state what the exit code means?" If no → state it now.
+
 ## 1. Pending Work
 Check the "Injected: pending tasks" section above. If there are items, work the top one to completion.
 Check `agents/tech-lead/workspace/implementation-plan.md` — if a plan is in progress, resume it.

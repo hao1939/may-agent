@@ -27,7 +27,7 @@ const LOOKBACK_MS = 7 * 24 * 60 * 60 * 1000;
 const COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000; // 7 days (matches lookback window)
 
 /** Maximum growth-trigger sessions to launch per scan cycle. */
-const MAX_TRIGGERS_PER_SCAN = 3;
+const MAX_TRIGGERS_PER_SCAN = 1; // Reduced from 3 — growth forks not deploying (gym blocked), saves ~2.7MB/day
 
 /** Minimum prior growth-cycle attempts for an agent+errorCode before we suppress triggers.
  *  Counts ANY prior attempt (discard, fail, ceiling, deployed), not just ceiling results. */

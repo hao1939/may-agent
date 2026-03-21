@@ -9,11 +9,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If found → add specific task to workspace/todo.md.
   Latest (2026-03-20T17:10): **63 sessions/6h, 7.9% error rate (5 errors — all amy-kimi missing OpenAI key).** ~9.5MB total. Top: coach 2.9MB, tech-lead 2.1MB, bob 1.5MB, optimizer 1.2MB. Down from $290/day pace (12:40) to ~$152/day (~9.5MB/6h at ~$4/MB). Growth trigger fix continues to reduce coach volume. No new optimization tasks — key blocker remains gym infra for skill deployment.
 
-- [x] **Cost outlier scan** — Last done: 2026-03-20T18:44
+- [x] **Cost outlier scan** — Last done: 2026-03-20T23:09
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-20T18:44): **96 sessions, ~10.9MB total in 6h window.** Top: tech-lead 3.2MB (incl coder spawns), coach 2.0MB, bob 1.7MB, optimizer 1.5MB. Built tracker-compact handler to compress 45KB→3KB status index for common-sense-verify cron (~252KB/day savings). Handler + deploy instructions at `workspace/patches/tracker-compact-*`. Sent to tech-lead (req:d8274b99).
+  Latest (2026-03-20T23:09): **Coach = #1 cost center: 28 sessions/day, 5.8MB.** Growth-trigger pipeline fires 12 sessions/day (3/scan × 4 scans), 1.66MB direct + 2.1MB child sessions. `.lab/` has 38MB of accumulated forks, NONE deployed (gym blocked). Applied fix: MAX_TRIGGERS_PER_SCAN 3→1 in error-log-scanner.ts. Estimated savings: ~2.7MB/day. Also found: method-catalog (76KB) read twice in 714KB sprint session. Amy-kimi error sessions continue (missing OpenAI key, ~4/day, trivial cost).
 
 - [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-20T18:44
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?

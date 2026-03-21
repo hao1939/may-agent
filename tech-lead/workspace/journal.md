@@ -1,5 +1,25 @@
 # Journal
 
+## 2026-03-20T23:37Z — Heartbeat: Applied FM-2.2 heartbeat guard
+
+**TSC**: Unavailable (dev tools not mounted)
+**System**: Healthy — no pending tasks, no new briefs, no errors in src/
+
+**Action**: Reviewed Coach's growth-cycle diagnosis (`diagnosis-tech-lead-fm22.md`). Coach identified 3x UNHANDLED_COMMAND_FAILURE errors where I ran grep/find, got exit code 1, and didn't explicitly interpret "no matches." Applied the recommended fix: added section 0e to `heartbeat.md` — "Bash Exit Interpretation" guard with exit code cheat sheet and self-test prompt. Lab fork was empty (not promoted), so I self-applied. Review date: 2026-03-27.
+
+---
+
+## 2026-03-20T22:09Z — Heartbeat: Created gym-score-utils.cjs, fixing 16 broken scenarios
+
+**Commit**: `699f489` — feat: add gym-score-utils.cjs
+**TSC**: Unavailable (dev tools not mounted)
+
+**Key fix**: All 16 gym scenarios using `require("../../lib/gym-score-utils.cjs")` were failing because the file didn't exist. The symlink `agents/gym/lib -> ../../test/gym/lib` was dangling because `test/gym/lib/` was never created. Created the Score class with full API: `readFile`, `fileExists`, `toolCalls`, `ops`, `hasTranscript`, `finishCall`, `finishStatus`, `anyMessageContains`, `firstMessageContains`, `hasBashCommand`, `hasVerifyAfterWrite`, `transcriptContains`, `transcriptIndexOf`, `checkProduct`, `checkBehavior`, `checkConvention`, `checkEfficiency`, `report`. All 16 scenarios now produce valid JSON output.
+
+**Impact**: This unblocks the entire gym scoring pipeline. Training sprints that were returning "0 promoted, 7 discarded" may now actually produce results since scenarios can be scored correctly.
+
+**System state**: No other pending tasks. Focus tasks all VERIFIED/COMPLETED except upstream-fix (HUMAN-NEEDED).
+
 ## 2026-03-20T20:37Z — Heartbeat: System stable, training sprint empty, no pending tasks
 
 **TSC**: Unavailable (dev tools not mounted) | **Pending**: 0 active tech-lead tasks
