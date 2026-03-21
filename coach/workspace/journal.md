@@ -1,5 +1,19 @@
 # Journal
 
+## 2026-03-21T02:12Z — Heartbeat: Tracker Bloat Fix + Triage
+
+**Optimizer finding processed**: Split `common-sense-tracker.md` (50KB) into:
+- Compact index (3.6KB) — just status table + summary
+- 39 per-item evidence files in `common-sense-evidence/` (~1-2KB each)
+- Full original archived to `archive/common-sense-tracker-full.md`
+- **Expected savings**: ~300KB/session for common-sense-verify cron (per optimizer's analysis)
+
+**Error scan**: All agent ERROR_LOGs quiet — 0 errors in last 2 days across all 9 agents.
+
+**Workspace hygiene**: Archived 5 stale files (diagnosis, growth-cycle notes, research/reflection logs). 22→18 files.
+
+**Forks status**: 8 forks in .lab, but recent gym tests show 0/3 baseline = 0/3 patched across all experiments. Scenarios too hard (neither agent passes), so no improvement measurable. **Next priority**: Create targeted gym scenarios that can actually detect the behavioral differences the patches address (step 5b).
+
 ## 2026-03-20T20:07Z — Common Sense Verification: C1.2 (One Read at a Time)
 
 Verified CS C1.2 (truncation handling) across 5 sessions with truncated reads.

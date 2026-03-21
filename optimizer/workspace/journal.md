@@ -1,5 +1,11 @@
 # Journal
 
+## 2026-03-21T02:45 — Handler Health Check: 3 Dead Handlers Found
+**Tasks**: Handler health check, Tool quality review
+**Critical Finding**: 3 cron handlers (convention-check, tool-quality-scan, analyze-failures) are DEAD — they have `preflight.type: "new-entries-since"` gates checking `.state/evaluations/` directory which doesn't exist. Evaluations were moved to SQLite DB but preflight gates weren't updated. Result: 0 convention checks ever done, tool-quality-scan can't generate reports, Bob's analysis never fires.
+**Also found**: 105 evaluations exist in DB but ALL are heuristic (0 LLM evaluations). 124 of 229 sessions still unevaluated. heartbeat-context.ts deployed but not loaded (handler cache needs restart). 2 orphaned handlers (focus-task-tracker, reflect).
+**Action**: Sent bug to tech-lead (req:1bfaa335) with fix options. Finding at workspace/finding-dead-preflight-gates-0321.md.
+
 ## 2026-03-21T01:12 — Cost Scan + Tracker Bloat Finding
 **Tasks**: Bob's P78 patch → May, Cost outlier scan, LLM-to-JS opportunity scan
 **Key Finding**: Coach's common-sense-tracker.md is 50KB and drives ~300KB/session (63% of 553KB sessions). The compact status file (4.9KB) exists but is barely used — Coach reads the full tracker 4x and edits it 3x per verify session. Sent finding + fix proposal to Coach (two options: split evidence into per-item files, or modify verify workflow to use compact status first). Estimated savings: ~1.5MB/day.

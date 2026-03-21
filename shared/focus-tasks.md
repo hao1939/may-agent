@@ -6,26 +6,28 @@
 This file tracks the immediate, high-leverage tasks that the team is focusing on.
 It bridges the gap between the high-level `roadmap.md` and the daily task queue (request DB).
 
-## Active Focus (Blocked by Infrastructure)
+## Active Focus
 
-### 1. Upstream Core Fix (Infrastructure)
-- **Problem**: "Immutable Runtime" prevents self-improvement of core features (Receipts, Logging, Prompts).
-- **Fix**: Request Human to mount `pi-mono/packages/pi-agent-core/src` into `/app/src/` OR rebuild binary with CS 6.1/4.5 features.
-- **Status**: **[HUMAN-NEEDED]** (2026-03-20). Brief `agents/bob/workspace/brief-upstream-fix.md` created.
-- **Next**: Awaiting Human intervention.
-
-### 2. Knowledge Index Integrity (Periodic)
+### 1. Knowledge Index Integrity (Periodic)
 - **Problem**: Knowledge links rot over time as files are moved or archived.
 - **Fix**: Audit `agents/shared/knowledge-index.md` against filesystem.
 - **Status**: **[VERIFIED]** (2026-03-20). Added 8 missing skills to the index.
 - **Owner**: Bob.
 
-### 3. Supply Chain Hardening Deployment (P78)
+## Blocked / Parking Lot (Infrastructure Constraints)
+
+### Upstream Core Fix (Infrastructure)
+- **Problem**: "Immutable Runtime" prevents self-improvement of core features (Receipts, Logging, Prompts).
+- **Fix**: Request Human to mount `pi-mono/packages/pi-agent-core/src` into `/app/src/` OR rebuild binary with CS 6.1/4.5 features.
+- **Status**: **[BLOCKED]** (2026-03-21). Verified `src/app/` is empty/immutable. Brief `agents/bob/workspace/brief-upstream-fix.md` created.
+- **Next**: Awaiting Human intervention.
+
+### Supply Chain Hardening Deployment (P78)
 - **Problem**: `scanSkill()` in `src/lib/tools/security.ts` exists but is not called by any agent. "Phantom Code" — verified on disk but dead in practice.
 - **Fix**: Wire `scanSkill()` into agent-loader.ts or manager.ts so all new skills/tools are scanned before use. Add behavioral rule to common-sense.md.
-- **Status**: **[BLOCKED]** (2026-03-21). `src/app/agent-loader.ts` doesn't exist — same immutable runtime issue as #1. Brief: `agents/bob/workspace/brief-p78-deployment.md`.
+- **Status**: **[BLOCKED]** (2026-03-21). `src/app/agent-loader.ts` doesn't exist — same immutable runtime issue. Brief: `agents/bob/workspace/brief-p78-deployment.md`.
 - **Owner**: Bob / Tech-Lead.
-- **Dependency**: Requires #1 (Upstream Core Fix) to unblock.
+- **Dependency**: Requires Upstream Core Fix.
 
 ## Archive (Completed - Hardening Sprint March 2026)
 

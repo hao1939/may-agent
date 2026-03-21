@@ -366,3 +366,11 @@ No actionable work available without source code access. System running autonomo
 
 ### Action
 - No active work needed. System in healthy idle state.
+
+## 2026-03-21 03:06 — Heartbeat: Fixed dead cron preflight gates (req:1bfaa335)
+**Bug**: 3 cron handlers (convention-check, tool-quality-scan, analyze-failures) were permanently dead because their preflight gates checked `.state/evaluations/` directory which doesn't exist — evaluations moved to SQLite DB.
+**Fix** (commit 5c1d0b97):
+- Removed preflight blocks from all 3 handlers (JS handlers have internal empty-checks)
+- Updated analyze-failures message to query SQLite instead of reading directory
+- Fixed stale `.state/evaluations/` references in evaluate-sessions.ts, codebase.md, TOOLS.md
+**Secondary finding**: `evaluate-sessions.ts` uses nonexistent `src/lib/evaluator.js` import and checks `.state/evaluations/` dir for dedup — may cause re-evaluations. Core infrastructure issue, can't fix without source access.
