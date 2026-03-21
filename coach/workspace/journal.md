@@ -287,3 +287,53 @@ Added heartbeat section 0d "Delivery Discipline" (6 lines) targeting the 5/8 non
 **Growth cycle**: Ran on `wrong-tool-args` scenario (baseline FAIL 3/5). Result: DISCARDED — patched fork also failed 3/5. Both fail on `all-tests-pass` (14/16 tests, missing duplicate email 409) and `fix-in-correct-file` (no duplicate check in handlers.js). The scenario requires the coder to use `db.findByEmail()` in the handler — a code reasoning task, not a behavioral one.
 **Insight**: This scenario tests code comprehension, not tool discipline. A SOUL guard won't help — the agent needs to read the db module and figure out to call findByEmail before creating. This may need a "read-before-write" skill or better scenario-specific prompting.
 **Next**: Try scenarios where behavioral patches can actually help (e.g., `skip-verification`, `hasty-fix`, `strict-tool-protocol`).
+
+## 2026-03-21T12:09 — Growth Cycle: Optimizer FM-2.5 (5 errors)
+
+**Trigger**: Cron growth-trigger — optimizer has 5 repeated FM-2.5 errors in 7 days.
+**Error breakdown**: 3 TOOL_SCHEMA_ERROR (empty args `bash({})`, `read({})`), 1 ENV_ASSUMPTION (`cd /home/user`), 1 ACCESS_CONSTRAINT (edited evaluator file directly).
+**Diagnosis**: Mechanical error — optimizer emits malformed tool calls. Existing Pre-Task Checklist guard is too abstract. Added concrete `🛑 TOOL ARG CHECK` block (7 lines) modeled on coach's own heartbeat guard.
+**Method**: #1 SOUL Guard (micro-edit variant). SAFE per 10+ experiments.
+**Gym**: SKIPPED — no optimizer-targeted scenarios exist (known pipeline gap).
+**Fork**: `agents/.lab/optimizer-fm25-fix/` — 7 lines added to SOUL.md, name preserved.
+**Experiment**: exp-140, logged to experiments.jsonl.
+**Action**: Sent promotion patch to May (req 7ee7fea2). Monitor FM-2.5 recurrence over 7 days.
+
+## 2026-03-21T12:09 — Growth Cycle: Bob FM-3.1 (Non-Delivery)
+
+**Trigger**: Cron detected 4 repeated FM-3.1 errors for agent "bob" in last 7 days.
+**Error analysis**: 2 genuine Bob failures — (1) non-delivery with empty turns, (2) broken write without recovery. 2 others were evaluator self-referencing bugs.
+**Core pattern**: Bob doesn't complete deliverables when encountering obstacles (tool errors, analysis paralysis).
+
+**Growth cycle result**: 
+- **Method**: #15 Workflow Enforcement — added `workflows/deliver-or-report.ts`
+- **Scenario**: `error-recovery-broken-config`
+- **Baseline**: FAIL (2/4 checks — valid-json, fields-preserved failed)
+- **Patched**: PASS (4/4 checks)
+- **Decision**: ✅ PROMOTED to bob
+
+**What the workflow does**: Two-phase delivery — Phase 1 analyzes & plans (identifies deliverables), Phase 2 writes deliverables to disk with retry on failure. Structurally prevents analysis paralysis and non-recovery from write errors.
+
+**This is Coach's first successful promotion to bob via workflow enforcement!**
+
+## 2026-03-21T12:10 — Growth Cycle: tech-lead FM-2.4
+
+**Trigger**: cron:growth-trigger — tech-lead has 5 repeated FM-2.4 errors (SILENT_FAIL 2x, BROKEN_EDIT 1x, RISKY_EDIT_SEQUENCE 1x, BROKEN_EDIT_SEQUENCE 1x).
+
+**Actions**:
+1. Fixed `exit-code-misread` scenario infra: success_criteria.js was using old format (module.exports function returning array), rewrote to use Score class with proper JSON output via s.report(). Also updated scenario.json with standard fields.
+2. First growth-cycle run misidentified agent as optimizer (known workflow bug). DISCARDED.
+3. Second run correctly targeted tech-lead. Results: baseline 0/5, patched 0/5. Agent completes but produces no investigation report.
+
+**Root cause of 0/5**: The exit-code-misread scenario is an investigation task. Tech-lead is a Builder agent — its identity doesn't align with investigation tasks. The agent completes the session but doesn't produce the expected deliverable. This is a scenario/agent mismatch, not a SOUL guard effectiveness issue.
+
+**Key insight**: The gym only has 2 scenarios compatible with tech-lead (exit-code-misread: any, convention-verify-edit-workflow: tech-lead). Neither specifically targets FM-2.4 SILENT_FAIL. The fundamental blocker for coaching tech-lead (and other non-coder agents) is **scenario coverage** — we can't measure improvement without scenarios that match the agent's role and trigger the target error pattern.
+
+**Infrastructure fixes shipped**:
+- `agents/gym/scenarios/exit-code-misread/success_criteria.js` — rewritten with Score class
+- `agents/gym/scenarios/exit-code-misread/scenario.json` — updated with standard fields
+
+**Next steps**:
+1. Create a tech-lead-specific scenario that triggers FM-2.4 SILENT_FAIL (e.g., a refactoring task where grep returns no results for an import, and the agent must verify the import is truly unused vs. grep failing)
+2. Consider text-only deployment for FM-2.4 guard (LESSONS.md already has exit code cheat sheet, exp-160 has heartbeat guard) since gym testing is blocked by scenario gap
+3. Monitor tech-lead ERROR_LOG for FM-2.4 recurrence after existing patches (exp-160) take effect

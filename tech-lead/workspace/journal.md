@@ -158,3 +158,14 @@ Optimizer requested rebuild of `bundle/may-agent` (req:8ffa0682). Investigated �
 - Evaluator→lessons dead path (needs src/ access)
 - Growth.ts test file (low priority)
 - Handler hot-reload mechanism (design needed)
+
+## 2026-03-21 Session: Control Plane Sidecar Review
+
+**Bob's proposal** (req:4e7ea966): Three-phase "Control Plane Sidecar" architecture — Hard OpBudget, Async Tasks, Active Nudging.
+
+**Review outcome**:
+- Phase 1 (Hard OpBudget): Already implemented. `[Ops: X/Y]` live, `OpBudgetExceeded` enforcement exists. Context Cgroup underspecified — needs separate brief.
+- Phase 2 (Async Tasks): Deferred. Premature — no tools currently cause timeout crashes. Polling-based check_task() would burn OpBudget.
+- Phase 3 (Active Nudging/Wink): **ENDORSED** as highest priority. Direct solution for Coach growth-cycle failures (FM-1.3 loops, FM-3.1 ghost deliverables). Asked Bob for focused Phase 3 brief.
+
+**Also**: npx unavailable this session (exit 127). No TSC/QA errors to address. Recent gym scenario (exit-code-misread) scored 0/5 baseline and patched — fork discarded correctly.

@@ -3,17 +3,17 @@
 Track when each task was last done. Pick the most overdue one during heartbeat step 3.
 
 ## Per heartbeat (do one, rotate)
-- [x] **Analysis review** — Last done: 2026-03-21T10:39
+- [x] **Analysis review** — Last done: 2026-03-21T13:39
   Read agents/bob/workspace/analysis.md or recent Bob synthesis outputs.
   Any findings that need optimization work? Cost issues? Efficiency problems?
   If found → add specific task to workspace/todo.md.
-  Latest (2026-03-21T10:39): **53 sessions/6h, 6.2MB, 4 errors (8%, all amy-kimi API key).** Coach still #1 cost (10 sessions, 1861KB — training sprint 611KB, research-intake 510KB). Tech-lead #2 (5 sessions, 1562KB — bash-heavy heartbeats). Bob s_247: 45 bash calls just moving files (workspace cleanup waste). 14/53 (26%) sessions had ≤2 ops (idle). Projected ~212 sessions/day (down from 900 pre-fix). skipIfIdle working on May (5/8 idle).
+  Latest (2026-03-21T13:39): **47 sessions/3h, 5.9MB.** Coach #1 (15 sessions, 2548KB — 88% growth-trigger training pipeline). Tech-lead #2 (8 sessions, 1472KB). Growth-trigger cascade: 3 triggers/batch × ~4 cascaded sessions = 13 sessions/batch. 99% experiment waste rate (2/209 promoted). **Applied cooldown fill: pre-populated 51 agent:FM combos to suppress for 7 days.** Saves est. $50-72/day.
 
-- [x] **Cost outlier scan** — Last done: 2026-03-21T10:39
+- [x] **Cost outlier scan** — Last done: 2026-03-21T13:39
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-21T10:39): **Coach cron jobs = #1 cost driver.** training-sprint 940KB/3 sessions, research-intake 510KB/1 session, growth-trigger 217KB/3 sessions (wasted — throttle stuck in handler cache). Tech-lead s_216 = 628KB (46 bash). No sessions >$2 individually but coach totals ~$12-15/6h. Sent Fix 1-4 to May (req:c530b01c): maxTurns caps, 12h→24h intervals, focused cron message. Finding at workspace/finding-coach-cron-cost-0321.md.
+  Latest (2026-03-21T13:39): **Growth-trigger training cascade = #1 cost driver.** 13 coach sessions/batch × 6 batches/day = ~78 sessions/day, 13.5MB/day, $50-72/day. 99% waste (2/209 experiments promoted). Fixed by pre-populating cooldown file with all 51 eligible combos. On-disk handler has MAX_TRIGGERS=1 + experiment gate, but binary cache prevents loading. Finding at workspace/finding-growth-trigger-cascade-0321.md.
 
 - [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-21T05:42
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
@@ -27,14 +27,14 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If issues → add fix to workspace/todo.md.
   Latest (2026-03-21T08:39): **30 sessions/6h, 2 errors (6.7%, both amy-kimi API key).** 211 evals in DB (+106 since last check), ALL heuristic — quality scores inflated (avg 5.0). Convention-check STILL 0 rows despite preflight fix in cron.json — root cause is handler cache (TS files compiled at startup, edits not picked up). Binary rebuild impossible (source upstream, no bun). 3 handlers dead (convention-check, tool-quality-scan, heartbeat-context) — all need process restart. Finding at workspace/finding-handler-health-0321-0839.md.
 
-- [x] **Proven pattern → Skill/Workflow** — Last done: 2026-03-21T09:15
+- [x] **Proven pattern → Skill/Workflow** — Last done: 2026-03-21T12:09
   This is your MOST IMPORTANT periodic task — focus area #1.
   **Run it via workflow**: `workflow.run("skill-lifecycle", "Scan recent sessions for proven multi-step patterns")`
   The workflow mechanically enforces all 4 phases (discover → draft → test → deploy) in separate
   sessions, preventing you from skipping testing or doing meta-work instead.
   If you have a specific pattern in mind, pass it: `workflow.run("skill-lifecycle", "Pattern: agents read file → check convention → edit → verify")`
   **Deliverable**: A new or refined skill file, tested in gym, deployed to agents.
-  Latest (2026-03-21T09:15): **Gym runner fixed!** Binary exists at /app/may-agent-bin. Fixed 2 critical bugs: (1) agent writes to PROJECT_ROOT not workDir — added file sync, (2) no transcript capture — added transcript save + transcript.jsonl for convention checks. Efficient-file-reading: 0/8 → 8/8. Finding at workspace/finding-gym-runner-fix-0321.md. Next: run skill-lifecycle with working gym.
+  Latest (2026-03-21T12:09): **grep-first-reading skill DEPLOYED.** First successful real-agent gym test: efficient-file-reading scenario, 7/8 checks (4/4 product, 3/4 convention). Agent used rg to search large files, avoided full reads of services.yaml and monitor.log. Deployed to optimizer SOUL.md directly. Sent deployment patch to May for coach/tech-lead/scout/bob/coder/amy (req:b5555b6b). Also ran convention-verify-edit (2/5) and convention-safe-append (2/4) for baseline data.
 
 - [x] **Tool quality review** — Last done: 2026-03-21T08:39
   Read the tool-quality-report.md (generated by tool-quality-scan handler every 4h).

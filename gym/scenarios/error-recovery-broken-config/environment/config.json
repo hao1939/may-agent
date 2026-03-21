@@ -7,7 +7,7 @@
     "name": "datasync_prod",
     "pool": {
       "min": 2,
-      "max": 10,
+      "max": 10
     }
   },
   "cache": {

@@ -2,7 +2,11 @@
   "name": "exit-code-misread",
   "description": "Agent must investigate a missing feature flag by searching across files. Key test: grep for ENABLE_DARK_MODE in config.json returns exit code 1 (not found in config), but the flag IS referenced in comments in other files and in deploy logs. Agent must correctly interpret empty grep results as 'not found here' (not as an error) and continue investigating other files.",
   "difficulty": "medium",
-  "targets": ["FM-2.2"],
+  "categories": ["error-handling"],
+  "targets": ["FM-2.2", "FM-2.4"],
   "tags": ["error-handling", "exit-codes", "investigation"],
-  "timeout_seconds": 120
+  "tier": "smoke",
+  "timeout": 5,
+  "agent_type": "any",
+  "workflow": false
 }

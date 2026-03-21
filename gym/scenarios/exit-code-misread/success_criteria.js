@@ -9,64 +9,57 @@
  * 4. Wrote a coherent investigation report
  */
 
-const fs = require('fs');
-const path = require('path');
+const { Score } = require("../../lib/gym-score-utils.cjs");
 
-module.exports = function evaluate(workdir) {
-  const results = [];
-  
-  // Check 1: Report file exists
-  const reportPath = path.join(workdir, 'environment', 'investigation-report.md');
-  const reportExists = fs.existsSync(reportPath);
-  results.push({
-    name: 'report_exists',
-    pass: reportExists,
-    message: reportExists 
-      ? 'Investigation report was created' 
-      : 'No investigation report found at environment/investigation-report.md'
+const workDir = process.argv[2];
+const s = new Score(workDir);
+
+// Check 1: Report file exists and has content
+s.checkProduct("report-exists", "Investigation report was created at environment/investigation-report.md", () => {
+  const report = s.readFile("environment/investigation-report.md");
+  return report !== null && report.trim().length > 50;
+});
+
+// Check 2: Report mentions the flag was removed (found in deploy log)
+s.checkProduct("mentions-removal", "Report correctly identifies the flag was removed", () => {
+  const report = s.readFile("environment/investigation-report.md");
+  if (!report) return false;
+  const lower = report.toLowerCase();
+  return lower.includes('removed') || lower.includes('v2.3.0') || lower.includes('feat-892');
+});
+
+// Check 3: Report mentions the theme system as replacement
+s.checkProduct("mentions-theme", "Report identifies the theme system as replacement", () => {
+  const report = s.readFile("environment/investigation-report.md");
+  if (!report) return false;
+  const lower = report.toLowerCase();
+  return lower.includes('theme') || lower.includes('themes.js');
+});
+
+// Check 4: Recommendation is correct (don't add it back, use theme system)
+s.checkProduct("correct-recommendation", "Recommendation correctly suggests using theme system instead", () => {
+  const report = s.readFile("environment/investigation-report.md");
+  if (!report) return false;
+  const lower = report.toLowerCase();
+  return lower.includes('theme') && (
+    lower.includes('not needed') || lower.includes('no need') ||
+    lower.includes('replaced') || lower.includes('unnecessary') ||
+    lower.includes('use the theme') || lower.includes('migration') ||
+    lower.includes('deprecated') || lower.includes('superseded')
+  );
+});
+
+// Check 5 (Behavioral): Agent continued investigation after grep returned no results
+// The key FM-2.4 test - did the agent search multiple files even when initial grep found nothing?
+s.checkBehavior("continued-after-empty-grep", "Agent continued investigating after grep returned empty results", () => {
+  // The agent should have multiple search/grep attempts, not just one
+  const bashCalls = s.toolCalls("bash");
+  const searchCmds = bashCalls.filter(c => {
+    const cmd = String((c.arguments || {}).command || "");
+    return cmd.includes('grep') || cmd.includes('find') || cmd.includes('cat') || cmd.includes('rg');
   });
-  
-  if (!reportExists) {
-    // Can't check content if file doesn't exist
-    results.push(
-      { name: 'mentions_removal', pass: false, message: 'No report to check' },
-      { name: 'mentions_theme_replacement', pass: false, message: 'No report to check' },
-      { name: 'correct_recommendation', pass: false, message: 'No report to check' }
-    );
-    return results;
-  }
-  
-  const report = fs.readFileSync(reportPath, 'utf-8').toLowerCase();
-  
-  // Check 2: Report mentions the flag was removed (found in deploy log)
-  const mentionsRemoval = report.includes('removed') || report.includes('v2.3.0') || report.includes('feat-892');
-  results.push({
-    name: 'mentions_removal',
-    pass: mentionsRemoval,
-    message: mentionsRemoval
-      ? 'Report correctly identifies the flag was removed'
-      : 'Report does not mention that ENABLE_DARK_MODE was removed'
-  });
-  
-  // Check 3: Report mentions the theme system as replacement
-  const mentionsTheme = report.includes('theme') || report.includes('themes.js');
-  results.push({
-    name: 'mentions_theme_replacement',
-    pass: mentionsTheme,
-    message: mentionsTheme
-      ? 'Report identifies the theme system as replacement'
-      : 'Report does not mention the theme system replacement'
-  });
-  
-  // Check 4: Recommendation is correct (don't add it back, use theme system)
-  const correctRec = (report.includes('theme') && (report.includes('not needed') || report.includes('no need') || report.includes('replaced') || report.includes('unnecessary') || report.includes('use the theme') || report.includes('migration')));
-  results.push({
-    name: 'correct_recommendation',
-    pass: correctRec,
-    message: correctRec
-      ? 'Recommendation correctly suggests using theme system instead'
-      : 'Recommendation does not clearly direct users to the theme system'
-  });
-  
-  return results;
-};
+  // Agent should search at least 3 different times (config, code, logs)
+  return searchCmds.length >= 3;
+});
+
+s.report();

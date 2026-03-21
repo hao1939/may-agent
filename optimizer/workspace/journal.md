@@ -1,5 +1,51 @@
 # Journal
 
+## 2026-03-21T13:39 — Growth-Trigger Cascade Cost Analysis + Suppression
+
+**Task**: Cost & Efficiency (alternating from pattern→skill work at 12:09)
+
+**Analysis** (47 sessions/3h, 5.9MB):
+- Coach: 15 sessions, 2548KB — 88% from growth-trigger training pipeline
+- Tech-lead: 8 sessions, 1472KB
+- Optimizer: 5 / 636KB, Bob: 5 / 528KB, May: 5 / 356KB
+
+**Growth-trigger cascade economics**:
+- `error-log-scanner` fires every 4h, sends 3 growth triggers per batch
+- Each trigger spawns ~4 cascaded sessions (diagnose → fork → apply)
+- 8 batches in 30 hours, 24 unique agent:FM combos already triggered
+- 39 eligible combos total (≥3 errors in 7 days), 15 still uncooled
+- **99% waste rate**: 2/209 experiments promoted (0.96%)
+- Estimated cost: **$50-72/day** (37-50% of system total)
+
+**Fix applied**: Pre-populated `.state/growth-trigger-cooldown.json` with all 51 agent:FM combos (39 eligible + 12 extras). Sets current timestamp for 7-day cooldown. Next `error-log-scanner` run should find all combos cooled and trigger 0.
+
+**Finding**: `workspace/finding-growth-trigger-cascade-0321.md`
+
+**Remaining blocker**: Binary handler cache still prevents loading updated handler code (MAX_TRIGGERS=1, experiment history gate). Cooldown fill is a 7-day bandaid.
+
+## 2026-03-21T12:09 — grep-first-reading Skill DEPLOYED (First Real Gym Test)
+
+**Task**: Pattern → Skill/Workflow (alternating from cost/analysis work at 10:39)
+**Milestone**: First successful skill lifecycle completion with real agent gym testing.
+
+**Gym Test Results** (efficient-file-reading scenario):
+- Agent binary: `/app/may-agent-bin` via `GYM_AGENT_BIN` env var
+- **7/8 checks passed** (4/4 product, 3/4 convention)
+- Product: report.md exists, 3 services found, correct names (payment-gateway, cache-proxy, auth-service), correct errors
+- Convention: used rg on large files ✅, no full-read services.yaml ✅, no full-read monitor.log ✅, targeted reads ❌ (agent used grep+context rather than read(offset,limit))
+- Duration: 38.6s
+- Status: PASSED
+
+**Deployment**:
+- ✅ Deployed to `agents/optimizer/SOUL.md` — added grep-first-reading to Inviolable Constraints
+- ⏳ Sent patch to May (req:b5555b6b) for coach, tech-lead, scout, bob, coder, amy
+
+**Bonus gym runs** (baseline data for future skills):
+- `convention-verify-edit`: 2/5 (product 2/3, convention 0/2) — agent set values correctly but lost fields, didn't verify or validate JSON
+- `convention-safe-append`: 2/4 — preserved original content but failed to add new entry
+
+**Key insight**: `GYM_AGENT_BIN` env var is the missing piece that unlocks real agent testing. The gym runner was already fixed (session 09:15), but the heartbeat shell wrapper doesn't set `GYM_AGENT_BIN` by default. Should add it to `test/gym/run-gym.sh` or document it.
+
 ## 2026-03-21T10:39 — Analysis Review (6h window)
 
 **Period**: 2026-03-21 04:39–10:39 UTC (6h)

@@ -24,6 +24,7 @@ Compact index. Per-item evidence in `common-sense-evidence/cs-{num}.md`.
 | C1.1 | Read Before Edit | ⚠️ | Amy-Kimi ✅, Optimizer ✅, QA ❌→ | 2026-03-20 |
 | C1.2 | One Read at a Time (truncation handling) | ⚠️ | TL ✅ (2x), QA ✅, Optimizer ⚠️ | 2026-03-20 |
 | C1.3 | Verify Writes | ⚠️ | TL ✅ (3/3), Bob ❌ (0/5) | 2026-03-21 |
+| C1.5 | No Ghost Deliverables | ⚠️ | Bob ✅, Scout ✅, QA ⚠️ (no rea | 2026-03-21 |
 | C3.2 | Workspace Isolation | ❌ | Scout ❌ (persistent), Bob ⚠️ ( | 2026-03-20 |
 | C3.3 | Safe Append (no write() to append-only f | ⚠️ | Bob ❌ (1x), Bob ✅ (1x), TL ✅ | 2026-03-19 |
 | 4.1 | Know your role | ✅ | Bob, TL, Scout | 2026-03-16 |
@@ -49,7 +50,7 @@ Compact index. Per-item evidence in `common-sense-evidence/cs-{num}.md`.
 | 13.4 | Not Required for All | ✅ | Bob ✅ | 2026-03-19 |
 
 ## Summary (2026-03-21)
-- ✅ 27/42 | ❌ 3/42 | ⚠️ 12/42
+- ✅ 27/43 | ❌ 3/43 | ⚠️ 13/43
 - **Failed**: 1.1 (Acknowledge), 1.6 (C50 Re-Planning), C3.2 (Scout workspace isolation)
-- **Key partial**: C1.3 (Bob no verify-writes), 3.2 (TL retries), C3.3 (Bob append), 4.5 (Tool schema), 13.1 (Coder no-commit)
+- **Key partial**: C1.3 (Bob no verify-writes), C1.5 (QA no read-back after bash write), 3.2 (TL retries), C3.3 (Bob append), 4.5 (Tool schema), 13.1 (Coder no-commit)
 - **Improving**: 3.3, 3.5, 6.1 (Optimizer budget pacing)
