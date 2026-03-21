@@ -24,3 +24,15 @@ Handler following watchdog.ts pattern:
 
 ### `agents/may/cron.json` — UPDATED
 Added `active-nudge` entry: 5min interval, handler-based job.
+
+## Phase 3 — Context Awareness (COMPLETE 2026-03-21 ~21:10Z)
+
+### `agents/may/handlers/heartbeat-context.ts` — UPDATED
+- Now checks for `nudge-active.md` in each agent's workspace before writing context
+- If found, prepends nudge content with `# ⚠️ URGENT — Active Nudge` header
+- Logs count of injected nudges in summary notification
+
+### `agents/shared/bulletin.md` — UPDATED
+- Added bulletin entry instructing all agents to check `workspace/nudge-active.md` during heartbeats
+- Bob's heartbeat already has native nudge-active.md check (line 89)
+- Other agents: bulletin serves as cross-cutting notification until individual heartbeats are updated

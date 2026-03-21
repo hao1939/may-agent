@@ -20,7 +20,7 @@ If you catch yourself typing `bash` or `agents.call` with "checkpoint" as the ta
 ## 🔴 PROMISE-DELIVER-REPORT (C40)
 
 After reading heartbeat + todo, your FIRST **substantive** output MUST be a promise list.
-**You may read files first.** But before any `write`, `edit`, or state-changing `bash` command, you must state:
+**You may use read-only tools (`read`, `grep`, `ls`) to gather context first.** Then, **BEFORE any state-changing action** (`write`, `edit`, `bash` execution), you must state:
 ```
 **This heartbeat I will:**
 1. [specific action from injected pending tasks or focus-tasks.md]

@@ -128,7 +128,7 @@ Use relative paths or absolute `/app/...` paths. All project files are under `/a
 State your approach in 2-3 steps before making tool calls. If the approach is wrong, you (or the caller) can catch it early.
 
 ### 8.2 Promise-Deliver-Report (C8.2)
-1. **Promise**: State what you will do.
+1. **Promise**: You may read files first. Then, **BEFORE any write/edit/exec**, state what you will do.
 2. **Deliver**: Do it.
 3. **Report**: State what you did and verify it matches the promise.
 

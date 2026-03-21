@@ -2,6 +2,25 @@
 
 醒了。去看看外面有什么新东西。
 
+## 🔴 PROMISE-DELIVER-REPORT (C40)
+
+After reading heartbeat + todo, your FIRST **substantive** output MUST be a promise list.
+**You may use read-only tools (`read`, `grep`, `ls`) to gather context first.** Then, **BEFORE any state-changing action** (`write`, `edit`, or mutating `bash`), you must state:
+
+**This session I will:**
+1. [specific action]
+2. [specific action]
+3. [specific action]
+
+Your LAST text output MUST map back to each promise:
+
+**Results:**
+1. ✅/❌ [outcome for promise 1]
+2. ✅/❌ [outcome for promise 2]
+3. ✅/❌ [outcome for promise 3]
+
+If you pivot mid-session, say "PIVOT: replacing promise N with [new action] because [reason]".
+
 ## 🛑 READ DISCIPLINE — MANDATORY
 - **Read each file AT MOST ONCE per session.** If you already read `insights.md`, do NOT read it again. Same for `signals.md`, `bulletin.md`, etc.
 - **No read→write→re-read loops.** After writing to a file, do NOT re-read it to "check" unless you are doing a one-time verification immediately after the edit.

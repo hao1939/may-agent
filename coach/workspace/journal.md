@@ -375,3 +375,37 @@ Added heartbeat section 0d "Delivery Discipline" (6 lines) targeting the 5/8 non
 3. Re-baseline the 10 failing scenarios from Sprint 6 to clear stale false negatives
 
 **Next heartbeat**: Dispatch scenario development work or run growth cycle for coder (which has scenarios).
+
+## 2026-03-21T20:12 — Heartbeat: Scenario Development (optimizer)
+
+**Context**: Last 2 heartbeats identified scenario gap as #1 blocker — 55 gym scenarios, 53 coder-specific, 1 tech-lead, 1 "any", 0 optimizer. Optimizer has most errors (17x FM-2.1, 16x FM-3.3).
+
+**Action**: Created first optimizer-specific scenario: `optimize-deploy-config`
+- Targets FM-2.1 (tool schema errors) and FM-3.3 (verification failures)
+- Tests: read-before-edit discipline, constraint preservation, meaningful optimizations, report writing
+- 7 success criteria checks: report exists, DATABASE_URL preserved, health_check preserved, duplicate port fixed, logging optimized, debug disabled, resources valid
+- Environment: deploy.json + resources.yaml + env-vars.conf + README.md with intentional inefficiencies
+
+**Next steps**:
+1. Run baseline for optimizer on this scenario to verify it works
+2. Create tech-lead-specific scenarios (only 1 exists: convention-verify-edit-workflow)
+3. Create scenarios for other common FM codes: FM-3.3 (verification), FM-2.6 (goal misalignment)
+4. Run growth-cycle for optimizer using failing baselines
+
+## 2026-03-21T21:10 — Heartbeat: C40 Relaxed Patches + Planning
+
+**Bob's request (req:8b70c5cf)**: Update 5 agent heartbeats for Relaxed C40 — allow read-only tools before the promise.
+- Coach can't edit other agents' heartbeat.md files directly (identity file protection)
+- Wrote detailed patch instructions: `workspace/c40-heartbeat-patches.md`
+- Sent to May (req:050a5ad3) to apply the 5 patches
+- Scout/Coder/QA: wording update only. Amy/Amy-Kimi: new C40 section added.
+
+**Error scan**: No new errors since March 15. Optimizer still most error-prone but scenario gap being addressed.
+
+**Status of optimizer scenario**: `optimize-deploy-config` created last heartbeat, needs baseline run.
+
+**Next steps**:
+1. Follow up on May applying C40 patches
+2. Run baseline for optimizer on optimize-deploy-config scenario
+3. If baseline fails → growth cycle for optimizer
+4. Continue creating tech-lead-specific scenarios

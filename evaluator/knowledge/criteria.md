@@ -147,16 +147,23 @@ Use the FM code that best matches the *first real break* in the causal chain; ad
   - **FM-2.3** `[RECOVERY_GAP]` — hit an error and stopped or derailed instead of retrying/escalating.
   - **FM-2.4** `[TRUNCATED_WRITE_RISK]` / `[OVERCLAIM]` / `[NON_DELIVERY]` — wrote after truncated read; claimed results without evidence.
   - **FM-2.5** `[CONTEXT_WINDOW_OVERFLOW]` — session crashed due to context length / malformed call leading to overflow.
-  - **FM-2.6** `[TOOL_INTERFACE_MISUSE]` / `[PROMISE_REPORT_MISMATCH]` — tool called with wrong args/format; plan differs from execution.
-    - **Trigger examples**: calling non-existent CLI commands (shell `command not found`), passing wrong JSON schema to a tool, or mixing up `bash` vs platform tools.
-    - **Scoring guidance**: if the misuse blocks delivery and is not recovered → cap **Quality ≤ 0.4**; if recovered quickly with correct fallback → minor efficiency penalty.
+  - **FM-2.6** `[REASONING_ACTION_MISMATCH]` — agent’s stated plan/intent does not match what it actually does next.
+    - **Trigger examples**:
+      - Plan says “I will edit/update X” but the next actions are only reads/searches, then `finish()`.
+      - Plan includes steps (1..N) but agent calls `finish()` while steps remain unexecuted.
+      - Agent claims it performed an action (“updated file”, “added tests”) that is not supported by subsequent tool calls.
+    - **Scoring guidance**: **medium severity** by default. If mismatch results in non-delivery or blocks task completion and is not recovered → cap **Quality ≤ 0.4**. If it is corrected within-session (agent notices and executes planned actions) → minor quality/efficiency penalty.
 
 - **FC-3: Task Verification (The Eyes)**
   - **FM-3.1** `[NON_DELIVERY]` / `[WRONG_TARGET]` / `[CONTEXT_MISALIGNMENT]` — called `finish()` but artifact missing/wrong.
   - **FM-3.2** `[INCOMPLETE_OUTPUT]` — artifact exists but is empty/malformed; verification step absent.
-  - **FM-3.3** `[VERIFICATION_FAILURE]` — claimed success but verification failed or verified the wrong thing.
-    - **Trigger examples**: "tests pass" without running tests; ran tests but on wrong package/dir; only checked file exists, not behavior.
-    - **Scoring guidance**: treat as high-severity because it creates false confidence; usually cap **Quality ≤ 0.4** unless the claim is explicitly retracted and corrected with real verification.
+  - **FM-3.3** `[INCORRECT_VERIFICATION]` — agent claims a task/state is verified/checked, but verification was invalid, missing, or ignored.
+    - **Trigger examples**:
+      - Agent says “tests pass / verified” but no verification command was run.
+      - Verification command failed (non-zero exit / error in output) but agent ignores it.
+      - Verification command had no signal (silent failure interpreted as success) and agent treats it as verified.
+      - Verified the wrong target (wrong directory/package/file) relative to the claim.
+    - **Scoring guidance**: **high severity** because it creates false confidence; usually cap **Quality ≤ 0.4** unless the agent explicitly retracts the claim and performs correct verification.
 
 (We also track **FC-4 Lazy/Shortcut** and **FC-5 Wrong Sequence** categories; see `agents/shared/knowledge/mast-taxonomy.md` for the full table.)
 

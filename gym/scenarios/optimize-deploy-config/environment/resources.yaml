@@ -1,0 +1,26 @@
+# Resource allocation for web-frontend
+apiVersion: apps/v1
+kind: Deployment
+spec:
+  template:
+    spec:
+      containers:
+        - name: web-frontend
+          resources:
+            requests:
+              memory: "2Gi"
+              cpu: "2000m"
+            limits:
+              memory: "8Gi"
+              cpu: "4000m"
+          # Unused sidecar allocated but never started
+        - name: debug-sidecar
+          image: busybox:latest
+          command: ["sleep", "infinity"]
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "1000m"

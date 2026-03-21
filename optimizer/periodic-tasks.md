@@ -3,17 +3,17 @@
 Track when each task was last done. Pick the most overdue one during heartbeat step 3.
 
 ## Per heartbeat (do one, rotate)
-- [x] **Analysis review** — Last done: 2026-03-21T13:39
+- [x] **Analysis review** — Last done: 2026-03-21T21:09
   Read agents/bob/workspace/analysis.md or recent Bob synthesis outputs.
   Any findings that need optimization work? Cost issues? Efficiency problems?
   If found → add specific task to workspace/todo.md.
-  Latest (2026-03-21T13:39): **47 sessions/3h, 5.9MB.** Coach #1 (15 sessions, 2548KB — 88% growth-trigger training pipeline). Tech-lead #2 (8 sessions, 1472KB). Growth-trigger cascade: 3 triggers/batch × ~4 cascaded sessions = 13 sessions/batch. 99% experiment waste rate (2/209 promoted). **Applied cooldown fill: pre-populated 51 agent:FM combos to suppress for 7 days.** Saves est. $50-72/day.
+  Latest (2026-03-21T21:09): **399 sessions/36h, 51.1MB total.** Coach #1 (79 sessions, 15.5MB, avg 197KB). Tech-lead #2 (43 sessions, 10.9MB, avg 253KB — highest per-session). Optimizer #3 (43 sessions, 7.7MB). **Amy-kimi 100% error rate** (26 dead sessions, "No API key for openai"). Sent disable request to May. Session rate dropping: 62/4h → 9/4h. Prior optimizations confirmed working.
 
-- [x] **Cost outlier scan** — Last done: 2026-03-21T13:39
+- [x] **Cost outlier scan** — Last done: 2026-03-21T21:09
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-21T13:39): **Growth-trigger training cascade = #1 cost driver.** 13 coach sessions/batch × 6 batches/day = ~78 sessions/day, 13.5MB/day, $50-72/day. 99% waste (2/209 experiments promoted). Fixed by pre-populating cooldown file with all 51 eligible combos. On-disk handler has MAX_TRIGGERS=1 + experiment gate, but binary cache prevents loading. Finding at workspace/finding-growth-trigger-cascade-0321.md.
+  Latest (2026-03-21T21:09): **No new cost outliers.** Largest sessions are from early period (coach 866KB, 732KB). Coach ops trending 12-26 (down from 50-58). Session rate 55-85% lower than day 1. Amy-kimi cron disabled (sent to May). Bob 2 empty-model errors — transient, no action. System running much leaner than 12h ago.
 
 - [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-21T15:09
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?

@@ -180,7 +180,7 @@
     "intervalMs": 1800000,
     "agent": "amy-kimi",
     "message": "[heartbeat] Read agents/amy-kimi/heartbeat.md and work through each section top to bottom. End with a 2-3 sentence brief of what you explored and discovered.",
-    "enabled": true,
+    "enabled": false,
     "description": "Amy-Kimi's heartbeat — XHS exploration with Kimi model (30min)",
     "notifyBrief": true
   },
@@ -311,7 +311,7 @@
     "intervalMs": 604800000,
     "agent": "amy-kimi",
     "message": "[cron:consolidate-memory] Read agents/shared/tasks/consolidate-memory.md and execute it. Your journal is at agents/amy-kimi/workspace/journal.md, your knowledge is at agents/amy-kimi/knowledge/, your archive is at agents/amy-kimi/workspace/archive/.",
-    "enabled": true,
+    "enabled": false,
     "handler": "run-agent-task",
     "description": "Weekly memory consolidation for Amy-Kimi — journal → knowledge → archive (7d)",
     "preflight": {

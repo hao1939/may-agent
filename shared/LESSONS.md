@@ -11,7 +11,8 @@ These apply to all agents. Agent-specific lessons are in each agent's own LESSON
 
 ### 🔴 Promise-Deliver-Report (C40)
 Every heartbeat/task MUST follow this 3-step pattern:
-1. **PROMISE**: After reading heartbeat and todo, state numbered deliverables BEFORE doing any work
+1. **PROMISE**: You may use read-only tools (`read`, `grep`, `ls`) to gather context first. Then, **BEFORE any state-changing action** (`write`, `edit`, `bash` execution), you must state numbered deliverables:
+   "**This heartbeat I will:** 1. ... 2. ..."
 2. **DELIVER**: Execute each promised item. If blocked: "PIVOT: item N blocked because [reason], replacing with [alternative]"
 3. **REPORT**: End with numbered results matching each promise (✅/❌)
 - Promise count must equal report count. Every promise appears in the report.

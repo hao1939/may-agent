@@ -227,3 +227,17 @@ Optimizer requested rebuild of `bundle/may-agent` (req:8ffa0682). Investigated �
 **Deferred items**: 9 items blocked on source access (manager.ts, evaluator.ts, may.ts, gym-runner.ts). These remain parked until Bob opens source tree.
 
 **Action**: None. System stable. No new work to initiate.
+
+---
+
+### 2026-03-21 21:10 — Active Nudging Phase 3 Complete (Context Awareness)
+
+**Task**: Bob requested Phase 3 implementation (req:f7b36d60) — context awareness for active nudges.
+
+**Work Done**:
+1. **Verified Phase 1-2**: All files exist, all detections implemented (loop, ghost, stall), handler writes nudge files, cron entry active at 5min interval.
+2. **Implemented Phase 3** — `heartbeat-context.ts` now checks for `nudge-active.md` in each agent's workspace and prepends it with URGENT header to heartbeat-context.md. Added nudge injection count to log output.
+3. **Bulletin update**: Added system-wide notice telling all agents to check `workspace/nudge-active.md` during heartbeats. Bob's heartbeat already has native support (line 89).
+4. **Limitation**: Cannot edit other agents' heartbeat.md files (P53 protection). Bulletin serves as cross-cutting notification until individual heartbeats are updated by their owners or Coach.
+
+**Files modified**: `agents/may/handlers/heartbeat-context.ts`, `agents/shared/bulletin.md`, `agents/tech-lead/workspace/implementation-plan-active-nudging.md`

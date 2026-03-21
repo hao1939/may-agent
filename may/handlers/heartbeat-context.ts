@@ -362,12 +362,31 @@ export const create: HandlerModule["create"] = (
     const outPath = join(sharedWorkspace, "system-context.md");
     writeFileSync(outPath, formatted, "utf-8");
 
-    // Write per-agent context files
+    // Write per-agent context files (with nudge injection per brief-active-nudging.md §3)
     let written = 0;
+    let nudgesInjected = 0;
     for (const agentName of CONTEXT_AGENTS) {
       const agentWorkspace = join(baseDir, "agents", agentName, "workspace");
       if (existsSync(agentWorkspace)) {
-        const agentContext = formatAgentContext(snap, agentName);
+        let agentContext = "";
+
+        // Check for active nudge file — prepend with URGENT priority
+        const nudgePath = join(agentWorkspace, "nudge-active.md");
+        if (existsSync(nudgePath)) {
+          try {
+            const nudgeContent = readFileSync(nudgePath, "utf-8").trim();
+            if (nudgeContent) {
+              agentContext += `# ⚠️ URGENT — Active Nudge\n\n`;
+              agentContext += nudgeContent;
+              agentContext += `\n\n---\n\n`;
+              nudgesInjected++;
+            }
+          } catch {
+            /* skip unreadable nudge file */
+          }
+        }
+
+        agentContext += formatAgentContext(snap, agentName);
         writeFileSync(
           join(agentWorkspace, "heartbeat-context.md"),
           agentContext,
@@ -378,7 +397,8 @@ export const create: HandlerModule["create"] = (
     }
 
     // Log result via notify (shows in cron output)
-    const summary = `Generated system context: ${snap.totalSessions} sessions, ${snap.totalKB}KB in ${snap.windowHours}h window. Context files written for ${written} agents.`;
+    const nudgeNote = nudgesInjected > 0 ? ` ${nudgesInjected} active nudge(s) injected.` : "";
+    const summary = `Generated system context: ${snap.totalSessions} sessions, ${snap.totalKB}KB in ${snap.windowHours}h window. Context files written for ${written} agents.${nudgeNote}`;
     ctx.notify(summary);
   };
 };
