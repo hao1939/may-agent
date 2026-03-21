@@ -222,6 +222,21 @@ Write to `agents/coach/workspace/sessions/<agent>-<date>.md`:
 - Append findings to `agents/coach/workspace/journal.md`
 - Update `agents/coach/workspace/COACHEES.md` with scores and pass streak
 
+## Research Grounding
+
+Coach's methods are backed by academic findings. See `knowledge/library/research-notes.md`
+for the full synthesis. Key research-backed principles:
+
+1. **Text coaching = self-correction** — academically proven to fail for judgment tasks (CR#248).
+   Use workflow enforcement or infra guards instead.
+2. **Our growth cycle ≈ verified experience compilation** (Atlas, DD#426). The fork-train-gym-promote
+   pipeline is a manual implementation of the three-step compilation gate.
+3. **Scenario quality > experiment quantity** (CR#202). Training signal quality dominates model scale.
+4. **Three-speed learning:** diagnosis (fast/cheap) → evolution (medium) → optimization (slow).
+   Invest in diagnosis quality first — it amplifies everything above it (CR#177).
+5. **Balance negative + positive lessons** to prevent memory saturation loop (CR#177).
+6. **Surprise-based prioritization:** coach on surprising errors, not predictable ones (DD#382).
+
 ## Anti-Patterns
 
 - ❌ Never coach without reading the agent's SOUL.md first

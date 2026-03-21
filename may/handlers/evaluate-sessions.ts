@@ -183,26 +183,45 @@ function extractSessionMetrics(persistDir: string, sessionId: string): SessionMe
         // Count tool calls from assistant messages
         if (entry.role === "assistant" && entry.content) {
           const text = typeof entry.content === "string" ? entry.content : JSON.stringify(entry.content);
-          // Count tool_use blocks
+          // Count tool_use / toolCall blocks
           if (Array.isArray(entry.content)) {
             for (const block of entry.content) {
-              if (block.type === "tool_use") totalCalls++;
+              if (block.type === "tool_use" || block.type === "toolCall") totalCalls++;
             }
           }
         }
         // Count tool results
-        if (entry.role === "tool" || entry.type === "tool_result") {
-          const text = typeof entry.content === "string" ? entry.content : JSON.stringify(entry.content);
-          if (text.includes("error") || text.includes("Error") || text.includes("FAILED") || text.includes("WRITE BLOCKED")) {
+        if (entry.role === "tool" || entry.role === "toolResult" || entry.type === "tool_result") {
+          // Prefer explicit isError field when available
+          if (entry.isError === true) {
             errorCalls++;
+          } else if (entry.isError !== false) {
+            // Fallback: check for error patterns in output (only for formats without isError)
+            const text = typeof entry.content === "string" ? entry.content : JSON.stringify(entry.content);
+            if (text.includes("ENOENT:") || text.includes("FAILED") || text.includes("WRITE BLOCKED") ||
+                text.includes("Command exited with code") || text.includes("Permission denied")) {
+              errorCalls++;
+            }
           }
         }
         // Check for finish() calls
         if (entry.role === "assistant" && entry.content) {
-          const text = typeof entry.content === "string" ? entry.content : JSON.stringify(entry.content);
-          if (text.includes('"finish"') || text.includes("finish(")) {
-            hasFinish = true;
-            if (text.includes('"success"')) hasSuccessFinish = true;
+          if (Array.isArray(entry.content)) {
+            for (const block of entry.content) {
+              if ((block.type === "tool_use" || block.type === "toolCall") && block.name === "finish") {
+                hasFinish = true;
+                const args = block.input || block.arguments || {};
+                if (args.status === "success") hasSuccessFinish = true;
+              }
+            }
+          }
+          // Fallback: text-based detection for other formats
+          if (!hasFinish) {
+            const text = typeof entry.content === "string" ? entry.content : JSON.stringify(entry.content);
+            if (text.includes('"finish"') || text.includes("finish(")) {
+              hasFinish = true;
+              if (text.includes('"success"')) hasSuccessFinish = true;
+            }
           }
         }
       } catch { /* skip unparseable lines */ }

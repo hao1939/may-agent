@@ -262,3 +262,20 @@ Added heartbeat section 0d "Delivery Discipline" (6 lines) targeting the 5/8 non
 - Bob (s_199, s_191): 0/5 edits verified — relies on edit() diff preview only ❌
 **Verdict**: ⚠️ Mixed compliance. Bob is the main offender.
 **Evidence**: `workspace/common-sense-evidence/cs-C1.3.md`
+
+## 2026-03-21T08:10 — Critical Pipeline Diagnosis
+
+**Finding**: 36 experiments discarded, 0 promoted. Root cause identified:
+1. 52/55 gym scenarios target `agent_type: "coder"` — only 1 targets `tech-lead`, 0 for bob/optimizer/scout
+2. Growth cycles create patches for bob/optimizer/scout/tech-lead but gym has no matching scenarios
+3. Sprint workflow runs produce "0/0" results because no scenarios match the target agent type
+4. Text-only patches (SOUL guards, heartbeat guards) can't be measured by code-fixing scenarios anyway
+
+**Impact**: The entire growth pipeline is burning tokens with zero learning. Every growth-cycle for non-coder agents is guaranteed to produce 0/0 results.
+
+**Action needed**: 
+- Create scenarios for bob, optimizer, scout, tech-lead agent types
+- OR: redesign growth-cycle to use a different validation method for text-only patches
+- Immediate: stop running growth-cycles for agents with no matching scenarios
+
+**Priority**: This is the #1 blocking issue for the coaching system.

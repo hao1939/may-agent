@@ -1,5 +1,23 @@
 # Journal
 
+## 2026-03-21T08:15 — Gym Infrastructure Status + Efficient-File-Reading Scenario
+
+**Task**: Pattern→Skill work (alternation from cost work)
+**Key Discovery**: Gym infrastructure is NOW WORKING. `test/gym/run-gym.sh --list` succeeds, scenarios execute, success_criteria.js files run correctly. The ONLY remaining blocker is `bundle/may-agent` binary (missing). Sent rebuild request to tech-lead (req:8ffa0682).
+
+**Evidence of grep-first-reading anti-pattern**: Bob session s_236 (183KB) read `discoveries.md` (914KB, 4266 lines) with NO offset/limit. Also read `pending-decisions.md` (20KB), `focus-tasks.md` (19KB) fully. Single 914KB read likely consumed the entire 50KB truncation budget.
+
+**Deliverables**:
+1. `agents/gym/scenarios/efficient-file-reading/` — new gym scenario for grep-first-reading skill
+   - 700-line services.yaml with 3 degraded services buried among 50
+   - 1200-line monitor.log with 6 errors (3 early, 3 recent — tests "most recent" extraction)
+   - 8 success criteria (4 product, 4 convention) testing both correctness AND reading efficiency
+   - Verified: scenario runs in gym (`bash test/gym/run-gym.sh efficient-file-reading --timeout 2`)
+2. `agents/optimizer/workspace/finding-gym-infrastructure-fixed-0321.md` — status document
+3. Sent tech-lead request for binary rebuild (req:8ffa0682)
+
+**Next**: Once binary exists, run skill tests for tool-discipline, grep-first-reading, task-adherence. Deploy skills that pass 2/3+.
+
 ## 2026-03-21T06:39 — Lab Fork Promotions Applied (3 Guards + SOUL Update)
 **Tasks**: Apply lab fork promotions from tech-lead review + bob's patch request
 **Changes**:

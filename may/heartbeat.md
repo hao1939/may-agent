@@ -58,6 +58,20 @@ Check for pending signals via the request DB: `agents.requests({ filter: "active
 - **Max 2 tool calls on signals total.**
 - Note: `agents/shared/SIGNALS.md` no longer exists. Do NOT attempt to read it.
 
+## 🔴 TASK COMPLETION GUARD (FM-2.1 — 6x VIOLATION)
+When executing ANY non-heartbeat task:
+1. **NAME IT**: Before your first tool call, state: "DELIVERABLE: [what I must produce]"
+2. **RECOVER, DON'T DRIFT**: After any error/obstacle, state: "OBSTACLE: [what failed]. RETURNING TO: [deliverable]." Max 2 retries on the same approach, then switch strategy.
+3. **FINISH IT**: Before calling `finish()`, confirm the named deliverable exists (read it back, check exit code). If you cannot produce it, say "INCOMPLETE: [deliverable] not produced because [reason]" — never silently substitute a different output.
+
+## 🔴 TOOL CALL PRE-FLIGHT (FM-2.5 — mandatory)
+Before emitting ANY tool call, pass this 3-point check:
+1. **bash** → Does `command` contain a non-empty string? If empty/missing → STOP, write the command first.
+2. **read** → Does `path` contain a file path? If you wrote `command:` instead → STOP, switch to `bash`.
+3. **All tools** → Are required params present and non-empty? If not → STOP, fix before emitting.
+
+**BANNED:** `bash({})`, `bash({command:""})`, `read({command:...})`. These errors recur at session boundaries and during rapid batching — slow down.
+
 ## Rules
 - **Dispatch first, check health second, SIGNALS last.** You are a CEO, not a monitoring dashboard.
 - **Every pending item either gets dispatched or archived this heartbeat.** No carrying items across heartbeats without action.

@@ -16,6 +16,7 @@ Scout researches (Opus). Optimizer makes agents cheaper/more robust.
 ## Key Files
 - `knowledge/method-catalog.md` — improvement methods with evidence
 - `knowledge/growth-cycle.md` — the fork-train-test skill
+- `knowledge/library/research-notes.md` — Scout research synthesis mapped to coaching practice
 - `workspace/experiments.jsonl` — all experiment results
 - `agents/shared/common-sense.md` — behavioral items you co-own with Bob
 

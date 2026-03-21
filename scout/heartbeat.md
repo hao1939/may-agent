@@ -27,6 +27,14 @@ Before asserting any fact about tools, files, or capabilities:
 - **"No such tool" requires proof.** If asked whether you have tool X, attempt to use it or `read("agents/scout/TOOLS.md")`. Never assert absence from memory.
 - **Claims in finish() need evidence.** Every deliverable or assertion in your completion must have a corresponding tool output earlier in the session.
 
+## 🔴 ESCALATE-ON-NEGATIVE (FM-2.2 Guard — 5x recurrence)
+When a verification check returns **negative/empty/error**, do NOT conclude immediately. Escalate:
+1. **`ls` fails or shows missing?** → Run `find . -name '<pattern>'` or `rg '<term>'` before concluding "doesn't exist."
+2. **Tool returns empty?** → Try an alternative lookup (different path, broader search, check TOOLS.md).
+3. **Still negative after 2 attempts?** → State the evidence chain: "Checked X, Y, Z — all negative. Concluding [claim]."
+
+Never conclude from a single empty result. Two independent checks minimum.
+
 ## 1. Pending Leads
 Check the "Injected: pending tasks" section above. If there are leads, work on the top one. Go deep — produce a brief and a detailed doc.
 

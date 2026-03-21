@@ -136,6 +136,9 @@ Optimizer found MAX_TRIGGERS_PER_SCAN=1 fix not live (handler cache).
 Estimated waste: ~850KB/day, 6 extra sessions. Only fix: process restart (no hot-reload).
 No action I can take — documented for awareness.
 
+### 2026-03-21 08:40 — Gym Binary Discovery
+Optimizer requested rebuild of `bundle/may-agent` (req:8ffa0682). Investigated — source (`src/app/binary-entry.ts`) doesn't exist in repo, can't rebuild. BUT discovered `/app/may-agent-bin` (103MB, executable) already present at project root. Created symlink `bundle/may-agent → /app/may-agent-bin`. Tested: `GYM_AGENT_BIN=/app/may-agent-bin bash test/gym/run-gym.sh convention-verify-edit --timeout 2` — runs successfully. Informed optimizer.
+
 ### Deferred
 - Evaluator→lessons dead path (needs src/ access)
 - Growth.ts test file (low priority)

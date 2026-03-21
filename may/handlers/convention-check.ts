@@ -264,11 +264,11 @@ function loadToolCalls(persistDir: string, sessionId: string): ToolCall[] | null
 
     if (entry.role === "assistant" && Array.isArray(entry.content)) {
       for (const block of entry.content) {
-        if (block.type === "tool_use" || block.type === "tool_call") {
+        if (block.type === "tool_use" || block.type === "tool_call" || block.type === "toolCall") {
           const tc: ToolCall = {
             index: callIndex++,
             name: block.name || "",
-            input: block.input || {},
+            input: block.input || block.arguments || {},
           };
           toolCalls.push(tc);
           if (block.id) {
