@@ -1303,6 +1303,12 @@ function analyzeSession(sessionId) {
         recentErrors: recentErrors.length,
       },
       recommendedAction: "interrupt",
+      intervention: {
+        type: "loop",
+        message:
+          `[SYSTEM NOTICE] Loop detected. You have called ${loop.tool || "the same tool"} ` +
+          `${loop.streak} times with similar arguments. You MUST change your approach or arguments.`,
+      },
     });
   }
 
@@ -1456,6 +1462,58 @@ function analyzeSession(sessionId) {
     });
   }
 
+  // 10. Ghost Deliverable detection (FM-3.1) — agent claims files that don't exist
+  const ghostDeliverable = detectGhostDeliverable(entries);
+  if (ghostDeliverable.detected) {
+    return attachRecall({
+      sessionId,
+      agent: agentName,
+      task: task?.slice(0, 200),
+      status: "GHOST_DELIVERABLE",
+      confidence: 0.8,
+      evidence: ghostDeliverable.evidence,
+      details: {
+        missingFiles: ghostDeliverable.missingFiles,
+        totalClaimed: ghostDeliverable.totalClaimed,
+        totalToolCalls: toolCalls.length,
+      },
+      recommendedAction: "interrupt",
+      intervention: {
+        type: "ghost_deliverable",
+        message:
+          `[SYSTEM NOTICE] Verification Failed. ` +
+          `File(s) ${ghostDeliverable.missingFiles.map((f) => "'" + f + "'").join(", ")} do not exist. ` +
+          `You cannot claim success until the file(s) are written.`,
+      },
+    });
+  }
+
+  // 11. Productivity Stall detection (FM-2.6) — many reads, zero writes
+  const productivityStall = detectProductivityStall(toolCalls, entries);
+  if (productivityStall.detected) {
+    return attachRecall({
+      sessionId,
+      agent: agentName,
+      task: task?.slice(0, 200),
+      status: "PRODUCTIVITY_STALL",
+      confidence: 0.7,
+      evidence: productivityStall.evidence,
+      details: {
+        toolCallCount: productivityStall.toolCallCount,
+        readOps: productivityStall.readOps,
+        writeOps: 0,
+        totalToolCalls: toolCalls.length,
+      },
+      recommendedAction: "warn",
+      intervention: {
+        type: "productivity",
+        message:
+          `[SYSTEM NOTICE] ${productivityStall.toolCallCount} turns used with no deliverables. ` +
+          `Stop exploring and start writing. You have read enough — produce output now.`,
+      },
+    });
+  }
+
   // All clear
   const lastTs = getLastTimestamp(entries);
   const idleSeconds = lastTs > 0 ? Math.round((Date.now() - lastTs) / 1000) : null;
@@ -1474,6 +1532,163 @@ function analyzeSession(sessionId) {
     },
     recommendedAction: "none",
   });
+}
+
+// ── Active Nudging Detections (Phase 3) ────────────────────────────────
+
+/**
+ * Detect ghost deliverables: agent calls finish() or claims success but
+ * references file paths that don't actually exist on disk.
+ *
+ * Signal: Agent's final assistant message contains file paths (e.g.,
+ * "wrote report.md", "created output.json") but those files don't exist.
+ *
+ * Returns { detected, missingFiles, evidence } or { detected: false }.
+ */
+function detectGhostDeliverable(entries) {
+  // Look at the last few assistant messages for success claims with file paths
+  const assistantEntries = [];
+  for (let i = entries.length - 1; i >= 0 && assistantEntries.length < 5; i--) {
+    if (entries[i].role === "assistant") {
+      assistantEntries.push(entries[i]);
+    }
+  }
+
+  // Extract file path references from assistant text
+  const filePathPattern = /(?:wrote|created|saved|generated|output|delivered|produced|writing)\s+(?:to\s+)?[`"']?([a-zA-Z0-9_\-./]+\.[a-zA-Z]{1,6})[`"']?/gi;
+  // Also match finish() deliverable paths
+  const deliverablePattern = /"path"\s*:\s*"([^"]+\.[a-zA-Z]{1,6})"/g;
+
+  const claimedFiles = new Set();
+  const hasSuccessClaim = [];
+
+  for (const entry of assistantEntries) {
+    let text = "";
+    if (typeof entry.content === "string") {
+      text = entry.content;
+    } else if (Array.isArray(entry.content)) {
+      for (const block of entry.content) {
+        if (block.type === "text" && block.text) text += block.text + " ";
+        // Check tool_use blocks for finish() calls
+        if (block.type === "tool_use" || block.type === "toolCall") {
+          const name = block.name || (block.function && block.function.name);
+          const args = block.input || block.arguments || (block.function && block.function.arguments);
+          if (name === "finish") {
+            const argsStr = typeof args === "string" ? args : JSON.stringify(args || "");
+            let m;
+            while ((m = deliverablePattern.exec(argsStr)) !== null) {
+              claimedFiles.add(m[1]);
+            }
+          }
+        }
+      }
+    }
+
+    let m;
+    while ((m = filePathPattern.exec(text)) !== null) {
+      // Filter out obvious non-files (URLs, common words)
+      const fp = m[1];
+      if (!fp.includes("/") && !fp.includes(".")) continue;
+      if (fp.startsWith("http")) continue;
+      if (fp.length < 3) continue;
+      claimedFiles.add(fp);
+    }
+  }
+
+  if (claimedFiles.size === 0) {
+    return { detected: false };
+  }
+
+  // Check which claimed files actually exist
+  const missingFiles = [];
+  for (const fp of claimedFiles) {
+    // Try both as absolute and relative to project root
+    const absPath = path.isAbsolute(fp) ? fp : path.join(process.cwd(), fp);
+    if (!fs.existsSync(absPath)) {
+      missingFiles.push(fp);
+    }
+  }
+
+  if (missingFiles.length === 0) {
+    return { detected: false };
+  }
+
+  // Only flag if majority of claimed files are missing (avoid false positives from stale references)
+  const missingRatio = missingFiles.length / claimedFiles.size;
+  if (missingRatio < 0.5 && missingFiles.length < 2) {
+    return { detected: false };
+  }
+
+  return {
+    detected: true,
+    missingFiles,
+    totalClaimed: claimedFiles.size,
+    evidence:
+      `Agent claims deliverables that don't exist: ${missingFiles.join(", ")}. ` +
+      `${missingFiles.length} of ${claimedFiles.size} claimed file(s) are missing. ` +
+      `This is a Ghost Deliverable (FM-3.1).`,
+  };
+}
+
+/**
+ * Detect productivity stall: many tool calls but zero file writes.
+ *
+ * Signal: 10+ tool calls in the analysis window, but none are write/edit
+ * operations that actually create or modify files. The agent is spinning
+ * its wheels reading/exploring without producing output.
+ *
+ * Returns { detected, toolCallCount, evidence } or { detected: false }.
+ */
+function detectProductivityStall(toolCalls, entries) {
+  const MIN_CALLS_THRESHOLD = 10;
+
+  if (toolCalls.length < MIN_CALLS_THRESHOLD) {
+    return { detected: false };
+  }
+
+  // Count write-like operations
+  let writeCount = 0;
+  let finishCount = 0;
+  for (const tc of toolCalls) {
+    const name = tc.name || tc.tool;
+    if (name === "write" || name === "edit") {
+      writeCount++;
+    } else if (name === "finish" || name === "checkpoint") {
+      finishCount++;
+    } else if (name === "bash") {
+      // Check if bash command does file writes
+      const args = typeof tc.arguments === "string"
+        ? tc.arguments
+        : JSON.stringify(tc.arguments || "");
+      if (/\b(cat\s*>|tee\s|>>|write|echo\s.*>|cp\s|mv\s|mkdir\s)/i.test(args)) {
+        writeCount++;
+      }
+    }
+  }
+
+  // If there are any writes or finish calls, not a productivity stall
+  if (writeCount > 0 || finishCount > 0) {
+    return { detected: false };
+  }
+
+  // What IS the agent doing? Categorize tool calls
+  const readOps = toolCalls.filter((tc) => {
+    const name = tc.name || tc.tool;
+    return name === "read" || (name === "bash" && /\b(cat|head|tail|grep|find|ls)\b/.test(
+      typeof tc.arguments === "string" ? tc.arguments : JSON.stringify(tc.arguments || "")
+    ));
+  }).length;
+
+  return {
+    detected: true,
+    toolCallCount: toolCalls.length,
+    readOps,
+    writeOps: 0,
+    evidence:
+      `${toolCalls.length} tool calls with 0 file writes. ` +
+      `Agent has made ${readOps} read/explore operations without producing any output. ` +
+      `This is a Productivity Stall (FM-2.6).`,
+  };
 }
 
 /**
@@ -1659,6 +1874,22 @@ function main() {
       action: r.recommendedAction,
       evidence: r.evidence,
     }));
+
+    // Active Nudging (Phase 3): Extract intervention payloads for actionable nudges
+    const interventions = results
+      .filter((r) => r.intervention)
+      .map((r) => ({
+        sessionId: r.sessionId,
+        agent: r.agent,
+        status: r.status,
+        type: r.intervention.type,
+        message: r.intervention.message,
+        action: r.recommendedAction,
+        confidence: r.confidence,
+      }));
+    if (interventions.length > 0) {
+      output.interventions = interventions;
+    }
   }
 
   console.log(JSON.stringify(output, null, 2));
@@ -1687,6 +1918,8 @@ if (require.main === module) {
     detectStall,
     detectDrift,
     detectErrorStorm,
+    detectGhostDeliverable,
+    detectProductivityStall,
     extractToolCalls,
     extractTask,
     extractRecentErrors,
