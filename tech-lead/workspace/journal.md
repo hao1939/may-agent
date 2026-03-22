@@ -282,3 +282,15 @@ QA had a CONDITIONAL pass due to `readFileSync` import (needed for cooldown) and
 Closing req:36e0d62f (from Bob) — implementation was completed across sessions 2026-03-21.
 
 **Environment note**: `npx` unavailable in this container (QA also blocked on tsc/vitest). Node v18.20.4 works. monitor-session.cjs loads cleanly via `require()`.
+
+---
+
+### 2026-03-22 ~03:07Z — Routine Heartbeat (clean)
+
+No pending tasks. `npx`/tsc unavailable (dangling symlinks). System healthy.
+
+**Workflow review**:
+- ✅ **Skill lifecycle** (`wr_1774138325282_mjvx`): SCBA (State-Check-Before-Action) skill completed all 4 phases — discovery, draft, test, deploy to 5 agents. Well-written skill targeting FM-1.1/FM-2.6 with strong evidence (96.7% failure rate without SCBA). Good optimizer output.
+- ❌ **Growth cycle** (`wr_1774141804224_t01z`): optimizer optimize-deploy-config — 0/7 baseline, 0/7 patched (no improvement). Workflow method #15 (read-then-optimize) didn't help. Likely fundamental capability gap — scenario requires multi-file read/edit/verify cycle within timeout. Coach will iterate.
+
+No new Bob briefs. Bulletin and pending-decisions current. Journal at 284 lines (healthy).

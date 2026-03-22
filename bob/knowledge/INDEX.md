@@ -76,3 +76,8 @@ Read on demand when relevant:
   tool output), verify paths before referencing, re-read after sequential edits.
   Critical for you: your sessions show the worst-case anti-pattern (89/92 edit
   failures from stale mental models). This skill prevents that cascade.
+- `agents/shared/skills/budget-before-act/SKILL.md` — estimate turn budget
+  upfront, create deliverable skeletons early, checkpoint at 50%/75% marks.
+  Targets FM-3.1 (premature termination) — you have 4 FM-3.1 cases (13% of total).
+  Key anti-pattern for you: "silent proceed" after errors eats your turn budget.
+  Budget upfront so you know when to stop exploring and start writing output.

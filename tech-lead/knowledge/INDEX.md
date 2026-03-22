@@ -61,3 +61,9 @@ When reporting implementation failures, use standardized MAST codes from `agents
   with a read-only tool call. Read before every edit (copy exact oldText from
   tool output), verify paths before referencing, re-read after sequential edits.
   Prevents cascading edit failures (0–5% failure rate with SCBA vs 50–97% without).
+- `agents/shared/skills/budget-before-act/SKILL.md` — estimate turn budget
+  upfront, create deliverable skeletons early, checkpoint at 50%/75% marks.
+  Targets FM-3.1 (premature termination) — you have 8 FM-3.1 cases (26% of total).
+  Key rule: exploration ≤30% of turns, deliverable file must exist by turn 4.
+  Anti-pattern for you: "planning without executing" — budget forces the
+  transition from reading/planning to writing output.

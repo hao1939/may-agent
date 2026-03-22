@@ -41,3 +41,8 @@ These are loaded every session. Update when Hao gives new corrections.
   execute immediately (same turn). Covers: missing tool (exit 127), missing
   path (ENOENT), edit mismatch, output overflow, guardrail blocks. Max 3
   attempts then move on.
+- `agents/shared/skills/budget-before-act/SKILL.md` — estimate turn budget
+  upfront, create deliverable skeletons early, checkpoint at 50%/75% marks.
+  Targets FM-3.1 (premature termination) — you have 3 FM-3.1 cases. Key rule:
+  exploration ≤30% of turns, deliverable must exist by turn 4, scope down if
+  over budget using MUST/SHOULD/DEFER. Finish with status "partial" if needed.

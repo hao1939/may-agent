@@ -61,3 +61,9 @@ Use these codes in your analysis reports to drive structural fixes.
   tool output), verify paths before referencing, re-read after sequential edits.
   Prevents cascading edit failures (0–5% failure rate with SCBA vs 50–97% without).
   You designed this skill — use it as reference when analyzing FM-1.1/FM-2.6.
+- `agents/shared/skills/budget-before-act/SKILL.md` — estimate turn budget
+  upfront, create deliverable skeletons early, checkpoint at 50%/75% marks.
+  Targets FM-3.1 (premature termination) — the #1 uncovered failure mode with
+  31 occurrences. You have 12 FM-3.1 cases (39% of total). Key rule: exploration
+  ≤30% of turns, deliverable file must exist by turn 4, finish honestly if partial.
+  You designed this skill — use it as reference when analyzing FM-3.1 in others.

@@ -52,3 +52,8 @@ Use standardized codes from `agents/shared/knowledge/mast-taxonomy.md`:
   path (ENOENT), edit mismatch, output overflow, guardrail blocks. Max 3
   attempts then move on. Use this when coaching agents on FM-2.2 (dead-end
   non-recovery) — the fallback ladders are the teachable intervention.
+- `agents/shared/skills/budget-before-act/SKILL.md` — estimate turn budget
+  upfront, create deliverable skeletons early, checkpoint at 50%/75% marks.
+  Targets FM-3.1 (premature termination) — 31 occurrences across all agents.
+  Use when coaching agents who explore without producing deliverables: the
+  50% checkpoint and deliverable-first steps are the key interventions.

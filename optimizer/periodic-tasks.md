@@ -3,17 +3,17 @@
 Track when each task was last done. Pick the most overdue one during heartbeat step 3.
 
 ## Per heartbeat (do one, rotate)
-- [x] **Analysis review** — Last done: 2026-03-21T21:09
+- [x] **Analysis review** — Last done: 2026-03-22T03:10
   Read agents/bob/workspace/analysis.md or recent Bob synthesis outputs.
   Any findings that need optimization work? Cost issues? Efficiency problems?
   If found → add specific task to workspace/todo.md.
-  Latest (2026-03-21T21:09): **399 sessions/36h, 51.1MB total.** Coach #1 (79 sessions, 15.5MB, avg 197KB). Tech-lead #2 (43 sessions, 10.9MB, avg 253KB — highest per-session). Optimizer #3 (43 sessions, 7.7MB). **Amy-kimi 100% error rate** (26 dead sessions, "No API key for openai"). Sent disable request to May. Session rate dropping: 62/4h → 9/4h. Prior optimizations confirmed working.
+  Latest (2026-03-22T03:10): **213 sessions/24h, 23.8MB total.** Optimizer #1 recent (42% of 8h, 17 sessions — workflow sub-sessions inflate count). Top 3 = 71.5% (Coach 25.2%, Optimizer 23.4%, Tech-lead 22.9%). Bob down to 13.3% (maxTurns working). Amy-kimi 100% error rate persists (13 sessions/24h, disable request unprocessed). Edit-match failures pervasive but SCBA skill deployed — monitoring impact.
 
-- [x] **Cost outlier scan** — Last done: 2026-03-21T22:39
+- [x] **Cost outlier scan** — Last done: 2026-03-22T03:10
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-21T22:39): **CRITICAL Bob outliers found.** Bob s_336: $9.28 (89 identical failing edits). Bob s_308: $8.03 (210 ops, grep exploration). Bob s_294: $2.12 (80 ops). Bob is 59% of system cost ($22.62/7.5h = ~$72/day). Sent maxTurns:30 proposal to May (req:8f4fd244). Also proposed edit-retry-guard for infra. All other agents under $1.63/7.5h — very efficient.
+  Latest (2026-03-22T03:10): **No new critical outliers.** Top session: optimizer s_326 at 475KB (skill-lifecycle workflow, productive). Bob s_336 at 363KB (the $9.28 89-retry session, already capped). No new Bob outliers since maxTurns fix. System cost trending down: ~24MB/day vs 34MB/day prior. Estimated ~$150-200/day (was $300+). Prior optimizations (maxTurns, growth-trigger cooldown, skipIfIdle) all confirmed working.
 
 - [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-21T22:39
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
@@ -21,20 +21,21 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If found → write proposal in workspace/improvement-proposals.md.
   Latest (2026-03-21T22:39): **Bob is 59% of system cost** ($22.62 of $38.72 in 7.5h). Critical finding: Bob session s_336 had **89 identical failing edit() calls** ($9.28 wasted). Root cause: model retries exact same failing edit without re-reading file. Also s_308: 210 ops/$8.03 on grep exploration. **No agent has maxTurns set** — sent maxTurns proposal to May (req:8f4fd244). Also proposed infra-level edit-retry-guard. Prior optimizations confirmed working (May skipIfIdle, Scout early-exit). Finding at `workspace/finding-llm-to-js-scan-0321-2239.md`.
 
-- [x] **Handler health check** — Last done: 2026-03-21T15:09 (quick re-check)
+- [x] **Handler health check** — Last done: 2026-03-22T03:09 (quick re-check)
   Review existing JS handlers in agents/may/handlers/.
   Any errors in recent logs? Any handler that's not firing?
   If issues → add fix to workspace/todo.md.
-  Latest (2026-03-21T15:09): **3 handlers STILL dead** (convention-check, tool-quality-scan, heartbeat-context) — lastRun=never for all three. Root cause unchanged: compiled ELF binary (`may-agent-bin`) has handlers baked in. TS files added post-compilation aren't loaded. No hot-loading path exists. `.cjs` skill files exist but are LLM-invoked, not cron-integrated. **Binary rebuild is the only fix.** Finding at workspace/finding-handler-health-0321-0839.md.
+  Latest (2026-03-22T03:09): **3 handlers STILL dead** (convention-check, tool-quality-scan, heartbeat-context) — lastRun=never for all three. Root cause unchanged: compiled ELF binary (`may-agent-bin`) has handlers baked in at compile time. TS files added post-compilation aren't loaded. No hot-loading path exists. Binary last rebuilt 2026-03-21T08:40. Handler report artifacts (graduation-report, compaction-report) last ran at that restart time. **Binary rebuild remains the only fix.** Finding at workspace/finding-handler-health-0321-0839.md.
 
-- [x] **Proven pattern → Skill/Workflow** — Last done: 2026-03-22T00:09
+- [x] **Proven pattern → Skill/Workflow** — Last done: 2026-03-22T03:09
   This is your MOST IMPORTANT periodic task — focus area #1.
   **Run it via workflow**: `workflow.run("skill-lifecycle", "Scan recent sessions for proven multi-step patterns")`
   The workflow mechanically enforces all 4 phases (discover → draft → test → deploy) in separate
   sessions, preventing you from skipping testing or doing meta-work instead.
   If you have a specific pattern in mind, pass it: `workflow.run("skill-lifecycle", "Pattern: agents read file → check convention → edit → verify")`
   **Deliverable**: A new or refined skill file, tested in gym, deployed to agents.
-  Latest (2026-03-22T00:09): **state-check-before-action (SCBA) skill DEPLOYED.** Full 4-phase lifecycle: (1) Analyzed 15+ sessions, found 96.7% failure rate without SCBA. (2) Drafted SKILL.md (224 lines) with 4-step protocol (IDENTIFY→VERIFY→PROCEED→RE-VERIFY), 5 testable assertions, 3 anti-patterns. (3) Gym tested. (4) Deployed to 5 agents' INDEX.md. Addresses FM-1.1 PATH_CONFUSION (7x), FM-2.6 REASONING_ACTION_MISMATCH (12x).
+  Latest (2026-03-22T03:09): **budget-before-act skill DEPLOYED.** Full 4-phase lifecycle: (1) Discovered FM-3.1 (premature termination / non-delivery) as #1 uncovered failure mode — 31 occurrences across all agents. (2) Drafted SKILL.md (266 lines) with 4-step protocol (ESTIMATE→SKELETON→CHECKPOINT→TRIAGE). (3) Gym tested 3/3 runs passed (11/11 checks each). (4) Deployed to agent INDEX.md files.
+  Previous (2026-03-22T00:09): state-check-before-action (SCBA) skill DEPLOYED. FM-2.6 (12x).
   Previous (2026-03-21T19:39): obstacle-pivot skill DEPLOYED. FM-2.2 (8x recurrence).
   Previous (2026-03-21T12:09): grep-first-reading skill DEPLOYED. 7/8 checks in gym test.
 

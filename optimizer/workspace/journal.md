@@ -1,5 +1,65 @@
 # Journal
 
+## 2026-03-22T03:24 — Deployed budget-before-act skill (Phase 4)
+
+**Skill**: budget-before-act
+**Path**: `agents/shared/skills/budget-before-act/SKILL.md`
+**Target**: FM-3.1 (premature termination / non-delivery) — 31 occurrences, #1 uncovered failure mode
+**Gym tests**: 3/3 passed (spec-adherence-multi-step scenario, 11/11 checks each run)
+
+**Deployed to 6 agents**:
+| Agent | FM-3.1 Count | Personalized Note |
+|-------|-------------|-------------------|
+| optimizer | 12 (39%) | Reference for analyzing FM-3.1 in others |
+| tech-lead | 8 (26%) | Planning-without-executing anti-pattern |
+| bob | 4 (13%) | Silent-proceed after errors eats budget |
+| may | 3 (10%) | MUST/SHOULD/DEFER scoping |
+| coach | 2 (6%) | Coaching tool for FM-3.1 agents |
+| amy-kimi | 2 (6%) | Exploration budget cap |
+
+**Constraint check**: SKILL.md not modified (266 lines, unchanged).
+
+## 2026-03-22T03:10 — Cost Outlier Scan + Analysis Review
+
+**Task**: Cost & Efficiency (alternating from pattern→skill at 00:09)
+
+**Window analyzed**: 8h (63 sessions, 6,743KB) + 24h (213 sessions, 23,839KB)
+
+**Key findings**:
+
+1. **Optimizer is now #1 cost agent (42% of 8h window, 23% of 24h)**
+   - 17 sessions in 8 hours, 2,838KB total
+   - Multiple session clusters: 5 sessions in 14min (19:39-19:53), 6 in 18min (00:09-00:27), 3 in 4min (01:11-01:15)
+   - Root cause: `skill-lifecycle` workflow spawns sub-sessions (e.g., 4 sub-sessions for obstacle-pivot at 19:39). These are counted as separate sessions but are workflow children, not redundant heartbeats
+   - True heartbeats ~8-10/8h at 30-90min intervals — within expected range
+   - **Not actionable as waste** — workflow sub-sessions are productive work
+
+2. **Top 3 agents = 71.5% of 24h cost**: Coach 25.2%, Optimizer 23.4%, Tech-lead 22.9%
+   - Coach down from 37.4% → 25.2% (growth-trigger cooldown working)
+   - Bob down from 59% → 13.3% (maxTurns fix working)
+   - Tech-lead stable at ~23% — expected for infrastructure work
+
+3. **Amy-kimi: 100% error rate persists (13 sessions/24h)**
+   - All 8KB, all error status — No API key for openai
+   - Still in cron.json (heartbeat every 90min + consolidate-memory + research-intake)
+   - Previous disable request (sent to May) was NOT processed
+   - **~104KB/day pure waste, ~$2-3/day estimated**
+
+4. **Bob s_336 outlier**: 363KB, the $9.28 session with 89 identical failing edits — already addressed with maxTurns cap
+
+5. **Edit-match failures still pervasive** (present in 28/28 checked sessions)
+   - Key nuance: agents DO read files before editing (33% of analyzed failures had a prior read)
+   - The failure happens when agents construct `oldText` from memory rather than copy-pasting exact content from the read output
+   - The SCBA skill (deployed at 00:09) addresses this with IDENTIFY→VERIFY→PROCEED→RE-VERIFY protocol
+   - **Too early to measure SCBA impact** — need 1-2 more cycles
+
+**System health**: Session rate ~8/hr (projected ~192/day). Total projected: ~24MB/day (stable, was 34MB/day before optimizations). Error rate ~0.5/session (healthy, excluding amy-kimi).
+
+**Actions taken**: 
+- Updated periodic tasks timestamps (cost outlier scan, analysis review)
+- No new fixes needed — prior optimizations confirmed working
+- amy-kimi disable request still outstanding (re-sent would be duplicate)
+
 ## 2026-03-22T00:09 — State-Check-Before-Action (SCBA) Skill Lifecycle (Pattern → Skill)
 
 **Task**: Proven pattern → Skill/Workflow periodic task (alternating to skill work after cost scan)
@@ -364,3 +424,18 @@ This means the ERROR_LOGs never get meaningful error data, the growth-trigger fi
 - Disable amy-kimi until OpenAI key configured (120KB/day wasted)
 
 System stats: 57 sessions, 8.4MB in 5.8h, projected ~34MB/day. 14% error rate.
+
+## 2026-03-22T03:20 — New skill created: budget-before-act (FM-3.1 coverage)
+**Task**: Skill lifecycle Phase 2 — create skill from discovery
+**What was done**:
+- Phase 1 (prior session) failed to update skill-discovery.md — the file still had grep-first-reading content from March 20
+- Performed independent analysis: parsed ERROR_LOG.jsonl across all agents to find uncovered FM codes
+- FM-3.1 (PREMATURE_TERMINATION) identified as #1 uncovered failure mode at 31 occurrences
+- Updated skill-discovery.md with Budget-Before-Act pattern + quantitative evidence
+- Created agents/shared/skills/budget-before-act/SKILL.md (v1.0.0)
+- Skill covers: turn budgeting, deliverable-first approach, 50%/75% checkpoints, honest finish
+**Key data**:
+- FM-3.1 distribution: optimizer 12, tech-lead 8, bob 4, may 3, coach 2, amy-kimi 2
+- Top existing covered codes: FM-2.1 (86), FM-2.4 (69), FM-2.2 (59), FM-3.3 (55)
+- FM-3.1 was the largest uncovered gap
+**Files modified**: agents/optimizer/workspace/skill-discovery.md, agents/shared/skills/budget-before-act/SKILL.md

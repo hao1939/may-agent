@@ -40,3 +40,7 @@ Bob is Architect (Gemini). Tech-Lead builds (Opus).
   path discovery (use `find`/`ls`, don't guess — 4 WRONG_PATH in your logs),
   write safety recovery, tool grounding. Anti-patterns: overclaiming without
   evidence (cite tool output for numeric claims), malformed tool calls.
+- `agents/shared/skills/budget-before-act/SKILL.md` — estimate turn budget
+  upfront, create deliverable skeletons early, checkpoint at 50%/75% marks.
+  Targets FM-3.1 (premature termination) — you have 2 FM-3.1 cases. Key rule:
+  exploration ≤30% of turns, write output early, finish honestly if partial.
