@@ -37,7 +37,7 @@ Compact index. Per-item evidence in `common-sense-evidence/cs-{num}.md`.
 | 5.3 | Ask with context | ✅ | Bob ✅, May ✅ | 2026-03-18 |
 | C5.3 | No Guessing | ✅ | TL ✅ (2x), Opt ✅, Bob ✅ (2x) | 2026-03-20 |
 | 5.4 | Share what you learn | ✅ | Scout, Bob, Evaluator, TL, QA | 2026-03-18 |
-| 6.1 | Respect your budget | ⚠️↑ | Optimizer ✅ (3x), Optimizer ❌  | 2026-03-18 |
+| 6.1 | Respect your budget | ✅ | Optimizer ✅ (3x), Optimizer ❌ (old), Opt ✅ (2026-03-22: efficient workflow delegation, lean session, no wasted turns) | 2026-03-22 |
 | 6.2 | Don't generate noise | ✅ | Scout, TL ✅ (2x), Evaluator ⚠️ | 2026-03-18 |
 | 7.1 | Don't lie | ✅ | — | — |
 | 7.2 | Don't fabricate | ✅ | — | — |
@@ -49,9 +49,9 @@ Compact index. Per-item evidence in `common-sense-evidence/cs-{num}.md`.
 | 13.3 | Message Quality | ✅ | TL ✅ (2x), Opt ✅ | 2026-03-19 |
 | 13.4 | Not Required for All | ✅ | Bob ✅ | 2026-03-19 |
 
-## Summary (2026-03-21)
-- ✅ 28/43 | ❌ 3/43 | ⚠️ 12/43
+## Summary (2026-03-22)
+- ✅ 29/43 | ❌ 3/43 | ⚠️ 11/43
 - **Failed**: 1.1 (Acknowledge), 1.6 (C50 Re-Planning), C3.2 (Scout workspace isolation)
 - **Key partial**: C1.3 (Bob no verify-writes), C1.5 (QA no read-back after bash write), 3.2 (TL retries), 4.5 (Tool schema), 13.1 (Coder no-commit)
-- **Improving**: 3.3, 3.5, 6.1 (Optimizer budget pacing)
-- **Resolved**: C3.3 (Safe Append) — upgraded ⚠️→✅ on 2026-03-21
+- **Improving**: 3.3, 3.5
+- **Resolved**: 6.1 (Budget pacing) — upgraded ⚠️↑→✅ on 2026-03-22 (optimizer efficiently delegates via workflows, lean sessions)
