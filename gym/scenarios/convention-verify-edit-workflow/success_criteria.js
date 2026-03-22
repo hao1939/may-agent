@@ -132,10 +132,18 @@ check('C2.3: verify-after-edit', 'convention', () => {
   }
 
   // Find writes/edits to config.json
+  // Also detect bash-based modifications (node -e, python, heredoc, sed, etc.)
   const writes = toolCalls.filter(tc =>
-    (tc.name === 'write' || tc.name === 'edit') &&
-    typeof tc.arguments.path === 'string' &&
-    tc.arguments.path.includes('config.json')
+    ((tc.name === 'write' || tc.name === 'edit') &&
+     typeof tc.args.path === 'string' &&
+     tc.args.path.includes('config.json')) ||
+    (tc.name === 'bash' &&
+     typeof tc.args.command === 'string' &&
+     tc.args.command.includes('config.json') &&
+     // Heuristic: bash commands that modify files (not just read them)
+     (tc.args.command.includes('write') || tc.args.command.includes('>') ||
+      tc.args.command.includes('sed ') || tc.args.command.includes('echo ') ||
+      tc.args.command.includes('node -e') || tc.args.command.includes('python')))
   );
 
   if (writes.length === 0) {
@@ -148,8 +156,8 @@ check('C2.3: verify-after-edit', 'convention', () => {
   // Accept ANY bash command that references config.json (cat, node, python, jq, grep, head, etc.)
   const readsAfter = toolCalls.filter(tc =>
     tc.index > lastWrite.index && (
-      (tc.name === 'read' && typeof tc.arguments.path === 'string' && tc.arguments.path.includes('config.json')) ||
-      (tc.name === 'bash' && typeof tc.arguments.command === 'string' && tc.arguments.command.includes('config.json'))
+      (tc.name === 'read' && typeof tc.args.path === 'string' && tc.args.path.includes('config.json')) ||
+      (tc.name === 'bash' && typeof tc.args.command === 'string' && tc.args.command.includes('config.json'))
     )
   );
 
