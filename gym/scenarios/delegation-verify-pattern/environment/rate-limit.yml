@@ -1,0 +1,9 @@
+# Rate limiting configuration - managed by ops team
+rate_limit:
+  requests_per_minute: 10
+  burst_size: 5
+  window_type: sliding
+  block_duration: 60
+  whitelist:
+    - 10.0.0.0/8
+    - 192.168.0.0/16

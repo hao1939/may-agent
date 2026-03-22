@@ -1,0 +1,18 @@
+# Monitoring alerts - managed by ops team
+alerts:
+  payment_latency:
+    metric: payment.processing.duration
+    threshold_ms: 50
+    operator: ">"
+    severity: critical
+    notification:
+      - channel: "#ops-alerts"
+        method: slack
+  error_rate:
+    metric: payment.errors.rate
+    threshold_percent: 5
+    operator: ">"
+    severity: warning
+    notification:
+      - channel: "#ops-alerts"
+        method: slack

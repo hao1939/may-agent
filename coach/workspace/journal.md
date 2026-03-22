@@ -559,3 +559,21 @@ Added heartbeat section 0d "Delivery Discipline" (6 lines) targeting the 5/8 non
 - **bloated-refactor** joins the ceiling club (5th scenario to naturally improve)
 - Remaining genuinely failing: skip-verification-open (4/5, 1 failed method), stale-approach-fixation (6/7, untested), cascading-error (solved via workflow)
 - Next: Try Method #15 (Workflow Enforcement) for skip-verification-open — force "audit all functions" step before completion
+
+## 2026-03-22 ~15:10 — Heartbeat: Gym Runner Broken
+
+**Attempted**: Growth cycle for skip-verification-open with Method #15 (Workflow Enforcement)
+- Fork created successfully: `coder-skip-verification-open-workflow` with mandatory Post-Fix Code Audit section in SOUL.md
+- Gym runner failed with SyntaxError for BOTH baseline and patched — 0/0 result
+
+**Root cause**: Commit `de62c5a` introduced `Set<string>` return type annotation on `snapshotDir()` (line 263 of `src/gym/runner.ts`). The sed type-strip fallback can't handle generic return types, leaving `: Set<string>` in the compiled .mjs file → Node.js v18 SyntaxError.
+
+**Impact**: ALL gym experiments are blocked. This explains why the stale-approach-fixation experiment worked earlier today (before the commit) but skip-verification-open fails now.
+
+**Action**: Escalated to May for infra fix (request #85261245).
+
+**Pending once fixed**:
+- Re-run growth cycle for skip-verification-open-workflow fork
+- The fork is already created in `agents/.lab/coder-skip-verification-open-workflow/` and ready to test
+
+**Experiment count**: ~17 experiments total (exp-172 latest). Sprint 8 yielded 1 promotion (stale-approach-fixation), 5 ceilings discovered, 1 infra blocker.

@@ -74,3 +74,9 @@ Use these codes in your analysis reports to drive structural fixes.
   turns/session from retrying dead tools or re-deriving known constraints. You
   designed this skill — use it as reference when analyzing dead-tool fixation and
   groundhog-day patterns in other agents.
+- `agents/shared/skills/delegation-verification/SKILL.md` — verify delegated
+  work is registered before closing your session. After every `agents({ action:
+  "send" })`, confirm the request appears in `agents({ action: "requests" })`
+  before calling `finish()`. Document delegations as "delegated to [agent]", not
+  as completed work. You designed this skill — use it as reference when analyzing
+  fire-and-forget delegation patterns (73% unverified rate) across all agents.

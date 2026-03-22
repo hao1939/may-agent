@@ -57,3 +57,9 @@ Use standardized codes from `agents/shared/knowledge/mast-taxonomy.md`:
   Targets FM-3.1 (premature termination) — 31 occurrences across all agents.
   Use when coaching agents who explore without producing deliverables: the
   50% checkpoint and deliverable-first steps are the key interventions.
+- `agents/shared/skills/delegation-verification/SKILL.md` — verify delegated
+  work is registered before closing your session. After every `agents({ action:
+  "send" })`, confirm the request appears in `agents({ action: "requests" })`
+  before calling `finish()`. 73% of delegations are fire-and-forget. You
+  delegate behavioral patches to May (3/3 unverified) — this skill ensures
+  your patches actually land with a SEND → RECORD → VERIFY → DOCUMENT pattern.

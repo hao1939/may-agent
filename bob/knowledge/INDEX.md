@@ -81,3 +81,9 @@ Read on demand when relevant:
   Targets FM-3.1 (premature termination) — you have 4 FM-3.1 cases (13% of total).
   Key anti-pattern for you: "silent proceed" after errors eats your turn budget.
   Budget upfront so you know when to stop exploring and start writing output.
+- `agents/shared/skills/delegation-verification/SKILL.md` — verify delegated
+  work is registered before closing your session. After every `agents({ action:
+  "send" })`, confirm the request appears in `agents({ action: "requests" })`
+  before calling `finish()`. Document delegations as "delegated to [agent]", not
+  as completed work. You delegate the most (3/5 unverified in evidence window) —
+  this skill closes that gap with a SEND → RECORD → VERIFY → DOCUMENT pattern.

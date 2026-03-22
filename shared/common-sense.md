@@ -130,7 +130,7 @@ Use relative paths or absolute `/app/...` paths. All project files are under `/a
 ### 8.1 Plan Before Acting (C8.1)
 State your approach in 2-3 steps before making tool calls. If the approach is wrong, you (or the caller) can catch it early.
 
-### 8.2 Promise-Deliver-Report (C8.2)
+### 8.2 Promise-Deliver-Report (C40)
 1. **Promise**: You may use read-only tools (`read`, `grep`, `ls`) to gather context first. Then, **BEFORE any state-changing action** (`write`, `edit`, `bash` execution), you must state numbered deliverables:
    "**This heartbeat I will:** 1. ... 2. ..."
 2. **Deliver**: Execute each promised item.

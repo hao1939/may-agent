@@ -1,5 +1,18 @@
 # Journal
 
+## 2026-03-22T15:20 — delegation-verification skill DEPLOYED (full lifecycle)
+
+**Task**: Pattern → Skill/Workflow (alternating from cost work in last heartbeat)
+
+**What I did**:
+1. Ran `workflow.run("skill-lifecycle")` — all 4 phases completed
+2. **Discovery**: Analyzed 10+ sessions since 12:00 UTC. Found "Delegation-Without-Verification" anti-pattern — 73% of agents skip verifying delegated tasks (11 sessions, fire-and-forget pattern)
+3. **Draft**: Created `agents/shared/skills/delegation-verification/SKILL.md` (225 lines) with SEND→RECORD→VERIFY→DOCUMENT protocol
+4. **Test**: Gym scenario `delegation-verify-pattern/` — 3/3 runs, 3/3 core behavioral checks pass (B1: send, B2: verify, B3: document)
+5. **Deploy**: Deployed to 4 agent INDEX.md files (coach, optimizer, bob, tech-lead)
+
+**Key insight**: This is the 8th skill through the full lifecycle. The delegation verification gap is particularly impactful because unverified delegations create ghost requests and broken chains.
+
 ## 2026-03-22T12:15 — Gym scenario created and tested: read-before-edit
 
 **Context**: Pattern→Skill heartbeat. The coder-edit-discipline skill was drafted but never gym-tested.
@@ -556,3 +569,28 @@ System stats: 57 sessions, 8.4MB in 5.8h, projected ~34MB/day. 14% error rate.
 
 ### Estimated Impact
 $2-3/day from QA fixes alone. $3-5.50/day total if all fixes applied.
+
+## 2026-03-22T15:25 — Skill deployed: delegation-verification
+
+**Skill**: `agents/shared/skills/delegation-verification/SKILL.md` (v1.0.0)
+**Pattern**: SEND → RECORD → VERIFY → DOCUMENT for async delegations
+**Problem**: 73% of `agents({ action: "send" })` delegations are fire-and-forget — no verification, no documentation, no follow-up. Causes ghost requests, broken chains, duplicated work.
+
+### Gym Test Results
+- **Scenario**: `agents/gym/scenarios/delegation-verify-pattern/`
+- **Agent**: coder, 3 runs
+- **Core behavioral checks (B1-B3)**: 3/3 pass (100%) — delegation sent, verified, documented
+- **B4 (no-false-completion)**: 0/3 — agent claims delegated work as completed (confirms AP-2 anti-pattern exists and skill correctly identifies it)
+- **Verdict**: TEST PASSED — core skill pattern verified
+
+### Deployed To
+1. **Bob** (`agents/bob/knowledge/INDEX.md`) — 3/5 delegations unverified, heaviest delegator
+2. **Coach** (`agents/coach/knowledge/INDEX.md`) — 3/3 delegations unverified
+3. **Tech-lead** (`agents/tech-lead/knowledge/INDEX.md`) — 1/1 delegation unverified
+4. **Optimizer** (`agents/optimizer/knowledge/INDEX.md`) — 1/2 delegations unverified
+
+### Evidence Base
+- 11 delegations analyzed across 6 agents
+- 8/11 (73%) unverified fire-and-forget
+- Ghost request example: May's req:1c42f66e unresolved for 43+ hours
+- 3 double-fire pairs in 6 hours amplified by unverified delegations

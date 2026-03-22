@@ -403,3 +403,11 @@ Implemented 2 of 3 optimizer-proposed QA efficiency fixes:
 - Journal at 395 lines — under limit, no consolidation needed
 - Zero TODO/FIXME/HACK in `src/`
 - No new briefs from Bob, no new requests to process
+
+### Heartbeat 2026-03-22T15:06Z — Code Quality Pass
+- System healthy: all workflows done, zero tech debt, no pending requests
+- Fixed `any` types in `src/gym/runner.ts`: `snapshotDir` → `Set<string>`, `syncNewFilesFromRoot` param → `Set<string>`
+- Fixed `src/lib/orders.ts`: updated misleading "append-only" doc comment (completeOrder uses writeAll/rewrite), added stderr logging for corrupt JSONL lines (was silently skipping)
+- Active Nudging handler verified at `agents/may/handlers/active-nudge.ts` — no nudge log yet means sessions are healthy (correct behavior)
+- Optimizer finding: SOUL.md not injected into system prompt, only read mid-session — valid architecture observation, not fixable from userland
+- Relaxed C40 endorsed — allow non-mutating tool calls before promise text

@@ -72,3 +72,9 @@ When reporting implementation failures, use standardized MAST codes from `agents
   or approach documented as unavailable. Use documented working approaches instead
   of defaults. Document new discoveries for future sessions. Prevents 3-5 wasted
   turns/session from retrying dead tools or re-deriving known constraints.
+- `agents/shared/skills/delegation-verification/SKILL.md` — verify delegated
+  work is registered before closing your session. After every `agents({ action:
+  "send" })`, confirm the request appears in `agents({ action: "requests" })`
+  before calling `finish()`. Document delegations as "delegated to [agent]", not
+  as completed work. You delegate implementation tasks to coder (1/1 unverified
+  in evidence) — this skill ensures requests don't get lost silently.
