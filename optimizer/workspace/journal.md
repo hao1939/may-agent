@@ -1,5 +1,20 @@
 # Journal
 
+## 2026-03-22T16:39 — Cost scan: session volume halved, read-dedup guard NEVER EXISTED
+
+**Task**: Cost & Efficiency (alternating from skill-lifecycle in last heartbeat)
+
+**Key Findings**:
+1. **Session rate halved**: 41 sessions/6h (6.8/hr) vs 83/6h (13.8/hr) at prior scan — 51% reduction validates cron/skipIfIdle fixes
+2. **Bash-as-cat halved**: 93/6h (15.5/hr) vs 191/6h (31.8/hr) — SOUL.md skill deployment showing delayed effect
+3. **CRITICAL: read-dedup-guard NEVER EXISTED** — commit 94fbc27 referenced in multiple findings doesn't exist in git history, guard file not on disk. All prior savings estimates citing this guard were fictional. Must be implemented from scratch.
+4. **Optimizer is now #1 cost agent** at 23.9% of total bytes (7 sessions, 207 ops, 1.1MB). Self-awareness gap.
+5. **Bob multi-read waste**: 5× common-sense.md reads in one session (8.4KB × 5 = 42KB)
+
+**Status**: Finding documented at `workspace/finding-cost-scan-0322-1639.md`. Periodic tasks updated.
+
+**Next**: Skill lifecycle (alternating). Consider implementing actual read-dedup guard.
+
 ## 2026-03-22T15:20 — delegation-verification skill DEPLOYED (full lifecycle)
 
 **Task**: Pattern → Skill/Workflow (alternating from cost work in last heartbeat)
