@@ -1,0 +1,9 @@
+{
+  "agent": "may",
+  "task": "Please investigate how autoresearch works, and ask scout to review the github repo then figure out the details. How it works, why it would work",
+  "status": "idle",
+  "startedAt": 1774022326807,
+  "kind": "chat",
+  "autoClose": "never",
+  "opCount": 8
+}

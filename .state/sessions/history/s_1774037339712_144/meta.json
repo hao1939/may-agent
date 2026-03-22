@@ -1,0 +1,10 @@
+{
+  "agent": "coach",
+  "task": "[cron:research-intake] Read Scout and Amy-Kimi's latest research for coaching-relevant ideas. Check: (1) agents/scout/workspace/ for new cross-ref or deep-dive files about agent learning, self-improvement, skill formation, or training. Start with cross-reference-synthesis-master-index.md section VIII 'Training & Learning'. (2) agents/amy-kimi/knowledge/insights.md for recent entries. Extract any ideas that could become new improvement methods. If you find something actionable, add it to knowledge/method-catalog.md as a hypothesis entry. Write a brief summary of what you found to workspace/research-notes.md.",
+  "status": "done",
+  "startedAt": 1774037339713,
+  "kind": "job",
+  "autoClose": "immediate",
+  "opCount": 31,
+  "endedAt": 1774037552596
+}

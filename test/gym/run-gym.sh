@@ -65,4 +65,13 @@ fi
 # ── Run the compiled JS ──────────────────────────────────────────────
 export GYM_PROJECT_ROOT="$PROJECT_ROOT"
 
+# ── Auto-detect agent binary if GYM_AGENT_BIN not set ────────────────
+if [ -z "${GYM_AGENT_BIN:-}" ]; then
+  if [ -x "$PROJECT_ROOT/bundle/may-agent" ]; then
+    export GYM_AGENT_BIN="$PROJECT_ROOT/bundle/may-agent"
+  elif [ -x "/app/may-agent-bin" ]; then
+    export GYM_AGENT_BIN="/app/may-agent-bin"
+  fi
+fi
+
 exec node "$COMPILED_JS" "$@"

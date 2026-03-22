@@ -1,0 +1,13 @@
+{
+  "agent": "coach",
+  "task": "Diagnose an error pattern and select an improvement method.\n\n## Error Pattern\nAgent \"tech-lead\" has 5 repeated FM-2.4 errors in 7 days. Sub-patterns: SILENT_FAIL (2x, grep exit code 1 treated as \"clean\"), BROKEN_EDIT (1x), RISKY_EDIT_SEQUENCE (1x), BROKEN_EDIT_SEQUENCE (1x). Primary target: SILENT_FAIL pattern. I just fixed the exit-code-misread scenario's success_criteria.js (was using old format, now uses Score class). Available scenario: exit-code-misread (agent_type: any, targets FM-2.2/FM-2.4). Diagnosis file: agents/coach/workspace/diagnosis-tech-lead-fm24.md. Steps: (1) Run baseline for tech-lead on exit-code-misread. (2) If baseline fails, fork tech-lead, add a SOUL guard targeting \"after any grep/find returning empty results, explicitly check if the command succeeded or just found nothing — exit code 1 means 'not found', NOT 'error'\". (3) Test patched fork. (4) Promote or discard based on results.\n\n## Instructions\n1. Read the error examples from the task description above. Identify the behavioral pattern.\n2. Read `agents/coach/knowledge/method-catalog.md` — understand available methods.\n3. Read `agents/coach/workspace/experiments.jsonl` (if it exists) — check if this pattern was already tested.\n4. Choose ONE method from the catalog that best fits this error pattern.\n   - If the catalog has evidence for this pattern → use the proven method.\n   - If no evidence → pick the method you think fits best (you'll test it).\n5. Identify which agent needs the fix.\n6. Identify which gym scenarios can test this fix (check `agents/gym/scenarios/` with `ls`).\n7. Report:\n   - Error pattern (FM code + description)\n   - Target agent\n   - Selected method (from catalog)\n   - Why this method (reasoning)\n   - Gym scenarios to test against\n   - What specifically you'll change",
+  "status": "done",
+  "startedAt": 1774095831014,
+  "parentSessionId": "s_1774095194228_271",
+  "workflowRunId": "wr_1774095831013_ong6",
+  "stepLabel": "coach",
+  "kind": "call",
+  "autoClose": "immediate",
+  "opCount": 7,
+  "endedAt": 1774095896717
+}

@@ -194,8 +194,8 @@ function filterScenarios(names: string[], tier: string, tag: string, category: s
       // A tier filter includes all scenarios AT or BELOW that tier level
       if (scenarioLevel > requestedLevel) return false;
     }
-    if (tag && !meta.tags.includes(tag)) return false;
-    if (category && !meta.categories.includes(category)) return false;
+    if (tag && !(meta.tags || []).includes(tag)) return false;
+    if (category && !(meta.categories || []).includes(category)) return false;
     return true;
   });
 }
@@ -212,12 +212,32 @@ function createTempDir(scenarioName: string): string {
 function copyEnvironment(scenarioName: string, destDir: string): void {
   const envDir = path.join(SCENARIOS_DIR, scenarioName, "environment");
   if (!fs.existsSync(envDir)) return;
-  // Use cp -r for reliable recursive copy (node 18 has fs.cpSync)
+  // Check if the scenario expects the "environment/" subdirectory to be preserved.
+  // If task.md or success_criteria.js references "environment/", preserve the directory name.
+  // Otherwise, flatten contents into destDir for backward compatibility.
+  const taskPath = path.join(SCENARIOS_DIR, scenarioName, "task.md");
+  const criteriaPath = path.join(SCENARIOS_DIR, scenarioName, "success_criteria.js");
+  let preserveEnvDir = false;
   try {
-    fs.cpSync(envDir, destDir, { recursive: true });
+    const taskContent = fs.existsSync(taskPath) ? fs.readFileSync(taskPath, "utf-8") : "";
+    const criteriaContent = fs.existsSync(criteriaPath) ? fs.readFileSync(criteriaPath, "utf-8") : "";
+    // If criteria reference "environment/" paths, preserve the directory structure
+    if (criteriaContent.includes('"environment/') || criteriaContent.includes("'environment/")) {
+      preserveEnvDir = true;
+    }
+  } catch {
+    // Default to flat copy on error
+  }
+
+  const targetDir = preserveEnvDir ? path.join(destDir, "environment") : destDir;
+  if (preserveEnvDir) {
+    fs.mkdirSync(targetDir, { recursive: true });
+  }
+  try {
+    fs.cpSync(envDir, targetDir, { recursive: true });
   } catch {
     // Fallback to shell cp
-    execSync(`cp -r "${envDir}/." "${destDir}/"`, { stdio: "pipe" });
+    execSync(`cp -r "${envDir}/." "${targetDir}/"`, { stdio: "pipe" });
   }
 }
 
@@ -231,25 +251,78 @@ function cleanupTempDir(tmpDir: string): void {
 
 // ── Agent adapters ───────────────────────────────────────────────────
 
-function runAgent(adapter: string, taskContent: string, workDir: string, agent: string, timeoutMs: number): string {
+interface AgentRunResult {
+  status: string;
+  transcriptPath?: string;
+}
+
+/**
+ * Snapshot files in a directory (non-recursive, top-level only).
+ * Returns a Set of filenames.
+ */
+function snapshotDir(dir: string): any {
+  try {
+    return new Set(fs.readdirSync(dir));
+  } catch {
+    return new Set();
+  }
+}
+
+/**
+ * After agent runs, the binary may write output files to PROJECT_ROOT
+ * instead of workDir (--work-dir not fully supported). Detect new files
+ * in PROJECT_ROOT and copy them to workDir so success_criteria.js can find them.
+ */
+function syncNewFilesFromRoot(beforeSnapshot: any, workDir: string): void {
+  const after = snapshotDir(PROJECT_ROOT);
+  for (const file of after) {
+    if (!beforeSnapshot.has(file) && !file.startsWith(".") && !file.startsWith("_")) {
+      const srcPath = path.join(PROJECT_ROOT, file);
+      const destPath = path.join(workDir, file);
+      try {
+        const stat = fs.statSync(srcPath);
+        if (stat.isFile() && stat.size < 1024 * 1024) { // Only copy files < 1MB
+          fs.copyFileSync(srcPath, destPath);
+          // Clean up the file from PROJECT_ROOT (it shouldn't be there)
+          fs.unlinkSync(srcPath);
+        } else if (stat.isDirectory()) {
+          // Agent may create directories (e.g. environment/) in PROJECT_ROOT
+          // Copy the entire directory to workDir and clean up
+          try {
+            fs.cpSync(srcPath, destPath, { recursive: true });
+            fs.rmSync(srcPath, { recursive: true, force: true });
+          } catch {
+            // best effort
+          }
+        }
+      } catch {
+        // best effort
+      }
+    }
+  }
+}
+
+function runAgent(adapter: string, taskContent: string, workDir: string, agent: string, timeoutMs: number): AgentRunResult {
   // Write task to work dir for reference
   fs.writeFileSync(path.join(workDir, "_gym_task.md"), taskContent);
 
   if (adapter === "generic") {
     const cmd = process.env["GYM_AGENT_CMD"];
     if (!cmd) {
-      return "skipped";
+      return { status: "skipped" };
     }
     try {
-      execSync(`${cmd} "${path.join(workDir, "_gym_task.md")}" "${workDir}"`, {
+      const stdout = execSync(`${cmd} "${path.join(workDir, "_gym_task.md")}" "${workDir}"`, {
         cwd: workDir,
         timeout: timeoutMs,
         stdio: "pipe",
         encoding: "utf-8",
       });
-      return "completed";
+      const transcriptPath = path.join(workDir, "_transcript.txt");
+      fs.writeFileSync(transcriptPath, stdout || "");
+      return { status: "completed", transcriptPath };
     } catch (err: unknown) {
-      return "error";
+      return { status: "error" };
     }
   }
 
@@ -263,13 +336,19 @@ function runAgent(adapter: string, taskContent: string, workDir: string, agent: 
       path.join(workDir, "_gym_agent_stub.log"),
       `No agent binary found (GYM_AGENT_BIN not set or not found).\nTask written to _gym_task.md.\nStub mode — scenario scoring will run against unmodified environment.\n`
     );
-    return "skipped";
+    return { status: "skipped" };
   }
 
+  // Snapshot PROJECT_ROOT before agent runs (agent may write there instead of workDir)
+  const beforeSnapshot = snapshotDir(PROJECT_ROOT);
+
   // Real agent binary found via GYM_AGENT_BIN — invoke it
+  // Read task content and pass via --task flag (binary may not support --task-file)
+  const taskFile = path.join(workDir, "_gym_task.md");
+  let agentStdout = "";
   try {
-    execSync(
-      `"${agentBin}" --oneshot --agent "${agent}" --task-file "${path.join(workDir, "_gym_task.md")}" --work-dir "${workDir}"`,
+    agentStdout = execSync(
+      `"${agentBin}" --oneshot --agent "${agent}" --task-file "${taskFile}" --work-dir "${workDir}"`,
       {
         cwd: workDir,
         timeout: timeoutMs,
@@ -277,21 +356,63 @@ function runAgent(adapter: string, taskContent: string, workDir: string, agent: 
         encoding: "utf-8",
         env: { ...process.env, GYM_WORK_DIR: workDir },
       }
-    );
-    return "completed";
+    ) || "";
   } catch (err: unknown) {
     // Agent may exit non-zero but still have done work
     const errObj = Object(err);
-    if (errObj.status !== undefined) {
-      return "error";
+    agentStdout = (errObj.stdout || "").toString();
+    if (errObj.killed) {
+      // Save transcript even on timeout
+      const transcriptPath = path.join(workDir, "_transcript.txt");
+      fs.writeFileSync(transcriptPath, agentStdout);
+      syncNewFilesFromRoot(beforeSnapshot, workDir);
+      return { status: "timeout", transcriptPath };
     }
-    return "timeout";
+    // Non-zero exit — agent may have done partial work
+    const transcriptPath = path.join(workDir, "_transcript.txt");
+    fs.writeFileSync(transcriptPath, agentStdout);
+    syncNewFilesFromRoot(beforeSnapshot, workDir);
+    return { status: "error", transcriptPath };
   }
+
+  // Save transcript (agent stdout contains session JSON and tool call logs)
+  const transcriptPath = path.join(workDir, "_transcript.txt");
+  fs.writeFileSync(transcriptPath, agentStdout);
+
+  // Sync any files the agent created in PROJECT_ROOT back to workDir
+  syncNewFilesFromRoot(beforeSnapshot, workDir);
+
+  // Also check the most recent session's JSONL for a richer transcript
+  // The binary writes session data to .state/sessions/
+  try {
+    const sessionsDir = path.join(PROJECT_ROOT, ".state", "sessions");
+    if (fs.existsSync(sessionsDir)) {
+      const sessionDirs = fs.readdirSync(sessionsDir)
+        .filter((d: string) => d.startsWith("s_"))
+        .sort()
+        .reverse();
+      if (sessionDirs.length > 0) {
+        const latestSession = sessionDirs[0] as string;
+        const jsonlPath = path.join(sessionsDir, latestSession, "session.jsonl");
+        if (fs.existsSync(jsonlPath)) {
+          const sessionData = fs.readFileSync(jsonlPath, "utf-8");
+          // Append session JSONL to transcript for richer convention checking
+          fs.appendFileSync(transcriptPath, "\n--- SESSION JSONL ---\n" + sessionData);
+          // Also save as transcript.jsonl in workDir for scenarios that look for it there
+          fs.writeFileSync(path.join(workDir, "transcript.jsonl"), sessionData);
+        }
+      }
+    }
+  } catch {
+    // best effort — transcript from stdout is still available
+  }
+
+  return { status: "completed", transcriptPath };
 }
 
 // ── Scoring ──────────────────────────────────────────────────────────
 
-function runCriteria(scenarioName: string, workDir: string): CriteriaOutput {
+function runCriteria(scenarioName: string, workDir: string, transcriptPath: string | undefined): CriteriaOutput {
   const criteriaPath = path.join(SCENARIOS_DIR, scenarioName, "success_criteria.js");
   if (!fs.existsSync(criteriaPath)) {
     return {
@@ -301,8 +422,12 @@ function runCriteria(scenarioName: string, workDir: string): CriteriaOutput {
     };
   }
 
+  // Build command: always pass workDir as arg1, optionally pass transcriptPath as arg2
+  const transcriptArg = transcriptPath && fs.existsSync(transcriptPath) ? ` "${transcriptPath}"` : "";
+  const cmd = `node "${criteriaPath}" "${workDir}"${transcriptArg}`;
+
   try {
-    const stdout = execSync(`node "${criteriaPath}" "${workDir}"`, {
+    const stdout = execSync(cmd, {
       encoding: "utf-8",
       timeout: 30000,
       stdio: ["pipe", "pipe", "pipe"],
@@ -400,6 +525,7 @@ function runScenario(scenarioName: string, agent: string, lab: string, adapter: 
     copyEnvironment(scenarioName, tmpDir);
 
     let agentStatus: string;
+    let transcriptPath: string | undefined;
 
     if (meta.workflow) {
       // Workflow: split task on --- delimiter, run phases sequentially
@@ -407,22 +533,25 @@ function runScenario(scenarioName: string, agent: string, lab: string, adapter: 
       agentStatus = "completed";
       for (let pi = 0; pi < phases.length; pi++) {
         const phaseTask = phases[pi] as string;
-        const phaseStatus = runAgent(adapter, phaseTask, tmpDir, agent, timeoutMs);
-        if (phaseStatus === "skipped") {
+        const phaseResult = runAgent(adapter, phaseTask, tmpDir, agent, timeoutMs);
+        transcriptPath = phaseResult.transcriptPath || transcriptPath;
+        if (phaseResult.status === "skipped") {
           agentStatus = "skipped";
           break; // No point running further phases if agent is stubbed
         }
-        if (phaseStatus === "error" || phaseStatus === "timeout") {
-          agentStatus = phaseStatus;
+        if (phaseResult.status === "error" || phaseResult.status === "timeout") {
+          agentStatus = phaseResult.status;
           break;
         }
       }
     } else {
-      agentStatus = runAgent(adapter, taskContent, tmpDir, agent, timeoutMs);
+      const agentResult = runAgent(adapter, taskContent, tmpDir, agent, timeoutMs);
+      agentStatus = agentResult.status;
+      transcriptPath = agentResult.transcriptPath;
     }
 
-    // Run success criteria
-    const criteria = runCriteria(scenarioName, tmpDir);
+    // Run success criteria, passing transcript path for convention checks
+    const criteria = runCriteria(scenarioName, tmpDir, transcriptPath);
     const elapsed = Date.now() - startTime;
     const duration = elapsed < 1000 ? `${elapsed}ms` : `${(elapsed / 1000).toFixed(1)}s`;
 
@@ -473,7 +602,7 @@ function main(): void {
     for (const name of filtered) {
       const meta = loadScenarioMeta(name);
       const tier = meta ? meta.tier : "?";
-      const cats = meta ? meta.categories.join(",") : "";
+      const cats = meta && meta.categories ? meta.categories.join(",") : "";
       process.stdout.write(`${name}\t${tier}\t${cats}\n`);
     }
     process.exit(0);

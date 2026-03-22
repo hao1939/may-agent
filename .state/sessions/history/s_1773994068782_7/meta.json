@@ -1,0 +1,10 @@
+{
+  "agent": "amy-kimi",
+  "task": "[cron:consolidate-memory] Read agents/shared/tasks/consolidate-memory.md and execute it. Your journal is at agents/amy-kimi/workspace/journal.md, your knowledge is at agents/amy-kimi/knowledge/, your archive is at agents/amy-kimi/workspace/archive/.",
+  "status": "error",
+  "startedAt": 1773994068782,
+  "kind": "job",
+  "autoClose": "immediate",
+  "endedAt": 1773994077731,
+  "error": "No API key for provider: openai"
+}

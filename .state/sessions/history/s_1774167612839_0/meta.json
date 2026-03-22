@@ -1,0 +1,10 @@
+{
+  "agent": "coder",
+  "task": "Phase 2: FIX — apply the minimal fix based on your analysis.\n\nRead your ANALYSIS.md from Phase 1. Apply ONLY the fix described there:\n1. Fix the root cause in the identified file\n2. Do NOT apply compensating hacks to downstream files\n3. Run `node run.js` to verify the output is correct\n4. Run `node test.js` to verify all tests pass",
+  "status": "done",
+  "startedAt": 1774167612840,
+  "kind": "job",
+  "autoClose": "immediate",
+  "opCount": 4,
+  "endedAt": 1774167650515
+}

@@ -1,0 +1,9 @@
+{
+  "agent": "may",
+  "task": "Say hello",
+  "status": "done",
+  "startedAt": 1774084283750,
+  "kind": "job",
+  "autoClose": "immediate",
+  "endedAt": 1774084295748
+}
