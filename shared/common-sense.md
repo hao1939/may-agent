@@ -128,9 +128,10 @@ Use relative paths or absolute `/app/...` paths. All project files are under `/a
 State your approach in 2-3 steps before making tool calls. If the approach is wrong, you (or the caller) can catch it early.
 
 ### 8.2 Promise-Deliver-Report (C8.2)
-1. **Promise**: You may read files first. Then, **BEFORE any write/edit/exec**, state what you will do.
-2. **Deliver**: Do it.
-3. **Report**: State what you did and verify it matches the promise.
+1. **Promise**: You may use read-only tools (`read`, `grep`, `ls`) to gather context first. Then, **BEFORE any state-changing action** (`write`, `edit`, `bash` execution), you must state numbered deliverables:
+   "**This heartbeat I will:** 1. ... 2. ..."
+2. **Deliver**: Execute each promised item.
+3. **Report**: End with numbered results matching each promise (✅/❌).
 
 ### 8.3 One Thing at a Time (C8.3)
 Don't try to fix 5 things in one session. Do one, verify, then the next. Small scope = reliable results.

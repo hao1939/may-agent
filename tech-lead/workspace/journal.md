@@ -241,3 +241,18 @@ Optimizer requested rebuild of `bundle/may-agent` (req:8ffa0682). Investigated �
 4. **Limitation**: Cannot edit other agents' heartbeat.md files (P53 protection). Bulletin serves as cross-cutting notification until individual heartbeats are updated by their owners or Coach.
 
 **Files modified**: `agents/may/handlers/heartbeat-context.ts`, `agents/shared/bulletin.md`, `agents/tech-lead/workspace/implementation-plan-active-nudging.md`
+
+---
+### 2026-03-21T22:37Z — Heartbeat (s_1774132617492_345)
+
+**Active Nudging (CP Phase 3)**: All 3 components verified complete:
+1. `monitor-session.cjs` — `detectGhostDeliverable` (L1548), `detectProductivityStall` (L1642), `interventions` output (L1879) ✅
+2. `active-nudge.ts` — cancel/warn/nudge actions, cooldown via nudge-log.jsonl, correct `.state/` path, `dirname()` fix in place ✅
+3. `heartbeat-context.ts` — nudge-active.md detection + URGENT header injection ✅
+4. `cron.json` — active-nudge entry (5min interval) ✅
+
+QA had a CONDITIONAL pass due to `readFileSync` import (needed for cooldown) and missing tsc/vitest (env limitation). All critical fixes confirmed applied. `dirname` properly imported and used (was `join(path, "..")` bug). `interrupt` action removed. Nudge log path uses `ctx.projectRoot`.
+
+**Build health**: Clean — no TODO/FIXME in src/lib, no new type errors detectable. Obstacle Pivot skill lifecycle completed (all 4 phases).
+
+**Bob req:fa83dc1f**: Already implemented. Closing.

@@ -9,17 +9,17 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If found → add specific task to workspace/todo.md.
   Latest (2026-03-21T21:09): **399 sessions/36h, 51.1MB total.** Coach #1 (79 sessions, 15.5MB, avg 197KB). Tech-lead #2 (43 sessions, 10.9MB, avg 253KB — highest per-session). Optimizer #3 (43 sessions, 7.7MB). **Amy-kimi 100% error rate** (26 dead sessions, "No API key for openai"). Sent disable request to May. Session rate dropping: 62/4h → 9/4h. Prior optimizations confirmed working.
 
-- [x] **Cost outlier scan** — Last done: 2026-03-21T21:09
+- [x] **Cost outlier scan** — Last done: 2026-03-21T22:39
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-21T21:09): **No new cost outliers.** Largest sessions are from early period (coach 866KB, 732KB). Coach ops trending 12-26 (down from 50-58). Session rate 55-85% lower than day 1. Amy-kimi cron disabled (sent to May). Bob 2 empty-model errors — transient, no action. System running much leaner than 12h ago.
+  Latest (2026-03-21T22:39): **CRITICAL Bob outliers found.** Bob s_336: $9.28 (89 identical failing edits). Bob s_308: $8.03 (210 ops, grep exploration). Bob s_294: $2.12 (80 ops). Bob is 59% of system cost ($22.62/7.5h = ~$72/day). Sent maxTurns:30 proposal to May (req:8f4fd244). Also proposed edit-retry-guard for infra. All other agents under $1.63/7.5h — very efficient.
 
-- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-21T15:09
+- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-21T22:39
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
   Could it be replaced with a JS handler? (See cron-graduation-process.md Stage 3.)
   If found → write proposal in workspace/improvement-proposals.md.
-  Latest (2026-03-21T15:09): **Prior optimizations working well** — May skipIfIdle (4/5 sessions=1op), Scout early-exit (4 ops), Coach 15-turn budget (16 ops), growth-trigger cooldown (1 pair vs 3+). Top new finding: **Bob git-commit waste** — 8+ ops/session on failed git add/commit. Not LLM-to-JS but instruction fix. Sent SOUL.md patch to May (req:8c229ef7). QA re-reviews same commits (no dedup) — proposed commit tracker. Finding at `workspace/finding-llm-to-js-scan-0321-1509.md`.
+  Latest (2026-03-21T22:39): **Bob is 59% of system cost** ($22.62 of $38.72 in 7.5h). Critical finding: Bob session s_336 had **89 identical failing edit() calls** ($9.28 wasted). Root cause: model retries exact same failing edit without re-reading file. Also s_308: 210 ops/$8.03 on grep exploration. **No agent has maxTurns set** — sent maxTurns proposal to May (req:8f4fd244). Also proposed infra-level edit-retry-guard. Prior optimizations confirmed working (May skipIfIdle, Scout early-exit). Finding at `workspace/finding-llm-to-js-scan-0321-2239.md`.
 
 - [x] **Handler health check** — Last done: 2026-03-21T15:09 (quick re-check)
   Review existing JS handlers in agents/may/handlers/.
