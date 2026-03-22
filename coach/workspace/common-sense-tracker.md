@@ -23,7 +23,7 @@ Compact index. Per-item evidence in `common-sense-evidence/cs-{num}.md`.
 | 3.5 | State is filesystem | ⚠️↑ | TL ✅, Scout ✅ (post-fix), Opti | 2026-03-18 |
 | C1.1 | Read Before Edit | ⚠️ | Amy-Kimi ✅, Optimizer ✅, QA ❌→ | 2026-03-20 |
 | C1.2 | One Read at a Time (truncation handling) | ⚠️ | TL ✅ (2x), QA ✅, Optimizer ⚠️ | 2026-03-20 |
-| C1.3 | Verify Writes | ⚠️ | TL ✅ (3/3), Bob ❌ (0/5) | 2026-03-21 |
+| C1.3 | Verify Writes | ⚠️ | TL ✅ (3/3), Bob ❌ (0/5), Opt ✅ (1/2 explicit re-read) | 2026-03-22 |
 | C1.5 | No Ghost Deliverables | ⚠️ | Bob ✅, Scout ✅, QA ⚠️ (no rea | 2026-03-21 |
 | C3.2 | Workspace Isolation | ❌ | Scout ❌ (persistent), Bob ⚠️ ( | 2026-03-20 |
 | C3.3 | Safe Append (no write() to append-only f | ✅ | Bob ❌ (1x), Bob ✅ (1x), TL ✅, Scout ✅, Opt ✅ (2x), Eval ✅, May ✅ — 0 violations in 30 recent sessions | 2026-03-21 |
