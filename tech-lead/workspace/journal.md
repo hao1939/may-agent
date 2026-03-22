@@ -382,3 +382,24 @@ Implemented 2 of 3 optimizer-proposed QA efficiency fixes:
 - Closing req:37dc3d5f as already-implemented
 - System health: zero TODOs/FIXMEs, coder gym healthy, QA doing useful commit reviews
 - No new action items
+
+## 2026-03-22T12:06Z — Heartbeat (s_1774181217519_454)
+- Pending task: Bob's `brief-active-nudging-implementation-v2.md` (req:dd82b8fd) — duplicate of already-completed work
+  - Verified: `agents/may/handlers/active-nudge.ts` (256 lines) ✅
+  - Verified: `agents/may/cron.json` has active-nudge entry ✅
+  - Handler covers all 3 heuristics (loops, stalls, ghost deliverables) per Bob's brief
+  - Closing req:dd82b8fd as already-implemented
+- Build health: zero TODOs/FIXMEs in `src/`, tsc not available (npx missing)
+- Growth-cycle workflows running well — coach creating verification skill forks for coder
+- QA doing useful commit reviews + code quality sweeps
+- No new work items
+
+## 2026-03-22T13:37Z — Heartbeat (s_1774186617522_462)
+- No pending tasks. System clean.
+- Coder gym: 30+ exercises all healthy (calc, pipeline, slugify, audit, coverage, multi-edit, etc.)
+- QA: reviewing commits, running quality sweeps on `src/lib/` (flagged finish-guard.ts `existsSync` dirs edge case — acceptable behavior, not a bug)
+- Growth-cycle: latest run `wr_1774181527724` tested "stale-approach-fixation" scenario with workflow enforcement method — coach completing fork/test cycles
+- Implementation plan: all items COMPLETE (Ghost Deliverable Guard module done, Active Nudging done, Dynamic Tool Listing done)
+- Journal at 395 lines — under limit, no consolidation needed
+- Zero TODO/FIXME/HACK in `src/`
+- No new briefs from Bob, no new requests to process

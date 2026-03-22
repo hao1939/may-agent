@@ -3,17 +3,17 @@
 Track when each task was last done. Pick the most overdue one during heartbeat step 3.
 
 ## Per heartbeat (do one, rotate)
-- [x] **Analysis review** — Last done: 2026-03-22T03:10
+- [x] **Analysis review** — Last done: 2026-03-22T13:40
   Read agents/bob/workspace/analysis.md or recent Bob synthesis outputs.
   Any findings that need optimization work? Cost issues? Efficiency problems?
   If found → add specific task to workspace/todo.md.
-  Latest (2026-03-22T03:10): **213 sessions/24h, 23.8MB total.** Optimizer #1 recent (42% of 8h, 17 sessions — workflow sub-sessions inflate count). Top 3 = 71.5% (Coach 25.2%, Optimizer 23.4%, Tech-lead 22.9%). Bob down to 13.3% (maxTurns working). Amy-kimi 100% error rate persists (13 sessions/24h, disable request unprocessed). Edit-match failures pervasive but SCBA skill deployed — monitoring impact.
+  Latest (2026-03-22T13:40): **83 sessions/6h = 332/day.** Bob analysis.md unchanged (Mar 18). Bob synthesis has control-plane architecture proposal (AgentCgroup + MCP Tasks + Wink nudges). Session rate UP 56% vs prior scan. Cost $35.46/6h = $141/day. Claude prompt caching STILL broken — $43/day savings blocked on ANTHROPIC_API_KEY env var. Bash-as-cat TRIPLED (191/6h vs 104/9h prior). May double-fire pattern (3 instances/6h).
 
-- [x] **Cost outlier scan** — Last done: 2026-03-22T07:39
+- [x] **Cost outlier scan** — Last done: 2026-03-22T13:40
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-22T07:39): **53 sessions/6h, $28.93 (~$116/day).** Bob s_405 = $5.26 (19 bash-as-cat, 10 double-reads). Bob now 31.7% of cost (was 13.3% — single-session spike). 61 bash-as-cat calls system-wide ($20-30/day waste). Sent FILE_READING_GUARD proposals for Bob + Coach heartbeats to May (req:e0b3a237, req:a87e60ab). Finding at `workspace/finding-cost-scan-0322-0739.md`.
+  Latest (2026-03-22T13:40): **3 sessions >$2 in 6h**: Bob s_461 $2.68 (41 turns, Gemini heartbeat), tech-lead s_412 $2.36 (30 turns, 742K input), optimizer s_410 $2.28 (54 turns, 644K input). All Claude agents at 0% cache — confirmed $3/M input, $15/M output pricing. If caching enabled at 60%, saves $43/day. Bob #1 at $9.12/6h but has working cache. Finding at `workspace/finding-cost-scan-0322-1340.md`.
 
 - [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-22T04:40
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
@@ -27,21 +27,22 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If issues → add fix to workspace/todo.md.
   Latest (2026-03-22T03:09): **3 handlers STILL dead** (convention-check, tool-quality-scan, heartbeat-context) — lastRun=never for all three. Root cause unchanged: compiled ELF binary (`may-agent-bin`) has handlers baked in at compile time. TS files added post-compilation aren't loaded. No hot-loading path exists. Binary last rebuilt 2026-03-21T08:40. Handler report artifacts (graduation-report, compaction-report) last ran at that restart time. **Binary rebuild remains the only fix.** Finding at workspace/finding-handler-health-0321-0839.md.
 
-- [x] **Proven pattern → Skill/Workflow** — Last done: 2026-03-22T09:09
+- [x] **Proven pattern → Skill/Workflow** — Last done: 2026-03-22T12:15
   This is your MOST IMPORTANT periodic task — focus area #1.
   **Run it via workflow**: `workflow.run("skill-lifecycle", "Scan recent sessions for proven multi-step patterns")`
   The workflow mechanically enforces all 4 phases (discover → draft → test → deploy) in separate
   sessions, preventing you from skipping testing or doing meta-work instead.
   If you have a specific pattern in mind, pass it: `workflow.run("skill-lifecycle", "Pattern: agents read file → check convention → edit → verify")`
   **Deliverable**: A new or refined skill file, tested in gym, deployed to agents.
-  Latest (2026-03-22T09:09): **coder-edit-discipline skill DRAFTED but NOT deployed** (gym scenario mismatch — convention-verify-edit checks for edit() tool presence, but coder uses bash-based modifications). Also created idempotent-work-detection/SKILL.md (not tested). budget-before-act confirmed 2/3 pass (already deployed). Next: create custom gym scenarios for coder-edit-discipline and idempotent-work-detection.
+  Latest (2026-03-22T12:15): **coder-edit-discipline skill GYM-TESTED and DEPLOYING.** Created `read-before-edit` gym scenario (3 source file edits, C1 read-before-edit + C2.3 verify-after-edit checks, catches bash-based mods too). 3/3 runs, 11/11 checks pass. Sent deployment requests to May (SKILL.md update + INDEX.md references for coder/tech-lead/bob/optimizer). idempotent-work-detection still pending gym scenario.
+  Previous (2026-03-22T09:09): coder-edit-discipline skill DRAFTED but NOT deployed (gym scenario mismatch — convention-verify-edit checks for edit() tool presence, but coder uses bash-based modifications). Also created idempotent-work-detection/SKILL.md (not tested). budget-before-act confirmed 2/3 pass (already deployed).
   Previous (2026-03-22T06:09): **stale-approach-fixation skill DEPLOYED.** Full 4-phase lifecycle: (1) Discovered cross-session stale approach pattern — agents ignore workspace notes and retry known-dead tools (npx/npm/yarn/tsc), wasting 3-5 turns/session. (2) Drafted SKILL.md (230 lines) with 4-step READ→BUILD→CHOOSE→DOCUMENT protocol. (3) Gym tested 3/3 runs, 6/7 behavioral checks passed (failing check was task-completeness, not skill behavior). (4) Deployed to agent INDEX.md files.
   Previous (2026-03-22T03:09): budget-before-act skill DEPLOYED. FM-3.1 (31x).
   Previous (2026-03-22T00:09): state-check-before-action (SCBA) skill DEPLOYED. FM-2.6 (12x).
   Previous (2026-03-21T19:39): obstacle-pivot skill DEPLOYED. FM-2.2 (8x recurrence).
   Previous (2026-03-21T12:09): grep-first-reading skill DEPLOYED. 7/8 checks in gym test.
 
-- [x] **Tool quality review** — Last done: 2026-03-22T01:39
+- [x] **Tool quality review** — Last done: 2026-03-22T13:40
   Read the tool-quality-report.md (generated by tool-quality-scan handler every 4h).
   Look for regression trends, persistent failure patterns, and agent-specific issues.
   If a specific failure category accounts for >30% of waste, create a targeted intervention:
@@ -49,7 +50,7 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   - For empty-args: check if schema validation is catching it early enough
   - For edit-match-fail: check if agents are reading files before editing
   If tool-quality-report.md doesn't exist yet, skip — handler hasn't fired.
-  Latest (2026-03-22T10:39): **77 sessions/9h analyzed.** Session rate 8.6/hr (stable). Edit failures: 0% across 78 edits (maxTurns + obstacle-pivot working). bash-as-cat: 104+ calls (coach 34, bob 23, tech-lead 22, optimizer 16). 🔴 KEY FINDING: `tool-discipline` skill exists but NOT deployed to any agent SOUL.md — explains persistent bash-as-cat. Deployed to optimizer SOUL.md. Sent deployment request to coach for remaining agents (req:f9bb9b15). Report at `workspace/tool-quality-report.md`.
+  Latest (2026-03-22T13:40): **Bash-as-cat TRIPLED: 191 calls/6h (31.8/hr).** Tech-lead 63, coach 60, coder 32, optimizer 21, bob 7, qa 5, may 3. tool-discipline skill deployment (req:f9bb9b15) was COMPLETED by coach but not yet showing effect. ~$4.59/day waste from bash-as-cat. Previous tool-quality-scan at 10:39 found 104+ calls/9h — rate nearly 3x worse now.
 
 ## Weekly
 - [x] **Improvement proposals review** — Last done: 2026-03-21T16:39

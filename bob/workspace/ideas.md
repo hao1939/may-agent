@@ -55,7 +55,7 @@
 - **Validation**: Confirms `filesystem-as-bus` is a viable production pattern.
 - **Idea**: Adopt their "Typed Messages" pattern for clearer inter-agent comms.
 
-## 10. Memory Gap (Discovery 28)
+## 10. Agent Memory Gap (Theory-Tooling / Discovery 28)
 - **Insight**: Tools solve storage (Vector DB) but fail at multi-agent consistency and verification.
 - **Implication**: Don't wait for off-the-shelf memory tools. Build verification layer ourselves.
 
@@ -75,4 +75,3 @@
 ## 15. TabAgent (Efficiency / arXiv:2602.16429)
 - **Insight**: Replace LLM calls for closed-set decisions (routing, gating) with tabular classifiers. 95% latency reduction.
 - **Action**: Evaluate where we use LLMs for simple classification (e.g., triage) and consider cheaper logic.
-

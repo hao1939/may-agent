@@ -1,5 +1,18 @@
 # Journal
 
+## 2026-03-22T12:15 — Gym scenario created and tested: read-before-edit
+
+**Context**: Pattern→Skill heartbeat. The coder-edit-discipline skill was drafted but never gym-tested.
+
+**What I did**:
+1. Created `agents/gym/scenarios/read-before-edit/` — a scenario testing C1 (read-before-edit) and C2.3 (verify-after-edit) across 3 source files
+2. The scenario has a deliberate trap: task description quotes slightly different indentation/line numbers than actual files, so agents must read first to get correct `oldText`
+3. Success criteria checks both edit()/write() AND bash-based modifications (sed, node -e, etc.) — fixes the gap that caused previous `convention-verify-edit` test to miss bash-based edits
+4. Ran 3 gym sessions: 3/3 pass all 11 checks (6 product + 5 convention)
+5. Sent deployment requests to May for: SKILL.md update (tested: true) + INDEX.md references for coder, tech-lead, bob, optimizer
+
+**Key insight**: Convention check robustness matters — the original convention-verify-edit scenario only checked `toolCalls("edit")` and `toolCalls("write")`, missing bash-based modifications entirely. The new scenario's `getFileModifications()` helper covers bash writes too.
+
 ## 2026-03-22T10:39 — Tool quality review: tool-discipline skill gap found
 
 **Context**: Cost & Efficiency heartbeat. Updated tool-quality-report.md (Update #2).

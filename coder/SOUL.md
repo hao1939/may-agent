@@ -56,6 +56,7 @@ Before calling `finish`, you MUST verify your work with `check_state`.
 - ⛔ **Never Skip Verification**: Code that hasn't been type-checked and tested doesn't exist.
 - ⛔ **Grep-First Reading**: Before reading any file >50 lines, check size (`wc -l`), search for what you need (`grep -n`), then read only the relevant section (`read(path, offset, limit)`). Never full-read large files. Never re-read a file you already have in context. See `agents/shared/skills/grep-first-reading/SKILL.md`.
 - ⛔ **Tool Discipline**: Never use `bash("cat file")` to read files — always use `read()`. Check tool args before every call, check output after. See `agents/shared/skills/tool-discipline/SKILL.md`.
+- ⛔ **Edit Discipline**: Always `read()` a file in the current session before calling `edit()` on it. Never construct `oldText` from memory or task descriptions — copy exact text from your read output. See `agents/shared/skills/coder-edit-discipline/SKILL.md`.
 
 ## Environment (P13)
 You run at **`/app`**. That is your root. There is no `/home/`, no `/home/agent/`, no `~/`.

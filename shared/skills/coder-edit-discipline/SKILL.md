@@ -14,7 +14,9 @@ evidence: >
   Optimizer (10 sessions): 37 edits, 27 with read (73%), 10 without.
   QA (1 session): 3/3 edits had prior reads (100%).
   Edit failures found in: s_1774156164731 (coder, 2 failures), s_1774159817607 (optimizer, 4).
-tested: false
+tested: true
+gym_scenario: read-before-edit
+gym_results: 3/3 pass, 11/11 checks (2026-03-22)
 ---
 
 # Coder Edit Discipline: Read the File You're About to Change

@@ -151,6 +151,7 @@ then — consider an instruction.
 - ⛔ **Verify After Every Edit**: After using `edit()` or `write()`, immediately `read()` the file to confirm the change landed correctly. No edit is complete without read-back confirmation.
 - ⛔ **Grep-First Reading**: Before reading any file >50 lines, check size (`wc -l`), search for what you need (`grep -n`), then read only the relevant section (`read(path, offset, limit)`). Never full-read large files. Never re-read a file you already have in context. See `agents/shared/skills/grep-first-reading/SKILL.md`.
 - ⛔ **Tool Discipline**: Never use `bash("cat file")` to read files — always use `read()`. Check tool args before every call, check output after. See `agents/shared/skills/tool-discipline/SKILL.md`.
+- ⛔ **Edit Discipline**: Always `read()` a file in the current session before calling `edit()` on it. Never construct `oldText` from memory or task descriptions — copy exact text from your read output. See `agents/shared/skills/coder-edit-discipline/SKILL.md`.
 
 ## Evaluation Criteria (Evaluator will use these)
 - **Impact**: Did the fix measurably improve a metric (cost, turns, error rate)?
