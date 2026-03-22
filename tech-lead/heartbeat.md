@@ -41,6 +41,18 @@ After EVERY `bash` call, **read the exit code** before your next action:
 - **Exit 126/127** → command not found. Do NOT retry — find an alternative.
 **Self-test**: after each non-zero bash, ask "Did I state what the exit code means?" If no → state it now.
 
+## 0g. ⚡ Early Exit Check (Cost Guard — optimizer finding 2026-03-22)
+**Before doing ANY status reading or journal writing**, check if there's actually work to do:
+1. Check the "Injected: pending tasks" section above — are there items that need action? (Cost findings about YOUR behavior count as work.)
+2. Run: `git log --oneline --since="90 minutes ago"` — any new commits?
+3. Check `agents/shared/bulletin.md` — any new entries since last session?
+
+**If ALL three are empty/unchanged AND no implementation plan is in progress** → immediately:
+```
+finish({ status: "success", summary: "No new work — early exit per cost guard." })
+```
+Do NOT read status files, do NOT write journal entries, do NOT run error checks. Just exit. A session that finds nothing and exits in 3 ops is better than one that reads 20 files to confirm there's nothing to do.
+
 ## 1. Pending Work
 Check the "Injected: pending tasks" section above. If there are items, work the top one to completion.
 Check `agents/tech-lead/workspace/implementation-plan.md` — if a plan is in progress, resume it.
