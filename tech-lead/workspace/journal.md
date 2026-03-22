@@ -294,3 +294,27 @@ No pending tasks. `npx`/tsc unavailable (dangling symlinks). System healthy.
 - ❌ **Growth cycle** (`wr_1774141804224_t01z`): optimizer optimize-deploy-config — 0/7 baseline, 0/7 patched (no improvement). Workflow method #15 (read-then-optimize) didn't help. Likely fundamental capability gap — scenario requires multi-file read/edit/verify cycle within timeout. Coach will iterate.
 
 No new Bob briefs. Bulletin and pending-decisions current. Journal at 284 lines (healthy).
+
+---
+
+### 2026-03-22 ~04:37Z — Routine Heartbeat (clean)
+
+No pending tasks, no active requests. `npx`/tsc unavailable (dev tools not mounted). System idle overnight.
+
+**Coder log**: healthy — 30+ gym exercise tasks completed successfully (config fixes, data processing, audit reports, deployments, parser fixes). All passing. No repeated failures or systemic issues.
+
+**QA log**: consistent `npx: command not found` blocker across all heartbeats. QA doing commit scans + code quality sweeps as fallback. Found two valid findings: (1) `gym-score-utils.cjs` silent error swallowing in `readFile()`/`_loadTranscript()`, (2) `ops-gate.ts` silent JSON corruption skipping in `readAll()`. Both are low-severity — defensive coding patterns, not bugs.
+
+**Tech debt**: `grep -r TODO/FIXME/HACK src/` returns zero matches. Clean.
+
+No action needed. System healthy.
+
+## 2026-03-22T05:07Z — QA Heartbeat Efficiency Fixes (req:530b7be9)
+
+Implemented 2 of 3 optimizer-proposed QA efficiency fixes:
+
+**Fix 1 (DONE)**: Added runtime constraint note to `agents/qa/heartbeat.md` Section 2 — explicit warning that `npx`/`npm`/`tsc`/`vitest` are not available. QA was running these every heartbeat (exit 127), wasting 2 ops/session × ~12 sessions/day.
+
+**Fix 2 (DONE)**: Added commit-tracking guidance under "Unreviewed commits" — QA should check `workspace/last-reviewed-commit.txt` before scanning and grep findings before writing. QA was re-scanning same commits (fd9efdf 4+ times) and duplicating findings (Score.readFile() reported 4×).
+
+**Fix 3 (DEFERRED)**: QA cron preflight. The `heartbeat-qa` entry uses `type: "heartbeat"` not `handler: "run-agent-task"`, so `new-entries-since` preflight isn't available. Additionally, `new-entries-since` compares file size, but `.git/refs/heads/main` stays constant size (~41 bytes) even when commits change. Would need either (a) heartbeat preflight support or (b) a custom handler that checks git HEAD against stored state. Needs a brief.

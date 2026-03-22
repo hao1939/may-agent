@@ -439,3 +439,27 @@ System stats: 57 sessions, 8.4MB in 5.8h, projected ~34MB/day. 14% error rate.
 - Top existing covered codes: FM-2.1 (86), FM-2.4 (69), FM-2.2 (59), FM-3.3 (55)
 - FM-3.1 was the largest uncovered gap
 **Files modified**: agents/optimizer/workspace/skill-discovery.md, agents/shared/skills/budget-before-act/SKILL.md
+
+## 2026-03-22T04:40 — LLM-to-JS Opportunity Scan (Cost & Efficiency)
+
+**Task**: Periodic LLM-to-JS opportunity scan
+**Window**: 55 sessions since last scan
+
+### Findings
+1. **QA Heartbeat: 3 Compound Wastes ($2-3/day)**
+   - npx tsc/vitest always fails (20% ops wasted, no npm in runtime)
+   - No commit preflight — fires every 30min even with no new commits
+   - Duplicate findings — same Score.readFile() bug reported 4× in unreviewed-findings.md
+2. **Coach common-sense-verify**: 50% of ops wasted on session discovery (could be JS index)
+3. **Bob bash-as-cat**: Persists at 6 calls/session despite read-dedup-guard
+
+### Actions Taken
+- Wrote detailed finding: `workspace/finding-llm-to-js-scan-0322-0440.md`
+- Sent QA fix proposals to tech-lead (req:530b7be9) with 3 concrete fixes:
+  - Remove npx calls from QA heartbeat
+  - Add commit-tracking to avoid duplicate scans
+  - Add `new-entries-since` preflight for `.git/refs/heads/main`
+- Updated periodic-tasks.md
+
+### Estimated Impact
+$2-3/day from QA fixes alone. $3-5.50/day total if all fixes applied.

@@ -30,9 +30,14 @@ Results:
 Check the "Injected: pending tasks" section above. If there are review requests, do the top one. Follow the Review Protocol in SOUL.md — read, critique, challenge, report.
 
 ## 2. Proactive Quality Scan
+
+> **⚠️ Runtime constraint**: `npx`, `npm`, `tsc`, and `vitest` are **NOT available** in this runtime. Do NOT run `npx tsc --noEmit` or `npx vitest --run` — they will always fail with "command not found" (exit 127). Focus on code reading, `git`-based analysis, and `node -e` for quick checks instead.
+
 No pending reviews? Do ONE of these (rotate each heartbeat):
 
 - **Unreviewed commits**: `git log --oneline -10` — read the diffs. Any changes that shipped without QA review? Write findings to `workspace/unreviewed-findings.md`.
+  - ⚠️ **Avoid duplicate work**: First check `workspace/last-reviewed-commit.txt` for the last commit hash you reviewed. Only scan commits NEWER than that hash. After scanning, update it: write the latest reviewed commit hash to `workspace/last-reviewed-commit.txt`.
+  - ⚠️ **Before writing findings**: grep `workspace/unreviewed-findings.md` for the commit hash — if already there, skip it.
 - **Code quality sweep**: Pick a source file from `src/lib/` you haven't reviewed recently. Read it. Error handling gaps? Silent failures? Untested edge cases? Write findings to `workspace/quality-sweep.md`.
 - **Past verdict audit**: Check recent evaluator scores in `.state/evaluations/`. Did code you previously reviewed cause issues later? Study what you missed.
 

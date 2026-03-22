@@ -15,11 +15,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If pattern found → design fix, add to workspace/todo.md.
   Latest (2026-03-22T03:10): **No new critical outliers.** Top session: optimizer s_326 at 475KB (skill-lifecycle workflow, productive). Bob s_336 at 363KB (the $9.28 89-retry session, already capped). No new Bob outliers since maxTurns fix. System cost trending down: ~24MB/day vs 34MB/day prior. Estimated ~$150-200/day (was $300+). Prior optimizations (maxTurns, growth-trigger cooldown, skipIfIdle) all confirmed working.
 
-- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-21T22:39
+- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-22T04:40
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
   Could it be replaced with a JS handler? (See cron-graduation-process.md Stage 3.)
   If found → write proposal in workspace/improvement-proposals.md.
-  Latest (2026-03-21T22:39): **Bob is 59% of system cost** ($22.62 of $38.72 in 7.5h). Critical finding: Bob session s_336 had **89 identical failing edit() calls** ($9.28 wasted). Root cause: model retries exact same failing edit without re-reading file. Also s_308: 210 ops/$8.03 on grep exploration. **No agent has maxTurns set** — sent maxTurns proposal to May (req:8f4fd244). Also proposed infra-level edit-retry-guard. Prior optimizations confirmed working (May skipIfIdle, Scout early-exit). Finding at `workspace/finding-llm-to-js-scan-0321-2239.md`.
+  Latest (2026-03-22T04:40): **QA: 3 compound wastes = $2-3/day.** (1a) npx tsc/vitest always fails — 24 wasted ops/day. (1b) No commit preflight — QA fires every 30min even with no new commits, rescanning same fd9efdf 4+ times. (1c) Duplicate findings — Score.readFile() bug reported 4× in unreviewed-findings.md. Also: Coach common-sense-verify wastes 50% ops on session discovery (could be JS index). Bob bash-as-cat persists (6 calls/session). Sent QA fix proposals to tech-lead (req:530b7be9). Finding at `workspace/finding-llm-to-js-scan-0322-0440.md`.
 
 - [x] **Handler health check** — Last done: 2026-03-22T03:09 (quick re-check)
   Review existing JS handlers in agents/may/handlers/.

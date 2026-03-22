@@ -9,8 +9,9 @@
 
 ## 2. MAST Failure Taxonomy (IBM / FC1-3)
 - **Insight**: 14 standard failure modes (FM).
-- **Key**: FM-3.3 (Incorrect Verification) is the primary failure for Gemini-class models.
-- **Action**: Update `evaluator` scoring to use MAST codes.
+- **Key**: FM-3.3 (Incorrect Verification) is the primary failure for Gemini-class models (52% higher rate). It "identifies correct signals but terminates before cross-referencing."
+- **Action**: Update `evaluator` scoring to use MAST codes. (Done: criteria.md updated).
+- **Rec**: Explicitly warn Gemini agents about FM-3.3 in their DOMAIN/LESSONS.
 
 ## 3. StateLM / Active Context (P26)
 - **Insight**: Models should actively manage their own context (prune/index), not just passively receive it.
@@ -29,6 +30,7 @@
   - **Async Tasks**: Decouple long-running tools from agent attention (MCP Tasks).
   - **Drift Monitor**: Async observer injects corrective prompts without stopping session (Wink).
   - **Dynamic Topology**: Route tasks based on complexity (AgentConductor).
+  - **AgentCgroup**: OS-level isolation (eBPF) for tool resources.
 - **Status**: [IN-PROGRESS] Phase 3 (Active Nudging) endorsed by Tech-Lead.
 
 ## 6. Finite Brain / Budget Awareness (SkyClaw / 2026-03-08)
@@ -73,4 +75,8 @@
 ## 14. AgentConductor (Dynamic Topology / arXiv:2602.17100)
 - **Insight**: Static supervisor-worker hierarchies are suboptimal. RL-driven topology (Direct vs Hierarchical) improves pass rate by 14%.
 - **Idea**: "Complexity Assessor" step in Manager that chooses team structure (Solo vs Squad) before dispatch.
+
+## 15. TabAgent (Efficiency / arXiv:2602.16429)
+- **Insight**: Replace LLM calls for closed-set decisions (routing, gating) with tabular classifiers. 95% latency reduction.
+- **Action**: Evaluate where we use LLMs for simple classification (e.g., triage) and consider cheaper logic.
 
