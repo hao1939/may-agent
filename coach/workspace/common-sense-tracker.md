@@ -43,7 +43,7 @@ Compact index. Per-item evidence in `common-sense-evidence/cs-{num}.md`.
 | 7.2 | Don't fabricate | ✅ | — | — |
 | 6.4 | Context Hygiene (Pruning) | ✅ | Amy ✅, Bob ✅, Coach ✅, Eval ✅, | 2026-03-20 |
 | 7.3 | Errors are information | ✅ | Evaluator ✅, QA ⚠️ | xargs jq ' |
-| C2.2 | Check Exit Codes | ✅ | Bob ✅, TL ✅ | tail -5` → |
+| C2.2 | Check Exit Codes | ✅ | Bob ✅, TL ✅, QA ✅, Opt ✅, Bob/Gem ⚠️ (bash-read 3x) | 2026-03-22 |
 | 13.1 | Commit Your Own Work | ⚠️ | TL ✅ (2x), Opt ✅, Coder ❌, Opt ❌ (2026-03-22: s_1774165169752_410 — 5 writes incl shared skill SKILL.md, 0 git commits) | 2026-03-22 |
 | 13.2 | Only Commit Your Files | ✅ | TL ✅ (2x), Opt ✅ | 2026-03-19 |
 | 13.3 | Message Quality | ✅ | TL ✅ (2x), Opt ✅ | 2026-03-19 |
