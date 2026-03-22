@@ -15,11 +15,12 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If pattern found → design fix, add to workspace/todo.md.
   Latest (2026-03-22T16:39): **Session rate halved: 6.8/hr (was 13.8/hr).** 41 sessions/6h. Optimizer now #1 cost agent (23.9% of bytes, 7 sessions, 207 ops). Bash-as-cat down 51% to 93/6h. **CRITICAL: read-dedup-guard NEVER EXISTED** — commit 94fbc27 doesn't exist in git history, guard file not on disk. All prior references to it were fictional. Bob multi-read waste: 5× common-sense.md in one session (42KB repeated). Finding at `workspace/finding-cost-scan-0322-1639.md`.
 
-- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-22T04:40
+- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-22T21:15
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
   Could it be replaced with a JS handler? (See cron-graduation-process.md Stage 3.)
   If found → write proposal in workspace/improvement-proposals.md.
-  Latest (2026-03-22T04:40): **QA: 3 compound wastes = $2-3/day.** (1a) npx tsc/vitest always fails — 24 wasted ops/day. (1b) No commit preflight — QA fires every 30min even with no new commits, rescanning same fd9efdf 4+ times. (1c) Duplicate findings — Score.readFile() bug reported 4× in unreviewed-findings.md. Also: Coach common-sense-verify wastes 50% ops on session discovery (could be JS index). Bob bash-as-cat persists (6 calls/session). Sent QA fix proposals to tech-lead (req:530b7be9). Finding at `workspace/finding-llm-to-js-scan-0322-0440.md`.
+  Latest (2026-03-22T21:15): **190 sessions scanned.** Bash-as-cat still 12% (162/1389 bash calls). Categorized: 81 simple-cat-read, 51 redirect-write, 13 heredoc-append, 12 cat-pipe. QA commit preflight STILL NOT BUILT — req:530b7be9 was "auto-completed" but only the npx fix was deployed (verified in heartbeat.md). QA re-scans same `de62c5a` commit across 3/4 sessions = ~$1.50/day waste. Bob reads 19KB focus-tasks.md in 100% of sessions (7/7). Tech-lead still calls `npx tsc` in 5 sessions (8 calls). Finding at `workspace/finding-llm-to-js-scan-0322-2115.md`.
+  Previous (2026-03-22T04:40): QA: 3 compound wastes = $2-3/day. npx fix deployed ✓. Commit preflight and dedup findings NOT deployed.
 
 - [x] **Handler health check** — Last done: 2026-03-22T03:09 (quick re-check)
   Review existing JS handlers in agents/may/handlers/.

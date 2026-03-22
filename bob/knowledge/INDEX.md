@@ -87,3 +87,6 @@ Read on demand when relevant:
   before calling `finish()`. Document delegations as "delegated to [agent]", not
   as completed work. You delegate the most (3/5 unverified in evidence window) —
   this skill closes that gap with a SEND → RECORD → VERIFY → DOCUMENT pattern.
+- `agents/shared/skills/idempotent-work-detection/SKILL.md` — before starting
+  any task, check if the work is already done. Quick state check in turn 1,
+  decide in turn 2. Prevents 3-8 wasted turns per incident.

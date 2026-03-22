@@ -191,3 +191,25 @@
 - Verified Scout is compliant.
 
 
+
+## Session s_1774211823656_511
+
+### Evidence
+- `read(agents/tech-lead/workspace/journal.md)`: Confirmed C1.5 Ghost Deliverable Guard is **blocked** at platform level ("Immutable Runtime"). Code exists (`src/lib/finish-guard.ts`) but cannot be wired into `finish()` tool.
+- `read(agents/coach/heartbeat.md)`: Confirmed FM-3.3 Guard ("Structural Verification") is present (Section 0c) for Coach.
+- `grep(agents/*/heartbeat.md)`: Confirmed FM-3.3 Guard is present for Amy, Bob, Coder, Optimizer, QA, Scout, Tech-Lead.
+- `read(agents/bob/workspace/ideas.md)`: Synthesized new discoveries (Memory Gap, Patrol Gap, GNAP, Active Nudging).
+
+### Analysis
+- **C1.5 Guard**: We cannot implement the `finish()` hook in userland because the runner binary is immutable. The `finish-guard.ts` module is a dead asset until we get platform access or a `beforeToolCall` hook.
+- **FM-3.3 Guard**: Successfully deployed across all relevant agents.
+- **Synthesis**: Updated `ideas.md` with high-value findings from Scout.
+
+### Decisions
+- **Stop Retrying C1.5**: Acknowledged the platform blocker. No further briefs or delegations on this topic.
+- **Focus on Userland Reliability**: Since we can't patch the runner, we must rely on "Active Nudging" (Sidecar) and "Structural Verification" (Script-over-Eye) to catch failures.
+
+### Actions Taken
+1. **Synthesized Discoveries**: Updated `agents/bob/workspace/ideas.md` with Memory Gap, Patrol Gap, GNAP, and Skill-Inject.
+2. **Consolidated Workspace**: Moved sent briefs to `agents/bob/workspace/sent/2026-03-22/`.
+3. **Verified Deployments**: Confirmed FM-3.3 guard presence.

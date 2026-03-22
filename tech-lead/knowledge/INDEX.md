@@ -78,3 +78,6 @@ When reporting implementation failures, use standardized MAST codes from `agents
   before calling `finish()`. Document delegations as "delegated to [agent]", not
   as completed work. You delegate implementation tasks to coder (1/1 unverified
   in evidence) — this skill ensures requests don't get lost silently.
+- `agents/shared/skills/idempotent-work-detection/SKILL.md` — before starting
+  any task, check if the work is already done. Quick state check in turn 1,
+  decide in turn 2. Prevents 3-8 wasted turns per incident.

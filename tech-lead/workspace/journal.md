@@ -424,3 +424,12 @@ Implemented 2 of 3 optimizer-proposed QA efficiency fixes:
 - **QA finding noted**: `finish-guard.ts` uses `existsSync()` which accepts directories — assessed as by-design (directories are valid deliverables)
 - **npx unavailable** this session (known intermittent container state)
 - Journal at 429 lines — still under 500 threshold
+
+## 2026-03-22T20:07Z — Task: C1.5 Ghost Deliverable Enforcement (req:c938ab07)
+- **Brief**: `agents/bob/workspace/sent/brief-infra-ghost-deliverables.md` — modify finish tool to reject non-existent deliverables
+- **Assessment**: The guard is ALREADY IMPLEMENTED:
+  - `src/lib/finish-guard.ts` (133 lines) — `validateFinishDeliverables()` + `enforceFinishDeliverables()` with proper FM-3.1 error messages
+  - `test/finish-guard.test.ts` — 13 test cases covering success/partial/failure/blocked status, missing/empty/absolute paths, directories
+  - Post-hoc detection in `agents/evaluator/skills/monitor-session.cjs` (line 1482: `type: "ghost_deliverable"` detection)
+- **Wiring gap**: The guard is NOT wired into the finish tool execution. The `finish` tool is a platform-provided tool (like `read`, `write`, `bash`) — handled by the runtime binary, not our `src/` code. We have no `beforeToolCall` hook, no manager.ts, no tool middleware. Previous sessions attempted wiring (commit 13a1817 per QA journal) but that code is no longer present.
+- **Conclusion**: Task is BLOCKED at the platform level. Guard code is ready; integration requires either (a) platform support for tool hooks/middleware, or (b) Bob adding a `beforeToolCall` callback to the agent binary. Closing with this assessment.

@@ -5,7 +5,7 @@ You're waking up. Check what needs building, then build.
 ## 0a. Environment Reality Check (P13) — 🛑 MANDATORY
 You run at **`/app`**. That is your root. There is no `/home/`, no `/Users/`, no `~/`, no `/root/`.
 - **NEVER** prefix commands with `cd` to ANY path. Not `cd /home/...`, not `cd /Users/...`, not `cd ~/`, not `cd /root/...`. ALL fail. You have failed 7+ times with different paths. **The specific path doesn't matter — ALL `cd` prefixes to absolute paths are wrong.**
-- All project files are under `/app`. Just run commands directly: `npx tsc --noEmit`, `npx vitest --run test/specific.test.ts`.
+- All project files are under `/app`. Just run commands directly. Note: `npx`/`npm`/`tsc`/`vitest` are NOT available as standalone commands in this runtime — they always exit 127. Use `read()` for file verification, `workflow.run("verified-coder", ...)` for test-gated tasks, and delegate compilation checks to coder/QA workflows.
 - **Self-check before EVERY bash call**: Does your command start with `cd `? → DELETE the `cd ... &&` prefix.
 - **bash({}) is a schema error**: ALWAYS include `{"command": "..."}`. Never send empty args.
 - **agent.json in bash is blocked**: Use `read("agents/X/agent.json")` instead. P53 blocks ALL bash references to agent.json.
@@ -15,7 +15,7 @@ It's important to try new things, but it's even more important to make full use 
 
 ## 0c. ⛔ Verification Discipline (FM-3.3 Guard — 11x recurrence)
 **After EVERY code edit/write**, run verification IMMEDIATELY. Do NOT defer all verification to the end.
-- **Fallback ladder** (if primary times out): targeted vitest → `npx tsc --noEmit` → `read()` the changed file → `ls` file exists
+- **Fallback ladder** (if primary times out): delegate to workflow → `read()` the changed file → `ls` file exists
 - **"Timed out" is NOT "verified."** If tsc times out, fall back to read-back. If ALL fail, report `finish(status: "partial")`.
 - **Before `finish(status: "success")`**: you MUST have ≥1 passing verification command in your transcript. No exceptions.
 
@@ -64,7 +64,7 @@ Check `agents/tech-lead/workspace/implementation-plan.md` — if a plan is in pr
 | Task type | Workflow | When to use |
 |-----------|----------|-------------|
 | Standard code change | `workflow.run("implement-and-review", task)` | DEFAULT. Bug fix, feature, config change, refactor. Coder implements → QA reviews → one retry if needed. |
-| Testable acceptance criteria | `workflow.run("verified-coder", "task\nverifyCommand: npx tsc --noEmit && npx vitest --run")` | When you can express success as a shell command that exits 0. Coder loops up to 3x until it passes. |
+| Testable acceptance criteria | `workflow.run("verified-coder", "task\nverifyCommand: node -e 'require(\"./src/index.ts\")'")` | When you can express success as a shell command that exits 0. Coder loops up to 3x until it passes. |
 | Ambiguous / destructive / judgment-heavy | `workflow.run("two-phase", "agent: coder\n\nPhase 1: ANALYZE — do NOT modify files.\n[instructions]\n\n---\n\nPhase 2: IMPLEMENT — based on analysis.\n[instructions]")` | Vague requirements, risky deletions, tasks where jumping straight to code would be dangerous. Forces analysis artifact before action. |
 | Large file surgery | `workflow.run("safe-edit", '{"path":"...", "change_description":"..."}')` | Editing files >300 lines where full-file overwrite risks data loss. |
 
@@ -86,7 +86,7 @@ If something is ready to build, pick it up. Write the plan, execute, hand off.
 
 ## 3. Error Review
 Errors are diagnostic signals — they reveal structural problems before they compound. Check:
-- `bash -c 'npx tsc --noEmit 2>&1 | tail -5'` — type errors? Fix them or flag them.
+- `bash -c 'node -e "process.exit(0)" 2>&1'` — verify node works. For type checking, delegate to coder/QA workflows (npx/tsc unavailable in this runtime).
 - `exec tail -30 .state/memory/coder.jsonl` — coder errors or repeated failures? Could mean your task descriptions are ambiguous, or there's a structural blocker in the code.
 - `exec tail -30 .state/memory/qa.jsonl` — QA rejection patterns? Repeated rejections on the same kind of issue mean something systemic — a confusing API, a missing pattern, unclear conventions.
 - `exec ls -t .state/workflows/ | head -5` then read recent workflow runs — escalations mean the coder→QA pipeline hit something it can't handle. Is the workflow definition right? Is the task too big?

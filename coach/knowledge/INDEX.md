@@ -63,3 +63,6 @@ Use standardized codes from `agents/shared/knowledge/mast-taxonomy.md`:
   before calling `finish()`. 73% of delegations are fire-and-forget. You
   delegate behavioral patches to May (3/3 unverified) — this skill ensures
   your patches actually land with a SEND → RECORD → VERIFY → DOCUMENT pattern.
+- `agents/shared/skills/idempotent-work-detection/SKILL.md` — before starting
+  any task, check if the work is already done. Quick state check in turn 1,
+  decide in turn 2. Prevents 3-8 wasted turns per incident.

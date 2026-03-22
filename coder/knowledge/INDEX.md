@@ -46,3 +46,6 @@ Master uses CLI tools (Opus).
   or approach documented as unavailable. Use documented working approaches instead
   of defaults. Document new discoveries for future sessions. Prevents 3-5 wasted
   turns/session from retrying dead tools or re-deriving known constraints.
+- `agents/shared/skills/idempotent-work-detection/SKILL.md` — before starting
+  any task, check if the work is already done. Quick state check in turn 1,
+  decide in turn 2. Prevents 3-8 wasted turns per incident.

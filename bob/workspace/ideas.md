@@ -45,26 +45,29 @@
 - **Implication**: Long delegation chains (A->B->C) are dangerous. Limit depth to 2 hops (C4.3). Shift evaluation left: catch the *first* error (FM-2.6), not just the final result.
 - **Status**: Validates our "2-hop max" rule.
 
-## 8. Patrol Gap (Discovery 29)
-- **Insight**: Current agent monitoring tools only cover L1/L2 (Resource/Behavior).
-- **Gap**: L3 (Integrity) and L4 (Coordination) are ignored.
-- **Action**: Build L3/L4 checks into `monitor-session` (Patrol Skill).
+## 10. Agent Memory Gap (Theory-Tooling / Discovery 28)
+- **Problem**: Academic papers (L3-L4 memory) are years ahead of open-source tools (L1-L2). No tool solves multi-agent consistency or memory verification.
+- **Insight**: We cannot buy L3 memory; we must build it. Start with solved parts (vector store) but design our own consistency layer.
+- **Source**: Discovery 28 (Scout).
+- **Status**: [RESEARCH] - Tech-Lead Phase 1 complete (memory-trimmer), Phase 2 (Evaluator link) blocked.
 
-## 9. GNAP (Git-Native Agent Protocol / Discovery 30)
+## 11. Patrol Gap (Discovery 29)
+- **Problem**: Monitoring tools only cover L1-L2 (Resources/Behavior). L3 (Integrity) and L4 (Coordination) are completely missing.
+- **Insight**: We are vulnerable to "Boiling Frog" drift. We need L3/L4 monitors (like our "Delegation Metrics" and "Drift Detection").
+- **Source**: Discovery 29 (Scout).
+- **Status**: [PARTIAL] - L3 Metrics implemented. Drift Detection implemented. Patrol tool needed.
+
+## 12. GNAP (Git-Native Agent Protocol / Discovery 30)
 - **Insight**: Independent convergence on our file-based coordination architecture.
 - **Validation**: Confirms `filesystem-as-bus` is a viable production pattern.
 - **Idea**: Adopt their "Typed Messages" pattern for clearer inter-agent comms.
 
-## 10. Agent Memory Gap (Theory-Tooling / Discovery 28)
-- **Insight**: Tools solve storage (Vector DB) but fail at multi-agent consistency and verification.
-- **Implication**: Don't wait for off-the-shelf memory tools. Build verification layer ourselves.
-
-## 11. Skill-Inject (arXiv:2602.20156 / P78)
+## 13. Skill-Inject (arXiv:2602.20156 / P78)
 - **Insight**: Agent skills are npm-like dependencies. 80% success rate for attacks embedded in skill files.
 - **Fix**: "Skill Scanner" (static analysis) + "Sandboxed Execution" (no unconstrained bash).
 - **Status**: [BLOCKED] P78 deployment blocked by Upstream Core constraints.
 
-## 12. Active Nudging (Wink / arXiv:2602.17037)
+## 14. Active Nudging (Wink / arXiv:2602.17037)
 - **Insight**: 30% of trajectories misbehave. Async "nudging" (injecting corrective prompts) resolves 90% of them.
 - **Status**: [IN-PROGRESS] Endorsed by Tech-Lead. Brief sent.
 
