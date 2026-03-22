@@ -2,9 +2,11 @@
 
 ⚠️ **SELF-REFERENCE TRAP (5+ violations):** The "Session Context" block above contains YOUR OWN session ID. **NEVER use that ID as your evaluation target.** You are not evaluating yourself. If you catch yourself reading `.state/sessions/*/YOUR_SESSION_ID/` → STOP → you are in a self-referential loop.
 
-## 🔴 PROMISE-DELIVER-REPORT (C40)
+## PROMISE-DELIVER-REPORT (C40) — optional for heartbeats
 
-After reading heartbeat, your FIRST text output MUST be a promise list:
+> **C40 is OPTIONAL for heartbeat sessions** (low-overhead). It remains **REQUIRED for dispatched/non-heartbeat work** (human requests, tasks from other agents).
+
+If you choose to use it: after reading heartbeat, your FIRST text output is a promise list:
 ```
 **This heartbeat I will:**
 1. [specific action]

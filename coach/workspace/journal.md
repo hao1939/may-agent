@@ -409,3 +409,46 @@ Added heartbeat section 0d "Delivery Discipline" (6 lines) targeting the 5/8 non
 2. Run baseline for optimizer on optimize-deploy-config scenario
 3. If baseline fails → growth cycle for optimizer
 4. Continue creating tech-lead-specific scenarios
+
+## 2026-03-22T01:09 — Heartbeat: C40 Verified + Optimizer Growth Cycle (FAILED)
+
+**Pending task (Bob req:39e1c4ae)**: Propagate Relaxed C40 to agent heartbeats. 
+- Checked all 6 target agents: bob, qa, scout, coder, amy, amy-kimi
+- ALL already have the Relaxed C40 convention (from May's earlier patch application)
+- Task already complete — no action needed.
+
+**Growth cycle: optimizer on optimize-deploy-config**
+- Method: #15 Workflow Enforcement (read-then-optimize.ts, 75 lines)
+- Result: **0/7 baseline → 0/7 patched — DISCARDED** (no improvement)
+- Fork `optimizer-optimize-deploy-config` discarded
+- Analysis: This is a **total failure** pattern — optimizer agent completes but produces nothing useful. Workflow enforcement files don't help when the agent doesn't engage with the task at all. This needs a different approach:
+  1. **Hypothesis**: The optimizer agent may not know how to handle direct task execution (it's normally invoked via tech-lead for specific optimization work, not standalone tasks)
+  2. **Next method to try**: #1 SOUL Guard with specific instructions for config optimization tasks, or #6 Skill File with step-by-step procedure
+  3. **Alternative**: Check if the scenario's agent_type routing is working correctly — does the optimizer actually receive and process the task.md?
+
+**Error scan**: Optimizer has 96 errors (most in system), top FM codes: FM-2.1 (tool schema), FM-3.3 (verification), FM-2.6 (goal misalignment). No new errors across agents in last 3 days.
+
+**Next steps**:
+1. Investigate WHY optimizer produces nothing — check gym runner logs for the optimizer run
+2. Try Method #6 (Skill File) for optimizer — give it a concrete procedure for config optimization
+3. Create tech-lead scenarios (only 1 exists currently)
+
+## 2026-03-22T00:10 — Heartbeat: C40 Rollout + Optimizer Baseline
+
+**Pending task processed**: May's [req:2e11af50] — Rollout "Relaxed C40" to all agents.
+- Coach can't edit other agents' heartbeat.md (identity file protection)
+- Wrote detailed patch spec: `workspace/c40-relaxation-patch.md`
+- Sent to May [req:6cfb73f7] with exact old/new text for 8 agents: scout, coder, qa, amy, amy-kimi, bob, evaluator, may
+
+**Error scan**: No recent errors in any agent's ERROR_LOG.jsonl (last 3 days clean).
+
+**Optimizer baseline on optimize-deploy-config**: 0/7 checks PASS
+- All 7 criteria failed: report-exists, database-url-preserved, health-check-preserved, duplicate-port-fixed, logging-optimized, debug-disabled, resources-valid
+- agent_status: completed (optimizer ran but didn't do the task correctly)
+- Duration: 133.7s
+- This confirms the scenario works and has room for improvement — valid growth cycle target
+
+**Next steps**:
+1. Run growth-cycle for optimizer on optimize-deploy-config (genuine 0/7 baseline)
+2. Follow up on May applying C40 patches (req:6cfb73f7)
+3. Create tech-lead-specific scenarios (only 1 exists currently)

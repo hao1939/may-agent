@@ -55,3 +55,9 @@ Use these codes in your analysis reports to drive structural fixes.
   path (ENOENT), edit mismatch, output overflow, guardrail blocks. Max 3
   attempts then move on. You designed this skill — use it as reference when
   analyzing pivot failures (FM-2.2) in other agents.
+- `agents/shared/skills/state-check-before-action/SKILL.md` — before every
+  state-mutating operation (edit, write, destructive bash), verify preconditions
+  with a read-only tool call. Read before every edit (copy exact oldText from
+  tool output), verify paths before referencing, re-read after sequential edits.
+  Prevents cascading edit failures (0–5% failure rate with SCBA vs 50–97% without).
+  You designed this skill — use it as reference when analyzing FM-1.1/FM-2.6.

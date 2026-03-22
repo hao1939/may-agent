@@ -70,3 +70,9 @@ Read on demand when relevant:
   path (ENOENT), edit mismatch, output overflow, guardrail blocks. Max 3
   attempts then move on. Key anti-pattern for you: "silent proceed" — when
   a tool errors, acknowledge it and try a fallback, don't just continue.
+- `agents/shared/skills/state-check-before-action/SKILL.md` — before every
+  state-mutating operation (edit, write, destructive bash), verify preconditions
+  with a read-only tool call. Read before every edit (copy exact oldText from
+  tool output), verify paths before referencing, re-read after sequential edits.
+  Critical for you: your sessions show the worst-case anti-pattern (89/92 edit
+  failures from stale mental models). This skill prevents that cascade.

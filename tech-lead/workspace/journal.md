@@ -256,3 +256,29 @@ QA had a CONDITIONAL pass due to `readFileSync` import (needed for cooldown) and
 **Build health**: Clean — no TODO/FIXME in src/lib, no new type errors detectable. Obstacle Pivot skill lifecycle completed (all 4 phases).
 
 **Bob req:fa83dc1f**: Already implemented. Closing.
+
+## 2026-03-22T01:37Z — Heartbeat (s_1774143417491_368)
+
+**Status**: Clean. Active Nudging fully implemented and verified. No new pending tasks.
+
+**Verification pass**: Re-confirmed all 3 brief deliverables + cron entry. monitor-session.cjs syntax-checks clean. No `interrupt` action leaks. `dirname` fix in place. Nudge log path correct (`ctx.projectRoot/.state/nudge-log.jsonl`). heartbeat-context.ts injects nudge-active.md with URGENT priority.
+
+**Growth cycle active**: `wr_1774141804224_t01z` — Coach working on optimizer's `optimize-deploy-config` scenario (FM-2.1/FM-3.3). In progress.
+
+**Bob request [req:20c7396f]**: Active Nudging brief. Implementation complete — marking done.
+
+---
+
+## 2026-03-22T00:07Z — Heartbeat (s_1774138017485_354)
+
+**Status**: Clean — no pending work, build healthy.
+
+**Active Nudging (Phase 3)**: Confirmed all 4 deliverables complete and QA-reviewed:
+1. ✅ `agents/evaluator/skills/monitor-session.cjs` — `detectGhostDeliverable` + `detectProductivityStall` exported (1930 lines)
+2. ✅ `agents/may/handlers/active-nudge.ts` — handler with cancel/nudge + cooldown (256 lines). QA fixes applied: `dirname()` import, proper dir creation, action handling spec-compliant.
+3. ✅ `agents/may/cron.json` — active-nudge entry at 5min interval
+4. ✅ `agents/may/handlers/heartbeat-context.ts` — nudge-active.md injection wiring
+
+Closing req:36e0d62f (from Bob) — implementation was completed across sessions 2026-03-21.
+
+**Environment note**: `npx` unavailable in this container (QA also blocked on tsc/vitest). Node v18.20.4 works. monitor-session.cjs loads cleanly via `require()`.

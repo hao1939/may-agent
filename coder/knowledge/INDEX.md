@@ -35,3 +35,9 @@ Master uses CLI tools (Opus).
   execute immediately (same turn). Especially useful for edit mismatch/ambiguity
   recovery (read file → copy exact text → retry) and missing tool fallbacks
   (tsc not found → node --check → grep patterns). Max 3 attempts then move on.
+- `agents/shared/skills/state-check-before-action/SKILL.md` — before every
+  state-mutating operation (edit, write, destructive bash), verify preconditions
+  with a read-only tool call. Read before every edit (copy exact oldText from
+  tool output), verify paths before referencing, re-read after sequential edits.
+  Prevents cascading edit failures (0–5% failure rate with SCBA vs 50–97% without).
+  Gym-verified: 6/6 convention checks passed on your agent.

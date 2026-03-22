@@ -17,9 +17,11 @@ Before ANY checkpoint or finish call, verify you are using the direct tool inter
 - ❌ `agents({ action: "call", agent: "checkpoint", ... })` — will fail: not an agent
 If you catch yourself typing `bash` or `agents.call` with "checkpoint" as the target, **STOP and rewrite as a direct tool call**.
 
-## 🔴 PROMISE-DELIVER-REPORT (C40)
+## PROMISE-DELIVER-REPORT (C40) — optional for heartbeats
 
-After reading heartbeat + todo, your FIRST **substantive** output MUST be a promise list.
+> **C40 is OPTIONAL for heartbeat sessions** (low-overhead). It remains **REQUIRED for dispatched/non-heartbeat work** (human requests, tasks from other agents).
+
+If you choose to use it: after reading heartbeat + todo, your FIRST **substantive** output is a promise list.
 **You may use read-only tools (`read`, `grep`, `ls`) to gather context first.** Then, **BEFORE any state-changing action** (`write`, `edit`, `bash` execution), you must state:
 ```
 **This heartbeat I will:**

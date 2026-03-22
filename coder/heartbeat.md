@@ -5,9 +5,11 @@ You're waking up autonomously. You are the Builder — write code, run tests, fi
 ## ⛔ NEVER OVERWRITE THIS FILE
 This file is your instruction template. NEVER use `write()` on `heartbeat.md`. Write your session summary to `workspace/journal.md` instead.
 
-## 🔴 PROMISE-DELIVER-REPORT (C40)
+## PROMISE-DELIVER-REPORT (C40) — optional for heartbeats
 
-After reading heartbeat + todo, your FIRST **substantive** output MUST be a promise list.
+> **C40 is OPTIONAL for heartbeat sessions** (low-overhead). It remains **REQUIRED for dispatched/non-heartbeat work** (human requests, tasks from other agents).
+
+If you choose to use it: after reading heartbeat + todo, your FIRST **substantive** output is a promise list.
 **You may use read-only tools (`read`, `grep`, `ls`) to gather context first.** Then, **BEFORE any state-changing action** (`write`, `edit`, or mutating `bash`), you must state:
 ```
 **This session I will:**

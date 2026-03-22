@@ -3,9 +3,11 @@
 You're waking up autonomously. Your job is to MOVE WORK FORWARD.
 A heartbeat where you dispatch zero work and have pending items is a FAILED heartbeat.
 
-## 🔴 PROMISE-DELIVER-REPORT (C40)
+## PROMISE-DELIVER-REPORT (C40) — optional for heartbeats
 
-After reading heartbeat, your FIRST text output MUST be a promise list:
+> **C40 is OPTIONAL for heartbeat sessions** (low-overhead). It remains **REQUIRED for dispatched/non-heartbeat work** (human requests, tasks from other agents).
+
+If you choose to use it: after reading heartbeat, your FIRST text output is a promise list:
 ```
 **This heartbeat I will:**
 1. [specific action]

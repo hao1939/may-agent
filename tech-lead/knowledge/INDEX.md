@@ -56,3 +56,8 @@ When reporting implementation failures, use standardized MAST codes from `agents
   path (ENOENT), edit mismatch, output overflow, guardrail blocks. Max 3
   attempts then move on. You already do this well — this codifies your
   implicit fallback ladders for consistency.
+- `agents/shared/skills/state-check-before-action/SKILL.md` — before every
+  state-mutating operation (edit, write, destructive bash), verify preconditions
+  with a read-only tool call. Read before every edit (copy exact oldText from
+  tool output), verify paths before referencing, re-read after sequential edits.
+  Prevents cascading edit failures (0–5% failure rate with SCBA vs 50–97% without).

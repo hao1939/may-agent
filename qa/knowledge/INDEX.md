@@ -29,6 +29,11 @@ Tech-lead builds (Opus). May is Supervisor (Opus).
   execute immediately (same turn). Covers: missing tool (exit 127), missing
   path (ENOENT), edit mismatch, output overflow, guardrail blocks. Max 3
   attempts then move on.
+- `agents/shared/skills/state-check-before-action/SKILL.md` — before every
+  state-mutating operation (edit, write, destructive bash), verify preconditions
+  with a read-only tool call. Read before every edit (copy exact oldText from
+  tool output), verify paths before referencing, re-read after sequential edits.
+  Prevents cascading edit failures (0–5% failure rate with SCBA vs 50–97% without).
 
 ## Consolidated Memory
 - `agents/qa/knowledge/consolidated-memory-2026-03.md`: Durable facts/patterns extracted from QA journal (2026-03-16..2026-03-18).

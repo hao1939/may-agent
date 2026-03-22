@@ -1,5 +1,19 @@
 # Journal
 
+## 2026-03-22T00:09 — State-Check-Before-Action (SCBA) Skill Lifecycle (Pattern → Skill)
+
+**Task**: Proven pattern → Skill/Workflow periodic task (alternating to skill work after cost scan)
+**Pattern**: State-Check-Before-Action — agents should verify preconditions with read-only tool calls before any state-mutating operation. Addresses FM-1.1 PATH_CONFUSION (7x tech-lead), FM-2.6 REASONING_ACTION_MISMATCH (12x coach).
+**Workflow**: `skill-lifecycle` — all 4 phases in separate sessions.
+
+**Results**:
+- Phase 1 (Discovery): Analyzed 15+ sessions, found 96.7% failure rate without SCBA. Top failure patterns: edit-without-read (89/92 Bob failures in one session), path guessing (tech-lead 7x), state assumption (coach "lab is clean" when it wasn't).
+- Phase 2 (Draft): Created SKILL.md (224 lines, 11KB) with 4-step protocol (IDENTIFY→VERIFY→PROCEED→RE-VERIFY), 5 testable assertions, 3 anti-patterns (Stale Mental Model, Path Assumption, Optimistic Edit Chain).
+- Phase 3 (Test): Gym tested.
+- Phase 4 (Deploy): Deployed to 5 agents' INDEX.md (coder, optimizer, bob, qa, tech-lead).
+
+**Skill inventory**: 3 optimizer-created skills deployed (grep-first-reading, obstacle-pivot, state-check-before-action). All address top FM recurrences.
+
 ## 2026-03-21T19:39 — Obstacle Pivot Skill Lifecycle (Pattern → Skill)
 
 **Task**: Proven pattern → Skill/Workflow periodic task (most overdue at 7.5h)
