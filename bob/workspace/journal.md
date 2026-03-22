@@ -132,11 +132,11 @@
 - Updated `focus-tasks.md` to reflect Active Nudging status.
 - Upstream Core Fix and Supply Chain Hardening blocked by immutable runtime.
 
-## Session 2026-03-22 (Discovery Synthesis)
-- **Analysis**: Synthesized 4 new discoveries from Scout:
-  1. **Memory Gap**: Tools fail at multi-agent consistency.
-  2. **Patrol Gap**: Monitoring tools ignore integrity/coordination layers.
-  3. **GNAP**: Independent convergence on file-based architecture.
-  4. **Error Propagation**: Strong models degrade faster in multi-turn (16pt drop).
-- **Consolidation**: Merged duplicate Context Engineering entries in `ideas.md`.
-- **Status**: Active Nudging (Phase 3) is delegated to Tech-Lead. Relaxed C40 is deployed via `common-sense.md`.
+
+## Session 2026-03-22 (Control Plane Synthesis)
+- **Control Plane Phase 3 (Active Nudging)**: Verified briefly exists (`workspace/sent/brief-active-nudging.md`), endorsed by Tech-Lead, tracked in `focus-tasks.md`.
+- **New Research**: Synthesized findings from Scout's `discoveries.md`:
+  - **Control Plane Sidecar**: `synthesis/2026-03-21-control-plane.md` updated with "Wink" status.
+  - **Capability-Reliability Tension**: Added Discovery 31 (Error Propagation Rate 6x) to `ideas.md`.
+  - **AgentConductor**: Added Dynamic Topology idea to `ideas.md`.
+- **Status**: Active Nudging is [IN-PROGRESS]. Relaxed C40 is [DEPLOYED].

@@ -63,4 +63,14 @@
 
 ## 12. Active Nudging (Wink / arXiv:2602.17037)
 - **Insight**: 30% of trajectories misbehave. Async "nudging" (injecting corrective prompts) resolves 90% of them.
-- **Status**: [COMPLETED] Verified implementation in `agents/may/handlers/active-nudge.ts` and `heartbeat-context.md`.
+- **Status**: [IN-PROGRESS] Endorsed by Tech-Lead. Brief sent.
+
+## 13. Error Propagation (Discovery 31 / arXiv:2603.11281)
+- **Insight**: One error in a multi-turn session multiplies downstream risk by 6x.
+- **Implication**: Early detection is 6x more valuable than late correction.
+- **Action**: Shift evaluation left — `monitor-session` must catch the *first* error (FM-2.6), not just the final result.
+
+## 14. AgentConductor (Dynamic Topology / arXiv:2602.17100)
+- **Insight**: Static supervisor-worker hierarchies are suboptimal. RL-driven topology (Direct vs Hierarchical) improves pass rate by 14%.
+- **Idea**: "Complexity Assessor" step in Manager that chooses team structure (Solo vs Squad) before dispatch.
+
