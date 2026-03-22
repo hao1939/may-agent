@@ -1,0 +1,9 @@
+{
+  "name": "stale-approach-fixation",
+  "categories": ["efficiency", "convention-compliance"],
+  "tags": ["behavior", "efficiency", "memory", "environment-awareness"],
+  "tier": "standard",
+  "timeout": 4,
+  "agent_type": "coder",
+  "workflow": false
+}

@@ -9,11 +9,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If found → add specific task to workspace/todo.md.
   Latest (2026-03-22T03:10): **213 sessions/24h, 23.8MB total.** Optimizer #1 recent (42% of 8h, 17 sessions — workflow sub-sessions inflate count). Top 3 = 71.5% (Coach 25.2%, Optimizer 23.4%, Tech-lead 22.9%). Bob down to 13.3% (maxTurns working). Amy-kimi 100% error rate persists (13 sessions/24h, disable request unprocessed). Edit-match failures pervasive but SCBA skill deployed — monitoring impact.
 
-- [x] **Cost outlier scan** — Last done: 2026-03-22T03:10
+- [x] **Cost outlier scan** — Last done: 2026-03-22T07:39
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-22T03:10): **No new critical outliers.** Top session: optimizer s_326 at 475KB (skill-lifecycle workflow, productive). Bob s_336 at 363KB (the $9.28 89-retry session, already capped). No new Bob outliers since maxTurns fix. System cost trending down: ~24MB/day vs 34MB/day prior. Estimated ~$150-200/day (was $300+). Prior optimizations (maxTurns, growth-trigger cooldown, skipIfIdle) all confirmed working.
+  Latest (2026-03-22T07:39): **53 sessions/6h, $28.93 (~$116/day).** Bob s_405 = $5.26 (19 bash-as-cat, 10 double-reads). Bob now 31.7% of cost (was 13.3% — single-session spike). 61 bash-as-cat calls system-wide ($20-30/day waste). Sent FILE_READING_GUARD proposals for Bob + Coach heartbeats to May (req:e0b3a237, req:a87e60ab). Finding at `workspace/finding-cost-scan-0322-0739.md`.
 
 - [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-22T04:40
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
@@ -27,14 +27,15 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If issues → add fix to workspace/todo.md.
   Latest (2026-03-22T03:09): **3 handlers STILL dead** (convention-check, tool-quality-scan, heartbeat-context) — lastRun=never for all three. Root cause unchanged: compiled ELF binary (`may-agent-bin`) has handlers baked in at compile time. TS files added post-compilation aren't loaded. No hot-loading path exists. Binary last rebuilt 2026-03-21T08:40. Handler report artifacts (graduation-report, compaction-report) last ran at that restart time. **Binary rebuild remains the only fix.** Finding at workspace/finding-handler-health-0321-0839.md.
 
-- [x] **Proven pattern → Skill/Workflow** — Last done: 2026-03-22T03:09
+- [x] **Proven pattern → Skill/Workflow** — Last done: 2026-03-22T06:09
   This is your MOST IMPORTANT periodic task — focus area #1.
   **Run it via workflow**: `workflow.run("skill-lifecycle", "Scan recent sessions for proven multi-step patterns")`
   The workflow mechanically enforces all 4 phases (discover → draft → test → deploy) in separate
   sessions, preventing you from skipping testing or doing meta-work instead.
   If you have a specific pattern in mind, pass it: `workflow.run("skill-lifecycle", "Pattern: agents read file → check convention → edit → verify")`
   **Deliverable**: A new or refined skill file, tested in gym, deployed to agents.
-  Latest (2026-03-22T03:09): **budget-before-act skill DEPLOYED.** Full 4-phase lifecycle: (1) Discovered FM-3.1 (premature termination / non-delivery) as #1 uncovered failure mode — 31 occurrences across all agents. (2) Drafted SKILL.md (266 lines) with 4-step protocol (ESTIMATE→SKELETON→CHECKPOINT→TRIAGE). (3) Gym tested 3/3 runs passed (11/11 checks each). (4) Deployed to agent INDEX.md files.
+  Latest (2026-03-22T06:09): **stale-approach-fixation skill DEPLOYED.** Full 4-phase lifecycle: (1) Discovered cross-session stale approach pattern — agents ignore workspace notes and retry known-dead tools (npx/npm/yarn/tsc), wasting 3-5 turns/session. (2) Drafted SKILL.md (230 lines) with 4-step READ→BUILD→CHOOSE→DOCUMENT protocol. (3) Gym tested 3/3 runs, 6/7 behavioral checks passed (failing check was task-completeness, not skill behavior). (4) Deployed to agent INDEX.md files.
+  Previous (2026-03-22T03:09): budget-before-act skill DEPLOYED. FM-3.1 (31x).
   Previous (2026-03-22T00:09): state-check-before-action (SCBA) skill DEPLOYED. FM-2.6 (12x).
   Previous (2026-03-21T19:39): obstacle-pivot skill DEPLOYED. FM-2.2 (8x recurrence).
   Previous (2026-03-21T12:09): grep-first-reading skill DEPLOYED. 7/8 checks in gym test.

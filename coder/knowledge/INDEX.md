@@ -41,3 +41,8 @@ Master uses CLI tools (Opus).
   tool output), verify paths before referencing, re-read after sequential edits.
   Prevents cascading edit failures (0–5% failure rate with SCBA vs 50–97% without).
   Gym-verified: 6/6 convention checks passed on your agent.
+- `agents/shared/skills/stale-approach-fixation/SKILL.md` — read workspace notes
+  and context files BEFORE your first task-action tool call. Never retry a tool
+  or approach documented as unavailable. Use documented working approaches instead
+  of defaults. Document new discoveries for future sessions. Prevents 3-5 wasted
+  turns/session from retrying dead tools or re-deriving known constraints.

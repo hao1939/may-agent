@@ -10,6 +10,7 @@
 ## 2. MAST Failure Taxonomy (IBM / FC1-3)
 - **Insight**: 14 standard failure modes (FM).
 - **Key**: FM-3.3 (Incorrect Verification) is the primary failure for Gemini-class models (52% higher rate). It "identifies correct signals but terminates before cross-referencing."
+- **Mitigation**: Structural Verification pattern (Script-over-Eye).
 - **Action**: Update `evaluator` scoring to use MAST codes. (Done: criteria.md updated).
 - **Rec**: Explicitly warn Gemini agents about FM-3.3 in their DOMAIN/LESSONS.
 

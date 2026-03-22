@@ -34,6 +34,13 @@ Tech-lead builds (Opus). May is Supervisor (Opus).
   with a read-only tool call. Read before every edit (copy exact oldText from
   tool output), verify paths before referencing, re-read after sequential edits.
   Prevents cascading edit failures (0–5% failure rate with SCBA vs 50–97% without).
+- `agents/shared/skills/stale-approach-fixation/SKILL.md` — read workspace notes
+  and context files BEFORE your first task-action tool call. Never retry a tool
+  or approach documented as unavailable (e.g., npx, npm, yarn if marked failed).
+  Use documented working approaches instead of defaults. Document new discoveries
+  for future sessions. Prevents 3-5 wasted turns/session from retrying dead tools.
+  You are the #1 beneficiary — evidence shows npx retried 20 times and same
+  commits re-scanned 17 times across sessions.
 
 ## Consolidated Memory
 - `agents/qa/knowledge/consolidated-memory-2026-03.md`: Durable facts/patterns extracted from QA journal (2026-03-16..2026-03-18).

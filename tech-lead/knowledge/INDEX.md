@@ -67,3 +67,8 @@ When reporting implementation failures, use standardized MAST codes from `agents
   Key rule: exploration ≤30% of turns, deliverable file must exist by turn 4.
   Anti-pattern for you: "planning without executing" — budget forces the
   transition from reading/planning to writing output.
+- `agents/shared/skills/stale-approach-fixation/SKILL.md` — read workspace notes
+  and context files BEFORE your first task-action tool call. Never retry a tool
+  or approach documented as unavailable. Use documented working approaches instead
+  of defaults. Document new discoveries for future sessions. Prevents 3-5 wasted
+  turns/session from retrying dead tools or re-deriving known constraints.

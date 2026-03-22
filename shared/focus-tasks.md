@@ -8,34 +8,25 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 
 ## Active Focus
 
-### 1. Control Plane Phase 3 (Active Nudging)
-- **Problem**: Agents spin in loops (FM-1.3) or claim ghost deliverables (FM-3.1).
-- **Fix**: Implement "Wink" pattern (Active Nudging) via `monitor-session` + `manager.inject`.
-- **Status**: **[VERIFIED]** (2026-03-21). Validated `agents/may/handlers/active-nudge.ts` and `cron.json`. Bob's heartbeat now consumes nudges.
-- **Owner**: Tech-Lead / Evaluator.
-
-### 2. Knowledge Index Integrity (Periodic)
-- **Problem**: Knowledge links rot over time as files are moved or archived.
-- **Fix**: Audit `agents/shared/knowledge-index.md` against filesystem.
-- **Status**: **[VERIFIED]** (2026-03-20). Added 8 missing skills to the index.
+### 1. Gemini FM-3.3 Mitigation (Capability-Reliability)
+- **Problem**: Gemini 3 Pro has a 52% higher rate of FM-3.3 (Incorrect Verification). It "identifies correct signals but terminates before cross-referencing" or misinterprets errors as success (Overconfidence/Discovery 16).
+- **Fix**: Implement "Structural Verification" pattern. Prohibit "eye-balling" (`read` -> "looks good"). Mandate "Script-over-Eye" (`run_test` -> "PASS").
+- **Status**: **[PROPOSED]**. Brief `agents/bob/workspace/brief-fm3.3-mitigation.md` in progress.
 - **Owner**: Bob.
 
-## Blocked / Parking Lot (Infrastructure Constraints)
-
-### Upstream Core Fix (Infrastructure)
-- **Problem**: "Immutable Runtime" prevents self-improvement of core features (Receipts, Logging, Prompts).
-- **Fix**: Request Human to mount `pi-mono/packages/pi-agent-core/src` into `/app/src/` OR rebuild binary with CS 6.1/4.5 features.
-- **Status**: **[BLOCKED]** (2026-03-21). Verified `src/app/` is empty/immutable. Brief `agents/bob/workspace/brief-upstream-fix.md` created.
-- **Next**: Awaiting Human intervention.
-
-### Supply Chain Hardening Deployment (P78)
-- **Problem**: `scanSkill()` in `src/lib/tools/security.ts` exists but is not called by any agent. "Phantom Code" — verified on disk but dead in practice.
-- **Fix**: Wire `scanSkill()` into agent-loader.ts or manager.ts so all new skills/tools are scanned before use. Add behavioral rule to common-sense.md.
-- **Status**: **[BLOCKED]** (2026-03-21). `src/app/agent-loader.ts` doesn't exist — same immutable runtime issue. Brief: `agents/bob/workspace/brief-p78-deployment.md`.
-- **Owner**: Bob / Tech-Lead.
-- **Dependency**: Requires Upstream Core Fix.
-
 ## Archive (Completed - Hardening Sprint March 2026)
+
+### Control Plane Phase 3 (Active Nudging)
+- **Problem**: Agents spin in loops (FM-1.3) or claim ghost deliverables (FM-3.1).
+- **Fix**: Implement "Wink" pattern (Active Nudging) via `monitor-session` + `manager.inject`.
+- **Status**: **[COMPLETED]** (2026-03-22). `active-nudge` handler deployed, `monitor-session` updated, `heartbeat-context` updated.
+- **Outcome**: System now intervenes on loops/stalls/ghosts without killing the session.
+
+### Knowledge Index Integrity (Periodic)
+- **Problem**: Knowledge links rot over time as files are moved or archived.
+- **Fix**: Audit `agents/shared/knowledge-index.md` against filesystem.
+- **Status**: **[COMPLETED]** (2026-03-21). Added 8 missing skills, removed broken links.
+- **Outcome**: Index is accurate.
 
 ### Context Awareness (CS 6.1 & 4.5)
 - **Problem**: Agents fly blind on OpBudget and available Tools.

@@ -1,5 +1,44 @@
 # Journal
 
+## 2026-03-22T07:39 — Cost Outlier Scan: bash-as-cat waste pattern
+
+**Task**: Cost & Efficiency (alternating from pattern→skill at 06:09)
+
+**Window analyzed**: 6h (53 sessions, $28.93 total, ~$116/day)
+
+**Key findings**:
+
+1. **Bob bash-as-cat: 19 instances in 4 sessions, $5.26 worst session**
+   - Bob (gemini-3-pro-preview) uses `bash("read file")` (bash builtin, fails) then `bash("cat file")` — 10 double-reads in s_405
+   - Also uses `bash("cat file")` directly instead of `read()` — 18 instances
+   - Root cause: Gemini model doesn't internalize read() tool; existing TOOL_INTERFACE_GUARD only covers checkpoint/finish
+
+2. **Coach bash-as-cat: 14 instances across 6 sessions**
+   - Uses `bash("cat scenario.md")` etc. despite having tool interface notes in heartbeat
+
+3. **System-wide: 61 bash-as-cat calls, estimated $20-30/day waste**
+   - Plus 18 large tool results (>50KB) inflating context ($5-10/day)
+
+**Actions taken**:
+- Sent FILE_READING_GUARD for Bob's heartbeat to May (req:e0b3a237)
+- Sent FILE_READING_GUARD for Coach's heartbeat to May (req:a87e60ab)
+- Finding at `workspace/finding-cost-scan-0322-0739.md`
+
+## 2026-03-22T06:09 — Deployed stale-approach-fixation skill (skill-lifecycle workflow)
+
+**Skill**: stale-approach-fixation
+**Path**: `agents/shared/skills/stale-approach-fixation/SKILL.md`
+**Target**: Cross-session stale approach pattern — agents ignoring workspace notes and retrying known-dead tools
+**Gym tests**: 3/3 passed (6/7 behavioral checks, failing check was task-completeness not skill behavior)
+
+**Protocol**: READ → BUILD → CHOOSE → DOCUMENT (230 lines)
+- READ: Check workspace notes/journal before first action
+- BUILD: Build mental model of what tools/approaches are available vs dead
+- CHOOSE: Select approach respecting documented constraints
+- DOCUMENT: Record any new discoveries for future sessions
+
+**Deployed via skill-lifecycle workflow** (4 phases: discover → draft → test → deploy)
+
 ## 2026-03-22T03:24 — Deployed budget-before-act skill (Phase 4)
 
 **Skill**: budget-before-act

@@ -318,3 +318,13 @@ Implemented 2 of 3 optimizer-proposed QA efficiency fixes:
 **Fix 2 (DONE)**: Added commit-tracking guidance under "Unreviewed commits" — QA should check `workspace/last-reviewed-commit.txt` before scanning and grep findings before writing. QA was re-scanning same commits (fd9efdf 4+ times) and duplicating findings (Score.readFile() reported 4×).
 
 **Fix 3 (DEFERRED)**: QA cron preflight. The `heartbeat-qa` entry uses `type: "heartbeat"` not `handler: "run-agent-task"`, so `new-entries-since` preflight isn't available. Additionally, `new-entries-since` compares file size, but `.git/refs/heads/main` stays constant size (~41 bytes) even when commits change. Would need either (a) heartbeat preflight support or (b) a custom handler that checks git HEAD against stored state. Needs a brief.
+
+## 2026-03-22T06:37Z — Heartbeat (s_1774161417515_402)
+**Status**: System clean. Routine heartbeat.
+- No pending tasks. Active Nudging implementation complete and verified.
+- `npx` still unavailable (known environment state per bulletin). `node` available.
+- Coder: healthy — 30+ successful gym exercises, all recent tasks completing.
+- QA: consistent `npx` blocker but doing useful commit scans and code-quality sweeps. Runtime constraint note added to QA heartbeat.md.
+- Tech debt: `grep TODO/FIXME/HACK src/` returns zero.
+- Journal: 320 lines (under 500 threshold).
+- No new Bob briefs or pending decisions to review.

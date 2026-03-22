@@ -139,3 +139,25 @@ context window is nearly full, and the model's generation gets compressed or tru
 **When you notice this happening** (a validation error on a tool call): slow down. Simplify
 your next tool call. Use shorter arguments. If you're near the end of your work, call
 `finish()` with a brief summary rather than trying to squeeze in more complex operations.
+
+### AP-4: Bash-as-Cat (reading files via bash instead of read)
+The agent uses `bash({ command: "cat file.md" })` to read file contents instead of the
+native `read({ path: "file.md" })` tool. Worse: some agents use `bash({ command: "read file.md" })`
+which invokes the bash builtin `read` (waits for stdin), always fails, then retry with `cat`.
+
+**Why this wastes money**: `bash("cat file.md")` returns raw file content without pagination,
+potentially flooding the context with 50-100KB of text. The `read()` tool has built-in
+pagination (offset/limit) and truncation (2000 lines / 50KB cap). Each unnecessary bash
+call also adds a full LLM round-trip (~$0.05-0.10).
+
+**Scale**: 61 bash-as-cat calls in 6 hours system-wide. Bob (gemini-3-pro-preview) = 19 calls
+including 10 double-reads (`bash("read")` → `bash("cat")`). Coach = 14 calls. ~$20-30/day waste.
+
+**Fix**: Always use `read({ path: "..." })` to read file contents. Reserve `bash` for:
+- Running commands (`npm test`, `tsc --noEmit`, `git status`)
+- Searching (`grep`, `find`, `rg`)
+- File manipulation (`mv`, `cp`, `mkdir`)
+- Piped operations (`cat file | grep pattern`, `wc -l`)
+
+**Evidence**: Cost scan 2026-03-22T07:39. Bob session s_1774163223624_405 ($5.26, 19 bash-as-cat).
+Coach session s_1774163513216_408 (6 bash-as-cat).

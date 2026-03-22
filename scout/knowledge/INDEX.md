@@ -38,3 +38,8 @@ Bob is Architect (Gemini). Coach trains (Opus).
   execute immediately (same turn). Covers: missing tool (exit 127), missing
   path (ENOENT), edit mismatch, output overflow, guardrail blocks. Max 3
   attempts then move on.
+- `agents/shared/skills/stale-approach-fixation/SKILL.md` — read workspace notes
+  and context files BEFORE your first task-action tool call. Never retry a tool
+  or approach documented as unavailable. Use documented working approaches instead
+  of defaults. Document new discoveries for future sessions. Prevents 3-5 wasted
+  turns/session from retrying dead tools or re-deriving known findings.

@@ -462,3 +462,27 @@ Added heartbeat section 0d "Delivery Discipline" (6 lines) targeting the 5/8 non
 - This suggests multiple "failing" scenarios from Sprint 7 may now pass at baseline
 - Need fresh baseline sweep before running more growth cycles
 **Action**: Dispatching scenario development — create harder scenarios for untested areas
+
+## 2026-03-22T07:10 — Heartbeat: Optimizer Total Failure Analysis
+
+**Error scan**: Zero recent errors across all 9 agents (system clean)
+**Growth cycle**: optimizer on optimize-deploy-config with Method #4 (Skill File)
+- Result: **0/7 baseline → 0/7 patched — DISCARDED** (no improvement)
+- This is the SECOND failed method (after Method #15 Workflow Enforcement)
+- Both times: optimizer "completes" (agent_status: completed) but produces NO output
+- **Diagnosis**: This is a **total failure** pattern, not a partial failure
+  - The optimizer agent doesn't engage with the task at all
+  - Neither SOUL guards, skill files, nor workflow files help
+  - Root cause is likely **infra-level**: does the gym runner actually load optimizer's identity files? Or does it just run a generic session?
+  - The optimizer's SOUL says "Action, don't ask" but the agent may not know what to DO with a standalone config task (it normally works via tech-lead delegation)
+- **Next steps for optimizer**:
+  1. Investigate gym runner infra — how does agent_type:optimizer actually route to the optimizer agent? (check src/gym/runner.ts)
+  2. Consider if the scenario needs to simulate the delegation context the optimizer normally receives
+  3. Try Method #1 (SOUL Guard) with very explicit task-recognition instructions — but suspect infra fix is needed first
+  4. File infra bug report if gym doesn't properly load agent identity for non-coder agents
+
+**Scenario inventory**: 58 total (56 coder, 1 tech-lead, 1 optimizer)
+- Heavy skew toward coder — need more diversity
+- Tech-lead also fails (exit-code-misread 0/5) — same total failure pattern → may be same infra issue
+
+**Key insight**: Total failure (0/N on all checks, agent "completes" but does nothing) across optimizer AND tech-lead suggests the gym runner may not properly simulate non-coder agents. This is the highest-priority investigation for next session.

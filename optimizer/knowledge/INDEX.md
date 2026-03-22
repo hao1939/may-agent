@@ -67,3 +67,10 @@ Use these codes in your analysis reports to drive structural fixes.
   31 occurrences. You have 12 FM-3.1 cases (39% of total). Key rule: exploration
   ≤30% of turns, deliverable file must exist by turn 4, finish honestly if partial.
   You designed this skill — use it as reference when analyzing FM-3.1 in others.
+- `agents/shared/skills/stale-approach-fixation/SKILL.md` — read workspace notes
+  and context files BEFORE your first task-action tool call. Never retry a tool
+  or approach documented as unavailable. Use documented working approaches instead
+  of defaults. Document new discoveries for future sessions. Prevents 3-5 wasted
+  turns/session from retrying dead tools or re-deriving known constraints. You
+  designed this skill — use it as reference when analyzing dead-tool fixation and
+  groundhog-day patterns in other agents.
