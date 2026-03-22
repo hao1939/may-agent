@@ -339,3 +339,21 @@ Implemented 2 of 3 optimizer-proposed QA efficiency fixes:
 **Status**: Module complete, awaiting pi-agent-core integration (2-line import + call).
 **Existing coverage**: `agents/evaluator/skills/monitor-session.cjs` already has post-hoc ghost deliverable detection (lines 1540-1627), but it's monitoring-only, not runtime enforcement. The new module enables runtime enforcement when wired in.
 **Zero tech debt markers in src/.**
+
+## 2026-03-22 Session (heartbeat 10:06Z)
+
+### Actions
+1. **Fixed convention-verify-edit criteria bug** — Both `convention-verify-edit` and `convention-verify-edit-workflow` scenarios had a property name bug: `toolCalls` stored args as `.args` but filters referenced `.arguments` (undefined). All convention checks (C2.3, C3) silently returned false. Fixed + enhanced write detection to recognize bash-based file modifications.
+   - Commit: ad67c04f (agents submodule)
+
+2. **Verified runner.ts fixes** from prior session — `copyEnvironment` directory preservation and `syncNewFilesFromRoot` directory handling both committed in 0e32ccd and working correctly. Optimizer successfully running gym scenarios.
+
+3. **Request triage**:
+   - req:25fd1b48 (Bob → Ghost Deliverable Guard): Already implemented (finish-guard.ts at src/lib/finish-guard.ts). MODULE COMPLETE, awaiting integration into manager.ts (blocked on source access).
+   - req:9407e957 (Coach → FM-3.3 guard in scout heartbeat): Already deployed at line 26 of agents/scout/heartbeat.md.
+
+### System Health
+- git: clean
+- No TODO/FIXME/HACK in src/
+- Optimizer gym runs: working (skill-test-results.md shows 2/3 pass on spec-adherence-multi-step)
+- All Bob brief items (FM-3.3 behavioral + C1.5 infra guard): complete
