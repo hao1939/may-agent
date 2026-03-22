@@ -27,14 +27,15 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If issues → add fix to workspace/todo.md.
   Latest (2026-03-22T03:09): **3 handlers STILL dead** (convention-check, tool-quality-scan, heartbeat-context) — lastRun=never for all three. Root cause unchanged: compiled ELF binary (`may-agent-bin`) has handlers baked in at compile time. TS files added post-compilation aren't loaded. No hot-loading path exists. Binary last rebuilt 2026-03-21T08:40. Handler report artifacts (graduation-report, compaction-report) last ran at that restart time. **Binary rebuild remains the only fix.** Finding at workspace/finding-handler-health-0321-0839.md.
 
-- [x] **Proven pattern → Skill/Workflow** — Last done: 2026-03-22T06:09
+- [x] **Proven pattern → Skill/Workflow** — Last done: 2026-03-22T09:09
   This is your MOST IMPORTANT periodic task — focus area #1.
   **Run it via workflow**: `workflow.run("skill-lifecycle", "Scan recent sessions for proven multi-step patterns")`
   The workflow mechanically enforces all 4 phases (discover → draft → test → deploy) in separate
   sessions, preventing you from skipping testing or doing meta-work instead.
   If you have a specific pattern in mind, pass it: `workflow.run("skill-lifecycle", "Pattern: agents read file → check convention → edit → verify")`
   **Deliverable**: A new or refined skill file, tested in gym, deployed to agents.
-  Latest (2026-03-22T06:09): **stale-approach-fixation skill DEPLOYED.** Full 4-phase lifecycle: (1) Discovered cross-session stale approach pattern — agents ignore workspace notes and retry known-dead tools (npx/npm/yarn/tsc), wasting 3-5 turns/session. (2) Drafted SKILL.md (230 lines) with 4-step READ→BUILD→CHOOSE→DOCUMENT protocol. (3) Gym tested 3/3 runs, 6/7 behavioral checks passed (failing check was task-completeness, not skill behavior). (4) Deployed to agent INDEX.md files.
+  Latest (2026-03-22T09:09): **coder-edit-discipline skill DRAFTED but NOT deployed** (gym scenario mismatch — convention-verify-edit checks for edit() tool presence, but coder uses bash-based modifications). Also created idempotent-work-detection/SKILL.md (not tested). budget-before-act confirmed 2/3 pass (already deployed). Next: create custom gym scenarios for coder-edit-discipline and idempotent-work-detection.
+  Previous (2026-03-22T06:09): **stale-approach-fixation skill DEPLOYED.** Full 4-phase lifecycle: (1) Discovered cross-session stale approach pattern — agents ignore workspace notes and retry known-dead tools (npx/npm/yarn/tsc), wasting 3-5 turns/session. (2) Drafted SKILL.md (230 lines) with 4-step READ→BUILD→CHOOSE→DOCUMENT protocol. (3) Gym tested 3/3 runs, 6/7 behavioral checks passed (failing check was task-completeness, not skill behavior). (4) Deployed to agent INDEX.md files.
   Previous (2026-03-22T03:09): budget-before-act skill DEPLOYED. FM-3.1 (31x).
   Previous (2026-03-22T00:09): state-check-before-action (SCBA) skill DEPLOYED. FM-2.6 (12x).
   Previous (2026-03-21T19:39): obstacle-pivot skill DEPLOYED. FM-2.2 (8x recurrence).

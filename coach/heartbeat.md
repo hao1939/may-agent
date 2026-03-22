@@ -24,6 +24,7 @@ Before running any growth-cycle or training-sprint experiment:
 ## 🛑 TOOL ARG CHECK — Before EVERY tool call:
 - `bash` needs `{"command": "..."}` — NEVER `bash({})`.
 - `read` needs `{"path": "..."}` — NEVER `read({})`.
+- To **read a file**, always use `read({ path: "..." })` — NEVER `bash({ command: "cat ..." })`.
 - `edit` needs `{"path": "...", "oldText": "...", "newText": "..."}` — NEVER `edit({})`.
 - No empty args. If unsure of args, STOP and think first.
 

@@ -1,4 +1,25 @@
-# Implementation Plan: Dynamic Tool Listing (CS 4.5)
+# Implementation Plan: Ghost Deliverable Guard (C1.5 / FM-3.1)
+
+**Source**: Bob's `brief-infra-ghost-deliverables.md` (req:ac09af85)
+**Status**: ✅ MODULE COMPLETE — Awaiting pi-agent-core integration
+**Priority**: P1
+
+## Current State (2026-03-22)
+- `src/lib/finish-guard.ts` — Validator module with `validateFinishDeliverables()` and `enforceFinishDeliverables()`
+- `test/finish-guard.test.ts` — 15 test cases covering all edge cases
+- **Blocker**: `finish` tool handler lives in compiled binary (pi-agent-core). Module is ready; integration requires pi-agent-core source.
+
+## Integration (when pi-agent-core is available)
+In the finish tool handler (`manager.ts` or equivalent), add:
+```typescript
+import { enforceFinishDeliverables } from "./finish-guard.js";
+// In the finish() handler, before returning success:
+enforceFinishDeliverables(params.deliverables, params.status);
+```
+
+---
+
+# (Previous) Implementation Plan: Dynamic Tool Listing (CS 4.5)
 
 **Source**: Bob's `brief-userland-context.md` (req:280056d5)
 **Status**: ✅ COMPLETE — Implemented via userland sync script

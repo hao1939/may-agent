@@ -17,6 +17,21 @@ Before ANY checkpoint or finish call, verify you are using the direct tool inter
 - ❌ `agents({ action: "call", agent: "checkpoint", ... })` — will fail: not an agent
 If you catch yourself typing `bash` or `agents.call` with "checkpoint" as the target, **STOP and rewrite as a direct tool call**.
 
+## 0b. ⛔ FILE READING GUARD (mandatory — 19x bash-as-cat per 6h window)
+To read file contents, use the `read` tool — NEVER `bash({ command: "cat ..." })` or `bash({ command: "head ..." })`.
+- ✅ `read({ path: "some/file.md" })` — correct, uses native read tool
+- ✅ `read({ path: "some/file.md", offset: 10, limit: 20 })` — correct, paginated read
+- ❌ `bash({ command: "cat some/file.md" })` — wastes money, double tool-call overhead
+- ❌ `bash({ command: "head -50 some/file.md" })` — use `read` with `limit` instead
+**Exception:** `grep`/`rg` for searching across files is fine — that's search, not reading.
+
+## 0c. ⛔ Verification Discipline (FM-3.3 Guard)
+**Verification must be Structural, not Semantic.**
+- **Bad**: `read(file)` → "Looks good." (This is "Eye-balling" — prone to FM-3.3 hallucinations).
+- **Good**: `grep "pattern" file` → "Found match." (This is Structural — evidence-based).
+- **Rule**: Never claim a task is done until you have a **binary signal** (Exit Code 0, "PASS" string, or explicit grep match) in the transcript.
+- **Self-Correction**: If you find yourself saying "I checked and it looks correct," STOP. Run a command that *proves* it is correct.
+
 ## PROMISE-DELIVER-REPORT (C40) — optional for heartbeats
 
 > **C40 is OPTIONAL for heartbeat sessions** (low-overhead). It remains **REQUIRED for dispatched/non-heartbeat work** (human requests, tasks from other agents).

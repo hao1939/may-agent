@@ -1,5 +1,28 @@
 # Journal
 
+## 2026-03-22T09:24 — Phase 4: budget-before-act already deployed; new skills not ready
+
+**Context**: Skill-lifecycle Phase 4 for session chain starting at 09:15.
+
+**Phase 1 discoveries** (09:15): Created 3 new artifacts:
+- `agents/shared/skills/idempotent-work-detection/SKILL.md` — detects redundant work (10% of sessions)
+- `agents/shared/skills/coder-edit-discipline/SKILL.md` — read-before-edit enforcement (68% edit-without-read rate)
+- `agents/shared/skills/patterns/coordinator-dedup.md` — coordinator dedup pattern
+
+**Phase 2** (09:18): Drafted `coder-edit-discipline` SKILL.md (230 lines, 4 steps: IDENTIFY → READ → CONSTRUCT → VERIFY)
+
+**Phase 3 results** (09:24):
+- `budget-before-act`: 2/3 PASS ✅ — already deployed to 6 agents on 2026-03-22T03:24
+- `coder-edit-discipline`: COULD NOT TEST — convention-verify-edit scenario checks for edit()/write() tool calls but coder uses bash-based file modifications. 0/2 convention checks passed across all 3 runs (product checks passed 8/9). Needs custom scenario.
+- `idempotent-work-detection`: Not tested (no gym scenario exists for this pattern)
+
+**Phase 4 decision**: 
+- `budget-before-act`: Already deployed ✅ — no action needed
+- `coder-edit-discipline`: NOT deployed — failed gym threshold (0/3 convention passes). Needs a scenario that checks for read() calls before edit() rather than checking for edit() tool presence.
+- `idempotent-work-detection`: NOT deployed — not gym-tested yet. Needs scenario.
+
+**Next steps**: Create gym scenarios for `coder-edit-discipline` and `idempotent-work-detection`, then re-run skill-lifecycle Phases 3-4.
+
 ## 2026-03-22T07:39 — Cost Outlier Scan: bash-as-cat waste pattern
 
 **Task**: Cost & Efficiency (alternating from pattern→skill at 06:09)

@@ -19,8 +19,11 @@ Never assume file contents. Always `read()` a file before you `edit()` it.
 ### 1.2 One Read at a Time (C1.2)
 Truncated reads are fatal. If a read is truncated, use `offset` to get the rest. Never write to a file based on a partial read.
 
-### 1.3 Verify Writes (C1.3)
-After every significant action (file edit, command, config change), verify it worked. Read the file back. Run the test. Check the output. "Successfully updated" without verification is a lie.
+### 1.3 Verify Structurally (C1.3)
+After every significant action, verify it worked using **structural evidence**.
+- **Bad**: `read(file)` → "Looks good." (FM-3.3 Eye-balling).
+- **Good**: `grep "pattern" file` or `test_script`.
+- **Rule**: Verification must be a tool output you can cite (grep match, test pass, exit code 0). Never verify by just reading and saying "looks good" — that is FM-3.3.
 
 ### 1.5 No Ghost Deliverables (C1.5)
 Never list a file in `deliverables` (finish) or `artifact` (send) unless you have verified it exists on disk in **this** session.
@@ -201,20 +204,18 @@ Write `workspace/journal.md` before calling `finish()`.
 
 ## 13. Git Discipline (C13)
 
-### 13.1 Commit Your Own Work (C13.1)
-Before calling `finish()`, commit the files you changed in this session to the agents/ git repo. Group related changes into one commit with a meaningful message.
+### 13.1 Trust Auto-Commit (C13.1)
+*Owner: Bob (Infra)*
+The system automatically commits all agent workspaces every 2 hours (via `agents-auto-commit` handler).
+- **Default**: Do nothing. Your files are safe.
+- **Manual**: Only run `git commit` if you need a specific atomic checkpoint for a feature release.
+- **Never**: Never run `git add .` or `git add -A`.
 
-```bash
-cd /app/agents && git add <specific-files-you-changed> && git commit -m "<type>: <what you did and why>"
-```
+### 13.2 Message Quality (C13.2)
+If you do commit manually, use a clear message: `agent: what you did`.
 
-Types: `feat`, `fix`, `chore`, `docs`, `refactor`. Example: `feat: add error-recovery gym scenario` or `chore: archive stale workspace files`.
+### 13.3 (Reserved)
+(Previous item "Only Commit Your Files" is subsumed by C13.1).
 
-### 13.2 Only Commit Your Files (C13.2)
-Only `git add` files you actually modified. Never `git add -A` or `git add .` — that sweeps up other agents' uncommitted work.
-
-### 13.3 Message Quality (C13.3)
-Bad: `auto: 5 files changed`. Good: `coach: add growth-cycle experiment results`. The message should tell a future reader *what* changed and *why* without looking at the diff.
-
-### 13.4 Not Required for All Agents (C13.4)
-If you're unsure about git or your changes are minor (journal updates, periodic-tasks rotation), it's fine to skip. A safety-net process will commit orphaned changes periodically. But if you made something meaningful — a new skill, a config change, a design doc — commit it yourself.
+### 13.4 (Reserved)
+(Previous item "Not Required" is now the default).

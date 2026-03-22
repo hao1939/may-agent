@@ -140,3 +140,13 @@
   - **Capability-Reliability Tension**: Added Discovery 31 (Error Propagation Rate 6x) to `ideas.md`.
   - **AgentConductor**: Added Dynamic Topology idea to `ideas.md`.
 - **Status**: Active Nudging is [IN-PROGRESS]. Relaxed C40 is [DEPLOYED].
+
+## Session 2026-03-22 (Common Sense Infra)
+- **C13 Git Discipline**: Updated `agents/shared/common-sense.md` to "Trust Auto-Commit" (infra-owned).
+- **C1.5 Ghost Deliverables**: Designed infra enforcement (FM-3.1 fix). Wrote `brief-infra-ghost-deliverables.md`.
+- **Action**: Delegated implementation to Tech-Lead.
+
+## Session s_1774168623654_424
+- **Deploy FM-3.3 Guard**: Updated `agents/shared/common-sense.md` to mandate Structural Verification (C1.3). Wrote `brief-deploy-fm3.3-guard.md` and delegated rollout to May (for Tech-Lead/Coach).
+- **Propose Infra Ghost Protection**: Wrote `brief-infra-ghost-deliverables.md` to enforce C1.5 in the `finish()` tool. Delegated to May (for Tech-Lead).
+- **Update Focus**: Marked FM-3.3 Mitigation as DEPLOYING and added Infra Ghost Protection as PROPOSED.

@@ -486,3 +486,35 @@ Added heartbeat section 0d "Delivery Discipline" (6 lines) targeting the 5/8 non
 - Tech-lead also fails (exit-code-misread 0/5) — same total failure pattern → may be same infra issue
 
 **Key insight**: Total failure (0/N on all checks, agent "completes" but does nothing) across optimizer AND tech-lead suggests the gym runner may not properly simulate non-coder agents. This is the highest-priority investigation for next session.
+
+## 2026-03-22T08:10 — Sprint 8: Training Sprint Execution
+
+**Sprint plan**: 4 experiments targeting coder scenarios (cascading-error, skip-verification-open, bloated-refactor, stale-approach-fixation)
+
+**Pre-sprint baselines** (10 scenarios revalidated):
+- 4 NEW CEILINGS: hasty-fix (5/5), drudgery-multi-file (7/7), spec-adherence-multi-step (11/11), convention-retry-pivot (6/6)
+- 4 confirmed failures: cascading-error (2/5), skip-verification-open (4/5), bloated-refactor (3/5), stale-approach-fixation (6/7)
+- 1 total failure: exit-code-misread (0/5) — deprioritized
+- 1 confirmed workflow fix: cascading-error-workflow (5/5) — Method #15 validated
+
+**Sprint results**: 0 promoted, 2 discarded
+- Exp 2 (coder-skip-verify-knowledge, Method #6): **0/0 — gym runner couldn't match scenarios to fork**. Discarded.
+- Exp 3 (coder-bloated-knowledge, Method #6): **0/0 — same issue**. Discarded.
+- Exp 1 (cascading-error-workflow): Confirmed at baseline, logged as exp-170.
+- Exp 4 (stale-approach-fixation-workflow): Scenario created but not tested.
+
+**Root cause of 0/0**: The sprint workflow's gym runner step couldn't identify which scenarios to run for the forks. The fork→scenario mapping was missing or the gym runner searched for scenario names matching the fork name pattern instead of using the scenarios listed in the sprint plan.
+
+**Takeaway**: The growth-cycle workflow (diagnose→fork→gym→evaluate) works better than the sprint workflow for individual experiments. Sprint workflow has an infra gap in fork→scenario mapping.
+
+**Overall Sprint 8 value**:
+- Positive: Revalidated 10 baselines, identified 4 new ceilings (natural improvement)
+- Positive: Confirmed workflow enforcement as the fix for cascading-error (exp-170)
+- Negative: 0 new improvements — both knowledge-file experiments failed to run
+- **Net**: Good diagnostic data, no agent improvements
+
+**Next steps**:
+1. Use growth-cycle workflow (not sprint) for individual experiments — it has better fork→scenario wiring
+2. Manually run bloated-refactor and skip-verification-open experiments via growth-cycle
+3. Investigate gym runner infra for optimizer total failures
+4. Create more diverse scenarios (tech-lead, optimizer compatible)

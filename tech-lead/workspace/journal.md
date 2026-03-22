@@ -328,3 +328,14 @@ Implemented 2 of 3 optimizer-proposed QA efficiency fixes:
 - Tech debt: `grep TODO/FIXME/HACK src/` returns zero.
 - Journal: 320 lines (under 500 threshold).
 - No new Bob briefs or pending decisions to review.
+
+### 2026-03-22T08:37Z — Heartbeat (s_1774168617511_423)
+**Pending task**: Bob's brief-infra-ghost-deliverables.md (req:ac09af85) — implement C1.5 ghost deliverable enforcement in finish() tool.
+**Analysis**: The `finish` tool handler lives in the compiled pi-agent-core binary — not in our editable source tree. Cannot add the check directly to the tool.
+**Deliverables**:
+- `src/lib/finish-guard.ts` — Standalone validator module with `validateFinishDeliverables()` and `enforceFinishDeliverables()`. Checks `fs.existsSync()` for each declared deliverable path, throws FM-3.1 error on missing files. Handles: relative/absolute paths, empty paths, status-gated validation (only success/partial), null/undefined deliverables.
+- `test/finish-guard.test.ts` — 15 test cases covering all edge cases (existing files, missing files, mixed, empty, null, absolute paths, directories, status filtering).
+- `agents/tech-lead/workspace/implementation-plan.md` — Updated with integration instructions for when pi-agent-core source becomes available.
+**Status**: Module complete, awaiting pi-agent-core integration (2-line import + call).
+**Existing coverage**: `agents/evaluator/skills/monitor-session.cjs` already has post-hoc ghost deliverable detection (lines 1540-1627), but it's monitoring-only, not runtime enforcement. The new module enables runtime enforcement when wired in.
+**Zero tech debt markers in src/.**
