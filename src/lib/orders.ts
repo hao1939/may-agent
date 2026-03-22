@@ -1,7 +1,8 @@
 /**
  * Order persistence ledger (P209).
  *
- * Provides a simple append-only JSONL-backed order system.
+ * Provides a JSONL-backed order system.  Appends for new orders;
+ * rewrites the file when mutating existing entries (e.g. completeOrder).
  * Orders are stored in `.state/orders.jsonl` by default, but every
  * function accepts an optional `basePath` for testability.
  *
@@ -60,7 +61,8 @@ function readAll(basePath: string): Order[] {
     try {
       orders.push(JSON.parse(trimmed) as Order);
     } catch {
-      // skip corrupt lines
+      // Log corrupt lines to stderr so they're visible in diagnostics
+      process.stderr.write(`[orders] skipping corrupt line in ${fp}: ${trimmed.slice(0, 80)}\n`);
     }
   }
 

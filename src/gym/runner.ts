@@ -260,11 +260,11 @@ interface AgentRunResult {
  * Snapshot files in a directory (non-recursive, top-level only).
  * Returns a Set of filenames.
  */
-function snapshotDir(dir: string): any {
+function snapshotDir(dir: string): Set<string> {
   try {
     return new Set(fs.readdirSync(dir));
   } catch {
-    return new Set();
+    return new Set<string>();
   }
 }
 
@@ -273,7 +273,7 @@ function snapshotDir(dir: string): any {
  * instead of workDir (--work-dir not fully supported). Detect new files
  * in PROJECT_ROOT and copy them to workDir so success_criteria.js can find them.
  */
-function syncNewFilesFromRoot(beforeSnapshot: any, workDir: string): void {
+function syncNewFilesFromRoot(beforeSnapshot: Set<string>, workDir: string): void {
   const after = snapshotDir(PROJECT_ROOT);
   for (const file of after) {
     if (!beforeSnapshot.has(file) && !file.startsWith(".") && !file.startsWith("_")) {
