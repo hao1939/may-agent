@@ -518,3 +518,21 @@ Added heartbeat section 0d "Delivery Discipline" (6 lines) targeting the 5/8 non
 2. Manually run bloated-refactor and skip-verification-open experiments via growth-cycle
 3. Investigate gym runner infra for optimizer total failures
 4. Create more diverse scenarios (tech-lead, optimizer compatible)
+
+## 2026-03-22 ~10:10 — FM-3.3 Guard Rollout (Bob req:9e35f808)
+- Received Bob's brief: deploy FM-3.3 guard to coder/qa/scout heartbeats + train on C1.3/C1.5
+- **Coder**: Already has FM-3.3 guard (section 0c) ✅
+- **QA**: Already has FM-3.3 guard (section 0c) ✅  
+- **Scout**: Has VERIFY-BEFORE-CLAIM guard but lacks standard "Structural vs Semantic" language — sent to tech-lead for addition
+- **common-sense.md**: C1.3 (Verify Structurally) and C1.5 (No Ghost Deliverables) already present ✅
+- Net action: Only Scout needs the standard block added above its existing guard
+
+## 2026-03-22 ~10:15 — Heartbeat: Growth Cycles
+- Ran growth-cycle on **bloated-refactor** → CEILING (5/5 at baseline). Logged as exp-172.
+- Ran growth-cycle on **skip-verification-open** → Method #4 (Skill File) DISCARDED. 4/5→4/5, no improvement.
+  - Root cause: agent fixes what tests catch, doesn't proactively audit functions without failing tests
+  - Skill file about "thorough verification" ignored — agent sees tests pass and stops
+  - Need: Method that changes the agent's workflow (e.g., "audit ALL functions before claiming done") or task prompt that hints at hidden bugs
+- **bloated-refactor** joins the ceiling club (5th scenario to naturally improve)
+- Remaining genuinely failing: skip-verification-open (4/5, 1 failed method), stale-approach-fixation (6/7, untested), cascading-error (solved via workflow)
+- Next: Try Method #15 (Workflow Enforcement) for skip-verification-open — force "audit all functions" step before completion

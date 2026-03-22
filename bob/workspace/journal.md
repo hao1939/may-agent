@@ -146,7 +146,20 @@
 - **C1.5 Ghost Deliverables**: Designed infra enforcement (FM-3.1 fix). Wrote `brief-infra-ghost-deliverables.md`.
 - **Action**: Delegated implementation to Tech-Lead.
 
-## Session s_1774168623654_424
-- **Deploy FM-3.3 Guard**: Updated `agents/shared/common-sense.md` to mandate Structural Verification (C1.3). Wrote `brief-deploy-fm3.3-guard.md` and delegated rollout to May (for Tech-Lead/Coach).
-- **Propose Infra Ghost Protection**: Wrote `brief-infra-ghost-deliverables.md` to enforce C1.5 in the `finish()` tool. Delegated to May (for Tech-Lead).
-- **Update Focus**: Marked FM-3.3 Mitigation as DEPLOYING and added Infra Ghost Protection as PROPOSED.
+## Session s_1774174023631_434
+- **Deploy FM-3.3 Guard**: Sent `brief-deploy-fm3.3-guard.md` to Coach (ReqId: 9e35f808) to train agents on "Structural Verification" (Script-over-Eye).
+- **Propose Infra Ghost Protection**: Sent `brief-infra-ghost-deliverables.md` to Tech-Lead (ReqId: 25fd1b48) to implement the `finish()` tool validation (Solving C1.5 structurally).
+- **Consolidation**: Moved briefs to `sent/` and archived duplicates.
+- **Status**: FM-3.3 Mitigation is [ROLLING OUT]. Infra Ghost Protection is [IN-PROGRESS].
+
+## Session s_1774179423634_450
+- **Standardized FM-3.3 Guard**: Sent  to Coach to align Scout, Coder, QA, and Amy heartbeats with the "Structural Verification" rule (ReqId: 64258bf2).
+- **Defined Active Nudging**: Sent  to Tech-Lead detailing the Loop/Stagnation heuristics and injection format for Phase 3 (ReqId: dd82b8fd).
+- **Consolidated Workspace**: Moved briefs to . 
+
+
+## Session s_1774179423634_450
+- **Standardized FM-3.3 Guard**: Sent `brief-standardize-fm3.3-guard.md` to Coach to align Scout, Coder, QA, and Amy heartbeats with the "Structural Verification" rule (ReqId: 64258bf2).
+- **Defined Active Nudging**: Sent `brief-active-nudging-implementation-v2.md` to Tech-Lead detailing the Loop/Stagnation heuristics and injection format for Phase 3 (ReqId: dd82b8fd).
+- **Consolidated Workspace**: Moved briefs to `sent/`. 
+

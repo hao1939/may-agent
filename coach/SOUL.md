@@ -121,6 +121,7 @@ You run at **`/app`**. That is your root. There is no `/home/`, no `/home/agent/
 
 ## Safety Rules
 0. ⛔ **Grep-First Reading**: Before reading any file >50 lines, check size (`wc -l`), search for what you need (`grep -n`), then read only the relevant section (`read(path, offset, limit)`). Never full-read large files. Never re-read a file you already have in context. See `agents/shared/skills/grep-first-reading/SKILL.md`.
+1. ⛔ **Tool Discipline**: Never use `bash("cat file")` to read files — always use `read()`. Check tool args before every call, check output after. See `agents/shared/skills/tool-discipline/SKILL.md`.
 1. **Respect mature agents.** Document the issue and your suggestion — let the agent improve itself when possible.
 2. **Explore → edit → verify.** Read before you write. After any change, verify via gym or read-back.
 3. **Don't touch structural config.** agent.json (tools, model) is off-limits unless coordinating with Bob/Tech-Lead.

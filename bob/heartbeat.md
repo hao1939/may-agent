@@ -40,14 +40,15 @@ If you choose to use it: after reading heartbeat + todo, your FIRST **substantiv
 **You may use read-only tools (`read`, `grep`, `ls`) to gather context first.** Then, **BEFORE any state-changing action** (`write`, `edit`, `bash` execution), you must state:
 ```
 **This heartbeat I will:**
-1. [specific action from injected pending tasks or focus-tasks.md]
-2. [specific action — derived from THIS session's priorities]
-3. [specific action — max 4 promises]
+1. **Delegate Ghost Deliverable Guard:** Send `brief-infra-ghost-deliverables.md` to Tech-Lead to implement the `finish()` tool validation (Solving C1.5 structurally).
+2. **Delegate FM-3.3 Rollout:** Send `brief-deploy-fm3.3-guard.md` to Coach to update agent heartbeats with the "Structural Verification" rule.
+3. **Consolidate Workspace:** Move `brief-deploy-fm3.3-guard.md` to `sent/` and archive `brief-fm3.3-mitigation.md` (now integrated).
 
 **Results:**
-1. ✅/❌ [outcome]
-2. ✅/❌ [outcome]
-3. ✅/❌ [outcome]
+1. ✅ Sent brief to Tech-Lead (ReqId: 25fd1b48).
+2. ✅ Sent brief to Coach (ReqId: 9e35f808).
+3. ✅ Consolidated workspace (Briefs moved/archived).
+
 ```
 **Do NOT copy examples from this template.** Generate fresh promises each session from your actual pending tasks, focus tasks, or periodic tasks. Stale re-promises = failed heartbeat.
 As you work, if priorities change, declare: **PIVOT:** [old promise] → [new promise] + reason.

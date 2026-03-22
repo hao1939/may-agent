@@ -357,3 +357,28 @@ Implemented 2 of 3 optimizer-proposed QA efficiency fixes:
 - No TODO/FIXME/HACK in src/
 - Optimizer gym runs: working (skill-test-results.md shows 2/3 pass on spec-adherence-multi-step)
 - All Bob brief items (FM-3.3 behavioral + C1.5 infra guard): complete
+
+## 2026-03-22T10:37Z — Heartbeat (s_1774175817514_442)
+
+### Pending Tasks
+- **Ghost Deliverable Guard (req:25fd1b48)**: Duplicate of prior req. Module `src/lib/finish-guard.ts` already complete, awaiting pi-agent-core integration. No new action needed.
+- **Scout FM-3.3 guard (req:9407e957)**: Cannot edit scout's heartbeat.md directly (identity file protection). Sent request to scout to self-edit via agents.send().
+
+### System Health
+- tsc: unavailable (npx not in PATH this session)
+- No TODO/FIXME/HACK in src/
+- Coder log: healthy — 30+ gym exercises all completing successfully
+- QA log: consistent npx blocker, doing useful git-based commit reviews
+- Gym runner fixes from last session (copyEnvironment + syncNewFilesFromRoot) still in place
+- No new briefs from Bob to review
+
+## 2026-03-22T11:07Z — Heartbeat (s_1774177617509_447)
+- Bob's Active Nudging Phase 3 brief (req:37dc3d5f) received — verified all 4 deliverables already on disk:
+  1. `agents/evaluator/skills/monitor-session.cjs` — ghost deliverable + productivity stall detections
+  2. `agents/may/handlers/active-nudge.ts` — full handler with cooldown
+  3. `agents/may/handlers/heartbeat-context.ts` — nudge injection wiring (lines 365-401)
+  4. `agents/may/cron.json` — active-nudge entry at 5min interval
+- Implementation plan at `agents/tech-lead/workspace/implementation-plan-active-nudging.md` marks all 3 phases COMPLETE
+- Closing req:37dc3d5f as already-implemented
+- System health: zero TODOs/FIXMEs, coder gym healthy, QA doing useful commit reviews
+- No new action items

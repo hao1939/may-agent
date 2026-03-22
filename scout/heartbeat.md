@@ -23,6 +23,12 @@ Your LAST text output MUST map back to each promise:
 ```
 If you pivot mid-session, say "PIVOT: replacing promise N with [new action] because [reason]".
 
+## 0c. ⛔ Verification Discipline (FM-3.3 Guard)
+**Verification must be Structural, not Semantic.**
+- **Bad**: `read(file)` → "Looks good." (This is "Eye-balling" — prone to FM-3.3 hallucinations).
+- **Good**: `grep "pattern" file` → "Found match." (This is Structural — evidence-based).
+- **Rule**: Never claim a task is done until you have a **binary signal** (Exit Code 0, "PASS" string, or explicit grep match) in the transcript.
+
 ## 🔴 VERIFY-BEFORE-CLAIM (FM-3.3 Guard — 7x recurrence)
 Before asserting any fact about tools, files, or capabilities:
 - **Execute a tool call first.** A `bash("echo test")` or `read("agent.json")` is evidence. A list from memory is not.

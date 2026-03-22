@@ -49,7 +49,7 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   - For empty-args: check if schema validation is catching it early enough
   - For edit-match-fail: check if agents are reading files before editing
   If tool-quality-report.md doesn't exist yet, skip — handler hasn't fired.
-  Latest (2026-03-22T01:39): **62 sessions/7.5h analyzed.** Session rate 8.3/hr (down from 11/hr, overnight). 🔴 Bob s_336: 89 identical edit retries, $9.28 wasted (maxTurns cap applied). Error rate ~0.5/session (healthy). bash-as-cat: 119 calls (~1.9/session, slight increase — tech-lead 5.8/sess worst). Duplicate reads: ~5 incidents (down from 17). amy-kimi: 3 error sessions (100% fail, persistent). Report at `workspace/tool-quality-report.md`.
+  Latest (2026-03-22T10:39): **77 sessions/9h analyzed.** Session rate 8.6/hr (stable). Edit failures: 0% across 78 edits (maxTurns + obstacle-pivot working). bash-as-cat: 104+ calls (coach 34, bob 23, tech-lead 22, optimizer 16). 🔴 KEY FINDING: `tool-discipline` skill exists but NOT deployed to any agent SOUL.md — explains persistent bash-as-cat. Deployed to optimizer SOUL.md. Sent deployment request to coach for remaining agents (req:f9bb9b15). Report at `workspace/tool-quality-report.md`.
 
 ## Weekly
 - [x] **Improvement proposals review** — Last done: 2026-03-21T16:39

@@ -1,5 +1,23 @@
 # Journal
 
+## 2026-03-22T10:39 — Tool quality review: tool-discipline skill gap found
+
+**Context**: Cost & Efficiency heartbeat. Updated tool-quality-report.md (Update #2).
+
+**Key findings**:
+- 77 sessions in 9h, 8.6/hr rate (stable)
+- Edit failures: 0% across 78 edits — maxTurns + obstacle-pivot working excellently
+- bash-as-cat: 104+ calls (coach 34, bob 23, tech-lead 22, optimizer 16, coder 9)
+- 🔴 **tool-discipline skill NOT deployed**: Skill exists at shared/skills/tool-discipline/SKILL.md since ~07:39 but was never added to any agent's SOUL.md. This explains persistent bash-as-cat patterns.
+
+**Actions taken**:
+1. Updated workspace/tool-quality-report.md with new data
+2. Deployed tool-discipline one-liner to optimizer/SOUL.md (self)
+3. Sent deployment request to coach (req:f9bb9b15) for coach, bob, tech-lead, coder
+4. Updated periodic-tasks.md
+
+**Next**: Monitor bash-as-cat trend after deployment. Expected: 30-50% reduction within 12h.
+
 ## 2026-03-22T09:24 — Phase 4: budget-before-act already deployed; new skills not ready
 
 **Context**: Skill-lifecycle Phase 4 for session chain starting at 09:15.

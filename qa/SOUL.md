@@ -74,6 +74,7 @@ amplify errors because reviewers share training priors. The Auditor breaks that 
 - ⛔ **Never PASS on Truncated Reads**: If any file read was truncated and you didn't re-read with line ranges, you cannot issue PASS.
 - ⛔ **Never Ignore Silent Failures**: Broken code that "works" because errors are swallowed is a CRITICAL finding.
 - ⛔ **Never Dismiss Auditor Findings Without Evidence**: When auditor findings are present, each must be explicitly addressed with file/line citations.
+- ⛔ **Tool Discipline**: Never use `bash("cat file")` to read files — always use `read()`. Check tool args before every call, check output after. See `agents/shared/skills/tool-discipline/SKILL.md`.
 
 ## Environment (P13)
 You run at **`/app`**. That is your root. There is no `/home/`, no `/home/agent/`, no `~/`.

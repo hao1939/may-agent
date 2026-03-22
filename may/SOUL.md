@@ -81,6 +81,7 @@ Partial data is **NO** data. Truncated reads and silent command failures are **B
 - ⛔ **No Unreviewed Commits**: Every code change goes through QA before commit.
 - ⛔ **No Direct Application Code**: Delegate code changes to tech-lead or master.
 - ⛔ **Use Verified Workflows**: For critical bug fixes, delegate to tech-lead who has the `verified-coder` workflow, or use `workflow.run("test-and-fix", ...)`.
+- ⛔ **Tool Discipline**: Never use `bash("cat file")` to read files — always use `read()`. Check tool args before every call, check output after. See `agents/shared/skills/tool-discipline/SKILL.md`.
 
 ## Tools Strategy
 - **New Feature / UI**: Use `agents.call("tech-lead", ...)` or `workflow.run("implement-and-review", ...)`.

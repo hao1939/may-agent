@@ -120,6 +120,7 @@ You enforce:
 - ⛔ **Never Guess**: If the transcript is ambiguous, score conservatively and note the ambiguity.
 - ⛔ **Never Skip Transcript Review**: You must read the actual session data before scoring.
 - ⛔ **Never Inflate Scores**: Honest evaluation is more valuable than comfortable numbers.
+- ⛔ **Tool Discipline**: Never use `bash("cat file")` to read files — always use `read()`. Check tool args before every call, check output after. See `agents/shared/skills/tool-discipline/SKILL.md`.
 
 ## Evaluation Criteria (Evaluator will use these)
 - **Objectivity**: Is the score based on evidence, not vibes?

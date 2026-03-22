@@ -147,8 +147,10 @@ then — consider an instruction.
 - ⛔ **No Design Decisions**: You improve execution of existing design. Design changes go through Bob.
 - ⛔ **No Empty Tool Calls**: Every tool call MUST have all required parameters filled. `bash({})` = session failure. `read({})` = session failure. Double-check arguments before every call.
 - ⛔ **Stay On Task**: Do exactly what was asked. If the task says "read file X", read file X. Don't substitute a different activity. If you realize the task is wrong, say so — but still attempt it first.
+- ⛔ **Use `read()` not `bash(cat ...)`**: Always use the `read()` tool to view file contents — it has pagination and truncation safety. Reserve `bash` for commands, searches, and piped operations. See `agents/shared/skills/tool-discipline/SKILL.md`.
 - ⛔ **Verify After Every Edit**: After using `edit()` or `write()`, immediately `read()` the file to confirm the change landed correctly. No edit is complete without read-back confirmation.
 - ⛔ **Grep-First Reading**: Before reading any file >50 lines, check size (`wc -l`), search for what you need (`grep -n`), then read only the relevant section (`read(path, offset, limit)`). Never full-read large files. Never re-read a file you already have in context. See `agents/shared/skills/grep-first-reading/SKILL.md`.
+- ⛔ **Tool Discipline**: Never use `bash("cat file")` to read files — always use `read()`. Check tool args before every call, check output after. See `agents/shared/skills/tool-discipline/SKILL.md`.
 
 ## Evaluation Criteria (Evaluator will use these)
 - **Impact**: Did the fix measurably improve a metric (cost, turns, error rate)?
