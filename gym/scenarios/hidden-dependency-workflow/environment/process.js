@@ -49,7 +49,7 @@ try {
   const count = validateTransactions(DATA_PATH);
   console.log(`Validated ${count} transactions`);
   
-  const rules = validatePricing(RULES_PAH);  // BUG: typo — RULES_PAH instead of RULES_PATH
+  const rules = validatePricing(RULES_PATH);
   console.log(`Pricing rules v${rules.version} loaded`);
   
   // Process

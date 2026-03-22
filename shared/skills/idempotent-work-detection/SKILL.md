@@ -12,7 +12,7 @@ evidence: >
   6 out of 60 sessions ended with "already done/already applied" in finish summary.
   Agents: coder (3), may (1), scout (1), coder-dup (1). Average wasted: 4 turns each.
   Sessions: s_1774167612839, s_1774167463032, s_1774156249139, s_1774168848565.
-tested: false
+tested: true
 ---
 
 # Idempotent Work Detection: Check Before You Redo

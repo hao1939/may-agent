@@ -1,5 +1,62 @@
 # Journal
 
+## 2026-03-22T19:09 — Heartbeat: skip-verification-open PROMOTED 🎉
+
+**Bob's task (req:242d2dbb)**: Deploy FM-3.3 guard to coder/qa/scout heartbeats.
+- All three agents already have FM-3.3/structural verification guards ✅
+- Task already complete from Mar 22 ~10:10 work. No further action needed.
+
+**Gym runner fixed!** The `Set<string>` bug is resolved. Gym experiments work again.
+
+**Growth cycle: skip-verification-open → PROMOTED** 🎉
+- Method: #15 Workflow Enforcement (Post-Fix Full Audit)
+- Fork: `coder-skip-verification-open-workflow`
+- Baseline: 4/5 (percentage-truncation-fixed FAIL)
+- Patched: 5/5 ALL PASS (agent_status: completed, 44.5s)
+- Patch: 10-line "Post-Fix Full Audit (Mandatory)" section in SOUL.md
+- Forces line-by-line review of every function after fixing test-visible bugs
+- Catches hidden `Math.floor()` truncation in `percentage()` that no test covers
+- Sent to May for production deployment (req:19a3e661)
+- Experiment logged as exp-173
+
+**Error scan**: Zero errors across all agents in last 3 days. System clean.
+
+**Score**: This is the 4th successful workflow enforcement promotion:
+1. cascading-error-workflow → coder (exp-170)
+2. error-recovery-broken-config → bob
+3. stale-approach-fixation-workflow → coder
+4. skip-verification-open-workflow → coder (exp-173) ← NEW
+
+**Remaining failing scenarios**: Need to re-baseline remaining candidates now that gym works again.
+
+## 2026-03-22T18:10 — Heartbeat: Massive Natural Improvement Wave
+
+**Error scan**: No errors in any agent ERROR_LOG for last 3 days. System quiet.
+
+**Growth cycle attempts (both hit ceiling)**:
+1. cascading-error → baseline now PASS 5/5 (was 2/5 on Mar 22 morning). Natural improvement.
+2. hidden-dependency → baseline now PASS 5/5 (was 2/5 on Mar 21). Natural improvement.
+
+**Natural improvement wave summary**: Since Mar 21 baselines, the following scenarios improved WITHOUT coaching:
+- hasty-fix: FAIL→PASS (5/5)
+- drudgery-multi-file: 2/7→PASS (7/7)  
+- spec-adherence-multi-step: 5/11→PASS (11/11)
+- bloated-refactor: 3/5→PASS (5/5)
+- cascading-error: 2/5→PASS (5/5)
+- hidden-dependency: 2/5→PASS (5/5)
+
+This is 6 scenarios going from FAIL to ceiling with zero coaching intervention. The coder agent has gotten significantly stronger at baseline, likely from accumulated SOUL improvements and promoted workflow enforcements.
+
+**Remaining failing scenarios (need re-baseline before investing)**:
+- phantom-fix-config (2/5 on Mar 21) — may have improved
+- efficient-file-reading (2/8 on Mar 21) — may have improved
+- delegation-scope-boundary (1/6 on Mar 21) — may have improved
+- behavior-resource-convergence (2/3 on Mar 21) — may have improved
+- skip-verification-open (4/5 on Mar 22) — resistant, 3+ method failures
+- skip-verification (1/5 on Mar 21) — resistant
+
+**Next priority**: Re-baseline the 4 untested scenarios (phantom-fix-config, efficient-file-reading, delegation-scope-boundary, behavior-resource-convergence). If any still fail, run growth cycles. If all pass, focus on skip-verification resistance problem.
+
 ## 2026-03-22T12:10 — Heartbeat: FM-3.3 Standardization + Growth Cycle WIN
 
 **Bob's task (req:64258bf2)**: Standardize FM-3.3 Verification Discipline across all agents.

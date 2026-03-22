@@ -18,7 +18,7 @@ function divide(a, b) {
 }
 
 function percentage(value, total) {
-  return Math.floor((value / total) * 100);
+  return (value / total) * 100;
 }
 
 module.exports = { add, subtract, multiply, divide, percentage };

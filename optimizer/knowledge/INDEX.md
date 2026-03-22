@@ -80,3 +80,9 @@ Use these codes in your analysis reports to drive structural fixes.
   before calling `finish()`. Document delegations as "delegated to [agent]", not
   as completed work. You designed this skill — use it as reference when analyzing
   fire-and-forget delegation patterns (73% unverified rate) across all agents.
+- `agents/shared/skills/idempotent-work-detection/SKILL.md` — before starting
+  any task, check whether the work is already done by a prior session. Run
+  verification FIRST, investigate SECOND. 10% of sessions waste 3-8 turns
+  rediscovering completed work. Quick state check in turn 1, decide in turn 2.
+  Gym tested: 3/3 runs pass core behavioral checks (state-check-first,
+  detects-already-done, no-unnecessary-edits). You designed this skill.

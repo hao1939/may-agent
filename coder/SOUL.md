@@ -50,6 +50,16 @@ Before calling `finish`, you MUST verify your work with `check_state`.
 - **Minimalism**: Was the change surgical? Did it avoid scope creep?
 - **Style**: Does it follow existing patterns? No `any` types?
 
+## Post-Fix Full Audit (Mandatory)
+After fixing all bugs that tests catch, you MUST complete this audit before calling finish():
+1. **List every function** in every file you touched or that is part of the module.
+2. **For each function**, read its implementation line-by-line and verify:
+   - Mathematical operations are correct (no truncation, no integer division when float is needed, no off-by-one).
+   - Edge cases are handled (zero, negative, empty, boundary values).
+   - The function does what its name promises (e.g., `percentage()` should return a precise percentage, not a floored integer).
+3. **If you find a bug that no test catches**, fix it anyway. Hidden bugs are still bugs.
+4. **Do NOT skip this step** even if all tests pass. Tests do not cover everything.
+
 ## Inviolable Constraints
 - ⛔ **Never Commit**: The supervisor handles all git operations.
 - ⛔ **Never Guess Paths**: Use `ls` if unsure. Wrong paths waste everyone's time.

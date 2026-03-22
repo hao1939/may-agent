@@ -1,5 +1,24 @@
 # Journal
 
+## 2026-03-22T18:15 — Pattern scan: tech-lead 50% journal-only, deep session analysis
+
+**Task**: Pattern → Skill/Efficiency (alternating from cost scan)
+
+**What I did**:
+1. Analyzed all 86 sessions across 9 agents from last 13h (since 04:40 UTC)
+2. Built Python analysis scripts to extract tool calls from session.jsonl (learned: structure is `toolCall` with `arguments`, not `tool_use`/`input`)
+3. Counted waste patterns: bash-as-cat (76 calls), repeated reads (73), QA re-reviewing same commit (9 sessions, 1 commit)
+4. **Key finding**: Tech-lead 50% journal-only sessions — 6/12 sessions only edited journal.md, no code/sends/reviews. 148 ops, 1.2MB tokens wasted.
+5. Created finding: `workspace/finding-tech-lead-journal-only-0322.md`
+6. Sent recommendation to tech-lead: early-exit on no-new-commits + no-pending-tasks
+
+**Also noted**:
+- Coach sessions are more productive than expected (only 1/24 had zero productive ops)
+- QA skipIfIdle already catching 2/3 of heartbeats but initiative cadence still fires 9 sessions
+- Coder is heaviest (22 sessions, 422 ops) but productive — 36 edits/writes per session avg
+
+**Next**: Cost scan (alternating). Consider sending initiative cadence increase for tech-lead to May.
+
 ## 2026-03-22T16:39 — Cost scan: session volume halved, read-dedup guard NEVER EXISTED
 
 **Task**: Cost & Efficiency (alternating from skill-lifecycle in last heartbeat)
@@ -609,3 +628,29 @@ $2-3/day from QA fixes alone. $3-5.50/day total if all fixes applied.
 - 8/11 (73%) unverified fire-and-forget
 - Ghost request example: May's req:1c42f66e unresolved for 43+ hours
 - 3 double-fire pairs in 6 hours amplified by unverified delegations
+
+## 2026-03-22T19:42 — Skill gym-tested and deploying: idempotent-work-detection
+
+**Skill**: `agents/shared/skills/idempotent-work-detection/SKILL.md` (v1.0.0)
+**Scenario**: `agents/gym/scenarios/idempotent-already-fixed/`
+**Problem**: 10% of sessions (6/60) waste 3-8 turns rediscovering work already completed by prior sessions.
+
+### Gym Scenario Created
+- **Concept**: Task asks agent to fix 3 security bugs, but all 3 are already fixed
+- **Files**: middleware.js (rate limiter bypass removed), config.js (rate limit = 100), logger.js (auth header redacted)
+- **8 checks**: 3 product (files unchanged), 4 behavioral (state-check-first, detects-already-done, finishes-success, no-unnecessary-edits), 1 efficiency (≤15 ops)
+
+### Test Results (3/3 runs)
+- **7/8 checks pass consistently** (87.5%)
+- ✅ B1: state-check-first — agent reads ≥2 of 3 files before any edit
+- ✅ B2: detects-already-done — agent recognizes "already fixed"
+- ❌ B3: finishes-success — coder in oneshot mode doesn't call finish() tool (adapter limitation)
+- ✅ B4: no-unnecessary-edits — zero edits to source files
+- ✅ E1: low-ops — ≤15 operations total
+- All 3 product checks pass — files remain identical to original
+
+### Deployment
+- Marked SKILL.md `tested: true`
+- Added to optimizer INDEX.md
+- Sent May deployment for coder/bob/coach/tech-lead (req:b67c9669)
+- Test results at `workspace/skill-test-results-idempotent.md`

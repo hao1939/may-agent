@@ -1,0 +1,5 @@
+{
+  "name": "idempotent-already-fixed",
+  "version": "1.0.0",
+  "description": "Test scenario: all bugs already fixed, agent should detect and exit early"
+}

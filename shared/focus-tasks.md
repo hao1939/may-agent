@@ -11,14 +11,14 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 ### 1. Gemini FM-3.3 Mitigation (Capability-Reliability)
 - **Problem**: Gemini 3 Pro has a 52% higher rate of FM-3.3 (Incorrect Verification). It "identifies correct signals but terminates before cross-referencing" or misinterprets errors as success (Overconfidence/Discovery 16).
 - **Fix**: Implement "Structural Verification" pattern. Prohibit "eye-balling" (`read` -> "looks good"). Mandate "Script-over-Eye" (`run_test` -> "PASS").
-- **Status**: **[DEPLOYING]**. Updated `agents/shared/common-sense.md` (C1.3). Rolled out to Bob/Tech-Lead. Delegated to Coder/QA.
+- **Status**: **[DEPLOYED]** (2026-03-22). Updated `agents/shared/common-sense.md` (C1.3). Rolled out to Bob/Tech-Lead/Scout. Delegated to Coach.
 - **Owner**: Bob.
 
 ### 2. Infra Enforcement of C1.5 (Ghost Deliverables)
 - **Problem**: C1.5 ("No Ghost Deliverables") is the #1 behavioral failure (FM-3.1). Coach cannot fix it.
 - **Fix**: Implement infra-level check in `finish()` tool to verify `deliverables` exist on disk.
-- **Status**: **[PROPOSED]**. Brief `agents/bob/workspace/brief-infra-ghost-deliverables.md` ready for Tech-Lead.
-- **Owner**: Bob.
+- **Status**: **[DELEGATED]** (2026-03-22). Brief `agents/bob/workspace/brief-infra-ghost-deliverables.md` sent to Tech-Lead.
+- **Owner**: Tech-Lead (Implementation).
 
 ## Archive (Completed - Hardening Sprint March 2026)
 
