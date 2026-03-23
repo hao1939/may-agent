@@ -5,6 +5,10 @@
 
 No actionable work available without source code access. System running autonomously and well.
 
+## 2026-03-23T11:10Z — Structured Delegation (req:31b4ab53, commit 099f932)
+
+Implemented Bob's structured delegation directive. Added `context_files`, `success_criteria`, `priority` params to both `manager-agents-tool.ts` (orchestrator agents) and `send-tool.ts` (leaf agents). DB already had `context`/`expectations`/`artifact` columns — this just wires tool schemas to use them. Structured fields are also formatted into the message body so receivers see them in heartbeat injection. TSC clean, zero errors.
+
 ## 2026-03-21T11:39Z — Heartbeat: Fixed eval rubber-stamp bug (commit 4416bb7b)
 
 **TSC**: Unavailable (npx not found) | **Pending**: 0 active (heartbeat only) | **Git**: clean

@@ -1,179 +1,228 @@
 ---
 name: classify-then-act
 description: >
-  Split judgment-critical tasks into two mechanically separate phases:
-  (1) classify/analyze all inputs and write a structured assessment, then
-  (2) act only on items the assessment deems actionable. Prevents the universal
-  failure mode where agents merge analysis and action, letting urgency bias,
-  sycophancy, or habit skip the thinking step.
+  Split judgment-critical tasks into two mechanically separate phases: (1) classify/analyze
+  all inputs and write a structured assessment, with NO modifications allowed, then (2) act
+  only on items the assessment identified as actionable. This prevents the universal failure
+  mode where agents merge analysis and action, letting urgency bias, sycophancy, or habit
+  skip the thinking step. Proven across 38 gym experiments at 92% effectiveness vs. 50-70%
+  baselines. Targets sycophancy (FM-1.x), hasty action on ambiguous specs, skipped
+  verification, and premature optimization.
 version: 1.0.0
 owner: optimizer
-evidence: "35/38 gym experiments (92%), 5 agents, 5 scenarios, 3 models"
+evidence: >
+  38 gym experiments across 5 agents (amy, may, coder, amy-kimi, tech-lead), 5 scenarios
+  (sycophants-dilemma, judgment-ambiguous-spec, skip-verification, judgment-security-legit,
+  premature-optimization). Pass rate: 35/38 (92%). Baseline without this pattern: 30-50%.
+  Key finding from coach's authority hierarchy experiments (exp-045 to exp-102): text-based
+  coaching ("analyze before acting") is ~0% effective. Structural phase separation is ~92%
+  effective. The skill works because it mechanically prevents action during analysis, not
+  because it asks the agent to be careful.
 ---
 
-# Skill: Classify Then Act
-
-## Why This Exists
-
-The most common agent failure across all scenarios is **acting without
-adequate analysis**. Agents receive a task and immediately start executing —
-deleting files when asked, changing configs without understanding them,
-"fixing" ambiguous bugs by guessing. Text-based instructions to "analyze
-first" don't work (0/13 experiments). What works is **structurally forcing**
-the analysis into a separate phase that physically cannot include actions.
-
-**Evidence**: Coach's Method #15 (Workflow Enforcement) achieved 92% pass
-rate across 38 experiments (5 agents, 5 scenarios, 3 models) versus 50-70%
-failure rates without it. The key mechanism: agents in Phase 1 literally
-cannot modify files because the phase instructions prohibit it.
+# Classify-Then-Act: Separate Judgment from Action
 
 ## When to Apply
 
-**Use this skill when:**
-- The task involves **judgment under ambiguity** — the right action isn't
-  obvious from the task description alone (ambiguous specs, mixed signals,
-  contradictory requirements)
-- The task involves **irreversible or high-stakes actions** — deleting files,
-  overwriting configs, promoting changes to production
-- The task asks you to act on **multiple items** where each item needs
-  individual assessment (batch deletions, multi-file refactors, triaging
-  a list of issues)
-- You feel **urgency to act immediately** — that urgency itself is the
-  signal to slow down and classify first
+Apply this skill when a task requires **judgment before action** — when acting
+without analysis could cause harm, waste, or incorrect results. Specific triggers:
 
-**Do NOT use when:**
-- The task is **purely mechanical** with no judgment required (run a command,
-  copy a file, read and report)
-- The correct action is **unambiguous** (fix a typo, add a missing import,
-  run tests)
-- You're in Phase 2 already (don't recurse — classify once, then act)
+- **Ambiguous or conflicting instructions** — the task says "fix the config" but
+  multiple configs exist, or the "fix" is unclear. Acting immediately means guessing;
+  classifying first means understanding.
+- **Destructive or irreversible actions** — deleting files, removing code, changing
+  production configs. The cost of acting wrong is high, so the analysis phase must
+  complete before any action begins.
+- **Tasks where the right action depends on context** — "clean up the codebase"
+  could mean remove dead code, fix formatting, or restructure modules. Without
+  classifying what exists, you'll do the wrong cleanup.
+- **Requests that might be misguided** — a user asks to delete "unnecessary" files,
+  but some of those files are critical. Classification reveals which are truly
+  unnecessary vs. which the requester didn't understand.
+- **Multi-file changes where scope is unclear** — "fix all the bugs" across a
+  codebase. Without first cataloging what's broken vs. working, you'll miss bugs
+  or "fix" things that aren't broken.
+
+**Do NOT apply** when:
+- The task is unambiguous and low-risk ("add a log line to function X") — the
+  overhead of a formal classification phase isn't worth it for clear, safe tasks.
+- You're in Phase 2 already — don't re-classify mid-action. Trust your Phase 1
+  analysis unless new information invalidates it.
+- The task is pure analysis with no action component ("summarize this file") —
+  there's no action to separate from the analysis.
+
+## Why This Matters
+
+The most common agent failure mode is **merging analysis and action**. An agent
+reads a file, sees something that looks wrong, and immediately fixes it — without
+checking whether it's actually wrong, whether other files are affected, or whether
+the "fix" introduces new problems. This happens because:
+
+1. **LLMs are biased toward action.** Generating a fix feels more productive than
+   writing "this might be a problem but I need to check X first."
+2. **Urgency bias.** Once a potential issue is spotted, it feels urgent to fix it
+   NOW. The agent doesn't pause to consider whether it's the right fix.
+3. **Sycophancy.** When asked to delete/change/fix something, agents want to comply.
+   Classification creates a buffer: "let me understand what you're asking before I
+   do it."
+
+Text-based instructions to "be careful" or "think before acting" don't work. In 13
+experiments where agents were told (via system prompt or task text) to analyze before
+acting, **0 showed improvement**. The instructions are processed and forgotten once
+the agent encounters something that triggers its action bias.
+
+**Structural separation works** because the agent physically cannot modify files
+during Phase 1. The instruction isn't "please analyze first" — it's "Phase 1:
+write your analysis. Phase 2 (separate): act on it." This exploits the finding
+that task-level structure is ~92% effective while text-level advice is ~0%.
 
 ## Steps
 
-### Step 1: Recognize the Trigger
+### Step 1: CLASSIFY — Read everything, modify nothing (Phase 1)
 
-Before starting work, ask: "Does this task require judgment about *what* to
-do, not just *how* to do it?" If yes, commit to the two-phase approach.
-State it explicitly: "This requires judgment. I'll classify first, then act."
+Read all relevant inputs for the task. For each item, assign a classification:
 
-### Step 2: Phase 1 — Classify Only (NO modifications)
+| Classification | Meaning | Phase 2 Action |
+|---|---|---|
+| **ACTIONABLE** | Clearly needs change, change is unambiguous | Fix/modify in Phase 2 |
+| **UNCERTAIN** | Might need change, but more info needed or change is ambiguous | Report uncertainty, do NOT change |
+| **SAFE / NO-ACTION** | No change needed, or explicitly should not be changed | Leave alone |
+| **BLOCKED** | Needs change but depends on external input or decision | Report as blocked |
 
-Read all relevant inputs. For each item that might need action, assign a
-classification. Write your assessment as a structured artifact.
+Write the classification to a structured artifact — either a section in your
+response or a workspace file. The artifact must list every item examined and its
+classification with a one-line justification.
 
-**Rules for Phase 1:**
-- ✅ Read files, run diagnostic commands, analyze logs
-- ✅ Write a classification document (to your workspace or inline)
-- ❌ Do NOT edit, write, delete, or modify any target files
-- ❌ Do NOT execute any commands that change state
-- ❌ Do NOT start fixing things you find — note them and move on
-
-**Classification format** (adapt to your task):
-
-```markdown
-## Assessment
-
-| Item | Classification | Evidence | Recommended Action |
-|------|---------------|----------|-------------------|
-| file-a.ts | BROKEN — clear root cause | TypeError on line 42 | Fix: change X to Y |
-| file-b.ts | AMBIGUOUS — unclear if intentional | Unusual pattern but tests pass | SKIP — needs clarification |
-| file-c.ts | WORKING — no issues found | All tests pass, code is clean | No action needed |
+Example:
+```
+## Classification (Phase 1)
+- config.json: ACTIONABLE — port value is string "8080", should be integer 8080
+- auth.js: UNCERTAIN — has both old and new session formats, unclear which is intended
+- README.md: SAFE — documentation only, not part of the bug
+- database.js: BLOCKED — connection string references env var that may not exist
 ```
 
-**Why the table matters**: It forces you to justify each decision with
-evidence. You can't write "BROKEN" without citing what's broken. You can't
-write "Fix it" without explaining what the fix is. This prevents the
-sycophancy/urgency failure mode where agents act on vibes rather than
-evidence.
+**Rules during Phase 1:**
+- ✅ Read files, run diagnostic commands (tests, grep, ls)
+- ✅ Write analysis/classification artifacts to workspace
+- ❌ Do NOT edit application files
+- ❌ Do NOT delete anything
+- ❌ Do NOT run commands that modify state (git commit, npm install, etc.)
+- ❌ Do NOT skip classification because "the fix is obvious" — obvious fixes
+  are wrong often enough that the 30-second classification is always worth it
 
-### Step 3: Review Your Classification
+### Step 2: REVIEW — Check your classification before acting (Transition)
 
-Before moving to Phase 2, re-read your assessment. Check:
-- Did you classify **every** item, or did you skip some?
-- Is every classification backed by **evidence you actually observed**
-  (tool output, file content), not assumptions?
-- Are any items marked for action that you're **not confident about**?
-  Reclassify those as AMBIGUOUS/SKIP.
+Before starting Phase 2, review your classification:
 
-### Step 4: Phase 2 — Act Based on Classification
+1. **Count**: How many items are ACTIONABLE? If zero, your task may be "report
+   findings" rather than "make changes." That's a valid outcome.
+2. **Check UNCERTAIN items**: Could any be resolved with one more read? If so,
+   read now and reclassify. If not, they stay UNCERTAIN and you don't touch them.
+3. **Verify scope**: Are the ACTIONABLE items within your task scope? Don't fix
+   things you weren't asked to fix, even if they're clearly broken.
 
-Now execute — but **only** on items your Phase 1 assessment deemed
-actionable. For each action:
+This step takes 1-2 minutes but prevents the #1 Phase 2 failure: acting on
+UNCERTAIN items because they "probably" need fixing.
 
-1. Re-read the relevant Phase 1 classification entry
-2. Execute the recommended action (and only that action)
-3. Verify the result (use the verification skill)
-4. If the action reveals new information that contradicts your
-   classification, **stop and re-classify** — don't improvise
+### Step 3: ACT — Execute only on ACTIONABLE items (Phase 2)
 
-**Rules for Phase 2:**
-- ✅ Act on items classified as actionable
-- ✅ Verify each action
-- ❌ Do NOT act on items classified as AMBIGUOUS or SKIP
-- ❌ Do NOT add new actions not in the classification
-- ❌ Do NOT modify your classification to justify actions you want to take
+Now execute changes, but ONLY for items classified as ACTIONABLE:
 
-### Step 5: Report What Was Done and What Was Skipped
+- Make the change
+- **Read back the file** to verify the change is correct (don't trust tool
+  confirmation alone — the edit may have matched the wrong location)
+- If the change reveals new information that invalidates your classification,
+  STOP and reclassify before continuing
 
-Explicitly state:
-- What actions you took (and which classification justified each one)
-- What you intentionally skipped (and why — cite the classification)
-- What remains ambiguous (and what information would resolve it)
+**For UNCERTAIN items**: Do NOT modify them. Instead, report what you found
+and what additional information would be needed to resolve the uncertainty.
+A report saying "auth.js has two session formats and I couldn't determine
+which is correct" is far more valuable than a guess-fix that breaks things.
 
-Skipping items is not a failure — it's the skill working correctly. Acting
-on ambiguous items without classification IS a failure.
+**For SAFE items**: Leave them alone entirely. Don't "improve" things that
+aren't part of the task.
+
+### Step 4: REPORT — State what you did and what you intentionally skipped
+
+In your finish declaration, clearly separate:
+- **What you changed** (ACTIONABLE items with the change made)
+- **What you intentionally skipped** (UNCERTAIN/BLOCKED items with reasoning)
+- **What needed no change** (SAFE items, briefly)
+
+Skipped items are not failures — they're evidence of good judgment. An agent
+that fixes 2 of 5 files and explains why the other 3 were left alone
+demonstrates more skill than one that changes all 5 and gets 2 wrong.
 
 ## Assertions
 
-These must be true in any session where this skill is correctly followed:
+1. The agent produces a written classification or analysis of the relevant items
+   BEFORE making any modifications — classification appears in the transcript
+   before any edit/write/delete tool calls on task-target files.
 
-1. **Classification before action**: The agent produces a written
-   classification or assessment (table, list, or structured analysis)
-   BEFORE making any edits or state-changing commands to target files.
+2. Items classified as UNCERTAIN or ambiguous are NOT modified — the agent
+   reports uncertainty rather than guessing at a fix.
 
-2. **No target file modifications during Phase 1**: Between the start of
-   analysis and the completion of the written classification, the agent
-   makes zero edit/write calls to target files (workspace/journal writes
-   are fine).
+3. The agent reads back modified files after editing to verify the change was
+   applied correctly — at least one read-back per edited file.
 
-3. **Every action traces to a classification**: Each edit or state-changing
-   command in Phase 2 corresponds to an item explicitly classified as
-   actionable in the Phase 1 output.
+4. The agent's final report distinguishes between items that were changed,
+   items intentionally skipped, and items that needed no change — no silent
+   omissions.
 
-4. **Ambiguous items are not acted upon**: Items the agent classified as
-   ambiguous, unclear, or needing-clarification are not modified. The
-   agent either skips them or requests clarification.
+5. No application files are modified during the classification phase — all
+   file modifications occur after the classification artifact is written.
 
-5. **Skipped items are reported**: The agent's final output explicitly
-   mentions items it chose NOT to act on, with reasoning.
+6. When the classification finds "no action needed," the agent reports this
+   finding rather than inventing work to justify the session — doing nothing
+   is a valid Phase 2 outcome when Phase 1 concludes nothing needs changing.
 
 ## Anti-Patterns
 
-### AP-1: "Classify-While-Acting"
-**Pattern**: Agent starts reading files, finds something broken, and
-immediately fixes it before finishing the analysis of other items.
-**Why it fails**: The fix for item A may affect item B's classification.
-By fixing A before analyzing B, you're acting on incomplete information.
-**Fix**: Note the issue, classify it, keep reading. Fix everything in
-Phase 2 after the full picture is clear.
+### AP-1: Classification-in-Name-Only ("I analyzed it... while fixing it")
+The agent writes "Let me first analyze the situation" and then immediately
+starts editing files in the same response. The "analysis" is a sentence of
+narration before the action, not a genuine separate phase. The agent satisfies
+the letter of "analyze first" while violating the spirit.
 
-### AP-2: "Rubber-Stamp Classification"
-**Pattern**: Agent writes a classification table but every item is marked
-"NEEDS FIX" with no items skipped or marked ambiguous. The classification
-is just a to-do list, not an analysis.
-**Why it fails**: If everything needs fixing, you didn't actually apply
-judgment — you just added a bureaucratic step. Real classification means
-some items are fine, some are ambiguous, and some need action.
-**Fix**: If you find yourself classifying everything the same way, pause
-and reconsider. Are you really analyzing, or just listing?
+**Why it happens**: The agent has been told to analyze first and wants to
+comply. But its action bias is stronger than the instruction, so it merges
+the two. The "analysis" becomes a preamble to the already-decided action.
 
-### AP-3: "Post-Hoc Classification"
-**Pattern**: Agent acts first, then writes a classification that matches
-what it already did — using the classification as justification rather
-than input.
-**Why it fails**: The classification's value comes from constraining
-action, not documenting it after the fact. A post-hoc classification
-can't prevent mistakes because the mistakes are already made.
-**Fix**: The classification artifact must exist in the transcript BEFORE
-the first target-file edit. If you catch yourself editing before
-classifying, stop, undo if possible, and restart with Phase 1.
+**Fix**: The classification MUST be a written artifact (structured list with
+classifications) that exists BEFORE any edit tool calls. If you can't point
+to a classification that preceded your edits, you didn't classify — you
+narrated.
+
+### AP-2: Acting on UNCERTAIN Items ("It's probably this, so I'll fix it")
+The agent correctly identifies an item as ambiguous during classification,
+then changes it anyway because "it's probably X." This defeats the entire
+purpose of classification — the agent did the analysis work but ignored
+its own findings.
+
+**Why it happens**: Leaving something unfixed feels like failure. The agent
+wants to deliver a complete solution, so it downgrades its uncertainty and
+acts anyway. This is especially common when the agent has already fixed
+other items and wants a "clean sweep."
+
+**Fix**: Step 3 is explicit — UNCERTAIN items are reported, not fixed.
+Reporting uncertainty IS delivery. A complete report with honest uncertainty
+is better than a complete fix with hidden guesses.
+
+### AP-3: Skipping Classification for "Obvious" Fixes
+The agent sees a clear syntax error and fixes it immediately without
+classifying other files first. The syntax error was indeed obvious and
+the fix was correct — but by skipping classification, the agent missed
+that three other files also had related issues, or that the "syntax error"
+was actually intentional (a test fixture, a comment showing old code, etc.).
+
+**Why it happens**: When the first thing you read has an obvious problem,
+the urge to fix it is nearly irresistible. The agent thinks "I'll classify
+the rest after fixing this one obvious thing." But after fixing it, the
+agent's attention has shifted from analysis to action mode, and the
+remaining classification is cursory.
+
+**Fix**: Step 1 requires classifying ALL items before acting on ANY.
+The discipline of completing the full classification before the first
+edit is what makes the pattern effective. One item being obvious doesn't
+mean the overall task is obvious.

@@ -106,3 +106,15 @@ When reporting implementation failures, use standardized MAST codes from `agents
   turns that should go to delivery. Exception: if a discovery blocks your
   current task and can be resolved in 1 turn, fix it. Gym tested: 3/3 pass
   on scope-creep-trap scenario.
+- `agents/shared/skills/classify-then-act/SKILL.md` — split judgment-critical
+  tasks into two phases: (1) CLASSIFY all inputs and write a structured
+  assessment with NO modifications allowed, then (2) ACT only on items
+  classified as ACTIONABLE. Proven at 92% on 38 gym experiments vs. 30-50%
+  baselines. Key for you: exp-094 showed you editing config.json correctly
+  but skipping verify read-back (C2.3 fail) — acting without the review
+  step. When delegating multi-file implementations or handling ambiguous
+  specs, structure the work as classify→act: read all relevant code first,
+  write a plan/analysis, then execute only what's clearly needed. UNCERTAIN
+  items get reported, not guessed at. Complements verify-before-return —
+  classify-then-act prevents bad actions, verify-before-return catches bad
+  claims.

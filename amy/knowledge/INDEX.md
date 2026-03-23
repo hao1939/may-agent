@@ -30,3 +30,12 @@ Scout researches (Opus). Bob is Architect (Gemini).
   execute immediately (same turn). Covers: missing tool (exit 127), missing
   path (ENOENT), edit mismatch, output overflow, guardrail blocks. Max 3
   attempts then move on.
+- `agents/shared/skills/classify-then-act/SKILL.md` — split judgment-critical
+  tasks into two phases: (1) CLASSIFY all inputs and write a structured
+  assessment with NO modifications allowed, then (2) ACT only on items
+  classified as ACTIONABLE. Proven at 92% effectiveness across 38 gym
+  experiments vs. 30-50% baselines. When you encounter ambiguous or
+  conflicting instructions, destructive actions, or requests that might be
+  misguided — classify first, act second. For XHS research: when asked to
+  clean up archives or reorganize content, classify each file before acting.
+  Do NOT skip classification because "the fix is obvious."

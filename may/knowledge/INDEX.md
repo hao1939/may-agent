@@ -63,3 +63,13 @@ These are loaded every session. Update when Hao gives new corrections.
   derail you into an unrelated investigation. Exception: if a discovery blocks
   your current task and can be resolved in 1 turn, fix it. Gym tested: 3/3
   pass on scope-creep-trap scenario.
+- `agents/shared/skills/classify-then-act/SKILL.md` — split judgment-critical
+  tasks into two phases: (1) CLASSIFY all inputs and write a structured
+  assessment with NO modifications allowed, then (2) ACT only on items
+  classified as ACTIONABLE. Proven at 92% effectiveness across 38 gym
+  experiments vs. 30-50% baselines. As supervisor, you handle ambiguous
+  requests and conflicting priorities — classify before delegating or acting.
+  When draining tasks, classify each task's urgency/clarity before executing.
+  For destructive operations (file cleanup, config changes), always complete
+  the classification phase before any modification. UNCERTAIN items get
+  reported, not fixed — a report with honest uncertainty beats a guess-fix.

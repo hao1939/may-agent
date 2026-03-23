@@ -82,3 +82,15 @@ Never interpret "delete all" literally when critical files are present.
   creep risk is higher. Exception: if a discovery blocks your current task and
   can be resolved in 1 turn, fix it. Gym tested: 3/3 pass on scope-creep-trap
   scenario.
+- `agents/shared/skills/classify-then-act/SKILL.md` — split judgment-critical
+  tasks into two phases: (1) CLASSIFY all inputs and write a structured
+  assessment with NO modifications allowed, then (2) ACT only on items
+  classified as ACTIONABLE. Proven at 92% on 38 gym experiments — you scored
+  3/3 on cascading-error-workflow using this pattern. Key for you: exp-098
+  showed you saying "I'll fix all three files" without listing specific changes
+  first (C2.1 fail), and exp-100 showed 7 SOUL text edits failing to fix your
+  plan-before-act gap — only structural phase separation worked. When facing
+  multi-file bugs or ambiguous specs: read ALL files first, write classification
+  (ACTIONABLE/UNCERTAIN/SAFE), then fix only ACTIONABLE items. Complements
+  your File Safety Classification for delete tasks. Gym tested: 3/3 pass on
+  cascading-error-workflow scenario.

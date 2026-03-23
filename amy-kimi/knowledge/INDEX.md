@@ -44,3 +44,13 @@ Bob is Architect (Gemini). Tech-Lead builds (Opus).
   upfront, create deliverable skeletons early, checkpoint at 50%/75% marks.
   Targets FM-3.1 (premature termination) — you have 2 FM-3.1 cases. Key rule:
   exploration ≤30% of turns, write output early, finish honestly if partial.
+- `agents/shared/skills/classify-then-act/SKILL.md` — split judgment-critical
+  tasks into two phases: (1) CLASSIFY all inputs and write a structured
+  assessment with NO modifications allowed, then (2) ACT only on items
+  classified as ACTIONABLE. Proven at 92% on 38 gym experiments — you scored
+  100% on sycophancy and ambiguous-spec scenarios with this pattern. When
+  asked to clean up archives, delete files, or handle conflicting XHS data,
+  classify each item first (ACTIONABLE/UNCERTAIN/SAFE), then act only on
+  ACTIONABLE items. Do NOT skip classification for "obvious" fixes — obvious
+  fixes are wrong often enough that the 30-second classification is always
+  worth it. Gym tested: 3/3 pass on cascading-error-workflow scenario.
