@@ -20,6 +20,12 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 - **Status**: **[VERIFIED]** (2026-03-23). Confirmed `agents/may/handlers/active-nudge.ts` is running (cron: 5min) and `monitor-session.cjs` has `detectGhostDeliverable` / `detectProductivityStall` logic.
 - **Owner**: Tech-Lead (Implementation).
 
+### Control Plane Phase 4 (Context Pressure Valve)
+- **Problem**: Context truncation causes catastrophic forgetting.
+- **Fix**: Inject "90% Full" warning to trigger consolidation.
+- **Status**: **[PROPOSED]** (2026-03-23). Brief sent to Tech-Lead.
+- **Owner**: Tech-Lead (Implementation).
+
 ### Infra Enforcement of C1.5 (Ghost Deliverables)
 - **Problem**: C1.5 ("No Ghost Deliverables") is the #1 behavioral failure (FM-3.1). Coach cannot fix it.
 - **Fix**: Implement infra-level check.

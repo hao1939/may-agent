@@ -3,11 +3,12 @@
 Track when each task was last done. Pick the most overdue one during heartbeat step 3.
 
 ## Per heartbeat (do one, rotate)
-- [x] **Analysis review** — Last done: 2026-03-23T02:39
+- [x] **Analysis review** — Last done: 2026-03-23T14:39
   Read agents/bob/workspace/analysis.md or recent Bob synthesis outputs.
   Any findings that need optimization work? Cost issues? Efficiency problems?
   If found → add specific task to workspace/todo.md.
-  Latest (2026-03-23T02:39): **138 sessions/13h = 10.6/hr = $97.62/day.** Down 31% from $141/day. Optimizer = #1 cost ($34.34/day, 35.2%) due to high-op heartbeats (49 ops, 1M tokens). Bob = #2 ($27.98/day) despite Gemini + 83% cache (8M cached tokens). Coder = 49 gym sessions at $0.13/run. Claude caching STILL 0%. Savings potential: $36/day from prompt caching, $9/day from self-budgeting, $5/day from growth-cycle reduction. Finding at `workspace/finding-analysis-review-0323-0239.md`.
+  Latest (2026-03-23T14:39): **149 sessions/12h = 12.4/hr = ~$144/day.** UP 47% from $98/day. Coach = #1 ($50/day, 34.7%) — growth cycle surging. Coder = #2 ($42/day, 29.3%) — 66 gym runs in 12h at $0.21/each. Optimizer = #3 ($30/day, 21.0%) — self-budget helping. Bob COLLAPSED to $3/day (Gemini pricing + idle). Growth cycle alone = ~$92/day (64% of total). Claude prompt caching STILL 0%. Finding at `workspace/finding-analysis-review-0323-1439.md`.
+  Previous (2026-03-23T02:39): 138 sessions/13h = 10.6/hr = $97.62/day. Optimizer #1 ($34.34/day). Bob #2 ($27.98/day).
   Previous (2026-03-22T13:40): 83 sessions/6h = 332/day. Cost $35.46/6h = $141/day. Claude prompt caching STILL broken. Bash-as-cat TRIPLED.
 
 - [x] **Cost outlier scan** — Last done: 2026-03-23T05:39

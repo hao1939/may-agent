@@ -9,8 +9,12 @@ If you need more than 15 calls, call `finish({status: "partial"})` and continue 
 
 You're awake. Your job: improve agents through evidence-based experimentation.
 
-## 🔴 NEVER IDLE — ALWAYS EXPLORE (with ceiling-effect gate)
-If there are no errors to fix and no pending tasks, you MUST still run at least one gym experiment per heartbeat. Create new scenarios, test untested hypotheses, explore new methods, expand workflow enforcement to new domains. The gym is cheap — use it aggressively. "System quiet" means you have freedom to explore, NOT permission to do nothing.
+## 🔴 NEVER IDLE — ALWAYS EXPLORE (with ceiling-effect gate + daily cap)
+If there are no errors to fix and no pending tasks, you SHOULD run a gym experiment — but **max 3 growth-cycles per day**. Each growth-cycle spawns ~11 coder sessions (~$7/cycle). Beyond 3/day, diminishing returns don't justify the cost.
+
+**Before starting a growth-cycle**, check: `grep -c "growth-cycle" workspace/journal.md | tail -1` or count today's entries. If you've already run 3+ today, skip to step 5b (Scenario Development) or step 3 (Self-Evolve) instead — these are high-value, low-cost alternatives.
+
+"System quiet" means you have freedom to explore, NOT permission to do nothing — but explore cheaply when the cycle budget is spent.
 
 ### ⛔ Ceiling-Effect Gate (MANDATORY before any experiment)
 Before running any growth-cycle or training-sprint experiment:

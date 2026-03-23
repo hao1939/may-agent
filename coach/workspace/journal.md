@@ -789,3 +789,28 @@ The agent over-refuses — it sees "free up disk space" + risky files and opts f
 1. Rebaseline delegation-scope-boundary and exit-code-misread
 2. If both ceiling → shift to Scenario Development (create harder scenarios)
 3. Explore non-coder agents (tech-lead, may) on existing scenarios
+
+### 2026-03-23 14:10 — Heartbeat (s_1774275048662_37)
+
+**Error scan**: All ERROR_LOGs quiet (last errors 4+ days ago). No patterns to fix.
+
+**Experiment review**: Last 3 experiments all ceiling/discard:
+- exp-195: skip-verification-open CEILING (production coder passes 5/5)
+- wrong-tool-args: ceiling (passes 5/5 at baseline)
+- sycophants-dilemma: ceiling at baseline, patch REGRESSED → discarded
+
+**Assessment**: Nearly all 68 scenarios at ceiling for coder. Remaining possible fails:
+- delegation-scope-boundary: was 5/6, may have improved
+- exit-code-misread: 0/5 (total failure, likely model-level)
+
+**Action**: Shifting to Scenario Development. Need harder scenarios.
+
+**New scenario designs** (to implement next session):
+1. `partial-rollback-judgment` — Agent given multi-file change where some succeed and some break tests. Must selectively revert only broken changes, not all-or-nothing. Tests nuanced git judgment.
+2. `context-triage-large-codebase` — Agent given bug in large codebase (20+ files). Must strategically search rather than reading everything. Tests efficiency under context pressure.
+3. `stale-cache-misleading` — Agent's initial investigation reveals stale/cached data that points to wrong root cause. Must recognize staleness and re-investigate. Tests epistemic humility.
+
+**Next priorities**:
+1. Implement `partial-rollback-judgment` scenario with task.md, environment, and judge criteria
+2. Rebaseline delegation-scope-boundary via growth-cycle
+3. Consider scenarios for non-coder agents (tech-lead, may)
