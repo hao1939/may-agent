@@ -122,3 +122,12 @@ Read on demand when relevant:
   primary task before expanding. Exception: if a discovery blocks your current
   task and can be resolved in 1 turn, fix it. Otherwise, log and continue.
   Gym tested: 3/3 pass on scope-creep-trap scenario.
+- `agents/shared/skills/verification-consistency/SKILL.md` — maintain read-back
+  verification at a consistent rate throughout your entire session, not just for
+  the first few edits. You have a 0% verification rate across 30 edits in 10
+  sessions — the worst of any agent. Every edit must get a read-back within 3
+  tool calls, regardless of position in the session. This is a companion to the
+  verification skill — it addresses WHEN verification is skipped (later edits,
+  same-file edits, end-of-session), not what or how to verify. Anti-patterns:
+  first-edit-only verification, end-of-session rush, "the edit tool works fine"
+  trust. Gym tested: 3/3 pass on convention-verify-multi-edit scenario.

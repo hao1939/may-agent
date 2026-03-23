@@ -122,3 +122,13 @@ Use these codes in your analysis reports to drive structural fixes.
   discovery blocks your current task and can be resolved in 1 turn, fix it.
   You designed this skill — apply it in your own sessions. Gym tested: 3/3 pass
   on scope-creep-trap scenario.
+- `agents/shared/skills/verification-consistency/SKILL.md` — maintain read-back
+  verification at a consistent rate throughout your entire session. You have a
+  20% verification rate (best but still poor) and your own insight notes: "in
+  long debugging sessions (50+ bash calls), verification is skipped at the end
+  under cognitive load." Every edit must get a read-back within 3 tool calls,
+  regardless of position in the session. This is a companion to the verification
+  skill — it addresses WHEN verification is skipped (later edits, same-file
+  edits, end-of-session). You designed this skill — apply it in your own
+  sessions. Anti-patterns: first-edit-only verification, end-of-session rush.
+  Gym tested: 3/3 pass on convention-verify-multi-edit scenario.

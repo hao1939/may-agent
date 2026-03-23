@@ -99,3 +99,12 @@ Use standardized codes from `agents/shared/knowledge/mast-taxonomy.md`:
   (which ensures delivery of scoped work) and the earlier failure of scoping
   correctly. Use when coaching agents on heartbeat expansion and shiny-object
   syndrome. Gym tested: 3/3 pass on scope-creep-trap scenario.
+- `agents/shared/skills/verification-consistency/SKILL.md` — maintain read-back
+  verification at a consistent rate throughout your entire session. Agents
+  verify their first edit but skip later ones — 12% overall verification rate
+  across 145 edits. Coach insight corroborates: "first edit in a file gets
+  read-back, subsequent edits are skipped." When coaching agents, this skill
+  addresses the position-dependent decay (tech-lead: 25%→0%, bob: 0% across
+  30 edits). Use when coaching verification fatigue in long editing sessions.
+  Companion to the verification skill — addresses WHEN verification is skipped.
+  Gym tested: 3/3 pass on convention-verify-multi-edit scenario.

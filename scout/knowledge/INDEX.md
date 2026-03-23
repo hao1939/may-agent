@@ -43,3 +43,11 @@ Bob is Architect (Gemini). Coach trains (Opus).
   or approach documented as unavailable. Use documented working approaches instead
   of defaults. Document new discoveries for future sessions. Prevents 3-5 wasted
   turns/session from retrying dead tools or re-deriving known findings.
+- `agents/shared/skills/verification-consistency/SKILL.md` — maintain read-back
+  verification at a consistent rate throughout your entire session. You have a
+  0% verification rate across 9 edits in 3 sessions. Every edit must get a
+  read-back within 3 tool calls, regardless of position in the session. This
+  is a companion to the verification skill — it addresses WHEN verification is
+  skipped (later edits, same-file edits, end-of-session), not what or how.
+  Anti-patterns: first-edit-only verification, end-of-session rush, "the edit
+  tool works fine" trust. Gym tested: 3/3 pass on convention-verify-multi-edit.

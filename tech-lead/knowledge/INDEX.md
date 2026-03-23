@@ -126,3 +126,12 @@ When reporting implementation failures, use standardized MAST codes from `agents
   items get reported, not guessed at. Complements verify-before-return —
   classify-then-act prevents bad actions, verify-before-return catches bad
   claims.
+- `agents/shared/skills/verification-consistency/SKILL.md` — maintain read-back
+  verification at a consistent rate throughout your entire session, not just
+  the first few edits. Tech-lead showed the sharpest position decay: 25%→0%
+  (s_73: verified edit #1 to repo-gate-check.ts, then skipped edits #2-#7).
+  Every edit must get a read-back within 3 tool calls. This is a companion to
+  the verification skill — it addresses WHEN verification is skipped (later
+  edits, same-file edits, end-of-session). Complements verify-before-return
+  which catches false done claims. Gym tested: 3/3 pass on
+  convention-verify-multi-edit scenario.

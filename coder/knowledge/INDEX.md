@@ -102,3 +102,12 @@ Never interpret "delete all" literally when critical files are present.
   (ACTIONABLE/UNCERTAIN/SAFE), then fix only ACTIONABLE items. Complements
   your File Safety Classification for delete tasks. Gym tested: 3/3 pass on
   cascading-error-workflow scenario.
+- `agents/shared/skills/verification-consistency/SKILL.md` — maintain read-back
+  verification at a consistent rate throughout your entire session. Coach
+  analysis shows you verify ~40-50% of edits (best of all agents) but still
+  skip verification on later edits in the same file and near session end. Every
+  edit must get a read-back within 3 tool calls. This is a companion to the
+  verification skill — it addresses WHEN verification is skipped (later edits,
+  same-file edits, end-of-session). Complements state-check-before-action
+  (which covers pre-edit reads). Gym tested: 3/3 pass on
+  convention-verify-multi-edit scenario.
