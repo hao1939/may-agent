@@ -146,26 +146,7 @@ function createMayAgentAdapter(): Adapter {
         throw new Error(`Agent '${opts.agentName}' not found in: ${agentsRoot}`);
       }
 
-      // ── Identity Injection ───────────────────────────────────────────
-      // Ensure non-standard agents (e.g. optimizer, coach) have their
-      // identity files (SOUL.md, DOMAIN.md, TOOLS.md, LESSONS.md)
-      // available in the gym environment if they rely on them.
-      // Since we point AGENTS_ROOT to the real (or lab) agents dir,
-      // the agent loader will find them naturally.
-      // BUT: If the scenario defines custom identity files in environment/,
-      // we need to make sure they are respected.
-      //
-      // Currently, `environment` is copied to `workDir`.
-      // The agent runs in `workDir`.
-      // The agent loader reads config from `AGENTS_ROOT/<agent>`.
-      //
-      // If we want to test a custom SOUL/DOMAIN for a standard agent,
-      // we would need to override the agent definition.
-      // For now, we assume the agent under test uses its standard identity,
-      // or the scenario uses a custom agent name.
-      //
-      // However, check if the agent directory is missing key files that
-      // might be needed. (No action needed if using real agents dir).
+      // ── Identity injection handled above in runAgent() ──────────────
 
       // Resolve binary — prefer compiled binary even if stale.
       // vite-node requires Node 20+ (crypto.hash) so it's not a safe fallback.
@@ -194,6 +175,17 @@ function createMayAgentAdapter(): Adapter {
     runAgent(taskFile: string, _workDir: string, timeoutMin: number): AdapterResult {
       const gymState = join(gymRoot, "state");
       mkdirSync(gymState, { recursive: true });
+
+      // ── Identity Sandbox ───────────────────────────────────────────
+      // Copy agent directory into workDir/agents/<name>/ so the agent
+      // can read("agents/<name>/heartbeat.md") etc. from its CWD.
+      // This is a sandbox copy — writes go to the temp dir, not prod.
+      const agentDir = join(agentsRoot, agentName);
+      const agentDest = join(_workDir, "agents", agentName);
+      if (existsSync(agentDir) && !existsSync(agentDest)) {
+        mkdirSync(join(_workDir, "agents"), { recursive: true });
+        cpSync(agentDir, agentDest, { recursive: true });
+      }
 
       const cmdParts = mayCmd.map(s => `"${s}"`).join(" ");
       const fullCmd = `${cmdParts} --oneshot --agent "${agentName}" --task-file "${taskFile}" --timeout=${timeoutMin}`;
@@ -461,8 +453,19 @@ function scoreScenario(scenarioDir: string, workDir: string): ScoreResult {
       stdio: ["pipe", "pipe", "pipe"],
     });
     return JSON.parse(output.trim());
-  } catch {
-    return { passed: false, checks: [], summary: "scoring failed" };
+  } catch (err: unknown) {
+    // Scorers exit non-zero on failure but still emit valid JSON to stdout.
+    // execSync throws on non-zero exit, so capture stdout from the error.
+    const execErr = err as { stdout?: string; stderr?: string };
+    if (execErr.stdout) {
+      try {
+        return JSON.parse(execErr.stdout.trim());
+      } catch {
+        // stdout wasn't valid JSON — fall through to generic failure
+      }
+    }
+    const stderr = execErr.stderr ? ` (${execErr.stderr.trim().slice(0, 200)})` : "";
+    return { passed: false, checks: [], summary: `scoring failed${stderr}` };
   }
 }
 
