@@ -1,104 +1,96 @@
-# Event & Chat Session Interface Redesign
+# Unified UI Architecture
 
-## Current State
+## Current state
 
-### Event flow
+Four UI backends, each wired differently:
 
 ```
-Agent sessions ──events──→ EventBus ──broadcast──→ Console UI (stdout)
-                                                 → Socket server (all clients)
-                                                 → Telegram bot
+                    ┌─ Console UI ── bus.on() ── filters by channel, renders to stdout
+                    │
+EventBus ───────────┼─ Telegram ──── bus.on() ── filters chat channel, accumulates text, flushes to Telegram API
+                    │                bus.command() ← Telegram poll
+                    │
+                    ├─ Socket ────── bus.on() ── broadcasts ALL events to all Unix socket clients
+                    │                bus.command() ← Unix socket clients
+                    │
+                    └─ Web UI ────── (not connected to bus)
+                                     WebSocket ↔ Unix socket proxy ↔ Socket server ↔ EventBus
+                                     Client-side JS filters chat channel
 ```
 
-The EventBus is a single broadcast channel. Every event goes to every listener.
+The web UI is the odd one out — it's a proxy of the socket, which is a proxy of the bus. Two hops. And it does its own filtering that the socket server should have done.
 
-### Channel tag
+## What's wrong
 
-Events have an optional `channel` field: `"chat"` or `"activity"` (default).
+1. **The web UI proxies through the socket instead of connecting to the bus directly.** This was the "separate process" choice — correct for the dashboard (reads SQLite), but wrong for chat. Chat needs the EventBus.
 
-- **`channel: "chat"`**: Events from the interface agent's session (the one that handles human messages). Set in `attachAgentEvents()` in `may.ts` — only the interface agent's session gets this tag.
-- **`channel: "activity"`** (default): Everything else — background agent turns, cron fires, system info.
+2. **Each UI reimplements event filtering.** Console dims activity. Telegram ignores non-chat. Web UI proxy filters. Socket broadcasts everything. There's no shared "what does a chat UI need?" logic.
 
-### How each UI uses channels
-
-| UI | Chat events | Activity events |
-|---|---|---|
-| **Console** | Bright text | Dimmed text (both shown) |
-| **Telegram** | Accumulate text, flush on prompt | Ignored |
-| **Socket** | Broadcast to all clients | Broadcast to all clients |
-| **Web UI (current)** | Show in chat | Filter out (after this fix) |
-
-### What's wrong
-
-1. **Socket broadcasts everything.** The socket was designed for `socat` debugging — seeing all events is useful for operators. But for a chat UI (web or otherwise), getting 200 `[coder] turn done` messages per day is noise.
-
-2. **No server-side filtering.** The socket server has no concept of "this client only wants chat events." Every client gets the full firehose. Filtering happens client-side (telegram filters in its own listener, web UI filters in JS). This means the socket still sends all the data — wasteful for chat-focused clients.
-
-3. **The channel tag is too coarse.** There are only two values: `chat` and `activity`. But a web UI might want:
-   - Chat agent's conversation (text, tool calls, tool results) ✓
-   - Status of sub-agents the chat agent spawned (delegation progress)
-   - NOT background heartbeats, cron fires, other agents' turn counts
-
-4. **No session scoping on events.** Events don't carry `sessionId` (except `session_start`). If the interface agent delegates to tech-lead, and tech-lead delegates to coder, the web UI can't tell which events belong to the user's request tree vs background activity.
+3. **The socket serves two purposes that conflict.** It's both a debug firehose (socat, socket_watch) AND a control interface (send commands). The web UI only needs the control interface + chat events, but gets the firehose.
 
 ## Proposed design
 
-### Keep it simple — filter at the proxy, not the protocol
+### Split the web UI into two parts
 
-Don't change the socket protocol. Don't add subscription topics. The socket stays as a debug firehose — it works well for that.
+**Dashboard** (standalone, no bus): Reads SQLite, serves HTML, no WebSocket. This stays as a separate process. `bun src/app/ui/web.ts --state-dir .state --port 8080 --no-chat`.
 
-Instead, the **web UI server** does the filtering. It already sits between WebSocket and Unix socket. Right now it's a dumb proxy. Make it a smart proxy:
+**Chat** (in-process, on the bus): An `attachWebUI(bus, opts)` function in may.ts, same pattern as console/telegram/socket. Listens on the bus directly, filters chat-channel events, serves WebSocket to browsers.
 
 ```
-Browser ──WebSocket──→ Web Server ──filter──→ Unix Socket
-                          │
-                          └── Only forwards channel:"chat" events to WebSocket clients
-                              Forwards ALL commands from WebSocket to Unix socket
+                    ┌─ Console UI ── bus.on() ── all events, dim activity
+                    │
+EventBus ───────────┼─ Telegram ──── bus.on() ── chat events only → Telegram API
+                    │                bus.command() ← Telegram poll
+                    │
+                    ├─ Socket ────── bus.on() ── ALL events → Unix socket (debug/control)
+                    │                bus.command() ← Unix socket
+                    │
+                    └─ Web UI ────── bus.on() ── chat events only → WebSocket → browser
+                                     bus.command() ← WebSocket ← browser
 ```
+
+All four UIs follow the same pattern:
+1. Subscribe to EventBus
+2. Filter events appropriate for their medium
+3. Accept input → route through `bus.command()`
+
+### But wait — the "separate process" benefit
+
+The whole point of making the web UI standalone was: dashboard doesn't need the agent process. And that's still true. The dashboard queries SQLite — it can run anywhere.
+
+So the answer is: **both modes**.
+
+When run standalone (`bun src/app/ui/web.ts --state-dir .state`):
+- Dashboard works (SQLite queries)
+- Chat proxies through Unix socket (current behavior, with server-side filtering)
+
+When run in-process (`--web` flag on the agent):
+- Dashboard works (same SQLite)
+- Chat connects to EventBus directly (no proxy, no socket hop)
+
+The standalone mode is the "good enough" default. The in-process mode is for when you want clean chat without the proxy indirection. Both serve the same HTML/API.
 
 ### Implementation
 
-In `web.ts`, instead of blindly forwarding every line from the Unix socket to the WebSocket client, parse each event and only forward if:
+**Phase 1** (now): Fix the standalone proxy filtering. This is what we just did — server-side filter in web.ts. Ship it, it works.
 
-1. `event.channel === "chat"` (interface agent's conversation), OR
-2. `event.type === "connected"` (welcome message), OR
-3. `event.type === "error"` (errors should always show)
+**Phase 2** (later, if needed): Add `attachWebUI(bus, opts)` in-process mode. Extracts the HTTP server from web.ts into a shared module. The `attachWebUI` function serves the same routes but uses `bus.on()` instead of Unix socket proxy for the WebSocket.
 
-Everything else (turn-done summaries, cron fires, heartbeat briefs, background info) is dropped at the proxy.
+Phase 2 is only worth doing if the proxy approach has real problems (latency, missed events, etc.). For now the proxy works fine.
 
-### Why not filter on the socket server?
+### The socket stays as-is
 
-- Socket protocol stays simple (one broadcast, no subscriptions)
-- Existing `socat` debugging still works (sees everything)
-- Detached agent control still works (receives all events)
-- `socket_watch` tool still works (needs all events)
-- The web server is the right place for UI-specific decisions
+The Unix socket continues to broadcast everything. It's the debug/control interface. The web UI proxy filters at the server layer. No protocol changes.
 
-### Why not add topics/subscriptions to the socket protocol?
+### Event filtering becomes a shared concern
 
-- Adds complexity to every socket client
-- Only one consumer (web UI) needs filtering
-- The proxy pattern is simpler and doesn't touch core code
-
-### Changes
-
-Only `src/app/ui/web.ts` changes — the `proxyWebSocket` function:
+For phase 2, extract a helper:
 
 ```typescript
-unix.on("data", (chunk) => {
-  // ... line buffering ...
-  for (const line of lines) {
-    try {
-      const event = JSON.parse(line);
-      // Only forward chat-channel events + meta events
-      if (event.channel === "chat" || event.type === "connected" || event.type === "error") {
-        ws.send(line);
-      }
-    } catch {
-      ws.send(line); // Forward unparseable lines as-is
-    }
-  }
-});
+function isChatEvent(event: RunnerEvent): boolean {
+  const channel = (event as any).channel ?? "activity";
+  return channel === "chat" || event.type === "connected" || event.type === "error";
+}
 ```
 
-The client-side filter in `index.html` becomes redundant (defense in depth — keep it but it won't fire for activity events).
+Telegram already does this check. Web UI proxy does it. Console uses it for dimming. One function, used by all.
