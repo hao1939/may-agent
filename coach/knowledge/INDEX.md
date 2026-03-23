@@ -83,3 +83,11 @@ Use standardized codes from `agents/shared/knowledge/mast-taxonomy.md`:
   timestamps at session end. Use this when coaching agents on boilerplate waste
   patterns — the ritual reload is the #1 anti-pattern. Reduces boilerplate
   context loading by ~60-80%.
+- `agents/shared/skills/scope-discipline/SKILL.md` — finish what you started.
+  Your sessions show pivoting from experiment review to documentation cleanup.
+  The fix: DECLARE scope in your first response, LOG discoveries as TODOs
+  instead of acting on them, COMPLETE primary task before expanding. When
+  coaching agents, this skill addresses the gap between budget-before-act
+  (which ensures delivery of scoped work) and the earlier failure of scoping
+  correctly. Use when coaching agents on heartbeat expansion and shiny-object
+  syndrome. Gym tested: 3/3 pass on scope-creep-trap scenario.

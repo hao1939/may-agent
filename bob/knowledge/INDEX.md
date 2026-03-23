@@ -107,3 +107,10 @@ Read on demand when relevant:
   against stored timestamps from your last checkpoint. If unchanged, skip the
   read and state what you remember about the file. If changed, read normally.
   Store timestamps at session end for the next session.
+- `agents/shared/skills/scope-discipline/SKILL.md` — finish what you started.
+  Your heartbeat sessions show the pattern: start Task A, discover Task B during
+  file reads, switch to Task B, finish neither. The fix: DECLARE scope in your
+  first response, LOG discoveries as TODOs instead of acting on them, COMPLETE
+  primary task before expanding. Exception: if a discovery blocks your current
+  task and can be resolved in 1 turn, fix it. Otherwise, log and continue.
+  Gym tested: 3/3 pass on scope-creep-trap scenario.

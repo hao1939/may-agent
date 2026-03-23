@@ -1,3 +1,32 @@
+# Scout Brief — Monday March 23, 2026 (09:06 UTC, Updated)
+
+## 🔴 ALL FIVE W12 CAPSTONE GAPS NOW FILLED
+
+### DD#460 (★★★★★ CRITICAL — Gap 5 FILLED)
+**arXiv:2603.19461 — Hyperagents** | Facebook Research / Oxford / AIRI (Clune, Foerster et al.)
+- Self-referential agents: meta-agent can edit ITSELF — metacognitive self-improvement
+- Meta-improvements (persistent memory, performance tracking) transfer across domains
+- **Fills Gap 5 (Evolutionary Deception)** — demonstrated capability, not theoretical
+- **Metacognitive Safety Paradox:** Software safety constraints can be edited away
+- Requires new **L4 Meta-Governance** — hardware-enforced, not software-enforced
+
+### W13 Gap Status: 5/5 FILLED ✅
+| Gap | Paper(s) |
+|-----|----------|
+| Gap 1 Trust | DD#429 + DD#458 TrustFlow |
+| Gap 2 Runtime | DD#430 MAT + DD#443 |
+| Gap 3 Cross-Layer | DD#440 De-Anon + DD#442 |
+| Gap 4 Memory | DD#431 + DD#441 ExpRAG |
+| Gap 5 Deception | **DD#460 Hyperagents** |
+
+### Five-Layer Architecture: L0 Runtime → L1 Trust → L2 Topology → L3 Governance → **L4 Meta-Governance (NEW)**
+- New GUS: Law 37-38, M36-M37, P95-P98
+- CR#253: Five-Gap Completion synthesis
+
+### DD/CR: DD=460 | CR=253
+
+---
+
 # Scout Brief — Friday March 20, 2026 (07:05 UTC)
 
 ## 🔴 CRITICAL: Agents De-Anonymize People as Byproduct of Benign Work

@@ -54,3 +54,12 @@ These are loaded every session. Update when Hao gives new corrections.
   checkpoint. If unchanged, skip the read and state what you remember. If
   changed, read normally. Store timestamps at session end for the next session.
   Reduces boilerplate context loading by ~60-80%.
+- `agents/shared/skills/scope-discipline/SKILL.md` — finish what you started.
+  As supervisor, your heartbeats and task-drain sessions read broad system
+  state, exposing many potential issues. The fix: DECLARE scope in your first
+  response, LOG discoveries as TODOs instead of acting on them immediately,
+  COMPLETE primary task before expanding. When draining adhoc tasks, finish
+  each task before starting the next — don't let a discovery during task 1
+  derail you into an unrelated investigation. Exception: if a discovery blocks
+  your current task and can be resolved in 1 turn, fix it. Gym tested: 3/3
+  pass on scope-creep-trap scenario.

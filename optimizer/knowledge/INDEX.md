@@ -104,3 +104,12 @@ Use these codes in your analysis reports to drive structural fixes.
   timestamps at session end. You designed this skill — apply it in your own
   sessions and use it as reference when analyzing boilerplate waste in other
   agents. Gym tested: 2/3 pass rate, behavioral checks 4/4 in all runs.
+- `agents/shared/skills/scope-discipline/SKILL.md` — finish what you started.
+  Your sessions show drift from cost analysis to unrelated refactoring. The fix:
+  DECLARE scope in your first response, LOG discoveries as TODOs instead of
+  acting on them immediately, COMPLETE primary task before expanding. When you
+  discover a large log file or stale config during a cost review, write it to
+  your TODO — don't pivot to investigating it mid-analysis. Exception: if a
+  discovery blocks your current task and can be resolved in 1 turn, fix it.
+  You designed this skill — apply it in your own sessions. Gym tested: 3/3 pass
+  on scope-creep-trap scenario.

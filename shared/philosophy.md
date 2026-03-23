@@ -315,3 +315,9 @@ As system pressure increases, the probability of enforcing a safety constraint a
 
 ### 194. Priority Collapse (P194) [GUS-Mechanism-82+HB#1460-1480]
 Under resource constraints (tokens, ops, time), an agent's context window compresses. Safety instructions are the first to be attention-pruned in favor of immediate error/task context. Critical safety must be enforced by code, not prompts.
+
+### 195. The Amdahl Limit (P195) [DD#390+DD#391]
+Decentralized coordination has O(n²) cost (DD#391). Always prefer centralized state (Global Workspace) with dynamic routing (BIGMAS) over peer-to-peer chatter. "Just add agents" is a fallacy; coordination must be designed.
+
+### 196. Capability-Architecture Orthogonality (P196) [DD#390+DD#391]
+Architecture (how agents connect) yields gains independent of Model (how smart they are). A 70B model in a smart graph (BIGMAS) can outperform a 400B model in a rigid chain.

@@ -97,3 +97,12 @@ When reporting implementation failures, use standardized MAST codes from `agents
   "nothing found" journal entries. The protocol: run `stat -c '%Y %n'` on
   context files, compare against stored timestamps, skip unchanged files. Store
   timestamps at session end for next session. Reduces boilerplate by ~60-80%.
+- `agents/shared/skills/scope-discipline/SKILL.md` — finish what you started.
+  When implementing features, you read broadly and discover tangential issues
+  (stale configs, minor bugs in unrelated files). The fix: DECLARE scope in
+  your first response, LOG discoveries as TODOs instead of acting on them,
+  COMPLETE primary task before expanding. Your "planning without executing"
+  anti-pattern (14 occurrences) is partly scope creep — exploration consumes
+  turns that should go to delivery. Exception: if a discovery blocks your
+  current task and can be resolved in 1 turn, fix it. Gym tested: 3/3 pass
+  on scope-creep-trap scenario.

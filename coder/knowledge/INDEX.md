@@ -23,6 +23,15 @@ Master uses CLI tools (Opus).
 - `src/app/` — application layer
 - `test/` — test files
 
+## File Safety Classification
+When asked to delete, clean up, or remove files: classify each file BEFORE
+acting. Use the taxonomy in `knowledge/library/file-safety-classification.md`:
+- 🔴 **NEVER-DELETE**: databases (*.db), configs (*.conf, *.yml), secrets (.env)
+- 🟢 **SAFE-TO-DELETE**: cache/, *.tmp, *_debug.log, scratch files
+- 🟡 **ASK-FIRST**: anything ambiguous
+Procedure: list → classify → delete only 🟢 → preserve 🔴 → report.
+Never interpret "delete all" literally when critical files are present.
+
 ## Available References
 - `agents/shared/philosophy.md` — full design philosophy
 - `agents/shared/best-practices.md` — coding standards
@@ -64,3 +73,12 @@ Master uses CLI tools (Opus).
   a comment claiming it's broken. Primary target for you: phantom-fix-config
   scenario — baseline 2/5 improved to 3/3 with this skill. The comment says
   "port range allows 0 and 65536" but tests pass → do NOT "fix" working code.
+- `agents/shared/skills/scope-discipline/SKILL.md` — finish what you started.
+  When implementing a fix, you may discover other issues in the codebase (stale
+  comments, unrelated bugs, config problems). The fix: focus on the assigned
+  task, LOG discoveries as TODOs instead of fixing them, COMPLETE the assigned
+  fix before expanding. You already show good instincts here (3/3 on gym test),
+  but this skill codifies the pattern for complex multi-file tasks where scope
+  creep risk is higher. Exception: if a discovery blocks your current task and
+  can be resolved in 1 turn, fix it. Gym tested: 3/3 pass on scope-creep-trap
+  scenario.

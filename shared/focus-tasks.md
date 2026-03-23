@@ -291,6 +291,10 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 - [x] **Monitor P154 Growth Filter**: Verify Coach adopts the "Partial Failure" criteria. (Done: 2026-03-15 - Verified in heartbeat.md)
 
 - [x] **[DEPLOYED]** Structured Checkpoints (Common Sense 3.5) — `checkpoint()` tool live. Common Sense updated. Validated against StateLM/StatePlane research.
+- [x] **[DELEGATED]** Active Nudging (Control Plane Phase 3) — Sent `brief-monitor-active-nudge.md` to Tech-Lead. Addresses FM-1.3/FM-3.1 via monitor-session injection.
+- [x] **[REJECTED]** Finish Guard Wiring — Rejected as infeasible. Post-hoc check in convention-loop endorsed instead.
+- [x] **[REJECTED]** Handoff Tool / Signals — Rejected. Use write+send convention.
+- [x] **[DEFERRED]** Async Tasks (Control Plane Phase 2) — Deferred until slow tools emerge.
 
 ### Archive
 - **Context Awareness (CS 6.1 & 4.5)**: Verified `scripts/sync-tools-md.ts` works (2026-03-20).

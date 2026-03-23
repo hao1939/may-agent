@@ -90,3 +90,15 @@
 ## 17. TabAgent (Efficiency / arXiv:2602.16429)
 - **Insight**: Replace LLM calls for closed-set decisions (routing, gating) with tabular classifiers. 95% latency reduction.
 - **Action**: Evaluate where we use LLMs for simple classification (e.g., triage) and consider cheaper logic.
+
+## 18. The Amdahl Limit (Distributed Systems / arXiv:2603.12229)
+- **Insight**: Decentralized coordination costs O(n²). Scaling agents yields diminishing returns for serial tasks.
+- **Law**: Always prefer centralized state (Global Workspace) over peer-to-peer chatter. "Just add agents" is a fallacy.
+- **Source**: DD#391 (Scout).
+- **Status**: Validates "Sidecar" pattern. Encoded in Philosophy P86.
+
+## 19. BIGMAS (Dynamic Topology / arXiv:2603.15371)
+- **Insight**: Brain-inspired graph construction + global workspace yields +36% gains.
+- **Key**: Dynamic topology (per-problem graph) beats fixed pipelines.
+- **Source**: DD#390 (Scout).
+- **Action**: Investigate "GraphDesigner" agent capability for complex tasks.
