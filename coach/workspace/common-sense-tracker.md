@@ -17,7 +17,7 @@ Compact index. Per-item evidence in `common-sense-evidence/cs-{num}.md`.
 | 2.3 | Verify after acting | ✅ | QA ✅, Optimizer ⚠️, TL ✅ (hear | 2026-03-17 |
 | 2.4 | One thing at a time | ✅ | Amy-Kimi, Bob, TL ✅, Amy ✅ | 2026-03-19 |
 | 3.1 | Fail gracefully | ✅ | Optimizer ✅, Amy ✅, Evaluator  | 2026-03-18 |
-| 3.2 | Don't repeat yourself | ⚠️ | Amy-Kimi ✅, TL ❌ (2x), Bob ❌ (6x grep), Opt ✅, QA ✅, Scout ✅ | 2026-03-21 |
+| 3.2 | Don't repeat yourself | ⚠️ | Amy-Kimi ✅, TL ❌ (2x), Bob ❌ (6x grep), Opt ✅, QA ✅, Scout ✅, Bob ❌ (3x mv same files, s_551 Mar 23) | 2026-03-23 |
 | 3.3 | Know when to stop | ⚠️↑ | Amy ✅, Optimizer ❌→⚠️ | 2026-03-18 |
 | 3.4 | Escalation has content | ✅ | QA ✅ (2x), Bob ✅, Opt ✅ (2x) | 2026-03-21 |
 | 3.5 | State is filesystem | ⚠️↑ | TL ✅, Scout ✅ (post-fix), Opti | 2026-03-18 |
@@ -49,9 +49,9 @@ Compact index. Per-item evidence in `common-sense-evidence/cs-{num}.md`.
 | 13.3 | Message Quality | ✅ | TL ✅ (2x), Opt ✅ | 2026-03-19 |
 | 13.4 | Not Required for All | ✅ | Bob ✅ | 2026-03-19 |
 
-## Summary (2026-03-23)
+## Summary (2026-03-23, 04:07 UTC)
 - ✅ 29/43 | ❌ 3/43 | ⚠️ 11/43
 - **Failed**: 1.1 (Acknowledge), 1.6 (C50 Re-Planning), C3.2 (Scout workspace isolation)
-- **Key partial**: C1.3 (Bob improving 4/9 verified, up from 0/5), C1.5 (QA no read-back after bash write), 3.2 (TL retries), 4.5 (Tool schema), 13.1 (Coder no-commit)
+- **Key partial**: C1.3 (Bob improving 4/9 verified, up from 0/5), C1.5 (QA no read-back after bash write), 3.2 (Bob still repeating — 3x mv same files in s_551), 4.5 (Tool schema), 13.1 (Coder no-commit)
 - **Improving**: 3.3, 3.5, C1.3, C1.5
 - **Resolved**: 6.1 (Budget pacing) — upgraded ⚠️↑→✅ on 2026-03-22 (optimizer efficiently delegates via workflows, lean sessions)

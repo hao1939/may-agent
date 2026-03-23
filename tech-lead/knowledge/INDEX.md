@@ -89,3 +89,11 @@ When reporting implementation failures, use standardized MAST codes from `agents
   read a result file before searching again. Escalate strategy (read structure,
   trace imports, search callers) after 5 failed commands instead of refining
   the same grep pattern.
+- `agents/shared/skills/incremental-context-loading/SKILL.md` — gate context
+  file reads on change detection before loading. All heartbeat agents load
+  their full heartbeat.md (~5KB) every 30-60 min session despite weekly change
+  frequency. For git-based work: after `git log <last-commit>..HEAD` returns
+  empty, stop immediately — don't re-read files, re-scan directories, or write
+  "nothing found" journal entries. The protocol: run `stat -c '%Y %n'` on
+  context files, compare against stored timestamps, skip unchanged files. Store
+  timestamps at session end for next session. Reduces boilerplate by ~60-80%.

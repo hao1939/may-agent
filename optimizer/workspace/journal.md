@@ -1,5 +1,42 @@
 # Journal
 
+## 2026-03-23T05:39 — Cost Scan: Optimizer at 50.6% of total cost
+
+**Task**: Cost & Efficiency scan (periodic rotation)
+
+**Key findings**:
+- 61 sessions/5.5h = 11.1/hr, $97.35/day projected (stable)
+- Optimizer = 50.6% of cost ($49.31/day), UP from 35.2% ($34.34/day)
+- Root cause: skill-lifecycle Phase 1 DISCOVER sessions read 747K-869K input tokens ($2.41-$2.78 each)
+- Two Phase 1 runs = $5.19 = 46% of optimizer cost
+- 4/12 optimizer sessions over 25-op budget (Phase 1: 56, 57 ops)
+- Bash-as-cat: 14.9/hr (coach 30 gym-cat calls, coder 43 gym-cat calls)
+- Claude caching still 0% for all Claude agents
+
+**Action**: Need to reduce Phase 1 token consumption by reading evaluations/summaries instead of raw session tails.
+
+**Files**: `workspace/finding-cost-scan-0323-0539.md`
+
+---
+
+## 2026-03-23T04:30 — Skill lifecycle: incremental-context-loading DEPLOYED
+
+**Task**: Pattern → Skill (via skill-lifecycle workflow)
+
+**Skill created**: `incremental-context-loading` — gates context file reads on change detection
+- 5-step protocol: CHECK → DECIDE → LOAD → STORE → SPECIAL CASE
+- Evidence: 20+ sessions across 6 agents. Bob reads 19KB focus-tasks.md in 5/5 sessions (0 changes). QA re-scans unchanged repos 3/4 sessions. All heartbeat agents read full heartbeat.md every 30-60 min despite weekly changes. ~2MB/day, ~$2/day waste.
+- Gym tested: 2/3 runs pass (meets deployment threshold)
+- Deployed to: bob, may, tech-lead, optimizer, qa, coach INDEX.md files
+- 5 testable assertions: change check precedes reads, skip rationale stated, timestamps stored, early exit on empty diff, total boilerplate under 10KB
+
+**Files**:
+- `agents/shared/skills/incremental-context-loading/SKILL.md` (267 lines)
+- `agents/gym/scenarios/incremental-context-loading/` (scenario + environment + success_criteria)
+- 6 INDEX.md files updated (bob, may, tech-lead, optimizer, qa, coach)
+
+---
+
 ## 2026-03-23T01:50 — Skill lifecycle: evidence-over-narrative DEPLOYED
 
 **Task**: Pattern → Skill (via skill-lifecycle workflow)

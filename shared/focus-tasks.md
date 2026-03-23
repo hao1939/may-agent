@@ -17,8 +17,15 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 ### Control Plane Phase 3 (Active Nudging)
 - **Problem**: Agents spin in loops (FM-1.3) or claim ghost deliverables (FM-3.1).
 - **Fix**: Implement "Wink" pattern (Active Nudging) via `monitor-session` + `manager.inject`.
-- **Status**: **[DELEGATED]** (2026-03-23). Tech-Lead briefed (req:c30ad6ad).
+- **Status**: **[COMPLETED]** (2026-03-22). Tech-Lead deployed `active-nudge` handler, `monitor-session` detections, and cron job.
 - **Owner**: Tech-Lead (Implementation).
+
+### Opus Prompt Caching (Cost Critical)
+- **Problem**: Opus agents (Tech-Lead, Coach, May) have 0% cache hit rate due to LiteLLM stripping headers. Wasting $36-63/day.
+- **Fix**: Bypass LiteLLM for Anthropic or update LiteLLM config.
+- **Status**: **[BLOCKED]** (2026-03-23). Requires Human/Hao intervention (Env vars + Binary rebuild). See `pending-decisions.md`.
+- **Owner**: Bob (Escalation) / Hao (Execution).
+
 
 
 ### Knowledge Index Integrity (Periodic)

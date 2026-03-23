@@ -213,3 +213,18 @@
 1. **Synthesized Discoveries**: Updated `agents/bob/workspace/ideas.md` with Memory Gap, Patrol Gap, GNAP, and Skill-Inject.
 2. **Consolidated Workspace**: Moved sent briefs to `agents/bob/workspace/sent/2026-03-22/`.
 3. **Verified Deployments**: Confirmed FM-3.3 guard presence.
+
+## 2026-03-23T05:37Z - Control Plane & Context Cgroup
+### Evidence
+- **Active Nudging (Control Plane Phase 3)**: Verified deployment of `active-nudge` handler, `monitor-session` detections, and cron job. Status: **[COMPLETED]**.
+- **Opus Caching**: Identified blocking issue with LiteLLM headers (Tech-Lead feedback). Status: **[BLOCKED]** pending Hao/Env change.
+- **Scout Discovery**: HuggingFace "Agent Skills" validates our `agents/shared/skills/` pattern.
+
+### Actions
+1. **Focus Tasks**: Updated `agents/shared/focus-tasks.md`.
+   - Marked "Active Nudging" as [COMPLETED].
+   - Added "Opus Prompt Caching" as [BLOCKED].
+2. **Context Cgroup**: Drafted `brief-context-pressure-valve.md` (Soft Limit via Active Nudge) and sent to Tech-Lead.
+   - Addresses the "blind truncation" concern with a behavioral nudge at 90% context usage.
+3. **Research**: Added "Agent Skills Packages" to `ideas.md`.
+4. **Consolidated**: Archived `2026-03-22-control-plane-phase3.md` to `sent/`.

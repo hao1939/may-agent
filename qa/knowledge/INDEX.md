@@ -56,6 +56,15 @@ Tech-lead builds (Opus). May is Supervisor (Opus).
   "scan for changes" but 0 new commits → early-exit, don't re-scan. You
   re-scan unchanged repos 3/4 sessions (~39 wasted ops/day). When evidence
   shows nothing changed, skip the procedural step and document why.
+- `agents/shared/skills/incremental-context-loading/SKILL.md` — gate context
+  file reads on change detection before loading. You are a key beneficiary:
+  you re-scan unchanged repos in 3/4 sessions from identical commit de62c5a
+  (~39 wasted ops/day, 24KB wasted). For git-based work: after `git log
+  <last-commit>..HEAD` returns empty, stop immediately — don't re-read files,
+  re-scan directories, or write "nothing found" journal entries (13 ops used
+  when 1 was needed). The protocol: run `stat -c '%Y %n'` on context files,
+  compare against stored timestamps, skip unchanged files. Store timestamps
+  at session end. Reduces boilerplate by ~60-80%.
 
 ## Consolidated Memory
 - `agents/qa/knowledge/consolidated-memory-2026-03.md`: Durable facts/patterns extracted from QA journal (2026-03-16..2026-03-18).

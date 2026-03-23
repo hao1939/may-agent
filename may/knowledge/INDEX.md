@@ -46,3 +46,11 @@ These are loaded every session. Update when Hao gives new corrections.
   Targets FM-3.1 (premature termination) — you have 3 FM-3.1 cases. Key rule:
   exploration ≤30% of turns, deliverable must exist by turn 4, scope down if
   over budget using MUST/SHOULD/DEFER. Finish with status "partial" if needed.
+- `agents/shared/skills/incremental-context-loading/SKILL.md` — gate context
+  file reads on change detection before loading. All heartbeat agents load
+  their full heartbeat.md (~5KB) every 30-60 min session despite weekly change
+  frequency. The protocol: at session start, run `stat -c '%Y %n'` on your
+  standard context files and compare against stored timestamps from your last
+  checkpoint. If unchanged, skip the read and state what you remember. If
+  changed, read normally. Store timestamps at session end for the next session.
+  Reduces boilerplate context loading by ~60-80%.

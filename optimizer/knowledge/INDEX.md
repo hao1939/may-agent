@@ -93,3 +93,14 @@ Use these codes in your analysis reports to drive structural fixes.
   after 3 search commands on the same topic, MUST read a result file. Escalate
   to scripts after 5 failed bash one-liners (AP-3). You designed this skill —
   use it as reference when analyzing grep spiral patterns in other agents.
+- `agents/shared/skills/incremental-context-loading/SKILL.md` — gate context
+  file reads on change detection before loading. You are the #1 cost agent at
+  $34/day — much of this is re-reading context that hasn't changed since the
+  last heartbeat 30 minutes ago. You load periodic-tasks.md, analysis files,
+  and cost scan results every session (~15KB+ of boilerplate). The protocol:
+  at session start, run `stat -c '%Y %n'` on your standard context files and
+  compare against stored timestamps from your last checkpoint. If unchanged,
+  skip the read and state what you remember. If changed, read normally. Store
+  timestamps at session end. You designed this skill — apply it in your own
+  sessions and use it as reference when analyzing boilerplate waste in other
+  agents. Gym tested: 2/3 pass rate, behavioral checks 4/4 in all runs.

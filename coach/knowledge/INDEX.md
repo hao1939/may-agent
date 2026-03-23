@@ -74,3 +74,12 @@ Use standardized codes from `agents/shared/knowledge/mast-taxonomy.md`:
   first: check method-catalog.md results BEFORE designing an intervention.
   When evidence says a method class doesn't work, skip it — don't re-evaluate.
   Use this skill when coaching agents on phantom-fix patterns (FM-2.6).
+- `agents/shared/skills/incremental-context-loading/SKILL.md` — gate context
+  file reads on change detection before loading. All heartbeat agents load
+  their full heartbeat.md (~5KB) every 30-60 min session despite weekly change
+  frequency. 5KB × 48 sessions/day × 6 agents = 1.44MB/day of unchanged
+  heartbeat reads. The protocol: at session start, run `stat -c '%Y %n'` on
+  context files, compare against stored timestamps, skip unchanged files. Store
+  timestamps at session end. Use this when coaching agents on boilerplate waste
+  patterns — the ritual reload is the #1 anti-pattern. Reduces boilerplate
+  context loading by ~60-80%.

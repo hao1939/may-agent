@@ -98,3 +98,12 @@ Read on demand when relevant:
   in 71% — even when unchanged. ~77KB/session of boilerplate reads. Before
   processing a large file, verify it has new content (check modified time or
   diff against last known state). If nothing changed, skip and note why.
+- `agents/shared/skills/incremental-context-loading/SKILL.md` — gate context
+  file reads on change detection before loading. You are the #1 beneficiary:
+  you read focus-tasks.md (19KB) in 5/5 sessions with 0/5 having changes
+  (95KB wasted), and pending-decisions.md (26KB) in 71% of sessions unchanged
+  (91KB wasted). ~77KB/session of boilerplate reads. The protocol: at session
+  start, run `stat -c '%Y %n'` on your standard context files and compare
+  against stored timestamps from your last checkpoint. If unchanged, skip the
+  read and state what you remember about the file. If changed, read normally.
+  Store timestamps at session end for the next session.
