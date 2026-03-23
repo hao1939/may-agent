@@ -156,7 +156,7 @@ const models: Record<string, ModelWithApiKey> = {
 // ── Infrastructure ─────────────────────────────────────────────────────
 
 const bus = new EventBus();
-if (CONSOLE_ENABLED) attachConsoleUI(bus);
+if (CONSOLE_ENABLED) attachConsoleUI(bus, () => taskSessionId ?? chatSession?.getSessionId() ?? null);
 
 bus.emit({
   type: "info",
@@ -337,53 +337,25 @@ const interfaceAgent = (() => {
 })();
 
 function attachAgentEvents(label: string, sessionId: string): void {
-  const isChat = label === interfaceAgent;
+  let toolCalls = 0;
+  let turnStart = Date.now();
 
-  if (!isChat) {
-    let toolCalls = 0;
-    let turnStart = Date.now();
-
-    manager.subscribe(sessionId, (event) => {
-      switch (event.type) {
-        case "turn_start":
-          turnStart = Date.now();
-          toolCalls = 0;
-          break;
-        case "tool_execution_start":
-          toolCalls++;
-          break;
-        case "turn_end": {
-          const elapsed = ((Date.now() - turnStart) / 1000).toFixed(0);
-          bus.emit({ type: "info", message: `[${label}] turn done (${elapsed}s, ${toolCalls} tool calls)` });
-          break;
-        }
-      }
-    });
-    return;
-  }
-
-  // Chat/task session: full event streaming
   manager.subscribe(sessionId, (event) => {
-    const channel = "chat" as const;
-
     switch (event.type) {
-      case "message_start":
-        if (event.message.role === "assistant") {
-          bus.emit({ type: "prompt", message: label, channel });
-        }
+      case "turn_start":
+        turnStart = Date.now();
+        toolCalls = 0;
+        break;
+      case "tool_execution_start":
+        toolCalls++;
+        bus.emit({ type: "tool_call", sessionId, agent: label, tool: event.toolName, args: event.args });
         break;
       case "message_update":
         if (event.assistantMessageEvent.type === "text_delta") {
-          bus.emit({ type: "text", agent: label, text: event.assistantMessageEvent.delta, channel });
+          bus.emit({ type: "text", sessionId, agent: label, text: event.assistantMessageEvent.delta });
         }
         break;
-      case "tool_execution_start":
-        bus.emit({ type: "tool_call", agent: label, tool: event.toolName, args: event.args, channel });
-        break;
       case "tool_execution_end": {
-        // P84 wrapping prepends <tool_output name="..."> as content[0] and appends
-        // </tool_output> as the last block. Skip those wrapper blocks to get the
-        // actual tool output for the preview.
         const blocks = event.result?.content ?? [];
         const firstReal = blocks.find(
           (b: any) => b?.type === "text" && !b.text?.startsWith("<tool_output") && b.text !== "</tool_output>",
@@ -391,12 +363,17 @@ function attachAgentEvents(label: string, sessionId: string): void {
         const text = firstReal?.text ?? "";
         bus.emit({
           type: "tool_result",
+          sessionId,
           agent: label,
           tool: event.toolName,
           preview: text.slice(0, 200),
           isError: !!event.isError,
-          channel,
         });
+        break;
+      }
+      case "turn_end": {
+        const durationMs = Date.now() - turnStart;
+        bus.emit({ type: "turn_end", sessionId, agent: label, toolCalls, durationMs });
         break;
       }
     }

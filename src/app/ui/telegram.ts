@@ -204,15 +204,25 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
   const pendingChatId: string | null = allowedChatIds[0] || null;
 
   const unsubBus = bus.on((event) => {
-    const ch = eventChannel(event);
-
-    // Accumulate interface agent's chat-channel text
-    if (event.type === "text" && ch === "chat" && event.agent === interfaceAgent) {
+    // Accumulate interface agent's text (identified by agent name, not channel)
+    if (event.type === "text" && event.agent === interfaceAgent) {
       pendingText += event.text;
     }
 
     // When interface agent's turn ends, flush
-    if (event.type === "prompt" && ch === "chat") {
+    if (event.type === "turn_end" && event.agent === interfaceAgent) {
+      flushPendingText();
+    }
+
+    // Notifications (heartbeat briefs, alerts) → push immediately
+    if (event.type === "notification") {
+      if (pendingChatId) {
+        sendMessage(pendingChatId, `📋 ${event.agent}: ${event.text}`).catch(() => {});
+      }
+    }
+
+    // Backward compat: prompt event still flushes (during migration)
+    if (event.type === "prompt") {
       flushPendingText();
     }
   });
