@@ -12,6 +12,7 @@
  * - Classifies file types (workspace, knowledge, config, code, skills)
  * - Produces messages like "bob: workspace updates | coach: new skill"
  * - Commits per-agent when possible for cleaner history
+ * - Pulls from and pushes to the first configured git remote (if any)
  *
  * Exports create() conforming to HandlerModule.
  */
@@ -120,45 +121,43 @@ function groupByAgent(files: string[]): AgentChanges[] {
   return [...agentMap.values()].sort((a, b) => b.files.length - a.files.length);
 }
 
-// ── Sync helper ───────────────────────────────────────────────────────
+// ── Git remote helpers ────────────────────────────────────────────────
 
-/**
- * Pull from the sync remote before committing. This picks up any changes
- * pushed from the local dev machine (via the host bare repo → sync bare repo
- * chain). Uses rebase to keep the commit history linear.
- *
- * Best-effort — if no remote, no connectivity, or conflicts, we log and
- * continue with the commit. The worst case is a diverged local branch that
- * the next manual merge will fix.
- */
-function trySyncPull(agentsDir: string, log: (msg: string) => void): void {
+/** Returns the name of the first configured remote, or null. */
+function getRemote(agentsDir: string): string | null {
   try {
-    const remotes = execSync("git remote", {
+    const out = execSync("git remote", {
       cwd: agentsDir,
       encoding: "utf-8",
       timeout: 5_000,
     }).trim();
+    return out ? out.split("\n")[0]! : null;
+  } catch {
+    return null;
+  }
+}
 
-    if (!remotes) return;
-
-    const remote = remotes.split("\n")[0]!;
-    // Fetch first, then check if there's anything new
+/**
+ * Pull from remote before committing. Picks up changes pushed from other
+ * instances (e.g. local dev machine). Uses stash + rebase to stay linear.
+ * Best-effort — failures are logged but don't block the commit.
+ */
+function tryPull(agentsDir: string, remote: string, log: (msg: string) => void): void {
+  try {
     execSync(`git fetch ${remote} main`, {
       cwd: agentsDir,
       timeout: 15_000,
       encoding: "utf-8",
     });
 
-    // Check if remote is ahead
     const behind = execSync(`git rev-list --count HEAD..${remote}/main`, {
       cwd: agentsDir,
       encoding: "utf-8",
       timeout: 5_000,
     }).trim();
 
-    if (behind === "0") return; // Already up to date
+    if (behind === "0") return;
 
-    // Stash any uncommitted changes, rebase, then pop
     const hasChanges = execSync("git status --porcelain", {
       cwd: agentsDir,
       encoding: "utf-8",
@@ -177,13 +176,19 @@ function trySyncPull(agentsDir: string, log: (msg: string) => void): void {
       });
       log(`[agents-auto-commit] pulled ${behind} commit(s) from ${remote}`);
     } catch {
-      // Rebase conflict — abort and continue without the pull
       execSync("git rebase --abort", { cwd: agentsDir, timeout: 5_000 });
-      log(`[agents-auto-commit] ⚠️ rebase conflict during pull — skipped`);
+      log(`[agents-auto-commit] rebase conflict during pull — skipped`);
     }
 
     if (hasChanges) {
-      execSync("git stash pop", { cwd: agentsDir, timeout: 10_000 }).toString();
+      try {
+        execSync("git stash pop", { cwd: agentsDir, timeout: 10_000 });
+      } catch {
+        // Stash pop conflict — drop it, the files are already on disk
+        execSync("git checkout -- .", { cwd: agentsDir, timeout: 5_000 });
+        execSync("git stash drop", { cwd: agentsDir, timeout: 5_000 });
+        log(`[agents-auto-commit] stash pop conflict — dropped stash`);
+      }
     }
   } catch (err) {
     const errMsg = err instanceof Error ? err.message : String(err);
@@ -191,25 +196,12 @@ function trySyncPull(agentsDir: string, log: (msg: string) => void): void {
   }
 }
 
-// ── Push helper ───────────────────────────────────────────────────────
-
 /**
- * Try to push to any configured remote. Best-effort — if no remote exists
- * or the push fails (no SSH key, network down, etc.), we log and move on.
- * The commit is still local, which is better than losing the data entirely.
+ * Push local commits to remote. Best-effort — if the push fails, the
+ * commits are still local and will be pushed next run.
  */
-function tryPush(agentsDir: string, log: (msg: string) => void): void {
+function tryPush(agentsDir: string, remote: string, log: (msg: string) => void): void {
   try {
-    // List remotes — pick the first one available
-    const remotes = execSync("git remote", {
-      cwd: agentsDir,
-      encoding: "utf-8",
-      timeout: 5_000,
-    }).trim();
-
-    if (!remotes) return; // No remotes configured — nothing to push to
-
-    const remote = remotes.split("\n")[0]!;
     execSync(`git push ${remote} main`, {
       cwd: agentsDir,
       timeout: 30_000,
@@ -218,11 +210,7 @@ function tryPush(agentsDir: string, log: (msg: string) => void): void {
     log(`[agents-auto-commit] pushed to ${remote}`);
   } catch (err) {
     const errMsg = err instanceof Error ? err.message : String(err);
-    // Don't spam logs for expected cases (no remote, no SSH key, etc.)
-    if (!errMsg.includes("No configured push destination") &&
-        !errMsg.includes("Could not read from remote")) {
-      log(`[agents-auto-commit] push failed (non-fatal): ${errMsg.split("\n")[0]}`);
-    }
+    log(`[agents-auto-commit] push failed (non-fatal): ${errMsg.split("\n")[0]}`);
   }
 }
 
@@ -232,10 +220,11 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
   const agentsDir = resolve(ctx.projectRoot, "agents");
 
   return async () => {
+    const remote = getRemote(agentsDir);
     let committed = false;
 
-    // Pull any changes pushed from other instances (local dev, other pods)
-    trySyncPull(agentsDir, ctx.log);
+    // Pull from remote to pick up changes from other instances
+    if (remote) tryPull(agentsDir, remote, ctx.log);
 
     try {
       // Check for changes (tracked + untracked)
@@ -246,9 +235,8 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       }).trim();
 
       if (!status) {
-        // Nothing to commit — still try to push in case previous commits
-        // were committed but never pushed (e.g. push failed last time).
-        tryPush(agentsDir, ctx.log);
+        // Nothing to commit — still push in case previous commits are unpushed
+        if (remote) tryPush(agentsDir, remote, ctx.log);
         return;
       }
 
@@ -321,9 +309,9 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       }
     }
 
-    // Push after committing (or if there were unpushed commits from last run)
-    if (committed) {
-      tryPush(agentsDir, ctx.log);
+    // Push after committing
+    if (remote && committed) {
+      tryPush(agentsDir, remote, ctx.log);
     }
   };
 };
