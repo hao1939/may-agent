@@ -18,6 +18,7 @@ import { join, dirname } from "node:path";
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { SubagentDefinition } from "./types.js";
 import { sanitizeMemory } from "./security/memory-sanitizer.js";
+import { upsertSession, updateSessionDb } from "./requests.js";
 
 /** Serializable agent config (no tools, no apiKey, no full model object). */
 export interface PersistedAgentConfig {
@@ -460,17 +461,29 @@ export async function loadAllSessionMetasAsync(persistDir: string): Promise<Reco
   return result;
 }
 
+// ── SessionStore interface ─────────────────────────────────────────────
+
+/** Abstraction over session metadata persistence.
+ *  RegistryStore is the default (meta.json + SQLite).
+ *  Tests/gym can provide alternatives (in-memory, spy, etc.). */
+export interface SessionStore {
+  readonly persistDir: string;
+  saveSession(sessionId: string, entry: PersistedSession): void;
+  updateSessionStatus(
+    sessionId: string,
+    status: "running" | "done" | "error" | "interrupted" | "idle",
+    error?: string,
+  ): void;
+  getSession(sessionId: string): PersistedSession | null;
+  getRegistry(): Registry;
+}
+
 // ── RegistryStore ──────────────────────────────────────────────────────
 //
-// Per-session file-based storage. No single shared file.
-//
+// Default SessionStore: meta.json (source of truth) + SQLite (queryable index).
 // Agent configs: in-memory only (re-registered on every startup).
-// Session metadata: individual meta.json per session directory.
-//
-// This design eliminates the single-file bottleneck that caused
-// conflicts when multiple may-agent instances share the same .state/.
 
-export class RegistryStore {
+export class RegistryStore implements SessionStore {
   private agents: Record<string, PersistedAgentConfig> = {};
   readonly persistDir: string;
 
@@ -489,13 +502,28 @@ export class RegistryStore {
     delete this.agents[name];
   }
 
-  /** Record a new session (writes meta.json to the session dir). */
+  /** Record a new session (writes meta.json + mirrors to SQLite). */
   saveSession(sessionId: string, entry: PersistedSession): void {
     writeSessionMeta(this.persistDir, sessionId, entry);
+    try {
+      upsertSession(this.persistDir, {
+        sessionId,
+        agent: entry.agent,
+        task: entry.task,
+        status: entry.status,
+        kind: entry.kind,
+        parentSessionId: entry.parentSessionId,
+        requestId: entry.orderId,
+        workflowRunId: entry.workflowRunId,
+        startedAt: entry.startedAt,
+        endedAt: entry.endedAt,
+        error: entry.error,
+        opCount: entry.opCount,
+      });
+    } catch { /* non-fatal — meta.json is source of truth */ }
   }
 
-  /** Update session status (running/done/error/interrupted/idle).
-   *  Reads the current meta.json, updates in place, writes back. */
+  /** Update session status. Writes meta.json + updates SQLite. */
   updateSessionStatus(
     sessionId: string,
     status: "running" | "done" | "error" | "interrupted" | "idle",
@@ -512,11 +540,17 @@ export class RegistryStore {
       if (error) session.error = error;
     }
     writeSessionMeta(this.persistDir, sessionId, session);
+    try {
+      updateSessionDb(this.persistDir, sessionId, {
+        status: session.status,
+        endedAt: session.endedAt,
+        error: session.error,
+        opCount: session.opCount,
+      });
+    } catch { /* non-fatal */ }
   }
 
-  /** Get the current registry data (scans session dirs on each call).
-   *  Agent configs come from in-memory registrations.
-   *  Session metadata comes from individual meta.json files. */
+  /** Get the current registry data (scans session dirs on each call). */
   getRegistry(): Registry {
     return {
       agents: { ...this.agents },

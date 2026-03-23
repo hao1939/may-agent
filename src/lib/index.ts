@@ -84,6 +84,7 @@ export type {
 export { isOverflowError, extractProgress, writeProgressFile } from "./overflow.js";
 export {
   RegistryStore,
+  SessionStore,
   ensureSessionDir,
   appendSessionMessage,
   readSessionMessages,

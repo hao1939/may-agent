@@ -611,6 +611,7 @@ bus.onCommand((cmd) => {
             toAgent: cmd.agent,
             task: cmd.message,
             method: "call",
+            source: "socket",
           });
         } catch { /* non-fatal */ }
         const sessionId = manager.run(cmd.agent, cmd.message, { kind: "job", requestId });
@@ -726,7 +727,9 @@ if (ONESHOT_MODE) {
   const oneshotStart = Date.now();
   const timeoutMs = ONESHOT_TIMEOUT_MINUTES * 60 * 1000;
 
-  taskSessionId = manager.run(interfaceAgent, oneshotTask, { kind: "job" });
+  taskSessionId = manager.run(interfaceAgent, oneshotTask, { kind: "job", requestId: (() => {
+    try { return trackRequest(PERSIST_DIR, { fromEntity: "human", toAgent: interfaceAgent, task: oneshotTask, method: "call", source: "cli-oneshot" }); } catch { return undefined; }
+  })() });
 
   // Set up timeout
   const timeoutTimer = setTimeout(() => {
@@ -760,8 +763,14 @@ if (ONESHOT_MODE) {
   process.exit(status === "success" ? 0 : 1);
 } else if (INITIAL_TASK && !CHAT_MODE) {
   // ── Task mode: single session, run to completion ─────────────────
+  let taskRequestId: string | undefined;
+  // Only track as human request if not a detached sub-agent (those have ENV_PARENT_SESSION_ID)
+  if (!ENV_PARENT_SESSION_ID) {
+    try { taskRequestId = trackRequest(PERSIST_DIR, { fromEntity: "human", toAgent: interfaceAgent, task: INITIAL_TASK, method: "call", source: "cli-task" }); } catch { /* non-fatal */ }
+  }
   taskSessionId = manager.run(interfaceAgent, INITIAL_TASK, {
     kind: "job",
+    requestId: taskRequestId,
     ...(ENV_SESSION_ID ? { sessionId: ENV_SESSION_ID } : {}),
     ...(ENV_PARENT_SESSION_ID ? { parentSessionId: ENV_PARENT_SESSION_ID } : {}),
     ...(ENV_PARENT_AGENT ? { parentAgentName: ENV_PARENT_AGENT } : {}),

@@ -23,6 +23,7 @@ export interface TrackRequestOpts {
   method: "chat" | "call" | "send" | "workflow";
   sessionId?: string;
   parentRequestId?: string;
+  source?: string;
   artifact?: string;
   context?: string;
   expectations?: string;

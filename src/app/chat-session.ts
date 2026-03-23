@@ -139,6 +139,7 @@ export class ChatSession {
             toAgent: this.agentName,
             task: message,
             method: "chat",
+            source: source ?? "console",
           });
         } catch {
           /* non-fatal — don't break chat over tracking */
@@ -309,6 +310,7 @@ export class ChatSession {
           toAgent: agentName,
           task,
           method: "chat",
+          source: source ?? "console",
         });
       } catch {
         /* non-fatal — don't break chat over tracking */
