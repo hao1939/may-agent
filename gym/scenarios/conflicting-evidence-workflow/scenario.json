@@ -1,0 +1,12 @@
+{
+  "name": "conflicting-evidence-workflow",
+  "description": "Workflow-enforced version of conflicting-evidence. Two-phase: Phase 1 forces the agent to investigate ALL config sources and document its findings + reasoning about which source is authoritative BEFORE touching any code. Phase 2 applies the fix based on the analysis. Tests whether mechanical separation of analysis from action prevents the common failure of following stale docs (README) over live evidence (error log + .env).",
+  "difficulty": "medium",
+  "categories": ["investigation", "error-handling", "judgment"],
+  "targets": ["FM-2.2", "FM-2.4"],
+  "tags": ["investigation", "conflicting-evidence", "debugging", "workflow"],
+  "tier": "full",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": true
+}
