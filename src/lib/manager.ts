@@ -845,6 +845,10 @@ export class SubagentManager {
 
     // ── Update request status (unified request tracking) ───────────────
     if (session.requestId) {
+      // Extract outcome summary from finish() data or last assistant text
+      const finishData = extractFinishParams(messages);
+      const summary = finishData?.summary ?? extractLastAssistantText(messages) ?? undefined;
+
       getRequestFns().then((mod) => {
         if (!mod) return;
         try {
@@ -852,6 +856,7 @@ export class SubagentManager {
           mod.updateRequest(this.registry.persistDir, session.requestId!, {
             status: archiveStatus === "done" ? "COMPLETED" : "FAILED",
             sessionId: session.sessionId,
+            summary: summary?.slice(0, 500),
             error: session.error ?? undefined,
             errorClass: session.error ? classifyErrorFn(session.error) : undefined,
             durationMs,
@@ -861,6 +866,24 @@ export class SubagentManager {
           /* non-fatal — don't block completion for request tracking */
         }
       });
+    }
+
+    // ── Update session outcome in DB ───────────────────────────────────
+    {
+      const finishData = extractFinishParams(messages);
+      const outcome = finishData?.summary ?? extractLastAssistantText(messages) ?? undefined;
+      if (outcome) {
+        try {
+          const { updateSessionDb } = require("./requests.js") as typeof import("./requests.js");
+          updateSessionDb(this.registry.persistDir, session.sessionId, {
+            status: archiveStatus,
+            endedAt: session.endedAt,
+            error: session.error,
+            outcome: outcome.slice(0, 500),
+            opCount: session.opCount,
+          });
+        } catch { /* non-fatal */ }
+      }
     }
 
     // ── Auto-escalation: notify parent on blocked/failure (F5) ─────────

@@ -36,6 +36,7 @@ export interface TrackRequestOpts {
   method: RequestMethod;
   sessionId?: string;
   parentRequestId?: string;
+  source?: string;
   artifact?: string;
   context?: string;
   expectations?: string;
@@ -61,6 +62,7 @@ export interface RequestRecord {
   task: string;
   status: RequestStatus;
   sessionId: string | null;
+  source: string | null;
   createdAt: number;
   updatedAt: number;
   completedAt: number | null;
@@ -72,7 +74,7 @@ export interface RequestRecord {
   artifact: string | null;
   context: string | null;
   expectations: string | null;
-  notify: string | null; // JSON array
+  notify: string | null;
 }
 
 // ── Schema ─────────────────────────────────────────────────────────────
@@ -87,6 +89,7 @@ CREATE TABLE IF NOT EXISTS requests (
   task            TEXT NOT NULL,
   status          TEXT NOT NULL DEFAULT 'CREATED',
   sessionId       TEXT,
+  source          TEXT,
   createdAt       INTEGER NOT NULL,
   updatedAt       INTEGER NOT NULL,
   completedAt     INTEGER,
@@ -105,6 +108,30 @@ CREATE INDEX IF NOT EXISTS idx_status    ON requests(status);
 CREATE INDEX IF NOT EXISTS idx_to_agent  ON requests(toAgent);
 CREATE INDEX IF NOT EXISTS idx_parent    ON requests(parentRequestId);
 CREATE INDEX IF NOT EXISTS idx_created   ON requests(createdAt);
+
+-- Sessions: queryable index of per-session meta.json files.
+-- Source of truth is meta.json on disk; this table is for SQL queries and joins.
+CREATE TABLE IF NOT EXISTS sessions (
+  sessionId       TEXT PRIMARY KEY,
+  agent           TEXT NOT NULL,
+  task            TEXT NOT NULL,
+  status          TEXT NOT NULL DEFAULT 'running',
+  kind            TEXT,
+  source          TEXT,
+  parentSessionId TEXT,
+  requestId       TEXT,
+  workflowRunId   TEXT,
+  startedAt       INTEGER NOT NULL,
+  endedAt         INTEGER,
+  error           TEXT,
+  outcome         TEXT,
+  opCount         INTEGER DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS idx_sess_agent   ON sessions(agent);
+CREATE INDEX IF NOT EXISTS idx_sess_status  ON sessions(status);
+CREATE INDEX IF NOT EXISTS idx_sess_parent  ON sessions(parentSessionId);
+CREATE INDEX IF NOT EXISTS idx_sess_started ON sessions(startedAt);
 
 -- Convention checks (P1: mechanical compliance checker)
 CREATE TABLE IF NOT EXISTS convention_checks (
@@ -182,6 +209,9 @@ export function getDb(persistDir: string): SqliteDb {
   db.exec("PRAGMA busy_timeout = 5000");
   db.exec(SCHEMA);
 
+  // Migrations for existing databases (idempotent — ALTER ADD COLUMN fails silently if column exists)
+  try { db.exec("ALTER TABLE requests ADD COLUMN source TEXT"); } catch { /* already exists */ }
+
   dbCache.set(persistDir, db);
   return db;
 }
@@ -213,9 +243,9 @@ export function trackRequest(
   db.run(
     `INSERT INTO requests (
       requestId, parentRequestId, fromEntity, toAgent, method, task,
-      status, sessionId, createdAt, updatedAt,
+      status, sessionId, source, createdAt, updatedAt,
       artifact, context, expectations, notify
-    ) VALUES (?, ?, ?, ?, ?, ?, 'CREATED', ?, ?, ?, ?, ?, ?, ?)`,
+    ) VALUES (?, ?, ?, ?, ?, ?, 'CREATED', ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       requestId,
       opts.parentRequestId ?? null,
@@ -224,6 +254,7 @@ export function trackRequest(
       opts.method,
       opts.task.slice(0, 500),
       opts.sessionId ?? null,
+      opts.source ?? null,
       now,
       now,
       opts.artifact ?? null,
@@ -667,4 +698,67 @@ function parseJsonArray(s: string | null): unknown[] {
 function parseJsonObject(s: string | null): Record<string, unknown> | null {
   if (!s) return null;
   try { return JSON.parse(s); } catch { return null; }
+}
+
+// ── Session DB helpers ─────────────────────────────────────────────────
+//
+// These mirror session meta.json data into the sessions table for
+// SQL queryability. Called from RegistryStore — non-blocking, best-effort.
+
+export interface SessionDbEntry {
+  sessionId: string;
+  agent: string;
+  task: string;
+  status: string;
+  kind?: string;
+  source?: string;
+  parentSessionId?: string;
+  requestId?: string;
+  workflowRunId?: string;
+  startedAt: number;
+  endedAt?: number;
+  error?: string;
+  outcome?: string;
+  opCount?: number;
+}
+
+/** Insert or replace a session row. */
+export function upsertSession(persistDir: string, entry: SessionDbEntry): void {
+  const db = getDb(persistDir);
+  db.run(
+    `INSERT OR REPLACE INTO sessions
+      (sessionId, agent, task, status, kind, source, parentSessionId, requestId, workflowRunId, startedAt, endedAt, error, outcome, opCount)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      entry.sessionId,
+      entry.agent,
+      entry.task?.slice(0, 500) ?? "",
+      entry.status,
+      entry.kind ?? "job",
+      entry.source ?? null,
+      entry.parentSessionId ?? null,
+      entry.requestId ?? null,
+      entry.workflowRunId ?? null,
+      entry.startedAt,
+      entry.endedAt ?? null,
+      entry.error ?? null,
+      entry.outcome ?? null,
+      entry.opCount ?? 0,
+    ],
+  );
+}
+
+/** Update session status fields only (for updateSessionStatus calls). */
+export function updateSessionDb(persistDir: string, sessionId: string, fields: {
+  status: string;
+  endedAt?: number;
+  error?: string;
+  outcome?: string;
+  opCount?: number;
+}): void {
+  const db = getDb(persistDir);
+  db.run(
+    `UPDATE sessions SET status = ?, endedAt = ?, error = ?, outcome = ?, opCount = ? WHERE sessionId = ?`,
+    [fields.status, fields.endedAt ?? null, fields.error ?? null, fields.outcome ?? null, fields.opCount ?? 0, sessionId],
+  );
 }
