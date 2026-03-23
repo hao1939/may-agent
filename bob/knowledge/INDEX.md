@@ -107,6 +107,14 @@ Read on demand when relevant:
   against stored timestamps from your last checkpoint. If unchanged, skip the
   read and state what you remember about the file. If changed, read normally.
   Store timestamps at session end for the next session.
+- `agents/shared/skills/task-adherence/SKILL.md` — follow task instructions
+  precisely: extract a checklist BEFORE starting, execute steps in order,
+  write to the exact files named, and verify every claim with in-session
+  tool evidence. Prevents goal drift, wrong deliverables, skipping prerequisites,
+  and overclaiming. Your architecture sessions involve multi-step plans and
+  named output files — this skill ensures you produce the specified deliverable
+  rather than an adjacent-but-wrong artifact. Protocol: Parse → Checklist →
+  Execute in order → Verify before finish.
 - `agents/shared/skills/scope-discipline/SKILL.md` — finish what you started.
   Your heartbeat sessions show the pattern: start Task A, discover Task B during
   file reads, switch to Task B, finish neither. The fix: DECLARE scope in your

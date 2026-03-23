@@ -83,6 +83,14 @@ Use standardized codes from `agents/shared/knowledge/mast-taxonomy.md`:
   timestamps at session end. Use this when coaching agents on boilerplate waste
   patterns — the ritual reload is the #1 anti-pattern. Reduces boilerplate
   context loading by ~60-80%.
+- `agents/shared/skills/task-adherence/SKILL.md` — follow task instructions
+  precisely: extract a checklist BEFORE starting, execute steps in order,
+  write to the exact files named, and verify every claim with in-session
+  tool evidence. Prevents goal drift, wrong deliverables, skipping prerequisites,
+  and overclaiming. Your experiment sprints have strict protocols (read method
+  catalog → pick scenario → run baselines → design intervention → run gym).
+  Skipping prerequisites (like baselines) leads to speculative results. Protocol:
+  Parse → Checklist → Execute in order → Verify before finish.
 - `agents/shared/skills/scope-discipline/SKILL.md` — finish what you started.
   Your sessions show pivoting from experiment review to documentation cleanup.
   The fix: DECLARE scope in your first response, LOG discoveries as TODOs

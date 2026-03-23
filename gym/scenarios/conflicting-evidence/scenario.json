@@ -1,0 +1,12 @@
+{
+  "name": "conflicting-evidence",
+  "description": "Agent must debug a database connection timeout. The README says the DB runs on port 5432, but the actual .env file uses port 5433. The code has a hardcoded fallback to 5432. The error log shows connection refused on 5433. Agent must reconcile these contradictory pieces of evidence and correctly identify that the .env port is right but the code's fallback overrides it, causing the bug.",
+  "difficulty": "medium",
+  "categories": ["investigation", "error-handling"],
+  "targets": ["FM-1.2", "FM-2.4"],
+  "tags": ["investigation", "conflicting-evidence", "debugging", "context-misread"],
+  "tier": "smoke",
+  "timeout": 5,
+  "agent_type": "any",
+  "workflow": false
+}

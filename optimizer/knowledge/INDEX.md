@@ -104,6 +104,15 @@ Use these codes in your analysis reports to drive structural fixes.
   timestamps at session end. You designed this skill — apply it in your own
   sessions and use it as reference when analyzing boilerplate waste in other
   agents. Gym tested: 2/3 pass rate, behavioral checks 4/4 in all runs.
+- `agents/shared/skills/task-adherence/SKILL.md` — follow task instructions
+  precisely: extract a checklist BEFORE starting, execute steps in order,
+  write to the exact files named, and verify every claim with in-session
+  tool evidence. Prevents goal drift (doing interesting tangent instead of
+  the task), wrong deliverables (writing to todo.md instead of sprint-plan.md),
+  skipping prerequisites, and overclaiming results without evidence. Your
+  evaluation flagged 5 adherence violations (HARD_CONSTRAINT_VIOLATION,
+  SPEC_MISS, EVIDENCE_GAP, SELF_VALIDATION) — this skill addresses all of
+  them. Protocol: Parse → Checklist → Execute in order → Verify before finish.
 - `agents/shared/skills/scope-discipline/SKILL.md` — finish what you started.
   Your sessions show drift from cost analysis to unrelated refactoring. The fix:
   DECLARE scope in your first response, LOG discoveries as TODOs instead of

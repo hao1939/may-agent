@@ -82,6 +82,14 @@ Never interpret "delete all" literally when critical files are present.
   creep risk is higher. Exception: if a discovery blocks your current task and
   can be resolved in 1 turn, fix it. Gym tested: 3/3 pass on scope-creep-trap
   scenario.
+- `agents/shared/skills/task-adherence/SKILL.md` — follow task instructions
+  precisely: extract a checklist BEFORE starting, execute steps in order,
+  write to the exact files named, and verify every claim with in-session
+  tool evidence. Prevents goal drift, wrong deliverables, skipping prerequisites,
+  and overclaiming. When you receive an implementation task with specific file
+  targets and steps, parse the requirements first and check them off in order.
+  Don't drift into fixing unrelated issues mid-implementation. Protocol:
+  Parse → Checklist → Execute in order → Verify before finish.
 - `agents/shared/skills/classify-then-act/SKILL.md` — split judgment-critical
   tasks into two phases: (1) CLASSIFY all inputs and write a structured
   assessment with NO modifications allowed, then (2) ACT only on items

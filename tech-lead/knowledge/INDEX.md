@@ -97,6 +97,14 @@ When reporting implementation failures, use standardized MAST codes from `agents
   "nothing found" journal entries. The protocol: run `stat -c '%Y %n'` on
   context files, compare against stored timestamps, skip unchanged files. Store
   timestamps at session end for next session. Reduces boilerplate by ~60-80%.
+- `agents/shared/skills/task-adherence/SKILL.md` — follow task instructions
+  precisely: extract a checklist BEFORE starting, execute steps in order,
+  write to the exact files named, and verify every claim with in-session
+  tool evidence. Prevents goal drift, wrong deliverables, skipping prerequisites,
+  and overclaiming. Your implementation tasks have specific specs and output
+  requirements — this skill ensures you complete every specified step before
+  reporting done (complements verify-before-return which catches false claims).
+  Protocol: Parse → Checklist → Execute in order → Verify before finish.
 - `agents/shared/skills/scope-discipline/SKILL.md` — finish what you started.
   When implementing features, you read broadly and discover tangential issues
   (stale configs, minor bugs in unrelated files). The fix: DECLARE scope in

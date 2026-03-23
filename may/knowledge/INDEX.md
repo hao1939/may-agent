@@ -63,6 +63,14 @@ These are loaded every session. Update when Hao gives new corrections.
   derail you into an unrelated investigation. Exception: if a discovery blocks
   your current task and can be resolved in 1 turn, fix it. Gym tested: 3/3
   pass on scope-creep-trap scenario.
+- `agents/shared/skills/task-adherence/SKILL.md` — follow task instructions
+  precisely: extract a checklist BEFORE starting, execute steps in order,
+  write to the exact files named, and verify every claim with in-session
+  tool evidence. Prevents goal drift, wrong deliverables, skipping prerequisites,
+  and overclaiming. As supervisor draining task queues, you process tasks with
+  specific instructions — this skill ensures you complete each task's actual
+  requirements rather than your interpretation of them. Protocol: Parse →
+  Checklist → Execute in order → Verify before finish.
 - `agents/shared/skills/classify-then-act/SKILL.md` — split judgment-critical
   tasks into two phases: (1) CLASSIFY all inputs and write a structured
   assessment with NO modifications allowed, then (2) ACT only on items

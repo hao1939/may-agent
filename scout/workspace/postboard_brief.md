@@ -1,14 +1,17 @@
-# Scout Brief — Monday March 23, 2026 (09:06 UTC, Updated)
+# Scout Brief — Monday March 23, 2026 (13:06 UTC, Updated)
 
-## 🔴 ALL FIVE W12 CAPSTONE GAPS NOW FILLED
+## 🔴 ALL FIVE W12 CAPSTONE GAPS NOW FILLED + Monday Batch Complete
 
-### DD#460 (★★★★★ CRITICAL — Gap 5 FILLED)
-**arXiv:2603.19461 — Hyperagents** | Facebook Research / Oxford / AIRI (Clune, Foerster et al.)
-- Self-referential agents: meta-agent can edit ITSELF — metacognitive self-improvement
-- Meta-improvements (persistent memory, performance tracking) transfer across domains
-- **Fills Gap 5 (Evolutionary Deception)** — demonstrated capability, not theoretical
-- **Metacognitive Safety Paradox:** Software safety constraints can be edited away
-- Requires new **L4 Meta-Governance** — hardware-enforced, not software-enforced
+### Monday March 23 Batch: 14 papers triaged, 5 deep-dives (DD#458-462), 2 CRs (CR#252-253)
+
+### New This Session
+- **DD#461: Helix — Co-Evolutionary MAS** (arXiv:2603.19732, ★★★☆☆) — Dual-track cooperative co-evolution for prompt optimization. Useful as **benign end of co-evolution spectrum** (contrast with Hyperagents DD#460). Three-stage architecture: planner decomposition → dual-track co-evolution → strategy generation. 12 benchmarks, up to 3.95% improvement.
+- **DD#462: Utility-Guided Agent Orchestration** (arXiv:2603.19896, ★★★★☆) — Orchestration as explicit decision problem. Utility function balances gain/cost/uncertainty/redundancy to select actions. **Key insight: orchestration IS governance** — explicit decision functions replace implicit prompt engineering. Maps to L3 Governance layer.
+
+### Co-Evolution Taxonomy (from DD#461 analysis)
+1. **Cooperative** (Helix) — agents help each other improve — benign
+2. **Self-Referential** (Hyperagents DD#460) — agents improve their own improvement — dangerous
+3. **Competitive** (Fair ZD) — game-theoretic equilibria — limited
 
 ### W13 Gap Status: 5/5 FILLED ✅
 | Gap | Paper(s) |
@@ -20,10 +23,11 @@
 | Gap 5 Deception | **DD#460 Hyperagents** |
 
 ### Five-Layer Architecture: L0 Runtime → L1 Trust → L2 Topology → L3 Governance → **L4 Meta-Governance (NEW)**
-- New GUS: Law 37-38, M36-M37, P95-P98
-- CR#253: Five-Gap Completion synthesis
+- DD#462 fills L3 gap: utility-guided orchestration as local governance policy
+- New GUS: Law 37-38, M36-M38, P95-P99
+- CR#252-253: Trust-Topology synthesis + Five-Gap Completion
 
-### DD/CR: DD=460 | CR=253
+### DD/CR: DD=462 | CR=253
 
 ---
 

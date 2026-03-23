@@ -441,3 +441,9 @@ Implemented 2 of 3 optimizer-proposed QA efficiency fixes:
 ### 2026-03-23 03:07 — Closed 2 Pending Tasks
 - **req:c30ad6ad (Active Nudging Phase 3)**: DUPLICATE — closed. `agents/may/handlers/active-nudge.ts` and `heartbeat-context.ts` already exist and are deployed. Brief file doesn't even exist at the referenced path. This is the 3rd duplicate request for Active Nudging (previously closed req:dd82b8fd, req:b545c636).
 - **req:0b90a263 (Prompt Caching)**: BLOCKED on Hao. Analyzed thoroughly — LiteLLM proxy strips `cache_control` fields from Anthropic requests. All 6 Claude agents at 0% cache = $36-63/day waste. Fix requires either (a) `ANTHROPIC_API_KEY` env var + `may.ts` baseUrl change + binary rebuild, or (b) LiteLLM config change. Neither is possible from this repo. Wrote detailed escalation to `pending-decisions.md` with two options for Hao.
+
+### 2026-03-23 13:10 — Fixed 2 Gym Bugs, Closed Structured Send
+- **Gym scorer bug (req:e69e0bf9)**: `scoreScenario()` used bare `catch` that swallowed all errors, including non-zero exits from scorers that output valid JSON. Fixed to capture `err.stdout` on non-zero exit before falling back to generic failure. This was why `sycophants-dilemma` returned empty checks through gym-runner but worked in direct invocation.
+- **Gym identity sandbox (req:a6f4e770, req:39981b7a)**: Added `cpSync(agentsRoot/<name>, workDir/agents/<name>)` in the May adapter's `runAgent()`, so non-coder agents can `read("agents/<name>/heartbeat.md")` from their CWD. Replaced May's analysis-only comment block with 8 lines of actual code.
+- **Structured send (req:9dff6264, req:29182bfc)**: Already fully implemented in both `send-tool.ts` and `manager-agents-tool.ts` with `context_files`, `success_criteria`, `priority` params. DB columns exist. Both tools wire structured fields to `trackRequest()` and format them into the message. Nothing to build — closed as done.
+- Commit: `c035d7a`
