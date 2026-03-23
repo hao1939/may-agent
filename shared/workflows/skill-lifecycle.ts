@@ -21,7 +21,7 @@
  * Phase 1 (Discover): Scan transcripts/evals, find a proven pattern appearing 3+ times
  * Phase 2 (Draft): Write a SKILL.md with assertions, based on Phase 1 findings
  * Phase 3 (Test): Run gym scenarios to verify the skill improves behavior
- * Phase 4 (Deploy): Add skill to relevant agents' knowledge INDEX.md
+ * Phase 4 (Deploy): Add skill one-liner ⛔ guard to relevant agents' SOUL.md
  *
  * If Phase 1 finds no pattern → workflow exits cleanly with "no pattern found"
  * If Phase 3 fails → workflow discards the skill and reports why
@@ -189,18 +189,25 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     `1. Read workspace/skill-discovery.md to see which agents benefit.\n` +
     `2. Read workspace/skill-test-results.md to confirm tests passed.\n` +
     `3. Read the SKILL.md you created (in agents/shared/skills/<name>/).\n` +
-    `4. For each agent that should use this skill:\n` +
-    `   - Read agents/<agent>/knowledge/INDEX.md\n` +
-    `   - Add an entry pointing to the new skill\n` +
-    `   - Verify the INDEX.md is valid after editing\n` +
+    `4. For each target agent, add a one-liner ⛔ guard to their SOUL.md:\n` +
+    `   - Read agents/<agent>/SOUL.md\n` +
+    `   - Find the "## Skill Guards" or "⛔" section (look for existing ⛔ lines)\n` +
+    `   - Add a new line in this format:\n` +
+    `     - ⛔ **Skill Name**: One-sentence behavioral instruction. See \`agents/shared/skills/<name>/SKILL.md\`.\n` +
+    `   - The one-liner must be a CONCRETE INSTRUCTION the agent can follow, not a description.\n` +
+    `     Good: "If a tool call fails, your NEXT action must use a DIFFERENT approach."\n` +
+    `     Bad: "This skill teaches agents to pivot when stuck."\n` +
+    `   - Verify the SOUL.md is valid after editing (read it back)\n` +
+    `   - IMPORTANT: Do NOT add to INDEX.md — agents never read INDEX.md. SOUL.md is always in context.\n` +
     `5. Log the deployment to workspace/journal.md with:\n` +
     `   - Skill name and path\n` +
-    `   - Agents it was deployed to\n` +
+    `   - Agents it was deployed to (and which SOUL.md files were edited)\n` +
     `   - Gym test results (pass rate)\n` +
     `   - Date\n\n` +
     `### Constraints\n` +
     `- Only deploy if Phase 3 passed (2/3+ gym tests).\n` +
-    `- Do NOT modify the SKILL.md — only update INDEX.md files and journal.`;
+    `- Do NOT modify the SKILL.md — only update SOUL.md files and journal.\n` +
+    `- Keep the one-liner under 200 characters (excluding the See link). Agents read SOUL.md every session.`;
 
   const deploy = await ctx.runAgent(agent, deployTask);
   if (deploy.status === "error") {

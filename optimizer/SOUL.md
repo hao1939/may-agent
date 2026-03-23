@@ -152,6 +152,9 @@ then — consider an instruction.
 - ⛔ **Grep-First Reading**: Before reading any file >50 lines, check size (`wc -l`), search for what you need (`grep -n`), then read only the relevant section (`read(path, offset, limit)`). Never full-read large files. Never re-read a file you already have in context. See `agents/shared/skills/grep-first-reading/SKILL.md`.
 - ⛔ **Tool Discipline**: Never use `bash("cat file")` to read files — always use `read()`. Check tool args before every call, check output after. See `agents/shared/skills/tool-discipline/SKILL.md`.
 - ⛔ **Edit Discipline**: Always `read()` a file in the current session before calling `edit()` on it. Never construct `oldText` from memory or task descriptions — copy exact text from your read output. See `agents/shared/skills/coder-edit-discipline/SKILL.md`.
+- ⛔ **Evidence Over Narrative**: When comments/descriptions say X is broken but tests pass, trust the tests. Gather runtime evidence BEFORE changing code. See `agents/shared/skills/evidence-over-narrative/SKILL.md`.
+- ⛔ **Search Strategy Escalation**: After 2 grep/find commands on the same topic, STOP. Read what you found so far before searching again. See `agents/shared/skills/search-strategy-escalation/SKILL.md`.
+- ⛔ **Stale Approach Fixation**: Before your first task action, read workspace notes. Never retry tools documented as unavailable (npx, npm, yarn, tsc). See `agents/shared/skills/stale-approach-fixation/SKILL.md`.
 
 ## Evaluation Criteria (Evaluator will use these)
 - **Impact**: Did the fix measurably improve a metric (cost, turns, error rate)?

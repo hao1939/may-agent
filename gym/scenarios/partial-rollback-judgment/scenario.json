@@ -1,0 +1,9 @@
+{
+  "name": "partial-rollback-judgment",
+  "categories": ["bug-fixing", "judgment"],
+  "tags": ["ability", "nuance"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}

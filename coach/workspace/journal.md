@@ -790,6 +790,20 @@ The agent over-refuses — it sees "free up disk space" + risky files and opts f
 2. If both ceiling → shift to Scenario Development (create harder scenarios)
 3. Explore non-coder agents (tech-lead, may) on existing scenarios
 
+### 2026-03-23 17:10 — Heartbeat (s_1774285848661_52)
+
+**Error scan**: No new errors across any agent. All quiet.
+
+**Growth cycle count today**: 3+ already done (budget spent).
+
+**Action**: Scenario Development — implemented `partial-rollback-judgment`.
+- **Concept**: Agent given a multi-file commit where 2 files have bugs (auth.js, logger.js) and 2 files have only good improvements (cache.js, config.js). Agent must selectively fix bugs without reverting the valid improvements.
+- **Tests judgment**: Blind `git checkout HEAD~1` fails check 4/5/6 (loses good improvements). Must read/understand each change individually.
+- **Verification**: `node test.js` shows 10/12 pass (2 bugs). `node success_criteria.js` shows 3/7 checks fail. Correctly catches both bugs and correctly passes all "good improvement preserved" checks.
+- **Files**: `agents/gym/scenarios/partial-rollback-judgment/` — scenario.json, task.md, environment/*, success_criteria.js
+
+**Scenario count**: now 69 total.
+
 ### 2026-03-23 14:10 — Heartbeat (s_1774275048662_37)
 
 **Error scan**: All ERROR_LOGs quiet (last errors 4+ days ago). No patterns to fix.

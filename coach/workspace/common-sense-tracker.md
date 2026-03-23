@@ -22,7 +22,7 @@ Compact index. Per-item evidence in `common-sense-evidence/cs-{num}.md`.
 | 3.4 | Escalation has content | ✅ | QA ✅ (2x), Bob ✅, Opt ✅ (2x) | 2026-03-21 |
 | 3.5 | State is filesystem | ⚠️↑ | TL ✅, Scout ✅ (post-fix), Opti | 2026-03-18 |
 | C1.1 | Read Before Edit | ✅ | Amy-Kimi ✅, Optimizer ✅ (2x 2026-03-23), QA ❌→⚠️, Bob ✅ (soft, cp+cat), Scout ✅ (bash-cat), Coder ✅ (gym) | 2026-03-23 |
-| C1.2 | One Read at a Time (truncation handling) | ⚠️ | TL ✅ (2x), QA ✅, Optimizer ⚠️ | 2026-03-20 |
+| C1.2 | One Read at a Time (truncation handling) | ✅ | Bob ✅ (offset follow-up), TL ✅ (offset+recognized), Bob ⚠️ (no offset, no bad write), Opt ✅ (proactive limit+offset), Coach ✅ (proactive offset) | 2026-03-23 |
 | C1.3 | Verify Writes | ⚠️↑ | TL ✅ (3/3), Bob ⚠️ (4/9 verified across 3 sessions, up from 0/5), Opt ✅ (1/2 explicit re-read) | 2026-03-22 |
 | C1.5 | No Ghost Deliverables | ⚠️↑ | Bob ✅, Scout ✅, QA ⚠️, Opt ✅ (13-file session verified), TL ✅ (grep+py3 verify), Scout ⚠️ (edit-only) — 3/4 pass, 1 borderline | 2026-03-22 |
 | C3.2 | Workspace Isolation | ❌ | Scout ❌ (persistent), Bob ⚠️ ( | 2026-03-20 |
@@ -49,10 +49,11 @@ Compact index. Per-item evidence in `common-sense-evidence/cs-{num}.md`.
 | 13.3 | Message Quality | ✅ | TL ✅ (2x), Opt ✅ | 2026-03-19 |
 | 13.4 | Not Required for All | ✅ | Bob ✅ | 2026-03-19 |
 
-## Summary (2026-03-23, 12:07 UTC)
-- ✅ 30/43 | ❌ 3/43 | ⚠️ 10/43
+## Summary (2026-03-23, 16:10 UTC)
+- ✅ 31/43 | ❌ 3/43 | ⚠️ 9/43
 - **Failed**: 1.1 (Acknowledge), 1.6 (C50 Re-Planning), C3.2 (Scout workspace isolation)
 - **Key partial**: C1.3 (Bob improving 4/9 verified, up from 0/5), C1.5 (QA no read-back after bash write), 3.2 (Bob still repeating — 3x mv same files in s_551), 4.5 (Tool schema), 13.1 (Coder no-commit)
 - **Improving**: 3.3, 3.5, C1.3, C1.5
+- **Resolved**: C1.2 (Truncation handling) — upgraded ⚠️→✅ on 2026-03-23 (6 sessions: Bob 2x, TL, Opt, Coach, Coder — all handle truncation or use proactive offset)
 - **Resolved**: C1.1 (Read Before Edit) — upgraded ⚠️→✅ on 2026-03-23 (5 sessions checked: Opt 2x✅, Bob ✅ soft, Scout ✅ bash-cat, Coder ✅ gym)
 - **Resolved**: 6.1 (Budget pacing) — upgraded ⚠️↑→✅ on 2026-03-22 (optimizer efficiently delegates via workflows, lean sessions)
