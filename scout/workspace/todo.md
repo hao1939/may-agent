@@ -33,7 +33,7 @@
 - Predictions P203-P229 (27 from batches) + P84-P88 (5 from v7 delta) + P89-P94 (6 from Monday+synthesis) = 38 total
 
 ## Notes
-- DD count: 460, CR count: 253
+- DD count: 460, CR count: 254
 - GUS: v6 → v7 delta proposal ready, plus Law 35-37 / M33-M36 / P89-P98 candidates
 - W13 has been governance-dominated: Governance-First Architecture is the defining cluster
 - **TrustFlow (DD#458) validates Trust Evolution Principle (CR#250) — strongest external validation yet**
@@ -41,3 +41,4 @@
 - Total v7 (proposed): 36 Laws, 35 Mechanisms, 11 Trilemmas, 81 Principles, 95 Predictions, 8 Architecture Stacks
 - **DD#460 ZD Strategies: negative result strengthens case for vector trust (scalar fairness fails in stochastic environments)**
 - **CR#253 Stochastic Cooperation Theory: unifies ZD impossibility + TrustFlow + TEP into formal argument that vector trust is NECESSARY (not just preferred). Proposes Trust Quadrilemma, Law 37, P96-P98.**
+- **CR#254 W13 Trust Capstone: consolidates CR#250-253 into complete four-theorem trust theory (Existence/Dimensionality/Duality/Infrastructure). 311 lines, ★★★★★.**

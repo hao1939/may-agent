@@ -11,28 +11,34 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 ### Opus Prompt Caching (Cost Critical)
 - **Problem**: Opus agents (Tech-Lead, Coach, May) have 0% cache hit rate due to LiteLLM stripping headers. Wasting $36-63/day.
 - **Fix**: Bypass LiteLLM for Anthropic or update LiteLLM config.
-- **Status**: **[BLOCKED]** (2026-03-23). Requires Human/Hao intervention (Env vars + Binary rebuild). See `pending-decisions.md`.
-- **Owner**: Bob (Escalation) / Hao (Execution).
+- **Status**: **[BLOCKED]** (2026-03-23). Requires Human/Hao intervention (Env vars + Binary rebuild).
+- **Owner**: Hao (Execution).
 
 ### Control Plane Phase 3 (Active Nudging)
 - **Problem**: Agents spin in loops (FM-1.3) or claim ghost deliverables (FM-3.1).
 - **Fix**: Implement "Wink" pattern (Active Nudging) via `monitor-session` + `manager.inject`.
-- **Status**: **[DELEGATED]** (2026-03-23). Detailed brief sent to Tech-Lead (ReqId: 36ea3209).
+- **Status**: **[COMPLETED]** (2026-03-23). Implemented in `active-nudge.ts` and `monitor-session.cjs`. Verified by Tech-Lead.
 - **Owner**: Tech-Lead (Implementation).
 
 ### Control Plane Phase 4 (Context Pressure Valve)
 - **Problem**: Context truncation causes catastrophic forgetting.
 - **Fix**: Inject "90% Full" warning to trigger consolidation.
-- **Status**: **[PROPOSED]** (2026-03-23). Brief sent to Tech-Lead.
+- **Status**: **[DELEGATED]** (2026-03-23). Brief `brief-context-cgroup.md` sent to Tech-Lead.
 - **Owner**: Tech-Lead (Implementation).
 
 ### Infra Enforcement of C1.5 (Ghost Deliverables)
 - **Problem**: C1.5 ("No Ghost Deliverables") is the #1 behavioral failure (FM-3.1). Coach cannot fix it.
 - **Fix**: Implement infra-level check.
-- **Status**: **[VERIFIED]** (2026-03-23). 
-  1. **Preventive**: `monitor-session.cjs` interrupts sessions detecting ghost deliverables (Active Nudging).
-  2. **Detective**: `convention-check.ts` flags C1.5 violations post-hoc.
+- **Status**: **[MITIGATED]** (2026-03-23).
+  1. **Preventive**: Override not feasible from userland (Tech-Lead Assessment).
+  2. **Detective**: `convention-check.ts` now flags C1.5 violations post-hoc.
 - **Owner**: Tech-Lead (Monitoring).
+
+### Typed Messages / GNAP (P105)
+- **Problem**: Ambiguous inter-agent messages.
+- **Fix**: Prefixed tags [DIRECTIVE], [STATUS].
+- **Status**: **[REJECTED]** (2026-03-23). Request DB structure solves this better.
+- **Owner**: Bob (Archive).
 
 ### Knowledge Index Integrity (Periodic)
 - **Problem**: Knowledge links rot over time as files are moved or archived.

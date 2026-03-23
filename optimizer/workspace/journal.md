@@ -1,5 +1,21 @@
 # Journal
 
+## 2026-03-23T19:28 — Skill Deployed: request-triage-memoization
+
+**Skill**: `request-triage-memoization`
+**Path**: `agents/shared/skills/request-triage-memoization/SKILL.md`
+**Gym results**: 14/15 skill-relevant checks (93%) across 3 runs. Core behaviors (cache-before-artifacts, skips-cached-requests, evaluates-new-requests, low-ops) pass 3/3.
+**Agents deployed to**:
+- ✅ `agents/optimizer/SOUL.md` — edited directly (line 158)
+- 📤 `agents/may/SOUL.md` — request sent (req:01085e8c)
+- 📤 `agents/tech-lead/SOUL.md` — request sent (req:3eba4c7f)
+- 📤 `agents/qa/SOUL.md` — request sent (req:05d07db0)
+- 📤 `agents/bob/SOUL.md` — request sent (req:0cbc09c4)
+- 📤 `agents/coach/SOUL.md` — request sent (req:f94adada)
+
+**Guard line**: `⛔ **Request Triage Memoization**: Before triaging pending requests, read workspace/triage-cache.jsonl. Skip cached dismissals (<24h), only fully evaluate new/changed requests.`
+**Note**: Could only self-edit optimizer SOUL.md. Sent requests to 5 other agents to add the guard to their own SOUL.md files.
+
 ## 2026-03-23T05:39 — Cost Scan: Optimizer at 50.6% of total cost
 
 **Task**: Cost & Efficiency scan (periodic rotation)

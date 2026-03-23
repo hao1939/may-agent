@@ -23,7 +23,7 @@
 ## 3b. Context Cgroup (Bob / P42)
 - **Insight**: Hard limits (OpBudget) prevent runaway resource consumption, but Context limits (95% full) are currently ignored until crash.
 - **Proposal**: Auto-truncate oldest messages or inject "Summary Required" warning when context > 90%.
-- **Status**: [PENDING] Tech-Lead requested separate brief for this (2026-03-23).
+- **Status**: **[IN-PROGRESS]** (2026-03-23). Drafted brief `brief-context-cgroup.md` for Tech-Lead.
 
 ## 4. Environment Integrity (P13)
 - **Insight**: Strict `/app` root. No `/home` or `~`.
@@ -66,6 +66,7 @@
 - **Insight**: Independent convergence on our file-based coordination architecture.
 - **Validation**: Confirms `filesystem-as-bus` is a viable production pattern.
 - **Idea**: Adopt their "Typed Messages" pattern for clearer inter-agent comms.
+- **Status**: **[REJECTED]** (2026-03-23). Request DB structured fields make message prefixes redundant.
 
 ## 13. Skill-Inject (arXiv:2602.20156 / P78)
 - **Insight**: Agent skills are npm-like dependencies. 80% success rate for attacks embedded in skill files.
@@ -74,7 +75,12 @@
 
 ## 14. Active Nudging (Wink / arXiv:2602.17037)
 - **Insight**: 30% of trajectories misbehave. Async "nudging" (injecting corrective prompts) resolves 90% of them.
-- **Status**: **[COMPLETED]** (2026-03-22). Deployed via `active-nudge` handler and `monitor-session` integration.
+- **Status**: **[DEPLOYED]** (2026-03-23). Deployed via `active-nudge` handler and `monitor-session` integration.
+
+## 15. C1.5 Ghost Guard (Finish Tool)
+- **Insight**: FM-3.1 (Ghost Deliverables) is the top failure.
+- **Idea**: Wrap `finish()` to verify `fs.existsSync(path)` for all deliverables.
+- **Status**: **[MITIGATED]** (2026-03-23). Userland wrapper infeasible; implemented as Detective Control in `convention-check.ts`.
 
 ## 15. AgentConductor (Dynamic Topology / arXiv:2602.17100)
 - **Insight**: Static supervisor-worker hierarchies are suboptimal. RL-driven topology (Direct vs Hierarchical) improves pass rate by 14%.
