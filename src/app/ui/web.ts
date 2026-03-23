@@ -205,6 +205,10 @@ function json(data: unknown, status = 200): Response {
 
 // ── WebSocket → Unix socket proxy ─────────────────────────────────────
 
+import type { Socket } from "node:net";
+
+const wsToUnix = new Map<any, Socket>();
+
 function proxyWebSocket(ws: any): void {
   const socketPath = findSocketPath();
   if (!socketPath) {
@@ -214,6 +218,7 @@ function proxyWebSocket(ws: any): void {
   }
 
   const unix = connect(socketPath);
+  wsToUnix.set(ws, unix);
   let buffer = "";
 
   unix.on("data", (chunk: Buffer) => {
@@ -235,17 +240,6 @@ function proxyWebSocket(ws: any): void {
   unix.on("close", () => {
     try { ws.send(JSON.stringify({ type: "info", message: "Agent disconnected" })); } catch {}
     try { ws.close(); } catch {}
-  });
-
-  ws.addEventListener("message", (event: any) => {
-    const msg = typeof event === "string" ? event : event.data;
-    if (typeof msg === "string" && msg.trim()) {
-      unix.write(msg.trim() + "\n");
-    }
-  });
-
-  ws.addEventListener("close", () => {
-    unix.destroy();
   });
 }
 
@@ -278,9 +272,17 @@ const server = Bun.serve({
     return new Response("Not found", { status: 404 });
   },
   websocket: {
-    open(ws) { proxyWebSocket(ws); },
-    message() { /* handled in proxyWebSocket addEventListener */ },
-    close() { /* cleanup handled in proxyWebSocket */ },
+    open(ws: any) { proxyWebSocket(ws); },
+    message(ws: any, msg: any) {
+      const unix = wsToUnix.get(ws);
+      if (unix && typeof msg === "string" && msg.trim()) {
+        unix.write(msg.trim() + "\n");
+      }
+    },
+    close(ws: any) {
+      const unix = wsToUnix.get(ws);
+      if (unix) { unix.destroy(); wsToUnix.delete(ws); }
+    },
   },
 });
 
