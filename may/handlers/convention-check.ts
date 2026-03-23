@@ -5,7 +5,7 @@
  * the convention registry (agents/shared/CONVENTIONS.md).
  * Writes results to `convention_checks` table in may.db.
  *
- * Phase 1 checks: C1.1, C1.3, C1.4, C2.1, C3.2, C3.3, C6.1, C7.1, C8.2, C12.1
+ * Phase 1 checks: C1.1, C1.3, C1.4, C1.5, C2.1, C3.2, C3.3, C6.1, C7.1, C8.2, C12.1
  *
  * Exports create() conforming to HandlerModule.
  */
@@ -317,6 +317,7 @@ function runAllChecks(toolCalls: ToolCall[], agent: string): CheckResult[] {
     checkC1_1_readBeforeEdit(toolCalls),
     checkC1_3_verifyWrites(toolCalls),
     checkC1_4_finishClearly(toolCalls),
+    checkC1_5_ghostDeliverables(toolCalls),
     checkC2_1_preciseArgs(toolCalls),
     checkC3_2_workspaceIsolation(toolCalls, agent),
     checkC3_3_safeAppend(toolCalls),
@@ -412,6 +413,34 @@ function checkC1_4_finishClearly(toolCalls: ToolCall[]): CheckResult {
     passed,
     violations: passed ? [] : [`Last tool call was ${last.name}(), not finish()`],
   };
+}
+
+/**
+ * C1.5: ghost-deliverables
+ * Every deliverable path declared in finish(success/partial) must exist on disk.
+ * Uses fs.existsSync — same logic as src/lib/finish-guard.ts but applied post-hoc.
+ */
+function checkC1_5_ghostDeliverables(toolCalls: ToolCall[]): CheckResult {
+  const violations: string[] = [];
+  const finishCalls = toolCalls.filter((tc) => tc.name === "finish");
+
+  for (const tc of finishCalls) {
+    const status = tc.input?.status as string | undefined;
+    if (!status || (status !== "success" && status !== "partial")) continue;
+
+    const deliverables = tc.input?.deliverables as Array<{ path?: string }> | undefined;
+    if (!deliverables || !Array.isArray(deliverables)) continue;
+
+    for (const d of deliverables) {
+      if (!d.path || typeof d.path !== "string") continue;
+      const resolved = d.path.startsWith("/") ? d.path : join("/app", d.path);
+      if (!existsSync(resolved)) {
+        violations.push(`Ghost deliverable: '${d.path}' declared in finish(${status}) but does not exist on disk`);
+      }
+    }
+  }
+
+  return { convention: "C1.5", passed: violations.length === 0, violations };
 }
 
 /**
