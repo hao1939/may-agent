@@ -120,6 +120,77 @@ function groupByAgent(files: string[]): AgentChanges[] {
   return [...agentMap.values()].sort((a, b) => b.files.length - a.files.length);
 }
 
+// ── Sync helper ───────────────────────────────────────────────────────
+
+/**
+ * Pull from the sync remote before committing. This picks up any changes
+ * pushed from the local dev machine (via the host bare repo → sync bare repo
+ * chain). Uses rebase to keep the commit history linear.
+ *
+ * Best-effort — if no remote, no connectivity, or conflicts, we log and
+ * continue with the commit. The worst case is a diverged local branch that
+ * the next manual merge will fix.
+ */
+function trySyncPull(agentsDir: string, log: (msg: string) => void): void {
+  try {
+    const remotes = execSync("git remote", {
+      cwd: agentsDir,
+      encoding: "utf-8",
+      timeout: 5_000,
+    }).trim();
+
+    if (!remotes) return;
+
+    const remote = remotes.split("\n")[0]!;
+    // Fetch first, then check if there's anything new
+    execSync(`git fetch ${remote} main`, {
+      cwd: agentsDir,
+      timeout: 15_000,
+      encoding: "utf-8",
+    });
+
+    // Check if remote is ahead
+    const behind = execSync(`git rev-list --count HEAD..${remote}/main`, {
+      cwd: agentsDir,
+      encoding: "utf-8",
+      timeout: 5_000,
+    }).trim();
+
+    if (behind === "0") return; // Already up to date
+
+    // Stash any uncommitted changes, rebase, then pop
+    const hasChanges = execSync("git status --porcelain", {
+      cwd: agentsDir,
+      encoding: "utf-8",
+      timeout: 5_000,
+    }).trim();
+
+    if (hasChanges) {
+      execSync("git stash --include-untracked", { cwd: agentsDir, timeout: 10_000 });
+    }
+
+    try {
+      execSync(`git rebase ${remote}/main`, {
+        cwd: agentsDir,
+        timeout: 30_000,
+        encoding: "utf-8",
+      });
+      log(`[agents-auto-commit] pulled ${behind} commit(s) from ${remote}`);
+    } catch {
+      // Rebase conflict — abort and continue without the pull
+      execSync("git rebase --abort", { cwd: agentsDir, timeout: 5_000 });
+      log(`[agents-auto-commit] ⚠️ rebase conflict during pull — skipped`);
+    }
+
+    if (hasChanges) {
+      execSync("git stash pop", { cwd: agentsDir, timeout: 10_000 }).toString();
+    }
+  } catch (err) {
+    const errMsg = err instanceof Error ? err.message : String(err);
+    log(`[agents-auto-commit] pull failed (non-fatal): ${errMsg.split("\n")[0]}`);
+  }
+}
+
 // ── Push helper ───────────────────────────────────────────────────────
 
 /**
@@ -162,6 +233,9 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
   return async () => {
     let committed = false;
+
+    // Pull any changes pushed from other instances (local dev, other pods)
+    trySyncPull(agentsDir, ctx.log);
 
     try {
       // Check for changes (tracked + untracked)
