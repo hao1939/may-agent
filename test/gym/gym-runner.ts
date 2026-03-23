@@ -141,9 +141,31 @@ function createMayAgentAdapter(): Adapter {
       }
 
       // Verify agent exists
-      if (!existsSync(join(agentsRoot, opts.agentName, "agent.json"))) {
+      const agentDir = join(agentsRoot, opts.agentName);
+      if (!existsSync(join(agentDir, "agent.json"))) {
         throw new Error(`Agent '${opts.agentName}' not found in: ${agentsRoot}`);
       }
+
+      // ── Identity Injection ───────────────────────────────────────────
+      // Ensure non-standard agents (e.g. optimizer, coach) have their
+      // identity files (SOUL.md, DOMAIN.md, TOOLS.md, LESSONS.md)
+      // available in the gym environment if they rely on them.
+      // Since we point AGENTS_ROOT to the real (or lab) agents dir,
+      // the agent loader will find them naturally.
+      // BUT: If the scenario defines custom identity files in environment/,
+      // we need to make sure they are respected.
+      //
+      // Currently, `environment` is copied to `workDir`.
+      // The agent runs in `workDir`.
+      // The agent loader reads config from `AGENTS_ROOT/<agent>`.
+      //
+      // If we want to test a custom SOUL/DOMAIN for a standard agent,
+      // we would need to override the agent definition.
+      // For now, we assume the agent under test uses its standard identity,
+      // or the scenario uses a custom agent name.
+      //
+      // However, check if the agent directory is missing key files that
+      // might be needed. (No action needed if using real agents dir).
 
       // Resolve binary — prefer compiled binary even if stale.
       // vite-node requires Node 20+ (crypto.hash) so it's not a safe fallback.
