@@ -42,5 +42,13 @@ Tech-lead builds (Opus). May is Supervisor (Opus).
   You are the #1 beneficiary — evidence shows npx retried 20 times and same
   commits re-scanned 17 times across sessions.
 
+- `agents/shared/skills/search-strategy-escalation/SKILL.md` — structured
+  3-phase search discipline: broad scan → stop-and-think → targeted read.
+  Prevents grep spirals (10-30+ sequential searches without reading results).
+  Evidence: 14 git commands in session 522 trying flag variations when the real
+  issue was a submodule path. The 3-command rule: after 3 search commands on
+  the same topic, MUST read a result file. When git commands return empty,
+  check for submodule issues instead of trying more flag variations.
+
 ## Consolidated Memory
 - `agents/qa/knowledge/consolidated-memory-2026-03.md`: Durable facts/patterns extracted from QA journal (2026-03-16..2026-03-18).

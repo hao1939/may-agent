@@ -1,5 +1,26 @@
 # Journal
 
+## 2026-03-22T22:54 — Skill lifecycle: search-strategy-escalation DEPLOYED
+
+**Task**: Pattern → Skill (via skill-lifecycle workflow)
+
+**Analysis**: Scanned 50 recent sessions. Key findings:
+- 12 coder sessions (150+ ops) discovering "already fixed" — gym Phase 2 rediscovery waste
+- Coach bash-cat persistence: 7 bash-cat calls in single session (s_*203_521)
+- Multi-read waste: QA reading journal.md 3×, optimizer reading todo.md 2×
+- Tech-lead high-ops low-output: 51 ops for single assessment (s_*507)
+
+**Skill created**: `search-strategy-escalation` — prevents grep/find spiral pattern
+- 4-step protocol: BROAD SCAN → STOP AND THINK → TARGETED READ → ESCALATE STRATEGY
+- Evidence: 6 sessions, 4 agents, avg 30 search cmds where 7 suffice (4.3× waste ratio)
+- Gym tested: 2/3 pass (search-count-under-10 criteria needs calibration)
+- Deployed to: tech-lead, optimizer, qa, coder INDEX.md files
+
+**Files**:
+- `agents/shared/skills/search-strategy-escalation/SKILL.md` (269 lines)
+- `agents/gym/scenarios/search-strategy-escalation/` (scenario + success_criteria)
+- `agents/optimizer/workspace/skill-test-results.md` (test results)
+
 ## 2026-03-22T18:15 — Pattern scan: tech-lead 50% journal-only, deep session analysis
 
 **Task**: Pattern → Skill/Efficiency (alternating from cost scan)
@@ -654,3 +675,22 @@ $2-3/day from QA fixes alone. $3-5.50/day total if all fixes applied.
 - Added to optimizer INDEX.md
 - Sent May deployment for coder/bob/coach/tech-lead (req:b67c9669)
 - Test results at `workspace/skill-test-results-idempotent.md`
+
+## 2026-03-22 ~22:45 — Phase 1: Skill Discovery — Search-Strategy Escalation
+
+### Pattern Discovered
+**"Search-Strategy Escalation" (Stop the Grep Spiral)** — agents issue 10-70+ sequential grep/find commands to locate a concept in the codebase, each slightly varying the last, without pausing to synthesize findings or form a targeted hypothesis.
+
+### Evidence Gathered (10 sessions analyzed)
+- **tech-lead (507)**: 27 grep/find calls out of 43 bash to locate "finish" handler
+- **optimizer (491)**: 71 grep/find/ls calls out of ~90 bash for session analysis
+- **optimizer (513)**: 37 search calls out of 45 bash for heartbeat analysis
+- **qa (522)**: 14 git commands to verify one file diff (submodule confusion)
+- **tech-lead (516)**: 19 git+grep commands for npx removal + commit
+- **coder (0)**: 12 search calls to find gym scenario files
+
+### Differentiation from Existing Skills
+Verified distinct from: grep-first-reading (covers grep→read, not grep→grep spirals), stale-approach-fixation (cross-session, not intra-session), investigate-and-fix (debug cycle, not search efficiency), budget-before-act (task-level, not search-level), obstacle-pivot (failure-triggered, spiral doesn't "fail")
+
+### Output
+Written to `workspace/skill-discovery.md` with all required sections: Pattern Name, Description, Evidence (6 sessions quantified), How It Differs, Which Agents Benefit, Secondary Patterns.

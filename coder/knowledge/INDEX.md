@@ -49,3 +49,10 @@ Master uses CLI tools (Opus).
 - `agents/shared/skills/idempotent-work-detection/SKILL.md` — before starting
   any task, check if the work is already done. Quick state check in turn 1,
   decide in turn 2. Prevents 3-8 wasted turns per incident.
+- `agents/shared/skills/search-strategy-escalation/SKILL.md` — structured
+  3-phase search discipline: broad scan → stop-and-think → targeted read.
+  Prevents grep spirals (10-30+ sequential searches without reading results).
+  Evidence: 12 searches in session 0 for gym scenario file locations. The
+  3-command rule: after 3 search commands on the same topic, MUST read a result
+  file before searching again. Use `-l` (files-only) for first searches to
+  build a mental map, then read the most promising file.

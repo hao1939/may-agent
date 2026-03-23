@@ -86,3 +86,10 @@ Use these codes in your analysis reports to drive structural fixes.
   rediscovering completed work. Quick state check in turn 1, decide in turn 2.
   Gym tested: 3/3 runs pass core behavioral checks (state-check-first,
   detects-already-done, no-unnecessary-edits). You designed this skill.
+- `agents/shared/skills/search-strategy-escalation/SKILL.md` — structured
+  3-phase search discipline: broad scan → stop-and-think → targeted read.
+  Prevents grep spirals (10-30+ sequential searches without reading results).
+  Evidence: 71 searches in session 491, 37 in session 513. The 3-command rule:
+  after 3 search commands on the same topic, MUST read a result file. Escalate
+  to scripts after 5 failed bash one-liners (AP-3). You designed this skill —
+  use it as reference when analyzing grep spiral patterns in other agents.

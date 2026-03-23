@@ -11,6 +11,16 @@ This file is your instruction template. NEVER use `write()` on `heartbeat.md`. W
 - **Good**: `grep "pattern" file` → "Found match." (This is Structural — evidence-based).
 - **Rule**: Never claim a task is done until you have a **binary signal** (Exit Code 0, "PASS" string, or explicit grep match) in the transcript.
 
+## ⚡ 0a. Commit Preflight — Early Exit Check (Cost Guard)
+**Before doing any work**, check if there are new commits to review:
+1. Check the "Injected: pending tasks" section above — any dispatched review requests? If yes → skip to §1.
+2. Read `workspace/last-reviewed-commit.txt` and run: `git log --oneline <hash>..HEAD`
+3. If no new commits AND no pending tasks → immediately:
+```
+finish({ status: "success", summary: "No new commits since <hash> — early exit per cost guard." })
+```
+Do NOT write journal entries, do NOT run quality sweeps, do NOT scan anything. Just exit.
+
 ## PROMISE-DELIVER-REPORT (C40) — optional for heartbeats
 
 > **C40 is OPTIONAL for heartbeat sessions** (low-overhead). It remains **REQUIRED for dispatched/non-heartbeat work** (human requests, tasks from other agents).

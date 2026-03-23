@@ -81,3 +81,11 @@ When reporting implementation failures, use standardized MAST codes from `agents
 - `agents/shared/skills/idempotent-work-detection/SKILL.md` — before starting
   any task, check if the work is already done. Quick state check in turn 1,
   decide in turn 2. Prevents 3-8 wasted turns per incident.
+- `agents/shared/skills/search-strategy-escalation/SKILL.md` — structured
+  3-phase search discipline: broad scan → stop-and-think → targeted read.
+  Prevents grep spirals (10-30+ sequential searches without reading results).
+  You are the worst offender — 27 greps in session 507, 19 git+grep in session
+  516. The 3-command rule: after 3 search commands on the same topic, you MUST
+  read a result file before searching again. Escalate strategy (read structure,
+  trace imports, search callers) after 5 failed commands instead of refining
+  the same grep pattern.

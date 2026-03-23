@@ -32,7 +32,7 @@
   - **Drift Monitor**: Async observer injects corrective prompts without stopping session (Wink).
   - **Dynamic Topology**: Route tasks based on complexity (AgentConductor).
   - **AgentCgroup**: OS-level isolation (eBPF) for tool resources.
-- **Status**: [IN-PROGRESS] Phase 3 (Active Nudging) endorsed by Tech-Lead.
+- **Status**: **[COMPLETED]** (2026-03-22). Phase 3 (Active Nudging) deployed. `active-nudge` handler and `monitor-session` logic active.
 
 ## 6. Finite Brain / Budget Awareness (SkyClaw / 2026-03-08)
 - **Insight**: Agents must see their own resource consumption (tokens/ops) in-context to self-regulate.
@@ -55,7 +55,7 @@
 - **Problem**: Monitoring tools only cover L1-L2 (Resources/Behavior). L3 (Integrity) and L4 (Coordination) are completely missing.
 - **Insight**: We are vulnerable to "Boiling Frog" drift. We need L3/L4 monitors (like our "Delegation Metrics" and "Drift Detection").
 - **Source**: Discovery 29 (Scout).
-- **Status**: [PARTIAL] - L3 Metrics implemented. Drift Detection implemented. Patrol tool needed.
+- **Status**: **[DEPLOYED]** (2026-03-22). `patrol.cjs` implemented and added to Evaluator periodic tasks.
 
 ## 12. GNAP (Git-Native Agent Protocol / Discovery 30)
 - **Insight**: Independent convergence on our file-based coordination architecture.
@@ -69,9 +69,9 @@
 
 ## 14. Active Nudging (Wink / arXiv:2602.17037)
 - **Insight**: 30% of trajectories misbehave. Async "nudging" (injecting corrective prompts) resolves 90% of them.
-- **Status**: [IN-PROGRESS] Endorsed by Tech-Lead. Brief sent.
+- **Status**: **[COMPLETED]** (2026-03-22). Deployed via `active-nudge` handler and `monitor-session` integration.
 
-## 14. AgentConductor (Dynamic Topology / arXiv:2602.17100)
+## 15. AgentConductor (Dynamic Topology / arXiv:2602.17100)
 - **Insight**: Static supervisor-worker hierarchies are suboptimal. RL-driven topology (Direct vs Hierarchical) improves pass rate by 14%.
 - **Idea**: "Complexity Assessor" step in Manager that chooses team structure (Solo vs Squad) before dispatch.
 
