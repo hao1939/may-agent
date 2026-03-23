@@ -17,13 +17,15 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 ### Control Plane Phase 3 (Active Nudging)
 - **Problem**: Agents spin in loops (FM-1.3) or claim ghost deliverables (FM-3.1).
 - **Fix**: Implement "Wink" pattern (Active Nudging) via `monitor-session` + `manager.inject`.
-- **Status**: **[COMPLETED]** (2026-03-22). Tech-Lead deployed `active-nudge` handler, `monitor-session` detections, and cron job.
+- **Status**: **[VERIFIED]** (2026-03-23). Confirmed `agents/may/handlers/active-nudge.ts` is running (cron: 5min) and `monitor-session.cjs` has `detectGhostDeliverable` / `detectProductivityStall` logic.
 - **Owner**: Tech-Lead (Implementation).
 
 ### Infra Enforcement of C1.5 (Ghost Deliverables)
 - **Problem**: C1.5 ("No Ghost Deliverables") is the #1 behavioral failure (FM-3.1). Coach cannot fix it.
 - **Fix**: Implement infra-level check.
-- **Status**: **[MITIGATED]** (2026-03-23). Tech-Lead implemented post-hoc detection in `convention-check.ts` and preventive nudging in `monitor-session.cjs`.
+- **Status**: **[VERIFIED]** (2026-03-23). 
+  1. **Preventive**: `monitor-session.cjs` interrupts sessions detecting ghost deliverables (Active Nudging).
+  2. **Detective**: `convention-check.ts` flags C1.5 violations post-hoc.
 - **Owner**: Tech-Lead (Monitoring).
 
 ### Knowledge Index Integrity (Periodic)

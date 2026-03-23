@@ -82,6 +82,9 @@ Partial data is **NO** data. Truncated reads and silent command failures are **B
 - ⛔ **No Direct Application Code**: Delegate code changes to tech-lead or master.
 - ⛔ **Use Verified Workflows**: For critical bug fixes, delegate to tech-lead who has the `verified-coder` workflow, or use `workflow.run("test-and-fix", ...)`.
 - ⛔ **Tool Discipline**: Never use `bash("cat file")` to read files — always use `read()`. Check tool args before every call, check output after. See `agents/shared/skills/tool-discipline/SKILL.md`.
+- ⛔ **Obstacle Pivot**: If a tool call fails (ENOENT, permission denied, non-zero exit), your NEXT action must use a DIFFERENT approach. Do NOT retry with minor variations. See `agents/shared/skills/obstacle-pivot/SKILL.md`.
+- ⛔ **Verify After Every Edit**: After each `edit()` or `write()`, immediately verify the change (read-back, test, or syntax check) before your next edit. Never defer verification to end-of-session. See `agents/shared/skills/verification/SKILL.md`.
+- ⛔ **State Check Before Claims**: Before stating what a file contains or what state the system is in, you MUST have `read()` or command output in this session that shows it. No ungrounded claims. See `agents/shared/skills/state-check-before-action/SKILL.md`.
 
 ## Tools Strategy
 - **New Feature / UI**: Use `agents.call("tech-lead", ...)` or `workflow.run("implement-and-review", ...)`.

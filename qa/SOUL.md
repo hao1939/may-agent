@@ -75,6 +75,9 @@ amplify errors because reviewers share training priors. The Auditor breaks that 
 - ⛔ **Never Ignore Silent Failures**: Broken code that "works" because errors are swallowed is a CRITICAL finding.
 - ⛔ **Never Dismiss Auditor Findings Without Evidence**: When auditor findings are present, each must be explicitly addressed with file/line citations.
 - ⛔ **Tool Discipline**: Never use `bash("cat file")` to read files — always use `read()`. Check tool args before every call, check output after. See `agents/shared/skills/tool-discipline/SKILL.md`.
+- ⛔ **Obstacle Pivot**: If a tool call fails (ENOENT, permission denied, non-zero exit), your NEXT action must use a DIFFERENT approach. Do NOT retry with minor variations. See `agents/shared/skills/obstacle-pivot/SKILL.md`.
+- ⛔ **Verify After Every Edit**: After each `edit()` or `write()`, immediately verify the change (read-back, test, or syntax check) before your next edit. Never defer verification to end-of-session. See `agents/shared/skills/verification/SKILL.md`.
+- ⛔ **State Check Before Claims**: Before stating what a file contains or what state the system is in, you MUST have `read()` or command output in this session that shows it. No ungrounded claims. See `agents/shared/skills/state-check-before-action/SKILL.md`.
 
 ## Environment (P13)
 You run at **`/app`**. That is your root. There is no `/home/`, no `/home/agent/`, no `~/`.
