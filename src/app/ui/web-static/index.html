@@ -386,14 +386,11 @@ function connectWs() {
     try {
       const event = JSON.parse(e.data);
 
-      // Only show chat-channel events in the chat UI.
-      // Background activity (agent turns, cron fires) is noise here.
-      const channel = event.channel || 'activity';
-      const isChat = channel === 'chat';
+      // The socket server filters events via subscribe — we receive only
+      // events from our session tree + notifications. No client-side filtering needed.
 
       switch (event.type) {
         case 'text':
-          if (!isChat) break;
           if (!currentAssistant) {
             currentAssistant = document.createElement('div');
             currentAssistant.className = 'msg assistant';
@@ -403,7 +400,6 @@ function connectWs() {
           messages.scrollTop = messages.scrollHeight;
           break;
         case 'tool_call': {
-          if (!isChat) break;
           currentAssistant = null;
           const div = document.createElement('div');
           div.className = 'msg tool_call';
@@ -414,7 +410,6 @@ function connectWs() {
           break;
         }
         case 'tool_result': {
-          if (!isChat) break;
           const div = document.createElement('div');
           div.className = `msg tool_result ${event.isError ? 'error' : ''}`;
           div.textContent = event.preview || '';
@@ -422,13 +417,46 @@ function connectWs() {
           messages.scrollTop = messages.scrollHeight;
           break;
         }
-        case 'prompt':
-          if (isChat) currentAssistant = null;
+        case 'turn_end':
+          currentAssistant = null;
           break;
+        case 'session_start': {
+          // Show delegation: "→ tech-lead: <task>"
+          if (event.parentSessionId) {
+            const div = document.createElement('div');
+            div.className = 'msg';
+            div.style.color = 'var(--purple)';
+            div.style.fontSize = '12px';
+            div.textContent = `→ ${event.agent}: ${(event.task || '').slice(0, 100)}`;
+            messages.appendChild(div);
+            messages.scrollTop = messages.scrollHeight;
+          }
+          break;
+        }
+        case 'session_end': {
+          const div = document.createElement('div');
+          div.className = 'msg';
+          div.style.color = 'var(--fg2)';
+          div.style.fontSize = '12px';
+          div.textContent = `✓ ${event.agent}: ${event.status}${event.duration ? ' (' + event.duration + ')' : ''}`;
+          messages.appendChild(div);
+          messages.scrollTop = messages.scrollHeight;
+          break;
+        }
+        case 'notification': {
+          const div = document.createElement('div');
+          div.className = 'msg';
+          div.style.borderLeft = '3px solid var(--yellow)';
+          div.style.paddingLeft = '8px';
+          div.style.fontSize = '12px';
+          div.textContent = `📋 ${event.agent}: ${event.text.slice(0, 300)}`;
+          messages.appendChild(div);
+          messages.scrollTop = messages.scrollHeight;
+          break;
+        }
         case 'connected':
           status.textContent = `Connected — ${event.agent} (${event.instance})`;
           break;
-        // Ignore: info, session_start, etc. from background activity
       }
     } catch {}
   };

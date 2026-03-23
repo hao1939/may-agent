@@ -27,6 +27,7 @@ const VALID_COMMAND_TYPES = new Set([
   "cancel_all",
   "cancel_task",
   "close",
+  "subscribe",
   "status",
   "input",
   "run",
@@ -74,7 +75,6 @@ function isSocketAlive(socketPath: string): Promise<boolean> {
 
 export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
   const { socketPath, bus, manager, getSessionId, agentName, instance } = opts;
-  const clients = new Set<Socket>();
 
   // If socket file exists, check whether it's live or stale
   if (existsSync(socketPath)) {
@@ -94,14 +94,45 @@ export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
     unlinkSync(socketPath);
   }
 
+  // Per-client state: session filter for subscribe command
+  interface ClientState {
+    socket: Socket;
+    /** Session IDs this client is watching. null = firehose (all events). */
+    filter: Set<string> | null;
+  }
+  const clients = new Map<Socket, ClientState>();
+
+  function shouldForward(client: ClientState, event: RunnerEvent): boolean {
+    if (!client.filter) return true; // firehose — no filter
+    if ("sessionId" in event && typeof event.sessionId === "string") {
+      return client.filter.has(event.sessionId);
+    }
+    // notification events always forwarded to filtered clients
+    if (event.type === "notification") return true;
+    // system events (log, info, prompt, eval, workflow) only in firehose
+    return false;
+  }
+
   function broadcast(event: RunnerEvent): void {
     if (clients.size === 0) return;
+
+    // Auto-expand: when a session starts with a parentSessionId in a client's filter,
+    // add the new session to that client's filter automatically.
+    if (event.type === "session_start" && event.parentSessionId) {
+      for (const client of clients.values()) {
+        if (client.filter?.has(event.parentSessionId)) {
+          client.filter.add(event.sessionId);
+        }
+      }
+    }
+
     const line = JSON.stringify(event) + "\n";
-    for (const client of clients) {
+    for (const [sock, client] of clients) {
+      if (!shouldForward(client, event)) continue;
       try {
-        client.write(line);
+        sock.write(line);
       } catch {
-        clients.delete(client);
+        clients.delete(sock);
       }
     }
   }
@@ -110,7 +141,7 @@ export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
   bus.on(broadcast);
 
   const server: Server = createServer((socket) => {
-    clients.add(socket);
+    clients.set(socket, { socket, filter: null });
 
     // Welcome message with process metadata and current state (L6)
     const status = manager.status();
@@ -173,6 +204,23 @@ export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
           cmd.message = cmd.content;
         }
 
+        // Handle subscribe locally (socket-server concern, not bus command)
+        if (cmdType === "subscribe") {
+          const sessions = cmd.sessions as string[] | undefined;
+          const client = clients.get(socket);
+          if (client && Array.isArray(sessions)) {
+            if (sessions.includes("*")) {
+              client.filter = null; // firehose
+            } else {
+              client.filter = new Set(sessions);
+            }
+            socket.write(JSON.stringify({ type: "ok", command: "subscribe" }) + "\n");
+          } else {
+            socket.write(JSON.stringify({ type: "error", command: "subscribe", message: "sessions must be an array" }) + "\n");
+          }
+          continue;
+        }
+
         // Dispatch and propagate handler result (L5)
         const result = bus.command(cmd as Parameters<typeof bus.command>[0]);
         if (result && !result.ok) {
@@ -222,7 +270,7 @@ export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
 
   return {
     close: () => {
-      for (const c of clients) c.destroy();
+      for (const c of clients.keys()) c.destroy();
       clients.clear();
       server.close();
       if (existsSync(socketPath)) unlinkSync(socketPath);

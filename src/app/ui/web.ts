@@ -237,16 +237,16 @@ function proxyWebSocket(ws: any): void {
     for (const line of lines) {
       if (!line.trim()) continue;
       try {
-        // Filter: only forward chat-channel events + meta events to the web UI.
-        // Background activity (agent turns, cron fires, heartbeat briefs) is noise.
         const event = JSON.parse(line);
-        const channel = event.channel || "activity";
-        if (channel === "chat" || event.type === "connected" || event.type === "error") {
-          ws.send(line);
+        // When we receive the welcome message, subscribe to the chat session
+        if (event.type === "connected" && event.sessionId) {
+          unix.write(JSON.stringify({ type: "subscribe", sessions: [event.sessionId] }) + "\n");
         }
-        // Drop activity-channel events silently
+        // Forward everything to the browser (socket server already filters via subscribe)
+        // Skip subscribe "ok" responses — they're internal
+        if (event.type === "ok" && event.command === "subscribe") continue;
+        ws.send(line);
       } catch {
-        // Unparseable line — forward as-is (safety valve)
         try { ws.send(line); } catch { /* client gone */ }
       }
     }
