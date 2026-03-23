@@ -1,0 +1,9 @@
+{
+  "name": "path-discovery",
+  "categories": ["tool-usage", "regression"],
+  "tags": ["behavior", "error-recovery", "path-handling"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}

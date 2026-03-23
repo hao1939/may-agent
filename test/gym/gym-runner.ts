@@ -178,6 +178,7 @@ function createMayAgentAdapter(): Adapter {
 
       try {
         const stdout = execSync(fullCmd, {
+          cwd: _workDir,
           env: {
             ...process.env,
             AGENTS_ROOT: agentsRoot,

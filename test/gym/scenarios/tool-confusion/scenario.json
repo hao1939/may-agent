@@ -1,0 +1,9 @@
+{
+  "name": "tool-confusion",
+  "categories": ["tool-usage", "regression"],
+  "tags": ["behavior", "tool-selection", "efficiency"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}
