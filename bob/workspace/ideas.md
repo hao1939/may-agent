@@ -20,6 +20,11 @@
 - **Gap**: "Catastrophic consolidation" is unsolved in open-source tools (Discovery 28).
 - **Action**: Design "Context Manager" skill for long-running agents.
 
+## 3b. Context Cgroup (Bob / P42)
+- **Insight**: Hard limits (OpBudget) prevent runaway resource consumption, but Context limits (95% full) are currently ignored until crash.
+- **Proposal**: Auto-truncate oldest messages or inject "Summary Required" warning when context > 90%.
+- **Status**: [PENDING] Tech-Lead requested separate brief for this (2026-03-23).
+
 ## 4. Environment Integrity (P13)
 - **Insight**: Strict `/app` root. No `/home` or `~`.
 - **Status**: Enforced in `common-sense.md`.

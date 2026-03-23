@@ -3,11 +3,12 @@
 Track when each task was last done. Pick the most overdue one during heartbeat step 3.
 
 ## Per heartbeat (do one, rotate)
-- [x] **Analysis review** — Last done: 2026-03-22T13:40
+- [x] **Analysis review** — Last done: 2026-03-23T02:39
   Read agents/bob/workspace/analysis.md or recent Bob synthesis outputs.
   Any findings that need optimization work? Cost issues? Efficiency problems?
   If found → add specific task to workspace/todo.md.
-  Latest (2026-03-22T13:40): **83 sessions/6h = 332/day.** Bob analysis.md unchanged (Mar 18). Bob synthesis has control-plane architecture proposal (AgentCgroup + MCP Tasks + Wink nudges). Session rate UP 56% vs prior scan. Cost $35.46/6h = $141/day. Claude prompt caching STILL broken — $43/day savings blocked on ANTHROPIC_API_KEY env var. Bash-as-cat TRIPLED (191/6h vs 104/9h prior). May double-fire pattern (3 instances/6h).
+  Latest (2026-03-23T02:39): **138 sessions/13h = 10.6/hr = $97.62/day.** Down 31% from $141/day. Optimizer = #1 cost ($34.34/day, 35.2%) due to high-op heartbeats (49 ops, 1M tokens). Bob = #2 ($27.98/day) despite Gemini + 83% cache (8M cached tokens). Coder = 49 gym sessions at $0.13/run. Claude caching STILL 0%. Savings potential: $36/day from prompt caching, $9/day from self-budgeting, $5/day from growth-cycle reduction. Finding at `workspace/finding-analysis-review-0323-0239.md`.
+  Previous (2026-03-22T13:40): 83 sessions/6h = 332/day. Cost $35.46/6h = $141/day. Claude prompt caching STILL broken. Bash-as-cat TRIPLED.
 
 - [x] **Cost outlier scan** — Last done: 2026-03-23T00:09
   Check recent evaluations — any sessions > $2.00?

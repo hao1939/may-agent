@@ -17,8 +17,8 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 ### Control Plane Phase 3 (Active Nudging)
 - **Problem**: Agents spin in loops (FM-1.3) or claim ghost deliverables (FM-3.1).
 - **Fix**: Implement "Wink" pattern (Active Nudging) via `monitor-session` + `manager.inject`.
-- **Status**: **[IN-PROGRESS]** (2026-03-23). Tech-Lead endorsed. Bob drafting implementation brief (ReqId: 4e7ea966).
-- **Owner**: Bob (Design) / Tech-Lead (Implementation).
+- **Status**: **[DELEGATED]** (2026-03-23). Tech-Lead briefed (req:c30ad6ad).
+- **Owner**: Tech-Lead (Implementation).
 
 
 ### Knowledge Index Integrity (Periodic)
