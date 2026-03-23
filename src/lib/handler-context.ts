@@ -3,10 +3,38 @@
  *
  * Each handler's create(ctx, entry) factory receives this context,
  * which provides everything the handler needs from the runtime.
+ *
+ * Runtime APIs (getDb, trackRequest, etc.) are provided here so that
+ * handlers don't need to import from src/lib/ directly. This allows
+ * handlers to work in binary-only deployments where source files are
+ * not present on disk.
  */
 
 import type { SubagentManager } from "./index.js";
 import type { CronEntry } from "./cron-tool.js";
+import type { SqliteDb } from "./db.js";
+import type { PersistedSession } from "./persistence.js";
+import type { TaskEvaluationResult } from "./evaluator.js";
+
+export interface TrackRequestOpts {
+  fromEntity: string;
+  toAgent: string;
+  task: string;
+  method: "chat" | "call" | "send" | "workflow";
+  sessionId?: string;
+  parentRequestId?: string;
+  artifact?: string;
+  context?: string;
+  expectations?: string;
+  notify?: string[];
+}
+
+export interface EvaluateTaskOpts {
+  manager: SubagentManager;
+  persistDir: string;
+  parentSessionId: string;
+  skipAgents?: Set<string>;
+}
 
 export interface HandlerContext {
   /** SubagentManager — for run(), followUp(), etc. */
@@ -35,6 +63,28 @@ export interface HandlerContext {
 
   /** Trigger a cron entry immediately (reactive trigger). Returns true if fired/latched. */
   triggerNow: (entryName: string) => boolean;
+
+  // ── Runtime APIs ──────────────────────────────────────────────────
+  // These are provided by the binary so handlers don't need to import
+  // from src/lib/ (which may not exist on disk in compiled deployments).
+
+  /** Open (or return cached) SQLite database for the persist directory. */
+  getDb: () => SqliteDb;
+
+  /** Track a request in the requests table. Returns the request ID. */
+  trackRequest: (opts: TrackRequestOpts) => string;
+
+  /** Load all session metadata (active + archived). */
+  loadAllSessionMetas: () => Record<string, PersistedSession>;
+
+  /** Evaluate a completed task tree. Returns null if nothing to evaluate. */
+  evaluateTask: (opts: EvaluateTaskOpts) => Promise<TaskEvaluationResult | null>;
+
+  /** Write skipped evaluations (meta-agents, no transcript). Returns count written. */
+  writeSkippedEvaluations: (skipAgents?: Set<string>) => Promise<number>;
+
+  /** Write heuristic evaluations (deterministic scoring). Returns count written. */
+  writeHeuristicEvaluations: () => Promise<number>;
 }
 
 /**
