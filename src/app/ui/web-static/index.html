@@ -385,8 +385,15 @@ function connectWs() {
   ws.onmessage = (e) => {
     try {
       const event = JSON.parse(e.data);
+
+      // Only show chat-channel events in the chat UI.
+      // Background activity (agent turns, cron fires) is noise here.
+      const channel = event.channel || 'activity';
+      const isChat = channel === 'chat';
+
       switch (event.type) {
         case 'text':
+          if (!isChat) break;
           if (!currentAssistant) {
             currentAssistant = document.createElement('div');
             currentAssistant.className = 'msg assistant';
@@ -396,6 +403,7 @@ function connectWs() {
           messages.scrollTop = messages.scrollHeight;
           break;
         case 'tool_call': {
+          if (!isChat) break;
           currentAssistant = null;
           const div = document.createElement('div');
           div.className = 'msg tool_call';
@@ -406,6 +414,7 @@ function connectWs() {
           break;
         }
         case 'tool_result': {
+          if (!isChat) break;
           const div = document.createElement('div');
           div.className = `msg tool_result ${event.isError ? 'error' : ''}`;
           div.textContent = event.preview || '';
@@ -414,21 +423,12 @@ function connectWs() {
           break;
         }
         case 'prompt':
-          currentAssistant = null;
+          if (isChat) currentAssistant = null;
           break;
-        case 'info': {
-          const div = document.createElement('div');
-          div.className = 'msg';
-          div.style.color = 'var(--fg2)';
-          div.style.fontSize = '12px';
-          div.textContent = event.message;
-          messages.appendChild(div);
-          messages.scrollTop = messages.scrollHeight;
-          break;
-        }
         case 'connected':
           status.textContent = `Connected — ${event.agent} (${event.instance})`;
           break;
+        // Ignore: info, session_start, etc. from background activity
       }
     } catch {}
   };
