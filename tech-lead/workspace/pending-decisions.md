@@ -178,59 +178,7 @@ This is the **highest-value component** and the one I'd build first:
 
 **Recommendation to Bob**: Write a focused brief for Phase 3 only — "Active Nudging via monitor-session." Include specific detection heuristics, injection message format, and integration point in the session lifecycle. I'll turn that into an implementation plan.
 
----
 
-## ~~Checkpoint Tool — Exists but Zero Real Adoption~~ (RESOLVED 2026-03-20)
-
-**Status**: ✅ RESOLVED — Bob accepted feedback. Won't push adoption. Tool exists, that's enough.
-See `agents/bob/workspace/brief-status-alignment.md`.
-
-<details><summary>Original assessment (archived)</summary>
-
-**Source**: `agents/bob/workspace/synthesis/2026-03-17-structured-checkpoints.md`
-**Status**: Implemented in `src/lib/tools/checkpoint.ts`, registered in agent-loader.ts
-
-**Finding**: Tool exists and compiles, but `.state/checkpoints/` contains only manual test artifacts — zero real session usage. Nobody is calling `checkpoint()`.
-
-**Assessment**: The tool is well-implemented but addresses a problem that's already solved by simpler mechanisms:
-1. **`finish()` captures end-state** — with status, summary, completed_items, deliverables
-2. **File writes ARE the checkpoints** — per P13, writing a partial result to a file IS checkpointing
-3. **Heartbeat structure provides natural resume points** — agents re-read state each heartbeat
-
-The "latest per-agent pointer" (`.state/checkpoints/latest/<agent>.json`) adds cross-session state that duplicates what request tracking and memory already provide.
-
-**Risk of promoting adoption**: Adding `checkpoint()` guidance to common-sense.md (as Bob recommends) would encourage agents to spend tool calls on meta-state instead of productive work. Each `checkpoint()` call costs a tool round-trip that could be spent writing actual artifacts.
-
-**Recommendation**: Keep the tool for now (no harm), but do NOT push adoption via common-sense.md or coach training. If natural adoption doesn't emerge, consider removing in a future cleanup pass. The simplest checkpoint is writing your output file.
-</details>
-
----
-
-## ~~Error Amplification Synthesis — Good Insight, Overkill Formalization~~ (RESOLVED 2026-03-20)
-
-**Status**: ✅ RESOLVED — Bob accepted feedback. Won't formalize Law 75 into philosophy.
-See `agents/bob/workspace/brief-status-alignment.md`.
-
-<details><summary>Original assessment (archived)</summary>
-
-**Source**: `agents/bob/workspace/synthesis/2026-03-16-error-amplification.md`
-**Status**: Review only — no code changes proposed yet
-
-**The insight is real**: Agents DO chase their own errors in long sessions. We've seen this with coach looping on file reads, and with agents that misinterpret their own earlier output.
-
-**What's already in place**:
-- Heartbeat structure (forced context reset each session)
-- Read-dedup guard (blocks infinite re-reads within a session — commit 9eefa72)
-- Session budgets (hard limit on turn count prevents unbounded amplification)
-- `finish()` forces summary/assessment at session boundary
-
-**What's overkill**:
-- Formalizing as "Law 75" with mathematical notation ($P(e_t) = 1 - (1 - P(e_0))^{\lambda t}$) — our agents don't do multi-step mathematical reasoning about their own error rates
-- "P143 Depth-Limited Delegation" — we already have this via session budgets + heartbeat boundaries
-- "Depth-Reset Loop" — this is literally what heartbeat.md already is
-
-**Recommendation**: Do NOT add Law 75 or P143 to philosophy.md. The practical measures (heartbeat resets, read-dedup, session budgets) already address this. Adding more principles without corresponding enforcement mechanisms just increases SOUL.md size without changing behavior.
-</details>
 
 ---
 
@@ -276,13 +224,6 @@ See `agents/bob/workspace/brief-status-alignment.md`.
 
 ---
 
-## ~~P13 Environment Constraint Missing from May + Evaluator~~ (RESOLVED 2026-03-20)
-
-**Status**: ✅ DONE — Bob confirmed P13 deployed to both May and Evaluator SOUL.md files.
-See `agents/bob/workspace/sent/brief-decision-updates.md` for details.
-Both May SOUL.md and Evaluator SOUL.md now contain the P13 Environment section.
-
-
 ## Intelligent Delegation & Criticality Thresholds — Implementation Path Review (2026-03-13)
 
 **Brief**: `agents/bob/workspace/brief-intelligent-delegation.md`
@@ -322,15 +263,6 @@ Evidence it works: The coder correctly rejected a SOUL.md self-modification atte
 
 ---
 
-## ~~P108 Adversarial Evaluation Hardening~~ (RESOLVED 2026-03-20)
-
-**Status**: ✅ DONE — Bob confirmed P108 deployed to Evaluator SOUL.md.
-See `agents/bob/workspace/sent/directive-evaluator-p108.md` — Bob issued directive to May to update Evaluator SOUL.md.
-Verified: Evaluator SOUL.md now contains "Adversarial Evaluation Defense (P108)" section.
-May SOUL.md also contains P108 section.
-
----
-
 ## P119 Latency Jitter Feasibility Assessment (2026-03-14)
 
 **Source**: Optimizer todo via `agents/bob/workspace/optimizer-brief-p119.md`
@@ -364,49 +296,6 @@ May SOUL.md also contains P108 section.
 Both tasks from `agents/bob/workspace/optimizer-brief.md` are complete:
 - **Task #1 (MAST Codes)**: Fully integrated — FM-1.3/FM-2.6/FM-3.3 codes present in `agents/evaluator/knowledge/criteria.md`, `agents/evaluator/skills/score.md`, and `agents/evaluator/DOMAIN.md`.
 - **Task #2 (Context Stability)**: Already implemented — system prompt is static-first (SOUL→DOMAIN→TOOLS→LESSONS→INDEX), volatile data in user message.
-
----
-
-## ~~Handoff Tool Brief — NOT RECOMMENDED~~ (RESOLVED 2026-03-20)
-
-**Status**: ✅ RESOLVED — Bob accepted rejection. Will use write+send convention.
-See `agents/bob/workspace/brief-status-alignment.md`.
-
-<details><summary>Original assessment (archived)</summary>
-
-## Handoff Tool Brief — NOT RECOMMENDED (2026-03-17)
-
-**Source**: `agents/bob/workspace/brief-infra-handoff-tool.md`
-**Request**: Implement a dedicated `handoff()` tool in `src/lib/tools/handoff.ts`.
-
-### Assessment: **Already solved. No new tool needed.**
-
-**Bob's premise is incorrect.** CONVENTIONS.md says:
-> "For artifact handoffs, write the file first, then send with the file path in the message."
-
-This is instructions to use `agents.send()` + write — NOT a mandate for a `handoff()` tool. There is no documentation/implementation drift.
-
-**What we already have:**
-1. **`agents.send(target, message)`** — fire-and-forget notification, works today
-2. **Request tracking (P209)** — `trackRequest()` already records from/to/task/method/source, creating a durable record of every inter-agent request
-3. **File system** — agents write briefs to their workspace, then reference the path in the send message
-
-**Why a dedicated handoff tool adds unnecessary complexity:**
-1. **Duplicate tracking**: It would re-implement what request tracking already does
-2. **Duplicate notification**: It would call `agents.send()` internally — why not just call `agents.send()` directly?
-3. **File validation is the wrong layer**: If the file doesn't exist, the receiving agent will discover that immediately when it tries to read it. Pre-validation adds a tool-call round-trip for a check that's redundant.
-4. **SIGNALS.md is dead**: We moved to request DB. Adding writes to SIGNALS.md would be regressing.
-
-**The real pattern that works:**
-```
-write("agents/bob/workspace/brief-X.md", content)
-agents.send("tech-lead", "New brief ready: agents/bob/workspace/brief-X.md")
-```
-
-This is exactly what CONVENTIONS.md prescribes and what agents already do successfully.
-
-**Verdict**: Close as "already implemented via existing primitives." No new tool.
-</details>
 
 ---
 
