@@ -200,6 +200,98 @@ describe("activity", () => {
     });
   });
 
+  describe("activity file trimming", () => {
+    it("trims activity file when it exceeds size threshold on start event", () => {
+      const filePath = activityPath(agentsRoot, "bloaty");
+      // Write 2000 large lines to exceed 500KB threshold
+      for (let i = 0; i < 2000; i++) {
+        appendActivity(agentsRoot, {
+          ts: i,
+          event: "progress",
+          sid: `s_${i}`,
+          agent: "bloaty",
+          turns: i,
+          summary: "x".repeat(190), // ~250 bytes per line
+        });
+      }
+      const beforeLines = readFileSync(filePath, "utf-8").trim().split("\n").length;
+      expect(beforeLines).toBe(2000);
+
+      // Now append a "start" event which triggers trimming
+      appendActivity(agentsRoot, {
+        ts: 9999,
+        event: "start",
+        sid: "s_trim",
+        agent: "bloaty",
+        task: "trigger trim",
+      });
+
+      const afterContent = readFileSync(filePath, "utf-8").trim().split("\n");
+      // Should be 1000 retained + 1 new start event = 1001
+      expect(afterContent.length).toBe(1001);
+      // Last line should be the new start event
+      const lastEvent = JSON.parse(afterContent[afterContent.length - 1]);
+      expect(lastEvent.event).toBe("start");
+      expect(lastEvent.sid).toBe("s_trim");
+      // Retained lines should be the most recent (tail)
+      const firstRetained = JSON.parse(afterContent[0]);
+      expect(firstRetained.ts).toBe(1000); // kept lines 1000-1999
+    });
+
+    it("does not trim small activity files", () => {
+      // Write just 10 lines — well under 500KB
+      for (let i = 0; i < 10; i++) {
+        appendActivity(agentsRoot, {
+          ts: i,
+          event: "progress",
+          sid: `s_${i}`,
+          agent: "small",
+          turns: i,
+          summary: "small entry",
+        });
+      }
+      appendActivity(agentsRoot, {
+        ts: 99,
+        event: "start",
+        sid: "s_start",
+        agent: "small",
+        task: "no trim needed",
+      });
+
+      const filePath = activityPath(agentsRoot, "small");
+      const lines = readFileSync(filePath, "utf-8").trim().split("\n");
+      expect(lines.length).toBe(11); // 10 progress + 1 start, no trimming
+    });
+
+    it("does not trim on non-start events", () => {
+      const filePath = activityPath(agentsRoot, "notrim");
+      // Write enough to exceed threshold
+      for (let i = 0; i < 2000; i++) {
+        appendActivity(agentsRoot, {
+          ts: i,
+          event: "progress",
+          sid: `s_${i}`,
+          agent: "notrim",
+          turns: i,
+          summary: "x".repeat(190),
+        });
+      }
+
+      // Append another progress event (not start) — should NOT trigger trim
+      appendActivity(agentsRoot, {
+        ts: 9999,
+        event: "progress",
+        sid: "s_nope",
+        agent: "notrim",
+        turns: 9999,
+        summary: "no trim",
+      });
+
+      const lines = readFileSync(filePath, "utf-8").trim().split("\n");
+      expect(lines.length).toBe(2001); // all lines kept, no trim
+    });
+  });
+
   describe("truncateSummary", () => {
     it("returns '(no summary)' for null", () => {
       expect(truncateSummary(null)).toBe("(no summary)");

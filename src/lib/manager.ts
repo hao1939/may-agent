@@ -1098,7 +1098,7 @@ export class SubagentManager {
 
     // Activity tracking: log session start
     appendActivity(this._projectRoot, {
-      ts: Date.now(), event: "start", sid: sessionId, agent: name, task,
+      ts: Date.now(), event: "start", sid: sessionId, agent: name, task: truncateSummary(task, 500),
     }, this.getWorkspacePath(name));
 
     // The initial user message is persisted via the message_end subscriber
