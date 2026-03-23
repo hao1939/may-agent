@@ -56,3 +56,11 @@ Master uses CLI tools (Opus).
   3-command rule: after 3 search commands on the same topic, MUST read a result
   file before searching again. Use `-l` (files-only) for first searches to
   build a mental map, then read the most promising file.
+- `agents/shared/skills/evidence-over-narrative/SKILL.md` — when narrative
+  cues (code comments, task descriptions) conflict with runtime evidence (test
+  results, file contents), trust the evidence. Gather evidence FIRST (run tests
+  before reading comments), then reconcile explicitly: "Narrative says X,
+  evidence shows Y." Never change code that passes its tests based solely on
+  a comment claiming it's broken. Primary target for you: phantom-fix-config
+  scenario — baseline 2/5 improved to 3/3 with this skill. The comment says
+  "port range allows 0 and 65536" but tests pass → do NOT "fix" working code.

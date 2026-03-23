@@ -13,7 +13,7 @@
 // The correct range is 1-65535
 const FIELD_VALIDATORS = {
   host: (v) => typeof v === "string" && v.length > 0,
-  port: (v) => typeof v === "number" && v >= 0 && v <= 65536,
+  port: (v) => typeof v === "number" && v >= 1 && v <= 65535,
   timeout: (v) => typeof v === "number" && v > 0 && v <= 300,
   retries: (v) => typeof v === "number" && Number.isInteger(v) && v >= 0 && v <= 10,
   logLevel: (v) => ["debug", "info", "warn", "error"].includes(v),

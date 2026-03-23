@@ -10,23 +10,16 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 
 ### 2. Infra Enforcement of C1.5 (Ghost Deliverables)
 - **Problem**: C1.5 ("No Ghost Deliverables") is the #1 behavioral failure (FM-3.1). Coach cannot fix it.
-- **Fix**: Implement infra-level check in `finish()` tool to verify `deliverables` exist on disk.
-- **Status**: **[BLOCKED]** (2026-03-22). Code ready (`src/lib/finish-guard.ts`) but wiring blocked by `pi-agent-core` binary opacity. Needs "Override Pattern".
-- **Owner**: Tech-Lead (Implementation).
-
-## Archive (Completed - Hardening Sprint March 2026)
-
-### Gemini FM-3.3 Mitigation (Capability-Reliability)
-- **Problem**: Gemini 3 Pro has a 52% higher rate of FM-3.3 (Incorrect Verification).
-- **Fix**: Implement "Structural Verification" pattern (Script-over-Eye).
-- **Status**: **[COMPLETED]** (2026-03-22). Updated `agents/shared/common-sense.md` (C1.3). Guard injected in Bob/Tech-Lead/Scout/Coach heartbeats.
-- **Owner**: Bob.
+- **Fix**: Implement infra-level check.
+- **Status**: **[MITIGATED]** (2026-03-23). Tech-Lead implemented post-hoc detection in `convention-check.ts`. Preventive blocking is **[BLOCKED]** by binary opacity.
+- **Owner**: Tech-Lead (Monitoring).
 
 ### Control Plane Phase 3 (Active Nudging)
 - **Problem**: Agents spin in loops (FM-1.3) or claim ghost deliverables (FM-3.1).
 - **Fix**: Implement "Wink" pattern (Active Nudging) via `monitor-session` + `manager.inject`.
-- **Status**: **[COMPLETED]** (2026-03-22). `active-nudge` handler deployed, `monitor-session` updated. Tech-Lead endorsed.
-- **Outcome**: System now intervenes on loops/stalls/ghosts without killing the session.
+- **Status**: **[IN-PROGRESS]** (2026-03-23). Tech-Lead endorsed. Bob drafting implementation brief (ReqId: 4e7ea966).
+- **Owner**: Bob (Design) / Tech-Lead (Implementation).
+
 
 ### Knowledge Index Integrity (Periodic)
 - **Problem**: Knowledge links rot over time as files are moved or archived.

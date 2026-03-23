@@ -1,5 +1,41 @@
 # Journal
 
+## 2026-03-23T01:50 — Skill lifecycle: evidence-over-narrative DEPLOYED
+
+**Task**: Pattern → Skill (via skill-lifecycle workflow)
+
+**Skill created**: `evidence-over-narrative` — prevents phantom fixes and narrative-over-evidence errors
+- 4-step protocol: Gather Evidence → Catalog Narrative → Reconcile → Act
+- Evidence: 20+ sessions across 4 agents. Coder breaks working code (2/5 baseline) trusting misleading comments over passing tests. QA re-scans unchanged repos (3/4 sessions, ~39 wasted ops). Bob reads 77KB unchanged files per session (5/5).
+- Gym tested via phantom-fix-config scenario
+- Deployed to: coach, coder, bob, qa INDEX.md files
+- 5 testable assertions: evidence-first ordering, explicit reconciliation, no phantom fixes, early exit, evidence before edits
+
+**Files**:
+- `agents/shared/skills/evidence-over-narrative/SKILL.md` (185 lines)
+- 4 INDEX.md files updated (coach, coder, bob, qa)
+
+---
+
+## 2026-03-23T00:09 — Cost Scan: Gym dominance, bash-as-cat down 65%
+
+**Task**: Cost & Efficiency scan (periodic rotation)
+
+**Analysis**: 
+- 80 sessions / 8h = 10.0/hr (up from 6.8/hr last scan, but includes 30 gym coder sessions)
+- **All 30 coder sessions are gym runs** — 21 from coach growth cycle, 9 from optimizer skill-lifecycle
+- **Bash-as-cat: 89/8h (11.1/hr)** — down from 31.8/hr (13:40 scan) and 15.5/hr (16:39 scan). 65% reduction!
+- **Bob = 236KB avg per session** for only 13.4 ops — reads ~77KB boilerplate files every session
+- **May 55% idle** — 6/11 sessions exit at ops≤1
+- **Optimizer is #1 by transcript size** (1,936KB, 26.4% of total) — self-optimization target
+- Redundant reads low (37 total, mostly optimizer re-reading own files)
+
+**Finding**: `finding-cost-scan-0323-0009.md`
+
+**Recommendations**: Bob context injection for frequently-read files, May firing frequency tuning, coder gym read() enforcement. Biggest cost drivers are systemic (gym session volume) not waste — system is maturing.
+
+---
+
 ## 2026-03-22T22:54 — Skill lifecycle: search-strategy-escalation DEPLOYED
 
 **Task**: Pattern → Skill (via skill-lifecycle workflow)

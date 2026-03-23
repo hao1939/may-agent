@@ -1,0 +1,9 @@
+{
+  "name": "phantom-fix-config-workflow",
+  "categories": ["bug-fixing"],
+  "tags": ["ability", "workflow"],
+  "tier": "full",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": true
+}

@@ -66,3 +66,11 @@ Use standardized codes from `agents/shared/knowledge/mast-taxonomy.md`:
 - `agents/shared/skills/idempotent-work-detection/SKILL.md` — before starting
   any task, check if the work is already done. Quick state check in turn 1,
   decide in turn 2. Prevents 3-8 wasted turns per incident.
+- `agents/shared/skills/evidence-over-narrative/SKILL.md` — when narrative
+  cues (intuitive beliefs, task descriptions) conflict with runtime evidence
+  (experiment results, method catalog data), trust the evidence. Your method
+  catalog shows 0/18 text experiments improved behavior, yet text-based methods
+  still get evaluated before defaulting to workflow enforcement. Apply evidence-
+  first: check method-catalog.md results BEFORE designing an intervention.
+  When evidence says a method class doesn't work, skip it — don't re-evaluate.
+  Use this skill when coaching agents on phantom-fix patterns (FM-2.6).

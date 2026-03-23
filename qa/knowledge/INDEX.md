@@ -49,6 +49,13 @@ Tech-lead builds (Opus). May is Supervisor (Opus).
   issue was a submodule path. The 3-command rule: after 3 search commands on
   the same topic, MUST read a result file. When git commands return empty,
   check for submodule issues instead of trying more flag variations.
+- `agents/shared/skills/evidence-over-narrative/SKILL.md` — when narrative
+  cues (checklists, procedures, prior session notes) conflict with runtime
+  evidence (git state, file contents, system checks), trust the evidence.
+  Gather evidence FIRST (check git log, verify state), then reconcile: if
+  "scan for changes" but 0 new commits → early-exit, don't re-scan. You
+  re-scan unchanged repos 3/4 sessions (~39 wasted ops/day). When evidence
+  shows nothing changed, skip the procedural step and document why.
 
 ## Consolidated Memory
 - `agents/qa/knowledge/consolidated-memory-2026-03.md`: Durable facts/patterns extracted from QA journal (2026-03-16..2026-03-18).

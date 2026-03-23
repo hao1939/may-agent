@@ -90,3 +90,11 @@ Read on demand when relevant:
 - `agents/shared/skills/idempotent-work-detection/SKILL.md` — before starting
   any task, check if the work is already done. Quick state check in turn 1,
   decide in turn 2. Prevents 3-8 wasted turns per incident.
+- `agents/shared/skills/evidence-over-narrative/SKILL.md` — when narrative
+  cues (heartbeat checklists, task descriptions, prior beliefs) conflict with
+  runtime evidence (file timestamps, system state, actual contents), trust the
+  evidence. Check if files have changed BEFORE re-reading them. You read
+  focus-tasks.md (19KB) in 100% of sessions and pending-decisions.md (26KB)
+  in 71% — even when unchanged. ~77KB/session of boilerplate reads. Before
+  processing a large file, verify it has new content (check modified time or
+  diff against last known state). If nothing changed, skip and note why.

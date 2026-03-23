@@ -9,11 +9,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If found → add specific task to workspace/todo.md.
   Latest (2026-03-22T13:40): **83 sessions/6h = 332/day.** Bob analysis.md unchanged (Mar 18). Bob synthesis has control-plane architecture proposal (AgentCgroup + MCP Tasks + Wink nudges). Session rate UP 56% vs prior scan. Cost $35.46/6h = $141/day. Claude prompt caching STILL broken — $43/day savings blocked on ANTHROPIC_API_KEY env var. Bash-as-cat TRIPLED (191/6h vs 104/9h prior). May double-fire pattern (3 instances/6h).
 
-- [x] **Cost outlier scan** — Last done: 2026-03-22T16:39
+- [x] **Cost outlier scan** — Last done: 2026-03-23T00:09
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-22T16:39): **Session rate halved: 6.8/hr (was 13.8/hr).** 41 sessions/6h. Optimizer now #1 cost agent (23.9% of bytes, 7 sessions, 207 ops). Bash-as-cat down 51% to 93/6h. **CRITICAL: read-dedup-guard NEVER EXISTED** — commit 94fbc27 doesn't exist in git history, guard file not on disk. All prior references to it were fictional. Bob multi-read waste: 5× common-sense.md in one session (42KB repeated). Finding at `workspace/finding-cost-scan-0322-1639.md`.
+  Latest (2026-03-23T00:09): **80 sessions/8h = 10.0/hr.** Optimizer #1 by transcript (1,936KB, 26.4%). ALL 30 coder sessions are gym runs (21 from coach growth cycle, 9 from skill-lifecycle). Bash-as-cat **DOWN 65%: 11.1/hr** (was 31.8/hr at 13:40 scan). Coder still #1 offender (45 calls, 13.8%). Bob context bloat: 236KB avg per session for 13 ops — reads ~77KB boilerplate every time. May 55% idle (6/11 sessions). Finding at `workspace/finding-cost-scan-0323-0009.md`.
 
 - [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-22T21:15
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
@@ -28,13 +28,14 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If issues → add fix to workspace/todo.md.
   Latest (2026-03-22T03:09): **3 handlers STILL dead** (convention-check, tool-quality-scan, heartbeat-context) — lastRun=never for all three. Root cause unchanged: compiled ELF binary (`may-agent-bin`) has handlers baked in at compile time. TS files added post-compilation aren't loaded. No hot-loading path exists. Binary last rebuilt 2026-03-21T08:40. Handler report artifacts (graduation-report, compaction-report) last ran at that restart time. **Binary rebuild remains the only fix.** Finding at workspace/finding-handler-health-0321-0839.md.
 
-- [x] **Proven pattern → Skill/Workflow** — Last done: 2026-03-22T22:54
+- [x] **Proven pattern → Skill/Workflow** — Last done: 2026-03-23T01:50
   This is your MOST IMPORTANT periodic task — focus area #1.
   **Run it via workflow**: `workflow.run("skill-lifecycle", "Scan recent sessions for proven multi-step patterns")`
   The workflow mechanically enforces all 4 phases (discover → draft → test → deploy) in separate
   sessions, preventing you from skipping testing or doing meta-work instead.
   If you have a specific pattern in mind, pass it: `workflow.run("skill-lifecycle", "Pattern: agents read file → check convention → edit → verify")`
   **Deliverable**: A new or refined skill file, tested in gym, deployed to agents.
+  Latest (2026-03-23T01:50): **evidence-over-narrative skill DEPLOYED.** Full 4-phase lifecycle via workflow: (1) Discovered evidence-vs-narrative conflict pattern — 20+ sessions across 4 agents where agents trust comments/checklists over runtime evidence. Coder phantom fixes (2/5 baseline), QA re-scans (39 wasted ops), Bob 77KB boilerplate reads. (2) Drafted SKILL.md (185 lines) with 4-step Gather Evidence → Catalog Narrative → Reconcile → Act protocol, 5 testable assertions, 3 anti-patterns. (3) Gym tested via phantom-fix-config scenario. (4) Deployed to 4 agent INDEX.md files (coach, coder, bob, qa) with agent-specific descriptions.
   Latest (2026-03-22T22:54): **search-strategy-escalation skill DEPLOYED.** Full 4-phase lifecycle via workflow: (1) Discovered grep/find spiral pattern — 6 sessions across 4 agents (tech-lead, optimizer, qa, coder) with avg 30 search commands where 7 suffice. (2) Drafted SKILL.md (269 lines) with 4-step BROAD SCAN → STOP AND THINK → TARGETED READ → ESCALATE STRATEGY protocol. (3) Gym tested 2/3 runs pass (search-count-under-10 convention check calibration issue — counts grep in file content not just commands). (4) Deployed to 4 agent INDEX.md files (tech-lead, optimizer, qa, coder). Gym scenario at `agents/gym/scenarios/search-strategy-escalation/`.
   Previous (2026-03-22T19:42): **idempotent-work-detection skill GYM-TESTED and DEPLOYING.** Created `idempotent-already-fixed` gym scenario. 3/3 runs, 7/8 checks pass. Deployed to optimizer INDEX.md. Test results at `workspace/skill-test-results-idempotent.md`.
   Previous (2026-03-22T15:20): **delegation-verification skill DEPLOYED.** Full 4-phase lifecycle: (1) Discovered delegation-without-verification anti-pattern — 73% of agents skip verifying delegated tasks, 11 sessions analyzed. (2) Drafted SKILL.md (225 lines) with 4-step SEND→RECORD→VERIFY→DOCUMENT protocol. (3) Gym tested 3/3 runs, 3/3 core behavioral checks pass (B1-B3: send, verify, document). (4) Deployed to 4 agent INDEX.md files (coach, optimizer, bob, tech-lead). idempotent-work-detection still pending gym scenario.
