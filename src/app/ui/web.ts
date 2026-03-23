@@ -56,16 +56,25 @@ function db(): SqliteDb {
 function findSocketPath(): string | null {
   const instancesDir = join(STATE_DIR, "instances");
   if (!existsSync(instancesDir)) return null;
+  // Prefer instances whose identity.json says "running"
+  const candidates: Array<{ path: string; running: boolean }> = [];
   for (const name of readdirSync(instancesDir)) {
     const dir = join(instancesDir, name);
     for (const file of readdirSync(dir)) {
       if (file.endsWith(".sock")) {
         const sockPath = join(dir, file);
-        if (existsSync(sockPath)) return sockPath;
+        if (!existsSync(sockPath)) continue;
+        let running = false;
+        try {
+          const identity = JSON.parse(readFileSync(join(dir, "identity.json"), "utf-8"));
+          running = identity.status === "running";
+        } catch { /* no identity — treat as maybe-alive */ }
+        candidates.push({ path: sockPath, running });
       }
     }
   }
-  return null;
+  // Return the first running instance, or fall back to any socket
+  return candidates.find(c => c.running)?.path ?? candidates[0]?.path ?? null;
 }
 
 // ── API handlers ──────────────────────────────────────────────────────
