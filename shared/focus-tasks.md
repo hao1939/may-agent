@@ -8,11 +8,11 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 
 ## Active Focus
 
-### 2. Infra Enforcement of C1.5 (Ghost Deliverables)
-- **Problem**: C1.5 ("No Ghost Deliverables") is the #1 behavioral failure (FM-3.1). Coach cannot fix it.
-- **Fix**: Implement infra-level check.
-- **Status**: **[MITIGATED]** (2026-03-23). Tech-Lead implemented post-hoc detection in `convention-check.ts`. Preventive blocking is **[BLOCKED]** by binary opacity.
-- **Owner**: Tech-Lead (Monitoring).
+### Opus Prompt Caching (Cost Critical)
+- **Problem**: Opus agents (Tech-Lead, Coach, May) have 0% cache hit rate due to LiteLLM stripping headers. Wasting $36-63/day.
+- **Fix**: Bypass LiteLLM for Anthropic or update LiteLLM config.
+- **Status**: **[BLOCKED]** (2026-03-23). Requires Human/Hao intervention (Env vars + Binary rebuild). See `pending-decisions.md`.
+- **Owner**: Bob (Escalation) / Hao (Execution).
 
 ### Control Plane Phase 3 (Active Nudging)
 - **Problem**: Agents spin in loops (FM-1.3) or claim ghost deliverables (FM-3.1).
@@ -20,13 +20,11 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 - **Status**: **[COMPLETED]** (2026-03-22). Tech-Lead deployed `active-nudge` handler, `monitor-session` detections, and cron job.
 - **Owner**: Tech-Lead (Implementation).
 
-### Opus Prompt Caching (Cost Critical)
-- **Problem**: Opus agents (Tech-Lead, Coach, May) have 0% cache hit rate due to LiteLLM stripping headers. Wasting $36-63/day.
-- **Fix**: Bypass LiteLLM for Anthropic or update LiteLLM config.
-- **Status**: **[BLOCKED]** (2026-03-23). Requires Human/Hao intervention (Env vars + Binary rebuild). See `pending-decisions.md`.
-- **Owner**: Bob (Escalation) / Hao (Execution).
-
-
+### Infra Enforcement of C1.5 (Ghost Deliverables)
+- **Problem**: C1.5 ("No Ghost Deliverables") is the #1 behavioral failure (FM-3.1). Coach cannot fix it.
+- **Fix**: Implement infra-level check.
+- **Status**: **[MITIGATED]** (2026-03-23). Tech-Lead implemented post-hoc detection in `convention-check.ts` and preventive nudging in `monitor-session.cjs`.
+- **Owner**: Tech-Lead (Monitoring).
 
 ### Knowledge Index Integrity (Periodic)
 - **Problem**: Knowledge links rot over time as files are moved or archived.
@@ -52,7 +50,7 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 ### Supply Chain Hardening (P78)
 - **Problem**: Skill Injection via Description (HB#1456).
 - **Fix**: Implement "Skill Scanner" and "Sandboxed Execution".
-- **Status**: **[REOPENED → IN-PROGRESS]** (2026-03-21). Mechanism verified but not wired into production. See Active Focus #3.
+- **Status**: **[REOPENED → IN-PROGRESS]** (2026-03-21). Mechanism verified but not wired into production.
 
 ### Order Persistence (P209)
 - **Problem**: Human orders lost on session crash.
@@ -285,4 +283,3 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 ### Archive
 - **Context Awareness (CS 6.1 & 4.5)**: Verified `scripts/sync-tools-md.ts` works (2026-03-20).
 - **Environment & Adversarial Hardening (P13 / P108)**: Confirmed in 10 agent SOULs (2026-03-20).
-

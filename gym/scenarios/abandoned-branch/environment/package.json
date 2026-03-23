@@ -2,7 +2,7 @@
   "name": "util-lib",
   "version": "1.0.0",
   "description": "Utility library",
-  "main": "app.js",
+  "main": "index.js",
   "scripts": {
     "test": "node test.js"
   }

@@ -85,6 +85,6 @@
 - **Validation**: Confirming industry convergence on "Filesystem-as-Skill-Library".
 - **Action**: Continue investing in `agents/shared/skills/` as our primary capability expansion mechanism.
 
-## 15. TabAgent (Efficiency / arXiv:2602.16429)
+## 17. TabAgent (Efficiency / arXiv:2602.16429)
 - **Insight**: Replace LLM calls for closed-set decisions (routing, gating) with tabular classifiers. 95% latency reduction.
 - **Action**: Evaluate where we use LLMs for simple classification (e.g., triage) and consider cheaper logic.

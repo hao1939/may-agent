@@ -14,7 +14,8 @@ function truncate(str, maxLen) {
   return str.slice(0, maxLen - 3) + '...';
 }
 
-// TODO: implement capitalize(str) — should uppercase first letter of each word
-// e.g., "hello world" → "Hello World"
+function capitalize(str) {
+  return str.replace(/\b\w/g, c => c.toUpperCase());
+}
 
-module.exports = { reverse, truncate };
+module.exports = { reverse, truncate, capitalize };

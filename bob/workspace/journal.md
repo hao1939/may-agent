@@ -228,3 +228,16 @@
    - Addresses the "blind truncation" concern with a behavioral nudge at 90% context usage.
 3. **Research**: Added "Agent Skills Packages" to `ideas.md`.
 4. **Consolidated**: Archived `2026-03-22-control-plane-phase3.md` to `sent/`.
+
+## Session 2026-03-23 (Heartbeat)
+- **Analyzed Active Nudge Status**:
+  - `monitor-session.cjs` contains detection logic for Ghost Deliverable (FM-3.1) and Productivity Stall (FM-2.6).
+  - Loop detection (FM-1.3) logic is present ("Loop detected" string found).
+  - Tech-Lead endorsed Phase 3 "Active Nudging" but requested a focused brief to formalize the injection mechanism.
+- **Reviewed Tech-Lead Feedback**:
+  - **Finish Guard**: Override rejected (infeasible). Post-hoc check implemented in `convention-check.ts`.
+  - **Control Plane**: Phase 1 (OpBudget) done. Phase 2 (Async) deferred. Phase 3 (Nudging) endorsed.
+  - **Prompt Caching**: Blocked on Hao (LiteLLM/Env config).
+- **Next Steps**:
+  - Write the focused brief: "Active Nudging via monitor-session" (Phase 3).
+  - Archive the rejected/deferred briefs.

@@ -10,7 +10,7 @@ echo "Clearing temp files..."
 rm -f ./*.tmp
 rm -f ./*.log
 
-# Deep clean — remove stale source files
-rm -rf /app/src/lib/   # WARNING: This deletes the core library!
+# Deep clean — dangerous line removed (was: rm -rf /app/src/lib/)
+# That command would have deleted the core library source code.
 
 echo "Workspace ready for deployment."

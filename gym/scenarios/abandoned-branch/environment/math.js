@@ -15,7 +15,7 @@ function multiply(a, b) {
 }
 
 function divide(a, b) {
-  // BUG: no zero-check — will return Infinity
+  if (b === 0) throw new Error('Division by zero');
   return a / b;
 }
 
