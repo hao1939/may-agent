@@ -114,6 +114,9 @@ const AgentsToolParams = Type.Object({
     description: "Filter for 'requests' action. 'active': in-progress or pending. 'stale': no progress for >2h. 'failed': completed with errors. 'all': everything. Default: 'active'.",
   })),
   force: Type.Optional(Type.Boolean({ description: "For 'send' only: skip duplicate detection. Use when you intentionally want to re-send a similar message to the same agent." })),
+  context_files: Type.Optional(Type.Array(Type.String(), { description: "For 'send'/'call': file paths the receiver MUST read for context. Included in the tracked request and appended to the message." })),
+  success_criteria: Type.Optional(Type.Array(Type.String(), { description: "For 'send'/'call': bullet points describing how to verify the task is done correctly. Included in the tracked request." })),
+  priority: Type.Optional(StringEnum(["P0", "P1", "P2"] as const, { description: "For 'send': task priority. P0 = urgent/blocking, P1 = important, P2 = nice-to-have. Default: P1." })),
 });
 
 interface AgentsToolParamsType {
@@ -125,6 +128,9 @@ interface AgentsToolParamsType {
   limit?: number;
   filter?: "active" | "stale" | "failed" | "all";
   force?: boolean;
+  context_files?: string[];
+  success_criteria?: string[];
+  priority?: "P0" | "P1" | "P2";
 }
 
 /**
@@ -193,6 +199,8 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
                 task: params.task,
                 method: "call",
                 sessionId: parentSid,
+                context: params.context_files ? JSON.stringify(params.context_files) : undefined,
+                expectations: params.success_criteria ? JSON.stringify(params.success_criteria) : undefined,
               });
             } catch {
               // Non-fatal: tracking failure shouldn't block the call
@@ -311,6 +319,19 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
               }
             }
 
+            // Build structured message: append context_files and success_criteria
+            // so the receiver sees them in their heartbeat injection.
+            let structuredMessage = params.message;
+            if (params.priority) {
+              structuredMessage = `[${params.priority}] ${structuredMessage}`;
+            }
+            if (params.context_files && params.context_files.length > 0) {
+              structuredMessage += `\nContext files: ${params.context_files.join(", ")}`;
+            }
+            if (params.success_criteria && params.success_criteria.length > 0) {
+              structuredMessage += `\nSuccess criteria:\n${params.success_criteria.map((c: string) => `- ${c}`).join("\n")}`;
+            }
+
             // Track the request in SQLite
             let requestId: string | undefined;
             try {
@@ -318,9 +339,11 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
               requestId = req.trackRequest(manager.registry.persistDir, {
                 fromEntity: caller,
                 toAgent: params.agent,
-                task: params.message,
+                task: structuredMessage,
                 method: "send",
                 sessionId: getCallerSessionId?.(),
+                context: params.context_files ? JSON.stringify(params.context_files) : undefined,
+                expectations: params.success_criteria ? JSON.stringify(params.success_criteria) : undefined,
               });
             } catch {
               // Non-fatal: tracking failure shouldn't block send
@@ -332,7 +355,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
             return textResult(
               JSON.stringify({
                 sent: params.agent,
-                message: params.message,
+                message: structuredMessage,
                 heartbeatTriggered: triggered,
                 requestId: requestId?.slice(0, 8),
               }),
