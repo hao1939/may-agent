@@ -1514,6 +1514,35 @@ function analyzeSession(sessionId) {
     });
   }
 
+  // 12. Context Pressure detection (Phase 4) — context window approaching token limit
+  const contextPressure = detectContextPressure(entries);
+  if (contextPressure.detected) {
+    return attachRecall({
+      sessionId,
+      agent: agentName,
+      task: task?.slice(0, 200),
+      status: "CONTEXT_PRESSURE",
+      confidence: 0.9,
+      evidence: contextPressure.evidence,
+      details: {
+        inputTokens: contextPressure.inputTokens,
+        threshold: contextPressure.threshold,
+        totalToolCalls: toolCalls.length,
+      },
+      recommendedAction: "warn",
+      intervention: {
+        type: "context_pressure",
+        message:
+          `[SYSTEM NOTICE] Critical Context Warning — your context window is at ` +
+          `${contextPressure.inputTokens.toLocaleString()} tokens (limit approaching). ` +
+          `You are about to lose early memory including your task instructions. ` +
+          `IMMEDIATE ACTION: (1) Write progress summary to workspace/journal.md NOW. ` +
+          `(2) Call finish(status: "partial", next_steps: "Context full — resume in fresh session"). ` +
+          `Do NOT continue working in this session.`,
+      },
+    });
+  }
+
   // All clear
   const lastTs = getLastTimestamp(entries);
   const idleSeconds = lastTs > 0 ? Math.round((Date.now() - lastTs) / 1000) : null;
@@ -1734,6 +1763,43 @@ function detectErrorStorm(entries) {
 }
 
 /**
+ * Detect context pressure: agent's context window is approaching the token limit.
+ *
+ * Reads the most recent assistant entry's usage.input to determine current
+ * context size, then compares against a conservative threshold.
+ *
+ * Default threshold: 100k tokens (safe for 128k-200k models).
+ * Configurable via CONTEXT_PRESSURE_THRESHOLD env var.
+ *
+ * Returns { detected, inputTokens, threshold, evidence } or { detected: false }.
+ */
+function detectContextPressure(entries) {
+  const threshold = parseInt(process.env.CONTEXT_PRESSURE_THRESHOLD || "100000", 10);
+
+  // Find the most recent assistant entry with usage data
+  for (let i = entries.length - 1; i >= 0; i--) {
+    const entry = entries[i];
+    if (entry.role === "assistant" && entry.usage && typeof entry.usage.input === "number") {
+      const inputTokens = entry.usage.input;
+      if (inputTokens >= threshold) {
+        return {
+          detected: true,
+          inputTokens,
+          threshold,
+          evidence: `Context window at ${inputTokens.toLocaleString()} input tokens (threshold: ${threshold.toLocaleString()}). ` +
+            `Agent risks catastrophic forgetting — early context (including task instructions) may be truncated.`,
+        };
+      }
+      // Only check the most recent assistant entry with usage
+      return { detected: false };
+    }
+  }
+
+  // No usage data found
+  return { detected: false };
+}
+
+/**
  * Count total lines in a file (fast — doesn't parse).
  */
 function countLines(filePath) {
@@ -1918,6 +1984,7 @@ if (require.main === module) {
     detectStall,
     detectDrift,
     detectErrorStorm,
+    detectContextPressure,
     detectGhostDeliverable,
     detectProductivityStall,
     extractToolCalls,

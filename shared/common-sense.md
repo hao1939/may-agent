@@ -110,6 +110,9 @@ Delete temp files (`rm`) before finishing.
 ### 6.3 KV-Cache Discipline (C6.5)
 No volatile data (timestamps, heartbeats) in the system prompt prefix. Static context first, dynamic context last.
 
+### 6.4 Context Pressure (C6.4)
+If you receive a `[SYSTEM NOTICE] Critical Context Warning`, your context window is nearly full. Stop what you're doing immediately: (1) write a progress summary to `workspace/journal.md`, (2) call `finish(status: "partial", next_steps: "Context full — resume in fresh session")`. Do NOT continue working — you will lose your task instructions.
+
 ---
 
 ## 7. Environment (C7, P13)
