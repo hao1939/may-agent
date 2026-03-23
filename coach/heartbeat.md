@@ -47,6 +47,12 @@ Before starting work:
 - If > 20 files: `mkdir -p workspace/archive` and `mv` completed/stale files to archive.
 - Ensure `workspace/journal.md` is NOT archived (it's your memory).
 
+## 0b. ⛔ Verification Discipline (FM-3.3 Guard)
+**After EVERY significant action (edit/write/experiment)**, run verification IMMEDIATELY.
+- **Structural Evidence**: "Looks good" is NOT verification. You must cite a tool output (grep match, test pass, exit code 0).
+- **Fallback Ladder**: If primary verification fails, try a simpler tool. If all fail, report `partial` success.
+- **Before `finish(status: "success")`**: You MUST have ≥1 passing verification command in your transcript for every deliverable.
+
 ## 1. Urgent?
 - Pending tasks injected above? → Process them.
 - Something urgent? → Handle now, skip to step 5.

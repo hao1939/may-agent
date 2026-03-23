@@ -101,7 +101,16 @@ export function runActiveNudge(ctx: HandlerContext): ActiveNudgeResult {
     const action = intervention.action;
 
     if (action === "cancel") {
-      // Loops, ghost deliverables → cancel the session
+      // Write nudge file BEFORE cancelling so the next session has context
+      // about why the previous session was terminated.
+      try {
+        writeNudgeFile(ctx, intervention);
+      } catch (err: any) {
+        ctx.log(`[active-nudge] Failed to write pre-cancel nudge for ${intervention.sessionId}: ${err.message?.slice(0, 100)}`);
+        // Continue with cancel even if nudge write fails
+      }
+
+      // Now cancel the session
       try {
         ctx.manager.cancel(intervention.sessionId);
         result.cancelled.push({
