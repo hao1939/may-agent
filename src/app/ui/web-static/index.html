@@ -80,6 +80,10 @@
   .chat-input-row button:hover { opacity: 0.9; }
   .chat-status { font-size: 12px; color: var(--fg2); padding: 4px 0; }
 
+  /* Action buttons */
+  .ask-btn { background: var(--bg3); color: var(--fg2); border: 1px solid var(--border); border-radius: 6px; padding: 3px 10px; cursor: pointer; font-size: 12px; }
+  .ask-btn:hover { color: var(--fg); border-color: var(--accent); }
+
   /* Pagination */
   .pagination { display: flex; gap: 8px; margin-top: 16px; justify-content: center; }
   .pagination button { background: var(--bg2); color: var(--fg); border: 1px solid var(--border); border-radius: 6px; padding: 6px 14px; cursor: pointer; font-size: 13px; }
@@ -197,6 +201,9 @@ function renderRequests(data) {
       </div>
       <div class="task">${esc(r.task)}</div>
       ${outcome ? `<div class="outcome">${esc(outcome.slice(0,200))}</div>` : ''}
+      <div class="actions" style="margin-top:6px">
+        <button class="ask-btn" onclick="event.stopPropagation(); askAboutRequest(${JSON.stringify(r).replace(/"/g, '&quot;')})">💬 Ask about this</button>
+      </div>
     </div>`;
   }).join('');
 
@@ -237,7 +244,9 @@ async function loadSessionDetail(sessionId) {
     const dur = s.endedAt ? Math.round((s.endedAt - s.startedAt)/1000) + 's' : 'running';
 
     let html = `<div class="panel">
-      <h3>${s.agent} <span class="badge ${s.status}">${s.status}</span> · ${dur} · ${s.opCount || 0} ops</h3>
+      <h3>${s.agent} <span class="badge ${s.status}">${s.status}</span> · ${dur} · ${s.opCount || 0} ops
+        <button class="ask-btn" style="margin-left:12px" onclick="askAboutSession('${s.sessionId}', ${JSON.stringify(esc(s.task.slice(0,200))).replace(/'/g,'\\&#39;')})">💬 Ask about this</button>
+      </h3>
       <div style="color:var(--fg2);font-size:12px;margin-bottom:8px">${esc(s.task.slice(0,200))}</div>
       ${s.outcome ? `<div style="font-style:italic;color:var(--fg2);font-size:12px;margin-bottom:12px">${esc(s.outcome)}</div>` : ''}`;
 
@@ -303,6 +312,48 @@ function renderTree(children) {
     html += renderLevel(p);
   }
   return html;
+}
+
+// ── Ask about (bridge dashboard → chat) ───────────────────────────────
+
+function switchToChat(message) {
+  // Switch to chat tab
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelector('[data-tab="chat"]').classList.add('active');
+  currentTab = 'chat';
+  document.getElementById('dashboard').classList.add('hidden');
+  document.getElementById('chat').classList.remove('hidden');
+  initChat();
+
+  // Pre-fill the input with the context message
+  const input = document.getElementById('chat-input');
+  input.value = message;
+  input.focus();
+}
+
+function askAboutRequest(r) {
+  const task = (r.task || '').slice(0, 150);
+  const outcome = r.outcome || r.summary || '(no outcome recorded)';
+  const dur = r.durationMs ? (r.durationMs < 60000 ? Math.round(r.durationMs/1000)+'s' : Math.round(r.durationMs/60000)+'m') : '?';
+
+  const msg = `Review this request and tell me what happened:\n` +
+    `- Request: ${r.requestId.slice(0,8)}\n` +
+    `- From: ${r.fromEntity} → ${r.toAgent}\n` +
+    `- Task: "${task}"\n` +
+    `- Status: ${r.status}, duration: ${dur}\n` +
+    (r.sessionId ? `- Session: ${r.sessionId}\n` : '') +
+    `- Outcome: ${outcome.slice(0,200)}\n\n` +
+    `Was this handled well? What was the actual result?`;
+
+  switchToChat(msg);
+}
+
+function askAboutSession(sessionId, taskPreview) {
+  const msg = `Review session ${sessionId} and tell me what happened.\n` +
+    `Task: "${taskPreview}"\n\n` +
+    `Read the session transcript at .state/sessions/history/${sessionId}/session.jsonl and summarize: what did the agent do, was it done well, any issues?`;
+
+  switchToChat(msg);
 }
 
 // ── Chat ──────────────────────────────────────────────────────────────
