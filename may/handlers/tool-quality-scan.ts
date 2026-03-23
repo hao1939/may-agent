@@ -16,7 +16,6 @@
 
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { join, dirname } from "node:path";
-import { getDb } from "../../../src/lib/requests.js";
 import type { HandlerContext, HandlerModule } from "../../../src/lib/handler-context.js";
 import type { CronEntry } from "../../../src/lib/cron-tool.js";
 
@@ -65,7 +64,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
   const optimizerTodoPath = join(ctx.agentsRoot, "optimizer", "workspace", "todo.md");
 
   return async () => {
-    const result = scanToolQuality(ctx.persistDir, baselinePath);
+    const result = scanToolQuality(ctx.persistDir, baselinePath, ctx.getDb);
     if (result.totalCalls === 0) { ctx.log("[tool-quality-scan] No evaluations in last 24h."); return; }
 
     mkdirSync(dirname(reportPath), { recursive: true });
@@ -126,10 +125,10 @@ export function classifyFailure(chain: FailureChain): FailureCategory {
 
 // ── Scanning ──────────────────────────────────────────────────────────
 
-function scanToolQuality(persistDir: string, baselinePath: string): ScanResult {
+function scanToolQuality(persistDir: string, baselinePath: string, getDb: () => { exec: (sql: string) => void; prepare: (sql: string) => any; run: (sql: string, params?: unknown[]) => any; close: () => void }): ScanResult {
   const now = Date.now();
   const cutoff = now - LOOKBACK_MS;
-  const db = getDb(persistDir);
+  const db = getDb();
 
   const totalRow = db.prepare(
     `SELECT COALESCE(SUM(productiveCalls + wastedCalls), 0) as totalCalls FROM evaluations WHERE createdAt > ? AND verdict != 'skipped'`

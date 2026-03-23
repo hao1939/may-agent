@@ -17,7 +17,6 @@ import { readdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import type { HandlerContext, HandlerModule } from "../../../src/lib/handler-context.js";
 import type { CronEntry } from "../../../src/lib/cron-tool.js";
-import { getDb } from "../../../src/lib/requests.js";
 
 // ── Configuration ─────────────────────────────────────────────────────
 
@@ -56,9 +55,9 @@ interface RequestRow {
 
 export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
   return async () => {
-    let db: ReturnType<typeof getDb>;
+    let db: ReturnType<HandlerContext["getDb"]>;
     try {
-      db = getDb(ctx.persistDir);
+      db = ctx.getDb();
     } catch {
       ctx.log("[audit-requests] DB not available, skipping audit.");
       return;

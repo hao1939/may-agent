@@ -12,7 +12,6 @@ import { readdirSync, readFileSync, statSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import type { HandlerContext, HandlerModule } from "../../../src/lib/handler-context.js";
 import type { CronEntry } from "../../../src/lib/cron-tool.js";
-import { getDb } from "../../../src/lib/requests.js";
 
 // ── Factory ───────────────────────────────────────────────────────────
 
@@ -22,6 +21,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
       persistDir: ctx.persistDir,
       agentsRoot: ctx.agentsRoot,
       projectRoot: ctx.projectRoot,
+      getDb: ctx.getDb,
     });
     ctx.notify(brief);
   };
@@ -33,6 +33,7 @@ export interface DailyBriefOptions {
   persistDir: string;
   agentsRoot: string;
   projectRoot: string;
+  getDb: () => { exec: (sql: string) => void; prepare: (sql: string) => any; run: (sql: string, params?: unknown[]) => any; close: () => void };
 }
 
 interface EvalSummary { agent: string; efficiency: number; quality: number; verdict: string; }
@@ -77,7 +78,7 @@ export function collectDailyBrief(opts: DailyBriefOptions): string {
   // 3. Agent pending task counts (from DB)
   const agentSummaries: AgentSummary[] = [];
   try {
-    const db = getDb(persistDir);
+    const db = opts.getDb();
     const rows = db
       .query(
         `SELECT toAgent, COUNT(*) as count FROM requests
@@ -211,7 +212,7 @@ function collectCronHealth(persistDir: string, since: number): CronHealthResult 
   const issues: string[] = [];
 
   try {
-    const db = getDb(persistDir);
+    const db = opts.getDb();
     const rows = db
       .query(
         `SELECT artifact, toAgent as agent, status, summary, error,

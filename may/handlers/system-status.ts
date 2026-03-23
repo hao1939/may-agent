@@ -10,8 +10,6 @@
 import { readdirSync, readFileSync, existsSync, statSync, appendFileSync, mkdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { execSync } from "node:child_process";
-import { loadAllSessionMetas } from "../../../src/lib/persistence.js";
-import { trackRequest } from "../../../src/lib/requests.js";
 import type { HandlerContext, HandlerModule } from "../../../src/lib/handler-context.js";
 import type { CronEntry } from "../../../src/lib/cron-tool.js";
 
@@ -33,6 +31,7 @@ export interface SystemStatusOptions {
   agentsRoot: string;
   healthLogPath: string;
   skipBuildChecks?: boolean;
+  loadAllSessionMetas: () => Record<string, any>;
 }
 
 // ── Factory ───────────────────────────────────────────────────────────
@@ -45,6 +44,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       projectRoot: ctx.projectRoot,
       agentsRoot: ctx.agentsRoot,
       healthLogPath,
+      loadAllSessionMetas: ctx.loadAllSessionMetas,
     });
     const report = formatStatusReport(result);
 
@@ -59,7 +59,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     // Reactive trigger: anomalies → write to May's todo + trigger heartbeat
     if (result.anomalies.length > 0) {
       try {
-        trackRequest(ctx.persistDir, {
+        ctx.trackRequest({
           fromEntity: "system-status",
           toAgent: "may",
           task: `[system-status] ${result.anomalies.length} anomaly(ies) detected: ${result.anomalies.map(a => a.slice(0, 80)).join("; ").slice(0, 300)}`,
@@ -80,7 +80,7 @@ export function runSystemStatus(opts: SystemStatusOptions): SystemStatusResult {
   const oneDayAgo = now - 24 * 60 * 60 * 1000;
   const anomalies: string[] = [];
 
-  const allSessions = loadAllSessionMetas(persistDir);
+  const allSessions = opts.loadAllSessionMetas();
   let sessionsLast24h = 0;
   for (const session of Object.values(allSessions)) {
     if (session.startedAt >= oneDayAgo) sessionsLast24h++;

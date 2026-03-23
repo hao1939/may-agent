@@ -12,9 +12,9 @@
 
 import { readFileSync, existsSync, writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
-import { getDb } from "../../../src/lib/requests.js";
 import type { HandlerContext, HandlerModule } from "../../../src/lib/handler-context.js";
 import type { CronEntry } from "../../../src/lib/cron-tool.js";
+import type { SqliteDb } from "../../../src/lib/db.js";
 
 // ── Types ─────────────────────────────────────────────────────────────
 
@@ -78,6 +78,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       persistDir: ctx.persistDir,
       agentsRoot: ctx.agentsRoot,
       log: (msg) => ctx.log(msg),
+      getDb: ctx.getDb,
     });
 
     if (result.sessionsChecked === 0) {
@@ -124,9 +125,10 @@ export function runConventionChecks(opts: {
   persistDir: string;
   agentsRoot: string;
   log: (msg: string) => void;
+  getDb: () => SqliteDb;
 }): ConventionCheckResult {
   const { persistDir, agentsRoot, log } = opts;
-  const db = getDb(persistDir);
+  const db = opts.getDb();
   const now = Date.now();
 
   const result: ConventionCheckResult = {
@@ -205,7 +207,7 @@ interface UncheckedSession {
 
 function findUncheckedSessions(
   _persistDir: string,
-  db: ReturnType<typeof getDb>
+  db: SqliteDb
 ): UncheckedSession[] {
   const MAX_SCAN = 200;
 
@@ -632,7 +634,7 @@ function checkC12_1_sessionStart(toolCalls: ToolCall[], agent: string): CheckRes
 // ── Regression detection ──────────────────────────────────────────────
 
 function detectRegressions(
-  db: ReturnType<typeof getDb>,
+  db: SqliteDb,
   now: number
 ): RegressionEntry[] {
   const regressions: RegressionEntry[] = [];
@@ -697,7 +699,7 @@ function detectRegressions(
 
 function writeSummary(
   persistDir: string,
-  db: ReturnType<typeof getDb>,
+  db: SqliteDb,
   now: number
 ): void {
   const summaryDir = join(persistDir, "convention-checks");

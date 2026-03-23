@@ -11,8 +11,6 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import type { HandlerContext, HandlerModule } from "../../../src/lib/handler-context.js";
 import type { CronEntry } from "../../../src/lib/cron-tool.js";
-import { getDb } from "../../../src/lib/requests.js";
-
 // ── Factory ───────────────────────────────────────────────────────────
 
 export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
@@ -20,6 +18,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     const report = collectCoachingReport({
       persistDir: ctx.persistDir,
       agentsRoot: ctx.agentsRoot,
+      getDb: ctx.getDb,
     });
     ctx.log(report);
   };
@@ -30,6 +29,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 export interface CoachingReportOptions {
   persistDir: string;
   agentsRoot: string;
+  getDb: () => { exec: (sql: string) => void; prepare: (sql: string) => any; run: (sql: string, params?: unknown[]) => any; close: () => void };
 }
 
 interface EvalRecord {
@@ -153,7 +153,7 @@ export function collectCoachingReport(opts: CoachingReportOptions): string {
   // 5. Coaching pending count from DB
   let coachTodoCount = 0;
   try {
-    const db = getDb(persistDir);
+    const db = opts.getDb();
     const row = db.query("SELECT COUNT(*) as cnt FROM requests WHERE toAgent = 'coach' AND status IN ('CREATED','IN_PROGRESS') AND method = 'send'").get() as { cnt: number } | null;
     coachTodoCount = row?.cnt ?? 0;
   } catch { /* best-effort — DB may not be available */ }

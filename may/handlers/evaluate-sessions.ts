@@ -9,9 +9,6 @@
 
 import { readdirSync, existsSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { loadAllSessionMetas } from "../../../src/lib/persistence.js";
-import { evaluateTask, writeSkippedEvaluations, writeHeuristicEvaluations } from "../../../src/lib/evaluator.js";
-import { trackRequest, getDb } from "../../../src/lib/requests.js";
 import type { HandlerContext, HandlerModule } from "../../../src/lib/handler-context.js";
 import type { CronEntry } from "../../../src/lib/cron-tool.js";
 
@@ -32,6 +29,11 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       persistDir: ctx.persistDir,
       manager: ctx.manager,
       onLog: (msg) => ctx.log(msg),
+      getDb: ctx.getDb,
+      loadAllSessionMetas: ctx.loadAllSessionMetas,
+      evaluateTask: ctx.evaluateTask,
+      writeSkippedEvaluations: ctx.writeSkippedEvaluations,
+      writeHeuristicEvaluations: ctx.writeHeuristicEvaluations,
     });
     if (result.sessionsEvaluated > 0 || result.skipped > 0) {
       ctx.log(`[cron:evaluate-sessions] ${result.skipped} skipped, ${result.sessionsEvaluated} evaluated, ${result.errors.length} errors`);
@@ -43,7 +45,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       const verdict = result.parentVerdicts[parentId];
       if (verdict === "needs_improvement") {
         try {
-          trackRequest(ctx.persistDir, {
+          ctx.trackRequest({
             fromEntity: "evaluate-sessions",
             toAgent: "coach",
             task: `Review session ${parentId} (verdict: needs_improvement). Query evaluations table in .state/may.db for details. Identify which agent needs coaching and run a targeted exercise.`,
@@ -73,10 +75,10 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
  * Only touches evaluations where quality=5 AND efficiency=4 (rubber-stamp
  * signature) to avoid re-scoring already-corrected evaluations.
  */
-function rescoreHeuristicEvaluations(persistDir: string): number {
-  let db: ReturnType<typeof getDb>;
+function rescoreHeuristicEvaluations(persistDir: string, getDb: () => any): number {
+  let db: any;
   try {
-    db = getDb(persistDir);
+    db = getDb();
   } catch {
     return 0; // DB not available
   }
@@ -247,13 +249,13 @@ function extractSessionMetrics(persistDir: string, sessionId: string): SessionMe
  * No agents are excluded by default — evaluateTask() uses an empty
  * skipAgents set.
  */
-export function findParentsWithUnevaluatedChildren(persistDir: string): string[] {
-  const allSessions = loadAllSessionMetas(persistDir);
+export function findParentsWithUnevaluatedChildren(persistDir: string, getDb: () => any, loadAllSessionMetas: () => Record<string, any>): string[] {
+  const allSessions = loadAllSessionMetas();
 
   // Build evaluated set from SQLite DB (primary) + legacy evaluations/ dir (fallback)
   const evaluatedIds = new Set<string>();
   try {
-    const db = getDb(persistDir);
+    const db = getDb();
     const rows = db.prepare(`SELECT sessionId FROM evaluations`).all() as Array<{ sessionId: string }>;
     for (const r of rows) evaluatedIds.add(r.sessionId);
   } catch {
@@ -283,12 +285,17 @@ export async function handleEvaluateSessions(opts: {
   persistDir: string;
   manager: any;
   onLog?: (msg: string) => void;
+  getDb: () => any;
+  loadAllSessionMetas: () => Record<string, any>;
+  evaluateTask: (evalOpts: any) => Promise<any>;
+  writeSkippedEvaluations: (skipAgents?: Set<string>) => Promise<number>;
+  writeHeuristicEvaluations: () => Promise<number>;
 }): Promise<EvaluateSessionsResult> {
   const { persistDir, manager, onLog } = opts;
   const result: EvaluateSessionsResult = { skipped: 0, parentsEvaluated: [], parentVerdicts: {}, sessionsEvaluated: 0, errors: [] };
 
   try {
-    result.skipped = await writeSkippedEvaluations(persistDir);
+    result.skipped = await opts.writeSkippedEvaluations();
     if (result.skipped > 0) onLog?.(`[eval] Wrote ${result.skipped} skip evaluation(s)`);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -298,7 +305,7 @@ export async function handleEvaluateSessions(opts: {
 
   // Heuristic evaluation for root sessions (no parent)
   try {
-    const heuristic = await writeHeuristicEvaluations(persistDir);
+    const heuristic = await opts.writeHeuristicEvaluations();
     if (heuristic > 0) {
       onLog?.(`[eval] Wrote ${heuristic} heuristic evaluation(s) for root sessions`);
     }
@@ -313,7 +320,7 @@ export async function handleEvaluateSessions(opts: {
   // This runs unconditionally to catch both newly-written AND previously-existing
   // rubber-stamp evaluations (quality=5, efficiency=4 signature).
   try {
-    const rescored = rescoreHeuristicEvaluations(persistDir);
+    const rescored = rescoreHeuristicEvaluations(persistDir, opts.getDb);
     if (rescored > 0) onLog?.(`[eval] Rescored ${rescored} rubber-stamp evaluation(s) with transcript metrics`);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -321,7 +328,7 @@ export async function handleEvaluateSessions(opts: {
     onLog?.(`[eval] rescoreHeuristicEvaluations failed: ${msg}`);
   }
 
-  const allParents = findParentsWithUnevaluatedChildren(persistDir);
+  const allParents = findParentsWithUnevaluatedChildren(persistDir, opts.getDb, opts.loadAllSessionMetas);
   if (allParents.length === 0) { onLog?.("[eval] No unevaluated sessions — all caught up"); return result; }
   // Limit to 3 parents per run to prevent cascade when many sessions are pending.
   // Remaining parents will be picked up in subsequent runs (every 30min).
@@ -335,7 +342,7 @@ export async function handleEvaluateSessions(opts: {
 
   for (const parentId of parents) {
     try {
-      const evalResult = await evaluateTask({ manager, persistDir, parentSessionId: parentId });
+      const evalResult = await opts.evaluateTask({ manager, persistDir, parentSessionId: parentId });
       if (evalResult) {
         result.parentsEvaluated.push(parentId);
         result.parentVerdicts[parentId] = evalResult.overall.verdict;
