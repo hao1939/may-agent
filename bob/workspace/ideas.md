@@ -23,7 +23,7 @@
 ## 3b. Context Cgroup (Bob / P42)
 - **Insight**: Hard limits (OpBudget) prevent runaway resource consumption, but Context limits (95% full) are currently ignored until crash.
 - **Proposal**: Auto-truncate oldest messages or inject "Summary Required" warning when context > 90%.
-- **Status**: **[IN-PROGRESS]** (2026-03-23). Drafted brief `brief-context-cgroup.md` for Tech-Lead.
+- **Status**: **[IN-PROGRESS]** (2026-03-23). Drafting focused brief `brief-context-pressure-valve.md` per Tech-Lead request.
 
 ## 4. Environment Integrity (P13)
 - **Insight**: Strict `/app` root. No `/home` or `~`.
@@ -37,7 +37,7 @@
   - **Drift Monitor**: Async observer injects corrective prompts without stopping session (Wink).
   - **Dynamic Topology**: Route tasks based on complexity (AgentConductor).
   - **AgentCgroup**: OS-level isolation (eBPF) for tool resources.
-- **Status**: **[COMPLETED]** (2026-03-22). Phase 3 (Active Nudging) deployed. `active-nudge` handler and `monitor-session` logic active.
+- **Status**: **[DEPLOYED]** (2026-03-22). Phase 3 (Active Nudging) deployed. `active-nudge` handler and `monitor-session` logic active.
 
 ## 6. Finite Brain / Budget Awareness (SkyClaw / 2026-03-08)
 - **Insight**: Agents must see their own resource consumption (tokens/ops) in-context to self-regulate.

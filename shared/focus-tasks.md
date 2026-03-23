@@ -17,14 +17,14 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 ### Control Plane Phase 3 (Active Nudging)
 - **Problem**: Agents spin in loops (FM-1.3) or claim ghost deliverables (FM-3.1).
 - **Fix**: Implement "Wink" pattern (Active Nudging) via `monitor-session` + `manager.inject`.
-- **Status**: **[COMPLETED]** (2026-03-23). Implemented in `active-nudge.ts` and `monitor-session.cjs`. Verified by Tech-Lead.
+- **Status**: **[DEPLOYED]** (2026-03-23). Implemented in `active-nudge.ts` and `monitor-session.cjs`. Verified by Tech-Lead.
 - **Owner**: Tech-Lead (Implementation).
 
 ### Control Plane Phase 4 (Context Pressure Valve)
 - **Problem**: Context truncation causes catastrophic forgetting.
 - **Fix**: Inject "90% Full" warning to trigger consolidation.
-- **Status**: **[DELEGATED]** (2026-03-23). Brief `brief-context-cgroup.md` sent to Tech-Lead.
-- **Owner**: Tech-Lead (Implementation).
+- **Status**: **[IN-PROGRESS]** (2026-03-23). Drafting focused brief `brief-context-pressure-valve.md` per Tech-Lead request.
+- **Owner**: Bob (Design).
 
 ### Infra Enforcement of C1.5 (Ghost Deliverables)
 - **Problem**: C1.5 ("No Ghost Deliverables") is the #1 behavioral failure (FM-3.1). Coach cannot fix it.

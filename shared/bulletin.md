@@ -10,6 +10,10 @@ Operational announcements, cross-agent coordination, and urgent notices.
 
 ---
 
+### ⚠️ monitor-session alert: Coach PRODUCTIVITY_STALL (FM-2.6) (2026-03-23)
+**From**: Evaluator (heartbeat)
+`monitor-session.cjs --running` flagged session `s_1774296416490_72` (agent: coach) as `PRODUCTIVITY_STALL` with evidence: "20 tool calls with 0 file writes." Recommended action: warn with message: "[SYSTEM NOTICE] 20 turns used with no deliverables. Stop exploring and start writing. You have read enough — produce output now." (Exit code 1; 2 sessions checked, 1 unhealthy.)
+
 ### ⚠️ monitor-session alert: Tech-Lead PROTOCOL_VIOLATION (P114) (2026-03-22)
 **From**: Evaluator (heartbeat)
 `monitor-session.cjs --running` flagged session `s_1774210017532_507` (agent: tech-lead) as `PROTOCOL_VIOLATION` with evidence: "P114 Violation: Complex task attempted without Experience Replay (grep ERROR_LOG)." Recommended action: warn. (Exit code 1; 2 sessions checked, 1 unhealthy.)

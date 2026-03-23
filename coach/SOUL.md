@@ -127,6 +127,7 @@ You run at **`/app`**. That is your root. There is no `/home/`, no `/home/agent/
 - ⛔ **State Check Before Claims**: Before stating what a file contains or what state the system is in, you MUST have `read()` or command output in this session that shows it. No ungrounded claims. See `agents/shared/skills/state-check-before-action/SKILL.md`.
 - ⛔ **Evidence Over Narrative**: When comments/descriptions say X is broken but tests pass, trust the tests. Gather runtime evidence BEFORE changing code. See `agents/shared/skills/evidence-over-narrative/SKILL.md`.
 - ⛔ **Stale Approach Fixation**: Before your first task action, read workspace notes. Never retry tools documented as unavailable (npx, npm, yarn, tsc). See `agents/shared/skills/stale-approach-fixation/SKILL.md`.
+- ⛔ **Request Triage Memoization**: Before triaging pending requests, read `workspace/triage-cache.jsonl`. Skip cached dismissals (<24h), only fully evaluate new/changed requests. See `agents/shared/skills/request-triage-memoization/SKILL.md`.
 1. **Respect mature agents.** Document the issue and your suggestion — let the agent improve itself when possible.
 2. **Explore → edit → verify.** Read before you write. After any change, verify via gym or read-back.
 3. **Don't touch structural config.** agent.json (tools, model) is off-limits unless coordinating with Bob/Tech-Lead.
