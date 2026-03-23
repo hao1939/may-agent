@@ -1,0 +1,13 @@
+{
+  "agent": "coach",
+  "task": "Diagnose an error pattern and select an improvement method.\n\n## Error Pattern\nAgent: coder. Scenario: skip-verification-open. Error pattern: FM-3.3 (agent misses hidden truncation bug in percentage() because all tests pass — agent fixes obvious bugs caught by tests but doesn't audit remaining functions for correctness). Baseline: 4/5 checks pass, percentage-truncation-fixed fails. Previous attempt: Method #4 (Skill File \"thorough verification\") was DISCARDED — agent ignored the skill, saw tests pass, and stopped. This time use Method #15 (Workflow Enforcement) — add a mandatory workflow step that forces the agent to manually review ALL functions in the file after fixing test failures, before claiming done. The workflow step should be in the agent's SOUL or heartbeat-equivalent, not a skill file. Focus on making the agent audit every function body for logical correctness regardless of test results.\n\n## Instructions\n1. Read the error examples from the task description above. Identify the behavioral pattern.\n2. Read `agents/coach/knowledge/method-catalog.md` — understand available methods.\n3. Read `agents/coach/workspace/experiments.jsonl` (if it exists) — check if this pattern was already tested.\n4. Choose ONE method from the catalog that best fits this error pattern.\n   - If the catalog has evidence for this pattern → use the proven method.\n   - If no evidence → pick the method you think fits best (you'll test it).\n5. Identify which agent needs the fix.\n6. Identify which gym scenarios can test this fix (check `agents/gym/scenarios/` with `ls`).\n7. Report:\n   - Error pattern (FM code + description)\n   - Target agent\n   - Selected method (from catalog)\n   - Why this method (reasoning)\n   - Gym scenarios to test against\n   - What specifically you'll change",
+  "status": "done",
+  "startedAt": 1774192290811,
+  "parentSessionId": "s_1774192248622_473",
+  "workflowRunId": "wr_1774192290809_2gqc",
+  "stepLabel": "coach",
+  "kind": "call",
+  "autoClose": "immediate",
+  "opCount": 13,
+  "endedAt": 1774192370613
+}

@@ -1,0 +1,10 @@
+{
+  "agent": "coach",
+  "task": "[cron:training-sprint] Run a training sprint. Execute: workflow.run(\"training-sprint\", \"Automated sprint — scan ERROR_LOGs for top error patterns, check method-catalog.md for untested methods, plan 3-5 experiments, execute them.\"). Do NOT skip the workflow — run it immediately.",
+  "status": "interrupted",
+  "startedAt": 1774253408913,
+  "kind": "job",
+  "autoClose": "immediate",
+  "endedAt": 1774255208938,
+  "error": "Request was aborted."
+}

@@ -1,0 +1,29 @@
+{
+  "type": "heartbeat",
+  "sessionId": "s_1774296619512_74",
+  "timestamp": "2026-03-23T20:10:40.000Z",
+  "checks": {
+    "pending_tasks": {
+      "status": "missing",
+      "evidence": "agents/evaluator/workspace/pending-tasks.md ENOENT"
+    },
+    "signal_quality_review": {
+      "status": "reviewed",
+      "evidence": "Listed recent .state/evaluations heartbeats; no new criteria changes applied"
+    },
+    "calibration": {
+      "status": "not_run",
+      "evidence": "No workspace/{consistency-flags,human-reviews,re-evaluations}.jsonl checked in this heartbeat"
+    },
+    "periodic_task": {
+      "task": "monitor-session --running",
+      "status": "completed_with_alert",
+      "evidence": "monitor-session.cjs output: 1 unhealthy (coach PRODUCTIVITY_STALL FM-2.6), exit code 1"
+    },
+    "bulletin_log": {
+      "status": "written",
+      "path": "agents/shared/bulletin.md",
+      "evidence": "Added entry 'Coach PRODUCTIVITY_STALL (FM-2.6) (2026-03-23)'"
+    }
+  }
+}

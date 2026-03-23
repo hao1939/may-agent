@@ -1,0 +1,13 @@
+{
+  "agent": "coach",
+  "task": "Plan a training sprint — identify multiple experiments to run in batch.\n\n## Context\nAutomated sprint — scan ERROR_LOGs for top error patterns, check method-catalog.md for untested methods, plan 3-5 experiments, execute them.\n\n## Instructions\n1. Read `agents/coach/workspace/todo.md` — find all growth cycle candidates.\n2. Read `agents/*/ERROR_LOG.jsonl` — find error patterns worth fixing.\n3. Read `agents/coach/knowledge/method-catalog.md` — check for untested methods\n   AND check for \"hypothesis\" entries (invented methods) that need testing.\n4. Read `agents/coach/workspace/experiments.jsonl` — skip patterns already tested.\n   For patterns with 2+ failures: try a DIFFERENT method or an invented one.\n5. **CEILING-EFFECT GATE (MANDATORY):** For each candidate experiment, run baseline:\n   `test/gym/run-gym.sh <scenario> --agent <agent> --timeout 3`\n   If baseline PASSES all checks → REMOVE that experiment from the plan.\n   Only keep experiments where baseline FAILS at least one check.\n   If ALL candidates are removed by this gate, your output should be:\n   \"GATE: ALL SKIPPED — ceiling effect on all candidates. Need harder scenarios.\"\n   This gate prevents wasting ~4 LLM sessions per experiment on zero-improvement cycles.\n6. Select 3-5 experiments. For each, specify:\n   - Target agent\n   - Error pattern (FM code) or method to learn\n   - Method to apply (can be a hypothesis from the catalog)\n   - Gym scenario(s) to test against (check `ls agents/gym/scenarios/`)\n   - Fork name (e.g., coder-sprint-1, optimizer-sprint-2)\n7. Write the plan to `agents/coach/workspace/sprint-plan.md`\n8. Report the full plan.",
+  "status": "done",
+  "startedAt": 1774253412433,
+  "parentSessionId": "s_1774253408912_1",
+  "workflowRunId": "wr_1774253412430_hx8k",
+  "stepLabel": "coach",
+  "kind": "call",
+  "autoClose": "immediate",
+  "opCount": 58,
+  "endedAt": 1774254390922
+}

@@ -1,0 +1,11 @@
+{
+  "agent": "bob",
+  "task": "[cron:analyze-failures] Analyze recent evaluation data. Run: node -e \"const{getDb}=require('./src/lib/requests.js');const db=getDb('.state');const rows=db.prepare('SELECT sessionId,agent,verdict,score,summary,createdAt FROM evaluations ORDER BY createdAt DESC LIMIT 10').all();console.log(JSON.stringify(rows,null,2));\" to get the last 10 evaluations from SQLite. Identify the top recurring pattern. Write findings to agents/bob/workspace/analysis.md. Compare against previous analysis — did targeted fixes help? If same issue persists, recommend a different approach.",
+  "status": "interrupted",
+  "startedAt": 1774253513776,
+  "kind": "job",
+  "autoClose": "immediate",
+  "opCount": 24,
+  "endedAt": 1774254141309,
+  "error": "Request was aborted."
+}

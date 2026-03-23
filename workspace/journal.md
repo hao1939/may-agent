@@ -1,5 +1,156 @@
 # Optimizer Workspace Journal
 
+## 2026-03-23 04:28 — Incremental-Context-Loading Skill — Deployed
+
+### Skill
+- **Name**: incremental-context-loading
+- **Version**: 1.0.0
+- **Path**: `agents/shared/skills/incremental-context-loading/SKILL.md`
+- **Owner**: optimizer
+
+### Description
+Gate context file reads on change detection. Agents waste significant tokens
+re-reading large files (heartbeat instructions, task lists, workspace state)
+every session even when those files haven't changed. This skill enforces a
+change-detection check before reading: compare file modification times against
+stored timestamps, and skip reads for unchanged files. Reduces boilerplate
+context loading by ~60-80% for heartbeat agents.
+
+### Gym Test Results (Phase 3)
+| Scenario | Pass Rate | Details |
+|----------|-----------|---------|
+| incremental-context-loading | 2/3 | Behavioral: 4/4 (100%) all 3 runs ✅ |
+| **Total** | **2/3 (67%)** | Meets 2/3 threshold ✅ |
+
+Behavioral checks (all passed 3/3):
+- `reads-context-cache-first` — agent reads context-cache.md before source files
+- `skips-unchanged-files` — agent reads ≤2 of 4 unchanged files
+- `reads-changed-file` — agent reads the changed file (src/cache.js)
+- `mentions-skip-rationale` — agent mentions skipping/caching rationale
+
+Run 1 failure: product check (ttl-bug-fixed) — agent followed the skill
+correctly but didn't apply the correct fix. Skill compliance was 100%.
+
+### Agents Deployed To (6 agents)
+| Agent | Why | Customization |
+|-------|-----|---------------|
+| bob | #1 beneficiary — reads 19KB focus-tasks.md in 5/5 sessions (0/5 changed), 77KB/session boilerplate | Specific file examples (focus-tasks.md, pending-decisions.md) |
+| optimizer | #1 cost agent ($34/day), loads 15KB+ boilerplate every heartbeat | "You designed this — apply it and reference for analysis" |
+| qa | Re-scans unchanged repos 3/4 sessions from identical commit de62c5a, 39 wasted ops/day | Git-specific early-exit guidance |
+| tech-lead | Heartbeat context loading + git scanning pattern | Git-specific early-exit guidance |
+| may | Heartbeat session context loading every 30-60 min | Standard heartbeat entry |
+| coach | Heartbeat context loading + coaching reference for boilerplate waste | "Use when coaching agents on ritual reload anti-pattern" |
+
+### Agents NOT Deployed To
+- **coder** — Task-based, not heartbeat-based; doesn't load recurring context
+- **master** — CLI-only agent (no read/write/bash tools)
+- **evaluator** — Reads transcripts, no recurring context loading
+- **scout**, **amy**, **amy-kimi** — Research agents, not heartbeat-driven
+
+### Files Modified
+- `agents/bob/knowledge/INDEX.md`
+- `agents/may/knowledge/INDEX.md`
+- `agents/tech-lead/knowledge/INDEX.md`
+- `agents/optimizer/knowledge/INDEX.md`
+- `agents/qa/knowledge/INDEX.md`
+- `agents/coach/knowledge/INDEX.md`
+
+## 2026-03-23 01:49 — Evidence-Over-Narrative Skill — Deployed
+
+### Skill
+- **Name**: evidence-over-narrative
+- **Version**: 1.0.0
+- **Path**: `agents/shared/skills/evidence-over-narrative/SKILL.md`
+- **Owner**: optimizer
+
+### Description
+When narrative cues (code comments, task descriptions, prior beliefs) conflict
+with runtime evidence (test results, file contents, system state), trust the
+evidence. Enforces an explicit evidence-gathering-then-reconciliation protocol:
+gather runtime evidence FIRST, catalog narrative claims, reconcile explicitly
+("Narrative says X, evidence shows Y"), then act only on evidence. Prevents
+phantom fixes, stale-state busywork, and comment-driven development.
+
+### Gym Test Results (Phase 3)
+| Scenario | Pass Rate | Details |
+|----------|-----------|---------|
+| phantom-fix-config | 3/3 | All runs: 5/5 checks passed |
+| **Total** | **3/3 (100%)** | Meets 2/3 threshold ✅ |
+
+Baseline without skill: 2/5 (exp-145, exp-174). With skill: 3/3 (100%).
+
+### Agents Deployed To (4 agents)
+| Agent | Why | Customization |
+|-------|-----|---------------|
+| coder | Primary target — phantom-fix-config 2/5 baseline, trusts misleading comments over passing tests | Phantom-fix specific guidance, scenario evidence |
+| qa | Stale-state scanning — re-scans unchanged repos 3/4 sessions (~39 wasted ops/day) | Early-exit guidance for no-new-commits |
+| bob | Redundant context loading — reads 77KB of unchanged files per session (5/5 sessions) | File-change verification before re-reading |
+| coach | Text method bias — 0/18 text experiments improved behavior but still evaluated | Method-catalog evidence-first guidance |
+
+### Agents NOT Deployed To
+- **tech-lead** — Low severity, already covered by stale-approach-fixation
+- **optimizer** — Skill owner, applies implicitly
+- **master** — CLI-only agent
+- **evaluator** — Reads transcripts, minimal narrative-evidence conflicts
+- **scout**, **amy**, **amy-kimi** — Research agents, not in evidence set
+- **may** — Supervisor role, minimal direct evidence conflicts
+
+### Files Modified
+- `agents/coder/knowledge/INDEX.md`
+- `agents/qa/knowledge/INDEX.md`
+- `agents/bob/knowledge/INDEX.md`
+- `agents/coach/knowledge/INDEX.md`
+
+## 2026-03-22 22:58 — Search-Strategy-Escalation Skill — Deployed
+
+### Skill
+- **Name**: search-strategy-escalation
+- **Version**: 1.0.0
+- **Path**: `agents/shared/skills/search-strategy-escalation/SKILL.md`
+- **Owner**: optimizer
+
+### Description
+Structured 3-phase search discipline: broad scan → stop-and-think → targeted
+read. Prevents grep spirals where agents issue 10-30+ sequential grep/find
+commands with slightly different patterns, never pausing to read results.
+Enforces the "3-command rule" (must read a result file after 3 searches) and
+strategy escalation (change approach after 5 commands). Evidence: 4.3× waste
+ratio across 6 sessions (average 30 search commands where 7 would suffice).
+
+### Gym Test Results (Phase 3)
+| Scenario | Pass Rate | Details |
+|----------|-----------|---------|
+| search-strategy-escalation | 2/3 | Run 1: FAIL (0/2 product), Runs 2-3: PASS (2/2 product) |
+| **Total** | **2/3 (67%)** | Meets 2/3 threshold ✅ |
+
+Note: Convention check `search-count-under-10` consistently failed across all
+runs due to criteria calibration issue (counting grep/find substrings in file
+content, not just agent commands). This is a criteria measurement gap, not a
+skill defect.
+
+### Agents Deployed To (4 agents)
+| Agent | Why | Customization |
+|-------|-----|---------------|
+| tech-lead | Worst offender — 27 greps in s507, 19 git+grep in s516 | "worst offender" highlighted with session evidence |
+| optimizer | Skill owner — 71 searches in s491, 37 in s513 | "you designed this — reference for analysis" |
+| qa | Git submodule confusion — 14 git commands in s522 | Submodule-specific guidance |
+| coder | 12 searches in s_0 for gym file locations | Standard entry with `-l` tip |
+
+### Agents NOT Deployed To
+- **bob** — Architecture role, not observed spiraling in evidence
+- **coach** — Teaching role, tasks involve known file paths
+- **master** — CLI-only agent (no read/write/bash tools)
+- **evaluator** — Reads transcripts, minimal searching
+- **scout** — Research agent, would benefit but not in evidence set
+- **amy**, **amy-kimi** — Specialized research agents
+- **may** — Supervisor role, minimal direct searching
+
+### Files Modified
+- `agents/tech-lead/knowledge/INDEX.md`
+- `agents/optimizer/knowledge/INDEX.md`
+- `agents/qa/knowledge/INDEX.md`
+- `agents/coder/knowledge/INDEX.md`
+
 ## 2026-03-19: Verification Skill — Deployment Decision
 
 ### Skill

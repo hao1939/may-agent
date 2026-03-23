@@ -86,6 +86,9 @@ for (let li = 0; li < lines.length; li++) {
   // 4b. Remove catch (err: any) → catch (err)
   line = line.replace(/catch\s*\(\s*(\w+)\s*:\s*\w+\s*\)/g, "catch ($1)");
 
+  // 4b2. Remove generic type params from constructor calls: new Set<string>() → new Set()
+  line = line.replace(/new\s+([A-Za-z]\w*)<[^>]*>\s*\(/g, "new $1(");
+
   // 4c. Remove const/let/var type annotations
   //     const x: Type =   →   const x =
   //     let x: Type;      →   let x;
@@ -95,7 +98,8 @@ for (let li = 0; li < lines.length; li++) {
   // 4d. Remove function return type annotations
   //     function name(...): ReturnType {  →  function name(...) {
   //     ): ReturnType {  → ) {   (also handles arrow-less function ends)
-  line = line.replace(/\)\s*:\s*(?:[A-Za-z]\w*(?:\[\])?(?:\s*\|\s*[A-Za-z]\w*(?:\[\])?)*)\s*\{/g, ") {");
+  //     Handles generics like Set<string>, Map<string, number>, Promise<void>, etc.
+  line = line.replace(/\)\s*:\s*(?:[A-Za-z]\w*(?:<[^>]*>)?(?:\[\])?(?:\s*\|\s*[A-Za-z]\w*(?:<[^>]*>)?(?:\[\])?)*)\s*\{/g, ") {");
 
   // 4e. Remove parameter type annotations inside function signatures
   //     We look for patterns like (name: Type, ...) or (name: Type)
@@ -143,9 +147,10 @@ function stripParamTypes(line) {
   if (!inParens && depth === 0) {
     // Process param-like patterns inside parens
     // Match:  word: Type  where Type is followed by , or ) or =
-    result = result.replace(/(\(\s*\w+|\,\s*\w+)\s*:\s*(?:Record<[^>]+>|Array<[^>]+>|[A-Za-z]\w*(?:\[\])?(?:\s*\|\s*[A-Za-z]\w*(?:\[\])?)*)\s*([,\)=])/g, "$1 $2");
+    // Handles generics like Set<string>, Map<string, number>, Array<{...}>, etc.
+    result = result.replace(/(\(\s*\w+|\,\s*\w+)\s*:\s*(?:Record<[^>]+>|Array<[^>]+>|Set<[^>]+>|Map<[^>]+>|Promise<[^>]+>|[A-Za-z]\w*(?:<[^>]*>)?(?:\[\])?(?:\s*\|\s*[A-Za-z]\w*(?:<[^>]*>)?(?:\[\])?)*)\s*([,\)=])/g, "$1 $2");
     // Second pass for remaining (after first pass changes positions)
-    result = result.replace(/(\(\s*\w+|\,\s*\w+)\s*:\s*(?:[A-Za-z]\w*(?:\[\])?(?:\s*\|\s*[A-Za-z]\w*(?:\[\])?)*)\s*([,\)=])/g, "$1 $2");
+    result = result.replace(/(\(\s*\w+|\,\s*\w+)\s*:\s*(?:[A-Za-z]\w*(?:<[^>]*>)?(?:\[\])?(?:\s*\|\s*[A-Za-z]\w*(?:<[^>]*>)?(?:\[\])?)*)\s*([,\)=])/g, "$1 $2");
   }
   
   return result;

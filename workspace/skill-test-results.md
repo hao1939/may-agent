@@ -1,61 +1,43 @@
-# Skill Test Results: stale-approach-fixation
+# Skill Test Results: incremental-context-loading
 
-## Scenario Used
-`agents/gym/scenarios/stale-approach-fixation/`
-- Agent is asked to generate a test coverage report
-- WORKSPACE_NOTES.md explicitly warns: npx/npm/yarn unavailable, lists 4 failed approaches
-- Success requires: reading notes first, avoiding dead tools, using manual approach, producing correct output
+## TEST PASSED
 
-## Test Runs
+**Skill**: `incremental-context-loading` (agents/shared/skills/incremental-context-loading/SKILL.md)
+**Scenario**: `incremental-context-loading` (agents/gym/scenarios/incremental-context-loading/)
+**Agent**: coder
+**Date**: 2026-03-23
 
-### Run 1 (duration: 32.9s)
-- **Result**: 6/7 checks passed
-- ✅ summary-exists
-- ✅ summary-complete (file counts + coverage percentage)
-- ❌ identifies-gaps (summary didn't mention uncovered files by name)
-- ✅ read-workspace-notes (agent read WORKSPACE_NOTES.md)
-- ✅ no-dead-tool-attempts (never tried npx/npm/yarn)
-- ✅ manual-approach (used find/ls to enumerate files)
-- ✅ low-waste (≤12 total tool calls)
+## Results
 
-### Run 2 (duration: 34.9s)
-- **Result**: 6/7 checks passed
-- Same pattern as Run 1 — only identifies-gaps failed
+| Run | Result | Product (2) | Behavior (4) | Efficiency (1) | Duration |
+|-----|--------|-------------|-------------|----------------|----------|
+| 1   | FAIL   | 1/2         | 4/4         | 1/1            | 69.4s    |
+| 2   | PASS   | 2/2         | 4/4         | 1/1            | 64.7s    |
+| 3   | PASS   | 2/2         | 4/4         | 1/1            | 52.0s    |
 
-### Run 3 (duration: 20.0s)
-- **Result**: 6/7 checks passed
-- Same pattern as Run 1 — only identifies-gaps failed
+**Pass rate: 2/3** (meets ≥2/3 threshold)
 
 ## Analysis
 
-### Behavioral Checks: 4/4 PASSED (all 3 runs)
-The four checks that directly test the stale-approach-fixation skill all passed
-consistently across all 3 runs:
+### What the scenario tests
+The agent is given a "resumed session" with a context-cache.md file listing 5 previously-read files with timestamps and summaries. Only 1 file (src/cache.js) has changed and contains a TTL bug to fix. The 4 other files (~32KB total) are unchanged and should be skipped.
 
-1. **read-workspace-notes** — Agent always read WORKSPACE_NOTES.md as an early action
-2. **no-dead-tool-attempts** — Agent never tried npx, npm, or yarn (all warned-against)
-3. **manual-approach** — Agent used find/ls instead of coverage tools
-4. **low-waste** — Agent completed efficiently with ≤12 tool calls
+### Behavioral checks (consistently passed)
+All 3 runs showed correct behavioral patterns:
+- **reads-context-cache-first**: Agent read workspace/context-cache.md before source files ✅
+- **skips-unchanged-files**: Agent read ≤2 of 4 unchanged files ✅
+- **reads-changed-file**: Agent read src/cache.js (the changed file) ✅
+- **mentions-skip-rationale**: Agent mentioned skipping/caching rationale ✅
 
-### Product Check: 1/3 failed (identifies-gaps)
-The agent's coverage summary didn't name the specific uncovered files (logger,
-router, config). This is a task-completeness issue independent of the skill being
-tested — the agent followed the skill pattern correctly but produced slightly
-incomplete output content.
+### Run 1 failure analysis
+The `ttl-bug-fixed` product check failed — the agent identified the bug area but didn't apply the correct fix (the `- 1000` remained in some form). The behavioral checks all passed, meaning the agent followed the incremental-context-loading pattern correctly but had an implementation issue with the actual fix. This is a product quality issue, not a skill compliance issue.
 
-### Verdict
-**TEST PASSED** — The skill's core behavior pattern works correctly. All behavioral
-and efficiency checks pass 3/3 times. The single failing check (identifies-gaps)
-tests product completeness, not the stale-approach-fixation pattern. The agent
-consistently:
-- Reads context files first (Step 1 of skill)
-- Respects documented constraints (Step 3 of skill)  
-- Uses the recommended approach (Step 3 of skill)
-- Completes efficiently without wasting turns on dead tools
+### Efficiency
+All runs completed within 20 ops, confirming the skill's efficiency benefit. The agent consistently avoided re-reading 32KB+ of unchanged documentation and source files.
 
-### Score Summary
-| Run | Total Checks | Passed | Failed | Behavioral Pass Rate |
-|-----|-------------|--------|--------|---------------------|
-| 1   | 7           | 6      | 1      | 4/4 (100%)         |
-| 2   | 7           | 6      | 1      | 4/4 (100%)         |
-| 3   | 7           | 6      | 1      | 4/4 (100%)         |
+## Scenario Details
+- **Environment**: 5 source files (7.5KB + 5.8KB + 10KB + 8.8KB + 5.5KB = ~38KB total)
+- **Changed files**: 1 (src/cache.js — TTL off-by-one bug)
+- **Unchanged files**: 4 (docs/architecture.md, docs/api-reference.md, src/server.js, src/database.js)
+- **Context cache**: workspace/context-cache.md with timestamps and summaries from "previous session"
+- **Test file**: test/cache-test.js — 4 tests including TTL boundary test that detects the bug

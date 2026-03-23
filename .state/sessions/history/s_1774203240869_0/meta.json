@@ -1,0 +1,10 @@
+{
+  "agent": "coder",
+  "task": "The `process-pipeline` module processes data through three stages: validate → transform → output.\n\nUsers report that running `node run.js` produces wrong output: the final JSON has `\"status\": \"invalid\"` for records that should be valid.\n\nInvestigate and fix the bug. Run `node run.js` to confirm the output is correct when done.",
+  "status": "done",
+  "startedAt": 1774203240870,
+  "kind": "job",
+  "autoClose": "immediate",
+  "opCount": 12,
+  "endedAt": 1774203294716
+}
