@@ -1,132 +1,148 @@
 # Event System Redesign
 
-## Current state
+## Starting point: what actually happens
 
-### Events
+Sessions run. Every session produces the same events:
 
-9 event types, one broadcast bus, one channel tag (`chat` | `activity`).
-
-| Type | What | Produced by | Volume |
-|---|---|---|---|
-| `text` | Streaming text delta | Agent LLM response | High (every token) |
-| `tool_call` | Agent invokes a tool | Agent turn | ~10/session |
-| `tool_result` | Tool output | Agent turn | ~10/session |
-| `prompt` | Agent is idle | Agent turn end | 1/turn |
-| `info` | Everything else | 30+ call sites | Very high |
-| `session_start` | New session | Manager | ~300/day |
-| `session_end` | Session done | Manager | ~300/day |
-| `workflow` | Workflow lifecycle | Workflow engine | Low |
-| `eval` | Evaluation result | Evaluator | Low |
-
-### The `info` dumping ground
-
-`info` is a catch-all. These are all `{ type: "info", message: string }`:
-
-- `[coder] turn done (3s, 1 tool calls)` — background agent progress
-- `[cron] heartbeat-scout fired (JS handler)` — cron activity
-- `Loaded 13 agent(s): ...` — startup
-- `[fatal] Uncaught exception: ...` — crash
-- `[status] 3 active session(s): ...` — command response
-- `[eval] Evaluated 5 session(s)...` — evaluator
-- `[recovery] Requeued session...` — infra recovery
-- `[agents-auto-commit] pushed to origin` — handler output
-- `Generated system context: 70 sessions...` — heartbeat-context handler
-
-They're indistinguishable without string parsing. A UI can't filter "show me errors but not turn summaries" because they're the same type.
-
-### The `channel` overload
-
-`channel: "chat"` means "show this to the human." It's used for:
-1. Interface agent's LLM response to the human's message
-2. Heartbeat briefs from ANY agent (`📋 *tech-lead* heartbeat brief:...`)
-3. Handler alerts via `ctx.notify()`
-
-A chat UI that filters `channel === "chat"` gets all three. (1) is the conversation. (2) and (3) are notifications — useful but not part of the conversation.
-
-## What consumers actually need
-
-| Consumer | Needs | Doesn't need |
-|---|---|---|
-| **Chat UI** (web, telegram) | Conversation: text/tool_call/tool_result/prompt from MY request. Notifications: briefs, alerts. | Background turns, cron fires, startup, all other info. |
-| **Console** (terminal) | Everything, but conversation bright and background dim. | Nothing — operator sees all. |
-| **Socket** (debug) | Everything, raw. | Nothing. |
-| **Dashboard** (web) | Nothing from the event stream. Reads SQLite. | All events. |
-
-## Proposed: scope events, don't channel-tag them
-
-The problem isn't the event types — it's that there's no way to know **which events belong to the human's request** vs background activity. The `channel` tag tried to solve this, but it's too coarse (chat vs activity) and too manually assigned (each emit site decides).
-
-### Option A: Add `sessionId` to every event
-
-Every event already has `agent`. If we add `sessionId`, a UI can filter:
-- Show events where `sessionId === mySession` (conversation)
-- Show events where `sessionId` is a child of my session (delegation progress)
-- Ignore everything else
-
-The interface agent's session is known (`chatSession.getSessionId()`). A UI subscribes to that session's events + its descendants.
-
-**Pros**: Clean, composable, no manual channel tagging. Works for any session, not just the interface agent.
-**Cons**: `info` events don't belong to a session (cron fires, startup, signals). Need a "system" category for those.
-
-### Option B: Replace `channel` with `audience`
-
-Instead of two channels, use explicit audience tags:
-
-```typescript
-type EventAudience = "conversation" | "notification" | "system";
+```
+session_start → [turn_start → text* → tool_call* → tool_result* → turn_end]* → session_end
 ```
 
-- `conversation`: Events from the session that's handling the human's current message. Text, tool calls, results, prompt.
-- `notification`: Pushed alerts — heartbeat briefs, handler alerts, escalations. Interesting to the human but not part of the conversation.
-- `system`: Everything else. Turn summaries, cron fires, startup, errors, status responses.
+There's no inherent difference between a session started by a human and one started by cron. The events are the same. The session doesn't know who's watching.
 
-**Pros**: Simple, maps to what UIs actually need. Three categories instead of two.
-**Cons**: Still manually tagged at each emit site. But fewer emit sites to get wrong.
+## Current problem
 
-### Recommendation: Option B
-
-Option A is more principled but requires threading sessionId through every event emission point, including `info` events that aren't session-scoped. Option B is pragmatic — rename `channel` to `audience`, add one value, update the emit sites.
-
-| Audience | Events | Who sees |
-|---|---|---|
-| `conversation` | text, tool_call, tool_result, prompt from interface agent session | Chat UIs (web, telegram), console (bright) |
-| `notification` | Heartbeat briefs, handler alerts, escalations | Chat UIs (separate section), console (bright), telegram (push) |
-| `system` | Turn summaries, cron fires, startup, errors, status, eval | Console (dim), socket (raw), chat UIs (hidden or collapsible) |
-
-### Migration
-
-1. Add `audience` field to RunnerEvent (optional, defaults to `"system"` for backward compat)
-2. Update emit sites:
-   - Interface agent text/tool_call/tool_result/prompt → `audience: "conversation"`
-   - Cron notify (heartbeat briefs) → `audience: "notification"`
-   - Handler ctx.notify → `audience: "notification"`
-   - Escalation alerts → `audience: "notification"`
-   - Everything else → no audience (defaults to `"system"`)
-3. Keep `channel` as a deprecated alias during migration
-4. Update UIs:
-   - Telegram: show `conversation` (accumulate text) + `notification` (push immediately)
-   - Web chat: show `conversation` (streaming) + `notification` (toast/badge)
-   - Console: `conversation` bright, `notification` bright with prefix, `system` dim
-   - Socket: all events, no change
-
-### Break up `info`
-
-Long term, the `info` type should be split into structured types:
+`may.ts` has this in `attachAgentEvents()`:
 
 ```typescript
-| { type: "agent_turn"; agent: string; sessionId: string; toolCalls: number; durationMs: number }
-| { type: "cron_fire"; name: string; handler: string }
-| { type: "system_log"; level: "info" | "warn" | "error"; message: string }
+if (label === interfaceAgent) {
+  // Full streaming: text, tool_call, tool_result, prompt → channel: "chat"
+} else {
+  // One-line summary: "[coder] turn done (3s, 1 tool calls)" → info event
+}
 ```
 
-But this is a larger refactor. For now, `info` + `audience: "system"` is good enough. The structured types can come later when we need programmatic consumers (monitoring, metrics).
+This bakes two bad assumptions into the event layer:
+1. Only the interface agent's events are worth streaming
+2. The UI cares about agents, not sessions
 
-## Summary
+These are wrong. A human might want to watch a delegation chain (may → tech-lead → coder). An operator might want to stream a specific cron session to debug it. The "interface agent" concept belongs to the UI, not the event system.
 
-| Today | Proposed |
-|---|---|
-| `channel: "chat" \| "activity"` | `audience: "conversation" \| "notification" \| "system"` |
-| Channel manually assigned, often wrong | Audience semantically clear |
-| `info` is 30+ different things | `info` stays but with `audience` scoping |
-| UIs each filter differently | UIs filter by audience (shared logic) |
-| Heartbeat briefs in conversation | Heartbeat briefs in notification |
+## Proposed design
+
+### Every session event carries `sessionId`
+
+```typescript
+export type SessionEvent =
+  | { type: "session_start"; sessionId: string; agent: string; task: string; parentSessionId?: string }
+  | { type: "text"; sessionId: string; agent: string; text: string }
+  | { type: "tool_call"; sessionId: string; agent: string; tool: string; args: unknown }
+  | { type: "tool_result"; sessionId: string; agent: string; tool: string; preview: string; isError: boolean }
+  | { type: "turn_end"; sessionId: string; agent: string; toolCalls: number; durationMs: number }
+  | { type: "session_end"; sessionId: string; agent: string; status: string; error?: string; duration?: string; outcome?: string }
+```
+
+Plus system-level events (not session-scoped):
+
+```typescript
+export type SystemEvent =
+  | { type: "cron_fire"; name: string; kind: string }
+  | { type: "notification"; agent: string; text: string }  // heartbeat briefs, escalations
+  | { type: "log"; level: "info" | "warn" | "error"; message: string }
+```
+
+```typescript
+export type RunnerEvent = SessionEvent | SystemEvent;
+```
+
+No `channel`. No `audience`. Just: every event says what it is and which session it belongs to (if any).
+
+### UIs subscribe by interest, not by channel
+
+```typescript
+// Chat UI (web, telegram): subscribe to a session tree
+function isRelevant(event: RunnerEvent, rootSessionId: string, childSessionIds: Set<string>): boolean {
+  if ("sessionId" in event) {
+    return event.sessionId === rootSessionId || childSessionIds.has(event.sessionId);
+  }
+  // Notifications are always relevant
+  if (event.type === "notification") return true;
+  return false;
+}
+
+// Console: show everything, dim non-primary sessions
+function isDimmed(event: RunnerEvent, primarySessionId: string): boolean {
+  if ("sessionId" in event) return event.sessionId !== primarySessionId;
+  return event.type === "log";
+}
+
+// Socket: no filter, forward everything
+```
+
+### attachAgentEvents becomes uniform
+
+```typescript
+function attachAgentEvents(agentName: string, sessionId: string): void {
+  manager.subscribe(sessionId, (event) => {
+    switch (event.type) {
+      case "message_update":
+        if (event.assistantMessageEvent.type === "text_delta") {
+          bus.emit({ type: "text", sessionId, agent: agentName, text: event.assistantMessageEvent.delta });
+        }
+        break;
+      case "tool_execution_start":
+        bus.emit({ type: "tool_call", sessionId, agent: agentName, tool: event.toolName, args: event.args });
+        break;
+      case "tool_execution_end":
+        bus.emit({ type: "tool_result", sessionId, agent: agentName, tool: event.toolName, preview: extractPreview(event), isError: !!event.isError });
+        break;
+      case "turn_end":
+        bus.emit({ type: "turn_end", sessionId, agent: agentName, toolCalls: countToolCalls(event), durationMs: elapsed });
+        break;
+    }
+  });
+}
+```
+
+Same handler for every session. No `if (isChat)`. The UI decides what to show, not the event emitter.
+
+### How chat UIs work
+
+When the human sends a message:
+1. ChatSession creates/wakes a session (e.g. `s_123`)
+2. The UI remembers `s_123` as the "active session"
+3. Events arrive on the bus with `sessionId: "s_123"` → UI shows them
+4. If the agent delegates (creates child `s_456` with `parentSessionId: s_123`), the UI sees `session_start` with `parentSessionId` and adds `s_456` to its watch set
+5. Events from `s_456` (agent: tech-lead) also show in the UI, indented/prefixed
+
+The UI builds the watch set dynamically from `session_start` events. No static config.
+
+### How telegram works
+
+Same as above, but rendering is different:
+- `text` events → accumulate, flush on `turn_end` or `session_end`
+- `tool_call` → show as one-liner: `🔧 read(agents/bob/workspace/...)`
+- `notification` → push immediately as a separate message
+- Child sessions → show as `📎 tech-lead: <task>` then `✅ tech-lead: done (45s)`
+
+### How console works
+
+Same event stream, different rendering:
+- Active session events → bright
+- Child session events → normal with indent
+- Other sessions → dim one-line turn summary
+- System events (cron, log) → dim
+
+### Notifications
+
+Heartbeat briefs, escalations, handler alerts → `{ type: "notification", agent, text }`. Not session-scoped. All UIs show them (telegram pushes, web shows as toast, console prints bright).
+
+### Migration path
+
+1. Add `sessionId` to all session events (keep `channel` as deprecated alias)
+2. Unify `attachAgentEvents` — same handler for all sessions
+3. Update UIs to filter by sessionId instead of channel
+4. Remove `channel` field
+5. Split `info` into `notification`, `cron_fire`, `log` over time
+
+Steps 1-3 are the meaningful change. Steps 4-5 are cleanup.
