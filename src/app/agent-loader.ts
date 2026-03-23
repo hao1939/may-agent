@@ -658,6 +658,9 @@ export async function reloadAgents(opts: AgentLoaderOptions): Promise<{ added: s
 
 import type { HandlerContext, HandlerModule } from "../lib/handler-context.js";
 import type { CronEntry } from "../lib/cron-tool.js";
+import { getDb, trackRequest } from "../lib/requests.js";
+import { loadAllSessionMetas } from "../lib/persistence.js";
+import { evaluateTask, writeSkippedEvaluations, writeHeuristicEvaluations } from "../lib/evaluator.js";
 
 /**
  * Auto-discover and register JS handlers for cron entries.
@@ -698,6 +701,13 @@ export async function loadAgentHandlers(
         bus.emit({ type: "prompt", message: agentName, channel: "chat" });
       },
       triggerNow: (entryName: string) => cron.triggerNow(entryName),
+      // Runtime APIs — provided by the binary so handlers don't import src/lib/
+      getDb: () => getDb(persistDir),
+      trackRequest: (reqOpts) => trackRequest(persistDir, reqOpts),
+      loadAllSessionMetas: () => loadAllSessionMetas(persistDir),
+      evaluateTask: (evalOpts) => evaluateTask(evalOpts),
+      writeSkippedEvaluations: (skipAgents) => writeSkippedEvaluations(persistDir, skipAgents),
+      writeHeuristicEvaluations: () => writeHeuristicEvaluations(persistDir),
     };
 
     // Group entries by handler file (multiple entries can share one handler file)
