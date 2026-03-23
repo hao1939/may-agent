@@ -112,7 +112,7 @@ export function runActiveNudge(ctx: HandlerContext): ActiveNudgeResult {
 
       // Now cancel the session
       try {
-        ctx.manager.cancel(intervention.sessionId);
+        ctx.manager.cancel(intervention.sessionId, intervention.message);
         result.cancelled.push({
           sessionId: intervention.sessionId,
           agent: intervention.agent,

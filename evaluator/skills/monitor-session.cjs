@@ -1302,7 +1302,7 @@ function analyzeSession(sessionId) {
         totalToolCalls: toolCalls.length,
         recentErrors: recentErrors.length,
       },
-      recommendedAction: "interrupt",
+      recommendedAction: "cancel",
       intervention: {
         type: "loop",
         message:
@@ -1477,7 +1477,7 @@ function analyzeSession(sessionId) {
         totalClaimed: ghostDeliverable.totalClaimed,
         totalToolCalls: toolCalls.length,
       },
-      recommendedAction: "interrupt",
+      recommendedAction: "cancel",
       intervention: {
         type: "ghost_deliverable",
         message:
@@ -1489,7 +1489,7 @@ function analyzeSession(sessionId) {
   }
 
   // 11. Productivity Stall detection (FM-2.6) — many reads, zero writes
-  const productivityStall = detectProductivityStall(toolCalls, entries);
+  const productivityStall = detectProductivityStall(toolCalls, entries, agentName);
   if (productivityStall.detected) {
     return attachRecall({
       sessionId,
@@ -1662,14 +1662,19 @@ function detectGhostDeliverable(entries) {
 /**
  * Detect productivity stall: many tool calls but zero file writes.
  *
- * Signal: 10+ tool calls in the analysis window, but none are write/edit
- * operations that actually create or modify files. The agent is spinning
- * its wheels reading/exploring without producing output.
+ * Signal: 20+ tool calls in the analysis window (30 for read-heavy agents
+ * like tech-lead, scout, evaluator), but none are write/edit operations
+ * that actually create or modify files. The agent is spinning its wheels
+ * reading/exploring without producing output.
  *
  * Returns { detected, toolCallCount, evidence } or { detected: false }.
  */
-function detectProductivityStall(toolCalls, entries) {
-  const MIN_CALLS_THRESHOLD = 10;
+function detectProductivityStall(toolCalls, entries, agentName) {
+  // Agent-aware thresholds (per brief v2): read-heavy agents get more room
+  const READ_HEAVY_AGENTS = new Set(["tech-lead", "scout", "evaluator", "bob", "amy-kimi"]);
+  
+  const agent = (agentName || "").toLowerCase();
+  const MIN_CALLS_THRESHOLD = READ_HEAVY_AGENTS.has(agent) ? 30 : 20;
 
   if (toolCalls.length < MIN_CALLS_THRESHOLD) {
     return { detected: false };

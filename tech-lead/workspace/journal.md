@@ -5,6 +5,17 @@
 
 No actionable work available without source code access. System running autonomously and well.
 
+## 2026-03-23T18:06Z — Active Nudge bug fix (req:1d18c2cb)
+
+Bob's brief asked for Loop/Stall/Ghost heuristics in `monitor-session.cjs` wired to `active-nudge.ts`. All 3 detectors already existed — but found a **critical action-mismatch bug**: monitor-session returned `recommendedAction: "interrupt"` for loop and ghost_deliverable detections, while active-nudge.ts checked `action === "cancel"`. They never matched, so **no cancellations ever fired**.
+
+**Fixes applied:**
+1. `monitor-session.cjs`: Changed `recommendedAction` from `"interrupt"` to `"cancel"` for loop (line 1305) and ghost_deliverable (line 1480) detections
+2. `monitor-session.cjs`: Bumped productivity stall threshold from 10→20 ops (30 for read-heavy agents: tech-lead, scout, evaluator, bob, amy-kimi). Function now accepts `agentName` parameter
+3. `active-nudge.ts`: Pass `intervention.message` to `ctx.manager.cancel()` so cancelled sessions get the reason why
+
+Verified: `node -c` syntax OK, smoke test confirms all 3 threshold tiers work (coder@25=STALL, tech-lead@25=OK, tech-lead@31=STALL).
+
 ## 2026-03-23T11:10Z — Structured Delegation (req:31b4ab53, commit 099f932)
 
 Implemented Bob's structured delegation directive. Added `context_files`, `success_criteria`, `priority` params to both `manager-agents-tool.ts` (orchestrator agents) and `send-tool.ts` (leaf agents). DB already had `context`/`expectations`/`artifact` columns — this just wires tool schemas to use them. Structured fields are also formatted into the message body so receivers see them in heartbeat injection. TSC clean, zero errors.
