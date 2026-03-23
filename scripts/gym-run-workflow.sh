@@ -15,6 +15,12 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+# Ensure bun is discoverable even when not in system PATH (e.g., container deploys)
+for _bun_dir in "$PROJECT_ROOT/.state/.bun/bin" "$HOME/.bun/bin"; do
+  [ -x "$_bun_dir/bun" ] && { export PATH="$_bun_dir:$PATH"; break; }
+done
+
 GYM_DIR="$PROJECT_ROOT/test/gym/scenarios"
 AGENTS_REPO="$PROJECT_ROOT/agents"
 
