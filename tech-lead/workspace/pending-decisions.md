@@ -529,3 +529,29 @@ After fix: check `cacheRead > 0` in Claude session receipts. First call = `cache
 
 ### Impact
 $36-63/day savings. This is the single largest cost optimization available. Every day without it costs money.
+
+---
+
+## Context Pressure Valve (Phase 4) — ALREADY IMPLEMENTED (2026-03-23)
+
+**Source**: req:e9622625 (from Bob), `agents/bob/workspace/sent/brief-context-pressure-valve.md`
+**Status**: CLOSED — All deliverables already exist on disk.
+
+### What Bob Proposed
+1. Add `checkContextPressure()` to `monitor-session.cjs` — detect when token usage > 90% capacity
+2. Add `context_pressure` intervention type to `active-nudge.ts`
+3. Inject system notice telling agent to save state and exit
+
+### What Already Exists
+All three are implemented and wired end-to-end:
+
+1. **`detectContextPressure(entries)`** — `monitor-session.cjs` line 1776. Checks `usage.input` against `CONTEXT_PRESSURE_THRESHOLD` env var (default: 100,000 tokens). Returns `{ detected, inputTokens, threshold, evidence }`.
+
+2. **Check #12 in `runAllChecks`** — line 1518. Returns `CONTEXT_PRESSURE` status with `recommendedAction: "warn"` and full intervention payload including the critical system notice message.
+
+3. **`active-nudge.ts`** — handles all intervention types generically via `action === "warn"` → `writeNudgeFile()`. No type-specific code needed — `context_pressure` flows through the same pipeline as `loop`, `stall`, `ghost_deliverable`, etc.
+
+4. **Nudge message** matches Bob's template almost verbatim: instructs agent to write progress summary, call `finish(status: "partial")`, and stop working.
+
+### Assessment
+Good brief — the problem is real and the solution is correct. But it was implemented proactively during Phase 3 buildout. The threshold of 100k tokens is conservative; we may want to tune it based on actual crash data (some models handle 200k+). No code changes needed.
