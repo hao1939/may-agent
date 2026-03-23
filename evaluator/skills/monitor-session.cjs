@@ -1670,11 +1670,19 @@ function detectGhostDeliverable(entries) {
  * Returns { detected, toolCallCount, evidence } or { detected: false }.
  */
 function detectProductivityStall(toolCalls, entries, agentName) {
-  // Agent-aware thresholds (per brief v2): read-heavy agents get more room
-  const READ_HEAVY_AGENTS = new Set(["tech-lead", "scout", "evaluator", "bob", "amy-kimi"]);
+  // Agent-aware thresholds (per brief-tune-active-nudge):
+  //   Builders (coder, qa): 20 ops — standard pressure
+  //   Research/Admin (scout, tech-lead, evaluator, bob, amy-kimi, amy, optimizer, may): 30 ops
+  //   Coach: 25 ops — reads heavily but should still feel pressure
+  const READ_HEAVY_AGENTS = new Set([
+    "tech-lead", "scout", "evaluator", "bob", "amy-kimi", "amy", "optimizer", "may",
+  ]);
+  const MODERATE_AGENTS = new Set(["coach"]);
   
   const agent = (agentName || "").toLowerCase();
-  const MIN_CALLS_THRESHOLD = READ_HEAVY_AGENTS.has(agent) ? 30 : 20;
+  const MIN_CALLS_THRESHOLD = READ_HEAVY_AGENTS.has(agent) ? 30
+    : MODERATE_AGENTS.has(agent) ? 25
+    : 20;
 
   if (toolCalls.length < MIN_CALLS_THRESHOLD) {
     return { detected: false };

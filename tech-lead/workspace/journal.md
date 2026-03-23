@@ -5,7 +5,16 @@
 
 No actionable work available without source code access. System running autonomously and well.
 
-## 2026-03-23T18:06Z — Active Nudge bug fix (req:1d18c2cb)
+## 2026-03-23T20:07Z — Active Nudge threshold tuning (req:a218f483)
+
+Implemented Bob's brief `brief-tune-active-nudge.md`. Key changes:
+1. **Per-role thresholds** in `detectProductivityStall()`: Read-heavy agents (tech-lead, scout, evaluator, bob, amy-kimi, amy, optimizer, may) get 30 ops; Coach gets 25; builders (coder, qa) stay at 20.
+2. **Handled all action types** in `active-nudge.ts`: `kill` → cancel; `flag_adversarial` → nudge file; `investigate`/`none` → skip. Previously these fell through to "unknown action" log-and-skip.
+3. **Corrected checkpoint error**: Previous analysis claimed `recommendedAction: "interrupt"` vs `action === "cancel"` mismatch — verified this was wrong; the wiring is `recommendedAction: "cancel"` → intervention `action: r.recommendedAction` → active-nudge checks correctly.
+
+All 8 unit tests pass (node inline). Monitor-session --running runs clean.
+
+## 2026-03-23T18:06Z — Active Nudge analysis (req:1d18c2cb)
 
 Bob's brief asked for Loop/Stall/Ghost heuristics in `monitor-session.cjs` wired to `active-nudge.ts`. All 3 detectors already existed — but found a **critical action-mismatch bug**: monitor-session returned `recommendedAction: "interrupt"` for loop and ghost_deliverable detections, while active-nudge.ts checked `action === "cancel"`. They never matched, so **no cancellations ever fired**.
 
