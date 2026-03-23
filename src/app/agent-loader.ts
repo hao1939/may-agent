@@ -314,11 +314,10 @@ async function buildTools(config: AgentConfig, opts: AgentLoaderOptions): Promis
               if (!sid) throw new Error(`No active ${config.name} session`);
               return sid;
             },
-            (msg) => bus.emit({ type: "info", message: `[cron:${config.name}] ${msg}` }),
+            (msg) => bus.emit({ type: "log", level: "info", message: `[cron:${config.name}] ${msg}` }),
             opts.projectRoot,
             (msg) => {
-              bus.emit({ type: "text", agent: config.name, text: msg, channel: "chat" });
-              bus.emit({ type: "prompt", message: config.name, channel: "chat" });
+              bus.emit({ type: "notification", agent: config.name, text: msg });
             },
           );
           cron.load();
@@ -695,10 +694,9 @@ export async function loadAgentHandlers(
       agentsRoot,
       agentName,
       getSessionId: () => opts.getSessionId(agentName),
-      log: (msg) => bus.emit({ type: "info", message: msg }),
+      log: (msg) => bus.emit({ type: "log", level: "info", message: msg }),
       notify: (msg) => {
-        bus.emit({ type: "text", agent: agentName, text: msg, channel: "chat" });
-        bus.emit({ type: "prompt", message: agentName, channel: "chat" });
+        bus.emit({ type: "notification", agent: agentName, text: msg });
       },
       triggerNow: (entryName: string) => cron.triggerNow(entryName),
       // Runtime APIs — provided by the binary so handlers don't import src/lib/
