@@ -120,12 +120,49 @@ function groupByAgent(files: string[]): AgentChanges[] {
   return [...agentMap.values()].sort((a, b) => b.files.length - a.files.length);
 }
 
+// ── Push helper ───────────────────────────────────────────────────────
+
+/**
+ * Try to push to any configured remote. Best-effort — if no remote exists
+ * or the push fails (no SSH key, network down, etc.), we log and move on.
+ * The commit is still local, which is better than losing the data entirely.
+ */
+function tryPush(agentsDir: string, log: (msg: string) => void): void {
+  try {
+    // List remotes — pick the first one available
+    const remotes = execSync("git remote", {
+      cwd: agentsDir,
+      encoding: "utf-8",
+      timeout: 5_000,
+    }).trim();
+
+    if (!remotes) return; // No remotes configured — nothing to push to
+
+    const remote = remotes.split("\n")[0]!;
+    execSync(`git push ${remote} main`, {
+      cwd: agentsDir,
+      timeout: 30_000,
+      encoding: "utf-8",
+    });
+    log(`[agents-auto-commit] pushed to ${remote}`);
+  } catch (err) {
+    const errMsg = err instanceof Error ? err.message : String(err);
+    // Don't spam logs for expected cases (no remote, no SSH key, etc.)
+    if (!errMsg.includes("No configured push destination") &&
+        !errMsg.includes("Could not read from remote")) {
+      log(`[agents-auto-commit] push failed (non-fatal): ${errMsg.split("\n")[0]}`);
+    }
+  }
+}
+
 // ── Factory ───────────────────────────────────────────────────────────
 
 export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
   const agentsDir = resolve(ctx.projectRoot, "agents");
 
   return async () => {
+    let committed = false;
+
     try {
       // Check for changes (tracked + untracked)
       const status = execSync("git status --porcelain", {
@@ -134,7 +171,12 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         timeout: 10_000,
       }).trim();
 
-      if (!status) return;
+      if (!status) {
+        // Nothing to commit — still try to push in case previous commits
+        // were committed but never pushed (e.g. push failed last time).
+        tryPush(agentsDir, ctx.log);
+        return;
+      }
 
       // Parse changed files from porcelain output
       const changedFiles = status
@@ -175,6 +217,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
               { cwd: agentsDir, timeout: 15_000 },
             );
             ctx.log(`[agents-auto-commit] ${msg}`);
+            committed = true;
           } catch (err) {
             const errMsg = err instanceof Error ? err.message : String(err);
             if (!errMsg.includes("nothing to commit")) {
@@ -195,12 +238,18 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
           { cwd: agentsDir, timeout: 15_000 },
         );
         ctx.log(`[agents-auto-commit] ${msg}`);
+        committed = true;
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       if (!msg.includes("nothing to commit")) {
         ctx.log(`[agents-auto-commit] ⚠️ ${msg}`);
       }
+    }
+
+    // Push after committing (or if there were unpushed commits from last run)
+    if (committed) {
+      tryPush(agentsDir, ctx.log);
     }
   };
 };
