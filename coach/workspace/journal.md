@@ -838,3 +838,60 @@ The agent over-refuses — it sees "free up disk space" + risky files and opts f
 **Growth cycle budget**: Spent (3+ today). No new growth cycles.
 
 **Next**: Baseline `partial-rollback-judgment` scenario next heartbeat. Also self-evolve is due (haven't done since early this week — check experiment review queue).
+
+### 2026-03-23 23:10 — Heartbeat (s_1774307448668_87)
+
+**Baseline: partial-rollback-judgment**: CEILING. Coder passes 7/7 at baseline — selectively fixed auth.js and logger.js bugs while preserving cache.js and config.js improvements. No experiment needed.
+
+**Status**: Error logs all stale (5+ days). Growth cycle budget spent. New scenario also at ceiling.
+
+**Assessment**: Coder agent is extremely capable on current scenario portfolio. Nearly all 68+ scenarios at ceiling. Need fundamentally harder scenario designs that test behaviors current scenarios don't cover:
+- Multi-step reasoning with misleading intermediate results
+- Efficiency under large-context pressure (not just correctness)
+- Error cascades where fixing one bug reveals another
+- Ambiguous requirements requiring clarification requests
+- Time-pressure tradeoffs (partial fix vs. complete fix)
+
+**Next priorities**:
+1. Design `error-cascade-diagnosis` scenario — fixing bug A reveals bug B, must handle both
+2. Design `ambiguous-spec-clarification` scenario — task deliberately underspecified, agent should ask rather than guess
+3. Self-evolve review due (experiment review + knowledge maintenance)
+
+### 2026-03-23 23:50 — Heartbeat (s_1774309187093_89)
+
+**New skill discovered: `materialize-intermediate-findings`**
+
+Analyzed 34 sessions across 6 agents. Found "phantom progress" pattern:
+- 35% of sessions had ZERO write/edit calls — all analysis lost at session end
+- 24% had first write after 60%+ of session tools consumed
+- Worst case: coach session with 45 tools, first write at 80%
+
+Created SKILL.md at `agents/shared/skills/materialize-intermediate-findings/SKILL.md`.
+Key idea: after every 3-4 analysis tool calls, persist findings to a workspace file.
+Distinct from budget-before-act (turn estimation) and search-strategy-escalation (grep spirals).
+
+**Status**: Skill drafted, needs gym testing. No growth cycles run (budget spent).
+
+**Next**: Test materialize-intermediate-findings skill via growth-cycle. Design error-cascade-diagnosis scenario.
+
+### 2026-03-24 00:03 — Heartbeat (s_1774310604129_93)
+
+**Tasks processed:**
+- Added `materialize-intermediate-findings` skill guard to SOUL.md (from optimizer req:00764646)
+
+**Error scan:** All logs stale (5+ days), no fresh patterns.
+
+**Scenario development (Step 5b):**
+- Created `error-cascade-diagnosis` scenario — tests cascade bug diagnosis:
+  - Bug A: validator date regex uses slashes (`/`) instead of dashes (`-`) → rejects all valid dates
+  - Bug B: formatter `amount_cents` returns string instead of number → masked when Bug A active
+  - Initial state: 4/8 tests pass. After fixing Bug A only: 6/8. After both: 8/8.
+  - 6 success criteria checks. Verified buggy state: 5/6 fail correctly.
+- This fills the "error cascade" gap identified in prior session.
+
+**Growth cycles today:** 0 (no experiments run, budget preserved)
+
+**Next priorities:**
+1. Baseline `error-cascade-diagnosis` with coder agent
+2. Remove BUG comment hints from source files (they make it too easy!)
+3. Design `ambiguous-spec-clarification` scenario

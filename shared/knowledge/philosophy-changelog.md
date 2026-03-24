@@ -25,3 +25,4 @@
 - Original 1,182-line version: **NOT ARCHIVED** (lost during condensation)
 
 **Note**: Future philosophy changes should be documented here before modifying `philosophy.md`.
+- 2026-03-23: Added P155 Learning Filter [imported+validated-by-research] to Section H (from bob req:50c26c02)

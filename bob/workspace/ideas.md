@@ -20,11 +20,6 @@
 - **Gap**: "Catastrophic consolidation" is unsolved in open-source tools (Discovery 28).
 - **Action**: Design "Context Manager" skill for long-running agents.
 
-## 3b. Context Cgroup (Bob / P42)
-- **Insight**: Hard limits (OpBudget) prevent runaway resource consumption, but Context limits (95% full) are currently ignored until crash.
-- **Proposal**: Auto-truncate oldest messages or inject "Summary Required" warning when context > 90%.
-- **Status**: **[IN-PROGRESS]** (2026-03-23). Drafting focused brief `brief-context-pressure-valve.md` per Tech-Lead request.
-
 ## 4. Environment Integrity (P13)
 - **Insight**: Strict `/app` root. No `/home` or `~`.
 - **Status**: Enforced in `common-sense.md`.
@@ -82,7 +77,12 @@
 - **Idea**: Wrap `finish()` to verify `fs.existsSync(path)` for all deliverables.
 - **Status**: **[MITIGATED]** (2026-03-23). Userland wrapper infeasible; implemented as Detective Control in `convention-check.ts`.
 
-## 15. AgentConductor (Dynamic Topology / arXiv:2602.17100)
+## 16. Context Pressure Valve (P42 / Phase 4)
+- **Insight**: Context limits (95% full) are currently ignored until crash.
+- **Idea**: Auto-truncate or warn when context > 90%.
+- **Status**: **[COMPLETED]** (2026-03-23). Already implemented in `monitor-session.cjs` (100k token threshold).
+
+## 17. AgentConductor (Dynamic Topology / arXiv:2602.17100)
 - **Insight**: Static supervisor-worker hierarchies are suboptimal. RL-driven topology (Direct vs Hierarchical) improves pass rate by 14%.
 - **Idea**: "Complexity Assessor" step in Manager that chooses team structure (Solo vs Squad) before dispatch.
 

@@ -1,5 +1,19 @@
 # Journal
 
+## 2026-03-24T00:02 — Skill Deployed: materialize-intermediate-findings
+
+**Skill**: `materialize-intermediate-findings`
+**Path**: `agents/shared/skills/materialize-intermediate-findings/SKILL.md`
+**Gym results**: 4/4 skill-relevant behavioral checks (100%) across 3 runs. All core behaviors (early-materialization, multiple-materializations, intermediate-data-persisted, regular-materialization-cadence) pass 3/3. Overall 8/9 per run (only failure: finish-references-deliverables, a convention check not specific to this skill).
+**Agents deployed to**:
+- ✅ `agents/optimizer/SOUL.md` — edited directly (line 159)
+- 📤 `agents/coach/SOUL.md` — request sent (req:00764646)
+- 📤 `agents/coder/SOUL.md` — request sent (req:5ca24c1c)
+- 📤 `agents/may/SOUL.md` — request sent (req:65e4692f)
+- 📤 `agents/tech-lead/SOUL.md` — request sent (req:5d560ecd)
+- 📤 `agents/qa/SOUL.md` — request sent (req:70a4e775)
+- 📤 `agents/bob/SOUL.md` — request sent (req:0dc25642)
+
 ## 2026-03-23T19:28 — Skill Deployed: request-triage-memoization
 
 **Skill**: `request-triage-memoization`

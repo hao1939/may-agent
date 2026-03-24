@@ -9,11 +9,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If found → add specific task to workspace/todo.md.
   Latest (2026-03-23T20:39): 75 sessions/12h = 6.7/hr = ~$163/day. Optimizer #1 ($65/day). Coach down to $23/day. Claude caching still 0%. Finding at `workspace/finding-analysis-review-0323-2039.md`.
 
-- [x] **Cost outlier scan** — Last done: 2026-03-23T17:39
+- [x] **Cost outlier scan** — Last done: 2026-03-23T22:09
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-23T17:39): 30 sessions/6h = 5.0/hr, $51.78/day. Optimizer #1 (37%). Claude caching 0%. Finding at `workspace/finding-cost-scan-0323-1739.md`.
+  Latest (2026-03-23T22:09): 88 sessions/12h = 7.3/hr, ~$133/day. Bash-as-cat 14% system-wide (scout 50%, coach 24%). Sent guard patches to May (req:08282cc8). Finding at `workspace/finding-cost-scan-0323-2209.md`.
 
 - [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-23T10:09
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
@@ -27,12 +27,12 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If issues → add fix to workspace/todo.md.
   Latest (2026-03-23T10:09): Same 3 handlers dead (convention-check, tool-quality-scan, heartbeat-context). Blocked on binary rebuild/restart.
 
-- [x] **Proven pattern → Skill/Workflow** — Last done: 2026-03-23T19:09
+- [x] **Proven pattern → Skill/Workflow** — Last done: 2026-03-23T23:50
   **Run via workflow**: `workflow.run("skill-lifecycle", "Scan recent sessions for proven multi-step patterns")`
   Mechanically enforces all 4 phases (discover → draft → test → deploy).
   **Deliverable**: A new or refined skill file, tested in gym, deployed to agents.
-  Latest (2026-03-23T19:09): request-triage-memoization DEPLOYED. 14/15 behavioral checks (93%). Skill at `agents/shared/skills/request-triage-memoization/SKILL.md`.
-  Skills deployed (10 total): obstacle-pivot, grep-first-reading, state-check-before-action, budget-before-act, stale-approach-fixation, coder-edit-discipline, delegation-verification, idempotent-work-detection, search-strategy-escalation, evidence-over-narrative, incremental-context-loading, request-triage-memoization.
+  Latest (2026-03-23T23:50): materialize-intermediate-findings DEPLOYED. 270-line SKILL.md. Skill at `agents/shared/skills/materialize-intermediate-findings/SKILL.md`.
+  Skills deployed (13 total): obstacle-pivot, grep-first-reading, state-check-before-action, budget-before-act, stale-approach-fixation, coder-edit-discipline, delegation-verification, idempotent-work-detection, search-strategy-escalation, evidence-over-narrative, incremental-context-loading, request-triage-memoization, materialize-intermediate-findings.
 
 - [x] **Tool quality review** — Last done: 2026-03-23T13:09
   Read tool-quality-report.md. Look for regression trends and persistent failure patterns.

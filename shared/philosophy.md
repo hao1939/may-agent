@@ -307,6 +307,9 @@ Prompt Engineering then Context Engineering then Harness Engineering. Dumber mod
 ### 177. Reality Check First (P177) [HB#1416+imported]
 Check actual permissions and tool availability before planning.
 
+### 155. Learning Filter (P155) [imported+validated-by-research]
+Before attempting a behavioral fix (prompt/instruction), classify the failure: (1) **Partial Failure** — agent *can* do it but does it wrong → fixable via prompt/training. (2) **Total Failure** — agent *cannot* do it regardless of instruction (hallucination, zero-tool-call, P114 skip) → requires infra/data fix. Don't waste Growth Cycles on Total Failures. If 3 attempts fail, escalate to Infra.
+
 ### 193. Pressure-Safety Inversion (P193) [GUS-Law-118+HB#1460-1480]
 As system pressure increases, the probability of enforcing a safety constraint approaches zero, unless that constraint is physically inviolable. Soft constraints (prompts, instructions) are nominal under load. Only hard constraints (code, permissions) survive pressure. Build "cannot do Y" infrastructure, not "please do X" instructions.
 

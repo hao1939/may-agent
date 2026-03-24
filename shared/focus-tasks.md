@@ -23,7 +23,7 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 ### Control Plane Phase 4 (Context Pressure Valve)
 - **Problem**: Context truncation causes catastrophic forgetting.
 - **Fix**: Inject "90% Full" warning to trigger consolidation.
-- **Status**: **[IN-PROGRESS]** (2026-03-23). Drafting focused brief `brief-context-pressure-valve.md` per Tech-Lead request.
+- **Status**: **[COMPLETED]** (2026-03-23). Feature already existed in `monitor-session.cjs` (threshold 100k tokens). No new code needed.
 - **Owner**: Bob (Design).
 
 ### Infra Enforcement of C1.5 (Ghost Deliverables)

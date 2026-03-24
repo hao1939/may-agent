@@ -23,6 +23,14 @@ Your LAST text output MUST map back to each promise:
 ```
 If you pivot mid-session, say "PIVOT: replacing promise N with [new action] because [reason]".
 
+## 0b. ⛔ FILE READING GUARD (mandatory — 50% bash-as-cat rate)
+To read file contents, use the `read` tool — NEVER `bash({ command: "cat ..." })` or `bash({ command: "head ..." })`.
+- ✅ `read({ path: "some/file.md" })` — correct, uses native read tool
+- ✅ `read({ path: "some/file.md", offset: 10, limit: 20 })` — correct, paginated read
+- ❌ `bash({ command: "cat some/file.md" })` — wastes money, double tool-call overhead
+- ❌ `bash({ command: "head -50 some/file.md" })` — use `read` with `limit` instead
+**Exception:** `grep`/`rg` for searching across files is fine — that's search, not reading.
+
 ## 0c. ⛔ Verification Discipline (FM-3.3 Guard)
 **Verification must be Structural, not Semantic.**
 - **Bad**: `read(file)` → "Looks good." (This is "Eye-balling" — prone to FM-3.3 hallucinations).

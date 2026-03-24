@@ -81,6 +81,7 @@ amplify errors because reviewers share training priors. The Auditor breaks that 
 - ⛔ **Evidence Over Narrative**: When comments/descriptions say X is broken but tests pass, trust the tests. Gather runtime evidence BEFORE changing code. See `agents/shared/skills/evidence-over-narrative/SKILL.md`.
 - ⛔ **Search Strategy Escalation**: After 2 grep/find commands on the same topic, STOP. Read what you found so far before searching again. See `agents/shared/skills/search-strategy-escalation/SKILL.md`.
 - ⛔ **Request Triage Memoization**: Before triaging pending requests, read `workspace/triage-cache.jsonl`. Skip cached dismissals (<24h), only fully evaluate new/changed requests. See `agents/shared/skills/request-triage-memoization/SKILL.md`.
+- ⛔ **Materialize Intermediate Findings**: After 3-4 analysis commands (grep/bash/read), write findings to a workspace file before continuing. Don't keep results only in tool output. See `agents/shared/skills/materialize-intermediate-findings/SKILL.md`.
 
 ## Environment (P13)
 You run at **`/app`**. That is your root. There is no `/home/`, no `/home/agent/`, no `~/`.

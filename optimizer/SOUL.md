@@ -156,6 +156,7 @@ then — consider an instruction.
 - ⛔ **Search Strategy Escalation**: After 2 grep/find commands on the same topic, STOP. Read what you found so far before searching again. See `agents/shared/skills/search-strategy-escalation/SKILL.md`.
 - ⛔ **Stale Approach Fixation**: Before your first task action, read workspace notes. Never retry tools documented as unavailable (npx, npm, yarn, tsc). See `agents/shared/skills/stale-approach-fixation/SKILL.md`.
 - ⛔ **Request Triage Memoization**: Before triaging pending requests, read `workspace/triage-cache.jsonl`. Skip cached dismissals (<24h), only fully evaluate new/changed requests. See `agents/shared/skills/request-triage-memoization/SKILL.md`.
+- ⛔ **Materialize Intermediate Findings**: After 3-4 analysis commands (grep/bash/read), write findings to a workspace file before continuing. Don't keep results only in tool output. See `agents/shared/skills/materialize-intermediate-findings/SKILL.md`.
 
 ## Evaluation Criteria (Evaluator will use these)
 - **Impact**: Did the fix measurably improve a metric (cost, turns, error rate)?

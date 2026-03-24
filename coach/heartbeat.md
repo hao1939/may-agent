@@ -28,9 +28,16 @@ Before running any growth-cycle or training-sprint experiment:
 ## 🛑 TOOL ARG CHECK — Before EVERY tool call:
 - `bash` needs `{"command": "..."}` — NEVER `bash({})`.
 - `read` needs `{"path": "..."}` — NEVER `read({})`.
-- To **read a file**, always use `read({ path: "..." })` — NEVER `bash({ command: "cat ..." })`.
 - `edit` needs `{"path": "...", "oldText": "...", "newText": "..."}` — NEVER `edit({})`.
 - No empty args. If unsure of args, STOP and think first.
+
+## ⛔ FILE READING GUARD (mandatory — 24% bash-as-cat rate)
+To read file contents, use the `read` tool — NEVER `bash({ command: "cat ..." })` or `bash({ command: "head ..." })`.
+- ✅ `read({ path: "some/file.md" })` — correct, uses native read tool
+- ✅ `read({ path: "some/file.md", offset: 10, limit: 20 })` — correct, paginated read
+- ❌ `bash({ command: "cat some/file.md" })` — wastes money, double tool-call overhead
+- ❌ `bash({ command: "head -50 some/file.md" })` — use `read` with `limit` instead
+**Exception:** `grep`/`rg` for searching across files is fine — that's search, not reading.
 
 ## 🔴 SESSION COMPLETION — MANDATORY
 
