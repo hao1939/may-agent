@@ -22,7 +22,8 @@ COPY src/ src/
 COPY tsconfig.json ./
 
 # Compile standalone binary
-RUN bun build --compile src/app/binary-entry.ts --outfile /build/may-agent
+RUN bun build --compile src/app/binary-entry.ts --outfile /build/may-agent && \
+    bun build --compile src/app/ui/web.ts --outfile /build/may-agent-web
 
 # ── Runtime stage: minimal image with Chrome + GUI ────────────────────────
 FROM debian:bookworm-slim
@@ -62,8 +63,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# Copy compiled binary from builder
+# Copy compiled binaries from builder
 COPY --from=builder /build/may-agent /usr/local/bin/may-agent
+
+# Compile web UI as standalone binary (runs independently of may-agent)
+COPY --from=builder /build/may-agent-web /usr/local/bin/may-agent-web
+
+# Copy web UI static files (not embedded in compiled binary)
+COPY src/app/ui/web-static/ /usr/local/share/may-agent-web/web-static/
 
 # Copy entrypoints and helpers
 COPY docker/entrypoint.sh docker/entrypoint-console.sh docker/restart-may.sh /usr/local/bin/
