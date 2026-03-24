@@ -411,9 +411,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
               switch (filter) {
                 case "active":
                   requests = params.agent
-                    ? req.getRequestsByAgent(persistDir, params.agent).filter(
-                        (r) => r.status === "CREATED" || r.status === "IN_PROGRESS",
-                      )
+                    ? req.getRequestsByAgentAndStatus(persistDir, params.agent, ["CREATED", "IN_PROGRESS"], 100)
                     : req.getActiveRequests(persistDir);
                   break;
                 case "stale":

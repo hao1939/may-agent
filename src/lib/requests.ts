@@ -397,16 +397,40 @@ export function getActiveRequests(persistDir: string): RequestRecord[] {
 }
 
 /**
- * Get all requests targeting a specific agent.
+ * Get requests targeting a specific agent.
+ * @param limit Max rows to return (default 100). Use -1 for unlimited (not recommended).
  */
 export function getRequestsByAgent(
   persistDir: string,
-  agent: string
+  agent: string,
+  limit: number = 100
 ): RequestRecord[] {
   const db = getDb(persistDir);
+  if (limit === -1) {
+    return db
+      .prepare("SELECT * FROM requests WHERE toAgent = ? ORDER BY createdAt DESC")
+      .all(agent) as unknown as RequestRecord[];
+  }
   return db
-    .prepare("SELECT * FROM requests WHERE toAgent = ? ORDER BY createdAt DESC")
-    .all(agent) as unknown as RequestRecord[];
+    .prepare("SELECT * FROM requests WHERE toAgent = ? ORDER BY createdAt DESC LIMIT ?")
+    .all(agent, limit) as unknown as RequestRecord[];
+}
+
+/**
+ * Get requests targeting a specific agent filtered by status.
+ * More efficient than getRequestsByAgent + JS filter.
+ */
+export function getRequestsByAgentAndStatus(
+  persistDir: string,
+  agent: string,
+  statuses: string[],
+  limit: number = 100
+): RequestRecord[] {
+  const db = getDb(persistDir);
+  const placeholders = statuses.map(() => "?").join(", ");
+  return db
+    .prepare(`SELECT * FROM requests WHERE toAgent = ? AND status IN (${placeholders}) ORDER BY createdAt DESC LIMIT ?`)
+    .all(agent, ...statuses, limit) as unknown as RequestRecord[];
 }
 
 /**
