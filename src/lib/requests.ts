@@ -133,6 +133,39 @@ CREATE INDEX IF NOT EXISTS idx_sess_status  ON sessions(status);
 CREATE INDEX IF NOT EXISTS idx_sess_parent  ON sessions(parentSessionId);
 CREATE INDEX IF NOT EXISTS idx_sess_started ON sessions(startedAt);
 
+-- Gym benchmark runs and checks
+CREATE TABLE IF NOT EXISTS gym_runs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  timestamp TEXT DEFAULT (datetime('now')),
+  agent_name TEXT NOT NULL,
+  lab_fork TEXT,
+  scenario TEXT NOT NULL,
+  passed INTEGER NOT NULL DEFAULT 0,
+  duration_ms INTEGER,
+  score_summary TEXT,
+  session_id TEXT,
+  cost_usd REAL,
+  total_ops INTEGER,
+  total_turns INTEGER,
+  method TEXT DEFAULT 'oneshot'
+);
+
+CREATE TABLE IF NOT EXISTS gym_checks (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  run_id INTEGER NOT NULL,
+  check_name TEXT NOT NULL,
+  passed INTEGER NOT NULL DEFAULT 0,
+  detail TEXT,
+  category TEXT,
+  code TEXT,
+  FOREIGN KEY(run_id) REFERENCES gym_runs(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_gym_runs_scenario ON gym_runs(scenario);
+CREATE INDEX IF NOT EXISTS idx_gym_runs_agent ON gym_runs(agent_name);
+CREATE INDEX IF NOT EXISTS idx_gym_runs_timestamp ON gym_runs(timestamp);
+CREATE INDEX IF NOT EXISTS idx_gym_checks_run ON gym_checks(run_id);
+
 -- Convention checks (P1: mechanical compliance checker)
 CREATE TABLE IF NOT EXISTS convention_checks (
   id INTEGER PRIMARY KEY AUTOINCREMENT,

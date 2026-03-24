@@ -20,39 +20,7 @@ import { join, dirname } from "node:path";
 
 // ── Schema ─────────────────────────────────────────────────────────────
 
-const SCHEMA = `
-CREATE TABLE IF NOT EXISTS runs (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  timestamp TEXT DEFAULT (datetime('now')),
-  agent_name TEXT NOT NULL,
-  lab_fork TEXT,
-  scenario TEXT NOT NULL,
-  passed INTEGER NOT NULL DEFAULT 0,
-  duration_ms INTEGER,
-  score_summary TEXT,
-  session_id TEXT,
-  cost_usd REAL,
-  total_ops INTEGER,
-  total_turns INTEGER,
-  method TEXT DEFAULT 'oneshot'
-);
-
-CREATE TABLE IF NOT EXISTS checks (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  run_id INTEGER NOT NULL,
-  check_name TEXT NOT NULL,
-  passed INTEGER NOT NULL DEFAULT 0,
-  detail TEXT,
-  category TEXT,
-  code TEXT,
-  FOREIGN KEY(run_id) REFERENCES runs(id) ON DELETE CASCADE
-);
-
-CREATE INDEX IF NOT EXISTS idx_runs_scenario ON runs(scenario);
-CREATE INDEX IF NOT EXISTS idx_runs_agent ON runs(agent_name);
-CREATE INDEX IF NOT EXISTS idx_runs_timestamp ON runs(timestamp);
-CREATE INDEX IF NOT EXISTS idx_checks_run ON checks(run_id);
-`;
+// Schema is defined inline in openDb() — tables are gym_runs and gym_checks in may.db
 
 // ── DB Location ────────────────────────────────────────────────────────
 
@@ -60,9 +28,8 @@ function getDbPath(): string {
   // Resolve relative to this script's location → project root
   const scriptDir = dirname(new URL(import.meta.url).pathname);
   const projectRoot = join(scriptDir, "..");
-  const dbDir = join(projectRoot, "test", "gym");
-  mkdirSync(dbDir, { recursive: true });
-  return join(dbDir, "stats.db");
+  const dbPath = join(projectRoot, ".state", "may.db");
+  return dbPath;
 }
 
 function openDb(): Database {
@@ -70,7 +37,25 @@ function openDb(): Database {
   const db = new Database(dbPath);
   db.exec("PRAGMA journal_mode = WAL;");
   db.exec("PRAGMA foreign_keys = ON;");
-  db.exec(SCHEMA);
+  // Tables are created by getDb() in requests.ts schema.
+  // But ensure they exist if may.db was just created.
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS gym_runs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      timestamp TEXT DEFAULT (datetime('now')),
+      agent_name TEXT NOT NULL, lab_fork TEXT, scenario TEXT NOT NULL,
+      passed INTEGER NOT NULL DEFAULT 0, duration_ms INTEGER,
+      score_summary TEXT, session_id TEXT, cost_usd REAL,
+      total_ops INTEGER, total_turns INTEGER, method TEXT DEFAULT 'oneshot'
+    );
+    CREATE TABLE IF NOT EXISTS gym_checks (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      run_id INTEGER NOT NULL, check_name TEXT NOT NULL,
+      passed INTEGER NOT NULL DEFAULT 0, detail TEXT,
+      category TEXT, code TEXT,
+      FOREIGN KEY(run_id) REFERENCES gym_runs(id) ON DELETE CASCADE
+    );
+  `);
   return db;
 }
 
@@ -102,7 +87,7 @@ export function recordRun(db: Database, result: GymResult): number {
   const durationMs = result.duration ? parseDuration(result.duration) : null;
 
   const insertRun = db.query<{ id: number }, unknown[]>(`
-    INSERT INTO runs (agent_name, lab_fork, scenario, passed, duration_ms,
+    INSERT INTO gym_runs (agent_name, lab_fork, scenario, passed, duration_ms,
                       score_summary, session_id, cost_usd, total_ops,
                       total_turns, method)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -127,7 +112,7 @@ export function recordRun(db: Database, result: GymResult): number {
   // Insert individual checks
   if (result.checks && result.checks.length > 0) {
     const insertCheck = db.query(`
-      INSERT INTO checks (run_id, check_name, passed, detail, category, code)
+      INSERT INTO gym_checks (run_id, check_name, passed, detail, category, code)
       VALUES (?, ?, ?, ?, ?, ?)
     `);
 

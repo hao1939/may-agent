@@ -19,7 +19,7 @@ import { join, dirname } from "node:path";
 
 function getDbPath(): string {
   const scriptDir = dirname(new URL(import.meta.url).pathname);
-  return join(scriptDir, "..", "test", "gym", "stats.db");
+  return join(scriptDir, "..", ".state", "may.db");
 }
 
 function openDb(): Database {
@@ -59,10 +59,10 @@ function showSummary(db: Database, agentFilter?: string): void {
         ROUND(AVG(r.passed) * 100, 1) as pass_rate,
         ROUND(AVG(r.duration_ms)) as avg_duration_ms,
         MAX(r.timestamp) as last_run,
-        (SELECT r2.passed FROM runs r2 WHERE r2.scenario = r.scenario 
+        (SELECT r2.passed FROM gym_runs r2 WHERE r2.scenario = r.scenario 
          ${agentFilter ? "AND r2.agent_name = ?" : ""}
          ORDER BY r2.timestamp DESC LIMIT 1) as last_passed
-      FROM runs r
+      FROM gym_runs r
       ${where}
       GROUP BY r.scenario
       ORDER BY pass_rate ASC, r.scenario`
@@ -130,7 +130,7 @@ function showRecent(db: Database, limit: number, scenarioFilter?: string, agentF
     .query<RecentRow, unknown[]>(
       `SELECT r.id, r.timestamp, r.agent_name, r.scenario, r.passed,
               r.duration_ms, r.score_summary, r.method
-       FROM runs r
+       FROM gym_runs r
        ${where}
        ORDER BY r.timestamp DESC
        LIMIT ?`
@@ -173,7 +173,7 @@ function showRegressions(db: Database): void {
       `WITH ranked AS (
         SELECT scenario, agent_name, passed, timestamp,
                ROW_NUMBER() OVER (PARTITION BY scenario, agent_name ORDER BY timestamp DESC) as rn
-        FROM runs
+        FROM gym_runs
       )
       SELECT 
         a.scenario,
