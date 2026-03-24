@@ -8,6 +8,12 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 
 ## Active Focus
 
+### Scout Prompt Standardization (Legacy Clean-up)
+- **Problem**: Scout runs on legacy `system_prompt.md`, missing global behavioral updates (C26).
+- **Fix**: Migrate to `SOUL.md` + `common-sense.md`.
+- **Status**: **[DELEGATED]** (2026-03-24). Brief sent to Tech-Lead (`brief-scout-prompt-simplification.md`).
+- **Owner**: Tech-Lead (Implementation).
+
 ### Gym Snapshots (Benchmark Tracking)
 - **Problem**: Gym results are ephemeral and hard to compare.
 - **Fix**: Store runs in DB with config hash + snapshots.
@@ -17,7 +23,7 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 ### Agent Evolution System (CI/CD for Prompts)
 - **Problem**: Improvements are ad-hoc, untracked, and prone to regression. No systematic way to measure "is the agent better?".
 - **Fix**: Implement "Gym is CI" workflow. Coach drives behavior, Optimizer drives efficiency. All changes gated by baselines.
-- **Status**: **[IN-PROGRESS]** (2026-03-24). Architecture defined in `agents/bob/knowledge/agent-evolution-architecture.md`. Directives sent to Coach and Optimizer.
+- **Status**: **[PUBLISHED]** (2026-03-24). Architecture defined in `agents/shared/knowledge/synthesis/2026-03-24-gym-integration-plan.md`. Directives sent to Coach and Optimizer.
 - **Owner**: Bob (Architecture), Coach/Optimizer (Execution).
 
 ### Opus Prompt Caching (Cost Critical)
@@ -43,6 +49,12 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 - **Fix**: Implement infra-level check.
 - **Status**: **[MITIGATED]** (2026-03-24). Preventive check blocked by platform. Detective controls deployed in `convention-check.ts` and `active-nudge.ts`.
 - **Owner**: Tech-Lead (Monitoring).
+
+### Verification Gap (FM-3.3 / C26)
+- **Problem**: Agents claim "Verified" without running tools, or don't cite evidence.
+- **Fix**: Enforce `finish(success, verification_evidence=[...])`.
+- **Status**: **[DELEGATED]** (2026-03-24). Briefs sent to Tech-Lead (Infra) and Coach (Behavioral).
+- **Owner**: Tech-Lead & Coach.
 
 ### Typed Messages / GNAP (P105)
 - **Problem**: Ambiguous inter-agent messages.

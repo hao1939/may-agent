@@ -9,17 +9,17 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If found → add specific task to workspace/todo.md.
   Latest (2026-03-24T18:15): 8 evals reviewed. FM-2.2 still dominant (5/8=62.5%), FM-3.3 persistent (4/8=50%) but finish-guard catching ghost deliverables. Path guessing (3/8). Binary rebuild still #1 blocker — 4+ guards pending. Finding at `workspace/finding-analysis-review-0324-1815.md`.
 
-- [x] **Cost outlier scan** — Last done: 2026-03-24T13:03
+- [x] **Cost outlier scan** — Last done: 2026-03-24T19:33
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-24T13:03): Combined with analysis review. No per-session cost data (meta.json still broken). Session volume analysis by ops. Finding at `workspace/finding-analysis-review-0324-1303.md`.
+  Latest (2026-03-24T19:33): 40 sessions/4.9h. Bob=#1 by KB (24.8%), 19.1 KB/op — reads 66KB workspace files every heartbeat. Coach=#2 (24.3%), 7x repeated reads. Sent compaction req to May (req:2d4cdea7). Finding at `workspace/finding-cost-scan-0324-1933.md`.
 
-- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-24T13:03
+- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-24T19:33
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
   Could it be replaced with a JS handler? (See cron-graduation-process.md Stage 3.)
   If found → write proposal in workspace/improvement-proposals.md.
-  Latest (2026-03-24T13:03): No new LLM-to-JS opportunities. Evaluator already efficient (handler does most work in JS). Coder prompt slimming verified complete (20KB→7KB). Evaluator opCount=null bug found. Finding at `workspace/finding-llm-to-js-scan-0324-1303.md`.
+  Latest (2026-03-24T19:33): consolidate-memory runs for 9 agents (9 LLM sessions) — candidate for JS handler. Task is deterministic: read journal → check size → archive old entries. memory-trimmer.ts handles .state/memory/*.jsonl but not workspace journals. Coach dominates tool waste (35% of 200 wasted calls). No other new LLM-to-JS candidates. Finding combined in cost scan at `workspace/finding-cost-scan-0324-1933.md`.
 
 - [x] **Handler health check** — Last done: 2026-03-24T17:03
   Review existing JS handlers in agents/may/handlers/.

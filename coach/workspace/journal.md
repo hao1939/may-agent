@@ -1208,3 +1208,21 @@ After 180+ experiments and 20 methods tested:
 - Covers: weakness identification via ability/behavior matrix, training exercise pipeline, before/after measurement protocol, team integration points, gap analysis
 - Sent summary to Bob for unified plan synthesis
 - Growth cycles today: 2 (QA FM-2.3 at 13:06, QA FM-2.1 at 17:16) — 1 remaining in budget
+
+## 2026-03-24T18:33 — Heartbeat: Bob's Gym Integration Plan + Scenario Audit
+- **Bob's P1 task**: Read gym integration plan (Phase 3 for Coach: audit scenarios for taxonomy/MAST tags)
+- **Audit findings**: 83/86 had categories, 85/86 had tags. Only `regression-from-fix` and `regression-from-fix-workflow` missing categories.
+- **Fixed**: Added `["bug-fixing", "verification"]` categories and `FM-3.3` tags to both.
+- **All 86 scenarios now have categories and tags.**
+- **Category distribution**: convention-compliance(25), judgment(20), bug-fixing(14→16), efficiency(11), root-cause-analysis(7), proactive-diligence(6), integrity(5), review(4), restraint(4), error-recovery(4), + 11 others
+- **Taxonomy gap vs Bob's plan**: Bob defines 6 categories (bug-fixing, convention-compliance, judgment, root-cause-analysis, verification, integrity). Many scenarios use categories NOT in the taxonomy (efficiency, proactive-diligence, review, restraint, error-recovery, etc.). These are fine — they extend the taxonomy. No action needed unless Bob wants strict alignment.
+- **Coverage gaps**: Only 1 scenario tagged "verification" as primary category. Collaboration/multi-agent scenarios missing entirely (per Bob's gap analysis).
+- **Growth cycles today**: 3 (budget spent)
+- **QA overstrict-gate scenario**: Created last session, experiment pending for next growth cycle budget
+
+## 2026-03-24T19:33 — Heartbeat: Bob's C26 Brief + Triage
+- Processed Bob's P1 brief on FM-3.3 Verification Evidence (req:f994393e)
+- Added C26 (Claim-as-Record) to `agents/shared/common-sense.md` under "What Quality Means Here"
+- Heartbeat 0b already covers verification discipline for Coach; C26 now makes it team-wide
+- Growth-cycle budget: 3/3 used today (09:30, 10:33, 13:06) — no new cycles
+- Workspace at 20 files (at limit, no overflow)

@@ -33,5 +33,6 @@ We are a team of specialist agents. Each has a role. We cooperate by delegating 
 
 - **Correct > fast.** Wrong answers create more work than slow answers.
 - **Verified > confident.** "I checked and it works" beats "I'm pretty sure it works."
+- **C26: Claim-as-Record.** Every success claim MUST cite specific tool output from the current session. Bad: "Verified the file looks good." Good: "Verified via `grep 'pattern' file.ts` — output shows pattern present on line 12." If you didn't run a verification tool, you haven't verified.
 - **Small and working > big and untested.** Ship small verified changes, not large unverified ones.
 - **Creative solutions welcome.** If you find a better way to solve the problem than what was specified, do it — but explain why your approach is better.
