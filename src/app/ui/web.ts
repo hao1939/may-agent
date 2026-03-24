@@ -136,17 +136,33 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   function handleBenchmarks(url: URL): Response {
     try {
       const agentFilter = url.searchParams.get("agent") || undefined;
+      const batchId = url.searchParams.get("batch") || undefined;
+
+      // Detailed batch view
+      if (batchId) {
+        const runs = _db().prepare(`SELECT r.id, r.scenario, r.passed, r.duration_ms, r.timestamp, r.categories, r.tags, r.tier, r.prompt_hash, r.model FROM gym_runs r WHERE r.batch_id = ? ORDER BY r.scenario`).all(batchId) as any[];
+        const checks: Record<number, any[]> = {};
+        for (const run of runs) { checks[run.id] = _db().prepare("SELECT check_name, passed, detail FROM gym_checks WHERE run_id = ?").all(run.id) as any[]; }
+        return json({ batch_id: batchId, runs, checks });
+      }
+
       const where = agentFilter ? "WHERE r.agent_name = ?" : "";
       const params = agentFilter ? [agentFilter] : [];
+
+      // Batch listing
+      const batchWhere = agentFilter ? "WHERE r.agent_name = ? AND r.batch_id IS NOT NULL" : "WHERE r.batch_id IS NOT NULL";
+      const batches = _db().prepare(`SELECT r.batch_id, r.agent_name, r.run_tag, r.prompt_hash, r.model, r.framework_sha, COUNT(*) as total, SUM(r.passed) as passed, MIN(r.timestamp) as started_at FROM gym_runs r ${batchWhere} GROUP BY r.batch_id ORDER BY started_at DESC LIMIT 50`).all(...params) as any[];
+
+      // Per-agent per-scenario summary
       const summary = _db().prepare(`
         SELECT r.agent_name as agent, r.scenario, COUNT(*) as runs, SUM(r.passed) as passes,
-          MAX(r.timestamp) as lastRun, AVG(r.duration_ms) as avgMs
+          MAX(r.timestamp) as lastRun, AVG(r.duration_ms) as avgMs, r.categories, r.tags, r.tier
         FROM gym_runs r ${where} GROUP BY r.agent_name, r.scenario ORDER BY r.agent_name, r.scenario
       `).all(...params) as any[];
       const agents: Record<string, any[]> = {};
       for (const row of summary) {
         if (!agents[row.agent]) agents[row.agent] = [];
-        agents[row.agent].push({ scenario: row.scenario, runs: row.runs, passes: row.passes, passRate: row.runs > 0 ? row.passes / row.runs : 0, lastRun: row.lastRun, avgMs: row.avgMs ? Math.round(row.avgMs) : null });
+        agents[row.agent].push({ scenario: row.scenario, runs: row.runs, passes: row.passes, passRate: row.runs > 0 ? row.passes / row.runs : 0, lastRun: row.lastRun, avgMs: row.avgMs ? Math.round(row.avgMs) : null, categories: row.categories ? JSON.parse(row.categories) : [], tags: row.tags ? JSON.parse(row.tags) : [], tier: row.tier });
       }
       let checkDetails: Record<string, any[]> = {};
       if (agentFilter) {
@@ -154,8 +170,51 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         for (const run of latestRuns) { checkDetails[run.scenario] = _db().prepare("SELECT check_name, passed, detail FROM gym_checks WHERE run_id = ?").all(run.id) as any[]; }
       }
       const totalRuns = _db().prepare("SELECT COUNT(*) as cnt FROM gym_runs").get() as any;
-      return json({ agents, scenarios: [...new Set(summary.map(r => r.scenario))].sort(), runs: totalRuns?.cnt || 0, checkDetails });
-    } catch (err) { return json({ error: String(err), agents: {}, scenarios: [], runs: 0 }); }
+      return json({ agents, scenarios: [...new Set(summary.map(r => r.scenario))].sort(), runs: totalRuns?.cnt || 0, checkDetails, batches });
+    } catch (err) { return json({ error: String(err), agents: {}, scenarios: [], runs: 0, batches: [] }); }
+  }
+
+  function handleBenchmarkPrompts(url: URL): Response {
+    try {
+      const hash = url.searchParams.get("hash");
+      const diffWith = url.searchParams.get("diff");
+      if (hash && diffWith) {
+        const a = _db().prepare("SELECT prompt_text, agent_name, model FROM gym_prompts WHERE prompt_hash = ?").get(hash) as any;
+        const b = _db().prepare("SELECT prompt_text, agent_name, model FROM gym_prompts WHERE prompt_hash = ?").get(diffWith) as any;
+        if (!a || !b) return json({ error: "Prompt not found" }, 404);
+        return json({ a: { hash, text: a.prompt_text, agent: a.agent_name, model: a.model }, b: { hash: diffWith, text: b.prompt_text, agent: b.agent_name, model: b.model } });
+      }
+      if (hash) {
+        const row = _db().prepare("SELECT * FROM gym_prompts WHERE prompt_hash = ?").get(hash) as any;
+        if (!row) return json({ error: "Prompt not found" }, 404);
+        return json(row);
+      }
+      const rows = _db().prepare(`SELECT p.prompt_hash, p.agent_name, p.model, p.framework_sha, p.created_at, (SELECT COUNT(*) FROM gym_runs r WHERE r.prompt_hash = p.prompt_hash) as run_count FROM gym_prompts p ORDER BY p.created_at DESC`).all() as any[];
+      return json({ prompts: rows });
+    } catch (err) { return json({ error: String(err) }); }
+  }
+
+  function handleBenchmarkCompare(url: URL): Response {
+    try {
+      const batchA = url.searchParams.get("a");
+      const batchB = url.searchParams.get("b");
+      if (!batchA || !batchB) return json({ error: "Need ?a=<batch_id>&b=<batch_id>" }, 400);
+      const runsA = _db().prepare("SELECT scenario, passed, duration_ms, prompt_hash FROM gym_runs WHERE batch_id = ?").all(batchA) as any[];
+      const runsB = _db().prepare("SELECT scenario, passed, duration_ms, prompt_hash FROM gym_runs WHERE batch_id = ?").all(batchB) as any[];
+      const mapA: Record<string, any> = {}; for (const r of runsA) mapA[r.scenario] = r;
+      const mapB: Record<string, any> = {}; for (const r of runsB) mapB[r.scenario] = r;
+      const allScenarios = [...new Set([...Object.keys(mapA), ...Object.keys(mapB)])].sort();
+      const regressions: any[] = [], improvements: any[] = [], unchanged: any[] = [];
+      for (const s of allScenarios) {
+        const a = mapA[s], b = mapB[s];
+        const passedA = a ? !!a.passed : null, passedB = b ? !!b.passed : null;
+        const entry = { scenario: s, a: passedA, b: passedB };
+        if (passedA === true && passedB === false) regressions.push(entry);
+        else if (passedA === false && passedB === true) improvements.push(entry);
+        else unchanged.push(entry);
+      }
+      return json({ batchA, batchB, regressions, improvements, unchanged, promptHashA: runsA[0]?.prompt_hash || null, promptHashB: runsB[0]?.prompt_hash || null });
+    } catch (err) { return json({ error: String(err) }); }
   }
 
   function handleStats(): Response {
@@ -195,6 +254,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     const unix = connect(socketPath);
     wsToUnix.set(ws, unix);
     let buffer = "";
+    let subscribed = false;
     unix.on("data", (chunk: Buffer) => {
       buffer += chunk.toString();
       const lines = buffer.split("\n");
@@ -203,8 +263,19 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         if (!line.trim()) continue;
         try {
           const event = JSON.parse(line);
-          if (event.type === "connected" && event.sessionId) unix.write(JSON.stringify({ type: "subscribe", sessions: [event.sessionId] }) + "\n");
+          // Subscribe to the chat session when we know its ID
+          if (event.type === "connected" && event.sessionId) {
+            unix.write(JSON.stringify({ type: "subscribe", sessions: [event.sessionId] }) + "\n");
+            subscribed = true;
+          }
+          // If no session on connect, watch for session_start from our input
+          if (!subscribed && event.type === "session_start") {
+            unix.write(JSON.stringify({ type: "subscribe", sessions: [event.sessionId] }) + "\n");
+            subscribed = true;
+          }
           if (event.type === "ok" && event.command === "subscribe") continue;
+          // Before subscribed, only forward meta events (not background agent noise)
+          if (!subscribed && event.type !== "connected" && event.type !== "error" && event.type !== "session_start") continue;
           ws.send(line);
         } catch { try { ws.send(line); } catch {} }
       }
@@ -224,6 +295,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (url.pathname === "/api/stats") return handleStats();
       if (url.pathname === "/api/digest") return handleDigest(url);
       if (url.pathname === "/api/benchmarks") return handleBenchmarks(url);
+      if (url.pathname === "/api/benchmarks/prompts") return handleBenchmarkPrompts(url);
+      if (url.pathname === "/api/benchmarks/compare") return handleBenchmarkCompare(url);
       const sessionMatch = url.pathname.match(/^\/api\/sessions\/([^/]+)$/);
       if (sessionMatch) return handleSession(sessionMatch[1]);
       const transcriptMatch = url.pathname.match(/^\/api\/sessions\/([^/]+)\/transcript$/);
