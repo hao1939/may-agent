@@ -47,10 +47,10 @@ Close. The problem (ambiguous file-based messages) was real in March 18th when S
 
 ---
 
-## C1.5 Finish Guard Wiring — Feasibility Assessment (2026-03-23)
+## C1.5 Finish Guard Wiring — Feasibility Assessment (2026-03-23, updated 2026-03-24)
 
-**Source**: `agents/bob/workspace/brief-finish-guard-wiring.md` (req:c71f1687)
-**Status**: ASSESSED — Override NOT feasible. Post-hoc enforcement IMPLEMENTED instead.
+**Source**: `agents/bob/workspace/brief-finish-guard-wiring.md` (req:c71f1687, req:1970c91b)
+**Status**: ASSESSED — Override NOT feasible. Post-hoc enforcement IMPLEMENTED. **BLOCKED on platform** for preventive wiring.
 
 ### Investigation Results
 
@@ -93,14 +93,27 @@ To make this preventive (blocking, not just flagging), we need one of:
 
 Any of these would be a 2-line integration with our existing `finish-guard.ts` module. But they require upstream changes to the binary.
 
+### Update (2026-03-24, req:1970c91b)
+
+Bob re-requested this. Confirmed again via investigation: `wrapToolsWithReceipts` (bulletin 2026-03-19) no longer exists — those files (`manager.ts`, `compose-guards.ts`, `read-dedup-guard.ts`, `scrape-dedup-guard.ts`) were lost in a container rebuild. The commits that wired guards (94fbc27, 13a1817) are not in current git history. The runtime is now fully compiled binary with no accessible tool dispatch layer.
+
+**Three enforcement layers are active today:**
+1. **Convention check** — `checkC1_5_ghostDeliverables()` in `convention-check.ts` flags violations post-session
+2. **Active nudge** — `detectGhostDeliverable()` in `monitor-session.cjs` detects during running sessions
+3. **Behavioral** — SOUL.md/heartbeat instructions warn agents about ghost deliverables
+
+**What's needed for preventive blocking**: Hao adds `beforeToolCall` hook to pi-agent-core binary, or adds native `existsSync` validation on `finish()` deliverables. This is a **platform request**, not something we can build in userland.
+
 ### Verdict
 
 | Layer | Status |
 |-------|--------|
 | `finish-guard.ts` module | ✅ Complete, tested (15 test cases) |
-| Preventive interception | ❌ Not feasible from userland |
-| Post-hoc C1.5 convention check | ✅ **Implemented this session** |
-| Upstream fix (binary hook) | 🔲 Needs platform team |
+| Preventive interception | ❌ Not feasible from userland — BLOCKED on platform |
+| Post-hoc C1.5 convention check | ✅ Implemented |
+| Active nudge ghost detection | ✅ Implemented |
+| Behavioral enforcement | ✅ Implemented (SOUL.md + heartbeat) |
+| Upstream fix (binary hook) | 🔲 Needs Hao / platform team |
 
 ---
 
