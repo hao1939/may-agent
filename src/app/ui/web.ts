@@ -162,6 +162,17 @@ function handleTranscript(sessionId: string): Response {
   return json({ sessionId, messageCount: messages.length, messages });
 }
 
+function handleDigest(): Response {
+  // Find the latest digest file
+  const digestDir = join(STATE_DIR, "..", "agents", "shared", "daily-digests");
+  if (!existsSync(digestDir)) return json({ digest: null, date: null });
+  const files = readdirSync(digestDir).filter(f => f.endsWith(".md")).sort().reverse();
+  if (files.length === 0) return json({ digest: null, date: null });
+  const latest = files[0];
+  const content = readFileSync(join(digestDir, latest), "utf-8");
+  return json({ digest: content, date: latest.replace(".md", "") });
+}
+
 function handleStats(): Response {
   const now = Date.now();
   const day = now - 86400000;
@@ -279,6 +290,7 @@ const server = Bun.serve({
     // API routes
     if (url.pathname === "/api/requests") return handleRequests(url);
     if (url.pathname === "/api/stats") return handleStats();
+    if (url.pathname === "/api/digest") return handleDigest();
 
     const sessionMatch = url.pathname.match(/^\/api\/sessions\/([^/]+)$/);
     if (sessionMatch) return handleSession(sessionMatch[1]);
