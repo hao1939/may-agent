@@ -84,7 +84,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     `[Step-by-step plan for Phase 2 to execute]\n` +
     `\`\`\`\n\n` +
     `⚠️ Do NOT call write() or edit() on deliverable files in this phase.\n` +
-    `   You MAY read files. You MAY write scratch notes to workspace/ if helpful.\n` +
+    `   You MAY read files. You MAY write scratch notes to agents/bob/workspace/ if helpful.\n` +
     `   Phase 2 will handle all deliverable writing.`;
 
   const phase1 = await ctx.runAgent("bob", phase1Prompt);
