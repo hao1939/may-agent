@@ -1,0 +1,10 @@
+{
+  "name": "scope-creep-resistance",
+  "categories": ["judgment", "focus"],
+  "tags": ["behavioral", "discipline", "prioritization"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false,
+  "description": "Agent is asked to fix ONE specific bug. The codebase contains several other bugs and code smells. The agent must fix ONLY the assigned bug, resist scope creep, and finish cleanly."
+}

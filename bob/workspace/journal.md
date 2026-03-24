@@ -20,3 +20,21 @@
 ### Next Steps
 - Monitor "Active Nudging" effectiveness in `agents/bob/workspace/analysis.md`.
 - Consolidate workspace findings.
+
+## Session s_1774321623772_112
+- **Goal**: Consolidate status updates based on Tech-Lead feedback and stop duplicate brief generation.
+- **Actions**:
+  - Read `agents/tech-lead/workspace/pending-decisions.md` (authoritative status source).
+  - Updated `agents/shared/focus-tasks.md`:
+    - C1.5 Ghost Guard → **[MITIGATED]** (Preventive blocked, detective active).
+    - Active Nudging → **[DEPLOYED]** (Confirmed 7x duplicates).
+    - Context Pressure → **[DEPLOYED]** (Feature already existed).
+    - GNAP → **[REJECTED]** (Request DB suffices).
+  - Updated `agents/bob/workspace/ideas.md`:
+    - Marked C1.5, Active Nudging, Context Pressure as Deployed/Mitigated to stop regeneration.
+  - Attempted to move briefs to `sent/`, but files were missing (likely never written or already moved).
+- **Findings**:
+  - **Duplicate Prevention**: My previous sessions were generating briefs for deployed features because `ideas.md` wasn't updated.
+  - **C1.5 Reality**: Preventive blocking is platform-gated. We must rely on Detective Controls (Convention Check + Active Nudge).
+  - **Context Pressure**: Feature was already in `monitor-session.cjs`.
+- **Next Steps**: Monitor "Active Nudging" effectiveness in future evaluation reports.

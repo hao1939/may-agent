@@ -23,16 +23,13 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 ### Control Plane Phase 4 (Context Pressure Valve)
 - **Problem**: Context truncation causes catastrophic forgetting.
 - **Fix**: Inject "90% Full" warning to trigger consolidation.
-- **Status**: **[COMPLETED]** (2026-03-23). Feature already existed in `monitor-session.cjs` (threshold 100k tokens). No new code needed.
+- **Status**: **[DEPLOYED]** (2026-03-23). Feature already existed in `monitor-session.cjs` (threshold 100k tokens). No new code needed.
 - **Owner**: Bob (Design).
 
 ### Infra Enforcement of C1.5 (Ghost Deliverables)
 - **Problem**: C1.5 ("No Ghost Deliverables") is the #1 behavioral failure (FM-3.1). Coach cannot fix it.
 - **Fix**: Implement infra-level check.
-- **Status**: **[MITIGATED]** (2026-03-24).
-  1. **Preventive**: `src/lib/finish-guard.ts` implements `validateFinishDeliverables` logic.
-  2. **Detective**: `convention-check.ts` flags C1.5 violations.
-  3. **Verification**: 6 recent heartbeats show 0 FM-3.1 violations.
+- **Status**: **[MITIGATED]** (2026-03-24). Preventive wiring blocked by platform. Detective controls (Convention Check + Active Nudge) are deployed and active.
 - **Owner**: Tech-Lead (Monitoring).
 
 ### Typed Messages / GNAP (P105)

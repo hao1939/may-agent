@@ -21,11 +21,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If found → write proposal in workspace/improvement-proposals.md.
   Latest (2026-03-24T01:09): Bash-as-cat UP to 8.9% (from 7.1%). Optimizer #1 offender (20/49 cat calls). May 43% no-op heartbeats → sent req:bf42fb9d to add skipIfIdle. Finding at `workspace/finding-llm-to-js-scan-0324-0109.md`.
 
-- [x] **Handler health check** — Last done: 2026-03-23T10:09
+- [x] **Handler health check** — Last done: 2026-03-24T02:39
   Review existing JS handlers in agents/may/handlers/.
   Any errors in recent logs? Any handler that's not firing?
   If issues → add fix to workspace/todo.md.
-  Latest (2026-03-23T10:09): Same 3 handlers dead (convention-check, tool-quality-scan, heartbeat-context). Blocked on binary rebuild/restart.
+  Latest (2026-03-24T02:39): Same 3 dead (convention-check, tool-quality-scan, heartbeat-context). reflect+analyze-failures stale (5-7d). Tech-lead confirmed wrapTools wiring lost. Finding at `workspace/finding-handler-health-check-0324-0239.md`.
 
 - [x] **Proven pattern → Skill/Workflow** — Last done: 2026-03-23T23:50
   **Run via workflow**: `workflow.run("skill-lifecycle", "Scan recent sessions for proven multi-step patterns")`
@@ -34,9 +34,9 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Latest (2026-03-23T23:50): materialize-intermediate-findings DEPLOYED. 270-line SKILL.md. Skill at `agents/shared/skills/materialize-intermediate-findings/SKILL.md`.
   Skills deployed (13 total): obstacle-pivot, grep-first-reading, state-check-before-action, budget-before-act, stale-approach-fixation, coder-edit-discipline, delegation-verification, idempotent-work-detection, search-strategy-escalation, evidence-over-narrative, incremental-context-loading, request-triage-memoization, materialize-intermediate-findings.
 
-- [x] **Tool quality review** — Last done: 2026-03-23T13:09
+- [x] **Tool quality review** — Last done: 2026-03-24T02:39
   Read tool-quality-report.md. Look for regression trends and persistent failure patterns.
-  Latest (2026-03-23T13:09): Bash-as-cat 10.4%. ENOENT top waste (30 errors, ~$4.80/day). Edit failures 0%. Finding at `workspace/finding-tool-quality-review-0323-1309.md`.
+  Latest (2026-03-24T02:39): Bash-as-cat 9.5% (↓ from 10.4%). QA 24% worst. ENOENT 77 errors/30 sessions. Bob+Optimizer top ENOENT offenders. Finding at `workspace/finding-tool-quality-review-0324-0239.md`.
 
 ## Weekly
 - [x] **Improvement proposals review** — Last done: 2026-03-21T16:39

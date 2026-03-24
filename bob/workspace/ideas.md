@@ -75,18 +75,14 @@
 ## 15. C1.5 Ghost Guard (Finish Tool)
 - **Insight**: FM-3.1 (Ghost Deliverables) is the top failure.
 - **Idea**: Wrap `finish()` to verify `fs.existsSync(path)` for all deliverables.
-- **Status**: **[MITIGATED]** (2026-03-23). Userland wrapper infeasible; implemented as Detective Control in `convention-check.ts`.
+- **Status**: **[MITIGATED]** (2026-03-23). Preventive wrapper blocked by platform; implemented as Detective Control in `convention-check.ts` and `monitor-session`.
 
 ## 16. Context Pressure Valve (P42 / Phase 4)
 - **Insight**: Context limits (95% full) are currently ignored until crash.
 - **Idea**: Auto-truncate or warn when context > 90%.
-- **Status**: **[COMPLETED]** (2026-03-23). Already implemented in `monitor-session.cjs` (100k token threshold).
+- **Status**: **[DEPLOYED]** (2026-03-23). Already implemented in `monitor-session.cjs` (100k token threshold).
 
-## 17. AgentConductor (Dynamic Topology / arXiv:2602.17100)
-- **Insight**: Static supervisor-worker hierarchies are suboptimal. RL-driven topology (Direct vs Hierarchical) improves pass rate by 14%.
-- **Idea**: "Complexity Assessor" step in Manager that chooses team structure (Solo vs Squad) before dispatch.
-
-## 16. Agent Skills Packages (HuggingFace / Validation)
+## 17. Agent Skills Packages (HuggingFace / Validation)
 - **Insight**: HuggingFace "Agent Skills" (distributable folders with code+prompts) mirror our `agents/shared/skills/` architecture.
 - **Validation**: Confirming industry convergence on "Filesystem-as-Skill-Library".
 - **Action**: Continue investing in `agents/shared/skills/` as our primary capability expansion mechanism.
