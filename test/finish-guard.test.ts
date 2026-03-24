@@ -65,14 +65,124 @@ describe("finish-guard", () => {
     expect(result).toBeUndefined();
   });
 
-  it("allows finish(success) with no deliverables", async () => {
-    const result = await guard(makeCtx({ status: "success", summary: "done" }));
+  it("allows finish(success) with no deliverables and non-action summary", async () => {
+    const result = await guard(makeCtx({ status: "success", summary: "Analyzed logs and found no issues" }));
     expect(result).toBeUndefined();
   });
 
-  it("allows finish(success) with empty deliverables array", async () => {
-    const result = await guard(makeCtx({ status: "success", summary: "done", deliverables: [] }));
+  it("allows finish(success) with empty deliverables array and non-action summary", async () => {
+    const result = await guard(makeCtx({ status: "success", summary: "No new work — early exit per cost guard.", deliverables: [] }));
     expect(result).toBeUndefined();
+  });
+
+  // === Ghost Deliverable Guard (FM-3.1 preventive) Tests ===
+
+  it("blocks finish(success) with 'Fixed bug' summary but no file changes", async () => {
+    const ctx = makeCtx(
+      { status: "success", summary: "Fixed the authentication bug in login handler" },
+      [assistantWithToolCall("read", { path: "src/auth.ts" })],
+    );
+    const result = await guard(ctx);
+    expect(result).toBeDefined();
+    expect(result!.block).toBe(true);
+    expect(result!.reason).toContain("FM-3.1 Ghost Deliverable");
+    expect(result!.reason).toContain("Fixed the authentication bug");
+  });
+
+  it("blocks finish(success) with 'Implemented' summary but no file changes", async () => {
+    const ctx = makeCtx(
+      { status: "success", summary: "Implemented the new caching layer" },
+      [assistantWithToolCall("read", { path: "src/cache.ts" })],
+    );
+    const result = await guard(ctx);
+    expect(result).toBeDefined();
+    expect(result!.block).toBe(true);
+    expect(result!.reason).toContain("FM-3.1 Ghost Deliverable");
+  });
+
+  it("blocks finish(success) with 'Refactored' summary but no file changes", async () => {
+    const ctx = makeCtx(
+      { status: "success", summary: "Refactored the database module for clarity" },
+      [],
+    );
+    const result = await guard(ctx);
+    expect(result).toBeDefined();
+    expect(result!.block).toBe(true);
+    expect(result!.reason).toContain("FM-3.1 Ghost Deliverable");
+  });
+
+  it("allows 'Fixed' summary when write evidence exists", async () => {
+    const ctx = makeCtx(
+      { status: "success", summary: "Fixed the authentication bug" },
+      [
+        assistantWithToolCall("edit", { path: "src/auth.ts", oldText: "a", newText: "b" }),
+        assistantWithToolCall("read", { path: "src/auth.ts" }),
+      ],
+    );
+    // No deliverables listed — but has write evidence, ghost guard doesn't fire
+    const result = await guard(ctx);
+    expect(result).toBeUndefined();
+  });
+
+  it("allows 'Updated' summary when bash write evidence exists", async () => {
+    const ctx = makeCtx(
+      { status: "success", summary: "Updated the config file" },
+      [
+        assistantWithToolCall("bash", { command: "echo 'new config' > config.json" }),
+        assistantWithToolCall("bash", { command: "cat config.json" }),
+      ],
+    );
+    const result = await guard(ctx);
+    expect(result).toBeUndefined();
+  });
+
+  it("allows 'Verified everything works' phrasing without file changes", async () => {
+    const ctx = makeCtx(
+      { status: "success", summary: "Verified the existing behavior is correct, no changes needed" },
+      [assistantWithToolCall("read", { path: "src/auth.ts" })],
+    );
+    // "Verified" is NOT in the ghost keyword list — this should pass
+    const result = await guard(ctx);
+    expect(result).toBeUndefined();
+  });
+
+  it("blocks 'Deleted old module' summary but no file changes", async () => {
+    const ctx = makeCtx(
+      { status: "success", summary: "Deleted the deprecated logging module" },
+      [assistantWithToolCall("read", { path: "src/old-logger.ts" })],
+    );
+    const result = await guard(ctx);
+    expect(result).toBeDefined();
+    expect(result!.block).toBe(true);
+    expect(result!.reason).toContain("FM-3.1 Ghost Deliverable");
+  });
+
+  it("blocks 'Added new feature' summary with no deliverables and no writes", async () => {
+    const ctx = makeCtx(
+      { status: "success", summary: "Added retry logic to the API client" },
+      [],
+    );
+    const result = await guard(ctx);
+    expect(result).toBeDefined();
+    expect(result!.block).toBe(true);
+  });
+
+  it("does not block ghost guard when deliverables ARE listed (falls through to Gate 1)", async () => {
+    // If deliverables are listed, the ghost guard should not fire — Gate 1 handles it
+    const ctx = makeCtx(
+      {
+        status: "success",
+        summary: "Fixed the bug",
+        deliverables: [{ path: "src/foo.ts", description: "fixed" }],
+      },
+      [assistantWithToolCall("read", { path: "src/foo.ts" })],
+    );
+    const result = await guard(ctx);
+    expect(result).toBeDefined();
+    expect(result!.block).toBe(true);
+    // Should be Gate 1 (write evidence), not Gate 0 (ghost)
+    expect(result!.reason).not.toContain("Ghost Deliverable");
+    expect(result!.reason).toContain("no write, edit");
   });
 
   it("blocks finish(success) with deliverables but no write evidence", async () => {
