@@ -15,11 +15,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If pattern found → design fix, add to workspace/todo.md.
   Latest (2026-03-23T22:09): 88 sessions/12h = 7.3/hr, ~$133/day. Bash-as-cat 14% system-wide (scout 50%, coach 24%). Sent guard patches to May (req:08282cc8). Finding at `workspace/finding-cost-scan-0323-2209.md`.
 
-- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-23T10:09
+- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-24T01:09
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
   Could it be replaced with a JS handler? (See cron-graduation-process.md Stage 3.)
   If found → write proposal in workspace/improvement-proposals.md.
-  Latest (2026-03-23T10:09): Bash-as-cat 7.1%. No new LLM-to-JS opportunities. Remaining: bash interceptor, QA commit preflight, Amy read-dedup (all previously identified). Finding at `workspace/finding-llm-to-js-scan-0323-1009.md`.
+  Latest (2026-03-24T01:09): Bash-as-cat UP to 8.9% (from 7.1%). Optimizer #1 offender (20/49 cat calls). May 43% no-op heartbeats → sent req:bf42fb9d to add skipIfIdle. Finding at `workspace/finding-llm-to-js-scan-0324-0109.md`.
 
 - [x] **Handler health check** — Last done: 2026-03-23T10:09
   Review existing JS handlers in agents/may/handlers/.

@@ -18,7 +18,7 @@ Compact index. Per-item evidence in `common-sense-evidence/cs-{num}.md`.
 | 2.4 | One thing at a time | ✅ | Amy-Kimi, Bob, TL ✅, Amy ✅ | 2026-03-19 |
 | 3.1 | Fail gracefully | ✅ | Optimizer ✅, Amy ✅, Evaluator  | 2026-03-18 |
 | 3.2 | Don't repeat yourself | ⚠️ | Amy-Kimi ✅, TL ❌ (2x), Bob ❌ (6x grep), Opt ✅, QA ✅, Scout ✅, Bob ❌ (3x mv same files, s_551 Mar 23) | 2026-03-23 |
-| 3.3 | Know when to stop | ⚠️↑ | Amy ✅, Optimizer ❌→⚠️ | 2026-03-18 |
+| 3.3 | Know when to stop | ✅ | Amy ✅, Optimizer ✅ (clean 16-67t sessions), Coder ✅ (adapts after parallel fails), Bob ✅ (no repetition) | 2026-03-24 |
 | 3.4 | Escalation has content | ✅ | QA ✅ (2x), Bob ✅, Opt ✅ (2x) | 2026-03-21 |
 | 3.5 | State is filesystem | ⚠️↑ | TL ✅, Scout ✅ (post-fix), Opti | 2026-03-18 |
 | C1.1 | Read Before Edit | ✅ | Amy-Kimi ✅, Optimizer ✅ (2x 2026-03-23), QA ❌→⚠️, Bob ✅ (soft, cp+cat), Scout ✅ (bash-cat), Coder ✅ (gym) | 2026-03-23 |
@@ -49,11 +49,12 @@ Compact index. Per-item evidence in `common-sense-evidence/cs-{num}.md`.
 | 13.3 | Message Quality | ✅ | TL ✅ (2x), Opt ✅ | 2026-03-19 |
 | 13.4 | Not Required for All | ✅ | Bob ✅ | 2026-03-19 |
 
-## Summary (2026-03-23, 20:10 UTC)
-- ✅ 31/43 | ❌ 3/43 | ⚠️ 9/43
+## Summary (2026-03-24, 00:06 UTC)
+- ✅ 32/43 | ❌ 3/43 | ⚠️ 8/43
 - **Failed**: 1.1 (Acknowledge), 1.6 (C50 Re-Planning), C3.2 (Scout workspace isolation)
 - **Key partial**: C1.3 (Bob ❌ 0/13 verified, Opt ✅ grep+ls, QA ⚠️ 1/2), C1.5 (QA no read-back after bash write), 3.2 (Bob still repeating — 3x mv same files in s_551), 4.5 (Tool schema), 13.1 (Coder no-commit)
-- **Improving**: 3.3, 3.5, C1.3 (Opt+QA improving, Bob still 0%), C1.5
+- **Improving**: 3.5, C1.3 (Opt+QA improving, Bob still 0%), C1.5
+- **Resolved**: 3.3 (Know when to stop) — upgraded ⚠️↑→✅ on 2026-03-24 (5 sessions: Optimizer clean 16-67t, Coder adapts after parallel fails, Bob no repetition, 0 blocked/failure finishes in 25 sessions)
 - **Resolved**: C1.2 (Truncation handling) — upgraded ⚠️→✅ on 2026-03-23 (6 sessions: Bob 2x, TL, Opt, Coach, Coder — all handle truncation or use proactive offset)
 - **Resolved**: C1.1 (Read Before Edit) — upgraded ⚠️→✅ on 2026-03-23 (5 sessions checked: Opt 2x✅, Bob ✅ soft, Scout ✅ bash-cat, Coder ✅ gym)
 - **Resolved**: 6.1 (Budget pacing) — upgraded ⚠️↑→✅ on 2026-03-22 (optimizer efficiently delegates via workflows, lean sessions)

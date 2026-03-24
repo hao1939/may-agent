@@ -29,9 +29,10 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 ### Infra Enforcement of C1.5 (Ghost Deliverables)
 - **Problem**: C1.5 ("No Ghost Deliverables") is the #1 behavioral failure (FM-3.1). Coach cannot fix it.
 - **Fix**: Implement infra-level check.
-- **Status**: **[MITIGATED]** (2026-03-23).
-  1. **Preventive**: Override not feasible from userland (Tech-Lead Assessment).
-  2. **Detective**: `convention-check.ts` now flags C1.5 violations post-hoc.
+- **Status**: **[MITIGATED]** (2026-03-24).
+  1. **Preventive**: `src/lib/finish-guard.ts` implements `validateFinishDeliverables` logic.
+  2. **Detective**: `convention-check.ts` flags C1.5 violations.
+  3. **Verification**: 6 recent heartbeats show 0 FM-3.1 violations.
 - **Owner**: Tech-Lead (Monitoring).
 
 ### Typed Messages / GNAP (P105)
