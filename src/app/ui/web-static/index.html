@@ -397,15 +397,27 @@ function initChat() {
 function renderSessionPicker() {
   const picker = document.getElementById('session-picker');
   if (!picker) return;
+  const seen = new Set();
+  const running = activeSessions.filter(s => {
+    if (s.status !== 'running' || seen.has(s.sessionId)) return false;
+    seen.add(s.sessionId);
+    return true;
+  });
   let html = '<button class="ask-btn" style="' + (!currentSessionId ? 'border-color:var(--accent);color:var(--accent)' : '') + '" onclick="switchSession(null)">💬 Chat</button> ';
-  for (const s of activeSessions) {
+  for (const s of running) {
     const isActive = currentSessionId === s.sessionId;
     const color = isActive ? 'border-color:var(--accent);color:var(--accent)' : '';
-    html += `<button class="ask-btn" style="${color}" onclick="switchSession('${s.sessionId}')" title="${esc(s.task || '')}">${s.agent}</button> `;
+    const label = s.agent + ' (' + s.sessionId.slice(-6) + ')';
+    const task = (s.task || '').slice(0, 80);
+    html += `<button class="ask-btn" style="${color}" onclick="switchSession('${s.sessionId}')" title="${esc(task)}">${label}</button> `;
+  }
+  if (running.length === 0) {
+    html += '<span style="color:var(--fg2);font-size:11px">No agents running</span>';
   }
   picker.innerHTML = html;
+  const target = running.find(s => s.sessionId === currentSessionId);
   document.getElementById('chat-input').placeholder = currentSessionId
-    ? `Steer ${activeSessions.find(s => s.sessionId === currentSessionId)?.agent || 'session'}...`
+    ? `Steer ${target?.agent || 'session'}...`
     : 'Type a message...';
 }
 
