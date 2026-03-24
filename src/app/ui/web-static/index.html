@@ -105,6 +105,7 @@
 <div class="main">
   <!-- Dashboard -->
   <div id="dashboard">
+    <div id="digest-panel" style="margin-bottom:20px"></div>
     <div class="stats" id="stats"></div>
     <div class="filters">
       <select id="f-from"><option value="">All sources</option><option value="human">Human</option><option value="cron">Cron</option></select>
@@ -499,7 +500,40 @@ function esc(s) {
   return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
+// ── Digest ────────────────────────────────────────────────────────────
+
+async function loadDigest() {
+  const panel = document.getElementById('digest-panel');
+  try {
+    const r = await fetch('/api/digest');
+    const data = await r.json();
+    if (!data.digest) {
+      panel.innerHTML = '<div style="color:var(--fg2);font-size:13px;padding:8px">No digest yet — generated daily by the system.</div>';
+      return;
+    }
+    // Simple markdown → HTML (headings, bold, tables, lists)
+    let html = data.digest
+      .replace(/^# (.+)$/gm, '<h2 style="font-size:16px;margin:16px 0 8px">$1</h2>')
+      .replace(/^## (.+)$/gm, '<h3 style="font-size:14px;color:var(--accent);margin:14px 0 6px">$1</h3>')
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/^- (.+)$/gm, '<div style="padding-left:12px">• $1</div>')
+      .replace(/^(\|.+\|)$/gm, (row) => {
+        if (row.match(/^\|[-|]+\|$/)) return '';
+        const cells = row.split('|').filter(Boolean).map(c => c.trim());
+        const tag = row === row.toUpperCase() ? 'th' : 'td';
+        return '<tr>' + cells.map(c => `<${tag} style="padding:4px 8px;border-bottom:1px solid var(--border);font-size:12px">${c}</${tag}>`).join('') + '</tr>';
+      })
+      .replace(/(<tr>.*<\/tr>\n?)+/g, (m) => `<table style="width:100%;border-collapse:collapse;margin:8px 0">${m}</table>`)
+      .replace(/\n\n/g, '<br>');
+
+    panel.innerHTML = `<div class="panel" style="border-left:3px solid var(--accent)">${html}</div>`;
+  } catch(e) {
+    panel.innerHTML = '';
+  }
+}
+
 // ── Init ──────────────────────────────────────────────────────────────
+loadDigest();
 loadStats();
 loadRequests();
 </script>
