@@ -99,6 +99,7 @@
   <div class="tabs">
     <div class="tab active" data-tab="dashboard">Dashboard</div>
     <div class="tab" data-tab="chat">Chat</div>
+    <div class="tab" data-tab="benchmarks">Benchmarks</div>
   </div>
 </div>
 
@@ -128,6 +129,11 @@
       </div>
     </div>
   </div>
+
+  <!-- Benchmarks -->
+  <div id="benchmarks" class="hidden">
+    <div id="benchmark-content"></div>
+  </div>
 </div>
 
 <script>
@@ -144,7 +150,9 @@ document.querySelectorAll('.tab').forEach(tab => {
     currentTab = tab.dataset.tab;
     document.getElementById('dashboard').classList.toggle('hidden', currentTab !== 'dashboard');
     document.getElementById('chat').classList.toggle('hidden', currentTab !== 'chat');
+    document.getElementById('benchmarks').classList.toggle('hidden', currentTab !== 'benchmarks');
     if (currentTab === 'chat') initChat();
+    if (currentTab === 'benchmarks') loadBenchmarks();
   });
 });
 
@@ -324,6 +332,7 @@ function switchToChat(message) {
   currentTab = 'chat';
   document.getElementById('dashboard').classList.add('hidden');
   document.getElementById('chat').classList.remove('hidden');
+  document.getElementById('benchmarks').classList.add('hidden');
   initChat();
 
   // Pre-fill the input with the context message
@@ -498,6 +507,81 @@ document.getElementById('f-search').addEventListener('input', () => {
 function esc(s) {
   if (!s) return '';
   return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Benchmarks ────────────────────────────────────────────────────────
+
+async function loadBenchmarks(agent) {
+  const panel = document.getElementById('benchmark-content');
+  try {
+    const params = agent ? '?agent=' + agent : '';
+    const r = await fetch('/api/benchmarks' + params);
+    const data = await r.json();
+
+    if (data.runs === 0) {
+      panel.innerHTML = '<div style="color:var(--fg2);padding:20px;text-align:center">No benchmark data yet. Run: <code>scripts/gym-baseline.sh --tier smoke --agent coder</code></div>';
+      return;
+    }
+
+    let html = '';
+
+    // Agent selector
+    const agents = Object.keys(data.agents).sort();
+    html += '<div style="margin-bottom:16px">';
+    html += '<span style="color:var(--fg2);font-size:13px;margin-right:8px">Agent:</span>';
+    html += `<button class="ask-btn ${!agent ? 'active' : ''}" onclick="loadBenchmarks()" style="${!agent ? 'border-color:var(--accent);color:var(--accent)' : ''}">All</button> `;
+    for (const a of agents) {
+      const isActive = agent === a;
+      html += `<button class="ask-btn" onclick="loadBenchmarks('${a}')" style="${isActive ? 'border-color:var(--accent);color:var(--accent)' : ''}">${a}</button> `;
+    }
+    html += `<span style="color:var(--fg2);font-size:12px;margin-left:12px">${data.runs} total runs</span>`;
+    html += '</div>';
+
+    // Results table per agent
+    for (const [agentName, scenarios] of Object.entries(data.agents)) {
+      const totalPass = scenarios.filter(s => s.passRate >= 1).length;
+      const totalFail = scenarios.filter(s => s.passRate < 1).length;
+
+      html += `<div class="panel" style="margin-bottom:12px">`;
+      html += `<h3 style="font-size:14px;margin-bottom:8px">${agentName} <span style="color:var(--fg2);font-size:12px">${totalPass}/${scenarios.length} scenarios passing</span></h3>`;
+      html += '<table style="width:100%;border-collapse:collapse;font-size:12px">';
+      html += '<tr><th style="text-align:left;padding:4px 8px;border-bottom:1px solid var(--border)">Scenario</th>';
+      html += '<th style="padding:4px 8px;border-bottom:1px solid var(--border)">Pass Rate</th>';
+      html += '<th style="padding:4px 8px;border-bottom:1px solid var(--border)">Runs</th>';
+      html += '<th style="padding:4px 8px;border-bottom:1px solid var(--border)">Avg Time</th>';
+      html += '<th style="padding:4px 8px;border-bottom:1px solid var(--border)">Last Run</th></tr>';
+
+      for (const s of scenarios) {
+        const pct = Math.round(s.passRate * 100);
+        const color = pct >= 100 ? 'var(--green)' : pct >= 50 ? 'var(--yellow)' : 'var(--red)';
+        const avgTime = s.avgMs ? (s.avgMs < 60000 ? Math.round(s.avgMs/1000) + 's' : Math.round(s.avgMs/60000) + 'm') : '—';
+        const lastRun = s.lastRun ? s.lastRun.split('T')[0] : '—';
+        html += `<tr>`;
+        html += `<td style="padding:4px 8px;border-bottom:1px solid var(--border)">${s.scenario}</td>`;
+        html += `<td style="padding:4px 8px;border-bottom:1px solid var(--border);text-align:center;color:${color}">${pct}% (${s.passes}/${s.runs})</td>`;
+        html += `<td style="padding:4px 8px;border-bottom:1px solid var(--border);text-align:center">${s.runs}</td>`;
+        html += `<td style="padding:4px 8px;border-bottom:1px solid var(--border);text-align:center">${avgTime}</td>`;
+        html += `<td style="padding:4px 8px;border-bottom:1px solid var(--border);text-align:center;color:var(--fg2)">${lastRun}</td>`;
+        html += `</tr>`;
+
+        // Show check details if available
+        const checks = data.checkDetails?.[s.scenario];
+        if (checks && checks.length > 0) {
+          html += '<tr><td colspan="5" style="padding:2px 8px 8px 24px;border-bottom:1px solid var(--border)">';
+          for (const c of checks) {
+            const icon = c.passed ? '✅' : '❌';
+            html += `<span style="margin-right:12px;font-size:11px">${icon} ${c.check_name}</span>`;
+          }
+          html += '</td></tr>';
+        }
+      }
+      html += '</table></div>';
+    }
+
+    panel.innerHTML = html;
+  } catch(e) {
+    panel.innerHTML = `<div style="color:var(--red);padding:20px">Error loading benchmarks: ${e.message}</div>`;
+  }
 }
 
 // ── Digest ────────────────────────────────────────────────────────────
