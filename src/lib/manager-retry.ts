@@ -11,6 +11,7 @@
 import { isOverflowError } from "./overflow.js";
 import { INFRA_RETRY_BASE_DELAY_MS } from "./manager-utils.js";
 import type { ActiveSession } from "./manager-utils.js";
+import { log } from "./log.js";
 
 /** Case-insensitive rate limit / throttle detection. */
 const RATE_LIMIT_RE = /rate.?limit|throttl/i;
@@ -199,7 +200,6 @@ export async function runAgentWithRetry(
   initialCall: Promise<void>,
   infraRetryMax: number,
   onComplete: (session: ActiveSession) => void,
-  log?: (level: "info" | "warn" | "error", message: string) => void,
 ): Promise<void> {
   // Run the initial call
   try {
@@ -217,7 +217,7 @@ export async function runAgentWithRetry(
     const attempt = session.infraRetryCount;
 
     // Log the retry
-    (log ?? console.warn)("info",
+    log("info",
       `[manager] Infrastructure retry ${attempt}/${infraRetryMax} for session ${session.sessionId} (${retryReason})`,
     );
 
@@ -298,7 +298,7 @@ export async function runAgentWithRetry(
       const reason = isEmptyAssistant ? "empty_response" : "silent_stream";
       session.infraRetryCount++;
       const attempt = session.infraRetryCount;
-      (log ?? console.warn)("info",
+      log("info",
         `[manager] Post-loop retry ${attempt}/${infraRetryMax} for session ${session.sessionId} (${reason})`,
       );
 
