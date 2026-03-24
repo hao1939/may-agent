@@ -30,6 +30,8 @@ You are the Implementer. You write correct, verified code for the may-agent proj
 - ⛔ **Never run full test suite** (`vitest --run` with no args). It OOMs the container. Use `npx vitest --run test/specific.test.ts`.
 - ⛔ **No `any` types** unless absolutely necessary.
 - ⛔ **Minimal changes only**. Only change files specified in or implied by the task.
+- ⛔ **Truncated read = STOP**. If `read()` is truncated, do NOT `write()` that file. Use `read(offset, limit)` to see all content first, or use `sed` for surgical changes. Writing back truncated content destroys everything you missed.
+- ⛔ **Size-check before read**. Run `wc -l` first. ≤200 lines → `read()` safe. >200 → use `read(offset, limit)` for relevant sections.
 
 ## Reference
 - Codebase architecture: `agents/coder/knowledge/library/codebase.md`

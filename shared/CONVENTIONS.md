@@ -12,6 +12,7 @@
 | C1.2 | complete-reads | Use offset for truncated reads | mechanical | injection |
 | C1.3 | verify-writes | read() after edit()/write() | mechanical | injection + handler |
 | C1.4 | finish-clearly | Last action must be finish() | mechanical | injection + handler |
+| C1.7 | verification-evidence | Verify before finish(success) | mechanical | handler |
 | C2.1 | precise-args | Don't hallucinate tool arguments | mechanical | handler |
 | C2.2 | check-exit-codes | Verify bash exit codes | llm-judge | gym |
 | C2.3 | no-interactive | No nano/vim/less | mechanical | handler |
@@ -57,8 +58,9 @@
 ## C1. Input/Output
 1. **Always Read First**: Never assume file contents. `read()` before `edit()`.
 2. **One Read at a Time**: Truncated reads are fatal. Use `offset` to get the rest.
-3. **Verify Writes**: After `edit()`/`write()`, `read()` the file to confirm success. "Successfully updated" without verification is a lie.
-4. **Finish Clearly**: Your LAST action in a session must be `finish(status, result)`. Raw text "I'm done" is insufficient. Use `completed_items` to mark tasks done.
+3. **Success Requires Evidence**: Before calling `finish(success)`, run at least one verification command (grep, ls, test, read) to confirm your work is correct.
+4. **Verify Writes**: After `edit()`/`write()`, `read()` the file to confirm success. "Successfully updated" without verification is a lie.
+5. **Finish Clearly**: Your LAST action in a session must be `finish(status, result)`. Raw text "I'm done" is insufficient. Use `completed_items` to mark tasks done.
 
 ## C2. Tool Usage
 1. **Precise Arguments**: Check tool definitions. Don't hallucinate arguments.

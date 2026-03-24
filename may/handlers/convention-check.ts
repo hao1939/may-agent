@@ -5,7 +5,7 @@
  * the convention registry (agents/shared/CONVENTIONS.md).
  * Writes results to `convention_checks` table in may.db.
  *
- * Phase 1 checks: C1.1, C1.3, C1.4, C1.5, C2.1, C3.2, C3.3, C6.1, C7.1, C8.2, C12.1
+ * Phase 1 checks: C1.1, C1.3, C1.4, C1.5, C1.7, C2.1, C3.2, C3.3, C6.1, C7.1, C8.2, C12.1
  *
  * Exports create() conforming to HandlerModule.
  */
@@ -327,6 +327,7 @@ function runAllChecks(toolCalls: ToolCall[], agent: string): CheckResult[] {
     checkC7_1_rootIsApp(toolCalls),
     checkC8_2_promiseDeliverReport(toolCalls),
     checkC12_1_sessionStart(toolCalls, agent),
+    checkC1_7_verificationEvidence(toolCalls),
   ];
 }
 
@@ -631,6 +632,76 @@ function checkC12_1_sessionStart(toolCalls: ToolCall[], agent: string): CheckRes
   };
 }
 
+/**
+ * C1.7: verification-evidence
+ * If finish(status: "success"), there must be at least one verification command
+ * (bash with grep/ls/test/curl/node/python, or read()) in the last N tool calls.
+ */
+function checkC1_7_verificationEvidence(toolCalls: ToolCall[]): CheckResult {
+  // Find finish calls with status "success"
+  const finishCalls = toolCalls.filter(
+    (tc) => tc.name === "finish" && tc.input?.status === "success"
+  );
+
+  if (finishCalls.length === 0) {
+    // No success claim — not applicable, pass by default
+    return { convention: "C1.7", passed: true, violations: [] };
+  }
+
+  const violations: string[] = [];
+
+  for (const finish of finishCalls) {
+    // Look at the last 5 tool calls before this finish
+    const finishIdx = finish.index;
+    const lookbackStart = Math.max(0, finishIdx - 5);
+    const recentCalls = toolCalls.filter(
+      (tc) => tc.index >= lookbackStart && tc.index < finishIdx
+    );
+
+    // Check for verification signals
+    const VERIFICATION_PATTERNS = [
+      /\bgrep\b/,
+      /\bls\b/,
+      /\btest\b/,
+      /\bcurl\b/,
+      /\bnode\b/,
+      /\bpython\b/,
+      /\bcat\b/,
+      /\bwc\b/,
+      /\bfind\b/,
+      /\bdiff\b/,
+      /\btsc\b/,
+      /\bvitest\b/,
+    ];
+
+    let hasVerification = false;
+
+    for (const tc of recentCalls) {
+      // read() counts as verification
+      if (tc.name === "read") {
+        hasVerification = true;
+        break;
+      }
+      // bash with verification command
+      if (tc.name === "bash") {
+        const cmd = String(tc.input.command || "");
+        if (VERIFICATION_PATTERNS.some((p) => p.test(cmd))) {
+          hasVerification = true;
+          break;
+        }
+      }
+    }
+
+    if (!hasVerification) {
+      violations.push(
+        "finish(success) without verification: no grep/ls/test/read in last 5 tool calls"
+      );
+    }
+  }
+
+  return { convention: "C1.7", passed: violations.length === 0, violations };
+}
+
 // ── Regression detection ──────────────────────────────────────────────
 
 function detectRegressions(
@@ -643,7 +714,7 @@ function detectRegressions(
   // Get per-agent per-convention rates for two windows:
   // Recent (last 3.5d) vs Previous (3.5d-7d)
   const conventions = [
-    "C1.1", "C1.3", "C1.4", "C2.1", "C3.2", "C3.3",
+    "C1.1", "C1.3", "C1.4", "C1.5", "C1.7", "C2.1", "C3.2", "C3.3",
     "C6.1", "C7.1", "C8.2", "C12.1",
   ];
 

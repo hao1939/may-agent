@@ -8,6 +8,12 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 
 ## Active Focus
 
+### Gym Snapshots (Benchmark Tracking)
+- **Problem**: Gym results are ephemeral and hard to compare.
+- **Fix**: Store runs in DB with config hash + snapshots.
+- **Status**: **[DESIGNED]** (2026-03-24). Reviewed `docs/design/gym-snapshots.md`. Endorsed with 1 architectural change (hash effective prompt).
+- **Owner**: Tech-Lead (Implementation).
+
 ### Agent Evolution System (CI/CD for Prompts)
 - **Problem**: Improvements are ad-hoc, untracked, and prone to regression. No systematic way to measure "is the agent better?".
 - **Fix**: Implement "Gym is CI" workflow. Coach drives behavior, Optimizer drives efficiency. All changes gated by baselines.

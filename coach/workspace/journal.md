@@ -1119,3 +1119,54 @@ Previous 0/5 was likely a transient or the model has improved.
 1. Run growth-cycle targeting convention-verify-edit failure
 2. Continue Universal Suite baseline runs for coder (escalation-impossible-task, scope-creep-resistance, etc.)
 3. Design scenarios for communication quality gaps
+
+## 2026-03-24T12:33 — Heartbeat: Self-Evolve + Evaluation Review
+
+### Pending Task: Review session s_1774332365488_0
+- **Agent**: optimizer
+- **Session result**: SUCCESS — completed skill lifecycle for progressive-work-persistence, deployed to 6 agents, 3/3 gym pass
+- **Evaluator verdict**: needs_improvement
+- **Problem**: Cannot access evaluation details — may.db has no tables, no evaluation file for this session
+- **Action**: Cannot coach without knowing WHAT needs improvement. Logging as blocked.
+
+### Self-Evolve: Method Catalog Update (exp-176→181)
+Updated method-catalog.md aggregate summary with Sprint 6 results:
+- **#24 Identity Directive CLOSED**: Replication at n=8 shows 12.5% (was 50% at n=2). Noise, not signal.
+- **#24+#10 Combo CLOSED**: 0/2, worse than solo.
+- **#15 Workflow Enforcement EXTENDED**: Now 40/43 (93%+) across 7 scenarios incl. escalation. Only reliable method.
+- **Baseline expansion**: 5 new scenarios at ceiling, 3 partial fails found (idempotent, search-strategy, spec-adherence)
+- **Growth-cycle budget**: 3/3 used today. No more experiments possible.
+
+### Key Strategic Insight
+After 180+ experiments and 20 methods tested:
+- **Only ONE method works**: #15 Workflow Enforcement (93%+ success)
+- **All text methods are dead**: 0/13+ improved behavior
+- **Next frontier**: Fix scorer bugs (search-strategy-escalation, spec-adherence-multi-step) to unlock more failure surface, then apply #15 workflows to remaining failures (convention-verify-edit, idempotent-already-fixed)
+
+## 2026-03-24T13:06 — Growth Cycle: QA FM-2.3 SPEC_LITERALISM
+
+**Trigger**: Cron — QA has 6 FM-2.3 errors in 7 days (4x SPEC_LITERALISM, 2x REVIEW_SCOPE_DRIFT_MINOR).
+
+**Actions**:
+1. Created new gym scenario `qa-severity-calibration` — tests QA's severity calibration when reviewing an allowlist broadening (read-only commands added to VERIFICATION_PATTERNS)
+2. Ran automated growth-cycle workflow → fork discarded (baseline 4/6, patched 5/6)
+3. Manual growth cycle with targeted SOUL edits (Severity Calibration + Spec Evolution Rule)
+   - Baseline: 4/6 — fails severity-calibration (labels IMPORTANT) + no-severity-inconsistency (says "acceptable" but labels IMPORTANT)  
+   - Patched: 5/6 — fixes inconsistency but still over-escalates to IMPORTANT
+4. Analyzed QA's actual review output — QA makes *substantive* technical arguments (find -delete, vitest snapshots, cat redirections)
+
+**Key Finding**: QA's over-escalation has a technical basis — it's not pure literalism. The model genuinely believes `find` and `vitest` can mutate state (true), and classifies this as IMPORTANT per its gatekeeper identity. SOUL edits fix the inconsistency symptom but can't override model-level judgment on security-adjacent concerns.
+
+**Verdict**: DISCARDED. Partial improvement (4/6→5/6) insufficient. This mirrors the sycophants-dilemma pattern — SOUL-level text doesn't reliably shift model judgment on core concerns.
+
+**Scenario retained**: `qa-severity-calibration` is a valuable new scenario for future experiments.
+
+**Next steps**: 
+- Consider if the scenario needs calibration (QA's `find -delete` point is valid — maybe the scenario should use clearly-safe-only patterns)
+- Try Method #15 (Workflow Enforcement) if applicable
+- Monitor FM-2.3 in production — the inconsistency fix alone may be worth deploying
+
+## 2026-03-24T13:33 — Heartbeat: P0 Identity Migration + Triage
+- **P0 DONE**: Merged DOMAIN.md content into SOUL.md — added Core Responsibilities, Key Files, Workflows, Gym Runner sections
+- Evaluation review tasks (s_1774321566672_145, s_1774348414866_43): blocked on DB access — sqlite3 not available, better-sqlite3 not in path. Deferring to next session with DB tooling.
+- Growth cycle budget: 3+ already run today (06:06, 09:30/10:33, 13:06). At daily cap. No more growth cycles.

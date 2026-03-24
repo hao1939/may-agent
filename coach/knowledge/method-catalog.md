@@ -23,9 +23,9 @@ the Ghost Bug. These methods need **re-testing with correct methodology**
 The only valid experiments are the two post-discovery micro-edit runs
 (Method #13), which kept the original name and showed 0 regression.
 
-## Aggregate Evidence Summary (updated 2026-03-24, Sprint 5+, exp-176)
+## Aggregate Evidence Summary (updated 2026-03-24, Sprint 6, exp-181)
 
-**167 experiment entries total** across 5+ sprints.
+**180+ experiment entries total** across 6 sprints.
 Key findings across 20 methods:
 
 | Method | # Experiments | Regressions? | Improvements? | Verdict |
@@ -37,18 +37,19 @@ Key findings across 20 methods:
 | #6 Knowledge File | 2 (1 confounded, 1 clean) | 0 | 0 | SAFE, INEFFECTIVE alone |
 | #6+#2 Combo | 1 (discarded pre-test) | — | — | POINTLESS — INDEX.md already visible |
 | #9 Negative Example | 4 (3 complete, 1 infra fail) | 0 | 0 | SAFE, INEFFECTIVE — CLOSED |
-| #10 Conditional Guard | 3 (2 complete, 1 infra fail) | 0 | 0 (qualitative signal) | SAFE, INEFFECTIVE quantitatively — first text method to influence reasoning |
+| #10 Conditional Guard | 3 (2 complete, 1 infra fail) | 0 | 0 (qualitative signal) | SAFE, INEFFECTIVE quantitatively |
 | #11 Prompt Prefix | 1 (untestable via gym) | N/A | N/A | UNTESTABLE VIA GYM |
 | #12 Subtractive Fix | 2 (1 confounded, 1 clean) | 0 | 0 | SAFE, INEFFECTIVE |
 | #13 Micro-Edit | 2 (1 interrupted) | 0 | 0 | SAFE, INEFFECTIVE |
 | #1-variant Inline SOUL | 2 | 0 | 0 | SAFE, INEFFECTIVE |
 | Identity Exception | 1 | 0 | 0 | SAFE, INEFFECTIVE |
 | #14 Task Structuring | 1 (6 runs + 3 control) | 0 | 33% (2/6) | SAFE, PARTIALLY EFFECTIVE |
-| **#15 Workflow Enforcement** | **20+ (38 runs + controls)** | **0** | **92% strict, ~97% behavioral (35/38)** | **🏆 CONFIRMED — 5 agents, 5 scenarios, 3 models** |
-| **#16 Structural Documentation** | **2 (systemic + monitoring)** | **N/A** | **0/5 (exp-053)** | **SAFE, INEFFECTIVE — reclassified as model-level attractor fix needed** |
-| **#24 Identity Directive Refinement** | **6 (4 solo, 1 combo #10, 1 combo #15)** | **0** | **25% solo (1/4)** | **PARTIALLY VALIDATED — first-ever pass on judgment-ambiguous-spec for coder** |
+| **#15 Workflow Enforcement** | **25+ (43 runs + controls)** | **0** | **93%+ (40/43)** | **🏆 CONFIRMED — 5 agents, 7 scenarios, 3 models** |
+| **#16 Structural Documentation** | **2 (systemic + monitoring)** | **N/A** | **0/5 (exp-053)** | **SAFE, INEFFECTIVE** |
+| **#24 Identity Directive Refinement** | **8 (4 solo, 2 combo, 2 replication)** | **0** | **12.5% solo (1/8)** | **⛔ CLOSED — first-pass noise, replication failed** |
+| **#24+#10 Combo** | **1** | **0** | **0/2** | **⛔ CLOSED — worse than solo #24** |
 
-### Core Finding (updated 2026-03-24, Sprint 5+, exp-176)
+### Core Finding (updated 2026-03-24, Sprint 6, exp-181)
 
 **Text-based coaching is SAFE but INEFFECTIVE: 0/13 clean text experiments
 improved judgment behavior, AND 0/5 sessions improved procedural behavior
@@ -57,6 +58,10 @@ LESSONS entries, knowledge files, TOOLS.md, inline content, negative examples,
 conditional guards, micro-edits, subtractive fixes — fail against both
 judgment-anchoring AND procedural-anchoring. The agent has the instruction,
 reads it, and ignores it.
+
+**Method #24 CLOSED (exp-178)**: Initial 50% pass (1/2) on judgment-ambiguous-spec was noise. Replication at n=8 shows ~12.5%. Combo with #10 made it worse. Identity directive refinement does not reliably overcome model priors.
+
+**Method #15 EXTENDED (exp-181)**: Workflow enforcement now 40/43 (93%+) across 7 scenarios including two new escalation scenarios (escalation-impossible-task, behavior-escalation-stubborn). 100% pass rate on escalation with assess→act workflow. This is the ONLY method that reliably changes agent behavior.
 
 **🏆 BREAKTHROUGH CONFIRMED — FIVE AGENTS, FIVE SCENARIOS, THREE MODELS (exp-045–091):
 Workflow Enforcement achieves ~92% strict / ~97% behavioral pass rate across
@@ -1545,3 +1550,23 @@ removes the opposition.
 The identity directive refinement was the FIRST method to ever produce a pass on this scenario, but at 17% (replication at n=6) it's noise, not signal. The combo with #10 adds complexity without benefit. The model's "fixer" prior (seeing "wrong" + "fix" in the task) is a model-level attractor that resists text-based interventions.
 
 **Status**: DISCARDED — exp-178 replication at n=6 shows ~17% pass rate, indistinguishable from noise. The #24+#10 combo (exp-177) is 0/3 — worse. Lab forks deleted. The judgment-ambiguous-spec scenario for coder appears to be a model-level attractor immune to text interventions.
+
+## QA Agent Findings
+
+**QA FM-2.3 SPEC_LITERALISM (2026-03-24)**: QA over-escalates severity on reasonable spec deviations. First QA-specific experiment.
+
+### Scenario: qa-severity-calibration
+New scenario testing QA's severity judgment when reviewing an allowlist expansion. Baseline QA scores 4/6 — fails on severity-calibration and no-severity-inconsistency.
+
+### SOUL Severity Calibration Edit
+- Added explicit guidance: "Spec deviation where change is clearly beneficial = MINOR"
+- Added Spec Evolution Rule: "Broadening allowlists with safe entries = MINOR"
+- Result: 5/6 — fixes inconsistency but severity still IMPORTANT (not MINOR)
+
+### Analysis
+QA's over-escalation has **substantive technical basis**: it correctly identifies that `find -delete` can mutate state, `vitest` writes snapshots, `cat > file` redirects. These are valid security concerns. The model's gatekeeper identity prioritizes safety — a **model-level attractor** similar to coder's sycophants-dilemma and judgment-ambiguous-spec.
+
+**Status**: Partial improvement achievable (inconsistency eliminated). Full severity calibration requires either:
+1. Stronger scenario design (use only truly-safe-only patterns without edge cases)
+2. Workflow enforcement (#15) — untested for QA agent
+3. Accept that QA's conservative stance on security-adjacent concerns may be a feature, not a bug

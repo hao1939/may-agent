@@ -1,37 +1,49 @@
-# Scout Prompt Simplification — Implementation Plan
+# Gym Benchmark Tracking — Phase 1 Implementation Plan
 
-**Request:** req:54c6d4a9 (from May)
-**Design:** agents/shared/may-agent-docs/design/prompt-simplification.md
+**Request**: req:742f0b94
+**Design**: agents/shared/may-agent-docs/design/gym-snapshots.md
+**Reviews**: Bob APPROVED w/ modification (config_hash from runner), Tech-lead APPROVED w/ phasing
 
-## Current State (Scout)
-- SOUL.md: 9.7KB — 80% rules duplicated from common-sense.md
-- DOMAIN.md: 3.2KB — mix of methodology + reference info
-- TOOLS.md: 2.4KB — redundant with tool schema descriptions
-- LESSONS.md: 2.0KB — graduated content
-- shared/LESSONS.md: 4.2KB, shared/INDEX.md: 2.7KB, knowledge/INDEX.md: 3.7KB
-- common-sense.md: 8.8KB
-- **Total system prompt: ~37KB**
+## Phase 1 Scope: Schema + Recording Flow
 
-## Target
-- New SOUL.md: ~3KB — identity, role, methodology, skills, constraints
-- Delete: DOMAIN.md, TOOLS.md, LESSONS.md
-- Keep: common-sense.md (shared), shared files still loaded (Phase 3)
-- **Target: ~19KB** (Phase 2 only — further reduction in Phase 3)
+### Step 1: Schema — Add columns to `gym_runs` and create `gym_snapshots` ✅ TODO
+**File**: `src/lib/requests.ts`
+- Add to `gym_runs` CREATE TABLE: `run_tag TEXT`, `config_hash TEXT`, `framework_sha TEXT`, `model TEXT`, `batch_id TEXT`, `categories TEXT`, `tags TEXT`, `tier TEXT`
+- Add new table `gym_snapshots`:
+  ```sql
+  CREATE TABLE IF NOT EXISTS gym_snapshots (
+    config_hash TEXT PRIMARY KEY,
+    agent_name TEXT NOT NULL,
+    created_at TEXT DEFAULT (datetime('now')),
+    files TEXT NOT NULL
+  );
+  ```
+- Add index: `CREATE INDEX IF NOT EXISTS idx_gym_runs_batch ON gym_runs(batch_id);`
+- Add index: `CREATE INDEX IF NOT EXISTS idx_gym_runs_config ON gym_runs(config_hash);`
 
-## Blocker
-SOUL.md is identity-protected — tech-lead cannot write to agents/scout/SOUL.md directly.
-Need to use a workflow with the coder agent, which should have write access.
+### Step 2: Recording — Update `gym-record.ts` to write new columns ✅ TODO
+**File**: `scripts/gym-record.ts`
+- Accept new CLI flags: `--batch <id>`, `--tag <label>`
+- Write new columns when inserting into `gym_runs`
+- Accept categories/tags/tier/config_hash/model from runner result JSON
+- On new `config_hash`: INSERT OR IGNORE into `gym_snapshots`
+- Ensure writing to `may.db` (check current target)
 
-## New SOUL.md Content (to replace current)
-See: agents/tech-lead/workspace/scout-soul-simplified.md
+### Step 3: Runner — Read scenario metadata + compute identity ✅ TODO  
+**File**: `test/gym/gym-runner.ts`
+- Read `scenario.json` fields: `categories`, `tags`, `tier`
+- Include them in RunResult output
+- Compute `config_hash` by hashing the effective system prompt (per Bob's review)
+- Read `model` from agent config
+- Read `framework_sha` from `git rev-parse --short HEAD`
 
-## Files to Delete After SOUL.md Update
-- agents/scout/DOMAIN.md
-- agents/scout/TOOLS.md
-- agents/scout/LESSONS.md
+### Step 4: Baseline script — Generate batch_id, forward args ✅ TODO
+**File**: `scripts/gym-baseline.sh`
+- Generate `batch_id` at start: `date +%s`_`$(openssl rand -hex 4)`
+- Pass `--batch $batch_id` and `--tag` through to gym-record.ts
+- Accept `--tag` CLI arg
 
-## Backups (already created)
-- agents/scout/workspace/SOUL-backup-pre-simplification.md
-- agents/scout/workspace/DOMAIN-backup-pre-simplification.md
-- agents/scout/workspace/TOOLS-backup-pre-simplification.md
-- agents/scout/workspace/LESSONS-backup-pre-simplification.md
+## Not in Phase 1
+- Web UI changes (Phase 2)
+- Comparison view (Phase 3)
+- Removing stats.db (after verification)

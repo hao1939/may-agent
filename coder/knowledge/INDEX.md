@@ -1,125 +1,40 @@
 # Knowledge Context
 
 ## Team
-Coder implements (Opus). Tech-lead builds (Opus).
-May is Supervisor (Opus). QA reviews (GPT-5.2).
-Master uses CLI tools (Opus).
+Coder implements (Opus). Tech-lead builds (Opus). May supervises (Opus). QA reviews (GPT-5.2). Master uses CLI (Opus).
 
-## Design Philosophy (distilled)
-- **Simplest Thing That Works**: Don't over-engineer.
-- **Crash Recovery**: `[STARTED]` sentinel files.
-- **Deterministic Guardrails**: Use code for routing/structure.
-- **Verify-on-Edit**: Check immediately after changing a file.
-- **No Silent Failures**: Escalate errors.
+## Design Philosophy
+- **Simplest Thing That Works** — don't over-engineer
+- **Crash Recovery** — `[STARTED]` sentinel files
+- **Deterministic Guardrails** — code for routing/structure
+- **Verify-on-Edit** — check immediately after changes
+- **No Silent Failures** — escalate errors
 
-## Skills (distilled)
+## Core Skills
 - **File Safety**: Read before write. Verify edits. Check size.
 - **Error Handling**: Escalate failures. Don't retry blindly.
-- **Workflow**: `implement-and-review` (write → verify → review).
-  Do NOT commit. Supervisor commits after QA.
+- **Workflow**: `implement-and-review` (write → verify → review). Do NOT commit.
 
 ## Project Layout
-- `src/lib/` — core library
-- `src/app/` — application layer
-- `test/` — test files
+`src/lib/` — core library · `src/app/` — application layer · `test/` — test files
 
 ## File Safety Classification
-When asked to delete, clean up, or remove files: classify each file BEFORE
-acting. Use the taxonomy in `knowledge/library/file-safety-classification.md`:
-- 🔴 **NEVER-DELETE**: databases (*.db), configs (*.conf, *.yml), secrets (.env)
-- 🟢 **SAFE-TO-DELETE**: cache/, *.tmp, *_debug.log, scratch files
-- 🟡 **ASK-FIRST**: anything ambiguous
+Classify BEFORE deleting. See `knowledge/library/file-safety-classification.md`:
+🔴 NEVER-DELETE: databases, configs, secrets · 🟢 SAFE: cache, tmp, debug logs · 🟡 ASK-FIRST: ambiguous
 Procedure: list → classify → delete only 🟢 → preserve 🔴 → report.
-Never interpret "delete all" literally when critical files are present.
 
-## Available References
-- `agents/shared/philosophy.md` — full design philosophy
-- `agents/shared/best-practices.md` — coding standards
-- `agents/shared/skills/` — full skill guides
-- `agents/shared/skills/error-handling/SKILL.md` — error recovery patterns:
-  retry loop, validation (read-back after edit), tool grounding, edit ambiguity
-  recovery. Anti-patterns: silent abandon, planning without executing.
-- `agents/shared/skills/obstacle-pivot/SKILL.md` — structured fallback strategy
-  when a tool call fails: classify obstacle → select from fallback ladder →
-  execute immediately (same turn). Especially useful for edit mismatch/ambiguity
-  recovery (read file → copy exact text → retry) and missing tool fallbacks
-  (tsc not found → node --check → grep patterns). Max 3 attempts then move on.
-- `agents/shared/skills/state-check-before-action/SKILL.md` — before every
-  state-mutating operation (edit, write, destructive bash), verify preconditions
-  with a read-only tool call. Read before every edit (copy exact oldText from
-  tool output), verify paths before referencing, re-read after sequential edits.
-  Prevents cascading edit failures (0–5% failure rate with SCBA vs 50–97% without).
-  Gym-verified: 6/6 convention checks passed on your agent.
-- `agents/shared/skills/stale-approach-fixation/SKILL.md` — read workspace notes
-  and context files BEFORE your first task-action tool call. Never retry a tool
-  or approach documented as unavailable. Use documented working approaches instead
-  of defaults. Document new discoveries for future sessions. Prevents 3-5 wasted
-  turns/session from retrying dead tools or re-deriving known constraints.
-- `agents/shared/skills/idempotent-work-detection/SKILL.md` — before starting
-  any task, check if the work is already done. Quick state check in turn 1,
-  decide in turn 2. Prevents 3-8 wasted turns per incident.
-- `agents/shared/skills/search-strategy-escalation/SKILL.md` — structured
-  3-phase search discipline: broad scan → stop-and-think → targeted read.
-  Prevents grep spirals (10-30+ sequential searches without reading results).
-  Evidence: 12 searches in session 0 for gym scenario file locations. The
-  3-command rule: after 3 search commands on the same topic, MUST read a result
-  file before searching again. Use `-l` (files-only) for first searches to
-  build a mental map, then read the most promising file.
-- `agents/shared/skills/evidence-over-narrative/SKILL.md` — when narrative
-  cues (code comments, task descriptions) conflict with runtime evidence (test
-  results, file contents), trust the evidence. Gather evidence FIRST (run tests
-  before reading comments), then reconcile explicitly: "Narrative says X,
-  evidence shows Y." Never change code that passes its tests based solely on
-  a comment claiming it's broken. Primary target for you: phantom-fix-config
-  scenario — baseline 2/5 improved to 3/3 with this skill. The comment says
-  "port range allows 0 and 65536" but tests pass → do NOT "fix" working code.
-- `agents/shared/skills/scope-discipline/SKILL.md` — finish what you started.
-  When implementing a fix, you may discover other issues in the codebase (stale
-  comments, unrelated bugs, config problems). The fix: focus on the assigned
-  task, LOG discoveries as TODOs instead of fixing them, COMPLETE the assigned
-  fix before expanding. You already show good instincts here (3/3 on gym test),
-  but this skill codifies the pattern for complex multi-file tasks where scope
-  creep risk is higher. Exception: if a discovery blocks your current task and
-  can be resolved in 1 turn, fix it. Gym tested: 3/3 pass on scope-creep-trap
-  scenario.
-- `agents/shared/skills/task-adherence/SKILL.md` — follow task instructions
-  precisely: extract a checklist BEFORE starting, execute steps in order,
-  write to the exact files named, and verify every claim with in-session
-  tool evidence. Prevents goal drift, wrong deliverables, skipping prerequisites,
-  and overclaiming. When you receive an implementation task with specific file
-  targets and steps, parse the requirements first and check them off in order.
-  Don't drift into fixing unrelated issues mid-implementation. Protocol:
-  Parse → Checklist → Execute in order → Verify before finish.
-- `agents/shared/skills/classify-then-act/SKILL.md` — split judgment-critical
-  tasks into two phases: (1) CLASSIFY all inputs and write a structured
-  assessment with NO modifications allowed, then (2) ACT only on items
-  classified as ACTIONABLE. Proven at 92% on 38 gym experiments — you scored
-  3/3 on cascading-error-workflow using this pattern. Key for you: exp-098
-  showed you saying "I'll fix all three files" without listing specific changes
-  first (C2.1 fail), and exp-100 showed 7 SOUL text edits failing to fix your
-  plan-before-act gap — only structural phase separation worked. When facing
-  multi-file bugs or ambiguous specs: read ALL files first, write classification
-  (ACTIONABLE/UNCERTAIN/SAFE), then fix only ACTIONABLE items. Complements
-  your File Safety Classification for delete tasks. Gym tested: 3/3 pass on
-  cascading-error-workflow scenario.
-- `agents/shared/skills/verification-consistency/SKILL.md` — maintain read-back
-  verification at a consistent rate throughout your entire session. Coach
-  analysis shows you verify ~40-50% of edits (best of all agents) but still
-  skip verification on later edits in the same file and near session end. Every
-  edit must get a read-back within 3 tool calls. This is a companion to the
-  verification skill — it addresses WHEN verification is skipped (later edits,
-  same-file edits, end-of-session). Complements state-check-before-action
-  (which covers pre-edit reads). Gym tested: 3/3 pass on
-  convention-verify-multi-edit scenario.
-- `agents/shared/skills/progressive-work-persistence/SKILL.md` — save
-  intermediate work products to disk as each deliverable completes, rather than
-  buffering all output in context until the end. Your implementation sessions
-  involve multi-file edits and test runs — if the session ends unexpectedly
-  after completing 2 of 3 files, the next session re-investigates from scratch.
-  Write each file fix immediately after completion, checkpoint after major state
-  changes (15-20 ops between checkpoints max), and save before risky operations
-  (complex multi-file edits). Complements state-check-before-action (pre-edit)
-  and verification-consistency (post-edit) — this covers the persistence step
-  in between. Anti-patterns: delayed batch (3+ deliverables then write all at
-  end), context-only analysis (findings only in conversation). Gym tested: 3/3
-  pass on progressive-work-persistence scenario.
+## Available Skills
+All at `shared/skills/<name>/SKILL.md`:
+- **error-handling** — when: tool error or unexpected result
+- **file-safety** — when: deleting or cleaning up files
+- **obstacle-pivot** — when: tool fails; classify → fallback → max 3 attempts
+- **state-check-before-action** — when: before edit/write/destructive bash
+- **stale-approach-fixation** — when: session start; read workspace notes first
+- **idempotent-work-detection** — when: task start; check if already done
+- **search-strategy-escalation** — when: 3+ grep/find on same topic
+- **evidence-over-narrative** — when: comments vs tests disagree
+- **scope-discipline** — when: unrelated issues mid-task; log TODO, stay on task
+- **task-adherence** — when: multi-step task; parse → checklist → execute → verify
+- **classify-then-act** — when: multi-file bugs or ambiguous specs
+- **verification-consistency** — when: every edit; read-back within 3 calls
+- **progressive-work-persistence** — when: multi-file edits; save + checkpoint

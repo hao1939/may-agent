@@ -273,3 +273,25 @@ agents/tech-lead/knowledge/INDEX.md
 
 ### Date
 2026-03-24T06:32:00Z
+
+## 2026-03-24: Skill Deployment — deliverable-integrity (v1.0.0)
+
+### Skill
+- **Name**: deliverable-integrity
+- **Path**: `agents/shared/skills/deliverable-integrity/SKILL.md`
+- **Version**: 1.0.0
+
+### Gym Test Results
+- **Scenario**: `convention-promise-report` (analyze data.csv, write analysis.md)
+- **Pass rate**: 3/3 (100%)
+- **Checks per run**: 4/4 (analysis-exists, analysis-has-content, C40.1 promise-before-action, C40.3 finish-includes-deliverables)
+- **Sessions**: s_1774361544111_0, s_1774361598044_0, s_1774361664504_0
+
+### Deployment
+- **Guard line**: `⛔ **Deliverable Integrity**: Before finish(), read back every file you'll claim and cite only numbers visible in tool output.`
+- **Self-deployed**: agents/optimizer/SOUL.md ✅ (direct edit)
+- **Requested via May** (P1 request #0fd1024f): bob, coach, coder, evaluator, scout, tech-lead, may, qa (8 agents)
+- Optimizer cannot edit other agents' SOUL.md directly per own constraint
+
+### Date
+2026-03-24T14:20:00Z
