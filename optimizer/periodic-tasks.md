@@ -27,20 +27,20 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If issues → add fix to workspace/todo.md.
   Latest (2026-03-24T02:39): Same 3 dead (convention-check, tool-quality-scan, heartbeat-context). reflect+analyze-failures stale (5-7d). Tech-lead confirmed wrapTools wiring lost. Finding at `workspace/finding-handler-health-check-0324-0239.md`.
 
-- [x] **Proven pattern → Skill/Workflow** — Last done: 2026-03-23T23:50
+- [x] **Proven pattern → Skill/Workflow** — Last done: 2026-03-24T05:53
   **Run via workflow**: `workflow.run("skill-lifecycle", "Scan recent sessions for proven multi-step patterns")`
   Mechanically enforces all 4 phases (discover → draft → test → deploy).
   **Deliverable**: A new or refined skill file, tested in gym, deployed to agents.
-  Latest (2026-03-23T23:50): materialize-intermediate-findings DEPLOYED. 270-line SKILL.md. Skill at `agents/shared/skills/materialize-intermediate-findings/SKILL.md`.
-  Skills deployed (13 total): obstacle-pivot, grep-first-reading, state-check-before-action, budget-before-act, stale-approach-fixation, coder-edit-discipline, delegation-verification, idempotent-work-detection, search-strategy-escalation, evidence-over-narrative, incremental-context-loading, request-triage-memoization, materialize-intermediate-findings.
+  Latest (2026-03-24T05:53): plan-once-amend DEPLOYED. 183-line SKILL.md. 24/24 gym checks (8/8 × 3 runs). Finding at `workspace/finding-plan-churn-0324.md`. Skill at `agents/shared/skills/plan-once-amend/SKILL.md`.
+  Skills deployed (14 total): obstacle-pivot, grep-first-reading, state-check-before-action, budget-before-act, stale-approach-fixation, coder-edit-discipline, delegation-verification, idempotent-work-detection, search-strategy-escalation, evidence-over-narrative, incremental-context-loading, request-triage-memoization, materialize-intermediate-findings, plan-once-amend.
 
 - [x] **Tool quality review** — Last done: 2026-03-24T02:39
   Read tool-quality-report.md. Look for regression trends and persistent failure patterns.
   Latest (2026-03-24T02:39): Bash-as-cat 9.5% (↓ from 10.4%). QA 24% worst. ENOENT 77 errors/30 sessions. Bob+Optimizer top ENOENT offenders. Finding at `workspace/finding-tool-quality-review-0324-0239.md`.
 
 ## Weekly
-- [x] **Improvement proposals review** — Last done: 2026-03-21T16:39
-  14 deployed ($107-150/day). 8 blocked on handler cache. 9 proposed ($14-21/day). Review at `workspace/improvement-proposals-review-0321.md`.
+- [x] **Improvement proposals review** — Last done: 2026-03-24T04:09
+  17 deployed ($115-165/day). 9 blocked on handler cache (wrapTools wiring lost). 8 proposed ($16-24/day). Grand total potential $225-337/day. Review at `workspace/improvement-proposals-review-0324.md`.
 
 ## Bi-Weekly
 - [x] **Heartbeat graduation review** — Last done: 2026-03-17

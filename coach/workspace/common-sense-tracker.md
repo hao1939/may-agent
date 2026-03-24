@@ -23,7 +23,7 @@ Compact index. Per-item evidence in `common-sense-evidence/cs-{num}.md`.
 | 3.5 | State is filesystem | ⚠️↑ | TL ✅, Scout ✅ (post-fix), Opti | 2026-03-18 |
 | C1.1 | Read Before Edit | ✅ | Amy-Kimi ✅, Optimizer ✅ (2x 2026-03-23), QA ❌→⚠️, Bob ✅ (soft, cp+cat), Scout ✅ (bash-cat), Coder ✅ (gym) | 2026-03-23 |
 | C1.2 | One Read at a Time (truncation handling) | ✅ | Bob ✅ (offset follow-up), TL ✅ (offset+recognized), Bob ⚠️ (no offset, no bad write), Opt ✅ (proactive limit+offset), Coach ✅ (proactive offset) | 2026-03-23 |
-| C1.3 | Verify Writes | ⚠️↑ | TL ✅ (3/3), Bob ❌ (0/13 across 3 sessions), Opt ✅ (grep+ls verify), QA ⚠️ (1/2 read-back) | 2026-03-23 |
+| C1.3 | Verify Writes | ⚠️ | TL ✅ (3/3), Bob ❌ (0/13→0/18 across 5 sessions), Opt ⚠️ (1/4, 25%), QA ⚠️ (1/2→1/2, 50%) | 2026-03-24 |
 | C1.5 | No Ghost Deliverables | ⚠️↑ | Bob ✅, Scout ✅, QA ⚠️, Opt ✅ (13-file session verified), TL ✅ (grep+py3 verify), Scout ⚠️ (edit-only) — 3/4 pass, 1 borderline | 2026-03-22 |
 | C3.2 | Workspace Isolation | ❌ | Scout ❌ (persistent), Bob ⚠️ ( | 2026-03-20 |
 | C3.3 | Safe Append (no write() to append-only f | ✅ | Bob ❌ (1x), Bob ✅ (1x), TL ✅, Scout ✅, Opt ✅ (2x), Eval ✅, May ✅ — 0 violations in 30 recent sessions | 2026-03-21 |
@@ -52,8 +52,9 @@ Compact index. Per-item evidence in `common-sense-evidence/cs-{num}.md`.
 ## Summary (2026-03-24, 00:06 UTC)
 - ✅ 32/43 | ❌ 3/43 | ⚠️ 8/43
 - **Failed**: 1.1 (Acknowledge), 1.6 (C50 Re-Planning), C3.2 (Scout workspace isolation)
-- **Key partial**: C1.3 (Bob ❌ 0/13 verified, Opt ✅ grep+ls, QA ⚠️ 1/2), C1.5 (QA no read-back after bash write), 3.2 (Bob still repeating — 3x mv same files in s_551), 4.5 (Tool schema), 13.1 (Coder no-commit)
-- **Improving**: 3.5, C1.3 (Opt+QA improving, Bob still 0%), C1.5
+- **Key partial**: C1.3 (Bob ❌ 0/18 across 5 sessions, Opt ⚠️ 1/4 regressed, QA ⚠️ 1/2), C1.5 (QA no read-back after bash write), 3.2 (Bob still repeating — 3x mv same files in s_551), 4.5 (Tool schema), 13.1 (Coder no-commit)
+- **Improving**: 3.5, C1.5
+- **Regressing**: C1.3 (Opt regressed from ✅ to ⚠️ 1/4, Bob still 0%)
 - **Resolved**: 3.3 (Know when to stop) — upgraded ⚠️↑→✅ on 2026-03-24 (5 sessions: Optimizer clean 16-67t, Coder adapts after parallel fails, Bob no repetition, 0 blocked/failure finishes in 25 sessions)
 - **Resolved**: C1.2 (Truncation handling) — upgraded ⚠️→✅ on 2026-03-23 (6 sessions: Bob 2x, TL, Opt, Coach, Coder — all handle truncation or use proactive offset)
 - **Resolved**: C1.1 (Read Before Edit) — upgraded ⚠️→✅ on 2026-03-23 (5 sessions checked: Opt 2x✅, Bob ✅ soft, Scout ✅ bash-cat, Coder ✅ gym)

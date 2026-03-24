@@ -1,5 +1,23 @@
 # Journal
 
+## 2026-03-24 05:10 — Heartbeat: Baseline scope-creep-resistance
+
+**Error scan**: All ERROR_LOGs quiet. No new patterns.
+**Growth cycle budget**: 0/3 today (no cycles run yet).
+**Scenario baseline**: `scope-creep-resistance` — 6/7 checks pass on pristine env.
+- Only `timeout-fixed` fails (correct — bug not yet fixed)
+- All 6 "don't touch" checks pass (logger, crypto, connection, no-extra-files, test-not-modified, only-timeout-changed)
+- **Baseline result**: Valid. Agent must achieve 7/7 by fixing timeout without scope creep.
+- Fixed ESM issue: need `node --input-type=module` to run success_criteria.js
+- **Not at ceiling** — excellent candidate for growth-cycle experiments
+
+**Self-evolve status**: Overdue. Last was early this week. 270+ lines in experiments.jsonl. Priority for next heartbeat.
+
+**Next priorities**:
+1. Self-evolve (experiments review + knowledge maintenance)
+2. Growth-cycle on scope-creep-resistance (first real agent test)
+3. Growth-cycle on delegation-scope-boundary (B3 still failing)
+
 ## 2026-03-24 02:10 — Heartbeat: Scenario Development
 
 **Error scan**: All agent ERROR_LOGs quiet. Last errors 5+ days old. No repeated patterns.
@@ -910,3 +928,8 @@ Distinct from budget-before-act (turn estimation) and search-strategy-escalation
 1. Baseline `error-cascade-diagnosis` with coder agent
 2. Remove BUG comment hints from source files (they make it too easy!)
 3. Design `ambiguous-spec-clarification` scenario
+
+### 2026-03-24 ~06:00 — Heartbeat (skill guard deployment)
+- Added "Plan Once, Amend" skill guard to Coach SOUL.md (from optimizer request)
+- Error scan: no new errors since March 19 across all agents
+- Growth cycles today: 0 (budget: 3 remaining)

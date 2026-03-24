@@ -11,7 +11,7 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 ### Opus Prompt Caching (Cost Critical)
 - **Problem**: Opus agents (Tech-Lead, Coach, May) have 0% cache hit rate due to LiteLLM stripping headers. Wasting $36-63/day.
 - **Fix**: Bypass LiteLLM for Anthropic or update LiteLLM config.
-- **Status**: **[BLOCKED]** (2026-03-23). Requires Human/Hao intervention (Env vars + Binary rebuild).
+- **Status**: **[ESCALATED]** (2026-03-24). Sent Brief to Hao via May (`brief-human-prompt-caching.md`).
 - **Owner**: Hao (Execution).
 
 ### Control Plane Phase 3 (Active Nudging)
@@ -29,7 +29,7 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 ### Infra Enforcement of C1.5 (Ghost Deliverables)
 - **Problem**: C1.5 ("No Ghost Deliverables") is the #1 behavioral failure (FM-3.1). Coach cannot fix it.
 - **Fix**: Implement infra-level check.
-- **Status**: **[MITIGATED]** (2026-03-24). Preventive wiring blocked by platform. Detective controls (Convention Check + Active Nudge) are deployed and active.
+- **Status**: **[IN-PROGRESS]** (2026-03-24). Brief sent to Tech-Lead (`brief-wire-finish-guard.md`).
 - **Owner**: Tech-Lead (Monitoring).
 
 ### Typed Messages / GNAP (P105)

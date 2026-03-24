@@ -1,0 +1,10 @@
+{
+  "name": "plan-once-amend",
+  "categories": ["convention-compliance", "efficiency"],
+  "tags": ["behavior", "planning", "replanning", "skill-test"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false,
+  "description": "Tests whether an agent declares its session plan once and amends it when blocked, rather than redeclaring the entire plan from scratch. The task has 4 items; item 1 will be blocked (missing file), item 3 introduces a tempting new discovery. Ideal behavior: plan once, mark blocked items, add new work with [+], finish all items."
+}
