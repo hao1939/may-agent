@@ -87,13 +87,13 @@ interface RunResult {
   session_path: string;
   work_dir: string;
   gym_root: string;
-  config_hash: string | null;
+  prompt_hash: string | null;
+  prompt_text: string | null;
   framework_sha: string | null;
   model: string | null;
   categories: string[];
   tags: string[];
   tier: string | null;
-  snapshot_files: Record<string, string> | null;
 }
 
 interface AdapterResult {
@@ -693,7 +693,7 @@ function runScenario(
     : join(PROJECT_ROOT, "agents");
   const frameworkSha = computeFrameworkSha();
   const model = readAgentModel(effectiveAgentsRoot, agentName);
-  const identity = computeConfigHash(effectiveAgentsRoot, agentName);
+  const prompt = assembleEffectivePrompt(effectiveAgentsRoot, agentName);
 
   return {
     scenario: scenarioName,
@@ -711,13 +711,13 @@ function runScenario(
     session_path: lastResult.sessionPath,
     work_dir: workDir,
     gym_root: gymRoot,
-    config_hash: identity?.hash ?? null,
+    prompt_hash: prompt?.hash ?? null,
+    prompt_text: prompt?.text ?? null,
     framework_sha: frameworkSha,
     model,
     categories: meta?.categories ?? [],
     tags: meta?.tags ?? [],
     tier: meta?.tier ?? null,
-    snapshot_files: identity?.files ?? null,
   };
 }
 
@@ -754,84 +754,72 @@ function readAgentModel(agentsRoot: string, agentName: string): string | null {
 }
 
 /**
- * Compute a deterministic config hash from the agent's effective prompt files.
+ * Assemble the effective system prompt, mirroring resolveSystemPrompt() in manager.ts.
  *
- * Reads a fixed set of config files, concatenates them in sorted order,
- * and returns a SHA-256 hash (first 12 hex chars) plus the file map.
+ * This reproduces the exact prompt the agent sees during a gym run:
+ *   1. SOUL.md (per-agent identity)
+ *   2. common-sense.md (shared behavioral rules)
+ *   3. Runtime Environment (generated)
+ *   4. Available Tools (from agent.json tools list)
  *
- * For shared files (e.g. common-sense.md), falls back to PROJECT_ROOT/agents/shared/
- * if the agentsRoot doesn't contain them (e.g. lab fork directories).
+ * Returns the full prompt text + its SHA-256 hash (first 12 hex chars).
  */
-function computeConfigHash(
+function assembleEffectivePrompt(
   agentsRoot: string,
   agentName: string,
-): { hash: string; files: Record<string, string> } | null {
+): { hash: string; text: string } | null {
   try {
     const agentDir = join(agentsRoot, agentName);
     if (!existsSync(agentDir)) return null;
 
-    const files: Record<string, string> = {};
+    const sections: string[] = [];
 
-    // Fixed file list to include (if they exist)
-    const fixedFiles: Array<{ relPath: string; absPath: string }> = [
-      {
-        relPath: `agents/${agentName}/agent.json`,
-        absPath: join(agentDir, "agent.json"),
-      },
-      {
-        relPath: `agents/${agentName}/SOUL.md`,
-        absPath: join(agentDir, "SOUL.md"),
-      },
-      {
-        relPath: `agents/${agentName}/DOMAIN.md`,
-        absPath: join(agentDir, "DOMAIN.md"),
-      },
-      {
-        relPath: `agents/${agentName}/TOOLS.md`,
-        absPath: join(agentDir, "TOOLS.md"),
-      },
-    ];
+    const loadFile = (path: string): string | undefined => {
+      if (!existsSync(path)) return undefined;
+      const content = readFileSync(path, "utf-8").trim();
+      return content || undefined;
+    };
 
-    // Shared file — fall back to PROJECT_ROOT if not in agentsRoot
+    // 1. SOUL.md — agent identity
+    const soul = loadFile(join(agentDir, "SOUL.md"));
+    if (soul) sections.push(soul);
+
+    // 2. common-sense.md — shared behavioral rules
     const sharedCommonSense = join(agentsRoot, "shared", "common-sense.md");
     const sharedFallback = join(PROJECT_ROOT, "agents", "shared", "common-sense.md");
-    fixedFiles.push({
-      relPath: "agents/shared/common-sense.md",
-      absPath: existsSync(sharedCommonSense) ? sharedCommonSense : sharedFallback,
-    });
+    const commonSense = loadFile(existsSync(sharedCommonSense) ? sharedCommonSense : sharedFallback);
+    if (commonSense) sections.push(commonSense);
 
-    // Read fixed files
-    for (const { relPath, absPath } of fixedFiles) {
-      if (existsSync(absPath)) {
-        files[relPath] = readFileSync(absPath, "utf-8");
-      }
-    }
+    // 3. Runtime Environment (generated — matches manager.ts)
+    const knowledgeDir = join(agentDir, "knowledge");
+    const workspace = join(agentDir, "workspace");
+    const envLines = ["# Runtime Environment"];
+    envLines.push(`- Project root: ${PROJECT_ROOT}`);
+    envLines.push(`- Agent directory: agents/${agentName}`);
+    if (existsSync(workspace)) envLines.push(`- Workspace: agents/${agentName}/workspace (ephemeral scratch)`);
+    if (existsSync(knowledgeDir)) envLines.push(`- Knowledge: agents/${agentName}/knowledge`);
+    envLines.push(`- Already in context (do NOT re-read): SOUL.md, common-sense.md`);
+    envLines.push(`- Knowledge index: knowledge/INDEX.md (read when you need references)`);
+    envLines.push(``);
+    envLines.push(`All paths are relative to project root. Your workspace is the ONLY directory you should write to.`);
+    sections.push(envLines.join("\n"));
 
-    // Any other .md files in agent directory (sorted, excluding already-included ones)
-    const knownMds = new Set(["SOUL.md", "DOMAIN.md", "TOOLS.md"]);
+    // 4. Available Tools (from agent.json)
     try {
-      const entries = readdirSync(agentDir).filter(
-        (f) => f.endsWith(".md") && !knownMds.has(f),
-      ).sort();
-      for (const f of entries) {
-        const relPath = `agents/${agentName}/${f}`;
-        if (!(relPath in files)) {
-          files[relPath] = readFileSync(join(agentDir, f), "utf-8");
-        }
+      const agentJson = JSON.parse(readFileSync(join(agentDir, "agent.json"), "utf-8"));
+      if (Array.isArray(agentJson.tools) && agentJson.tools.length > 0) {
+        sections.push(
+          `## Available Tools\nYou have access to these tools (and ONLY these): ${agentJson.tools.join(", ")}.\nDo not attempt to call any tool not in this list.`
+        );
       }
-    } catch {
-      // ignore readdir errors
-    }
+    } catch { /* no agent.json or invalid */ }
 
-    if (Object.keys(files).length === 0) return null;
+    if (sections.length === 0) return null;
 
-    // Concatenate in deterministic (sorted by key) order, with filename delimiters
-    const sortedKeys = Object.keys(files).sort();
-    const concatenated = sortedKeys.map((k) => `\n--- ${k} ---\n${files[k]}`).join("");
+    const text = `<system_instructions>\n${sections.join("\n\n")}\n</system_instructions>`;
+    const hash = createHash("sha256").update(text).digest("hex").slice(0, 12);
 
-    const hash = createHash("sha256").update(concatenated).digest("hex").slice(0, 12);
-
-    return { hash, files };
+    return { hash, text };
   } catch {
     return null;
   }
@@ -966,13 +954,13 @@ function main() {
           session_path: "",
           work_dir: "",
           gym_root: "",
-          config_hash: null,
+          prompt_hash: null,
+          prompt_text: null,
           framework_sha: null,
           model: null,
           categories: [],
           tags: [],
           tier: null,
-          snapshot_files: null,
         });
       }
     }

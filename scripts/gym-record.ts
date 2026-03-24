@@ -10,26 +10,22 @@
  *   bun scripts/gym-record.ts < result.json
  *   # or with explicit path:
  *   bun scripts/gym-record.ts --result /path/to/result.json
+ *   # with batch/tag:
+ *   bun scripts/gym-record.ts --result /path/to/result.json --batch <id> --tag "baseline"
  *
- * Design: agents/bob/workspace/gym-evolution-design.md §2.2
+ * Design: docs/design/gym-snapshots.md
  */
 
 import { Database } from "bun:sqlite";
-import { readFileSync, existsSync, mkdirSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 import { join, dirname } from "node:path";
-
-// ── Schema ─────────────────────────────────────────────────────────────
-
-// Schema is defined inline in openDb() — tables are gym_runs and gym_checks in may.db
 
 // ── DB Location ────────────────────────────────────────────────────────
 
 function getDbPath(): string {
-  // Resolve relative to this script's location → project root
   const scriptDir = dirname(new URL(import.meta.url).pathname);
   const projectRoot = join(scriptDir, "..");
-  const dbPath = join(projectRoot, ".state", "may.db");
-  return dbPath;
+  return join(projectRoot, ".state", "may.db");
 }
 
 function openDb(): Database {
@@ -37,8 +33,7 @@ function openDb(): Database {
   const db = new Database(dbPath);
   db.exec("PRAGMA journal_mode = WAL;");
   db.exec("PRAGMA foreign_keys = ON;");
-  // Tables are created by getDb() in requests.ts schema.
-  // But ensure they exist if may.db was just created.
+  // Ensure tables exist (schema matches requests.ts DDL)
   db.exec(`
     CREATE TABLE IF NOT EXISTS gym_runs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -47,7 +42,7 @@ function openDb(): Database {
       passed INTEGER NOT NULL DEFAULT 0, duration_ms INTEGER,
       score_summary TEXT, session_id TEXT, cost_usd REAL,
       total_ops INTEGER, total_turns INTEGER, method TEXT DEFAULT 'oneshot',
-      run_tag TEXT, config_hash TEXT, framework_sha TEXT,
+      run_tag TEXT, prompt_hash TEXT, framework_sha TEXT,
       model TEXT, batch_id TEXT, categories TEXT, tags TEXT, tier TEXT
     );
     CREATE TABLE IF NOT EXISTS gym_checks (
@@ -57,13 +52,28 @@ function openDb(): Database {
       category TEXT, code TEXT,
       FOREIGN KEY(run_id) REFERENCES gym_runs(id) ON DELETE CASCADE
     );
-    CREATE TABLE IF NOT EXISTS gym_snapshots (
-      config_hash TEXT PRIMARY KEY,
+    CREATE TABLE IF NOT EXISTS gym_prompts (
+      prompt_hash TEXT PRIMARY KEY,
       agent_name TEXT NOT NULL,
+      model TEXT,
+      framework_sha TEXT,
       created_at TEXT DEFAULT (datetime('now')),
-      files TEXT NOT NULL
+      prompt_text TEXT NOT NULL
     );
   `);
+  // Migrate: add columns if missing (for DBs created before this schema)
+  const cols = db.prepare("PRAGMA table_info(gym_runs)").all() as any[];
+  const colNames = new Set(cols.map((c: any) => c.name));
+  const migrations: Array<[string, string]> = [
+    ["prompt_hash", "TEXT"], ["framework_sha", "TEXT"], ["model", "TEXT"],
+    ["batch_id", "TEXT"], ["run_tag", "TEXT"], ["categories", "TEXT"],
+    ["tags", "TEXT"], ["tier", "TEXT"],
+  ];
+  for (const [col, type] of migrations) {
+    if (!colNames.has(col)) {
+      db.exec(`ALTER TABLE gym_runs ADD COLUMN ${col} ${type}`);
+    }
+  }
   return db;
 }
 
@@ -78,17 +88,18 @@ interface GymResult {
   summary?: string;
   agent_status?: string;
   duration?: string;
+  duration_ms?: number;
   session_id?: string;
   session_path?: string;
   work_dir?: string;
   gym_root?: string;
   method?: string;
-  // Telemetry fields (added by gym-run.sh when transcript is available)
   cost_usd?: number;
   total_ops?: number;
   total_turns?: number;
-  // Benchmark tracking fields (Phase 1 — gym-snapshots design)
-  config_hash?: string;
+  // Benchmark tracking fields
+  prompt_hash?: string;
+  prompt_text?: string;
   framework_sha?: string;
   model?: string;
   categories?: string[];
@@ -96,19 +107,15 @@ interface GymResult {
   tier?: string;
 }
 
-interface GymResultWithSnapshot extends GymResult {
-  snapshot_files?: Record<string, string>;
-}
-
 // ── Record ─────────────────────────────────────────────────────────────
 
 export function recordRun(db: Database, result: GymResult, opts?: { batch_id?: string; run_tag?: string }): number {
-  const durationMs = result.duration ? parseDuration(result.duration) : null;
+  const durationMs = result.duration_ms ?? (result.duration ? parseDuration(result.duration) : null);
 
   const insertRun = db.query<{ id: number }, unknown[]>(`
     INSERT INTO gym_runs (agent_name, lab_fork, scenario, passed, duration_ms,
                       score_summary, session_id, cost_usd, total_ops,
-                      total_turns, method, run_tag, config_hash, framework_sha,
+                      total_turns, method, run_tag, prompt_hash, framework_sha,
                       model, batch_id, categories, tags, tier)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
@@ -126,7 +133,7 @@ export function recordRun(db: Database, result: GymResult, opts?: { batch_id?: s
     result.total_turns || null,
     result.method || "oneshot",
     opts?.run_tag || null,
-    result.config_hash || null,
+    result.prompt_hash || null,
     result.framework_sha || null,
     result.model || null,
     opts?.batch_id || null,
@@ -137,10 +144,10 @@ export function recordRun(db: Database, result: GymResult, opts?: { batch_id?: s
 
   const runId = Number(runResult.lastInsertRowid);
 
-  // Insert config snapshot if new config_hash (idempotent via INSERT OR IGNORE)
-  if (result.config_hash && (result as GymResultWithSnapshot).snapshot_files) {
-    db.query(`INSERT OR IGNORE INTO gym_snapshots (config_hash, agent_name, files) VALUES (?, ?, ?)`)
-      .run(result.config_hash, result.agent, JSON.stringify((result as GymResultWithSnapshot).snapshot_files));
+  // Insert prompt snapshot if new prompt_hash (idempotent via INSERT OR IGNORE)
+  if (result.prompt_hash && result.prompt_text) {
+    db.query(`INSERT OR IGNORE INTO gym_prompts (prompt_hash, agent_name, model, framework_sha, prompt_text) VALUES (?, ?, ?, ?, ?)`)
+      .run(result.prompt_hash, result.agent, result.model || null, result.framework_sha || null, result.prompt_text);
   }
 
   // Insert individual checks
@@ -159,14 +166,10 @@ export function recordRun(db: Database, result: GymResult, opts?: { batch_id?: s
 }
 
 function parseDuration(dur: string): number | null {
-  // Handles formats like "45s", "2m30s", "1234" (ms), "1.5m"
   if (!dur) return null;
-
-  // Pure number = assume milliseconds
   const num = Number(dur);
   if (!isNaN(num)) return Math.round(num);
 
-  // "Xm Ys" or "Xm" or "Ys"
   let ms = 0;
   const minMatch = dur.match(/([\d.]+)\s*m/);
   const secMatch = dur.match(/([\d.]+)\s*s/);
@@ -180,7 +183,6 @@ function parseDuration(dur: string): number | null {
 async function main() {
   let inputJson: string;
 
-  // Parse CLI flags
   const resultIdx = process.argv.indexOf("--result");
   const batchIdx = process.argv.indexOf("--batch");
   const tagIdx = process.argv.indexOf("--tag");
@@ -188,7 +190,6 @@ async function main() {
   const batchId = batchIdx !== -1 ? process.argv[batchIdx + 1] : undefined;
   const runTag = tagIdx !== -1 ? process.argv[tagIdx + 1] : undefined;
 
-  // Check for --result flag
   if (resultIdx !== -1 && process.argv[resultIdx + 1]) {
     const filePath = process.argv[resultIdx + 1];
     if (!existsSync(filePath)) {
@@ -197,7 +198,6 @@ async function main() {
     }
     inputJson = readFileSync(filePath, "utf-8");
   } else {
-    // Read from stdin
     const chunks: string[] = [];
     for await (const chunk of Bun.stdin.stream()) {
       chunks.push(new TextDecoder().decode(chunk));
