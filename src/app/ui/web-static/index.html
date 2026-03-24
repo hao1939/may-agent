@@ -423,7 +423,17 @@ function renderSessionPicker() {
 
 function switchSession(sessionId) {
   currentSessionId = sessionId;
-  document.getElementById('chat-messages').innerHTML = '';
+  const messages = document.getElementById('chat-messages');
+  messages.innerHTML = '';
+  if (sessionId) {
+    const s = activeSessions.find(s => s.sessionId === sessionId);
+    const div = document.createElement('div');
+    div.className = 'msg';
+    div.style.color = 'var(--fg2)';
+    div.style.fontSize = '12px';
+    div.textContent = `Watching ${s?.agent || 'agent'} — live events from here. Type to steer.`;
+    messages.appendChild(div);
+  }
   renderSessionPicker();
   // Tell the server to switch subscription
   if (ws && ws.readyState === 1) {
