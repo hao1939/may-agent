@@ -147,7 +147,15 @@ CREATE TABLE IF NOT EXISTS gym_runs (
   cost_usd REAL,
   total_ops INTEGER,
   total_turns INTEGER,
-  method TEXT DEFAULT 'oneshot'
+  method TEXT DEFAULT 'oneshot',
+  run_tag TEXT,
+  config_hash TEXT,
+  framework_sha TEXT,
+  model TEXT,
+  batch_id TEXT,
+  categories TEXT,
+  tags TEXT,
+  tier TEXT
 );
 
 CREATE TABLE IF NOT EXISTS gym_checks (
@@ -165,6 +173,15 @@ CREATE INDEX IF NOT EXISTS idx_gym_runs_scenario ON gym_runs(scenario);
 CREATE INDEX IF NOT EXISTS idx_gym_runs_agent ON gym_runs(agent_name);
 CREATE INDEX IF NOT EXISTS idx_gym_runs_timestamp ON gym_runs(timestamp);
 CREATE INDEX IF NOT EXISTS idx_gym_checks_run ON gym_checks(run_id);
+CREATE INDEX IF NOT EXISTS idx_gym_runs_batch ON gym_runs(batch_id);
+CREATE INDEX IF NOT EXISTS idx_gym_runs_config ON gym_runs(config_hash);
+
+CREATE TABLE IF NOT EXISTS gym_snapshots (
+  config_hash TEXT PRIMARY KEY,
+  agent_name TEXT NOT NULL,
+  created_at TEXT DEFAULT (datetime('now')),
+  files TEXT NOT NULL
+);
 
 -- Convention checks (P1: mechanical compliance checker)
 CREATE TABLE IF NOT EXISTS convention_checks (

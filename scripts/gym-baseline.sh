@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# gym-baseline.sh — Run gym scenarios and record results to stats.db
+# gym-baseline.sh — Run gym scenarios and record results to may.db
 #
 # Usage:
 #   scripts/gym-baseline.sh --tier smoke --agent coder
-#   scripts/gym-baseline.sh --tier standard --agent coder
+#   scripts/gym-baseline.sh --tier standard --agent coder --tag "baseline"
 #   scripts/gym-baseline.sh --scenario hasty-fix --agent coder
 #   scripts/gym-baseline.sh --run-all --agent coder
 
@@ -19,13 +19,18 @@ done
 AGENT="coder"
 SCENARIOS=()
 LIST_ARGS=()
+RUN_TAG=""
+
+# Generate unique batch ID for this run
+BATCH_ID="$(date +%s)_$(openssl rand -hex 4)"
 
 # Parse args
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --agent) AGENT="$2"; shift 2 ;;
     --scenario) SCENARIOS+=("$2"); shift 2 ;;
-    --tier|--category|--tag) LIST_ARGS+=("$1" "$2"); shift 2 ;;
+    --tag) RUN_TAG="$2"; shift 2 ;;
+    --tier|--category) LIST_ARGS+=("$1" "$2"); shift 2 ;;
     --run-all) LIST_ARGS+=("--run-all"); shift ;;
     *) echo "Unknown arg: $1"; exit 1 ;;
   esac
@@ -43,8 +48,9 @@ if [ ${#SCENARIOS[@]} -eq 0 ]; then
   done < <("$PROJECT_ROOT/scripts/gym-run.sh" --list "${LIST_ARGS[@]}" 2>&1)
 fi
 
-echo "=== Gym Baseline: ${#SCENARIOS[@]} scenarios, agent=$AGENT ==="
+echo "=== Gym Baseline: ${#SCENARIOS[@]} scenarios, agent=$AGENT, batch=$BATCH_ID ==="
 echo "Started: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+[ -n "$RUN_TAG" ] && echo "Tag: $RUN_TAG"
 echo ""
 
 PASS=0
@@ -80,9 +86,11 @@ if start >= 0:
 " 2>/dev/null)
   
   if [ -n "$result_json" ]; then
-    # Record to stats.db
+    # Record to may.db with batch/tag
     echo "$result_json" > "$tmpfile.json"
-    record_out=$(bun "$PROJECT_ROOT/scripts/gym-record.ts" --result "$tmpfile.json" 2>&1)
+    record_args=(--result "$tmpfile.json" --batch "$BATCH_ID")
+    [ -n "$RUN_TAG" ] && record_args+=(--tag "$RUN_TAG")
+    record_out=$(bun "$PROJECT_ROOT/scripts/gym-record.ts" "${record_args[@]}" 2>&1)
     
     # Check pass/fail
     passed=$(echo "$result_json" | python3 -c "import json,sys; d=json.load(sys.stdin); print('true' if d.get('passed') or all(c.get('passed') for c in d.get('checks',[])) else 'false')" 2>/dev/null)
@@ -106,4 +114,4 @@ done
 echo ""
 echo "=== Results: $PASS pass, $FAIL fail, $ERROR error (${#SCENARIOS[@]} total) ==="
 echo "Finished: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-echo "Results saved to test/gym/stats.db"
+echo "Results saved to .state/may.db (batch: $BATCH_ID)"

@@ -42,6 +42,7 @@ services:
       - "${CONSOLE_NOVNC_PORT:-6081}:6080"
     volumes:
       - ..:/app
+      - /home/hao:/home/hao:rw
     environment:
       - INSTANCE=${INSTANCE:-console}
       - MODEL_BASE_URL=${MODEL_BASE_URL:-http://host.docker.internal:4000}
