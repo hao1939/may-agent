@@ -502,16 +502,30 @@ function esc(s) {
 
 // ── Digest ────────────────────────────────────────────────────────────
 
-async function loadDigest() {
+async function loadDigest(date) {
   const panel = document.getElementById('digest-panel');
   try {
-    const r = await fetch('/api/digest');
+    const params = date ? '?date=' + date : '';
+    const r = await fetch('/api/digest' + params);
     const data = await r.json();
     if (!data.digest) {
       panel.innerHTML = '<div style="color:var(--fg2);font-size:13px;padding:8px">No digest yet — generated daily by the system.</div>';
       return;
     }
-    // Simple markdown → HTML (headings, bold, tables, lists)
+
+    // Date navigation
+    const available = data.available || [];
+    const currentIdx = available.indexOf(data.date);
+    const prevDate = currentIdx < available.length - 1 ? available[currentIdx + 1] : null;
+    const nextDate = currentIdx > 0 ? available[currentIdx - 1] : null;
+
+    let nav = '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">';
+    nav += prevDate ? `<button class="ask-btn" onclick="loadDigest('${prevDate}')">← ${prevDate}</button>` : '<span></span>';
+    nav += `<span style="color:var(--fg2);font-size:12px;flex:1;text-align:center">${data.date} (${available.length} days available)</span>`;
+    nav += nextDate ? `<button class="ask-btn" onclick="loadDigest('${nextDate}')">${nextDate} →</button>` : '<span></span>';
+    nav += '</div>';
+
+    // Simple markdown → HTML
     let html = data.digest
       .replace(/^# (.+)$/gm, '<h2 style="font-size:16px;margin:16px 0 8px">$1</h2>')
       .replace(/^## (.+)$/gm, '<h3 style="font-size:14px;color:var(--accent);margin:14px 0 6px">$1</h3>')
@@ -526,7 +540,7 @@ async function loadDigest() {
       .replace(/(<tr>.*<\/tr>\n?)+/g, (m) => `<table style="width:100%;border-collapse:collapse;margin:8px 0">${m}</table>`)
       .replace(/\n\n/g, '<br>');
 
-    panel.innerHTML = `<div class="panel" style="border-left:3px solid var(--accent)">${html}</div>`;
+    panel.innerHTML = `<div class="panel" style="border-left:3px solid var(--accent)">${nav}${html}</div>`;
   } catch(e) {
     panel.innerHTML = '';
   }
