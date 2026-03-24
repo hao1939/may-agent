@@ -139,7 +139,7 @@
 
 <script>
 // ── State ─────────────────────────────────────────────────────────────
-let currentTab = 'dashboard';
+let currentTab = location.hash.slice(1) || 'dashboard';
 let offset = 0;
 const limit = 30;
 
@@ -149,6 +149,7 @@ document.querySelectorAll('.tab').forEach(tab => {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     tab.classList.add('active');
     currentTab = tab.dataset.tab;
+    location.hash = currentTab;
     document.getElementById('dashboard').classList.toggle('hidden', currentTab !== 'dashboard');
     document.getElementById('chat').classList.toggle('hidden', currentTab !== 'chat');
     document.getElementById('benchmarks').classList.toggle('hidden', currentTab !== 'benchmarks');
@@ -416,7 +417,15 @@ function connectWs() {
   const status = document.getElementById('chat-status');
   const messages = document.getElementById('chat-messages');
 
-  ws.onopen = () => { status.textContent = 'Connected'; };
+  ws.onopen = () => {
+    status.textContent = 'Connected';
+    // Poll for active sessions periodically
+    const pollSessions = () => {
+      if (ws && ws.readyState === 1) ws.send(JSON.stringify({ type: 'status' }));
+    };
+    pollSessions();
+    setInterval(pollSessions, 15000);
+  };
   ws.onclose = () => {
     status.textContent = 'Disconnected — reconnecting...';
     setTimeout(connectWs, 3000);
@@ -859,6 +868,17 @@ async function loadDigest(date) {
 }
 
 // ── Init ──────────────────────────────────────────────────────────────
+
+// Restore tab from URL hash
+if (currentTab !== 'dashboard') {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === currentTab));
+  document.getElementById('dashboard').classList.toggle('hidden', currentTab !== 'dashboard');
+  document.getElementById('chat').classList.toggle('hidden', currentTab !== 'chat');
+  document.getElementById('benchmarks').classList.toggle('hidden', currentTab !== 'benchmarks');
+  if (currentTab === 'chat') initChat();
+  if (currentTab === 'benchmarks') loadBenchmarks();
+}
+
 loadDigest();
 loadStats();
 loadRequests();
