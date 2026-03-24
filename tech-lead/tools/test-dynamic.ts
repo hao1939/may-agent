@@ -1,5 +1,5 @@
 import type { ToolContext } from "../../../src/lib/types.js";
-import { Type } from "@sinclair/typebox";
+import { Type } from "@mariozechner/pi-ai";
 
 export default function(context: ToolContext) {
   return {
