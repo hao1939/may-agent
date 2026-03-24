@@ -194,6 +194,7 @@ export class SubagentManager {
   private onSessionComplete?: (info: SessionInfo) => void;
   private onSessionStart?: (agentName: string, sessionId: string) => void;
   private onSessionBlocked?: (agentName: string, sessionId: string, reason: string) => void;
+  private _log: (level: "info" | "warn" | "error", message: string) => void;
   private startedAt = Date.now();
   private _projectRoot: string;
   /** Maximum call depth for callAgent chains. Prevents A→B→A infinite loops. */
@@ -221,6 +222,10 @@ export class SubagentManager {
     this.onSessionComplete = opts.onSessionComplete;
     this.onSessionStart = opts.onSessionStart;
     this.onSessionBlocked = opts.onSessionBlocked;
+    this._log = opts.onLog ?? ((level, msg) => {
+      if (level === "error") console.error(msg);
+      else console.warn(msg);
+    });
   }
 
   /** Register a feature unit. */
@@ -280,14 +285,12 @@ export class SubagentManager {
           // Inject stuck warning at threshold
           if (session.consecutiveErrorTurns >= STUCK_WARNING_THRESHOLD && !session.stuckWarningInjected) {
             session.stuckWarningInjected = true;
-            console.error(`STUCK_WARNING: Agent ${session.agentName} (${sessionId}) has ${session.consecutiveErrorTurns} consecutive error turns. Warning injected.`);
-            console.log(JSON.stringify({ type: "STUCK_WARNING", agent: session.agentName, sessionId, consecutiveErrorTurns: session.consecutiveErrorTurns }));
+            this._log("warn", `STUCK_WARNING: Agent ${session.agentName} (${sessionId}) has ${session.consecutiveErrorTurns} consecutive error turns. Warning injected.`);
           }
 
           // Auto-terminate at terminate threshold
           if (session.consecutiveErrorTurns >= STUCK_TERMINATE_THRESHOLD) {
-            console.error(`STUCK_TERMINATE: Agent ${session.agentName} (${sessionId}) has ${session.consecutiveErrorTurns} consecutive error turns. Auto-terminating.`);
-            console.log(JSON.stringify({ type: "STUCK_TERMINATE", agent: session.agentName, sessionId, consecutiveErrorTurns: session.consecutiveErrorTurns }));
+            this._log("error", `STUCK_TERMINATE: Agent ${session.agentName} (${sessionId}) has ${session.consecutiveErrorTurns} consecutive error turns. Auto-terminating.`);
             session.error = `Stuck Detection: ${session.consecutiveErrorTurns} consecutive turns with only errors. Session auto-terminated.`;
             session.agent.abort();
           }
@@ -1006,6 +1009,7 @@ export class SubagentManager {
           activeSessions: this.activeSessions,
           persistDir: this.registry.persistDir,
           projectRoot: this._projectRoot,
+          log: this._log,
 
           beforeToolCall: composeGuards(
             createFinishGuard(),
@@ -1108,7 +1112,7 @@ export class SubagentManager {
     const sessionContext = this.buildSessionContext(def, name, sessionId, persistDir);
     const promptText = `${sessionContext}\n\n---\n\n${task}`;
 
-    session.promise = runAgentWithRetry(session, agent.prompt(promptText), this._infraRetryMax, (s) => this.handleCompletion(s));
+    session.promise = runAgentWithRetry(session, agent.prompt(promptText), this._infraRetryMax, (s) => this.handleCompletion(s), this._log);
 
     this.sessionResults.set(
       sessionId,
@@ -1176,7 +1180,7 @@ export class SubagentManager {
           }
         }
       } catch (err) {
-        console.warn("[manager] Error scanning for crashed sessions:", err);
+        this._log("warn", `[manager] Error scanning for crashed sessions: ${err instanceof Error ? err.message : String(err)}`);
       }
     }
 
@@ -1324,6 +1328,7 @@ export class SubagentManager {
           activeSessions: this.activeSessions,
           persistDir: this.registry.persistDir,
           projectRoot: this._projectRoot,
+          log: this._log,
 
           beforeToolCall: composeGuards(
             createFinishGuard(),
@@ -1423,7 +1428,7 @@ export class SubagentManager {
     const startPromise =
       lastRole === "user" || lastRole === "toolResult" ? agent.continue() : agent.prompt(resumeMessage);
 
-    session.promise = runAgentWithRetry(session, startPromise, this._infraRetryMax, (s) => this.handleCompletion(s));
+    session.promise = runAgentWithRetry(session, startPromise, this._infraRetryMax, (s) => this.handleCompletion(s), this._log);
 
     this.sessionResults.set(
       sessionId,
@@ -1753,7 +1758,7 @@ export class SubagentManager {
       }
 
       // Prompt the agent with new input
-      const p = runAgentWithRetry(session, session.agent.prompt(text), this._infraRetryMax, (s) => this.handleCompletion(s));
+      const p = runAgentWithRetry(session, session.agent.prompt(text), this._infraRetryMax, (s) => this.handleCompletion(s), this._log);
 
       session.promise = p;
       const resultPromise = p.then(() => this.buildResultFromSession(session));

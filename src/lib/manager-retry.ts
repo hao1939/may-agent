@@ -199,6 +199,7 @@ export async function runAgentWithRetry(
   initialCall: Promise<void>,
   infraRetryMax: number,
   onComplete: (session: ActiveSession) => void,
+  log?: (level: "info" | "warn" | "error", message: string) => void,
 ): Promise<void> {
   // Run the initial call
   try {
@@ -216,7 +217,7 @@ export async function runAgentWithRetry(
     const attempt = session.infraRetryCount;
 
     // Log the retry
-    console.warn(
+    (log ?? console.warn)("info",
       `[manager] Infrastructure retry ${attempt}/${infraRetryMax} for session ${session.sessionId} (${retryReason})`,
     );
 
@@ -297,7 +298,7 @@ export async function runAgentWithRetry(
       const reason = isEmptyAssistant ? "empty_response" : "silent_stream";
       session.infraRetryCount++;
       const attempt = session.infraRetryCount;
-      console.warn(
+      (log ?? console.warn)("info",
         `[manager] Post-loop retry ${attempt}/${infraRetryMax} for session ${session.sessionId} (${reason})`,
       );
 

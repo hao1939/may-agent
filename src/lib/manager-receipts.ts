@@ -118,6 +118,8 @@ export interface ReceiptWrapContext {
   projectRoot: string;
   /** Composed beforeToolCall guard — runs before tool.execute(). */
   beforeToolCall?: (context: BeforeToolCallContext, signal?: AbortSignal) => Promise<BeforeToolCallResult | undefined>;
+  /** Log operational messages to the event system. Falls back to console if not set. */
+  log?: (level: "info" | "warn" | "error", message: string) => void;
 }
 
 /**
@@ -194,8 +196,7 @@ export function wrapToolsWithReceipts(
       if (isStateChanging) {
         const session = ctx.activeSessions.get(sessionId);
         if (session && session.opBudget > 0 && session.opCount >= session.opBudget) {
-          console.error(`OpBudgetExceeded: Agent ${session.agentName} consumed ${session.opCount} ops (limit ${session.opBudget}). Stopping.`);
-          console.log(JSON.stringify({ type: 'OpBudgetExceeded', agent: session.agentName, sessionId, limit: session.opBudget, opCount: session.opCount }));
+          (ctx.log ?? console.error)("warn", `OpBudgetExceeded: Agent ${session.agentName} (${sessionId}) consumed ${session.opCount} ops (limit ${session.opBudget}). Stopping.`);
 
           // P85: Mark session as errored so handleCompletion archives it
           // with status "error" instead of "done". This makes OpBudget
@@ -216,8 +217,7 @@ export function wrapToolsWithReceipts(
         const failCount = session.toolErrorHistory.get(pivotKey) ?? 0;
         if (failCount >= TOOL_PIVOT_LIMIT) {
           const agentName = session.agentName;
-          console.error(`E_RETRY_LIMIT: Agent ${agentName} repeated ${tool.name} with identical args ${failCount} times. Blocked.`);
-          console.log(JSON.stringify({ type: 'E_RETRY_LIMIT', agent: agentName, sessionId, tool: tool.name, argsHash: pivotKey, attempts: failCount }));
+          (ctx.log ?? console.error)("warn", `E_RETRY_LIMIT: Agent ${agentName} (${sessionId}) repeated ${tool.name} with identical args ${failCount} times. Blocked.`);
           return {
             content: [{ type: "text" as const, text: `🚫 E_RETRY_LIMIT: This exact tool call (${tool.name}) has failed ${failCount} times with identical arguments. Execution blocked. You MUST use a different approach — change the tool, change the arguments, or change your strategy entirely.` }],
             details: undefined,

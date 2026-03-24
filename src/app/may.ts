@@ -210,6 +210,9 @@ const manager = new SubagentManager({
   persistDir: PERSIST_DIR,
   projectRoot: PROJECT_ROOT,
   infraRetryMax: 3,
+  onLog: (level, message) => {
+    bus.emit({ type: "log", level, message });
+  },
   onSessionStart: (agentName, sessionId) => {
     attachAgentEvents(agentName, sessionId);
     setAgentSessionId(agentName, sessionId);
