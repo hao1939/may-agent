@@ -176,6 +176,72 @@ function handleDigest(url: URL): Response {
   return json({ digest: content, date: target.replace(".md", ""), available });
 }
 
+function handleBenchmarks(url: URL): Response {
+  // Gym stats DB is separate from the main may.db
+  const gymDbPath = join(STATE_DIR, "..", "test", "gym", "stats.db");
+  if (!existsSync(gymDbPath)) return json({ agents: {}, scenarios: [], runs: 0 });
+
+  try {
+    const { openDatabase } = require("../../lib/db.js") as { openDatabase: (path: string) => import("../../lib/db.js").SqliteDb };
+    const gymDb = openDatabase(gymDbPath);
+
+    const agentFilter = url.searchParams.get("agent") || undefined;
+
+    // Summary per agent per scenario
+    const where = agentFilter ? "WHERE r.agent_name = ?" : "";
+    const params = agentFilter ? [agentFilter] : [];
+
+    const summary = gymDb.prepare(`
+      SELECT r.agent_name as agent, r.scenario,
+        COUNT(*) as runs,
+        SUM(r.passed) as passes,
+        MAX(r.timestamp) as lastRun,
+        AVG(r.duration_ms) as avgMs
+      FROM runs r ${where}
+      GROUP BY r.agent_name, r.scenario
+      ORDER BY r.agent_name, r.scenario
+    `).all(...params) as any[];
+
+    // Group by agent
+    const agents: Record<string, any[]> = {};
+    for (const row of summary) {
+      if (!agents[row.agent]) agents[row.agent] = [];
+      agents[row.agent].push({
+        scenario: row.scenario,
+        runs: row.runs,
+        passes: row.passes,
+        passRate: row.runs > 0 ? row.passes / row.runs : 0,
+        lastRun: row.lastRun,
+        avgMs: row.avgMs ? Math.round(row.avgMs) : null,
+      });
+    }
+
+    // Per-check detail for the latest run of each scenario (if agent specified)
+    let checkDetails: Record<string, any[]> = {};
+    if (agentFilter) {
+      const latestRuns = gymDb.prepare(`
+        SELECT r.id, r.scenario, r.passed, r.timestamp
+        FROM runs r
+        WHERE r.agent_name = ?
+        AND r.id = (SELECT MAX(r2.id) FROM runs r2 WHERE r2.agent_name = r.agent_name AND r2.scenario = r.scenario)
+        ORDER BY r.scenario
+      `).all(agentFilter) as any[];
+
+      for (const run of latestRuns) {
+        const checks = gymDb.prepare("SELECT check_name, passed, detail FROM checks WHERE run_id = ?").all(run.id) as any[];
+        checkDetails[run.scenario] = checks;
+      }
+    }
+
+    const totalRuns = gymDb.prepare("SELECT COUNT(*) as cnt FROM runs").get() as any;
+    const scenarios = [...new Set(summary.map(r => r.scenario))].sort();
+
+    return json({ agents, scenarios, runs: totalRuns?.cnt || 0, checkDetails });
+  } catch (err) {
+    return json({ error: String(err), agents: {}, scenarios: [], runs: 0 });
+  }
+}
+
 function handleStats(): Response {
   const now = Date.now();
   const day = now - 86400000;
@@ -294,6 +360,7 @@ const server = Bun.serve({
     if (url.pathname === "/api/requests") return handleRequests(url);
     if (url.pathname === "/api/stats") return handleStats();
     if (url.pathname === "/api/digest") return handleDigest(url);
+    if (url.pathname === "/api/benchmarks") return handleBenchmarks(url);
 
     const sessionMatch = url.pathname.match(/^\/api\/sessions\/([^/]+)$/);
     if (sessionMatch) return handleSession(sessionMatch[1]);
