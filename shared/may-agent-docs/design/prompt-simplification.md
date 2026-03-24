@@ -17,96 +17,164 @@ common-sense.md (9KB) — behavioral rules
 
 ## Root cause
 
-Not too many files — too much duplication. "Verify after write" appears in 11 files (10 SOUL.md + common-sense.md). "No cd" appears in 11 files. Agents wrote rules to their own SOUL.md that already existed in common-sense.md, and nobody cleaned up either copy.
+Not too many files — too much duplication. "Verify after write" appears in 11 files. Agents wrote rules to their SOUL.md that already existed in common-sense.md, and nobody cleaned up either copy.
 
 ## Proposed: 3 files, 10-15KB
 
-### 1. `common-sense.md` (shared, ~5-8KB) — behavioral rules
+### 1. `SOUL.md` (per-agent, ~2-4KB) — identity, role, and curated capabilities
 
-Already exists. Already contains the right content. Already referenced by coach, convention checks, and cron jobs. Keep it.
+Who you are + what makes you effective. Not generic rules — those are in common-sense.md. Contains:
+
+- **Identity**: Who you are, your mission, how you differ from other agents (2-3 sentences)
+- **Role boundaries**: What you do vs what other agents do (e.g., "Coach vs Optimizer")
+- **Methodology**: Your critical workflows and how you do your work (e.g., coach's Learning Loop, optimizer's Improvement Loop, bob's Meta-Loop). Condensed to key steps, not full docs.
+- **Curated skills**: The specific skills that matter for YOUR job, with trigger conditions. Not a link to the skills folder — the actual skill names and when to use them.
+- **Agent-specific constraints**: Things that only apply to you (e.g., "coder: do not commit")
+
+Example for optimizer:
+```markdown
+## Identity
+You are Optimizer. You analyze agent performance and implement improvements.
+You focus on structural fixes, not behavioral patches — make the wrong thing
+impossible rather than telling agents to be careful.
+
+## Role
+You improve the system. Coach improves agents. You own: opBudget, compaction,
+handler migration, prompt assembly, tool presets. Coach owns: behavioral
+training, gym exercises, growth cycles. When you find a behavioral issue,
+hand it to Coach. When Coach finds an infra issue, they hand it to you.
+
+## Methodology
+Improvement Loop: Analyze (query evaluations DB, max 10 sessions) → Identify
+highest-impact fix → Implement (prefer structural > environmental > reductive
+> behavioral) → Verify (gym test or measurement).
+
+## Skills
+- search-strategy-escalation: After 2 grep commands, STOP. Think. Target.
+- idempotent-work-detection: Check if work is already done before starting.
+- budget-before-act: Estimate turns needed, create deliverable skeletons early.
+- progressive-work-persistence: Save intermediate results, don't lose progress.
+
+## Constraints
+- One fix per session. Don't stack multiple changes.
+- Always measure before/after. No "I think this helped."
+- Don't edit SOUL.md, common-sense.md, or heartbeat.md of other agents directly.
+```
+
+### 2. `common-sense.md` (shared, ~5-8KB) — behavioral rules
+
+Already exists. Already contains the right content. Keep it.
 
 Changes:
-- **Deduplicate**: Remove rules that are now only needed here (not in SOUL.md)
-- **Human-controlled**: Agents propose changes via requests, human approves. Add a comment at top: `<!-- Human-controlled. Agents: propose changes via agents.send("may", ...) -->`
-- **Prune**: Remove rules that are already enforced by tooling (e.g., "don't exceed opBudget" — the system enforces this, the rule is noise)
-
-### 2. `SOUL.md` (per-agent, ~1-3KB) — identity and domain
-
-Slim down from 7-15KB to 1-3KB. Remove all generic rules (they're in common-sense.md). Keep:
-- Who you are (2-3 sentences)
-- What you specifically do (your responsibilities, not generic agent behavior)
-- How you differ from other agents
-- Agent-specific constraints (e.g., "coder: do not commit")
-- Domain expertise summary (2-3 sentences from current DOMAIN.md)
+- **Deduplicate**: Remove rules that appear in agent SOUL.md files
+- **Prune**: Remove rules enforced by tooling (system already blocks opBudget excess)
+- **Gym-gated**: Changes must pass gym suite before taking effect (see below)
 
 ### 3. `knowledge/INDEX.md` (per-agent, not in system prompt) — references
 
-Already exists. Stop loading it into the system prompt. The agent reads it with `read()` when it needs references. SOUL.md mentions: "Your knowledge index is at knowledge/INDEX.md — read it when you need references."
+Already exists. Stop loading into system prompt. Agent reads on-demand. SOUL.md tells the agent it exists.
 
 ### Files removed from system prompt
 
 | File | Action |
 |------|--------|
-| DOMAIN.md | Merge 2-3 key sentences into SOUL.md. Rest → knowledge/ files. |
+| DOMAIN.md | Key methodology → SOUL.md (condensed). Reference info → knowledge/ files. |
 | TOOLS.md | Delete. Tool schema descriptions are sufficient. |
-| shared/LESSONS.md | Proven lessons → common-sense.md rules. Delete file. |
+| shared/LESSONS.md | Proven lessons → common-sense.md. Delete file. |
 | LESSONS.md (per-agent) | Proven → SOUL.md or common-sense.md. Delete file. |
-| shared/INDEX.md | Don't load into prompt. Agent reads on demand. |
-| knowledge/INDEX.md | Don't load into prompt. Agent reads on demand. |
+| shared/INDEX.md | Don't load into prompt. |
+| knowledge/INDEX.md | Don't load into prompt. |
 
 ### System prompt becomes
 
 ```
 resolveSystemPrompt():
-  1. SOUL.md (~1-3KB) — agent identity + domain
+  1. SOUL.md (~2-4KB) — identity, role, methodology, curated skills, constraints
   2. common-sense.md (~5-8KB) — shared behavioral rules
   3. [generated] Available tools (~0.1KB)
   4. [generated] Runtime environment (~0.3KB)
 
-Total: ~7-12KB (down from 36-52KB)
+Total: ~8-13KB (down from 36-52KB)
 ```
 
-First user message (unchanged):
-  - Session context (memory, checkpoint, active recall)
-  - Task text
+## Change management: gym as the gate
 
-## What changes for coaching
+No human-approval bottleneck. The gym suite IS the approval mechanism.
 
-Today:
-```
-Coach finds behavioral gap → writes rule to SOUL.md or LESSONS.md → rule stays forever
-```
+### For common-sense.md changes:
 
-After:
 ```
-Coach finds behavioral gap → tests in gym →
-  Universal rule? → propose change to common-sense.md (human reviews)
-  Agent-specific? → edit agent's SOUL.md (identity/constraints only)
-  Knowledge? → write to knowledge/ files (not in prompt)
+Coach/Optimizer proposes change →
+  Save current common-sense.md as backup →
+  Apply change →
+  Run gym suite (all scenarios, all agents) →
+    Pass rates unchanged or improved? → Keep change. Log in changelog.
+    Pass rates dropped? → Auto-revert. Log failure reason.
 ```
 
-The key gate: **common-sense.md requires human approval**. This prevents the unbounded rule accumulation that got us to 52KB.
+### For SOUL.md changes:
 
-## What changes for optimization
+```
+Coach proposes change to agent's SOUL.md →
+  Save backup →
+  Apply change →
+  Run gym suite (that agent's scenarios specifically) →
+    Pass? → Keep.
+    Fail? → Revert.
+```
 
-- One shared file to audit (common-sense.md) instead of 9 SOUL.md files
-- Per-agent SOUL.md is tiny (1-3KB) and focused — easy to verify
-- Can measure: remove a rule, run gym, compare scores
-- Prompt size is predictable: common-sense.md + SOUL.md + generated = X KB
+### Per-agent gym scenarios
+
+Each agent should have scenarios that test its specific concerns:
+
+| Agent | Key scenarios |
+|-------|--------------|
+| coder | edit-precision, read-before-edit, abandoned-branch, phantom-fix |
+| optimizer | search-strategy-escalation, idempotent-already-fixed, scope-creep-trap |
+| coach | growth-cycle execution, convention verification |
+| bob | synthesis quality, delegation-scope-boundary |
+| tech-lead | multi-file workflow, tool-confusion |
+| scout | research depth, early-exit efficiency |
+| qa | code review accuracy, false positive rate |
+
+### Daily digest shows prompt health
+
+The daily digest includes:
+- System prompt size per agent (track bloat)
+- Gym pass rates (track quality)
+- Rule changes in the last 24h (track what changed)
 
 ## Migration
 
-1. **For each agent's SOUL.md**: Extract identity (first ~20%). Delete everything that's already in common-sense.md. Merge 2-3 sentences from DOMAIN.md. Target: 1-3KB.
-2. **Update resolveSystemPrompt()**: Load common-sense.md + SOUL.md only. Stop loading DOMAIN.md, TOOLS.md, LESSONS.md, INDEX.md files.
-3. **Prune common-sense.md**: Remove rules enforced by tooling. Deduplicate. Target: 5-8KB.
-4. **Run gym scenarios**: Verify quality doesn't drop.
-5. **Delete deprecated files** from the loading path (keep on disk as archive).
-6. **Update coach workflows**: New process for rule changes.
-7. **Add prompt size logging**: Track system prompt size per session.
+### Phase 1: Baseline
+1. Run full gym suite, record pass rates per agent per scenario
+2. Log current system prompt size per agent
+3. This is the "before" measurement
+
+### Phase 2: Slim SOUL.md (biggest impact)
+1. For each agent: extract identity, role, methodology, curated skills, constraints
+2. Everything else → delete (if in common-sense.md) or move (if reference)
+3. Target: 2-4KB per agent
+4. Run gym suite, compare to baseline
+
+### Phase 3: Stop loading extra files
+1. Update resolveSystemPrompt() to load only SOUL.md + common-sense.md + generated
+2. Run gym suite, compare to baseline
+
+### Phase 4: Prune common-sense.md
+1. Remove rules enforced by tooling
+2. Remove rules that no gym scenario tests (they're unverified)
+3. Run gym suite after each removal
+
+### Phase 5: Gym gate automation
+1. Build the gym-gated change workflow for common-sense.md
+2. Build per-agent scenario suites
+3. Integrate into coach's growth cycle
 
 ## Success criteria
 
 - System prompt < 15KB for all agents (currently 36-52KB)
-- Gym pass rates unchanged or improved
-- common-sense.md has clear human-approval gate
-- Coach has documented process for proposing rule changes
+- Gym pass rates unchanged or improved after migration
+- Every common-sense.md change goes through gym gate
+- Daily digest tracks prompt size and gym scores
+- Coach has clear, automated process for behavioral improvements
