@@ -58,8 +58,8 @@ Already exists. Stop loading it into the system prompt. The agent reads it with 
 
 ```
 resolveSystemPrompt():
-  1. common-sense.md (~5-8KB) — shared behavioral rules
-  2. SOUL.md (~1-3KB) — agent identity + domain
+  1. SOUL.md (~1-3KB) — agent identity + domain
+  2. common-sense.md (~5-8KB) — shared behavioral rules
   3. [generated] Available tools (~0.1KB)
   4. [generated] Runtime environment (~0.3KB)
 
