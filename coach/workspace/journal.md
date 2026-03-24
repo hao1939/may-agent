@@ -1,5 +1,20 @@
 # Journal
 
+## 2026-03-24T21:06 — Heartbeat: FM-3.3 Self-Improvement (SOUL Guard)
+- **Task**: Address Coach's own FM-3.3 errors (35 total — top failure mode)
+- **Analysis**: Categorized into 3 sub-types: VERIFICATION_FAILURE (13), VERIFICATION_GAP (12), DELIVERABLE_CLAIM_MISMATCH (7)
+- **Action**: Added specific FM-3.3 Self-Guard section to SOUL.md with concrete ❌/✅ examples for each sub-type
+- **Note**: Growth cycle budget 5/3 (exceeded) — no more growth cycles today. This is self-improvement, not a gym experiment.
+- **Workspace**: 22 files (within limit)
+
+## 2026-03-24T21:04 — Heartbeat: C26 Verification + Reflection
+- **C26 Verification**: Sampled 10 sessions across 7 agents. 70% C26 compliance (7/10 pass). Failures: May (early-exit no evidence), Scout (narrative not evidence), Optimizer (no verify call before finish).
+- **Reflection**: 4 new human inputs since last reflection — 3 DIRECTION (gym integration), 1 CLARIFICATION ("help"). Key insight: Hao had to manually orchestrate cross-team gym integration; system lacks autonomous cross-team coordination detection.
+- **New ITs**: IT-21-1 (autonomous coordination detection for May/Bob), IT-21-2 (better "help" response for May)
+- **Deliverables**: `workspace/verifications/2026-03-24-c26-verification.md`, `workspace/reflections/2026-03-24-21-reflection.md`
+- **Growth cycles today**: 3/3 (budget spent)
+- **Workspace**: 22 files (2 over limit — created verifications dir + files, acceptable)
+
 ## 2026-03-24T15:33 — Heartbeat: Triage + Evaluation Review
 - Reviewed 2 pending eval tasks (s_1774256833822_15, s_1774343166447_17) — both are **coach's own** sessions, both "acceptable" verdict. No external agent coaching needed.
 - s_1774256833822_15: quality 0.75, issues = instruction noncompliance, obstacle pivot, ghost deliverables

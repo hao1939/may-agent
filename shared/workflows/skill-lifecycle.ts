@@ -75,7 +75,12 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     `     - Evidence (3+ session IDs where this pattern appears)\n` +
     `     - Which agents would benefit\n` +
     `5. If no pattern found after scanning 10 transcripts:\n` +
-    `   - Write "NO PATTERN FOUND" to workspace/skill-discovery.md with a 3-line explanation.\n\n` +
+    `   - Write "NO PATTERN FOUND" to workspace/skill-discovery.md with a 3-line explanation.\n` +
+    `6. If you find a pattern BUT it's already covered by an existing skill in agents/shared/skills/:\n` +
+    `   - Check the skills directory: ls agents/shared/skills/\n` +
+    `   - Read any skill that might match the pattern you found.\n` +
+    `   - If a matching skill exists, write "ALREADY COVERED" to workspace/skill-discovery.md\n` +
+    `     with: pattern name, which existing skill covers it, and why no new skill is needed.\n\n` +
     `### Output\n` +
     `You MUST write to workspace/skill-discovery.md. Do NOT create any SKILL.md files yet.`;
 
@@ -84,15 +89,32 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     return ctx.escalate("Phase 1 (discover) failed", { error: discover.error });
   }
 
-  // Check if pattern was found
+  // Check if pattern was found or already covered
   const discoverText = discover.lastAssistantText ?? "";
+  const discoverUpper = discoverText.toUpperCase();
   if (
-    discoverText.toUpperCase().includes("NO PATTERN FOUND") ||
-    discoverText.toUpperCase().includes("NO PROVEN PATTERN")
+    discoverUpper.includes("NO PATTERN FOUND") ||
+    discoverUpper.includes("NO PROVEN PATTERN") ||
+    discoverUpper.includes("NO NEW PATTERN")
   ) {
     return ctx.done(
       `## Skill Lifecycle: No pattern found\n\n` +
         `Scanned transcripts but no repeating multi-step pattern appeared 3+ times.\n\n` +
+        `${discoverText}`,
+    );
+  }
+
+  // Check if discovered pattern is already covered by an existing skill
+  if (
+    discoverUpper.includes("ALREADY EXISTS") ||
+    discoverUpper.includes("ALREADY DEPLOYED") ||
+    discoverUpper.includes("ALREADY COVERED") ||
+    discoverUpper.includes("NO NEW SKILL NEEDED") ||
+    discoverUpper.includes("ALREADY HANDLED")
+  ) {
+    return ctx.done(
+      `## Skill Lifecycle: Pattern already covered\n\n` +
+        `Discovery found a pattern but it's already handled by an existing skill or guard.\n\n` +
         `${discoverText}`,
     );
   }

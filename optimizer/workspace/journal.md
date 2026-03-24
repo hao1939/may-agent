@@ -295,3 +295,22 @@ agents/tech-lead/knowledge/INDEX.md
 
 ### Date
 2026-03-24T14:20:00Z
+
+---
+
+## 2026-03-24T21:33 — Heartbeat: Health Check + Analysis Review + Workflow Fix
+
+### Periodic Tasks
+1. **Handler health check**: All healthy. Binary b9ef77e (14.5h old, 18 commits behind). 23 handlers. No errors. Convention checks: 6008. Evals: 15120.
+2. **Analysis review**: 40 sessions/6h. All agents "good" except 4 optimizer skill-lifecycle evals (workflow design issue). Bob waste spiked to 27/8.9% (scattered). Tool waste 5.6%. Binary rebuild remains #1 blocker.
+
+### Workflow Improvement
+- **File**: `agents/shared/workflows/skill-lifecycle.ts`
+- **Change**: Added "ALREADY COVERED" early-exit to Phase 1 discovery
+- **Impact**: Saves ~90 ops when discovery finds pattern already deployed as skill
+- **Trigger**: 4 false "needs_improvement" evals from skill-lifecycle running all 4 phases when no new skill was needed
+- **Status**: Code deployed, needs binary rebuild to activate
+
+### Findings
+- `workspace/finding-handler-health-0324-2133.md`
+- `workspace/finding-analysis-review-0324-2133.md`
