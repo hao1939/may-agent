@@ -22,6 +22,7 @@
  */
 
 import { execSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import {
   cpSync,
   existsSync,
@@ -86,6 +87,13 @@ interface RunResult {
   session_path: string;
   work_dir: string;
   gym_root: string;
+  config_hash: string | null;
+  framework_sha: string | null;
+  model: string | null;
+  categories: string[];
+  tags: string[];
+  tier: string | null;
+  snapshot_files: Record<string, string> | null;
 }
 
 interface AdapterResult {
@@ -677,6 +685,16 @@ function runScenario(
     ? ` | judge: ${judgments.filter(j => j.verdict === "pass").length}/${judgments.length}`
     : "";
 
+  // Compute benchmark identity
+  // Derive the effective agentsRoot the same way the adapter does:
+  // lab fork → gymRoot/agents-lab, otherwise → PROJECT_ROOT/agents
+  const effectiveAgentsRoot = labFork
+    ? join(gymRoot, "agents-lab")
+    : join(PROJECT_ROOT, "agents");
+  const frameworkSha = computeFrameworkSha();
+  const model = readAgentModel(effectiveAgentsRoot, agentName);
+  const identity = computeConfigHash(effectiveAgentsRoot, agentName);
+
   return {
     scenario: scenarioName,
     adapter: adapter.name,
@@ -693,10 +711,131 @@ function runScenario(
     session_path: lastResult.sessionPath,
     work_dir: workDir,
     gym_root: gymRoot,
+    config_hash: identity?.hash ?? null,
+    framework_sha: frameworkSha,
+    model,
+    categories: meta?.categories ?? [],
+    tags: meta?.tags ?? [],
+    tier: meta?.tier ?? null,
+    snapshot_files: identity?.files ?? null,
   };
 }
 
 // ── Utilities ──────────────────────────────────────────────────────────
+
+/**
+ * Get the current git short SHA for the framework.
+ */
+function computeFrameworkSha(): string | null {
+  try {
+    return execSync("git rev-parse --short HEAD", {
+      cwd: PROJECT_ROOT,
+      encoding: "utf-8",
+      timeout: 5000,
+      stdio: ["pipe", "pipe", "pipe"],
+    }).trim() || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Read the `model` field from an agent's agent.json.
+ */
+function readAgentModel(agentsRoot: string, agentName: string): string | null {
+  try {
+    const agentJson = join(agentsRoot, agentName, "agent.json");
+    if (!existsSync(agentJson)) return null;
+    const parsed = JSON.parse(readFileSync(agentJson, "utf-8"));
+    return typeof parsed.model === "string" ? parsed.model : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Compute a deterministic config hash from the agent's effective prompt files.
+ *
+ * Reads a fixed set of config files, concatenates them in sorted order,
+ * and returns a SHA-256 hash (first 12 hex chars) plus the file map.
+ *
+ * For shared files (e.g. common-sense.md), falls back to PROJECT_ROOT/agents/shared/
+ * if the agentsRoot doesn't contain them (e.g. lab fork directories).
+ */
+function computeConfigHash(
+  agentsRoot: string,
+  agentName: string,
+): { hash: string; files: Record<string, string> } | null {
+  try {
+    const agentDir = join(agentsRoot, agentName);
+    if (!existsSync(agentDir)) return null;
+
+    const files: Record<string, string> = {};
+
+    // Fixed file list to include (if they exist)
+    const fixedFiles: Array<{ relPath: string; absPath: string }> = [
+      {
+        relPath: `agents/${agentName}/agent.json`,
+        absPath: join(agentDir, "agent.json"),
+      },
+      {
+        relPath: `agents/${agentName}/SOUL.md`,
+        absPath: join(agentDir, "SOUL.md"),
+      },
+      {
+        relPath: `agents/${agentName}/DOMAIN.md`,
+        absPath: join(agentDir, "DOMAIN.md"),
+      },
+      {
+        relPath: `agents/${agentName}/TOOLS.md`,
+        absPath: join(agentDir, "TOOLS.md"),
+      },
+    ];
+
+    // Shared file — fall back to PROJECT_ROOT if not in agentsRoot
+    const sharedCommonSense = join(agentsRoot, "shared", "common-sense.md");
+    const sharedFallback = join(PROJECT_ROOT, "agents", "shared", "common-sense.md");
+    fixedFiles.push({
+      relPath: "agents/shared/common-sense.md",
+      absPath: existsSync(sharedCommonSense) ? sharedCommonSense : sharedFallback,
+    });
+
+    // Read fixed files
+    for (const { relPath, absPath } of fixedFiles) {
+      if (existsSync(absPath)) {
+        files[relPath] = readFileSync(absPath, "utf-8");
+      }
+    }
+
+    // Any other .md files in agent directory (sorted, excluding already-included ones)
+    const knownMds = new Set(["SOUL.md", "DOMAIN.md", "TOOLS.md"]);
+    try {
+      const entries = readdirSync(agentDir).filter(
+        (f) => f.endsWith(".md") && !knownMds.has(f),
+      ).sort();
+      for (const f of entries) {
+        const relPath = `agents/${agentName}/${f}`;
+        if (!(relPath in files)) {
+          files[relPath] = readFileSync(join(agentDir, f), "utf-8");
+        }
+      }
+    } catch {
+      // ignore readdir errors
+    }
+
+    if (Object.keys(files).length === 0) return null;
+
+    // Concatenate in deterministic (sorted by key) order, with filename delimiters
+    const sortedKeys = Object.keys(files).sort();
+    const concatenated = sortedKeys.map((k) => `\n--- ${k} ---\n${files[k]}`).join("");
+
+    const hash = createHash("sha256").update(concatenated).digest("hex").slice(0, 12);
+
+    return { hash, files };
+  } catch {
+    return null;
+  }
+}
 
 function findNewerFile(dir: string, thanMs: number): string | null {
   try {
@@ -827,6 +966,13 @@ function main() {
           session_path: "",
           work_dir: "",
           gym_root: "",
+          config_hash: null,
+          framework_sha: null,
+          model: null,
+          categories: [],
+          tags: [],
+          tier: null,
+          snapshot_files: null,
         });
       }
     }
