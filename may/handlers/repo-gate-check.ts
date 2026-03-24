@@ -229,7 +229,7 @@ export function runRepoGateCheck(ctx: HandlerContext): GateResult {
 function runTsc(ctx: HandlerContext): GateResult["tsc"] {
   const start = Date.now();
   try {
-    const output = execSync("npx tsc --noEmit 2>&1", {
+    const output = execSync("node_modules/.bin/tsc --noEmit 2>&1", {
       cwd: ctx.projectRoot,
       timeout: TSC_TIMEOUT_MS,
       stdio: "pipe",
@@ -252,7 +252,7 @@ function runTsc(ctx: HandlerContext): GateResult["tsc"] {
 function runVitest(ctx: HandlerContext): GateResult["vitest"] {
   const start = Date.now();
   try {
-    const output = execSync("npx vitest --run 2>&1", {
+    const output = execSync("node_modules/.bin/vitest --run 2>&1", {
       cwd: ctx.projectRoot,
       timeout: VITEST_TIMEOUT_MS,
       stdio: "pipe",

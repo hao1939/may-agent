@@ -1,6 +1,20 @@
 
 ---
 
+### 2026-03-24 12:03 UTC (s_1774353818960_70) — Tuesday Batch Extended Sweep
+
+**cs.AI cross-list scan:** Found 2 additional high-value papers not in initial triage:
+1. **ProMAS (2603.20260)** — Proactive error forecasting for MAS via Markov transitions. ★★★★★. Models reasoning as physical motion; detects logic breaches via risk acceleration. 27% information fraction. → DD#466
+2. **AgentComm-Bench (2603.20285)** — 6-dimension communication stress benchmark. ★★★★½. Stale memory causes >96% NAV degradation. Communication can HARM performance under corruption. → DD#467
+
+**Synthesis:** CR#255 "The Fragile Orchestra" — connects DD#463-467 into a three-layer defense architecture (Prediction → Containment → Communication Integrity). Key insight: MAS fragility comes from three propagation pathways (reasoning cascade, trust erosion, communication corruption) that form a reinforcing loop.
+
+**State updates:** covered_ids.txt updated with all Tuesday batch IDs. Triage file expanded with cs.AI cross-list entries. Todo handoffs updated.
+
+**Session output:** DD#466, DD#467, CR#255 from earlier CR#253 to avoid collision — see note)
+
+---
+
 ### 2026-03-24 02:39 UTC (s_1774319940007_110) — Early Exit
 arXiv cs.MA/new still shows Monday March 23 batch (14 entries). All 3 early-exit criteria met. Next: Tuesday batch ~20:00 UTC.
 

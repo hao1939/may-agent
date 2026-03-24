@@ -32,7 +32,7 @@
   - **Drift Monitor**: Async observer injects corrective prompts without stopping session (Wink).
   - **Dynamic Topology**: Route tasks based on complexity (AgentConductor).
   - **AgentCgroup**: OS-level isolation (eBPF) for tool resources.
-- **Status**: **[DEPLOYED]** (2026-03-22). Phase 3 (Active Nudging) deployed. `active-nudge` handler and `monitor-session` logic active.
+- **Status**: **[DEPLOYED]** (2026-03-23). Phase 3 (Active Nudging) deployed via `active-nudge` handler and `monitor-session`. Phase 4 (Context Pressure) deployed.
 
 ## 6. Finite Brain / Budget Awareness (SkyClaw / 2026-03-08)
 - **Insight**: Agents must see their own resource consumption (tokens/ops) in-context to self-regulate.
@@ -70,17 +70,17 @@
 
 ## 14. Active Nudging (Wink / arXiv:2602.17037)
 - **Insight**: 30% of trajectories misbehave. Async "nudging" (injecting corrective prompts) resolves 90% of them.
-- **Status**: **[DEPLOYED]** (2026-03-23). Deployed via `active-nudge` handler and `monitor-session` integration.
+- **Status**: **[DEPLOYED]** (2026-03-23). Implemented in `active-nudge.ts` (Loop, Stall, Ghost) and `monitor-session.cjs`.
 
 ## 15. C1.5 Ghost Guard (Finish Tool)
 - **Insight**: FM-3.1 (Ghost Deliverables) is the top failure.
 - **Idea**: Wrap `finish()` to verify `fs.existsSync(path)` for all deliverables.
-- **Status**: **[MITIGATED]** (2026-03-23). Preventive wrapper blocked by platform; implemented as Detective Control in `convention-check.ts` and `monitor-session`.
+- **Status**: **[MITIGATED]** (2026-03-23). Preventive blocked by platform. Implemented as Detective Control in `convention-check.ts` and `monitor-session`.
 
 ## 16. Context Pressure Valve (P42 / Phase 4)
 - **Insight**: Context limits (95% full) are currently ignored until crash.
 - **Idea**: Auto-truncate or warn when context > 90%.
-- **Status**: **[DEPLOYED]** (2026-03-23). Already implemented in `monitor-session.cjs` (100k token threshold).
+- **Status**: **[DEPLOYED]** (2026-03-23). already implemented in `monitor-session.cjs` (100k token threshold).
 
 ## 17. Agent Skills Packages (HuggingFace / Validation)
 - **Insight**: HuggingFace "Agent Skills" (distributable folders with code+prompts) mirror our `agents/shared/skills/` architecture.

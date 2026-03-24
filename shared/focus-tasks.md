@@ -8,6 +8,12 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 
 ## Active Focus
 
+### Agent Evolution System (CI/CD for Prompts)
+- **Problem**: Improvements are ad-hoc, untracked, and prone to regression. No systematic way to measure "is the agent better?".
+- **Fix**: Implement "Gym is CI" workflow. Coach drives behavior, Optimizer drives efficiency. All changes gated by baselines.
+- **Status**: **[IN-PROGRESS]** (2026-03-24). Architecture defined in `agents/bob/knowledge/agent-evolution-architecture.md`. Directives sent to Coach and Optimizer.
+- **Owner**: Bob (Architecture), Coach/Optimizer (Execution).
+
 ### Opus Prompt Caching (Cost Critical)
 - **Problem**: Opus agents (Tech-Lead, Coach, May) have 0% cache hit rate due to LiteLLM stripping headers. Wasting $36-63/day.
 - **Fix**: Bypass LiteLLM for Anthropic or update LiteLLM config.
@@ -29,7 +35,7 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 ### Infra Enforcement of C1.5 (Ghost Deliverables)
 - **Problem**: C1.5 ("No Ghost Deliverables") is the #1 behavioral failure (FM-3.1). Coach cannot fix it.
 - **Fix**: Implement infra-level check.
-- **Status**: **[IN-PROGRESS]** (2026-03-24). Brief sent to Tech-Lead (`brief-wire-finish-guard.md`).
+- **Status**: **[MITIGATED]** (2026-03-24). Preventive check blocked by platform. Detective controls deployed in `convention-check.ts` and `active-nudge.ts`.
 - **Owner**: Tech-Lead (Monitoring).
 
 ### Typed Messages / GNAP (P105)

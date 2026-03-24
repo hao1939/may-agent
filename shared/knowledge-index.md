@@ -68,8 +68,9 @@ Read this before starting research — someone may have already covered your top
 - `agents/shared/knowledge/strategies.md` — Common failure recovery patterns (P63)
 - `agents/shared/knowledge/infrastructure-constraints.md` — Hardware/Software limits (Binary, Read-Only).
 - `agents/shared/knowledge/advisories/` — Security advisories and patches.
-- `agents/shared/knowledge/mast-taxonomy.md` — **MAST Failure Codes** (FM-1.1 to FM-3.3) for error logging.
+- `agents/shared/knowledge/mast-taxonomy.md` — **MAST Failure Codes** (FM-1.1 to FM-3.3) for failure tracking.
 - `agents/shared/knowledge/error-log-schema.md` — **Error Log Schema** (JSONL) for structured failure tracking.
+- `agents/bob/knowledge/agent-evolution-architecture.md` — **Agent Evolution System**. Architecture for the "Gym as CI" pipeline (AHA).
 - `docs/` — Design docs, architecture, proposals, operations. See `docs/README.md`.
 
 ## Shared Tools

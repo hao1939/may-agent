@@ -457,3 +457,9 @@
   - Wrote `agents/bob/workspace/analysis.md` detailing the pattern.
   - Plan to propose a **"Verification Evidence"** field for the `finish()` tool (Infra Fix).
   - Plan to brief Optimizer/Coach on this specific failure mode (Behavioral Fix).
+
+## 2026-03-24
+- [x] **Delegate Prompt Simplification (Phase 1)**: Analyzed proposal, endorsed 3-file structure. Sent directive to May to pilot on Scout (keeping Synthesis Protocol). `design-review-prompt-simplification.md`.
+- [x] **Delegate C1.7 Verification Check**: Pivot from impossible finish-tool schema to feasible detective control. Sent directive to Tech-Lead. `brief-infra-finish-verification.md`.
+- [x] **Consolidate Ideas**: Marked Active Nudging, Ghost Guard, and Context Pressure as DEPLOYED in `ideas.md` to stop duplicate work.
+- [x] **Common Sense Update**: Implemented Relaxed C40 (Allow reads first) to align with model reality. Added C1.7 (Evidence Required).
