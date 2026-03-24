@@ -91,40 +91,49 @@ describe("finish-guard", () => {
     expect(result!.reason).toContain("no write, edit");
   });
 
-  it("allows finish(success) with deliverables when write tool was used", async () => {
+  it("allows finish(success) with deliverables when write tool was used and verified", async () => {
     const ctx = makeCtx(
       {
         status: "success",
         summary: "wrote a file",
         deliverables: [{ path: "src/foo.ts", description: "new file" }],
       },
-      [assistantWithToolCall("write", { path: "src/foo.ts", content: "hello" })],
+      [
+        assistantWithToolCall("write", { path: "src/foo.ts", content: "hello" }),
+        assistantWithToolCall("read", { path: "src/foo.ts" }),
+      ],
     );
     const result = await guard(ctx);
     expect(result).toBeUndefined();
   });
 
-  it("allows finish(success) with deliverables when edit tool was used", async () => {
+  it("allows finish(success) with deliverables when edit tool was used and verified", async () => {
     const ctx = makeCtx(
       {
         status: "success",
         summary: "edited a file",
         deliverables: [{ path: "src/foo.ts", description: "updated file" }],
       },
-      [assistantWithToolCall("edit", { path: "src/foo.ts", oldText: "a", newText: "b" })],
+      [
+        assistantWithToolCall("edit", { path: "src/foo.ts", oldText: "a", newText: "b" }),
+        assistantWithToolCall("read", { path: "src/foo.ts" }),
+      ],
     );
     const result = await guard(ctx);
     expect(result).toBeUndefined();
   });
 
-  it("allows finish(success) with deliverables when bash writes files", async () => {
+  it("allows finish(success) with deliverables when bash writes files and verified", async () => {
     const ctx = makeCtx(
       {
         status: "success",
         summary: "generated output",
         deliverables: [{ path: "output.txt", description: "generated" }],
       },
-      [assistantWithToolCall("bash", { command: "echo hello > output.txt" })],
+      [
+        assistantWithToolCall("bash", { command: "echo hello > output.txt" }),
+        assistantWithToolCall("bash", { command: "cat output.txt" }),
+      ],
     );
     const result = await guard(ctx);
     expect(result).toBeUndefined();
@@ -144,7 +153,7 @@ describe("finish-guard", () => {
     expect(result!.block).toBe(true);
   });
 
-  it("allows when bash uses git commit", async () => {
+  it("allows when bash uses git commit with verification", async () => {
     const ctx = makeCtx(
       {
         status: "success",
@@ -154,6 +163,7 @@ describe("finish-guard", () => {
       [
         assistantWithToolCall("write", { path: "src/foo.ts", content: "x" }),
         assistantWithToolCall("bash", { command: "git commit -am 'feat: add foo'" }),
+        assistantWithToolCall("bash", { command: "git diff HEAD~1 --stat" }),
       ],
     );
     const result = await guard(ctx);
@@ -180,6 +190,168 @@ describe("finish-guard", () => {
       summary: "stuck",
       deliverables: [{ path: "src/foo.ts", description: "partial" }],
       blockers: [{ reason: "API down", context: "tried 3 times" }],
+    });
+    const result = await guard(ctx);
+    expect(result).toBeUndefined();
+  });
+
+  // === FM-3.3 Verification Guard Tests ===
+
+  it("blocks finish(success) when write exists but no verification after it", async () => {
+    const ctx = makeCtx(
+      {
+        status: "success",
+        summary: "wrote a file",
+        deliverables: [{ path: "src/foo.ts", description: "new file" }],
+      },
+      [assistantWithToolCall("write", { path: "src/foo.ts", content: "hello" })],
+    );
+    const result = await guard(ctx);
+    expect(result).toBeDefined();
+    expect(result!.block).toBe(true);
+    expect(result!.reason).toContain("FM-3.3");
+    expect(result!.reason).toContain("no verification AFTER");
+  });
+
+  it("blocks finish(success) when edit exists but no verification after it", async () => {
+    const ctx = makeCtx(
+      {
+        status: "success",
+        summary: "edited a file",
+        deliverables: [{ path: "src/foo.ts", description: "updated file" }],
+      },
+      [assistantWithToolCall("edit", { path: "src/foo.ts", oldText: "a", newText: "b" })],
+    );
+    const result = await guard(ctx);
+    expect(result).toBeDefined();
+    expect(result!.block).toBe(true);
+    expect(result!.reason).toContain("FM-3.3");
+  });
+
+  it("blocks when verification exists BEFORE but not AFTER last write", async () => {
+    const ctx = makeCtx(
+      {
+        status: "success",
+        summary: "wrote two files",
+        deliverables: [{ path: "src/foo.ts", description: "new file" }],
+      },
+      [
+        assistantWithToolCall("write", { path: "src/foo.ts", content: "v1" }),
+        assistantWithToolCall("read", { path: "src/foo.ts" }),  // verification for first write
+        assistantWithToolCall("write", { path: "src/foo.ts", content: "v2" }),  // second write — no verification after
+      ],
+    );
+    const result = await guard(ctx);
+    expect(result).toBeDefined();
+    expect(result!.block).toBe(true);
+    expect(result!.reason).toContain("FM-3.3");
+  });
+
+  it("allows when verification exists after the LAST write in multi-write sequence", async () => {
+    const ctx = makeCtx(
+      {
+        status: "success",
+        summary: "wrote two files",
+        deliverables: [{ path: "src/foo.ts", description: "new file" }],
+      },
+      [
+        assistantWithToolCall("write", { path: "src/foo.ts", content: "v1" }),
+        assistantWithToolCall("write", { path: "src/foo.ts", content: "v2" }),
+        assistantWithToolCall("read", { path: "src/foo.ts" }),  // verification after last write
+      ],
+    );
+    const result = await guard(ctx);
+    expect(result).toBeUndefined();
+  });
+
+  it("allows bash test commands as verification after write", async () => {
+    const ctx = makeCtx(
+      {
+        status: "success",
+        summary: "wrote and tested",
+        deliverables: [{ path: "src/foo.ts", description: "new file" }],
+      },
+      [
+        assistantWithToolCall("write", { path: "src/foo.ts", content: "hello" }),
+        assistantWithToolCall("bash", { command: "vitest --run test/foo.test.ts" }),
+      ],
+    );
+    const result = await guard(ctx);
+    expect(result).toBeUndefined();
+  });
+
+  it("allows tsc as verification after edit", async () => {
+    const ctx = makeCtx(
+      {
+        status: "success",
+        summary: "edited and type-checked",
+        deliverables: [{ path: "src/foo.ts", description: "updated" }],
+      },
+      [
+        assistantWithToolCall("edit", { path: "src/foo.ts", oldText: "a", newText: "b" }),
+        assistantWithToolCall("bash", { command: "tsc --noEmit" }),
+      ],
+    );
+    const result = await guard(ctx);
+    expect(result).toBeUndefined();
+  });
+
+  it("allows ls -la as verification after write", async () => {
+    const ctx = makeCtx(
+      {
+        status: "success",
+        summary: "wrote and checked",
+        deliverables: [{ path: "output.txt", description: "new file" }],
+      },
+      [
+        assistantWithToolCall("write", { path: "output.txt", content: "data" }),
+        assistantWithToolCall("bash", { command: "ls -la output.txt && wc -l output.txt" }),
+      ],
+    );
+    const result = await guard(ctx);
+    expect(result).toBeUndefined();
+  });
+
+  it("blocks when bash after write is not a verification command", async () => {
+    const ctx = makeCtx(
+      {
+        status: "success",
+        summary: "wrote stuff",
+        deliverables: [{ path: "src/foo.ts", description: "new file" }],
+      },
+      [
+        assistantWithToolCall("write", { path: "src/foo.ts", content: "hello" }),
+        assistantWithToolCall("bash", { command: "echo done" }),
+      ],
+    );
+    const result = await guard(ctx);
+    expect(result).toBeDefined();
+    expect(result!.block).toBe(true);
+    expect(result!.reason).toContain("FM-3.3");
+  });
+
+  it("allows bash redirect write + cat verification", async () => {
+    const ctx = makeCtx(
+      {
+        status: "success",
+        summary: "generated output",
+        deliverables: [{ path: "output.txt", description: "generated" }],
+      },
+      [
+        assistantWithToolCall("bash", { command: "echo hello > output.txt" }),
+        assistantWithToolCall("bash", { command: "cat output.txt" }),
+      ],
+    );
+    const result = await guard(ctx);
+    expect(result).toBeUndefined();
+  });
+
+  it("does not require verification for finish(partial) with deliverables", async () => {
+    const ctx = makeCtx({
+      status: "partial",
+      summary: "partial work",
+      deliverables: [{ path: "src/foo.ts", description: "partial" }],
+      next_steps: "finish the work",
     });
     const result = await guard(ctx);
     expect(result).toBeUndefined();

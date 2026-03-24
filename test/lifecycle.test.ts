@@ -60,6 +60,7 @@ describe("createFinishTool", () => {
       deliverables: [
         { path: "src/lib/feature.ts", description: "Widget implementation" },
       ],
+      verification_evidence: ["Step 3: read(src/lib/feature.ts) confirmed export exists"],
     });
 
     expect(text).toContain("✅");
@@ -163,10 +164,52 @@ describe("createFinishTool", () => {
     const text = await callFinish(tool, {
       status: "success",
       summary: "Reviewed and found no issues.",
+      verification_evidence: ["Step 2: read(README.md) confirmed no issues"],
     });
 
     expect(text).toContain("✅");
     expect(text).toContain("SUCCESS");
+  });
+
+  it("rejects success without verification_evidence", async () => {
+    const tool = createTool();
+    const text = await callFinish(tool, {
+      status: "success",
+      summary: "Done.",
+      deliverables: [{ path: "src/lib/feature.ts", description: "Feature" }],
+    });
+
+    expect(text).toContain("error");
+    expect(text).toContain("verification_evidence");
+  });
+
+  it("includes verification evidence in output", async () => {
+    const tool = createTool();
+    const text = await callFinish(tool, {
+      status: "success",
+      summary: "Done.",
+      deliverables: [{ path: "src/lib/feature.ts", description: "Feature" }],
+      verification_evidence: [
+        "Step 5: read(src/lib/feature.ts) confirmed changes",
+        "Step 8: bash test exit code 0",
+      ],
+    });
+
+    expect(text).toContain("Verification evidence");
+    expect(text).toContain("Step 5: read(src/lib/feature.ts) confirmed changes");
+    expect(text).toContain("Step 8: bash test exit code 0");
+  });
+
+  it("allows non-success status without verification_evidence", async () => {
+    const tool = createTool();
+    const text = await callFinish(tool, {
+      status: "partial",
+      summary: "Halfway done.",
+      next_steps: "Finish remaining items.",
+    });
+
+    expect(text).toContain("⚠️");
+    expect(text).toContain("PARTIAL");
   });
 
   it("allows partial with missing deliverables (warning only)", async () => {
