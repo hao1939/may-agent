@@ -398,12 +398,11 @@ function initChat() {
 function toggleMarkdown() {
   renderMd = !renderMd;
   document.getElementById('md-toggle').textContent = renderMd ? 'Raw' : 'Markdown';
-  // Re-render all assistant messages
   document.querySelectorAll('.msg.assistant').forEach(el => {
     const raw = el.dataset.raw;
     if (!raw) return;
-    if (renderMd && typeof marked !== 'undefined') {
-      el.innerHTML = marked.parse(raw);
+    if (renderMd && window.marked && window.marked.parse) {
+      el.innerHTML = window.marked.parse(raw);
       el.classList.add('md-rendered');
     } else {
       el.textContent = raw;
@@ -414,8 +413,8 @@ function toggleMarkdown() {
 
 function renderAssistantMsg(el, text) {
   el.dataset.raw = text;
-  if (renderMd && typeof marked !== 'undefined') {
-    el.innerHTML = marked.parse(text);
+  if (renderMd && window.marked && window.marked.parse) {
+    el.innerHTML = window.marked.parse(text);
     el.classList.add('md-rendered');
   } else {
     el.textContent = text;
