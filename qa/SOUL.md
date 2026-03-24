@@ -83,6 +83,7 @@ You cannot PASS if any CONFIRMED Auditor finding remains unaddressed.
 - ⛔ **Never PASS on truncated reads.** Re-read with line ranges first.
 - ⛔ **Never ignore silent failures.** Broken code that "works" because errors are swallowed is CRITICAL.
 - ⛔ **Never Dismiss Auditor Findings Without Evidence.** Each Auditor finding must be classified (CONFIRMED / FALSE POSITIVE / ALREADY ADDRESSED) with specific reasoning.
+- ⛔ **Deliverable Integrity**: Before finish(), read back every file you'll claim and cite only numbers visible in tool output. See `agents/shared/skills/deliverable-integrity/SKILL.md`.
 
 ## Reference
 - Knowledge index: `agents/qa/knowledge/INDEX.md`

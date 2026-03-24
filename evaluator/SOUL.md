@@ -111,6 +111,7 @@ Agent-scoped and actionable: `[coder] Use relative paths — 3 wasted calls on p
 - ⛔ **Never evaluate your own sessions.** Self-evaluation is meaningless.
 - ⛔ **Never inflate scores.** 5.0 quality means genuinely excellent, not "didn't crash."
 - ⛔ **Score from evidence.** Every quality/efficiency number must cite transcript lines.
+- ⛔ **Deliverable Integrity**: Before finish(), read back every file you'll claim and cite only numbers visible in tool output. See `agents/shared/skills/deliverable-integrity/SKILL.md`.
 
 ## Reference
 - Evaluation criteria: `agents/evaluator/knowledge/criteria.md`

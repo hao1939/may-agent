@@ -1,5 +1,31 @@
 # Journal
 
+## 2026-03-24T15:33 — Heartbeat: Triage + Evaluation Review
+- Reviewed 2 pending eval tasks (s_1774256833822_15, s_1774343166447_17) — both are **coach's own** sessions, both "acceptable" verdict. No external agent coaching needed.
+- s_1774256833822_15: quality 0.75, issues = instruction noncompliance, obstacle pivot, ghost deliverables
+- s_1774343166447_17: quality 5.0, issues = multiple tool errors
+- Growth cycle budget: 3/3 spent today (09:30, 10:33, 13:06). No more cycles.
+- Agent error logs (coder, qa, tech-lead): all empty — no new error patterns to target.
+- Hygiene: archived review-agent-teams.md, now at 20 files.
+- Scorer bugs noted (search-strategy-escalation, spec-adherence-multi-step) — need infra fix, not coach work.
+
+## 2026-03-24T15:06 — Reflection: Human Input Analysis
+
+Analyzed 14 human inputs since last reflection (22h gap, improved from 76h).
+
+**Key findings:**
+- Hao in architect/reviewer mode — 8/14 messages are design review requests (prompt-simplification, agent-teams)
+- Coach DROPPED the prompt-simplification review — assigned at 09:17 UTC, still not done. **P0 for next session.**
+- Bob also dropped 2 reviews (prompt-simplification, agent-teams). Monitor.
+- flexnodehelper is a new external project — May struggled 4 times before Hao mounted the path
+- Coach has 27 TOOL_SCHEMA_ERROR entries — worst self-error pattern, needs self-improvement experiment
+
+**Previous ITs status:** IT-1 done, IT-2 partially (binary rebuilt), IT-3 partially (1/3 scenarios), IT-4 not done.
+
+**New ITs:** IT-1 complete prompt-simplification review (P0), IT-2 self-improvement for tool schema errors (P1), IT-3 monitor bob/optimizer reviews (P2), IT-4 remaining gym scenarios (P2), IT-5 teach May mount-diagnosis (P2).
+
+Full reflection: `workspace/reflections/2026-03-24-15-reflection.md`
+
 ## 2026-03-24T09:30 — Heartbeat: Experiment Execution + Scenario Exploration
 
 ### Experiments run (7 total)
@@ -1170,3 +1196,9 @@ After 180+ experiments and 20 methods tested:
 - **P0 DONE**: Merged DOMAIN.md content into SOUL.md — added Core Responsibilities, Key Files, Workflows, Gym Runner sections
 - Evaluation review tasks (s_1774321566672_145, s_1774348414866_43): blocked on DB access — sqlite3 not available, better-sqlite3 not in path. Deferring to next session with DB tooling.
 - Growth cycle budget: 3+ already run today (06:06, 09:30/10:33, 13:06). At daily cap. No more growth cycles.
+
+## 2026-03-24T14:33 — Heartbeat: Duplicate Relaxed C40 Request
+- **Bob req:55fe37ab**: Update agent heartbeats to Relaxed C40 Protocol. 
+- **Already done**: All 5 agents (bob, qa, scout, coder, amy-kimi) already have the Relaxed C40 language in their heartbeat.md files. Verified via grep: each has "read-only tools" and "state-changing action" phrasing.
+- **No changes needed**: This is a duplicate of earlier requests (req:89958cf9, req:8b70c5cf, req:39e1c4ae, req:2e11af50).
+- Growth cycle budget: 3+ already run today. At daily cap.

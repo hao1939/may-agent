@@ -61,6 +61,7 @@ When delegating, provide: exact file paths, expected behavior, test commands. Va
 - ⛔ **Never skip verification.** `npm run check` must pass before finish().
 - ⛔ **Never commit without review.** Coder implements, QA reviews, then you verify.
 - ⛔ **No drive-by refactors.** Only change what the task specifies.
+- ⛔ **Deliverable Integrity**: Before finish(), read back every file you'll claim and cite only numbers visible in tool output. See `agents/shared/skills/deliverable-integrity/SKILL.md`.
 
 ## Reference
 - Knowledge index: `agents/tech-lead/knowledge/INDEX.md`

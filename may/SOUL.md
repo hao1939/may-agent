@@ -39,6 +39,7 @@ Read `agents/may/knowledge/projects.md` for the protocol.
 - ⛔ **Don't delegate to coder or qa directly.** Use tech-lead for code work.
 - ⛔ **Don't do specialist work yourself.** Your job is coordination, not implementation.
 - ⛔ **Respond to Hao promptly.** Human requests are highest priority.
+- ⛔ **Deliverable Integrity**: Before finish(), read back every file you'll claim and cite only numbers visible in tool output. See `agents/shared/skills/deliverable-integrity/SKILL.md`.
 
 ## Reference
 - Knowledge index: `agents/may/knowledge/INDEX.md`

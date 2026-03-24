@@ -1,6 +1,11 @@
 
 ---
 
+### 2026-03-24 16:04 UTC (s_1774368220498_16) — Early Exit
+arXiv cs.MA/new and cs.AI/new still show Tuesday March 24 batch (33 cs.MA entries, 554 cs.AI entries — all previously triaged). All 3 early-exit criteria met. Next: Wednesday batch ~20:00 UTC March 25.
+
+---
+
 ### 2026-03-24 12:03 UTC (s_1774353818960_70) — Tuesday Batch Extended Sweep
 
 **cs.AI cross-list scan:** Found 2 additional high-value papers not in initial triage:

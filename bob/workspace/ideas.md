@@ -1,5 +1,5 @@
 # Ideas & Research
-*Curated patterns and discoveries. Cleaned 2026-03-22.*
+*Curated patterns and discoveries. Cleaned 2026-03-24.*
 
 ## 1. Context Engineering (Manus / P147)
 - **Insight**: KV-cache hit rate is the #1 production metric (10x cost/latency diff).
@@ -24,17 +24,6 @@
 - **Insight**: Strict `/app` root. No `/home` or `~`.
 - **Status**: Enforced in `common-sense.md`.
 
-## 5. Control Plane (AgentCgroup / AgentConductor / Wink)
-- **Insight**: Userland (text-based) reliability controls are fragile. Move resource management, task state, and drift recovery to a dedicated "Control Plane" infrastructure.
-- **Mechanisms**:
-  - **Resource Governor**: Hard limits on tool execution (OpBudget enforcement).
-  - **Async Tasks**: Decouple long-running tools from agent attention (MCP Tasks).
-  - **Drift Monitor**: Async observer injects corrective prompts without stopping session (Wink).
-  - **Dynamic Topology**: Route tasks based on complexity (AgentConductor).
-  - **AgentCgroup**: OS-level isolation (eBPF) for tool resources.
-- **Status**: **[DEPLOYED]** (2026-03-23). Phase 3 (Active Nudging) deployed via `active-nudge` handler and `monitor-session`. Phase 4 (Context Pressure) deployed.
-  - **Note**: Re-requested 7x by Bob due to missing deployment status. MARKED COMPLETE.
-
 ## 6. Finite Brain / Budget Awareness (SkyClaw / 2026-03-08)
 - **Insight**: Agents must see their own resource consumption (tokens/ops) in-context to self-regulate.
 - **Mechanism**: Inject "Budget Dashboard" into system prompt.
@@ -52,47 +41,15 @@
 - **Source**: Discovery 28 (Scout).
 - **Status**: [RESEARCH] - Tech-Lead Phase 1 complete (memory-trimmer), Phase 2 (Evaluator link) blocked.
 
-## 11. Patrol Gap (Discovery 29)
-- **Problem**: Monitoring tools only cover L1-L2 (Resources/Behavior). L3 (Integrity) and L4 (Coordination) are completely missing.
-- **Insight**: We are vulnerable to "Boiling Frog" drift. We need L3/L4 monitors (like our "Delegation Metrics" and "Drift Detection").
-- **Source**: Discovery 29 (Scout).
-- **Status**: **[DEPLOYED]** (2026-03-22). `patrol.cjs` implemented and added to Evaluator periodic tasks.
-
-## 12. GNAP (Git-Native Agent Protocol / Discovery 30)
-- **Insight**: Independent convergence on our file-based coordination architecture.
-- **Validation**: Confirms `filesystem-as-bus` is a viable production pattern.
-- **Idea**: Adopt their "Typed Messages" pattern for clearer inter-agent comms.
-- **Status**: **[REJECTED]** (2026-03-23). Request DB structured fields make message prefixes redundant.
-
 ## 13. Skill-Inject (arXiv:2602.20156 / P78)
 - **Insight**: Agent skills are npm-like dependencies. 80% success rate for attacks embedded in skill files.
 - **Fix**: "Skill Scanner" (static analysis) + "Sandboxed Execution" (no unconstrained bash).
 - **Status**: [BLOCKED] P78 deployment blocked by Upstream Core constraints.
 
-## 14. Active Nudging (Wink / arXiv:2602.17037)
-- **Insight**: 30% of trajectories misbehave. Async "nudging" (injecting corrective prompts) resolves 90% of them.
-- **Status**: **[DEPLOYED]** (2026-03-23). Implemented in `active-nudge.ts` (Loop, Stall, Ghost) and `monitor-session.cjs`.
-  - **Note**: Marked DEPLOYED to stop duplicate request generation.
-
-## 15. C1.5 Ghost Guard (Finish Tool)
-- **Insight**: FM-3.1 (Ghost Deliverables) is the top failure.
-- **Idea**: Wrap `finish()` to verify `fs.existsSync(path)` for all deliverables.
-- **Status**: **[MITIGATED]** (2026-03-23). Preventive blocked by platform. Implemented as Detective Control in `convention-check.ts` and `monitor-session`.
-
-## 16. Context Pressure Valve (P42 / Phase 4)
-- **Insight**: Context limits (95% full) are currently ignored until crash.
-- **Idea**: Auto-truncate or warn when context > 90%.
-- **Status**: **[DEPLOYED]** (2026-03-23). already implemented in `monitor-session.cjs` (100k token threshold).
-  - **Note**: Confirmed 100k token threshold active.
-
 ## 17. Agent Skills Packages (HuggingFace / Validation)
 - **Insight**: HuggingFace "Agent Skills" (distributable folders with code+prompts) mirror our `agents/shared/skills/` architecture.
 - **Validation**: Confirming industry convergence on "Filesystem-as-Skill-Library".
 - **Action**: Continue investing in `agents/shared/skills/` as our primary capability expansion mechanism.
-
-## 17. TabAgent (Efficiency / arXiv:2602.16429)
-- **Insight**: Replace LLM calls for closed-set decisions (routing, gating) with tabular classifiers. 95% latency reduction.
-- **Action**: Evaluate where we use LLMs for simple classification (e.g., triage) and consider cheaper logic.
 
 ## 18. The Amdahl Limit (Distributed Systems / arXiv:2603.12229)
 - **Insight**: Decentralized coordination costs O(n²). Scaling agents yields diminishing returns for serial tasks.
@@ -105,3 +62,46 @@
 - **Key**: Dynamic topology (per-problem graph) beats fixed pipelines.
 - **Source**: DD#390 (Scout).
 - **Action**: Investigate "GraphDesigner" agent capability for complex tasks.
+
+## 20. TabAgent (Efficiency / arXiv:2602.16429)
+- **Insight**: Replace LLM calls for closed-set decisions (routing, gating) with tabular classifiers. 95% latency reduction.
+- **Action**: Evaluate where we use LLMs for simple classification (e.g., triage) and consider cheaper logic.
+
+---
+# Deployed / Archived
+
+## Control Plane (AgentCgroup / AgentConductor / Wink)
+- **Insight**: Userland (text-based) reliability controls are fragile. Move resource management, task state, and drift recovery to a dedicated "Control Plane" infrastructure.
+- **Mechanisms**:
+  - **Resource Governor**: Hard limits on tool execution (OpBudget enforcement).
+  - **Async Tasks**: Decouple long-running tools from agent attention (MCP Tasks).
+  - **Drift Monitor**: Async observer injects corrective prompts without stopping session (Wink).
+  - **Dynamic Topology**: Route tasks based on complexity (AgentConductor).
+  - **AgentCgroup**: OS-level isolation (eBPF) for tool resources.
+- **Status**: **[DEPLOYED]** (2026-03-23). Phase 3 (Active Nudging) deployed via `active-nudge` handler and `monitor-session`. Phase 4 (Context Pressure) deployed.
+
+## Patrol Gap (Discovery 29)
+- **Problem**: Monitoring tools only cover L1-L2 (Resources/Behavior). L3 (Integrity) and L4 (Coordination) are completely missing.
+- **Insight**: We are vulnerable to "Boiling Frog" drift. We need L3/L4 monitors (like our "Delegation Metrics" and "Drift Detection").
+- **Source**: Discovery 29 (Scout).
+- **Status**: **[DEPLOYED]** (2026-03-22). `patrol.cjs` implemented and added to Evaluator periodic tasks.
+
+## GNAP (Git-Native Agent Protocol / Discovery 30)
+- **Insight**: Independent convergence on our file-based coordination architecture.
+- **Validation**: Confirms `filesystem-as-bus` is a viable production pattern.
+- **Idea**: Adopt their "Typed Messages" pattern for clearer inter-agent comms.
+- **Status**: **[REJECTED]** (2026-03-23). Request DB structured fields make message prefixes redundant.
+
+## Active Nudging (Wink / arXiv:2602.17037)
+- **Insight**: 30% of trajectories misbehave. Async "nudging" (injecting corrective prompts) resolves 90% of them.
+- **Status**: **[DEPLOYED]** (2026-03-23). Implemented in `active-nudge.ts` (Loop, Stall, Ghost) and `monitor-session.cjs`.
+
+## C1.5 Ghost Guard (Finish Tool)
+- **Insight**: FM-3.1 (Ghost Deliverables) is the top failure.
+- **Idea**: Wrap `finish()` to verify `fs.existsSync(path)` for all deliverables.
+- **Status**: **[MITIGATED]** (2026-03-23). Preventive blocked by platform. Implemented as Detective Control in `convention-check.ts` and `monitor-session`.
+
+## Context Pressure Valve (P42 / Phase 4)
+- **Insight**: Context limits (95% full) are currently ignored until crash.
+- **Idea**: Auto-truncate or warn when context > 90%.
+- **Status**: **[DEPLOYED]** (2026-03-23). already implemented in `monitor-session.cjs` (100k token threshold).

@@ -3,10 +3,11 @@
 **Request**: req:742f0b94
 **Design**: agents/shared/may-agent-docs/design/gym-snapshots.md
 **Reviews**: Bob APPROVED w/ modification (config_hash from runner), Tech-lead APPROVED w/ phasing
+**Status**: ✅ PHASE 1 COMPLETE — committed `0a9fad9` (2026-03-24)
 
 ## Phase 1 Scope: Schema + Recording Flow
 
-### Step 1: Schema — Add columns to `gym_runs` and create `gym_snapshots` ✅ TODO
+### Step 1: Schema — Add columns to `gym_runs` and create `gym_snapshots` ✅ DONE
 **File**: `src/lib/requests.ts`
 - Add to `gym_runs` CREATE TABLE: `run_tag TEXT`, `config_hash TEXT`, `framework_sha TEXT`, `model TEXT`, `batch_id TEXT`, `categories TEXT`, `tags TEXT`, `tier TEXT`
 - Add new table `gym_snapshots`:
@@ -21,7 +22,7 @@
 - Add index: `CREATE INDEX IF NOT EXISTS idx_gym_runs_batch ON gym_runs(batch_id);`
 - Add index: `CREATE INDEX IF NOT EXISTS idx_gym_runs_config ON gym_runs(config_hash);`
 
-### Step 2: Recording — Update `gym-record.ts` to write new columns ✅ TODO
+### Step 2: Recording — Update `gym-record.ts` to write new columns ✅ DONE
 **File**: `scripts/gym-record.ts`
 - Accept new CLI flags: `--batch <id>`, `--tag <label>`
 - Write new columns when inserting into `gym_runs`
@@ -29,7 +30,7 @@
 - On new `config_hash`: INSERT OR IGNORE into `gym_snapshots`
 - Ensure writing to `may.db` (check current target)
 
-### Step 3: Runner — Read scenario metadata + compute identity ✅ TODO  
+### Step 3: Runner — Read scenario metadata + compute identity ✅ DONE  
 **File**: `test/gym/gym-runner.ts`
 - Read `scenario.json` fields: `categories`, `tags`, `tier`
 - Include them in RunResult output
@@ -37,7 +38,7 @@
 - Read `model` from agent config
 - Read `framework_sha` from `git rev-parse --short HEAD`
 
-### Step 4: Baseline script — Generate batch_id, forward args ✅ TODO
+### Step 4: Baseline script — Generate batch_id, forward args ✅ DONE
 **File**: `scripts/gym-baseline.sh`
 - Generate `batch_id` at start: `date +%s`_`$(openssl rand -hex 4)`
 - Pass `--batch $batch_id` and `--tag` through to gym-record.ts

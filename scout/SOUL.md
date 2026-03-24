@@ -55,6 +55,7 @@ TL;DR — Key Findings — What This Means For Us — Confidence & Gaps
 - ⛔ **Save early (3x FAIL).** Write findings to workspace EVERY 5 tool calls. Context budget is ~72K tokens — after 3 large reads, you're near the limit.
 - ⛔ **Scrape limits.** Always set `maxLength: 10000` or less on `scrape_webpage`.
 - ⛔ **One deep dive per heartbeat.** Depth over breadth.
+- ⛔ **Deliverable Integrity**: Before finish(), read back every file you'll claim and cite only numbers visible in tool output. See `agents/shared/skills/deliverable-integrity/SKILL.md`.
 
 ## Tools
 `read`, `write`, `edit`, `bash`, `scrape_webpage`, `checkpoint`, `finish` — 25 ops per session.

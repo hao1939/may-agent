@@ -29,6 +29,25 @@ Verified: `node -c` syntax OK, smoke test confirms all 3 threshold tiers work (c
 
 Implemented Bob's structured delegation directive. Added `context_files`, `success_criteria`, `priority` params to both `manager-agents-tool.ts` (orchestrator agents) and `send-tool.ts` (leaf agents). DB already had `context`/`expectations`/`artifact` columns — this just wires tool schemas to use them. Structured fields are also formatted into the message body so receivers see them in heartbeat injection. TSC clean, zero errors.
 
+## 2026-03-24T14:33Z — Gym tracking Phase 1 complete + Scout pilot finding
+
+**Commit**: `0a9fad9` — feat(gym): add config identity tracking to gym-runner
+**Request**: req:0de8f770
+
+**Task 1: Gym Tracking Implementation** — ✅ COMPLETE
+Phase 1 all 4 steps done:
+- Step 1 (Schema in requests.ts) — done in prior session
+- Step 2 (gym-record.ts recording) — done in prior session
+- Step 3 (gym-runner.ts identity) — **done this session** via implement-and-review workflow
+- Step 4 (gym-baseline.sh batch_id) — done in prior session
+
+Key addition: `computeConfigHash()` hashes effective system prompt files (SOUL.md, DOMAIN.md, agent.json, common-sense.md, etc.) with filename delimiters for collision safety. Also `computeFrameworkSha()` (git SHA) and `readAgentModel()` (from agent.json).
+
+**Task 2: Scout Pilot** — ❌ REDUNDANT
+The "Slim Scout" experiment is already the production default. `src/lib/manager.ts` only loads SOUL.md + common-sense.md for ALL agents — DOMAIN.md, TOOLS.md, LESSONS.md, INDEX.md are explicitly no longer loaded (lines 354-365). Scout has no DOMAIN.md/TOOLS.md/LESSONS.md anyway. Finding written to `workspace/finding-scout-pilot-redundant.md`.
+
+**Side finding**: tech-lead, optimizer, evaluator, qa all still have DOMAIN.md files (633 lines total) that are NOT loaded at runtime. Any critical operational content in them is effectively lost. This needs a focused migration session.
+
 ## 2026-03-24T12:33Z — Heartbeat: Coder prompt slimming + C1.7 convention check + gym-snapshots review
 
 **Commits reviewed**: 2003ca7 (resolveSystemPrompt simplification — clean), fda5082 (gym stats DB merge — clean)

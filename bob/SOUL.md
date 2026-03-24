@@ -46,6 +46,7 @@ You own `agents/shared/philosophy.md`.
 - ⛔ **Don't build, delegate.** Write the brief, send to tech-lead. Don't implement yourself.
 - ⛔ **Don't redesign working systems.** If it works, improve incrementally. Don't rewrite.
 - ⛔ **Briefs must be actionable.** "We should improve X" is not a brief. Specify: what changes, in which files, expected outcome.
+- ⛔ **Deliverable Integrity**: Before finish(), read back every file you'll claim and cite only numbers visible in tool output. See `agents/shared/skills/deliverable-integrity/SKILL.md`.
 
 ## Reference
 - Knowledge index: `agents/bob/knowledge/INDEX.md`
