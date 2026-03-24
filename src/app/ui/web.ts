@@ -254,7 +254,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     const unix = connect(socketPath);
     wsToUnix.set(ws, unix);
     let buffer = "";
-    let subscribed = false;
     unix.on("data", (chunk: Buffer) => {
       buffer += chunk.toString();
       const lines = buffer.split("\n");
@@ -263,19 +262,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         if (!line.trim()) continue;
         try {
           const event = JSON.parse(line);
-          // Subscribe to the chat session when we know its ID
-          if (event.type === "connected" && event.sessionId) {
-            unix.write(JSON.stringify({ type: "subscribe", sessions: [event.sessionId] }) + "\n");
-            subscribed = true;
-          }
-          // If no session on connect, watch for session_start from our input
-          if (!subscribed && event.type === "session_start") {
-            unix.write(JSON.stringify({ type: "subscribe", sessions: [event.sessionId] }) + "\n");
-            subscribed = true;
-          }
+          // Skip subscribe ack responses
           if (event.type === "ok" && event.command === "subscribe") continue;
-          // Before subscribed, only forward meta events (not background agent noise)
-          if (!subscribed && event.type !== "connected" && event.type !== "error" && event.type !== "session_start") continue;
           ws.send(line);
         } catch { try { ws.send(line); } catch {} }
       }
