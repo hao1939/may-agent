@@ -535,5 +535,19 @@
     "enabled": true,
     "handler": "daily-digest",
     "description": "Daily progress digest for human review (JS handler, 24h). Writes to agents/shared/daily-digests/."
+  },
+  {
+    "name": "project-monitor",
+    "type": "job",
+    "handler": "run-agent-task",
+    "agent": "may",
+    "intervalMs": 1800000,
+    "message": "[cron:project-monitor] Run workflow: project-monitor. Execute: workflow.run(\"project-monitor\", \"Check all external projects\")",
+    "enabled": true,
+    "description": "Monitor external agent projects every 30min \u2014 check status, read progress, escalate to coach if needed",
+    "handlerConfig": {
+      "maxTurns": 20,
+      "timeoutMs": 600000
+    }
   }
 ]
