@@ -660,6 +660,7 @@ import type { CronEntry } from "../lib/cron-tool.js";
 import { getDb, trackRequest } from "../lib/requests.js";
 import { loadAllSessionMetas } from "../lib/persistence.js";
 import { evaluateTask, writeSkippedEvaluations, writeHeuristicEvaluations } from "../lib/evaluator.js";
+import { log as globalLog } from "../lib/log.js";
 
 /**
  * Auto-discover and register JS handlers for cron entries.
@@ -694,7 +695,7 @@ export async function loadAgentHandlers(
       agentsRoot,
       agentName,
       getSessionId: () => opts.getSessionId(agentName),
-      log: (msg) => bus.emit({ type: "log", level: "info", message: msg }),
+      log: (msg) => globalLog("info", msg),
       notify: (msg) => {
         bus.emit({ type: "notification", agent: agentName, text: msg });
       },

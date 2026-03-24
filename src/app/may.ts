@@ -22,6 +22,7 @@ import {
 } from "./agent-loader.js";
 import { resolveProjectRoot } from "./bundle-mode.js";
 import { trackRequest } from "../lib/requests.js";
+import { setLogHandler, log } from "../lib/log.js";
 
 const PROJECT_ROOT = resolveProjectRoot(import.meta.url);
 const AGENTS_ROOT = resolve(process.env.AGENTS_ROOT || resolve(PROJECT_ROOT, "agents"));
@@ -156,6 +157,10 @@ const models: Record<string, ModelWithApiKey> = {
 // ── Infrastructure ─────────────────────────────────────────────────────
 
 const bus = new EventBus();
+setLogHandler((level, message) => {
+  if (level === "debug") return; // debug logs don't reach the event system
+  bus.emit({ type: "log", level: level as "info" | "warn" | "error", message });
+});
 if (CONSOLE_ENABLED) attachConsoleUI(bus, () => taskSessionId ?? chatSession?.getSessionId() ?? null);
 
 bus.emit({
@@ -210,9 +215,6 @@ const manager = new SubagentManager({
   persistDir: PERSIST_DIR,
   projectRoot: PROJECT_ROOT,
   infraRetryMax: 3,
-  onLog: (level, message) => {
-    bus.emit({ type: "log", level, message });
-  },
   onSessionStart: (agentName, sessionId) => {
     attachAgentEvents(agentName, sessionId);
     setAgentSessionId(agentName, sessionId);

@@ -296,10 +296,4 @@ export interface SubagentManagerOptions {
    * Used to route escalations to May's session.
    */
   onSessionBlocked?: (agentName: string, sessionId: string, reason: string) => void;
-  /**
-   * Called for operational log messages that should be visible to the event system.
-   * Replaces console.error/warn for runtime events (stuck agents, budget exceeded, etc.).
-   * If not set, messages go to console.warn as fallback.
-   */
-  onLog?: (level: "info" | "warn" | "error", message: string) => void;
 }

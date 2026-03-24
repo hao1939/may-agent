@@ -19,6 +19,7 @@ import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { SubagentDefinition } from "./types.js";
 import { sanitizeMemory } from "./security/memory-sanitizer.js";
 import { upsertSession, updateSessionDb } from "./requests.js";
+import { log } from "./log.js";
 
 /** Serializable agent config (no tools, no apiKey, no full model object). */
 export interface PersistedAgentConfig {
@@ -109,7 +110,7 @@ function readJsonlFile<T>(filePath: string): T[] {
     try {
       items.push(JSON.parse(line) as T);
     } catch {
-      console.warn(`[persistence:jsonl] Skipping corrupted JSONL line in ${filePath}`);
+      log("warn", `[persistence:jsonl] Skipping corrupted JSONL line in ${filePath}`);
     }
   }
   return items;
@@ -166,7 +167,7 @@ function readLastNJsonlLines<T>(filePath: string, n: number): T[] {
       try {
         items.push(JSON.parse(line) as T);
       } catch {
-        console.warn(`[persistence:jsonl] Skipping corrupted JSONL line in ${filePath}`);
+        log("warn", `[persistence:jsonl] Skipping corrupted JSONL line in ${filePath}`);
       }
     }
     return items;

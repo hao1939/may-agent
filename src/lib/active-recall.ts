@@ -8,6 +8,7 @@
 
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
+import { log } from "./log.js";
 
 // ── Active Recall Pre-Check (P110) ─────────────────────────────────────
 
@@ -125,7 +126,7 @@ export function runActiveRecall(agentName: string, projectRoot: string): ActiveR
     };
   } catch (err) {
     // Active recall is best-effort — never block task execution
-    console.warn(`[active-recall] Failed for ${agentName}:`, err);
+    log("warn", `[active-recall] Failed for ${agentName}: ${err instanceof Error ? err.message : String(err)}`);
     return { triggered: false, matchCount: 0, failureTypes: [], warnings: [] };
   }
 }
