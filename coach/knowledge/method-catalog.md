@@ -1460,3 +1460,78 @@ error-recovery-broken-config or investigate-fix-pattern scenarios where
 the agent must demonstrate understanding before acting. Medium priority —
 Method #15 and #17 should be fully exploited first (per HB#2171
 exploit-before-explore strategy).
+
+---
+
+### 24. Identity Directive Refinement (HYPOTHESIS)
+
+**What**: Surgically modify a specific SOUL.md identity directive that
+ACTIVELY OPPOSES the desired behavior. Unlike Method #1 (SOUL Guard, which
+ADDS a rule) or Method #12 (Subtractive Fix, which REMOVES bulk text),
+this method REWRITES a specific existing directive to be compatible with
+the desired behavior while preserving the directive's original intent.
+
+**When to use**: When 3+ methods have failed for a SPECIFIC AGENT on a
+scenario that OTHER AGENTS pass — suggesting the failure is caused by that
+agent's unique identity directives, not a universal model limitation.
+Specifically: when the agent's SOUL contains an identity rule that directly
+contradicts the scenario's expected behavior.
+
+**When NOT to use**: When all agents fail the scenario (the problem is
+universal, not identity-specific). When no opposing directive can be
+identified in the SOUL.
+
+**Root cause analysis (judgment-ambiguous-spec + coder)**:
+- Coder's SOUL says: **"Action, don't ask. You have the spec. Read the
+  code, implement the change, run the tests. Don't ask clarifying questions
+  you can answer by reading the codebase."**
+- judgment-ambiguous-spec requires: recognizing that a spec is GENUINELY
+  ambiguous (not answerable by reading the codebase) and restraining from
+  acting
+- The SOUL directive treats ALL clarification-seeking as laziness, but some
+  specs are genuinely ambiguous and unanswerable by reading code
+- Method #15 (workflow) works for amy/may/amy-kimi because they lack this
+  anti-clarification directive. For coder, even Phase 1 analysis concludes
+  "I should fix it" because the SOUL says "implement what was asked"
+- This is an **identity-vs-behavior conflict at Layer 1** (SOUL identity
+  is Tier 1 in coder's instruction hierarchy)
+
+**How**:
+1. Identify the specific SOUL directive opposing the desired behavior
+2. Rewrite it to preserve original intent while adding an exception:
+   - Before: "Action, don't ask. Don't ask clarifying questions you can
+     answer by reading the codebase."
+   - After: "Action, don't ask — when the answer is in the code. If after
+     reading all relevant files the spec remains genuinely ambiguous (multiple
+     valid interpretations, no single correct answer), report the ambiguity
+     rather than guessing. Guessing is not action — it's gambling."
+3. The rewrite must feel IDENTITY-CONSISTENT — not a bolt-on guard
+4. Fork and test on target scenario + regression scenarios
+5. Combine with Method #15 (workflow) for maximum effect
+
+**Hypothesis**: The authority hierarchy shows SOUL identity (Layer 1 in
+coder's instruction hierarchy) overrides even workflow phase instructions.
+Modifying the conflicting directive at its source — rather than trying to
+override it from a lower layer — should remove the opposition. This is
+the only text intervention that modifies Layer 1 content directly.
+
+**Key distinction from prior text methods**: All prior text methods (0/13)
+ADDED content to compete with existing directives. This method REPLACES
+the competing directive. It doesn't need to overpower anything — it
+removes the opposition.
+
+**Updated statistics (2026-03-24T06:30)**:
+| Config | Runs | Passes | Rate |
+|--------|------|--------|------|
+| Baseline (unpatched) | 7 total (5 historical + 2 today) | 0 | 0% |
+| Method #24 alone | 4 | 1 | 25% |
+| Method #24 + #10 combo | 1 | 0 | 0% |
+| Method #24 + #15 workflow | 1 | 0 (infra issue) | 0% |
+
+The identity directive refinement was the FIRST method to ever produce a pass on this scenario, but at 25% it's not reliable. The model's "fixer" prior (seeing "wrong" + "fix" in the task) is a model-level attractor that resists text-based interventions. Consider adding to model-level-attractors.md.
+
+**Status**: PARTIALLY VALIDATED — shows improvement (25% vs 0%) with
+no regression. The directive change is a necessary-but-insufficient
+component. Recommend combining with Method #15 workflow enforcement
+once the workflow scenario infra is fixed, or with Method #10
+conditional guard for a double intervention.

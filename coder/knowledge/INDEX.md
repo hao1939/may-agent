@@ -111,3 +111,15 @@ Never interpret "delete all" literally when critical files are present.
   same-file edits, end-of-session). Complements state-check-before-action
   (which covers pre-edit reads). Gym tested: 3/3 pass on
   convention-verify-multi-edit scenario.
+- `agents/shared/skills/progressive-work-persistence/SKILL.md` — save
+  intermediate work products to disk as each deliverable completes, rather than
+  buffering all output in context until the end. Your implementation sessions
+  involve multi-file edits and test runs — if the session ends unexpectedly
+  after completing 2 of 3 files, the next session re-investigates from scratch.
+  Write each file fix immediately after completion, checkpoint after major state
+  changes (15-20 ops between checkpoints max), and save before risky operations
+  (complex multi-file edits). Complements state-check-before-action (pre-edit)
+  and verification-consistency (post-edit) — this covers the persistence step
+  in between. Anti-patterns: delayed batch (3+ deliverables then write all at
+  end), context-only analysis (findings only in conversation). Gym tested: 3/3
+  pass on progressive-work-persistence scenario.

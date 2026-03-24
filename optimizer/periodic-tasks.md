@@ -3,51 +3,80 @@
 Track when each task was last done. Pick the most overdue one during heartbeat step 3.
 
 ## Per heartbeat (do one, rotate)
-- [x] **Analysis review** — Last done: 2026-03-23T20:39
+- [x] **Analysis review** — Last done: 2026-03-24T01:06
   Read agents/bob/workspace/analysis.md or recent Bob synthesis outputs.
   Any findings that need optimization work? Cost issues? Efficiency problems?
   If found → add specific task to workspace/todo.md.
-  Latest (2026-03-23T20:39): 75 sessions/12h = 6.7/hr = ~$163/day. Optimizer #1 ($65/day). Coach down to $23/day. Claude caching still 0%. Finding at `workspace/finding-analysis-review-0323-2039.md`.
+  Latest (2026-03-24T01:06): 36 sessions/5h, optimizer 53.7%. Finding at `workspace/finding-analysis-review-0324-0106.md`.
 
-- [x] **Cost outlier scan** — Last done: 2026-03-23T22:09
+- [x] **Cost outlier scan** — Last done: 2026-03-24T01:06
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-23T22:09): 88 sessions/12h = 7.3/hr, ~$133/day. Bash-as-cat 14% system-wide (scout 50%, coach 24%). Sent guard patches to May (req:08282cc8). Finding at `workspace/finding-cost-scan-0323-2209.md`.
+  Latest (2026-03-24T01:06): Combined with analysis review. Finding at `workspace/finding-analysis-review-0324-0106.md`.
 
-- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-24T01:09
+- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-24T01:36
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
   Could it be replaced with a JS handler? (See cron-graduation-process.md Stage 3.)
   If found → write proposal in workspace/improvement-proposals.md.
-  Latest (2026-03-24T01:09): Bash-as-cat UP to 8.9% (from 7.1%). Optimizer #1 offender (20/49 cat calls). May 43% no-op heartbeats → sent req:bf42fb9d to add skipIfIdle. Finding at `workspace/finding-llm-to-js-scan-0324-0109.md`.
+  Latest (2026-03-24T01:36): Optimizer is 54% of cost ($118/day), driven by context accumulation (1.3M input tokens/heartbeat). Idle waste=$10/day (skipIfIdle working). Total: ~$221/day. Finding at `workspace/finding-llm-to-js-scan-0324-0136.md`.
 
-- [x] **Handler health check** — Last done: 2026-03-24T02:39
+- [x] **Handler health check** — Last done: 2026-03-23T23:06
   Review existing JS handlers in agents/may/handlers/.
   Any errors in recent logs? Any handler that's not firing?
   If issues → add fix to workspace/todo.md.
-  Latest (2026-03-24T02:39): Same 3 dead (convention-check, tool-quality-scan, heartbeat-context). reflect+analyze-failures stale (5-7d). Tech-lead confirmed wrapTools wiring lost. Finding at `workspace/finding-handler-health-check-0324-0239.md`.
+  Latest (2026-03-23T23:06): **10+ handlers dead.** Binary 3.7 days old. Commit 1223990 fixes imports but binary not rebuilt. Finding at `workspace/finding-handler-health-0323-2306.md`.
 
-- [x] **Proven pattern → Skill/Workflow** — Last done: 2026-03-24T05:53
-  **Run via workflow**: `workflow.run("skill-lifecycle", "Scan recent sessions for proven multi-step patterns")`
-  Mechanically enforces all 4 phases (discover → draft → test → deploy).
+- [x] **Proven pattern → Skill/Workflow** — Last done: 2026-03-24T06:06
+  This is your MOST IMPORTANT periodic task — focus area #1.
+  **⛔ COOLDOWN: 6h minimum between runs.** With 14 skills deployed, discovery phases increasingly
+  find "no new skill needed." Each lifecycle costs ~90 ops (4 phases). Running 3x/6h = 270 ops =
+  33% of total system cost. Cap to 1 run per 6h. If last run was <6h ago, skip to cost-efficiency work.
+  **Run it via workflow**: `workflow.run("skill-lifecycle", "Scan recent sessions for proven multi-step patterns")`
+  The workflow mechanically enforces all 4 phases (discover → draft → test → deploy) in separate
+  sessions, preventing you from skipping testing or doing meta-work instead.
+  If you have a specific pattern in mind, pass it: `workflow.run("skill-lifecycle", "Pattern: agents read file → check convention → edit → verify")`
   **Deliverable**: A new or refined skill file, tested in gym, deployed to agents.
-  Latest (2026-03-24T05:53): plan-once-amend DEPLOYED. 183-line SKILL.md. 24/24 gym checks (8/8 × 3 runs). Finding at `workspace/finding-plan-churn-0324.md`. Skill at `agents/shared/skills/plan-once-amend/SKILL.md`.
-  Skills deployed (14 total): obstacle-pivot, grep-first-reading, state-check-before-action, budget-before-act, stale-approach-fixation, coder-edit-discipline, delegation-verification, idempotent-work-detection, search-strategy-escalation, evidence-over-narrative, incremental-context-loading, request-triage-memoization, materialize-intermediate-findings, plan-once-amend.
+  Latest (2026-03-24T06:06): progressive-work-persistence (16th skill) deployed to 6 agents. Full lifecycle.
+  Latest (2026-03-23T21:36): verification-consistency (15th skill) deployed to 6 agents. Full lifecycle.
+  _13 earlier skill deployments documented in finding files. See `workspace/finding-pattern-scan-*.md`._
 
-- [x] **Tool quality review** — Last done: 2026-03-24T02:39
-  Read tool-quality-report.md. Look for regression trends and persistent failure patterns.
-  Latest (2026-03-24T02:39): Bash-as-cat 9.5% (↓ from 10.4%). QA 24% worst. ENOENT 77 errors/30 sessions. Bob+Optimizer top ENOENT offenders. Finding at `workspace/finding-tool-quality-review-0324-0239.md`.
+- [x] **Tool quality review** — Last done: 2026-03-24T03:06
+  Read the tool-quality-report.md (generated by tool-quality-scan handler every 4h).
+  Look for regression trends, persistent failure patterns, and agent-specific issues.
+  If a specific failure category accounts for >30% of waste, create a targeted intervention:
+  - For wrong-tool: add/improve tool descriptions or add a gym scenario
+  - For empty-args: check if schema validation is catching it early enough
+  - For edit-match-fail: check if agents are reading files before editing
+  If tool-quality-report.md doesn't exist yet, skip — handler hasn't fired.
+  Latest (2026-03-24T03:06): Edit failures 0/20. Bash-as-cat 10 (↓54%). Large results >10KB: 31 (main waste). Bob Gemini pricing corrected ($0.76 not $9.58). periodic-tasks.md trimmed 19KB→5.7KB. Finding at `workspace/finding-tool-quality-0324-0306.md`.
 
 ## Weekly
-- [x] **Improvement proposals review** — Last done: 2026-03-24T04:09
-  17 deployed ($115-165/day). 9 blocked on handler cache (wrapTools wiring lost). 8 proposed ($16-24/day). Grand total potential $225-337/day. Review at `workspace/improvement-proposals-review-0324.md`.
+- [x] **Improvement proposals review** — Last done: 2026-03-23T09:15
+  Latest (2026-03-23T09:15): Cycle 13. 18 code improvements, 11 skills, 5 handlers blocked on binary rebuild. Top priorities: fix symlinks, set ANTHROPIC_API_KEY, rebuild binary. Full review at `workspace/improvement-proposals-review-0323.md`.
+
+---
 
 ## Bi-Weekly
 - [x] **Heartbeat graduation review** — Last done: 2026-03-17
-  Review agents' heartbeat.md for stable patterns that could become cron entries. Log at `workspace/graduation-log.md`.
+  Latest (2026-03-17): Graduated error-log-scanner.ts to cron.json. 2 orphaned handlers remain. Full log at `workspace/graduation-log.md`.
+  Review all agents' heartbeat.md files. For each step, ask:
+  1. Has this step been running for 1+ weeks?
+  2. Is the pattern stable (same structure, same inputs/outputs)?
+  3. Could it be expressed as a focused cron message?
+  If yes to all three → propose a cron entry to May. The heartbeat step
+  gets replaced with creative/directional work. Track graduated steps in
+  workspace/graduation-log.md. See `agents/shared/tasks/work-maturity-ladder.md`.
+
+---
 
 - [x] **LESSONS.md graduation audit** — Last done: 2026-03-17
-  **Automated** via daily JS handler `agents/may/handlers/lessons-graduation.ts`.
+  Scan all agents' LESSONS.md files. For each entry, check:
+  1. Is it a duplicate of a shared convention? → Remove (should be in shared/LESSONS.md)
+  2. Has it been active for 2+ weeks? → Graduate to structural home or delete
+  3. Is the agent-specific example still needed? → Keep if yes, trim if bloated
+  Target: each agent's LESSONS.md under 2,000 bytes.
+  Latest (2026-03-17): Automated via `agents/may/handlers/lessons-graduation.ts` (daily cron). All agents under 2K. **This task is now automated.**
 
 ## How to use this file
 1. Read this file during heartbeat step 3

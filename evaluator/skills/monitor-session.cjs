@@ -1670,18 +1670,24 @@ function detectGhostDeliverable(entries) {
  * Returns { detected, toolCallCount, evidence } or { detected: false }.
  */
 function detectProductivityStall(toolCalls, entries, agentName) {
-  // Agent-aware thresholds (per brief-tune-active-nudge):
-  //   Builders (coder, qa): 20 ops — standard pressure
-  //   Research/Admin (scout, tech-lead, evaluator, bob, amy-kimi, amy, optimizer, may): 30 ops
-  //   Coach: 25 ops — reads heavily but should still feel pressure
-  const READ_HEAVY_AGENTS = new Set([
-    "tech-lead", "scout", "evaluator", "bob", "amy-kimi", "amy", "optimizer", "may",
+  // Agent-aware thresholds (per brief-tune-active-nudge-v2):
+  //   Coordinators (may): 10 ops — should be dispatching quickly
+  //   Builders (coder, qa): 15 ops — code-verify loops are tight
+  //   Coach: 25 ops — reads many logs/transcripts before diagnosing
+  //   Research (scout, tech-lead, evaluator, bob, amy-kimi, amy, optimizer): 30 ops — deep analysis
+  //   Default: 20 ops — safe middle ground
+  const RESEARCH_AGENTS = new Set([
+    "tech-lead", "scout", "evaluator", "bob", "amy-kimi", "amy", "optimizer",
   ]);
+  const BUILDER_AGENTS = new Set(["coder", "qa"]);
   const MODERATE_AGENTS = new Set(["coach"]);
+  const COORDINATOR_AGENTS = new Set(["may"]);
   
   const agent = (agentName || "").toLowerCase();
-  const MIN_CALLS_THRESHOLD = READ_HEAVY_AGENTS.has(agent) ? 30
+  const MIN_CALLS_THRESHOLD = COORDINATOR_AGENTS.has(agent) ? 10
+    : BUILDER_AGENTS.has(agent) ? 15
     : MODERATE_AGENTS.has(agent) ? 25
+    : RESEARCH_AGENTS.has(agent) ? 30
     : 20;
 
   if (toolCalls.length < MIN_CALLS_THRESHOLD) {

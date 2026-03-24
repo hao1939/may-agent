@@ -51,3 +51,14 @@ Bob is Architect (Gemini). Coach trains (Opus).
   skipped (later edits, same-file edits, end-of-session), not what or how.
   Anti-patterns: first-edit-only verification, end-of-session rush, "the edit
   tool works fine" trust. Gym tested: 3/3 pass on convention-verify-multi-edit.
+- `agents/shared/skills/progressive-work-persistence/SKILL.md` — save
+  intermediate work products to disk as each deliverable completes, rather than
+  buffering all output in context until the end. Your research sessions produce
+  multiple deep-dives and triage reports — if the session ends mid-analysis,
+  unwritten findings are lost. Follow Scout's own SAVE-AS-YOU-GO pattern:
+  write each deep dive immediately after completion (DD#463 → disk → DD#464 →
+  disk). Checkpoint after major state changes (15-20 ops between checkpoints
+  max), and save before risky operations (scrapes that might fail, delegations).
+  Anti-patterns: delayed batch (completing 3+ analyses then writing all at end),
+  context-only analysis (findings exist only in conversation). Gym tested: 3/3
+  pass on progressive-work-persistence scenario.

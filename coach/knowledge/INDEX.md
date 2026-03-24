@@ -108,3 +108,14 @@ Use standardized codes from `agents/shared/knowledge/mast-taxonomy.md`:
   30 edits). Use when coaching verification fatigue in long editing sessions.
   Companion to the verification skill — addresses WHEN verification is skipped.
   Gym tested: 3/3 pass on convention-verify-multi-edit scenario.
+- `agents/shared/skills/progressive-work-persistence/SKILL.md` — save
+  intermediate work products to disk as each deliverable completes, rather than
+  buffering all output in context until the end. When coaching agents, this
+  addresses the work-loss risk pattern: Coach s_145 and s_148 did 20+ tool
+  calls with 0 saves — high work-loss risk. QA does 0 saves across 6 sessions.
+  Contrast with Scout's SAVE-AS-YOU-GO (8 progressive writes) and Bob's
+  consistent checkpointing (4-5 per session). Use when coaching agents on
+  session resilience: write each deliverable immediately, checkpoint every
+  15-20 ops, save before risky operations. Anti-patterns: delayed batch,
+  checkpoint-free long sessions (40+ ops with zero saves), context-only
+  analysis. Gym tested: 3/3 pass on progressive-work-persistence scenario.

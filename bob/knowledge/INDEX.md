@@ -131,3 +131,14 @@ Read on demand when relevant:
   same-file edits, end-of-session), not what or how to verify. Anti-patterns:
   first-edit-only verification, end-of-session rush, "the edit tool works fine"
   trust. Gym tested: 3/3 pass on convention-verify-multi-edit scenario.
+- `agents/shared/skills/progressive-work-persistence/SKILL.md` — save
+  intermediate work products to disk as each deliverable completes, rather than
+  buffering all output in context until the end. Your architecture sessions
+  involve multi-step plans with named output files — if the session ends
+  unexpectedly, any unwritten deliverables are lost. Write each deliverable
+  immediately after completion, checkpoint after major state changes (15-20 ops
+  between checkpoints max), and save before risky operations (complex edits,
+  delegations). Anti-patterns: delayed batch (completing 3+ deliverables then
+  writing all at end), checkpoint-free long sessions (40+ ops with zero saves),
+  context-only analysis (findings exist only in conversation). Gym tested: 3/3
+  pass on progressive-work-persistence scenario.

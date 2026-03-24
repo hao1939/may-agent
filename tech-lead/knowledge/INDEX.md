@@ -135,3 +135,15 @@ When reporting implementation failures, use standardized MAST codes from `agents
   edits, same-file edits, end-of-session). Complements verify-before-return
   which catches false done claims. Gym tested: 3/3 pass on
   convention-verify-multi-edit scenario.
+- `agents/shared/skills/progressive-work-persistence/SKILL.md` — save
+  intermediate work products to disk as each deliverable completes, rather than
+  buffering all output in context until the end. Your implementation sessions
+  involve multi-file edits and test runs — if the session ends unexpectedly
+  after completing 2 of 3 files, unwritten state is lost and the next session
+  re-investigates from scratch. Write deliverables immediately after completion,
+  checkpoint after major state changes (15-20 ops between checkpoints max),
+  and save before risky operations (complex multi-file edits, delegations to
+  coder/QA). Complements budget-before-act (plan save points after estimating
+  budget). Anti-patterns: delayed batch (3+ deliverables then write all at end),
+  checkpoint-free long sessions (40+ ops with zero saves). Gym tested: 3/3
+  pass on progressive-work-persistence scenario.

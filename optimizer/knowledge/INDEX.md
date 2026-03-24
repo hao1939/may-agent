@@ -132,3 +132,16 @@ Use these codes in your analysis reports to drive structural fixes.
   edits, end-of-session). You designed this skill — apply it in your own
   sessions. Anti-patterns: first-edit-only verification, end-of-session rush.
   Gym tested: 3/3 pass on convention-verify-multi-edit scenario.
+- `agents/shared/skills/progressive-work-persistence/SKILL.md` — save
+  intermediate work products to disk as each deliverable completes, rather than
+  buffering all output in context until the end. You already use 2 checkpoints
+  per session (s_138, s_134) which is good — but your analysis sessions produce
+  findings that exist only in context until the session ends. Write analysis
+  findings to workspace files as you complete each one, checkpoint every 15-20
+  ops, and save before risky operations (delegations, complex edits). You
+  designed this skill — apply it in your own sessions. Complements budget-
+  before-act (plan save points after estimating budget) and scope-discipline
+  (save each deliverable independently so scope cuts don't lose completed work).
+  Anti-patterns: context-only analysis, checkpoint-free long sessions (40+ ops
+  with zero saves). Gym tested: 3/3 pass on progressive-work-persistence
+  scenario.
