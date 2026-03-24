@@ -351,37 +351,24 @@ export class SubagentManager {
       return content || undefined;
     };
 
-    // ── Convention files (stable, cached by LLM) ────────────────────
+    // ── System prompt: SOUL.md + common-sense.md + generated sections ──
+    //
+    // SOUL.md: agent identity, role, methodology, curated skills, constraints (~2-4KB)
+    // common-sense.md: shared behavioral rules for all agents (~5-8KB)
+    //
+    // Files NO LONGER loaded (removed as part of prompt simplification):
+    //   DOMAIN.md — merged into SOUL.md or moved to knowledge/
+    //   TOOLS.md — redundant with tool schema descriptions
+    //   LESSONS.md — proven lessons promoted to SOUL.md or common-sense.md
+    //   shared/LESSONS.md — same
+    //   knowledge/INDEX.md — agent reads on-demand, not preloaded
+    //   shared/INDEX.md — same
 
-    // 1. SOUL.md — identity, mission, values
+    // 1. SOUL.md — agent identity, role, methodology, curated skills
     const soul = loadFile(agentDir ? join(agentDir, "SOUL.md") : undefined);
     if (soul) sections.push(soul);
 
-    // 2. DOMAIN.md — domain expertise
-    const domain = loadFile(agentDir ? join(agentDir, "DOMAIN.md") : undefined);
-    if (domain) sections.push(domain);
-
-    // 3. TOOLS.md — tool usage guide
-    const tools = loadFile(agentDir ? join(agentDir, "TOOLS.md") : undefined);
-    if (tools) sections.push(tools);
-
-    // 4. LESSONS.md — accumulated learnings
-    const sharedLessons = loadFile(def.projectRoot ? join(def.projectRoot, "agents", "shared", "LESSONS.md") : undefined);
-    if (sharedLessons) sections.push(sharedLessons);
-    const lessons = loadFile(agentDir ? join(agentDir, "LESSONS.md") : undefined);
-    if (lessons) sections.push(lessons);
-
-    // 5. knowledge/INDEX.md — curated context (team, skills, references)
-    const index = loadFile(def.knowledgeDir ? join(def.knowledgeDir, "INDEX.md") : undefined);
-    if (index) sections.push(index);
-
-    // 5b. agents/shared/INDEX.md — knowledge index for all agents (Memex L1)
-    const sharedIndex = loadFile(def.projectRoot ? join(def.projectRoot, "agents", "shared", "INDEX.md") : undefined);
-    if (sharedIndex) sections.push(sharedIndex);
-
-    // 5b2. agents/shared/common-sense.md — behavioral + infra fundamentals for all agents
-    // Loaded here (system prompt) instead of in cron task message so Anthropic prompt
-    // caching can cache it after first use — saves ~$31/day in redundant token costs.
+    // 2. common-sense.md — shared behavioral rules
     const commonSense = loadFile(def.projectRoot ? join(def.projectRoot, "agents", "shared", "common-sense.md") : undefined);
     if (commonSense) sections.push(commonSense);
 
@@ -412,17 +399,12 @@ export class SubagentManager {
         envLines.push(`- Knowledge: ${relPath(def.knowledgeDir)}`);
       }
       // List which convention files are already in this prompt
-      const loaded: string[] = [];
-      if (agentDir) {
-        for (const name of ["SOUL.md", "DOMAIN.md", "TOOLS.md", "LESSONS.md"]) {
-          if (existsSync(join(agentDir, name))) loaded.push(name);
-        }
-      }
-      if (index) loaded.push("knowledge/INDEX.md");
+      const loaded: string[] = ["SOUL.md"];
       if (loaded.length > 0) {
-        envLines.push(`- Already in context (do NOT re-read): ${loaded.join(", ")}`);
+        envLines.push(`- Already in context (do NOT re-read): ${loaded.join(", ")}, common-sense.md`);
       }
       envLines.push(
+        `- Knowledge index: knowledge/INDEX.md (read when you need references)`,
         ``,
         `All paths are relative to project root. Your workspace is the ONLY directory you should write to.`,
       );
