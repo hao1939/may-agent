@@ -91,6 +91,10 @@ const finishSchema: TSchema = Type.Object({
     }),
     { description: "Lessons learned this session. Persisted to memory for cross-session learning." },
   )),
+  verification_evidence: Type.Optional(Type.Array(
+    Type.String({ description: "Reference to a specific tool output proving your work. Format: 'Step N: <tool> showed <result>'. Example: 'Step 12: read(src/app.ts) confirmed new function exists', 'Step 8: bash test exit code 0'." }),
+    { description: "Evidence from this session's tool outputs that verify your deliverables. Required when status is 'success'. Cite specific tool calls and their results." },
+  )),
 });
 
 interface FinishParams {
@@ -102,6 +106,7 @@ interface FinishParams {
   completed_items?: string[];
   new_items?: string[];
   lessons?: Array<{ category: "fix" | "pattern" | "insight"; content: string }>;
+  verification_evidence?: string[];
 }
 
 // ── Tool factory ───────────────────────────────────────────────────────
@@ -177,6 +182,21 @@ export function createFinishTool(options: FinishToolOptions): AgentTool<TSchema>
             type: "text" as const,
             text: `finish() error: Deliverables not found on disk: ${missingDeliverables.join(", ")}. ` +
               `Cannot declare success with missing deliverables.`,
+          }],
+          details: undefined,
+        };
+      }
+
+      // ── Require verification evidence for success ─────────────
+      if (status === "success" && (!params.verification_evidence || params.verification_evidence.length === 0)) {
+        return {
+          content: [{ type: "text" as const, text: 
+            "finish() error: 'verification_evidence' is required when status is 'success'. " +
+            "Cite specific tool outputs that verify your work, e.g.:\n" +
+            '- "Step 5: read(src/app.ts) shows new function added"\n' +
+            '- "Step 8: bash test suite exit code 0"\n' +
+            '- "Step 3: edit() confirmed by read-back"\n' +
+            "Add verification_evidence and try again."
           }],
           details: undefined,
         };
@@ -259,6 +279,14 @@ export function createFinishTool(options: FinishToolOptions): AgentTool<TSchema>
         parts.push("**Lessons recorded:**");
         for (const l of params.lessons) {
           parts.push(`- [${l.category}] ${l.content}`);
+        }
+      }
+
+      if (params.verification_evidence && params.verification_evidence.length > 0) {
+        parts.push("");
+        parts.push("**Verification evidence:**");
+        for (const ev of params.verification_evidence) {
+          parts.push(`- ${ev}`);
         }
       }
 
