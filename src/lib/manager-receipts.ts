@@ -23,7 +23,8 @@ import {
 } from "./manager-utils.js";
 import type { ActiveSession } from "./manager-utils.js";
 import { sessionDir, readSessionMeta, writeSessionMeta } from "./persistence.js";
-import { ConcurrencyGate, HIGH_IMPACT_TOOLS } from "./concurrency-gate.js";
+// ConcurrencyGate removed — P162 was causing more gate timeouts than resource issues.
+// If resource contention becomes a problem, reintroduce with higher maxConcurrent.
 import type { BeforeToolCallContext, BeforeToolCallResult } from "./tools/compose-guards.js";
 
 /** Runtime-generated HMAC secret for tool receipt signing.
@@ -115,8 +116,6 @@ export interface ReceiptWrapContext {
   persistDir: string;
   /** Project root for resolving agent paths (P114). */
   projectRoot: string;
-  /** P162: Optional concurrency gate for high-impact tools. */
-  concurrencyGate?: ConcurrencyGate;
   /** Composed beforeToolCall guard — runs before tool.execute(). */
   beforeToolCall?: (context: BeforeToolCallContext, signal?: AbortSignal) => Promise<BeforeToolCallResult | undefined>;
 }
@@ -229,26 +228,11 @@ export function wrapToolsWithReceipts(
       // Execute the original tool (with timing for P113 Cost Signal)
       const execStartMs = Date.now();
 
-      // P162: Concurrency Gate — serialize high-impact tool execution
-      const isHighImpact = HIGH_IMPACT_TOOLS.has(tool.name);
-      let release: (() => void) | null = null;
-      if (isHighImpact && ctx.concurrencyGate) {
-        try {
-          release = await ctx.concurrencyGate.acquire();
-        } catch (e: any) {
-          console.error(`P162_GATE_TIMEOUT: ${tool.name} for session ${sessionId}: ${e.message}`);
-          return {
-            content: [{ type: "text" as const, text: `⏳ System Busy: Another high-impact tool is running. Please retry in a few seconds.` }],
-            details: undefined,
-          };
-        }
-      }
-
       let result: AgentToolResult<any>;
       try {
         result = await tool.execute(toolCallId, params, signal, onUpdate);
       } finally {
-        if (release) release();
+        // no-op — gate removed (P162 was causing more timeouts than it prevented)
       }
       const execDurationMs = Date.now() - execStartMs;
 
