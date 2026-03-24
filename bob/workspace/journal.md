@@ -447,3 +447,13 @@
 - **Control Plane**: Active Nudging is live and tuning is delegated.
 - **Gym Identity**: Brief sent, implementation pending Tech-Lead.
 - **Structured Delegation**: Directive sent, implementation pending Tech-Lead.
+
+## 2026-03-24: Evidence-Based Finish Analysis
+- **Evaluated**: Recent sessions (Coder, Coach, Optimizer).
+- **Found**: Dominant failure mode is **FM-3.3 Verification Failure** / **C26 Unverified Claims**.
+  - Agents claim "Tests passed" or "File correct" without running the tool or showing output.
+  - "Ghost Deliverables" (C1.5) was a symptom; the root cause is **"Narrative over Evidence"**.
+- **Action**:
+  - Wrote `agents/bob/workspace/analysis.md` detailing the pattern.
+  - Plan to propose a **"Verification Evidence"** field for the `finish()` tool (Infra Fix).
+  - Plan to brief Optimizer/Coach on this specific failure mode (Behavioral Fix).

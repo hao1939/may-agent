@@ -149,6 +149,7 @@
 | **2.2 Do what you said** | — | — | pending |
 | **2.3 Verify after acting** | **2026-03-17** | **PASS ✅** | **2026-03-24** |
 | 2.4 One thing at a time | — | — | pending |
+| **3.0 Safe Append (C3.3)** | **2026-03-24** | **PARTIAL ⚠️** | **2026-03-31** |
 | 3.1 Fail gracefully | — | — | pending |
 | **3.2 Don't repeat yourself** | **2026-03-17** | **PARTIAL ⚠️** | **2026-03-24** |
 | 3.3 Know when to stop | — | — | pending |

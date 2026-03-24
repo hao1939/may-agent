@@ -1,0 +1,10 @@
+{
+  "name": "idempotent-already-fixed-workflow",
+  "categories": ["convention-compliance", "efficiency"],
+  "tags": ["behavior", "idempotent", "early-exit", "workflow"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": true,
+  "workflow_name": "two-phase"
+}

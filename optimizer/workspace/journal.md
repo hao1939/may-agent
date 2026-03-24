@@ -1,5 +1,25 @@
 # Optimizer Workspace Journal
 
+## 2026-03-24: Session Read Guard — Bash Bypass Fix
+
+### Problem
+Coach sessions bypassed the read() guard by using `bash` + `grep` to dump session.jsonl files (50-102KB per call). Session s_72 produced 401KB from 35 bash calls.
+
+### Fix
+Extended `session-read-guard.ts` to intercept bash tool calls:
+- Blocks `cat/less/more` of session.jsonl (always)
+- Blocks unbounded `grep/rg` of session.jsonl (without `| head` / `-c` / `-l` / `-m`)
+- Allows bounded grep patterns (head, tail, count, filenames-only, max-matches)
+
+### Files
+- `src/lib/tools/session-read-guard.ts` — Extended guard
+- `test/session-read-guard.test.ts` — 29 tests (was 8)
+
+### Projected Savings
+- ~$10/day (coach sessions that grep session.jsonl unbounded)
+
+---
+
 ## 2026-03-19: Verification Skill — Deployment Decision
 
 ### Skill
