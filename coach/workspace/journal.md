@@ -1202,3 +1202,9 @@ After 180+ experiments and 20 methods tested:
 - **Already done**: All 5 agents (bob, qa, scout, coder, amy-kimi) already have the Relaxed C40 language in their heartbeat.md files. Verified via grep: each has "read-only tools" and "state-changing action" phrasing.
 - **No changes needed**: This is a duplicate of earlier requests (req:89958cf9, req:8b70c5cf, req:39e1c4ae, req:2e11af50).
 - Growth cycle budget: 3+ already run today. At daily cap.
+
+## 2026-03-24T17:33 — Heartbeat: Gym Integration Plan
+- Wrote Coach's gym integration plan (agents/coach/workspace/briefs/gym-integration-plan.md) for req:e0e0a2a9
+- Covers: weakness identification via ability/behavior matrix, training exercise pipeline, before/after measurement protocol, team integration points, gap analysis
+- Sent summary to Bob for unified plan synthesis
+- Growth cycles today: 2 (QA FM-2.3 at 13:06, QA FM-2.1 at 17:16) — 1 remaining in budget

@@ -3,11 +3,11 @@
 Track when each task was last done. Pick the most overdue one during heartbeat step 3.
 
 ## Per heartbeat (do one, rotate)
-- [x] **Analysis review** — Last done: 2026-03-24T13:03
+- [x] **Analysis review** — Last done: 2026-03-24T18:15
   Read agents/bob/workspace/analysis.md or recent Bob synthesis outputs.
   Any findings that need optimization work? Cost issues? Efficiency problems?
   If found → add specific task to workspace/todo.md.
-  Latest (2026-03-24T13:03): 8 evals reviewed. FM-2.2 dominant (6/8), FM-3.3 persistent (5/8). Coach 169 ops/6h. finish() guard deployed. Finding at `workspace/finding-analysis-review-0324-1303.md`.
+  Latest (2026-03-24T18:15): 8 evals reviewed. FM-2.2 still dominant (5/8=62.5%), FM-3.3 persistent (4/8=50%) but finish-guard catching ghost deliverables. Path guessing (3/8). Binary rebuild still #1 blocker — 4+ guards pending. Finding at `workspace/finding-analysis-review-0324-1815.md`.
 
 - [x] **Cost outlier scan** — Last done: 2026-03-24T13:03
   Check recent evaluations — any sessions > $2.00?
@@ -21,11 +21,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If found → write proposal in workspace/improvement-proposals.md.
   Latest (2026-03-24T13:03): No new LLM-to-JS opportunities. Evaluator already efficient (handler does most work in JS). Coder prompt slimming verified complete (20KB→7KB). Evaluator opCount=null bug found. Finding at `workspace/finding-llm-to-js-scan-0324-1303.md`.
 
-- [x] **Handler health check** — Last done: 2026-03-24T11:33
+- [x] **Handler health check** — Last done: 2026-03-24T17:03
   Review existing JS handlers in agents/may/handlers/.
   Any errors in recent logs? Any handler that's not firing?
   If issues → add fix to workspace/todo.md.
-  Latest (2026-03-24T11:33): **Healthy.** Binary rebuilt 2026-03-24T07:02 (4.5h old). 35 cron entries, 32 enabled. Tool-quality-scan ran at 09:07 (1.0% waste rate, 2487 calls). No handler errors in ERROR_LOG. No issues found.
+  Latest (2026-03-24T17:03): **Healthy.** Binary is b9ef77e from 2026-03-24T07:02 (10h old). 19 handler files present. No ERROR_LOG found. tool-quality-scan fired at 17:07 (waste rate 6.5%, 3072 calls, 200 wasted). All regressions are in categories already addressed by empty-args-guard (blocked on rebuild). Coach is 54% of waste.
 
 - [x] **Proven pattern → Skill/Workflow** — Last done: 2026-03-24T14:03
   This is your MOST IMPORTANT periodic task — focus area #1.
@@ -51,6 +51,15 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   - For edit-match-fail: check if agents are reading files before editing
   If tool-quality-report.md doesn't exist yet, skip — handler hasn't fired.
   Latest (2026-03-24T15:10): Waste rate 5.9% (156/2655 calls, was 1.0%). bash:other=106 (+489%), bash:nonexistent-path=28 (+1300%), read:empty-args=10, bash:empty-args=8. Deployed empty-args-guard.ts (16 tests pass). Finding at `workspace/finding-tool-quality-regression-0324-1510.md`.
+
+- [x] **Gym shadow baseline & trend tracking** — Last done: 2026-03-24T18:15
+  ⚠️ COOLDOWN: After each binary rebuild only. No point re-running on same binary.
+  Run `scripts/gym-baseline.sh --tier smoke --agent coder --tag "<descriptive-tag>"` (takes ~10 min).
+  Then update `workspace/gym-trend-tracker.md` with new batch results.
+  Compare with previous batches via `bun scripts/gym-stats.ts --batches`.
+  Flag regressions via `bun scripts/gym-stats.ts --regressions`.
+  NOTE: Runs take ~600s for 13 smoke scenarios. Consider running in background or splitting.
+  Latest (2026-03-24T18:15): First shadow baseline (partial, 5/13 due to timeout). Full batch from 16:33 shows 85% (11/13). Two red scenarios: behavior-escalation-stubborn (escalation judgment), conflicting-evidence (correct diagnosis, wrong fix). Trend tracker created at `workspace/gym-trend-tracker.md`.
 
 ## Weekly
 - [x] **Improvement proposals review** — Last done: 2026-03-24T16:03

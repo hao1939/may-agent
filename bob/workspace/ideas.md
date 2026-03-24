@@ -74,7 +74,7 @@
 - **Insight**: Userland (text-based) reliability controls are fragile. Move resource management, task state, and drift recovery to a dedicated "Control Plane" infrastructure.
 - **Mechanisms**:
   - **Resource Governor**: Hard limits on tool execution (OpBudget enforcement).
-  - **Async Tasks**: Decouple long-running tools from agent attention (MCP Tasks).
+  - **Async Tasks**: Decouple long-running tools from agent attention (MCP Tasks). [DEFERRED]
   - **Drift Monitor**: Async observer injects corrective prompts without stopping session (Wink).
   - **Dynamic Topology**: Route tasks based on complexity (AgentConductor).
   - **AgentCgroup**: OS-level isolation (eBPF) for tool resources.

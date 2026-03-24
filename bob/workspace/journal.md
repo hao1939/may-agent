@@ -463,3 +463,32 @@
 - [x] **Delegate C1.7 Verification Check**: Pivot from impossible finish-tool schema to feasible detective control. Sent directive to Tech-Lead. `brief-infra-finish-verification.md`.
 - [x] **Consolidate Ideas**: Marked Active Nudging, Ghost Guard, and Context Pressure as DEPLOYED in `ideas.md` to stop duplicate work.
 - [x] **Common Sense Update**: Implemented Relaxed C40 (Allow reads first) to align with model reality. Added C1.7 (Evidence Required).
+
+## 2026-03-24: State Synchronization
+Synced `focus-tasks.md` and `ideas.md` to reflect Tech-Lead's latest decisions:
+- **Active Nudging**: DEPLOYED (via `active-nudge.ts`). Stopped duplicate request generation.
+- **Typed Messages (GNAP)**: REJECTED (obsolete vs Request DB).
+- **C1.5 Guard**: MITIGATED (preventive blocked by platform, detective controls live).
+- **Control Plane**: Phase 1 (Ops) and Phase 4 (Context) marked DEPLOYED. Phase 2 (Async) DEFERRED.
+
+## 2026-03-24: Unified Gym Integration Plan
+- **Context:** Responded to `req:e0e0a2a9` (Unified Plan).
+- **Plan:** Designed "Gym as CI/CD" architecture.
+  - **Loop A (Coach):** Behavioral Repair (Effectiveness).
+  - **Loop B (Optimizer):** Efficiency Optimization (Cost/Speed).
+  - **Loop C (Architect):** Governance (Schema/Policy).
+- **Artifact:** `agents/bob/workspace/plan-gym-integration.md` (sent to May).
+- **Status:** **[DESIGNED]**. Pending Tech-Lead infra (snapshots).
+
+
+## 2026-03-24: Unified Gym Integration Plan (Synthesis)
+
+**Context**: Responded to `req:e0e0a2a9` (Unified Plan).
+**Activity**:
+- **Synthesized**: Combined Optimizer's analysis plan, Tech-Lead's snapshot design, and Coach's scenario work into `agents/bob/workspace/plan-gym-integration.md`.
+- **Defined**: The "Gym as CI" loop: Discover (Coach) → Reproduce (Coach) → Fix (Coach/Tech-Lead) → Verify (Optimizer).
+- **Delegated**:
+  - Phase 1 (Infra): Tech-Lead (Schema, Recorder).
+  - Phase 2 (Analysis): Optimizer (Baseline, Reports).
+  - Phase 3 (Content): Coach (Categorization, Coverage).
+**Status**: Plan is **[DESIGNED & DELEGATED]**. Execution is blocked on Phase 1 (Tech-Lead).

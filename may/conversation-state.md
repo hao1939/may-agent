@@ -2,9 +2,9 @@
 *Auto-updated. Do not edit manually unless correcting errors.*
 
 ## 🎯 Current Focus (The Stack)
-- **Primary**: Close the Learning Loop (P2) — 3 mechanisms dispatched
-- **Immediate**: Mechanism C implementation (conversation-state.md created, agent.json integration pending)
-- **Context**: Hao's strategic direction: make agents learn from human corrections
+- **Primary**: Gym integration — baseline running (tech-lead), team plans in progress (coach, optimizer, bob)
+- **Secondary**: Close the Learning Loop (P2) — 3 mechanisms dispatched
+- **Context**: Hao's strategic direction: gym as continuous improvement feedback loop
 
 ## ⏳ Pending Human Input
 - System restart required for P82 handoff tool + security hardening — **Blocked on Hao**
