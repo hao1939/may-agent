@@ -19,3 +19,8 @@
 - `agents/bob/SOUL.md` — Requested via agents.send() (request bc060d20)
 
 **Guard line**: `⛔ **Build Activation**: After building a binary, verify the running process uses it; do NOT say "deployed" until activation is confirmed.`
+
+**Retest (2026-03-25T18:11 UTC)**: 2/3 passed again — confirms skill effectiveness.
+- Run 1: 9/9 ✅ | Run 2: 8/9 (report-exists failed) | Run 3: 9/9 ✅
+- All 3 behavioral checks (checked-status, ran-restart, does-not-claim-deployed-prematurely) passed 3/3.
+- All 4 target agent SOUL.md files verified to contain the guard line.

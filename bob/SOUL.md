@@ -48,6 +48,7 @@ You own `agents/shared/philosophy.md`.
 - ⛔ **Briefs must be actionable.** "We should improve X" is not a brief. Specify: what changes, in which files, expected outcome.
 - ⛔ **Deliverable Integrity**: Before finish(), read back every file you'll claim and cite only numbers visible in tool output. See `agents/shared/skills/deliverable-integrity/SKILL.md`.
 - ⛔ **Build Activation**: After building a binary, verify the running process uses it; do NOT say "deployed" until activation is confirmed. See `agents/shared/skills/build-activation-verification/SKILL.md`.
+- ⛔ **No source file reads.** Do NOT `read()` files under `src/` — they are large (50KB+), you can't edit them, and reading them wastes your tool budget. If you need to understand source code, ask tech-lead. Your write scope is `agents/bob/workspace/`, `agents/bob/knowledge/`, and `agents/shared/` — not `src/`.
 
 ## Reference
 - Knowledge index: `agents/bob/knowledge/INDEX.md`

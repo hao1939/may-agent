@@ -9,11 +9,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If found → add specific task to workspace/todo.md.
   Latest (2026-03-25T16:03): Same analysis.md (unchanged since 12:03). Bob also sent brief-fix-context-loading.md to tech-lead — DOMAIN.md restore + FM-3.3 guard for 3 agents. DOMAIN.md restore already in binary f4b83c6. FM-3.3 guard already in all 12 heartbeats (verified via grep). No new action needed.
 
-- [x] **Cost outlier scan** — Last done: 2026-03-25T14:03
+- [x] **Cost outlier scan** — Last done: 2026-03-25T16:35
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-25T14:03): Follow-up verification. Waste rate 5.4%→3.8% (-30%). QA npx fix confirmed working: 0 waste in 8/9 recent QA sessions (was ~70/day). Classifier sub-categories deployed in handler code. Built new binary bbbe4fe (18+ commits ahead of running b9ef77e). Bob now top waster (148 calls, 13%). Still needs process restart. Finding at `workspace/finding-cost-scan-0325-1403.md`.
+  Latest (2026-03-25T16:35): 61 sessions in 6.5h (9.4/hr). Two outliers: tech-lead gym test (528KB, 3x 100KB bash outputs — expected), Bob agents(filter:all) (404KB, 324KB response — one-off). No new systematic waste. Scout loop fix confirmed (2 sessions vs 32/day before). 30+ Bob zombies blocked on restart (req:31d94ce6). Finding at `workspace/finding-cost-scan-0325-1635.md`.
 
 - [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-25T16:03
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
@@ -21,13 +21,13 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If found → write proposal in workspace/improvement-proposals.md.
   Latest (2026-03-25T16:03): Scanned last 4h sessions (48 total). QA: 9 sessions (avg 5 ops, 4 at 1 op — diagnose phases). Coach: 7 (avg 22.7 ops). Coder: 7 (avg 4.1, one at 1 op). Evaluator: 6 (all 0 ops — JS heuristic working). Optimizer: 5 (avg 34.2). May: 4 (avg 1.3 ops — quick idle checks). No new LLM-to-JS candidate. All low-op sessions are either already handled by JS or require judgment. Waste rate 3.8%. System well-optimized.
 
-- [x] **Handler health check** — Last done: 2026-03-25T14:33
+- [x] **Handler health check** — Last done: 2026-03-25T16:38
   Review existing JS handlers in agents/may/handlers/.
   Any errors in recent logs? Any handler that's not firing?
   If issues → add fix to workspace/todo.md.
-  Latest (2026-03-25T14:33): 21 handlers. 43 zombies (up from 37): bob=34, optimizer=4, tech-lead=2, may=1(23h old). No errors in last 4h. Tool quality 3.8% waste. **CRITICAL**: Discovered bbbe4fe binary regression — DOMAIN.md loading removed (commit 2003ca7) but restore (63e76d2) happened AFTER binary build. Must rebuild before restart. Finding at `workspace/finding-binary-regression-0325-1435.md`.
+  Latest (2026-03-25T16:38): Quick tool error scan of last 15 sessions: 21 tool errors total. Evaluator worst offender (10 errors across 2 sessions: 4 ENOENT for nonexistent workspace files + 5 edit-match-fail + 1 `python: command not found`). Optimizer: 4 cmd-not-found (npm/bun/sqlite3). Tech-lead: 3 (ENOENT, git bad args). Coach: 2 (bash exit code 2, validation error). **Evaluator workspace references stale** — reading files that don't exist. Zombie cleanup: sent periodic-cleanup brief to tech-lead (req:89285acb). Binary f4b83c6 built and symlinked, PID 7 still old — restart sent (req:31d94ce6).
 
-- [x] **Proven pattern → Skill/Workflow** — Last done: 2026-03-25T10:03
+- [x] **Proven pattern → Skill/Workflow** — Last done: 2026-03-25T18:11
   This is your MOST IMPORTANT periodic task — focus area #1.
   **⛔ COOLDOWN: 6h minimum between runs.** With 14 skills deployed, discovery phases increasingly
   find "no new skill needed." Each lifecycle costs ~90 ops (4 phases). Running 3x/6h = 270 ops =
@@ -37,6 +37,7 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   sessions, preventing you from skipping testing or doing meta-work instead.
   If you have a specific pattern in mind, pass it: `workflow.run("skill-lifecycle", "Pattern: agents read file → check convention → edit → verify")`
   **Deliverable**: A new or refined skill file, tested in gym, deployed to agents.
+  Latest (2026-03-25T18:11): Re-ran lifecycle — discovery found build-activation-verification pattern (same as 10:03 run). Phase 2 reused existing SKILL.md. Phase 3 re-tested: 2/3 gym pass, all behavioral checks 3/3. Phase 4 deployed to optimizer SOUL.md + sent requests for tech-lead/coder/bob SOUL.md updates.
   Latest (2026-03-25T10:03): build-activation-verification (18th skill) drafted, tested (2/3 gym pass, core assertions 3/3), deployed to optimizer + tech-lead SOUL.md. Pattern: agents build binaries and claim "deployed" but don't verify the running process switched. 206 lines.
   Latest (2026-03-25T03:03): prerequisite-gap-protocol drafted and tested — 0/3 gym pass (agents claim success even with missing prerequisites). NOT deployed. Skill identifies real pattern but needs prompt injection to change behavior.
   Latest (2026-03-24T21:03): No new skill needed — discovery found deliverable-integrity pattern already deployed. 17 skills achieving good coverage.

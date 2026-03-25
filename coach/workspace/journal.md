@@ -446,3 +446,15 @@ Key milestones archived:
   3. Would a negative example (Method #6) be more effective?
 - **Next**: Investigate C2.3 scorer logic before next attempt. Also try materialize-intermediate-findings (6/9, 3 gaps) as higher-payoff target.
 - **Growth cycles today**: 2 (optimizer scope-discipline + this one)
+
+### 2026-03-25 18:25 — Auto-Evolve Step 1: Coder SOUL.md Variations
+- **Task**: P0 from may — generate 5 SOUL.md variations for coder auto-evolve experiment
+- **Error profile**: 96 errors total, top = FM-3.3 (25), FM-2.3 (7), FM-2.2 (6), FM-1.1 (6)
+- **Variations created** (in `workspace/auto-evolve/variations/`):
+  - v01_check: +double-check skill (targets FM-3.3)
+  - v02_unconstrained: -constraints section (tests overload hypothesis)
+  - v03_stepbystep: +planning methodology (targets premature closure)
+  - v04_senior: identity reframe to senior engineer (targets judgment errors)
+  - v05_simplified: dramatically shortened SOUL (tests "less is more")
+- **Manifest**: `workspace/auto-evolve/manifest.md`
+- **Next**: Step 2 — run gym-baseline.sh for each variation mechanically

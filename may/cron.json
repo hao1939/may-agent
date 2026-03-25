@@ -23,6 +23,15 @@
     "description": "Cancel sessions stuck running > 30min (JS handler, 10min interval)"
   },
   {
+    "name": "zombie-cleanup",
+    "type": "job",
+    "intervalMs": 3600000,
+    "message": "[cron:zombie-cleanup] Clean up orphaned zombie sessions.",
+    "enabled": true,
+    "handler": "zombie-cleanup",
+    "description": "Archive sessions stuck in running/terminal states not active in memory (JS handler, 60min, no LLM cost)"
+  },
+  {
     "name": "evaluate-sessions",
     "type": "job",
     "intervalMs": 1800000,

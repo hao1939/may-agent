@@ -1,11 +1,15 @@
 **This heartbeat I will:**
-1. **Verify Context Loading Logic**: Read `src/lib/manager.ts` to confirm whether `DOMAIN.md`, `TOOLS.md`, and `LESSONS.md` are strictly excluded from the system prompt for all agents.
-2. **Audit Zombie Context**: List all existing `DOMAIN.md` files and identify which agents are affected by this potential context loss.
-3. **Audit Heartbeat Guards**: Compare the list of all `heartbeat.md` files against those containing "FM-3.3 Guard" to identify any remaining agents needing the update.
-4. **Brief Context Fix**: Create `agents/bob/workspace/brief-fix-context-loading.md` to either restore `DOMAIN.md` loading (if critical info is lost) or formalize the migration to `SOUL.md`.
+1. **Audit Agent Coverage**: Count total active agents and compare with the 12 verified to have the FM-3.3 Guard.
+2. **Audit Ignored Lessons**: List all `agents/*/LESSONS.md` files (which are currently ignored by `manager.ts`) and read a sample to determine if critical knowledge is being lost.
+3. **Update Focus Tasks**: Mark "Verification Discipline" as **[VERIFIED]** if coverage is 100%.
+4. **Brief Lessons Migration**: If valuable `LESSONS.md` content is found, write `agents/bob/workspace/brief-migrate-lessons.md` to formally move them to `SOUL.md`.
 
 **Results:**
-1. ✅/❌ Verified `src/lib/manager.ts`.
-2. ✅/❌ Audited `DOMAIN.md` presence.
-3. ✅/❌ Identified agents missing FM-3.3 Guard.
-4. ✅/❌ Created brief.
+1. ✅/❌ Agent coverage audit.
+2. ✅/❌ Lessons audit.
+3. ✅/❌ Focus tasks updated.
+4. ✅/❌ Migration brief created (if needed).
+## 2026-03-25 (Heartbeat) - Verification & Context Audit
+- **Verification Guard**: Confirmed 100% coverage (12/12 active agents) for the FM-3.3 Guard. `agents/gym` and `agents/judge` are inactive/orphaned directories with no heartbeats.
+- **Context Gap**: Verified `src/lib/manager.ts` now correctly loads `LESSONS.md`, resolving the critical context gap. The hotfix requested in the previous session was implemented by Tech-Lead.
+- **Housekeeping**: Archived `brief-migrate-lessons.md` to `sent/`. Updated `focus-tasks.md` to mark both items as [COMPLETED].

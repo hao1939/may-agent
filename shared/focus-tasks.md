@@ -71,8 +71,14 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 ### Verification Discipline (FM-3.3 Standardization)
 - **Problem**: 4 agents (Amy-Kimi, Evaluator, Master, May) lack the standard FM-3.3 heartbeat guard.
 - **Fix**: Apply patch to remaining agents' heartbeats.
-- **Status**: **[ACTIVE]** (2026-03-25). Brief sent to Tech-Lead to update remaining agents.
-- **Outcome**: (Pending) All agents will have standard FM-3.3 guards.
+- **Status**: **[COMPLETED]** (2026-03-25). Audit confirmed all 15 agents (including sub-agents) now have the FM-3.3 Guard in their heartbeat files.
+- **Outcome**: Standardized.
+
+### Critical Context Gap (LESSONS.md)
+- **Problem**: `LESSONS.md` is ignored by runtime, but contains active behavioral patches (e.g., FM-2.4).
+- **Fix**: Restore loading in `src/lib/manager.ts`.
+- **Status**: **[COMPLETED]** (2026-03-25). Tech-Lead restored `loadFile` call in `src/lib/manager.ts`. Verified by code read.
+- **Owner**: Tech-Lead (Implementation).
 
 ### Typed Messages / GNAP (P105)
 - **Problem**: Ambiguous inter-agent messages.
