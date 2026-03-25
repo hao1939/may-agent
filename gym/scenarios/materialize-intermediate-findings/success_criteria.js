@@ -97,7 +97,7 @@ s.checkProduct("report-identifies-trigger", "Report identifies Redis maintenance
 s.checkBehavior("early-materialization", "First workspace write occurs before 50% of total tool calls", () => {
   if (!s.hasTranscript()) return true;
 
-  const t = s._loadTranscript();
+  const t = s.transcript ? s.transcript.toolCalls : null;
   if (!t) return true;
 
   const toolCalls = t.filter(e => e.tool || e.name);
@@ -119,7 +119,7 @@ s.checkBehavior("early-materialization", "First workspace write occurs before 50
 s.checkBehavior("multiple-materializations", "At least 2 workspace writes before/including final report", () => {
   if (!s.hasTranscript()) return true;
 
-  const t = s._loadTranscript();
+  const t = s.transcript ? s.transcript.toolCalls : null;
   if (!t) return true;
 
   const toolCalls = t.filter(e => e.tool || e.name);
@@ -166,7 +166,7 @@ s.checkBehavior("intermediate-data-persisted", "Workspace contains intermediate 
 s.checkBehavior("regular-materialization-cadence", "Max gap between workspace writes ≤ 6 tool calls", () => {
   if (!s.hasTranscript()) return true;
 
-  const t = s._loadTranscript();
+  const t = s.transcript ? s.transcript.toolCalls : null;
   if (!t) return true;
 
   const toolCalls = t.filter(e => e.tool || e.name);

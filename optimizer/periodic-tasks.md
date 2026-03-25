@@ -3,17 +3,17 @@
 Track when each task was last done. Pick the most overdue one during heartbeat step 3.
 
 ## Per heartbeat (do one, rotate)
-- [x] **Analysis review** — Last done: 2026-03-25T07:30
+- [x] **Analysis review** — Last done: 2026-03-25T08:38
   Read agents/bob/workspace/analysis.md or recent Bob synthesis outputs.
   Any findings that need optimization work? Cost issues? Efficiency problems?
   If found → add specific task to workspace/todo.md.
-  Latest (2026-03-25T07:30): Zombie session count now 15 (was 10 at 06:33) — continuing to accumulate. Filed fix to tech-lead (req:21940c63). Gym baseline completed (11/13 = 85%, binary 37b8fbb). No new Bob analysis since 09:07 UTC yesterday (22h old). Bob has 39 "echo hello" sessions in last 6h — diagnostic/test pattern, harmless but noisy.
+  Latest (2026-03-25T08:38): Bob analysis.md unchanged since Mar 24 09:07 UTC (~23.5h stale). Bob had 38 echo-hello sessions (31 at 0 ops — handler-intercepted). 3 real heartbeats in last 4h (13, 38, 12 ops). Zombie count 26 (bob=22). Zombie fix in new binary (1d58bd5). No new analysis findings.
 
-- [x] **Cost outlier scan** — Last done: 2026-03-25T06:33
+- [x] **Cost outlier scan** — Last done: 2026-03-25T08:36
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-25T06:33): 2h window (04:33-06:33 UTC): ~30 sessions, ~593 ops. bob=261 ops (44%, 11 sessions, 23.7 avg), optimizer=171 (5 sessions, 34.2 avg), tech-lead=104 (2 sessions, 52.0 avg), may=50 (2 sessions), qa=7 (1 session). Highest single session: optimizer s_1774416820979_124=128 ops (binary rebuild, justified). Bob has 5 zombie sessions from ~2h ago still marked "running" (115-121min stale). No sessions >$2. No new cost intervention needed.
+  Latest (2026-03-25T08:36): 2h window (06:33-08:33 UTC): 54 sessions, 212 ops. optimizer=59 ops (8 sessions, 7.4 avg), tech-lead=46 (1 session), coach=30 (2 sessions), bob=20 (34 sessions, 0.6 avg), coder=18 (2 sessions), scout=12 (3 sessions). No sessions >50 ops. Zombie sessions grew to 26 (bob=22, optimizer=3, tech-lead=1). Zombie fix (1d58bd5) committed and QA'd — rebuilt binary as may-agent-1d58bd5, symlink updated. Still needs process restart to take effect (PID 52 running b9ef77e).
 
 - [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-25T07:29
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
@@ -21,13 +21,13 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If found → write proposal in workspace/improvement-proposals.md.
   Latest (2026-03-25T07:29): Scanned last 6h sessions. Bob has 39 "echo hello" sessions (1 op each) — test/diagnostic, not a handler candidate. All heartbeats are judgment work (not automatable). No high-frequency deterministic work remaining in LLM. Previous scan findings still valid: all automatable patterns already handler-driven.
 
-- [x] **Handler health check** — Last done: 2026-03-25T04:33
+- [x] **Handler health check** — Last done: 2026-03-25T08:37
   Review existing JS handlers in agents/may/handlers/.
   Any errors in recent logs? Any handler that's not firing?
   If issues → add fix to workspace/todo.md.
-  Latest (2026-03-25T05:38): **BINARY REBUILT!** Found bun at `/home/hao/.npm/_npx/.../bun` (v1.3.11). Built `may-agent-37b8fbb` from HEAD (22 commits ahead of old b9ef77e). Updated symlink. New binary includes: empty-args guard, FM-3.3 verification guard, finish-guard (ghost deliverable), session-read-guard (bash-grep), request limit fix, skill-lifecycle early-exit. Running process still uses old binary (PID 52) — new sessions will use new binary once process restarts. Handlers all functional.
+  Latest (2026-03-25T08:37): 20 handlers in agents/may/handlers/. Last 4h: 51 done jobs, 26 running (zombies), 4 call sessions, 1 error (bob litellm.ServiceUnavailableError — transient). Cron jobs executing: consolidate-memory ran for 4 agents (optimizer, bob, coach, scout). **Binary rebuilt again**: may-agent-1d58bd5 (includes zombie session cleanup fix). Symlink updated. PID 52 still running b9ef77e — needs process restart. All handlers functional, no persistent errors.
 
-- [x] **Proven pattern → Skill/Workflow** — Last done: 2026-03-25T03:03
+- [x] **Proven pattern → Skill/Workflow** — Last done: 2026-03-25T10:03
   This is your MOST IMPORTANT periodic task — focus area #1.
   **⛔ COOLDOWN: 6h minimum between runs.** With 14 skills deployed, discovery phases increasingly
   find "no new skill needed." Each lifecycle costs ~90 ops (4 phases). Running 3x/6h = 270 ops =
@@ -37,6 +37,7 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   sessions, preventing you from skipping testing or doing meta-work instead.
   If you have a specific pattern in mind, pass it: `workflow.run("skill-lifecycle", "Pattern: agents read file → check convention → edit → verify")`
   **Deliverable**: A new or refined skill file, tested in gym, deployed to agents.
+  Latest (2026-03-25T10:03): build-activation-verification (18th skill) drafted, tested (2/3 gym pass, core assertions 3/3), deployed to optimizer + tech-lead SOUL.md. Pattern: agents build binaries and claim "deployed" but don't verify the running process switched. 206 lines.
   Latest (2026-03-25T03:03): prerequisite-gap-protocol drafted and tested — 0/3 gym pass (agents claim success even with missing prerequisites). NOT deployed. Skill identifies real pattern but needs prompt injection to change behavior.
   Latest (2026-03-24T21:03): No new skill needed — discovery found deliverable-integrity pattern already deployed. 17 skills achieving good coverage.
   Latest (2026-03-24T14:03): deliverable-integrity (17th skill) deployed to agents. Full lifecycle. 3/3 gym pass.
@@ -44,7 +45,7 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Latest (2026-03-23T21:36): verification-consistency (15th skill) deployed to 6 agents. Full lifecycle.
   _13 earlier skill deployments documented in finding files. See `workspace/finding-pattern-scan-*.md`._
 
-- [x] **Tool quality review** — Last done: 2026-03-25T06:33
+- [x] **Tool quality review** — Last done: 2026-03-25T08:39
   Read the tool-quality-report.md (generated by tool-quality-scan handler every 4h).
   Look for regression trends, persistent failure patterns, and agent-specific issues.
   If a specific failure category accounts for >30% of waste, create a targeted intervention:
@@ -52,7 +53,7 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   - For empty-args: check if schema validation is catching it early enough
   - For edit-match-fail: check if agents are reading files before editing
   If tool-quality-report.md doesn't exist yet, skip — handler hasn't fired.
-  Latest (2026-03-25T06:33): Report from 05:07 UTC (24h window). Waste rate 5.5% (222/4047). bash:other=150 (68% of waste, optimizer=56), bash:nonexistent-path=28 (coder=16 still `cd /home/coder`), bash:empty-args=16, read:empty-args=14 (coach=10), read:nonexistent-path=12 (+50% regression, coach=8). Optimizer convention rates: C1.3=30.1% (verify-writes), C1.1=40.7% (read-before-edit), C6.1=48.8% (budget). All guards deployed in new binary (37b8fbb) but binary not yet active — process needs restart.
+  Latest (2026-03-25T08:39): Report still from 05:07 UTC (next handler run ~09:07). Evaluation quality check: last 6h all non-Bob sessions "good". Bob has 10+ "needs_improvement" — all echo-hello handler sessions (false positive, 0 ops, no real work). Tech-lead had 5 wasted / 61 productive (8% waste). All guards deployed in binary 1d58bd5 but not yet active (PID 52 = b9ef77e).
 
 - [x] **Gym shadow baseline & trend tracking** — Last done: 2026-03-25T07:27
   ⚠️ COOLDOWN: After each binary rebuild only. No point re-running on same binary.
@@ -62,6 +63,7 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Flag regressions via `bun scripts/gym-stats.ts --regressions`.
   NOTE: Runs take ~600s for 13 smoke scenarios. Consider running in background or splitting.
   Latest (2026-03-25T07:27): Full smoke baseline on binary 37b8fbb. 11/13 pass (85%) — same as previous baseline (335546d). Zero regressions. 2 red: behavior-escalation-stubborn (0/4, needs escalation skill), conflicting-evidence (0/4, correct diagnosis but wrong fix). 1 yellow: optimize-deploy-config (67%, flaky). Batch: 1774422494_11c91301. Results in may.db + gym-trend-tracker.md updated.
+  **NOTE**: New binary 1d58bd5 built (2026-03-25T08:36) — includes zombie session cleanup fix. Gym baseline needed after process restart activates it.
 
 ## Weekly
 - [x] **Improvement proposals review** — Last done: 2026-03-24T16:03

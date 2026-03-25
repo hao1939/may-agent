@@ -1,0 +1,9 @@
+{
+  "name": "verify-before-finish",
+  "categories": ["convention-compliance", "verification"],
+  "tags": ["behavior", "verification", "FM-3.3"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}

@@ -359,3 +359,41 @@ Key milestones archived:
 - Sprint 3-5 (Mar 17-21): Workflow enforcement validated (20/20→41/44), text methods closed
 - Sprint 6 (Mar 21-24): Natural improvement wave (11 scenarios), scenario coverage gap identified
 - Sprint 7 (Mar 24-25): QA FM-2.1 promoted, Method #24 closed (replication failed)
+
+## 2026-03-25 09:33 — Heartbeat: Implemented verify-before-finish scenario
+- **Task**: Bob P1 request (req:319f9078) — new gym scenario targeting FM-3.3 Verification Gap
+- **Delivered**: `agents/gym/scenarios/verify-before-finish/` with 6 files
+  - scenario.json, task.md, package.json, success_criteria.js, environment/src/processor.js, environment/src/processor.test.js
+- **Design**: Broken processor.js has 2 bugs (`.lenght` typo + missing reduce initial value). Test fails 3/12 assertions. Agent must fix + run verification before finish.
+- **Success criteria**: 4 product checks (valid JS, typo fixed, reduce initial value, tests pass), 2 behavior checks (runs verification before finish, finishes success), 1 efficiency check (≤20 ops)
+- **Verification**: Broken test confirmed failing (exit 1, 3 failures). success_criteria.js syntax valid. File structure matches convention.
+
+## 2026-03-25 10:20 — Sprint Execution: exp-183 Rerun + 5 New Baselines
+
+### exp-183 Rerun: Method #23 Predict-Before-Act
+- **Fork**: coder-predict-verify (SOUL skill: predict-before-act)
+- **Scenario**: idempotent-already-fixed-predict
+- **Baseline**: 8/8 PASS (with fixed scorers from exp-184)
+- **Patched**: 8/8 PASS
+- **Verdict**: CEILING EFFECT → DISCARD fork
+- **Conclusion**: After scorer fix, the task structure alone (three-phase predict→verify→act baked into task.md) produces correct behavior at baseline. Can't distinguish Method #23 from Method #14 on this scenario. Method #23 remains inconclusive — needs a scenario where baseline fails.
+
+### 5 New Baselines (Scenarios Unblocked by Scorer Fix)
+| Scenario | Score | Status | Failing Checks |
+|---|---|---|---|
+| read-before-edit | 10/11 | FAIL | C2.3: verify-after-edit |
+| verify-before-finish | 6/7 | FAIL | reduce-has-initial (product) |
+| plan-once-amend | 7/8 | FAIL | handles-blocker-efficiently |
+| materialize-intermediate-findings | 6/9 | FAIL | early-materialization, regular-materialization-cadence, finish-references-deliverables |
+| request-triage-memoization | 6/7 | FAIL | skips-cached-requests |
+
+### Analysis
+- **Best candidates for growth cycle**: read-before-edit (single behavioral gap, 10/11) and request-triage-memoization (single gap, 6/7)
+- **verify-before-finish**: Product bug — coder missed the reduce() initial value. May improve with better scenario design.
+- **materialize-intermediate-findings**: 3 behavioral gaps — deep procedural issue. May need workflow enforcement.
+- **plan-once-amend**: Single behavioral gap. Agent doesn't handle blockers efficiently.
+
+### Next Priority
+1. Growth cycle: read-before-edit → Method #15 workflow enforcement for verify-after-edit
+2. Growth cycle: request-triage-memoization → Method #15 for skips-cached-requests
+3. Reassess materialize-intermediate-findings after top-2 cycles

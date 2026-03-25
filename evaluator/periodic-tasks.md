@@ -46,7 +46,7 @@ See `agents/evaluator/periodic-tasks.md` for the definitions.
 - Do NOT update `agents/shared/knowledge/strategies.md` directly (Bob reviews first).
 - **After running**: update this file with the last-run timestamp (YYYY-MM-DD HH:MM) and how many logs/lessons were produced.
 
-**Last run**: 2026-03-25 02:33 — ran `monitor-session.cjs --running` (3 sessions checked; 0 unhealthy)
+**Last run**: 2026-03-25 08:33 — ran periodic calibration heartbeat checks (workspace flag inputs missing; spot-checked latest `.state/evaluations` artifacts)
 
 **P63 Extract Strategies — Last run**: 2026-03-13 19:28 — logs: 50, lessons: 4 (P63 Automated Extraction Live)
 

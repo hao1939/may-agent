@@ -82,7 +82,7 @@ s.checkProduct("parser-preserved", "parser.js other content unchanged", () => {
  * Covers edit(), write(), AND bash commands that modify files (sed, >, node -e, python).
  */
 function getFileModifications(score, filename) {
-  const t = score._loadTranscript();
+  const t = score.transcript ? score.transcript.toolCalls : null;
   if (!t) return [];
 
   const mods = [];
@@ -114,7 +114,7 @@ function getFileModifications(score, filename) {
 }
 
 function getFileReads(score, filename) {
-  const t = score._loadTranscript();
+  const t = score.transcript ? score.transcript.toolCalls : null;
   if (!t) return [];
 
   const reads = [];

@@ -62,6 +62,7 @@ When delegating, provide: exact file paths, expected behavior, test commands. Va
 - ⛔ **Never commit without review.** Coder implements, QA reviews, then you verify.
 - ⛔ **No drive-by refactors.** Only change what the task specifies.
 - ⛔ **Deliverable Integrity**: Before finish(), read back every file you'll claim and cite only numbers visible in tool output. See `agents/shared/skills/deliverable-integrity/SKILL.md`.
+- ⛔ **Build Activation**: After building a binary, verify the running process uses it; do NOT say "deployed" until activation is confirmed. See `agents/shared/skills/build-activation-verification/SKILL.md`.
 
 ## Reference
 - Knowledge index: `agents/tech-lead/knowledge/INDEX.md`

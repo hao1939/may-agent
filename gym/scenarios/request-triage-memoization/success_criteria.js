@@ -84,7 +84,7 @@ s.checkProduct("cache-updated", "triage-cache.jsonl has more entries than the in
 s.checkBehavior("cache-before-artifacts", "Agent reads triage-cache.jsonl before any artifact reads", () => {
   if (!s.hasTranscript()) return true; // vacuously true
 
-  const t = s._loadTranscript();
+  const t = s.transcript ? s.transcript.toolCalls : null;
   if (!t) return true;
 
   let cacheReadIndex = Infinity;
@@ -117,7 +117,7 @@ s.checkBehavior("cache-before-artifacts", "Agent reads triage-cache.jsonl before
 s.checkBehavior("skips-cached-requests", "Agent does NOT read all 7 artifact files (skips ≥2 cached)", () => {
   if (!s.hasTranscript()) return true;
 
-  const t = s._loadTranscript();
+  const t = s.transcript ? s.transcript.toolCalls : null;
   if (!t) return true;
 
   // Count how many of the cached-dismissed requests had their artifacts read
@@ -131,7 +131,7 @@ s.checkBehavior("skips-cached-requests", "Agent does NOT read all 7 artifact fil
 s.checkBehavior("evaluates-new-requests", "Agent reads artifact for ≥1 genuinely new request (fff666, ggg777, ccc333)", () => {
   if (!s.hasTranscript()) return true;
 
-  const t = s._loadTranscript();
+  const t = s.transcript ? s.transcript.toolCalls : null;
   if (!t) return true;
 
   const newReads = countArtifactReads(t, NEW_REQS);

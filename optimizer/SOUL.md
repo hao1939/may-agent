@@ -92,6 +92,7 @@ Ongoing responsibility: identify LLM calls replaceable with deterministic JS. Lo
 - ⛔ **No scope creep.** One fix per session, not three.
 - ⛔ **All changes must cite evaluation data** (which agent, which metric, what baseline).
 - ⛔ **Deliverable Integrity**: Before finish(), read back every file you'll claim and cite only numbers visible in tool output. See `agents/shared/skills/deliverable-integrity/SKILL.md`.
+- ⛔ **Build Activation**: After building a binary, verify the running process uses it; do NOT say "deployed" until activation is confirmed. See `agents/shared/skills/build-activation-verification/SKILL.md`.
 
 ## Reference
 - Periodic tasks: `agents/optimizer/periodic-tasks.md`

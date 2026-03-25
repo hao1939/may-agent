@@ -87,7 +87,7 @@ s.checkProduct("logger-unchanged", "logger.js redacts Authorization (was already
 s.checkBehavior("state-check-first", "Agent reads ≥2 of 3 target files before any edit/write", () => {
   if (!s.hasTranscript()) return true; // vacuously true if no transcript
 
-  const t = s._loadTranscript();
+  const t = s.transcript ? s.transcript.toolCalls : null;
   if (!t) return true;
 
   const targetFiles = ["middleware.js", "config.js", "logger.js"];

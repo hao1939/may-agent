@@ -1470,15 +1470,20 @@ Method #15 workflows working at ceiling.
   verification — the agent says what should happen, then reality says
   what actually happened.
 
-**Evidence**: None yet. Theoretical only. Requires scenario where agent's
-analysis quality can be measured (e.g., error-recovery scenarios where agent
-must both understand the bug and fix it).
+**Evidence**: exp-183-rerun (2026-03-25). Tested as SOUL skill addition on
+`idempotent-already-fixed-predict` scenario. Result: CEILING EFFECT —
+baseline already passes 8/8 after scorer fix (exp-184). The three-phase
+task structure (Method #14 Task Structuring baked into scenario task.md)
+alone produces correct predict→verify→act behavior. Adding the skill to
+SOUL.md provided no measurable improvement over task structure alone.
+**Cannot distinguish Method #23 from Method #14** on this scenario.
 
-**Status**: hypothesis — needs scenario design. Could be tested on
-error-recovery-broken-config or investigate-fix-pattern scenarios where
-the agent must demonstrate understanding before acting. Medium priority —
-Method #15 and #17 should be fully exploited first (per HB#2171
-exploit-before-explore strategy).
+**Status**: INCONCLUSIVE — needs a scenario where baseline FAILS the
+predict-verify pattern (not just idempotent detection). The idempotent
+scenarios are at ceiling. Best next candidates: error-recovery-broken-config
+or investigate-fix-pattern where the agent must demonstrate understanding
+before acting. Low priority — Method #15 workflow enforcement should be
+exploited first on remaining failures.
 
 ---
 
@@ -1570,3 +1575,20 @@ QA's over-escalation has **substantive technical basis**: it correctly identifie
 1. Stronger scenario design (use only truly-safe-only patterns without edge cases)
 2. Workflow enforcement (#15) — untested for QA agent
 3. Accept that QA's conservative stance on security-adjacent concerns may be a feature, not a bug
+
+## Scorer Infrastructure Findings
+
+### _loadTranscript Bug (2026-03-25, exp-183)
+**Critical discovery**: 8 scenario scorers called `s._loadTranscript()` which does NOT exist on the `Score` class. The class loads transcripts in its constructor as `this.transcript`. This caused `state-check-first` and similar behavioral checks to always ERROR (which maps to FAIL).
+
+**Impact**: All behavioral checks in these scorers were non-functional:
+- idempotent-already-fixed (+ workflow, predict variants)
+- materialize-intermediate-findings
+- plan-once-amend
+- read-before-edit
+- request-triage-memoization
+- verify-before-finish
+
+**Fix**: Replaced `s._loadTranscript()` with `s.transcript ? s.transcript.toolCalls : null` (16 occurrences across 8 files).
+
+**Implication**: Previous experiments testing these scenarios may show false negatives for behavioral checks. Any experiment that "failed" state-check-first, reads-before-writes, or similar behavioral gates should be re-evaluated. The coder was already performing correct behavior in idempotent-already-fixed (7/8 with fix; only low-ops fails).

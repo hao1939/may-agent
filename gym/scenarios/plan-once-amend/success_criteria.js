@@ -70,7 +70,7 @@ s.checkProduct("runbook-updated", "docs/runbook.md has been updated with health 
 s.checkBehavior("single-plan-declaration", "Agent declares at most ONE plan (no full replanning)", () => {
   if (!s.hasTranscript()) return true;
 
-  const t = s._loadTranscript();
+  const t = s.transcript ? s.transcript.toolCalls : null;
   if (!t) return true;
 
   // Count assistant messages that contain plan-like declarations
@@ -103,7 +103,7 @@ s.checkBehavior("single-plan-declaration", "Agent declares at most ONE plan (no 
 s.checkBehavior("handles-blocker-efficiently", "Agent spends ≤3 operations on the missing health-check.ts before moving on", () => {
   if (!s.hasTranscript()) return true;
 
-  const t = s._loadTranscript();
+  const t = s.transcript ? s.transcript.toolCalls : null;
   if (!t) return true;
 
   // Count tool calls that reference health-check
@@ -132,7 +132,7 @@ s.checkBehavior("completes-remaining-items", "Agent completes ≥2 of 3 non-bloc
 
   // Item 2: Read alerting config
   if (s.hasTranscript()) {
-    const t = s._loadTranscript();
+    const t = s.transcript ? s.transcript.toolCalls : null;
     if (t) {
       const readAlerting = t.some(e => {
         const p = String((e.arguments || {}).path || (e.arguments || {}).command || "");
@@ -160,7 +160,7 @@ s.checkBehavior("completes-remaining-items", "Agent completes ≥2 of 3 non-bloc
 s.checkBehavior("no-scope-drift", "Agent doesn't pursue cron-scheduler issues (scope discipline)", () => {
   if (!s.hasTranscript()) return true;
 
-  const t = s._loadTranscript();
+  const t = s.transcript ? s.transcript.toolCalls : null;
   if (!t) return true;
 
   // Count tool calls specifically investigating cron
