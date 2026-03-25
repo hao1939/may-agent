@@ -1,3 +1,4 @@
+export type { SessionStore } from './persistence.js';
 export { SubagentManager, generateId, truncateForPrompt } from "./manager.js";
 export type { SubagentManagerOptions, RunOptions } from "./manager.js";
 // Session recovery (Ambulance Protocol — P62)
@@ -84,7 +85,6 @@ export type {
 export { isOverflowError, extractProgress, writeProgressFile } from "./overflow.js";
 export {
   RegistryStore,
-  SessionStore,
   ensureSessionDir,
   appendSessionMessage,
   readSessionMessages,
@@ -146,6 +146,7 @@ export type {
   WorkflowRun,
   WorkflowStep,
 } from "./persistence.js";
+
 export type { HandlerContext, HandlerModule } from "./handler-context.js";
 export { retryWithBackoff } from "./retry-with-backoff.js";
 export type { RetryWithBackoffOptions } from "./retry-with-backoff.js";
