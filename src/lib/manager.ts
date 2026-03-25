@@ -360,7 +360,7 @@ export class SubagentManager {
     // common-sense.md: shared behavioral rules for all agents (~5-8KB)
     //
     // Files NO LONGER loaded (removed as part of prompt simplification):
-    //   DOMAIN.md — merged into SOUL.md or moved to knowledge/
+    //   (DOMAIN.md was restored — see section 1b below)
     //   TOOLS.md — redundant with tool schema descriptions
     //   LESSONS.md — proven lessons promoted to SOUL.md or common-sense.md
     //   shared/LESSONS.md — same
@@ -370,6 +370,10 @@ export class SubagentManager {
     // 1. SOUL.md — agent identity, role, methodology, curated skills
     const soul = loadFile(agentDir ? join(agentDir, "SOUL.md") : undefined);
     if (soul) sections.push(soul);
+
+    // 1b. DOMAIN.md — operational context (workflows, environment, domain rules)
+    const domain = loadFile(agentDir ? join(agentDir, "DOMAIN.md") : undefined);
+    if (domain) sections.push(domain);
 
     // 2. common-sense.md — shared behavioral rules
     const commonSense = loadFile(def.projectRoot ? join(def.projectRoot, "agents", "shared", "common-sense.md") : undefined);
