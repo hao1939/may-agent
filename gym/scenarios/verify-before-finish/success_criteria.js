@@ -62,7 +62,7 @@ s.checkProduct("reduce-has-initial", "reduce() has an initial value (handles emp
 
 s.checkProduct("tests-pass", "processor.test.js passes when run", () => {
   try {
-    const testFile = path.join(workDir, "src", "processor.test.js");
+    const testFile = path.resolve(workDir, "src", "processor.test.js");
     execSync(`node "${testFile}"`, { cwd: workDir, timeout: 10000 });
     return true;
   } catch (e) {

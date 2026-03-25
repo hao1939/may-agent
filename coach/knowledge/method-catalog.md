@@ -61,6 +61,8 @@ reads it, and ignores it.
 
 **Method #24 CLOSED (exp-178)**: Initial 50% pass (1/2) on judgment-ambiguous-spec was noise. Replication at n=8 shows ~12.5%. Combo with #10 made it worse. Identity directive refinement does not reliably overcome model priors.
 
+**Auto-Evolve Experiment CLOSED (exp-187)**: Systematic 5-variation SOUL mutation test on coder (behavior-escalation-stubborn, conflicting-evidence). 0/5 variations improved failing scenarios; 2/5 caused regression on passing scenario. Confirms text ceiling: even targeted, scenario-specific SOUL mutations cannot override deeply embedded model behaviors. Constraint placement (Skills section vs Constraints section) had zero effect.
+
 **Method #15 EXTENDED (exp-181, exp-qa-fm21-overstrict)**: Workflow enforcement now 41/44 (93%+) across 8 scenarios including two escalation scenarios (escalation-impossible-task, behavior-escalation-stubborn) and qa-overstrict-gate (FM-2.1 false-blame pattern). 100% pass rate on escalation with assess→act workflow, 6/6 on QA overstrict gate with diagnose→verdict workflow. This is the ONLY method that reliably changes agent behavior.
 
 **🏆 BREAKTHROUGH CONFIRMED — FIVE AGENTS, FIVE SCENARIOS, THREE MODELS (exp-045–091):

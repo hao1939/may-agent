@@ -3,29 +3,30 @@
 Track when each task was last done. Pick the most overdue one during heartbeat step 3.
 
 ## Per heartbeat (do one, rotate)
-- [x] **Analysis review** — Last done: 2026-03-25T16:03
+- [x] **Analysis review** — Last done: 2026-03-25T22:05
   Read agents/bob/workspace/analysis.md or recent Bob synthesis outputs.
   Any findings that need optimization work? Cost issues? Efficiency problems?
   If found → add specific task to workspace/todo.md.
-  Latest (2026-03-25T16:03): Same analysis.md (unchanged since 12:03). Bob also sent brief-fix-context-loading.md to tech-lead — DOMAIN.md restore + FM-3.3 guard for 3 agents. DOMAIN.md restore already in binary f4b83c6. FM-3.3 guard already in all 12 heartbeats (verified via grep). No new action needed.
+  Latest (2026-03-25T22:05): analysis.md unchanged (still FM-3.3/verification gap focus). Bob produced new `brief-gym-verification-scenario.md` for tech-lead — good alignment with existing FM-3.3 guards. No new action needed.
 
-- [x] **Cost outlier scan** — Last done: 2026-03-25T16:35
+- [x] **Cost outlier scan** — Last done: 2026-03-25T20:40
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
+  Latest (2026-03-25T20:40): 52 sessions in 4h (13/hr). Top ops: optimizer 57ops (common-sense experiment, expected), coach 26ops/2825s (interrupted). Coach+optimizer each 10 sessions, ~150 ops. No new waste patterns. System stable.
   Latest (2026-03-25T16:35): 61 sessions in 6.5h (9.4/hr). Two outliers: tech-lead gym test (528KB, 3x 100KB bash outputs — expected), Bob agents(filter:all) (404KB, 324KB response — one-off). No new systematic waste. Scout loop fix confirmed (2 sessions vs 32/day before). 30+ Bob zombies blocked on restart (req:31d94ce6). Finding at `workspace/finding-cost-scan-0325-1635.md`.
 
-- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-25T16:03
+- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-25T22:07
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
   Could it be replaced with a JS handler? (See cron-graduation-process.md Stage 3.)
   If found → write proposal in workspace/improvement-proposals.md.
-  Latest (2026-03-25T16:03): Scanned last 4h sessions (48 total). QA: 9 sessions (avg 5 ops, 4 at 1 op — diagnose phases). Coach: 7 (avg 22.7 ops). Coder: 7 (avg 4.1, one at 1 op). Evaluator: 6 (all 0 ops — JS heuristic working). Optimizer: 5 (avg 34.2). May: 4 (avg 1.3 ops — quick idle checks). No new LLM-to-JS candidate. All low-op sessions are either already handled by JS or require judgment. Waste rate 3.8%. System well-optimized.
+  Latest (2026-03-25T22:07): Scanned 49 sessions in 4h (12.25/hr). 15 low-op sessions (0-2 ops): evaluator 0-ops (JS heuristic ✅), May 1-op idle checks, QA 1-2 op early exits, Scout 1-2 ops idle. All low-op sessions already optimized or require LLM judgment. No new LLM-to-JS candidate.
 
-- [x] **Handler health check** — Last done: 2026-03-25T16:38
+- [x] **Handler health check** — Last done: 2026-03-25T22:08
   Review existing JS handlers in agents/may/handlers/.
   Any errors in recent logs? Any handler that's not firing?
   If issues → add fix to workspace/todo.md.
-  Latest (2026-03-25T16:38): Quick tool error scan of last 15 sessions: 21 tool errors total. Evaluator worst offender (10 errors across 2 sessions: 4 ENOENT for nonexistent workspace files + 5 edit-match-fail + 1 `python: command not found`). Optimizer: 4 cmd-not-found (npm/bun/sqlite3). Tech-lead: 3 (ENOENT, git bad args). Coach: 2 (bash exit code 2, validation error). **Evaluator workspace references stale** — reading files that don't exist. Zombie cleanup: sent periodic-cleanup brief to tech-lead (req:89285acb). Binary f4b83c6 built and symlinked, PID 7 still old — restart sent (req:31d94ce6).
+  Latest (2026-03-25T22:08): Only 3 sessions with tool errors in last 4h (1 error each: optimizer, coach, may). Down from 21 errors in 15 sessions at last check. Tool error rate very low. No handler issues detected.
 
 - [x] **Proven pattern → Skill/Workflow** — Last done: 2026-03-25T18:11
   This is your MOST IMPORTANT periodic task — focus area #1.
@@ -65,7 +66,7 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Flag regressions via `bun scripts/gym-stats.ts --regressions`.
   NOTE: Runs take ~600s for 13 smoke scenarios. Consider running in background or splitting.
   Latest (2026-03-25T07:27): Full smoke baseline on binary 37b8fbb. 11/13 pass (85%) — same as previous baseline (335546d). Zero regressions. 2 red: behavior-escalation-stubborn (0/4, needs escalation skill), conflicting-evidence (0/4, correct diagnosis but wrong fix). 1 yellow: optimize-deploy-config (67%, flaky). Batch: 1774422494_11c91301. Results in may.db + gym-trend-tracker.md updated.
-  **NOTE**: New binary f4b83c6 built (2026-03-25T16:04) — includes DOMAIN.md restore, verification gym scenarios, 30 test fixes, all bbbe4fe features. Gym baseline needed after process restart activates it.
+  **NOTE**: New binary f10cfde built (2026-03-25T22:10) — includes LESSONS.md loading restore, agent archetype inheritance, DOMAIN.md restore, verification gym scenarios, 30 test fixes, all bbbe4fe features. Gym baseline needed after process restart activates it.
 
 ## Weekly
 - [x] **Improvement proposals review** — Last done: 2026-03-24T16:03

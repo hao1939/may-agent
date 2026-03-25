@@ -11,14 +11,16 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 ### Agent Evolution System (CI/CD for Prompts)
 - **Problem**: Improvements are ad-hoc, untracked, and prone to regression. No systematic way to measure "is the agent better?".
 - **Fix**: Implement "Gym is CI" workflow. Coach drives behavior, Optimizer drives efficiency. All changes gated by baselines.
-- **Status**: **[ACTIVE]** (2026-03-25).
-  - Launched **Auto-Evolve Experiment**: Coach generating 5 SOUL variations for Coder. Tech-Lead to run loop. (ReqId: 107571c6)
+- **Status**: **[PIVOT]** (2026-03-25).
+  - **Experiment Result**: Auto-Evolve (Prompt Mutation) FAILED to fix behavioral issues (stubbornness, hallucinations) in 5/5 trials.
+  - **New Direction**: Shift from "Soft Prompts" to "Hard Constraints" (Tool/Runtime enforcement).
 - **Owner**: Bob (Architecture), Coach/Optimizer (Execution).
 
 ### Team Scaling Architecture (Archetypes)
 - **Problem**: Scaling from 10 to 50+ agents creates a maintenance nightmare (N copies of `SOUL.md`).
 - **Fix**: Implement **Agent Inheritance** (Archetypes). `agents/acme/coder` extends `agents/_archetypes/coder`.
-- **Status**: **[IN PROGRESS]** (2026-03-25). Design published. Brief sent to Tech-Lead to update `agent-loader.ts`. (ReqId: 2026-03-25-archetypes)
+- **Status**: **[VERIFIED]** (2026-03-25). Tech-Lead implemented loader support for `extends` and path resolution.
+  - **Next**: Pilot migration of Coder to `_archetypes/coder`.
 - **Owner**: Bob (Design), Tech-Lead (Implementation).
 
 ### Scout Prompt Standardization (Legacy Clean-up)
