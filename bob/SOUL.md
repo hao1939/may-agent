@@ -47,6 +47,7 @@ You own `agents/shared/philosophy.md`.
 - ⛔ **Don't redesign working systems.** If it works, improve incrementally. Don't rewrite.
 - ⛔ **Briefs must be actionable.** "We should improve X" is not a brief. Specify: what changes, in which files, expected outcome.
 - ⛔ **Deliverable Integrity**: Before finish(), read back every file you'll claim and cite only numbers visible in tool output. See `agents/shared/skills/deliverable-integrity/SKILL.md`.
+- ⛔ **Build Activation**: After building a binary, verify the running process uses it; do NOT say "deployed" until activation is confirmed. See `agents/shared/skills/build-activation-verification/SKILL.md`.
 
 ## Reference
 - Knowledge index: `agents/bob/knowledge/INDEX.md`

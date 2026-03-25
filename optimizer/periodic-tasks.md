@@ -3,29 +3,29 @@
 Track when each task was last done. Pick the most overdue one during heartbeat step 3.
 
 ## Per heartbeat (do one, rotate)
-- [x] **Analysis review** — Last done: 2026-03-25T08:38
+- [x] **Analysis review** — Last done: 2026-03-25T12:03
   Read agents/bob/workspace/analysis.md or recent Bob synthesis outputs.
   Any findings that need optimization work? Cost issues? Efficiency problems?
   If found → add specific task to workspace/todo.md.
-  Latest (2026-03-25T08:38): Bob analysis.md unchanged since Mar 24 09:07 UTC (~23.5h stale). Bob had 38 echo-hello sessions (31 at 0 ops — handler-intercepted). 3 real heartbeats in last 4h (13, 38, 12 ops). Zombie count 26 (bob=22). Zombie fix in new binary (1d58bd5). No new analysis findings.
+  Latest (2026-03-25T12:03): Bob analysis.md updated 2026-03-25 — now focuses on FM-3.3 Verification Gap and FM-1.1 Goal Drift. Bob sent req to tech-lead for "Verify Before Finish" gym scenario. Bob's 3 recommendations: (1) finish() require verification_evidence field, (2) env hardening in common-sense.md, (3) gym scenario for verification integrity. Rec #1 already partially addressed by finish-guard.ts. Rec #2 already has path-assumption-guard in binary 786c884. Rec #3 is new and valuable. No new optimizer action needed — Bob already sent the req.
 
-- [x] **Cost outlier scan** — Last done: 2026-03-25T08:36
+- [x] **Cost outlier scan** — Last done: 2026-03-25T10:33
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-25T08:36): 2h window (06:33-08:33 UTC): 54 sessions, 212 ops. optimizer=59 ops (8 sessions, 7.4 avg), tech-lead=46 (1 session), coach=30 (2 sessions), bob=20 (34 sessions, 0.6 avg), coder=18 (2 sessions), scout=12 (3 sessions). No sessions >50 ops. Zombie sessions grew to 26 (bob=22, optimizer=3, tech-lead=1). Zombie fix (1d58bd5) committed and QA'd — rebuilt binary as may-agent-1d58bd5, symlink updated. Still needs process restart to take effect (PID 52 running b9ef77e).
+  Latest (2026-03-25T10:33): 48 stale requests (mostly bob echo-hello). Binary gap: PID 52 running b9ef77e, 15 commits behind (now 786c884). Rebuilt binary may-agent-786c884 with path-assumption-guard + all pending fixes. Top cost sessions: coach sprint planning (675KB/56ops), optimizer heartbeats (150-180KB). bash:other = 148 wasted calls (69% of waste), qa=70 worst offender. Finding at `workspace/finding-cost-scan-0325-1033.md`.
 
-- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-25T07:29
+- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-25T12:03
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
   Could it be replaced with a JS handler? (See cron-graduation-process.md Stage 3.)
   If found → write proposal in workspace/improvement-proposals.md.
-  Latest (2026-03-25T07:29): Scanned last 6h sessions. Bob has 39 "echo hello" sessions (1 op each) — test/diagnostic, not a handler candidate. All heartbeats are judgment work (not automatable). No high-frequency deterministic work remaining in LLM. Previous scan findings still valid: all automatable patterns already handler-driven.
+  Latest (2026-03-25T12:03): Scanned last 6h sessions. 57 sessions total. Bob: 49 echo sessions (34 "echo hello" + 15 testing variants) — already handler-intercepted at 0-1 ops. Evaluator: 5 sessions, 4 at 0 ops (JS heuristic). May: 6 sessions, 1-5 ops. All heartbeats are judgment work. No new LLM-to-JS opportunity found. System well-optimized. Main waste: 67 stale CREATED requests (60 bob echo) — known issue, needs request TTL feature (already proposed in finding-cost-scan-0325-1033.md).
 
-- [x] **Handler health check** — Last done: 2026-03-25T08:37
+- [x] **Handler health check** — Last done: 2026-03-25T12:03
   Review existing JS handlers in agents/may/handlers/.
   Any errors in recent logs? Any handler that's not firing?
   If issues → add fix to workspace/todo.md.
-  Latest (2026-03-25T08:37): 20 handlers in agents/may/handlers/. Last 4h: 51 done jobs, 26 running (zombies), 4 call sessions, 1 error (bob litellm.ServiceUnavailableError — transient). Cron jobs executing: consolidate-memory ran for 4 agents (optimizer, bob, coach, scout). **Binary rebuilt again**: may-agent-1d58bd5 (includes zombie session cleanup fix). Symlink updated. PID 52 still running b9ef77e — needs process restart. All handlers functional, no persistent errors.
+  Latest (2026-03-25T12:03): 21 handlers (up from 20). Last 4h: 57 sessions, 4 errors (all "Request was aborted" — timeout interruptions, not handler bugs). Zombie count: bob=33 (up from 26), optimizer=4, tech-lead=1. Binary b9ef77e still running (PID 7+52), zombie cleanup in 786c884 not active. 4 interrupted sessions (optimizer phase3 timeout, bob heartbeat, coach cron, optimizer cron). All handlers functional, no persistent errors. Cron jobs executing normally.
 
 - [x] **Proven pattern → Skill/Workflow** — Last done: 2026-03-25T10:03
   This is your MOST IMPORTANT periodic task — focus area #1.
@@ -45,7 +45,7 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Latest (2026-03-23T21:36): verification-consistency (15th skill) deployed to 6 agents. Full lifecycle.
   _13 earlier skill deployments documented in finding files. See `workspace/finding-pattern-scan-*.md`._
 
-- [x] **Tool quality review** — Last done: 2026-03-25T08:39
+- [x] **Tool quality review** — Last done: 2026-03-25T10:33
   Read the tool-quality-report.md (generated by tool-quality-scan handler every 4h).
   Look for regression trends, persistent failure patterns, and agent-specific issues.
   If a specific failure category accounts for >30% of waste, create a targeted intervention:
@@ -53,7 +53,7 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   - For empty-args: check if schema validation is catching it early enough
   - For edit-match-fail: check if agents are reading files before editing
   If tool-quality-report.md doesn't exist yet, skip — handler hasn't fired.
-  Latest (2026-03-25T08:39): Report still from 05:07 UTC (next handler run ~09:07). Evaluation quality check: last 6h all non-Bob sessions "good". Bob has 10+ "needs_improvement" — all echo-hello handler sessions (false positive, 0 ops, no real work). Tech-lead had 5 wasted / 61 productive (8% waste). All guards deployed in binary 1d58bd5 but not yet active (PID 52 = b9ef77e).
+  Latest (2026-03-25T10:33): Report from 09:07 UTC. 4500 calls, 216 wasted (4.8% — down from 5.4%). bash:other=148 (69% of waste, qa=70 leading). bash:nonexistent-path=28 (coder=16, optimizer=12 — path-assumption-guard now in binary 786c884 but not active). empty-args=28 stable. read:nonexistent-path grew 8→10 (coach=6). All guards need process restart to activate.
 
 - [x] **Gym shadow baseline & trend tracking** — Last done: 2026-03-25T07:27
   ⚠️ COOLDOWN: After each binary rebuild only. No point re-running on same binary.

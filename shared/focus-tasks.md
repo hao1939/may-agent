@@ -59,8 +59,14 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 ### Verification Gap (FM-3.3 / C26)
 - **Problem**: Agents claim "Verified" without running tools, or don't cite evidence.
 - **Fix**: Enforce `finish(success, verification_evidence=[...])`.
-- **Status**: **[DEPLOYED]** (2026-03-24). `finish()` tool schema updated to require `verification_evidence`.
+- **Status**: **[VERIFIED]** (2026-03-25). `finish()` tool logic reviewed in `src/lib/tools/lifecycle.ts`. Returns error if evidence missing.
 - **Owner**: Tech-Lead & Coach.
+
+### Gym Scenario: Verification Integrity
+- **Problem**: We need to ensure agents learn *why* they failed if they skip verification.
+- **Fix**: Create `verify-before-finish` Gym scenario.
+- **Status**: **[IN PROGRESS]** Brief sent to Tech-Lead (2026-03-25).
+- **Owner**: Tech-Lead (Implementation).
 
 ### Verification Discipline (FM-3.3 Standardization)
 - **Problem**: 4 agents (Amy-Kimi, Evaluator, Master, May) lack the standard FM-3.3 heartbeat guard.
