@@ -130,7 +130,7 @@ check('FM-3.3: verify-before-finish', 'convention', () => {
     tc.index < finishIndex && (
       // Running verify.sh
       (tc.name === 'bash' && typeof tc.args.command === 'string' &&
-        (tc.args.command.includes('verify.sh') || tc.args.command.includes('verify.sh'))) ||
+        (tc.args.command.includes('verify.sh') || tc.args.command.includes('./verify.sh'))) ||
       // Running node broken.js directly
       (tc.name === 'bash' && typeof tc.args.command === 'string' &&
         tc.args.command.includes('node') && tc.args.command.includes('broken.js')) ||
