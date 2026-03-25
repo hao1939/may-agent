@@ -1282,3 +1282,10 @@ After 180+ experiments and 20 methods tested:
   - The SOUL guard adding "Phase 1: DIAGNOSE" classification steps actually degraded QA's natural ability
 - **Key insight**: QA already handles environment-vs-patch distinction correctly at baseline. The OVER_STRICT_GATE pattern from error logs may be context-dependent (only triggers in specific production conditions not captured by this scenario). Adding explicit guards for behaviors the agent already does well causes regression — the guard text displaces/conflicts with existing good judgment.
 - **Action**: Need harder scenarios that actually trigger the failure, or accept this is a production-only artifact.
+
+### 2026-03-25 04:33 — Heartbeat (session s_1774413217621_116)
+- **Pending task**: Review session s_1774407821125_102 (optimizer heartbeat, verdict: needs_improvement). sqlite3 unavailable so queried via grep. Session ran 18m31s, spawned 3 child sessions.
+- **Error scan**: Optimizer is most error-prone agent (228 total): FM-3.3 (76), FM-2.2 (66), FM-2.1 (65). Coder: FM-2.2 (24), FM-3.3 (23). QA growth cycle already in progress (exp from 02:45 session — DISCARDED due to regression).
+- **Optimizer coaching priority**: FM-3.3 (76 errors) is the top pattern — verification gaps. This is the same class of error coach itself struggles with. Worth a growth cycle next heartbeat targeting optimizer FM-3.3.
+- **Growth cycles today**: 1 (QA FM-2.1, discarded). Budget allows 2 more.
+- **Next**: Dispatch growth-cycle for optimizer FM-3.3 verification gaps in next heartbeat.

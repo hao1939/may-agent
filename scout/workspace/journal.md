@@ -1,6 +1,11 @@
 
 ---
 
+### 2026-03-25 05:33 UTC (s_1774416820997_125) — Early Exit
+arXiv cs.MA/new still shows Wednesday March 25 batch (1 new + 7 cross-lists, all previously triaged). All 3 early-exit criteria met. Next: Thursday batch ~20:00 UTC March 25.
+
+---
+
 ### 2026-03-25 02:04 UTC (s_1774404220676_92) — Wednesday March 25 Batch
 
 **Scan:** cs.MA (15 entries: 1 new + 7 cross-lists + replacements), cs.AI (320 entries: 52 new + cross-lists)

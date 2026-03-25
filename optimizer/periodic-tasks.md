@@ -3,17 +3,17 @@
 Track when each task was last done. Pick the most overdue one during heartbeat step 3.
 
 ## Per heartbeat (do one, rotate)
-- [x] **Analysis review** — Last done: 2026-03-25T02:03
+- [x] **Analysis review** — Last done: 2026-03-25T05:33
   Read agents/bob/workspace/analysis.md or recent Bob synthesis outputs.
   Any findings that need optimization work? Cost issues? Efficiency problems?
   If found → add specific task to workspace/todo.md.
-  Latest (2026-03-25T02:03): Bob analysis.md from 09:07 UTC (17h old) focuses on FM-3.3 verification failures — already addressed by finish-guard Gate 2 deployment (2233509). Bob's journal (00:04 UTC) documents cron failures (getDb) — already tracked in handler health check. Bob sent 3 briefs yesterday (scout prompt, ghost deliverables, FM-3.3 guard) — all acted on. No new optimization tasks needed from Bob's work.
+  Latest (2026-03-25T05:33): Bob analysis.md still 09:07 UTC (20h old). Reviewed 6 fresh evaluations + convention-check summary.json (05:33 UTC). Key findings: (1) 2 optimizer evals — 1 acceptable, 1 needs_improvement; recurring PATH_ASSUMPTION (workspace/ vs agents/optimizer/workspace/) and GHOST_DELIVERABLE. (2) Coach evals — 1 good, 1 acceptable; finish-guard correctly blocking ghost deliverables. (3) Convention check C12.1 near-zero system-wide — benign (tests first-tool-call=heartbeat, fails for all sub-agent sessions). (4) Bob 2 new briefs: gym-recorder bridge + fix-gym-and-oneshot — both for tech-lead, no optimizer action. (5) Bob error rate still ~40% (4/10), API infrastructure. (6) Cron errors RESOLVED. No new optimization tasks from this review.
 
-- [x] **Cost outlier scan** — Last done: 2026-03-25T02:03
+- [x] **Cost outlier scan** — Last done: 2026-03-25T04:33
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-25T02:03): 6h window: optimizer 257 ops (10 sessions, 34.2 avg), tech-lead 148 ops (5 sessions, 29.5 avg), coach 125 ops (6 sessions). 24h heartbeat totals: optimizer 547 ops/16 sessions, tech-lead 442/15, coach 208/13, bob 179/21. Limit fix completed (37b8fbb) but binary still 22 commits behind. Bob had 33 error sessions/week (API infrastructure). No new cost intervention needed — all top issues known, blocked on binary rebuild.
+  Latest (2026-03-25T04:33): 6h window (22:36-04:33 UTC): 54 sessions, 788 ops. optimizer=285 ops (36%, 9 sessions, 31.7 avg), tech-lead=176 (6 sessions), coach=149 (7 sessions, 21.3 avg), bob=73 (7 sessions, 3 errors). Evaluator recovered with 7 sessions (5 ops — mostly handler-driven). Bob still has ~43% error rate (3/7). All patterns known — optimizer self-cost escalated (req:93d7d0ea), binary rebuild blocks remaining fixes. No new cost intervention needed.
 
 - [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-25T02:03
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
@@ -21,11 +21,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If found → write proposal in workspace/improvement-proposals.md.
   Latest (2026-03-25T02:03): 17 JS handlers + 14 LLM cron jobs. All high-frequency deterministic work already handler-driven. common-sense-verify (4h, ~27 ops/run) requires behavioral judgment — not automatable. consolidate-memory (weekly, ~76 ops total) requires summarization — not automatable. Evaluator JSON retry spawns 16 retry sessions/week (15% rate) via manager.run() in evaluator.ts:446 — modest cost (0-1 ops each), already capped at 1 retry. Bob has 33 error sessions/week (26 ServiceUnavailable + 6 empty response) — API infrastructure issue, not code. No new proposal needed.
 
-- [x] **Handler health check** — Last done: 2026-03-25T01:03
+- [x] **Handler health check** — Last done: 2026-03-25T04:33
   Review existing JS handlers in agents/may/handlers/.
   Any errors in recent logs? Any handler that's not firing?
   If issues → add fix to workspace/todo.md.
-  Latest (2026-03-25T01:03): **CRITICAL: evaluate-sessions broken → 12,937 unevaluated sessions.** Binary b9ef77e now 22 commits behind. 50 failed cron runs in DB (getDb/loadAllSessionMetas/trackRequest errors). Convention-check and tool-quality-scan recovered, evaluate-sessions and repo-gate-check still broken. Bob sent P0 fix (req:e91359f2, req:0d3d6a39). Tech-lead worked on limit fix instead, hasn't reached cron fix. Binary rebuild is universal fix. Finding at `workspace/finding-handler-health-0325-0103.md`.
+  Latest (2026-03-25T05:38): **BINARY REBUILT!** Found bun at `/home/hao/.npm/_npx/.../bun` (v1.3.11). Built `may-agent-37b8fbb` from HEAD (22 commits ahead of old b9ef77e). Updated symlink. New binary includes: empty-args guard, FM-3.3 verification guard, finish-guard (ghost deliverable), session-read-guard (bash-grep), request limit fix, skill-lifecycle early-exit. Running process still uses old binary (PID 52) — new sessions will use new binary once process restarts. Handlers all functional.
 
 - [x] **Proven pattern → Skill/Workflow** — Last done: 2026-03-25T03:03
   This is your MOST IMPORTANT periodic task — focus area #1.
@@ -44,7 +44,7 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Latest (2026-03-23T21:36): verification-consistency (15th skill) deployed to 6 agents. Full lifecycle.
   _13 earlier skill deployments documented in finding files. See `workspace/finding-pattern-scan-*.md`._
 
-- [x] **Tool quality review** — Last done: 2026-03-25T01:03
+- [x] **Tool quality review** — Last done: 2026-03-25T04:33
   Read the tool-quality-report.md (generated by tool-quality-scan handler every 4h).
   Look for regression trends, persistent failure patterns, and agent-specific issues.
   If a specific failure category accounts for >30% of waste, create a targeted intervention:
@@ -52,7 +52,7 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   - For empty-args: check if schema validation is catching it early enough
   - For edit-match-fail: check if agents are reading files before editing
   If tool-quality-report.md doesn't exist yet, skip — handler hasn't fired.
-  Latest (2026-03-25T01:03): Waste rate 5.4% (194/3606, was 5.6%). bash:other=126 (65% of waste, QA=50, optimizer=32, coach=28). bash:nonexistent-path=28 (coder=16 doing `cd /home/coder`). bash:empty-args=16 (+33% regression, guard deployed but binary behind). read:empty-args=14 (coach=10). No new intervention needed — all top issues covered by existing guards/skills, all blocked on binary rebuild.
+  Latest (2026-03-25T04:33): Report from 01:07 UTC. Waste rate 5.4% (194/3606). bash:other=126 (65% of waste, unchanged). bash:empty-args=16 (+33% regression, guard deployed but binary behind). coder still doing `cd /home/coder` (16 bash:nonexistent-path). coach=10 read:empty-args. All top issues covered by existing guards/skills — all blocked on binary rebuild to activate. No new intervention needed.
 
 - [x] **Gym shadow baseline & trend tracking** — Last done: 2026-03-24T18:15
   ⚠️ COOLDOWN: After each binary rebuild only. No point re-running on same binary.
@@ -62,6 +62,7 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Flag regressions via `bun scripts/gym-stats.ts --regressions`.
   NOTE: Runs take ~600s for 13 smoke scenarios. Consider running in background or splitting.
   Latest (2026-03-24T18:15): First shadow baseline (partial, 5/13 due to timeout). Full batch from 16:33 shows 85% (11/13). Two red scenarios: behavior-escalation-stubborn (escalation judgment), conflicting-evidence (correct diagnosis, wrong fix). Trend tracker created at `workspace/gym-trend-tracker.md`.
+  **⚠️ NEW BINARY AVAILABLE (37b8fbb, built 2026-03-25T05:38)** — cooldown lifted, run new baseline after process restart.
 
 ## Weekly
 - [x] **Improvement proposals review** — Last done: 2026-03-24T16:03
