@@ -111,7 +111,11 @@ describe("coach: knowledge files", () => {
     const pathPattern = /(?:knowledge|workspace)\/[\w-]+(?:\.\w+)?/g;
     const matches = content.match(pathPattern) || [];
 
+    // workspace files may be created at runtime by the agent (e.g., experiments.jsonl)
+    const runtimeFiles = new Set(["workspace/experiments.jsonl"]);
+
     for (const p of matches) {
+      if (runtimeFiles.has(p)) continue;
       const full = resolve(COACH_DIR, p);
       // workspace paths may reference directories (sessions/, exercises/)
       if (p.endsWith("/") || !p.includes(".")) {

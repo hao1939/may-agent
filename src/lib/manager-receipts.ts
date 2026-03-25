@@ -142,6 +142,22 @@ export function wrapToolsWithReceipts(
   sessionId: string,
   ctx: ReceiptWrapContext,
 ): AgentTool[] {
+  // Lazily capture the session reference on first access. Once resolved,
+  // reuse the same object even if activeSessions removes it later (the
+  // agent loop may clean up while tools are still being called).
+  let cachedSession: ActiveSession | null | undefined;
+  const getSession = (): ActiveSession | undefined => {
+    if (cachedSession === undefined) {
+      cachedSession = ctx.activeSessions.get(sessionId) ?? null;
+    }
+    // If the cached lookup failed, try again (session may not have been
+    // added to activeSessions yet when wrapToolsWithReceipts was called).
+    if (cachedSession === null) {
+      cachedSession = ctx.activeSessions.get(sessionId) ?? null;
+    }
+    return cachedSession ?? undefined;
+  };
+
   return tools.map((tool) => ({
     ...tool,
     execute: async (
@@ -154,7 +170,7 @@ export function wrapToolsWithReceipts(
 
       // ── beforeToolCall guard (finish-guard, read-dedup, session-read, scrape-dedup) ──
       if (ctx.beforeToolCall) {
-        const session = ctx.activeSessions.get(sessionId);
+        const session = getSession();
         const guardCtx: BeforeToolCallContext = {
           toolCall: { name: tool.name, id: toolCallId },
           args: params ?? {},
@@ -170,7 +186,7 @@ export function wrapToolsWithReceipts(
             const signed = signToolOutput(blockedText);
             const sigTag = signed.slice(blockedText.length);
             // Count blocked calls for heartbeat detection
-            const blockedSession = ctx.activeSessions.get(sessionId);
+            const blockedSession = getSession();
             if (blockedSession) blockedSession.totalToolCalls++;
             return {
               content: [
@@ -192,8 +208,11 @@ export function wrapToolsWithReceipts(
 
       // P85: Operation budget enforcement — check before executing state-changing tools
       const isStateChanging = STATE_CHANGING_TOOLS.has(tool.name);
+      // Capture session reference once — the session may be removed from activeSessions
+      // by the async agent loop (e.g., model connection failure), but the wrapped tool
+      // must still be able to update opCount/totalToolCalls on the live object.
+      const session = getSession();
       if (isStateChanging) {
-        const session = ctx.activeSessions.get(sessionId);
         if (session && session.opBudget > 0 && session.opCount >= session.opBudget) {
           log("warn", `OpBudgetExceeded: Agent ${session.agentName} (${sessionId}) consumed ${session.opCount} ops (limit ${session.opBudget}). Stopping.`);
 
@@ -211,7 +230,6 @@ export function wrapToolsWithReceipts(
 
       // P110: Tool Pivot Heuristic — block after TOOL_PIVOT_LIMIT identical failures
       const pivotKey = computeToolArgsKey(tool.name, params);
-      const session = ctx.activeSessions.get(sessionId);
       if (session) {
         const failCount = session.toolErrorHistory.get(pivotKey) ?? 0;
         if (failCount >= TOOL_PIVOT_LIMIT) {
@@ -237,7 +255,6 @@ export function wrapToolsWithReceipts(
 
       // P85: Increment opCount for state-changing tools after successful execution
       if (isStateChanging) {
-        const session = ctx.activeSessions.get(sessionId);
         if (session) {
           session.opCount++;
           // Persist opCount to meta.json for crash recovery
@@ -253,11 +270,8 @@ export function wrapToolsWithReceipts(
 
       // Increment totalToolCalls for ALL tool calls (including read-only)
       // Used for shallow heartbeat detection (P110)
-      {
-        const session = ctx.activeSessions.get(sessionId);
-        if (session) {
-          session.totalToolCalls++;
-        }
+      if (session) {
+        session.totalToolCalls++;
       }
 
       // Extract the plain text output from all text blocks

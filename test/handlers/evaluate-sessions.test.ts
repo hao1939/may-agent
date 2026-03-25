@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readdirSync, readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { findParentsWithUnevaluatedChildren } from "../../agents/may/handlers/evaluate-sessions.js";
@@ -12,6 +12,27 @@ import { findParentsWithUnevaluatedChildren } from "../../agents/may/handlers/ev
 describe("findParentsWithUnevaluatedChildren", () => {
   let dir: string;
   let persistDir: string;
+
+  /** Build a loadAllSessionMetas function that reads session meta.json files from disk. */
+  function makeLoadAllSessionMetas(): () => Record<string, any> {
+    return () => {
+      const sessionsDir = resolve(persistDir, "sessions");
+      const result: Record<string, any> = {};
+      if (!existsSync(sessionsDir)) return result;
+      for (const sid of readdirSync(sessionsDir)) {
+        const metaPath = resolve(sessionsDir, sid, "meta.json");
+        if (existsSync(metaPath)) {
+          result[sid] = JSON.parse(readFileSync(metaPath, "utf-8"));
+        }
+      }
+      return result;
+    };
+  }
+
+  /** Stub getDb that throws (forces legacy fallback). */
+  function stubGetDb(): () => any {
+    return () => { throw new Error("no db"); };
+  }
 
   beforeEach(() => {
     dir = mkdtempSync(resolve(tmpdir(), "eval-sessions-"));
@@ -38,7 +59,7 @@ describe("findParentsWithUnevaluatedChildren", () => {
   }
 
   it("returns empty when no sessions exist", () => {
-    expect(findParentsWithUnevaluatedChildren(persistDir)).toEqual([]);
+    expect(findParentsWithUnevaluatedChildren(persistDir, stubGetDb(), makeLoadAllSessionMetas())).toEqual([]);
   });
 
   it("finds parent of unevaluated child session", () => {
@@ -50,7 +71,7 @@ describe("findParentsWithUnevaluatedChildren", () => {
       parentSessionId: "s_parent_1",
     });
 
-    const parents = findParentsWithUnevaluatedChildren(persistDir);
+    const parents = findParentsWithUnevaluatedChildren(persistDir, stubGetDb(), makeLoadAllSessionMetas());
     expect(parents).toEqual(["s_parent_1"]);
   });
 
@@ -64,7 +85,7 @@ describe("findParentsWithUnevaluatedChildren", () => {
     });
     createEvaluation("s_child_1");
 
-    const parents = findParentsWithUnevaluatedChildren(persistDir);
+    const parents = findParentsWithUnevaluatedChildren(persistDir, stubGetDb(), makeLoadAllSessionMetas());
     expect(parents).toEqual([]);
   });
 
@@ -77,7 +98,7 @@ describe("findParentsWithUnevaluatedChildren", () => {
       parentSessionId: "s_parent_1",
     });
 
-    expect(findParentsWithUnevaluatedChildren(persistDir)).toEqual([]);
+    expect(findParentsWithUnevaluatedChildren(persistDir, stubGetDb(), makeLoadAllSessionMetas())).toEqual([]);
   });
 
   it("includes meta-agent sessions (filtering happens at evaluation time, not discovery)", () => {
@@ -105,7 +126,7 @@ describe("findParentsWithUnevaluatedChildren", () => {
 
     // findParentsWithUnevaluatedChildren returns parents — filtering by agent
     // happens later in evaluateTask() via skipAgents
-    expect(findParentsWithUnevaluatedChildren(persistDir)).toEqual(["s_parent_1"]);
+    expect(findParentsWithUnevaluatedChildren(persistDir, stubGetDb(), makeLoadAllSessionMetas())).toEqual(["s_parent_1"]);
   });
 
   it("skips sessions without transcript", () => {
@@ -121,7 +142,7 @@ describe("findParentsWithUnevaluatedChildren", () => {
       false,
     ); // no transcript
 
-    expect(findParentsWithUnevaluatedChildren(persistDir)).toEqual([]);
+    expect(findParentsWithUnevaluatedChildren(persistDir, stubGetDb(), makeLoadAllSessionMetas())).toEqual([]);
   });
 
   it("skips sessions without parentSessionId", () => {
@@ -132,7 +153,7 @@ describe("findParentsWithUnevaluatedChildren", () => {
       task: "orphan task",
     });
 
-    expect(findParentsWithUnevaluatedChildren(persistDir)).toEqual([]);
+    expect(findParentsWithUnevaluatedChildren(persistDir, stubGetDb(), makeLoadAllSessionMetas())).toEqual([]);
   });
 
   it("deduplicates parents with multiple unevaluated children", () => {
@@ -151,7 +172,7 @@ describe("findParentsWithUnevaluatedChildren", () => {
       parentSessionId: "s_parent_1",
     });
 
-    const parents = findParentsWithUnevaluatedChildren(persistDir);
+    const parents = findParentsWithUnevaluatedChildren(persistDir, stubGetDb(), makeLoadAllSessionMetas());
     expect(parents).toEqual(["s_parent_1"]);
   });
 });

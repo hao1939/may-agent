@@ -151,11 +151,10 @@ describe("Instruction Hierarchy (P84)", () => {
     );
 
     expect(inner).toContain("# SOUL");
-    expect(inner).toContain("# Domain");
-    expect(inner).toContain("# Tools");
-    expect(inner).toContain("# Lessons");
-    expect(inner).toContain("# Index");
     expect(inner).toContain("# Runtime Environment");
+
+    // Files no longer loaded (removed as part of prompt simplification):
+    // DOMAIN.md, TOOLS.md, LESSONS.md, knowledge/INDEX.md
 
     // Tags appear exactly once (no nesting)
     const openCount = (prompt.match(/<system_instructions>/g) || []).length;

@@ -110,7 +110,7 @@ describe("P85: Operation Budget", () => {
 
     // Execute the wrapped tool and check for <tool_output> tags
     const wrappedRead = wrappedTools[0];
-    const result = await wrappedRead.execute("tc1", {});
+    const result = await wrappedRead.execute("tc1", { path: "/tmp/test.txt" });
     const fullText = result.content.map((b: any) => b.text || "").join("");
     expect(fullText).toContain("<tool_output");
     expect(fullText).toContain("</tool_output>");
@@ -141,16 +141,16 @@ describe("P85: Operation Budget", () => {
     const readTool = wrappedTools.find((t: AgentTool) => t.name === "read")!;
 
     // First two writes should succeed
-    const result1 = await writeTool.execute("tc1", {});
+    const result1 = await writeTool.execute("tc1", { path: "/tmp/a.txt", content: "x" });
     expect(result1.content.map((b: any) => b.text || "").join("")).toContain("written");
     expect(session!.opCount).toBe(1);
 
-    const result2 = await writeTool.execute("tc2", {});
+    const result2 = await writeTool.execute("tc2", { path: "/tmp/b.txt", content: "y" });
     expect(result2.content.map((b: any) => b.text || "").join("")).toContain("written");
     expect(session!.opCount).toBe(2);
 
     // Third write should be blocked
-    const result3 = await writeTool.execute("tc3", {});
+    const result3 = await writeTool.execute("tc3", { path: "/tmp/d.txt", content: "w" });
     const text3 = result3.content.map((b: any) => b.text || "").join("");
     expect(text3).toContain("OpBudgetExceeded");
     expect(text3).toContain("2/2");
@@ -158,7 +158,7 @@ describe("P85: Operation Budget", () => {
     expect(session!.opCount).toBe(2);
 
     // Read tool should still work (not state-changing)
-    const readResult = await readTool.execute("tc4", {});
+    const readResult = await readTool.execute("tc4", { path: "/tmp/test.txt" });
     const readText = readResult.content.map((b: any) => b.text || "").join("");
     expect(readText).toContain("file data");
     // opCount unchanged
@@ -184,12 +184,12 @@ describe("P85: Operation Budget", () => {
     const writeTool = session!.agent.state.tools[0];
 
     // First write succeeds — no error yet
-    await writeTool.execute("tc1", {});
+    await writeTool.execute("tc1", { path: "/tmp/a.txt", content: "x" });
     expect(session!.opCount).toBe(1);
     expect(session!.error).toBeUndefined();
 
     // Second write triggers OpBudgetExceeded — session.error must be set
-    const result2 = await writeTool.execute("tc2", {});
+    const result2 = await writeTool.execute("tc2", { path: "/tmp/b.txt", content: "y" });
     const text2 = result2.content.map((b: any) => b.text || "").join("");
     expect(text2).toContain("OpBudgetExceeded");
     expect(session!.error).toBe("OpBudgetExceeded: Limit 1 reached.");
@@ -219,7 +219,7 @@ describe("P85: Operation Budget", () => {
 
     // Execute writes — none should be budget-capped when opBudget=0 (unlimited).
     for (let i = 0; i < 10; i++) {
-      const result = await writeTool.execute(`tc${i}`, {});
+      const result = await writeTool.execute(`tc${i}`, { path: `/tmp/f${i}.txt`, content: `data${i}` });
       const text = result.content.map((b: any) => b.text || "").join("");
       expect(text).not.toContain("OpBudgetExceeded");
     }
@@ -295,7 +295,7 @@ describe("P84: Tool output wrapping", () => {
     const session = manager.activeSessions.get(sessionId);
     const readTool = session!.agent.state.tools[0];
 
-    const result = await readTool.execute("tc1", {});
+    const result = await readTool.execute("tc1", { path: "/tmp/test.txt" });
     const texts = result.content.map((b: any) => b.text || "");
 
     // First text block should be the opening tag (may include evidence attribute)
@@ -328,7 +328,7 @@ describe("P84: Tool output wrapping", () => {
     const session = manager.activeSessions.get(sessionId);
     const bashTool = session!.agent.state.tools[0];
 
-    const result = await bashTool.execute("tc1", {});
+    const result = await bashTool.execute("tc1", { command: "echo hello" });
     const fullText = result.content.map((b: any) => b.text || "").join("");
 
     // Should have the full structure: <tool_output> ... [SIG: ...] ... </tool_output>
@@ -366,7 +366,7 @@ describe("P84: Tool output wrapping", () => {
     const session = manager.activeSessions.get(sessionId);
     const wrappedTool = session!.agent.state.tools[0];
 
-    const result = await wrappedTool.execute("tc1", {});
+    const result = await wrappedTool.execute("tc1", { path: "/tmp/evil.txt" });
     const texts = result.content.map((b: any) => b.text || "");
     const fullText = texts.join("");
 
