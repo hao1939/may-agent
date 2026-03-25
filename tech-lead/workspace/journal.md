@@ -80,3 +80,18 @@ The "Slim Scout" experiment is already the production default. `src/lib/manager.
 - Key addition: environment vs patch failure distinction — "If vitest fails, determine whether failures are caused by the patch or are pre-existing environment issues."
 - Based on Coach experiment `exp-qa-fm21-overstrict` (Method #15: 6/6 vs 0/1 baseline).
 - Files in gitignored `agents/` dir — changes live on disk, no git commit needed.
+
+## 2026-03-25T13:33 — Heartbeat: Pending task triage + commit
+
+### Task Status (all 4 already done)
+1. **req:ebee63bf (P0)** — QA SOUL.md npx→./node_modules/.bin/ — ✅ already done (verified: `grep -n npx` returns 0 matches)
+2. **req:bc308f88 (P1)** — audit-requests call TTL — ✅ step 2b already handles stale CREATED calls to known agents (4h TTL)
+3. **req:f9c719c5 (P1)** — verify-before-finish gym scenario — ✅ exists at test/gym/scenarios/verify-before-finish/ (committed 05d9912)
+4. **req:1e70e1cc (P1)** — tool-quality-scan sub-classification — ✅ 3 new categories at lines 27,124-126
+
+### Commit
+- `bbbe4fe` — feat: add verification-evidence-required gym scenario (new, untracked scenario)
+
+### Observations
+- QA still running `vitest --run` even though it picks up .state/.bun/install/cache/ tests (pre-existing env issue)
+- Bob brief for gym-verification-scenario (req:f9c719c5) not found at expected path — but verify-before-finish scenario already exists and covers it

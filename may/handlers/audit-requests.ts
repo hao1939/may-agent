@@ -7,6 +7,8 @@
  *    to inject them wastes ~$58/day in tokens at 31 stuck requests)
  * 2. Auto-expires stale CREATED `call` requests to non-agent targets (e.g. "finish")
  *    older than 1h (these are tracking artifacts, not real requests)
+ * 2b. Auto-expires stale CREATED `call` requests to known agents older than 4h
+ *    (test/debug calls like "echo hello" that were never picked up)
  * 3. Resets IN_PROGRESS requests older than 4h with no active session → CREATED
  * 4. Archives COMPLETED/FAILED requests older than 7 days
  *
@@ -25,6 +27,9 @@ const STALE_SEND_MS = 4 * 60 * 60 * 1000; // 4 hours
 
 /** Non-agent call requests (e.g. "finish") older than this get auto-expired. */
 const STALE_NONAGENT_CALL_MS = 1 * 60 * 60 * 1000; // 1 hour
+
+/** Agent-targeted call requests older than this get auto-expired (stale test/debug calls). */
+const STALE_AGENT_CALL_MS = 4 * 60 * 60 * 1000; // 4 hours
 
 /** Requests older than this in IN_PROGRESS with no active session get reset. */
 const STALE_IN_PROGRESS_MS = 4 * 60 * 60 * 1000; // 4 hours
@@ -136,6 +141,43 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       );
     }
 
+    // 2b. Auto-expire stale CREATED `call` requests to known agents (> 4h)
+    //     These are typically test/debug calls ("echo hello") that were never picked up.
+    //     At 72+ stale requests, they bloat the active request list and waste context.
+    let expiredAgentCalls = 0;
+    try {
+      const staleAgentCallRows = db.query(
+        `SELECT * FROM requests WHERE status = 'CREATED' AND method = 'call' AND createdAt < ?`
+      ).all(now - STALE_AGENT_CALL_MS) as RequestRow[];
+
+      const staleAgentCalls = staleAgentCallRows.filter(r => KNOWN_AGENTS.has(r.toAgent));
+
+      for (const req of staleAgentCalls) {
+        try {
+          db.query(
+            `UPDATE requests SET status = ?, summary = ?, completedAt = ?, updatedAt = ? WHERE requestId = ?`
+          ).run(
+            "COMPLETED",
+            `Auto-expired: stale call to "${req.toAgent}" after ${Math.round((now - req.createdAt) / 3600000)}h (never picked up)`,
+            now,
+            now,
+            req.requestId,
+          );
+          expiredAgentCalls++;
+        } catch {
+          ctx.log(`[audit-requests] Failed to expire agent call request ${req.requestId}`);
+        }
+      }
+    } catch {
+      ctx.log("[audit-requests] Failed to query stale agent call requests.");
+    }
+
+    if (expiredAgentCalls > 0) {
+      ctx.log(
+        `[audit-requests] Auto-expired ${expiredAgentCalls} stale agent call request(s) older than ${STALE_AGENT_CALL_MS / 3600000}h.`
+      );
+    }
+
     // 3. Reset orphaned IN_PROGRESS requests (> 4h, no active session)
     let resetCount = 0;
     try {
@@ -194,6 +236,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     ctx.log(
       `[audit-requests] Audit complete. Active: ${activeCount}, ` +
       `Expired sends: ${expiredSends}, Expired non-agent: ${expiredNonAgent}, ` +
+      `Expired agent calls: ${expiredAgentCalls}, ` +
       `Reset: ${resetCount}, Archived: ${archived}.`
     );
   };

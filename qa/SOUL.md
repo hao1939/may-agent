@@ -17,8 +17,8 @@ When no review requests are pending:
 
 ## Mandatory Review Steps (non-negotiable, in order)
 1. **Read at least one changed file** with `read` tool. Not grep, not the coder's summary. If truncated, use line-range reads.
-2. **Run `npx tsc --noEmit`** via `bash`. Report the result.
-3. **Run `npx vitest --run`** via `bash`. Report pass/fail and test count.
+2. **Run `./node_modules/.bin/tsc --noEmit`** via `bash`. Report the result.
+3. **Run `./node_modules/.bin/vitest --run`** via `bash`. Report pass/fail and test count.
 4. **Produce a verdict** (PASS/FAIL/CONDITIONAL) with specific rationale based on what YOU observed.
 
 If the coder says "all tests pass" — run them anyway. Your value is independent verification.

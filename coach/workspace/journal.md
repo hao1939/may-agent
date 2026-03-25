@@ -397,3 +397,40 @@ Key milestones archived:
 1. Growth cycle: read-before-edit → Method #15 workflow enforcement for verify-after-edit
 2. Growth cycle: request-triage-memoization → Method #15 for skips-cached-requests
 3. Reassess materialize-intermediate-findings after top-2 cycles
+
+## 2026-03-25 12:36 — Heartbeat: Triage + Priority Queue
+
+**Growth-cycle budget**: 3/3 used today. No new cycles. Focused on triage and planning.
+
+### Error Scan Summary
+- **optimizer (2026-03-25T10:33)**: FM-1.4 unresolved tool error, FM-2.1 stale binary warning ignored, FM-3.3 verification gap. All from self-improvement gym test session (s_1774433336706_172). Meta-level errors during self-testing — no production impact. No SKILL.md files exist currently.
+- **coder (2026-03-25T08:03)**: FM-3.3 test gap (handled in follow-up session), FM-2.1 spec mismatch (handled correctly). Both acknowledged/resolved.
+- **coach (2026-03-25T10:03)**: FM-1.1 workflow break, FM-1.4 unresolved blockers, FM-3.3 verification gap. Self-errors from sprint execution — ENOENT on sprint-plan.md, claimed success anyway. **Action needed**: Coach should not finish "success" when blockers are unresolved.
+- Other agents: All errors pre-March 25 or environment-related. No new patterns needing coaching.
+
+### Experiment Status
+- **186 experiments logged**. Method catalog current through exp-185.
+- **Method #15 (Workflow Enforcement)**: 41/44 (93%+) across 8 scenarios, 5 agents, 3 models. Only effective method.
+- **All other text methods**: SAFE but INEFFECTIVE. 0/13 clean text experiments improve judgment.
+
+### Priority Queue for Next Growth Cycles (tomorrow)
+| Priority | Scenario | Score | Failing Checks | Suggested Method |
+|---|---|---|---|---|
+| P1 | read-before-edit | 10/11 | verify-after-edit | #15 workflow enforcement |
+| P1 | request-triage-memoization | 6/7 | skips-cached-requests | #15 workflow enforcement |
+| P2 | plan-once-amend | 7/8 | handles-blocker-efficiently | #15 workflow enforcement |
+| P2 | verify-before-finish | 6/7 | reduce-has-initial (product) | Better scenario design (product bug, not behavioral) |
+| P3 | materialize-intermediate-findings | 6/9 | 3 behavioral gaps | #15 workflow enforcement |
+
+### Key Decisions
+1. **verify-before-finish** failing check is a product bug (missed reduce() initial value), not a behavioral gap. May need scenario revision to make the product task clearer.
+2. **materialize-intermediate-findings** has 3 failures — deepest gap. But Method #15 works best on single clear behavioral targets. May need multi-phase workflow.
+3. **Coach self-errors**: Need to add FM-1.4 guard — don't finish "success" when ENOENT blockers are unresolved.
+
+## 2026-03-25 12:45 — Heartbeat: Growth Cycle for Optimizer FM-2.2
+- **Target**: optimizer INSTRUCTION_NONCOMPLIANCE (24x in 48h — creates SKILL.md when forbidden)
+- **Scenarios tested**: scope-creep-trap, spec-adherence-multi-step
+- **Results**: scope-creep-trap CEILING (5/5 baseline), spec-adherence-multi-step 8/11 both baseline+patched (3 failures are SCORER BUGS: transcriptContains/transcriptIndexOf not functions)
+- **Decision**: DISCARD fork optimizer-scope-discipline — no measurable improvement
+- **Next**: Fix spec-adherence-multi-step scorer bugs (infra issue → escalate to optimizer), then design scenario specifically for "explicit prohibition compliance"
+- **Growth cycles today**: 1 (this one)

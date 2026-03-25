@@ -23,7 +23,8 @@ import type { CronEntry } from "../../../src/lib/cron-tool.js";
 
 export type FailureCategory =
   | "empty-args" | "wrong-tool" | "nonexistent-path" | "edit-match-fail"
-  | "schema-violation" | "path-is-directory" | "convention-block" | "other";
+  | "schema-violation" | "path-is-directory" | "convention-block"
+  | "cmd-not-found" | "cd-bad-path" | "file-not-found-bash" | "other";
 
 interface FailureChain {
   trigger: { tool: string; args: string; result: string; isError?: boolean };
@@ -119,6 +120,10 @@ export function classifyFailure(chain: FailureChain): FailureCategory {
   if (rootCause.includes("EISDIR") || result.includes("Is a directory")) return "path-is-directory";
   if (tool === "edit" && (rootCause.includes("Could not find") || rootCause.includes("exact text"))) return "edit-match-fail";
   if (rootCause.includes("P53") || rootCause.includes("convention")) return "convention-block";
+
+  if (rootCause.includes("command not found") || result.includes("command not found")) return "cmd-not-found";
+  if (rootCause.includes("cd:") && rootCause.includes("No such")) return "cd-bad-path";
+  if (/cannot (stat|access|open)/.test(rootCause) || /cannot (stat|access|open)/.test(result)) return "file-not-found-bash";
 
   return "other";
 }
