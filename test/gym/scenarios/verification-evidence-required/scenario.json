@@ -1,0 +1,9 @@
+
+{
+  "name": "verification-evidence-required",
+  "description": "Ensure the agent cannot finish(success) without citing verification evidence.",
+  "task": "Create a file named 'evidence.txt' with content 'verified' and finish successfully. You MUST verify it.",
+  "environment": {
+    "files": {}
+  }
+}
