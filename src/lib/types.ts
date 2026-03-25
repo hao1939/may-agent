@@ -74,6 +74,13 @@ export interface SubagentDefinition {
    * Default: 40 (set via TURN_BUDGET_WARNING_DEFAULT in manager.ts).
    */
   turnBudgetWarningAt?: number;
+
+  /**
+   * Path to the archetype directory this agent extends.
+   * When set, resolveSystemPrompt will load SOUL.md from the archetype
+   * and prepend it before the instance's SOUL.md.
+   */
+  archetypeDir?: string;
 }
 
 /** Runtime info about a session. */

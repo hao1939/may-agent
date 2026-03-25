@@ -58,6 +58,8 @@ export interface AgentConfig {
   context_files?: string[];
   /** Maximum state-changing operations (bash, write, edit, commit) per session. */
   opBudget?: number;
+  /** Archetype to inherit from (e.g., "_archetypes/coder"). Resolved relative to agentsRoot. */
+  extends?: string;
 }
 
 // ── Loader options ──────────────────────────────────────────────────────
@@ -376,7 +378,7 @@ async function buildTools(config: AgentConfig, opts: AgentLoaderOptions): Promis
 
       case "agent-growth": {
         const registerAgentFromDir = async (agentDir: string) => {
-          const config = loadAgentConfig(agentDir, opts.bus);
+          const config = loadAgentConfig(agentDir, opts.bus, opts.agentsRoot);
           if (!config) return;
           const model = opts.models[config.model];
           const knowledgeDir = resolve(agentDir, "knowledge");
@@ -394,6 +396,7 @@ async function buildTools(config: AgentConfig, opts: AgentLoaderOptions): Promis
             apiKey: model.apiKey,
             memoryLimit: config.memoryLimit,
             opBudget: config.opBudget,
+            archetypeDir: config.extends ? resolve(opts.agentsRoot, config.extends) : undefined,
           });
         };
 
@@ -548,18 +551,53 @@ export function validateAgentConfig(
     }
   }
 
+  // Validate extends (archetype reference)
+  if (config.extends) {
+    const archetypeDir = resolve(agentsRoot, config.extends);
+    const archetypeConfig = resolve(archetypeDir, "agent.json");
+    if (!existsSync(archetypeConfig)) {
+      errors.push({ agent: name, field: "extends", message: `Archetype not found: ${config.extends} (expected ${archetypeConfig})` });
+    }
+  }
+
   return errors;
 }
 
 // ── Load and register agents ────────────────────────────────────────────
 
-function loadAgentConfig(agentDir: string, bus: EventBus): AgentConfig | null {
+function loadAgentConfig(agentDir: string, bus: EventBus, agentsRoot?: string): AgentConfig | null {
   const configPath = resolve(agentDir, "agent.json");
   if (!existsSync(configPath)) return null;
 
   try {
     const raw = readFileSync(configPath, "utf-8");
-    return JSON.parse(raw) as AgentConfig;
+    const config = JSON.parse(raw) as AgentConfig;
+
+    // Archetype inheritance: merge parent config if `extends` is set
+    if (config.extends && agentsRoot) {
+      const archetypeDir = resolve(agentsRoot, config.extends);
+      const parentConfig = loadAgentConfig(archetypeDir, bus); // no agentsRoot = no chaining for now
+      if (parentConfig) {
+        // Merge: parent is base, instance overrides
+        const merged: AgentConfig = {
+          ...parentConfig,
+          ...config,
+          // name MUST come from instance
+          name: config.name,
+          // tools: deduplicated union (parent + instance)
+          tools: [...new Set([...(parentConfig.tools || []), ...(config.tools || [])])],
+          // context_files: concatenated (parent + instance)
+          context_files: [...(parentConfig.context_files || []), ...(config.context_files || [])],
+          // Preserve the extends field
+          extends: config.extends,
+        };
+        return merged;
+      } else {
+        bus.emit({ type: "info", message: `[loader] ⚠️ Archetype not found for ${config.name}: ${archetypeDir}` });
+      }
+    }
+
+    return config;
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     bus.emit({ type: "info", message: `[loader] Failed to parse ${configPath}: ${msg}` });
@@ -588,9 +626,10 @@ export async function loadAgents(opts: AgentLoaderOptions): Promise<LoadResult> 
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;
     if (entry.name === "shared") continue; // shared/ is not an agent
+    if (entry.name.startsWith("_")) continue; // Skip archetype directories (e.g., _archetypes)
 
     const agentDir = resolve(agentsRoot, entry.name);
-    const config = loadAgentConfig(agentDir, opts.bus);
+    const config = loadAgentConfig(agentDir, opts.bus, agentsRoot);
     if (!config) continue;
 
     // Validate before registering
@@ -620,6 +659,7 @@ export async function loadAgents(opts: AgentLoaderOptions): Promise<LoadResult> 
       compaction: config.compaction,
       contextFiles: config.context_files?.map((f) => resolve(agentDir, f)),
       opBudget: config.opBudget,
+      archetypeDir: config.extends ? resolve(agentsRoot, config.extends) : undefined,
     });
 
     if (isUpdate) {
