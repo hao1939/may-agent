@@ -73,6 +73,7 @@ import {
   historyDir,
   listActiveSessionIds,
   readSessionMeta,
+  writeSessionMeta,
   readWorkflowRun,
   listWorkflowRuns,
   saveWorkflowRun,
@@ -1262,6 +1263,20 @@ export class SubagentManager {
           archived++;
         } catch {
           // best-effort — dir may already be gone or locked
+        }
+      } else if (meta.status === "running") {
+        // Orphaned session: still "running" but not active in memory.
+        // If stale >30min, mark as interrupted and archive.
+        const staleThresholdMs = 30 * 60 * 1000;
+        const lastActivity = meta.startedAt ?? 0;
+        if (Date.now() - lastActivity > staleThresholdMs) {
+          try {
+            writeSessionMeta(persistDir, sessionId, { ...meta, status: "interrupted" });
+            archiveSession(persistDir, sessionId);
+            archived++;
+          } catch {
+            // best-effort
+          }
         }
       }
     }

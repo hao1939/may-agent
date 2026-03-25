@@ -98,12 +98,30 @@ describe("SubagentManager.cleanupZombieSessions()", () => {
     expect(listArchivedSessionIds(persistDir)).toContain("s_zombie_err");
   });
 
-  it("does NOT archive sessions with 'running' status", () => {
+  it("archives stale 'running' sessions (>30min) as interrupted", () => {
+    // createZombieSession sets startedAt to 1 hour ago — qualifies as stale
     createZombieSession(persistDir, "s_running", "running");
 
     const archived = manager.cleanupZombieSessions();
+    expect(archived).toBe(1);
+    expect(listActiveSessionIds(persistDir)).not.toContain("s_running");
+    expect(listArchivedSessionIds(persistDir)).toContain("s_running");
+  });
+
+  it("does NOT archive recent 'running' sessions (<30min)", () => {
+    // Create a session with startedAt = 5 minutes ago (not stale)
+    ensureSessionDir(persistDir, "s_recent");
+    writeSessionMeta(persistDir, "s_recent", {
+      agent: "test-agent",
+      task: "recent task",
+      status: "running",
+      startedAt: Date.now() - 5 * 60 * 1000, // 5 minutes ago
+      autoClose: "never",
+    });
+
+    const archived = manager.cleanupZombieSessions();
     expect(archived).toBe(0);
-    expect(listActiveSessionIds(persistDir)).toContain("s_running");
+    expect(listActiveSessionIds(persistDir)).toContain("s_recent");
   });
 
   it("does NOT archive sessions with 'idle' status", () => {
@@ -118,13 +136,12 @@ describe("SubagentManager.cleanupZombieSessions()", () => {
     createZombieSession(persistDir, "s_z1", "interrupted");
     createZombieSession(persistDir, "s_z2", "done");
     createZombieSession(persistDir, "s_z3", "error");
-    createZombieSession(persistDir, "s_z4", "running"); // should stay
+    createZombieSession(persistDir, "s_z4", "running"); // stale (1hr old) — also archived
 
     const archived = manager.cleanupZombieSessions();
-    expect(archived).toBe(3);
-    expect(listActiveSessionIds(persistDir)).toEqual(expect.arrayContaining(["s_z4"]));
-    expect(listActiveSessionIds(persistDir)).toHaveLength(1);
-    expect(listArchivedSessionIds(persistDir)).toHaveLength(3);
+    expect(archived).toBe(4);
+    expect(listActiveSessionIds(persistDir)).toHaveLength(0);
+    expect(listArchivedSessionIds(persistDir)).toHaveLength(4);
   });
 
   it("returns 0 when no zombie sessions exist", () => {

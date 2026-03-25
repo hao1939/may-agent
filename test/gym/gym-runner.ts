@@ -372,15 +372,15 @@ function matchesFilters(
     // Tier hierarchy: smoke < standard < full
     switch (tier) {
       case "smoke":
-        if (meta.tier !== "smoke") return false;
+        if ((meta.tier || "") !== "smoke") return false;
         break;
       case "standard":
-        if (meta.tier !== "smoke" && meta.tier !== "standard") return false;
+        if ((meta.tier || "") !== "smoke" && (meta.tier || "") !== "standard") return false;
         break;
       case "full":
         break; // everything matches
       default:
-        if (meta.tier !== tier) return false;
+        if ((meta.tier || "") !== tier) return false;
     }
   }
 
@@ -894,8 +894,9 @@ function main() {
       if (!matchesFilters(meta, args.tier, args.category, args.tag)) continue;
 
       if (meta) {
-        const cats = meta.categories.join(",");
-        console.log(`${name.padEnd(42)} tier=${meta.tier.padEnd(10)} categories=${cats}`);
+        const tier = (meta.tier || "unknown");
+        const cats = (meta.categories || []).join(",");
+        console.log(`${name.padEnd(42)} tier=${tier.padEnd(10)} categories=${cats}`);
       } else {
         console.log(`${name.padEnd(42)} (no metadata)`);
       }
