@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readdirSync, readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { runSystemStatus, formatStatusReport } from "../../agents/may/handlers/system-status.js";
@@ -13,6 +13,22 @@ describe("runSystemStatus", () => {
   let persistDir: string;
   let agentsRoot: string;
   let projectRoot: string;
+
+  /** Build a loadAllSessionMetas function that reads session meta.json files from disk. */
+  function makeLoadAllSessionMetas(): () => Record<string, any> {
+    return () => {
+      const sessionsDir = resolve(persistDir, "sessions");
+      const result: Record<string, any> = {};
+      if (!existsSync(sessionsDir)) return result;
+      for (const sid of readdirSync(sessionsDir)) {
+        const metaPath = resolve(sessionsDir, sid, "meta.json");
+        if (existsSync(metaPath)) {
+          result[sid] = JSON.parse(readFileSync(metaPath, "utf-8"));
+        }
+      }
+      return result;
+    };
+  }
 
   beforeEach(() => {
     dir = mkdtempSync(resolve(tmpdir(), "sys-status-"));
@@ -36,6 +52,7 @@ describe("runSystemStatus", () => {
       agentsRoot,
       healthLogPath: resolve(dir, "health-log.md"),
       skipBuildChecks: true,
+      loadAllSessionMetas: makeLoadAllSessionMetas(),
     });
 
     expect(result.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/);
@@ -67,6 +84,7 @@ describe("runSystemStatus", () => {
       agentsRoot,
       healthLogPath: resolve(dir, "health-log.md"),
       skipBuildChecks: true,
+      loadAllSessionMetas: makeLoadAllSessionMetas(),
     });
 
     expect(result.sessionsLast24h).toBe(1);
@@ -95,6 +113,7 @@ describe("runSystemStatus", () => {
       agentsRoot,
       healthLogPath: resolve(dir, "health-log.md"),
       skipBuildChecks: true,
+      loadAllSessionMetas: makeLoadAllSessionMetas(),
     });
 
     expect(result.unevaluated.total).toBe(1);
@@ -124,6 +143,7 @@ describe("runSystemStatus", () => {
       agentsRoot,
       healthLogPath: resolve(dir, "health-log.md"),
       skipBuildChecks: true,
+      loadAllSessionMetas: makeLoadAllSessionMetas(),
     });
 
     expect(result.unevaluated.autoSkippable).toBe(1);
@@ -139,6 +159,7 @@ describe("runSystemStatus", () => {
       agentsRoot,
       healthLogPath: resolve(dir, "health-log.md"),
       skipBuildChecks: true,
+      loadAllSessionMetas: makeLoadAllSessionMetas(),
     });
 
     expect(result.lessonLineCounts["may"]).toBe(4); // 3 lines + trailing newline split
@@ -152,6 +173,7 @@ describe("runSystemStatus", () => {
       agentsRoot,
       healthLogPath: resolve(dir, "health-log.md"),
       skipBuildChecks: true,
+      loadAllSessionMetas: makeLoadAllSessionMetas(),
     });
 
     expect(result.analysisAge).toBe("missing");
@@ -178,6 +200,7 @@ describe("runSystemStatus", () => {
       agentsRoot,
       healthLogPath: resolve(dir, "health-log.md"),
       skipBuildChecks: true,
+      loadAllSessionMetas: makeLoadAllSessionMetas(),
     });
 
     expect(result.anomalies.some((a) => a.includes("may be stuck"))).toBe(true);
@@ -204,6 +227,7 @@ describe("runSystemStatus", () => {
       agentsRoot,
       healthLogPath: resolve(dir, "health-log.md"),
       skipBuildChecks: true,
+      loadAllSessionMetas: makeLoadAllSessionMetas(),
     });
 
     expect(result.anomalies.filter((a) => a.includes("may be stuck"))).toHaveLength(0);
