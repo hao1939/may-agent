@@ -8,6 +8,19 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 
 ## Active Focus
 
+### Agent Evolution System (CI/CD for Prompts)
+- **Problem**: Improvements are ad-hoc, untracked, and prone to regression. No systematic way to measure "is the agent better?".
+- **Fix**: Implement "Gym is CI" workflow. Coach drives behavior, Optimizer drives efficiency. All changes gated by baselines.
+- **Status**: **[ACTIVE]** (2026-03-25).
+  - Launched **Auto-Evolve Experiment**: Coach generating 5 SOUL variations for Coder. Tech-Lead to run loop. (ReqId: 107571c6)
+- **Owner**: Bob (Architecture), Coach/Optimizer (Execution).
+
+### Team Scaling Architecture (Archetypes)
+- **Problem**: Scaling from 10 to 50+ agents creates a maintenance nightmare (N copies of `SOUL.md`).
+- **Fix**: Implement **Agent Inheritance** (Archetypes). `agents/acme/coder` extends `agents/_archetypes/coder`.
+- **Status**: **[IN PROGRESS]** (2026-03-25). Design published. Brief sent to Tech-Lead to update `agent-loader.ts`. (ReqId: 2026-03-25-archetypes)
+- **Owner**: Bob (Design), Tech-Lead (Implementation).
+
 ### Scout Prompt Standardization (Legacy Clean-up)
 - **Problem**: Scout runs on legacy `system_prompt.md`, missing global behavioral updates (C26).
 - **Fix**: Migrate to `SOUL.md` + `common-sense.md`.
@@ -25,12 +38,6 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 - **Fix**: Update oneshot mode to respect `--agent` flag.
 - **Status**: **[IN PROGRESS]** Brief sent to Tech-Lead.
 - **Owner**: Tech-Lead (Implementation).
-
-### Agent Evolution System (CI/CD for Prompts)
-- **Problem**: Improvements are ad-hoc, untracked, and prone to regression. No systematic way to measure "is the agent better?".
-- **Fix**: Implement "Gym is CI" workflow. Coach drives behavior, Optimizer drives efficiency. All changes gated by baselines.
-- **Status**: **[ACTIVE]** (2026-03-24). Coach actively running experiments (e.g., exp-181, exp-155). Optimizer deploying skills (`task-adherence`, `verification-consistency`).
-- **Owner**: Bob (Architecture), Coach/Optimizer (Execution).
 
 ### Opus Prompt Caching (Cost Critical)
 - **Problem**: Opus agents (Tech-Lead, Coach, May) have 0% cache hit rate due to LiteLLM stripping headers. Wasting $36-63/day.

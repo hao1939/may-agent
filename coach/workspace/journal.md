@@ -458,3 +458,16 @@ Key milestones archived:
   - v05_simplified: dramatically shortened SOUL (tests "less is more")
 - **Manifest**: `workspace/auto-evolve/manifest.md`
 - **Next**: Step 2 — run gym-baseline.sh for each variation mechanically
+
+### 2026-03-25 19:34 — Auto-Evolve Experiment Complete (Coder SOUL.md)
+- **Type**: Auto-evolve (full Steps 1-3)
+- **Target**: coder — failing behavior-escalation-stubborn, conflicting-evidence
+- **Result**: 0/5 variations improved failing scenarios. 2/5 caused regression on passing scenario.
+- **Key finding**: SOUL.md text mutations insufficient for these failures — they appear to be model-level behavior patterns, not prompt-addressable issues.
+- **Full results**: `workspace/auto-evolve/results-summary.md`
+- **Bob's brief**: `agents/bob/workspace/brief-auto-evolve-experiment.md` — completed (ran experiment directly instead of delegating to tech-lead, since mechanical testing was faster inline)
+- **Next steps**: Try workflow-level changes (pre-task inspection steps, skill files with concrete examples) rather than more SOUL mutations
+
+### 2026-03-25 19:34 — Session Review Request (s_1774463068923_269)
+- **Status**: Blocked — sqlite3 not available, cannot query .state/may.db evaluations table
+- **Will retry**: Next heartbeat or when DB access is available
