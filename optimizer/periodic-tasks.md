@@ -3,29 +3,29 @@
 Track when each task was last done. Pick the most overdue one during heartbeat step 3.
 
 ## Per heartbeat (do one, rotate)
-- [x] **Analysis review** — Last done: 2026-03-25T00:03
+- [x] **Analysis review** — Last done: 2026-03-25T02:03
   Read agents/bob/workspace/analysis.md or recent Bob synthesis outputs.
   Any findings that need optimization work? Cost issues? Efficiency problems?
   If found → add specific task to workspace/todo.md.
-  Latest (2026-03-25T00:03): Bob's latest work (22:05): ghost deliverables guard sent to tech-lead, FM-3.3 behavioral guard to coach, scout prompt simplification. Bob's sessions still large (412KB, 440KB). Root causes: (1) `agents(requests, all, limit:20)` returns 100 items (56KB) — limit param ignored. (2) Bob reads coach journal (84KB) and evaluator monitor-session.cjs (69KB) fully. Sent limit fix to tech-lead (req:f26d118f). Binary now 21 commits behind (was 18). Finding at `workspace/finding-agents-limit-ignored-0325.md`.
+  Latest (2026-03-25T02:03): Bob analysis.md from 09:07 UTC (17h old) focuses on FM-3.3 verification failures — already addressed by finish-guard Gate 2 deployment (2233509). Bob's journal (00:04 UTC) documents cron failures (getDb) — already tracked in handler health check. Bob sent 3 briefs yesterday (scout prompt, ghost deliverables, FM-3.3 guard) — all acted on. No new optimization tasks needed from Bob's work.
 
-- [x] **Cost outlier scan** — Last done: 2026-03-25T00:03
+- [x] **Cost outlier scan** — Last done: 2026-03-25T02:03
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-25T00:03): Top 5 sessions by size (last 6h): Bob 440KB + 412KB (heartbeats), optimizer 368KB + 356KB, coach 360KB (QA growth-trigger). Bob cost driven by: (1) agents(requests) 56KB response (limit ignored bug, req:f26d118f), (2) full reads of coach journal 84KB + evaluator monitor-session.cjs 69KB. Coach journal at 84KB/1249 lines — unbounded growth, compaction target. Previous LIMIT fix (req:6128e276) was committed (5c5cbb4) but binary 21 commits behind.
+  Latest (2026-03-25T02:03): 6h window: optimizer 257 ops (10 sessions, 34.2 avg), tech-lead 148 ops (5 sessions, 29.5 avg), coach 125 ops (6 sessions). 24h heartbeat totals: optimizer 547 ops/16 sessions, tech-lead 442/15, coach 208/13, bob 179/21. Limit fix completed (37b8fbb) but binary still 22 commits behind. Bob had 33 error sessions/week (API infrastructure). No new cost intervention needed — all top issues known, blocked on binary rebuild.
 
-- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-24T23:03
+- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-25T02:03
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
   Could it be replaced with a JS handler? (See cron-graduation-process.md Stage 3.)
   If found → write proposal in workspace/improvement-proposals.md.
-  Latest (2026-03-24T23:03): No new LLM-to-JS candidates since last scan. Evaluator sessions are 30KB/0ops — already handler-driven. Scout sessions 54KB/2ops — minimal. Bob session s_1774375420896_28 had 115 bash calls (anomaly but likely one-off investigation). consolidate-memory remains the #1 graduation candidate from previous scan. No new proposal needed.
+  Latest (2026-03-25T02:03): 17 JS handlers + 14 LLM cron jobs. All high-frequency deterministic work already handler-driven. common-sense-verify (4h, ~27 ops/run) requires behavioral judgment — not automatable. consolidate-memory (weekly, ~76 ops total) requires summarization — not automatable. Evaluator JSON retry spawns 16 retry sessions/week (15% rate) via manager.run() in evaluator.ts:446 — modest cost (0-1 ops each), already capped at 1 retry. Bob has 33 error sessions/week (26 ServiceUnavailable + 6 empty response) — API infrastructure issue, not code. No new proposal needed.
 
-- [x] **Handler health check** — Last done: 2026-03-24T21:33
+- [x] **Handler health check** — Last done: 2026-03-25T01:03
   Review existing JS handlers in agents/may/handlers/.
   Any errors in recent logs? Any handler that's not firing?
   If issues → add fix to workspace/todo.md.
-  Latest (2026-03-24T21:33): **Healthy.** Binary is b9ef77e from 2026-03-24T07:02 (14.5h old, 18 commits behind). 23 handler files. No ERROR_LOG found. evaluate-sessions (21:13, 15120 evals), convention-check (21:33, 6008 checks), tool-quality-scan (21:07). All handlers operational. Binary rebuild remains #1 blocker — empty-args-guard, finish verification, session-read bash protection all pending. Finding at `workspace/finding-handler-health-0324-2133.md`.
+  Latest (2026-03-25T01:03): **CRITICAL: evaluate-sessions broken → 12,937 unevaluated sessions.** Binary b9ef77e now 22 commits behind. 50 failed cron runs in DB (getDb/loadAllSessionMetas/trackRequest errors). Convention-check and tool-quality-scan recovered, evaluate-sessions and repo-gate-check still broken. Bob sent P0 fix (req:e91359f2, req:0d3d6a39). Tech-lead worked on limit fix instead, hasn't reached cron fix. Binary rebuild is universal fix. Finding at `workspace/finding-handler-health-0325-0103.md`.
 
 - [x] **Proven pattern → Skill/Workflow** — Last done: 2026-03-24T21:03
   This is your MOST IMPORTANT periodic task — focus area #1.
@@ -43,7 +43,7 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Latest (2026-03-23T21:36): verification-consistency (15th skill) deployed to 6 agents. Full lifecycle.
   _13 earlier skill deployments documented in finding files. See `workspace/finding-pattern-scan-*.md`._
 
-- [x] **Tool quality review** — Last done: 2026-03-24T21:05
+- [x] **Tool quality review** — Last done: 2026-03-25T01:03
   Read the tool-quality-report.md (generated by tool-quality-scan handler every 4h).
   Look for regression trends, persistent failure patterns, and agent-specific issues.
   If a specific failure category accounts for >30% of waste, create a targeted intervention:
@@ -51,8 +51,7 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   - For empty-args: check if schema validation is catching it early enough
   - For edit-match-fail: check if agents are reading files before editing
   If tool-quality-report.md doesn't exist yet, skip — handler hasn't fired.
-  Latest (2026-03-24T21:05): Waste rate 5.6% (190/3401, was 5.9%). bash:other=118 (62% of waste, QA=50, optimizer=28, coach=28). bash:nonexistent-path=36 (optimizer=20 — path guessing). Empty-args=26 (covered by guard, awaiting rebuild). No new intervention needed — existing guards cover 14% of waste, rebuild is blocker.
-  Latest (2026-03-24T15:10): Waste rate 5.9% (156/2655 calls, was 1.0%). bash:other=106 (+489%), bash:nonexistent-path=28 (+1300%), read:empty-args=10, bash:empty-args=8. Deployed empty-args-guard.ts (16 tests pass). Finding at `workspace/finding-tool-quality-regression-0324-1510.md`.
+  Latest (2026-03-25T01:03): Waste rate 5.4% (194/3606, was 5.6%). bash:other=126 (65% of waste, QA=50, optimizer=32, coach=28). bash:nonexistent-path=28 (coder=16 doing `cd /home/coder`). bash:empty-args=16 (+33% regression, guard deployed but binary behind). read:empty-args=14 (coach=10). No new intervention needed — all top issues covered by existing guards/skills, all blocked on binary rebuild.
 
 - [x] **Gym shadow baseline & trend tracking** — Last done: 2026-03-24T18:15
   ⚠️ COOLDOWN: After each binary rebuild only. No point re-running on same binary.

@@ -59,8 +59,8 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 ### Verification Discipline (FM-3.3 Standardization)
 - **Problem**: Amy lacks the standard FM-3.3 heartbeat guard present in other agents.
 - **Fix**: Apply patch to `agents/amy/heartbeat.md`.
-- **Status**: **[DELEGATED]** (2026-03-24). Sent patch request to Coach.
-- **Owner**: Coach.
+- **Status**: **[COMPLETED]** (2026-03-25). Verified `agents/amy/heartbeat.md` contains "Verification Discipline".
+- **Outcome**: All agents now have standard FM-3.3 guards.
 
 ### Typed Messages / GNAP (P105)
 - **Problem**: Ambiguous inter-agent messages.
