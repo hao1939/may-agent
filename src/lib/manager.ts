@@ -328,9 +328,7 @@ export class SubagentManager {
 
   /** Resolve the system prompt from a definition.
    *  Convention files are auto-loaded from the agent directory if present:
-   *    SOUL.md → DOMAIN.md → TOOLS.md → LESSONS.md → knowledge/INDEX.md
-   *  Shared files loaded for all agents:
-   *    agents/shared/LESSONS.md, agents/shared/INDEX.md
+   *    SOUL.md → DOMAIN.md → LESSONS.md → shared/LESSONS.md → common-sense.md → knowledge/INDEX.md
    *  Then: Runtime Environment (generated), Session Context (generated).
    *
    *  The entire prompt is wrapped in <system_instructions> tags (P84) to
@@ -361,9 +359,8 @@ export class SubagentManager {
     //
     // Files NO LONGER loaded (removed as part of prompt simplification):
     //   (DOMAIN.md was restored — see section 1b below)
+    //   (LESSONS.md was restored — see section 1c below)
     //   TOOLS.md — redundant with tool schema descriptions
-    //   LESSONS.md — proven lessons promoted to SOUL.md or common-sense.md
-    //   shared/LESSONS.md — same
     //   knowledge/INDEX.md — agent reads on-demand, not preloaded
     //   shared/INDEX.md — same
 
@@ -374,6 +371,14 @@ export class SubagentManager {
     // 1b. DOMAIN.md — operational context (workflows, environment, domain rules)
     const domain = loadFile(agentDir ? join(agentDir, "DOMAIN.md") : undefined);
     if (domain) sections.push(domain);
+
+    // 1c. LESSONS.md — active behavioral patches and band-aids
+    const lessons = loadFile(agentDir ? join(agentDir, "LESSONS.md") : undefined);
+    if (lessons) sections.push(lessons);
+
+    // 1d. shared/LESSONS.md — cross-agent behavioral lessons
+    const sharedLessons = loadFile(def.projectRoot ? join(def.projectRoot, "agents", "shared", "LESSONS.md") : undefined);
+    if (sharedLessons) sections.push(sharedLessons);
 
     // 2. common-sense.md — shared behavioral rules
     const commonSense = loadFile(def.projectRoot ? join(def.projectRoot, "agents", "shared", "common-sense.md") : undefined);
