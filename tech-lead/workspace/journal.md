@@ -62,3 +62,15 @@ The "Slim Scout" experiment is already the production default. `src/lib/manager.
 3. **req:eb2931a0 (Gym Snapshots Design Review)** — Reviewed and APPROVED with phasing. Review at `agents/tech-lead/workspace/review-gym-snapshots.md`. Sent feedback to May.
 
 **Note**: QA flagged vitest failures — these are pre-existing environment issues (missing @mariozechner/* deps, no node:sqlite). Also `test/verify-parallel.test.ts` expects exact strings not in qa/SOUL.md — pre-existing test-code divergence.
+
+## 2026-03-24 23:35 — Cost fix: LIMIT on getRequestsByAgent (req:6128e276)
+- **Problem**: `getRequestsByAgent()` returned ALL historical requests (443 items = 127KB for tech-lead). Called multiple times per session.
+- **Fix**: Added `LIMIT 100` default to `getRequestsByAgent()`. New `getRequestsByAgentAndStatus()` pushes status filtering into SQL. "active" filter now uses SQL `WHERE status IN (...)` instead of fetching all then JS `.filter()`.
+- **Commit**: `5c5cbb4`. TSC clean.
+
+## 2026-03-24 22:39 — Ghost Deliverable Guard (FM-3.1 preventive)
+- **req:cd588556** — Implemented Gate 0 in `finish-guard.ts`: blocks `finish(success)` when summary implies code changes but no write/edit evidence exists and no deliverables listed.
+- Keywords: fix, implement, refactor, rewrite, update, deploy, patch, add, create, modify, change, delete, remove, migrate, rewire.
+- Analysis-only summaries ("Analyzed", "Verified") pass through.
+- 31 tests passing (11 new ghost-guard tests). Commit `d4ca28a`.
+- **req:8f2a8101** — Scout prompt simplification already done: `system_prompt.md` doesn't exist, `SOUL.md` in place, `agent.json` has no `systemPromptPath`. Closed as already-complete.

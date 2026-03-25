@@ -3,23 +3,23 @@
 Track when each task was last done. Pick the most overdue one during heartbeat step 3.
 
 ## Per heartbeat (do one, rotate)
-- [x] **Analysis review** — Last done: 2026-03-24T21:33
+- [x] **Analysis review** — Last done: 2026-03-25T00:03
   Read agents/bob/workspace/analysis.md or recent Bob synthesis outputs.
   Any findings that need optimization work? Cost issues? Efficiency problems?
   If found → add specific task to workspace/todo.md.
-  Latest (2026-03-24T21:33): 40 sessions/6h. All agents "good" except 4 optimizer skill-lifecycle evals (needs_improvement — workflow design issue, not quality). Bob waste spiked to 27 wasted/8.9% (scattered path errors). Tool waste 5.6% (190/3401). Binary 18 commits behind — guards pending. Finding at `workspace/finding-analysis-review-0324-2133.md`.
+  Latest (2026-03-25T00:03): Bob's latest work (22:05): ghost deliverables guard sent to tech-lead, FM-3.3 behavioral guard to coach, scout prompt simplification. Bob's sessions still large (412KB, 440KB). Root causes: (1) `agents(requests, all, limit:20)` returns 100 items (56KB) — limit param ignored. (2) Bob reads coach journal (84KB) and evaluator monitor-session.cjs (69KB) fully. Sent limit fix to tech-lead (req:f26d118f). Binary now 21 commits behind (was 18). Finding at `workspace/finding-agents-limit-ignored-0325.md`.
 
-- [x] **Cost outlier scan** — Last done: 2026-03-24T19:33
+- [x] **Cost outlier scan** — Last done: 2026-03-25T00:03
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-24T19:33): 40 sessions/4.9h. Bob=#1 by KB (24.8%), 19.1 KB/op — reads 66KB workspace files every heartbeat. Coach=#2 (24.3%), 7x repeated reads. Sent compaction req to May (req:2d4cdea7). Finding at `workspace/finding-cost-scan-0324-1933.md`.
+  Latest (2026-03-25T00:03): Top 5 sessions by size (last 6h): Bob 440KB + 412KB (heartbeats), optimizer 368KB + 356KB, coach 360KB (QA growth-trigger). Bob cost driven by: (1) agents(requests) 56KB response (limit ignored bug, req:f26d118f), (2) full reads of coach journal 84KB + evaluator monitor-session.cjs 69KB. Coach journal at 84KB/1249 lines — unbounded growth, compaction target. Previous LIMIT fix (req:6128e276) was committed (5c5cbb4) but binary 21 commits behind.
 
-- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-24T19:33
+- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-24T23:03
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
   Could it be replaced with a JS handler? (See cron-graduation-process.md Stage 3.)
   If found → write proposal in workspace/improvement-proposals.md.
-  Latest (2026-03-24T19:33): consolidate-memory runs for 9 agents (9 LLM sessions) — candidate for JS handler. Task is deterministic: read journal → check size → archive old entries. memory-trimmer.ts handles .state/memory/*.jsonl but not workspace journals. Coach dominates tool waste (35% of 200 wasted calls). No other new LLM-to-JS candidates. Finding combined in cost scan at `workspace/finding-cost-scan-0324-1933.md`.
+  Latest (2026-03-24T23:03): No new LLM-to-JS candidates since last scan. Evaluator sessions are 30KB/0ops — already handler-driven. Scout sessions 54KB/2ops — minimal. Bob session s_1774375420896_28 had 115 bash calls (anomaly but likely one-off investigation). consolidate-memory remains the #1 graduation candidate from previous scan. No new proposal needed.
 
 - [x] **Handler health check** — Last done: 2026-03-24T21:33
   Review existing JS handlers in agents/may/handlers/.

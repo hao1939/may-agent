@@ -11,19 +11,19 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 ### Scout Prompt Standardization (Legacy Clean-up)
 - **Problem**: Scout runs on legacy `system_prompt.md`, missing global behavioral updates (C26).
 - **Fix**: Migrate to `SOUL.md` + `common-sense.md`.
-- **Status**: **[DELEGATED]** (2026-03-24). Brief sent to Tech-Lead (`brief-scout-prompt-simplification.md`).
+- **Status**: **[DEPLOYED]** (2026-03-24). Tech-Lead confirmed legacy file removed and loader updated.
 - **Owner**: Tech-Lead (Implementation).
 
 ### Gym Snapshots (Benchmark Tracking)
 - **Problem**: Gym results are ephemeral and hard to compare.
 - **Fix**: Store runs in DB with config hash + snapshots.
-- **Status**: **[DESIGNED]** (2026-03-24). Reviewed `docs/design/gym-snapshots.md`. Endorsed with 1 architectural change (hash effective prompt).
+- **Status**: **[DEPLOYED]** (2026-03-24). Schema implemented in `src/lib/requests.ts` (`gym_runs`, `gym_checks`).
 - **Owner**: Tech-Lead (Implementation).
 
 ### Agent Evolution System (CI/CD for Prompts)
 - **Problem**: Improvements are ad-hoc, untracked, and prone to regression. No systematic way to measure "is the agent better?".
 - **Fix**: Implement "Gym is CI" workflow. Coach drives behavior, Optimizer drives efficiency. All changes gated by baselines.
-- **Status**: **[PUBLISHED]** (2026-03-24). Architecture defined in `agents/shared/knowledge/synthesis/2026-03-24-gym-integration-plan.md`. Directives sent to Coach and Optimizer.
+- **Status**: **[ACTIVE]** (2026-03-24). Coach actively running experiments (e.g., exp-181, exp-155). Optimizer deploying skills (`task-adherence`, `verification-consistency`).
 - **Owner**: Bob (Architecture), Coach/Optimizer (Execution).
 
 ### Opus Prompt Caching (Cost Critical)
@@ -47,14 +47,20 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 ### Infra Enforcement of C1.5 (Ghost Deliverables)
 - **Problem**: C1.5 ("No Ghost Deliverables") is the #1 behavioral failure (FM-3.1). Coach cannot fix it.
 - **Fix**: Implement infra-level check.
-- **Status**: **[MITIGATED]** (2026-03-24). Preventive check blocked by platform. Detective controls deployed in `convention-check.ts` and `active-nudge.ts`.
+- **Status**: **[DEPLOYED]** (2026-03-24). Implemented "Gate 0" in `src/lib/tools/finish-guard.ts`. Blocks `finish(success)` if deliverables claim changes but no edits occurred.
 - **Owner**: Tech-Lead (Monitoring).
 
 ### Verification Gap (FM-3.3 / C26)
 - **Problem**: Agents claim "Verified" without running tools, or don't cite evidence.
 - **Fix**: Enforce `finish(success, verification_evidence=[...])`.
-- **Status**: **[DELEGATED]** (2026-03-24). Briefs sent to Tech-Lead (Infra) and Coach (Behavioral).
+- **Status**: **[DEPLOYED]** (2026-03-24). `finish()` tool schema updated to require `verification_evidence`.
 - **Owner**: Tech-Lead & Coach.
+
+### Verification Discipline (FM-3.3 Standardization)
+- **Problem**: Amy lacks the standard FM-3.3 heartbeat guard present in other agents.
+- **Fix**: Apply patch to `agents/amy/heartbeat.md`.
+- **Status**: **[DELEGATED]** (2026-03-24). Sent patch request to Coach.
+- **Owner**: Coach.
 
 ### Typed Messages / GNAP (P105)
 - **Problem**: Ambiguous inter-agent messages.
