@@ -28,6 +28,7 @@ import { createReadDedupGuard } from "./tools/read-dedup-guard.js";
 import { createSessionReadGuard } from "./tools/session-read-guard.js";
 import { createScrapeDedupGuard } from "./tools/scrape-dedup-guard.js";
 import { createEmptyArgsGuard } from "./tools/empty-args-guard.js";
+import { createPathAssumptionGuard } from "./tools/path-assumption-guard.js";
 import { composeGuards } from "./tools/compose-guards.js";
 
 // Re-export everything from manager-utils so existing import paths don't break
@@ -992,6 +993,7 @@ export class SubagentManager {
 
           beforeToolCall: composeGuards(
             createEmptyArgsGuard(),
+            createPathAssumptionGuard(),
             createFinishGuard(),
             createReadDedupGuard(),
             createSessionReadGuard(),
@@ -1325,6 +1327,7 @@ export class SubagentManager {
 
           beforeToolCall: composeGuards(
             createEmptyArgsGuard(),
+            createPathAssumptionGuard(),
             createFinishGuard(),
             createReadDedupGuard(),
             createSessionReadGuard(),
