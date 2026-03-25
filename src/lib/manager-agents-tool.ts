@@ -109,7 +109,7 @@ const AgentsToolParams = Type.Object({
   task: Type.Optional(Type.String({ description: "Task description for 'call'. Be specific: include file paths, expected outcomes, and constraints. The agent runs to completion and returns a summary." })),
   message: Type.Optional(Type.String({ description: "Message to send for 'send'. Creates a tracked request in the DB and triggers the target agent's next heartbeat. Include artifact file paths if the agent needs to read your output." })),
   sessionId: Type.Optional(Type.String({ description: "Session ID for 'peek' or 'cancel'. Get session IDs from 'list' output." })),
-  limit: Type.Optional(Type.Number({ description: "Max messages to return for 'peek' (default: 20). Increase to see more history." })),
+  limit: Type.Optional(Type.Number({ description: "Max items to return. For 'peek': messages (default: 20). For 'requests': records (default: 50). Increase to see more." })),
   filter: Type.Optional(StringEnum(["active", "stale", "failed", "all"] as const, {
     description: "Filter for 'requests' action. 'active': in-progress or pending. 'stale': no progress for >2h. 'failed': completed with errors. 'all': everything. Default: 'active'.",
   })),
@@ -406,24 +406,27 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
               const req = await getRequestsModule();
               const persistDir = manager.registry.persistDir;
               const filter = params.filter ?? "active";
+              const limit = params.limit ?? 50;
 
               let requests: RequestRecord[];
               switch (filter) {
                 case "active":
                   requests = params.agent
-                    ? req.getRequestsByAgentAndStatus(persistDir, params.agent, ["CREATED", "IN_PROGRESS"], 100)
+                    ? req.getRequestsByAgentAndStatus(persistDir, params.agent, ["CREATED", "IN_PROGRESS"], limit)
                     : req.getActiveRequests(persistDir);
+                  if (!params.agent) requests = requests.slice(0, limit);
                   break;
                 case "stale":
                   requests = req.getStaleRequests(persistDir, 2 * 60 * 60 * 1000); // 2h
                   if (params.agent) requests = requests.filter((r) => r.toAgent === params.agent);
+                  requests = requests.slice(0, limit);
                   break;
                 case "failed": {
                   // getActiveRequests only returns active — need direct query for failed
                   const db = req.getDb(persistDir);
                   const query = params.agent
-                    ? "SELECT * FROM requests WHERE status = 'FAILED' AND toAgent = ? ORDER BY createdAt DESC LIMIT 50"
-                    : "SELECT * FROM requests WHERE status = 'FAILED' ORDER BY createdAt DESC LIMIT 50";
+                    ? `SELECT * FROM requests WHERE status = 'FAILED' AND toAgent = ? ORDER BY createdAt DESC LIMIT ${limit}`
+                    : `SELECT * FROM requests WHERE status = 'FAILED' ORDER BY createdAt DESC LIMIT ${limit}`;
                   requests = params.agent
                     ? (db.prepare(query).all(params.agent) as unknown as RequestRecord[])
                     : (db.prepare(query).all() as unknown as RequestRecord[]);
@@ -437,8 +440,10 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
                     // For "all" without agent filter, get everything (limited)
                     const db = req.getDb(persistDir);
                     requests = db
-                      .prepare("SELECT * FROM requests ORDER BY createdAt DESC LIMIT 100")
+                      .prepare(`SELECT * FROM requests ORDER BY createdAt DESC LIMIT ${limit}`)
                       .all() as unknown as RequestRecord[];
+                  } else {
+                    requests = requests.slice(0, limit);
                   }
                   break;
               }
