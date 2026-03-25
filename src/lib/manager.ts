@@ -366,14 +366,27 @@ export class SubagentManager {
 
     // 1. SOUL.md — agent identity, role, methodology, curated skills
     const soul = loadFile(agentDir ? join(agentDir, "SOUL.md") : undefined);
+
+    // 0. Archetype SOUL.md — base identity from parent archetype (if extending)
+    if (def.archetypeDir) {
+      const archetypeSoul = loadFile(join(def.archetypeDir, "SOUL.md"));
+      if (archetypeSoul) sections.push(archetypeSoul);
+    }
+
     if (soul) sections.push(soul);
 
     // 1b. DOMAIN.md — operational context (workflows, environment, domain rules)
-    const domain = loadFile(agentDir ? join(agentDir, "DOMAIN.md") : undefined);
+    let domain = loadFile(agentDir ? join(agentDir, "DOMAIN.md") : undefined);
+    if (!domain && def.archetypeDir) {
+      domain = loadFile(join(def.archetypeDir, "DOMAIN.md"));
+    }
     if (domain) sections.push(domain);
 
     // 1c. LESSONS.md — active behavioral patches and band-aids
-    const lessons = loadFile(agentDir ? join(agentDir, "LESSONS.md") : undefined);
+    let lessons = loadFile(agentDir ? join(agentDir, "LESSONS.md") : undefined);
+    if (!lessons && def.archetypeDir) {
+      lessons = loadFile(join(def.archetypeDir, "LESSONS.md"));
+    }
     if (lessons) sections.push(lessons);
 
     // 1d. shared/LESSONS.md — cross-agent behavioral lessons
