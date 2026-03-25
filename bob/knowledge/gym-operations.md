@@ -5,9 +5,10 @@
 
 ## Infrastructure Facts
 - **Database**: `test/gym/stats.db` (SQLite).
-- **Schema Source**: `scripts/gym-record.ts`.
+- **Schema Source**: `scripts/gym-record.ts` (Legacy), `src/lib/requests.ts` (Modern - `gym_runs`, `gym_checks`).
 - **Key Tables**:
   - `checks`: Stores pass/fail results. Columns: `category` (TEXT), `code` (TEXT).
+  - `gym_runs`, `gym_checks`: New schema in `requests.ts` for granular tracking.
 - **Cold Start**: In a fresh environment, `test/gym/stats.db` may be 0 bytes or missing. This is normal. It initializes on the first run.
 
 ## Convention Compliance

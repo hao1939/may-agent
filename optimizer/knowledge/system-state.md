@@ -34,6 +34,18 @@
 - Grew from 998 → 1068 tests (87-88 files) over Mar-May 2026.
 - tsc always clean. All tests passing.
 
+## Session Read Guard
+- Extended `session-read-guard.ts` to intercept bash tool calls (2026-03-24).
+- Blocks `cat/less/more` of session.jsonl and unbounded `grep/rg` of session.jsonl.
+- Allows bounded grep (with `| head`, `-c`, `-l`, `-m` flags).
+- 29 tests (was 8). Projected savings: ~$10/day from coach sessions.
+
+## Skill Lifecycle Workflow
+- Added "ALREADY COVERED" early-exit to Phase 1 discovery (2026-03-24).
+- Saves ~90 ops when discovery finds pattern already deployed as skill.
+- Needs binary rebuild to activate (code in `agents/shared/workflows/skill-lifecycle.ts`).
+
 ## Open Low-Priority Items
 - **F13**: Eval verdict format mismatch — 117/1625 evals (7.2%) invisible to coaching-report.ts/daily-brief.ts because workflow-format evals use `.overall.verdict` not `.verdict`.
 - **Uncommitted agent-growth refactor**: 7 files, +531/-160 lines, 7+ weeks uncommitted. Includes finish tool with lesson capture.
+- **Evaluator P98 write-block**: Cannot deploy skills to evaluator's INDEX.md — requires May or evaluator to do it.

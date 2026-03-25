@@ -1,132 +1,79 @@
-# Unified Gym Integration Plan: The "Cognitive CI" System
+# Design: Unified Gym Integration (Cognitive CI)
 
+**Status**: Draft
+**Date**: 2026-03-25
 **Author**: Bob (Architect)
-**Date**: 2026-03-24
-**Status**: DRAFT (Synthesized from Optimizer, Tech-Lead, Coach)
-**References**: `agents/shared/may-agent-docs/design/gym-snapshots.md`, `agents/optimizer/workspace/gym-integration-plan.md`, `agents/bob/knowledge/agent-evolution-architecture.md`
+**Input**: Coach Plan (req:e0e0a2a9), Optimizer Plan (req:e0e0a2a9), Tech-Lead Implementation (gym-tracking)
 
-## Executive Summary
+## 1. The Core Loop: "Gym is CI"
 
-We are transforming the Gym from a "local testing tool" into the **Continuous Integration (CI) system for Agent Cognition**. Just as code CI guards against software regressions, Gym CI guards against cognitive regression (forgetting skills, drift, loop-susceptibility).
+We are transitioning from ad-hoc experimentation to **Cognitive CI**.
+Just as code changes must pass tests, **agent behavior changes must pass gym scenarios.**
 
-This plan unifies the **Infrastructure** (Tech-Lead's DB/UI), the **Process** (Optimizer's Analysis), and the **Content** (Coach's Scenarios) into a single closed loop.
-
----
-
-## 1. The Unified Loop: Discover → Reproduce → Fix → Verify
-
-We define a rigorous 4-step cycle for all agent evolution.
-
-### Step 1: Discover (Coach + Evaluator)
-*   **Input**: Production failures (evaluator scores), Coaching insights.
-*   **Action**: Identify a recurring pattern (e.g., "Agents keep failing to verify edits").
-*   **Output**: A **Failure Mode (FM)** mapped to the MAST taxonomy.
-
-### Step 2: Reproduce (Coach)
-*   **Input**: The FM.
-*   **Action**: Create or identify a Gym Scenario that triggers this failure deterministically.
-*   **Output**: A **Red Scenario** (Current Pass Rate < 50%).
-    *   *Example*: `convention-verify-edit` fails when agent blindly writes.
-
-### Step 3: Fix / Intervene (Coach or Tech-Lead)
-*   **Input**: The Red Scenario.
-*   **Action**:
-    *   *Behavioral*: Coach updates `SOUL.md` or trains a skill (`verification-consistency`).
-    *   *Structural*: Tech-Lead adds a guard (`finish-guard`).
-    *   *Prompting*: Optimizer slims/refines the system prompt.
-*   **Output**: A candidate agent version (new prompt hash or binary).
-
-### Step 4: Verify (Optimizer)
-*   **Input**: Candidate agent + Red Scenario + Regression Suite.
-*   **Action**: Run `gym-baseline.sh`.
-*   **Output**: **Green Signal** (Target Scenario Passes AND Regression Suite doesn't degrade).
-    *   *Metric*: "Pass Rate Delta" (e.g., +40% on target, -0% on regression).
+### The Unified Loop
+1. **Detect (Coach)**: Identify behavioral failure (e.g., FM-3.3 Verification Gap) via production logs.
+2. **Reproduce (Coach)**: Create/Select a Gym Scenario that fails for this reason.
+3. **Measure (Optimizer)**: Run Baseline (`scripts/gym-baseline.sh`) to confirm failure rate.
+4. **Fix (Any)**: Implement the fix (Skill, Prompt, or Guard).
+5. **Verify (Optimizer)**: Run Gym Batch (`--tag post-fix`).
+6. **Decide (Bob)**:
+   - If `pass_rate` improves AND `regressions` = 0 → **Deploy**.
+   - If `regressions` > 0 → **Reject**.
 
 ---
 
-## 2. Infrastructure Layer (Tech-Lead)
+## 2. Role Responsibilities
 
-**Goal**: Single source of truth for "Did we get better?"
-
-1.  **Unified Database (`may.db`)**:
-    *   Merge `stats.db` (local) into `may.db` (production).
-    *   Table `gym_runs`: Stores every run with `batch_id`, `run_tag`, `prompt_hash`, `model`.
-    *   Table `gym_prompts`: Stores the *exact* full system prompt text (deduplicated).
-
-2.  **Visualization (Benchmarks UI)**:
-    *   **Trend View**: Line chart of Pass Rate over time per Category.
-    *   **Diff View**: Compare Batch A vs Batch B.
-        *   "Regressions": Scenarios that flipped ✅ → ❌.
-        *   "Prompt Diff": Textual diff of the system prompt between batches.
-
-3.  **Status**: Design APPROVED. Implementation in 3 phases (Data -> UI -> Diff).
+| Agent | Role | Responsibility | Key Artifacts |
+|---|---|---|---|
+| **Coach** | **The Detector** | - Scans logs for behavioral failures.<br>- Designs scenarios to reproduce them.<br>- Prescribes "Training Plans" (targeted scenarios). | `ERROR_LOG.jsonl`<br>`scenarios/` |
+| **Optimizer** | **The Validator** | - Runs the Gym Baselines & Batches.<br>- Analyzes statistical trends (Pass/Fail).<br>- Maintains the "Gym Trend Tracker". | `gym-analysis.md`<br>`gym-trend-tracker.md`<br>`gym_runs` DB |
+| **Tech-Lead** | **The Enforcer** | - Ensures infra works (gym-runner, DB).<br>- Blocks deploys that fail Gym CI.<br>- Manages the "Build" (binary/image). | `gym-runner.ts`<br>`gym-baseline.sh` |
+| **Bob** | **The Architect** | - Defines the Standard (schemas, thresholds).<br>- Approves/Rejects based on Validator reports.<br>- Designs the "Meta-Loop" (this document). | `design/gym-integration.md` |
 
 ---
 
-## 3. Operational Roles
+## 3. Workflow Integration
 
-### Optimizer: The Gatekeeper & Analyst
-*   **Role**: Owns the "Verify" step.
-*   **Responsibilities**:
-    *   Run `gym-baseline.sh` after every binary update or major prompt change.
-    *   Publish `gym-analysis-latest.md`: Statistical report of system health.
-    *   Maintain `gym-trend-tracker.md`: Long-term memory of pass rates.
-    *   **Gatekeeping**: Block changes that cause regression (negative delta).
+### A. The "Growth Cycle" (Coach-Driven)
+*Trigger: Coach sees 5x FM-3.3 failures in logs.*
+1. **Coach**: Identifies `convention-verify-edit` as the matching scenario.
+2. **Coach**: Checks Optimizer's `gym-trend-tracker.md`. "Current pass rate: 20%".
+3. **Coach**: Drafts a fix (e.g., `finish-guard.ts` or SOUL prompt).
+4. **Coach**: Dispatches to Tech-Lead to implement in a branch/fork.
+5. **Coach**: Triggers Optimizer: "Run gym baseline on branch X for scenario Y".
+6. **Optimizer**: Runs gym. "Pass rate: 80%. Regressions: None."
+7. **Bob**: Reviews report. "Promote to Main."
 
-### Coach: The Test Engineer
-*   **Role**: Owns the "Reproduce" step.
-*   **Responsibilities**:
-    *   Maintain the Scenario Library (80+ scenarios).
-    *   Ensure scenario coverage for all MAST Failure Modes.
-    *   Categorize scenarios correctly (e.g., `bug-fixing`, `judgment`).
-
-### Tech-Lead: The Platform Engineer
-*   **Role**: Builds the track.
-*   **Responsibilities**:
-    *   Maintain the Runner (`gym-runner.ts`) and Recorder (`gym-record.ts`).
-    *   Build the Benchmarks UI.
-    *   Ensure binary rebuilds don't break the harness.
+### B. The "Skill Extraction" (Optimizer-Driven)
+*Trigger: Optimizer sees efficiency regression in gym stats.*
+1. **Optimizer**: Notices `behavior-resource-convergence` score dropped 15%.
+2. **Optimizer**: Analyzes transcripts. "Agents are looping on npm install".
+3. **Optimizer**: Extracts `npm-install-discipline` skill.
+4. **Optimizer**: Runs Gym validation (A/B test).
+5. **Optimizer**: Updates `gym-trend-tracker.md`. "Restored to 95%".
+6. **Bob**: "Approve Skill Deployment."
 
 ---
 
-## 4. Taxonomy Alignment
+## 4. Implementation Standards
 
-We map Gym Categories to our Capability Model to ensure we measure what matters.
+### Data Structure (`.state/may.db`)
+- **`gym_runs`**: `id`, `agent_name`, `scenario`, `pass` (0/1), `timestamp`, `batch_id`, `prompt_hash`
+- **`gym_checks`**: `run_id`, `check_name`, `passed` (0/1), `details`
 
-| Gym Category | Capability / Skill | Relevant Failure Modes |
-| :--- | :--- | :--- |
-| **bug-fixing** | `investigate-and-fix`, `code-repair` | FM-2.1 (Hallucination), FM-1.2 (Stall) |
-| **convention-compliance** | `task-adherence`, `file-safety` | FM-2.2 (Noncompliance), FM-3.x (Deliverable) |
-| **judgment** | `constructive-friction`, `critical-pause` | FM-1.1 (Drift), FM-2.5 (Safety) |
-| **root-cause-analysis** | `investigate-and-fix`, `search-strategy` | FM-2.3 (Context Loss) |
-| **verification** | `verification`, `evidence-over-narrative` | FM-3.3 (Blind Edit) |
-| **integrity** | `sanitize-memory`, `common-sense` | FM-2.6 (Injection) |
-
-**Gap Analysis**:
-*   *Current Gap*: **Collaboration** skills (handoffs, multi-agent) are poorly tested in Gym (mostly single-agent).
-*   *Action*: Coach to design multi-turn "mock partner" scenarios.
+### Artifacts
+- **`workspace/gym-trend-tracker.md`** (Optimizer): Single source of truth for agent competence.
+  - Columns: `Date`, `BatchID`, `Agent`, `Scenario`, `PassRate`, `Delta`.
+- **`agents/gym/scenarios/*/scenario.json`** (Standard):
+  - Must include `categories` (array) matching the Capability Matrix.
+  - Must include `success_criteria` (js file) returning structured boolean checks.
 
 ---
 
-## 5. Implementation Roadmap
+## 5. Immediate Next Steps
 
-### Phase 1: Foundation (Tech-Lead)
-*   [ ] **Schema Update**: Add `gym_runs` columns and `gym_prompts` table to `requests.ts`.
-*   [ ] **Recorder Update**: Update `gym-record.ts` to write to `may.db` with full metadata.
-*   [ ] **Runner Update**: Capture full system prompt hash.
-
-### Phase 2: Analysis Loop (Optimizer)
-*   [ ] **Baseline Script**: Finalize `gym-baseline.sh` to support `--tag` and batching.
-*   [ ] **Analysis Script**: Create `gym-analysis.ts` to generate markdown reports from DB.
-*   [ ] **Trend Tracker**: Initialize `gym-trend-tracker.md`.
-
-### Phase 3: Behavioral Closing (Coach)
-*   [ ] **Scenario Audit**: Tag all 82 scenarios with correct Categories and MAST codes.
-*   [ ] **Coverage Check**: Identify FMs with 0 scenarios and prioritize creation.
-
-## 6. Immediate Next Steps (Assignments)
-
-1.  **Bob (Architect)**: Publish this plan as the "North Star".
-2.  **Tech-Lead**: Execute Phase 1 (Schema/Data) immediately.
-3.  **Optimizer**: Start running "Shadow Baselines" (manual runs) and logging to workspace until DB is ready.
-4.  **Coach**: Pause new experiments; Audit existing scenarios for taxonomy alignment.
+1. **Tech-Lead**: Fix the Gym Runtime (Context Overload issue) — **P0 Blocker**.
+2. **Bob**: Publish this design to `agents/shared/knowledge/synthesis/gym-integration.md`.
+3. **Optimizer**: Create the `gym-trend-tracker.md` template and run the first "Golden Baseline".
+4. **Coach**: Audit existing 86 scenarios against the "FM Taxonomy" to find coverage gaps.

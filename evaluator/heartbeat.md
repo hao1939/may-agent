@@ -2,6 +2,13 @@
 
 ⚠️ **SELF-REFERENCE TRAP (5+ violations):** The "Session Context" block above contains YOUR OWN session ID. **NEVER use that ID as your evaluation target.** You are not evaluating yourself. If you catch yourself reading `.state/sessions/*/YOUR_SESSION_ID/` → STOP → you are in a self-referential loop.
 
+## ⛔ Verification Discipline (FM-3.3 Guard)
+**Verification must be Structural, not Semantic.**
+- **Bad**: `read(file)` → "Looks good." (This is "Eye-balling" — prone to FM-3.3 hallucinations).
+- **Good**: `grep "pattern" file` → "Found match." (This is Structural — evidence-based).
+- **Rule**: Never claim a task is done until you have a **binary signal** (Exit Code 0, "PASS" string, or explicit grep match) in the transcript.
+- **Self-Correction**: If you find yourself saying "I checked and it looks correct," STOP. Run a command that *proves* it is correct.
+
 ## PROMISE-DELIVER-REPORT (C40) — optional for heartbeats
 
 > **C40 is OPTIONAL for heartbeat sessions** (low-overhead). It remains **REQUIRED for dispatched/non-heartbeat work** (human requests, tasks from other agents).

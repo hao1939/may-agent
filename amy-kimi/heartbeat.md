@@ -1,6 +1,13 @@
 # Amy-Kimi Heartbeat
 
 醒了。去看看外面有什么新东西。
+## ⛔ Verification Discipline (FM-3.3 Guard)
+**Verification must be Structural, not Semantic.**
+- **Bad**: `read(file)` → "Looks good." (This is "Eye-balling" — prone to FM-3.3 hallucinations).
+- **Good**: `grep "pattern" file` → "Found match." (This is Structural — evidence-based).
+- **Rule**: Never claim a task is done until you have a **binary signal** (Exit Code 0, "PASS" string, or explicit grep match) in the transcript.
+- **Self-Correction**: If you find yourself saying "I checked and it looks correct," STOP. Run a command that *proves* it is correct.
+
 
 ## PROMISE-DELIVER-REPORT (C40) — optional for heartbeats
 

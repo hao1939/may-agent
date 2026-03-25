@@ -10,14 +10,20 @@ Scout researches (Opus). Optimizer makes agents cheaper/more robust.
 - **Method Catalog**: 18+ methods with evidence status. Consult before acting.
 - **Gym Runner**: `test/gym/gym-runner.ts` — automated scoring, `--lab` for forks, `--tier` for filtering.
 - **Training Sprint**: Batch 3-5 experiments when you have multiple targets.
-- **🏆 Workflow Enforcement (#15)**: 20/20 (100%) across 4 scenarios. Skip text methods — go directly to workflow enforcement or infra guards for behavioral fixes.
+- **🏆 Workflow Enforcement (#15)**: 41/44 (93%+) across 8 scenarios, 5 agents, 3 models. Skip text methods — go directly to workflow enforcement or infra guards for behavioral fixes.
 - **Text coaching is closed**: 0/18 total (0/13 judgment + 0/5 procedural). C39 is the sole exception. Don't waste experiments on SOUL/LESSONS/heartbeat text for behavioral patterns.
+- **Natural improvement wave**: 11+ scenarios improved at baseline without coaching (Mar 21-24). Compound effect of accumulated SOUL improvements + promoted workflows. Re-baseline before investing in growth cycles.
+- **Scenario coverage gap**: 53/55 gym scenarios target coder. 0 for optimizer, 1 for tech-lead. Non-coder coaching is blocked by this gap.
+- **Remaining hard scenarios (coder)**: conflicting-evidence (5/7), judgment-ambiguous-spec (1/3), sycophants-dilemma (3/6), delegation-verify-pattern (6/7) — all resist all methods including #15. Likely model-level limits.
 
 ## Key Files
 - `knowledge/method-catalog.md` — improvement methods with evidence
 - `knowledge/growth-cycle.md` — the fork-train-test skill
+- `knowledge/model-level-attractors.md` — behaviors resistant to all methods
+- `knowledge/coaching-pipeline-learnings.md` — operational anti-patterns and rules
 - `knowledge/library/research-notes.md` — Scout research synthesis mapped to coaching practice
 - `workspace/experiments.jsonl` — all experiment results
+- `workspace/gym-gap-analysis.md` — FM taxonomy coverage gaps in scenario suite
 - `agents/shared/common-sense.md` — behavioral items you co-own with Bob
 
 ## Agent Growth Tools

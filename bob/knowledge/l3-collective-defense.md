@@ -30,8 +30,15 @@ L3 Defense replaces "trust" (L1) and "permission" (L2) with **active verificatio
   - `Stalled`: No output for >5 minutes.
   - `Drift`: Content mismatch with task.
 
+### 4. Semantic Guard: Ghost Guard (Gate 0)
+- **Concept:** Prevent "hallucinated work" where an agent claims to have modified files but hasn't touched the filesystem.
+- **Mechanism:** `src/lib/tools/finish-guard.ts`.
+- **Action:** Intercepts `finish(status='success')`. Checks `deliverables` against actual session `file_modifications`.
+- **Enforcement:** If deliverables > 0 but edits == 0, rejects the finish action.
+
 ## Implementation Status (2026-03-26)
 - ✅ **Code:** `manager.ts` supports `opBudget`.
+- ✅ **Guard:** `finish-guard.ts` implements Gate 0 logic.
 - ✅ **Config:** All 12 `agent.json` files have `opBudget` set.
 - ✅ **Skills:** Coach has `red-team`, Evaluator has `monitor-session`.
 - ⏳ **Tuning:** Initial budgets are estimates; Evaluator will tune them.

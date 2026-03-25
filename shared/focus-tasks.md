@@ -20,6 +20,12 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 - **Status**: **[DEPLOYED]** (2026-03-24). Schema implemented in `src/lib/requests.ts` (`gym_runs`, `gym_checks`).
 - **Owner**: Tech-Lead (Implementation).
 
+### Gym Runtime (Evolution Loop)
+- **Problem**: Gym cannot run non-May agents (Coach, Optimizer) due to `src/app/may.ts` ignoring `--agent` in oneshot mode.
+- **Fix**: Update oneshot mode to respect `--agent` flag.
+- **Status**: **[IN PROGRESS]** Brief sent to Tech-Lead.
+- **Owner**: Tech-Lead (Implementation).
+
 ### Agent Evolution System (CI/CD for Prompts)
 - **Problem**: Improvements are ad-hoc, untracked, and prone to regression. No systematic way to measure "is the agent better?".
 - **Fix**: Implement "Gym is CI" workflow. Coach drives behavior, Optimizer drives efficiency. All changes gated by baselines.
@@ -57,10 +63,10 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 - **Owner**: Tech-Lead & Coach.
 
 ### Verification Discipline (FM-3.3 Standardization)
-- **Problem**: Amy lacks the standard FM-3.3 heartbeat guard present in other agents.
-- **Fix**: Apply patch to `agents/amy/heartbeat.md`.
-- **Status**: **[COMPLETED]** (2026-03-25). Verified `agents/amy/heartbeat.md` contains "Verification Discipline".
-- **Outcome**: All agents now have standard FM-3.3 guards.
+- **Problem**: 4 agents (Amy-Kimi, Evaluator, Master, May) lack the standard FM-3.3 heartbeat guard.
+- **Fix**: Apply patch to remaining agents' heartbeats.
+- **Status**: **[ACTIVE]** (2026-03-25). Brief sent to Tech-Lead to update remaining agents.
+- **Outcome**: (Pending) All agents will have standard FM-3.3 guards.
 
 ### Typed Messages / GNAP (P105)
 - **Problem**: Ambiguous inter-agent messages.
