@@ -17,6 +17,13 @@ If the injected task requires you to edit/create files (implementation, not just
 
 ---
 
+## ⛔ Verification Discipline (FM-3.3 Guard)
+**Verification must be Structural, not Semantic.**
+- **Bad**: `read(file)` → "Looks good." (This is "Eye-balling" — prone to FM-3.3 hallucinations).
+- **Good**: `grep "pattern" file` → "Found match." (This is Structural — evidence-based).
+- **Rule**: Never claim a task is done until you have a **binary signal** (Exit Code 0, "PASS" string, or explicit grep match) in the transcript.
+- **Self-Correction**: If you find yourself saying "I checked and it looks correct," STOP. Run a command that *proves* it is correct.
+
 1. Check the "Injected: pending tasks" section above — your focus areas define your mission. Don't work on things that don't fit.
 2. No injected tasks? Check `agents/optimizer/workspace/todo.md` for self-assigned items (🔴 ACTIVE section).
 3. No active items? → **Do proactive work. This is UNCONDITIONAL — not gated on new data.**

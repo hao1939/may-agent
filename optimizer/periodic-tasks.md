@@ -3,11 +3,11 @@
 Track when each task was last done. Pick the most overdue one during heartbeat step 3.
 
 ## Per heartbeat (do one, rotate)
-- [x] **Analysis review** — Last done: 2026-03-25T12:03
+- [x] **Analysis review** — Last done: 2026-03-25T16:03
   Read agents/bob/workspace/analysis.md or recent Bob synthesis outputs.
   Any findings that need optimization work? Cost issues? Efficiency problems?
   If found → add specific task to workspace/todo.md.
-  Latest (2026-03-25T12:03): Bob analysis.md updated 2026-03-25 — now focuses on FM-3.3 Verification Gap and FM-1.1 Goal Drift. Bob sent req to tech-lead for "Verify Before Finish" gym scenario. Bob's 3 recommendations: (1) finish() require verification_evidence field, (2) env hardening in common-sense.md, (3) gym scenario for verification integrity. Rec #1 already partially addressed by finish-guard.ts. Rec #2 already has path-assumption-guard in binary 786c884. Rec #3 is new and valuable. No new optimizer action needed — Bob already sent the req.
+  Latest (2026-03-25T16:03): Same analysis.md (unchanged since 12:03). Bob also sent brief-fix-context-loading.md to tech-lead — DOMAIN.md restore + FM-3.3 guard for 3 agents. DOMAIN.md restore already in binary f4b83c6. FM-3.3 guard already in all 12 heartbeats (verified via grep). No new action needed.
 
 - [x] **Cost outlier scan** — Last done: 2026-03-25T14:03
   Check recent evaluations — any sessions > $2.00?
@@ -15,17 +15,17 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If pattern found → design fix, add to workspace/todo.md.
   Latest (2026-03-25T14:03): Follow-up verification. Waste rate 5.4%→3.8% (-30%). QA npx fix confirmed working: 0 waste in 8/9 recent QA sessions (was ~70/day). Classifier sub-categories deployed in handler code. Built new binary bbbe4fe (18+ commits ahead of running b9ef77e). Bob now top waster (148 calls, 13%). Still needs process restart. Finding at `workspace/finding-cost-scan-0325-1403.md`.
 
-- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-25T12:03
+- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-25T16:03
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
   Could it be replaced with a JS handler? (See cron-graduation-process.md Stage 3.)
   If found → write proposal in workspace/improvement-proposals.md.
-  Latest (2026-03-25T12:03): Scanned last 6h sessions. 57 sessions total. Bob: 49 echo sessions (34 "echo hello" + 15 testing variants) — already handler-intercepted at 0-1 ops. Evaluator: 5 sessions, 4 at 0 ops (JS heuristic). May: 6 sessions, 1-5 ops. All heartbeats are judgment work. No new LLM-to-JS opportunity found. System well-optimized. Main waste: 67 stale CREATED requests (60 bob echo) — known issue, needs request TTL feature (already proposed in finding-cost-scan-0325-1033.md).
+  Latest (2026-03-25T16:03): Scanned last 4h sessions (48 total). QA: 9 sessions (avg 5 ops, 4 at 1 op — diagnose phases). Coach: 7 (avg 22.7 ops). Coder: 7 (avg 4.1, one at 1 op). Evaluator: 6 (all 0 ops — JS heuristic working). Optimizer: 5 (avg 34.2). May: 4 (avg 1.3 ops — quick idle checks). No new LLM-to-JS candidate. All low-op sessions are either already handled by JS or require judgment. Waste rate 3.8%. System well-optimized.
 
-- [x] **Handler health check** — Last done: 2026-03-25T12:03
+- [x] **Handler health check** — Last done: 2026-03-25T14:33
   Review existing JS handlers in agents/may/handlers/.
   Any errors in recent logs? Any handler that's not firing?
   If issues → add fix to workspace/todo.md.
-  Latest (2026-03-25T12:03): 21 handlers (up from 20). Last 4h: 57 sessions, 4 errors (all "Request was aborted" — timeout interruptions, not handler bugs). Zombie count: bob=33 (up from 26), optimizer=4, tech-lead=1. Binary b9ef77e still running (PID 7+52), zombie cleanup in 786c884 not active. 4 interrupted sessions (optimizer phase3 timeout, bob heartbeat, coach cron, optimizer cron). All handlers functional, no persistent errors. Cron jobs executing normally.
+  Latest (2026-03-25T14:33): 21 handlers. 43 zombies (up from 37): bob=34, optimizer=4, tech-lead=2, may=1(23h old). No errors in last 4h. Tool quality 3.8% waste. **CRITICAL**: Discovered bbbe4fe binary regression — DOMAIN.md loading removed (commit 2003ca7) but restore (63e76d2) happened AFTER binary build. Must rebuild before restart. Finding at `workspace/finding-binary-regression-0325-1435.md`.
 
 - [x] **Proven pattern → Skill/Workflow** — Last done: 2026-03-25T10:03
   This is your MOST IMPORTANT periodic task — focus area #1.
@@ -63,7 +63,7 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Flag regressions via `bun scripts/gym-stats.ts --regressions`.
   NOTE: Runs take ~600s for 13 smoke scenarios. Consider running in background or splitting.
   Latest (2026-03-25T07:27): Full smoke baseline on binary 37b8fbb. 11/13 pass (85%) — same as previous baseline (335546d). Zero regressions. 2 red: behavior-escalation-stubborn (0/4, needs escalation skill), conflicting-evidence (0/4, correct diagnosis but wrong fix). 1 yellow: optimize-deploy-config (67%, flaky). Batch: 1774422494_11c91301. Results in may.db + gym-trend-tracker.md updated.
-  **NOTE**: New binary bbbe4fe built (2026-03-25T14:08) — includes zombie cleanup, verification gym scenarios, path-assumption-guard, classifier improvements. Gym baseline needed after process restart activates it.
+  **NOTE**: New binary f4b83c6 built (2026-03-25T16:04) — includes DOMAIN.md restore, verification gym scenarios, 30 test fixes, all bbbe4fe features. Gym baseline needed after process restart activates it.
 
 ## Weekly
 - [x] **Improvement proposals review** — Last done: 2026-03-24T16:03

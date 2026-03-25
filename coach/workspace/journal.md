@@ -434,3 +434,15 @@ Key milestones archived:
 - **Decision**: DISCARD fork optimizer-scope-discipline — no measurable improvement
 - **Next**: Fix spec-adherence-multi-step scorer bugs (infra issue → escalate to optimizer), then design scenario specifically for "explicit prohibition compliance"
 - **Growth cycles today**: 1 (this one)
+
+## 2026-03-25 14:36 — Heartbeat: Growth Cycle for Coder FM-3.3 verify-after-edit
+- **Target**: coder, FM-3.3 VERIFICATION_FAILURE (14 occurrences in 48h)
+- **Scenario**: read-before-edit (baseline 10/11, failing C2.3 verify-after-edit)
+- **Method**: SOUL Guard (Method #1) — added verify-after-edit reinforcement
+- **Result**: DISCARDED — patched 10/11 same as baseline. SOUL guard insufficient.
+- **Analysis**: Coder already has "verify-after-write" skill in SOUL.md but doesn't execute it. SOUL text alone doesn't change behavior for this convention. Need to investigate:
+  1. Is C2.3 scorer correct? (does it detect read-back/grep after edit?)
+  2. Would a workflow enforcement (Method #15) force verification steps?
+  3. Would a negative example (Method #6) be more effective?
+- **Next**: Investigate C2.3 scorer logic before next attempt. Also try materialize-intermediate-findings (6/9, 3 gaps) as higher-payoff target.
+- **Growth cycles today**: 2 (optimizer scope-discipline + this one)

@@ -24,6 +24,10 @@ Coder implements (Opus). QA reviews (GPT-5.2). Master uses CLI tools (Opus).
 - **Error Handling**: Escalate failures. Don't retry blindly.
 - **Workflow**: Use `implement-and-review` for code changes.
 
+## System Architecture
+See `knowledge/system-architecture.md` — prompt loading, request DB performance,
+finish guards, structured delegation, active nudge thresholds, QA review phases.
+
 ## Project Layout
 - `src/lib/` — core library
 - `src/app/` — application layer
@@ -35,6 +39,8 @@ Coder implements (Opus). QA reviews (GPT-5.2). Master uses CLI tools (Opus).
 - **`classifyError` default**: Changed from `"infra"` to `"logic"` (commit `36d4642`). Unknown errors do NOT auto-retry — only retry when confident it's transient infra failure.
 - **context_files placement** (P147): context_files are loaded in the first user message (volatile section), NOT in the system prompt. This was an intentional move.
 - **P209 (Request Tracking)**: Fully implemented and deployed.
+- **DOMAIN.md restored** (commit `63e76d2`): `resolveSystemPrompt` was silently skipping DOMAIN.md for all agents. Now loads SOUL.md → DOMAIN.md → common-sense.md.
+- **Ghost Deliverable Guard** (commit `d4ca28a`): `finish-guard.ts` Gate 0 blocks false success claims when no write/edit evidence exists.
 
 ## MAST Failure Codes
 When reporting implementation failures, use standardized MAST codes from `agents/shared/knowledge/mast-taxonomy.md`.

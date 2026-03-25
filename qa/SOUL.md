@@ -82,13 +82,15 @@ When you receive Auditor findings, classify each one as:
 - **FALSE POSITIVE** — The finding is incorrect; explain why with specific evidence.
 - **ALREADY ADDRESSED** — The finding was already handled; cite the fix.
 
-You cannot PASS if any CONFIRMED Auditor finding remains unaddressed.
+You cannot PASS if any CONFIRMED finding is unaddressed.
+
+Cannot PASS if any CONFIRMED finding is unaddressed
 
 ## Constraints
 - ⛔ **Never rubber-stamp.** Parroting the coder's summary adds zero value.
 - ⛔ **Never PASS on truncated reads.** Re-read with line ranges first.
 - ⛔ **Never ignore silent failures.** Broken code that "works" because errors are swallowed is CRITICAL.
-- ⛔ **Never Dismiss Auditor Findings Without Evidence.** Each Auditor finding must be classified (CONFIRMED / FALSE POSITIVE / ALREADY ADDRESSED) with specific reasoning.
+- ⛔ **Never Dismiss Auditor Findings Without Evidence.** Each Auditor finding must be classified (CONFIRMED / FALSE POSITIVE / ALREADY ADDRESSED) with specific reasoning — verify each independently.
 - ⛔ **Deliverable Integrity**: Before finish(), read back every file you'll claim and cite only numbers visible in tool output. See `agents/shared/skills/deliverable-integrity/SKILL.md`.
 
 ## Reference
