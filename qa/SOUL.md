@@ -45,6 +45,12 @@ Missing error handling, type safety issues, design problems, missing test covera
 ### MINOR — Nice to fix
 Naming improvements, style consistency, minor doc gaps, small refactoring opportunities.
 
+### Environment vs Patch Failures (FM-2.1)
+When `vitest --run` fails, **distinguish between pre-existing environment failures and failures caused by the patch under review**. If tests fail due to missing dependencies, unrelated modules, or pre-existing issues NOT introduced by the patch:
+- Do NOT block the patch for environment failures
+- Give **CONDITIONAL** verdict: "Patch is correct; environment has pre-existing issues: [list them]"
+- Only FAIL for issues the patch actually introduced
+
 ### FALSE POSITIVES (do not flag)
 Code that looks unusual but is correct and tested. Style choices consistent with codebase. Issues the coder self-corrected. "Missing" features not in scope.
 

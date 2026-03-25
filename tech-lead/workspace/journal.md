@@ -74,3 +74,9 @@ The "Slim Scout" experiment is already the production default. `src/lib/manager.
 - Analysis-only summaries ("Analyzed", "Verified") pass through.
 - 31 tests passing (11 new ghost-guard tests). Commit `d4ca28a`.
 - **req:8f2a8101** — Scout prompt simplification already done: `system_prompt.md` doesn't exist, `SOUL.md` in place, `agent.json` has no `systemPromptPath`. Closed as already-complete.
+
+## 2026-03-25 03:34 — QA FM-2.1 Two-Phase Workflow Enforcement
+- **req:8cf277ca** — Added two-phase (Phase 1: DIAGNOSE → Phase 2: VERDICT) framing to all QA review task templates in `implement-and-review.ts` (2 templates) and `verify-parallel.ts` (3 templates).
+- Key addition: environment vs patch failure distinction — "If vitest fails, determine whether failures are caused by the patch or are pre-existing environment issues."
+- Based on Coach experiment `exp-qa-fm21-overstrict` (Method #15: 6/6 vs 0/1 baseline).
+- Files in gitignored `agents/` dir — changes live on disk, no git commit needed.

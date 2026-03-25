@@ -18,10 +18,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   // NOTE: Frame coder output as claims to verify, not facts to accept.
   // QA must read files and run checks itself — never trust the summary.
   const reviewTask =
-    `Review these code changes independently. Read the changed files yourself and run checks yourself.\n\n` +
+    `Phase 1: DIAGNOSE — gather evidence before any verdict.\n` +
+    `Read the changed files yourself and run checks yourself.\n\n` +
     `## Task Description\n${ctx.task}\n\n` +
     `## Coder's Summary (claims to verify — do NOT trust without checking)\n${coder.lastAssistantText}\n\n` +
-    `Your job: verify the coder's claims by reading the actual files and running tsc/tests yourself. ` +
+    `Your job: verify the coder's claims by reading the actual files and running tsc/tests yourself.\n` +
+    `IMPORTANT: If vitest fails, determine whether failures are caused by the patch ` +
+    `or are pre-existing environment issues. Only blame the patch for failures it introduced.\n\n` +
+    `Phase 2: VERDICT — now give your assessment based on Phase 1 evidence.\n` +
     `Form your own judgment. Report what YOU found, not what the coder said.`;
   const review = await ctx.runAgent("qa", reviewTask);
   if (review.status === "error") {
@@ -80,10 +84,15 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
   // Step 5: Re-review
   const reReviewTask =
-    `Re-review after fixes. Verify the issues from your original review are actually resolved.\n\n` +
+    `Phase 1: DIAGNOSE — gather evidence before any verdict.\n` +
+    `Re-review after fixes. Read the changed files yourself and run checks yourself.\n\n` +
     `## Your Original Review Feedback\n${reviewText}\n\n` +
     `## Coder's Fix Summary (verify independently)\n${fix.lastAssistantText}\n\n` +
-    `Read the changed files yourself. Run tsc and tests. Confirm each issue is fixed.`;
+    `Verify the issues from your original review are actually resolved.\n` +
+    `IMPORTANT: If vitest fails, determine whether failures are caused by the patch ` +
+    `or are pre-existing environment issues. Only blame the patch for failures it introduced.\n\n` +
+    `Phase 2: VERDICT — now give your assessment based on Phase 1 evidence.\n` +
+    `Confirm each issue is fixed. Report what YOU found.`;
   const review2 = await ctx.runAgent("qa", reReviewTask);
   if (review2.status === "error") {
     return ctx.escalate("re-review failed", { error: review2.error });

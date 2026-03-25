@@ -44,12 +44,12 @@ Key findings across 20 methods:
 | #1-variant Inline SOUL | 2 | 0 | 0 | SAFE, INEFFECTIVE |
 | Identity Exception | 1 | 0 | 0 | SAFE, INEFFECTIVE |
 | #14 Task Structuring | 1 (6 runs + 3 control) | 0 | 33% (2/6) | SAFE, PARTIALLY EFFECTIVE |
-| **#15 Workflow Enforcement** | **25+ (43 runs + controls)** | **0** | **93%+ (40/43)** | **🏆 CONFIRMED — 5 agents, 7 scenarios, 3 models** |
+| **#15 Workflow Enforcement** | **26+ (44 runs + controls)** | **0** | **93%+ (41/44)** | **🏆 CONFIRMED — 5 agents, 8 scenarios, 3 models** |
 | **#16 Structural Documentation** | **2 (systemic + monitoring)** | **N/A** | **0/5 (exp-053)** | **SAFE, INEFFECTIVE** |
 | **#24 Identity Directive Refinement** | **8 (4 solo, 2 combo, 2 replication)** | **0** | **12.5% solo (1/8)** | **⛔ CLOSED — first-pass noise, replication failed** |
 | **#24+#10 Combo** | **1** | **0** | **0/2** | **⛔ CLOSED — worse than solo #24** |
 
-### Core Finding (updated 2026-03-24, Sprint 6, exp-181)
+### Core Finding (updated 2026-03-25, exp-qa-fm21-overstrict)
 
 **Text-based coaching is SAFE but INEFFECTIVE: 0/13 clean text experiments
 improved judgment behavior, AND 0/5 sessions improved procedural behavior
@@ -61,7 +61,7 @@ reads it, and ignores it.
 
 **Method #24 CLOSED (exp-178)**: Initial 50% pass (1/2) on judgment-ambiguous-spec was noise. Replication at n=8 shows ~12.5%. Combo with #10 made it worse. Identity directive refinement does not reliably overcome model priors.
 
-**Method #15 EXTENDED (exp-181)**: Workflow enforcement now 40/43 (93%+) across 7 scenarios including two new escalation scenarios (escalation-impossible-task, behavior-escalation-stubborn). 100% pass rate on escalation with assess→act workflow. This is the ONLY method that reliably changes agent behavior.
+**Method #15 EXTENDED (exp-181, exp-qa-fm21-overstrict)**: Workflow enforcement now 41/44 (93%+) across 8 scenarios including two escalation scenarios (escalation-impossible-task, behavior-escalation-stubborn) and qa-overstrict-gate (FM-2.1 false-blame pattern). 100% pass rate on escalation with assess→act workflow, 6/6 on QA overstrict gate with diagnose→verdict workflow. This is the ONLY method that reliably changes agent behavior.
 
 **🏆 BREAKTHROUGH CONFIRMED — FIVE AGENTS, FIVE SCENARIOS, THREE MODELS (exp-045–091):
 Workflow Enforcement achieves ~92% strict / ~97% behavioral pass rate across

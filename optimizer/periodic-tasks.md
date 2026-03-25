@@ -27,7 +27,7 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   If issues → add fix to workspace/todo.md.
   Latest (2026-03-25T01:03): **CRITICAL: evaluate-sessions broken → 12,937 unevaluated sessions.** Binary b9ef77e now 22 commits behind. 50 failed cron runs in DB (getDb/loadAllSessionMetas/trackRequest errors). Convention-check and tool-quality-scan recovered, evaluate-sessions and repo-gate-check still broken. Bob sent P0 fix (req:e91359f2, req:0d3d6a39). Tech-lead worked on limit fix instead, hasn't reached cron fix. Binary rebuild is universal fix. Finding at `workspace/finding-handler-health-0325-0103.md`.
 
-- [x] **Proven pattern → Skill/Workflow** — Last done: 2026-03-24T21:03
+- [x] **Proven pattern → Skill/Workflow** — Last done: 2026-03-25T03:03
   This is your MOST IMPORTANT periodic task — focus area #1.
   **⛔ COOLDOWN: 6h minimum between runs.** With 14 skills deployed, discovery phases increasingly
   find "no new skill needed." Each lifecycle costs ~90 ops (4 phases). Running 3x/6h = 270 ops =
@@ -37,6 +37,7 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   sessions, preventing you from skipping testing or doing meta-work instead.
   If you have a specific pattern in mind, pass it: `workflow.run("skill-lifecycle", "Pattern: agents read file → check convention → edit → verify")`
   **Deliverable**: A new or refined skill file, tested in gym, deployed to agents.
+  Latest (2026-03-25T03:03): prerequisite-gap-protocol drafted and tested — 0/3 gym pass (agents claim success even with missing prerequisites). NOT deployed. Skill identifies real pattern but needs prompt injection to change behavior.
   Latest (2026-03-24T21:03): No new skill needed — discovery found deliverable-integrity pattern already deployed. 17 skills achieving good coverage.
   Latest (2026-03-24T14:03): deliverable-integrity (17th skill) deployed to agents. Full lifecycle. 3/3 gym pass.
   Latest (2026-03-24T06:06): progressive-work-persistence (16th skill) deployed to 6 agents. Full lifecycle.
