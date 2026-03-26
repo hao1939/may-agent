@@ -98,7 +98,9 @@ export function isProcessAlive(pid: number | undefined): boolean {
  */
 export function isToolError(outputText: string): boolean {
   // Non-zero exit code patterns (bash tools)
-  if (/exit\s*(code\s*)?\d*[1-9]\d*/i.test(outputText)) return true;
+  // Anchored to the specific format bash.ts appends: "Command exited with code N"
+  // This avoids false positives when grep/read output contains "exit code 1" in content
+  if (/Command exited with code \d*[1-9]\d*/.test(outputText)) return true;
   // Common error markers
   if (outputText.startsWith("❌")) return true;
   if (/\bENOENT\b/.test(outputText)) return true;
