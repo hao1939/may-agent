@@ -19,10 +19,10 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 ### Team Scaling Architecture (Archetypes)
 - **Problem**: Scaling from 10 to 50+ agents creates a maintenance nightmare (N copies of `SOUL.md`).
 - **Fix**: Implement **Agent Inheritance** (Archetypes). `agents/acme/coder` extends `agents/_archetypes/coder`.
-- **Status**: **[IN PROGRESS]** (2026-03-26).
+- **Status**: **[COMPLETED]** (2026-03-26).
   - **Coder**: **[COMPLETED]** (Migrated to `_archetypes/coder`).
   - **Coach**: **[COMPLETED]** (Migrated to `_archetypes/coach`).
-  - **Scout**: **[IN PROGRESS]** (Delegated to Tech-Lead).
+  - **Scout**: **[COMPLETED]** (Migrated to `_archetypes/scout`).
 - **Owner**: Bob (Design), Tech-Lead (Implementation).
 
 ### Scout Prompt Standardization (Legacy Clean-up)
@@ -76,7 +76,7 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 ### Gym Scenario: Verification Integrity
 - **Problem**: We need to ensure agents learn *why* they failed if they skip verification.
 - **Fix**: Create `verify-before-finish` Gym scenario.
-- **Status**: **[IN PROGRESS]** Brief sent to Tech-Lead (2026-03-25).
+- **Status**: **[COMPLETED]** (2026-03-26). Scenario created in `agents/gym/scenarios/verify-before-finish/`.
 - **Owner**: Tech-Lead (Implementation).
 
 ### Verification Discipline (FM-3.3 Standardization)

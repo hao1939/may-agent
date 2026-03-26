@@ -10,11 +10,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Latest (2026-03-26T03:12): Bob session 351 initialized Scout archetype files and delegated migration to tech-lead (req:30f9ea94). Coach session 347/348 diagnosed coder materialization failure (6/9 baseline) and created workflow-enforcement fork (coder-materialize-workflow in .lab/). Evaluator session 350 scored coach good (0.72 eff / 0.74 qual) with issues: premature finish() and evidence gap. System running 4 active agent requests (coach heartbeat, bob→coach verify, bob→tech-lead migrate, optimizer heartbeat). Process still on stale binary b9ef77e.
   Latest (2026-03-26T01:05): analysis.md unchanged from Mar 25. Bob journal shows archetype work (coder → _archetypes/coder) and auto-evolve pivot completed. Bob sent 2 new requests to tech-lead: verify-before-finish gym scenario (req:329d46df) and coach archetype migration (req:9468a5d9). System very quiet — 15h gap with no non-optimizer sessions. 69 active requests total, ~55 are stale zombie "echo hello" test requests from Hao. No new optimization action needed.
 
-- [x] **Cost outlier scan** — Last done: 2026-03-26T00:10
+- [x] **Cost outlier scan** — Last done: 2026-03-26T05:03
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-26T00:10): System very quiet — only current optimizer session in last 4h. PID 52 still running stale binary (b9ef77e, 31h+ uptime). Symlink points to f10cfde. Restart still pending. Focused on code improvements instead: (1) increased rootCause truncation 80→200 chars in evaluator-failure-chain.ts, (2) added node_modules/.bin/ and node -c patterns to isTestOrBuildRunner, (3) drafted tool-quality sub-classification v2 patch (5 new categories). 42/42 tests pass.
+  Latest (2026-03-26T05:03): 60 sessions in 5h (12/hr), 768 ops total (153 ops/hr). Optimizer is #1 cost consumer (369 ops, 48%) — heartbeats avg 38.6 ops, no turn budget existed. Coach #2 (227 ops, 30%). Combined = 78%. **ACTIONS TAKEN**: (1) Added 35-op turn budget to optimizer heartbeat.md, (2) Increased skill lifecycle cooldown from 6h to 12h. Expected savings: ~25% reduction in optimizer heartbeat ops + ~160 ops/day from fewer lifecycle runs. Finding at `workspace/finding-cost-scan-0326-0503.md`.
   Latest (2026-03-25T20:40): 52 sessions in 4h (13/hr). Top ops: optimizer 57ops (common-sense experiment, expected), coach 26ops/2825s (interrupted). Coach+optimizer each 10 sessions, ~150 ops. No new waste patterns. System stable.
   Latest (2026-03-25T16:35): 61 sessions in 6.5h (9.4/hr). Two outliers: tech-lead gym test (528KB, 3x 100KB bash outputs — expected), Bob agents(filter:all) (404KB, 324KB response — one-off). No new systematic waste. Scout loop fix confirmed (2 sessions vs 32/day before). 30+ Bob zombies blocked on restart (req:31d94ce6). Finding at `workspace/finding-cost-scan-0325-1635.md`.
 
@@ -34,9 +34,9 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
 
 - [x] **Proven pattern → Skill/Workflow** — Last done: 2026-03-26T03:20
   This is your MOST IMPORTANT periodic task — focus area #1.
-  **⛔ COOLDOWN: 6h minimum between runs.** With 14 skills deployed, discovery phases increasingly
-  find "no new skill needed." Each lifecycle costs ~90 ops (4 phases). Running 3x/6h = 270 ops =
-  33% of total system cost. Cap to 1 run per 6h. If last run was <6h ago, skip to cost-efficiency work.
+  **⛔ COOLDOWN: 12h minimum between runs.** With 54 skills and confirmed saturation, discovery phases
+  almost always find "no new skill needed." Each lifecycle costs ~160 ops (4 phases). Running at 6h
+  burned ~320 ops/day for zero new skills. Cap to 1 run per 12h. If last run was <12h ago, skip to cost-efficiency work.
   **Run it via workflow**: `workflow.run("skill-lifecycle", "Scan recent sessions for proven multi-step patterns")`
   The workflow mechanically enforces all 4 phases (discover → draft → test → deploy) in separate
   sessions, preventing you from skipping testing or doing meta-work instead.
@@ -76,7 +76,8 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   **NOTE**: New binary f10cfde built (2026-03-25T22:10) — includes LESSONS.md loading restore, agent archetype inheritance, DOMAIN.md restore, verification gym scenarios, 30 test fixes, all bbbe4fe features. Gym baseline needed after process restart activates it.
 
 ## Weekly
-- [x] **Improvement proposals review** — Last done: 2026-03-24T16:03
+- [x] **Improvement proposals review** — Last done: 2026-03-26T04:38
+  Latest (2026-03-26T04:38): Cycle 15. 8 guards (991 lines, only 4 active in running binary). 40 SKILL.md files (+2), 18 deployed (+1). 22 handlers. PID 52 now 32 commits behind HEAD (was 10 at Cycle 14). 12 improvements blocked on restart (LESSONS.md/DOMAIN.md restore, 4 guards, isToolError fix, archetype inheritance, zombie cleanup, request limits, web UI, gym DB). 22 real test failures. Guards > Skills > Prompts hierarchy confirmed by auto-evolve results. Skill lifecycle cooldown recommended increase to 12h. Process restart is CRITICAL. Full review at `workspace/improvement-proposals-review-0326.md`.
   Latest (2026-03-24T16:03): Cycle 14. 23 code improvements (+5), 17 skills deployed (+6), 38 SKILL.md files, 7 guards (804 lines). Binary rebuilt (b9ef77e) but 10 commits behind. Prompt simplification landed (SOUL.md+common-sense.md only). Top priorities: binary rebuild (again), ANTHROPIC_API_KEY, FM-2.2 structural fix, measure prompt size savings. Full review at `workspace/improvement-proposals-review-0324.md`.
 
 ---

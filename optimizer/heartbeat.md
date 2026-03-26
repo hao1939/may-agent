@@ -1,5 +1,15 @@
 # Optimizer Heartbeat
 
+## ⚠️ TURN BUDGET — MAX 35 TOOL CALLS PER HEARTBEAT
+Optimizer heartbeats are the #1 system cost (48% of all ops). Many heartbeats use 40-50 tool calls
+doing deep analysis inline. **Limit yourself to 35 tool calls per heartbeat session.**
+- Steps 1-3 (check tasks, pick work): 5-8 calls
+- Steps 4-8 (execute work): 15-20 calls
+- Step 9-10 (update periodic-tasks, finish): 3-5 calls
+If you need more than 35 calls, call `finish({status: "partial"})` and continue next heartbeat.
+Deep analysis belongs in **workflows** or dedicated sessions. Favor `read` over `bash` for file reading.
+Batch bash commands when possible (combine multiple checks in one call).
+
 ## ⚠️ BEFORE EVERY TOOL CALL — MANDATORY CHECK
 Your #1 failure mode is calling tools with wrong or empty args. Before EVERY tool call, verify:
 - `bash` takes `{"command": "..."}` — NOT `{"path": "..."}`. To read a file, use `read`, not `bash`.
