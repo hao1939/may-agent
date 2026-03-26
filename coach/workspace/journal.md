@@ -529,3 +529,21 @@ Key milestones archived:
 - **Bob task completed**: Wrote `agents/bob/workspace/report-verify-before-finish.md` — scenario verified working with empirical evidence from coder (6/7), bob (baseline fail → patched improve), optimizer (fail). No lazy/diligent fork needed since real data already proves discrimination.
 - **Recent growth cycles dispatched** (from prior sessions today): bob FM-3.3 VERIFICATION_FAILURE fork, coder materialize-intermediate-findings fork. Bob fork promoted (3/5 vs 2/5 baseline).
 - **Next priorities**: (1) Design read-only-report scenario for coder FM-3.1, (2) Run growth-cycle on optimizer (285 errors, highest), (3) Self-evolve review (191+ experiments).
+
+## 2026-03-26 07:33 — Heartbeat
+
+### Error Scan
+- Coder FM-3.3: 33 errors (biggest pattern). Recent experiments: Method #15 failed for materialization (exp-094), SOUL mutations 0/5 (exp-187).
+- Bob FM-3.3: 7 errors — had a promotion on convention-verify-multi-edit (3/5 vs 2/5 baseline).
+- Tech-lead FM-2.2: 12 errors, FM-3.3: 11 errors.
+
+### Growth Cycle: coder verify-after-edit (DISCARDED)
+- Ran growth-cycle targeting coder read-before-edit scenario (10/11, failing C2.3 verify-after-edit).
+- Result: DISCARDED — patched 10/11 same as baseline.
+- **Key finding**: prompt_hash identical for baseline and patched (`638e2098862e`). This means the skill file added in the .lab fork was NOT injected into the agent's system prompt. The gym runner may not be incorporating .lab fork skill files into the prompt. This is an infrastructure gap, not a method failure.
+- Next: investigate how gym runner builds prompts for .lab forks — are skill/knowledge files from forks included?
+
+### Hygiene
+- Archived 5 stale files (diagnosis-optimizer-fm22.md, brief-coder-fm33-verify-after-edit.md, response-autoresearch-pattern.md, heartbeat-context.md, reflect-prompt.md). Workspace down to 16 files.
+
+### Growth-cycle budget: 2/3 used today.

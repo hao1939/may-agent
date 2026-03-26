@@ -32,5 +32,14 @@
   3. Verified: SOUL.md identical (diff, 4161 bytes each), merged config has all fields (description, domain, model, compaction, tools, opBudget), archetype resolves correctly
   - Runtime-only change (agents/ gitignored). Coder, coach, and scout now all use archetype inheritance.
 
+## 2026-03-26 07:35 — Read Safety Guard implemented
+- **P1 req:22e296e3** — Implemented 3 safety guards in `src/lib/tools/read.ts`:
+  1. Directory block: throws if path is a directory (use `ls` instead)
+  2. Size cap: blocks full reads >50KB unless `limit` provided (forces pagination)
+  3. Binary guard: detects null bytes in first 512 bytes
+  - Added `stat` to `ReadOperations` interface for testability
+  - 6 tests in `test/read-safety-guard.test.ts` (all pass, tsc clean)
+  - Commit `510622c`
+
 ## 2026-03-25 21:35 — verify-before-finish scenario already complete
 - **P1 req:f7c1e26d** — Bob's brief for FM-3.3 gym scenario. State check: already implemented in both `test/gym/scenarios/verify-before-finish/` (committed as `3905b13`) and `agents/gym/scenarios/verify-before-finish/` (runtime). The `agents/gym/` version has a more sophisticated design (processor.js with .lenght typo + missing reduce initial, uses gym-score-utils Score builder). Fixed a `path.join` → `path.resolve` bug in the agents/gym scorer (runtime-only, gitignored). No new commit needed.

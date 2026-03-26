@@ -8,6 +8,12 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 
 ## Active Focus
 
+### Read Safety Guard (FM-2.1)
+- **Problem**: Agents waste context/budget reading massive files (locks, logs) or directories.
+- **Fix**: Enforce hard limits in `read` tool: max 50KB without pagination, block directory reads.
+- **Status**: **[IN PROGRESS]** Brief sent to Tech-Lead.
+- **Owner**: Bob (Design), Tech-Lead (Implementation).
+
 ### Agent Evolution System (CI/CD for Prompts)
 - **Problem**: Improvements are ad-hoc, untracked, and prone to regression. No systematic way to measure "is the agent better?".
 - **Fix**: Implement "Gym is CI" workflow. Coach drives behavior, Optimizer drives efficiency. All changes gated by baselines.
