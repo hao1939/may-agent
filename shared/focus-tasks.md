@@ -19,8 +19,9 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 ### Team Scaling Architecture (Archetypes)
 - **Problem**: Scaling from 10 to 50+ agents creates a maintenance nightmare (N copies of `SOUL.md`).
 - **Fix**: Implement **Agent Inheritance** (Archetypes). `agents/acme/coder` extends `agents/_archetypes/coder`.
-- **Status**: **[VERIFIED]** (2026-03-25). Tech-Lead implemented loader support for `extends` and path resolution.
-  - **Next**: Pilot migration of Coder to `_archetypes/coder`.
+- **Status**: **[IN PROGRESS]** (2026-03-25). 
+  - **Infrastructure**: Loader support verified. `agents/_archetypes/coder` initialized.
+  - **Pilot**: Brief sent to Tech-Lead to migrate Coder to use `extends`.
 - **Owner**: Bob (Design), Tech-Lead (Implementation).
 
 ### Scout Prompt Standardization (Legacy Clean-up)

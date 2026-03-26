@@ -1,15 +1,15 @@
-**This heartbeat I will:**
-1. **Audit Agent Coverage**: Count total active agents and compare with the 12 verified to have the FM-3.3 Guard.
-2. **Audit Ignored Lessons**: List all `agents/*/LESSONS.md` files (which are currently ignored by `manager.ts`) and read a sample to determine if critical knowledge is being lost.
-3. **Update Focus Tasks**: Mark "Verification Discipline" as **[VERIFIED]** if coverage is 100%.
-4. **Brief Lessons Migration**: If valuable `LESSONS.md` content is found, write `agents/bob/workspace/brief-migrate-lessons.md` to formally move them to `SOUL.md`.
+# Session Journal - 2026-03-25
 
-**Results:**
-1. ✅/❌ Agent coverage audit.
-2. ✅/❌ Lessons audit.
-3. ✅/❌ Focus tasks updated.
-4. ✅/❌ Migration brief created (if needed).
-## 2026-03-25 (Heartbeat) - Verification & Context Audit
-- **Verification Guard**: Confirmed 100% coverage (12/12 active agents) for the FM-3.3 Guard. `agents/gym` and `agents/judge` are inactive/orphaned directories with no heartbeats.
-- **Context Gap**: Verified `src/lib/manager.ts` now correctly loads `LESSONS.md`, resolving the critical context gap. The hotfix requested in the previous session was implemented by Tech-Lead.
-- **Housekeeping**: Archived `brief-migrate-lessons.md` to `sent/`. Updated `focus-tasks.md` to mark both items as [COMPLETED].
+## Accomplishments
+1. **Verified Agent Archetypes Logic**: Confirmed `src/app/agent-loader.ts` correctly implements the `extends` logic, resolving path inheritance for `SOUL.md` and `tools` from parent configs.
+2. **Initialized Archetype**: Created `agents/_archetypes/coder/` and seeded it with `agents/coder/SOUL.md`. This is the first step towards the "Team Scaling" milestone.
+3. **Synthesized Auto-Evolve Failure**: Documented the "Prompt Mutation" failure (0/5 success) and formally pivoted the safety strategy from "Soft Prompts" to "Hard Constraints" (Runtime Enforcement).
+4. **Updated Focus Tasks**: Reflected the Archetype progress and the Auto-Evolve pivot in `agents/shared/focus-tasks.md`.
+
+## Findings
+- **Agent Loader**: The `loadAgentConfig` function recursively merges configs if `extends` is present. It handles tools (union) and context files (concatenation) correctly.
+- **Auto-Evolve Lesson**: "Text is Policy, Code is Law." Agents under pressure ignore prompts. We must rely on tool-level guards (finish guard, verification guard) for non-negotiable safety properties.
+
+## Next Steps
+- **Pilot Migration**: Modify `agents/coder/agent.json` to extend `_archetypes/coder` and remove the local `SOUL.md` to verify inheritance works in a live session.
+- **Gym as CI**: Shift Gym focus from "training behavior" to "verifying runtime guards".

@@ -471,3 +471,10 @@ Key milestones archived:
 ### 2026-03-25 19:34 — Session Review Request (s_1774463068923_269)
 - **Status**: Blocked — sqlite3 not available, cannot query .state/may.db evaluations table
 - **Will retry**: Next heartbeat or when DB access is available
+
+## 2026-03-25 23:33 — Heartbeat: Error Scan + Ceiling Gate
+- **Coder FM-3.1 PROTOCOL_BREACH_ON_FINISH (4x today)**: Coder tries `finish(success)` with deliverables but no writes happened. The `verify-before-finish` scenario does NOT trigger this (baseline 6/7, behavior checks all pass). Need a NEW scenario: "verification-only session" where task is read-only analysis but agent must report without claiming file deliverables.
+- **Coach errors**: FM-1.4 unforced tool errors (`bash({})`/`read({})`), FM-3.2 incomplete verification. Already guarded in heartbeat.md.
+- **Growth cycle count today**: 0 (auto-evolve ran but not growth-cycle workflow).
+- **Next action**: Design "read-only-report" gym scenario to expose coder FM-3.1 pattern, then run growth-cycle targeting it.
+- **Experiments.jsonl**: 191 entries. Last experiment (exp-187) confirmed SOUL text mutations have ceiling for deep behavioral change — workflow-level needed.

@@ -17,5 +17,13 @@
   - `test/agent-loader.test.ts`: 2 new tests (7/7 pass), tsc clean
   - Commit `f10cfde`. Design: `agents/shared/may-agent-docs/design/2026-03-25-team-archetypes.md`
 
+## 2026-03-25 23:35 — Archetype Pilot: Coder migrated to inheritance
+- **P1 req:a91ad778** — Migrated coder agent to use archetype inheritance:
+  1. Created `agents/_archetypes/coder/agent.json` with base config (description, domain, model, tools)
+  2. Slimmed `agents/coder/agent.json` to just `name`, `extends: "_archetypes/coder"`, `opBudget`
+  3. Renamed `agents/coder/SOUL.md` → `SOUL.md.bak` (archetype SOUL.md serves as source)
+  4. Verified: merged config correct (all fields present), validation passes, SOUL loaded from archetype
+  - Files were already identical (diff showed no differences). Runtime-only change (agents/ gitignored).
+
 ## 2026-03-25 21:35 — verify-before-finish scenario already complete
 - **P1 req:f7c1e26d** — Bob's brief for FM-3.3 gym scenario. State check: already implemented in both `test/gym/scenarios/verify-before-finish/` (committed as `3905b13`) and `agents/gym/scenarios/verify-before-finish/` (runtime). The `agents/gym/` version has a more sophisticated design (processor.js with .lenght typo + missing reduce initial, uses gym-score-utils Score builder). Fixed a `path.join` → `path.resolve` bug in the agents/gym scorer (runtime-only, gitignored). No new commit needed.
