@@ -46,7 +46,7 @@ See `agents/evaluator/periodic-tasks.md` for the definitions.
 - Do NOT update `agents/shared/knowledge/strategies.md` directly (Bob reviews first).
 - **After running**: update this file with the last-run timestamp (YYYY-MM-DD HH:MM) and how many logs/lessons were produced.
 
-**Last run**: 2026-03-25 22:33 — ran Monitor Active Sessions (`node agents/evaluator/skills/monitor-session.cjs --running`): sessionsChecked=41, healthy=4, unhealthy=37; noted many long-idle STALL sessions causing persistent non-OK status.
+**Last run**: 2026-03-26 02:33 — ran Monitor Active Sessions (`node agents/evaluator/skills/monitor-session.cjs --running`): output tail shows repeated `STALL` statuses with `action: "kill"` due to last activity ~975–982 min ago (threshold 10 min); indicates the running-session set still includes many long-idle sessions.
 
 **P63 Extract Strategies — Last run**: 2026-03-13 19:28 — logs: 50, lessons: 4 (P63 Automated Extraction Live)
 

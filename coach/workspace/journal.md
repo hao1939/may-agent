@@ -1,5 +1,51 @@
 # Journal
 
+## 2026-03-26 03:15 — Auto-Evolve: Bob Tool-Interface Skill (exp-bob-tool-interface-001)
+
+**Growth budget**: 2/3 used today (March 26).
+
+### Experiment: Bob FM-2.6 + FM-3.3 Improvement
+- **Diagnosed**: FM-2.6 (TOOL_INTERFACE_MISUSE, 5x) — bob runs `checkpoint`/`finish` as bash commands → exit 127
+- **Diagnosed**: FM-3.3 (VERIFICATION_FAILURE, 5x) — claims deliverables without reading them back
+- **Method**: Skill injection — created `tool-interface-protocol` SKILL.md
+- **Fork**: `agents/.lab/bob-tool-interface-skill/` — SOUL.md + new skill file
+- **Status**: Fork created, BLOCKED on gym testing — no bob-specific scenarios exist
+- **Next**: Create a bob-type gym scenario (architect agent checkpoint/finish test) OR deploy fork to production and monitor
+
+### Deliverables
+- `agents/.lab/bob-tool-interface-skill/skills/tool-interface-protocol/SKILL.md` — 147-line skill
+- `agents/.lab/bob-tool-interface-skill/SOUL.md` — skill reference added at line 44
+- `agents/coach/workspace/auto-evolve/experiment-bob-tool-interface.md` — full experiment record
+
+## 2026-03-26 02:45 — Heartbeat: Growth Cycle (materialize-intermediate-findings)
+
+**Growth budget**: 1/3 used today (March 26).
+
+### Error Scan
+- coder: FM-3.3 (26x), FM-2.1 (15x), FM-3.1 (12x)
+- optimizer: FM-2.1 (48x), FM-2.2 (36x), FM-3.3 (24x)
+- qa: FM-2.2 (24x), FM-2.1 (12x)
+- coach: all null-type (evaluator infrastructure noise)
+
+### Growth Cycle: exp-094 — DISCARDED ❌
+- **Target**: coder FM-3.3 materialization discipline
+- **Scenario**: `materialize-intermediate-findings` (baseline 6/9)
+- **Method**: #15 Workflow Enforcement (two-phase split)
+- **Result**: Patched scored 5/9 — REGRESSED on `multiple-materializations` (PASS→FAIL)
+- **Insight**: Workflow enforcement works for verification patterns (93%+) but FAILS for materialization patterns. The two-phase split changes session dynamics but doesn't enforce intra-phase write cadence. The agent still batches writes to end of each phase.
+- **Method catalog update needed**: Note that Method #15 has boundary conditions — effective for verification enforcement, NOT for materialization cadence enforcement.
+
+### Priority Queue (updated)
+1. ~~`materialize-intermediate-findings` (6/9)~~ — Method #15 failed. Need new method or finer-grained enforcement.
+2. `read-before-edit` (10/11) — ceiling effect, skip.
+3. Coder FM-3.1 (12x) — design "read-only-report" scenario (from 03-25 journal).
+4. Optimizer FM-2.2 (36x) — high volume, investigate.
+
+### Next Steps
+- Update method catalog: Mark Method #15 boundary (verification ✓, materialization ✗)
+- Explore finer-grained enforcement for materialization (3+ phases, checkpoint-per-read)
+- Or accept materialization as a **model-level limitation** not addressable via coaching
+
 ## 2026-03-25 03:33 — Heartbeat (s_1774409617089_112)
 - **Pending task** (May req:78028f7a): QA SOUL update for FM-2.1. Attempted direct edit — blocked by ownership rules. Sent exact edit text to May via agents.send (req:3a3f948c).
 - **Error scan**: Coder has 22 FM-3.3 verification errors (16 VERIFICATION_FAILURE + 6 VERIFICATION_GAP) — top target. QA FM-2.1 already addressed. Tech-lead errors spread thin (max 3 each).

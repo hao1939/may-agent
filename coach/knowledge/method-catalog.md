@@ -954,6 +954,11 @@ invocation.
 
 **When NOT to use**: When single-session performance is required (workflow
 adds overhead). When the phases can't be meaningfully separated.
+When the target behavior is **intra-phase cadence** (e.g., materialization
+discipline — writing intermediate findings throughout a session). The
+two-phase split doesn't enforce write cadence WITHIN each phase; the agent
+still batches writes to phase-end. (Evidence: exp-094, baseline 6/9 →
+patched 5/9 on `materialize-intermediate-findings`, REGRESSED.)
 
 **How**:
 1. Design a workflow with ≥2 steps (phases)

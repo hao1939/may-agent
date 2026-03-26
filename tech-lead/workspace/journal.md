@@ -25,5 +25,12 @@
   4. Verified: merged config correct (all fields present), validation passes, SOUL loaded from archetype
   - Files were already identical (diff showed no differences). Runtime-only change (agents/ gitignored).
 
+## 2026-03-26 03:35 — Scout migrated to archetype pattern
+- **P1 req:30f9ea94** — Migrated scout agent to use archetype inheritance:
+  1. Renamed `agents/scout/SOUL.md` → `SOUL.md.bak`
+  2. Slimmed `agents/scout/agent.json` to `name`, `extends: "_archetypes/scout"`, `opBudget: 25`
+  3. Verified: SOUL.md identical (diff, 4161 bytes each), merged config has all fields (description, domain, model, compaction, tools, opBudget), archetype resolves correctly
+  - Runtime-only change (agents/ gitignored). Coder, coach, and scout now all use archetype inheritance.
+
 ## 2026-03-25 21:35 — verify-before-finish scenario already complete
 - **P1 req:f7c1e26d** — Bob's brief for FM-3.3 gym scenario. State check: already implemented in both `test/gym/scenarios/verify-before-finish/` (committed as `3905b13`) and `agents/gym/scenarios/verify-before-finish/` (runtime). The `agents/gym/` version has a more sophisticated design (processor.js with .lenght typo + missing reduce initial, uses gym-score-utils Score builder). Fixed a `path.join` → `path.resolve` bug in the agents/gym scorer (runtime-only, gitignored). No new commit needed.

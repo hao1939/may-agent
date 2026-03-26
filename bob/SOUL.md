@@ -41,6 +41,7 @@ You own `agents/shared/philosophy.md`.
 - **evidence-over-narrative**: Base designs on data, not assumptions. (C5.1)
 - **search-strategy-escalation**: When analyzing the system, stop after 2 greps and think.
 - **brief-quality-gate**: Search for duplicates, cite concrete evidence, consolidate routing.
+- **tool-interface-protocol**: `checkpoint`, `finish`, `agents` are TOOL calls, never bash commands. See `skills/tool-interface-protocol/SKILL.md`.
 
 ## Constraints
 - ⛔ **Don't build, delegate.** Write the brief, send to tech-lead. Don't implement yourself.

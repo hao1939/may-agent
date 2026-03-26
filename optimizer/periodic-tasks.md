@@ -3,12 +3,12 @@
 Track when each task was last done. Pick the most overdue one during heartbeat step 3.
 
 ## Per heartbeat (do one, rotate)
-- [x] **Analysis review** — Last done: 2026-03-26T01:05
+- [x] **Analysis review** — Last done: 2026-03-26T03:12
   Read agents/bob/workspace/analysis.md or recent Bob synthesis outputs.
   Any findings that need optimization work? Cost issues? Efficiency problems?
   If found → add specific task to workspace/todo.md.
+  Latest (2026-03-26T03:12): Bob session 351 initialized Scout archetype files and delegated migration to tech-lead (req:30f9ea94). Coach session 347/348 diagnosed coder materialization failure (6/9 baseline) and created workflow-enforcement fork (coder-materialize-workflow in .lab/). Evaluator session 350 scored coach good (0.72 eff / 0.74 qual) with issues: premature finish() and evidence gap. System running 4 active agent requests (coach heartbeat, bob→coach verify, bob→tech-lead migrate, optimizer heartbeat). Process still on stale binary b9ef77e.
   Latest (2026-03-26T01:05): analysis.md unchanged from Mar 25. Bob journal shows archetype work (coder → _archetypes/coder) and auto-evolve pivot completed. Bob sent 2 new requests to tech-lead: verify-before-finish gym scenario (req:329d46df) and coach archetype migration (req:9468a5d9). System very quiet — 15h gap with no non-optimizer sessions. 69 active requests total, ~55 are stale zombie "echo hello" test requests from Hao. No new optimization action needed.
-  Latest (2026-03-25T22:05): analysis.md unchanged (still FM-3.3/verification gap focus). Bob produced new `brief-gym-verification-scenario.md` for tech-lead — good alignment with existing FM-3.3 guards. No new action needed.
 
 - [x] **Cost outlier scan** — Last done: 2026-03-26T00:10
   Check recent evaluations — any sessions > $2.00?
@@ -18,19 +18,21 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Latest (2026-03-25T20:40): 52 sessions in 4h (13/hr). Top ops: optimizer 57ops (common-sense experiment, expected), coach 26ops/2825s (interrupted). Coach+optimizer each 10 sessions, ~150 ops. No new waste patterns. System stable.
   Latest (2026-03-25T16:35): 61 sessions in 6.5h (9.4/hr). Two outliers: tech-lead gym test (528KB, 3x 100KB bash outputs — expected), Bob agents(filter:all) (404KB, 324KB response — one-off). No new systematic waste. Scout loop fix confirmed (2 sessions vs 32/day before). 30+ Bob zombies blocked on restart (req:31d94ce6). Finding at `workspace/finding-cost-scan-0325-1635.md`.
 
-- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-25T22:07
+- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-26T03:11
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
   Could it be replaced with a JS handler? (See cron-graduation-process.md Stage 3.)
   If found → write proposal in workspace/improvement-proposals.md.
+  Latest (2026-03-26T03:11): No new LLM-to-JS candidates. Short sessions already use JS heuristics (evaluator 0-op, QA early exit). NEW FINDING: 50+ stale test requests (echo hello/testing) clogging requests.db — not LLM waste but DB scan waste. Wrote finding at `workspace/finding-stale-requests-0326-0311.md`. Proposed: request-cleanup JS handler to auto-cancel stale CREATED test requests >24h old.
   Latest (2026-03-25T22:07): Scanned 49 sessions in 4h (12.25/hr). 15 low-op sessions (0-2 ops): evaluator 0-ops (JS heuristic ✅), May 1-op idle checks, QA 1-2 op early exits, Scout 1-2 ops idle. All low-op sessions already optimized or require LLM judgment. No new LLM-to-JS candidate.
 
-- [x] **Handler health check** — Last done: 2026-03-25T22:08
+- [x] **Handler health check** — Last done: 2026-03-26T03:20
   Review existing JS handlers in agents/may/handlers/.
   Any errors in recent logs? Any handler that's not firing?
   If issues → add fix to workspace/todo.md.
+  Latest (2026-03-26T03:20): 22 handlers present. Tool quality report (01:07 UTC): waste rate 4.1% (173/4193), bash:other=152 (88% of waste, optimizer=72, qa=48, coach=28). read:nonexistent-path=8 (skill-discovery.md pattern — optimizer looking for workspace-relative path). bash:empty-args=8. coach:finish-empty-args=2 (new). All known patterns — QA npx fix and sub-classifier blocked on process restart. No new handler issues.
   Latest (2026-03-25T22:08): Only 3 sessions with tool errors in last 4h (1 error each: optimizer, coach, may). Down from 21 errors in 15 sessions at last check. Tool error rate very low. No handler issues detected.
 
-- [x] **Proven pattern → Skill/Workflow** — Last done: 2026-03-25T18:11
+- [x] **Proven pattern → Skill/Workflow** — Last done: 2026-03-26T03:20
   This is your MOST IMPORTANT periodic task — focus area #1.
   **⛔ COOLDOWN: 6h minimum between runs.** With 14 skills deployed, discovery phases increasingly
   find "no new skill needed." Each lifecycle costs ~90 ops (4 phases). Running 3x/6h = 270 ops =
@@ -40,6 +42,7 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   sessions, preventing you from skipping testing or doing meta-work instead.
   If you have a specific pattern in mind, pass it: `workflow.run("skill-lifecycle", "Pattern: agents read file → check convention → edit → verify")`
   **Deliverable**: A new or refined skill file, tested in gym, deployed to agents.
+  Latest (2026-03-26T03:26): Full 4-phase lifecycle via workflow. Phase 1 discovered "guard-precision-refinement" (isToolError false-positive regex). Phase 2 correctly concluded it's a code fix, NOT a teachable skill — no SKILL.md created. Phase 3 documented TEST BLOCKED. Phase 4 verified existing build-activation-verification deployment. 54 skills now exist. Saturation signal confirmed — code fixes > prompt skills for remaining patterns. Next run: consider 12h cooldown or skip if no novel behavioral pattern observed.
   Latest (2026-03-25T18:11): Re-ran lifecycle — discovery found build-activation-verification pattern (same as 10:03 run). Phase 2 reused existing SKILL.md. Phase 3 re-tested: 2/3 gym pass, all behavioral checks 3/3. Phase 4 deployed to optimizer SOUL.md + sent requests for tech-lead/coder/bob SOUL.md updates.
   Latest (2026-03-25T10:03): build-activation-verification (18th skill) drafted, tested (2/3 gym pass, core assertions 3/3), deployed to optimizer + tech-lead SOUL.md. Pattern: agents build binaries and claim "deployed" but don't verify the running process switched. 206 lines.
   Latest (2026-03-25T03:03): prerequisite-gap-protocol drafted and tested — 0/3 gym pass (agents claim success even with missing prerequisites). NOT deployed. Skill identifies real pattern but needs prompt injection to change behavior.
@@ -49,7 +52,7 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Latest (2026-03-23T21:36): verification-consistency (15th skill) deployed to 6 agents. Full lifecycle.
   _13 earlier skill deployments documented in finding files. See `workspace/finding-pattern-scan-*.md`._
 
-- [x] **Tool quality review** — Last done: 2026-03-25T22:34
+- [x] **Tool quality review** — Last done: 2026-03-26T02:40
   Read the tool-quality-report.md (generated by tool-quality-scan handler every 4h).
   Look for regression trends, persistent failure patterns, and agent-specific issues.
   If a specific failure category accounts for >30% of waste, create a targeted intervention:
@@ -57,6 +60,7 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   - For empty-args: check if schema validation is catching it early enough
   - For edit-match-fail: check if agents are reading files before editing
   If tool-quality-report.md doesn't exist yet, skip — handler hasn't fired.
+  Latest (2026-03-26T02:40): **BUG FIX**: Found and fixed false positive in `isToolError()` (manager-utils.ts). Old regex `/exit\s*(code\s*)?\d*[1-9]\d*/i` matched "exit code 1" anywhere in output — false-triggers when grep/read output contains exit code mentions in content (e.g., grepping error logs). Fixed to anchor to bash.ts format: `/Command exited with code \d*[1-9]\d*/`. Coder ERROR_LOG showed FM-1.2 PIVOT_SIGNAL_IGNORED caused by this. Updated test/tool-pivot.test.ts with false-positive test cases. All 87 related tests pass.
   Latest (2026-03-25T22:34): Report from 21:07 UTC. Waste rate 4.4% (slightly up from 3.8%). bash:other=162 (85.7% of waste), optimizer=78 wasted calls (worst offender, 49% of all waste). bash:empty-args=11 (optimizer=7, coach=4). read:nonexistent-path=8 (skill-discovery.md pattern). bash:nonexistent-path=3 (all /home/user errors). All interventions already in binary f10cfde — blocked on restart. No new interventions needed.
   Latest (2026-03-25T18:33): Report from 17:07 UTC. Waste rate 3.8% (stable). bash:other=136 (83% of waste), optimizer=60 wasted calls (worst offender). bash:empty-args regressed: 12 (was 8, +50%). QA npx fix deployed but blocked on restart. Sub-classifier deployed but blocked on restart. All improvements blocked on PID restart (req:e535d4d8). No new interventions needed — existing fixes just need activation.
   Latest (2026-03-25T12:43): Deep-dived bash:other (148 calls, 69% of waste). Sub-classified: CMD_NOT_FOUND=56% (npx/bun/sqlite3), FILE_NOT_FOUND=26%, CD_BAD_PATH=19%. **ROOT CAUSE FOUND**: QA SOUL.md instructs `npx tsc`/`npx vitest` but npx isn't in PATH — causes ~70/148 waste calls alone (47%). Sent P0 fix to tech-lead: replace with `./node_modules/.bin/tsc`/`./node_modules/.bin/vitest`. Also sent P1 patch to improve classifyFailure() with 3 new sub-categories. Findings at `workspace/finding-qa-npx-not-available-0325-1243.md` and `workspace/finding-bash-other-subclassify-0325-1240.md`.

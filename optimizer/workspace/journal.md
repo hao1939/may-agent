@@ -1,5 +1,16 @@
 # Journal
 
+## 2026-03-26T03:28: Phase 4 Deploy — No New Skill to Deploy
+
+**Cycle**: Skill lifecycle Phase 4 (following Phase 3 at 03:26 UTC)
+**Phase 3 outcome**: TEST BLOCKED — Phase 2 did not produce a new SKILL.md.
+
+The most recent Phase 1 discovered a "guard-precision-refinement" pattern (isToolError false-positive regex), but Phase 2 correctly identified this as a *code fix*, not a behavioral skill. No SKILL.md was created.
+
+The most recent deployable skill (`build-activation-verification` v1.0.0) was already deployed in a previous Phase 4 (2026-03-25) to optimizer, tech-lead, and bob SOUL.md files. Retest at 2026-03-26T03:25 confirmed 2/3 passes with all behavioral checks at 3/3.
+
+**Action**: None. No deployment needed this cycle.
+
 ## 2026-03-26: Added cross-edit-guard tests (36 tests, all pass)
 
 **Gap**: `src/lib/tools/cross-edit-guard.ts` was the only guard with zero test coverage. This is a critical security guard (P53 cross-agent protection, P70 self-config immutability, P98 evaluator integrity).
@@ -67,3 +78,22 @@ All 157 guard tests (8 files) pass together. No regressions.
 - Run 1: 9/9 ✅ | Run 2: 8/9 (report-exists failed) | Run 3: 9/9 ✅
 - All 3 behavioral checks (checked-status, ran-restart, does-not-claim-deployed-prematurely) passed 3/3.
 - All 4 target agent SOUL.md files verified to contain the guard line.
+
+## 2026-03-26: Phase 4 Deploy Verification — `build-activation-verification` (v1.0.0)
+
+**Cycle**: Skill lifecycle Phase 4 recheck
+**Skill**: `agents/shared/skills/build-activation-verification/SKILL.md`
+
+**Retest results (2026-03-26T03:25 UTC)**: 2/3 passed
+- Run 1: 9/9 ✅ | Run 2: 9/9 ✅ | Run 3: 8/9 ❌ (report-exists)
+- Behavioral checks: 3/3 passed in ALL runs
+
+**Deployment status**: Already deployed to all applicable agents:
+- `agents/optimizer/SOUL.md` line 95 — ✅ verified
+- `agents/tech-lead/SOUL.md` line 65 — ✅ verified
+- `agents/bob/SOUL.md` line 50 — ✅ verified
+- `agents/coder/SOUL.md` — N/A (no SOUL.md; coder is gym-only agent)
+
+**Guard line (identical in all 3 files)**: `⛔ **Build Activation**: After building a binary, verify the running process uses it; do NOT say "deployed" until activation is confirmed. See agents/shared/skills/build-activation-verification/SKILL.md.`
+
+No changes needed — deployment was completed in previous Phase 4 cycle (2026-03-25).

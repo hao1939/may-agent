@@ -14,6 +14,9 @@
 - [ ] **DD#468 ABSTRAL** — ready for Bob (automatic MAS design via SKILL.md, ★★★★★)
 - [ ] **DD#469 MemCollab** — ready for Bob (cross-agent memory via contrastive distillation, ★★★★½)
 - [ ] **CR#256 Meta-Design Cluster** — ready for Bob (Wednesday synthesis, Inspectability Trilemma, ★★★★★)
+- [ ] **DD#470 ETD-MAPPO** — ready for Bob (epistemic time-dilation async MARL, ★★★★½)
+- [ ] **DD#471 SEMA** — ready for Bob (self-evolving multi-agent RTS, structural entropy pruning, ★★★★)
+- [ ] **CR#258 Compute Governance** — ready for Bob (Thursday synthesis, When-and-What Triangle, ★★★★★)
 
 ## Leads to Track
 - ~~Fair ZD Strategies follow-up~~ → **DONE: CR#253 Stochastic Cooperation Theory**
@@ -30,6 +33,7 @@
 - Environmental Stochasticity Principle (P81 candidate) — from DD#460 ZD failure result
 - **MAS Fragility Triangle** — integration of prediction (ProMAS) + containment (ALARA) + communication integrity (AgentComm-Bench)
 - **Circuit breaker mechanism for LLM-based MAS** — AgentComm-Bench proves communication can harm; need operational mechanism
+- **Compute Efficiency Convergence** — ETD-MAPPO (temporal sleep) + SEMA (observation pruning) both solve MAS deployment cost from different angles; potential synthesis with DD#463 Selection Bottleneck
 
 ## Completed This Week (W13)
 - Thursday batch: 10/10 deep-dives (DD#434-DD#443)
@@ -38,11 +42,12 @@
 - Sunday: early exit (no new arXiv data)
 - **Monday March 23 batch: DD#458-DD#460 (TrustFlow + GoAgent + ZD Strategies) + 10/10 papers triaged + CR#252 synthesis + CR#253 Stochastic Cooperation Theory**
 - **Tuesday March 24 batch: DD#463-DD#467 (5 deep-dives) + 29 papers triaged + CR#255 Fragile Orchestra synthesis**
+- **Thursday March 26 batch: DD#470-DD#471 (ETD-MAPPO + SEMA) + 18 papers triaged + 6 predictions (P99-P104)**
 - GUS v7 Delta proposal produced
 - Predictions P203-P229 (27 from batches) + P84-P88 (5 from v7 delta) + P89-P94 (6 from Monday+synthesis) = 38 total
 
 ## Notes
-- DD count: 469, CR count: 256
+- DD count: 471, CR count: 257
 - GUS: v6 → v7 delta proposal ready, plus Law 35-37 / M33-M36 / P89-P98 candidates
 - W13 has been governance-dominated: Governance-First Architecture is the defining cluster
 - **TrustFlow (DD#458) validates Trust Evolution Principle (CR#250) — strongest external validation yet**
@@ -57,3 +62,5 @@
 - **DD#468 ABSTRAL: Automatic MAS design via SKILL.md documents, topology repulsion, specialist role discovery. 26% turn efficiency = coordination tax. ★★★★★.**
 - **DD#469 MemCollab: Cross-agent memory via contrastive trajectory distillation. Knowledge = invariance across agents. Cross-model-family transfer works. ★★★★½.**
 - **CR#256 Meta-Design Cluster: Phase transition from human-designed to self-designing MAS. Discovers Inspectability Trilemma (T12 candidate). ★★★★★.**
+- **DD#470 ETD-MAPPO: Dual-gated epistemic time-dilation for async MARL. Policy entropy + twin-critic divergence gates. 73.6% compute reduction. Emergent temporal role specialization. ★★★★½.**
+- **DD#471 SEMA: Self-evolving multi-agent RTS framework. Structural entropy observation pruning (70% token reduction). Three-agent executor/evaluator/evolver architecture. ★★★★.**

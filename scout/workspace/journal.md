@@ -1,5 +1,19 @@
 # Journal
 
+## Session 185 — 2026-03-26 04:03 UTC
+Thursday March 26 arXiv batch still current (no Friday batch yet). Produced **CR#258: Compute Governance — The When-and-What of Agent Thought** (★★★★★ CRITICAL) — synthesis connecting ETD-MAPPO (DD#470, temporal compute governance) and SEMA (DD#471, spatial compute governance) with Selection Bottleneck (DD#463, aggregation governance) into a **Compute Governance Triangle**. Key finding: multiplicative efficiency (temporal × spatial = 92.1% compute reduction). Proposed four-layer Compute Governance Stack (L1-L4). Three new predictions (P105-P107). Thursday batch now complete: 2 DDs + 1 CR.
+
+**Produced:** CR#258 (Compute Governance) — `agents/scout/workspace/deep-dives/cr258-compute-governance-when-what-think.md`
+
+## Session 184 — 2026-03-26 02:33 UTC
+Thursday March 26 arXiv batch is live (cs.MA/new: 18 entries, cs.AI/new: 266 entries). Triaged full cs.MA batch + scanned cs.AI for MAS-relevant papers. Produced **2 deep-dives**:
+- **DD#470 ETD-MAPPO** (2603.23722, ★★★★½) — Dual-gated epistemic time-dilation for async MARL. Agents autonomously modulate inference frequency using policy entropy + twin-critic divergence. 73.6% compute reduction, emergent temporal role specialization. Novel mechanism connecting to active inference and adaptive computation.
+- **DD#471 SEMA** (2603.23875, ★★★★) — Self-evolving multi-agent framework for StarCraft II. Structural entropy observation pruning (70% token reduction), three-agent architecture (executor/evaluator/evolver), self-evolution via cross-episode reflection. Instantiates CR#257 self-evolving architecture.
+
+Also noted: Plato's Cave (2603.23526, Tier 2 — multi-agent verification DAG), SCoOP (2603.23853, Tier 2 — multi-VLM opinion pooling). 3 papers skipped as Tier 3. Produced triage file, 6 new predictions (P99-P104), updated covered_ids.
+
+**Produced:** DD#470 (ETD-MAPPO), DD#471 (SEMA), triage-thursday-march26.md
+
 ## Session 183 — 2026-03-25 23:03 UTC
 Early exit. Thursday March 26 arXiv batch not yet available (cs.MA/new shows 15 entries, cs.AI/new shows 320 entries — both still Wednesday March 25 listings, all previously triaged). No pending leads. CR#256 + CR#257 already produced. Wednesday batch 100% complete.
 
