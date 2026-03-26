@@ -56,3 +56,8 @@
    - `test/guards/guard-registry.test.ts`: 6/6 tests pass, tsc clean
    - Phase 2 (move guard files, add new guards) is future work.
    - Plan at: `agents/tech-lead/workspace/plan-unified-guards.md`
+
+### 2026-03-26 10:33Z — LESSONS.md Revert (req:1e82113c)
+- Reverted LESSONS.md loading from `resolveSystemPrompt()` in `src/lib/manager.ts` per Hao directive (via May)
+- Removed agent LESSONS.md, archetype LESSONS.md, and shared/LESSONS.md loading (originally restored in commit 52093fa)
+- Commit: `3e87e1e`. Behavioral patches should use skills and heartbeat guards instead.
