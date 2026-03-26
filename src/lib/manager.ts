@@ -32,6 +32,9 @@ import { createPathAssumptionGuard } from "./tools/path-assumption-guard.js";
 import { composeGuards } from "./tools/compose-guards.js";
 import { GuardRegistry } from "./guards/index.js";
 import { registerDefaultGuards } from "./guards/default-guards.js";
+import { createBinaryGuard } from "./guards/binary-guard.js";
+import { createWorkVerifyGuard } from "./guards/work-verify-guard.js";
+import { createToolSyntaxGuard } from "./guards/tool-syntax-guard.js";
 
 // Re-export everything from manager-utils so existing import paths don't break
 export {
@@ -1010,7 +1013,10 @@ export class SubagentManager {
           beforeToolCall: composeGuards(
             createEmptyArgsGuard(),
             createPathAssumptionGuard(),
+            createBinaryGuard(),
+            createToolSyntaxGuard(),
             createFinishGuard(),
+            createWorkVerifyGuard(),
             createReadDedupGuard(),
             createSessionReadGuard(),
             createScrapeDedupGuard(),
@@ -1344,7 +1350,10 @@ export class SubagentManager {
           beforeToolCall: composeGuards(
             createEmptyArgsGuard(),
             createPathAssumptionGuard(),
+            createBinaryGuard(),
+            createToolSyntaxGuard(),
             createFinishGuard(),
+            createWorkVerifyGuard(),
             createReadDedupGuard(),
             createSessionReadGuard(),
             createScrapeDedupGuard(),
