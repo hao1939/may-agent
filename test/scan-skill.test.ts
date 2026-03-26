@@ -5,7 +5,7 @@
  */
 
 import { describe, test, expect } from "vitest";
-import { scanSkill, G1_CODE_PATTERNS, G2_TEXT_PATTERNS } from "../agents/tech-lead/tools/scan-skill.js";
+import { scanSkill, G1_CODE_PATTERNS, G2_TEXT_PATTERNS } from "../src/lib/tools/scan-skill.js";
 
 describe("scanSkill", () => {
   // ─── Safe Content ──────────────────────────────────────────────────
