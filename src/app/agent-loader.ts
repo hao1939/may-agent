@@ -397,7 +397,7 @@ async function buildTools(config: AgentConfig, opts: AgentLoaderOptions): Promis
             apiKey: model.apiKey,
             memoryLimit: config.memoryLimit,
             opBudget: config.opBudget,
-            archetypeDir: config.extends ? resolve(opts.agentsRoot, config.extends) : undefined,
+            // archetypeDir removed per Hao directive (prompt simplification)
           });
         };
 
@@ -713,7 +713,7 @@ export async function loadAgents(opts: AgentLoaderOptions): Promise<LoadResult> 
       compaction: config.compaction,
       contextFiles: config.context_files?.map((f) => resolve(agentDir, f)),
       opBudget: config.opBudget,
-      archetypeDir: config.extends ? resolve(agentsRoot, config.extends) : undefined,
+      // archetypeDir removed per Hao directive (prompt simplification)
     });
 
     if (isUpdate) {

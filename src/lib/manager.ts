@@ -334,7 +334,7 @@ export class SubagentManager {
 
   /** Resolve the system prompt from a definition.
    *  Convention files are auto-loaded from the agent directory if present:
-   *    SOUL.md → DOMAIN.md → common-sense.md → knowledge/INDEX.md
+   *    SOUL.md → common-sense.md + generated sections (Runtime Env, Available Tools)
    *  Then: Runtime Environment (generated), Session Context (generated).
    *
    *  The entire prompt is wrapped in <system_instructions> tags (P84) to
@@ -364,7 +364,8 @@ export class SubagentManager {
     // common-sense.md: shared behavioral rules for all agents (~5-8KB)
     //
     // Files NO LONGER loaded (removed as part of prompt simplification):
-    //   (DOMAIN.md was restored — see section 1b below)
+    //   DOMAIN.md — removed per Hao directive (prompt simplification)
+    //   Archetype SOUL.md — removed per Hao directive (prompt simplification)
     //   LESSONS.md — removed per prompt simplification (Hao directive)
     //   shared/LESSONS.md — removed per prompt simplification (Hao directive)
     //   TOOLS.md — redundant with tool schema descriptions
@@ -374,20 +375,13 @@ export class SubagentManager {
     // 1. SOUL.md — agent identity, role, methodology, curated skills
     const soul = loadFile(agentDir ? join(agentDir, "SOUL.md") : undefined);
 
-    // 0. Archetype SOUL.md — base identity from parent archetype (if extending)
-    if (def.archetypeDir) {
-      const archetypeSoul = loadFile(join(def.archetypeDir, "SOUL.md"));
-      if (archetypeSoul) sections.push(archetypeSoul);
-    }
+    // 0. Archetype SOUL.md — REMOVED per Hao directive.
+    // _archetypes/ directory can stay as reference but is NOT loaded into prompts.
 
     if (soul) sections.push(soul);
 
-    // 1b. DOMAIN.md — operational context (workflows, environment, domain rules)
-    let domain = loadFile(agentDir ? join(agentDir, "DOMAIN.md") : undefined);
-    if (!domain && def.archetypeDir) {
-      domain = loadFile(join(def.archetypeDir, "DOMAIN.md"));
-    }
-    if (domain) sections.push(domain);
+    // 1b. DOMAIN.md — REMOVED per Hao directive (prompt simplification).
+    // Domain content belongs in SOUL.md or knowledge/ files, NOT auto-loaded into prompts.
 
     // 1c/1d. LESSONS.md — REMOVED per Hao directive (prompt simplification).
     // Previously loaded agent LESSONS.md + shared/LESSONS.md here.
