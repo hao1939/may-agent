@@ -1,5 +1,36 @@
 # Journal
 
+## 2026-03-26 09:10 — Growth Cycle: Coder FM-3.3 Workflow Enforcement (DISCARDED)
+
+**Target**: coder verify-after-edit (C2.3) on read-before-edit-workflow
+**Method**: #15 Workflow Enforcement — two-phase scenario split (edit then verify)
+**Results**:
+- `read-before-edit-workflow` baseline: 10/11 (C2.3 FAIL) → patched: 10/11 (C2.3 FAIL) — NO improvement
+- `read-before-edit` baseline: 11/11 (all pass!) → patched: 11/11 — ceiling effect
+- prompt_hash identical across all runs (638e2098862e) — fork NOT injected
+
+**Key findings**:
+1. The non-workflow scenario now passes baseline (was 10/11 before) — coder's base behavior improved
+2. The workflow variant STILL fails C2.3 even with Phase 2 forcing read-back — likely a scorer issue
+3. The scorer checks for reads-after-last-modification, but in the workflow case, Phase 2 reads happen in a separate session/transcript that the scorer may not see
+4. The prompt_hash is identical for baseline/patched confirming the .lab fork skill-file injection gap persists
+
+**Infrastructure gap confirmed**: The C2.3 scorer for the workflow variant needs to aggregate transcript data across both phases. Currently it only sees one phase's transcript.
+
+**Decision**: DISCARDED. Need to fix the scorer to support multi-phase transcript aggregation before workflow enforcement can be properly tested.
+
+**Growth cycle budget**: 3/3 used today (March 26). Budget exhausted.
+
+### Cron: Common-Sense Verify (summary-first) — Already Compliant
+- Last verification (2026-03-25): "summary first, then details" — 9/10 sessions compliant
+- Skipped this round — recent verification still valid, no new concerns
+
+### Cron: Research Intake
+- Scout published triage-thursday-march26.md with new papers
+- DD#470 (ETD-MAPPO): Dual-gated compute modulation in async MARL — interesting for resource sensitivity
+- DD#471 (SEMA): Self-evolving multi-agent for StarCraft II — connects to CR#257 self-evolving arch
+- No new amy-kimi/knowledge entries since last check
+
 ## 2026-03-26 03:15 — Auto-Evolve: Bob Tool-Interface Skill (exp-bob-tool-interface-001)
 
 **Growth budget**: 2/3 used today (March 26).
@@ -547,3 +578,23 @@ Key milestones archived:
 - Archived 5 stale files (diagnosis-optimizer-fm22.md, brief-coder-fm33-verify-after-edit.md, response-autoresearch-pattern.md, heartbeat-context.md, reflect-prompt.md). Workspace down to 16 files.
 
 ### Growth-cycle budget: 2/3 used today.
+
+## 2026-03-26 08:33 — Heartbeat: Infrastructure Gap Assessment
+
+### Error Scan
+- Optimizer: 285 errors (highest), coder: 107, tech-lead: 78, qa: 38, bob: 36.
+- Most recent coder error: FM-2.6 TOOL_SCHEMA_MISUSE (edit({}) missing required fields).
+- Recent experiments: 3 DISCARDED in a row (coder materialization, optimizer FM-2.2, coder verify-after-edit).
+
+### Critical Finding: Skill File Injection Gap
+- Last growth-cycle (coder verify-after-edit) showed prompt_hash IDENTICAL between baseline and patched fork.
+- This means .lab fork skill files are NOT being injected into the agent's system prompt by the gym runner.
+- **Impact**: ALL skill-file-based experiments are potentially unreliable — the fork appears identical to baseline.
+- **Action needed**: Escalate to May to investigate gym runner prompt construction for .lab forks.
+- Methods that bypass this issue: SOUL edits (modify existing agent files), heartbeat/cron message edits, workflow files.
+
+### Decisions
+- Growth-cycle budget: 2/3 used today. 1 remaining but held — no point running another skill-file experiment until the injection gap is fixed.
+- Next priorities: (1) Escalate skill-file injection gap to May, (2) Focus future experiments on SOUL/heartbeat modifications that directly edit existing agent files rather than adding new skill files, (3) Self-evolve review (191+ experiments accumulated).
+
+### Growth-cycle budget: 2/3 used today (1 held for infrastructure fix).

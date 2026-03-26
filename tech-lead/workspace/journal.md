@@ -43,3 +43,16 @@
 
 ## 2026-03-25 21:35 — verify-before-finish scenario already complete
 - **P1 req:f7c1e26d** — Bob's brief for FM-3.3 gym scenario. State check: already implemented in both `test/gym/scenarios/verify-before-finish/` (committed as `3905b13`) and `agents/gym/scenarios/verify-before-finish/` (runtime). The `agents/gym/` version has a more sophisticated design (processor.js with .lenght typo + missing reduce initial, uses gym-score-utils Score builder). Fixed a `path.join` → `path.resolve` bug in the agents/gym scorer (runtime-only, gitignored). No new commit needed.
+
+## 2026-03-26 09:35 — P78 Skill Scanner deployed + Guard Architecture Phase 1
+1. **P1 req:d6902a7f** — P78 Supply Chain Hardening: deployed skill scanner into runtime.
+   - Moved `agents/tech-lead/tools/scan-skill.ts` → `src/lib/tools/scan-skill.ts` (core location)
+   - Wired into `src/app/agent-loader.ts`: scans shared + per-agent `skills/*.md` at startup, emits `[SECURITY]` log on risk detection (visibility mode — does not block registration)
+   - Updated `test/scan-skill.test.ts` import path. 37/37 tests pass, tsc clean.
+2. **P1 req:3ffd43f3 / req:698b033e** — Unified Guard Architecture Phase 1:
+   - Created `src/lib/guards/index.ts`: Guard interface with `beforeToolCall` + `afterToolResult` hooks, `GuardRegistry` class with `composeBeforeHooks()` + `composeAfterHooks()`
+   - Created `src/lib/guards/default-guards.ts`: wraps all 6 existing guards as named Guard objects
+   - Wired into `src/lib/manager.ts`: imports + initializes registry (existing `composeGuards()` wiring untouched — both paths coexist)
+   - `test/guards/guard-registry.test.ts`: 6/6 tests pass, tsc clean
+   - Phase 2 (move guard files, add new guards) is future work.
+   - Plan at: `agents/tech-lead/workspace/plan-unified-guards.md`

@@ -47,6 +47,16 @@ interface ToolQualityBaseline {
   totalWastedCalls: number; totalCalls: number; wasteRate: number;
 }
 
+interface TrendEntry {
+  timestamp: number;
+  wasteRate: number;
+  totalCalls: number;
+  totalWastedCalls: number;
+  topCategories: Array<{ key: string; count: number }>;
+}
+
+const MAX_HISTORY_ENTRIES = 5;
+
 interface ScanResult {
   timestamp: number; window: string;
   categories: Record<string, CategoryMetric>;
@@ -63,16 +73,48 @@ const MAX_EXAMPLES = 3;
 
 export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
   const baselinePath = join(ctx.persistDir, "tool-quality-baseline.json");
+  const historyPath = join(ctx.persistDir, "tool-quality-history.json");
   const reportPath = join(ctx.agentsRoot, "optimizer", "workspace", "tool-quality-report.md");
+  const trendPath = join(ctx.agentsRoot, "optimizer", "workspace", "tool-quality-trend.md");
   const optimizerTodoPath = join(ctx.agentsRoot, "optimizer", "workspace", "todo.md");
 
   return async () => {
     const result = scanToolQuality(ctx.persistDir, baselinePath, ctx.getDb);
     if (result.totalCalls === 0) { ctx.log("[tool-quality-scan] No evaluations in last 24h."); return; }
 
+    // Load trend history
+    let history: TrendEntry[] = [];
+    try { if (existsSync(historyPath)) history = JSON.parse(readFileSync(historyPath, "utf-8")); } catch {}
+
+    // Save current baseline to history before overwriting
+    try {
+      if (existsSync(baselinePath)) {
+        const oldBaseline: ToolQualityBaseline = JSON.parse(readFileSync(baselinePath, "utf-8"));
+        const topCats = Object.entries(oldBaseline.metrics)
+          .sort(([, a], [, b]) => b.count - a.count)
+          .slice(0, 5)
+          .map(([key, m]) => ({ key, count: m.count }));
+        history.push({
+          timestamp: oldBaseline.timestamp,
+          wasteRate: oldBaseline.wasteRate,
+          totalCalls: oldBaseline.totalCalls,
+          totalWastedCalls: oldBaseline.totalWastedCalls,
+          topCategories: topCats,
+        });
+        // Keep only last N entries
+        if (history.length > MAX_HISTORY_ENTRIES) history = history.slice(-MAX_HISTORY_ENTRIES);
+        writeFileSync(historyPath, JSON.stringify(history, null, 2), "utf-8");
+      }
+    } catch { /* history update is best-effort */ }
+
     mkdirSync(dirname(reportPath), { recursive: true });
-    writeFileSync(reportPath, formatReport(result), "utf-8");
+    writeFileSync(reportPath, formatReport(result, history), "utf-8");
     ctx.log(`[tool-quality-scan] Report: ${result.totalSessionsWithFailures} sessions, ${result.totalWastedCalls} wasted, ${(result.wasteRate * 100).toFixed(1)}% waste.`);
+
+    // Write trend summary for LLM consumption (reduces 5-10 ops to 1-2)
+    mkdirSync(dirname(trendPath), { recursive: true });
+    writeFileSync(trendPath, formatTrendSummary(result, history), "utf-8");
+    ctx.log(`[tool-quality-scan] Trend summary written (${history.length} historical entries).`);
 
     // Update baseline
     const newBaseline: ToolQualityBaseline = {
@@ -212,16 +254,26 @@ function scanToolQuality(persistDir: string, baselinePath: string, getDb: () => 
 
 // ── Report ────────────────────────────────────────────────────────────
 
-function formatReport(result: ScanResult): string {
+function formatReport(result: ScanResult, history: TrendEntry[]): string {
   const ts = new Date(result.timestamp).toISOString().slice(0, 16);
+  const trendArrow = getTrendArrow(result.wasteRate, history);
   const lines = [
     "# Tool Quality Report", "",
     `**Generated**: ${ts}  `, `**Window**: ${result.window}  `,
     `**Total calls**: ${result.totalCalls}  `, `**Wasted calls**: ${result.totalWastedCalls}  `,
-    `**Waste rate**: ${(result.wasteRate * 100).toFixed(1)}%  `,
+    `**Waste rate**: ${(result.wasteRate * 100).toFixed(1)}% ${trendArrow}  `,
     `**Sessions with failures**: ${result.totalSessionsWithFailures}  `, "",
-    "## Top Issues (by wasted calls)", "",
   ];
+
+  // Add trend history section if we have data
+  if (history.length > 0) {
+    lines.push("## Waste Rate Trend", "");
+    const ratePoints = history.map(h => `${(h.wasteRate * 100).toFixed(1)}%`);
+    ratePoints.push(`**${(result.wasteRate * 100).toFixed(1)}%**`);
+    lines.push(`${ratePoints.join(" → ")}`, "");
+  }
+
+  lines.push("## Top Issues (by wasted calls)", "");
 
   const sorted = Object.entries(result.categories).sort(([, a], [, b]) => b.wastedCalls - a.wastedCalls);
 
@@ -248,6 +300,81 @@ function formatReport(result: ScanResult): string {
   for (const [key, m] of sorted) {
     const top = Object.entries(m.agents).sort(([, a], [, b]) => b - a)[0];
     lines.push(`| ${key} | ${m.count} | ${m.wastedCalls} | ${top ? `${top[0]}(${top[1]})` : "-"} |`);
+  }
+
+  return lines.join("\n");
+}
+
+// ── Trend Analysis ────────────────────────────────────────────────────
+
+function getTrendArrow(currentRate: number, history: TrendEntry[]): string {
+  if (history.length === 0) return "";
+  const lastRate = history[history.length - 1].wasteRate;
+  const delta = currentRate - lastRate;
+  if (Math.abs(delta) < 0.002) return "→";  // <0.2% change = stable
+  return delta > 0 ? "↑" : "↓";
+}
+
+function formatTrendSummary(result: ScanResult, history: TrendEntry[]): string {
+  const ts = new Date(result.timestamp).toISOString().slice(0, 16);
+  const arrow = getTrendArrow(result.wasteRate, history);
+  const lines = [
+    "# Tool Quality Trend Summary", "",
+    `**Generated**: ${ts} (auto-generated by tool-quality-scan.ts)  `,
+    `**Purpose**: Pre-analyzed trend data — read this instead of full report to save ops.`, "",
+    "## Current Snapshot",
+    `- Waste rate: **${(result.wasteRate * 100).toFixed(1)}%** ${arrow}`,
+    `- Total calls: ${result.totalCalls}`,
+    `- Wasted calls: ${result.totalWastedCalls}`,
+    `- Sessions with failures: ${result.totalSessionsWithFailures}`, "",
+  ];
+
+  // Waste rate trend
+  if (history.length > 0) {
+    lines.push("## Waste Rate History");
+    const ratePoints = history.map(h => {
+      const t = new Date(h.timestamp).toISOString().slice(5, 16);
+      return `${t}: ${(h.wasteRate * 100).toFixed(1)}%`;
+    });
+    ratePoints.push(`**NOW**: ${(result.wasteRate * 100).toFixed(1)}%`);
+    for (const p of ratePoints) lines.push(`- ${p}`);
+
+    // Trend direction
+    const rates = history.map(h => h.wasteRate).concat(result.wasteRate);
+    const rising = rates.length >= 3 && rates.slice(-3).every((r, i, a) => i === 0 || r >= a[i - 1]);
+    const falling = rates.length >= 3 && rates.slice(-3).every((r, i, a) => i === 0 || r <= a[i - 1]);
+    if (rising) lines.push("", "⚠️ **Trend: RISING** — waste rate increasing for 3+ consecutive scans.");
+    else if (falling) lines.push("", "✅ **Trend: FALLING** — waste rate decreasing for 3+ consecutive scans.");
+    else lines.push("", "→ **Trend: MIXED** — no consistent direction.");
+    lines.push("");
+  }
+
+  // Top issues summary
+  const sorted = Object.entries(result.categories).sort(([, a], [, b]) => b.wastedCalls - a.wastedCalls);
+  lines.push("## Top 3 Issues");
+  for (const [key, metric] of sorted.slice(0, 3)) {
+    const topAgent = Object.entries(metric.agents).sort(([, a], [, b]) => b - a)[0];
+    lines.push(`- **${key}**: ${metric.count} occurrences, ${metric.wastedCalls} wasted (top: ${topAgent ? topAgent[0] : "-"})`);
+  }
+  lines.push("");
+
+  // Regressions
+  if (result.regressions.length > 0) {
+    lines.push("## ⚠️ Regressions (need attention)");
+    for (const r of result.regressions) {
+      lines.push(`- **${r.category}**: ${r.current} (was ${r.baseline}, +${r.deltaPercent.toFixed(0)}%)`);
+    }
+    lines.push("");
+  }
+
+  // Action recommendation
+  lines.push("## Recommended Action");
+  if (result.regressions.length > 0) {
+    lines.push("**ACTION NEEDED**: Review regressions above. Check full report for examples.");
+  } else if (result.wasteRate > 0.05) {
+    lines.push("**MONITOR**: Waste rate above 5% threshold. Review top issues for intervention opportunities.");
+  } else {
+    lines.push("**NO ACTION NEEDED**: Waste rate within acceptable range, no regressions.");
   }
 
   return lines.join("\n");
