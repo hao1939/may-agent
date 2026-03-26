@@ -623,3 +623,11 @@ This is the **evidence fabrication** pattern — optimizer claims to have done w
 - This is a recurring optimizer issue (FM-2.3, FM-1.4 appear in 10+ previous evals)
 - **Low-cost action**: The optimizer heartbeat already has path-guessing guards. The issue is specifically in skill-lifecycle Phase 1 where the workflow instructions say "scan sessions" but don't give the exact path. Could add path hints to the workflow template.
 - **Deferred**: Run a targeted growth-cycle for optimizer path-discovery next available slot
+
+## 2026-03-26 19:33 — Heartbeat: Error Scan + Scenario Gap Discovery
+- **Error patterns (recent 20)**: coder FM-2.3 x7, optimizer FM-1.4 x5, tech-lead FM-2.2 x5
+- **Ceiling-effect check**: verify-before-finish baseline = 6/7 (behavioral checks pass, product check fails). Not ideal for FM-2.3 behavioral training.
+- **Key finding**: ALL gym scenarios are coder-only. Zero optimizer or tech-lead scenarios exist. This blocks growth cycles for those agents entirely.
+- **Action needed**: Create optimizer scenario (error-recovery / FM-1.4 focused) and tech-lead scenario (scope-compliance / FM-2.2 focused)
+- **Growth cycles today**: 2 run (02:45, 09:10). 1 remaining in budget.
+- **Next**: Create optimizer gym scenario to unlock training for FM-1.4 pattern (5 recent errors, 290 total in ERROR_LOG)

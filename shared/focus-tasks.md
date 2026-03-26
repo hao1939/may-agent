@@ -8,17 +8,17 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 
 ## Active Focus
 
-### Unified Guard Architecture (Hard Constraints)
-- **Status**: **[CANCELLED]** (2026-03-26). Stopped per Hao's directive (Req: 8b381f87). "Guards add complexity/rigidity." Pivoting to Workflows/Scenarios.
-- **Old Plan**: Implement `Guard` middleware in `manager.ts`.
+### Security Scenario (P78)
+- **Problem**: "Supply Chain Hardening" (Code Scanner) was cancelled to avoid runtime complexity.
+- **Fix**: Create a Gym Scenario that *punishes* insecure code (plaintext passwords) during training/eval.
+- **Status**: **[COMPLETED]** (2026-03-26). Scenario `judgment-security-legit` verified.
+- **Owner**: Tech-Lead (Implementation).
 
-### Supply Chain Hardening (P78)
-- **Status**: **[CANCELLED]** (2026-03-26). Stopped per Hao's directive. "Guards add complexity/rigidity." Pivoting to Workflows/Scenarios.
-- **Old Plan**: Implement "Skill Scanner" in `agent-loader.ts`.
-
-### Read Safety Guard (FM-2.1)
-- **Status**: **[CANCELLED]** (2026-03-26). Stopped per Hao's directive. "Guards add complexity/rigidity." Pivoting to Workflows/Scenarios.
-- **Old Plan**: Hard limits in `read` tool.
+### Read Safety Scenario (FM-2.1)
+- **Problem**: "Read Safety Guard" (Tool Limit) was cancelled to avoid runtime complexity.
+- **Fix**: Create a Gym Scenario that *punishes* inefficient reading (entire large files).
+- **Status**: **[COMPLETED]** (2026-03-26). Scenario `efficient-file-reading` verified.
+- **Owner**: Tech-Lead (Implementation).
 
 ### Agent Evolution System (CI/CD for Prompts)
 - **Problem**: Improvements are ad-hoc, untracked, and prone to regression. No systematic way to measure "is the agent better?".
@@ -54,12 +54,6 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 - **Fix**: Update oneshot mode to respect `--agent` flag.
 - **Status**: **[IN PROGRESS]** Brief sent to Tech-Lead.
 - **Owner**: Tech-Lead (Implementation).
-
-### Supply Chain Hardening Deployment (P78)
-- **Problem**: `scanSkill()` in `src/lib/tools/security.ts` exists but is not called.
-- **Fix**: Wire `scanSkill()` into agent-loader.ts.
-- **Status**: **[CANCELLED]** (2026-03-26). Merged with "Supply Chain Hardening (P78)" above. Stopped per Hao's directive to avoid runtime guards.
-- **Owner**: Bob / Tech-Lead.
 
 ### Safe Verification Workflow (verify-and-finish)
 - **Problem**: We need a structural way to ensure agents verify work without rigid runtime guards.
@@ -161,6 +155,18 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 - **Status**: **[RESOLVED]** (2026-03-20). Handled via `write` + `agents.send` convention. No new tool needed.
 
 ## Archive (Previous)
+
+### Unified Guard Architecture (Hard Constraints)
+- **Status**: **[CANCELLED]** (2026-03-26). Stopped per Hao's directive (Req: 8b381f87). "Guards add complexity/rigidity." Pivoting to Workflows/Scenarios.
+- **Old Plan**: Implement `Guard` middleware in `manager.ts`.
+
+### Supply Chain Hardening (P78)
+- **Status**: **[CANCELLED]** (2026-03-26). Stopped per Hao's directive. "Guards add complexity/rigidity." Pivoting to Workflows/Scenarios.
+- **Old Plan**: Implement "Skill Scanner" in `agent-loader.ts`.
+
+### Read Safety Guard (FM-2.1)
+- **Status**: **[CANCELLED]** (2026-03-26). Stopped per Hao's directive. "Guards add complexity/rigidity." Pivoting to Workflows/Scenarios.
+- **Old Plan**: Hard limits in `read` tool.
 
 ### Agent Gym v2 (P80)
 - **Problem**: Current Gym is unit tests, not scenarios.

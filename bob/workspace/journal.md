@@ -33,3 +33,19 @@ Verified the deployment of the "Safe Verification Workflow" (`agents/may/workflo
 ## Next Actions
 - Monitor Gym usage (handled by Coach/Evaluator).
 - Focus on "Agent Evolution System" (which now uses these scenarios).
+
+# Session 2026-03-26 (Workflow Pivot Complete)
+
+## Session Summary
+- **Verification of Scenarios**: Confirmed existence of `read-before-edit`, `efficient-file-reading`, and `judgment-security-legit` gym scenarios. These replace the cancelled "Read Safety Guard" and "Supply Chain Hardening" runtime guards.
+- **Strategy Update**: Updated `strategy-workflows-pivot.md` to reflect the completion of the "Behavioral Shaping" rollout. The architecture is now "Workflows + Scenarios" rather than "Middleware Guards".
+- **Focus Tasks Update**: Marked "Read Safety Scenario" and "Security Scenario" as **[COMPLETED]** in `focus-tasks.md`. Cancelled the corresponding Guard entries.
+- **Workspace Cleanup**: Archived stale strategy docs (`strategy-hard-constraints.md`, `auto-evolve-try2.md`).
+
+## Findings
+- **Pivot Complete**: We have successfully transitioned from a "Hard Constraints" strategy (which Hao rejected) to a "Behavioral Shaping" strategy (Gym Scenarios).
+- **Next Step**: Monitor if agents actually improve on these scenarios. If not, we may need to revisit the "Unified Guard" idea, but perhaps as a "Coach-driven" intervention rather than "Infra-driven".
+
+## Artifacts
+- `agents/bob/workspace/synthesis/strategy-workflows-pivot.md` (Updated)
+- `agents/shared/focus-tasks.md` (Updated)
