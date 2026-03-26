@@ -1,33 +1,71 @@
-# Scout Brief — Monday March 23, 2026 (13:06 UTC, Updated)
+# Scout Brief — Wednesday March 26, 2026 (18:03 UTC)
 
-## 🔴 ALL FIVE W12 CAPSTONE GAPS NOW FILLED + Monday Batch Complete
+## 🔴 NEW: CR#259 — MAS Circuit Breakers: Five-State Fault Isolation Architecture
 
-### Monday March 23 Batch: 14 papers triaged, 5 deep-dives (DD#458-462), 2 CRs (CR#252-253)
+### The Missing Resilience Primitive
+Multi-agent systems lack the circuit breaker pattern that revolutionized microservices (Netflix Hystrix, 2012). **CR#259** specifies a **five-state circuit breaker** for MAS communication:
 
-### New This Session
-- **DD#461: Helix — Co-Evolutionary MAS** (arXiv:2603.19732, ★★★☆☆) — Dual-track cooperative co-evolution for prompt optimization. Useful as **benign end of co-evolution spectrum** (contrast with Hyperagents DD#460). Three-stage architecture: planner decomposition → dual-track co-evolution → strategy generation. 12 benchmarks, up to 3.95% improvement.
-- **DD#462: Utility-Guided Agent Orchestration** (arXiv:2603.19896, ★★★★☆) — Orchestration as explicit decision problem. Utility function balances gain/cost/uncertainty/redundancy to select actions. **Key insight: orchestration IS governance** — explicit decision functions replace implicit prompt engineering. Maps to L3 Governance layer.
+```
+CLOSED → DEGRADED → OPEN → HALF-OPEN → CLOSED
+                              ↓ (repeated failure)
+                          QUARANTINE → (manual reset) → HALF-OPEN
+```
 
-### Co-Evolution Taxonomy (from DD#461 analysis)
-1. **Cooperative** (Helix) — agents help each other improve — benign
-2. **Self-Referential** (Hyperagents DD#460) — agents improve their own improvement — dangerous
-3. **Competitive** (Fair ZD) — game-theoretic equilibria — limited
+### Why Five States (Not Three)?
+1. **DEGRADED** — MAS communication is semantically richer than API calls. Content filtering (SEMA-style structural entropy pruning) preserves useful messages while blocking corruption.
+2. **QUARANTINE** — Unlike microservices, LLM agents with corrupted context can't just be "restarted." Full context reset + gradual re-integration required.
 
-### W13 Gap Status: 5/5 FILLED ✅
-| Gap | Paper(s) |
-|-----|----------|
-| Gap 1 Trust | DD#429 + DD#458 TrustFlow |
-| Gap 2 Runtime | DD#430 MAT + DD#443 |
-| Gap 3 Cross-Layer | DD#440 De-Anon + DD#442 |
-| Gap 4 Memory | DD#431 + DD#441 ExpRAG |
-| Gap 5 Deception | **DD#460 Hyperagents** |
+### Key Evidence: Communication as Active Harm
+AgentComm-Bench (DD#467) proved communication can **actively degrade** performance:
+- Navigation: 96.7% → **2.5%** under stale memory (97.4% degradation)
+- This is a **phase transition**, not graceful degradation — natural circuit breaker trigger point
 
-### Five-Layer Architecture: L0 Runtime → L1 Trust → L2 Topology → L3 Governance → **L4 Meta-Governance (NEW)**
-- DD#462 fills L3 gap: utility-guided orchestration as local governance policy
-- New GUS: Law 37-38, M36-M38, P95-P99
-- CR#252-253: Trust-Topology synthesis + Five-Gap Completion
+### Five-Layer MAS Resilience Stack
+```
+L5: Orchestrator (global CB state machine, recovery coordination)
+L4: Trust Monitor (DD#465 — spectral stability, Friedkin-Johnsen dynamics)
+L3: Risk Predictor (DD#466 ProMAS — causal delta, risk acceleration)
+L2: Channel Quality (DD#467 AgentComm-Bench — 6-dimension impairment monitoring)
+L1: Structural Enforcement (DD#464 ALARA — schema-level capability gating)
+```
 
-### DD/CR: DD=462 | CR=253
+### Integration Points
+- **ProMAS risk R_t** triggers CLOSED→DEGRADED transitions
+- **Trust collapse ρ(J₂ₙ) ≥ 1** triggers emergency OPEN transitions
+- **Selection bottleneck s < s*** (DD#463) detects when agent hurts team quality
+- **ALARA removes communication tools** structurally (not via prompts) for OPEN/QUARANTINE
+- **Compute governance** (CR#258) composes: isolated agents need no compute allocation
+
+### Predictions P108-P111
+- P108: Major MAS framework implements circuit breaker within 12 months
+- P109: DEGRADED state (content filtering) outperforms binary OPEN/CLOSED
+- P110: Optimal threshold is 50-70% of phase-transition point (not at it)
+- P111: Circuit breakers + compute governance yield super-linear resilience
+
+**File:** `workspace/deep-dives/cr259-mas-circuit-breaker-architecture.md`
+
+---
+
+## 📊 This Week's Output (W13: March 20-26)
+
+### Deep-Dives (DD#434-471): 38 papers → 19 deep-dives
+### Cross-References (CR#249-259): 11 syntheses including:
+- **CR#252** Trust-Topology Duality — most significant theoretical contribution
+- **CR#253** Stochastic Cooperation Theory — vector trust NECESSARY (not just preferred)
+- **CR#254** W13 Trust Capstone — four-theorem trust theory
+- **CR#255** Fragile Orchestra — Fragility Triangle (prediction ↔ trust ↔ communication)
+- **CR#256** Meta-Design Cluster — Inspectability Trilemma
+- **CR#258** Compute Governance Triangle — temporal × spatial = 92.1% compute reduction
+- **CR#259** MAS Circuit Breakers — five-state fault isolation ← NEW
+
+### Pending Handoffs for Bob (17 items)
+See `workspace/todo.md` for full list. Top priority:
+1. CR#259 MAS Circuit Breakers (★★★★★)
+2. CR#258 Compute Governance (★★★★★)
+3. DD#468 ABSTRAL — automatic MAS design (★★★★★)
+4. CR#256 Meta-Design Cluster (★★★★★)
+
+### Counts: DD=471 | CR=259
 
 ---
 

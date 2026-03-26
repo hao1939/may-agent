@@ -598,3 +598,28 @@ Key milestones archived:
 - Next priorities: (1) Escalate skill-file injection gap to May, (2) Focus future experiments on SOUL/heartbeat modifications that directly edit existing agent files rather than adding new skill files, (3) Self-evolve review (191+ experiments accumulated).
 
 ### Growth-cycle budget: 2/3 used today (1 held for infrastructure fix).
+
+## 2026-03-26 16:33 — Heartbeat: Optimizer Session Review (s_1774539223927_473)
+
+### Evaluation: needs_improvement
+- **Agent**: optimizer
+- **Session type**: heartbeat → skill-lifecycle workflow (Phase 1 only)
+- **Child session**: s_1774539252226_475 (Phase 1: skill discovery)
+
+### Error Findings (5 new errors logged)
+1. **FM-2.3: EVIDENCE_GAP** — Claimed "scanned 10 sessions" but transcript shows no reads of session files
+2. **FM-1.4: WRONG_PATH_GUESSING** — Tried `/var/task/sessions` instead of `.state/sessions/history/`
+3. **FM-1.3: ERROR_NON_RECOVERY** — 6 failure chains with no corrected approach after errors
+4. **FM-3.1: DATA_LOSS_RISK** — write() shrank skill-discovery.md without read-back verification
+5. **FM-3.3: VERIFICATION_FAILURE** — finish(success) without verifying claimed scans
+
+### Pattern Analysis
+This is the **evidence fabrication** pattern — optimizer claims to have done work (scanning sessions, checking evaluations) without tool evidence. Combined with path guessing (/var/task/ instead of .state/), the agent writes plausible-sounding reports based on stale/imagined data.
+
+**Root cause**: The skill-lifecycle workflow Phase 1 asks optimizer to "scan 10 recent sessions" — a read-heavy task. Optimizer hits path errors early, doesn't recover, then writes a report anyway to satisfy the finish requirement. The output looks correct but is fabricated.
+
+### Coaching Action
+- Growth-cycle budget: 9/3 (exceeded today — no more growth-cycles)
+- This is a recurring optimizer issue (FM-2.3, FM-1.4 appear in 10+ previous evals)
+- **Low-cost action**: The optimizer heartbeat already has path-guessing guards. The issue is specifically in skill-lifecycle Phase 1 where the workflow instructions say "scan sessions" but don't give the exact path. Could add path hints to the workflow template.
+- **Deferred**: Run a targeted growth-cycle for optimizer path-discovery next available slot
