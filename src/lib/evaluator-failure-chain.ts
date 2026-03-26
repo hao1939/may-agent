@@ -41,7 +41,7 @@ export interface FailureChain {
  * catching `find /home/user -name "*.ts"` (hallucinated path, real problem).
  */
 function isFindWithNoResults(toolName: string, args: Record<string, unknown>, resultText: string): boolean {
-  if (toolName !== "exec") return false;
+  if (toolName !== "bash") return false;
   const cmd = typeof args.command === "string" ? args.command : "";
   if (!/\b(find|locate)\b/.test(cmd)) return false;
 
@@ -106,11 +106,17 @@ function isTestOrBuildRunner(command: string): boolean {
   // npx-invoked test/build tools: npx vitest, npx tsc, npx jest, etc.
   if (/\bnpx\s+(vitest|jest|tsc|mocha)\b/.test(actual)) return true;
 
+  // Direct node_modules/.bin/ invocations (agents use these when npx is unavailable)
+  if (/node_modules\/\.bin\/(vitest|jest|tsc|mocha)\b/.test(actual)) return true;
+
   // npm/yarn/pnpm test or build scripts
   if (/\b(npm|yarn|pnpm)\s+(test|run\s+(test|build|check|lint|typecheck))\b/.test(actual)) return true;
 
   // Direct tsc invocation
   if (/\btsc\b/.test(actual) && /--noEmit|--build/.test(actual)) return true;
+
+  // node -c (syntax check) — exit 1 means syntax error, which is expected in dev workflow
+  if (/\bnode\s+-c\b/.test(actual)) return true;
 
   return false;
 }
@@ -223,7 +229,7 @@ function isToolOwnError(toolName: string, resultText: string, args?: Record<stri
     return resultText.startsWith("Error reading file:");
   }
 
-  if (toolName === "exec") {
+  if (toolName === "bash") {
     const stripped = resultText.replace(/^CWD:[^\n]*\n/, "");
     const exitMatch = stripped.match(/^Exit code (\S+)/);
     if (!exitMatch) return false;
@@ -363,7 +369,7 @@ function detectIntent(p: { tool: string; args: Record<string, unknown>; resultTe
   if (p.tool === "read" && typeof p.args.path === "string") {
     return { type: "read-file", path: p.args.path };
   }
-  if (p.tool === "exec" && typeof p.args.command === "string") {
+  if (p.tool === "bash" && typeof p.args.command === "string") {
     return { type: "exec-command" };
   }
   return { type: "unknown" };
@@ -377,13 +383,13 @@ function isRecoveryAttempt(
   const path = typeof p.args.path === "string" ? p.args.path : "";
 
   // Filesystem discovery commands — agent is trying to find the right path
-  if (p.tool === "exec" && /\b(find|locate|which|pwd|ls|tree|stat)\b/.test(cmd)) return true;
+  if (p.tool === "bash" && /\b(find|locate|which|pwd|ls|tree|stat)\b/.test(cmd)) return true;
 
   // Content inspection after failure — agent retrying with different path or approach
-  if (p.tool === "exec" && /\b(cat|head|tail|wc)\b/.test(cmd) && intent.type === "exec-command") return true;
+  if (p.tool === "bash" && /\b(cat|head|tail|wc)\b/.test(cmd) && intent.type === "exec-command") return true;
 
   // grep/ag/rg to search for patterns after initial command failed
-  if (p.tool === "exec" && /\b(grep|ag|rg)\b/.test(cmd) && intent.type === "exec-command") return true;
+  if (p.tool === "bash" && /\b(grep|ag|rg)\b/.test(cmd) && intent.type === "exec-command") return true;
 
   if (p.tool === "read" && intent.type === "read-file" && intent.path) {
     const origFile = intent.path.split("/").pop() ?? "";
@@ -420,7 +426,7 @@ function diagnoseRootCause(trigger: FailureStep, recovery: FailureStep[], resolu
     return `read tool returned ENOENT for ${guessedPath} with no path hint — agent could not find the file`;
   }
 
-  if (trigger.tool === "exec") {
+  if (trigger.tool === "bash") {
     const cmd = trigger.args.slice(0, 80);
     let cmdStr = "";
     try {
@@ -431,10 +437,10 @@ function diagnoseRootCause(trigger: FailureStep, recovery: FailureStep[], resolu
     if (/\b(find|locate)\b/.test(cmdStr) && (!trigger.result.trim() || trigger.result.includes("(no output)"))) {
       return `blind filesystem search returned empty: ${cmd} — agent is guessing paths instead of using cwd`;
     }
-    return `exec failed: ${cmd} — ${trigger.result.slice(0, 80)}`;
+    return `exec failed: ${cmd} — ${trigger.result.slice(0, 200)}`;
   }
 
-  return `${trigger.tool} failed: ${trigger.result.slice(0, 80)}`;
+  return `${trigger.tool} failed: ${trigger.result.slice(0, 200)}`;
 }
 
 /** Format failure chains as a human-readable section for the evaluation prompt. */

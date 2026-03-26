@@ -3,11 +3,20 @@ import { isToolError, computeToolArgsKey, TOOL_PIVOT_LIMIT } from "../src/lib/ma
 
 describe("Tool Pivot Heuristic", () => {
   describe("isToolError", () => {
-    it("detects non-zero exit codes", () => {
-      expect(isToolError("Command failed with exit code 1")).toBe(true);
-      expect(isToolError("Process exited with exit code 127")).toBe(true);
-      expect(isToolError("bash: exit 2")).toBe(true);
+    it("detects non-zero exit codes from bash.ts format", () => {
+      // bash.ts appends "Command exited with code N" for non-zero exits
+      expect(isToolError("some output\n\nCommand exited with code 1")).toBe(true);
+      expect(isToolError("Command exited with code 127")).toBe(true);
+      expect(isToolError("Command exited with code 2")).toBe(true);
       expect(isToolError("exit code 0")).toBe(false); // exit 0 is success
+    });
+
+    it("does not false-positive on exit code mentions in content", () => {
+      // grep/read output containing "exit code 1" should NOT trigger error
+      expect(isToolError("src/foo.ts:42: exit code 1;")).toBe(false);
+      expect(isToolError("the process will exit 1 if")).toBe(false);
+      expect(isToolError("testing that exit 42 is handled")).toBe(false);
+      expect(isToolError("bash: exit 2 in documentation")).toBe(false);
     });
 
     it("detects error emoji prefix", () => {
