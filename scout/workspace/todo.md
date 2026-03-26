@@ -16,6 +16,7 @@
 - [ ] **CR#256 Meta-Design Cluster** — ready for Bob (Wednesday synthesis, Inspectability Trilemma, ★★★★★)
 - [ ] **DD#470 ETD-MAPPO** — ready for Bob (epistemic time-dilation async MARL, ★★★★½)
 - [ ] **DD#471 SEMA** — ready for Bob (self-evolving multi-agent RTS, structural entropy pruning, ★★★★)
+- [ ] **DD#472 MAD-Spear** — ready for Bob (formal adversarial attack model, Conformity Paradox, Sybil detection gap, ★★★★★)
 - [ ] **CR#259 MAS Circuit Breakers** — ready for Bob (five-state fault isolation, MAS Resilience Stack, ★★★★★)
 - [ ] **CR#258 Compute Governance** — ready for Bob (Thursday synthesis, When-and-What Triangle, ★★★★★)
 
@@ -35,6 +36,9 @@
 - **MAS Fragility Triangle** — integration of prediction (ProMAS) + containment (ALARA) + communication integrity (AgentComm-Bench)
 - ~~**Circuit breaker mechanism for LLM-based MAS**~~ → **DONE: CR#259 MAS Circuit Breakers**
 - **Compute Efficiency Convergence** — ETD-MAPPO (temporal sleep) + SEMA (observation pruning) both solve MAS deployment cost from different angles; potential synthesis with DD#463 Selection Bottleneck
+- **Conformity Paradox formalization** — extend MAD-Spear BFT model with trust layers (GUS framework); test whether vector trust reduces conformity vulnerability
+- **Sybil Detection for MAS** — response fingerprinting, timing analysis, stylometric detection; bridge DD#472 threat model with CR#259 circuit breaker defense
+- **AgentNet decentralized coordination** (2504.00587) — DAG-based agent topology with evolutionary specialization; potential connection to CR#256 Meta-Design and DD#468 ABSTRAL
 
 ## Completed This Week (W13)
 - Thursday batch: 10/10 deep-dives (DD#434-DD#443)
@@ -48,7 +52,7 @@
 - Predictions P203-P229 (27 from batches) + P84-P88 (5 from v7 delta) + P89-P94 (6 from Monday+synthesis) = 38 total
 
 ## Notes
-- DD count: 471, CR count: 259
+- DD count: 472, CR count: 259
 - GUS: v6 → v7 delta proposal ready, plus Law 35-37 / M33-M36 / P89-P98 candidates
 - W13 has been governance-dominated: Governance-First Architecture is the defining cluster
 - **TrustFlow (DD#458) validates Trust Evolution Principle (CR#250) — strongest external validation yet**
@@ -66,3 +70,4 @@
 - **DD#470 ETD-MAPPO: Dual-gated epistemic time-dilation for async MARL. Policy entropy + twin-critic divergence gates. 73.6% compute reduction. Emergent temporal role specialization. ★★★★½.**
 - **DD#471 SEMA: Self-evolving multi-agent RTS framework. Structural entropy observation pruning (70% token reduction). Three-agent executor/evaluator/evolver architecture. ★★★★.**
 - **CR#259 MAS Circuit Breakers: Five-state fault isolation pattern (CLOSED/DEGRADED/OPEN/HALF-OPEN/QUARANTINE). Integrates ProMAS sensing → trust monitoring → ALARA enforcement into MAS Resilience Stack. P108-P111. ★★★★★.**
+- **DD#472 MAD-Spear: First formal adversarial threat model for MAS debate. BFT-style fault-tolerance, Sybil amplification (1/6 agents → system failure), Conformity Paradox (cooperation mechanism = attack surface). Validates CR#259, reveals missing Sybil detection layer. P112-P114. ★★★★★.**
