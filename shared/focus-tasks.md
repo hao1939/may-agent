@@ -56,10 +56,16 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 - **Owner**: Tech-Lead (Implementation).
 
 ### Supply Chain Hardening Deployment (P78)
-- **Problem**: `scanSkill()` in `src/lib/tools/security.ts` exists but is not called by any agent. "Phantom Code" — verified on disk but dead in practice.
-- **Fix**: Wire `scanSkill()` into agent-loader.ts or manager.ts so all new skills/tools are scanned before use. Add behavioral rule to common-sense.md.
-- **Status**: **[IN-PROGRESS]** (2026-03-21). Brief: `agents/bob/workspace/brief-p78-deployment.md`.
+- **Problem**: `scanSkill()` in `src/lib/tools/security.ts` exists but is not called.
+- **Fix**: Wire `scanSkill()` into agent-loader.ts.
+- **Status**: **[CANCELLED]** (2026-03-26). Merged with "Supply Chain Hardening (P78)" above. Stopped per Hao's directive to avoid runtime guards.
 - **Owner**: Bob / Tech-Lead.
+
+### Safe Verification Workflow (verify-and-finish)
+- **Problem**: We need a structural way to ensure agents verify work without rigid runtime guards.
+- **Fix**: Implement `verify-and-finish` workflow that runs agent -> verifies -> retries.
+- **Status**: **[DEPLOYED]** (2026-03-26). Verified `agents/may/workflows/verify-and-finish.ts` exists and is documented in `common-sense.md`.
+- **Owner**: Tech-Lead (Implementation).
 
 ### Opus Prompt Caching (Cost Critical)
 - **Problem**: Opus agents (Tech-Lead, Coach, May) have 0% cache hit rate due to LiteLLM stripping headers. Wasting $36-63/day.
