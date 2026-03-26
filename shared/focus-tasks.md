@@ -8,18 +8,24 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 
 ## Active Focus
 
+### Unified Guard Architecture (Hard Constraints)
+- **Status**: **[CANCELLED]** (2026-03-26). Stopped per Hao's directive (Req: 8b381f87). "Guards add complexity/rigidity." Pivoting to Workflows/Scenarios.
+- **Old Plan**: Implement `Guard` middleware in `manager.ts`.
+
+### Supply Chain Hardening (P78)
+- **Status**: **[CANCELLED]** (2026-03-26). Stopped per Hao's directive. "Guards add complexity/rigidity." Pivoting to Workflows/Scenarios.
+- **Old Plan**: Implement "Skill Scanner" in `agent-loader.ts`.
+
 ### Read Safety Guard (FM-2.1)
-- **Problem**: Agents waste context/budget reading massive files (locks, logs) or directories.
-- **Fix**: Enforce hard limits in `read` tool: max 50KB without pagination, block directory reads.
-- **Status**: **[IN PROGRESS]** Brief sent to Tech-Lead.
-- **Owner**: Bob (Design), Tech-Lead (Implementation).
+- **Status**: **[CANCELLED]** (2026-03-26). Stopped per Hao's directive. "Guards add complexity/rigidity." Pivoting to Workflows/Scenarios.
+- **Old Plan**: Hard limits in `read` tool.
 
 ### Agent Evolution System (CI/CD for Prompts)
 - **Problem**: Improvements are ad-hoc, untracked, and prone to regression. No systematic way to measure "is the agent better?".
 - **Fix**: Implement "Gym is CI" workflow. Coach drives behavior, Optimizer drives efficiency. All changes gated by baselines.
-- **Status**: **[PIVOT]** (2026-03-25).
-  - **Experiment Result**: Auto-Evolve (Prompt Mutation) FAILED to fix behavioral issues (stubbornness, hallucinations) in 5/5 trials.
-  - **New Direction**: Shift from "Soft Prompts" to "Hard Constraints" (Tool/Runtime enforcement).
+- **Status**: **[PIVOT]** (2026-03-26).
+  - **Experiment Result**: Auto-Evolve (Prompt Mutation) FAILED.
+  - **New Direction**: Shift from "Hard Constraints" to "Workflows + Scenarios" (Behavioral Shaping).
 - **Owner**: Bob (Architecture), Coach/Optimizer (Execution).
 
 ### Team Scaling Architecture (Archetypes)
@@ -129,18 +135,6 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 - **Problem**: Reasoning Judges (Evaluator) are fooled by "Safe Refusal" + "Self Praise". (HB#1464)
 - **Fix**: Shift evaluation from "Reasoning" to "Artifacts" (Receipts).
 - **Status**: **[DEPLOYED]** (2026-03-20). Verified `agents/evaluator/knowledge/criteria.md` contains `[INVALID_RECEIPT]` and `P108 Patrol Pattern`.
-
-### Unified Guard Architecture (Hard Constraints)
-- **Problem**: Agents "forget" verification (FM-3.3) and safety policies (P78, FM-2.1). Soft prompts fail under load.
-- **Fix**: Implement a standard `Guard` middleware in `manager.ts` to intercept tools and enforce constraints (Verify-Before-Finish, Path Safety, Skill Scanning).
-- **Status**: **[DELEGATED]** (2026-03-26). Brief `brief-unified-guards.md` sent to Tech-Lead.
-- **Owner**: Tech-Lead (Implementation).
-
-### Supply Chain Hardening (P78)
-- **Problem**: Skill Injection via Description (HB#1456).
-- **Fix**: Implement "Skill Scanner" and "Sandboxed Execution".
-- **Status**: **[DELEGATED]** (2026-03-26). Brief `brief-p78-deployment.md` sent to Tech-Lead.
-- **Owner**: Tech-Lead (Implementation).
 
 ### Order Persistence (P209)
 - **Problem**: Human orders lost on session crash.

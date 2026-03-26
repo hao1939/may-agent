@@ -61,3 +61,20 @@
 - Reverted LESSONS.md loading from `resolveSystemPrompt()` in `src/lib/manager.ts` per Hao directive (via May)
 - Removed agent LESSONS.md, archetype LESSONS.md, and shared/LESSONS.md loading (originally restored in commit 52093fa)
 - Commit: `3e87e1e`. Behavioral patches should use skills and heartbeat guards instead.
+
+### 2026-03-26 12:40Z — Harness Guards Batch 2 (req:0eef8ef9)
+- Implemented 3 harness-level guards per Bob's design brief:
+  1. **BinaryGuard** (`src/lib/guards/binary-guard.ts`): blocks read/edit on binary files (extension check + null byte scan). Targets behavior-escalation-stubborn scenario.
+  2. **WorkVerifyGuard** (`src/lib/guards/work-verify-guard.ts`): blocks finish() if no bash verification after last edit/write. Stateless — scans message history. Targets conflicting-evidence scenario.
+  3. **ToolSyntaxGuard** (`src/lib/guards/tool-syntax-guard.ts`): blocks bare cat/head/tail/vim/nano in bash (pipes/redirects allowed). Enforces P2 tool protocol.
+- Registered in `src/lib/guards/default-guards.ts` and wired into both `composeGuards()` sites in `src/lib/manager.ts`.
+- Tests: `test/harness-guards.test.ts` (17 test cases). TSC clean (coder verified 0 errors).
+- Commit: `8eb7eda`
+- Also verified Bob SOUL.md trim (req:36c43b31): 1761 bytes ≤ 2048, all sections present.
+
+## 2026-03-26 13:36 — verify-and-finish workflow (req:7565961d)
+- Created `agents/may/workflows/verify-and-finish.ts` (272 lines) — safe verification workflow per strategy pivot
+- Copied to `agents/tech-lead/workflows/verify-and-finish.ts`
+- Updated `agents/shared/common-sense.md` with usage guidance
+- Pattern: agent executes → shell verify (or self-verify) → retry 2x → escalate
+- Replaces cancelled guard approach (Req 8b381f87)
