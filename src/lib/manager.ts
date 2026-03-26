@@ -30,6 +30,8 @@ import { createScrapeDedupGuard } from "./tools/scrape-dedup-guard.js";
 import { createEmptyArgsGuard } from "./tools/empty-args-guard.js";
 import { createPathAssumptionGuard } from "./tools/path-assumption-guard.js";
 import { composeGuards } from "./tools/compose-guards.js";
+import { GuardRegistry } from "./guards/index.js";
+import { registerDefaultGuards } from "./guards/default-guards.js";
 
 // Re-export everything from manager-utils so existing import paths don't break
 export {
@@ -204,6 +206,8 @@ export class SubagentManager {
   private _maxCallDepth: number;
   /** Maximum infrastructure retries per session turn. */
   private _infraRetryMax: number;
+  /** Unified guard registry (Phase 1 — parallel to existing composeGuards wiring). */
+  private guardRegistry: GuardRegistry;
   /** Current call depth per root session (tracks nested callAgent chains). */
   private callDepths = new Map<string, number>();
 
@@ -225,6 +229,8 @@ export class SubagentManager {
     this.onSessionComplete = opts.onSessionComplete;
     this.onSessionStart = opts.onSessionStart;
     this.onSessionBlocked = opts.onSessionBlocked;
+    this.guardRegistry = new GuardRegistry();
+    registerDefaultGuards(this.guardRegistry);
   }
 
   /** Register a feature unit. */

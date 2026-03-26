@@ -38,6 +38,7 @@ import {
 } from "../lib/index.js";
 import { createAgentGrowthTools } from "../lib/tools/agent-growth.js";
 import { createSendTool } from "../lib/tools/send-tool.js";
+import { scanSkill } from "../lib/tools/scan-skill.js";
 import type { EventBus } from "./event-bus.js";
 import { Cron } from "./cron.js";
 
@@ -526,37 +527,52 @@ export function validateAgentConfig(
   const errors: ValidationError[] = [];
   const name = config.name || "<unnamed>";
 
-  // Required fields
+  // Resolve archetype inheritance before validation
+  let effective = config;
+  if (config.extends) {
+    const archetypeDir = resolve(agentsRoot, config.extends);
+    const archetypeConfigPath = resolve(archetypeDir, "agent.json");
+    if (!existsSync(archetypeConfigPath)) {
+      errors.push({ agent: name, field: "extends", message: `Archetype not found: ${config.extends} (expected ${archetypeConfigPath})` });
+    } else {
+      try {
+        const parentConfig = JSON.parse(readFileSync(archetypeConfigPath, "utf-8")) as AgentConfig;
+        effective = {
+          ...parentConfig,
+          ...config,
+          name: config.name,
+          tools: [...new Set([...(parentConfig.tools || []), ...(config.tools || [])])],
+          context_files: [...(parentConfig.context_files || []), ...(config.context_files || [])],
+          extends: config.extends,
+        };
+      } catch {
+        errors.push({ agent: name, field: "extends", message: `Failed to parse archetype config: ${archetypeConfigPath}` });
+      }
+    }
+  }
+
+  // Required fields (checked against effective/merged config)
   for (const field of REQUIRED_FIELDS) {
-    if (!config[field]) {
+    if (!effective[field]) {
       errors.push({ agent: name, field, message: `Missing required field "${field}"` });
     }
   }
 
   // Model must exist in the models map
-  if (config.model && !models[config.model]) {
-    errors.push({ agent: name, field: "model", message: `Unknown model "${config.model}"` });
+  if (effective.model && !models[effective.model]) {
+    errors.push({ agent: name, field: "model", message: `Unknown model "${effective.model}"` });
   }
 
   // Tool presets must be valid
-  if (config.tools) {
-    if (!Array.isArray(config.tools)) {
+  if (effective.tools) {
+    if (!Array.isArray(effective.tools)) {
       errors.push({ agent: name, field: "tools", message: `"tools" must be an array` });
     } else {
-      for (const preset of config.tools) {
+      for (const preset of effective.tools) {
         if (!VALID_TOOL_PRESETS.has(preset)) {
           errors.push({ agent: name, field: "tools", message: `Unknown tool preset "${preset}"` });
         }
       }
-    }
-  }
-
-  // Validate extends (archetype reference)
-  if (config.extends) {
-    const archetypeDir = resolve(agentsRoot, config.extends);
-    const archetypeConfig = resolve(archetypeDir, "agent.json");
-    if (!existsSync(archetypeConfig)) {
-      errors.push({ agent: name, field: "extends", message: `Archetype not found: ${config.extends} (expected ${archetypeConfig})` });
     }
   }
 
@@ -622,6 +638,25 @@ export async function loadAgents(opts: AgentLoaderOptions): Promise<LoadResult> 
   const updated: string[] = [];
   const allErrors: ValidationError[] = [];
 
+  // P78: Scan shared skill files too
+  const sharedSkillsDir = resolve(agentsRoot, "shared", "skills");
+  if (existsSync(sharedSkillsDir)) {
+    const sharedSkillEntries = readdirSync(sharedSkillsDir, { withFileTypes: true });
+    for (const skillEntry of sharedSkillEntries) {
+      if (!skillEntry.isFile()) continue;
+      if (!skillEntry.name.endsWith(".md")) continue;
+      const skillPath = resolve(sharedSkillsDir, skillEntry.name);
+      const skillContent = readFileSync(skillPath, "utf-8");
+      const scanResult = scanSkill(skillContent);
+      if (scanResult.status === "RISK") {
+        opts.bus.emit({
+          type: "info",
+          message: `[SECURITY] Risk in shared skill: ${skillEntry.name} — ${scanResult.summary}`,
+        });
+      }
+    }
+  }
+
   const entries = readdirSync(agentsRoot, { withFileTypes: true });
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;
@@ -637,6 +672,25 @@ export async function loadAgents(opts: AgentLoaderOptions): Promise<LoadResult> 
     if (errors.length > 0) {
       allErrors.push(...errors);
       continue;
+    }
+
+    // P78: Scan skill files for supply chain risks
+    const skillsDir = resolve(agentDir, "skills");
+    if (existsSync(skillsDir)) {
+      const skillEntries = readdirSync(skillsDir, { withFileTypes: true });
+      for (const skillEntry of skillEntries) {
+        if (!skillEntry.isFile()) continue;
+        if (!skillEntry.name.endsWith(".md")) continue;
+        const skillPath = resolve(skillsDir, skillEntry.name);
+        const skillContent = readFileSync(skillPath, "utf-8");
+        const scanResult = scanSkill(skillContent);
+        if (scanResult.status === "RISK") {
+          opts.bus.emit({
+            type: "info",
+            message: `[SECURITY] Risk detected in skill for ${config.name}: ${skillEntry.name} — ${scanResult.summary}`,
+          });
+        }
+      }
     }
 
     const isUpdate = manager.hasAgent(config.name);
