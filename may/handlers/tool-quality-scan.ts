@@ -24,7 +24,9 @@ import type { CronEntry } from "../../../src/lib/cron-tool.js";
 export type FailureCategory =
   | "empty-args" | "wrong-tool" | "nonexistent-path" | "edit-match-fail"
   | "schema-violation" | "path-is-directory" | "convention-block"
-  | "cmd-not-found" | "cd-bad-path" | "file-not-found-bash" | "other";
+  | "cmd-not-found" | "cd-bad-path" | "file-not-found-bash"
+  | "permission-denied" | "timeout-killed" | "python-error"
+  | "module-not-found" | "syntax-error" | "other";
 
 interface FailureChain {
   trigger: { tool: string; args: string; result: string; isError?: boolean };
@@ -124,6 +126,26 @@ export function classifyFailure(chain: FailureChain): FailureCategory {
   if (rootCause.includes("command not found") || result.includes("command not found")) return "cmd-not-found";
   if (rootCause.includes("cd:") && rootCause.includes("No such")) return "cd-bad-path";
   if (/cannot (stat|access|open)/.test(rootCause) || /cannot (stat|access|open)/.test(result)) return "file-not-found-bash";
+
+  // Permission denied errors
+  if (/permission denied/i.test(rootCause) || /permission denied/i.test(result) ||
+      /EACCES/.test(rootCause) || /EACCES/.test(result)) return "permission-denied";
+
+  // Command/process killed or timed out
+  if (/timed?\s*out|killed|signal\s+(SIGKILL|SIGTERM|SIGINT)/i.test(rootCause) ||
+      /timed?\s*out|killed|signal\s+(SIGKILL|SIGTERM|SIGINT)/i.test(result)) return "timeout-killed";
+
+  // Python errors (optimizer frequently runs python for analysis)
+  if (/Traceback \(most recent call last\)|ModuleNotFoundError|ImportError/.test(rootCause) ||
+      /Traceback \(most recent call last\)|ModuleNotFoundError|ImportError/.test(result)) return "python-error";
+
+  // Node/bun module resolution failures
+  if (/Cannot find module|MODULE_NOT_FOUND|Could not resolve/.test(rootCause) ||
+      /Cannot find module|MODULE_NOT_FOUND|Could not resolve/.test(result)) return "module-not-found";
+
+  // Bash syntax errors
+  if (/syntax error|unexpected (token|EOF|end)/i.test(rootCause) ||
+      /syntax error|unexpected (token|EOF|end)/i.test(result)) return "syntax-error";
 
   return "other";
 }

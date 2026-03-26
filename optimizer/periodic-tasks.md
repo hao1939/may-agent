@@ -3,10 +3,11 @@
 Track when each task was last done. Pick the most overdue one during heartbeat step 3.
 
 ## Per heartbeat (do one, rotate)
-- [x] **Analysis review** — Last done: 2026-03-25T22:05
+- [x] **Analysis review** — Last done: 2026-03-26T01:05
   Read agents/bob/workspace/analysis.md or recent Bob synthesis outputs.
   Any findings that need optimization work? Cost issues? Efficiency problems?
   If found → add specific task to workspace/todo.md.
+  Latest (2026-03-26T01:05): analysis.md unchanged from Mar 25. Bob journal shows archetype work (coder → _archetypes/coder) and auto-evolve pivot completed. Bob sent 2 new requests to tech-lead: verify-before-finish gym scenario (req:329d46df) and coach archetype migration (req:9468a5d9). System very quiet — 15h gap with no non-optimizer sessions. 69 active requests total, ~55 are stale zombie "echo hello" test requests from Hao. No new optimization action needed.
   Latest (2026-03-25T22:05): analysis.md unchanged (still FM-3.3/verification gap focus). Bob produced new `brief-gym-verification-scenario.md` for tech-lead — good alignment with existing FM-3.3 guards. No new action needed.
 
 - [x] **Cost outlier scan** — Last done: 2026-03-26T00:10

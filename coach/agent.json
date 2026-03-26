@@ -1,16 +1,5 @@
 {
   "name": "coach",
-  "opBudget": 60,
-  "description": "Supervises and trains agents through process-isolated coaching sessions with real exercises",
-  "domain": "agent coaching and training",
-  "model": "opus",
-  "compaction": true,
-  "tools": [
-    "coding",
-    "agents",
-    "workflow",
-    "checkpoint",
-    "finish"
-  ],
-  "memoryLimit": 10
+  "extends": "_archetypes/coach",
+  "opBudget": 60
 }
