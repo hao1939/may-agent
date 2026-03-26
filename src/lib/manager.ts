@@ -334,7 +334,7 @@ export class SubagentManager {
 
   /** Resolve the system prompt from a definition.
    *  Convention files are auto-loaded from the agent directory if present:
-   *    SOUL.md → DOMAIN.md → LESSONS.md → shared/LESSONS.md → common-sense.md → knowledge/INDEX.md
+   *    SOUL.md → DOMAIN.md → common-sense.md → knowledge/INDEX.md
    *  Then: Runtime Environment (generated), Session Context (generated).
    *
    *  The entire prompt is wrapped in <system_instructions> tags (P84) to
@@ -365,7 +365,8 @@ export class SubagentManager {
     //
     // Files NO LONGER loaded (removed as part of prompt simplification):
     //   (DOMAIN.md was restored — see section 1b below)
-    //   (LESSONS.md was restored — see section 1c below)
+    //   LESSONS.md — removed per prompt simplification (Hao directive)
+    //   shared/LESSONS.md — removed per prompt simplification (Hao directive)
     //   TOOLS.md — redundant with tool schema descriptions
     //   knowledge/INDEX.md — agent reads on-demand, not preloaded
     //   shared/INDEX.md — same
@@ -388,16 +389,9 @@ export class SubagentManager {
     }
     if (domain) sections.push(domain);
 
-    // 1c. LESSONS.md — active behavioral patches and band-aids
-    let lessons = loadFile(agentDir ? join(agentDir, "LESSONS.md") : undefined);
-    if (!lessons && def.archetypeDir) {
-      lessons = loadFile(join(def.archetypeDir, "LESSONS.md"));
-    }
-    if (lessons) sections.push(lessons);
-
-    // 1d. shared/LESSONS.md — cross-agent behavioral lessons
-    const sharedLessons = loadFile(def.projectRoot ? join(def.projectRoot, "agents", "shared", "LESSONS.md") : undefined);
-    if (sharedLessons) sections.push(sharedLessons);
+    // 1c/1d. LESSONS.md — REMOVED per Hao directive (prompt simplification).
+    // Previously loaded agent LESSONS.md + shared/LESSONS.md here.
+    // Agents should use skills and heartbeat guards for behavioral patches.
 
     // 2. common-sense.md — shared behavioral rules
     const commonSense = loadFile(def.projectRoot ? join(def.projectRoot, "agents", "shared", "common-sense.md") : undefined);
