@@ -75,12 +75,8 @@ export interface SubagentDefinition {
    */
   turnBudgetWarningAt?: number;
 
-  /**
-   * Path to the archetype directory this agent extends.
-   * When set, resolveSystemPrompt will load SOUL.md from the archetype
-   * and prepend it before the instance's SOUL.md.
-   */
-  archetypeDir?: string;
+  // archetypeDir — REMOVED per Hao directive. _archetypes/ stay as reference only.
+  // archetypeDir?: string;
 }
 
 /** Runtime info about a session. */
