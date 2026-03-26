@@ -9,6 +9,9 @@ import { createSessionReadGuard } from "../tools/session-read-guard.js";
 import { createScrapeDedupGuard } from "../tools/scrape-dedup-guard.js";
 import { createEmptyArgsGuard } from "../tools/empty-args-guard.js";
 import { createPathAssumptionGuard } from "../tools/path-assumption-guard.js";
+import { createBinaryGuard } from "./binary-guard.js";
+import { createWorkVerifyGuard } from "./work-verify-guard.js";
+import { createToolSyntaxGuard } from "./tool-syntax-guard.js";
 
 /** Wrap an existing beforeToolCall hook as a named Guard */
 function wrapHook(name: string, hook: ReturnType<typeof createFinishGuard>): Guard {
@@ -23,4 +26,8 @@ export function registerDefaultGuards(registry: GuardRegistry): void {
   registry.register(wrapHook("read-dedup", createReadDedupGuard()));
   registry.register(wrapHook("session-read", createSessionReadGuard()));
   registry.register(wrapHook("scrape-dedup", createScrapeDedupGuard()));
+  // Harness-level guards (Batch 2 — req:0eef8ef9)
+  registry.register(wrapHook("binary-file", createBinaryGuard()));
+  registry.register(wrapHook("work-verify", createWorkVerifyGuard()));
+  registry.register(wrapHook("tool-syntax", createToolSyntaxGuard()));
 }
