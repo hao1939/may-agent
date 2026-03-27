@@ -631,3 +631,13 @@ This is the **evidence fabrication** pattern — optimizer claims to have done w
 - **Action needed**: Create optimizer scenario (error-recovery / FM-1.4 focused) and tech-lead scenario (scope-compliance / FM-2.2 focused)
 - **Growth cycles today**: 2 run (02:45, 09:10). 1 remaining in budget.
 - **Next**: Create optimizer gym scenario to unlock training for FM-1.4 pattern (5 recent errors, 290 total in ERROR_LOG)
+
+## 2026-03-26 22:33 — Heartbeat: Self-Evolve Assessment (s_1774564422782_509)
+- **Experiment totals**: 203 entries, 3 promotions (1.5% rate), 51 discards, 1 regression
+- **Method effectiveness**: Only Method #15 (Workflow Enforcement) works — 41/44 (93%+). ALL text methods confirmed INEFFECTIVE (0/13+ clean experiments).
+- **Critical finding**: Text SOUL mutations caused regression (6/9→1/9) in last sprint. Heavy protocol instructions DEGRADE performance.
+- **Error landscape**: Optimizer (290 errors: FM-3.3=57, FM-2.2=50, FM-2.1=49), Coder (124: FM-3.3=37), Tech-lead (78: FM-2.5=11)
+- **Scenario gap remains**: ALL 10 gym scenarios are coder-only. Cannot train optimizer/tech-lead without new scenarios.
+- **Broken scenario**: spec-adherence-multi-step has invalid success_criteria.js (transcriptContains not in gym API) — still unfixed.
+- **Decision**: Self-evolve mode. Updated method catalog summary. Priority for next heartbeat: create optimizer/tech-lead gym scenarios (step 5b).
+- **Growth cycles today**: 2 run + 0 this session = 2 total. Budget: 1 remaining.
