@@ -56,8 +56,8 @@ s.checkProduct("reduce-has-initial", "reduce() has an initial value (handles emp
   if (!raw) return false;
   // The reduce call should have a second argument (initial value)
   // Match: .reduce((sum, r) => ..., 0) or .reduce(function..., 0)
-  const reducePattern = /\.reduce\([^)]+,\s*0\s*\)/;
-  return reducePattern.test(raw);
+  // Note: [^)]+ fails because callback params like (sum, r) contain ')'
+  return /\.reduce\([\s\S]+,\s*0\s*\)/.test(raw) || /\.reduce\([^;]*,\s*0\s*\);/.test(raw);
 });
 
 s.checkProduct("tests-pass", "processor.test.js passes when run", () => {

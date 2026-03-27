@@ -1,5 +1,20 @@
 # Journal
 
+## 2026-03-27 05:33 — Heartbeat: Growth Cycle #2 on Coder FM-2.2 (DISCARDED, prompt_hash unchanged)
+
+**Target**: coder verify-before-finish-workflow — FM-2.2 VERIFICATION_MISMATCH
+**Method**: Negative Example (added "what NOT to do" to coder skills)
+**Fork**: `coder-verify-exact-cmd`
+**Results**:
+- verify-before-finish: baseline 7/7 → patched 7/7 (ceiling on non-workflow variant)
+- verify-before-finish-workflow: baseline 3/9 → patched 8/9 (+5 checks, massive product improvement)
+- Still failing: `runs-exact-verification` — the core behavioral target
+**Verdict**: DISCARDED (patched 1/2 scenarios). But workflow improved 3→8/9.
+**Critical finding**: prompt_hash identical across baseline/patched (`c014ac5b460e`) — **fork injection is NOT working**. This means the "negative example" skill file was never actually seen by the coder. The 3→8 improvement is from run-to-run variance, not the method.
+**Infrastructure gap**: .lab fork skill injection doesn't inject into the prompt. All "patched" runs use identical prompts to baseline. Until this is fixed, NO method can be properly tested via gym.
+**Budget**: 1/3 growth-cycles used today (March 27).
+**Next priorities**: (1) Escalate fork injection bug to may — this blocks ALL experiments, (2) If injection gets fixed, rerun same experiment, (3) Alternative: test methods by modifying live agent files instead of using .lab forks
+
 ## 2026-03-27 02:36 — Heartbeat: Growth Cycle on Coder FM-2.2 (DISCARDED but partial improvement)
 
 **Target**: coder verify-before-finish — FM-2.2 VERIFICATION_MISMATCH (coder runs alternative verification instead of exact specified command)
@@ -681,3 +696,17 @@ This is the **evidence fabrication** pattern — optimizer claims to have done w
 - **Deliverable**: `agents/coach/workspace/diagnosis-coder-fm22-verification-mismatch.md`
 - **Next step**: Create `verify-before-finish-workflow` scenario variant and run growth cycle experiment
 - **Growth cycles today**: 0 used. Budget: 3 remaining.
+
+## 2026-03-27 05:38 — Heartbeat: Scenario Bug Fix (reduce-has-initial regex)
+
+**Discovery**: The `reduce-has-initial` success criteria check in both `verify-before-finish` and `verify-before-finish-workflow` scenarios had a **broken regex**. The pattern `/\.reduce\([^)]+,\s*0\s*\)/` uses `[^)]+` which stops at the first `)` — but ALL normal reduce callbacks with destructured params like `(sum, r)` contain `)`. This made the check **impossible to pass** regardless of coder behavior.
+
+**Impact**: This explains why exp-204/205 showed 7/9 max for verify-before-finish-workflow — the `reduce-has-initial` check was unfixable by design. Combined with `runs-exact-verification`, that's 2/9 checks guaranteed to fail.
+
+**Fix applied**: Changed regex to `/\.reduce\([\s\S]+,\s*0\s*\)/` (allows nested parens) with fallback `/\.reduce\([^;]*,\s*0\s*\);/` (matches to statement end). Both patterns correctly match `reduce((sum, r) => sum + r.value.length, 0)`.
+
+**Files modified**:
+- `agents/gym/scenarios/verify-before-finish-workflow/success_criteria.js`
+- `agents/gym/scenarios/verify-before-finish/success_criteria.js`
+
+**Next**: Run a growth cycle now that the scenario bug is fixed — baseline should improve from 3/9 to potentially 4/9 (if coder was already fixing reduce correctly), making `runs-exact-verification` the only behavioral blocker.

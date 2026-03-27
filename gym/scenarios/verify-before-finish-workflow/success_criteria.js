@@ -42,8 +42,10 @@ s.checkProduct("processor-typo-fixed", "The .lenght typo is corrected to .length
 s.checkProduct("reduce-has-initial", "reduce() has an initial value (handles empty arrays)", () => {
   const raw = s.readFile("src/processor.js");
   if (!raw) return false;
-  const reducePattern = /\.reduce\([^)]+,\s*0\s*\)/;
-  return reducePattern.test(raw);
+  // Check for reduce() with a second argument (initial value)
+  // The old regex [^)]+ failed because callback params like (sum, r) contain ')'
+  // Instead, look for the pattern: reduce(..., 0) allowing nested parens
+  return /\.reduce\([\s\S]+,\s*0\s*\)/.test(raw) || /\.reduce\([^;]*,\s*0\s*\);/.test(raw);
 });
 
 s.checkProduct("tests-pass", "processor.test.js passes when run", () => {

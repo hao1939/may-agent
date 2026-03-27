@@ -3,21 +3,22 @@
 Track when each task was last done. Pick the most overdue one during heartbeat step 3.
 
 ## Per heartbeat (do one, rotate)
-- [x] **Analysis review** — Last done: 2026-03-27T03:33
+- [x] **Analysis review** — Last done: 2026-03-27T05:33
   Read agents/bob/workspace/analysis.md or recent Bob synthesis outputs.
   Any findings that need optimization work? Cost issues? Efficiency problems?
   If found → add specific task to workspace/todo.md.
-  Latest (2026-03-27T03:33): **Bob still down — 10+ hours.** Session s_539 (03:34 UTC) still failing with same `gemini-3-pro-preview` model error. 3 consecutive Bob errors in last 4h (s_526, s_537, s_539). analysis.md unchanged (last from 09:13 Mar 26). Two P0s to May still unresolved. No new optimization data from Bob.
+  Latest (2026-03-27T05:33): **System very quiet — only 3 sessions running** (coach, tech-lead, optimizer). No Bob sessions visible in current session listing (old sessions purged). analysis.md unchanged (timestamp 1774516411, from 09:13 Mar 26). Tech-lead working P0 revert of harness guards (req:c8d1da68). ERROR_LOG empty/missing. No new optimization data from Bob. System appears to have restarted or session store was cleaned — only 42 sessions in .state/sessions/ vs hundreds previously.
   Latest (2026-03-27T01:33): **Bob still down — 8+ hours now.** Model `gemini-3-pro-preview` continues failing (confirmed via activity.jsonl, latest error at 01:33). All 5 Bob sessions in last 6h are errors. System error rate 23.1%. Two P0 bugs sent to May (req:fe5595d9, req:26b8505b) — neither appears resolved yet. No new analysis.md output from Bob (last update 09:13 yesterday). Optimizer cost: 42% of system ops, max 42 ops (over 35-op budget in s_521).
   Latest (2026-03-26T23:33): **CRITICAL: Bob completely down for ~4h.** Model `gemini-3-pro-preview` no longer supported (Github Copilot backend). 4 consecutive sessions failed (s_498/501/510/514). Sent P0 bug to May (req:26b8505b). Bob's last work: strategy-workflows-pivot.md — Hao directed STOP on guards, pivot to workflows+scenarios. All guard work CANCELLED. Finding at `workspace/finding-analysis-review-0326-2333.md`.
   Latest (2026-03-26T20:33): analysis.md unchanged since 09:13 (timestamp 1774516411). Bob active on strategy docs but no new analysis output. No optimization action needed.
   Latest (2026-03-26T06:33): Bob published `synthesis/strategy-hard-constraints.md` — articulates Auto-Evolve failure (0/5) and pivot to runtime guards. Confirms optimizer's direction: tool guards > prompt engineering. Coach ran growth-cycle (session 369, 13 ops) for verify-before-finish scenario. System stable. Previous optimizer heartbeat (session 371) used 46 ops, but that was before 35-op budget was added. No new optimization action needed.
   Latest (2026-03-26T03:12): Bob session 351 initialized Scout archetype files and delegated migration to tech-lead (req:30f9ea94). Coach session 347/348 diagnosed coder materialization failure (6/9 baseline) and created workflow-enforcement fork (coder-materialize-workflow in .lab/). Evaluator session 350 scored coach good (0.72 eff / 0.74 qual) with issues: premature finish() and evidence gap. System running 4 active agent requests (coach heartbeat, bob→coach verify, bob→tech-lead migrate, optimizer heartbeat). Process still on stale binary b9ef77e.
 
-- [x] **Cost outlier scan** — Last done: 2026-03-27T03:33
+- [x] **Cost outlier scan** — Last done: 2026-03-27T05:03
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
+  Latest (2026-03-27T05:03): 26 sessions since 01:03 (6.5/hr — picking up from overnight low). Distribution: bob 5 (all errors), optimizer 4 (21-42 ops), coach 4 (11-32 ops), qa 4 (1-3 ops), may 3 (1-15 ops), scout 2 (9-14 ops), tech-lead 2 (2-6 ops), evaluator 1 (0 ops). **OUTLIER**: optimizer s_521 at 42 ops (over 35-op budget). **KEY WASTE**: Bob 5 more error sessions. No other new patterns.
   Latest (2026-03-27T03:33): 15 sessions in last ~4h (3.75/hr — very low, overnight). Distribution: bob 3 (all errors), qa 3, coach 3, optimizer 2, may 1, tech-lead 1, scout 1, evaluator 1. No sessions >35 ops visible. **KEY WASTE**: Bob errors continue (3 more wasted sessions, ~12 ops). System running lean overnight. No new cost outliers or patterns.
   Latest (2026-03-27T01:33): 40 sessions/8h (5/hr — low, overnight). 351 total ops (44 ops/hr). Optimizer #1: 7 sessions, 146 ops (42%), avg 20.9, max 42 (s_521 — over 35-op budget). Bob #2 by sessions (8) but 6 are model-error failures (~4 ops each wasted, gemini-3-pro-preview deprecated). Coach healthy: 6 sessions, 89 ops, avg 14.8. QA/May/Scout all efficient (1.5/5.8/9.3 avg). No sessions >42 ops. **KEY WASTE**: Bob error sessions ~24 ops/day wasted (P0 sent to May, req:fe5595d9+req:26b8505b). Tool waste: 4.3% (109/2526), coder /home/user still #1 at 16 wasted calls.
   Latest (2026-03-26T22:33): 200 sessions/24h, 2,141 ops. Optimizer 35% (742 ops, 33s). Coach 29% (626 ops). Tech-lead 13% (279 ops). Evening lull: 32 sessions/6h, 229 ops (7.2 ops/session). No sessions >35 ops in 6h. Top wasters in 6h: optimizer 6/10 (s_502), optimizer 5/20 (s_493). Trend: total ops slightly down vs last scan (2,283→2,141). No new cost outliers.
@@ -26,10 +27,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Latest (2026-03-25T20:40): 52 sessions in 4h (13/hr). Top ops: optimizer 57ops (common-sense experiment, expected), coach 26ops/2825s (interrupted). Coach+optimizer each 10 sessions, ~150 ops. No new waste patterns. System stable.
   Latest (2026-03-25T16:35): 61 sessions in 6.5h (9.4/hr). Two outliers: tech-lead gym test (528KB, 3x 100KB bash outputs — expected), Bob agents(filter:all) (404KB, 324KB response — one-off). No new systematic waste. Scout loop fix confirmed (2 sessions vs 32/day before). 30+ Bob zombies blocked on restart (req:31d94ce6). Finding at `workspace/finding-cost-scan-0325-1635.md`.
 
-- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-27T01:03
+- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-27T05:03
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
   Could it be replaced with a JS handler? (See cron-graduation-process.md Stage 3.)
   If found → write proposal in workspace/improvement-proposals.md.
+  Latest (2026-03-27T05:03): Scanned 26 sessions since 01:03 (6.5/hr). No new LLM-to-JS candidates. QA (1 op), May (1 op), evaluator (0 op), tech-lead (2 op) all already optimized with JS early-exit. Higher-op sessions: coach 32 ops (gym scenario creation — genuine LLM), scout 14 ops (research — genuine LLM), May 15 ops (Bob model error investigation — genuine). Bob still 5 error sessions (0 ops each) — circuit breaker proposal from 01:03 scan still the top candidate. System overnight efficiency good — no new waste patterns.
   Latest (2026-03-27T01:03): Scanned 40 sessions. NEW CANDIDATE: Agent Error Circuit Breaker — Bob failing 10+ consecutive sessions with same model error (gemini-3-pro-preview not supported), 4 wasted ops each. Proposed JS handler to detect 3+ consecutive agent errors and auto-pause heartbeats. Simpler alternative: extend system-status anomaly detection. Saves ~40 ops/day during outages. QA (50% 2-3 ops), May (3 ops), all already optimized. Finding at `workspace/finding-llm-to-js-scan-0327-0103.md`.
   Latest (2026-03-26T20:33): Activity lull — only 9 sessions in 6h (optimizer 4, bob 4, scout 1). All doing genuine LLM work (strategy docs, research CRs, optimization). No new JS handler candidates. Previous candidates (periodic-task-router, tool-quality-trend) still blocked on restart. System in low-traffic evening mode.
   Latest (2026-03-26T14:03): Scanned 30 recent sessions for LLM-doing-deterministic-work patterns. Main finding: git-add-agents debugging loop (tech-lead, 11+ ops) — not LLM-to-JS candidate but common-sense fix (sent to May). No new JS handler candidates this scan. Previous candidates (trend-history, cost-scan-extension) still blocked on restart.
@@ -38,11 +40,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Latest (2026-03-26T03:11): No new LLM-to-JS candidates. Short sessions already use JS heuristics (evaluator 0-op, QA early exit). NEW FINDING: 50+ stale test requests (echo hello/testing) clogging requests.db — not LLM waste but DB scan waste. Wrote finding at `workspace/finding-stale-requests-0326-0311.md`. Proposed: request-cleanup JS handler to auto-cancel stale CREATED test requests >24h old.
   Latest (2026-03-25T22:07): Scanned 49 sessions in 4h (12.25/hr). 15 low-op sessions (0-2 ops): evaluator 0-ops (JS heuristic ✅), May 1-op idle checks, QA 1-2 op early exits, Scout 1-2 ops idle. All low-op sessions already optimized or require LLM judgment. No new LLM-to-JS candidate.
 
-- [x] **Handler health check** — Last done: 2026-03-27T03:33
+- [x] **Handler health check** — Last done: 2026-03-27T05:33
   Review existing JS handlers in agents/may/handlers/.
   Any errors in recent logs? Any handler that's not firing?
   If issues → add fix to workspace/todo.md.
-  Latest (2026-03-27T03:33): 22 handlers (unchanged). Tool quality baseline from 01:07 — 109 waste calls, bash:other=65 (#1), bash:nonexistent-path=17, read:empty-args=9. No new handler errors in .state/logs. System quiet overnight. All handlers stable but blocked on restart.
+  Latest (2026-03-27T05:33): System very quiet — only 3 sessions running (coach, tech-lead, optimizer). ERROR_LOG empty/missing. Tool quality report from 05:07 shows 2.8% waste (improving). Tech-lead working P0 guard revert. Session store appears cleaned (42 sessions vs hundreds). Handler status unchanged — 22 handlers. No new errors.
   Latest (2026-03-27T01:03): 22 handlers (unchanged). system-status handler lacks consecutive-error detection — only catches "stuck sessions" not "repeated model failures." Proposed extension to add agent error counting to anomaly detection. Tool quality report (01:07): 4.3% waste, down from 4.7%. bash:other still #1 at 65 (optimizer=33). Bob model error not caught by any handler for 6h. Sent P0 to May (req:fe5595d9).
   Latest (2026-03-26T20:33): 22 handlers (unchanged). Error log empty (no recent entries). Tool quality report last at 17:07. All handlers stable. Improvements blocked on process restart.
   Latest (2026-03-26T07:33): 22 handlers present (unchanged). No errors in .state/logs/. Job history stale (last entry Mar 20 — PID 52 still running). Tool quality report (05:07 UTC): waste rate 4.7%, bash:other=158, bash:empty-args=14 (+75%), read:empty-args=7 (+600%). Optimizer is #1 offender for empty-args (12/21). All fixes blocked on process restart. No new handler issues — the handlers themselves are functioning correctly; the waste comes from LLM agents.
@@ -70,7 +72,7 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Latest (2026-03-23T21:36): verification-consistency (15th skill) deployed to 6 agents. Full lifecycle.
   _13 earlier skill deployments documented in finding files. See `workspace/finding-pattern-scan-*.md`._
 
-- [x] **Tool quality review** — Last done: 2026-03-27T03:33
+- [x] **Tool quality review** — Last done: 2026-03-27T05:33
   Read the tool-quality-report.md (generated by tool-quality-scan handler every 4h).
   Look for regression trends, persistent failure patterns, and agent-specific issues.
   If a specific failure category accounts for >30% of waste, create a targeted intervention:
@@ -78,7 +80,7 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   - For empty-args: check if schema validation is catching it early enough
   - For edit-match-fail: check if agents are reading files before editing
   If tool-quality-report.md doesn't exist yet, skip — handler hasn't fired.
-  Latest (2026-03-27T03:33): Baseline from 01:07. Total waste: 109 calls. bash:other=65 (60%), bash:nonexistent-path=17 (16%, coder /home/user still dominant), read:empty-args=9, bash:empty-args=6, read:nonexistent-path=5, edit:empty-args=5, finish:schema-violation=2. Waste rate stable (was 4.3% at 01:33). No new regressions. All fixes still blocked on restart.
+  Latest (2026-03-27T05:33): Report from 05:07. **Waste rate 2.8%** — major improvement from 4.3% at 01:07 (down 35%)! Total waste 61 calls (was 109). bash:other=33 (qa=12, coder=11, coach=5, optimizer=5), bash:nonexistent-path=17 (coder=16, all /home/user), edit:empty-args=5, read:empty-args=3, read:nonexistent-path=3 (coach). Optimizer waste down significantly (6 vs 33 previously). Trend: 4.7%→4.3%→2.8% — steadily improving. No new regressions.
   Latest (2026-03-26T22:33): Report from 21:07. Waste rate 4.1% (115/2823) — down from 4.7% earlier today. Top: bash:other=71 (optimizer 33, qa 16, coder 13), bash:nonexistent-path=17 (coder 16 — all `/home/user`), empty-args=15 (read:9 + bash:6). **ACTION**: Sent patch to May (req:e228ee50) to add `/app` working directory lesson to coder LESSONS.md — should eliminate 16 wasted calls/day. Trend: improving (4.7%→4.1%).
   Latest (2026-03-26T06:33): Waste rate 4.7% (trending up: 4.1→4.4→4.7). Regressions: bash:empty-args +75% (14, was 8), read:empty-args +600% (7, was 1). Optimizer worst offender (12/21 empty-args). Coach developing new failure modes: finish:empty-args(2), finish:schema-violation(2), bash:convention-block(2). All fixes blocked on process restart. No new interventions possible. Finding at `workspace/finding-tool-quality-0326-0633.md`.
   Latest (2026-03-26T02:40): **BUG FIX**: Found and fixed false positive in `isToolError()` (manager-utils.ts). Old regex `/exit\s*(code\s*)?\d*[1-9]\d*/i` matched "exit code 1" anywhere in output — false-triggers when grep/read output contains exit code mentions in content (e.g., grepping error logs). Fixed to anchor to bash.ts format: `/Command exited with code \d*[1-9]\d*/`. Coder ERROR_LOG showed FM-1.2 PIVOT_SIGNAL_IGNORED caused by this. Updated test/tool-pivot.test.ts with false-positive test cases. All 87 related tests pass.

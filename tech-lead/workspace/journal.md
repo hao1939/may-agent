@@ -78,3 +78,9 @@
 - Updated `agents/shared/common-sense.md` with usage guidance
 - Pattern: agent executes → shell verify (or self-verify) → retry 2x → escalate
 - Replaces cancelled guard approach (Req 8b381f87)
+
+## 2026-03-27 05:35 — Revert all harness guards (req:c8d1da68)
+- **P0** — Reverted 4 commits per Hao directive (via May): `8eb7eda`, `510622c`, `786c884`, `e0a0d4b`
+- `git revert --no-commit` all 4, single commit `2f9d2ef`
+- Removed: Guard Architecture (GuardRegistry, default-guards), BinaryGuard, WorkVerifyGuard, ToolSyntaxGuard, PathAssumptionGuard, read safety guards, scanSkill supply chain scanner
+- 15 files changed, -1389 lines. All guard files deleted, manager.ts and agent-loader.ts cleaned.
