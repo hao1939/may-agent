@@ -174,11 +174,14 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
     timeoutMs?: number;
     /** Whether to wait for the session to complete (default: true). */
     waitForCompletion?: boolean;
+    /** Override agent's default opBudget (max turns) for this cron job. */
+    maxTurns?: number;
   };
 
   const agentName = entry.agent || "may";
   const timeoutMs = config.timeoutMs ?? 600_000; // 10 min default
   const waitForCompletion = config.waitForCompletion !== false;
+  const maxTurns = config.maxTurns;
 
   return async () => {
     const message = entry.message || `[cron:${entry.name}] Execute your task.`;
@@ -202,6 +205,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
 
     const sessionId = ctx.manager.run(agentName, message, {
       source: "cron",
+      ...(maxTurns ? { opBudget: maxTurns } : {}),
     });
 
     ctx.log(`[run-agent-task:${entry.name}] Started ${agentName} session: ${sessionId}`);
