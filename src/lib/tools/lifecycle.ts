@@ -95,6 +95,16 @@ const finishSchema: TSchema = Type.Object({
     Type.String({ description: "Reference to a specific tool output proving your work. Format: 'Step N: <tool> showed <result>'. Example: 'Step 12: read(src/app.ts) confirmed new function exists', 'Step 8: bash test exit code 0'." }),
     { description: "Evidence from this session's tool outputs that verify your deliverables. Required when status is 'success'. Cite specific tool calls and their results." },
   )),
+  context_updates: Type.Optional(Type.Array(
+    Type.Object({
+      action: Type.Union([
+        Type.Literal("add"),
+        Type.Literal("remove"),
+      ], { description: "'add': persist a new fact. 'remove': delete a stale/incorrect fact." }),
+      content: Type.String({ description: "The fact to add or remove. Keep short (one line). Example: 'User prefers Vitest over Jest', 'DB uses node:sqlite not better-sqlite3'." }),
+    }),
+    { description: "Persistent context updates. Facts added here are loaded into future sessions via agents/<name>/context.md. Use sparingly — only for durable project knowledge, user preferences, or corrections." },
+  )),
 });
 
 interface FinishParams {
@@ -107,6 +117,7 @@ interface FinishParams {
   new_items?: string[];
   lessons?: Array<{ category: "fix" | "pattern" | "insight"; content: string }>;
   verification_evidence?: string[];
+  context_updates?: Array<{ action: "add" | "remove"; content: string }>;
 }
 
 // ── Tool factory ───────────────────────────────────────────────────────

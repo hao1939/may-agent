@@ -1,0 +1,9 @@
+{
+  "name": "optimizer-error-recovery",
+  "categories": ["error-recovery", "tool-usage"],
+  "tags": ["behavior", "error-recovery", "path-handling", "optimizer"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "optimizer",
+  "workflow": false
+}
