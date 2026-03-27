@@ -2292,6 +2292,23 @@ export class SubagentManager {
   }
 
   /**
+   * Non-blocking agent run — starts an agent immediately and returns the session ID.
+   * Used by the agents tool 'run' action. Thin wrapper around this.run().
+   */
+  runAgent(
+    agentName: string,
+    task: string,
+    opts?: { parentSessionId?: string; source?: string; requestId?: string },
+  ): string {
+    return this.run(agentName, task, {
+      parentSessionId: opts?.parentSessionId,
+      source: opts?.source ?? "agents.run",
+      kind: "job",
+      requestId: opts?.requestId,
+    });
+  }
+
+  /**
    * Create the V2 agents tool — 5 actions: call, send, list, peek, cancel.
    *
    * Delegates to the standalone `createAgentsTool()` in `manager-agents-tool.ts`.
