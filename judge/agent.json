@@ -1,0 +1,12 @@
+{
+  "name": "judge",
+  "opBudget": 15,
+  "description": "Convention compliance judge for gym scenarios — evaluates whether agents follow may-agent protocols",
+  "domain": "convention compliance evaluation",
+  "model": "opus",
+  "tools": [
+    "coding",
+    "finish"
+  ],
+  "memoryLimit": 0
+}

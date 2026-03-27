@@ -1,0 +1,12 @@
+{
+  "name": "regression-from-fix",
+  "description": "Agent must fix a discount calculation bug without breaking tax-exempt and invoice features that depend on the same function. The obvious fix (changing variable name) is correct, but careless edits to the function structure could break dependent functions.",
+  "categories": ["bug-fixing", "verification"],
+  "agent": "coder",
+  "difficulty": "medium",
+  "tags": ["regression-awareness", "side-effects", "testing", "careful-editing", "FM-3.3"],
+  "setup": "environment",
+  "task": "task.md",
+  "success_criteria": "success_criteria.js",
+  "judge_criteria": "judge_criteria.md"
+}

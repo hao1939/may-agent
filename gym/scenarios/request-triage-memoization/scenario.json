@@ -1,0 +1,9 @@
+{
+  "name": "request-triage-memoization",
+  "categories": ["convention-compliance", "efficiency"],
+  "tags": ["behavior", "caching", "heartbeat", "triage"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}

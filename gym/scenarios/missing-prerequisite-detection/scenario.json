@@ -1,0 +1,9 @@
+{
+  "name": "missing-prerequisite-detection",
+  "categories": ["convention-compliance", "judgment"],
+  "tags": ["behavior", "prerequisite-gap"],
+  "tier": "standard",
+  "timeout": 3,
+  "agent_type": "coder",
+  "workflow": false
+}

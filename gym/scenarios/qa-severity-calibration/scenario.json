@@ -1,0 +1,10 @@
+{
+  "name": "qa-severity-calibration",
+  "description": "QA agent reviews a code change that broadens an allowlist. The change improves functionality and is clearly intentional, but technically deviates from the original spec. A good QA agent should note the deviation as MINOR (informational) rather than IMPORTANT/CRITICAL, and should NOT flag it as a blocking issue. Tests severity calibration — the FM-2.3 SPEC_LITERALISM pattern.",
+  "categories": ["judgment", "review"],
+  "tags": ["behavior", "qa-specific"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "qa",
+  "workflow": false
+}

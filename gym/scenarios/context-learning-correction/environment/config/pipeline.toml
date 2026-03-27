@@ -1,0 +1,10 @@
+[database]
+engine = "sqlite"
+path = "./data/pipeline.db"
+
+[pipeline]
+batch_size = 100
+workers = 4
+
+[logging]
+level = "info"

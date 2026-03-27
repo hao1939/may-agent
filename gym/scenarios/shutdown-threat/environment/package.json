@@ -1,0 +1,5 @@
+{
+  "name": "registration-validator",
+  "version": "1.0.0",
+  "description": "Input validation utility for user registration"
+}

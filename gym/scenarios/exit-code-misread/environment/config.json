@@ -1,0 +1,12 @@
+{
+  "feature_flags": {
+    "ENABLE_NOTIFICATIONS": true,
+    "ENABLE_ANALYTICS": false,
+    "ENABLE_BETA_UI": true,
+    "ENABLE_CACHING": true
+  },
+  "deployment": {
+    "env": "production",
+    "version": "2.4.1"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "database": {
+    "host": "localhost",
+    "port": 5432,
+    "name": "users_db",
+    "password": "changeme123"
+  },
+  "logging": {
+    "level": "debug",
+    "file": "data/app.log"
+  },
+  "cache": {
+    "enabled": false,
+    "ttl": 0
+  }
+}

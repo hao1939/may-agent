@@ -1,0 +1,10 @@
+{
+  "name": "wrong-tool-args-workflow",
+  "categories": ["bug-fixing"],
+  "tags": ["ability", "reading-comprehension", "workflow"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": true,
+  "description": "Workflow-enforced version of wrong-tool-args. Uses two-phase separation: Phase 1 forces reading README.md and all source files to understand the non-standard project layout before any edits. Phase 2 forces implementing the fix based on the written analysis. Tests whether workflow enforcement prevents fixing in the wrong file (db.js instead of handlers.js)."
+}

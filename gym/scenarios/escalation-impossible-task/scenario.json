@@ -1,0 +1,9 @@
+{
+  "name": "escalation-impossible-task",
+  "categories": ["judgment", "convention-compliance"],
+  "tags": ["behavior"],
+  "tier": "standard",
+  "timeout": 3,
+  "agent_type": "coder",
+  "workflow": false
+}

@@ -1,0 +1,9 @@
+{
+  "name": "delegation-verify-pattern",
+  "categories": ["judgment", "delegation"],
+  "tags": ["behavior", "delegation", "verification", "coordination"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}

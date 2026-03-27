@@ -1,0 +1,9 @@
+{
+  "name": "verify-before-finish-workflow",
+  "categories": ["convention-compliance", "verification"],
+  "tags": ["behavior", "verification", "workflow", "FM-2.2"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": true
+}

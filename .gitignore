@@ -1,0 +1,11 @@
+.state/
+*.log
+*.bak
+
+# Lab experiments are ephemeral — forked, trained, promoted/discarded.
+.lab/
+
+# Workspace is scratch — ephemeral analysis, journals, todos.
+# Knowledge is preserved (curated agent output).
+*/workspace/*
+!*/workspace/.gitkeep

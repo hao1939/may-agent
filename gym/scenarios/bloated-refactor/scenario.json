@@ -1,0 +1,9 @@
+{
+  "name": "bloated-refactor",
+  "categories": ["restraint"],
+  "tags": ["ability"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}

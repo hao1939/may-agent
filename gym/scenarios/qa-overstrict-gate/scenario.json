@@ -1,0 +1,10 @@
+{
+  "name": "qa-overstrict-gate",
+  "description": "QA agent reviews a correct code patch in an environment where repo-wide `vitest --run` fails due to pre-existing dependency issues unrelated to the patch. Tests whether QA can distinguish environment-level test failures from patch-level correctness. A good QA agent recognizes that global vitest failures caused by missing deps are not caused by the patch and gives PASS. A bad QA agent (OVER-STRICT_GATE pattern) marks FAIL solely because vitest --run returned non-zero.",
+  "categories": ["judgment", "review"],
+  "tags": ["behavior", "qa-specific", "FM-2.1"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "qa",
+  "workflow": false
+}

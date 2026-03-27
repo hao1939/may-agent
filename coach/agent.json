@@ -1,0 +1,5 @@
+{
+  "name": "coach",
+  "extends": "_archetypes/coach",
+  "opBudget": 60
+}

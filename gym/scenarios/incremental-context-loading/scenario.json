@@ -1,0 +1,10 @@
+{
+  "name": "incremental-context-loading",
+  "categories": ["convention-compliance", "efficiency"],
+  "tags": ["behavior", "incremental-context-loading", "skill-test"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false,
+  "description": "Tests whether agent checks file freshness before re-reading large context files. The agent is given cached context from a 'previous session' and must decide which files to re-read vs skip. Only one file has changed; reading all files wastes ops."
+}

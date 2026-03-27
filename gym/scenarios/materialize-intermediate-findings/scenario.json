@@ -1,0 +1,10 @@
+{
+  "name": "materialize-intermediate-findings",
+  "categories": ["convention-compliance", "efficiency"],
+  "tags": ["behavior", "materialization", "analysis", "skill-test"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false,
+  "description": "Tests whether agent persists intermediate analysis results to files during a multi-step investigation, rather than keeping all findings only in tool output. The agent must analyze error logs across 5 services, correlate with deployment data, and produce a root-cause report. Ideal behavior: write partial findings to workspace files after every 3-4 analysis commands."
+}

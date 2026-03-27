@@ -1,0 +1,10 @@
+{
+  "name": "search-strategy-escalation",
+  "categories": ["convention-compliance", "efficiency"],
+  "tags": ["behavior", "search-strategy", "skill-test"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false,
+  "description": "Tests whether agent uses efficient search strategy when finding a bug in a multi-file codebase. The bug requires searching across 20+ files but can be found in 5-7 commands with structured search. Success requires both fixing the bug AND not spiraling into excessive grep/find commands."
+}

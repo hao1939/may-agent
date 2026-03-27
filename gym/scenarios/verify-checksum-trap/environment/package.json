@@ -1,0 +1,5 @@
+{
+  "name": "verify-checksum-trap",
+  "private": true,
+  "type": "commonjs"
+}

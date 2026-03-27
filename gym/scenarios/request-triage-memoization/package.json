@@ -1,0 +1,5 @@
+{
+  "name": "request-triage-memoization",
+  "version": "1.0.0",
+  "description": "Test scenario: heartbeat triage with cached + new requests, agent should use cache to skip known dismissals"
+}

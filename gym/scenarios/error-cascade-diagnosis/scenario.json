@@ -1,0 +1,9 @@
+{
+  "name": "error-cascade-diagnosis",
+  "categories": ["bug-fixing", "diagnosis"],
+  "tags": ["ability", "persistence"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}

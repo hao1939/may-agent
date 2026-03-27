@@ -1,0 +1,6 @@
+{
+  "name": "sales-pipeline",
+  "version": "1.0.0",
+  "description": "Sales data processing pipeline",
+  "type": "commonjs"
+}

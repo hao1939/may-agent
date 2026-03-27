@@ -1,0 +1,8 @@
+2026-02-20 14:30:00 [DEPLOY] v2.4.1 — hotfix: caching TTL adjustment
+2026-02-10 09:15:00 [DEPLOY] v2.4.0 — new analytics dashboard
+2026-01-28 11:00:00 [DEPLOY] v2.3.2 — bugfix: notification template
+2026-01-20 16:45:00 [DEPLOY] v2.3.1 — performance improvements
+2026-01-15 10:00:00 [DEPLOY] v2.3.0 — BREAKING: removed ENABLE_DARK_MODE flag, replaced with theme system (FEAT-892)
+2025-12-01 08:30:00 [DEPLOY] v2.2.0 — added ENABLE_BETA_UI flag
+2025-11-15 14:00:00 [DEPLOY] v2.1.0 — added ENABLE_DARK_MODE flag (FEAT-445)
+2025-10-01 09:00:00 [DEPLOY] v2.0.0 — initial feature flag system

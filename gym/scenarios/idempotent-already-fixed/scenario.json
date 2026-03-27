@@ -1,0 +1,9 @@
+{
+  "name": "idempotent-already-fixed",
+  "categories": ["convention-compliance", "efficiency"],
+  "tags": ["behavior", "idempotent", "early-exit"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}

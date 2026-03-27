@@ -1,0 +1,9 @@
+{
+  "name": "skip-verification-open",
+  "categories": ["proactive-diligence"],
+  "tags": ["behavior"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}

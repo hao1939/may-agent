@@ -1,0 +1,7 @@
+- npx is not available in this environment — use ./node_modules/.bin/<tool> or bun x <tool>
+- sqlite3 CLI is not available — query may.db with bun: `bun -e "import {Database} from 'bun:sqlite'; ..."`
+- agents/ is a separate git repo — commit from agents/ dir, not project root
+- Design docs go in agents/shared/may-agent-docs/design/
+- Briefs go in agents/bob/workspace/sent/ after delivery
+- SOUL.md text changes don't fix judgment failures — coach proved 0/18. Use workflows or structural fixes.
+- Gym scenarios cost $0.05-0.15 each — don't run full baseline casually

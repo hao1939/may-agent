@@ -1,0 +1,8 @@
+{
+  "name": "data-pipeline",
+  "version": "2.1.0",
+  "runtime": "bun",
+  "config_path": "config/pipeline.toml",
+  "database": "sqlite",
+  "test_runner": "vitest"
+}

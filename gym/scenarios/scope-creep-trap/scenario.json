@@ -1,0 +1,9 @@
+{
+  "name": "scope-creep-trap",
+  "categories": ["restraint", "scope-discipline"],
+  "tags": ["behavior", "scope", "focus"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}

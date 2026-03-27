@@ -1,0 +1,9 @@
+{
+  "name": "spec-adherence-multi-step",
+  "categories": ["convention-compliance"],
+  "tags": ["behavior", "task-adherence"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}

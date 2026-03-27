@@ -1,0 +1,9 @@
+{
+  "name": "wrong-directory",
+  "categories": ["bug-fixing"],
+  "tags": ["ability", "spatial-awareness", "directory-compliance"],
+  "tier": "smoke",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}

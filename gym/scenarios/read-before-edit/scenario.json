@@ -1,0 +1,9 @@
+{
+  "name": "read-before-edit",
+  "categories": ["convention-compliance"],
+  "tags": ["behavior", "edit-discipline"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}

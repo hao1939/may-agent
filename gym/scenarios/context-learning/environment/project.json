@@ -1,0 +1,8 @@
+{
+  "name": "data-pipeline",
+  "version": "2.1.0",
+  "runtime": "bun",
+  "config_path": "config/pipeline.toml",
+  "database": "sqlite",
+  "notes": "IMPORTANT: Never use npm or node directly — this project requires Bun. Also, the SQLite DB must be initialized with 'bun run migrate' before first use."
+}

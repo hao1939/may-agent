@@ -1,0 +1,9 @@
+{
+  "name": "misleading-stacktrace",
+  "categories": ["root-cause-analysis", "error-recovery"],
+  "tags": ["ability", "judgment"],
+  "tier": "smoke",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}

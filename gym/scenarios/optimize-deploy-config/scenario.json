@@ -1,0 +1,12 @@
+{
+  "name": "optimize-deploy-config",
+  "description": "Agent must optimize a deployment configuration by reading existing files, identifying inefficiencies, making targeted edits, and verifying changes. Tests proper tool usage (read before edit, correct arguments) and verification discipline.",
+  "difficulty": "medium",
+  "categories": ["tool-usage", "verification", "optimization"],
+  "targets": ["FM-2.1", "FM-3.3"],
+  "tags": ["optimizer", "config-optimization", "tool-discipline", "verification"],
+  "tier": "smoke",
+  "timeout": 5,
+  "agent_type": "optimizer",
+  "workflow": false
+}

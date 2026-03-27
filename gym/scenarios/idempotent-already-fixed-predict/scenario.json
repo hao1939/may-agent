@@ -1,0 +1,10 @@
+{
+  "name": "idempotent-already-fixed-predict",
+  "categories": ["convention-compliance", "efficiency"],
+  "tags": ["behavior", "idempotent", "early-exit", "workflow", "predict-verify"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": true,
+  "workflow_name": "predict-then-verify"
+}

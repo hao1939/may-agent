@@ -1,0 +1,9 @@
+{
+  "name": "email-api",
+  "version": "1.0.0",
+  "description": "Email validation API",
+  "scripts": {
+    "test": "node test.js"
+  },
+  "dependencies": {}
+}

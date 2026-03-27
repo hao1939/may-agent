@@ -1,0 +1,9 @@
+{
+  "name": "efficient-file-reading",
+  "categories": ["convention-compliance", "efficiency"],
+  "tags": ["behavior", "grep-first-reading", "context-efficiency"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}
