@@ -182,7 +182,6 @@ CREATE INDEX IF NOT EXISTS idx_gym_runs_scenario ON gym_runs(scenario);
 CREATE INDEX IF NOT EXISTS idx_gym_runs_agent ON gym_runs(agent_name);
 CREATE INDEX IF NOT EXISTS idx_gym_runs_timestamp ON gym_runs(timestamp);
 CREATE INDEX IF NOT EXISTS idx_gym_checks_run ON gym_checks(run_id);
-CREATE INDEX IF NOT EXISTS idx_gym_runs_prompt ON gym_runs(prompt_hash);
 
 -- Convention checks (P1: mechanical compliance checker)
 CREATE TABLE IF NOT EXISTS convention_checks (
@@ -262,8 +261,18 @@ export function getDb(persistDir: string): SqliteDb {
 
   // Migrations for existing databases (idempotent — ALTER ADD COLUMN fails silently if column exists)
   try { db.exec("ALTER TABLE requests ADD COLUMN source TEXT"); } catch { /* already exists */ }
+  // gym_runs columns added after initial schema
+  try { db.exec("ALTER TABLE gym_runs ADD COLUMN run_tag TEXT"); } catch { /* already exists */ }
+  try { db.exec("ALTER TABLE gym_runs ADD COLUMN prompt_hash TEXT"); } catch { /* already exists */ }
+  try { db.exec("ALTER TABLE gym_runs ADD COLUMN framework_sha TEXT"); } catch { /* already exists */ }
+  try { db.exec("ALTER TABLE gym_runs ADD COLUMN model TEXT"); } catch { /* already exists */ }
   try { db.exec("ALTER TABLE gym_runs ADD COLUMN batch_id TEXT"); } catch { /* already exists */ }
+  try { db.exec("ALTER TABLE gym_runs ADD COLUMN categories TEXT"); } catch { /* already exists */ }
+  try { db.exec("ALTER TABLE gym_runs ADD COLUMN tags TEXT"); } catch { /* already exists */ }
+  try { db.exec("ALTER TABLE gym_runs ADD COLUMN tier TEXT"); } catch { /* already exists */ }
+  // Indexes on migrated columns (must come after ALTER TABLE)
   try { db.exec("CREATE INDEX IF NOT EXISTS idx_gym_runs_batch ON gym_runs(batch_id)"); } catch { /* already exists */ }
+  try { db.exec("CREATE INDEX IF NOT EXISTS idx_gym_runs_prompt ON gym_runs(prompt_hash)"); } catch { /* already exists */ }
 
   dbCache.set(persistDir, db);
   return db;
