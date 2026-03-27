@@ -193,6 +193,98 @@ export function readContext(contextPath: string): string {
   try { return readFileSync(contextPath, "utf-8").trim(); } catch { return ""; }
 }
 
+// ── Merge prompt (produces complete context.md, not patches) ───────────
+
+const MERGE_PROMPT = `You maintain a knowledge file (context.md) for an AI agent — a concise collection of durable facts that help the agent work effectively.
+
+You receive the agent's CURRENT context.md and new text to learn from. Output the COMPLETE UPDATED context.md.
+
+**What belongs:** correct commands, runtime/tooling facts, architectural patterns, file locations, user preferences, gotchas.
+**What doesn't:** session-specific details, obvious truths, opinions, generic advice.
+
+**Merging:** If a new fact updates an existing one, REPLACE (e.g., "Bun 1.0" → "Bun 1.2"). If facts contradict, keep the newer one. Merge related facts into one line. Remove stale facts. Keep UNDER 30 lines.
+
+Output ONLY the complete context.md inside a code fence:
+
+\`\`\`markdown
+- fact one
+- fact two
+\`\`\`
+
+If nothing new to learn, output the existing context unchanged. If empty and nothing to learn, output an empty code fence.`;
+
+/**
+ * Merge new knowledge into a context file using an LLM.
+ *
+ * Unlike extractFacts + applyContextUpdates (which patches), this produces
+ * the complete merged context.md — handling conflicts, dedup, and staleness.
+ *
+ * @param contextPath - Path to context.md
+ * @param text - New text to learn from (transcript, error log, etc.)
+ * @param manager - LLM caller
+ * @param label - Optional context label
+ * @param maxSize - Max file size in bytes
+ */
+export async function mergeContext(
+  contextPath: string,
+  text: string,
+  manager: LLMCaller,
+  label?: string,
+  maxSize = 2048,
+): Promise<ContextUpdateResult> {
+  const existing = readContext(contextPath);
+
+  const cappedText = text.length > 8000
+    ? text.slice(0, 3000) + "\n\n[... truncated ...]\n\n" + text.slice(-5000)
+    : text;
+
+  const prompt = [
+    MERGE_PROMPT,
+    "",
+    label ? `## Agent context\n${label}\n` : "",
+    `## Current context.md`,
+    existing ? `\`\`\`\n${existing}\n\`\`\`` : "(empty)",
+    "",
+    `## New text to learn from`,
+    cappedText,
+    "",
+    "Output the complete updated context.md:",
+  ].join("\n");
+
+  const sessionId = manager.run("evaluator", prompt, { kind: "job" });
+  const result = await manager.waitFor(sessionId);
+  const response = result?.lastAssistantText ?? "";
+
+  const match = response.match(/```(?:markdown)?\s*\n([\s\S]*?)```/);
+  if (!match) return { added: [], removed: [] };
+
+  let merged = match[1].trim();
+
+  // Enforce size limit
+  if (merged.length > maxSize) {
+    const lines = merged.split("\n");
+    while (lines.join("\n").length > maxSize && lines.length > 1) {
+      lines.shift();
+    }
+    merged = lines.join("\n");
+  }
+
+  // Compute diff for reporting
+  const oldLines = new Set(existing.split("\n").filter(l => l.startsWith("- ")));
+  const newLines = new Set(merged.split("\n").filter(l => l.startsWith("- ")));
+  const added = [...newLines].filter(l => !oldLines.has(l)).map(l => l.replace(/^- /, ""));
+  const removed = [...oldLines].filter(l => !newLines.has(l)).map(l => l.replace(/^- /, ""));
+
+  if (added.length === 0 && removed.length === 0 && merged === existing) {
+    return { added: [], removed: [] };
+  }
+
+  mkdirSync(dirname(contextPath), { recursive: true });
+  writeFileSync(contextPath, merged);
+
+  return { added, removed };
+}
+
 // ── Layer 3: Convenience wrappers ──────────────────────────────────────
 
 export interface LearnFromSessionOptions {
@@ -208,24 +300,23 @@ export interface LearnFromSessionLLMOptions extends LearnFromSessionOptions {
 }
 
 /**
- * Post-session learning with LLM extraction.
+ * Post-session learning with LLM merge.
+ * The LLM sees the full existing context + session transcript and produces
+ * the complete updated context.md — handling conflicts, dedup, and staleness.
  * Falls back to mechanical extraction if LLM fails.
  */
 export async function learnFromSessionLLM(opts: LearnFromSessionLLMOptions): Promise<ContextUpdateResult> {
   const { agentDir, messages, agentName, task, manager, maxSize = 2048 } = opts;
   const contextPath = `${agentDir}/context.md`;
-  const existing = readContext(contextPath);
-
   const transcript = formatTranscriptForLearning(messages);
   const label = `Agent: ${agentName}\nTask: ${task}`;
 
-  const updates = await extractFacts(transcript, manager, existing, label);
-  if (updates.length > 0) {
-    return applyContextUpdates(contextPath, updates, maxSize);
+  try {
+    return await mergeContext(contextPath, transcript, manager, label, maxSize);
+  } catch {
+    // Fallback to mechanical extraction
+    return learnFromSession({ agentDir, messages, maxSize });
   }
-
-  // Fallback to mechanical
-  return learnFromSession({ agentDir, messages, maxSize });
 }
 
 /**
@@ -243,7 +334,7 @@ export function learnFromSession(opts: LearnFromSessionOptions): ContextUpdateRe
 }
 
 /**
- * Learn from arbitrary text (ad-hoc). Requires LLM.
+ * Learn from arbitrary text (ad-hoc). Uses LLM merge.
  *
  * Examples:
  *   - learnFromText(contextPath, readmeContent, manager, "Onboarding: reading project README")
@@ -256,10 +347,7 @@ export async function learnFromText(
   label?: string,
   maxSize = 2048,
 ): Promise<ContextUpdateResult> {
-  const existing = readContext(contextPath);
-  const updates = await extractFacts(text, manager, existing, label);
-  if (updates.length === 0) return { added: [], removed: [] };
-  return applyContextUpdates(contextPath, updates, maxSize);
+  return mergeContext(contextPath, text, manager, label, maxSize);
 }
 
 // ── Transcript formatting ──────────────────────────────────────────────
