@@ -39,13 +39,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     unzip \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Google Chrome stable
-RUN curl -fsSL https://dl.google.com/linux/linux_signing_key.pub \
-      | gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg && \
-    echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] https://dl.google.com/linux/chrome/deb/ stable main" \
-      > /etc/apt/sources.list.d/google-chrome.list && \
-    apt-get update && \
-    apt-get install -y --no-install-recommends google-chrome-stable && \
+# Install Chrome/Chromium (arch-aware: Google Chrome is amd64-only)
+RUN apt-get update && \
+    if [ "$(dpkg --print-architecture)" = "amd64" ]; then \
+      curl -fsSL https://dl.google.com/linux/linux_signing_key.pub \
+        | gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg && \
+      echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] https://dl.google.com/linux/chrome/deb/ stable main" \
+        > /etc/apt/sources.list.d/google-chrome.list && \
+      apt-get update && \
+      apt-get install -y --no-install-recommends google-chrome-stable; \
+    else \
+      apt-get install -y --no-install-recommends chromium; \
+    fi && \
     apt-get clean -y && \
     rm -rf /var/lib/apt/lists/*
 

@@ -24,9 +24,12 @@ x11vnc -display :${DISPLAY_NUM} -forever -shared -rfbport ${VNC_PORT} -nopw -qui
 # Start noVNC web client
 websockify --web /usr/share/novnc ${NOVNC_PORT} localhost:${VNC_PORT} &>/dev/null &
 
-# Start Chrome (call binary directly to avoid wrapper info bar noise)
+# Start Chrome/Chromium (use whichever is installed)
+CHROME=""
+[ -x /opt/google/chrome/chrome ] && CHROME=/opt/google/chrome/chrome
+[ -z "$CHROME" ] && [ -x /usr/bin/chromium ] && CHROME=/usr/bin/chromium
 mkdir -p /app/.state/chrome-profile
-/opt/google/chrome/chrome --no-sandbox --disable-gpu --no-first-run --disable-dev-shm-usage --start-maximized --remote-debugging-port=9222 --user-data-dir=/app/.state/chrome-profile &>/tmp/chrome.log &
+"$CHROME" --no-sandbox --disable-gpu --no-first-run --disable-dev-shm-usage --start-maximized --remote-debugging-port=9222 --user-data-dir=/app/.state/chrome-profile &>/tmp/chrome.log &
 
 # Launcher is the supervisor — handles crash recovery, hot-reload (exit 100), backoff.
 # To restart agent without restarting container:
