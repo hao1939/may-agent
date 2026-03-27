@@ -1,18 +1,19 @@
 /**
  * Success Criteria for "evidence-gate-reject"
  *
- * Tests that the evidence-gate workflow correctly REJECTS a theory-first brief.
+ * Tests that the agent correctly evaluates a theory-first brief as REJECT.
  *
  * Product:
- *   P1: Workflow returned a result (didn't crash)
+ *   P1: Agent read the brief
+ *   P2: Agent wrote evidence-gate-result.md
  *
  * Behavior:
- *   B1: Verdict is REJECT (the brief lacks evidence)
- *   B2: At least one evidence check shows FAIL
- *   B3: Feedback mentions what evidence is missing
+ *   B1: Verdict is REJECT
+ *   B2: At least two evidence checks show FAIL
+ *   B3: Feedback explains what evidence is missing
  *
  * Efficiency:
- *   E1: Completed in ≤ 2 agent calls
+ *   E1: Total operations ≤ 10
  */
 
 const { Score } = require("../../lib/gym-score-utils.cjs");
@@ -22,42 +23,55 @@ const s = new Score(workDir);
 
 // ── Product ────────────────────────────────────────────────────────────
 
-s.checkProduct("workflow-completed", "Workflow returned a result", () => {
-  const summary = s.readFile("workflow-result.md");
-  if (summary) return summary.length > 0;
+s.checkProduct("read-brief", "Agent read the brief", () => {
   if (!s.hasTranscript()) return false;
-  return s.ops() > 0;
+  const reads = s.toolCalls("read");
+  return reads.some(tc =>
+    tc.arguments.path && String(tc.arguments.path).includes("brief.md")
+  );
+});
+
+s.checkProduct("wrote-result", "Agent wrote evidence-gate-result.md", () => {
+  return s.fileExists("evidence-gate-result.md");
 });
 
 // ── Behavioral ─────────────────────────────────────────────────────────
 
-s.checkBehavior("verdict-reject", "Evidence gate verdict is REJECT", () => {
-  const summary = s.readFile("workflow-result.md");
-  if (!summary) return false;
-  return summary.includes("REJECT");
+s.checkBehavior("verdict-reject", "Verdict is REJECT (brief lacks evidence)", () => {
+  const result = s.readFile("evidence-gate-result.md");
+  if (!result) return false;
+  const verdictLine = result.split("\n").find(l => l.trim().startsWith("VERDICT:"));
+  if (!verdictLine) return false;
+  return verdictLine.includes("REJECT");
 });
 
-s.checkBehavior("has-failures", "At least one evidence check shows FAIL", () => {
-  const summary = s.readFile("workflow-result.md");
-  if (!summary) return false;
-  // Count ❌ marks — should be at least 1
-  const failures = (summary.match(/❌/g) || []).length;
-  return failures >= 1;
+s.checkBehavior("has-failures", "At least two evidence checks show FAIL", () => {
+  const result = s.readFile("evidence-gate-result.md");
+  if (!result) return false;
+  const lines = result.split("\n");
+  let failCount = 0;
+  for (const line of lines) {
+    if (line.trim().match(/^EVIDENCE_[123]:/) && line.includes("FAIL")) {
+      failCount++;
+    }
+  }
+  return failCount >= 2;
 });
 
 s.checkBehavior("feedback-present", "Feedback explains what evidence is needed", () => {
-  const summary = s.readFile("workflow-result.md");
-  if (!summary) return false;
-  // Feedback should mention specific missing evidence types
-  const feedbackMatch = summary.match(/Feedback[:\s]+(.+)/i);
-  if (!feedbackMatch) return false;
-  return feedbackMatch[1].length > 20; // Non-trivial feedback
+  const result = s.readFile("evidence-gate-result.md");
+  if (!result) return false;
+  const feedbackLine = result.split("\n").find(l => l.trim().startsWith("FEEDBACK:"));
+  if (!feedbackLine) return false;
+  const feedback = feedbackLine.replace(/^FEEDBACK:\s*/, "");
+  // Should mention specific missing evidence types
+  return feedback.length > 20;
 });
 
 // ── Efficiency ─────────────────────────────────────────────────────────
 
-s.checkEfficiency("minimal-calls", "Completed in ≤ 2 agent calls", () => {
-  return s.ops() <= 5;
+s.checkEfficiency("reasonable-ops", "Total operations ≤ 10", () => {
+  return s.ops() <= 10;
 });
 
 s.report();

@@ -1,17 +1,18 @@
 /**
  * Success Criteria for "evidence-gate-pass"
  *
- * Tests that the evidence-gate workflow correctly PASSES an evidence-backed brief.
+ * Tests that the agent correctly evaluates an evidence-backed brief as PASS.
  *
  * Product:
- *   P1: Workflow returned a result (didn't crash)
+ *   P1: Agent read the brief
+ *   P2: Agent wrote evidence-gate-result.md
  *
  * Behavior:
- *   B1: Verdict is PASS (the brief has all three evidence elements)
+ *   B1: Verdict is PASS
  *   B2: All three evidence checks show PASS
  *
  * Efficiency:
- *   E1: Completed in ≤ 2 agent calls (evaluator check only)
+ *   E1: Total operations ≤ 10
  */
 
 const { Score } = require("../../lib/gym-score-utils.cjs");
@@ -21,40 +22,44 @@ const s = new Score(workDir);
 
 // ── Product ────────────────────────────────────────────────────────────
 
-s.checkProduct("workflow-completed", "Workflow returned a result", () => {
-  const summary = s.readFile("workflow-result.md");
-  if (summary) return summary.length > 0;
-  // Fall back: check if transcript exists and has evaluator calls
+s.checkProduct("read-brief", "Agent read the brief", () => {
   if (!s.hasTranscript()) return false;
-  return s.ops() > 0;
+  const reads = s.toolCalls("read");
+  return reads.some(tc =>
+    tc.arguments.path && String(tc.arguments.path).includes("brief.md")
+  );
+});
+
+s.checkProduct("wrote-result", "Agent wrote evidence-gate-result.md", () => {
+  return s.fileExists("evidence-gate-result.md");
 });
 
 // ── Behavioral ─────────────────────────────────────────────────────────
 
-s.checkBehavior("verdict-pass", "Evidence gate verdict is PASS", () => {
-  const summary = s.readFile("workflow-result.md");
-  if (summary) {
-    return summary.includes("PASS") && !summary.includes("REJECT");
-  }
-  // Fall back to transcript: check evaluator response
-  if (!s.hasTranscript()) return false;
-  const assistantMsgs = s.toolCalls("evaluator");
-  // Check the last assistant message for PASS verdict
-  return false; // Can't determine without workflow result file
+s.checkBehavior("verdict-pass", "Verdict is PASS (brief has all evidence)", () => {
+  const result = s.readFile("evidence-gate-result.md");
+  if (!result) return false;
+  // Check VERDICT line says PASS
+  const verdictLine = result.split("\n").find(l => l.trim().startsWith("VERDICT:"));
+  if (!verdictLine) return false;
+  return verdictLine.includes("PASS") && !verdictLine.includes("REJECT");
 });
 
 s.checkBehavior("all-checks-pass", "All three evidence checks show PASS", () => {
-  const summary = s.readFile("workflow-result.md");
-  if (!summary) return false;
-  // Count ✅ marks — should be 3 (one per evidence check)
-  const checkmarks = (summary.match(/✅/g) || []).length;
-  return checkmarks >= 3;
+  const result = s.readFile("evidence-gate-result.md");
+  if (!result) return false;
+  const lines = result.split("\n");
+  const e1 = lines.find(l => l.trim().startsWith("EVIDENCE_1:"));
+  const e2 = lines.find(l => l.trim().startsWith("EVIDENCE_2:"));
+  const e3 = lines.find(l => l.trim().startsWith("EVIDENCE_3:"));
+  if (!e1 || !e2 || !e3) return false;
+  return e1.includes("PASS") && e2.includes("PASS") && e3.includes("PASS");
 });
 
 // ── Efficiency ─────────────────────────────────────────────────────────
 
-s.checkEfficiency("minimal-calls", "Completed in ≤ 2 agent calls", () => {
-  return s.ops() <= 5; // Workflow overhead is small
+s.checkEfficiency("reasonable-ops", "Total operations ≤ 10", () => {
+  return s.ops() <= 10;
 });
 
 s.report();

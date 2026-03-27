@@ -1,10 +1,10 @@
 {
   "name": "evidence-gate-pass",
   "categories": ["workflow", "evidence"],
-  "tags": ["behavioral", "evidence-first", "design-brief", "workflow"],
+  "tags": ["behavioral", "evidence-first", "design-brief"],
   "tier": "standard",
   "timeout": 5,
-  "agent_type": "evaluator",
-  "workflow": "evidence-gate",
-  "description": "An evidence-backed design brief should pass through the evidence gate. Tests that the workflow correctly identifies briefs with incidents, alternatives, and validation plans."
+  "agent_type": "coder",
+  "workflow": false,
+  "description": "Agent must evaluate a design brief using the evidence-gate rubric and correctly identify it as evidence-backed (PASS). Tests the core judgment that the evidence-gate workflow relies on."
 }
