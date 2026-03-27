@@ -384,6 +384,35 @@ export class SubagentManager {
     const commonSense = loadFile(def.projectRoot ? join(def.projectRoot, "agents", "shared", "common-sense.md") : undefined);
     if (commonSense) sections.push(commonSense);
 
+    // 3. Skills — behavioral patches from skills/*.md
+    if (agentDir) {
+      const skillsDir = join(agentDir, "skills");
+      if (existsSync(skillsDir)) {
+        const skillFiles = readdirSync(skillsDir, { recursive: true })
+          .map(f => String(f))
+          .filter(f => f.endsWith(".md"))
+          .sort();
+        for (const sf of skillFiles) {
+          const skillContent = loadFile(join(skillsDir, sf));
+          if (skillContent) sections.push(skillContent);
+        }
+      }
+    }
+    // Also load shared skills
+    if (def.projectRoot) {
+      const sharedSkillsDir = join(def.projectRoot, "agents", "shared", "skills");
+      if (existsSync(sharedSkillsDir)) {
+        const sharedSkillFiles = readdirSync(sharedSkillsDir, { recursive: true })
+          .map(f => String(f))
+          .filter(f => f.endsWith(".md"))
+          .sort();
+        for (const sf of sharedSkillFiles) {
+          const skillContent = loadFile(join(sharedSkillsDir, sf));
+          if (skillContent) sections.push(skillContent);
+        }
+      }
+    }
+
     // 5c. context_files — moved to buildSessionContext() (P147 KV-Cache Discipline).
     // These files (e.g., conversation-state.md) change between sessions, so
     // loading them here would invalidate the KV-cache prefix every time.

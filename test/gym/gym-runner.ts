@@ -790,7 +790,32 @@ function assembleEffectivePrompt(
     const commonSense = loadFile(existsSync(sharedCommonSense) ? sharedCommonSense : sharedFallback);
     if (commonSense) sections.push(commonSense);
 
-    // 3. Runtime Environment (generated — matches manager.ts)
+    // 3. Skills — behavioral patches from skills/*.md
+    const skillsDir = join(agentDir, "skills");
+    if (existsSync(skillsDir)) {
+      const skillFiles = readdirSync(skillsDir, { recursive: true })
+        .map(f => String(f))
+        .filter(f => f.endsWith(".md"))
+        .sort();
+      for (const sf of skillFiles) {
+        const skillContent = loadFile(join(skillsDir, sf));
+        if (skillContent) sections.push(skillContent);
+      }
+    }
+    // Also load shared skills
+    const sharedSkillsDir = join(agentsRoot, "shared", "skills");
+    if (existsSync(sharedSkillsDir)) {
+      const sharedSkillFiles = readdirSync(sharedSkillsDir, { recursive: true })
+        .map(f => String(f))
+        .filter(f => f.endsWith(".md"))
+        .sort();
+      for (const sf of sharedSkillFiles) {
+        const skillContent = loadFile(join(sharedSkillsDir, sf));
+        if (skillContent) sections.push(skillContent);
+      }
+    }
+
+    // 4. Runtime Environment (generated — matches manager.ts)
     const knowledgeDir = join(agentDir, "knowledge");
     const workspace = join(agentDir, "workspace");
     const envLines = ["# Runtime Environment"];
