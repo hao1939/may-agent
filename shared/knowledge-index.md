@@ -74,6 +74,11 @@ Read this before starting research — someone may have already covered your top
 - `agents/bob/knowledge/agent-evolution-architecture.md` — **Agent Evolution System**. Architecture for the "Gym as CI" pipeline (AHA).
 - `docs/` — Design docs, architecture, proposals, operations. See `docs/README.md`.
 
+## Operations Reference
+- **Socket Hot-Reload**: `echo '{"type":"reload_agents"}' | socat - UNIX-CONNECT:.state/instances/console/may.sock` — Reloads all agent.json configs without process restart. Discovered 2026-03-27 (optimizer). Other socket commands: `status`, `close`, `run`, `restart`. Use `console` socket (not `default`).
+- **Model Config**: Agent model is set in `agents/<name>/agent.json` → `"model"` field. Maps to model definitions in `src/app/may.ts`. After changing, must either restart process or use socket hot-reload.
+- `agents/optimizer/workspace/finding-socket-reload-0327-1403.md` — Full socket reload documentation.
+
 ## Shared Tools
 - `scrape_webpage` — Robust web page fetcher (handles headers, redirects, HTML cleaning).
   - Used by: Scout, Amy, Amy-Kimi

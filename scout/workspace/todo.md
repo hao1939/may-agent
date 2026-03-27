@@ -30,6 +30,8 @@
 
 - [ ] **CR#263 L2-L3 Interference AACG** — ready for Bob (adversarially-aware compute governance, three-gate architecture, Pareto frontier, phase transition discovery, boundary operator concept, Law 40/M39/P136-P140, ★★★★★)
 
+- [ ] **CR#264 Cross-Layer Attack Taxonomy** — ready for Bob (CLAT 10 attack classes, Defense Locality Impossibility proof, LAI boundary monitor architecture, severity ranking, STRIDE mapping, Law 41/M40/T15/P141-P144, ★★★★★)
+
 ## Leads to Track
 - ~~Fair ZD Strategies follow-up~~ → **DONE: CR#253 Stochastic Cooperation Theory**
 - GUS v7 delta review — awaiting Bob's response
@@ -50,7 +52,7 @@
 - **Sybil Detection for MAS** — response fingerprinting, timing analysis, stylometric detection; bridge DD#472 threat model with CR#259 circuit breaker defense
 - ~~**GRA Gap 1: L2-L3 Interference**~~ → **DONE: CR#263 L2-L3 Interference AACG (★★★★★, 363 lines) — formal compatibility proof, three-gate architecture, Pareto frontier, phase transition discovery, boundary operator concept**
 - **GRA Gap 3: Evolving Constitutions** — constitutional amendment theory for MAS (AE4E + CR#256 self-evolution)
-- **GRA Gap 4: Cross-Layer Attacks** — multi-layer adversarial analysis of the Governance-Resilience Architecture
+- ~~**GRA Gap 4: Cross-Layer Attacks**~~ → **DONE: CR#264 Cross-Layer Attack Taxonomy (★★★★★, 455 lines) — 10 attack classes, Defense Locality Impossibility proof, LAI boundary monitor architecture, Law 41/M40/T15/P141-P144**
 - ~~**AgentNet decentralized coordination** (2504.00587)~~ → **DONE: DD#476 AgentNet (★★★★, 241 lines) — DAG-structured decentralized MAS, governance gap, ABSTRAL→AgentNet pipeline, P131-P134/M38**
 - ~~**AE4E / Logic Monopoly / Separation of Power** (2603.25100)~~ → **DONE: DD#475 AE4E/Logic Monopoly (★★★★½, 236 lines)**
 - ~~**Governance Authority Stack formalization**~~ → **DONE: CR#261 Governance Authority Stack (★★★★★, 299 lines) — five-layer hard/soft governance unification, Law 38/M37/T14 proposals**
@@ -68,7 +70,7 @@
 - Predictions P203-P229 (27 from batches) + P84-P88 (5 from v7 delta) + P89-P94 (6 from Monday+synthesis) = 38 total
 
 ## Notes
-- DD count: 476, CR count: 263
+- DD count: 476, CR count: 264
 - GUS: v6 → v7 delta proposal ready, plus Law 35-37 / M33-M36 / P89-P98 candidates
 - W13 has been governance-dominated: Governance-First Architecture is the defining cluster
 - **TrustFlow (DD#458) validates Trust Evolution Principle (CR#250) — strongest external validation yet**
@@ -95,3 +97,4 @@
 - **DD#476 AgentNet: First complete decentralized LLM-MAS architecture. DAG-structured task routing + RAG memory evolution + dynamic topology adaptation. Three-pillar innovation (decentralized paradigm, dynamic topology, adaptive learning). Critical governance gap: operates only at L1-L2 of Governance Authority Stack. DAG-variant Sybil routing attack vulnerability. Decentralized Coordination Sufficiency theorem + Adversarial Insufficiency corollary. ABSTRAL→AgentNet pipeline as optimal compile→runtime architecture. P131-P134, M38 (Decentralized Routing). ★★★★.**
 - **CR#262 W13 Capstone — Governance-Resilience Architecture (GRA): Unifies all 14 DDs (DD#463-476) + 7 CRs (CR#255-261) into six-layer architecture: L1 Agent Infrastructure → L2 Runtime Efficiency → L3 Trust & Resilience → L4 Institutional → L5 Constitutional → L6 Meta-Governance. Information-theoretic substrate unifying governance/resilience/efficiency. GRA Completeness Argument. 5 critical gaps identified. P135. W13 stats: 14 DDs, 8 CRs, 37 predictions, 3 laws, 3 mechanisms, 3 trilemmas. ★★★★★.**
 - **CR#263 L2-L3 Interference AACG: Resolves GRA Gap 1. Formal proof that ETD-MAPPO sleep amplifies adversarial power 2.5× under Sybil attacks. Derives Efficiency-Resilience Compatibility Condition. Proposes three-gate AACG architecture (aleatoric + epistemic + threat-model) with stochastic opacity and phase-locked waking. Pareto frontier: 52% compute savings as sweet spot. Phase transition in tradeoff governed by QSG's Γ_T. GRA boundary operator concept. Law 40, M39, P136-P140. ★★★★★.**
+- **CR#264 Cross-Layer Attack Taxonomy (CLAT): Resolves GRA Gap 4. Formalizes cross-layer attacks as type-confusion analogs in multi-layer governance. 10 novel attack classes across all GRA boundaries. Defense Locality Impossibility proof (no single-layer defense suffices). Layered Adversarial Integrity (LAI) architecture with 5 boundary monitors. Three-tier severity ranking (meta-governance hijacking = existential). CLAT-to-STRIDE mapping. Cross-Layer Defense Trilemma (T15). Law 41, M40, P141-P144. ★★★★★.**

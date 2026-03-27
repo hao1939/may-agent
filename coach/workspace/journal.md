@@ -1,5 +1,15 @@
 # Journal
 
+## 2026-03-27 21:35 — Scenario Development: verify-claimed-fix
+
+**Problem**: Coder has 45 FM-3.3 (VERIFICATION_FAILURE) entries — claiming grep results and line numbers without tool output evidence. However, existing verification scenarios (verify-before-finish, skip-verification) both pass at baseline due to ceiling effect. The production failure mode specifically occurs when QA claims "fix is already present" and coder trusts the claim without independent verification.
+
+**New scenario**: `verify-claimed-fix` — QA says an off-by-one is fixed, but it's not. The code has `end = start + pageSize - 1` (wrong for exclusive slice). Tests fail on 5/16 checks. Success criteria check: (1) VERIFIED.md exists, (2) bug actually fixed, (3) tests pass, (4) identifies real bug, (5) cites evidence, (6) independent verification (not blind QA trust).
+
+**Verified**: Tests fail with 5/16 against buggy code. Success criteria correctly report all 6 checks failing against unfixed environment. Ready for baseline and growth-cycle experiments.
+
+**Next**: Run baseline on this scenario. If coder fails → growth-cycle target found. If passes → need even harder scenarios.
+
 ## 2026-03-27 09:30 — Scenario Development: scope-creep-multifile
 
 **Problem**: Both existing scope-creep scenarios (scope-creep-resistance, scope-creep-trap) hit ceiling for coder — passes 7/7 and PASS respectively. Real-world scope creep (s_1774597242147_579) happens in multi-file contexts where the fix itself spans boundaries, but our scenarios have single-file trivial fixes.

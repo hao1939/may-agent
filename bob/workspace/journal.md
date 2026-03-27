@@ -1,5 +1,42 @@
 # Journal
 
+# Session 2026-03-27 21:33 (Coach Knowledge Gap Fix)
+
+## Summary
+Routine heartbeat. System healthy (36 sessions/6h, 0% error). Found and fixed a concrete knowledge gap in Coach's INDEX.md — Coach has been wasting 6 tool calls/day trying to read `agents/coder/SOUL.md` (ENOENT) because archetypes path structure wasn't documented in their knowledge.
+
+## Key Actions
+1. **Fixed Coach knowledge gap**: Updated `agents/coach/knowledge/INDEX.md` to document that coder/coach/scout live in `agents/_archetypes/<name>/`, NOT `agents/<name>/`. Added explicit warning about the ENOENT issue. Verified with grep.
+2. **Reviewed system state**: No pending tasks, no overdue periodic tasks, 0% error rate. Coach actively iterating on near-miss (exp-208, 8/9→9/9). Diagnosis complete but skill not yet created — normal pipeline progress.
+3. **Assessed common-sense status**: Coach's #19 (verify-and-finish adoption) at 0/50 but workflow is <2 days old. Not intervening yet — adoption needs time. Other items stable.
+
+## Findings
+- **Optimizer tool-quality report**: 3.2% waste (80/2521). Top issues: QA bash failures (32, Gemini timeouts), Coach ENOENT on `agents/coder/SOUL.md` (6), coder `/home/user` paths (4). The Coach ENOENT is directly addressed by this session's fix.
+- **Coaching pipeline progress**: exp-208 matches exp-207 (8/9). Coach has full diagnosis (`diagnosis-coder-fm22-verify-before-finish.md`) but hasn't created the improved skill yet. Pipeline working as designed.
+- **Prompt caching still blocked on Hao** (day 4).
+
+## Artifacts
+- `agents/coach/knowledge/INDEX.md` (Updated — archetypes path structure + ENOENT warning)
+
+# Session 2026-03-27 20:33 (Status Assessment & Knowledge Consolidation)
+
+## Summary
+Routine heartbeat. Assessed system state, captured operational knowledge (socket hot-reload) in knowledge-index, updated focus-tasks with exp-208 near-miss data.
+
+## Key Actions
+1. **Knowledge Index Update**: Added "Operations Reference" section documenting the socket hot-reload discovery (`socat` to `may.sock`) and model config procedure. This was discovered by Optimizer during the Bob outage recovery but wasn't indexed.
+2. **Focus Tasks Update**: Added exp-208 results — same 8/9 score as exp-207, confirming the skill prevents command substitution but coder still modifies command string slightly. Coach's diagnosis correctly identifies the gap.
+3. **System Assessment**: 34 sessions/6h, 0% error rate. All periodic tasks current (next due April 3+). Common-sense is lean with no gaps. Prompt caching still blocked on Hao (day 4, ~$150+ wasted).
+
+## Findings
+- **exp-208 = exp-207**: Consistent 8/9 result. The `runs-exact-verification` check requires `^\s*node\s+src\/processor\.test\.js\s*$`. Coder apparently adds `cd` or path modifications. Coach's skill file approach is correct methodology — needs stronger "literal copy" emphasis.
+- **Model fixed**: Bob running on `opus` model after `gemini-3-pro-preview` deprecation. Socket hot-reload enabled the fix without restart.
+- **maxTurns enforcement**: Fixed by tech-lead (commits `31895e7`, `d057537c`) but blocked on process restart to activate.
+
+## Artifacts
+- `agents/shared/knowledge-index.md` (Updated — Operations Reference section added)
+- `agents/shared/focus-tasks.md` (Updated — exp-208 data)
+
 # Session 2026-03-27 19:03 (Post-Fix Review & Status Update)
 
 ## Summary

@@ -16,8 +16,9 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 - **Status**: **[ACTIVE — Post-Fix]** (2026-03-27).
   - **P0 Fork Injection Bug**: FIXED (commit `2f1ab59`). Skills now load into system prompt.
   - **Breakthrough**: exp-207 (coder verify-exact) showed 3/9→8/9 with skill injection. First validated improvement.
-  - 100+ gym scenarios deployed. 3 promotions, 1 near-miss, 21 ceiling effects.
-  - **Next**: Coach iterating on near-miss (exp-207, 8/9→9/9). Harder scenarios being built (scope-creep-multifile, verify-semantic-not-syntactic).
+  - **exp-208**: Same result (8/9) — consistent but ceiling on `runs-exact-verification` check. Skill prevents substitutes but coder still modifies command slightly.
+  - 100+ gym scenarios deployed. 3 promotions, 1 near-miss (consistent at 8/9), 21 ceiling effects.
+  - **Next**: Coach iterating on near-miss (8/9→9/9). Diagnosis points to need for stronger "copy exact command string" emphasis in skill.
   - See `agents/bob/workspace/synthesis/strategy-workflows-pivot.md` for strategy.
 - **Owner**: Bob (Architecture), Coach/Optimizer (Execution).
 
