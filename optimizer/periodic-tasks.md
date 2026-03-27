@@ -3,10 +3,11 @@
 Track when each task was last done. Pick the most overdue one during heartbeat step 3.
 
 ## Per heartbeat (do one, rotate)
-- [x] **Analysis review** — Last done: 2026-03-27T16:03
+- [x] **Analysis review** — Last done: 2026-03-27T17:34
   Read agents/bob/workspace/analysis.md or recent Bob synthesis outputs.
   Any findings that need optimization work? Cost issues? Efficiency problems?
   If found → add specific task to workspace/todo.md.
+  Latest (2026-03-27T17:34): **System healthy, all agents active.** 14 sessions since 16:03, 220 tool calls, 40min wall time. Coach heaviest (4 sessions, 119 ops, including 1 interrupted at 42 ops). Bob running (s_654, 28+ ops, active). May quick (1-2 ops). QA efficient (3 ops). No Bob analysis.md updates visible yet.
   Latest (2026-03-27T16:03): **🎉 BOB FULLY RECOVERED.** First successful heartbeat (s_642, 28 ops, 340s) since 48+ hour outage. Journal.md updated at 15:38. Currently running second heartbeat (s_644 at 16:03). Recovery chain: optimizer identified model fix → tech-lead applied via socket reload → optimizer sent P1 to break idle-skip cycle → Bob fired real heartbeat. analysis.md still from Mar 26 09:13 (not yet updated by Bob). System healthy: 16 sessions/3h (5.3/hr), 228 ops (76/hr).
   Latest (2026-03-27T15:03): **BOB RECOVERY VERIFIED.** Deep-dived Bob heartbeat mechanics. Reload confirmed by tech-lead (s_638) — socket returned `[reload] 10 updated (...bob...)`. However Bob heartbeats were being idle-skipped (no pending send() work). Sent P1 to Bob to trigger real heartbeat on next cycle (~15:30 UTC). Verified: (1) requests DB shows Bob heartbeats marked COMPLETED with "Idle skip" summaries at 14:30 and 15:03, (2) last real fire at 14:03 errored (pre-reload), (3) no circuit breaker blocking Bob, (4) initiative cadence=3 working correctly. Next real Bob heartbeat should succeed with opus model. Also found: running binary (b9ef77e) DOES have circuit breaker and idle-skip features (contrary to earlier belief).
   Latest (2026-03-27T14:03): **🎉 BOB MODEL FIX APPLIED VIA SOCKET RELOAD.** Discovered console socket at `.state/instances/console/may.sock` and sent `{"type":"reload_agents"}` — got `[reload] 10 updated` response including Bob. PID 52 now has opus config loaded in memory. Bob outage (40+ hours) should be resolved on next heartbeat. System very quiet (only may, optimizer, qa, scout running). Warning: scout/coder/coach configs missing required fields (expected — they use cron.json not agent.json).
@@ -20,10 +21,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Latest (2026-03-26T06:33): Bob published `synthesis/strategy-hard-constraints.md` — articulates Auto-Evolve failure (0/5) and pivot to runtime guards. Confirms optimizer's direction: tool guards > prompt engineering. Coach ran growth-cycle (session 369, 13 ops) for verify-before-finish scenario. System stable. Previous optimizer heartbeat (session 371) used 46 ops, but that was before 35-op budget was added. No new optimization action needed.
   Latest (2026-03-26T03:12): Bob session 351 initialized Scout archetype files and delegated migration to tech-lead (req:30f9ea94). Coach session 347/348 diagnosed coder materialization failure (6/9 baseline) and created workflow-enforcement fork (coder-materialize-workflow in .lab/). Evaluator session 350 scored coach good (0.72 eff / 0.74 qual) with issues: premature finish() and evidence gap. System running 4 active agent requests (coach heartbeat, bob→coach verify, bob→tech-lead migrate, optimizer heartbeat). Process still on stale binary b9ef77e.
 
-- [x] **Cost outlier scan** — Last done: 2026-03-27T16:03
+- [x] **Cost outlier scan** — Last done: 2026-03-27T17:34
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
+  Latest (2026-03-27T17:34): 14 sessions since 16:03, 220 ops total. Coach dominated: 4 sessions (119 ops, 54% of total). **KEY WASTE**: coach common-sense-verify cron (s_652) INTERRUPTED at 42 ops after hitting 600s timeout — all work lost. Coach evidence-gate design (s_649, 51 ops) justified but heavy. No other outliers. Bob/may/qa all efficient. System running ~9.3 sessions/hr.
   Latest (2026-03-27T16:03): 16 sessions/3h (5.3/hr), 228 ops (76/hr) — system running lean. Distribution: optimizer 3 (77 ops), coach 2 (54 ops), tech-lead 1 (35 ops), bob 2 (28 ops, 1 error pre-reload + 1 SUCCESS at 15:33), may 3 (17 ops), qa 3 (10 ops), evaluator 1 (6 ops), scout 1 (1 ops). **Bob recovery confirmed** — first successful session (s_642, 28 ops) in 48+ hours. No outliers. All sessions within budget. System very healthy.
   Latest (2026-03-27T15:03): ~30 requests since 14:03. System very quiet — almost all JS handlers (active-nudge, watchdog, convention-check, evaluate-sessions) or idle skips (bob, scout, qa, coach). Only LLM sessions: tech-lead s_638 (360s, 9 ops — handled P0 Bob fix), optimizer (current). No outliers. No cost issues. System running lean.
   Latest (2026-03-27T13:33): ~25 sessions since 12:03 (~8/hr). Distribution: coach 5 (13-37 ops, growth cycle), may 3 (1-15 ops), qa 3 (2-3 ops), evaluator 3, optimizer 3 (20-21 ops), bob 3 (ALL ERRORS — model fix NOT working, see below), tech-lead 2 (9-46 ops), scout 1 (17 ops). **KEY FINDING**: Bob model fix did NOT take effect — PID 52 never reloaded agent.json. Running binary still sends gemini-3-pro-preview. Bob now at 40+ hours continuous failure. Sent P0 to May (req:554fed2c) and tech-lead (req:7293e5af) requesting handleReload() trigger or process restart. Coach s_629 at 37 ops borderline but justified (growth cycle). No other outliers.
@@ -40,10 +42,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Latest (2026-03-25T20:40): 52 sessions in 4h (13/hr). Top ops: optimizer 57ops (common-sense experiment, expected), coach 26ops/2825s (interrupted). Coach+optimizer each 10 sessions, ~150 ops. No new waste patterns. System stable.
   Latest (2026-03-25T16:35): 61 sessions in 6.5h (9.4/hr). Two outliers: tech-lead gym test (528KB, 3x 100KB bash outputs — expected), Bob agents(filter:all) (404KB, 324KB response — one-off). No new systematic waste. Scout loop fix confirmed (2 sessions vs 32/day before). 30+ Bob zombies blocked on restart (req:31d94ce6). Finding at `workspace/finding-cost-scan-0325-1635.md`.
 
-- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-27T13:33
+- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-27T17:34
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
   Could it be replaced with a JS handler? (See cron-graduation-process.md Stage 3.)
   If found → write proposal in workspace/improvement-proposals.md.
+  Latest (2026-03-27T17:34): 14 sessions since 16:03. **Coach anti-pattern**: s_649 (51 ops) used 12 cat/head commands — 8 for reading files (should use read() tool), 4 for heredoc file creation (cat > file << EOF — could use write() tool). Not an LLM-to-JS candidate but a tool-usage efficiency issue. Coach common-sense-verify cron (s_652, 42 ops) INTERRUPTED at 600s — this recurring timeout pattern could benefit from a scope-limit cron parameter (max 20 ops) or splitting into smaller verification tasks. No new LLM-to-JS graduation candidates — all high-op sessions doing genuine LLM reasoning.
   Latest (2026-03-27T13:33): ~25 sessions since 12:03. No new LLM-to-JS candidates. May 1-op (JS), QA 2-3 ops (JS), evaluator 5 ops (mostly JS). All higher-op sessions genuine LLM: coach growth cycle (13-37 ops), tech-lead (9-46 ops), scout research (17 ops), optimizer periodic tasks (20-21 ops). Bob still erroring (model config not reloaded by running process — new P0 escalation sent). Circuit breaker candidate (#1 from 01:03 scan) implemented in code (d3b04e9) but blocked on process restart. No new candidates.
   Latest (2026-03-27T07:03):
   Latest (2026-03-27T05:03): Scanned 26 sessions since 01:03 (6.5/hr). No new LLM-to-JS candidates. QA (1 op), May (1 op), evaluator (0 op), tech-lead (2 op) all already optimized with JS early-exit. Higher-op sessions: coach 32 ops (gym scenario creation — genuine LLM), scout 14 ops (research — genuine LLM), May 15 ops (Bob model error investigation — genuine). Bob still 5 error sessions (0 ops each) — circuit breaker proposal from 01:03 scan still the top candidate. System overnight efficiency good — no new waste patterns.
@@ -55,10 +58,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Latest (2026-03-26T03:11): No new LLM-to-JS candidates. Short sessions already use JS heuristics (evaluator 0-op, QA early exit). NEW FINDING: 50+ stale test requests (echo hello/testing) clogging requests.db — not LLM waste but DB scan waste. Wrote finding at `workspace/finding-stale-requests-0326-0311.md`. Proposed: request-cleanup JS handler to auto-cancel stale CREATED test requests >24h old.
   Latest (2026-03-25T22:07): Scanned 49 sessions in 4h (12.25/hr). 15 low-op sessions (0-2 ops): evaluator 0-ops (JS heuristic ✅), May 1-op idle checks, QA 1-2 op early exits, Scout 1-2 ops idle. All low-op sessions already optimized or require LLM judgment. No new LLM-to-JS candidate.
 
-- [x] **Handler health check** — Last done: 2026-03-27T14:03
+- [x] **Handler health check** — Last done: 2026-03-27T17:34
   Review existing JS handlers in agents/may/handlers/.
   Any errors in recent logs? Any handler that's not firing?
   If issues → add fix to workspace/todo.md.
+  Latest (2026-03-27T17:34): **BUG FOUND**: `maxTurns` in cron `handlerConfig` is documented but NEVER ENFORCED by `run-agent-task.ts`. 12 cron entries have maxTurns configured (15-40) but all sessions use agent opBudget instead. Coach common-sense-verify configured for 15 maxTurns but sessions use 29-50 tool calls. s_652 timed out at 42 ops (50 tool calls) — all WASTED. Applied prompt workaround to cron message. Filed P1 to tech-lead for infrastructure fix. Finding at `workspace/finding-maxTurns-not-enforced-0327-1734.md`.
   Latest (2026-03-27T13:33): Same degraded state — tool-quality-report.md MISSING, requests.db 0 bytes, ERROR_LOG absent. 22 handlers present. All blocked on process restart. PID 52 (may-agent-b9ef77e from Mar 24) still running. **New insight**: handleReload() exists in may.ts (line 527) and is triggered by "reload" console command or "reload_agents" bus event. If a handler could emit this event, Bob's model config would reload without full restart. Escalated to tech-lead.
   Latest (2026-03-27T10:33): Same degraded state as 07:33 — tool-quality-report.md still missing, requests.db still 0 bytes, ERROR_LOG still absent. 22 handlers present but handler execution pipeline not generating output. No change from previous check. All blocked on process restart (PID 52 running binary 37+ commits behind HEAD).
   Latest (2026-03-27T07:33): **Infrastructure degraded**: tool-quality-report.md MISSING (handler not generating output), requests.db 0 bytes (empty), may.db has no readable tables (WAL not checkpointed), job-history.jsonl empty. ERROR_LOG empty/missing. 22 handlers still present in agents/may/handlers/. State partially reset but system is functioning — sessions run, meta.json written, history preserved. Handler execution pipeline may be broken (no evidence of any handler firing since last restart). Key gap: no tool quality data being generated.
@@ -90,7 +94,7 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Latest (2026-03-23T21:36): verification-consistency (15th skill) deployed to 6 agents. Full lifecycle.
   _13 earlier skill deployments documented in finding files. See `workspace/finding-pattern-scan-*.md`._
 
-- [x] **Tool quality review** — Last done: 2026-03-27T12:03
+- [x] **Tool quality review** — Last done: 2026-03-27T17:34
   Read the tool-quality-report.md (generated by tool-quality-scan handler every 4h).
   Look for regression trends, persistent failure patterns, and agent-specific issues.
   If a specific failure category accounts for >30% of waste, create a targeted intervention:
@@ -98,6 +102,7 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   - For empty-args: check if schema validation is catching it early enough
   - For edit-match-fail: check if agents are reading files before editing
   If tool-quality-report.md doesn't exist yet, skip — handler hasn't fired.
+  Latest (2026-03-27T17:34): Report still MISSING — handler not generating output (6+ hours since last check). Cannot assess tool quality. Last known: 2.8% waste at 05:07. Manual scan found coach bash anti-patterns (12 cat/head calls in one session). Blocked on process restart.
   Latest (2026-03-27T12:03): Report still MISSING — handler not generating output (same since 07:33). Cannot assess tool quality. Last known: 2.8% waste at 05:07. Blocked on process restart. No change.
   Latest (2026-03-27T10:33): Still missing — handler not generating output (same as 07:33). Cannot assess tool quality. Last known data was 2.8% waste at 05:07. Infrastructure monitoring gap persists — blocked on process restart.
   Latest (2026-03-27T07:33): **REPORT MISSING** — tool-quality-report.md does not exist. Handler not generating output (see handler health check). Cannot assess tool quality trends. Last known data was 2.8% waste at 05:07 (before state reset). System functioning but no tool quality instrumentation active. Requests.db also 0 bytes. Infrastructure monitoring gap.

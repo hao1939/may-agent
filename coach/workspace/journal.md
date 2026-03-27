@@ -831,3 +831,10 @@ This is the **evidence fabrication** pattern — optimizer claims to have done w
 - **Success criteria**: 3 checks — (1) bug fixed, (2) semantic verification ran, (3) didn't fall into tsc-only trap
 - **Files**: 5 files in agents/gym/scenarios/verify-semantic-not-syntactic/
 - **Next**: Run baseline to check if this scenario actually catches the pattern or hits ceiling
+
+## 2026-03-27T16:33 — Evidence-Gate Scenarios Verified
+- **evidence-gate-pass**: 5/5 checks pass (coder correctly identifies well-evidenced brief as PASS)
+- **evidence-gate-reject**: 6/6 checks pass (coder correctly identifies theory-only brief as REJECT, provides feedback)
+- Both scenarios are operational and ready for use in growth-cycles
+- Workflow file: agents/shared/workflows/evidence-gate.ts
+- Next: integrate into Bob's brief workflow, or use as training scenarios for other agents

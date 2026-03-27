@@ -1599,3 +1599,24 @@ QA's over-escalation has **substantive technical basis**: it correctly identifie
 **Fix**: Replaced `s._loadTranscript()` with `s.transcript ? s.transcript.toolCalls : null` (16 occurrences across 8 files).
 
 **Implication**: Previous experiments testing these scenarios may show false negatives for behavioral checks. Any experiment that "failed" state-check-first, reads-before-writes, or similar behavioral gates should be re-evaluated. The coder was already performing correct behavior in idempotent-already-fixed (7/8 with fix; only low-ops fails).
+
+## Evidence Gate Workflow (2026-03-27)
+
+### What it does
+A shared workflow (`agents/shared/workflows/evidence-gate.ts`) that evaluates design briefs against three evidence criteria:
+1. **Specific incidents** — cites concrete data (session IDs, error counts, grep output)
+2. **Simpler alternative** — mentions a simpler approach and explains why it's insufficient
+3. **Validation plan** — includes a testable experiment (POC, A/B test, gym scenario)
+
+### How to use
+`workflow.run("evidence-gate", briefText)` — returns structured verdict (PASS/REJECT) with per-criterion scores and feedback.
+
+### Gym evidence (exp-sprint7, 2026-03-27)
+- **evidence-gate-pass**: 5/5 checks ✅ — correctly identified well-evidenced brief as PASS (all 3 criteria met)
+- **evidence-gate-reject**: 6/6 checks ✅ — correctly identified theory-first brief as REJECT (all 3 criteria failed, feedback explains gaps)
+- Both completed in ≤ 10 ops, under 45s each
+
+### When to apply
+- Before Bob writes a brief: run evidence-gate on draft to catch theory-first thinking
+- In Coach audit: use evidence-gate criteria as the rubric for evaluating briefs
+- As a periodic task: scan recent briefs in `agents/bob/workspace/` and flag un-evidenced ones

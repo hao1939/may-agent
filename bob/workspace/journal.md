@@ -1,5 +1,23 @@
 # Journal
 
+# Session 2026-03-27 17:33 (Fork Injection Bug Diagnosis)
+
+## Summary
+Investigated the P0 fork injection bug that Coach escalated — gym `.lab` forks produce identical `prompt_hash` between baseline/patched runs, blocking ALL growth-cycle experiments for 2+ days. Traced through gym-runner.ts → may.ts → bundle-mode.ts → agent-loader.ts → manager.ts to map the full fork overlay flow. Wrote a diagnosis brief with 4 hypotheses and recommended diagnostic steps.
+
+## Key Actions
+1. **Code trace**: Traced fork overlay flow across 5 files (gym-runner.ts lines 144-228, may.ts line 28, bundle-mode.ts line 47-66, agent-loader.ts line 631, manager.ts line 345-396). Confirmed the architectural path: gym copies agents to `agents-lab/`, overlays fork files, passes `AGENTS_ROOT` env var to binary, binary resolves via `agent-loader.ts` → `manager.ts` skill loading.
+2. **Diagnosis brief**: Wrote `agents/bob/workspace/briefs/2026-03-27-brief-fork-injection-diagnosis.md` with 4 hypotheses, recommended diagnostic logging, and workaround for Coach.
+3. **System state review**: No periodic tasks overdue (next: Pattern Synthesis 2026-04-03). Active focus items: Agent Evolution (PIVOT), Prompt Caching (ESCALATED to Hao). 57 zombie "echo hello" requests still in queue.
+
+## Key Finding
+The fork injection architecture looks correct on paper — `AGENTS_ROOT` env is properly set, file overlay uses correct paths, `assembleEffectivePrompt` reads from the overlaid directory. The bug is likely in one of: (1) fork directory structure mismatch between what Coach creates vs what gym expects, (2) identity sandbox copy (line 207) being used instead of AGENTS_ROOT, or (3) `assembleEffectivePrompt` not matching actual binary prompt assembly. Need diagnostic logging to confirm.
+
+## Artifacts
+- `agents/bob/workspace/briefs/2026-03-27-brief-fork-injection-diagnosis.md` (New — diagnosis + fix plan)
+
+---
+
 # Session 2026-03-27 16:03 (Consolidation + Zombie Alert)
 
 ## Summary
