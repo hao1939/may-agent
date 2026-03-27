@@ -846,18 +846,9 @@ function assembleEffectivePrompt(
         if (skillContent) sections.push(skillContent);
       }
     }
-    // Also load shared skills
-    const sharedSkillsDir = join(agentsRoot, "shared", "skills");
-    if (existsSync(sharedSkillsDir)) {
-      const sharedSkillFiles = readdirSync(sharedSkillsDir, { recursive: true })
-        .map(f => String(f))
-        .filter(f => f.endsWith(".md"))
-        .sort();
-      for (const sf of sharedSkillFiles) {
-        const skillContent = loadFile(join(sharedSkillsDir, sf));
-        if (skillContent) sections.push(skillContent);
-      }
-    }
+    // Note: shared skills (agents/shared/skills/) are a reference library,
+    // NOT auto-loaded. Agents adopt specific skills by copying into their
+    // own skills/ directory (e.g., via growth-cycle lab forks).
 
     // 4. Runtime Environment (generated — matches manager.ts)
     const knowledgeDir = join(agentDir, "knowledge");
