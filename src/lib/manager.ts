@@ -384,6 +384,24 @@ export class SubagentManager {
     const commonSense = loadFile(def.projectRoot ? join(def.projectRoot, "agents", "shared", "common-sense.md") : undefined);
     if (commonSense) sections.push(commonSense);
 
+    // 3. Skills — behavioral patches from skills/*.md
+    if (agentDir) {
+      const skillsDir = join(agentDir, "skills");
+      if (existsSync(skillsDir)) {
+        const skillFiles = readdirSync(skillsDir, { recursive: true })
+          .map(f => String(f))
+          .filter(f => f.endsWith(".md"))
+          .sort();
+        for (const sf of skillFiles) {
+          const skillContent = loadFile(join(skillsDir, sf));
+          if (skillContent) sections.push(skillContent);
+        }
+      }
+    }
+    // Note: shared skills (agents/shared/skills/) are a reference library,
+    // NOT auto-loaded into every agent's prompt. Agents adopt specific skills
+    // by copying them into their own skills/ directory (e.g., via growth-cycle).
+
     // 5c. context_files — moved to buildSessionContext() (P147 KV-Cache Discipline).
     // These files (e.g., conversation-state.md) change between sessions, so
     // loading them here would invalidate the KV-cache prefix every time.
@@ -413,7 +431,7 @@ export class SubagentManager {
       // List which convention files are already in this prompt
       const loaded: string[] = ["SOUL.md"];
       if (loaded.length > 0) {
-        envLines.push(`- Already in context (do NOT re-read): ${loaded.join(", ")}, common-sense.md`);
+        envLines.push(`- Already in context (do NOT re-read): ${loaded.join(", ")}, common-sense.md, skills/*.md`);
       }
       envLines.push(
         `- Knowledge index: knowledge/INDEX.md (read when you need references)`,
