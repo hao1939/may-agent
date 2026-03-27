@@ -16,7 +16,7 @@ import type { AgentTool } from "@mariozechner/pi-agent-core";
 import { Type } from "@mariozechner/pi-ai";
 import type { TSchema } from "@mariozechner/pi-ai";
 import { constants } from "fs";
-import { access as fsAccess, readFile as fsReadFile, stat as fsStat } from "fs/promises";
+import { access as fsAccess, readFile as fsReadFile } from "fs/promises";
 import { resolveReadPath } from "./path-utils.js";
 import { DEFAULT_MAX_BYTES, DEFAULT_MAX_LINES, formatSize, type TruncationResult, truncateHead } from "./truncate.js";
 import { withAbortSignal } from "./abort-utils.js";
@@ -40,13 +40,11 @@ export interface ReadToolDetails {
 export interface ReadOperations {
   readFile: (absolutePath: string) => Promise<Buffer>;
   access: (absolutePath: string) => Promise<void>;
-  stat: (absolutePath: string) => Promise<{ size: number; isDirectory: () => boolean }>;
 }
 
 const defaultReadOperations: ReadOperations = {
   readFile: (path) => fsReadFile(path),
   access: (path) => fsAccess(path, constants.R_OK),
-  stat: (path) => fsStat(path),
 };
 
 export interface ReadToolOptions {
@@ -75,30 +73,7 @@ export function createReadTool(cwd: string, options?: ReadToolOptions): AgentToo
         await ops.access(absolutePath);
         if (isAborted()) return { content: [{ type: "text" as const, text: "" }], details: undefined };
 
-        // Safety guards (FM-2.1 / FM-3.1)
-        const fileStat = await ops.stat(absolutePath);
-
-        // Guard 1: Directory block
-        if (fileStat.isDirectory()) {
-          throw new Error("Path is a directory. Use 'bash ls -F' to list contents.");
-        }
-
-        // Guard 2: Size cap — block full reads of files > 50KB unless limit is provided
-        const SIZE_CAP = 50 * 1024; // 50KB
-        if (fileStat.size > SIZE_CAP && limit === undefined) {
-          throw new Error(
-            `File is too large (${formatSize(fileStat.size)}). Use 'read' with 'offset' and 'limit' to read in chunks, or 'bash' with grep to search.`
-          );
-        }
-
         const buffer = await ops.readFile(absolutePath);
-
-        // Guard 3: Binary file detection
-        const checkBytes = buffer.subarray(0, 512);
-        if (checkBytes.includes(0)) {
-          throw new Error("File appears to be binary. Cannot read text content.");
-        }
-
         const textContent = buffer.toString("utf-8");
         const allLines = textContent.split("\n");
         const totalFileLines = allLines.length;
