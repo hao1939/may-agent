@@ -150,5 +150,7 @@ export type {
 export type { HandlerContext, HandlerModule } from "./handler-context.js";
 export { retryWithBackoff } from "./retry-with-backoff.js";
 export type { RetryWithBackoffOptions } from "./retry-with-backoff.js";
+export { learnFromSession } from "./context-learn.js";
+export type { ContextLearnOptions } from "./context-learn.js";
 export { loadAgents, reloadAgents, validateAgentConfig } from "../app/agent-loader.js";
 export type { AgentConfig, AgentLoaderOptions, LoadResult, ValidationError } from "../app/agent-loader.js";

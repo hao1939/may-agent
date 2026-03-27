@@ -4,7 +4,7 @@ import { resolve, dirname } from "node:path";
 import { existsSync, readFileSync, writeFileSync, appendFileSync, unlinkSync, mkdirSync } from "node:fs";
 import { getModel } from "@mariozechner/pi-ai";
 import type { ModelWithApiKey } from "../lib/types.js";
-import { SubagentManager, evaluateTask, writeSkippedEvaluations, writeHeuristicEvaluations, classifyError } from "../lib/index.js";
+import { SubagentManager, evaluateTask, writeSkippedEvaluations, writeHeuristicEvaluations, classifyError, readSessionMeta, learnFromSession } from "../lib/index.js";
 import { EventBus } from "./event-bus.js";
 import { ChatSession } from "./chat-session.js";
 import { attachConsoleUI } from "./ui/console.js";
@@ -273,6 +273,14 @@ const manager = new SubagentManager({
               type: "info",
               message: `[eval] Auto-evaluated ${result.sessionIds.length} session(s) (${agentNames}): ${verdict}`,
             });
+
+            // Emit context-learn events for each evaluated agent
+            for (const sessionId of result.sessionIds) {
+              const meta = readSessionMeta(PERSIST_DIR, sessionId);
+              if (meta && meta.agent) {
+                bus.emit({ type: "context-learn", agentName: meta.agent, sessionId, persistDir: PERSIST_DIR });
+              }
+            }
           }
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err);
@@ -384,6 +392,47 @@ function attachAgentEvents(label: string, sessionId: string): void {
     }
   });
 }
+
+// ── Context Learning (event-driven) ────────────────────────────────────
+// Listen for "context-learn" events and extract durable facts from the session.
+// Enabled per-agent via CONTEXT_LEARN_AGENTS env var (comma-separated, default: none).
+// Set CONTEXT_LEARN_AGENTS=all to enable for all agents.
+
+const contextLearnAgents = new Set(
+  (process.env.CONTEXT_LEARN_AGENTS ?? "").split(",").map(s => s.trim()).filter(Boolean),
+);
+
+bus.on((event) => {
+  if (event.type !== "context-learn") return;
+  const { agentName, sessionId, persistDir } = event;
+
+  // Filter: only learn for enabled agents
+  if (!contextLearnAgents.has("all") && !contextLearnAgents.has(agentName)) return;
+  // Never learn from meta-agents
+  if (["evaluator", "coach", "judge"].includes(agentName)) return;
+
+  setTimeout(() => {
+    try {
+      const { readSessionMessages } = require("../lib/index.js") as typeof import("../lib/index.js");
+      const messages = readSessionMessages(persistDir, sessionId);
+      if (messages.length === 0) return;
+
+      const agentDir = resolve(AGENTS_ROOT, agentName);
+      if (!existsSync(agentDir)) return;
+
+      const result = learnFromSession({ agentDir, messages: messages as Parameters<typeof learnFromSession>[0]["messages"] });
+      if (result.added.length > 0) {
+        bus.emit({
+          type: "info",
+          message: `[context-learn] ${agentName}: +${result.added.length} fact(s) from session ${sessionId}`,
+        });
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      bus.emit({ type: "info", message: `[context-learn] Error for ${agentName}/${sessionId}: ${msg}` });
+    }
+  }, 1000);
+});
 
 // ── Graceful shutdown / restart ─────────────────────────────────────────
 

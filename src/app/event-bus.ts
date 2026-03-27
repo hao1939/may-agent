@@ -49,6 +49,12 @@ export type SystemEvent =
       turns?: number;
       failureChains?: number;
       wastedCalls?: number;
+    }
+  | {
+      type: "context-learn";
+      agentName: string;
+      sessionId: string;
+      persistDir: string;
     };
 
 export type RunnerEvent = SessionEvent | SystemEvent
