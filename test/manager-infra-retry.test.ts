@@ -236,7 +236,11 @@ describe("P93 Infrastructure Resilience — Infra Retry", () => {
     ["500 Internal Server Error", "http_retryable"],
     ["ECONNRESET", "http_retryable"],
     ["ETIMEDOUT", "http_retryable"],
+    ["ECONNREFUSED", "http_retryable"],
+    ["ENOTFOUND", "http_retryable"],
     ["socket hang up", "http_retryable"],
+    ["Connection error.", "http_retryable"],
+    ["Connection timed out", "http_retryable"],
   ])('returns "%s" → "%s"', (errorMsg, expected) => {
     const session = mockSession({
       status: "running",
