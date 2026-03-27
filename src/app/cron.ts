@@ -562,6 +562,15 @@ export class Cron {
         }
       }
 
+      // Circuit breaker for ALL agent-specific modes (not just heartbeats)
+      // Prevents wasted sessions when an agent's model is down or misconfigured
+      if (mode !== "heartbeat" && entry.agent) {
+        if (this.isCircuitBroken(entry.agent)) {
+          this.onError?.(`Cron "${entry.name}" skipped — circuit breaker tripped for ${entry.agent} (${this.agentErrors.get(entry.agent)?.count ?? 0} consecutive errors)`);
+          return;
+        }
+      }
+
       switch (mode) {
         case "heartbeat": this.fireHeartbeat(entry); break;
         case "job-handler": this.fireHandler(entry); break;
@@ -772,6 +781,8 @@ export class Cron {
     updateRequest(this.persistDir, requestId, { status: "IN_PROGRESS" });
     const startMs = Date.now();
 
+    const agentName = entry.agent;
+
     handler()
       .then(() => {
         updateRequest(this.persistDir, requestId, {
@@ -780,6 +791,8 @@ export class Cron {
           durationMs: Date.now() - startMs,
           summary: `JS handler "${entry.name}" completed`,
         });
+        // Circuit breaker: reset on success for agent-specific handlers
+        if (agentName) this.recordAgentSuccess(agentName);
       })
       .catch((err) => {
         const errMsg = err instanceof Error ? err.message : String(err);
@@ -789,6 +802,8 @@ export class Cron {
           durationMs: Date.now() - startMs,
           error: errMsg,
         });
+        // Circuit breaker: track consecutive errors for agent-specific handlers
+        if (agentName) this.recordAgentError(agentName);
         this.onError?.(`Cron handler "${entry.name}" failed: ${errMsg}`);
       });
   }
