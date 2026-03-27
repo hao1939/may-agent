@@ -36,6 +36,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+import { learnFromSession } from "../../src/lib/context-learn.js";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -47,6 +48,8 @@ interface ScenarioMeta {
   timeout: number;
   agent_type: string;
   workflow: boolean;
+  /** Run context learning between workflow phases. */
+  learn_between_phases?: boolean;
 }
 
 interface ScoreCheck {
@@ -112,6 +115,8 @@ interface AdapterOpts {
   agentName: string;
   labFork: string;
   gymRoot: string;
+  /** Copy agents to gym-local dir so context.md persists between phases. */
+  sandboxAgents?: boolean;
 }
 
 // ── Paths ──────────────────────────────────────────────────────────────
@@ -143,6 +148,13 @@ function createMayAgentAdapter(): Adapter {
         rmSync(join(gymAgents, ".lab"), { recursive: true, force: true });
         rmSync(join(gymAgents, ".git"), { recursive: true, force: true });
         cpSync(labDir, join(gymAgents, opts.agentName), { recursive: true });
+        agentsRoot = gymAgents;
+      } else if (opts.sandboxAgents) {
+        // Copy agents to gym-local dir so writes (e.g. context.md) don't pollute the real dir
+        const gymAgents = join(opts.gymRoot, "agents-sandbox");
+        cpSync(join(projectRoot, "agents"), gymAgents, { recursive: true });
+        rmSync(join(gymAgents, ".lab"), { recursive: true, force: true });
+        rmSync(join(gymAgents, ".git"), { recursive: true, force: true });
         agentsRoot = gymAgents;
       } else {
         agentsRoot = join(projectRoot, "agents");
@@ -619,6 +631,7 @@ function runScenario(
 
   const meta = loadScenarioMeta(scenarioDir);
   const isWorkflow = meta?.workflow ?? false;
+  const learnBetween = meta?.learn_between_phases ?? false;
   const timeout = timeoutOverride ?? meta?.timeout ?? 5;
 
   // Set up isolated environment
@@ -632,7 +645,7 @@ function runScenario(
   cpSync(join(scenarioDir, "environment"), workDir, { recursive: true });
 
   // Setup adapter
-  adapter.setup(PROJECT_ROOT, { agentName, labFork, gymRoot });
+  adapter.setup(PROJECT_ROOT, { agentName, labFork, gymRoot, sandboxAgents: learnBetween });
 
   const startMs = Date.now();
   let lastResult: AdapterResult = { sessionId: "", status: "unknown", sessionPath: "" };
@@ -652,6 +665,37 @@ function runScenario(
       console.error(`Phase ${i + 1}...`);
       lastResult = adapter.runAgent(phaseFile, workDir, timeout);
       console.error(`Phase ${i + 1} complete (session: ${lastResult.sessionId})`);
+
+      // Context learning between phases: extract facts from this phase's transcript
+      // and write to the agent's context.md in the sandbox
+      if (learnBetween && i < parts.length - 1 && lastResult.sessionPath) {
+        try {
+          const sessionDir = lastResult.sessionPath;
+          const jsonlPath = existsSync(sessionDir) && statSync(sessionDir).isDirectory()
+            ? readdirSync(sessionDir).filter(f => f.endsWith(".jsonl")).map(f => join(sessionDir, f))[0]
+            : sessionDir;
+          if (jsonlPath && existsSync(jsonlPath)) {
+            const lines = readFileSync(jsonlPath, "utf-8").split("\n").filter(l => l.trim());
+            const messages = lines.map(l => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
+
+            // Write to the sandbox agents dir (where AGENTS_ROOT points)
+            const sandboxAgentDir = join(gymRoot, "agents-sandbox", agentName);
+            // Also write to workDir agents dir (for success_criteria to inspect)
+            const workAgentDir = join(workDir, "agents", agentName);
+
+            for (const dir of [sandboxAgentDir, workAgentDir]) {
+              if (existsSync(dir)) {
+                const result = learnFromSession({ agentDir: dir, messages });
+                if (result.added.length > 0) {
+                  console.error(`  Context-learn: +${result.added.length} fact(s) → ${dir}/context.md`);
+                }
+              }
+            }
+          }
+        } catch (err) {
+          console.error(`  Context-learn error: ${err instanceof Error ? err.message : err}`);
+        }
+      }
     }
   } else {
     // Single phase
