@@ -1,0 +1,10 @@
+{
+  "name": "context-proof-runtime",
+  "categories": ["context-learning", "proof"],
+  "tags": ["behavior", "multi-session", "runtime-discovery"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": true,
+  "learn_between_phases": true
+}

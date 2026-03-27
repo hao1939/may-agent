@@ -1,0 +1,11 @@
+{
+  "name": "context-proof-build",
+  "categories": ["context-learning", "proof"],
+  "tags": ["behavior", "multi-session", "build-gotcha"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": true,
+  "learn_between_phases": true,
+  "phase_cleanup": ["generated", "dist"]
+}

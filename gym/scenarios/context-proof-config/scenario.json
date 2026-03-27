@@ -1,0 +1,10 @@
+{
+  "name": "context-proof-config",
+  "categories": ["context-learning", "proof"],
+  "tags": ["behavior", "multi-session", "config-discovery"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": true,
+  "learn_between_phases": true
+}
