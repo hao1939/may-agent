@@ -2309,7 +2309,7 @@ export class SubagentManager {
   }
 
   /**
-   * Create the V2 agents tool — 5 actions: call, send, list, peek, cancel.
+   * Create the V2 agents tool — 7 actions: call, send, run, list, peek, cancel, requests.
    *
    * Delegates to the standalone `createAgentsTool()` in `manager-agents-tool.ts`.
    * Kept as an instance method for backward compatibility with existing callers.
