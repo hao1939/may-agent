@@ -23,7 +23,7 @@ export type RequestStatus =
   | "FAILED"
   | "BLOCKED";
 
-export type RequestMethod = "chat" | "call" | "send" | "workflow";
+export type RequestMethod = "chat" | "call" | "send" | "run" | "workflow";
 
 // ErrorClass and classifyError are now in classify-error.ts (pure, no bun:sqlite deps)
 export type { ErrorClass } from "./classify-error.js";

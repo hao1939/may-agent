@@ -36,6 +36,11 @@ export interface AgentsToolManagerDeps {
     task: string,
     opts?: { parentSessionId?: string },
   ): Promise<TaskResult & { messages: AgentMessage[] }>;
+  runAgent(
+    agentName: string,
+    task: string,
+    opts?: { parentSessionId?: string; source?: string; requestId?: string },
+  ): string;
   status(): SessionInfo[];
   progress(sessionId: string, limit?: number): AgentMessage[];
   hasActiveSession(sessionId: string): boolean;
@@ -95,10 +100,11 @@ function textResult(text: string): AgentToolResult<string> {
 }
 
 const AgentsToolParams = Type.Object({
-  action: StringEnum(["call", "send", "list", "peek", "cancel", "requests"] as const, {
+  action: StringEnum(["call", "send", "run", "list", "peek", "cancel", "requests"] as const, {
     description: [
       "'call': run an agent synchronously and get the result (blocks your session until the agent finishes).",
       "'send': add a todo item for an agent and trigger their heartbeat — fire-and-forget, you continue immediately.",
+      "'run': start an agent immediately in the background (non-blocking). Returns sessionId. Use 'peek' to monitor progress.",
       "'list': show all available agents with descriptions and any running sessions.",
       "'peek': view recent messages from a running session (requires sessionId).",
       "'cancel': kill a running session (requires sessionId).",
@@ -120,7 +126,7 @@ const AgentsToolParams = Type.Object({
 });
 
 interface AgentsToolParamsType {
-  action: "call" | "send" | "list" | "peek" | "cancel" | "requests";
+  action: "call" | "send" | "run" | "list" | "peek" | "cancel" | "requests";
   agent?: string;
   task?: string;
   message?: string;
@@ -150,7 +156,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
     name: "agents",
     label: "Agents",
     description:
-      "Cooperate with other agents. Use 'list' to see available agents, 'call' to run one synchronously, 'send' to dispatch async work, 'peek'/'cancel' to monitor sessions, 'requests' to query the tracking DB.",
+      "Cooperate with other agents. Use 'list' to see available agents, 'call' to run one synchronously, 'run' to start one in the background (non-blocking), 'send' to dispatch async work, 'peek'/'cancel' to monitor sessions, 'requests' to query the tracking DB.",
     parameters: AgentsToolParams,
     execute: async (_toolCallId, _params) => {
       const params = _params as AgentsToolParamsType;
@@ -233,6 +239,73 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
             // Return result without full messages array (too large for tool output)
             const { messages: _msgs, ...resultWithoutMessages } = result;
             return textResult(JSON.stringify(resultWithoutMessages, null, 2));
+          }
+
+          case "run": {
+            if (!params.agent || !params.task) {
+              return textResult(JSON.stringify({ error: "'run' requires 'agent' and 'task'" }));
+            }
+            // Guard: reject if target matches a tool in caller's toolset
+            const callerAgentRun = getCallerAgentName?.();
+            if (callerAgentRun) {
+              const callerReg = manager.agents.get(callerAgentRun);
+              if (callerReg) {
+                const toolNames = callerReg.definition.tools.map((t) => t.name);
+                if (toolNames.includes(params.agent)) {
+                  return textResult(
+                    JSON.stringify({
+                      error: `"${params.agent}" is a tool, not an agent. Call it directly as: ${params.agent}({ ... }) — do NOT use agents.run("${params.agent}", ...).`,
+                    }),
+                  );
+                }
+              }
+            }
+            if (!manager.agents.has(params.agent)) {
+              return textResult(
+                JSON.stringify({ error: `Agent "${params.agent}" not registered. Use 'list' to see available agents.` }),
+              );
+            }
+            if (callDeny && callDeny.agents.includes(params.agent)) {
+              return textResult(
+                JSON.stringify({ error: `Cannot run "${params.agent}" directly. ${callDeny.hint}` }),
+              );
+            }
+            const parentSidRun = getCallerSessionId?.();
+            const callerNameRun = getCallerAgentName?.() ?? "unknown";
+
+            // Track the request in SQLite
+            let runRequestId: string | undefined;
+            try {
+              const req = await getRequestsModule();
+              runRequestId = req.trackRequest(manager.registry.persistDir, {
+                fromEntity: callerNameRun,
+                toAgent: params.agent,
+                task: params.task,
+                method: "run",
+                sessionId: parentSidRun,
+                context: params.context_files ? JSON.stringify(params.context_files) : undefined,
+                expectations: params.success_criteria ? JSON.stringify(params.success_criteria) : undefined,
+              });
+            } catch {
+              // Non-fatal: tracking failure shouldn't block the run
+            }
+
+            // Fire-and-forget: start agent immediately, don't wait
+            const sessionId = manager.runAgent(params.agent, params.task, {
+              parentSessionId: parentSidRun,
+              source: "agents.run",
+              requestId: runRequestId,
+            });
+
+            return textResult(
+              JSON.stringify({
+                status: "started",
+                sessionId,
+                agent: params.agent,
+                requestId: runRequestId?.slice(0, 8),
+                hint: `Use peek({ sessionId: "${sessionId}" }) to monitor progress.`,
+              }),
+            );
           }
 
           case "list": {
