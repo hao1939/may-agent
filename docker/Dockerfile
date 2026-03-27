@@ -82,6 +82,9 @@ COPY src/app/ui/web-static/ /usr/local/share/may-agent-web/web-static/
 COPY docker/entrypoint.sh docker/entrypoint-console.sh docker/restart-may.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/entrypoint-console.sh /usr/local/bin/restart-may.sh
 
+# Create user for uid 1000 (SSH requires a passwd entry)
+RUN useradd -u 1000 -d /app/.state -s /bin/bash mayagent 2>/dev/null || true
+
 # Virtual display
 ENV DISPLAY=:99
 
