@@ -1,0 +1,7 @@
+{
+  "agent_type": "coder",
+  "timeoutSeconds": 180,
+  "description": "Tests that agents use finish(context_updates) to persist learned facts",
+  "tier": "smoke",
+  "categories": ["context-learning", "self-improvement"]
+}

@@ -84,3 +84,7 @@
 - `git revert --no-commit` all 4, single commit `2f9d2ef`
 - Removed: Guard Architecture (GuardRegistry, default-guards), BinaryGuard, WorkVerifyGuard, ToolSyntaxGuard, PathAssumptionGuard, read safety guards, scanSkill supply chain scanner
 - 15 files changed, -1389 lines. All guard files deleted, manager.ts and agent-loader.ts cleaned.
+
+## 2026-03-27 06:33 — P0 Tasks from May
+- **req:03e6d435 — handleCompletion refactor**: Extracted `extractFinishParams(messages)` once at top of handleCompletion (line 670), removed 4 redundant calls. TSC passes. Committed `5328839`.
+- **req:6176e87b — Skills injection into system prompt**: Added skill file loading (skills/*.md, recursive, sorted) to both `resolveSystemPrompt()` in manager.ts and `assembleEffectivePrompt()` in gym-runner.ts. Loads agent-specific + shared skills after common-sense.md, before Runtime Environment. TSC passes. Committed `3661a21`.
