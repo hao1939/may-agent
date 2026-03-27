@@ -123,7 +123,11 @@ export function isRetryableInfraError(session: ActiveSession): string | null {
       agentError.includes("500 ") ||
       agentError.includes("ECONNRESET") ||
       agentError.includes("ETIMEDOUT") ||
-      agentError.includes("socket hang up");
+      agentError.includes("ECONNREFUSED") ||
+      agentError.includes("ENOTFOUND") ||
+      agentError.includes("socket hang up") ||
+      agentError.includes("Connection error") ||
+      agentError.includes("Connection timed out");
     if (isHttpRetryable) {
       return "http_retryable";
     }
