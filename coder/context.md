@@ -1,0 +1,5 @@
+- npx is not available in this environment — use ./node_modules/.bin/<tool> or bun x <tool> instead
+- sudo is not available — install packages with bun install --no-save
+- Build check command: npm run check (runs tsc --noEmit)
+- agents/ directory is a separate git repo (gitignored from main repo) — don't git add agents files from the main repo
+- The .state/ directory contains may.db (SQLite), sessions, and instance data — never commit it

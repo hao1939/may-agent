@@ -1,133 +1,190 @@
 # Context Learning System
 
+## Status: Proven Effective (Narrow Scope)
+
+A/B testing on 2026-03-27 showed context.md **does change agent behavior** — but only for environmental knowledge the agent can't derive from project files.
+
 ## The Problem
 
-Each session starts fresh. The agent gets SOUL.md (identity) and common-sense.md (team rules), but nothing about what it learned from working. It rediscovers the same facts, repeats the same mistakes, doesn't know what changed since last time.
+Each session starts fresh. Agents rediscover the same environmental constraints, repeat the same mistakes, don't know what worked or failed in prior sessions.
 
-## The Solution
+## The Evidence
 
-One file per agent: `context.md`. Auto-maintained by a learning process. Injected by the harness into the first user message every session. Contains accumulated knowledge about the project, the user, known issues, and recent decisions.
+### What works: Environmental knowledge (not in any file)
 
-## What's in context.md
+A/B test — `context-npx-avoidance` scenario, 3 runs each, 100% consistent:
 
-```markdown
-## Project
-- TypeScript/Bun, monorepo at /app
-- Tests: vitest (never run full suite — OOMs)
-- Build check: npm run check (tsc --noEmit)
+| Run | context.md | npx attempted | Result |
+|-----|-----------|---------------|--------|
+| WITHOUT (×3) | absent | yes (always) | Agent tries npx → fails → recovers |
+| WITH (×3) | "npx not available, use node_modules/.bin/" | no (never) | Agent uses correct path directly |
 
-## Team
-- May coordinates. Tech-lead manages coder+qa.
-- Bob designs. Coach trains. Optimizer tunes.
-- Scout researches. Evaluator scores.
+Real data backing this: 82 out of 100 coder sessions used `npx` despite it not being available in the container. This wastes 1-3 ops per session.
 
-## User
-- Reviews daily digest and web UI
-- Prefers concise answers, code over explanation
-- Communicates through May
+### What doesn't work: Derivable knowledge (already in project files)
 
-## Known Issues
-- gym scenarios cost $0.05-0.15 each
-- common-sense.md is human-controlled
-- SOUL.md text changes don't fix judgment failures (coach proved 0/18)
-- Workflows work better than rules (18/18)
+A/B test — `context-proof-runtime` and `context-proof-config` scenarios:
 
-## Recent Decisions
-- Prompt: only SOUL.md + common-sense.md loaded (no DOMAIN/LESSONS/INDEX)
-- Prefer workflows over harness guards
-- Auto-evolve: try variations, gym test, keep best
-```
+| Scenario | WITH context | WITHOUT context | Delta |
+|----------|-------------|----------------|-------|
+| Runtime discovery (bun vs node) | PASS 8/8 | PASS 8/8 | **None** |
+| Config location | PASS 7/7 | PASS 7/7 | **None** |
 
-## What's NOT in context.md
+Claude reads package.json, sees `bun:test`, and knows to use bun — with or without context.md.
 
-- Agent identity (that's SOUL.md)
-- Behavioral rules (that's common-sense.md)
-- Task history (that's the task message)
-- Full conversation (that's session compaction)
+### Why the difference
 
-## How it gets updated
+Context.md helps when the knowledge **doesn't exist in any file the agent can read**:
+- ✅ Environment constraints: "npx not available", "port 6443 blocked"
+- ✅ Historical failures: "approach X failed because Y, use Z"
+- ✅ Team preferences: "user wants concise answers"
+- ✅ Cross-session patterns: "coder hits this error 5× — workaround is..."
+- ❌ Project facts: runtime, config locations, dependencies → agent reads these from files
 
-A cron job runs periodically (e.g., every 6 hours). For each agent:
+### Weaker model hypothesis
 
-### Step 1: Gather signal
-- Read the agent's last N sessions (from .state/sessions/history/)
-- Read evaluations for those sessions (from may.db)
-- Read the agent's workspace journal
-- Read human inputs (from requests table where fromEntity='human')
+Claude Sonnet 4 derives project facts from files. A weaker model (GPT-4o-mini, Gemini Flash) might not. Context.md's value scales inversely with model capability. Not tested yet — becomes relevant when optimizer downgrades models for cost.
 
-### Step 2: Extract learnings
-Ask: what NEW facts emerged that the agent should know going forward?
+## Architecture
 
-Categories:
-- **Project fact**: "The project switched from npm to bun" — discovered when agent tried npm and failed
-- **User preference**: "Hao said stop adding harness guards" — from a human directive
-- **Known issue**: "The flexnodehelper socket is at /home/hao/flexnodehelper/.state/..." — discovered during project monitoring
-- **Decision**: "We use auto-evolve to test SOUL.md changes" — from a design discussion
-- **Stale removal**: "The PostgreSQL migration is done — remove references to pg" — old fact no longer relevant
-
-### Step 3: Update context.md
-- Add new facts to the appropriate section
-- Remove stale facts (referenced in sessions >2 weeks ago, never referenced since)
-- Keep the file small (<2KB target)
-- Don't duplicate what's in SOUL.md or common-sense.md
-
-### Step 4: Verify
-- Diff the old and new context.md
-- If significant changes, log what was added/removed
-
-## How it gets loaded
-
-In `resolveSystemPrompt` or `buildSessionContext`:
+### Three layers
 
 ```
-First user message:
-  # Session Context
-  - Session ID: s_xxx
-  - Current Time: 2026-03-26T10:00:00Z
-
-  ## What You Know (from context.md)
-  [contents of agents/<name>/context.md]
-
-  ## Last Checkpoint (if any)
-  [checkpoint data]
-
-  ---
-  
-  [Task text]
+1. Extraction     →  extractFacts() (LLM) or extractFactsMechanical() (pattern matching)
+2. Context file   →  applyContextUpdates() or mergeContext() (LLM produces complete file)
+3. Convenience    →  learnFromSession(), learnFromText(), context-learn workflow
 ```
 
-The harness injects it. The agent always sees it. Not optional, not a prompt instruction to "read your context file."
+### Triggering
 
-## Who maintains it
+```
+session ends
+  → handleCompletion fires onSessionComplete
+    → evaluateTask runs (3s delay)
+      → bus.emit("context-learn", { agentName, sessionId, persistDir })
+        → listener in may.ts (filtered by CONTEXT_LEARN_AGENTS env var)
+          → learnFromSessionLLM() [primary] or learnFromSession() [fallback]
+            → writes agents/<name>/context.md
+              → next session: buildSessionContext loads it as "What You Know"
+```
 
-**The learning cron job** — not the agent itself. The agent can't modify its own context.md (it's harness-managed, like SOUL.md loading). This prevents agents from bloating their own context with noise.
+### Enable/disable
 
-**The human can edit it** — override, correct, remove stale entries. Just like AGENTS.md in pi.
+```bash
+# Enable for specific agents
+CONTEXT_LEARN_AGENTS=coder,tech-lead
 
-**The learning process can be an LLM call** — read sessions, extract facts, update the file. Or it can be mechanical — pattern matching on error logs, tracking human directives. Start mechanical, add LLM later if needed.
+# Enable for all
+CONTEXT_LEARN_AGENTS=all
 
-## Per-agent vs shared context
+# Disable (default)
+# unset or empty
+```
 
-Each agent gets its own `context.md` because they work in different domains:
-- Coder's context: build commands, test patterns, known code issues
-- Scout's context: research sources, paper databases, current topics
-- May's context: team status, project registry, human preferences
+Meta-agents (evaluator, coach, judge) are always excluded.
 
-Shared facts (like "we use bun not npm") could go in a `shared/context.md` that all agents see. But start with per-agent only — simpler.
+### Two extraction modes
 
-## Relationship to other systems
+**LLM merge (primary)**: Evaluator agent reads transcript + existing context.md, produces the complete updated context.md. Handles conflicts, dedup, staleness, reorganization. Cost: ~$0.01/session.
 
-| System | What | When loaded | Who updates | Lifetime |
-|--------|------|-------------|-------------|----------|
-| SOUL.md | Identity, skills, constraints | Every session (system prompt) | Human + gym-gated auto-evolve | Permanent |
-| common-sense.md | Team behavioral rules | Every session (system prompt) | Human only | Permanent |
-| context.md | Accumulated project knowledge | Every session (first user msg) | Learning cron | Evolves |
-| checkpoint | Resume point for ongoing work | When resuming (first user msg) | Agent (via tool) | Until consumed |
-| workspace/ | Working files | Agent reads on demand | Agent | Ephemeral |
+**Mechanical (fallback)**: Pattern matches on tool calls. Catches: npm→bun corrections, node→deno, path corrections, runtime file discovery. Misses: build dependencies, architectural patterns, implicit constraints.
 
-## Implementation
+### Workflow
 
-1. Create `agents/<name>/context.md` for each agent (start with manual content)
-2. Update `buildSessionContext()` to load and inject it
-3. Build the learning cron job (start mechanical, evolve to LLM-assisted)
-4. Add context.md size to daily digest (track bloat)
+`agents/shared/workflows/context-learn.ts` — invokable by any agent:
+
+```
+workflow context-learn
+agent: coder
+contextPath: agents/coder/context.md
+
+<transcript or text to learn from>
+```
+
+Steps: parse → LLM extract+merge → write → verify. Produces diff summary.
+
+### Reuse
+
+The extraction functions are decoupled. Call from anywhere:
+
+```typescript
+// Post-session (automatic)
+learnFromSessionLLM({ agentDir, messages, agentName, task, manager });
+
+// Ad-hoc from any text
+learnFromText(contextPath, prReviewText, manager, "Code review on PR #42");
+
+// Merge with full conflict resolution
+mergeContext(contextPath, transcript, manager, "Agent: coder");
+
+// Mechanical only (no LLM, for gym/tests)
+learnFromSession({ agentDir, messages });
+
+// Low-level
+const updates = extractFactsMechanical(messages);
+applyContextUpdates(contextPath, updates);
+```
+
+## What belongs in context.md
+
+**YES — environmental knowledge:**
+- `npx is not available — use ./node_modules/.bin/<tool> or bun x <tool>`
+- `Docker container has no sudo — use bun install --no-save for temp deps`
+- `Port 6443 requires NSG rule — check Azure portal before debugging connectivity`
+
+**YES — historical patterns:**
+- `manager.ts uses lazy DB init — call getDb() not import db directly`
+- `SOUL.md text changes don't fix judgment failures (coach proved 0/18) — use workflows`
+- `gym scenarios cost $0.05-0.15 each — don't run full baseline casually`
+
+**YES — team/user preferences:**
+- `User prefers concise answers over explanations`
+- `Don't modify common-sense.md — human-controlled`
+- `One task per agent, end-to-end — avoid long coordination chains`
+
+**NO — derivable from project files:**
+- ~~"Project uses Bun runtime"~~ → agent reads package.json
+- ~~"Config at config/database.json"~~ → agent runs find/grep
+- ~~"Tests use vitest"~~ → agent reads test files
+
+## Files
+
+| File | Purpose |
+|------|---------|
+| `src/lib/context-learn.ts` | Core extraction + context file management |
+| `src/app/event-bus.ts` | `context-learn` event type |
+| `src/app/may.ts` | Event listener, CONTEXT_LEARN_AGENTS filter |
+| `src/lib/manager.ts` | `buildSessionContext()` loads context.md; `applyContextUpdates()` writes it |
+| `agents/shared/workflows/context-learn.ts` | Workflow for agent/human-triggered learning |
+| `scripts/context-learn-ab.sh` | A/B comparison script |
+
+## Gym scenarios
+
+| Scenario | What it tests | Result |
+|----------|--------------|--------|
+| `context-npx-avoidance` | Environmental knowledge (npx unavailable) | **✅ Proven: 3/3 WITH avoided npx, 3/3 WITHOUT used npx** |
+| `context-learning` | Basic fact extraction via finish() | Pass but doesn't prove improvement |
+| `context-learning-correction` | Remove+add wrong facts | Pass but doesn't prove improvement |
+| `context-learning-restraint` | No spam on trivial tasks | Pass |
+| `context-proof-runtime` | Runtime discovery (bun) | **No difference with/without context** |
+| `context-proof-config` | Config location | **No difference with/without context** |
+| `context-proof-build` | Build dependency (codegen) | Broken — mechanical extractor can't detect |
+
+## Tests
+
+- `test/context-learn.test.ts` — 7 tests for mechanical extraction patterns
+- `test/context-learning.test.ts` — 6 tests for context file persistence (applyContextUpdates in manager.ts)
+
+## Cost
+
+- LLM merge: ~$0.01/session (evaluator agent, single turn)
+- Mechanical: $0 (pattern matching only)
+- Storage: context.md capped at 2KB per agent
+
+## Recommendations
+
+1. **Deploy now**: Set `CONTEXT_LEARN_AGENTS=coder` on k3s. Seed with known facts (npx unavailability).
+2. **Measure weekly**: Track coder's avg quality score (currently 0.7) against gym baseline.
+3. **Seed manually**: Don't wait for the extractor to discover known facts. Write them.
+4. **Don't over-invest**: Mechanical extraction is limited. LLM merge is the real path.
+5. **Revisit on model downgrade**: When optimizer switches to cheaper models, context.md becomes more valuable.
