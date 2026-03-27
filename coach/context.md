@@ -1,0 +1,9 @@
+- npx is not available in this environment — use ./node_modules/.bin/<tool> or bun x <tool>
+- bun is at .state/.bun/bin/bun — add to PATH: `export PATH=".state/.bun/bin:$PATH"`
+- sqlite3 CLI is not available — query may.db with bun: `bun -e "import {Database} from 'bun:sqlite'; ..."`
+- Gym runner: scripts/gym-run.sh <scenario> --agent <name>
+- Gym scenarios are in agents/gym/scenarios/
+- Lab forks for experiments: agents/.lab/<fork-name>/
+- SOUL.md text changes don't fix judgment failures (0/18 in experiments) — use workflow enforcement
+- Growth cycle: fork → patch → gym test → promote if improved, discard if not. One change per cycle.
+- agents/ is a separate git repo — use `git add` from agents/ dir
