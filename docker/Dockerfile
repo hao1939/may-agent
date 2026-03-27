@@ -34,6 +34,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     gnupg2 \
     jq \
+    openssh-client \
     procps \
     socat \
     unzip \
