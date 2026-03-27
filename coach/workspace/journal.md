@@ -823,3 +823,11 @@ This is the **evidence fabrication** pattern — optimizer claims to have done w
 1. Examine what command the patched coder actually ran (was it close?)  
 2. Strengthen the skill — maybe add the exact scenario-specific command
 3. This validates the entire coaching methodology now that skills are actually loaded!
+
+### 2026-03-27 12:35 — Scenario Development: verify-semantic-not-syntactic
+- **Target**: Coder FM-3.3 (verification gap — syntax-only verification)
+- **Real-world pattern**: 6 coder FM-3.3 errors today. Coder runs `tsc --noEmit` but doesn't verify the fix actually produces correct output.
+- **Scenario design**: Bug in discount calc (sign error in >50% branch). Easy to fix, but the trap is verifying only with tsc instead of running the test file.
+- **Success criteria**: 3 checks — (1) bug fixed, (2) semantic verification ran, (3) didn't fall into tsc-only trap
+- **Files**: 5 files in agents/gym/scenarios/verify-semantic-not-syntactic/
+- **Next**: Run baseline to check if this scenario actually catches the pattern or hits ceiling

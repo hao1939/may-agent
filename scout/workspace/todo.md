@@ -26,6 +26,8 @@
 - [ ] **CR#261 Governance Authority Stack** — ready for Bob (five-layer hard/soft governance unification, Hardness Gradient Principle, Governance Cube, Minimum Viable SoP, Law 38/M37/T14 proposals, ★★★★★)
 - [ ] **DD#476 AgentNet** — ready for Bob (decentralized DAG-structured evolutionary coordination, governance gap analysis, Sybil routing vulnerability, ABSTRAL→AgentNet pipeline, P131-P134/M38, ★★★★)
 
+- [ ] **CR#262 W13 Capstone — GRA** — ready for Bob (Governance-Resilience Architecture, unifies all W13 output: 14 DDs + 7 CRs into six-layer stack, information-theoretic substrate, GRA Completeness Argument, 5 critical gaps, P135, ★★★★★)
+
 ## Leads to Track
 - ~~Fair ZD Strategies follow-up~~ → **DONE: CR#253 Stochastic Cooperation Theory**
 - GUS v7 delta review — awaiting Bob's response
@@ -41,9 +43,12 @@
 - Environmental Stochasticity Principle (P81 candidate) — from DD#460 ZD failure result
 - **MAS Fragility Triangle** — integration of prediction (ProMAS) + containment (ALARA) + communication integrity (AgentComm-Bench)
 - ~~**Circuit breaker mechanism for LLM-based MAS**~~ → **DONE: CR#259 MAS Circuit Breakers**
-- **Compute Efficiency Convergence** — ETD-MAPPO (temporal sleep) + SEMA (observation pruning) both solve MAS deployment cost from different angles; potential synthesis with DD#463 Selection Bottleneck
+- ~~**Compute Efficiency Convergence**~~ → **DONE: Already covered by CR#258 (Compute Governance Triangle). W13 Capstone (CR#262) integrates this with governance + resilience fronts.**
 - **Conformity Paradox formalization** — extend MAD-Spear BFT model with trust layers (GUS framework); test whether vector trust reduces conformity vulnerability
 - **Sybil Detection for MAS** — response fingerprinting, timing analysis, stylometric detection; bridge DD#472 threat model with CR#259 circuit breaker defense
+- **GRA Gap 1: L2-L3 Interference** — adversarially-aware compute governance (ETD-MAPPO + MAD-Spear interaction, P135)
+- **GRA Gap 3: Evolving Constitutions** — constitutional amendment theory for MAS (AE4E + CR#256 self-evolution)
+- **GRA Gap 4: Cross-Layer Attacks** — multi-layer adversarial analysis of the Governance-Resilience Architecture
 - ~~**AgentNet decentralized coordination** (2504.00587)~~ → **DONE: DD#476 AgentNet (★★★★, 241 lines) — DAG-structured decentralized MAS, governance gap, ABSTRAL→AgentNet pipeline, P131-P134/M38**
 - ~~**AE4E / Logic Monopoly / Separation of Power** (2603.25100)~~ → **DONE: DD#475 AE4E/Logic Monopoly (★★★★½, 236 lines)**
 - ~~**Governance Authority Stack formalization**~~ → **DONE: CR#261 Governance Authority Stack (★★★★★, 299 lines) — five-layer hard/soft governance unification, Law 38/M37/T14 proposals**
@@ -61,7 +66,7 @@
 - Predictions P203-P229 (27 from batches) + P84-P88 (5 from v7 delta) + P89-P94 (6 from Monday+synthesis) = 38 total
 
 ## Notes
-- DD count: 476, CR count: 261
+- DD count: 476, CR count: 262
 - GUS: v6 → v7 delta proposal ready, plus Law 35-37 / M33-M36 / P89-P98 candidates
 - W13 has been governance-dominated: Governance-First Architecture is the defining cluster
 - **TrustFlow (DD#458) validates Trust Evolution Principle (CR#250) — strongest external validation yet**
@@ -86,3 +91,4 @@
 - **DD#475 AE4E/Logic Monopoly: 143-page constitutional governance proposal. Logic Monopoly concept (agent as legislator+executor+adjudicator). Three-branch SoP enforced via smart contracts + TEE. AGIL-based Agentic Social Layer with 60+ institutional AE4Es. Five-layer Governance Authority Stack synthesis. Correct diagnosis, no empirical validation. P124-P126. ★★★★½.**
 - **CR#261 Governance Authority Stack: Definitive hard/soft governance unification. Five-layer stack (L1 Alignment → L2 Monitoring → L3 Trust Dynamics → L4 Institutional → L5 Constitutional). Hardness Gradient Principle. GUS Laws mapped to stack layers. Logic Monopoly = layer collapse. Governance Cube (Authority × Efficiency × Resilience). Minimum Viable SoP at L3-L4 without blockchain. Proposes Law 38, M37, T14. P127-P130. ★★★★★.**
 - **DD#476 AgentNet: First complete decentralized LLM-MAS architecture. DAG-structured task routing + RAG memory evolution + dynamic topology adaptation. Three-pillar innovation (decentralized paradigm, dynamic topology, adaptive learning). Critical governance gap: operates only at L1-L2 of Governance Authority Stack. DAG-variant Sybil routing attack vulnerability. Decentralized Coordination Sufficiency theorem + Adversarial Insufficiency corollary. ABSTRAL→AgentNet pipeline as optimal compile→runtime architecture. P131-P134, M38 (Decentralized Routing). ★★★★.**
+- **CR#262 W13 Capstone — Governance-Resilience Architecture (GRA): Unifies all 14 DDs (DD#463-476) + 7 CRs (CR#255-261) into six-layer architecture: L1 Agent Infrastructure → L2 Runtime Efficiency → L3 Trust & Resilience → L4 Institutional → L5 Constitutional → L6 Meta-Governance. Information-theoretic substrate unifying governance/resilience/efficiency. GRA Completeness Argument. 5 critical gaps identified. P135. W13 stats: 14 DDs, 8 CRs, 37 predictions, 3 laws, 3 mechanisms, 3 trilemmas. ★★★★★.**
