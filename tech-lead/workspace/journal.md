@@ -88,3 +88,10 @@
 ## 2026-03-27 06:33 — P0 Tasks from May
 - **req:03e6d435 — handleCompletion refactor**: Extracted `extractFinishParams(messages)` once at top of handleCompletion (line 670), removed 4 redundant calls. TSC passes. Committed `5328839`.
 - **req:6176e87b — Skills injection into system prompt**: Added skill file loading (skills/*.md, recursive, sorted) to both `resolveSystemPrompt()` in manager.ts and `assembleEffectivePrompt()` in gym-runner.ts. Loads agent-specific + shared skills after common-sense.md, before Runtime Environment. TSC passes. Committed `3661a21`.
+
+## 2026-03-27 08:45 — P0: agents.run action (req:dd39d18d)
+- Added `run` action to agents tool — fire-and-forget non-blocking agent start
+- Fills gap between `call` (blocks) and `send` (queued for heartbeat)
+- Implementation: `runAgent()` in manager-agents-tool.ts interface + switch case, `SubagentManager.runAgent()` wrapper in manager.ts
+- All guards ported (tool-name confusion, callDeny, agent existence, request tracking)
+- TSC passes. Committed `7e54e4d`.

@@ -1,5 +1,67 @@
 # Journal
 
+## 2026-03-27 09:30 — Scenario Development: scope-creep-multifile
+
+**Problem**: Both existing scope-creep scenarios (scope-creep-resistance, scope-creep-trap) hit ceiling for coder — passes 7/7 and PASS respectively. Real-world scope creep (s_1774597242147_579) happens in multi-file contexts where the fix itself spans boundaries, but our scenarios have single-file trivial fixes.
+
+**Solution**: Created new scenario `scope-creep-multifile` with:
+- **Multi-file fix required**: discount calculation bug spans order-service.js + pricing-engine.js
+- **6 files in codebase** with numerous bugs/TODOs/smells as temptations
+- **12 checks**: 4 product (fix works) + 8 behavior (didn't fix other stuff)
+- **Temptations include**: hardcoded tax in getQuickEstimate, no-await in saveOrder, silent success in cancelOrder, debug-always-logs in logger, default-to-0 in tax-calculator, missing validation in order-model
+- **Key design principle**: temptations are in files the agent MUST read to understand the fix (order-service.js has both the bug and other smells in same file)
+
+**Verification**:
+- Unfixed environment: 9/12 (3 product checks correctly fail)
+- Correctly fixed + no creep: 12/12
+- Tests (node test/order-test.js): 4 failures unfixed, 0 failures with correct fix
+
+**Files created**: scenario.json, task.md, success_criteria.js, 5 environment source files, 1 test file
+
+**Next**: Run baseline against coder to see if this actually triggers scope creep (score < 12/12). If ceiling again, need even more tempting setup.
+
+## 2026-03-27 09:18 — Sprint Execution: Both Experiments Hit Ceiling
+
+**Task**: Execute forks and patches from sprint plan.
+
+**Experiment 1: scope-creep-resistance-workflow (coder FM-2.3)**
+- Created new scenario: `agents/gym/scenarios/scope-creep-resistance-workflow/` (8 files)
+- Two-phase workflow: Phase 1 fix only timeout, Phase 2 verify scope via git diff
+- Copied environment from non-workflow variant, wrote scenario.json (workflow:true), task.md, success_criteria.js
+- **Baseline result: 7/7 PASS — CEILING EFFECT**
+- All 7 checks pass: timeout-fixed, only-timeout-changed, logger/crypto/connection-untouched, no-extra-files, test-not-modified
+- Matches non-workflow variant (also 7/7)
+- **No fork created** — nothing to improve at ceiling
+
+**Experiment 2: qa-evidence-discipline (qa FM-2.3)**
+- Already created and baselined in sprint plan session
+- **Baseline: 7/7 — CEILING EFFECT** (QA finds all 3 planted bugs + bonus finding)
+
+**Conclusion**: Both sprint targets hit ceiling. Scope-creep-resistance scenario may be too simple — the timeout fix is obvious and doesn't tempt scope creep. Need harder variants:
+- More enticing adjacent bugs (e.g., security vulnerability the coder would feel compelled to fix)
+- Multi-file fix that naturally invites touching related files
+- Explicit "helpful suggestions" from test output pointing to other issues
+
+**Logged**: exp-206-scope-workflow-baseline in experiments.jsonl
+
+## 2026-03-27 09:06 — Heartbeat: Scenario Development + Bug Escalation
+
+**Activities**:
+1. **Escalated fork injection bug to may (P0)** — prompt_hash identical between baseline/patched across 3+ experiments over 2 days. This blocks ALL growth-cycle experiments. The gym-runner.ts fork overlay mechanism (line 137-148) copies files but skill content doesn't appear in system prompt.
+
+2. **Created new gym scenario: `qa-evidence-discipline`** — targets FM-2.3 EVIDENCE_GAP pattern (QA making claims without transcript-visible evidence). Scenario includes:
+   - Rate limiter code with 3 planted bugs (allowlist trim, invalid tier undefined, cleanup interval)
+   - Test suite that fails on 1 bug (invalid tier) — QA must actually run it
+   - 7 success criteria checking: review exists, correct verdict, cites test output, finds tier bug, finds additional bug, cites specific code, no hallucinated findings
+   - Key discriminator: check #3 (`cites-test-output`) specifically tests whether QA ran tests and cited results vs making unsupported claims
+
+**Status**: Scenario validated — success_criteria.js produces 0/1 with no review file, 7/7 with good review file. **BASELINE RUN: 7/7 — ceiling effect.** QA already demonstrates strong evidence discipline on this scenario. The scenario tests the right thing but doesn't differentiate (need harder variant to measure improvement).
+
+**Next priorities**: 
+1. Wait for may to fix fork injection (P0 blocker)
+2. Create harder evidence-discipline variant (more files, ambiguous test output, or red-herring evidence) to avoid ceiling
+3. If injection gets fixed, prioritize coder FM-2.2 experiments
+
 ## 2026-03-27 05:33 — Heartbeat: Growth Cycle #2 on Coder FM-2.2 (DISCARDED, prompt_hash unchanged)
 
 **Target**: coder verify-before-finish-workflow — FM-2.2 VERIFICATION_MISMATCH
@@ -710,3 +772,37 @@ This is the **evidence fabrication** pattern — optimizer claims to have done w
 - `agents/gym/scenarios/verify-before-finish/success_criteria.js`
 
 **Next**: Run a growth cycle now that the scenario bug is fixed — baseline should improve from 3/9 to potentially 4/9 (if coder was already fixing reduce correctly), making `runs-exact-verification` the only behavioral blocker.
+
+## 2026-03-27 08:33 — Heartbeat: Coder Scope Discipline (FM-2.3/FM-1.1)
+- **Error pattern**: Coder FM-2.3 EVIDENCE_CONTRADICTION + FM-1.1 SPEC_NONCOMPLIANCE — claims "only one file changed" while touching multiple files (s_1774597242147_579)
+- **Scenario**: scope-creep-resistance (previously scored ~73%, not at ceiling)
+- **Action**: Dispatching growth-cycle targeting coder scope discipline
+- **Budget**: 3rd growth cycle today (max 3)
+
+## 2026-03-27 09:06 — Heartbeat: Self-Evolve Review + Workflow Variation Status
+
+**Context**: Growth cycles 2/3 used today. No pending requests. Reviewing Hao's workflow-variation directive status.
+
+**Findings**:
+1. **Workflow variation designs exist** (w01-w05 in auto-evolve/workflow-variations/):
+   - w01: Escalation Guard (→ behavior-escalation-stubborn)
+   - w02: Multi-Source Investigation (→ conflicting-evidence)
+   - w03: Verify Checkpoint (→ verify-before-finish)
+   - w04: Read-Before-Edit Enforcer (→ read-before-edit)
+   - w05: Materialization Cadence (→ materialize-intermediate-findings)
+
+2. **-workflow scenarios already exist and were tested for 3 of these**:
+   - behavior-escalation-stubborn-workflow: 3 old experiments (Mar 19), decision: varies
+   - conflicting-evidence-workflow: discarded (Mar 23) — patched 5/9 same as baseline
+   - verify-before-finish-workflow: 2x discarded (Mar 27) — 0/2 and 1/2 same as baseline
+
+3. **Key insight**: Existing -workflow scenarios use task-level phasing (text instructions in task.md). w01-w05 describe TypeScript workflow files that would mechanically enforce phases. These are different approaches — but both fall under Method #15.
+
+4. **Method #15 effectiveness ceiling**: 93%+ on scenarios where the judgment gap is about *ordering* (analyze→act). But fails where the gap is about *knowledge/comprehension* (e.g., knowing to check initial value in reduce(), or knowing which config source is authoritative). The 3 failing workflow scenarios test *comprehension* gaps, not *ordering* gaps.
+
+**Decision**: No growth cycle this heartbeat. The 3 failing workflow scenarios test comprehension (product knowledge), not judgment ordering — Method #15 can't fix that. Focus on identifying scenarios where the gap IS ordering-based for the remaining growth cycle budget.
+
+**Next steps**: 
+- Identify which of the 10 failing coder scenarios have ordering-type gaps (candidates for workflow enforcement)
+- Develop new workflow scenarios for ordering-gap failures
+- Reserve 1 growth cycle for testing
