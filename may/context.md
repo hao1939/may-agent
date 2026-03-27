@@ -1,6 +1,6 @@
 - npx is not available in this environment — use ./node_modules/.bin/<tool> or bun x <tool>
 - sudo is not available — install packages with bun install --no-save
-- sqlite3 CLI is not available — query may.db with bun/node: `bun -e "import {Database} from 'bun:sqlite'; ..."`
+- sqlite3 CLI is not available — query may.db with bun: `bun -e "import {Database} from 'bun:sqlite'; ..."`
 - Build check command: npm run check (runs tsc --noEmit)
 - agents/ is a separate git repo (gitignored from main) — commit agent changes from agents/ dir, not project root
 - .state/ contains may.db, sessions, instance data — never commit it
