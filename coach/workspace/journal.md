@@ -1,5 +1,19 @@
 # Journal
 
+## 2026-03-27 02:36 — Heartbeat: Growth Cycle on Coder FM-2.2 (DISCARDED but partial improvement)
+
+**Target**: coder verify-before-finish — FM-2.2 VERIFICATION_MISMATCH (coder runs alternative verification instead of exact specified command)
+**Method**: #15 Workflow Enforcement — two-phase task separating bug-fix from exact verification
+**Fork**: `coder-verify-exact-cmd`
+**Results**:
+- verify-before-finish: baseline 6/7 → patched 6/7 (no change, persistent `reduce-has-initial` product fail)
+- verify-before-finish-workflow (NEW scenario created by growth cycle): baseline 3/9 → patched 7/9 (+4 checks)
+- Key improvement: workflow version gained processor-valid, processor-typo-fixed, tests-pass, finishes-success
+- Still failing: `reduce-has-initial` (product), `runs-exact-verification` (behavioral)
+**Verdict**: DISCARDED by automation (no full scenario pass). But workflow scenario showed meaningful behavioral improvement (3→7/9).
+**Insight**: The `reduce-has-initial` failure is a product quality issue (coder doesn't add initial value to reduce()), not behavioral — it blocks all scenarios from passing. The `runs-exact-verification` check remains the core behavioral target. Method #15 helped with completion/product but didn't solve the exact-command compliance problem.
+**Next priorities**: (1) Investigate if `reduce-has-initial` is a scenario design issue or real coder gap, (2) Try a different method for exact-command compliance (maybe negative example or prompt prefix), (3) QA has 4x FM-2.3 EVIDENCE_GAP — needs a scenario
+
 ## 2026-03-26 09:10 — Growth Cycle: Coder FM-3.3 Workflow Enforcement (DISCARDED)
 
 **Target**: coder verify-after-edit (C2.3) on read-before-edit-workflow
@@ -641,3 +655,29 @@ This is the **evidence fabrication** pattern — optimizer claims to have done w
 - **Broken scenario**: spec-adherence-multi-step has invalid success_criteria.js (transcriptContains not in gym API) — still unfixed.
 - **Decision**: Self-evolve mode. Updated method catalog summary. Priority for next heartbeat: create optimizer/tech-lead gym scenarios (step 5b).
 - **Growth cycles today**: 2 run + 0 this session = 2 total. Budget: 1 remaining.
+
+## 2026-03-27 01:33 — Heartbeat: Scenario Development (s_1774575222764_524)
+- **Error scan**: ERROR_LOG.jsonl files present but no new dense patterns beyond known ones (optimizer FM-3.3/FM-2.2/FM-2.1, coder FM-3.3)
+- **Self-evolve**: Skipped — last done 3h ago (22:33), no new experiments since
+- **Action: Created first optimizer gym scenario** (`optimizer-error-recovery`)
+  - Tests: path discovery (FM-2.1), error recovery from corrupt JSON (FM-1.4), verification (FM-3.3), report accuracy
+  - 10 session files (8 valid, 2 corrupted) across 2 subdirectories (batch-a, batch-b)
+  - 7 checks: 5 product (report exists, summary table, FM codes, corruption mention, recommendation) + 2 process (both batches found, correct failure rates)
+  - Passing threshold: 5/7
+  - **Verified**: success_criteria.js runs correctly (0/7 with no report, exit 1)
+- **Impact**: This is the first non-coder gym scenario. Unlocks growth-cycle experiments for optimizer agent.
+- **Next**: Run baseline gym test with optimizer on this scenario. Create tech-lead scenario next.
+- **Growth cycles today**: 0 (new day). Budget: 3 remaining.
+
+## 2026-03-27 02:36 — Heartbeat: Diagnosis — Coder FM-2.2 VERIFICATION_MISMATCH (s_1774578969266_534)
+- **Error pattern diagnosed**: FM-2.2 VERIFICATION_MISMATCH + FM-2.1 ROOT_CAUSE_NOT_FIXED
+  - Coder substitutes alternative verification commands instead of running the exact specified one
+  - When specified tool (e.g., `npx`) is missing, coder works around it instead of reporting/fixing the gap
+- **Baseline**: verify-before-finish = 6/7 (fails `reduce-has-initial` product check; behavioral checks all pass)
+- **Prior experiments**: FM-3.3 focused (verification GAP, not MISMATCH). No experiment has targeted FM-2.2 specifically.
+- **Method selected**: #15 Workflow Enforcement — only proven method (93%+ across 8 scenarios, 5 agents)
+  - Phase 1: Fix bugs, summarize changes, no verification
+  - Phase 2: Extract EXACT verification command from task spec, run it literally, report failures without substitution
+- **Deliverable**: `agents/coach/workspace/diagnosis-coder-fm22-verification-mismatch.md`
+- **Next step**: Create `verify-before-finish-workflow` scenario variant and run growth cycle experiment
+- **Growth cycles today**: 0 used. Budget: 3 remaining.
