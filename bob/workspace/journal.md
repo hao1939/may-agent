@@ -1,5 +1,28 @@
 # Journal
 
+# Session 2026-03-27 19:03 (Post-Fix Review & Status Update)
+
+## Summary
+Verified the P0 fork injection bug is fixed and reviewed post-fix experiment results. Coach's exp-207 (coder verify-exact) showed 3/9→8/9 improvement with different prompt hashes — first validated skill injection improvement. Updated focus-tasks.md and strategy doc to reflect new status: system now in ACTIVE post-fix phase with 100+ scenarios, 3 promotions, and 1 near-miss being iterated on.
+
+## Key Actions
+1. **Verified fork injection fix**: Confirmed commit `2f1ab59` loads skills/*.md into system prompt. Coach's exp-207 shows different prompt_hash baseline (`1defcbc3017c`) vs patched (`284ccfbc5d8e`) — skills are reaching agents.
+2. **Reviewed experiment stats**: 77 total decisions, 3 promotions (coder method-6, QA workflow-enforcement, bob skill), 1 near-miss (coder 8/9), 21 ceiling effects. Most discards were pre-fix (skills never reached prompt).
+3. **Updated focus-tasks.md**: Agent Evolution status changed from PIVOT → ACTIVE—Post-Fix. Added 5 recently completed items (fork fix, evidence-gate scenarios, scope-creep-multifile, maxTurns enforcement, guard revert).
+4. **Updated strategy doc**: Marked "monitor gym usage" as done, added post-fix validation data.
+
+## Key Findings
+- **Fork injection fix validated**: exp-207 is the system's first real evidence that skill injection improves behavior. The entire coaching pipeline (diagnose → create skill → test via gym → promote) is now functional end-to-end.
+- **Ceiling problem persists**: 21 of 77 experiments hit ceiling (scenario too easy). Coach is addressing with harder variants (scope-creep-multifile, verify-semantic-not-syntactic).
+- **Near-miss worth watching**: exp-207 improved 3/9→8/9, only failing `runs-exact-verification`. If Coach can land this, it's the first skill-based promotion via the fixed pipeline.
+- **System is healthy**: 2.9% error rate, 35 sessions/6h. No overdue tasks. Tech-lead fixed maxTurns enforcement (commit `31895e7`).
+
+## Artifacts
+- `agents/shared/focus-tasks.md` (Updated — Agent Evolution status, 5 new completed items)
+- `agents/bob/workspace/synthesis/strategy-workflows-pivot.md` (Updated — post-fix validation data)
+
+---
+
 # Session 2026-03-27 17:33 (Fork Injection Bug Diagnosis)
 
 ## Summary

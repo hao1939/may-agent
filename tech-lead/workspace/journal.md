@@ -111,3 +111,9 @@ Bob down 30+ hours — `gemini3pro` maps to deprecated `gemini-3-pro-preview` on
 - **Verification**: Socket returned `{"type":"ok","command":"reload_agents"}` + reload log shows Bob in the updated list. Agent-loader reads agent.json from disk at runtime (not baked into binary), so `model: "opus"` → `claude-opus-4.6` is now active.
 - **Side finding**: Archetype inheritance (scout/coder/coach) fails during reload — validation checks fields before merge completes. Pre-existing P2 bug; agents still functional from initial startup load.
 - **Lesson**: Editing agent.json alone is not enough — must trigger reload via socket or console. The binary caches configs in memory.
+
+### 2026-03-27 18:40 — Bug fix: maxTurns enforcement (req:7812cec9)
+- **Problem**: `handlerConfig.maxTurns` configured in cron.json but never read/passed to `manager.run()`. Sessions used per-agent `opBudget` instead. Example: common-sense-verify configured with maxTurns:15 but sessions used 42+ ops.
+- **Fix**: Two locations — `src/app/cron.ts` fireHeartbeat() and `agents/may/handlers/run-agent-task.ts` create(). Both now read `maxTurns` and pass as `opBudget` override.
+- **Commits**: `31895e7` (cron.ts), `d057537c` (run-agent-task.ts)
+- **tsc**: PASS (verified by QA)

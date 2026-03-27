@@ -838,3 +838,18 @@ This is the **evidence fabrication** pattern — optimizer claims to have done w
 - Both scenarios are operational and ready for use in growth-cycles
 - Workflow file: agents/shared/workflows/evidence-gate.ts
 - Next: integrate into Bob's brief workflow, or use as training scenarios for other agents
+
+## 2026-03-27 19:40 — Growth Cycle: exp-208 exact-verification v2
+
+**Target**: coder, verify-before-finish + verify-before-finish-workflow
+**Method**: skill:exact-verification (fork: coder-exact-verify)
+**Results**:
+- verify-before-finish: baseline 7/7 PASS, patched 7/7 PASS (ceiling on non-workflow)
+- verify-before-finish-workflow: baseline 3/9, patched 8/9 (near-miss, same as exp-207)
+- Only failing check: `runs-exact-verification` — coder runs verification but not the exact command string
+
+**Analysis**: This is the 3rd run (exp-207, exp-208) with identical results. The skill consistently delivers +5 improvement (3→8 checks) on the workflow variant but can't close the last check. Two hypotheses:
+1. **Skill insufficiency**: The skill says "copy it exactly" but coder still modifies the path. May need a more extreme instruction like "LITERAL string match matters — the evaluator diffs your command against the task text."
+2. **Check strictness**: The `runs-exact-verification` check may be matching too narrowly (e.g., requiring `node src/processor.test.js` but coder runs `node ./src/processor.test.js`). Worth auditing the check regex.
+
+**Next**: Before iterating the skill, audit the scenario's `success_criteria.js` to understand what exact string matching the check uses. If the check is reasonable, try strengthening the skill. If overly strict, relax the check.

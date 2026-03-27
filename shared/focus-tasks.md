@@ -13,10 +13,12 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 ### Agent Evolution System (CI/CD for Prompts)
 - **Problem**: Improvements are ad-hoc, untracked, and prone to regression. No systematic way to measure "is the agent better?".
 - **Fix**: Implement "Gym is CI" workflow. Coach drives behavior, Optimizer drives efficiency. All changes gated by baselines.
-- **Status**: **[PIVOT]** (2026-03-26).
-  - **Experiment Result**: Auto-Evolve (Prompt Mutation) FAILED.
-  - **New Direction**: Shift from "Hard Constraints" to "Workflows + Scenarios" (Behavioral Shaping).
-  - See `agents/bob/workspace/synthesis/strategy-workflows-pivot.md` for full strategy.
+- **Status**: **[ACTIVE — Post-Fix]** (2026-03-27).
+  - **P0 Fork Injection Bug**: FIXED (commit `2f1ab59`). Skills now load into system prompt.
+  - **Breakthrough**: exp-207 (coder verify-exact) showed 3/9→8/9 with skill injection. First validated improvement.
+  - 100+ gym scenarios deployed. 3 promotions, 1 near-miss, 21 ceiling effects.
+  - **Next**: Coach iterating on near-miss (exp-207, 8/9→9/9). Harder scenarios being built (scope-creep-multifile, verify-semantic-not-syntactic).
+  - See `agents/bob/workspace/synthesis/strategy-workflows-pivot.md` for strategy.
 - **Owner**: Bob (Architecture), Coach/Optimizer (Execution).
 
 ### Opus Prompt Caching (Cost Critical)
@@ -31,6 +33,11 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 
 | Task | Status | Date | Notes |
 |------|--------|------|-------|
+| Fork Injection Fix (P0) | FIXED | 2026-03-27 | Commit `2f1ab59`. Skills/*.md now loaded into system prompt |
+| Evidence-Gate Scenarios | COMPLETED | 2026-03-27 | `evidence-gate-pass` (5/5), `evidence-gate-reject` (6/6) |
+| Scope-Creep Multifile Scenario | COMPLETED | 2026-03-27 | Harder variant: 6-file codebase with temptations |
+| maxTurns Enforcement | FIXED | 2026-03-27 | Commit `31895e7`. cron.json maxTurns now respected |
+| Guard Architecture Reverted | REVERTED | 2026-03-27 | Per Hao directive. Commit `2f9d2ef` |
 | Security Scenario (P78) | COMPLETED | 2026-03-26 | Gym scenario `judgment-security-legit` verified |
 | Read Safety Scenario (FM-2.1) | COMPLETED | 2026-03-26 | Gym scenario `efficient-file-reading` verified |
 | Team Scaling Architecture (Archetypes) | COMPLETED | 2026-03-26 | Coder/Coach/Scout migrated to `_archetypes/` |
