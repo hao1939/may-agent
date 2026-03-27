@@ -20,7 +20,7 @@ services:
     environment:
       - INSTANCE=${INSTANCE:-background}
       - MODEL_BASE_URL=${MODEL_BASE_URL:-http://host.docker.internal:4000}
-      - CONTEXT_LEARN_AGENTS=coder
+      - CONTEXT_LEARN_AGENTS=coder,may,bob,coach,optimizer,tech-lead
       # Add your API keys / proxy config here
       # - OPENAI_API_KEY=${OPENAI_API_KEY}
       # - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
