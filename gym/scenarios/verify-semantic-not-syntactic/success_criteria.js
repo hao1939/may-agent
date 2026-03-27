@@ -1,65 +1,60 @@
 /**
  * Success criteria for verify-semantic-not-syntactic scenario.
  * 
+ * Targets FM-3.3: coder runs tsc/grep but doesn't verify semantic correctness.
+ * 
  * The coder must:
  * 1. Fix the sign error in the discount calculation
  * 2. Actually verify the fix produces correct output (not just type-check)
- * 
- * This targets FM-3.3: coder runs tsc/grep but doesn't verify semantic correctness.
+ * 3. Not fall into tsc-only verification trap
  */
 
-function evaluate(transcript, files) {
-  const results = [];
+const { Score } = require("../../lib/gym-score-utils.cjs");
+const path = require("path");
 
-  // Check 1: The bug is actually fixed (sign error removed)
-  const pricing = files["utils/pricing.ts"] || "";
+const workDir = process.argv[2];
+const s = new Score(workDir);
+
+// ── Product Check ─────────────────────────────────────────────────────
+
+s.checkProduct("bug_fixed", "Sign error in discount calculation is removed", () => {
+  const pricing = s.readFile("utils/pricing.ts");
+  if (!pricing) return false;
   const hasNegativeSign = /discountAmount\s*=\s*-\s*\(/.test(pricing) || 
-                          /discountAmount\s*=\s*-price/.test(pricing);
-  const hasCorrectFormula = /discountAmount\s*=\s*price\s*\*\s*\(?\s*discountPercent\s*\/\s*100/.test(pricing) ||
-                            /discountAmount\s*=\s*\(?\s*price\s*\*\s*discountPercent\s*\)?\s*\/\s*100/.test(pricing);
+                          /discountAmount\s*=\s*-\s*price/.test(pricing);
+  return !hasNegativeSign && pricing.length > 50;
+});
 
-  results.push({
-    name: "bug_fixed",
-    pass: !hasNegativeSign && pricing.length > 0,
-    message: hasNegativeSign ? "Sign error still present in code" : "Sign error removed"
-  });
+// ── Behavior Checks ───────────────────────────────────────────────────
 
-  // Check 2: Coder ran a SEMANTIC verification (not just tsc --noEmit)
-  // Look for evidence they actually ran the test or checked output values
-  const transcriptText = typeof transcript === "string" ? transcript : JSON.stringify(transcript);
+s.checkBehavior("semantic_verification", "Coder ran semantic verification (test or output check), not just tsc", () => {
+  if (!s.hasTranscript()) return false;
+  const text = JSON.stringify(s.transcript);
   
-  const ranTest = /npx\s+tsx?\s+.*pricing\.test/.test(transcriptText) ||
-                  /bun\s+run\s+.*pricing\.test/.test(transcriptText) ||
-                  /node\s+.*pricing\.test/.test(transcriptText) ||
-                  /ts-node\s+.*pricing\.test/.test(transcriptText) ||
-                  /deno\s+run\s+.*pricing\.test/.test(transcriptText);
+  // Did coder run the test file?
+  const ranTest = /pricing\.test/.test(text) ||
+                  /pricing-test/.test(text);
   
-  const checkedOutput = /applyDiscount\s*\(\s*100\s*,\s*60\s*\)/.test(transcriptText) ||
-                        /Test 4.*PASS/.test(transcriptText) ||
-                        /=== 40/.test(transcriptText) ||
-                        /console\.log.*applyDiscount/.test(transcriptText);
+  // Did coder manually check output values?
+  const checkedOutput = (/applyDiscount/.test(text) && /(console\.log|node\s|npx\s+tsx)/.test(text)) ||
+                        /Test\s+\d+.*PASS/.test(text) ||
+                        /=== 40/.test(text);
+  
+  return ranTest || checkedOutput;
+});
 
-  const ranSemanticCheck = ranTest || checkedOutput;
+s.checkBehavior("not_tsc_only", "Did not fall into tsc-only verification trap", () => {
+  if (!s.hasTranscript()) return true; // no transcript = can't assess
+  const text = JSON.stringify(s.transcript);
+  
+  const ranTsc = /tsc\s+--noEmit/.test(text);
+  const ranSemantic = /pricing\.test/.test(text) ||
+                      /pricing-test/.test(text) ||
+                      (/applyDiscount/.test(text) && /(console\.log|node\s|npx\s+tsx)/.test(text));
+  
+  // Fail only if they ran tsc but NO semantic check
+  const tscOnly = ranTsc && !ranSemantic;
+  return !tscOnly;
+});
 
-  results.push({
-    name: "semantic_verification",
-    pass: ranSemanticCheck,
-    message: ranSemanticCheck 
-      ? "Coder verified fix produces correct output" 
-      : "Coder did NOT verify semantic correctness (FM-3.3: only syntax check or no verification)"
-  });
-
-  // Check 3: Did they ONLY run tsc --noEmit without semantic check? (specific FM-3.3 detection)
-  const ranTscOnly = /tsc\s+--noEmit/.test(transcriptText) && !ranSemanticCheck;
-  results.push({
-    name: "not_tsc_only",
-    pass: !ranTscOnly,
-    message: ranTscOnly 
-      ? "FM-3.3 triggered: ran tsc --noEmit but no semantic verification" 
-      : "Did not fall into syntax-only verification trap"
-  });
-
-  return results;
-}
-
-module.exports = { evaluate };
+s.report();

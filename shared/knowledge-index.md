@@ -9,9 +9,10 @@ Read this before starting research — someone may have already covered your top
 - `agents/scout/knowledge/library/papers.md` — Academic papers with key takeaways
 - `agents/scout/knowledge/library/people.md` — Notable researchers and accounts
 - `agents/scout/knowledge/library/reddit.md` — Reddit community insights
-- `agents/scout/workspace/deep-dive-*.md` — 220 detailed research reports + 54 cross-reference syntheses
+- `agents/scout/workspace/deep-dives/` — Detailed research reports (dd*) + cross-reference syntheses (cr*). ~22 files.
+  - Also: `agents/scout/workspace/deep-dive-*.md` — 2 standalone deep-dives (dd468, dd469).
   - Used by: Scout, Amy, Amy-Kimi, Bob
-- `agents/scout/workspace/GRAND-UNIFIED-SYNTHESIS-*.md` — Grand Unified Synthesis (v1 + v2 + v3 + v3.1 + v3.2 + v4 deltas). 19 Laws + 1 corollary, 16 Mechanisms, 7 Trilemmas, 45 Principles, 47 Predictions, 7 Architecture Stacks. ~122KB total.
+- `agents/scout/workspace/archive/2026-03/GRAND-UNIFIED-SYNTHESIS-*.md` — Grand Unified Synthesis (v2–v6 deltas, consolidated reference). Archived 2026-03. ~122KB total.
 - **Topics:** agent architecture, skills/tools, context engineering, memory systems, evaluation, RL for agents, MCP protocol, agent security
 - **Best for:** "What's the state of the art in X?" or "Any repos doing Y?"
 
@@ -19,7 +20,7 @@ Read this before starting research — someone may have already covered your top
 - `agents/amy/knowledge/insights.md` — Community insights from Xiaohongshu
 - `agents/amy/knowledge/threads.md` — Discussion threads tracked
 - `agents/amy/knowledge/library/people.md` — Notable XHS accounts and authors
-- `agents/amy/knowledge/posts/` — Individual post analyses (80+ files)
+- `agents/amy/knowledge/posts/` — Individual post analyses (1000+ files)
 - **Topics:** Chinese AI community sentiment, framework comparisons, user experience reports, product trends
 - **Best for:** "What does the Chinese AI community think about X?"
 
@@ -44,7 +45,7 @@ Read this before starting research — someone may have already covered your top
 
 ## Coach — Agent Development
 - `agents/coach/knowledge/library/coaching-methodology.md` — Coaching process
-- `agents/coach/skills/agent-conventions/` — 33 conventions library
+- `agents/coach/skills/agent-conventions/` — 7 conventions library
 - **Topics:** agent behavior patterns, convention compliance, coaching results
 - **Best for:** "What are the common agent failure patterns?" or "How should agents handle X?"
 
@@ -118,6 +119,19 @@ Standardized capabilities available to all agents. Read the `.md` file to learn 
   - `robust-scraping.md`: How to scrape without getting blocked.
   - `research-and-synthesize.md`: Standard research loop.
   - `implement-review-commit.md`: Standard coding loop.
-  - `experiment-before-apply.md`: **Experimentation**. Protocol for validating changes safely.
-  - `extract-directives.md`: **Directive Extraction**. How to turn analysis into actionable tasks.
-  - `synthesis-dpir.md`: **Synthesis**. Data-Pattern-Insight-Recommendation protocol.
+  - `coordinator-dedup.md`: **Coordinator Dedup**. Deduplication pattern for coordinating agents.
+
+### Workflows (May Runtime)
+Pre-built multi-step execution patterns available via `workflow.run()`.
+- `agents/may/workflows/verify-and-finish.ts` — **Verify & Finish**. Run agent → verify → retry loop. Supports shell verification or self-check.
+- `agents/may/workflows/implement-and-review.ts` — **Implement & Review**. Coding with review gate.
+- `agents/may/workflows/test-and-fix.ts` — **Test & Fix**. Run tests → fix failures loop.
+- `agents/may/workflows/research-pipeline.ts` — **Research Pipeline**. Structured research execution.
+- `agents/may/workflows/verify-parallel.ts` — **Parallel Verify**. Run multiple verifications concurrently.
+- `agents/may/workflows/project-monitor.ts` — **Project Monitor**. Ongoing project health checks.
+
+### Agent Archetypes
+Shared base configurations for agent families. Agents extend these instead of duplicating prompts.
+- `agents/_archetypes/coder/` — Base config for coding agents.
+- `agents/_archetypes/coach/` — Base config for coaching agents.
+- `agents/_archetypes/scout/` — Base config for research/scouting agents.

@@ -104,3 +104,10 @@
 
 ### 2026-03-27 11:34 — P0: Bob + Judge Model Fix
 Bob down 30+ hours — `gemini3pro` maps to deprecated `gemini-3-pro-preview` on LiteLLM proxy. Changed `agents/bob/agent.json` and `agents/judge/agent.json` from `gemini3pro` → `opus` (claude-opus-4.6). Takes effect next heartbeat, no restart needed. Resolves req:5cff555c, req:617ed99b.
+
+### 2026-03-27 14:34 — P0: Bob config reload via socket (req:7293e5af)
+- **Problem**: Agent.json was updated on disk but PID 52 (compiled binary `may-agent-b9ef77e`) never reloaded configs. Bob had 20 error sessions in 48h, all dying in 9-12s (model API errors).
+- **Fix**: Sent `{"type":"reload_agents"}` via Unix socket (`.state/instances/console/may.sock`). Socket confirmed: `[reload] 10 updated (...bob...)`.
+- **Verification**: Socket returned `{"type":"ok","command":"reload_agents"}` + reload log shows Bob in the updated list. Agent-loader reads agent.json from disk at runtime (not baked into binary), so `model: "opus"` → `claude-opus-4.6` is now active.
+- **Side finding**: Archetype inheritance (scout/coder/coach) fails during reload — validation checks fields before merge completes. Pre-existing P2 bug; agents still functional from initial startup load.
+- **Lesson**: Editing agent.json alone is not enough — must trigger reload via socket or console. The binary caches configs in memory.

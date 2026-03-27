@@ -1,3 +1,41 @@
+# Journal
+
+# Session 2026-03-27 16:03 (Consolidation + Zombie Alert)
+
+## Summary
+Consolidated `focus-tasks.md` from 385→101 lines (96% of items were completed/archived). Identified and escalated 37 zombie sessions clogging the system. Reviewed Scout's latest CRITICAL research (Memetic Drift scaling laws, Conformity Dynamics Trinity).
+
+## Key Actions
+1. **Focus-tasks cleanup**: Reduced from 385 lines to 101. Active items (2: Agent Evolution PIVOT, Prompt Caching ESCALATED) now clearly separated. Completed items in compact table. Deep archive in collapsible section.
+2. **Zombie sessions brief**: Wrote `agents/bob/workspace/briefs/2026-03-27-brief-zombie-sessions.md` documenting 37 stale "echo hello" sessions from 2.5 days ago. Sent P2 to May for Hao.
+3. **Research review**: Scout produced DD#473 (Memetic Drift / QSG Scaling Laws — ★★★★★), DD#474 (Trust Management), CR#260 (Conformity Dynamics Trinity — ★★★★★). Key insight: multi-agent consensus can be pure sampling noise ("lottery") rather than collective reasoning. Directly relevant to our system's consensus mechanisms.
+
+## Findings
+- **System health**: 36 sessions/6h, 11.1% error rate. My errors were all model-config issues, now resolved.
+- **No overdue periodic tasks**: Next Pattern Synthesis due 2026-04-03.
+- **Key architectural insight from DD#473**: The QSG model proves that low-bandwidth communication (m=1, like our text-based inter-agent messages) maximizes memetic drift. Our mitigations: structured request DB (not free-form debate), Bob as architect (single design authority), and workflow-based constraints all help prevent drift.
+
+---
+
+# Session 2026-03-27 (Evidence-First Reflection)
+
+## Summary
+Responded to Hao's directive on evidence-first process. Wrote a substantive reflection acknowledging the critique, cataloging specific examples where I over-designed before validating (Unified Guards, Auto-Evolve, Archetypes), and committing to a new workflow: assumption → data check → minimal test → brief (only if test passes).
+
+## Key Actions
+1. **Wrote reflection**: `agents/bob/workspace/reflection-evidence-first.md` — 99 lines, covers the critique honestly, identifies 3 concrete examples of theory-before-evidence, extracts the lesson from the context learning cycle, and commits to 5 specific process changes.
+2. **Reviewed system state**: Common-sense is lean (8 principles). All focus tasks are completed/deployed. No periodic tasks overdue (next: Pattern Synthesis on 2026-04-03).
+
+## Findings
+- **Error streak resolved**: Last session (15:39) ran successfully after ~20h of model-config errors. This session is clean.
+- **Archive evidence**: 94+ analysis files, 30+ briefs in archive. Many represent cancelled or unvalidated work. The archive itself is evidence of the pattern Hao identified.
+- **No new common-sense gaps**: The 8 principles in common-sense.md are all deployed and behavioral. Nothing new to build.
+
+## Artifacts
+- `agents/bob/workspace/reflection-evidence-first.md` (New — evidence-first reflection per Hao's directive)
+
+---
+
 # Journal - 2026-03-26
 
 ## Summary
@@ -49,3 +87,30 @@ Verified the deployment of the "Safe Verification Workflow" (`agents/may/workflo
 ## Artifacts
 - `agents/bob/workspace/synthesis/strategy-workflows-pivot.md` (Updated)
 - `agents/shared/focus-tasks.md` (Updated)
+
+# Session 2026-03-27 (Recovery + Knowledge Index Scan)
+
+## Summary
+First successful session after ~20 hours of errors due to model misconfiguration (stuck on deprecated gemini-3-pro-preview, now running claude-opus-4.6). Completed the weekly Knowledge Index Scan and updated focus tasks.
+
+## Key Actions
+1. **Knowledge Index Scan (Periodic):** Audited all 60+ paths in `agents/shared/knowledge-index.md` against the filesystem. Found and fixed:
+   - **3 broken links removed**: `experiment-before-apply.md`, `extract-directives.md`, `synthesis-dpir.md` (files don't exist in `agents/shared/skills/patterns/`).
+   - **1 new pattern added**: `coordinator-dedup.md` (existed but unlisted).
+   - **Stale counts updated**: Amy posts 80→1000+, Coach conventions 33→7, deep-dives restructured (now in `deep-dives/` subdir, 22 files).
+   - **GUS path updated**: Moved from root workspace to `archive/2026-03/`.
+   - **2 new sections added**: "Workflows (May Runtime)" listing 6 workflow files, and "Agent Archetypes" listing 3 archetypes (coder/coach/scout).
+2. **Focus Task Update:** Marked "Gym Runtime (Evolution Loop)" as **[DEPLOYED]** — verified in code that `may.ts` line 784 passes `interfaceAgent` (from `--agent` flag) to `manager.run()` in oneshot mode.
+3. **Periodic Tasks:** Updated Knowledge Index Scan last_run to 2026-03-27, next due 2026-04-03.
+
+## Findings
+- **System Health**: 32 sessions/6h with 12.5% error rate. My own 4 recent sessions were all errors (model config issue now fixed).
+- **Common Sense**: `common-sense.md` is lean and healthy — 8 principles, all behavioral, all deployed.
+- **Prompt Caching**: Still blocked on Hao ($36-63/day waste). No movement since 2026-03-23.
+- **Bulletin Staleness**: Bulletin has entries from Mar 17-19 that should be archived (>7 day rule). Lower priority.
+- **All Focus Tasks Resolved**: The only active focus task is "Agent Evolution System" which is in monitoring phase. All IN PROGRESS items are now either DEPLOYED or COMPLETED.
+
+## Artifacts
+- `agents/shared/knowledge-index.md` (Updated — 3 broken links fixed, 2 sections added, counts updated)
+- `agents/shared/focus-tasks.md` (Updated — Gym Runtime marked DEPLOYED)
+- `agents/bob/periodic-tasks.md` (Updated — Knowledge Index Scan date)

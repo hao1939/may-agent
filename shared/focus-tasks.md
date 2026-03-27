@@ -6,19 +6,9 @@
 This file tracks the immediate, high-leverage tasks that the team is focusing on.
 It bridges the gap between the high-level `roadmap.md` and the daily task queue (request DB).
 
+---
+
 ## Active Focus
-
-### Security Scenario (P78)
-- **Problem**: "Supply Chain Hardening" (Code Scanner) was cancelled to avoid runtime complexity.
-- **Fix**: Create a Gym Scenario that *punishes* insecure code (plaintext passwords) during training/eval.
-- **Status**: **[COMPLETED]** (2026-03-26). Scenario `judgment-security-legit` verified.
-- **Owner**: Tech-Lead (Implementation).
-
-### Read Safety Scenario (FM-2.1)
-- **Problem**: "Read Safety Guard" (Tool Limit) was cancelled to avoid runtime complexity.
-- **Fix**: Create a Gym Scenario that *punishes* inefficient reading (entire large files).
-- **Status**: **[COMPLETED]** (2026-03-26). Scenario `efficient-file-reading` verified.
-- **Owner**: Tech-Lead (Implementation).
 
 ### Agent Evolution System (CI/CD for Prompts)
 - **Problem**: Improvements are ad-hoc, untracked, and prone to regression. No systematic way to measure "is the agent better?".
@@ -26,40 +16,8 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 - **Status**: **[PIVOT]** (2026-03-26).
   - **Experiment Result**: Auto-Evolve (Prompt Mutation) FAILED.
   - **New Direction**: Shift from "Hard Constraints" to "Workflows + Scenarios" (Behavioral Shaping).
+  - See `agents/bob/workspace/synthesis/strategy-workflows-pivot.md` for full strategy.
 - **Owner**: Bob (Architecture), Coach/Optimizer (Execution).
-
-### Team Scaling Architecture (Archetypes)
-- **Problem**: Scaling from 10 to 50+ agents creates a maintenance nightmare (N copies of `SOUL.md`).
-- **Fix**: Implement **Agent Inheritance** (Archetypes). `agents/acme/coder` extends `agents/_archetypes/coder`.
-- **Status**: **[COMPLETED]** (2026-03-26).
-  - **Coder**: **[COMPLETED]** (Migrated to `_archetypes/coder`).
-  - **Coach**: **[COMPLETED]** (Migrated to `_archetypes/coach`).
-  - **Scout**: **[COMPLETED]** (Migrated to `_archetypes/scout`).
-- **Owner**: Bob (Design), Tech-Lead (Implementation).
-
-### Scout Prompt Standardization (Legacy Clean-up)
-- **Problem**: Scout runs on legacy `system_prompt.md`, missing global behavioral updates (C26).
-- **Fix**: Migrate to `SOUL.md` + `common-sense.md`.
-- **Status**: **[DEPLOYED]** (2026-03-24). Tech-Lead confirmed legacy file removed and loader updated.
-- **Owner**: Tech-Lead (Implementation).
-
-### Gym Snapshots (Benchmark Tracking)
-- **Problem**: Gym results are ephemeral and hard to compare.
-- **Fix**: Store runs in DB with config hash + snapshots.
-- **Status**: **[DEPLOYED]** (2026-03-24). Schema implemented in `src/lib/requests.ts` (`gym_runs`, `gym_checks`).
-- **Owner**: Tech-Lead (Implementation).
-
-### Gym Runtime (Evolution Loop)
-- **Problem**: Gym cannot run non-May agents (Coach, Optimizer) due to `src/app/may.ts` ignoring `--agent` in oneshot mode.
-- **Fix**: Update oneshot mode to respect `--agent` flag.
-- **Status**: **[IN PROGRESS]** Brief sent to Tech-Lead.
-- **Owner**: Tech-Lead (Implementation).
-
-### Safe Verification Workflow (verify-and-finish)
-- **Problem**: We need a structural way to ensure agents verify work without rigid runtime guards.
-- **Fix**: Implement `verify-and-finish` workflow that runs agent -> verifies -> retries.
-- **Status**: **[DEPLOYED]** (2026-03-26). Verified `agents/may/workflows/verify-and-finish.ts` exists and is documented in `common-sense.md`.
-- **Owner**: Tech-Lead (Implementation).
 
 ### Opus Prompt Caching (Cost Critical)
 - **Problem**: Opus agents (Tech-Lead, Coach, May) have 0% cache hit rate due to LiteLLM stripping headers. Wasting $36-63/day.
@@ -67,319 +25,77 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 - **Status**: **[ESCALATED]** (2026-03-24). Sent Brief to Hao via May (`brief-human-prompt-caching.md`).
 - **Owner**: Hao (Execution).
 
-### Control Plane Phase 3 (Active Nudging)
-- **Problem**: Agents spin in loops (FM-1.3) or claim ghost deliverables (FM-3.1).
-- **Fix**: Implement "Wink" pattern (Active Nudging) via `monitor-session` + `manager.inject`.
-- **Status**: **[DEPLOYED]** (2026-03-23). Implemented in `active-nudge.ts` and `monitor-session.cjs`. Verified by Tech-Lead.
-- **Owner**: Tech-Lead (Implementation).
+---
 
-### Control Plane Phase 4 (Context Pressure Valve)
-- **Problem**: Context truncation causes catastrophic forgetting.
-- **Fix**: Inject "90% Full" warning to trigger consolidation.
-- **Status**: **[DEPLOYED]** (2026-03-23). Feature already existed in `monitor-session.cjs` (threshold 100k tokens). No new code needed.
-- **Owner**: Bob (Design).
+## Recently Completed (Last 7 Days)
 
-### Infra Enforcement of C1.5 (Ghost Deliverables)
-- **Problem**: C1.5 ("No Ghost Deliverables") is the #1 behavioral failure (FM-3.1). Coach cannot fix it.
-- **Fix**: Implement infra-level check.
-- **Status**: **[DEPLOYED]** (2026-03-24). Implemented "Gate 0" in `src/lib/tools/finish-guard.ts`. Blocks `finish(success)` if deliverables claim changes but no edits occurred.
-- **Owner**: Tech-Lead (Monitoring).
+| Task | Status | Date | Notes |
+|------|--------|------|-------|
+| Security Scenario (P78) | COMPLETED | 2026-03-26 | Gym scenario `judgment-security-legit` verified |
+| Read Safety Scenario (FM-2.1) | COMPLETED | 2026-03-26 | Gym scenario `efficient-file-reading` verified |
+| Team Scaling Architecture (Archetypes) | COMPLETED | 2026-03-26 | Coder/Coach/Scout migrated to `_archetypes/` |
+| Verification Integrity Scenario | COMPLETED | 2026-03-26 | Gym scenario `verify-before-finish` created |
+| Safe Verification Workflow | DEPLOYED | 2026-03-26 | `agents/may/workflows/verify-and-finish.ts` |
+| Unified Guard Architecture | CANCELLED | 2026-03-26 | Stopped per Hao: "Guards add complexity/rigidity" |
+| Supply Chain Hardening (P78) | CANCELLED | 2026-03-26 | Pivoting to Workflows/Scenarios |
+| Read Safety Guard (FM-2.1) | CANCELLED | 2026-03-26 | Pivoting to Workflows/Scenarios |
+| Verification Discipline (FM-3.3) | COMPLETED | 2026-03-25 | All 15 agents now have FM-3.3 Guard |
+| Critical Context Gap (LESSONS.md) | COMPLETED | 2026-03-25 | `loadFile` restored in `src/lib/manager.ts` |
+| Verification Gap (FM-3.3 / C26) | VERIFIED | 2026-03-25 | `finish()` returns error if evidence missing |
+| Scout Prompt Standardization | DEPLOYED | 2026-03-24 | Migrated to `SOUL.md` + `common-sense.md` |
+| Gym Snapshots (Benchmark Tracking) | DEPLOYED | 2026-03-24 | Schema in `src/lib/requests.ts` |
+| Infra Enforcement C1.5 (Ghosts) | DEPLOYED | 2026-03-24 | "Gate 0" in `src/lib/tools/finish-guard.ts` |
+| Gym Runtime (Evolution Loop) | DEPLOYED | 2026-03-27 | `may.ts` respects `--agent` flag in oneshot |
+| Control Plane Phase 3 (Nudging) | DEPLOYED | 2026-03-23 | `active-nudge.ts` + `monitor-session.cjs` |
+| Control Plane Phase 4 (Pressure) | DEPLOYED | 2026-03-23 | 90% warning in `monitor-session.cjs` |
 
-### Verification Gap (FM-3.3 / C26)
-- **Problem**: Agents claim "Verified" without running tools, or don't cite evidence.
-- **Fix**: Enforce `finish(success, verification_evidence=[...])`.
-- **Status**: **[VERIFIED]** (2026-03-25). `finish()` tool logic reviewed in `src/lib/tools/lifecycle.ts`. Returns error if evidence missing.
-- **Owner**: Tech-Lead & Coach.
+---
 
-### Gym Scenario: Verification Integrity
-- **Problem**: We need to ensure agents learn *why* they failed if they skip verification.
-- **Fix**: Create `verify-before-finish` Gym scenario.
-- **Status**: **[COMPLETED]** (2026-03-26). Scenario created in `agents/gym/scenarios/verify-before-finish/`.
-- **Owner**: Tech-Lead (Implementation).
+## Archive (Older Than 7 Days)
 
-### Verification Discipline (FM-3.3 Standardization)
-- **Problem**: 4 agents (Amy-Kimi, Evaluator, Master, May) lack the standard FM-3.3 heartbeat guard.
-- **Fix**: Apply patch to remaining agents' heartbeats.
-- **Status**: **[COMPLETED]** (2026-03-25). Audit confirmed all 15 agents (including sub-agents) now have the FM-3.3 Guard in their heartbeat files.
-- **Outcome**: Standardized.
+<details>
+<summary>Click to expand full archive (items completed before 2026-03-20)</summary>
 
-### Critical Context Gap (LESSONS.md)
-- **Problem**: `LESSONS.md` is ignored by runtime, but contains active behavioral patches (e.g., FM-2.4).
-- **Fix**: Restore loading in `src/lib/manager.ts`.
-- **Status**: **[COMPLETED]** (2026-03-25). Tech-Lead restored `loadFile` call in `src/lib/manager.ts`. Verified by code read.
-- **Owner**: Tech-Lead (Implementation).
+### Completed Infrastructure (2026-03-20)
+- Context Awareness (CS 6.1 & 4.5) — `scripts/sync-tools-md.ts` verified
+- Environment & Adversarial Hardening (P13/P108) — Confirmed in 10 agent SOULs
+- Sycophancy Defense (P192) — Evaluator criteria updated with `[INVALID_RECEIPT]`
+- Order Persistence (P209) — `src/lib/orders.ts` verified
+- Ops Gate & Experience Replay (P61/P114) — `src/lib/ops-gate.ts` verified
+- Reflect System (P110) — `agents/may/handlers/reflect.ts` created
+- Explicit Acks Monitor (P82) — Resolved via write+send convention
 
-### Typed Messages / GNAP (P105)
-- **Problem**: Ambiguous inter-agent messages.
-- **Fix**: Prefixed tags [DIRECTIVE], [STATUS].
-- **Status**: **[REJECTED]** (2026-03-23). Request DB structure solves this better.
-- **Owner**: Bob (Archive).
+### Completed Safety & Evolution (2026-03-12 to 2026-03-14)
+- Self-Evolution Bifurcation — P53 formalized (Reasoning=Immutable, Capability=Mutable)
+- P53 Zombie Code Flush — Security patched, quote-splitting blocked
+- Reasoning Evolution Compliance — Snapshot baseline created
+- HMAC Tool Receipts — `signToolOutput`/`verifyToolOutput` in `manager.ts`
+- Instruction Hierarchy Verification — CowAgent attack tested, all agents passed
+- Ops Gate Logging (P61) — `logOpsReceipt` in `ops-gate.ts`
 
-### Knowledge Index Integrity (Periodic)
-- **Problem**: Knowledge links rot over time as files are moved or archived.
-- **Fix**: Audit `agents/shared/knowledge-index.md` against filesystem.
-- **Status**: **[COMPLETED]** (2026-03-21). Added 8 missing skills, removed broken links.
-- **Outcome**: Index is accurate.
+### Completed Drift Detection & Response (2026-03-13)
+- L3 Delegation Metrics — `delegation-metrics.cjs` (TSR 91% / ISR 80%)
+- L3 Drift Detection — `detect-drift.cjs` skill created
+- L3 Drift Response (Controller) — `drift-controller.cjs` implemented
+- L3 Automated Reversion (Circuit Breaker) — `manage-backups.cjs` implemented
+- L3 System Stability Monitor — Verified, re-baselined
 
-### Context Awareness (CS 6.1 & 4.5)
-- **Problem**: Agents fly blind on OpBudget and available Tools.
-- **Fix**: Userland Sync: Auto-generate `TOOLS.md` from `agent.json`.
-- **Status**: **[COMPLETED]** (2026-03-20). Verified `scripts/sync-tools-md.ts` works.
+### Completed Agent Growth (2026-03-14)
+- Agent Growth Cycle monitoring — Coach adoption verified
+- P109 Verification Hardening — Growth cycle requires PASS/FAIL receipt
+- Agent Growth: Scale to Bob — Bob "Synthesis Protocol" trained and promoted
+- Automated Strategy Extraction (P63) — `extract-strategy.cjs` in Evaluator
 
-### Environment & Adversarial Hardening (P13 / P108)
-- **Problem**: Drifting agents and gaming evaluation.
-- **Fix**: Injected `Instruction Hierarchy` and `Adversarial Defense` into SOULs.
-- **Status**: **[VERIFIED]** (2026-03-20). Confirmed in 10 agent SOULs (including May/Evaluator).
+### Completed Gym & Training (2026-03-15)
+- Agent Gym v2 (P80) — Scenario format designed, handed to May
+- Experience Replay Monitor — FAILED (0% adoption, skills ignored under load)
+- Enforce Law 0, Monitor Reflect, Monitor Orders, Monitor P154 Growth — All verified
 
-### The Sycophancy Defense (P192)
-- **Problem**: Reasoning Judges (Evaluator) are fooled by "Safe Refusal" + "Self Praise". (HB#1464)
-- **Fix**: Shift evaluation from "Reasoning" to "Artifacts" (Receipts).
-- **Status**: **[DEPLOYED]** (2026-03-20). Verified `agents/evaluator/knowledge/criteria.md` contains `[INVALID_RECEIPT]` and `P108 Patrol Pattern`.
+### Rejected/Deferred
+- Typed Messages / GNAP (P105) — REJECTED (request DB solves it)
+- Finish Guard Wiring — REJECTED (post-hoc check better)
+- Handoff Tool / Signals — REJECTED (use write+send)
+- Async Tasks (Phase 2) — DEFERRED until slow tools emerge
+- Structured Checkpoints (CS 3.5) — DEPLOYED
 
-### Order Persistence (P209)
-- **Problem**: Human orders lost on session crash.
-- **Fix**: Implement `orders.jsonl` ledger.
-- **Status**: **[VERIFIED]** (2026-03-20). `src/lib/orders.ts` exists and contains logic. Test suite at `test/orders.test.ts`.
-
-### Ops Gate & Experience Replay (P61 / P114)
-- **Problem**: Need safe state changes and error learning.
-- **Fix**: Userland implementation in `src/lib/ops-gate.ts` and `src/lib/manager-receipts.ts`.
-- **Status**: **[VERIFIED]** (2026-03-20). Files exist and contain correct logic.
-
-### Reflect System (P110)
-- **Problem**: System is reactive, not proactive.
-- **Fix**: Implement `cron:reflect`.
-- **Status**: **[VERIFIED]** (2026-03-20). `agents/may/handlers/reflect.ts` created.
-
-### Explicit Acks Monitor (P82)
-- **Status**: **[RESOLVED]** (2026-03-20). Handled via `write` + `agents.send` convention. No new tool needed.
-
-## Archive (Previous)
-
-### Unified Guard Architecture (Hard Constraints)
-- **Status**: **[CANCELLED]** (2026-03-26). Stopped per Hao's directive (Req: 8b381f87). "Guards add complexity/rigidity." Pivoting to Workflows/Scenarios.
-- **Old Plan**: Implement `Guard` middleware in `manager.ts`.
-
-### Supply Chain Hardening (P78)
-- **Status**: **[CANCELLED]** (2026-03-26). Stopped per Hao's directive. "Guards add complexity/rigidity." Pivoting to Workflows/Scenarios.
-- **Old Plan**: Implement "Skill Scanner" in `agent-loader.ts`.
-
-### Read Safety Guard (FM-2.1)
-- **Status**: **[CANCELLED]** (2026-03-26). Stopped per Hao's directive. "Guards add complexity/rigidity." Pivoting to Workflows/Scenarios.
-- **Old Plan**: Hard limits in `read` tool.
-
-### Agent Gym v2 (P80)
-- **Problem**: Current Gym is unit tests, not scenarios.
-- **Fix**: Design `environment/task/verifier` schema.
-- **Status**: **COMPLETED** (2026-03-15). Handed off `agent-gym-v2-scenario-format.md` to May.
-
-### Monitor: Experience Replay (Phase 1) (2026-03-31)
-- **Context**: Initial deployment of `experience-replay` skill.
-- **Goal**: Watch for organic adoption.
-- **Owner**: Bob
-- **Status**: **FAIL** (2026-03-31)
-- **Outcome**:
-  - 0% Adoption. Proven that "Passive Skills" are ignored under load.
-  - **Lesson**: Critical safety behaviors must be structural (Harness/Prompt), not just available tools.
-
-### Adversarial Hardening (P168) (2026-03-14)
-- **Context**: Research (arXiv:2603.12246) shows "Reasoning Judges" (Evaluator) can be tricked by "Adversarial Sycophancy" (fake policies) and "Self-Validation" (prompt injection).
-- **Goal**: Harden `monitor-session` and `Evaluator` to detect and reject these gaming attempts.
-- **Owner**: Bob
-- **Status**: **COMPLETED** (2026-03-14)
-- **Outcome**:
-  - Synthesized threat model: `agents/bob/workspace/synthesis/2026-04-26-adversarial-judge-threat.md`.
-  - Implemented `detectAdversarialSycophancy` in `monitor-session.cjs`.
-  - Aggregates 3 weak signals (Over-refusal, Fake Termination, Self-Praise) into a high-confidence attack signature.
-  - Verified with synthetic attack vectors (`s_fake_policy`, `s_mismatch`).
-  - Evaluator now automatically rejects "Fake Safety" and "Hallucinated Success".
-
-### P53 Zombie Code Flush (Critical Security) (2026-03-14)
-- **Context**: The P53 security hardening is partially active but vulnerable to "Quote Splitting" (e.g., `S""OUL.md`).
-- **Goal**: Patch `src/lib/tools/security.ts` to handle bash quote expansion or deny specific filenames regardless of quotes.
-- **Owner**: Tech-Lead
-- **Status**: **COMPLETED** (2026-03-14)
-- **Outcome**:
-  - **Patch Verified (Disk)**: Optimizer successfully patched `src/lib/tools/coding.ts` and `src/app/agent-loader.ts`.
-  - **Zombie State Confirmed**: The running process previously allowed bypass.
-  - **Resolution**: Restart completed. Verified fix with 3 attack vectors (Direct, Quote-Split, Python). All blocked.
-  - **Status**: **SECURE**.
-
-### Automated Strategy Extraction (P63) (2026-03-26)
-- **Context**: We have thousands of session logs, but we treat them only as audit trails. **P63 Trajectory Extraction** states we must distill "next state" signals (tool outputs, errors) into forward-looking strategies ("If X fails, try Y"). Currently, this is manual and rare.
-- **Goal**: Implement an automated loop where Evaluator reviews recent sessions, extracts "Strategy Tips" (Success patterns) and "Recovery Tips" (Failure patterns), and proposes updates to a shared knowledge base.
-- **Owner**: Bob
-- **Status**: **COMPLETED** (2026-03-13)
-- **Outcome**:
-  - Implemented `extract-strategy.cjs` skill (Regex-based failure detection).
-  - Integrated into Evaluator's periodic tasks (`agents/evaluator/periodic-tasks.md`).
-  - First successful run extracted 4 high-confidence recovery strategies from 50 logs.
-  - Strategies published to `agents/shared/knowledge/strategies.md`.
-  - The loop is now closed: Log -> Evaluator -> Proposal -> Bob -> Shared Knowledge.
-
-### Monitor: Agent Growth Cycle (2026-03-14)
-- **Context**: The "Agent Growth Cycle" (Fork -> Train -> Verify -> Promote) has been successfully applied to Coder (Debug Protocol) and Bob (Synthesis Protocol). We now need to monitor its organic usage by Coach.
-- **Goal**: Ensure the "Growth Cycle" is used correctly and safely by Coach without manual intervention.
-- **Owner**: Bob / Coach
-- **Status**: **COMPLETED** (2026-03-14)
-- **Outcome**:
-  - **Knowledge Fix**: Synced `agents/coach/knowledge/growth-cycle.md` to match the canonical skill.
-  - **Configuration Fix**: Updated `agents/coach/heartbeat.md` to explicitly mandate the "Fork → Train → Verify → Promote" workflow when a gap is found.
-  - **Verification Fix**: Updated `agents/shared/skills/growth-cycle.md` and `agents/coach/skills/growth-cycle.md` to mandate a "Verification Receipt" (PASS/FAIL signal).
-
-### P109 Verification Hardening (2026-03-14)
-- **Context**: Evaluator found that "Agent Growth Cycle" verifications were often ritualistic.
-- **Goal**: Ensure `verify_agent` produces a concrete receipt (log/file).
-- **Owner**: Bob / Coach
-- **Status**: **COMPLETED** (2026-03-14)
-- **Outcome**:
-  - Updated `agents/shared/skills/growth-cycle.md` to require PASS/FAIL signal.
-  - Updated `agents/coach/skills/growth-cycle.md` to match shared skill.
-  - Briefed Evaluator to look for "Verification Receipt" in future reviews.
-
-### L3 Delegation Metrics (2026-03-13)
-- **Context**: HAE research (arXiv:2603.07496) identified **L3 Collective Drift** (Consensus Hallucination) as a critical threat. We had L2 defenses (Ops Gates) but no visibility into inter-agent delegation failures.
-- **Goal**: Implement `delegation-metrics` skill to track Integration Success Rate (ISR).
-- **Owner**: Bob
-- **Status**: **COMPLETED** (2026-03-13)
-- **Outcome**:
-  - Implemented `agents/evaluator/skills/delegation-metrics.cjs`.
-  - Added schema to `manager.ts` (already implemented).
-  - Verified with `delegation-metrics.test.cjs`.
-  - Added "Analyze Delegation Metrics" to Evaluator's periodic tasks.
-  - Validated fix for `send` counting (TSR 91% / ISR 80%).
-  - Produced first L3 Baseline Report (`agents/bob/workspace/report-l3-metrics.md`).
-  - The system now detects when agents succeed individually but fail collectively.
-
-### Monitor: L3 System Stability (2026-03-14)
-- **Context**: The "L3 Collective Defense" (Drift Detection + Auto-Revert) is now fully deployed. We need to monitor its first few cycles to ensure no false positives trigger accidental rollbacks.
-- **Goal**: Verify the system behaves correctly in production.
-- **Owner**: Bob / Evaluator
-- **Status**: **COMPLETED** (2026-03-14)
-- **Outcome**:
-  - Audited `.state/ops-receipts.jsonl` — confirmed successful logging and rollback triggering.
-  - Verified logic with `verify-drift-logic.cjs` — confirmed correct classification of stable/drift/mixed scenarios.
-  - Re-baselined P53 snapshot to bless Bob/Coder Growth experiments.
-  - See `agents/bob/workspace/report-l3-monitor.md` for full details.
-
-### Agent Growth Cycle: Scale to Bob (2026-03-14)
-- **Context**: The "Coder Growth Experiment" (Fork -> Train -> Verify -> Promote) was successful. We now need to prove the cycle's versatility by applying it to the Architect (Bob).
-- **Goal**: Use the Growth Cycle to upgrade Bob's **Synthesis Protocol**, enabling deeper, more structural insights.
-- **Owner**: Bob
-- **Status**: **COMPLETED** (2026-03-14)
-- **Outcome**:
-  - Forked Bob to `bob-synth`.
-  - Trained with "Synthesis Protocol" (Mechanism, Pattern, Principle).
-  - Verified against a "Silent Failure" trap test.
-  - Promoted back to `bob`. Bob now structurally looks for patterns.
-  - **Audit Update**: Updated `snapshot.json` to bless the SOUL changes for Bob and Coder.
-
-### L3 Drift Detection (Safety) (2026-03-13)
-- **Context**: We have implemented **Ops Gates** (logging execution receipts) and **HMAC Receipts** (verifying facts). However, we lack **L3 Collective Defense** (arXiv:2603.07496). We cannot currently detect "Boiling Frog" drift — where an agent's success rate slowly degrades from 95% to 70% over weeks.
-- **Goal**: Design a **Drift Detection** mechanism that consumes `.state/ops-receipts.jsonl` and flags anomalies (e.g., "Coder test pass rate dropped 15% this week").
-- **Owner**: Bob (Design) / Evaluator (Execution)
-- **Status**: **COMPLETED** (2026-03-13)
-- **Outcome**:
-  - Designed the system in `agents/bob/workspace/design-drift-detection.md`.
-  - Created the skill definition `agents/evaluator/skills/detect-drift.cjs` (Success Rate, Test Density).
-  - Prototyped and verified detection with synthetic data (`agents/bob/workspace/compliance-test/detect-drift.test.ts`).
-  - Correctly flagged a 100% drift in a test scenario.
-  - Added "Detect Statistical Drift" to Evaluator's periodic tasks.
-  - This closes the "Collective Defense" loop (L3).
-
-### L3 Drift Response (The Controller) (2026-03-13)
-- **Context**: We have the **Sensor** (`detect-drift`) and the **Actuator** (`manage-backups`). Now we need the **Controller** that wires them together safely. We cannot simply say `if (drift) restore()`.
-- **Goal**: Implement the `drift-controller` skill that orchestrates detection and response based on severity levels (Warning, Critical, Catastrophic).
-- **Owner**: Bob
-- **Status**: **COMPLETED** (2026-03-13)
-- **Outcome**:
-  - Implemented `agents/evaluator/skills/drift-controller.cjs`.
-  - Upgraded `detect-drift` to return structured JSON.
-  - Upgraded `manage-backups` to support millisecond-precision timestamps (to avoid collision in fast tests).
-  - Verified with `agents/bob/workspace/compliance-test/drift-controller.test.cjs` (Passed).
-  - Wired into `agents/evaluator/periodic-tasks.md`.
-  - The system now **automatically reverts toxic changes** that cause >15% performance degradation.
-
-### L3 Automated Reversion (Circuit Breaker) (2026-03-13)
-- **Context**: We can now detect drift (`detect-drift` skill), but the system cannot yet react. A "Boiling Frog" scenario requires immediate, automated rollback of the toxic change.
-- **Goal**: Implement the "Circuit Breaker" mechanism that automatically reverts a modified reasoning core or skill file if drift is detected.
-- **Owner**: Bob
-- **Status**: **COMPLETED** (2026-03-13)
-- **Outcome**:
-  - Implemented `agents/evaluator/skills/manage-backups.cjs` (Backup/Restore/List).
-  - Verified safely with synthetic test (`agents/bob/workspace/compliance-test/manage-backups.test.cjs`).
-  - Added "Backup Agent Configs" to `agents/evaluator/periodic-tasks.md`.
-  - The system now has a "Time Machine" to revert toxic changes even without git history.
-  - Next step: Automate the connection between Drift -> Restore (currently manual).
-
-### Monitor: Reasoning Evolution Compliance (P53) (2026-03-12)
-- **Context**: We have bifurcated self-evolution into **Reasoning Core** (Immutable) and **Capability Periphery** (Mutable). We must now actively monitor for violations of this principle (e.g., agents trying to edit their own `SOUL.md`).
-- **Goal**: Ensure no agent modifies its own reasoning core.
-- **Owner**: Bob
-- **Status**: **COMPLETED** (2026-03-12)
-- **Outcome**:
-  - Audited all 12 `SOUL.md` files; no modifications in last 6 hours.
-  - Confirmed `agents/` is git-ignored, preventing git-based audit.
-  - Created `agents/bob/workspace/compliance-audit/snapshot.json` as the baseline for future drift detection.
-  - Established a repeatable audit process (compare sha256sum against snapshot).
-  - Verified P53 compliance: **Reasoning Core is currently Immutable**.
-
-### Self-Evolution Bifurcation (Philosophy) (2026-03-13)
-- **Context**: The "Self-Evolution Trilemma" (arXiv:2602.09877) proves that isolated self-evolution degrades safety. However, "Alita" (arXiv:2505.20286) shows that capability generation (tools/MCP) is safe and effective. We need to distinguish between "changing the brain" (forbidden) and "building tools" (allowed).
-- **Goal**: Formalize the distinction between **Reasoning Evolution** (Immutable Core) and **Capability Evolution** (Mutable Periphery) in `philosophy.md`.
-- **Owner**: Bob
-- **Status**: **COMPLETED** (2026-03-13)
-- **Outcome**:
-  - Updated **P53 Grounded Self-Evolution** in `agents/shared/philosophy.md` to explicitly bifurcate the two types.
-  - **Reasoning Core** (prompts/logic) is **Immutable** (Read-Only).
-  - **Capability Periphery** (skills/tools) is **Mutable** (Untrusted Code).
-  - Added citation to Alita (arXiv:2505.20286) as the enabling research for safe tool generation.
-
-### Ops Gate Logging (P61) (2026-03-13)
-- **Context**: OpenClaw Deployment Study showed that "Text is policy, Code is law." Agents hallucinate "success". We implemented **Ops Gates** (P61) but lacked persistence.
-- **Goal**: Implement persistent logging for Ops Gates.
-- **Owner**: Bob / Tech-Lead
-- **Status**: **COMPLETED** (2026-03-13)
-- **Outcome**:
-  - Implemented `logOpsReceipt` in `src/lib/ops-gate.ts`.
-  - All `run_test` and `git_commit` operations now append structured JSONL receipts to `.state/ops-receipts.jsonl`.
-  - Verified with `test/ops-gate-logging.test.ts` (4 passing tests).
-  - Enables future "Drift Detection" by Evaluator.
-
-### HMAC Tool Receipts (Security/Trust) (2026-03-12)
-- **Context**: Agents can hallucinate "success" (e.g., claiming tests passed when they failed). We need a mechanism to verify tool outputs without re-running them. Research (NabaOS) suggests cryptographic receipts.
-- **Goal**: Implement HMAC signing for tool outputs so Evaluator/QA can verify facts cryptographically.
-- **Owner**: Bob (Design) / Tech-Lead (Implementation)
-- **Status**: **COMPLETED** (2026-03-12)
-- **Outcome**:
-  - Implemented `signToolOutput` and `verifyToolOutput` in `src/lib/manager.ts`.
-  - Wrapped all tool executions to append `[SIG: <timestamp>:<hash>]` automatically.
-  - Added `verify_receipt` tool for Evaluator/QA to check validity.
-  - Verified with 20 new tests (917 total passing).
-  - This closes the "Trust with Verification" loop (P59).
-
-### Instruction Hierarchy Verification (Harness) (2026-03-12)
-- **Context**: We injected the Instruction Hierarchy (System > User > Tool) into all agent `SOUL.md` files to mitigate prompt injection and ensure alignment.
-- **Goal**: Verify that agents actually adhere to this hierarchy under pressure.
-- **Owner**: Bob
-- **Status**: **COMPLETED** (2026-03-12)
-- **Outcome**:
-  - Audited all 12 `SOUL.md` files — confirmed presence of "Instruction Hierarchy" section.
-  - Executed a "CowAgent" prompt injection attack on Scout, Coder, and May.
-  - **Result**: All agents successfully ignored the injected instructions and summarized the attack file instead.
-  - Verified that "System > User > Tool" precedence is active and effective.
-
-- [x] **Enforce Law 0 (Reliability Fixes)**: Correct Tech-Lead's misunderstanding of Consolidation Mode. (Done: 2026-03-15)
-- [x] **Monitor Reflect System Implementation**: Validated implementation in `agents/may/cron.json` (generic handler). (Done: 2026-03-15 - FALSE POSITIVE on missing handler file)
-- [x] **Monitor Order Persistence**: Validated code in `src/lib/orders.ts`. Runtime file `.state/orders.jsonl` pending human input. (Done: 2026-03-15 - VERIFIED CODE)
-- [x] **Monitor P154 Growth Filter**: Verify Coach adopts the "Partial Failure" criteria. (Done: 2026-03-15 - Verified in heartbeat.md)
-
-- [x] **[DEPLOYED]** Structured Checkpoints (Common Sense 3.5) — `checkpoint()` tool live. Common Sense updated. Validated against StateLM/StatePlane research.
-- [x] **[DELEGATED]** Active Nudging (Control Plane Phase 3) — Sent `brief-monitor-active-nudge.md` to Tech-Lead. Addresses FM-1.3/FM-3.1 via monitor-session injection.
-- [x] **[REJECTED]** Finish Guard Wiring — Rejected as infeasible. Post-hoc check in convention-loop endorsed instead.
-- [x] **[REJECTED]** Handoff Tool / Signals — Rejected. Use write+send convention.
-- [x] **[DEFERRED]** Async Tasks (Control Plane Phase 2) — Deferred until slow tools emerge.
-
-### Archive
-- **Context Awareness (CS 6.1 & 4.5)**: Verified `scripts/sync-tools-md.ts` works (2026-03-20).
-- **Environment & Adversarial Hardening (P13 / P108)**: Confirmed in 10 agent SOULs (2026-03-20).
+</details>

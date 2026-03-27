@@ -1,0 +1,10 @@
+{
+  "name": "evidence-gate-reject",
+  "categories": ["workflow", "evidence"],
+  "tags": ["behavioral", "evidence-first", "design-brief", "workflow"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "evaluator",
+  "workflow": "evidence-gate",
+  "description": "A theory-first design brief without evidence should be rejected by the evidence gate. Tests that the workflow correctly identifies missing incidents, alternatives, and validation plans."
+}
