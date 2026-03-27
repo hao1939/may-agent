@@ -50,6 +50,8 @@ interface ScenarioMeta {
   workflow: boolean;
   /** Run context learning between workflow phases. */
   learn_between_phases?: boolean;
+  /** Paths (relative to workDir) to delete between workflow phases. */
+  phase_cleanup?: string[];
 }
 
 interface ScoreCheck {
@@ -694,6 +696,16 @@ function runScenario(
           }
         } catch (err) {
           console.error(`  Context-learn error: ${err instanceof Error ? err.message : err}`);
+        }
+      }
+
+      // Phase cleanup: delete specified paths between phases
+      const phaseCleanup = meta?.phase_cleanup ?? [];
+      for (const rel of phaseCleanup) {
+        const target = join(workDir, rel);
+        if (existsSync(target)) {
+          rmSync(target, { recursive: true, force: true });
+          console.error(`  Phase cleanup: deleted ${rel}`);
         }
       }
     }

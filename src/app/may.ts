@@ -140,7 +140,7 @@ const models: Record<string, ModelWithApiKey> = {
   gemini3pro: {
     ...getModel("openai", "gpt-4o"),
     api: "openai-completions" as const,
-    id: "gemini-3-pro-preview",
+    id: "gemini-3.1-pro-preview-customtools",
     baseUrl: MODEL_BASE_URL,
     apiKey: LITELLM_API_KEY,
   },
