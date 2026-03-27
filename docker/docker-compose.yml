@@ -1,6 +1,27 @@
 name: may-agent
 
 services:
+  litellm:
+    image: ghcr.io/berriai/litellm:main-latest
+    container_name: may-agent-litellm
+    hostname: litellm
+    restart: unless-stopped
+    ports:
+      - "${LITELLM_PORT:-4000}:4000"
+    volumes:
+      - ../litellm/config.yaml:/app/config.yaml:ro
+      - ../litellm/github_copilot:/home/litellm/.config/litellm/github_copilot:rw
+    environment:
+      - HOME=/home/litellm
+      - GITHUB_COPILOT_TOKEN_DIR=/home/litellm/.config/litellm/github_copilot
+    command: ["--config", "/app/config.yaml", "--port", "4000"]
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:4000/health/liveliness')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
   may:
     build:
       context: ..
@@ -19,15 +40,15 @@ services:
       - ..:/app
     environment:
       - INSTANCE=${INSTANCE:-background}
-      - MODEL_BASE_URL=${MODEL_BASE_URL:-http://host.docker.internal:4000}
+      - MODEL_BASE_URL=http://litellm:4000
       - CONTEXT_LEARN_AGENTS=coder,may,bob,coach,optimizer,tech-lead
-      # Add your API keys / proxy config here
-      # - OPENAI_API_KEY=${OPENAI_API_KEY}
-      # - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    depends_on:
+      litellm:
+        condition: service_healthy
 
   # Interactive console: bun run docker:console
   console:
-    image: may-agent-may
+    image: localhost/may-agent:latest
     container_name: may-console
     hostname: may-console
     profiles: ["console"]
@@ -37,8 +58,6 @@ services:
     user: "${UID:-1000}:${GID:-1000}"
     env_file: ../.env
     entrypoint: ["/usr/local/bin/entrypoint-console.sh"]
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     ports:
       - "${CONSOLE_NOVNC_PORT:-6081}:6080"
     volumes:
@@ -46,4 +65,7 @@ services:
       - /home/example-user:/home/example-user:rw
     environment:
       - INSTANCE=${INSTANCE:-console}
-      - MODEL_BASE_URL=${MODEL_BASE_URL:-http://host.docker.internal:4000}
+      - MODEL_BASE_URL=http://litellm:4000
+    depends_on:
+      litellm:
+        condition: service_healthy

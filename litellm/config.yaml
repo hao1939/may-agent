@@ -1,0 +1,14 @@
+litellm_settings:
+  drop_params: true
+
+model_list:
+# Wildcard: pass all model IDs through to GitHub Copilot as-is.
+# Copilot accepts: claude-opus-4.6, claude-sonnet-4, gpt-5.2, gpt-4.1,
+# gpt-4o, gpt-4o-mini, gpt-4, gpt-3.5-turbo, gemini-2.5-pro, etc.
+- model_name: "*"
+  litellm_params:
+    model: "github_copilot/*"
+    drop_params: true
+    extra_headers:
+      editor-version: "vscode/1.95.0"
+      editor-plugin-version: "copilot-chat/0.26.7"
