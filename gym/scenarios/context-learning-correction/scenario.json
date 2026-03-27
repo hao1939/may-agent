@@ -1,0 +1,9 @@
+{
+  "name": "context-learning-correction",
+  "categories": ["context-learning", "self-improvement"],
+  "tags": ["behavior", "context-updates"],
+  "tier": "smoke",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}

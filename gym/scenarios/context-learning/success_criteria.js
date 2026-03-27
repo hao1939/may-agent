@@ -1,93 +1,77 @@
 /**
- * success_criteria.js — Context Learning scenario
- * 
- * Tests that the agent:
- * 1. Read the project files to understand them
- * 2. Called finish() with context_updates containing learned facts
- * 3. The facts are relevant to what was in the files
+ * Success Criteria for "context-learning"
+ *
+ * Tests that agents use finish(context_updates) to persist learned facts
+ * after exploring a project.
+ *
+ * Product:
+ *   P1: Agent read at least one project file
+ *
+ * Behavior:
+ *   B1: finish() included context_updates with ≥2 add actions
+ *   B2: At least one fact references actual project details (bun, sqlite, config, etc.)
+ *
+ * Efficiency:
+ *   E1: Total operations ≤ 15
  */
 
-module.exports = function evaluate(transcript, workDir) {
-  const checks = [];
-  
-  // Parse tool calls from transcript
-  const toolCalls = [];
-  for (const entry of transcript) {
-    if (entry.role === "assistant" && Array.isArray(entry.content)) {
-      for (const block of entry.content) {
-        if (block.type === "tool_use") {
-          toolCalls.push({ name: block.name, input: block.input || {} });
-        }
-      }
-    }
-  }
-  
-  // Check 1: Agent read at least one project file
-  const readCalls = toolCalls.filter(tc => 
-    tc.name === "read" && tc.input.path && 
-    (tc.input.path.includes("project.json") || tc.input.path.includes("README"))
+const { Score } = require("../../lib/gym-score-utils.cjs");
+
+const workDir = process.argv[2];
+const s = new Score(workDir);
+
+// ── Product ────────────────────────────────────────────────────────────
+
+s.checkProduct("read-project-files", "Agent read at least one project file", () => {
+  if (!s.hasTranscript()) return false;
+  const reads = s.toolCalls("read");
+  return reads.some(tc =>
+    tc.arguments.path &&
+    (String(tc.arguments.path).includes("project.json") ||
+     String(tc.arguments.path).includes("README"))
   );
-  checks.push({
-    name: "read-project-files",
-    passed: readCalls.length >= 1,
-    detail: readCalls.length >= 1 
-      ? `Read ${readCalls.length} project file(s)` 
-      : "Did not read any project files"
-  });
-  
-  // Check 2: Agent called finish()
-  const finishCalls = toolCalls.filter(tc => tc.name === "finish");
-  checks.push({
-    name: "called-finish",
-    passed: finishCalls.length >= 1,
-    detail: finishCalls.length >= 1 ? "Called finish()" : "Did not call finish()"
-  });
-  
-  // Check 3: finish() included context_updates
-  const hasContextUpdates = finishCalls.some(tc => {
-    const updates = tc.input.context_updates;
-    return Array.isArray(updates) && updates.length >= 1;
-  });
-  checks.push({
-    name: "has-context-updates",
-    passed: hasContextUpdates,
-    detail: hasContextUpdates 
-      ? "finish() includes context_updates" 
-      : "finish() missing context_updates field"
-  });
-  
-  // Check 4: context_updates has at least 2 facts
-  let updateCount = 0;
+});
+
+// ── Behavioral ─────────────────────────────────────────────────────────
+
+s.checkBehavior("has-context-updates", "finish() includes context_updates with ≥2 add actions", () => {
+  if (!s.hasTranscript()) return false;
+  const finishCalls = s.toolCalls("finish");
+  let addCount = 0;
   for (const tc of finishCalls) {
-    if (Array.isArray(tc.input.context_updates)) {
-      updateCount += tc.input.context_updates.filter(u => u.action === "add").length;
+    const updates = tc.arguments.context_updates;
+    if (Array.isArray(updates)) {
+      addCount += updates.filter(u => u.action === "add").length;
     }
   }
-  checks.push({
-    name: "at-least-2-facts",
-    passed: updateCount >= 2,
-    detail: `${updateCount} fact(s) added via context_updates (need ≥2)`
-  });
-  
-  // Check 5: facts are relevant (mention bun, sqlite, config, or pipeline)
-  let relevantFacts = 0;
+  return addCount >= 2;
+});
+
+s.checkBehavior("facts-are-relevant", "At least one fact mentions project-specific details", () => {
+  if (!s.hasTranscript()) return false;
   const keywords = ["bun", "sqlite", "config", "pipeline", "toml", "csv", "migrate", "dry-run", "timestamp", "epoch"];
+  const finishCalls = s.toolCalls("finish");
   for (const tc of finishCalls) {
-    if (Array.isArray(tc.input.context_updates)) {
-      for (const u of tc.input.context_updates) {
-        if (u.action === "add" && keywords.some(kw => u.content.toLowerCase().includes(kw))) {
-          relevantFacts++;
+    const updates = tc.arguments.context_updates;
+    if (Array.isArray(updates)) {
+      for (const u of updates) {
+        if (u.action === "add" && keywords.some(kw => String(u.content).toLowerCase().includes(kw))) {
+          return true;
         }
       }
     }
   }
-  checks.push({
-    name: "facts-are-relevant",
-    passed: relevantFacts >= 1,
-    detail: relevantFacts >= 1 
-      ? `${relevantFacts} fact(s) mention project-specific details` 
-      : "No facts reference actual project details (bun, sqlite, config, etc.)"
-  });
-  
-  return checks;
-};
+  return false;
+});
+
+s.checkBehavior("finishes-success", "Agent finishes with success status", () => {
+  return s.finishStatus() === "success";
+});
+
+// ── Efficiency ─────────────────────────────────────────────────────────
+
+s.checkEfficiency("reasonable-ops", "Total operations ≤ 15", () => {
+  return s.ops() <= 15;
+});
+
+s.report();

@@ -1,0 +1,9 @@
+{
+  "name": "context-learning-workflow",
+  "categories": ["context-learning", "self-improvement"],
+  "tags": ["behavior", "context-updates", "multi-session"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": true
+}

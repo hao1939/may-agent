@@ -1,0 +1,9 @@
+{
+  "name": "context-learning-restraint",
+  "categories": ["context-learning", "self-improvement"],
+  "tags": ["behavior", "context-updates", "restraint"],
+  "tier": "smoke",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}
