@@ -4,7 +4,7 @@ import { resolve, dirname } from "node:path";
 import { existsSync, readFileSync, writeFileSync, appendFileSync, unlinkSync, mkdirSync } from "node:fs";
 import { getModel } from "@mariozechner/pi-ai";
 import type { ModelWithApiKey } from "../lib/types.js";
-import { SubagentManager, evaluateTask, writeSkippedEvaluations, writeHeuristicEvaluations, classifyError, readSessionMeta, learnFromSession } from "../lib/index.js";
+import { SubagentManager, evaluateTask, writeSkippedEvaluations, writeHeuristicEvaluations, classifyError, readSessionMeta, learnFromSession, learnFromSessionLLM } from "../lib/index.js";
 import { EventBus } from "./event-bus.js";
 import { ChatSession } from "./chat-session.js";
 import { attachConsoleUI } from "./ui/console.js";
@@ -397,6 +397,7 @@ function attachAgentEvents(label: string, sessionId: string): void {
 // Listen for "context-learn" events and extract durable facts from the session.
 // Enabled per-agent via CONTEXT_LEARN_AGENTS env var (comma-separated, default: none).
 // Set CONTEXT_LEARN_AGENTS=all to enable for all agents.
+// Uses LLM (evaluator agent) for extraction; falls back to mechanical if LLM unavailable.
 
 const contextLearnAgents = new Set(
   (process.env.CONTEXT_LEARN_AGENTS ?? "").split(",").map(s => s.trim()).filter(Boolean),
@@ -411,20 +412,42 @@ bus.on((event) => {
   // Never learn from meta-agents
   if (["evaluator", "coach", "judge"].includes(agentName)) return;
 
-  setTimeout(() => {
+  setTimeout(async () => {
     try {
-      const { readSessionMessages } = require("../lib/index.js") as typeof import("../lib/index.js");
+      const { readSessionMessages, readSessionMeta: readMeta } = require("../lib/index.js") as typeof import("../lib/index.js");
       const messages = readSessionMessages(persistDir, sessionId);
       if (messages.length === 0) return;
 
       const agentDir = resolve(AGENTS_ROOT, agentName);
       if (!existsSync(agentDir)) return;
 
-      const result = learnFromSession({ agentDir, messages: messages as Parameters<typeof learnFromSession>[0]["messages"] });
-      if (result.added.length > 0) {
+      const meta = readMeta(persistDir, sessionId);
+      const task = meta?.task ?? "";
+
+      // Try LLM extraction (evaluator agent), fall back to mechanical
+      let result: { added: string[]; removed: string[] };
+      try {
+        result = await learnFromSessionLLM({
+          agentDir,
+          messages: messages as Parameters<typeof learnFromSessionLLM>[0]["messages"],
+          agentName,
+          task,
+          manager,
+        });
+      } catch {
+        result = learnFromSession({
+          agentDir,
+          messages: messages as Parameters<typeof learnFromSession>[0]["messages"],
+        });
+      }
+
+      if (result.added.length > 0 || result.removed.length > 0) {
+        const parts: string[] = [];
+        if (result.added.length > 0) parts.push(`+${result.added.length} added`);
+        if (result.removed.length > 0) parts.push(`-${result.removed.length} removed`);
         bus.emit({
           type: "info",
-          message: `[context-learn] ${agentName}: +${result.added.length} fact(s) from session ${sessionId}`,
+          message: `[context-learn] ${agentName}: ${parts.join(", ")} from session ${sessionId}`,
         });
       }
     } catch (err) {
