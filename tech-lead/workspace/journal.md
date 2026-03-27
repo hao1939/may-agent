@@ -95,3 +95,12 @@
 - Implementation: `runAgent()` in manager-agents-tool.ts interface + switch case, `SubagentManager.runAgent()` wrapper in manager.ts
 - All guards ported (tool-name confusion, callDeny, agent existence, request tracking)
 - TSC passes. Committed `7e54e4d`.
+
+## 2026-03-27 10:35 — P0 Fix: Skills loading in resolveSystemPrompt (req:64452f8a)
+- **Root cause**: `resolveSystemPrompt()` in manager.ts loaded SOUL.md + common-sense.md but NOT skills/*.md files. The gym-runner's `assembleEffectivePrompt` had skills loading code, but the real manager didn't — so skills were never seen by agents in production, and gym fork experiments couldn't inject skills.
+- **Fix** (commit 2f1ab59): Added agent-specific skills/*.md loading in manager.ts between common-sense.md and Runtime Environment. Uses `readdirSync({recursive:true})` + `.md` filter, sorted. Does NOT load shared skills library (400KB, 61 files) — those are a reference catalog, not auto-loaded.
+- **Gym-runner alignment**: Removed shared skills loading from gym-runner.ts `assembleEffectivePrompt` to match. Lab fork skills work because fork files are copied into agent's skills/ dir before the run.
+- Verified: all agents with skills/ also have knowledge/ or workspace/, so agentDir derivation works.
+
+### 2026-03-27 11:34 — P0: Bob + Judge Model Fix
+Bob down 30+ hours — `gemini3pro` maps to deprecated `gemini-3-pro-preview` on LiteLLM proxy. Changed `agents/bob/agent.json` and `agents/judge/agent.json` from `gemini3pro` → `opus` (claude-opus-4.6). Takes effect next heartbeat, no restart needed. Resolves req:5cff555c, req:617ed99b.

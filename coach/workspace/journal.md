@@ -806,3 +806,20 @@ This is the **evidence fabrication** pattern — optimizer claims to have done w
 - Identify which of the 10 failing coder scenarios have ordering-type gaps (candidates for workflow enforcement)
 - Develop new workflow scenarios for ordering-gap failures
 - Reserve 1 growth cycle for testing
+
+## 2026-03-27 11:40 — BREAKTHROUGH: Fork Injection Bug Fixed, First Real Improvement
+
+**P0 fix confirmed**: tech-lead commit 2f1ab59 — skills/*.md now loaded into system prompt.
+- Prompt hashes: baseline `1defcbc3017c` vs patched `284ccfbc5d8e` — DIFFERENT! Skills are in the prompt!
+
+**Growth cycle results (coder, verify-before-finish-workflow)**:
+- Baseline: 3/9 checks (all product checks FAIL, runs-exact-verification FAIL)
+- Patched (skill: exact-verification.md): 8/9 checks (all product checks PASS, only runs-exact-verification still FAIL)
+- **Delta: +5 checks** — massive improvement, but auto-decision was "discard" because overall pass/fail didn't flip
+
+**Analysis**: The skill `exact-verification.md` dramatically improved the coder's behavior in workflow mode. The coder now fixes bugs correctly and verifies — but still doesn't run the EXACT specified command. The "runs-exact-verification" check seems to require character-for-character match. The skill content was strong (anti-patterns listing wrong substitutions) but coder still used a different runner.
+
+**Next steps**: 
+1. Examine what command the patched coder actually ran (was it close?)  
+2. Strengthen the skill — maybe add the exact scenario-specific command
+3. This validates the entire coaching methodology now that skills are actually loaded!
