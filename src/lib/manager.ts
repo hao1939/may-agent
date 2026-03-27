@@ -519,7 +519,55 @@ export class SubagentManager {
       }
     }
 
+    // Context learning: load agents/<name>/context.md if it exists.
+    // Auto-maintained by finish(context_updates) — accumulated project knowledge.
+    {
+      const ctxAgentDir = def.knowledgeDir ? dirname(def.knowledgeDir) : def.workspace ? dirname(def.workspace) : undefined;
+      if (ctxAgentDir) {
+        const ctxPath = join(ctxAgentDir, "context.md");
+        if (existsSync(ctxPath)) {
+          const ctxContent = readFileSync(ctxPath, "utf-8").trim();
+          if (ctxContent) {
+            ctxLines.push(``, `## What You Know (persistent context)`, ctxContent);
+          }
+        }
+      }
+    }
+
     return ctxLines.join("\n");
+  }
+
+  /** Apply context_updates from finish() to agents/<name>/context.md. */
+  private applyContextUpdates(agentName: string, updates: { action: string; content: string }[]): void {
+    const registered = this.agents.get(agentName);
+    const dir = registered?.definition.knowledgeDir
+      ? dirname(registered.definition.knowledgeDir)
+      : registered?.definition.workspace ? dirname(registered.definition.workspace) : undefined;
+    if (!dir) return;
+
+    const contextPath = join(dir, "context.md");
+    let lines: string[] = [];
+    try { lines = readFileSync(contextPath, "utf-8").split("\n"); } catch { /* file may not exist */ }
+
+    for (const u of updates) {
+      const trimmed = u.content.trim();
+      if (u.action === "add" && !lines.some(l => l.includes(trimmed))) {
+        lines.push(`- ${trimmed}`);
+      } else if (u.action === "remove") {
+        lines = lines.filter(l => !l.includes(trimmed));
+      }
+    }
+
+    // Trim if over 2KB
+    let content = lines.join("\n");
+    while (content.length > 2048) {
+      const idx = content.indexOf("\n", 1);
+      if (idx === -1) break;
+      content = content.slice(idx + 1);
+    }
+
+    mkdirSync(dirname(contextPath), { recursive: true });
+    writeFileSync(contextPath, content);
   }
 
   /** Append a memory entry after session completion.
@@ -801,6 +849,11 @@ export class SubagentManager {
     }
 
     this.appendMemory(session);
+
+    // Apply context_updates from finish() to agents/<name>/context.md
+    if (finishParams?.context_updates?.length) {
+      try { this.applyContextUpdates(session.agentName, finishParams.context_updates); } catch { /* non-fatal */ }
+    }
 
     // Update request DB from finish() data (mark completed, track new items)
     this.updateTodoFromFinish(session);
