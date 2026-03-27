@@ -667,6 +667,7 @@ export class SubagentManager {
     // so agent.state.error is never set. Detect this by checking if
     // the last message is still a user message (no assistant reply).
     const messages = session.agent.state.messages;
+    const finishParams = extractFinishParams(messages);
     const lastMsg = messages.length > 0 ? messages[messages.length - 1] : null;
     if (!session.agent.state.error && !session.error && lastMsg?.role === "user") {
       session.error = "Agent completed without producing a response (possible stream/API error)";
@@ -836,8 +837,7 @@ export class SubagentManager {
     // ── Update request status (unified request tracking) ───────────────
     if (session.requestId) {
       // Extract outcome summary from finish() data or last assistant text
-      const finishData = extractFinishParams(messages);
-      const summary = finishData?.summary ?? extractLastAssistantText(messages) ?? undefined;
+      const summary = finishParams?.summary ?? extractLastAssistantText(messages) ?? undefined;
 
       getRequestFns().then((mod) => {
         if (!mod) return;
@@ -860,8 +860,7 @@ export class SubagentManager {
 
     // ── Update session outcome in DB ───────────────────────────────────
     {
-      const finishData = extractFinishParams(messages);
-      const outcome = finishData?.summary ?? extractLastAssistantText(messages) ?? undefined;
+      const outcome = finishParams?.summary ?? extractLastAssistantText(messages) ?? undefined;
       if (outcome) {
         try {
           const { updateSessionDb } = require("./requests.js") as typeof import("./requests.js");
@@ -880,7 +879,6 @@ export class SubagentManager {
     // When a session ends with finish(blocked) or finish(failure), track an
     // escalation request to the parent agent (or fire onSessionBlocked for May).
     {
-      const finishParams = extractFinishParams(messages);
       if (finishParams && (finishParams.status === "blocked" || finishParams.status === "failure")) {
         const blockerText = finishParams.blockers?.map(b => `${b.reason}: ${b.context}`).join("; ") ?? "";
         const escalationTask = `[escalation] ${session.agentName} session ${session.sessionId} ended ${finishParams.status}: ${finishParams.summary}${blockerText ? ` | Blockers: ${blockerText}` : ""}`;
@@ -913,7 +911,6 @@ export class SubagentManager {
 
     // ── Extract structured finish data (F2: Structured Result Passing) ──
     {
-      const finishParams = extractFinishParams(messages);
       if (finishParams) {
         session.finishResult = {
           status: finishParams.status as "success" | "failure" | "blocked" | "partial",
