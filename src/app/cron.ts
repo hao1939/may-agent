@@ -702,7 +702,11 @@ export class Cron {
         taskMessage = `${entry.message ?? ""}\n\n---\n${injections.join("\n\n---\n")}`;
       }
 
-      const sessionId = this.manager.run(agentName, taskMessage, { kind: "job" });
+      const maxTurns = typeof entry.handlerConfig?.maxTurns === "number" ? entry.handlerConfig.maxTurns : undefined;
+      const sessionId = this.manager.run(agentName, taskMessage, {
+        kind: "job",
+        ...(maxTurns ? { opBudget: maxTurns } : {}),
+      });
       updateRequest(this.persistDir, requestId, { sessionId });
 
       this.manager
