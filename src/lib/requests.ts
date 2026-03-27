@@ -263,6 +263,7 @@ export function getDb(persistDir: string): SqliteDb {
 
   // Migrations for existing databases (idempotent — ALTER ADD COLUMN fails silently if column exists)
   try { db.exec("ALTER TABLE requests ADD COLUMN source TEXT"); } catch { /* already exists */ }
+  try { db.exec("ALTER TABLE gym_runs ADD COLUMN batch_id TEXT"); } catch { /* already exists */ }
 
   dbCache.set(persistDir, db);
   return db;
