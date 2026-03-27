@@ -150,7 +150,7 @@ export type {
 export type { HandlerContext, HandlerModule } from "./handler-context.js";
 export { retryWithBackoff } from "./retry-with-backoff.js";
 export type { RetryWithBackoffOptions } from "./retry-with-backoff.js";
-export { learnFromSession, learnFromSessionLLM, learnFromText, extractFacts, extractFactsMechanical, applyContextUpdates, readContext } from "./context-learn.js";
+export { learnFromSession, learnFromSessionLLM, learnFromText, mergeContext, extractFacts, extractFactsMechanical, applyContextUpdates, readContext } from "./context-learn.js";
 export type { LearnFromSessionOptions, LearnFromSessionLLMOptions, ContextUpdate, ContextUpdateResult, LLMCaller, TranscriptMessage } from "./context-learn.js";
 export { loadAgents, reloadAgents, validateAgentConfig } from "../app/agent-loader.js";
 export type { AgentConfig, AgentLoaderOptions, LoadResult, ValidationError } from "../app/agent-loader.js";
