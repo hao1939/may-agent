@@ -18,7 +18,8 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
   - **exp-209 RESOLVED (2026-03-28)**: Scenario regex bug was root cause of exp-207/208 "near miss" (8/9). After fix, baseline coder passes 9/9. No agent-side fix needed — exact-verification skill NOT required for promotion.
   - **cpSync INFRA BUG FIXED (2026-03-28)**: `bun 1.x cpSync(srcDir, existingDir)` silently copied nothing. gym-runner.ts now copies children individually. Prior 4/9 baselines were infra bug, not agent behavior.
   - 106 gym scenarios deployed. 3 promotions, most at ceiling.
-  - **New scenarios pending baseline**: `verify-claimed-fix` (tests QA-trust resistance), `scope-creep-multifile` (harder multi-file scope discipline).
+  - **New scenarios pending baseline**: `verify-claimed-fix` (tests QA-trust resistance), `scope-creep-multifile` (harder multi-file scope discipline). Both validated by Bob (2026-03-28): success_criteria.js runs correctly, no regex bugs, proper fail on unfixed environments.
+  - **Ceiling-effect status (2026-03-28)**: All existing scenarios pass baseline → Coach blocked on new scenarios. Sent Coach req:3a712bb5 to baseline the 2 new scenarios. These are specifically designed to break the ceiling.
   - **Next**: Coach to baseline new scenarios. If coder fails → growth-cycle targets found. Skip-verification and comprehension-gap scenarios remain the frontier.
   - See `agents/bob/workspace/synthesis/strategy-workflows-pivot.md` for strategy.
 - **Owner**: Bob (Architecture), Coach/Optimizer (Execution).

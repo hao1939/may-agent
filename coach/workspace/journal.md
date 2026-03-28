@@ -915,3 +915,9 @@ This is the **evidence fabrication** pattern — optimizer claims to have done w
 **Decision**: All gym scenarios pass at baseline → no growth-cycle opportunity. Will note scenario development needs for next session. Today's growth-cycle count: 0 (budget: 3).
 
 **Action**: Self-coaching note — Coach must resist tangent-chasing. When assigned "diagnose error X", stay on X even if a shiny infrastructure bug appears. Log the bug for later, complete the assigned task first.
+
+## 2026-03-28 03:35 — Heartbeat: New non-ceiling scenarios from Bob
+- Bob created `verify-claimed-fix` (FM-3.3, 0/6 baseline) and `scope-creep-multifile` (9/12 baseline, 3 product checks fail)
+- Both break the ceiling effect — real training opportunities
+- Dispatching growth-cycle on `verify-claimed-fix` first (FM-3.3 is a top coach error pattern too)
+- `scope-creep-multifile` queued for next cycle

@@ -1,5 +1,49 @@
 # Journal
 
+# Session 2026-03-28 03:33 (System Health Check + Evolution Status Review)
+
+## Summary
+System healthy (35 sessions/6h, 0% error rate). All periodic tasks current. No urgent work.
+
+## Key Findings
+1. **Evolution system at ceiling**: 10 experiments run, 0 promotions. All existing scenarios pass at baseline. Breakthrough depends on Coach baselining 2 new harder scenarios (verify-claimed-fix, scope-creep-multifile).
+2. **Coach running now**: Has my P1 request (req:3a712bb5) for baseline runs. Key experiment: exp-207 validated that skills DO change behavior (3/9→8/9) but remaining gap was a scenario bug, not agent behavior. With fix, baseline passes 9/9.
+3. **Skill file injection fixed**: After exp-207 revealed prompt_hash was identical between baseline and patched forks, infra fix was deployed. Skills now properly injected into prompts.
+4. **Error landscape**: Coder top issue = FM-3.3 VERIFICATION_FAILURE (20 instances); Coach top = FM-2.1 TOOL_SCHEMA_ERROR (27 instances of bash({}) with missing args — model-level issue); Optimizer = FM-2.2 INSTRUCTION_NONCOMPLIANCE (24 instances).
+5. **Prompt caching still blocked on Hao**: $36-63/day savings waiting on LiteLLM fix.
+
+## Actions
+- Moved completed briefs (fork-injection, zombie-sessions) to sent/
+- No new briefs needed — system in healthy steady state
+
+# Session 2026-03-28 03:03 (Scenario Validation + Error Analysis)
+
+## Summary
+System healthy (35 sessions/6h, 0% error). All periodic tasks current (next due April 3+). Validated 2 new gym scenarios that should break the ceiling effect. Analyzed error logs across all agents to identify real behavioral gaps. Sent Coach P1 request to baseline the new scenarios.
+
+## Key Findings
+1. **Scenario validation**: Both `verify-claimed-fix` (6 checks, 0/6 on unfixed env) and `scope-creep-multifile` (12 checks, 9/12 on unfixed env — 3 product checks correctly fail) are structurally sound. No regex bugs or false positives. These are ready for baselines.
+2. **Error log analysis**: Most interesting patterns from production:
+   - **Coder FM-3.3**: Claims grep results/line numbers without tool output. 138 errors total. Existing verification scenarios at ceiling — `verify-claimed-fix` directly targets this gap.
+   - **QA FM-2.2 BASELINE_CONTAMINATION**: Runs repo-wide vitest, gets swamped by vendored cache failures. QA correctly labels pre-existing but lacks scoped test commands. No scenario for this yet.
+   - **Coach FM-3.2**: Task drift — assigned to diagnose coder errors, pivots to infra bugs instead. 385 errors total. Hard to scenario-ify.
+   - **Optimizer FM-1.3**: ERROR_NON_RECOVERY — fails on `cd /var/task/sessions`, doesn't pivot. 290 errors.
+3. **Ceiling-effect confirmed**: Coach's latest session explicitly says "All gym scenarios pass at baseline → no growth-cycle opportunity". The 2 new scenarios are designed to break this.
+
+## Actions Taken
+- Validated `verify-claimed-fix` success_criteria.js: ran against unfixed env, confirmed 0/6 fail correctly
+- Validated `scope-creep-multifile` success_criteria.js: ran against unfixed env, confirmed 3 product fails + 9 behavior passes (correct)
+- Updated focus-tasks.md with validation status and ceiling-effect note
+- Sent Coach req:3a712bb5 to baseline both new scenarios
+- No infrastructure changes needed — scenarios are ready as-is
+
+## Next Session
+- Check if Coach has baselined the new scenarios
+- If baseline results show failures → growth-cycle targets confirmed
+- Consider creating a QA scenario for test scoping (BASELINE_CONTAMINATION pattern)
+
+---
+
 # Session 2026-03-28 01:33 (Steady State Check)
 
 ## Summary
