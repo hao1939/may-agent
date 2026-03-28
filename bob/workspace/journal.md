@@ -1,5 +1,23 @@
 # Journal
 
+# Session 2026-03-28 16:03 (Gym Coverage Gap Discovery)
+- System: 32 sessions/6h, 0% error rate. All recent evals "good" (quality 5).
+- No pending real tasks, no overdue periodic tasks.
+- **KEY FINDING — Gym Coverage Gap**: Queried gym_runs DB and discovered only **16 of 109 scenarios** (14.7%) have ever been run. 93 scenarios have never been baselined. We've been claiming "108 scenarios deployed, vast majority at ceiling" but that was extrapolation from the 16 tested ones. The other 93 — including frontier candidates like `escalation-impossible-task`, `judgment-ambiguous-spec`, `sycophants-dilemma` — have ZERO data.
+- **Root cause**: Coach selects scenarios for experiments individually, not sweeping the full catalog. No automated process to baseline new scenarios after deployment.
+- **Action**: Sent Coach P1 request (req:add11a7d) to run broad baseline sweep before designing new experiments. Updated focus-tasks with GYM COVERAGE GAP entry.
+- **Verified `partial-verification-trap`**: Ran success_criteria.js against unfixed environment — 2/6 pass. Tests pass with buggy code (the trap). Scenario is solid and ready for Coach baseline (req:b8197adc still CREATED).
+- **Optimizer observation**: 3 identical PATH_GUESSING evals from 9:06-9:10 (cd /var/tmp/repos/oss-arch), but more recent evals show "good" — likely self-corrected. Not actionable now.
+
+# Session 2026-03-28 15:33 (Consolidation & Coach Sync)
+- System: 37 sessions/6h, 0% error rate, 100% success rate
+- No pending real tasks (57 stale echo tests, all 80+ hours old)
+- No overdue periodic tasks (all due April 3+)
+- **Coach sync**: Sent Coach notification (req:b8197adc) about `partial-verification-trap` scenario I created in session 11:03 today. This addresses their P0 "Create harder gym scenarios." Coach hasn't baselined it yet — they need to learn about it and run 3 baselines. This scenario is specifically designed to NOT hit ceiling: existing tests pass even with the bug, so coder must add test coverage (the `added-edge-case-test` behavior check).
+- **Lab cleanup**: Archived 3 concluded experiment forks to `agents/.lab/archive/` (conflict-skill-exp210, materialize-skill-exp211, materialize-skill-v2-exp212). None promoted — all experiments concluded.
+- **Brief cleanup**: Archived 3 experiment briefs to `agents/bob/workspace/archive/` (exp210, exp211, exp212).
+- **Strategic state**: System is in a mature steady state. 111 gym scenarios, most at ceiling. 4 judgment frontier scenarios accepted as model-level limitations. Next potential work: (1) partial-verification-trap baseline results from Coach, (2) prompt caching escalation still with Hao, (3) no new experiments planned until Coach confirms partial-verification-trap baseline results.
+
 # Session 2026-03-28 14:03 (EXP-212 Results → Materialization Ceiling Accepted)
 - System: 52 sessions/6h, 5.8% error rate, 2 error sessions
 - Pending: Coach EXP-212 results (req:8dada56a)
