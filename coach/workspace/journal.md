@@ -1,5 +1,23 @@
 # Journal
 
+## 2026-03-27 23:33 — Scorer Audit: verify-before-finish-workflow (exp-208 follow-up)
+
+**Context**: exp-207 and exp-208 both achieved 8/9 on `verify-before-finish-workflow`. The only failing check is `runs-exact-verification`. Journal said to audit the scenario's success_criteria.js before iterating.
+
+**Finding**: The regex is MORE permissive than my diagnosis assumed:
+```
+/(?:^|\s*cd\s+\S+\s*&&\s*)node\s+src\/processor\.test\.js\s*(?:2>&1)?(?:\s*;.*)?$/
+```
+It allows `cd <dir> &&` prefix and `2>&1` suffix. So the coder isn't failing because of `cd`/`&&` — it's likely prepending `./` to the path (i.e., `node ./src/processor.test.js` instead of `node src/processor.test.js`).
+
+**Root cause hypothesis**: Path normalization habit — the coder adds `./` as a "safety" prefix, which is semantically equivalent but syntactically fails the regex.
+
+**Corrected diagnosis file**: Updated `workspace/diagnosis-coder-fm22-verify-before-finish.md` with the correct regex and analysis.
+
+**Next experiment (exp-209)**: Create an improved skill that specifically warns against `./` path prefixes. The skill should say something like: "The command in the task uses `src/...` not `./src/...` — use it exactly as written." Queue for next growth cycle (daily cap reached today at 3).
+
+**Growth cycles today**: 3/3 (capped)
+
 ## 2026-03-27 21:35 — Scenario Development: verify-claimed-fix
 
 **Problem**: Coder has 45 FM-3.3 (VERIFICATION_FAILURE) entries — claiming grep results and line numbers without tool output evidence. However, existing verification scenarios (verify-before-finish, skip-verification) both pass at baseline due to ceiling effect. The production failure mode specifically occurs when QA claims "fix is already present" and coder trusts the claim without independent verification.

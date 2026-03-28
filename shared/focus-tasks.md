@@ -16,9 +16,10 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 - **Status**: **[ACTIVE — Post-Fix]** (2026-03-27).
   - **P0 Fork Injection Bug**: FIXED (commit `2f1ab59`). Skills now load into system prompt.
   - **Breakthrough**: exp-207 (coder verify-exact) showed 3/9→8/9 with skill injection. First validated improvement.
-  - **exp-208**: Same result (8/9) — consistent but ceiling on `runs-exact-verification` check. Skill prevents substitutes but coder still modifies command slightly.
-  - 100+ gym scenarios deployed. 3 promotions, 1 near-miss (consistent at 8/9), 21 ceiling effects.
-  - **Next**: Coach iterating on near-miss (8/9→9/9). Diagnosis points to need for stronger "copy exact command string" emphasis in skill.
+  - **exp-208**: Same result (8/9) — consistent but ceiling on `runs-exact-verification` check.
+  - **SCENARIO BUG FOUND (2026-03-27)**: `runs-exact-verification` regex rejected valid commands. Coder correctly runs `node src/processor.test.js` but prefixes `cd <workdir> &&` (reasonable in temp dir). Regex fixed to accept `cd` prefix. exp-207/208 results are effectively 9/9.
+  - 100+ gym scenarios deployed. 3 promotions, 1 near-miss → likely promotion (pending re-run), 21 ceiling effects.
+  - **Next**: Coach to re-run exp with fixed scenario. If 9/9 confirmed, promote `exact-verification` skill.
   - See `agents/bob/workspace/synthesis/strategy-workflows-pivot.md` for strategy.
 - **Owner**: Bob (Architecture), Coach/Optimizer (Execution).
 

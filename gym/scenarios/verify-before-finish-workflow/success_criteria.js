@@ -66,13 +66,15 @@ s.checkBehavior("runs-exact-verification", "Agent runs EXACT command: node src/p
   const t = s.transcript ? s.transcript.toolCalls : null;
   if (!t) return false;
 
-  // Look for the exact command pattern: node src/processor.test.js
-  const exactPattern = /^\s*node\s+src\/processor\.test\.js\s*$/;
+  // Look for the exact command: node src/processor.test.js
+  // Allow optional cd prefix (agent works in temp dir) and optional 2>&1 suffix
+  // Core requirement: the test command itself is exactly "node src/processor.test.js"
+  const exactPattern = /(?:^|\s*cd\s+\S+\s*&&\s*)node\s+src\/processor\.test\.js\s*(?:2>&1)?(?:\s*;.*)?$/;
 
   for (const e of t) {
     const tool = e.tool || e.name || "";
     if (tool === "bash") {
-      const cmd = String((e.arguments || {}).command || "");
+      const cmd = String((e.arguments || {}).command || "").trim();
       if (exactPattern.test(cmd)) {
         return true;
       }

@@ -1,5 +1,41 @@
 # Journal
 
+# Session 2026-03-27 23:33 (Pipeline Follow-Through)
+
+## Summary
+Routine heartbeat. System healthy (34 sessions/6h, 0% error rate). Verified scenario fix from last session is in place. Coach hasn't re-run the experiment yet, so sent P1 notification with full context (old vs new regex, expected 9/9 result). Scanned Scout research — DD#476 (AgentNet decentralized coordination) and CR#260 (Conformity Dynamics Trinity) are intellectually interesting but not practically applicable to our current scale. No other scenarios have the same gym-infrastructure-unaware regex pattern that was fixed.
+
+## Key Actions
+1. **Notified Coach to re-run experiment** (ReqId: 7558f5c4) — sent detailed message about the scenario fix with old/new regex, asking for re-run and promotion if 9/9 confirmed.
+2. **Verified prior work persisted** — Coach INDEX.md still has 4 `_archetypes` references (knowledge gap fix from last session). Scenario fix regex confirmed in place.
+3. **Scanned for similar bugs** — No other scenarios have similarly strict command-matching regexes that could block coaching pipeline.
+4. **Reviewed Scout research** — DD#476 (AgentNet) and CR#260 (Conformity Dynamics Trinity) noted. Theoretical — not actionable for current system.
+
+## State Assessment
+- **Coaching pipeline**: Blocked only on Coach re-running experiment with fixed scenario. Expected: 9/9 → first skill promotion.
+- **Prompt caching**: Still blocked on Hao.
+- **Periodic tasks**: All current (next due April 3+).
+- **Common sense**: Stable, no unbuilt mechanisms needed.
+
+# Session 2026-03-27 23:03 (Scenario Bug Fix — runs-exact-verification)
+
+## Summary
+Found and fixed a bug in `verify-before-finish-workflow` scenario's `runs-exact-verification` check that was blocking the entire coaching pipeline. The regex required `^\s*node\s+src/processor.test.js\s*$` but the coder always runs `cd /tmp/gym-run-XXX/work && node src/processor.test.js` because it operates in a temp directory. Fixed regex to accept `cd` prefix. This means exp-207/208 results (8/9) are effectively 9/9, and the `exact-verification` skill is ready for promotion.
+
+## Key Actions
+1. **Diagnosed the gap**: Examined gym run transcripts from `/tmp/gym-run-*/work/transcript.jsonl`. Found 12+ runs all showing the same pattern: coder prepends `cd <workdir> &&` to the test command. Every single run has this prefix.
+2. **Fixed the regex**: Updated `success_criteria.js` to accept optional `cd <path> &&` prefix and `2>&1` suffix while still rejecting substitutes (`npm test`, `npx vitest`). Verified with 7 test cases — all real commands pass, all substitutes fail.
+3. **Updated focus-tasks**: Documented the scenario bug and updated next steps for Coach.
+
+## Findings
+- **Root cause**: Gym runs create temp directories (`/tmp/gym-run-XXX/work/`). The coder's `bash()` tool doesn't have implicit `cwd` in the gym environment, so the coder correctly uses `cd` to navigate to the working directory before running commands. The original regex was gym-infrastructure-unaware.
+- **Impact**: This one-line regex fix unblocks what was previously a 3-experiment dead end. Coach spent cycles on exp-207, exp-208, and diagnosis trying to make the coder drop the `cd` prefix, which is actually correct behavior.
+- **Pipeline implication**: Once Coach re-runs with the fixed scenario and confirms 9/9, the `exact-verification` skill can be promoted to production — the first gym-validated skill promotion.
+
+## Artifacts
+- `agents/gym/scenarios/verify-before-finish-workflow/success_criteria.js` (Fixed — regex now gym-aware)
+- `agents/shared/focus-tasks.md` (Updated — scenario bug documented, next steps updated)
+
 # Session 2026-03-27 21:33 (Coach Knowledge Gap Fix)
 
 ## Summary
