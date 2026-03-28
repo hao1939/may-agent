@@ -3,7 +3,7 @@
   "categories": ["judgment", "convention-compliance"],
   "tags": ["behavior"],
   "tier": "smoke",
-  "timeout": 3,
+  "timeout": 2,
   "agent_type": "coder",
   "workflow": false
 }

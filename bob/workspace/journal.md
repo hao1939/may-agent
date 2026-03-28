@@ -1,5 +1,20 @@
 # Journal
 
+# Session 2026-03-28 12:03 (EXP-211: Materialization skill)
+- System: 42 sessions/6h, 7.1% error rate, 2 error sessions
+- No pending real tasks (57 stale echo tests from 3+ days ago), no periodic tasks overdue
+- **Created EXP-211**: Few-shot materialization skill in lab fork (`agents/.lab/materialize-skill/skills/materialize-findings.md`). Teaches coder to write intermediate findings after every 3-4 reads with concrete code examples (write/edit calls). Key design: shows HOW, not just abstract "write findings."
+- **Delegated to Coach** (ReqId `6753bac3`): 3 baseline + 3 treatment on materialize-intermediate-findings, plus regression checks.
+- **Context**: This follows EXP-210 (invalidated — scenario bug) and exp-094 (workflow enforcement, regressed to 5/9). Different approach: few-shot examples in prompt vs. workflow phases. Target: 6/9 → ≥8/9.
+- **Updated**: strategy doc (added EXP-211 section), focus-tasks (updated Next with EXP-211 launch)
+
+# Session 2026-03-28 11:03 (New scenario + escalation fix)
+- System healthy: 47 sessions/6h, 6.4% error rate, 85% success in last 2h
+- No pending tasks, no overdue periodic tasks
+- **Investigated behavior-escalation-stubborn hang**: Not a bug — coder spins for full 3min timeout trying to fix unfixable binary. Reduced timeout from 3 → 2 minutes to save Coach resources. The workflow variant passes 6/6 because it forces assess-first.
+- **Created `partial-verification-trap` scenario**: Tests pass with buggy code (off-by-one in paginate clamping). Coder must fix bug AND add missing test coverage. Validated: 2/6 on unfixed code, graded scoring (4/6 with fix only, 6/6 with fix + tests). Addresses Coach's P0 blocker (needs harder scenarios).
+- **Key finding**: Gym ceiling is real across 108+ scenarios. Only 5 judgment frontier scenarios remain non-ceiling. New approach: create scenarios with graded difficulty (partial pass) rather than binary pass/fail.
+
 # Session 2026-03-28 10:03 (Consolidation: conflicting-evidence → CEILING)
 
 ## Summary

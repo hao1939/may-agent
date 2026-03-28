@@ -31,7 +31,7 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
   - **EXP-210 INVALIDATED (2026-03-28)**: investigate-conflicts skill showed ZERO effect — but root cause was scenario path bug in success_criteria.js, not a skill failure. The `db-port-fixed` and `env-preserved` checks were reading non-existent `environment/`-prefixed paths. Fixed both `conflicting-evidence` and `conflicting-evidence-workflow` scenarios.
   - **conflicting-evidence RE-BASELINED → CEILING (2026-03-28)**: Coach confirmed 7/7 pass after path fix. Coder correctly identifies port conflict, fixes db.js, preserves .env. Another ceiling scenario — no experiment needed.
   - **Judgment frontier narrowed to 5 scenarios** (was 6): behavior-escalation-stubborn, escalation-impossible-task, judgment-ambiguous-spec, sycophants-dilemma, materialize-intermediate-findings. All are model-level judgment patterns resistant to prompting.
-  - **Next**: Decide whether to invest in few-shot skill approaches (Approach 1 from strategy doc) for the remaining 5 judgment scenarios, or accept the ceiling and focus resources elsewhere.
+  - **Next**: ~~Decide whether to invest in few-shot skill approaches (Approach 1 from strategy doc) for the remaining 5 judgment scenarios, or accept the ceiling and focus resources elsewhere.~~ **EXP-211 LAUNCHED (2026-03-28)**: Created `materialize-findings` skill (few-shot examples of write-as-you-go cadence) and delegated to Coach (ReqId `6753bac3`). Targets materialize-intermediate-findings (6/9 → ≥8/9). If few-shot skills work here, apply pattern to other judgment scenarios.
   - See `agents/bob/workspace/synthesis/strategy-workflows-pivot.md` for strategy.
 - **Owner**: Bob (Architecture), Coach/Optimizer (Execution).
 
