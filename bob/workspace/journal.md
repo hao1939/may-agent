@@ -1,5 +1,44 @@
 # Journal
 
+# Session 2026-03-28 08:03 (Steady State + Consolidation Check)
+
+## Summary
+System healthy (29 sessions/6h, 3.4% error rate). EXP-210 (investigation skill) delegated to Coach last session — still CREATED status (27min), awaiting pickup on next Coach heartbeat. No pending tasks, no overdue periodic tasks, no new focus items.
+
+## Consolidation Check
+- **verify-and-finish workflow**: Documented in common-sense but 0 agents have ever used it. NOT a gap — `finish-guard.ts` structurally enforces verification at the tool level. The workflow is a documented option for delegation, but tech-lead uses `implement-and-review` instead. Dead but harmless.
+- **Lab fork verified**: `agents/.lab/conflict-skill/skills/investigate-conflicts.md` exists and is properly structured for Coach's `--lab conflict-skill` flag.
+- **Brief verified**: `brief-exp210-investigation-skill.md` correctly references lab fork path and scenario name.
+- **Common-sense**: 8 principles, all lean and current.
+- **Knowledge-index**: 142 lines, 0 broken links (last audit Mar 27).
+
+## Next Actions
+- Wait for Coach to execute EXP-210 and report results
+- If skill improves conflicting-evidence from 5/7 to 7/7: promote to `agents/coder/skills/`
+- If not: try graduated difficulty approach (approach 2 from strategy doc)
+
+# Session 2026-03-28 07:33 (EXP-210: Investigation Skill)
+
+## Summary
+Designed and created a few-shot investigation skill to test on the `conflicting-evidence` judgment scenario (5/7 baseline). The skill teaches multi-source conflict resolution with a concrete authority hierarchy. Set up as lab fork for isolated testing. Delegated experiment to Coach.
+
+## Actions
+1. Analyzed `conflicting-evidence` scenario in detail — understood the 7 checks, identified likely failure points (P4: identifies-conflict, B2: multiple-sources-checked)
+2. Created `agents/.lab/conflict-skill/skills/investigate-conflicts.md` — procedural skill with investigation protocol, trust hierarchy, and anti-patterns
+3. Initially placed in coder/skills/, then moved to lab fork only (evidence-first: test before deploying)
+4. Wrote experiment brief (`agents/bob/workspace/brief-exp210-investigation-skill.md`) with A/B design
+5. Sent to Coach (ReqId: ebde42f2) for execution
+
+## Key Decisions
+- **Lab fork first, not direct deploy**: Following evidence-first principle — skill hasn't been validated yet
+- **Procedural skill, not few-shot examples**: True few-shot examples would risk teaching the specific scenario answer. The procedural protocol is general enough to transfer to other conflict scenarios.
+- **Target: conflicting-evidence**: Highest ROI — needs only 2 more checks to pass (5/7 → 7/7)
+
+## Next Session
+- Check Coach's EXP-210 results
+- If skill works: promote to coder/skills/, design escalation/ambiguity skills
+- If not: try graduated difficulty or accept ceiling
+
 # Session 2026-03-28 06:03 (Judgment Frontier Analysis)
 
 ## Summary
