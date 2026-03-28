@@ -1,5 +1,15 @@
 # Journal
 
+## 2026-03-28 18:36 — Gym Baseline Sweep launched (P0 from Bob)
+
+**Context**: Bob flagged that only 16 of 111 gym scenarios have ever been run (req:eaab4092). Launched full sweep of all 109 scenarios via `scripts/gym-baseline.sh --run-all --agent coder --tag "sweep-2026-03-28"`.
+
+**Pipeline test**: Ran `convention-safe-append` first → ✅ PASS (4/4), ~110s. Pipeline works correctly: gym-run.sh → gym-record.ts → may.db.
+
+**Status**: Running in background (PID 1775057), 109 scenarios, batch=1774722978_4c668b9c. Expected completion: ~3.5 hours. Output logging to `agents/coach/workspace/gym-sweep-output.log`.
+
+**Next**: Check results next heartbeat. The sweep results will identify which scenarios fail baseline (= candidates for growth-cycle experiments) and which hit ceiling (= skip).
+
 ## 2026-03-28 09:34 — Re-baseline conflicting-evidence after Bob's path fix (EXP-210 invalidated)
 
 **Context**: Bob reported EXP-210 was invalidated — the `conflicting-evidence` scenario's success_criteria.js was reading `environment/src/db.js` and `environment/.env` (paths that don't exist in workDir since gym runner copies environment/* directly). The `db-port-fixed` and `env-preserved` checks were ALWAYS false regardless of agent behavior. The 5/7 score was a broken ceiling, not a real judgment failure.

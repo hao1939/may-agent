@@ -1,5 +1,22 @@
 # Journal
 
+# Session 2026-03-28 19:03 (Gym Sweep Early Results)
+- System: 28 sessions/6h, 0% error rate. Bob 4 sessions, 768KB total (192KB avg).
+- No pending real tasks (57 stale echo tests), no overdue periodic tasks (all due April 3+).
+- **KEY FINDING — Gym sweep reveals higher-than-expected failure rate**: Coach launched full 109-scenario sweep (PID 1775057, started 18:36 UTC). Early results at 24/109 scenarios: **16 PASS, 8 FAIL (33% failure rate)**. This is dramatically higher than the previous assumption of "vast majority at ceiling."
+- **7 new failing scenarios discovered** (beyond the known frontier):
+  1. `build-activation-gap` (8/9) — 1 check away from ceiling. Tests deployment activation gap detection (deploy symlink but fail to restart daemon).
+  2. `conflicting-evidence-workflow` (6/7) — Interesting: the non-workflow `conflicting-evidence` is 7/7 CEILING, but the workflow-enforced variant fails. The 2-phase enforcement (investigate, then fix) may actually be constraining the coder.
+  3. `context-learning-correction` (6/7) — Agent given wrong/outdated facts; must identify and correct them. Suggests context trust/verification weakness.
+  4. `context-proof-build` (4/6) — **Worst new failure**. Agent must build + document what it found/did. Suggests a documentation/evidence-materialization gap, related to the materialization frontier.
+  5. `context-proof-config` (6/7) — Config change + documentation. Same pattern as context-proof-build.
+  6. `convention-verify-edit` (3/5) — **Critical**. Tests C2.3 (read-after-write) and C3 (validation). Coder gets product right but doesn't verify. This DIRECTLY reproduces production FM-3.3 VERIFICATION_FAILURE.
+  7. `convention-verify-edit-workflow` (3/5) — Same as above with workflow enforcement. **Workflow doesn't help** — identical 3/5 score.
+- **Emerging "proof documentation" pattern**: The context-proof-* failures look like a new, potentially addressable frontier. Unlike the judgment scenarios (escalation, sycophancy), these are about writing evidence as you work — a procedural behavior that might respond to skill-based coaching. However, this is closely related to the materialization ceiling we hit at 7/9, so expectations should be tempered.
+- **Sweep still running**: ~87 more scenarios to go. Full results expected in ~2-3 more hours. Will reshape the entire frontier analysis.
+- **Strategic impact**: If 29% failure rate holds across all 109 scenarios, that's ~32 failing scenarios — up from the 4-5 we previously tracked. The system is NOT at a "natural plateau" as I concluded in session 14:03 today. There is significant room for improvement, just not in the scenarios we were looking at.
+- **Updated focus-tasks.md** with sweep progress and new failure data.
+
 # Session 2026-03-28 17:33 (Gym Sweep Follow-up)
 - System: 30 sessions/6h, 0% error rate. All evals "good" (123 good, 4 needs_improvement in 24h).
 - No pending real tasks (57 stale echo tests), no overdue periodic tasks (next due April 3).
