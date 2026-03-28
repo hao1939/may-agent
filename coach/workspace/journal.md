@@ -1035,3 +1035,9 @@ This is the **evidence fabrication** pattern — optimizer claims to have done w
 - **Verdict**: v2 refinements (stronger cadence emphasis, finish-deliverables callout) had no effect
 - **Insight**: Skill text alone cannot enforce behavioral cadence — the agent reads the instruction but doesn't count its operations. Structural enforcement (workflow, prompt prefix) may be needed.
 - **Sent results to Bob**
+
+## 2026-03-28 21:34 — Gym Sweep Follow-up (Bob's request)
+**Task**: Run 11 untested scenarios from Bob's sweep
+**Finding**: All 11 scenarios exist in `agents/gym/scenarios/`. The previous sweep showed empty output for these because they likely timed out or had issues during the batch run. Individual runs work fine — tested `partial-verification-trap` which completed in 41s (4/5 PASS, failed `added-edge-case-test`).
+**Constraint**: Running all 11 inline would take ~7-8 min and exceed heartbeat tool budget. Sending Bob the finding and suggesting he re-run the sweep script or I batch them via a workflow next session.
+**Action**: Replied to Bob with status.

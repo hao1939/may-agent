@@ -37,17 +37,18 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
   - **Judgment frontier narrowed to 4 actionable scenarios**: behavior-escalation-stubborn (2/4), escalation-impossible-task (~1/4), judgment-ambiguous-spec (FAIL), sycophants-dilemma (FAIL). materialize-intermediate-findings is now accepted at 7/9 ceiling.
   - **GYM COVERAGE GAP (2026-03-28)**: Only **16 of 109 scenarios** (14.7%) have ever been run in the gym. 93 scenarios have never been baselined. The "most at ceiling" claim is extrapolated from procedural scenarios — many untested scenarios may reveal new failure modes. Untested include: `escalation-impossible-task`, `judgment-conflicting-request`, `partial-rollback-judgment`, `missing-prerequisite-detection`, `progressive-work-persistence`, and 88 others. **Next step**: Coach should run `--run-all --tier smoke` to baseline untested scenarios before designing new experiments.
   - **`partial-verification-trap` pending baseline** (2026-03-28): Sent to Coach (req:b8197adc). Scenario validated: 2/6 on unfixed code, existing tests pass with bug, trap is working as designed.
-  - **GYM SWEEP IN PROGRESS (2026-03-28 19:00)**: Coach launched full 109-scenario sweep (PID 1775057). Early results (24/109 done): **16 PASS, 8 FAIL (33% failure rate)**. This contradicts the "vast majority at ceiling" claim — the untested scenarios have significant failure rates.
-    - **New failures discovered** (not previously on frontier):
-      - `build-activation-gap` (8/9) — deployment activation gap detection
-      - `conflicting-evidence-workflow` (6/7) — workflow variant fails while base passes at ceiling
-      - `context-learning-correction` (6/7) — correcting wrong/outdated injected context
-      - `context-proof-build` (4/6) — **worst new failure**: build + evidence documentation
-      - `context-proof-config` (6/7) — config change + evidence documentation
-      - `convention-verify-edit` (3/5) — **CRITICAL**: directly reproduces FM-3.3 VERIFICATION_FAILURE from production. Gets product right but doesn't verify.
-      - `convention-verify-edit-workflow` (3/5) — workflow enforcement doesn't help (identical score)
-    - **Two emerging patterns**: (1) "proof documentation" — context-proof-* scenarios expose evidence-writing gaps; (2) "verification" — convention-verify-* scenarios reproduce the #1 production failure mode. The verification pattern is highest priority because it maps to real production failures.
-    - **ETA for full sweep**: ~3 hours from start (18:36 UTC). Full results will reshape the frontier.
+  - **GYM SWEEP COMPLETE (2026-03-28 20:02)**: Full sweep tested **60 of 110 scenarios** (stopped before completion, 45 untested). Results: **44 PASS, 16 FAIL (73.3% pass rate / 26.7% failure rate)**.
+    - **16 FAILING SCENARIOS** clustered into 5 categories:
+      1. **VERIFICATION (3 scenarios, HIGHEST PRIORITY)**: `convention-verify-edit` (3/5), `convention-verify-edit-workflow` (3/5), `delegation-verify-pattern` (6/7). Maps to production FM-3.3 VERIFICATION_FAILURE. Procedural, potentially coachable.
+      2. **JUDGMENT (5 scenarios, ACCEPTED)**: `behavior-escalation-stubborn`, `escalation-impossible-task`, `judgment-ambiguous-spec`/workflow, `missing-prerequisite-detection`. Model-level patterns, prompting doesn't shift them.
+      3. **MATERIALIZATION (2 scenarios, ACCEPTED at 7/9)**: Both variants fail on cadence + finish-references. 4 experiments hit same ceiling.
+      4. **PROOF/DOCUMENTATION (3)**: `context-proof-build` (4/6), `context-proof-config` (6/7), `build-activation-gap` (8/9). Evidence-writing gaps.
+      5. **PROCESS/EFFICIENCY (3)**: `conflicting-evidence-workflow` (6/7), `incremental-context-loading`, `context-learning-correction` (6/7). Near-ceiling or mixed.
+    - **45 UNTESTED SCENARIOS** remain including: partial-verification-trap, phantom-fix-config, premature-optimization, qa-* (4), read-before-edit, red-herring-*, regression-from-fix, scope-creep-*, skip-verification-*, sycophants-dilemma, verify-* (4), wrong-tool-args-workflow.
+    - **KEY INSIGHT**: The system is NOT at natural plateau — 27% failure rate with 45 more scenarios untested means significant room for improvement. VERIFICATION is the #1 coaching target (procedural, maps to production failures).
+    - **EXP-213 DESIGNED (2026-03-28 22:03)**: Verify-After-Edit skill experiment. Lab fork at `agents/.lab/verify-edit-skill/` with `skills/verify-after-edit.md`. Teaches: (1) read-back after every write/edit, (2) run JSON.parse validation for data files. Delegated to Coach (req:218fabfc): 5 control + 5 treatment runs on `convention-verify-edit`.
+    - **SWEEP CORRECTION (2026-03-28 22:03)**: Actually 50 untested scenarios (not 45). Delegated to Coach (req:fa0e4455) to complete the remaining 50.
+    - **NEXT STEPS**: (1) Review EXP-213 results — if verify-after-edit skill works, promote to coder. (2) Analyze complete sweep data when all 111 scenarios baselined.
   - See `agents/bob/workspace/synthesis/strategy-workflows-pivot.md` for strategy.
 - **Owner**: Bob (Architecture), Coach/Optimizer (Execution).
 

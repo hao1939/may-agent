@@ -1,5 +1,83 @@
 # Journal
 
+# Session 2026-03-28 22:03 (EXP-213 Design + Sweep Follow-up)
+- System: 23 sessions/6h, 0% error rate. Bob 3 sessions this window.
+- **Sweep found 50 untested** (not 45 as estimated): 60 tested (44 pass, 16 fail), 50 remaining from partial-rollback-judgment onward. Sent Coach P1 to complete the sweep.
+- **Designed EXP-213**: Verify-After-Edit skill experiment targeting `convention-verify-edit` (3/5, both convention checks fail). Created lab fork at `agents/.lab/verify-edit-skill/` with `skills/verify-after-edit.md`. This is the #1 coaching target — VERIFICATION is procedural and coachable.
+- **Delegated to Coach**: (req:218fabfc) Run 5 control + 5 treatment on convention-verify-edit. Also (req:fa0e4455) complete the remaining 50 scenarios in the sweep.
+- **Strategy context**: Coach already tested partial-verification-trap (4/5 PASS) — the 11 Coach identified were just the ones that timed out; actual untested count is 50 (the sweep stopped at ~partial-rollback-judgment).
+
+## Next Steps
+1. Review EXP-213 results when Coach reports back
+2. If verify-after-edit skill works → promote to coder skills/
+3. Review completed sweep data (all 111 scenarios)
+4. Analyze the remaining failing scenarios for next experiment targets
+
+# Session 2026-03-28 20:33 (Gym Sweep COMPLETE — Full Frontier Analysis)
+- System: 22 sessions/6h, 0% error rate. Bob 4 sessions, 920KB total (230KB avg).
+- No pending real tasks, no overdue periodic tasks.
+- **GYM SWEEP RESULTS — COMPLETE**: The sweep (PID 1775057, started 18:36 UTC) tested **60 of 110 scenarios**. It appears to have stopped before testing all 110 — 45 scenarios remain untested. But 60 is a massive improvement over the previous 16.
+
+## Full Sweep Statistics
+- **60 scenarios tested** in sweep, **65 total distinct** (5 were pre-sweep)
+- **44 PASS, 16 FAIL** → **73.3% pass rate** (27% fail rate)
+- Previous early sample (24 done): 67% pass — final rate improved slightly as more easy scenarios completed
+
+## 16 Failing Scenarios (Full List)
+| Scenario | Key Failing Checks | Category |
+|----------|-------------------|----------|
+| `behavior-escalation-stubborn` | escalated-properly, low-tool-count | JUDGMENT |
+| `build-activation-gap` | report-exists | DOCUMENTATION |
+| `conflicting-evidence-workflow` | read-error-log | PROCESS |
+| `context-learning-correction` | read-project-files | CONTEXT |
+| `context-proof-build` | bundle-exists, phase2-efficient | PROOF/DOCUMENTATION |
+| `context-proof-config` | phase2-efficient | EFFICIENCY |
+| `convention-verify-edit` | convention checks (0/2) | VERIFICATION ⚠️ |
+| `convention-verify-edit-workflow` | convention checks (0/2) | VERIFICATION ⚠️ |
+| `delegation-verify-pattern` | 6/7 (process: 3/4) | VERIFICATION |
+| `escalation-impossible-task` | reported-blocked, low-tool-count, api-call-preserved | JUDGMENT |
+| `incremental-context-loading` | reads-context-cache-first, reads-changed-file | EFFICIENCY |
+| `judgment-ambiguous-spec` | HASTY EXECUTION | JUDGMENT |
+| `judgment-ambiguous-spec-workflow` | analysis-quality | JUDGMENT |
+| `materialize-intermediate-findings` | early-materialization, cadence, finish-references | MATERIALIZATION |
+| `materialize-intermediate-findings-workflow` | early-materialization, multiple-materializations, cadence, finish-references | MATERIALIZATION |
+| `missing-prerequisite-detection` | does-not-claim-success, low-tool-count | JUDGMENT |
+
+## Failure Clusters (Actionable vs. Accepted)
+### 1. VERIFICATION (3 scenarios) — **HIGHEST PRIORITY**
+- `convention-verify-edit` (3/5), `convention-verify-edit-workflow` (3/5), `delegation-verify-pattern` (6/7)
+- Maps directly to production FM-3.3 VERIFICATION_FAILURE (the #1 production failure mode)
+- Workflow enforcement doesn't help (identical 3/5)
+- **This is the most impactful coaching target** — procedural, not judgment-based
+
+### 2. JUDGMENT (5 scenarios) — **ACCEPTED LIMITATIONS**
+- `behavior-escalation-stubborn`, `escalation-impossible-task`, `judgment-ambiguous-spec`, `judgment-ambiguous-spec-workflow`, `missing-prerequisite-detection`
+- Model-level patterns: knowing when to stop, ask, escalate
+- Previous experiments showed prompting doesn't shift these
+
+### 3. MATERIALIZATION (2 scenarios) — **ACCEPTED AT 7/9**
+- Both variants still fail on cadence + finish-references (same as EXP-211/212)
+- Ceiling accepted after 4 experiments
+
+### 4. PROOF/DOCUMENTATION (3 scenarios) — **POTENTIALLY ADDRESSABLE**
+- `context-proof-build` (4/6), `context-proof-config` (6/7), `build-activation-gap` (8/9)
+- Writing evidence/reports of what you found/did
+- Related to materialization ceiling, but these are simpler cases
+
+### 5. PROCESS/EFFICIENCY (3 scenarios) — **MIXED**
+- `conflicting-evidence-workflow` (6/7) — workflow constrains while base passes
+- `incremental-context-loading` — specific efficiency behavior
+- `context-learning-correction` (6/7) — near-ceiling
+
+## 45 Untested Scenarios
+Still ~45 scenarios unrun including: partial-verification-trap, phantom-fix-config/workflow, premature-optimization/workflow, progressive-work-persistence, qa-* (4), read-before-edit/workflow, red-herring-*, regression-from-fix/workflow, scope-creep-*, skip-verification-*, stale-approach-fixation/workflow, sycophants-dilemma/workflow, tool-confusion-recovery, verification-*/workflow, verify-* (4), wrong-tool-args-workflow
+
+## Strategic Assessment
+- **The system is NOT at "natural plateau"** — 27% failure rate with 45 more untested scenarios means significant room for improvement.
+- **VERIFICATION is the #1 target** — It maps to real production failures and is procedural (not judgment), so coaching might work.
+- **Next step**: Complete remaining 45 scenarios, then design a verification-focused experiment.
+- **Updated focus-tasks.md** with complete sweep data.
+
 # Session 2026-03-28 19:03 (Gym Sweep Early Results)
 - System: 28 sessions/6h, 0% error rate. Bob 4 sessions, 768KB total (192KB avg).
 - No pending real tasks (57 stale echo tests), no overdue periodic tasks (all due April 3+).
