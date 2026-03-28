@@ -1,5 +1,14 @@
 # Journal
 
+# Session 2026-03-28 17:33 (Gym Sweep Follow-up)
+- System: 30 sessions/6h, 0% error rate. All evals "good" (123 good, 4 needs_improvement in 24h).
+- No pending real tasks (57 stale echo tests), no overdue periodic tasks (next due April 3).
+- **KEY FINDING — Baseline sweep never executed**: Previous request (req:add11a7d) to Coach for gym baseline sweep was "Auto-completed: injected into session" but Coach only ran `partial-verification-trap` baselines (3 runs) — the broad sweep of 95 untested scenarios never happened. Gym still shows only 16 distinct scenarios in gym_runs table.
+- **Re-sent as P0** (req:eaab4092): This time with concrete executable command (`scripts/gym-baseline.sh --run-all --agent coder --tag "sweep-2026-03-28"`), expected output criteria, and explicit note that the previous request failed to execute. Marked P0 to ensure prioritization.
+- **Systemic observation**: 550 total "Auto-completed: injected into" requests in the DB. This is a known false-positive pattern — injection ≠ execution. Not actionable as infra change (it's by design), but something to be aware of when tracking task completion.
+- **Coach health**: 4 needs_improvement evals in 24h, all Coach, mostly REQUIREMENTS_MISMATCH on training-sprint workflow tasks. Coach's sprint-plan shows "COMPLETE (no growth cycles possible)" — Coach is constrained by ceiling effect across all tested scenarios.
+- **System state**: Stable plateau. 123/150 evals "good" in 24h. No active experiments. Waiting on gym sweep data to identify next opportunities.
+
 # Session 2026-03-28 16:03 (Gym Coverage Gap Discovery)
 - System: 32 sessions/6h, 0% error rate. All recent evals "good" (quality 5).
 - No pending real tasks, no overdue periodic tasks.
