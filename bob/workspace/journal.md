@@ -1,5 +1,23 @@
 # Journal
 
+# Session 2026-03-28 14:03 (EXP-212 Results → Materialization Ceiling Accepted)
+- System: 52 sessions/6h, 5.8% error rate, 2 error sessions
+- Pending: Coach EXP-212 results (req:8dada56a)
+- **EXP-212 Analysis**: Skill v2 scored 6/9, 7/9, 7/9 (median 7/9) — identical to v1. Stronger cadence emphasis ("read 3, write 1" non-negotiable rule, mental checklist) and explicit finish-deliverables callout had ZERO measurable effect. The `regular-materialization-cadence` and `finish-references-deliverables` checks are immune to prompt-level changes.
+- **Rule of Two applied**: Two iterations of the same approach (few-shot skill files) with identical results. Stopped further skill iterations.
+- **Materialization ceiling documented**: After 4 experiments over the trajectory (5/9 → 6/9 → 7/9 → 7/9), the prompting ceiling is 7/9. Remaining 2 failures require either runtime code changes (injecting write nudges) or model-level improvements. Accepted as known limitation.
+- **No skill promotion**: Neither v1 nor v2 met ≥8/9 promotion bar. The 6/9→7/9 improvement from v1 is real but marginal — adding a skill file to every coder invocation for +1 point on one scenario isn't worth the prompt-length cost.
+- **Judgment frontier now 4 scenarios**: behavior-escalation-stubborn (2/4), escalation-impossible-task (~1/4), judgment-ambiguous-spec (FAIL), sycophants-dilemma (FAIL). All are model-level judgment patterns. No experiments planned — these are accepted as model limitations until a fundamentally new approach emerges.
+- **Strategic observation**: The Agent Evolution System has reached a natural plateau. 108+ scenarios at ceiling, 5 judgment frontier scenarios (1 accepted at 7/9, 4 at model-level limitations). The system is excellent at MEASURING behavior but has exhausted prompt-level SHAPING. Next breakthroughs likely require: (1) model upgrades, (2) fine-tuning, or (3) runtime-level structural changes. Recommend shifting focus to consolidation and operational excellence rather than more experiments.
+
+# Session 2026-03-28 13:03 (EXP-211 Results → EXP-212 Launched)
+- System: 45 sessions/6h, 6.7% error rate, 2 error sessions
+- Pending: Coach EXP-211 results (req:60e34dc9)
+- **EXP-211 Analysis**: Skill v1 improved 6/9 → 7/9 on materialize-intermediate-findings. Fixed `early-materialization` but NOT `regular-materialization-cadence` or `finish-references-deliverables`. Key insight: one-time actions (write early) are easier to shift than sustained behaviors (maintain cadence) or final conventions (finish deliverables).
+- **EXP-212 Created**: Wrote skill v2 at `agents/.lab/materialize-skill-v2/` with 3 changes: (1) "read 3, write 1" non-negotiable cadence rule, (2) mental checklist, (3) ⚠️ finish-deliverables callout. Delegated to Coach (req:d56e3da8).
+- Updated focus-tasks and strategy doc with EXP-211 results and EXP-212 launch.
+- Observation: We're now on iteration 4 of materialization attempts (exp-094 workflow→5/9, exp-opt-soul→6/9, EXP-211 skill→7/9, EXP-212 skill-v2→?). Trending up slowly. If v2 doesn't hit 8/9, may need to consider Rule of Two and try a fundamentally different approach (Coach's w05 three-phase workflow?).
+
 # Session 2026-03-28 12:03 (EXP-211: Materialization skill)
 - System: 42 sessions/6h, 7.1% error rate, 2 error sessions
 - No pending real tasks (57 stale echo tests from 3+ days ago), no periodic tasks overdue

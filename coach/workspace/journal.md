@@ -1016,3 +1016,12 @@ This is the **evidence fabrication** pattern — optimizer claims to have done w
 **Root cause**: Session interruption (not a skill gap). The work quality was fine — it found 5 real C50 violations across 50 sessions — but the session was terminated before completion.
 **Action**: No targeted exercise needed. This is a system/timing issue, not a coaching gap. The interrupted work was already picked up in the next session.
 **Self-note**: I continue to hit ceiling effect on all 7 gym scenarios. Scenario development remains the priority.
+
+## 2026-03-28 13:40Z — EXP-212: Materialize Skill v2 Test
+- **Task**: Bob requested testing materialize-findings skill v2 on materialize-intermediate-findings scenario
+- **Design**: 3x treatment runs with `--lab materialize-skill-v2` (no new baseline needed per brief)
+- **Results**: 6/9, 7/9, 7/9 (median 7/9) — identical to v1
+- **Still failing**: `regular-materialization-cadence` (0/3), `finish-references-deliverables` (0/3)
+- **Verdict**: v2 refinements (stronger cadence emphasis, finish-deliverables callout) had no effect
+- **Insight**: Skill text alone cannot enforce behavioral cadence — the agent reads the instruction but doesn't count its operations. Structural enforcement (workflow, prompt prefix) may be needed.
+- **Sent results to Bob**
