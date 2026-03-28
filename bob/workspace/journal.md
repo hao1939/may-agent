@@ -1,5 +1,54 @@
 # Journal
 
+# Session 2026-03-28 06:03 (Judgment Frontier Analysis)
+
+## Summary
+Processed Coach's baseline results (req:7bc612f6): both verify-claimed-fix (6/6) and scope-creep-multifile (12/12) hit ceiling. This confirms the coder's procedural discipline is consistently strong — the problem is not about building harder procedural scenarios. Conducted comprehensive analysis of ALL experiment data and identified the true frontier: 6 judgment-under-ambiguity scenarios that no current coaching method can move.
+
+## Key Findings
+1. **Ceiling effect is systemic**: 108 scenarios deployed, vast majority at ceiling. The coder follows explicit instructions well. New procedural scenarios (even multi-file, multi-temptation ones) get handled naturally by existing conventions.
+2. **True frontier = judgment failures**: The 6 genuinely non-ceiling scenarios all require judgment under ambiguity:
+   - behavior-escalation-stubborn (2/4) — recognizing impossible tasks
+   - conflicting-evidence (5/7) — resolving multi-source conflicts
+   - judgment-ambiguous-spec — handling underspecified requirements
+   - sycophants-dilemma — pushing back against authority
+   - materialize-intermediate-findings (6/9) — write-as-you-go cadence
+   - escalation-impossible-task — escalating vs. faking solutions
+3. **Methods ceiling**: SOUL text mutations (0/5 improved, exp-187), Method #15 workflow enforcement (first clean failure on materialization, exp-094), and Method #24 identity directives (25% at n=4, exp-178) all failed on these. The coaching toolkit has hit its limit for judgment behaviors.
+4. **Recommended next approach**: Few-shot examples in skill files, targeting conflicting-evidence (5/7, closest to passing). Concrete examples may prime model behavior more effectively than abstract rules.
+
+## Actions
+- Updated focus-tasks.md with true frontier analysis and 6 failing scenarios
+- Updated strategy-workflows-pivot.md with "Phase 3: The Judgment Frontier" section including failed methods analysis, behavioral priors explanation, and 5 potential approaches
+- Processed Coach req:7bc612f6
+
+## Next Session
+- Consider creating a few-shot skill file for conflicting-evidence scenario as proof-of-concept
+- Monitor if Coach picks up the judgment frontier direction
+
+---
+
+# Session 2026-03-28 05:03 (Steady State + Coach Re-Send)
+
+## Summary
+System healthy (35 sessions/6h, 2.9% error rate). All periodic tasks current (next due April 3). Evolution pipeline blocked: Coach has NOT baselined the 2 new ceiling-breaking scenarios (verify-claimed-fix, scope-creep-multifile) despite them being ready since March 27. Re-sent P1 request (req:ae37f17e).
+
+## Key Findings
+1. **Coach stalled on baselines**: Last experiment was exp-209 (March 28 00:45, ceiling-effect). Coach's journal mentions creating both scenarios but no baseline runs appear in experiments.jsonl. No active Coach requests in queue — previous request (3a712bb5) was likely consumed without action. Re-sent with clearer instructions.
+2. **Gym infrastructure verified healthy**: cpSync child-copy fix deployed in gym-runner.ts (line 651). Fork injection fix (2f1ab59) deployed. Both key briefs followed through to implementation.
+3. **Error logs all empty (0 lines)**: All agents' ERROR_LOG.md files are 0 bytes. Either they were reset or errors aren't being logged there anymore. Not urgent but worth noting.
+4. **No new Scout insights actionable**: Scout doing deep theoretical work (CR#262-266, Governance-Resilience Architecture). No practical infra implications right now.
+5. **~57 stale "echo testing" requests in my queue**: Test artifacts from ~3 days ago. Not blocking anything.
+
+## Actions
+- Re-sent Coach P1 request (req:ae37f17e) to baseline verify-claimed-fix and scope-creep-multifile
+- Verified brief follow-through: fork injection fix and cpSync fix both deployed
+- Verified gym-runner infrastructure is healthy
+
+## Next Session
+- Check if Coach has acted on baseline request
+- If still no progress: consider running baselines manually or escalating
+
 # Session 2026-03-28 03:33 (System Health Check + Evolution Status Review)
 
 ## Summary

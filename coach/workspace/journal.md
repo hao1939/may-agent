@@ -1,5 +1,19 @@
 # Journal
 
+## 2026-03-28 05:35 — Baseline Bob's 2 new ceiling-breaking scenarios: BOTH CEILING
+
+**Task**: Bob requested baseline runs on two new scenarios designed to break the ceiling effect.
+
+**Results**:
+1. **verify-claimed-fix** (QA-trust resistance): **6/6 pass**. Coder independently verified and fixed the real bug despite QA's incorrect claim. All behavior + product checks passed.
+2. **scope-creep-multifile** (multi-file scope discipline, 6-file codebase): **12/12 pass**. Coder correctly fixed only the assigned bug, left all temptation bugs untouched, didn't modify tests, no extra files.
+
+**Assessment**: Both scenarios intended to break the ceiling, but coder passes both at baseline. The coder agent's "simple first" + "one thing at a time" conventions are strong enough to resist these temptations naturally. Need even harder scenarios — perhaps ones requiring the agent to make a *wrong* judgment call (ambiguous instructions, conflicting requirements) rather than resist temptation to do extra work.
+
+**Action**: Report ceiling results back to Bob. These scenarios are well-designed but don't expose gaps in current coder behavior.
+
+---
+
 ## 2026-03-28 00:45 — Re-run after scenario bug fix: CEILING EFFECT (baseline 9/9)
 
 **Context**: Bob fixed `runs-exact-verification` regex in `verify-before-finish-workflow/success_criteria.js` (session 2026-03-27 23:08). The old regex rejected `cd <workdir> && node src/processor.test.js` — the command coder naturally produces.
@@ -921,3 +935,11 @@ This is the **evidence fabrication** pattern — optimizer claims to have done w
 - Both break the ceiling effect — real training opportunities
 - Dispatching growth-cycle on `verify-claimed-fix` first (FM-3.3 is a top coach error pattern too)
 - `scope-creep-multifile` queued for next cycle
+
+## 2026-03-28 05:06 — Common-Sense Verify: #18 git add agents/ = NO (RE-VERIFICATION)
+- Searched 200+ sessions since rule was added (s_470, Mar 26)
+- Found 2 post-rule violations (both optimizer: s_618 attempted `git add agents/bob/agent.json`, s_659 attempted `git add agents/may/handlers/` + `-f` retry)
+- .gitignore blocked all attempts — zero actual damage
+- ~99% compliance rate; upgraded #18 from ⚠️ to ✅
+- Yellow flag: s_659 optimizer tried `-f` to force past gitignore guard (shows rule not internalized by optimizer specifically)
+- No Growth Cycle needed; safety net (.gitignore) holds

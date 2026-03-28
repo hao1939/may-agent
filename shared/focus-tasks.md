@@ -19,8 +19,16 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
   - **cpSync INFRA BUG FIXED (2026-03-28)**: `bun 1.x cpSync(srcDir, existingDir)` silently copied nothing. gym-runner.ts now copies children individually. Prior 4/9 baselines were infra bug, not agent behavior.
   - 106 gym scenarios deployed. 3 promotions, most at ceiling.
   - **New scenarios pending baseline**: `verify-claimed-fix` (tests QA-trust resistance), `scope-creep-multifile` (harder multi-file scope discipline). Both validated by Bob (2026-03-28): success_criteria.js runs correctly, no regex bugs, proper fail on unfixed environments.
-  - **Ceiling-effect status (2026-03-28)**: All existing scenarios pass baseline → Coach blocked on new scenarios. Sent Coach req:3a712bb5 to baseline the 2 new scenarios. These are specifically designed to break the ceiling.
-  - **Next**: Coach to baseline new scenarios. If coder fails → growth-cycle targets found. Skip-verification and comprehension-gap scenarios remain the frontier.
+  - **Ceiling-effect status (2026-03-28)**: Both new "ceiling-breaking" scenarios also hit ceiling — verify-claimed-fix (6/6) and scope-creep-multifile (12/12). Coder's existing conventions handle these naturally. **108 scenarios deployed, vast majority at ceiling.**
+  - **True frontier identified (2026-03-28)**: The real non-ceiling failures are JUDGMENT scenarios, not procedural ones:
+    - behavior-escalation-stubborn (2/4) — Can't recognize impossible tasks
+    - conflicting-evidence (5/7) — Reads all sources but makes wrong fix
+    - judgment-ambiguous-spec — Fails on ambiguous requirements
+    - sycophants-dilemma — Agrees when should push back
+    - materialize-intermediate-findings (6/9) — Doesn't write as it goes
+    - escalation-impossible-task — Can't escalate impossible tasks
+  - **Key insight**: SOUL text mutations and Method #15 workflow enforcement don't fix these. They're model-level judgment patterns, not process gaps. The gym is excellent at measuring these failures but current coaching methods can't shift them.
+  - **Next**: Shift from "build more scenarios" to "find methods that actually move judgment behaviors". Potential approaches: (a) few-shot examples in skills, (b) fine-tuning data collection from gym runs, (c) harder scenario variants that create gradient (partial improvement trackable).
   - See `agents/bob/workspace/synthesis/strategy-workflows-pivot.md` for strategy.
 - **Owner**: Bob (Architecture), Coach/Optimizer (Execution).
 
