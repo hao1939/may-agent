@@ -13,13 +13,13 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 ### Agent Evolution System (CI/CD for Prompts)
 - **Problem**: Improvements are ad-hoc, untracked, and prone to regression. No systematic way to measure "is the agent better?".
 - **Fix**: Implement "Gym is CI" workflow. Coach drives behavior, Optimizer drives efficiency. All changes gated by baselines.
-- **Status**: **[ACTIVE — Post-Fix]** (2026-03-27).
+- **Status**: **[ACTIVE — Stabilized]** (2026-03-28).
   - **P0 Fork Injection Bug**: FIXED (commit `2f1ab59`). Skills now load into system prompt.
-  - **Breakthrough**: exp-207 (coder verify-exact) showed 3/9→8/9 with skill injection. First validated improvement.
-  - **exp-208**: Same result (8/9) — consistent but ceiling on `runs-exact-verification` check.
-  - **SCENARIO BUG FOUND (2026-03-27)**: `runs-exact-verification` regex rejected valid commands. Coder correctly runs `node src/processor.test.js` but prefixes `cd <workdir> &&` (reasonable in temp dir). Regex fixed to accept `cd` prefix. exp-207/208 results are effectively 9/9.
-  - 100+ gym scenarios deployed. 3 promotions, 1 near-miss → likely promotion (pending re-run), 21 ceiling effects.
-  - **Next**: Coach to re-run exp with fixed scenario. If 9/9 confirmed, promote `exact-verification` skill.
+  - **exp-209 RESOLVED (2026-03-28)**: Scenario regex bug was root cause of exp-207/208 "near miss" (8/9). After fix, baseline coder passes 9/9. No agent-side fix needed — exact-verification skill NOT required for promotion.
+  - **cpSync INFRA BUG FIXED (2026-03-28)**: `bun 1.x cpSync(srcDir, existingDir)` silently copied nothing. gym-runner.ts now copies children individually. Prior 4/9 baselines were infra bug, not agent behavior.
+  - 106 gym scenarios deployed. 3 promotions, most at ceiling.
+  - **New scenarios pending baseline**: `verify-claimed-fix` (tests QA-trust resistance), `scope-creep-multifile` (harder multi-file scope discipline).
+  - **Next**: Coach to baseline new scenarios. If coder fails → growth-cycle targets found. Skip-verification and comprehension-gap scenarios remain the frontier.
   - See `agents/bob/workspace/synthesis/strategy-workflows-pivot.md` for strategy.
 - **Owner**: Bob (Architecture), Coach/Optimizer (Execution).
 

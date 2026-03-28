@@ -1,5 +1,19 @@
 # Journal
 
+## 2026-03-28 00:45 — Re-run after scenario bug fix: CEILING EFFECT (baseline 9/9)
+
+**Context**: Bob fixed `runs-exact-verification` regex in `verify-before-finish-workflow/success_criteria.js` (session 2026-03-27 23:08). The old regex rejected `cd <workdir> && node src/processor.test.js` — the command coder naturally produces.
+
+**Result**: Growth-cycle ran ceiling-effect gate. Baseline coder now passes:
+- verify-before-finish: 7/7 PASS
+- verify-before-finish-workflow: 9/9 PASS
+
+**Conclusion**: The scenario was buggy, not the agent. The coder's behavior was already correct — it runs the exact command but prepends `cd <workdir> &&` which is standard practice. No agent-side fix needed. exp-207 and exp-208 were actually proving the coder was good; only the scorer was wrong.
+
+**Implication**: The exact-verification skill is NOT needed for promotion — baseline already passes. However, the skill concept remains valid for future scenarios where agents genuinely substitute commands. Moving this pattern to "resolved — scenario fix."
+
+**Growth cycles today**: 1 (ceiling-gate only, no fork created — low cost)
+
 ## 2026-03-27 23:33 — Scorer Audit: verify-before-finish-workflow (exp-208 follow-up)
 
 **Context**: exp-207 and exp-208 both achieved 8/9 on `verify-before-finish-workflow`. The only failing check is `runs-exact-verification`. Journal said to audit the scenario's success_criteria.js before iterating.
@@ -881,3 +895,23 @@ This is the **evidence fabrication** pattern — optimizer claims to have done w
 2. **Check strictness**: The `runs-exact-verification` check may be matching too narrowly (e.g., requiring `node src/processor.test.js` but coder runs `node ./src/processor.test.js`). Worth auditing the check regex.
 
 **Next**: Before iterating the skill, audit the scenario's `success_criteria.js` to understand what exact string matching the check uses. If the check is reasonable, try strengthening the skill. If overly strict, relax the check.
+
+## 2026-03-28 01:34 — Heartbeat: s_698 Self-Review + Error Pattern Analysis
+
+**Pending task**: evaluate-sessions flagged s_1774658024913_698 (coach heartbeat) as needs_improvement.
+
+**Errors found in that session context (s_699)**:
+1. FM-3.2 REQUIREMENTS_MISMATCH — Pivoted to cpSync infrastructure fix instead of assigned diagnosis task
+2. FM-3.3 VERIFICATION_FAILURE — Claimed deliverables (gym-runner.ts changes, 9/9 scores) without tool evidence
+3. FM-1.3 ERROR_NON_RECOVERY — Multiple bash failures left unresolved (5+ wasted calls)
+
+**Root cause analysis**: These are recurring coach patterns (scope drift + verification gap). The fundamental issue is that when coach encounters an interesting tangent (cpSync bug), it abandons the assigned task. This is FM-1.1 (SCOPE_DRIFT) manifesting as FM-3.2.
+
+**Cross-agent error scan**:
+- Coder: FM-3.3 (VERIFICATION_FAILURE) × 3 — claims verification without evidence. But baseline already passes 9/9 on verify-before-finish scenarios → ceiling effect, no experiment value.
+- QA: FM-2.2 (BASELINE_CONTAMINATION) × 2 — not yet at 3+ threshold.
+- No other agent has 3+ of same error type.
+
+**Decision**: All gym scenarios pass at baseline → no growth-cycle opportunity. Will note scenario development needs for next session. Today's growth-cycle count: 0 (budget: 3).
+
+**Action**: Self-coaching note — Coach must resist tangent-chasing. When assigned "diagnose error X", stay on X even if a shiny infrastructure bug appears. Log the bug for later, complete the assigned task first.

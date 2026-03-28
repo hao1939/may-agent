@@ -1,5 +1,46 @@
 # Journal
 
+# Session 2026-03-28 01:33 (Steady State Check)
+
+## Summary
+System healthy (36 sessions/6h, 0% error rate). No pending urgent tasks, no overdue periodic tasks (all next due April 3+). Confirmed evolution pipeline is flowing: Coach ran exp-209 confirming ceiling effect, 53 of 108 scenarios have been used in experiments. Identified gym scenario distribution gap: 94/108 scenarios target coder, only 6 target other agents (4 QA, 1 optimizer, 1 tech-lead). This is the next frontier for broadening the evolution system but is Coach's domain to action.
+
+## Key Findings
+1. **Gym scenario utilization**: 53/108 scenarios have been used in at least one experiment. 55 scenarios created but never baselined — consolidation opportunity for Coach.
+2. **Agent diversity gap**: 94/108 scenarios are coder-only. Coach noted this ("ALL 10 gym scenarios are coder-only" — actually 94). Multi-agent scenarios are the next frontier.
+3. **Pipeline health**: Last 7 experiment decisions include: 2 discards, 1 iterate, 1 resolved (our scenario fix), 1 skipped (ceiling), 1 ceiling-too-high. Pipeline is making good automated decisions.
+4. **Stale request queue**: 57 old test "echo hello" requests still in CREATED status (ages 3800-4100min). Not causing harm but adds noise. Would benefit from a DB cleanup.
+5. **Prompt caching**: Still blocked on Hao. No change.
+
+## State Assessment
+- **Evolution system**: Stable. Coach iterating on frontier scenarios. New scenarios (verify-claimed-fix, scope-creep-multifile) await baseline.
+- **No action needed this session**: All focus tasks either stabilized or blocked on external actors (Hao for caching, Coach for new baselines).
+- **Standing down**: Healthy idle state. Next meaningful work will emerge from Coach's experiment results or new Hao directives.
+
+# Session 2026-03-28 01:03 (Evolution System Status Update)
+
+## Summary
+System healthy (32 sessions/6h, 0% error rate). Key finding: Coach ran exp-209 confirming scenario regex fix resolved the 8/9 ceiling — baseline coder now 9/9. Additionally, a cpSync infra bug was found and fixed (bun 1.x silently failed to copy gym environments). Fixed `verify-claimed-fix` scenario which was missing its `scenario.json`. Updated focus-tasks and strategy doc to reflect stabilized evolution system.
+
+## Key Actions
+1. **Found exp-209 result**: Coach confirmed baseline coder passes 9/9 on verify-before-finish-workflow after scenario regex fix. No agent-side skill needed. exp-207/208 "near miss" was entirely a scorer bug.
+2. **Found cpSync infra bug fix**: `gym-runner.ts` was updated to copy environment children individually because `bun 1.x cpSync(src, existingDst)` silently copies nothing. Prior 4/9 baselines were infra-caused, not agent behavior.
+3. **Fixed `verify-claimed-fix` scenario**: Added missing `scenario.json` so it can be discovered and run through the gym. 106 total scenarios now.
+4. **Updated focus-tasks.md**: Status changed from "Post-Fix" to "Stabilized". Documented exp-209 resolution, cpSync fix, and new frontier.
+5. **Updated strategy doc**: Reflects stabilized state and comprehension-gap frontier.
+
+## Evolution System Analysis
+- **Method #15 (workflow enforcement)**: 93%+ on ordering-type judgment gaps. Proven generalization across agents.
+- **Frontier**: Comprehension gaps — where agent fails not because it does things in wrong order, but because it lacks domain knowledge (e.g., knowing which config source is authoritative, or knowing that cache files are safe to delete). Method #15 can't fix these.
+- **Natural improvement**: 10+ scenarios went from FAIL to ceiling with zero coaching, just from accumulated SOUL improvements and promoted workflows. This suggests SOUL/workflow changes have broad positive spillover.
+- **New scenarios**: `verify-claimed-fix` and `scope-creep-multifile` designed to find non-ceiling failures. Coach needs to baseline these.
+
+## State Assessment
+- **Evolution system**: Stabilized. Infrastructure reliable. Coach iterating on frontier scenarios.
+- **Prompt caching**: Still blocked on Hao.
+- **Periodic tasks**: All current (next due April 3+).
+- **Common sense**: No unbuilt mechanisms needed.
+
 # Session 2026-03-27 23:33 (Pipeline Follow-Through)
 
 ## Summary

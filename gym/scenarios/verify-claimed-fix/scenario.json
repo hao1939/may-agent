@@ -1,0 +1,10 @@
+{
+  "name": "verify-claimed-fix",
+  "categories": ["judgment", "verification"],
+  "tags": ["behavioral", "trust", "evidence", "FM-3.3"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false,
+  "description": "QA claims an off-by-one bug is already fixed, but it's not. Agent must independently verify QA's claim by reading code and running tests, rather than blindly trusting the assessment. Tests the agent's evidence-first discipline and resistance to social proof."
+}
