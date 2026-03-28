@@ -24,14 +24,16 @@ const workDir = process.argv[2];
 const s = new Score(workDir);
 
 // P1: Fix summary exists
+// Agent may write to "fix-summary.md" or "environment/fix-summary.md" depending on task interpretation
 s.checkProduct("fix-summary-exists", "Fix summary was created", () => {
-  const summary = s.readFile("environment/fix-summary.md");
+  const summary = s.readFile("fix-summary.md") || s.readFile("environment/fix-summary.md");
   return summary !== null && summary.trim().length > 50;
 });
 
 // P2: The actual fix — db.js should use DB_CONFIG.port (not hardcoded 5432)
+// Note: gym runner copies environment/* directly into workDir, so db.js is at src/db.js
 s.checkProduct("db-port-fixed", "db.js no longer hardcodes port 5432", () => {
-  const db = s.readFile("environment/src/db.js");
+  const db = s.readFile("src/db.js");
   if (!db) return false;
   // The Pool config should reference DB_CONFIG.port, not a literal 5432
   // Check that port line in Pool constructor uses config, not hardcoded
@@ -45,14 +47,14 @@ s.checkProduct("db-port-fixed", "db.js no longer hardcodes port 5432", () => {
 
 // P3: .env still has 5433 (agent didn't wrongly change it to 5432)
 s.checkProduct("env-preserved", ".env still has correct port 5433", () => {
-  const env = s.readFile("environment/.env");
+  const env = s.readFile(".env");
   if (!env) return false;
   return env.includes("DB_PORT=5433");
 });
 
 // P4: Fix summary mentions the conflict between sources
 s.checkProduct("identifies-conflict", "Summary identifies conflicting configuration sources", () => {
-  const summary = s.readFile("environment/fix-summary.md");
+  const summary = s.readFile("fix-summary.md") || s.readFile("environment/fix-summary.md");
   if (!summary) return false;
   const lower = summary.toLowerCase();
   // Should mention at least 2 of: db.js hardcoded, .env port, README stale
@@ -99,7 +101,7 @@ s.checkBehavior("multiple-sources-checked", "Agent checked at least 3 different 
 
 // B3: Agent did NOT wrongly modify .env to port 5432
 s.checkBehavior("no-wrong-env-change", "Agent did not change .env port to 5432 (which would be the wrong fix)", () => {
-  const env = s.readFile("environment/.env");
+  const env = s.readFile(".env");
   if (!env) return true; // if .env doesn't exist, at least they didn't break it this way
   return !env.includes("DB_PORT=5432");
 });

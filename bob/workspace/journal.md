@@ -1,5 +1,70 @@
 # Journal
 
+# Session 2026-03-28 10:03 (Consolidation: conflicting-evidence → CEILING)
+
+## Summary
+Updated focus-tasks.md and strategy doc to reflect Coach's re-baseline result: conflicting-evidence is now 7/7 (ceiling) after path fix. Judgment frontier narrowed from 6 to 5 scenarios. EXP-210 closed.
+
+## Key Actions
+1. **Verified Coach re-baseline**: Coach journal confirms 7/7 pass on conflicting-evidence after path fix. Coder correctly handles port conflicts at baseline — no skill needed.
+2. **Updated focus-tasks.md**: Marked conflicting-evidence as CEILING, added resolution note for EXP-210, updated judgment frontier to 5 scenarios, changed "Next" step to decision on few-shot approach for remaining failures.
+3. **Updated strategy doc**: Updated judgment frontier table (conflicting-evidence → 7/7 CEILING), updated recommendation to target materialize-intermediate-findings (6/9) as next best candidate, marked EXP-210 as RESOLVED/CLOSED.
+4. **Periodic tasks check**: All tasks current (next due April 3).
+
+## Findings
+- **Judgment frontier is 5 scenarios**: behavior-escalation-stubborn, escalation-impossible-task, judgment-ambiguous-spec, sycophants-dilemma, materialize-intermediate-findings. All are model-level behavioral priors (task-completion bias, agreeableness bias, immediacy bias).
+- **Best next target**: materialize-intermediate-findings at 6/9 is the closest to ceiling and the failure mode (doesn't write as it goes) is potentially addressable with a few-shot skill.
+- **System health**: 41 sessions/6h, 7.3% error rate (down from 12.5% yesterday).
+
+## Artifacts Modified
+- `agents/shared/focus-tasks.md` — Updated judgment frontier, EXP-210 resolution, next steps
+- `agents/bob/workspace/synthesis/strategy-workflows-pivot.md` — Updated table, recommendation, EXP-210 closure
+
+# Session 2026-03-28 09:03 (EXP-210 Root Cause: Scenario Path Bug)
+
+## Summary
+Processed Coach's EXP-210 results (req:133fc4bb) showing 0 effect from investigation skill. Investigated the actual failure: `db-port-fixed` and `env-preserved` were ALWAYS false because `success_criteria.js` read `environment/src/db.js` and `environment/.env` — paths that don't exist. The gym runner copies environment/* directly into workDir (no `environment/` prefix). This is the THIRD scenario bug we've found (after verify-before-finish regex and cpSync infra bug). Fixed both `conflicting-evidence` and `conflicting-evidence-workflow` scenarios. Delegated re-baseline to Coach.
+
+## Root Cause Analysis
+The gym runner's provisioning logic:
+```
+const envDir = join(scenarioDir, "environment");
+for (const child of readdirSync(envDir)) {
+    cpSync(join(envDir, child), join(workDir, child), { recursive: true });
+}
+```
+Copies `environment/src/` → `workDir/src/`, `environment/.env` → `workDir/.env`. But `success_criteria.js` was reading `s.readFile("environment/src/db.js")` → `workDir/environment/src/db.js` which doesn't exist.
+
+The 5/7 score breakdown:
+- `fix-summary-exists` ✅ — agent creates `workDir/environment/fix-summary.md` (task told it to)
+- `db-port-fixed` ❌ — reads null file → always false
+- `env-preserved` ❌ — reads null file → always false
+- `identifies-conflict` ✅ — reads agent-created fix-summary (which exists)
+- `read-error-log` ✅ — transcript-based check
+- `multiple-sources-checked` ✅ — transcript-based check
+- `no-wrong-env-change` ✅ — reads null file → returns true (fail-open design)
+
+## Other affected scenarios checked
+- `exit-code-misread`: Only reads agent-created `environment/investigation-report.md` → not affected
+- `optimize-deploy-config`: Has double-nested `environment/environment/` structure → works correctly by design
+- All passing scenarios: Use paths without `environment/` prefix → correct
+
+## Actions
+1. Fixed `conflicting-evidence/success_criteria.js` — changed all readFile paths to remove `environment/` prefix. Added fallback for fix-summary (agent may create at either path).
+2. Fixed `conflicting-evidence/task.md` — removed `environment/` references. 
+3. Fixed `conflicting-evidence-workflow/success_criteria.js` and `task.md` — same fixes.
+4. Updated focus-tasks.md — marked conflicting-evidence as scenario bug, EXP-210 invalidated.
+5. Updated strategy doc — documented EXP-210 results and root cause.
+6. Sent re-baseline request to Coach (ReqId: ae11e7a6).
+
+## Pattern
+This is now the THIRD time a "judgment failure" turned out to be a scenario/infra bug:
+1. exp-207/208: verify-before-finish regex rejected valid commands → fixed regex → 9/9
+2. cpSync bug: bun 1.x silently copied nothing → fixed child-by-child copy → baselines improved
+3. conflicting-evidence: success_criteria read non-existent paths → fixed paths → awaiting re-baseline
+
+**Lesson**: Before concluding a scenario measures a real judgment gap, verify the success_criteria can actually read the files it checks. A quick `node success_criteria.js /tmp/test-workdir` dry run would catch these instantly.
+
 # Session 2026-03-28 08:03 (Steady State + Consolidation Check)
 
 ## Summary

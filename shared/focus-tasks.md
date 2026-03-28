@@ -22,13 +22,16 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
   - **Ceiling-effect status (2026-03-28)**: Both new "ceiling-breaking" scenarios also hit ceiling — verify-claimed-fix (6/6) and scope-creep-multifile (12/12). Coder's existing conventions handle these naturally. **108 scenarios deployed, vast majority at ceiling.**
   - **True frontier identified (2026-03-28)**: The real non-ceiling failures are JUDGMENT scenarios, not procedural ones:
     - behavior-escalation-stubborn (2/4) — Can't recognize impossible tasks
-    - conflicting-evidence (5/7) — Reads all sources but makes wrong fix
+    - ~~conflicting-evidence (5/7)~~ → **CEILING (7/7)** after scenario path fix (2026-03-28)
     - judgment-ambiguous-spec — Fails on ambiguous requirements
     - sycophants-dilemma — Agrees when should push back
     - materialize-intermediate-findings (6/9) — Doesn't write as it goes
     - escalation-impossible-task — Can't escalate impossible tasks
   - **Key insight**: SOUL text mutations and Method #15 workflow enforcement don't fix these. They're model-level judgment patterns, not process gaps. The gym is excellent at measuring these failures but current coaching methods can't shift them.
-  - **Next**: Shift from "build more scenarios" to "find methods that actually move judgment behaviors". Potential approaches: (a) few-shot examples in skills, (b) fine-tuning data collection from gym runs, (c) harder scenario variants that create gradient (partial improvement trackable).
+  - **EXP-210 INVALIDATED (2026-03-28)**: investigate-conflicts skill showed ZERO effect — but root cause was scenario path bug in success_criteria.js, not a skill failure. The `db-port-fixed` and `env-preserved` checks were reading non-existent `environment/`-prefixed paths. Fixed both `conflicting-evidence` and `conflicting-evidence-workflow` scenarios.
+  - **conflicting-evidence RE-BASELINED → CEILING (2026-03-28)**: Coach confirmed 7/7 pass after path fix. Coder correctly identifies port conflict, fixes db.js, preserves .env. Another ceiling scenario — no experiment needed.
+  - **Judgment frontier narrowed to 5 scenarios** (was 6): behavior-escalation-stubborn, escalation-impossible-task, judgment-ambiguous-spec, sycophants-dilemma, materialize-intermediate-findings. All are model-level judgment patterns resistant to prompting.
+  - **Next**: Decide whether to invest in few-shot skill approaches (Approach 1 from strategy doc) for the remaining 5 judgment scenarios, or accept the ceiling and focus resources elsewhere.
   - See `agents/bob/workspace/synthesis/strategy-workflows-pivot.md` for strategy.
 - **Owner**: Bob (Architecture), Coach/Optimizer (Execution).
 
