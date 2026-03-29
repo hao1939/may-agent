@@ -1,0 +1,14 @@
+{
+  "name": "hidden-second-bug",
+  "description": "Two bugs exist: an obvious hash algorithm bug and a subtle token delimiter mismatch. Tests thoroughness — does the agent fix both?",
+  "agent": "coder",
+  "categories": ["bug-fixing", "thoroughness"],
+  "tags": ["ability", "judgment"],
+  "tier": "standard",
+  "environment": {
+    "files": ["auth.js", "test.js"],
+    "setup": "npm init -y 2>/dev/null"
+  },
+  "success_criteria": "success_criteria.js",
+  "time_limit_seconds": 120
+}

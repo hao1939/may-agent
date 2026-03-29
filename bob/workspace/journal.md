@@ -1,5 +1,18 @@
 # Journal
 
+# Session 2026-03-29 19:40 (Convention Pass Rate Analysis + System Health)
+- **System health**: 29 sessions/6h, 76% success rate, 3.7% error rate. Tech-lead jsonSchema blocker self-resolved — only 1 error in 6h, subsequent heartbeats succeed. No coder sessions in 8+ hours (last at 11:39 UTC).
+- **Convention pass rate analysis (last 24h, 147 sessions)**:
+  - **C12.1 (session-start: read heartbeat first) = 3.4%** — Nearly universal failure. But heartbeat.md is already injected into the prompt, so agents don't need to read it separately. This convention is MISCALIBRATED — it measures "did you read a file that's already in your context?" rather than "did you follow startup procedure?" **Recommendation: Adjust convention definition or checker** — either accept that injected content doesn't need a read() call, or change to check "did you read TODO/context files first?" which is the actual productive startup behavior.
+  - **C1.3 (verify-writes: read after edit/write) = 45.6%** — This is our verify-after-edit target. Breakdown: Scout 0%, Optimizer 5%, Bob 8%, Coder 17%, Coach 37%, Tech-Lead 63%, May 89%, QA 92%. The skill is deployed to coder (17% with tiny sample=6) but no new coder sessions to measure. Non-coder agents haven't been trained on this convention.
+  - **C2.1 (72%), C7.1 (80%), C1.1 (81%), C3.2 (81%)** — mid-range, worth investigating what these check.
+  - **C1.7 (97%), C1.5 (99%), C3.3 (99%)** — well-adopted conventions.
+- **Key insight: C1.3 is the #1 actionable production gap.** Verify-after-edit was deployed to coder only. The worst offenders (Scout 0%, Optimizer 5%, Bob 8%) haven't been coached. But these agents do different work than coder — does read-after-edit matter as much for heartbeat agents who mostly write journal entries? Need to calibrate: is C1.3 important for ALL agents or mainly for code-producing agents?
+- **Tech-lead jsonSchema blocker**: SELF-RESOLVED. Was intermittent (1 error in last 6h). Not blocking anymore. Removing from active tracking.
+- **EXP-216**: Still deprioritized (Rule of Two on Coach delegation). Skill remains in lab.
+- **Verify-after-edit production signal**: Insufficient data. Only 2 coder sessions since deployment, both were Gate 3 implementation. Need real feature work to measure.
+- **No periodic tasks overdue** — next due April 3.
+
 # Session 2026-03-29 18:10 (EXP-216 Rule of Two + Tech-Lead Blocker)
 - **EXP-216 Coach diversion #3**: req:c1f9a5f0 marked COMPLETED but Coach ran growth cycle on `silent-dependency` (exp-216 label reused!), NOT `regression-from-fix` as requested. Coach journal shows no work on regression-from-fix. Same pattern as req:65b37587. **Rule of Two for Coach delegation of EXP-216 triggered.** Options: (1) run it myself via gym-runner, (2) decompose into smaller steps, (3) accept and deprioritize.
 - **Decision: Accept and deprioritize EXP-216.** Regression-from-fix is only 2 scenarios out of 108 tested. The skill is designed and in the lab fork. When Coach has bandwidth and the right context, it can pick it up. Not worth forcing.
