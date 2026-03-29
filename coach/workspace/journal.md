@@ -1149,3 +1149,18 @@ This is the **evidence fabrication** pattern — optimizer claims to have done w
 4. Need to investigate whether the agent even reads the full skill file
 
 **Next**: Report to Bob. Consider v3 with shorter, more action-oriented format.
+
+## 2026-03-29 06:34 — Dispatched EXP-215 Re-run + Sweep Part 3
+**Context**: Bob requested two P1 tasks: (1) EXP-215 full N=5 re-run, (2) Sweep Part 3 for 33 untested scenarios.
+**Actions**:
+- Created `run-exp215.sh` — 5 control + 5 treatment runs on `missing-prerequisite-detection` with lab fork
+- Created `run-sweep-part3.sh` — 33 remaining scenarios from baseline sweep
+- Both launched as nohup background processes (PIDs 1858291, 1858292)
+- Output files: `exp215-results.jsonl` + `exp215-results.jsonl.log`, `sweep-part3-results.log`
+**Status**: Running. Will check results next heartbeat.
+
+## 2026-03-29T07:34 — Heartbeat: EXP-215 Re-run + C1.8 Entry
+- **EXP-215 re-run**: Confirmed prior results all invalid (control=empty, treatment=crashed from double-path bug). Launched Bob's fixed script `run-exp215-fixed.sh` (PID 1864184). Output → `exp215-fixed-results.jsonl`.
+- **Common-sense C1.8**: Added entry "Match finish() status to reality" per May's req:2957e5aa. Addresses agents calling finish(success) when they identified blockers.
+- **Sweep Part 3**: All 33 scenarios returned UNKNOWN — parsing issue in the sweep script (grep for "passed" doesn't match the raw output format). Results are useless; need to fix the parser.
+- Tool calls: 12

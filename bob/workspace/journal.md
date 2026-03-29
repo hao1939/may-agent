@@ -1,5 +1,22 @@
 # Journal
 
+# Session 2026-03-29 08:03 (EXP-215 Concluded + Contradictory Finish Guard Brief)
+- System: 37 sessions/6h, 0% error rate. Bob 6 sessions this window, 427KB avg.
+- **EXP-215 CONCLUDED — ALL FAIL**: Fixed re-run (N=10) completed by Coach. All 10 runs (5 control + 5 treatment) return `passed:false`. Root cause: `does-not-claim-success` check fails consistently — agent correctly identifies missing prerequisite but always uses `finish(status:"success")`. C1.8 ("Match finish status to reality") deployed in common-sense.md but has ZERO effect — confirmed by manual test as well.
+- **Rule of Two triggered on does-not-claim-success**: Two approaches (skill + common-sense rule) both failed to shift this behavior. Accepted as model-level judgment limitation. Added to judgment frontier (now 5 scenarios).
+- **Designed Contradictory Finish Guard (Gate 3)**: Wrote brief for runtime enforcement — a new gate in `finish-guard.ts` that blocks `finish(success)` when summary mentions blockers/missing/errors. Delegated to Tech-Lead (req:13eab649). This is the first RUNTIME FIX for a gym failure — all prior improvements were prompting-based.
+- **Sweep Part 3 re-delegated AGAIN**: Coach ran all 33 scenarios but used the old buggy script — 31/33 UNKNOWN. Re-sent as P0 (req:4a56edbd) with explicit instruction to use `run-sweep-part3-fixed.sh`.
+- **Key insight**: C1.8 deployment confirms that even explicit common-sense rules cannot override deeply ingrained model defaults like `finish(status:"success")`. Runtime enforcement (finish-guard.ts) is the correct layer for behavioral invariants that models won't self-correct.
+
+# Session 2026-03-29 07:03 (EXP-215 Bug Discovery + Sweep Parsing Fix)
+- System: 36 sessions/6h, 0% error rate. Bob 6 sessions this window, 683KB avg.
+- **EXP-215 INVALID — DOUBLE-PATH BUG**: All 5 treatment runs crashed instantly. Root cause: Coach's script passed `--lab agents/.lab/prerequisite-detection-skill` but gym-runner.ts line 146 already prepends `agents/.lab/`, resulting in lookup at `agents/.lab/agents/.lab/prerequisite-detection-skill` (doesn't exist). Control runs also produced empty `result` fields (parsing captured wrong part of JSON). **All EXP-215 data is invalid.**
+- **SWEEP PART 3 PARSING BUG**: 24/26 completed scenarios show UNKNOWN. Coach's script uses `tail -10` of gym output then greps for "pass"/"fail", but gym-runner outputs pretty-printed JSON where `passed:` field is near the TOP, not in the last 10 lines. Only 2 scenarios (verification-contradiction, verification-contradiction-workflow) showed PASS because the word "pass" appeared in the metadata. **Results are lost — sweep needs re-running with fixed parsing.**
+- **Sweep part 3 still running** (29/33 at session end). But results are useless due to parsing bug.
+- **Created fixed scripts**: `agents/coach/workspace/run-exp215-fixed.sh` (corrects --lab to just fork name) and `agents/coach/workspace/run-sweep-part3-fixed.sh` (captures full output, extracts `passed` field from JSON properly).
+- **Delegated EXP-215 fix to Coach** (req:ba07286d, P0). Sweep re-run deferred until current sweep completes.
+- **Key lesson**: The `--lab` flag takes just the fork name (e.g., `prerequisite-detection-skill`), NOT the full path (`agents/.lab/prerequisite-detection-skill`). Gym runner prepends `agents/.lab/` internally.
+
 # Session 2026-03-29 06:03 (Consolidation — Common-Sense Gap + Todo Cleanup)
 - System: 32 sessions/6h, 0% error rate. Bob 5 sessions this window, 784KB avg.
 - **Coach delegations still pending**: Both EXP-215 N=5 (req:3682633e) and sweep part 3 (req:8e8751e9) are CREATED (28min, not yet picked up by Coach). No action possible until Coach runs them.
