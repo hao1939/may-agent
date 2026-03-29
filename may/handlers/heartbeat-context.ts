@@ -399,6 +399,6 @@ export const create: HandlerModule["create"] = (
     // Log result via notify (shows in cron output)
     const nudgeNote = nudgesInjected > 0 ? ` ${nudgesInjected} active nudge(s) injected.` : "";
     const summary = `Generated system context: ${snap.totalSessions} sessions, ${snap.totalKB}KB in ${snap.windowHours}h window. Context files written for ${written} agents.${nudgeNote}`;
-    ctx.notify(summary);
+    ctx.log(summary);
   };
 };
