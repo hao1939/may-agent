@@ -607,28 +607,46 @@ function checkC12_1_sessionStart(toolCalls: ToolCall[], agent: string): CheckRes
     return { convention: "C12.1", passed: false, violations: ["No tool calls"] };
   }
 
-  const first = toolCalls[0];
-  if (first.name !== "read") {
-    return {
-      convention: "C12.1",
-      passed: false,
-      violations: [`First tool call was ${first.name}(), not read()`],
-    };
+  // Heartbeat sessions have heartbeat.md injected into the system prompt.
+  // Agents don't need to read() it again — the content is already in context.
+  // For these sessions, check that the agent reads workspace context files
+  // (todo.md, focus-tasks.md, etc.) in the first few tool calls instead.
+  const CONTEXT_FILE_PATTERNS = [
+    /heartbeat\.md$/,
+    /todo\.md$/,
+    /focus-tasks\.md$/,
+    /periodic-tasks\.md$/,
+    /context\.md$/,
+    /common-sense\.md$/,
+    /nudge-active\.md$/,
+    /heartbeat-context\.md$/,
+    /pending-decisions\.md$/,
+  ];
+
+  // Check first 5 tool calls for productive context-reading behavior
+  const earlyWindow = toolCalls.slice(0, 5);
+  const earlyReads = earlyWindow.filter((tc) => tc.name === "read");
+
+  // If any early read targets a context file, pass
+  for (const tc of earlyReads) {
+    const path = extractPath(tc.input);
+    if (!path) continue;
+    if (CONTEXT_FILE_PATTERNS.some((p) => p.test(path))) {
+      return { convention: "C12.1", passed: true, violations: [] };
+    }
   }
 
-  const path = extractPath(first.input);
-  if (!path) {
-    return { convention: "C12.1", passed: false, violations: ["First read() has no path"] };
+  // Also pass if the first call is system_status (another valid orientation step)
+  if (toolCalls[0].name === "system_status") {
+    return { convention: "C12.1", passed: true, violations: [] };
   }
-
-  const isHeartbeat =
-    path.includes("heartbeat.md") ||
-    path.includes(`agents/${agent}/heartbeat`);
 
   return {
     convention: "C12.1",
-    passed: isHeartbeat,
-    violations: isHeartbeat ? [] : [`First read() was ${path}, not heartbeat.md`],
+    passed: false,
+    violations: [
+      `No context file read in first 5 tool calls (first was ${toolCalls[0].name}(${extractPath(toolCalls[0].input) || ""}))`,
+    ],
   };
 }
 

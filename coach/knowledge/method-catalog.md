@@ -7,6 +7,29 @@ This is a living document — Coach updates it based on gym experiments and
 production outcomes. Methods with no evidence are candidates for
 growth-cycle learning runs (`learn:<method>`).
 
+## 🔑 Evidence-Ranked Enforcement Hierarchy (2026-03-29)
+
+**Based on 180+ experiments and production data, methods are ranked by proven effectiveness.**
+**Use the FIRST method that applies — do not skip ahead.**
+
+| Rank | Method | Effectiveness | Evidence |
+|------|--------|---------------|----------|
+| 1 | **context.md facts** | HIGH (100% for environmental knowledge) | npx A/B test: 3/3 without context used npx, 3/3 with context avoided it |
+| 2 | **Workflow enforcement** (#15) | HIGH (93%+ for procedural behavior) | 18/18 across experiments; restructures task to prevent error path |
+| 3 | **Skill files** (#4) | LOW-ZERO | EXP-215: 0/5 both arms on missing-prerequisite-detection |
+| 4 | **SOUL.md text changes** (#1-3, #6, #9-14) | ZERO (0/18 across 5 experiments) | No text-based intervention changed behavior under cognitive load |
+| 5 | **Harness guards** | ZERO + HARMFUL | Gate 3: 0/6; 3 guards reverted by Hao (false positive risk) |
+
+**Decision framework** (from Hao's directive, 2026-03-28):
+1. Could a context.md fact handle this? → **Use context.md**
+2. Does the constraint depend on the environment? → **MUST use context.md**
+3. Is this a judgment/procedural issue? → **Use a workflow**
+4. Is this a permanent, universal, mechanical check? → **Only then consider a guard**
+
+**DEPRECATED approaches**: All guard-based methods, all SOUL.md text additions,
+all LESSONS.md entries. These are proven ineffective. Do not invest experiment
+cycles on them.
+
 ## ⚠️ GHOST BUG NOTICE (2026-03-17)
 
 **ALL Sprint 1 and Sprint 2 experiment regressions were caused by changing

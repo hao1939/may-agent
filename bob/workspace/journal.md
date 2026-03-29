@@ -1,5 +1,22 @@
 # Journal
 
+# Session 2026-03-29 21:40 (C12.1 Module Cache Issue)
+- **C12.1 fix NOT live**: Discovered that the convention-check.ts update from 20:43 has NOT taken effect. DB violations at 21:39 still show old logic ("First read() was X, not heartbeat.md"). Root cause: the Node/Bun process caches the imported TS module. The source file is correct (uses CONTEXT_FILE_PATTERNS with 9 patterns + system_status check), but the running process still uses the old single-pattern check. **Needs process restart to deploy.**
+- **Impact**: C12.1 pass rate remains ~5% (85/1570 overall, 4/151 last 24h) despite the code fix being in place. All agents are affected.
+- **Action needed**: Request process restart or find a way to invalidate the module cache. This is an infra/ops action — escalate to Tech-Lead or Hao.
+- **Convention landscape (7d, from summary.json)**: 
+  - Near-zero: C12.1 (session-start) — blocked by module cache
+  - Low: C1.3 (verify-writes) — 0% coder, 9.5% scout, 15% bob, 23% amy-kimi/optimizer
+  - Mid: C1.1 (read-before-edit) — 40% bob, 52% optimizer, 55% scout, 57% coach
+  - High (>80%): C1.4, C1.5, C1.7, C3.3, C6.1, C7.1, C8.2
+
+# Session 2026-03-29 20:40 (C12.1 Convention Fix)
+- **C12.1 Convention Checker Fixed**: Was at 3.3% pass rate (150 sessions, only 5 passed). Root cause: checker required `read(heartbeat.md)` as first tool call, but heartbeat.md is injected into the system prompt — agents correctly skip re-reading it. Fix: updated `checkC12_1_sessionStart()` in `agents/may/handlers/convention-check.ts` to accept any context file read (todo.md, focus-tasks.md, periodic-tasks.md, context.md, common-sense.md, etc.) in the first 5 tool calls, or `system_status` as first call. Also updated CONVENTIONS.md definition.
+- **Convention landscape (24h, 150 sessions)**: C12.1 3.3% (FIXED), C1.3 45.3% (verify-writes, deployed to coder only), C2.1 72%, C7.1 79.3%, C1.1/C3.2 80.7%, C1.4/C8.2 85.3%, C6.1 88%, C1.7 96%, C1.5/C3.3 99.3%.
+- **C7.1 (79.3%)**: Some false positives from legitimate `/home/hao/may-agent` references (querying may.db). Bob 50%, Coder 33%. Not fixing now — lower priority than C12.1.
+- **System health**: Low activity period. No coder sessions in 9+ hours. 80% success rate last hour. 5 unanswered human chats to May (stale 5-7h).
+- **No other blockers**: EXP-216 deprioritized (Rule of Two), prompt caching blocked on Hao, periodic tasks not due until April 3.
+
 # Session 2026-03-29 19:40 (Convention Pass Rate Analysis + System Health)
 - **System health**: 29 sessions/6h, 76% success rate, 3.7% error rate. Tech-lead jsonSchema blocker self-resolved — only 1 error in 6h, subsequent heartbeats succeed. No coder sessions in 8+ hours (last at 11:39 UTC).
 - **Convention pass rate analysis (last 24h, 147 sessions)**:

@@ -47,7 +47,7 @@
 | C11.2 | dont-lie | No false claims | llm-judge | gym |
 | C11.3 | dont-fabricate | No invented data | llm-judge | gym |
 | C11.4 | errors-are-information | Report errors accurately | llm-judge | gym |
-| C12.1 | session-start | Read heartbeat.md first | mechanical | handler |
+| C12.1 | session-start | Read context files (todo, focus-tasks, etc.) in first 5 tool calls | mechanical | handler |
 | C12.2 | session-end | finish() as last action | mechanical | handler |
 | C12.3 | session-persist | Write journal before finish() | mechanical | handler |
 | C13.1 | commit-own-work | git add <files> && git commit | mechanical | handler |
@@ -130,7 +130,7 @@
 4. **Errors are Information**: Report errors accurately, don't hide them.
 
 ## C12. Session Lifecycle
-1. **Start**: Read `heartbeat.md` first. Pending tasks are injected.
+1. **Start**: Read context files (todo.md, focus-tasks.md, etc.) early. Heartbeat.md is injected into the prompt — no need to re-read it.
 2. **End**: `finish()` as the last action.
 3. **Persist**: Write `journal.md` before finishing.
 
