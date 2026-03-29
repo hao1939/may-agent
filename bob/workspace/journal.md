@@ -1,5 +1,21 @@
 # Journal
 
+# Session 2026-03-29 18:10 (EXP-216 Rule of Two + Tech-Lead Blocker)
+- **EXP-216 Coach diversion #3**: req:c1f9a5f0 marked COMPLETED but Coach ran growth cycle on `silent-dependency` (exp-216 label reused!), NOT `regression-from-fix` as requested. Coach journal shows no work on regression-from-fix. Same pattern as req:65b37587. **Rule of Two for Coach delegation of EXP-216 triggered.** Options: (1) run it myself via gym-runner, (2) decompose into smaller steps, (3) accept and deprioritize.
+- **Decision: Accept and deprioritize EXP-216.** Regression-from-fix is only 2 scenarios out of 108 tested. The skill is designed and in the lab fork. When Coach has bandwidth and the right context, it can pick it up. Not worth forcing.
+- **Tech-lead completely blocked**: jsonSchema error (`undefined is not an object evaluating jsonSchema.properties`) in openai SDK transform.js. Happened 2 consecutive heartbeat cycles (13:39, 16:39). Error occurs during tool schema serialization for the OpenAI API. Tech-lead has `workflow` tool — suspected malformed schema somewhere in the tool chain. This is NOT a tech-lead agent file issue — it's an infrastructure/SDK issue. **Action needed: investigate how TypeBox schemas are converted to OpenAI tool schemas in manager.ts, specifically for agents with the `workflow` tool.**
+- **System health**: No coder sessions in 9+ hours. 5 unanswered human chats to May (mostly "test", "hi", "what are agents working on" — Hao probing if system is responsive). May sessions run but some go idle/interrupted. Tech-lead blocked. Coach running but not picking up delegated experiments correctly.
+- **Verify-after-edit production signal**: Still no data. Last coder sessions were Gate 3/3b implementations ~9h ago. Need real production coder work to measure impact.
+- **Key insight**: System is in a low-activity period. Core agents (tech-lead blocked, coder unused, Coach misaligned on delegated tasks). The tech-lead jsonSchema error is the highest-impact blocker to fix — it's preventing an entire agent from functioning.
+
+# Session 2026-03-29 16:39 (Production Monitoring + System Health)
+- **System health**: 50 sessions/6h, 34% error rate (up from 1.5%). Errors are mostly connection errors (~13:20 cluster) plus tech-lead jsonSchema bug.
+- **Tech-lead jsonSchema error**: `undefined is not an object (evaluating 'jsonSchema.properties')` — 3 occurrences today. Error is in `openai/lib/transform.js:62` during tool schema serialization. Only affects tech-lead. Intermittent (4 total across 2 days). Root cause: something in the tool schema tree has an undefined node where the SDK expects an object. Low priority — self-resolves on retry.
+- **Verify-after-edit production signal**: 2 coder sessions since skill deployment (s_937, s_939 at ~11:35 UTC). Both still fail C1.3 (edit not verified with read-back). However: (1) small sample size, (2) these were specific Gate 3/3b implementation tasks, not representative. Lab showed 60% convention pass rate vs 30% baseline — need ≥5 production sessions for meaningful signal.
+- **EXP-216 status**: Delegated to Coach (req:c1f9a5f0) 28 min ago. Status: CREATED. Coach is currently running a heartbeat (req:41272662) — should pick up EXP-216 during this cycle.
+- **Prompt caching**: Still blocked on Hao. No movement.
+- **No actionable work found**: All experiments delegated, periodic tasks not due, common-sense items all deployed. System is in a monitoring/waiting phase.
+
 # Session 2026-03-29 16:10 (EXP-216 Re-delegation + System Health Check)
 - **EXP-216 NOT ACTUALLY RUN**: Checked Coach's journal — req:65b37587 was marked COMPLETED but Coach diverted to growth cycles on other scenarios (silent-dependency, search-strategy-escalation). Both turned out to be ceiling effects or scenario bugs. `regression-from-fix` was noted as a future target but never tested. **Re-delegated** to Coach (req:c1f9a5f0) with explicit instructions.
 - **Coach findings from growth cycles**: `silent-dependency` has npm unavailable in gym runtime (false negative). `search-strategy-escalation` also ceiling (6/6 at baseline). `spec-adherence-multi-step` confirmed genuine failure.
