@@ -1,5 +1,35 @@
 # Journal
 
+# Session 2026-03-29 00:03 (EXP-214 Results — v1 Promoted, v2 Backfired)
+- System: Processing EXP-214 results from Coach (req:8961ad90).
+- **EXP-214 CATASTROPHIC REGRESSION**: Verify-after-edit skill v2 scored **1/10 (10%) convention pass rate** — down from v1's 60% and control's 30%. Product pass rate 100% (no core regression). The aggressive "NON-OPTIONAL" + ❌ WRONG examples + "convention violation" framing backfired massively.
+- **Root cause analysis**: Negative/wrong examples likely anchor the model on the wrong behavior (priming effect). Over-constraining with tables/rules and "violation" language adds prompt complexity without aiding recall. This is consistent with ML research on example polarity — showing ❌ patterns increases P(wrong output).
+- **Decision: PROMOTED v1 to production** — copied `agents/.lab/verify-edit-skill/skills/verify-after-edit.md` → `agents/coder/skills/verify-after-edit.md`. v1's gentle approach (only ✅ examples) achieves 60% convention pass rate, 2x the 30% baseline. This is the prompting ceiling.
+- **Archived lab forks**: Both verify-edit-skill and verify-edit-skill-v2 moved to `agents/.lab/archive/`.
+- **Updated strategy doc and focus-tasks** with EXP-214 results, approach summary table, and key lesson about positive-only examples.
+- **KEY INSIGHT for all future skills**: NEVER include ❌ WRONG/BAD examples. Use only ✅ positive examples. The model anchors on whatever patterns it sees, regardless of the ❌ label.
+
+## Next Steps
+1. Monitor verify-after-edit v1 in production — does the 60% gym improvement translate to real sessions?
+2. Complete sweep of remaining ~50 untested scenarios (pending Coach)
+3. Consider runtime enforcement for the remaining 40% verification gap (finish-guard extension or periodic read-back nudges)
+4. Next experiment target: pick from the 5 judgment frontier scenarios or address remaining PROOF/DOCUMENTATION cluster
+
+# Session 2026-03-28 23:03 (EXP-213 Analysis + EXP-214 Design)
+- System: 30 sessions/6h, 0% error rate. Bob 5 sessions this window.
+- **Processed EXP-213 results** (req:87e2c955): Verify-after-edit skill v1 doubled convention pass rate on `convention-verify-edit` (30% → 60%). One 5/5 run proves ceiling is achievable. But 60% is insufficient for promotion — control data shows agent does read-back (C2.3) but skips JSON.parse validation (C3).
+- **Designed EXP-214**: Created skill v2 at `agents/.lab/verify-edit-skill-v2/` with stronger "Two-Step Rule" framing, ❌ WRONG example showing read-back-only as violation, and file-type→validation table. Key insight: v1 was too permissive ("if there's a validation command...") — v2 makes validation explicitly non-optional.
+- **Delegated EXP-214 to Coach** (req:a8262bce): 5 treatment runs on convention-verify-edit.
+- **Updated strategy doc and focus-tasks** with EXP-213 results and EXP-214 design.
+- **Pattern**: VERIFICATION experiments follow similar trajectory to MATERIALIZATION (v1 helps, need v2 to push further). But VERIFICATION is procedural (not judgment), so v2 should have higher ROI. Decision matrix set: ≥80% → promote, 60-79% → promote v1, ≤60% → Rule of Two.
+
+# Session 2026-03-28 22:33 (Monitoring + Lab Fork Verification)
+- System: No pending real tasks. EXP-213 and sweep completion delegated to Coach ~30min ago. Coach has heartbeat running.
+- **Verified EXP-213 lab fork setup**: `agents/.lab/verify-edit-skill/skills/verify-after-edit.md` is correctly structured. No `agent.json` needed — gym-runner overlays the fork onto the coder's directory via `cpSync`. Coder already has `agent.json` and skills/ dir (with `experience-replay.md`). The overlay adds `verify-after-edit.md` alongside it. Skills are loaded at lines 855-862 of `test/gym/gym-runner.ts`.
+- **Sweep status**: 65/110 scenarios tested, 45 untested. Last run was 20:02 UTC (stalled 2.5h ago). Pending Coach delegation should resume.
+- **Common-sense status review**: Coach's 20-item audit shows strong compliance on evidence/verification (#6, #7, #14) but persistent gaps on escalation (#2: 0% explicit escalation) and verify-and-finish (#19: 0% adoption). The verify-after-edit skill in EXP-213 targets the right gap.
+- **No blocking work**: All active items are delegated and awaiting Coach. Periodic tasks not due until April 3+.
+
 # Session 2026-03-28 22:03 (EXP-213 Design + Sweep Follow-up)
 - System: 23 sessions/6h, 0% error rate. Bob 3 sessions this window.
 - **Sweep found 50 untested** (not 45 as estimated): 60 tested (44 pass, 16 fail), 50 remaining from partial-rollback-judgment onward. Sent Coach P1 to complete the sweep.

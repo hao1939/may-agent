@@ -1041,3 +1041,67 @@ This is the **evidence fabrication** pattern — optimizer claims to have done w
 **Finding**: All 11 scenarios exist in `agents/gym/scenarios/`. The previous sweep showed empty output for these because they likely timed out or had issues during the batch run. Individual runs work fine — tested `partial-verification-trap` which completed in 41s (4/5 PASS, failed `added-edge-case-test`).
 **Constraint**: Running all 11 inline would take ~7-8 min and exceed heartbeat tool budget. Sending Bob the finding and suggesting he re-run the sweep script or I batch them via a workflow next session.
 **Action**: Replied to Bob with status.
+
+## 2026-03-28T22:33 — EXP-213: Verify-After-Edit Skill A/B Test
+
+**Scenario:** convention-verify-edit  
+**Treatment:** Lab fork `verify-edit-skill` with skill `skills/verify-after-edit.md`
+
+### Control (baseline, no skill) — 5 runs
+| Run | Score | Convention |
+|-----|-------|-----------|
+| 1   | 3/5   | 0/2       |
+| 2   | 4/5   | 1/2       |
+| 3   | 4/5   | 1/2       |
+| 4   | 4/5   | 1/2       |
+| 5   | 3/5   | 0/2       |
+**Avg: 3.6/5, Convention: 3/10 (30%)**
+
+### Treatment (with verify-after-edit skill) — 5 runs
+| Run | Score | Convention |
+|-----|-------|-----------|
+| 1   | 4/5   | 1/2       |
+| 2   | 4/5   | 1/2       |
+| 3   | 4/5   | 1/2       |
+| 4   | 4/5   | 1/2       |
+| 5   | 5/5   | 2/2       |
+**Avg: 4.2/5, Convention: 6/10 (60%)**
+
+### Analysis
+- **Overall improvement:** 3.6 → 4.2 (+0.6/run, +17%)
+- **Convention check improvement:** 30% → 60% (doubled)
+- **One full pass (5/5)** in treatment, zero in control
+- Product checks: 3/3 in all runs (both groups) — no regression
+- The skill doubles the convention pass rate but doesn't reach the 4/5 target (80%) yet
+- C2.3 (verify-after-edit) improved but C3 (validation-attempt) still inconsistent
+- **Verdict:** POSITIVE EFFECT — skill improves behavior but more refinement needed
+
+### Next steps
+- Consider strengthening C3 (JSON validation) with more prominent instruction in the skill
+- Run secondary test on `convention-verify-edit-workflow` to check transfer
+- Consider promoting skill to production if further iteration hits 80%+
+
+## 2026-03-28 23:40 — EXP-214: Verify-After-Edit Skill v2 Results
+
+**Task**: Bob requested running EXP-214 (v2 of verify-after-edit skill).
+**Fork**: `verify-edit-skill-v2` — makes validation NON-OPTIONAL, adds wrong-example.
+
+**Results (5 treatment runs)**:
+| Run | Score | Convention |
+|-----|-------|------------|
+| 1   | 3/5   | 0/2        |
+| 2   | 3/5   | 0/2        |
+| 3   | 3/5   | 0/2        |
+| 4   | 4/5   | 1/2        |
+| 5   | 3/5   | 0/2        |
+
+**Convention pass rate: 1/10 (10%)** — REGRESSION from v1's 60%.
+**Product pass rate: 15/15 (100%)** — No regression.
+
+**Analysis**: v2's more prescriptive approach backfired. Possible explanations:
+1. Verbose wrong-examples may have ironically primed the wrong behavior
+2. The "NON-OPTIONAL" framing may be too abstract vs. v1's procedural format
+3. The skill file is very long (~100 lines) — cognitive overload may cause skipping
+4. Need to investigate whether the agent even reads the full skill file
+
+**Next**: Report to Bob. Consider v3 with shorter, more action-oriented format.
