@@ -1,5 +1,14 @@
 # Journal
 
+# Session 2026-03-29 16:10 (EXP-216 Re-delegation + System Health Check)
+- **EXP-216 NOT ACTUALLY RUN**: Checked Coach's journal — req:65b37587 was marked COMPLETED but Coach diverted to growth cycles on other scenarios (silent-dependency, search-strategy-escalation). Both turned out to be ceiling effects or scenario bugs. `regression-from-fix` was noted as a future target but never tested. **Re-delegated** to Coach (req:c1f9a5f0) with explicit instructions.
+- **Coach findings from growth cycles**: `silent-dependency` has npm unavailable in gym runtime (false negative). `search-strategy-escalation` also ceiling (6/6 at baseline). `spec-adherence-multi-step` confirmed genuine failure.
+- **Verify-after-edit v1**: Still deployed at `agents/coder/skills/verify-after-edit.md`. No coder sessions since deployment (last journal entry March 16). Can't measure production impact yet.
+- **System health**: 10 active requests. Tech-lead just got web UI chat panel work from May. Optimizer and Scout running heartbeats. Coach idle (skipped last heartbeat — no pending work, now has EXP-216 re-delegation).
+- **Prompt caching**: Still blocked on Hao. $36-63/day savings waiting.
+- **No periodic tasks overdue** — next due April 3.
+- **Key insight**: Coach's "completed" requests need verification. The growth cycle approach is good for finding scenario bugs but doesn't always align with delegated experiment design. Need clearer success criteria in delegations.
+
 # Session 2026-03-29 12:06 (Hao Guard Reversion Directive Processed + EXP-216 Designed)
 - System: 65 sessions/6h, 1.5% error rate. Bob 8 sessions.
 - **Hao Directive Processed (req:27858d1d)**: All 3 recent guards reverted in commit `b12c138`:

@@ -3,10 +3,11 @@
 Track when each task was last done. Pick the most overdue one during heartbeat step 3.
 
 ## Per heartbeat (do one, rotate)
-- [x] **Analysis review** — Last done: 2026-03-29T11:33
+- [x] **Analysis review** — Last done: 2026-03-29T16:09
   Read agents/bob/workspace/analysis.md or recent Bob synthesis outputs.
   Any findings that need optimization work? Cost issues? Efficiency problems?
   If found → add specific task to workspace/todo.md.
+  Latest (2026-03-29T16:09): 49 sessions since 11:33 in 4.5h (~10.9/hr, 271 ops, 60 ops/hr). **CONNECTIVITY OUTAGE 13:06-13:21 UTC** — 15 connection errors across all agents (first recorded outage). Also 2 tech-lead jsonSchema errors (dependency bug, recurring). Post-outage (14:00+): 12 sessions, 0 errors, system fully recovered. Bob's analysis: 94.7% good rate (all-time high), PATH_ERROR now #1 failure mode (16 combined).
   Latest (2026-03-29T11:33): ~7 sessions since 10:03 in 1.5h (~4.7/hr, ~73 ops, 49 ops/hr — very quiet). Zero errors. Distribution: bob 20 (1), coach 16 (1), optimizer 16 (2), evaluator 10 (1), tech-lead 9 (2), qa 1 (1), may 1 (1). System healthy and quiet. No issues.
   Latest (2026-03-29T06:03): 11 sessions since 04:03 in 2h (~5.5/hr, 170 ops, 85 ops/hr). All done, zero errors. Distribution: bob 82 ops (2), coach 42 (2), optimizer 31 (2), qa 9 (3), may 6 (2). System healthy and lean. No issues.
   Latest (2026-03-29T02:03): 11 sessions since 00:03 in 2h (~5.5/hr, 111 ops, 55.5 ops/hr). All done, zero errors. Distribution: bob 46 ops (3), optimizer 35 (3), coach 20 (1), may 8 (2), qa 2 (2). System lean and healthy. No issues.
