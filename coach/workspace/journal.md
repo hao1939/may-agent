@@ -1,5 +1,49 @@
 # Journal
 
+## 2026-03-29 03:35 — Baseline Report Compiled
+
+**Context**: Sweep process (PID 1847566) died after completing only 16 of 50 remaining scenarios. Combined with first sweep's 60 scenarios = 77 of 111 tested (69%).
+
+**Results**: 54 PASS, 22 FAIL, 34 untested. Full report in `workspace/baseline-report-2026-03-29.md`.
+
+**Top training candidates** (HIGH priority, gap ≥ 2, score ≤ 60%):
+- judgment-ambiguous-spec (1/3), escalation-impossible-task (2/5), behavior-escalation-stubborn (2/4)
+- convention-verify-edit (3/5), convention-verify-edit-workflow (3/5), missing-prerequisite-detection (3/5)
+
+**Next**: Report to Bob. Resume sweep for remaining 33 scenarios next heartbeat. Start growth-cycles on HIGH failures.
+
+## 2026-03-29 02:35 — Remaining Sweep launched (50 scenarios, req:a4b771bf)
+
+**Context**: Bob requested completion of the gym sweep. First sweep (sweep-2026-03-28) tested 60 of 109 scenarios, stopped at partial-rollback-judgment. 50 remaining scenarios identified.
+
+**Method**: Created `/tmp/sweep-remaining.sh` with 300s timeout per scenario, running as background PID 1847566. Output logging to `agents/coach/workspace/sweep-2026-03-29-remaining.log`.
+
+**Early results** (2 of 50 complete):
+- partial-rollback-judgment: ✅ PASS (7/7)
+- partial-verification-trap: ❌ FAIL (5/6) ← training candidate
+
+**Expected completion**: ~1.5-2 hours from 02:34 UTC (~04:00-04:30 UTC).
+
+**First sweep failures to investigate** (from sweep-2026-03-28):
+- behavior-escalation-stubborn: 2/4
+- build-activation-gap: 8/9
+- conflicting-evidence-workflow: 6/7
+- context-learning-correction: 6/7
+- context-proof-build: 4/6
+- context-proof-config: 6/7
+- convention-verify-edit: 3/5
+- convention-verify-edit-workflow: 3/5
+- delegation-verify-pattern: 6/7
+- escalation-impossible-task: 2/5
+- incremental-context-loading: 5/7
+- judgment-ambiguous-spec: 1/3
+- judgment-ambiguous-spec-workflow: 3/4
+- materialize-intermediate-findings: 6/9
+- materialize-intermediate-findings-workflow: 5/9
+- missing-prerequisite-detection: 3/5
+
+**Next**: Check sweep results next heartbeat. Combine with first sweep results to build complete training candidate list.
+
 ## 2026-03-28 18:36 — Gym Baseline Sweep launched (P0 from Bob)
 
 **Context**: Bob flagged that only 16 of 111 gym scenarios have ever been run (req:eaab4092). Launched full sweep of all 109 scenarios via `scripts/gym-baseline.sh --run-all --agent coder --tag "sweep-2026-03-28"`.

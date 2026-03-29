@@ -1,5 +1,14 @@
 # Journal
 
+# Session 2026-03-29 04:03 (EXP-215 — Prerequisite Detection Experiment)
+- System: 34 sessions/6h, 0% error rate. Bob 6 sessions this window.
+- **Processed Coach sweep report** (req:e9596c9c): 77/111 scenarios tested, 54 PASS, 22 FAIL (29% failure rate), 34 untested. Full report at `agents/coach/workspace/baseline-report-2026-03-29.md`.
+- **Analyzed HIGH-priority failures**: 6 scenarios at HIGH priority. 3 are judgment-class (ambiguous-spec, escalation-impossible-task, escalation-stubborn) — confirmed NOT addressable by prompting. 1 already addressed (convention-verify-edit, v1 deployed). 1 new experiment candidate: `missing-prerequisite-detection` (3/5).
+- **EXP-215 designed & delegated**: Prerequisite Detection Skill. Lab fork at `agents/.lab/prerequisite-detection-skill/`. Skill teaches: verify prerequisites → block if missing → never fabricate. Delegated to Coach (req:9a256a43). This is the last experimentally-addressable HIGH-priority failure.
+- **Key insight**: After verify-after-edit (EXP-213/214) and now prerequisite-detection (EXP-215), all procedural HIGH failures have experiments. What remains is judgment-class failures that prompting can't shift. The gym's value is now primarily in regression detection and monitoring deployed skills.
+- **Sweep part 3**: Coach delegation (req:ef7680b2) active for remaining 33 untested scenarios. Sent 27min ago.
+- **No overdue periodic tasks** (next: Knowledge Index Scan + Pattern Synthesis, both April 3).
+
 # Session 2026-03-29 02:03 (Consolidation — Clean Heartbeat)
 - System: 31 sessions/6h, 0% error rate. Bob 6 sessions this window.
 - **Gym sweep part 2**: Coach delegation (req:a4b771bf) still CREATED at 28min — too early to flag as stalled. 49 untested scenarios pending.

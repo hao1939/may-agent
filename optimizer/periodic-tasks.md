@@ -3,10 +3,11 @@
 Track when each task was last done. Pick the most overdue one during heartbeat step 3.
 
 ## Per heartbeat (do one, rotate)
-- [x] **Analysis review** — Last done: 2026-03-29T02:03
+- [x] **Analysis review** — Last done: 2026-03-29T04:03
   Read agents/bob/workspace/analysis.md or recent Bob synthesis outputs.
   Any findings that need optimization work? Cost issues? Efficiency problems?
   If found → add specific task to workspace/todo.md.
+  Latest (2026-03-29T04:03): 12 sessions since 02:03 in 2h (~6/hr, 67 ops, 33.5 ops/hr). All done, zero errors. Distribution: coach 24 ops (2), bob 20 (1), optimizer 10 (1), evaluator 4 (1), scout 3 (2), may 2 (2), qa 2 (2), tech-lead 2 (1). System lean and healthy. No issues.
   Latest (2026-03-29T02:03): 11 sessions since 00:03 in 2h (~5.5/hr, 111 ops, 55.5 ops/hr). All done, zero errors. Distribution: bob 46 ops (3), optimizer 35 (3), coach 20 (1), may 8 (2), qa 2 (2). System lean and healthy. No issues.
   Latest (2026-03-28T22:03): 11 sessions since 19:03 in 3h (~3.7/hr, 109 ops, 36 ops/hr). All done, zero errors. Distribution: coach 47 ops (2, max 28 common-sense-verify), bob 33 (1, heartbeat), evaluator 9 (1), optimizer 7 (1), scout 7 (1), may 2 (2), tech-lead 2 (1), qa 2 (2). System lean and healthy. No issues.
   Latest (2026-03-28T19:03): 11 sessions since 16:03 in 3h (~3.7/hr, 92 ops, 30.7 ops/hr). All done, zero errors. Distribution: coach 41 ops (3, max 17), bob 29 (1), optimizer 12 (1), scout 5 (1), may 3 (3), qa 2 (2). System lean and healthy. No issues.
@@ -28,10 +29,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Latest (2026-03-26T06:33): Bob published `synthesis/strategy-hard-constraints.md` — articulates Auto-Evolve failure (0/5) and pivot to runtime guards. Confirms optimizer's direction: tool guards > prompt engineering. Coach ran growth-cycle (session 369, 13 ops) for verify-before-finish scenario. System stable. Previous optimizer heartbeat (session 371) used 46 ops, but that was before 35-op budget was added. No new optimization action needed.
   Latest (2026-03-26T03:12): Bob session 351 initialized Scout archetype files and delegated migration to tech-lead (req:30f9ea94). Coach session 347/348 diagnosed coder materialization failure (6/9 baseline) and created workflow-enforcement fork (coder-materialize-workflow in .lab/). Evaluator session 350 scored coach good (0.72 eff / 0.74 qual) with issues: premature finish() and evidence gap. System running 4 active agent requests (coach heartbeat, bob→coach verify, bob→tech-lead migrate, optimizer heartbeat). Process still on stale binary b9ef77e.
 
-- [x] **Cost outlier scan** — Last done: 2026-03-29T02:03
+- [x] **Cost outlier scan** — Last done: 2026-03-29T04:03
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
+  Latest (2026-03-29T04:03): 12 sessions/2h (~6/hr, 67 ops, 33.5 ops/hr). Zero errors, zero outliers. Max: bob 20 ops (normal heartbeat), coach 12 ops (normal). May/QA/scout all 1-2 ops (JS). No cost issues. System running lean.
   Latest (2026-03-29T02:03): 11 sessions/2h (~5.5/hr, 111 ops, 55.5 ops/hr). Zero errors, zero outliers. Max: bob 22 ops (normal heartbeat), coach 20 ops (normal). May/QA all 1-7 ops (JS). No cost issues. System running lean.
   Latest (2026-03-28T22:03): 11 sessions/3h (~3.7/hr, 109 ops, 36 ops/hr). Zero errors, zero outliers. Max: bob 33 ops (normal heartbeat), coach 28 ops (common-sense-verify cron). May/QA all 1 op (JS). No cost issues. System running lean.
   Latest (2026-03-28T19:03): 11 sessions/3h (~3.7/hr, 92 ops, 30.7 ops/hr). Zero errors, zero outliers. Max: bob 29 ops (normal heartbeat). Coach 17 ops max (normal). May/QA all 1 op (JS). No cost issues. System running lean.
@@ -57,10 +59,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Latest (2026-03-25T20:40): 52 sessions in 4h (13/hr). Top ops: optimizer 57ops (common-sense experiment, expected), coach 26ops/2825s (interrupted). Coach+optimizer each 10 sessions, ~150 ops. No new waste patterns. System stable.
   Latest (2026-03-25T16:35): 61 sessions in 6.5h (9.4/hr). Two outliers: tech-lead gym test (528KB, 3x 100KB bash outputs — expected), Bob agents(filter:all) (404KB, 324KB response — one-off). No new systematic waste. Scout loop fix confirmed (2 sessions vs 32/day before). 30+ Bob zombies blocked on restart (req:31d94ce6). Finding at `workspace/finding-cost-scan-0325-1635.md`.
 
-- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-29T02:03
+- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-29T04:03
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
   Could it be replaced with a JS handler? (See cron-graduation-process.md Stage 3.)
   If found → write proposal in workspace/improvement-proposals.md.
+  Latest (2026-03-29T04:03): 12 sessions since 02:03. May 1 op (JS), QA 1 op (JS) — already optimized. Bob 20 ops (1, heartbeat), coach 24 (2), optimizer 10 (1), evaluator 4 (1), scout 3 (2), tech-lead 2 (1). No new LLM-to-JS candidates — all high-op sessions doing genuine LLM work.
   Latest (2026-03-29T02:03): 11 sessions since 00:03. May 1-7 ops (JS), QA 1 op (JS) — already optimized. Bob 46 ops (3, heartbeats), coach 20 (1), optimizer 35 (3). No new LLM-to-JS candidates — all high-op sessions doing genuine LLM work.
   Latest (2026-03-28T22:03): 11 sessions since 19:03. May 1 op (JS), QA 1 op (JS) — already optimized. Coach 47 ops (2 sessions: common-sense-verify + heartbeat), bob 33 ops (1, heartbeat), evaluator 9 (1), optimizer 7 (1), scout 7 (1), tech-lead 2 (1). No new LLM-to-JS candidates — all high-op sessions doing genuine LLM work.
   Latest (2026-03-28T19:03): 11 sessions since 16:03. May 1 op (JS), QA 1 op (JS) — already optimized. Coach 41 ops (3 sessions, genuine LLM heartbeats), bob 29 ops (1, heartbeat), optimizer 12 (1, periodic tasks), scout 5 (1). No new LLM-to-JS candidates — all high-op sessions doing genuine work.
@@ -79,10 +82,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Latest (2026-03-26T03:11): No new LLM-to-JS candidates. Short sessions already use JS heuristics (evaluator 0-op, QA early exit). NEW FINDING: 50+ stale test requests (echo hello/testing) clogging requests.db — not LLM waste but DB scan waste. Wrote finding at `workspace/finding-stale-requests-0326-0311.md`. Proposed: request-cleanup JS handler to auto-cancel stale CREATED test requests >24h old.
   Latest (2026-03-25T22:07): Scanned 49 sessions in 4h (12.25/hr). 15 low-op sessions (0-2 ops): evaluator 0-ops (JS heuristic ✅), May 1-op idle checks, QA 1-2 op early exits, Scout 1-2 ops idle. All low-op sessions already optimized or require LLM judgment. No new LLM-to-JS candidate.
 
-- [x] **Handler health check** — Last done: 2026-03-29T01:33
+- [x] **Handler health check** — Last done: 2026-03-29T03:33
   Review existing JS handlers in agents/may/handlers/.
   Any errors in recent logs? Any handler that's not firing?
   If issues → add fix to workspace/todo.md.
+  Latest (2026-03-29T03:33): 22 handlers (unchanged). Tool-quality-report.md still MISSING (blocked on restart, 71h+). 8 sessions since 01:33 (2h), 24 ops, zero errors. All done. 30+ zombie Bob "running" sessions persist. System healthy and lean. Process restart remains #1 blocker.
   Latest (2026-03-29T01:33): 22 handlers (unchanged). Tool-quality-report.md still MISSING (blocked on restart, 69h+). ~9 sessions since 22:33 (3h), ~68 ops, zero errors. All done. System healthy and lean. Process restart remains #1 blocker.
   Latest (2026-03-28T22:33): 22 handlers (unchanged). Tool-quality-report.md still MISSING (blocked on restart, 66h+). 15 sessions since 20:33 (2h), 148 ops, zero errors. All done. Distribution: bob 57 (2), coach 47 (2, max 28 common-sense-verify), optimizer 19 (2), evaluator 9 (1), scout 10 (2), may 3 (3), qa 3 (3). System healthy and lean. Process restart remains #1 blocker.
   Latest (2026-03-28T20:33): 22 handlers (unchanged). Tool-quality-report.md still MISSING (blocked on restart, 64h+). 8 sessions since 17:33 (3h), 59 ops, zero errors. All done. Distribution: bob 30 (1), optimizer 12 (1), coach 11 (1), tech-lead 2 (1), may 2 (2), qa 2 (2). System healthy and lean. Process restart remains #1 blocker.
@@ -123,7 +127,7 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Latest (2026-03-23T21:36): verification-consistency (15th skill) deployed to 6 agents. Full lifecycle.
   _13 earlier skill deployments documented in finding files. See `workspace/finding-pattern-scan-*.md`._
 
-- [x] **Tool quality review** — Last done: 2026-03-29T01:33
+- [x] **Tool quality review** — Last done: 2026-03-29T03:33
   Read the tool-quality-report.md (generated by tool-quality-scan handler every 4h).
   Look for regression trends, persistent failure patterns, and agent-specific issues.
   If a specific failure category accounts for >30% of waste, create a targeted intervention:
@@ -131,6 +135,7 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   - For empty-args: check if schema validation is catching it early enough
   - For edit-match-fail: check if agents are reading files before editing
   If tool-quality-report.md doesn't exist yet, skip — handler hasn't fired.
+  Latest (2026-03-29T03:33): Report still MISSING (blocked on restart, 71h+). Last known: 2.8% waste at 05:07 Mar 27. 8 sessions since 01:33, zero errors. No manual assessment possible without the report. Status unchanged — all blocked on restart.
   Latest (2026-03-29T01:33): Report still MISSING (blocked on restart, 69h+). Last known: 2.8% waste at 05:07 Mar 27. ~9 sessions since 22:33, zero errors. No manual assessment possible without the report. Status unchanged — all blocked on restart.
   Latest (2026-03-28T20:33): Report still MISSING (blocked on restart, 64h+). Last known: 2.8% waste at 05:07 Mar 27. 8 sessions since 17:33, zero errors. No manual assessment possible without the report. Status unchanged — all blocked on restart.
   Latest (2026-03-28T15:33): Report still MISSING (blocked on restart, 58h+). Last known: 2.8% waste at 05:07 Mar 27. 14 sessions since 13:33, zero errors. No manual assessment possible without the report. Status unchanged — all blocked on restart.

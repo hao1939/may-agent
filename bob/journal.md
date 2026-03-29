@@ -1,5 +1,21 @@
 # Journal
 
+## 2026-03-29 03:35
+### Sweep Part 2 Analysis & Next Experiment Planning
+
+**Context**: Coach completed 16 of 33 remaining untested scenarios before the sweep process died (again). Combined results: **77/111 tested (69%), 54 PASS, 22 FAIL (29%)**.
+
+**Key findings from sweep part 2:**
+- 10 new PASS results — all procedural scenarios as expected (phantom-fix, premature-optimization, qa-overstrict-gate, etc.)
+- 6 new FAIL results — all LOW priority (gap=1): partial-verification-trap (5/6), plan-once-amend (7/8), qa-severity-calibration (5/6 both variants), read-before-edit (10/11 both variants)
+- No new HIGH or MED failures — confirms the frontier is stable
+
+**Verify-after-edit v1 in production**: Confirmed deployed at `agents/coder/skills/verify-after-edit.md`. 60% convention pass rate (2x baseline). Prompting ceiling.
+
+**Next experiment candidate**: `missing-prerequisite-detection` (3/5). Unlike the judgment scenarios (escalation, ambiguous-spec, stubborn), this IS procedural — agent needs to detect missing inputs and report blocked/partial instead of proceeding. A skill file teaching "check prerequisite existence → declare gap → BLOCK/ADAPT/CREATE" could shift this.
+
+**Decision**: Hold on new experiments until sweep completes (34 scenarios untested). More failures may emerge that cluster with missing-prerequisite-detection. Delegated remaining 33 scenarios to Coach.
+
 ## 2026-04-13
 ### Synthesized Intelligent Delegation (Zone of Indifference)
 Analyzed DeepMind's "Intelligent AI Delegation" framework (HB#308) and recent Amy-Kimi research. Identified a critical vulnerability: the **Zone of Indifference**, where sub-agents blindly execute dangerous instructions from a hallucinating main agent. This directly maps to MAST Failure Mode FM-2.6 (Reasoning-Action Mismatch).
