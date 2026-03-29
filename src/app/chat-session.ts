@@ -72,16 +72,26 @@ export class ChatSession {
 
   /**
    * Look for an existing idle chat session for this agent and resume it.
+   * Archives any extra idle chat sessions (keeps only the most recent).
    * Called on construction to preserve conversation across restarts.
    */
   private resumeExistingSession(): void {
     const sessions = this.manager.status();
-    const existing = sessions.find(
-      (s) => s.agent === this.agentName && s.kind === "chat" && s.status === "idle",
-    );
-    if (existing) {
-      this.sessionId = existing.sessionId;
+    const chatSessions = sessions
+      .filter((s) => s.agent === this.agentName && s.kind === "chat" && s.status === "idle")
+      .sort((a, b) => (b.startedAt ?? 0) - (a.startedAt ?? 0));
+
+    if (chatSessions.length > 0) {
+      // Resume the most recent
+      this.sessionId = chatSessions[0].sessionId;
       this.trackCompletion(this.sessionId);
+
+      // Archive older orphans
+      for (let i = 1; i < chatSessions.length; i++) {
+        try {
+          this.manager.cancel(chatSessions[i].sessionId);
+        } catch { /* already terminal */ }
+      }
     }
   }
 
