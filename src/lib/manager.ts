@@ -713,12 +713,17 @@ export class SubagentManager {
   }
 
   /**
-   * Common completion handler — called when the agent's prompt()/continue() settles.
+   * Common completion handler — called when the agent's turn settles (prompt()/continue() resolves).
    *
-   * Determines the outcome from agent state, then:
-   *   - Task sessions → terminal status (done/error/interrupted) → archive + remove
+   * finish() = turn complete. Session close = caller's decision (autoClose policy).
    *
-   * See docs/session-state-machine.md for the full state machine.
+   * Flow:
+   *   1. Extract finish() params if present (status, summary, deliverables, etc.)
+   *   2. Clear post-finish artifacts (abort errors from agent loop cleanup)
+   *   3. Determine session next state:
+   *      - autoClose "never" (chat): → idle, stay in activeSessions, await next input
+   *      - autoClose "immediate" (job/call): → archive, fire onSessionComplete
+   *   4. Fire hooks: memory, context-learn, request DB, escalation
    */
   private handleCompletion(session: ActiveSession): void {
     this.clearTimeout(session);

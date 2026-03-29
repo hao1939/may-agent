@@ -1,11 +1,24 @@
 /**
- * Lifecycle tools — structured session completion.
+ * Lifecycle tools — structured turn completion.
  *
- * The `finish()` tool replaces unstructured "I'm done" session endings
- * with a standardized, machine-readable completion signal.
+ * `finish()` signals "I'm done with this turn" — NOT "close the session."
  *
- * Policy: Common Sense 1.4 (Signal completion clearly),
- *         P1 (Simplest thing), P5 (Data Integrity)
+ * What finish() does:
+ *   - Reports status (success/failure/blocked/partial) + summary
+ *   - Validates deliverables exist on disk
+ *   - Updates request tracker (SQLite)
+ *   - Triggers post-turn hooks (evaluation, context-learn, memory)
+ *
+ * What finish() does NOT do:
+ *   - Close/archive the session (that's the caller's decision via autoClose)
+ *   - Prevent further messages (chat sessions accept input after finish)
+ *
+ * Session lifecycle after finish():
+ *   - Chat (autoClose: "never"):  turn ends → session idle → awaits next input
+ *   - Job  (autoClose: "immediate"): turn ends → session archives → parent continues
+ *   - Call (autoClose: "immediate"): turn ends → session archives → caller gets result
+ *
+ * The session close decision belongs to whoever created it, not to the agent.
  */
 
 import type { AgentTool } from "@mariozechner/pi-agent-core";
@@ -141,10 +154,10 @@ export function createFinishTool(options: FinishToolOptions): AgentTool<TSchema>
     name: "finish",
     label: "Finish",
     description:
-      "Signal structured completion of a task. Call this as the LAST action in a session " +
-      "to declare outcome (success/failure/blocked/partial), list deliverables, and specify blockers. " +
-      "This replaces unstructured 'I'm done' messages with machine-readable completion signals. " +
-      "Optionally include lessons learned (fix/pattern/insight) for cross-session memory.",
+      "Signal structured completion of the current turn. Reports what you accomplished " +
+      "(status, summary, deliverables, blockers). Call this when you're done working — " +
+      "the session may continue with further input from the user or caller. " +
+      "This does NOT close the session; it ends the turn and records your results.",
     parameters: finishSchema,
     execute: async (_toolCallId: string, _params: unknown) => {
       const params = _params as FinishParams;
