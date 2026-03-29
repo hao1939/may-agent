@@ -426,42 +426,67 @@ function renderSessionPicker() {
   const picker = document.getElementById('session-picker');
   if (!picker) return;
   const seen = new Set();
-  const running = activeSessions.filter(s => {
-    if (s.status !== 'running' || seen.has(s.sessionId)) return false;
+  // Show running AND idle chat sessions (idle = waiting for next message)
+  const visible = activeSessions.filter(s => {
+    if (seen.has(s.sessionId)) return false;
+    if (s.status !== 'running' && !(s.status === 'idle' && s.kind === 'chat')) return false;
     seen.add(s.sessionId);
     return true;
   });
   let html = '<button class="ask-btn" style="' + (!currentSessionId ? 'border-color:var(--accent);color:var(--accent)' : '') + '" onclick="switchSession(null)">💬 Chat</button> ';
-  for (const s of running) {
+  for (const s of visible) {
     const isActive = currentSessionId === s.sessionId;
     const color = isActive ? 'border-color:var(--accent);color:var(--accent)' : '';
     const label = s.agent + ' (' + s.sessionId.slice(-6) + ')';
     const task = (s.task || '').slice(0, 80);
-    html += `<button class="ask-btn" style="${color}" onclick="switchSession('${s.sessionId}')" title="${esc(task)}">${label}</button> `;
+    const statusIcon = s.status === 'idle' ? '💤 ' : '';
+    html += `<button class="ask-btn" style="${color}" onclick="switchSession('${s.sessionId}')" title="${esc(task)}">${statusIcon}${label}</button> `;
   }
-  if (running.length === 0) {
-    html += '<span style="color:var(--fg2);font-size:11px">No agents running</span>';
+  if (visible.length === 0) {
+    html += '<span style="color:var(--fg2);font-size:11px">No active sessions</span>';
   }
   picker.innerHTML = html;
-  const target = running.find(s => s.sessionId === currentSessionId);
+  const target = visible.find(s => s.sessionId === currentSessionId);
   document.getElementById('chat-input').placeholder = currentSessionId
     ? `Steer ${target?.agent || 'session'}...`
     : 'Type a message...';
 }
 
-function switchSession(sessionId) {
+async function switchSession(sessionId) {
   currentSessionId = sessionId;
   const messages = document.getElementById('chat-messages');
   messages.innerHTML = '';
+
   if (sessionId) {
-    const s = activeSessions.find(s => s.sessionId === sessionId);
-    const div = document.createElement('div');
-    div.className = 'msg';
-    div.style.color = 'var(--fg2)';
-    div.style.fontSize = '12px';
-    div.textContent = `Watching ${s?.agent || 'agent'} — live events from here. Type to steer.`;
-    messages.appendChild(div);
+    // Load transcript history
+    try {
+      const resp = await fetch(`/api/sessions/${sessionId}/transcript`);
+      if (resp.ok) {
+        const data = await resp.json();
+        const transcript = data.messages || data;
+        for (const msg of transcript) {
+          if (msg.role === 'user' && msg.text) {
+            const div = document.createElement('div');
+            div.className = 'msg user';
+            div.textContent = msg.text;
+            messages.appendChild(div);
+          } else if (msg.role === 'assistant' && msg.text) {
+            const div = document.createElement('div');
+            div.className = 'msg assistant';
+            renderAssistantMsg(div, msg.text);
+            messages.appendChild(div);
+          } else if (msg.role === 'tool_result' && msg.isError) {
+            const div = document.createElement('div');
+            div.className = 'msg tool_result error';
+            div.textContent = (msg.content || '').slice(0, 200);
+            messages.appendChild(div);
+          }
+        }
+      }
+    } catch {}
+    messages.scrollTop = messages.scrollHeight;
   }
+
   renderSessionPicker();
   // Tell the server to switch subscription
   if (ws && ws.readyState === 1) {
@@ -578,6 +603,13 @@ function connectWs() {
           status.textContent = `Connected — ${event.agent} (${event.instance})`;
           activeSessions = event.activeAgents || [];
           renderSessionPicker();
+          // Auto-attach to existing chat session (preserves conversation across refreshes)
+          if (!currentSessionId) {
+            const chatSession = activeSessions.find(s => s.agent === 'may' && (s.status === 'running' || (s.status === 'idle' && s.kind === 'chat')));
+            if (chatSession) {
+              switchSession(chatSession.sessionId);
+            }
+          }
           break;
         case 'session_start':
           // New session appeared — update picker
