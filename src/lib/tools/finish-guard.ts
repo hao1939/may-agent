@@ -157,13 +157,7 @@ const GHOST_KEYWORDS = /\b(?:fix(?:ed)?|implement(?:ed)?|refactor(?:ed)?|rewrote
 /**
  * Create a beforeToolCall hook that guards finish(status: "success") calls.
  *
- * Five gates:
- * 0. Contradictory Status Guard: blocks when summary mentions blockers/missing
- *    prerequisites but status is "success" (EXP-215).
- * 0b. Transcript Contradiction Guard: blocks when assistant messages in the
- *     transcript contain evidence of unresolved blockers (missing files, etc.)
- *     but status is "success". Catches agents that write clean summaries while
- *     acknowledging problems in conversation (Gate 3v2, req:8c85fec9).
+ * Three gates:
  * 1. Ghost Deliverable Guard (FM-3.1 preventive): blocks when summary implies
  *    code changes ("Fixed", "Implemented", etc.) but no write/edit evidence
  *    exists in the transcript AND no deliverables are listed. This catches the
@@ -195,63 +189,6 @@ export function createFinishGuard(): (
     // Only guard success
     if (args.status !== "success") return undefined;
 
-    const summary = args.summary ?? "";
-
-    // ── Gate 3: Contradictory Status Guard ──────
-    // Summary mentions blockers/missing/errors but status is "success".
-    // This is a model-level judgment default that prompting can't fix (EXP-215, N=10).
-    const BLOCKER_PATTERNS = /\b(missing|not found|does not exist|blocked|cannot proceed|unable to|prerequisite.*missing|failed to find|not available|not installed|could not find)\b/i;
-
-    if (BLOCKER_PATTERNS.test(summary)) {
-      return {
-        block: true,
-        reason:
-          `finish(status: "success") blocked [Contradictory Status]: Your summary mentions blockers ` +
-          `or missing prerequisites ("${summary.slice(0, 120)}") but your status is "success". ` +
-          `If the task objectives were NOT fully met, use the appropriate status:\n` +
-          `1. finish(status: "blocked", blockers: [...]) — when external dependency is missing\n` +
-          `2. finish(status: "partial", next_steps: "...") — when some work done but not complete\n` +
-          `3. finish(status: "failure", blockers: [...]) — when the task cannot be done\n` +
-          `If you genuinely succeeded despite the mentioned issue, rephrase your summary to be unambiguous.`,
-      };
-    }
-
-    // ── Gate 3b: Transcript Contradiction Guard ──────
-    // The agent may write a clean summary but the transcript reveals
-    // acknowledged blockers/missing prerequisites that were never resolved.
-    const TRANSCRIPT_BLOCKER_PATTERNS = /\b(?:file\s+(?:is\s+)?(?:missing|not\s+found|does\s+not\s+exist)|(?:missing|absent|not\s+(?:found|present|available))\s+(?:file|dependency|prerequisite|input|data)|cannot\s+(?:proceed|continue)\s+(?:without|until)|required\s+.*?\s+(?:is|are)\s+(?:missing|not\s+(?:found|present|available))|no\s+such\s+file)\b/i;
-
-    // Extract assistant text and check for unresolved blocker language
-    let transcriptBlockerMatch: string | null = null;
-    for (const msg of ctx.context.messages) {
-      if (msg.role !== "assistant") continue;
-      const text = typeof msg.content === "string"
-        ? msg.content
-        : Array.isArray(msg.content)
-          ? msg.content.filter((b: any) => b?.type === "text").map((b: any) => b.text).join(" ")
-          : "";
-      const match = text.match(TRANSCRIPT_BLOCKER_PATTERNS);
-      if (match) {
-        transcriptBlockerMatch = match[0];
-        break;
-      }
-    }
-
-    if (transcriptBlockerMatch) {
-      return {
-        block: true,
-        reason:
-          `finish(status: "success") blocked [Transcript Contradiction]: Your session transcript ` +
-          `contains evidence of unresolved blockers ("${transcriptBlockerMatch}") but you're claiming success. ` +
-          `If you discovered missing files, unmet prerequisites, or blockers during this session, ` +
-          `your finish status must reflect that:\n` +
-          `1. finish(status: "blocked", blockers: [...]) — when external dependency is missing\n` +
-          `2. finish(status: "partial", next_steps: "...") — when some work done but not complete\n` +
-          `3. finish(status: "failure", blockers: [...]) — when the task cannot be done\n` +
-          `Discovering and reporting a problem is valuable work, but the status must be "blocked" or "partial", not "success".`,
-      };
-    }
-
     // Check for write/edit evidence in the transcript
     const toolNames = extractToolCallNames(ctx.context.messages);
 
@@ -269,6 +206,7 @@ export function createFinishGuard(): (
     // ── Gate 0: Ghost Deliverable Guard (FM-3.1 preventive) ──────
     // Summary implies code changes but no write evidence AND no deliverables.
     // This catches "Fixed the bug" with zero file modifications.
+    const summary = args.summary ?? "";
     const hasDeliverables = args.deliverables && args.deliverables.length > 0;
     if (!hasWriteEvidence && !hasDeliverables && GHOST_KEYWORDS.test(summary)) {
       return {
