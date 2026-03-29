@@ -175,7 +175,7 @@ setLogHandler((level, message) => {
   if (level === "debug") return; // debug logs don't reach the event system
   bus.emit({ type: "log", level: level as "info" | "warn" | "error", message });
 });
-if (CONSOLE_ENABLED) attachConsoleUI(bus, () => taskSessionId ?? chatSession?.getSessionId() ?? null);
+if (CONSOLE_ENABLED) attachConsoleUI(bus, () => taskSessionId ?? chatSession?.getSessionId() ?? null, CHAT_MODE);
 
 bus.emit({
   type: "info",
