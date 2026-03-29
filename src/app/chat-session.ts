@@ -65,6 +65,24 @@ export class ChatSession {
     this.onReload = opts.onReload;
     this.onClose = opts.onClose;
     this.onRestart = opts.onRestart;
+
+    // Resume existing idle chat session from previous process (preserves conversation)
+    this.resumeExistingSession();
+  }
+
+  /**
+   * Look for an existing idle chat session for this agent and resume it.
+   * Called on construction to preserve conversation across restarts.
+   */
+  private resumeExistingSession(): void {
+    const sessions = this.manager.status();
+    const existing = sessions.find(
+      (s) => s.agent === this.agentName && s.kind === "chat" && s.status === "idle",
+    );
+    if (existing) {
+      this.sessionId = existing.sessionId;
+      this.trackCompletion(this.sessionId);
+    }
   }
 
   /**
