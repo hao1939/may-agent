@@ -158,6 +158,7 @@ export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
             agent: s.agent,
             sessionId: s.sessionId,
             status: s.status,
+            kind: s.kind,
             task: s.task.slice(0, 100),
           })),
       }) + "\n",
