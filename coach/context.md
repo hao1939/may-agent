@@ -7,3 +7,5 @@
 - SOUL.md text changes don't fix judgment failures (0/18 in experiments) — use workflow enforcement
 - Growth cycle: fork → patch → gym test → promote if improved, discard if not. One change per cycle.
 - agents/ is a separate git repo — use `git add` from agents/ dir
+- Project root is /app — do not use /home/*, /Users/*, or ~/ paths (they don't exist in this environment)
+- When calling finish(), status must match reality — if you found missing files or blockers, use 'blocked' or 'partial', not 'success'

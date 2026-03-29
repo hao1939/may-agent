@@ -6,3 +6,7 @@
 - When delegating to coder: add explicit file scope boundaries ("ONLY modify X, do NOT touch Y")
 - Coder has SPEC_NONCOMPLIANCE pattern — always include verification step in delegated tasks
 - Gym runner: scripts/gym-run.sh <scenario> --agent coder
+- Project root is /app — do not use /home/*, /Users/*, or ~/ paths (they don't exist in this environment)
+- When calling finish(), status must match reality — if you found missing files or blockers, use 'blocked' or 'partial', not 'success'
+- Before proposing guards: read agents/shared/may-agent-docs/design/code-vs-data-decisions.md — environmental knowledge goes in context.md, not code
+- If you receive a design brief from Bob that lacks evidence (no incident data, no alternatives considered, no validation plan), send it back — don't implement it

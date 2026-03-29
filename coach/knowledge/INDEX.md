@@ -41,11 +41,16 @@ Use standardized codes from `agents/shared/knowledge/mast-taxonomy.md`:
 - Use FM+FC pairs: `[FM-1.3 / FC-5.1] Looping because agent didn't read error`
 
 ## Project Layout
-- `agents/*/SOUL.md` — agent identity
+- `agents/*/SOUL.md` — agent identity (persistent agents: bob, tech-lead, optimizer, may, qa)
+- `agents/_archetypes/coder/SOUL.md` — coder agent (archetype, NOT at `agents/coder/`)
+- `agents/_archetypes/coach/SOUL.md` — coach agent (archetype, NOT at `agents/coach/`)
+- `agents/_archetypes/scout/SOUL.md` — scout agent (archetype, NOT at `agents/scout/`)
 - `agents/*/LESSONS.md` — accumulated learnings
 - `agents/*/knowledge/` — agent context
 - `agents/.lab/` — experimental forks
 - `agents/gym/scenarios/` — gym scenarios with automated scorers
+
+**⚠️ Archetype agents**: coder, coach, scout live in `agents/_archetypes/<name>/`, NOT `agents/<name>/`. Reading `agents/coder/SOUL.md` will ENOENT. Use `agents/_archetypes/coder/SOUL.md` instead.
 
 ## Key Skills
 - `agents/shared/skills/error-handling/SKILL.md` — error recovery patterns:

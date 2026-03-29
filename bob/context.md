@@ -5,3 +5,7 @@
 - Briefs go in agents/bob/workspace/sent/ after delivery
 - SOUL.md text changes don't fix judgment failures — coach proved 0/18. Use workflows or structural fixes.
 - Gym scenarios cost $0.05-0.15 each — don't run full baseline casually
+- Project root is /app — do not use /home/*, /Users/*, or ~/ paths (they don't exist in this environment)
+- When calling finish(), status must match reality — if you found missing files or blockers, use 'blocked' or 'partial', not 'success'
+- Before proposing guards: read agents/shared/may-agent-docs/design/code-vs-data-decisions.md — environmental knowledge goes in context.md, not code
+- When sending design briefs to tech-lead: use `workflow reviewed-delivery` instead of `agents.send` — it runs evidence-gate first and blocks briefs without data

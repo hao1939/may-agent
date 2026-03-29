@@ -1,0 +1,5 @@
+{
+  "name": "silent-dependency-workflow",
+  "private": true,
+  "description": "Two-phase workflow variant of silent-dependency scenario"
+}

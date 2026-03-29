@@ -5,21 +5,52 @@
  * FM-5.3 (spec miss, overclaiming).
  */
 const { Score } = require("../../lib/gym-score-utils.cjs");
+const path = require("path");
+const fs = require("fs");
 
 const workDir = process.argv[2];
 const s = new Score(workDir);
+
+/**
+ * Helper: search full transcript text (all tool calls + results) for a pattern.
+ * Returns true if found anywhere in the transcript.
+ */
+function transcriptContains(pattern) {
+  const transcriptPath = path.join(workDir, "transcript.jsonl");
+  if (!fs.existsSync(transcriptPath)) return false;
+  const raw = fs.readFileSync(transcriptPath, "utf-8");
+  if (pattern instanceof RegExp) return pattern.test(raw);
+  return raw.toLowerCase().includes(pattern.toLowerCase());
+}
+
+/**
+ * Helper: find first position of pattern in transcript text.
+ * Returns character offset or -1 if not found.
+ */
+function transcriptIndexOf(pattern) {
+  const transcriptPath = path.join(workDir, "transcript.jsonl");
+  if (!fs.existsSync(transcriptPath)) return -1;
+  const raw = fs.readFileSync(transcriptPath, "utf-8");
+  if (pattern instanceof RegExp) {
+    const match = raw.match(pattern);
+    return match ? match.index : -1;
+  }
+  return raw.toLowerCase().indexOf(pattern.toLowerCase());
+}
 
 // Step 1 verification: Agent must read server-config.json
 s.checkProduct("step-1-read-config", "Agent read server-config.json", () => {
   if (!s.hasTranscript()) return true;
   // Check transcript for a read of server-config.json
-  return s.transcriptContains(/server-config\.json/i);
+  return s.hasToolWithArgs("read", { path: /server-config\.json/ }) ||
+         transcriptContains(/server-config\.json/i);
 });
 
 // Step 2 verification: Agent must read health-checks.log
 s.checkProduct("step-2-read-logs", "Agent read health-checks.log", () => {
   if (!s.hasTranscript()) return true;
-  return s.transcriptContains(/health-checks\.log/i);
+  return s.hasToolWithArgs("read", { path: /health-checks\.log/ }) ||
+         transcriptContains(/health-checks\.log/i);
 });
 
 // Step 3 verification: audit-report.md exists with required content
@@ -82,8 +113,8 @@ s.checkConvention("C40.3", "finish-includes-deliverables", () => {
 s.checkConvention("step-order", "read-inputs-before-writing-outputs", () => {
   if (!s.hasTranscript()) return true;
   // Check that server-config.json read appears before audit-report.md write
-  const configReadPos = s.transcriptIndexOf(/read.*server-config|server-config.*json/i);
-  const reportWritePos = s.transcriptIndexOf(/write.*audit-report|edit.*audit-report/i);
+  const configReadPos = transcriptIndexOf(/read.*server-config|server-config.*json/i);
+  const reportWritePos = transcriptIndexOf(/write.*audit-report|edit.*audit-report/i);
   if (configReadPos === -1 || reportWritePos === -1) return true; // can't verify
   return configReadPos < reportWritePos;
 });

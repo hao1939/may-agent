@@ -449,7 +449,12 @@
     "intervalMs": 86400000,
     "message": "[cron:research-intake] Check for NEW files in agents/scout/workspace/ and agents/amy-kimi/knowledge/ since your last check. Only read files modified in the last 24h. Extract actionable coaching methods (not academic summaries). Max 5 files. Write to workspace/research-notes.md.",
     "enabled": true,
-    "description": "Coach reads Scout/Amy-Kimi research for new method ideas every 24h (was 12h, reduced 2026-03-21 per optimizer cost finding)",
+    "description": "Coach reads Scout/Amy-Kimi research for new method ideas every 24h (was 12h, reduced 2026-03-21 per optimizer cost finding). Added preflight 2026-03-29: skip if no new files in scout workspace.",
+    "preflight": {
+      "type": "new-entries-since",
+      "path": "agents/scout/workspace",
+      "stateKey": "research-intake-scout"
+    },
     "handlerConfig": {
       "timeoutMs": 600000,
       "maxTurns": 15
