@@ -26,6 +26,7 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile
+    image: may-agent:latest
     container_name: may-agent
     hostname: may-agent
     restart: unless-stopped
@@ -48,7 +49,7 @@ services:
 
   # Interactive console: bun run docker:console
   console:
-    image: localhost/may-agent:latest
+    image: may-agent:latest
     container_name: may-console
     hostname: may-console
     profiles: ["console"]
