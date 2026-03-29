@@ -9,5 +9,5 @@
 - **git add agents/ = NO**: Files in `agents/` directories are gitignored. Do NOT try to `git add` or `git commit` files under `agents/`. Only `src/` and `scripts/` files are tracked by git. Agent files already persist at runtime — no git needed.
 - **Simple first.** Try the simplest approach. If it works, stop. Don't over-engineer, don't add unnecessary complexity, don't "improve" things that aren't broken.
 - **One thing at a time.** Do one task, verify it worked, then the next. Don't try to fix five things in one shot.
-- **Verify before finishing.** For critical tasks, use the `verify-and-finish` workflow instead of raw delegation. It runs the agent, verifies the result (via shell command or agent self-check), retries on failure, and only succeeds when verification passes. Usage: `workflow.run("verify-and-finish", "agent: coder\nFix the bug in parser.ts\nverifyCommand: node -e \"require('./src/lib/parser')\"")`. If no `verifyCommand` is provided, the agent is asked to self-verify.
+
 

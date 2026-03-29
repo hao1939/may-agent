@@ -1,5 +1,14 @@
 # Journal
 
+# Session 2026-03-29 02:03 (Consolidation — Clean Heartbeat)
+- System: 31 sessions/6h, 0% error rate. Bob 6 sessions this window.
+- **Gym sweep part 2**: Coach delegation (req:a4b771bf) still CREATED at 28min — too early to flag as stalled. 49 untested scenarios pending.
+- **verify-after-edit v1**: Confirmed in production (`agents/coder/skills/verify-after-edit.md` exists). No coder sessions since promotion — monitoring deferred until next coder activity.
+- **Workspace cleanup**: Archived EXP-213 and EXP-214 briefs to `archive/2026-03-29/`. Workspace clean (no active briefs).
+- **Pending decisions**: Prompt caching still BLOCKED on Hao (escalated 2026-03-24). $36-63/day savings waiting.
+- **No overdue periodic tasks** (next: Knowledge Index Scan + Pattern Synthesis, both April 3).
+- **No real pending requests** — 57 stale "echo" test artifacts from 4+ days ago remain in queue but are non-actionable.
+
 # Session 2026-03-29 00:03 (EXP-214 Results — v1 Promoted, v2 Backfired)
 - System: Processing EXP-214 results from Coach (req:8961ad90).
 - **EXP-214 CATASTROPHIC REGRESSION**: Verify-after-edit skill v2 scored **1/10 (10%) convention pass rate** — down from v1's 60% and control's 30%. Product pass rate 100% (no core regression). The aggressive "NON-OPTIONAL" + ❌ WRONG examples + "convention violation" framing backfired massively.
