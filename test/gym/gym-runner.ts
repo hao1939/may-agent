@@ -643,8 +643,13 @@ function runScenario(
   mkdirSync(workDir, { recursive: true });
   mkdirSync(stateDir, { recursive: true });
 
-  // Copy environment
-  cpSync(join(scenarioDir, "environment"), workDir, { recursive: true });
+  // Copy environment contents into workDir
+  // Note: cpSync(dir, existingDir) silently copies nothing in bun 1.x and throws
+  // in Node 18.  Copy each top-level child individually to merge into workDir.
+  const envDir = join(scenarioDir, "environment");
+  for (const child of readdirSync(envDir)) {
+    cpSync(join(envDir, child), join(workDir, child), { recursive: true });
+  }
 
   // Setup adapter
   adapter.setup(PROJECT_ROOT, { agentName, labFork, gymRoot, sandboxAgents: learnBetween });
