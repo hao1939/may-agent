@@ -642,7 +642,14 @@ bus.onCommand((cmd) => {
         return { ok: false, message: "steer requires sessionId in V2" };
       }
       try {
-        manager.steer(targetSid, cmd.message, "human");
+        // Use input() for idle sessions (wakes them), steer() for running ones
+        const sessions = manager.status();
+        const target = sessions.find(s => s.sessionId === targetSid);
+        if (target?.status === "idle") {
+          manager.input(targetSid, cmd.message);
+        } else {
+          manager.steer(targetSid, cmd.message, "human");
+        }
         return { ok: true };
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
