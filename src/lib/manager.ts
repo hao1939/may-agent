@@ -808,7 +808,11 @@ export class SubagentManager {
     }
 
     // ── Determine archive status, archive, remove ──────────────────────
-    if (session.autoClose === "never" && !wasAborted) {
+    // Recompute wasAborted from session.error (not the stale agentError captured
+    // before error-clearing). Post-finish aborts clear the error above, so
+    // wasAborted should be false for chat sessions that completed via finish().
+    const effectivelyAborted = session.error?.includes("aborted") ?? false;
+    if (session.autoClose === "never" && !effectivelyAborted) {
       // Interface session (Chat) — stays alive in "idle" state
       session.status = "idle";
       session.turnCount = 0;
