@@ -22,12 +22,20 @@ type SessionTracker = {
   children: Set<string>;
 };
 
-export function attachConsoleUI(bus: EventBus, getPrimarySessionId?: () => string | null): void {
+export function attachConsoleUI(bus: EventBus, getPrimarySessionId?: () => string | null, chatMode?: boolean): void {
   const tracker: SessionTracker = { primary: null, children: new Set() };
 
   bus.on((event) => {
     const primarySid = getPrimarySessionId?.() ?? null;
     tracker.primary = primarySid;
+
+    // ── Chat mode with no active session → suppress all except notifications ──
+    if (chatMode && !primarySid) {
+      if (event.type === "notification") {
+        console.log(`\n📋 ${event.agent}: ${event.text}`);
+      }
+      return;
+    }
 
     // ── No primary session (daemon mode) → show everything dimmed ────
     if (!primarySid) {
