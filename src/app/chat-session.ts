@@ -72,7 +72,7 @@ export class ChatSession {
 
   /**
    * Look for an existing idle chat session for this agent and resume it.
-   * Archives any extra idle chat sessions (keeps only the most recent).
+   * Closes any extra idle chat sessions (orphans from pre-fix era).
    * Called on construction to preserve conversation across restarts.
    */
   private resumeExistingSession(): void {
@@ -86,11 +86,11 @@ export class ChatSession {
       this.sessionId = chatSessions[0].sessionId;
       this.trackCompletion(this.sessionId);
 
-      // Archive older orphans
+      // Close older orphans (won't happen once finish→idle fix is deployed)
       for (let i = 1; i < chatSessions.length; i++) {
         try {
-          this.manager.cancel(chatSessions[i].sessionId);
-        } catch { /* already terminal */ }
+          this.manager.close(chatSessions[i].sessionId);
+        } catch { /* already gone */ }
       }
     }
   }
