@@ -6,3 +6,5 @@
 - When delegating to coder: add explicit file scope boundaries ("ONLY modify X, do NOT touch Y")
 - Coder has SPEC_NONCOMPLIANCE pattern — always include verification step in delegated tasks
 - Gym runner: scripts/gym-run.sh <scenario> --agent coder
+- Project root is /app — do not use /home/*, /Users/*, or ~/ paths (they don't exist in this environment)
+- When calling finish(), status must match reality — if you found missing files or blockers, use 'blocked' or 'partial', not 'success'

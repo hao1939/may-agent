@@ -7,3 +7,5 @@
 - Session data is in may.db sessions + evaluations tables, not filesystem scans
 - Cron handlers are in agents/<name>/handlers/ — referenced by cron.json "handler" field
 - Don't add harness guards without gym evidence — text rules don't change LLM behavior
+- Project root is /app — do not use /home/*, /Users/*, or ~/ paths (they don't exist in this environment)
+- When calling finish(), status must match reality — if you found missing files or blockers, use 'blocked' or 'partial', not 'success'
