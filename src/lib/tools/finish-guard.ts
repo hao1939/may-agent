@@ -157,7 +157,9 @@ const GHOST_KEYWORDS = /\b(?:fix(?:ed)?|implement(?:ed)?|refactor(?:ed)?|rewrote
 /**
  * Create a beforeToolCall hook that guards finish(status: "success") calls.
  *
- * Three gates:
+ * Four gates:
+ * 0. Contradictory Status Guard: blocks when summary mentions blockers/missing
+ *    prerequisites but status is "success" (EXP-215).
  * 1. Ghost Deliverable Guard (FM-3.1 preventive): blocks when summary implies
  *    code changes ("Fixed", "Implemented", etc.) but no write/edit evidence
  *    exists in the transcript AND no deliverables are listed. This catches the
@@ -189,6 +191,27 @@ export function createFinishGuard(): (
     // Only guard success
     if (args.status !== "success") return undefined;
 
+    const summary = args.summary ?? "";
+
+    // ── Gate 3: Contradictory Status Guard ──────
+    // Summary mentions blockers/missing/errors but status is "success".
+    // This is a model-level judgment default that prompting can't fix (EXP-215, N=10).
+    const BLOCKER_PATTERNS = /\b(missing|not found|does not exist|blocked|cannot proceed|unable to|prerequisite.*missing|failed to find|not available|not installed|could not find)\b/i;
+
+    if (BLOCKER_PATTERNS.test(summary)) {
+      return {
+        block: true,
+        reason:
+          `finish(status: "success") blocked [Contradictory Status]: Your summary mentions blockers ` +
+          `or missing prerequisites ("${summary.slice(0, 120)}") but your status is "success". ` +
+          `If the task objectives were NOT fully met, use the appropriate status:\n` +
+          `1. finish(status: "blocked", blockers: [...]) — when external dependency is missing\n` +
+          `2. finish(status: "partial", next_steps: "...") — when some work done but not complete\n` +
+          `3. finish(status: "failure", blockers: [...]) — when the task cannot be done\n` +
+          `If you genuinely succeeded despite the mentioned issue, rephrase your summary to be unambiguous.`,
+      };
+    }
+
     // Check for write/edit evidence in the transcript
     const toolNames = extractToolCallNames(ctx.context.messages);
 
@@ -206,7 +229,6 @@ export function createFinishGuard(): (
     // ── Gate 0: Ghost Deliverable Guard (FM-3.1 preventive) ──────
     // Summary implies code changes but no write evidence AND no deliverables.
     // This catches "Fixed the bug" with zero file modifications.
-    const summary = args.summary ?? "";
     const hasDeliverables = args.deliverables && args.deliverables.length > 0;
     if (!hasWriteEvidence && !hasDeliverables && GHOST_KEYWORDS.test(summary)) {
       return {
