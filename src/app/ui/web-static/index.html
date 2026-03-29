@@ -628,6 +628,20 @@ function connectWs() {
           activeSessions = activeSessions.filter(s => s.sessionId !== event.sessionId);
           renderSessionPicker();
           break;
+        case 'status':
+          // Update active sessions from periodic poll
+          if (event.activeAgents) {
+            activeSessions = event.activeAgents;
+            renderSessionPicker();
+            // Auto-attach to chat session if we don't have one
+            if (!currentSessionId) {
+              const chatSession = activeSessions.find(s => s.agent === 'may' && (s.status === 'running' || (s.status === 'idle' && s.kind === 'chat')));
+              if (chatSession) {
+                switchSession(chatSession.sessionId);
+              }
+            }
+          }
+          break;
       }
     } catch {}
   };
