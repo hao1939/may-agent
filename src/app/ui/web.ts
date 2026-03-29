@@ -106,7 +106,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         const entry = JSON.parse(line);
         if (entry.role === "user") {
           const text = Array.isArray(entry.content) ? entry.content.map((b: any) => b.text || "").join("") : typeof entry.content === "string" ? entry.content : "";
-          if (text) messages.push({ role: "user", text });
+          // Skip session context injection (buildSessionContext output)
+          if (text && !text.startsWith("# Session Context")) messages.push({ role: "user", text });
         } else if (entry.role === "assistant") {
           const blocks = Array.isArray(entry.content) ? entry.content : [];
           const text = blocks.filter((b: any) => b.type === "text").map((b: any) => b.text).join("");

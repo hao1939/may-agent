@@ -222,6 +222,24 @@ export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
           continue;
         }
 
+        // Handle status locally — return active sessions list to the requesting client
+        if (cmdType === "status") {
+          const statusList = manager.status();
+          socket.write(JSON.stringify({
+            type: "status",
+            activeAgents: statusList
+              .filter((s) => s.status === "running" || s.status === "idle")
+              .map((s) => ({
+                agent: s.agent,
+                sessionId: s.sessionId,
+                status: s.status,
+                kind: s.kind,
+                task: s.task.slice(0, 100),
+              })),
+          }) + "\n");
+          continue;
+        }
+
         // Dispatch and propagate handler result (L5)
         const result = bus.command(cmd as Parameters<typeof bus.command>[0]);
         if (result && !result.ok) {
