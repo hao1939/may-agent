@@ -71,27 +71,23 @@ export class ChatSession {
   }
 
   /**
-   * Look for an existing idle chat session for this agent and resume it.
-   * Closes any extra idle chat sessions (orphans from pre-fix era).
-   * Called on construction to preserve conversation across restarts.
+   * Re-check for idle chat sessions after resumeStaleSessions loads them.
+   * Called from may.ts after stale sessions are loaded into memory.
    */
+  resumeAfterLoad(): void {
+    if (!this.sessionId) {
+      this.resumeExistingSession();
+    }
+  }
+
   private resumeExistingSession(): void {
     const sessions = this.manager.status();
-    const chatSessions = sessions
-      .filter((s) => s.agent === this.agentName && s.kind === "chat" && s.status === "idle")
-      .sort((a, b) => (b.startedAt ?? 0) - (a.startedAt ?? 0));
-
-    if (chatSessions.length > 0) {
-      // Resume the most recent
-      this.sessionId = chatSessions[0].sessionId;
+    const existing = sessions.find(
+      (s) => s.agent === this.agentName && s.kind === "chat" && s.status === "idle",
+    );
+    if (existing) {
+      this.sessionId = existing.sessionId;
       this.trackCompletion(this.sessionId);
-
-      // Close older orphans (won't happen once finish→idle fix is deployed)
-      for (let i = 1; i < chatSessions.length; i++) {
-        try {
-          this.manager.close(chatSessions[i].sessionId);
-        } catch { /* already gone */ }
-      }
     }
   }
 
