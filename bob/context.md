@@ -8,3 +8,4 @@
 - Project root is /app — do not use /home/*, /Users/*, or ~/ paths (they don't exist in this environment)
 - When calling finish(), status must match reality — if you found missing files or blockers, use 'blocked' or 'partial', not 'success'
 - Before proposing guards: read agents/shared/may-agent-docs/design/code-vs-data-decisions.md — environmental knowledge goes in context.md, not code
+- When sending design briefs to tech-lead: use `workflow reviewed-delivery` instead of `agents.send` — it runs evidence-gate first and blocks briefs without data
