@@ -16,6 +16,8 @@ export function attachConsoleUI(bus: EventBus, getPrimarySessionId?: () => strin
 
     // Chat mode: only show primary session + notifications
     if (chatMode) {
+      // Debug: uncomment to trace session matching
+      // Debug removed
       if (event.type === "notification") {
         console.log(`\n📋 ${event.agent}: ${event.text}`);
         return;

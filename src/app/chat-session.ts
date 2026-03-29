@@ -83,7 +83,7 @@ export class ChatSession {
   private resumeExistingSession(): void {
     const sessions = this.manager.status();
     const existing = sessions.find(
-      (s) => s.agent === this.agentName && s.kind === "chat" && s.status === "idle",
+      (s) => s.agent === this.agentName && s.kind === "chat",
     );
     if (existing) {
       this.sessionId = existing.sessionId;
