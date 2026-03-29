@@ -891,9 +891,18 @@ writeIdentity({
 if (CRON_ENABLED) {
   // Resume stale job sessions from a previous process crash.
   const { resumed, interrupted } = manager.resumeStaleSessions({ kinds: ["job"] });
-  // Clean up orphaned non-job sessions (chat/call) — these have no trigger to self-resume,
-  // so they accumulate forever if not interrupted on startup.
-  const { interrupted: orphansCleaned } = manager.resumeStaleSessions({ abort: true, kinds: ["chat", "call"] });
+  // Clean up orphaned non-job sessions (call) — these have no trigger to self-resume.
+  // Chat sessions are handled separately: in CHAT_MODE they're resumed, otherwise interrupted.
+  const { interrupted: orphansCleaned } = manager.resumeStaleSessions({ abort: true, kinds: ["call"] });
+  if (!CHAT_MODE) {
+    // Daemon mode: also clean up orphaned chat sessions
+    const { interrupted: chatCleaned } = manager.resumeStaleSessions({ abort: true, kinds: ["chat"] });
+    orphansCleaned.push(...chatCleaned);
+  } else {
+    // Chat mode: resume idle chat sessions (preserves conversation history)
+    const { resumed: chatResumed } = manager.resumeStaleSessions({ kinds: ["chat"] });
+    resumed.push(...chatResumed);
+  }
   if (resumed.length > 0) {
     bus.emit({
       type: "info",
