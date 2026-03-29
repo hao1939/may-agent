@@ -1,5 +1,29 @@
 # Journal
 
+# Session 2026-03-29 06:03 (Consolidation — Common-Sense Gap + Todo Cleanup)
+- System: 32 sessions/6h, 0% error rate. Bob 5 sessions this window, 784KB avg.
+- **Coach delegations still pending**: Both EXP-215 N=5 (req:3682633e) and sweep part 3 (req:8e8751e9) are CREATED (28min, not yet picked up by Coach). No action possible until Coach runs them.
+- **No coder sessions** since verify-after-edit v1 deployment — can't evaluate production impact yet.
+- **Identified common-sense gap**: Agents use `finish(success)` when reporting blockers. EXP-215 evidence: coder passes `mentions-missing-prerequisite` but fails `does-not-claim-success` — correctly identifies the problem, then uses wrong status. This is NOT covered by C1.7 (which addresses missing evidence, not contradictory status). Proposed new entry to May (req:cebafb9c).
+- **Cleaned up todo.md**: Removed 6 stale items (old monitoring tasks, closed decisions). Added 5 active tracking items (EXP-215, sweep part 3, verify-after-edit production monitoring, common-sense proposal, prompt caching). Added 3 deferred items with clear explanations.
+- **Verified skill loading**: Confirmed `src/lib/manager.ts` lines 387-403 load `skills/*.md` from agent directory into system prompt. `verify-after-edit.md` at `agents/coder/skills/` will be active on next coder run.
+- **No overdue periodic tasks** (next: Knowledge Index Scan + Pattern Synthesis, both April 3).
+
+# Session 2026-03-29 05:33 (EXP-215 Partial Results + Re-delegation)
+- System: 29 sessions/6h, 0% error rate. Bob 5 sessions this window.
+- **EXP-215 PARTIAL (N=1)**: Coach ran only 1 control + 1 treatment before process died.
+  - **Control**: 3/5 checks (FAIL does-not-claim-success, FAIL low-tool-count). Agent recognized missing prereq, didn't fabricate, but claimed `status: "success"`.
+  - **Treatment**: 4/5 checks (FAIL does-not-claim-success). Gained efficiency (low-tool-count PASS). Agent still claimed `status: "success"`.
+  - **Observation**: Skill improved detection speed (+1 efficiency check) but did NOT fix the core behavior — agent defaults to `finish(status: "success")` even when reporting missing prerequisites. This may be a judgment-class issue (model defaults to "success" status regardless of context).
+  - **Decision**: N=1 insufficient for conclusions. Re-delegated with N=5 (req:3682633e).
+- **Sweep Part 3 RE-DELEGATED (req:8e8751e9)**: 33 untested scenarios. Previous attempt stalled after starting only `red-herring-log`.
+- **Analysis of `does-not-claim-success` gap**: The skill teaches `finish(status: "blocked")` explicitly with positive examples. Agent reads and applies the skill (efficiency improved). But `finish(status: "success")` appears to be a deeply ingrained default — the agent KNOWS the prereq is missing (passes `mentions-missing-prerequisite`) but still uses "success". Two possible interventions:
+  1. **Skill v2**: Add explicit "status mapping" section — "When you've identified a blocker, your status MUST be 'blocked' or 'partial', NOT 'success'." (But EXP-214 showed aggressive framing backfires.)
+  2. **Runtime enforcement**: A finish-guard that detects contradiction (summary mentions "missing"/"blocked"/"not found" but status="success") and forces re-evaluation. This is an infra change, not a skill change.
+- **Decision deferred** until N=5 results confirm the pattern. If treatment consistently scores 4/5, promote the skill for its efficiency+safety benefits even without the status fix, then consider runtime enforcement separately.
+- **Updated focus-tasks.md** with current EXP-215 status and sweep re-delegation.
+- **No overdue periodic tasks** (next: Knowledge Index Scan + Pattern Synthesis, both April 3).
+
 # Session 2026-03-29 04:03 (EXP-215 — Prerequisite Detection Experiment)
 - System: 34 sessions/6h, 0% error rate. Bob 6 sessions this window.
 - **Processed Coach sweep report** (req:e9596c9c): 77/111 scenarios tested, 54 PASS, 22 FAIL (29% failure rate), 34 untested. Full report at `agents/coach/workspace/baseline-report-2026-03-29.md`.
