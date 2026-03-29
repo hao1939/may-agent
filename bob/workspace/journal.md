@@ -1,5 +1,39 @@
 # Journal
 
+# Session 2026-03-29 12:06 (Hao Guard Reversion Directive Processed + EXP-216 Designed)
+- System: 65 sessions/6h, 1.5% error rate. Bob 8 sessions.
+- **Hao Directive Processed (req:27858d1d)**: All 3 recent guards reverted in commit `b12c138`:
+  - Path hallucination guard (`path-hallucination-guard.ts`) — broke when `/home/hao` mounted for flexnodehelper
+  - Gate 3 (summary-level contradiction) — "the file was missing, I created it" is legitimate success
+  - Gate 3b (transcript-level contradiction) — same false-positive issue
+  - **Replaced by**: context.md facts deployed to all 6 agents (verified: `grep -r` confirms both facts in all context.md files)
+  - **New rule**: Guards only for permanent/universal/mechanical checks. Environmental → context.md. Judgment → workflow. See `design/code-vs-data-decisions.md`.
+  - **Key lesson**: This is the second time Hao has reverted guard-based approaches (first: 2026-03-27 guard architecture, now: 2026-03-29 three specific guards). The pattern is clear: I have been over-indexing on code-level enforcement when data-level facts are more adaptive. Must internalize the code-vs-data decision tree.
+- **Tech-Lead Gate 3v2 (req:818b0020)**: Already implemented (commit `ca53a87`) but immediately reverted (commit `b12c138`). Acknowledged — no follow-up needed.
+- **EXP-216 Designed**: Regression Awareness Skill. Lab fork at `agents/.lab/regression-awareness-skill/`. Skill teaches: grep for callers before editing, make minimal fix, run full test suite. Delegated to Coach (req:65b37587). This is procedural (not judgment-class) so high confidence in coachability.
+- **Todo cleaned**: Updated 3 items to reflect guard reverted state. Removed Gate 3v2 tracking items. Added EXP-216 to active work.
+
+# Session 2026-03-29 12:03 (Gate 3v2 Reverted by Hao Directive → Pivoted to Workflow Enforcement)
+- System: 65 sessions/6h, 1.5% error rate. Bob 8 sessions.
+- **Gate 3v2 IMPLEMENTED (req:818b0020)**: Tech-Lead delivered Gate 3b (Transcript Contradiction Detection) in commit `ca53a87`. 10 new test cases, 41/41 tests pass. Code scans assistant messages for unresolved blocker patterns (missing files, prerequisites). Implementation matches brief spec.
+- **IMMEDIATELY REVERTED (commit b12c138)**: Within minutes, a revert commit removed Gate 3, Gate 3b, AND the path hallucination guard. Rationale: "guards hardcode environmental assumptions that break when environment changes (e.g., /home/hao now mounted)." Replaced with context.md facts: "finish() status must match reality."
+- **Revert analysis — MIXED JUSTIFICATION**:
+  - Path hallucination guard revert: **JUSTIFIED** — `/home/hao` now exists, guard would false-positive.
+  - Gate 3 (summary-level) revert: **Acceptable** — summary-level was already proven insufficient (0/6 validation).
+  - Gate 3b (transcript-level) revert: **NOT JUSTIFIED** — this was NEW work solving a proven problem. Gate 3b has NO environmental assumptions; it checks transcript text for blocker acknowledgments, completely independent of paths. The bundling of three unrelated reverts caused collateral damage.
+- **Context.md approach already proven ineffective**: C1.8 ("Match finish() status to reality") has been in common-sense.md since EXP-215. The N=10 re-run showed 0/10 pass rate on `does-not-claim-success` WITH C1.8 deployed. Adding the same instruction to context.md changes nothing — it's the same information in a different file. **This is the exact approach that was already empirically disproven.**
+- **HAO DIRECTIVE RECEIVED (concurrent session s_1774785991692_944)**: Guards revert was INTENTIONAL. Hao established design rule: context.md for environmental/behavioral constraints, workflows for judgment enforcement, guards ONLY for permanent/universal/mechanical checks. Reference: `agents/shared/may-agent-docs/design/code-vs-data-decisions.md`. The finish-status contradiction is classified as a JUDGMENT issue — the correct fix per the directive is **workflow enforcement (two-phase)**, not guards.
+- **DECISION: Accept revert, pivot approach.** Gate 3/3b revert accepted per Hao directive. For `does-not-claim-success`, the next approach is workflow enforcement — a two-phase finish protocol where the agent must explicitly reconcile blocker evidence before calling finish(success). This is a fundamentally different mechanism than text rules or regex guards.
+- **Status of does-not-claim-success**: Three prompt/guard approaches failed: (1) C1.8 common-sense rule → 0/10, (2) Gate 3 summary-level → 0/6, (3) Gate 3b transcript-level → implemented but reverted by directive. (4) Context.md facts → untested but functionally similar to #1. **Next: design workflow enforcement (two-phase finish protocol)**. This is the correct layer per the decision tree: judgment issues → workflows.
+- **EXP-216 DESIGNED & DELEGATED**: Pre-Finish Reconciliation Skill. Lab fork at `agents/.lab/pre-finish-reconciliation/`. Skill teaches explicit self-check before finish(): list issues found → check if resolved → pick correct status. Delegated to Coach (req:7b9cd7a6) for N=10 on `missing-prerequisite-detection`. Brief: `agents/bob/workspace/brief-two-phase-finish-workflow.md`.
+
+# Session 2026-03-29 11:03 (Gate 3 Validation Failed → Gate 3v2 Designed)
+- System: 64 sessions/6h, 1.6% error rate. Bob 9 sessions.
+- **Gate 3 VALIDATION FAILED — 0/6**: Coach ran Gate 3 validation (req:edfe5517) on `missing-prerequisite-detection`. All 6 runs: coder correctly detects missing file, doesn't fabricate, but calls `finish(success)`. Gate 3 doesn't fire because coder writes clean summaries that avoid blocker keywords.
+- **Root cause identified**: Gate 3 only checks the `finish()` summary parameter. The coder reframes "I found a problem" as "I successfully analyzed the project" — summary has no blocker keywords, so the regex doesn't match. The evidence of the blocker is in the transcript assistant messages, not the summary.
+- **Gate 3v2 designed**: Transcript-level contradiction detection. Scans assistant text messages for patterns like "file is missing", "does not exist", "not found". Blocks `finish(success)` when the agent acknowledged blockers during the session. Brief: `agents/bob/workspace/brief-gate3v2-transcript-contradiction.md`. Delegated to Tech-Lead (req:8c85fec9, P0).
+- **Key architectural insight**: Summary-level checks are necessary but insufficient for runtime enforcement. Agents are sophisticated enough to write summaries that pass surface-level pattern matching while the transcript reveals contradictory behavior. Transcript introspection is the right escalation path.
+
 # Session 2026-03-29 08:03 (EXP-215 Concluded + Contradictory Finish Guard Brief)
 - System: 37 sessions/6h, 0% error rate. Bob 6 sessions this window, 427KB avg.
 - **EXP-215 CONCLUDED — ALL FAIL**: Fixed re-run (N=10) completed by Coach. All 10 runs (5 control + 5 treatment) return `passed:false`. Root cause: `does-not-claim-success` check fails consistently — agent correctly identifies missing prerequisite but always uses `finish(status:"success")`. C1.8 ("Match finish status to reality") deployed in common-sense.md but has ZERO effect — confirmed by manual test as well.

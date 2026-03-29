@@ -1,5 +1,8 @@
 # Journal
 
+## 2026-03-29 11:34 — Gate 3v2: Transcript Contradiction Detection
+**P0 req:8c85fec9** — Implemented Gate 3b in `src/lib/tools/finish-guard.ts`. Scans assistant text messages for unresolved blocker language (missing files, absent prerequisites, "cannot proceed without") when agent calls `finish(success)`. Catches pattern where agents write clean summaries but transcript shows acknowledged problems. 10 new test cases in `test/finish-guard.test.ts`. 41/41 tests pass, tsc clean. Commit `ca53a87`. Notified Bob for gym validation (baseline: 0/6 on missing-prerequisite-detection).
+
 ## 2026-03-25 17:35 — Two tasks completed
 1. **P0 req:26d4853c** — Restored LESSONS.md loading in `src/lib/manager.ts` buildSystemPrompt(). Added sections 1c (agent LESSONS.md) and 1d (shared/LESSONS.md) between DOMAIN.md and common-sense.md. Commit `52093fa`. TSC clean.
 2. **P1 req:89285acb** — Created `agents/may/handlers/zombie-cleanup.ts` + cron entry (60min interval). Calls `manager.cleanupZombieSessions()` periodically. On disk, agents/ gitignored so no commit needed — runtime loads dynamically.
