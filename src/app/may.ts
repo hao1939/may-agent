@@ -909,6 +909,9 @@ if (CRON_ENABLED) {
     // Chat mode: resume idle chat sessions (preserves conversation history)
     const { resumed: chatResumed } = manager.resumeStaleSessions({ kinds: ["chat"] });
     resumed.push(...chatResumed);
+    // Now that sessions are loaded, let ChatSession attach to the newest
+    // and close orphan duplicates
+    if (chatSession) chatSession.resumeAfterLoad();
   }
   if (resumed.length > 0) {
     bus.emit({
