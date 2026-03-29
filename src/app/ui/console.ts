@@ -1,110 +1,186 @@
 /**
  * Console UI — renders RunnerEvents to stdout.
  *
- * Uses sessionId to determine rendering: events from the primary session
- * (human's chat) render bright, everything else renders dimmed.
+ * In chat mode (primary session set), renders like pi-agent:
+ *   - Primary session: text streams, tool calls + results shown
+ *   - Delegated sessions (children): summary only (start + end)
+ *   - Background activity (cron, heartbeats, other agents): HIDDEN
+ *   - Notifications: always shown (they're addressed to the human)
+ *
+ * In daemon mode (no primary session), shows everything dimmed (old behavior).
  */
 
 import { isSessionEvent, type EventBus, type RunnerEvent } from "../event-bus.js";
 
 const DIM = "\x1b[2m";
 const RESET = "\x1b[0m";
+const CYAN = "\x1b[36m";
+
+/** Set of sessionIds that are part of the human's task tree (primary + delegations). */
+type SessionTracker = {
+  primary: string | null;
+  children: Set<string>;
+};
 
 export function attachConsoleUI(bus: EventBus, getPrimarySessionId?: () => string | null): void {
+  const tracker: SessionTracker = { primary: null, children: new Set() };
+
   bus.on((event) => {
-    // Determine if this event is from the human's active session
     const primarySid = getPrimarySessionId?.() ?? null;
-    const dim = primarySid
-      ? isSessionEvent(event) && event.sessionId !== primarySid
-      : event.type === "log" || event.type === "turn_end";
+    tracker.primary = primarySid;
 
-    switch (event.type) {
-      case "text":
-        if (dim) {
-          process.stdout.write(`${DIM}${event.text}${RESET}`);
-        } else {
-          process.stdout.write(event.text);
+    // ── No primary session (daemon mode) → show everything dimmed ────
+    if (!primarySid) {
+      renderDaemon(event);
+      return;
+    }
+
+    // ── Chat mode: filter to primary session + its delegation tree ────
+
+    if (isSessionEvent(event)) {
+      const sid = event.sessionId;
+      const isPrimary = sid === primarySid;
+
+      // Track delegation children: if a session starts with parentSessionId
+      // matching primary or a known child, it's part of our task tree
+      if (event.type === "session_start" && event.parentSessionId) {
+        if (event.parentSessionId === primarySid || tracker.children.has(event.parentSessionId)) {
+          tracker.children.add(sid);
         }
-        break;
-
-      case "tool_call":
-        dimLog(dim, `\n[${event.agent}:${event.tool}] ${JSON.stringify(event.args).slice(0, 200)}`);
-        break;
-
-      case "tool_result": {
-        const prefix = `[${event.agent}:${event.tool}]`;
-        if (event.isError) {
-          dimLog(dim, `${prefix} ERROR`);
-        } else {
-          dimLog(dim, `${prefix} ${event.preview}${event.preview.length >= 200 ? "..." : ""}`);
-        }
-        break;
       }
 
-      case "turn_end":
-        dimLog(true, `[${event.agent}] turn done (${Math.round(event.durationMs / 1000)}s, ${event.toolCalls} tool calls)`);
-        break;
+      const isChild = tracker.children.has(sid);
 
-      case "session_start":
-        if (event.parentSessionId) {
-          dimLog(dim, `\n[${event.agent}] started: ${event.task.slice(0, 100)}`);
-        }
-        break;
+      if (isPrimary) {
+        renderPrimary(event);
+      } else if (isChild) {
+        renderChild(event);
+      }
+      // else: background — drop silently
+      return;
+    }
 
-      case "session_end":
-        dimLog(dim, `[${event.agent}] ${event.status}${event.duration ? ` (${event.duration})` : ""}`);
-        break;
-
+    // ── Non-session events ───────────────────────────────────────────
+    switch (event.type) {
       case "notification":
+        // Notifications are human-facing — always show
         console.log(`\n📋 ${event.agent}: ${event.text}`);
         break;
-
-      case "workflow": {
-        const prefix = `[${event.agent}:${event.event === "start" ? "workflow" : "step"}]`;
-        switch (event.event) {
-          case "start":
-            dimLog(dim, `\n${prefix} ${event.workflow}: ${(event.task ?? "").slice(0, 100)}`);
-            break;
-          case "step_start":
-            dimLog(dim, `${prefix} ${event.step} started`);
-            break;
-          case "step_done":
-            dimLog(dim, `[${event.agent}:step] ${event.step} ${event.status ?? "done"} (${event.duration ?? "?"})`);
-            break;
-          case "done":
-            dimLog(dim, `[${event.agent}:workflow] done`);
-            break;
-          case "escalated":
-            dimLog(dim, `[${event.agent}:workflow] escalated: ${event.reason ?? ""}`);
-            break;
-        }
-        break;
-      }
-
-      case "eval":
-        dimLog(true, `\n[eval] verdict: ${event.verdict} (efficiency: ${event.efficiency}, quality: ${event.quality})`);
-        break;
-
-      case "log":
-        dimLog(true, `\n[${event.level}] ${event.message}`);
-        break;
-
-      // Deprecated: info and prompt (backward compat during migration)
-      case "info":
-        dimLog(true, `\n[runner] ${(event as { message: string }).message}`);
-        break;
-
-      case "prompt":
-        process.stdout.write(`\n[${(event as { message: string }).message}] `);
-        break;
+      // Everything else (log, info, eval) — drop in chat mode
     }
   });
 }
 
-function dimLog(dim: boolean, msg: string): void {
-  if (dim) {
-    console.log(`${DIM}${msg}${RESET}`);
-  } else {
-    console.log(msg);
+/** Render events from the primary session (human's direct conversation). */
+function renderPrimary(event: RunnerEvent & { sessionId: string }): void {
+  switch (event.type) {
+    case "text":
+      process.stdout.write(event.text);
+      break;
+    case "tool_call":
+      console.log(`${DIM}[${event.tool}] ${formatArgs(event.tool, event.args)}${RESET}`);
+      break;
+    case "tool_result":
+      if (event.isError) {
+        console.log(`${DIM}[${event.tool}] ERROR: ${event.preview.slice(0, 200)}${RESET}`);
+      }
+      // Successful results: don't show (agent will summarize)
+      break;
+    case "turn_end":
+      // Subtle separator between turns
+      break;
+    case "session_end":
+      if (event.error) {
+        console.log(`\n⚠️ ${event.error}`);
+      }
+      break;
+  }
+}
+
+/** Render events from delegated child sessions (summary only). */
+function renderChild(event: RunnerEvent & { sessionId: string }): void {
+  switch (event.type) {
+    case "session_start":
+      if ("agent" in event && "task" in event) {
+        console.log(`${DIM}${CYAN}→ [${event.agent}] ${(event.task as string).slice(0, 100)}${RESET}`);
+      }
+      break;
+    case "session_end":
+      if ("agent" in event) {
+        const outcome = (event as { outcome?: string }).outcome;
+        const summary = outcome ? outcome.slice(0, 150) : event.status;
+        console.log(`${DIM}${CYAN}← [${(event as { agent: string }).agent}] ${summary}${RESET}`);
+      }
+      break;
+    // Everything else from children: drop (tool calls, text, etc.)
+  }
+}
+
+/** Daemon mode: show everything dimmed (no primary session). */
+function renderDaemon(event: RunnerEvent): void {
+  switch (event.type) {
+    case "text":
+      if (isSessionEvent(event)) {
+        process.stdout.write(`${DIM}${event.text}${RESET}`);
+      }
+      break;
+    case "tool_call":
+      if (isSessionEvent(event)) {
+        console.log(`${DIM}[${event.agent}:${event.tool}] ${JSON.stringify(event.args).slice(0, 200)}${RESET}`);
+      }
+      break;
+    case "tool_result":
+      if (isSessionEvent(event)) {
+        const prefix = `[${event.agent}:${event.tool}]`;
+        if (event.isError) {
+          console.log(`${DIM}${prefix} ERROR${RESET}`);
+        }
+      }
+      break;
+    case "session_start":
+      if (isSessionEvent(event) && event.parentSessionId) {
+        console.log(`${DIM}[${event.agent}] started: ${event.task.slice(0, 100)}${RESET}`);
+      }
+      break;
+    case "session_end":
+      if (isSessionEvent(event)) {
+        console.log(`${DIM}[${event.agent}] ${event.status}${RESET}`);
+      }
+      break;
+    case "notification":
+      console.log(`📋 ${event.agent}: ${event.text}`);
+      break;
+    case "info":
+      console.log(`${DIM}${(event as { message: string }).message}${RESET}`);
+      break;
+    case "log":
+      if (event.level === "error") {
+        console.log(`${DIM}[${event.level}] ${event.message}${RESET}`);
+      }
+      break;
+  }
+}
+
+/** Format tool call arguments for display. */
+function formatArgs(tool: string, args: unknown): string {
+  if (!args || typeof args !== "object") return "";
+  const a = args as Record<string, unknown>;
+  switch (tool) {
+    case "bash":
+      return String(a.command ?? "").slice(0, 200);
+    case "read":
+      return String(a.path ?? "");
+    case "write":
+      return String(a.path ?? "");
+    case "edit":
+      return String(a.path ?? "");
+    case "agents":
+      return `${a.action ?? "?"} ${a.agent ?? ""} ${String(a.message ?? "").slice(0, 80)}`;
+    case "workflow":
+      return `${a.name ?? "?"} ${String(a.task ?? "").slice(0, 80)}`;
+    case "finish":
+      return `${a.status ?? "?"}: ${String(a.summary ?? "").slice(0, 100)}`;
+    default:
+      return JSON.stringify(args).slice(0, 200);
   }
 }
