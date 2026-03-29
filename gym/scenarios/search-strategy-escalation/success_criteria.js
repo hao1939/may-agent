@@ -19,7 +19,7 @@ const fs = require('fs');
 const { execSync } = require('child_process');
 
 const envDir = process.argv[2] || path.join(__dirname, 'environment');
-const transcriptPath = process.argv[3];
+const transcriptPath = process.argv[3] || path.join(process.argv[2] || '.', 'transcript.jsonl');
 
 const results = {
   scenario: 'search-strategy-escalation',

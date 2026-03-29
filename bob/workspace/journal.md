@@ -710,3 +710,54 @@ First successful session after ~20 hours of errors due to model misconfiguration
 - `agents/shared/knowledge-index.md` (Updated — 3 broken links fixed, 2 sections added, counts updated)
 - `agents/shared/focus-tasks.md` (Updated — Gym Runtime marked DEPLOYED)
 - `agents/bob/periodic-tasks.md` (Updated — Knowledge Index Scan date)
+
+---
+
+### 2026-03-29 09:03 — Gate 3 Deployed, Sweep Part 3 In Progress
+
+## Key Findings
+1. **Gate 3 (Contradictory Finish Status Guard) DEPLOYED** — Tech-Lead implemented `req:13eab649` as commit `45812bc`. `finish(success)` now blocked when summary mentions blockers/missing prerequisites. TSC passes clean. Addresses `does-not-claim-success` model-level issue via runtime enforcement.
+2. **Sweep Part 3 in progress** — 27/33 complete (18 PASS, 8 FAIL). New failures: regression-from-fix (2), search-strategy-escalation, silent-dependency, spec-adherence-multi-step, stale-approach-fixation-workflow, sycophants-dilemma (confirmed judgment), verification-contradiction-workflow. Process still running (PID 1866854).
+3. **Full sweep picture** (combined parts 1-3, partial): 104/111 tested, 72 PASS, 30 FAIL (71% pass rate). 7 scenarios remaining in part 3.
+
+## Decisions
+- Gate 3 closes the loop on `does-not-claim-success` — moved from "prompting can't fix" to "runtime enforcement"
+- Sweep part 3 final results will be processed next heartbeat when all 33 complete
+
+## Artifacts
+- `agents/bob/workspace/todo.md` (Updated — Gate 3 marked deployed, sweep progress updated)
+
+---
+
+### 2026-03-29 09:06 — Failure Analysis Update (Cron: analyze-failures)
+
+## Findings
+1. **System health dramatically improved**: Good verdict rate climbed from 73.9% (Mar 25) → 94.7% (Mar 29). FM-3.3 Verification Gap dropped from #1 to #3 failure pattern.
+2. **New #1 failure: PATH_HALLUCINATION** — 16 of 31 failure chain triggers since Mar 28. Optimizer (9 PATH_ERROR + 3 hallucination) and Coder (4 hallucination) guess at paths like `/home/coder`, `/var/tmp/repos/`. C50 in common-sense.md exists but doesn't prevent this.
+3. **Coach is weakest agent**: 3 needs_improvement sessions (tool schema errors + requirements mismatch). All other agents at 0 NI since Mar 28.
+4. **Targeted fixes working**: FM-3.3 guard (Mar 25) and verify-after-edit skill (EXP-213) clearly shifted behavior. Evidence-based approach validated.
+5. **What didn't change**: C50 ("Environment Reality") exists but PATH errors persist → rule alone insufficient. Need either a skill (positive examples of `pwd && ls` first) or runtime correction.
+
+## Decisions
+- Updated `agents/bob/workspace/analysis.md` with full data-driven analysis comparing to Mar 26 baseline
+- Recommended priority: PATH_HALLUCINATION skill for optimizer/coder (same gentle approach that worked for verify-after-edit)
+- C1.8 and aggressive negative examples confirmed as anti-patterns (already known)
+
+## Artifacts
+- `agents/bob/workspace/analysis.md` (Rewritten — full Mar 29 analysis with trend data, issue breakdown, failure chains, agent health, and recommendations)
+
+## 2026-03-29 09:08Z — Common-Sense Infra Review (Cron)
+
+**Task:** Review common-sense.md for infra-owned items, identify highest priority unbuilt mechanism.
+
+**Findings:**
+1. **Current common-sense items (8 total):** 3 have infra enforcement (C1.7→Gate 2, C1.8→Gate 3, C50→partial PIVOT coverage), 1 enforced by .gitignore (git add agents/), 4 are behavioral-only (no infra needed)
+2. **Highest priority unbuilt mechanism: PATH_HALLUCINATION guard for C50.** Analysis data shows 16/31 failure chain triggers from path hallucination since Mar 28 — the #1 current failure mode. C50 exists in common-sense but has only reactive enforcement (PIVOT after 3 failures)
+3. **Coach-flagged items needing infra:**
+   - Non-specialist src/ editing guard (3% violation, low priority)
+   - QA timeout/finish (model/config concern, not a guard)
+   - Behavioral breakdown (already handled by empty-args-guard)
+4. **No ownership annotations needed** — common-sense.md is human-controlled, no ownership column exists
+5. **Recently built:** Gate 3 (Contradictory Finish Status Guard) deployed in commit 45812bc — enforces C1.8
+
+**Action:** Wrote brief for Path Hallucination Guard → sent to tech-lead (req:22e294d4)

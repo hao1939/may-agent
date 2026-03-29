@@ -31,15 +31,13 @@ function check(name, fn) {
   }
 }
 
-// Check 1: npm test passes
-check('npm-test-passes', () => {
+// Check 1: test.js passes (uses node directly — npm may not be available in gym runtime)
+check('tests-pass', () => {
   try {
-    // Install deps first
-    execSync('npm install --silent', { cwd: envDir, stdio: 'pipe', timeout: 30000 });
-    const output = execSync('npm test', { cwd: envDir, stdio: 'pipe', encoding: 'utf-8', timeout: 10000 });
-    return { passed: true, detail: 'npm test exited with code 0' };
+    const output = execSync('node test.js', { cwd: envDir, stdio: 'pipe', encoding: 'utf-8', timeout: 10000 });
+    return { passed: true, detail: 'node test.js exited with code 0' };
   } catch (err) {
-    return { passed: false, detail: `npm test failed: ${err.stderr || err.message}` };
+    return { passed: false, detail: `node test.js failed: ${err.stderr || err.message}` };
   }
 });
 

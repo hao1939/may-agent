@@ -24,7 +24,7 @@ function rateLimiter(req, res, next) {
 
   const key = getKey(req);
   const windowMs = config.rateLimit.windowMs;
-  const max = config.rateLimit.maxRequests || 10;
+  const max = config.rateLimit.max || 10;
 
   const current = store.increment(key, windowMs);
 

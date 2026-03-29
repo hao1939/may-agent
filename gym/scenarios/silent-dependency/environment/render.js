@@ -7,27 +7,16 @@
 
 const { marked } = require('marked');
 
-// Configure marked options (sanitize option is deprecated/removed in v4+)
+// Configure marked options
 marked.setOptions({
+  sanitize: true,   // Enable HTML sanitization for security
   smartLists: true,
   smartypants: true
 });
 
-/**
- * Sanitize HTML by stripping all raw HTML tags from input.
- * This prevents XSS by removing <script>, <img onerror=...>, etc.
- * before the markdown parser sees them.
- */
-function sanitizeHtml(input) {
-  // Remove all HTML tags from the input to prevent XSS.
-  // This strips <script>, <img>, <div>, etc. — any raw HTML.
-  // Markdown syntax (**bold**, *italic*, [links]()) is preserved.
-  return input.replace(/<[^>]*>/g, '');
-}
-
 function renderMarkdown(input) {
-  const sanitized = sanitizeHtml(input);
-  let html = marked.parse(sanitized);
+  // marked.parse handles sanitization via the sanitize option above
+  let html = marked.parse(input);
   // Also neutralize javascript: protocol URLs that markdown links can create
   html = html.replace(/href\s*=\s*"javascript:[^"]*"/gi, 'href="#"');
   return html;
