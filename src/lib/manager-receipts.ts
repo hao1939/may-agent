@@ -334,12 +334,7 @@ export function wrapToolsWithReceipts(
         contentBlocks.push({ type: "text" as const, text: `\n\n${guardWarning}` });
       }
 
-      // Turn Budget Warning: inject once when turn count reaches threshold
-      if (session && session.turnBudgetWarningAt > 0 && !session.turnBudgetWarned && session.turnCount >= session.turnBudgetWarningAt) {
-        session.turnBudgetWarned = true;
-        const warningText = `\n\n⚠️ [SYSTEM WARNING: Turn Budget ${session.turnCount}/${session.turnBudgetWarningAt}] You have used ${session.turnCount} turns. Wrap up your current task — summarize progress, write any pending output, and finish. Do NOT start new exploratory work.`;
-        contentBlocks.push({ type: "text" as const, text: warningText });
-      }
+      // Turn Budget Warning: removed — turnBudgetWarningAt is always 0 now.
 
       // Stuck Detection Warning: inject once when consecutive error turns hit threshold
       if (session && session.consecutiveErrorTurns >= STUCK_WARNING_THRESHOLD && !session.stuckWarningInjected) {
