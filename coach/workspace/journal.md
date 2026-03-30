@@ -1313,3 +1313,60 @@ Coder fails `silent-dependency` due to FM-3.3 — not tracing silent deprecation
 - **Pattern**: Whenever the coder "does the main work but skips a thorough follow-up step," workflow enforcement is the answer
 
 **Growth cycles today**: 2/3
+
+## 2026-03-30 10:45 UTC — Heartbeat
+- Processed eval request for s_1774861572874_17 (coach self-session, "acceptable" with multiple_tool_errors)
+- Self-coaching: FM-1.3/FM-2.6/FM-3.3 patterns already in active_recall system
+- Error scan: coder FM-3.3 VERIFICATION_GAP (3 entries) was top external target
+- Growth cycle: verification-contradiction baseline → 6/6 PASS (ceiling effect, SKIPPED)
+- exp-224 (partial-verification-trap-workflow) already PROMOTED
+- Status: All coder scenarios at ceiling. Need harder scenarios.
+- Next: Develop new scenarios targeting subtle verification failures (e.g., partial test output parsing, cherry-picked evidence)
+
+## 2026-03-30 11:39 — Heartbeat: Self-Evolve Review (Sprint 7)
+
+**Trigger**: Last self-evolve was 2026-03-27 (3 days ago). 252 experiments logged. Time for knowledge maintenance.
+
+### Experiment Review (since 2026-03-27)
+Key experiments reviewed:
+- **exp-224** (partial-verification-trap-workflow): PROMOTED. Baseline 5/6 → Treatment 6/6 (2/2 runs). Method #15.
+- **exp-226** (idempotent-already-fixed-workflow): PROMOTED. Baseline 7/8 → Treatment 8/8 (2/2 runs). Method #15.
+- **exp-220** (missing-prerequisite-workflow): PROMOTED. Behavior flip (finish:success → finish:blocked). Method #15.
+- **exp-213** (convention-verify-edit skill v1): POSITIVE. Convention 30%→60%. First skill with measurable effect.
+- **EXP-214** (convention-verify-edit skill v2): REGRESSED to 10%. Over-specification backfires.
+- **EXP-215** (missing-prerequisite-detection skill): No effect (0/5 both arms).
+- **exp-227** (verification-contradiction baseline): Ceiling 6/6.
+- Multiple infra fixes: cpSync bug (exp-186), search-strategy-escalation scorer (exp-217), spec-adherence scorer (exp-219).
+
+### Updated Method Catalog
+- Method #15 Workflow Enforcement: 47/50 (94%+) across 11 scenarios. Updated aggregate summary.
+- Method #4 Skill File: Added exp-213/214/215 evidence. Skills work for conventions (2x improvement) but fragile. Over-specification is harmful.
+- Identified unsolved scenarios: materialize-intermediate-findings (workflow REGRESSED), convention-verify-edit (skill partially works).
+
+### Coach Self-Failure Analysis
+Top failure patterns across 246 needs_improvement sessions:
+1. **TASK_NONCOMPLETION / sprint-plan.md ENOENT** — training-sprint workflow creates sprint-plan.md in planning phase; if that phase fails/interrupts, execution phase fails. Systemic infrastructure issue, not a judgment error.
+2. **FM-2.6 Reasoning-Action Mismatch** — pivot away from assigned task after encountering errors. Root cause: error recovery discipline. When first approach fails, should escalate as blocked rather than pivoting.
+3. **FAILURE_CHAIN_NONRECOVERY** — tool errors not resolved. Need to stop and report partial rather than ignoring failures.
+
+### Pending Experiment Targets
+- `materialize-intermediate-findings`: Need a three-phase or progressive-checkpoint approach (two-phase made it WORSE)
+- `convention-verify-edit-workflow`: Workflow variant untested; skill v1 shows 60%, could workflow push to 80%+?
+- `behavior-escalation-stubborn`: Unreliable timing, needs investigation
+
+### Growth-cycle budget: 0/3 used today from heartbeats. Training sprint ran exp-224–227 via cron.
+
+### Growth Cycle: materialize-3phase-workflow design
+Created `/app/agents/.lab/materialize-3phase-workflow/` — a three-phase variant of the materialize-intermediate-findings scenario.
+- **Rationale**: Two-phase split (exp-094) REGRESSED from 6/9 to 5/9 because it doesn't enforce write cadence WITHIN each phase. Three phases force 3 separate write moments, each after 2-3 analysis ops.
+- **Phase 1**: Read deployments + error-rates → write error-analysis.md
+- **Phase 2**: Read config-changes + Phase 1 artifacts → write timeline-correlation.md  
+- **Phase 3**: Synthesize → write root-cause-report.md
+- **Status**: Designed, ready for baseline test. NOT YET RUN.
+- **Hypothesis**: Three phases should pass B1 (early write), B2 (multiple writes), B4 (cadence ≤6 ops) by design.
+
+### Summary
+- Self-evolve completed: method catalog updated with 7 new experiment results
+- 1 growth-cycle used: three-phase workflow designed (untested)
+- Key finding: skills CAN work for conventions (exp-213, 2x improvement) but over-specification regresses (EXP-214)
+- Workflow enforcement remains dominant (47/50, 94%+, 11 scenarios)

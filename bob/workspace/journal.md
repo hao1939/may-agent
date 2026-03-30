@@ -1,5 +1,24 @@
 # Journal
 
+# Session 2026-03-30 ~11:10 (Convention Calibration + C1.1 Precision Fix)
+
+## Key Findings
+1. **Convention scores (6h, n=47)**: C12.1=29.8%, C1.3=51.1%, C2.1=66.0%, C1.1=72.3%, C7.1=76.6%, C3.2/C6.1/C8.2=80.9%, C1.4=87.2%, C1.7=93.6%, C3.3=95.7%, C1.5=97.9%
+2. **C1.1 FALSE POSITIVE FIX DEPLOYED**: `write()` no longer requires prior `read()` in C1.1 check — only `edit()` does. Rationale: C1.1 is "read-before-edit" — `write()` creates/replaces files (doesn't need prior read for context). This was causing optimizer (14.3%) and coach (61.5%) to fail C1.1 when creating new workspace files. **In source, awaits module cache restart.**
+3. **All 3 bottom conventions (C12.1, C2.1, C1.1) have fixes in source but NOT LIVE**: Running process was restarted at 07:47 but fixes were committed at 08:40+ (0abd974a). Module cache prevents handler hot-reload.
+4. **C12.1 WORKSPACE_PATTERN also not live**: The workspace path matching (`agents/{agent}/(workspace|knowledge)/`) was added after restart. Coach reading `sprint-plan.md` and QA reading `last-reviewed-commit.txt` would pass with current source but fail in running process.
+5. **System overall healthy**: 31 good, 11 acceptable, 3 NI out of 45 non-skipped evals (68.9% good, 93.3% acceptable+). All 3 NI are coach (TASK_NONCOMPLETION, INSTRUCTION_COVERAGE_GAP).
+6. **Coach remains weakest link**: 5 good, 6 acceptable, 3 NI in 6h. Recurring issues: doesn't produce required deliverables, skips required reads.
+
+## Actions
+- Fixed C1.1 to only flag `edit()` (not `write()`) — reduces false positives for new file creation
+- Comprehensive convention health check with per-agent breakdown
+
+## Status
+- 3 convention fixes in source awaiting process restart (C1.1, C2.1, C12.1-workspace)
+- Prompt caching still blocked on Hao
+- No periodic tasks overdue
+
 # Session 2026-03-30 ~09:10 (Convention Health Check & C2.1 Root Cause)
 
 ## Key Findings
@@ -990,3 +1009,28 @@ First successful session after ~20 hours of errors due to model misconfiguration
 5. **Recently built:** Gate 3 (Contradictory Finish Status Guard) deployed in commit 45812bc — enforces C1.8
 
 **Action:** Wrote brief for Path Hallucination Guard → sent to tech-lead (req:22e294d4)
+
+### 2026-03-30 10:40Z — C12.1 Calibration Fix v2
+
+## Key Actions
+1. **Diagnosed C12.1 failure root cause**: 24h rate was 9.8% (13/133). My previous fix (CONTEXT_FILE_PATTERNS) was live since ~08:00 but still only catching a fraction of legitimate sessions. Breakdown: May 0/27, QA 0/20, Coach 1/29, Scout 1/9.
+2. **Implemented C12.1 calibration fix v2** in `agents/may/handlers/convention-check.ts`:
+   - Added `WORKSPACE_PATTERN` — reads under `agents/{agent}/(workspace|knowledge)/` now count as orientation
+   - Added `ORIENTATION_TOOLS` — `system_status` and `agents` tool calls count
+   - Added `workflow()` as valid cron start
+   - Added bash grep/rg/find/ls in early window as search-orientation
+   - Added `journal.md` and `analysis.md` to context file patterns
+   - Added missing `extractBashCommand()` helper function
+3. **TypeScript compiles clean** (902 lines, no errors)
+4. **Identified C2.1 false positive root cause**: `isError` heuristic at line 315 matches `"Error:"` in read file content, flagging `read()` of .ts files and markdown with "Error:" as schema errors. Optimizer 0/6 C2.1 is entirely false positives.
+
+## Convention Health (24h)
+- C12.1: 9.8% → fix deployed (blocked on module cache/restart)
+- C1.3: 48.9% (C1_3_EXEMPT fix live since 07:47)
+- C2.1: 72.9% (false positives from isError heuristic)
+- C1.1: 74.4%, C7.1: 78.2%, C6.1: 85.7%
+- C1.7: 95.5%, C3.3: 97.7%, C1.5: 99.2% (healthy)
+
+## Next Steps
+- C12.1 fix is in source but needs process restart to take effect
+- C2.1 fix needed: `isError` should not flag `read()` tool results — file content containing "Error:" is not a tool error. Quick fix: skip isError for `read()` calls, or check for actual tool-level error indicators (exit codes, ENOENT paths)

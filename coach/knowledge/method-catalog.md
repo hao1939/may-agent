@@ -46,9 +46,9 @@ the Ghost Bug. These methods need **re-testing with correct methodology**
 The only valid experiments are the two post-discovery micro-edit runs
 (Method #13), which kept the original name and showed 0 regression.
 
-## Aggregate Evidence Summary (updated 2026-03-24, Sprint 6, exp-181)
+## Aggregate Evidence Summary (updated 2026-03-30, Sprint 7, exp-227)
 
-**180+ experiment entries total** across 6 sprints.
+**252 experiment entries total** across 7 sprints.
 Key findings across 20 methods:
 
 | Method | # Experiments | Regressions? | Improvements? | Verdict |
@@ -67,7 +67,7 @@ Key findings across 20 methods:
 | #1-variant Inline SOUL | 2 | 0 | 0 | SAFE, INEFFECTIVE |
 | Identity Exception | 1 | 0 | 0 | SAFE, INEFFECTIVE |
 | #14 Task Structuring | 1 (6 runs + 3 control) | 0 | 33% (2/6) | SAFE, PARTIALLY EFFECTIVE |
-| **#15 Workflow Enforcement** | **26+ (44 runs + controls)** | **0** | **93%+ (41/44)** | **🏆 CONFIRMED — 5 agents, 8 scenarios, 3 models** |
+| **#15 Workflow Enforcement** | **29+ (50 runs + controls)** | **0** | **94%+ (47/50)** | **🏆 CONFIRMED — 5 agents, 11 scenarios, 3 models** |
 | **#16 Structural Documentation** | **2 (systemic + monitoring)** | **N/A** | **0/5 (exp-053)** | **SAFE, INEFFECTIVE** |
 | **#24 Identity Directive Refinement** | **8 (4 solo, 2 combo, 2 replication)** | **0** | **12.5% solo (1/8)** | **⛔ CLOSED — first-pass noise, replication failed** |
 | **#24+#10 Combo** | **1** | **0** | **0/2** | **⛔ CLOSED — worse than solo #24** |
@@ -86,7 +86,7 @@ reads it, and ignores it.
 
 **Auto-Evolve Experiment CLOSED (exp-187)**: Systematic 5-variation SOUL mutation test on coder (behavior-escalation-stubborn, conflicting-evidence). 0/5 variations improved failing scenarios; 2/5 caused regression on passing scenario. Confirms text ceiling: even targeted, scenario-specific SOUL mutations cannot override deeply embedded model behaviors. Constraint placement (Skills section vs Constraints section) had zero effect.
 
-**Method #15 EXTENDED (exp-181, exp-qa-fm21-overstrict)**: Workflow enforcement now 41/44 (93%+) across 8 scenarios including two escalation scenarios (escalation-impossible-task, behavior-escalation-stubborn) and qa-overstrict-gate (FM-2.1 false-blame pattern). 100% pass rate on escalation with assess→act workflow, 6/6 on QA overstrict gate with diagnose→verdict workflow. This is the ONLY method that reliably changes agent behavior.
+**Method #15 EXTENDED (exp-181 through exp-226)**: Workflow enforcement now 47/50 (94%+) across 11 scenarios including escalation (escalation-impossible-task, behavior-escalation-stubborn), qa-overstrict-gate (FM-2.1 false-blame pattern), partial-verification-trap (FM-3.3 test coverage), idempotent-already-fixed (efficiency), and missing-prerequisite (judgment). Latest promotions: partial-verification-trap-workflow 6/6 (2/2 runs), idempotent-already-fixed-workflow 8/8 (2/2 runs), missing-prerequisite-workflow behavior flip. This is the ONLY method that reliably changes agent behavior.
 
 **🏆 BREAKTHROUGH CONFIRMED — FIVE AGENTS, FIVE SCENARIOS, THREE MODELS (exp-045–091):
 Workflow Enforcement achieves ~92% strict / ~97% behavioral pass rate across
@@ -371,6 +371,21 @@ Key insights from experiments:
 **Status**: Known — 0/2 experiments showed improvement (1 infra failure,
 1 no-difference). Blocked on gym scenario quality. Method remains
 theoretically sound but needs harder scenarios to validate.
+
+**Sprint 6 experiments (2026-03-28–29):**
+- **exp-213 (convention-verify-edit)**: verify-after-edit skill v1 showed
+  +17% improvement (3.6→4.2/5 avg, convention 30%→60%). First skill to show
+  measurable positive effect. Below 80% target.
+- **EXP-214 (convention-verify-edit)**: v2 (non-optional + wrong-example)
+  REGRESSED from v1's 60% to 10%. Verbose negative examples may ironically
+  reinforce wrong behavior. **Lesson: less is more for skill content.**
+- **EXP-215 (missing-prerequisite-detection)**: Prerequisite detection skill
+  0/5 both control and treatment. Scenario genuinely hard — skill ineffective.
+
+**Updated assessment**: Skills CAN work for convention compliance (exp-213
+showed 2x improvement) but are fragile — over-specification backfires (EXP-214).
+Still ineffective for judgment behaviors (EXP-215). Use workflows (#15) for
+judgment, skills for convention/procedural habits.
 
 ---
 
@@ -982,6 +997,10 @@ discipline — writing intermediate findings throughout a session). The
 two-phase split doesn't enforce write cadence WITHIN each phase; the agent
 still batches writes to phase-end. (Evidence: exp-094, baseline 6/9 →
 patched 5/9 on `materialize-intermediate-findings`, REGRESSED.)
+**Unsolved scenarios**: materialize-intermediate-findings (6/9 baseline,
+workflow WORSE at 5/9 — needs three-phase or progressive-checkpoint approach),
+convention-verify-edit (skill approach partially works at 60%, workflow
+variant untested).
 
 **How**:
 1. Design a workflow with ≥2 steps (phases)
