@@ -114,3 +114,35 @@ Before building any phase:
 1. **Phase 1 test**: Manually add caller's tool history to 5 delegation tasks. Compare delegate ops vs 5 without.
 2. **Phase 2 test**: For 5 completed sessions, compare ctx.summarize() output vs what the agent put in finish(). Which gives the caller more useful information?
 3. **Phase 3 test**: Run 5 code reviews with auto-framed QA questions vs 5 with current "review the commit" framing. Compare issue detection rate.
+
+## Infra Support: Context Query
+
+### Problem
+Delegates can't access their caller's context. They start from the task string only. If the caller forgot to include a file path or error message, the delegate re-discovers it.
+
+### Solution: `agents({ action: "context" })` tool
+
+Agents can query context from related sessions:
+
+```
+agents({ action: "context" })                      → parent session's handoff summary
+agents({ action: "context", sessionId: "s_XXX" })  → specific session's handoff summary
+```
+
+Returns ctx.summarize() output: files read/written, commands run, errors, final response. Not raw transcript — focused and useful.
+
+### When to use
+- Delegate starts working, realizes task description is missing something → query parent context
+- QA reviewing coder → query coder's session to see what files changed
+- Fix round → query QA's session to see exact findings
+
+### What it doesn't do
+- Doesn't auto-attach to every delegation (that's over-automation)
+- Doesn't replace good task descriptions (caller should still write good tasks)
+- Doesn't give raw transcripts (too large, not useful)
+
+### Implementation
+- Add "context" action to agents tool in manager-agents-tool.ts
+- Uses summarizeForHandoff() on the target session
+- Parent session ID is already tracked on every session (parentSessionId field)
+- For workflow steps, the workflow context holds previous step results
