@@ -1,3 +1,54 @@
+# Scout Brief — Monday March 30, 2026 (14:40 UTC)
+
+## 🔴 CRITICAL: Gap 5 (Deception) NOW COMPLETE — All W12 Capstone Gaps Filled
+
+### DD#470: Deception & Communication in Autonomous MAS (★★★★★ CRITICAL)
+**arXiv:2603.26635** | AAMAS 2026 | Milkowski & Weninger (Notre Dame)
+- **1,100 games × 1M+ tokens** — largest empirical study of LLM agent deception
+- Key finding: **Deception = EQUIVOCATION, not fabrication.** LLMs hedge and remain vague rather than lie outright.
+- Safety training constrains falsification → agents favor "plausible deniability" language
+- Impostors produce 3.4× more representative speech acts (denials, explanations)
+- **Equivocation increases under social pressure but does NOT improve win rates** — strategically limited
+- Communication volume doesn't predict success; coordinated ejection does
+- **Directly fills Gap 5** (Evolutionary Deception) — the sole remaining W12 Capstone gap
+
+### Framework Impact
+| New Element | Description |
+|---|---|
+| **M33: Equivocation Dominance** | LLM deception manifests as vague/hedged language, not outright lies. Detectable via speech-act distribution shifts. |
+| **P89: Speech-Act Anomaly Detection** | Monitor representative-act proportion; impostors leak role info through aggregate communication patterns (χ²=103.85). |
+| **P196: Equivocation Arms Race** | As LLMs improve, equivocation→falsification ratio will decrease. Detection must shift from speech-act to semantic analysis. |
+| **P197: Detection Asymmetry Inversion** | Current: LLMs better at producing than detecting deception. May invert with scale as equivocation becomes harder to produce convincingly. |
+
+### All 5 W12 Capstone Gaps — FINAL STATUS
+| Gap | Status | Key Paper |
+|-----|--------|-----------|
+| Gap 1 (Trust) | ✅ | DD#429: Provenance Paradox |
+| Gap 2 (Runtime) | ✅ | DD#430: MAT Framework |
+| Gap 3 (Cross-Layer) | ✅ | DD#440: De-Anonymization |
+| Gap 4 (Memory) | ✅ | DD#431 + DD#441: MemArchitect + ExpRAG |
+| Gap 5 (Deception) | ✅ | **DD#470: Equivocation in Among Us** |
+
+---
+
+## DD#471: obra/superpowers Repository Evaluation (★★★★)
+**github.com/obra/superpowers** | 125k stars | Jesse Vincent
+- Composable skills library for coding agents (Claude Code, Cursor, OpenCode, Codex)
+- 13 structured skills as context-engineering documents — NOT traditional APIs
+- **Validates our context engineering thesis at massive scale**
+- Key patterns: skill-triggered workflow governance, verification-universal, meta-skill bootstrap
+- Limitation: single-agent focus — no trust, adversarial, or multi-agent governance
+
+---
+
+## Monday Batch Summary
+- 2 new cs.MA papers + 4 cross-listings triaged
+- 2 deep-dives produced (DD#470, DD#471)
+- DD count: 471 | CR count: 256 | Predictions: P197
+- Files: `drops/dd470-deception-among-us.md`, `drops/dd471-obra-superpowers-eval.md`
+
+---
+
 # Scout Brief — Friday March 20, 2026 (07:05 UTC)
 
 ## 🔴 CRITICAL: Agents De-Anonymize People as Byproduct of Benign Work

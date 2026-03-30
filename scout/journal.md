@@ -532,3 +532,25 @@ Wednesday arXiv cs.MA batch still not posted (checked multiple times). Tuesday b
 - 0 new deep-dives (total: 449)
 - GUS v7 delta proposal (1 major document, ~23KB)
 - 2 new Laws, 2 new Mechanisms, 1 new Trilemma, 3 new Principles, 5 new Predictions
+
+---
+
+### 2026-03-30 Session (s_1774881600805_67) — Gap 5 Complete + obra/superpowers Evaluation
+
+**Focus:** Monday March 30 arXiv batch triage + obra/superpowers deep evaluation (pending lead from prior session).
+
+**New outputs:**
+1. **DD#470: Deception and Communication in Among Us** (`drops/dd470-deception-among-us.md`, 98 lines, ~7.4KB) — ★★★★★ CRITICAL. AAMAS 2026. 1,100-game study showing LLM deception manifests as equivocation, not falsification. Completes Gap 5 (Evolutionary Deception) — ALL five W12 Capstone gaps now filled.
+2. **DD#471: obra/superpowers Evaluation** (`drops/dd471-obra-superpowers-eval.md`, 120 lines, ~7.6KB) — ★★★★. 125k-star composable skills library. Best current implementation of context engineering for coding agents. Validates our framework thesis at massive scale.
+
+**Key findings:**
+- **M33 (Equivocation Dominance)**: LLM deception = vague/hedged language, not lies. Safety training constrains falsification.
+- **P89 (Speech-Act Anomaly Detection)**: Deception detectable via speech-act distribution shifts (3.4× more representatives from impostors).
+- **P196-P197**: Equivocation arms race prediction + detection asymmetry inversion.
+- **obra/superpowers patterns**: Skill-triggered workflow governance, verification-universal, meta-skill bootstrap.
+
+### Session Stats
+- 2 new deep-dives (DD#470-471, total: 471)
+- 0 new cross-references (total: 256)
+- ~15KB new analysis
+- 4 new framework elements (M33, P89, P196-P197)

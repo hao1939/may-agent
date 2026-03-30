@@ -1,5 +1,19 @@
 # Journal
 
+## 2026-03-30 14:40 — Heartbeat: Pending Task Triage + Tech-Lead Error Analysis
+
+**Pending Task Review**: Two duplicate requests to review `s_1774876904208_29`. Queried evaluations DB — this is a **may** session with verdict **acceptable** (not needs_improvement as claimed). Issues: `session_error`, `opBudget_exhaustion`. No coaching needed — false alarm.
+
+**Tech-Lead Error Patterns**:
+- 14 needs_improvement sessions today — ALL are TASK_NONCOMPLETION/SILENT_FAIL (blank sessions, no tool calls). This is **infra**, not behavioral. Already escalated to May in previous session.
+- 5 acceptable sessions with FM-3.3 VERIFICATION_GAP — agent claims tests pass without running vitest. This IS behavioral but sessions still delivered results (verdict: acceptable). Lower priority than needs_improvement.
+- 5 good sessions — recovery after infra period.
+- **Coder** also has FM-3.3 VERIFICATION_GAP as top error (4 occurrences in ERROR_LOG).
+
+**3-Phase Scenario Test**: Attempted baseline for `materialize-intermediate-findings-workflow` but it timed out at 540s — too expensive for heartbeat. Need to run this via cron training sprint or dedicated session with higher timeout.
+
+**Growth Cycle Budget**: 2/3 used today (partial-verification-trap DISCARDED + PROMOTED).
+
 ## 2026-03-30 13:45 — Three-Phase Workflow Redesign + Tech-Lead Escalation
 
 **Scenario Development**: Redesigned `materialize-intermediate-findings-workflow` from 2-phase to 3-phase:
