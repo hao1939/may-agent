@@ -56,9 +56,15 @@ Check previously dispatched work:
 - Failed → diagnose with `agents.peek(sessionId)`, re-dispatch or fix.
 - Stale (>1h with no progress) → cancel and retry.
 
-## 3. System Health (quick — ≤2 tool calls)
-- `ls -lt .state/sessions/active/ 2>/dev/null | head -5` — stuck sessions?
-- `ls -lt .state/cron/ 2>/dev/null | head -3` — cron running?
+## 3. Process Ownership Check (3 processes — quick)
+You own: **#1 Heartbeat System, #2 Request Tracking, #14 Tech-Lead Pipeline**.
+
+| Process | Health Query | Action |
+|---------|-------------|--------|
+| #1 Heartbeat | `ls -lt .state/sessions/active/ 2>/dev/null \| head -5` + `ls -lt .state/cron/ 2>/dev/null \| head -3` | Stuck sessions → cancel. Agents not running in >2h → check cron. |
+| #2 Requests | Already done in Step 1 (triage) | Track: how many items dispatched this heartbeat vs carried over? |
+| #14 Tech-Lead | `agents.requests({filter: "active", agent: "tech-lead"})` | >50% failure rate → investigate root cause. Pipeline working → no action. |
+
 Only report problems. Don't narrate "all healthy."
 
 ## 4. Signals (LAST — only after dispatch is done)

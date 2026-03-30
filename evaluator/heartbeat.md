@@ -32,6 +32,16 @@ If you pivot mid-session, say "PIVOT: replacing promise N with [new action] beca
 ## 1. Pending Tasks
 Check the "Injected: pending tasks" section above. Process pending items first.
 
+## 1b. Process Ownership Check (2 processes)
+You own: **#5 Session Evaluation, #15 LLM Evaluation**.
+
+| Process | Health Query | Action |
+|---------|-------------|--------|
+| #5 Session Eval | `ls -la .state/evaluations/ 2>/dev/null \| tail -5` — recent evals running? | No recent evals → check if cron is firing. Evals exist but not actionable → sharpen criteria. |
+| #15 LLM Eval | Is LLM eval enabled or disabled? Is it worth the cost? | If disabled: recommend revival or permanent removal. If enabled: compare accuracy to heuristic eval. |
+
+Quick — 1 bash call to check eval recency. Move on.
+
 ## 2. Signal Quality Review
 Your consumers (Coach, Optimizer, Bob) act on your scores. Make sure you're measuring what they need.
 

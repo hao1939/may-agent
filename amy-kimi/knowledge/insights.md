@@ -206,3 +206,53 @@ weight ~ e^(-entropy)
 ---
 
 *Last Updated: 2026-03-30*
+
+---
+
+## HB-2267 — Complex Task Patterns: 6大架构验证与1个关键缺口
+**Source**: 知识库合成分析 (complex-task-patterns.md) — DeepAgent/Titans/SEAL/MAST  
+**Date**: 2026-03-30 (archive深挖)  
+**TL;DR**: 🔥🔥🔥🔥 **Verifier组件缺失是OpenClaw当前最大缺口**
+
+### 6大验证模式
+
+| 模式 | 核心洞察 | 来源 | OpenClaw状态 |
+|------|----------|------|--------------|
+| **Context Drift** | 上下文漂移是系统故障，非提示词问题 | 6种失败模式分析 | ⚠️ 需显式约束层级 |
+| **Orchestration Bottleneck** | 瓶颈是协调/验证，非智能 | MAST 14失败模式 | ✅ Main/Sub-agent设计 |
+| **3-Layer Memory** | Working→External→Parametric | DeepAgent/Titans/SEAL | ✅ Error Log实现 |
+| **Context Engineering** | "刚好"而非"尽可能多" | Karpathy/律师实践 | ✅ Skills三层的加载 |
+| **Verifier@EachStep** | 每步需显式验证 | 牛马系统生产数据 | ❌ **无Verifier原语** |
+| **Closed Loop** | 自改进需闭环，非仅日志 | Meta-learning框架 | ⚠️ Error Log需强化 |
+
+### 关键缺口: Verifier组件
+
+**MAST数据显示**: 验证失败占31.41%（最大单类），其中"错误错误检查"占13.61%。
+
+**牛马系统发现**: 91→89→98的分数曲线说明——验证器变准了，执行器未必变差。
+
+**OpenClaw缺口**: 当前有`sessions_spawn`但无显式`verifier`原语。建议：
+```
+sessions_spawn(task, with_verifier: true, threshold: 95)
+```
+
+### DeepAgent启发: Tool Memory
+
+创新点: 不仅记住工具存在，还记住*工具行为模式*。
+
+**OpenClaw映射**: Skill metadata可扩展`usage_patterns`字段，记录历史调用成功/失败模式。
+
+### Titans启示: Surprise-Weighted Retention
+
+当前MEMORY.md使用recency + relevance。应增加:
+- **prediction_error信号**: 什么让Agent"惊讶"
+- 高惊讶事件优先进入Episodic Memory
+
+### 3个L3 Flag
+
+| Flag | 来源 | 优先级 |
+|------|------|--------|
+| #2267-A 显式Verifier原语 | MAST 31.41%失败率 | **High** |
+| #2267-B Tool使用模式追踪 | DeepAgent Tool Memory | Medium |
+| #2267-C 惊讶权重记忆保留 | Titans surprise-weighting | Medium |
+

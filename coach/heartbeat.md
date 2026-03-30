@@ -61,6 +61,22 @@ Before starting work:
 - Pending tasks injected above? → Process them.
 - Something urgent? → Handle now, skip to step 5.
 
+## 1b. Process Ownership Check (6 processes — rotate)
+You own: **#4 Conventions, #7 Context Learning, #9 Gym, #10 Skills, #11 Growth, #12 Common Sense**.
+
+Check 2 per heartbeat (rotate through all 6 over 3 heartbeats):
+
+| Process | Health Query | Action |
+|---------|-------------|--------|
+| #4 Conventions | `bash`: query convention DB for lowest-scoring conventions per agent | Identify bottom 3 → write targeted fix. Deploy to agent context.md. |
+| #7 Context Learning | `bash`: `wc -l agents/*/context.md` — any >50 lines (bloated)? Any empty (nothing learned)? | Prune stale facts. Add missing ones for repeat mistakes. |
+| #9 Gym | `bash`: count scenarios passing baseline in `workspace/experiments.jsonl` | All passing? → Need harder scenarios (step 5c). Some failing? → Experiment target found. |
+| #10 Skills | `read`: LIBRARY.md — count ⚪ untested / ✅ proven / 📦 deployed | Zero deployed = pipeline broken. Fix handoff. Test 1 untested skill. |
+| #11 Growth | `bash`: compare before/after metrics for active experiments | No measurable impact after 1 week → kill experiment. Impact found → promote method. |
+| #12 Common Sense | `bash`: `wc -l agents/shared/common-sense.md agents/shared/best-practices.md agents/shared/CONVENTIONS.md` | Overlapping docs? → Merge. Rules without measurable checks? → Delete or add check. |
+
+**Key metric to track in journal.md**: How many skills moved from untested → proven → deployed this week?
+
 ## 2. Error-Driven Growth (quick scan)
 Scan `agents/*/ERROR_LOG.jsonl` for agents with 3+ repeated errors of the
 same type. Focus on **partial failures** (agent knows how but does it wrong).
