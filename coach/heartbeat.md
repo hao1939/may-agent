@@ -178,13 +178,31 @@ Priority: hypothesized methods (from step 4), then untested methods,
 then methods with only negative evidence that might work with a different
 framing.
 
-## 5b. Scenario Development (if no methods to learn)
-If all hypotheses are tested and no methods need learning, CREATE VALUE by building new gym scenarios:
+## 5b. Skill Library (you own this)
+You own the skill library (`agents/shared/skills/LIBRARY.md`). Two jobs:
+
+**Evaluate untested skills:**
+1. Read `agents/shared/skills/LIBRARY.md` — find skills with status ⚪ untested
+2. Pick one. Find/create a gym scenario that exercises it.
+3. Run baseline (without skill) → Run with skill → Compare scores
+4. Fill in the LIBRARY.md table: status, "Works When", "Fails When"
+5. Save detailed results to `workspace/skill-gym-results/<skill>-<date>.md`
+
+**Deploy proven skills:**
+1. Pick a ✅ proven skill from the library
+2. Add it to the target agent's context.md or knowledge/
+3. Update LIBRARY.md status to 📦 deployed, note which agent
+
+**Key principle: "Fails When" is as valuable as "Works When."** A skill that works for coding tasks but hurts research tasks needs that documented. Don't just test the happy path.
+
+When Scout delivers a new skill evaluation (from external repos like superpowers), evaluate it through the gym before adding to the library.
+
+## 5c. Scenario Development (if no methods to learn)
 - Design scenarios that test behaviors no current scenario covers
 - Focus on: efficiency, error recovery, multi-step reasoning, delegation judgment, context management
 - Each new scenario unlocks new experiments — more scenarios = more learning surface area
 - Run baseline tests on new scenarios to establish which agents pass/fail
-- YOU MUST do at least step 5 or 5b. Skipping both to go to step 6 is NOT ALLOWED.
+- YOU MUST do at least step 5, 5b, or 5c. Skipping all three to go to step 6 is NOT ALLOWED.
 
 ## 6. Close out.
 - Call `finish()` with summary, completed_items, and new_items.

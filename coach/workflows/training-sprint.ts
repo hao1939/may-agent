@@ -1,6 +1,6 @@
 /// <reference path="../../../src/workflow-defs.d.ts" />
 
-import { writeFileSync, appendFileSync } from "node:fs";
+import { writeFileSync, appendFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import {
   promoteAgent,
@@ -32,6 +32,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   // Step 1: Batch diagnosis — identify multiple experiments to run
   const plan = await ctx.runAgent("coach",
     `Plan a training sprint — identify multiple experiments to run in batch.\n\n` +
+    `## ⚠️ TURN BUDGET: MAX 30 TOOL CALLS\n` +
+    `This session has a strict budget of 30 tool calls. Plan efficiently.\n` +
+    `If you cannot finish within 30 calls, call finish({status: "partial"}) with what you have.\n\n` +
     `## Context\n${ctx.task}\n\n` +
     `## Instructions\n` +
     `1. Read \`agents/coach/workspace/todo.md\` — find all growth cycle candidates.\n` +
@@ -87,9 +90,22 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     );
   }
 
+  // Verify sprint-plan.md was actually created by Phase 1
+  const sprintPlanPath = join(PROJECT_ROOT, "agents/coach/workspace/sprint-plan.md");
+  if (!existsSync(sprintPlanPath)) {
+    return ctx.escalate(
+      "Sprint plan Phase 1 failed: Coach did not create agents/coach/workspace/sprint-plan.md. " +
+      "Cannot proceed to Phase 2 (fork/patch) without the plan file.",
+      { planOutput: plan.lastAssistantText?.substring(0, 500) }
+    );
+  }
+
   // Step 2: Fork and patch all experiments
   const patch = await ctx.runAgent("coach",
     `Execute all forks and patches from the sprint plan.\n\n` +
+    `## ⚠️ TURN BUDGET: MAX 25 TOOL CALLS\n` +
+    `This session has a strict budget of 25 tool calls. Fork, patch, verify, move on.\n` +
+    `If you cannot finish within 25 calls, call finish({status: "partial"}) with what you have.\n\n` +
     `## Sprint Plan\n${ctx.summarize(plan)}\n\n` +
     `## Instructions\n` +
     `Read \`agents/coach/workspace/sprint-plan.md\` for the full plan.\n\n` +

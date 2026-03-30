@@ -48,6 +48,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   // Step 1: Diagnose / Study
   const step1Prompt = isLearning
     ? ENV_FACTS +
+      `## ⚠️ TURN BUDGET: MAX 25 TOOL CALLS\n` +
+      `Budget 25 tool calls. If you can't finish, call finish({status: "partial"}).\n\n` +
       `Study an improvement method you haven't used before.\n\n` +
       `## Method to Learn\n${ctx.task.slice(6).trim()}\n\n` +
       `## Instructions\n` +
@@ -63,6 +65,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       `5. Design a small experiment: what change will you make using this method?\n` +
       `6. Report: what you learned about the method, your experiment plan.`
     : ENV_FACTS +
+      `## ⚠️ TURN BUDGET: MAX 25 TOOL CALLS\n` +
+      `Budget 25 tool calls. If you can't finish, call finish({status: "partial"}).\n\n` +
       `Diagnose an error pattern and select an improvement method.\n\n` +
       `## Error Pattern\n${ctx.task}\n\n` +
       `## Instructions\n` +
@@ -132,6 +136,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   // Step 2: Fork and apply
   const patch = await ctx.runAgent("coach",
     ENV_FACTS +
+    `## ⚠️ TURN BUDGET: MAX 20 TOOL CALLS\n` +
+    `Budget 20 tool calls. Fork, patch, verify — be efficient.\n\n` +
     `Fork the target agent and apply exactly ONE improvement method.\n\n` +
     `## ${isLearning ? "Study Results" : "Diagnosis"}\n${ctx.summarize(step1)}\n\n` +
     `## Instructions\n` +

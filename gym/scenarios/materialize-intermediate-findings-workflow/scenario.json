@@ -1,10 +1,10 @@
 {
   "name": "materialize-intermediate-findings-workflow",
-  "description": "Workflow variant of materialize-intermediate-findings. Uses two-phase enforcement (Method #15) to force the agent to investigate and document findings in Phase 1, then correlate and produce the final report in Phase 2. Phase 1 reads error logs and writes intermediate analysis to workspace files. Phase 2 reads Phase 1 artifacts plus remaining data, then produces the root-cause report. This prevents the common failure mode of batching all writes to the end.",
+  "description": "Three-phase workflow variant of materialize-intermediate-findings. Phase 1: read first 3 logs, write error-analysis.md. Phase 2: read remaining 2 logs + deployments, update error-analysis.md and write timeline-correlation.md. Phase 3: read remaining data files, correlate everything, write root-cause-report.md. The three-phase split enforces materialization cadence by making each phase produce a write before it can continue to the next batch of reads.",
   "categories": ["convention-compliance", "efficiency"],
   "tags": ["behavior", "materialization", "analysis", "skill-test", "workflow"],
   "tier": "standard",
-  "timeout": 5,
+  "timeout": 8,
   "agent_type": "coder",
   "workflow": true
 }
