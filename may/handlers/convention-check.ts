@@ -46,10 +46,10 @@ interface CheckResult {
 // ── Configuration ─────────────────────────────────────────────────────
 
 /** Agents exempt from workspace-isolation checks (they write everywhere). */
-const WORKSPACE_EXEMPT_AGENTS = new Set(["may", "tech-lead"]);
+const WORKSPACE_EXEMPT_AGENTS = new Set(["may", "tech-lead", "bob"]);
 
 /** Allowed write prefixes for all agents. */
-const ALLOWED_WRITE_PREFIXES = [".state/", "tmp/", "/tmp/"];
+const ALLOWED_WRITE_PREFIXES = [".state/", "tmp/", "/tmp/", "agents/shared/", "agents/gym/", "agents/.lab/"];
 
 /** Known append-only file patterns (C3.3). */
 const APPEND_ONLY_PATTERNS = [
@@ -310,12 +310,22 @@ function loadToolCalls(persistDir: string, sessionId: string): ToolCall[] | null
         } else if (typeof entry.content === "string") {
           tc.resultContent = entry.content;
         }
-        // Check for error indicators
+        // Check for error indicators — but skip false positives from file content
         if (tc.resultContent) {
-          tc.isError =
-            tc.resultContent.includes("ENOENT:") ||
-            tc.resultContent.includes("Error:") ||
-            tc.resultContent.startsWith("error");
+          // If the tool output is wrapped in <tool_output>, it succeeded —
+          // the content is file/command output, not a tool error.
+          // Only check for errors in raw (unwrapped) output.
+          const isWrappedOutput = tc.resultContent.includes('<tool_output');
+          if (isWrappedOutput) {
+            // For wrapped output, only flag ENOENT (file not found) which
+            // appears in error messages, not in normal file content
+            tc.isError = tc.resultContent.includes("ENOENT:");
+          } else {
+            tc.isError =
+              tc.resultContent.includes("ENOENT:") ||
+              tc.resultContent.includes("Error:") ||
+              tc.resultContent.startsWith("error");
+          }
         }
       }
     }

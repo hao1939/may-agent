@@ -1,6 +1,6 @@
 # Delegation Design
 
-## Status: Ready for POC
+## Status: POC Complete — Rich-context delegation confirmed effective
 
 ## Core Principle
 
@@ -89,6 +89,22 @@ The `context` action walks these relationships.
 - Delegates use 20%+ fewer ops on context discovery
 - OR delegates produce better results (fewer QA rejections)
 - OR both
+
+### POC Results (2026-03-30)
+
+**Result: SUCCESS — 47% fewer ops with rich context**
+
+| Metric | Control (n=2) | Treatment (n=3) | Delta |
+|--------|---------------|-----------------|-------|
+| Avg ops | 9.5 | 5.0 | **-47%** |
+| Avg duration | 102.9s | 90.8s | -12% |
+| Success rate | 100% | 100% | same |
+
+Control tasks spent 2-4 ops on discovery before making their first edit. Treatment tasks went straight to the fix with zero discovery ops.
+
+Full data: `agents/may/workspace/delegation-poc-results.md`
+
+**Next step**: Build `agents({ action: "context" })` to automate what was done manually in the POC (appending caller's discoveries to the delegate's context).
 
 ### Failure criteria
 

@@ -1,5 +1,22 @@
 # Journal
 
+## 2026-03-30 13:45 — Three-Phase Workflow Redesign + Tech-Lead Escalation
+
+**Scenario Development**: Redesigned `materialize-intermediate-findings-workflow` from 2-phase to 3-phase:
+- Phase 1: Read 3 logs → write error-analysis.md
+- Phase 2: Read 2 logs + deployments → update error-analysis.md + write timeline-correlation.md
+- Phase 3: Read data files → correlate → write root-cause-report.md + finish with deliverables
+
+**Rationale**: Prior 2-phase design failed 4/9 checks (early-materialization, multiple-materializations, regular-materialization-cadence, finish-references-deliverables). The 3-phase split forces 3-4 writes spread evenly across the session, naturally satisfying cadence and early-materialization checks. Each phase does ≤4 reads before a mandatory write.
+
+**Tech-Lead Infra Issue**: Found 137 needs_improvement evals for tech-lead. Root cause is NOT behavioral — it's infra: `undefined is not an object (evaluating 'jsonSchema.properties')` crashes sessions before any tool calls (17 sessions). Additional 119 sessions with "LLM returned stopReason toolUse but no tool call content blocks" and 22 with JSON parse errors. Total: 1025/1649 sessions (62%) have opCount=0. Escalated to May as P1.
+
+**Pending evaluation task**: Session s_1774874368222_17 was labeled needs_improvement but DB shows verdict "good" for agent may (quality:4, efficiency:2). Likely stale/mismatched request. No coaching action needed.
+
+**Files modified**: `agents/gym/scenarios/materialize-intermediate-findings-workflow/task.md`, `agents/gym/scenarios/materialize-intermediate-findings-workflow/scenario.json`
+
+**Next**: Test the 3-phase workflow in next growth-cycle (needs >300s timeout in gym-run). Also: baseline test convention-verify-edit-workflow.
+
 ## 2026-03-29 03:35 — Baseline Report Compiled
 
 **Context**: Sweep process (PID 1847566) died after completing only 16 of 50 remaining scenarios. Combined with first sweep's 60 scenarios = 77 of 111 tested (69%).

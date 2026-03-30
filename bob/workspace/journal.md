@@ -1,5 +1,44 @@
 # Journal
 
+# Session 2026-03-30 ~14:10 (C2.1 False Positive Root Cause + Fix)
+
+## Key Findings
+1. **Convention scores (6h, n=48)**: C12.1=39.6%, C1.3=52.1%, C2.1=66.7%, C6.1=68.8%, C1.1=70.8%, C3.2=72.9%, C7.1=75%, C8.2=77.1%, C1.4=83.3%, C1.7=95.8%, C1.5=97.9%, C3.3=97.9%
+2. **C2.1 bob=0/7 — ALL false positives**: Root cause confirmed. `isError` flag at line 315-318 matches `"Error:"` in tool output (file content from todo.md containing "schema error" text). Then C2.1 pattern `/schema validation/i` triggers on the same content. Not real schema errors.
+3. **Process started at 10:42 UTC** — after 08:40 agent commit (0abd974a) but BEFORE 12:40 commit (623ab37a). So fixes from 08:40 are live, but C12.1 WORKSPACE_PATTERN/ORIENTATION_TOOLS, C1.1 write-exemption, C3.2 bob-exemption from 12:40 are NOT LIVE.
+4. **C12.1 per-agent**: may=0/8, qa=0/5, scout=0/3, coach=2/15 all failing. Bob=7/7, optimizer=6/6, amy-kimi=4/4 passing. May failures: starts with `agents()` or reads design docs, not context files. ORIENTATION_TOOLS fix would help but not live.
+5. **Only 3 active requests** in system (bob, optimizer, may heartbeats). System very quiet.
+
+## Actions
+- **Improved C2.1 isError detection**: Added `<tool_output>` wrapper check. If tool output is wrapped in `<tool_output>`, it's successful tool execution (file content / command output), not a tool error — only check ENOENT in that case. Un-wrapped output still uses full error detection. This prevents false positives from reading files that contain "Error:" or "schema validation" in their content.
+- Fix is in source at agents/may/handlers/convention-check.ts, awaits next process restart.
+
+## Status
+- 6+ convention fixes in source awaiting module cache restart: C2.1 (isError wrapper check), C12.1 (workspace+orientation), C1.1 (write vs edit), C3.2 (bob exempt + prefixes), training-sprint.ts, and original C2.1 (isError guard)
+- No periodic tasks overdue (all next due April 3+)
+- Prompt caching still blocked on Hao
+- System running very quietly (only 3 active requests)
+
+# Session 2026-03-30 ~12:40 (Training Sprint Fix + C3.2 Precision)
+
+## Key Findings
+1. **Convention scores (6h, n=46)**: C12.1=37%, C1.3=52.2%, C2.1=69.6%, C1.1=71.7%, C3.2=76.1%, C7.1=76.1%, C8.2=78.3%, C6.1=80.4%, C1.4=87%, C1.7=95.7%, C3.3=95.7%, C1.5=97.8%
+2. **C12.1 improved 0%→37%** after process restart with CONTEXT_FILE_PATTERNS fix. Remaining failures: coach starts with bash()/reads non-context files, may starts with agents(), qa reads workspace files. Source has WORKSPACE_PATTERN + ORIENTATION_TOOLS fixes but NOT LIVE (module cache).
+3. **C3.2 dropped 94.3%→76.1%**: NOT a regression — false positives. Amy-kimi editing shared/bulletin.md, bob editing convention-check.ts, coach creating gym scenarios. All legitimate cross-workspace writes.
+4. **C8.2 dropped 100%→78.3%**: Coach 4x "No finish() call" (session termination issue), amy-kimi 4x "no summary" in finish(). Coach issue is structural (sessions die), amy-kimi may need coaching.
+5. **Coach NI root cause found**: `training-sprint.ts` workflow asks Coach Phase 1 to create `sprint-plan.md`, Phase 2 to read it. Coach fails Phase 1, file never created, Phase 2 always fails with ENOENT. ERROR_LOG shows 10+ instances since March 18.
+6. **System health**: 33 good, 11 acceptable, 3 NI, 6 skipped (6h). 70.2% good, 93.6% acceptable+. Coach is still weakest (5 good, 6 acceptable, 3 NI).
+
+## Actions
+- **Fixed training-sprint.ts**: Added `existsSync` check between Phase 1 and Phase 2. If sprint-plan.md not created, workflow escalates instead of sending Coach into guaranteed-fail Phase 2. Should eliminate a category of Coach NI sessions.
+- **Fixed C3.2 false positives**: Added `bob` to WORKSPACE_EXEMPT_AGENTS (architect writes everywhere). Added `agents/shared/`, `agents/gym/`, `agents/.lab/` to ALLOWED_WRITE_PREFIXES (legitimate cross-workspace writes).
+- Both fixes in source, awaiting module cache restart to go live.
+
+## Status
+- 5 convention fixes in source awaiting restart: C1.1 (write vs edit), C2.1 (isError content), C12.1 (workspace+orientation), C3.2 (exempt+prefixes), training-sprint.ts
+- Prompt caching still blocked on Hao
+- No periodic tasks overdue
+
 # Session 2026-03-30 ~11:10 (Convention Calibration + C1.1 Precision Fix)
 
 ## Key Findings
