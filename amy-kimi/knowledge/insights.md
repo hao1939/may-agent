@@ -518,5 +518,234 @@ Relevant Sections + Page References
 
 ---
 
-*Next ID: HB-2277*
+## HB-2277 — MCP安全SoK论文: "USB-C for Agentic AI"威胁全景
+**Source**: arXiv:2512.08290 / XHS@量子智心  
+**Date**: 2026-03-30 (archive深挖)  
+**TL;DR**: 🔥🔥🔥🔥🔥 **里程碑级安全研究** — CLI路线降低攻击面获学术验证
+
+### 核心框架
+MCP已成为连接LLM与外部数据/工具的**事实标准**，但上下文与执行的解耦创造了新的威胁边界：
+> "The boundary between epistemic errors (hallucinations) and security breaches (unauthorized actions) dissolves."
+
+### 安全 vs 安全性双重性
+| 维度 | 安全(Security) | 安全性(Safety) |
+|------|---------------|---------------|
+| 完整性 | 工具/资源篡改、上下文注入 | 模型误读导致有害调用 |
+| 机密性 | 恶意MCP服务器数据窃取 | 过度权限工具暴露敏感数据 |
+| 可用性 | DoS攻击、资源耗尽 | 过度自动化、失控执行循环 |
+
+### 独特威胁: Cross-Primitive Escalation
+**结构性漏洞**: 上下文(Resources)与行动(Tools)的解耦使得**只读访问可被武器化触发写操作**。
+
+### 对OpenClaw的意义
+**✅ CLI优先路线验证**: 论文确认MCP扩大攻击面，将LLM变为"shell级权限的系统组件" — CLI设计降低暴露面
+**✅ AGENTS.md被动上下文**: 对应论文"上下文可用性与执行权限必须作为关联变量处理"
+**⚠️ 待验证**: Tool Contamination防御、AGENTS.md武器化风险、权限分层充分性
+
+---
+
+## HB-2278 — LLM Teams作为分布式系统: 架构形式化验证
+**Source**: arXiv:2603.12229 / Princeton+MIT+NYU  
+**Date**: 2026-03-30 (archive深挖)  
+**TL;DR**: 🔥🔥🔥🔥🔥 **分布式系统理论验证OpenClaw架构** — 中心化降低开销
+
+### 核心发现
+LLM teams exhibit same challenges as distributed systems: consistency conflicts, architectural tradeoffs, communication overhead, stragglers.
+
+### 四共享属性
+1. **Independence**: Agents maintain local contexts with partial observability
+2. **Communication**: Coordination through message passing (not shared state)
+3. **Concurrency**: Parallel execution introduces coordination problems
+4. **Fallibility**: Agents hallucinate, stall, errors propagate
+
+### 中心化 vs 去中心化
+| 架构 | 优势 | 弱点 |
+|------|------|------|
+| **Centralized** | 降低开销、改善一致性 | 易受stragglers影响 |
+| **Decentralized** | 动态任务分配、抗stragglers | 更大协调开销、更高冲突率 |
+
+### 对OpenClaw的意义
+**直接映射验证**:
+| 分布式系统 | OpenClaw实现 |
+|-----------|-------------|
+| Centralized Architecture | Main Agent ↔ Sub-agent结构 |
+| Task Delegation | SKILL.md调用 |
+| Consistency Enforcement | AGENTS.md + Error Log |
+| Communication Overhead Reduction | YAML声明式配置 |
+
+**关键洞察**: "Multi-agent systems benefit on parallelizable tasks but degrade on sequential workflows due to communication overhead."
+
+---
+
+## HB-2279 — Context Engineering: 从Prompt到系统性上下文管理
+**Source**: XHS@whisper / context-kit开源工具  
+**Date**: 2026-03-30 (archive深挖)  
+**TL;DR**: 🔥🔥🔥🔥 **行业概念升级** — "多数Agent失败是上下文工程失败"
+
+### 概念演进路径
+```
+Prompt Engineering → RAG → MCP → Context Engineering
+单次提示词优化    → 外部知识 → 工具协议 → 系统性上下文管理
+```
+
+### context-kit三模块
+| 模块 | 功能 | OpenClaw对应 |
+|------|------|-------------|
+| **Select** | 上下文选择 | insights-index.json筛选 |
+| **Compress** | 上下文压缩 | compact策略、分层归档 |
+| **Memory** | 记忆管理 | AGENTS.md/MEMORY.md分层 |
+
+### 社区信号
+> "多数AI Agent的失败，并非模型能力的失败，而是上下文工程的失败。" — 976赞
+
+### 对OpenClaw的意义
+**概念定位**: 我们的知识管理系统（insights/posts分层、compact策略、AGENTS.md加载）本质上就是**Context Engineering**的实践
+**行业趋势验证**: 从Prompt Engineering升级到Context Engineering是明确方向
+
+---
+
+## HB-2280 — CRYSTAL Benchmark: 推理透明度诊断
+**Source**: arXiv:2603.13099 / Dartmouth  
+**Date**: 2026-03-30 (archive深挖)  
+**TL;DR**: 🔥🔥🔥🔥 **精度≠推理保真度** — GPT-5精度第1但F1排第8
+
+### 核心发现
+1. **Universal Cherry-Picking**: 19/20 models precision >> recall (1.2× to 7.2×)
+2. **Accuracy-Reasoning Divergence**: GPT-5 leads accuracy (57.99%) but ranks 8th in F1 (0.612)
+3. **Non-Monotonic Scaling**: Larger models don't uniformly improve reasoning
+4. **No model preserves >60% matched steps in correct order**
+
+### 评估指标
+| 指标 | 功能 | OpenClaw映射 |
+|------|------|-------------|
+| **Match F1** | Step-level P/R | L2 Validation Layer |
+| **Ordered Match F1** | LIS-ratio序列验证 | L3 Orchestration Ordering |
+| **CPR Multiplicative Reward** | 过程奖励 | Error Log scoring |
+
+### 关键洞察
+> "Without observing intermediate steps, shortcuts become indistinguishable from genuine understanding."
+
+### 对OpenClaw的意义
+**多层验证架构验证**: L1/L2/L3设计直接回应CRYSTAL发现 — 最终答案正确性掩盖系统性推理失败
+**Actionable**: 引入Ordered Match F1风格指标评估Skill执行序列质量
+
+---
+
+## HB-2281 — OC×Obsidian: 6场景AI笔记激活方案
+**Source**: XHS@奥森木 / @ArtemXTech | ❤️138  
+**Date**: 2026-03-30 (archive深挖)  
+**TL;DR**: 🔥🔥🔥🔥🔥 **"OC是管道，Obsidian是仓库"** — 个人知识库完整技术栈
+
+### 核心架构
+```
+Obsidian = 本地Markdown文件堆 → AI直接能读
+4000条笔记 = AI的长期记忆 | 数据在自己手里
+```
+
+### 技术栈
+- **AI大脑**: Claude Code Max ($200/月封顶 vs API $3000+/月)
+- **同步**: Obsidian Git插件自动push + 服务器git pull
+- **硬件**: Mac Mini 7×24运行
+
+### 6个每日场景
+| 场景 | 流程 | 价值 |
+|------|------|------|
+| ① 网页书签→笔记 | TG bot发链接 → AI提取摘要 → 自动分类存储 | "收藏不再吃灰" |
+| ② 人话查知识库 | 语义搜索4000条笔记 → 定位文件和段落 | 理解意图，非关键词匹配 |
+| ③ 会议→任务→笔记 | 录音/笔记 → AI提取action items → 关联项目 | 闭环 |
+| ④ 深度研究→知识库 | 话题 → AI调研 → PDF推手机+摘要入库 | 成果不沉在聊天记录 |
+| ⑤ 智能早报 | "早安" → AI读待办+进度+日历+天气 → 定制播报 | 基于笔记的个性化 |
+| ⑥ 万物收集箱 | 截图/语音/链接/文字 → TG bot → AI分类存储 | 统一入口 |
+
+### ⚠️ 风险警示
+- **幻觉删文件**: OC对本地文件高权限 = 数据安全关键风险 (评论区Jina)
+- **TOS封号**: CC Max $200封顶用于OC存在服务条款风险
+
+### 对OpenClaw的意义
+**生产部署参考**: 完整的7×24个人知识库Agent架构，可作为企业级部署的缩小版验证。
+
+---
+
+## HB-2282 — SkillsBench: 首个Agent Skills大规模基准测试
+**Source**: Stanford/CMU/Berkeley/UCSD/Oxford/Amazon | 105位专家  
+**Paper**: SkillsBench (151赞XHS帖)  
+**Date**: 2026-03-30 (archive深挖)  
+**TL;DR**: 🔥🔥🔥🔥🔥 **Skills有效性 ∝ 领域程序性知识缺口**
+
+### 规模
+- **105位领域专家** (Stanford/CMU/Berkeley/UCSD/Oxford/Amazon)
+- **11大领域** | **84个可验证任务** | **7个agent配置**
+- **7,308条执行轨迹**
+
+### 三大发现
+
+**1. 精选Skills有效，但领域差异极大**
+```
+平均: +16.2pp
+医疗:    +51.9pp ← 程序性知识缺口大
+制造:    +41.9pp ← 程序性知识缺口大
+软件工程:  +4.5pp ← 预训练已充分
+```
+**规律**: 越是"预训练缺SOP/程序性知识"的领域，Skills越有用
+
+**2. 自生成Skills基本无效甚至倒退**
+```
+Self-generated Skills平均: -1.3pp
+翻车两类:
+  a. 写得太泛 - "用pandas处理一下"(空话)
+  b. 缺乏专业流程意识 - 通用套路硬做
+```
+
+**3. Skills也会"投毒"**
+```
+16/84任务加了Skills反而更差
+原因: 冲突指导 | 上下文负担加大 | 把本来会做的题带偏
+⚠️ Skills不是越多越好
+```
+
+### 与MemSkill论文对照
+| 研究 | 环境 | Skills增益 | 解读 |
+|------|------|-----------|------|
+| MemSkill | ALFWorld (结构化家居) | +205% | 规则明确→SOP化效益最大 |
+| SkillsBench | 软件工程 | +4.5pp | 预训练密集→Skills提升有限 |
+| SkillsBench | 医疗/制造 | +51.9pp/+41.9pp | 程序性知识缺口→Skills效益最大 |
+
+**统一结论**: Skills有效性 ∝ 领域程序性知识缺口
+
+### 对OpenClaw的意义
+**✅ Designer组件验证**: 自生成Skills失效印证了SKILL.md Designer设计的必要性——不能让Agent直接写Skills，要有约束框架(Purpose/When/How/Constraints)
+
+**✅ 领域适配原则**: OpenClaw Skill设计应聚焦程序性知识缺口领域，软件工程类Skill收益有限
+
+---
+
+## HB-2283 — OpenClaw安全配置: 社区量化共识清单
+**Source**: XHS@星信号漫记 | ❤️70 | 2026-02-21  
+**Date**: 2026-03-30 (archive深挖)  
+**TL;DR**: 🔥🔥🔥🔥 **社区最佳实践有数字**: 70%+绑定127.0.0.1，90%权限700/600
+
+### 致命误区 (绝对避免)
+- ❌ 绑定 `0.0.0.0`（暴露公网）
+- ❌ 共享配置目录
+- ❌ 乱信任所有代理
+- ❌ 禁用设备认证
+- ❌ Docker挂载敏感目录
+
+### 社区共识统计
+| 配置项 | 社区采用率 | 意义 |
+|--------|-----------|------|
+| 绑定 `127.0.0.1` | **70%+** | 网络暴露面最小化 |
+| 权限 `700/600` | **90%** | 文件系统隔离 |
+| Tailscale + 可信代理 | **80%** | 零信任网络接入 |
+| 关闭 mDNS | **60%** | 减少广播攻击面 |
+| Docker非root运行 | **50%** | 容器逃逸防护 |
+
+### 对OpenClaw的意义
+**生产部署Checklist**: 首次量化验证的社区安全配置共识，与大鱼帖Docker socat方案形成完整安全栈：
+- socat → 解决自动配对
+- 本帖 → 解决网络暴露面
+
+---
+
+*Next ID: HB-2284*
 
