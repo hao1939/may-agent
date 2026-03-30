@@ -1252,3 +1252,15 @@ Coder fails `silent-dependency` due to FM-3.3 — not tracing silent deprecation
 - **Note**: Efficiency check fails (10+ tool calls vs <10) — acceptable tradeoff
 - **Growth cycles today**: 1 (budget: 3)
 - Tool calls: ~14 (within budget)
+
+## 2026-03-30 01:45 — Experiment: silent-dependency Method #15 (Workflow Enforcement)
+
+**Baseline (silent-dependency):** 4/5 checks passed. FAILED: xss-onerror-sanitized. Coder sanitized script tags but missed onerror XSS vector. Duration: 61s.
+
+**Treatment (silent-dependency-workflow):** 4/5 checks passed. PASSED: both xss-script and xss-onerror sanitized. But still "Failed 1/5" — likely the marked-upgraded check failed (coder may have sanitized HTML manually instead of upgrading marked). Duration: 189s.
+
+**Analysis:** Method #15 (two-phase workflow: analyze first, then fix) improved XSS sanitization quality — coder caught both vectors vs only one in baseline. However, coder may have taken a different fix approach (manual sanitization) instead of the intended fix (upgrade marked + use DOMPurify). The workflow's analysis phase helped coder understand the problem better, but the fix phase still didn't fully match expected approach.
+
+**Verdict:** PARTIAL IMPROVEMENT. Method #15 helps with thoroughness but needs scenario refinement to ensure the "right" fix path is taken. The marked-upgraded check may be too prescriptive if manual sanitization also works.
+
+**Growth cycle count today:** 1/3

@@ -1,5 +1,22 @@
 # Journal
 
+# Session 2026-03-30 01:10 (Convention Health Audit)
+- **C12.1 still 0%** (6h): Module cache blocker persists. Re-escalation req:1b9ba130 marked COMPLETED but fix still not live. Handler uses old violation format ("not heartbeat.md") vs new format ("No context file read in first 5 tool calls") — proves old cached code is running.
+- **C7.1 at 84%** (6h): ALL failures are Bob sessions using `/home/hao/.../bun` for DB queries. This is a false positive — bun isn't available at /app, so /home/hao path is the only option. C7.1 checker needs an exception for bun binary access (not navigating to /home as working directory).
+- **C1.3 at 52%** (6h): Verify-after-edit skill stable at prompting ceiling (~52-62%). No regression.
+- **Convention health snapshot (6h)**: C1.5/C3.3=100%, C1.4/C1.7/C8.2=96%, C3.2=92%, C6.1/C7.1=84%, C1.1=76%, C2.1=72%, C1.3=52%, C12.1=0% (broken checker).
+- **System health**: 94% session success rate over 6h. 34 sessions completed. 1 error (tech-lead jsonSchema bug, intermittent).
+- **Two blockers remain Hao-dependent**: (1) Module cache/process restart for ALL handler+skill changes. (2) Prompt caching ($36-63/day savings).
+- **No new work dispatched**: All open items blocked on module cache restart. Nothing actionable until binary is rebuilt.
+
+# Session 2026-03-30 00:40 (C1.3 Skill Deployment + Module Cache Re-escalation)
+- **C12.1 still 0%**: Despite previous escalation (req:ed7f02cf) being marked COMPLETED, the bundled binary was never rebuilt/restarted. C12.1 is 0% for ALL agents in last 24h. Re-escalated to May/Hao as P0 (req:1b9ba130).
+- **C1.3 coder regression**: 7-day trend shows decline: 80.8% → 61.5% → 64.3% → 40.0% → 16.7%. Only 6 sessions today so likely noise, but worth monitoring. Verify-after-edit skill file is still in place.
+- **Deployed verify-after-edit skill to 3 more agents**: Bob (15% C1.3), Optimizer (23.3%), Scout (9.3%) — the three worst offenders. Copied adapted version to `agents/{bob,optimizer,scout}/skills/verify-after-edit.md`. NOTE: Same module cache issue applies — skills are loaded into bundled binary. Won't take effect until next process rebuild.
+- **Key finding**: The main process is `/app/bundle/may-agent` (PID 7) — a pre-bundled binary. ALL source file changes (handlers, skills, etc.) require a rebuild to deploy. This makes the module cache escalation doubly important — it blocks both the C12.1 fix AND the new skill deployments.
+- **System health**: 28 sessions/6h, 3.6% error rate. Bob 4 sessions, 720KB total.
+- **No pending requests**: Only this heartbeat active for bob.
+
 # Session 2026-03-29 23:10 (Module Cache Escalation + C1.3 Production Signal)
 - **C12.1 module cache STILL broken**: Confirmed via DB query that latest C12.1 violations still use old logic ("not heartbeat.md"). Source file is correct. Root cause: `loadAgentHandlers()` in `agent-loader.ts:781` uses `await import(modulePath)` — Bun caches this. Handlers load once at startup, never reload.
 - **Escalated to May/Hao** (req:ed7f02cf): Requested process restart. Also suggested future cache-busting improvement.
