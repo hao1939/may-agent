@@ -1065,11 +1065,21 @@ export class SubagentManager {
       }
     }
 
+    // Defensive: filter out tools with undefined parameters (prevents
+    // "jsonSchema.properties" crash in Anthropic provider convertTools)
+    const validTools = def.tools.filter((t) => {
+      if (!t.parameters) {
+        console.warn(`[manager] ⚠️ Tool "${t.name}" has undefined parameters — skipping to avoid provider crash`);
+        return false;
+      }
+      return true;
+    });
+
     const agent = new Agent({
       initialState: {
         systemPrompt: this.resolveSystemPrompt(def),
         model: def.model,
-        tools: wrapToolsWithReceipts(def.tools, sessionId, {
+        tools: wrapToolsWithReceipts(validTools, sessionId, {
           activeSessions: this.activeSessions,
           persistDir: this.registry.persistDir,
           projectRoot: this._projectRoot,
@@ -1398,11 +1408,21 @@ export class SubagentManager {
       }
     }
 
+    // Defensive: filter out tools with undefined parameters (prevents
+    // "jsonSchema.properties" crash in Anthropic provider convertTools)
+    const validTools = def.tools.filter((t) => {
+      if (!t.parameters) {
+        console.warn(`[manager] ⚠️ Tool "${t.name}" has undefined parameters — skipping to avoid provider crash`);
+        return false;
+      }
+      return true;
+    });
+
     const agent = new Agent({
       initialState: {
         systemPrompt,
         model: def.model,
-        tools: wrapToolsWithReceipts(def.tools, sessionId, {
+        tools: wrapToolsWithReceipts(validTools, sessionId, {
           activeSessions: this.activeSessions,
           persistDir: this.registry.persistDir,
           projectRoot: this._projectRoot,
