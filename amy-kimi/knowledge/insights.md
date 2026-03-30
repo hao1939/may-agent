@@ -376,3 +376,147 @@ sessions_spawn(task, with_verifier: true, threshold: 95)
 | #2270-B | Cross-Rollout Critique: 多轨迹对比分析 | P2 |
 | #2270-C | Non-Prescriptive注入规范: 参考vs强制边界 | P1 |
 
+---
+
+## HB-2271 — 拜占庭共识：多Agent系统的根本性缺陷验证
+**Source**: XHS@TEAVAMC X / 420赞  
+**Date**: 2026-03-30 (archive深挖)  
+**TL;DR**: 🔥🔥🔥🔥 **LLM随机性 vs 共识确定性** — Main↔Sub-agent架构的工程正确性验证
+
+### 核心矛盾
+> "我们试图用一群'诗人'去执行'会计'的工作，却期待他们能像机器一样精确对账。"
+
+LLM的随机性与共识机制的确定性存在根本冲突。即使所有Agent都"诚实"，也无法对共同价值观达成一致。
+
+### 关键洞察
+| 问题 | 表现 | OpenClaw应对 |
+|------|------|--------------|
+| 共识失败 | 对话死循环、超时、无法收敛 | 命令-反馈模式，无需共识 |
+| 随机性冲突 | 同一输入不同输出 | 确定性协议层 (L0) |
+| 群体临界点 | 规模↑协调成本↑ | Sub-agent数量可控 |
+| 高风险决策 | 金融/医疗场景 | Human-in-the-loop保留 |
+
+### 评论区工程智慧
+> "让subagent组当作工具被mainagent调用唤醒，没有什么群体共识，只有**命令和反馈**。"
+
+**验证**: OpenClaw的Main/Sub-agent架构正是"Agent as Skill"模式，避免了拜占庭将军问题。
+
+---
+
+## HB-2272 — 9种Agent记忆优化技术全景
+**Source**: github.com/FareedKhan-dev/optimize-ai-agent-memory (281⭐)  
+**Date**: 2026-03-30 (external follow-up)  
+**TL;DR**: 🔥🔥🔥 **从Sliding Window到OS-like Memory** — 记忆层工程选项清单
+
+### 技术光谱
+| 级别 | 技术 | 适用场景 | 复杂度 |
+|------|------|----------|--------|
+| L1 | Sliding Window | 简单对话 | ⭐ |
+| L2 | Summarization | 长对话历史 | ⭐⭐ |
+| L3 | Retrieval-Based | 知识库关联 | ⭐⭐⭐ |
+| L4 | Memory-Augmented Transformers | 参数化记忆 | ⭐⭐⭐⭐ |
+| L5 | Hierarchical | 多任务并行 | ⭐⭐⭐⭐ |
+| L6 | Graph-Based | 关系推理 | ⭐⭐⭐⭐⭐ |
+| L7 | Compression & Consolidation | 长期记忆压缩 | ⭐⭐⭐⭐⭐ |
+| L8 | OS-like Memory Management | 全面记忆系统 | ⭐⭐⭐⭐⭐ |
+
+### OpenClaw记忆层建议
+- **L0-L1**: Session上下文 + Error Log (已验证)
+- **L2-L3**: 考虑增加Summarization用于跨会话
+- **L4+**: 未来扩展储备
+
+---
+
+## HB-2273 — PageIndex：无向量推理式RAG新范式
+**Source**: github.com/VectifyAI/PageIndex (23.3k⭐) / FinanceBench 98.7%  
+**Date**: 2026-03-30 (external follow-up)  
+**TL;DR**: 🔥🔥🔥🔥🔥 **Similarity ≠ Relevance** — 树索引+推理检索挑战向量RAG
+
+### 核心突破
+传统向量RAG依赖**语义相似度**，但专业文档需要**推理相关性**。PageIndex提出：
+1. **无Vector DB** — 文档结构+LLM推理
+2. **无Chunking** — 自然章节而非人工分块
+3. **类人检索** — 树搜索模拟专家导航
+
+### 技术架构
+```
+Document → Tree Structure Index (Table-of-Contents)
+                ↓
+Query → Tree Search (reasoning-based retrieval)
+                ↓
+Relevant Sections + Page References
+```
+
+### 性能验证
+- **FinanceBench**: 98.7% (SOTA)
+- **可解释性**: 检索路径可追溯
+- **对比**: 向量搜索是"vibe retrieval"，PageIndex是"reasoning retrieval"
+
+### 对OpenClaw的启发
+- **文档理解Skill**: 考虑PageIndex模式处理长文档
+- **Error Log索引**: 树结构可能比向量检索更适合代码调试场景
+
+---
+
+## HB-2274 — R2Rank: RL+自反思SFT端到端排序框架
+**Source**: XHS@王哥儿 / R2Rank论文  
+**Date**: 2026-03-30 (archive深挖)  
+**TL;DR**: 🔥🔥🔥 **端到端对齐推理与排序目标** — Plackett-Luce可微代理
+
+### 核心创新
+将LLM内在推理过程与推荐系统排序目标直接对齐，解决"推理与排序脱节"问题。
+
+### 技术亮点
+1. **端到端梯度传播**: 从排序奖励直接回传至token生成
+2. **Plackett-Luce可微代理**: 解决listwise排序指标(NDCG)不可微难题
+3. **自反思SFT冷启动**: 教LLM稳定推理用户意图，为RL训练打基础
+
+### 对OpenClaw的意义
+**意图-执行对齐**: R2Rank展示了"推理过程与目标对齐"的重要性，OpenClaw的Agent/Skill架构需要类似的"意图-执行"对齐机制。
+
+---
+
+## HB-2275 — ReMe: 动态过程记忆演化框架
+**Source**: XHS@硅谷刘老师 / "Remember Me, Refine Me"论文  
+**Date**: 2026-03-30 (archive深挖)  
+**TL;DR**: 🔥🔥🔥🔥 **8B+优质记忆 > 14B无记忆** — 记忆质量弥补参数规模
+
+### 核心问题
+当前Agent过程记忆采用**被动积累模式**: 存原始轨迹、噪声多、不会遗忘、检索不适应新场景 → "会存但不会用"。
+
+### ReMe三机制
+1. **多维度经验蒸馏**: 从嘈杂轨迹提炼高质量过程知识
+2. **上下文自适应重用**: 场景感知索引，旧知识在新场景"活起来"
+3. **效用驱动精炼**: 自动剪枝过时/低质记忆，保持记忆池紧凑
+
+### 震撼数据
+- **BFCL-V3 & AppWorld SOTA**
+- **Qwen3-8B + ReMe > Qwen3-14B (无记忆)**
+
+### 对OpenClaw的意义
+**张力与验证**: ReMe的"自动演化"与OpenClaw的"人工审计"Skill学习形成张力，但**记忆质量>参数规模**的结论支持Context Engineering优先策略。
+
+---
+
+## HB-2276 — Web-Rooter: AI可审计联网执行层
+**Source**: XHS@琛說.  
+**Date**: 2026-03-30 (archive深挖)  
+**TL;DR**: 🔥🔥🔥 **给AI的标准化联网协议** — 可引用、可审计
+
+### 核心定位
+不是"给人手敲的爬虫"，而是"**给AI调用的标准化联网协议层**"。
+
+### 设计目标
+- 将"AI看起来答对但没有来源"升级为"AI有执行链路、有引用、可审计"
+- 输出天然带citations + references_text
+
+### 关键背景
+**起源**: 为解决Claude Code的Web Search在国内无法使用而设计。
+
+### 对OpenClaw的意义
+**Skill底层实现参考**: Web-Rooter的标准化协议层可作为OpenClaw web_search/browser技能的底层实现，"可审计性"与Error Log设计哲学一致。
+
+---
+
+*Next ID: HB-2277*
+

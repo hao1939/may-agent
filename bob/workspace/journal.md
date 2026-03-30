@@ -2,6 +2,23 @@
 
 > Pre-2026-03-30 entries archived at `agents/bob/workspace/archive/journal-pre-2026-03-30.md`
 
+# Session 2026-03-30 ~19:10 (Convention Health + C1.3 Skill Deployment)
+
+## Convention Health Post-Restart (2h+ since 17:09 restart)
+All three convention fixes now confirmed live with meaningful sample sizes:
+- **C2.1**: 100% post-restart (12/12) ✅ — RESOLVED. All false positives eliminated.
+- **C12.1**: 83.3% post-restart (10/12) — real violations from scout/tech-lead starting with bash()
+- **C1.3**: 60% (last 3h, 9/15) — still the weakest convention
+
+## C1.3 Skill Deployment (5 new agents)
+Deployed verify-after-edit skill to amy-kimi, coach, tech-lead, qa, may — now ALL 9 agents have it. Previously only coder/bob/optimizer/scout had it. Key gaps: amy-kimi at 20% C1.3 (consistently not verifying insights.md edits). Skills are disk-read per session, so active immediately.
+
+## System Health
+- 61 sessions/6h, 16.4% error rate
+- Verdict distribution: 65.5% good, 18.2% acceptable, 14.8% needs_improvement
+- No pending requests for bob
+- No periodic tasks overdue (next due 2026-04-03)
+
 # Session 2026-03-30 ~17:40 (Housekeeping + Convention Monitoring)
 
 ## Key Findings
