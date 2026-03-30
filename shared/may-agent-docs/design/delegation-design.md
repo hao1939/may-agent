@@ -1,133 +1,116 @@
 # Delegation Design
 
-## Status: Design Phase — Evidence Gathering
+## Status: Design Phase
 
-## The Goal
+## Core Insight
 
-Make delegation amplify agent capability, not limit it. Every delegate should start as informed as the caller, with full ability to learn more.
+Agents are good at **decisions** (read code, find bugs, choose approach). Agents are bad at **process** (remembering to include context, formatting returns, following review steps). The infra should handle all process; agents only make decisions.
 
-## Current State (Evidence)
+## Current Problem
 
-### Timing (from DB, 2026-03-29)
-- May→tech-lead send: 1777-3655 seconds (30-60min) to completion
-- Within tech-lead's session, coder→qa→fix chain: 7-10 minutes
-- Most delay is heartbeat interval (30min), not execution
+Today, agents manage their own delegation process:
+- May decides what context to include in the task (often too little)
+- Coder decides what to return in finish() (often just a summary)
+- Tech-lead manually orchestrates the coder→qa→fix loop in heartbeats
+- QA decides how to review (often just confirms "looks good")
 
-### Context Loss (from session analysis)
-- Coder gets task string only — no files the caller already read
-- QA gets "review the last commit" — not what changed or why
-- Fix tasks get "fix these issues from QA" — paste of QA output with no original context
-- 30-50% of delegate ops spent rediscovering what caller already knew
+Result: context lost at every handoff, 30-50% ops wasted on rediscovery, QA rubber-stamps.
 
-### Return Quality
-- finish() has deliverables + verification_evidence fields
-- But callers read lastAssistantText (one formatted paragraph)
-- Structured return data exists but isn't used for verification
+## Design: Infra Does Process, Agents Do Decisions
 
-### What Works
-- ctx.summarize() in workflows already extracts: files read/written, commands run, errors, response
-- Workflows pass context between steps via task strings
-- The code-review chain within one tech-lead session runs in 7-10min
+### Sending: Infra auto-gathers context
 
-## Design Principles
+When `agents.call("coder", task)` is invoked, the infra should automatically:
 
-### 1. Delegate starts informed, not from zero
+1. **Attach the caller's relevant tool history** — what files were read, what errors were seen, what commands ran. The caller doesn't write this — infra extracts it from the session transcript.
 
-The task should include:
-- **What**: the specific thing to do
-- **Where**: file paths, line numbers, error messages
-- **Why**: what problem this solves (so the agent can make judgment calls)
-- **How to verify**: the command or check that proves it worked
-- **What was tried**: if this is a retry, what didn't work last time
+2. **Attach related file contents** — if the task mentions file paths, pre-read them and include snippets. The delegate doesn't re-read what the caller already read.
 
-The delegate still has tools to read more. But it shouldn't NEED to rediscover what the caller already knows.
+3. **Attach the verification command** — if the task was dispatched from a workflow, the workflow defines how to verify. Not up to the agent.
 
-### 2. Return is auditable without re-reading
+The agent writes: "Fix the off-by-one in the discount calculation."
+The infra adds: here are the files, here's the error, here's how to verify.
 
-finish() should flow back to the caller with:
-- **What changed**: deliverables (file paths + descriptions)
-- **Proof it works**: verification_evidence (specific tool outputs)
-- **What to watch for**: known limitations or edge cases
+### Returning: Infra structures the result
 
-The caller can audit from the return data alone. If they want to deep-verify, they read the files. But the default path doesn't require it.
+When an agent's turn completes, the infra should automatically:
 
-### 3. Agents can pull context, not just receive it
+1. **Extract deliverables** from the transcript — what files were written/edited. Not from finish() args (agent may forget), but from actual tool calls.
 
-Instead of stuffing everything into the task string (which bloats it), give agents:
-- **File references**: "read agents/shared/may-agent-docs/design/X.md for the full design"
-- **Session references**: "previous session s_XXX worked on this — read its output at .state/sessions/history/s_XXX/output/"
-- **DB queries**: "check requests table for related work: SELECT ... WHERE ..."
+2. **Extract verification evidence** — what commands were run and their exit codes. Not from agent self-report, but from tool results.
 
-The task tells them what to look at. They decide how deep to go.
+3. **Build the handoff summary** — ctx.summarize() already does this. Make it the default return, not optional.
 
-### 4. Accountability boundaries are role-based
+The agent just works. The infra captures what happened.
 
-Separate sessions when:
-- **Different accountability**: coder implements, QA verifies — QA must not see coder's reasoning, only output
-- **Different authority**: May decides what to build, coder decides how
-- **Different cost**: evaluator uses cheap model, coder uses expensive one
+### Reviewing: Infra frames the review
 
-Same session when:
-- **Same accountability**: coder reading files and writing code — no reason to split
-- **Sequential steps by same agent**: coder fix round 2 should see round 1 context
+When QA reviews coder's work, the infra should:
 
-### 5. Workflows hold the loop, agents hold the expertise
+1. **Provide the diff** — not "review the last commit" but the actual file changes, extracted from coder's tool history.
 
-Workflows coordinate: what order, what context to pass, when to escalate.
-Agents execute: read the code, write the fix, run the test, find the bug.
+2. **Provide the verification results** — what commands coder ran and whether they passed.
 
-The workflow is the process. The agent is the skill. Don't make agents manage the process (that's what tech-lead's heartbeat does now, poorly).
+3. **Frame the question** — "Does this change solve [original task]? Check [these specific files]. Run [this verification command]."
 
-## Design Questions (Need Evidence)
+QA's job is reduced to: read the diff, check the logic, run the test, say pass/fail with specifics. The process framing comes from infra.
 
-### Q1: Does richer context actually reduce ops?
+### Looping: Infra manages the loop
 
-**Test**: Send 5 tasks to coder with full context (file paths, errors, verification commands). Send 5 similar tasks with minimal context ("fix the build"). Compare ops.
+The coder→qa→fix cycle is a workflow, not agent initiative:
 
-### Q2: Does QA find more issues with coder's full output vs just "review the commit"?
+1. Infra runs coder with task + auto-gathered context
+2. Infra extracts coder's deliverables + verification from transcript
+3. Infra runs QA with deliverables + diff + verification framing
+4. Infra checks QA result: PASS → done, FAIL → back to step 1 with QA findings
+5. After N rounds, infra escalates to human
 
-**Test**: Run QA on 5 sessions with ctx.summarize (files changed, commands, diffs). Run QA on 5 sessions with just "review commit X". Compare issue detection rate.
+No agent decides the process. Each agent just answers its question.
 
-### Q3: Does the caller actually use structured return data?
+## What Changes
 
-**Test**: Check 20 delegation chains. Does the caller read deliverables/verification_evidence from finish(), or just lastAssistantText?
+| Today | Proposed |
+|-------|----------|
+| Agent writes task description | Infra auto-gathers context from caller's transcript |
+| Agent formats finish() args | Infra extracts deliverables from tool calls |
+| Agent decides review process | Workflow defines review steps |
+| Agent decides when to escalate | Workflow escalates after N rounds |
+| Tech-lead orchestrates in heartbeat | Workflow orchestrates mechanically |
+| QA decides what to check | Infra frames the review question |
 
-### Q4: How much context is too much?
+## What Stays the Same
 
-**Test**: Measure task string size vs delegate performance. Is there a point where more context hurts (context window saturation, distraction)?
+| Aspect | Why |
+|--------|-----|
+| Separate sessions for coder/QA | Accountability — can't mark own homework |
+| Agent has full tool access | Agent decides HOW, infra decides WHAT and WHEN |
+| finish() exists | Agent signals "I'm done with my decision" — infra captures the rest |
+| context.md injection | Environmental knowledge still needed |
 
-## Proposed Patterns
+## Implementation Approach
 
-### Pattern A: Workflow-driven loop (code-review-loop)
-```
-workflow → coder (task + context) → qa (coder's output) → coder fix (qa findings) → done
-```
-Workflow holds full context. Each agent gets focused slice.
+### Phase 1: Auto-context on call (infra change)
 
-### Pattern B: Rich send (better agents.send)
-```
-may sends: task + file refs + verification command + "read X for more context"
-delegate reads what it needs, works, returns structured result
-```
-No workflow. Just better task descriptions. Simpler.
+When `agents.call` or `ctx.runAgent` is invoked, the infra automatically appends the caller's recent tool history (files read, commands run, errors seen) to the task. This is a change in `manager.ts` — extract from the calling session's messages and append to the delegate's task.
 
-### Pattern C: Shared workspace (filesystem as context)
-```
-caller writes TASK.md to workspace with full context
-delegate reads TASK.md, works, writes RESULT.md
-caller reads RESULT.md to verify
-```
-Context passes through files, not task strings. More durable.
+Measure: do delegates use fewer ops for context discovery?
 
-### Which pattern?
+### Phase 2: Auto-extract on return (infra change)
 
-Start with B (rich send) — it's the simplest change. Measure if it helps. If it does, keep it. If context still gets lost, try A (workflow) for the code-review loop specifically. C is for later.
+When a session completes, the infra auto-extracts deliverables and verification from the transcript (like ctx.summarize but always-on). The caller gets structured data without depending on the agent's finish() discipline.
 
-## Next Steps
+Measure: do callers have better information to audit with?
 
-1. May measures baseline: context quality in recent delegations (Q1-Q4 above)
-2. May tries rich send for 5 delegations, compares ops
-3. If rich send works, update delegation practice across the team
-4. If not, build workflow for the specific loops that need it
+### Phase 3: Review workflow (workflow)
 
-Follow evidence-first-process.md.
+Build the code-review-loop workflow that uses Phase 1 + 2 for the coder→qa→fix cycle. QA gets auto-framed review questions.
+
+Measure: does QA catch more issues? Does the fix cycle complete faster?
+
+## Evidence Questions
+
+Before building any phase:
+
+1. **Phase 1 test**: Manually add caller's tool history to 5 delegation tasks. Compare delegate ops vs 5 without.
+2. **Phase 2 test**: For 5 completed sessions, compare ctx.summarize() output vs what the agent put in finish(). Which gives the caller more useful information?
+3. **Phase 3 test**: Run 5 code reviews with auto-framed QA questions vs 5 with current "review the commit" framing. Compare issue detection rate.
