@@ -1,11 +1,11 @@
 - npx is not available in this environment — use ./node_modules/.bin/<tool> or bun x <tool>
-- sqlite3 CLI is not available — query may.db with bun: `bun -e "import {Database} from 'bun:sqlite'; ..."`
+- sqlite3 CLI is not available — query may.db with: `/app/.state/bin/bun -e "import {Database} from 'bun:sqlite'; ..."` (use full path, not bare `bun`)
 - agents/ is a separate git repo — commit from agents/ dir, not project root
 - Design docs go in agents/shared/may-agent-docs/design/
 - Briefs go in agents/bob/workspace/sent/ after delivery
 - SOUL.md text changes don't fix judgment failures — coach proved 0/18. Use workflows or structural fixes.
 - Gym scenarios cost $0.05-0.15 each — don't run full baseline casually
-- Project root is /app — do not use /home/*, /Users/*, or ~/ paths (they don't exist in this environment)
+- Project root is /app — do not use /Users/* or ~/ paths. /home/hao is mounted but avoid referencing it in bash commands (triggers C7.1 violations). Use /app/.state/bin/bun for bun.
 - When calling finish(), status must match reality — if you found missing files or blockers, use 'blocked' or 'partial', not 'success'
 - Before proposing guards: read agents/shared/may-agent-docs/design/code-vs-data-decisions.md — environmental knowledge goes in context.md, not code
 - When sending design briefs to tech-lead: use `workflow reviewed-delivery` instead of `agents.send` — it runs evidence-gate first and blocks briefs without data

@@ -1,0 +1,12 @@
+{
+  "name": "design-cache-strategy",
+  "description": "Agent must design and implement a caching layer for a data-processing pipeline. Multiple valid approaches exist (in-memory map, LRU cache, TTL cache). The naive approach (unlimited Map) causes memory leaks. Tests verify correctness AND that the agent considered alternatives before implementing.",
+  "difficulty": "medium",
+  "categories": ["design", "judgment"],
+  "targets": ["FM-2.6"],
+  "tags": ["design", "brainstorming", "creative-work"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}

@@ -256,3 +256,123 @@ sessions_spawn(task, with_verifier: true, threshold: 95)
 | #2267-B Tool使用模式追踪 | DeepAgent Tool Memory | Medium |
 | #2267-C 惊讶权重记忆保留 | Titans surprise-weighting | Medium |
 
+---
+
+## HB-2268 — MCP死亡论：CLI-first路线的社区共识验证
+**Source**: XHS@TopGrd / ejholmes.github.io  
+**Date**: 2026-03-30 (archive深挖)  
+**TL;DR**: 🔥🔥 **CLI > MCP** — 过度抽象的反思与既有工具链价值的再发现
+
+### 核心论点
+> "真正好的工具，对人和AI都管用。CLI已经迭代了几十年，可组合、易调试、认证开箱即用。MCP试图造一个更好的抽象——结果发现我们早就有了。"
+
+### CLI vs MCP 四大对比
+
+| 维度 | CLI | MCP |
+|------|-----|-----|
+| 🐛 调试体验 | 直接跑命令秒定位 | 翻JSON传输日志 |
+| 🔗 组合能力 | pipe链优雅实现 | 无法优雅实现 |
+| 🔐 认证 | `gh auth login` 一次搞定 | 每个工具单独认证 |
+| ⚙️ 稳定性 | 磁盘二进制，想用就用 | 进程随时可能卡死 |
+
+### 对OpenClaw的意义
+**✅ 独立验证**
+- 这是社区对**CLI-first路线**的又一次独立验证
+- 与之前追踪的"Perplexity弃用MCP"形成呼应
+- OpenClaw的CLI Tool设计哲学获得多重验证
+
+**核心共识**: CLI = 自主任务，MCP = 标准任务，两者互补而非替代
+
+---
+
+## HB-2269 — PlugMem：任务无关记忆的知识图谱化
+**Source**: XHS@大模型幻想家 / arXiv:2603.03296  
+**Date**: 2026-03-30 (archive深挖)  
+**TL;DR**: 🔥🔥🔥 **知识作为记忆单位** — 从原始轨迹到命题-处方知识图的转化
+
+### 核心创新
+现有记忆设计两难：
+1. **任务特定型** - 不可迁移，每个任务重设计
+2. **任务无关型** - 任务相关性低，原始记忆检索导致context爆炸
+
+**PlugMem方案**: 认知启发的知识抽象
+- **语义记忆** → 抽象事实
+- **过程记忆** → 抽象策略
+- **情景记忆** → 保留溯源
+
+### 关键机制
+1. **三模块架构**: 结构化模块 → 检索模块 → 推理模块
+2. **知识为单位**: 区别于GraphRAG的实体/文本块
+3. **记忆信息密度**: 量化单token决策信息增益
+
+### 对OpenClaw的意义
+**✅ Mem0路线验证**
+- PlugMem的"任务无关插件记忆"与OpenClaw的Mem0实践一致
+- 多Agent独立Qdrant Collection、物理隔离解决数据污染
+
+**⚠️ 待增强**
+- Error Log可进一步结构化为propositional knowledge
+- 从"记录"升级为"可检索知识"
+
+**关键引用**:
+> "Decision-relevant information is concentrated as abstract knowledge rather than raw experience."
+> — 与OpenClaw SKILL.md设计哲学呼应：**抽象知识 > 原始经验**
+
+---
+
+## HB-2270 — XSkill：Experience+Skill双知识流持续学习
+**Source**: XHS+arXiv:2603.12056  
+**Date**: 2026-03-30 (archive深挖)  
+**TL;DR**: 🔥🔥🔥🔥 **双MLLM架构** — 知识管理(MLLM_kb)与执行(MLLM_exec)分离
+
+### 两大知识类型
+
+| 类型 | Experience | Skill |
+|------|------------|-------|
+| 层级 | 动作级 | 任务级 |
+| 作用 | 工具选择、决策制定 | 规划、工具编排 |
+| 格式 | JSON (condition, action) | Markdown (metadata, workflow) |
+
+### 核心流程
+**Phase I - 知识积累**:
+1. Rollout Summary (视觉grounded)
+2. Cross-Rollout Critique (多轨迹对比)
+3. Knowledge Consolidation (相似度合并)
+
+**Phase II - 推理**:
+1. Task Decomposition Retrieval
+2. Experience Rewrite (任务适配)
+3. Skill Adaptation (剪枝+集成)
+4. **Non-Prescriptive Injection** (参考而非强制)
+
+### 性能验证
+| Model | Baseline | XSkill | Δ |
+|-------|----------|--------|---|
+| Gemini-2.5-Pro | 24.99 | 28.63 | **+3.64** |
+| Gemini-3-Flash | 34.88 | 40.34 | **+5.46** |
+
+**最大增益达+11.13 points**（挑战设置）
+
+### OpenClaw架构映射
+
+| XSkill | OpenClaw |
+|--------|----------|
+| Skill Library (𝒦) | `skills/` + `SKILL.md` ✅ |
+| Experience Bank (ℰ) | `Error Log` + 运行时反馈 ✅ |
+| MLLM_kb | Bob (架构设计) ✅ |
+| MLLM_exec | Agent执行 ✅ |
+| Cross-Rollout Critique | Error Log分析 → AGENTS.md更新 ✅ |
+| Non-Prescriptive注入 | AGENTS.md引导而非强制 ✅ |
+
+### 关键验证
+1. **双知识流必要性**: Skill(结构化) + Experience(战术性)互补
+2. **知识管理层分离**: MLLM_kb与MLLM_exec分离
+3. **非指令式注入**: 知识作为参考保留即兴空间
+
+### L3 Flags
+| ID | Flag | Priority |
+|----|------|----------|
+| #2270-A | Experience结构化: (condition, action)三元组 | P2 |
+| #2270-B | Cross-Rollout Critique: 多轨迹对比分析 | P2 |
+| #2270-C | Non-Prescriptive注入规范: 参考vs强制边界 | P1 |
+
