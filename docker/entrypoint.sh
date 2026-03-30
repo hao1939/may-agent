@@ -38,6 +38,14 @@ mkdir -p /app/.state/chrome-profile
 # Default to "background" instance name to avoid conflict with interactive "default" sessions
 export INSTANCE="${INSTANCE:-background}"
 
+# Pre-populate SSH known_hosts for git remotes (prevents interactive prompt blocking agents)
+if command -v ssh-keyscan >/dev/null 2>&1; then
+  mkdir -p "${HOME}/.ssh"
+  for host in $(cd /app/agents 2>/dev/null && git remote -v 2>/dev/null | grep -oP '@\K[^:/]+' | sort -u); do
+    grep -q "$host" "${HOME}/.ssh/known_hosts" 2>/dev/null || ssh-keyscan "$host" >> "${HOME}/.ssh/known_hosts" 2>/dev/null
+  done
+fi
+
 # Prefer bind-mounted binary (dev hot-reload), fall back to baked-in
 MAY_BIN="${PROJECT_ROOT:-/app}/bundle/may-agent"
 [ -x "$MAY_BIN" ] || MAY_BIN=/usr/local/bin/may-agent
