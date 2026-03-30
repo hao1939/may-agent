@@ -1110,6 +1110,7 @@ export class SubagentManager {
       parentAgentName:
         opts?.parentAgentName ??
         (opts?.parentSessionId ? this.activeSessions.get(opts.parentSessionId)?.agentName : undefined),
+      originSessionId: opts?.originSessionId,
       workflowRunId: opts?.workflowRunId,
       stepLabel: opts?.stepLabel,
       turnCount: 0,
@@ -2201,6 +2202,48 @@ export class SubagentManager {
 
   getOpUsage(sessionId: string): { opBudget: number; opCount: number } | null {
     return getOpUsage(this.activeSessions, sessionId);
+  }
+
+  /** Get a handoff summary for a session (for agents.context action). */
+  getSessionSummary(sessionId: string): { task: string; summary: string; status: string } {
+    const session = this.activeSessions.get(sessionId);
+    if (session) {
+      try {
+        const result = this.buildResultFromSession(session);
+        const { summarizeForHandoff } = require("./handoff.js") as typeof import("./handoff.js");
+        return {
+          task: session.task,
+          summary: summarizeForHandoff(result),
+          status: session.status,
+        };
+      } catch {
+        return { task: session.task, summary: "(session in progress)", status: session.status };
+      }
+    }
+    // Try archived session
+    try {
+      const result = this.result(sessionId);
+      const { summarizeForHandoff } = require("./handoff.js") as typeof import("./handoff.js");
+      return {
+        task: result.messages?.[0]?.content?.toString().slice(0, 200) ?? "",
+        summary: summarizeForHandoff(result),
+        status: result.status,
+      };
+    } catch {
+      return { task: "", summary: "(session not found)", status: "unknown" };
+    }
+  }
+
+  /** Get completed workflow steps (for agents.context scope: "workflow"). */
+  getWorkflowSteps(workflowRunId: string): Array<{ step: string; sessionId: string; summary: string }> {
+    const { readWorkflowRun } = require("./persistence.js") as typeof import("./persistence.js");
+    const run = readWorkflowRun(this.registry.persistDir, workflowRunId);
+    if (!run) return [];
+    return run.steps.map(s => ({
+      step: s.agent,
+      sessionId: s.sessionId,
+      summary: `${s.status}: ${(s.lastAssistantText ?? "").slice(0, 300)}`,
+    }));
   }
 
   // ── V2: callAgent + agents tool ──────────────────────────────────────
