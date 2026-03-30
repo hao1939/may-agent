@@ -1,90 +1,126 @@
-# Agent Calling Guide
+# Agent Calling & Context Design
 
-## The Rule
+## Three Calling Patterns
 
-**Block by default, async only at the top.**
+| Action | Behavior | Session tree | Use when |
+|--------|----------|-------------|----------|
+| `call` | Sync, blocks, returns result | Child of caller (same root) | Need the result to continue |
+| `fork` | Async, returns immediately | New independent root | Parallel work, May staying responsive |
+| `message` | Fire-and-forget | No session until picked up | Background task, not urgent |
 
-- **May's chat session** → uses `agents.run()` (async) to stay responsive to the human
-- **Everything else** → uses `agents.call()` or `ctx.runAgent()` (blocking)
+### Session Tree
 
-That's it. No agent inside a workflow or call chain should use async.
-
-## Why
-
-Async (`agents.run`, `agents.send`) decouples the caller from the callee. Good for May (stays responsive), bad for everything else:
-
-- Loses the return value — caller can't use the result
-- Requires heartbeat to check completion — 30min latency
-- Breaks workflow context chain — sub-steps can't pass data back
-- Makes error handling hard — who retries?
-
-Blocking (`agents.call`, `ctx.runAgent`) keeps the chain tight:
-- Caller gets the result immediately
-- Errors propagate up
-- Workflows can branch on results
-- No heartbeat waits
-
-## Calling Patterns
-
-### May → delegate (async)
 ```
-agents.run("tech-lead", task)  → returns immediately, May keeps talking
-```
-May is the ONLY agent that uses async. Because May serves the human.
+call creates children under the same root:
 
-### Agent → agent (blocking)
-```
-agents.call("coder", task)     → blocks until coder finishes, gets result
-agents.call("qa", review)      → blocks until qa finishes, gets result
+  Root (May chat or forked session)
+    ├── call("tech-lead", task)          ← child
+    │     ├── call("coder", task)        ← grandchild
+    │     └── call("qa", review)         ← grandchild
+    └── call("coder", other-task)        ← child
+
+fork creates a new root:
+
+  Root A (May chat)
+    └── fork("tech-lead", big-task)      ← returns sessionId, May continues
+
+  Root B (forked, independent)           ← tech-lead's session, no parent
+    ├── call("coder", task)
+    └── call("qa", review)
+
+message creates nothing:
+
+  message("bob", "review this design")   ← stored in request DB
+                                          ← bob picks up on next heartbeat
 ```
 
-### Workflow → agent (blocking)
+## Context Within a Call Tree
+
+Every session in a call tree can see its relatives. This is the key benefit of `call` over `fork` — the context stays connected.
+
+### What each session knows automatically
+
+- **Its task** (the string passed by the caller)
+- **Its parent session ID** (who called me)
+- **Its workflow run ID** (if inside a workflow)
+- **Its root session ID** (top of the tree)
+
+### What each session can query
+
 ```
-ctx.runAgent("coder", task)    → blocks workflow step, gets TaskResult
-ctx.runAgent("qa", review)     → blocks workflow step, gets TaskResult
+agents({ action: "context" })
+  → parent session's handoff summary
+  → files parent read, commands parent ran, errors parent saw
+
+agents({ action: "context", sessionId: "<sibling>" })
+  → specific session's handoff summary
+  → e.g., QA queries coder's session to see what changed
+
+agents({ action: "context", scope: "root" })
+  → root session's task and summary
+  → e.g., coder asks "what was the original human request?"
 ```
 
-### Agent → workflow (blocking)
-```
-workflow({ action: "run", name: "code-review-loop", task: "..." })
-→ blocks agent until workflow completes
-```
+### What the summary contains
 
-### Workflow → sub-workflow (blocking)
-```
-ctx.runWorkflow("two-phase", subtask)  → blocks, gets WorkflowResult
-```
+The handoff summary (already implemented as `summarizeForHandoff`):
+- Files read and written
+- Commands run and exit codes
+- Errors encountered
+- Agent's final response (truncated)
 
-### May → workflow (async via agent)
-```
-agents.run("tech-lead", "workflow code-review-loop\n<task>")
-→ tech-lead runs the workflow (blocking for tech-lead)
-→ May continues talking to human
-```
+Not the raw transcript. Focused, bounded, useful.
 
-## What NOT to Do
+### When to use context query
 
-- ❌ `agents.send()` inside a workflow — adds 30min heartbeat delay
-- ❌ `agents.run()` inside a workflow — decouples step, breaks context chain
-- ❌ `agents.send()` from agent to agent when result needed — same delay
-- ❌ Polling with `agents.peek()` inside a call chain — just use blocking call
+The caller should write a good task. The context query is for when the delegate needs MORE:
+- Task says "fix the build" but doesn't mention which file → query parent to see what files parent read
+- QA reviewing coder → query coder's session to see exact file changes
+- Fix round → query QA's session to see specific findings
+- Deep in a call chain → query root to recall the original human request
 
-## When to Use Each
+## Context Outside a Call Tree
 
-| Caller | Callee | Pattern | Why |
-|--------|--------|---------|-----|
-| May (chat) | any agent | `agents.run()` | May must stay responsive |
-| May (chat) | workflow via agent | `agents.run("tech-lead", "workflow ...")` | Async + structured loop |
-| Agent | agent | `agents.call()` | Get result, decide next step |
-| Agent | workflow | `workflow({ action: "run" })` | Structured multi-step |
-| Workflow | agent | `ctx.runAgent()` | Fast, synchronous step |
-| Workflow | workflow | `ctx.runWorkflow()` | Nested structured loops |
+### Fork
+Forked sessions have no parent. They start from:
+- The task string (from whoever called fork)
+- context.md (environmental knowledge)
+- Files on disk (tools)
 
-## agents.send() — When?
+No parent context to query. The task must be self-contained.
 
-For truly independent work that doesn't need a result:
-- May dispatching a background task she'll check later
-- Bob sending a brief for eventual implementation
-- Coach scheduling a training experiment
+### Message
+Messages have no session at all until picked up. The recipient gets:
+- The message text (from request DB)
+- context.md
+- Their own heartbeat context
 
-Goes through heartbeat queue (30min delay). Never use when you need the result.
+No tree to query. Pure fire-and-forget.
+
+## Design Rules
+
+1. **call is the default** — use it unless you have a reason not to
+2. **fork is for May only** (or any human-facing agent) — to stay responsive
+3. **message is for background work** — not time-sensitive, no result needed
+4. **Context queries only work within a call tree** — fork/message start fresh
+5. **The caller writes a good task** — context query supplements, doesn't replace
+6. **Summaries, not transcripts** — agents get handoff summaries, never raw session data
+
+## Implementation
+
+### Phase 1: Rename + clarify (agent tool)
+- `agents.run` → `agents.fork` (new root session, async)
+- `agents.send` → `agents.message` (request DB, heartbeat pickup)
+- `agents.call` stays as-is (sync, child session)
+- Update all SOUL.md, context.md, heartbeat.md references
+
+### Phase 2: Context query (agent tool)
+- Add `agents.context` action
+- Returns `summarizeForHandoff()` for the target session
+- Default: parent session. Optional: any session in the same call tree.
+- Reject queries outside the tree (fork/message sessions can't query the caller)
+
+### Phase 3: Root context
+- Add `scope: "root"` option to context query
+- Returns the root session's task + summary
+- Useful deep in call chains to recall the original intent
