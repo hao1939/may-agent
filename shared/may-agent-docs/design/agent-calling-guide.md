@@ -5,122 +5,170 @@
 | Action | Behavior | Session tree | Use when |
 |--------|----------|-------------|----------|
 | `call` | Sync, blocks, returns result | Child of caller (same root) | Need the result to continue |
-| `fork` | Async, returns immediately | New independent root | Parallel work, May staying responsive |
-| `message` | Fire-and-forget | No session until picked up | Background task, not urgent |
+| `fork` | Async, returns immediately | New root, but carries origin reference | Parallel work, May staying responsive |
+| `message` | Fire-and-forget, heartbeat pickup | No session until picked up | Background, not time-sensitive |
 
-### Session Tree
+## Session Tree
 
 ```
 call creates children under the same root:
 
-  Root (May chat or forked session)
+  Root (May chat)
     ├── call("tech-lead", task)          ← child
     │     ├── call("coder", task)        ← grandchild
     │     └── call("qa", review)         ← grandchild
     └── call("coder", other-task)        ← child
 
-fork creates a new root:
+fork creates a new root with an origin link:
 
   Root A (May chat)
     └── fork("tech-lead", big-task)      ← returns sessionId, May continues
 
-  Root B (forked, independent)           ← tech-lead's session, no parent
-    ├── call("coder", task)
-    └── call("qa", review)
+  Root B (forked session, originSessionId → Root A)
+    ├── call("coder", task)              ← child of Root B
+    └── call("qa", review)              ← child of Root B
 
-message creates nothing:
+  Coder in Root B can:
+    - query tech-lead (parent) ✅
+    - query Root A via origin link ✅ (read-only, summary only)
+
+message creates nothing until picked up:
 
   message("bob", "review this design")   ← stored in request DB
                                           ← bob picks up on next heartbeat
 ```
 
-## Context Within a Call Tree
+### Fork carries an origin reference
 
-Every session in a call tree can see its relatives. This is the key benefit of `call` over `fork` — the context stays connected.
+When May forks, the forked session gets `originSessionId` pointing back to May's session. This is NOT a parent — the forked tree is independent. But agents in the forked tree can query the origin for context:
 
-### What each session knows automatically
+```
+agents({ action: "context", scope: "origin" })
+→ the session that triggered this fork (May's recent activity)
+```
 
-- **Its task** (the string passed by the caller)
-- **Its parent session ID** (who called me)
-- **Its workflow run ID** (if inside a workflow)
-- **Its root session ID** (top of the tree)
+This means: May writes a short task, forks tech-lead. Tech-lead needs more context → queries origin → sees what May was discussing with the human.
 
-### What each session can query
+## Context Query
+
+### Actions
 
 ```
 agents({ action: "context" })
-  → parent session's handoff summary
-  → files parent read, commands parent ran, errors parent saw
+→ parent session's handoff summary (default)
 
-agents({ action: "context", sessionId: "<sibling>" })
-  → specific session's handoff summary
-  → e.g., QA queries coder's session to see what changed
+agents({ action: "context", scope: "origin" })
+→ the session that forked this tree (if applicable)
 
 agents({ action: "context", scope: "root" })
-  → root session's task and summary
-  → e.g., coder asks "what was the original human request?"
+→ root of the current call tree (the forked session itself)
+
+agents({ action: "context", scope: "workflow" })
+→ all completed steps in the current workflow (if inside one)
+   returns: [{ step: "coder", sessionId, summary }, { step: "qa", sessionId, summary }]
 ```
 
 ### What the summary contains
 
-The handoff summary (already implemented as `summarizeForHandoff`):
+Uses `summarizeForHandoff()` plus finish() structured data when available:
 - Files read and written
 - Commands run and exit codes
 - Errors encountered
 - Agent's final response (truncated)
+- **finish() data**: deliverables, verification_evidence, status, blockers (if present)
 
-Not the raw transcript. Focused, bounded, useful.
+finish() data is more structured than the raw transcript summary. When available, it's included.
 
-### When to use context query
+### Workflow context: how siblings see each other
 
-The caller should write a good task. The context query is for when the delegate needs MORE:
-- Task says "fix the build" but doesn't mention which file → query parent to see what files parent read
-- QA reviewing coder → query coder's session to see exact file changes
-- Fix round → query QA's session to see specific findings
-- Deep in a call chain → query root to recall the original human request
+Inside a workflow, each step runs as a separate session. The workflow engine tracks completed steps. An agent doesn't need to know sibling session IDs — it queries the workflow:
 
-## Context Outside a Call Tree
+```
+agents({ action: "context", scope: "workflow" })
+→ [
+    { step: "coder", summary: "Changed src/build.js, ran tests, 2 files written" },
+    { step: "qa", summary: "FAIL: missing error handling for empty input" }
+  ]
+```
 
-### Fork
-Forked sessions have no parent. They start from:
-- The task string (from whoever called fork)
-- context.md (environmental knowledge)
-- Files on disk (tools)
+The workflow engine provides this from its step records. The agent asks "what happened before me in this workflow?" and gets a structured answer.
 
-No parent context to query. The task must be self-contained.
+### Access rules
 
-### Message
-Messages have no session at all until picked up. The recipient gets:
-- The message text (from request DB)
-- context.md
-- Their own heartbeat context
+| Query | From call tree | From forked tree | From message |
+|-------|---------------|-----------------|-------------|
+| Parent | ✅ | ✅ (within fork's tree) | ❌ |
+| Origin | N/A (call trees don't fork) | ✅ (read-only summary) | ❌ |
+| Root | ✅ | ✅ (fork's root) | ❌ |
+| Workflow | ✅ (if inside workflow) | ✅ (if inside workflow) | ❌ |
+| Arbitrary sessionId | ✅ (same tree only) | ✅ (same tree only) | ❌ |
 
-No tree to query. Pure fire-and-forget.
+## When to Use Each Pattern
 
-## Design Rules
+### May dispatching work
 
-1. **call is the default** — use it unless you have a reason not to
-2. **fork is for May only** (or any human-facing agent) — to stay responsive
-3. **message is for background work** — not time-sensitive, no result needed
-4. **Context queries only work within a call tree** — fork/message start fresh
-5. **The caller writes a good task** — context query supplements, doesn't replace
-6. **Summaries, not transcripts** — agents get handoff summaries, never raw session data
+| Situation | Pattern | Why |
+|-----------|---------|-----|
+| "Fix this bug now" | `fork("tech-lead", task)` | Immediate, May stays responsive |
+| "When you get a chance, review this" | `message("bob", task)` | Not urgent, heartbeat pickup |
+| "What's in this file?" | `call("coder", "read X")` | May needs the answer right now (rare — May usually reads herself) |
 
-## Implementation
+### Tech-lead inside a fork
 
-### Phase 1: Rename + clarify (agent tool)
-- `agents.run` → `agents.fork` (new root session, async)
-- `agents.send` → `agents.message` (request DB, heartbeat pickup)
-- `agents.call` stays as-is (sync, child session)
-- Update all SOUL.md, context.md, heartbeat.md references
+| Situation | Pattern | Why |
+|-----------|---------|-----|
+| Run code-review loop | `workflow code-review-loop` | Structured, blocking for tech-lead |
+| Quick coder task | `call("coder", task)` | Get result, decide next step |
+| Ask QA to review | `call("qa", review)` | Get verdict, maybe loop back to coder |
 
-### Phase 2: Context query (agent tool)
-- Add `agents.context` action
-- Returns `summarizeForHandoff()` for the target session
-- Default: parent session. Optional: any session in the same call tree.
-- Reject queries outside the tree (fork/message sessions can't query the caller)
+### Inside a workflow
 
-### Phase 3: Root context
-- Add `scope: "root"` option to context query
-- Returns the root session's task + summary
-- Useful deep in call chains to recall the original intent
+| Situation | Pattern | Why |
+|-----------|---------|-----|
+| Run a step | `ctx.runAgent("coder", task)` | Always sync |
+| Run sub-workflow | `ctx.runWorkflow("two-phase", task)` | Always sync |
+| NEVER | `agents.fork()` or `agents.message()` | Breaks the chain |
+
+## What NOT to Do
+
+- ❌ `fork()` or `message()` inside a workflow — breaks context chain
+- ❌ `message()` when you need the result — 30min delay
+- ❌ `call()` from May's chat session for long tasks — blocks May
+- ❌ Query context outside your tree — sessions are isolated between trees
+
+## Relationship to Existing Systems
+
+### finish() = turn complete
+finish() signals the agent's turn is done. The infra handles session lifecycle based on autoClose policy. In a call tree, the caller gets the result. In a fork, the session archives. finish() data (deliverables, verification_evidence) flows into context queries.
+
+### context.md = environmental knowledge
+Loaded every session. Orthogonal to session context queries. context.md is "what you always need to know" (npx unavailable, project root is /app). Session context is "what happened in this specific work chain."
+
+### Heartbeats = agent initiative
+Heartbeats still exist for agents to find their own work (check request DB, review recent sessions, etc.). But active delegation uses fork/call, not heartbeat-driven message pickup.
+
+## Evidence
+
+### POC Results (2026-03-30)
+Rich-context delegation: 47% fewer ops, 12% faster. Control tasks spent 2-4 ops on discovery. Treatment tasks went straight to the fix.
+
+### What remains to test
+1. Does `agents.context` query actually get used by agents? (vs ignoring it)
+2. Does workflow context (sibling queries) help QA find more issues?
+3. Does origin context help forked sessions avoid rediscovery?
+
+## Implementation Phases
+
+### Phase 1: Rename actions
+- `agents.run` → `agents.fork` (carries originSessionId)
+- `agents.send` → `agents.message`
+- `agents.call` unchanged
+
+### Phase 2: Context query
+- Add `agents.context` action with scope: parent/origin/root/workflow
+- Returns summarizeForHandoff + finish() structured data
+- Access scoped to tree + origin
+
+### Phase 3: Workflow context
+- Workflow engine exposes completed steps to current step
+- `scope: "workflow"` returns step summaries
