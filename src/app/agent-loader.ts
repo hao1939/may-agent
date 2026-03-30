@@ -57,7 +57,6 @@ export interface AgentConfig {
   /** Additional context files to include in system prompt (relative to agent dir). */
   context_files?: string[];
   /** Maximum state-changing operations (bash, write, edit, commit) per session. */
-  opBudget?: number;
   /** Archetype to inherit from (e.g., "_archetypes/coder"). Resolved relative to agentsRoot. */
   extends?: string;
 }
@@ -395,7 +394,7 @@ async function buildTools(config: AgentConfig, opts: AgentLoaderOptions): Promis
             projectRoot: opts.projectRoot,
             apiKey: model.apiKey,
             memoryLimit: config.memoryLimit,
-            opBudget: config.opBudget,
+            
             // archetypeDir removed per Hao directive (prompt simplification)
           });
         };
@@ -658,7 +657,7 @@ export async function loadAgents(opts: AgentLoaderOptions): Promise<LoadResult> 
       memoryLimit: config.memoryLimit,
       compaction: config.compaction,
       contextFiles: config.context_files?.map((f) => resolve(agentDir, f)),
-      opBudget: config.opBudget,
+      
       // archetypeDir removed per Hao directive (prompt simplification)
     });
 
