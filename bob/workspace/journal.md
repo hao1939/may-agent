@@ -1,5 +1,44 @@
 # Journal
 
+# Session 2026-03-30 ~09:10 (Convention Health Check & C2.1 Root Cause)
+
+## Key Findings
+1. **C12.1 at 6.6% (24h), improving to 36.4% (1h)**: CONTEXT_FILE_PATTERNS fix is live. Low pass rate is behavioral — agents start with bash() before reading context files. This is a coaching target, not an infra fix.
+2. **C2.1 false positive fix NOT LIVE**: Confirmed the `isError` guard was written AFTER the 07:47 process restart (committed in 0abd974a at 08:40). The running process has the old version without the guard. Optimizer still at 0% C2.1 — entirely false positives from `periodic-tasks.md` containing "schema validation" text. **Needs next process restart.**
+3. **C1.3 at 46.4% (24h)**: C1_3_EXEMPT_PATTERNS fix IS live (committed 06:40, before 07:47 restart). Still the 2nd-worst convention. Remaining failures are real (agents not verifying non-exempt writes).
+4. **tsc --noEmit passes cleanly** — the system-status anomaly may have been transient.
+5. **DB query fix**: Convention checks use millisecond timestamps (not seconds). Must use `Date.now()` arithmetic, not `unixepoch('now', '-6 hours')`.
+
+## Status
+- C2.1 isError guard: in source, needs restart
+- C12.1: behavioral, needs coaching
+- C1.3: exempt patterns live, remaining gap is real
+- No pending requests besides this heartbeat
+
+# Session 2026-03-30 09:06 (Failure Pattern Analysis — Coach Now #1 Issue)
+
+## Key Findings
+1. **Good rate 70.5% (117/166)** — apparent decline from 83.3%, but **entirely explained by Mar 29 13:06-14:40 UTC outage** (18 session_errors across all agents). Adjusted: ~79%, stable.
+2. **PATH_HALLUCINATION essentially resolved** in production — context.md "Project root is /app" fact working. Down from #1 (16 occurrences) on Mar 29 to near-zero. Only persists in Coach's gym scenario execution.
+3. **Coach is now the system's weakest link**: 63% good rate (17/27), 3 NI + 7 acceptable. Issues: TASK_NONCOMPLETION (doesn't produce required deliverables), SCOPE_DRIFT (debugs infra instead of assigned task), FM-2.1 path errors in gym (`/root/project/...`).
+4. **Tech-lead has recurring crashes**: 5 session_errors in 24h, not outage-related. Likely infra issue.
+5. **FM-3.3 down to 1 occurrence** — verify-after-edit skill + heartbeat guard working.
+6. **opBudget_exhaustion** (4 occurrences) will disappear now that opBudget is removed.
+
+## Recommendations Written
+- R1: Coach task-adherence checkpoint in heartbeat (structural verification for task completion)
+- R2: Coach gym environment context.md fact (quick win)
+- R3: Tech-lead crash monitoring
+
+## Actions
+- Wrote full analysis to `agents/bob/workspace/analysis.md`
+- Verified analysis via grep (46 table rows, all sections present)
+
+## Artifacts
+- `agents/bob/workspace/analysis.md` — Full failure pattern analysis with trends, agent breakdown, recommendations
+
+---
+
 # Session 2026-03-30 08:10 (Module Cache RESOLVED + C2.1 False Positive Fix)
 
 ## Key Findings

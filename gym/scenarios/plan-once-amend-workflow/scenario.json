@@ -1,0 +1,10 @@
+{
+  "name": "plan-once-amend-workflow",
+  "categories": ["convention-compliance", "efficiency"],
+  "tags": ["behavior", "planning", "replanning", "skill-test", "workflow"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": true,
+  "description": "Workflow variant of plan-once-amend. Uses two-phase enforcement (Method #15): Phase 1 assesses file availability and creates a triage plan, Phase 2 executes only on available files. This prevents the agent from wasting operations hunting for missing files."
+}

@@ -538,5 +538,151 @@ RL训练中 **Rollout阶段占80%+时间**，长尾效应严重：
 
 ---
 
-*Last Updated: 2026-03-20*  
-*Next HB ID: HB-2245*
+---
+
+## HB-2248 — NVIDIA NeMo RL: Agent训练的工业化基础设施验证
+**Source**: GitHub NVIDIA-NeMo/RL (1.5k⭐) / HB#1629深挖  
+**Date**: 2026-03-30 (web follow-up)  
+**TL;DR**: 🔥🔥🔥🔥 **Agent下一阶段确实是RL — NVIDIA正在建设训练基础设施**
+
+### NeMo RL核心能力
+
+| 特性 | 状态 | 意义 |
+|------|------|------|
+| **GRPO训练** | ✅ 完整支持 | 组相对策略优化，DeepSeek-R1同款 |
+| **DAPO算法** | ✅ 已支持 | Decoupled Clip + Dynamic Sampling |
+| **LoRA微调** | ✅ DTensor + Megatron Core | 高效参数更新 |
+| **NeMo Gym** | ✅ v0.5.0 | 模拟环境训练框架 |
+| **GDPO多奖励** | ✅ 新增 | 多奖励RL训练 |
+| **FP8量化** | ✅ 已支持 | 显存效率 |
+
+### 关键验证：Nemotron-3-Super训练
+> NeMo RL是Nemotron-3-Super的后训练框架 — 生产级验证
+
+### 对OpenClaw的意义
+
+**🎯 RL训练基础设施已成熟**
+- NVIDIA投入 = 行业标准正在从Prompt工程转向RL训练
+- 与HB#1629 "Agent的下一阶段是RL"交叉验证
+
+**🎯 技术栈预判**
+- 我们的Agent系统未来可能需要集成RL训练能力
+- 但当前CLI-first + Skill框架仍是正确的阶段性选择
+
+**Relevant to**: Tech-lead (技术栈规划)、Scout (NeMo RL深度)
+
+---
+
+## HB-2249 — OpenClaw生态热度：Skill排行榜信号
+**Source**: XHS @Lif / ClawHub下载排行 (4672赞)  
+**Date**: 2026-03-30 (archive深挖)  
+**TL;DR**: 🔥🔥🔥 **"大家最想要的不是花哨功能，是AI能越用越聪明"**
+
+### ClawHub TOP6 Skill下载榜
+
+| 排名 | Skill | 下载量 | 核心信号 |
+|------|-------|--------|----------|
+| 1 | Tavily Web Search | 14.2万 | AI专用搜索是刚需 |
+| 2 | self-improving-agent | 13.7万/1600⭐ | **自学习能力是头号需求** |
+| 3 | Find Skills | 13.6万 | 自然语言发现Skill |
+| 4 | Summarize | 10.7万 | 多格式摘要基础能力 |
+| 5 | Gog | 9.6万/682⭐ | CLI-first工具化趋势 |
+| 6 | Agent Browser | 9.1万 | Rust无头浏览器 |
+
+### 关键洞察
+
+**self-improving-agent设计**:
+- 三类本地经验文件：错误记录 / 学习笔记 / 功能建议
+- 下次遇到同类问题直接调用，不重复犯错
+
+### 对OpenClaw的意义
+
+**🎯 Error Log设计验证**
+- 与我们的Error Log分层记录高度一致
+- 社区验证：经验积累 > 单次执行能力
+
+**🎯 Skill发现机制**
+- Find Skills高下载量 = 自然语言Skill检索的价值确认
+- 我们的skill registry应考虑语义发现能力
+
+**🎯 CLI工具优先级**
+- Gog高排名验证CLI-first工具化趋势
+- 与Anthropic "简单可组合模式"原则一致
+
+---
+
+## HB-2250 — Agent Workflow五种模式：Anthropic的工程手册
+**Source**: Anthropic Engineering Blog / HB#2240深挖  
+**Date**: 2026-03-30 (archive交叉验证)  
+**TL;DR**: 🔥🔥🔥🔥 **从Workflow到Agent的决策树**
+
+### Workflow vs Agent 本质区别
+
+| 类型 | 控制权 | 适用场景 |
+|------|--------|----------|
+| **Workflow** | 预定义代码路径 | 任务可清晰分解为固定步骤 |
+| **Agent** | LLM动态控制 | 需要自适应决策的复杂任务 |
+
+### 五种核心Workflow模式
+
+| 模式 | 核心机制 | OpenClaw对应 |
+|------|---------|--------------|
+| **Prompt Chaining** | 固定步骤序列 | L1确定性任务 |
+| **Routing** | 输入分类→专门处理 | Intent解析 → Skill路由 |
+| **Parallelization** | 并行处理(Sectioning/Voting) | 待探索：多Skill并行 |
+| **Orchestrator-Workers** | 动态任务分解 | Main Agent + Sub-agent |
+| **Evaluator-Optimizer** | 生成→评估→反馈循环 | Error Log驱动改进 |
+
+### Agent三原则 (重述强化)
+1. **Keep it simple** — 简洁设计优先
+2. **Prioritize transparency** — 显式规划步骤
+3. **Design ACI carefully** — 工具接口设计至关重要
+
+### 对OpenClaw的意义
+
+**🎯 架构验证**: Main/Sub-agent设计对应Orchestrator-Workers模式
+**🎯 透明性**: Agent规划步骤需要可视化，不是黑盒
+**🎯 ACI投资**: Skill接口设计应占开发时间的重要比例
+
+---
+
+## HB-2251 — "Cosplay Multi-Agent"批判：架构收敛的社区共识
+**Source**: XHS @403-error / 社区讨论精华  
+**Date**: 2026-03-30 (knowledge base深挖)  
+**TL;DR**: 🔥🔥🔥 **"角色扮演式Multi-Agent确实没用" — 行业从形式回归功能**
+
+### 社区神评论
+
+> "如果是那种 cosplay 一样的 multi agent 确实没用" — @403-error
+
+> "之前那堆什么multiagent 之类的框架就是猴子出把戏，演戏用的" — @TeaStone
+
+> "多agent完全不好用 是人理解的概念" — @osmosis
+
+### 批判的本质
+
+| 形式化Multi-Agent | 功能性Multi-Agent |
+|------------------|-------------------|
+| 为多人而多人 | 为解决实际问题 |
+| 角色扮演架构 | 能力分工架构 |
+| 复杂orchestration | 简单ReAct+Middleware |
+
+### 架构收敛公式 (社区共识)
+```
+ReAct loop + Middleware + Skills = 现代Agent架构
+```
+
+### 对OpenClaw的意义
+
+**🎯 设计哲学验证**
+- 我们的Main/Sub-agent是功能性分工，非角色扮演
+- 集中式架构避免了"cosplay"陷阱
+
+**🎯 行业趋势确认**
+- 从Multi-Agent Framework → Agent Harness/Runtime/Super Agent
+- 我们在行业混乱期已确定简约架构，现在被验证
+
+---
+
+*Last Updated: 2026-03-30*  
+*Next HB ID: HB-2252*

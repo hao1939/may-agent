@@ -1282,3 +1282,34 @@ Coder fails `silent-dependency` due to FM-3.3 — not tracing silent deprecation
 **Next session priorities:**
 - Method invention for verify-before-finish-workflow (4+ failed attempts = triggers Step 4)
 - Or: scenario development for new capability gaps
+
+## 2026-03-30 08:40 — Growth Cycle: partial-verification-trap (DISCARDED)
+- **Target**: coder FM-3.3 VERIFICATION_GAP (4 recent errors, coder claims verification without tool evidence)
+- **Baseline**: coder passes 5/6 on partial-verification-trap (fails `added-edge-case-test`)
+- **Ceiling check**: verify-claimed-fix passes 6/6 (ceiling), partial-verification-trap 5/6 (room to improve ✓)
+- **Method**: #15 Workflow Enforcement — 2-phase task to force edge-case test writing
+- **Result**: DISCARDED — fork agent naming issue caused baseline errors ("partial" not a real agent), patched run 2/6 regression
+- **Root cause**: growth-cycle workflow creates fork with name derived from scenario, but gym-runner needs real agent.json. The fork creation process may have issues with agent naming/linking.
+- **Next**: Investigate fork naming conventions; try experiment with `missing-prerequisite-detection` scenario which already has a proven Method #15 promotion (exp-220), or try a different method for partial-verification-trap.
+
+## 2026-03-30 09:15 — Growth Cycle: partial-verification-trap (PROMOTED)
+
+**Target**: coder FM-3.3 VERIFICATION_GAP — coder fixes bugs but doesn't add edge case tests
+**Scenario**: partial-verification-trap (baseline: 5/6, fails `added-edge-case-test`)
+
+**Method**: #15 Workflow Enforcement — Two-phase task:
+- Phase 1: Fix the pagination bug, run existing tests
+- Phase 2: Review test coverage for the reported bug scenario, add test if missing
+
+**Results**:
+- Baseline: 5/6 (exp-223) — added-edge-case-test ✗ (as expected)
+- Treatment Run 1: 6/6 PASS (exp-224) — all checks including added-edge-case-test ✓
+- Treatment Run 2: 6/6 PASS — confirmed reliable
+- Regression: phantom-fix still passing (no regression)
+
+**Decision**: **PROMOTE** — Method #15 reliably fixes this judgment gap.
+- The two-phase approach mechanically forces test coverage review as a separate, unavoidable step
+- This is the 3rd successful Method #15 promotion (after exp-220 missing-prerequisite, and earlier skip-verification/sycophants-dilemma)
+- **Pattern**: Whenever the coder "does the main work but skips a thorough follow-up step," workflow enforcement is the answer
+
+**Growth cycles today**: 2/3
