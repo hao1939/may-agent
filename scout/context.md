@@ -1,0 +1,11 @@
+- npx is not available in this environment — use ./node_modules/.bin/<tool> or bun x <tool>
+- Project root is /app — do not use /home/*, /Users/*, or ~/ paths
+- agents/ is a separate git repo — commit from agents/ dir, not project root
+- When calling finish(), status must match reality — use 'blocked' or 'partial' not 'success' if there are issues
+- arXiv is the highest-signal research source — broad query → get IDs → arxiv.org/abs/<id>
+- GitHub Trending: weekly view filters better than daily for agent-related repos
+- Always grep discoveries.md for repo/paper name before adding — duplicates waste time
+- Don't read large files in full — use grep for dedup, tail for recent entries
+- At 60% budget, commit what you have — timeout losses are real
+- If a repo references a paper, fetch it. If a blog mentions a project, check the repo. Follow the thread.
+- When asked to verify tool availability, provide structural evidence (tool-call output), not assertions

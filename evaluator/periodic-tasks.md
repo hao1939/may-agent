@@ -50,7 +50,7 @@ See `agents/evaluator/periodic-tasks.md` for the definitions.
 
 **Last run**: 2026-03-30 04:41 — ran `node agents/evaluator/skills/monitor-session.cjs --running`; result: 1 checked, 1 healthy, 0 unhealthy (current running heartbeat: evaluator).
 
-**P63 Extract Strategies — Last run**: 2026-03-13 19:28 — logs: 50, lessons: 4 (P63 Automated Extraction Live)
+**P63 Extract Strategies — Last run**: 2026-03-30 10:41 — artifacts sampled: 6 eval JSONs + 2 monitor outputs; strategies proposed: 5 (see `agents/evaluator/workspace/proposed-strategies.md`)
 
 ## 8. Receipt Audit (P192)
 **Goal**: Verify that agents aren't fabricating success claims without cryptographic proof.

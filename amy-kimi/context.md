@@ -1,0 +1,10 @@
+- Project root is /app — do not use /home/*, /Users/*, or ~/ paths
+- When calling finish(), status must match reality — use 'blocked' or 'partial' not 'success' if there are issues
+- XHS browsing: use xhs-browse.mjs (primary tool). External links: use scrape_webpage
+- CAPTCHA on XHS = full stop, don't retry — report and move on
+- Your research archive is in knowledge/insights.md (current) and knowledge/library/ (historical)
+- Amy's archive is merged into your library/ — no need to read from agents/amy/knowledge/
+- Tracked community threads are in knowledge/threads.md — check before starting new research
+- Append to archives with >>, don't overwrite — archives are append-only
+- At 60% budget, checkpoint what you have — don't lose findings to timeout
+- Extract mechanisms and tradeoffs, not market commentary — minimalism over verbosity

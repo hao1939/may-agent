@@ -213,7 +213,7 @@
     "intervalMs": 1800000,
     "agent": "amy-kimi",
     "message": "[heartbeat] Read agents/amy-kimi/heartbeat.md and work through each section top to bottom. End with a 2-3 sentence brief of what you explored and discovered.",
-    "enabled": false,
+    "enabled": true,
     "description": "Amy-Kimi's heartbeat — XHS exploration with Kimi model (30min)",
     "notifyBrief": true
   },
@@ -223,7 +223,7 @@
     "intervalMs": 604800000,
     "agent": "bob",
     "message": "[cron:consolidate-memory] Read agents/shared/tasks/consolidate-memory.md and execute it. Your journal is at agents/bob/workspace/journal.md, your knowledge is at agents/bob/knowledge/, your archive is at agents/bob/workspace/archive/.",
-    "enabled": true,
+    "enabled": false,
     "handler": "run-agent-task",
     "description": "Weekly memory consolidation for Bob — journal → knowledge → archive (7d)",
     "preflight": {
@@ -238,7 +238,7 @@
     "intervalMs": 604800000,
     "agent": "scout",
     "message": "[cron:consolidate-memory] Read agents/shared/tasks/consolidate-memory.md and execute it. Your journal is at agents/scout/workspace/journal.md, your knowledge is at agents/scout/knowledge/, your archive is at agents/scout/workspace/archive/.",
-    "enabled": true,
+    "enabled": false,
     "handler": "run-agent-task",
     "description": "Weekly memory consolidation for Scout — journal → knowledge → archive (7d)",
     "preflight": {
@@ -253,7 +253,7 @@
     "intervalMs": 604800000,
     "agent": "coach",
     "message": "[cron:consolidate-memory] Read agents/shared/tasks/consolidate-memory.md and execute it. Your journal is at agents/coach/workspace/journal.md, your knowledge is at agents/coach/knowledge/, your archive is at agents/coach/workspace/archive/.",
-    "enabled": true,
+    "enabled": false,
     "handler": "run-agent-task",
     "description": "Weekly memory consolidation for Coach — journal → knowledge → archive (7d)",
     "preflight": {
@@ -268,7 +268,7 @@
     "intervalMs": 604800000,
     "agent": "optimizer",
     "message": "[cron:consolidate-memory] Read agents/shared/tasks/consolidate-memory.md and execute it. Your journal is at agents/optimizer/workspace/journal.md, your knowledge is at agents/optimizer/knowledge/, your archive is at agents/optimizer/workspace/archive/.",
-    "enabled": true,
+    "enabled": false,
     "handler": "run-agent-task",
     "description": "Weekly memory consolidation for Optimizer — journal → knowledge → archive (7d)",
     "preflight": {
@@ -299,7 +299,7 @@
     "intervalMs": 604800000,
     "agent": "tech-lead",
     "message": "[cron:consolidate-memory] Read agents/shared/tasks/consolidate-memory.md and execute it. Your journal is at agents/tech-lead/workspace/journal.md, your knowledge is at agents/tech-lead/knowledge/, your archive is at agents/tech-lead/workspace/archive/.",
-    "enabled": true,
+    "enabled": false,
     "handler": "run-agent-task",
     "description": "Weekly memory consolidation for Tech-Lead — journal → knowledge → archive (7d)",
     "preflight": {
@@ -314,7 +314,7 @@
     "intervalMs": 604800000,
     "agent": "evaluator",
     "message": "[cron:consolidate-memory] Read agents/shared/tasks/consolidate-memory.md and execute it. Your journal is at agents/evaluator/workspace/journal.md, your knowledge is at agents/evaluator/knowledge/, your archive is at agents/evaluator/workspace/archive/.",
-    "enabled": true,
+    "enabled": false,
     "handler": "run-agent-task",
     "description": "Weekly memory consolidation for Evaluator — journal → knowledge → archive (7d)",
     "preflight": {
@@ -329,7 +329,7 @@
     "intervalMs": 604800000,
     "agent": "qa",
     "message": "[cron:consolidate-memory] Read agents/shared/tasks/consolidate-memory.md and execute it. Your journal is at agents/qa/workspace/journal.md, your knowledge is at agents/qa/knowledge/, your archive is at agents/qa/workspace/archive/.",
-    "enabled": true,
+    "enabled": false,
     "handler": "run-agent-task",
     "description": "Weekly memory consolidation for QA — journal → knowledge → archive (7d)",
     "preflight": {
@@ -405,7 +405,7 @@
     "handler": "run-agent-task",
     "agent": "coach",
     "intervalMs": 14400000,
-    "message": "[cron:common-sense-verify] ⚠️ MAX 15 TOOL CALLS — you MUST call finish() before reaching 15 calls. If you cannot complete, call finish({status:'partial'}). Pick ONE behavioral item from agents/shared/common-sense.md that you haven't verified recently (check workspace/common-sense-status.md for status index — it shows which items are ❌/⚠️ and need attention). To check agent behavior: use `bash` with grep/jq to search session transcripts — do NOT read full session.jsonl files (they are 30-300KB and will waste tokens). Example: `grep -l 'keyword' .state/sessions/history/*/session.jsonl` to find relevant sessions, then `grep 'keyword' <file> | head -20` to extract evidence. Only read small excerpts (<5KB). Did the agent follow the rule? Quote evidence. If NO — add to Growth Cycle queue. If YES — update workspace/common-sense-tracker.md with your findings.",
+    "message": "[cron:common-sense-verify] Pick ONE behavioral item from agents/shared/common-sense.md that you haven't verified recently (check workspace/common-sense-status.md for status index — it shows which items are ❌/⚠️ and need attention). To check agent behavior: use `bash` with grep/jq to search session transcripts — do NOT read full session.jsonl files (they are 30-300KB and will waste tokens). Example: `grep -l 'keyword' .state/sessions/history/*/session.jsonl` to find relevant sessions, then `grep 'keyword' <file> | head -20` to extract evidence. Only read small excerpts (<5KB). Did the agent follow the rule? Quote evidence. If NO — add to Growth Cycle queue. If YES — update workspace/common-sense-tracker.md with your findings.",
     "enabled": true,
     "description": "Verify one common-sense behavioral item against real behavior (4h, graduated from coach heartbeat)",
     "preflight": {

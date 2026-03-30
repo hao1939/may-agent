@@ -1,0 +1,10 @@
+- Project root is /app — do not use /home/*, /Users/*, or ~/ paths
+- When calling finish(), status must match reality — use 'blocked' or 'partial' not 'success' if there are issues
+- XHS browsing: try read command first, never assume inaccessible — report exact error if it fails
+- CAPTCHA = full stop, don't retry (extends lockout). Rate limit = wait 5-10 min. Session expiry = report.
+- Extract mechanisms and tradeoffs, not market commentary — every insight must answer "What does this mean for our system?"
+- Don't take sides (OpenClaw vs X) — extract the pattern, compare against our actual design
+- Archive is in knowledge/insights.md (current), knowledge/library/ (historical), knowledge/posts/ (raw)
+- Amy-Kimi has a merged copy of your archive — coordinate via agents/shared/bulletin.md
+- Append to archives with >>, don't overwrite
+- At 60% budget, checkpoint what you have — timeout losses are real

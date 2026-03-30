@@ -358,7 +358,9 @@ function checkC1_1_readBeforeEdit(toolCalls: ToolCall[]): CheckResult {
       const path = extractPath(tc.input);
       if (path) readPaths.add(normalizePath(path));
     }
-    if (tc.name === "edit" || tc.name === "write") {
+    // Only flag edit() — write() creates/replaces files and doesn't need prior read.
+    // edit() needs prior read to get exact oldText for matching.
+    if (tc.name === "edit") {
       const path = extractPath(tc.input);
       if (path) {
         const normed = normalizePath(path);
@@ -476,7 +478,7 @@ function checkC2_1_preciseArgs(toolCalls: ToolCall[]): CheckResult {
   ];
 
   for (const tc of toolCalls) {
-    if (tc.resultContent) {
+    if (tc.resultContent && tc.isError) {
       for (const pattern of errorPatterns) {
         if (pattern.test(tc.resultContent)) {
           violations.push(`${tc.name}() got schema error: ${tc.resultContent.substring(0, 100)}`);
@@ -623,10 +625,11 @@ function checkC12_1_sessionStart(toolCalls: ToolCall[], agent: string): CheckRes
     return { convention: "C12.1", passed: false, violations: ["No tool calls"] };
   }
 
-  // Heartbeat sessions have heartbeat.md injected into the system prompt.
-  // Agents don't need to read() it again — the content is already in context.
-  // For these sessions, check that the agent reads workspace context files
-  // (todo.md, focus-tasks.md, etc.) in the first few tool calls instead.
+  // C12.1 spirit: agents should orient themselves before acting.
+  // "Orient" means reading context files OR using orientation tools.
+  // Different agents and session types have different valid startup patterns.
+
+  // Named context files that indicate orientation
   const CONTEXT_FILE_PATTERNS = [
     /heartbeat\.md$/,
     /todo\.md$/,
@@ -637,24 +640,54 @@ function checkC12_1_sessionStart(toolCalls: ToolCall[], agent: string): CheckRes
     /nudge-active\.md$/,
     /heartbeat-context\.md$/,
     /pending-decisions\.md$/,
+    /journal\.md$/,
+    /analysis\.md$/,
   ];
 
-  // Check first 5 tool calls for productive context-reading behavior
-  const earlyWindow = toolCalls.slice(0, 5);
-  const earlyReads = earlyWindow.filter((tc) => tc.name === "read");
+  // Agent workspace reads also count as orientation (e.g., QA reading
+  // last-reviewed-commit.txt, Coach reading diagnosis-*.md)
+  const WORKSPACE_PATTERN = new RegExp(`agents/${agent}/(workspace|knowledge)/`);
 
-  // If any early read targets a context file, pass
-  for (const tc of earlyReads) {
-    const path = extractPath(tc.input);
-    if (!path) continue;
-    if (CONTEXT_FILE_PATTERNS.some((p) => p.test(path))) {
+  // Orientation tools that aren't read() but still show the agent is
+  // getting context before acting
+  const ORIENTATION_TOOLS = new Set([
+    "system_status",  // checking system state
+    "agents",         // listing agents or checking requests
+  ]);
+
+  // Check first 5 tool calls for any orientation behavior
+  const earlyWindow = toolCalls.slice(0, 5);
+
+  for (const tc of earlyWindow) {
+    // read() of a context file or workspace file
+    if (tc.name === "read") {
+      const path = extractPath(tc.input);
+      if (!path) continue;
+      if (CONTEXT_FILE_PATTERNS.some((p) => p.test(path))) {
+        return { convention: "C12.1", passed: true, violations: [] };
+      }
+      if (WORKSPACE_PATTERN.test(path)) {
+        return { convention: "C12.1", passed: true, violations: [] };
+      }
+    }
+
+    // Orientation tools (system_status, agents list/requests)
+    if (ORIENTATION_TOOLS.has(tc.name)) {
       return { convention: "C12.1", passed: true, violations: [] };
     }
-  }
 
-  // Also pass if the first call is system_status (another valid orientation step)
-  if (toolCalls[0].name === "system_status") {
-    return { convention: "C12.1", passed: true, violations: [] };
+    // workflow() is a valid start for cron tasks that are told to run a workflow
+    if (tc.name === "workflow") {
+      return { convention: "C12.1", passed: true, violations: [] };
+    }
+
+    // bash() with grep/find/ls in early window = searching for context
+    if (tc.name === "bash") {
+      const cmd = extractBashCommand(tc.input);
+      if (cmd && /^(grep|rg|find|ls)\b/.test(cmd.trim())) {
+        return { convention: "C12.1", passed: true, violations: [] };
+      }
+    }
   }
 
   return {
@@ -854,6 +887,11 @@ function writeSummary(
 function extractPath(input: Record<string, unknown>): string | null {
   if (typeof input.path === "string") return input.path;
   if (typeof input.file === "string") return input.file;
+  return null;
+}
+
+function extractBashCommand(input: Record<string, unknown>): string | null {
+  if (typeof input.command === "string") return input.command;
   return null;
 }
 

@@ -7,8 +7,6 @@
     "coding",
     "finish"
   ],
-  "contextFiles": [
-    "agents/evaluator/knowledge/criteria.md"
-  ],
+  "contextFiles": [],
   "memoryLimit": 5
 }
