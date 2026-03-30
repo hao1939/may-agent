@@ -1,5 +1,13 @@
 # Journal
 
+# Session 2026-03-29 23:10 (Module Cache Escalation + C1.3 Production Signal)
+- **C12.1 module cache STILL broken**: Confirmed via DB query that latest C12.1 violations still use old logic ("not heartbeat.md"). Source file is correct. Root cause: `loadAgentHandlers()` in `agent-loader.ts:781` uses `await import(modulePath)` — Bun caches this. Handlers load once at startup, never reload.
+- **Escalated to May/Hao** (req:ed7f02cf): Requested process restart. Also suggested future cache-busting improvement.
+- **C1.3 (verify-writes) production signal**: Coder at **62.3%** (43/69 sessions, 7-day window). Up from 30% baseline (EXP-213). The verify-after-edit v1 skill IS working in production. Other agents: May 91.4%, QA 88.4%, coach 38.1%, tech-lead 40.7%, optimizer 23.4%, bob 15.1%, scout 9.5%, amy 0%.
+- **Key insight**: Coder verify-after-edit skill doubled the convention pass rate and it's holding. The 62.3% is consistent with lab results (60%). The remaining 38% is the prompting ceiling — needs runtime enforcement for further improvement.
+- **System health**: 25 sessions/6h, 4% error rate. Low activity. No coder sessions in 11.5h. No pending tasks for Bob beyond monitoring.
+- **No periodic tasks overdue** — next due April 3.
+
 # Session 2026-03-29 21:40 (C12.1 Module Cache Issue)
 - **C12.1 fix NOT live**: Discovered that the convention-check.ts update from 20:43 has NOT taken effect. DB violations at 21:39 still show old logic ("First read() was X, not heartbeat.md"). Root cause: the Node/Bun process caches the imported TS module. The source file is correct (uses CONTEXT_FILE_PATTERNS with 9 patterns + system_status check), but the running process still uses the old single-pattern check. **Needs process restart to deploy.**
 - **Impact**: C12.1 pass rate remains ~5% (85/1570 overall, 4/151 last 24h) despite the code fix being in place. All agents are affected.

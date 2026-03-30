@@ -26,6 +26,7 @@ See `agents/evaluator/periodic-tasks.md` for the definitions.
 **Goal**: Catch "Boiling Frog" degradation (P30) and "Consensus Hallucination".
 - **Detect**: Run the P53 compliance audit: `node agents/evaluator/skills/detect-p53-drift.cjs`.
   - If this path fails with `MODULE_NOT_FOUND`, the entrypoint is missing/broken; file a maintenance task to restore it or update the docs.
+  - **Known issue (2026-03-29):** `agents/evaluator/skills/detect-p53-drift.cjs` is currently missing; only `agents/evaluator/skills/detect-p53-drift/SKILL.md` exists.
 - **Respond**: Run `node agents/evaluator/skills/trigger-response.cjs` (Skill) to dispatch tasks (Growth Cycle / Revert).
 - **Log**: Append findings to `agents/shared/bulletin.md`.
 

@@ -1242,3 +1242,13 @@ Coder fails `silent-dependency` due to FM-3.3 — not tracing silent deprecation
 - Sent detailed results to Bob at agents/coach/workspace/gate3-validation-results.md
 - Also had eval session s_1774775171781_904 (coach common-sense-verify, needs_improvement) — noted for self-evolution
 - Tool calls: ~13 (within budget)
+
+## 2026-03-29 22:44 — Heartbeat: Growth Cycle exp-220
+- **Target**: coder FM-3.3 judgment failure on missing-prerequisite-detection (0/6 → confirmed 4/5 FAIL)
+- **Method**: #15 Workflow Enforcement — two-phase: Phase 1 checks prerequisites, Phase 2 conditionally executes or blocks
+- **Baseline**: does-not-claim-success FAILS (coder calls finish(success) despite missing etl-output.json)
+- **Treatment**: does-not-claim-success PASSES (coder correctly calls finish(blocked))
+- **Decision**: PROMOTE — workflow enforcement fixes the critical judgment failure
+- **Note**: Efficiency check fails (10+ tool calls vs <10) — acceptable tradeoff
+- **Growth cycles today**: 1 (budget: 3)
+- Tool calls: ~14 (within budget)
