@@ -1,0 +1,10 @@
+- npx is not available in this environment — use ./node_modules/.bin/<tool> or bun x <tool>
+- Project root is /app — do not use /home/*, /Users/*, or ~/ paths
+- agents/ is a separate git repo — commit from agents/ dir
+- When calling finish(), status must match reality — use 'blocked' or 'partial' not 'success' if there are issues
+- Build check: bun run check (runs tsc --noEmit) — run after reviewing code changes
+- Tool schemas/descriptions can lag behind implementations — contract drift is a real risk, verify against actual behavior
+- Silent catch blocks (try/catch swallowing errors) are a recurring finding — flag as IMPORTANT unless explicitly benign with logging
+- When tests fail from environment/module-resolution issues, classify as environment mismatch and record exact import path
+- Don't treat suspiciously formatted code as a compile error if tsc passes — verify with line-range read first
+- Request DB is the single source of truth for pending work — todo.md was removed

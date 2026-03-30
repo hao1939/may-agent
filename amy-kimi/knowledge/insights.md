@@ -401,6 +401,106 @@ RL训练中 **Rollout阶段占80%+时间**，长尾效应严重：
 
 ---
 
+## HB-2245 — Agent架构年终盘点: 行业收敛验证
+**Source**: XHS @403-error (994赞) / 2025-02-16 archive  
+**Date**: 2026-03-30 (knowledge base深挖)  
+**TL;DR**: 🔥🔥 **Multi-Agent Framework → Agent Harness/Runtime/Super Agent 的行业级收敛**
+
+### 架构演进趋势
+
+从 **Multi-Agent Framework** 转向：
+- **Agent Harness** — 运行时封装
+- **Agent Runtime** — 执行环境  
+- **Super Agent** — 单一强智能体
+
+**核心收敛公式**: `ReAct loop + Middleware + Skills`
+
+### 关键验证
+
+| 行业趋势 | OpenClaw对应 |
+|---------|-------------|
+| Agent Harness | ✅ L0-L3 Harness架构 |
+| Skills标准组件 | ✅ Skill+Experience双流 |
+| ReAct + Middleware | ✅ Core Agent设计 |
+
+### 神评论
+> "经过一年内卷，行业从复杂Multi-Agent框架回归简约核心。现在谁还谈 orchestration 谁外行。"
+
+### 对我们意味着什么
+
+**🎯 时机优势验证**: 我们在行业混乱期已确定简约架构，现在行业追赶验证
+**🎯 术语统一**: "Agent Harness"成为行业通用术语，与我们定义完全一致
+**🎯 架构信心**: Skill作为核心组件的判定得到行业级确认
+
+---
+
+## HB-2246 — ART框架: Agent RL的轻量级入门方案
+**Source**: XHS@Tim的AI日记 (322赞/530收藏) / 2025-08-31  
+**Date**: 2026-03-30 (knowledge base深挖)  
+**TL;DR**: 非技术友好的Agent RL训练框架，GRPO + RULER机制，Colab即可运行
+
+### ART核心概念
+
+| 组件 | 说明 |
+|------|------|
+| Model/TrainableModel | 待训练模型 + LoRA参数 |
+| Rollout | 一次完整任务执行 |
+| Trajectory | 交互记录(输入/输出/动作/奖励) |
+| Training Loop | 收集trajectory → GRPO更新 → checkpoint |
+
+### GRPO优化方法
+- 类似PPO，但通过**组内相对奖励排序**稳定训练
+- 同一任务生成多条候选轨迹，按奖励对比概率分布
+
+### RULER奖励机制 (LLM-as-judge)
+- 大模型对多条输出做**相对排序**
+- 适合无法直接定义数值奖励的开放任务
+
+### 社区反馈
+- ✅ "适合学习和toy demo"
+- ⚠️ "bug挺多的，上下文管理需优化"
+- ❌ "不适合生产级业务"
+
+### 对我们意味着什么
+
+**🎯 轻量级验证方案**: 为OpenClaw提供"失败→优化"循环的快速验证工具
+**🎯 RULER与Error Log对应**: LLM-as-judge机制与我们的Error Log驱动优化有形式化映射
+**🎯 训练门槛降低**: 可作为内部原型验证工具，降低RL实验成本
+
+---
+
+## HB-2247 — Agentic RL五维训练框架
+**Source**: XHS@算法改进猫博士 (116赞/179收藏) / 浙江  
+**Date**: 2026-03-30 (knowledge base深挖)  
+**TL;DR**: 🔥 **环境真实化 + 组合奖励 + 显式Memory + 渐进训练 + Self-Play 的完整方法论**
+
+### 五维框架
+
+| 维度 | 核心要点 | OpenClaw映射 |
+|------|---------|-------------|
+| **环境真实化** | 模拟API延迟、调用失败、随机扰动 | Skill评审 + 真实场景验证 |
+| **组合奖励函数** | 主奖励(完成度) + 辅助奖励(效率/准确/可解释) | 多维度评估标准 |
+| **显式Memory模块** | 提取关键信息存储，需要时召回 | AGENTS.md 100%上下文注入 |
+| **渐进式训练** | 单工具→双工具→多步规划 | L1→L2→L3能力层级 |
+| **Self-Play对抗** | 新旧版本对抗/协作训练 | Agent间审计机制 |
+
+### 显式Memory设计细节
+> "Agentic任务需要多步推理，前面步骤的信息要传递到后面。可训练小模型判断哪些信息值得记忆，或用规则提取工具调用结果、中间推理等重要内容。"
+
+### 渐进式训练路径
+```
+单工具 → 双工具组合 → 多步规划复杂任务
+```
+
+### 对我们意味着什么
+
+**🎯 训练体系完整映射**: 五维框架全部可在OpenClaw找到对应机制
+**🎯 Memory模块验证**: 显式Memory设计与我们AGENTS.md全上下文注入策略一致
+**🎯 渐进式路径确认**: L1→L2→L3的层级设计与行业最佳实践吻合
+**🎯 Self-Play启发**: Agent间审计机制可扩展为对抗训练场景
+
+---
+
 ## HB-2244 — ReMe: 动态过程记忆框架 (Experience-Driven Evolution)
 **Source**: XHS @硅谷刘老师 — "强烈推荐读这篇动态过程记忆框架"  
 **Paper**: Remember Me, Refine Me: A Dynamic Procedural Memory Framework  

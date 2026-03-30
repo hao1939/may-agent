@@ -1,5 +1,41 @@
 # Journal
 
+# Session 2026-03-30 08:10 (Module Cache RESOLVED + C2.1 False Positive Fix)
+
+## Key Findings
+1. **Module cache RESOLVED**: Process restarted at 07:47 UTC (build `84e05c6`, opBudget removal commit). After **41+ hours blocked**, all handler-level fixes now LIVE:
+   - C12.1 CONTEXT_FILE_PATTERNS: 0% → **66.7%** (N=3 post-restart)
+   - C1.3 C1_3_EXEMPT_PATTERNS: precision fix live, monitoring
+   - C7.1 false positive fix: also now live
+2. **C2.1 False Positive Bug Found & Fixed**: `checkC2_1_preciseArgs()` matched error patterns (`/schema validation/i`, `/missing required/i`) in ALL tool result content, including successful file reads where files MENTION those terms. Optimizer at 0% C2.1 was entirely false positives from `periodic-tasks.md` containing text about "schema validation" and "missing required fields." **Fix**: Added `tc.isError` guard so only actual error results are checked. In source, will deploy on next process restart.
+3. **System healthy post-restart**: 4 active sessions, heartbeats running normally. Coach doing experiments, tech-lead processing opBudget P0 + unified client P1.
+4. **Auto-evolve tried by coach** (5 days ago): Confirmed SOUL variations don't fix judgment-class failures — aligns with gym sweep findings.
+
+## Actions
+- Updated todo.md: C12.1 module cache marked RESOLVED, C1.3 precision fix marked LIVE
+- Fixed C2.1 false positive in `agents/may/handlers/convention-check.ts` line 479
+- This fix is in source but blocked on module cache (like before) — will deploy on next restart
+
+## Artifacts
+- `agents/may/handlers/convention-check.ts` (C2.1 false positive fix)
+- `agents/bob/workspace/todo.md` (updated with resolution status)
+
+# Session 2026-03-30 07:38 (Hao Directive: opBudget Removal)
+- **Processed Hao directive**: opBudget removed entirely. Updated `agents/bob/context.md` with fact: no per-session tool call limits, opCount observational only, cost control at model/session level.
+- **Cleaned duplicate**: Context.md had a stale duplicate opBudget line — consolidated to single entry.
+- **Convention status (24h, 148 sessions)**: C12.1=2.7%, C1.3=46.6%, C1.1=75%, C2.1=70.3%, C7.1=78.4%, C3.2=84.5%, C1.4=86.5%, C6.1=87.2%, C8.2=87.8%, C1.7=97.3%, C3.3/C1.5=99.3%.
+- **Module cache still stale (~41h)**: C12.1 and C1.3 fixes in source, violation messages confirm old code still running. 5 escalations all auto-completed without restart. No further action possible — requires human restart.
+- **Note for future**: `progressive-work-persistence/SKILL.md` references "ops budget" in 4 places — technically stale language now that opBudget is removed, but the checkpoint/persistence behavior it teaches is still valid. Low priority to update.
+
+# Session 2026-03-30 07:10 (Module Cache Status Check)
+- **C12.1 still 0%** (6h, 0/35): Module cache blocker persists — **38+ hours**. Convention handler still running old cached code. All prior escalations (5x) auto-completed without resolution.
+- **C1.3 at 45.7%** (6h, 16/35): C1_3_EXEMPT_PATTERNS fix also blocked by module cache. Both fixes confirmed in source (line 68 and line 630 of convention-check.ts).
+- **Convention snapshot (6h, 35 sessions)**: C12.1=0%, C1.3=45.7%, C1.1=71.4%, C2.1=74.3%, C7.1=80%, C6.1=82.9%, C1.7/C3.2=94.3%, C1.4/C1.5/C3.3/C8.2=100%.
+- **System health**: 97% success (31/32), 32 sessions/6h. Stable. Tech-lead jsonSchema error persists (1 in 6h).
+- **5th escalation sent** (req:968c97ac): Different framing — addressed to Hao directly via May, flagged as human-action-required. Previous escalations were marked COMPLETED by auto-completion system without the restart occurring.
+- **Bun path discovery**: `bun` is not on PATH; actual binary at `/home/hao/may-agent/.state/bin/bun`. Needed for DB queries.
+- **No other actionable work**: All handler fixes blocked on module cache. No pending requests. Periodic tasks not due until April 3. Prompt caching still blocked on Hao.
+
 # Session 2026-03-30 06:10 (C1.3 Precision Fix)
 - **C1.3 at 45.9%** (24h, all agents): Analyzed violations — **65%+ are journal.md, todo.md, periodic-tasks.md, focus-tasks.md** — internal bookkeeping files, NOT deliverables. The convention was designed to catch bugs in code/config writes, not to penalize agents for not reading back their own journal entries.
 - **Fix deployed to source**: Added `C1_3_EXEMPT_PATTERNS` to `convention-check.ts` exempting 7 bookkeeping file patterns from C1.3. This will significantly improve measured pass rate by removing false positives.

@@ -476,7 +476,7 @@ function checkC2_1_preciseArgs(toolCalls: ToolCall[]): CheckResult {
   ];
 
   for (const tc of toolCalls) {
-    if (tc.resultContent) {
+    if (tc.resultContent && tc.isError) {
       for (const pattern of errorPatterns) {
         if (pattern.test(tc.resultContent)) {
           violations.push(`${tc.name}() got schema error: ${tc.resultContent.substring(0, 100)}`);
