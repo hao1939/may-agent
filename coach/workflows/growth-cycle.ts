@@ -34,9 +34,21 @@ export const description: string =
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const isLearning = ctx.task.startsWith("learn:");
 
+  // Environment facts — injected into every LLM step to prevent FM-2.1 path-guessing
+  const ENV_FACTS =
+    `## ENVIRONMENT FACTS (do NOT guess paths — use these)\n` +
+    `- Working directory: /app\n` +
+    `- No npm — use bun or ./node_modules/.bin/\n` +
+    `- Agent files: /app/agents/<name>/\n` +
+    `- Gym scenarios: /app/agents/gym/scenarios/\n` +
+    `- Lab forks: /app/agents/.lab/<fork-name>/\n` +
+    `- Scripts: /app/scripts/\n` +
+    `- Do NOT use /root/, /home/, /Users/, or ~/ paths\n\n`;
+
   // Step 1: Diagnose / Study
   const step1Prompt = isLearning
-    ? `Study an improvement method you haven't used before.\n\n` +
+    ? ENV_FACTS +
+      `Study an improvement method you haven't used before.\n\n` +
       `## Method to Learn\n${ctx.task.slice(6).trim()}\n\n` +
       `## Instructions\n` +
       `1. Read \`agents/coach/knowledge/method-catalog.md\` — find this method's entry.\n` +
@@ -50,7 +62,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       `4. Pick a target agent (preferably coder — simplest agent).\n` +
       `5. Design a small experiment: what change will you make using this method?\n` +
       `6. Report: what you learned about the method, your experiment plan.`
-    : `Diagnose an error pattern and select an improvement method.\n\n` +
+    : ENV_FACTS +
+      `Diagnose an error pattern and select an improvement method.\n\n` +
       `## Error Pattern\n${ctx.task}\n\n` +
       `## Instructions\n` +
       `1. Read the error examples from the task description above. Identify the behavioral pattern.\n` +
@@ -118,6 +131,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
   // Step 2: Fork and apply
   const patch = await ctx.runAgent("coach",
+    ENV_FACTS +
     `Fork the target agent and apply exactly ONE improvement method.\n\n` +
     `## ${isLearning ? "Study Results" : "Diagnosis"}\n${ctx.summarize(step1)}\n\n` +
     `## Instructions\n` +

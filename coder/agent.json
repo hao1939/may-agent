@@ -1,5 +1,4 @@
 {
   "name": "coder",
-  "extends": "_archetypes/coder",
-  "opBudget": 60
+  "extends": "_archetypes/coder"
 }

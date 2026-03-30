@@ -1,5 +1,4 @@
 {
   "name": "scout",
-  "extends": "_archetypes/scout",
-  "opBudget": 25
+  "extends": "_archetypes/scout"
 }
