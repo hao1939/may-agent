@@ -1,5 +1,29 @@
 # Journal
 
+# Session 2026-03-30 04:10 (Convention Health Check + DB Path Discovery)
+- **DB path correction**: The correct DB path is `/app/.state/may.db` (not `/app/may.db` which is 0 bytes). Tables: convention_checks, convention_maturity, evaluations, gym_checks, gym_prompts, gym_runs, requests, sessions. Schema uses `convention` column (not `convention_id`) and `checked_at` (epoch ms, not ISO datetime).
+- **C12.1 STILL 0%** (6h, 0/30): Module cache blocker persists after **31+ hours**. Violations still show old logic ("not heartbeat.md"). Source fix from 2026-03-29 20:43 confirmed still in place (`convention-check.ts` line 614: CONTEXT_FILE_PATTERNS array). Running binary is `may-agent-f83555f` (built Mar 29 15:02, before fix).
+- **Convention snapshot (6h, 30 sessions)**: C12.1=0%, C1.3=47%, C1.1=73%, C2.1=77%, C6.1=83%, C7.1=83%, C1.7/C3.2=97%, C1.4/C1.5/C3.3/C8.2=100%.
+- **System health**: 97% success (31/32), 32 sessions/6h. Stable. Only error: tech-lead jsonSchema (intermittent).
+- **Module cache analysis**: `loadAgentHandlers()` at agent-loader.ts:781 uses `await import(modulePath)`. Bun caches this at process level. No way to invalidate without process restart. Build script exists (`bun run bundle`) but can't replace running PID 7. Needs Hao intervention.
+- **No new actionable work**: All handler-level fixes blocked on process restart. Skills are live (read from disk). No pending requests. Periodic tasks not due until April 3.
+- **Bun binary path**: `/home/hao/.bun/bin/bun` — `bun` is not on PATH in this environment.
+
+# Session 2026-03-30 02:40 (Architecture Audit + Skill Deployment Correction)
+- **KEY CORRECTION: Skills are NOT blocked by module cache.** Skills in `agents/<name>/skills/*.md` are loaded via `readFileSync` in `loadFile()` at system prompt assembly time — they're read fresh from disk every session. Only HANDLERS (loaded via `await import()`) are cached by Bun. This means:
+  - ✅ verify-after-edit skill deployed to coder/bob/optimizer/scout IS live
+  - ✅ Any future skill file changes take effect immediately
+  - ❌ C12.1 convention checker fix (in `agents/may/handlers/convention-check.ts`) IS blocked by module cache
+  - ❌ C7.1 false positive fix (same handler file) also blocked
+- **C12.1 still 0%** (6h, 0/30): Module cache confirmed — violations still show old logic ("First read() was X, not heartbeat.md"). Source fix has been in place for ~6h.
+- **C1.3 at 47%** (6h, 14/30): Stable around ceiling. Bob 0/2, Optimizer 0/2 since skill deploy (too small N to conclude). Coder 0 sessions since deploy.
+- **C7.1 at 83%** (6h, 25/30): False positives from `/home/hao/.bun/bin/bun` usage. Fix would require handler update — blocked by same module cache.
+- **Convention health snapshot**: C1.4/C1.5/C3.3/C8.2=100%, C1.7/C3.2=97%, C6.1/C7.1=83%, C1.1=77%, C2.1=70%, C1.3=47%, C12.1=0%.
+- **System health**: 31 sessions/6h, 3.2% error rate. Stable. Coach actively running experiments on silent-dependency.
+- **Architecture finding**: Bundle (`/app/bundle/may-agent-f83555f`) contains `src/` code only. Agent handlers are dynamic imports (Bun-cached). Skills and config files are `readFileSync` (live). This distinction matters for deployment strategy.
+- **Todo correction needed**: Removed "All 4 need bundle rebuild" note — skills deploy was already live.
+- **No actionable work this session**: All handler-level fixes blocked on process restart. Skills are live. No pending requests. Periodic tasks not due.
+
 # Session 2026-03-30 01:10 (Convention Health Audit)
 - **C12.1 still 0%** (6h): Module cache blocker persists. Re-escalation req:1b9ba130 marked COMPLETED but fix still not live. Handler uses old violation format ("not heartbeat.md") vs new format ("No context file read in first 5 tool calls") — proves old cached code is running.
 - **C7.1 at 84%** (6h): ALL failures are Bob sessions using `/home/hao/.../bun` for DB queries. This is a false positive — bun isn't available at /app, so /home/hao path is the only option. C7.1 checker needs an exception for bun binary access (not navigating to /home as working directory).

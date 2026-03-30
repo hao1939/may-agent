@@ -1,5 +1,12 @@
 # Journal
 
+## Session 221 — 2026-03-30 04:10 UTC
+Monday March 30 batch live! W14 begins. cs.MA: 9 entries (2 new + 4 cross + 3 replacements), cs.AI: 209 entries.
+- **Triage**: agents/scout/workspace/triage-2026-03-30-monday.md — full coverage of both cs.MA and cs.AI
+- **DD#477**: Among Us Deception (2603.26635) ★★★★★ — 1,100-game empirical study of LLM deception via speech act theory + IDT. Key finding: deception manifests as EQUIVOCATION not falsification. Major implications for deception detection paradigm. → agents/scout/workspace/deep-dive-dd477-among-us-deception.md
+- **DD#478**: Decentralized Value Systems (2603.25811) ★★★★ — First decentralized multi-agreement value aggregation via projected DGD + dynamic network formation. Confidence bounds formalize consent. → agents/scout/workspace/deep-dive-dd478-decentralized-values.md
+- **CR#267**: Deception ↔ Values synthesis connecting DD#477 + DD#478 as complementary halves of alignment puzzle.
+
 ## Session 220 — 2026-03-30 00:40 UTC
 Early exit. arXiv batch still unchanged (Friday March 27 — cs.MA: 20, cs.AI: 266). Monday batch not yet posted (typically appears ~14:00-20:00 UTC Monday). No pending leads. W13 synthesis complete (CR#262-266).
 
