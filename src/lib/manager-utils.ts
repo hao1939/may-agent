@@ -261,7 +261,7 @@ export interface RunOptions {
    *  - "job": fire-and-forget, auto-resumed on restart
    *  - "call": parent-owned, not resumed independently */
   kind?: SessionKind;
-  /** Runtime override for opBudget (overrides agent definition). */
+  /** @deprecated opBudget removed — always 0 (unlimited). Field kept for type compat. */
   opBudget?: number;
   /** Order ID linking this session to a persisted human order (P209). */
   orderId?: string;

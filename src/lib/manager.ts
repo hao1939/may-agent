@@ -1031,16 +1031,13 @@ export class SubagentManager {
 
     const def = registered.definition;
 
-    // Hot-reload mutable config (opBudget, memoryLimit) from agent.json on disk.
+    // Hot-reload mutable config (memoryLimit) from agent.json on disk.
     // Agent configs are loaded once at startup and cached. Without this, changes
-    // to agent.json (e.g. opBudget rebalancing) don't take effect until restart.
+    // to agent.json don't take effect until restart.
     const agentDir = def.knowledgeDir ? dirname(def.knowledgeDir) : def.workspace ? dirname(def.workspace) : undefined;
     if (agentDir) {
       try {
         const freshConfig = JSON.parse(readFileSync(join(agentDir, "agent.json"), "utf-8"));
-        if (typeof freshConfig.opBudget === "number" && freshConfig.opBudget !== def.opBudget) {
-          def.opBudget = freshConfig.opBudget;
-        }
         if (typeof freshConfig.memoryLimit === "number" && freshConfig.memoryLimit !== def.memoryLimit) {
           def.memoryLimit = freshConfig.memoryLimit;
         }
@@ -1110,7 +1107,7 @@ export class SubagentManager {
       closed: false,
       autoClose: opts?.autoClose ?? "immediate",
       kind: opts?.kind ?? "job",
-      opBudget: opts?.opBudget ?? def.opBudget ?? 0,
+      opBudget: 0,
       opCount: 0,
       totalToolCalls: 0,
       infraRetryCount: 0,
@@ -1474,7 +1471,7 @@ export class SubagentManager {
       closed: false,
       autoClose: persisted.autoClose ?? "immediate",
       kind: persisted.kind ?? "job",
-      opBudget: def.opBudget ?? 0,
+      opBudget: 0,
       opCount: persisted.opCount ?? 0,
       totalToolCalls: 0,
       infraRetryCount: 0,

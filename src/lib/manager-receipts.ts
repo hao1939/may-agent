@@ -3,8 +3,8 @@
  *
  * Extracted from manager.ts for maintainability. Contains:
  * - HMAC signing/verification (P84)
- * - Tool wrapping with receipt signing, OpBudget enforcement (P85),
- *   Tool Pivot Heuristic (P110), Turn Budget Warning, and OpBudget Visibility
+ * - Tool wrapping with receipt signing,
+ *   Tool Pivot Heuristic (P110), Turn Budget Warning
  * - verify_receipt built-in tool
  * - Operation usage query
  */
@@ -37,8 +37,7 @@ const RUNTIME_RECEIPT_SECRET = randomUUID();
 export const COST_SIGNAL_DURATION_MS = 2000;
 export const COST_SIGNAL_BYTES = 10000;
 
-/** OpBudget visibility: warn when this many ops remain. */
-const OP_BUDGET_LOW_THRESHOLD = 5;
+
 
 /**
  * Sign a tool output string with HMAC-SHA256.
@@ -212,21 +211,6 @@ export function wrapToolsWithReceipts(
       // by the async agent loop (e.g., model connection failure), but the wrapped tool
       // must still be able to update opCount/totalToolCalls on the live object.
       const session = getSession();
-      if (isStateChanging) {
-        if (session && session.opBudget > 0 && session.opCount >= session.opBudget) {
-          log("warn", `OpBudgetExceeded: Agent ${session.agentName} (${sessionId}) consumed ${session.opCount} ops (limit ${session.opBudget}). Stopping.`);
-
-          // P85: Mark session as errored so handleCompletion archives it
-          // with status "error" instead of "done". This makes OpBudget
-          // exhaustion visible in delegation-metrics (ISR/TSR).
-          session.error = `OpBudgetExceeded: Limit ${session.opBudget} reached.`;
-
-          return {
-            content: [{ type: "text" as const, text: `OpBudgetExceeded: Agent ${session.agentName} consumed ${session.opCount}/${session.opBudget} state-changing operations. Further writes are blocked. Use read-only tools or request re-authorization.` }],
-            details: undefined,
-          };
-        }
-      }
 
       // P110: Tool Pivot Heuristic — block after TOOL_PIVOT_LIMIT identical failures
       const pivotKey = computeToolArgsKey(tool.name, params);
@@ -362,21 +346,6 @@ export function wrapToolsWithReceipts(
         session.stuckWarningInjected = true;
         const stuckWarningText = `\n\n🚨 SYSTEM ALERT: You are in a repetitive failure loop. You have had ${session.consecutiveErrorTurns} consecutive turns where every tool call errored. Stop. Pivot to a completely different approach or use finish({ status: "blocked" }) to report what is blocking you.`;
         contentBlocks.push({ type: "text" as const, text: stuckWarningText });
-      }
-
-      // OpBudget Visibility: show ops used/remaining for state-changing tools
-      // Only inject when remaining ops is meaningful — avoid noise when budget is plentiful (QA finding 2026-03-17)
-      if (isStateChanging && session && session.opBudget > 0) {
-        const remaining = session.opBudget - session.opCount;
-        if (remaining <= OP_BUDGET_LOW_THRESHOLD) {
-          const warningText = `\n\n⚠️ [Ops: ${session.opCount}/${session.opBudget} — ${remaining} remaining] Finish up. Save progress and call finish().`;
-          contentBlocks.push({ type: "text" as const, text: warningText });
-        } else if (remaining <= Math.ceil(session.opBudget * 0.5)) {
-          // Show status when >50% consumed but not yet critical
-          const statusText = `\n\n<system_note>[Ops: ${session.opCount}/${session.opBudget}]</system_note>`;
-          contentBlocks.push({ type: "text" as const, text: statusText });
-        }
-        // When >50% remaining: no injection (avoid noise)
       }
 
       contentBlocks.push(closeTag);
