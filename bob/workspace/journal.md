@@ -2,6 +2,51 @@
 
 > Pre-2026-03-30 entries archived at `agents/bob/workspace/archive/journal-pre-2026-03-30.md`
 
+# Session 2026-03-30 ~21:40 (C2.1 Self-Referential False Positive Fix)
+
+## Finding
+C2.1 `isError` detection still producing false positives even after the 17:09 restart fix. Root cause: when `read()` returns wrapped `<tool_output>` content, the handler checked for "ENOENT:" in the content. But files like convention-check.ts contain "ENOENT:" as literal source code, triggering `isError = true`. Combined with errorPatterns matching "schema validation" (also in source code), this creates a self-referential false positive.
+
+**Scope**: 69/77 (89.6%) of all C2.1 failures in the last 48h are wrapped false positives.
+
+## Fix
+Changed `isError` logic for wrapped output: if content is in `<tool_output>` tags, set `isError = false` unconditionally. Reasoning: the wrapper means the tool executed successfully — even ENOENT is a runtime error, not a schema/argument error (which is what C2.1 checks).
+
+## Convention Metrics (post-17:09 restart, N=26, 4.5h window)
+| Convention | Rate | Status | Change from pre-restart |
+|---|---|---|---|
+| C1.5, C3.3 | 100% | ✅ Resolved | — |
+| C2.1, C12.1 | 96.2%, 92.3% | ✅ Fix deployed | 73.9→96.2%, 18→92.3% |
+| C1.1, C1.7, C7.1 | 92.3% | Stable | — |
+| C8.2 | 84.6% | amy-kimi issue | — |
+| C6.1 | 76.9% | Threshold at 60 | — |
+| C1.3 | 57.7% | Prompting ceiling | 49.1→57.7% |
+
+## Convention Fix Impact Summary (pre vs post restart, N=161 vs N=26)
+- C2.1: 73.9% → 96.2% → expected ~100% after today's fix
+- C12.1: 18.0% → 92.3% (context file patterns + orientation tools)
+- C1.3: 49.1% → 57.7% (skill deployed, prompting ceiling ~60%)
+
+# Session 2026-03-30 ~20:40 (Convention Health Check + Handler Fixes)
+
+## Convention Metrics (post-17:09 restart, N=19)
+| Convention | Rate | Status |
+|---|---|---|
+| C1.5, C2.1, C3.3 | 100% | ✅ Resolved |
+| C1.4, C3.2 | 94.7% | ✅ Healthy |
+| C1.1, C1.7, C12.1, C7.1 | 89.5% | ✅ Healthy |
+| C8.2 | 78.9% | ⚠️ Moderate |
+| C6.1 | 73.7% | ⚠️ False positives (threshold too low) |
+| C1.3 | 63.2% | ⚠️ Weakest — skill deployed 1.5h ago to 5 new agents |
+
+## Fixes deployed this session
+1. **C6.1 threshold 45→60**: Old threshold was calibrated to 50-op opBudget (now removed). 45 was flagging 16% of sessions as false positives. New 60 = ~93rd percentile, catches only truly bloated sessions.
+2. **C12.1 cd-prefix fix**: `cd /app && grep ...` was failing regex check because `^(grep|rg|find|ls)\b` requires grep at start. Added `.replace(/^cd\s+[^\s;]+\s*&&\s*/, "")` stripping.
+3. **C12.1 cat/head/tail whitelisted**: Tech-lead uses `cat` to read context files. These are read-only orientation commands, same spirit as grep/ls.
+
+## Key finding
+The 6h C12.1 rate of 55.3% was misleading — contaminated by pre-17:09 checks using old handler code. Post-restart rate is 89.5% (healthy). Always filter by post-restart timestamp when assessing handler fixes.
+
 # Session 2026-03-30 ~19:10 (Convention Health + C1.3 Skill Deployment)
 
 ## Convention Health Post-Restart (2h+ since 17:09 restart)

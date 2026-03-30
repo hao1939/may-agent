@@ -1,7 +1,7 @@
 # Workflow Registry
 
 **Owner**: Optimizer (accountable for quality, deduplication, effectiveness tracking)
-**Last audit**: 2026-03-30
+**Last audit**: 2026-03-30T21:10
 
 ## Shared Workflows (available to all agents)
 
@@ -36,6 +36,7 @@
 |------|------|-------|---------|
 | `design-then-build` | `may/workflows/design-then-build.ts` | 94 | Design phase then implementation |
 | `implement-and-review` | `may/workflows/implement-and-review.ts` | 107 | ⚠️ DUPLICATE — see consolidation notes |
+| `project-monitor` | `may/workflows/project-monitor.ts` | 97 | Actively monitor external projects — verify work, give feedback, escalate |
 | `research-pipeline` | `may/workflows/research-pipeline.ts` | 84 | Multi-step research workflow |
 | `test-and-fix` | `may/workflows/test-and-fix.ts` | 45 | Run tests, fix failures |
 | `verify-and-finish` | `may/workflows/verify-and-finish.ts` | 272 | ⚠️ DUPLICATE — identical to tech-lead's |
@@ -90,8 +91,32 @@
 
 ## Effectiveness Tracking
 
-> **Status**: Not yet implemented. Optimizer's first task is to establish baseline metrics:
-> - Success rate per workflow (done vs escalate)
-> - Average cost per workflow run
-> - Retry frequency
-> - Evaluation scores for sessions using each workflow
+**Last measured**: 2026-03-30T21:10 (all-time data, 177 workflow runs, 460 sessions)
+
+### Overall Metrics
+| Metric | Workflow Sessions | Non-Workflow Sessions |
+|--------|------------------|----------------------|
+| Quality (good+acc) | 70.7% (325/460) | 81.4% (12291/15108) |
+| Error rate | 2.6% (12/460) | 18.1% (2733/15112) |
+| Avg ops/session | 11.2 | — |
+| Run completion rate | 72.9% (129/177) | — |
+| Avg ops/completed run | 32.8 | — |
+
+### Key Findings
+1. **Workflows reduce errors dramatically** (2.6% vs 18.1%) — structured multi-step execution prevents crashes
+2. **Quality is lower** (70.7% vs 81.4%) — driven by coach training workflows (68 NI) and coder sub-sessions (40 NI)
+3. **Coach is the biggest NI source** — 68/133 needs_improvement in workflows are coach sessions (TASK_NONCOMPLETION in sprint planning)
+4. **27.1% of runs interrupted** — 48/177 runs don't complete, wasting avg 19.1 ops each (total ~917 ops wasted)
+5. **Job-kind sessions** (124) have 0 ops but still evaluated — may inflate NI counts for sub-task dispatches
+
+### Consolidation Priority Updates (validated 2026-03-30T21:10)
+- **P1 verify-and-finish**: Confirmed byte-identical (may vs tech-lead) ✓
+- **P2 verify-parallel**: may/optimizer identical; tech-lead has better QA prompt (Phase 1 DIAGNOSE / Phase 2 VERDICT, pre-existing failure detection) ✓
+- **P3 implement-and-review**: 3 versions divergent — tech-lead has best prompts (DIAGNOSE/VERDICT pattern + verification phase 4), may has "claims" framing note
+
+### Recommendations
+1. **Consolidate P1 immediately** — verify-and-finish is byte-identical, zero risk
+2. **Consolidate P2 with tech-lead's version** — strictly better QA prompts
+3. **Consolidate P3 by merging** — combine tech-lead's DIAGNOSE/VERDICT + may's "claims" note
+4. **Investigate coach training workflow NI rate** — 68 NI sessions suggest sprint planning prompts need improvement
+5. **Track interrupted runs** — 27% interruption rate means ops waste; consider timeout tuning

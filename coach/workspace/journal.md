@@ -1,5 +1,40 @@
 # Journal
 
+## 2026-03-30 21:06 — Reflection: Process Ownership + Workflow Quality Evidence
+
+**Reflection written**: `reflections/2026-03-30-21-reflection.md`
+
+**Inputs analyzed**: 9 messages since last reflection (ts: 1774886774468 → 1774898210850). Dominant theme: **process ownership** — Hao asking who drives each process and how. Key distinction: "driving" (active steering, tracking outcomes, adjusting) vs "running" (passive execution).
+
+**Key findings**:
+1. **Workflow quality evidence**: Coach has clean A/B data — workflow enforcement 75% promote (3/4), text changes 0% success (0/19). This is publishable evidence for Hao's ownership question.
+2. **Scenario development is the bottleneck**: Only 2 non-ceiling scenarios. 9 skills untested because there's nothing to test them against.
+3. **IT tracking**: Started rolling IT completion tracker. Previous reflection ITs: 33% completed (1/3).
+
+**ITs generated**: 4 (workflow evidence report P1, new scenarios P1, IT tracking P2, delegation scenario verify P2)
+
+## 2026-03-30 20:40 — Heartbeat: Skill Testing + Ceiling-Effect Confirmations
+
+**Resumed from checkpoint**: design-cache-strategy baseline test.
+
+### Results
+1. **design-cache-strategy baseline**: 5/5 PASS. Ceiling effect — coder designs bounded LRU cache without brainstorm skill. brainstorm-before-build reverted to ⚪ untested (needs harder scenario). Logged as exp-228.
+2. **verify-before-finish skill test** (exp-229): Injected skill text via lab fork `verify-before-finish-skill`, tested against `partial-verification-trap`. Result: 5/6 — **same as baseline**. Skill text had zero effect on behavior. Agent still doesn't add edge case test.
+3. **Key insight confirmed**: Text-based skill injection ≠ behavior change. Method #15 (workflow-enforcement) is the only proven mechanism. This is now the 19th data point supporting "SOUL text changes don't fix judgment failures."
+
+### Process Checks (#9 Gym, #10 Skills)
+- **#9 Gym**: Most scenarios at ceiling. Partial-verification-trap (5/6) and idempotent-already-fixed (7/8) are the only non-ceiling baselines.
+- **#10 Skills**: 0 proven, 1 disproven (verify-before-finish), 1 reverted to untested (brainstorm-before-build), 9 untested. Pipeline: discovery works, but text-based skills are likely dead ends. Need to rethink: should "skills" be workflow templates instead of text instructions?
+
+### LIBRARY.md Updates
+- verify-before-finish: ⚪ untested → ❌ disproven
+- brainstorm-before-build: 🧪 testing → ⚪ untested (ceiling effect)
+
+### Next Priorities
+- Test classify-then-act or scope-discipline against a non-ceiling scenario
+- OR shift to scenario development: create scenarios that expose real gaps (current gap: only 2 non-ceiling scenarios)
+- Consider: should the skill library pivot from text-instructions to workflow-template definitions?
+
 ## 2026-03-30 17:40 — Heartbeat: brainstorm-before-build Skill Evaluation Setup
 
 **Pending Task**: May requested gym testing of `brainstorm-before-build` skill (from obra/superpowers, 125k★ repo).

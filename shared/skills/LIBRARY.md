@@ -27,13 +27,13 @@ Each skill has ONE status:
 | evidence-over-narrative | ⚪ untested | | | | needs gym test |
 | check-state | ⚪ untested | | | | needs gym test |
 | task-adherence | ⚪ untested | | | | needs gym test |
-| verify-before-finish | ⚪ untested | | | | needs gym test |
+| verify-before-finish | ❌ disproven | N/A | Bug-fix tasks where edge-case test is expected (partial-verification-trap: 5/6 same as baseline) | | exp-229: text injection has zero effect on behavior. Method #15 workflow-enforcement needed instead. |
 | classify-then-act | ⚪ untested | | | | needs gym test |
 | scope-discipline | ⚪ untested | | | | needs gym test |
 | tool-discipline | ⚪ untested | | | | needs gym test |
 | obstacle-pivot | ⚪ untested | | | | needs gym test |
 | investigate-and-fix | ⚪ untested | | | | needs gym test |
-| brainstorm-before-build | 🧪 testing | | | | `design-cache-strategy` scenario created 2026-03-30 — baseline pending |
+| brainstorm-before-build | ⚪ untested | | | | `design-cache-strategy` scenario: ceiling effect (baseline 5/5 PASS 2026-03-30). Need harder scenario to test. |
 
 > **Note**: Only the top 10 most-referenced skills listed above. Full inventory in the skills/ subdirectories.
 > Coach: when you test a skill, fill in "Works When" and "Fails When" — these are the most valuable columns.

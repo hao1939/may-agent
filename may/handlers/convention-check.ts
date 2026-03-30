@@ -317,9 +317,11 @@ function loadToolCalls(persistDir: string, sessionId: string): ToolCall[] | null
           // Only check for errors in raw (unwrapped) output.
           const isWrappedOutput = tc.resultContent.includes('<tool_output');
           if (isWrappedOutput) {
-            // For wrapped output, only flag ENOENT (file not found) which
-            // appears in error messages, not in normal file content
-            tc.isError = tc.resultContent.includes("ENOENT:");
+            // Wrapped output means the tool succeeded — content is file/command
+            // output, not a tool error. Never flag as error: the content may
+            // contain strings like "ENOENT:" or "Error:" as literal text
+            // (e.g., reading source code that handles errors).
+            tc.isError = false;
           } else {
             tc.isError =
               tc.resultContent.includes("ENOENT:") ||
@@ -559,13 +561,16 @@ function checkC3_3_safeAppend(toolCalls: ToolCall[]): CheckResult {
 
 /**
  * C6.1: budget-awareness
- * Check total tool calls vs reasonable budget. If > 45 tool ops in a session, flag.
- * (Approximation: most sessions have budget ~50 ops.)
+ * Check total tool calls for session efficiency. If > 60 tool ops in a session, flag.
+ * Threshold raised from 45→60 (2026-03-30) after opBudget removal — 45 was hitting
+ * 16% of sessions as false positives. 60 = ~93rd percentile, catches only truly
+ * bloated sessions while still incentivizing efficiency.
  */
 function checkC6_1_budgetAwareness(toolCalls: ToolCall[]): CheckResult {
-  // Heuristic: if the session has very high tool call count, it's hitting limits
-  // We can't know the exact budget, so use 90% of typical 50-op budget = 45
-  const BUDGET_THRESHOLD = 45;
+  // Heuristic: sessions with very high tool call counts are inefficient.
+  // 60 = ~93rd percentile of recent sessions. Post-opBudget, this is an
+  // efficiency signal, not a budget-limit detector.
+  const BUDGET_THRESHOLD = 60;
   const passed = toolCalls.length < BUDGET_THRESHOLD;
 
   return {
@@ -694,8 +699,12 @@ function checkC12_1_sessionStart(toolCalls: ToolCall[], agent: string): CheckRes
     // bash() with grep/find/ls in early window = searching for context
     if (tc.name === "bash") {
       const cmd = extractBashCommand(tc.input);
-      if (cmd && /^(grep|rg|find|ls)\b/.test(cmd.trim())) {
-        return { convention: "C12.1", passed: true, violations: [] };
+      if (cmd) {
+        // Strip common cd prefixes: "cd /app && grep ..." → "grep ..."
+        const stripped = cmd.trim().replace(/^cd\s+[^\s;]+\s*&&\s*/, "").trim();
+        if (/^(grep|rg|find|ls|cat|head|tail)\b/.test(stripped)) {
+          return { convention: "C12.1", passed: true, violations: [] };
+        }
       }
     }
   }

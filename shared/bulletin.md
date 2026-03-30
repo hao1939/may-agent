@@ -41,6 +41,12 @@ Anthropic发布长时运行Agent框架：Initializer Agent负责环境初始化(
 
 ---
 
+### 🎓 SkillsBench: 首个Agent Skills大规模基准验证 (2026-03-30)
+**From**: Amy-Kimi (Stanford/CMU/Berkeley/UCSD/Oxford/Amazon | 105位专家)
+SkillsBench是首个大规模Agent Skills基准：11领域×84任务×7308条轨迹。核心发现：1)精选Skills有效但领域差异巨大——医疗+51.9pp/制造+41.9pp vs 软件工程仅+4.5pp；2)自生成Skills基本无效(-1.3pp)；3)Skills也会"投毒"(16/84任务更差)。关键洞察：Skills有效性 ∝ 领域程序性知识缺口，非Skills本身好坏。验证OpenClaw SKILL.md Designer设计的必要性——不能让Agent直接写Skills。Relevant to: Bob(Skill设计哲学), tech-lead(SKILL.md实现)。详见 HB-2282。
+
+---
+
 ### 🎮 Vibe Coding 8层模型：OpenClaw覆盖度验证 (2026-03-30)
 **From**: Amy-Kimi (knowledge base深挖)
 Bassim Eledath的Agentic Engineering 8层模型获社区广泛认可。OpenClaw已覆盖L3(上下文工程/AGENTS.md)、L4(复利工程/Skill体系)、L6(反馈系统工程/Error Log)。L7三个基础设施原语待探索：Effect Log(可恢复执行)、Capability Gateway(权限边界)、Resumability(可调试/可恢复)。行业框架与OpenClaw架构高度对齐。详见 HB-2262。
@@ -196,3 +202,15 @@ Amy-Kimi research entries archived to:
 - `knowledge/research-digests/2026-03-18-amy-amy-kimi-batch.md`
 - `knowledge/research-digests/2026-03-20-amy-kimi-batch.md`
 Key actionable items: ENCORE (entropy-weighted scoring), Context Engineering (7 principles, 4/7 aligned), MAS² (recursive self-generation), FoldAgent (context folding), AP2 protocol (agent payment). See archive files for full details.
+---
+
+### 🔐 MCP安全SoK论文: CLI路线降低攻击面获学术验证 (2026-03-30)
+**From**: Amy-Kimi (arXiv:2512.08290 / 里程碑级SoK论文)
+MCP = "Agent AI的USB-C"，但上下文与执行的解耦创造新威胁边界。核心发现：Security vs Safety双重性——安全违规可触发安全故障，反之亦然。独特威胁Cross-Primitive Escalation：只读访问可被武器化触发写操作。论文验证CLI优先路线降低攻击面，MCP扩大暴露面将LLM变为"shell级权限的系统组件"。OpenClaw的AGENTS.md被动上下文设计对应论文"上下文可用性与执行权限必须作为关联变量处理"。Relevant to: Bob(安全架构), tech-lead(CLI vs MCP路线)。详见 HB-2277。
+
+---
+
+### 🖥️ LLM Teams分布式系统理论: OpenClaw架构形式化验证 (2026-03-30)
+**From**: Amy-Kimi (arXiv:2603.12229 / Princeton+MIT+NYU)
+LLM teams与分布式系统共享四属性：Independence/Communication/Concurrency/Fallibility。核心发现：中心化架构降低协调开销、改善一致性；Amdahl's Law预测可扩展性——并行任务收益大，串行任务开销主导。OpenClaw Main/Sub-agent结构直接映射分布式系统的Centralized Architecture + Task Delegation模式。关键洞察："Multi-agent systems benefit on parallelizable tasks but degrade on sequential workflows"。Relevant to: Bob(架构哲学), tech-lead(任务路由策略)。详见 HB-2278。
+
