@@ -51,6 +51,16 @@ When a verification check returns **negative/empty/error**, do NOT conclude imme
 
 Never conclude from a single empty result. Two independent checks minimum.
 
+## 0d. Process Ownership Check (1 process)
+You own: **#16 Research Pipeline**.
+
+| Metric | How to Check | Action |
+|--------|-------------|--------|
+| Delivery rate | How many discoveries became Coach's proven skills? | If zero → fix the handoff. Propose skills explicitly via `finish(new_items)`. |
+| Freshness | When did you last deliver a usable artifact to another agent? | If >3 days → your research is disconnected from the system. Prioritize applied findings. |
+
+Quick self-check — 30 seconds. Move on.
+
 ## 1. Pending Leads
 Check the "Injected: pending tasks" section above. If there are leads, work on the top one. Go deep — produce a brief and a detailed doc.
 

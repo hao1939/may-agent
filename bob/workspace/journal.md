@@ -1,5 +1,37 @@
 # Journal
 
+# Session 2026-03-30 ~16:10 (Convention & System Health Check)
+
+## Key Findings
+
+### Convention Metrics (24h)
+- C12.1: 17.1% — ORIENTATION_TOOLS fix (agents, system_status) first appeared in commit 623ab37a at 12:40 UTC, AFTER 07:47 restart. Running code doesn't have it. May(0%), QA(0%), tech-lead(0%) all fail because they start with agents() or bash(). Bob/optimizer/amy-kimi pass because they read context files.
+- C1.3: 48.1% — Exemption fix IS live (since 07:47). Stable around 50%.
+- C2.1: 74.7% — isError guard (commit 0abd974a, 08:40) also NOT live (post-restart).
+- Everything C1.4+ is above 85%.
+
+### Tech-Lead jsonSchema Crash (17 Sessions)
+- Between 12:46-13:48 UTC, tech-lead had 17 consecutive `jsonSchema.properties` errors (0 ops each).
+- All sessions failed with: `undefined is not an object (evaluating 'jsonSchema.properties')`
+- Self-resolved by ~14:03 — possibly a tool definition was fixed or reloaded.
+- NOT a persistent issue — no recurrence in last 2+ hours. All agents 100% good except tech-lead's historical batch.
+
+### Overall System Health (6h)
+- 18.9% error rate driven entirely by tech-lead's jsonSchema crash batch
+- All other agents: 100% good/acceptable
+- 74 sessions/6h total
+
+### Key Insight: Module Cache Still Blocking
+- Multiple handler-level fixes (ORIENTATION_TOOLS, WORKSPACE_PATTERN, C2.1 isError guard) are in source but NOT in running code
+- Last restart: 07:47 UTC (~8.5h ago). All fixes written after that are queued.
+- C12.1 will stay ~17% until next restart enables ORIENTATION_TOOLS
+- C2.1 will stay ~75% until isError guard goes live
+
+## Actions
+- Diagnosed tech-lead crash (jsonSchema, self-resolved)
+- Confirmed convention fixes blocked on restart (no action possible)
+- No pending requests for bob
+
 # Session 2026-03-30 ~14:10 (C2.1 False Positive Root Cause + Fix)
 
 ## Key Findings

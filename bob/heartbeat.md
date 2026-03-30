@@ -82,7 +82,21 @@ Check `agents/shared/common-sense.md`. For infra-owned items:
 ## 3. Periodic Tasks
 Check `agents/bob/periodic-tasks.md` and do the most overdue task. Update dates after completion.
 
-## 4. Initiative
+## 4. Process Ownership Check (4 processes)
+You own: **#3 Session Persistence, #6 JS Handlers, #8 Compaction, #13 Workflows**.
+
+Quick check each heartbeat (1-2 bash calls total, not per-process):
+
+| Process | Health Query | Action |
+|---------|-------------|--------|
+| #3 Persistence | `grep -c "session.*lost\|recovery.*fail" .state/logs/*.log 2>/dev/null` | Non-zero → investigate. |
+| #6 JS Handlers | Are handlers producing value? Which fire frequently? | Audit periodically. Dead handlers → propose removal. |
+| #8 Compaction | Sample a compacted session — was key info preserved? | If info loss is high → tune compaction prompt. |
+| #13 Workflows | `grep -c "workflow" .state/logs/*.log 2>/dev/null` | Which workflows are used? Which are broken? Fix or deprecate unused. |
+
+Only check 1-2 processes per heartbeat (rotate). Don't audit all 4 every time.
+
+## 4b. Initiative
 If nothing's urgent: check whether your recent briefs actually got implemented and changed behavior. Read tech-lead's feedback in `agents/tech-lead/workspace/pending-decisions.md`. If tech-lead rejected a brief, understand why. If tech-lead implemented one, did agent behavior actually improve? A brief without follow-through is noise.
 
 Then: explore Scout/Amy research, synthesize insights, or propose designs — but prefer designs that address common-sense gaps over abstract patterns.
