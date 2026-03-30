@@ -1,7 +1,99 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { mkdirSync, writeFileSync, existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
+
+// ── Mock db.ts so openDatabase works without node:sqlite ──────────────
+// Vitest runs under Node 18 which lacks node:sqlite. We provide a minimal
+// in-memory SqliteDb implementation that handles the SQL patterns used by
+// requests.ts (evaluations table CRUD + schema DDL).
+
+vi.mock("../src/lib/db.js", () => {
+  /** Tiny in-memory SQL-ish store keyed by table name → rows (Map by PK). */
+  function createMemoryDb() {
+    const tables = new Map<string, Map<string, Record<string, unknown>>>();
+
+    function getTable(name: string): Map<string, Record<string, unknown>> {
+      if (!tables.has(name)) tables.set(name, new Map());
+      return tables.get(name)!;
+    }
+
+    // Parse "INSERT OR REPLACE INTO <table> (...cols...) VALUES (?, ...)"
+    function parseInsert(sql: string): { table: string; cols: string[] } | null {
+      const m = sql.match(/INSERT\s+OR\s+REPLACE\s+INTO\s+(\w+)\s*\(([^)]+)\)/i);
+      if (!m) return null;
+      return { table: m[1], cols: m[2].split(",").map((c) => c.trim()) };
+    }
+
+    // Parse "SELECT ... FROM <table> WHERE <col> = ?"
+    function parseSelect(sql: string): { table: string; cols: string | "*"; whereCol: string } | null {
+      const m = sql.match(/SELECT\s+(.+?)\s+FROM\s+(\w+)\s+WHERE\s+(\w+)\s*=\s*\?/i);
+      if (!m) return null;
+      return { cols: m[1].trim(), table: m[2], whereCol: m[3] };
+    }
+
+    const db = {
+      exec(_sql: string) { /* DDL / PRAGMA — no-op */ },
+      prepare(sql: string) {
+        const sel = parseSelect(sql);
+        return {
+          get(...params: unknown[]): Record<string, unknown> | null {
+            if (!sel) return null;
+            const tbl = getTable(sel.table);
+            for (const row of tbl.values()) {
+              if (row[sel.whereCol] === params[0]) {
+                if (sel.cols === "1") return { "1": 1 };
+                return { ...row };
+              }
+            }
+            return null;
+          },
+          all(...params: unknown[]): Record<string, unknown>[] {
+            if (!sel) return [];
+            const tbl = getTable(sel.table);
+            const results: Record<string, unknown>[] = [];
+            for (const row of tbl.values()) {
+              if (row[sel.whereCol] === params[0]) {
+                results.push({ ...row });
+              }
+            }
+            return results;
+          },
+          run(...params: unknown[]) {
+            // INSERT OR REPLACE
+            const ins = parseInsert(sql);
+            if (ins) {
+              const row: Record<string, unknown> = {};
+              ins.cols.forEach((col, i) => { row[col] = params[i]; });
+              const pk = row[ins.cols[0]] as string;
+              getTable(ins.table).set(pk, row);
+              return { changes: 1, lastInsertRowid: 0 };
+            }
+            return { changes: 0, lastInsertRowid: 0 };
+          },
+        };
+      },
+      run(sql: string, params?: unknown[]) {
+        const ins = parseInsert(sql);
+        if (ins && params) {
+          const row: Record<string, unknown> = {};
+          ins.cols.forEach((col, i) => { row[col] = params[i]; });
+          const pk = row[ins.cols[0]] as string;
+          getTable(ins.table).set(pk, row);
+          return { changes: 1, lastInsertRowid: 0 };
+        }
+        return { changes: 0, lastInsertRowid: 0 };
+      },
+      close() { tables.clear(); },
+    };
+    return db;
+  }
+
+  return {
+    openDatabase: (_path: string) => createMemoryDb(),
+  };
+});
+
 import { findUnevaluatedChildren, writeSkippedEvaluations } from "../src/lib/evaluator.js";
 import { upsertEvaluation, hasEvaluation, getDb, closeDb } from "../src/lib/requests.js";
 import type { PersistedSession } from "../src/lib/persistence.js";

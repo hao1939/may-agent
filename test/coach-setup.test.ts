@@ -10,6 +10,23 @@ import type { WorkflowToolResult } from "../src/lib/workflow.js";
 const AGENTS_ROOT = resolve(import.meta.dirname, "..", "agents");
 const COACH_DIR = resolve(AGENTS_ROOT, "coach");
 
+/** Read agent.json, resolving archetype inheritance if `extends` is set */
+function loadResolvedConfig(agentDir: string): Record<string, any> {
+  const config = JSON.parse(readFileSync(resolve(agentDir, "agent.json"), "utf-8"));
+  if (config.extends) {
+    const archetypeDir = resolve(AGENTS_ROOT, config.extends);
+    const parent = JSON.parse(readFileSync(resolve(archetypeDir, "agent.json"), "utf-8"));
+    return {
+      ...parent,
+      ...config,
+      name: config.name,
+      tools: [...new Set([...(parent.tools || []), ...(config.tools || [])])],
+      context_files: [...(parent.context_files || []), ...(config.context_files || [])],
+    };
+  }
+  return config;
+}
+
 describe("coach: workflow discovery", () => {
   it("workflows directory exists and contains .ts files", () => {
     const wfDir = resolve(COACH_DIR, "workflows");
@@ -88,7 +105,14 @@ describe("coach: skill discovery", () => {
 
 describe("coach: knowledge files", () => {
   it("SOUL.md exists and is concise", () => {
-    const file = resolve(COACH_DIR, "SOUL.md");
+    // SOUL.md may live in the archetype directory when agent uses `extends`
+    let file = resolve(COACH_DIR, "SOUL.md");
+    if (!existsSync(file)) {
+      const config = JSON.parse(readFileSync(resolve(COACH_DIR, "agent.json"), "utf-8"));
+      if (config.extends) {
+        file = resolve(AGENTS_ROOT, config.extends, "SOUL.md");
+      }
+    }
     expect(existsSync(file)).toBe(true);
     const content = readFileSync(file, "utf-8");
     const lines = content.split("\n").length;
@@ -140,7 +164,7 @@ describe("coach: knowledge files", () => {
 
 describe("coach: agent.json", () => {
   it("has required tools", () => {
-    const config = JSON.parse(readFileSync(resolve(COACH_DIR, "agent.json"), "utf-8"));
+    const config = loadResolvedConfig(COACH_DIR);
     const tools: string[] = config.tools;
     expect(tools).toContain("agents");
     expect(tools).toContain("workflow");
@@ -150,7 +174,7 @@ describe("coach: agent.json", () => {
   });
 
   it("does not have background-exec", () => {
-    const config = JSON.parse(readFileSync(resolve(COACH_DIR, "agent.json"), "utf-8"));
+    const config = loadResolvedConfig(COACH_DIR);
     expect(config.tools).not.toContain("background-exec");
   });
 
