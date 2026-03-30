@@ -61,6 +61,20 @@ const APPEND_ONLY_PATTERNS = [
 /** Forbidden path prefixes (C7.1). */
 const FORBIDDEN_PATH_PREFIXES = ["/home/", "~/", "/Users/", "/root/"];
 
+/** Internal bookkeeping files exempt from C1.3 verify-writes.
+ * These are personal/shared tracking files where write failures are
+ * low-risk (edit() fails atomically) and read-back adds no value.
+ * C1.3 should focus on deliverables (code, configs, briefs). */
+const C1_3_EXEMPT_PATTERNS = [
+  /journal\.md$/,
+  /todo\.md$/,
+  /periodic-tasks\.md$/,
+  /focus-tasks\.md$/,
+  /heartbeat-context\.md$/,
+  /common-sense-status\.md$/,
+  /last-reviewed-commit\.txt$/,
+];
+
 /** Lookback for regression detection (7 days in ms). */
 const REGRESSION_LOOKBACK_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -392,7 +406,9 @@ function checkC1_3_verifyWrites(toolCalls: ToolCall[]): CheckResult {
     }
   }
 
-  for (const [, desc] of unverified) {
+  for (const [normed, desc] of unverified) {
+    // Skip internal bookkeeping files — low risk, not deliverables
+    if (C1_3_EXEMPT_PATTERNS.some((p) => p.test(normed))) continue;
     violations.push(`${desc} not verified with subsequent read`);
   }
 

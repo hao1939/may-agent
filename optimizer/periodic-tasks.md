@@ -3,10 +3,12 @@
 Track when each task was last done. Pick the most overdue one during heartbeat step 3.
 
 ## Per heartbeat (do one, rotate)
-- [x] **Analysis review** — Last done: 2026-03-30T04:10
+- [x] **Analysis review** — Last done: 2026-03-30T06:10
   Read agents/bob/workspace/analysis.md or recent Bob synthesis outputs.
   Any findings that need optimization work? Cost issues? Efficiency problems?
   If found → add specific task to workspace/todo.md.
+  Latest (2026-03-30T06:10): 13 sessions/2h. optimizer 2(27ops), coach 2(27ops), bob 2(21ops), evaluator 1(14ops), scout 1(4ops), may 2(3ops), qa 2(2ops), tech-lead 1(0ops,error). 24h: 184s, 1981ops (10.8 avg). **QUALITY DROP**: Good eval rate 69% (was 84% yesterday). Root causes: coach sprint burst 09:00-09:30 (7 FM failures), connectivity outage residuals (5 sessions), tech-lead jsonSchema (5). Adjusted good rate ~78%. Finding at workspace/finding-quality-drop-0330.md.
+  Latest (2026-03-30T05:10): 13 sessions/2h. By agent: qa 2(2ops), scout 2(17ops), optimizer 2(25ops), bob 2(27ops), may 2(3ops), coach 1(12ops), tech-lead 1(0ops,error), evaluator 1(14ops). 24h: 186 sessions, 2001 ops (10.8 avg). 5 errors (4 tech-lead jsonSchema recurring + 1 connectivity). System healthy.
   Latest (2026-03-30T04:10): 36 sessions in 6h, 370 ops (6/hr, 61.7 ops/hr). Zero interruptions. Only 1 error (tech-lead jsonSchema). Coach 116ops(8s), Bob 113ops(5s), Optimizer 107ops(5s). System healthy overnight. **Key finding**: Coach growth-cycle quality gap (23% good vs 85% heartbeat good). Finding at finding-coach-growth-cycle-quality-0330.md.
   Latest (2026-03-30T02:40): 9 sessions since 01:10 (1.5h). Coach 14ops, May 1op, QA 1op, Bob 27ops, Optimizer 28ops (all done), plus 4 running. Zero errors. 24h: 184s, 1909 ops, 1.3% waste (25 wasted ops). System very healthy. 3-day trend: waste improving (3.3%→1.3%), avg ops/session declining (12.8→10.4). Wrote efficiency-trend-report-0330.md.
   Latest (2026-03-30T00:40): 4 sessions since 23:10 (1.5h, ~2.7/hr — overnight lull). May 1op x2, Scout 2ops, QA 1op. Zero errors. System very quiet overnight. No issues.
@@ -37,11 +39,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Latest (2026-03-26T06:33): Bob published `synthesis/strategy-hard-constraints.md` — articulates Auto-Evolve failure (0/5) and pivot to runtime guards. Confirms optimizer's direction: tool guards > prompt engineering. Coach ran growth-cycle (session 369, 13 ops) for verify-before-finish scenario. System stable. Previous optimizer heartbeat (session 371) used 46 ops, but that was before 35-op budget was added. No new optimization action needed.
   Latest (2026-03-26T03:12): Bob session 351 initialized Scout archetype files and delegated migration to tech-lead (req:30f9ea94). Coach session 347/348 diagnosed coder materialization failure (6/9 baseline) and created workflow-enforcement fork (coder-materialize-workflow in .lab/). Evaluator session 350 scored coach good (0.72 eff / 0.74 qual) with issues: premature finish() and evidence gap. System running 4 active agent requests (coach heartbeat, bob→coach verify, bob→tech-lead migrate, optimizer heartbeat). Process still on stale binary b9ef77e.
 
-- [x] **Cost outlier scan** — Last done: 2026-03-30T04:10
+- [x] **Cost outlier scan** — Last done: 2026-03-30T06:10
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-30T04:10): 36 sessions/6h. Max: optimizer 27ops, bob 27ops, coach 27ops (all normal heartbeats). Coach growth-cycle sessions peaked at 55ops (Mar 29 09:12). 24h: 181s, 1939 ops (10.7 avg). Zero cost outliers. **Growth-cycle is cost concern**: 13 sessions, 303 ops, 23% good rate — see finding-coach-growth-cycle-quality-0330.md.
+  Latest (2026-03-30T05:10): 13 sessions/2h. Max ops: bob 27, optimizer 25, scout 17, evaluator 14, coach 12. All normal. 24h: 186s, 2001 ops (10.8 avg). High ops (>30): coach 55(Mar29 09:12), optimizer 39(Mar29 09:06), bob 37/35/35. Zero cost outliers.
   Latest (2026-03-30T02:40): 9 sessions since 01:10 (1.5h). Max: optimizer 28 ops, bob 27 ops (normal heartbeats). Coach 14 ops (normal). Zero cost outliers. 24h: 184s, 1909 ops (10.4 avg). Waste: 1.3% (25 ops). No issues.
   Latest (2026-03-29T23:10): 13 sessions since 21:40 (1.5h). Max: bob 27 ops (normal heartbeat). Coach 13 ops (normal). Tech-lead 0 ops (error, jsonSchema bug). No cost outliers. 24h: 184 sessions, 1850 ops. System running lean.
   Latest (2026-03-29T21:10): 11 sessions/3h (~3.7/hr, 129 ops, 43 ops/hr). Zero cost outliers. Max: bob 28 ops (normal heartbeat). Zero errors. System running lean.
@@ -73,11 +75,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Latest (2026-03-25T20:40): 52 sessions in 4h (13/hr). Top ops: optimizer 57ops (common-sense experiment, expected), coach 26ops/2825s (interrupted). Coach+optimizer each 10 sessions, ~150 ops. No new waste patterns. System stable.
   Latest (2026-03-25T16:35): 61 sessions in 6.5h (9.4/hr). Two outliers: tech-lead gym test (528KB, 3x 100KB bash outputs — expected), Bob agents(filter:all) (404KB, 324KB response — one-off). No new systematic waste. Scout loop fix confirmed (2 sessions vs 32/day before). 30+ Bob zombies blocked on restart (req:31d94ce6). Finding at `workspace/finding-cost-scan-0325-1635.md`.
 
-- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-30T04:10
+- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-30T06:10
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
   Could it be replaced with a JS handler? (See cron-graduation-process.md Stage 3.)
   If found → write proposal in workspace/improvement-proposals.md.
-  Latest (2026-03-30T04:10): 36 sessions/6h. QA 1 op (JS), May 1 op (JS), Scout 1 op (JS). All high-op sessions doing genuine LLM work (heartbeats, growth-cycles). No new LLM-to-JS candidates.
+  Latest (2026-03-30T05:10): 13 sessions/2h. QA 1op (JS), May 1-2ops (JS), Scout 4-13ops (done). All high-op sessions doing genuine LLM work (heartbeats, evaluations). No new LLM-to-JS candidates.
   Latest (2026-03-30T02:40): 9 sessions since 01:10. QA 1 op (JS), May 1 op (JS). Coach 14 ops (common-sense-verify, genuine LLM). Bob 27 ops (heartbeat, genuine LLM). Optimizer 28 ops (heartbeat, genuine LLM). No new LLM-to-JS candidates.
   Latest (2026-03-29T23:10): 13 sessions since 21:40. QA 1 op (JS), Scout 2 ops (done), May 1 op (JS), Evaluator 0 ops (JS). Coach 10+13 ops (heartbeats, genuine LLM). Bob 27 ops (heartbeat, genuine LLM). Zero coder sessions post-restart. No new LLM-to-JS candidates.
   Latest (2026-03-29T21:10): 11 sessions/3h. QA 1 op (JS), May 1-3 ops (JS), Scout 2 ops (idle). Coach 13-24 ops (heartbeats, genuine LLM), Bob 27-28 ops (heartbeats, genuine LLM). No new LLM-to-JS candidates.
@@ -102,11 +104,11 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Latest (2026-03-26T03:11): No new LLM-to-JS candidates. Short sessions already use JS heuristics (evaluator 0-op, QA early exit). NEW FINDING: 50+ stale test requests (echo hello/testing) clogging requests.db — not LLM waste but DB scan waste. Wrote finding at `workspace/finding-stale-requests-0326-0311.md`. Proposed: request-cleanup JS handler to auto-cancel stale CREATED test requests >24h old.
   Latest (2026-03-25T22:07): Scanned 49 sessions in 4h (12.25/hr). 15 low-op sessions (0-2 ops): evaluator 0-ops (JS heuristic ✅), May 1-op idle checks, QA 1-2 op early exits, Scout 1-2 ops idle. All low-op sessions already optimized or require LLM judgment. No new LLM-to-JS candidate.
 
-- [x] **Handler health check** — Last done: 2026-03-30T04:10
+- [x] **Handler health check** — Last done: 2026-03-30T06:10
   Review existing JS handlers in agents/may/handlers/.
   Any errors in recent logs? Any handler that's not firing?
   If issues → add fix to workspace/todo.md.
-  Latest (2026-03-30T04:10): 22 handlers (unchanged). 36 sessions/6h. Zero errors in window (except tech-lead jsonSchema recurring bug, 0 ops). Process running f83555f (HEAD) since Mar 29 15:07 (13.0h uptime). All systems nominal.
+  Latest (2026-03-30T05:10): 22 handlers (unchanged). 13 sessions/2h. 1 error (tech-lead jsonSchema recurring). Process running f83555f (HEAD) since Mar 29 15:07 (14.0h uptime). All systems nominal.
   Latest (2026-03-30T02:40): 22 handlers (unchanged). 9 sessions since 01:10. Zero errors in window. Process running f83555f (HEAD) since 15:07 (11.5h uptime). Tool quality baseline at 01:07 (1.5h ago, fresh). Tech-lead jsonSchema bug recurring (~hourly, 0 ops, dependency issue). All systems nominal.
   Latest (2026-03-29T23:10): 22 handlers (unchanged). 13 sessions since 21:40. Tech-lead jsonSchema bug persists (22:39, 0 ops — recurring dependency issue). Process running f83555f (HEAD) since 15:07 (8h uptime). Tool quality baseline from 21:07 (2h ago, still fresh). All systems nominal.
   Latest (2026-03-29T21:10): 22 handlers (unchanged). Tool quality handler confirmed firing — latest baseline at 21:07 UTC, waste 2.67%. 11 sessions/3h, zero errors. Process running f83555f (HEAD) since 15:07. All systems nominal.
@@ -153,7 +155,7 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Latest (2026-03-23T21:36): verification-consistency (15th skill) deployed to 6 agents. Full lifecycle.
   _13 earlier skill deployments documented in finding files. See `workspace/finding-pattern-scan-*.md`._
 
-- [x] **Tool quality review** — Last done: 2026-03-30T04:10
+- [x] **Tool quality review** — Last done: 2026-03-30T06:10
   Read the tool-quality-report.md (generated by tool-quality-scan handler every 4h).
   Look for regression trends, persistent failure patterns, and agent-specific issues.
   If a specific failure category accounts for >30% of waste, create a targeted intervention:

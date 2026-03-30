@@ -48,7 +48,7 @@ See `agents/evaluator/periodic-tasks.md` for the definitions.
 - Do NOT update `agents/shared/knowledge/strategies.md` directly (Bob reviews first).
 - **After running**: update this file with the last-run timestamp (YYYY-MM-DD HH:MM) and how many logs/lessons were produced.
 
-**Last run**: 2026-03-29 10:34 — ran `node agents/evaluator/skills/monitor-session.cjs --running`; result: 40 checked, 37 unhealthy (mostly very-old `STALL`), 1 `NO_LOG` (s_1774413778093_1), and 3 healthy (current heartbeat sessions: evaluator/coach/tech-lead).
+**Last run**: 2026-03-30 04:41 — ran `node agents/evaluator/skills/monitor-session.cjs --running`; result: 1 checked, 1 healthy, 0 unhealthy (current running heartbeat: evaluator).
 
 **P63 Extract Strategies — Last run**: 2026-03-13 19:28 — logs: 50, lessons: 4 (P63 Automated Extraction Live)
 

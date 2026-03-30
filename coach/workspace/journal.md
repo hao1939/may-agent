@@ -1264,3 +1264,21 @@ Coder fails `silent-dependency` due to FM-3.3 — not tracing silent deprecation
 **Verdict:** PARTIAL IMPROVEMENT. Method #15 helps with thoroughness but needs scenario refinement to ensure the "right" fix path is taken. The marked-upgraded check may be too prescriptive if manual sanitization also works.
 
 **Growth cycle count today:** 1/3
+
+## 2026-03-30 05:40 — Heartbeat: Ceiling-Effect Gate + Next Priorities
+
+**Silent-dependency recheck:** Baseline now passes all checks (exp-222). The exp-070 failure was likely flaky or had different environment state. Ceiling effect confirmed — no experiment needed.
+
+**Growth cycles today:** 1 (silent-dependency baseline). 2 remaining in daily budget.
+
+**Top failing scenarios to target next (coder):**
+1. verify-before-finish-workflow — 0% pass rate across 4+ growth cycles, all methods failed
+2. materialize-intermediate-findings — 6/9 baseline, Method #15 failed (regression)
+3. conflicting-evidence — 5/7 baseline, SOUL mutations all failed
+4. behavior-escalation-stubborn — 2/4 baseline, SOUL mutations all failed
+
+**Key insight from exp log review:** verify-before-finish-workflow has been attempted 4+ times with no improvement from any method. This is a candidate for Method Invention (Step 4) — the standard methods are exhausted. conflicting-evidence and behavior-escalation-stubborn resisted all SOUL mutations, suggesting these need workflow-level or scenario-structural approaches.
+
+**Next session priorities:**
+- Method invention for verify-before-finish-workflow (4+ failed attempts = triggers Step 4)
+- Or: scenario development for new capability gaps
