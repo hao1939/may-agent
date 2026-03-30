@@ -7,12 +7,76 @@
  * - Process health detection
  * - Human input trend tracking
  * - Convention compliance section (when summary.json exists)
+ *
+ * Since vitest runs under Node.js (no bun:sqlite), we mock the requests module
+ * with an in-memory store.
  */
 
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import { mkdirSync, writeFileSync, rmSync, mkdtempSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
+
+// ── In-memory mock for requests.js (no bun:sqlite in vitest) ────────────
+
+interface MockEvalRecord {
+  sessionId: string;
+  agent: string;
+  quality: number;
+  efficiency: number;
+  productiveCalls: number;
+  wastedCalls: number;
+  verdict: string;
+  issues: string[];
+  overall: Record<string, unknown> | null;
+  usage: Record<string, unknown> | null;
+  failureChains: unknown[];
+  evaluatedByHeuristic: boolean;
+  skippedByJs: boolean;
+  createdAt: number;
+}
+
+const evalStore: MockEvalRecord[] = [];
+
+const mockDb = {
+  prepare: () => ({
+    get: () => null,
+    all: () => [],
+  }),
+  run: () => {},
+  exec: () => {},
+};
+
+vi.mock("../src/lib/requests.js", () => ({
+  upsertEvaluation: (_persistDir: string, opts: Record<string, unknown>) => {
+    evalStore.push({
+      sessionId: opts.sessionId as string,
+      agent: opts.agent as string,
+      quality: opts.quality as number,
+      efficiency: opts.efficiency as number,
+      productiveCalls: (opts.productiveCalls as number) ?? 0,
+      wastedCalls: (opts.wastedCalls as number) ?? 0,
+      verdict: opts.verdict as string,
+      issues: (opts.issues as string[]) ?? [],
+      overall: (opts.overall as Record<string, unknown>) ?? null,
+      usage: (opts.usage as Record<string, unknown>) ?? null,
+      failureChains: (opts.failureChains as unknown[]) ?? [],
+      evaluatedByHeuristic: !!(opts.evaluatedByHeuristic),
+      skippedByJs: !!(opts.skippedByJs),
+      createdAt: opts.createdAt as number,
+    });
+  },
+  getEvaluationsSince: (_persistDir: string, sinceMs: number) => {
+    return evalStore
+      .filter((e) => e.createdAt >= sinceMs)
+      .sort((a, b) => a.createdAt - b.createdAt);
+  },
+  getDb: () => mockDb,
+  getActiveRequests: () => [],
+  getRequestsByAgent: () => [],
+  getStaleRequests: () => [],
+  closeDb: () => {},
+}));
 
 import { printRequestStatus } from "../src/lib/tools/request-status.js";
 import { upsertEvaluation, closeDb } from "../src/lib/requests.js";
@@ -204,6 +268,8 @@ describe("printRequestStatus triage logic", () => {
   let persistDir: string;
 
   beforeAll(() => {
+    // Clear the in-memory eval store from previous describe
+    evalStore.length = 0;
     const fixtures = createTestState();
     root = fixtures.root;
     persistDir = fixtures.persistDir;

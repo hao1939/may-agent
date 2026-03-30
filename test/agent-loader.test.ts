@@ -71,7 +71,23 @@ describe("validateAgentConfig", () => {
       if (!existsSync(configPath)) continue;
 
       const raw = readFileSync(configPath, "utf-8");
-      const config = JSON.parse(raw) as AgentConfig;
+      let config = JSON.parse(raw) as AgentConfig;
+
+      // Resolve archetype inheritance before validating
+      if (config.extends) {
+        const archetypePath = resolve(AGENTS_ROOT, config.extends, "agent.json");
+        if (existsSync(archetypePath)) {
+          const parentRaw = readFileSync(archetypePath, "utf-8");
+          const parentConfig = JSON.parse(parentRaw) as AgentConfig;
+          config = {
+            ...parentConfig,
+            ...config,
+            name: config.name,
+            tools: [...new Set([...(parentConfig.tools || []), ...(config.tools || [])])],
+          };
+        }
+      }
+
       const errors = validateAgentConfig(config, fakeModels, AGENTS_ROOT);
       expect(errors, `agent "${config.name}" has validation errors`).toEqual([]);
     }

@@ -1,7 +1,66 @@
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, afterEach, vi } from "vitest";
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
+
+// ── In-memory mock for requests.js (no bun:sqlite / node:sqlite in vitest) ──
+
+interface StoredEval {
+  sessionId: string;
+  agent: string;
+  quality: number;
+  efficiency: number;
+  productiveCalls: number;
+  wastedCalls: number;
+  verdict: string;
+  issues: string[];
+  overall: Record<string, unknown> | null;
+  usage: Record<string, unknown> | null;
+  failureChains: unknown[];
+  evaluatedByHeuristic: boolean;
+  skippedByJs: boolean;
+  createdAt: number;
+}
+
+const evalStore = new Map<string, Map<string, StoredEval>>();
+
+vi.mock("../src/lib/requests.js", () => ({
+  upsertEvaluation: (_persistDir: string, opts: any) => {
+    if (!evalStore.has(_persistDir)) evalStore.set(_persistDir, new Map());
+    const store = evalStore.get(_persistDir)!;
+    store.set(opts.sessionId, {
+      sessionId: opts.sessionId,
+      agent: opts.agent,
+      quality: opts.quality ?? 0,
+      efficiency: opts.efficiency ?? 0,
+      productiveCalls: opts.productiveCalls ?? 0,
+      wastedCalls: opts.wastedCalls ?? 0,
+      verdict: opts.verdict ?? "needs_improvement",
+      issues: opts.issues ?? [],
+      overall: opts.overall ?? null,
+      usage: opts.usage ?? null,
+      failureChains: opts.failureChains ?? [],
+      evaluatedByHeuristic: opts.evaluatedByHeuristic ?? false,
+      skippedByJs: opts.skippedByJs ?? false,
+      createdAt: opts.createdAt,
+    });
+  },
+  getAllEvaluations: (persistDir: string) => {
+    const store = evalStore.get(persistDir);
+    if (!store) return [];
+    return [...store.values()].sort((a, b) => a.createdAt - b.createdAt);
+  },
+  hasEvaluation: (persistDir: string, sessionId: string) => {
+    const store = evalStore.get(persistDir);
+    return store ? store.has(sessionId) : false;
+  },
+  getEvaluationStatus: () => ({ evaluated: false, skipped: false }),
+  closeDb: (persistDir: string) => {
+    evalStore.delete(persistDir);
+  },
+  getDb: () => { throw new Error("getDb should not be called in this test"); },
+}));
+
 import { getAgentScoreSummary } from "../src/lib/evaluator.js";
 import { upsertEvaluation, closeDb } from "../src/lib/requests.js";
 

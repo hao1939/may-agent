@@ -66,7 +66,7 @@ describe("P85: Operation Budget", () => {
       model: fakeModel(),
       tools: [fakeTool("write"), fakeTool("read")],
       apiKey: "fake-key",
-      opBudget: 5,
+      opBudget: 5, // ignored — opBudget is always 0 (unlimited) now
     });
 
     // Run a session — we can't actually run it (no real model), but we can
@@ -75,7 +75,7 @@ describe("P85: Operation Budget", () => {
 
     const usage = manager.getOpUsage(sessionId);
     expect(usage).toBeTruthy();
-    expect(usage!.opBudget).toBe(5);
+    expect(usage!.opBudget).toBe(0); // opBudget feature removed — always 0 (unlimited)
     expect(usage!.opCount).toBe(0);
   });
 
@@ -118,8 +118,9 @@ describe("P85: Operation Budget", () => {
     expect(fullText).toContain("[SIG:");
   });
 
-  it("budget enforcement blocks state-changing tools when exceeded", async () => {
-    // Register agent with small budget
+  it("opBudget removed: all writes succeed when opBudget is always 0 (unlimited)", async () => {
+    // opBudget feature was removed — opBudget is always 0 (unlimited).
+    // Verify that writes are never blocked regardless of opBudget in registration.
     manager.register({
       name: "limited-agent",
       description: "Test",
@@ -128,7 +129,7 @@ describe("P85: Operation Budget", () => {
       model: fakeModel(),
       tools: [fakeTool("write", "written"), fakeTool("read", "file data")],
       apiKey: "fake-key",
-      opBudget: 2,
+      opBudget: 2, // ignored — always 0 (unlimited) now
     });
 
     const sessionId = manager.run("limited-agent", "test task");
@@ -140,7 +141,7 @@ describe("P85: Operation Budget", () => {
     const writeTool = wrappedTools.find((t: AgentTool) => t.name === "write")!;
     const readTool = wrappedTools.find((t: AgentTool) => t.name === "read")!;
 
-    // First two writes should succeed
+    // All writes should succeed — no budget enforcement
     const result1 = await writeTool.execute("tc1", { path: "/tmp/a.txt", content: "x" });
     expect(result1.content.map((b: any) => b.text || "").join("")).toContain("written");
     expect(session!.opCount).toBe(1);
@@ -149,23 +150,22 @@ describe("P85: Operation Budget", () => {
     expect(result2.content.map((b: any) => b.text || "").join("")).toContain("written");
     expect(session!.opCount).toBe(2);
 
-    // Third write should be blocked
+    // Third write also succeeds — opBudget is unlimited
     const result3 = await writeTool.execute("tc3", { path: "/tmp/d.txt", content: "w" });
     const text3 = result3.content.map((b: any) => b.text || "").join("");
-    expect(text3).toContain("OpBudgetExceeded");
-    expect(text3).toContain("2/2");
-    // Count should NOT have been incremented
-    expect(session!.opCount).toBe(2);
+    expect(text3).toContain("written");
+    expect(text3).not.toContain("OpBudgetExceeded");
+    expect(session!.opCount).toBe(3);
 
-    // Read tool should still work (not state-changing)
+    // Read tool still works
     const readResult = await readTool.execute("tc4", { path: "/tmp/test.txt" });
     const readText = readResult.content.map((b: any) => b.text || "").join("");
     expect(readText).toContain("file data");
-    // opCount unchanged
-    expect(session!.opCount).toBe(2);
+    // opCount unchanged by read (not state-changing)
+    expect(session!.opCount).toBe(3);
   });
 
-  it("sets session.error on OpBudget exhaustion so handleCompletion marks status as error", async () => {
+  it("opBudget removed: no session.error set since budget is always unlimited", async () => {
     manager.register({
       name: "error-budget-agent",
       description: "Test",
@@ -174,7 +174,7 @@ describe("P85: Operation Budget", () => {
       model: fakeModel(),
       tools: [fakeTool("write", "ok")],
       apiKey: "fake-key",
-      opBudget: 1,
+      opBudget: 1, // ignored — always 0 (unlimited) now
     });
 
     const sessionId = manager.run("error-budget-agent", "test task");
@@ -183,20 +183,21 @@ describe("P85: Operation Budget", () => {
     const session = manager.activeSessions.get(sessionId);
     const writeTool = session!.agent.state.tools[0];
 
-    // First write succeeds — no error yet
+    // First write succeeds
     await writeTool.execute("tc1", { path: "/tmp/a.txt", content: "x" });
     expect(session!.opCount).toBe(1);
     expect(session!.error).toBeUndefined();
 
-    // Second write triggers OpBudgetExceeded — session.error must be set
+    // Second write also succeeds — opBudget is unlimited (always 0)
     const result2 = await writeTool.execute("tc2", { path: "/tmp/b.txt", content: "y" });
     const text2 = result2.content.map((b: any) => b.text || "").join("");
-    expect(text2).toContain("OpBudgetExceeded");
-    expect(session!.error).toBe("OpBudgetExceeded: Limit 1 reached.");
-
-    // Verify the error message contains enough info for metrics parsing
-    expect(session!.error).toContain("OpBudgetExceeded");
-    expect(session!.error).toContain("Limit 1");
+    expect(text2).toContain("ok");
+    expect(text2).not.toContain("OpBudgetExceeded");
+    expect(session!.opCount).toBe(2);
+    // No OpBudgetExceeded error should be set (session may have other errors from fake model)
+    if (session!.error) {
+      expect(session!.error).not.toContain("OpBudgetExceeded");
+    }
   });
 
   it("zero opBudget means unlimited operations", async () => {
@@ -246,7 +247,7 @@ describe("P85: Operation Budget", () => {
     expect(usage!.opBudget).toBe(0); // defaults to 0 = unlimited
   });
 
-  it("run() opBudget option overrides agent definition", () => {
+  it("opBudget removed: run() opBudget option is ignored, always 0", () => {
     manager.register({
       name: "override-agent",
       description: "Test",
@@ -258,10 +259,10 @@ describe("P85: Operation Budget", () => {
       opBudget: 50,
     });
 
-    // Override to 3 for this session
+    // opBudget override is ignored — always 0 (unlimited)
     const sessionId = manager.run("override-agent", "test", { opBudget: 3 });
     const usage = manager.getOpUsage(sessionId);
-    expect(usage!.opBudget).toBe(3);
+    expect(usage!.opBudget).toBe(0); // opBudget feature removed — always 0
   });
 });
 
