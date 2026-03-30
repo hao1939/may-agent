@@ -8,7 +8,7 @@
 
 import type { AgentMessage, AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
 import { Type, StringEnum } from "@mariozechner/pi-ai";
-import type { RegisteredAgent } from "./manager-utils.js";
+import type { ActiveSession, RegisteredAgent } from "./manager-utils.js";
 import type { SessionInfo, TaskResult } from "./types.js";
 import type { PersistedSession } from "./persistence.js";
 import type { RequestRecord } from "./requests.js";
@@ -31,6 +31,7 @@ async function getRequestsModule() {
 
 export interface AgentsToolManagerDeps {
   agents: Map<string, RegisteredAgent>;
+  activeSessions: Map<string, ActiveSession>;
   callAgent(
     agentName: string,
     task: string,
@@ -39,12 +40,14 @@ export interface AgentsToolManagerDeps {
   runAgent(
     agentName: string,
     task: string,
-    opts?: { parentSessionId?: string; source?: string; requestId?: string },
+    opts?: { parentSessionId?: string; originSessionId?: string; source?: string; requestId?: string },
   ): string;
   status(): SessionInfo[];
   progress(sessionId: string, limit?: number): AgentMessage[];
   hasActiveSession(sessionId: string): boolean;
   cancel(sessionId: string): void;
+  getSessionSummary(sessionId: string): { task: string; summary: string; status: string };
+  getWorkflowSteps(workflowRunId: string): Array<{ step: string; sessionId: string; summary: string }>;
   registry: {
     persistDir: string;
     getSession(sessionId: string): PersistedSession | null;
@@ -100,11 +103,12 @@ function textResult(text: string): AgentToolResult<string> {
 }
 
 const AgentsToolParams = Type.Object({
-  action: StringEnum(["call", "send", "run", "list", "peek", "cancel", "requests"] as const, {
+  action: StringEnum(["call", "fork", "message", "context", "list", "peek", "cancel", "requests", "send", "run"] as const, {
     description: [
-      "'call': run an agent synchronously and get the result (blocks your session until the agent finishes).",
-      "'send': add a todo item for an agent and trigger their heartbeat — fire-and-forget, you continue immediately.",
-      "'run': start an agent immediately in the background (non-blocking). Returns sessionId. Use 'peek' to monitor progress.",
+      "'call': run an agent synchronously and get the result (blocks your session until the agent finishes). Creates a child session in your call tree.",
+      "'fork': start an agent in a new independent session (non-blocking). Returns sessionId. You continue immediately. The forked session can query your context via origin link.",
+      "'message': fire-and-forget task for an agent to pick up on their next heartbeat. No result returned. Use for background work.",
+      "'context': query session context — parent's summary, origin session, workflow steps. Use when you need more context than your task provides.",
       "'list': show all available agents with descriptions and any running sessions.",
       "'peek': view recent messages from a running session (requires sessionId).",
       "'cancel': kill a running session (requires sessionId).",
@@ -123,10 +127,11 @@ const AgentsToolParams = Type.Object({
   context_files: Type.Optional(Type.Array(Type.String(), { description: "For 'send'/'call': file paths the receiver MUST read for context. Included in the tracked request and appended to the message." })),
   success_criteria: Type.Optional(Type.Array(Type.String(), { description: "For 'send'/'call': bullet points describing how to verify the task is done correctly. Included in the tracked request." })),
   priority: Type.Optional(StringEnum(["P0", "P1", "P2"] as const, { description: "For 'send': task priority. P0 = urgent/blocking, P1 = important, P2 = nice-to-have. Default: P1." })),
+  scope: Type.Optional(StringEnum(["parent", "origin", "root", "workflow"] as const, { description: "For 'context': what to query. 'parent' (default): caller's session summary. 'origin': the session that forked this tree. 'root': top of the call tree. 'workflow': all completed workflow steps." })),
 });
 
 interface AgentsToolParamsType {
-  action: "call" | "send" | "run" | "list" | "peek" | "cancel" | "requests";
+  action: "call" | "fork" | "message" | "context" | "send" | "run" | "list" | "peek" | "cancel" | "requests";
   agent?: string;
   task?: string;
   message?: string;
@@ -137,6 +142,7 @@ interface AgentsToolParamsType {
   context_files?: string[];
   success_criteria?: string[];
   priority?: "P0" | "P1" | "P2";
+  scope?: "parent" | "origin" | "root" | "workflow";
 }
 
 /**
@@ -241,10 +247,12 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
             return textResult(JSON.stringify(resultWithoutMessages, null, 2));
           }
 
+          case "fork":
           case "run": {
-            if (!params.agent || !params.task) {
-              return textResult(JSON.stringify({ error: "'run' requires 'agent' and 'task'" }));
+            if (!params.agent || !(params.task || params.message)) {
+              return textResult(JSON.stringify({ error: "'fork' requires 'agent' and 'task'" }));
             }
+            const forkTask = params.task || params.message!;
             // Guard: reject if target matches a tool in caller's toolset
             const callerAgentRun = getCallerAgentName?.();
             if (callerAgentRun) {
@@ -254,7 +262,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
                 if (toolNames.includes(params.agent)) {
                   return textResult(
                     JSON.stringify({
-                      error: `"${params.agent}" is a tool, not an agent. Call it directly as: ${params.agent}({ ... }) — do NOT use agents.run("${params.agent}", ...).`,
+                      error: `"${params.agent}" is a tool, not an agent. Call it directly as: ${params.agent}({ ... }) — do NOT use agents.fork("${params.agent}", ...).`,
                     }),
                   );
                 }
@@ -267,7 +275,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
             }
             if (callDeny && callDeny.agents.includes(params.agent)) {
               return textResult(
-                JSON.stringify({ error: `Cannot run "${params.agent}" directly. ${callDeny.hint}` }),
+                JSON.stringify({ error: `Cannot fork "${params.agent}" directly. ${callDeny.hint}` }),
               );
             }
             const parentSidRun = getCallerSessionId?.();
@@ -280,7 +288,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
               runRequestId = req.trackRequest(manager.registry.persistDir, {
                 fromEntity: callerNameRun,
                 toAgent: params.agent,
-                task: params.task,
+                task: forkTask,
                 method: "run",
                 sessionId: parentSidRun,
                 context: params.context_files ? JSON.stringify(params.context_files) : undefined,
@@ -291,9 +299,10 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
             }
 
             // Fire-and-forget: start agent immediately, don't wait
-            const sessionId = manager.runAgent(params.agent, params.task, {
-              parentSessionId: parentSidRun,
-              source: "agents.run",
+            // Fork creates a new root with originSessionId linking back to the caller
+            const sessionId = manager.runAgent(params.agent, forkTask, {
+              originSessionId: parentSidRun,
+              source: "agents.fork",
               requestId: runRequestId,
             });
 
@@ -341,6 +350,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
             }
           }
 
+          case "message":
           case "send": {
             if (!params.agent || !params.message) {
               return textResult(JSON.stringify({ error: "'send' requires 'agent' and 'message'" }));
@@ -472,6 +482,63 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
             }
             manager.cancel(params.sessionId);
             return textResult(JSON.stringify({ cancelled: params.sessionId }));
+          }
+
+          case "context": {
+            const callerSid = getCallerSessionId?.();
+            if (!callerSid) {
+              return textResult(JSON.stringify({ error: "No session context available (not running inside a session)" }));
+            }
+
+            const scope = params.scope ?? "parent";
+            const callerSession = manager.activeSessions.get(callerSid);
+
+            if (scope === "parent") {
+              const parentSid = callerSession?.parentSessionId;
+              if (!parentSid) {
+                return textResult(JSON.stringify({ error: "No parent session (this is a root session). Try scope: 'origin' for forked sessions." }));
+              }
+              const summary = manager.getSessionSummary(parentSid);
+              return textResult(JSON.stringify({ scope: "parent", sessionId: parentSid, ...summary }, null, 2));
+            }
+
+            if (scope === "origin") {
+              // Walk up to root, then check originSessionId
+              let rootSid = callerSid;
+              let current = callerSession;
+              while (current?.parentSessionId) {
+                rootSid = current.parentSessionId;
+                current = manager.activeSessions.get(rootSid);
+              }
+              const originSid = current?.originSessionId;
+              if (!originSid) {
+                return textResult(JSON.stringify({ error: "No origin session (this tree was not forked). Try scope: 'parent'." }));
+              }
+              const summary = manager.getSessionSummary(originSid);
+              return textResult(JSON.stringify({ scope: "origin", sessionId: originSid, ...summary }, null, 2));
+            }
+
+            if (scope === "root") {
+              let rootSid = callerSid;
+              let current = callerSession;
+              while (current?.parentSessionId) {
+                rootSid = current.parentSessionId;
+                current = manager.activeSessions.get(rootSid);
+              }
+              const summary = manager.getSessionSummary(rootSid);
+              return textResult(JSON.stringify({ scope: "root", sessionId: rootSid, ...summary }, null, 2));
+            }
+
+            if (scope === "workflow") {
+              const wfRunId = callerSession?.workflowRunId;
+              if (!wfRunId) {
+                return textResult(JSON.stringify({ error: "Not inside a workflow. Try scope: 'parent'." }));
+              }
+              const steps = manager.getWorkflowSteps(wfRunId);
+              return textResult(JSON.stringify({ scope: "workflow", workflowRunId: wfRunId, steps }, null, 2));
+            }
+
+            return textResult(JSON.stringify({ error: `Unknown scope: ${scope}` }));
           }
 
           case "requests": {

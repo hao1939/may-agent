@@ -189,6 +189,8 @@ export interface ActiveSession {
   parentSessionId?: string;
   /** Agent name of the parent session (cached at creation for notification after parent may be gone). */
   parentAgentName?: string;
+  /** Session ID of the originating session (set by fork — the session that triggered this independent tree). */
+  originSessionId?: string;
   workflowRunId?: string;
   stepLabel?: string;
   turnCount: number;
@@ -241,6 +243,8 @@ export interface RunOptions {
   parentSessionId?: string;
   /** Name of the parent agent (for cross-process notification routing). */
   parentAgentName?: string;
+  /** Session ID of the originating session (set by fork — links back to the caller's tree). */
+  originSessionId?: string;
   workflowRunId?: string;
   stepLabel?: string;
   /** Runtime override: enable compaction for this session. */
