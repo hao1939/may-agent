@@ -1,5 +1,24 @@
 # Journal
 
+## 2026-03-30 17:40 — Heartbeat: brainstorm-before-build Skill Evaluation Setup
+
+**Pending Task**: May requested gym testing of `brainstorm-before-build` skill (from obra/superpowers, 125k★ repo).
+
+**New Scenario Created**: `design-cache-strategy`
+- Agent must design+implement a cache for a data pipeline (50k events, 2k users, Zipf distribution)
+- Requires creating cache.js with get/set/stats API, integrating into pipeline.js
+- Naive unbounded Map fails memory-safety check; must have eviction (LRU/TTL/size-limit)
+- 5 success criteria checks: cache exists, pipeline integration, tests pass, bounded cache, tests unmodified
+- Verified: clean environment fails 4/5 tests; reference LRU solution passes 5/5 + success_criteria
+
+**Baseline Result**: ⚠️ **CEILING EFFECT** — coder without skill passed 5/5 in 64s.
+- Coder already knows to add eviction/bounding to caches. The scenario doesn't expose a brainstorming gap.
+- Need a harder scenario where the first-instinct approach actually has a flaw, or where there are multiple architecturally different approaches with real trade-offs.
+
+**LIBRARY.md**: Updated brainstorm-before-build to 🧪 testing status.
+
+**Insight**: Implementation tasks don't expose brainstorming value because coding agents already implement reasonable solutions. The skill's value is in **architectural/design decisions** where the obvious approach has hidden costs — need a scenario with that structure.
+
 ## 2026-03-30 14:40 — Heartbeat: Pending Task Triage + Tech-Lead Error Analysis
 
 **Pending Task Review**: Two duplicate requests to review `s_1774876904208_29`. Queried evaluations DB — this is a **may** session with verdict **acceptable** (not needs_improvement as claimed). Issues: `session_error`, `opBudget_exhaustion`. No coaching needed — false alarm.

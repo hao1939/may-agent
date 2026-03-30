@@ -33,6 +33,7 @@ Each skill has ONE status:
 | tool-discipline | ⚪ untested | | | | needs gym test |
 | obstacle-pivot | ⚪ untested | | | | needs gym test |
 | investigate-and-fix | ⚪ untested | | | | needs gym test |
+| brainstorm-before-build | 🧪 testing | | | | `design-cache-strategy` scenario created 2026-03-30 — baseline pending |
 
 > **Note**: Only the top 10 most-referenced skills listed above. Full inventory in the skills/ subdirectories.
 > Coach: when you test a skill, fill in "Works When" and "Fails When" — these are the most valuable columns.
