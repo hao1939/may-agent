@@ -99,6 +99,8 @@ export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
     socket: Socket;
     /** Session IDs this client is watching. null = firehose (all events). */
     filter: Set<string> | null;
+    /** When true, auto-track the chat session from getSessionId() + children. */
+    chatMode: boolean;
   }
   const clients = new Map<Socket, ClientState>();
 
@@ -115,6 +117,18 @@ export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
 
   function broadcast(event: RunnerEvent): void {
     if (clients.size === 0) return;
+
+    // Chat-mode clients: keep filter in sync with the current chat session
+    const chatSid = getSessionId();
+    for (const client of clients.values()) {
+      if (client.chatMode && chatSid) {
+        if (!client.filter) client.filter = new Set();
+        if (!client.filter.has(chatSid)) {
+          client.filter.clear();
+          client.filter.add(chatSid);
+        }
+      }
+    }
 
     // Auto-expand: when a session starts with a parentSessionId in a client's filter,
     // add the new session to that client's filter automatically.
@@ -141,7 +155,7 @@ export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
   bus.on(broadcast);
 
   const server: Server = createServer((socket) => {
-    clients.set(socket, { socket, filter: null });
+    clients.set(socket, { socket, filter: null, chatMode: false });
 
     // Welcome message with process metadata and current state (L6)
     const status = manager.status();
@@ -212,8 +226,15 @@ export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
           if (client && Array.isArray(sessions)) {
             if (sessions.includes("*")) {
               client.filter = null; // firehose
+              client.chatMode = false;
+            } else if (sessions.includes("chat")) {
+              // Chat mode: auto-track the active chat session + children
+              client.chatMode = true;
+              const chatSid = getSessionId();
+              client.filter = chatSid ? new Set([chatSid]) : new Set();
             } else {
               client.filter = new Set(sessions);
+              client.chatMode = false;
             }
             socket.write(JSON.stringify({ type: "ok", command: "subscribe" }) + "\n");
           } else {
