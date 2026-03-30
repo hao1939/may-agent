@@ -26,11 +26,33 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   }
 
   // Check verdict (QA uses PASS/FAIL/CONDITIONAL)
+  // CONDITIONAL means "changes are correct but pre-existing issues prevent clean PASS"
+  // — treat it the same as PASS.
   const reviewText = review.lastAssistantText ?? "";
-  const reviewUpper = reviewText.toUpperCase();
-  if (reviewUpper.includes("PASS") && !reviewUpper.includes("FAIL")) {
+
+  // Extract the formal verdict from QA's "### Verdict" section.
+  // Individual check items may say "FAIL" (e.g., "tsc: FAIL") but those
+  // are item-level — the verdict line is the authoritative signal.
+  const getVerdict = (text: string): "pass" | "conditional" | "fail" => {
+    const verdictMatch = text.match(/#+\s*Verdict[^\n]*\n+\**(\w+)\**/i);
+    if (verdictMatch) {
+      const v = verdictMatch[1].toUpperCase();
+      if (v === "PASS") return "pass";
+      if (v === "CONDITIONAL") return "conditional";
+      if (v === "FAIL") return "fail";
+    }
+    const u = text.toUpperCase();
+    if (u.includes("**CONDITIONAL**")) return "conditional";
+    if (u.includes("**PASS**") && !u.includes("**FAIL**")) return "pass";
+    if (u.includes("PASS") && !u.includes("FAIL")) return "pass";
+    return "fail";
+  };
+
+  const verdict1 = getVerdict(reviewText);
+  if (verdict1 === "pass" || verdict1 === "conditional") {
+    const verdict = verdict1 === "conditional" ? "CONDITIONAL PASS" : "PASS";
     return ctx.done(
-      `## QA Verdict: PASS — ready to commit\n\n` +
+      `## QA Verdict: ${verdict} — ready to commit\n\n` +
       `## Implementation\n${coder.lastAssistantText}\n\n` +
       `## Review\n${reviewText}\n\n` +
       `## ACTION REQUIRED\n` +
@@ -78,16 +100,17 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   }
 
   const review2Text = review2.lastAssistantText ?? "";
-  const review2Upper = review2Text.toUpperCase();
-  if (review2Upper.includes("FAIL") || (review2Upper.includes("CONDITIONAL") && !review2Upper.includes("PASS"))) {
+  const verdict2Result = getVerdict(review2Text);
+  if (verdict2Result === "fail") {
     return ctx.escalate("still failing after one iteration", {
       fixResult: fix.lastAssistantText,
       reviewFeedback: review2Text,
     });
   }
 
+  const verdict2 = verdict2Result === "conditional" ? "CONDITIONAL PASS" : "PASS";
   return ctx.done(
-    `## QA Verdict: PASS (after one iteration) — ready to commit\n\n` +
+    `## QA Verdict: ${verdict2} (after one iteration) — ready to commit\n\n` +
     `## Implementation (after one iteration)\n${fix.lastAssistantText}\n\n` +
     `## Final Review\n${review2Text}\n\n` +
     `## ACTION REQUIRED\n` +
