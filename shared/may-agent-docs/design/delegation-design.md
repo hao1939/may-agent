@@ -1,148 +1,133 @@
 # Delegation Design
 
-## Status: Design Phase
+## Status: Ready for POC
 
-## Core Insight
+## Core Principle
 
-Agents are good at **decisions** (read code, find bugs, choose approach). Agents are bad at **process** (remembering to include context, formatting returns, following review steps). The infra should handle all process; agents only make decisions.
+Agents are smart. Infra provides access, agents make decisions.
 
-## Current Problem
+- Caller writes a good task — enough to start working
+- Delegate works from the task — if it needs more, it pulls context on demand
+- Infra makes context accessible — doesn't auto-attach, doesn't decide what's relevant
 
-Today, agents manage their own delegation process:
-- May decides what context to include in the task (often too little)
-- Coder decides what to return in finish() (often just a summary)
-- Tech-lead manually orchestrates the coder→qa→fix loop in heartbeats
-- QA decides how to review (often just confirms "looks good")
+## The One Infra Gap
 
-Result: context lost at every handoff, 30-50% ops wasted on rediscovery, QA rubber-stamps.
+Today, a delegate session has:
+- ✅ The task string (from caller)
+- ✅ Full tool access (read files, run commands, query DB)
+- ✅ context.md (environmental knowledge)
+- ❌ **No access to what the caller already discovered**
 
-## Design: Infra Does Process, Agents Do Decisions
+The delegate can read any file. But it doesn't know WHICH files the caller read, what errors the caller saw, or what the caller already tried. That knowledge is in the parent session's transcript — inaccessible to the delegate.
 
-### Sending: Infra auto-gathers context
+## Proposed Solution: `agents({ action: "context" })`
 
-When `agents.call("coder", task)` is invoked, the infra should automatically:
+One new action on the existing agents tool:
 
-1. **Attach the caller's relevant tool history** — what files were read, what errors were seen, what commands ran. The caller doesn't write this — infra extracts it from the session transcript.
+```typescript
+// Get my parent session's summary (what the caller saw/did)
+agents({ action: "context" })
 
-2. **Attach related file contents** — if the task mentions file paths, pre-read them and include snippets. The delegate doesn't re-read what the caller already read.
+// Get a specific session's summary (workflow sibling, previous attempt)
+agents({ action: "context", sessionId: "s_XXX" })
+```
 
-3. **Attach the verification command** — if the task was dispatched from a workflow, the workflow defines how to verify. Not up to the agent.
+Returns a handoff summary (already implemented as `summarizeForHandoff()`):
+- Files read and written
+- Commands run and their outcomes
+- Errors encountered
+- Agent's final response (truncated)
 
-The agent writes: "Fix the off-by-one in the discount calculation."
-The infra adds: here are the files, here's the error, here's how to verify.
+NOT the raw transcript. Focused, bounded, useful.
 
-### Returning: Infra structures the result
+## Session Hierarchy
 
-When an agent's turn completes, the infra should automatically:
+```
+May (chat, long-lived)
+  ├── agents.call("coder", task)
+  │     coder has parentSessionId → can query May's context
+  │
+  └── workflow code-review-loop
+        step 1: coder (workflowRunId=X) → can query May's context
+        step 2: qa (workflowRunId=X) → can query coder's context (step 1)
+        step 3: coder fix (workflowRunId=X) → can query qa's context (step 2)
+```
 
-1. **Extract deliverables** from the transcript — what files were written/edited. Not from finish() args (agent may forget), but from actual tool calls.
+Every session knows its parent (parentSessionId) and workflow (workflowRunId).
+The `context` action walks these relationships.
 
-2. **Extract verification evidence** — what commands were run and their exit codes. Not from agent self-report, but from tool results.
+## What This Enables
 
-3. **Build the handoff summary** — ctx.summarize() already does this. Make it the default return, not optional.
+**Before**: QA gets "review the last commit." Reads random files. Says "looks good."
 
-The agent just works. The infra captures what happened.
+**After**: QA gets "review this implementation." If it needs more detail, calls `agents({ action: "context", sessionId: coderSessionId })` and sees exactly what coder changed, what commands coder ran, what coder verified. QA reviews the actual work.
 
-### Reviewing: Infra frames the review
+**Before**: Coder fix task gets "fix these issues from QA" — a paste of QA's text output.
 
-When QA reviews coder's work, the infra should:
+**After**: Coder fix gets the specific issues. If it needs the original context, calls `agents({ action: "context" })` and sees what the parent (or step 1) did.
 
-1. **Provide the diff** — not "review the last commit" but the actual file changes, extracted from coder's tool history.
+## What This Does NOT Do
 
-2. **Provide the verification results** — what commands coder ran and whether they passed.
+- Does not auto-attach context to delegations
+- Does not replace good task descriptions
+- Does not give raw transcripts (too large)
+- Does not change how agents.call/send work
+- Does not add new tools — extends existing agents tool
 
-3. **Frame the question** — "Does this change solve [original task]? Check [these specific files]. Run [this verification command]."
+## Evidence-First Verification
 
-QA's job is reduced to: read the diff, check the logic, run the test, say pass/fail with specifics. The process framing comes from infra.
+### POC (before building)
 
-### Looping: Infra manages the loop
+1. Manually simulate: for 5 delegation tasks, append `summarizeForHandoff()` output from the parent session to the delegate's task. Measure: does the delegate use fewer ops? Does it find the right files faster?
 
-The coder→qa→fix cycle is a workflow, not agent initiative:
+2. If yes: build the `context` action (small change in manager-agents-tool.ts)
 
-1. Infra runs coder with task + auto-gathered context
-2. Infra extracts coder's deliverables + verification from transcript
-3. Infra runs QA with deliverables + diff + verification framing
-4. Infra checks QA result: PASS → done, FAIL → back to step 1 with QA findings
-5. After N rounds, infra escalates to human
+3. After building: run 5 real delegations where the delegate can use `agents({ action: "context" })`. Compare ops and outcome quality vs baseline.
 
-No agent decides the process. Each agent just answers its question.
+### Success criteria
 
-## What Changes
+- Delegates use 20%+ fewer ops on context discovery
+- OR delegates produce better results (fewer QA rejections)
+- OR both
 
-| Today | Proposed |
-|-------|----------|
-| Agent writes task description | Infra auto-gathers context from caller's transcript |
-| Agent formats finish() args | Infra extracts deliverables from tool calls |
-| Agent decides review process | Workflow defines review steps |
-| Agent decides when to escalate | Workflow escalates after N rounds |
-| Tech-lead orchestrates in heartbeat | Workflow orchestrates mechanically |
-| QA decides what to check | Infra frames the review question |
+### Failure criteria
 
-## What Stays the Same
+- Delegates ignore the context action (don't use it)
+- OR context summaries are too noisy (agents get confused)
+- If either: stop, don't deploy
 
-| Aspect | Why |
-|--------|-----|
-| Separate sessions for coder/QA | Accountability — can't mark own homework |
-| Agent has full tool access | Agent decides HOW, infra decides WHAT and WHEN |
-| finish() exists | Agent signals "I'm done with my decision" — infra captures the rest |
-| context.md injection | Environmental knowledge still needed |
-
-## Implementation Approach
-
-### Phase 1: Auto-context on call (infra change)
-
-When `agents.call` or `ctx.runAgent` is invoked, the infra automatically appends the caller's recent tool history (files read, commands run, errors seen) to the task. This is a change in `manager.ts` — extract from the calling session's messages and append to the delegate's task.
-
-Measure: do delegates use fewer ops for context discovery?
-
-### Phase 2: Auto-extract on return (infra change)
-
-When a session completes, the infra auto-extracts deliverables and verification from the transcript (like ctx.summarize but always-on). The caller gets structured data without depending on the agent's finish() discipline.
-
-Measure: do callers have better information to audit with?
-
-### Phase 3: Review workflow (workflow)
-
-Build the code-review-loop workflow that uses Phase 1 + 2 for the coder→qa→fix cycle. QA gets auto-framed review questions.
-
-Measure: does QA catch more issues? Does the fix cycle complete faster?
-
-## Evidence Questions
-
-Before building any phase:
-
-1. **Phase 1 test**: Manually add caller's tool history to 5 delegation tasks. Compare delegate ops vs 5 without.
-2. **Phase 2 test**: For 5 completed sessions, compare ctx.summarize() output vs what the agent put in finish(). Which gives the caller more useful information?
-3. **Phase 3 test**: Run 5 code reviews with auto-framed QA questions vs 5 with current "review the commit" framing. Compare issue detection rate.
-
-## Infra Support: Context Query
+## Infra Gap: Async Workflow Invocation
 
 ### Problem
-Delegates can't access their caller's context. They start from the task string only. If the caller forgot to include a file path or error message, the delegate re-discovers it.
 
-### Solution: `agents({ action: "context" })` tool
+Today workflows block the caller. If May runs `workflow code-review-loop`, she's frozen for 7-10 minutes. She can't respond to the human.
 
-Agents can query context from related sessions:
+The alternative — `agents.send` through heartbeats — adds 30min latency.
+
+### What's Needed
+
+A way to start a workflow in the background, non-blocking:
 
 ```
-agents({ action: "context" })                      → parent session's handoff summary
-agents({ action: "context", sessionId: "s_XXX" })  → specific session's handoff summary
+workflow({ action: "start", name: "code-review-loop", task: "..." })
+→ returns workflowRunId immediately, May continues
 ```
 
-Returns ctx.summarize() output: files read/written, commands run, errors, final response. Not raw transcript — focused and useful.
+The workflow runs in its own execution context. May can check on it later:
+```
+workflow({ action: "status", workflowRunId: "wf_XXX" })
+→ { status: "running", currentStep: "qa-round-1", ... }
+```
 
-### When to use
-- Delegate starts working, realizes task description is missing something → query parent context
-- QA reviewing coder → query coder's session to see what files changed
-- Fix round → query QA's session to see exact findings
+Or get notified when done (via event/notification).
 
-### What it doesn't do
-- Doesn't auto-attach to every delegation (that's over-automation)
-- Doesn't replace good task descriptions (caller should still write good tasks)
-- Doesn't give raw transcripts (too large, not useful)
+### This Unblocks
 
-### Implementation
-- Add "context" action to agents tool in manager-agents-tool.ts
-- Uses summarizeForHandoff() on the target session
-- Parent session ID is already tracked on every session (parentSessionId field)
-- For workflow steps, the workflow context holds previous step results
+- May delegates via workflow without blocking
+- Workflows run the coder→qa→fix loop at full speed (no heartbeat delays)
+- May stays responsive to human input
+- Multiple workflows can run in parallel
+
+### POC Question
+
+Before building: can we simulate this by having May call `agents.run("may", "workflow code-review-loop ...")` — spinning up a background May session that runs the workflow? Wasteful but tests the pattern without new infra.
