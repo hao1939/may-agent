@@ -9,3 +9,4 @@
 - When calling finish(), status must match reality — if you found missing files or blockers, use 'blocked' or 'partial', not 'success'
 - Before proposing guards: read agents/shared/may-agent-docs/design/code-vs-data-decisions.md — environmental knowledge goes in context.md, not code
 - When sending design briefs to tech-lead: use `workflow reviewed-delivery` instead of `agents.send` — it runs evidence-gate first and blocks briefs without data
+- opBudget removed — do not reintroduce. We want agents creative and thorough, not limited. Cost control via model choice, not tool call limits.
