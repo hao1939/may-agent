@@ -17,7 +17,7 @@
  */
 
 import { setDefaultAutoSelectFamily } from "node:net";
-import { type EventBus, eventChannel } from "../event-bus.js";
+import { type EventBus } from "../event-bus.js";
 import type { SubagentManager } from "../../lib/index.js";
 
 // Force IPv4 for fetch — Node 22's undici tries IPv6 first which times out
@@ -40,7 +40,7 @@ export interface TelegramBot {
 const TELEGRAM_MAX_LENGTH = 4096;
 
 export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
-  const { bus, manager, getSessionId, interfaceAgent } = opts;
+  const { bus, manager, getSessionId } = opts;
 
   const token = process.env.TELEGRAM_BOT_TOKEN || "";
   const allowedChatIds = (process.env.TELEGRAM_CHAT_ID || "")
@@ -203,14 +203,36 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
   let pendingText = "";
   const pendingChatId: string | null = allowedChatIds[0] || null;
 
+  // Track the chat session tree — only forward events from the active
+  // chat session and its children (delegated sub-sessions).
+  const watchedSessions = new Set<string>();
+
   const unsubBus = bus.on((event) => {
-    // Accumulate interface agent's text (identified by agent name, not channel)
-    if (event.type === "text" && event.agent === interfaceAgent) {
+    const chatSid = getSessionId();
+
+    // Keep the watched set in sync with the current chat session
+    if (chatSid && !watchedSessions.has(chatSid)) {
+      watchedSessions.clear();
+      watchedSessions.add(chatSid);
+    }
+
+    // Auto-expand: child sessions inherit from parent (same as socket.ts)
+    if (event.type === "session_start" && event.parentSessionId && watchedSessions.has(event.parentSessionId)) {
+      watchedSessions.add(event.sessionId);
+    }
+
+    // Session-scoped events: only forward if in our watched set
+    if ("sessionId" in event && typeof event.sessionId === "string") {
+      if (!watchedSessions.has(event.sessionId)) return;
+    }
+
+    // Accumulate text from the chat session tree
+    if (event.type === "text" && "sessionId" in event) {
       pendingText += event.text;
     }
 
-    // When interface agent's turn ends, flush
-    if (event.type === "turn_end" && event.agent === interfaceAgent) {
+    // When a turn ends in the chat session tree, flush
+    if (event.type === "turn_end" && "sessionId" in event) {
       flushPendingText();
     }
 

@@ -736,7 +736,7 @@ const socketUI = SOCKET_ENABLED
       socketPath: SOCKET_PATH,
       bus,
       manager,
-      getSessionId: () => taskSessionId ?? "",
+      getSessionId: () => taskSessionId ?? chatSession?.getSessionId() ?? "",
       agentName: interfaceAgent,
       instance: INSTANCE_LABEL,
     })
@@ -983,7 +983,7 @@ const telegramBot = TELEGRAM_ENABLED
   ? attachTelegramBot({
       bus,
       manager,
-      getSessionId: () => taskSessionId ?? "",
+      getSessionId: () => taskSessionId ?? chatSession?.getSessionId() ?? "",
       interfaceAgent,
     })
   : { close: () => {}, sendAlert: () => {} };

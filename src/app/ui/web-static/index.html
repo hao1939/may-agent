@@ -493,8 +493,8 @@ async function switchSession(sessionId) {
     if (sessionId) {
       ws.send(JSON.stringify({ type: 'subscribe', sessions: [sessionId] }));
     } else {
-      // Chat mode — subscribe to "*" to get the next session_start
-      ws.send(JSON.stringify({ type: 'subscribe', sessions: ['*'] }));
+      // Chat mode — server auto-tracks the active chat session + children
+      ws.send(JSON.stringify({ type: 'subscribe', sessions: ['chat'] }));
     }
   }
 }
@@ -576,6 +576,11 @@ function connectWs() {
             messages.appendChild(div);
             messages.scrollTop = messages.scrollHeight;
           }
+          // Update session picker
+          if (event.sessionId && !activeSessions.find(s => s.sessionId === event.sessionId)) {
+            activeSessions.push({ agent: event.agent, sessionId: event.sessionId, status: 'running', task: event.task });
+            renderSessionPicker();
+          }
           break;
         }
         case 'session_end': {
@@ -586,6 +591,9 @@ function connectWs() {
           div.textContent = `✓ ${event.agent}: ${event.status}${event.duration ? ' (' + event.duration + ')' : ''}`;
           messages.appendChild(div);
           messages.scrollTop = messages.scrollHeight;
+          // Update session picker
+          activeSessions = activeSessions.filter(s => s.sessionId !== event.sessionId);
+          renderSessionPicker();
           break;
         }
         case 'notification': {
@@ -608,25 +616,11 @@ function connectWs() {
             const chatSession = activeSessions.find(s => s.agent === 'may' && (s.status === 'running' || (s.status === 'idle' && s.kind === 'chat')));
             if (chatSession) {
               switchSession(chatSession.sessionId);
+            } else {
+              // No chat session yet — use chat mode so server auto-tracks it when it appears
+              ws.send(JSON.stringify({ type: 'subscribe', sessions: ['chat'] }));
             }
           }
-          break;
-        case 'session_start':
-          // New session appeared — update picker
-          if (event.sessionId && !activeSessions.find(s => s.sessionId === event.sessionId)) {
-            activeSessions.push({ agent: event.agent, sessionId: event.sessionId, status: 'running', task: event.task });
-            renderSessionPicker();
-          }
-          // If in chat mode and this looks like our session, subscribe to it
-          if (!currentSessionId && event.agent === 'may') {
-            currentSessionId = event.sessionId;
-            ws.send(JSON.stringify({ type: 'subscribe', sessions: [event.sessionId] }));
-            renderSessionPicker();
-          }
-          break;
-        case 'session_end':
-          activeSessions = activeSessions.filter(s => s.sessionId !== event.sessionId);
-          renderSessionPicker();
           break;
         case 'status':
           // Update active sessions from periodic poll
