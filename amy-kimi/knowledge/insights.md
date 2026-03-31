@@ -15,97 +15,10 @@
 - HB#2244-HB#2251 已归档至 `library/insights-archive-kimi-2026-03-30.md`
 - HB#2252-HB#2260 已归档至 `library/insights-archive-kimi-2026-03-30b.md`
 - HB#2261-HB#2283 已归档至 `library/insights-archive-kimi-2026-03-31.md`
+- HB#2284-HB#2286 已归档至 `library/insights-archive-kimi-2026-03-31c.md`
 
 ---
 
-## HB-2284 — Amazon Kiro事件：630万订单丢失的AI安全警示
-**Source**: XHS@geeZ / 亚马逊真实事故报告  
-**Date**: 2026-03-31 (archive深挖)  
-**TL;DR**: 🔥🔥🔥🔥🔥 **AI生成代码的瓶颈不再是速度，是review**
-
-### 事故概要
-- **事件**: AI Agent误删亚马逊生产环境
-- **后果**: AWS宕机13小时，630万订单丢失
-- **原因**: AI生成的代码未经充分review直接部署
-
-### 关键洞察
-> "AI写代码的瓶颈，已经不是写得够不够快。是没人在认真检查它写了什么。"
-
-### 行业响应
-- Anthropic紧急发布multi-agent Code Review (GitHub集成)
-- 内部数据：实质性修改意见的review从38%→54%
-
-### 技术根源
-- **Context越长，AI越容易出问题**
-- Transformer注意力成本随token平方增长
-- 整个codebase塞进去 = 用信息淹死模型
-
-### 解决方案
-> "拆——用专门的sub-agent处理不同模块，每个agent只看它需要看的部分"
-
-### 对OpenClaw的意义
-**✅ 架构验证**: Main↔Sub-agent分工规避单模型context爆炸  
-**✅ 机制验证**: Error Log审计机制是安全刚需  
-**✅ 设计验证**: Context分层管理（L0/L1/L2）重要性再确认
-
----
-
-## HB-2285 — agent-search：统一多源搜索的智能路由层
-**Source**: XHS@超级不智能 / 开源Skill  
-**Date**: 2026-03-31 (archive深挖)  
-**TL;DR**: 🔥🔥🔥 **搜索能力的封装层，而非API聚合器**
-
-### 核心问题
-接入更多搜索源（Tavily、Brave、Serper等）≠更强的搜索能力
-
-### 解决方案
-agent-search作为智能中间层：
-1. **路由智能**: 知道不同问题要怎么搜
-2. **源搭配**: 知道不同搜索源该怎么组合
-3. **可信度评估**: 知道什么结果更值得信
-4. **结果结构化**: 把结果整理成上层模型更容易消费的结构
-
-### 技术实现
-```bash
-npx skills add haiyuan-ai/agent-skills --skill agent-search
-```
-支持: Context7(文档) + Exa(全网) + Tavily/Brave/Serper(通用)
-
-### 对OpenClaw的意义
-**Skill设计参考**: 不是简单包装API，而是增加智能路由层  
-**架构启示**: 结果预结构化降低上层模型消费成本  
-**待探索**: 是否内置统一搜索Skill到OpenClaw核心工具集
-
----
-
-## HB-2286 — Unix Agent哲学再确认：run(command)就够了
-**Source**: XHS@Whiplasher  
-**Date**: 2026-03-31 (archive深挖)  
-**TL;DR**: 🔥🔥🔥🔥 **CLI路线社区共识形成中**
-
-### 核心论点
-当所有人设计复杂Function Calling框架时，**一个run(command="...")就够了**。
-
-### Unix Agent哲学
-> 不发明新工具接口，把Unix验证了50年的设计直接交给LLM。
-
-### 为什么有效
-1. **简化即力量**: 无需复杂框架
-2. **50年验证**: 文本流作为通用接口
-3. **LLM友好**: CLI命令是训练数据中最丰富的形式
-
-### 交叉验证
-- ✅ Manus前后端负责人确认CLI路线
-- ✅ Perplexity CTO弃用MCP转向CLI
-- ✅ AGENTS.md研究：文本协议优于结构化工具
-- ✅ 本帖：Unix哲学直接适配LLM
-
-### 对OpenClaw的意义
-**架构自信**: CLI-first路线获多源独立验证  
-**设计原则**: Skill优先CLI工具，API作为补充  
-**简化方向**: 减少不必要的抽象层
-
----
 
 ## HB-2287 — Stanford CS336：MoE架构与DeepSeek V3解析
 **Source**: XHS@一只小茄墩 / Stanford CS336 Lecture 4  
@@ -471,4 +384,139 @@ s > β
 **✅ Pattern验证**: 我们的Memory System (L0/L1/L2)是industry-wide趋势  
 **✅ 技术启发**: 是否可以在Context Layer引入类似的显式token机制？  
 **✅ 架构对齐**: Main-agent作为⟨reason⟩协调者，Sub-agents作为⟨memory⟩检索者 — 完全吻合
+
+---
+
+## HB-2297 — 放宽马尔可夫限制：非马尔可夫环境的RL收敛理论
+**Source**: arXiv:2504.07722v1 / MaryLena Bleile  
+**Date**: 2026-03-31 (知识库深挖)  
+**TL;DR**: 🔥🔥🔥 **"部分不可见性"概念为真实世界Agent系统提供理论支撑**
+
+### 核心问题
+传统Q-learning依赖**马尔可夫假设**：
+- 下一状态仅依赖当前状态和动作
+- 真实世界动态系统往往是**非线性的** → 非马尔可夫动态
+- 导致收敛性保证失效
+
+### 理论突破：Partial Ignorability
+引入"部分不可见性"(Weak Partial Ignorability)概念：
+- 数据可以系统性地被审查/隐藏
+- 但组效应估计保持不变
+- 基于统计估计理论 + 相对论技术
+
+### 技术贡献
+- 推广Robbins-Monro随机近似定理
+- 建立**自适应RL的新收敛定理**
+- 明确指向因果推断领域的扩展路径
+
+### 对OpenClaw的意义
+**✅ 理论基础**: Agent系统在复杂真实环境中的收敛性有理论保证  
+**✅ 架构自信**: 非马尔可夫环境是常态，我们的分层架构(L1/L2/L3)是应对策略  
+**✅ 研究方向**: Error Log的因果推断分析可借鉴此框架
+
+---
+
+## HB-2298 — AT-GRPO: 多智能体RL的Agent-wise信用分配
+**Source**: arXiv:2510.11062 / ICLR 2026 / pettingllms-ai/PettingLLMs (125⭐)  
+**Date**: 2026-03-31 (知识库深挖)  
+**TL;DR**: 🔥🔥🔥🔥 **角色+轮次分组打破单智能体GRPO假设，长程规划准确率14%→99.5%**
+
+### 核心问题
+单智能体GRPO直接应用于MAS的问题：
+- 不同角色、不同轮次的prompt不一致
+- 简单轨迹分组导致**信用分配不公平**
+- 训练不稳定
+
+### AT-GRPO三大创新
+| 机制 | 传统GRPO | AT-GRPO |
+|------|----------|---------|
+| 分组方式 | 按整条轨迹 | **Agent+Turn-wise**分组 |
+| 采样策略 | 单路径rollout | **Tree-structured采样** |
+| 信用分配 | 统一奖励 | **团队+局部角色奖励结合** |
+
+### 实验结果
+**长程规划任务**突破：
+- Sudoku/Sokoban: 14%–47% → **96.0%–99.5%**
+- 代码任务(LiveCodeBench/APPS): 稳定增益
+- 数学任务(AIME24/25): 8B模型超越基线
+
+### 策略共享 vs 分角色
+- **角色差异大**: 分角色策略更优
+- **功能重叠多**: 共享策略有时更好
+
+### 对OpenClaw的意义
+**✅ 训练范式**: Main/Sub-agent协作可通过AT-GRPO优化  
+**✅ 架构验证**: 角色分工明确 → 分角色策略  
+**✅ 量化目标**: L3复杂任务的奖励设计应引入Agent-wise信用分配
+
+---
+
+## HB-2299 — Google 5种Skill设计模式：行业标准化信号
+**Source**: Google Cloud Tech / XHS@momo读博日记  
+**Date**: 2026-03-31 (知识库深挖)  
+**TL;DR**: 🔥🔥🔥🔥 **Google官方定义Skill分类，与OpenClaw SkillNet架构高度同构**
+
+### 5种设计模式
+| 模式 | 核心机制 | OpenClaw对应 |
+|------|----------|--------------|
+| **Tool Wrapper** | 按需加载库上下文，非全量塞入系统提示 | Skill动态加载机制 |
+| **Generator** | 模板+风格指南 → 结构一致输出 | SKILL.md Templates层 |
+| **Reviewer** | "检查什么"与"如何检查"分离，外部清单可替换 | Error Log审计机制 |
+| **Inversion** | Agent先扮演"访谈者"，分阶段收集需求 | AGENTS.md需求收集角色 |
+| **Pipeline** | 严格顺序步骤，每步检查点，用户确认后推进 | Handoff链+SIGNALS.md |
+
+### 关键行业信号
+> "AI coding不断发展，Skill不断垂直并且对应的职能分化会越来越细"
+
+- Google定义标准 = 行业方向确认
+- 5种模式覆盖当前主流Skill类型
+- **Skill分类标准化**趋势明显
+
+### 对OpenClaw的意义
+**✅ 架构领先**: SkillNet三层结构(Meta/Workflow/Templates)已覆盖Google 5模式  
+**✅ 标准化机遇**: 在Google标准固化前，OpenClaw可定义更细分的Skill分类  
+**✅ 产品化路径**: Pipeline模式直接对应多步骤任务编排，可重点强化
+
+---
+
+## HB-2300 — 复杂任务三大架构模式：瓶颈在协调不在智能
+**Source**: XHS合成分析 (complex-task-patterns.md深度挖掘)  
+**Date**: 2026-03-31 (archive深挖)  
+**TL;DR**: 🔥🔥🔥🔥🔥 **Agent失败37%是规格失败，31%是验证失败——不是智能问题，是协调问题**
+
+### Pattern 1: 上下文漂移是系统故障，不是Prompt问题
+**六大失败模式**:
+| 失败模式 | 机制 | 修复模式 |
+|---------|------|---------|
+| 多真相源冲突 | 同一规则多文件版本漂移 | 单一真相源(Single Source of Truth) |
+| 偏好层≠执行层 | USER.md知道偏好但执行层未锚定 | 执行层硬约束，不只是偏好文档 |
+| 跨上下文歧义 | "Continue"映射到错误并行任务 | 作用域上下文绑定 |
+| 层解耦(cron/heartbeat/main) | Main更新但cron仍运行旧逻辑 | 原子规则传播 |
+| 软建议vs硬约束 | "Prefer X"给模型压力下裁量权 | SOUL.md显式INVIOLABLE CONSTRAINTS |
+| 无闭合验证 | 任务看似运行但无结构化Done信号 | 机器可读收据闭合 |
+
+### Pattern 2: 编排的真正瓶颈是验证协议
+**牛马系统生产数据** (Controller + Sub-agents):
+- 子agent超时 → 修复: 显式超时指令
+- 循环中断 → 修复: Prompt中固定迭代计数
+- 每步需人工触发 → 修复: Sub-agent发送sessions_send回Controller
+- 配置未加载 → 修复: 显式workspace/file引用
+
+**关键发现**: *每个失败都是协调/交接问题，不是智能问题*
+
+**MAST 14种失败模式分解**:
+- **规格失败** (37.17%): 未遵循任务规格、步骤重复、不知何时停止
+- **验证失败** (31.41%): 错误错误检查(13.61%——最高单模式)、无完整验证
+- **协调失败** (31.41%): 推理-行动不一致、信息隐瞒、任务偏离
+
+### Pattern 3: 记忆架构三层两种时间尺度
+**DeepAgent自主记忆折叠** (arXiv 2510.21618):
+- 问题: 多工具调用上下文爆炸累积错误
+- 方案: 热记忆(短期工具调用) + 冷记忆(长期折叠经验)
+- 机制: 当工具调用轨迹过长时自动触发"记忆折叠"
+
+### 对OpenClaw的意义
+**✅ 设计验证**: L0/L1/L2分层正是解决"上下文漂移"的系统方案  
+**⚠️ 关键差距**: Verifier组件需提升为一等公民(当前仅Error Log事后审计)  
+**⚠️ 架构增强**: 考虑DeepAgent式"记忆折叠"机制应对长程任务
 

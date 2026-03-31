@@ -5,12 +5,12 @@ Read this before starting research — someone may have already covered your top
 
 ## Scout — External Research (AI Agents)
 - `agents/scout/knowledge/library/discoveries.md` — 400+ curated findings (4200+ lines). **Use `grep`, don't read in full.**
-- `agents/scout/knowledge/library/repos.md` — GitHub repos: description, stars, relevance (440 lines)
+- `agents/scout/knowledge/library/repos.md` — GitHub repos: description, stars, relevance (900 lines)
 - `agents/scout/knowledge/library/papers.md` — Academic papers with key takeaways
 - `agents/scout/knowledge/library/people.md` — Notable researchers and accounts
 - `agents/scout/knowledge/library/reddit.md` — Reddit community insights
-- `agents/scout/workspace/deep-dives/` — Detailed research reports (dd*) + cross-reference syntheses (cr*). ~22 files.
-  - Also: `agents/scout/workspace/deep-dive-*.md` — 2 standalone deep-dives (dd468, dd469).
+- `agents/scout/workspace/deep-dives/` — Detailed research reports (dd*) + cross-reference syntheses (cr*). ~26 files.
+  - Also: `agents/scout/workspace/deep-dive-*.md` — 6 standalone deep-dives.
   - Used by: Scout, Amy, Amy-Kimi, Bob
 - `agents/scout/workspace/archive/2026-03/GRAND-UNIFIED-SYNTHESIS-*.md` — Grand Unified Synthesis (v2–v6 deltas, consolidated reference). Archived 2026-03. ~122KB total.
 - **Topics:** agent architecture, skills/tools, context engineering, memory systems, evaluation, RL for agents, MCP protocol, agent security
@@ -27,6 +27,7 @@ Read this before starting research — someone may have already covered your top
 ## Amy-Kimi — XHS / Chinese Community (Kimi variant)
 - `agents/amy-kimi/knowledge/insights.md` — Insights from XHS via Kimi
 - `agents/amy-kimi/knowledge/threads.md` — Thread tracking
+- `agents/amy-kimi/knowledge/library/` — Archive of insights (160+ files), deep-dives, people, journal archives
 - **Topics:** Same domain as Amy, different model perspective
 
 ## Bob — Design Philosophy & Synthesis
@@ -45,6 +46,8 @@ Read this before starting research — someone may have already covered your top
 
 ## Coach — Agent Development
 - `agents/coach/knowledge/library/coaching-methodology.md` — Coaching process
+- `agents/coach/knowledge/method-catalog.md` — Method catalog: when/how to apply each improvement method, with experimental evidence
+- `agents/coach/knowledge/INDEX.md` — Coach's own knowledge index
 - `agents/coach/skills/agent-conventions/` — 7 conventions library
 - **Topics:** agent behavior patterns, convention compliance, coaching results
 - **Best for:** "What are the common agent failure patterns?" or "How should agents handle X?"
@@ -115,11 +118,13 @@ Standardized capabilities available to all agents. Read the `.md` file to learn 
 - `agents/shared/skills/grep-first-reading/SKILL.md` — **Grep First**. Read efficiency protocol (C6.1).
 - `agents/shared/skills/classify-then-act/SKILL.md` — **Classify Then Act**. Reduce cognitive load by separating decision from action.
 - `agents/shared/skills/baseline-before-change/SKILL.md` — **Baseline Before Change**. Measure before modifying (Scientific Method).
+- `agents/shared/skills/brainstorm-before-build/SKILL.md` — **Brainstorm Before Build**. Exploration-first approach for creative/design work.
 - `agents/shared/skills/knowledge-sharing/SKILL.md` — **Knowledge Sharing**. Protocol for broadcasting learnings (C10.3).
 - `agents/shared/skills/evaluator-scoring/SKILL.md` — **Evaluator Scoring**. Rubrics for self-assessment.
 - `agents/shared/skills/skill-lifecycle/SKILL.md` — **Skill Lifecycle**. How to deprecate or promote skills.
 - `agents/shared/skills/task-adherence/SKILL.md` — **Task Adherence**. Sticking to the prompt (P1).
 - `agents/shared/skills/tool-discipline/SKILL.md` — **Tool Discipline**. Precise usage (C2).
+- `agents/shared/skills/LIBRARY.md` — **Skill Library**. Master index of all skills with discovery/evaluation/deployment status.
 - `agents/shared/skills/patterns/` — **Common Workflows**:
   - `robust-scraping.md`: How to scrape without getting blocked.
   - `research-and-synthesize.md`: Standard research loop.
@@ -134,6 +139,7 @@ Pre-built multi-step execution patterns available via `workflow.run()`.
 - `agents/may/workflows/research-pipeline.ts` — **Research Pipeline**. Structured research execution.
 - `agents/may/workflows/verify-parallel.ts` — **Parallel Verify**. Run multiple verifications concurrently.
 - `agents/may/workflows/project-monitor.ts` — **Project Monitor**. Ongoing project health checks.
+- `agents/may/workflows/design-then-build.ts` — **Design Then Build**. Design-first workflow for feature implementation.
 
 ### Agent Archetypes
 Shared base configurations for agent families. Agents extend these instead of duplicating prompts.

@@ -49,11 +49,15 @@ Don't plan your exploration — just start. The best finds come from following c
 After exploring, write down what matters:
 - Archive valuable posts → `agents/amy-kimi/knowledge/library/posts/<id>.md`
 - Update `agents/amy-kimi/knowledge/insights.md` — always answer: 这个对我们意味着什么?
-- Found something Bob or tech-lead should know? → `agents/shared/bulletin.md`
-- Found a paper or repo worth a deep dive? → bulletin with `Relevant to: scout`
+- **Maintain the shared research library** → `agents/shared/research-digest.md` (you own this file)
+  - Add a row to the right topic table: Date | Title | Key Insight | Detail link
+  - Keep entries short (2-3 lines). The detail stays in your `insights.md`.
+  - If a topic table doesn't exist yet, create one.
+  - This is how Bob, tech-lead, scout, and others find your research.
+- Only post to `agents/shared/bulletin.md` for **truly urgent operational items** (system outages, security issues, breaking changes) — NOT research.
 - insights.md > 600 lines? Compress first.
 
-⚠️ **After EVERY edit to insights.md or bulletin.md**: immediately `read()` it back to confirm integrity. No exceptions.
+⚠️ **After EVERY edit to insights.md or research-digest.md**: immediately `read()` it back to confirm integrity. No exceptions.
 
 ## 4. 工具挂了也别闲着
 CAPTCHA or Chrome down? **Pivot after 2 failed attempts** — don't retry a 3rd time.

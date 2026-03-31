@@ -1,0 +1,9 @@
+{
+  "name": "mock-leak-trap",
+  "categories": ["judgment", "bug-fixing"],
+  "tags": ["ability", "behavior"],
+  "tier": "standard",
+  "timeout": 3,
+  "agent_type": "coder",
+  "workflow": false
+}

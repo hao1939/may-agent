@@ -19,10 +19,11 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 - **Owner**: Bob (Architecture), Coach/Optimizer (Execution).
 
 #### Current State
-- **111 gym scenarios** deployed. **108 tested** (3 untested: wrong-tool-args pair + 1).
-- **77 PASS, 30 FAIL (27.8% failure rate)** across full sweep.
+- **120 gym scenarios** deployed (was 111 — Coach creating new variants). **80 tested** via gym_runs (40 untested, mostly new workflow variants + new Coach scenarios).
+- **77 PASS, 30 FAIL (27.8% failure rate)** across original sweep of 108. New scenarios not yet baselined.
 - **3 skills promoted to production**: verify-after-edit v1 (coder), and 2 others.
 - **Key insight**: Prompting has reached its ceiling for most failure categories. Remaining gaps require runtime enforcement or model improvements.
+- **Next action**: Run gym sweep on the 40 new/untested scenarios to establish baselines.
 
 #### Failure Categories (30 failing scenarios)
 | Category | Count | Status | Details |
@@ -43,11 +44,13 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 - **Rule of Two**: If 2 iterations of same approach yield same result → stop, change approach.
 - **does-not-claim-success**: Model always calls `finish(success)` even when reporting failures. Confirmed untreatable by prompting (EXP-215, C1.8 rule). Runtime-only fix.
 
-#### Convention Check Fixes (2026-03-30)
-- **C12.1**: CONTEXT_FILE_PATTERNS + WORKSPACE_PATTERN + ORIENTATION_TOOLS deployed. Live since 17:09 restart. Rate: 90.3% (28/31, 6h window).
-- **C1.3**: C1_3_EXEMPT_PATTERNS deployed. Some patterns live since 07:47, newer patterns (knowledge/reflections/bulletin) blocked by module cache. True rate ~83.9% (6 of 11 failures are false positives from exempt files).
-- **C2.1**: isError false-positive fix + belt-and-suspenders fix committed but **NOT LIVE** (post-restart commits). ALL 33 C2.1 failures in 24h are false positives. Escalated module cache issue to May/Hao.
-- **Module cache**: **ROOT CAUSE FIXED** (commit `fd5b559`). Handler hot-reload wrapper re-imports modules on each cron invocation. Blocked on process restart (req:86f73b6a). Once restarted, handler code changes take effect immediately — no more multi-day cache blockers.
+#### Convention Check Status (2026-03-31 05:40)
+- **C12.1**: 32.5% (48h) → projected **~90%** post-restart. 92 of 216 failures are exempt-pattern false positives. Remaining 59 mostly auto-fixed by ORIENTATION_TOOLS (agents, system_status) + WORKSPACE_PATTERN. Only ~10 are real violations (scout scrape_webpage first, coach finish() first).
+- **C1.3**: 67.5% (6h). Exempt patterns deployed but module-cached. ~5 of 13 recent failures are false positives.
+- **C2.1**: 97.5% (6h). isError false-positive fix deployed but module-cached. 1 residual false positive.
+- **C6.1**: 77.5% (6h). Threshold 60→80 in code but NOT LIVE. 53/59 failures are false positives (< 80 calls).
+- **C8.2**: 85% (6h). Amy-Kimi 0/6 (Kimi model JSON bug). Other agents fine.
+- **Module cache**: Root cause fixed (commit `fd5b559`, hot-reload wrapper). **Still blocked on process restart** — binary built from `80b52a9`. 8+ restart escalations all auto-completed without effect. Once restarted, projected convention pass rates jump to ~90%+ across the board.
 
 ### Opus Prompt Caching (Cost Critical)
 - **Problem**: Opus agents (Tech-Lead, Coach, May) have 0% cache hit rate due to LiteLLM stripping headers. Wasting $36-63/day.
@@ -61,6 +64,7 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 
 | Task | Status | Date | Notes |
 |------|--------|------|-------|
+| C12.1/C1.3/C2.1 Calibration | DEPLOYED | 2026-03-30 | Convention check precision fixes in handler |
 | Full Gym Sweep (3 parts) | COMPLETED | 2026-03-29 | 108/111 tested, 77 PASS, 30 FAIL |
 | EXP-213/214 (Verify-Edit) | v1 PROMOTED | 2026-03-29 | 2x improvement (30%→60%). v2 rejected (regression) |
 | EXP-215 (Prereq Detection) | CONCLUDED | 2026-03-29 | does-not-claim-success is model-level. Accepted |
@@ -68,7 +72,6 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 | Path Hallucination Guard | REVERTED | 2026-03-29 | /home/hao mounted. Replaced by context.md facts |
 | Gate 3/3b (Contradiction) | REVERTED | 2026-03-29 | Per Hao: guards wrong mechanism for judgment |
 | Fork Injection Fix (P0) | FIXED | 2026-03-27 | Commit `2f1ab59`. Skills load into system prompt |
-| C12.1/C1.3/C2.1 Calibration | DEPLOYED | 2026-03-30 | Convention check precision fixes in handler |
 
 ---
 

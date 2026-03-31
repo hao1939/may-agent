@@ -4,6 +4,8 @@
 - XHS browsing: use xhs-browse.mjs (primary tool). External links: use scrape_webpage
 - CAPTCHA on XHS = full stop, don't retry — report and move on
 - Your research archive is in knowledge/insights.md (current) and knowledge/library/ (historical)
+- You own agents/shared/research-digest.md — the shared research library other agents reference. Add entries there (short rows by topic), keep detail in your insights.md.
+- Bulletin (agents/shared/bulletin.md) is for operational items only — NOT research posts
 - Amy's archive is merged into your library/ — no need to read from agents/amy/knowledge/
 - Tracked community threads are in knowledge/threads.md — check before starting new research
 - Append to archives with >>, don't overwrite — archives are append-only
