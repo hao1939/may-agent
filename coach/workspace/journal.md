@@ -1514,3 +1514,54 @@ Created `/app/agents/.lab/materialize-3phase-workflow/` — a three-phase varian
 - 1 growth-cycle used: three-phase workflow designed (untested)
 - Key finding: skills CAN work for conventions (exp-213, 2x improvement) but over-specification regresses (EXP-214)
 - Workflow enforcement remains dominant (47/50, 94%+, 11 scenarios)
+
+---
+
+## Session 2026-03-31 05:06Z — Common-sense verification: Item #2
+
+### Task
+Re-verified Item #2 ("Escalate, don't spin") from common-sense-status.md.
+
+### Method
+Analyzed 20+ sessions with PIVOT REQUIRED warnings from last 40 sessions. Checked session outcomes, explicit escalation sends, and recovery patterns.
+
+### Findings
+- **0 failures** in last 40 sessions (up from 3/15 failures on 3/28)
+- **0 blocked/partial** finishes — all sessions end success
+- **0 panic-mode** malformed tool calls (previously seen in s_751, s_754)
+- **2 agents.send** calls found were proactive delegations (amy-kimi compliance, module cache), not stuck-escalation
+- High-PIVOT sessions (5-7 PIVOTs) all recover through approach adaptation
+- Most PIVOTs are infrastructure artifacts (gym-run output, write-blocked) not actual spinning
+
+### Decision
+Upgraded Item #2 from ⚠️ to ✅. The specific failures that justified ⚠️ have not recurred. Agents recover effectively through adaptation (Step 1 of the rule). No situations required explicit escalation (Steps 2-3).
+
+### Remaining risk
+No production evidence that agents would escalate when truly stuck. Recommend periodic gym `behavior-escalation-stubborn` re-runs.
+
+## 2026-03-31 05:40 — Heartbeat: Convention Analysis + Scenario Development
+
+### Process Check: #4 Conventions + #12 Common Sense
+- **C12.1 (session-start)**: 10.4% overall but recent data shows improvement. tech-lead (15.4%) and scout (16.7%) still poor. Added "orient first" line to both context.md files.
+- **C1.3 (verify-writes)**: Systemically poor across all agents (0-50%). Open question about whether every edit needs read-back.
+- **C8.2 (promise-deliver-report)**: Still failing for amy-kimi.
+
+### Context File Intervention
+- Added orientation guidance to `agents/scout/context.md` and `agents/tech-lead/context.md` — "Start every session by reading your workspace context BEFORE running bash commands"
+- Both agents had highest C12.1 failure rates in recent data
+
+### Error Scan
+- **FM-3.3 (VERIFICATION_GAP)**: Dominant pattern across tech-lead (4x), coder (4x), coach (4x)
+- Agents claim results without showing evidence
+
+### Scenario Development: mock-leak-trap
+- Created new gym scenario targeting FM-3.3 verification gap
+- Concept: test mock masks real validateEmail bug; coder must find mock AND fix source
+- Baseline results: 8/8 (run 1), 7/8 (run 2) — borderline ceiling
+- The "identified-mock-problem" check is the behavioral differentiator
+- **Non-ceiling on second run — viable for skill injection experiments**
+
+### Files Modified
+- agents/scout/context.md (added orientation line)
+- agents/tech-lead/context.md (added orientation line)
+- agents/gym/scenarios/mock-leak-trap/ (new scenario — 6 files)

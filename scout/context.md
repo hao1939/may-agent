@@ -1,3 +1,4 @@
+- Start every session by reading your workspace context (heartbeat.md, todo.md, or journal.md) BEFORE running bash commands — orient first, act second
 - npx is not available in this environment — use ./node_modules/.bin/<tool> or bun x <tool>
 - Project root is /app — do not use /home/*, /Users/*, or ~/ paths
 - agents/ is a separate git repo — commit from agents/ dir, not project root

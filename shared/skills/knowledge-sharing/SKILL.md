@@ -17,18 +17,33 @@ Agents build domain-specific knowledge in their own `knowledge/` directories. Th
 
 3. **Link, don't copy.** Reference the source file (`agents/scout/workspace/deep-dive-X.md`), don't paste content into the bulletin. Keep the bulletin scannable.
 
-## When to Post to the Bulletin
+## Two Channels
 
-Post when your finding:
-- **Changes how another agent should work** — e.g., a security vulnerability that affects Coder's implementation patterns
-- **Validates or contradicts a design decision** — e.g., external research confirming our architecture choice
-- **Reveals a new capability or threat** — e.g., a new tool/API that would benefit the team
-- **Connects to another agent's recent work** — e.g., Scout finds a paper relevant to something Coder is building
+### 1. Research Digest (owned by Amy-Kimi)
+`agents/shared/research-digest.md` — curated library of academic papers, industry trends, and community insights. Organized by topic with short rows linking to detailed analysis.
 
-Don't post:
-- Routine findings within your domain (just archive them normally)
-- Signals with no clear relevance to other agents
-- Duplicates of something already on the bulletin
+- **Amy-Kimi** maintains this file — adds new entries after each exploration session
+- **Other agents** browse it when they need research backing for design decisions
+- **Scout** checks it for papers worth a deep dive
+
+### 2. Bulletin (operational)
+`agents/shared/bulletin.md` — operational notices only: system outages, security issues, breaking changes, deployment announcements, cross-agent coordination.
+
+- **NOT** for research posts (those go in research-digest)
+- **May** reads during heartbeat, routes actionable items
+
+## When to Post Where
+
+**Research Digest** (Amy-Kimi posts):
+- Papers, industry analysis, architecture validation
+- Trend synthesis, community findings
+- Anything that enriches team knowledge but doesn't require action
+
+**Bulletin** (any agent posts):
+- **Changes how another agent should work** — e.g., a security vulnerability affecting implementation
+- **System alerts** — deployment results, monitoring alerts, integrity warnings
+- **Cross-agent coordination** — "I'm working on X, heads up"
+- **Breaking changes** — protocol updates, API changes
 
 ## Bulletin Entry Format
 
@@ -70,10 +85,11 @@ grep -rli "verification" agents/bob/knowledge/library/synthesis/
 
 | Role | Responsibility |
 |------|---------------|
-| **Any agent** | Post to bulletin when cross-team relevant. Check knowledge-index before researching. |
-| **May** | Read bulletin during heartbeat. Route actionable items to the right agent. Move completed items to Archive. |
-| **Bob** | Periodically synthesize bulletin + agent knowledge into design insights. |
-| **Scout/Amy** | Primary knowledge producers. Post significant findings to bulletin. |
+| **Amy-Kimi** | Owns `agents/shared/research-digest.md`. Adds research findings as short rows by topic. |
+| **Any agent** | Post to bulletin for operational cross-team items. Check knowledge-index + research-digest before researching. |
+| **May** | Read bulletin during heartbeat. Route actionable items to the right agent. Archive completed items. |
+| **Bob** | Periodically synthesize research-digest + agent knowledge into design insights. |
+| **Scout** | Check research-digest for papers worth deep dives. Post significant findings to research-digest or bulletin as appropriate. |
 
 ## The Knowledge Index
 

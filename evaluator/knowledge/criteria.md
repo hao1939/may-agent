@@ -75,6 +75,11 @@ When evaluating an agent, the Evaluator MUST check the target agent's `SOUL.md` 
 4. **Actionability**: Can the target agent use this feedback?
 5. **Tool-Interface Fidelity**: When diagnosing tool behavior, does the evaluation distinguish *shell commands* from *platform tool invocations* and cite evidence (e.g., exit code 127/command-not-found, absence of tool call records)?
 
+### Meta: Cron/Job Liveness Checks (Heartbeat)
+When a heartbeat is asked to "check eval recency", treat `.state/evaluations/` recency and `.state/job-history.jsonl` as a **joint signal**.
+- If `.state/evaluations/` has no entries newer than ~48h **and** `job-history.jsonl` has no `evaluate`-like job names, report as a **liveness failure** (not merely "no recent evals").
+- Recommended next step: file a maintenance task to either (a) re-enable/reconnect the evaluation cron, or (b) update the doc/check to reflect a renamed job or new output directory.
+
 ### Capability Levels
 - **L1 (Auditor)**: Spots failures. Writes accurate scores.
 - **L2 (Reviewer)**: Provides actionable feedback. Identifies patterns.
