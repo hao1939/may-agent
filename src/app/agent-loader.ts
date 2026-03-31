@@ -445,7 +445,7 @@ async function loadLocalTools(
   for (const file of entries) {
     const filePath = resolve(toolsDir, file);
     try {
-      const mod = await import(filePath);
+      const mod = await import(`${filePath}?t=${Date.now()}`);
       const factory = mod.default;
       if (typeof factory !== "function") {
         opts.bus.emit({
@@ -777,7 +777,8 @@ export async function loadAgentHandlers(
       }
 
       try {
-        const mod: HandlerModule = await import(modulePath);
+        // Validate module at startup (fail-fast)
+        const mod: HandlerModule = await import(`${modulePath}?t=${Date.now()}`);
         if (typeof mod.create !== "function") {
           const msg = `Handler ${modulePath} does not export create()`;
           errors.push(msg);
@@ -786,10 +787,24 @@ export async function loadAgentHandlers(
         }
 
         for (const entry of fileEntries) {
-          const fn = mod.create(ctx, entry);
-          cron.registerHandler(entry.name, fn);
+          // Hot-reload wrapper: re-import the handler module on each
+          // invocation so that code changes take effect without a
+          // process restart.  The ?t= cache-buster forces Bun to
+          // re-evaluate the file.
+          const _modulePath = modulePath;        // capture for closure
+          const _ctx = ctx;                      // capture for closure
+          const _entry = { ...entry };           // snapshot
+          const hotHandler = async () => {
+            const freshMod: HandlerModule = await import(`${_modulePath}?t=${Date.now()}`);
+            if (typeof freshMod.create !== "function") {
+              throw new Error(`Handler ${_modulePath} no longer exports create()`);
+            }
+            const fn = freshMod.create(_ctx, _entry);
+            return fn();
+          };
+          cron.registerHandler(entry.name, hotHandler);
           registered.push(`${agentName}:${entry.name}`);
-          bus.emit({ type: "info", message: `[handler] Registered ${agentName}:${entry.name} → ${handlerFile}.ts` });
+          bus.emit({ type: "info", message: `[handler] Registered ${agentName}:${entry.name} → ${handlerFile}.ts (hot-reload)` });
         }
       } catch (err) {
         const msg = `Failed to import handler ${modulePath}: ${err instanceof Error ? err.message : String(err)}`;
