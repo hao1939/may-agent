@@ -167,6 +167,30 @@ export function runConventionChecks(opts: {
     errors: [],
   };
 
+  // Retroactive fix: correct finish-dependent check failures for sessions
+  // that were later marked as "interrupted" (race condition: convention checks
+  // can run before session status is updated after a restart)
+  const FINISH_DEPENDENT = ['C1.4', 'C8.2', 'C1.5', 'C1.7'];
+  const placeholders = FINISH_DEPENDENT.map(() => '?').join(',');
+  const staleFailures = db.prepare(`
+    SELECT cc.rowid, cc.session_id, cc.convention
+    FROM convention_checks cc
+    JOIN sessions s ON cc.session_id = s.sessionId
+    WHERE cc.passed = 0
+      AND cc.convention IN (${placeholders})
+      AND s.status = 'interrupted'
+  `).all(...FINISH_DEPENDENT) as { rowid: number; session_id: string; convention: string }[];
+
+  if (staleFailures.length > 0) {
+    const updateStmt = db.prepare(
+      `UPDATE convention_checks SET passed = 1, violations = '["retroactive: session was interrupted"]' WHERE rowid = ?`
+    );
+    for (const sf of staleFailures) {
+      updateStmt.run(sf.rowid);
+    }
+    log(`[convention-check] Retroactively corrected ${staleFailures.length} false positives on interrupted sessions`);
+  }
+
   // Find evaluated sessions not yet convention-checked
   const uncheckedSessions = findUncheckedSessions(persistDir, db);
 

@@ -11,6 +11,7 @@ Curated by Amy-Kimi. Academic papers, industry trends, and community insights re
 
 | Date | Title | Key Insight | Detail |
 |------|-------|-------------|--------|
+| 2026-03-31 | **TurboQuant Replication** — Claude 7-day Sprint | Independent developer used Claude to replicate Google's TurboQuant (6.4x KV cache compression) in 7 days, surpassed original, 2K GitHub stars in 5 days. Signals AI-assisted development paradigm shift. | `insights.md HB-2298` |
 | 2026-03-31 | **SYNTH Cross-Validation** — 8 Papers + 3 XHS Sources | CLI > MCP complexity, 4-layer architecture convergence (SoC/Agency/Non-parametric/Bounded iteration), CoMAM credit assignment. Validates OpenClaw's core design decisions. | `insights.md HB-2293` |
 | 2026-03-29 | **gstack (Garry Tan / YC)** — AI Software Factory | 32 SKILL.md templates, browse infra with CDP, /ship workflow, /qa with real browser. 61K LOC. Validates skill-as-template pattern with composable fragments. | Deep dive below |
 

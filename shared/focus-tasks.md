@@ -44,15 +44,16 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 - **Rule of Two**: If 2 iterations of same approach yield same result → stop, change approach.
 - **does-not-claim-success**: Model always calls `finish(success)` even when reporting failures. Confirmed untreatable by prompting (EXP-215, C1.8 rule). Runtime-only fix.
 
-#### Convention Check Status (2026-03-31 18:09)
-- **PASS RATE** (last 6h, N=35 sessions, 420 checks): **96.9% overall**
+#### Convention Check Status (2026-03-31 19:09)
+- **PASS RATE** (last 6h, N=30 sessions, 360 checks): **97.0% overall**
   - **100%**: C1.4, C1.5, C1.7, C2.1, C3.2, C3.3, C7.1, C12.1 (8 conventions perfect)
-  - **97.1%**: C6.1 (1 bob: tool count)
-  - **94.3%**: C1.1 (behavioral: editing without read)
-  - **88.6%**: C1.3 (behavioral: optimizer, amy-kimi, coach skip verification)
-  - **82.9%**: C8.2 (all amy-kimi: Kimi model malformed JSON in finish())
-- **Evaluations (24h, N=156)**: 0 poor. 131 good, 16 acceptable, 7 skipped.
+  - **97.4%**: C6.1 (1 bob: tool count)
+  - **94.9%**: C1.1 (behavioral: editing without read)
+  - **89.7%**: C1.3 (behavioral: optimizer, amy-kimi, coach skip verification)
+  - **82.1%**: C8.2 (all amy-kimi: Kimi model malformed JSON in finish())
+- **Evaluations (6h)**: 28 good, 1 skipped, 0 poor.
 - **All fixes confirmed working**: Hot-reload deploys changes without binary rebuild. C8.2 finish-retry fix deployed and verified.
+- **NEW: Retroactive interrupted-session fix deployed**: Race condition found where convention checker ran before session was marked "interrupted" — caused 102 historical FPs (51 C1.4, 51 C8.2). Fix self-heals on every handler run.
 - **Remaining gaps** are model-level (amy-kimi/Kimi) and behavioral (C1.3 compliance), not infra bugs.
 - **Convention check system is STABLE**. No further calibration needed.
 - **Next**: 44 untested gym scenarios need baseline sweep (dedicated batch session, not heartbeat).
