@@ -312,3 +312,163 @@ rfinal,n = rlocal,n + wn · rglobal
 - #901 Session状态机 hardened设计 (P0)
 - #902 意图推断Error模式专项分析 (P1)
 
+
+---
+
+## HB-2292 — SkillRL: 递归Skill进化与P109边界辨析
+**Source**: arXiv:2602.08234 / aiming-lab/SkillRL (395⭐) / Archive HB#1393深挖  
+**Date**: 2026-03-31  
+**Signal**: 🔥🔥🔥🔥 **Self-Evolution边界核心张力**
+
+### 核心机制
+**Recursive Skill Evolution**: Skill库与Agent策略在RL训练中共同进化
+- Experience-based Distillation: 成功/失败轨迹→结构化lesson
+- Hierarchical SKILLBANK: General + Task-Specific分层
+- **Skill library co-evolves with agent's policy during RL**
+
+### 关键辨析: 训练期 vs 运行时
+| 维度 | SkillRL | OpenClaw P109 |
+|------|---------|---------------|
+| 进化发生时机 | **训练阶段**(离线RL) | 明确禁止运行时 |
+| 验证机制 | 验证集失败分析 | 编译期TDAD验证 |
+| 人工监督 | 隐式(通过reward) | 显式(read_by) |
+| 边界状态 | ✅ **合规** | 需要精确化定义 |
+
+### 社区三重验证
+| 项目 | 进化机制 | 边界状态 |
+|------|----------|----------|
+| **SkillRL** | 训练期RL co-evolution | ✅ 合规 |
+| **MemSkill** | Designer周期性审查 | ⚠️ 需澄清离线/在线 |
+| **Cognee** | 自动Skill修正优化 | ❌ 可能越界 |
+
+### 对我们意味着什么
+> "训练期优化"vs"运行时自修改"需要更清晰的架构定义。SkillRL验证了我们的Error Log设计作为"结构化噪声"的价值，同时确认P109需要精确区分**编译期进化**(允许)与**运行时自我修改**(禁止)。
+
+---
+
+## HB-2293 — Multi-Agent相变理论: 预算约束下的协同阈值
+**Source**: arXiv:2601.17311 (蒙特利尔/阿尔伯塔/Duke, 55页理论) / Archive HB#1387深挖  
+**Date**: 2026-03-31  
+**Signal**: 🔥🔥🔥🔥 **Multi-Agent从经验设计进入理论指导时代**
+
+### 核心发现: Phase Transition
+同一预算下，Multi-Agent系统可能出现三种状态:
+- ✅ **Help** — 协同增益
+- ⚠️ **Saturate** — 饱和停滞  
+- ❌ **Collapse** — 完全崩溃
+
+### 三大约束条件 (现代Agent栈绑定约束)
+| 约束 | 符号 | 含义 | OpenClaw映射 |
+|------|------|------|--------------|
+| 有限上下文窗口 | W | 硬性fan-in限制 | AGENTS.md注入限制 |
+| 有损通信 | γ(m) | 消息长度→保真度曲线 | Sub-agent返回压缩 |
+| 共享失败 | ρ | 相似Agent系统性错误 | 同源模型风险 |
+
+### Budgeted Synergy条件
+```
+s > β
+```
+- s = organization exponent (组织效率指数)
+- β = single-agent scaling exponent (单Agent scaling指数)
+
+**只有当组织效率超过单Agent scaling效率时，Multi-Agent才有意义**。
+
+### 对我们意味着什么
+> Main↔Sub架构合理性获得理论验证: 层级结构绕过fan-in限制(W约束)，AGENTS.md注入减少通信损耗(γ约束)。未来Agent拓扑设计将有数学基础，而非纯经验。
+
+---
+
+## HB-2294 — MemSkill: 自进化记忆技能与红线边界
+**Source**: arXiv:2602.02474 (南洋理工, ICML投稿) / Archive HB#1387深挖  
+**Date**: 2026-03-31  
+**Signal**: 🔥🔥🔥 **可控自进化 vs 静态安全边界争议**
+
+### 三组件闭环架构
+| 组件 | 功能 | OpenClaw对应 | 边界状态 |
+|------|------|--------------|----------|
+| **Controller** | RL学习选择skill | Skill选择逻辑 | ✅ 合规 |
+| **Executor** | LLM执行skill生成记忆 | Skill执行层 | ✅ 合规 |
+| **Designer** | 周期性审查hard cases，提出skill改进 | Error Log审计 | ⚠️ **触及红线** |
+
+### 核心张力
+**MemSkill机制**: Designer聚合训练失败案例 → 使用LLM精炼现有skill、提出新skill → 闭环进化
+
+| 维度 | MemSkill | OpenClaw立场 |
+|------|----------|--------------|
+| Skill进化 | 自动(Designer驱动) | 禁止运行时自进化 |
+| 验证机制 | 隐式(通过任务reward) | 显式编译期验证 |
+| 人工监督 | 无 | 强制(read_by) |
+
+### 理论边界澄清
+- MemSkill的skill进化发生在**训练阶段**(离线)，非运行时
+- 但"self-evolving"表述易与运行时自进化混淆
+- OpenClaw P109需更精确区分**训练期优化**与**运行时自我修改**
+
+### 对我们意味着什么
+> 学术社区正在试探可控自进化 vs 静态安全的边界。MemSkill验证了我们的Skill抽象是Agent时代的"函数"，但Designer机制提醒我们: **即使离线进化也需要显式验证层**，不能仅靠task reward隐式验证。
+
+
+---
+
+## HB-2295 — LeCun团队ICML 2025: 中间层表示超越最后一层
+**Source**: arXiv:2502.02013 / Yann LeCun et al. / ICML 2025 Camera-ready  
+**Date**: 2026-03-31  
+**TL;DR**: 🔥🔥🔥🔥 **挑战标准认知：mid-depth embeddings > final layer**
+
+### 核心发现
+传统观点：LLM的最后一层包含最丰富的表示  
+**这篇论文**：中间层编码更丰富的表示，在下游任务中表现更优
+
+### 技术框架
+提出统一的表示质量评估框架：
+- **信息论指标**: 信息压缩 vs 信号保留的平衡
+- **几何分析**: 嵌入空间结构
+- **扰动不变性**: 对输入变化的鲁棒性
+
+### 实验规模
+- 32个text-embedding任务
+- 覆盖transformers + state-space models
+- 跨语言、视觉领域
+
+### 关键洞察
+> "中间层在信息压缩和信号保留之间找到了更好的平衡"
+
+### 对OpenClaw的意义
+**✅ 潜在优化**: 是否可以从中间层提取embedding用于RAG？  
+**✅ 架构思考**: Layer-wise的表示质量不均匀，可以针对性利用  
+**✅ 研究方向**: Sub-agent的语义理解层是否可以利用mid-layer features？
+
+---
+
+## HB-2296 — ACL 2025: 用特殊Token分离Memory与Reasoning
+**Source**: arXiv:2411.13504 / Mingyu Jin et al. / ACL 2025 Main  
+**Repo**: https://github.com/MingyuJ666/Disentangling-Memory-and-Reasoning  
+**Date**: 2026-03-31  
+**TL;DR**: 🔥🔥🔥🔥 **显式分解inference过程：⟨memory⟩ vs ⟨reason⟩**
+
+### 问题定义
+现有LLM inference是黑盒过程：
+- 知识检索和推理步骤没有显式分离
+- 导致幻觉、知识遗忘
+- 高 stakes 场景可靠性不足
+
+### 解决方案
+引入两个特殊token：
+- **⟨memory⟩**: 触发知识检索步骤
+- **⟨reason⟩**: 触发逻辑推理步骤
+
+### 训练方法
+- Prompt Tuning + LoRA (parameter-efficient)
+- 支持Llama2-7B, Qwen等
+- 数据集: StrategyQA, CommonsenseQA, TruthfulQA
+
+### 效果
+- 模型性能提升
+- **可解释性增强**: 用户可识别错误来源
+- 支持refine model responses
+
+### 对OpenClaw的意义
+**✅ Pattern验证**: 我们的Memory System (L0/L1/L2)是industry-wide趋势  
+**✅ 技术启发**: 是否可以在Context Layer引入类似的显式token机制？  
+**✅ 架构对齐**: Main-agent作为⟨reason⟩协调者，Sub-agents作为⟨memory⟩检索者 — 完全吻合
+

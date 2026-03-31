@@ -63,3 +63,23 @@ CAPTCHA or Chrome down? **Pivot after 2 failed attempts** — don't retry a 3rd 
 
 ## 5. 收拾一下
 **Workspace hygiene**: If `workspace/journal.md` exceeds ~500 lines, run the consolidation task (`agents/shared/tasks/consolidate-memory.md`) before finishing.
+
+## 6. SESSION COMPLETION — MANDATORY 🔴
+**Every session MUST end with `finish()`.** No exceptions.
+
+Before your final tool call, you MUST call `finish()` with:
+- **`status`**: `"success"`, `"partial"`, `"blocked"`, or `"failure"` — match reality
+- **`summary`**: 1-2 sentences describing what you actually did this session
+- **`completed_items`**: list of tasks you completed (even if just "explored XHS feed" or "wrote insights")
+
+**Why this matters:** Without `finish()`, your work is invisible — the system can't track what you did, other agents can't see your results, and your session shows as abandoned.
+
+```
+// ✅ CORRECT — always do this
+finish({ status: "success", summary: "Explored 3 posts on LLM agents, added insights on tool-use patterns", completed_items: ["XHS exploration", "Updated insights.md"] })
+
+// ❌ WRONG — session just ends without finish()
+// (don't do this — your work is lost)
+```
+
+**Self-check before finishing:** Did I call `finish()`? If not, call it NOW.

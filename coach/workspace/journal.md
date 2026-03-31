@@ -1,5 +1,32 @@
 # Journal
 
+## 2026-03-31 03:54 — Growth Cycle: misleading-test-fix (DISCARDED — no improvement)
+
+**Experiment**: Attempted context injection for coder on misleading-test-fix scenario.
+- Baseline: 5/8 (same 3 behavioral checks fail: discount-mathematically-correct, test-assertion-fixed, applyDiscount-not-modified)
+- Patched: 5/8 (identical result — prompt_hash unchanged between baseline and patched)
+- **Root cause**: The lab fork didn't actually modify the injected prompt content. The prompt_hash `13ba8cdcc54b` was identical for both runs.
+- **Conclusion**: Text injection failed to reach the agent. Need workflow-based approach (force analysis phase before editing) to fix this behavioral pattern.
+- Growth cycles today: 1/3
+
+## 2026-03-31 04:07 — Scenario Development: misleading-test-fix-workflow (CEILING 11/11 — workflow works!)
+
+**Built**: Workflow variant of misleading-test-fix. Added:
+- Task instructions: write ANALYSIS.md first, calculate the correct answer independently, classify each failure as code bug vs test bug
+- 3 new scorer checks: analysis-written, analysis-has-math, analysis-identifies-test-bug
+
+**Results** (2 baseline runs):
+- Run 1: 11/11 PASS ✓
+- Run 2: 11/11 PASS ✓
+
+**A/B comparison (same code, same agent, same scorer subset)**:
+- Without workflow instructions: 5/8 (coder modifies correct code to match wrong test)
+- With workflow instructions: 11/11 (coder calculates the math, realizes test is wrong, fixes test assertion)
+
+**Key finding**: Method #15 (Workflow Enforcement) extends to root-cause diagnosis tasks. The simple instruction "calculate the correct answer independently before editing" is enough to prevent the agent from blindly trusting test expectations. This adds a new category to Method #15's evidence: root-cause diagnosis (previously: verification, multi-step, escalation).
+
+**Scenario status**: CEILING — useful as evidence for Method #15 but can't be used for further experiments.
+
 ## 2026-03-31 00:55 — Scenario Development: misleading-test-fix (NON-CEILING 5/8!)
 
 **Built**: New scenario `misleading-test-fix` — invoice calculator with 3 test failures:
