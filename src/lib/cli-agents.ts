@@ -141,6 +141,34 @@ export function truncateOutput(output: string, maxLen: number): string {
 /** Default timeout for CLI agent invocations (seconds). */
 const DEFAULT_TIMEOUT = 300;
 
+/**
+ * Resolve extended PATH that includes host node bin directories.
+ * CLI agents (claude, codex, gemini) are installed via npm/nvm on the host
+ * but the container PATH doesn't include them.
+ */
+function resolveCliPath(): string {
+  const basePath = process.env.PATH ?? "";
+  try {
+    const { readdirSync, existsSync } = require("node:fs") as typeof import("node:fs");
+    const { join } = require("node:path") as typeof import("node:path");
+    // Common nvm installation paths
+    const nvmDirs = ["/home/example-user/.nvm/versions/node", "/root/.nvm/versions/node"];
+    for (const nvmDir of nvmDirs) {
+      if (!existsSync(nvmDir)) continue;
+      const versions = readdirSync(nvmDir).sort().reverse();
+      for (const ver of versions) {
+        const binDir = join(nvmDir, ver, "bin");
+        if (existsSync(join(binDir, "claude")) || existsSync(join(binDir, "node"))) {
+          return `${binDir}:${basePath}`;
+        }
+      }
+    }
+  } catch { /* best-effort */ }
+  return basePath;
+}
+
+const CLI_PATH = resolveCliPath();
+
 /** How often to push partial output updates (ms). */
 const UPDATE_INTERVAL_MS = 3000;
 
@@ -178,7 +206,7 @@ export function spawnCliAgent(
     try {
       child = spawn(command, args, {
         cwd,
-        env: env ?? { ...process.env },
+        env: env ?? { ...process.env, PATH: CLI_PATH },
         stdio: ["ignore", "pipe", "pipe"],
         detached: false,
       });
