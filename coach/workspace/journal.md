@@ -1,5 +1,32 @@
 # Journal
 
+## 2026-03-31 08:08 — Heartbeat: Process Check + mock-leak-trap Experiments
+
+### Process Check: #7 Context Learning + #9 Gym
+- **#7 Context Learning**: All context.md files healthy (8-14 lines, none empty, none bloated). ✅
+- **#9 Gym**: 124 scenarios. Verdicts: 12 ceiling, 3 FAIL, 2 PROMOTE. Experiment pipeline active.
+  - `mock-leak-trap` baseline: 8/8 CEILING (exp-226). No workflow needed.
+  - `partial-verification-trap`: 5/6 baseline, workflow variant PROMOTED.
+  - `misleading-test-fix`: 5/8 baseline, growth cycle discarded.
+  - Error pattern dominance: FM-3.3 VERIFICATION_GAP across coder (30), optimizer (27), tech-lead (17)
+  - Optimizer has unique FM-2.2 INSTRUCTION_NONCOMPLIANCE pattern (24x) — only 1 optimizer scenario exists. GAP.
+
+### Experiments Run (3): Growth budget 3/3
+1. **exp-226**: `mock-leak-trap` baseline → 8/8. CEILING confirmed. Agent fixed email bug, identified mock, modified test file in 77s.
+2. **exp-227**: `mock-leak-trap-workflow` (Method #15) → 7/8. Failed `identified-mock-problem`. Agent wrote excellent ANALYSIS.md but timed out at 240s before fixing test file. Workflow adds overhead.
+3. **exp-228**: `mock-leak-trap-workflow` (6min timeout) → TIMEOUT. Even with 360s, only ANALYSIS.md written. Two-phase workflow too costly.
+
+### Key Insight
+**mock-leak-trap workflow variant is counter-productive**: The baseline already achieves ceiling (8/8) in 77s. Adding a forced analysis phase slows the agent to 360s+ and causes timeout before fixing. The model naturally investigates the mock when given the simpler task. The workflow's "investigate first" constraint converts a natural strength into a bottleneck.
+
+This reinforces the pattern: Method #15 (workflow enforcement) works best when the baseline **consistently fails** a behavioral check (like `partial-verification-trap` where baseline never adds edge case tests). When the baseline already succeeds, adding workflow phases just wastes time budget.
+
+### Self-evolve Check
+- Last self-evolve: 9h ago (2026-03-30 22:33). No new PROMOTE experiments since then — skip self-evolve.
+- Skill library: 0 deployed, 7 untested, 1 testing, 1 disproven. Text-based skill injection remains 0% effective across all experiments.
+
+**Next**: Build optimizer-specific gym scenarios (only 1 exists, optimizer has 24 FM-2.2 errors). Focus on INSTRUCTION_NONCOMPLIANCE pattern.
+
 ## 2026-03-31 03:54 — Growth Cycle: misleading-test-fix (DISCARDED — no improvement)
 
 **Experiment**: Attempted context injection for coder on misleading-test-fix scenario.

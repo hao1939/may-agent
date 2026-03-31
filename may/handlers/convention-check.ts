@@ -697,6 +697,7 @@ function checkC12_1_sessionStart(toolCalls: ToolCall[], agent: string): CheckRes
   const ORIENTATION_TOOLS = new Set([
     "system_status",  // checking system state
     "agents",         // listing agents or checking requests
+    "claude_code",    // delegation to external CLI agent (has its own context)
   ]);
 
   // Check first 5 tool calls for any orientation behavior

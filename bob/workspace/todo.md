@@ -10,12 +10,12 @@
 - [ ] **Complete remaining 3 scenarios**: wrong-tool-args, wrong-tool-args-workflow (cut off in sweep part 3). Delegate to Coach.
 - [x] **Tech-Lead jsonSchema Blocker**: SELF-RESOLVED (2026-03-29). Was intermittent — 1 error in last 6h, subsequent heartbeats completing normally. No longer blocking.
 - [x] **C12.1 Convention Miscalibration → Module Cache**: Fix deployed in code (2026-03-29 20:43) but NOT LIVE due to Bun module cache. See C12.1 Module Cache (P0) entry above.
-- [ ] **C1.3 Production Gap**: Skill deployed to ALL 9 agents. Post-restart (N=19): 63.2% → now 57.5% (6h). Added 6 new exempt patterns (gym/scenarios, .lab, LIBRARY/REGISTRY, graduation-log, /tmp/) — projected 82.5%. All exempt patterns + grep verification heuristic blocked by module cache.
+- [x] **C1.3 Production Gap — NOW LIVE**: All exempt patterns + grep verification heuristic now active (hot-reload since 06:43 UTC). Post-restart C1.3=100% (N=2). 6h rate=81.1% (includes pre-restart data). Monitoring for stabilization with larger N.
 - [x] **C6.1 Threshold Recalibration — DONE (2nd time)**: Raised BUDGET_THRESHOLD from 60→80 in convention-check.ts (2026-03-31 02:10). Post-opBudget, 48-74 tool calls are normal for complex work. New threshold = ~97th percentile. Blocked by module cache.
 - [x] **C12.1 cd-prefix + cat/head/tail fix — DONE**: `cd /app && grep` was failing regex. Added prefix stripping and cat/head/tail to allowed orientation commands (2026-03-30 20:40).
 - [x] **C12.1 Module Cache (P0) — RESOLVED**: Fix was in source since 2026-03-29 20:43. Process restarted 2026-03-30 07:47 (new build `84e05c6`, opBudget removal commit). **41+ hour blocker cleared.** Post-restart C12.1 at 66.7% (2/3, N=3) — up from 0%. Both C12.1 (CONTEXT_FILE_PATTERNS) and C1.3 (C1_3_EXEMPT_PATTERNS) handler-level fixes now LIVE.
-- [ ] **C2.1 False Positive Fix — STILL BLOCKED**: `isError` guard deployed in code but NOT LIVE due to module cache. Fix committed AFTER the 17:09 restart (at 21:44). 6h: 95% (2 bob false positives). 3h: 100%. **Handler hot-reload fix committed** (fd5b559) — once process restarts, ALL handler fixes will auto-apply without future restarts. 8th restart escalation sent (req:11bb6d49).
-- [ ] **Convention Handler Module Cache (META-ISSUE)**: **ROOT CAUSE FIXED** in commit fd5b559: hot-reload wrapper re-imports handler modules on each cron invocation. Blocked on process restart (escalated P0 via req:86f73b6a, req:11bb6d49). Once restarted, this issue is permanently resolved.
+- [x] **C2.1 False Positive Fix — RESOLVED**: `isError` guard deployed and NOW LIVE (hot-reload fix active since 06:43 UTC). Post-restart C2.1=100%. The isError=false guard for `<tool_output>` wrapped content eliminates false positives from file content containing error-like strings.
+- [x] **Convention Handler Module Cache (META-ISSUE)**: **RESOLVED** — Binary rebuilt at 06:43 UTC 2026-03-31 from `dc7595b` (includes `fd5b559` hot-reload fix). Handler modules now re-import on each cron invocation with cache-busting. All convention-check code changes auto-apply. Permanently resolved.
 - [ ] **Amy-Kimi C8.2 Compliance**: 0/16 in 24h. **ROOT CAUSE FOUND**: Kimi-K2.5 generates malformed JSON in finish() arguments (e.g., `"success','summary\":"...`). The model attempts to call finish() but the JSON is unparseable, so summary/completed_items are never extracted. This is a model-level tool-calling bug, not a prompting issue. Options: (a) runtime JSON repair in tool-call parser, (b) exempt Amy-Kimi from C8.2, (c) accept as model limitation.
 
 ## Completed / Closed
@@ -35,9 +35,9 @@
 - [ ] **Runtime Enforcement for Verification Gap**: Remaining 40% of verify-after-edit failures need code-level fix, not prompting. Deferred until prompting experiments complete.
 - [ ] **Judgment Frontier (4 scenarios)**: behavior-escalation-stubborn, escalation-impossible-task, judgment-ambiguous-spec, sycophants-dilemma. All confirmed resistant to prompting. Accept as model-level limitations unless fine-tuning becomes available.
 
-## Session Notes (2026-03-31 04:40)
-- **Amy-Kimi C8.2 Root Cause**: Kimi-K2.5 malformed JSON in tool-call arguments. SDK `parseStreamingJson` falls back to `{}`. Not fixable by prompting.
-- **Convention 6h rates**: C12.1=92.7%, C2.1=97.6%, C8.2=85.4%, C6.1=78%, C1.3=68.3%. All improving except C1.3 (false positive backlog from module cache).
-- **Gym scenarios**: 120 total (was 111). 40 untested workflow variants need baselines.
-- **Tech-lead cluster**: 4 blank-message sessions ~19h ago, resolved. Not ongoing.
-- **Focus-tasks.md updated** with current numbers and convention status.
+## Session Notes (2026-03-31 07:10)
+- **HOT-RELOAD IS LIVE**: Binary rebuilt from `dc7595b` at 06:43 UTC. All convention-check code changes now auto-apply via hot-reload. Module cache blocker permanently resolved.
+- **Post-restart convention rates (N=2)**: C6.1=100%, C2.1=100%, C1.3=100%, C12.1=0% (claude_code FP → fixed).
+- **6h convention rates (N=37)**: C1.1=94.6%, C1.3=81.1%, C1.4=97.3%, C1.5=94.6%, C1.7=100%, C12.1=89.2%, C2.1=97.3%, C3.2=94.6%, C3.3=100%, C6.1=83.8%, C7.1=100%, C8.2=83.8%
+- **Evaluation health**: 32 good, 3 acceptable, 0 poor (6h). Excellent.
+- **New tools**: `claude_code` tool added (commit `dc7595b`) — master delegates to external CLI agents.

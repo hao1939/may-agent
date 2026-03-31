@@ -2,6 +2,27 @@
 
 > Pre-2026-03-30 entries archived at `agents/bob/workspace/archive/journal-pre-2026-03-30.md`
 
+# Session 2026-03-31 ~07:10 (Hot-Reload LIVE + Convention Health + claude_code Fix)
+
+## Key Discovery: Hot-Reload IS Live
+Binary rebuilt at 06:43 UTC from commit `dc7595b` (includes hot-reload fix `fd5b559`). All convention-check code changes are now live and auto-reloading. The 40+ hour module cache blocker is **permanently resolved**.
+
+## Post-Restart Convention Rates (N=2, since 06:43 UTC)
+| Convention | Rate | vs Pre-Restart | Notes |
+|-----------|------|---------------|-------|
+| C6.1 | 100% | 83.8% | Threshold 80 working |
+| C2.1 | 100% | 97.3% | isError fix working |
+| C1.3 | 100% | 81.1% | Exempt patterns working |
+| C12.1 | 0% (2/2) | 89.2% | NEW: claude_code false positive |
+
+## Fix: C12.1 claude_code False Positive
+New `claude_code` tool (commit `dc7595b`) lets master delegate to external CLI agents. Convention-check flagged it as "no context file read". Fix: added `claude_code` to ORIENTATION_TOOLS (same as `agents()` — delegation to context-aware agent).
+
+## 6h Convention Health (N=37)
+C1.1=94.6%, C1.3=81.1%, C1.4=97.3%, C1.5=94.6%, C1.7=100%, C12.1=89.2%, C2.1=97.3%, C3.2=94.6%, C3.3=100%, C6.1=83.8%, C7.1=100%, C8.2=83.8%
+
+C8.2 failures all Amy-Kimi (Kimi model JSON bug). C6.1 failures all pre-restart (threshold was still 60). With hot-reload live, future convention checks will use all latest fixes.
+
 # Session 2026-03-31 ~03:10 (Convention Audit + Amy-Kimi C8.2 + Process Health)
 
 ## Convention Health (6h window, N=40)
