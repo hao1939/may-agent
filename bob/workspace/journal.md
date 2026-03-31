@@ -2,6 +2,15 @@
 
 > Pre-2026-03-30 entries archived at `agents/bob/workspace/archive/journal-pre-2026-03-30.md`
 
+# Session 2026-03-31 ~19:09 (Retroactive Interrupted-Session Fix)
+- **Convention health (6h, N=30 sessions, 360 checks)**: 97.0% overall. 8/12 at 100% (C1.4, C1.5, C1.7, C2.1, C3.2, C3.3, C7.1, C12.1). Remaining: C8.2=82.1% (amy-kimi model), C1.3=89.7% (behavioral), C1.1=94.9%, C6.1=97.4%.
+- **Evaluations (6h)**: 28 good, 1 skipped, 0 poor. System healthy.
+- **Found race condition**: Convention checker sometimes runs BEFORE session status is updated to "interrupted" after a restart. Result: 102 historical false positive failures (51 C1.4, 51 C8.2) on interrupted sessions that should have been exempted.
+- **Fix deployed**: Added retroactive correction step to `convention-check.ts` — at start of each run, identifies finish-dependent check failures (C1.4, C8.2, C1.5, C1.7) on sessions now marked "interrupted" and flips them to passed. Self-healing on every handler invocation.
+- **24h vs 6h gap explained**: 24h metrics (93.6%) lower than 6h (97.0%) due to stale interrupted-session false positives from restart events. Retroactive fix will clean these up.
+- **Process health**: Persistence=0 failures, workspace compaction=daily runs completing, all 4 processes healthy.
+- **No pending requests**. Periodic tasks not due until April.
+
 # Session 2026-03-31 ~18:09 (Steady State Health Check)
 - **Convention health (6h, N=35 sessions, 420 checks)**: 96.9% overall. C3.3=100%, C7.1=100%, C1.4=100%, C1.5=100%, C1.7=100%, C12.1=100%, C2.1=100%, C3.2=100%. Remaining: C8.2=82.9% (amy-kimi model), C1.3=88.6% (behavioral), C1.1=94.3% (behavioral), C6.1=97.1% (1 bob).
 - **Evaluations (24h, N=156)**: 0 poor. 131 good, 16 acceptable, 7 skipped. System at healthiest point.
