@@ -2,6 +2,24 @@
 
 > Pre-2026-03-30 entries archived at `agents/bob/workspace/archive/journal-pre-2026-03-30.md`
 
+# Session 2026-03-31 ~21:39 (Knowledge Index Scan)
+- **Knowledge Index updated**: Found significant drift — 22 skills, 3 agents (Judge, QA, Tech-Lead), 6 shared knowledge files, and 1 stale count all missing from index.
+  - Added 22 skills in new categories: Planning & Process Discipline (8 skills), Core Lifecycle (7 new), Coordination (1 new), Operational (6 new).
+  - Added Judge (convention evaluation), QA (quality assurance), Tech-Lead (implementation/architecture) agent sections.
+  - Added GUS-CONSOLIDATED-REFERENCE, GUS-CONSOLIDATED, design-ideas, mas-diagnostic-guide, research-laws, research-digests.
+  - Updated amy-kimi library count: 160+ → 200+ (now 201 files).
+- **System health (6h)**: 30 sessions, 27 good / 2 acceptable / 1 skipped. 0 poor/needs_improvement. Persistence: 0 failures.
+- **No pending requests** for bob. Convention system stable. No nudges active.
+
+# Session 2026-03-31 ~20:39 (Steady State Monitoring)
+- **Convention health (6h, N=32 sessions, 384 checks)**: 97.2% overall. 8/12 at 100% (C1.4, C1.5, C1.7, C2.1, C3.2, C3.3, C6.1, C7.1, C12.1). C6.1 now at 100% (was 97.4%). Remaining: C8.2=81.3% (5 amy-kimi + 1 bob), C1.1=90.6% (3 behavioral: may, optimizer, scout), C1.3=96.9% (1 failure).
+- **Evaluations (24h, N=158)**: 134 good, 16 acceptable, 1 needs_improvement (coach sprint-plan miss), 7 skipped. **0 poor**. System at sustained health.
+- **Bob C8.2 failure investigated**: Session s_1774969738732_28 genuinely called finish() with empty input (`{}`). Not a false positive — the finish-retry pattern produced 2 empty finish calls. Convention checker correctly flagged.
+- **System stats (24h)**: 160 sessions, 0 errors. Heaviest: may(25), coach(24), bob(22), optimizer(21).
+- **Gym status**: 80/135 scenarios have runs. 55 untested (was 44 — new scenarios added). Needs dedicated batch session.
+- **Process health (#8 Compaction)**: Working — recent sessions being moved to history/. (#13 Workflows): Active — 10 recent workflow runs, all coach.
+- **No pending requests**. Periodic tasks not due until April 3 (Pattern Synthesis).
+
 # Session 2026-03-31 ~19:09 (Retroactive Interrupted-Session Fix)
 - **Convention health (6h, N=30 sessions, 360 checks)**: 97.0% overall. 8/12 at 100% (C1.4, C1.5, C1.7, C2.1, C3.2, C3.3, C7.1, C12.1). Remaining: C8.2=82.1% (amy-kimi model), C1.3=89.7% (behavioral), C1.1=94.9%, C6.1=97.4%.
 - **Evaluations (6h)**: 28 good, 1 skipped, 0 poor. System healthy.

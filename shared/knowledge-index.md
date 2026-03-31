@@ -27,7 +27,7 @@ Read this before starting research — someone may have already covered your top
 ## Amy-Kimi — XHS / Chinese Community (Kimi variant)
 - `agents/amy-kimi/knowledge/insights.md` — Insights from XHS via Kimi
 - `agents/amy-kimi/knowledge/threads.md` — Thread tracking
-- `agents/amy-kimi/knowledge/library/` — Archive of insights (160+ files), deep-dives, people, journal archives
+- `agents/amy-kimi/knowledge/library/` — Archive of insights (200+ files), deep-dives, people, journal archives
 - **Topics:** Same domain as Amy, different model perspective
 
 ## Bob — Design Philosophy & Synthesis
@@ -64,6 +64,26 @@ Read this before starting research — someone may have already covered your top
 - **Topics:** performance metrics, drift detection logs, automated verification
 - **Best for:** "Is the system drifting?" or "What is the current success rate?"
 
+## Judge — Convention Evaluation
+- `agents/judge/DOMAIN.md` — Judge's scope: evaluates session transcripts against CONVENTIONS.md, LESSONS.md, common-sense.md
+- No knowledge files — operates purely from shared convention definitions
+- **Topics:** convention compliance checking, per-session scoring
+- **Best for:** "Did session X follow convention Y?"
+
+## QA — Quality Assurance
+- `agents/qa/knowledge/INDEX.md` — QA's own knowledge index
+- `agents/qa/knowledge/consolidated-memory-2026-03.md` — Consolidated operational memory
+- **Topics:** test verification, quality gates, regression detection
+- **Best for:** "Is this change safe?" or "What tests cover X?"
+
+## Tech-Lead — Implementation & Architecture
+- `agents/tech-lead/knowledge/INDEX.md` — Tech-Lead's own knowledge index
+- `agents/tech-lead/knowledge/system-architecture.md` — System architecture deep-dive
+- `agents/tech-lead/knowledge/gym-scoring.md` — Gym scoring mechanics
+- `agents/tech-lead/workspace/pending-decisions.md` — Active decisions awaiting resolution
+- **Topics:** implementation planning, code architecture, build process, brief execution
+- **Best for:** "What's the implementation plan for X?" or "Was brief Y accepted?"
+
 ## Shared Reference
 - `agents/shared/team.md` — Agent roster and roles
 - `agents/shared/philosophy.md` — Design philosophy
@@ -75,6 +95,12 @@ Read this before starting research — someone may have already covered your top
 - `agents/shared/knowledge/mast-taxonomy.md` — **MAST Failure Codes** (FM-1.1 to FM-3.3) for failure tracking.
 - `agents/shared/knowledge/error-log-schema.md` — **Error Log Schema** (JSONL) for structured failure tracking.
 - `agents/bob/knowledge/agent-evolution-architecture.md` — **Agent Evolution System**. Architecture for the "Gym as CI" pipeline (AHA).
+- `agents/shared/knowledge/GUS-CONSOLIDATED-REFERENCE.md` — **GUS Framework** (Grand Unified Synthesis). Consolidated research reference (~245 lines).
+- `agents/shared/knowledge/GUS-CONSOLIDATED.md` — **GUS Full** (~447 lines). Extended GUS with all delta versions.
+- `agents/shared/knowledge/design-ideas.md` — **Design Ideas**. Validated design ideas and research findings from openclaw-config knowledge base.
+- `agents/shared/knowledge/mas-diagnostic-guide.md` — **MAS Diagnostic Guide**. Field guide to agent operations (synthesized from Scout research).
+- `agents/shared/knowledge/research-laws.md` — **Research Laws**. Archive of theoretical principles and research findings.
+- `agents/shared/knowledge/research-digests/` — **Research Digests**. Periodic batch summaries of Amy/Amy-Kimi research (3 files).
 - `docs/` — Design docs, architecture, proposals, operations. See `docs/README.md`.
 
 ## Operations Reference
@@ -93,13 +119,20 @@ Standardized capabilities available to all agents. Read the `.md` file to learn 
 
 ### Core Lifecycle & Safety
 - `agents/shared/skills/growth-cycle.md` — **Agent Growth Cycle** (Fork-Train-Verify-Promote). Standard for safe evolution.
+- `agents/shared/skills/agent-growth/SKILL.md` — **Agent Growth**. Execution skill for running the growth cycle.
 - `agents/shared/skills/file-safety/SKILL.md` — **File Safety**. Protocols for safe reading/writing (check size, don't overwrite blindly).
 - `agents/shared/skills/check-state/SKILL.md` — **Ops Gates**. Scripts to verify system state before/after critical actions.
 - `agents/shared/skills/sanitize-memory.md` — **Memory Sanitization**. Critical for preventing "Zombie Agent" poisoning.
 - `agents/shared/skills/sanitize-content.md` — **Content Sanitization**. Stripping imperative injections from untrusted text.
 - `agents/shared/skills/critical-pause.md` — **Critical Pause**. When to stop and think (P115 Complexity Rationing).
 - `agents/shared/skills/verification/SKILL.md` — **Verification**. Protocols for establishing truth (Receipts, Tests).
+- `agents/shared/skills/verification-consistency/SKILL.md` — **Verification Consistency**. Every edit gets read-back — verification scheduling.
+- `agents/shared/skills/build-activation-verification/SKILL.md` — **Build Activation Verification**. Don't declare deployed until it's running.
+- `agents/shared/skills/deliverable-integrity/SKILL.md` — **Deliverable Integrity**. Only claim what you can evidence.
+- `agents/shared/skills/evidence-over-narrative/SKILL.md` — **Evidence Over Narrative**. Prefer tool output over assertions.
+- `agents/shared/skills/state-check-before-action/SKILL.md` — **State-Check-Before-Action (SCBA)**. Verify before you mutate.
 - `agents/evaluator/skills/patrol.cjs` — **Patrol**. L3 Integrity (Hash) and L4 Coordination (Task) monitoring.
+- `agents/shared/skills/progressive-work-persistence/SKILL.md` — **Progressive Work Persistence**. Save early, save often.
 
 ### Coordination & Strategy
 - `agents/shared/skills/agent-coordination/SKILL.md` — **Coordination**. How to use `call` vs `send` effectively.
@@ -108,6 +141,17 @@ Standardized capabilities available to all agents. Read the `.md` file to learn 
 - `agents/shared/skills/experience-replay.md` — **Experience Replay**. Checking `ERROR_LOG` before acting (P114).
 - `agents/shared/skills/consolidate-memory.md` — **Memory Consolidation**. Protocol for extracting patterns from logs.
 - `agents/shared/skills/l3-delegation-metrics/SKILL.md` — **L3 Metrics**. Schema for tracking delegation success rates.
+- `agents/shared/skills/delegation-verification/SKILL.md` — **Delegation Verification**. Confirm before you close — verify delegated work landed.
+
+### Planning & Process Discipline
+- `agents/shared/skills/budget-before-act/SKILL.md` — **Budget-Before-Act**. Estimate turns, guarantee delivery.
+- `agents/shared/skills/plan-once-amend/SKILL.md` — **Plan Once, Amend**. Declare work plan at start, amend as needed.
+- `agents/shared/skills/scope-discipline/SKILL.md` — **Scope Discipline**. Finish what you started — resist scope creep.
+- `agents/shared/skills/prerequisite-gap-protocol/SKILL.md` — **Prerequisite Gap Protocol**. Don't silently redefine success when prereqs are missing.
+- `agents/shared/skills/obstacle-pivot/SKILL.md` — **Obstacle Pivot**. When Plan A fails, execute Plan B instead of retrying.
+- `agents/shared/skills/stale-approach-fixation/SKILL.md` — **Stale Approach Fixation**. Read notes before you act — avoid repeating failed approaches.
+- `agents/shared/skills/idempotent-work-detection/SKILL.md` — **Idempotent Work Detection**. Check before you redo already-completed work.
+- `agents/shared/skills/request-triage-memoization/SKILL.md` — **Request Triage Memoization**. Dismiss once, skip forever.
 
 ### Operational Patterns
 - `agents/shared/skills/web-scraping/SKILL.md` — **Web Scraping**. Robust fetching with the `scrape` tool.
@@ -124,6 +168,12 @@ Standardized capabilities available to all agents. Read the `.md` file to learn 
 - `agents/shared/skills/skill-lifecycle/SKILL.md` — **Skill Lifecycle**. How to deprecate or promote skills.
 - `agents/shared/skills/task-adherence/SKILL.md` — **Task Adherence**. Sticking to the prompt (P1).
 - `agents/shared/skills/tool-discipline/SKILL.md` — **Tool Discipline**. Precise usage (C2).
+- `agents/shared/skills/coder-edit-discipline/SKILL.md` — **Coder Edit Discipline**. Read the file before editing it.
+- `agents/shared/skills/incremental-context-loading/SKILL.md` — **Incremental Context Loading**. Diff before read — efficient recurring session startup.
+- `agents/shared/skills/materialize-intermediate-findings/SKILL.md` — **Materialize Intermediate Findings**. Write what you found during multi-step analysis.
+- `agents/shared/skills/search-strategy-escalation/SKILL.md` — **Search-Strategy Escalation**. Stop the grep spiral — escalate search methods.
+- `agents/shared/skills/agent-gym/SKILL.md` — **Agent Gym**. Training and evaluation scenarios for agent improvement.
+- `agents/shared/skills/prototype-skill-package/README.md` — **Skill Package Prototype**. Template for packaging skills with tests and examples.
 - `agents/shared/skills/LIBRARY.md` — **Skill Library**. Master index of all skills with discovery/evaluation/deployment status.
 - `agents/shared/skills/patterns/` — **Common Workflows**:
   - `robust-scraping.md`: How to scrape without getting blocked.

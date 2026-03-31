@@ -1,5 +1,44 @@
 # Journal
 
+## 2026-03-31 22:09 — Heartbeat: Process #7/#9 Check + Mass Baselining
+
+### Process Checks
+- **#7 Context Learning**: All context.md files 8-14 lines. ✅ Healthy.
+- **#9 Gym**: Baselined 5 untested scenarios. 3 hit ceiling, 1 confirmed non-ceiling, 1 workflow made things worse.
+
+### New Baselines (exp-231 to exp-235)
+| Scenario | Score | Status |
+|---|---|---|
+| triage-ambiguous-cleanup | 9/9 | CEILING |
+| behavior-resource-convergence | 3/3 | CEILING |
+| build-activation-gap | 9/9 | CEILING |
+| efficient-file-reading | 6/8 (×2) | **NON-CEILING** |
+| efficient-file-reading-workflow | 4/8 | WORSE than baseline |
+
+### Key Finding: efficient-file-reading (6/8 stable non-ceiling)
+- **Passes**: All 4 product checks + no-full-read-services + no-full-read-log
+- **Fails**: grep-first-reading:uses-grep-or-search, grep-first-reading:uses-targeted-reads
+- **Root cause**: Coder reads file chunks (tool auto-truncates) but doesn't proactively use grep/rg or offset/limit. This is a **tool usage habit**, not a judgment problem.
+- **Workflow attempt (exp-235)**: 4/8 — WORSE. Two-phase split loses context. Phase 2 gets product checks wrong. Agent still ignores "use grep" instructions even when explicit.
+- **Diagnosis**: Written to `diagnosis-efficient-file-reading.md`. Status: STUCK — no known intervention works.
+
+### Pattern Confirmed
+Text injection doesn't work (0/18+). Workflow enforcement doesn't help when the problem is **tool usage habits** rather than **judgment sequencing**. Workflow works for:
+- ✅ Verification (run tests before claiming done)
+- ✅ Root-cause diagnosis (analyze before editing)
+- ✅ Escalation (assess feasibility before diving in)
+- ❌ Materialization cadence (still batches writes)
+- ❌ Tool usage habits (still uses read() instead of grep)
+
+### Untested Scenario Status (updated)
+Reduced from 20 to 15 untested scenarios. Key remaining:
+- 6 context-proof/learning scenarios (need special setup)
+- context-npx-avoidance, incremental-context-loading
+- silent-dependency-xss-vectors
+- red-herring-investigation (broken — no env/criteria)
+
+### Growth Cycles: 0/3 (baselines only, no fork experiments)
+
 ## 2026-03-31 18:09 — Heartbeat: Mass Baselining + Infra Fix
 
 ### Process Checks
