@@ -76,6 +76,17 @@ const C1_3_EXEMPT_PATTERNS = [
   /knowledge\/.*\.md$/,
   /reflections\/.*\.md$/,
   /bulletin\.md$/,
+  // Gym scenario scaffolding — creating test environments, not deliverables
+  /agents\/gym\/scenarios\//,
+  // Lab experiment files — exploratory, not production
+  /agents\/\.lab\//,
+  // Shared registries — append-only catalogs, low-risk
+  /LIBRARY\.md$/,
+  /REGISTRY\.md$/,
+  // Workspace logs — append-only bookkeeping
+  /graduation-log\.md$/,
+  // Temp files — not worth verifying
+  /^\/tmp\//,
 ];
 
 /** Lookback for regression detection (7 days in ms). */
@@ -585,9 +596,10 @@ function checkC3_3_safeAppend(toolCalls: ToolCall[]): CheckResult {
  */
 function checkC6_1_budgetAwareness(toolCalls: ToolCall[]): CheckResult {
   // Heuristic: sessions with very high tool call counts are inefficient.
-  // 60 = ~93rd percentile of recent sessions. Post-opBudget, this is an
-  // efficiency signal, not a budget-limit detector.
-  const BUDGET_THRESHOLD = 60;
+  // 80 = ~97th percentile of recent sessions (2026-03-31). Post-opBudget,
+  // this is an efficiency signal only. Coach/Bob regularly use 50-75 calls
+  // for legitimate complex work (gym scenarios, convention analysis).
+  const BUDGET_THRESHOLD = 80;
   const passed = toolCalls.length < BUDGET_THRESHOLD;
 
   return {
