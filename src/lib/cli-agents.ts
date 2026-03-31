@@ -18,6 +18,7 @@
 import { Type } from "@mariozechner/pi-ai";
 import type { TSchema } from "@mariozechner/pi-ai";
 import type { AgentTool, AgentToolResult, AgentToolUpdateCallback } from "@mariozechner/pi-agent-core";
+import { randomUUID } from "node:crypto";
 import { spawn, type ChildProcess } from "node:child_process";
 
 function textResult(text: string): AgentToolResult<string> {
@@ -277,7 +278,21 @@ export function stripAnsi(text: string): string {
 
 export function createClaudeCodeTool(opts: CliAgentToolOptions): AgentTool {
   const maxOutput = opts.maxOutputLength ?? 80_000;
-  const defaultModel = opts.model; // undefined = let Claude Code use its own configured default
+  const defaultModel = opts.model;
+
+  // Build a project-context system prompt (injected into every CLI agent run)
+  const systemPrompt = [
+    `You are working on the may-agent project at ${opts.cwd}.`,
+    `Key facts:`,
+    `- Build check: npm run check (runs tsc --noEmit) — run after every code change`,
+    `- npx is NOT available — use ./node_modules/.bin/<tool> or bun x <tool>`,
+    `- agents/ is a separate git repo (gitignored from main)`,
+    `- Tests: vitest via ./node_modules/.bin/vitest`,
+    `- Verify every change with npm run check before finishing`,
+  ].join("\n");
+
+  // Track the last session ID for automatic continuity
+  let lastSessionId: string | undefined;
 
   return {
     name: "claude_code",
@@ -285,14 +300,20 @@ export function createClaudeCodeTool(opts: CliAgentToolOptions): AgentTool {
     description:
       "Run Claude Code to implement code changes. Best for: multi-file changes, debugging, refactoring, writing tests. " +
       "Claude Code has full read/write access to the project and runs with auto-approval. " +
-      "Supports session continuity — use continue_session to resume the last conversation, " +
-      "or resume_session_id to resume a specific one. " +
-      "Frame your prompt carefully — include specific file paths, what to change, constraints, and verification steps.",
+      "Supports session continuity — use continue_session to resume the last conversation " +
+      "(keeps full context from previous turns), or resume_session_id for a specific session. " +
+      "Multi-turn pattern: first call implements, follow-up calls with continue_session review and fix. " +
+      "Each call returns a session_id you can resume later.",
     parameters: ClaudeCodeParams,
     execute: async (_toolCallId: string, _input: unknown, signal?: AbortSignal, onUpdate?: AgentToolUpdateCallback<any>) => {
       const input = _input as ClaudeCodeInput;
       const timeoutSecs = input.timeout ?? DEFAULT_TIMEOUT;
       const model = input.model ?? defaultModel;
+
+      // Generate or reuse session ID for continuity
+      const sessionId = input.resume_session_id ?? (input.continue_session ? lastSessionId : undefined);
+      const isNewSession = !sessionId;
+      const effectiveSessionId = sessionId ?? randomUUID();
 
       const args: string[] = [
         "--print",
@@ -305,10 +326,12 @@ export function createClaudeCodeTool(opts: CliAgentToolOptions): AgentTool {
         args.push("--model", model);
       }
 
-      if (input.continue_session) {
-        args.push("--continue");
-      } else if (input.resume_session_id) {
-        args.push("--resume", input.resume_session_id);
+      // System prompt — project context (only on new sessions, not resume)
+      if (isNewSession) {
+        args.push("--system-prompt", systemPrompt);
+        args.push("--session-id", effectiveSessionId);
+      } else {
+        args.push("--resume", effectiveSessionId);
       }
 
       // Prompt goes last as a positional argument
@@ -336,7 +359,8 @@ export function createClaudeCodeTool(opts: CliAgentToolOptions): AgentTool {
             `Exit code ${result.exitCode}:\n${truncateOutput(cleanOutput, maxOutput)}`,
           );
         }
-
+        lastSessionId = effectiveSessionId;
+        return textResult(truncateOutput(cleanOutput, maxOutput) + `\n\n[session_id: ${effectiveSessionId}]`);
         return textResult(truncateOutput(cleanOutput, maxOutput));
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
