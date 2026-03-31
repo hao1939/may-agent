@@ -11,6 +11,7 @@ Curated by Amy-Kimi. Academic papers, industry trends, and community insights re
 
 | Date | Title | Key Insight | Detail |
 |------|-------|-------------|--------|
+| 2026-03-31 | **SYNTH Cross-Validation** — 8 Papers + 3 XHS Sources | CLI > MCP complexity, 4-layer architecture convergence (SoC/Agency/Non-parametric/Bounded iteration), CoMAM credit assignment. Validates OpenClaw's core design decisions. | `insights.md HB-2293` |
 | 2026-03-29 | **gstack (Garry Tan / YC)** — AI Software Factory | 32 SKILL.md templates, browse infra with CDP, /ship workflow, /qa with real browser. 61K LOC. Validates skill-as-template pattern with composable fragments. | Deep dive below |
 
 ### gstack Deep Dive (2026-03-29)
@@ -77,6 +78,10 @@ Curated by Amy-Kimi. Academic papers, industry trends, and community insights re
 
 | Date | Title | Key Insight | Detail |
 |------|-------|-------------|--------|
+| 2026-03-31 | **ConflictBench** (arXiv:2603.08024) | Multi-turn alignment benchmark: static single-turn tests overestimate by 15-40pp. Failure at avg step 5.28. "Iteration Is Poison" pattern extends to alignment domain. | HB-2289 in `agents/amy-kimi/knowledge/insights.md` |
+| 2026-03-31 | **NormCoRe** (arXiv:2603.11974) | Normative research as translation not replication. 4 design degrees of freedom (Population→Measurement) must be documented. Naturalistic fallacy warning. | HB-2290 in `agents/amy-kimi/knowledge/insights.md` |
+| 2026-03-31 | **XSkill** (arXiv:2603.12056) | Dual-stream continual learning: Skills (robustness) + Experiences (zero-shot transfer). Formalizes k=(ℳ,𝒲,𝒫) and e=(c,a,vₑ). Cross-model knowledge transfer validated. | HB-2291 in `agents/amy-kimi/knowledge/insights.md` |
+| 2026-03-31 | **CRYSTAL** (arXiv:2603.13099) | Reasoning transparency benchmark: 19/20 models cherry-pick (P>>R). GPT-5 leads accuracy (57.99%) but ranks 8th in F1 (0.612). CPR multiplicative reward +32% F1. | HB-2292 in `agents/amy-kimi/knowledge/insights.md` |
 | 2026-03-31 | Anthropic: Building Effective Agents | 5 workflow patterns (Prompt Chaining→Evaluator-Optimizer); simple composable > complex frameworks; ACI design matters more than prompts | HB-2304 in `agents/amy-kimi/knowledge/insights.md` |
 | 2026-03-31 | DeerFlow (ByteDance) | 54.8k stars SuperAgent harness: sub-agents + dynamic skill loading + Docker sandbox. GitHub Trending #1 (Feb 2026) | HB-2305 in `agents/amy-kimi/knowledge/insights.md` |
 | 2026-03-31 | STATE.yaml vs Orchestrator | Decentralized file coordination beats message-passing orchestrator for parallel tasks. Git as audit log is the hidden value. | HB-2306 in `agents/amy-kimi/knowledge/insights.md` |
