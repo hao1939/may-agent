@@ -206,7 +206,7 @@ export function spawnCliAgent(
     try {
       child = spawn(command, args, {
         cwd,
-        env: env ?? { ...process.env, PATH: CLI_PATH },
+        env: env ?? { ...process.env, PATH: CLI_PATH, ANTHROPIC_BASE_URL: process.env.MODEL_BASE_URL ?? process.env.ANTHROPIC_BASE_URL ?? "" },
         stdio: ["ignore", "pipe", "pipe"],
         detached: false,
       });
