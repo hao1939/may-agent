@@ -7,10 +7,79 @@ Curated by Amy-Kimi. Academic papers, industry trends, and community insights re
 
 ---
 
+## Industry Projects & Tools
+
+| Date | Title | Key Insight | Detail |
+|------|-------|-------------|--------|
+| 2026-03-29 | **gstack (Garry Tan / YC)** — AI Software Factory | 32 SKILL.md templates, browse infra with CDP, /ship workflow, /qa with real browser. 61K LOC. Validates skill-as-template pattern with composable fragments. | Deep dive below |
+
+### gstack Deep Dive (2026-03-29)
+
+**What it is**: Open-source "software factory" by Garry Tan (YC CEO). Turns Claude Code into a virtual engineering team via slash commands. 32 skills, 8 power tools, 143 TypeScript files, MIT license. Claims 10K-20K LOC/day output. GitHub: `garrytan/gstack`.
+
+**Architecture — Key Patterns**:
+
+1. **SKILL.md.tmpl templating**: Skills are Markdown templates with `{{FRAGMENT}}` placeholders resolved at build time. Fragments like `{{PREAMBLE}}`, `{{BASE_BRANCH_DETECT}}`, `{{TEST_BOOTSTRAP}}`, `{{QA_METHODOLOGY}}` are shared across skills. This is a compile-time composition model — no runtime resolution. Setup script (`setup` bash) compiles templates → final SKILL.md files placed in `~/.claude/skills/`.
+
+2. **Browse infrastructure**: Full headless browser control via CDP (Chrome DevTools Protocol). Architecture: persistent background server (`browse/src/server.ts`) + thin CLI client (`browse/src/cli.ts`). Commands: `goto`, `click`, `type`, `screenshot`, `snapshot` (accessibility tree), `console`, `cookies`. Server writes connection info to `.gstack/browse.json`. Supports real browser attachment (CDP mode) and headless mode.
+
+3. **Preamble tiers (1-4)**: Skills declare a `preamble-tier` in frontmatter. Higher tiers get more context injected (project structure, conventions, etc). Prevents context bloat for simple skills while giving complex skills (like /ship at tier 4) full project awareness.
+
+4. **Host abstraction**: `src/hosts.ts` defines paths for `claude`, `codex`, and `factory` hosts. Skills install to different locations based on host. Supports Claude Code, OpenAI Codex, Gemini CLI, and Cursor.
+
+5. **Learnings system**: `gstack-learnings-log` and `gstack-learnings-search` bin scripts. Structured learning capture (skill, type, content) persisted to project. `{{LEARNINGS_SEARCH}}` fragment injected into skills that benefit from prior learnings.
+
+**Notable Skills**:
+
+| Skill | What it does | Why it matters |
+|-------|-------------|----------------|
+| `/office-hours` | YC-style forcing questions — demand, distribution, moat, team | Product thinking before code |
+| `/plan-ceo-review` | 4 modes: Scope Expansion/Selective/Hold/Reduction. Premise challenge, failure modes, error naming | Rigorous plan review with cognitive patterns (Bezos, Grove, Munger frameworks) |
+| `/plan-eng-review` | Architecture review with error/rescue maps, data flow shadow paths | Engineering rigor — every error has a name |
+| `/ship` | Fully automated: merge base, run tests, triage failures, pre-landing review, version bump, PR | Complete CI/CD in a skill. Non-interactive by default. |
+| `/qa` | Opens real browser, tests like a user, finds bugs, fixes them with atomic commits, before/after screenshots | Real browser QA — not mocked, not simulated |
+| `/review` | Code review with checklist, auto-fix for dead code/N+1/stale comments | Automated code review |
+| `/retro` | Weekly retrospective from git history | Engineering health tracking |
+| `/autoplan` | Reads CEO + design + eng review outputs, synthesizes implementation plan | Review pipeline orchestration |
+| `/cso` | OWASP + STRIDE security audit | Security review |
+| `/browse` | Headless browser with CDP, screenshots, accessibility snapshots | Foundation for /qa and visual review |
+| `/careful` | Activates defensive coding mode — more checks, more tests | Mode switch for critical code |
+| `/freeze` / `/unfreeze` | Lock/unlock files from modification | Protect critical files during agent work |
+| `/learn` | Capture structured learnings for future sessions | Cross-session knowledge |
+
+**Relevance to OpenClaw**:
+
+1. **Skill composition model**: gstack's `{{FRAGMENT}}` templating is a simpler alternative to our workflow system. Their compile-time approach means no runtime overhead but less flexibility. Our runtime workflow system is more powerful but more complex. **Takeaway**: Consider whether some of our simpler workflows could be expressed as template-composed skills.
+
+2. **Browse/CDP architecture**: Their persistent-server + thin-client browser model is clean. Server stays alive across commands, maintaining browser state. This avoids the cold-start problem of launching a browser per command.
+
+3. **Review pipeline**: The `/plan-ceo-review` → `/plan-eng-review` → `/plan-design-review` → implement → `/review` → `/ship` pipeline is a complete software lifecycle in skills. Each skill produces artifacts the next one consumes. This is workflow orchestration without a workflow engine — each skill checks for prior skill outputs via file existence checks.
+
+4. **Error taxonomy**: "Every error has a name" is enforced across all review skills. Named exceptions, specific triggers, specific catchers, specific user-visible effects. This is a strong pattern we could adopt.
+
+5. **Test failure triage**: `/ship` doesn't just fail on test failures — it triages them as in-branch vs pre-existing, auto-fixes what it can, and only blocks on genuine regressions. Sophisticated failure handling.
+
+6. **Opinionated defaults**: "Completeness is cheap" — AI compresses implementation time 10-100x, so always prefer the complete solution over the shortcut. This philosophy pervades the system.
+
+**Limitations / Differences from OpenClaw**:
+
+- **No multi-agent runtime**: gstack is single-agent (one Claude Code session). Skills are sequential, not concurrent. No agent-to-agent communication.
+- **No persistent memory across sessions**: Learnings are file-based, no semantic retrieval. No event bus, no shared state.
+- **No dynamic skill generation**: Skills are authored by humans, compiled at install time. No self-evolution.
+- **No evaluation framework**: No equivalent to our evaluator agent. QA is manual-trigger only.
+- **Tightly coupled to Claude Code**: Despite host abstraction, deeply assumes Claude Code's tool model (Bash, Read, Write, Edit, Grep, Glob, Agent, WebSearch).
+
+**Bottom line**: gstack is the most sophisticated single-agent skill system in the wild. It validates the skill-as-structured-markdown pattern, composable fragments, and opinionated review pipelines. OpenClaw's multi-agent architecture goes significantly further, but gstack's skill design quality is reference-grade. Worth studying for skill authoring patterns.
+
+---
+
 ## Architecture & Multi-Agent Systems
 
 | Date | Title | Key Insight | Detail |
 |------|-------|-------------|--------|
+| 2026-03-31 | HAE Security Framework | Three-tier security: Cognitive(L1) + Execution(L2) + Collective(L3). OpenClaw L1-L5 maps directly. | HB-2303 in `agents/amy-kimi/knowledge/insights.md` |
+| 2026-03-31 | MAS²: Self-Generative MAS | Generator-Implementer-Rectifier tri-agent breaks "generate-once-deploy" rigidity; +19.6% on complex tasks | HB-2302 in `agents/amy-kimi/knowledge/insights.md` |
+| 2026-03-31 | TDAD: Test-Driven Agent Definition | Prompt as compiled artifact: specs → tests → iterative refinement. 92% compile success, 97% hidden pass rate. | HB-2301 in `agents/amy-kimi/knowledge/insights.md` |
 | 2026-03-31 | Complex Task Patterns Synthesis | 37% spec failures + 31% verification failures = coordination, not intelligence, is the bottleneck | HB-2300 in `agents/amy-kimi/knowledge/insights.md` |
 | 2026-03-31 | AT-GRPO: Multi-Agent RL (ICLR 2026) | Agent+Turn-wise grouping breaks single-agent GRPO assumptions; 14%→99.5% on planning | HB-2298 in `agents/amy-kimi/knowledge/insights.md` |
 | 2026-03-31 | Partial Ignorability in RL | Weak partial ignorability enables Q-learning convergence in non-Markovian environments | arXiv:2504.07722v1, HB-2297 |

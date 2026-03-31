@@ -46,7 +46,7 @@ interface CheckResult {
 // ── Configuration ─────────────────────────────────────────────────────
 
 /** Agents exempt from workspace-isolation checks (they write everywhere). */
-const WORKSPACE_EXEMPT_AGENTS = new Set(["may", "tech-lead", "bob"]);
+const WORKSPACE_EXEMPT_AGENTS = new Set(["may", "tech-lead", "bob", "coach", "optimizer"]);
 
 /** Allowed write prefixes for all agents. */
 const ALLOWED_WRITE_PREFIXES = [".state/", "tmp/", "/tmp/", "agents/shared/", "agents/gym/", "agents/.lab/"];
@@ -195,7 +195,13 @@ export function runConventionChecks(opts: {
         continue;
       }
 
-      const checks = runAllChecks(toolCalls, agent);
+      // Check if session was interrupted (can't penalize for missing finish())
+      const sessionRow = db.prepare(
+        `SELECT status FROM sessions WHERE sessionId = ?`
+      ).get(sessionId) as { status: string } | undefined;
+      const isInterrupted = sessionRow?.status === "interrupted";
+
+      const checks = runAllChecks(toolCalls, agent, isInterrupted);
       result.sessionsChecked++;
 
       for (const check of checks) {
@@ -352,23 +358,32 @@ function loadToolCalls(persistDir: string, sessionId: string): ToolCall[] | null
 
 // ── Check implementations ─────────────────────────────────────────────
 
-function runAllChecks(toolCalls: ToolCall[], agent: string): CheckResult[] {
+function runAllChecks(toolCalls: ToolCall[], agent: string, isInterrupted: boolean = false): CheckResult[] {
   if (toolCalls.length === 0) return [];
 
-  return [
+  // For interrupted sessions, skip finish-dependent checks (C1.4, C8.2, C1.5, C1.7)
+  // since the session was externally terminated before the agent could call finish()
+  const checks: CheckResult[] = [
     checkC1_1_readBeforeEdit(toolCalls),
     checkC1_3_verifyWrites(toolCalls),
-    checkC1_4_finishClearly(toolCalls),
-    checkC1_5_ghostDeliverables(toolCalls),
     checkC2_1_preciseArgs(toolCalls),
     checkC3_2_workspaceIsolation(toolCalls, agent),
     checkC3_3_safeAppend(toolCalls),
     checkC6_1_budgetAwareness(toolCalls),
     checkC7_1_rootIsApp(toolCalls),
-    checkC8_2_promiseDeliverReport(toolCalls),
     checkC12_1_sessionStart(toolCalls, agent),
-    checkC1_7_verificationEvidence(toolCalls),
   ];
+
+  if (!isInterrupted) {
+    checks.push(
+      checkC1_4_finishClearly(toolCalls),
+      checkC1_5_ghostDeliverables(toolCalls),
+      checkC8_2_promiseDeliverReport(toolCalls),
+      checkC1_7_verificationEvidence(toolCalls),
+    );
+  }
+
+  return checks;
 }
 
 /**

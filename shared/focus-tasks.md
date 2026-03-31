@@ -44,14 +44,17 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 - **Rule of Two**: If 2 iterations of same approach yield same result → stop, change approach.
 - **does-not-claim-success**: Model always calls `finish(success)` even when reporting failures. Confirmed untreatable by prompting (EXP-215, C1.8 rule). Runtime-only fix.
 
-#### Convention Check Status (2026-03-31 07:10)
+#### Convention Check Status (2026-03-31 09:39)
 - **ALL FIXES NOW LIVE** — Binary rebuilt at 06:43 UTC from `dc7595b` (includes hot-reload fix `fd5b559`). Handler modules auto-reload on each cron invocation.
-- **C12.1**: 89.2% (6h). Post-restart: `claude_code` false positive fixed (added to ORIENTATION_TOOLS). Projected ~95%+.
-- **C1.3**: 81.1% (6h). Post-restart: 100% (N=2). All exempt patterns + grep heuristic now active.
-- **C2.1**: 97.3% (6h). Post-restart: 100% (N=2). isError false-positive fix active.
-- **C6.1**: 83.8% (6h). Post-restart: 100% (N=2). Threshold 80 now active (was 60 in old binary).
-- **C8.2**: 83.8% (6h). Amy-Kimi 0/6 (Kimi model JSON bug — accepted as model limitation). Other agents fine.
-- **Module cache**: **PERMANENTLY RESOLVED.** Hot-reload wrapper re-imports handler modules with cache-busting on each cron invocation. No more restart-blocking for convention fixes.
+- **NEW FIX: Interrupted session FP** — C1.4/C8.2/C1.5/C1.7 now skipped for interrupted sessions (status=interrupted). 88% of C1.4 failures and 58% of C8.2 failures were false positives.
+- **NEW FIX: Workspace exemptions** — Coach and Optimizer added to WORKSPACE_EXEMPT_AGENTS (they legitimately edit other agents' files).
+- **C1.4**: 82.2% → projected 97.4% (interrupted session fix)
+- **C8.2**: 73.3% → projected 86.8% (interrupted session fix + remaining amy-kimi JSON bug)
+- **C1.3**: 84.4% (real — prompting ceiling ~80%)
+- **C3.2**: 88.9% → projected ~97% (workspace exemption fix)
+- **C12.1**: 91.1% (master claude_code FP already resolved by prior commit)
+- **C6.1**: 91.1% (threshold 80, small N noise)
+- **Module cache**: **PERMANENTLY RESOLVED.** Hot-reload wrapper re-imports handler modules with cache-busting on each cron invocation.
 
 ### Opus Prompt Caching (Cost Critical)
 - **Problem**: Opus agents (Tech-Lead, Coach, May) have 0% cache hit rate due to LiteLLM stripping headers. Wasting $36-63/day.

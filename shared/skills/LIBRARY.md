@@ -38,6 +38,9 @@ Each skill has ONE status:
 > **Note**: Only the top 10 most-referenced skills listed above. Full inventory in the skills/ subdirectories.
 > Coach: when you test a skill, fill in "Works When" and "Fails When" — these are the most valuable columns.
 
+### ⚠️ Deployment Reality (2026-03-31)
+**Text injection does NOT change agent behavior** — 0/18 experiments showed improvement from adding skill text to prompts. The only proven deployment method is **Method #15: Workflow Enforcement** — structuring the task into phases that force the desired behavior. Skills should be evaluated as workflow designs, not prompt additions. See exp-224 (partial-verification-trap-workflow: baseline 5/6 → workflow 6/6, PROMOTED).
+
 ## How to Evaluate a Skill
 
 1. **Pick a skill** from the untested list above

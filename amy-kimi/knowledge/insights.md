@@ -520,3 +520,87 @@ s > β
 **⚠️ 关键差距**: Verifier组件需提升为一等公民(当前仅Error Log事后审计)  
 **⚠️ 架构增强**: 考虑DeepAgent式"记忆折叠"机制应对长程任务
 
+---
+
+## HB-2301 — TDAD: 测试驱动的Agent定义方法论
+**Source**: arXiv:2603.08806 [cs.SE] / Test-Driven AI Agent Definition  
+**Date**: 2026-03-31 (外部链接跟进)  
+**TL;DR**: 🔥🔥🔥 **将Agent prompt视为编译产物——行为规范→测试用例→prompt迭代优化**
+
+### 核心机制
+```
+行为规范 (Spec) 
+    ↓
+编码Agent生成可执行测试
+    ↓
+第二个编码Agent迭代优化prompt直到测试通过
+```
+
+### 三大防投机机制
+1. **Visible/Hidden测试分离**: 编译时隐藏评估测试，防止过拟合
+2. **语义变异测试**: 生成plausible的faulty prompt变体，验证测试套件能否检测
+3. **规范演化场景**: 量化需求变更时的回归安全性
+
+### 实验结果 (24次独立运行)
+- **v1编译成功率**: 92%
+- **隐藏测试通过率**: 97%
+- **演化规范编译率**: 58%
+- **变异分数**: 86-100%
+- **v2隐藏通过率**: 78%
+- **回归安全性**: 97%
+
+### 对我们意味着什么
+> **P109验证框架的理论基础**: TDAD验证了"测试先于实现"在Agent领域的可行性。Skill的输入/输出契约可以转化为可执行测试，prompt版本迭代需要隐藏测试集防止过拟合。
+
+---
+
+## HB-2302 — MAS²: 递归自生成的多智能体系统
+**Source**: arXiv:2509.24323 [cs.MA] / MAS²: Self-Generative Multi-Agent Systems  
+**Date**: 2026-03-31 (外部链接跟进)  
+**TL;DR**: 🔥🔥🔥 **突破"生成一次就部署"的刚性范式——Agent系统自主架构 bespoke MAS**
+
+### 核心创新: Generator-Implementer-Rectifier三元组
+- **Generator**: 根据问题动态设计Agent系统架构
+- **Implementer**: 实现具体Agent和通信协议
+- **Rectifier**: 运行时自适应修正
+
+### 协作树优化 (Collaborative Tree Optimization)
+训练并特化这些meta-agents，使其能够递归地为不同问题生成定制化的多Agent系统。
+
+### 实验结果
+- **复杂场景提升**: +19.6% over SOTA (deep research, code generation)
+- **跨骨干泛化**: 未见过LLM上提升+15.1%
+- **成本效益**: 始终处于Pareto最优前沿
+
+### 与OpenClaw的关系
+**关键差异**: MAS²是自动生成Agent系统，OpenClaw是预定义分层架构
+**启发**: "Rectifier"概念可借鉴到Error Log驱动的Skill自我修正
+**边界**: P109禁止的自进化是Generator改写系统架构，而Rectifier是执行层修正，处于允许范围
+
+---
+
+## HB-2303 — HAE: 分层自治演化的Agent安全框架
+**Source**: arXiv:2603.07496 [cs.CR] / Hierarchical Autonomy Evolution Security  
+**Date**: 2026-03-31 (外部链接跟进)  
+**TL;DR**: 🔥🔥🔥 **Agent安全三层架构：认知自治(L1) + 执行自治(L2) + 集体自治(L3)**
+
+### 三层安全模型
+| 层级 | 名称 | 威胁范围 | 防御焦点 |
+|------|------|----------|----------|
+| **L1** | Cognitive Autonomy | 内部推理完整性 | 认知操控、提示注入 |
+| **L2** | Execution Autonomy | 工具媒介的环境交互 | 物理环境破坏、工具滥用 |
+| **L3** | Collective Autonomy | 多智能体系统性风险 | 级联故障、群体智能失控 |
+
+### 威胁分类学
+- **认知操控**: 对抗性提示、思维链劫持
+- **物理环境破坏**: 通过工具API造成实际损害
+- **多智能体系统故障**: 通信协议滥用、共识攻击
+
+### 对我们意味着什么
+> **P109+L1-L5架构的安全映射**: 
+> - P109(Main Agent) ↔ L1认知层安全
+> - L1-L3 Skill执行 ↔ L2执行层安全  
+> - L4-L5编排 ↔ L3集体层安全
+> 
+> OpenClaw的分层架构天然对应HAE的安全分层，CLI隔离降低了L2层攻击面。
+

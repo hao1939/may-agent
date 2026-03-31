@@ -76,9 +76,17 @@ When evaluating an agent, the Evaluator MUST check the target agent's `SOUL.md` 
 5. **Tool-Interface Fidelity**: When diagnosing tool behavior, does the evaluation distinguish *shell commands* from *platform tool invocations* and cite evidence (e.g., exit code 127/command-not-found, absence of tool call records)?
 
 ### Meta: Cron/Job Liveness Checks (Heartbeat)
-When a heartbeat is asked to "check eval recency", treat `.state/evaluations/` recency and `.state/job-history.jsonl` as a **joint signal**.
-- If `.state/evaluations/` has no entries newer than ~48h **and** `job-history.jsonl` has no `evaluate`-like job names, report as a **liveness failure** (not merely "no recent evals").
-- Recommended next step: file a maintenance task to either (a) re-enable/reconnect the evaluation cron, or (b) update the doc/check to reflect a renamed job or new output directory.
+When a heartbeat is asked to "check eval recency", treat **SQLite DB liveness** as the primary signal.
+
+**Primary (current system):** `.state/may.db` → `evaluations` table
+- Query `MAX(createdAt)` from `evaluations` and compare to now.
+- If the latest evaluation is stale (>48h), report likely evaluator/cron liveness issues.
+
+**Secondary (legacy / fallback):** `.state/evaluations/` and `.state/job-history.jsonl`
+- `.state/evaluations/*.json` may be legacy artifacts (some systems migrated to DB).
+- `.state/job-history.jsonl` may be stale (not written by the current cron system).
+
+**Recommended next step:** If DB liveness is stale, file a maintenance task to re-enable/reconnect the evaluation pipeline. If only the legacy artifacts are stale but DB is fresh, update docs/checklists to stop treating legacy paths as authoritative.
 
 ### Capability Levels
 - **L1 (Auditor)**: Spots failures. Writes accurate scores.
