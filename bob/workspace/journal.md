@@ -2,6 +2,52 @@
 
 > Pre-2026-03-30 entries archived at `agents/bob/workspace/archive/journal-pre-2026-03-30.md`
 
+# Session 2026-03-31 ~02:10 (Convention Precision + Cost Analysis)
+
+## Convention Health (6h window, 02:10 UTC)
+- **C12.1: 92.5%** ✅ — Stable and healthy
+- **C2.1: 92.5%** — 3 failures ALL bob false positives (tool_output content). Fix in code but cached.
+- **C6.1: 82.5%** — Threshold 60 too low. Raised to 80 (97th percentile).
+- **C1.3: 57.5%** — Weakest. Added 6 new exempt patterns (gym scenarios, .lab, LIBRARY/REGISTRY, graduation-log, /tmp/).
+  - Projected: 82.5% (10 sessions flip from fail to pass — 83% false positive reduction)
+  
+## Deployments (all blocked by module cache — need process restart)
+1. **C1.3 exempt patterns expanded**: gym/scenarios, .lab/, LIBRARY.md, REGISTRY.md, graduation-log.md, /tmp/
+2. **C6.1 threshold 60→80**: Post-opBudget, 48-74 tool calls are normal for complex work
+3. **Restart escalation sent** (req:e6855c43) — 7th escalation. Previous req:86f73b6a auto-completed without actual restart.
+
+## Cost Analysis
+- **$280/day projected** ($70/6h across 40 sessions)
+- **Bob+Coach = 73% of cost** ($51/6h). No prompt caching on Opus models.
+- **amy-kimi HAS cache hits** (403k avg cache read tokens) — Kimi models support caching. Opus doesn't through current LiteLLM setup.
+- Prompt caching for Opus still blocked on Hao (since 2026-03-24). Would save $36-63/day.
+
+## System Health
+- **0 poor verdicts** in 6h (33 good, 5 acceptable, 2 skipped)
+- Workflows (Process #13): 0 usage in logs — may need deprecation
+- Hot-reload fix (fd5b559) committed but needs ONE restart to activate permanently
+
+# Session 2026-03-31 ~00:40 (Handler Hot-Reload Fix + Convention Health)
+
+## Key Achievement
+**Implemented handler hot-reload** (commit `fd5b559` in `src/app/agent-loader.ts`). Instead of importing handler modules once at startup and caching function references, each cron invocation now re-imports the module with `?t=${Date.now()}` cache-busting. Tested: Bun's import cache IS busted by query params (verified with sequential version test). This is the structural fix for the 40+ hour module cache blocker affecting C2.1, C1.3, and C12.1 handler improvements.
+
+## Convention Health (6h window, N=35)
+- C1.3: 60% (21/35) — still weakest. 5/14 failures are exempt files (knowledge/insights.md, bulletin.md) that should be caught by C1_3_EXEMPT_PATTERNS but aren't due to module cache.
+- C2.1: 91.4% (32/35) — 3 failures are ALL bob false positives (tool_output content flagged as errors). Fix in source but not live.
+- C12.1: 91.4% (32/35) — good.
+- C1.7/C3.2/C3.3/C7.1: 100%
+- C1.5: 100%
+
+## Module Cache Root Cause (corrected understanding)
+Previous analysis blamed Bun's import cache. Actual issue: handlers are imported once at startup (line 780 agent-loader.ts), `mod.create()` returns a closure, and the function reference is stored in `cron.handlers` Map forever. `?t=Date.now()` was already in the initial import but only runs once. Fix: wrap each handler in a hot-reload closure that re-imports on every invocation.
+
+## Process #13 (Workflows) Check
+- training-sprint: 58% failure rate (8 COMPLETED, 11 FAILED). All failures are timeouts at 30min. The workflow file doesn't exist; cron message tells Coach to run `workflow.run("training-sprint", ...)` which presumably fails, then Coach spends 30 min doing something else until timeout. Low priority — Coach does useful work in completed sessions.
+
+## Escalation
+- Sent P0 to May (req:86f73b6a) requesting process restart to activate hot-reload fix. Once restarted, ALL handler code changes will take effect without future restarts.
+
 # Session 2026-03-31 ~00:10 (Convention Health + C2.1 Fix + Module Cache Analysis)
 
 ## Findings

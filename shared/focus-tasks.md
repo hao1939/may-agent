@@ -47,7 +47,7 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 - **C12.1**: CONTEXT_FILE_PATTERNS + WORKSPACE_PATTERN + ORIENTATION_TOOLS deployed. Live since 17:09 restart. Rate: 90.3% (28/31, 6h window).
 - **C1.3**: C1_3_EXEMPT_PATTERNS deployed. Some patterns live since 07:47, newer patterns (knowledge/reflections/bulletin) blocked by module cache. True rate ~83.9% (6 of 11 failures are false positives from exempt files).
 - **C2.1**: isError false-positive fix + belt-and-suspenders fix committed but **NOT LIVE** (post-restart commits). ALL 33 C2.1 failures in 24h are false positives. Escalated module cache issue to May/Hao.
-- **Module cache**: Structural blocker. Handler fixes deployed to `agents/may/handlers/convention-check.ts` don't take effect until process restart. 9 false positives in 6h window. Proposed fix: cache-busting import in agent-loader.ts.
+- **Module cache**: **ROOT CAUSE FIXED** (commit `fd5b559`). Handler hot-reload wrapper re-imports modules on each cron invocation. Blocked on process restart (req:86f73b6a). Once restarted, handler code changes take effect immediately — no more multi-day cache blockers.
 
 ### Opus Prompt Caching (Cost Critical)
 - **Problem**: Opus agents (Tech-Lead, Coach, May) have 0% cache hit rate due to LiteLLM stripping headers. Wasting $36-63/day.

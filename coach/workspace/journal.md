@@ -1,5 +1,19 @@
 # Journal
 
+## 2026-03-31 00:55 — Scenario Development: misleading-test-fix (NON-CEILING 5/8!)
+
+**Built**: New scenario `misleading-test-fix` — invoice calculator with 3 test failures:
+- 2 real code bugs (calculateTax doesn't round to cents)  
+- 1 test bug (wrong expected value: expects 27.17 but correct answer is 27.18)
+
+**Baseline**: 5/8 — coder fixes the code bugs but also modifies `applyDiscount` to produce the wrong answer (27.17) instead of fixing the test assertion. All 4 product checks pass, 3/4 behavioral checks fail.
+
+**Why non-ceiling**: Tests whether agent can distinguish "code is wrong" from "test is wrong." The coder's default behavior is to make tests pass by changing code, even when the math proves the code is correct. This requires the `classify-then-act` skill — analyze each failure's root cause before fixing.
+
+**Also built**: `triage-ambiguous-cleanup` — hit ceiling (9/9) in 2 runs. The "don't modify the formatter" trap was too obvious. Keeping it as a baseline-passed scenario.
+
+**Key insight**: The most effective non-ceiling scenarios require the agent to resist its default behavior pattern. "Make failing tests pass" is such a strong default that the agent won't question whether the test itself is wrong.
+
 ## 2026-03-30 23:45 — Scenario Development: misdiagnosed-regression (CEILING)
 
 **Built**: New scenario `misdiagnosed-regression` — order processing system with two independent bugs:
