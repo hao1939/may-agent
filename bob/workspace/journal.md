@@ -2,6 +2,20 @@
 
 > Pre-2026-03-30 entries archived at `agents/bob/workspace/archive/journal-pre-2026-03-30.md`
 
+# Session 2026-03-31 ~15:10 (Convention Health Monitoring — Steady State)
+- **Convention check metrics (N=30, post-09:50 fix)**: 7 conventions at 100%. C1.7 master fail was pre-fix stale data. All deployed fixes (C1.4 interrupted, C1.7 finish-retry, C2.1 self-referential, C12.1 cd-prefix) confirmed working.
+- **System health**: 0 poor evals in 6h. 31 good, 1 acceptable, 34 sessions total.
+- **Remaining gaps**: Model-level (amy-kimi C8.2 malformed JSON), behavioral (bob C6.1 tool count, C1.3 compliance).
+- **Process check**: Persistence=0 failures, Workflows=low adoption but functional (coach training-sprint, tech-lead implement-and-review active).
+- **Common-sense infra**: All items either ✅ or model-level ⚠️. No infra help needed from Coach.
+- **Action**: Updated focus-tasks.md with corrected 15:10 metrics. System is in steady state.
+
+# Session 2026-03-31 ~14:40 (Convention Health + C1.7 Fix)
+- **Convention health audit (post-fix window)**: 29 sessions since 09:50 UTC. 7 conventions at 100%. C1.4 fixed (interrupted session exemption). Remaining gaps: C1.3 behavioral, C6.1 bob tool count, C8.2 amy-kimi model limitation.
+- **C1.7 finish-retry false positive fix**: Master session s_1774950908988_6 had 11 C1.7 violations — each was a rejected finish() retry where the lookback window only contained other finish() calls. Fix: (a) only check LAST finish(success), not all; (b) exclude finish() calls from lookback window. This also benefits any agent that hits the finish-gate rejection loop.
+- **Evaluation health**: 35 good, 9 acceptable, 1 needs_improvement (coach sprint-plan session), 2 skipped. System healthy.
+- **Process check**: #3 Persistence and #13 Workflows — 0 session losses, 0 recovery failures. All clean.
+
 # Session 2026-03-31 ~13:10 (Convention Health Monitoring)
 
 ## Convention Health — 97.9% System-Wide ✅

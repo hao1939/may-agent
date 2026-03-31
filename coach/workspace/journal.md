@@ -1,5 +1,31 @@
 # Journal
 
+## 2026-03-31 15:09 — Heartbeat: Infra Bug Fix + Growth Cycle
+
+### Infrastructure Bug Found & Fixed
+- **Bug**: gym-runner.ts `exportTranscript()` only exported LAST phase's transcript for workflow scenarios
+- **Impact**: ALL workflow scenario behavioral checks were broken — they could only see Phase 3's tool calls, not the full multi-phase sequence. This caused every workflow variant to appear to regress vs baseline.
+- **Fix**: Added `exportCombinedTranscript()` function + `allPhaseResults[]` tracking in `test/gym/gym-runner.ts`
+- **Evidence**: materialize-intermediate-findings-workflow went from 5/9 (pre-fix) to 6/9 (post-fix), recovering `early-materialization` and `multiple-materializations` checks
+- **Implication**: Historical workflow experiment scores (exp-181 through exp-241) that used behavioral checks need reinterpretation — the 94%+ pass rate was for PRODUCT checks only, not behavioral checks which were silently broken
+
+### Growth Cycle: materialize-intermediate-findings (exp-265 to exp-267)
+- **Baseline (exp-265)**: 6/9 — fails early-materialization, cadence, finish-deliverables
+- **Workflow pre-fix (exp-266)**: 5/9 — broken transcript caused regression
+- **Workflow post-fix (exp-267)**: 6/9 — matches baseline but now with DIFFERENT pass/fail set
+  - Workflow gains: early-materialization, multiple-materializations ✓ 
+  - Workflow loses: low-ops (3-phase overhead pushes >25 ops)
+  - Both fail: regular-materialization-cadence, finish-references-deliverables
+- **Next**: `finish-references-deliverables` is a universal coder gap — investigate whether task.md instruction to include deliverables is being followed
+
+### Convention Analysis
+- **C12.1** (session-start): 0% for coder, ~3% for scout — systemic failure, needs investigation
+- **C1.3** (verify-writes): 0% for amy, 17-31% for others — same root cause as FM-3.3
+- **FM-3.3** (verification gaps): Dominant error across coder, coach, tech-lead
+
+### Files Modified
+- `test/gym/gym-runner.ts` — added `exportCombinedTranscript()` + `allPhaseResults` tracking
+
 ## 2026-03-31 10:08 — Heartbeat: Self-Coaching + Scenario Development + Skill Pipeline
 
 ### Pending Task: Review session s_1774947983325_9

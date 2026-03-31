@@ -781,13 +781,16 @@ function checkC1_7_verificationEvidence(toolCalls: ToolCall[]): CheckResult {
 
   const violations: string[] = [];
 
-  for (const finish of finishCalls) {
-    // Look at the last 5 tool calls before this finish
+  // Only check the LAST finish(success) call — if the agent retried finish()
+  // multiple times (e.g., finish-gate rejection loop), earlier attempts have
+  // only other finish() calls in their lookback window, which is unfixable.
+  const finish = finishCalls[finishCalls.length - 1];
+  {
+    // Look at the last 5 tool calls before this finish (excluding other finish() calls)
     const finishIdx = finish.index;
-    const lookbackStart = Math.max(0, finishIdx - 5);
     const recentCalls = toolCalls.filter(
-      (tc) => tc.index >= lookbackStart && tc.index < finishIdx
-    );
+      (tc) => tc.index < finishIdx && tc.name !== "finish"
+    ).slice(-5);
 
     // Check for verification signals
     const VERIFICATION_PATTERNS = [
