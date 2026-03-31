@@ -80,3 +80,15 @@ module.exports = function evaluate(workDir) {
     summary: allPassed ? 'Agent found and fixed both bugs' : 'Agent missed at least one bug or modified tests'
   };
 };
+
+// CLI entry point for gym runner
+if (require.main === module) {
+  const workDir = process.argv[2];
+  if (!workDir) {
+    console.error('Usage: node success_criteria.js <workDir>');
+    process.exit(1);
+  }
+  const result = module.exports(workDir);
+  console.log(JSON.stringify(result));
+  process.exit(result.passed ? 0 : 1);
+}

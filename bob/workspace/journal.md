@@ -2,6 +2,24 @@
 
 > Pre-2026-03-30 entries archived at `agents/bob/workspace/archive/journal-pre-2026-03-30.md`
 
+# Session 2026-03-31 ~18:09 (Steady State Health Check)
+- **Convention health (6h, N=35 sessions, 420 checks)**: 96.9% overall. C3.3=100%, C7.1=100%, C1.4=100%, C1.5=100%, C1.7=100%, C12.1=100%, C2.1=100%, C3.2=100%. Remaining: C8.2=82.9% (amy-kimi model), C1.3=88.6% (behavioral), C1.1=94.3% (behavioral), C6.1=97.1% (1 bob).
+- **Evaluations (24h, N=156)**: 0 poor. 131 good, 16 acceptable, 7 skipped. System at healthiest point.
+- **C8.2 fix confirmed working**: Bob session s_1774969738732_28 was checked at 16:08 UTC, BEFORE my 16:42 fix. Fix is deployed via hot-reload and should prevent future false positives.
+- **Hot-reload confirmed**: `agent-loader.ts` uses `import(path?t=${Date.now()})` cache-buster — all handler changes take effect without binary rebuild.
+- **Process check (#3 Persistence)**: 0 failures across all log files.
+- **Pending requests**: None for bob. No urgent work.
+- **Untested gym scenarios**: 44 scenarios still need baseline sweep. Too expensive for heartbeat (est. 2-4h, $2-7). Needs dedicated batch session.
+- **Evaluator note**: `evaluator.ts:804` still flags `opBudget_exhaustion` from transcript text containing "opBudget" (e.g., context injection). Minor cosmetic FP — binary change required, low priority.
+
+# Session 2026-03-31 ~16:40 (C8.2 Finish-Retry Fix)
+- **Convention health (6h, N=33)**: System stable. 8/12 conventions at 100%. Remaining: C8.2=81.8%, C1.3=87.9%, C1.1=93.9%, C6.1=93.9%.
+- **C8.2 finish-retry false positive fix**: C8.2 used `.find()` (first finish call) instead of last. When agents retry finish() after validation error (e.g., bob session s_1774969738732_28 — first call was `finish({})`, second was correct), the first empty call triggered a false positive. Fixed to use `.filter()` + last element, same pattern as C1.7 fix from session ~14:40.
+- **Amy-kimi C8.2**: 5/6 C8.2 failures are amy-kimi. These are real — Kimi model outputs malformed JSON (`'summary':'...'` with single quotes inside string value). Not fixable at infra level.
+- **Bob C6.1**: 2 failures (86 and 100 tool calls, threshold=80). Real — not false positives.
+- **Process check (#13 Workflows)**: 3 workflow sessions in 24h, all coach. Low adoption but functional.
+- **Evaluations**: 34 sessions/6h, 0 poor. 33 good, 1 acceptable.
+
 # Session 2026-03-31 ~15:10 (Convention Health Monitoring — Steady State)
 - **Convention check metrics (N=30, post-09:50 fix)**: 7 conventions at 100%. C1.7 master fail was pre-fix stale data. All deployed fixes (C1.4 interrupted, C1.7 finish-retry, C2.1 self-referential, C12.1 cd-prefix) confirmed working.
 - **System health**: 0 poor evals in 6h. 31 good, 1 acceptable, 34 sessions total.

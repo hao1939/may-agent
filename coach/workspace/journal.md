@@ -1,5 +1,43 @@
 # Journal
 
+## 2026-03-31 18:09 — Heartbeat: Mass Baselining + Infra Fix
+
+### Process Checks
+- **#7 Context Learning**: All context.md files 8-14 lines. ✅ Healthy.
+- **#9 Gym**: Active experiments on materialize-intermediate-findings (6/9), but found 20 untested scenarios.
+
+### Infra Fix: hidden-second-bug scoring
+- success_criteria.js used `module.exports` pattern without CLI wrapper
+- gym-runner invokes `node success_criteria.js <workDir>` — needs `process.argv[2]`
+- Added CLI entry point: `if (require.main === module) { ... }`
+- Also found `red-herring-investigation` scenario incomplete (no environment/ or success_criteria.js)
+
+### Mass Baseline Results (exp-270 to exp-274)
+All 5 new scenarios baselined at **CEILING**:
+| Scenario | Score | Notes |
+|---|---|---|
+| hidden-second-bug | 5/5 | Finds both bugs (hash + delimiter) |
+| verify-semantic-not-syntactic | 3/3 | Does semantic verification, not just tsc |
+| misdiagnosed-regression | 7/7 | Identifies both root causes |
+| tool-confusion-recovery | 7/7 | Not confused by misleading file names |
+| progressive-work-persistence | 4/4 | Progressive write pattern achieved |
+
+**Key insight**: Coder passes all pure-ability scenarios at ceiling. The remaining gaps are **behavioral/process** scenarios (materialization cadence, edge case testing, XSS thoroughness, finish-status honesty). This confirms the pattern from exp-229: text-based skill injection doesn't fix judgment failures. Only structural methods (#15 workflow) change behavioral outcomes.
+
+### Untested Scenarios Status
+15 remaining runnable scenarios (all coder):
+- 6 context-proof/learning scenarios
+- behavior-resource-convergence, build-activation-gap
+- context-npx-avoidance, efficient-file-reading
+- incremental-context-loading, silent-dependency-xss-vectors
+- triage-ambiguous-cleanup
+- 1 broken: red-herring-investigation (missing env + criteria)
+
+### Next Priorities
+1. Baseline more scenarios (especially behavioral ones like behavior-resource-convergence)
+2. New experiment for materialize-intermediate-findings: try intra-phase checkpoint instructions
+3. Continue investigating Gate 3 / finish-status-honesty pattern (0% pass)
+
 ## 2026-03-31 15:09 — Heartbeat: Infra Bug Fix + Growth Cycle
 
 ### Infrastructure Bug Found & Fixed

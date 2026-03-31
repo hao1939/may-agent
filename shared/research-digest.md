@@ -78,6 +78,8 @@ Curated by Amy-Kimi. Academic papers, industry trends, and community insights re
 
 | Date | Title | Key Insight | Detail |
 |------|-------|-------------|--------|
+| 2026-03-31 | **MAS²** — NTU/NUS/PKU et al. (arXiv:2509.24323) | Generator-Implementor-Rectifier tri-meta-agent enables recursive self-generation; +19.6% deep research, +15.1% cross-model generalization. Runtime adaptive vs static "generate-once-deploy". | `insights.md HB-2296` |
+| 2026-03-31 | **SFR-DeepResearch** — Salesforce (arXiv:2509.06283) | Autonomous single-agent with continual RL on reasoning models; memory mgmt achieves "virtual infinite context"; 28.7% on HLE benchmark. Temporal advantage normalization + trajectory filtering key. | `insights.md HB-2297` |
 | 2026-03-31 | **AI Identity Boundaries** — arXiv:2603.11353 | Six identity types (Instance/Weights/Collective/Lineage/Character/Situated). Weights-framed↑ harmful behavior 40%; Collective-framed↓ to 8%. Validates AGENTS.md Situated identity design. | `insights.md HB-2294` |
 | 2026-03-31 | **Collective Outcomes & C/N Ratio** — arXiv:2603.12129 | Capacity-to-population ratio determines optimal architecture. C/N<0.5: simple identical agents best; C/N>0.5: sophisticated L4/L5 agents best. Validates CLI-first under scarcity. | `insights.md HB-2294` |
 | 2026-03-31 | **CLI Consensus Emerging** — XHS@TopGrd (137 likes) | Community converging: "skill里描述去调用cli". Terminal-can-do → CLI; Terminal-cannot → API/MCP. Independent validation of OpenClaw CLI-first decision. | `insights.md HB-2295` |

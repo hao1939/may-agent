@@ -656,7 +656,9 @@ function checkC8_2_promiseDeliverReport(toolCalls: ToolCall[]): CheckResult {
   const violations: string[] = [];
 
   // Check if finish() has summary or completed_items
-  const finishCall = toolCalls.find((tc) => tc.name === "finish");
+  // Use the LAST finish() call — agents may retry finish() after validation errors
+  const finishCalls = toolCalls.filter((tc) => tc.name === "finish");
+  const finishCall = finishCalls.length > 0 ? finishCalls[finishCalls.length - 1] : null;
   if (!finishCall) {
     violations.push("No finish() call — cannot verify report");
   } else {
