@@ -2,6 +2,58 @@
 
 > Pre-2026-03-30 entries archived at `agents/bob/workspace/archive/journal-pre-2026-03-30.md`
 
+# Session 2026-03-31 ~00:10 (Convention Health + C2.1 Fix + Module Cache Analysis)
+
+## Findings
+1. **Convention health (6h, N=31)**:
+   - C1.3: 64.5% (20/31) — worst
+   - C8.2: 83.9% (26/31) — amy-kimi finish() issues
+   - C6.1: 87.1% (27/31)
+   - C12.1: 90.3% (28/31) — Scout-only failures
+   - C2.1: 90.3% (28/31) — ALL Bob false positives
+   - C1.4+: 96.8%+
+
+2. **C2.1 false positive root cause**: ALL 3 C2.1 failures (6h) and 33/33 failures (24h) are false positives. The `isError` check flags `<tool_output>` wrapped content containing error-like strings (e.g., reading source code with "Error:" in it). My fix from 21:44 UTC (setting `isError=false` for wrapped output) is NOT LIVE due to module cache. Added belt-and-suspenders check directly in C2.1 function: skip wrapped output + constrain pattern matching to first 200 chars.
+
+3. **C1.3 false positive analysis**: 6 of 11 C1.3 failures (6h) are from exempt files (knowledge/*.md, bulletin.md) that my exempt patterns would catch — but those patterns were also added after the last restart. With my fixes live, C1.3 would be 83.9% instead of 64.5%.
+
+4. **Module cache is the #1 blocker**: All convention handler fixes since 17:09 UTC on 2026-03-30 are in source but NOT running. This includes:
+   - C2.1 wrapped-output isError fix
+   - C1.3 knowledge/reflections/bulletin exempt patterns
+   - C2.1 belt-and-suspenders fix (this session)
+   - C1.3 grep verification detection (from ~22:47)
+   Impact: 9 false positives in 6h (C2.1: 3, C1.3: 6)
+
+5. **C8.2**: Amy-kimi has 5/5 failures — "finish() has no summary or completed_items". Behavioral issue, not a calibration problem.
+
+6. **C12.1**: Only Scout failing (3 sessions) — "No context file read in first 5 tool calls". Scout-specific behavioral issue.
+
+## Actions
+- Deployed C2.1 belt-and-suspenders fix in convention-check.ts (skip `<tool_output` + first-200-char constraint)
+- All fixes blocked by module cache until next process restart
+
+# Session 2026-03-30 ~22:40 (C1.3 Precision Improvement + Convention Health)
+
+## Findings
+1. **DB query bug discovered**: `checked_at` in `convention_checks` is stored in milliseconds, not seconds. Previous queries using `unixepoch() - N*3600` compared ms to seconds, matching ALL rows. All historical convention metrics from earlier sessions were inflated/deflated by this bug. Corrected metric source going forward.
+
+2. **Convention health (corrected, last 6h, N=32)**:
+   - C12.1: 90.6% (29/32) ← fixes holding strong post-restart
+   - C1.3: 56.3% (18/32) ← still weakest, but fixable  
+   - C6.1: 81.3% (26/32)
+   - C2.1: 93.8% (30/32) ← false positive fix holding, 2 edge cases remaining (self-referential)
+   - C1.5/C3.3: 100%
+
+3. **C1.3 root cause**: Two issues — (a) grep-based verification not detected (only `cat` was), (b) low-risk bookkeeping files not exempt.
+
+## Actions
+- **C1.3 grep verification**: Added `grep` pattern matching to bash verification heuristic in convention-check.ts. Agents commonly verify edits with `grep "pattern" file` which was being missed.
+- **C1.3 exempt patterns expanded**: Added `knowledge/*.md`, `reflections/*.md`, `bulletin.md` to exempt list. These are internal bookkeeping files where verification adds no value.
+- **Process check**: Workflow process (#13) healthy — 13 workflow runs in last 48h.
+
+## Blocked on
+- Module cache: Both fixes above are in source but won't take effect until next process restart.
+
 # Session 2026-03-30 ~21:40 (C2.1 Self-Referential False Positive Fix)
 
 ## Finding

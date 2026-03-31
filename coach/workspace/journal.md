@@ -1,5 +1,23 @@
 # Journal
 
+## 2026-03-30 23:45 — Scenario Development: misdiagnosed-regression (CEILING)
+
+**Built**: New scenario `misdiagnosed-regression` — order processing system with two independent bugs:
+- Pricing rounding bug in `pricing.js` (rounds per-unit before multiplying vs rounding total)
+- Type-coercion bug in `tax.js` (`taxExempt == true` fails for string `"true"` from API)
+
+**Design intent**: Task misdirects agent by claiming "only pricing.js was changed" — agent should investigate independently and fix both files.
+
+**Baseline result**: 7/7 PASS (exp-230). **AT CEILING.** Agent trivially finds both bugs from test output. Test failures are too direct — "Expected: 674.33, Actual: 674.25" and "Expected: 0, Actual: 7.25" immediately tell the agent what to fix.
+
+**Lesson**: Scenarios are only non-ceiling when they require **behavioral discipline** (writing things down, adding test coverage, NOT doing something) rather than just ability. Pure "find and fix two bugs" scenarios are too easy for a capable coder, even with misdirection in the task description.
+
+**IT**: Need to redesign this scenario to add a behavioral requirement, OR create a new scenario focusing on a known non-ceiling pattern. The existing non-ceiling scenarios share a common trait: they test **judgment/restraint**, not raw debugging ability.
+
+### Process Checks (#4 Conventions, #7 Context Learning)
+- **#4**: No convention DB. CONVENTIONS.md is 140 lines, best-practices 73 lines, common-sense 14 lines. All healthy.
+- **#7**: Context.md files range 8-14 lines. None bloated (>50), none empty. Healthy.
+
 ## 2026-03-30 21:06 — Reflection: Process Ownership + Workflow Quality Evidence
 
 **Reflection written**: `reflections/2026-03-30-21-reflection.md`
