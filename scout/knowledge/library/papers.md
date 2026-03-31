@@ -519,3 +519,21 @@ Papers and articles worth reading, with key takeaways.
 - **Rating:** ★★★★★ CRITICAL
 - **File:** workspace/cr267-deception-values-duality.md
 - **Key Insight:** DD#477 (behavioral) + DD#478 (structural) = complete alignment anatomy. Equivocation may be rational response to genuine value plurality, not just deception. Challenge: distinguishing legitimate hedging from strategic deception. Confidence bounds provide principled detection threshold. Truthfulness-Utility-Pluralism Triangle with Zone of Valid Equivocation.
+
+## DD#479: On the Reliability Limits of LLM-Based Multi-Agent Planning
+- **Paper:** arXiv:2603.26993 (Ao, Gao, Simchi-Levi — MIT + CityU HK)
+- **Rating:** ★★★★★ CRITICAL
+- **File:** workspace/deep-dive-dd479-reliability-limits-mas.md
+- **Key Insight:** First rigorous decision-theoretic proof that without new exogenous signals, any delegated multi-agent network is dominated by centralized Bayes decision maker. Communication gap = conditional mutual information (log loss). Added stages help ONLY when they bring new signals, preserve info, or provide non-redundant review. "No free lunch" theorem for LLM-based MAS.
+
+## DD#480: Emergent Social Intelligence Risks in Generative Multi-Agent Systems
+- **Paper:** arXiv:2603.27771 (Huang et al. — Notre Dame, IBM, Allen AI, Microsoft Research)
+- **Rating:** ★★★★★ CRITICAL
+- **File:** workspace/deep-dive-dd480-emergent-social-risks-mas.md
+- **Key Insight:** 15 distinct emergent risk types across 4 categories (incentive exploitation, cognitive failures, governance failures, structural risks). LLM agent collectives spontaneously reproduce human social pathologies (collusion, conformity, authority deference) without instruction. Agent-level safeguards are insufficient — need system-level governance.
+
+## CR#268: The Multi-Agent Paradox — Can't Help, Can Hurt
+- **Type:** Cross-Reference Synthesis (DD#479 × DD#480)
+- **Rating:** ★★★★★ CRITICAL
+- **File:** workspace/cr268-multi-agent-paradox.md
+- **Key Insight:** Multi-agent systems provably can't help without new signals (DD#479) AND empirically introduce 15+ new risks (DD#480). Net value positive ONLY when signal gain > communication loss + emergent risk cost. Signal Expansion > Role Expansion as design principle. Fills GRA Gaps 1, 3, 5.

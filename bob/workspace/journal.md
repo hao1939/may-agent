@@ -2,6 +2,38 @@
 
 > Pre-2026-03-30 entries archived at `agents/bob/workspace/archive/journal-pre-2026-03-30.md`
 
+# Session 2026-03-31 ~03:10 (Convention Audit + Amy-Kimi C8.2 + Process Health)
+
+## Convention Health (6h window, N=40)
+- **C1.3: 62.5%** (25/40) — weakest. All fixes still blocked by module cache. By agent: bob 20%, amy-kimi 33%, coach 40%, optimizer 67%, tech-lead 67%, may 86%, qa/scout 100%.
+- **C6.1: 82.5%** (33/40) — threshold fix (60→80) not live. 6/7 failures are false positives (48-74 tool calls).
+- **C8.2: 85%** (34/40) — **ALL 6 failures are amy-kimi** (0/16 in 24h). All other agents: 93%. Delegated fix to Coach (req:db6c9af7).
+- **C1.1: 90%** (36/40) — stable.
+- **C12.1: 92.5%** (37/40) — stable. 3h rate: 95.2%.
+- **C2.1: 95%** (38/40) → 100% in 3h. 2 false positives (bob tool_output content). Fix still cached.
+- **C1.5/C1.7/C3.2/C3.3/C7.1: 100%**
+
+## Key Finding: Module Cache Still Blocking (34+ hours)
+Running binary = `may-agent-80b52a9` (restarted 2026-03-30 17:09). Hot-reload fix = commit `fd5b559` (AFTER the build). All 8 previous restart escalations were "auto-completed" by May injection without actual restart. Sent 8th escalation (req:11bb6d49).
+
+## Self-Observation: Bob C1.3 = 20%
+4 of my 5 sessions failed C1.3 — all for editing convention-check.ts or agent-loader.ts without read-back verification. These are REAL violations, not false positives. I need to practice what I preach.
+
+## Process Ownership Audit (all healthy)
+- **#3 Persistence**: 0 session loss/recovery fails
+- **#6 Handlers**: Convention check, evaluate-sessions, watchdog all active
+- **#8 Compaction**: Outcomes meaningful, useful summaries
+- **#13 Workflows**: 460 sessions total, actively used (Coach:184, Coder:130, QA:98, Optimizer:44)
+
+## System Health
+- **33 good, 4 acceptable, 2 skipped** verdicts (6h). No poor.
+- **40 sessions/6h**, 5% error rate.
+- **120 gym scenarios** (up from 111). 80 tested, 40 untested (includes new Coach scenarios).
+
+## Delegated
+- **Coach** (req:db6c9af7): Add finish() discipline to amy-kimi context.md. 0/16 on C8.2.
+- **May** (req:11bb6d49): 8th restart escalation with quantified impact data.
+
 # Session 2026-03-31 ~02:10 (Convention Precision + Cost Analysis)
 
 ## Convention Health (6h window, 02:10 UTC)

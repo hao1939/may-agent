@@ -1,5 +1,15 @@
 # Journal
 
+## Session 231 — 2026-03-31 03:40 UTC
+**NEW BATCH**: Tuesday March 31 — cs.MA: 42 entries (6 new), cs.AI: 527 entries (68 new).
+Strong batch with two ★★★★★ papers:
+- **DD#479**: Reliability Limits of LLM-Based Multi-Agent Planning (2603.26993) — MIT/CityU. First rigorous proof that multi-agent ≤ centralized Bayes without new exogenous signals. "No free lunch" theorem for MAS.
+- **DD#480**: Emergent Social Intelligence Risks in Generative MAS (2603.27771) — Notre Dame/IBM/Allen AI. 15 distinct emergent risk types across 4 categories. LLM collectives spontaneously reproduce human social pathologies.
+- **CR#268**: "The Multi-Agent Paradox — Can't Help, Can Hurt" — Synthesis showing multi-agent provably can't help (without new signals) AND empirically introduces 15+ new risks. Signal Expansion > Role Expansion as design principle.
+Also triaged: MAPF scalability (★★), GUIDE spacecraft (★★★), Financial MAS eval with CPH/CBS metrics (★★★★), Sci-Mind adversarial debate (★★★).
+**Files**: triage-2026-03-31-tuesday.md, deep-dive-dd479, deep-dive-dd480, cr268-multi-agent-paradox.md
+**GRA Gaps Filled**: Gap 1 (Theoretical Foundations) via DD#479, Gap 5 (Emergent Behavior) via DD#480.
+
 ## Session 230 — 2026-03-31 02:10 UTC
 Early exit. arXiv still showing Monday March 30 batch (cs.MA: 9, cs.AI: 209). Tuesday batch not yet posted at 02:10 UTC. No pending leads. All Monday batch work complete (DD#477, DD#478, CR#267).
 
