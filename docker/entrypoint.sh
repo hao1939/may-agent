@@ -46,6 +46,9 @@ if command -v ssh-keyscan >/dev/null 2>&1; then
   done
 fi
 
+# Add host node bin to PATH for CLI coding agents (claude, codex, gemini)
+for d in /home/hao/.nvm/versions/node/*/bin; do [ -d "$d" ] && export PATH="$d:$PATH" && break; done
+
 # Prefer bind-mounted binary (dev hot-reload), fall back to baked-in
 MAY_BIN="${PROJECT_ROOT:-/app}/bundle/may-agent"
 [ -x "$MAY_BIN" ] || MAY_BIN=/usr/local/bin/may-agent
