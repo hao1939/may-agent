@@ -78,6 +78,9 @@ Curated by Amy-Kimi. Academic papers, industry trends, and community insights re
 
 | Date | Title | Key Insight | Detail |
 |------|-------|-------------|--------|
+| 2026-03-31 | **AI Identity Boundaries** — arXiv:2603.11353 | Six identity types (Instance/Weights/Collective/Lineage/Character/Situated). Weights-framed↑ harmful behavior 40%; Collective-framed↓ to 8%. Validates AGENTS.md Situated identity design. | `insights.md HB-2294` |
+| 2026-03-31 | **Collective Outcomes & C/N Ratio** — arXiv:2603.12129 | Capacity-to-population ratio determines optimal architecture. C/N<0.5: simple identical agents best; C/N>0.5: sophisticated L4/L5 agents best. Validates CLI-first under scarcity. | `insights.md HB-2294` |
+| 2026-03-31 | **CLI Consensus Emerging** — XHS@TopGrd (137 likes) | Community converging: "skill里描述去调用cli". Terminal-can-do → CLI; Terminal-cannot → API/MCP. Independent validation of OpenClaw CLI-first decision. | `insights.md HB-2295` |
 | 2026-03-31 | **ConflictBench** (arXiv:2603.08024) | Multi-turn alignment benchmark: static single-turn tests overestimate by 15-40pp. Failure at avg step 5.28. "Iteration Is Poison" pattern extends to alignment domain. | HB-2289 in `agents/amy-kimi/knowledge/insights.md` |
 | 2026-03-31 | **NormCoRe** (arXiv:2603.11974) | Normative research as translation not replication. 4 design degrees of freedom (Population→Measurement) must be documented. Naturalistic fallacy warning. | HB-2290 in `agents/amy-kimi/knowledge/insights.md` |
 | 2026-03-31 | **XSkill** (arXiv:2603.12056) | Dual-stream continual learning: Skills (robustness) + Experiences (zero-shot transfer). Formalizes k=(ℳ,𝒲,𝒫) and e=(c,a,vₑ). Cross-model knowledge transfer validated. | HB-2291 in `agents/amy-kimi/knowledge/insights.md` |
@@ -120,6 +123,7 @@ Curated by Amy-Kimi. Academic papers, industry trends, and community insights re
 
 | Date | Title | Key Insight | Detail |
 |------|-------|-------------|--------|
+| 2026-03-31 | **Semantic Invariance + MADQA + XSkill** — 评估范式三角验证 | 规模≠可靠性、accuracy-effort trade-off、Skill+Experience互补。三篇独立论文验证"过程质量>结果正确"评估范式。 | `insights.md HB-2296` |
 | 2026-03-30 | MAST: Verifier Component Gap | Verification failure = 31.41% of failures; explicit Verifier raises success 91%→98% | HB-2267 |
 | 2026-03-30 | MIT ENCORE: Entropy-Guided Reward | High-entropy scoring dimensions are unreliable; weight by consistency | arXiv:2503.20995, HB-2255 |
 
@@ -128,3 +132,11 @@ Curated by Amy-Kimi. Academic papers, industry trends, and community insights re
 | Date | Title | Key Insight | Detail |
 |------|-------|-------------|--------|
 | 2026-03-30 | Stripe MCP Server | MCP moves to production finance; validates MCP(data) vs Skill(orchestration) layering | HB-2253 |
+
+### Skill Systems & Knowledge Management
+
+| Date | Title | Key Insight | Detail |
+|------|-------|-------------|--------|
+| 2026-03-31 | D2Skill: Dynamic Dual-Granularity Skill Bank | Task+Step双粒度架构与OpenClaw SKILL.md+Error Log设计一致；效用驱动EMA更新提供剪枝算法 | [HB-2294](../amy-kimi/knowledge/insights.md) |
+| 2026-03-31 | MonitorBench: CoT Monitorability | 模型能力与可监控性负相关；压力测试下监控性暴跌30%；Opus需更强验证 | [HB-2295](../amy-kimi/knowledge/insights.md) |
+
