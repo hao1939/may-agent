@@ -24,7 +24,7 @@ Each skill has ONE status:
 | Skill | Status | Works When | Fails When | Deployed To | Gym Evidence |
 |-------|--------|------------|------------|-------------|--------------|
 | grep-first-reading | ⚪ untested | | | | needs gym test |
-| evidence-over-narrative | ⚪ untested | | | | needs gym test |
+| evidence-over-narrative | 🧪 testing | Phantom-fix scenarios (tests pass, misleading comment) | misleading-test-fix: text injection failed to reach agent (prompt_hash identical). Need workflow approach. | | 2026-03-31: 5/8 baseline, 5/8 patched (no effect — injection didn't modify prompt) |
 | check-state | ⚪ untested | | | | needs gym test |
 | task-adherence | ⚪ untested | | | | needs gym test |
 | verify-before-finish | ❌ disproven | N/A | Bug-fix tasks where edge-case test is expected (partial-verification-trap: 5/6 same as baseline) | | exp-229: text injection has zero effect on behavior. Method #15 workflow-enforcement needed instead. |

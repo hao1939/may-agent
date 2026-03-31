@@ -1,0 +1,12 @@
+{
+  "name": "misleading-test-fix-workflow",
+  "categories": ["judgment", "root-cause"],
+  "tags": ["behavioral", "discipline", "diagnosis", "workflow"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": true,
+  "baseline_score": "11/11",
+  "baseline_status": "CEILING",
+  "description": "Workflow variant of misleading-test-fix. Forces agent to write ANALYSIS.md diagnosing each failure's root cause (code bug vs test bug) BEFORE editing any code. Demonstrates Method #15 workflow enforcement for root-cause diagnosis."
+}
