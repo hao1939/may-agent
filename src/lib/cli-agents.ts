@@ -212,6 +212,7 @@ export function spawnCliAgent(
           ANTHROPIC_BASE_URL: process.env.MODEL_BASE_URL ?? process.env.ANTHROPIC_BASE_URL ?? "",
           OPENAI_BASE_URL: (process.env.MODEL_BASE_URL ?? process.env.OPENAI_BASE_URL ?? "") + "/v1",
           OPENAI_API_KEY: process.env.OPENAI_API_KEY ?? "dummy",
+          GEMINI_API_KEY: process.env.GEMINI_API_KEY ?? "dummy",
         },
         stdio: ["ignore", "pipe", "pipe"],
         detached: false,
@@ -443,8 +444,9 @@ export function createGeminiCliTool(opts: GeminiCliToolOptions): AgentTool {
 
       const env: NodeJS.ProcessEnv = {
         ...process.env,
+        PATH: CLI_PATH,
         GEMINI_API_KEY: apiKey,
-        GOOGLE_GEMINI_BASE_URL: baseUrl,
+        GOOGLE_GEMINI_BASE_URL: process.env.MODEL_BASE_URL ?? baseUrl,
       };
 
       try {
