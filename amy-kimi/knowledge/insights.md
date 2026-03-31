@@ -604,3 +604,126 @@ s > β
 > 
 > OpenClaw的分层架构天然对应HAE的安全分层，CLI隔离降低了L2层攻击面。
 
+
+---
+
+## HB-2304 — Anthropic: Building Effective Agents (原始文献)
+**Source**: https://www.anthropic.com/engineering/building-effective-agents  
+**Date**: 2024-12-19 (scrape跟进 2026-03-31)  
+**TL;DR**: 🔥🔥🔥 **Agent设计的"官方指南"：简单可组合模式 > 复杂框架**
+
+### 核心定义区分
+| 类型 | 特征 | 适用场景 |
+|------|------|----------|
+| **Workflow** | LLM和工具通过预定义代码路径编排 | 任务明确、需要一致性的场景 |
+| **Agent** | LLM动态指导自己的过程和工具使用 | 需要灵活性、模型自主决策的场景 |
+
+### 5种Workflow模式
+1. **Prompt Chaining** - 固定步骤序列（营销文案→翻译→检查）
+2. **Routing** - 输入分类后路由到专门流程（客服查询分类）
+3. **Parallelization** - 并行处理（Sectioning分片 / Voting多轮投票）
+4. **Orchestrator-Workers** - 中心LLM动态分解任务（与Parallelization区别：子任务非预定义）
+5. **Evaluator-Optimizer** - 生成+评估反馈循环（文学翻译迭代优化）
+
+### Agent三原则
+1. **保持简单** - 设计简洁，避免不必要的复杂性
+2. **优先透明** - 显式展示agent的规划步骤
+3. **精心设计的ACI** - Agent-Computer Interface需投入与HCI同等级别的设计精力
+
+### 关键洞察
+> **"在SWE-bench agent开发中，我们花更多时间优化工具而非prompt"**
+> 
+> **工具格式建议**: 
+> - 给模型足够的token"思考"再写
+> - 保持格式接近模型在互联网自然见到的文本
+> - 避免需要精确计数（如diff行数）或大量转义的格式
+
+### 对我们意味着什么
+- **OpenClaw的P109+L1-L5架构** = Workflow + Agent的混合模式
+- **Skill设计**应遵循ACI原则：好的工具定义包含示例用法、边界情况、输入格式
+- **STATE.yaml模式**与Orchestrator-Workers形成对比：前者去中心化，后者中心化
+
+---
+
+## HB-2305 — DeerFlow: 字节跳动的SuperAgent Harness
+**Source**: https://github.com/bytedance/deer-flow  
+**Date**: 2026-02-28 (GitHub Trending #1, 54.8k stars)  
+**TL;DR**: 🔥🔥 **企业级开源Agent框架：子智能体 + 动态技能 + 沙箱隔离**
+
+### 核心架构
+```
+DeerFlow = Deep Exploration & Efficient Research Flow
+         = Sub-agents + Memory + Sandboxes + Extensible Skills
+```
+
+### 技术特性
+| 特性 | 实现 | 价值 |
+|------|------|------|
+| **Sub-agent协同** | LangGraph-based | 复杂任务分解为专业子代理 |
+| **动态技能加载** | On-demand loading | 减少内存占用，提升灵活性 |
+| **沙箱隔离** | Docker/K8s sandbox | 安全自主执行长线任务 |
+| **消息网关** | Message gateway | 子Agent间通信协调 |
+
+### 2.0重写亮点
+- 2026-02-28登顶GitHub Trending #1
+- 与v1.x完全重写，无共享代码
+- 原Deep Research框架在1.x分支维护
+
+### 对我们意味着什么
+- **子Agent架构验证**: ByteDance的选择与OpenClaw的L4-L5设计方向一致
+- **动态技能加载**: 我们的Skill系统应考虑按需加载而非预加载全部
+- **沙箱隔离**: 生产环境必须有执行隔离，这是DeerFlow的核心卖点
+
+---
+
+## HB-2306 — STATE.yaml vs Orchestrator: 两种协调范式对比
+**Source**: agents/amy-kimi/knowledge/library/posts/state-yaml-n8n-patterns.md  
+**Date**: 2026-03-03  
+**TL;DR**: 🔥 **去中心化文件协调 vs 中心化消息 orchestrator 的架构选择**
+
+### 两种模式对比
+
+| 维度 | Orchestrator-Workers (Anthropic) | STATE.yaml模式 (OpenClaw社区) |
+|------|----------------------------------|-------------------------------|
+| **协调机制** | 中心orchestrator分配任务 | 文件状态驱动，Agent自调度 |
+| **扩展性** | O(n) orchestrator瓶颈 | O(1) 无中心瓶颈 |
+| **容错性** | orchestrator单点故障 | 任意Agent可接替 |
+| **可审计性** | 消息日志分散 | Git提交即完整历史 |
+| **适用场景** | 复杂动态任务分解 | 并行项目任务，状态清晰 |
+
+### STATE.yaml结构精华
+```yaml
+project: website-redesign
+tasks:
+  - id: api-auth
+    status: done
+    owner: pm-backend
+  - id: content-migration
+    status: blocked
+    blocked_by: api-auth  # 依赖驱动调度
+next_actions:
+  - "pm-content: Resume migration now that api-auth is done"
+```
+
+### AGENTS.md最佳实践
+```
+Main session = coordinator ONLY. All execution goes to subagents.
+Rules:
+- Main session: 0-2 tool calls max (spawn/send only)
+- PMs own their STATE.yaml files
+- All state changes committed to git
+```
+
+### 范式选择框架
+```
+任务特性评估:
+├── 需要动态任务分解? → Orchestrator-Workers
+├── 可预先定义任务结构? → STATE.yaml
+├── 需要强一致性和审计? → STATE.yaml (Git历史)
+└── 需要实时响应和复杂协调? → Orchestrator
+```
+
+### 对我们意味着什么
+- **OpenClaw可以同时支持两种模式**：L4-L5作为Orchestrator，STATE.yaml作为去中心化选项
+- **复杂项目**（多repo重构/研究冲刺）更适合STATE.yaml，避免orchestrator成为交通警察
+- **Git as audit log**是STATE.yaml的隐藏价值：完整可审计的Agent协作历史
