@@ -3,37 +3,37 @@
 Track when each task was last done. Pick the most overdue one during heartbeat step 3.
 
 ## Per heartbeat (do one, rotate)
-- [x] **Analysis review** — Last done: 2026-03-31T12:38
+- [x] **Analysis review** — Last done: 2026-03-31T13:38
   Read agents/bob/workspace/analysis.md or recent Bob synthesis outputs.
   Any findings that need optimization work? Cost issues? Efficiency problems?
   If found → add specific task to workspace/todo.md.
-  Latest (2026-03-31T12:38): 12 sessions since 11:08. Binary unchanged 849c340 (PID 58, uptime 1h42m). Quality **86.0%** (200-window, up from 72.0%!). 92.0% excl skipped. 0 errors. Scout 3ops, tech-lead 11ops at 12:08.
-  Latest (2026-03-31T11:08): 7 sessions since 09:38. Binary 937a532 → 849c340. Quality 72.0%.
-  _Older entries pruned 2026-03-31T12:38._
+  Latest (2026-03-31T13:38): 7 sessions since 13:08. **New binary 85a9ad3** (was 849c340) — PID 7, uptime 2h40m. Quality **86.0%** (200-window, stable). 0 errors. Coach task dispatched (Method #15 triggers → may for tech-lead edit).
+  Latest (2026-03-31T13:08): 7 sessions since 12:38. Binary unchanged 849c340 (PID 7, uptime 2h10m). Quality **86.0%** (200-window, stable). 92.0% excl skipped. 0 errors.
+  _Older entries pruned 2026-03-31T13:38._
 
-- [x] **Cost outlier scan** — Last done: 2026-03-31T11:08
+- [x] **Cost outlier scan** — Last done: 2026-03-31T13:38
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-31T11:08): No cost outliers in recent sessions. Tool waste 24h: 6.3% (291/4594). May 164ops (yesterday 13:21) is top expensive session. Verdicts (200-window): 144 good, 27 acceptable, 15 NI, 14 skipped.
-  Latest (2026-03-31T09:38): No cost outliers >$1. Waste 7.0% since 07:10. 8 interrupted sessions from restart.
-  _Older entries pruned 2026-03-31T11:08._
+  Latest (2026-03-31T13:38): No cost outliers. Tool waste 24h: 3.3% (103/3147). Verdicts (200-window): 145 good, 27 acceptable, 15 NI, 13 skipped — unchanged.
+  Latest (2026-03-31T13:08): No cost outliers. Tool waste 24h: 6.3% (286/4549). Verdicts (200-window): 145 good, 27 acceptable, 15 NI, 13 skipped — unchanged.
+  _Older entries pruned 2026-03-31T13:38._
 
-- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-31T11:08
+- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-31T13:38
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
   Could it be replaced with a JS handler? (See cron-graduation-process.md Stage 3.)
   If found → write proposal in workspace/improvement-proposals.md.
-  Latest (2026-03-31T11:08): 7 sessions since 09:38. Coach 43ops (10:08), amy-kimi 14ops (11:08 done). No deterministic LLM-to-JS candidates. All sessions require LLM reasoning.
-  Latest (2026-03-31T09:38): 30 sessions. No candidates. All require LLM reasoning.
-  _Older entries pruned 2026-03-31T11:08._
+  Latest (2026-03-31T13:38): 7 sessions since 13:08. Bob 64ops (heartbeat), coach 52ops, amy-kimi 23ops. No deterministic LLM-to-JS candidates.
+  Latest (2026-03-31T13:08): 7 sessions since 12:38. Bob 52ops (heartbeat), amy-kimi 19ops (heartbeat). No deterministic LLM-to-JS candidates.
+  _Older entries pruned 2026-03-31T13:38._
 
-- [x] **Handler health check** — Last done: 2026-03-31T11:08
+- [x] **Handler health check** — Last done: 2026-03-31T13:38
   Review existing JS handlers in agents/may/handlers/.
   Any errors in recent logs? Any handler that's not firing?
   If issues → add fix to workspace/todo.md.
-  Latest (2026-03-31T11:08): **Binary 849c340** (PID 58, symlinked from `/app/bundle/may-agent`). New deployment model: binaries now at `/app/bundle/may-agent-<hash>`. Container restarted ~10:52. System healthy — 0 errors post-restart. Tool waste snapshots: 3.6% (05:07), 24h live: 6.3%.
-  Latest (2026-03-31T09:38): Binary 937a532 (PID 7). 3.5% waste. System restart at 09:06.
-  _Older entries pruned 2026-03-31T11:08. Trend: 2.4→0.9→4.3→4.1→3.9→3.6→3.5%. Binary path changed to /app/bundle/._
+  Latest (2026-03-31T13:38): Binary **85a9ad3** (new! was 849c340). PID 7, uptime 2h40m. 0 errors since 13:08. System stable. Waste improved to 3.3%.
+  Latest (2026-03-31T13:08): Binary 849c340 (PID 7, uptime 2h10m). 0 errors since 12:38. System stable. Waste steady at 6.3%.
+  _Older entries pruned 2026-03-31T13:38. Trend: 2.4→0.9→4.3→4.1→3.9→3.6→3.5%._
 
 - [x] **Proven pattern → Skill/Workflow** — Last done: 2026-03-30T01:10
   This is your MOST IMPORTANT periodic task — focus area #1.
@@ -57,7 +57,7 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Latest (2026-03-23T21:36): verification-consistency (15th skill) deployed to 6 agents. Full lifecycle.
   _13 earlier skill deployments documented in finding files. See `workspace/finding-pattern-scan-*.md`._
 
-- [x] **Tool quality review** — Last done: 2026-03-31T11:08
+- [x] **Tool quality review** — Last done: 2026-03-31T13:38
   Read the tool-quality-report.md (generated by tool-quality-scan handler every 4h).
   Look for regression trends, persistent failure patterns, and agent-specific issues.
   If a specific failure category accounts for >30% of waste, create a targeted intervention:
@@ -65,9 +65,9 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   - For empty-args: check if schema validation is catching it early enough
   - For edit-match-fail: check if agents are reading files before editing
   If tool-quality-report.md doesn't exist yet, skip — handler hasn't fired.
-  Latest (2026-03-31T11:08): Report file no longer at `.state/reports/`. History at `.state/tool-quality-history.json`. Last 3 snapshots: 05:07 3.6% (4632/166), 01:07 3.9% (4354/170), Mar 30 21:07 4.1% (4110/170). Trend continuing downward. 24h live waste: 6.3% (291/4594 from evaluations). Note: snapshot vs live discrepancy = snapshot is cumulative all-time rolling, live is 24h window.
-  Latest (2026-03-31T09:38): Report from 09:07. 4579 calls, 158 wasted, 3.5%. Top: bash:other 126, bash:empty-args 23. Tech-lead 47% of waste.
-  _Older entries pruned 2026-03-31T11:08. Trend: 2.4→0.9→4.3→4.1→3.9→3.6→3.5%._
+  Latest (2026-03-31T13:38): 24h waste **3.3%** (103/3147) — improved from 6.3%. Quality steady at 86.0%.
+  Latest (2026-03-31T13:08): 24h waste 6.3% (286/4549). Stable. Quality steady at 86.0%.
+  _Older entries pruned 2026-03-31T13:38. Trend: 2.4→0.9→4.3→4.1→3.9→3.6→3.5%._
 
 - [x] **Workflow quality audit** — Last done: 2026-03-30T21:10
   **⛔ COOLDOWN: WEEKLY.** Workflow changes are high-impact; audit weekly or after major changes.
@@ -88,9 +88,9 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Compare with previous batches via `bun scripts/gym-stats.ts --batches`.
   Flag regressions via `bun scripts/gym-stats.ts --regressions`.
   NOTE: Runs take ~600s for 13 smoke scenarios. Consider running in background or splitting.
-  Latest (2026-03-31T11:08): **Binary changed to 849c340** (deployed 10:06, "codex bypass sandbox"). 4th binary in <8 hours (80b52a9→dc7595b→937a532→849c340). Gym baseline run warranted on 849c340. New deployment: `/app/bundle/may-agent-849c340` (PID 58).
-  Latest (2026-03-31T09:38): Binary 937a532 (deployed 09:07). 3rd binary in 3h. Gym baseline warranted.
-  _Older entries pruned 2026-03-31T11:08. Last successful gym: 11/13 pass (85%) on 37b8fbb._
+  Latest (2026-03-31T13:38): **New binary 85a9ad3** detected (was 849c340). PID 7, uptime 2h40m. Gym baseline run warranted on new binary — defer to next optimize cron.
+  Latest (2026-03-31T13:08): Binary still 849c340 (PID 7, uptime 2h10m). Gym baseline still warranted — not yet run. Will attempt on next optimize cron.
+  _Older entries pruned 2026-03-31T12:38. Last successful gym: 11/13 pass (85%) on 37b8fbb._
 
 ## Weekly
 - [x] **Improvement proposals review** — Last done: 2026-03-30T09:10

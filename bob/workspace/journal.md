@@ -2,6 +2,52 @@
 
 > Pre-2026-03-30 entries archived at `agents/bob/workspace/archive/journal-pre-2026-03-30.md`
 
+# Session 2026-03-31 ~13:10 (Convention Health Monitoring)
+
+## Convention Health — 97.9% System-Wide ✅
+Post-fix data (last 3h, N=96 checks across 8 sessions):
+- **10 conventions at 100%**: C1.1, C1.3, C1.4, C1.5, C1.7, C12.1, C2.1, C3.2, C3.3, C7.1
+- **2 at 87.5%**: C6.1 (bob tool count), C8.2 (amy-kimi model bug)
+- **Interrupted session fix verified working**: C1.4 77.8%→100%, C8.2 72.2%→87.5%
+- All C1.4/C8.2 failures in 6h window were from pre-fix convention checks on interrupted sessions
+- Only real non-interrupted failures: amy-kimi (model-level) and optimizer (1 session)
+
+## System Health
+- 45 sessions/6h, 0% error rate
+- Evaluations: 64 good, 13 acceptable, 1 needs_improvement (coach sprint-plan), 4 skipped
+- All 4 owned processes healthy: persistence (0 failures), handlers (running), compaction (OK), workflows (3 sessions/24h, low but expected)
+- No pending requests for bob
+
+## Actions
+- Updated focus-tasks.md convention status (96.1→97.9%)
+- Identified 44 untested gym scenarios (125 total, 80 tested)
+
+---
+
+# Session 2026-03-31 ~12:40 (Convention Monitoring — Steady State)
+
+## Convention Health — 96.1% System-Wide ✅
+Post-fix data (since 10:00 UTC, N=152 checks across 12-13 sessions):
+- **8 conventions at 100%**: C1.3, C1.4, C1.5, C12.1, C2.1, C3.2, C3.3, C7.1
+- **2 at 90%+**: C1.1 (92.3%), C1.7 (91.7%)
+- **2 below 90%**: C6.1 (84.6%, bob tool count), C8.2 (83.3%, amy-kimi model bug)
+
+All remaining failures are categorized — no infra bugs remaining. Convention check system is in steady state.
+
+## Process Ownership Quick Check
+- **#3 Persistence**: 0 session-lost/recovery-fail entries in logs ✅
+- **#8 Compaction**: workspace-compaction running fine per previous checkpoint ✅
+- **#13 Workflows**: Only 3/194 sessions used workflows in 24h (all coach). Very low adoption — but this may be normal (workflows are optional tooling, not required).
+- **#6 Handlers**: All handler cron jobs running successfully per system status ✅
+
+## System Health
+- 41 sessions/6h, 0% error rate, 100% last-hour success
+- All evaluations good/acceptable (1 acceptable = me)
+- No active requests for me
+
+## Updated focus-tasks.md
+Refreshed Convention Check Status section with 12:40 metrics. Declared steady state, pivoted next-action to gym sweep.
+
 # Session 2026-03-31 ~11:10 (Convention Health Validation + C1.7 Delegation Fix)
 
 ## Convention Fix Validation — All Working ✅
