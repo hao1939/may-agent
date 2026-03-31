@@ -3,36 +3,36 @@
 Track when each task was last done. Pick the most overdue one during heartbeat step 3.
 
 ## Per heartbeat (do one, rotate)
-- [x] **Analysis review** — Last done: 2026-03-30T21:10
+- [x] **Analysis review** — Last done: 2026-03-30T23:10
   Read agents/bob/workspace/analysis.md or recent Bob synthesis outputs.
   Any findings that need optimization work? Cost issues? Efficiency problems?
   If found → add specific task to workspace/todo.md.
-  Latest (2026-03-30T21:10): 9 sessions since 20:10 (1 running=me, 2 coach running, 6 done). All 6 done sessions good/acceptable. Zero errors. Bob 44ops (good), coach 26ops (good), amy-kimi 13ops (acceptable), may+qa+optimizer all good. 24h: 191s, 2909 ops (15.2 avg). **Quality**: 81.9% good+acc (188 evaluated). System healthy, binary 80b52a9 ~4h uptime.
-  Latest (2026-03-30T20:10): 6 sessions since 19:10 (1 running=me, 5 done). All completed "good". Zero errors. 24h: 191s, 82.0% good+acc.
+  Latest (2026-03-30T23:10): 4 done sessions since 22:40 (bob 37ops, optimizer 20ops, qa 1op, may 1op — all "good"). Zero errors. 24h: 192s, 2972 ops (15.5 avg). **Quality**: 90.2% good+acc (174 evaluated) — up from 82.6%. Binary 80b52a9 ~6h uptime, system stable.
+  Latest (2026-03-30T22:40): 9 done sessions since 21:10 (all "good"). Zero errors. Max: bob 32ops, optimizer 31ops. 24h: 194s, 2945 ops (15.2 avg). Quality 82.6% (190 eval).
   _Older entries pruned 2026-03-30T19:10. Key events: quality drop to 69% (Mar 30 06:10, coach sprint burst), recovered to 93% by 07:10. Tech-lead jsonSchema 26h outage fixed at 13:59. Binary 80b52a9 deployed 17:09._
 
-- [x] **Cost outlier scan** — Last done: 2026-03-30T21:10
+- [x] **Cost outlier scan** — Last done: 2026-03-30T23:10
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-30T21:10): 9 sessions since 20:10. Max: bob 44ops (good), coach 26ops (good). All normal. 24h: 191s, 2909 ops (15.2 avg). Zero cost outliers.
-  Latest (2026-03-30T20:10): 6 sessions since 19:10. Max: bob 39ops (good). Zero cost outliers. 24h: 191s, 2891 ops.
+  Latest (2026-03-30T23:10): 4 done sessions since 22:40. Max: bob 37ops (good). All normal. 24h: 192s, 2972 ops (15.5 avg). Zero cost outliers.
+  Latest (2026-03-30T22:40): 9 done sessions since 21:10. Max: bob 32ops (good). All normal. 24h: 194s, 2945 ops.
   _Older entries pruned 2026-03-30T19:10. Historical peaks: May 164ops (justified infra fix), Coach 52ops heartbeat (good eval). No persistent cost issues._
 
-- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-30T21:10
+- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-30T23:10
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
   Could it be replaced with a JS handler? (See cron-graduation-process.md Stage 3.)
   If found → write proposal in workspace/improvement-proposals.md.
-  Latest (2026-03-30T21:10): 9 sessions since 20:10. Bob 44ops (genuine LLM synthesis). Coach 26ops (genuine training). Amy-kimi 13ops (genuine chat). No new LLM-to-JS candidates.
-  Latest (2026-03-30T20:10): 6 sessions since 19:10. No new candidates. QA/May/Evaluator already JS-optimized.
+  Latest (2026-03-30T23:10): 4 done sessions since 22:40. Bob 37ops (genuine synthesis). All others low-ops routine. No new LLM-to-JS candidates.
+  Latest (2026-03-30T22:40): 9 done sessions. No new candidates. QA/May/Evaluator already JS-optimized.
   _Older entries pruned 2026-03-30T19:10. All scans consistently show no new LLM-to-JS candidates._
 
-- [x] **Handler health check** — Last done: 2026-03-30T21:10
+- [x] **Handler health check** — Last done: 2026-03-30T23:10
   Review existing JS handlers in agents/may/handlers/.
   Any errors in recent logs? Any handler that's not firing?
   If issues → add fix to workspace/todo.md.
-  Latest (2026-03-30T21:10): Binary 80b52a9 (PID 7) running since 17:09 (~4h uptime). Zero errors since 20:10. All 6 completed sessions good/acceptable. System stable.
-  Latest (2026-03-30T20:10): Binary 80b52a9 (~3h uptime). Zero errors since 19:10. All 5 completed sessions "good".
+  Latest (2026-03-30T23:10): Binary 80b52a9 (PID 7) running since 17:10 (~6h uptime). Zero errors since 22:40. All 4 done sessions "good". System stable.
+  Latest (2026-03-30T22:40): Binary 80b52a9 (~5.5h uptime). Zero errors. All 9 done sessions "good".
   _Older entries pruned 2026-03-30T19:10. Key events: tool-quality handler fixed Mar 29. 22 handlers consistently present. Waste trend: 2.7%→2.6%→2.8%→2.4%→0.9%→4.3%._
 
 - [x] **Proven pattern → Skill/Workflow** — Last done: 2026-03-30T01:10
@@ -57,7 +57,7 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Latest (2026-03-23T21:36): verification-consistency (15th skill) deployed to 6 agents. Full lifecycle.
   _13 earlier skill deployments documented in finding files. See `workspace/finding-pattern-scan-*.md`._
 
-- [x] **Tool quality review** — Last done: 2026-03-30T21:10
+- [x] **Tool quality review** — Last done: 2026-03-30T23:10
   Read the tool-quality-report.md (generated by tool-quality-scan handler every 4h).
   Look for regression trends, persistent failure patterns, and agent-specific issues.
   If a specific failure category accounts for >30% of waste, create a targeted intervention:
@@ -65,8 +65,8 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   - For empty-args: check if schema validation is catching it early enough
   - For edit-match-fail: check if agents are reading files before editing
   If tool-quality-report.md doesn't exist yet, skip — handler hasn't fired.
-  Latest (2026-03-30T21:10): No tool-quality-report.md found (handler may not have fired since binary restart at 17:09). Eval-based: 81.9% good+acc (188 evaluated 24h). The needs_improvement cluster continues to be from earlier tech-lead + evaluator sessions. No active waste regressions.
-  Latest (2026-03-30T20:10): Last baseline at 17:07 showed 4.34% waste (170/3921). Eval-based waste 8.29% (344/4150 in 24h). No active waste regressions.
+  Latest (2026-03-30T23:10): Eval-based: 90.2% good+acc (174 evaluated 24h) — up from 82.6%. Quality improving steadily. Zero errors. No active waste regressions.
+  Latest (2026-03-30T22:40): 82.6% good+acc (190 evaluated). 5 NI sessions today (all tech-lead 0-1ops, heuristic skips).
   _Older entries pruned 2026-03-30T19:10. History: 4.7%→4.1%→2.8%→2.65%→2.36%→0.90%→4.34%. See finding files for interventions._
 
 - [x] **Workflow quality audit** — Last done: 2026-03-30T21:10
@@ -81,15 +81,15 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Latest (2026-03-30T21:10): **First full audit completed.** 32 workflow files across 7 agents. 177 workflow runs, 460 sessions all-time. Key findings: (1) Workflows reduce errors dramatically (2.6% vs 18.1% non-workflow) but quality is lower (70.7% vs 81.4%) — mainly due to coach sprint NI rate (68/133). (2) All 3 consolidation priorities still open — P1 verify-and-finish confirmed byte-identical, P2 verify-parallel confirmed tech-lead best, P3 implement-and-review has 3 divergent versions. (3) Found 1 unregistered workflow: may/project-monitor.ts — added to registry. (4) 27.1% run interruption rate (48/177) wastes ~917 ops total. Registry updated with effectiveness metrics and recommendations. Next: consolidate P1 (zero-risk dedup).
   Latest: Registry created 2026-03-30 with initial audit data. 3 consolidation priorities identified.
 
-- [x] **Gym shadow baseline & trend tracking** — Last done: 2026-03-30T21:10
+- [x] **Gym shadow baseline & trend tracking** — Last done: 2026-03-30T23:10
   ⚠️ COOLDOWN: After each binary rebuild only. No point re-running on same binary.
   Run `scripts/gym-baseline.sh --tier smoke --agent coder --tag "<descriptive-tag>"` (takes ~10 min).
   Then update `workspace/gym-trend-tracker.md` with new batch results.
   Compare with previous batches via `bun scripts/gym-stats.ts --batches`.
   Flag regressions via `bun scripts/gym-stats.ts --regressions`.
   NOTE: Runs take ~600s for 13 smoke scenarios. Consider running in background or splitting.
-  Latest (2026-03-30T21:10): Binary 80b52a9 (PID 7, ~4h uptime). Still no gym run on this binary. Last DB gym run: Mar 29 02:56 on framework_sha 31895e7. Low priority — system stable, zero errors.
-  Latest (2026-03-30T20:10): Binary 80b52a9 (~3h uptime). No gym run on it yet. Low priority.
+  Latest (2026-03-30T23:10): Binary 80b52a9 (PID 7, ~6h uptime). Still no gym run on this binary. Last DB gym run: Mar 29 02:56 on framework_sha 31895e7. Low priority — system stable, zero errors, quality 90.2%.
+  Latest (2026-03-30T22:40): Binary 80b52a9 (~5.5h uptime). No gym run on this binary. Low priority.
   _Older entries pruned 2026-03-30T19:10. Last successful: 11/13 pass (85%) on 37b8fbb. Binaries 84e05c6 and f10cfde never baselined._
 
 ## Weekly

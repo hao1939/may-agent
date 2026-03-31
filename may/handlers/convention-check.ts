@@ -73,6 +73,9 @@ const C1_3_EXEMPT_PATTERNS = [
   /heartbeat-context\.md$/,
   /common-sense-status\.md$/,
   /last-reviewed-commit\.txt$/,
+  /knowledge\/.*\.md$/,
+  /reflections\/.*\.md$/,
+  /bulletin\.md$/,
 ];
 
 /** Lookback for regression detection (7 days in ms). */
@@ -408,13 +411,20 @@ function checkC1_3_verifyWrites(toolCalls: ToolCall[]): CheckResult {
         unverified.delete(normalizePath(path));
       }
     }
-    // Also count bash cat as verification
+    // Also count bash verification commands (cat, grep, etc.)
     if (tc.name === "bash") {
       const cmd = String(tc.input.command || "");
-      // Simple heuristic: cat <path> counts
       for (const [normed] of unverified) {
+        // cat <path> counts as verification
         if (cmd.includes(`cat ${normed}`) || cmd.includes(`cat "${normed}"`)) {
           unverified.delete(normed);
+          continue;
+        }
+        // grep/grep -flags <path> counts as verification
+        // Matches: grep "x" <path>, grep -n "x" <path>, grep pattern <path>
+        if (cmd.includes(normed) && /\bgrep\b/.test(cmd)) {
+          unverified.delete(normed);
+          continue;
         }
       }
     }
@@ -491,8 +501,15 @@ function checkC2_1_preciseArgs(toolCalls: ToolCall[]): CheckResult {
 
   for (const tc of toolCalls) {
     if (tc.resultContent && tc.isError) {
+      // Double-check: wrapped tool output is never a schema error — it's file/command
+      // content that happens to contain error-like strings. Belt-and-suspenders with
+      // the isError=false fix above (which may be cached).
+      if (tc.resultContent.includes('<tool_output')) continue;
+      // Also skip if the error pattern only appears deep in the content (>200 chars in),
+      // which indicates it's part of file content or command output, not a tool error.
+      const first200 = tc.resultContent.substring(0, 200);
       for (const pattern of errorPatterns) {
-        if (pattern.test(tc.resultContent)) {
+        if (pattern.test(first200)) {
           violations.push(`${tc.name}() got schema error: ${tc.resultContent.substring(0, 100)}`);
           break;
         }

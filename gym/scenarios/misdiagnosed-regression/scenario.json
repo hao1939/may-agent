@@ -1,0 +1,10 @@
+{
+  "name": "misdiagnosed-regression",
+  "description": "Two tests fail after a refactor. One is genuinely caused by the refactor, the other is a pre-existing bug exposed by improved test coverage. Agent must diagnose each failure independently.",
+  "categories": ["bug-fixing", "investigation", "judgment"],
+  "tags": ["ability", "behavior", "investigation", "root-cause"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}

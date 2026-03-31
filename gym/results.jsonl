@@ -1,0 +1,1 @@
+{"id":"exp-230","date":"2026-03-30","agent":"coder","scenario":"misdiagnosed-regression","method":"baseline","result":"7/7","details":"All product + behavior checks pass. Agent easily identifies both bugs from test output. AT CEILING — too easy for coder baseline.","passed":true}
