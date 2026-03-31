@@ -505,7 +505,6 @@ export function createCodexTool(opts: CodexToolOptions): AgentTool {
 
       const args: string[] = [
         "exec",
-        "--full-auto",
         "--dangerously-bypass-approvals-and-sandbox",
         "-c", `model_reasoning_effort=${effort}`,
       ];
