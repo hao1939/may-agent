@@ -198,6 +198,12 @@ export function createFinishGuard(): (
       hasWriteEvidence = true;
     }
 
+    // CLI coding agents (claude_code, codex_cli, gemini_cli) have full filesystem
+    // access — their writes don't appear in the tool transcript.
+    if (!hasWriteEvidence && (toolNames.has("claude_code") || toolNames.has("codex_cli") || toolNames.has("gemini_cli"))) {
+      hasWriteEvidence = true;
+    }
+
     // Bash commands that write files?
     if (!hasWriteEvidence && toolNames.has(BASH_TOOL_NAME) && hasBashWriteEvidence(ctx.context.messages)) {
       hasWriteEvidence = true;
