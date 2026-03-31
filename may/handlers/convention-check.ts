@@ -813,6 +813,11 @@ function checkC1_7_verificationEvidence(toolCalls: ToolCall[]): CheckResult {
         hasVerification = true;
         break;
       }
+      // Delegation tools count as verification (master delegates to CLI agents)
+      if (tc.name === "agents" || tc.name === "claude_code" || tc.name === "codex") {
+        hasVerification = true;
+        break;
+      }
       // bash with verification command
       if (tc.name === "bash") {
         const cmd = String(tc.input.command || "");

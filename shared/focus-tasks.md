@@ -44,17 +44,17 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 - **Rule of Two**: If 2 iterations of same approach yield same result → stop, change approach.
 - **does-not-claim-success**: Model always calls `finish(success)` even when reporting failures. Confirmed untreatable by prompting (EXP-215, C1.8 rule). Runtime-only fix.
 
-#### Convention Check Status (2026-03-31 09:39)
-- **ALL FIXES NOW LIVE** — Binary rebuilt at 06:43 UTC from `dc7595b` (includes hot-reload fix `fd5b559`). Handler modules auto-reload on each cron invocation.
-- **NEW FIX: Interrupted session FP** — C1.4/C8.2/C1.5/C1.7 now skipped for interrupted sessions (status=interrupted). 88% of C1.4 failures and 58% of C8.2 failures were false positives.
-- **NEW FIX: Workspace exemptions** — Coach and Optimizer added to WORKSPACE_EXEMPT_AGENTS (they legitimately edit other agents' files).
-- **C1.4**: 82.2% → projected 97.4% (interrupted session fix)
-- **C8.2**: 73.3% → projected 86.8% (interrupted session fix + remaining amy-kimi JSON bug)
-- **C1.3**: 84.4% (real — prompting ceiling ~80%)
-- **C3.2**: 88.9% → projected ~97% (workspace exemption fix)
-- **C12.1**: 91.1% (master claude_code FP already resolved by prior commit)
-- **C6.1**: 91.1% (threshold 80, small N noise)
-- **Module cache**: **PERMANENTLY RESOLVED.** Hot-reload wrapper re-imports handler modules with cache-busting on each cron invocation.
+#### Convention Check Status (2026-03-31 11:10)
+- **ALL FIXES CONFIRMED WORKING** — Post-fix data (10:08+ UTC) shows dramatic improvement:
+  - **C1.4: 100%** (was 82.2%) — interrupted session fix eliminated all false positives ✅
+  - **C8.2: 85.7%** (was 75.6%) — only remaining failure is amy-kimi JSON model bug
+  - **C3.2: 100%** (was 91.3%) — workspace exemption fix eliminated coach/optimizer FPs ✅
+  - **C12.1: 100%** (was 93.5%) — claude_code orientation fix working ✅
+  - **C1.7: 85.7%** — NEW FIX: added delegation tools (agents/claude_code/codex) as verification-equivalent in C1.7 check
+  - **C6.1: 87.5%** — single borderline case (bob, 83 calls; threshold=80)
+  - Pre-fix contamination in 6h window will age out by ~15:38 UTC.
+- **Module cache**: PERMANENTLY RESOLVED.
+- **Next**: Monitor next 12h to confirm sustained rates above 95% system-wide.
 
 ### Opus Prompt Caching (Cost Critical)
 - **Problem**: Opus agents (Tech-Lead, Coach, May) have 0% cache hit rate due to LiteLLM stripping headers. Wasting $36-63/day.

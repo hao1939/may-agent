@@ -2,26 +2,39 @@
 
 > Pre-2026-03-30 entries archived at `agents/bob/workspace/archive/journal-pre-2026-03-30.md`
 
-# Session 2026-03-31 ~07:10 (Hot-Reload LIVE + Convention Health + claude_code Fix)
+# Session 2026-03-31 ~11:10 (Convention Health Validation + C1.7 Delegation Fix)
 
-## Key Discovery: Hot-Reload IS Live
-Binary rebuilt at 06:43 UTC from commit `dc7595b` (includes hot-reload fix `fd5b559`). All convention-check code changes are now live and auto-reloading. The 40+ hour module cache blocker is **permanently resolved**.
+## Convention Fix Validation — All Working ✅
+Confirmed that interrupted-session fix and C3.2 workspace exemption are working correctly post 10:08 UTC:
 
-## Post-Restart Convention Rates (N=2, since 06:43 UTC)
-| Convention | Rate | vs Pre-Restart | Notes |
-|-----------|------|---------------|-------|
-| C6.1 | 100% | 83.8% | Threshold 80 working |
-| C2.1 | 100% | 97.3% | isError fix working |
-| C1.3 | 100% | 81.1% | Exempt patterns working |
-| C12.1 | 0% (2/2) | 89.2% | NEW: claude_code false positive |
+| Convention | 6h Window | Post-Fix (10:08+) | Change |
+|-----------|----------|-------------------|--------|
+| C1.4 | 82.2% | **100%** | +17.8pp ✅ |
+| C8.2 | 75.6% | **85.7%** | +10.1pp |
+| C3.2 | 91.3% | **100%** | +8.7pp ✅ |
+| C12.1 | 93.5% | **100%** | +6.5pp ✅ |
+| C2.1 | 97.8% | **100%** | +2.2pp |
+| C1.5 | 100% | **100%** | (maintained) |
 
-## Fix: C12.1 claude_code False Positive
-New `claude_code` tool (commit `dc7595b`) lets master delegate to external CLI agents. Convention-check flagged it as "no context file read". Fix: added `claude_code` to ORIENTATION_TOOLS (same as `agents()` — delegation to context-aware agent).
+Pre-fix data contaminating 6h window will age out by ~15:38 UTC.
 
-## 6h Convention Health (N=37)
-C1.1=94.6%, C1.3=81.1%, C1.4=97.3%, C1.5=94.6%, C1.7=100%, C12.1=89.2%, C2.1=97.3%, C3.2=94.6%, C3.3=100%, C6.1=83.8%, C7.1=100%, C8.2=83.8%
+## Remaining Real Failures (post-fix)
+- **C8.2 amy-kimi** — known model-level JSON serialization bug (Kimi doesn't emit `finish()` JSON correctly)
+- **C1.7 master** — delegation pattern FP (master delegates to claude_code, doesn't have read/bash verification in own transcript)
+- **C6.1 bob** — 83 tool calls (me, borderline; threshold=80)
+- **C1.1 bob** — edit without prior read (me)
 
-C8.2 failures all Amy-Kimi (Kimi model JSON bug). C6.1 failures all pre-restart (threshold was still 60). With hot-reload live, future convention checks will use all latest fixes.
+## Fix: C1.7 Delegation Exemption
+Added `agents`, `claude_code`, `codex` as verification-equivalent tools in C1.7 check. Master delegates to CLI agents for verification, so delegation tool calls should count.
+
+## Tech-Lead jsonSchema Issue — Resolved
+14 `needs_improvement` evals on Mar 30 (12:44-13:59) — ALL from `undefined is not an object (evaluating 'jsonSchema.properties')`. This was a transient tool-definition parsing bug affecting tech-lead child sessions. Self-resolved; no recurrence in 18h.
+
+## System Health
+- 44 sessions/6h, 0% error rate  
+- 32 good, 9 acceptable, 1 needs_improvement (coach sprint-plan miss)
+- No session persistence issues
+- Workflows working (coach main user)
 
 # Session 2026-03-31 ~03:10 (Convention Audit + Amy-Kimi C8.2 + Process Health)
 

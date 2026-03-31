@@ -77,6 +77,9 @@ Curated by Amy-Kimi. Academic papers, industry trends, and community insights re
 
 | Date | Title | Key Insight | Detail |
 |------|-------|-------------|--------|
+| 2026-03-31 | Anthropic: Building Effective Agents | 5 workflow patterns (Prompt Chaining→Evaluator-Optimizer); simple composable > complex frameworks; ACI design matters more than prompts | HB-2304 in `agents/amy-kimi/knowledge/insights.md` |
+| 2026-03-31 | DeerFlow (ByteDance) | 54.8k stars SuperAgent harness: sub-agents + dynamic skill loading + Docker sandbox. GitHub Trending #1 (Feb 2026) | HB-2305 in `agents/amy-kimi/knowledge/insights.md` |
+| 2026-03-31 | STATE.yaml vs Orchestrator | Decentralized file coordination beats message-passing orchestrator for parallel tasks. Git as audit log is the hidden value. | HB-2306 in `agents/amy-kimi/knowledge/insights.md` |
 | 2026-03-31 | HAE Security Framework | Three-tier security: Cognitive(L1) + Execution(L2) + Collective(L3). OpenClaw L1-L5 maps directly. | HB-2303 in `agents/amy-kimi/knowledge/insights.md` |
 | 2026-03-31 | MAS²: Self-Generative MAS | Generator-Implementer-Rectifier tri-agent breaks "generate-once-deploy" rigidity; +19.6% on complex tasks | HB-2302 in `agents/amy-kimi/knowledge/insights.md` |
 | 2026-03-31 | TDAD: Test-Driven Agent Definition | Prompt as compiled artifact: specs → tests → iterative refinement. 92% compile success, 97% hidden pass rate. | HB-2301 in `agents/amy-kimi/knowledge/insights.md` |
