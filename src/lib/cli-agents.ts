@@ -206,7 +206,13 @@ export function spawnCliAgent(
     try {
       child = spawn(command, args, {
         cwd,
-        env: env ?? { ...process.env, PATH: CLI_PATH, ANTHROPIC_BASE_URL: process.env.MODEL_BASE_URL ?? process.env.ANTHROPIC_BASE_URL ?? "" },
+        env: env ?? {
+          ...process.env,
+          PATH: CLI_PATH,
+          ANTHROPIC_BASE_URL: process.env.MODEL_BASE_URL ?? process.env.ANTHROPIC_BASE_URL ?? "",
+          OPENAI_BASE_URL: (process.env.MODEL_BASE_URL ?? process.env.OPENAI_BASE_URL ?? "") + "/v1",
+          OPENAI_API_KEY: process.env.OPENAI_API_KEY ?? "dummy",
+        },
         stdio: ["ignore", "pipe", "pipe"],
         detached: false,
       });
