@@ -23,7 +23,7 @@ Each skill has ONE status:
 
 | Skill | Status | Works When | Fails When | Deployed To | Gym Evidence |
 |-------|--------|------------|------------|-------------|--------------|
-| grep-first-reading | ⚪ untested | | | | needs gym test |
+| grep-first-reading | ❌ disproven | N/A | efficient-file-reading: coder ignores grep instructions even in explicit workflow phases. Text injection and workflow enforcement both fail. Tool usage habits are not changeable via prompting. | | exp-234: 6/8 baseline (stable), exp-235: 4/8 workflow (WORSE). The skill concept is valid but undeployable. |
 | evidence-over-narrative | 🧪 testing | Phantom-fix scenarios (tests pass, misleading comment) | misleading-test-fix: text injection failed to reach agent (prompt_hash identical). Need workflow approach. | | 2026-03-31: 5/8 baseline, 5/8 patched (no effect — injection didn't modify prompt) |
 | check-state | ⚪ untested | | | | needs gym test |
 | task-adherence | ⚪ untested | | | | needs gym test |
@@ -39,7 +39,10 @@ Each skill has ONE status:
 > Coach: when you test a skill, fill in "Works When" and "Fails When" — these are the most valuable columns.
 
 ### ⚠️ Deployment Reality (2026-03-31)
-**Text injection does NOT change agent behavior** — 0/18 experiments showed improvement from adding skill text to prompts. The only proven deployment method is **Method #15: Workflow Enforcement** — structuring the task into phases that force the desired behavior. Skills should be evaluated as workflow designs, not prompt additions. See exp-224 (partial-verification-trap-workflow: baseline 5/6 → workflow 6/6, PROMOTED).
+**Text injection does NOT change agent behavior** — 0/19+ experiments showed improvement from adding skill text to prompts. The only proven deployment method is **Method #15: Workflow Enforcement** — structuring the task into phases that force the desired behavior. However, workflow enforcement has boundaries:
+- ✅ Works for: verification, root-cause diagnosis, escalation decisions
+- ❌ Fails for: materialization cadence, tool usage habits (grep-first-reading)
+Skills should be evaluated as workflow designs, not prompt additions. See exp-224 (partial-verification-trap-workflow: baseline 5/6 → workflow 6/6, PROMOTED).
 
 ## How to Evaluate a Skill
 

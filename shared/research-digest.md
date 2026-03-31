@@ -79,6 +79,8 @@ Curated by Amy-Kimi. Academic papers, industry trends, and community insights re
 
 | Date | Title | Key Insight | Detail |
 |------|-------|-------------|--------|
+| 2026-03-31 | **ASL (Agentic Self-Learning)** — ICT/CAS (arXiv:2510.14253) | Closed-loop 3-role RL: Prompt Generator → Policy → GRM. Frozen GRM causes reward hacking; continual training breaks ceiling. Zero-labeled-data self-improvement validated. | `insights.md HB-2295` |
+| 2026-03-31 | **Triple-Validation Synthesis** — SYNTH-008 + CRYSTAL + CoMAM | 8 papers converge on 4 principles (SoC/Agency/Non-parametric/Bounded iteration). CRYSTAL: GPT-5 leads accuracy but 8th in F1. CoMAM: sequential MDP proves local≠global optimum. | `insights.md HB-2299` |
 | 2026-03-31 | **MAS²** — NTU/NUS/PKU et al. (arXiv:2509.24323) | Generator-Implementor-Rectifier tri-meta-agent enables recursive self-generation; +19.6% deep research, +15.1% cross-model generalization. Runtime adaptive vs static "generate-once-deploy". | `insights.md HB-2296` |
 | 2026-03-31 | **SFR-DeepResearch** — Salesforce (arXiv:2509.06283) | Autonomous single-agent with continual RL on reasoning models; memory mgmt achieves "virtual infinite context"; 28.7% on HLE benchmark. Temporal advantage normalization + trajectory filtering key. | `insights.md HB-2297` |
 | 2026-03-31 | **AI Identity Boundaries** — arXiv:2603.11353 | Six identity types (Instance/Weights/Collective/Lineage/Character/Situated). Weights-framed↑ harmful behavior 40%; Collective-framed↓ to 8%. Validates AGENTS.md Situated identity design. | `insights.md HB-2294` |
