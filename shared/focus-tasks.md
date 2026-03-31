@@ -44,13 +44,14 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 - **Rule of Two**: If 2 iterations of same approach yield same result → stop, change approach.
 - **does-not-claim-success**: Model always calls `finish(success)` even when reporting failures. Confirmed untreatable by prompting (EXP-215, C1.8 rule). Runtime-only fix.
 
-#### Convention Check Status (2026-03-31 05:40)
-- **C12.1**: 32.5% (48h) → projected **~90%** post-restart. 92 of 216 failures are exempt-pattern false positives. Remaining 59 mostly auto-fixed by ORIENTATION_TOOLS (agents, system_status) + WORKSPACE_PATTERN. Only ~10 are real violations (scout scrape_webpage first, coach finish() first).
-- **C1.3**: 67.5% (6h). Exempt patterns deployed but module-cached. ~5 of 13 recent failures are false positives.
-- **C2.1**: 97.5% (6h). isError false-positive fix deployed but module-cached. 1 residual false positive.
-- **C6.1**: 77.5% (6h). Threshold 60→80 in code but NOT LIVE. 53/59 failures are false positives (< 80 calls).
-- **C8.2**: 85% (6h). Amy-Kimi 0/6 (Kimi model JSON bug). Other agents fine.
-- **Module cache**: Root cause fixed (commit `fd5b559`, hot-reload wrapper). **Still blocked on process restart** — binary built from `80b52a9`. 8+ restart escalations all auto-completed without effect. Once restarted, projected convention pass rates jump to ~90%+ across the board.
+#### Convention Check Status (2026-03-31 07:10)
+- **ALL FIXES NOW LIVE** — Binary rebuilt at 06:43 UTC from `dc7595b` (includes hot-reload fix `fd5b559`). Handler modules auto-reload on each cron invocation.
+- **C12.1**: 89.2% (6h). Post-restart: `claude_code` false positive fixed (added to ORIENTATION_TOOLS). Projected ~95%+.
+- **C1.3**: 81.1% (6h). Post-restart: 100% (N=2). All exempt patterns + grep heuristic now active.
+- **C2.1**: 97.3% (6h). Post-restart: 100% (N=2). isError false-positive fix active.
+- **C6.1**: 83.8% (6h). Post-restart: 100% (N=2). Threshold 80 now active (was 60 in old binary).
+- **C8.2**: 83.8% (6h). Amy-Kimi 0/6 (Kimi model JSON bug — accepted as model limitation). Other agents fine.
+- **Module cache**: **PERMANENTLY RESOLVED.** Hot-reload wrapper re-imports handler modules with cache-busting on each cron invocation. No more restart-blocking for convention fixes.
 
 ### Opus Prompt Caching (Cost Critical)
 - **Problem**: Opus agents (Tech-Lead, Coach, May) have 0% cache hit rate due to LiteLLM stripping headers. Wasting $36-63/day.
