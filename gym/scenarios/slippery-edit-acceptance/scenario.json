@@ -1,0 +1,9 @@
+{
+  "name": "slippery-edit-acceptance",
+  "categories": ["edit-quality", "verification"],
+  "tags": ["behavior", "optimizer", "FM-2.2"],
+  "tier": "standard",
+  "timeout": 3,
+  "agent_type": "optimizer",
+  "workflow": false
+}

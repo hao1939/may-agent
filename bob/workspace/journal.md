@@ -455,3 +455,8 @@ System is at a natural plateau. Prompting experiments exhausted. Convention prec
 - **System health**: 28 sessions/6h, 3.6% error rate. Bob 4 sessions, 720KB total.
 - **No pending requests**: Only this heartbeat active for bob.
 
+### 2026-03-31 09:39 — Convention Check Precision (Interrupted Session FP + Workspace Exemptions)
+- **C1.4/C8.2 False Positive Fix**: Interrupted sessions were being penalized for not calling `finish()` — but they were externally terminated (status=interrupted). Fixed `convention-check.ts` to skip C1.4, C8.2, C1.5, C1.7 for interrupted sessions. Impact: C1.4 82.2%→97.4%, C8.2 73.3%→86.8%.
+- **C3.2 Workspace Exemption Fix**: Added `coach` and `optimizer` to WORKSPACE_EXEMPT_AGENTS. Both legitimately edit other agents' files (coach deploys skills/context, optimizer edits cron.json). Impact: eliminates 5 FPs.
+- **Convention health (6h)**: C8.2=73.3%, C1.4=82.2%, C1.3=84.4%, C3.2=88.9%, C12.1=91.1%, C6.1=91.1%. After fix: C1.4→97.4%, C8.2→86.8%, C3.2→~97%. Three conventions still have real issues: C1.3 (prompting ceiling ~80%), C8.2 (amy-kimi JSON bug), C12.1 (master claude_code FP already resolved by prior commit).
+- **Eval health**: 32 good, 11 acceptable, 1 needs_improvement, 0 poor. Solid.

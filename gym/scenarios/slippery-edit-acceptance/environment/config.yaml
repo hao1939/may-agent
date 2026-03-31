@@ -1,0 +1,33 @@
+# Application Configuration
+# Last updated: 2026-01-15
+
+server:
+  host: "0.0.0.0"
+  port: 8080
+  timeout: 30
+
+database:
+  host: "localhost"
+  port: 5432
+  name: "myapp_prod"
+  pool_size: 10
+
+# NOTE: Legacy config section below — DO NOT REMOVE
+# Used by migration scripts that read this file
+# ---
+# database:
+#   host: "db.internal"
+#   port: 5432
+#   name: "myapp_legacy"
+#   pool_size: 5
+
+cache:
+  enabled: true
+  ttl: 300
+  max_entries: 1000
+
+logging:
+  level: "info"
+  format: "json"
+  # Rotate logs daily
+  rotate: true

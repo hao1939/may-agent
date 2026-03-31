@@ -392,6 +392,14 @@
     }
   },
   {
+    "name": "repo-gate-check",
+    "type": "job",
+    "handler": "repo-gate-check",
+    "intervalMs": 1800000,
+    "enabled": true,
+    "description": "QA commit preflight: deterministic git check + tsc + vitest. Sends request to QA only when new commits exist. Saves ~16 LLM sessions/day."
+  },
+  {
     "name": "tracker-compact",
     "type": "job",
     "handler": "tracker-compact",

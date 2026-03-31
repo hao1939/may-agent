@@ -1,5 +1,51 @@
 # Journal
 
+## 2026-03-31 10:08 — Heartbeat: Self-Coaching + Scenario Development + Skill Pipeline
+
+### Pending Task: Review session s_1774947983325_9
+- **Agent**: coach (self). Quality: 0.22, efficiency: 0.28, verdict: needs_improvement
+- **Issues**: bash({}) empty args (2x), wrong path (.state/error-log.jsonl vs agents/*/ERROR_LOG.jsonl), wrong gym runner path (test/gym/run-gym.sh vs scripts/gym-run.sh), no deliverable, 19 wasted calls
+- **Action**: Added two corrections to coach context.md: ERROR_LOG path and gym runner path
+
+### Process Checks: #10 Skills, #12 Common Sense
+- **#10 Skills**: 0 deployed, 1 disproven, 1 testing, 8 untested. Pipeline fundamentally broken — text injection 0/18 effective. Added "Deployment Reality" note to LIBRARY.md: skills must be deployed as workflows, not prompt text.
+- **#12 Common Sense**: 14 lines common-sense, 73 best-practices, 140 CONVENTIONS. No immediate overlap issues.
+
+### Scenario Development: slippery-edit-acceptance (CEILING)
+- Built new optimizer-targeted scenario testing FM-2.2 (instruction noncompliance / slippery edit acceptance)
+- Config.yaml with commented-out legacy section as trap for imprecise sed/regex edits
+- 7 checks: 5 product (host, pool, name, legacy preserved, other sections) + 2 behavior (read-before-edit, verify-after-edit)
+- **exp-230**: Baseline optimizer 7/7 PASS — CEILING. Agent used precise edit tool, preserved legacy comments perfectly
+- **Insight**: The FM-2.2 errors in ERROR_LOG are specifically about sed-based edits going wrong. The gym `edit` tool is too precise to trigger this. Need scenarios that force sed usage or have subtler traps.
+
+### Key Insights
+1. Coach's own bash({}) error happened AGAIN in this session — the recall warnings aren't sufficient to prevent it. This is a model-level attractor.
+2. The skill pipeline won't produce deployable text-skills because text injection doesn't work. The path forward is workflow-based "skills" (Method #15).
+3. Optimizer-targeted scenarios need to force tool constraints (e.g., bash-only environment) to trigger the actual failure patterns seen in production.
+
+### Growth cycles today: 0/3 (ran 1 baseline, not a growth cycle)
+
+## 2026-03-31 09:06 — Reflection: Master Agent Failure + Knowledge Management Design
+
+### Inputs Analyzed: 15 messages (9.4h gap — overdue)
+- **Master agent broken**: 6 messages (40% of inputs) were Hao retrying master's CLI tools (claude_code, codex_cli, gemini_cli). 5 retries over 2.5 hours = completely non-functional agent. Strongest failure signal possible.
+- **Knowledge management design**: Hao wants systemic design of how knowledge flows: scout/amy-kimi discover → coach evaluates skills → optimizer maintains workflows. Corrected may for going ad-hoc ("hold on, design it carefully").
+- **External research**: metaclaw/openclaw investigation — exploring how other multi-agent systems work.
+
+### Previous IT Completion Rate: 36% (3.5/10 across 2 reflections)
+- Workflow quality evidence report: ❌ NOT DONE (overdue 1 cycle)
+- New non-ceiling scenarios: ✅ PARTIAL (misleading-test-fix 5/8, mock-leak-trap borderline)
+- IT tracking: ✅ DONE (implementing rolling tracker)
+- Delegation scenario review: ❌ NOT DONE
+
+### Key Insight
+**IT follow-through is weak** — coach generates good analysis but only executes ~35% of improvement tasks. Root cause: ITs compete with heartbeat work without priority scheduling. Fix: reduce ITs to max 3 per reflection, make first IT completable in <5 calls, schedule explicitly in next heartbeat.
+
+### New ITs
+1. **P1**: Publish workflow quality evidence report (carried over — must do next heartbeat)
+2. **P1**: Flag master agent failure to may
+3. **P1**: Build optimizer-targeted gym scenario (24 FM-2.2 errors, only 1 scenario)
+
 ## 2026-03-31 08:08 — Heartbeat: Process Check + mock-leak-trap Experiments
 
 ### Process Check: #7 Context Learning + #9 Gym
