@@ -1,4 +1,5 @@
 import { createInterface } from "node:readline";
+import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { resolve, dirname } from "node:path";
 import { existsSync, readFileSync, writeFileSync, appendFileSync, unlinkSync, mkdirSync } from "node:fs";
@@ -23,6 +24,19 @@ import {
 import { resolveProjectRoot } from "./bundle-mode.js";
 import { trackRequest } from "../lib/requests.js";
 import { setLogHandler, log } from "../lib/log.js";
+
+// ── --version / -v: print version + git SHA and exit immediately ────────
+if (process.argv.includes("--version") || process.argv.includes("-v")) {
+  const pkg = JSON.parse(readFileSync(new URL("../../package.json", import.meta.url), "utf-8"));
+  let gitSha = "unknown";
+  try {
+    gitSha = execSync("git rev-parse --short HEAD", { encoding: "utf-8" }).trim();
+  } catch {
+    // Not inside a git repo or git not available — fall back to "unknown"
+  }
+  console.log(`${pkg.name} v${pkg.version} (${gitSha})`);
+  process.exit(0);
+}
 
 const PROJECT_ROOT = resolveProjectRoot(import.meta.url);
 const AGENTS_ROOT = resolve(process.env.AGENTS_ROOT || resolve(PROJECT_ROOT, "agents"));

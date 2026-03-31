@@ -14,3 +14,4 @@ bundle/
 test/gym/stats.db
 test/gym/.gym-runner-bundle.mjs
 workspace/
+may.db
