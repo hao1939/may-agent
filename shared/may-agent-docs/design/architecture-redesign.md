@@ -2,12 +2,11 @@
 
 ## Core Concept
 
-Two systems, one shared DB.
+One process. One EventBus. Everything connects through it.
 
-**Core system**: EventBus-based. Commands in, events out. Real-time.
-**Cron system**: Standalone. Timers + DB + spawn. No EventBus.
-
-They share SQLite. That's the only integration point between them.
+**EventBus**: commands in, events out. All components subscribe and emit.
+**DB**: optional subscriber that persists events to SQLite. Enables queries.
+**Cron**: emits `run` commands on schedule. Runs in the same process.
 
 ## EventBus
 
@@ -31,126 +30,90 @@ class EventBus {
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    Core System (one process)                  │
-│                                                              │
-│  Console ──┐                          ┌── Web UI            │
-│  Telegram ──┼── Socket ──┐           │  (HTTP + WS)        │
-│             ┘            │           │                      │
-│                     commands/     events +                   │
-│                     events      DB reads                    │
-│                          │           │                      │
-│                    ┌─────┴───────────┴──────┐               │
-│                    │       EventBus          │               │
-│                    │   subscribe + emit      │               │
-│                    └──┬──────┬──────┬────────┘               │
-│                       │      │      │                        │
-│                  ┌────┴┐  ┌──┴──┐  ┌┴──────────┐            │
-│                  │Core │  │ DB  │  │ Context   │            │
-│                  │     │  │Write│  │ Learner   │            │
-│                  └─────┘  └──┬──┘  └───────────┘            │
-│                              │writes                         │
-└──────────────────────────────┼───────────────────────────────┘
-                               │
-                          ┌────┴────┐
-                          │ SQLite  │
-                          └────┬────┘
-                               │
-┌──────────────────────────────┼───────────────────────────────┐
-│                    Cron System (standalone)                    │
-│                                                              │
-│  ┌────────────┐     reads/writes     ┌─────────────────┐    │
-│  │ Scheduler  │◀────────────────────▶│    SQLite        │    │
-│  │            │                      │ (job history,    │    │
-│  │ - timers   │                      │  messages,       │    │
-│  │ - cron.json│                      │  request queue)  │    │
-│  └─────┬──────┘                                              │
-│        │ spawns                                              │
-│  ┌─────┴──────────────┐                                      │
-│  │ may-agent --oneshot │  (each is an independent process    │
-│  │ may-agent --oneshot │   with its own EventBus + DB writer)│
-│  │ may-agent --oneshot │                                      │
-│  └─────────────────────┘                                      │
-│                                                              │
-│  ┌─────────────────────┐                                      │
-│  │ JS Handlers          │  (in-process: evaluate-sessions,   │
-│  │ (read/write DB)      │   watchdog, daily-digest)          │
-│  └──────────────────────┘                                     │
-└───────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────┐
+│                    One Process                           │
+│                                                          │
+│  Console ──┐                          ┌── Web UI        │
+│  Telegram ──┼── Socket ──┐           │  (HTTP + WS)    │
+│             ┘            │           │  reads DB        │
+│                     commands/     events                 │
+│                     events                               │
+│                          │           │                   │
+│                    ┌─────┴───────────┴──────┐            │
+│                    │       EventBus          │            │
+│                    │   subscribe + emit      │            │
+│                    └──┬──┬──────┬──────┬─────┘            │
+│                       │  │      │      │                  │
+│                  ┌────┴┐┌┴────┐┌┴────┐┌┴──────────┐      │
+│                  │Core ││ DB  ││Cron ││ Context   │      │
+│                  │     ││Write││     ││ Learner   │      │
+│                  └─────┘└──┬──┘└─────┘└───────────┘      │
+│                            │writes                        │
+│                       ┌────┴────┐                         │
+│                       │ SQLite  │◀── Web UI reads         │
+│                       └─────────┘                         │
+└──────────────────────────────────────────────────────────┘
 ```
 
 ## Components
 
-### Core System
+### Core
 
-One long-running process. EventBus connects everything inside it.
+Subscribes to command events. Emits observation events. Multi-agent runtime.
 
-**Core**: subscribes to commands, emits observations. Multi-agent runtime.
+All sessions run concurrently in the same process — async, non-blocking. 10 agents can run heartbeats simultaneously.
+
 ```
 Subscribes to: input, run, fork, steer, cancel
 Emits: session_start, text, tool_call, tool_result, session_end, message_created
 ```
 
-**Socket server**: bridges user interfaces to EventBus.
+Contains: SubagentManager, tools, workflow engine, compaction, session persistence (JSONL).
+
+### Socket Server
+
+Bridges user interfaces to the EventBus.
+
 ```
 Inbound: commands from console/telegram/web UI → emits to bus
 Outbound: subscribes to bus → forwards events to clients
 ```
 
-**DB writer** (optional subscriber): persists events to SQLite.
+### User Interfaces (behind socket)
+
+- **Console**: readline → socket → bus. Bus → socket → terminal.
+- **Telegram**: bot → socket → bus. Bus → socket → telegram chat.
+- **Web UI**: WebSocket → socket for live events. HTTP reads DB for queries.
+
+### DB Writer (optional subscriber)
+
+Persists events to SQLite. The only component that writes to DB.
+
 ```
-Subscribes to: session_start, session_end, message_created, eval
-Writes: sessions, requests, evaluations tables
+Subscribes to: session_start, session_end, message_created, eval, cron_fired
 ```
 
-**Context learner** (optional subscriber): post-session knowledge extraction.
+Without it, core runs fine. Events are ephemeral.
+
+### Cron
+
+Emits `run` commands on schedule. Reads DB for job history. Runs JS handlers in-process.
+
+```
+Emits: run (agent heartbeats), cron_fired (tracking)
+Reads DB: last fire times, overlap detection
+Runs: JS handlers in-process (evaluate-sessions, watchdog)
+```
+
+Non-blocking — `bus.emit({ type: "run" })` returns immediately. Core starts the session async. Cron continues scheduling.
+
+### Context Learner (optional subscriber)
+
 ```
 Subscribes to: session_end
+Reads: session transcript from filesystem
 Writes: agents/<name>/context.md
 ```
-
-**User interfaces** (behind socket):
-- Console: readline → socket → bus. Bus → socket → terminal.
-- Telegram: bot → socket → bus. Bus → socket → telegram chat.
-- Web UI: WebSocket → socket for live events. HTTP reads DB for queries.
-
-### Cron System
-
-Standalone. No EventBus. Reads/writes DB directly. Spawns processes.
-
-**Scheduler**: reads cron.json, manages intervals, tracks job history in DB.
-```
-Reads DB: last fire times, job status, overlap detection
-Writes DB: job history (fired_at, status, duration)
-Spawns: may-agent --oneshot for agent tasks
-Runs: JS handlers in-process for lightweight jobs
-```
-
-**Spawned processes**: each `may-agent --oneshot` is independent.
-- Has its own EventBus + core + DB writer
-- Runs one task, writes results to DB, exits
-- Cron checks DB later to see what happened
-
-**JS handlers**: internal functions for plumbing.
-- evaluate-sessions: reads session transcripts, writes evaluations to DB
-- watchdog: reads active sessions, cancels stuck ones
-- daily-digest: reads DB, produces summary
-
-### Shared DB (SQLite)
-
-The integration point between core system and cron system.
-
-**Written by:**
-- DB writer subscriber (inside core system, via EventBus)
-- Cron scheduler (job history, direct writes)
-- JS handlers (evaluations, direct writes)
-- Spawned oneshot processes (via their own DB writer)
-
-**Read by:**
-- Web UI (dashboards, history, search)
-- Cron scheduler (last fire times, overlap)
-- JS handlers (session data for evaluation)
-- Agent tools (system_status, requests)
 
 ## Event Types
 
@@ -172,44 +135,43 @@ type AgentEvent =
   | { type: "session_end"; sessionId: string; agent: string; status: string; error?: string; outcome?: string }
   | { type: "message_created"; from: string; to: string; task: string }
 
+  // Cron
+  | { type: "cron_fired"; job: string; agent?: string; timestamp: number }
+
   // System
   | { type: "notification"; agent: string; text: string }
   | { type: "log"; level: "info" | "warn" | "error"; message: string };
 ```
 
-## Startup Modes
+## Startup
 
-**Full system** (core + cron in one process):
 ```typescript
 const bus = new EventBus();
-const core = new Core(bus, { persistDir, projectRoot });
-new DbWriter(bus, dbPath);
+
+// Core (subscribes to commands, emits observations)
+new Core(bus, { persistDir, projectRoot });
+
+// DB writer (optional — persists events to SQLite)
+const db = dbEnabled ? new DbWriter(bus, dbPath) : null;
+
+// Socket server (bridges user interfaces)
 new SocketServer(bus, db, socketPath);
-new ContextLearner(bus, agentsRoot);
-new CronScheduler(db, cronConfig, spawnCmd);
-new WebUI(db, socketPath, webPort);
+
+// Cron (emits run commands on schedule)
+if (cronEnabled) new CronScheduler(bus, db, cronConfig);
+
+// Context learner (post-session knowledge extraction)
+if (contextLearnEnabled) new ContextLearner(bus, agentsRoot);
+
+// Web UI (HTTP + WS, reads DB)
+if (webEnabled) new WebUI(db, socketPath, webPort);
 ```
 
-**Core only** (interactive, no cron):
-```typescript
-const bus = new EventBus();
-const core = new Core(bus, { persistDir, projectRoot });
-new DbWriter(bus, dbPath);
-new SocketServer(bus, db, socketPath);
-```
-
-**Oneshot** (single task, exits):
-```typescript
-const bus = new EventBus();
-const core = new Core(bus, { persistDir, projectRoot });
-new DbWriter(bus, dbPath);
-core.run(agent, task);
-```
-
-**Cron standalone** (no core, just scheduling):
-```typescript
-new CronScheduler(db, cronConfig, "may-agent --oneshot");
-```
+Startup is under 20 lines. Each mode attaches different components:
+- **--chat**: core + DB + socket
+- **--cron**: core + DB + socket + cron
+- **--oneshot**: core + DB
+- **full**: everything
 
 ## Migration Path
 
@@ -220,14 +182,8 @@ new CronScheduler(db, cronConfig, "may-agent --oneshot");
 
 ### Phase 2: DB writes through subscriber
 - Remove direct DB calls from core
-- DB writer subscriber handles all core-system writes
-- Cron keeps direct DB access (it's standalone)
+- DB writer subscriber handles all writes
 
-### Phase 3: Extract cron
-- Cron becomes standalone module
-- Spawns may-agent --oneshot instead of running in-process
-- Or runs in-process as today (both modes supported)
-
-### Phase 4: Thin startup
-- Under 100 lines per mode
+### Phase 3: Thin startup
 - Create bus → attach components → done
+- Under 100 lines total
