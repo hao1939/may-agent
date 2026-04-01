@@ -31,7 +31,6 @@ services:
     hostname: may-agent
     restart: unless-stopped
     init: true
-    user: "${UID:-1000}:${GID:-1000}"
     env_file: ../.env
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -55,7 +54,6 @@ services:
     init: true
     stdin_open: true
     tty: true
-    user: "${UID:-1000}:${GID:-1000}"
     env_file: ../.env
     entrypoint: ["/usr/local/bin/entrypoint-console.sh"]
     extra_hosts:
