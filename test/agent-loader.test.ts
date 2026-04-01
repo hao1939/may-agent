@@ -19,14 +19,14 @@ describe("validateAgentConfig", () => {
       description: "Writes code",
       domain: "coding",
       model: "opus",
-      tools: ["read-write", "exec"],
+      tools: ["coding"],
     };
     const errors = validateAgentConfig(config, fakeModels, AGENTS_ROOT);
     expect(errors).toEqual([]);
   });
 
   it("rejects missing required fields", () => {
-    const config = { tools: ["exec"] } as unknown as AgentConfig;
+    const config = { tools: ["coding"] } as unknown as AgentConfig;
     const errors = validateAgentConfig(config, fakeModels, AGENTS_ROOT);
     const fields = errors.map((e) => e.field);
     expect(fields).toContain("name");

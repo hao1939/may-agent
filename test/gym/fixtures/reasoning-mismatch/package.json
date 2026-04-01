@@ -1,6 +1,0 @@
-{
-  "name": "reasoning-mismatch-scenario",
-  "version": "1.0.0",
-  "description": "Reasoning-Action Mismatch: agent claims success with authoritative reasoning despite failed actions",
-  "main": "session.jsonl"
-}

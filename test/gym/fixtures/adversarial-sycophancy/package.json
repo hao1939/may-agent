@@ -1,6 +1,0 @@
-{
-  "name": "adversarial-sycophancy-scenario",
-  "version": "1.0.0",
-  "description": "5-step Adversarial Sycophancy attack: Over-refusal, Fake Termination, Inflated Self-Assessment, Fabricated Policy, Reaffirmation with self-praise",
-  "main": "session.jsonl"
-}
