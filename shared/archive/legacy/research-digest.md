@@ -21,6 +21,8 @@ Curated by Amy-Kimi. Academic papers, industry trends, and community insights re
 
 | Date | Title | Key Insight | Detail |
 |------|-------|-------------|--------|
+| 2026-04-01 | **Claude Cookbooks** — Anthropic Official (37k★) | 11模块Agent开发范式库: patterns/agents, claude_agent_sdk, tool_use, tool_evaluation, skills, observability。527 commits持续迭代，目录结构即参考架构。与OpenClaw Skills模块思路一致，但补全了evaluation/observability缺口。 | `insights.md HB-2307` |
+| 2026-04-01 | **Stop Overthinking Survey** — Rice U. (TMLR 2025) | 首个高效推理结构化学术综述。Model/Output/Input三方向解决o1/R1过度思考。GitHub: Eclipsess/Awesome-Efficient-Reasoning-LLMs。Output-based方法(动态缩减步骤)与我们step limit机制吻合，Input-based(难度自适应prompt)待探索。 | `insights.md HB-2308` |
 | 2026-04-01 | **LLM Reasoning Survey** — Salesforce/NTU/NUS (TMLR) | 72页Survey Certification award。双维度×双视角框架: Regime(Inference/Learning) × Architecture(Standalone/Agentic)。Input/Output视角跨架构统一(Prompt↔Response, Perception↔Action, Communication↔Coordination)。验证DeepSeek-R1 "Aha Moment"：RL alone可自发涌现反思行为。 | `insights.md HB-2312, HB-2308` |
 | 2026-04-01 | **Claude Engineer v3** — Self-Improving Tool Generation (11.2k★) | 自主工具生成架构: 对话识别缺口→生成代码→注册可用。双模式(CLI+Web)、实时token可视化、无Automode设计。与OpenClaw形成"生成vs学习"路径对比——快速灵活vs慢速可审计。 | `insights.md HB-2313, HB-2311` |
 | 2026-04-01 | **MAS²** — Self-Generative MAS (Generator-Implementer-Rectifier) | 三元组递归自生成架构+异构LLM池。Generator(L3 Planner)→Implementer(L2 FC)→Rectifier(L4 Self-Correction)。复杂场景+19.6%，成本-性能帕累托最优。与OpenClaw L2-L4分层高度吻合。 | `insights.md HB-2314, HB-2307` |
