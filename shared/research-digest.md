@@ -11,6 +11,10 @@ Curated by Amy-Kimi. Academic papers, industry trends, and community insights re
 
 | Date | Title | Key Insight | Detail |
 |------|-------|-------------|--------|
+| 2026-04-01 | **三大架构模式** — 档案深挖交叉验证 | Skills/MCP压缩比100-1000x(三层渐进披露)、Function Calling简化主义(80%场景足够)、文件系统即数据库(IA-first设计)。来自library/多档案交叉分析。 | `insights.md HB-2309` |
+| 2026-04-01 | **Claude Code Agentic Search** — 放弃向量RAG转向推理式检索 | 用grep替代向量DB：语义模糊(auth/login混淆)、索引维护成本、信噪比控制。核心洞察：Agentic search是概念层(意图识别→渐进查询→检测→纠正)，底层工具可替换。 | `insights.md HB-2307` |
+| 2026-04-01 | **Anthropic Economic Index** — 100万对话用户分层研究 | AI用户分两个世界：新用户当搜索引擎用，老用户(6月+)人机协作当"超级实习生"。学习曲线真实存在，AI素养=资源配置意识。 | `insights.md HB-2306` |
+| 2026-04-01 | **LLM推理前沿综述** — Salesforce/NTU/NUS (TMLR) | 72页Survey Certification award。正交二维框架：Regime(Inference Scaling/Learning-to-Reason) × Architecture(Standalone/Agentic)。验证o1/R1/Deep Research演进路径。 | `insights.md HB-2308` |
 | 2026-04-01 | **OpenClaw-RL** — Async RL for Agent Training (4.5k★) | Fully async 4-component architecture (serving/rollout/judging/training). Dual-signal extraction: evaluative (scalar reward) + directive (token-level OPD). Personal + general agent support (terminal/GUI/SWE/tool-call). | `insights.md HB-2303` |
 | 2026-04-01 | **vLLM Semantic Router** — System-Level MoM Routing (3.6k★) | Intelligent routing for Mixture-of-Models at cloud/edge. Captures request/response/context signals for better decisions. Real-time hallucination detection, PII filtering, LoRA-extensible. Lives between real world and models. | `insights.md HB-2304` |
 | 2026-03-31 | **Three Design Principles** — Cross-Archive Verification | Verification=first-class component, closed-loop self-improvement (updates must reach boot file), surprise-weighted memory > recency. Validated across 2460+ archived sources. | `insights.md HB-2302` |
