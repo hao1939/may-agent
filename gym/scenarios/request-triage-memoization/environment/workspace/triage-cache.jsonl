@@ -1,7 +1,0 @@
-{"reqId": "req:aaa111", "decision": "dismissed", "reason": "Ghost request — task was completed in session s_999 weeks ago", "ts": "2026-03-23T15:00:00Z"}
-{"reqId": "req:bbb222", "decision": "dismissed", "reason": "Duplicate of req:ccc333 — same task described differently", "ts": "2026-03-23T14:30:00Z"}
-{"reqId": "req:ddd444", "decision": "dismissed", "reason": "Not for this agent — belongs to tech-lead", "ts": "2026-03-23T16:00:00Z"}
-{"reqId": "req:eee555", "decision": "deferred", "reason": "Low priority — revisit next week", "ts": "2026-03-23T12:00:00Z"}
-{"reqId": "req:ccc333", "decision": "accepted", "reason": "Canonical rate-limiting request, medium priority, ready for implementation", "ts": "2026-03-23T19:23:00Z"}
-{"reqId": "req:fff666", "decision": "accepted", "reason": "Critical memory leak causing OOM kills in production every 8 hours — immediate fix needed", "ts": "2026-03-23T19:23:00Z"}
-{"reqId": "req:ggg777", "decision": "accepted", "reason": "Auth module shipped without tests, medium priority, ready for implementation", "ts": "2026-03-23T19:23:00Z"}
