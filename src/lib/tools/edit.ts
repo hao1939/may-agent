@@ -194,6 +194,3 @@ export function createEditTool(cwd: string, options?: EditToolOptions): AgentToo
 		},
 	};
 }
-
-/** Default edit tool using process.cwd() - for backwards compatibility */
-export const editTool = createEditTool(process.cwd());

@@ -107,7 +107,6 @@
   .md-rendered h3 { margin-top: 20px; margin-bottom: 6px; color: var(--fg2); }
   .md-rendered a { color: var(--accent); }
   .md-rendered code { background: var(--bg3); padding: 2px 5px; border-radius: 3px; font-size: 12px; }
-  #knowledge-list .md-rendered { max-width: 100%; overflow-x: auto; }
   .msg.assistant.md-rendered td, .msg.assistant.md-rendered th { padding: 4px 8px; border: 1px solid var(--border); }
   .msg.assistant.md-rendered strong { color: var(--fg); }
 </style>
@@ -132,7 +131,6 @@
     <div class="filters">
       <select id="f-from"><option value="">All sources</option><option value="human">Human</option><option value="cron">Cron</option></select>
       <select id="f-status"><option value="">All statuses</option><option value="COMPLETED">Completed</option><option value="FAILED">Failed</option><option value="CREATED">Active</option></select>
-      <input id="f-search" type="text" placeholder="Search task..." style="min-width:200px">
     </div>
     <div class="request-list" id="request-list"></div>
     <div class="pagination" id="pagination"></div>
@@ -698,11 +696,6 @@ document.getElementById('chat-input').addEventListener('keydown', (e) => {
 // ── Filters ───────────────────────────────────────────────────────────
 document.getElementById('f-from').addEventListener('change', () => { offset=0; loadRequests(); });
 document.getElementById('f-status').addEventListener('change', () => { offset=0; loadRequests(); });
-let searchTimer;
-document.getElementById('f-search').addEventListener('input', () => {
-  clearTimeout(searchTimer);
-  searchTimer = setTimeout(() => { offset=0; loadRequests(); }, 300);
-});
 
 // ── Helpers ───────────────────────────────────────────────────────────
 function esc(s) {
@@ -1002,16 +995,6 @@ async function loadDigest(date) {
 }
 
 // ── Init ──────────────────────────────────────────────────────────────
-
-// Restore tab from URL hash
-if (currentTab !== 'dashboard') {
-  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === currentTab));
-  document.getElementById('dashboard').classList.toggle('hidden', currentTab !== 'dashboard');
-  document.getElementById('chat').classList.toggle('hidden', currentTab !== 'chat');
-  document.getElementById('benchmarks').classList.toggle('hidden', currentTab !== 'benchmarks');
-  if (currentTab === 'chat') initChat();
-  if (currentTab === 'benchmarks') loadBenchmarks();
-}
 
 loadDigest();
 loadStats();

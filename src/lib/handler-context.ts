@@ -30,7 +30,7 @@ export interface TrackRequestOpts {
   notify?: string[];
 }
 
-export interface EvaluateTaskOpts {
+interface EvaluateTaskOpts {
   manager: SubagentManager;
   persistDir: string;
   parentSessionId: string;

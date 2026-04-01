@@ -84,7 +84,7 @@ export interface MemoryEntry {
 }
 
 /** Extract persistable fields from a SubagentDefinition. */
-export function toPersistedConfig(def: SubagentDefinition): PersistedAgentConfig {
+function toPersistedConfig(def: SubagentDefinition): PersistedAgentConfig {
   const config: PersistedAgentConfig = {
     name: def.name,
     description: def.description,

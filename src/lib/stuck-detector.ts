@@ -18,7 +18,7 @@ import { isToolError, computeToolArgsKey, TOOL_PIVOT_LIMIT, STUCK_WARNING_THRESH
 
 // ── Types ──────────────────────────────────────────────────────────────
 
-export interface StuckResult {
+interface StuckResult {
   stuck: boolean;
   reason: string;
 }

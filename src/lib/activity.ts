@@ -26,7 +26,7 @@ const ACTIVITY_RETAIN_LINES = 1000;
 
 // ── Types ───────────────────────────────────────────────────────────────
 
-export interface ActivityEventBase {
+interface ActivityEventBase {
   ts: number;
   sid: string;
   agent: string;
@@ -66,7 +66,7 @@ export interface BlockedEvent extends ActivityEventBase {
   blocker: string;
 }
 
-export type ActivityEvent = StartEvent | ProgressEvent | DoneEvent | ErrorEvent | BlockedEvent;
+type ActivityEvent = StartEvent | ProgressEvent | DoneEvent | ErrorEvent | BlockedEvent;
 
 // ── Helpers ─────────────────────────────────────────────────────────────
 

@@ -4,9 +4,6 @@
  */
 
 import * as Diff from "diff";
-import { constants } from "fs";
-import { access, readFile } from "fs/promises";
-import { resolveToCwd } from "./path-utils.js";
 
 export function detectLineEnding(content: string): "\r\n" | "\n" {
 	const crlfIdx = content.indexOf("\r\n");
@@ -59,7 +56,7 @@ export function normalizeForFuzzyMatch(text: string): string {
 	);
 }
 
-export interface FuzzyMatchResult {
+interface FuzzyMatchResult {
 	/** Whether a match was found */
 	found: boolean;
 	/** The index where the match starts (in the content that should be used for replacement) */
@@ -233,85 +230,4 @@ export function generateDiffString(
 	}
 
 	return { diff: output.join("\n"), firstChangedLine };
-}
-
-export interface EditDiffResult {
-	diff: string;
-	firstChangedLine: number | undefined;
-}
-
-export interface EditDiffError {
-	error: string;
-}
-
-/**
- * Compute the diff for an edit operation without applying it.
- * Used for preview rendering in the TUI before the tool executes.
- */
-export async function computeEditDiff(
-	path: string,
-	oldText: string,
-	newText: string,
-	cwd: string,
-): Promise<EditDiffResult | EditDiffError> {
-	const absolutePath = resolveToCwd(path, cwd);
-
-	try {
-		// Check if file exists and is readable
-		try {
-			await access(absolutePath, constants.R_OK);
-		} catch {
-			return { error: `File not found: ${path}` };
-		}
-
-		// Read the file
-		const rawContent = await readFile(absolutePath, "utf-8");
-
-		// Strip BOM before matching (LLM won't include invisible BOM in oldText)
-		const { text: content } = stripBom(rawContent);
-
-		const normalizedContent = normalizeToLF(content);
-		const normalizedOldText = normalizeToLF(oldText);
-		const normalizedNewText = normalizeToLF(newText);
-
-		// Find the old text using fuzzy matching (tries exact match first, then fuzzy)
-		const matchResult = fuzzyFindText(normalizedContent, normalizedOldText);
-
-		if (!matchResult.found) {
-			return {
-				error: `Could not find the exact text in ${path}. The old text must match exactly including all whitespace and newlines.`,
-			};
-		}
-
-		// Count occurrences using fuzzy-normalized content for consistency
-		const fuzzyContent = normalizeForFuzzyMatch(normalizedContent);
-		const fuzzyOldText = normalizeForFuzzyMatch(normalizedOldText);
-		const occurrences = fuzzyContent.split(fuzzyOldText).length - 1;
-
-		if (occurrences > 1) {
-			return {
-				error: `Found ${occurrences} occurrences of the text in ${path}. The text must be unique. Please provide more context to make it unique.`,
-			};
-		}
-
-		// Compute the new content using the matched position
-		// When fuzzy matching was used, contentForReplacement is the normalized version
-		const baseContent = matchResult.contentForReplacement;
-		const newContent =
-			baseContent.substring(0, matchResult.index) +
-			normalizedNewText +
-			baseContent.substring(matchResult.index + matchResult.matchLength);
-
-		// Check if it would actually change anything
-		if (baseContent === newContent) {
-			return {
-				error: `No changes would be made to ${path}. The replacement produces identical content.`,
-			};
-		}
-
-		// Generate the diff
-		return generateDiffString(baseContent, newContent);
-	} catch (err) {
-		return { error: err instanceof Error ? err.message : String(err) };
-	}
 }
