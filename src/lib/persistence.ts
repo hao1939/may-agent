@@ -18,7 +18,7 @@ import { join, dirname } from "node:path";
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { SubagentDefinition } from "./types.js";
 import { sanitizeMemory } from "./security/memory-sanitizer.js";
-import { upsertSession, updateSessionDb } from "./requests.js";
+// DB writes removed from RegistryStore — handled by DbWriter subscriber via EventBus.
 import { log } from "./log.js";
 
 /** Serializable agent config (no tools, no apiKey, no full model object). */
@@ -503,28 +503,12 @@ export class RegistryStore implements SessionStore {
     delete this.agents[name];
   }
 
-  /** Record a new session (writes meta.json + mirrors to SQLite). */
+  /** Record a new session (writes meta.json). DB persistence handled by DbWriter subscriber. */
   saveSession(sessionId: string, entry: PersistedSession): void {
     writeSessionMeta(this.persistDir, sessionId, entry);
-    try {
-      upsertSession(this.persistDir, {
-        sessionId,
-        agent: entry.agent,
-        task: entry.task,
-        status: entry.status,
-        kind: entry.kind,
-        parentSessionId: entry.parentSessionId,
-        requestId: entry.orderId,
-        workflowRunId: entry.workflowRunId,
-        startedAt: entry.startedAt,
-        endedAt: entry.endedAt,
-        error: entry.error,
-        opCount: entry.opCount,
-      });
-    } catch { /* non-fatal — meta.json is source of truth */ }
   }
 
-  /** Update session status. Writes meta.json + updates SQLite. */
+  /** Update session status (writes meta.json). DB persistence handled by DbWriter subscriber. */
   updateSessionStatus(
     sessionId: string,
     status: "running" | "done" | "error" | "interrupted" | "idle",
@@ -541,14 +525,6 @@ export class RegistryStore implements SessionStore {
       if (error) session.error = error;
     }
     writeSessionMeta(this.persistDir, sessionId, session);
-    try {
-      updateSessionDb(this.persistDir, sessionId, {
-        status: session.status,
-        endedAt: session.endedAt,
-        error: session.error,
-        opCount: session.opCount,
-      });
-    } catch { /* non-fatal */ }
   }
 
   /** Get the current registry data (scans session dirs on each call). */

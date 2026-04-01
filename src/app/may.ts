@@ -185,6 +185,12 @@ const models: Record<string, ModelWithApiKey> = {
 // ── Infrastructure ─────────────────────────────────────────────────────
 
 const bus = new EventBus();
+
+// DB writer subscriber — persists events to SQLite
+import { DbWriter } from "../lib/db-writer.js";
+const dbWriter = new DbWriter(PERSIST_DIR);
+bus.subscribe(dbWriter.handler);
+
 setLogHandler((level, message) => {
   if (level === "debug") return; // debug logs don't reach the event system
   bus.emit({ type: "log", level: level as "info" | "warn" | "error", message });
