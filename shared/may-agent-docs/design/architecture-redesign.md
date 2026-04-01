@@ -4,7 +4,10 @@
 
 One integration point: the **EventBus**. Commands in, events out. Everything flows through it.
 
-**DB is optional.** A subscriber that persists events to SQLite. Enables queries (dashboards, history). Without it, core still runs — events are ephemeral.
+**DB** is a shared read store. Written only by the DB writer subscriber. Read by anyone who needs data.
+
+**One write path**: component → bus → DB writer → SQLite.
+**Multiple read paths**: anyone reads SQLite directly.
 
 ## EventBus
 
@@ -25,66 +28,44 @@ class EventBus {
 }
 ```
 
-15 lines. Everyone subscribes. Everyone emits. No direct calls between components.
-
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────┐
-│                 User Interfaces                      │
-│                                                      │
-│  Console ──┐                                         │
-│  Telegram ──┼── Socket ──┐         ┌── Web UI ──┐   │
-│  (future) ──┘            │         │   (HTTP +   │   │
-│                          │         │   WebSocket)│   │
-└──────────────────────────┼─────────┼─────────────┘   │
-                           │         │                  │
-                      commands/   events +              │
-                      events     DB reads               │
-                           │         │                  │
-┌──────────────────────────┼─────────┼──────────────────┘
-│                    ┌─────┴─────────┴──────┐
-│                    │      EventBus         │
-│                    │  subscribe() + emit() │
-│                    └──┬──────┬──────┬──────┘
-│                       │      │      │
-│                  ┌────┴──┐ ┌┴────┐ ┌┴──────────┐
-│   Internal:      │ Core  │ │ DB  │ │ Context   │
-│                  │       │ │Write│ │ Learner   │
-│                  └───────┘ └──┬──┘ └───────────┘
-│                               │
-│                          ┌────┴────┐
-│                          │ SQLite  │◀── Web UI reads
-│                          └─────────┘
+┌─────────────────────────────────────────────────┐
+│              User Interfaces                     │
+│                                                  │
+│  Console ──┐                     ┌── Web UI ──┐ │
+│  Telegram ──┼── Socket ──┐      │  (HTTP +   │ │
+│             ┘            │      │  WebSocket)│ │
+└──────────────────────────┼──────┼────────────┘ │
+                           │      │               │
+                      commands/ events            │
+                      events   + DB reads         │
+                           │      │               │
+┌──────────────────────────┼──────┼───────────────┘
+│                    ┌─────┴──────┴──────┐
+│                    │     EventBus      │
+│                    │ subscribe + emit  │
+│                    └──┬───┬──────┬─────┘
+│                       │   │      │
+│                  ┌────┴┐ ┌┴────┐ ┌┴──────────┐
+│                  │Core │ │ DB  │ │ Context   │
+│                  │     │ │Write│ │ Learner   │
+│                  └─────┘ └──┬──┘ └───────────┘
+│                             │ writes
+│                        ┌────┴────┐
+│                        │ SQLite  │◀── reads: Web UI, Cron, Handlers
+│                        └─────────┘
 │
 │                  ┌────────┐
-│                  │  Cron  │── emits run commands
+│                  │  Cron  │── emits run commands + cron_fired
+│                  │        │── reads DB for scheduling decisions
+│                  │        │── runs JS handlers in-process
 │                  └────────┘
-└───────────────────────────────────────────────────────
+└──────────────────────────────────────────────────
 ```
 
 ## Components
-
-### Socket Server
-
-The boundary between user interfaces and the system. Bridges socket protocol to EventBus.
-
-```
-Inbound: receives commands from console/telegram/web UI → emits to bus
-Outbound: subscribes to bus → forwards events to connected clients
-```
-
-Console and telegram connect via socket. They don't subscribe to the EventBus directly.
-
-### User Interfaces
-
-All behind the socket. Each is a client that sends commands and renders events.
-
-**Console**: readline → socket commands. Socket events → terminal rendering.
-**Telegram**: bot messages → socket commands. Socket events → telegram messages.
-**Web UI**: HTTP + WebSocket. WebSocket connects to socket for live events. HTTP reads DB directly for queries (session history, stats, benchmarks).
-
-Web UI is enhanced because it can query the DB — browse session history, search requests, view dashboards. Console and telegram only see live events.
 
 ### Core
 
@@ -95,30 +76,55 @@ Subscribes to: input, run, fork, steer, cancel
 Emits: session_start, text, tool_call, tool_result, session_end, message_created
 ```
 
-Contains: SubagentManager, tools, workflow engine, compaction, session persistence (JSONL).
+Contains: SubagentManager, tools, workflow engine, compaction, session persistence (JSONL on filesystem).
+
+Does NOT access DB. Does NOT know about socket, console, telegram, cron.
+
+### Socket Server
+
+The boundary between user interfaces and the system.
+
+```
+Inbound: commands from console/telegram/web UI → emits to bus
+Outbound: subscribes to bus → forwards events to connected clients
+```
+
+### User Interfaces (behind socket)
+
+**Console**: readline → socket. Socket events → terminal.
+**Telegram**: bot messages → socket. Socket events → telegram chat.
+**Web UI**: WebSocket → socket for live events. HTTP reads DB for queries (history, stats, search). Enhanced because it has DB access.
 
 ### DB Writer (optional subscriber)
 
-Subscribes to observation events. Writes to SQLite.
+The only component that writes to SQLite. All writes flow through the bus.
 
 ```
-Subscribes to: session_start, session_end, message_created, eval
-Writes: sessions, requests, evaluations tables
+Subscribes to: session_start, session_end, message_created, eval, cron_fired
+Writes: sessions, requests, evaluations, cron_history tables
 ```
 
-Without this subscriber, core runs fine. No persistence, no queries. Add it when you need dashboards, history, or cross-restart state.
+### Cron
 
-### Cron (optional)
-
-Emits run commands on schedule. Reads cron.json for intervals.
+Timer that emits commands. Reads DB for scheduling. Runs JS handlers.
 
 ```
-Emits: run (heartbeats, scheduled jobs)
+Emits: run (agent heartbeats), cron_fired (tracking)
+Reads DB: last run times, overlap detection
+Runs: JS handlers in-process (evaluate-sessions, watchdog, daily-digest)
 ```
+
+Cron never writes DB directly. It emits `cron_fired` events → DB writer persists them.
+
+JS handlers are cron's implementation detail — internal functions that read DB and emit results to the bus.
 
 ### Context Learner (optional subscriber)
 
-Subscribes to session_end. Extracts knowledge. Writes to context.md.
+```
+Subscribes to: session_end
+Reads: session transcript from filesystem
+Writes: agents/<name>/context.md
+```
 
 ## Event Types
 
@@ -140,51 +146,60 @@ type AgentEvent =
   | { type: "session_end"; sessionId: string; agent: string; status: string; error?: string; outcome?: string }
   | { type: "message_created"; from: string; to: string; task: string }
 
+  // Cron
+  | { type: "cron_fired"; job: string; agent?: string; timestamp: number }
+
   // System
   | { type: "notification"; agent: string; text: string }
   | { type: "log"; level: "info" | "warn" | "error"; message: string };
 ```
 
+## Data Flow Rules
+
+| Action | Path |
+|--------|------|
+| Write anything | → bus.emit() → DB writer → SQLite |
+| Read data | → SQLite directly |
+| Send command to core | → bus.emit() |
+| Receive events | → bus.subscribe() or socket |
+| User interaction | → socket → bus |
+
 ## Startup
 
 ```typescript
-// Create the bus
 const bus = new EventBus();
 
-// Attach core (subscribes to commands, emits observations)
+// Core (subscribes to commands, emits observations)
 const core = new Core(bus, { persistDir, projectRoot });
 
-// Attach optional subscribers
+// DB writer (subscribes to events, writes SQLite)
 if (dbEnabled) new DbWriter(bus, dbPath);
-if (contextLearnEnabled) new ContextLearner(bus, agentsRoot);
 
-// Attach socket server (bridges to user interfaces)
+// Socket server (bridges UI interfaces to bus)
 new SocketServer(bus, db, socketPath);
 
-// Attach cron (emits run commands on schedule)
-if (cronEnabled) new CronScheduler(bus, cronConfig);
+// Cron (emits run commands, reads DB, runs handlers)
+if (cronEnabled) new CronScheduler(bus, db, cronConfig);
 
-// Web UI is separate — HTTP server that reads DB + connects to socket
+// Context learner (subscribes to session_end)
+if (contextLearnEnabled) new ContextLearner(bus, agentsRoot);
+
+// Web UI (HTTP + WS, reads DB, connects to socket)
 if (webEnabled) new WebUI(db, socketPath, webPort);
 ```
-
-Each mode attaches different components:
-- **--chat**: core + socket + console (via socket)
-- **--cron**: core + socket + cron + DB writer
-- **--oneshot**: core only (no socket, no cron, no DB)
-- **full**: everything
 
 ## Migration Path
 
 ### Phase 1: Unified EventBus
-- Replace current EventBus with 15-line version
+- 15-line EventBus replaces current class
 - Core emits through it
-- Extract command handling into core subscriber
-- Socket bridges to bus instead of calling handleInput
+- Command handling extracted into core subscriber
+- Socket bridges to bus
 
-### Phase 2: Move DB writes to subscriber
-- Remove direct DB calls from core
-- Core depends only on EventBus + filesystem
+### Phase 2: DB writes through bus
+- Remove direct DB calls from core and cron
+- DB writer subscriber handles all writes
+- One write path: bus → DB writer → SQLite
 
 ### Phase 3: Thin startup
 - Create bus → attach components → done
