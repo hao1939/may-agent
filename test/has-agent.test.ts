@@ -34,12 +34,12 @@ function registerAgent(manager: SubagentManager, name: string) {
 
 describe("SubagentManager.hasAgent()", () => {
   it("returns false when no agents are registered", () => {
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) , infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")), infraRetryMax: 0 });
     expect(manager.hasAgent("anything")).toBe(false);
   });
 
   it("returns true for a registered agent and false for an unregistered one", () => {
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) , infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")), infraRetryMax: 0 });
     registerAgent(manager, "alpha");
     registerAgent(manager, "beta");
 
@@ -49,7 +49,7 @@ describe("SubagentManager.hasAgent()", () => {
   });
 
   it("returns true after re-registering an agent", () => {
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) , infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")), infraRetryMax: 0 });
     registerAgent(manager, "alpha");
     expect(manager.hasAgent("alpha")).toBe(true);
 

@@ -14,7 +14,13 @@
 
 /** Agent commands (to core) */
 export type AgentCommand =
-  | { type: "fork"; agent: string; task: string; originSessionId?: string; opts?: { kind?: string; requestId?: string; source?: string } }
+  | {
+      type: "fork";
+      agent: string;
+      task: string;
+      originSessionId?: string;
+      opts?: { kind?: string; requestId?: string; source?: string };
+    }
   | { type: "message"; from: string; to: string; task: string; priority?: string }
   | { type: "input"; sessionId?: string; text?: string; message?: string; source?: string }
   | { type: "steer"; sessionId?: string; text?: string; message?: string; source?: string }
@@ -22,10 +28,7 @@ export type AgentCommand =
   | { type: "cancel_all" };
 
 /** Management commands (to core / launcher) */
-export type ManagementCommand =
-  | { type: "reload" }
-  | { type: "restart" }
-  | { type: "shutdown" };
+export type ManagementCommand = { type: "reload" } | { type: "restart" } | { type: "shutdown" };
 
 /** Observation events (from core) */
 export type SessionEvent =
@@ -34,7 +37,15 @@ export type SessionEvent =
   | { type: "tool_result"; sessionId: string; agent: string; tool: string; preview: string; isError: boolean }
   | { type: "turn_end"; sessionId: string; agent: string; toolCalls: number; durationMs: number }
   | { type: "session_start"; sessionId: string; agent: string; task: string; parentSessionId?: string }
-  | { type: "session_end"; sessionId: string; agent: string; status: string; duration?: string; error?: string; outcome?: string };
+  | {
+      type: "session_end";
+      sessionId: string;
+      agent: string;
+      status: string;
+      duration?: string;
+      error?: string;
+      outcome?: string;
+    };
 
 /** System events */
 export type SystemEvent =
@@ -68,7 +79,11 @@ export type SystemEvent =
     };
 
 /** All event types — commands + observations + system */
-export type AgentEvent = AgentCommand | ManagementCommand | SessionEvent | SystemEvent
+export type AgentEvent =
+  | AgentCommand
+  | ManagementCommand
+  | SessionEvent
+  | SystemEvent
   // Deprecated — kept for backward compat during migration
   | { type: "info"; message: string; channel?: string }
   | { type: "prompt"; message: string; channel?: string };
@@ -82,7 +97,17 @@ export function isSessionEvent(event: AgentEvent): event is SessionEvent {
 
 /** Check if an event is a command (to core). */
 export function isCommand(event: AgentEvent): event is AgentCommand | ManagementCommand {
-  const commands = new Set(["fork", "message", "input", "steer", "cancel", "cancel_all", "reload", "restart", "shutdown"]);
+  const commands = new Set([
+    "fork",
+    "message",
+    "input",
+    "steer",
+    "cancel",
+    "cancel_all",
+    "reload",
+    "restart",
+    "shutdown",
+  ]);
   return commands.has(event.type);
 }
 
@@ -92,7 +117,9 @@ export function isCommand(event: AgentEvent): event is AgentCommand | Management
 /** @deprecated Use AgentEvent instead. */
 export type RunnerEvent = AgentEvent;
 /** @deprecated Use AgentCommand instead. */
-export type RunnerCommand = AgentCommand | ManagementCommand
+export type RunnerCommand =
+  | AgentCommand
+  | ManagementCommand
   | { type: "status" }
   | { type: "close" }
   | { type: "cancel_task" }
@@ -117,13 +144,19 @@ export class EventBus {
   /** Subscribe to all events. Returns unsubscribe function. */
   subscribe(fn: Subscriber): () => void {
     this.subscribers.push(fn);
-    return () => { this.subscribers = this.subscribers.filter(s => s !== fn); };
+    return () => {
+      this.subscribers = this.subscribers.filter((s) => s !== fn);
+    };
   }
 
   /** Emit an event to all subscribers. */
   emit(event: AgentEvent): void {
     for (const fn of this.subscribers) {
-      try { fn(event); } catch { /* subscriber errors never break the bus */ }
+      try {
+        fn(event);
+      } catch {
+        /* subscriber errors never break the bus */
+      }
     }
   }
 

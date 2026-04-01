@@ -1,4 +1,4 @@
-export type { SessionStore } from './persistence.js';
+export type { SessionStore } from "./persistence.js";
 export { SubagentManager, generateId, truncateForPrompt } from "./manager.js";
 export type { SubagentManagerOptions, RunOptions } from "./manager.js";
 // Session recovery (Ambulance Protocol — P62)
@@ -117,7 +117,14 @@ export { createBackgroundExecTool } from "./background-exec.js";
 export type { BackgroundExecToolOptions } from "./background-exec.js";
 export { createSocketWatchTool } from "./socket-watch.js";
 export type { SocketWatchToolOptions } from "./socket-watch.js";
-export { createClaudeCodeTool, createGeminiCliTool, createCodexTool, truncateOutput, stripAnsi, spawnCliAgent } from "./cli-agents.js";
+export {
+  createClaudeCodeTool,
+  createGeminiCliTool,
+  createCodexTool,
+  truncateOutput,
+  stripAnsi,
+  spawnCliAgent,
+} from "./cli-agents.js";
 export type { CliAgentToolOptions, GeminiCliToolOptions, CodexToolOptions } from "./cli-agents.js";
 export { createCronTool } from "./cron-tool.js";
 export type { CronToolOptions, CronEntry } from "./cron-tool.js";
@@ -150,7 +157,23 @@ export type {
 export type { HandlerContext, HandlerModule } from "./handler-context.js";
 export { retryWithBackoff } from "./retry-with-backoff.js";
 export type { RetryWithBackoffOptions } from "./retry-with-backoff.js";
-export { learnFromSession, learnFromSessionLLM, learnFromText, mergeContext, extractFacts, extractFactsMechanical, applyContextUpdates, readContext } from "./context-learn.js";
-export type { LearnFromSessionOptions, LearnFromSessionLLMOptions, ContextUpdate, ContextUpdateResult, LLMCaller, TranscriptMessage } from "./context-learn.js";
+export {
+  learnFromSession,
+  learnFromSessionLLM,
+  learnFromText,
+  mergeContext,
+  extractFacts,
+  extractFactsMechanical,
+  applyContextUpdates,
+  readContext,
+} from "./context-learn.js";
+export type {
+  LearnFromSessionOptions,
+  LearnFromSessionLLMOptions,
+  ContextUpdate,
+  ContextUpdateResult,
+  LLMCaller,
+  TranscriptMessage,
+} from "./context-learn.js";
 export { loadAgents, reloadAgents, validateAgentConfig } from "../app/agent-loader.js";
 export type { AgentConfig, AgentLoaderOptions, LoadResult, ValidationError } from "../app/agent-loader.js";

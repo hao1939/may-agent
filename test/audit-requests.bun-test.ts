@@ -3,8 +3,14 @@ import { mkdtempSync, mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import {
-  getDb, closeDb, trackRequest, updateRequest, getRequest,
-  getActiveRequests, getStaleRequests, archiveOld,
+  getDb,
+  closeDb,
+  trackRequest,
+  updateRequest,
+  getRequest,
+  getActiveRequests,
+  getStaleRequests,
+  archiveOld,
 } from "../src/lib/requests";
 
 let testDir: string;
@@ -31,7 +37,9 @@ describe("audit-requests scenarios", () => {
     const db = getDb(testDir);
     const threeHoursAgo = Date.now() - 3 * 60 * 60 * 1000;
     db.run("UPDATE requests SET createdAt = ?, updatedAt = ? WHERE requestId = ?", [
-      threeHoursAgo, threeHoursAgo, reqId,
+      threeHoursAgo,
+      threeHoursAgo,
+      reqId,
     ]);
 
     const stale = getStaleRequests(testDir, 2 * 60 * 60 * 1000);
@@ -64,9 +72,7 @@ describe("audit-requests scenarios", () => {
     // Backdate
     const db = getDb(testDir);
     const fiveHoursAgo = Date.now() - 5 * 60 * 60 * 1000;
-    db.run("UPDATE requests SET createdAt = ?, updatedAt = ? WHERE requestId = ?", [
-      fiveHoursAgo, fiveHoursAgo, reqId,
-    ]);
+    db.run("UPDATE requests SET createdAt = ?, updatedAt = ? WHERE requestId = ?", [fiveHoursAgo, fiveHoursAgo, reqId]);
 
     const stale = getStaleRequests(testDir, 4 * 60 * 60 * 1000);
     expect(stale).toHaveLength(1);
@@ -85,13 +91,10 @@ describe("audit-requests scenarios", () => {
     // Backdate
     const db = getDb(testDir);
     const fiveHoursAgo = Date.now() - 5 * 60 * 60 * 1000;
-    db.run("UPDATE requests SET createdAt = ?, updatedAt = ? WHERE requestId = ?", [
-      fiveHoursAgo, fiveHoursAgo, reqId,
-    ]);
+    db.run("UPDATE requests SET createdAt = ?, updatedAt = ? WHERE requestId = ?", [fiveHoursAgo, fiveHoursAgo, reqId]);
 
     // Simulate the audit reset
-    const stale = getStaleRequests(testDir, 4 * 60 * 60 * 1000)
-      .filter(r => r.status === "IN_PROGRESS");
+    const stale = getStaleRequests(testDir, 4 * 60 * 60 * 1000).filter((r) => r.status === "IN_PROGRESS");
     expect(stale).toHaveLength(1);
 
     updateRequest(testDir, reqId, { status: "CREATED" });
@@ -152,9 +155,7 @@ describe("audit-requests scenarios", () => {
     // Backdate but keep CREATED status
     const db = getDb(testDir);
     const tenDaysAgo = Date.now() - 10 * 24 * 60 * 60 * 1000;
-    db.run("UPDATE requests SET createdAt = ?, updatedAt = ? WHERE requestId = ?", [
-      tenDaysAgo, tenDaysAgo, reqId,
-    ]);
+    db.run("UPDATE requests SET createdAt = ?, updatedAt = ? WHERE requestId = ?", [tenDaysAgo, tenDaysAgo, reqId]);
 
     const archived = archiveOld(testDir, 7);
     expect(archived).toBe(0); // Still CREATED, not archived
@@ -165,21 +166,30 @@ describe("audit-requests scenarios", () => {
 
   test("getActiveRequests returns only CREATED and IN_PROGRESS", () => {
     const req1 = trackRequest(testDir, {
-      fromEntity: "human", toAgent: "tech-lead", method: "chat", task: "task 1",
+      fromEntity: "human",
+      toAgent: "tech-lead",
+      method: "chat",
+      task: "task 1",
     });
     const req2 = trackRequest(testDir, {
-      fromEntity: "may", toAgent: "coder", method: "call", task: "task 2",
+      fromEntity: "may",
+      toAgent: "coder",
+      method: "call",
+      task: "task 2",
     });
     updateRequest(testDir, req2, { status: "IN_PROGRESS" });
 
     const req3 = trackRequest(testDir, {
-      fromEntity: "tech-lead", toAgent: "qa", method: "call", task: "task 3",
+      fromEntity: "tech-lead",
+      toAgent: "qa",
+      method: "call",
+      task: "task 3",
     });
     updateRequest(testDir, req3, { status: "COMPLETED", completedAt: Date.now() });
 
     const active = getActiveRequests(testDir);
     expect(active).toHaveLength(2);
-    const ids = active.map(r => r.requestId);
+    const ids = active.map((r) => r.requestId);
     expect(ids).toContain(req1);
     expect(ids).toContain(req2);
     expect(ids).not.toContain(req3);

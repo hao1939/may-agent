@@ -39,7 +39,10 @@ function makeNonFinishCtx(): BeforeToolCallContext {
 }
 
 /** Build an assistant message containing a tool call. */
-function assistantWithToolCall(name: string, args: Record<string, unknown> = {}): BeforeToolCallContext["context"]["messages"][0] {
+function assistantWithToolCall(
+  name: string,
+  args: Record<string, unknown> = {},
+): BeforeToolCallContext["context"]["messages"][0] {
   return {
     role: "assistant" as const,
     content: [{ type: "toolCall" as const, id: "tc_x", name, arguments: args }],
@@ -71,17 +74,18 @@ describe("finish-guard", () => {
   });
 
   it("allows finish(success) with empty deliverables array and non-action summary", async () => {
-    const result = await guard(makeCtx({ status: "success", summary: "No new work — early exit per cost guard.", deliverables: [] }));
+    const result = await guard(
+      makeCtx({ status: "success", summary: "No new work — early exit per cost guard.", deliverables: [] }),
+    );
     expect(result).toBeUndefined();
   });
 
   // === Ghost Deliverable Guard (FM-3.1 preventive) Tests ===
 
   it("blocks finish(success) with 'Fixed bug' summary but no file changes", async () => {
-    const ctx = makeCtx(
-      { status: "success", summary: "Fixed the authentication bug in login handler" },
-      [assistantWithToolCall("read", { path: "src/auth.ts" })],
-    );
+    const ctx = makeCtx({ status: "success", summary: "Fixed the authentication bug in login handler" }, [
+      assistantWithToolCall("read", { path: "src/auth.ts" }),
+    ]);
     const result = await guard(ctx);
     expect(result).toBeDefined();
     expect(result!.block).toBe(true);
@@ -90,10 +94,9 @@ describe("finish-guard", () => {
   });
 
   it("blocks finish(success) with 'Implemented' summary but no file changes", async () => {
-    const ctx = makeCtx(
-      { status: "success", summary: "Implemented the new caching layer" },
-      [assistantWithToolCall("read", { path: "src/cache.ts" })],
-    );
+    const ctx = makeCtx({ status: "success", summary: "Implemented the new caching layer" }, [
+      assistantWithToolCall("read", { path: "src/cache.ts" }),
+    ]);
     const result = await guard(ctx);
     expect(result).toBeDefined();
     expect(result!.block).toBe(true);
@@ -101,10 +104,7 @@ describe("finish-guard", () => {
   });
 
   it("blocks finish(success) with 'Refactored' summary but no file changes", async () => {
-    const ctx = makeCtx(
-      { status: "success", summary: "Refactored the database module for clarity" },
-      [],
-    );
+    const ctx = makeCtx({ status: "success", summary: "Refactored the database module for clarity" }, []);
     const result = await guard(ctx);
     expect(result).toBeDefined();
     expect(result!.block).toBe(true);
@@ -112,26 +112,20 @@ describe("finish-guard", () => {
   });
 
   it("allows 'Fixed' summary when write evidence exists", async () => {
-    const ctx = makeCtx(
-      { status: "success", summary: "Fixed the authentication bug" },
-      [
-        assistantWithToolCall("edit", { path: "src/auth.ts", oldText: "a", newText: "b" }),
-        assistantWithToolCall("read", { path: "src/auth.ts" }),
-      ],
-    );
+    const ctx = makeCtx({ status: "success", summary: "Fixed the authentication bug" }, [
+      assistantWithToolCall("edit", { path: "src/auth.ts", oldText: "a", newText: "b" }),
+      assistantWithToolCall("read", { path: "src/auth.ts" }),
+    ]);
     // No deliverables listed — but has write evidence, ghost guard doesn't fire
     const result = await guard(ctx);
     expect(result).toBeUndefined();
   });
 
   it("allows 'Updated' summary when bash write evidence exists", async () => {
-    const ctx = makeCtx(
-      { status: "success", summary: "Updated the config file" },
-      [
-        assistantWithToolCall("bash", { command: "echo 'new config' > config.json" }),
-        assistantWithToolCall("bash", { command: "cat config.json" }),
-      ],
-    );
+    const ctx = makeCtx({ status: "success", summary: "Updated the config file" }, [
+      assistantWithToolCall("bash", { command: "echo 'new config' > config.json" }),
+      assistantWithToolCall("bash", { command: "cat config.json" }),
+    ]);
     const result = await guard(ctx);
     expect(result).toBeUndefined();
   });
@@ -147,10 +141,9 @@ describe("finish-guard", () => {
   });
 
   it("blocks 'Deleted old module' summary but no file changes", async () => {
-    const ctx = makeCtx(
-      { status: "success", summary: "Deleted the deprecated logging module" },
-      [assistantWithToolCall("read", { path: "src/old-logger.ts" })],
-    );
+    const ctx = makeCtx({ status: "success", summary: "Deleted the deprecated logging module" }, [
+      assistantWithToolCall("read", { path: "src/old-logger.ts" }),
+    ]);
     const result = await guard(ctx);
     expect(result).toBeDefined();
     expect(result!.block).toBe(true);
@@ -158,10 +151,7 @@ describe("finish-guard", () => {
   });
 
   it("blocks 'Added new feature' summary with no deliverables and no writes", async () => {
-    const ctx = makeCtx(
-      { status: "success", summary: "Added retry logic to the API client" },
-      [],
-    );
+    const ctx = makeCtx({ status: "success", summary: "Added retry logic to the API client" }, []);
     const result = await guard(ctx);
     expect(result).toBeDefined();
     expect(result!.block).toBe(true);
@@ -347,8 +337,8 @@ describe("finish-guard", () => {
       },
       [
         assistantWithToolCall("write", { path: "src/foo.ts", content: "v1" }),
-        assistantWithToolCall("read", { path: "src/foo.ts" }),  // verification for first write
-        assistantWithToolCall("write", { path: "src/foo.ts", content: "v2" }),  // second write — no verification after
+        assistantWithToolCall("read", { path: "src/foo.ts" }), // verification for first write
+        assistantWithToolCall("write", { path: "src/foo.ts", content: "v2" }), // second write — no verification after
       ],
     );
     const result = await guard(ctx);
@@ -367,7 +357,7 @@ describe("finish-guard", () => {
       [
         assistantWithToolCall("write", { path: "src/foo.ts", content: "v1" }),
         assistantWithToolCall("write", { path: "src/foo.ts", content: "v2" }),
-        assistantWithToolCall("read", { path: "src/foo.ts" }),  // verification after last write
+        assistantWithToolCall("read", { path: "src/foo.ts" }), // verification after last write
       ],
     );
     const result = await guard(ctx);

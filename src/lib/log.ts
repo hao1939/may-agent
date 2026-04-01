@@ -14,8 +14,9 @@ export type LogHandler = (level: LogLevel, message: string) => void;
 const defaultHandler: LogHandler = (level, msg) => {
   if (level === "error") console.error(msg);
   else if (level === "warn") console.warn(msg);
-  else if (level === "debug") { /* silent by default */ }
-  else console.log(msg);
+  else if (level === "debug") {
+    /* silent by default */
+  } else console.log(msg);
 };
 
 let _handler: LogHandler = defaultHandler;

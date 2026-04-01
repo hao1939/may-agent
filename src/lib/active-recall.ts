@@ -58,7 +58,8 @@ export function runActiveRecall(agentName: string, projectRoot: string): ActiveR
     const tailLines = lines.slice(-100);
 
     const threeDaysAgo = Date.now() - 3 * 24 * 60 * 60 * 1000;
-    const matchingEntries: Array<{ failure_type?: string; error?: string; correction?: string; timestamp?: string }> = [];
+    const matchingEntries: Array<{ failure_type?: string; error?: string; correction?: string; timestamp?: string }> =
+      [];
 
     for (const line of tailLines) {
       try {
@@ -114,7 +115,7 @@ export function runActiveRecall(agentName: string, projectRoot: string): ActiveR
     for (const [failureType, info] of seenTypes) {
       const countNote = info.count > 1 ? ` (${info.count}x)` : "";
       warnings.push(
-        `⚠️ RECALL: ${agentName} failed ${info.daysLabel} due to ${failureType}${countNote}. ${info.correction}`
+        `⚠️ RECALL: ${agentName} failed ${info.daysLabel} due to ${failureType}${countNote}. ${info.correction}`,
       );
     }
 

@@ -99,7 +99,9 @@ describe("error-log-scanner — scanErrorLogs", () => {
     mkdirSync(dirA);
     writeFileSync(
       join(dirA, "ERROR_LOG.jsonl"),
-      Array(4).fill(JSON.stringify({ timestamp: now, error: "FM-2.5: SCHEMA" })).join("\n"),
+      Array(4)
+        .fill(JSON.stringify({ timestamp: now, error: "FM-2.5: SCHEMA" }))
+        .join("\n"),
     );
 
     // Agent B: 3 FM-1.1 + 2 FM-3.3 (only FM-1.1 triggers)
@@ -125,7 +127,9 @@ describe("error-log-scanner — scanErrorLogs", () => {
     const now = new Date().toISOString();
     writeFileSync(
       join(agentsRoot, ".lab", "ERROR_LOG.jsonl"),
-      Array(5).fill(JSON.stringify({ timestamp: now, error: "FM-2.5: SCHEMA" })).join("\n"),
+      Array(5)
+        .fill(JSON.stringify({ timestamp: now, error: "FM-2.5: SCHEMA" }))
+        .join("\n"),
     );
 
     const result = scanErrorLogs({ agentsRoot, threshold: 3, lookbackMs: 7 * 24 * 60 * 60 * 1000 });
@@ -158,14 +162,18 @@ describe("error-log-scanner — scanErrorLogs", () => {
     mkdirSync(coachDir);
     writeFileSync(
       join(coachDir, "ERROR_LOG.jsonl"),
-      Array(5).fill(JSON.stringify({ timestamp: now, error: "FM-2.1: TOOL" })).join("\n"),
+      Array(5)
+        .fill(JSON.stringify({ timestamp: now, error: "FM-2.1: TOOL" }))
+        .join("\n"),
     );
     // Bob has errors and is NOT excluded
     const bobDir = join(agentsRoot, "bob");
     mkdirSync(bobDir);
     writeFileSync(
       join(bobDir, "ERROR_LOG.jsonl"),
-      Array(3).fill(JSON.stringify({ timestamp: now, error: "FM-2.5: SCHEMA" })).join("\n"),
+      Array(3)
+        .fill(JSON.stringify({ timestamp: now, error: "FM-2.5: SCHEMA" }))
+        .join("\n"),
     );
 
     const result = scanErrorLogs({

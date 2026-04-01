@@ -3,9 +3,18 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import {
-  getDb, closeDb, trackRequest, updateRequest, getRequest,
-  getActiveRequests, getRequestsByAgent, getRequestTree,
-  getStaleRequests, isDuplicate, archiveOld, classifyError,
+  getDb,
+  closeDb,
+  trackRequest,
+  updateRequest,
+  getRequest,
+  getActiveRequests,
+  getRequestsByAgent,
+  getRequestTree,
+  getStaleRequests,
+  isDuplicate,
+  archiveOld,
+  classifyError,
 } from "../src/lib/requests";
 
 let testDir: string;
@@ -34,8 +43,10 @@ describe("getDb", () => {
 
   test("creates indexes", () => {
     const db = getDb(testDir);
-    const indexes = db.query("SELECT name FROM sqlite_master WHERE type='index' AND tbl_name='requests'").all() as {name: string}[];
-    const names = indexes.map(i => i.name);
+    const indexes = db.query("SELECT name FROM sqlite_master WHERE type='index' AND tbl_name='requests'").all() as {
+      name: string;
+    }[];
+    const names = indexes.map((i) => i.name);
     expect(names).toContain("idx_status");
     expect(names).toContain("idx_to_agent");
     expect(names).toContain("idx_parent");
@@ -46,7 +57,10 @@ describe("getDb", () => {
 describe("trackRequest", () => {
   test("creates a request and returns requestId", () => {
     const id = trackRequest(testDir, {
-      fromEntity: "human", toAgent: "tech-lead", task: "Fix the bug", method: "chat",
+      fromEntity: "human",
+      toAgent: "tech-lead",
+      task: "Fix the bug",
+      method: "chat",
     });
     expect(id).toBeTruthy();
     const record = getRequest(testDir, id);
@@ -60,14 +74,20 @@ describe("trackRequest", () => {
 
   test("truncates task to 500 characters", () => {
     const id = trackRequest(testDir, {
-      fromEntity: "bob", toAgent: "tech-lead", task: "x".repeat(1000), method: "send",
+      fromEntity: "bob",
+      toAgent: "tech-lead",
+      task: "x".repeat(1000),
+      method: "send",
     });
     expect(getRequest(testDir, id)!.task).toHaveLength(500);
   });
 
   test("stores optional fields", () => {
     const id = trackRequest(testDir, {
-      fromEntity: "bob", toAgent: "tech-lead", task: "Review design", method: "send",
+      fromEntity: "bob",
+      toAgent: "tech-lead",
+      task: "Review design",
+      method: "send",
       artifact: "agents/bob/workspace/brief.md",
       context: "Closes P70 gap",
       expectations: "Review and approve",
@@ -82,7 +102,13 @@ describe("trackRequest", () => {
 
   test("stores parentRequestId", () => {
     const parentId = trackRequest(testDir, { fromEntity: "human", toAgent: "may", task: "Deploy", method: "chat" });
-    const childId = trackRequest(testDir, { fromEntity: "may", toAgent: "tech-lead", task: "Implement", method: "call", parentRequestId: parentId });
+    const childId = trackRequest(testDir, {
+      fromEntity: "may",
+      toAgent: "tech-lead",
+      task: "Implement",
+      method: "call",
+      parentRequestId: parentId,
+    });
     expect(getRequest(testDir, childId)!.parentRequestId).toBe(parentId);
   });
 });
@@ -129,7 +155,7 @@ describe("getActiveRequests", () => {
 
     const active = getActiveRequests(testDir);
     expect(active).toHaveLength(2);
-    expect(active.map(r => r.task)).toEqual(["1", "2"]);
+    expect(active.map((r) => r.task)).toEqual(["1", "2"]);
   });
 
   test("returns empty when no active requests", () => {
@@ -144,15 +170,27 @@ describe("getRequestsByAgent", () => {
     trackRequest(testDir, { fromEntity: "b", toAgent: "tech-lead", task: "3", method: "call" });
     const r = getRequestsByAgent(testDir, "tech-lead");
     expect(r).toHaveLength(2);
-    expect(r.every(x => x.toAgent === "tech-lead")).toBe(true);
+    expect(r.every((x) => x.toAgent === "tech-lead")).toBe(true);
   });
 });
 
 describe("getRequestTree", () => {
   test("returns full hierarchy", () => {
     const rootId = trackRequest(testDir, { fromEntity: "human", toAgent: "may", task: "Deploy", method: "chat" });
-    const childId = trackRequest(testDir, { fromEntity: "may", toAgent: "tech-lead", task: "Implement", method: "call", parentRequestId: rootId });
-    trackRequest(testDir, { fromEntity: "tech-lead", toAgent: "coder", task: "Code", method: "call", parentRequestId: childId });
+    const childId = trackRequest(testDir, {
+      fromEntity: "may",
+      toAgent: "tech-lead",
+      task: "Implement",
+      method: "call",
+      parentRequestId: rootId,
+    });
+    trackRequest(testDir, {
+      fromEntity: "tech-lead",
+      toAgent: "coder",
+      task: "Code",
+      method: "call",
+      parentRequestId: childId,
+    });
     trackRequest(testDir, { fromEntity: "human", toAgent: "bob", task: "Unrelated", method: "chat" });
 
     const tree = getRequestTree(testDir, rootId);

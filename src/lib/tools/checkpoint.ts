@@ -67,10 +67,7 @@ interface CheckpointParams {
  * Read all checkpoints for a given session.
  * Returns them in order (oldest first).
  */
-export function readCheckpoints(
-  persistDir: string,
-  sessionId: string,
-): CheckpointEntry[] {
+export function readCheckpoints(persistDir: string, sessionId: string): CheckpointEntry[] {
   const dir = resolve(persistDir, "checkpoints");
   const filePath = resolve(dir, `${sessionId}.jsonl`);
   if (!existsSync(filePath)) return [];
@@ -94,10 +91,7 @@ export function readCheckpoints(
  * Read the latest checkpoint for a session.
  * Returns null if no checkpoints exist.
  */
-export function readLatestCheckpoint(
-  persistDir: string,
-  sessionId: string,
-): CheckpointEntry | null {
+export function readLatestCheckpoint(persistDir: string, sessionId: string): CheckpointEntry | null {
   const entries = readCheckpoints(persistDir, sessionId);
   return entries.length > 0 ? entries[entries.length - 1] : null;
 }
@@ -107,10 +101,7 @@ export function readLatestCheckpoint(
  * Uses the per-agent latest pointer at `.state/checkpoints/latest/<agentName>.json`.
  * Returns null if no checkpoints exist for this agent.
  */
-export function readLatestCheckpointForAgent(
-  persistDir: string,
-  agentName: string,
-): CheckpointEntry | null {
+export function readLatestCheckpointForAgent(persistDir: string, agentName: string): CheckpointEntry | null {
   const filePath = resolve(persistDir, "checkpoints", "latest", `${agentName}.json`);
   if (!existsSync(filePath)) return null;
   try {
@@ -142,18 +133,10 @@ export function cleanupStepCounter(sessionId: string): void {
  * The checkpoint is append-only — each call adds a new entry.
  * The last entry represents the most recent state.
  */
-export function createCheckpointTool(
-  options: CheckpointToolOptions,
-): AgentTool<TSchema> {
+export function createCheckpointTool(options: CheckpointToolOptions): AgentTool<TSchema> {
   const { persistDir } = options;
-  const resolveSessionId = () =>
-    typeof options.sessionId === "function"
-      ? options.sessionId()
-      : options.sessionId;
-  const resolveAgentName = () =>
-    typeof options.agentName === "function"
-      ? options.agentName()
-      : options.agentName;
+  const resolveSessionId = () => (typeof options.sessionId === "function" ? options.sessionId() : options.sessionId);
+  const resolveAgentName = () => (typeof options.agentName === "function" ? options.agentName() : options.agentName);
   const checkpointDir = resolve(persistDir, "checkpoints");
   const latestDir = resolve(checkpointDir, "latest");
 
@@ -200,18 +183,10 @@ export function createCheckpointTool(
       // Write to file
       try {
         mkdirSync(checkpointDir, { recursive: true });
-        appendFileSync(
-          resolve(checkpointDir, `${sid}.jsonl`),
-          JSON.stringify(entry) + "\n",
-          "utf-8",
-        );
+        appendFileSync(resolve(checkpointDir, `${sid}.jsonl`), JSON.stringify(entry) + "\n", "utf-8");
         // Write per-agent latest pointer for session injection
         mkdirSync(latestDir, { recursive: true });
-        writeFileSync(
-          resolve(latestDir, `${entry.agentName}.json`),
-          JSON.stringify(entry) + "\n",
-          "utf-8",
-        );
+        writeFileSync(resolve(latestDir, `${entry.agentName}.json`), JSON.stringify(entry) + "\n", "utf-8");
       } catch (err) {
         return {
           content: [
@@ -226,10 +201,7 @@ export function createCheckpointTool(
 
       // Build response
       const dataKeys = data ? Object.keys(data) : [];
-      const dataInfo =
-        dataKeys.length > 0
-          ? ` Data keys: ${dataKeys.join(", ")}.`
-          : "";
+      const dataInfo = dataKeys.length > 0 ? ` Data keys: ${dataKeys.join(", ")}.` : "";
 
       return {
         content: [

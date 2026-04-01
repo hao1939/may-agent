@@ -107,7 +107,7 @@ describe("validateAgentConfig", () => {
     // by not adding the archetype dir. The validator will flag it.
     const errors = validateAgentConfig(config, fakeModels, AGENTS_ROOT);
     // Will have extends error since _archetypes/coder doesn't exist on disk
-    const nonExtendsErrors = errors.filter(e => e.field !== "extends");
+    const nonExtendsErrors = errors.filter((e) => e.field !== "extends");
     expect(nonExtendsErrors).toEqual([]);
   });
 
@@ -121,6 +121,6 @@ describe("validateAgentConfig", () => {
       extends: "_archetypes/nonexistent",
     };
     const errors = validateAgentConfig(config, fakeModels, AGENTS_ROOT);
-    expect(errors.some(e => e.field === "extends" && e.message.includes("not found"))).toBe(true);
+    expect(errors.some((e) => e.field === "extends" && e.message.includes("not found"))).toBe(true);
   });
 });

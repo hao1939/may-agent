@@ -16,12 +16,7 @@ import { randomUUID } from "node:crypto";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
-export type RequestStatus =
-  | "CREATED"
-  | "IN_PROGRESS"
-  | "COMPLETED"
-  | "FAILED"
-  | "BLOCKED";
+export type RequestStatus = "CREATED" | "IN_PROGRESS" | "COMPLETED" | "FAILED" | "BLOCKED";
 
 export type RequestMethod = "chat" | "call" | "send" | "run" | "workflow";
 
@@ -260,19 +255,63 @@ export function getDb(persistDir: string): SqliteDb {
   db.exec(SCHEMA);
 
   // Migrations for existing databases (idempotent — ALTER ADD COLUMN fails silently if column exists)
-  try { db.exec("ALTER TABLE requests ADD COLUMN source TEXT"); } catch { /* already exists */ }
+  try {
+    db.exec("ALTER TABLE requests ADD COLUMN source TEXT");
+  } catch {
+    /* already exists */
+  }
   // gym_runs columns added after initial schema
-  try { db.exec("ALTER TABLE gym_runs ADD COLUMN run_tag TEXT"); } catch { /* already exists */ }
-  try { db.exec("ALTER TABLE gym_runs ADD COLUMN prompt_hash TEXT"); } catch { /* already exists */ }
-  try { db.exec("ALTER TABLE gym_runs ADD COLUMN framework_sha TEXT"); } catch { /* already exists */ }
-  try { db.exec("ALTER TABLE gym_runs ADD COLUMN model TEXT"); } catch { /* already exists */ }
-  try { db.exec("ALTER TABLE gym_runs ADD COLUMN batch_id TEXT"); } catch { /* already exists */ }
-  try { db.exec("ALTER TABLE gym_runs ADD COLUMN categories TEXT"); } catch { /* already exists */ }
-  try { db.exec("ALTER TABLE gym_runs ADD COLUMN tags TEXT"); } catch { /* already exists */ }
-  try { db.exec("ALTER TABLE gym_runs ADD COLUMN tier TEXT"); } catch { /* already exists */ }
+  try {
+    db.exec("ALTER TABLE gym_runs ADD COLUMN run_tag TEXT");
+  } catch {
+    /* already exists */
+  }
+  try {
+    db.exec("ALTER TABLE gym_runs ADD COLUMN prompt_hash TEXT");
+  } catch {
+    /* already exists */
+  }
+  try {
+    db.exec("ALTER TABLE gym_runs ADD COLUMN framework_sha TEXT");
+  } catch {
+    /* already exists */
+  }
+  try {
+    db.exec("ALTER TABLE gym_runs ADD COLUMN model TEXT");
+  } catch {
+    /* already exists */
+  }
+  try {
+    db.exec("ALTER TABLE gym_runs ADD COLUMN batch_id TEXT");
+  } catch {
+    /* already exists */
+  }
+  try {
+    db.exec("ALTER TABLE gym_runs ADD COLUMN categories TEXT");
+  } catch {
+    /* already exists */
+  }
+  try {
+    db.exec("ALTER TABLE gym_runs ADD COLUMN tags TEXT");
+  } catch {
+    /* already exists */
+  }
+  try {
+    db.exec("ALTER TABLE gym_runs ADD COLUMN tier TEXT");
+  } catch {
+    /* already exists */
+  }
   // Indexes on migrated columns (must come after ALTER TABLE)
-  try { db.exec("CREATE INDEX IF NOT EXISTS idx_gym_runs_batch ON gym_runs(batch_id)"); } catch { /* already exists */ }
-  try { db.exec("CREATE INDEX IF NOT EXISTS idx_gym_runs_prompt ON gym_runs(prompt_hash)"); } catch { /* already exists */ }
+  try {
+    db.exec("CREATE INDEX IF NOT EXISTS idx_gym_runs_batch ON gym_runs(batch_id)");
+  } catch {
+    /* already exists */
+  }
+  try {
+    db.exec("CREATE INDEX IF NOT EXISTS idx_gym_runs_prompt ON gym_runs(prompt_hash)");
+  } catch {
+    /* already exists */
+  }
 
   dbCache.set(persistDir, db);
   return db;
@@ -294,10 +333,7 @@ export function closeDb(persistDir: string): void {
 /**
  * Track a new request. Returns the generated requestId.
  */
-export function trackRequest(
-  persistDir: string,
-  opts: TrackRequestOpts
-): string {
+export function trackRequest(persistDir: string, opts: TrackRequestOpts): string {
   const db = getDb(persistDir);
   const requestId = randomUUID();
   const now = Date.now();
@@ -323,7 +359,7 @@ export function trackRequest(
       opts.context ?? null,
       opts.expectations ?? null,
       opts.notify ? JSON.stringify(opts.notify) : null,
-    ]
+    ],
   );
 
   return requestId;
@@ -332,11 +368,7 @@ export function trackRequest(
 /**
  * Update an existing request's status and metadata.
  */
-export function updateRequest(
-  persistDir: string,
-  requestId: string,
-  update: UpdateRequestOpts
-): void {
+export function updateRequest(persistDir: string, requestId: string, update: UpdateRequestOpts): void {
   const db = getDb(persistDir);
   const sets: string[] = ["updatedAt = ?"];
   const values: unknown[] = [Date.now()];
@@ -373,25 +405,15 @@ export function updateRequest(
   }
 
   values.push(requestId);
-  db.run(
-    `UPDATE requests SET ${sets.join(", ")} WHERE requestId = ?`,
-    values
-  );
+  db.run(`UPDATE requests SET ${sets.join(", ")} WHERE requestId = ?`, values);
 }
 
 /**
  * Get a single request by ID.
  */
-export function getRequest(
-  persistDir: string,
-  requestId: string
-): RequestRecord | null {
+export function getRequest(persistDir: string, requestId: string): RequestRecord | null {
   const db = getDb(persistDir);
-  return (
-    (db
-      .prepare("SELECT * FROM requests WHERE requestId = ?")
-      .get(requestId) as RequestRecord | null) ?? null
-  );
+  return (db.prepare("SELECT * FROM requests WHERE requestId = ?").get(requestId) as RequestRecord | null) ?? null;
 }
 
 /**
@@ -400,9 +422,7 @@ export function getRequest(
 export function getActiveRequests(persistDir: string): RequestRecord[] {
   const db = getDb(persistDir);
   return db
-    .prepare(
-      "SELECT * FROM requests WHERE status IN ('CREATED', 'IN_PROGRESS') ORDER BY createdAt ASC"
-    )
+    .prepare("SELECT * FROM requests WHERE status IN ('CREATED', 'IN_PROGRESS') ORDER BY createdAt ASC")
     .all() as unknown as RequestRecord[];
 }
 
@@ -410,11 +430,7 @@ export function getActiveRequests(persistDir: string): RequestRecord[] {
  * Get requests targeting a specific agent.
  * @param limit Max rows to return (default 100). Use -1 for unlimited (not recommended).
  */
-export function getRequestsByAgent(
-  persistDir: string,
-  agent: string,
-  limit: number = 100
-): RequestRecord[] {
+export function getRequestsByAgent(persistDir: string, agent: string, limit: number = 100): RequestRecord[] {
   const db = getDb(persistDir);
   if (limit === -1) {
     return db
@@ -434,7 +450,7 @@ export function getRequestsByAgentAndStatus(
   persistDir: string,
   agent: string,
   statuses: string[],
-  limit: number = 100
+  limit: number = 100,
 ): RequestRecord[] {
   const db = getDb(persistDir);
   const placeholders = statuses.map(() => "?").join(", ");
@@ -447,10 +463,7 @@ export function getRequestsByAgentAndStatus(
  * Get request tree using recursive CTE.
  * Returns the root request and all its descendants.
  */
-export function getRequestTree(
-  persistDir: string,
-  requestId: string
-): RequestRecord[] {
+export function getRequestTree(persistDir: string, requestId: string): RequestRecord[] {
   const db = getDb(persistDir);
   return db
     .prepare(
@@ -460,7 +473,7 @@ export function getRequestTree(
         SELECT r.* FROM requests r
         JOIN tree t ON r.parentRequestId = t.requestId
       )
-      SELECT * FROM tree ORDER BY createdAt ASC`
+      SELECT * FROM tree ORDER BY createdAt ASC`,
     )
     .all(requestId) as unknown as RequestRecord[];
 }
@@ -468,10 +481,7 @@ export function getRequestTree(
 /**
  * Find stale requests: CREATED or IN_PROGRESS older than maxAgeMs.
  */
-export function getStaleRequests(
-  persistDir: string,
-  maxAgeMs: number
-): RequestRecord[] {
+export function getStaleRequests(persistDir: string, maxAgeMs: number): RequestRecord[] {
   const db = getDb(persistDir);
   const cutoff = Date.now() - maxAgeMs;
   return db
@@ -479,7 +489,7 @@ export function getStaleRequests(
       `SELECT * FROM requests
        WHERE status IN ('CREATED', 'IN_PROGRESS')
        AND createdAt < ?
-       ORDER BY createdAt ASC`
+       ORDER BY createdAt ASC`,
     )
     .all(cutoff) as unknown as RequestRecord[];
 }
@@ -489,12 +499,7 @@ export function getStaleRequests(
  * Used by send() to prevent duplicate handoffs/sends.
  * Returns the existing requestId if a duplicate is found, null otherwise.
  */
-export function isDuplicate(
-  persistDir: string,
-  fromEntity: string,
-  toAgent: string,
-  taskHash: string
-): string | null {
+export function isDuplicate(persistDir: string, fromEntity: string, toAgent: string, taskHash: string): string | null {
   const db = getDb(persistDir);
   // Check for active (non-terminal) duplicates only
   const row = db
@@ -502,7 +507,7 @@ export function isDuplicate(
       `SELECT requestId FROM requests
        WHERE fromEntity = ? AND toAgent = ?
        AND task = ? AND status IN ('CREATED', 'IN_PROGRESS')
-       LIMIT 1`
+       LIMIT 1`,
     )
     .get(fromEntity, toAgent, taskHash) as { requestId: string } | null;
   return row?.requestId ?? null;
@@ -512,10 +517,7 @@ export function isDuplicate(
  * Archive old completed/failed requests.
  * Returns the number of rows deleted.
  */
-export function archiveOld(
-  persistDir: string,
-  maxAgeDays: number
-): number {
+export function archiveOld(persistDir: string, maxAgeDays: number): number {
   const db = getDb(persistDir);
   const cutoff = Date.now() - maxAgeDays * 24 * 60 * 60 * 1000;
   const result = db.run(
@@ -523,7 +525,7 @@ export function archiveOld(
      WHERE status IN ('COMPLETED', 'FAILED', 'BLOCKED')
      AND completedAt IS NOT NULL
      AND completedAt < ?`,
-    [cutoff]
+    [cutoff],
   );
   return result.changes;
 }
@@ -613,7 +615,10 @@ export function hasEvaluation(persistDir: string, sessionId: string): boolean {
  */
 export function getEvaluation(persistDir: string, sessionId: string): EvaluationRecord | null {
   const db = getDb(persistDir);
-  const row = db.prepare("SELECT * FROM evaluations WHERE sessionId = ?").get(sessionId) as Record<string, unknown> | null;
+  const row = db.prepare("SELECT * FROM evaluations WHERE sessionId = ?").get(sessionId) as Record<
+    string,
+    unknown
+  > | null;
   if (!row) return null;
   return deserializeEvalRow(row);
 }
@@ -621,18 +626,21 @@ export function getEvaluation(persistDir: string, sessionId: string): Evaluation
 /**
  * Get evaluations for a specific agent within a time window.
  */
-export function getEvaluationsByAgent(
-  persistDir: string,
-  agent: string,
-  sinceMs?: number,
-): EvaluationRecord[] {
+export function getEvaluationsByAgent(persistDir: string, agent: string, sinceMs?: number): EvaluationRecord[] {
   const db = getDb(persistDir);
   if (sinceMs !== undefined) {
-    return (db.prepare("SELECT * FROM evaluations WHERE agent = ? AND createdAt >= ? ORDER BY createdAt ASC")
-      .all(agent, sinceMs) as Record<string, unknown>[]).map(deserializeEvalRow);
+    return (
+      db
+        .prepare("SELECT * FROM evaluations WHERE agent = ? AND createdAt >= ? ORDER BY createdAt ASC")
+        .all(agent, sinceMs) as Record<string, unknown>[]
+    ).map(deserializeEvalRow);
   }
-  return (db.prepare("SELECT * FROM evaluations WHERE agent = ? ORDER BY createdAt ASC")
-    .all(agent) as Record<string, unknown>[]).map(deserializeEvalRow);
+  return (
+    db.prepare("SELECT * FROM evaluations WHERE agent = ? ORDER BY createdAt ASC").all(agent) as Record<
+      string,
+      unknown
+    >[]
+  ).map(deserializeEvalRow);
 }
 
 /**
@@ -640,8 +648,12 @@ export function getEvaluationsByAgent(
  */
 export function getEvaluationsSince(persistDir: string, sinceMs: number): EvaluationRecord[] {
   const db = getDb(persistDir);
-  return (db.prepare("SELECT * FROM evaluations WHERE createdAt >= ? ORDER BY createdAt ASC")
-    .all(sinceMs) as Record<string, unknown>[]).map(deserializeEvalRow);
+  return (
+    db.prepare("SELECT * FROM evaluations WHERE createdAt >= ? ORDER BY createdAt ASC").all(sinceMs) as Record<
+      string,
+      unknown
+    >[]
+  ).map(deserializeEvalRow);
 }
 
 /**
@@ -649,20 +661,26 @@ export function getEvaluationsSince(persistDir: string, sinceMs: number): Evalua
  */
 export function getAllEvaluations(persistDir: string): EvaluationRecord[] {
   const db = getDb(persistDir);
-  return (db.prepare("SELECT * FROM evaluations ORDER BY createdAt ASC")
-    .all() as Record<string, unknown>[]).map(deserializeEvalRow);
+  return (db.prepare("SELECT * FROM evaluations ORDER BY createdAt ASC").all() as Record<string, unknown>[]).map(
+    deserializeEvalRow,
+  );
 }
 
 /**
  * Check if an evaluation exists and has real usage data.
  * Returns { exists: boolean; hasUsage: boolean; isRecent: boolean }.
  */
-export function getEvaluationStatus(persistDir: string, sessionId: string): {
+export function getEvaluationStatus(
+  persistDir: string,
+  sessionId: string,
+): {
   exists: boolean;
   hasUsage: boolean;
 } {
   const db = getDb(persistDir);
-  const row = db.prepare("SELECT usage FROM evaluations WHERE sessionId = ?").get(sessionId) as { usage: string | null } | null;
+  const row = db.prepare("SELECT usage FROM evaluations WHERE sessionId = ?").get(sessionId) as {
+    usage: string | null;
+  } | null;
   if (!row) return { exists: false, hasUsage: false };
   if (!row.usage) return { exists: true, hasUsage: false };
   try {
@@ -778,12 +796,20 @@ function deserializeEvalRow(row: Record<string, unknown>): EvaluationRecord {
 
 function parseJsonArray(s: string | null): unknown[] {
   if (!s) return [];
-  try { return JSON.parse(s); } catch { return []; }
+  try {
+    return JSON.parse(s);
+  } catch {
+    return [];
+  }
 }
 
 function parseJsonObject(s: string | null): Record<string, unknown> | null {
   if (!s) return null;
-  try { return JSON.parse(s); } catch { return null; }
+  try {
+    return JSON.parse(s);
+  } catch {
+    return null;
+  }
 }
 
 // ── Session DB helpers ─────────────────────────────────────────────────
@@ -835,16 +861,24 @@ export function upsertSession(persistDir: string, entry: SessionDbEntry): void {
 }
 
 /** Update session status fields only (for updateSessionStatus calls). */
-export function updateSessionDb(persistDir: string, sessionId: string, fields: {
-  status: string;
-  endedAt?: number;
-  error?: string;
-  outcome?: string;
-  opCount?: number;
-}): void {
+export function updateSessionDb(
+  persistDir: string,
+  sessionId: string,
+  fields: {
+    status: string;
+    endedAt?: number;
+    error?: string;
+    outcome?: string;
+    opCount?: number;
+  },
+): void {
   const db = getDb(persistDir);
-  db.run(
-    `UPDATE sessions SET status = ?, endedAt = ?, error = ?, outcome = ?, opCount = ? WHERE sessionId = ?`,
-    [fields.status, fields.endedAt ?? null, fields.error ?? null, fields.outcome ?? null, fields.opCount ?? 0, sessionId],
-  );
+  db.run(`UPDATE sessions SET status = ?, endedAt = ?, error = ?, outcome = ?, opCount = ? WHERE sessionId = ?`, [
+    fields.status,
+    fields.endedAt ?? null,
+    fields.error ?? null,
+    fields.outcome ?? null,
+    fields.opCount ?? 0,
+    sessionId,
+  ]);
 }

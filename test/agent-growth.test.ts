@@ -1,21 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { SubagentManager } from "../src/lib/manager.js";
 import { createAgentGrowthTools } from "../src/lib/tools/agent-growth.js";
-import {
-  forkAgent,
-  promoteAgent,
-  discardAgent,
-  listLabAgents,
-} from "../src/lib/growth.js";
+import { forkAgent, promoteAgent, discardAgent, listLabAgents } from "../src/lib/growth.js";
 import type { GrowthConfig } from "../src/lib/growth.js";
 import { join, resolve } from "node:path";
-import {
-  existsSync,
-  mkdirSync,
-  writeFileSync,
-  rmSync,
-  readFileSync,
-} from "node:fs";
+import { existsSync, mkdirSync, writeFileSync, rmSync, readFileSync } from "node:fs";
 import { EventBus } from "../src/app/event-bus.js";
 
 const TEST_DIR = resolve("test-workspace/agent-growth");
@@ -50,10 +39,7 @@ function createTestAgent(name: string, extras?: Record<string, string>) {
 function createTestMemory(name: string) {
   const memDir = join(PERSIST_DIR, "memory");
   mkdirSync(memDir, { recursive: true });
-  writeFileSync(
-    join(memDir, `${name}.jsonl`),
-    JSON.stringify({ ts: Date.now(), text: `Memory for ${name}` }) + "\n",
-  );
+  writeFileSync(join(memDir, `${name}.jsonl`), JSON.stringify({ ts: Date.now(), text: `Memory for ${name}` }) + "\n");
 }
 
 // ── Core Logic Tests (src/lib/growth.ts) ───────────────────────────────
@@ -79,25 +65,16 @@ describe("Growth Core Logic", () => {
 
       expect(existsSync(result.destDir)).toBe(true);
       expect(existsSync(join(result.destDir, "SOUL.md"))).toBe(true);
-      expect(readFileSync(join(result.destDir, "SOUL.md"), "utf-8")).toBe(
-        "I am coder.",
-      );
+      expect(readFileSync(join(result.destDir, "SOUL.md"), "utf-8")).toBe("I am coder.");
     });
 
     it("should update agent.json name in the fork", () => {
       forkAgent(config, "coder", "coder-v2");
 
-      const forkConfig = JSON.parse(
-        readFileSync(
-          join(AGENTS_ROOT, ".lab", "coder-v2", "agent.json"),
-          "utf-8",
-        ),
-      );
+      const forkConfig = JSON.parse(readFileSync(join(AGENTS_ROOT, ".lab", "coder-v2", "agent.json"), "utf-8"));
       expect(forkConfig.name).toBe("coder-v2");
       // Original should be unchanged
-      const origConfig = JSON.parse(
-        readFileSync(join(AGENTS_ROOT, "coder", "agent.json"), "utf-8"),
-      );
+      const origConfig = JSON.parse(readFileSync(join(AGENTS_ROOT, "coder", "agent.json"), "utf-8"));
       expect(origConfig.name).toBe("coder");
     });
 
@@ -115,22 +92,16 @@ describe("Growth Core Logic", () => {
       forkAgent(noMemConfig, "coder", "coder-v2");
 
       // Fork created but no memory copied
-      expect(
-        existsSync(join(AGENTS_ROOT, ".lab", "coder-v2")),
-      ).toBe(true);
+      expect(existsSync(join(AGENTS_ROOT, ".lab", "coder-v2"))).toBe(true);
     });
 
     it("should throw if source doesn't exist", () => {
-      expect(() => forkAgent(config, "nonexistent", "test")).toThrow(
-        'Source agent "nonexistent" not found',
-      );
+      expect(() => forkAgent(config, "nonexistent", "test")).toThrow('Source agent "nonexistent" not found');
     });
 
     it("should throw if destination already exists", () => {
       forkAgent(config, "coder", "coder-v2");
-      expect(() => forkAgent(config, "coder", "coder-v2")).toThrow(
-        'Destination "coder-v2" already exists',
-      );
+      expect(() => forkAgent(config, "coder", "coder-v2")).toThrow('Destination "coder-v2" already exists');
     });
   });
 
@@ -144,20 +115,13 @@ describe("Growth Core Logic", () => {
       const result = promoteAgent(config, "coder-v2", "coder");
 
       expect(result.promoted).toContain("SOUL.md");
-      expect(
-        readFileSync(join(AGENTS_ROOT, "coder", "SOUL.md"), "utf-8"),
-      ).toBe("I am Coder V2 — improved.");
+      expect(readFileSync(join(AGENTS_ROOT, "coder", "SOUL.md"), "utf-8")).toBe("I am Coder V2 — improved.");
     });
 
     it("should preserve original agent.json (name, model, tools)", () => {
       forkAgent(config, "coder", "coder-v2");
       // Modify the fork's agent.json
-      const forkConfigPath = join(
-        AGENTS_ROOT,
-        ".lab",
-        "coder-v2",
-        "agent.json",
-      );
+      const forkConfigPath = join(AGENTS_ROOT, ".lab", "coder-v2", "agent.json");
       const forkConfig = JSON.parse(readFileSync(forkConfigPath, "utf-8"));
       forkConfig.model = "expensive-model";
       forkConfig.description = "Modified fork";
@@ -166,9 +130,7 @@ describe("Growth Core Logic", () => {
       promoteAgent(config, "coder-v2", "coder");
 
       // Original agent.json should be unchanged
-      const origConfig = JSON.parse(
-        readFileSync(join(AGENTS_ROOT, "coder", "agent.json"), "utf-8"),
-      );
+      const origConfig = JSON.parse(readFileSync(join(AGENTS_ROOT, "coder", "agent.json"), "utf-8"));
       expect(origConfig.name).toBe("coder");
       expect(origConfig.model).toBe("test-model");
     });
@@ -181,28 +143,15 @@ describe("Growth Core Logic", () => {
       forkAgent(config, "coder", "coder-v2");
 
       const forkDir = join(AGENTS_ROOT, ".lab", "coder-v2");
-      writeFileSync(
-        join(forkDir, "knowledge", "INDEX.md"),
-        "# Knowledge\n- basics\n- advanced",
-      );
-      writeFileSync(
-        join(forkDir, "skills", "testing.md"),
-        "# Testing skill",
-      );
+      writeFileSync(join(forkDir, "knowledge", "INDEX.md"), "# Knowledge\n- basics\n- advanced");
+      writeFileSync(join(forkDir, "skills", "testing.md"), "# Testing skill");
 
       const result = promoteAgent(config, "coder-v2", "coder");
 
       expect(result.promoted).toContain("knowledge");
       expect(result.promoted).toContain("skills");
-      expect(
-        readFileSync(
-          join(AGENTS_ROOT, "coder", "knowledge", "INDEX.md"),
-          "utf-8",
-        ),
-      ).toContain("advanced");
-      expect(
-        existsSync(join(AGENTS_ROOT, "coder", "skills", "testing.md")),
-      ).toBe(true);
+      expect(readFileSync(join(AGENTS_ROOT, "coder", "knowledge", "INDEX.md"), "utf-8")).toContain("advanced");
+      expect(existsSync(join(AGENTS_ROOT, "coder", "skills", "testing.md"))).toBe(true);
     });
 
     it("should promote heartbeat.md (C14)", () => {
@@ -217,31 +166,27 @@ describe("Growth Core Logic", () => {
       const result = promoteAgent(config, "coder-v2", "coder");
 
       expect(result.promoted).toContain("heartbeat.md");
-      expect(
-        readFileSync(join(AGENTS_ROOT, "coder", "heartbeat.md"), "utf-8"),
-      ).toBe("# Improved Heartbeat\n\n## Mandatory Gate\nCheck X before Y.");
+      expect(readFileSync(join(AGENTS_ROOT, "coder", "heartbeat.md"), "utf-8")).toBe(
+        "# Improved Heartbeat\n\n## Mandatory Gate\nCheck X before Y.",
+      );
     });
 
     it("should delete the lab fork after promote", () => {
       forkAgent(config, "coder", "coder-v2");
       promoteAgent(config, "coder-v2", "coder");
 
-      expect(
-        existsSync(join(AGENTS_ROOT, ".lab", "coder-v2")),
-      ).toBe(false);
+      expect(existsSync(join(AGENTS_ROOT, ".lab", "coder-v2"))).toBe(false);
     });
 
     it("should throw if source not in .lab/", () => {
-      expect(() => promoteAgent(config, "nonexistent", "coder")).toThrow(
-        'Source "nonexistent" not found in .lab/',
-      );
+      expect(() => promoteAgent(config, "nonexistent", "coder")).toThrow('Source "nonexistent" not found in .lab/');
     });
 
     it("should throw if target not in agents/", () => {
       forkAgent(config, "coder", "coder-v2");
-      expect(() =>
-        promoteAgent(config, "coder-v2", "nonexistent"),
-      ).toThrow('Target "nonexistent" not found in agents/');
+      expect(() => promoteAgent(config, "coder-v2", "nonexistent")).toThrow(
+        'Target "nonexistent" not found in agents/',
+      );
     });
   });
 
@@ -250,9 +195,7 @@ describe("Growth Core Logic", () => {
       forkAgent(config, "coder", "coder-v2");
       discardAgent(config, "coder-v2");
 
-      expect(
-        existsSync(join(AGENTS_ROOT, ".lab", "coder-v2")),
-      ).toBe(false);
+      expect(existsSync(join(AGENTS_ROOT, ".lab", "coder-v2"))).toBe(false);
     });
 
     it("should remove memory state", () => {
@@ -261,15 +204,11 @@ describe("Growth Core Logic", () => {
 
       discardAgent(config, "coder-v2");
 
-      expect(
-        existsSync(join(PERSIST_DIR, "memory", "coder-v2.jsonl")),
-      ).toBe(false);
+      expect(existsSync(join(PERSIST_DIR, "memory", "coder-v2.jsonl"))).toBe(false);
     });
 
     it("should throw if agent not in .lab/", () => {
-      expect(() => discardAgent(config, "nonexistent")).toThrow(
-        'Agent "nonexistent" not found in .lab/',
-      );
+      expect(() => discardAgent(config, "nonexistent")).toThrow('Agent "nonexistent" not found in .lab/');
     });
   });
 
@@ -312,16 +251,12 @@ describe("Agent Growth Tools (wrappers)", () => {
       manager,
       persistDir: PERSIST_DIR,
       loadAgent: (dir) => {
-        const config = JSON.parse(
-          readFileSync(join(dir, "agent.json"), "utf-8"),
-        );
+        const config = JSON.parse(readFileSync(join(dir, "agent.json"), "utf-8"));
         registerTestAgent(config.name);
       },
       reloadAgent: (name) => {
         const dir = join(AGENTS_ROOT, name);
-        const config = JSON.parse(
-          readFileSync(join(dir, "agent.json"), "utf-8"),
-        );
+        const config = JSON.parse(readFileSync(join(dir, "agent.json"), "utf-8"));
         registerTestAgent(config.name);
       },
     });
@@ -380,9 +315,7 @@ describe("Agent Growth Tools (wrappers)", () => {
       agent: "coder-v2",
       task: "write hello world",
     });
-    expect((result.content[0] as any).text).toContain(
-      "Verification run for coder-v2",
-    );
+    expect((result.content[0] as any).text).toContain("Verification run for coder-v2");
   });
 
   it("verify_agent throws if agent not registered", async () => {
@@ -405,10 +338,7 @@ describe("Agent Growth Tools (wrappers)", () => {
     await forkTool.execute("call-1", { source: "coder", dest: "coder-v2" });
 
     // Modify the fork
-    writeFileSync(
-      join(AGENTS_ROOT, ".lab", "coder-v2", "SOUL.md"),
-      "Improved coder.",
-    );
+    writeFileSync(join(AGENTS_ROOT, ".lab", "coder-v2", "SOUL.md"), "Improved coder.");
 
     const result = await promoteTool.execute("call-2", {
       source: "coder-v2",
@@ -417,9 +347,7 @@ describe("Agent Growth Tools (wrappers)", () => {
 
     expect(manager.hasAgent("coder-v2")).toBe(false);
     expect(manager.hasAgent("coder")).toBe(true);
-    expect(
-      readFileSync(join(AGENTS_ROOT, "coder", "SOUL.md"), "utf-8"),
-    ).toBe("Improved coder.");
+    expect(readFileSync(join(AGENTS_ROOT, "coder", "SOUL.md"), "utf-8")).toBe("Improved coder.");
     expect((result.content[0] as any).text).toContain('Promoted "coder-v2"');
   });
 
@@ -436,9 +364,7 @@ describe("Agent Growth Tools (wrappers)", () => {
     });
 
     expect(manager.hasAgent("coder-v2")).toBe(false);
-    expect(
-      existsSync(join(AGENTS_ROOT, ".lab", "coder-v2")),
-    ).toBe(false);
+    expect(existsSync(join(AGENTS_ROOT, ".lab", "coder-v2"))).toBe(false);
     expect((result.content[0] as any).text).toContain("Discarded");
   });
 
@@ -463,10 +389,7 @@ describe("Agent Growth Tools (wrappers)", () => {
     expect(manager.hasAgent("coder-exp")).toBe(true);
 
     // 2. Modify
-    writeFileSync(
-      join(AGENTS_ROOT, ".lab", "coder-exp", "SOUL.md"),
-      "Enhanced coder with new skills.",
-    );
+    writeFileSync(join(AGENTS_ROOT, ".lab", "coder-exp", "SOUL.md"), "Enhanced coder with new skills.");
 
     // 3. Verify
     const verifyResult = await verifyTool.execute("c2", {
@@ -483,13 +406,9 @@ describe("Agent Growth Tools (wrappers)", () => {
 
     // Verify final state
     expect(manager.hasAgent("coder-exp")).toBe(false);
-    expect(
-      readFileSync(join(AGENTS_ROOT, "coder", "SOUL.md"), "utf-8"),
-    ).toBe("Enhanced coder with new skills.");
+    expect(readFileSync(join(AGENTS_ROOT, "coder", "SOUL.md"), "utf-8")).toBe("Enhanced coder with new skills.");
     // Original agent.json name preserved
-    const finalConfig = JSON.parse(
-      readFileSync(join(AGENTS_ROOT, "coder", "agent.json"), "utf-8"),
-    );
+    const finalConfig = JSON.parse(readFileSync(join(AGENTS_ROOT, "coder", "agent.json"), "utf-8"));
     expect(finalConfig.name).toBe("coder");
   });
 
@@ -502,18 +421,13 @@ describe("Agent Growth Tools (wrappers)", () => {
     await forkTool.execute("c1", { source: "coder", dest: "coder-fail" });
 
     // 2. Modify (but it's bad)
-    writeFileSync(
-      join(AGENTS_ROOT, ".lab", "coder-fail", "SOUL.md"),
-      "This change is terrible.",
-    );
+    writeFileSync(join(AGENTS_ROOT, ".lab", "coder-fail", "SOUL.md"), "This change is terrible.");
 
     // 3. Discard
     await discardTool.execute("c2", { agent: "coder-fail" });
 
     // Original untouched
-    expect(
-      readFileSync(join(AGENTS_ROOT, "coder", "SOUL.md"), "utf-8"),
-    ).toBe("I am coder.");
+    expect(readFileSync(join(AGENTS_ROOT, "coder", "SOUL.md"), "utf-8")).toBe("I am coder.");
     expect(manager.hasAgent("coder-fail")).toBe(false);
   });
 });

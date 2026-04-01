@@ -430,7 +430,7 @@ describe("Memory auto-append on completion", () => {
   });
 
   it("handles session completion with memory", async () => {
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) , infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")), infraRetryMax: 0 });
 
     manager.register({
       name: "no-persist",

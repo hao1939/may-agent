@@ -64,8 +64,7 @@ describe("retryWithBackoff()", () => {
           maxRetries: 5,
           baseDelayMs: 1,
           jitter: false,
-          shouldRetry: (err) =>
-            err instanceof Error && !err.message.includes("fatal"),
+          shouldRetry: (err) => err instanceof Error && !err.message.includes("fatal"),
         },
       ),
     ).rejects.toThrow("fatal");

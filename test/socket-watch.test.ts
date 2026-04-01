@@ -88,7 +88,7 @@ describe("socket_watch tool", () => {
   beforeEach(async () => {
     dir = mkdtempSync(join(tmpdir(), "socket-watch-test-"));
     socketPath = join(dir, "test.sock");
-    manager = new SubagentManager({ persistDir: dir , infraRetryMax: 0 });
+    manager = new SubagentManager({ persistDir: dir, infraRetryMax: 0 });
 
     manager.register({
       name: "coach",

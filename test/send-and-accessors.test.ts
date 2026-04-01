@@ -22,7 +22,7 @@ function fakeModel(): Model<any> {
 
 describe("SubagentManager.getKnowledgePath()", () => {
   it("returns knowledgeDir for a registered agent", () => {
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) , infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")), infraRetryMax: 0 });
     manager.register({
       name: "agent-k",
       description: "Test",
@@ -37,12 +37,12 @@ describe("SubagentManager.getKnowledgePath()", () => {
   });
 
   it("returns undefined for an unregistered agent", () => {
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) , infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")), infraRetryMax: 0 });
     expect(manager.getKnowledgePath("nonexistent")).toBeUndefined();
   });
 
   it("returns undefined when knowledgeDir is not set", () => {
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) , infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")), infraRetryMax: 0 });
     manager.register({
       name: "agent-nk",
       description: "Test",

@@ -8,9 +8,7 @@ import type { AgentMessage } from "@mariozechner/pi-agent-core";
 function assistantToolCall(id: string, name: string, args: Record<string, any>): AgentMessage {
   return {
     role: "assistant",
-    content: [
-      { type: "toolCall", id, name, arguments: args },
-    ],
+    content: [{ type: "toolCall", id, name, arguments: args }],
     api: "anthropic" as any,
     provider: "anthropic" as any,
     model: "test",
@@ -179,12 +177,7 @@ describe("stuck-detector", () => {
     });
 
     it("detects 3x bash(same_cmd) → same error", () => {
-      const history = repeatedFailingCalls(
-        "bash",
-        { command: "npm test" },
-        "Command failed with exit code 1",
-        3,
-      );
+      const history = repeatedFailingCalls("bash", { command: "npm test" }, "Command failed with exit code 1", 3);
 
       const result = isStuck(history, { toolRepeatLimit: 3 });
       expect(result.stuck).toBe(true);
@@ -281,12 +274,7 @@ describe("stuck-detector", () => {
         assistantToolCall("ok", "read", { path: "exists.ts" }),
         toolResult("ok", "read", "file contents"),
         // Then 3 identical failing calls
-        ...repeatedFailingCalls(
-          "read",
-          { path: "/missing.ts" },
-          "Error: ENOENT: no such file or directory",
-          3,
-        ),
+        ...repeatedFailingCalls("read", { path: "/missing.ts" }, "Error: ENOENT: no such file or directory", 3),
       ];
 
       const result = isStuck(history, { toolRepeatLimit: 3 });
@@ -294,7 +282,8 @@ describe("stuck-detector", () => {
     });
 
     it("includes last error snippet in reason", () => {
-      const errorText = "Error: ENOENT: no such file or directory, open '/very/long/path/that/should/be/truncated/in/the/reason/string.ts'";
+      const errorText =
+        "Error: ENOENT: no such file or directory, open '/very/long/path/that/should/be/truncated/in/the/reason/string.ts'";
       const history = repeatedFailingCalls("read", { path: "/bad" }, errorText, 3);
 
       const result = isStuck(history, { toolRepeatLimit: 3 });
@@ -385,12 +374,7 @@ describe("stuck-detector", () => {
 
   describe("isStuck — default thresholds", () => {
     it("uses TOOL_PIVOT_LIMIT=3 as default toolRepeatLimit", () => {
-      const history = repeatedFailingCalls(
-        "read",
-        { path: "/missing" },
-        "Error: ENOENT: no such file or directory",
-        3,
-      );
+      const history = repeatedFailingCalls("read", { path: "/missing" }, "Error: ENOENT: no such file or directory", 3);
 
       // No options → should use defaults
       const result = isStuck(history);
@@ -431,12 +415,7 @@ describe("stuck-detector", () => {
 
     it("prioritizes tool-level detection over turn-level", () => {
       // 5 identical failing calls in separate turns — should detect as tool repetition first
-      const history = repeatedFailingCalls(
-        "read",
-        { path: "/missing" },
-        "Error: ENOENT: no such file or directory",
-        5,
-      );
+      const history = repeatedFailingCalls("read", { path: "/missing" }, "Error: ENOENT: no such file or directory", 5);
 
       const result = isStuck(history, { toolRepeatLimit: 3, errorTurnLimit: 3 });
       expect(result.stuck).toBe(true);
@@ -464,12 +443,7 @@ describe("stuck-detector", () => {
 
     it("custom thresholds work independently", () => {
       // 2 repeats: not stuck at default limit=3, but stuck at limit=2
-      const history = repeatedFailingCalls(
-        "bash",
-        { command: "make build" },
-        "Command failed with exit code 2",
-        2,
-      );
+      const history = repeatedFailingCalls("bash", { command: "make build" }, "Command failed with exit code 2", 2);
 
       expect(isStuck(history, { toolRepeatLimit: 2 }).stuck).toBe(true);
       expect(isStuck(history, { toolRepeatLimit: 3 }).stuck).toBe(false);

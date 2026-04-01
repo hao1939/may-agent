@@ -37,8 +37,6 @@ const RUNTIME_RECEIPT_SECRET = randomUUID();
 export const COST_SIGNAL_DURATION_MS = 2000;
 export const COST_SIGNAL_BYTES = 10000;
 
-
-
 /**
  * Sign a tool output string with HMAC-SHA256.
  *
@@ -89,7 +87,9 @@ export function verifyToolOutput(content: string, signature: string): boolean {
  */
 export function createVerifyReceiptTool(): AgentTool {
   const VerifyReceiptParams = Type.Object({
-    content: Type.String({ description: "The exact content of the tool output (everything before the [SIG: ...] line)." }),
+    content: Type.String({
+      description: "The exact content of the tool output (everything before the [SIG: ...] line).",
+    }),
     signature: Type.String({ description: "The signature string (e.g., '1741789000:a1b2c3d4')." }),
   });
 
@@ -136,11 +136,7 @@ export interface ReceiptWrapContext {
  * P84: Tool outputs are wrapped in `<tool_output name="...">...</tool_output>` tags
  * to structurally contain tool output and prevent prompt injection.
  */
-export function wrapToolsWithReceipts(
-  tools: AgentTool[],
-  sessionId: string,
-  ctx: ReceiptWrapContext,
-): AgentTool[] {
+export function wrapToolsWithReceipts(tools: AgentTool[], sessionId: string, ctx: ReceiptWrapContext): AgentTool[] {
   // Lazily capture the session reference on first access. Once resolved,
   // reuse the same object even if activeSessions removes it later (the
   // agent loop may clean up while tools are still being called).
@@ -218,9 +214,17 @@ export function wrapToolsWithReceipts(
         const failCount = session.toolErrorHistory.get(pivotKey) ?? 0;
         if (failCount >= TOOL_PIVOT_LIMIT) {
           const agentName = session.agentName;
-          log("warn", `E_RETRY_LIMIT: Agent ${agentName} (${sessionId}) repeated ${tool.name} with identical args ${failCount} times. Blocked.`);
+          log(
+            "warn",
+            `E_RETRY_LIMIT: Agent ${agentName} (${sessionId}) repeated ${tool.name} with identical args ${failCount} times. Blocked.`,
+          );
           return {
-            content: [{ type: "text" as const, text: `🚫 E_RETRY_LIMIT: This exact tool call (${tool.name}) has failed ${failCount} times with identical arguments. Execution blocked. You MUST use a different approach — change the tool, change the arguments, or change your strategy entirely.` }],
+            content: [
+              {
+                type: "text" as const,
+                text: `🚫 E_RETRY_LIMIT: This exact tool call (${tool.name}) has failed ${failCount} times with identical arguments. Execution blocked. You MUST use a different approach — change the tool, change the arguments, or change your strategy entirely.`,
+              },
+            ],
             details: undefined,
           };
         }
@@ -248,7 +252,9 @@ export function wrapToolsWithReceipts(
               meta.opCount = session.opCount;
               writeSessionMeta(ctx.persistDir, sessionId, meta);
             }
-          } catch { /* best-effort */ }
+          } catch {
+            /* best-effort */
+          }
         }
       }
 
@@ -259,9 +265,7 @@ export function wrapToolsWithReceipts(
       }
 
       // Extract the plain text output from all text blocks
-      const outputText = result.content
-        .map((block: any) => (block?.type === "text" ? block.text : ""))
-        .join("");
+      const outputText = result.content.map((block: any) => (block?.type === "text" ? block.text : "")).join("");
 
       // P110: Tool Pivot Heuristic — track errors and inject critique
       let pivotCritique = "";
@@ -297,10 +301,7 @@ export function wrapToolsWithReceipts(
           signature,
           timestamp: new Date().toISOString(),
         };
-        const receiptsPath = join(
-          sessionDir(ctx.persistDir, sessionId),
-          "receipts.jsonl",
-        );
+        const receiptsPath = join(sessionDir(ctx.persistDir, sessionId), "receipts.jsonl");
         appendFileSync(receiptsPath, JSON.stringify(receiptEntry) + "\n", "utf-8");
       } catch {
         /* best-effort — never block tool execution for logging */

@@ -15,14 +15,14 @@ describe("learnFromSession", () => {
   it("extracts npm→bun correction", () => {
     const messages = [
       { role: "assistant", content: [{ type: "toolCall", name: "bash", arguments: { command: "npm test" } }] },
-      { role: "toolResult", toolName: "bash", content: "npm ERR! Missing script: \"test\"", isError: true },
+      { role: "toolResult", toolName: "bash", content: 'npm ERR! Missing script: "test"', isError: true },
       { role: "assistant", content: [{ type: "toolCall", name: "bash", arguments: { command: "bun test" } }] },
       { role: "toolResult", toolName: "bash", content: "4 passed, 0 failed", isError: false },
     ];
 
     const result = learnFromSession({ agentDir, messages });
     expect(result.added.length).toBeGreaterThanOrEqual(1);
-    expect(result.added.some(f => f.toLowerCase().includes("bun"))).toBe(true);
+    expect(result.added.some((f) => f.toLowerCase().includes("bun"))).toBe(true);
     expect(existsSync(join(agentDir, "context.md"))).toBe(true);
   });
 
@@ -36,20 +36,28 @@ describe("learnFromSession", () => {
 
     const result = learnFromSession({ agentDir, messages });
     expect(result.added.length).toBeGreaterThanOrEqual(1);
-    expect(result.added.some(f => f.toLowerCase().includes("bun"))).toBe(true);
+    expect(result.added.some((f) => f.toLowerCase().includes("bun"))).toBe(true);
   });
 
   it("extracts general command correction (same tool, different args)", () => {
     const messages = [
-      { role: "assistant", content: [{ type: "toolCall", name: "bash", arguments: { command: "bun test/pipeline.test.js" } }] },
-      { role: "toolResult", toolName: "bash", content: "error: Cannot use describe() outside of the test runner", isError: true },
+      {
+        role: "assistant",
+        content: [{ type: "toolCall", name: "bash", arguments: { command: "bun test/pipeline.test.js" } }],
+      },
+      {
+        role: "toolResult",
+        toolName: "bash",
+        content: "error: Cannot use describe() outside of the test runner",
+        isError: true,
+      },
       { role: "assistant", content: [{ type: "toolCall", name: "bash", arguments: { command: "bun test" } }] },
       { role: "toolResult", toolName: "bash", content: "4 passed, 0 failed", isError: false },
     ];
 
     const result = learnFromSession({ agentDir, messages });
     expect(result.added.length).toBeGreaterThanOrEqual(1);
-    expect(result.added.some(f => f.includes("bun test"))).toBe(true);
+    expect(result.added.some((f) => f.includes("bun test"))).toBe(true);
   });
 
   it("extracts runtime fact from deno.json", () => {
@@ -59,19 +67,22 @@ describe("learnFromSession", () => {
     ];
 
     const result = learnFromSession({ agentDir, messages });
-    expect(result.added.some(f => f.toLowerCase().includes("deno"))).toBe(true);
+    expect(result.added.some((f) => f.toLowerCase().includes("deno"))).toBe(true);
   });
 
   it("extracts path discovery after failed read", () => {
     const messages = [
       { role: "assistant", content: [{ type: "toolCall", name: "read", arguments: { path: "/work/src/config.ts" } }] },
       { role: "toolResult", toolName: "read", content: "File not found", isError: true },
-      { role: "assistant", content: [{ type: "toolCall", name: "read", arguments: { path: "/work/config/config.ts" } }] },
+      {
+        role: "assistant",
+        content: [{ type: "toolCall", name: "read", arguments: { path: "/work/config/config.ts" } }],
+      },
       { role: "toolResult", toolName: "read", content: "export const config = {}", isError: false },
     ];
 
     const result = learnFromSession({ agentDir, messages });
-    expect(result.added.some(f => f.includes("config.ts") && f.includes("config/config.ts"))).toBe(true);
+    expect(result.added.some((f) => f.includes("config.ts") && f.includes("config/config.ts"))).toBe(true);
   });
 
   it("deduplicates against existing context.md", () => {

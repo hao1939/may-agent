@@ -22,9 +22,22 @@ import { DEFAULT_MAX_BYTES, DEFAULT_MAX_LINES, formatSize, type TruncationResult
 import { withAbortSignal } from "./abort-utils.js";
 
 const readSchema: TSchema = Type.Object({
-  path: Type.String({ description: "Path to the file to read (relative or absolute). Use bash with grep/rg to search across files instead of reading them one by one." }),
-  offset: Type.Optional(Type.Number({ description: "Line number to start reading from (1-indexed). Use this to continue reading after a truncated response — the truncation message tells you the next offset." })),
-  limit: Type.Optional(Type.Number({ description: "Maximum number of lines to read. Use this with offset to read a specific range. If omitted, reads from offset to end of file (subject to truncation)." })),
+  path: Type.String({
+    description:
+      "Path to the file to read (relative or absolute). Use bash with grep/rg to search across files instead of reading them one by one.",
+  }),
+  offset: Type.Optional(
+    Type.Number({
+      description:
+        "Line number to start reading from (1-indexed). Use this to continue reading after a truncated response — the truncation message tells you the next offset.",
+    }),
+  ),
+  limit: Type.Optional(
+    Type.Number({
+      description:
+        "Maximum number of lines to read. Use this with offset to read a specific range. If omitted, reads from offset to end of file (subject to truncation).",
+    }),
+  ),
 });
 
 export interface ReadToolInput {

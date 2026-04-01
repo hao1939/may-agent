@@ -82,9 +82,7 @@ export class ChatSession {
 
   private resumeExistingSession(): void {
     const sessions = this.manager.status();
-    const existing = sessions.find(
-      (s) => s.agent === this.agentName && s.kind === "chat",
-    );
+    const existing = sessions.find((s) => s.agent === this.agentName && s.kind === "chat");
     if (existing) {
       this.sessionId = existing.sessionId;
       this.trackCompletion(this.sessionId);
@@ -254,10 +252,7 @@ export class ChatSession {
         agent: agent ?? this.agentName,
         text,
       };
-      appendFileSync(
-        join(this.persistDir, "human-inputs.jsonl"),
-        JSON.stringify(entry) + "\n",
-      );
+      appendFileSync(join(this.persistDir, "human-inputs.jsonl"), JSON.stringify(entry) + "\n");
     } catch {
       /* best-effort — don't break chat over logging */
     }

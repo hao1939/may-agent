@@ -41,11 +41,11 @@ const ClaudeCodeParams: TSchema = Type.Object({
   continue_session: Type.Optional(
     Type.Boolean({ description: "Continue the most recent conversation in the current directory." }),
   ),
-  resume_session_id: Type.Optional(
-    Type.String({ description: "Resume a specific conversation by session ID." }),
-  ),
+  resume_session_id: Type.Optional(Type.String({ description: "Resume a specific conversation by session ID." })),
   model: Type.Optional(
-    Type.String({ description: "Model override for this invocation (e.g. 'sonnet', 'opus'). Uses tool default if not set." }),
+    Type.String({
+      description: "Model override for this invocation (e.g. 'sonnet', 'opus'). Uses tool default if not set.",
+    }),
   ),
 });
 
@@ -163,7 +163,9 @@ function resolveCliPath(): string {
         }
       }
     }
-  } catch { /* best-effort */ }
+  } catch {
+    /* best-effort */
+  }
   return basePath;
 }
 
@@ -257,15 +259,25 @@ export function spawnCliAgent(
         // Give it 5s to clean up, then SIGKILL
         setTimeout(() => {
           if (!exited) {
-            try { child.kill("SIGKILL"); } catch { /* already dead */ }
+            try {
+              child.kill("SIGKILL");
+            } catch {
+              /* already dead */
+            }
           }
         }, 5000);
-      } catch { /* already dead */ }
+      } catch {
+        /* already dead */
+      }
     }, timeoutMs);
 
     // Abort signal
     const onAbort = () => {
-      try { child.kill("SIGTERM"); } catch { /* already dead */ }
+      try {
+        child.kill("SIGTERM");
+      } catch {
+        /* already dead */
+      }
     };
     if (signal) {
       if (signal.aborted) {
@@ -340,7 +352,12 @@ export function createClaudeCodeTool(opts: CliAgentToolOptions): AgentTool {
       "Multi-turn pattern: first call implements, follow-up calls with continue_session review and fix. " +
       "Each call returns a session_id you can resume later.",
     parameters: ClaudeCodeParams,
-    execute: async (_toolCallId: string, _input: unknown, signal?: AbortSignal, onUpdate?: AgentToolUpdateCallback<any>) => {
+    execute: async (
+      _toolCallId: string,
+      _input: unknown,
+      signal?: AbortSignal,
+      onUpdate?: AgentToolUpdateCallback<any>,
+    ) => {
       const input = _input as ClaudeCodeInput;
       const timeoutSecs = input.timeout ?? DEFAULT_TIMEOUT;
       const model = input.model ?? defaultModel;
@@ -350,11 +367,7 @@ export function createClaudeCodeTool(opts: CliAgentToolOptions): AgentTool {
       const isNewSession = !sessionId;
       const effectiveSessionId = sessionId ?? randomUUID();
 
-      const args: string[] = [
-        "--print",
-        "--dangerously-skip-permissions",
-        "--output-format", "text",
-      ];
+      const args: string[] = ["--print", "--dangerously-skip-permissions", "--output-format", "text"];
 
       // Only pass --model if explicitly specified; otherwise Claude Code uses its own config
       if (model) {
@@ -390,9 +403,7 @@ export function createClaudeCodeTool(opts: CliAgentToolOptions): AgentTool {
         }
 
         if (result.exitCode !== 0 && result.exitCode !== null) {
-          return textResult(
-            `Exit code ${result.exitCode}:\n${truncateOutput(cleanOutput, maxOutput)}`,
-          );
+          return textResult(`Exit code ${result.exitCode}:\n${truncateOutput(cleanOutput, maxOutput)}`);
         }
         lastSessionId = effectiveSessionId;
         return textResult(truncateOutput(cleanOutput, maxOutput) + `\n\n[session_id: ${effectiveSessionId}]`);
@@ -423,15 +434,17 @@ export function createGeminiCliTool(opts: GeminiCliToolOptions): AgentTool {
       "Supports session resumption via resume_session. " +
       "Frame your prompt carefully — include specific file paths, what to analyze/change, and what output you expect.",
     parameters: GeminiCliParams,
-    execute: async (_toolCallId: string, _input: unknown, signal?: AbortSignal, onUpdate?: AgentToolUpdateCallback<any>) => {
+    execute: async (
+      _toolCallId: string,
+      _input: unknown,
+      signal?: AbortSignal,
+      onUpdate?: AgentToolUpdateCallback<any>,
+    ) => {
       const input = _input as GeminiCliInput;
       const timeoutSecs = input.timeout ?? DEFAULT_TIMEOUT;
       const model = input.model ?? defaultModel;
 
-      const args: string[] = [
-        "--prompt", input.prompt,
-        "--yolo",
-      ];
+      const args: string[] = ["--prompt", input.prompt, "--yolo"];
 
       // Only pass --model if explicitly specified
       if (model) {
@@ -468,9 +481,7 @@ export function createGeminiCliTool(opts: GeminiCliToolOptions): AgentTool {
         }
 
         if (result.exitCode !== 0 && result.exitCode !== null) {
-          return textResult(
-            `Exit code ${result.exitCode}:\n${truncateOutput(cleanOutput, maxOutput)}`,
-          );
+          return textResult(`Exit code ${result.exitCode}:\n${truncateOutput(cleanOutput, maxOutput)}`);
         }
 
         return textResult(truncateOutput(cleanOutput, maxOutput));
@@ -497,7 +508,12 @@ export function createCodexTool(opts: CodexToolOptions): AgentTool {
       "Codex runs with full auto-approval and high reasoning effort by default. " +
       "Frame your prompt carefully — include specific file paths, what to change, constraints, and verification steps.",
     parameters: CodexParams,
-    execute: async (_toolCallId: string, _input: unknown, signal?: AbortSignal, onUpdate?: AgentToolUpdateCallback<any>) => {
+    execute: async (
+      _toolCallId: string,
+      _input: unknown,
+      signal?: AbortSignal,
+      onUpdate?: AgentToolUpdateCallback<any>,
+    ) => {
       const input = _input as CodexInput;
       const timeoutSecs = input.timeout ?? DEFAULT_TIMEOUT;
       const effort = input.reasoning_effort ?? "high";
@@ -506,7 +522,8 @@ export function createCodexTool(opts: CodexToolOptions): AgentTool {
       const args: string[] = [
         "exec",
         "--dangerously-bypass-approvals-and-sandbox",
-        "-c", `model_reasoning_effort=${effort}`,
+        "-c",
+        `model_reasoning_effort=${effort}`,
       ];
 
       if (model) {
@@ -534,9 +551,7 @@ export function createCodexTool(opts: CodexToolOptions): AgentTool {
         }
 
         if (result.exitCode !== 0 && result.exitCode !== null) {
-          return textResult(
-            `Exit code ${result.exitCode}:\n${truncateOutput(cleanOutput, maxOutput)}`,
-          );
+          return textResult(`Exit code ${result.exitCode}:\n${truncateOutput(cleanOutput, maxOutput)}`);
         }
 
         return textResult(truncateOutput(cleanOutput, maxOutput));

@@ -10,9 +10,7 @@ describe("P113 Bash Resource Caps", () => {
     // Create a bash tool with a very short default timeout (1s) for testing
     const tool = createBashTool("/tmp", { defaultTimeout: 1 });
     // sleep 30 should be killed by the 1s default timeout
-    await expect(
-      tool.execute("id", { command: "sleep 30" })
-    ).rejects.toThrow(/timed out/);
+    await expect(tool.execute("id", { command: "sleep 30" })).rejects.toThrow(/timed out/);
   });
 
   it("agent-specified timeout overrides the default", async () => {

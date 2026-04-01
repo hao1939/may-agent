@@ -84,7 +84,11 @@ describe("Resource Awareness (Agent-RRM)", () => {
       }
 
       function shouldInjectWarning(session: MockSession): boolean {
-        return session.turnBudgetWarningAt > 0 && !session.turnBudgetWarned && session.turnCount >= session.turnBudgetWarningAt;
+        return (
+          session.turnBudgetWarningAt > 0 &&
+          !session.turnBudgetWarned &&
+          session.turnCount >= session.turnBudgetWarningAt
+        );
       }
 
       it("injects warning when turnCount reaches threshold", () => {
@@ -150,5 +154,4 @@ describe("Resource Awareness (Agent-RRM)", () => {
       });
     });
   });
-
 });

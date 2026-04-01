@@ -68,23 +68,19 @@ export function spawnDetachedAgent(opts: SpawnDetachedOpts): { pid: number | und
   const workerArgs = ["--task", opts.task, "--socket"];
   const cmd = getWorkerCommand(workerArgs, mayTsPath);
 
-  const proc = spawn(
-    cmd.cmd,
-    cmd.args,
-    {
-      cwd: opts.projectRoot,
-      stdio: ["ignore", logFd, logFd],
-      detached: true,
-      env: {
-        ...cmd.env,
-        AGENT: opts.agentName,
-        INSTANCE: instanceName,
-        SESSION_ID: opts.sessionId,
-        ...(opts.parentSessionId ? { PARENT_SESSION_ID: opts.parentSessionId } : {}),
-        ...(opts.parentAgentName ? { PARENT_AGENT: opts.parentAgentName } : {}),
-      },
+  const proc = spawn(cmd.cmd, cmd.args, {
+    cwd: opts.projectRoot,
+    stdio: ["ignore", logFd, logFd],
+    detached: true,
+    env: {
+      ...cmd.env,
+      AGENT: opts.agentName,
+      INSTANCE: instanceName,
+      SESSION_ID: opts.sessionId,
+      ...(opts.parentSessionId ? { PARENT_SESSION_ID: opts.parentSessionId } : {}),
+      ...(opts.parentAgentName ? { PARENT_AGENT: opts.parentAgentName } : {}),
     },
-  );
+  });
   proc.unref();
   closeSync(logFd);
   return { pid: proc.pid };

@@ -112,28 +112,23 @@ describe("P93 Infrastructure Resilience — Infra Retry", () => {
   });
 
   // ------ Guard: overflow errors are never retried ------
-  it.each([
-    "prompt is too long: 210000 tokens",
-    "maximum context length exceeded",
-    "context_length_exceeded",
-  ])("returns null for overflow error: %s", (errMsg) => {
-    const session = mockSession({
-      status: "running",
-      messages: [{ role: "user" }],
-      agentError: errMsg,
-    });
-    expect(isRetryableInfraError(session)).toBeNull();
-  });
+  it.each(["prompt is too long: 210000 tokens", "maximum context length exceeded", "context_length_exceeded"])(
+    "returns null for overflow error: %s",
+    (errMsg) => {
+      const session = mockSession({
+        status: "running",
+        messages: [{ role: "user" }],
+        agentError: errMsg,
+      });
+      expect(isRetryableInfraError(session)).toBeNull();
+    },
+  );
 
   // ------ Pattern 1: Silent stream error (last message is user, no agentError) ------
   it('returns "empty_response" when last message is user (silent stream error)', () => {
     const session = mockSession({
       status: "running",
-      messages: [
-        { role: "user" },
-        { role: "assistant", content: [{ type: "text", text: "hello" }] },
-        { role: "user" },
-      ],
+      messages: [{ role: "user" }, { role: "assistant", content: [{ type: "text", text: "hello" }] }, { role: "user" }],
     });
     expect(isRetryableInfraError(session)).toBe("empty_response");
   });
@@ -150,9 +145,7 @@ describe("P93 Infrastructure Resilience — Infra Retry", () => {
   it('returns "empty_response" for assistant with whitespace-only text', () => {
     const session = mockSession({
       status: "running",
-      messages: [
-        { role: "assistant", content: [{ type: "text", text: "   \n  " }] },
-      ],
+      messages: [{ role: "assistant", content: [{ type: "text", text: "   \n  " }] }],
     });
     expect(isRetryableInfraError(session)).toBe("empty_response");
   });
@@ -304,9 +297,7 @@ describe("P93 Infrastructure Resilience — Infra Retry", () => {
       messages: [
         {
           role: "assistant",
-          content: [
-            { type: "toolCall", name: "bash", args: { command: "ls" } },
-          ],
+          content: [{ type: "toolCall", name: "bash", args: { command: "ls" } }],
         },
       ],
     });
@@ -339,15 +330,12 @@ describe("isRateLimitError — case-insensitive detection", () => {
     expect(isRateLimitError(msg)).toBe(true);
   });
 
-  it.each([
-    "API key invalid",
-    "Connection refused",
-    "ECONNRESET",
-    "500 Internal Server Error",
-    "timeout exceeded",
-  ])("does not match: %s", (msg) => {
-    expect(isRateLimitError(msg)).toBe(false);
-  });
+  it.each(["API key invalid", "Connection refused", "ECONNRESET", "500 Internal Server Error", "timeout exceeded"])(
+    "does not match: %s",
+    (msg) => {
+      expect(isRateLimitError(msg)).toBe(false);
+    },
+  );
 });
 
 describe("hasFinishToolCall — detects finish tool in message history", () => {

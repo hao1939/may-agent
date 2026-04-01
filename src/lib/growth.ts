@@ -10,15 +10,7 @@
  */
 
 import { resolve, join } from "node:path";
-import {
-  existsSync,
-  mkdirSync,
-  cpSync,
-  rmSync,
-  readFileSync,
-  writeFileSync,
-  readdirSync,
-} from "node:fs";
+import { existsSync, mkdirSync, cpSync, rmSync, readFileSync, writeFileSync, readdirSync } from "node:fs";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -44,15 +36,7 @@ export interface PromoteResult {
 // ── Artifacts that get promoted ────────────────────────────────────────
 
 /** Files/directories copied during promote. Order doesn't matter. */
-const PROMOTABLE_ARTIFACTS = [
-  "SOUL.md",
-  "DOMAIN.md",
-  "TOOLS.md",
-  "LESSONS.md",
-  "heartbeat.md",
-  "knowledge",
-  "skills",
-];
+const PROMOTABLE_ARTIFACTS = ["SOUL.md", "DOMAIN.md", "TOOLS.md", "LESSONS.md", "heartbeat.md", "knowledge", "skills"];
 
 // ── Core operations ────────────────────────────────────────────────────
 
@@ -62,11 +46,7 @@ const PROMOTABLE_ARTIFACTS = [
  * Copies the full agent directory, updates agent.json name,
  * and optionally copies memory state.
  */
-export function forkAgent(
-  config: GrowthConfig,
-  sourceName: string,
-  targetName: string,
-): ForkResult {
+export function forkAgent(config: GrowthConfig, sourceName: string, targetName: string): ForkResult {
   const { agentsRoot } = config;
   const labDir = resolve(agentsRoot, ".lab");
   const sourceDir = resolve(agentsRoot, sourceName);
@@ -114,11 +94,7 @@ export function forkAgent(
  * Preserves the target's agent.json identity (name, model, tools).
  * Removes the lab fork after promotion.
  */
-export function promoteAgent(
-  config: GrowthConfig,
-  sourceName: string,
-  targetName: string,
-): PromoteResult {
+export function promoteAgent(config: GrowthConfig, sourceName: string, targetName: string): PromoteResult {
   const { agentsRoot } = config;
   const labDir = resolve(agentsRoot, ".lab");
   const sourceDir = resolve(labDir, sourceName);
@@ -154,10 +130,7 @@ export function promoteAgent(
  *
  * Removes the fork directory and its memory state.
  */
-export function discardAgent(
-  config: GrowthConfig,
-  agentName: string,
-): void {
+export function discardAgent(config: GrowthConfig, agentName: string): void {
   const { agentsRoot } = config;
   const labDir = resolve(agentsRoot, ".lab");
   const agentDir = resolve(labDir, agentName);
@@ -186,7 +159,5 @@ export function listLabAgents(agentsRoot: string): string[] {
   if (!existsSync(labDir)) return [];
 
   const entries = readdirSync(labDir, { withFileTypes: true });
-  return entries
-    .filter((e) => e.isDirectory())
-    .map((e) => e.name);
+  return entries.filter((e) => e.isDirectory()).map((e) => e.name);
 }

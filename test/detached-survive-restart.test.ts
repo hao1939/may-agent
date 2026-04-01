@@ -81,7 +81,7 @@ describe("detached sessions survive restart", () => {
     });
     setupSessionDir(dir, "s_attached_1");
 
-    const manager = new SubagentManager({ persistDir: dir , infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir: dir, infraRetryMax: 0 });
     manager.register(baseDef("worker"));
 
     const { resumed, interrupted } = manager.resumeStaleSessions();
@@ -115,7 +115,7 @@ describe("detached sessions survive restart", () => {
     });
     setupSessionDir(dir, "s_detached_dead");
 
-    const manager = new SubagentManager({ persistDir: dir , infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir: dir, infraRetryMax: 0 });
     manager.register(baseDef("worker"));
 
     const { resumed, interrupted } = manager.resumeStaleSessions();

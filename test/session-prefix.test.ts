@@ -22,7 +22,7 @@ function fakeModel(): Model<any> {
 
 describe("session ID prefix", () => {
   it("uses default 's' prefix when sessionIdPrefix is not set", () => {
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) , infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")), infraRetryMax: 0 });
     manager.register({
       name: "default-agent",
       description: "Agent with default prefix",
@@ -38,7 +38,7 @@ describe("session ID prefix", () => {
   });
 
   it("uses custom prefix when sessionIdPrefix is set", () => {
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) , infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")), infraRetryMax: 0 });
     manager.register({
       name: "custom-agent",
       description: "Agent with custom prefix",
@@ -55,7 +55,7 @@ describe("session ID prefix", () => {
   });
 
   it("different agents can have different prefixes", () => {
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) , infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")), infraRetryMax: 0 });
     manager.register({
       name: "coder",
       description: "Coder agent",

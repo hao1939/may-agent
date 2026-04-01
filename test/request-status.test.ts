@@ -61,15 +61,13 @@ vi.mock("../src/lib/requests.js", () => ({
       overall: (opts.overall as Record<string, unknown>) ?? null,
       usage: (opts.usage as Record<string, unknown>) ?? null,
       failureChains: (opts.failureChains as unknown[]) ?? [],
-      evaluatedByHeuristic: !!(opts.evaluatedByHeuristic),
-      skippedByJs: !!(opts.skippedByJs),
+      evaluatedByHeuristic: !!opts.evaluatedByHeuristic,
+      skippedByJs: !!opts.skippedByJs,
       createdAt: opts.createdAt as number,
     });
   },
   getEvaluationsSince: (_persistDir: string, sinceMs: number) => {
-    return evalStore
-      .filter((e) => e.createdAt >= sinceMs)
-      .sort((a, b) => a.createdAt - b.createdAt);
+    return evalStore.filter((e) => e.createdAt >= sinceMs).sort((a, b) => a.createdAt - b.createdAt);
   },
   getDb: () => mockDb,
   getActiveRequests: () => [],
@@ -164,7 +162,11 @@ describe("printRequestStatus (enhanced dashboard)", () => {
   });
 
   afterAll(() => {
-    try { closeDb(persistDir); } catch { /* ignore */ }
+    try {
+      closeDb(persistDir);
+    } catch {
+      /* ignore */
+    }
     rmSync(root, { recursive: true, force: true });
   });
 
@@ -226,7 +228,13 @@ describe("printRequestStatus (enhanced dashboard)", () => {
       join(persistDir, "convention-checks", "summary.json"),
       JSON.stringify({
         conventions: [
-          { name: "C1.1 read-before-edit", systemRate: 0.95, worstAgent: "optimizer", worstRate: 0.82, status: "stable" },
+          {
+            name: "C1.1 read-before-edit",
+            systemRate: 0.95,
+            worstAgent: "optimizer",
+            worstRate: 0.82,
+            status: "stable",
+          },
           { name: "C1.3 verify-writes", systemRate: 0.88, worstAgent: "bob", worstRate: 0.71, status: "active" },
         ],
       }),
@@ -276,7 +284,11 @@ describe("printRequestStatus triage logic", () => {
   });
 
   afterAll(() => {
-    try { closeDb(persistDir); } catch { /* ignore */ }
+    try {
+      closeDb(persistDir);
+    } catch {
+      /* ignore */
+    }
     rmSync(root, { recursive: true, force: true });
   });
 

@@ -142,7 +142,6 @@ export function runAgentCleanup(agentName: string): void {
 //  agents free bash access. For safety, create specialist agents without bash."
 // Cross-edit protection remains via write/edit tool path guards (checkCrossEditGuard in cross-edit-guard.ts).
 
-
 async function buildTools(config: AgentConfig, opts: AgentLoaderOptions): Promise<AgentTool[]> {
   const { projectRoot, persistDir, manager, bus } = opts;
   const agentDir = resolve(opts.agentsRoot, config.name);
@@ -370,8 +369,12 @@ async function buildTools(config: AgentConfig, opts: AgentLoaderOptions): Promis
         );
         // Store setters on the tool for the manager to call at session start
         const cpTool = tools[tools.length - 1] as any;
-        cpTool._setSessionId = (id: string) => { currentSessionId = id; };
-        cpTool._setAgentName = (name: string) => { currentAgentName = name; };
+        cpTool._setSessionId = (id: string) => {
+          currentSessionId = id;
+        };
+        cpTool._setAgentName = (name: string) => {
+          currentAgentName = name;
+        };
         break;
       }
 
@@ -394,7 +397,7 @@ async function buildTools(config: AgentConfig, opts: AgentLoaderOptions): Promis
             projectRoot: opts.projectRoot,
             apiKey: model.apiKey,
             memoryLimit: config.memoryLimit,
-            
+
             // archetypeDir removed per Hao directive (prompt simplification)
           });
         };
@@ -431,11 +434,7 @@ async function buildTools(config: AgentConfig, opts: AgentLoaderOptions): Promis
  * Each file must default-export a ToolFactory function.
  * Errors are logged and skipped — one bad tool doesn't kill the agent.
  */
-async function loadLocalTools(
-  agentName: string,
-  agentDir: string,
-  opts: AgentLoaderOptions,
-): Promise<AgentTool[]> {
+async function loadLocalTools(agentName: string, agentDir: string, opts: AgentLoaderOptions): Promise<AgentTool[]> {
   const toolsDir = resolve(agentDir, "tools");
   if (!existsSync(toolsDir)) return [];
 
@@ -555,7 +554,11 @@ export function validateAgentConfig(
     const archetypeDir = resolve(agentsRoot, config.extends);
     const archetypeConfig = resolve(archetypeDir, "agent.json");
     if (!existsSync(archetypeConfig)) {
-      errors.push({ agent: name, field: "extends", message: `Archetype not found: ${config.extends} (expected ${archetypeConfig})` });
+      errors.push({
+        agent: name,
+        field: "extends",
+        message: `Archetype not found: ${config.extends} (expected ${archetypeConfig})`,
+      });
     }
   }
 
@@ -657,7 +660,7 @@ export async function loadAgents(opts: AgentLoaderOptions): Promise<LoadResult> 
       memoryLimit: config.memoryLimit,
       compaction: config.compaction,
       contextFiles: config.context_files?.map((f) => resolve(agentDir, f)),
-      
+
       // archetypeDir removed per Hao directive (prompt simplification)
     });
 
@@ -682,7 +685,9 @@ export async function loadAgents(opts: AgentLoaderOptions): Promise<LoadResult> 
  * Active sessions keep their old config; only new sessions use the updated definition.
  * Returns { added, updated, errors } — errors are reported but don't crash.
  */
-export async function reloadAgents(opts: AgentLoaderOptions): Promise<{ added: string[]; updated: string[]; errors: string[] }> {
+export async function reloadAgents(
+  opts: AgentLoaderOptions,
+): Promise<{ added: string[]; updated: string[]; errors: string[] }> {
   try {
     const result = await loadAgents(opts);
     return { ...result, errors: [] };
@@ -791,9 +796,9 @@ export async function loadAgentHandlers(
           // invocation so that code changes take effect without a
           // process restart.  The ?t= cache-buster forces Bun to
           // re-evaluate the file.
-          const _modulePath = modulePath;        // capture for closure
-          const _ctx = ctx;                      // capture for closure
-          const _entry = { ...entry };           // snapshot
+          const _modulePath = modulePath; // capture for closure
+          const _ctx = ctx; // capture for closure
+          const _entry = { ...entry }; // snapshot
           const hotHandler = async () => {
             const freshMod: HandlerModule = await import(`${_modulePath}?t=${Date.now()}`);
             if (typeof freshMod.create !== "function") {
@@ -804,7 +809,10 @@ export async function loadAgentHandlers(
           };
           cron.registerHandler(entry.name, hotHandler);
           registered.push(`${agentName}:${entry.name}`);
-          bus.emit({ type: "info", message: `[handler] Registered ${agentName}:${entry.name} → ${handlerFile}.ts (hot-reload)` });
+          bus.emit({
+            type: "info",
+            message: `[handler] Registered ${agentName}:${entry.name} → ${handlerFile}.ts (hot-reload)`,
+          });
         }
       } catch (err) {
         const msg = `Failed to import handler ${modulePath}: ${err instanceof Error ? err.message : String(err)}`;

@@ -77,9 +77,7 @@ describe("Context Learning", () => {
     mkdirSync(agentDir, { recursive: true });
     writeFileSync(contextPath, "- Old fact about PostgreSQL\n- Keep this fact\n- Another old fact about pg\n");
 
-    (manager as any).applyContextUpdates("test-agent", [
-      { action: "remove", content: "PostgreSQL" },
-    ]);
+    (manager as any).applyContextUpdates("test-agent", [{ action: "remove", content: "PostgreSQL" }]);
 
     const content = readFileSync(contextPath, "utf-8");
     expect(content).not.toContain("PostgreSQL");

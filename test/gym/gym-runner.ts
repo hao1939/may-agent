@@ -182,9 +182,13 @@ function createMayAgentAdapter(): Adapter {
             const binaryStat = statSync(binary);
             const newerFile = findNewerFile(join(projectRoot, "src"), binaryStat.mtimeMs);
             if (newerFile !== null) {
-              console.error(`Warning: compiled binary is stale (newer: ${newerFile}). Using it anyway — rebuild with: bun run bundle`);
+              console.error(
+                `Warning: compiled binary is stale (newer: ${newerFile}). Using it anyway — rebuild with: bun run bundle`,
+              );
             }
-          } catch { /* assume fresh */ }
+          } catch {
+            /* assume fresh */
+          }
           mayCmd = [binary];
         } else {
           // No binary at all — try vite-node as last resort
@@ -209,7 +213,7 @@ function createMayAgentAdapter(): Adapter {
         cpSync(agentDir, agentDest, { recursive: true });
       }
 
-      const cmdParts = mayCmd.map(s => `"${s}"`).join(" ");
+      const cmdParts = mayCmd.map((s) => `"${s}"`).join(" ");
       const fullCmd = `${cmdParts} --oneshot --agent "${agentName}" --task-file "${taskFile}" --timeout=${timeoutMin}`;
 
       try {
@@ -247,10 +251,7 @@ function parseOneshotOutput(stdout: string, gymState: string): AdapterResult {
 
     let sessionPath = "";
     if (sessionId) {
-      for (const candidate of [
-        join(gymState, "sessions", sessionId),
-        join(gymState, "sessions/history", sessionId),
-      ]) {
+      for (const candidate of [join(gymState, "sessions", sessionId), join(gymState, "sessions/history", sessionId)]) {
         if (existsSync(candidate)) {
           sessionPath = candidate;
           break;
@@ -291,12 +292,12 @@ function createClaudeCodeAdapter(): Adapter {
             encoding: "utf-8",
             stdio: ["pipe", "pipe", "pipe"],
             maxBuffer: 10 * 1024 * 1024,
-          }
+          },
         );
         return { sessionId: "", status: "success", sessionPath: "" };
       } catch (err: unknown) {
         const e = err as { killed?: boolean; signal?: string };
-        const status = (e.killed || e.signal === "SIGTERM") ? "timeout" : "error";
+        const status = e.killed || e.signal === "SIGTERM" ? "timeout" : "error";
         return { sessionId: "", status, sessionPath: "" };
       }
     },
@@ -316,7 +317,7 @@ function createGenericAdapter(): Adapter {
       if (!agentCmd) {
         throw new Error(
           "GYM_AGENT_CMD env var required for generic adapter.\n" +
-          "Example: GYM_AGENT_CMD='my-agent --task-file' bash test/gym/run-gym.sh phantom-fix --adapter generic"
+            "Example: GYM_AGENT_CMD='my-agent --task-file' bash test/gym/run-gym.sh phantom-fix --adapter generic",
         );
       }
     },
@@ -335,7 +336,7 @@ function createGenericAdapter(): Adapter {
         return { sessionId: "", status: "success", sessionPath: "" };
       } catch (err: unknown) {
         const e = err as { killed?: boolean; signal?: string };
-        const status = (e.killed || e.signal === "SIGTERM") ? "timeout" : "error";
+        const status = e.killed || e.signal === "SIGTERM" ? "timeout" : "error";
         return { sessionId: "", status, sessionPath: "" };
       }
     },
@@ -347,7 +348,7 @@ function createGenericAdapter(): Adapter {
 const ADAPTERS: Record<string, () => Adapter> = {
   "may-agent": createMayAgentAdapter,
   "claude-code": createClaudeCodeAdapter,
-  "generic": createGenericAdapter,
+  generic: createGenericAdapter,
 };
 
 // ── Scenario loading ───────────────────────────────────────────────────
@@ -364,21 +365,18 @@ function loadScenarioMeta(scenarioDir: string): ScenarioMeta | null {
 
 function listScenarios(): string[] {
   return readdirSync(SCENARIOS_DIR)
-    .filter(name => {
+    .filter((name) => {
       const dir = join(SCENARIOS_DIR, name);
-      return existsSync(join(dir, "task.md")) &&
-             existsSync(join(dir, "success_criteria.js")) &&
-             existsSync(join(dir, "environment"));
+      return (
+        existsSync(join(dir, "task.md")) &&
+        existsSync(join(dir, "success_criteria.js")) &&
+        existsSync(join(dir, "environment"))
+      );
     })
     .sort();
 }
 
-function matchesFilters(
-  meta: ScenarioMeta | null,
-  tier?: string,
-  category?: string,
-  tag?: string,
-): boolean {
+function matchesFilters(meta: ScenarioMeta | null, tier?: string, category?: string, tag?: string): boolean {
   if (!tier && !category && !tag) return true;
   if (!meta) return false;
 
@@ -460,8 +458,61 @@ function exportTranscript(sessionPath: string, workDir: string): void {
 
   writeFileSync(
     transcriptDest,
-    JSON.stringify({ note: "session path found but no transcript file detected", sessionPath }) + "\n"
+    JSON.stringify({ note: "session path found but no transcript file detected", sessionPath }) + "\n",
   );
+}
+
+/**
+ * For workflow scenarios: concatenate transcripts from all phases into a single
+ * combined transcript.jsonl. This allows success_criteria.js behavioral checks
+ * to see the full sequence of tool calls across all phases, not just the last one.
+ */
+function exportCombinedTranscript(phaseResults: AdapterResult[], workDir: string): void {
+  const transcriptDest = join(workDir, "transcript.jsonl");
+  let combined = "";
+
+  for (const result of phaseResults) {
+    const sessionPath = result.sessionPath;
+    if (!sessionPath || !existsSync(sessionPath)) continue;
+
+    let phaseTranscript = "";
+
+    if (sessionPath.endsWith(".jsonl") && existsSync(sessionPath)) {
+      phaseTranscript = readFileSync(sessionPath, "utf-8");
+    } else {
+      // Look for .jsonl files in the session directory
+      try {
+        const files = readdirSync(sessionPath).filter((f) => f.endsWith(".jsonl"));
+        if (files.length > 0) {
+          let best = files[0];
+          let bestSize = 0;
+          for (const f of files) {
+            const sz = statSync(join(sessionPath, f)).size;
+            if (sz > bestSize) {
+              bestSize = sz;
+              best = f;
+            }
+          }
+          phaseTranscript = readFileSync(join(sessionPath, best), "utf-8");
+        }
+      } catch {
+        // skip this phase
+      }
+    }
+
+    if (phaseTranscript) {
+      combined += phaseTranscript;
+      // Ensure newline separator between phases
+      if (!combined.endsWith("\n")) combined += "\n";
+    }
+  }
+
+  if (combined) {
+    writeFileSync(transcriptDest, combined);
+  } else {
+    // Fallback: try last phase only
+    exportTranscript(phaseResults[phaseResults.length - 1]?.sessionPath ?? "", workDir);
+  }
 }
 
 // ── Scoring ────────────────────────────────────────────────────────────
@@ -501,12 +552,7 @@ function scoreScenario(scenarioDir: string, workDir: string): ScoreResult {
  *
  * Returns empty array if no judge criteria or if judging fails.
  */
-function judgeScenario(
-  scenarioDir: string,
-  workDir: string,
-  gymRoot: string,
-  task: string,
-): Judgment[] {
+function judgeScenario(scenarioDir: string, workDir: string, gymRoot: string, task: string): Judgment[] {
   const rubricPath = join(scenarioDir, "judge_criteria.md");
   if (!existsSync(rubricPath)) return [];
 
@@ -563,7 +609,7 @@ function judgeScenario(
   const judgeState = join(gymRoot, "judge-state");
   mkdirSync(judgeState, { recursive: true });
 
-  const cmdParts = mayCmd.map(s => `"${s}"`).join(" ");
+  const cmdParts = mayCmd.map((s) => `"${s}"`).join(" ");
   const fullCmd = `${cmdParts} --oneshot --agent "judge" --task-file "${judgeTaskFile}" --timeout=3`;
 
   try {
@@ -651,6 +697,7 @@ function runScenario(
 
   const startMs = Date.now();
   let lastResult: AdapterResult = { sessionId: "", status: "unknown", sessionPath: "" };
+  const allPhaseResults: AdapterResult[] = [];
 
   if (isWorkflow) {
     // Multi-phase: split task.md on "---"
@@ -666,6 +713,7 @@ function runScenario(
 
       console.error(`Phase ${i + 1}...`);
       lastResult = adapter.runAgent(phaseFile, workDir, timeout);
+      allPhaseResults.push(lastResult);
       console.error(`Phase ${i + 1} complete (session: ${lastResult.sessionId})`);
 
       // Context learning between phases: extract facts from this phase's transcript
@@ -673,12 +721,25 @@ function runScenario(
       if (learnBetween && i < parts.length - 1 && lastResult.sessionPath) {
         try {
           const sessionDir = lastResult.sessionPath;
-          const jsonlPath = existsSync(sessionDir) && statSync(sessionDir).isDirectory()
-            ? readdirSync(sessionDir).filter(f => f.endsWith(".jsonl")).map(f => join(sessionDir, f))[0]
-            : sessionDir;
+          const jsonlPath =
+            existsSync(sessionDir) && statSync(sessionDir).isDirectory()
+              ? readdirSync(sessionDir)
+                  .filter((f) => f.endsWith(".jsonl"))
+                  .map((f) => join(sessionDir, f))[0]
+              : sessionDir;
           if (jsonlPath && existsSync(jsonlPath)) {
-            const lines = readFileSync(jsonlPath, "utf-8").split("\n").filter(l => l.trim());
-            const messages = lines.map(l => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
+            const lines = readFileSync(jsonlPath, "utf-8")
+              .split("\n")
+              .filter((l) => l.trim());
+            const messages = lines
+              .map((l) => {
+                try {
+                  return JSON.parse(l);
+                } catch {
+                  return null;
+                }
+              })
+              .filter(Boolean);
 
             // Write to the sandbox agents dir (where AGENTS_ROOT points)
             const sandboxAgentDir = join(gymRoot, "agents-sandbox", agentName);
@@ -721,7 +782,13 @@ function runScenario(
   const durationMs = Date.now() - startMs;
 
   // Export transcript so scorers can inspect agent behavior
-  exportTranscript(lastResult.sessionPath, workDir);
+  // For workflow scenarios, concatenate all phase transcripts so behavioral
+  // checks can see the full sequence of tool calls across all phases
+  if (isWorkflow && allPhaseResults.length > 1) {
+    exportCombinedTranscript(allPhaseResults, workDir);
+  } else {
+    exportTranscript(lastResult.sessionPath, workDir);
+  }
 
   // Mechanical score
   const score = scoreScenario(scenarioDir, workDir);
@@ -732,21 +799,18 @@ function runScenario(
   if (existsSync(join(scenarioDir, "judge_criteria.md"))) {
     console.error("  Running LLM judge...");
     judgments = judgeScenario(scenarioDir, workDir, gymRoot, taskContent);
-    const jPass = judgments.filter(j => j.verdict === "pass").length;
+    const jPass = judgments.filter((j) => j.verdict === "pass").length;
     console.error(`  Judge: ${jPass}/${judgments.length} conventions passed`);
   }
 
   // Summary combines both layers
-  const judgeSummary = judgments.length > 0
-    ? ` | judge: ${judgments.filter(j => j.verdict === "pass").length}/${judgments.length}`
-    : "";
+  const judgeSummary =
+    judgments.length > 0 ? ` | judge: ${judgments.filter((j) => j.verdict === "pass").length}/${judgments.length}` : "";
 
   // Compute benchmark identity
   // Derive the effective agentsRoot the same way the adapter does:
   // lab fork → gymRoot/agents-lab, otherwise → PROJECT_ROOT/agents
-  const effectiveAgentsRoot = labFork
-    ? join(gymRoot, "agents-lab")
-    : join(PROJECT_ROOT, "agents");
+  const effectiveAgentsRoot = labFork ? join(gymRoot, "agents-lab") : join(PROJECT_ROOT, "agents");
   const frameworkSha = computeFrameworkSha();
   const model = readAgentModel(effectiveAgentsRoot, agentName);
   const prompt = assembleEffectivePrompt(effectiveAgentsRoot, agentName);
@@ -784,12 +848,14 @@ function runScenario(
  */
 function computeFrameworkSha(): string | null {
   try {
-    return execSync("git rev-parse --short HEAD", {
-      cwd: PROJECT_ROOT,
-      encoding: "utf-8",
-      timeout: 5000,
-      stdio: ["pipe", "pipe", "pipe"],
-    }).trim() || null;
+    return (
+      execSync("git rev-parse --short HEAD", {
+        cwd: PROJECT_ROOT,
+        encoding: "utf-8",
+        timeout: 5000,
+        stdio: ["pipe", "pipe", "pipe"],
+      }).trim() || null
+    );
   } catch {
     return null;
   }
@@ -820,10 +886,7 @@ function readAgentModel(agentsRoot: string, agentName: string): string | null {
  *
  * Returns the full prompt text + its SHA-256 hash (first 12 hex chars).
  */
-function assembleEffectivePrompt(
-  agentsRoot: string,
-  agentName: string,
-): { hash: string; text: string } | null {
+function assembleEffectivePrompt(agentsRoot: string, agentName: string): { hash: string; text: string } | null {
   try {
     const agentDir = join(agentsRoot, agentName);
     if (!existsSync(agentDir)) return null;
@@ -850,8 +913,8 @@ function assembleEffectivePrompt(
     const skillsDir = join(agentDir, "skills");
     if (existsSync(skillsDir)) {
       const skillFiles = readdirSync(skillsDir, { recursive: true })
-        .map(f => String(f))
-        .filter(f => f.endsWith(".md"))
+        .map((f) => String(f))
+        .filter((f) => f.endsWith(".md"))
         .sort();
       for (const sf of skillFiles) {
         const skillContent = loadFile(join(skillsDir, sf));
@@ -881,10 +944,12 @@ function assembleEffectivePrompt(
       const agentJson = JSON.parse(readFileSync(join(agentDir, "agent.json"), "utf-8"));
       if (Array.isArray(agentJson.tools) && agentJson.tools.length > 0) {
         sections.push(
-          `## Available Tools\nYou have access to these tools (and ONLY these): ${agentJson.tools.join(", ")}.\nDo not attempt to call any tool not in this list.`
+          `## Available Tools\nYou have access to these tools (and ONLY these): ${agentJson.tools.join(", ")}.\nDo not attempt to call any tool not in this list.`,
         );
       }
-    } catch { /* no agent.json or invalid */ }
+    } catch {
+      /* no agent.json or invalid */
+    }
 
     if (sections.length === 0) return null;
 
@@ -909,7 +974,9 @@ function findNewerFile(dir: string, thanMs: number): string | null {
         if (statSync(full).mtimeMs > thanMs) return full;
       }
     }
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   return null;
 }
 
@@ -933,15 +1000,33 @@ function parseArgs(argv: string[]) {
   while (i < argv.length) {
     const arg = argv[i];
     switch (arg) {
-      case "--adapter":   args.adapter = argv[++i]; break;
-      case "--agent":     args.agent = argv[++i]; break;
-      case "--lab":       args.lab = argv[++i]; break;
-      case "--timeout":   args.timeout = parseInt(argv[++i]); break;
-      case "--tier":      args.tier = argv[++i]; break;
-      case "--category":  args.category = argv[++i]; break;
-      case "--tag":       args.tag = argv[++i]; break;
-      case "--list":      args.list = true; break;
-      case "--run-all":   args.runAll = true; break;
+      case "--adapter":
+        args.adapter = argv[++i];
+        break;
+      case "--agent":
+        args.agent = argv[++i];
+        break;
+      case "--lab":
+        args.lab = argv[++i];
+        break;
+      case "--timeout":
+        args.timeout = parseInt(argv[++i]);
+        break;
+      case "--tier":
+        args.tier = argv[++i];
+        break;
+      case "--category":
+        args.category = argv[++i];
+        break;
+      case "--tag":
+        args.tag = argv[++i];
+        break;
+      case "--list":
+        args.list = true;
+        break;
+      case "--run-all":
+        args.runAll = true;
+        break;
       default:
         if (arg.startsWith("-")) {
           console.error(`Unknown flag: ${arg}`);
@@ -966,7 +1051,7 @@ function main() {
       if (!matchesFilters(meta, args.tier, args.category, args.tag)) continue;
 
       if (meta) {
-        const tier = (meta.tier || "unknown");
+        const tier = meta.tier || "unknown";
         const cats = (meta.categories || []).join(",");
         console.log(`${name.padEnd(42)} tier=${tier.padEnd(10)} categories=${cats}`);
       } else {
@@ -978,7 +1063,7 @@ function main() {
 
   // ── Run-all mode ─────────────────────────────────────────────────
   if (args.runAll) {
-    const scenarios = listScenarios().filter(name => {
+    const scenarios = listScenarios().filter((name) => {
       const meta = loadScenarioMeta(join(SCENARIOS_DIR, name));
       return matchesFilters(meta, args.tier, args.category, args.tag);
     });
@@ -1039,7 +1124,7 @@ function main() {
     }
 
     const total = scenarios.length;
-    const pct = total > 0 ? Math.round(passCount * 100 / total) : 0;
+    const pct = total > 0 ? Math.round((passCount * 100) / total) : 0;
     console.error(`\nResults: ${passCount}/${total} passed (${pct}%)`);
     console.log(JSON.stringify(results, null, 2));
     return;

@@ -436,7 +436,7 @@ describe("trace()", () => {
   });
 
   it("returns null for unknown session", () => {
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) , infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")), infraRetryMax: 0 });
     expect(manager.trace("anything")).toBeNull();
   });
 

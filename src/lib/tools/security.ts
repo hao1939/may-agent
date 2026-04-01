@@ -110,9 +110,7 @@ export function normalizeForP53(input: string): string {
   result = result.replace(/^['"`]+|['"`]+$/g, "");
 
   // Decode URL-encoded characters (%XX)
-  result = result.replace(/%([0-9a-fA-F]{2})/g, (_match, hex) =>
-    String.fromCharCode(parseInt(hex, 16)),
-  );
+  result = result.replace(/%([0-9a-fA-F]{2})/g, (_match, hex) => String.fromCharCode(parseInt(hex, 16)));
 
   // Remove null bytes
   result = result.replace(/\x00/g, "");
@@ -128,9 +126,7 @@ export function normalizeForP53(input: string): string {
   result = result.replace(/\$[A-Za-z_][A-Za-z0-9_]*/g, "");
 
   // Normalize Unicode homoglyphs (fullwidth → ASCII)
-  result = result.replace(/[\uff01-\uff5e]/g, (ch) =>
-    String.fromCharCode(ch.charCodeAt(0) - 0xfee0),
-  );
+  result = result.replace(/[\uff01-\uff5e]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) - 0xfee0));
 
   // Strip control characters (except \n, \t)
   result = result.replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g, "");

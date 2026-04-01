@@ -34,12 +34,12 @@ function registerAgent(manager: SubagentManager, name: string) {
 
 describe("SubagentManager.agentCount()", () => {
   it("returns 0 when no agents are registered", () => {
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) , infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")), infraRetryMax: 0 });
     expect(manager.agentCount()).toBe(0);
   });
 
   it("returns the correct count after registering multiple agents", () => {
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) , infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")), infraRetryMax: 0 });
     registerAgent(manager, "alpha");
     expect(manager.agentCount()).toBe(1);
 
@@ -51,7 +51,7 @@ describe("SubagentManager.agentCount()", () => {
   });
 
   it("does not double-count when re-registering the same agent name", () => {
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) , infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")), infraRetryMax: 0 });
     registerAgent(manager, "alpha");
     registerAgent(manager, "alpha");
     expect(manager.agentCount()).toBe(1);

@@ -22,12 +22,12 @@ function fakeModel(): Model<any> {
 
 describe("getWorkflowDir", () => {
   it("returns undefined for an unregistered agent name", () => {
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) , infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")), infraRetryMax: 0 });
     expect(manager.getWorkflowDir("nonexistent")).toBeUndefined();
   });
 
   it("returns undefined when the agent has no workspace", () => {
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) , infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")), infraRetryMax: 0 });
     manager.register({
       name: "no-workspace",
       description: "Agent without workspace",
@@ -40,7 +40,7 @@ describe("getWorkflowDir", () => {
   });
 
   it("returns <dirname(workspace)>/workflows when workspace is set", () => {
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) , infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")), infraRetryMax: 0 });
     manager.register({
       name: "coder",
       description: "Coding agent",
@@ -54,7 +54,7 @@ describe("getWorkflowDir", () => {
   });
 
   it("works for different workspace paths", () => {
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) , infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")), infraRetryMax: 0 });
     manager.register({
       name: "myagent",
       description: "Another agent",

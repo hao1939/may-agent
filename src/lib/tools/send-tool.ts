@@ -31,18 +31,46 @@ export interface SendToolOptions {
 }
 
 const sendParams = Type.Object({
-  agent: Type.String({ description: "Target agent name. The message is injected into this agent's next heartbeat session." }),
-  message: Type.String({ description: "Message to send. Be specific: include file paths to artifacts, what you need the target to do, and any context they'll need. Tracked in the request DB." }),
+  agent: Type.String({
+    description: "Target agent name. The message is injected into this agent's next heartbeat session.",
+  }),
+  message: Type.String({
+    description:
+      "Message to send. Be specific: include file paths to artifacts, what you need the target to do, and any context they'll need. Tracked in the request DB.",
+  }),
   artifact: Type.Optional(
-    Type.String({ description: "Path to an artifact file to reference. The file must exist. Write your output to a file first, then pass the path here so the target agent knows where to read it." }),
+    Type.String({
+      description:
+        "Path to an artifact file to reference. The file must exist. Write your output to a file first, then pass the path here so the target agent knows where to read it.",
+    }),
   ),
-  force: Type.Optional(Type.Boolean({ description: "Skip duplicate detection. Use when you intentionally want to re-send a similar message to the same agent." })),
-  context_files: Type.Optional(Type.Array(Type.String(), { description: "File paths the receiver MUST read for context. Appended to the message so the receiver sees them." })),
-  success_criteria: Type.Optional(Type.Array(Type.String(), { description: "Bullet points describing how to verify the task is done correctly." })),
-  priority: Type.Optional(Type.Union([Type.Literal("P0"), Type.Literal("P1"), Type.Literal("P2")], { description: "Task priority. P0 = urgent/blocking, P1 = important, P2 = nice-to-have." })),
+  force: Type.Optional(
+    Type.Boolean({
+      description:
+        "Skip duplicate detection. Use when you intentionally want to re-send a similar message to the same agent.",
+    }),
+  ),
+  context_files: Type.Optional(
+    Type.Array(Type.String(), {
+      description: "File paths the receiver MUST read for context. Appended to the message so the receiver sees them.",
+    }),
+  ),
+  success_criteria: Type.Optional(
+    Type.Array(Type.String(), { description: "Bullet points describing how to verify the task is done correctly." }),
+  ),
+  priority: Type.Optional(
+    Type.Union([Type.Literal("P0"), Type.Literal("P1"), Type.Literal("P2")], {
+      description: "Task priority. P0 = urgent/blocking, P1 = important, P2 = nice-to-have.",
+    }),
+  ),
 });
 
-type SendParams = Static<typeof sendParams> & { force?: boolean; context_files?: string[]; success_criteria?: string[]; priority?: "P0" | "P1" | "P2" };
+type SendParams = Static<typeof sendParams> & {
+  force?: boolean;
+  context_files?: string[];
+  success_criteria?: string[];
+  priority?: "P0" | "P1" | "P2";
+};
 
 function textResult(text: string): AgentToolResult<undefined> {
   return { content: [{ type: "text" as const, text }], details: undefined };

@@ -54,13 +54,15 @@ export function attachConsoleUI(bus: EventBus, getPrimarySessionId?: () => strin
         if (isSessionEvent(event)) process.stdout.write(`${DIM}${event.text}${RESET}`);
         break;
       case "tool_call":
-        if (isSessionEvent(event)) console.log(`${DIM}[${event.agent}:${event.tool}] ${JSON.stringify(event.args).slice(0, 200)}${RESET}`);
+        if (isSessionEvent(event))
+          console.log(`${DIM}[${event.agent}:${event.tool}] ${JSON.stringify(event.args).slice(0, 200)}${RESET}`);
         break;
       case "tool_result":
         if (isSessionEvent(event) && event.isError) console.log(`${DIM}[${event.agent}:${event.tool}] ERROR${RESET}`);
         break;
       case "session_start":
-        if (isSessionEvent(event) && event.parentSessionId) console.log(`${DIM}[${event.agent}] started: ${event.task.slice(0, 100)}${RESET}`);
+        if (isSessionEvent(event) && event.parentSessionId)
+          console.log(`${DIM}[${event.agent}] started: ${event.task.slice(0, 100)}${RESET}`);
         break;
       case "session_end":
         if (isSessionEvent(event)) console.log(`${DIM}[${event.agent}] ${event.status}${RESET}`);
@@ -82,13 +84,21 @@ function formatArgs(tool: string, args: unknown): string {
   if (!args || typeof args !== "object") return "";
   const a = args as Record<string, unknown>;
   switch (tool) {
-    case "bash": return String(a.command ?? "").slice(0, 200);
-    case "read": return String(a.path ?? "");
-    case "write": return String(a.path ?? "");
-    case "edit": return String(a.path ?? "");
-    case "agents": return `${a.action ?? "?"} ${a.agent ?? ""} ${String(a.message ?? "").slice(0, 80)}`;
-    case "workflow": return `${a.name ?? "?"} ${String(a.task ?? "").slice(0, 80)}`;
-    case "finish": return `${a.status ?? "?"}: ${String(a.summary ?? "").slice(0, 100)}`;
-    default: return JSON.stringify(args).slice(0, 200);
+    case "bash":
+      return String(a.command ?? "").slice(0, 200);
+    case "read":
+      return String(a.path ?? "");
+    case "write":
+      return String(a.path ?? "");
+    case "edit":
+      return String(a.path ?? "");
+    case "agents":
+      return `${a.action ?? "?"} ${a.agent ?? ""} ${String(a.message ?? "").slice(0, 80)}`;
+    case "workflow":
+      return `${a.name ?? "?"} ${String(a.task ?? "").slice(0, 80)}`;
+    case "finish":
+      return `${a.status ?? "?"}: ${String(a.summary ?? "").slice(0, 100)}`;
+    default:
+      return JSON.stringify(args).slice(0, 200);
   }
 }

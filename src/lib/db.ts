@@ -44,19 +44,29 @@ function openBun(path: string): SqliteDb {
   const { Database } = require("bun:sqlite") as { Database: new (path: string) => BunDatabase };
   const db = new Database(path);
   return {
-    exec(sql: string) { db.exec(sql); },
+    exec(sql: string) {
+      db.exec(sql);
+    },
     prepare(sql: string): Statement {
       const stmt = db.query(sql);
       return {
-        get(...params: unknown[]) { return (stmt.get as (...args: unknown[]) => Record<string, unknown> | null)(...params); },
-        all(...params: unknown[]) { return (stmt.all as (...args: unknown[]) => Record<string, unknown>[])(...params); },
-        run(...params: unknown[]) { return (stmt.run as (...args: unknown[]) => RunResult)(...params); },
+        get(...params: unknown[]) {
+          return (stmt.get as (...args: unknown[]) => Record<string, unknown> | null)(...params);
+        },
+        all(...params: unknown[]) {
+          return (stmt.all as (...args: unknown[]) => Record<string, unknown>[])(...params);
+        },
+        run(...params: unknown[]) {
+          return (stmt.run as (...args: unknown[]) => RunResult)(...params);
+        },
       };
     },
     run(sql: string, params?: unknown[]) {
       return db.run(sql, params ?? []) as RunResult;
     },
-    close() { db.close(); },
+    close() {
+      db.close();
+    },
   };
 }
 
@@ -74,21 +84,31 @@ function openNode(path: string): SqliteDb {
   const { DatabaseSync } = require("node:sqlite") as { DatabaseSync: new (path: string) => NodeDatabase };
   const db = new DatabaseSync(path);
   return {
-    exec(sql: string) { db.exec(sql); },
+    exec(sql: string) {
+      db.exec(sql);
+    },
     prepare(sql: string): Statement {
       const stmt = db.prepare(sql);
       return {
         // node:sqlite returns undefined for missing rows; normalize to null
-        get(...params: unknown[]) { return (stmt.get as (...args: unknown[]) => Record<string, unknown> | undefined)(...params) ?? null; },
-        all(...params: unknown[]) { return (stmt.all as (...args: unknown[]) => Record<string, unknown>[])(...params); },
-        run(...params: unknown[]) { return (stmt.run as (...args: unknown[]) => RunResult)(...params); },
+        get(...params: unknown[]) {
+          return (stmt.get as (...args: unknown[]) => Record<string, unknown> | undefined)(...params) ?? null;
+        },
+        all(...params: unknown[]) {
+          return (stmt.all as (...args: unknown[]) => Record<string, unknown>[])(...params);
+        },
+        run(...params: unknown[]) {
+          return (stmt.run as (...args: unknown[]) => RunResult)(...params);
+        },
       };
     },
     run(sql: string, params?: unknown[]) {
       const stmt = db.prepare(sql);
       return (stmt.run as (...args: unknown[]) => RunResult)(...(params ?? []));
     },
-    close() { db.close(); },
+    close() {
+      db.close();
+    },
   };
 }
 

@@ -51,10 +51,7 @@ describe("computeHeuristicScores - hard error counting", () => {
 
   it("does NOT count error strings inside long file content (>500 chars)", () => {
     // Simulate reading an error log or TSC output that contains "Cannot find module"
-    const longContent =
-      "x".repeat(200) +
-      "\nCannot find module '@foo/bar'\nENOENT: no such file\n" +
-      "x".repeat(300);
+    const longContent = "x".repeat(200) + "\nCannot find module '@foo/bar'\nENOENT: no such file\n" + "x".repeat(300);
     const messages = [
       assistantMsg(3),
       toolResult(longContent), // long read result — analyzing error logs
@@ -86,11 +83,7 @@ describe("computeHeuristicScores - hard error counting", () => {
 
   it("falls back to transcript matching when no messages provided", () => {
     // Legacy behavior: regex on full transcript
-    const messages = [
-      assistantMsg(2),
-      toolResult("ENOENT: no such file or directory"),
-      toolResult("ok"),
-    ];
+    const messages = [assistantMsg(2), toolResult("ENOENT: no such file or directory"), toolResult("ok")];
     const transcript = toTranscript(messages);
     // Pass undefined messages — should fall back to transcript matching
     const scores = computeHeuristicScores(makeSession(), transcript);
@@ -114,8 +107,10 @@ describe("computeHeuristicScores - hard error counting", () => {
 
   it("real-world scenario: agent reading TSC output with 'Cannot find module' is NOT penalized", () => {
     // TSC output is typically long with many lines
-    const tscOutput = Array.from({ length: 30 }, (_, i) =>
-      `src/file${i}.ts(${i + 1},5): error TS2307: Cannot find module './dep${i}' or its corresponding type declarations.`
+    const tscOutput = Array.from(
+      { length: 30 },
+      (_, i) =>
+        `src/file${i}.ts(${i + 1},5): error TS2307: Cannot find module './dep${i}' or its corresponding type declarations.`,
     ).join("\n");
     // tscOutput is > 500 chars
     expect(tscOutput.length).toBeGreaterThan(500);

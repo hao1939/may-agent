@@ -84,7 +84,9 @@ function spawnChild(): void {
 
     // Instant failure (< 5s) = startup/config error, not transient. Don't retry.
     if (runtime < INSTANT_FAILURE_THRESHOLD) {
-      log(`may.ts failed immediately (code ${code}, ran ${Math.round(runtime / 1000)}s). Not retrying — fix the error and restart.`);
+      log(
+        `may.ts failed immediately (code ${code}, ran ${Math.round(runtime / 1000)}s). Not retrying — fix the error and restart.`,
+      );
       process.exit(code ?? 1);
     }
 

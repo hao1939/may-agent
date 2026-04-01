@@ -145,7 +145,7 @@ function loadProcessHealth(persistDir: string): ProcessInfo[] {
         .prepare(
           `SELECT MAX(createdAt) as lastFire, status
            FROM requests WHERE artifact = ?
-           ORDER BY createdAt DESC LIMIT 1`
+           ORDER BY createdAt DESC LIMIT 1`,
         )
         .get(proc.name) as { lastFire: number | null; status: string | null } | null;
 
@@ -156,7 +156,7 @@ function loadProcessHealth(persistDir: string): ProcessInfo[] {
           .prepare(
             `SELECT status FROM requests
              WHERE artifact = ? AND createdAt = ?
-             LIMIT 1`
+             LIMIT 1`,
           )
           .get(proc.name, row.lastFire) as { status: string } | null;
         lastStatus = statusRow?.status ?? null;
@@ -291,13 +291,20 @@ function triageItems(
 
 function trendArrow(trend: "improving" | "declining" | "stable"): string {
   switch (trend) {
-    case "improving": return "↗";
-    case "declining": return "↘";
-    case "stable": return "→";
+    case "improving":
+      return "↗";
+    case "declining":
+      return "↘";
+    case "stable":
+      return "→";
   }
 }
 
-function computeWindowedTrend(evals: EvalRecord[], agent: string, windowMs: number): "improving" | "declining" | "stable" {
+function computeWindowedTrend(
+  evals: EvalRecord[],
+  agent: string,
+  windowMs: number,
+): "improving" | "declining" | "stable" {
   const now = Date.now();
   const agentEvals = evals.filter((e) => e.agent === agent).sort((a, b) => a.ts - b.ts);
   if (agentEvals.length < 4) return "stable";
@@ -376,7 +383,7 @@ export function printRequestStatus(persistDir: string, opts?: Partial<StatusOpti
          FROM requests
          WHERE createdAt > ?
          GROUP BY toAgent
-         ORDER BY total DESC`
+         ORDER BY total DESC`,
       )
       .all(cutoff) as unknown as typeof agentStatsRows;
   } catch {
@@ -440,7 +447,7 @@ export function printRequestStatus(persistDir: string, opts?: Partial<StatusOpti
     }
 
     lines.push(
-      `  ${"Agent".padEnd(14)} ${"Sess".padStart(5)} ${"Done".padStart(5)} ${"Fail".padStart(5)} ${"Rate".padStart(5)} ${"Qual".padStart(5)} ${"Trend".padStart(6)}`
+      `  ${"Agent".padEnd(14)} ${"Sess".padStart(5)} ${"Done".padStart(5)} ${"Fail".padStart(5)} ${"Rate".padStart(5)} ${"Qual".padStart(5)} ${"Trend".padStart(6)}`,
     );
 
     for (const s of agentStatsRows) {
@@ -448,17 +455,13 @@ export function printRequestStatus(persistDir: string, opts?: Partial<StatusOpti
 
       // Quality from 24h evals
       const qEntry = agentQuality24h.get(s.toAgent);
-      const qualStr = qEntry && qEntry.count > 0
-        ? `${(qEntry.total / qEntry.count).toFixed(1)}`
-        : "—";
+      const qualStr = qEntry && qEntry.count > 0 ? `${(qEntry.total / qEntry.count).toFixed(1)}` : "—";
 
       // Trend from 7d evals (excluding skipped)
-      const trend = includeEvals
-        ? trendArrow(computeWindowedTrend(evals7dScored, s.toAgent, WEEK))
-        : "—";
+      const trend = includeEvals ? trendArrow(computeWindowedTrend(evals7dScored, s.toAgent, WEEK)) : "—";
 
       lines.push(
-        `  ${s.toAgent.padEnd(14)} ${String(s.total).padStart(5)} ${String(s.completed).padStart(5)} ${String(s.failed).padStart(5)} ${rate.padStart(5)} ${qualStr.padStart(5)} ${trend.padStart(6)}`
+        `  ${s.toAgent.padEnd(14)} ${String(s.total).padStart(5)} ${String(s.completed).padStart(5)} ${String(s.failed).padStart(5)} ${rate.padStart(5)} ${qualStr.padStart(5)} ${trend.padStart(6)}`,
       );
     }
   } else {
@@ -472,9 +475,7 @@ export function printRequestStatus(persistDir: string, opts?: Partial<StatusOpti
     lines.push("─".repeat(62));
     lines.push(" PROCESS HEALTH");
     lines.push("─".repeat(62));
-    lines.push(
-      `  ${"Process".padEnd(22)} ${"Last Run".padEnd(12)} ${"Status".padEnd(10)}`
-    );
+    lines.push(`  ${"Process".padEnd(22)} ${"Last Run".padEnd(12)} ${"Status".padEnd(10)}`);
 
     for (const proc of processes) {
       const lastRun = proc.lastFire ? ago(proc.lastFire) : "never";
@@ -494,9 +495,7 @@ export function printRequestStatus(persistDir: string, opts?: Partial<StatusOpti
         }
       }
 
-      lines.push(
-        `  ${proc.name.padEnd(22)} ${lastRun.padEnd(12)} ${status}`
-      );
+      lines.push(`  ${proc.name.padEnd(22)} ${lastRun.padEnd(12)} ${status}`);
     }
   }
 
@@ -511,19 +510,20 @@ export function printRequestStatus(persistDir: string, opts?: Partial<StatusOpti
       lines.push(" CONVENTION COMPLIANCE");
       lines.push("─".repeat(62));
       lines.push(
-        `  ${"Convention".padEnd(22)} ${"System".padEnd(8)} ${"Worst Agent".padEnd(18)} ${"Status".padEnd(10)}`
+        `  ${"Convention".padEnd(22)} ${"System".padEnd(8)} ${"Worst Agent".padEnd(18)} ${"Status".padEnd(10)}`,
       );
 
       for (const c of conventions) {
         const name = typeof c.name === "string" ? c.name : "?";
         const rate = typeof c.systemRate === "number" ? `${Math.round(c.systemRate * 100)}%` : "—";
-        const worst = typeof c.worstAgent === "string" && typeof c.worstRate === "number"
-          ? `${c.worstAgent} ${Math.round((c.worstRate as number) * 100)}%`
-          : "—";
+        const worst =
+          typeof c.worstAgent === "string" && typeof c.worstRate === "number"
+            ? `${c.worstAgent} ${Math.round((c.worstRate as number) * 100)}%`
+            : "—";
         const status = typeof c.status === "string" ? c.status : "—";
 
         lines.push(
-          `  ${truncate(name, 21).padEnd(22)} ${rate.padEnd(8)} ${truncate(worst, 17).padEnd(18)} ${status.padEnd(10)}`
+          `  ${truncate(name, 21).padEnd(22)} ${rate.padEnd(8)} ${truncate(worst, 17).padEnd(18)} ${status.padEnd(10)}`,
         );
       }
     }
@@ -591,7 +591,7 @@ export function printRequestStatus(persistDir: string, opts?: Partial<StatusOpti
            FROM requests
            WHERE toAgent = 'coach'
              AND task LIKE '%growth-cycle%'
-             AND createdAt > ?`
+             AND createdAt > ?`,
         )
         .get(now - WEEK) as { total: number } | null;
       if (coachExperimentsRow && coachExperimentsRow.total > 0) {
@@ -614,9 +614,7 @@ export function printRequestStatus(persistDir: string, opts?: Partial<StatusOpti
     for (const r of active) {
       const age = ago(r.createdAt);
       const task = truncate(r.task, 55);
-      lines.push(
-        `  [${r.status}] ${r.fromEntity} → ${r.toAgent} (${r.method}, ${age})`
-      );
+      lines.push(`  [${r.status}] ${r.fromEntity} → ${r.toAgent} (${r.method}, ${age})`);
       lines.push(`           ${task}`);
     }
   } else {
@@ -632,9 +630,7 @@ export function printRequestStatus(persistDir: string, opts?: Partial<StatusOpti
     lines.push("─".repeat(62));
     for (const r of stale) {
       const age = ago(r.createdAt);
-      lines.push(
-        `  [${r.status}] ${r.fromEntity} → ${r.toAgent} (${age}) ${truncate(r.task, 45)}`
-      );
+      lines.push(`  [${r.status}] ${r.fromEntity} → ${r.toAgent} (${age}) ${truncate(r.task, 45)}`);
     }
   }
 

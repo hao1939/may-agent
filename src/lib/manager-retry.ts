@@ -39,7 +39,20 @@ export function hasFinishToolCall(messages: any[]): boolean {
 }
 
 /** Extract the params from the last finish() tool call, if any. */
-export function extractFinishParams(messages: any[]): { status: string; summary: string; blockers?: { reason: string; context: string }[]; deliverables?: { path: string; description: string }[]; next_steps?: string; completed_items?: string[]; new_items?: string[]; lessons?: { category: string; content: string }[]; verification_evidence?: string[]; context_updates?: { action: string; content: string }[] } | null {
+export function extractFinishParams(
+  messages: any[],
+): {
+  status: string;
+  summary: string;
+  blockers?: { reason: string; context: string }[];
+  deliverables?: { path: string; description: string }[];
+  next_steps?: string;
+  completed_items?: string[];
+  new_items?: string[];
+  lessons?: { category: string; content: string }[];
+  verification_evidence?: string[];
+  context_updates?: { action: string; content: string }[];
+} | null {
   for (let i = messages.length - 1; i >= 0; i--) {
     const msg = messages[i];
     if (msg.role === "assistant" && Array.isArray(msg.content)) {
@@ -47,8 +60,21 @@ export function extractFinishParams(messages: any[]): { status: string; summary:
         if (block?.type === "toolCall" && block.name === "finish" && block.args) {
           try {
             const args = typeof block.args === "string" ? JSON.parse(block.args) : block.args;
-            return { status: args.status, summary: args.summary, blockers: args.blockers, deliverables: args.deliverables, next_steps: args.next_steps, completed_items: args.completed_items, new_items: args.new_items, lessons: args.lessons, verification_evidence: args.verification_evidence, context_updates: args.context_updates };
-          } catch { return null; }
+            return {
+              status: args.status,
+              summary: args.summary,
+              blockers: args.blockers,
+              deliverables: args.deliverables,
+              next_steps: args.next_steps,
+              completed_items: args.completed_items,
+              new_items: args.new_items,
+              lessons: args.lessons,
+              verification_evidence: args.verification_evidence,
+              context_updates: args.context_updates,
+            };
+          } catch {
+            return null;
+          }
         }
       }
     }
@@ -164,9 +190,7 @@ export function isRetryableInfraError(session: ActiveSession): string | null {
   if (lastMsg.role === "assistant") {
     const content = Array.isArray(lastMsg.content) ? lastMsg.content : [];
     const hasSubstance = content.some(
-      (block: any) =>
-        (block?.type === "text" && block.text?.trim()) ||
-        block?.type === "toolCall",
+      (block: any) => (block?.type === "text" && block.text?.trim()) || block?.type === "toolCall",
     );
     if (!hasSubstance) {
       return "empty_response";
@@ -221,7 +245,8 @@ export async function runAgentWithRetry(
     const attempt = session.infraRetryCount;
 
     // Log the retry
-    log("info",
+    log(
+      "info",
       `[manager] Infrastructure retry ${attempt}/${infraRetryMax} for session ${session.sessionId} (${retryReason})`,
     );
 
@@ -284,14 +309,15 @@ export async function runAgentWithRetry(
     const agentError = session.agent.state.error ?? session.error;
 
     // Check for empty assistant response (no text, no tool calls)
-    const isEmptyAssistant = !agentError && lastMsg?.role === "assistant" && (() => {
-      const content = Array.isArray(lastMsg.content) ? lastMsg.content : [];
-      return !content.some(
-        (block: any) =>
-          (block?.type === "text" && block.text?.trim()) ||
-          block?.type === "toolCall",
-      );
-    })();
+    const isEmptyAssistant =
+      !agentError &&
+      lastMsg?.role === "assistant" &&
+      (() => {
+        const content = Array.isArray(lastMsg.content) ? lastMsg.content : [];
+        return !content.some(
+          (block: any) => (block?.type === "text" && block.text?.trim()) || block?.type === "toolCall",
+        );
+      })();
 
     // Check for silent stream error (last message is user = no assistant reply)
     const isSilentStream = !agentError && lastMsg?.role === "user";
@@ -302,9 +328,7 @@ export async function runAgentWithRetry(
       const reason = isEmptyAssistant ? "empty_response" : "silent_stream";
       session.infraRetryCount++;
       const attempt = session.infraRetryCount;
-      log("info",
-        `[manager] Post-loop retry ${attempt}/${infraRetryMax} for session ${session.sessionId} (${reason})`,
-      );
+      log("info", `[manager] Post-loop retry ${attempt}/${infraRetryMax} for session ${session.sessionId} (${reason})`);
 
       // Clean up: remove empty assistant message if present
       if (isEmptyAssistant && lastMsg?.role === "assistant") {
@@ -325,8 +349,9 @@ export async function runAgentWithRetry(
       session.error = undefined;
       session.agent.state.error = undefined;
 
-      const delayMs = Math.min(INFRA_RETRY_BASE_DELAY_MS * Math.pow(2, attempt - 1), MAX_RETRY_DELAY_MS)
-        + Math.floor(Math.random() * 500);
+      const delayMs =
+        Math.min(INFRA_RETRY_BASE_DELAY_MS * Math.pow(2, attempt - 1), MAX_RETRY_DELAY_MS) +
+        Math.floor(Math.random() * 500);
       await new Promise((resolve) => setTimeout(resolve, delayMs));
 
       if (!session.closed) {

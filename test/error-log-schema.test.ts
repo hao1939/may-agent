@@ -1,11 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { existsSync, readFileSync, mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
-import {
-  extractErrorCodes,
-  parseIssueToErrorEntry,
-  appendErrorLogs,
-} from "../src/lib/evaluator.js";
+import { extractErrorCodes, parseIssueToErrorEntry, appendErrorLogs } from "../src/lib/evaluator.js";
 import type { TaskEvaluationResult, ChildSessionInfo } from "../src/lib/evaluator.js";
 
 // ── extractErrorCodes ──────────────────────────────────────────────────
@@ -16,9 +12,7 @@ describe("extractErrorCodes", () => {
   });
 
   it("extracts multiple FM codes", () => {
-    expect(
-      extractErrorCodes("[FM-1.3][LOOP] and also FM-2.6 reasoning issue"),
-    ).toEqual(["FM-1.3", "FM-2.6"]);
+    expect(extractErrorCodes("[FM-1.3][LOOP] and also FM-2.6 reasoning issue")).toEqual(["FM-1.3", "FM-2.6"]);
   });
 
   it("returns empty array for no FM codes", () => {
@@ -40,8 +34,7 @@ describe("extractErrorCodes", () => {
 
 describe("parseIssueToErrorEntry", () => {
   it("parses issue with FM code into error entry", () => {
-    const issue =
-      "[FM-2.6 / FC-1.1][REASONING_ACTION_MISMATCH] Agent's task doesn't match actions";
+    const issue = "[FM-2.6 / FC-1.1][REASONING_ACTION_MISMATCH] Agent's task doesn't match actions";
     const entries = parseIssueToErrorEntry(issue, "s_12345", "2026-03-13");
     expect(entries).toHaveLength(1);
     expect(entries[0]).toEqual({
@@ -55,11 +48,7 @@ describe("parseIssueToErrorEntry", () => {
   });
 
   it("returns empty for issue without FM code", () => {
-    const entries = parseIssueToErrorEntry(
-      "evaluator did not score this agent",
-      "s_12345",
-      "2026-03-13",
-    );
+    const entries = parseIssueToErrorEntry("evaluator did not score this agent", "s_12345", "2026-03-13");
     expect(entries).toEqual([]);
   });
 
@@ -296,7 +285,7 @@ describe("appendErrorLogs", () => {
           wasted_calls: 8,
           verdict: "needs_improvement",
           issues: [
-            '[FM-2.2 / FC-1.1][CONSTRAINT_MISMATCH] Brief explicitly instructed updating `agents/evaluator/SOUL.md`, but optimizer attempted it and hit a hard P53 boundary.',
+            "[FM-2.2 / FC-1.1][CONSTRAINT_MISMATCH] Brief explicitly instructed updating `agents/evaluator/SOUL.md`, but optimizer attempted it and hit a hard P53 boundary.",
             "[FM-3.1 / FC-1.1][FAILED_EDIT_NO_RECOVERY] Edit produced identical content",
             "[FM-2.5 / FC-2.1][UNNECESSARY_TOOL_CALL] Called agents({}) with missing params",
           ],

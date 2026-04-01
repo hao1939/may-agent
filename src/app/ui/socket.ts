@@ -238,7 +238,9 @@ export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
             }
             socket.write(JSON.stringify({ type: "ok", command: "subscribe" }) + "\n");
           } else {
-            socket.write(JSON.stringify({ type: "error", command: "subscribe", message: "sessions must be an array" }) + "\n");
+            socket.write(
+              JSON.stringify({ type: "error", command: "subscribe", message: "sessions must be an array" }) + "\n",
+            );
           }
           continue;
         }
@@ -246,18 +248,20 @@ export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
         // Handle status locally — return active sessions list to the requesting client
         if (cmdType === "status") {
           const statusList = manager.status();
-          socket.write(JSON.stringify({
-            type: "status",
-            activeAgents: statusList
-              .filter((s) => s.status === "running" || s.status === "idle")
-              .map((s) => ({
-                agent: s.agent,
-                sessionId: s.sessionId,
-                status: s.status,
-                kind: s.kind,
-                task: s.task.slice(0, 100),
-              })),
-          }) + "\n");
+          socket.write(
+            JSON.stringify({
+              type: "status",
+              activeAgents: statusList
+                .filter((s) => s.status === "running" || s.status === "idle")
+                .map((s) => ({
+                  agent: s.agent,
+                  sessionId: s.sessionId,
+                  status: s.status,
+                  kind: s.kind,
+                  task: s.task.slice(0, 100),
+                })),
+            }) + "\n",
+          );
           continue;
         }
 

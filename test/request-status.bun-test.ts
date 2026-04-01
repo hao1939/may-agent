@@ -55,10 +55,7 @@ test("shows stale requests when older than 2h", () => {
   const { getDb } = require("../src/lib/requests");
   const db = getDb(tempDir);
   const twoHoursAgo = Date.now() - 3 * 60 * 60 * 1000; // 3h ago
-  db.run("UPDATE requests SET createdAt = ? WHERE requestId = ?", [
-    twoHoursAgo,
-    reqId,
-  ]);
+  db.run("UPDATE requests SET createdAt = ? WHERE requestId = ?", [twoHoursAgo, reqId]);
 
   const output = printRequestStatus(tempDir);
   expect(output).toContain("Stale Requests (>2h)");

@@ -173,7 +173,11 @@ function readLastNJsonlLines<T>(filePath: string, n: number): T[] {
     return items;
   } finally {
     // fd might already be closed if we took the small-file path
-    try { closeSync(fd); } catch { /* already closed */ }
+    try {
+      closeSync(fd);
+    } catch {
+      /* already closed */
+    }
   }
 }
 
@@ -448,13 +452,17 @@ export async function loadAllSessionMetasAsync(persistDir: string): Promise<Reco
   const result: Record<string, PersistedSession> = {};
   // Active sessions
   const activeIds = await listActiveSessionIdsAsync(persistDir);
-  const activeMetas = await Promise.all(activeIds.map((sid) => readSessionMetaAsync(persistDir, sid).then((meta) => [sid, meta] as const)));
+  const activeMetas = await Promise.all(
+    activeIds.map((sid) => readSessionMetaAsync(persistDir, sid).then((meta) => [sid, meta] as const)),
+  );
   for (const [sid, meta] of activeMetas) {
     if (meta) result[sid] = meta;
   }
   // Archived sessions (don't overwrite active — active takes precedence)
   const archivedIds = await listArchivedSessionIdsAsync(persistDir);
-  const archivedMetas = await Promise.all(archivedIds.map((sid) => readSessionMetaAsync(persistDir, sid).then((meta) => [sid, meta] as const)));
+  const archivedMetas = await Promise.all(
+    archivedIds.map((sid) => readSessionMetaAsync(persistDir, sid).then((meta) => [sid, meta] as const)),
+  );
   for (const [sid, meta] of archivedMetas) {
     if (result[sid]) continue;
     if (meta) result[sid] = meta;

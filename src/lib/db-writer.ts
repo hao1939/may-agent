@@ -57,11 +57,14 @@ export class DbWriter {
         case "cron_fired":
           // Track cron job history
           try {
-            this.db.run(
-              "INSERT INTO cron_history (job, agent, fired_at) VALUES (?, ?, ?)",
-              [event.job, event.agent ?? null, event.timestamp],
-            );
-          } catch { /* table may not exist yet */ }
+            this.db.run("INSERT INTO cron_history (job, agent, fired_at) VALUES (?, ?, ?)", [
+              event.job,
+              event.agent ?? null,
+              event.timestamp,
+            ]);
+          } catch {
+            /* table may not exist yet */
+          }
           break;
       }
     } catch (err) {
