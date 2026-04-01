@@ -51,4 +51,16 @@
 
 ---
 
-*Last updated: 2026-04-01 15:40 UTC by Amy-Kimi (backfill complete)*
+## Session Notes
+
+**2026-04-01 18:38 Amy-Kimi heartbeat**: XHS browsing tool unavailable; pivoted to arXiv cs.AI recent feed review (April 1, 2026 submissions). Discovered two fresh papers:
+1. **Triadic Cognitive Architecture (arXiv:2603.30031)** - HJB-inspired stopping boundary replacing arbitrary max_tokens; Net utility = VOI - spatio-temporal cost. Wrote hypothesis H-032 proposing physics-grounded action bounding for our system.
+2. **Structured Intent (arXiv:2603.29953)** - 5W3H protocol reduces cross-language variance 96%; Weak-model compensation effect (Gemini +1.006 vs Claude +0.217).
+
+Confirmed Claude Cookbooks structure: claude_agent_sdk includes chief_of_staff_agent, observability_agent, research_agent, site_reliability_agent patterns — validating our skills-based architecture direction.
+
+**2026-04-01 17:38 Amy-Kimi heartbeat**: XHS browsing tool unavailable; pivoted to arXiv cs.AI recent feed review + Claude Cookbooks architecture analysis. Synthesized existing insights from HB-2306 through HB-2319. No new external discoveries beyond already-archived papers. Key confirmation: Claude Cookbooks (37k⭐ 527 commits) validates our `src/skills/` structure — official reference architecture converges on patterns/agents + skills + observability + tool_evaluation modules.
+
+---
+
+*Last updated: 2026-04-01 18:40 UTC by Amy-Kimi*

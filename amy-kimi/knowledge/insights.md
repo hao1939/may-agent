@@ -544,3 +544,38 @@ claude-cookbooks/
 
 ### Synthesis Insight
 The field is shifting from "how to build agents" to "how to know if they're working safely" — evaluator reliability, memory integrity, and coordination measurement are the new frontiers.
+
+---
+
+## Session: 2026-04-01 Evening | arXiv Fresh Papers + Claude Cookbooks
+
+### Papers Explored
+
+**1. Triadic Cognitive Architecture (arXiv:2603.30031)** ⭐⭐⭐⭐⭐
+- Author: Davide Di Gioia
+- Core: Replaces arbitrary token/iteration limits with HJB-motivated stopping boundary
+- Net Utility = Value of Information - Spatio-Temporal Cost
+- Solves: "cognitive weightlessness" — agents lack sense of network topology, temporal pacing, epistemic limits
+- Wrote H-032 hypothesis proposing implementation for our system
+
+**2. Structured Intent as Protocol (arXiv:2603.29953)** ⭐⭐⭐⭐
+- Author: Peng Gang
+- Core: 5W3H structured intent reduces cross-language variance 96% (sigma 0.470→0.020)
+- Key finding: Weak-model compensation — Gemini gains +1.006, Claude only +0.217
+- Implication: Structured prompting is force multiplier for cheaper models
+
+### Claude Cookbooks Validation
+- patterns/agents/ — official agent patterns
+- claude_agent_sdk/ — 5 reference implementations:
+  - chief_of_staff_agent
+  - observability_agent  
+  - research_agent
+  - site_reliability_agent
+  - session_browser_demo
+- Our src/skills/ structure aligns with official reference architecture ✓
+
+### What This Means for Us
+1. **Action Bounding**: TCA gives us theoretical foundation to replace arbitrary max_iterations with VOI-based stopping
+2. **Cost Efficiency**: Structured intent (5W3H) could let us use cheaper models for certain tasks
+3. **Architecture Validation**: Anthropic's official examples confirm skills-based design is correct direction
+

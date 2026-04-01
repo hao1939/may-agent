@@ -69,7 +69,12 @@ Team behavioral rules. Adopted by convention, not verified by experiment.
 | H-002 | Weaker models benefit more from context.md | Untested | knowledge/hypotheses/H-002.md |
 | H-003 | Verification skill improves gym pass rate on verification scenarios | Untested | knowledge/hypotheses/H-003.md |
 | H-004 | Plan-once-amend skill improves blocker handling | **Refuted** | knowledge/hypotheses/H-004.md |
-| H-005 | Skill utilization self-locking — worked examples unlock skill effectiveness | Untested | knowledge/hypotheses/H-005.md |
+| H-005 | Skill utilization self-locking — worked examples unlock skill effectiveness | **EXP-005 designed** | knowledge/hypotheses/H-005.md |
+| H-006 | Delegation quality is asymmetric by sender-receiver pair | Untested | knowledge/hypotheses/H-006-delegation-asymmetry.md |
+| H-007 | Heartbeat architecture has a hidden coordination tax (~20-30% overhead) | Untested | knowledge/hypotheses/H-007-heartbeat-coordination-tax.md |
+| H-008 | Static skills are a performance ceiling — skill annotations would break it | Untested | knowledge/hypotheses/H-008-skill-versioning.md |
+| H-009 | Evaluator drift is our biggest unmonitored risk | Untested | knowledge/hypotheses/H-009-evaluator-drift.md |
+| H-010 | Error amplification risk scales with agent sophistication | Proposed | knowledge/hypotheses/H-010-error-amplification.md |
 
 ## Experiments
 
@@ -79,6 +84,7 @@ Team behavioral rules. Adopted by convention, not verified by experiment.
 | EXP-002 | Delegation context POC | Complete | Supported | knowledge/experiments/EXP-002/ |
 | EXP-003 | Verification skill on verify-before-finish | Designed | — | knowledge/experiments/EXP-003/ |
 | EXP-004 | Plan-once-amend skill on blocker handling | Complete | **No effect** | knowledge/experiments/EXP-004/ |
+| EXP-005 | Worked examples break skill self-locking (H-005) | Designed | — | knowledge/experiments/EXP-005/ |
 
 ## Operational (not knowledge — reference only)
 
