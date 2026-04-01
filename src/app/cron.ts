@@ -639,9 +639,12 @@ export class Cron {
 
     const lastFire = this.getLastFireTime(entry.name);
     if (lastFire == null) {
-      // Never ran — jitter so entries don't all fire at once.
-      // Cap jitter to 5 minutes to prevent long-interval jobs (24h, 7d)
-      // from waiting hours/days before their first fire.
+      // Never ran — use offsetMs for deterministic staggering.
+      // If no offsetMs, fall back to random jitter.
+      const offset = entry.offsetMs ?? 0;
+      if (offset > 0) {
+        return offset;
+      }
       const MAX_INITIAL_JITTER_MS = 5 * 60 * 1000; // 5 minutes
       const jitterWindow = Math.min(entry.intervalMs, MAX_INITIAL_JITTER_MS);
       return Math.floor(Math.random() * jitterWindow);
