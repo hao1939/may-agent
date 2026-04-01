@@ -4,190 +4,226 @@
 
 Everything lives in one monolith (`may.ts` — 1089 lines). Models, cron, UI, recovery, context learning, event routing — all tangled together.
 
-## Proposed Components
+## Core Concept
+
+Core owns an EventBus. Subscribers attach to it. Core emits events. That's the only integration point.
+
+```typescript
+// The entire event system
+class EventBus {
+  private subscribers: Array<(event: AgentEvent) => void> = [];
+
+  subscribe(fn: (event: AgentEvent) => void): () => void {
+    this.subscribers.push(fn);
+    return () => { this.subscribers = this.subscribers.filter(s => s !== fn); };
+  }
+
+  emit(event: AgentEvent): void {
+    for (const fn of this.subscribers) {
+      try { fn(event); } catch { /* never breaks core */ }
+    }
+  }
+}
+```
+
+Zero subscribers = silent. Core still works. Add subscribers for what you need.
+
+## Components
 
 ### 1. Core
 
-The multi-agent runtime. Manages agents, sessions, tools, workflows.
+The multi-agent runtime. Owns the EventBus.
 
 **Contains:**
+- EventBus (created by core, subscribers attach from outside)
 - SubagentManager (session lifecycle, agent registry)
 - Agent tools (coding, agents, workflow, finish, cli-agents)
 - Workflow engine
-- Compaction
-- Handoff / context summarization
-- Session persistence (JSONL read/write/archive)
-- Manager receipts (tool wrapping, signatures)
+- Compaction, handoff, context summarization
+- Session persistence (JSONL on filesystem)
 
-**Interface:**
+**API:**
 ```typescript
-// Core depends on ONE interface: EventBus
-interface EventBus {
-  emit(event: AgentEvent): void;
-}
-
-// Core API
-const manager = new SubagentManager({
-  persistDir,
-  projectRoot,
-  eventBus,       // optional — if not provided, events are silent
-});
+const bus = new EventBus();
+const manager = new SubagentManager({ eventBus: bus, persistDir, projectRoot });
 
 manager.register(agentDef);
-const sessionId = manager.run("coder", task);
-const result = await manager.waitFor(sessionId);
-manager.input(sessionId, "follow-up");
+manager.run("coder", task);
+manager.callAgent("coder", task);
+manager.input(sessionId, text);
 manager.cancel(sessionId);
 ```
 
+**Core emits, never subscribes.** Core calls `bus.emit(event)` when things happen. It never calls `bus.subscribe()` — that's for consumers.
+
 **Core does NOT import:** DB, socket, console, telegram, cron, models config.
 
-Core emits events through the EventBus interface. That's its only outward dependency. Everything else — persistence to DB, streaming to UIs, context learning — is done by the EventBus implementation.
+### 2. Subscribers
 
-### 2. EventBus Implementation
-
-The glue. Receives events from core, fans out to all consumers.
+Each subscriber is a function that receives events. Independent of each other. Register what you need.
 
 ```typescript
-const eventBus: EventBus = {
-  emit(event) {
-    // Real-time: stream to connected clients
-    socketServer.broadcast(event);
-    consoleRenderer.render(event);
-    telegramBot.forward(event);
+// Full system
+bus.subscribe(consoleRenderer);      // render to terminal
+bus.subscribe(dbWriter);             // persist to SQLite
+bus.subscribe(socketBroadcaster);    // stream to web UI clients
+bus.subscribe(telegramForwarder);    // forward to telegram
+bus.subscribe(contextLearner);       // post-session learning
 
-    // Persistence: track in SQLite
-    dbWriter.track(event);
+// Gym runner — nothing. Zero subscribers. Core still works.
 
-    // Learning: post-session context extraction
-    if (event.type === "session_end") contextLearn(event);
-  }
-};
+// Oneshot — just DB
+bus.subscribe(dbWriter);
 ```
 
-Each consumer is optional. Gym runner provides an empty EventBus. Oneshot provides one with just DB. Full system provides all of them.
+**Subscriber examples:**
 
-The EventBus implementation is where you decide:
-- What gets stored (DB)
-- What gets shown (socket → web UI, console, telegram)
-- What triggers follow-up (context learning, evaluation, recovery)
+```typescript
+// Console: render primary session, hide background
+function consoleRenderer(event: AgentEvent) {
+  if (event.type === "text" && event.sessionId === primarySid) {
+    process.stdout.write(event.text);
+  }
+}
+
+// DB: track sessions and requests
+function dbWriter(event: AgentEvent) {
+  if (event.type === "session_start") upsertSession(db, event);
+  if (event.type === "session_end") updateSession(db, event);
+  if (event.type === "message_created") insertRequest(db, event);
+}
+
+// Socket: broadcast to connected clients
+function socketBroadcaster(event: AgentEvent) {
+  for (const client of clients) {
+    if (client.filter === null || client.filter.has(event.sessionId)) {
+      client.write(JSON.stringify(event));
+    }
+  }
+}
+```
 
 ### 3. Interfaces
 
-Connections between humans and core. Each attaches to the EventBus.
+Connections between humans and core. Each subscribes to the bus and sends commands to core.
 
 **Socket server:**
-- Unix domain socket, JSON-line protocol
-- Commands in (input, steer, cancel, status, subscribe)
-- Events out (filtered by subscription)
-- The bridge for web UI and external tools
+- Subscribes to bus → broadcasts events to connected clients
+- Receives commands → calls manager.input/steer/cancel/fork
 
 **Console:**
-- Readline + event rendering
-- ChatSession helper manages persistent human session
-- Attaches to EventBus for rendering
+- Subscribes to bus → renders events to terminal
+- Readline → calls manager via ChatSession helper
 
 **Telegram:**
-- Bot polling, message routing
-- Attaches to EventBus for forwarding
+- Subscribes to bus → forwards notifications to chat
+- Receives messages → calls manager via ChatSession
 
 ### 4. Cron System
 
-Time-triggered job execution.
+Time-triggered job execution. Separate module.
 
-**Today:** Embedded in may.ts, fires heartbeats and handlers in-process.
-
-**Proposed:** Separate module that reads cron.json, manages intervals, and triggers jobs by:
-- Running JS handlers in-process (evaluate-sessions, watchdog)
-- Spawning oneshot sessions via core's manager.run()
-- Calling via socket for cross-process triggers
-
-Does NOT depend on UI or ChatSession.
+- Reads cron.json, manages intervals
+- Triggers jobs via manager.run() (in-process) or socket (cross-process)
+- Handlers (evaluate-sessions, watchdog) are JS functions called directly
+- Does NOT subscribe to bus (it triggers, doesn't observe)
 
 ### 5. Web UI
 
-Already mostly separate (`src/app/ui/web.ts` + `web-static/`).
+HTTP server + static dashboard.
 
-**Contains:**
-- HTTP server (REST API for requests, sessions, stats)
-- WebSocket proxy (browser WS → unix socket)
-- Static files (dashboard HTML/CSS/JS)
+- REST API reads from DB (sessions, requests, stats)
+- WebSocket proxies to socket server for real-time events
+- Does NOT import core — connects via socket + DB
 
-**Connects via:** Socket (for real-time events) + DB (for queries).
-Does NOT import core directly.
+### 6. DB (SQLite)
 
-### 6. Shared DB (SQLite)
+Just a subscriber. Receives events, writes rows.
 
-Persistence layer. One file (may.db), multiple readers.
+- `sessions` — mirrors session lifecycle events
+- `requests` — tracks message/task assignments
+- `evaluations` — quality scores (written by evaluator handler)
+- `gym_runs` / `gym_checks` — benchmark results
 
-**Tables:**
-- `requests` — task tracking
-- `sessions` — session metadata
-- `evaluations` — quality scores
-- `gym_runs` / `gym_checks` — benchmarks
-- `convention_checks` — compliance
+Web UI and cron handlers READ from DB. The DB subscriber WRITES to DB. No other component writes directly.
 
-**Written by:** EventBus implementation (on session/request events from core).
-**Read by:** Web UI (dashboard), cron handlers (evaluate-sessions), agent tools (system_status, requests).
+## Event Types
 
-Core does NOT write to DB directly. The EventBus implementation handles DB writes when it receives events from core.
+```typescript
+type AgentEvent =
+  // Session-scoped (carry sessionId)
+  | { type: "text"; sessionId: string; agent: string; text: string }
+  | { type: "tool_call"; sessionId: string; agent: string; tool: string; args: unknown }
+  | { type: "tool_result"; sessionId: string; agent: string; tool: string; preview: string; isError: boolean }
+  | { type: "turn_end"; sessionId: string; agent: string; toolCalls: number; durationMs: number }
+  | { type: "session_start"; sessionId: string; agent: string; task: string; parentSessionId?: string }
+  | { type: "session_end"; sessionId: string; agent: string; status: string; error?: string; outcome?: string }
+
+  // System-scoped
+  | { type: "notification"; agent: string; text: string }
+  | { type: "log"; level: "info" | "warn" | "error"; message: string }
+  | { type: "message_created"; from: string; to: string; task: string; requestId: string }
+  | { type: "context-learn"; agentName: string; sessionId: string }
+  | { type: "eval"; verdict: string; efficiency: number; quality: number };
+```
 
 ## Dependency Graph
 
 ```
                     ┌──────────┐
                     │  Web UI  │
-                    │ (HTTP +  │
-                    │  static) │
+                    │ (reads)  │
                     └────┬─────┘
                          │ socket + DB reads
                          │
-┌──────────┐        ┌────┴─────┐        ┌──────────┐
-│ Console  ├────────┤ EventBus ├────────┤ Telegram │
-└──────────┘        │  (impl)  │        └──────────┘
-                    └────┬─────┘
-                         │
-              ┌──────────┼──────────┐
-              │          │          │
-         ┌────┴───┐ ┌───┴────┐ ┌──┴───┐
-         │  Core  │ │   DB   │ │ Cron │
-         │(manager│ │(SQLite)│ │      │
-         │ tools, │ │        │ │      │
-         │workflow)│ │        │ │      │
-         └────────┘ └────────┘ └──────┘
+┌──────────┐   subscribe ┌────┴──────────────────────────┐ subscribe   ┌──────────┐
+│ Console  ├────────────▶│         EventBus              │◀────────────┤ Telegram │
+└──────────┘             │  (owned by core, open to all) │             └──────────┘
+                         └────┬──────────┬───────────────┘
+                    subscribe │          │ subscribe
+                         ┌────┴───┐ ┌───┴────┐
+                         │   DB   │ │Context │
+                         │Writer  │ │Learner │
+                         └────┬───┘ └────────┘
+                              │ writes
+                         ┌────┴───┐
+                         │ SQLite │
+                         └────────┘
+
+         ┌────────┐
+         │  Cron  │──── manager.run() ───▶ Core
+         └────────┘
 ```
 
-Core emits → EventBus fans out → DB writes, UI streams, cron triggers.
+## What Core Can Do Without Any Subscribers
 
-## What Changes
+- Run agents (sessions execute, tools work, results return)
+- Call agents synchronously (workflows chain steps)
+- Fork agents asynchronously (parallel work)
+- Message agents (emits event — if no DB subscriber, message is lost, logged to stderr)
+- Session persistence (JSONL on filesystem — not DB)
+- All orchestration works
 
-| Aspect | Today | Proposed |
-|--------|-------|----------|
-| Event routing | EventBus class in may.ts | Interface on core, impl in glue |
-| DB writes | Deep inside core (persistence.ts) | EventBus impl handles writes |
-| may.ts | 1089 lines, does everything | Thin glue: parse args → init core → wire EventBus → attach interfaces |
-| Cron | Embedded in may.ts | Separate module |
-| Models | Hardcoded in may.ts | Config file |
-| Testing | Need full may.ts to test core | Core testable standalone |
+What's missing without subscribers: no UI, no DB tracking, no context learning, no telegram. Core is fully functional but unobserved.
 
 ## Migration Path
 
-### Phase 1: Define EventBus interface
-- Create the interface in core
-- Core calls `this.eventBus?.emit(...)` instead of direct DB/bus calls
-- may.ts provides the implementation that does what it does today
-- No behavior change — just indirection
+### Phase 1: Define EventBus in core
+- 15-line class: subscribe + emit
+- Core creates it, passes it down to manager/tools
+- may.ts subscribes existing consumers
 
-### Phase 2: Extract core
-- Move SubagentManager + tools + workflow to clean module
-- Core depends only on EventBus interface + filesystem (JSONL)
-- DB writes move to EventBus implementation
+### Phase 2: Move DB writes to subscriber
+- Today: core calls upsertSession() directly
+- After: DB subscriber handles session_start/session_end events
+- Core no longer imports db.ts
 
 ### Phase 3: Thin may.ts
-- may.ts becomes: parse args → create EventBus impl → init core → attach interfaces → start cron
-- Each mode (--chat, --cron, --oneshot) is a separate code path
+- Parse args → create EventBus → init core → register subscribers → start interfaces
 - Under 200 lines
+- Each mode (--chat, --cron, --oneshot) registers different subscribers
 
 ### Phase 4: Separate cron
-- Extract cron to standalone module
-- Can run in-process or as separate binary
+- Extract to standalone module
+- Runs in-process or as separate binary
+- Triggers via manager.run(), no bus subscription needed
