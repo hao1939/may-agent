@@ -193,7 +193,7 @@ document.querySelectorAll('.tab').forEach(tab => {
     document.getElementById('knowledge').classList.toggle('hidden', currentTab !== 'knowledge');
     if (currentTab === 'chat') initChat();
     if (currentTab === 'benchmarks') loadBenchmarks();
-    if (currentTab === 'knowledge') loadKnowledge(kbSection);
+    if (currentTab === 'knowledge') loadKnowledge();
   });
 });
 
@@ -1028,212 +1028,97 @@ if (currentTab && currentTab !== 'dashboard') {
   document.getElementById('knowledge').classList.toggle('hidden', currentTab !== 'knowledge');
   if (currentTab === 'chat') initChat();
   if (currentTab === 'benchmarks') loadBenchmarks();
-  if (currentTab === 'knowledge') loadKnowledge(kbSection);
+  if (currentTab === 'knowledge') loadKnowledge();
 }
 
-// ── Knowledge ─────────────────────────────────────────────────────────
-let kbSection = 'index';
-const kbBtnIds = ['kb-index-btn','kb-entries-btn','kb-hypo-btn','kb-exp-btn','kb-lib-btn','kb-skills-btn','kb-wf-btn'];
-const kbSections = ['index','entries','hypotheses','experiments','library','skills','workflows'];
+// ── Knowledge Browser ─────────────────────────────────────────────────
+let kbCurrentPath = '';
 
-async function loadKnowledge(section) {
-  kbSection = section || 'index';
-  // Update button styles
-  kbBtnIds.forEach((id, i) => {
-    const el = document.getElementById(id);
-    if (el) el.style.cssText = kbSections[i] === section ? 'border-color:var(--accent);color:var(--accent)' : '';
-  });
-  document.getElementById('knowledge-detail').classList.add('hidden');
-
-  const list = document.getElementById('knowledge-list');
-  list.innerHTML = '<span style="color:var(--fg2)">Loading...</span>';
-
-  // Load overview cards
-  loadKnowledgeOverview();
-
-  // Index view
-  if (section === 'index') {
-    try {
-      const resp = await fetch('/api/knowledge/index');
-      const data = await resp.json();
-      if (data.content && window.marked && window.marked.parse) {
-        let html = window.marked.parse(data.content);
-        html = html.replace(/\b(KE-\d+)\b/g, '<a href="#" onclick="event.preventDefault(); loadKnowledge(\'entries\'); setTimeout(() => viewKnowledgeItem(\'entries\', \'$1\'), 200)">$1</a>');
-        html = html.replace(/\b(H-\d+)\b/g, '<a href="#" onclick="event.preventDefault(); loadKnowledge(\'hypotheses\'); setTimeout(() => viewKnowledgeItem(\'hypotheses\', \'$1\'), 200)">$1</a>');
-        html = html.replace(/\b(EXP-\d+)\b/g, '<a href="#" onclick="event.preventDefault(); loadKnowledge(\'experiments\'); setTimeout(() => viewKnowledgeItem(\'experiments\', \'$1\'), 200)">$1</a>');
-        list.innerHTML = '<div class="md-rendered">' + html + '</div>';
-      } else {
-        list.textContent = data.content || 'No index';
-      }
-    } catch (err) {
-      list.innerHTML = `<span style="color:var(--red)">Error: ${err.message}</span>`;
-    }
-    return;
-  }
-
-  // Library view
-  if (section === 'library') {
-    try {
-      const resp = await fetch('/api/knowledge/library');
-      const data = await resp.json();
-      const items = data.items || [];
-      list.innerHTML = items.map(item => {
-        const icon = item.type === 'deep-dive' ? '📄' : '📚';
-        return `<div class="request" onclick="viewKnowledgeItem('library', '${item.id}')">
-          <div class="top">
-            <span style="font-size:16px">${icon}</span>
-            <strong>${esc(item.title)}</strong>
-            ${item.size ? `<span style="color:var(--fg2);font-size:11px;margin-left:auto">${item.size}</span>` : ''}
-          </div>
-        </div>`;
-      }).join('');
-    } catch (err) {
-      list.innerHTML = `<span style="color:var(--red)">Error: ${err.message}</span>`;
-    }
-    return;
-  }
-
-  // Skills view
-  if (section === 'skills') {
-    try {
-      const resp = await fetch('/api/knowledge/skills');
-      const data = await resp.json();
-      list.innerHTML = (data.items || []).map(item => {
-        return `<div class="request" onclick="viewKnowledgeItem('skills', '${item.id}')">
-          <div class="top">
-            <span class="badge" style="background:var(--purple)22;color:var(--purple)">skill</span>
-            <strong>${esc(item.name)}</strong>
-            ${item.owner ? `<span style="color:var(--fg2);font-size:11px;margin-left:auto">${item.owner}</span>` : ''}
-          </div>
-          ${item.description ? `<div class="task">${esc(item.description.slice(0, 120))}</div>` : ''}
-        </div>`;
-      }).join('');
-    } catch (err) {
-      list.innerHTML = `<span style="color:var(--red)">Error: ${err.message}</span>`;
-    }
-    return;
-  }
-
-  // Workflows view
-  if (section === 'workflows') {
-    try {
-      const resp = await fetch('/api/knowledge/workflows');
-      const data = await resp.json();
-      list.innerHTML = (data.items || []).map(item => {
-        return `<div class="request" onclick="viewKnowledgeItem('workflows', '${item.id}')">
-          <div class="top">
-            <span class="badge" style="background:var(--accent)22;color:var(--accent)">workflow</span>
-            <strong>${esc(item.name)}</strong>
-          </div>
-          ${item.description ? `<div class="task">${esc(item.description.slice(0, 150))}</div>` : ''}
-        </div>`;
-      }).join('');
-    } catch (err) {
-      list.innerHTML = `<span style="color:var(--red)">Error: ${err.message}</span>`;
-    }
-    return;
-  }
-
-  // Default: entries, hypotheses, experiments
-  try {
-    const endpoint = section === 'entries' ? '/api/knowledge' : `/api/knowledge/${section}`;
-    const resp = await fetch(endpoint);
-    const data = await resp.json();
-    const items = data.entries || data.hypotheses || data.experiments || [];
-
-    if (items.length === 0) {
-      list.innerHTML = '<span style="color:var(--fg2)">No items</span>';
-      return;
-    }
-
-    const statusColor = (s) => {
-      s = (s || '').toLowerCase();
-      if (s.includes('verified') || s.includes('complete') || s.includes('supported')) return 'var(--green)';
-      if (s.includes('refuted') || s.includes('failed')) return 'var(--red)';
-      if (s.includes('untested') || s.includes('provisional')) return 'var(--yellow)';
-      return 'var(--fg2)';
-    };
-
-    list.innerHTML = items.map(item => {
-      const title = item.title || item.id;
-      const status = item.status || item.verdict || '';
-      const subtitle = item.claim || item.hypothesis || item.priority || '';
-      return `<div class="request" onclick="viewKnowledgeItem('${section}', '${item.id}')">
-        <div class="top">
-          <span class="badge" style="background:${statusColor(status)}22;color:${statusColor(status)}">${esc(status)}</span>
-          <strong>${esc(title)}</strong>
-        </div>
-        ${subtitle ? `<div class="task">${esc(subtitle.slice(0, 150))}</div>` : ''}
-        ${item.links && item.links.length > 0 ? `<div style="margin-top:4px;font-size:11px;color:var(--fg2)">${item.links.map(l => `<span style="color:var(--purple)">${l.type}</span> → ${esc(l.target.slice(0,50))}`).join(' · ')}</div>` : ''}
-      </div>`;
-    }).join('');
-  } catch (err) {
-    list.innerHTML = `<span style="color:var(--red)">Error: ${err.message}</span>`;
-  }
+async function loadKnowledge() {
+  browsePath('');
 }
 
-async function loadKnowledgeOverview() {
-  const el = document.getElementById('kb-overview');
-  try {
-    const [entries, hypo, exp, lib, skills, wf] = await Promise.all([
-      fetch('/api/knowledge').then(r => r.json()),
-      fetch('/api/knowledge/hypotheses').then(r => r.json()),
-      fetch('/api/knowledge/experiments').then(r => r.json()),
-      fetch('/api/knowledge/library').then(r => r.json()),
-      fetch('/api/knowledge/skills').then(r => r.json()),
-      fetch('/api/knowledge/workflows').then(r => r.json()),
-    ]);
-    el.innerHTML = [
-      { label: 'Verified', value: (entries.entries||[]).length, color: 'var(--green)', tab: 'entries' },
-      { label: 'Hypotheses', value: (hypo.hypotheses||[]).length, color: 'var(--yellow)', tab: 'hypotheses' },
-      { label: 'Experiments', value: (exp.experiments||[]).length, color: 'var(--accent)', tab: 'experiments' },
-      { label: 'Library', value: (lib.items||[]).length, color: 'var(--purple)', tab: 'library' },
-      { label: 'Skills', value: (skills.items||[]).length, color: 'var(--fg2)', tab: 'skills' },
-      { label: 'Workflows', value: (wf.items||[]).length, color: 'var(--fg2)', tab: 'workflows' },
-    ].map(c => `<div class="stat" style="cursor:pointer;border-left:3px solid ${c.color}" onclick="loadKnowledge('${c.tab}')"><div class="label">${c.label}</div><div class="value">${c.value}</div></div>`).join('');
-  } catch { el.innerHTML = ''; }
-}
+async function browsePath(path) {
+  kbCurrentPath = path;
+  const tree = document.getElementById('kb-tree');
+  const content = document.getElementById('kb-content');
+  const breadcrumb = document.getElementById('kb-breadcrumb');
 
-async function viewKnowledgeItem(section, id) {
-  const detail = document.getElementById('knowledge-detail');
-  detail.classList.remove('hidden');
-  detail.innerHTML = '<span style="color:var(--fg2)">Loading...</span>';
+  // Breadcrumb
+  const parts = path ? path.split('/') : [];
+  let crumb = '<a href="#" onclick="event.preventDefault(); browsePath(\'\')">shared</a>';
+  let accumulated = '';
+  for (const part of parts) {
+    accumulated += (accumulated ? '/' : '') + part;
+    const p = accumulated;
+    crumb += ` / <a href="#" onclick="event.preventDefault(); browsePath('${p}')">${part}</a>`;
+  }
+  breadcrumb.innerHTML = '📁 ' + crumb;
+
+  tree.innerHTML = '<span style="color:var(--fg2)">Loading...</span>';
 
   try {
-    let endpoint;
-    if (section === 'entries' || section === 'hypotheses') endpoint = `/api/knowledge/entries/${id}`;
-    else if (section === 'library') endpoint = `/api/knowledge/library/${id}`;
-    else if (section === 'skills') endpoint = `/api/knowledge/entries/${id}`;
-    else if (section === 'workflows') endpoint = `/api/knowledge/library/${id}`;
-    else endpoint = `/api/knowledge/experiments/${id}`;
-    const resp = await fetch(endpoint);
+    const resp = await fetch(`/api/browse?path=${encodeURIComponent(path)}`);
     const data = await resp.json();
 
-    let html = '';
-    if (data.content) {
-      if (window.marked && window.marked.parse) {
-        html = window.marked.parse(data.content);
-        // Make IDs clickable in content
-        html = html.replace(/\b(KE-\d+)\b/g, '<a href="#" onclick="event.preventDefault(); loadKnowledge(\'entries\'); setTimeout(() => viewKnowledgeItem(\'entries\', \'$1\'), 200)">$1</a>');
-        html = html.replace(/\b(H-\d+)\b/g, '<a href="#" onclick="event.preventDefault(); loadKnowledge(\'hypotheses\'); setTimeout(() => viewKnowledgeItem(\'hypotheses\', \'$1\'), 200)">$1</a>');
-        html = html.replace(/\b(EXP-\d+)\b/g, '<a href="#" onclick="event.preventDefault(); loadKnowledge(\'experiments\'); setTimeout(() => viewKnowledgeItem(\'experiments\', \'$1\'), 200)">$1</a>');
-      } else {
-        html = `<pre>${esc(data.content)}</pre>`;
+    if (data.type === 'dir') {
+      // Render directory listing
+      const dirs = data.entries.filter(e => e.type === 'dir');
+      const files = data.entries.filter(e => e.type === 'file');
+
+      let html = '';
+      for (const d of dirs) {
+        const childPath = path ? `${path}/${d.name}` : d.name;
+        html += `<div class="request" onclick="browsePath('${childPath}')" style="padding:8px 12px">
+          <span style="color:var(--accent)">📁 ${esc(d.name)}</span>
+        </div>`;
       }
-    } else if (data.results) {
-      if (data.design) html += `<pre style="font-size:12px;color:var(--fg2);margin-bottom:12px">${esc(JSON.stringify(data.design, null, 2))}</pre>`;
-      html += window.marked?.parse(data.results) ?? `<pre>${esc(data.results)}</pre>`;
-      if (data.runs?.length > 0) {
-        html += `<h4 style="margin-top:12px">Run Data (${data.runs.length} run${data.runs.length > 1 ? 's' : ''})</h4>`;
-        html += `<pre style="font-size:11px;max-height:300px;overflow:auto">${esc(JSON.stringify(data.runs, null, 2))}</pre>`;
+      for (const f of files) {
+        const filePath = path ? `${path}/${f.name}` : f.name;
+        const size = f.size ? `<span style="color:var(--fg2);font-size:11px;float:right">${(f.size/1024).toFixed(1)}KB</span>` : '';
+        html += `<div class="request" onclick="viewFile('${filePath}')" style="padding:8px 12px">
+          <span>📄 ${esc(f.name)}</span>${size}
+        </div>`;
       }
-    } else {
-      html = `<pre>${esc(JSON.stringify(data, null, 2))}</pre>`;
+      tree.innerHTML = html || '<span style="color:var(--fg2)">Empty directory</span>';
+    } else if (data.type === 'file') {
+      // Directly opened a file from URL
+      renderFileContent(content, data.content, path);
     }
-    detail.innerHTML = html;
-    detail.classList.add('md-rendered');
   } catch (err) {
-    detail.innerHTML = `<span style="color:var(--red)">Error: ${err.message}</span>`;
+    tree.innerHTML = `<span style="color:var(--red)">Error: ${err.message}</span>`;
+  }
+}
+
+async function viewFile(path) {
+  const content = document.getElementById('kb-content');
+  content.innerHTML = '<span style="color:var(--fg2)">Loading...</span>';
+
+  try {
+    const resp = await fetch(`/api/browse?path=${encodeURIComponent(path)}`);
+    const data = await resp.json();
+    renderFileContent(content, data.content, path);
+  } catch (err) {
+    content.innerHTML = `<span style="color:var(--red)">Error: ${err.message}</span>`;
+  }
+}
+
+function renderFileContent(el, text, path) {
+  if (path.endsWith('.md') && window.marked && window.marked.parse) {
+    let html = window.marked.parse(text);
+    // Make KE-XXX, H-XXX, EXP-XXX clickable
+    html = html.replace(/\b(KE-\d+)\b/g, '<a href="#" onclick="event.preventDefault(); browsePath(\'knowledge/entries\'); setTimeout(() => viewFile(\'knowledge/entries/$1.md\'), 200)">$1</a>');
+    html = html.replace(/\b(H-\d+)\b/g, '<a href="#" onclick="event.preventDefault(); browsePath(\'knowledge/hypotheses\'); setTimeout(() => viewFile(\'knowledge/hypotheses/$1.md\'), 200)">$1</a>');
+    html = html.replace(/\b(EXP-\d+)\b/g, '<a href="#" onclick="event.preventDefault(); browsePath(\'knowledge/experiments\'); setTimeout(() => viewFile(\'knowledge/experiments/$1/results.md\'), 200)">$1</a>');
+    el.innerHTML = '<div class="md-rendered">' + html + '</div>';
+  } else if (path.endsWith('.json')) {
+    try {
+      el.innerHTML = `<pre style="font-size:12px">${esc(JSON.stringify(JSON.parse(text), null, 2))}</pre>`;
+    } catch {
+      el.innerHTML = `<pre style="font-size:12px">${esc(text)}</pre>`;
+    }
+  } else {
+    el.innerHTML = `<pre style="font-size:12px">${esc(text)}</pre>`;
   }
 }
 </script>
