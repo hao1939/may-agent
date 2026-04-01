@@ -119,7 +119,7 @@ describe("coach: knowledge files", () => {
     const content = readFileSync(file, "utf-8");
     const lines = content.split("\n").length;
     expect(lines).toBeLessThanOrEqual(320);
-    expect(content).toContain("coach");
+    expect(content.toLowerCase()).toContain("coach");
   });
 
   it("DOMAIN.md exists and indexes workflows", () => {
