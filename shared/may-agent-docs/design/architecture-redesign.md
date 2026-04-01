@@ -129,7 +129,7 @@ Writes: agents/<name>/context.md
 ```typescript
 type AgentEvent =
   // Agent commands (to core)
-  | { type: "fork"; agent: string; task: string; originSessionId?: string }
+  | { type: "fork"; agent: string; task: string; originSessionId?: string; opts?: { kind?: string; requestId?: string } }
   | { type: "message"; from: string; to: string; task: string }
   | { type: "input"; sessionId: string; text: string }
   | { type: "steer"; sessionId: string; text: string }
@@ -204,3 +204,37 @@ Each mode:
 ### Phase 3: Thin startup
 - Create bus → attach components → done
 - Under 100 lines total
+
+## Design Clarifications (from review feedback)
+
+### No request/response on the bus
+
+The bus is fire-and-forget. No correlation IDs. No response events.
+
+When an agent needs a sync response, it uses `call` — direct, blocks the caller, returns the result. That's what `call` is for. The bus is for async commands and observation events.
+
+When infra needs data (status, session list), it reads DB directly. Not through the bus. DB is a shared read store.
+
+| Need | Path |
+|------|------|
+| Agent needs sync response | `agents.call()` — internal to core |
+| Agent needs async action | `agents.fork()` / `agents.message()` — bus command |
+| Infra needs data now | Read DB directly |
+
+### Infra errors don't reach agents
+
+If the DB writer fails to persist a `session_end` event, that's an ops problem — not an agent problem. The agent's work is done. The bus catch block logs the error. Ops monitors DB health. The agent doesn't retry.
+
+Agents never see infra errors. They see tool results and session outcomes. The bus subscriber error isolation (`try { fn(event) } catch {}`) is correct — a broken subscriber never breaks core or other subscribers.
+
+### Shutdown is not a bus problem
+
+The bus carries a `shutdown` event for notification. But ordering is handled by the startup code in reverse: stop cron → cancel sessions → close socket → exit. Same as today. The bus doesn't orchestrate shutdown — the process owner does.
+
+### fork carries session options
+
+The `fork` event includes an `opts` field for session configuration (kind, requestId, etc.). This ensures config doesn't get lost when cron or interfaces emit fork commands.
+
+### DB is optional in code, required in production
+
+The architecture allows running without DB (for gym, tests, oneshot). Production always enables it. This is a deployment decision, not an architecture constraint.
