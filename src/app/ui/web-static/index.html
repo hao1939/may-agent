@@ -153,7 +153,8 @@
   <!-- Knowledge -->
   <div id="knowledge" class="hidden">
     <div class="filters" style="margin-bottom: 16px;">
-      <button class="ask-btn" onclick="loadKnowledge('entries')" id="kb-entries-btn" style="border-color:var(--accent);color:var(--accent)">Entries</button>
+      <button class="ask-btn" onclick="loadKnowledge('index')" id="kb-index-btn" style="border-color:var(--accent);color:var(--accent)">Index</button>
+      <button class="ask-btn" onclick="loadKnowledge('entries')" id="kb-entries-btn">Entries</button>
       <button class="ask-btn" onclick="loadKnowledge('hypotheses')" id="kb-hypo-btn">Hypotheses</button>
       <button class="ask-btn" onclick="loadKnowledge('experiments')" id="kb-exp-btn">Experiments</button>
     </div>
@@ -1006,11 +1007,12 @@ loadStats();
 loadRequests();
 
 // ── Knowledge ─────────────────────────────────────────────────────────
-let kbSection = 'entries';
+let kbSection = 'index';
 
 async function loadKnowledge(section) {
-  kbSection = section || 'entries';
+  kbSection = section || 'index';
   // Update button styles
+  document.getElementById('kb-index-btn').style.cssText = section === 'index' ? 'border-color:var(--accent);color:var(--accent)' : '';
   document.getElementById('kb-entries-btn').style.cssText = section === 'entries' ? 'border-color:var(--accent);color:var(--accent)' : '';
   document.getElementById('kb-hypo-btn').style.cssText = section === 'hypotheses' ? 'border-color:var(--accent);color:var(--accent)' : '';
   document.getElementById('kb-exp-btn').style.cssText = section === 'experiments' ? 'border-color:var(--accent);color:var(--accent)' : '';
@@ -1018,6 +1020,22 @@ async function loadKnowledge(section) {
 
   const list = document.getElementById('knowledge-list');
   list.innerHTML = '<span style="color:var(--fg2)">Loading...</span>';
+
+  // Index view — render the full INDEX.md
+  if (section === 'index') {
+    try {
+      const resp = await fetch('/api/knowledge/index');
+      const data = await resp.json();
+      if (data.content && window.marked && window.marked.parse) {
+        list.innerHTML = '<div class="md-rendered">' + window.marked.parse(data.content) + '</div>';
+      } else {
+        list.textContent = data.content || 'No index';
+      }
+    } catch (err) {
+      list.innerHTML = `<span style="color:var(--red)">Error: ${err.message}</span>`;
+    }
+    return;
+  }
 
   try {
     const endpoint = section === 'entries' ? '/api/knowledge' : `/api/knowledge/${section}`;
@@ -1048,6 +1066,7 @@ async function loadKnowledge(section) {
           <strong>${esc(title)}</strong>
         </div>
         ${subtitle ? `<div class="task">${esc(subtitle.slice(0, 150))}</div>` : ''}
+        ${item.links && item.links.length > 0 ? `<div style="margin-top:4px;font-size:11px;color:var(--fg2)">${item.links.map(l => `<span style="color:var(--purple)">${l.type}</span> → ${esc(l.target.slice(0,50))}`).join(' · ')}</div>` : ''}
       </div>`;
     }).join('');
   } catch (err) {

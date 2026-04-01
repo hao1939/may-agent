@@ -232,7 +232,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
           tier: row.tier,
         });
       }
-      let checkDetails: Record<string, any[]> = {};
+      const checkDetails: Record<string, any[]> = {};
       if (agentFilter) {
         const latestRuns = _db()
           .prepare(
@@ -364,7 +364,13 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
   function handleKnowledge(): Response {
     const knowledgeDir = join(STATE_DIR, "..", "agents", "shared", "knowledge");
-    const entries: Array<{ id: string; title: string; status: string; claim: string }> = [];
+    const entries: Array<{
+      id: string;
+      title: string;
+      status: string;
+      claim: string;
+      links: Array<{ type: string; target: string }>;
+    }> = [];
     try {
       const entriesDir = join(knowledgeDir, "entries");
       if (existsSync(entriesDir)) {
@@ -376,11 +382,21 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
           const titleMatch = content.match(/^#\s+(.+)/m);
           const statusMatch = content.match(/\*\*Status\*\*:\s*(.+)/);
           const claimMatch = content.match(/## Claim\n\n(.+)/);
+          // Extract links
+          const links: Array<{ type: string; target: string }> = [];
+          const linkSection = content.match(/## Links\n\n([\s\S]*?)(?=\n## |\n$|$)/);
+          if (linkSection) {
+            for (const line of linkSection[1].split("\n")) {
+              const linkMatch = line.match(/\*\*(\w+)\*\*\s*→\s*(.+?)(?:\s*\(|$)/);
+              if (linkMatch) links.push({ type: linkMatch[1], target: linkMatch[2].trim() });
+            }
+          }
           entries.push({
             id,
             title: titleMatch?.[1] ?? id,
             status: statusMatch?.[1]?.trim() ?? "unknown",
             claim: claimMatch?.[1]?.trim() ?? "",
+            links,
           });
         }
       }
@@ -452,6 +468,12 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       /* best effort */
     }
     return json({ experiments });
+  }
+
+  function handleKnowledgeIndex(): Response {
+    const indexPath = join(STATE_DIR, "..", "agents", "shared", "knowledge", "INDEX.md");
+    if (!existsSync(indexPath)) return json({ error: "Index not found" }, 404);
+    return json({ content: readFileSync(indexPath, "utf-8") });
   }
 
   function handleKnowledgeEntry(id: string): Response {
@@ -581,6 +603,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (url.pathname === "/api/benchmarks/prompts") return handleBenchmarkPrompts(url);
       if (url.pathname === "/api/benchmarks/compare") return handleBenchmarkCompare(url);
       if (url.pathname === "/api/knowledge") return handleKnowledge();
+      if (url.pathname === "/api/knowledge/index") return handleKnowledgeIndex();
       if (url.pathname === "/api/knowledge/hypotheses") return handleHypotheses();
       if (url.pathname === "/api/knowledge/experiments") return handleExperiments();
       const knowledgeEntryMatch = url.pathname.match(/^\/api\/knowledge\/entries\/([^/]+)$/);
