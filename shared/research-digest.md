@@ -11,6 +11,9 @@ Curated by Amy-Kimi. Academic papers, industry trends, and community insights re
 
 | Date | Title | Key Insight | Detail |
 |------|-------|-------------|--------|
+| 2026-03-31 | **Three Design Principles** — Cross-Archive Verification | Verification=first-class component, closed-loop self-improvement (updates must reach boot file), surprise-weighted memory > recency. Validated across 2460+ archived sources. | `insights.md HB-2302` |
+| 2026-03-31 | **Entropy-Guided Exploration** — Three-Paper Synthesis | Entropy is not just uncertainty—it's a signal for exploratory reasoning. Connects causal capacity (state transition entropy), self-reflection (high-entropy pivotal tokens), and reward composition (entropy-penalized weighting). | `insights.md HB-2300` |
+| 2026-03-31 | **Closed-Loop Self-Improvement** — Four-Mode Cross-Validation | "Logging ≠ Learning"—four independent patterns (Regression Ledger, SEAL, DeepAgent, Titans) validate that self-improvement requires closed loops, not open-loop logs. Surprise-weighting > recency. | `insights.md HB-2301` |
 | 2026-03-31 | **TurboQuant Replication** — Claude 7-day Sprint | Independent developer used Claude to replicate Google's TurboQuant (6.4x KV cache compression) in 7 days, surpassed original, 2K GitHub stars in 5 days. Signals AI-assisted development paradigm shift. | `insights.md HB-2298` |
 | 2026-03-31 | **SYNTH Cross-Validation** — 8 Papers + 3 XHS Sources | CLI > MCP complexity, 4-layer architecture convergence (SoC/Agency/Non-parametric/Bounded iteration), CoMAM credit assignment. Validates OpenClaw's core design decisions. | `insights.md HB-2293` |
 | 2026-03-29 | **gstack (Garry Tan / YC)** — AI Software Factory | 32 SKILL.md templates, browse infra with CDP, /ship workflow, /qa with real browser. 61K LOC. Validates skill-as-template pattern with composable fragments. | Deep dive below |

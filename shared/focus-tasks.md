@@ -44,18 +44,18 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 - **Rule of Two**: If 2 iterations of same approach yield same result → stop, change approach.
 - **does-not-claim-success**: Model always calls `finish(success)` even when reporting failures. Confirmed untreatable by prompting (EXP-215, C1.8 rule). Runtime-only fix.
 
-#### Convention Check Status (2026-03-31 20:39)
-- **PASS RATE** (last 6h, N=32 sessions, 384 checks): **97.2% overall**
+#### Convention Check Status (2026-03-31 23:09)
+- **PASS RATE** (last 6h, N=35 sessions, 416 checks): **98.1% overall** (↑ from 97.2%)
   - **100%**: C1.4, C1.5, C1.7, C2.1, C3.2, C3.3, C6.1, C7.1, C12.1 (9 conventions perfect)
-  - **96.9%**: C1.3 (1 failure — behavioral)
-  - **90.6%**: C1.1 (3 behavioral: may, optimizer, scout editing without read)
-  - **81.3%**: C8.2 (5 amy-kimi Kimi model + 1 bob genuine empty finish)
-- **Evaluations (24h, N=158)**: 134 good, 16 acceptable, 1 needs_improvement, 0 poor.
-- **System: 160 sessions/24h, 0 errors.** Sustained health across all agents.
+  - **97.1%**: C1.3 (1 amy-kimi failure)
+  - **94.3%**: C1.1 (2 failures — amy-kimi + scout behavioral)
+  - **85.3%**: C8.2 (5 amy-kimi Kimi model — known model-level JSON issue)
+- **Evaluations (24h, N=156)**: 132 good, 16 acceptable, 1 needs_improvement, 0 poor.
+- **System: 161 sessions/24h, 0 errors.** Sustained health across all agents.
 - **All fixes confirmed working**: Hot-reload deploys changes without binary rebuild. Retroactive interrupted-session fix self-heals on every handler run.
 - **Remaining gaps** are model-level (amy-kimi/Kimi C8.2) and behavioral (C1.1 read-before-edit compliance), not infra bugs.
 - **Convention check system is STABLE**. No further calibration needed.
-- **Next**: 55 untested gym scenarios need baseline sweep (dedicated batch session, not heartbeat).
+- **Next**: 45 untested gym scenarios need baseline sweep (dedicated batch session, not heartbeat). 1 stray package.json in scenarios/ to clean up.
 
 ### Opus Prompt Caching (Cost Critical)
 - **Problem**: Opus agents (Tech-Lead, Coach, May) have 0% cache hit rate due to LiteLLM stripping headers. Wasting $36-63/day.
