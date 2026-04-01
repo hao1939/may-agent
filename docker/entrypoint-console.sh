@@ -42,6 +42,14 @@ fi
 # Add host node bin to PATH for CLI coding agents (claude, codex, gemini)
 for d in /home/example-user/.nvm/versions/node/*/bin; do [ -d "$d" ] && export PATH="$d:$PATH" && break; done
 
+# Start web UI in background (reads DB + connects to socket)
+WEB_BIN="${PROJECT_ROOT:-/app}/bundle/may-agent-web"
+[ -x "$WEB_BIN" ] || WEB_BIN=/usr/local/bin/may-agent-web
+if [ -x "$WEB_BIN" ]; then
+  "$WEB_BIN" --state-dir "${STATE_DIR:-/app/.state}" --port "${WEB_PORT:-8080}" &
+  echo "Web UI started on port ${WEB_PORT:-8080}"
+fi
+
 # Prefer bind-mounted binary (dev hot-reload), fall back to baked-in
 MAY_BIN="${PROJECT_ROOT:-/app}/bundle/may-agent"
 [ -x "$MAY_BIN" ] || MAY_BIN=/usr/local/bin/may-agent
