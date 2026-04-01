@@ -16,16 +16,30 @@ Check the "Injected: pending tasks" section above. For every pending task:
 ## 2. Follow Up
 Check previously dispatched work:
 - Completed → read result, take next action
-- Failed → diagnose, re-dispatch or fix
+- Failed → diagnose and get help (see step 3)
 - Stale (>1h with no progress) → cancel and retry
 
-## 3. System Health
+## 3. Triage Failures
+Check for recent agent failures:
+```bash
+bun -e "import{Database}from'bun:sqlite';const db=new Database('.state/may.db',{readonly:true});const rows=db.query(\"SELECT agent,status,error,task FROM sessions WHERE status IN ('error','interrupted') AND startedAt > ? ORDER BY startedAt DESC LIMIT 10\").all(Date.now()-3600000);for(const r of rows)console.log(r.agent+' | '+r.status+' | '+(r.error||'').slice(0,80))"
+```
+
+When an agent fails, route to the right helper:
+- **Keeps failing at the same task** → Coach (behavioral issue, needs training or a skill)
+- **System/tool error** (DB down, tool broken, timeout) → Tech-lead (infra fix)
+- **Confused about what to do** (wrong approach, misunderstands task) → Bob (unclear design)
+- **Spinning/wasteful** (many ops, no progress) → Optimizer (efficiency issue)
+- **Repeated failures, same agent** → check if circuit breaker tripped, investigate root cause
+
+Don't just re-dispatch a failed task. Understand WHY it failed first.
+
+## 4. System Health
 Quick check:
 - Any stuck sessions? → cancel
 - Any agents not running? → investigate
-- Any errors in recent sessions? → route to the right agent
 
 Only report problems. Don't narrate "all healthy."
 
-## 4. Close Out
+## 5. Close Out
 Call `finish()` with what you dispatched and what's blocked. Keep it brief.
