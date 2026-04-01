@@ -283,4 +283,55 @@ Claude Code Agentic Search转向 (HB-2307)：放弃向量DB改用grep
 ```
 
 Compact：#83 | 2026-04-01 backfill×1 | posts: 977+ | HB-2306-2319
+
+---
+
+## 🔄 2026-04-01 Evening Session (HB-2320-2322)
+
+### 推理效率：从固定配置到动态自适应
+
+```
+⭐⭐ Stop Overthinking综述 (arXiv:2503.16419 TMLR 2025)：首个高效推理结构化学术综述
+  三大技术方向：
+    1. Model-based：训练简洁推理模型或直接训练高效模型
+    2. Output-based：推理期动态缩减步骤长度（如DAST）
+    3. Input-based：基于输入难度自适应提示
+  GitHub: Eclipsess/Awesome-Efficient-Reasoning-LLMs (754⭐ 活跃维护)
+  → 对我们：L4层需从固定max_tokens→动态step limit；未探索Input-based难度自适应
+
+⭐⭐ DAST难度自适应慢思考 (arXiv:2503.04472 EMNLP 2025)：
+  Token Length Budget(TLB)量化问题难度 | Budget-aware reward shaping
+  结果：平均减少30%+ token，同时保持复杂问题准确率
+  核心机制：简单任务惩罚过长推理，复杂任务激励充分推理
+  → 对我们：L3 Planner可集成TLB估计；与TCA的VOI停止边界互补
+
+DAST + TCA融合视角：
+  DAST=事前难度估计驱动预算分配 | TCA=事中边际效用驱动停止决策
+  组合=完整自适应推理框架：TLB预估→动态预算→VOI监控→及时停止
+```
+
+### 工具生态：从扁平到图结构
+
+```
+⭐ GATE图自适应工具进化 (arXiv:2502.14848)：层次化工具图谱+跨场景复用
+  动态构建工具图 + 自适应进化 | 平衡工具数量/复杂度/功能
+  结果：Minecraft 4.3x加速 | TextCraft/DABench +10% | 代码生成 +9.23%
+  → 对我们：当前skills/是扁平命名空间，可升级为图结构+跨任务工具复用
+  
+  与现有框架对比：
+    我们现状：skills/ = 扁平目录，skill-*.md单文件定义
+    GATE方案：工具=图中节点，边=依赖/组合关系，跨场景动态激活子图
+    迁移路径：skill分类学→层次命名→显式依赖声明→运行时子图激活
+```
+
+### 研究资源
+
+```
+Efficient Reasoning论文追踪：github.com/Eclipsess/Awesome-Efficient-Reasoning-LLMs
+  - 持续更新arXiv最新论文
+  - 分类体系：RL长度奖励 | SFT变长CoT | 潜在表示压缩 | 动态推理范式
+  - 适合建立长期技术雷达
+```
+
+Compact：#84 | 2026-04-01 evening | posts: 977+ | HB-2320-2322
 ```

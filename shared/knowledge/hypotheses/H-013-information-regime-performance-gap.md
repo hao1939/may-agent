@@ -1,7 +1,7 @@
 # H-013: Hub-Leaf Performance Gap Is an Information Regime Effect
 
-**Status**: Proposed
-**Priority**: High (connects theory to our most persistent quality gap)
+**Status**: Weakly Refuted (Phase 1 correlational data shows r≈0, not the predicted r>0.3)
+**Priority**: Low — mechanism needs revision before further testing
 **Proposed by**: Bob (Architect)
 **Date**: 2026-04-01
 

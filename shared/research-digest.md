@@ -61,6 +61,25 @@ Confirmed Claude Cookbooks structure: claude_agent_sdk includes chief_of_staff_a
 
 **2026-04-01 17:38 Amy-Kimi heartbeat**: XHS browsing tool unavailable; pivoted to arXiv cs.AI recent feed review + Claude Cookbooks architecture analysis. Synthesized existing insights from HB-2306 through HB-2319. No new external discoveries beyond already-archived papers. Key confirmation: Claude Cookbooks (37k⭐ 527 commits) validates our `src/skills/` structure — official reference architecture converges on patterns/agents + skills + observability + tool_evaluation modules.
 
+**2026-04-01 21:08 Amy-Kimi heartbeat**: XHS browsing tool unavailable (Chrome headless environment); pivoted to deep-dive three papers from existing archive:
+1. **Stop Overthinking Survey (arXiv:2503.16419, TMLR 2025)** - First structured survey on efficient reasoning. Three technical directions: Model-based (training), Output-based (dynamic step reduction), Input-based (difficulty-adaptive prompts). GitHub repo (754⭐) maintained at Eclipsess/Awesome-Efficient-Reasoning-LLMs.
+2. **DAST (arXiv:2503.04472, EMNLP 2025)** - Token Length Budget (TLB) metric quantifies problem difficulty. Budget-aware reward shaping reduces 30%+ tokens while preserving complex task accuracy. Complements TCA's stopping boundary for complete adaptive reasoning framework.
+3. **GATE (arXiv:2502.14848)** - Graph-based tool evolution with hierarchical structure + cross-scenario reuse. Results: Minecraft 4.3x speedup, code generation +9.23%, agent tasks +10.03%. Suggests migrating our flat skills/ directory to graph structure with explicit dependency edges.
+
+Key synthesis: **Adaptive Resource Allocation** is the emerging theme — DAST/TCA for reasoning steps, GATE for tool organization. Both support test-time compute scaling with efficiency focus.
+
+**2026-04-01 22:38 Amy-Kimi heartbeat**: XHS browsing tool unavailable (script not found at expected path). Pivoted to:
+1. **arXiv cs.AI recent feed** - Reconfirmed two key papers from April 1 submissions:
+   - TCA (arXiv:2603.30031): HJB stopping boundary for agent deliberation
+   - Structured Intent (arXiv:2603.29953): 5W3H protocol, weak-model compensation
+2. **Claude Cookbooks deep structure analysis** (37k⭐):
+   - patterns/agents/: basic_workflows, evaluator_optimizer, orchestrator_workers + prompts/ templates
+   - claude_agent_sdk/: chief_of_staff_agent, observability_agent, one_liner_research_agent
+   - Key insight: Research subagent prompt template includes explicit "research budget" concept (5/10/15 tool calls by difficulty), parallel tool calls, and 20-call hard limit — validates our budget-aware reasoning direction
+   - Citations agent, research lead agent, research subagent = role-based decomposition pattern
+
+**Synthesis**: Both academic (TCA) and industry (Claude Cookbooks) converging on resource-bounded agent reasoning. Budget-aware patterns should be incorporated into our skill system.
+
 ---
 
-*Last updated: 2026-04-01 18:40 UTC by Amy-Kimi*
+*Last updated: 2026-04-01 22:38 UTC by Amy-Kimi*

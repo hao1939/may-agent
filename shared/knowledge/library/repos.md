@@ -897,3 +897,31 @@ SoLA (arXiv:2603.11239) proposes semantic-routing-based LoRA modules where each 
 | ARPAHLS/rooms | 8★ | Python | 2026-03-09 | Secure, local-first Python framework for multi-agent orchestration. |
 
 **Assessment:** Agent observability is the second major tooling wave (after memory). All tools converge on resource monitoring (L1) and basic behavioral monitoring (L2). Integrity monitoring (L3) and coordination monitoring (L4) remain completely unaddressed. GNAP is the most architecturally significant discovery — a formalized protocol for file-based multi-agent coordination that validates our approach. (ref: agents/scout/workspace/deep-dive-agent-observability-patrol-wave.md)
+
+---
+
+## SakanaAI/AI-Scientist-v2 ★4,400 (+trending weekly) — First AI-Accepted Workshop Paper
+- **URL:** https://github.com/SakanaAI/AI-Scientist-v2
+- **Stars:** 4,400 (635 forks) | Active (58 commits, released Apr 7 2025)
+- **What it does:** End-to-end agentic scientific research system. Generates hypotheses, writes code, runs experiments, analyzes data, creates figures, writes complete manuscripts. Uses **progressive agentic tree search** guided by an experiment manager agent. No human-authored templates (unlike v1).
+- **Why it matters:** **First fully AI-generated paper accepted through peer review** — at ICLR 2025 Workshop "ICBINB" (I Can't Believe It's Not Better). Paper: "Compositional Regularization: Unexpected Obstacles in Enhancing Neural Network Generalization" (avg score 6.33/10, above acceptance threshold). Withdrawn after acceptance per ethical protocol (IRB-approved experiment with ICLR cooperation).
+- **Key architectural choices:** (1) Agentic tree search replaces linear pipeline of v1 — explores multiple hypotheses via branching. (2) Experiment manager agent coordinates exploration. (3) No templates — fully autonomous end-to-end. (4) Trade-off: v2 has lower success rate than v1 but handles open-ended exploration; v1 better when good template exists.
+- **Connects to:** EvoScientist (2603.08127) — multi-agent evolving AI scientists, same space but different approach (evolutionary vs tree search). Also connects to our "agent autonomy" research theme — this is the frontier of fully autonomous agent systems.
+- **Limitations:** Workshop-level only (60-70% acceptance rate vs 20-30% for main conference). Only 1/3 submitted papers accepted. Human researchers acknowledge papers don't yet meet their internal bar for main conference publication.
+- **Status:** watching — landmark milestone for fully autonomous research agents. Added 2026-04-01.
+
+## Yeachan-Heo/oh-my-claudecode ★20,600 (+trending weekly) — Multi-Agent Orchestration for Claude Code
+- **URL:** https://github.com/Yeachan-Heo/oh-my-claudecode
+- **Stars:** 20,600 (1,700 forks) | Very Active (2,193 commits)
+- **What it does:** Teams-first multi-agent orchestration layer for Claude Code. Provides agents/, missions/, skills/, hooks/, bridge/ infrastructure. Includes benchmarking, seminar system, and templates. TypeScript-based. Has `.claude-plugin` integration. README in 12 languages.
+- **Why it matters:** 20k★ multi-agent orchestration specifically for Claude Code — directly comparable to our architecture. The "missions" concept maps to our task system, "skills" to our knowledge library, "bridge" likely handles inter-agent communication. 2,193 commits suggests mature, battle-tested system.
+- **Connects to:** Our own multi-agent architecture (agents/, shared/knowledge). GNAP protocol (farol-team/gnap). Agent skills ecosystem (huggingface/skills, muratcankoylan/Agent-Skills-for-Context-Engineering).
+- **Status:** watching closely — study for architectural patterns. Added 2026-04-01.
+
+## affaan-m/everything-claude-code ★131,000 (+trending weekly) — Agent Harness Performance System
+- **URL:** https://github.com/affaan-m/everything-claude-code
+- **Stars:** 131,000 (18,600 forks) | Extremely Active
+- **What it does:** Comprehensive "agent harness performance optimization system" — skills, instincts, memory, security, and research-first development for Claude Code, Codex, OpenCode, Cursor and beyond. Includes .claude/, .codex/, .cursor/, .gemini/, .opencode/, .trae/ configs (multi-platform). Has agents/, commands/, contexts/, hooks/, manifests/, plugins/, rules/, schemas/, skills/ directories. SOUL.md, AGENTS.md, CLAUDE.md, WORKING-CONTEXT.md provide agent configuration.
+- **Why it matters:** **131k stars is extraordinary** — makes this one of the most-starred repos on all of GitHub. The "agent harness" concept treats the entire project as an optimized environment for AI coding agents. Cross-platform support (Claude Code + Codex + Cursor + Gemini + OpenCode + Trae) is notable — not locked to one tool. "Research-first development" and research/ directory suggest a knowledge-driven approach similar to our Scout system.
+- **Connects to:** Agent skills ecosystem convergence (HF skills, muratcankoylan). Our own architecture (contexts ≈ our shared knowledge, skills ≈ our library). The multi-platform approach validates the "agent-portable" skill format.
+- **Status:** watching closely — study SOUL.md and WORKING-CONTEXT.md patterns for our own system. Added 2026-04-01.
