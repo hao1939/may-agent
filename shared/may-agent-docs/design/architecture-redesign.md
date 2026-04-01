@@ -2,14 +2,9 @@
 
 ## Core Concept
 
-Two paths. Simple rules.
+One integration point: the EventBus. Commands in, events out. Everything flows through it.
 
-- **EventBus**: async. Fire and forget. Commands and events. Results come back later as events.
-- **DB**: sync reads. Query anytime. Dashboards, status, history.
-
-| Need something to happen | → EventBus (async) |
-|--------------------------|---------------------|
-| Need data now | → DB read (sync) |
+**DB is optional.** It's a subscriber that persists events to SQLite, enabling sync reads (dashboards, status, history). Without it, core still runs — events are just ephemeral.
 
 ## EventBus
 
