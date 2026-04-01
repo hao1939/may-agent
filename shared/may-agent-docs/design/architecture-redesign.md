@@ -128,12 +128,17 @@ Writes: agents/<name>/context.md
 
 ```typescript
 type AgentEvent =
-  // Commands (to core)
+  // Agent commands (to core)
   | { type: "fork"; agent: string; task: string; originSessionId?: string }
   | { type: "message"; from: string; to: string; task: string }
   | { type: "input"; sessionId: string; text: string }
   | { type: "steer"; sessionId: string; text: string }
   | { type: "cancel"; sessionId: string }
+
+  // Management commands (to core / launcher)
+  | { type: "reload" }                    // core reloads agent configs from disk
+  | { type: "restart" }                   // launcher kills process, restarts
+  | { type: "shutdown" }                  // graceful shutdown, close all sessions
 
   // Observations (from core)
   | { type: "text"; sessionId: string; agent: string; text: string }
@@ -151,6 +156,19 @@ type AgentEvent =
   | { type: "notification"; agent: string; text: string }
   | { type: "log"; level: "info" | "warn" | "error"; message: string };
 ```
+
+**Who handles what:**
+
+| Command | Handler | What it does |
+|---------|---------|-------------|
+| fork | Core | Starts async session |
+| message | Core | Writes request to DB via bus |
+| input | Core | Sends text to existing session (wake if idle) |
+| steer | Core | Injects text mid-turn |
+| cancel | Core | Stops session |
+| reload | Core | Reloads agent configs from disk |
+| restart | Launcher | Kills process, restarts with new code |
+| shutdown | Launcher | Graceful exit |
 
 ## Startup
 
