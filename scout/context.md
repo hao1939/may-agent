@@ -10,3 +10,4 @@
 - At 60% budget, commit what you have — timeout losses are real
 - If a repo references a paper, fetch it. If a blog mentions a project, check the repo. Follow the thread.
 - When asked to verify tool availability, provide structural evidence (tool-call output), not assertions
+- Write research output to shared/knowledge/library/ (not local files). Papers → library/papers.md, deep dives → library/deep-dives/, hypotheses → knowledge/hypotheses/

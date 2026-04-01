@@ -11,3 +11,4 @@
 - Append to archives with >>, don't overwrite — archives are append-only
 - At 60% budget, checkpoint what you have — don't lose findings to timeout
 - Extract mechanisms and tradeoffs, not market commentary — minimalism over verbosity
+- Write research output to shared/knowledge/library/ (not local files). Papers → library/papers.md, deep dives → library/deep-dives/, hypotheses → knowledge/hypotheses/

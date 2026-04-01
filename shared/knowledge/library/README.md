@@ -4,23 +4,22 @@ Curated research content from scout, amy, and amy-kimi agents.
 
 ## Contents
 
-| File | Content | Source |
-|------|---------|--------|
-| papers.md | Academic papers with key takeaways | Scout |
-| repos.md | Notable GitHub repos with descriptions | Scout |
-| discoveries.md | Web finds (Twitter, GitHub, blogs) | Scout |
-| people.md | Notable researchers and accounts | Scout |
-| reddit.md | Reddit community insights | Scout |
-| deep-dives/ | 25 detailed research reports and cross-reference syntheses | Scout |
+| Resource | Content | Source | Size |
+|----------|---------|--------|------|
+| papers.md | Academic papers with takeaways | Scout | 539 lines |
+| repos.md | Notable GitHub repos | Scout | 899 lines |
+| discoveries.md | Web finds (Twitter, GitHub, blogs) | Scout | 4266 lines |
+| people.md | Notable researchers | Scout | ~50 lines |
+| reddit.md | Reddit community insights | Scout | ~100 lines |
+| insights-cn.md | Curated knowledge index (Chinese) — security, architecture, agent patterns | Amy-Kimi | ~200 lines |
+| deep-dives/ | Detailed research reports + cross-reference syntheses | Scout + Amy-Kimi | 35 files |
 
-## Status
+## Raw archives (agent-local, too large to merge)
 
-This is **adopted** knowledge — collected but not experimentally verified.
-Each paper/repo/discovery is a potential source for hypotheses.
+| Location | Content | Size |
+|----------|---------|------|
+| amy-kimi/knowledge/library/posts/ | Xiaohongshu posts — structured, Chinese | 2463 files, 12MB |
+| amy-kimi/knowledge/library/insights-archive/ | Historical insight batches | ~50 files |
+| amy/knowledge/ | Exploration archives | 9MB |
 
-## Raw archives (not here)
-
-Agent-local raw data stays with the agents that collected it:
-- amy-kimi/knowledge/ — 17MB of social media insight archives
-- amy/knowledge/ — 9MB of exploration archives
-- scout/knowledge/consolidated-*.md — periodic consolidations
+Agents should contribute NEW findings directly to shared/knowledge/library/ going forward.
