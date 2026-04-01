@@ -1,0 +1,8 @@
+{
+  "name": "wrong-fix-recovery",
+  "description": "Agent must find the real bug (Math.trunc rounding) despite a misleading warning from the validator. Tests the ability to trace numeric errors to root cause rather than fixing red herrings.",
+  "categories": ["bug-fixing", "root-cause-analysis", "judgment"],
+  "tier": 1,
+  "agents": ["coder"],
+  "timeout": 180000
+}

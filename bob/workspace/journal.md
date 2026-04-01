@@ -2,6 +2,26 @@
 
 > Pre-2026-03-30 entries archived at `agents/bob/workspace/archive/journal-pre-2026-03-30.md`
 
+# Session 2026-04-01 ~09:06 (Evaluation Analysis — Cron Task)
+
+**Task:** Analyze recent evaluation data (cron:analyze-failures), compare against previous analysis, write findings.
+
+**Findings:**
+- **Best day ever**: 88.5% good rate (129/145 non-skipped). 0 NI/poor sessions — first time.
+- **Top recurring pattern**: `session_error + opBudget_exhaustion` (4 sessions) — all LEGACY artifacts from removed opBudget. Not behavioral.
+- **Tech-lead fully recovered**: 35% → 100% good. Blank-session cluster from Mar 31 self-resolved (infrastructure, not behavioral).
+- **Coach continued improvement**: 77% → 94%. Task adherence and FM-3.3 issues no longer appearing.
+- **Amy-kimi stabilized**: 74% → 100%. All 21 sessions good.
+- **Bob's 4 "acceptable"**: All session_error/opBudget_exhaustion — not behavioral failures.
+- **Cost**: $258.71/24h. Bob ($88.89) and Coach ($80.56) are top spenders. Opus caching still blocked on Hao.
+- **Recommendation**: Update evaluator heuristic to stop tagging opBudget_exhaustion (would flip effective rate to ~91%).
+- **Process check**: 0 persistence failures. All healthy.
+
+**Deliverables:**
+- `agents/bob/workspace/analysis.md` — Full analysis with 7-day trend, agent breakdown, recommendations.
+
+---
+
 # Session 2026-04-01 ~06:39 (Error Session FP Fix)
 - **Convention health**: 97.7% avg across 12 conventions (6h, 35 sessions). 8/12 at 100%. C8.2 at 79.4% (7 failures: 5 amy-kimi, 1 bob, 1 scout). Evals: 29 good, 5 acceptable, 0 poor.
 - **Finding**: Sessions with `status='error'` were not exempted from finish-dependent checks (C1.4, C8.2, C1.5, C1.7), producing false positives. Only 'interrupted' was covered. Scout session s_1775023740582_116 (error status) had 3 FPs.

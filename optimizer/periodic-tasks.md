@@ -3,37 +3,37 @@
 Track when each task was last done. Pick the most overdue one during heartbeat step 3.
 
 ## Per heartbeat (do one, rotate)
-- [x] **Analysis review** — Last done: 2026-04-01T07:39
+- [x] **Analysis review** — Last done: 2026-04-01T10:15
   Read agents/bob/workspace/analysis.md or recent Bob synthesis outputs.
   Any findings that need optimization work? Cost issues? Efficiency problems?
   If found → add specific task to workspace/todo.md.
-  Latest (2026-04-01T07:39): 15 sessions since 05:39 (normal). Binary **849c340**, PID 58. HEAD **d84c785** (maxTurns fix pending rebuild). Quality **99.5%** (200-window: 171g/20a/1ni/8skip). 24h errors: 2. 24h waste **0.6%** (1/154 evaluated). 50-window **100.0%** (43g/5a/0ni/2skip). 159 sessions in 24h.
-  Latest (2026-04-01T05:39): 15 sessions since 03:39 (normal activity). Binary **849c340**, PID 58. HEAD now **d84c785** (includes maxTurns fix commit). Quality **99.5%** (200-window: 171g/19a/1ni/9skip). 24h errors: 9. 24h waste **0.7%** (1/153 evaluated). 50-window **100.0%** (45g/3a/0ni/2skip). 154 sessions in 24h.
-  _Older entries pruned 2026-04-01T07:39._
+  Latest (2026-04-01T10:15): 12 sessions since 08:39 (coach 5, bob 2, optimizer 2, amy-kimi 1, may 1, qa 1). **New binary 77e52c1 ACTIVE** (PID 71, started 09:55). HEAD **1947ef2** (2 ahead of binary). Binary includes 7 commits beyond e58e521: EventBus Phase 1-3, web UI, knowledge tab, podman migration. Quality **98.9%** (200-window: 154g/26a/2ni/18skip). 24h errors: 2 (bob+scout timeouts). 24h waste **0.6%** (1/160). 50-window **97.4%** (26g/11a/1ni/12skip). 146 sessions in 24h. Verdict format changed to underscore: `needs_improvement`.
+  Latest (2026-04-01T08:39): 9 sessions since 07:39 (normal). **New binary e58e521 built at 08:37** (symlink updated, not yet hot-reloaded). HEAD **5c44520** (Phase 1 EventBus). Quality **100.0%** (200-window: 169g/21a/0ni/0skip). 24h errors: 0. 24h waste **0.0%** (0/157). 50-window: **100.0%** (42g/6a/0ni/0skip). 161 sessions in 24h.
+  _Older entries pruned 2026-04-01T10:15._
 
-- [x] **Cost outlier scan** — Last done: 2026-04-01T07:39
+- [x] **Cost outlier scan** — Last done: 2026-04-01T10:15
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-04-01T07:39): No cost outliers. Quality **99.5%** (200-window: 171g/20a/1ni/8skip). 50-window **100.0%** (43g/5a/0ni/2skip). NI at 1 (stable). 24h waste **0.6%** (1/154 evaluated). 15 sessions since last HB. maxTurns fix committed (d84c785) but binary not yet rebuilt.
-  Latest (2026-04-01T05:39): No cost outliers. Quality **99.5%** (200-window: 171g/19a/1ni/9skip). 50-window **100.0%** (45g/3a/0ni/2skip). NI at 1 (stable). 24h waste **0.7%** (1/153 evaluated). 15 sessions since last HB. maxTurns fix committed (d84c785) but binary not yet rebuilt.
-  _Older entries pruned 2026-04-01T07:39._
+  Latest (2026-04-01T10:15): No cost outliers. Quality **98.9%** (200-window: 154g/26a/2ni/18skip). 50-window **97.4%** (26g/11a/1ni/12skip). NI at 2 (200w). 24h waste **0.6%** (1/160). 12 sessions since last HB. Binary 77e52c1 active (started 09:55). Skip rate elevated at 9% (18/200) and 24% (12/50) — likely from new binary transition. Quality slightly regressed from 100% peak.
+  Latest (2026-04-01T08:39): No cost outliers. Quality **100.0%** (200-window: 169g/21a/0ni/0skip). 50-window: **100.0%** (42g/6a/0ni/0skip). NI at 0 (best ever). 24h waste **0.0%** (0/157). 9 sessions since last HB.
+  _Older entries pruned 2026-04-01T10:15._
 
-- [x] **LLM-to-JS opportunity scan** — Last done: 2026-04-01T07:39
+- [x] **LLM-to-JS opportunity scan** — Last done: 2026-04-01T10:15
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
   Could it be replaced with a JS handler? (See cron-graduation-process.md Stage 3.)
   If found → write proposal in workspace/improvement-proposals.md.
-  Latest (2026-04-01T07:39): 15 sessions since 05:39. optimizer 3x(47+33+0)ops, coach 2x(59+0)ops, tech-lead 1x36ops, bob 2x(20+13)ops, may 3x(14+1+1)ops, amy-kimi 1x15ops, qa 1x15ops, scout 1x7ops, evaluator 1x0ops. No LLM-to-JS candidates.
-  Latest (2026-04-01T05:39): 15 sessions since 03:39. Coach 2x(61+61)ops, bob 2x(28+35)ops, amy-kimi 2x(27+14)ops, optimizer 2x(8+32)ops, tech-lead 1x30ops, evaluator 1x12ops, scout 1x7ops, may 2x1ops, qa 2x1ops. No LLM-to-JS candidates.
-  _Older entries pruned 2026-04-01T07:39._
+  Latest (2026-04-01T10:15): 12 sessions since 08:39. coach 5x(66ops), bob 2x(22ops), optimizer 2x(67ops), amy-kimi 1x(12ops), may 1x(1ops), qa 1x(17ops). Coach is highest volume (5 sessions). No LLM-to-JS candidates — coach sessions are complex behavioral coaching. Skip rate elevated (12/50=24% in 50-window) worth monitoring.
+  Latest (2026-04-01T08:39): 9 sessions since 07:39. amy-kimi 2x(7ops), optimizer 2x(40ops), qa 2x(10ops), bob 1x(0ops), evaluator 1x(0ops), may 1x(1ops). No LLM-to-JS candidates.
+  _Older entries pruned 2026-04-01T10:15._
 
-- [x] **Handler health check** — Last done: 2026-04-01T07:39
+- [x] **Handler health check** — Last done: 2026-04-01T10:15
   Review existing JS handlers in agents/may/handlers/.
   Any errors in recent logs? Any handler that's not firing?
   If issues → add fix to workspace/todo.md.
-  Latest (2026-04-01T07:39): Binary 849c340, PID 58. HEAD d84c785 (maxTurns fix pending rebuild). 2 errors in 24h (down from 9). System stable. Quality 99.5%. 24h waste 0.6%.
-  Latest (2026-04-01T05:39): Binary 849c340, PID 58. HEAD d84c785 (maxTurns fix pending rebuild). 9 errors in 24h. System stable. Quality 99.5%. 24h waste 0.7%.
-  _Older entries pruned 2026-04-01T07:39. Trend: 2.4→0.9→4.3→4.1→3.9→3.6→3.5→2.2→1.4→6.0→6.0→6.0→6.3→0.7→0.7→0.7→0.6%._
+  Latest (2026-04-01T10:15): Binary **77e52c1 ACTIVE** (PID 71, started 09:55). HEAD **1947ef2** (2 ahead: podman rootless fix + compose path fix). Process healthy. 2 errors in 24h (bob+scout timeouts — not handler issues). Quality 98.9%. 24h waste 0.6%. New DB schema confirmed in production (startedAt/createdAt INTEGER, opCount, no pid). EventBus Phase 1-3 + web UI + knowledge tab now live.
+  Latest (2026-04-01T08:39): Binary e58e521 built at 08:37, symlink updated. Still running 849c340 (PID 58). Hot-reload pending. 0 errors in 24h. Quality 100.0%. 24h waste 0.0%.
+  _Older entries pruned 2026-04-01T10:15. Waste trend: 2.4→0.9→4.3→4.1→3.9→3.6→3.5→2.2→1.4→6.0→6.0→6.0→6.3→0.7→0.7→0.7→0.6→0.0→0.6%._
 
 - [x] **Proven pattern → Skill/Workflow** — Last done: 2026-03-30T01:10
   This is your MOST IMPORTANT periodic task — focus area #1.
@@ -57,7 +57,7 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Latest (2026-03-23T21:36): verification-consistency (15th skill) deployed to 6 agents. Full lifecycle.
   _13 earlier skill deployments documented in finding files. See `workspace/finding-pattern-scan-*.md`._
 
-- [x] **Tool quality review** — Last done: 2026-04-01T07:39
+- [x] **Tool quality review** — Last done: 2026-04-01T10:15
   Read the tool-quality-report.md (generated by tool-quality-scan handler every 4h).
   Look for regression trends, persistent failure patterns, and agent-specific issues.
   If a specific failure category accounts for >30% of waste, create a targeted intervention:
@@ -65,9 +65,9 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   - For empty-args: check if schema validation is catching it early enough
   - For edit-match-fail: check if agents are reading files before editing
   If tool-quality-report.md doesn't exist yet, skip — handler hasn't fired.
-  Latest (2026-04-01T07:39): Quality **99.5%** (200-window: 171g/20a/1ni/8skip). 50-window: **100.0%** (43g/5a/0ni/2skip). NI at 1. 24h waste **0.6%** (1/154 evaluated). Binary 849c340. HEAD d84c785 (maxTurns fix pending rebuild).
-  Latest (2026-04-01T05:39): Quality **99.5%** (200-window: 171g/19a/1ni/9skip). 50-window: **100.0%** (45g/3a/0ni/2skip). NI at 1. 24h waste **0.7%** (1/153 evaluated). Binary 849c340. HEAD d84c785 (maxTurns fix pending rebuild).
-  _Older entries pruned 2026-04-01T07:39. Waste trend: 2.4→0.9→4.3→4.1→3.9→3.6→3.5→2.2→1.4→6.0→6.0→6.0→6.3→0.7→0.7→0.7→0.6%._
+  Latest (2026-04-01T10:15): Quality **98.9%** (200-window: 154g/26a/2ni/18skip). 50-window: **97.4%** (26g/11a/1ni/12skip). NI at 2 (200w), 1 (50w). 24h waste **0.6%** (1/160). Recent NI was coach session (evaluator didn't score). Skip rate elevated in 50-window (24%) — suggests evaluator may be skipping more since binary change. Binary 77e52c1. HEAD 1947ef2 (2 ahead).
+  Latest (2026-04-01T08:39): Quality **100.0%** (200-window: 169g/21a/0ni/0skip). 50-window: **100.0%** (42g/6a/0ni/0skip). NI at 0 (best ever). 24h waste **0.0%** (0/157).
+  _Older entries pruned 2026-04-01T10:15. Waste trend: 2.4→0.9→4.3→4.1→3.9→3.6→3.5→2.2→1.4→6.0→6.0→6.0→6.3→0.7→0.7→0.7→0.6→0.0→0.6%._
 
 - [x] **Workflow quality audit** — Last done: 2026-03-30T21:10
   **⛔ COOLDOWN: WEEKLY.** Workflow changes are high-impact; audit weekly or after major changes.
@@ -81,16 +81,16 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Latest (2026-03-30T21:10): **First full audit completed.** 32 workflow files across 7 agents. 177 workflow runs, 460 sessions all-time. Key findings: (1) Workflows reduce errors dramatically (2.6% vs 18.1% non-workflow) but quality is lower (70.7% vs 81.4%) — mainly due to coach sprint NI rate (68/133). (2) All 3 consolidation priorities still open — P1 verify-and-finish confirmed byte-identical, P2 verify-parallel confirmed tech-lead best, P3 implement-and-review has 3 divergent versions. (3) Found 1 unregistered workflow: may/project-monitor.ts — added to registry. (4) 27.1% run interruption rate (48/177) wastes ~917 ops total. Registry updated with effectiveness metrics and recommendations. Next: consolidate P1 (zero-risk dedup).
   Latest: Registry created 2026-03-30 with initial audit data. 3 consolidation priorities identified.
 
-- [x] **Gym shadow baseline & trend tracking** — Last done: 2026-04-01T07:39
+- [x] **Gym shadow baseline & trend tracking** — Last done: 2026-04-01T10:15
   ⚠️ COOLDOWN: After each binary rebuild only. No point re-running on same binary.
   Run `scripts/gym-baseline.sh --tier smoke --agent coder --tag "<descriptive-tag>"` (takes ~10 min).
   Then update `workspace/gym-trend-tracker.md` with new batch results.
   Compare with previous batches via `bun scripts/gym-stats.ts --batches`.
   Flag regressions via `bun scripts/gym-stats.ts --regressions`.
   NOTE: Runs take ~600s for 13 smoke scenarios. Consider running in background or splitting.
-  Latest (2026-04-01T07:39): **Gym baseline on 849c340 stable at 15/16 pass (94%)**. HEAD d84c785 (maxTurns fix). Binary not rebuilt yet — will need new baseline after rebuild.
-  Latest (2026-04-01T05:39): **Gym baseline on 849c340 stable at 15/16 pass (94%)**. HEAD now d84c785 (maxTurns fix). Binary not rebuilt yet — will need new baseline after rebuild.
-  _Older entries pruned 2026-04-01T07:39. Last successful gym: 11/13 pass (85%) on 37b8fbb._
+  Latest (2026-04-01T10:15): **Binary 77e52c1 now active (started 09:55)**. Gym baseline NEEDED on 77e52c1. Previous baseline on 849c340: 15/16 pass (94%). Binary jumped from e58e521 to 77e52c1 (7 extra commits: EventBus Phase 1-3, web UI, knowledge tab, podman migration). Red-herring-investigation gym run was in progress at 10:11 (now finished).
+  Latest (2026-04-01T08:39): **New binary e58e521 built at 08:37** — gym baseline needed on e58e521 once process restarts. Previous baseline on 849c340: 15/16 pass (94%).
+  _Older entries pruned 2026-04-01T10:15. Last successful gym: 11/13 pass (85%) on 37b8fbb._
 
 ## Weekly
 - [x] **Improvement proposals review** — Last done: 2026-03-30T09:10
