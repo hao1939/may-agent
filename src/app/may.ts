@@ -650,20 +650,71 @@ function handleInput(message: string, source?: string): void {
   bus.emit({ type: "info", message: `[cmd] Input ignored (no chat session). Use --chat for interactive mode.` });
 }
 
+// ── Core command subscriber — handles commands from the EventBus ────────
+bus.subscribe((event) => {
+  switch (event.type) {
+    case "input":
+      handleInput(event.message ?? event.text ?? "", event.source);
+      break;
+    case "steer": {
+      const targetSid = event.sessionId;
+      const steerText = event.message ?? event.text ?? "";
+      if (!targetSid) break;
+      try {
+        const sessions = manager.status();
+        const target = sessions.find(s => s.sessionId === targetSid);
+        if (target?.status === "idle") {
+          manager.input(targetSid, steerText);
+        } else {
+          manager.steer(targetSid, steerText, "human");
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        bus.emit({ type: "log", level: "error", message: `[steer] ${msg}` });
+      }
+      break;
+    }
+    case "cancel":
+      if (event.sessionId) manager.cancel(event.sessionId);
+      break;
+    case "cancel_all":
+      handleInput("cancel all");
+      break;
+    case "fork":
+      if ("agent" in event && "task" in event) {
+        if (chatSession) {
+          chatSession.handleInput(`@${event.agent} ${event.task}`, "socket");
+        } else {
+          const sessionId = manager.run(event.agent, event.task, { kind: "job" });
+          bus.emit({ type: "log", level: "info", message: `[fork] Started ${event.agent} session: ${sessionId}` });
+        }
+      }
+      break;
+    case "reload":
+      handleReload();
+      break;
+    case "restart":
+      gracefulRestart();
+      break;
+    case "shutdown":
+      gracefulShutdown();
+      break;
+  }
+});
+
+// ── Backward compat: old command handler for socket.ts ──────────────────
+// Socket.ts still uses bus.command() for request/response commands (status, subscribe).
+// These will be migrated to direct DB reads in a future phase.
 bus.onCommand((cmd) => {
   switch (cmd.type) {
     case "input":
-      handleInput(cmd.message ?? cmd.text ?? "", cmd.source);
+      handleInput((cmd as any).message ?? (cmd as any).text ?? "", (cmd as any).source);
       return { ok: true };
     case "steer": {
-      // Steer a specific session by ID (for programmatic control from socket).
-      const targetSid = cmd.sessionId;
-      const steerText = cmd.message ?? cmd.text ?? "";
-      if (!targetSid) {
-        return { ok: false, message: "steer requires sessionId in V2" };
-      }
+      const targetSid = (cmd as any).sessionId;
+      const steerText = (cmd as any).message ?? (cmd as any).text ?? "";
+      if (!targetSid) return { ok: false, message: "steer requires sessionId" };
       try {
-        // Use input() for idle sessions (wakes them), steer() for running ones
         const sessions = manager.status();
         const target = sessions.find(s => s.sessionId === targetSid);
         if (target?.status === "idle") {
@@ -674,13 +725,11 @@ bus.onCommand((cmd) => {
         return { ok: true };
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        bus.emit({ type: "info", message: `[steer] ${msg}` });
         return { ok: false, message: msg };
       }
     }
     case "cancel":
-      bus.emit({ type: "info", message: `[cmd] Cancel: ${cmd.sessionId}` });
-      manager.cancel(cmd.sessionId);
+      if ((cmd as any).sessionId) manager.cancel((cmd as any).sessionId);
       return { ok: true };
     case "cancel_all":
       handleInput("cancel all");
@@ -695,23 +744,21 @@ bus.onCommand((cmd) => {
       handleInput("status");
       return { ok: true };
     case "run": {
-      // Direct agent invocation from socket
       if (chatSession) {
-        chatSession.handleInput(`@${cmd.agent} ${cmd.message}`, "socket");
+        chatSession.handleInput(`@${(cmd as any).agent} ${(cmd as any).message}`, "socket");
       } else {
-        // Track request before spawning (P209)
         let requestId: string | undefined;
         try {
           requestId = trackRequest(PERSIST_DIR, {
             fromEntity: "human",
-            toAgent: cmd.agent,
-            task: cmd.message,
+            toAgent: (cmd as any).agent,
+            task: (cmd as any).message,
             method: "call",
             source: "socket",
           });
         } catch { /* non-fatal */ }
-        const sessionId = manager.run(cmd.agent, cmd.message, { kind: "job", requestId });
-        bus.emit({ type: "info", message: `[direct] Started ${cmd.agent} session: ${sessionId}` });
+        const sessionId = manager.run((cmd as any).agent, (cmd as any).message, { kind: "job", requestId });
+        bus.emit({ type: "log", level: "info", message: `[direct] Started ${(cmd as any).agent} session: ${sessionId}` });
       }
       return { ok: true };
     }
