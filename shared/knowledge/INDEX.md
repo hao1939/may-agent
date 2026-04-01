@@ -75,6 +75,9 @@ Team behavioral rules. Adopted by convention, not verified by experiment.
 | H-008 | Static skills are a performance ceiling — skill annotations would break it | Untested | knowledge/hypotheses/H-008-skill-versioning.md |
 | H-009 | Evaluator drift is our biggest unmonitored risk | Untested | knowledge/hypotheses/H-009-evaluator-drift.md |
 | H-010 | Error amplification risk scales with agent sophistication | Proposed | knowledge/hypotheses/H-010-error-amplification.md |
+| H-011 | Multi-agent coordination undergoes phase transition at ~50% capability/capacity | Proposed | knowledge/hypotheses/H-011-coordination-phase-transition.md |
+| H-012 | Agent persona drift is a hidden coordination cost in MAS | Proposed | knowledge/hypotheses/H-012-persona-drift-coordination-cost.md |
+| H-013 | Hub-leaf performance gap is an information regime effect (sequential vs shared-memory) | Proposed | knowledge/hypotheses/H-013-information-regime-performance-gap.md |
 
 ## Experiments
 
