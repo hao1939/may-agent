@@ -6,10 +6,9 @@ Everything lives in one monolith (`may.ts` — 1089 lines). Models, cron, UI, re
 
 ## Core Concept
 
-Core owns an EventBus. Subscribers attach to it. Core emits events. That's the only integration point.
+One EventBus. Everyone talks on it. Core is just another participant.
 
 ```typescript
-// The entire event system
 class EventBus {
   private subscribers: Array<(event: AgentEvent) => void> = [];
 
@@ -20,210 +19,234 @@ class EventBus {
 
   emit(event: AgentEvent): void {
     for (const fn of this.subscribers) {
-      try { fn(event); } catch { /* never breaks core */ }
+      try { fn(event); } catch { /* never breaks anyone */ }
     }
   }
 }
 ```
 
-Zero subscribers = silent. Core still works. Add subscribers for what you need.
+The bus carries two kinds of events:
+- **Observations** (from core): session_start, text, tool_call, session_end
+- **Commands** (to core): input, fork, run, cancel, steer
+
+Core subscribes to commands. Everyone subscribes to observations. The bus is the only interface.
+
+## How It Works
+
+```
+Console types "fix the build"
+  → bus.emit({ type: "input", agent: "may", text: "fix the build" })
+  → core subscriber picks it up, starts session
+  → bus.emit({ type: "session_start", sessionId, agent: "may" })
+  → bus.emit({ type: "text", sessionId, text: "Let me look..." })
+  → bus.emit({ type: "tool_call", sessionId, tool: "bash", args: ... })
+  → bus.emit({ type: "session_end", sessionId, status: "done" })
+  → console subscriber renders each event
+  → DB subscriber persists each event
+  → socket subscriber forwards to web UI
+```
+
+Everything is async. The console emits `input` and doesn't wait. Events flow back through the bus. Every subscriber sees everything.
 
 ## Components
 
 ### 1. Core
 
-The multi-agent runtime. Owns the EventBus.
+The multi-agent runtime. Subscribes to command events, emits observation events.
 
 **Contains:**
-- EventBus (created by core, subscribers attach from outside)
 - SubagentManager (session lifecycle, agent registry)
 - Agent tools (coding, agents, workflow, finish, cli-agents)
 - Workflow engine
 - Compaction, handoff, context summarization
 - Session persistence (JSONL on filesystem)
 
-**API:**
+**Core subscribes to commands:**
 ```typescript
-const bus = new EventBus();
-const manager = new SubagentManager({ eventBus: bus, persistDir, projectRoot });
-
-manager.register(agentDef);
-manager.run("coder", task);
-manager.callAgent("coder", task);
-manager.input(sessionId, text);
-manager.cancel(sessionId);
+bus.subscribe((event) => {
+  if (event.type === "input") manager.input(event.sessionId, event.text);
+  if (event.type === "run") manager.run(event.agent, event.task, event.opts);
+  if (event.type === "fork") manager.runAgent(event.agent, event.task, event.opts);
+  if (event.type === "steer") manager.steer(event.sessionId, event.text);
+  if (event.type === "cancel") manager.cancel(event.sessionId);
+});
 ```
 
-**Core emits, never subscribes.** Core calls `bus.emit(event)` when things happen. It never calls `bus.subscribe()` — that's for consumers.
+**Core emits observations:**
+```typescript
+// Inside manager, when things happen:
+this.eventBus.emit({ type: "text", sessionId, agent, text });
+this.eventBus.emit({ type: "session_end", sessionId, agent, status });
+this.eventBus.emit({ type: "message_created", from, to, task });
+```
 
-**Core does NOT import:** DB, socket, console, telegram, cron, models config.
+**Core does NOT import:** DB, socket, console, telegram, cron.
 
 ### 2. Subscribers
 
-Each subscriber is a function that receives events. Independent of each other. Register what you need.
+Each subscriber is a function. Independent. Register what you need.
 
+**Console renderer:**
 ```typescript
-// Full system
-bus.subscribe(consoleRenderer);      // render to terminal
-bus.subscribe(dbWriter);             // persist to SQLite
-bus.subscribe(socketBroadcaster);    // stream to web UI clients
-bus.subscribe(telegramForwarder);    // forward to telegram
-bus.subscribe(contextLearner);       // post-session learning
-
-// Gym runner — nothing. Zero subscribers. Core still works.
-
-// Oneshot — just DB
-bus.subscribe(dbWriter);
+bus.subscribe((event) => {
+  if (event.type === "text" && event.sessionId === primarySid)
+    process.stdout.write(event.text);
+  if (event.type === "tool_call" && event.sessionId === primarySid)
+    console.log(`[${event.tool}] ${formatArgs(event.args)}`);
+});
 ```
 
-**Subscriber examples:**
-
+**DB writer:**
 ```typescript
-// Console: render primary session, hide background
-function consoleRenderer(event: AgentEvent) {
-  if (event.type === "text" && event.sessionId === primarySid) {
-    process.stdout.write(event.text);
-  }
-}
-
-// DB: track sessions and requests
-function dbWriter(event: AgentEvent) {
+bus.subscribe((event) => {
   if (event.type === "session_start") upsertSession(db, event);
   if (event.type === "session_end") updateSession(db, event);
   if (event.type === "message_created") insertRequest(db, event);
-}
-
-// Socket: broadcast to connected clients
-function socketBroadcaster(event: AgentEvent) {
-  for (const client of clients) {
-    if (client.filter === null || client.filter.has(event.sessionId)) {
-      client.write(JSON.stringify(event));
-    }
-  }
-}
+});
 ```
 
-### 3. Interfaces
+**Socket broadcaster:**
+```typescript
+bus.subscribe((event) => {
+  for (const client of clients) {
+    if (client.wantsEvent(event)) client.send(event);
+  }
+});
+```
 
-Connections between humans and core. Each subscribes to the bus and sends commands to core.
+**Context learner:**
+```typescript
+bus.subscribe((event) => {
+  if (event.type === "session_end" && shouldLearn(event.agent))
+    learnFromSession(event);
+});
+```
 
-**Socket server:**
-- Subscribes to bus → broadcasts events to connected clients
-- Receives commands → calls manager.input/steer/cancel/fork
+### 3. Command Emitters
 
-**Console:**
-- Subscribes to bus → renders events to terminal
-- Readline → calls manager via ChatSession helper
+Anything that talks to core emits commands onto the bus.
 
-**Telegram:**
-- Subscribes to bus → forwards notifications to chat
-- Receives messages → calls manager via ChatSession
+**Console (readline):**
+```typescript
+readline.on("line", (text) => {
+  bus.emit({ type: "input", agent: "may", text });
+});
+```
 
-### 4. Cron System
+**Socket server (receives from web UI):**
+```typescript
+socket.on("data", (msg) => {
+  const cmd = JSON.parse(msg);
+  bus.emit(cmd);  // { type: "fork", agent: "tech-lead", task: "..." }
+});
+```
 
-Time-triggered job execution. Separate module.
+**Cron scheduler:**
+```typescript
+onInterval(() => {
+  bus.emit({ type: "run", agent: "may", task: "[heartbeat] ..." });
+});
+```
 
-- Reads cron.json, manages intervals
-- Triggers jobs via manager.run() (in-process) or socket (cross-process)
-- Handlers (evaluate-sessions, watchdog) are JS functions called directly
-- Does NOT subscribe to bus (it triggers, doesn't observe)
+**Telegram bot:**
+```typescript
+bot.on("message", (msg) => {
+  bus.emit({ type: "input", agent: "may", text: msg.text });
+});
+```
 
-### 5. Web UI
+### 4. Web UI
 
-HTTP server + static dashboard.
+HTTP server + static dashboard. Connects via socket + DB reads.
 
 - REST API reads from DB (sessions, requests, stats)
-- WebSocket proxies to socket server for real-time events
-- Does NOT import core — connects via socket + DB
+- WebSocket proxies to socket server
+- Does NOT import core or bus directly
 
-### 6. DB (SQLite)
+### 5. DB (SQLite)
 
-Just a subscriber. Receives events, writes rows.
+Just a subscriber that writes. Others read.
 
-- `sessions` — mirrors session lifecycle events
-- `requests` — tracks message/task assignments
-- `evaluations` — quality scores (written by evaluator handler)
-- `gym_runs` / `gym_checks` — benchmark results
+- Written by: DB subscriber (on events from bus)
+- Read by: Web UI, cron handlers, agent tools
 
-Web UI and cron handlers READ from DB. The DB subscriber WRITES to DB. No other component writes directly.
+### 6. Cron
+
+Emits `run` commands onto the bus. Reads cron.json for schedules. That's it.
 
 ## Event Types
 
 ```typescript
 type AgentEvent =
-  // Session-scoped (carry sessionId)
+  // Observations (from core)
   | { type: "text"; sessionId: string; agent: string; text: string }
   | { type: "tool_call"; sessionId: string; agent: string; tool: string; args: unknown }
   | { type: "tool_result"; sessionId: string; agent: string; tool: string; preview: string; isError: boolean }
   | { type: "turn_end"; sessionId: string; agent: string; toolCalls: number; durationMs: number }
   | { type: "session_start"; sessionId: string; agent: string; task: string; parentSessionId?: string }
   | { type: "session_end"; sessionId: string; agent: string; status: string; error?: string; outcome?: string }
-
-  // System-scoped
   | { type: "notification"; agent: string; text: string }
   | { type: "log"; level: "info" | "warn" | "error"; message: string }
-  | { type: "message_created"; from: string; to: string; task: string; requestId: string }
+  | { type: "message_created"; from: string; to: string; task: string }
   | { type: "context-learn"; agentName: string; sessionId: string }
-  | { type: "eval"; verdict: string; efficiency: number; quality: number };
+  | { type: "eval"; verdict: string; efficiency: number; quality: number }
+
+  // Commands (to core)
+  | { type: "input"; agent: string; text: string; sessionId?: string }
+  | { type: "run"; agent: string; task: string }
+  | { type: "fork"; agent: string; task: string }
+  | { type: "steer"; sessionId: string; text: string }
+  | { type: "cancel"; sessionId: string }
+  | { type: "cancel_all" };
 ```
 
 ## Dependency Graph
 
 ```
-                    ┌──────────┐
-                    │  Web UI  │
-                    │ (reads)  │
-                    └────┬─────┘
-                         │ socket + DB reads
-                         │
-┌──────────┐   subscribe ┌────┴──────────────────────────┐ subscribe   ┌──────────┐
-│ Console  ├────────────▶│         EventBus              │◀────────────┤ Telegram │
-└──────────┘             │  (owned by core, open to all) │             └──────────┘
-                         └────┬──────────┬───────────────┘
-                    subscribe │          │ subscribe
-                         ┌────┴───┐ ┌───┴────┐
-                         │   DB   │ │Context │
-                         │Writer  │ │Learner │
-                         └────┬───┘ └────────┘
-                              │ writes
-                         ┌────┴───┐
-                         │ SQLite │
-                         └────────┘
-
-         ┌────────┐
-         │  Cron  │──── manager.run() ───▶ Core
-         └────────┘
+┌──────────┐  emit    ┌─────────────────────────────────┐  emit    ┌──────────┐
+│ Console  ├─────────▶│           EventBus               │◀─────────┤ Telegram │
+│          │◀─────────┤  subscribe() + emit()            ├─────────▶│          │
+└──────────┘ subscribe│                                   │subscribe └──────────┘
+                      │   Everyone talks. Everyone hears. │
+┌──────────┐  emit    │                                   │ subscribe┌──────────┐
+│   Cron   ├─────────▶│                                   ├─────────▶│    DB    │
+└──────────┘          │                                   │          │  Writer  │
+                      │                                   │          └────┬─────┘
+┌──────────┐ subscribe│                                   │               │writes
+│  Socket  │◀────────▶│                                   │          ┌────┴─────┐
+│ Server   │          │                                   │          │  SQLite  │
+└────┬─────┘          └──────────────┬────────────────────┘          └──────────┘
+     │ WebSocket                     │
+┌────┴─────┐               ┌────────┴────────┐
+│  Web UI  │               │      Core       │
+│ (browser)│               │ (subscribes to  │
+└──────────┘               │  commands, emits│
+                           │  observations)  │
+                           └─────────────────┘
 ```
 
-## What Core Can Do Without Any Subscribers
+## What Core Can Do With Zero Subscribers
 
-- Run agents (sessions execute, tools work, results return)
-- Call agents synchronously (workflows chain steps)
-- Fork agents asynchronously (parallel work)
-- Message agents (emits event — if no DB subscriber, message is lost, logged to stderr)
-- Session persistence (JSONL on filesystem — not DB)
-- All orchestration works
+- Run agents, execute tools, return results ✅
+- Workflow orchestration ✅
+- Session persistence (JSONL) ✅
+- Emit events into the void (nobody listens) ✅
+- Receive commands (if nobody emits, nothing happens) ✅
 
-What's missing without subscribers: no UI, no DB tracking, no context learning, no telegram. Core is fully functional but unobserved.
+Fully functional. Just unobserved and untriggered.
 
 ## Migration Path
 
-### Phase 1: Define EventBus in core
-- 15-line class: subscribe + emit
-- Core creates it, passes it down to manager/tools
-- may.ts subscribes existing consumers
+### Phase 1: Unified EventBus
+- Replace current EventBus class with the 15-line version
+- Core emits through it (already does)
+- Core subscribes for commands (extract from may.ts command handler)
+- All interfaces emit commands through bus
 
 ### Phase 2: Move DB writes to subscriber
-- Today: core calls upsertSession() directly
-- After: DB subscriber handles session_start/session_end events
-- Core no longer imports db.ts
+- Remove direct DB calls from core
+- DB subscriber handles persistence
 
 ### Phase 3: Thin may.ts
-- Parse args → create EventBus → init core → register subscribers → start interfaces
+- Create EventBus → register subscribers → done
 - Under 200 lines
-- Each mode (--chat, --cron, --oneshot) registers different subscribers
-
-### Phase 4: Separate cron
-- Extract to standalone module
-- Runs in-process or as separate binary
-- Triggers via manager.run(), no bus subscription needed
