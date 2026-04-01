@@ -88,3 +88,18 @@ Team behavioral rules. Adopted by convention, not verified by experiment.
 3. **Conventions should have evidence.** C1.1 "Read before edit" — does it actually prevent bad edits? The gym scenario exists. Run the experiment.
 
 4. **The lab is the verification engine.** Everything adopted or theoretical should eventually be tested. The knowledge base tracks what's verified and what's still assumed.
+
+## Research Library (curated, not verified)
+
+Collected by scout, amy, amy-kimi agents. Each item is a potential source for hypotheses.
+
+| Resource | Content | Size |
+|----------|---------|------|
+| library/papers.md | Academic papers with takeaways | 539 lines |
+| library/repos.md | Notable GitHub repos | 899 lines |
+| library/discoveries.md | Web finds (Twitter, GitHub, blogs) | 4266 lines |
+| library/people.md | Notable researchers | ~50 lines |
+| library/reddit.md | Reddit insights | ~100 lines |
+| library/deep-dives/ | Detailed research reports | 25 files |
+
+See library/README.md for details. Raw archives stay agent-local.
