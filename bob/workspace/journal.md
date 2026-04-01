@@ -2,6 +2,25 @@
 
 > Pre-2026-03-30 entries archived at `agents/bob/workspace/archive/journal-pre-2026-03-30.md`
 
+# Session 2026-03-31 ~23:39 (Steady State + Workspace Cleanup)
+- **Convention health (6h, N=35 sessions, 416 checks)**: 98.1% overall (stable). 9/12 at 100%. C1.1=94.3% (2 failures: scout, amy-kimi), C1.3=97.1% (1 failure), C8.2=85.3% (5 amy-kimi Kimi model). Same pattern as last check — no regression or new failure types.
+- **Evaluations (24h, N=164 sessions)**: 136 good, 16 acceptable, 1 needs_improvement (coach), 0 poor. Slightly up from 156 sessions last check.
+- **Agent eval breakdown (24h)**: scout/tech-lead 100%, may/optimizer/qa 95%+, bob/amy-kimi 86%, coach 71%. Coach is weakest — mostly session_errors (5/7 non-good evals), plus FM-3.3/tooling issues. Not fixable by prompting.
+- **Bob self-audit**: 3 "acceptable" — 2x multiple_tool_errors, 1x session_error. The tool errors are from malformed bash calls (empty params). Behavioral fix: be more careful with tool invocations.
+- **Workspace cleanup**: Archived 6 stale briefs (all from 2026-03-28/29, all superseded or concluded): brief-contradictory-finish-guard, brief-exp215-prerequisite-detection, brief-exp216-regression-awareness, brief-gate3v2-transcript-contradiction, brief-path-hallucination-guard, brief-two-phase-finish-workflow. Moved to archive/stale-briefs-2026-03-31/.
+- **Process health**: #3 Persistence = 0 failures (all log files show 0). #8 Compaction = running. System healthy.
+- **Gym status**: 45 untested scenarios remain. Still need dedicated batch session. Not heartbeat work.
+- **No pending requests**. Periodic tasks not due until April 3 (Pattern Synthesis).
+
+# Session 2026-03-31 ~23:09 (Steady State Monitoring)
+- **Convention health (6h, N=35 sessions, 416 checks)**: 98.1% overall (↑ from 97.2%). 9/12 at 100%. C1.3=97.1%, C1.1=94.3%, C8.2=85.3% (all amy-kimi Kimi model issues).
+- **Evaluations (24h, N=156)**: 132 good, 16 acceptable, 1 needs_improvement, 0 poor. System fully healthy.
+- **Bob C6.1 observation**: 9/22 bob sessions (41%) exceeded 80-tool threshold in 24h. Not a calibration issue — system P95 is 55 ops, threshold at 80 is generous. Behavioral improvement needed: keep heartbeats lean.
+- **Process health**: #3 Persistence = 0 failures. #13 Workflows = low activity but functional. All processes healthy.
+- **"unknown" agent convention entries**: Found 4 entries where agent='unknown' — tracked to coach/scout sessions with missing agent name propagation. Minor — 4 cases in 24h.
+- **Gym status**: 45 untested scenarios (was 55 — corrected count excluding package.json stray file). Need dedicated batch session.
+- **No pending requests**, no nudges. System idle and stable.
+
 # Session 2026-03-31 ~21:39 (Knowledge Index Scan)
 - **Knowledge Index updated**: Found significant drift — 22 skills, 3 agents (Judge, QA, Tech-Lead), 6 shared knowledge files, and 1 stale count all missing from index.
   - Added 22 skills in new categories: Planning & Process Discipline (8 skills), Core Lifecycle (7 new), Coordination (1 new), Operational (6 new).

@@ -3,37 +3,37 @@
 Track when each task was last done. Pick the most overdue one during heartbeat step 3.
 
 ## Per heartbeat (do one, rotate)
-- [x] **Analysis review** — Last done: 2026-03-31T21:39
+- [x] **Analysis review** — Last done: 2026-03-31T23:39
   Read agents/bob/workspace/analysis.md or recent Bob synthesis outputs.
   Any findings that need optimization work? Cost issues? Efficiency problems?
   If found → add specific task to workspace/todo.md.
-  Latest (2026-03-31T21:39): 8 sessions since 21:09. Binary **85a9ad3**, PID 7, uptime ~10.5h. Quality **100.0%** (200-window: 168g/22a/0ni). 24h errors: 11 (batch abort at 09:08 + coach abort + amy-kimi 429). 24h waste **6.0%** (238/3954 eval-based).
-  Latest (2026-03-31T21:09): 13 sessions since 19:39. Binary **849c340**, PID 7, uptime ~10h. Quality **99.5%** (200-window: 167g/21a/1ni). 24h errors: 2. 24h waste **1.4%**.
-  _Older entries pruned 2026-03-31T21:39._
+  Latest (2026-03-31T23:39): 8 sessions since 23:09. Binary **849c340**, PID 7, uptime ~12.5h. Quality **99.5%** (200-window: 169g/22a/1ni). 24h errors: 11. 24h waste **6.0%** (241/4039 eval-based). 165 sessions in 24h.
+  Latest (2026-03-31T23:09): 7 sessions since 21:39. Binary **849c340**, PID 7, uptime ~12h. Quality **99.5%** (200-window: 168g/22a/1ni). 24h errors: 2. 24h waste **6.0%** (240/4001 eval-based). 161 sessions in 24h.
+  _Older entries pruned 2026-03-31T23:39._
 
-- [x] **Cost outlier scan** — Last done: 2026-03-31T21:39
+- [x] **Cost outlier scan** — Last done: 2026-03-31T23:39
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-03-31T21:39): No cost outliers. Quality **100.0%** (200-window: 168g/22a/0ni). 50-window **100.0%** (46g/2a/0ni). NI dropped to 0 (from 1 last heartbeat). 24h waste **6.0%** eval-based (238/3954). Amy-kimi 23ops and coach 25ops+37ops are largest recent sessions.
-  Latest (2026-03-31T21:09): No cost outliers. Quality **99.5%** (200-window: 167g/21a/1ni). 50-window **100.0%** (49g/1a/0ni). 24h waste **1.4%** (39/2708) — all-time low.
-  _Older entries pruned 2026-03-31T21:39._
+  Latest (2026-03-31T23:39): No cost outliers. Quality **99.5%** (200-window: 169g/22a/1ni). 50-window **100.0%** (46g/2a/0ni). NI at 1 (same as 23:09). 24h waste **6.0%** eval-based (241/4039). Bob 33ops largest recent session.
+  Latest (2026-03-31T23:09): No cost outliers. Quality **99.5%** (200-window: 168g/22a/1ni). 50-window **100.0%** (46g/2a/0ni). NI at 1 (from 0 last heartbeat — 1ni appeared in 200-window). 24h waste **6.0%** eval-based (240/4001). Bob 114ops and 94ops are largest recent sessions.
+  _Older entries pruned 2026-03-31T23:39._
 
-- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-31T21:39
+- [x] **LLM-to-JS opportunity scan** — Last done: 2026-03-31T23:39
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
   Could it be replaced with a JS handler? (See cron-graduation-process.md Stage 3.)
   If found → write proposal in workspace/improvement-proposals.md.
-  Latest (2026-03-31T21:39): 8 sessions since 21:09. QA 2ops, amy-kimi 12ops+23ops, may 1ops, bob 0ops. No LLM-to-JS candidates.
-  Latest (2026-03-31T21:09): 13 sessions. No LLM-to-JS candidates. QA already graduated to handler.
-  _Older entries pruned 2026-03-31T21:39._
+  Latest (2026-03-31T23:39): 8 sessions since 23:09. QA 2x1ops, bob 33ops, optimizer 26ops, amy-kimi 20ops. No LLM-to-JS candidates.
+  Latest (2026-03-31T23:09): 7 sessions since 21:39. QA 2ops, amy-kimi 12ops, coach 55ops, bob 32ops, scout 3ops, may 1ops. No LLM-to-JS candidates.
+  _Older entries pruned 2026-03-31T23:39._
 
-- [x] **Handler health check** — Last done: 2026-03-31T21:39
+- [x] **Handler health check** — Last done: 2026-03-31T23:39
   Review existing JS handlers in agents/may/handlers/.
   Any errors in recent logs? Any handler that's not firing?
   If issues → add fix to workspace/todo.md.
-  Latest (2026-03-31T21:39): Binary 85a9ad3 (rebuilt 10:06, restarted 11:12), PID 7, uptime ~10.5h. 11 errors in 24h (09:08 batch abort x5, 3 coach aborts, 1 coach abort at 21:08, 1 amy-kimi 429). Most are "Request was aborted" — not handler issues. System stable.
-  Latest (2026-03-31T21:09): Binary 849c340, PID 7, uptime ~10h. 2 errors. System stable.
-  _Older entries pruned 2026-03-31T21:39. Trend: 2.4→0.9→4.3→4.1→3.9→3.6→3.5→2.2→1.4→6.0%._
+  Latest (2026-03-31T23:39): Binary 849c340, PID 7, uptime ~12.5h since 11:14. 11 errors in 24h. System stable. Quality 99.5%.
+  Latest (2026-03-31T23:09): Binary 849c340, PID 7, uptime ~12h since 11:13. 2 errors in 24h. System stable. Quality 99.5%.
+  _Older entries pruned 2026-03-31T23:39. Trend: 2.4→0.9→4.3→4.1→3.9→3.6→3.5→2.2→1.4→6.0→6.0→6.0%._
 
 - [x] **Proven pattern → Skill/Workflow** — Last done: 2026-03-30T01:10
   This is your MOST IMPORTANT periodic task — focus area #1.
@@ -57,7 +57,7 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Latest (2026-03-23T21:36): verification-consistency (15th skill) deployed to 6 agents. Full lifecycle.
   _13 earlier skill deployments documented in finding files. See `workspace/finding-pattern-scan-*.md`._
 
-- [x] **Tool quality review** — Last done: 2026-03-31T21:39
+- [x] **Tool quality review** — Last done: 2026-03-31T23:39
   Read the tool-quality-report.md (generated by tool-quality-scan handler every 4h).
   Look for regression trends, persistent failure patterns, and agent-specific issues.
   If a specific failure category accounts for >30% of waste, create a targeted intervention:
@@ -65,9 +65,9 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   - For empty-args: check if schema validation is catching it early enough
   - For edit-match-fail: check if agents are reading files before editing
   If tool-quality-report.md doesn't exist yet, skip — handler hasn't fired.
-  Latest (2026-03-31T21:39): Quality **100.0%** (200-window: 168g/22a/0ni). 50-window: **100.0%** (46g/2a/0ni). NI dropped to 0. 24h waste **6.0%** eval-based. Binary changed from 849c340 to 85a9ad3.
-  Latest (2026-03-31T21:09): Quality **99.5%** (200-window: 167g/21a/1ni). 50-window: **100.0%**. 24h waste **1.4%**. NI at 1.
-  _Older entries pruned 2026-03-31T21:39. Waste trend: 2.4→0.9→4.3→4.1→3.9→3.6→3.5→2.2→1.4→6.0%._
+  Latest (2026-03-31T23:39): Quality **99.5%** (200-window: 169g/22a/1ni). 50-window: **100.0%** (46g/2a/0ni). NI at 1. 24h waste **6.0%** eval-based. Binary 849c340.
+  Latest (2026-03-31T23:09): Quality **99.5%** (200-window: 168g/22a/1ni). 50-window **100.0%** (46g/2a/0ni). NI at 1. 24h waste **6.0%** eval-based. Binary 849c340.
+  _Older entries pruned 2026-03-31T23:39. Waste trend: 2.4→0.9→4.3→4.1→3.9→3.6→3.5→2.2→1.4→6.0→6.0→6.0%._
 
 - [x] **Workflow quality audit** — Last done: 2026-03-30T21:10
   **⛔ COOLDOWN: WEEKLY.** Workflow changes are high-impact; audit weekly or after major changes.
@@ -88,9 +88,9 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Compare with previous batches via `bun scripts/gym-stats.ts --batches`.
   Flag regressions via `bun scripts/gym-stats.ts --regressions`.
   NOTE: Runs take ~600s for 13 smoke scenarios. Consider running in background or splitting.
-  Latest (2026-03-31T21:39): Binary is **85a9ad3** (changed from 849c340!), PID 7, uptime ~10.5h. Binary was rebuilt at 10:06, process restarted 11:12. **Gym baseline needed on 85a9ad3.**
-  Latest (2026-03-31T21:09): Binary is **849c340**, PID 7, uptime ~10h. Gym baseline still needed on 849c340.
-  _Older entries pruned 2026-03-31T21:39. Last successful gym: 11/13 pass (85%) on 37b8fbb._
+  Latest (2026-03-31T23:39): Binary is **849c340** (symlink confirmed), PID 7, uptime ~12.5h since 11:14. Last gym baseline was on 37b8fbb. **Gym baseline still needed on 849c340.**
+  Latest (2026-03-31T23:09): Binary is **849c340** (symlink confirmed), PID 7, uptime ~12h since 11:13. Last gym baseline was on 37b8fbb. **Gym baseline still needed on 849c340.**
+  _Older entries pruned 2026-03-31T23:09. Last successful gym: 11/13 pass (85%) on 37b8fbb._
 
 ## Weekly
 - [x] **Improvement proposals review** — Last done: 2026-03-30T09:10
