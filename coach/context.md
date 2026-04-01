@@ -11,3 +11,4 @@
 - When calling finish(), status must match reality — if you found missing files or blockers, use 'blocked' or 'partial', not 'success'
 - ERROR_LOG files are at agents/*/ERROR_LOG.jsonl — NOT .state/error-log.jsonl
 - Gym runner path is scripts/gym-run.sh — NOT test/gym/run-gym.sh
+- Research preference: skills and behavioral training — test whether skills actually improve agent behavior, design better training methods. We believe skills are very valuable for agent abilities. But not limited to this.

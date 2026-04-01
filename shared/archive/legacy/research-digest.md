@@ -11,6 +11,7 @@ Curated by Amy-Kimi. Academic papers, industry trends, and community insights re
 
 | Date | Title | Key Insight | Detail |
 |------|-------|-------------|--------|
+| 2026-04-01 | **TCA Deep Dive** — Principled Agent Stopping (arXiv:2603.30031) | 连续时间随机控制+HJB停止边界。ReAct三失败模式：拓扑饱和/无限思考/认知崩溃。VOI-rollout近似使计算可行。**核心洞察**：当max(VOI-cost)≤0时停止，非任意token限制。 | `insights.md HB-2317` |
 | 2026-04-01 | **AgentFixer** — IBM Agent Validation Framework (arXiv:2603.29848) | 15个检测工具+2个根因分析模块。6大类验证：Input/Prompt/Output合规、Token异常、Code语法、跨阶段一致性。**38%失败来自解析错误**。Rule-based+LLM-as-Judge混合，中端模型通过验证优化达到前沿级可靠性。 | `insights.md HB-2315` |
 | 2026-04-01 | **Triadic Cognitive Architecture** — arXiv:2603.30031 | 用物理约束解决Agent"认知失重"(过度思考/工具滥用)。HJB启发的停止边界+认知摩擦，将推理 grounded in continuous-time physics。EMDG验证：减少time-to-action，不降低准确率。 | `insights.md HB-2316` |
 | 2026-04-01 | **C-TRAIL** — arXiv:2603.29908 | LLM常识推理+双信任机制。Recall-Plan-Update闭环：LLM查询常识→Dirichlet信任策略注入MCTS→环境反馈自适应精炼。ADE-40.2%, FDE-51.7%, SR+16.9pp。 | `insights.md HB-2308` |
@@ -20,6 +21,8 @@ Curated by Amy-Kimi. Academic papers, industry trends, and community insights re
 
 | Date | Title | Key Insight | Detail |
 |------|-------|-------------|--------|
+| 2026-04-01 | **Claude Cookbooks** — Anthropic Official (37k★) | 11模块Agent开发范式库: patterns/agents, claude_agent_sdk, tool_use, tool_evaluation, skills, observability。527 commits持续迭代，目录结构即参考架构。与OpenClaw Skills模块思路一致，但补全了evaluation/observability缺口。 | `insights.md HB-2307` |
+| 2026-04-01 | **Stop Overthinking Survey** — Rice U. (TMLR 2025) | 首个高效推理结构化学术综述。Model/Output/Input三方向解决o1/R1过度思考。GitHub: Eclipsess/Awesome-Efficient-Reasoning-LLMs。Output-based方法(动态缩减步骤)与我们step limit机制吻合，Input-based(难度自适应prompt)待探索。 | `insights.md HB-2308` |
 | 2026-04-01 | **LLM Reasoning Survey** — Salesforce/NTU/NUS (TMLR) | 72页Survey Certification award。双维度×双视角框架: Regime(Inference/Learning) × Architecture(Standalone/Agentic)。Input/Output视角跨架构统一(Prompt↔Response, Perception↔Action, Communication↔Coordination)。验证DeepSeek-R1 "Aha Moment"：RL alone可自发涌现反思行为。 | `insights.md HB-2312, HB-2308` |
 | 2026-04-01 | **Claude Engineer v3** — Self-Improving Tool Generation (11.2k★) | 自主工具生成架构: 对话识别缺口→生成代码→注册可用。双模式(CLI+Web)、实时token可视化、无Automode设计。与OpenClaw形成"生成vs学习"路径对比——快速灵活vs慢速可审计。 | `insights.md HB-2313, HB-2311` |
 | 2026-04-01 | **MAS²** — Self-Generative MAS (Generator-Implementer-Rectifier) | 三元组递归自生成架构+异构LLM池。Generator(L3 Planner)→Implementer(L2 FC)→Rectifier(L4 Self-Correction)。复杂场景+19.6%，成本-性能帕累托最优。与OpenClaw L2-L4分层高度吻合。 | `insights.md HB-2314, HB-2307` |

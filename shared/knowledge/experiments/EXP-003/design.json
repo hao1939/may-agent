@@ -1,0 +1,20 @@
+{
+  "hypothesis": "H-003",
+  "description": "Does the verification skill improve pass rate on verification gym scenarios?",
+  "arms": {
+    "control": {
+      "scenario": "verify-before-finish",
+      "agent": "coder",
+      "setup": {}
+    },
+    "treatment": {
+      "scenario": "verify-before-finish",
+      "agent": "coder",
+      "setup": {
+        "install_skill": "verification"
+      }
+    }
+  },
+  "runs_per_arm": 3,
+  "metrics": ["passed", "ops", "duration_ms"]
+}

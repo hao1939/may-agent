@@ -221,3 +221,140 @@ IBM团队构建了包含**15个检测工具 + 2个根因分析模块**的全面�
 
 **Relevant to: bob** — L4控制器设计哲学  
 **Relevant to: tech-lead** — 停止条件实现
+
+---
+
+## HB-2317: Triadic Cognitive Architecture — Principled Agent Stopping via Physics
+**Source**: arXiv:2603.30031 / Davide Di Gioia (UCL)  
+**Date**: 2026-04-01
+
+### Core Thesis
+
+Current LLM agents operate in **"cognitive weightlessness"** — processing information without intrinsic sense of:
+- **Network topology** (spatial cost of routing)
+- **Temporal pacing** (time decay of utility)
+- **Epistemic limits** (when to stop gathering evidence)
+
+### ReAct's Three Failure Modes
+
+| Failure Mode | Description | Physical Analog |
+|--------------|-------------|-----------------|
+| **Topological Saturation** | Indiscriminate API querying → congestion | Network overload |
+| **Infinite Deliberation** | Recursive thought loops, missing windows | No time discounting |
+| **Epistemic Collapse** | Averaging conflicts → confident hallucination | Unresolved ambiguity |
+
+### TCA Framework
+
+**Mathematical foundation**:
+- Continuous-time stochastic control
+- Nonlinear filtering (Kushner-Stratonovich)
+- Riemannian routing geometry
+- **HJB-motivated stopping boundary**
+
+**Net utility scoring**:
+```
+U(a; b_t, t, C_t) = ΔĤ(a|b_t) - α(λ_S(C_t + Ω(a)) + β(t + τ(a)))
+
+Where:
+- ΔĤ = Value-of-Information (expected entropy reduction)
+- Ω(a) = Action load (spatial cost)
+- τ(a) = Latency (temporal cost)
+- C_t = Current congestion
+```
+
+**Stopping condition**:
+```
+STOP ⟺ max_{a∈A} U(a) ≤ 0
+```
+Stop when even the best query has non-positive net value.
+
+### Empirical Validation (EMDG)
+
+Emergency Medical Diagnostic Grid simulation:
+- 5 fatal pathologies, uniform prior
+- Distributed hospital sub-systems with distinct costs
+- Patient survivability decays exponentially
+
+**Result**: TCA reduces time-to-action while maintaining diagnostic accuracy vs greedy ReAct.
+
+### Key Quote
+
+> "True autonomous control cannot emerge from unstructured prompt-reflection; it requires a formal, decision-theoretic optimization layer."
+
+### 对我们意味着什么
+
+1. **L4 Controller升级**: 从固定token限制 → 效用驱动的动态停止
+2. **成本感知推理**: 每次skill调用应有明确的边际效用计算
+3. **信念状态追踪**: 为planning引入VOI (value-of-information) 估计
+4. **TCA-Lite可行**: EMDG使用Monte Carlo rollout近似VOI，计算成本可控
+
+**Relevant to: bob** — L4设计哲学验证与扩展  
+**Relevant to: tech-lead** — 停止条件与成本模型实现
+
+
+## HB-2307: Claude Cookbooks — 官方Agent开发范式库
+**Source**: GitHub anthropic/claude-cookbooks  
+**Date**: 2026-04-01
+
+### 核心发现
+
+Anthropic官方维护的37k⭐ cookbook，包含**11个核心模块**：
+
+| 模块 | 内容 |
+|------|------|
+| `patterns/agents` | Agent设计模式 |
+| `claude_agent_sdk` | 官方Agent SDK使用 |
+| `tool_use` | 工具调用最佳实践 |
+| `tool_evaluation` | 工具评估方法 |
+| `skills` | 可复用技能定义 |
+| `extended_thinking` | 长推理链优化 |
+| `observability` | 可观测性实现 |
+
+### 关键洞察
+
+**527 commits**显示持续迭代，比文档更贴近实战。目录结构本身就是Agent系统的**参考架构**：
+- Patterns → 抽象层
+- Skills → 可复用组件
+- Tool evaluation → 质量保障
+- Observability → 运维基础
+
+### 对我们意味着什么
+
+1. **架构验证**：OpenClaw的 `src/skills/` 目录与官方Skills模块思路一致
+2. **补全缺口**：我们缺少 `tool_evaluation/` 和 `observability/` 对应模块
+3. **标准化机会**：可以参考cookbook重构我们的agent启动流程
+
+---
+
+## HB-2308: "Stop Overthinking" — 高效推理综述论文
+**Source**: arXiv:2503.16419 / TMLR 2025  
+**Date**: 2026-04-01
+
+### 核心发现
+
+Rice大学团队的首个**高效推理结构化学术综述**，针对o1/DeepSeek-R1的"过度思考"问题：
+
+**三大技术方向**：
+
+1. **Model-based** — 训练更简洁的推理模型
+2. **Output-based** — 推理时动态缩减步骤
+3. **Input-based** — 基于难度/长度的提示优化
+
+### 关键洞察
+
+> **"长CoT提升性能但带来冗余开销"** — 效率-质量权衡是核心问题
+
+论文还覆盖了：
+- 高效训练数据筛选
+- 小模型推理能力
+- 评估方法与benchmark
+
+GitHub: https://github.com/Eclipsess/Awesome-Efficient-Reasoning-LLMs
+
+### 对我们意味着什么
+
+1. **思考预算控制**：我们的step limit机制属于Output-based方向
+2. **Prompt优化空间**：Input-based方法（难度自适应）尚未探索
+3. **评估缺口**：需要建立推理效率的benchmark，不只是准确率
+4. **资源约束场景**：高效推理对小团队部署大模型至关重要
+
