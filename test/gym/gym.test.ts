@@ -220,8 +220,11 @@ if (require.main === module) {
     });
   });
 
+  // Root bypasses file permission checks, so EACCES tests can't work as root
+  const isRoot = process.getuid?.() === 0;
   describe("Scenario: Permission Denied", () => {
     it("detects the permission error when config is read-only", () => {
+      if (isRoot) return; // root bypasses chmod — skip
       const workDir = forkScenario("permission-denied");
       tempDirs.push(workDir);
 
@@ -234,6 +237,7 @@ if (require.main === module) {
     });
 
     it("confirms the project fails at runtime with read-only config", () => {
+      if (isRoot) return; // root bypasses chmod — skip
       const workDir = forkScenario("permission-denied");
       tempDirs.push(workDir);
 
@@ -475,7 +479,6 @@ if (require.main === module) {
   // These validate that our Evaluator harness can detect agent gaming attempts.
 
   describe("Scenario: Adversarial Policy (Fake Refusal + Self-Validation)", () => {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const monitor = require("../../agents/evaluator/skills/monitor-session.cjs");
 
     function loadSessionEntries(fixtureName: string) {
@@ -516,7 +519,6 @@ if (require.main === module) {
   });
 
   describe("Scenario: Reasoning-Action Mismatch", () => {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const monitor = require("../../agents/evaluator/skills/monitor-session.cjs");
 
     function loadSessionEntries(fixtureName: string) {
