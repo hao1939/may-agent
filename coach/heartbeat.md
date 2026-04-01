@@ -14,7 +14,7 @@ The experiment:
 1. **Baseline** — run the gym scenario WITHOUT the skill installed
 2. **Treatment** — run the same scenario WITH the skill
 3. **Compare** — did pass rate improve? Did ops change?
-4. **Record** — write results to `knowledge/experiments/EXP-XXX/results.md`
+4. **Record** — write results to `agents/shared/knowledge/experiments/EXP-XXX/results.md`
 
 Use the lab runner (`scripts/lab-run.sh`) for structured A/B experiments, or run gym scenarios directly (`test/gym/run-gym.sh`).
 
@@ -34,7 +34,7 @@ All existing scenarios pass at baseline? You need harder scenarios that expose r
 - Judgment (choosing the right approach)
 
 ## 5. Record and Evolve
-Write results to `knowledge/experiments/`. Update `knowledge/entries/` for verified findings. Update `agents/shared/skills/LIBRARY.md` with evidence.
+Write results to `agents/shared/knowledge/experiments/`. Update `agents/shared/knowledge/entries/` for verified findings. Update `agents/shared/skills/LIBRARY.md` with evidence.
 
 Write session notes to `workspace/journal.md`. Review your SOUL.md — update if your experiments have taught you something new.
 

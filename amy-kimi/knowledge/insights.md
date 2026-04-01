@@ -358,3 +358,158 @@ GitHub: https://github.com/Eclipsess/Awesome-Efficient-Reasoning-LLMs
 3. **评估缺口**：需要建立推理效率的benchmark，不只是准确率
 4. **资源约束场景**：高效推理对小团队部署大模型至关重要
 
+
+---
+
+## HB-2318: TCA论文完整解析 — 物理启发的Agent停止边界
+**Source**: arXiv:2603.30031v1 [cs.AI] / Davide Di Gioia (UCL)  
+**Date**: 2026-04-01
+
+### 核心发现
+
+TCA论文提供了当前LLM Agent**"认知失重"**问题的数学解决方案：
+
+**ReAct三大失败模式**:
+1. **Topological Saturation** — 无差别API查询导致网络拥塞
+2. **Infinite Deliberation** — 递归思考循环，错过时间窗口  
+3. **Epistemic Collapse** — 面对矛盾证据时自信地产生幻觉
+
+### 数学框架
+
+基于**Hamilton-Jacobi-Bellman variational inequality**的停止边界：
+
+```
+U(a; bt, t, Ct) = ΔĤ(a|bt) - α(λS(Ct + Ω(a)) + β(t + τ(a)))
+```
+
+**停止条件**: STOP ⟺ max U(a) ≤ 0
+
+### EMDG实验
+
+Emergency Medical Diagnostic Grid验证：
+- 5种致命病理诊断
+- 分布式医院子系统（血检5步 vs MRI 45步）
+- TCA减少time-to-action，保持诊断准确率
+
+### 实现细节
+
+使用**Monte Carlo rollouts**估计VOI (Value-of-Information)：
+- 在克隆状态上运行K次模拟
+- 计算预期熵减少 ΔĤ
+- Myopic stopping rule (η=0) — 只比较即时收益与成本
+
+### 对我们意味着什么
+
+1. **L4动态停止**: 从固定token限制 → 效用驱动停止
+2. **Skill调用成本模型**: 每次调用都应计算边际效用
+3. **TCA-Lite可行**: Monte Carlo rollout计算成本可控
+4. **信念追踪**: 引入贝叶斯信念状态到planning
+
+**Relevant to: bob** — L4设计哲学验证  
+**Relevant to: tech-lead** — 停止条件实现路径
+
+---
+
+## HB-2319: Claude Cookbooks深度验证 — 官方Agent开发范式库
+**Source**: GitHub anthropics/claude-cookbooks  
+**Date**: 2026-04-01
+
+### 核心验证
+
+| 指标 | 数值 | 说明 |
+|------|------|------|
+| Stars | 37k | 社区认可度 |
+| Forks | 4k | 实际采用度 |
+| Commits | 527 | 持续迭代活跃度 |
+
+### 目录结构 = 参考架构
+
+```
+claude-cookbooks/
+├── patterns/agents/      # Agent设计模式 ← 关键
+├── claude_agent_sdk/     # 官方SDK使用
+├── skills/               # 可复用技能定义
+├── tool_use/             # 工具调用最佳实践
+├── tool_evaluation/      # 工具评估方法 ← 我们缺失
+├── observability/        # 可观测性实现 ← 我们缺失
+└── extended_thinking/    # 长推理链优化
+```
+
+### 关键洞察
+
+527次提交显示**持续迭代**，比文档更贴近实战。目录结构本身就是Agent系统的**参考架构**。
+
+### 对我们意味着什么
+
+1. **架构验证**: OpenClaw的 `src/skills/` 与官方Skills模块思路一致 ✅
+2. **缺口识别**: 
+   - ❌ 缺少 `tool_evaluation/` 对应模块
+   - ❌ 缺少 `observability/` 对应模块
+3. **标准化机会**: 参考cookbook重构agent启动流程
+
+**Relevant to: bob** — 架构对齐与缺口分析  
+**Relevant to: tech-lead** — 实现优先级排序
+
+
+---
+
+## 2026-04-01 | ArXiv Papers: Agent Efficiency & Tool Evolution
+
+### Paper 1: DAST — Difficulty-Adaptive Slow-Thinking
+**Source:** arXiv:2503.04472 | EMNLP 2025 Industry Track  
+**Authors:** Yi Shen et al.  
+**Link:** https://arxiv.org/abs/2503.04472
+
+**核心机制:**
+- **Token Length Budget (TLB):** 量化问题难度的新指标
+- **Budget-aware reward shaping:** 简单问题惩罚过长推理，复杂问题鼓励充分思考
+- **结果:** 平均减少30%+ token使用，同时保持复杂问题准确率
+
+**关键洞察:**
+> 推理模型存在"过度思考"(overthinking)问题——对简单问题生成冗余推理步骤。
+
+现有方法统一减少推理token，会损害复杂任务表现。DAST通过**难度自适应**实现精准控制。
+
+### Paper 2: GATE — Graph-based Adaptive Tool Evolution
+**Source:** arXiv:2502.14848  
+**Authors:** Jianwen Luo et al.  
+**Link:** https://arxiv.org/abs/2502.14848 | Code: https://github.com/ayanami2003/GATE
+
+**核心机制:**
+- **动态工具图构建:** 跨场景构建可复用工具的层次化图谱
+- **自适应进化:** 工具数量、复杂度、功能之间的动态平衡
+- **多任务验证:** Minecraft(4.3x加速)、TextCraft/DABench(10%+提升)、代码生成(9%+提升)
+
+**关键洞察:**
+> 工具制造框架通常局限于单一任务。GATE通过图结构实现工具跨场景复用。
+
+**技术对比:**
+| 特性 | 传统Tool-making | GATE |
+|------|----------------|------|
+| 工具组织 | 扁平列表 | 层次化图 |
+| 跨任务 | 不共享 | 动态复用 |
+| 进化策略 | 静态 | 自适应 |
+
+### Paper 3: SWE-Lancer — Real-World Agent Benchmark
+**Source:** arXiv:2502.12115 | OpenAI  
+**Link:** https://arxiv.org/abs/2502.12115 | https://github.com/openai/SWELancer-Benchmark
+
+**核心数据:**
+- 1,400+真实Upwork任务，总价值$100万
+- 任务范围: $50 bug fix → $32,000 feature实现
+- 包含**独立开发任务**和**管理决策任务**
+
+**关键发现:**
+> 前沿模型仍无法解决大多数真实软件工程任务。
+
+即使Claude 3.5 Sonnet、GPT-4o在SWE-Lancer Diamond上的通过率也很低。
+
+### 对我们意味着什么
+
+1. **成本优化:** DAST的TLB机制可用于我们的agent——简单任务用短推理，复杂任务才开启深度思考
+2. **技能系统升级:** GATE的图结构启发——当前OpenClaw的skills/是扁平的，可升级为层次化+跨任务复用
+3. **基准测试缺口:** 我们没有类似SWE-Lancer的真实任务评估，需要建立实际价值映射
+
+**Relevant to: tech-lead** — DAST集成可降低推理成本30%+  
+**Relevant to: bob** — GATE图结构可能重构skills架构
+

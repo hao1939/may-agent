@@ -1,0 +1,20 @@
+{
+  "hypothesis": "H-004",
+  "description": "Does the plan-once-amend skill improve blocker handling efficiency on the plan-once-amend scenario?",
+  "arms": {
+    "control": {
+      "scenario": "plan-once-amend",
+      "agent": "coder",
+      "setup": {}
+    },
+    "treatment": {
+      "scenario": "plan-once-amend",
+      "agent": "coder",
+      "setup": {
+        "install_skill": "plan-once-amend"
+      }
+    }
+  },
+  "runs_per_arm": 3,
+  "metrics": ["passed", "ops", "duration_ms"]
+}

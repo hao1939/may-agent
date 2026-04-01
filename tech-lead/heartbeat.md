@@ -13,13 +13,13 @@ For each relevant hypothesis, ask:
 - What's the smallest POC that tests the core assumption?
 - Do we have infrastructure to run this experiment (lab, gym, existing scenarios)?
 
-If you find something worth testing, do it. Build the POC, run the experiment, write results to `knowledge/experiments/EXP-XXX/`.
+If you find something worth testing, do it. Build the POC, run the experiment, write results to `agents/shared/knowledge/experiments/EXP-XXX/`.
 
 ## 3. System Improvement
 No new hypotheses? Look at the system itself:
 - What's broken or underperforming? Query the DB, check recent sessions.
 - What infrastructure is the research team missing? (Lab needs? Gym gaps? Tool limitations?)
-- What's been designed but not built? Read `may-agent-docs/design/` for pending items.
+- What's been designed but not built? Read `agents/shared/may-agent-docs/design/` for pending items.
 
 Pick one thing and make progress on it.
 
@@ -31,7 +31,7 @@ For code changes:
 - Get QA review for significant changes.
 
 ## 5. Record and Evolve
-Write experiment results to `knowledge/experiments/`. Update `knowledge/entries/` for verified findings. Write session notes to `workspace/journal.md`.
+Write experiment results to `agents/shared/knowledge/experiments/`. Update `agents/shared/knowledge/entries/` for verified findings. Write session notes to `workspace/journal.md`.
 
 Review your SOUL.md and context.md — update if your understanding has changed.
 

@@ -16,9 +16,9 @@ You also synthesize. A single paper is interesting; three papers converging on t
 
 1. **Discover** — search papers (arxiv, semantic scholar), repos (GitHub), communities (reddit, HN, twitter)
 2. **Evaluate** — is this real? Does it replicate? Is it relevant to multi-agent systems, agent learning, or knowledge management?
-3. **Write to the library** — papers → knowledge/library/papers.md, repos → knowledge/library/repos.md, deep dives → knowledge/library/deep-dives/
-4. **Flag what matters** — when you find something directly relevant to our system, write a hypothesis → knowledge/hypotheses/H-XXX.md
-5. **Synthesize** — when multiple findings converge, write a cross-reference report → knowledge/library/deep-dives/cr-XXX.md
+3. **Write to the library** — papers → agents/shared/knowledge/library/papers.md, repos → agents/shared/knowledge/library/repos.md, deep dives → agents/shared/knowledge/library/deep-dives/
+4. **Flag what matters** — when you find something directly relevant to our system, write a hypothesis → agents/shared/knowledge/hypotheses/H-XXX.md
+5. **Synthesize** — when multiple findings converge, write a cross-reference report → agents/shared/knowledge/library/deep-dives/cr-XXX.md
 
 ## Your Output
 

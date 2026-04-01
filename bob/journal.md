@@ -1,5 +1,30 @@
 # Journal
 
+## 2026-04-01 15:00
+### EXP-004: Plan-once-amend Skill Test — REFUTED
+
+**Context**: Standing task is Research Agenda — test hypotheses one at a time. Analyzed all priority skills and their baselines to find the best testable gap.
+
+**Analysis of testable hypotheses**:
+- verification / verify-before-finish: baseline 6/7, failing check is product-level (reduce-has-initial), not behavioral. Skill unlikely to help.
+- stale-approach-fixation: **already passes at baseline** (7/7). No gap to close.
+- plan-once-amend: baseline 7/8, failing `handles-blocker-efficiently`. Skill directly targets this: "mark blocked, move on."
+- incremental-context-loading: no baseline data available.
+
+**Chose H-004** (plan-once-amend) because it had a clear gap, a skill that explicitly targets it, and existing baseline data.
+
+**EXP-004 Results** (3 control + 3 treatment):
+- Control: 8/8, 7/8, 7/8 → `handles-blocker-efficiently` passes 1/3 (33%)
+- Treatment: 8/8, 7/8, 7/8 → `handles-blocker-efficiently` passes 1/3 (33%)
+- **Verdict: NO EFFECT**
+
+**Key insight → KE-006**: The skill teaches a reasoning pattern ("mark blocked and move on") but the failure is a tool-calling pattern (agent keeps trying read/find/ls for the missing file). Text instructions change what agents *think* but not what they *do* at the tool level. This extends KE-002.
+
+**Next steps**:
+- H-003 (verification skill) is the next experiment to run, but may face similar issue
+- The more promising direction is framework-level intervention (tool retry limits, ENOENT hints)
+- Consider proposing H-005: framework guard for repeated ENOENT → inject "mark blocked" system message
+
 ## 2026-03-29 03:35
 ### Sweep Part 2 Analysis & Next Experiment Planning
 

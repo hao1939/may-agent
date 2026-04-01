@@ -11,7 +11,7 @@ Read `agents/shared/workflows/` — 7 workflows exist. Your core question: **whi
 Pick one workflow to evaluate this session:
 1. **Measure** — query may.db for sessions that used this workflow vs sessions that didn't
 2. **Compare** — ops count, pass rate, error rate, escalation rate
-3. **Record** — write findings to `knowledge/experiments/EXP-XXX/results.md`
+3. **Record** — write findings to `agents/shared/knowledge/experiments/EXP-XXX/results.md`
 
 Use the lab runner (`scripts/lab-run.sh`) for controlled experiments, or query the DB directly:
 ```bash
@@ -35,7 +35,7 @@ Look at how work flows through the system:
 Design better workflows. Test them in the lab before deploying.
 
 ## 5. Record and Evolve
-Write results to `knowledge/experiments/`. Update `knowledge/entries/` for verified findings. Update `agents/shared/workflows/REGISTRY.md` with evidence.
+Write results to `agents/shared/knowledge/experiments/`. Update `agents/shared/knowledge/entries/` for verified findings. Update `agents/shared/workflows/REGISTRY.md` with evidence.
 
 Write session notes to `workspace/journal.md`. Review your SOUL.md — update if your measurements have revealed something new.
 
