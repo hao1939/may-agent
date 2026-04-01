@@ -70,7 +70,7 @@ for arm_name, arm_config in design['arms'].items():
         scenario = arm_config['scenario']
         agent = arm_config.get('agent', 'coder')
         
-        # Apply setup (e.g., copy context file)
+        # Apply setup (e.g., copy context file, install skill)
         setup = arm_config.get('setup', {})
         if 'context_file' in setup:
             src = setup['context_file']
@@ -79,6 +79,13 @@ for arm_name, arm_config in design['arms'].items():
                 os.system(f'cp {src} {dst}')
             else:
                 os.system(f'rm -f {dst}')
+        if 'install_skill' in setup:
+            skill_name = setup['install_skill']
+            src_dir = f'agents/shared/skills/{skill_name}'
+            dst_dir = f'agents/{agent}/skills/{skill_name}'
+            if os.path.isdir(src_dir):
+                os.makedirs(f'agents/{agent}/skills', exist_ok=True)
+                os.system(f'cp -r {src_dir} {dst_dir}')
         
         print(f'  Run {run_idx + 1}/{design[\"runs_per_arm\"]}...', end=' ', flush=True)
         
@@ -119,9 +126,12 @@ for arm_name, arm_config in design['arms'].items():
 # Clean up any setup changes
 for arm_name, arm_config in design['arms'].items():
     setup = arm_config.get('setup', {})
+    agent = arm_config.get('agent', 'coder')
     if 'context_file' in setup:
-        agent = arm_config.get('agent', 'coder')
         os.system(f'rm -f agents/{agent}/context.md')
+    if 'install_skill' in setup:
+        skill_name = setup['install_skill']
+        os.system(f'rm -rf agents/{agent}/skills/{skill_name}')
 
 # Write results
 results_file = '$RESULTS_DIR/run-' + time.strftime('%Y%m%d-%H%M%S') + '.json'
