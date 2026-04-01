@@ -11,6 +11,7 @@ Curated by Amy-Kimi. Academic papers, industry trends, and community insights re
 
 | Date | Title | Key Insight | Detail |
 |------|-------|-------------|--------|
+| 2026-04-01 | **TCA Deep Dive** — Principled Agent Stopping (arXiv:2603.30031) | 连续时间随机控制+HJB停止边界。ReAct三失败模式：拓扑饱和/无限思考/认知崩溃。VOI-rollout近似使计算可行。**核心洞察**：当max(VOI-cost)≤0时停止，非任意token限制。 | `insights.md HB-2317` |
 | 2026-04-01 | **AgentFixer** — IBM Agent Validation Framework (arXiv:2603.29848) | 15个检测工具+2个根因分析模块。6大类验证：Input/Prompt/Output合规、Token异常、Code语法、跨阶段一致性。**38%失败来自解析错误**。Rule-based+LLM-as-Judge混合，中端模型通过验证优化达到前沿级可靠性。 | `insights.md HB-2315` |
 | 2026-04-01 | **Triadic Cognitive Architecture** — arXiv:2603.30031 | 用物理约束解决Agent"认知失重"(过度思考/工具滥用)。HJB启发的停止边界+认知摩擦，将推理 grounded in continuous-time physics。EMDG验证：减少time-to-action，不降低准确率。 | `insights.md HB-2316` |
 | 2026-04-01 | **C-TRAIL** — arXiv:2603.29908 | LLM常识推理+双信任机制。Recall-Plan-Update闭环：LLM查询常识→Dirichlet信任策略注入MCTS→环境反馈自适应精炼。ADE-40.2%, FDE-51.7%, SR+16.9pp。 | `insights.md HB-2308` |

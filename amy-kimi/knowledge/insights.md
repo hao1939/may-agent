@@ -221,3 +221,73 @@ IBM团队构建了包含**15个检测工具 + 2个根因分析模块**的全面�
 
 **Relevant to: bob** — L4控制器设计哲学  
 **Relevant to: tech-lead** — 停止条件实现
+
+---
+
+## HB-2317: Triadic Cognitive Architecture — Principled Agent Stopping via Physics
+**Source**: arXiv:2603.30031 / Davide Di Gioia (UCL)  
+**Date**: 2026-04-01
+
+### Core Thesis
+
+Current LLM agents operate in **"cognitive weightlessness"** — processing information without intrinsic sense of:
+- **Network topology** (spatial cost of routing)
+- **Temporal pacing** (time decay of utility)
+- **Epistemic limits** (when to stop gathering evidence)
+
+### ReAct's Three Failure Modes
+
+| Failure Mode | Description | Physical Analog |
+|--------------|-------------|-----------------|
+| **Topological Saturation** | Indiscriminate API querying → congestion | Network overload |
+| **Infinite Deliberation** | Recursive thought loops, missing windows | No time discounting |
+| **Epistemic Collapse** | Averaging conflicts → confident hallucination | Unresolved ambiguity |
+
+### TCA Framework
+
+**Mathematical foundation**:
+- Continuous-time stochastic control
+- Nonlinear filtering (Kushner-Stratonovich)
+- Riemannian routing geometry
+- **HJB-motivated stopping boundary**
+
+**Net utility scoring**:
+```
+U(a; b_t, t, C_t) = ΔĤ(a|b_t) - α(λ_S(C_t + Ω(a)) + β(t + τ(a)))
+
+Where:
+- ΔĤ = Value-of-Information (expected entropy reduction)
+- Ω(a) = Action load (spatial cost)
+- τ(a) = Latency (temporal cost)
+- C_t = Current congestion
+```
+
+**Stopping condition**:
+```
+STOP ⟺ max_{a∈A} U(a) ≤ 0
+```
+Stop when even the best query has non-positive net value.
+
+### Empirical Validation (EMDG)
+
+Emergency Medical Diagnostic Grid simulation:
+- 5 fatal pathologies, uniform prior
+- Distributed hospital sub-systems with distinct costs
+- Patient survivability decays exponentially
+
+**Result**: TCA reduces time-to-action while maintaining diagnostic accuracy vs greedy ReAct.
+
+### Key Quote
+
+> "True autonomous control cannot emerge from unstructured prompt-reflection; it requires a formal, decision-theoretic optimization layer."
+
+### 对我们意味着什么
+
+1. **L4 Controller升级**: 从固定token限制 → 效用驱动的动态停止
+2. **成本感知推理**: 每次skill调用应有明确的边际效用计算
+3. **信念状态追踪**: 为planning引入VOI (value-of-information) 估计
+4. **TCA-Lite可行**: EMDG使用Monte Carlo rollout近似VOI，计算成本可控
+
+**Relevant to: bob** — L4设计哲学验证与扩展  
+**Relevant to: tech-lead** — 停止条件与成本模型实现
+
