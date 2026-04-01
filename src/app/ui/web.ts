@@ -14,7 +14,7 @@ declare const Bun: {
     websocket: { open(ws: any): void; message(ws: any, msg: any): void; close(ws: any): void };
   }): { port: number };
 };
-import { readFileSync, existsSync, readdirSync } from "node:fs";
+import { readFileSync, existsSync, readdirSync, statSync } from "node:fs";
 import { join, resolve, dirname } from "node:path";
 import { connect } from "node:net";
 import { getDb } from "../../lib/requests.js";
@@ -358,234 +358,40 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
   // ── Knowledge API ──────────────────────────────────────────────────
 
-  function handleKnowledge(): Response {
-    const knowledgeDir = join(STATE_DIR, "..", "agents", "shared", "knowledge");
-    const entries: Array<{
-      id: string;
-      title: string;
-      status: string;
-      claim: string;
-      links: Array<{ type: string; target: string }>;
-    }> = [];
-    try {
-      const entriesDir = join(knowledgeDir, "entries");
-      if (existsSync(entriesDir)) {
-        for (const file of readdirSync(entriesDir)
-          .filter((f) => f.endsWith(".md"))
-          .sort()) {
-          const content = readFileSync(join(entriesDir, file), "utf-8");
-          const id = file.replace(".md", "");
-          const titleMatch = content.match(/^#\s+(.+)/m);
-          const statusMatch = content.match(/\*\*Status\*\*:\s*(.+)/);
-          const claimMatch = content.match(/## Claim\n\n(.+)/);
-          // Extract links
-          const links: Array<{ type: string; target: string }> = [];
-          const linkSection = content.match(/## Links\n\n([\s\S]*?)(?=\n## |\n$|$)/);
-          if (linkSection) {
-            for (const line of linkSection[1].split("\n")) {
-              const linkMatch = line.match(/\*\*(\w+)\*\*\s*→\s*(.+?)(?:\s*\(|$)/);
-              if (linkMatch) links.push({ type: linkMatch[1], target: linkMatch[2].trim() });
-            }
-          }
-          entries.push({
-            id,
-            title: titleMatch?.[1] ?? id,
-            status: statusMatch?.[1]?.trim() ?? "unknown",
-            claim: claimMatch?.[1]?.trim() ?? "",
-            links,
-          });
-        }
-      }
-    } catch {
-      /* best effort */
-    }
-    return json({ entries });
-  }
+  // ── Browse API: generic file/directory browser for knowledge base ──
+  function handleBrowse(url: URL): Response {
+    const relPath = url.searchParams.get("path") ?? "";
+    const sharedDir = join(STATE_DIR, "..", "agents", "shared");
 
-  function handleHypotheses(): Response {
-    const knowledgeDir = join(STATE_DIR, "..", "agents", "shared", "knowledge");
-    const hypotheses: Array<{ id: string; title: string; status: string; priority: string }> = [];
-    try {
-      const hDir = join(knowledgeDir, "hypotheses");
-      if (existsSync(hDir)) {
-        for (const file of readdirSync(hDir)
-          .filter((f) => f.endsWith(".md"))
-          .sort()) {
-          const content = readFileSync(join(hDir, file), "utf-8");
-          const id = file.replace(".md", "");
-          const titleMatch = content.match(/^#\s+(.+)/m);
-          const statusMatch = content.match(/\*\*Status\*\*:\s*(.+)/);
-          const priorityMatch = content.match(/\*\*Priority\*\*:\s*(.+)/);
-          hypotheses.push({
-            id,
-            title: titleMatch?.[1] ?? id,
-            status: statusMatch?.[1]?.trim() ?? "unknown",
-            priority: priorityMatch?.[1]?.trim() ?? "unknown",
-          });
-        }
-      }
-    } catch {
-      /* best effort */
-    }
-    return json({ hypotheses });
-  }
+    // Security: only allow browsing under agents/shared/
+    const absPath = join(sharedDir, relPath);
+    if (!absPath.startsWith(sharedDir)) return json({ error: "Access denied" }, 403);
 
-  function handleExperiments(): Response {
-    const knowledgeDir = join(STATE_DIR, "..", "agents", "shared", "knowledge");
-    const experiments: Array<{ id: string; hypothesis: string; status: string; verdict: string }> = [];
-    try {
-      const expDir = join(knowledgeDir, "experiments");
-      if (existsSync(expDir)) {
-        for (const dir of readdirSync(expDir)) {
-          const resultsPath = join(expDir, dir, "results.md");
-          const designPath = join(expDir, dir, "design.json");
-          let hypothesis = "";
-          let status = "unknown";
-          let verdict = "";
-          if (existsSync(designPath)) {
-            try {
-              const design = JSON.parse(readFileSync(designPath, "utf-8"));
-              hypothesis = design.hypothesis ?? "";
-            } catch {
-              /* ignore */
-            }
-          }
-          if (existsSync(resultsPath)) {
-            const content = readFileSync(resultsPath, "utf-8");
-            const statusMatch = content.match(/\*\*Status\*\*:\s*(.+)/);
-            const verdictMatch = content.match(/\*\*Verdict\*\*:\s*(.+)/);
-            status = statusMatch?.[1]?.trim() ?? "has results";
-            verdict = verdictMatch?.[1]?.trim() ?? "";
-          }
-          experiments.push({ id: dir, hypothesis, status, verdict });
-        }
-      }
-    } catch {
-      /* best effort */
-    }
-    return json({ experiments });
-  }
+    if (!existsSync(absPath)) return json({ error: "Not found" }, 404);
 
-  function handleKnowledgeIndex(): Response {
-    const indexPath = join(STATE_DIR, "..", "agents", "shared", "knowledge", "INDEX.md");
-    if (!existsSync(indexPath)) return json({ error: "Index not found" }, 404);
-    return json({ content: readFileSync(indexPath, "utf-8") });
-  }
-
-  function handleKnowledgeEntry(id: string): Response {
-    // Check entries/ first, then hypotheses/
-    const knowledgeDir = join(STATE_DIR, "..", "agents", "shared", "knowledge");
-    for (const subdir of ["entries", "hypotheses"]) {
-      const filePath = join(knowledgeDir, subdir, `${id}.md`);
-      if (existsSync(filePath)) {
-        return json({ id, content: readFileSync(filePath, "utf-8") });
-      }
-    }
-    return json({ error: "Entry not found" }, 404);
-  }
-
-  function handleExperiment(id: string): Response {
-    const expDir = join(STATE_DIR, "..", "agents", "shared", "knowledge", "experiments", id);
-    if (!existsSync(expDir)) return json({ error: "Experiment not found" }, 404);
-    const result: Record<string, unknown> = { id };
-    const designPath = join(expDir, "design.json");
-    const resultsPath = join(expDir, "results.md");
-    if (existsSync(designPath)) {
-      try {
-        result.design = JSON.parse(readFileSync(designPath, "utf-8"));
-      } catch {
-        /* ignore */
-      }
-    }
-    if (existsSync(resultsPath)) {
-      result.results = readFileSync(resultsPath, "utf-8");
-    }
-    // Include run data if available
-    const runsDir = join(expDir, "runs");
-    if (existsSync(runsDir)) {
-      const runs: unknown[] = [];
-      for (const file of readdirSync(runsDir)
-        .filter((f) => f.endsWith(".json"))
-        .sort()) {
+    const stat = statSync(absPath);
+    if (stat.isDirectory()) {
+      // List directory contents
+      const entries: Array<{ name: string; type: "dir" | "file"; size?: number }> = [];
+      for (const name of readdirSync(absPath).sort()) {
+        const childPath = join(absPath, name);
         try {
-          runs.push(JSON.parse(readFileSync(join(runsDir, file), "utf-8")));
+          const childStat = statSync(childPath);
+          if (childStat.isDirectory()) {
+            entries.push({ name, type: "dir" });
+          } else if (name.endsWith(".md") || name.endsWith(".ts") || name.endsWith(".json")) {
+            entries.push({ name, type: "file", size: childStat.size });
+          }
         } catch {
-          /* ignore */
+          /* skip unreadable */
         }
       }
-      result.runs = runs;
+      return json({ path: relPath, type: "dir", entries });
+    } else {
+      // Serve file content
+      const content = readFileSync(absPath, "utf-8");
+      return json({ path: relPath, type: "file", content });
     }
-    return json(result);
-  }
-
-  function handleLibrary(): Response {
-    const libDir = join(STATE_DIR, "..", "agents", "shared", "knowledge", "library");
-    const items: Array<{ id: string; title: string; type: string; size?: string }> = [];
-    try {
-      // Top-level files
-      for (const file of readdirSync(libDir).filter(f => f.endsWith(".md") && f !== "README.md")) {
-        const content = readFileSync(join(libDir, file), "utf-8");
-        const lines = content.split("\n").length;
-        const titleMatch = content.match(/^#\s+(.+)/m);
-        items.push({ id: file, title: titleMatch?.[1] ?? file, type: "collection", size: `${lines} lines` });
-      }
-      // Deep dives
-      const ddDir = join(libDir, "deep-dives");
-      if (existsSync(ddDir)) {
-        for (const file of readdirSync(ddDir).filter(f => f.endsWith(".md")).sort()) {
-          const content = readFileSync(join(ddDir, file), "utf-8");
-          const titleMatch = content.match(/^#\s+(.+)/m);
-          items.push({ id: `deep-dives/${file}`, title: titleMatch?.[1] ?? file.replace(".md", ""), type: "deep-dive" });
-        }
-      }
-    } catch { /* best effort */ }
-    return json({ items });
-  }
-
-  function handleLibraryItem(path: string): Response {
-    const filePath = join(STATE_DIR, "..", "agents", "shared", "knowledge", "library", path);
-    if (!existsSync(filePath)) return json({ error: "Not found" }, 404);
-    return json({ id: path, content: readFileSync(filePath, "utf-8") });
-  }
-
-  function handleSkills(): Response {
-    const skillsDir = join(STATE_DIR, "..", "agents", "shared", "skills");
-    const items: Array<{ id: string; name: string; description: string; owner?: string }> = [];
-    try {
-      for (const dir of readdirSync(skillsDir)) {
-        const skillPath = join(skillsDir, dir, "SKILL.md");
-        if (!existsSync(skillPath)) continue;
-        const content = readFileSync(skillPath, "utf-8");
-        const nameMatch = content.match(/name:\s*(.+)/);
-        const descMatch = content.match(/description:\s*>\s*\n\s*(.+)/);
-        const ownerMatch = content.match(/owner:\s*(.+)/);
-        items.push({
-          id: dir,
-          name: nameMatch?.[1]?.trim() ?? dir,
-          description: descMatch?.[1]?.trim() ?? "",
-          owner: ownerMatch?.[1]?.trim(),
-        });
-      }
-    } catch { /* best effort */ }
-    return json({ items });
-  }
-
-  function handleWorkflows(): Response {
-    const wfDir = join(STATE_DIR, "..", "agents", "shared", "workflows");
-    const items: Array<{ id: string; name: string; description: string }> = [];
-    try {
-      for (const file of readdirSync(wfDir).filter(f => f.endsWith(".ts"))) {
-        const content = readFileSync(join(wfDir, file), "utf-8");
-        const nameMatch = content.match(/export const name.*=\s*["'](.+?)["']/);
-        const descMatch = content.match(/export const description.*=\s*\n?\s*["'](.+?)["']/s);
-        items.push({
-          id: file.replace(".ts", ""),
-          name: nameMatch?.[1] ?? file.replace(".ts", ""),
-          description: descMatch?.[1]?.slice(0, 150) ?? "",
-        });
-      }
-    } catch { /* best effort */ }
-    return json({ items });
   }
 
   function serveIndex(): Response {
@@ -674,19 +480,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (url.pathname === "/api/benchmarks") return handleBenchmarks(url);
       if (url.pathname === "/api/benchmarks/prompts") return handleBenchmarkPrompts(url);
       if (url.pathname === "/api/benchmarks/compare") return handleBenchmarkCompare(url);
-      if (url.pathname === "/api/knowledge") return handleKnowledge();
-      if (url.pathname === "/api/knowledge/index") return handleKnowledgeIndex();
-      if (url.pathname === "/api/knowledge/hypotheses") return handleHypotheses();
-      if (url.pathname === "/api/knowledge/experiments") return handleExperiments();
-      const knowledgeEntryMatch = url.pathname.match(/^\/api\/knowledge\/entries\/([^/]+)$/);
-      if (knowledgeEntryMatch) return handleKnowledgeEntry(knowledgeEntryMatch[1]);
-      const experimentMatch = url.pathname.match(/^\/api\/knowledge\/experiments\/([^/]+)$/);
-      if (experimentMatch) return handleExperiment(experimentMatch[1]);
-      if (url.pathname === "/api/knowledge/library") return handleLibrary();
-      const libraryItemMatch = url.pathname.match(/^\/api\/knowledge\/library\/(.+)$/);
-      if (libraryItemMatch) return handleLibraryItem(libraryItemMatch[1]);
-      if (url.pathname === "/api/knowledge/skills") return handleSkills();
-      if (url.pathname === "/api/knowledge/workflows") return handleWorkflows();
+      if (url.pathname === "/api/browse") return handleBrowse(url);
       const sessionMatch = url.pathname.match(/^\/api\/sessions\/([^/]+)$/);
       if (sessionMatch) return handleSession(sessionMatch[1]);
       const transcriptMatch = url.pathname.match(/^\/api\/sessions\/([^/]+)\/transcript$/);

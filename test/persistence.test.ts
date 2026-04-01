@@ -1,10 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { SubagentManager } from "../src/lib/index.js";
-import { mkdtempSync, rmSync, readFileSync, existsSync } from "node:fs";
+import { mkdtempSync, rmSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { readSessionMeta, RegistryStore, toPersistedConfig } from "../src/lib/persistence.js";
-import type { PersistedAgentConfig } from "../src/lib/persistence.js";
+import { readSessionMeta } from "../src/lib/persistence.js";
 import type { Model } from "@mariozechner/pi-ai";
 
 // Minimal fake model that satisfies the Model interface

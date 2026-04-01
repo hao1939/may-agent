@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { mkdirSync, writeFileSync, existsSync, readFileSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
@@ -103,7 +103,7 @@ vi.mock("../src/lib/db.js", () => {
 });
 
 import { findUnevaluatedChildren, writeSkippedEvaluations } from "../src/lib/evaluator.js";
-import { upsertEvaluation, hasEvaluation, getDb, closeDb } from "../src/lib/requests.js";
+import { upsertEvaluation, hasEvaluation, closeDb } from "../src/lib/requests.js";
 import type { PersistedSession } from "../src/lib/persistence.js";
 
 function tmpDir(): string {

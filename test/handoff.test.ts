@@ -1,6 +1,5 @@
 import { describe, it, expect } from "vitest";
 import { extractHandoff, summarizeForHandoff } from "../src/lib/handoff.js";
-import type { HandoffData, HandoffOptions } from "../src/lib/handoff.js";
 import type { TaskResult } from "../src/lib/types.js";
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 
@@ -8,7 +7,7 @@ import type { AgentMessage } from "@mariozechner/pi-agent-core";
 
 let _tcCounter = 0;
 
-function resetCounter() {
+function _resetCounter() {
   _tcCounter = 0;
 }
 
@@ -40,7 +39,7 @@ function assistantMsg(text: string, ts = Date.now()): AgentMessage {
   } as AgentMessage;
 }
 
-function toolCallMsg(name: string, args: Record<string, any>, ts = Date.now()): AgentMessage {
+function _toolCallMsg(name: string, args: Record<string, any>, ts = Date.now()): AgentMessage {
   const id = `tc_${++_tcCounter}`;
   return {
     role: "assistant",

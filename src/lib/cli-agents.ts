@@ -121,9 +121,8 @@ export interface GeminiCliToolOptions extends CliAgentToolOptions {
   baseUrl?: string;
 }
 
-export interface CodexToolOptions extends CliAgentToolOptions {
-  // Codex uses OPENAI_API_KEY from env, no extra config needed
-}
+// Codex uses OPENAI_API_KEY from env, no extra config needed
+export type CodexToolOptions = CliAgentToolOptions;
 
 // ── Output truncation ──────────────────────────────────────────────────
 
@@ -317,7 +316,6 @@ export function spawnCliAgent(
 // ── Strip ANSI escape codes ────────────────────────────────────────────
 
 export function stripAnsi(text: string): string {
-  // eslint-disable-next-line no-control-regex
   return text.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, "");
 }
 

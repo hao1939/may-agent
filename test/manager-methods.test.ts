@@ -151,8 +151,8 @@ describe("SubagentManager.sessions()", () => {
   });
 
   it("filters sessions by agent name (while running)", () => {
-    const s1 = manager.run("agent-a", "task for a");
-    const s2 = manager.run("agent-b", "task for b");
+    const _s1 = manager.run("agent-a", "task for a");
+    const _s2 = manager.run("agent-b", "task for b");
 
     // Check while still active (before completion removes them)
     const sessionsA = manager.sessions("agent-a");

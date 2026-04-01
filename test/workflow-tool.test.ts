@@ -5,7 +5,6 @@ import { tmpdir } from "node:os";
 import { createWorkflowTool } from "../src/lib/workflow-tool.js";
 import { SubagentManager } from "../src/lib/manager.js";
 import type { WorkflowEvent, WorkflowToolResult } from "../src/lib/workflow.js";
-import type { WorkflowTool } from "../src/lib/workflow-tool.js";
 
 // ── Test fixtures ──────────────────────────────────────────────────────
 

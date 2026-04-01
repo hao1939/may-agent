@@ -12,7 +12,7 @@
 import { mkdtempSync, cpSync, rmSync, existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { execSync, spawnSync, type ExecSyncOptionsWithStringEncoding } from "node:child_process";
+import { spawnSync } from "node:child_process";
 
 const FIXTURES_DIR = join(import.meta.dirname, "fixtures");
 

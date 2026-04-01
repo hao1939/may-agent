@@ -304,7 +304,7 @@ export function readMemoryEntries(
   persistDir: string,
   name: string,
   limit?: number,
-  includeCorrupted: boolean = false,
+  _includeCorrupted: boolean = false,
 ): MemoryEntry[] {
   if (limit !== undefined) {
     if (limit <= 0) return [];

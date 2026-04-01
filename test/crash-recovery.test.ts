@@ -15,19 +15,17 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdtempSync, rmSync, mkdirSync, existsSync, writeFileSync, readFileSync } from "node:fs";
+import { mkdtempSync, rmSync, mkdirSync, existsSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { SubagentManager } from "../src/lib/manager.js";
 import {
   ensureSessionDir,
   appendSessionMessage,
-  readSessionMessages,
   sessionDir,
   sessionOutputDir,
   writeSessionMeta,
   readSessionMeta,
-  RegistryStore,
 } from "../src/lib/persistence.js";
 import type { PersistedSession } from "../src/lib/persistence.js";
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
@@ -295,7 +293,7 @@ describe("Crash Recovery: Sentinel-Driven Crash Detection", () => {
     registerAgent(manager, "worker");
 
     // Phase 4: Run crash recovery
-    const { resumed, interrupted } = manager.resumeStaleSessions();
+    const { resumed, interrupted: _interrupted } = manager.resumeStaleSessions();
 
     // Phase 5: Verify recovery
     expect(resumed).toHaveLength(1);

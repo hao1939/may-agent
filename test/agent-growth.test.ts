@@ -5,7 +5,6 @@ import { forkAgent, promoteAgent, discardAgent, listLabAgents } from "../src/lib
 import type { GrowthConfig } from "../src/lib/growth.js";
 import { join, resolve } from "node:path";
 import { existsSync, mkdirSync, writeFileSync, rmSync, readFileSync } from "node:fs";
-import { EventBus } from "../src/app/event-bus.js";
 
 const TEST_DIR = resolve("test-workspace/agent-growth");
 const AGENTS_ROOT = join(TEST_DIR, "agents");
@@ -375,7 +374,7 @@ describe("Agent Growth Tools (wrappers)", () => {
     const promoteTool = tools.find((t) => t.name === "promote_agent")!;
 
     // Mock callAgent for verify
-    manager.callAgent = async (name, task) => ({
+    manager.callAgent = async (name, _task) => ({
       sessionId: "test-session",
       status: "done",
       lastAssistantText: `Result from ${name}`,

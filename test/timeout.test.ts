@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { mkdtempSync, rmSync, existsSync, readFileSync } from "node:fs";
+import { mkdtempSync, rmSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { SubagentManager } from "../src/lib/manager.js";
@@ -66,7 +66,7 @@ describe("SubagentManager timeout enforcement", () => {
     // Since the session errors before timeout, cancel should NOT be called.
     try {
       const sessionId = manager.run("slow-agent", "do something slow");
-      const result = await manager.waitFor(sessionId);
+      const _result = await manager.waitFor(sessionId);
 
       // Session errored (fake model), timeout should have been cleared
       vi.advanceTimersByTime(10000);

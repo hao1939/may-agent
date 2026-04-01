@@ -5,7 +5,7 @@
  * Daemon mode: show everything dimmed.
  */
 
-import { isSessionEvent, type EventBus, type RunnerEvent } from "../event-bus.js";
+import { isSessionEvent, type EventBus } from "../event-bus.js";
 
 const DIM = "\x1b[2m";
 const RESET = "\x1b[0m";

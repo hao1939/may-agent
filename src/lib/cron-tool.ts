@@ -3,7 +3,7 @@
  * Agents use this to manage their own scheduled jobs. Each agent has its own cron.json.
  */
 
-import { Type, type Static } from "@mariozechner/pi-ai";
+import { Type } from "@mariozechner/pi-ai";
 import type { TSchema } from "@mariozechner/pi-ai";
 import type { AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";

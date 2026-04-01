@@ -1,7 +1,7 @@
 import { SubagentManager } from "../src/lib/index.js";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync } from "node:fs";
 import { getModel } from "@mariozechner/pi-ai";
 
 // Use a known model from pi-ai, override baseUrl to go through litellm

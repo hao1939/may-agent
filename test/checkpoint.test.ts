@@ -150,8 +150,8 @@ describe("checkpoint tool", () => {
   });
 
   it("supports function-based sessionId and agentName", async () => {
-    let currentSession = "sess-dyn-1";
-    let currentAgent = "agent-dyn";
+    const currentSession = "sess-dyn-1";
+    const currentAgent = "agent-dyn";
 
     const tool = createCheckpointTool({
       sessionId: () => currentSession,

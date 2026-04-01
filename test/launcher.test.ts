@@ -5,9 +5,9 @@
  * with specific codes, then verify the launcher's behavior.
  */
 
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect } from "vitest";
 import { spawn, type ChildProcess } from "node:child_process";
-import { writeFileSync, unlinkSync, existsSync } from "node:fs";
+import { writeFileSync, existsSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -16,7 +16,7 @@ const projectRoot = resolve(__dirname, "..");
 const launcherTs = resolve(projectRoot, "src/app/launcher.ts");
 
 // Helper: create a temp script that exits with a specific code
-function createExitScript(exitCode: number, delayMs = 0): string {
+function _createExitScript(exitCode: number, delayMs = 0): string {
   const path = resolve(__dirname, `_test-child-${exitCode}-${Date.now()}.ts`);
   writeFileSync(
     path,
@@ -28,7 +28,7 @@ function createExitScript(exitCode: number, delayMs = 0): string {
 }
 
 // Helper: create a script that exits with code A first, then code B on second run
-function createTwoRunScript(firstCode: number, secondCode: number): string {
+function _createTwoRunScript(firstCode: number, secondCode: number): string {
   const markerPath = resolve(__dirname, `_marker-${Date.now()}.tmp`);
   const path = resolve(__dirname, `_test-tworun-${Date.now()}.ts`);
   writeFileSync(
@@ -48,7 +48,7 @@ function createTwoRunScript(firstCode: number, secondCode: number): string {
 }
 
 // Spawn launcher with a custom child script instead of may.ts
-function spawnLauncher(childScript: string): {
+function _spawnLauncher(_childScript: string): {
   proc: ChildProcess;
   output: string[];
   waitForExit: () => Promise<number | null>;

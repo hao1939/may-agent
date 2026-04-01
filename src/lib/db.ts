@@ -40,7 +40,6 @@ function detectRuntime(): Runtime {
 // ── Bun adapter ────────────────────────────────────────────────────────
 
 function openBun(path: string): SqliteDb {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { Database } = require("bun:sqlite") as { Database: new (path: string) => BunDatabase };
   const db = new Database(path);
   return {
@@ -72,7 +71,11 @@ function openBun(path: string): SqliteDb {
 
 interface BunDatabase {
   exec(sql: string): void;
-  query(sql: string): { get: Function; all: Function; run: Function };
+  query(sql: string): {
+    get: (...args: unknown[]) => unknown;
+    all: (...args: unknown[]) => unknown[];
+    run: (...args: unknown[]) => unknown;
+  };
   run(sql: string, params: unknown[]): { changes: number; lastInsertRowid: number | bigint };
   close(): void;
 }
@@ -80,7 +83,6 @@ interface BunDatabase {
 // ── Node adapter ───────────────────────────────────────────────────────
 
 function openNode(path: string): SqliteDb {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { DatabaseSync } = require("node:sqlite") as { DatabaseSync: new (path: string) => NodeDatabase };
   const db = new DatabaseSync(path);
   return {
@@ -114,7 +116,11 @@ function openNode(path: string): SqliteDb {
 
 interface NodeDatabase {
   exec(sql: string): void;
-  prepare(sql: string): { get: Function; all: Function; run: Function };
+  prepare(sql: string): {
+    get: (...args: unknown[]) => unknown;
+    all: (...args: unknown[]) => unknown[];
+    run: (...args: unknown[]) => unknown;
+  };
   close(): void;
 }
 

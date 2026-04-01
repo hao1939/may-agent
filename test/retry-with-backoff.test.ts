@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import { retryWithBackoff } from "../src/lib/retry-with-backoff.js";
 
 describe("retryWithBackoff()", () => {
@@ -98,11 +98,11 @@ describe("retryWithBackoff()", () => {
 
   it("caps delay at maxDelayMs", async () => {
     const delays: number[] = [];
-    let calls = 0;
+    let _calls = 0;
     await expect(
       retryWithBackoff(
         async () => {
-          calls++;
+          _calls++;
           throw new Error("fail");
         },
         {
@@ -125,12 +125,12 @@ describe("retryWithBackoff()", () => {
 
   it("applies jitter when enabled (delays vary)", async () => {
     const delays: number[] = [];
-    let calls = 0;
+    let _calls = 0;
     // Run multiple times to check jitter introduces variance
     await expect(
       retryWithBackoff(
         async () => {
-          calls++;
+          _calls++;
           throw new Error("fail");
         },
         {

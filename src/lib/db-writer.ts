@@ -8,7 +8,7 @@
  */
 
 import type { AgentEvent } from "../app/event-bus.js";
-import { getDb, upsertSession, updateSessionDb, trackRequest, updateRequest } from "./requests.js";
+import { getDb, upsertSession, updateSessionDb, trackRequest } from "./requests.js";
 import type { SqliteDb } from "./db.js";
 
 export class DbWriter {

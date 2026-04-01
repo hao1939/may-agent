@@ -7,8 +7,6 @@
 
 import { Type } from "@mariozechner/pi-ai";
 import { type AgentTool } from "@mariozechner/pi-agent-core";
-import { resolve, join } from "node:path";
-import { existsSync, readFileSync } from "node:fs";
 import { SubagentManager } from "../manager.js";
 import { forkAgent, promoteAgent, discardAgent, type GrowthConfig } from "../growth.js";
 

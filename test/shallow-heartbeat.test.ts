@@ -14,7 +14,7 @@
 
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { SubagentManager } from "../src/lib/manager.js";
-import type { SubagentDefinition, SessionInfo } from "../src/lib/types.js";
+import type { SubagentDefinition } from "../src/lib/types.js";
 import type { Model } from "@mariozechner/pi-ai";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
