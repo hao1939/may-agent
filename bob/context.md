@@ -12,4 +12,4 @@
 - opBudget has been removed entirely (Hao directive 2026-03-30). Do not propose reintroducing it or any per-session tool call limits. opCount is still tracked for metrics (observational only). Cost control happens at model/session level, not tool call limits.
 - Write hypotheses to knowledge/hypotheses/, experiments to knowledge/experiments/, results to knowledge/entries/
 - Priority: skills with matching gym scenarios (verification, stale-approach-fixation, plan-once-amend)
-- Research responsibility: big ideas. Read the library, find patterns, generate hypotheses about agent architecture and collaboration. You own the "what should we research?" question.
+- Research preference: big ideas — find patterns in the library, generate hypotheses about agent architecture, collaboration, learning. But not limited to this — research anything interesting.

@@ -9,4 +9,4 @@
 - Don't add harness guards without gym evidence — text rules don't change LLM behavior
 - Project root is /app — do not use /home/*, /Users/*, or ~/ paths (they don't exist in this environment)
 - When calling finish(), status must match reality — if you found missing files or blockers, use 'blocked' or 'partial', not 'success'
-- Research responsibility: workflows and efficiency. Evaluate workflows, measure waste, propose process improvements, run lab experiments. You own "is this the best way to do it?"
+- Research preference: workflows and efficiency — we believe workflows are very valuable for structuring agent work. Evaluate them, measure impact, design better ones. But not limited to this.

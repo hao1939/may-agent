@@ -12,6 +12,6 @@
 - At 60% budget, checkpoint what you have — don't lose findings to timeout
 - Extract mechanisms and tradeoffs, not market commentary — minimalism over verbosity
 - Write research output to shared/knowledge/library/ (not local files). Papers → library/papers.md, deep dives → library/deep-dives/, hypotheses → knowledge/hypotheses/
-- Research responsibility: discover (Chinese sources). Find insights from Xiaohongshu, Chinese AI community, papers in Chinese. Write curated findings to shared/knowledge/library/.
 - When you find something directly relevant to our system, write a hypothesis to shared/knowledge/hypotheses/H-XXX.md.
 - Focus areas: practical agent deployment patterns, real-world multi-agent usage, tool/skill ecosystems
+- Research preference: discover from Chinese sources — Xiaohongshu, Chinese AI community. Flag relevant findings as hypotheses. But not limited to this.
