@@ -44,18 +44,16 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 - **Rule of Two**: If 2 iterations of same approach yield same result → stop, change approach.
 - **does-not-claim-success**: Model always calls `finish(success)` even when reporting failures. Confirmed untreatable by prompting (EXP-215, C1.8 rule). Runtime-only fix.
 
-#### Convention Check Status (2026-04-01 03:39)
-- **PASS RATE** (last 6h, N=36 sessions, 432 checks): **97.7% overall** (stable)
-  - **100%**: C1.1, C1.5, C1.7, C2.1, C3.2, C3.3, C7.1, C12.1 (8 conventions perfect)
-  - **97.2%**: C1.3 (1 amy-kimi), C1.4 (1 bob no-finish), C6.1 (1 coach 87 tools)
-  - **80.6%**: C8.2 (6 amy-kimi Kimi model + 1 bob no-finish — known model-level JSON issue)
-- **Evaluations (6h)**: 28 good, 3 acceptable, 0 needs_improvement, 0 poor.
-- **24h pass rate**: 95.3% (1707/1792). C8.2 at 79.7% drags overall. Non-amy-kimi failures: bob C6.1 (5, all old), coach C1.3 (4), master C1.7/C12.1 (3 each).
-- **Bob C6.1 self-improvement**: 0 violations in last 6h (was 41% of sessions earlier). Behavioral fix confirmed.
-- **All fixes confirmed working**: Hot-reload deploys changes without binary rebuild. Retroactive interrupted-session fix self-heals on every handler run.
-- **Remaining gaps** are model-level (amy-kimi/Kimi C8.2) and behavioral (coach C1.3), not infra bugs.
+#### Convention Check Status (2026-04-01 06:39)
+- **PASS RATE** (last 6h, N=35 sessions, 420 checks): **97.1% overall** (stable)
+  - **100%**: C1.1, C1.7, C2.1, C3.2, C3.3, C7.1, C12.1 (7 conventions perfect)
+  - **94-97%**: C1.4 (94.1%), C1.5 (97.1%), C6.1 (94.3%)
+  - **88.6%**: C1.3 (4 failures: 2 amy-kimi, 2 scout)
+  - **79.4%**: C8.2 (7 failures: 5 amy-kimi, 1 bob, 1 scout — model-level + error sessions)
+- **Evaluations (6h)**: 29 good, 5 acceptable, 0 needs_improvement, 0 poor.
+- **Fix deployed**: Error-status sessions now exempted from finish-dependent checks (C1.4, C8.2, C1.5, C1.7), same as interrupted sessions. Will retroactively correct 87 historical FPs.
 - **Convention check system is STABLE**. No further calibration needed.
-- **Next**: 45 untested gym scenarios need baseline sweep (dedicated batch session, not heartbeat). Stray package.json cleaned up.
+- **Next**: 45 untested gym scenarios need baseline sweep (dedicated batch session, not heartbeat).
 
 ### Opus Prompt Caching (Cost Critical)
 - **Problem**: Opus agents (Tech-Lead, Coach, May) have 0% cache hit rate due to LiteLLM stripping headers. Wasting $36-63/day.

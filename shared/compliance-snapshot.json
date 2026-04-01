@@ -1,6 +1,6 @@
 {
-  "timestamp": "2026-03-29T06:35:00Z",
-  "note": "Updated 2026-03-29: coach/coder/scout now use _archetypes paths (extends field in agent.json).",
+  "timestamp": "2026-04-01T07:47:31.733Z",
+  "note": "Updated 2026-04-01: optimizer/SOUL.md hash updated after benign self-evolution (reviewed by may).",
   "files": [
     {
       "path": "agents/shared/philosophy.md",
@@ -44,7 +44,7 @@
     },
     {
       "path": "agents/optimizer/SOUL.md",
-      "hash": "4246f6514c0e419df09a0a108ca3460dadef7f126693ac7b4ecf9437a3ce4fc7"
+      "hash": "f4001c3ff2cf447cb7cf4bdd8a2a5eef6a627ab15c45efe80b669ad6aee1f812"
     },
     {
       "path": "agents/qa/SOUL.md",

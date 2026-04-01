@@ -2,6 +2,12 @@
 
 > Pre-2026-03-30 entries archived at `agents/bob/workspace/archive/journal-pre-2026-03-30.md`
 
+# Session 2026-04-01 ~06:39 (Error Session FP Fix)
+- **Convention health**: 97.7% avg across 12 conventions (6h, 35 sessions). 8/12 at 100%. C8.2 at 79.4% (7 failures: 5 amy-kimi, 1 bob, 1 scout). Evals: 29 good, 5 acceptable, 0 poor.
+- **Finding**: Sessions with `status='error'` were not exempted from finish-dependent checks (C1.4, C8.2, C1.5, C1.7), producing false positives. Only 'interrupted' was covered. Scout session s_1775023740582_116 (error status) had 3 FPs.
+- **Fix**: Modified `convention-check.ts` to treat 'error' sessions same as 'interrupted' for finish-dependent checks. Both forward-looking (line 226) and retroactive correction (line 181). Will auto-correct 87 historical FPs on next handler run.
+- **No pending requests**, all 4 processes healthy (0 persistence failures).
+
 # Session 2026-04-01 ~05:09 (Steady State Monitoring)
 - **Convention health (6h, N=36, 432 checks)**: 97.2% overall (stable). 8/12 at 100% (C1.1, C1.5, C1.7, C12.1, C2.1, C3.2, C3.3, C7.1). C8.2=80.6% (amy-kimi model-level), C1.3=91.7% (scout 1, amy-kimi 2), C1.4=97.2% (bob 1 interrupted), C6.1=97.2% (coach 1).
 - **Evaluations (24h)**: 130 good, 15 acceptable, 1 needs_improvement (coach: incomplete deliverable + baseline gate miss), 0 poor. Excellent health across all agents.

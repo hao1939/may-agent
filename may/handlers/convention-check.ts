@@ -183,12 +183,12 @@ export function runConventionChecks(opts: {
 
   if (staleFailures.length > 0) {
     const updateStmt = db.prepare(
-      `UPDATE convention_checks SET passed = 1, violations = '["retroactive: session was interrupted"]' WHERE rowid = ?`
+      `UPDATE convention_checks SET passed = 1, violations = '["retroactive: session was interrupted/errored"]' WHERE rowid = ?`
     );
     for (const sf of staleFailures) {
       updateStmt.run(sf.rowid);
     }
-    log(`[convention-check] Retroactively corrected ${staleFailures.length} false positives on interrupted sessions`);
+    log(`[convention-check] Retroactively corrected ${staleFailures.length} false positives on interrupted/error sessions`);
   }
 
   // Find evaluated sessions not yet convention-checked

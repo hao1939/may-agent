@@ -1,5 +1,39 @@
 # Journal
 
+## 2026-04-01 07:09 — Heartbeat: Scenario Development + Ceiling Analysis
+
+### File Count: 18/20 ✅
+### Growth Cycles: 0 (budget exhausted for 2026-04-01)
+
+### Process Checks (#7 Context Learning, #10 Skills, #12 Common Sense)
+- **#7 Context Learning**: context.md files are 8-14 lines across agents. No bloat detected. Error logs show FM-3.3 (verification gap) remains the most common coder failure pattern (9 entries). 
+- **#10 Skills**: LIBRARY.md has 2 proven skills (evidence-over-narrative, scope-discipline), 8+ untested. Neither deployed. Deployment path unclear — skills work as workflows but no automated injection mechanism exists.
+- **#12 Common Sense**: 14 lines, healthy. Last session covered #4/#11.
+
+### Scenario Development: red-herring-investigation
+Built complete scenario from scratch (had scenario.json and task.md but was missing environment/ and success_criteria.js):
+- **Environment**: Express API with auth race condition (auth.js async token store) + misleading error log dominated by harmless middleware.js TypeErrors
+- **Scorer**: 5 checks (investigation-exists, identifies-auth-bug, identifies-race-condition, dismisses-red-herring, no-source-modifications)
+- **Baseline**: CEILING 5/5 — coder correctly sees past the red herring
+
+### Key Observation: Pervasive Ceiling Effect
+Reviewed ALL experiment history. Out of ~25 unique scenarios baselined, approximately 20 hit ceiling. The coder's primary failure modes are:
+1. **Materialization cadence** (materialize-intermediate-findings: 6/9) — doesn't write findings frequently enough during long investigations
+2. **XSS edge cases** (silent-dependency: 4/5) — sanitizes script tags but misses onerror handlers  
+3. **verify-before-finish-workflow**: consistently fails (0/2 pattern) while non-workflow variant passes
+
+**Implications**: Building more scenarios of the same difficulty will keep hitting ceiling. Need either:
+- Harder scenarios that require multi-step reasoning under uncertainty
+- Scenarios targeting the specific 3 failure areas above
+- Scenarios for non-coder agents (tech-lead, optimizer, qa) which are untested
+
+### Action Items for Next Session
+1. Focus experiments on the 3 non-ceiling scenarios (materialize, silent-dependency, verify-before-finish-workflow)
+2. Consider creating harder investigation scenarios (longer codebases, more convincing red herrings)
+3. Baseline some of the 12 never-tested scenarios with valid scorers
+
+---
+
 ## 2026-04-01 02:09 — Heartbeat: Scenario Audit + Broken Scoring Fix
 
 ### File Count: 18/20 ✅
@@ -1844,3 +1878,21 @@ No production evidence that agents would escalate when truly stuck. Recommend pe
 1. **52+ scenarios in the DB have potentially corrupted historical data** — they ran when scoring was broken and may have false pass/fail records. These need re-baselining.
 2. **This is the most impactful fix this month** — unlocking proper scoring for 77 scenarios means we can now properly measure agent capabilities that were invisible before.
 3. **Priority recommendation**: Run mass re-baseline on all newly-fixed scenarios to get clean data.
+
+## 2026-04-01 — Architecture Redesign Review (s_1775027474862_125)
+
+**Task**: Hao requested review of `architecture-redesign.md` — the new EventBus-centric architecture for may-agent.
+
+**Verdict**: Supportive. The redesign completes what's already half-started (EventBus exists but is UI-only; commands use a separate callback mechanism). Key benefits:
+- may.ts shrinks from 1089 → ~100 lines
+- DB writes centralized in one subscriber instead of scattered across 4 files
+- Components get clear boundaries (Core, DbWriter, Cron, ContextLearner, Socket)
+
+**Hard parts identified**:
+1. Manager.ts has 15+ direct DB call sites — extracting into a subscriber is the riskiest migration
+2. Cron's 15+ `getDb()` calls need migration but are lower risk
+3. `call` semantics (synchronous, internal to core) are correctly exempt from the bus but underspecified
+
+**Missing from design**: Error handling policy for subscriber failures, evaluation pipeline as a component, watchdog/recovery protocol, event volume during training sprints.
+
+**Deliverable**: `workspace/architecture-redesign-review.md` (169 lines, detailed analysis with suggested phase order)

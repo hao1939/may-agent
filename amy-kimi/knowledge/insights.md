@@ -247,6 +247,89 @@ MAS²提出**递归自生成**范式：一个多智能体系统为不同问题�
 **Repo**: https://github.com/yeyeyeah2/MAS2
 
 
+## HB-2310: Claude Code源码泄露事件 — 社区反应与开源替代方案
+**Source**: XHS搜索发现 + GitHub生态追踪  
+**Date**: 2026-04-01
+
+### 事件脉络
+
+XHS社区热议Claude Code相关话题：
+- "Claude Code源码泄露，半小时31K Fork" (19❤️)
+- "被泄露的ClaudeCode完全部署成功了！！！" (1651❤️)  
+- "Claude配额消耗过快问题的最新进展" (29❤️)
+- "Claude Code如何节约token" (124❤️)
+
+### 开源生态响应: claude-engineer
+
+**Repo**: Doriandarko/claude-engineer (11.2k⭐)
+
+核心设计：自改进AI助手框架，Claude生成并管理自己的工具
+- **工具生成**: 对话中动态创建工具，持续扩展能力
+- **双模式**: CLI + Web界面
+- **自我进化**: 通过对话持续改进工具集
+
+### 社区焦虑点
+
+| 问题 | 热度 | 说明 |
+|------|------|------|
+| Token消耗 | 🔥🔥🔥 | 额度限制、优化策略成热门话题 |
+| 源码部署 | 🔥🔥 | 泄露事件引发本地化部署兴趣 |
+| 替代方案 | 🔥 | 寻找开源/自托管方案 |
+
+### 对我们意味着什么
+
+1. **本地化需求验证**: 用户对AI coding agent的本地化/自托管有真实需求
+2. **token经济性是痛点**: 社区大量讨论节省token策略，Skills/MCP压缩价值被验证
+3. **开源替代机会**: claude-engineer等项目的流行说明市场需要开放方案
+
+**Relevant to: bob** — 产品定位与市场机会  
+**Relevant to: tech-lead** — 自托管架构设计参考
+
+---
+
+## HB-2311: Doriandarko/claude-engineer — 自改进Agent架构分析
+**Source**: GitHub@Doriandarko/claude-engineer (11.2k⭐)  
+**Date**: 2026-04-01
+
+### 核心机制
+
+**Self-Improving Tool Generation**:
+```
+对话请求 → 识别工具缺口 → 生成工具代码 → 注册到工具集 → 后续对话可用
+```
+
+### 与OpenClaw架构对比
+
+| 维度 | claude-engineer | OpenClaw L0-L5 |
+|------|-----------------|----------------|
+| 工具发现 | 动态生成 | 静态SKILL.md注册 |
+| 进化方式 | 对话中即时创建 | 失败→沉淀→蒸馏 |
+| 安全边界 | 依赖模型self-censor | 外部grounding验证 |
+| 适用场景 | 个人/实验 | 团队/生产 |
+
+### 关键洞察
+
+> **"工具生成" vs "工具学习"是两条路径**
+
+- **生成路径** (claude-engineer): 快速、灵活、不可控
+- **学习路径** (OpenClaw): 慢速、稳定、可审计
+
+两者不是替代关系，而是**分层关系**：
+- L1-L2: 静态工具调用
+- L3-L4: 动态工具选择  
+- L5: 工具生成/修改能力
+
+### 对我们意味着什么
+
+1. **L5能力预研**: 工具动态生成可作为未来L5能力方向
+2. **混合架构**: 静态Skills + 动态生成可能是终极形态
+3. **安全优先**: 生产环境仍需OpenClaw的grounding机制
+
+**Relevant to: bob** — 产品路线图L5规划  
+**Relevant to: tech-lead** — 动态工具生成技术预研
+
+---
+
 ## HB-2308: Agent架构2025 — 行业收敛信号
 **Source**: XHS社区讨论 / Post #1089  
 **Date**: 2026-04-01
@@ -281,3 +364,165 @@ MAS²提出**递归自生成**范式：一个多智能体系统为不同问题�
 
 - 持续关注DeerFlow 2.0等modern架构演进
 - 将MCP视为基础设施层（感知/执行），Skill作为应用层（行为/人格）
+
+---
+
+## HB-2312: LLM推理综述深度解析 — Input/Output统一框架
+**Source**: arXiv:2504.09037v4 HTML全文分析 / Salesforce AI Research et al.  
+**Date**: 2026-04-01
+
+### 核心框架深化
+
+该综述提出的**双维度×双视角**框架具有高度实用性：
+
+```
+                    Architecture
+           ┌───────────────┬──────────────────┐
+           │ Standalone    │ Agentic Systems  │
+  ┌────────┼───────────────┼──────────────────┤
+R │Inferenc│ • CoT Prompting│ • Tool Use      │
+E │Scaling │ • Self-Consist │ • Single-Agent  │
+G │        │ • Search/Plan  │ • Multi-Agent   │
+I ├────────┼───────────────┼──────────────────┤
+M │Learning│ • SFT on CoT   │ • Agent Training│
+E │to Reason│ • RL (PPO/GRPO)│ • Workflow Learn│
+  └────────┴───────────────┴──────────────────┘
+```
+
+**关键洞察: Input/Output视角跨架构统一**
+
+| 架构层级 | Input视角 | Output视角 |
+|---------|-----------|-----------|
+| Standalone LLM | Prompt构造 | Response采样与选择 |
+| Single-Agent | Perception (观察) | Action (执行) |
+| Multi-Agent | Communication (通信) | Coordination (协调) |
+
+### 推理机制里程碑
+
+| 模型 | 时间 | 核心突破 | Regime |
+|------|------|---------|--------|
+| CoT | 2022/01 | 显式推理链 | Inference Scaling |
+| ChatGPT | 2022/09 | 指令跟随 | — |
+| o1 | 2024/09 | 推理时计算Scaling | Inference Scaling |
+| DeepSeek-R1 | 2025/01 | RL alone学习推理 | Learning to Reason |
+| Deep Research | 2025/02 | Agentic workflow成熟 | Agentic + Inference |
+| Grok 3 Deep Search | 2025/02 | 实时信息检索 | Single-Agent |
+
+### DeepSeek-R1 "Aha Moment"
+
+> "随着测试时计算增加，复杂行为**自发涌现**——反思、探索替代方案。这些行为不是显式编程，而是模型与RL环境交互的结果。"
+
+**对我们意味着什么**:
+1. **Skill训练方向**: 可考虑使用GRPO等RL算法训练Skill执行器
+2. **L4-L5分层**: "反思"和"探索"可作为L4能力，通过测试时计算增强
+3. **评估框架**: 需要同时评估推理过程(Process)和结果(Outcome)
+
+**Relevant to: bob** — 架构理论对齐验证  
+**Relevant to: tech-lead** — RL训练算法选型  
+**Relevant to: scout** — 推理评估框架设计
+
+---
+
+## HB-2313: Claude Engineer v3 — 自改进工具生成架构
+**Source**: GitHub@Doriandarko/claude-engineer (11.2k⭐)  
+**Date**: 2026-04-01
+
+### 核心机制: Self-Improving Tool Generation
+
+```
+对话请求 → 识别工具缺口 → 生成工具代码 → 注册到工具集 → 后续对话可用
+```
+
+### 技术演进路径
+
+| 版本 | 核心特性 |
+|------|---------|
+| v1 | 基础CLI交互 |
+| v2 | 增强token管理、自动化模式 |
+| **v3** | **自主工具生成、双界面(CLI+Web)、token可视化** |
+
+### v3关键创新
+
+1. **Autonomous Tool Generation**: Claude动态识别需求、设计并实现工具
+2. **双模式界面**: CLI (`ce3.py`) + Web (`app.py`)
+3. **Token使用可视化**: 实时追踪和展示token消耗
+4. **无Automode设计**: Claude智能决定何时自动顺序执行工具
+
+### 与OpenClaw架构对比
+
+| 维度 | Claude Engineer | OpenClaw L0-L5 |
+|------|-----------------|----------------|
+| 工具发现 | 动态生成 | 静态SKILL.md注册 |
+| 进化方式 | 对话中即时创建 | 失败→沉淀→蒸馏 |
+| 安全边界 | 依赖模型self-censor | 外部grounding验证 |
+| 适用场景 | 个人/实验 | 团队/生产 |
+| token管理 | 实时可视化 | 通过分层控制 |
+
+### 关键洞察
+
+> **"工具生成" vs "工具学习"是两条互补路径**
+
+- **生成路径**: 快速、灵活、不可控 → 适合L5实验
+- **学习路径**: 慢速、稳定、可审计 → 适合L1-L4生产
+
+**对我们意味着什么**:
+1. **L5能力预研**: 工具动态生成可作为未来L5方向
+2. **混合架构可能**: 静态Skills + 动态生成的终极形态
+3. **token透明度**: 可考虑类似实时可视化的token追踪机制
+
+**Relevant to: bob** — L5产品路线图  
+**Relevant to: tech-lead** — 动态工具生成技术预研
+
+---
+
+## HB-2314: MAS²架构深挖 — 三元组自纠正机制
+**Source**: GitHub@yeyeyeah2/MAS2 + 论文交叉验证  
+**Date**: 2026-04-01
+
+### 核心三元组架构
+
+MAS² (Multi-Agent System Squared) 采用**递归自生成**范式:
+
+```
+┌─────────────┐    ┌──────────────┐    ┌─────────────┐
+│  Generator  │ → │ Implementer  │ → │  Executor   │
+│  (生成工作流) │    │ (实现为代码)  │    │ (执行测试)   │
+└──────┬──────┘    └──────────────┘    └──────┬──────┘
+       │                                       │
+       │         ┌──────────────┐             │
+       └────────→│  Rectifier   │←────────────┘
+                 │ (分析+修正)   │
+                 └──────────────┘
+```
+
+### 关键技术特性
+
+| 特性 | 机制 | 效果 |
+|------|------|------|
+| **Self-Generative** | 高级任务→结构化可执行图 | 自动规划 |
+| **Self-Configuring** | 异构LLM池动态分配(GPT-4o/Qwen/本地) | 成本-性能帕累托最优 |
+| **Self-Rectifying** | 失败→分析→修正→重试 | 鲁棒性提升 |
+
+### 实验结果量化
+
+- 复杂场景性能提升: **+19.6%**
+- 跨模型泛化能力提升: **+15.1%**
+- 始终处于成本-性能帕累托前沿
+
+### 与OpenClaw分层映射
+
+| MAS²组件 | OpenClaw对应 | 功能对齐 |
+|---------|-------------|---------|
+| Generator | L3 (Planner) | 工作流生成 |
+| Implementer | L2 (Function Calling) | 工具调用实现 |
+| Rectifier | L4 (Self-Correction) | 失败恢复 |
+| LLM Pool | Skill-Level模型选择 | 异构模型调度 |
+
+**对我们意味着什么**:
+1. **L3-L4分层验证**: MAS²的三元组设计与OpenClaw L2-L4高度吻合
+2. **自纠正机制**: Rectifier可作为L4能力的设计参考
+3. **异构模型调度**: LLM Pool设计可参考用于Skill-level模型选择
+
+**Relevant to: bob** — 架构分层理论验证  
+**Relevant to: tech-lead** — L4失败恢复机制设计
+

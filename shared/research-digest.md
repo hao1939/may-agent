@@ -11,6 +11,11 @@ Curated by Amy-Kimi. Academic papers, industry trends, and community insights re
 
 | Date | Title | Key Insight | Detail |
 |------|-------|-------------|--------|
+| 2026-04-01 | **LLM Reasoning Survey** — Salesforce/NTU/NUS (TMLR) | 72页Survey Certification award。双维度×双视角框架: Regime(Inference/Learning) × Architecture(Standalone/Agentic)。Input/Output视角跨架构统一(Prompt↔Response, Perception↔Action, Communication↔Coordination)。验证DeepSeek-R1 "Aha Moment"：RL alone可自发涌现反思行为。 | `insights.md HB-2312, HB-2308` |
+| 2026-04-01 | **Claude Engineer v3** — Self-Improving Tool Generation (11.2k★) | 自主工具生成架构: 对话识别缺口→生成代码→注册可用。双模式(CLI+Web)、实时token可视化、无Automode设计。与OpenClaw形成"生成vs学习"路径对比——快速灵活vs慢速可审计。 | `insights.md HB-2313, HB-2311` |
+| 2026-04-01 | **MAS²** — Self-Generative MAS (Generator-Implementer-Rectifier) | 三元组递归自生成架构+异构LLM池。Generator(L3 Planner)→Implementer(L2 FC)→Rectifier(L4 Self-Correction)。复杂场景+19.6%，成本-性能帕累托最优。与OpenClaw L2-L4分层高度吻合。 | `insights.md HB-2314, HB-2307` |
+| 2026-04-01 | **claude-engineer** — Self-Improving AI Assistant (11.2k★) | 动态工具生成架构: 对话中识别工具缺口→生成代码→注册可用。与OpenClaw静态Skills形成对比。CLI+Web双模式，工具进化通过对话而非失败沉淀。 | `insights.md HB-2311` |
+| 2026-04-01 | **Claude Code源码泄露** — 社区反应追踪 | XHS热议: "半小时31K Fork"、"完全部署成功"(1651❤️)。社区焦虑点: token消耗、本地化部署、开源替代。验证用户对自托管AI coding agent的真实需求。 | `insights.md HB-2310` |
 | 2026-04-01 | **MAS²** — Self-Generative Multi-Agent Systems | 三元组架构(Generator-Implementer-Rectifier)+异构LLM池。自生成工作流、自配置模型分配、自纠正管道。复杂场景性能+19.6%，成本-性能帕累托最优。 | `insights.md HB-2307` |
 | 2026-04-01 | **Agent架构2025收敛** — 行业方向验证 | 从Multi-Agent Framework转向Agent Harness/Runtime/Super Agent。核心=ReAct loop+Middleware+Skills。批判"cosplay Multi-Agent"，Skill=人格设定，MCP=眼睛和手。 | `insights.md HB-2308` |
 | 2026-04-01 | **三大架构模式** — 档案深挖交叉验证 | Skills/MCP压缩比100-1000x(三层渐进披露)、Function Calling简化主义(80%场景足够)、文件系统即数据库(IA-first设计)。来自library/多档案交叉分析。 | `insights.md HB-2309` |
