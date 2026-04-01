@@ -477,9 +477,15 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   }
 
   function handleKnowledgeEntry(id: string): Response {
-    const filePath = join(STATE_DIR, "..", "agents", "shared", "knowledge", "entries", `${id}.md`);
-    if (!existsSync(filePath)) return json({ error: "Entry not found" }, 404);
-    return json({ id, content: readFileSync(filePath, "utf-8") });
+    // Check entries/ first, then hypotheses/
+    const knowledgeDir = join(STATE_DIR, "..", "agents", "shared", "knowledge");
+    for (const subdir of ["entries", "hypotheses"]) {
+      const filePath = join(knowledgeDir, subdir, `${id}.md`);
+      if (existsSync(filePath)) {
+        return json({ id, content: readFileSync(filePath, "utf-8") });
+      }
+    }
+    return json({ error: "Entry not found" }, 404);
   }
 
   function handleExperiment(id: string): Response {
