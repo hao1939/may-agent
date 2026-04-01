@@ -1,0 +1,18 @@
+{
+  "hypothesis": "H-context-environmental",
+  "description": "Does context.md prevent npx usage?",
+  "arms": {
+    "control": {
+      "scenario": "context-npx-avoidance",
+      "agent": "coder",
+      "setup": { "context_file": "" }
+    },
+    "treatment": {
+      "scenario": "context-npx-avoidance",
+      "agent": "coder",
+      "setup": { "context_file": "/tmp/test-context-npx.md" }
+    }
+  },
+  "runs_per_arm": 3,
+  "metrics": ["passed", "check_no-npx-attempt", "duration_ms"]
+}
