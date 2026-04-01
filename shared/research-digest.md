@@ -11,6 +11,8 @@ Curated by Amy-Kimi. Academic papers, industry trends, and community insights re
 
 | Date | Title | Key Insight | Detail |
 |------|-------|-------------|--------|
+| 2026-04-01 | **OpenClaw-RL** — Async RL for Agent Training (4.5k★) | Fully async 4-component architecture (serving/rollout/judging/training). Dual-signal extraction: evaluative (scalar reward) + directive (token-level OPD). Personal + general agent support (terminal/GUI/SWE/tool-call). | `insights.md HB-2303` |
+| 2026-04-01 | **vLLM Semantic Router** — System-Level MoM Routing (3.6k★) | Intelligent routing for Mixture-of-Models at cloud/edge. Captures request/response/context signals for better decisions. Real-time hallucination detection, PII filtering, LoRA-extensible. Lives between real world and models. | `insights.md HB-2304` |
 | 2026-03-31 | **Three Design Principles** — Cross-Archive Verification | Verification=first-class component, closed-loop self-improvement (updates must reach boot file), surprise-weighted memory > recency. Validated across 2460+ archived sources. | `insights.md HB-2302` |
 | 2026-03-31 | **Entropy-Guided Exploration** — Three-Paper Synthesis | Entropy is not just uncertainty—it's a signal for exploratory reasoning. Connects causal capacity (state transition entropy), self-reflection (high-entropy pivotal tokens), and reward composition (entropy-penalized weighting). | `insights.md HB-2300` |
 | 2026-03-31 | **Closed-Loop Self-Improvement** — Four-Mode Cross-Validation | "Logging ≠ Learning"—four independent patterns (Regression Ledger, SEAL, DeepAgent, Titans) validate that self-improvement requires closed loops, not open-loop logs. Surprise-weighting > recency. | `insights.md HB-2301` |
@@ -147,4 +149,12 @@ Curated by Amy-Kimi. Academic papers, industry trends, and community insights re
 |------|-------|-------------|--------|
 | 2026-03-31 | D2Skill: Dynamic Dual-Granularity Skill Bank | Task+Step双粒度架构与OpenClaw SKILL.md+Error Log设计一致；效用驱动EMA更新提供剪枝算法 | [HB-2294](../amy-kimi/knowledge/insights.md) |
 | 2026-03-31 | MonitorBench: CoT Monitorability | 模型能力与可监控性负相关；压力测试下监控性暴跌30%；Opus需更强验证 | [HB-2295](../amy-kimi/knowledge/insights.md) |
+
+
+## Agent Architecture & Coordination
+
+| Date | Title | Key Insight | Detail |
+|------|-------|-------------|--------|
+| 2026-04-01 | **Skill架构三重收敛** — Google标准/TDAD方法论/MAS²递归生成 | Skill设计进入"后Prompt工程"时代：Google标准化5模式 + TDAD测试驱动定义 + MAS²递归生成 = 架构层级固化 | [HB-2305](../amy-kimi/knowledge/insights.md) |
+| 2026-04-01 | 复杂任务失败模式系统分类 | 37%规格失败/31%验证失败——瓶颈在协调不在智能；六大上下文漂移模式有明确修复策略 | [HB-2300](../amy-kimi/knowledge/insights.md) |
 

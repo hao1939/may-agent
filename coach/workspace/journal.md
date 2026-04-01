@@ -1,5 +1,50 @@
 # Journal
 
+## 2026-04-01 02:09 — Heartbeat: Scenario Audit + Broken Scoring Fix
+
+### File Count: 18/20 ✅
+
+### Process Checks (#4 Conventions, #12 Common Sense)
+- **#12 Common Sense**: 14 lines (8 items). CONVENTIONS.md 140 lines. Overlap by design — common-sense is the injected subset. ✅ Healthy.
+- **#4 Conventions**: No convention DB. Error log analysis shows coach has most errors (FM-2.1 TOOL_SCHEMA_ERROR x27, FM-2.2 INSTRUCTION_NONCOMPLIANCE x14). No deployment mechanism beyond text injection. Status quo.
+
+### Critical Bug Found: efficient-file-reading Scoring
+**Both `efficient-file-reading` and `efficient-file-reading-workflow` had broken transcript path resolution.**
+- Used `process.argv[3]` (never passed by gym-runner) with NO fallback
+- Result: 4 convention checks were never actually evaluating agent behavior
+  - GFR-1 (uses-grep): always FAIL (no transcript → fail)
+  - GFR-2 (no-full-read-services): always PASS (no transcript → default pass)
+  - GFR-3 (no-full-read-log): always PASS (no transcript → default pass)
+  - GFR-4 (uses-targeted-reads): always FAIL (no transcript → fail)
+- **Previous diagnosis "agent doesn't use grep" was based on broken scoring!**
+- Fix: Added `|| path.join(envDir, 'transcript.jsonl')` fallback (matching pattern used by 12 other scenarios)
+- Previous baseline of 6/8 was: 4/4 product + 2/4 convention (the 2 defaults)
+- **Need re-baseline to get true score**
+
+### Scenario Audit: Transcript Parsing Fragility
+- 14 scenarios directly read transcript.jsonl (vs 45+ using Score class)
+- 13 of 14 use raw JSON parsing instead of the Score utility class
+- 1 (`spec-adherence-multi-step`) uses Score class
+- Only `delegation-verify-pattern` uses `getTranscript()` — the rest parse JSONL structurally
+- **Most are actually OK** — they parse JSONL line-by-line and check tool_call structure
+- The fragility score (FRAGILE(9) markers) reflects check count, not parsing quality
+
+### Remaining Non-Ceiling Scenarios
+| Scenario | Score | Notes |
+|---|---|---|
+| materialize-intermediate-findings | 6/9 | Behavioral skill gap |
+| efficient-file-reading | 6/8→? | **Broken scoring fixed — needs re-baseline** |
+| misleading-test-fix | 5/8 | Non-ceiling |
+| mock-leak-trap-workflow | 7/8 | Close to ceiling |
+| partial-verification-trap | 5/6 | Close |
+
+### Growth Cycles: 0 (budget exhausted for 2026-04-01)
+
+### Next Priorities
+1. Re-baseline efficient-file-reading after fix (high priority — previous data was wrong)
+2. Consider migrating 13 raw-parsing scenarios to Score class (lower priority, most work fine)
+3. Self-evolve review (27 new experiments since last review)
+
 ## 2026-03-31 22:09 — Heartbeat: Process #7/#9 Check + Mass Baselining
 
 ### Process Checks
@@ -1741,3 +1786,33 @@ No production evidence that agents would escalate when truly stuck. Recommend pe
 - agents/scout/context.md (added orientation line)
 - agents/tech-lead/context.md (added orientation line)
 - agents/gym/scenarios/mock-leak-trap/ (new scenario — 6 files)
+
+## 2026-04-01 — Heartbeat Session (s_1775005736224_84)
+
+### Process Checks (Rotated to #9 Gym + #10 Skills)
+
+**Process #9 Gym**:
+- Ran 3 baselines: hasty-fix (CEILING), scope-creep-trap (CEILING), regression-from-fix (BROKEN→FIXED→CEILING)
+- **Key finding**: regression-from-fix had broken success_criteria.js — transcript-based parsing fails. Rewrote to file-level execution checks. 1/6 was false negative; actual coder score is 6/6.
+- **Systemic risk**: 14 scenarios use transcript parsing. Some work, some don't. Should audit these.
+- Logged exp-268 through exp-271.
+- Total experiments: 46
+
+**Process #10 Skills**:
+- Updated LIBRARY.md: evidence-over-narrative promoted (🧪→✅), verify-before-finish promoted (❌→✅)  
+- Both proven as workflows, not text injection
+- 0 deployed (pipeline still broken — deployment = actually modifying agent prompts/workflows in production use)
+- Updated Deployment Reality note to 2026-04-01
+
+### Error Scan
+- FM-3.3 VERIFICATION_GAP: 17 occurrences across 5 agents (still #1)
+- FM-2.4 OVERCLAIM: second most common
+- Both behavioral — only addressable via workflow enforcement
+
+### Key Insight
+**Coder is at ceiling on all pure-ability scenarios**. The only remaining non-ceiling results are:
+1. `materialize-intermediate-findings` (6/9) — behavioral, workflow didn't help
+2. `misleading-test-fix` (5/8) — FIXED via workflow (11/11)
+3. Possibly others with broken criteria giving false negatives
+
+**Next priority**: Audit 14 transcript-parsing scenarios for broken criteria. This is the most impactful work — false negatives waste growth cycles.

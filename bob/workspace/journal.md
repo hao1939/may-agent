@@ -2,6 +2,26 @@
 
 > Pre-2026-03-30 entries archived at `agents/bob/workspace/archive/journal-pre-2026-03-30.md`
 
+# Session 2026-04-01 ~01:39 (Steady State Monitoring)
+- **Convention health (6h, N=39, 464 checks)**: 98.1% overall (stable). 9/12 at 100%. C8.2=84.2% (6 amy-kimi), C1.1=94.9% (2 failures: amy-kimi + scout), C1.3=97.4% (1 amy-kimi). All model-level.
+- **Evaluations (6h)**: 29 good, 5 acceptable, 0 needs_improvement, 0 poor. Coach improved to 4 good + 1 acceptable. All agents healthy.
+- **Process health**: #3 Persistence = 0 failures. #13 Workflows = functional (training sprints running, 7x in 7d). No log errors.
+- **No pending requests**. No nudges. Periodic tasks not due.
+- **Workflow consolidation noted**: 3 duplicate sets identified in REGISTRY.md (verify-and-finish, verify-parallel, implement-and-review). Optimizer owns consolidation. P1 (verify-and-finish) is zero-risk but also 0 invocations (dead workflow). Low urgency.
+- Updated focus-tasks.md with 01:39 metrics.
+
+# Session 2026-04-01 ~01:09 (Pattern Synthesis + System Health)
+- **Pattern Synthesis completed** (periodic task, was due Apr 3 — done early). See `synthesis/pattern-synthesis-2026-04-01.md`.
+- **Key finding: Tech-lead transient failure cascade** on Mar 30 12:44-14:05 — 14 `needs_improvement` sessions in 80 minutes. Model produced "blank messages" / no tool calls. Resolved by Mar 31 (6/6 good since). Only tech-lead affected; all other agents fine during same window.
+- **Convention health (6h, N=34, 404 checks)**: 98.0% overall (stable). 9/12 at 100%. C8.2=84.8% (amy-kimi), C1.1=94.1% (amy-kimi + scout), C1.3=97.1% (amy-kimi). All model-level.
+- **Evaluations (6h)**: 29 good, 3 acceptable, 0 needs_improvement, 0 poor.
+- **Agent tiers (48h)**: A-tier (>90%): scout 94%, qa 95%, bob 93%, optimizer 93%, may 91%. B-tier: master 86%, amy-kimi 82%. C-tier: coach 69% (session_errors), tech-lead 39% (Mar 30 outage only).
+- **Failure chain analysis (7d)**: #1 pattern = empty `bash({})` calls (29 sessions). Model-level, not fixable by prompting.
+- **Training sprints**: 60% failure rate (3/5 timeout at 30 min). Most recent succeeded. Coach efficiency issue.
+- **Process health**: #3 Persistence = 0 failures. #13 Workflows = functional (7 workflow files, training sprints running, design-then-build/research-pipeline active).
+- **Prompt caching**: Still blocked on Hao ($36-63/day savings).
+- Updated `focus-tasks.md` with 01:09 metrics and agent tiers.
+
 # Session 2026-03-31 ~23:39 (Steady State + Workspace Cleanup)
 - **Convention health (6h, N=35 sessions, 416 checks)**: 98.1% overall (stable). 9/12 at 100%. C1.1=94.3% (2 failures: scout, amy-kimi), C1.3=97.1% (1 failure), C8.2=85.3% (5 amy-kimi Kimi model). Same pattern as last check — no regression or new failure types.
 - **Evaluations (24h, N=164 sessions)**: 136 good, 16 acceptable, 1 needs_improvement (coach), 0 poor. Slightly up from 156 sessions last check.

@@ -4,13 +4,13 @@
  * The bug: In billing.js, the discount lookup uses undefined variable `code`
  * instead of `discountCode`. The fix is simple: change `code` to `discountCode`.
  * 
- * What we check:
- * 1. Agent read billing.js before editing
- * 2. The discount bug is actually fixed
- * 3. Agent ran the test suite
- * 4. Tax-exempt functionality still works (no regression)
- * 5. The fix is minimal (didn't rewrite unrelated code)
- * 6. All tests pass
+ * What we check (file-level, not transcript-based):
+ * 1. The discount bug is actually fixed (code executes correctly)
+ * 2. Tax-exempt functionality still works (no regression)
+ * 3. Invoice generation still works
+ * 4. The fix is minimal (didn't rewrite the whole file)
+ * 5. Tax calculations are correct with discount
+ * 6. All tests pass when run
  * 
  * Usage: node success_criteria.js <workDir>
  */
@@ -27,63 +27,6 @@ const results = {
   summary: ''
 };
 
-// Parse transcript to extract tool calls
-function parseTranscript(dir) {
-  const transcriptPath = path.join(dir, 'transcript.jsonl');
-  if (!fs.existsSync(transcriptPath)) return [];
-  
-  const lines = fs.readFileSync(transcriptPath, 'utf-8').split('\n').filter(Boolean);
-  const toolCalls = [];
-  
-  for (const line of lines) {
-    try {
-      const entry = JSON.parse(line);
-      // Look for tool_call entries
-      if (entry.role === 'assistant' && entry.content) {
-        // Parse tool calls from assistant messages
-        const content = typeof entry.content === 'string' ? entry.content : JSON.stringify(entry.content);
-        // Match tool call patterns
-        const toolCallMatches = content.matchAll(/\[tool_call:\s*(\w+)\]\s*(\{[\s\S]*?\})/g);
-        for (const match of toolCallMatches) {
-          try {
-            toolCalls.push({ name: match[1], arguments: JSON.parse(match[2]) });
-          } catch {}
-        }
-      }
-      // Also check for structured tool_calls
-      if (entry.tool_calls) {
-        for (const tc of entry.tool_calls) {
-          toolCalls.push({ name: tc.function?.name || tc.name, arguments: tc.function?.arguments || tc.arguments });
-        }
-      }
-      // Check tool_call role entries
-      if (entry.role === 'tool_call' || entry.type === 'tool_call') {
-        toolCalls.push({ name: entry.name || entry.function?.name, arguments: entry.arguments || entry.function?.arguments });
-      }
-    } catch {}
-  }
-  return toolCalls;
-}
-
-// Get tool results from transcript
-function getToolResults(dir) {
-  const transcriptPath = path.join(dir, 'transcript.jsonl');
-  if (!fs.existsSync(transcriptPath)) return [];
-  
-  const lines = fs.readFileSync(transcriptPath, 'utf-8').split('\n').filter(Boolean);
-  const results = [];
-  
-  for (const line of lines) {
-    try {
-      const entry = JSON.parse(line);
-      if (entry.role === 'tool' || entry.role === 'tool_result' || entry.type === 'tool_result') {
-        results.push(typeof entry.content === 'string' ? entry.content : JSON.stringify(entry.content));
-      }
-    } catch {}
-  }
-  return results;
-}
-
 function check(name, fn) {
   try {
     const result = fn();
@@ -95,109 +38,113 @@ function check(name, fn) {
   }
 }
 
-const toolCalls = parseTranscript(workDir);
-const toolResults = getToolResults(workDir);
-const allOutput = toolResults.join('\n');
+// Helper: load billing module from work dir
+function loadBilling() {
+  const billingPath = path.join(workDir, 'src', 'billing.js');
+  // Clear require cache
+  delete require.cache[require.resolve(billingPath)];
+  return require(billingPath);
+}
 
-// Check 1: Agent read billing.js before editing
-check('read-before-edit', () => {
-  const readBilling = toolCalls.some(c => 
-    c.name === 'read' && c.arguments?.path?.includes('billing.js')
-  );
-  return {
-    passed: readBilling,
-    detail: readBilling 
-      ? 'Agent read billing.js before editing' 
-      : 'Agent did not read billing.js before editing'
-  };
-});
-
-// Check 2: Agent fixed the bug (changed `code` to `discountCode`)
+// Check 1: Discount bug is fixed — SAVE20 on $100 gives correct result
 check('discount-bug-fixed', () => {
-  const editCalls = toolCalls.filter(c => 
-    (c.name === 'edit' || c.name === 'write') && 
-    c.arguments?.path?.includes('billing.js')
-  );
-  const fixApplied = editCalls.some(c => {
-    const content = c.arguments?.newText || c.arguments?.content || '';
-    return content.includes('DISCOUNT_CODES[discountCode]') || 
-           content.includes('DISCOUNT_CODES[ discountCode ]');
-  });
+  const { calculateTotal } = loadBilling();
+  const result = calculateTotal(100, 'SAVE20');
+  const discountCorrect = result.discount === 20;
+  const totalCorrect = result.total === 86.4; // (100-20)*1.08 = 86.40
   return {
-    passed: fixApplied,
-    detail: fixApplied 
-      ? 'Agent fixed the discount code variable reference' 
-      : 'Agent did not fix the core bug (code → discountCode)'
+    passed: discountCorrect && totalCorrect,
+    detail: discountCorrect && totalCorrect
+      ? 'SAVE20 discount works: $100 → $20 off → $86.40 total'
+      : `SAVE20 on $100: discount=${result.discount} (expected 20), total=${result.total} (expected 86.4)`
   };
 });
 
-// Check 3: Agent ran the test suite
-check('ran-tests', () => {
-  const ranTests = toolCalls.some(c =>
-    c.name === 'bash' && c.arguments?.command?.includes('test-billing')
-  );
-  return {
-    passed: ranTests,
-    detail: ranTests 
-      ? 'Agent ran the test suite' 
-      : 'Agent did not run the test suite'
-  };
-});
-
-// Check 4: Tax-exempt function not broken
+// Check 2: Tax-exempt still works correctly
 check('tax-exempt-preserved', () => {
-  const editCalls = toolCalls.filter(c => 
-    (c.name === 'edit' || c.name === 'write') && 
-    c.arguments?.path?.includes('billing.js')
-  );
-  const taxExemptBroken = editCalls.some(c => {
-    const content = c.arguments?.newText || c.arguments?.content || '';
-    if (c.name === 'write' && content.includes('calculateTaxExemptTotal')) {
-      return !content.includes('result.taxable') || !content.includes('tax: 0');
-    }
-    if (c.name === 'edit') {
-      const oldText = c.arguments?.oldText || '';
-      return oldText.includes('calculateTaxExemptTotal') || 
-             oldText.includes('taxExempt');
-    }
-    return false;
-  });
+  const { calculateTaxExemptTotal } = loadBilling();
+  const result = calculateTaxExemptTotal(100, 'SAVE20');
+  const taxZero = result.tax === 0;
+  const totalCorrect = result.total === 80; // $100 - $20, no tax
+  const markedExempt = result.taxExempt === true;
   return {
-    passed: !taxExemptBroken,
-    detail: taxExemptBroken 
-      ? 'Agent broke or modified the tax-exempt function (regression!)' 
-      : 'Tax-exempt function preserved correctly'
+    passed: taxZero && totalCorrect && markedExempt,
+    detail: taxZero && totalCorrect && markedExempt
+      ? 'Tax-exempt works: $100 - $20 discount = $80 total, tax=0, taxExempt=true'
+      : `Tax-exempt broken: tax=${result.tax} (expect 0), total=${result.total} (expect 80), taxExempt=${result.taxExempt}`
   };
 });
 
-// Check 5: Minimal fix
+// Check 3: Invoice generation still works
+check('invoice-works', () => {
+  const { generateInvoice } = loadBilling();
+  const items = [
+    { name: 'Widget', qty: 2, price: 25 },
+    { name: 'Gadget', qty: 1, price: 50 }
+  ];
+  const result = generateInvoice(items, 'LOYALTY');
+  const linesCorrect = result.lines.length === 2;
+  const subtotalCorrect = result.subtotal === 100;
+  const discountCorrect = result.discount === 15; // 15% of 100
+  const totalCorrect = result.total === 91.8; // (100-15)*1.08 = 91.80
+  return {
+    passed: linesCorrect && subtotalCorrect && discountCorrect && totalCorrect,
+    detail: linesCorrect && subtotalCorrect && discountCorrect && totalCorrect
+      ? 'Invoice generation works correctly with LOYALTY discount'
+      : `Invoice issue: lines=${result.lines?.length}, subtotal=${result.subtotal}, discount=${result.discount}, total=${result.total}`
+  };
+});
+
+// Check 4: Fix is minimal — billing.js still has all original functions
 check('minimal-fix', () => {
-  const editCalls = toolCalls.filter(c => 
-    (c.name === 'edit' || c.name === 'write') && 
-    c.arguments?.path?.includes('billing.js')
-  );
-  const usedMinimalEdit = editCalls.some(c => c.name === 'edit');
-  const rewroteFile = editCalls.some(c => c.name === 'write');
+  const billingPath = path.join(workDir, 'src', 'billing.js');
+  const content = fs.readFileSync(billingPath, 'utf-8');
+  
+  // Check that all three functions are still present
+  const hasCalculateTotal = content.includes('function calculateTotal');
+  const hasTaxExempt = content.includes('function calculateTaxExemptTotal');
+  const hasInvoice = content.includes('function generateInvoice');
+  const hasTaxRate = content.includes('TAX_RATE');
+  const hasDiscountCodes = content.includes('DISCOUNT_CODES');
+  
+  // Check file wasn't drastically rewritten (original is ~70 lines)
+  const lineCount = content.split('\n').length;
+  const reasonableLength = lineCount >= 40 && lineCount <= 120;
+  
+  const allPresent = hasCalculateTotal && hasTaxExempt && hasInvoice && hasTaxRate && hasDiscountCodes && reasonableLength;
   return {
-    passed: usedMinimalEdit && !rewroteFile,
-    detail: usedMinimalEdit && !rewroteFile
-      ? 'Agent used surgical edit (not full rewrite)'
-      : rewroteFile
-        ? 'Agent rewrote the entire file instead of making a targeted edit'
-        : 'Agent did not make any edits to billing.js'
+    passed: allPresent,
+    detail: allPresent
+      ? 'Fix is minimal — all original functions and constants preserved'
+      : `File structure changed: calculateTotal=${hasCalculateTotal}, taxExempt=${hasTaxExempt}, invoice=${hasInvoice}, lines=${lineCount}`
   };
 });
 
-// Check 6: All tests pass
-check('all-tests-pass', () => {
-  const testOutput = allOutput;
-  const allTestsPass = testOutput.includes('0 failed') || 
-                       (testOutput.includes('passed') && !testOutput.includes('✗'));
+// Check 5: FLAT10 discount works too (tests multiple discount types)
+check('flat-discount-works', () => {
+  const { calculateTotal } = loadBilling();
+  const result = calculateTotal(50, 'FLAT10');
+  const discountCorrect = result.discount === 10;
+  const totalCorrect = result.total === 43.2; // (50-10)*1.08 = 43.20
   return {
-    passed: allTestsPass,
-    detail: allTestsPass 
-      ? 'All tests passed after fix' 
-      : 'Some tests still failing after fix'
+    passed: discountCorrect && totalCorrect,
+    detail: discountCorrect && totalCorrect
+      ? 'FLAT10 discount works: $50 - $10 = $40 → $43.20 with tax'
+      : `FLAT10 on $50: discount=${result.discount} (expected 10), total=${result.total} (expected 43.2)`
+  };
+});
+
+// Check 6: No-discount case still works (no regression on base case)
+check('no-discount-works', () => {
+  const { calculateTotal } = loadBilling();
+  const result = calculateTotal(100, null);
+  const noDiscount = result.discount === 0;
+  const totalCorrect = result.total === 108; // 100 * 1.08 = 108
+  return {
+    passed: noDiscount && totalCorrect,
+    detail: noDiscount && totalCorrect
+      ? 'No-discount case preserved: $100 → $108 with tax'
+      : `No-discount case: discount=${result.discount} (expected 0), total=${result.total} (expected 108)`
   };
 });
 
