@@ -647,11 +647,12 @@ function handleInput(message: string, source?: string): void {
 bus.onCommand((cmd) => {
   switch (cmd.type) {
     case "input":
-      handleInput(cmd.message, cmd.source);
+      handleInput(cmd.message ?? cmd.text ?? "", cmd.source);
       return { ok: true };
     case "steer": {
       // Steer a specific session by ID (for programmatic control from socket).
       const targetSid = cmd.sessionId;
+      const steerText = cmd.message ?? cmd.text ?? "";
       if (!targetSid) {
         return { ok: false, message: "steer requires sessionId in V2" };
       }
@@ -660,9 +661,9 @@ bus.onCommand((cmd) => {
         const sessions = manager.status();
         const target = sessions.find(s => s.sessionId === targetSid);
         if (target?.status === "idle") {
-          manager.input(targetSid, cmd.message);
+          manager.input(targetSid, steerText);
         } else {
-          manager.steer(targetSid, cmd.message, "human");
+          manager.steer(targetSid, steerText, "human");
         }
         return { ok: true };
       } catch (err) {
