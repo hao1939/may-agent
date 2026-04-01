@@ -6,7 +6,6 @@ One process. One EventBus. Everything connects through it.
 
 **EventBus**: commands in, events out. All components subscribe and emit.
 **DB**: optional subscriber that persists events to SQLite. Enables queries.
-**Cron**: emits `run` commands on schedule. Runs in the same process.
 
 ## EventBus
 
@@ -26,6 +25,20 @@ class EventBus {
   }
 }
 ```
+
+## Agent Cooperation Modes
+
+Three modes, aligned between the agents tool and the EventBus:
+
+| Mode | Behavior | EventBus | Inside core |
+|------|----------|----------|-------------|
+| `call` | Sync, blocks caller, child session | Not a bus command — internal to core | `await manager.callAgent()` |
+| `fork` | Async, new session, caller continues | `{ type: "fork" }` | `manager.runAgent()` |
+| `message` | Fire-and-forget, picked up later | `{ type: "message" }` | writes to request DB |
+
+`call` is synchronous — it lives inside core's execution (agent tools, workflow steps). The caller awaits the result. The bus only sees the resulting session_start/session_end events.
+
+`fork` and `message` are async — they go through the EventBus as commands.
 
 ## Architecture
 
@@ -59,16 +72,17 @@ class EventBus {
 
 ### Core
 
-Subscribes to command events. Emits observation events. Multi-agent runtime.
+Subscribes to `fork`, `message`, `input`, `steer`, `cancel` commands. Emits observation events. Multi-agent runtime.
 
-All sessions run concurrently in the same process — async, non-blocking. 10 agents can run heartbeats simultaneously.
+`call` is internal — agents use it via the agents tool, workflows use it via `ctx.runAgent()`. It blocks the calling session, not the process.
+
+All sessions run concurrently (async, non-blocking).
 
 ```
-Subscribes to: input, run, fork, steer, cancel
+Subscribes to: fork, message, input, steer, cancel
 Emits: session_start, text, tool_call, tool_result, session_end, message_created
+Internal only: call (sync, blocks calling agent)
 ```
-
-Contains: SubagentManager, tools, workflow engine, compaction, session persistence (JSONL).
 
 ### Socket Server
 
@@ -93,25 +107,20 @@ Persists events to SQLite. The only component that writes to DB.
 Subscribes to: session_start, session_end, message_created, eval, cron_fired
 ```
 
-Without it, core runs fine. Events are ephemeral.
-
 ### Cron
 
-Emits `run` commands on schedule. Reads DB for job history. Runs JS handlers in-process.
+Emits `fork` commands on schedule. Reads DB for job history.
 
 ```
-Emits: run (agent heartbeats), cron_fired (tracking)
+Emits: fork (agent heartbeats), cron_fired (tracking)
 Reads DB: last fire times, overlap detection
 Runs: JS handlers in-process (evaluate-sessions, watchdog)
 ```
-
-Non-blocking — `bus.emit({ type: "run" })` returns immediately. Core starts the session async. Cron continues scheduling.
 
 ### Context Learner (optional subscriber)
 
 ```
 Subscribes to: session_end
-Reads: session transcript from filesystem
 Writes: agents/<name>/context.md
 ```
 
@@ -120,9 +129,9 @@ Writes: agents/<name>/context.md
 ```typescript
 type AgentEvent =
   // Commands (to core)
-  | { type: "input"; agent: string; text: string; sessionId?: string }
-  | { type: "run"; agent: string; task: string }
-  | { type: "fork"; agent: string; task: string }
+  | { type: "fork"; agent: string; task: string; originSessionId?: string }
+  | { type: "message"; from: string; to: string; task: string }
+  | { type: "input"; sessionId: string; text: string }
   | { type: "steer"; sessionId: string; text: string }
   | { type: "cancel"; sessionId: string }
 
@@ -133,7 +142,7 @@ type AgentEvent =
   | { type: "turn_end"; sessionId: string; agent: string; toolCalls: number; durationMs: number }
   | { type: "session_start"; sessionId: string; agent: string; task: string; parentSessionId?: string }
   | { type: "session_end"; sessionId: string; agent: string; status: string; error?: string; outcome?: string }
-  | { type: "message_created"; from: string; to: string; task: string }
+  | { type: "message_created"; from: string; to: string; task: string; requestId: string }
 
   // Cron
   | { type: "cron_fired"; job: string; agent?: string; timestamp: number }
@@ -148,26 +157,15 @@ type AgentEvent =
 ```typescript
 const bus = new EventBus();
 
-// Core (subscribes to commands, emits observations)
 new Core(bus, { persistDir, projectRoot });
-
-// DB writer (optional — persists events to SQLite)
-const db = dbEnabled ? new DbWriter(bus, dbPath) : null;
-
-// Socket server (bridges user interfaces)
+if (dbEnabled) new DbWriter(bus, dbPath);
 new SocketServer(bus, db, socketPath);
-
-// Cron (emits run commands on schedule)
 if (cronEnabled) new CronScheduler(bus, db, cronConfig);
-
-// Context learner (post-session knowledge extraction)
 if (contextLearnEnabled) new ContextLearner(bus, agentsRoot);
-
-// Web UI (HTTP + WS, reads DB)
 if (webEnabled) new WebUI(db, socketPath, webPort);
 ```
 
-Startup is under 20 lines. Each mode attaches different components:
+Each mode:
 - **--chat**: core + DB + socket
 - **--cron**: core + DB + socket + cron
 - **--oneshot**: core + DB
@@ -177,7 +175,8 @@ Startup is under 20 lines. Each mode attaches different components:
 
 ### Phase 1: Unified EventBus
 - 15-line EventBus replaces current class
-- Core emits through it, subscribes for commands
+- Core subscribes for commands (fork, message, input, steer, cancel)
+- Core emits observations
 - Socket bridges to bus
 
 ### Phase 2: DB writes through subscriber
