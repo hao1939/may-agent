@@ -352,14 +352,12 @@ export const create: HandlerModule["create"] = (
     const snap = buildSnapshot(baseDir);
     const formatted = formatSnapshot(snap);
 
-    // Ensure shared workspace exists
-    const sharedWorkspace = join(baseDir, "agents", "shared", "workspace");
-    if (!existsSync(sharedWorkspace)) {
-      mkdirSync(sharedWorkspace, { recursive: true });
+    // Write system-wide context to .state (ephemeral, not in agents/ repo)
+    const stateContextDir = join(baseDir, ".state", "context");
+    if (!existsSync(stateContextDir)) {
+      mkdirSync(stateContextDir, { recursive: true });
     }
-
-    // Write system-wide context
-    const outPath = join(sharedWorkspace, "system-context.md");
+    const outPath = join(stateContextDir, "system-context.md");
     writeFileSync(outPath, formatted, "utf-8");
 
     // Write per-agent context files (with nudge injection per brief-active-nudging.md §3)
