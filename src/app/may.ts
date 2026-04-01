@@ -264,9 +264,29 @@ const manager = new SubagentManager({
   onSessionStart: (agentName, sessionId) => {
     attachAgentEvents(agentName, sessionId);
     setAgentSessionId(agentName, sessionId);
+
+    // Emit session_start so DbWriter persists to SQLite
+    const meta = readSessionMeta(PERSIST_DIR, sessionId);
+    bus.emit({
+      type: "session_start",
+      sessionId,
+      agent: agentName,
+      task: meta?.task ?? "",
+      parentSessionId: meta?.parentSessionId,
+    });
   },
   onSessionComplete: (info) => {
     runAgentCleanup(info.agent);
+
+    // Emit session_end so DbWriter persists to SQLite
+    bus.emit({
+      type: "session_end",
+      sessionId: info.sessionId,
+      agent: info.agent,
+      status: info.status,
+      duration: info.runtime,
+      error: info.error,
+    });
 
     // Surface errors for completed task sessions
     if (info.error && info.status === "error") {
