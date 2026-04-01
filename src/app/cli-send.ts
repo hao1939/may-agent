@@ -77,7 +77,7 @@ function trackInDb(persistDir: string, agent: string, message: string): string |
 }
 
 export async function cliSend(opts: SendOptions): Promise<void> {
-  const { agent, message, artifact, persistDir, agentsRoot, source } = opts;
+  const { agent, message, artifact, persistDir, agentsRoot: _agentsRoot, source } = opts;
 
   // Validate artifact exists if provided
   if (artifact) {

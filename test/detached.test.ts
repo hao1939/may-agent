@@ -9,7 +9,7 @@
 
 import { describe, it, expect, beforeAll, beforeEach, afterEach } from "vitest";
 import { mkdirSync, writeFileSync, rmSync } from "node:fs";
-import { resolve, join } from "node:path";
+import { resolve } from "node:path";
 import { createServer, type Server } from "node:net";
 import { readIdentity, type InstanceIdentity } from "../src/lib/detached.js";
 import { sendSocketCommand, waitForSocketEvent } from "../src/lib/socket-client.js";
@@ -139,7 +139,7 @@ describe("sendSocketCommand", () => {
         buffer += data.toString();
         const lines = buffer.split("\n");
         buffer = lines.pop()!;
-        for (const line of lines) {
+        for (const _line of lines) {
           socket.write(JSON.stringify({ type: "error", message: "Unknown command" }) + "\n");
         }
       });
@@ -175,7 +175,7 @@ describe("sendSocketCommand", () => {
         buffer += data.toString();
         const lines = buffer.split("\n");
         buffer = lines.pop()!;
-        for (const line of lines) {
+        for (const _line of lines) {
           // Send some broadcast events first
           socket.write(JSON.stringify({ type: "info", message: "loading..." }) + "\n");
           socket.write(JSON.stringify({ type: "text", agent: "bob", text: "Hello" }) + "\n");

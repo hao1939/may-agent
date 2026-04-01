@@ -11,10 +11,9 @@
  * - .state/convention-checks/summary.json → convention compliance (when deployed)
  */
 
-import { readdirSync, readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
-import { getEvaluationsSince, getDb, getActiveRequests, getRequestsByAgent, getStaleRequests } from "../requests.js";
-import type { RequestRecord } from "../requests.js";
+import { getEvaluationsSince, getDb, getActiveRequests, getStaleRequests } from "../requests.js";
 
 const HOUR = 60 * 60 * 1000;
 const DAY = 24 * HOUR;
@@ -34,7 +33,7 @@ function truncate(s: string, max: number): string {
 }
 
 /** Extract epoch ms from a session ID like s_1773920113683_82 or cron_1773851350025_106 */
-function sessionIdToTs(filename: string): number | null {
+function _sessionIdToTs(filename: string): number | null {
   const m = filename.match(/^(?:s|cron|e|tasktree|task.tree|task_tree)_(\d{13,})/);
   if (!m) return null;
   return parseInt(m[1], 10);
@@ -102,7 +101,7 @@ function loadHumanInputCounts(persistDir: string, days: number): number[] {
   const filePath = join(persistDir, "human-inputs.jsonl");
   if (!existsSync(filePath)) return [];
 
-  const now = Date.now();
+  const _now = Date.now();
   // Buckets: [oldest ... today], each is a day
   const buckets = new Array<number>(days).fill(0);
   const startOfToday = new Date();

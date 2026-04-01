@@ -158,7 +158,7 @@ describe("verify-parallel workflow: execution logic", () => {
   });
 
   it("escalates when QA passes but Auditor finds critical issues (consensus hallucination caught)", async () => {
-    const { ctx, callLog } = createMockContext({
+    const { ctx, callLog: _callLog } = createMockContext({
       agentResponses: {
         coder: [{ status: "done", text: "Implemented the feature" }],
         qa: [

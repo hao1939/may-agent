@@ -1,5 +1,5 @@
-import { readFileSync, writeFileSync, appendFileSync, mkdirSync, existsSync, readdirSync, renameSync } from "node:fs";
-import { join, dirname } from "node:path";
+import { readFileSync, existsSync } from "node:fs";
+import { join } from "node:path";
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { AssistantMessage } from "@mariozechner/pi-ai";
 import type { SubagentManager } from "./manager.js";
@@ -11,7 +11,6 @@ import {
   listArchivedSessionIdsAsync,
   historyDir,
 } from "./persistence.js";
-import { extractHallucinatedRelPath } from "./tools/may-utils.js";
 import type { PersistedSession } from "./persistence.js";
 import { appendErrorLogs } from "./evaluator-error-log.js";
 import { upsertEvaluation, hasEvaluation, getAllEvaluations, getEvaluationStatus } from "./requests.js";

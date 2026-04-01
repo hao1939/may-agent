@@ -44,7 +44,7 @@ export interface TelegramBot {
 const TELEGRAM_MAX_LENGTH = 4096;
 
 export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
-  const { bus, manager, getSessionId } = opts;
+  const { bus, manager: _manager, getSessionId } = opts;
 
   const token = process.env.TELEGRAM_BOT_TOKEN || "";
   const allowedChatIds = (process.env.TELEGRAM_CHAT_ID || "")

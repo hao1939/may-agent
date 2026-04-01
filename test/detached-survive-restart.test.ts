@@ -118,7 +118,7 @@ describe("detached sessions survive restart", () => {
     const manager = new SubagentManager({ persistDir: dir, infraRetryMax: 0 });
     manager.register(baseDef("worker"));
 
-    const { resumed, interrupted } = manager.resumeStaleSessions();
+    const { resumed, interrupted: _interrupted } = manager.resumeStaleSessions();
 
     // Dead detached process should be resumed (agent is registered)
     const detachedResumed = resumed.find((s) => s.sessionId === "s_detached_dead");

@@ -219,7 +219,7 @@ function makeMockManager() {
 }
 
 /** Get tracked requests by artifact name. */
-function getRequestsByArtifact(artifact: string) {
+function _getRequestsByArtifact(artifact: string) {
   return [...requestStore.values()].filter((r) => r.artifact === artifact);
 }
 
@@ -921,10 +921,10 @@ describe("Cron", () => {
   it("triggerNow: debounces rapid re-triggers", () => {
     writeFileSync(configPath, JSON.stringify([{ name: "debounced", type: "job", intervalMs: 300000, message: "go" }]));
     const mgr = makeMockManager();
-    let callCount = 0;
+    let _callCount = 0;
     const c = new Cron(configPath, mgr as any, () => "sid-1");
     c.registerHandler("debounced", async () => {
-      callCount++;
+      _callCount++;
     });
     c.start();
 
@@ -1003,14 +1003,14 @@ describe("Cron", () => {
       ]),
     );
     const mgr = makeMockManager();
-    let shortCount = 0;
-    let longCount = 0;
+    let _shortCount = 0;
+    let _longCount = 0;
     const c = new Cron(configPath, mgr as any, () => "sid-1");
     c.registerHandler("short", async () => {
-      shortCount++;
+      _shortCount++;
     });
     c.registerHandler("long", async () => {
-      longCount++;
+      _longCount++;
     });
     c.start();
 
@@ -1166,12 +1166,12 @@ describe("Cron", () => {
     const mgr = makeMockManager();
     // Only bob fails
     mgr.setWaitFor((sid) => {
-      const runCall = mgr.calls.find(
+      const _runCall = mgr.calls.find(
         (c) => c.method === "run" && `mock-sid-${mgr.calls.filter((cc) => cc.method === "run").indexOf(c) + 1}` === sid,
       );
       // Simple approach: odd sessions fail (bob fires first each round)
       const runCalls = mgr.calls.filter((c) => c.method === "run");
-      const idx = runCalls.findIndex((c) => {
+      const _idx = runCalls.findIndex((_c) => {
         const waitIdx = mgr.calls.filter((cc) => cc.method === "waitFor").findIndex((wc) => wc.args[0] === sid);
         return waitIdx >= 0;
       });

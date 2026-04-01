@@ -42,7 +42,7 @@ declare module "@mariozechner/pi-ai" {
   export function StringEnum<T extends readonly string[]>(values: T, options?: Record<string, any>): TSchema;
 
   /** Static type extractor for TypeBox schemas. */
-  export type Static<T extends TSchema> = any;
+  export type Static<_T extends TSchema> = any;
 
   // ── Message types ────────────────────────────────────────────────────
 

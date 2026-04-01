@@ -20,7 +20,7 @@
  *   - Onboarding: extractFacts(readmeContent) → apply to new agent's context
  */
 
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 
 // ── Types ──────────────────────────────────────────────────────────────

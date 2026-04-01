@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import { SubagentManager } from "../src/lib/manager.js";
 import { createWorkflowTool } from "../src/lib/workflow-tool.js";
 import { readWorkflowRun, listWorkflowRuns } from "../src/lib/persistence.js";
-import type { WorkflowToolResult, WorkflowEvent, SessionTrace } from "../src/lib/workflow.js";
+import type { WorkflowToolResult } from "../src/lib/workflow.js";
 import type { Model } from "@mariozechner/pi-ai";
 
 // ── Test fixtures ──────────────────────────────────────────────────────

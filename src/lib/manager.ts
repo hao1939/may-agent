@@ -1,8 +1,6 @@
-import { readFileSync, readdirSync, mkdirSync, existsSync, writeFileSync, appendFileSync, unlinkSync } from "node:fs";
-import { randomUUID } from "node:crypto";
+import { readFileSync, readdirSync, mkdirSync, existsSync, writeFileSync, unlinkSync } from "node:fs";
 import { Agent } from "@mariozechner/pi-agent-core";
-import type { AgentMessage, AgentEvent, AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
-import { Type, StringEnum } from "@mariozechner/pi-ai";
+import type { AgentMessage, AgentEvent, AgentTool } from "@mariozechner/pi-agent-core";
 import {
   generateId,
   formatDuration,
@@ -11,13 +9,9 @@ import {
   isProcessAlive,
   truncateForPrompt,
   isToolError,
-  computeToolArgsKey,
   MEMORY_TASK_MAX,
   MEMORY_SUMMARY_MAX,
-  STATE_CHANGING_TOOLS,
   INFRA_RETRY_MAX,
-  INFRA_RETRY_BASE_DELAY_MS,
-  TOOL_PIVOT_LIMIT,
   TURN_BUDGET_WARNING_DEFAULT,
   STUCK_WARNING_THRESHOLD,
   STUCK_TERMINATE_THRESHOLD,
@@ -48,7 +42,6 @@ import type {
   SubagentDefinition,
   SessionInfo,
   TaskResult,
-  FinishResult,
   SessionTreeNode,
   ManagerHealthReport,
   AuditHealthOptions,
@@ -77,19 +70,17 @@ import {
   readWorkflowRun,
   listWorkflowRuns,
   saveWorkflowRun,
-  saveCompactedMessages,
   readCompactedMessages,
 } from "./persistence.js";
-import type { MemoryEntry, WorkflowRun, PersistedSession, Registry, SessionKind } from "./persistence.js";
+import type { MemoryEntry, PersistedSession, SessionKind } from "./persistence.js";
 import type { SessionTrace } from "./workflow.js";
 import { join, dirname, relative, resolve } from "node:path";
 import { isOverflowError, extractProgress, writeProgressFile } from "./overflow.js";
-import { spawnDetachedAgent, readIdentity } from "./detached.js";
-import { sendSocketCommand } from "./socket-client.js";
+import { readIdentity } from "./detached.js";
 import { runActiveRecall, formatRecallWarnings } from "./active-recall.js";
 import { readLatestCheckpointForAgent, cleanupStepCounter } from "./tools/checkpoint.js";
 import { buildTrace } from "./manager-trace.js";
-import { hasFinishToolCall, extractFinishParams, isRetryableInfraError, runAgentWithRetry } from "./manager-retry.js";
+import { hasFinishToolCall, extractFinishParams, runAgentWithRetry } from "./manager-retry.js";
 import { createAgentsTool as createAgentsToolFn, type CreateAgentsToolOptions } from "./manager-agents-tool.js";
 import { classifyError as classifyErrorFn } from "./classify-error.js";
 
@@ -112,7 +103,7 @@ export { isRetryableInfraError, runAgentWithRetry } from "./manager-retry.js";
 export { classifyError } from "./classify-error.js";
 export { buildTrace, findPathToTarget } from "./manager-trace.js";
 export type { TraceContext } from "./manager-trace.js";
-import { computeHealth, computeAuditHealth, computeReconcileHealth, EVAL_SKIP_AGENTS } from "./manager-health.js";
+import { computeHealth, computeAuditHealth, computeReconcileHealth } from "./manager-health.js";
 export { EVAL_SKIP_AGENTS } from "./manager-health.js";
 export type { HealthContext } from "./manager-health.js";
 import {
@@ -130,7 +121,7 @@ export {
   getOpUsage,
 } from "./manager-receipts.js";
 export type { ReceiptWrapContext } from "./manager-receipts.js";
-import { appendActivity, truncateSummary, PROGRESS_INTERVAL, type ActivityEvent } from "./activity.js";
+import { appendActivity, truncateSummary, PROGRESS_INTERVAL } from "./activity.js";
 import { log } from "./log.js";
 // ConcurrencyGate removed — see manager-receipts.ts comment.
 

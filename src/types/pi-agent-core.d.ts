@@ -8,7 +8,7 @@
  * WARNING: Keep in sync with the real package when updating pi-mono.
  */
 declare module "@mariozechner/pi-agent-core" {
-  import type { TSchema, Message, Model, Api } from "@mariozechner/pi-ai";
+  import type { TSchema, Model } from "@mariozechner/pi-ai";
 
   // ── Agent messages ───────────────────────────────────────────────────
 
@@ -40,7 +40,7 @@ declare module "@mariozechner/pi-agent-core" {
   }
 
   /** A tool that an agent can invoke. */
-  export interface AgentTool<T = any> {
+  export interface AgentTool<_T = any> {
     name: string;
     label?: string;
     description: string;

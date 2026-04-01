@@ -5,8 +5,6 @@ import { tmpdir } from "node:os";
 import {
   readSessionMessages,
   readMemoryEntries,
-  appendSessionMessage,
-  appendMemoryEntry,
   ensureSessionDir,
   RegistryStore,
   sessionJsonlPath,

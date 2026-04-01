@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { composeGuards } from "../src/lib/tools/compose-guards.js";
-import type { BeforeToolCallContext, BeforeToolCallResult } from "@mariozechner/pi-agent-core";
+import type { BeforeToolCallContext } from "@mariozechner/pi-agent-core";
 
 function makeCtx(): BeforeToolCallContext {
   return {

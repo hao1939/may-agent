@@ -10,7 +10,7 @@ import { getModel } from "@mariozechner/pi-ai";
 import { SubagentManager } from "../src/lib/manager.js";
 import { ChatSession } from "../src/app/chat-session.js";
 import { EventBus } from "../src/app/event-bus.js";
-import { readSessionMeta, writeSessionMeta, ensureSessionDir, appendSessionMessage } from "../src/lib/persistence.js";
+import { readSessionMeta, writeSessionMeta, ensureSessionDir } from "../src/lib/persistence.js";
 import type { AgentTool } from "@mariozechner/pi-agent-core";
 
 // ── Helpers ─────────────────────────────────────────────────────────────

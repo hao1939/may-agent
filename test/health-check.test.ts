@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { createHealthCheckTool } from "../src/lib/tools/health.js";
-import { mkdtempSync, rmSync, writeFileSync, mkdirSync } from "node:fs";
+import { mkdtempSync, rmSync, mkdirSync } from "node:fs";
 import { writeSessionMeta } from "../src/lib/persistence.js";
 import { join } from "node:path";
 import { tmpdir } from "node:os";

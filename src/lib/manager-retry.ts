@@ -39,9 +39,7 @@ export function hasFinishToolCall(messages: any[]): boolean {
 }
 
 /** Extract the params from the last finish() tool call, if any. */
-export function extractFinishParams(
-  messages: any[],
-): {
+export function extractFinishParams(messages: any[]): {
   status: string;
   summary: string;
   blockers?: { reason: string; context: string }[];

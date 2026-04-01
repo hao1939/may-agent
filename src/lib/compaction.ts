@@ -1,5 +1,5 @@
-import type { AgentMessage, AgentTool } from "@mariozechner/pi-agent-core";
-import type { Message, AssistantMessage, UserMessage, ToolResultMessage, Model } from "@mariozechner/pi-ai";
+import type { AgentMessage } from "@mariozechner/pi-agent-core";
+import type { UserMessage, ToolResultMessage, Model } from "@mariozechner/pi-ai";
 
 // ── Token estimation ───────────────────────────────────────────────────
 //

@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it } from "vitest";
 import { SubagentManager } from "../src/lib/manager.js";
 
 describe("System Prompt Caching", () => {
@@ -44,8 +44,8 @@ describe("System Prompt Caching", () => {
     // Then Project Structure comes later.
     // This breaks caching because the prefix changes immediately.
 
-    const hasSessionIdInPrefix = stablePrefix.includes("session_123");
-    const hasStructureInPrefix = stablePrefix.includes("Project Structure");
+    const _hasSessionIdInPrefix = stablePrefix.includes("session_123");
+    const _hasStructureInPrefix = stablePrefix.includes("Project Structure");
 
     // Expectation: The stable prefix should be LONG (contain structure) and NOT contain the session ID.
     // If this fails, it proves the cache-busting behavior.

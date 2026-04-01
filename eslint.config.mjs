@@ -13,6 +13,8 @@ export default [
       "test-workspace/",
       "pi-deps/",
       "docs/",
+      // Gym scenario environment files — intentionally broken code for agent exercises
+      "test/gym/scenarios/**/environment/",
       // Synced from pi-coding-agent via scripts/sync-pi-tools.sh — do not lint/format
       "src/lib/tools/bash.ts",
       "src/lib/tools/edit.ts",

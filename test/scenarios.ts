@@ -72,7 +72,7 @@ async function scenario1_singleAgent() {
 async function scenario2_agentWithExec() {
   console.log("\n=== Scenario 2: Agent with exec tool ===");
 
-  const { manager, persistDir } = makeManager();
+  const { manager, persistDir: _persistDir } = makeManager();
   const projectRoot = join(tmpdir(), "scenario2-project-" + Date.now());
   mkdtempSync(projectRoot + "-");
 
@@ -98,7 +98,7 @@ async function scenario2_agentWithExec() {
 async function scenario3_delegation() {
   console.log("\n=== Scenario 3: Supervisor delegates to coder ===");
 
-  const { manager, persistDir } = makeManager();
+  const { manager, persistDir: _persistDir } = makeManager();
   const workDir = mkdtempSync(join(tmpdir(), "scenario3-work-"));
 
   // Register coder — can write files
@@ -320,7 +320,7 @@ async function scenario7_events() {
 async function scenario9_memory() {
   console.log("\n=== Scenario 9: Memory persists across sessions ===");
 
-  const { manager, persistDir } = makeManager();
+  const { manager, persistDir: _persistDir } = makeManager();
 
   manager.register({
     name: "rememberer",

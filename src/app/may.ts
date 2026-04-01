@@ -1,7 +1,6 @@
 import { createInterface } from "node:readline";
 import { execSync } from "node:child_process";
-import { fileURLToPath } from "node:url";
-import { resolve, dirname } from "node:path";
+import { resolve } from "node:path";
 import { existsSync, readFileSync, writeFileSync, appendFileSync, unlinkSync, mkdirSync } from "node:fs";
 import { getModel } from "@mariozechner/pi-ai";
 import type { ModelWithApiKey } from "../lib/types.js";
@@ -32,7 +31,7 @@ import {
 } from "./agent-loader.js";
 import { resolveProjectRoot } from "./bundle-mode.js";
 import { trackRequest } from "../lib/requests.js";
-import { setLogHandler, log } from "../lib/log.js";
+import { setLogHandler } from "../lib/log.js";
 
 // ── --version / -v: print version + git SHA and exit immediately ────────
 if (process.argv.includes("--version") || process.argv.includes("-v")) {
