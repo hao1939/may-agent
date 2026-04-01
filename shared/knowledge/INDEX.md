@@ -1,0 +1,90 @@
+# Knowledge Index
+
+All knowledge in the system, organized by confidence level.
+
+## Verified (tested with evidence)
+
+| ID | Claim | Evidence | Location |
+|----|-------|----------|----------|
+| KE-001 | Context learning works for environmental knowledge only | EXP-001 (A/B 3/3) | knowledge/entries/KE-001.md |
+| KE-002 | Text rules don't fix judgment failures | 18 coach experiments, auto-evolve 0/5 | knowledge/entries/KE-002.md |
+| KE-003 | Rich delegation context reduces ops by 47% | EXP-002 (POC n=5) | knowledge/entries/KE-003.md |
+| KE-004 | Guards are brittle, use context.md instead | 3 guard reverts | knowledge/entries/KE-004.md |
+| KE-005 | QA rubber-stamps at 14% detection | DB analysis | knowledge/entries/KE-005.md |
+
+## Adopted (in use, not experimentally verified)
+
+### Skills (41)
+Each skill is an untested hypothesis: "doing X improves agent behavior in situation Y."
+
+| Skill | Hypothesis | Testable? | Location |
+|-------|-----------|-----------|----------|
+| evidence-over-narrative | Trusting runtime evidence over narrative prevents phantom fixes | Yes — gym scenario exists | skills/evidence-over-narrative/SKILL.md |
+| budget-before-act | Turn-budget awareness reduces FM-3.1 non-delivery | Yes — measure delivery rate | skills/budget-before-act/SKILL.md |
+| coder-edit-discipline | Reading before editing prevents wrong edits | Yes — read-before-edit scenario | skills/coder-edit-discipline/SKILL.md |
+| ... | (38 more — see skills/LIBRARY.md for full list) | | |
+
+### Workflows (7)
+Structural enforcement patterns. More reliable than text rules (KE-002).
+
+| Workflow | Purpose | Verified? | Location |
+|----------|---------|-----------|----------|
+| two-phase | Separate analysis from action | Gym: 92-97% pass | workflows/two-phase.ts |
+| code-review-loop | Coder → QA → fix cycle with context passing | Not tested in production | workflows/code-review-loop.ts |
+| evidence-gate | Check briefs for evidence before sending | Gym: 5/5 pass, 6/6 reject | workflows/evidence-gate.ts |
+| context-learn | Extract knowledge from session transcripts | Deployed, LLM merge | workflows/context-learn.ts |
+| reviewed-delivery | Evidence-gate before sending briefs | Not tested | workflows/reviewed-delivery.ts |
+| predict-then-verify | Predict outcome, then verify | Not tested | workflows/predict-then-verify.ts |
+| skill-lifecycle | Install/test/promote skills | Not tested | workflows/skill-lifecycle.ts |
+
+### Conventions
+Team behavioral rules. Adopted by convention, not verified by experiment.
+
+| Document | Content | Lines | Testable? |
+|----------|---------|-------|-----------|
+| common-sense.md | How we work, think, communicate | 14 | Some items map to gym scenarios |
+| CONVENTIONS.md | Behavioral conventions (C1-C13) | 140 | Each convention is testable |
+
+## Theoretical (proposed, untested)
+
+| Document | Content | Lines | Status |
+|----------|---------|-------|--------|
+| philosophy.md | Principles P1-P147+ | 323 | Many never tested. KE-002 refuted text-rule principles. |
+| best-practices.md | Agent hardening practices | 73 | Overlap with skills |
+| patterns/patrol.md | Patrol pattern | ~30 | Untested |
+| patterns/transient-skill.md | Transient skill pattern | ~30 | Untested |
+
+## Hypothetical (specific testable claims)
+
+| ID | Hypothesis | Status | Location |
+|----|-----------|--------|----------|
+| H-001 | Adversarial QA framing increases detection from 14% to >30% | Untested | knowledge/hypotheses/H-001.md |
+| H-002 | Weaker models benefit more from context.md | Untested | knowledge/hypotheses/H-002.md |
+
+## Experiments
+
+| ID | Tests | Status | Verdict | Location |
+|----|-------|--------|---------|----------|
+| EXP-001 | Context learning A/B | Complete | Supported | knowledge/experiments/EXP-001/ |
+| EXP-002 | Delegation context POC | Complete | Supported | knowledge/experiments/EXP-002/ |
+
+## Operational (not knowledge — reference only)
+
+| Document | Purpose |
+|----------|---------|
+| focus-tasks.md | Current work priorities |
+| roadmap.md | Long-term direction |
+| SIGNALS.md | Operational signals between agents |
+| daily-digests/ | Historical daily summaries |
+| bulletins | Operational notices |
+| tasks/ | Task templates |
+
+## What Should Happen
+
+1. **Skills should be hypotheses.** Each skill claims "X improves Y." Test it in the lab. If verified → knowledge entry. If not → remove or revise.
+
+2. **Philosophy principles should be testable.** P53 "Self-Evolution Bifurcation" — is it true? Design an experiment. KE-002 already refuted some principles.
+
+3. **Conventions should have evidence.** C1.1 "Read before edit" — does it actually prevent bad edits? The gym scenario exists. Run the experiment.
+
+4. **The lab is the verification engine.** Everything adopted or theoretical should eventually be tested. The knowledge base tracks what's verified and what's still assumed.
