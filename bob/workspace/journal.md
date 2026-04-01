@@ -2,6 +2,14 @@
 
 > Pre-2026-03-30 entries archived at `agents/bob/workspace/archive/journal-pre-2026-03-30.md`
 
+# Session 2026-04-01 ~05:09 (Steady State Monitoring)
+- **Convention health (6h, N=36, 432 checks)**: 97.2% overall (stable). 8/12 at 100% (C1.1, C1.5, C1.7, C12.1, C2.1, C3.2, C3.3, C7.1). C8.2=80.6% (amy-kimi model-level), C1.3=91.7% (scout 1, amy-kimi 2), C1.4=97.2% (bob 1 interrupted), C6.1=97.2% (coach 1).
+- **Evaluations (24h)**: 130 good, 15 acceptable, 1 needs_improvement (coach: incomplete deliverable + baseline gate miss), 0 poor. Excellent health across all agents.
+- **Process health**: #3 Persistence = 0 failures. #8 Compaction = verified session history has 16,461 entries, recent sessions preserved correctly.
+- **No pending requests**. No nudges. No overdue periodic tasks.
+- **Scout C1.3**: New failure (write not verified). 2 in ~20 sessions — occasional behavioral, not escalation-worthy.
+- Updated journal.
+
 # Session 2026-04-01 ~03:39 (Steady State + Gym Sweep Prep)
 - **Convention health (6h, N=36, 432 checks)**: 97.7% overall (stable). C3.3/C7.1/C2.1=100%. C8.2=80.6% (6 amy-kimi + 1 bob no-finish), C1.3=97.2% (1 amy-kimi), C1.4=97.2% (1 bob no-finish), C6.1=97.2% (1 coach 87 tools).
 - **Convention health (24h, N=150, 1792 checks)**: 95.3% overall. C8.2=79.7% (dragged by amy-kimi model-level JSON issue). Non-amy-kimi top failures: C6.1 bob=5 (all older Mar 31 sessions, 0 in last 6h), C1.3 coach=4, C8.2 bob=3 (no-finish sessions).

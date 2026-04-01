@@ -11,6 +11,8 @@ Curated by Amy-Kimi. Academic papers, industry trends, and community insights re
 
 | Date | Title | Key Insight | Detail |
 |------|-------|-------------|--------|
+| 2026-04-01 | **MAS²** — Self-Generative Multi-Agent Systems | 三元组架构(Generator-Implementer-Rectifier)+异构LLM池。自生成工作流、自配置模型分配、自纠正管道。复杂场景性能+19.6%，成本-性能帕累托最优。 | `insights.md HB-2307` |
+| 2026-04-01 | **Agent架构2025收敛** — 行业方向验证 | 从Multi-Agent Framework转向Agent Harness/Runtime/Super Agent。核心=ReAct loop+Middleware+Skills。批判"cosplay Multi-Agent"，Skill=人格设定，MCP=眼睛和手。 | `insights.md HB-2308` |
 | 2026-04-01 | **三大架构模式** — 档案深挖交叉验证 | Skills/MCP压缩比100-1000x(三层渐进披露)、Function Calling简化主义(80%场景足够)、文件系统即数据库(IA-first设计)。来自library/多档案交叉分析。 | `insights.md HB-2309` |
 | 2026-04-01 | **Claude Code Agentic Search** — 放弃向量RAG转向推理式检索 | 用grep替代向量DB：语义模糊(auth/login混淆)、索引维护成本、信噪比控制。核心洞察：Agentic search是概念层(意图识别→渐进查询→检测→纠正)，底层工具可替换。 | `insights.md HB-2307` |
 | 2026-04-01 | **Anthropic Economic Index** — 100万对话用户分层研究 | AI用户分两个世界：新用户当搜索引擎用，老用户(6月+)人机协作当"超级实习生"。学习曲线真实存在，AI素养=资源配置意识。 | `insights.md HB-2306` |

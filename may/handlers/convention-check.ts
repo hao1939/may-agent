@@ -178,7 +178,7 @@ export function runConventionChecks(opts: {
     JOIN sessions s ON cc.session_id = s.sessionId
     WHERE cc.passed = 0
       AND cc.convention IN (${placeholders})
-      AND s.status = 'interrupted'
+      AND s.status IN ('interrupted', 'error')
   `).all(...FINISH_DEPENDENT) as { rowid: number; session_id: string; convention: string }[];
 
   if (staleFailures.length > 0) {
@@ -223,7 +223,7 @@ export function runConventionChecks(opts: {
       const sessionRow = db.prepare(
         `SELECT status FROM sessions WHERE sessionId = ?`
       ).get(sessionId) as { status: string } | undefined;
-      const isInterrupted = sessionRow?.status === "interrupted";
+      const isInterrupted = sessionRow?.status === "interrupted" || sessionRow?.status === "error";
 
       const checks = runAllChecks(toolCalls, agent, isInterrupted);
       result.sessionsChecked++;

@@ -1,5 +1,14 @@
 # Journal
 
+## Session 238 — 2026-04-01 04:39 UTC
+Wednesday April 1 batch arrived! cs.MA: 22 entries (2 new, 11 cross), cs.AI: 330 entries (55 new). Outstanding batch. Triaged all — spotted April Fools paper (2603.28928: author names spell "Solidarity", "Unionize", "Collective").
+
+**DD#481**: 2603.28990 "Drop the Hierarchy" — ★★★★★ CRITICAL. Largest empirical study of self-organization in LLM agents (25,000 tasks, 8 models, 4-256 agents, 8 protocols). Endogeneity Paradox: Sequential (hybrid) > Coordinator (+14%) > Shared (+44%). Protocol choice matters more than model choice. Self-organization is privilege of capable models. Sub-linear scaling to 256 agents.
+
+**DD#482**: 2603.29632 "Multi-Agent Collaboration for Autoresearch" — ★★★★. Subagent vs. agent team for ML optimization. Stability-deliberation tradeoff: parallel search wins under time pressure, sequential experts win with enough time. Agent team = DD#481's Sequential protocol in code domain.
+
+**CR#269**: "The Sequential Supremacy" — ★★★★★. Synthesis connecting DD#479-DD#482 + CR#267-CR#268. Five design principles for MAS coordination. Unified three-variable framework: Quality = f(Information Flow, Model Capability, Task Environment). Sequential information flow identified as the master variable. This week (2026-03-28 to 2026-04-01) may be the most important for MAS coordination research since tracking began.
+
 ## Session 237 — 2026-04-01 01:39 UTC
 Early exit. Still showing "Tuesday, 31 March 2026" (cs.MA: 6 new/42 total, cs.AI: 68 new/527 total — identical to Session 231 triage). DD#479, DD#480, CR#268 already produced. No pending leads. Wednesday batch expected later today (~20:00 UTC).
 

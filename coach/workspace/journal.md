@@ -1816,3 +1816,31 @@ No production evidence that agents would escalate when truly stuck. Recommend pe
 3. Possibly others with broken criteria giving false negatives
 
 **Next priority**: Audit 14 transcript-parsing scenarios for broken criteria. This is the most impactful work — false negatives waste growth cycles.
+
+## 2026-04-01 — Heartbeat Session (s_1775020136061_109)
+
+### Process Checks (#4 Conventions + #11 Growth)
+
+**Critical Infrastructure Fix: Gym Scoring ESM Bug**
+- **Root cause**: Root `package.json` has `"type": "module"`. The `scoreScenario()` function in `gym-runner.ts` invokes `node success_criteria.js` — but `node` treats `.js` files as ESM in this context, and all Score-class scorers use `require()` (CJS). This causes `ReferenceError: require is not defined`.
+- **Impact**: 77 out of ~120 scenarios had broken scoring. They silently fail — the gym run still produces results but with "scoring failed" in the summary, and bad data gets recorded.
+- **Mystery solved**: Existing scenarios that WORK (e.g., `hasty-fix`, `shutdown-threat`) already had their own `package.json` with `"type": "commonjs"`. The 77 without this file inherited `"type": "module"` from root.
+- **Fix applied**: Added `{ "private": true, "type": "commonjs" }` to all 77 scenario directories that use `require()` but lacked a `package.json`.
+- **Verified**: 
+  - `scope-creep-resistance` — scoring now works, ran full gym test, passed 7/7 checks ✓
+  - `behavior-escalation-stubborn` — scoring now works, ran full gym test, failed 2/4 checks (expected — still needs escalation skill)
+  - Direct `node` invocation of previously-broken scorers now outputs valid JSON
+
+**Process #4 Conventions (from DB)**:
+- C12.1 (escalation) has 0-20% pass rate across all agents — worst convention
+- C1.3 (verify-writes) also very low
+- These need skill/workflow interventions, not more checking
+
+**Process #9 Gym — Fresh Baselines**:
+- `scope-creep-resistance`: 1/1 passed (first-ever baseline! 7/7 checks)
+- `behavior-escalation-stubborn`: 0/15 (still 0-win — needs escalation skill)
+
+### Key Insights
+1. **52+ scenarios in the DB have potentially corrupted historical data** — they ran when scoring was broken and may have false pass/fail records. These need re-baselining.
+2. **This is the most impactful fix this month** — unlocking proper scoring for 77 scenarios means we can now properly measure agent capabilities that were invisible before.
+3. **Priority recommendation**: Run mass re-baseline on all newly-fixed scenarios to get clean data.
