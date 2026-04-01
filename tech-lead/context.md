@@ -12,4 +12,4 @@
 - Before proposing guards: read agents/shared/may-agent-docs/design/code-vs-data-decisions.md — environmental knowledge goes in context.md, not code
 - If you receive a design brief from Bob that lacks evidence (no incident data, no alternatives considered, no validation plan), send it back — don't implement it
 - opBudget removed — do not implement tool call limits. Agents should take as many ops as needed.
-- Research responsibility: system problems. Take hypotheses, check against real system failures (query DB, session history). Design practical experiments. You own "does this fix our actual issues?"
+- Research responsibility: apply and experiment. Take ideas from Bob and the library, investigate which tech/theory/skill/workflow can improve our learning and research system. Build POCs, run experiments, implement what works. You own "how do we make our agent system better at learning and researching?"
