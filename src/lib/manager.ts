@@ -293,6 +293,14 @@ export class SubagentManager {
             session.agent.abort();
           }
 
+          // ── maxTurns Enforcement ─────────────────────────────────────
+          // Gracefully terminate sessions that exceed their turn budget.
+          if (session.maxTurns > 0 && session.turnCount >= session.maxTurns) {
+            log("warn", `MAX_TURNS: Agent ${session.agentName} (${sessionId}) reached turn limit (${session.turnCount}/${session.maxTurns}). Terminating.`);
+            session.error = `Turn limit reached: ${session.turnCount}/${session.maxTurns} turns. Session terminated.`;
+            session.agent.abort();
+          }
+
           // Activity tracking: emit progress event every N turns
           if (session.turnCount > 0 && session.turnCount % PROGRESS_INTERVAL === 0) {
             const lastText = event.message.content
@@ -1130,6 +1138,7 @@ export class SubagentManager {
       orderId: opts?.orderId,
       requestId: opts?.requestId,
       consecutiveErrorTurns: 0,
+      maxTurns: opts?.maxTurns ?? 0,
       stuckWarningInjected: false,
       currentTurnErrors: 0,
       currentTurnSuccesses: 0,
@@ -1503,6 +1512,7 @@ export class SubagentManager {
       filesModified: new Set(),
       orderId: persisted.orderId,
       consecutiveErrorTurns: 0,
+      maxTurns: 0,
       stuckWarningInjected: false,
       currentTurnErrors: 0,
       currentTurnSuccesses: 0,

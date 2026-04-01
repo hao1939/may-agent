@@ -705,7 +705,7 @@ export class Cron {
       const maxTurns = typeof entry.handlerConfig?.maxTurns === "number" ? entry.handlerConfig.maxTurns : undefined;
       const sessionId = this.manager.run(agentName, taskMessage, {
         kind: "job",
-        
+        maxTurns,
       });
       updateRequest(this.persistDir, requestId, { sessionId });
 
