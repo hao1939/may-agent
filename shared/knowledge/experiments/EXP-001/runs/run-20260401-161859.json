@@ -1,0 +1,258 @@
+{
+  "control": [
+    {
+      "passed": false,
+      "checks": [
+        {
+          "name": "test-results",
+          "passed": true,
+          "detail": "test-results.md exists",
+          "category": "product"
+        },
+        {
+          "name": "no-npx-attempt",
+          "passed": false,
+          "detail": "FAIL: Agent did not attempt npx (unavailable in env)",
+          "category": "behavior"
+        },
+        {
+          "name": "tests-ran",
+          "passed": true,
+          "detail": "Agent ran the tests successfully",
+          "category": "behavior"
+        },
+        {
+          "name": "finishes-success",
+          "passed": false,
+          "detail": "FAIL: Agent finishes with success",
+          "category": "behavior"
+        },
+        {
+          "name": "efficient",
+          "passed": true,
+          "detail": "Total ops \u2264 10",
+          "category": "efficiency"
+        }
+      ],
+      "duration_ms": 181647,
+      "ops": 0,
+      "check_test-results": true,
+      "check_no-npx-attempt": false,
+      "check_tests-ran": true,
+      "check_finishes-success": false,
+      "check_efficient": true
+    },
+    {
+      "passed": false,
+      "checks": [
+        {
+          "name": "test-results",
+          "passed": true,
+          "detail": "test-results.md exists",
+          "category": "product"
+        },
+        {
+          "name": "no-npx-attempt",
+          "passed": false,
+          "detail": "FAIL: Agent did not attempt npx (unavailable in env)",
+          "category": "behavior"
+        },
+        {
+          "name": "tests-ran",
+          "passed": true,
+          "detail": "Agent ran the tests successfully",
+          "category": "behavior"
+        },
+        {
+          "name": "finishes-success",
+          "passed": false,
+          "detail": "FAIL: Agent finishes with success",
+          "category": "behavior"
+        },
+        {
+          "name": "efficient",
+          "passed": true,
+          "detail": "Total ops \u2264 10",
+          "category": "efficiency"
+        }
+      ],
+      "duration_ms": 179636,
+      "ops": 0,
+      "check_test-results": true,
+      "check_no-npx-attempt": false,
+      "check_tests-ran": true,
+      "check_finishes-success": false,
+      "check_efficient": true
+    },
+    {
+      "passed": false,
+      "checks": [
+        {
+          "name": "test-results",
+          "passed": false,
+          "detail": "FAIL: test-results.md exists",
+          "category": "product"
+        },
+        {
+          "name": "no-npx-attempt",
+          "passed": true,
+          "detail": "Agent did not attempt npx (unavailable in env)",
+          "category": "behavior"
+        },
+        {
+          "name": "tests-ran",
+          "passed": false,
+          "detail": "FAIL: Agent ran the tests successfully",
+          "category": "behavior"
+        },
+        {
+          "name": "finishes-success",
+          "passed": false,
+          "detail": "FAIL: Agent finishes with success",
+          "category": "behavior"
+        },
+        {
+          "name": "efficient",
+          "passed": true,
+          "detail": "Total ops \u2264 10",
+          "category": "efficiency"
+        }
+      ],
+      "duration_ms": 179664,
+      "ops": 0,
+      "check_test-results": false,
+      "check_no-npx-attempt": true,
+      "check_tests-ran": false,
+      "check_finishes-success": false,
+      "check_efficient": true
+    }
+  ],
+  "treatment": [
+    {
+      "passed": false,
+      "checks": [
+        {
+          "name": "test-results",
+          "passed": false,
+          "detail": "FAIL: test-results.md exists",
+          "category": "product"
+        },
+        {
+          "name": "no-npx-attempt",
+          "passed": true,
+          "detail": "Agent did not attempt npx (unavailable in env)",
+          "category": "behavior"
+        },
+        {
+          "name": "tests-ran",
+          "passed": false,
+          "detail": "FAIL: Agent ran the tests successfully",
+          "category": "behavior"
+        },
+        {
+          "name": "finishes-success",
+          "passed": false,
+          "detail": "FAIL: Agent finishes with success",
+          "category": "behavior"
+        },
+        {
+          "name": "efficient",
+          "passed": true,
+          "detail": "Total ops \u2264 10",
+          "category": "efficiency"
+        }
+      ],
+      "duration_ms": 181622,
+      "ops": 0,
+      "check_test-results": false,
+      "check_no-npx-attempt": true,
+      "check_tests-ran": false,
+      "check_finishes-success": false,
+      "check_efficient": true
+    },
+    {
+      "passed": false,
+      "checks": [
+        {
+          "name": "test-results",
+          "passed": false,
+          "detail": "FAIL: test-results.md exists",
+          "category": "product"
+        },
+        {
+          "name": "no-npx-attempt",
+          "passed": true,
+          "detail": "Agent did not attempt npx (unavailable in env)",
+          "category": "behavior"
+        },
+        {
+          "name": "tests-ran",
+          "passed": true,
+          "detail": "Agent ran the tests successfully",
+          "category": "behavior"
+        },
+        {
+          "name": "finishes-success",
+          "passed": false,
+          "detail": "FAIL: Agent finishes with success",
+          "category": "behavior"
+        },
+        {
+          "name": "efficient",
+          "passed": true,
+          "detail": "Total ops \u2264 10",
+          "category": "efficiency"
+        }
+      ],
+      "duration_ms": 179850,
+      "ops": 0,
+      "check_test-results": false,
+      "check_no-npx-attempt": true,
+      "check_tests-ran": true,
+      "check_finishes-success": false,
+      "check_efficient": true
+    },
+    {
+      "passed": false,
+      "checks": [
+        {
+          "name": "test-results",
+          "passed": true,
+          "detail": "test-results.md exists",
+          "category": "product"
+        },
+        {
+          "name": "no-npx-attempt",
+          "passed": true,
+          "detail": "Agent did not attempt npx (unavailable in env)",
+          "category": "behavior"
+        },
+        {
+          "name": "tests-ran",
+          "passed": true,
+          "detail": "Agent ran the tests successfully",
+          "category": "behavior"
+        },
+        {
+          "name": "finishes-success",
+          "passed": false,
+          "detail": "FAIL: Agent finishes with success",
+          "category": "behavior"
+        },
+        {
+          "name": "efficient",
+          "passed": true,
+          "detail": "Total ops \u2264 10",
+          "category": "efficiency"
+        }
+      ],
+      "duration_ms": 179937,
+      "ops": 0,
+      "check_test-results": true,
+      "check_no-npx-attempt": true,
+      "check_tests-ran": true,
+      "check_finishes-success": false,
+      "check_efficient": true
+    }
+  ]
+}

@@ -129,7 +129,7 @@ Writes: agents/<name>/context.md
 ```typescript
 type AgentEvent =
   // Agent commands (to core)
-  | { type: "fork"; agent: string; task: string; originSessionId?: string }
+  | { type: "fork"; agent: string; task: string; originSessionId?: string; opts?: { kind?: string; requestId?: string } }
   | { type: "message"; from: string; to: string; task: string }
   | { type: "input"; sessionId: string; text: string }
   | { type: "steer"; sessionId: string; text: string }
@@ -204,3 +204,151 @@ Each mode:
 ### Phase 3: Thin startup
 - Create bus → attach components → done
 - Under 100 lines total
+
+## Design Clarifications (from review feedback)
+
+### No request/response on the bus
+
+The bus is fire-and-forget. No correlation IDs. No response events.
+
+When an agent needs a sync response, it uses `call` — direct, blocks the caller, returns the result. That's what `call` is for. The bus is for async commands and observation events.
+
+When infra needs data (status, session list), it reads DB directly. Not through the bus. DB is a shared read store.
+
+| Need | Path |
+|------|------|
+| Agent needs sync response | `agents.call()` — internal to core |
+| Agent needs async action | `agents.fork()` / `agents.message()` — bus command |
+| Infra needs data now | Read DB directly |
+
+### Infra errors don't reach agents
+
+If the DB writer fails to persist a `session_end` event, that's an ops problem — not an agent problem. The agent's work is done. The bus catch block logs the error. Ops monitors DB health. The agent doesn't retry.
+
+Agents never see infra errors. They see tool results and session outcomes. The bus subscriber error isolation (`try { fn(event) } catch {}`) is correct — a broken subscriber never breaks core or other subscribers.
+
+### Shutdown is not a bus problem
+
+The bus carries a `shutdown` event for notification. But ordering is handled by the startup code in reverse: stop cron → cancel sessions → close socket → exit. Same as today. The bus doesn't orchestrate shutdown — the process owner does.
+
+### fork carries session options
+
+The `fork` event includes an `opts` field for session configuration (kind, requestId, etc.). This ensures config doesn't get lost when cron or interfaces emit fork commands.
+
+### DB is optional in code, required in production
+
+The architecture allows running without DB (for gym, tests, oneshot). Production always enables it. This is a deployment decision, not an architecture constraint.
+
+## Research System Integration
+
+The research system (see research-system.md) builds on this architecture:
+
+### Knowledge Base
+
+```
+agents/shared/knowledge/
+  entries/     KE-XXX.md    (verified facts with evidence)
+  hypotheses/  H-XXX.md     (testable claims)
+  experiments/ EXP-XXX/     (design.json + results)
+```
+
+Knowledge entries link to experiments. Experiments link to hypotheses. Verified knowledge flows to agents via context.md.
+
+### Lab Infrastructure
+
+The lab extends the gym runner for hypothesis testing:
+
+```
+Gym: fixed scenario → agent runs → pass/fail → "is the agent correct?"
+Lab: hypothesis → multi-arm experiment → statistical comparison → "is the idea true?"
+```
+
+Lab runner (`scripts/lab-run.sh`) reads experiment designs from `knowledge/experiments/EXP-XXX/design.json` and runs multi-arm comparisons. Results are per-metric, not just pass/fail.
+
+### Adversarial Peers
+
+Two agents research the same question from opposite angles:
+- **Advocate**: finds evidence FOR a hypothesis
+- **Skeptic**: finds evidence AGAINST
+
+Agreement → high confidence knowledge entry. Disagreement → design experiment → lab tests it.
+
+### Research Events on the Bus
+
+```typescript
+  // Research events
+  | { type: "hypothesis_created"; id: string; title: string }
+  | { type: "experiment_started"; id: string; hypothesis: string }
+  | { type: "experiment_complete"; id: string; verdict: string }
+  | { type: "knowledge_created"; id: string; title: string; status: string }
+```
+
+These are observation events — core and research agents emit them, DB writer persists them, web UI displays them.
+
+### Research DB Tables
+
+```sql
+CREATE TABLE hypotheses (
+  id TEXT PRIMARY KEY,
+  title TEXT,
+  status TEXT,
+  proposedBy TEXT,
+  createdAt INTEGER
+);
+
+CREATE TABLE experiments (
+  id TEXT PRIMARY KEY,
+  hypothesisId TEXT,
+  status TEXT,
+  design TEXT,
+  results TEXT,
+  createdAt INTEGER,
+  completedAt INTEGER
+);
+
+CREATE TABLE knowledge_entries (
+  id TEXT PRIMARY KEY,
+  title TEXT,
+  claim TEXT,
+  status TEXT,
+  evidence TEXT,
+  createdAt INTEGER,
+  lastVerified INTEGER
+);
+```
+
+## Current State
+
+### What exists today
+- EventBus: 147 lines, handles events + commands (needs cleanup)
+- Manager: 2400 lines, the core runtime (stays as-is internally)
+- Cron: 919 lines, direct manager dependency (needs decoupling)
+- may.ts: 1089 lines glue (needs thinning)
+- Knowledge base: 5 entries, 2 hypotheses, 2 experiments (seeded)
+- Lab runner: working, tested with EXP-001
+- Agent calling: call/fork/message implemented in agents tool
+
+### What needs building
+- Phase 1: EventBus cleanup + core command subscriber
+- Phase 2: DB writer subscriber (extract from may.ts)
+- Phase 3: Thin startup (under 100 lines)
+- Advocate + Skeptic agents
+- Research workflow (discover → challenge → experiment → analyze)
+- Research events + DB tables
+
+## Summary
+
+One process. One EventBus. Everyone subscribes and emits.
+
+```
+Commands → bus → core acts → observations → bus → subscribers persist/render
+
+call:     sync, internal to core (agent cooperation)
+fork:     async, bus command (parallel work)
+message:  async, bus command (background work)
+
+DB:       optional subscriber, persists events, enables queries
+Lab:      extends gym, tests ideas not agents
+Knowledge: entries + hypotheses + experiments, evidence-linked
+```
+
