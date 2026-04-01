@@ -1016,6 +1016,20 @@ loadDigest();
 loadStats();
 loadRequests();
 
+// Apply initial tab from URL hash
+if (currentTab && currentTab !== 'dashboard') {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  const activeTab = document.querySelector(`[data-tab="${currentTab}"]`);
+  if (activeTab) activeTab.classList.add('active');
+  document.getElementById('dashboard').classList.add('hidden');
+  document.getElementById('chat').classList.toggle('hidden', currentTab !== 'chat');
+  document.getElementById('benchmarks').classList.toggle('hidden', currentTab !== 'benchmarks');
+  document.getElementById('knowledge').classList.toggle('hidden', currentTab !== 'knowledge');
+  if (currentTab === 'chat') initChat();
+  if (currentTab === 'benchmarks') loadBenchmarks();
+  if (currentTab === 'knowledge') loadKnowledge(kbSection);
+}
+
 // ── Knowledge ─────────────────────────────────────────────────────────
 let kbSection = 'index';
 
