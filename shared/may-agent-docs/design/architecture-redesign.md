@@ -2,24 +2,13 @@
 
 ## Current State
 
-Everything lives in one monolith (`may.ts` — 1089 lines) that glues together:
-- Agent management (SubagentManager)
-- Chat session (ChatSession)
-- Console UI
-- Socket server
-- Telegram bot
-- Cron system
-- Event bus
-- Model configuration
-- Session recovery
-- Context learning
-- Error recovery
+Everything lives in one monolith (`may.ts` — 1089 lines). Models, cron, UI, recovery, context learning, event routing — all tangled together.
 
 ## Proposed Components
 
-### 1. Core (`src/core/` or `packages/core/`)
+### 1. Core
 
-The multi-agent runtime. No I/O, no UI, no cron. Pure agent management.
+The multi-agent runtime. Manages agents, sessions, tools, workflows.
 
 **Contains:**
 - SubagentManager (session lifecycle, agent registry)
@@ -27,12 +16,23 @@ The multi-agent runtime. No I/O, no UI, no cron. Pure agent management.
 - Workflow engine
 - Compaction
 - Handoff / context summarization
-- Session persistence (read/write JSONL, archive)
+- Session persistence (JSONL read/write/archive)
 - Manager receipts (tool wrapping, signatures)
 
 **Interface:**
 ```typescript
-const manager = new SubagentManager({ persistDir, projectRoot });
+// Core depends on ONE interface: EventBus
+interface EventBus {
+  emit(event: AgentEvent): void;
+}
+
+// Core API
+const manager = new SubagentManager({
+  persistDir,
+  projectRoot,
+  eventBus,       // optional — if not provided, events are silent
+});
+
 manager.register(agentDef);
 const sessionId = manager.run("coder", task);
 const result = await manager.waitFor(sessionId);
@@ -40,153 +40,154 @@ manager.input(sessionId, "follow-up");
 manager.cancel(sessionId);
 ```
 
-**Does NOT depend on:** EventBus, DB, cron, socket, UI, models config.
+**Core does NOT import:** DB, socket, console, telegram, cron, models config.
 
-**Events:** Emits typed events (text, tool_call, session_start, etc.) via a callback or simple emitter. Consumers wire it to whatever they want.
+Core emits events through the EventBus interface. That's its only outward dependency. Everything else — persistence to DB, streaming to UIs, context learning — is done by the EventBus implementation.
 
-### 2. Interface (`src/interface/`)
+### 2. EventBus Implementation
 
-Connections between humans and the core. Each is independent.
+The glue. Receives events from core, fans out to all consumers.
 
-**Socket server** (`socket.ts`):
+```typescript
+const eventBus: EventBus = {
+  emit(event) {
+    // Real-time: stream to connected clients
+    socketServer.broadcast(event);
+    consoleRenderer.render(event);
+    telegramBot.forward(event);
+
+    // Persistence: track in SQLite
+    dbWriter.track(event);
+
+    // Learning: post-session context extraction
+    if (event.type === "session_end") contextLearn(event);
+  }
+};
+```
+
+Each consumer is optional. Gym runner provides an empty EventBus. Oneshot provides one with just DB. Full system provides all of them.
+
+The EventBus implementation is where you decide:
+- What gets stored (DB)
+- What gets shown (socket → web UI, console, telegram)
+- What triggers follow-up (context learning, evaluation, recovery)
+
+### 3. Interfaces
+
+Connections between humans and core. Each attaches to the EventBus.
+
+**Socket server:**
 - Unix domain socket, JSON-line protocol
-- Receives commands (input, steer, cancel, status, subscribe)
-- Forwards events to subscribed clients
-- The bridge for everything external
+- Commands in (input, steer, cancel, status, subscribe)
+- Events out (filtered by subscription)
+- The bridge for web UI and external tools
 
-**Console** (`console.ts`):
+**Console:**
 - Readline + event rendering
-- Talks to core via ChatSession helper
-- Could also talk via socket (simpler, but latency)
+- ChatSession helper manages persistent human session
+- Attaches to EventBus for rendering
 
-**Telegram** (`telegram.ts`):
+**Telegram:**
 - Bot polling, message routing
-- Talks to core via socket or direct API
+- Attaches to EventBus for forwarding
 
-**ChatSession** (`chat-session.ts`):
-- Stateful chat helper — manages the persistent human session
-- Wraps core's manager.run/input/steer
-- Handles /new, cancel, resume
+### 4. Cron System
 
-### 3. Cron System (`src/cron/`)
+Time-triggered job execution.
 
-Time-triggered job execution. Completely separate process.
+**Today:** Embedded in may.ts, fires heartbeats and handlers in-process.
 
-**How it works today:** Embedded in may.ts, fires heartbeats and handlers in-process.
+**Proposed:** Separate module that reads cron.json, manages intervals, and triggers jobs by:
+- Running JS handlers in-process (evaluate-sessions, watchdog)
+- Spawning oneshot sessions via core's manager.run()
+- Calling via socket for cross-process triggers
 
-**How it should work:** Standalone process that reads cron.json, triggers jobs by spawning the binary in oneshot mode:
-```bash
-may-agent --oneshot --agent coder --task "heartbeat..."
-```
+Does NOT depend on UI or ChatSession.
 
-Or calls via socket:
-```json
-{"type": "run", "agent": "may", "message": "[heartbeat]..."}
-```
-
-**Contains:**
-- Cron scheduler (interval management, overlap prevention)
-- Handler loading (JS handlers like evaluate-sessions, watchdog)
-- Agent-loader (for resolving agent configs + cron entries)
-
-**Does NOT depend on:** UI, ChatSession, event rendering.
-
-### 4. Web UI (`src/web/`)
+### 5. Web UI
 
 Already mostly separate (`src/app/ui/web.ts` + `web-static/`).
 
 **Contains:**
-- HTTP server (Bun.serve)
-- REST API (requests, sessions, stats, digest, benchmarks)
+- HTTP server (REST API for requests, sessions, stats)
 - WebSocket proxy (browser WS → unix socket)
 - Static files (dashboard HTML/CSS/JS)
 
-**Talks to core via:** Socket (for events) + DB (for queries).
+**Connects via:** Socket (for real-time events) + DB (for queries).
+Does NOT import core directly.
 
-**Does NOT depend on:** Core directly, cron, console, telegram.
+### 6. Shared DB (SQLite)
 
-### 5. Shared DB (`src/db/`)
-
-SQLite for tracking and querying. Optional for core, required by others.
+Persistence layer. One file (may.db), multiple readers.
 
 **Tables:**
-- `requests` — task tracking (from/to/status/summary)
-- `sessions` — session metadata mirror (agent/task/status/timing)
-- `evaluations` — quality/efficiency scores
-- `gym_runs` / `gym_checks` — benchmark results
-- `convention_checks` / `convention_maturity` — compliance tracking
+- `requests` — task tracking
+- `sessions` — session metadata
+- `evaluations` — quality scores
+- `gym_runs` / `gym_checks` — benchmarks
+- `convention_checks` — compliance
 
-**Used by:**
-- Core: optional — writes session metadata, reads for resume
-- Cron handlers: queries for evaluate-sessions, audit-requests
-- Web UI: reads for dashboard, request list, stats
-- Agents: via system_status and requests tools
-- Context learning: reads evaluations for post-session analysis
+**Written by:** EventBus implementation (on session/request events from core).
+**Read by:** Web UI (dashboard), cron handlers (evaluate-sessions), agent tools (system_status, requests).
 
-**Interface:**
-```typescript
-const db = getDb(persistDir);  // lazy init, cached
-db.query("SELECT ...").all();
-```
+Core does NOT write to DB directly. The EventBus implementation handles DB writes when it receives events from core.
 
 ## Dependency Graph
 
 ```
-              ┌──────────┐
-              │  Web UI   │──── reads ────┐
-              └────┬──────┘               │
-                   │ socket               │
-              ┌────┴──────┐         ┌─────┴─────┐
-              │ Interface │         │ Shared DB  │
-              │ (socket,  │         │ (SQLite)   │
-              │  console, │         └─────┬──────┘
-              │  telegram)│               │
-              └────┬──────┘               │ writes
-                   │ API calls            │
-              ┌────┴──────┐         ┌─────┴──────┐
-              │   Core    │────────▶│  Cron      │
-              │ (manager, │ events  │ (scheduler,│
-              │  tools,   │         │  handlers) │
-              │  workflow) │         └────────────┘
-              └───────────┘
+                    ┌──────────┐
+                    │  Web UI  │
+                    │ (HTTP +  │
+                    │  static) │
+                    └────┬─────┘
+                         │ socket + DB reads
+                         │
+┌──────────┐        ┌────┴─────┐        ┌──────────┐
+│ Console  ├────────┤ EventBus ├────────┤ Telegram │
+└──────────┘        │  (impl)  │        └──────────┘
+                    └────┬─────┘
+                         │
+              ┌──────────┼──────────┐
+              │          │          │
+         ┌────┴───┐ ┌───┴────┐ ┌──┴───┐
+         │  Core  │ │   DB   │ │ Cron │
+         │(manager│ │(SQLite)│ │      │
+         │ tools, │ │        │ │      │
+         │workflow)│ │        │ │      │
+         └────────┘ └────────┘ └──────┘
 ```
 
-Core is the center. Everything else connects to it. DB is a shared service — core writes, everyone reads.
+Core emits → EventBus fans out → DB writes, UI streams, cron triggers.
 
-## What Changes vs Today
+## What Changes
 
 | Aspect | Today | Proposed |
 |--------|-------|----------|
-| Entry point | `may.ts` (1089 lines, does everything) | Separate entry per mode |
-| Cron | In-process, coupled to may.ts | Separate process or module |
-| DB | Required by core (getDb in manager) | Optional for core, service for others |
-| Event bus | Global singleton in may.ts | Core emits, consumers subscribe |
-| Models | Defined in may.ts | Config file or separate module |
-| Agent loading | In may.ts startup | Shared utility, used by core + cron |
+| Event routing | EventBus class in may.ts | Interface on core, impl in glue |
+| DB writes | Deep inside core (persistence.ts) | EventBus impl handles writes |
+| may.ts | 1089 lines, does everything | Thin glue: parse args → init core → wire EventBus → attach interfaces |
+| Cron | Embedded in may.ts | Separate module |
+| Models | Hardcoded in may.ts | Config file |
+| Testing | Need full may.ts to test core | Core testable standalone |
 
 ## Migration Path
 
-### Phase 1: Extract core
-- Move SubagentManager + tools + workflow to `src/core/`
-- Core exports a clean API, no may.ts dependencies
-- may.ts imports from core instead of lib
+### Phase 1: Define EventBus interface
+- Create the interface in core
+- Core calls `this.eventBus?.emit(...)` instead of direct DB/bus calls
+- may.ts provides the implementation that does what it does today
+- No behavior change — just indirection
 
-### Phase 2: Separate web UI
-- Already mostly separate. Make it fully standalone.
-- Communicates only via socket + DB reads.
+### Phase 2: Extract core
+- Move SubagentManager + tools + workflow to clean module
+- Core depends only on EventBus interface + filesystem (JSONL)
+- DB writes move to EventBus implementation
 
-### Phase 3: Extract cron
-- Move cron scheduler to standalone module
-- Can run in-process (current) or as separate process
-- Handlers are already agent-owned (agents/*/handlers/)
+### Phase 3: Thin may.ts
+- may.ts becomes: parse args → create EventBus impl → init core → attach interfaces → start cron
+- Each mode (--chat, --cron, --oneshot) is a separate code path
+- Under 200 lines
 
-### Phase 4: Clean may.ts
-- may.ts becomes thin glue: parse args → init core → attach interfaces → start cron
-- Each mode (--chat, --cron, --oneshot, --status) is a separate code path
-
-## Questions
-
-1. Should core depend on the DB at all? Today it writes session metadata to SQLite. Could be a callback/hook instead.
-2. Should cron be a separate binary? Or just a separate module loaded by may.ts?
-3. Should models config live in a JSON file instead of hardcoded in may.ts?
-4. How do we handle the transition? Big refactor or incremental extraction?
+### Phase 4: Separate cron
+- Extract cron to standalone module
+- Can run in-process or as separate binary
