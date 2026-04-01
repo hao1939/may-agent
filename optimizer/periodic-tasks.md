@@ -19,10 +19,18 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Latest (2026-04-01T14:45): No cost outliers accessible. Bob+Coach ~65% of $258.71/day.
   _Older entries pruned 2026-04-01T15:15._
 
-- [x] **LLM-to-JS opportunity scan** — Last done: 2026-04-01T15:15
-  Read recent sessions. Any agent doing predictable, deterministic work via LLM?
-  Could it be replaced with a JS handler? (See cron-graduation-process.md Stage 3.)
-  If found → write proposal in workspace/improvement-proposals.md.
+- [x] **Tool development & LLM-call reduction** — Last done: 2026-04-01T15:15
+  **This is your HIGHEST-LEVERAGE periodic task.** Every tool you build saves LLM calls permanently.
+  1. **Scan sessions** — read recent session transcripts. Look for agents doing multi-step bash sequences,
+     parsing data formats, or making deterministic decisions via LLM that could be a single tool call.
+  2. **Audit tool quality** — check tool-quality-report.md. Any `wrong-tool` or `empty-args` patterns?
+     Could better schema descriptions fix them? Any tool underused that agents don't know about?
+  3. **Check tool requests** — other agents may suggest tools via requests or bulletin. Review those.
+  4. **Build or improve** — implement new tools in `src/lib/tools/`, improve existing tool schemas,
+     or improve tool descriptions. Each tool needs: clear schema, good description, TypeScript impl.
+  5. **Measure impact** — after deploying a tool, track: LLM calls saved, error rate change, adoption.
+  If found → write proposal in workspace/improvement-proposals.md, then implement.
+  Tool code: `src/lib/tools/` (28 files). Tool assembly: `src/lib/manager.ts`. Agent config: `agent.json`.
   Latest (2026-04-01T15:15): Still cannot assess — sessions not written to DB (6.1h gap). Only evaluations visible. No new LLM-to-JS candidates identifiable without session transcript data.
   Latest (2026-04-01T14:45): Cannot assess — sessions not written to DB (5.5h gap).
   _Older entries pruned 2026-04-01T15:15._
