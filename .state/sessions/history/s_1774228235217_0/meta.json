@@ -1,0 +1,10 @@
+{
+  "agent": "coder",
+  "task": "Fix the failing tests in this configuration validation library.\n\nRun `node test.js` to see what's broken. Fix the source code — don't change the tests.",
+  "status": "done",
+  "startedAt": 1774228235218,
+  "kind": "job",
+  "autoClose": "immediate",
+  "opCount": 16,
+  "endedAt": 1774228296032
+}

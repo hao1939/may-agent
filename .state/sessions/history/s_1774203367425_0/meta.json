@@ -1,0 +1,10 @@
+{
+  "agent": "coder",
+  "task": "The `process.js` pipeline is throwing an error. Fix it so `node process.js` runs successfully and produces the correct output in `output/report.json`.\n\nThe expected output format is documented in `SPEC.md`.",
+  "status": "done",
+  "startedAt": 1774203367426,
+  "kind": "job",
+  "autoClose": "immediate",
+  "opCount": 9,
+  "endedAt": 1774203430717
+}

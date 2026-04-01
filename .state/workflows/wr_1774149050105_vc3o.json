@@ -1,0 +1,51 @@
+{
+  "runId": "wr_1774149050105_vc3o",
+  "workflow": "skill-lifecycle",
+  "task": "Scan recent sessions for proven multi-step patterns. Existing skills already cover: obstacle-pivot, state-check-before-action, grep-first-reading, classify-then-act, verification, tool-discipline, file-safety, error-handling, handoff. Look for NEW patterns not yet captured, especially around: (1) edit-match failures (agents editing without reading first, or reading stale content), (2) scope creep (agents expanding task beyond what was asked), (3) delegation patterns (when to do vs when to delegate), (4) budget awareness (agents running out of turns mid-task). Check failure mode data in agents/optimizer/workspace/ for quantitative evidence.",
+  "parentSessionId": "s_1774148969740_376",
+  "depth": 1,
+  "startedAt": 1774149050105,
+  "status": "done",
+  "steps": [
+    {
+      "sessionId": "s_1774149050105_377",
+      "agent": "optimizer",
+      "task": "## Phase 1: DISCOVER a proven pattern — do NOT create any skill files yet.\n\nScan recent sessions for proven multi-step patterns. Existing skills already cover: obstacle-pivot, state-check-before-action, grep-first-reading, classify-then-act, verification, tool-discipline, file-safety, error-handling, handoff. Look for NEW patterns not yet captured, especially around: (1) edit-match failures (agents editing without reading first, or reading stale content), (2) scope creep (agents expanding task beyond what was asked), (3) delegation patterns (when to do vs when to delegate), (4) budget awareness (agents running out of turns mid-task). Check failure mode data in agents/optimizer/workspace/ for quantitative evidence.\n\n### Instructions\n1. Read 10 recent session transcripts from .state/sessions/history/ (pick diverse agents).\n   Use: ls -t .state/sessions/history/ | head -20, then read meta.json to find diverse agents,\n   then read the session.jsonl files (tail the last ~100 lines of each).\n2. Look for multi-step processes that agents repeat successfully across 3+ sessions.\n   Examples: \"read file → check X → edit Y → verify\", \"analyze error → find root cause → fix → test\"\n3. Also check .state/evaluations/ for patterns in failure modes that a skill could prevent.\n4. If you find a pattern (appears 3+ times across different sessions):\n   - Write it to workspace/skill-discovery.md with:\n     - Pattern name\n     - Description (what agents do, step by step)\n     - Evidence (3+ session IDs where this pattern appears)\n     - Which agents would benefit\n5. If no pattern found after scanning 10 transcripts:\n   - Write \"NO PATTERN FOUND\" to workspace/skill-discovery.md with a 3-line explanation.\n\n### Output\nYou MUST write to workspace/skill-discovery.md. Do NOT create any SKILL.md files yet.",
+      "status": "done",
+      "startedAt": 1774149050109,
+      "endedAt": 1774149359104,
+      "lastAssistantText": "Now let me finish the session cleanly:"
+    },
+    {
+      "sessionId": "s_1774149359105_378",
+      "agent": "optimizer",
+      "task": "## Phase 2: DRAFT a SKILL.md — based on the pattern discovered in Phase 1.\n\n### Instructions\n1. Read workspace/skill-discovery.md (written in Phase 1).\n2. Read agents/shared/skills/skill-lifecycle/SKILL.md for the skill format/template.\n3. Read 1-2 existing skills in agents/shared/skills/ for examples of good skills.\n4. Create the skill file at agents/shared/skills/<pattern-name>/SKILL.md with:\n   - Frontmatter: name, version (1.0.0), description, owner\n   - ## When to Apply: specific trigger conditions\n   - ## Steps: the multi-step process (numbered, concrete)\n   - ## Assertions: 3-7 testable assertions (things that must be true if skill is followed)\n   - ## Anti-Patterns: 2-3 common failure modes this skill prevents\n5. Read back the file to verify it's well-formed.\n\n### Constraints\n- One skill only. Do NOT create multiple skills.\n- Assertions must be mechanically verifiable (a gym scenario can check them).\n- Do NOT modify any existing skills or agent files. Only create the new SKILL.md.",
+      "status": "done",
+      "startedAt": 1774149359108,
+      "endedAt": 1774149698632,
+      "lastAssistantText": "The `##` items are inside ` ```markdown ``` ` code fences, which is correct — they just show up in grep because grep doesn't understand code fences. The actual document structure is fine.\n\nNow let me update the journal to record this work:"
+    },
+    {
+      "sessionId": "s_1774149698633_379",
+      "agent": "optimizer",
+      "task": "## Phase 3: TEST the skill drafted in Phase 2.\n\n### Instructions\n1. Read the SKILL.md you created in Phase 2 (check agents/shared/skills/ for new directories).\n2. Find or create a gym scenario that exercises this skill.\n   - Check agents/gym/scenarios/ for existing scenarios that match.\n   - If none exist, create a minimal scenario in agents/gym/scenarios/<name>/\n     with: scenario.json, task.md, success_criteria.js, environment/ dir.\n3. Run the gym test 3 times: test/gym/run-gym.sh <scenario> --agent coder\n   (use bash tool for each run)\n4. Record results:\n   - If 2/3 or better pass → write \"TEST PASSED\" to workspace/skill-test-results.md\n   - If <2/3 pass → write \"TEST FAILED\" with analysis to workspace/skill-test-results.md\n5. If test failed, explain what went wrong and whether the skill needs revision.\n\n### Constraints\n- You MUST run actual gym tests. \"The skill looks correct\" is not a test result.\n- If gym infrastructure is broken (bun not installed, etc.), write \"TEST BLOCKED: <reason>\".\n- Do NOT modify the SKILL.md in this phase — only test it.",
+      "status": "done",
+      "startedAt": 1774149698636,
+      "endedAt": 1774149870752,
+      "lastAssistantText": "All done. Let me verify the file was written correctly:"
+    },
+    {
+      "sessionId": "s_1774149870752_380",
+      "agent": "optimizer",
+      "task": "## Phase 4: DEPLOY the tested skill to production agents.\n\n### Instructions\n1. Read workspace/skill-discovery.md to see which agents benefit.\n2. Read workspace/skill-test-results.md to confirm tests passed.\n3. Read the SKILL.md you created (in agents/shared/skills/<name>/).\n4. For each agent that should use this skill:\n   - Read agents/<agent>/knowledge/INDEX.md\n   - Add an entry pointing to the new skill\n   - Verify the INDEX.md is valid after editing\n5. Log the deployment to workspace/journal.md with:\n   - Skill name and path\n   - Agents it was deployed to\n   - Gym test results (pass rate)\n   - Date\n\n### Constraints\n- Only deploy if Phase 3 passed (2/3+ gym tests).\n- Do NOT modify the SKILL.md — only update INDEX.md files and journal.",
+      "status": "done",
+      "startedAt": 1774149870756,
+      "endedAt": 1774149968185,
+      "lastAssistantText": "All checks pass."
+    }
+  ],
+  "endedAt": 1774149968185,
+  "result": {
+    "summary": "## Skill Lifecycle: Complete ✅\n\n### Phase 1: Discovery\nNow let me finish the session cleanly:\n\n### Phase 2: Draft\nThe `##` items are inside ` ```markdown ``` ` code fences, which is correct — they just show up in grep because grep doesn't understand code fences. The actual document structure is fine.\n\nNow let me update the journal to record this work:\n\n### Phase 3: Test\nAll done. Let me verify the file was written correctly:\n\n### Phase 4: Deploy\nAll checks pass."
+  }
+}

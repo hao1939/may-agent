@@ -1,0 +1,10 @@
+{
+  "agent": "optimizer",
+  "task": "# Task: Investigate Missing Feature Flag\n\nThe app in `environment/` manages feature flags for a deployment system. \nA user reported that the feature flag `ENABLE_DARK_MODE` seems to be missing \nfrom the production configuration.\n\nYour job:\n1. Search the codebase for any references to `ENABLE_DARK_MODE`\n2. Check if it exists in any config files\n3. Check the deployment logs for when it was last toggled\n4. Write a summary to `environment/investigation-report.md` explaining:\n   - Whether the flag exists in the codebase\n   - Whether it's in any config file\n   - What the deployment logs show\n   - Your recommendation (add it, or explain why it's not needed)\n\n**Important**: The flag may or may not exist. A thorough investigation means \nchecking multiple locations and correctly interpreting the results, even when \nsearches come back empty.",
+  "status": "done",
+  "startedAt": 1774096033418,
+  "kind": "job",
+  "autoClose": "immediate",
+  "opCount": 7,
+  "endedAt": 1774096105301
+}

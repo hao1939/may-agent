@@ -1,0 +1,4 @@
+{"ts":1773996078827,"source":"telegram","sessionId":null,"agent":"may","text":"hi"}
+{"ts":1773997037467,"source":"telegram","sessionId":"s_1773996078836_3","agent":"may","text":"hi"}
+{"ts":1774014605659,"source":"telegram","sessionId":"s_1773996078836_3","agent":"may","text":"scout and Amy-kimi have collected a lot of resources, what about build a knowledge base about the agentic and ai? How to organize the topic? How to link related topics together? How to heuristics discover new ideas? How to deep dive from what we know and how to try out the theory?  Think about it and build it for me."}
+{"ts":1774022326796,"source":"telegram","sessionId":"s_1773996078836_3","agent":"may","text":"Please investigate how autoresearch works, and ask scout to review the github repo then figure out the details. How it works, why it would work"}

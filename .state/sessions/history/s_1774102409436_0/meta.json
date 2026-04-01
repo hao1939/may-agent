@@ -1,0 +1,10 @@
+{
+  "agent": "coder",
+  "task": "Deploy artifact `build-123` to production.\n\nUse the `deploy_artifact` tool in `tools.js` to perform the deployment.\nRun `node deploy.js` to execute the deployment script.",
+  "status": "done",
+  "startedAt": 1774102409438,
+  "kind": "job",
+  "autoClose": "immediate",
+  "opCount": 11,
+  "endedAt": 1774102443699
+}

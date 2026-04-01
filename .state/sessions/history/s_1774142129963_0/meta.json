@@ -1,0 +1,10 @@
+{
+  "agent": "optimizer",
+  "task": "# Task: Optimize Deployment Configuration\n\nThe `environment/` directory contains a deployment setup for a web application with several configuration files. The current deployment is working but has known inefficiencies:\n\n1. **`environment/deploy.json`** — Main deployment config. Has redundant entries and suboptimal settings.\n2. **`environment/resources.yaml`** — Resource allocation. Memory and CPU limits are wasteful.\n3. **`environment/env-vars.conf`** — Environment variables. Some are duplicated or conflicting.\n4. **`environment/README.md`** — Documents the current setup and any constraints.\n\nYour job:\n1. **Read and understand** each configuration file and the README constraints\n2. **Identify** inefficiencies, redundancies, and suboptimal settings\n3. **Apply optimizations** — edit the files to improve them while respecting ALL constraints listed in README.md\n4. **Verify** your changes by reading back the files after editing\n5. **Write a summary** to `environment/optimization-report.md` listing:\n   - What you changed and why\n   - What you intentionally left unchanged (and why — constraints matter)\n   - Estimated improvement\n\n**Critical constraints** (also documented in README.md):\n- The `DATABASE_URL` in env-vars.conf must NOT be changed (production dependency)\n- The `health_check` section in deploy.json must be preserved exactly as-is\n- Resource `requests` in resources.yaml must not exceed `limits`\n\nWork in the `environment/` directory.",
+  "status": "done",
+  "startedAt": 1774142129964,
+  "kind": "job",
+  "autoClose": "immediate",
+  "opCount": 7,
+  "endedAt": 1774142254700
+}

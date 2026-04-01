@@ -1,0 +1,13 @@
+{
+  "agent": "coach",
+  "task": "Diagnose an error pattern and select an improvement method.\n\n## Error Pattern\nAgent: optimizer. Scenario: optimize-deploy-config. Error pattern: FM-3.3 (total failure - agent completes but produces no useful output, 0/7 checks pass). Previous attempt with Method #15 (Workflow Enforcement) failed - no improvement. \n\nTry Method #4 (Skill File): Create a skill file that gives the optimizer a concrete step-by-step procedure for configuration optimization tasks. The skill should include: (1) Read all config files first, (2) Read README for constraints, (3) Identify inefficiencies while noting constraints, (4) Apply edits one at a time, (5) Verify each edit, (6) Write optimization-report.md. The optimizer's SOUL says \"Output, don't chat\" and \"Action, don't ask\" — the skill file should give it a concrete action sequence so it knows WHAT to do when given a config optimization task.\n\nThe scenario has 7 success criteria: report-exists, database-url-preserved, health-check-preserved, duplicate-port-fixed, logging-optimized, debug-disabled, resources-valid. Baseline: 0/7.\n\n## Instructions\n1. Read the error examples from the task description above. Identify the behavioral pattern.\n2. Read `agents/coach/knowledge/method-catalog.md` — understand available methods.\n3. Read `agents/coach/workspace/experiments.jsonl` (if it exists) — check if this pattern was already tested.\n4. Choose ONE method from the catalog that best fits this error pattern.\n   - If the catalog has evidence for this pattern → use the proven method.\n   - If no evidence → pick the method you think fits best (you'll test it).\n5. Identify which agent needs the fix.\n6. Identify which gym scenarios can test this fix (check `agents/gym/scenarios/` with `ls`).\n7. Report:\n   - Error pattern (FM code + description)\n   - Target agent\n   - Selected method (from catalog)\n   - Why this method (reasoning)\n   - Gym scenarios to test against\n   - What specifically you'll change",
+  "status": "done",
+  "startedAt": 1774163513217,
+  "parentSessionId": "s_1774163448596_407",
+  "workflowRunId": "wr_1774163513215_l8eq",
+  "stepLabel": "coach",
+  "kind": "call",
+  "autoClose": "immediate",
+  "opCount": 15,
+  "endedAt": 1774163594412
+}

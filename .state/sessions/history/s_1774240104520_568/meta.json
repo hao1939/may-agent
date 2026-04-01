@@ -1,0 +1,13 @@
+{
+  "agent": "optimizer",
+  "task": "## Phase 4: DEPLOY the tested skill to production agents.\n\n### Instructions\n1. Read workspace/skill-discovery.md to see which agents benefit.\n2. Read workspace/skill-test-results.md to confirm tests passed.\n3. Read the SKILL.md you created (in agents/shared/skills/<name>/).\n4. For each agent that should use this skill:\n   - Read agents/<agent>/knowledge/INDEX.md\n   - Add an entry pointing to the new skill\n   - Verify the INDEX.md is valid after editing\n5. Log the deployment to workspace/journal.md with:\n   - Skill name and path\n   - Agents it was deployed to\n   - Gym test results (pass rate)\n   - Date\n\n### Constraints\n- Only deploy if Phase 3 passed (2/3+ gym tests).\n- Do NOT modify the SKILL.md — only update INDEX.md files and journal.",
+  "status": "done",
+  "startedAt": 1774240104521,
+  "parentSessionId": "s_1774238969799_564",
+  "workflowRunId": "wr_1774239012217_ndgt",
+  "stepLabel": "optimizer",
+  "kind": "call",
+  "autoClose": "immediate",
+  "opCount": 23,
+  "endedAt": 1774240252927
+}

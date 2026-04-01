@@ -1,0 +1,47 @@
+{
+  "app_name": "web-frontend",
+  "version": "2.4.1",
+  "replicas": 3,
+  "max_replicas": 10,
+  "min_replicas": 2,
+  "port": 8080,
+  "target_port": 8080,
+  "protocol": "HTTP",
+  "environment": "production",
+  "deploy_strategy": "rolling",
+  "rolling_update": {
+    "max_surge": "50%",
+    "max_unavailable": "25%"
+  },
+  "health_check": {
+    "path": "/health",
+    "port": 8080,
+    "initial_delay_seconds": 30,
+    "period_seconds": 10,
+    "timeout_seconds": 5,
+    "success_threshold": 1,
+    "failure_threshold": 3
+  },
+  "readiness_check": {
+    "path": "/health",
+    "port": 8080,
+    "initial_delay_seconds": 10,
+    "period_seconds": 5,
+    "timeout_seconds": 3,
+    "success_threshold": 1,
+    "failure_threshold": 3
+  },
+  "logging": {
+    "level": "INFO",
+    "format": "json",
+    "output": "stdout"
+  },
+  "timeout_seconds": 30,
+  "grace_period_seconds": 30,
+  "image_pull_policy": "IfNotPresent",
+  "annotations": {
+    "team": "frontend",
+    "cost_center": "engineering",
+    "managed_by": "devops"
+  }
+}
