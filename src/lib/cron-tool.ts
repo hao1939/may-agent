@@ -63,6 +63,13 @@ export interface CronEntry {
    * initiative/health-check work. Default: 3 (skip 2, fire 1).
    */
   initiativeCadence?: number;
+  /**
+   * Fixed offset in ms from the start of each interval cycle.
+   * Use to stagger jobs that share the same intervalMs so they don't all
+   * fire at once. E.g., 5 heartbeats at 30min with offsets 0, 6min, 12min,
+   * 18min, 24min fire evenly across the window. Default: 0.
+   */
+  offsetMs?: number;
 }
 
 function textResult(text: string): AgentToolResult<string> {
