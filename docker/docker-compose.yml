@@ -61,6 +61,7 @@ services:
     entrypoint: ["/usr/local/bin/entrypoint-console.sh"]
     ports:
       - "${CONSOLE_NOVNC_PORT:-6081}:6080"
+      - "${WEB_PORT:-8080}:8080"
     volumes:
       - ..:/app
       - /home/hao:/home/hao:rw
