@@ -15,7 +15,7 @@ import { log } from "./log.js";
 /**
  * Structured output from the Active Recall pre-check.
  */
-export interface ActiveRecallResult {
+interface ActiveRecallResult {
   /** Whether any past failures were found for this agent. */
   triggered: boolean;
   /** Number of matching failure entries found. */

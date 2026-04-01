@@ -15,7 +15,7 @@
 
 // ── Types ───────────────────────────────────────────────────────────────
 
-export interface SanitizeResult {
+interface SanitizeResult {
   /** Whether the content was modified or rejected. */
   action: "pass" | "redacted" | "rejected";
   /** The sanitized content (original if passed, redacted if cleaned). */
@@ -24,7 +24,7 @@ export interface SanitizeResult {
   issues: string[];
 }
 
-export interface SanitizeOptions {
+interface SanitizeOptions {
   /** File path being written to (used to determine if memory sanitization applies). */
   filePath?: string;
   /** Agent name performing the write (for logging). */

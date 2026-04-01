@@ -573,7 +573,6 @@ const EXIT_RELOAD = 100;
 function gracefulRestart() {
   if (shuttingDown) {
     process.exit(EXIT_RELOAD);
-    return;
   }
   shuttingDown = true;
   bus.emit({ type: "info", message: "Restarting (hot-reload)..." });

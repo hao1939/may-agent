@@ -19,7 +19,7 @@ import { trackRequest } from "../lib/requests.js";
 
 import type { EventBus } from "./event-bus.js";
 
-export interface ChatSessionOptions {
+interface ChatSessionOptions {
   manager: SubagentManager;
   bus: EventBus;
   /** The agent to run for human messages (default: "may"). */

@@ -101,11 +101,8 @@ async function getRequestFns() {
 export { isRetryableInfraError, runAgentWithRetry } from "./manager-retry.js";
 // classifyError is pure string-matching — imported from classify-error.ts (no bun:sqlite deps)
 export { classifyError } from "./classify-error.js";
-export { buildTrace, findPathToTarget } from "./manager-trace.js";
-export type { TraceContext } from "./manager-trace.js";
+export { buildTrace } from "./manager-trace.js";
 import { computeHealth, computeAuditHealth, computeReconcileHealth } from "./manager-health.js";
-export { EVAL_SKIP_AGENTS } from "./manager-health.js";
-export type { HealthContext } from "./manager-health.js";
 import {
   signToolOutput,
   verifyToolOutput,
@@ -120,7 +117,6 @@ export {
   wrapToolsWithReceipts,
   getOpUsage,
 } from "./manager-receipts.js";
-export type { ReceiptWrapContext } from "./manager-receipts.js";
 import { appendActivity, truncateSummary, PROGRESS_INTERVAL } from "./activity.js";
 import { log } from "./log.js";
 // ConcurrencyGate removed — see manager-receipts.ts comment.
@@ -2484,8 +2480,4 @@ export class SubagentManager {
     return createAgentsToolFn(this as unknown as import("./manager-agents-tool.js").AgentsToolManagerDeps, opts);
   }
 
-  /** Return a snapshot of all sessions tracked by the internal registry. */
-  getRegistrySessions(): Record<string, any> {
-    return this.registry.getRegistry();
-  }
 }

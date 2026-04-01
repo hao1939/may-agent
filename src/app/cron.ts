@@ -27,10 +27,10 @@ import type { CronEntry } from "../lib/cron-tool.js";
 // ── Types ─────────────────────────────────────────────────────────────
 
 /** A JS function that replaces the LLM for a specific cron job. */
-export type CronHandler = () => Promise<void>;
+type CronHandler = () => Promise<void>;
 
 /** Callback when a job fires (for notifications). */
-export type CronJobCallback = (entry: CronEntry, type: "js" | "heartbeat" | "detached") => void;
+type CronJobCallback = (entry: CronEntry, type: "js" | "heartbeat" | "detached") => void;
 
 // ── Cron class ────────────────────────────────────────────────────────
 
