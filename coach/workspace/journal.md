@@ -1896,3 +1896,23 @@ No production evidence that agents would escalate when truly stuck. Recommend pe
 **Missing from design**: Error handling policy for subscriber failures, evaluation pipeline as a component, watchdog/recovery protocol, event volume during training sprints.
 
 **Deliverable**: `workspace/architecture-redesign-review.md` (169 lines, detailed analysis with suggested phase order)
+
+## 2026-04-01 — Reflection (s_1775055975122_21)
+
+### Inputs Analyzed
+10 human inputs since last reflection (16h gap — missed one reflection slot due to interrupted session). Key themes:
+1. **Architecture redesign review** (5 messages): Sent to all agents. Coach completed its review.
+2. **Knowledge centralization** (2 messages): Scout/amy-kimi research → shared library.
+3. **Role clarification** (3 messages): Hao explicitly assigns: Bob = big ideas, **Coach = mechanical skill testing**, Tech-lead = POCs/experiments.
+
+### Critical Finding: Coach's Mandate Expanded
+Hao said verbatim: "mechanically testing skills is coach's job." 41 adopted skills are unverified. Coach should pivot from "build new scenarios" to "verify existing claims."
+
+### IT Status
+- IT-1 (workflow evidence report): ✅ DONE (75 lines, includes regression data)
+- IT-2 (Method #15 regression diagnosis): ❌ NOT DONE (deprioritized for architecture review + scenario building)
+- Rate: 1/2 (50%) — improved from 17% last cycle
+
+### New ITs
+1. Build skill verification protocol + test first skill (P0)
+2. Check knowledge/hypotheses/ for Bob's experiment requests (P1)

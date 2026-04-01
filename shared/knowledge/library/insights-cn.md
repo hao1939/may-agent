@@ -215,4 +215,72 @@ OC版本：v2026.3.2(ACP默认开/PDF原生工具/Zalo纯JS重构/100+安全修�
 **OC哲学사용자귀납(69819e90❤️109)：**"실행이지능"(vs LangChain"제어正義"/AutoGPT"자율목표")；댓글(❤️6):"Agent루프미래=prompt cache중심컨텍스트공학"
 关键博主：小盖❤️9675|JT❤️2760|aopstudio❤️2639|whisper❤️975|奥森木(多篇)|火柴(系列)
 Compact：#76-82 | 2026-03-06 explore×3 synthesis
+
+---
+
+## 🔄 2026-04-01 新增 (HB-2306+)
+
+### Agent可靠性工程
+```
+⭐⭐ AgentFixer (HB-2315 arXiv:2603.29848 IBM Research)：15检测工具+2根因分析模块
+  工具分类：Input-Prompt(3)|System Prompt(4)|Output-Prompt(3)|Token异常(2)|Code验证(1)|跨阶段一致(2)
+  关键数据：38%失败来自解析错误(JSON格式/schema缺失) | 验证驱动优化使Llama4/Mistral达到前沿可靠性
+  方法论：Rule-based + LLM-as-a-Judge混合架构
+  → 对我们：Error Log可参照6大类15小类扩展；L4层保留规则+LLM双验证；中端模型+精细化验证=生产级可靠
+
+⭐⭐ TCA三认知架构 (HB-2316-2318 arXiv:2603.30031 UCL)：物理启发的Agent停止边界
+  问题：ReAct"认知失重"—无网络拓扑/时间节奏/认知边界感知 → 三大失败模式：拥堵时过度工具|时间衰减时过度思考|模糊证据下脆弱行为
+  方案：HJB启发的停止边界 U(a)=ΔĤ(信息价值)-α(λS(拥堵成本)+β(时间成本)) | STOP ⟺ max U(a)≤0
+  验证：EMDG紧急医疗诊断，减少time-to-action同时保持准确率
+  → 对我们：L4从固定token→效用驱动动态停止；Skill调用需边际效用计算；TCA-Lite用Monte Carlo估计VOI可行
+```
+
+### 推理效率与结构化
+```
+⭐ Structured Intent (HB-2309 arXiv:2603.29953)：5W3H结构化意图的弱模型补偿效应
+  跨Claude/GPT-4o/Gemini 3,240次测试：跨语言方差↓96% | 交互轮次-60% | 满意度+28%
+  关键发现：结构化对弱模型增益更大(Gemini +1.006 vs Claude +0.217)
+  → 对我们：L1指令强制5W3H预处理；弱模型需更严格结构化；跨语言鲁棒性大幅提升
+
+⭐ Stop Overthinking综述 (HB-2308 arXiv:2503.16419 TMLR 2025)：高效推理首篇结构化学术综述
+  三方向：Model-based训练简洁模型|Output-based动态缩减步骤|Input-based难度自适应提示
+  GitHub: github.com/Eclipsess/Awesome-Efficient-Reasoning-LLMs
+  → 对我们：step limit属Output-based；Input-based难度自适应尚未探索；需建推理效率benchmark
+
+DAST (arXiv:2503.04472 EMNLP 2025)：难度自适应慢思考
+  Token Length Budget(TLB)量化问题难度 | Budget-aware reward shaping
+  结果：平均减少30%+ token，同时保持复杂问题准确率
+  → 简单任务短推理，复杂任务才深度思考
+```
+
+### 工具生态与架构
+```
+Claude Cookbooks (HB-2319 GitHub 37k⭐ 527 commits)：官方Agent开发范式库
+  目录=参考架构：patterns/agents|claude_agent_sdk|skills|tool_use|tool_evaluation|observability
+  → 对我们：src/skills/与官方思路一致✅；缺失tool_evaluation/observability模块❌
+
+GATE (arXiv:2502.14848)：Graph-based Adaptive Tool Evolution
+  动态工具图构建+自适应进化 | Minecraft 4.3x加速 | TextCraft/DABench 10%+提升
+  → 对我们：当前skills/是扁平的，可升级层次化图结构+跨任务复用
+
+SWE-Lancer (arXiv:2502.12115 OpenAI)：真实Agent基准
+  1,400+真实Upwork任务，总价值$100万 | $50 bug fix → $32,000 feature
+  关键发现：前沿模型仍无法解决大多数真实软件工程任务
+  → 需建立实际价值映射的评估体系
+```
+
+### 用户行为与产品
+```
+Anthropic经济指数报告 (HB-2306)：100万条Claude对话揭示用户分层现象
+  新用户：搜索引擎式简单查询 | 老用户(6个月+)：复杂任务自动化工作流+人机协作
+  洞察："学习曲线真实存在"—需6个月经验才能进入高效模式
+  → 对我们：OpenClaw L0-L5分层与使用成熟度曲线吻合；渐进式能力释放；CLI/GUI双轨策略
+
+Claude Code Agentic Search转向 (HB-2307)：放弃向量DB改用grep
+  原因：语义模糊性(auth vs login)|索引维护成本|context信噪比
+  洞察：Agentic search=意图识别→渐进式查询→检测→纠正循环；简单工具+智能编排>复杂检索
+  → 对我们：SKILL.md可能不需要复杂向量检索，文件系统+grep+分层命名更有效
+```
+
+Compact：#83 | 2026-04-01 backfill×1 | posts: 977+ | HB-2306-2319
 ```

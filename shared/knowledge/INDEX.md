@@ -11,6 +11,7 @@ All knowledge in the system, organized by confidence level.
 | KE-003 | Rich delegation context reduces ops by 47% | EXP-002 (POC n=5) | knowledge/entries/KE-003.md |
 | KE-004 | Guards are brittle, use context.md instead | 3 guard reverts | knowledge/entries/KE-004.md |
 | KE-005 | QA rubber-stamps at 14% detection | DB analysis | knowledge/entries/KE-005.md |
+| KE-006 | Skills targeting reasoning patterns don't change tool-calling patterns | EXP-004 (A/B 1/3 vs 1/3) | knowledge/entries/KE-006.md |
 
 ## Adopted (in use, not experimentally verified)
 
@@ -60,6 +61,9 @@ Team behavioral rules. Adopted by convention, not verified by experiment.
 |----|-----------|--------|----------|
 | H-001 | Adversarial QA framing increases detection from 14% to >30% | Untested | knowledge/hypotheses/H-001.md |
 | H-002 | Weaker models benefit more from context.md | Untested | knowledge/hypotheses/H-002.md |
+| H-003 | Verification skill improves gym pass rate on verification scenarios | Untested | knowledge/hypotheses/H-003.md |
+| H-004 | Plan-once-amend skill improves blocker handling | **Refuted** | knowledge/hypotheses/H-004.md |
+| H-005 | Skill utilization self-locking — worked examples unlock skill effectiveness | Untested | knowledge/hypotheses/H-005.md |
 
 ## Experiments
 
@@ -67,6 +71,8 @@ Team behavioral rules. Adopted by convention, not verified by experiment.
 |----|-------|--------|---------|----------|
 | EXP-001 | Context learning A/B | Complete | Supported | knowledge/experiments/EXP-001/ |
 | EXP-002 | Delegation context POC | Complete | Supported | knowledge/experiments/EXP-002/ |
+| EXP-003 | Verification skill on verify-before-finish | Designed | — | knowledge/experiments/EXP-003/ |
+| EXP-004 | Plan-once-amend skill on blocker handling | Complete | **No effect** | knowledge/experiments/EXP-004/ |
 
 ## Operational (not knowledge — reference only)
 
@@ -98,8 +104,9 @@ Collected by scout, amy, amy-kimi agents. Each item is a potential source for hy
 | library/papers.md | Academic papers with takeaways | 539 lines |
 | library/repos.md | Notable GitHub repos | 899 lines |
 | library/discoveries.md | Web finds (Twitter, GitHub, blogs) | 4266 lines |
-| library/people.md | Notable researchers | ~50 lines |
-| library/reddit.md | Reddit insights | ~100 lines |
-| library/deep-dives/ | Detailed research reports | 25 files |
+| library/people.md | Notable researchers | 71 lines |
+| library/reddit.md | Reddit insights | 165 lines |
+| library/insights-cn.md | Curated knowledge index (Chinese) — security, architecture, agent patterns | 286 lines |
+| library/deep-dives/ | Detailed research reports + cross-reference syntheses | 68 files |
 
 See library/README.md for details. Raw archives stay agent-local.

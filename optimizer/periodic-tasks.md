@@ -3,37 +3,37 @@
 Track when each task was last done. Pick the most overdue one during heartbeat step 3.
 
 ## Per heartbeat (do one, rotate)
-- [x] **Analysis review** — Last done: 2026-04-01T11:39
+- [x] **Analysis review** — Last done: 2026-04-01T15:15
   Read agents/bob/workspace/analysis.md or recent Bob synthesis outputs.
   Any findings that need optimization work? Cost issues? Efficiency problems?
   If found → add specific task to workspace/todo.md.
-  Latest (2026-04-01T11:39): **New binary 4970ddf ACTIVE** (PID 71, started 11:27). Was 77e52c1 — rebuilt again. HEAD **fc16d69** (2 ahead: web UI source fix, URL hash routing). **2.6h session gap** (09:09→11:27, 0 sessions since restart — this is first). 9 sessions in last 3h (coach 5, bob 2, may 1, optimizer 1). Quality **98.9%** (200w: 153g/31a/2ni/14skip). 50w **97.6%** (25g/16a/1ni/8skip). 24h errors: **10** (spike — 5 coach + 2 bob "Request aborted" at 09:06 batch = likely crash before restart). 24h waste **0.6%** (1/159). 141 sessions in 24h.
-  Latest (2026-04-01T10:15): 12 sessions since 08:39. Binary 77e52c1 ACTIVE (PID 71, started 09:55). HEAD 1947ef2. Quality 98.9%. 24h errors: 2. 24h waste 0.6%.
-  _Older entries pruned 2026-04-01T11:39._
+  Latest (2026-04-01T15:15): Bob analysis unchanged (last updated ~09:00). Quality **98.9%** (200w: 149g/36a/2ni/13skip). 50w **97.7%** (22g/20a/1ni/7skip). 24h waste **0.7%** (1/141). 0 errors. **Session persistence STILL BROKEN** — 6.1h gap (last session 09:09). P0 follow-up (req:af79e5a6) still CREATED, not picked up by May. Binary 4970ddf, PID 71. HEAD 7ab9126 (7+ commits ahead, no session fix in any).
+  Latest (2026-04-01T14:45): Session persistence STILL BROKEN. Bug report auto-completed but fix not deployed.
+  _Older entries pruned 2026-04-01T15:15._
 
-- [x] **Cost outlier scan** — Last done: 2026-04-01T11:39
+- [x] **Cost outlier scan** — Last done: 2026-04-01T15:15
   Check recent evaluations — any sessions > $2.00?
   What caused the high cost? Too many turns? Large tool calls? Model choice?
   If pattern found → design fix, add to workspace/todo.md.
-  Latest (2026-04-01T11:39): No cost outliers. Quality **98.9%** (200w: 153g/31a/2ni/14skip). 50w **97.6%** (25g/16a/1ni/8skip). NI at 2 (200w), 1 (50w). 24h waste **0.6%** (1/159). Error spike to 10 (mostly "Request aborted" batch at 09:06 — process crash/restart). Skip rate improving: 7% (200w), 16% (50w), down from 9%/24% last HB. Binary 4970ddf active (started 11:27).
-  Latest (2026-04-01T10:15): No cost outliers. Quality 98.9%. 50w 97.4%. NI at 2/1. Waste 0.6%. Skip rate elevated at 9%/24%.
-  _Older entries pruned 2026-04-01T11:39._
+  Latest (2026-04-01T15:15): Session table still broken — no cost data since 09:09. Eval-only view: 152 evals in 24h. Bob+Coach still ~65% of daily spend per Bob's analysis ($258.71/day total). No new cost anomalies detectable without session data.
+  Latest (2026-04-01T14:45): No cost outliers accessible. Bob+Coach ~65% of $258.71/day.
+  _Older entries pruned 2026-04-01T15:15._
 
-- [x] **LLM-to-JS opportunity scan** — Last done: 2026-04-01T11:39
+- [x] **LLM-to-JS opportunity scan** — Last done: 2026-04-01T15:15
   Read recent sessions. Any agent doing predictable, deterministic work via LLM?
   Could it be replaced with a JS handler? (See cron-graduation-process.md Stage 3.)
   If found → write proposal in workspace/improvement-proposals.md.
-  Latest (2026-04-01T11:39): 9 sessions in last 3h. coach 5x(66ops), bob 2x(22ops), may 1x(1ops), optimizer 1x(42ops). Coach remains highest volume. **2.6h gap with 0 sessions** (09:09→11:27 restart). No LLM-to-JS candidates — activity too sparse during this window. Skip rate improving (16% 50w, down from 24%).
-  Latest (2026-04-01T10:15): 12 sessions. coach 5x(66ops), bob 2x(22ops), optimizer 2x(67ops). No LLM-to-JS candidates.
-  _Older entries pruned 2026-04-01T11:39._
+  Latest (2026-04-01T15:15): Still cannot assess — sessions not written to DB (6.1h gap). Only evaluations visible. No new LLM-to-JS candidates identifiable without session transcript data.
+  Latest (2026-04-01T14:45): Cannot assess — sessions not written to DB (5.5h gap).
+  _Older entries pruned 2026-04-01T15:15._
 
-- [x] **Handler health check** — Last done: 2026-04-01T11:39
+- [x] **Handler health check** — Last done: 2026-04-01T15:15
   Review existing JS handlers in agents/may/handlers/.
   Any errors in recent logs? Any handler that's not firing?
   If issues → add fix to workspace/todo.md.
-  Latest (2026-04-01T11:39): Binary **4970ddf ACTIVE** (PID 71, started 11:27). Previous 77e52c1 crashed at ~09:06 (5 "Request aborted" errors in coach+bob batch). HEAD **fc16d69** (2 ahead: web UI source fix, URL hash routing). **2.6h session gap** (09:09→11:27). 10 errors in 24h (spike from crash batch). Process now healthy — this session is first since restart. Quality 98.9%. 24h waste 0.6%.
-  Latest (2026-04-01T10:15): Binary 77e52c1 ACTIVE (PID 71, started 09:55). HEAD 1947ef2 (2 ahead). 2 errors in 24h. Quality 98.9%. Waste 0.6%.
-  _Older entries pruned 2026-04-01T11:39. Waste trend: 2.4→0.9→4.3→4.1→3.9→3.6→3.5→2.2→1.4→6.0→6.0→6.0→6.3→0.7→0.7→0.7→0.6→0.0→0.6→0.6%._
+  Latest (2026-04-01T15:15): **Session persistence STILL BROKEN** (6.1h). Binary 4970ddf, PID 71. Evaluations healthy (latest 15:06, 11 min gap). HEAD 7ab9126 (7 commits ahead of binary — UI/knowledge/research changes, NO session fix). P0 follow-up req:af79e5a6 still CREATED. Original bug req:1b83f546 was auto-completed into May session s_11 (rated acceptable) but no actual fix deployed.
+  Latest (2026-04-01T14:45): Session persistence broken 5.5h. Bug auto-completed but fix not deployed.
+  _Older entries pruned 2026-04-01T15:15. Waste trend: ...→0.7→0.6→0.0→0.6→0.6→0.7→0.7→0.7%._
 
 - [x] **Proven pattern → Skill/Workflow** — Last done: 2026-03-30T01:10
   This is your MOST IMPORTANT periodic task — focus area #1.
@@ -57,7 +57,7 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Latest (2026-03-23T21:36): verification-consistency (15th skill) deployed to 6 agents. Full lifecycle.
   _13 earlier skill deployments documented in finding files. See `workspace/finding-pattern-scan-*.md`._
 
-- [x] **Tool quality review** — Last done: 2026-04-01T11:39
+- [x] **Tool quality review** — Last done: 2026-04-01T15:15
   Read the tool-quality-report.md (generated by tool-quality-scan handler every 4h).
   Look for regression trends, persistent failure patterns, and agent-specific issues.
   If a specific failure category accounts for >30% of waste, create a targeted intervention:
@@ -65,9 +65,9 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   - For empty-args: check if schema validation is catching it early enough
   - For edit-match-fail: check if agents are reading files before editing
   If tool-quality-report.md doesn't exist yet, skip — handler hasn't fired.
-  Latest (2026-04-01T11:39): Quality **98.9%** (200w: 153g/31a/2ni/14skip). 50w: **97.6%** (25g/16a/1ni/8skip). NI at 2 (200w), 1 (50w). 24h waste **0.6%** (1/159). Skip rate improving: 7% (200w), 16% (50w) — down from 9%/24%. Binary 4970ddf restarted at 11:27. 10 errors in 24h (crash-related batch at 09:06, not tool quality issues).
-  Latest (2026-04-01T10:15): Quality 98.9% (200w). 50w 97.4%. NI at 2/1. Waste 0.6%. Skip rate 9%/24%.
-  _Older entries pruned 2026-04-01T11:39. Waste trend: 2.4→0.9→4.3→4.1→3.9→3.6→3.5→2.2→1.4→6.0→6.0→6.0→6.3→0.7→0.7→0.7→0.6→0.0→0.6→0.6%._
+  Latest (2026-04-01T15:15): Quality **98.9%** (200w: 149g/36a/2ni/13skip). 50w: **97.7%** (22g/20a/1ni/7skip). 24h waste **0.7%** (1/141). 0 errors in 24h. Session data unavailable for deeper tool-level analysis (6.1h session gap). Metrics stable — no regression detected.
+  Latest (2026-04-01T14:45): Quality 98.9%. Waste 0.7%. Session data unavailable.
+  _Older entries pruned 2026-04-01T15:15. Waste trend: ...→0.7→0.6→0.0→0.6→0.6→0.7→0.7→0.7%._
 
 - [x] **Workflow quality audit** — Last done: 2026-03-30T21:10
   **⛔ COOLDOWN: WEEKLY.** Workflow changes are high-impact; audit weekly or after major changes.
@@ -81,16 +81,16 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Latest (2026-03-30T21:10): **First full audit completed.** 32 workflow files across 7 agents. 177 workflow runs, 460 sessions all-time. Key findings: (1) Workflows reduce errors dramatically (2.6% vs 18.1% non-workflow) but quality is lower (70.7% vs 81.4%) — mainly due to coach sprint NI rate (68/133). (2) All 3 consolidation priorities still open — P1 verify-and-finish confirmed byte-identical, P2 verify-parallel confirmed tech-lead best, P3 implement-and-review has 3 divergent versions. (3) Found 1 unregistered workflow: may/project-monitor.ts — added to registry. (4) 27.1% run interruption rate (48/177) wastes ~917 ops total. Registry updated with effectiveness metrics and recommendations. Next: consolidate P1 (zero-risk dedup).
   Latest: Registry created 2026-03-30 with initial audit data. 3 consolidation priorities identified.
 
-- [x] **Gym shadow baseline & trend tracking** — Last done: 2026-04-01T11:39
+- [x] **Gym shadow baseline & trend tracking** — Last done: 2026-04-01T13:15
   ⚠️ COOLDOWN: After each binary rebuild only. No point re-running on same binary.
   Run `scripts/gym-baseline.sh --tier smoke --agent coder --tag "<descriptive-tag>"` (takes ~10 min).
   Then update `workspace/gym-trend-tracker.md` with new batch results.
   Compare with previous batches via `bun scripts/gym-stats.ts --batches`.
   Flag regressions via `bun scripts/gym-stats.ts --regressions`.
   NOTE: Runs take ~600s for 13 smoke scenarios. Consider running in background or splitting.
-  Latest (2026-04-01T11:39): **Binary 4970ddf now active** (started 11:27). Was 77e52c1, now rebuilt again. Gym baseline NEEDED on 4970ddf. Previous: 849c340 = 15/16 pass (94%), 77e52c1 = not completed (session interrupted at 10:32). HEAD fc16d69 (2 ahead). Binary has had 3 rebuilds today: e58e521→77e52c1→4970ddf.
-  Latest (2026-04-01T10:15): Binary 77e52c1 active. Gym baseline NEEDED. Previous: 849c340 = 15/16 (94%).
-  _Older entries pruned 2026-04-01T11:39. Last successful gym: 11/13 pass (85%) on 37b8fbb._
+  Latest (2026-04-01T15:15): **Gym baseline STILL NEEDED on 4970ddf.** Binary active since 11:37. Session persistence still broken (6.1h gap). Recommend deferring gym until session bug is fixed and new binary built. Previous: 849c340 = 15/16 pass (94%).
+  Latest (2026-04-01T14:45): Gym baseline deferred due to session persistence bug.
+  _Older entries pruned 2026-04-01T15:15. Last successful gym: 15/16 pass (94%) on 849c340._
 
 ## Weekly
 - [x] **Improvement proposals review** — Last done: 2026-03-30T09:10

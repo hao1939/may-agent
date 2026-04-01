@@ -191,6 +191,29 @@ export function runConventionChecks(opts: {
     log(`[convention-check] Retroactively corrected ${staleFailures.length} false positives on interrupted/error sessions`);
   }
 
+  // Retroactive fix #2: correct finish-dependent check failures for orphan sessions
+  // (sessions that have convention_check records but no sessions table entry at all).
+  // These are typically gym runs or sessions that died before session creation.
+  // Can't penalize for missing finish() if the session never registered.
+  const orphanFailures = db.prepare(`
+    SELECT cc.rowid, cc.session_id, cc.convention
+    FROM convention_checks cc
+    LEFT JOIN sessions s ON cc.session_id = s.sessionId
+    WHERE cc.passed = 0
+      AND cc.convention IN (${placeholders})
+      AND s.sessionId IS NULL
+  `).all() as { rowid: number; session_id: string; convention: string }[];
+
+  if (orphanFailures.length > 0) {
+    const updateOrphanStmt = db.prepare(
+      `UPDATE convention_checks SET passed = 1, violations = '["retroactive: orphan session (no session record)"]' WHERE rowid = ?`
+    );
+    for (const orphan of orphanFailures) {
+      updateOrphanStmt.run(orphan.rowid);
+    }
+    log(`[convention-check] Retroactively corrected ${orphanFailures.length} false positives on orphan sessions (no session record)`);
+  }
+
   // Find evaluated sessions not yet convention-checked
   const uncheckedSessions = findUncheckedSessions(persistDir, db);
 
@@ -220,10 +243,12 @@ export function runConventionChecks(opts: {
       }
 
       // Check if session was interrupted (can't penalize for missing finish())
+      // Also treat sessions with no session record as interrupted (orphans —
+      // gym runs or sessions that died before session record creation)
       const sessionRow = db.prepare(
         `SELECT status FROM sessions WHERE sessionId = ?`
       ).get(sessionId) as { status: string } | undefined;
-      const isInterrupted = sessionRow?.status === "interrupted" || sessionRow?.status === "error";
+      const isInterrupted = !sessionRow || sessionRow.status === "interrupted" || sessionRow.status === "error";
 
       const checks = runAllChecks(toolCalls, agent, isInterrupted);
       result.sessionsChecked++;

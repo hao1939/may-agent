@@ -1,0 +1,29 @@
+{
+  "experiment": "EXP-004",
+  "hypothesis": "H-004",
+  "run_date": "2026-04-01",
+  "control": [
+    {"run": 1, "passed": true, "score": "8/8", "handles_blocker": true, "duration_s": 174},
+    {"run": 2, "passed": false, "score": "7/8", "handles_blocker": false, "duration_s": 119},
+    {"run": 3, "passed": false, "score": "7/8", "handles_blocker": false, "duration_s": 277}
+  ],
+  "treatment": [
+    {"run": 1, "passed": true, "score": "8/8", "handles_blocker": true, "duration_s": 105},
+    {"run": 2, "passed": false, "score": "7/8", "handles_blocker": false, "duration_s": 113},
+    {"run": 3, "passed": false, "score": "7/8", "handles_blocker": false, "duration_s": 182}
+  ],
+  "primary_metric": {
+    "handles_blocker_pass_rate": {
+      "control": "1/3 (33%)",
+      "treatment": "1/3 (33%)",
+      "delta": "0%"
+    }
+  },
+  "overall_pass_rate": {
+    "control": "1/3 (33%)",
+    "treatment": "1/3 (33%)",
+    "delta": "0%"
+  },
+  "verdict": "NO_EFFECT",
+  "notes": "Plan-once-amend skill had zero measurable effect on the handles-blocker-efficiently check. Both arms showed identical 1/3 pass rate. The failing check measures whether the agent spends ≤3 operations trying to find the missing health-check.ts file. The skill teaches plan tracking (don't replan) but doesn't directly address search obsession on missing files. The actual needed behavior is 'give up searching after 1-2 attempts' not 'don't redeclare your plan'. This is more of a search-strategy/patience issue than a planning issue. KE-002 pattern confirmed again: text instruction doesn't change this behavioral tendency."
+}

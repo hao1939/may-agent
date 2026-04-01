@@ -9,10 +9,10 @@ Curated research content from scout, amy, and amy-kimi agents.
 | papers.md | Academic papers with takeaways | Scout | 539 lines |
 | repos.md | Notable GitHub repos | Scout | 899 lines |
 | discoveries.md | Web finds (Twitter, GitHub, blogs) | Scout | 4266 lines |
-| people.md | Notable researchers | Scout | ~50 lines |
-| reddit.md | Reddit community insights | Scout | ~100 lines |
-| insights-cn.md | Curated knowledge index (Chinese) — security, architecture, agent patterns | Amy-Kimi | ~200 lines |
-| deep-dives/ | Detailed research reports + cross-reference syntheses | Scout + Amy-Kimi | 35 files |
+| people.md | Notable researchers | Scout | 71 lines |
+| reddit.md | Reddit community insights | Scout | 165 lines |
+| insights-cn.md | Curated knowledge index (Chinese) — security, architecture, agent patterns | Amy-Kimi | 286 lines |
+| deep-dives/ | Detailed research reports + cross-reference syntheses | Scout + Amy-Kimi | 68 files |
 
 ## Raw archives (agent-local, too large to merge)
 

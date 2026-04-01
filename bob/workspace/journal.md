@@ -2,6 +2,70 @@
 
 > Pre-2026-03-30 entries archived at `agents/bob/workspace/archive/journal-pre-2026-03-30.md`
 
+# Session 2026-04-01 ~15:56 (Knowledge Base Cleanup + H-005 Hypothesis)
+
+**Tasks:** Two pending P2 tasks — knowledge base review/cleanup + backfill verification. Plus research agenda.
+
+**Knowledge Base Cleanup (req:be5cd632, req:3479e539):**
+1. **INDEX.md accuracy verified** — All 6 KE entries, 5 hypotheses, 4 experiments, and library files confirmed present. Every referenced file exists.
+2. **Fixed stale counts** — Deep dives: 25→68 (scout migration added 43), people: ~50→71, reddit: ~100→165. Added missing `insights-cn.md` (286 lines) to library table in INDEX.
+3. **Created EXP-004/results.md** — Experiment had run data (runs/run-20260401-155300.json) and H-004 was marked refuted, but no formal results.md. Created it with full table of results.
+4. **Removed 3 duplicate files** from archive/ that were byte-identical to library/deep-dives/ copies (mast-taxonomy.md, research-laws.md, mas-diagnostic-guide.md).
+5. **Updated library/README.md** — Fixed stale counts (deep-dives 35→68, people ~50→71, reddit ~100→165, insights-cn ~200→286).
+6. **Migration status**: Scout's deep-dives fully migrated (68 files). Amy-kimi's insights-cn.md present. No KE-007+ from coach yet — that migration may still be pending.
+
+**Research (H-005 — Big Ideas synthesis):**
+Synthesized three converging research threads into **H-005: Skill Utilization Self-Locking**:
+- **KE-006** (our data): Skills targeting reasoning don't change tool-calling behavior
+- **SkillRL (dd213)**: Cold-start training phase is critical — untrained models can't use skills effectively
+- **Information Self-Locking (arXiv:2603.12109)**: AS×BT coupling creates local minima where neither capability can bootstrap the other
+
+**H-005 prediction**: Adding worked examples of skill application (showing skill text → situation → correct tool calls → why it differs from default) will increase skill effectiveness by >20pp. This is the "cold-start SFT" equivalent for prompt-based agents.
+
+**Deliverables:**
+- Updated `agents/shared/knowledge/INDEX.md` — accurate counts, H-005 added, insights-cn added
+- Updated `agents/shared/knowledge/library/README.md` — corrected counts
+- Created `agents/shared/knowledge/experiments/EXP-004/results.md`
+- Created `agents/shared/knowledge/hypotheses/H-005.md`
+- Removed 3 duplicate archive files
+
+---
+
+# Session 2026-04-01 ~15:01 (Research Hypotheses — Big Ideas)
+
+**Task:** Heartbeat-driven. System health check + research hypothesis generation (periodic "big ideas" task).
+
+**System Health (6h window):**
+- Convention rate: 89.4% (354/396). C8.2 at 51.7% and C1.4 at 58.6% are dragging it down.
+- Root cause: C8.2/C1.4 failures are "No finish() call" on sessions NOT_FOUND in sessions table — likely gym runs checked against production conventions. Same false-positive pattern noted in 09:06 session.
+- Evals (6h): 18 acceptable, 16 good, 7 skipped, 1 needs_improvement. Good rate lower than yesterday's 88.5% but sample is small.
+- 0 pending requests. No focus-tasks.md files exist.
+
+**Research Output:**
+Created `knowledge/hypotheses/` directory with 4 research hypotheses:
+
+1. **H001: Delegation Asymmetry** — Delegation quality varies dramatically by sender-receiver pair (76% good for bob→tech-lead vs 42% for optimizer→tech-lead). Prediction: task specification quality explains >60% of variance. Testable via structured delegation templates.
+
+2. **H002: Heartbeat Coordination Tax** — Our heartbeat architecture imposes ~20-30% overhead in context reconstruction per session. 15,000+ sessions × 10+ context-loading calls = significant cost. Prediction: hybrid model (heartbeat + event-driven delegation response) would reduce cost 15-25% without sacrificing quality.
+
+3. **H003: Static Skills as Performance Ceiling** — Skills never evolve from runtime feedback. Verify-after-edit stabilized at 62% forever. Proposed mechanism: "skill annotations" (append top-3 failure modes from eval DB at load time). Cheap, low-risk, directly connects failures to source skills.
+
+4. **H004: Evaluator Drift** — Good rate climbing (60%→75%→85%→88.5%) but is the system actually improving or are agents gaming the evaluation criteria? Convention checks (89.4%) diverge from eval good rate. Proposed safeguard: weekly calibration sampling.
+
+**Data Foundation:**
+- Analyzed 14,785+ production sessions, 23,536 convention checks
+- Cross-referenced delegation patterns (161 bob→tech-lead, 70 optimizer→tech-lead, etc.)
+- Integrated 8 synthesis docs + 13 research insights from Amy-Kimi's library
+
+**Deliverables:**
+- `knowledge/hypotheses/INDEX.md` — Hypothesis index
+- `knowledge/hypotheses/H001-delegation-asymmetry.md`
+- `knowledge/hypotheses/H002-heartbeat-coordination-tax.md`
+- `knowledge/hypotheses/H003-skill-versioning.md`
+- `knowledge/hypotheses/H004-evaluator-drift.md`
+
+---
+
 # Session 2026-04-01 ~09:06 (Evaluation Analysis — Cron Task)
 
 **Task:** Analyze recent evaluation data (cron:analyze-failures), compare against previous analysis, write findings.
