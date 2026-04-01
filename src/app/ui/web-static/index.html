@@ -109,6 +109,7 @@
   <div class="tabs">
     <div class="tab active" data-tab="dashboard">Dashboard</div>
     <div class="tab" data-tab="chat">Chat</div>
+    <div class="tab" data-tab="knowledge">Knowledge</div>
     <div class="tab" data-tab="benchmarks">Benchmarks</div>
   </div>
 </div>
@@ -148,6 +149,17 @@
   <div id="benchmarks" class="hidden">
     <div id="benchmark-content"></div>
   </div>
+
+  <!-- Knowledge -->
+  <div id="knowledge" class="hidden">
+    <div class="filters" style="margin-bottom: 16px;">
+      <button class="ask-btn" onclick="loadKnowledge('entries')" id="kb-entries-btn" style="border-color:var(--accent);color:var(--accent)">Entries</button>
+      <button class="ask-btn" onclick="loadKnowledge('hypotheses')" id="kb-hypo-btn">Hypotheses</button>
+      <button class="ask-btn" onclick="loadKnowledge('experiments')" id="kb-exp-btn">Experiments</button>
+    </div>
+    <div id="knowledge-list"></div>
+    <div id="knowledge-detail" class="hidden" style="margin-top: 16px; background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 16px;"></div>
+  </div>
 </div>
 
 <script>
@@ -166,8 +178,10 @@ document.querySelectorAll('.tab').forEach(tab => {
     document.getElementById('dashboard').classList.toggle('hidden', currentTab !== 'dashboard');
     document.getElementById('chat').classList.toggle('hidden', currentTab !== 'chat');
     document.getElementById('benchmarks').classList.toggle('hidden', currentTab !== 'benchmarks');
+    document.getElementById('knowledge').classList.toggle('hidden', currentTab !== 'knowledge');
     if (currentTab === 'chat') initChat();
     if (currentTab === 'benchmarks') loadBenchmarks();
+    if (currentTab === 'knowledge') loadKnowledge(kbSection);
   });
 });
 
@@ -990,6 +1004,99 @@ if (currentTab !== 'dashboard') {
 loadDigest();
 loadStats();
 loadRequests();
+
+// ── Knowledge ─────────────────────────────────────────────────────────
+let kbSection = 'entries';
+
+async function loadKnowledge(section) {
+  kbSection = section || 'entries';
+  // Update button styles
+  document.getElementById('kb-entries-btn').style.cssText = section === 'entries' ? 'border-color:var(--accent);color:var(--accent)' : '';
+  document.getElementById('kb-hypo-btn').style.cssText = section === 'hypotheses' ? 'border-color:var(--accent);color:var(--accent)' : '';
+  document.getElementById('kb-exp-btn').style.cssText = section === 'experiments' ? 'border-color:var(--accent);color:var(--accent)' : '';
+  document.getElementById('knowledge-detail').classList.add('hidden');
+
+  const list = document.getElementById('knowledge-list');
+  list.innerHTML = '<span style="color:var(--fg2)">Loading...</span>';
+
+  try {
+    const endpoint = section === 'entries' ? '/api/knowledge' : `/api/knowledge/${section}`;
+    const resp = await fetch(endpoint);
+    const data = await resp.json();
+    const items = data.entries || data.hypotheses || data.experiments || [];
+
+    if (items.length === 0) {
+      list.innerHTML = '<span style="color:var(--fg2)">No items</span>';
+      return;
+    }
+
+    const statusColor = (s) => {
+      s = (s || '').toLowerCase();
+      if (s.includes('verified') || s.includes('complete') || s.includes('supported')) return 'var(--green)';
+      if (s.includes('refuted') || s.includes('failed')) return 'var(--red)';
+      if (s.includes('untested') || s.includes('provisional')) return 'var(--yellow)';
+      return 'var(--fg2)';
+    };
+
+    list.innerHTML = items.map(item => {
+      const title = item.title || item.id;
+      const status = item.status || item.verdict || '';
+      const subtitle = item.claim || item.hypothesis || item.priority || '';
+      return `<div class="request" onclick="viewKnowledgeItem('${section}', '${item.id}')">
+        <div class="top">
+          <span class="badge" style="background:${statusColor(status)}22;color:${statusColor(status)}">${esc(status)}</span>
+          <strong>${esc(title)}</strong>
+        </div>
+        ${subtitle ? `<div class="task">${esc(subtitle.slice(0, 150))}</div>` : ''}
+      </div>`;
+    }).join('');
+  } catch (err) {
+    list.innerHTML = `<span style="color:var(--red)">Error: ${err.message}</span>`;
+  }
+}
+
+async function viewKnowledgeItem(section, id) {
+  const detail = document.getElementById('knowledge-detail');
+  detail.classList.remove('hidden');
+  detail.innerHTML = '<span style="color:var(--fg2)">Loading...</span>';
+
+  try {
+    const endpoint = section === 'entries' ? `/api/knowledge/entries/${id}` : `/api/knowledge/experiments/${id}`;
+    const resp = await fetch(endpoint);
+    const data = await resp.json();
+
+    if (data.content) {
+      // Markdown entry
+      if (window.marked && window.marked.parse) {
+        detail.innerHTML = window.marked.parse(data.content);
+        detail.classList.add('md-rendered');
+      } else {
+        detail.textContent = data.content;
+      }
+    } else if (data.results) {
+      // Experiment with results
+      let html = '';
+      if (data.design) {
+        html += `<pre style="font-size:12px;color:var(--fg2);margin-bottom:12px">${esc(JSON.stringify(data.design, null, 2))}</pre>`;
+      }
+      if (window.marked && window.marked.parse) {
+        html += window.marked.parse(data.results);
+      } else {
+        html += `<pre>${esc(data.results)}</pre>`;
+      }
+      if (data.runs && data.runs.length > 0) {
+        html += `<h4 style="margin-top:12px">Run Data (${data.runs.length} run${data.runs.length > 1 ? 's' : ''})</h4>`;
+        html += `<pre style="font-size:11px;max-height:300px;overflow:auto">${esc(JSON.stringify(data.runs, null, 2))}</pre>`;
+      }
+      detail.innerHTML = html;
+      detail.classList.add('md-rendered');
+    } else {
+      detail.textContent = JSON.stringify(data, null, 2);
+    }
+  } catch (err) {
+    detail.innerHTML = `<span style="color:var(--red)">Error: ${err.message}</span>`;
+  }
+}
 </script>
 </body>
 </html>
