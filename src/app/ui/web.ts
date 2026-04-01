@@ -14,10 +14,6 @@ declare const Bun: {
     websocket: { open(ws: any): void; message(ws: any, msg: any): void; close(ws: any): void };
   }): { port: number };
 };
-declare interface ImportMeta {
-  url: string;
-}
-
 import { readFileSync, existsSync, readdirSync } from "node:fs";
 import { join, resolve, dirname } from "node:path";
 import { connect } from "node:net";
@@ -522,6 +518,76 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     return json(result);
   }
 
+  function handleLibrary(): Response {
+    const libDir = join(STATE_DIR, "..", "agents", "shared", "knowledge", "library");
+    const items: Array<{ id: string; title: string; type: string; size?: string }> = [];
+    try {
+      // Top-level files
+      for (const file of readdirSync(libDir).filter(f => f.endsWith(".md") && f !== "README.md")) {
+        const content = readFileSync(join(libDir, file), "utf-8");
+        const lines = content.split("\n").length;
+        const titleMatch = content.match(/^#\s+(.+)/m);
+        items.push({ id: file, title: titleMatch?.[1] ?? file, type: "collection", size: `${lines} lines` });
+      }
+      // Deep dives
+      const ddDir = join(libDir, "deep-dives");
+      if (existsSync(ddDir)) {
+        for (const file of readdirSync(ddDir).filter(f => f.endsWith(".md")).sort()) {
+          const content = readFileSync(join(ddDir, file), "utf-8");
+          const titleMatch = content.match(/^#\s+(.+)/m);
+          items.push({ id: `deep-dives/${file}`, title: titleMatch?.[1] ?? file.replace(".md", ""), type: "deep-dive" });
+        }
+      }
+    } catch { /* best effort */ }
+    return json({ items });
+  }
+
+  function handleLibraryItem(path: string): Response {
+    const filePath = join(STATE_DIR, "..", "agents", "shared", "knowledge", "library", path);
+    if (!existsSync(filePath)) return json({ error: "Not found" }, 404);
+    return json({ id: path, content: readFileSync(filePath, "utf-8") });
+  }
+
+  function handleSkills(): Response {
+    const skillsDir = join(STATE_DIR, "..", "agents", "shared", "skills");
+    const items: Array<{ id: string; name: string; description: string; owner?: string }> = [];
+    try {
+      for (const dir of readdirSync(skillsDir)) {
+        const skillPath = join(skillsDir, dir, "SKILL.md");
+        if (!existsSync(skillPath)) continue;
+        const content = readFileSync(skillPath, "utf-8");
+        const nameMatch = content.match(/name:\s*(.+)/);
+        const descMatch = content.match(/description:\s*>\s*\n\s*(.+)/);
+        const ownerMatch = content.match(/owner:\s*(.+)/);
+        items.push({
+          id: dir,
+          name: nameMatch?.[1]?.trim() ?? dir,
+          description: descMatch?.[1]?.trim() ?? "",
+          owner: ownerMatch?.[1]?.trim(),
+        });
+      }
+    } catch { /* best effort */ }
+    return json({ items });
+  }
+
+  function handleWorkflows(): Response {
+    const wfDir = join(STATE_DIR, "..", "agents", "shared", "workflows");
+    const items: Array<{ id: string; name: string; description: string }> = [];
+    try {
+      for (const file of readdirSync(wfDir).filter(f => f.endsWith(".ts"))) {
+        const content = readFileSync(join(wfDir, file), "utf-8");
+        const nameMatch = content.match(/export const name.*=\s*["'](.+?)["']/);
+        const descMatch = content.match(/export const description.*=\s*\n?\s*["'](.+?)["']/s);
+        items.push({
+          id: file.replace(".ts", ""),
+          name: nameMatch?.[1] ?? file.replace(".ts", ""),
+          description: descMatch?.[1]?.slice(0, 150) ?? "",
+        });
+      }
+    } catch { /* best effort */ }
+    return json({ items });
+  }
+
   function serveIndex(): Response {
     const candidates = [
       join(dirname(new URL(import.meta.url).pathname), "web-static", "index.html"),
@@ -616,6 +682,11 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (knowledgeEntryMatch) return handleKnowledgeEntry(knowledgeEntryMatch[1]);
       const experimentMatch = url.pathname.match(/^\/api\/knowledge\/experiments\/([^/]+)$/);
       if (experimentMatch) return handleExperiment(experimentMatch[1]);
+      if (url.pathname === "/api/knowledge/library") return handleLibrary();
+      const libraryItemMatch = url.pathname.match(/^\/api\/knowledge\/library\/(.+)$/);
+      if (libraryItemMatch) return handleLibraryItem(libraryItemMatch[1]);
+      if (url.pathname === "/api/knowledge/skills") return handleSkills();
+      if (url.pathname === "/api/knowledge/workflows") return handleWorkflows();
       const sessionMatch = url.pathname.match(/^\/api\/sessions\/([^/]+)$/);
       if (sessionMatch) return handleSession(sessionMatch[1]);
       const transcriptMatch = url.pathname.match(/^\/api\/sessions\/([^/]+)\/transcript$/);
