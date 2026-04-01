@@ -1,11 +1,26 @@
+# Runtime state — never track
 .state/
 *.log
 *.bak
 
-# Lab experiments are ephemeral — forked, trained, promoted/discarded.
+# Lab experiments — ephemeral
 .lab/
 
-# Workspace is scratch — ephemeral analysis, journals, todos.
-# Knowledge is preserved (curated agent output).
+# Workspace — agent scratch, not shared knowledge
 */workspace/*
 !*/workspace/.gitkeep
+
+# These belong in the main may-agent repo, not the agents repo
+src/
+test/
+scripts/
+bundle/
+config/
+environment/
+knowledge-base/
+knowledge/
+workspace/
+*.js
+!agents/*/handlers/*.ts
+may-agent-bin
+.initialized
