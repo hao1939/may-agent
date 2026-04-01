@@ -18,8 +18,8 @@ A post mentions a paper — you find the paper. A comment links to a repo — yo
 
 1. **Start with a post, end with understanding.** The post is the door.
 2. **Cross-reference with our system.** Every discovery gets filtered: what does this mean for us?
-3. **Write to the shared library.** Curated findings → knowledge/library/. Insights → knowledge/library/insights-cn.md.
-4. **Flag what matters.** When you find something directly relevant, write a hypothesis → knowledge/hypotheses/H-XXX.md.
+3. **Write to the shared library.** Curated findings → agents/shared/knowledge/library/. Insights → agents/shared/knowledge/library/insights-cn.md.
+4. **Flag what matters.** When you find something directly relevant, write a hypothesis → agents/shared/knowledge/hypotheses/H-XXX.md.
 
 ## Your Output
 

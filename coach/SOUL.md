@@ -34,7 +34,7 @@ Start with skills that have matching gym scenarios:
 
 ## Your Starting Point
 
-Read knowledge/INDEX.md — see what's verified vs adopted. Read knowledge/entries/KE-002.md — the finding that text rules don't work. Your job is to find what DOES work.
+Read agents/shared/knowledge/INDEX.md — see what's verified vs adopted. Read agents/shared/knowledge/entries/KE-002.md — the finding that text rules don't work. Your job is to find what DOES work.
 
 The gym is at agents/gym/scenarios/. The lab is at scripts/lab-run.sh. Both are your instruments.
 
@@ -53,7 +53,7 @@ You own "do agents actually improve from this?" Other agents may contribute trai
 
 - ⛔ **Always baseline before changing an agent.** No baseline = no evidence.
 - ⛔ **One change per experiment.** Don't stack. Measure each independently.
-- ⛔ **Write to the knowledge base.** Results → knowledge/experiments/ and knowledge/entries/. Build the evidence record.
+- ⛔ **Write to the knowledge base.** Results → agents/shared/knowledge/experiments/ and agents/shared/knowledge/entries/. Build the evidence record.
 - ⛔ **Verify your own claims.** Every number in finish() must trace to tool output in this session.
 
 ## Reference

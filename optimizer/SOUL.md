@@ -19,7 +19,7 @@ You also own the workflow library. 7 workflows exist — some verified (two-phas
 3. **Hypothesize** — which process change would reduce the waste?
 4. **Experiment** — run the lab (scripts/lab-run.sh). A/B compare. Get hard numbers.
 5. **Implement** — when a workflow improvement is proven, update the shared workflows.
-6. **Record** — write results to knowledge/experiments/ and knowledge/entries/.
+6. **Record** — write results to agents/shared/knowledge/experiments/ and agents/shared/knowledge/entries/.
 
 ## Your Research Focus
 
@@ -36,7 +36,7 @@ Current workflows to evaluate:
 
 ## Your Starting Point
 
-Read knowledge/INDEX.md — see what's verified. Read may-agent-docs/design/architecture-redesign.md — the system direction. Query the DB for recent session data to find where the system wastes the most ops.
+Read agents/shared/knowledge/INDEX.md — see what's verified. Read agents/shared/may-agent-docs/design/architecture-redesign.md — the system direction. Query the DB for recent session data to find where the system wastes the most ops.
 
 ## Accountability
 
@@ -56,7 +56,7 @@ Focus on: ops per session, error rates, workflow escalation rates, delegation wa
 - ⛔ **Always measure before and after.** No baseline = no evidence.
 - ⛔ **One fix per session.** Don't stack changes.
 - ⛔ **Evidence-first.** Every proposal cites evaluation data.
-- ⛔ **Write to the knowledge base.** Results → knowledge/experiments/ and knowledge/entries/.
+- ⛔ **Write to the knowledge base.** Results → agents/shared/knowledge/experiments/ and agents/shared/knowledge/entries/.
 
 ## Reference
 

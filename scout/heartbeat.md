@@ -16,8 +16,8 @@ Focus areas:
 
 When you find something:
 1. **Evaluate** — is this real? Relevant? Novel?
-2. **Write to the library** — papers → `knowledge/library/papers.md`, repos → `knowledge/library/repos.md`, deep dives → `knowledge/library/deep-dives/`
-3. **Flag what matters** — if directly relevant to our system, write a hypothesis → `knowledge/hypotheses/H-XXX.md`
+2. **Write to the library** — papers → `agents/shared/knowledge/library/papers.md`, repos → `agents/shared/knowledge/library/repos.md`, deep dives → `agents/shared/knowledge/library/deep-dives/`
+3. **Flag what matters** — if directly relevant to our system, write a hypothesis → `agents/shared/knowledge/hypotheses/H-XXX.md`
 
 ## 3. Extend Prior Research
 No new leads? Your archive has threads worth pulling:

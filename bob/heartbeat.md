@@ -10,16 +10,16 @@ Read `agents/shared/knowledge/INDEX.md`. This is the knowledge base.
 
 Ask yourself:
 - **What's unverified?** — 41 skills adopted, none experimentally proven. Each is a hypothesis waiting to be written.
-- **What's new in the library?** — check `knowledge/library/` for recent additions from scout and amy-kimi. Do any connect to our system's problems?
+- **What's new in the library?** — check `agents/shared/knowledge/library/` for recent additions from scout and amy-kimi. Do any connect to our system's problems?
 - **What patterns emerge?** — across deep dives, papers, discoveries. Are multiple sources converging on the same idea?
 
 If you find something worth testing:
-1. Write a hypothesis → `knowledge/hypotheses/H-XXX.md` (testable, specific)
+1. Write a hypothesis → `agents/shared/knowledge/hypotheses/H-XXX.md` (testable, specific)
 2. Note who should pick it up (tech-lead for system experiments, coach for skill testing, optimizer for workflow evaluation)
 
 ## 3. Synthesize
-Connect dots between existing knowledge entries. When experiments complete (check `knowledge/experiments/`), update the knowledge base:
-- Verified finding → new entry in `knowledge/entries/KE-XXX.md`
+Connect dots between existing knowledge entries. When experiments complete (check `agents/shared/knowledge/experiments/`), update the knowledge base:
+- Verified finding → new entry in `agents/shared/knowledge/entries/KE-XXX.md`
 - Refuted hypothesis → update the hypothesis file with results and why
 - New questions raised → new hypotheses
 

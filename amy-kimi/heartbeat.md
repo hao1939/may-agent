@@ -19,7 +19,7 @@ Follow the chain. Go deep.
 Write findings to the shared knowledge base:
 - Insights → `agents/shared/knowledge/library/insights-cn.md`
 - Deep dives → `agents/shared/knowledge/library/deep-dives/`
-- If directly relevant to our system → write a hypothesis → `knowledge/hypotheses/H-XXX.md`
+- If directly relevant to our system → write a hypothesis → `agents/shared/knowledge/hypotheses/H-XXX.md`
 
 Always answer: 这个对我们的系统意味着什么？
 
