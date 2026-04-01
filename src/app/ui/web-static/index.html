@@ -98,6 +98,16 @@
   .msg.assistant.md-rendered pre code { background: none; padding: 0; }
   .msg.assistant.md-rendered ul, .msg.assistant.md-rendered ol { margin: 4px 0; padding-left: 20px; }
   .msg.assistant.md-rendered table { border-collapse: collapse; margin: 8px 0; font-size: 12px; }
+  /* Knowledge tab tables */
+  .md-rendered table { border-collapse: collapse; margin: 12px 0; font-size: 13px; width: 100%; }
+  .md-rendered th { text-align: left; padding: 8px 12px; background: var(--bg3); border: 1px solid var(--border); font-weight: 600; color: var(--fg); white-space: nowrap; }
+  .md-rendered td { padding: 8px 12px; border: 1px solid var(--border); vertical-align: top; }
+  .md-rendered td:first-child { white-space: nowrap; font-family: var(--mono); font-size: 12px; }
+  .md-rendered h2 { margin-top: 28px; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+  .md-rendered h3 { margin-top: 20px; margin-bottom: 6px; color: var(--fg2); }
+  .md-rendered a { color: var(--accent); }
+  .md-rendered code { background: var(--bg3); padding: 2px 5px; border-radius: 3px; font-size: 12px; }
+  #knowledge-list .md-rendered { max-width: 100%; overflow-x: auto; }
   .msg.assistant.md-rendered td, .msg.assistant.md-rendered th { padding: 4px 8px; border: 1px solid var(--border); }
   .msg.assistant.md-rendered strong { color: var(--fg); }
 </style>
@@ -1027,7 +1037,12 @@ async function loadKnowledge(section) {
       const resp = await fetch('/api/knowledge/index');
       const data = await resp.json();
       if (data.content && window.marked && window.marked.parse) {
-        list.innerHTML = '<div class="md-rendered">' + window.marked.parse(data.content) + '</div>';
+        let html = window.marked.parse(data.content);
+        // Make KE-XXX, H-XXX, EXP-XXX clickable
+        html = html.replace(/\b(KE-\d+)\b/g, '<a href="#" onclick="event.preventDefault(); loadKnowledge(\'entries\'); setTimeout(() => viewKnowledgeItem(\'entries\', \'$1\'), 200)">$1</a>');
+        html = html.replace(/\b(H-\d+)\b/g, '<a href="#" onclick="event.preventDefault(); loadKnowledge(\'hypotheses\'); setTimeout(() => viewKnowledgeItem(\'hypotheses\', \'$1\'), 200)">$1</a>');
+        html = html.replace(/\b(EXP-\d+)\b/g, '<a href="#" onclick="event.preventDefault(); loadKnowledge(\'experiments\'); setTimeout(() => viewKnowledgeItem(\'experiments\', \'$1\'), 200)">$1</a>');
+        list.innerHTML = '<div class="md-rendered">' + html + '</div>';
       } else {
         list.textContent = data.content || 'No index';
       }
@@ -1078,9 +1093,13 @@ async function viewKnowledgeItem(section, id) {
   const detail = document.getElementById('knowledge-detail');
   detail.classList.remove('hidden');
   detail.innerHTML = '<span style="color:var(--fg2)">Loading...</span>';
+  detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
   try {
-    const endpoint = section === 'entries' ? `/api/knowledge/entries/${id}` : `/api/knowledge/experiments/${id}`;
+    let endpoint;
+    if (section === 'entries') endpoint = `/api/knowledge/entries/${id}`;
+    else if (section === 'hypotheses') endpoint = `/api/knowledge/entries/${id}`;
+    else endpoint = `/api/knowledge/experiments/${id}`;
     const resp = await fetch(endpoint);
     const data = await resp.json();
 
