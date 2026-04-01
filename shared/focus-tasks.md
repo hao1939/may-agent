@@ -44,14 +44,15 @@ It bridges the gap between the high-level `roadmap.md` and the daily task queue 
 - **Rule of Two**: If 2 iterations of same approach yield same result → stop, change approach.
 - **does-not-claim-success**: Model always calls `finish(success)` even when reporting failures. Confirmed untreatable by prompting (EXP-215, C1.8 rule). Runtime-only fix.
 
-#### Convention Check Status (2026-03-31 23:09)
-- **PASS RATE** (last 6h, N=35 sessions, 416 checks): **98.1% overall** (↑ from 97.2%)
+#### Convention Check Status (2026-04-01 01:39)
+- **PASS RATE** (last 6h, N=39 sessions, 464 checks): **98.1% overall** (stable)
   - **100%**: C1.4, C1.5, C1.7, C2.1, C3.2, C3.3, C6.1, C7.1, C12.1 (9 conventions perfect)
-  - **97.1%**: C1.3 (1 amy-kimi failure)
-  - **94.3%**: C1.1 (2 failures — amy-kimi + scout behavioral)
-  - **85.3%**: C8.2 (5 amy-kimi Kimi model — known model-level JSON issue)
-- **Evaluations (24h, N=156)**: 132 good, 16 acceptable, 1 needs_improvement, 0 poor.
-- **System: 161 sessions/24h, 0 errors.** Sustained health across all agents.
+  - **97.4%**: C1.3 (1 amy-kimi failure)
+  - **94.1%**: C1.1 (2 failures — amy-kimi + scout behavioral)
+  - **84.8%**: C8.2 (5 amy-kimi Kimi model — known model-level JSON issue)
+- **Evaluations (6h)**: 29 good, 5 acceptable, 0 needs_improvement, 0 poor.
+- **24h pass rate**: 95.2% (1672/1756). Lower due to Mar 30 tech-lead transient model failure (14 blank sessions).
+- **Agent tiers (48h)**: A-tier (>90%): scout, qa, bob, optimizer, may. B-tier: master, amy-kimi. C-tier: coach (69% — session_errors), tech-lead (39%* — all from Mar 30 outage, 100% since Mar 31).
 - **All fixes confirmed working**: Hot-reload deploys changes without binary rebuild. Retroactive interrupted-session fix self-heals on every handler run.
 - **Remaining gaps** are model-level (amy-kimi/Kimi C8.2) and behavioral (C1.1 read-before-edit compliance), not infra bugs.
 - **Convention check system is STABLE**. No further calibration needed.

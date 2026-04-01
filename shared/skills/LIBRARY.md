@@ -24,10 +24,10 @@ Each skill has ONE status:
 | Skill | Status | Works When | Fails When | Deployed To | Gym Evidence |
 |-------|--------|------------|------------|-------------|--------------|
 | grep-first-reading | ❌ disproven | N/A | efficient-file-reading: coder ignores grep instructions even in explicit workflow phases. Text injection and workflow enforcement both fail. Tool usage habits are not changeable via prompting. | | exp-234: 6/8 baseline (stable), exp-235: 4/8 workflow (WORSE). The skill concept is valid but undeployable. |
-| evidence-over-narrative | 🧪 testing | Phantom-fix scenarios (tests pass, misleading comment) | misleading-test-fix: text injection failed to reach agent (prompt_hash identical). Need workflow approach. | | 2026-03-31: 5/8 baseline, 5/8 patched (no effect — injection didn't modify prompt) |
+| evidence-over-narrative | ✅ proven (as workflow) | misleading-test-fix: 3-phase workflow forces independent calculation, preventing test corruption. 5/8→11/11 | Text injection fails (exp-229). Only works as workflow enforcement. | | exp-268+: misleading-test-fix-workflow 11/11 (2 runs) vs baseline 5/8. PROMOTED. |
 | check-state | ⚪ untested | | | | needs gym test |
 | task-adherence | ⚪ untested | | | | needs gym test |
-| verify-before-finish | ❌ disproven | N/A | Bug-fix tasks where edge-case test is expected (partial-verification-trap: 5/6 same as baseline) | | exp-229: text injection has zero effect on behavior. Method #15 workflow-enforcement needed instead. |
+| verify-before-finish | ✅ proven (as workflow) | partial-verification-trap: 2-phase workflow forces edge-case testing before finish. 5/6→6/6 | Text injection zero effect (exp-229). Only works as workflow enforcement. | | exp-224: partial-verification-trap-workflow 6/6 (2 runs) vs baseline 5/6. PROMOTED. |
 | classify-then-act | ⚪ untested | | | | needs gym test |
 | scope-discipline | ⚪ untested | | | | needs gym test |
 | tool-discipline | ⚪ untested | | | | needs gym test |
@@ -38,11 +38,14 @@ Each skill has ONE status:
 > **Note**: Only the top 10 most-referenced skills listed above. Full inventory in the skills/ subdirectories.
 > Coach: when you test a skill, fill in "Works When" and "Fails When" — these are the most valuable columns.
 
-### ⚠️ Deployment Reality (2026-03-31)
+### ⚠️ Deployment Reality (2026-04-01)
 **Text injection does NOT change agent behavior** — 0/19+ experiments showed improvement from adding skill text to prompts. The only proven deployment method is **Method #15: Workflow Enforcement** — structuring the task into phases that force the desired behavior. However, workflow enforcement has boundaries:
-- ✅ Works for: verification, root-cause diagnosis, escalation decisions
-- ❌ Fails for: materialization cadence, tool usage habits (grep-first-reading)
-Skills should be evaluated as workflow designs, not prompt additions. See exp-224 (partial-verification-trap-workflow: baseline 5/6 → workflow 6/6, PROMOTED).
+- ✅ Works for: verification (5/6→6/6), misleading-test diagnosis (5/8→11/11), escalation decisions
+- ❌ Fails for: materialization cadence (6/9→6/9), tool usage habits (grep-first-reading)
+- 🔍 Untested: scope discipline, task adherence, classify-then-act
+Two skills are now PROMOTED as workflows, ready for deployment consideration:
+1. **verify-before-finish** (partial-verification-trap-workflow: 5/6→6/6)
+2. **evidence-over-narrative** (misleading-test-fix-workflow: 5/8→11/11)
 
 ## How to Evaluate a Skill
 
