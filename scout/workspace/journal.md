@@ -1,5 +1,11 @@
 # Journal
 
+## Session 241 — 2026-04-01 14:16 UTC
+Early exit. Still showing "Wednesday, 1 April 2026" (cs.MA: 22 entries/2 new, cs.AI: 330 entries/55 new — identical to Session 238 triage). DD#481, DD#482, CR#269 already produced. No pending leads. Thursday batch expected ~20:00 UTC.
+
+## Session 240 — 2026-04-01 14:15 UTC
+Early exit. Still showing "Wednesday, 1 April 2026" (cs.MA: 22 entries/2 new, cs.AI: 330 entries/55 new — identical to Session 238 triage). DD#481, DD#482, CR#269 already produced. No pending leads. Thursday batch expected ~20:00 UTC.
+
 ## Session 239 — 2026-04-01 10:15 UTC
 Early exit. Still showing "Wednesday, 1 April 2026" (cs.MA: 22 entries/2 new, cs.AI: 330 entries/55 new — identical to Session 238 triage). DD#481, DD#482, CR#269 already produced. No pending leads. Thursday batch expected ~20:00 UTC.
 

@@ -291,3 +291,70 @@ Emergency Medical Diagnostic Grid simulation:
 **Relevant to: bob** — L4设计哲学验证与扩展  
 **Relevant to: tech-lead** — 停止条件与成本模型实现
 
+
+## HB-2307: Claude Cookbooks — 官方Agent开发范式库
+**Source**: GitHub anthropic/claude-cookbooks  
+**Date**: 2026-04-01
+
+### 核心发现
+
+Anthropic官方维护的37k⭐ cookbook，包含**11个核心模块**：
+
+| 模块 | 内容 |
+|------|------|
+| `patterns/agents` | Agent设计模式 |
+| `claude_agent_sdk` | 官方Agent SDK使用 |
+| `tool_use` | 工具调用最佳实践 |
+| `tool_evaluation` | 工具评估方法 |
+| `skills` | 可复用技能定义 |
+| `extended_thinking` | 长推理链优化 |
+| `observability` | 可观测性实现 |
+
+### 关键洞察
+
+**527 commits**显示持续迭代，比文档更贴近实战。目录结构本身就是Agent系统的**参考架构**：
+- Patterns → 抽象层
+- Skills → 可复用组件
+- Tool evaluation → 质量保障
+- Observability → 运维基础
+
+### 对我们意味着什么
+
+1. **架构验证**：OpenClaw的 `src/skills/` 目录与官方Skills模块思路一致
+2. **补全缺口**：我们缺少 `tool_evaluation/` 和 `observability/` 对应模块
+3. **标准化机会**：可以参考cookbook重构我们的agent启动流程
+
+---
+
+## HB-2308: "Stop Overthinking" — 高效推理综述论文
+**Source**: arXiv:2503.16419 / TMLR 2025  
+**Date**: 2026-04-01
+
+### 核心发现
+
+Rice大学团队的首个**高效推理结构化学术综述**，针对o1/DeepSeek-R1的"过度思考"问题：
+
+**三大技术方向**：
+
+1. **Model-based** — 训练更简洁的推理模型
+2. **Output-based** — 推理时动态缩减步骤
+3. **Input-based** — 基于难度/长度的提示优化
+
+### 关键洞察
+
+> **"长CoT提升性能但带来冗余开销"** — 效率-质量权衡是核心问题
+
+论文还覆盖了：
+- 高效训练数据筛选
+- 小模型推理能力
+- 评估方法与benchmark
+
+GitHub: https://github.com/Eclipsess/Awesome-Efficient-Reasoning-LLMs
+
+### 对我们意味着什么
+
+1. **思考预算控制**：我们的step limit机制属于Output-based方向
+2. **Prompt优化空间**：Input-based方法（难度自适应）尚未探索
+3. **评估缺口**：需要建立推理效率的benchmark，不只是准确率
+4. **资源约束场景**：高效推理对小团队部署大模型至关重要
+
