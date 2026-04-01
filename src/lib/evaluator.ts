@@ -14,12 +14,7 @@ import {
 import { extractHallucinatedRelPath } from "./tools/may-utils.js";
 import type { PersistedSession } from "./persistence.js";
 import { appendErrorLogs } from "./evaluator-error-log.js";
-import {
-  upsertEvaluation,
-  hasEvaluation,
-  getAllEvaluations,
-  getEvaluationStatus,
-} from "./requests.js";
+import { upsertEvaluation, hasEvaluation, getAllEvaluations, getEvaluationStatus } from "./requests.js";
 
 /** Extract epoch ms from a session ID. Falls back to Date.now(). */
 function extractTimestamp(sessionId: string): number {
@@ -95,7 +90,7 @@ export function extractUsage(messages: AgentMessage[]): UsageSummary {
         cacheReadTokens += am.usage.cacheRead ?? 0;
         cacheWriteTokens += am.usage.cacheWrite ?? 0;
         totalTokens += am.usage.totalTokens ?? 0;
-        cost += (typeof am.usage.cost === 'number' ? am.usage.cost : am.usage.cost?.total) ?? 0;
+        cost += (typeof am.usage.cost === "number" ? am.usage.cost : am.usage.cost?.total) ?? 0;
       }
       turns++;
     }
@@ -119,7 +114,8 @@ function formatTranscript(messages: AgentMessage[]): string {
     lines.push(`## ${msg.role}`);
 
     if (msg.role === "toolResult") {
-      const fullText = msg.content?.map((c: { type: string; text?: string }) => (c.type === "text" ? c.text : "")).join("") ?? "";
+      const fullText =
+        msg.content?.map((c: { type: string; text?: string }) => (c.type === "text" ? c.text : "")).join("") ?? "";
       const truncated = fullText.length > 2000;
       const text = fullText.slice(0, 2000);
       const suffix = truncated
@@ -350,7 +346,8 @@ export async function evaluateTask(opts: EvaluateTaskOptions): Promise<TaskEvalu
       const headSize = 3_000;
       const tailSize = 7_000;
       const originalLen = transcript.length;
-      transcript = transcript.slice(0, headSize) +
+      transcript =
+        transcript.slice(0, headSize) +
         `\n\n[... ${((originalLen - headSize - tailSize) / 1024).toFixed(0)}KB of transcript omitted for review brevity ...]\n\n` +
         transcript.slice(-tailSize);
     }
@@ -376,20 +373,21 @@ export async function evaluateTask(opts: EvaluateTaskOptions): Promise<TaskEvalu
   const totalTranscriptChars = perAgentTranscripts.reduce((sum, t) => sum + t.length, 0);
   if (totalTranscriptChars > MAX_TOTAL_TRANSCRIPT_CHARS && perAgentTranscripts.length > 1) {
     const ratio = MAX_TOTAL_TRANSCRIPT_CHARS / totalTranscriptChars;
-    perAgentTranscripts = perAgentTranscripts.map(section => {
+    perAgentTranscripts = perAgentTranscripts.map((section) => {
       const maxLen = Math.floor(section.length * ratio);
       if (section.length <= maxLen) return section;
       const headLen = Math.floor(maxLen * 0.4);
       const tailLen = maxLen - headLen;
-      return section.slice(0, headLen) +
+      return (
+        section.slice(0, headLen) +
         `\n\n[... ${((section.length - maxLen) / 1024).toFixed(0)}KB trimmed to fit total transcript budget ...]\n\n` +
-        section.slice(-tailLen);
+        section.slice(-tailLen)
+      );
     });
   }
 
   // Build the evaluation prompt
   const agentList = [...new Set(children.map((c) => c.agent))].join(", ");
-
 
   const prompt = [
     `# Task Tree Evaluation`,
@@ -539,7 +537,6 @@ export async function evaluateTask(opts: EvaluateTaskOptions): Promise<TaskEvalu
   return result;
 }
 
-
 export interface AgentScoreSummary {
   avgEfficiency: number;
   avgQuality: number;
@@ -619,9 +616,19 @@ function computeTrend(efficiencies: number[]): "improving" | "declining" | "stab
  *
  * Returns the number of evaluation files written.
  */
-export async function writeSkippedEvaluations(persistDir: string, skipAgents: Set<string> = new Set(["evaluator"])): Promise<number> {
+export async function writeSkippedEvaluations(
+  persistDir: string,
+  skipAgents: Set<string> = new Set(["evaluator"]),
+): Promise<number> {
   const { access } = await import("node:fs/promises");
-  const fileExists = async (p: string) => { try { await access(p); return true; } catch { return false; } };
+  const fileExists = async (p: string) => {
+    try {
+      await access(p);
+      return true;
+    } catch {
+      return false;
+    }
+  };
 
   const allSessions: Record<string, PersistedSession> = await loadAllSessionMetasAsync(persistDir);
   let written = 0;
@@ -636,7 +643,7 @@ export async function writeSkippedEvaluations(persistDir: string, skipAgents: Se
     } else {
       const activeJsonl = join(persistDir, "sessions", sessionId, "session.jsonl");
       const archivedJsonl = join(historyDir(persistDir), sessionId, "session.jsonl");
-      if (!await fileExists(activeJsonl) && !await fileExists(archivedJsonl)) {
+      if (!(await fileExists(activeJsonl)) && !(await fileExists(archivedJsonl))) {
         skipReason = "no_transcript";
       }
     }
@@ -650,7 +657,15 @@ export async function writeSkippedEvaluations(persistDir: string, skipAgents: Se
       verdict: "skipped",
       issues: [skipReason],
       overall: { efficiency: 0, quality: 0, verdict: "skipped", result_delivered: false },
-      usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, totalTokens: 0, cost: 0, turns: 0 },
+      usage: {
+        inputTokens: 0,
+        outputTokens: 0,
+        cacheReadTokens: 0,
+        cacheWriteTokens: 0,
+        totalTokens: 0,
+        cost: 0,
+        turns: 0,
+      },
       failureChains: [],
       skippedByJs: true,
       createdAt: extractTimestamp(sessionId),
@@ -660,7 +675,10 @@ export async function writeSkippedEvaluations(persistDir: string, skipAgents: Se
 
   // Second pass: orphaned sessions (no meta.json)
   const knownSessionIds = new Set(Object.keys(allSessions));
-  const allDirIds = new Set([...await listActiveSessionIdsAsync(persistDir), ...await listArchivedSessionIdsAsync(persistDir)]);
+  const allDirIds = new Set([
+    ...(await listActiveSessionIdsAsync(persistDir)),
+    ...(await listArchivedSessionIdsAsync(persistDir)),
+  ]);
 
   for (const sessionId of allDirIds) {
     if (knownSessionIds.has(sessionId)) continue;
@@ -674,7 +692,15 @@ export async function writeSkippedEvaluations(persistDir: string, skipAgents: Se
       verdict: "skipped",
       issues: ["no_metadata"],
       overall: { efficiency: 0, quality: 0, verdict: "skipped", result_delivered: false },
-      usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, totalTokens: 0, cost: 0, turns: 0 },
+      usage: {
+        inputTokens: 0,
+        outputTokens: 0,
+        cacheReadTokens: 0,
+        cacheWriteTokens: 0,
+        totalTokens: 0,
+        cost: 0,
+        turns: 0,
+      },
       failureChains: [],
       skippedByJs: true,
       createdAt: extractTimestamp(sessionId),
@@ -721,8 +747,7 @@ export async function writeHeuristicEvaluations(persistDir: string): Promise<num
 
     const activeJsonl = join(persistDir, "sessions", sessionId, "session.jsonl");
     const archivedJsonl = join(historyDir(persistDir), sessionId, "session.jsonl");
-    const transcriptPath = existsSync(activeJsonl) ? activeJsonl :
-                           existsSync(archivedJsonl) ? archivedJsonl : null;
+    const transcriptPath = existsSync(activeJsonl) ? activeJsonl : existsSync(archivedJsonl) ? archivedJsonl : null;
     if (!transcriptPath) continue;
 
     let transcriptText = "";
@@ -737,7 +762,9 @@ export async function writeHeuristicEvaluations(persistDir: string): Promise<num
       try {
         const msg = JSON.parse(line);
         if (msg && typeof msg === "object") messages.push(msg as AgentMessage);
-      } catch { /* skip */ }
+      } catch {
+        /* skip */
+      }
     }
 
     const scores = computeHeuristicScores(session, transcriptText, messages);
@@ -772,7 +799,11 @@ export async function writeHeuristicEvaluations(persistDir: string): Promise<num
 /**
  * Deterministic scoring based on session metadata and transcript patterns.
  */
-export function computeHeuristicScores(session: PersistedSession, transcript: string, messages?: AgentMessage[]): {
+export function computeHeuristicScores(
+  session: PersistedSession,
+  transcript: string,
+  messages?: AgentMessage[],
+): {
   efficiency: number;
   quality: number;
   productiveCalls: number;
@@ -833,7 +864,8 @@ export function computeHeuristicScores(session: PersistedSession, transcript: st
   // file contents being read/analyzed. An agent reading error logs would get penalized.
   // Now we only count errors in short toolResult messages (actual tool errors are brief;
   // file contents being analyzed are long).
-  const hardErrorPattern = /P53 Violation|ENOENT: no such file|Error: ENOENT|Cannot find module|Validation failed for tool/gi;
+  const hardErrorPattern =
+    /P53 Violation|ENOENT: no such file|Error: ENOENT|Cannot find module|Validation failed for tool/gi;
   let hardErrors = 0;
   if (messages && messages.length > 0) {
     // Message-aware counting: only count errors in short toolResult content (< 500 chars)

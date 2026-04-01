@@ -5,7 +5,16 @@ import { resolve, dirname } from "node:path";
 import { existsSync, readFileSync, writeFileSync, appendFileSync, unlinkSync, mkdirSync } from "node:fs";
 import { getModel } from "@mariozechner/pi-ai";
 import type { ModelWithApiKey } from "../lib/types.js";
-import { SubagentManager, evaluateTask, writeSkippedEvaluations, writeHeuristicEvaluations, classifyError, readSessionMeta, learnFromSession, learnFromSessionLLM } from "../lib/index.js";
+import {
+  SubagentManager,
+  evaluateTask,
+  writeSkippedEvaluations,
+  writeHeuristicEvaluations,
+  classifyError,
+  readSessionMeta,
+  learnFromSession,
+  learnFromSessionLLM,
+} from "../lib/index.js";
 import { EventBus } from "./event-bus.js";
 import { ChatSession } from "./chat-session.js";
 import { attachConsoleUI } from "./ui/console.js";
@@ -239,7 +248,11 @@ function escalateToHuman(agent: string, reason: string): void {
     reason,
     notified: TELEGRAM_ENABLED,
   });
-  try { appendFileSync(escalationPath, entry + "\n", "utf-8"); } catch { /* best-effort */ }
+  try {
+    appendFileSync(escalationPath, entry + "\n", "utf-8");
+  } catch {
+    /* best-effort */
+  }
 
   // 2. Push to Telegram if available (best-effort, non-blocking)
   telegramAlert(`⚠️ *Agent Blocked*\n${agent} — ${reason}`);
@@ -334,7 +347,9 @@ const manager = new SubagentManager({
         method: "send",
         sessionId,
       });
-    } catch { /* best-effort */ }
+    } catch {
+      /* best-effort */
+    }
 
     // Push notification to human via Telegram
     escalateToHuman(agentName, reason);
@@ -434,7 +449,10 @@ function attachAgentEvents(label: string, sessionId: string): void {
 // Uses LLM (evaluator agent) for extraction; falls back to mechanical if LLM unavailable.
 
 const contextLearnAgents = new Set(
-  (process.env.CONTEXT_LEARN_AGENTS ?? "").split(",").map(s => s.trim()).filter(Boolean),
+  (process.env.CONTEXT_LEARN_AGENTS ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean),
 );
 
 bus.on((event) => {
@@ -448,7 +466,8 @@ bus.on((event) => {
 
   setTimeout(async () => {
     try {
-      const { readSessionMessages, readSessionMeta: readMeta } = require("../lib/index.js") as typeof import("../lib/index.js");
+      const { readSessionMessages, readSessionMeta: readMeta } =
+        require("../lib/index.js") as typeof import("../lib/index.js");
       const messages = readSessionMessages(persistDir, sessionId);
       if (messages.length === 0) return;
 
@@ -662,7 +681,7 @@ bus.subscribe((event) => {
       if (!targetSid) break;
       try {
         const sessions = manager.status();
-        const target = sessions.find(s => s.sessionId === targetSid);
+        const target = sessions.find((s) => s.sessionId === targetSid);
         if (target?.status === "idle") {
           manager.input(targetSid, steerText);
         } else {
@@ -716,7 +735,7 @@ bus.onCommand((cmd) => {
       if (!targetSid) return { ok: false, message: "steer requires sessionId" };
       try {
         const sessions = manager.status();
-        const target = sessions.find(s => s.sessionId === targetSid);
+        const target = sessions.find((s) => s.sessionId === targetSid);
         if (target?.status === "idle") {
           manager.input(targetSid, steerText);
         } else {
@@ -756,9 +775,15 @@ bus.onCommand((cmd) => {
             method: "call",
             source: "socket",
           });
-        } catch { /* non-fatal */ }
+        } catch {
+          /* non-fatal */
+        }
         const sessionId = manager.run((cmd as any).agent, (cmd as any).message, { kind: "job", requestId });
-        bus.emit({ type: "log", level: "info", message: `[direct] Started ${(cmd as any).agent} session: ${sessionId}` });
+        bus.emit({
+          type: "log",
+          level: "info",
+          message: `[direct] Started ${(cmd as any).agent} session: ${sessionId}`,
+        });
       }
       return { ok: true };
     }
@@ -870,9 +895,22 @@ if (ONESHOT_MODE) {
   const oneshotStart = Date.now();
   const timeoutMs = ONESHOT_TIMEOUT_MINUTES * 60 * 1000;
 
-  taskSessionId = manager.run(interfaceAgent, oneshotTask, { kind: "job", requestId: (() => {
-    try { return trackRequest(PERSIST_DIR, { fromEntity: "human", toAgent: interfaceAgent, task: oneshotTask, method: "call", source: "cli-oneshot" }); } catch { return undefined; }
-  })() });
+  taskSessionId = manager.run(interfaceAgent, oneshotTask, {
+    kind: "job",
+    requestId: (() => {
+      try {
+        return trackRequest(PERSIST_DIR, {
+          fromEntity: "human",
+          toAgent: interfaceAgent,
+          task: oneshotTask,
+          method: "call",
+          source: "cli-oneshot",
+        });
+      } catch {
+        return undefined;
+      }
+    })(),
+  });
 
   // Set up timeout
   const timeoutTimer = setTimeout(() => {
@@ -894,7 +932,7 @@ if (ONESHOT_MODE) {
   const durationMs = Date.now() - oneshotStart;
   const sessions = manager.status();
   const session = sessions.find((s) => s.sessionId === taskSessionId);
-  const status = (session?.status === "error" || session?.status === "interrupted") ? "error" : "success";
+  const status = session?.status === "error" || session?.status === "interrupted" ? "error" : "success";
 
   const result = {
     sessionId: taskSessionId,
@@ -909,7 +947,17 @@ if (ONESHOT_MODE) {
   let taskRequestId: string | undefined;
   // Only track as human request if not a detached sub-agent (those have ENV_PARENT_SESSION_ID)
   if (!ENV_PARENT_SESSION_ID) {
-    try { taskRequestId = trackRequest(PERSIST_DIR, { fromEntity: "human", toAgent: interfaceAgent, task: INITIAL_TASK, method: "call", source: "cli-task" }); } catch { /* non-fatal */ }
+    try {
+      taskRequestId = trackRequest(PERSIST_DIR, {
+        fromEntity: "human",
+        toAgent: interfaceAgent,
+        task: INITIAL_TASK,
+        method: "call",
+        source: "cli-task",
+      });
+    } catch {
+      /* non-fatal */
+    }
   }
   taskSessionId = manager.run(interfaceAgent, INITIAL_TASK, {
     kind: "job",

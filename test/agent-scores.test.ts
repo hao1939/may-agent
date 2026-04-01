@@ -58,7 +58,9 @@ vi.mock("../src/lib/requests.js", () => ({
   closeDb: (persistDir: string) => {
     evalStore.delete(persistDir);
   },
-  getDb: () => { throw new Error("getDb should not be called in this test"); },
+  getDb: () => {
+    throw new Error("getDb should not be called in this test");
+  },
 }));
 
 import { getAgentScoreSummary } from "../src/lib/evaluator.js";
@@ -75,7 +77,11 @@ function tmpDir(): string {
 
 afterEach(() => {
   for (const d of dirs) {
-    try { closeDb(d); } catch { /* ignore */ }
+    try {
+      closeDb(d);
+    } catch {
+      /* ignore */
+    }
   }
   dirs.length = 0;
 });

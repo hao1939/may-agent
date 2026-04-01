@@ -57,8 +57,13 @@ export function extractToolCalls(messages: AgentMessage[]): ToolCall[] {
       const pending = toolCallId ? pendingCalls.get(toolCallId) : undefined;
       if (pending) {
         const outputText = Array.isArray(toolMsg.content)
-          ? toolMsg.content.filter((b: any) => b.type === "text").map((b: any) => b.text).join("")
-          : typeof toolMsg.content === "string" ? toolMsg.content : "";
+          ? toolMsg.content
+              .filter((b: any) => b.type === "text")
+              .map((b: any) => b.text)
+              .join("")
+          : typeof toolMsg.content === "string"
+            ? toolMsg.content
+            : "";
         calls.push({
           name: pending.name,
           args: pending.args,
@@ -178,8 +183,13 @@ function groupIntoTurns(messages: AgentMessage[]): Turn[] {
       const pending = toolCallId ? pendingCalls.get(toolCallId) : undefined;
       if (pending) {
         const outputText = Array.isArray(toolMsg.content)
-          ? toolMsg.content.filter((b: any) => b.type === "text").map((b: any) => b.text).join("")
-          : typeof toolMsg.content === "string" ? toolMsg.content : "";
+          ? toolMsg.content
+              .filter((b: any) => b.type === "text")
+              .map((b: any) => b.text)
+              .join("")
+          : typeof toolMsg.content === "string"
+            ? toolMsg.content
+            : "";
         currentTurn.toolCalls.push({
           name: pending.name,
           args: pending.args,

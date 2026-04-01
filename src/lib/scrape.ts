@@ -21,8 +21,15 @@ function textResult(text: string): AgentToolResult<string> {
 }
 
 const ScrapeParams: TSchema = Type.Object({
-  url: Type.String({ description: "Full URL of the web page to fetch (including https://). Handles redirects automatically." }),
-  raw: Type.Optional(Type.Boolean({ description: "If true, return raw HTML instead of cleaned text. Use when you need to parse specific HTML elements or attributes. Default: false (returns clean text)." })),
+  url: Type.String({
+    description: "Full URL of the web page to fetch (including https://). Handles redirects automatically.",
+  }),
+  raw: Type.Optional(
+    Type.Boolean({
+      description:
+        "If true, return raw HTML instead of cleaned text. Use when you need to parse specific HTML elements or attributes. Default: false (returns clean text).",
+    }),
+  ),
   maxLength: Type.Optional(
     Type.Number({ description: "Maximum character length of returned content. Default: 20000" }),
   ),

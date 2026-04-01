@@ -93,7 +93,6 @@ import { hasFinishToolCall, extractFinishParams, isRetryableInfraError, runAgent
 import { createAgentsTool as createAgentsToolFn, type CreateAgentsToolOptions } from "./manager-agents-tool.js";
 import { classifyError as classifyErrorFn } from "./classify-error.js";
 
-
 // Lazy import for requests.ts (uses bun:sqlite, not available in vitest)
 let _requestsMod: typeof import("./requests.js") | null = null;
 async function getRequestFns() {
@@ -183,8 +182,6 @@ import { log } from "./log.js";
  *   See `runAgentWithRetry()` for the retry loop implementation.
  */
 
-
-
 export class SubagentManager {
   private agents = new Map<string, RegisteredAgent>();
   private activeSessions = new Map<string, ActiveSession>();
@@ -250,11 +247,15 @@ export class SubagentManager {
         if (event.message.role === "user" && Array.isArray(event.message.content)) {
           for (const block of event.message.content as any[]) {
             if (block.type === "tool_result") {
-              const text = typeof block.content === "string"
-                ? block.content
-                : Array.isArray(block.content)
-                  ? block.content.filter((b: any) => b.type === "text").map((b: any) => b.text).join(" ")
-                  : "";
+              const text =
+                typeof block.content === "string"
+                  ? block.content
+                  : Array.isArray(block.content)
+                    ? block.content
+                        .filter((b: any) => b.type === "text")
+                        .map((b: any) => b.text)
+                        .join(" ")
+                    : "";
               if (block.is_error || isToolError(text)) {
                 session.currentTurnErrors++;
               } else {
@@ -283,12 +284,18 @@ export class SubagentManager {
           // Inject stuck warning at threshold
           if (session.consecutiveErrorTurns >= STUCK_WARNING_THRESHOLD && !session.stuckWarningInjected) {
             session.stuckWarningInjected = true;
-            log("warn", `STUCK_WARNING: Agent ${session.agentName} (${sessionId}) has ${session.consecutiveErrorTurns} consecutive error turns. Warning injected.`);
+            log(
+              "warn",
+              `STUCK_WARNING: Agent ${session.agentName} (${sessionId}) has ${session.consecutiveErrorTurns} consecutive error turns. Warning injected.`,
+            );
           }
 
           // Auto-terminate at terminate threshold
           if (session.consecutiveErrorTurns >= STUCK_TERMINATE_THRESHOLD) {
-            log("error", `STUCK_TERMINATE: Agent ${session.agentName} (${sessionId}) has ${session.consecutiveErrorTurns} consecutive error turns. Auto-terminating.`);
+            log(
+              "error",
+              `STUCK_TERMINATE: Agent ${session.agentName} (${sessionId}) has ${session.consecutiveErrorTurns} consecutive error turns. Auto-terminating.`,
+            );
             session.error = `Stuck Detection: ${session.consecutiveErrorTurns} consecutive turns with only errors. Session auto-terminated.`;
             session.agent.abort();
           }
@@ -296,7 +303,10 @@ export class SubagentManager {
           // ── maxTurns Enforcement ─────────────────────────────────────
           // Gracefully terminate sessions that exceed their turn budget.
           if (session.maxTurns > 0 && session.turnCount >= session.maxTurns) {
-            log("warn", `MAX_TURNS: Agent ${session.agentName} (${sessionId}) reached turn limit (${session.turnCount}/${session.maxTurns}). Terminating.`);
+            log(
+              "warn",
+              `MAX_TURNS: Agent ${session.agentName} (${sessionId}) reached turn limit (${session.turnCount}/${session.maxTurns}). Terminating.`,
+            );
             session.error = `Turn limit reached: ${session.turnCount}/${session.maxTurns} turns. Session terminated.`;
             session.agent.abort();
           }
@@ -304,18 +314,25 @@ export class SubagentManager {
           // Activity tracking: emit progress event every N turns
           if (session.turnCount > 0 && session.turnCount % PROGRESS_INTERVAL === 0) {
             const lastText = event.message.content
-              ? (Array.isArray(event.message.content)
-                  ? event.message.content.filter((b: any) => b.type === "text").map((b: any) => b.text).join(" ")
-                  : String(event.message.content))
+              ? Array.isArray(event.message.content)
+                ? event.message.content
+                    .filter((b: any) => b.type === "text")
+                    .map((b: any) => b.text)
+                    .join(" ")
+                : String(event.message.content)
               : "";
-            appendActivity(this._projectRoot, {
-              ts: Date.now(),
-              event: "progress",
-              sid: sessionId,
-              agent: session.agentName,
-              turns: session.turnCount,
-              summary: truncateSummary(lastText),
-            }, this.getWorkspacePath(session.agentName));
+            appendActivity(
+              this._projectRoot,
+              {
+                ts: Date.now(),
+                event: "progress",
+                sid: sessionId,
+                agent: session.agentName,
+                turns: session.turnCount,
+                summary: truncateSummary(lastText),
+              },
+              this.getWorkspacePath(session.agentName),
+            );
           }
         }
       }
@@ -344,9 +361,7 @@ export class SubagentManager {
    *
    *  If systemPrompt is set directly, it takes precedence over everything.
    */
-  private resolveSystemPrompt(
-    def: SubagentDefinition,
-  ): string {
+  private resolveSystemPrompt(def: SubagentDefinition): string {
     if (def.systemPrompt) return def.systemPrompt;
 
     const sections: string[] = [];
@@ -389,7 +404,9 @@ export class SubagentManager {
     // Agents should use skills and heartbeat guards for behavioral patches.
 
     // 2. common-sense.md — shared behavioral rules
-    const commonSense = loadFile(def.projectRoot ? join(def.projectRoot, "agents", "shared", "common-sense.md") : undefined);
+    const commonSense = loadFile(
+      def.projectRoot ? join(def.projectRoot, "agents", "shared", "common-sense.md") : undefined,
+    );
     if (commonSense) sections.push(commonSense);
 
     // 3. Skills — behavioral patches from skills/*.md
@@ -397,8 +414,8 @@ export class SubagentManager {
       const skillsDir = join(agentDir, "skills");
       if (existsSync(skillsDir)) {
         const skillFiles = readdirSync(skillsDir, { recursive: true })
-          .map(f => String(f))
-          .filter(f => f.endsWith(".md"))
+          .map((f) => String(f))
+          .filter((f) => f.endsWith(".md"))
           .sort();
         for (const sf of skillFiles) {
           const skillContent = loadFile(join(skillsDir, sf));
@@ -484,11 +501,7 @@ export class SubagentManager {
     sessionId: string,
     persistDir: string,
   ): string {
-    const ctxLines = [
-      `# Session Context`,
-      `- Session ID: ${sessionId}`,
-      `- Current Time: ${new Date().toISOString()}`,
-    ];
+    const ctxLines = [`# Session Context`, `- Session ID: ${sessionId}`, `- Current Time: ${new Date().toISOString()}`];
     const memoryLimit = def.memoryLimit ?? 20;
     if (memoryLimit > 0) {
       const entries = readMemoryEntries(persistDir, agentName, memoryLimit);
@@ -519,12 +532,9 @@ export class SubagentManager {
     const lastCheckpoint = readLatestCheckpointForAgent(persistDir, agentName);
     if (lastCheckpoint) {
       const age = Date.now() - lastCheckpoint.timestamp;
-      const ageStr = age < 3_600_000
-        ? `${Math.round(age / 60_000)}m ago`
-        : `${Math.round(age / 3_600_000)}h ago`;
-      const dataStr = Object.keys(lastCheckpoint.data).length > 0
-        ? `\n- Data: ${JSON.stringify(lastCheckpoint.data)}`
-        : "";
+      const ageStr = age < 3_600_000 ? `${Math.round(age / 60_000)}m ago` : `${Math.round(age / 3_600_000)}h ago`;
+      const dataStr =
+        Object.keys(lastCheckpoint.data).length > 0 ? `\n- Data: ${JSON.stringify(lastCheckpoint.data)}` : "";
       ctxLines.push(
         ``,
         `## Last Checkpoint (from session ${lastCheckpoint.sessionId}, step #${lastCheckpoint.step}, ${ageStr})`,
@@ -548,7 +558,11 @@ export class SubagentManager {
     // Context learning: load agents/<name>/context.md if it exists.
     // Auto-maintained by finish(context_updates) — accumulated project knowledge.
     {
-      const ctxAgentDir = def.knowledgeDir ? dirname(def.knowledgeDir) : def.workspace ? dirname(def.workspace) : undefined;
+      const ctxAgentDir = def.knowledgeDir
+        ? dirname(def.knowledgeDir)
+        : def.workspace
+          ? dirname(def.workspace)
+          : undefined;
       if (ctxAgentDir) {
         const ctxPath = join(ctxAgentDir, "context.md");
         if (existsSync(ctxPath)) {
@@ -568,19 +582,25 @@ export class SubagentManager {
     const registered = this.agents.get(agentName);
     const dir = registered?.definition.knowledgeDir
       ? dirname(registered.definition.knowledgeDir)
-      : registered?.definition.workspace ? dirname(registered.definition.workspace) : undefined;
+      : registered?.definition.workspace
+        ? dirname(registered.definition.workspace)
+        : undefined;
     if (!dir) return;
 
     const contextPath = join(dir, "context.md");
     let lines: string[] = [];
-    try { lines = readFileSync(contextPath, "utf-8").split("\n"); } catch { /* file may not exist */ }
+    try {
+      lines = readFileSync(contextPath, "utf-8").split("\n");
+    } catch {
+      /* file may not exist */
+    }
 
     for (const u of updates) {
       const trimmed = u.content.trim();
-      if (u.action === "add" && !lines.some(l => l.includes(trimmed))) {
+      if (u.action === "add" && !lines.some((l) => l.includes(trimmed))) {
         lines.push(`- ${trimmed}`);
       } else if (u.action === "remove") {
-        lines = lines.filter(l => !l.includes(trimmed));
+        lines = lines.filter((l) => !l.includes(trimmed));
       }
     }
 
@@ -647,7 +667,7 @@ export class SubagentManager {
           const pending = db
             .prepare(
               `SELECT requestId, task FROM requests
-               WHERE toAgent = ? AND status IN ('CREATED', 'IN_PROGRESS') AND method = 'send'`
+               WHERE toAgent = ? AND status IN ('CREATED', 'IN_PROGRESS') AND method = 'send'`,
             )
             .all(session.agentName) as { requestId: string; task: string }[];
 
@@ -659,7 +679,10 @@ export class SubagentManager {
               const reqText = req.task.toLowerCase();
               if (reqText.includes(needle) || needle.includes(reqText)) {
                 const score = Math.min(reqText.length, needle.length) / Math.max(reqText.length, needle.length);
-                if (score > bestScore) { bestScore = score; bestId = req.requestId; }
+                if (score > bestScore) {
+                  bestScore = score;
+                  bestId = req.requestId;
+                }
               }
             }
             if (bestId && bestScore > 0.3) {
@@ -670,7 +693,9 @@ export class SubagentManager {
               });
             }
           }
-        } catch { /* best-effort */ }
+        } catch {
+          /* best-effort */
+        }
       }
 
       // Track new self-assigned items as requests
@@ -684,7 +709,9 @@ export class SubagentManager {
               method: "send",
               sessionId: session.sessionId,
             });
-          } catch { /* best-effort */ }
+          } catch {
+            /* best-effort */
+          }
         }
       }
     } catch {
@@ -762,12 +789,11 @@ export class SubagentManager {
     if (!session.agent.state.error && !session.error && lastMsg?.role === "assistant") {
       const content = Array.isArray(lastMsg.content) ? lastMsg.content : [];
       const hasSubstance = content.some(
-        (block: any) =>
-          (block?.type === "text" && block.text?.trim()) ||
-          block?.type === "toolCall",
+        (block: any) => (block?.type === "text" && block.text?.trim()) || block?.type === "toolCall",
       );
       if (!hasSubstance && !hasFinishToolCall(messages)) {
-        session.error = "Model returned an empty response (0 output tokens). This usually indicates a model/API issue — try again or switch models.";
+        session.error =
+          "Model returned an empty response (0 output tokens). This usually indicates a model/API issue — try again or switch models.";
         session.agent.state.error = session.error;
       }
     }
@@ -780,10 +806,15 @@ export class SubagentManager {
     // subsequent empty responses or transient model errors as session failures
     // (the agent completed its work; the model just had a post-finish hiccup,
     //  or we deliberately aborted after finish() to prevent re-invocation loops)
-    if (agentError && hasFinishToolCall(messages) &&
-        (agentError.includes("empty response") || agentError.includes("0 output tokens") ||
-         agentError.includes("Unhandled stop reason") || agentError.includes("OpBudgetExceeded") ||
-         agentError.includes("aborted"))) {
+    if (
+      agentError &&
+      hasFinishToolCall(messages) &&
+      (agentError.includes("empty response") ||
+        agentError.includes("0 output tokens") ||
+        agentError.includes("Unhandled stop reason") ||
+        agentError.includes("OpBudgetExceeded") ||
+        agentError.includes("aborted"))
+    ) {
       session.error = undefined;
       session.agent.state.error = undefined;
     } else if (agentError) {
@@ -812,9 +843,13 @@ export class SubagentManager {
     // triggered by the finish-termination logic in manager-receipts.ts).
     if (session.error && hasFinishToolCall(messages)) {
       const e = session.error;
-      if (e.includes("empty response") || e.includes("0 output tokens") ||
-          e.includes("Unhandled stop reason") || e.includes("OpBudgetExceeded") ||
-          e.includes("aborted")) {
+      if (
+        e.includes("empty response") ||
+        e.includes("0 output tokens") ||
+        e.includes("Unhandled stop reason") ||
+        e.includes("OpBudgetExceeded") ||
+        e.includes("aborted")
+      ) {
         session.error = undefined;
         session.agent.state.error = undefined;
       }
@@ -849,12 +884,7 @@ export class SubagentManager {
     // Heartbeat sessions MUST read files (heartbeat.md, etc.).
     // If an agent completes a heartbeat with zero tool calls, it responded
     // from compacted context without actually checking anything — flag it.
-    if (
-      !wasAborted &&
-      !session.error &&
-      session.totalToolCalls === 0 &&
-      session.task.startsWith("[heartbeat]")
-    ) {
+    if (!wasAborted && !session.error && session.totalToolCalls === 0 && session.task.startsWith("[heartbeat]")) {
       session.error =
         "Shallow heartbeat: completed with zero tool calls. " +
         "Heartbeat sessions MUST use tools (read heartbeat.md, check health, etc.).";
@@ -864,11 +894,8 @@ export class SubagentManager {
     // Task sessions (or aborted interface sessions) → archive and remove
     // If finish() was called and the error was cleared (post-finish abort),
     // treat as "done" — the abort was just the session cleanup, not a failure.
-    const archiveStatus: "done" | "error" | "interrupted" = wasAborted && session.error
-      ? "interrupted"
-      : session.error
-        ? "error"
-        : "done";
+    const archiveStatus: "done" | "error" | "interrupted" =
+      wasAborted && session.error ? "interrupted" : session.error ? "error" : "done";
     session.archiveStatus = archiveStatus;
     this.registry.updateSessionStatus(session.sessionId, archiveStatus, session.error);
 
@@ -887,7 +914,11 @@ export class SubagentManager {
 
     // Apply context_updates from finish() to agents/<name>/context.md
     if (finishParams?.context_updates?.length) {
-      try { this.applyContextUpdates(session.agentName, finishParams.context_updates); } catch { /* non-fatal */ }
+      try {
+        this.applyContextUpdates(session.agentName, finishParams.context_updates);
+      } catch {
+        /* non-fatal */
+      }
     }
 
     // Update request DB from finish() data (mark completed, track new items)
@@ -896,26 +927,45 @@ export class SubagentManager {
     // Activity tracking: log session completion
     {
       const duration = formatDuration(session.endedAt! - session.startedAt);
-      const lastText = session.agent.state.messages
-        .filter((m: any) => m.role === "assistant")
-        .pop()?.content;
+      const lastText = session.agent.state.messages.filter((m: any) => m.role === "assistant").pop()?.content;
       const summaryText = Array.isArray(lastText)
-        ? lastText.filter((b: any) => b.type === "text").map((b: any) => b.text).join(" ")
-        : typeof lastText === "string" ? lastText : "";
+        ? lastText
+            .filter((b: any) => b.type === "text")
+            .map((b: any) => b.text)
+            .join(" ")
+        : typeof lastText === "string"
+          ? lastText
+          : "";
       if (archiveStatus === "error") {
-        appendActivity(this._projectRoot, {
-          ts: Date.now(), event: "error", sid: session.sessionId,
-          agent: session.agentName, turns: session.turnCount,
-          duration, summary: truncateSummary(summaryText),
-          error: truncateSummary(session.error),
-        }, this.getWorkspacePath(session.agentName));
+        appendActivity(
+          this._projectRoot,
+          {
+            ts: Date.now(),
+            event: "error",
+            sid: session.sessionId,
+            agent: session.agentName,
+            turns: session.turnCount,
+            duration,
+            summary: truncateSummary(summaryText),
+            error: truncateSummary(session.error),
+          },
+          this.getWorkspacePath(session.agentName),
+        );
       } else {
-        appendActivity(this._projectRoot, {
-          ts: Date.now(), event: "done", sid: session.sessionId,
-          agent: session.agentName, turns: session.turnCount,
-          duration, summary: truncateSummary(summaryText),
-          files: [...session.filesModified],
-        }, this.getWorkspacePath(session.agentName));
+        appendActivity(
+          this._projectRoot,
+          {
+            ts: Date.now(),
+            event: "done",
+            sid: session.sessionId,
+            agent: session.agentName,
+            turns: session.turnCount,
+            duration,
+            summary: truncateSummary(summaryText),
+            files: [...session.filesModified],
+          },
+          this.getWorkspacePath(session.agentName),
+        );
       }
     }
 
@@ -959,7 +1009,9 @@ export class SubagentManager {
             outcome: outcome.slice(0, 500),
             opCount: session.opCount,
           });
-        } catch { /* non-fatal */ }
+        } catch {
+          /* non-fatal */
+        }
       }
     }
 
@@ -968,7 +1020,7 @@ export class SubagentManager {
     // escalation request to the parent agent (or fire onSessionBlocked for May).
     {
       if (finishParams && (finishParams.status === "blocked" || finishParams.status === "failure")) {
-        const blockerText = finishParams.blockers?.map(b => `${b.reason}: ${b.context}`).join("; ") ?? "";
+        const blockerText = finishParams.blockers?.map((b) => `${b.reason}: ${b.context}`).join("; ") ?? "";
         const escalationTask = `[escalation] ${session.agentName} session ${session.sessionId} ended ${finishParams.status}: ${finishParams.summary}${blockerText ? ` | Blockers: ${blockerText}` : ""}`;
 
         // Try parent agent first, fall back to onSessionBlocked (May)
@@ -984,15 +1036,23 @@ export class SubagentManager {
                 method: "send",
                 sessionId: session.sessionId,
               });
-            } catch { /* best-effort */ }
+            } catch {
+              /* best-effort */
+            }
           });
         }
 
         // Always fire onSessionBlocked so May can track it
         if (this.onSessionBlocked) {
           try {
-            this.onSessionBlocked(session.agentName, session.sessionId, `${finishParams.status}: ${finishParams.summary}`);
-          } catch { /* best-effort */ }
+            this.onSessionBlocked(
+              session.agentName,
+              session.sessionId,
+              `${finishParams.status}: ${finishParams.summary}`,
+            );
+          } catch {
+            /* best-effort */
+          }
         }
       }
     }
@@ -1049,7 +1109,9 @@ export class SubagentManager {
         if (typeof freshConfig.memoryLimit === "number" && freshConfig.memoryLimit !== def.memoryLimit) {
           def.memoryLimit = freshConfig.memoryLimit;
         }
-      } catch { /* best-effort — fall back to cached definition */ }
+      } catch {
+        /* best-effort — fall back to cached definition */
+      }
     }
 
     const sessionId = opts?.sessionId ?? generateId(def.sessionIdPrefix);
@@ -1182,9 +1244,17 @@ export class SubagentManager {
     this.onSessionStart?.(name, sessionId);
 
     // Activity tracking: log session start
-    appendActivity(this._projectRoot, {
-      ts: Date.now(), event: "start", sid: sessionId, agent: name, task: truncateSummary(task, 500),
-    }, this.getWorkspacePath(name));
+    appendActivity(
+      this._projectRoot,
+      {
+        ts: Date.now(),
+        event: "start",
+        sid: sessionId,
+        agent: name,
+        task: truncateSummary(task, 500),
+      },
+      this.getWorkspacePath(name),
+    );
 
     // The initial user message is persisted via the message_end subscriber
     // when agentLoop emits it (before any LLM call). No explicit write here
@@ -1196,7 +1266,9 @@ export class SubagentManager {
     const sessionContext = this.buildSessionContext(def, name, sessionId, persistDir);
     const promptText = `${sessionContext}\n\n---\n\n${task}`;
 
-    session.promise = runAgentWithRetry(session, agent.prompt(promptText), this._infraRetryMax, (s) => this.handleCompletion(s));
+    session.promise = runAgentWithRetry(session, agent.prompt(promptText), this._infraRetryMax, (s) =>
+      this.handleCompletion(s),
+    );
 
     this.sessionResults.set(
       sessionId,
@@ -1264,7 +1336,10 @@ export class SubagentManager {
           }
         }
       } catch (err) {
-        log("warn", `[manager] Error scanning for crashed sessions: ${err instanceof Error ? err.message : String(err)}`);
+        log(
+          "warn",
+          `[manager] Error scanning for crashed sessions: ${err instanceof Error ? err.message : String(err)}`,
+        );
       }
     }
 
@@ -1867,7 +1942,9 @@ export class SubagentManager {
       }
 
       // Prompt the agent with new input
-      const p = runAgentWithRetry(session, session.agent.prompt(text), this._infraRetryMax, (s) => this.handleCompletion(s));
+      const p = runAgentWithRetry(session, session.agent.prompt(text), this._infraRetryMax, (s) =>
+        this.handleCompletion(s),
+      );
 
       session.promise = p;
       const resultPromise = p.then(() => this.buildResultFromSession(session));
@@ -2249,7 +2326,7 @@ export class SubagentManager {
     const { readWorkflowRun } = require("./persistence.js") as typeof import("./persistence.js");
     const run = readWorkflowRun(this.registry.persistDir, workflowRunId);
     if (!run) return [];
-    return run.steps.map(s => ({
+    return run.steps.map((s) => ({
       step: s.agent,
       sessionId: s.sessionId,
       summary: `${s.status}: ${(s.lastAssistantText ?? "").slice(0, 300)}`,
@@ -2311,7 +2388,6 @@ export class SubagentManager {
     if (rootSessionId) {
       this.callDepths.set(rootSessionId, currentDepth + 1);
     }
-
 
     try {
       // ── Start session ──────────────────────────────────────────────────

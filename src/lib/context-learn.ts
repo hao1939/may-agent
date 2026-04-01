@@ -92,9 +92,8 @@ export async function extractFacts(
   label?: string,
 ): Promise<ContextUpdate[]> {
   // Cap input text
-  const cappedText = text.length > 8000
-    ? text.slice(0, 3000) + "\n\n[... truncated ...]\n\n" + text.slice(-5000)
-    : text;
+  const cappedText =
+    text.length > 8000 ? text.slice(0, 3000) + "\n\n[... truncated ...]\n\n" + text.slice(-5000) : text;
 
   const prompt = [
     EXTRACT_PROMPT,
@@ -129,7 +128,7 @@ export function extractFactsMechanical(messages: TranscriptMessage[]): ContextUp
   extractRuntimeFacts(toolCalls, toolResults, facts);
   extractPathDiscoveries(toolCalls, toolResults, facts);
 
-  return facts.map(f => ({ action: "add" as const, content: f }));
+  return facts.map((f) => ({ action: "add" as const, content: f }));
 }
 
 // ── Layer 2: Context file management ───────────────────────────────────
@@ -150,7 +149,11 @@ export function applyContextUpdates(
   maxSize = 2048,
 ): ContextUpdateResult {
   let lines: string[] = [];
-  try { lines = readFileSync(contextPath, "utf-8").split("\n"); } catch { /* file may not exist */ }
+  try {
+    lines = readFileSync(contextPath, "utf-8").split("\n");
+  } catch {
+    /* file may not exist */
+  }
 
   const added: string[] = [];
   const removed: string[] = [];
@@ -158,13 +161,13 @@ export function applyContextUpdates(
   for (const u of updates) {
     const trimmed = u.content.trim();
     if (u.action === "add") {
-      if (!lines.some(line => line.toLowerCase().includes(trimmed.toLowerCase()))) {
+      if (!lines.some((line) => line.toLowerCase().includes(trimmed.toLowerCase()))) {
         lines.push(`- ${trimmed}`);
         added.push(trimmed);
       }
     } else if (u.action === "remove") {
       const before = lines.length;
-      lines = lines.filter(l => !l.toLowerCase().includes(trimmed.toLowerCase()));
+      lines = lines.filter((l) => !l.toLowerCase().includes(trimmed.toLowerCase()));
       if (lines.length < before) removed.push(trimmed);
     }
   }
@@ -190,7 +193,11 @@ export function applyContextUpdates(
  * Read the current contents of a context file. Returns empty string if missing.
  */
 export function readContext(contextPath: string): string {
-  try { return readFileSync(contextPath, "utf-8").trim(); } catch { return ""; }
+  try {
+    return readFileSync(contextPath, "utf-8").trim();
+  } catch {
+    return "";
+  }
 }
 
 // ── Merge prompt (produces complete context.md, not patches) ───────────
@@ -234,9 +241,8 @@ export async function mergeContext(
 ): Promise<ContextUpdateResult> {
   const existing = readContext(contextPath);
 
-  const cappedText = text.length > 8000
-    ? text.slice(0, 3000) + "\n\n[... truncated ...]\n\n" + text.slice(-5000)
-    : text;
+  const cappedText =
+    text.length > 8000 ? text.slice(0, 3000) + "\n\n[... truncated ...]\n\n" + text.slice(-5000) : text;
 
   const prompt = [
     MERGE_PROMPT,
@@ -270,10 +276,10 @@ export async function mergeContext(
   }
 
   // Compute diff for reporting
-  const oldLines = new Set(existing.split("\n").filter(l => l.startsWith("- ")));
-  const newLines = new Set(merged.split("\n").filter(l => l.startsWith("- ")));
-  const added = [...newLines].filter(l => !oldLines.has(l)).map(l => l.replace(/^- /, ""));
-  const removed = [...oldLines].filter(l => !newLines.has(l)).map(l => l.replace(/^- /, ""));
+  const oldLines = new Set(existing.split("\n").filter((l) => l.startsWith("- ")));
+  const newLines = new Set(merged.split("\n").filter((l) => l.startsWith("- ")));
+  const added = [...newLines].filter((l) => !oldLines.has(l)).map((l) => l.replace(/^- /, ""));
+  const removed = [...oldLines].filter((l) => !newLines.has(l)).map((l) => l.replace(/^- /, ""));
 
   if (added.length === 0 && removed.length === 0 && merged === existing) {
     return { added: [], removed: [] };
@@ -368,11 +374,12 @@ function formatTranscriptForLearning(messages: TranscriptMessage[]): string {
       }
     }
     if (msg.role === "toolResult" || msg.role === "tool") {
-      const text = typeof msg.content === "string"
-        ? msg.content
-        : Array.isArray(msg.content)
-          ? (msg.content as Array<{ text?: string }>).map(p => p.text ?? "").join("\n")
-          : "";
+      const text =
+        typeof msg.content === "string"
+          ? msg.content
+          : Array.isArray(msg.content)
+            ? (msg.content as Array<{ text?: string }>).map((p) => p.text ?? "").join("\n")
+            : "";
       const truncated = text.length > 1000 ? text.slice(0, 1000) + "..." : text;
       const errTag = msg.isError ? " [ERROR]" : "";
       lines.push(`[tool_result: ${msg.toolName ?? "?"}${errTag}] ${truncated}`);
@@ -397,8 +404,10 @@ function parseContextUpdates(text: string): ContextUpdate[] {
     if (!Array.isArray(parsed)) return [];
     return parsed.filter(
       (u: unknown): u is ContextUpdate =>
-        typeof u === "object" && u !== null &&
-        "action" in u && "content" in u &&
+        typeof u === "object" &&
+        u !== null &&
+        "action" in u &&
+        "content" in u &&
         typeof (u as Record<string, unknown>).action === "string" &&
         typeof (u as Record<string, unknown>).content === "string" &&
         ((u as Record<string, unknown>).action === "add" || (u as Record<string, unknown>).action === "remove"),
@@ -432,19 +441,21 @@ function parseToolEvents(messages: TranscriptMessage[]): { toolCalls: ToolCall[]
     if (msg.role === "assistant" && Array.isArray(msg.content)) {
       for (const part of msg.content as Array<Record<string, unknown>>) {
         if (part.type === "toolCall" || part.type === "tool_use") {
-          const args = typeof part.arguments === "string"
-            ? tryParseJson(part.arguments)
-            : (part.arguments ?? part.input ?? {}) as Record<string, unknown>;
+          const args =
+            typeof part.arguments === "string"
+              ? tryParseJson(part.arguments)
+              : ((part.arguments ?? part.input ?? {}) as Record<string, unknown>);
           toolCalls.push({ name: (part.name ?? part.toolName ?? "") as string, args, index: i });
         }
       }
     }
     if (msg.role === "toolResult" || msg.role === "tool") {
-      const text = typeof msg.content === "string"
-        ? msg.content
-        : Array.isArray(msg.content)
-          ? (msg.content as Array<{ text?: string }>).map(p => p.text ?? "").join("\n")
-          : "";
+      const text =
+        typeof msg.content === "string"
+          ? msg.content
+          : Array.isArray(msg.content)
+            ? (msg.content as Array<{ text?: string }>).map((p) => p.text ?? "").join("\n")
+            : "";
       toolResults.push({
         toolName: (msg.toolName ?? "") as string,
         content: text,
@@ -460,12 +471,12 @@ function parseToolEvents(messages: TranscriptMessage[]): { toolCalls: ToolCall[]
 // ── Mechanical pattern extractors ──────────────────────────────────────
 
 function extractCommandCorrections(calls: ToolCall[], results: ToolResult[], facts: string[]): void {
-  const bashCalls = calls.filter(c => c.name === "bash");
-  const bashResults = results.filter(r => r.toolName === "bash");
+  const bashCalls = calls.filter((c) => c.name === "bash");
+  const bashResults = results.filter((r) => r.toolName === "bash");
 
   for (let i = 0; i < bashCalls.length - 1; i++) {
     const call = bashCalls[i];
-    const result = bashResults.find(r => r.index > call.index && r.index < (bashCalls[i + 1]?.index ?? Infinity));
+    const result = bashResults.find((r) => r.index > call.index && r.index < (bashCalls[i + 1]?.index ?? Infinity));
     if (!result || !result.isError) continue;
 
     const failedCmd = String(call.args.command ?? "");
@@ -473,7 +484,9 @@ function extractCommandCorrections(calls: ToolCall[], results: ToolResult[], fac
 
     for (let j = i + 1; j < bashCalls.length; j++) {
       const nextCall = bashCalls[j];
-      const nextResult = bashResults.find(r => r.index > nextCall.index && r.index < (bashCalls[j + 1]?.index ?? Infinity));
+      const nextResult = bashResults.find(
+        (r) => r.index > nextCall.index && r.index < (bashCalls[j + 1]?.index ?? Infinity),
+      );
       if (!nextResult || nextResult.isError) continue;
 
       const successCmd = String(nextCall.args.command ?? "");
@@ -484,10 +497,18 @@ function extractCommandCorrections(calls: ToolCall[], results: ToolResult[], fac
       }
       if (failedCmd.startsWith("node ") && (successCmd.startsWith("bun ") || successCmd.startsWith("deno "))) {
         const runtime = successCmd.split(" ")[0];
-        facts.push(`Use '${runtime}' not 'node' — '${failedCmd.slice(0, 40)}' failed, '${successCmd.slice(0, 40)}' worked`);
+        facts.push(
+          `Use '${runtime}' not 'node' — '${failedCmd.slice(0, 40)}' failed, '${successCmd.slice(0, 40)}' worked`,
+        );
         break;
       }
-      if (failedCmd.includes("npm test") && (successCmd.includes("bun test") || successCmd.includes("deno test") || successCmd.includes("vitest") || successCmd.includes("jest"))) {
+      if (
+        failedCmd.includes("npm test") &&
+        (successCmd.includes("bun test") ||
+          successCmd.includes("deno test") ||
+          successCmd.includes("vitest") ||
+          successCmd.includes("jest"))
+      ) {
         facts.push(`Test runner: '${successCmd.slice(0, 50)}' (not 'npm test')`);
         break;
       }
@@ -511,11 +532,11 @@ function extractCommandCorrections(calls: ToolCall[], results: ToolResult[], fac
 }
 
 function extractRuntimeFacts(calls: ToolCall[], results: ToolResult[], facts: string[]): void {
-  const readCalls = calls.filter(c => c.name === "read");
+  const readCalls = calls.filter((c) => c.name === "read");
 
   for (const call of readCalls) {
     const path = String(call.args.path ?? "");
-    const result = results.find(r => r.index > call.index && !r.isError);
+    const result = results.find((r) => r.index > call.index && !r.isError);
     if (!result) continue;
 
     if (path.endsWith("deno.json") || path.endsWith("deno.jsonc")) {
@@ -533,11 +554,11 @@ function extractRuntimeFacts(calls: ToolCall[], results: ToolResult[], facts: st
 }
 
 function extractPathDiscoveries(calls: ToolCall[], results: ToolResult[], facts: string[]): void {
-  const readCalls = calls.filter(c => c.name === "read");
+  const readCalls = calls.filter((c) => c.name === "read");
 
   for (let i = 0; i < readCalls.length - 1; i++) {
     const call = readCalls[i];
-    const result = results.find(r => r.index > call.index);
+    const result = results.find((r) => r.index > call.index);
     if (!result || !result.isError) continue;
 
     const failedPath = String(call.args.path ?? "");
@@ -545,7 +566,7 @@ function extractPathDiscoveries(calls: ToolCall[], results: ToolResult[], facts:
 
     for (let j = i + 1; j < readCalls.length; j++) {
       const nextCall = readCalls[j];
-      const nextResult = results.find(r => r.index > nextCall.index);
+      const nextResult = results.find((r) => r.index > nextCall.index);
       if (!nextResult || nextResult.isError) continue;
 
       const successPath = String(nextCall.args.path ?? "");
@@ -560,5 +581,9 @@ function extractPathDiscoveries(calls: ToolCall[], results: ToolResult[], facts:
 }
 
 function tryParseJson(s: string): Record<string, unknown> {
-  try { return JSON.parse(s); } catch { return {}; }
+  try {
+    return JSON.parse(s);
+  } catch {
+    return {};
+  }
 }

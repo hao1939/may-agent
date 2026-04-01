@@ -64,14 +64,14 @@ export function cleanupScenario(workDir: string): void {
 export function runWithTimeout(
   workDir: string,
   entryFile: string,
-  timeoutMs: number = 3000
+  timeoutMs: number = 3000,
 ): { stdout: string; stderr: string; exitCode: number } {
   const result = spawnSync("node", [entryFile], {
     cwd: workDir,
     timeout: timeoutMs,
     encoding: "utf-8",
     stdio: ["pipe", "pipe", "pipe"],
-    killSignal: "SIGKILL",  // SIGKILL ensures process cannot ignore the signal
+    killSignal: "SIGKILL", // SIGKILL ensures process cannot ignore the signal
   });
 
   const timedOut = result.signal === "SIGKILL" || result.error?.message?.includes("ETIMEDOUT");
@@ -177,7 +177,7 @@ export function detectInfiniteLoop(workDir: string, entryFile: string, timeoutMs
  */
 export function detectPermissionDenied(
   workDir: string,
-  entryFile: string
+  entryFile: string,
 ): { hasPermissionIssue: boolean; file: string; error: string } {
   const result = runWithTimeout(workDir, entryFile, 3000);
   if (result.exitCode !== 0 && result.stderr.includes("EACCES")) {
@@ -199,7 +199,7 @@ export function detectPermissionDenied(
  */
 export function detectBrokenTool(
   workDir: string,
-  entryFile: string
+  entryFile: string,
 ): { isBroken: boolean; errorPattern: string; failedSource: string } {
   const result = runWithTimeout(workDir, entryFile, 3000);
   if (result.exitCode !== 0) {
@@ -222,7 +222,7 @@ export function detectBrokenTool(
  */
 export function detectResourceExhaustion(
   workDir: string,
-  entryFile: string
+  entryFile: string,
 ): { isExhausted: boolean; resource: string; message: string } {
   const result = runWithTimeout(workDir, entryFile, 3000);
   if (result.exitCode !== 0) {
@@ -242,15 +242,14 @@ export function detectResourceExhaustion(
  * have contradictory values for the same keys.
  * Returns { hasConflict, conflicts } with details of each mismatch.
  */
-export function detectConfigConflict(
-  workDir: string
-): { hasConflict: boolean; conflicts: Array<{ key: string; valueA: unknown; valueB: unknown }> } {
+export function detectConfigConflict(workDir: string): {
+  hasConflict: boolean;
+  conflicts: Array<{ key: string; valueA: unknown; valueB: unknown }>;
+} {
   const conflicts: Array<{ key: string; valueA: unknown; valueB: unknown }> = [];
 
   // Look for pairs of config-like JSON files
-  const jsonFiles = readdirSync(workDir).filter(
-    (f) => f.endsWith(".json") && f !== "package.json"
-  );
+  const jsonFiles = readdirSync(workDir).filter((f) => f.endsWith(".json") && f !== "package.json");
   if (jsonFiles.length < 2) return { hasConflict: false, conflicts };
 
   const configs: Array<{ name: string; data: Record<string, unknown> }> = [];

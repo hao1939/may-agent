@@ -103,31 +103,83 @@ function textResult(text: string): AgentToolResult<string> {
 }
 
 const AgentsToolParams = Type.Object({
-  action: StringEnum(["call", "fork", "message", "context", "list", "peek", "cancel", "requests", "send", "run"] as const, {
-    description: [
-      "'call': run an agent synchronously and get the result (blocks your session until the agent finishes). Creates a child session in your call tree.",
-      "'fork': start an agent in a new independent session (non-blocking). Returns sessionId. You continue immediately. The forked session can query your context via origin link.",
-      "'message': fire-and-forget task for an agent to pick up on their next heartbeat. No result returned. Use for background work.",
-      "'context': query session context — parent's summary, origin session, workflow steps. Use when you need more context than your task provides.",
-      "'list': show all available agents with descriptions and any running sessions.",
-      "'peek': view recent messages from a running session (requires sessionId).",
-      "'cancel': kill a running session (requires sessionId).",
-      "'requests': query the request tracking database (optionally filter by agent or status).",
-    ].join(" "),
-  }),
-  agent: Type.Optional(Type.String({ description: "Target agent name. Required for 'call' and 'send'. Optional for 'requests' (filters by agent). Use 'list' first to see available agents if unsure." })),
-  task: Type.Optional(Type.String({ description: "Task description for 'call'. Be specific: include file paths, expected outcomes, and constraints. The agent runs to completion and returns a summary." })),
-  message: Type.Optional(Type.String({ description: "Message to send for 'send'. Creates a tracked request in the DB and triggers the target agent's next heartbeat. Include artifact file paths if the agent needs to read your output." })),
-  sessionId: Type.Optional(Type.String({ description: "Session ID for 'peek' or 'cancel'. Get session IDs from 'list' output." })),
-  limit: Type.Optional(Type.Number({ description: "Max items to return. For 'peek': messages (default: 20). For 'requests': records (default: 50). Increase to see more." })),
-  filter: Type.Optional(StringEnum(["active", "stale", "failed", "all"] as const, {
-    description: "Filter for 'requests' action. 'active': in-progress or pending. 'stale': no progress for >2h. 'failed': completed with errors. 'all': everything. Default: 'active'.",
-  })),
-  force: Type.Optional(Type.Boolean({ description: "For 'send' only: skip duplicate detection. Use when you intentionally want to re-send a similar message to the same agent." })),
-  context_files: Type.Optional(Type.Array(Type.String(), { description: "For 'send'/'call': file paths the receiver MUST read for context. Included in the tracked request and appended to the message." })),
-  success_criteria: Type.Optional(Type.Array(Type.String(), { description: "For 'send'/'call': bullet points describing how to verify the task is done correctly. Included in the tracked request." })),
-  priority: Type.Optional(StringEnum(["P0", "P1", "P2"] as const, { description: "For 'send': task priority. P0 = urgent/blocking, P1 = important, P2 = nice-to-have. Default: P1." })),
-  scope: Type.Optional(StringEnum(["parent", "origin", "root", "workflow"] as const, { description: "For 'context': what to query. 'parent' (default): caller's session summary. 'origin': the session that forked this tree. 'root': top of the call tree. 'workflow': all completed workflow steps." })),
+  action: StringEnum(
+    ["call", "fork", "message", "context", "list", "peek", "cancel", "requests", "send", "run"] as const,
+    {
+      description: [
+        "'call': run an agent synchronously and get the result (blocks your session until the agent finishes). Creates a child session in your call tree.",
+        "'fork': start an agent in a new independent session (non-blocking). Returns sessionId. You continue immediately. The forked session can query your context via origin link.",
+        "'message': fire-and-forget task for an agent to pick up on their next heartbeat. No result returned. Use for background work.",
+        "'context': query session context — parent's summary, origin session, workflow steps. Use when you need more context than your task provides.",
+        "'list': show all available agents with descriptions and any running sessions.",
+        "'peek': view recent messages from a running session (requires sessionId).",
+        "'cancel': kill a running session (requires sessionId).",
+        "'requests': query the request tracking database (optionally filter by agent or status).",
+      ].join(" "),
+    },
+  ),
+  agent: Type.Optional(
+    Type.String({
+      description:
+        "Target agent name. Required for 'call' and 'send'. Optional for 'requests' (filters by agent). Use 'list' first to see available agents if unsure.",
+    }),
+  ),
+  task: Type.Optional(
+    Type.String({
+      description:
+        "Task description for 'call'. Be specific: include file paths, expected outcomes, and constraints. The agent runs to completion and returns a summary.",
+    }),
+  ),
+  message: Type.Optional(
+    Type.String({
+      description:
+        "Message to send for 'send'. Creates a tracked request in the DB and triggers the target agent's next heartbeat. Include artifact file paths if the agent needs to read your output.",
+    }),
+  ),
+  sessionId: Type.Optional(
+    Type.String({ description: "Session ID for 'peek' or 'cancel'. Get session IDs from 'list' output." }),
+  ),
+  limit: Type.Optional(
+    Type.Number({
+      description:
+        "Max items to return. For 'peek': messages (default: 20). For 'requests': records (default: 50). Increase to see more.",
+    }),
+  ),
+  filter: Type.Optional(
+    StringEnum(["active", "stale", "failed", "all"] as const, {
+      description:
+        "Filter for 'requests' action. 'active': in-progress or pending. 'stale': no progress for >2h. 'failed': completed with errors. 'all': everything. Default: 'active'.",
+    }),
+  ),
+  force: Type.Optional(
+    Type.Boolean({
+      description:
+        "For 'send' only: skip duplicate detection. Use when you intentionally want to re-send a similar message to the same agent.",
+    }),
+  ),
+  context_files: Type.Optional(
+    Type.Array(Type.String(), {
+      description:
+        "For 'send'/'call': file paths the receiver MUST read for context. Included in the tracked request and appended to the message.",
+    }),
+  ),
+  success_criteria: Type.Optional(
+    Type.Array(Type.String(), {
+      description:
+        "For 'send'/'call': bullet points describing how to verify the task is done correctly. Included in the tracked request.",
+    }),
+  ),
+  priority: Type.Optional(
+    StringEnum(["P0", "P1", "P2"] as const, {
+      description: "For 'send': task priority. P0 = urgent/blocking, P1 = important, P2 = nice-to-have. Default: P1.",
+    }),
+  ),
+  scope: Type.Optional(
+    StringEnum(["parent", "origin", "root", "workflow"] as const, {
+      description:
+        "For 'context': what to query. 'parent' (default): caller's session summary. 'origin': the session that forked this tree. 'root': top of the call tree. 'workflow': all completed workflow steps.",
+    }),
+  ),
 });
 
 interface AgentsToolParamsType {
@@ -189,13 +241,13 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
             }
             if (!manager.agents.has(params.agent)) {
               return textResult(
-                JSON.stringify({ error: `Agent "${params.agent}" not registered. Use 'list' to see available agents.` }),
+                JSON.stringify({
+                  error: `Agent "${params.agent}" not registered. Use 'list' to see available agents.`,
+                }),
               );
             }
             if (callDeny && callDeny.agents.includes(params.agent)) {
-              return textResult(
-                JSON.stringify({ error: `Cannot call "${params.agent}" directly. ${callDeny.hint}` }),
-              );
+              return textResult(JSON.stringify({ error: `Cannot call "${params.agent}" directly. ${callDeny.hint}` }));
             }
             const parentSid = getCallerSessionId?.();
             const callerName = getCallerAgentName?.() ?? "unknown";
@@ -270,13 +322,13 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
             }
             if (!manager.agents.has(params.agent)) {
               return textResult(
-                JSON.stringify({ error: `Agent "${params.agent}" not registered. Use 'list' to see available agents.` }),
+                JSON.stringify({
+                  error: `Agent "${params.agent}" not registered. Use 'list' to see available agents.`,
+                }),
               );
             }
             if (callDeny && callDeny.agents.includes(params.agent)) {
-              return textResult(
-                JSON.stringify({ error: `Cannot fork "${params.agent}" directly. ${callDeny.hint}` }),
-              );
+              return textResult(JSON.stringify({ error: `Cannot fork "${params.agent}" directly. ${callDeny.hint}` }));
             }
             const parentSidRun = getCallerSessionId?.();
             const callerNameRun = getCallerAgentName?.() ?? "unknown";
@@ -384,7 +436,12 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
             if (!params.force) {
               try {
                 const req = await getRequestsModule();
-                const existingReqId = req.isDuplicate(manager.registry.persistDir, caller, params.agent, params.message.slice(0, 500));
+                const existingReqId = req.isDuplicate(
+                  manager.registry.persistDir,
+                  caller,
+                  params.agent,
+                  params.message.slice(0, 500),
+                );
                 if (existingReqId) {
                   return textResult(
                     JSON.stringify({
@@ -487,7 +544,9 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
           case "context": {
             const callerSid = getCallerSessionId?.();
             if (!callerSid) {
-              return textResult(JSON.stringify({ error: "No session context available (not running inside a session)" }));
+              return textResult(
+                JSON.stringify({ error: "No session context available (not running inside a session)" }),
+              );
             }
 
             const scope = params.scope ?? "parent";
@@ -496,7 +555,11 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
             if (scope === "parent") {
               const parentSid = callerSession?.parentSessionId;
               if (!parentSid) {
-                return textResult(JSON.stringify({ error: "No parent session (this is a root session). Try scope: 'origin' for forked sessions." }));
+                return textResult(
+                  JSON.stringify({
+                    error: "No parent session (this is a root session). Try scope: 'origin' for forked sessions.",
+                  }),
+                );
               }
               const summary = manager.getSessionSummary(parentSid);
               return textResult(JSON.stringify({ scope: "parent", sessionId: parentSid, ...summary }, null, 2));
@@ -512,7 +575,9 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
               }
               const originSid = current?.originSessionId;
               if (!originSid) {
-                return textResult(JSON.stringify({ error: "No origin session (this tree was not forked). Try scope: 'parent'." }));
+                return textResult(
+                  JSON.stringify({ error: "No origin session (this tree was not forked). Try scope: 'parent'." }),
+                );
               }
               const summary = manager.getSessionSummary(originSid);
               return textResult(JSON.stringify({ scope: "origin", sessionId: originSid, ...summary }, null, 2));
@@ -600,13 +665,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
                 error: r.error?.slice(0, 80),
               }));
 
-              return textResult(
-                JSON.stringify(
-                  { filter, count: formatted.length, requests: formatted },
-                  null,
-                  2,
-                ),
-              );
+              return textResult(JSON.stringify({ filter, count: formatted.length, requests: formatted }, null, 2));
             } catch (err) {
               const msg = err instanceof Error ? err.message : String(err);
               return textResult(JSON.stringify({ error: `requests query failed: ${msg}` }));

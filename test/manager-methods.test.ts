@@ -141,7 +141,7 @@ describe("SubagentManager.sessions()", () => {
   let manager: SubagentManager;
 
   beforeEach(() => {
-    manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) , infraRetryMax: 0 });
+    manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")), infraRetryMax: 0 });
     registerAgent(manager, "agent-a");
     registerAgent(manager, "agent-b");
   });

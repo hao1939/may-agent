@@ -150,10 +150,18 @@ describe("activity", () => {
 
     it("handles multiple agents writing to different files", () => {
       appendActivity(agentsRoot, {
-        ts: 1, event: "start", sid: "s_1", agent: "alice", task: "task A",
+        ts: 1,
+        event: "start",
+        sid: "s_1",
+        agent: "alice",
+        task: "task A",
       });
       appendActivity(agentsRoot, {
-        ts: 2, event: "start", sid: "s_2", agent: "bob", task: "task B",
+        ts: 2,
+        event: "start",
+        sid: "s_2",
+        agent: "bob",
+        task: "task B",
       });
 
       expect(existsSync(activityPath(agentsRoot, "alice"))).toBe(true);
@@ -169,7 +177,11 @@ describe("activity", () => {
       // Best-effort: appendActivity should never throw
       expect(() => {
         appendActivity("/nonexistent/readonly/path", {
-          ts: 1, event: "start", sid: "s_1", agent: "test", task: "test",
+          ts: 1,
+          event: "start",
+          sid: "s_1",
+          agent: "test",
+          task: "test",
         });
       }).not.toThrow();
     });

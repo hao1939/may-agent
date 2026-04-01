@@ -31,7 +31,9 @@ describe("findParentsWithUnevaluatedChildren", () => {
 
   /** Stub getDb that throws (forces legacy fallback). */
   function stubGetDb(): () => any {
-    return () => { throw new Error("no db"); };
+    return () => {
+      throw new Error("no db");
+    };
   }
 
   beforeEach(() => {
@@ -126,7 +128,9 @@ describe("findParentsWithUnevaluatedChildren", () => {
 
     // findParentsWithUnevaluatedChildren returns parents — filtering by agent
     // happens later in evaluateTask() via skipAgents
-    expect(findParentsWithUnevaluatedChildren(persistDir, stubGetDb(), makeLoadAllSessionMetas())).toEqual(["s_parent_1"]);
+    expect(findParentsWithUnevaluatedChildren(persistDir, stubGetDb(), makeLoadAllSessionMetas())).toEqual([
+      "s_parent_1",
+    ]);
   });
 
   it("skips sessions without transcript", () => {

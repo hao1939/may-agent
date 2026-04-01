@@ -122,8 +122,9 @@ function getActiveSessions(stateDir: string): Array<{ id: string; meta: Persiste
 
   const results: Array<{ id: string; meta: PersistedSession }> = [];
   try {
-    const dirs = readdirSync(sessionsRoot, { withFileTypes: true })
-      .filter((d) => d.isDirectory() && d.name !== "history");
+    const dirs = readdirSync(sessionsRoot, { withFileTypes: true }).filter(
+      (d) => d.isDirectory() && d.name !== "history",
+    );
 
     for (const d of dirs) {
       const metaPath = join(sessionsRoot, d.name, "meta.json");
@@ -214,7 +215,7 @@ function readTodoSummary(stateDir: string): string {
     const row = db
       .prepare(
         `SELECT COUNT(*) as count FROM requests
-         WHERE toAgent = 'may' AND status IN ('CREATED', 'IN_PROGRESS') AND method = 'send'`
+         WHERE toAgent = 'may' AND status IN ('CREATED', 'IN_PROGRESS') AND method = 'send'`,
       )
       .get() as { count: number } | null;
     return `${row?.count ?? 0} pending task(s)`;
@@ -404,7 +405,11 @@ export function createSystemStatusTool(stateDir: string, agentsRoot: string): Ag
       "Get a high-level dashboard of system activity: active sessions, recent completions, delegation history, job health, and strategic context. Read-only. Use this during heartbeats to understand what's happening before deciding on actions.",
     parameters: Type.Object({
       windowMinutes: Type.Optional(
-        Type.Number({ description: "Lookback window in minutes for history stats. Default: 60. Increase to 180 or 360 for a broader view of recent activity.", default: 60 }),
+        Type.Number({
+          description:
+            "Lookback window in minutes for history stats. Default: 60. Increase to 180 or 360 for a broader view of recent activity.",
+          default: 60,
+        }),
       ),
     }),
     execute: async (_toolCallId, params) => {

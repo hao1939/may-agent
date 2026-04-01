@@ -260,9 +260,7 @@ export class Score {
    */
   report(): never {
     const passed = this.checks.every((c) => c.passed);
-    const summary = this.checks
-      .map((c) => `${c.passed ? "✓" : "✗"} [${c.category}] ${c.name}`)
-      .join("\n");
+    const summary = this.checks.map((c) => `${c.passed ? "✓" : "✗"} [${c.category}] ${c.name}`).join("\n");
 
     const result = {
       passed,

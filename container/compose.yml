@@ -25,8 +25,8 @@ services:
   may:
     build:
       context: ..
-      dockerfile: docker/Dockerfile
-    image: may-agent:latest
+      dockerfile: container/Dockerfile
+    image: localhost/may-agent:latest
     container_name: may-agent
     hostname: may-agent
     restart: unless-stopped
@@ -47,9 +47,8 @@ services:
       litellm:
         condition: service_healthy
 
-  # Interactive console: bun run docker:console
   console:
-    image: may-agent:latest
+    image: localhost/may-agent:latest
     container_name: may-console
     hostname: may-console
     profiles: ["console"]
@@ -59,6 +58,8 @@ services:
     user: "${UID:-1000}:${GID:-1000}"
     env_file: ../.env
     entrypoint: ["/usr/local/bin/entrypoint-console.sh"]
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "${CONSOLE_NOVNC_PORT:-6081}:6080"
       - "${WEB_PORT:-8080}:8080"

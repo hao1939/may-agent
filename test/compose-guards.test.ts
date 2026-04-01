@@ -22,8 +22,14 @@ describe("composeGuards", () => {
   it("returns the first blocking result and stops", async () => {
     const calls: string[] = [];
     const composed = composeGuards(
-      async () => { calls.push("a"); return { block: true, reason: "blocked by A" }; },
-      async () => { calls.push("b"); return { block: true, reason: "blocked by B" }; },
+      async () => {
+        calls.push("a");
+        return { block: true, reason: "blocked by A" };
+      },
+      async () => {
+        calls.push("b");
+        return { block: true, reason: "blocked by B" };
+      },
     );
     const result = await composed(makeCtx());
     expect(result).toEqual({ block: true, reason: "blocked by A" });

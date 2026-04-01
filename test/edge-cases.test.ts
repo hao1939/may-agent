@@ -153,7 +153,7 @@ describe("Edge cases", () => {
 
   describe("SubagentManager basics", () => {
     it("can run sessions", async () => {
-      const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) , infraRetryMax: 0 });
+      const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")), infraRetryMax: 0 });
       manager.register(baseDef("agent-np"));
 
       const sessionId = manager.run("agent-np", "task");

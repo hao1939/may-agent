@@ -34,19 +34,19 @@ function registerAgent(manager: SubagentManager, name: string) {
 
 describe("SubagentManager.getSessionCount()", () => {
   it("returns 0 when no sessions have been created", () => {
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) , infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")), infraRetryMax: 0 });
     expect(manager.getSessionCount()).toBe(0);
   });
 
   it("returns 1 after a single session is started", () => {
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) , infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")), infraRetryMax: 0 });
     registerAgent(manager, "alpha");
     manager.run("alpha", "do something");
     expect(manager.getSessionCount()).toBe(1);
   });
 
   it("completed sessions are removed from active count", async () => {
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) , infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")), infraRetryMax: 0 });
     registerAgent(manager, "alpha");
 
     const s1 = manager.run("alpha", "task one");
@@ -66,7 +66,7 @@ describe("SubagentManager.getSessionCount()", () => {
   });
 
   it("counts only running sessions across multiple agents", async () => {
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) , infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")), infraRetryMax: 0 });
     registerAgent(manager, "alpha");
     registerAgent(manager, "beta");
 

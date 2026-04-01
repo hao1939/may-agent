@@ -27,7 +27,20 @@ const mockSpawn = vi.mocked(spawnDetachedAgent);
 
 // Mock request tracking — no bun:sqlite in vitest
 // We track calls and provide a simple in-memory store for overlap queries.
-const requestStore = new Map<string, { requestId: string; artifact: string; status: string; fromEntity: string; createdAt: number; context: string | null; sessionId: string | null; toAgent: string | null; method: string | null }>();
+const requestStore = new Map<
+  string,
+  {
+    requestId: string;
+    artifact: string;
+    status: string;
+    fromEntity: string;
+    createdAt: number;
+    context: string | null;
+    sessionId: string | null;
+    toAgent: string | null;
+    method: string | null;
+  }
+>();
 let requestCounter = 0;
 
 const mockTrackRequest = vi.fn((_persistDir: string, opts: any) => {
@@ -62,7 +75,11 @@ function makeMockDb() {
           if (sql.includes("toAgent") && sql.includes("method = 'send'")) {
             const toAgent = args[0];
             for (const entry of requestStore.values()) {
-              if (entry.toAgent === toAgent && (entry.status === "CREATED" || entry.status === "IN_PROGRESS") && entry.method === "send") {
+              if (
+                entry.toAgent === toAgent &&
+                (entry.status === "CREATED" || entry.status === "IN_PROGRESS") &&
+                entry.method === "send"
+              ) {
                 return { 1: 1 };
               }
             }
@@ -74,7 +91,12 @@ function makeMockDb() {
             const cutoff = args[1] as number;
             let cnt = 0;
             for (const entry of requestStore.values()) {
-              if (entry.artifact === artifact && entry.status === "COMPLETED" && entry.context?.includes('"idle_skip":true') && entry.createdAt > cutoff) {
+              if (
+                entry.artifact === artifact &&
+                entry.status === "COMPLETED" &&
+                entry.context?.includes('"idle_skip":true') &&
+                entry.createdAt > cutoff
+              ) {
                 cnt++;
               }
             }
@@ -180,9 +202,15 @@ function makeMockManager() {
       return Promise.resolve({ status: "complete" });
     },
 
-    status() { return []; },
-    hasAgent(_name: string) { return true; },
-    agentNames() { return ["may", "bob", "optimizer"]; },
+    status() {
+      return [];
+    },
+    hasAgent(_name: string) {
+      return true;
+    },
+    agentNames() {
+      return ["may", "bob", "optimizer"];
+    },
 
     setWaitFor(fn: (sid: string) => Promise<void>) {
       waitForResolver = fn;
@@ -247,7 +275,12 @@ describe("Cron", () => {
       ]),
     );
     const mgr = makeMockManager();
-    const c = new Cron(configPath, mgr as any, () => "sid-1", (msg) => errors.push(msg));
+    const c = new Cron(
+      configPath,
+      mgr as any,
+      () => "sid-1",
+      (msg) => errors.push(msg),
+    );
     const entries = c.load();
     expect(entries).toHaveLength(1);
     expect(entries[0].name).toBe("ok");
@@ -266,8 +299,12 @@ describe("Cron", () => {
     let activeCalled = false;
     let disabledCalled = false;
     const c = new Cron(configPath, mgr as any, () => "sid-1");
-    c.registerHandler("active", async () => { activeCalled = true; });
-    c.registerHandler("disabled", async () => { disabledCalled = true; });
+    c.registerHandler("active", async () => {
+      activeCalled = true;
+    });
+    c.registerHandler("disabled", async () => {
+      disabledCalled = true;
+    });
     c.start();
 
     await vi.advanceTimersByTimeAsync(10000);
@@ -279,14 +316,13 @@ describe("Cron", () => {
   });
 
   it("treats entries without enabled field as enabled", async () => {
-    writeFileSync(
-      configPath,
-      JSON.stringify([{ name: "implicit", type: "job", intervalMs: 10000, message: "go" }]),
-    );
+    writeFileSync(configPath, JSON.stringify([{ name: "implicit", type: "job", intervalMs: 10000, message: "go" }]));
     const mgr = makeMockManager();
     let called = false;
     const c = new Cron(configPath, mgr as any, () => "sid-1");
-    c.registerHandler("implicit", async () => { called = true; });
+    c.registerHandler("implicit", async () => {
+      called = true;
+    });
     c.start();
 
     await vi.advanceTimersByTimeAsync(10000);
@@ -297,14 +333,13 @@ describe("Cron", () => {
   });
 
   it("stop clears all jobs", async () => {
-    writeFileSync(
-      configPath,
-      JSON.stringify([{ name: "a", type: "job", intervalMs: 10000, message: "m1" }]),
-    );
+    writeFileSync(configPath, JSON.stringify([{ name: "a", type: "job", intervalMs: 10000, message: "m1" }]));
     const mgr = makeMockManager();
     let callCount = 0;
     const c = new Cron(configPath, mgr as any, () => "sid-1");
-    c.registerHandler("a", async () => { callCount++; });
+    c.registerHandler("a", async () => {
+      callCount++;
+    });
     c.start();
 
     c.stop();
@@ -314,21 +349,19 @@ describe("Cron", () => {
   });
 
   it("reload picks up new entries", async () => {
-    writeFileSync(
-      configPath,
-      JSON.stringify([{ name: "old", type: "job", intervalMs: 10000, message: "old" }]),
-    );
+    writeFileSync(configPath, JSON.stringify([{ name: "old", type: "job", intervalMs: 10000, message: "old" }]));
     const mgr = makeMockManager();
     const calls: string[] = [];
     const c = new Cron(configPath, mgr as any, () => "sid-1");
-    c.registerHandler("old", async () => { calls.push("old"); });
-    c.registerHandler("new", async () => { calls.push("new"); });
+    c.registerHandler("old", async () => {
+      calls.push("old");
+    });
+    c.registerHandler("new", async () => {
+      calls.push("new");
+    });
     c.start();
 
-    writeFileSync(
-      configPath,
-      JSON.stringify([{ name: "new", type: "job", intervalMs: 15000, message: "new" }]),
-    );
+    writeFileSync(configPath, JSON.stringify([{ name: "new", type: "job", intervalMs: 15000, message: "new" }]));
     c.reload();
 
     await vi.advanceTimersByTimeAsync(15000);
@@ -382,7 +415,9 @@ describe("Cron", () => {
   it("heartbeat: spawns fresh session each fire (no reuse)", async () => {
     writeFileSync(
       configPath,
-      JSON.stringify([{ name: "hb", type: "heartbeat", intervalMs: 10000, agent: "bob", message: "go", skipIfIdle: false }]),
+      JSON.stringify([
+        { name: "hb", type: "heartbeat", intervalMs: 10000, agent: "bob", message: "go", skipIfIdle: false },
+      ]),
     );
     const mgr = makeMockManager();
     const c = new Cron(configPath, mgr as any, () => "sid-1");
@@ -404,7 +439,9 @@ describe("Cron", () => {
   it("heartbeat: tracks request on fire", async () => {
     writeFileSync(
       configPath,
-      JSON.stringify([{ name: "hb-may", type: "heartbeat", intervalMs: 30000, agent: "may", message: "heartbeat check" }]),
+      JSON.stringify([
+        { name: "hb-may", type: "heartbeat", intervalMs: 30000, agent: "may", message: "heartbeat check" },
+      ]),
     );
     const mgr = makeMockManager();
     const c = new Cron(configPath, mgr as any, () => "sid-1");
@@ -435,7 +472,12 @@ describe("Cron", () => {
     const mgr = makeMockManager();
     mgr.setWaitFor(() => Promise.reject(new Error("session exploded")));
     const errors: string[] = [];
-    const c = new Cron(configPath, mgr as any, () => "sid-1", (msg) => errors.push(msg));
+    const c = new Cron(
+      configPath,
+      mgr as any,
+      () => "sid-1",
+      (msg) => errors.push(msg),
+    );
     c.start();
 
     await vi.advanceTimersByTimeAsync(30000);
@@ -457,9 +499,19 @@ describe("Cron", () => {
     const mgr = makeMockManager();
     const errors: string[] = [];
     let resolveWait!: () => void;
-    mgr.setWaitFor(() => new Promise<void>((r) => { resolveWait = r; }));
+    mgr.setWaitFor(
+      () =>
+        new Promise<void>((r) => {
+          resolveWait = r;
+        }),
+    );
 
-    const c = new Cron(configPath, mgr as any, () => "sid-1", (msg) => errors.push(msg));
+    const c = new Cron(
+      configPath,
+      mgr as any,
+      () => "sid-1",
+      (msg) => errors.push(msg),
+    );
     c.start();
 
     // First fire — starts, hangs on waitFor
@@ -524,9 +576,7 @@ describe("Cron", () => {
     expect(runCalls2).toHaveLength(1);
 
     // The skip should be tracked in requests
-    const skipTracked = mockTrackRequest.mock.calls.find(
-      (call) => call[1].task?.includes("skipped"),
-    );
+    const skipTracked = mockTrackRequest.mock.calls.find((call) => call[1].task?.includes("skipped"));
     expect(skipTracked).toBeDefined();
 
     c.stop();
@@ -571,7 +621,9 @@ describe("Cron", () => {
   it("heartbeat: skipIfIdle=false disables idle skipping", async () => {
     writeFileSync(
       configPath,
-      JSON.stringify([{ name: "hb-always", type: "heartbeat", intervalMs: 10000, agent: "bob", message: "hb", skipIfIdle: false }]),
+      JSON.stringify([
+        { name: "hb-always", type: "heartbeat", intervalMs: 10000, agent: "bob", message: "hb", skipIfIdle: false },
+      ]),
     );
     const mgr = makeMockManager();
     const c = new Cron(configPath, mgr as any, () => "sid-1");
@@ -592,14 +644,13 @@ describe("Cron", () => {
   // ── Job with handler ────────────────────────────────────────────────
 
   it("job-handler: runs registered JS handler", async () => {
-    writeFileSync(
-      configPath,
-      JSON.stringify([{ name: "eval", type: "job", intervalMs: 30000, message: "evaluate" }]),
-    );
+    writeFileSync(configPath, JSON.stringify([{ name: "eval", type: "job", intervalMs: 30000, message: "evaluate" }]));
     const mgr = makeMockManager();
     let handlerCalled = false;
     const c = new Cron(configPath, mgr as any, () => "sid-1");
-    c.registerHandler("eval", async () => { handlerCalled = true; });
+    c.registerHandler("eval", async () => {
+      handlerCalled = true;
+    });
     c.start();
 
     await vi.advanceTimersByTimeAsync(30000);
@@ -612,10 +663,7 @@ describe("Cron", () => {
   });
 
   it("job-handler: tracks request on success", async () => {
-    writeFileSync(
-      configPath,
-      JSON.stringify([{ name: "eval", type: "job", intervalMs: 30000, message: "evaluate" }]),
-    );
+    writeFileSync(configPath, JSON.stringify([{ name: "eval", type: "job", intervalMs: 30000, message: "evaluate" }]));
     const mgr = makeMockManager();
     const c = new Cron(configPath, mgr as any, () => "sid-1");
     c.registerHandler("eval", async () => {});
@@ -636,14 +684,18 @@ describe("Cron", () => {
   });
 
   it("job-handler: records failure on error", async () => {
-    writeFileSync(
-      configPath,
-      JSON.stringify([{ name: "fail-job", type: "job", intervalMs: 30000, message: "fail" }]),
-    );
+    writeFileSync(configPath, JSON.stringify([{ name: "fail-job", type: "job", intervalMs: 30000, message: "fail" }]));
     const mgr = makeMockManager();
     const errors: string[] = [];
-    const c = new Cron(configPath, mgr as any, () => "sid-1", (msg) => errors.push(msg));
-    c.registerHandler("fail-job", async () => { throw new Error("handler broke"); });
+    const c = new Cron(
+      configPath,
+      mgr as any,
+      () => "sid-1",
+      (msg) => errors.push(msg),
+    );
+    c.registerHandler("fail-job", async () => {
+      throw new Error("handler broke");
+    });
     c.start();
 
     await vi.advanceTimersByTimeAsync(30000);
@@ -658,19 +710,23 @@ describe("Cron", () => {
   });
 
   it("job-handler: cron timer skips if previous handler still running", async () => {
-    writeFileSync(
-      configPath,
-      JSON.stringify([{ name: "slow", type: "job", intervalMs: 10000, message: "slow" }]),
-    );
+    writeFileSync(configPath, JSON.stringify([{ name: "slow", type: "job", intervalMs: 10000, message: "slow" }]));
     const mgr = makeMockManager();
     const errors: string[] = [];
     let resolveHandler!: () => void;
     let callCount = 0;
 
-    const c = new Cron(configPath, mgr as any, () => "sid-1", (msg) => errors.push(msg));
+    const c = new Cron(
+      configPath,
+      mgr as any,
+      () => "sid-1",
+      (msg) => errors.push(msg),
+    );
     c.registerHandler("slow", () => {
       callCount++;
-      return new Promise<void>((r) => { resolveHandler = r; });
+      return new Promise<void>((r) => {
+        resolveHandler = r;
+      });
     });
     c.start();
 
@@ -735,14 +791,21 @@ describe("Cron", () => {
   });
 
   it("job-detached: records failure when spawn throws", async () => {
-    mockSpawn.mockImplementation(() => { throw new Error("spawn failed"); });
+    mockSpawn.mockImplementation(() => {
+      throw new Error("spawn failed");
+    });
     writeFileSync(
       configPath,
       JSON.stringify([{ name: "fail-spawn", intervalMs: 60000, agent: "bob", message: "boom" }]),
     );
     const mgr = makeMockManager();
     const errors: string[] = [];
-    const c = new Cron(configPath, mgr as any, () => "sid-1", (msg) => errors.push(msg));
+    const c = new Cron(
+      configPath,
+      mgr as any,
+      () => "sid-1",
+      (msg) => errors.push(msg),
+    );
     c.start();
 
     await vi.advanceTimersByTimeAsync(60000);
@@ -762,7 +825,9 @@ describe("Cron", () => {
     const mgr = makeMockManager();
     let handlerCalled = false;
     const c = new Cron(configPath, mgr as any, () => "sid-1");
-    c.registerHandler("js-job", async () => { handlerCalled = true; });
+    c.registerHandler("js-job", async () => {
+      handlerCalled = true;
+    });
     c.start();
 
     await vi.advanceTimersByTimeAsync(30000);
@@ -778,7 +843,12 @@ describe("Cron", () => {
     writeFileSync(configPath, JSON.stringify([{ name: "orphan", intervalMs: 30000, message: "nobody" }]));
     const mgr = makeMockManager();
     const errors: string[] = [];
-    const c = new Cron(configPath, mgr as any, () => "sid-1", (msg) => errors.push(msg));
+    const c = new Cron(
+      configPath,
+      mgr as any,
+      () => "sid-1",
+      (msg) => errors.push(msg),
+    );
     c.start();
 
     vi.advanceTimersByTime(30000);
@@ -819,14 +889,13 @@ describe("Cron", () => {
   // ── triggerNow() ────────────────────────────────────────────────────
 
   it("triggerNow: fires entry immediately", async () => {
-    writeFileSync(
-      configPath,
-      JSON.stringify([{ name: "trigger-me", type: "job", intervalMs: 300000, message: "go" }]),
-    );
+    writeFileSync(configPath, JSON.stringify([{ name: "trigger-me", type: "job", intervalMs: 300000, message: "go" }]));
     const mgr = makeMockManager();
     let called = false;
     const c = new Cron(configPath, mgr as any, () => "sid-1");
-    c.registerHandler("trigger-me", async () => { called = true; });
+    c.registerHandler("trigger-me", async () => {
+      called = true;
+    });
     c.start();
 
     const result = c.triggerNow("trigger-me");
@@ -850,14 +919,13 @@ describe("Cron", () => {
   });
 
   it("triggerNow: debounces rapid re-triggers", () => {
-    writeFileSync(
-      configPath,
-      JSON.stringify([{ name: "debounced", type: "job", intervalMs: 300000, message: "go" }]),
-    );
+    writeFileSync(configPath, JSON.stringify([{ name: "debounced", type: "job", intervalMs: 300000, message: "go" }]));
     const mgr = makeMockManager();
     let callCount = 0;
     const c = new Cron(configPath, mgr as any, () => "sid-1");
-    c.registerHandler("debounced", async () => { callCount++; });
+    c.registerHandler("debounced", async () => {
+      callCount++;
+    });
     c.start();
 
     expect(c.triggerNow("debounced")).toBe(true);
@@ -868,14 +936,13 @@ describe("Cron", () => {
   });
 
   it("triggerNow: force bypasses debounce", async () => {
-    writeFileSync(
-      configPath,
-      JSON.stringify([{ name: "force-test", type: "job", intervalMs: 300000, message: "go" }]),
-    );
+    writeFileSync(configPath, JSON.stringify([{ name: "force-test", type: "job", intervalMs: 300000, message: "go" }]));
     const mgr = makeMockManager();
     let callCount = 0;
     const c = new Cron(configPath, mgr as any, () => "sid-1");
-    c.registerHandler("force-test", async () => { callCount++; });
+    c.registerHandler("force-test", async () => {
+      callCount++;
+    });
     c.start();
 
     expect(c.triggerNow("force-test")).toBe(true);
@@ -900,7 +967,12 @@ describe("Cron", () => {
     );
     const mgr = makeMockManager();
     let resolveWait!: () => void;
-    mgr.setWaitFor(() => new Promise<void>((r) => { resolveWait = r; }));
+    mgr.setWaitFor(
+      () =>
+        new Promise<void>((r) => {
+          resolveWait = r;
+        }),
+    );
 
     const c = new Cron(configPath, mgr as any, () => "sid-1");
     c.start();
@@ -934,8 +1006,12 @@ describe("Cron", () => {
     let shortCount = 0;
     let longCount = 0;
     const c = new Cron(configPath, mgr as any, () => "sid-1");
-    c.registerHandler("short", async () => { shortCount++; });
-    c.registerHandler("long", async () => { longCount++; });
+    c.registerHandler("short", async () => {
+      shortCount++;
+    });
+    c.registerHandler("long", async () => {
+      longCount++;
+    });
     c.start();
 
     expect(c.triggerNow("short")).toBe(true);
@@ -959,12 +1035,19 @@ describe("Cron", () => {
   it("circuit breaker: skips heartbeat after 3 consecutive errors", async () => {
     writeFileSync(
       configPath,
-      JSON.stringify([{ name: "hb-cb", type: "heartbeat", intervalMs: 10000, agent: "bob", message: "hb", skipIfIdle: false }]),
+      JSON.stringify([
+        { name: "hb-cb", type: "heartbeat", intervalMs: 10000, agent: "bob", message: "hb", skipIfIdle: false },
+      ]),
     );
     const mgr = makeMockManager();
     mgr.setWaitFor(() => Promise.reject(new Error("Gemini API error")));
     const errors: string[] = [];
-    const c = new Cron(configPath, mgr as any, () => "sid-1", (msg) => errors.push(msg));
+    const c = new Cron(
+      configPath,
+      mgr as any,
+      () => "sid-1",
+      (msg) => errors.push(msg),
+    );
     c.start();
 
     // Fire 3 heartbeats — all fail
@@ -991,12 +1074,19 @@ describe("Cron", () => {
   it("circuit breaker: allows probe after 30 minutes", async () => {
     writeFileSync(
       configPath,
-      JSON.stringify([{ name: "hb-probe", type: "heartbeat", intervalMs: 10000, agent: "bob", message: "hb", skipIfIdle: false }]),
+      JSON.stringify([
+        { name: "hb-probe", type: "heartbeat", intervalMs: 10000, agent: "bob", message: "hb", skipIfIdle: false },
+      ]),
     );
     const mgr = makeMockManager();
     mgr.setWaitFor(() => Promise.reject(new Error("API down")));
     const errors: string[] = [];
-    const c = new Cron(configPath, mgr as any, () => "sid-1", (msg) => errors.push(msg));
+    const c = new Cron(
+      configPath,
+      mgr as any,
+      () => "sid-1",
+      (msg) => errors.push(msg),
+    );
     c.start();
 
     // Trip the circuit breaker (3 errors)
@@ -1020,7 +1110,9 @@ describe("Cron", () => {
   it("circuit breaker: resets on successful session", async () => {
     writeFileSync(
       configPath,
-      JSON.stringify([{ name: "hb-reset", type: "heartbeat", intervalMs: 10000, agent: "bob", message: "hb", skipIfIdle: false }]),
+      JSON.stringify([
+        { name: "hb-reset", type: "heartbeat", intervalMs: 10000, agent: "bob", message: "hb", skipIfIdle: false },
+      ]),
     );
     const mgr = makeMockManager();
     let shouldFail = true;
@@ -1029,7 +1121,12 @@ describe("Cron", () => {
       return Promise.resolve({ status: "complete" });
     });
     const errors: string[] = [];
-    const c = new Cron(configPath, mgr as any, () => "sid-1", (msg) => errors.push(msg));
+    const c = new Cron(
+      configPath,
+      mgr as any,
+      () => "sid-1",
+      (msg) => errors.push(msg),
+    );
     c.start();
 
     // Trip the circuit breaker (3 errors)
@@ -1069,7 +1166,9 @@ describe("Cron", () => {
     const mgr = makeMockManager();
     // Only bob fails
     mgr.setWaitFor((sid) => {
-      const runCall = mgr.calls.find((c) => c.method === "run" && `mock-sid-${mgr.calls.filter((cc) => cc.method === "run").indexOf(c) + 1}` === sid);
+      const runCall = mgr.calls.find(
+        (c) => c.method === "run" && `mock-sid-${mgr.calls.filter((cc) => cc.method === "run").indexOf(c) + 1}` === sid,
+      );
       // Simple approach: odd sessions fail (bob fires first each round)
       const runCalls = mgr.calls.filter((c) => c.method === "run");
       const idx = runCalls.findIndex((c) => {
@@ -1080,7 +1179,12 @@ describe("Cron", () => {
       return Promise.reject(new Error("API error"));
     });
     const errors: string[] = [];
-    const c = new Cron(configPath, mgr as any, () => "sid-1", (msg) => errors.push(msg));
+    const c = new Cron(
+      configPath,
+      mgr as any,
+      () => "sid-1",
+      (msg) => errors.push(msg),
+    );
     c.start();
 
     // Fire 3 rounds — both agents fail 3 times each
@@ -1109,12 +1213,19 @@ describe("Cron", () => {
   it("circuit breaker: logs TRIPPED message at threshold", async () => {
     writeFileSync(
       configPath,
-      JSON.stringify([{ name: "hb-log", type: "heartbeat", intervalMs: 10000, agent: "bob", message: "hb", skipIfIdle: false }]),
+      JSON.stringify([
+        { name: "hb-log", type: "heartbeat", intervalMs: 10000, agent: "bob", message: "hb", skipIfIdle: false },
+      ]),
     );
     const mgr = makeMockManager();
     mgr.setWaitFor(() => Promise.reject(new Error("API error")));
     const errors: string[] = [];
-    const c = new Cron(configPath, mgr as any, () => "sid-1", (msg) => errors.push(msg));
+    const c = new Cron(
+      configPath,
+      mgr as any,
+      () => "sid-1",
+      (msg) => errors.push(msg),
+    );
     c.start();
 
     // Fire 3 heartbeats to hit the threshold
@@ -1136,14 +1247,14 @@ describe("Cron", () => {
     // With the jitter cap, max initial delay is 5 minutes (300000ms).
     writeFileSync(
       configPath,
-      JSON.stringify([
-        { name: "daily-job", type: "job", intervalMs: 86400000, message: "daily" },
-      ]),
+      JSON.stringify([{ name: "daily-job", type: "job", intervalMs: 86400000, message: "daily" }]),
     );
     const mgr = makeMockManager();
     let fired = false;
     const c = new Cron(configPath, mgr as any, () => "sid-1");
-    c.registerHandler("daily-job", async () => { fired = true; });
+    c.registerHandler("daily-job", async () => {
+      fired = true;
+    });
     c.start();
 
     // Advance past the max jitter cap (5 minutes + 1s buffer)

@@ -95,7 +95,8 @@ function hasVerificationAfterLastWrite(messages: BeforeToolCallContext["context"
     if (msg.role !== "assistant" || !Array.isArray(msg.content)) continue;
 
     for (const block of msg.content) {
-      if (!block || typeof block !== "object" || !("type" in block) || block.type !== "toolCall" || !("name" in block)) continue;
+      if (!block || typeof block !== "object" || !("type" in block) || block.type !== "toolCall" || !("name" in block))
+        continue;
 
       const name = (block as { name: string }).name;
 
@@ -152,7 +153,8 @@ function hasVerificationAfterLastWrite(messages: BeforeToolCallContext["context"
  * If these appear in the summary but no write/edit/bash-write evidence exists
  * in the transcript, the ghost deliverable guard blocks the call.
  */
-const GHOST_KEYWORDS = /\b(?:fix(?:ed)?|implement(?:ed)?|refactor(?:ed)?|rewrote|rewrite|updat(?:ed?)|deploy(?:ed)?|patch(?:ed)?|add(?:ed)?|creat(?:ed)?|modif(?:ied|y)|chang(?:ed?)|delet(?:ed?)|remov(?:ed?)|migrat(?:ed?)|rewir(?:ed?))\b/i;
+const GHOST_KEYWORDS =
+  /\b(?:fix(?:ed)?|implement(?:ed)?|refactor(?:ed)?|rewrote|rewrite|updat(?:ed?)|deploy(?:ed)?|patch(?:ed)?|add(?:ed)?|creat(?:ed)?|modif(?:ied|y)|chang(?:ed?)|delet(?:ed?)|remov(?:ed?)|migrat(?:ed?)|rewir(?:ed?))\b/i;
 
 /**
  * Create a beforeToolCall hook that guards finish(status: "success") calls.
@@ -200,7 +202,10 @@ export function createFinishGuard(): (
 
     // CLI coding agents (claude_code, codex_cli, gemini_cli) have full filesystem
     // access — their writes don't appear in the tool transcript.
-    if (!hasWriteEvidence && (toolNames.has("claude_code") || toolNames.has("codex_cli") || toolNames.has("gemini_cli"))) {
+    if (
+      !hasWriteEvidence &&
+      (toolNames.has("claude_code") || toolNames.has("codex_cli") || toolNames.has("gemini_cli"))
+    ) {
       hasWriteEvidence = true;
     }
 

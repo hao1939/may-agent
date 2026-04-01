@@ -2,14 +2,10 @@ import { describe, it, expect } from "vitest";
 import { createRequire } from "module";
 
 const require = createRequire(import.meta.url);
-const { detectProtocolViolations } = require(
-  "../agents/evaluator/skills/monitor-session.cjs",
-);
+const { detectProtocolViolations } = require("../agents/evaluator/skills/monitor-session.cjs");
 
 // Helper: create an assistant message with tool calls
-function assistantWithToolCalls(
-  calls: Array<{ name: string; args: Record<string, unknown> }>,
-) {
+function assistantWithToolCalls(calls: Array<{ name: string; args: Record<string, unknown> }>) {
   return {
     role: "assistant",
     content: calls.map((c) => ({
@@ -217,9 +213,7 @@ describe("detectProtocolViolations (P82/P114)", () => {
       const result = detectProtocolViolations(entries);
       expect(result.detected).toBe(true);
       // Should only have 1 P114 violation, not 2
-      const p114s = result.violations.filter(
-        (v: { type: string }) => v.type === "P114",
-      );
+      const p114s = result.violations.filter((v: { type: string }) => v.type === "P114");
       expect(p114s).toHaveLength(1);
     });
 

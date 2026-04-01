@@ -103,7 +103,7 @@ describe("Agent Gym", { timeout: 15_000 }, () => {
   // Lazy require breaks the circular dependency
   return "B";
 }
-module.exports = { getB };`
+module.exports = { getB };`,
       );
 
       // After fix, no cycle should be detected
@@ -147,7 +147,7 @@ module.exports = { getB };`
         `function calculate(a, b) {
   return a + b;
 }
-module.exports = { calculate };`
+module.exports = { calculate };`,
       );
 
       // After fix, no missing files
@@ -178,7 +178,7 @@ module.exports = { calculate };`
       writeFileSync(
         join(workDir, "math-utils.js"),
         `function calculate(a, b) { return a + b; }
-module.exports = { calculate };`
+module.exports = { calculate };`,
       );
 
       const hangs = detectInfiniteLoop(workDir, "app.js", 2000);
@@ -206,7 +206,7 @@ if (require.main === module) {
   console.log("Starting data processing...");
   const result = processData();
   console.log("Done! Processed", result.length, "items");
-}`
+}`,
       );
 
       // After fix, should not hang
@@ -322,7 +322,7 @@ if (require.main === module) {
     console.error("Error:", err.message);
     process.exit(1);
   }
-}`
+}`,
       );
 
       // After fix with retries, should succeed
@@ -396,7 +396,7 @@ if (require.main === module) {
     console.log("Batch " + batch + ": created " + files.length + " files");
   }
   console.log("All batches processed");
-}`
+}`,
       );
 
       // After fix, should complete all batches
@@ -440,7 +440,7 @@ if (require.main === module) {
       // Fix: update config.json to match env.json (env overrides main)
       writeFileSync(
         join(workDir, "config.json"),
-        JSON.stringify({ port: 8080, mode: "debug", logLevel: "error" }, null, 2)
+        JSON.stringify({ port: 8080, mode: "debug", logLevel: "error" }, null, 2),
       );
 
       // After fix, no config conflict on port/mode
@@ -480,7 +480,9 @@ if (require.main === module) {
 
     function loadSessionEntries(fixtureName: string) {
       const sessionPath = join(import.meta.dirname, "fixtures", fixtureName, "session.jsonl");
-      const raw = readFileSync(sessionPath, "utf-8").split("\n").filter((l: string) => l.trim());
+      const raw = readFileSync(sessionPath, "utf-8")
+        .split("\n")
+        .filter((l: string) => l.trim());
       return monitor.parseJsonl(raw);
     }
 
@@ -519,7 +521,9 @@ if (require.main === module) {
 
     function loadSessionEntries(fixtureName: string) {
       const sessionPath = join(import.meta.dirname, "fixtures", fixtureName, "session.jsonl");
-      const raw = readFileSync(sessionPath, "utf-8").split("\n").filter((l: string) => l.trim());
+      const raw = readFileSync(sessionPath, "utf-8")
+        .split("\n")
+        .filter((l: string) => l.trim());
       return monitor.parseJsonl(raw);
     }
 

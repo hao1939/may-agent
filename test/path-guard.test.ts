@@ -78,10 +78,9 @@ describe("checkCrossEditGuard (P53/P70 cross-agent protection)", () => {
   });
 
   it("handles deeply nested agent workspace paths", () => {
-    expect(isAllowed(
-      "/app/agents/coach/workspace/exercises/tech-lead-regression/session-cleanup.ts",
-      "tech-lead",
-    )).toBe(true);
+    expect(
+      isAllowed("/app/agents/coach/workspace/exercises/tech-lead-regression/session-cleanup.ts", "tech-lead"),
+    ).toBe(true);
   });
 
   it("includes the blocked agent dir and caller name in the message", () => {
@@ -91,24 +90,15 @@ describe("checkCrossEditGuard (P53/P70 cross-agent protection)", () => {
   });
 
   it("allows writes to .lab/ fork LESSONS.md (growth system sandbox)", () => {
-    expect(isAllowed(
-      "/app/agents/.lab/bob-growth-test/LESSONS.md",
-      "coach",
-    )).toBe(true);
+    expect(isAllowed("/app/agents/.lab/bob-growth-test/LESSONS.md", "coach")).toBe(true);
   });
 
   it("allows writes to .lab/ fork SOUL.md", () => {
-    expect(isAllowed(
-      "/app/agents/.lab/bob-growth-test/SOUL.md",
-      "coach",
-    )).toBe(true);
+    expect(isAllowed("/app/agents/.lab/bob-growth-test/SOUL.md", "coach")).toBe(true);
   });
 
   it("allows writes to .lab/ fork agent.json", () => {
-    expect(isAllowed(
-      "/app/agents/.lab/bob-growth-test/agent.json",
-      "coach",
-    )).toBe(true);
+    expect(isAllowed("/app/agents/.lab/bob-growth-test/agent.json", "coach")).toBe(true);
   });
 
   // May exemption — May can edit any agent's protected files

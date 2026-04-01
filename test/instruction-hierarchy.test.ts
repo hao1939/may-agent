@@ -40,11 +40,7 @@ describe("Instruction Hierarchy (P84)", () => {
 
   it("wraps convention-file prompt in <system_instructions> tags", () => {
     // Create SOUL.md
-    writeFileSync(
-      join(agentDir, "SOUL.md"),
-      "# SOUL — Test\n\n## Identity\nYou are a test agent.",
-      "utf-8",
-    );
+    writeFileSync(join(agentDir, "SOUL.md"), "# SOUL — Test\n\n## Identity\nYou are a test agent.", "utf-8");
 
     manager.register({
       name: "ih-agent",
@@ -60,9 +56,7 @@ describe("Instruction Hierarchy (P84)", () => {
 
     // Access the private method for testing
     // @ts-expect-error Accessing private method
-    const prompt: string = manager.resolveSystemPrompt(
-      manager.getAgentDefinition("ih-agent"),
-    );
+    const prompt: string = manager.resolveSystemPrompt(manager.getAgentDefinition("ih-agent"));
 
     expect(prompt).toMatch(/^<system_instructions>\n/);
     expect(prompt).toMatch(/\n<\/system_instructions>$/);
@@ -82,9 +76,7 @@ describe("Instruction Hierarchy (P84)", () => {
     });
 
     // @ts-expect-error Accessing private method
-    const prompt: string = manager.resolveSystemPrompt(
-      manager.getAgentDefinition("direct-agent"),
-    );
+    const prompt: string = manager.resolveSystemPrompt(manager.getAgentDefinition("direct-agent"));
 
     // Direct prompts bypass convention-file assembly, so no wrapping
     expect(prompt).toBe("You are a direct prompt agent.");
@@ -92,11 +84,7 @@ describe("Instruction Hierarchy (P84)", () => {
   });
 
   it("produces identical system prompts across sessions (caching)", () => {
-    writeFileSync(
-      join(agentDir, "SOUL.md"),
-      "# SOUL — Cache Test\nYou are stable.",
-      "utf-8",
-    );
+    writeFileSync(join(agentDir, "SOUL.md"), "# SOUL — Cache Test\nYou are stable.", "utf-8");
 
     manager.register({
       name: "cache-agent",
@@ -140,15 +128,10 @@ describe("Instruction Hierarchy (P84)", () => {
     });
 
     // @ts-expect-error Accessing private method
-    const prompt: string = manager.resolveSystemPrompt(
-      manager.getAgentDefinition("full-agent"),
-    );
+    const prompt: string = manager.resolveSystemPrompt(manager.getAgentDefinition("full-agent"));
 
     // All content should be inside the tags
-    const inner = prompt.slice(
-      "<system_instructions>\n".length,
-      prompt.length - "\n</system_instructions>".length,
-    );
+    const inner = prompt.slice("<system_instructions>\n".length, prompt.length - "\n</system_instructions>".length);
 
     expect(inner).toContain("# SOUL");
     expect(inner).toContain("# Runtime Environment");
@@ -178,9 +161,7 @@ describe("Instruction Hierarchy (P84)", () => {
     });
 
     // @ts-expect-error Accessing private method
-    const prompt: string = manager.resolveSystemPrompt(
-      manager.getAgentDefinition("nest-test"),
-    );
+    const prompt: string = manager.resolveSystemPrompt(manager.getAgentDefinition("nest-test"));
 
     // First line should be the opening tag
     const lines = prompt.split("\n");

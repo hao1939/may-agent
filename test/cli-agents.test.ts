@@ -115,16 +115,12 @@ describe("spawnCliAgent", () => {
     });
 
     // Script that outputs every 100ms for ~1.5s
-    await spawnCliAgent(
-      "bash",
-      ["-c", "for i in 1 2 3 4 5; do echo line$i; sleep 0.3; done"],
-      {
-        cwd: "/tmp",
-        timeoutMs: 10000,
-        maxOutput: 10000,
-        onUpdate,
-      },
-    );
+    await spawnCliAgent("bash", ["-c", "for i in 1 2 3 4 5; do echo line$i; sleep 0.3; done"], {
+      cwd: "/tmp",
+      timeoutMs: 10000,
+      maxOutput: 10000,
+      onUpdate,
+    });
 
     // With UPDATE_INTERVAL_MS=3000 and a 1.5s script, we might get 0 updates
     // (since the process finishes before the first interval fires).
@@ -151,15 +147,11 @@ describe("spawnCliAgent", () => {
 
   it("caps output buffer to prevent OOM", async () => {
     // Generate 200KB of output, with maxOutput=1000
-    const result = await spawnCliAgent(
-      "bash",
-      ["-c", "python3 -c \"print('x' * 200000)\""],
-      {
-        cwd: "/tmp",
-        timeoutMs: 5000,
-        maxOutput: 1000,
-      },
-    );
+    const result = await spawnCliAgent("bash", ["-c", "python3 -c \"print('x' * 200000)\""], {
+      cwd: "/tmp",
+      timeoutMs: 5000,
+      maxOutput: 1000,
+    });
     // Buffer capped at 2x maxOutput = 2000
     expect(result.output.length).toBeLessThanOrEqual(2000);
   });

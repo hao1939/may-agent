@@ -171,7 +171,7 @@ describe("Registry persistence", () => {
   });
 
   it("works with a fresh persistDir (no prior state)", () => {
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) , infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")), infraRetryMax: 0 });
 
     // Should work fine, just no file created
     manager.register({

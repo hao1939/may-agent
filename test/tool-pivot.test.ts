@@ -95,7 +95,7 @@ describe("Tool Pivot Heuristic", () => {
   describe("pivot integration (toolErrorHistory tracking)", () => {
     // These tests verify the logic by simulating what wrapToolsWithReceipts does internally.
     // Full integration requires a running SubagentManager, so we test the helpers + the Map logic.
-    
+
     it("tracks consecutive errors and resets on success", () => {
       const history = new Map<string, number>();
       const key = computeToolArgsKey("bash", { command: "cat /missing" });

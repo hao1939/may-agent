@@ -23,12 +23,26 @@ import { summarizeForHandoff } from "./handoff.js";
 
 const WorkflowToolParams: TSchema = Type.Object({
   action: StringEnum(["list", "run", "resume"] as const, {
-    description: "'list': show available workflows with descriptions. 'run': execute a workflow by name (blocks until complete). 'resume': continue a workflow that was interrupted by a crash (requires workflowRunId).",
+    description:
+      "'list': show available workflows with descriptions. 'run': execute a workflow by name (blocks until complete). 'resume': continue a workflow that was interrupted by a crash (requires workflowRunId).",
   }),
-  name: Type.Optional(Type.String({ description: "Workflow name to execute (required for 'run'). Use 'list' first to see available workflows and their descriptions." })),
-  task: Type.Optional(Type.String({ description: "Task string to pass to the workflow (required for 'run'). Format depends on the workflow — check the workflow description from 'list' for expected format." })),
+  name: Type.Optional(
+    Type.String({
+      description:
+        "Workflow name to execute (required for 'run'). Use 'list' first to see available workflows and their descriptions.",
+    }),
+  ),
+  task: Type.Optional(
+    Type.String({
+      description:
+        "Task string to pass to the workflow (required for 'run'). Format depends on the workflow — check the workflow description from 'list' for expected format.",
+    }),
+  ),
   workflowRunId: Type.Optional(
-    Type.String({ description: "ID of a previous workflow run to resume from (required for 'resume'). The ID is returned when a workflow starts." }),
+    Type.String({
+      description:
+        "ID of a previous workflow run to resume from (required for 'resume'). The ID is returned when a workflow starts.",
+    }),
   ),
 });
 interface WorkflowInput {
@@ -520,7 +534,11 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
             );
           }
 
-          const { workflow: resumeWf, error: resumeFindError } = await findWorkflow(workflowDir, prevRun.workflow, sharedWorkflowDir);
+          const { workflow: resumeWf, error: resumeFindError } = await findWorkflow(
+            workflowDir,
+            prevRun.workflow,
+            sharedWorkflowDir,
+          );
           if (!resumeWf) {
             return textResult(JSON.stringify({ type: "error", workflow: prevRun.workflow, error: resumeFindError }));
           }

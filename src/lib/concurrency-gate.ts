@@ -72,7 +72,12 @@ export class ConcurrencyGate {
 
     // At capacity — queue up and wait
     return new Promise<() => void>((resolve, reject) => {
-      const waiter = { resolve: () => { /* overwritten below */ }, reject };
+      const waiter = {
+        resolve: () => {
+          /* overwritten below */
+        },
+        reject,
+      };
 
       let timer: ReturnType<typeof setTimeout> | null = null;
 

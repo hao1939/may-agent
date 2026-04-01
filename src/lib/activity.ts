@@ -66,12 +66,7 @@ export interface BlockedEvent extends ActivityEventBase {
   blocker: string;
 }
 
-export type ActivityEvent =
-  | StartEvent
-  | ProgressEvent
-  | DoneEvent
-  | ErrorEvent
-  | BlockedEvent;
+export type ActivityEvent = StartEvent | ProgressEvent | DoneEvent | ErrorEvent | BlockedEvent;
 
 // ── Helpers ─────────────────────────────────────────────────────────────
 
@@ -138,7 +133,7 @@ function trimActivityFile(filePath: string): void {
     if (stat.size <= ACTIVITY_MAX_BYTES) return;
 
     const content = readFileSync(filePath, "utf-8");
-    const lines = content.split("\n").filter(l => l.trim().length > 0);
+    const lines = content.split("\n").filter((l) => l.trim().length > 0);
     if (lines.length <= ACTIVITY_RETAIN_LINES) return;
 
     const kept = lines.slice(-ACTIVITY_RETAIN_LINES);

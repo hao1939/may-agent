@@ -33,7 +33,9 @@ vi.mock("../src/lib/db.js", () => {
     }
 
     const db = {
-      exec(_sql: string) { /* DDL / PRAGMA — no-op */ },
+      exec(_sql: string) {
+        /* DDL / PRAGMA — no-op */
+      },
       prepare(sql: string) {
         const sel = parseSelect(sql);
         return {
@@ -64,7 +66,9 @@ vi.mock("../src/lib/db.js", () => {
             const ins = parseInsert(sql);
             if (ins) {
               const row: Record<string, unknown> = {};
-              ins.cols.forEach((col, i) => { row[col] = params[i]; });
+              ins.cols.forEach((col, i) => {
+                row[col] = params[i];
+              });
               const pk = row[ins.cols[0]] as string;
               getTable(ins.table).set(pk, row);
               return { changes: 1, lastInsertRowid: 0 };
@@ -77,14 +81,18 @@ vi.mock("../src/lib/db.js", () => {
         const ins = parseInsert(sql);
         if (ins && params) {
           const row: Record<string, unknown> = {};
-          ins.cols.forEach((col, i) => { row[col] = params[i]; });
+          ins.cols.forEach((col, i) => {
+            row[col] = params[i];
+          });
           const pk = row[ins.cols[0]] as string;
           getTable(ins.table).set(pk, row);
           return { changes: 1, lastInsertRowid: 0 };
         }
         return { changes: 0, lastInsertRowid: 0 };
       },
-      close() { tables.clear(); },
+      close() {
+        tables.clear();
+      },
     };
     return db;
   }
@@ -294,7 +302,11 @@ describe("writeSkippedEvaluations – orphaned sessions (no meta.json)", () => {
   });
 
   afterEach(() => {
-    try { closeDb(persistDir); } catch { /* ignore */ }
+    try {
+      closeDb(persistDir);
+    } catch {
+      /* ignore */
+    }
   });
 
   it("handles sessions without meta.json", async () => {

@@ -144,9 +144,7 @@ describe("artifact extraction", () => {
   });
 
   it("deduplicates artifacts", () => {
-    const artifacts = extractExpectedArtifacts(
-      "Write your analysis to ANALYSIS.md. Save results to ANALYSIS.md.",
-    );
+    const artifacts = extractExpectedArtifacts("Write your analysis to ANALYSIS.md. Save results to ANALYSIS.md.");
     const unique = artifacts.filter((a) => a === "ANALYSIS.md");
     expect(unique.length).toBe(1);
   });

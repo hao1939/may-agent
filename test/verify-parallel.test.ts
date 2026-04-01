@@ -41,7 +41,7 @@ describe("verify-parallel workflow: structure", () => {
     ];
     for (const dir of dirs) {
       const content = readFileSync(join(process.cwd(), dir), "utf-8");
-      expect(content).toContain('export const name');
+      expect(content).toContain("export const name");
       expect(content).toContain("verify-parallel");
       expect(content).toContain("Promise.all");
     }
@@ -244,9 +244,7 @@ describe("verify-parallel workflow: execution logic", () => {
     const result = await mod.execute(ctx as any);
 
     // Fix task should mention both QA and Auditor findings
-    const fixCall = callLog.find(
-      (c) => c.agent === "coder" && c.task.includes("Fix these issues"),
-    );
+    const fixCall = callLog.find((c) => c.agent === "coder" && c.task.includes("Fix these issues"));
     expect(fixCall).toBeDefined();
     expect(fixCall!.task).toContain("QA Review Findings");
     expect(fixCall!.task).toContain("Auditor Findings");

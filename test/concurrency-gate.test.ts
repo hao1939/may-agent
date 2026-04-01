@@ -77,8 +77,14 @@ describe("P162: ConcurrencyGate", () => {
 
     const r1 = await gate.acquire();
 
-    const p2 = gate.acquire().then((release) => { order.push(2); return release; });
-    const p3 = gate.acquire().then((release) => { order.push(3); return release; });
+    const p2 = gate.acquire().then((release) => {
+      order.push(2);
+      return release;
+    });
+    const p3 = gate.acquire().then((release) => {
+      order.push(3);
+      return release;
+    });
 
     // Release r1 — p2 should resolve first (FIFO)
     r1();

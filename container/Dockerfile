@@ -79,7 +79,7 @@ COPY --from=builder /build/may-agent-web /usr/local/bin/may-agent-web
 COPY src/app/ui/web-static/ /usr/local/share/may-agent-web/web-static/
 
 # Copy entrypoints and helpers
-COPY docker/entrypoint.sh docker/entrypoint-console.sh docker/restart-may.sh /usr/local/bin/
+COPY container/entrypoint.sh container/entrypoint-console.sh container/restart-may.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/entrypoint-console.sh /usr/local/bin/restart-may.sh
 
 # Create user for uid 1000 (SSH requires a passwd entry)

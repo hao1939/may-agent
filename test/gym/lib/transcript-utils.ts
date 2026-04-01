@@ -112,7 +112,11 @@ export function loadTranscript(transcriptPath: string): Transcript | null {
         if (part.type === "toolCall" || part.type === "tool_use") {
           let args: Record<string, unknown> = {};
           if (typeof part.arguments === "string") {
-            try { args = JSON.parse(part.arguments); } catch { /* keep empty */ }
+            try {
+              args = JSON.parse(part.arguments);
+            } catch {
+              /* keep empty */
+            }
           } else if (typeof part.arguments === "object" && part.arguments !== null) {
             args = part.arguments;
           } else if (typeof part.input === "object" && part.input !== null) {
@@ -137,9 +141,7 @@ export function loadTranscript(transcriptPath: string): Transcript | null {
       if (typeof entry.content === "string") {
         content = entry.content;
       } else if (Array.isArray(entry.content)) {
-        content = entry.content
-          .map((p: { text?: string }) => p.text || "")
-          .join("\n");
+        content = entry.content.map((p: { text?: string }) => p.text || "").join("\n");
       }
       toolResults.push({
         toolCallId: entry.toolCallId || "",
@@ -193,7 +195,7 @@ export function getToolResult(transcript: Transcript, toolCallId: string): ToolR
 export function hasToolCallWithArgs(
   transcript: Transcript,
   toolName: string,
-  argPatterns: Record<string, string | RegExp | number | boolean>
+  argPatterns: Record<string, string | RegExp | number | boolean>,
 ): boolean {
   return transcript.toolCalls.some((tc) => {
     if (tc.name !== toolName) return false;
@@ -223,7 +225,7 @@ export function hasVerificationAfterWrite(transcript: Transcript, filePath: stri
     (tc) =>
       (tc.name === "write" || tc.name === "edit") &&
       typeof tc.arguments.path === "string" &&
-      tc.arguments.path.includes(filePath)
+      tc.arguments.path.includes(filePath),
   );
 
   if (writes.length === 0) return false;
@@ -235,12 +237,8 @@ export function hasVerificationAfterWrite(transcript: Transcript, filePath: stri
     const readsAfter = transcript.toolCalls.filter(
       (tc) =>
         tc.callIndex > write.callIndex &&
-        ((tc.name === "read" &&
-          typeof tc.arguments.path === "string" &&
-          tc.arguments.path.includes(filePath)) ||
-          (tc.name === "bash" &&
-            typeof tc.arguments.command === "string" &&
-            tc.arguments.command.includes(filePath)))
+        ((tc.name === "read" && typeof tc.arguments.path === "string" && tc.arguments.path.includes(filePath)) ||
+          (tc.name === "bash" && typeof tc.arguments.command === "string" && tc.arguments.command.includes(filePath))),
     );
 
     if (readsAfter.length > 0) return true;

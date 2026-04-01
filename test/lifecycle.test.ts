@@ -57,9 +57,7 @@ describe("createFinishTool", () => {
     const text = await callFinish(tool, {
       status: "success",
       summary: "Implemented the widget feature.",
-      deliverables: [
-        { path: "src/lib/feature.ts", description: "Widget implementation" },
-      ],
+      deliverables: [{ path: "src/lib/feature.ts", description: "Widget implementation" }],
       verification_evidence: ["Step 3: read(src/lib/feature.ts) confirmed export exists"],
     });
 
@@ -189,10 +187,7 @@ describe("createFinishTool", () => {
       status: "success",
       summary: "Done.",
       deliverables: [{ path: "src/lib/feature.ts", description: "Feature" }],
-      verification_evidence: [
-        "Step 5: read(src/lib/feature.ts) confirmed changes",
-        "Step 8: bash test exit code 0",
-      ],
+      verification_evidence: ["Step 5: read(src/lib/feature.ts) confirmed changes", "Step 8: bash test exit code 0"],
     });
 
     expect(text).toContain("Verification evidence");

@@ -57,67 +57,105 @@ export interface FinishToolOptions {
 // ── Schema ─────────────────────────────────────────────────────────────
 
 const finishSchema: TSchema = Type.Object({
-  status: Type.Union([
-    Type.Literal("success"),
-    Type.Literal("failure"),
-    Type.Literal("blocked"),
-    Type.Literal("partial"),
-  ], {
-    description: "'success': task completed fully. 'failure': task failed (include blockers). 'blocked': cannot proceed without external input. 'partial': some progress made but not complete (include next_steps).",
-  }),
+  status: Type.Union(
+    [Type.Literal("success"), Type.Literal("failure"), Type.Literal("blocked"), Type.Literal("partial")],
+    {
+      description:
+        "'success': task completed fully. 'failure': task failed (include blockers). 'blocked': cannot proceed without external input. 'partial': some progress made but not complete (include next_steps).",
+    },
+  ),
   summary: Type.String({
-    description: "1-2 sentence executive summary of what was accomplished. This is shown to the calling agent, so be concrete: mention specific files changed, tests passed, or errors encountered.",
+    description:
+      "1-2 sentence executive summary of what was accomplished. This is shown to the calling agent, so be concrete: mention specific files changed, tests passed, or errors encountered.",
   }),
-  deliverables: Type.Optional(Type.Array(
-    Type.Object({
-      path: Type.String({ description: "File path relative to project root" }),
-      description: Type.String({ description: "What this file is or what changed in it" }),
+  deliverables: Type.Optional(
+    Type.Array(
+      Type.Object({
+        path: Type.String({ description: "File path relative to project root" }),
+        description: Type.String({ description: "What this file is or what changed in it" }),
+      }),
+      {
+        description:
+          "Files produced or modified during this session. The calling agent uses these paths to review your work.",
+      },
+    ),
+  ),
+  blockers: Type.Optional(
+    Type.Array(
+      Type.Object({
+        reason: Type.String({ description: "What is blocking progress" }),
+        context: Type.String({ description: "Additional context: what you tried, why it failed, what's needed" }),
+      }),
+      { description: "What prevented completion. Required when status is 'failure' or 'blocked'." },
+    ),
+  ),
+  next_steps: Type.Optional(
+    Type.String({
+      description:
+        "Recommended next actions for whoever picks this up. Required when status is 'partial' or 'blocked'.",
     }),
-    { description: "Files produced or modified during this session. The calling agent uses these paths to review your work." },
-  )),
-  blockers: Type.Optional(Type.Array(
-    Type.Object({
-      reason: Type.String({ description: "What is blocking progress" }),
-      context: Type.String({ description: "Additional context: what you tried, why it failed, what's needed" }),
+  ),
+  completed_items: Type.Optional(
+    Type.Array(
+      Type.String({
+        description:
+          "Description of a task completed this session. Fuzzy-matched against pending requests in the DB to auto-mark them COMPLETED.",
+      }),
+      {
+        description:
+          "Tasks completed during this session. Infrastructure automatically resolves matching tracked requests.",
+      },
+    ),
+  ),
+  new_items: Type.Optional(
+    Type.Array(Type.String({ description: "Description of a new task to track (self-assigned follow-up work)" }), {
+      description: "New tasks discovered during this session. Infrastructure creates tracked requests for them.",
     }),
-    { description: "What prevented completion. Required when status is 'failure' or 'blocked'." },
-  )),
-  next_steps: Type.Optional(Type.String({
-    description: "Recommended next actions for whoever picks this up. Required when status is 'partial' or 'blocked'.",
-  })),
-  completed_items: Type.Optional(Type.Array(
-    Type.String({ description: "Description of a task completed this session. Fuzzy-matched against pending requests in the DB to auto-mark them COMPLETED." }),
-    { description: "Tasks completed during this session. Infrastructure automatically resolves matching tracked requests." },
-  )),
-  new_items: Type.Optional(Type.Array(
-    Type.String({ description: "Description of a new task to track (self-assigned follow-up work)" }),
-    { description: "New tasks discovered during this session. Infrastructure creates tracked requests for them." },
-  )),
-  lessons: Type.Optional(Type.Array(
-    Type.Object({
-      category: Type.Union([
-        Type.Literal("fix"),
-        Type.Literal("pattern"),
-        Type.Literal("insight"),
-      ], { description: "'fix': what you learned from a bug/error. 'pattern': a reusable approach worth remembering. 'insight': an observation about the system or codebase." }),
-      content: Type.String({ description: "The lesson — specific and actionable, not generic. Bad: 'always test'. Good: 'manager.ts uses lazy DB init, must call getDb() not import db directly'." }),
-    }),
-    { description: "Lessons learned this session. Persisted to memory for cross-session learning." },
-  )),
-  verification_evidence: Type.Optional(Type.Array(
-    Type.String({ description: "Reference to a specific tool output proving your work. Format: 'Step N: <tool> showed <result>'. Example: 'Step 12: read(src/app.ts) confirmed new function exists', 'Step 8: bash test exit code 0'." }),
-    { description: "Evidence from this session's tool outputs that verify your deliverables. Required when status is 'success'. Cite specific tool calls and their results." },
-  )),
-  context_updates: Type.Optional(Type.Array(
-    Type.Object({
-      action: Type.Union([
-        Type.Literal("add"),
-        Type.Literal("remove"),
-      ], { description: "'add': persist a new fact. 'remove': delete a stale/incorrect fact." }),
-      content: Type.String({ description: "The fact to add or remove. Keep short (one line). Example: 'User prefers Vitest over Jest', 'DB uses node:sqlite not better-sqlite3'." }),
-    }),
-    { description: "Persistent context updates. Facts added here are loaded into future sessions via agents/<name>/context.md. Use sparingly — only for durable project knowledge, user preferences, or corrections." },
-  )),
+  ),
+  lessons: Type.Optional(
+    Type.Array(
+      Type.Object({
+        category: Type.Union([Type.Literal("fix"), Type.Literal("pattern"), Type.Literal("insight")], {
+          description:
+            "'fix': what you learned from a bug/error. 'pattern': a reusable approach worth remembering. 'insight': an observation about the system or codebase.",
+        }),
+        content: Type.String({
+          description:
+            "The lesson — specific and actionable, not generic. Bad: 'always test'. Good: 'manager.ts uses lazy DB init, must call getDb() not import db directly'.",
+        }),
+      }),
+      { description: "Lessons learned this session. Persisted to memory for cross-session learning." },
+    ),
+  ),
+  verification_evidence: Type.Optional(
+    Type.Array(
+      Type.String({
+        description:
+          "Reference to a specific tool output proving your work. Format: 'Step N: <tool> showed <result>'. Example: 'Step 12: read(src/app.ts) confirmed new function exists', 'Step 8: bash test exit code 0'.",
+      }),
+      {
+        description:
+          "Evidence from this session's tool outputs that verify your deliverables. Required when status is 'success'. Cite specific tool calls and their results.",
+      },
+    ),
+  ),
+  context_updates: Type.Optional(
+    Type.Array(
+      Type.Object({
+        action: Type.Union([Type.Literal("add"), Type.Literal("remove")], {
+          description: "'add': persist a new fact. 'remove': delete a stale/incorrect fact.",
+        }),
+        content: Type.String({
+          description:
+            "The fact to add or remove. Keep short (one line). Example: 'User prefers Vitest over Jest', 'DB uses node:sqlite not better-sqlite3'.",
+        }),
+      }),
+      {
+        description:
+          "Persistent context updates. Facts added here are loaded into future sessions via agents/<name>/context.md. Use sparingly — only for durable project knowledge, user preferences, or corrections.",
+      },
+    ),
+  ),
 });
 
 interface FinishParams {
@@ -181,10 +219,12 @@ export function createFinishTool(options: FinishToolOptions): AgentTool<TSchema>
       // ── Validate blockers required for blocked/failure ─────────
       if ((status === "blocked" || status === "failure") && (!blockers || blockers.length === 0)) {
         return {
-          content: [{
-            type: "text" as const,
-            text: `finish() error: 'blockers' required when status is '${status}'.`,
-          }],
+          content: [
+            {
+              type: "text" as const,
+              text: `finish() error: 'blockers' required when status is '${status}'.`,
+            },
+          ],
           details: undefined,
         };
       }
@@ -202,11 +242,14 @@ export function createFinishTool(options: FinishToolOptions): AgentTool<TSchema>
 
       if (status === "success" && missingDeliverables.length > 0) {
         return {
-          content: [{
-            type: "text" as const,
-            text: `finish() error: Deliverables not found on disk: ${missingDeliverables.join(", ")}. ` +
-              `Cannot declare success with missing deliverables.`,
-          }],
+          content: [
+            {
+              type: "text" as const,
+              text:
+                `finish() error: Deliverables not found on disk: ${missingDeliverables.join(", ")}. ` +
+                `Cannot declare success with missing deliverables.`,
+            },
+          ],
           details: undefined,
         };
       }
@@ -214,14 +257,18 @@ export function createFinishTool(options: FinishToolOptions): AgentTool<TSchema>
       // ── Require verification evidence for success ─────────────
       if (status === "success" && (!params.verification_evidence || params.verification_evidence.length === 0)) {
         return {
-          content: [{ type: "text" as const, text: 
-            "finish() error: 'verification_evidence' is required when status is 'success'. " +
-            "Cite specific tool outputs that verify your work, e.g.:\n" +
-            '- "Step 5: read(src/app.ts) shows new function added"\n' +
-            '- "Step 8: bash test suite exit code 0"\n' +
-            '- "Step 3: edit() confirmed by read-back"\n' +
-            "Add verification_evidence and try again."
-          }],
+          content: [
+            {
+              type: "text" as const,
+              text:
+                "finish() error: 'verification_evidence' is required when status is 'success'. " +
+                "Cite specific tool outputs that verify your work, e.g.:\n" +
+                '- "Step 5: read(src/app.ts) shows new function added"\n' +
+                '- "Step 8: bash test suite exit code 0"\n' +
+                '- "Step 3: edit() confirmed by read-back"\n' +
+                "Add verification_evidence and try again.",
+            },
+          ],
           details: undefined,
         };
       }
@@ -231,9 +278,7 @@ export function createFinishTool(options: FinishToolOptions): AgentTool<TSchema>
         getUpdateRequest().then((updateReq) => {
           if (!updateReq) return;
           try {
-            const requestStatus = status === "success" ? "COMPLETED"
-              : status === "failure" ? "FAILED"
-              : "BLOCKED";
+            const requestStatus = status === "success" ? "COMPLETED" : status === "failure" ? "FAILED" : "BLOCKED";
             updateReq(stateDir, options.requestId!, {
               status: requestStatus,
               summary,
@@ -272,9 +317,7 @@ export function createFinishTool(options: FinishToolOptions): AgentTool<TSchema>
         partial: "⚠️",
       }[status];
 
-      const parts: string[] = [
-        `${statusEmoji} **${status.toUpperCase()}**: ${summary}`,
-      ];
+      const parts: string[] = [`${statusEmoji} **${status.toUpperCase()}**: ${summary}`];
 
       if (deliverables && deliverables.length > 0) {
         parts.push("");

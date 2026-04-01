@@ -72,19 +72,30 @@ function textResult(text: string): AgentToolResult<string> {
 const CronParams: TSchema = Type.Object({
   action: Type.Union(
     [Type.Literal("list"), Type.Literal("add"), Type.Literal("remove"), Type.Literal("update"), Type.Literal("status")],
-    { description: "'list': show all scheduled jobs with intervals and status. 'add': create a new job. 'remove': delete a job. 'update': change interval, message, or enabled state. 'status': show detailed runtime state (last fire time, next fire, error counts)." },
+    {
+      description:
+        "'list': show all scheduled jobs with intervals and status. 'add': create a new job. 'remove': delete a job. 'update': change interval, message, or enabled state. 'status': show detailed runtime state (last fire time, next fire, error counts).",
+    },
   ),
-  name: Type.Optional(Type.String({ description: "Job name (required for add/remove/update). Use 'list' to see existing job names." })),
+  name: Type.Optional(
+    Type.String({ description: "Job name (required for add/remove/update). Use 'list' to see existing job names." }),
+  ),
   intervalMs: Type.Optional(
     Type.Number({
-      description: "Interval in milliseconds (required for 'add', optional for 'update'). Minimum 10000 (10s). Common values: 1800000 (30min), 3600000 (1h), 7200000 (2h).",
+      description:
+        "Interval in milliseconds (required for 'add', optional for 'update'). Minimum 10000 (10s). Common values: 1800000 (30min), 3600000 (1h), 7200000 (2h).",
     }),
   ),
   message: Type.Optional(
-    Type.String({ description: "Message to inject into the agent session each time the job fires (required for 'add'). This becomes the heartbeat prompt." }),
+    Type.String({
+      description:
+        "Message to inject into the agent session each time the job fires (required for 'add'). This becomes the heartbeat prompt.",
+    }),
   ),
   enabled: Type.Optional(
-    Type.Boolean({ description: "Whether the job is enabled. Set to false to pause a job without removing it. Default: true." }),
+    Type.Boolean({
+      description: "Whether the job is enabled. Set to false to pause a job without removing it. Default: true.",
+    }),
   ),
   description: Type.Optional(Type.String({ description: "Human-readable description of what this job does." })),
 });
