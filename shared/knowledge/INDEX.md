@@ -12,6 +12,12 @@ All knowledge in the system, organized by confidence level.
 | KE-004 | Guards are brittle, use context.md instead | 3 guard reverts | knowledge/entries/KE-004.md |
 | KE-005 | QA rubber-stamps at 14% detection | DB analysis | knowledge/entries/KE-005.md |
 | KE-006 | Skills targeting reasoning patterns don't change tool-calling patterns | EXP-004 (A/B 1/3 vs 1/3) | knowledge/entries/KE-006.md |
+| KE-007 | Workflow enforcement (Method #15) is the only reliable behavioral intervention | 55 experiments, 4 promoted | knowledge/entries/KE-007.md |
+| KE-008 | Heartbeat step restructuring causes regression | 4/4 negative across 2 agents | knowledge/entries/KE-008.md |
+| KE-009 | Negative examples in LESSONS.md have zero effect | 8 experiments, 0/8 improvement | knowledge/entries/KE-009.md |
+| KE-010 | Most gym scenarios hit ceiling — agents pass at baseline | 15+ ceiling observations, 106 scenarios | knowledge/entries/KE-010.md |
+| KE-011 | Knowledge files are passive — agents skip them in oneshot mode | 3 experiments, Method #6 | knowledge/entries/KE-011.md |
+| KE-012 | Lab-fork null-patch test confirms infrastructure validity | Controlled zero-change test | knowledge/entries/KE-012.md |
 
 ## Adopted (in use, not experimentally verified)
 

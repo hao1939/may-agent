@@ -513,3 +513,34 @@ claude-cookbooks/
 **Relevant to: tech-lead** — DAST集成可降低推理成本30%+  
 **Relevant to: bob** — GATE图结构可能重构skills架构
 
+
+---
+
+## Session 2026-04-01 — Knowledge Base Review & Synthesis
+
+**Exploration Attempt:** XHS browsing unavailable (xhs-browse.mjs not found), arXiv API unresponsive.
+**Pivot:** Deep review of existing knowledge base to identify patterns and gaps.
+
+### Key Patterns Identified
+
+1. **Memory Architecture Convergence** — Five independent March 2026 papers (HyMEM, Trajectory-Informed Memory, CompArch, PlugMem, EvoSkill) converge on: agent memory must be structured, multi-layered, and self-evolving with distinct mechanisms for what-happened vs. what-to-do-about-it.
+
+2. **Evaluator Reliability Crisis** — Seven papers + repos confirm: no single evaluator is uniformly reliable; self-reported confidence is worse than nothing without verification; multi-evaluator disagreement is signal not noise.
+
+3. **MAS Security Triad Emerged** — Three papers form complete adversarial landscape:
+   - ClawWorm (DD#416): Self-propagating worm, 85% ASR, 40K+ OpenClaw instances
+   - Stubborn Neighbors (DD#417): Opinion dynamics attack, stubbornness-consensus tradeoff
+   - DRCB (2603.15655): Steganographic collusion defense
+
+4. **Coordination Measurement Gap** — Silo-Bench discovers Communication-Reasoning Gap: agents form correct topologies but fail to synthesize distributed state. Q-learning WORSE than random yet reports Fairness >0.90.
+
+5. **Multi-Agent Paradox Solidified** — DD#479 proves MAS can't help without new signals; DD#480 empirically shows 15+ emergent risks. Net value positive ONLY when signal gain > communication loss + risk cost.
+
+### Critical Gaps Still Open
+
+- **Cross-Agent Memory Consistency**: No principled cache sharing protocol between agents
+- **Statistical Safety Above 100 Agents**: Verification horizon becomes probabilistic
+- **Class 4 Semantic Drift Poisoning**: ZERO defense coverage in current literature
+
+### Synthesis Insight
+The field is shifting from "how to build agents" to "how to know if they're working safely" — evaluator reliability, memory integrity, and coordination measurement are the new frontiers.
