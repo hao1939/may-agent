@@ -238,3 +238,117 @@ The `fork` event includes an `opts` field for session configuration (kind, reque
 ### DB is optional in code, required in production
 
 The architecture allows running without DB (for gym, tests, oneshot). Production always enables it. This is a deployment decision, not an architecture constraint.
+
+## Research System Integration
+
+The research system (see research-system.md) builds on this architecture:
+
+### Knowledge Base
+
+```
+agents/shared/knowledge/
+  entries/     KE-XXX.md    (verified facts with evidence)
+  hypotheses/  H-XXX.md     (testable claims)
+  experiments/ EXP-XXX/     (design.json + results)
+```
+
+Knowledge entries link to experiments. Experiments link to hypotheses. Verified knowledge flows to agents via context.md.
+
+### Lab Infrastructure
+
+The lab extends the gym runner for hypothesis testing:
+
+```
+Gym: fixed scenario → agent runs → pass/fail → "is the agent correct?"
+Lab: hypothesis → multi-arm experiment → statistical comparison → "is the idea true?"
+```
+
+Lab runner (`scripts/lab-run.sh`) reads experiment designs from `knowledge/experiments/EXP-XXX/design.json` and runs multi-arm comparisons. Results are per-metric, not just pass/fail.
+
+### Adversarial Peers
+
+Two agents research the same question from opposite angles:
+- **Advocate**: finds evidence FOR a hypothesis
+- **Skeptic**: finds evidence AGAINST
+
+Agreement → high confidence knowledge entry. Disagreement → design experiment → lab tests it.
+
+### Research Events on the Bus
+
+```typescript
+  // Research events
+  | { type: "hypothesis_created"; id: string; title: string }
+  | { type: "experiment_started"; id: string; hypothesis: string }
+  | { type: "experiment_complete"; id: string; verdict: string }
+  | { type: "knowledge_created"; id: string; title: string; status: string }
+```
+
+These are observation events — core and research agents emit them, DB writer persists them, web UI displays them.
+
+### Research DB Tables
+
+```sql
+CREATE TABLE hypotheses (
+  id TEXT PRIMARY KEY,
+  title TEXT,
+  status TEXT,
+  proposedBy TEXT,
+  createdAt INTEGER
+);
+
+CREATE TABLE experiments (
+  id TEXT PRIMARY KEY,
+  hypothesisId TEXT,
+  status TEXT,
+  design TEXT,
+  results TEXT,
+  createdAt INTEGER,
+  completedAt INTEGER
+);
+
+CREATE TABLE knowledge_entries (
+  id TEXT PRIMARY KEY,
+  title TEXT,
+  claim TEXT,
+  status TEXT,
+  evidence TEXT,
+  createdAt INTEGER,
+  lastVerified INTEGER
+);
+```
+
+## Current State
+
+### What exists today
+- EventBus: 147 lines, handles events + commands (needs cleanup)
+- Manager: 2400 lines, the core runtime (stays as-is internally)
+- Cron: 919 lines, direct manager dependency (needs decoupling)
+- may.ts: 1089 lines glue (needs thinning)
+- Knowledge base: 5 entries, 2 hypotheses, 2 experiments (seeded)
+- Lab runner: working, tested with EXP-001
+- Agent calling: call/fork/message implemented in agents tool
+
+### What needs building
+- Phase 1: EventBus cleanup + core command subscriber
+- Phase 2: DB writer subscriber (extract from may.ts)
+- Phase 3: Thin startup (under 100 lines)
+- Advocate + Skeptic agents
+- Research workflow (discover → challenge → experiment → analyze)
+- Research events + DB tables
+
+## Summary
+
+One process. One EventBus. Everyone subscribes and emits.
+
+```
+Commands → bus → core acts → observations → bus → subscribers persist/render
+
+call:     sync, internal to core (agent cooperation)
+fork:     async, bus command (parallel work)
+message:  async, bus command (background work)
+
+DB:       optional subscriber, persists events, enables queries
+Lab:      extends gym, tests ideas not agents
+Knowledge: entries + hypotheses + experiments, evidence-linked
+```
+
