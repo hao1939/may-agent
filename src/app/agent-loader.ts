@@ -154,27 +154,10 @@ async function buildTools(config: AgentConfig, opts: AgentLoaderOptions): Promis
         tools.push(...createCodingTools(projectRoot, { agentName: config.name }));
         break;
 
-      case "read-write": {
-        // Legacy preset — maps to coding tools (read + bash + edit + write)
-        tools.push(...createCodingTools(projectRoot, { agentName: config.name }));
-        break;
-      }
-
       case "read-only": {
         tools.push(createReadTool(projectRoot) as any);
         break;
       }
-
-      case "exec":
-      case "exec-readonly":
-      case "exec-master":
-        // Legacy exec presets — now no-ops (bash is included in coding tools)
-        // Agents should use "coding" preset instead
-        bus.emit({
-          type: "info",
-          message: `[loader] Preset "${preset}" for agent "${config.name}" is deprecated — bash is included in "coding" preset`,
-        });
-        break;
 
       case "claude-code":
         tools.push(
@@ -481,11 +464,7 @@ async function loadLocalTools(agentName: string, agentDir: string, opts: AgentLo
 
 const VALID_TOOL_PRESETS = new Set([
   "coding",
-  "read-write",
   "read-only",
-  "exec",
-  "exec-readonly",
-  "exec-master",
   "claude-code",
   "gemini-cli",
   "codex",

@@ -131,11 +131,7 @@ export function createCronTool(opts: CronToolOptions): AgentTool {
     try {
       const raw = readFileSync(opts.configPath, "utf-8");
       const parsed = JSON.parse(raw);
-      // Migrate legacy entries that lack the `enabled` field
-      return parsed.map((e: any) => ({
-        ...e,
-        enabled: e.enabled !== undefined ? e.enabled : true,
-      }));
+      return parsed;
     } catch {
       return [];
     }

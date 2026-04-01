@@ -32,13 +32,6 @@ function truncate(s: string, max: number): string {
   return s.slice(0, max - 1) + "…";
 }
 
-/** Extract epoch ms from a session ID like s_1773920113683_82 or cron_1773851350025_106 */
-function _sessionIdToTs(filename: string): number | null {
-  const m = filename.match(/^(?:s|cron|e|tasktree|task.tree|task_tree)_(\d{13,})/);
-  if (!m) return null;
-  return parseInt(m[1], 10);
-}
-
 // ── Types ────────────────────────────────────────────────────────────
 
 interface EvalRecord {

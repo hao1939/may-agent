@@ -6,7 +6,7 @@
  * to per-agent ERROR_LOG.jsonl files.
  */
 
-import { appendFileSync, mkdirSync, existsSync, renameSync } from "node:fs";
+import { appendFileSync, mkdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import type { TaskEvaluationResult, ChildSessionInfo } from "./evaluator.js";
 
@@ -126,16 +126,6 @@ export function appendErrorLogs(result: TaskEvaluationResult, children: ChildSes
 
     // Write to agents/{agent}/ERROR_LOG.jsonl as JSONL
     const errorLogPath = join("agents", child.agent, "ERROR_LOG.jsonl");
-
-    // One-time migration: rename ERROR_LOG.md → ERROR_LOG.jsonl if the old file exists
-    const legacyPath = join("agents", child.agent, "ERROR_LOG.md");
-    try {
-      if (existsSync(legacyPath) && !existsSync(errorLogPath)) {
-        renameSync(legacyPath, errorLogPath);
-      }
-    } catch {
-      // Best-effort migration — continue with append either way
-    }
 
     const lines = entries.map((e) => JSON.stringify(e)).join("\n") + "\n";
 

@@ -16,9 +16,9 @@ import { randomUUID } from "node:crypto";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
-export type RequestStatus = "CREATED" | "IN_PROGRESS" | "COMPLETED" | "FAILED" | "BLOCKED";
+type RequestStatus = "CREATED" | "IN_PROGRESS" | "COMPLETED" | "FAILED" | "BLOCKED";
 
-export type RequestMethod = "chat" | "call" | "send" | "run" | "workflow";
+type RequestMethod = "chat" | "call" | "send" | "run" | "workflow";
 
 // ErrorClass and classifyError are now in classify-error.ts (pure, no bun:sqlite deps)
 export type { ErrorClass } from "./classify-error.js";
@@ -38,7 +38,7 @@ export interface TrackRequestOpts {
   notify?: string[];
 }
 
-export interface UpdateRequestOpts {
+interface UpdateRequestOpts {
   status?: RequestStatus;
   sessionId?: string;
   summary?: string;
@@ -537,7 +537,7 @@ export { classifyError } from "./classify-error.js";
 
 // ── Evaluations ────────────────────────────────────────────────────────
 
-export interface EvaluationRecord {
+interface EvaluationRecord {
   sessionId: string;
   agent: string;
   quality: number;
@@ -554,7 +554,7 @@ export interface EvaluationRecord {
   createdAt: number;
 }
 
-export interface UpsertEvaluationOpts {
+interface UpsertEvaluationOpts {
   sessionId: string;
   agent: string;
   quality: number;
@@ -624,26 +624,6 @@ export function getEvaluation(persistDir: string, sessionId: string): Evaluation
 }
 
 /**
- * Get evaluations for a specific agent within a time window.
- */
-export function getEvaluationsByAgent(persistDir: string, agent: string, sinceMs?: number): EvaluationRecord[] {
-  const db = getDb(persistDir);
-  if (sinceMs !== undefined) {
-    return (
-      db
-        .prepare("SELECT * FROM evaluations WHERE agent = ? AND createdAt >= ? ORDER BY createdAt ASC")
-        .all(agent, sinceMs) as Record<string, unknown>[]
-    ).map(deserializeEvalRow);
-  }
-  return (
-    db.prepare("SELECT * FROM evaluations WHERE agent = ? ORDER BY createdAt ASC").all(agent) as Record<
-      string,
-      unknown
-    >[]
-  ).map(deserializeEvalRow);
-}
-
-/**
  * Get all evaluations within a time window.
  */
 export function getEvaluationsSince(persistDir: string, sinceMs: number): EvaluationRecord[] {
@@ -691,90 +671,6 @@ export function getEvaluationStatus(
   }
 }
 
-/**
- * Migrate existing .state/evaluations/*.json files into the evaluations table.
- * Skips entries that already exist in the DB. Returns count of imported rows.
- */
-export function migrateEvaluationsFromFiles(persistDir: string): number {
-  const { readdirSync, readFileSync } = require("node:fs") as typeof import("node:fs");
-  const { join } = require("node:path") as typeof import("node:path");
-  const evalsDir = join(persistDir, "evaluations");
-  if (!existsSync(evalsDir)) return 0;
-
-  let files: string[];
-  try {
-    files = readdirSync(evalsDir).filter((f: string) => f.endsWith(".json"));
-  } catch {
-    return 0;
-  }
-
-  const db = getDb(persistDir);
-  let imported = 0;
-
-  // Use a transaction for bulk insert performance
-  const insertStmt = db.prepare(
-    `INSERT OR IGNORE INTO evaluations (
-      sessionId, agent, quality, efficiency, productiveCalls, wastedCalls,
-      verdict, issues, overall, usage, failureChains,
-      evaluatedByHeuristic, skippedByJs, createdAt
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-  );
-
-  db.exec("BEGIN TRANSACTION");
-  try {
-    for (const file of files) {
-      const sessionId = file.replace(".json", "");
-
-      // Extract timestamp from session ID (broad: any 13+ digit number)
-      const tsMatch = sessionId.match(/(\d{13,})/);
-      const createdAt = tsMatch ? parseInt(tsMatch[1], 10) : 0;
-
-      try {
-        const raw = JSON.parse(readFileSync(join(evalsDir, file), "utf-8"));
-        if (typeof raw !== "object" || raw === null) continue;
-
-        // Handle flat format: { agent, quality, efficiency, verdict, ... }
-        const agent = typeof raw.agent === "string" ? raw.agent : "unknown";
-        const quality = typeof raw.quality === "number" ? raw.quality : 0;
-        const efficiency = typeof raw.efficiency === "number" ? raw.efficiency : 0;
-        const verdict = typeof raw.verdict === "string" ? raw.verdict : "unknown";
-        const productiveCalls = typeof raw.productive_calls === "number" ? raw.productive_calls : 0;
-        const wastedCalls = typeof raw.wasted_calls === "number" ? raw.wasted_calls : 0;
-        const issues = Array.isArray(raw.issues) ? raw.issues : [];
-        const overall = raw.overall && typeof raw.overall === "object" ? raw.overall : null;
-        const usage = raw.usage && typeof raw.usage === "object" ? raw.usage : null;
-        const failureChains = Array.isArray(raw.failureChains) ? raw.failureChains : [];
-
-        insertStmt.run(
-          sessionId,
-          agent,
-          quality,
-          efficiency,
-          productiveCalls,
-          wastedCalls,
-          verdict,
-          JSON.stringify(issues),
-          overall ? JSON.stringify(overall) : null,
-          usage ? JSON.stringify(usage) : null,
-          JSON.stringify(failureChains),
-          raw.evaluatedByHeuristic ? 1 : 0,
-          raw.skippedByJs ? 1 : 0,
-          createdAt,
-        );
-        imported++;
-      } catch {
-        continue;
-      }
-    }
-    db.exec("COMMIT");
-  } catch (err) {
-    db.exec("ROLLBACK");
-    throw err;
-  }
-
-  return imported;
-}
-
 function deserializeEvalRow(row: Record<string, unknown>): EvaluationRecord {
   return {
     sessionId: row.sessionId as string,
@@ -817,7 +713,7 @@ function parseJsonObject(s: string | null): Record<string, unknown> | null {
 // These mirror session meta.json data into the sessions table for
 // SQL queryability. Called from RegistryStore — non-blocking, best-effort.
 
-export interface SessionDbEntry {
+interface SessionDbEntry {
   sessionId: string;
   agent: string;
   task: string;

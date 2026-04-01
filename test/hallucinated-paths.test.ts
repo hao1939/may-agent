@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { resolveHallucinatedPath, extractHallucinatedRelPath } from "../src/lib/tools/may-utils.js";
+import { extractHallucinatedRelPath } from "../src/lib/tools/may-utils.js";
 import { createReadTool } from "../src/lib/tools/read.js";
 import { mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
@@ -42,54 +42,6 @@ describe("extractHallucinatedRelPath", () => {
 
   it("returns null for /tmp/test", () => {
     expect(extractHallucinatedRelPath("/tmp/test")).toBe(null);
-  });
-});
-
-// ── resolveHallucinatedPath ────────────────────────────────────────────
-
-describe("resolveHallucinatedPath", () => {
-  const ROOT = "/home/example-user/may-agent";
-
-  it("rewrites /home/user/src/tools.ts to project root", () => {
-    expect(resolveHallucinatedPath("/home/user/src/tools.ts", ROOT)).toBe("/home/example-user/may-agent/src/tools.ts");
-  });
-
-  it("rewrites /home/user/repo/test/max-turns.test.ts", () => {
-    expect(resolveHallucinatedPath("/home/user/repo/test/max-turns.test.ts", ROOT)).toBe(
-      "/home/example-user/may-agent/test/max-turns.test.ts",
-    );
-  });
-
-  it("rewrites /home/user/repos/cora/src/manager.ts", () => {
-    expect(resolveHallucinatedPath("/home/user/repos/cora/src/manager.ts", ROOT)).toBe(
-      "/home/example-user/may-agent/src/manager.ts",
-    );
-  });
-
-  it("rewrites /Users/jdoe/amp-agent/.state/evaluations/", () => {
-    expect(resolveHallucinatedPath("/Users/jdoe/amp-agent/.state/evaluations/", ROOT)).toBe(
-      "/home/example-user/may-agent/.state/evaluations/",
-    );
-  });
-
-  it("rewrites /app/config.yaml", () => {
-    expect(resolveHallucinatedPath("/app/config.yaml", ROOT)).toBe("/home/example-user/may-agent/config.yaml");
-  });
-
-  it("rewrites bare /home/user to project root", () => {
-    expect(resolveHallucinatedPath("/home/user", ROOT)).toBe("/home/example-user/may-agent");
-  });
-
-  it("preserves the actual project root path (rewrite is identity)", () => {
-    expect(resolveHallucinatedPath("/home/example-user/may-agent/src/tools.ts", ROOT)).toBe("/home/example-user/may-agent/src/tools.ts");
-  });
-
-  it("does NOT rewrite non-hallucinated paths like /etc/config", () => {
-    expect(resolveHallucinatedPath("/etc/config", ROOT)).toBe("/etc/config");
-  });
-
-  it("does NOT rewrite relative paths", () => {
-    expect(resolveHallucinatedPath("src/tools.ts", ROOT)).toBe("src/tools.ts");
   });
 });
 

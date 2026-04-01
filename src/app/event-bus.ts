@@ -95,22 +95,6 @@ export function isSessionEvent(event: AgentEvent): event is SessionEvent {
   return "sessionId" in event && typeof (event as SessionEvent).sessionId === "string";
 }
 
-/** Check if an event is a command (to core). */
-export function isCommand(event: AgentEvent): event is AgentCommand | ManagementCommand {
-  const commands = new Set([
-    "fork",
-    "message",
-    "input",
-    "steer",
-    "cancel",
-    "cancel_all",
-    "reload",
-    "restart",
-    "shutdown",
-  ]);
-  return commands.has(event.type);
-}
-
 // ── Backward compat types ──────────────────────────────────────────────
 // Remove these after full migration.
 
@@ -126,8 +110,6 @@ export type RunnerCommand =
   | { type: "run"; agent: string; message: string }
   | { type: "reload_agents" }
   | { type: "subscribe"; sessions: string[]; notifications?: boolean };
-/** @deprecated */
-export type EventChannel = "chat" | "activity";
 /** @deprecated */
 export type CommandResult = { ok: boolean; message?: string };
 

@@ -117,13 +117,6 @@ export class ConcurrencyGate {
   }
 }
 
-/**
- * Default high-impact tools that should be gated.
- * These are the STATE_CHANGING_TOOLS from manager-receipts.ts —
- * tools that modify the filesystem or execute arbitrary commands.
- */
-export const HIGH_IMPACT_TOOLS = new Set(["bash", "write", "edit"]);
-
 /** Singleton gate instance shared across all sessions. */
 let _defaultGate: ConcurrencyGate | null = null;
 
