@@ -2,6 +2,17 @@
 
 > Pre-2026-03-30 entries archived at `agents/bob/workspace/archive/journal-pre-2026-03-30.md`
 
+# Session 2026-04-01 ~03:39 (Steady State + Gym Sweep Prep)
+- **Convention health (6h, N=36, 432 checks)**: 97.7% overall (stable). C3.3/C7.1/C2.1=100%. C8.2=80.6% (6 amy-kimi + 1 bob no-finish), C1.3=97.2% (1 amy-kimi), C1.4=97.2% (1 bob no-finish), C6.1=97.2% (1 coach 87 tools).
+- **Convention health (24h, N=150, 1792 checks)**: 95.3% overall. C8.2=79.7% (dragged by amy-kimi model-level JSON issue). Non-amy-kimi top failures: C6.1 bob=5 (all older Mar 31 sessions, 0 in last 6h), C1.3 coach=4, C8.2 bob=3 (no-finish sessions).
+- **Evaluations (6h)**: 28 good, 3 acceptable, 0 needs_improvement, 0 poor. 24h: 130 good, 17 acceptable, 1 needs_improvement (coach), 0 poor.
+- **Bob C6.1 improvement**: 0 violations in last 6h (was 5 in older 24h window). Behavioral fix working.
+- **Process health**: #3 Persistence = 0 failures. All 4 processes healthy. Prompt caching still blocked on Hao.
+- **Cleaned up stray `package.json`** from `agents/gym/scenarios/` — was not a real scenario.
+- **Gym sweep inventory**: 45 untested scenarios remaining (was 46 before package.json cleanup). Categories: verification (13), workflow variants (12), judgment/scope (8), debugging (7), miscellaneous (5). Next step: dedicated batch session for baseline sweep ($2-7 estimated cost).
+- **No pending requests.** No nudges. Periodic tasks not due.
+- Updated focus-tasks.md with 03:39 metrics.
+
 # Session 2026-04-01 ~01:39 (Steady State Monitoring)
 - **Convention health (6h, N=39, 464 checks)**: 98.1% overall (stable). 9/12 at 100%. C8.2=84.2% (6 amy-kimi), C1.1=94.9% (2 failures: amy-kimi + scout), C1.3=97.4% (1 amy-kimi). All model-level.
 - **Evaluations (6h)**: 29 good, 5 acceptable, 0 needs_improvement, 0 poor. Coach improved to 4 good + 1 acceptable. All agents healthy.
