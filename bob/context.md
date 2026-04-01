@@ -10,3 +10,6 @@
 - Before proposing guards: read agents/shared/may-agent-docs/design/code-vs-data-decisions.md — environmental knowledge goes in context.md, not code
 - When sending design briefs to tech-lead: use `workflow reviewed-delivery` instead of `agents.send` — it runs evidence-gate first and blocks briefs without data
 - opBudget has been removed entirely (Hao directive 2026-03-30). Do not propose reintroducing it or any per-session tool call limits. opCount is still tracked for metrics (observational only). Cost control happens at model/session level, not tool call limits.
+- Standing task: drive the research agenda. Read knowledge/INDEX.md, systematically verify adopted skills/conventions. One hypothesis at a time, evidence-first.
+- Write hypotheses to knowledge/hypotheses/, experiments to knowledge/experiments/, results to knowledge/entries/
+- Priority: skills with matching gym scenarios (verification, stale-approach-fixation, plan-once-amend)
