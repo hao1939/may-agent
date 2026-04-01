@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
 #
-# sync-agents.sh — Sync agents/ repo: local → k3s → origin (dell-laptop)
+# sync-agents.sh — Two-way sync agents/ between local and k3s pod.
 #
 # Flow:
-#   1. Push local changes to k3s bare repo (post-receive deploys to PVC)
-#   2. k3s pod pulls from PVC, rebases if needed
-#   3. k3s pod pushes to origin (dell-laptop)
+#   1. Local: commit any dirty files
+#   2. Local: push to bare repo
+#   3. Pod: pull from bare (merge)
+#   4. Pod: push merged result to bare + dell-laptop
+#   5. Local: pull merged result from bare
 #
-# Usage: scripts/sync-agents.sh
+# Both sides end on the same commit. Dell-laptop gets backup.
 
 set -euo pipefail
 
@@ -18,29 +20,40 @@ POD="may-agent-0"
 CONTAINER="may-agent"
 
 export KUBECONFIG
+kexec() { kubectl exec -n "$NAMESPACE" "$POD" -c "$CONTAINER" -- sh -c "$1" 2>&1; }
 
-echo "=== Step 1: Push local → k3s ==="
+echo "=== 1. Commit local ==="
 cd "$AGENTS_DIR"
-git push k3s main 2>&1 || {
-  echo "Push to k3s failed. Trying pull --rebase first..."
-  git pull --rebase k3s main 2>&1
-  git push k3s main 2>&1
-}
+git add -A
+git diff --cached --quiet && echo "(clean)" || git commit -m "chore: local sync"
 
 echo ""
-echo "=== Step 2: k3s pod push → origin ==="
-kubectl exec -n "$NAMESPACE" "$POD" -c "$CONTAINER" -- sh -c '
-  cd /app/agents
-  git push origin main 2>&1
-' 2>&1 || {
-  echo "Push to origin failed. Trying pull --rebase first..."
-  kubectl exec -n "$NAMESPACE" "$POD" -c "$CONTAINER" -- sh -c '
-    cd /app/agents
-    git pull --rebase origin main 2>&1
-    git push origin main 2>&1
-  ' 2>&1
-}
+echo "=== 2. Push local → bare ==="
+git push k3s main
 
 echo ""
-echo "=== Done ==="
-echo "Local → k3s → origin synced."
+echo "=== 3. Pod: commit + pull from bare ==="
+kexec '
+cd /app/agents
+git add -A
+git diff --cached --quiet || git commit -m "chore(auto): pod sync"
+git fetch local-bare main
+git merge --no-edit local-bare/main || git reset --hard local-bare/main
+'
+
+echo ""
+echo "=== 4. Pod: push → bare + dell-laptop ==="
+kexec '
+cd /app/agents
+git push local-bare main
+git push origin main || echo "(origin push failed — non-fatal)"
+'
+
+echo ""
+echo "=== 5. Pull merged → local ==="
+git pull --no-rebase k3s main
+
+echo ""
+LOCAL=$(git rev-parse --short HEAD)
+POD_SHA=$(kexec 'cd /app/agents && git rev-parse --short HEAD')
+echo "=== Done: local=$LOCAL pod=$POD_SHA ==="
