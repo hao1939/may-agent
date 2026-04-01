@@ -6,3 +6,4 @@ node_modules
 dist
 pi-deps
 bundle
+litellm/github_copilot
