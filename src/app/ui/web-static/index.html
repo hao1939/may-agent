@@ -162,22 +162,14 @@
 
   <!-- Knowledge -->
   <div id="knowledge" class="hidden">
-    <!-- Overview cards -->
-    <div id="kb-overview" class="stats" style="margin-bottom: 16px;"></div>
-    <!-- Category tabs -->
-    <div class="filters" style="margin-bottom: 16px;">
-      <button class="ask-btn" onclick="loadKnowledge('index')" id="kb-index-btn" style="border-color:var(--accent);color:var(--accent)">Overview</button>
-      <button class="ask-btn" onclick="loadKnowledge('entries')" id="kb-entries-btn">Entries</button>
-      <button class="ask-btn" onclick="loadKnowledge('hypotheses')" id="kb-hypo-btn">Hypotheses</button>
-      <button class="ask-btn" onclick="loadKnowledge('experiments')" id="kb-exp-btn">Experiments</button>
-      <button class="ask-btn" onclick="loadKnowledge('library')" id="kb-lib-btn">Library</button>
-      <button class="ask-btn" onclick="loadKnowledge('skills')" id="kb-skills-btn">Skills</button>
-      <button class="ask-btn" onclick="loadKnowledge('workflows')" id="kb-wf-btn">Workflows</button>
-    </div>
-    <!-- List + detail split -->
+    <!-- Breadcrumb -->
+    <div id="kb-breadcrumb" style="margin-bottom: 12px; font-size: 13px; color: var(--fg2);"></div>
+    <!-- Split: file tree left, content right -->
     <div style="display: flex; gap: 16px; align-items: flex-start;">
-      <div id="knowledge-list" style="flex: 1; min-width: 0;"></div>
-      <div id="knowledge-detail" class="hidden" style="flex: 1; min-width: 0; background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 16px; max-height: 80vh; overflow-y: auto; position: sticky; top: 20px;"></div>
+      <div id="kb-tree" style="min-width: 280px; max-width: 350px;"></div>
+      <div id="kb-content" style="flex: 1; min-width: 0; background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 16px; max-height: 85vh; overflow-y: auto;">
+        <span style="color:var(--fg2)">Select a file to view</span>
+      </div>
     </div>
   </div>
 </div>
