@@ -1,5 +1,5 @@
 /**
- * Console UI — renders RunnerEvents to stdout.
+ * Console UI — renders events to stdout.
  *
  * Chat mode: show primary session events bright, everything else hidden.
  * Daemon mode: show everything dimmed.
@@ -11,7 +11,7 @@ const DIM = "\x1b[2m";
 const RESET = "\x1b[0m";
 
 export function attachConsoleUI(bus: EventBus, getPrimarySessionId?: () => string | null, chatMode?: boolean): void {
-  bus.on((event) => {
+  bus.subscribe((event) => {
     const primarySid = getPrimarySessionId?.() ?? null;
 
     // Chat mode: only show primary session + notifications
