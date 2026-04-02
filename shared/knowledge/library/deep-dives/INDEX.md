@@ -1,6 +1,6 @@
 # Deep Dives Index
 
-> 74 research deep dives, cross-reference syntheses, and reference documents.  
+> 75 research deep dives, cross-reference syntheses, and reference documents.  
 > Last updated: 2026-04-02 | Maintained by Scout
 
 ## How to Use This Index
@@ -34,6 +34,7 @@
 | [dd484](dd484-orgagent-company-hierarchy-mas.md) | OrgAgent — Company-Style Hierarchy for MAS ★★★★★ | 3-layer hierarchy: governance→execution→compliance; +102% F1, -74% tokens |
 | [dd485](dd485-cascade-scoped-communication-replanning.md) | CASCADE — Budgeted Scoped Communication ★★★★★ | Communication scope as first-class control variable; gate-triggered escalation |
 | [dd487](dd487-role-differentiation-multilevel-selection.md) | Role Differentiation via Multi-Level Selection ★★★½ | Tragedy-of-commons avoidance through emergent role specialization |
+| [dd488](dd488-camp-case-adaptive-multi-agent-panel.md) | CAMP — Case-Adaptive Multi-Agent Panel ★★★★ | Dynamic panel assembly + three-valued voting + hierarchical resolution |
 
 ### Multi-Agent Debate
 | File | Title | Key Finding |

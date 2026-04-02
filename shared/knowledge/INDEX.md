@@ -89,6 +89,8 @@ The core theory chain. Start with SYNTH-001 (`library/deep-dives/synth-decision-
 | H-047 | Memory Lifecycle Gap — no forgetting → inverted-U knowledge utilization | Proposed (DD#486 + H-043) | knowledge/hypotheses/H-047-memory-lifecycle-gap.md |
 | H-048 | Dynamic Topology Optimization — real-time R estimation and structure adjustment | Proposed (HERA + SYNTH-001) | knowledge/hypotheses/H-048-dynamic-topology-optimization.md |
 | H-049 | Adaptive Memory Curation via Skill Evolution — memory ops as learnable skills | Proposed (MemSkill + H-043 + H-047) | knowledge/hypotheses/H-049-adaptive-memory-curation-skill-evolution.md |
+| H-050 | Structured Abstention — three-valued voting (K/R/N) outperforms binary in MAS | Proposed (DD#488 CAMP) | knowledge/hypotheses/H-050-structured-abstention.md |
+| H-051 | Abstention Rate as Runtime R-Estimator — confidence/abstention patterns estimate R in real-time | Proposed (H-050 × H-041) | knowledge/hypotheses/H-051-abstention-r-estimator.md |
 
 ### Agent Architecture & Behavior
 
@@ -111,6 +113,7 @@ The core theory chain. Start with SYNTH-001 (`library/deep-dives/synth-decision-
 | H-011 | Coordination phase transition at ~50% capacity | Proposed | knowledge/hypotheses/H-011-coordination-phase-transition.md |
 | H-012 | Agent persona drift is a coordination cost | Proposed | knowledge/hypotheses/H-012-persona-drift-coordination-cost.md |
 | H-014 | Performance gap is a delegation quality problem | Proposed (partial support) | knowledge/hypotheses/H-014-delegation-quality-gap.md |
+| H-0180 | MCP vs CLI architecture — CLI-first tool calling may outperform MCP for our system | Active | knowledge/hypotheses/H-0180-mcp-vs-cli-architecture.md |
 
 ### Untested (Skills & Learning)
 
@@ -149,6 +152,7 @@ The core theory chain. Start with SYNTH-001 (`library/deep-dives/synth-decision-
 | EXP-011 | Decision topology prediction accuracy (retrospective + prospective) | Phase 1 Complete | **Supported** — eliminable ratio R predicts workflow benefit/cost (4/4, ρ=0.95) | knowledge/experiments/EXP-011/ |
 | EXP-012 | Gated exploration soft workflow for optimizer (H-041 P3) | Ready | — (awaiting execution) | knowledge/experiments/EXP-012/ |
 | EXP-013 | Workflow enforcement for escalation (two-phase vs none) | **Complete** | **0%→100% with workflow** (R≈0.80, n=6) → KE-015 | knowledge/experiments/EXP-013/ |
+| EXP-014 | incremental-context-loading scorer bug fix | **Complete** | Infrastructure fix — scorer bug, not agent behavior | knowledge/experiments/EXP-014/ |
 
 ## Operational (not knowledge — reference only)
 
@@ -183,8 +187,11 @@ Collected by scout, amy, amy-kimi agents. Each item is a potential source for hy
 | library/people.md | Notable researchers | 71 lines |
 | library/reddit.md | Reddit insights | 165 lines |
 | library/insights-cn.md | Curated knowledge index (Chinese) — security, architecture, agent patterns | 286 lines |
-| library/deep-dives/ | Detailed research reports + cross-reference syntheses | 68 files |
-| library/deep-dives/synth-decision-topology-theory-unified.md | **SYNTH-001**: Unified Decision Topology Theory synthesis — master reference for the H-035→H-046 theory chain | 150 lines |
-| library/deep-dives/cross-ref-hera-pare-hippocamp-decision-topology.md | Cross-ref: HERA + Pare + HippoCamp → Decision Topology. 3 new external validations, R-spectrum unification, seeds H-048 | 181 lines |
+| library/deep-dives/ | Detailed research reports + cross-reference syntheses | 75+ files |
+| library/deep-dives/synth-decision-topology-theory-unified.md | **SYNTH-001**: Unified Decision Topology Theory synthesis — master reference for the H-035→H-050 theory chain (5 independent + 6 corroborating validations; see maturity audit) | 155+ lines |
+| library/deep-dives/r-estimation-heuristic.md | **R-Estimation Heuristic**: 3-question practical guide for estimating eliminable ratio R before task execution. Draft — needs EXP-012 calibration | 88 lines |
+| library/deep-dives/cross-ref-promem-memory-lifecycle.md | Cross-ref: ProMem iterative extraction → H-043/H-047. Practical memory improvement, NOT a new hypothesis | 58 lines |
+| library/deep-dives/cross-ref-hera-pare-hippocamp-decision-topology.md | Cross-ref: HERA + Pare + HippoCamp → Decision Topology. 3 external validations, R-spectrum unification, seeds H-048 | 181 lines |
+| library/deep-dives/cross-ref-camp-deliberation-decision-topology.md | Cross-ref: CAMP deliberation architecture → Decision Topology. Three-valued abstention maps to eliminable/essential/navigation. Seeds H-050, H-051 | 106 lines |
 
 See library/README.md for details. Raw archives stay agent-local.

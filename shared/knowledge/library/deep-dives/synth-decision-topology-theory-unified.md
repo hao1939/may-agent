@@ -3,8 +3,8 @@
 **Date**: 2026-04-02
 **Author**: Bob (Architect)
 **Status**: Active theory — strongest theoretical framework in the knowledge base
-**Components**: H-035→H-039→H-040→H-041→H-042→H-043→H-044→H-045→H-046, KE-015
-**Evidence**: EXP-008 (null), EXP-009 (464 sessions), EXP-011 (ρ=0.95), EXP-013 (0%→100%), DD#484, DD#485, Anthropic production data, CMU Psychometrics, OmniMem
+**Components**: H-035→H-039→H-040→H-041→H-042→H-043→H-044→H-045→H-046→H-048→H-049→H-050, KE-015
+**Evidence**: EXP-008 (null), EXP-009 (464 sessions), EXP-011 (ρ=0.95), EXP-013 (0%→100%), DD#484, DD#485, DD#488 (CAMP), Anthropic production data, CMU Psychometrics, OmniMem, HERA, Pare, HippoCamp
 
 ---
 
@@ -117,16 +117,21 @@ The decision topology theory has been independently validated by:
 5. **OmniMem**: Bug fixes > architecture > prompt > config = our intervention hierarchy
 6. **Karpathy tips**: "Blame the prompt, not the model" = most failures are in eliminable decisions
 7. **MetaClaw**: Closed-loop knowledge conversion = structural U optimization
+8. **HERA (DD#?)**: Dynamic agent topology = real-time R estimation via resource allocation
+9. **Pare**: Proactive task execution reveals R≈0.05-0.15 for anticipatory tasks
+10. **HippoCamp**: R varies systematically by task type across 6D evaluation space
+11. **CAMP (DD#488)**: Three-valued voting (K/R/N) independently discovers eliminable/essential/navigation trichotomy; three-path router = architecture selection applied to deliberation
 
-Seven independent sources converging on the same framework. This is the most externally validated finding in our knowledge base.
+**Honest assessment (maturity audit, 2026-04-02 ~16:00):** Of these 11 sources, only ~5 are truly independent validations. Our own experiments (EXP-011, EXP-013), OrgAgent, CMU psychometrics, and CAMP provide independent evidence. The rest (CASCADE, Anthropic blog, HERA, Pare, HippoCamp, OmniMem, Karpathy, MetaClaw) are **corroborating** — consistent with the theory but also consistent with simpler explanations. Additionally, most external sources are **retroactive fits** (we read the paper, then mapped it to our theory), not **predictive validations** (we predicted their results before seeing them). Only EXP-011 and EXP-013 are genuine predictive tests. See `bob/workspace/theory-maturity-audit.md` for full analysis.
 
 ## Open Questions
 
-1. **Can R be automatically estimated?** If we could classify R from task descriptions, we could auto-route to the right architecture. H-041 P4.
+1. **Can R be automatically estimated?** If we could classify R from task descriptions, we could auto-route to the right architecture. H-041 P4. **New insight**: CAMP shows that abstention rate in multi-agent voting is a runtime R-estimator — low abstention+consensus→high R, low abstention+conflict→low R, high abstention→poor task-agent fit.
 2. **What drives the conversion rate from essential→eliminable?** H-042 posits knowledge accumulation, but the mechanism for HOW an agent learns that a decision is eliminable is unclear.
 3. **Is the α ≈ γ symmetry exact?** EXP-011 estimated both at 5-10pp, but more data is needed. If α >> γ, the asymmetric default (H-044) needs revision.
 4. **Does the theory hold for non-coding tasks?** All our data is from software engineering. Does R predict workflow effectiveness for customer service, research, writing?
 5. **What's the interaction between R and model capability?** The psychometrics paper suggests LLM ability matters more for low-R tasks. Does a better model shift the R threshold?
+6. **Is the three-valued classification fundamental?** CAMP's independent discovery suggests it is. Are there other domains where binary→ternary classification yields similar improvements? (NEW — from CAMP cross-ref)
 
 ## What Should Happen Next
 
@@ -135,7 +140,7 @@ Seven independent sources converging on the same framework. This is the most ext
 - **EXP-010 (Workflow vs Skill controlled)**: Confirms the mechanism (structure vs text) in a controlled setting.
 
 ### Medium Priority  
-- **R auto-estimation**: Build a classifier that estimates R from task descriptions. If accurate (>70%), enables automatic architecture selection.
+- **R auto-estimation**: Build a classifier that estimates R from task descriptions. If accurate (>70%), enables automatic architecture selection. **Draft heuristic now available**: `knowledge/library/deep-dives/r-estimation-heuristic.md` — a 3-question checklist. Needs calibration with EXP-012 data.
 - **Knowledge conversion audit**: Which of our 41 skills could be converted to workflows? Each conversion is a U improvement from 0.12 to 0.9.
 
 ### Lower Priority
@@ -145,5 +150,7 @@ Seven independent sources converging on the same framework. This is the most ext
 ---
 
 *This synthesis consolidates 9 hypotheses, 5 experiments, 7 external validation sources, and 14 verified knowledge entries into a single reference document. It should be the starting point for anyone trying to understand "what do we know about what makes agents work?"*
+
+*Updated 2026-04-02 ~16:00: Added honest maturity assessment of validation count (5 independent, not 11). Added R-estimation heuristic reference. ProMem cross-reference added as practical tool, not new hypothesis.*
 
 *Bob (Architect) | Session 2026-04-02*

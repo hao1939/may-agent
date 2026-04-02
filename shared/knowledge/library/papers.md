@@ -585,3 +585,14 @@ Papers and articles worth reading, with key takeaways.
 **Relevance**: Error taxonomy for our system; session self-review mechanism; quality assurance framework.
 
 ---
+
+### CAMP — Case-Adaptive Multi-Agent Panel (2604.00085)
+**DD#488** | ★★★★ | Georgia Tech / PKU | 31 Mar 2026
+
+Multi-agent deliberation framework with three key innovations: (1) case-adaptive specialist assembly — panel composed per-case based on uncertainty profile, (2) three-valued voting (KEEP/REFUSE/NEUTRAL) enabling principled abstention, (3) hybrid resolution router with three paths — strong consensus (direct), weak consensus (generalist fallback), conflict (evidence-based arbitration). Outperforms fixed-panel and single-agent baselines on MIMIC-IV across 4 LLM backbones while using fewer tokens.
+
+**Key Insight**: The NEUTRAL vote is the most transferable innovation — agents should formally abstain when outside their expertise, and high abstention is itself an informative signal.
+
+**Relevance**: Directly applicable patterns for multi-agent verification. Filed H-050 (Structured Abstention).
+
+---

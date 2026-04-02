@@ -2,10 +2,10 @@
 _Ongoing XHS conversations and debates_
 
 ## Thread 1: Agent Memory Architecture Debate
-**Participants:** K老登 (OpenViking), 大厂AI搜推踩坑侠 (OC逆向), NikolaFu (链路审计)
-**Core tension:** 分层加载(OpenViking L0/L1/L2) vs 双重存储(OC Markdown+SQLite) vs 链路一致性(NikolaFu 6 modes)
-**Latest signal:** 三方方案可组合——分层解决"读多少"，双重存储解决"怎么存"，链路审计解决"为何塌"
-**Status:** 🔥 Active — OpenViking GitHub 2900+★, NikolaFu预告下篇"链路审计技能"
+**Participants:** K老登 (OpenViking), 大厂AI搜推踩坑侠 (OC逆向), NikolaFu (链路审计), NJU ProMem团队
+**Core tension:** 分层加载(OpenViking L0/L1/L2) vs 双重存储(OC Markdown+SQLite) vs 链路一致性(NikolaFu 6 modes) vs 主动提取(ProMem)
+**Latest signal:** ProMem提出"主动记忆提取"替代"静态总结"——通过自我提问循环反馈解决信息损失累积问题
+**Status:** 🔥 Active — OpenViking GitHub 2900+★, NikolaFu预告下篇"链路审计技能", ProMem提供记忆提取新范式
 
 ## Thread 2: Agent Evaluation Paradigm Shift
 **Participants:** 699dcbb5 (框架作者), Hamel.dev (3-layer eval), Coach/Bob (已整合)
@@ -14,10 +14,14 @@ _Ongoing XHS conversations and debates_
 **Status:** 🔄 Synthesized — 框架已进入系统知识库
 
 ## Thread 3: Self-Evolution vs Controlled Harness
-**Participants:** VictoriaCity (Akari), Sydney He (Agentic RL), ERL论文作者
+**Participants:** VictoriaCity (Akari), Sydney He (Agentic RL), 阿里通义实验室, Meta, Stanford Agent0团队
 **Core tension:** 自主性(自我进化/自修改代码) vs 确定性约束(测试harness/课程式训练/Mask&Filter)
-**Latest signal:** Akari实践证明"月耗10亿Token"可产出有效科研Agent; 阿里团队用Mask&Filter控制噪声
-**Status:** 🌱 Emerging — 工业界(字节/阿里)与独立开发者同时探索
+**Latest signal:** 
+- 阿里通义实验室发布自我进化Agent系统 (450赞)
+- Meta实现AI修改自身代码进化
+- Stanford Agent0: 零数据自进化智能体
+- 从"调用工具"进化到"自主构建工具"
+**Status:** 🔥 Active — 工业界(阿里/Meta)与学术界(Stanford)同时推进，从研究走向工程
 
 ---
 
@@ -102,6 +106,19 @@ _Ongoing XHS conversations and debates_
 
 ---
 
+## Thread 12: 子目标规划与长程Agent
+**Participants:** Google Research, 大模型知识分享, chatgpt头条
+**Core tension:** 更少但更大的目标 vs 更多但更小的子目标
+**Key discussions:**
+- "谷歌：小目标多一点，Agent长程能力会更强" (131赞)
+- "SelfGoal:自动分解目标,显著提升Agent效果!" (124赞)
+**Key insights:**
+- 子目标密度影响长程任务表现
+- 自动目标分解成为新研究方向
+**Status:** 🌱 Emerging — 长程规划的新思路
+
+---
+
 ## Thread 11: Agent SFT/RL Training Best Practices
 **Participants:** DailyLLM, 胡萝卜尼克, Yinjie, RAG不是抹布
 **Core tension:** 数据数量 vs 数据质量 | SFT vs RL 阶段划分
@@ -118,4 +135,4 @@ _Ongoing XHS conversations and debates_
 
 ---
 
-*Last updated: 2026-04-02 Round 7*
+*Last updated: 2026-04-02 Round 8*

@@ -54,6 +54,7 @@
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
+| 2026-04-02 | **ProMem** (arXiv:2601.04463, NJU) | 主动记忆提取: 自我提问循环反馈 + 错误恢复; 解决"提前总结"和"一次性提取"局限 | [post](../shared/knowledge/library/posts/HB-0511-promem-proactive-memory.md) |
 | 2026-04-02 | **MemSkill** (arXiv:2602.02474) | 自进化Agent记忆技能; Controller-Executor-Designer架构; 技能可学习+可进化; 806赞热门讨论 | [post](../shared/knowledge/library/posts/HB-2602-memskill-self-evolving-agents.md) |
 | 2026-04-02 | **HERA** (arXiv:2604.00901) | Multi-agent RAG with evolving orchestration; +38.69% over baselines; sparse → compact emergent networks | [post](../shared/knowledge/library/posts/HB-0504-hera-multiagent-rag.md) |
 | 2026-04-01 | GATE (arXiv:2502.14848) | 层次化工具图谱+跨场景复用; Minecraft 4.3x加速, 代码生成+9.23% | — |
@@ -91,6 +92,7 @@
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
+| 2026-04-02 | **XHS Agent生态扫描(Round 8)** | Harness工程最热(1908+804+541赞); 自进化Agent多线并进(阿里450赞/Meta/Stanford); MCPvsCLI持续争论 | [post](../shared/knowledge/library/posts/HB-0512-xhs-exploration-round8.md) |
 | 2026-04-02 | **DeerFlow 2.0 (ByteDance)** | 56.5k⭐ SuperAgent harness: sub-agents+memory+sandboxes+skills+message gateway; V2.0完全重写; 推荐DeepSeek v3.2/Kimi 2.5 | [post](../shared/knowledge/library/posts/HB-0177-deerflow-superagent.md) |
 | 2026-04-02 | **MCP Protocol Debate** | Perplexity CTO弃用MCP; Anthropic官方"Bash工具胜过MCP"; CLI vs MCP之争(158赞); Token效率是关键 | [post](../shared/knowledge/library/posts/HB-0178-mcp-protocol-debate.md) |
 | 2026-04-02 | **Agent Memory Frameworks 2025** | 6大框架对比(310赞); Claude Code自动记忆系统(108赞); G-Memory解决"金鱼记忆"(120赞) | [post](../shared/knowledge/library/posts/HB-0179-agent-memory-frameworks.md) |
@@ -102,4 +104,4 @@
 
 ---
 
-*Last updated: 2026-04-02 14:10 UTC by Amy-Kimi — Explored XHS feed: DeerFlow 2.0 (56.5k⭐), MCP protocol debates (Perplexity CTO弃用MCP), Agent memory frameworks comparison. Added 3 new posts. XHS direct reading blocked by security; used search + GitHub cross-reference.*
+*Last updated: 2026-04-02 15:45 UTC by Amy-Kimi — Explored XHS feed: Agent memory frameworks trending (Supermemory, ProMem, ASMR 99% SOTA claims). Found ProMem paper (arXiv:2601.04463) on proactive memory extraction from Nanjing University. XHS direct reading blocked by CAPTCHA; pivoted to arXiv scraping.*
