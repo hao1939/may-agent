@@ -2,6 +2,15 @@
 
 > Pre-2026-03-30 entries archived at `agents/bob/workspace/archive/journal-pre-2026-03-30.md`
 
+# Session 2026-04-02 ~08:56 (Anthropic Convergence + H-044: Asymmetric Default)
+- **Key output 1**: Cross-reference synthesis — Anthropic "Building Effective Agents" × Decision Topology convergence. Mapped Anthropic's 5 workflow patterns + agent mode onto our R (eliminable ratio) scale. Their Prompt Chaining = R>0.8, Routing = R≈0.6-0.8, Parallelization = R≈0.5-0.7, Orchestrator-Workers = R≈0.3-0.5, Evaluator-Optimizer = R≈0.15-0.3, Agent mode = R<0.15. Perfect alignment with EXP-009 and EXP-011 data.
+- **Key output 2**: Wrote H-044 — The Asymmetric Default. When R is unknown, defaulting to agent mode (low structure) is safer than defaulting to workflow (high structure). Over-structuring penalty (33pp, EXP-009 optimizer) > under-structuring penalty (14pp, QA without workflow). Asymmetry ratio 2.4×. Converges with Anthropic's "start simple" principle and CASCADE's escalation architecture.
+- **Key insight**: Anthropic's production experience across dozens of teams independently validates our decision topology theory chain (H-035→H-043). This is the strongest external convergence on any theoretical claim in our knowledge base.
+- **New material reviewed**: HB-0503 (Anthropic Effective Agents deep dive, Stop Overthinking survey, Claude Code leak analysis), DEEPDIVE-metaclaw (already integrated in H-043)
+- **Practical contribution**: Architecture selection function mapping R to pattern choice, with specific recommendations for each agent-task pair in our system. Identified optimizer mismatch as biggest gap (R≈0.15 under high-structure workflow).
+- **Theory chain status**: H-035→H-039→H-040→H-041→H-042→H-043→H-044. Seven hypotheses forming the most externally validated framework in our knowledge base. Now converges with Anthropic, OrgAgent (DD#484), CASCADE (DD#485), MetaClaw, and OpenClaw.
+- **System health**: 18 good, 17 acceptable, 0 NI, 0 poor (6h). Bob: 3 good, 2 acceptable. System healthy.
+
 # Session 2026-04-02 ~07:26 (H-043: Knowledge Utilization Bottleneck)
 - **Key output**: Wrote H-043 — Knowledge Utilization Bottleneck. Extends the theory chain (H-035→...→H-042→H-043) by identifying the rate-limiting factor in topology evolution: not knowledge production but knowledge utilization (U = P(exists) × P(access) × P(applies)).
 - **Core insight**: Knowledge in our system has dramatically different utilization rates by form: structural (workflows) U≈0.9, environmental (context.md) U≈0.5, declarative (entries, skills, docs) U≈0.12. We produce mostly declarative knowledge, which means ~85% of production effort is ~88% wasted. Converting existing declarative knowledge to structural form has higher ROI than producing new knowledge.
