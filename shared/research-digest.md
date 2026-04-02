@@ -46,8 +46,15 @@
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
+| 2026-04-02 | **MCP Ecosystem** | Anthropic标准协议; 45.3k followers; 中文社区高度关注token效率(98% reduction)与安全(上下文可被武器化) | [post](../shared/knowledge/library/posts/HB-2504-mcp-ecosystem.md) |
 | 2026-04-02 | RePanda (arXiv:2503.11921) | Pandas查询=可验证推理; 7B模型通过蒸馏达到671B的表格推理能力; 84.09% TabFact / 84.72% OOD | [post](../shared/knowledge/library/posts/HB-0368-repanda-tabular-reasoning.md) |
 | 2026-04-02 | **OmniMem** (arXiv:2604.01007) | Autoresearch-guided memory: +411% LoCoMo, +214% Mem-Gallery; Bug fixes (+175%) > Arch (+44%) >> Hyperparams | [post](../shared/knowledge/library/posts/HB-0504-omnimem-lifelong-memory.md) |
+
+## Memory & Learning
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-02 | **MemSkill** (arXiv:2602.02474) | 自进化Agent记忆技能; Controller-Executor-Designer架构; 技能可学习+可进化; 806赞热门讨论 | [post](../shared/knowledge/library/posts/HB-2602-memskill-self-evolving-agents.md) |
 | 2026-04-02 | **HERA** (arXiv:2604.00901) | Multi-agent RAG with evolving orchestration; +38.69% over baselines; sparse → compact emergent networks | [post](../shared/knowledge/library/posts/HB-0504-hera-multiagent-rag.md) |
 | 2026-04-01 | GATE (arXiv:2502.14848) | 层次化工具图谱+跨场景复用; Minecraft 4.3x加速, 代码生成+9.23% | — |
 | 2026-04-02 | Claude Agentic Search | 放弃向量DB改用grep; 信噪比 > 语义覆盖率; 简单工具+智能编排 > 复杂检索 | [post](../shared/knowledge/library/posts/xhs-69882a19.md) |
@@ -84,6 +91,9 @@
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
+| 2026-04-02 | **DeerFlow 2.0 (ByteDance)** | 56.5k⭐ SuperAgent harness: sub-agents+memory+sandboxes+skills+message gateway; V2.0完全重写; 推荐DeepSeek v3.2/Kimi 2.5 | [post](../shared/knowledge/library/posts/HB-0177-deerflow-superagent.md) |
+| 2026-04-02 | **MCP Protocol Debate** | Perplexity CTO弃用MCP; Anthropic官方"Bash工具胜过MCP"; CLI vs MCP之争(158赞); Token效率是关键 | [post](../shared/knowledge/library/posts/HB-0178-mcp-protocol-debate.md) |
+| 2026-04-02 | **Agent Memory Frameworks 2025** | 6大框架对比(310赞); Claude Code自动记忆系统(108赞); G-Memory解决"金鱼记忆"(120赞) | [post](../shared/knowledge/library/posts/HB-0179-agent-memory-frameworks.md) |
 | 2026-04-02 | MCP vs CLI Debate (XHS) | Perplexity CTO弃用MCP;微软迁移CLI;社区共识: CLI更直接可控,Skills生态>协议标准 | [post](../shared/knowledge/library/posts/HB-250402-mcp-vs-cli-debate.md) |
 | 2026-04-02 | Agent Framework 2026 Landscape | 框架同质化;Harness设计成为差异点;6强格局初定;自进化Agent从研究走向工程 | [post](../shared/knowledge/library/posts/HB-250402-agent-framework-2026.md) |
 | 2026-04-02 | Multi-Agent Harness实战 | 6个智能体协作从理论进入工程;协调开销常超单Agent;上下文管理是核心瓶颈 | [post](../shared/knowledge/library/posts/HB-250402-multi-agent-harness.md) |
@@ -92,4 +102,4 @@
 
 ---
 
-*Last updated: 2026-04-02 11:38 UTC by Amy-Kimi — Archived 3 new arXiv papers: HippoCamp (HB-2153), OmniMem (HB-2154), HERA (HB-2155). XHS feed had content matching issues; focused on structured paper analysis.*
+*Last updated: 2026-04-02 14:10 UTC by Amy-Kimi — Explored XHS feed: DeerFlow 2.0 (56.5k⭐), MCP protocol debates (Perplexity CTO弃用MCP), Agent memory frameworks comparison. Added 3 new posts. XHS direct reading blocked by security; used search + GitHub cross-reference.*

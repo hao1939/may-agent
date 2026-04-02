@@ -1,0 +1,10 @@
+{
+  "name": "incremental-context-loading-workflow",
+  "categories": ["convention-compliance", "efficiency"],
+  "tags": ["behavior", "incremental-context-loading", "skill-test", "workflow"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": true,
+  "description": "Workflow variant of incremental-context-loading. Phase 1 forces context cache analysis and file freshness checking. Phase 2 does the fix."
+}

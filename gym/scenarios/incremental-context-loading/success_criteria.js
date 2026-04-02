@@ -58,15 +58,41 @@ s.checkProduct("tests-would-pass", "The fixed cache.js has correct TTL logic", (
 s.checkBehavior("reads-context-cache-first", "Agent reads workspace/context-cache.md before source files", () => {
   if (!s.hasTranscript()) return true;
 
-  const contextCacheIdx = s.transcriptIndexOf(/context-cache\.md/);
-  if (contextCacheIdx === -1) return false; // Never read the context cache
+  // Collect all read() and bash() calls that touch files, in order
+  const allReads = s.toolCalls("read");
+  const allBash = s.toolCalls("bash");
+
+  // Find the callIndex of the first read/bash that references context-cache.md
+  let contextCacheIdx = Infinity;
+  for (const call of allReads) {
+    const p = String((call.arguments || {}).path || "");
+    if (p.includes("context-cache")) {
+      contextCacheIdx = Math.min(contextCacheIdx, call.callIndex);
+      break;
+    }
+  }
+  for (const call of allBash) {
+    const cmd = String((call.arguments || {}).command || "");
+    if (cmd.includes("context-cache") && (cmd.includes("cat ") || cmd.includes("head ") || cmd.includes("less "))) {
+      contextCacheIdx = Math.min(contextCacheIdx, call.callIndex);
+    }
+  }
+  if (contextCacheIdx === Infinity) return false; // Never read the context cache
 
   // Check that no large source files were read before the context cache
   const largeFiles = ["architecture.md", "api-reference.md", "server.js", "database.js"];
   for (const f of largeFiles) {
-    const fIdx = s.transcriptIndexOf(new RegExp(f.replace(".", "\\.")));
-    if (fIdx !== -1 && fIdx < contextCacheIdx) {
-      return false; // Read a large file before the context cache
+    for (const call of allReads) {
+      const p = String((call.arguments || {}).path || "");
+      if (p.includes(f) && call.callIndex < contextCacheIdx) {
+        return false; // Read a large file before the context cache
+      }
+    }
+    for (const call of allBash) {
+      const cmd = String((call.arguments || {}).command || "");
+      if (cmd.includes(f) && (cmd.includes("cat ") || cmd.includes("head ") || cmd.includes("less ")) && call.callIndex < contextCacheIdx) {
+        return false;
+      }
     }
   }
   return true;
@@ -107,7 +133,23 @@ s.checkBehavior("skips-unchanged-files", "Agent reads ≤2 of the 4 unchanged la
 // B3: Agent reads the changed file (cache.js)
 s.checkBehavior("reads-changed-file", "Agent reads src/cache.js (the changed file)", () => {
   if (!s.hasTranscript()) return true;
-  return s.transcriptContains(/cache\.js/);
+  
+  // Check read() calls for cache.js
+  const reads = s.toolCalls("read");
+  for (const call of reads) {
+    const p = String((call.arguments || {}).path || "");
+    if (p.includes("cache.js")) return true;
+  }
+  
+  // Check bash calls that read cache.js (cat, head, etc.)
+  const bashCalls = s.toolCalls("bash");
+  for (const call of bashCalls) {
+    const cmd = String((call.arguments || {}).command || "");
+    if (cmd.includes("cache.js")) return true;
+  }
+  
+  // Also check if any assistant message mentions cache.js (they might have read it via edit)
+  return s.anyMessageContains(/cache\.js/);
 });
 
 // B4: Agent mentions skipping or not needing to re-read unchanged files

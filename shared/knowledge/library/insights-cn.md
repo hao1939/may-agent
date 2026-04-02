@@ -1,5 +1,26 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #82 | 2026-03-06 explore×3 | posts: 977 | HB129-367+explore综合
+> Compact #82 | 2026-04-02 explore | posts: 979 | HB368-2602新增
+
+---
+
+## 2026-04-02 Session Highlights
+
+### 🔥 MemSkill: 自进化Agent记忆 (arXiv:2602.02474, XHS 806赞)
+- **核心创新**: 将记忆操作(提取/整合/修剪)重新定义为可学习、可进化的"记忆技能"
+- **架构**: Controller(选择技能) → Executor(执行) → Designer(进化技能集)
+- **关键洞察**: 不只是使用记忆，而是持续改进如何使用记忆
+- **关联**: 直接相关OpenClaw记忆架构 — 可考虑将记忆操作技能化
+
+### 🔌 MCP生态深度观察
+- **Status**: Anthropic标准协议，GitHub 45.3k followers，成为后端必备知识
+- **中文社区关注点**: 
+  - Token效率优化(讨论"降低98%开销"方案)
+  - 安全警示("上下文可被武器化")
+- **机会**: MCP兼容性可提升adoption，但token overhead是真实痛点
+
+### 📊 其他发现
+- OpenManus-RL: 4k⭐项目，专注LLM Agent的RL调优
+- 社区持续讨论Agent架构演进：StateGraph质疑声增多，轻量级方案受青睐
 
 ---
 

@@ -33,18 +33,19 @@ Each skill is an untested hypothesis: "doing X improves agent behavior in situat
 | coder-edit-discipline | Reading before editing prevents wrong edits | Yes — read-before-edit scenario | skills/coder-edit-discipline/SKILL.md |
 | ... | (38 more — see skills/LIBRARY.md for full list) | | |
 
-### Workflows (7)
+### Workflows (8)
 Structural enforcement patterns. More reliable than text rules (KE-002).
 
 | Workflow | Purpose | Verified? | Location |
 |----------|---------|-----------|----------|
-| two-phase | Separate analysis from action | Gym: 92-97% pass | workflows/two-phase.ts |
+| two-phase | Separate analysis from action | Gym: 92-97% pass, EXP-013: 0%→100% | workflows/two-phase.ts |
 | code-review-loop | Coder → QA → fix cycle with context passing | Not tested in production | workflows/code-review-loop.ts |
 | evidence-gate | Check briefs for evidence before sending | Gym: 5/5 pass, 6/6 reject | workflows/evidence-gate.ts |
 | context-learn | Extract knowledge from session transcripts | Deployed, LLM merge | workflows/context-learn.ts |
 | reviewed-delivery | Evidence-gate before sending briefs | Not tested | workflows/reviewed-delivery.ts |
 | predict-then-verify | Predict outcome, then verify | Not tested | workflows/predict-then-verify.ts |
 | skill-lifecycle | Install/test/promote skills | Not tested | workflows/skill-lifecycle.ts |
+| gated-exploration | Soft workflow for exploratory tasks — gate-based validation without step prescription | EXP-012 ready | workflows/gated-exploration.ts |
 
 ### Conventions
 Team behavioral rules. Adopted by convention, not verified by experiment.
@@ -63,41 +64,73 @@ Team behavioral rules. Adopted by convention, not verified by experiment.
 | patterns/patrol.md | Patrol pattern | ~30 | Untested |
 | patterns/transient-skill.md | Transient skill pattern | ~30 | Untested |
 
-## Hypothetical (specific testable claims)
+## Hypotheses (specific testable claims)
+
+> **Navigation guide**: Start with SYNTH-001 for the unified theory. Hypotheses below are grouped by theme. Archived hypotheses (refuted/superseded) are in `knowledge/archive/hypotheses/`.
+> **Last curated**: 2026-04-02. **Next curation**: 2026-04-16.
+
+### Decision Topology Theory (SYNTH-001)
+The core theory chain. Start with SYNTH-001 (`library/deep-dives/synth-decision-topology-theory-unified.md`), then individual hypotheses only if needed.
+
+| ID | Hypothesis | Status | Location |
+|----|-----------|--------|----------|
+| H-041 | **Decision Topology** — eliminable ratio R predicts workflow effectiveness (ρ=0.95) | Proposed (8+ sources, KE-015) | knowledge/hypotheses/H-041-decision-topology.md |
+| H-042 | Topology Evolution — R increases monotonically with knowledge accumulation | Proposed (6+ sources) | knowledge/hypotheses/H-042-topology-evolution.md |
+| H-043 | Knowledge Utilization Bottleneck — U = P(exists) × P(access) × P(applies) bounds R evolution | Proposed (5+ sources) | knowledge/hypotheses/H-043-knowledge-utilization-bottleneck.md |
+| H-044 | Asymmetric Default — default to less structure when R is unknown | Proposed (Anthropic + EXP-009) | knowledge/hypotheses/H-044-asymmetric-default.md |
+| H-045 | Sprint Contract Pattern — contracts convert essential→eliminable decisions (R-increasing) | Proposed | knowledge/hypotheses/H-045-sprint-contract-pattern.md |
+| H-039 | Decomposition Bottleneck — MAS ceiling set by orchestrator decomposition skill | Proposed (4+ sources) | knowledge/hypotheses/H-039-decomposition-bottleneck.md |
+| H-046 | Coupled Resource Channels — coupled work/coordination channels drive specialization | Proposed (DD#487) | knowledge/hypotheses/H-046-coupled-resource-channels.md |
+
+### Memory & Knowledge Management
+
+| ID | Hypothesis | Status | Location |
+|----|-----------|--------|----------|
+| H-047 | Memory Lifecycle Gap — no forgetting → inverted-U knowledge utilization | Proposed (DD#486 + H-043) | knowledge/hypotheses/H-047-memory-lifecycle-gap.md |
+| H-048 | Dynamic Topology Optimization — real-time R estimation and structure adjustment | Proposed (HERA + SYNTH-001) | knowledge/hypotheses/H-048-dynamic-topology-optimization.md |
+| H-049 | Adaptive Memory Curation via Skill Evolution — memory ops as learnable skills | Proposed (MemSkill + H-043 + H-047) | knowledge/hypotheses/H-049-adaptive-memory-curation-skill-evolution.md |
+
+### Agent Architecture & Behavior
+
+| ID | Hypothesis | Status | Location |
+|----|-----------|--------|----------|
+| H-032 | Triadic Cognitive Architecture — System 1/2/3 reasoning | Active | knowledge/hypotheses/H-032-triadic-cognitive-architecture.md |
+| H-033 | Adaptive Reasoning Framework — difficulty-adaptive behavior | Active | knowledge/hypotheses/H-033-adaptive-reasoning-framework.md |
+| H-034 | Session fragility — exponential success decay on long tasks | Active | knowledge/hypotheses/H-034-session-fragility.md |
+| H-036 | Claude Code harness patterns — six-layer architecture audit | Active | knowledge/hypotheses/H-036-claude-harness-patterns.md |
+| H-037 | L3 Patrol Pattern — integrity monitoring | Untested | knowledge/hypotheses/H-037-patrol-pattern.md |
+| H-038 | Transient Skills — test-time training via strategy files | Untested | knowledge/hypotheses/H-038-transient-skill.md |
+| H-010 | Error amplification scales with agent sophistication | Proposed | knowledge/hypotheses/H-010-error-amplification.md |
+
+### System Design & Coordination
+
+| ID | Hypothesis | Status | Location |
+|----|-----------|--------|----------|
+| H-006 | Delegation quality is asymmetric by sender-receiver pair | Proposed | knowledge/hypotheses/H-006-delegation-asymmetry.md |
+| H-007 | Heartbeat architecture has a hidden coordination tax | Proposed | knowledge/hypotheses/H-007-heartbeat-coordination-tax.md |
+| H-011 | Coordination phase transition at ~50% capacity | Proposed | knowledge/hypotheses/H-011-coordination-phase-transition.md |
+| H-012 | Agent persona drift is a coordination cost | Proposed | knowledge/hypotheses/H-012-persona-drift-coordination-cost.md |
+| H-014 | Performance gap is a delegation quality problem | Proposed (partial support) | knowledge/hypotheses/H-014-delegation-quality-gap.md |
+
+### Untested (Skills & Learning)
 
 | ID | Hypothesis | Status | Location |
 |----|-----------|--------|----------|
 | H-001 | Adversarial QA framing increases detection from 14% to >30% | Untested | knowledge/hypotheses/H-001.md |
 | H-002 | Weaker models benefit more from context.md | Untested | knowledge/hypotheses/H-002.md |
-| H-003 | Verification skill improves gym pass rate on verification scenarios | Untested | knowledge/hypotheses/H-003.md |
-| H-004 | Plan-once-amend skill improves blocker handling | **Refuted** | knowledge/hypotheses/H-004.md |
-| H-005 | Skill utilization self-locking — worked examples unlock skill effectiveness | **EXP-005 designed** | knowledge/hypotheses/H-005.md |
-| H-006 | Delegation quality is asymmetric by sender-receiver pair | Untested | knowledge/hypotheses/H-006-delegation-asymmetry.md |
-| H-007 | Heartbeat architecture has a hidden coordination tax (~20-30% overhead) | Untested | knowledge/hypotheses/H-007-heartbeat-coordination-tax.md |
-| H-008 | Static skills are a performance ceiling — skill annotations would break it | Untested | knowledge/hypotheses/H-008-skill-versioning.md |
-| H-009 | Evaluator drift is our biggest unmonitored risk | Untested | knowledge/hypotheses/H-009-evaluator-drift.md |
-| H-010 | Error amplification risk scales with agent sophistication | Proposed | knowledge/hypotheses/H-010-error-amplification.md |
-| H-011 | Multi-agent coordination undergoes phase transition at ~50% capability/capacity | Proposed | knowledge/hypotheses/H-011-coordination-phase-transition.md |
-| H-012 | Agent persona drift is a hidden coordination cost in MAS | Proposed | knowledge/hypotheses/H-012-persona-drift-coordination-cost.md |
-| H-013 | Hub-leaf performance gap is an information regime effect (sequential vs shared-memory) | **Weakly Refuted** (EXP-006 r≈0) | knowledge/hypotheses/H-013-information-regime-performance-gap.md |
-| H-014 | Performance gap is a delegation quality problem — call sessions degrade hub agents 33-51pp vs job sessions | Proposed (initial data supports) | knowledge/hypotheses/H-014-delegation-quality-gap.md |
-| H-032 | Triadic Cognitive Architecture — replace flat action lists with System 1 (fast)/System 2 (deliberate)/System 3 (meta-reasoning) | Active | knowledge/hypotheses/H-032-triadic-cognitive-architecture.md |
-| H-033 | Adaptive Reasoning Framework — DAST + TCA fusion for difficulty-adaptive agent behavior | Active | knowledge/hypotheses/H-033-adaptive-reasoning-framework.md |
-| H-034 | Session fragility — long-horizon tasks exhibit exponential success decay | Active | knowledge/hypotheses/H-034-session-fragility.md |
-| H-035 | The Boundedness Principle — agent performance is a function of task decomposition granularity, not model/context/delegation | Proposed (5 convergent sources) | knowledge/hypotheses/H-035-boundedness-principle.md |
-| H-036 | Claude Code harness patterns — six-layer harness architecture applicable to our system audit | Active | knowledge/hypotheses/H-036-claude-harness-patterns.md |
-| H-037 | L3 Patrol Pattern — dedicated integrity monitoring for semantic/coordination failures | Untested | knowledge/hypotheses/H-037-patrol-pattern.md |
-| H-038 | Transient Skills — test-time training via workspace strategy files | Untested | knowledge/hypotheses/H-038-transient-skill.md |
-| H-039 | The Decomposition Bottleneck — MAS quality ceiling is set by orchestrator decomposition skill, not agent capability (dual of Selection Bottleneck, subsumes H-035) | Proposed (4+ convergent sources) | knowledge/hypotheses/H-039-decomposition-bottleneck.md |
-| H-040 | The Reliability Inversion — eliminating agent decision points beats improving decision quality; explains why workflows > skills, bounded > unbounded, decomposition works | Proposed (6+ convergent sources, meta-principle) | knowledge/hypotheses/H-040-reliability-inversion.md |
-| H-041 | The Decision Topology — MAS quality = Structure × Scope × TaskFit; refines H-040 by classifying decisions as eliminable/essential/navigation; supported by EXP-009 (464 sessions) | Proposed (8+ convergent sources, operationalizes H-040) | knowledge/hypotheses/H-041-decision-topology.md |
-| H-042 | Topology Evolution — knowledge accumulation monotonically increases eliminable-decision fraction R, shifting optimal architecture from Mode B → Mode A over time; predicts phase transition at K* | Proposed (6+ convergent sources + longitudinal observation) | knowledge/hypotheses/H-042-topology-evolution.md |
-| H-043 | Knowledge Utilization Bottleneck — topology evolution rate is bounded by knowledge accessibility (U = P(exists) × P(access) × P(applies)), not knowledge quantity; structural form (U≈0.9) >> environmental (U≈0.5) >> declarative (U≈0.12); explains why optimizer stays flat despite growing knowledge base | Proposed (5+ convergent sources: KE-002, KE-007, KE-011, EXP-008 + external memory research) | knowledge/hypotheses/H-043-knowledge-utilization-bottleneck.md |
-| H-044 | Asymmetric Default — when task decision-landscape is unknown, defaulting to lower structure (agent mode) produces higher expected quality than defaulting to higher structure (workflow), because over-structuring cost (γ_eff) > under-structuring cost (α_eff); supported by EXP-009 asymmetry (33pp vs 14pp penalty) and Anthropic "start simple" production principle | Proposed (Anthropic convergence + EXP-009 + information-theoretic argument) | knowledge/hypotheses/H-044-asymmetric-default.md |
-| H-045 | Sprint Contract Pattern — negotiating testable success criteria before work begins converts interpretation decisions from essential to eliminable (R-increasing), extending KE-013's bounded-task quality advantage to tasks that can be bounded via contract | Proposed (Anthropic harness + H-041 integration) | knowledge/hypotheses/H-045-sprint-contract-pattern.md |
-| H-046 | Coupled Resource Channels — MAS with coupled work/coordination channels develop more robust specialization than decoupled systems; sessions balancing both deep work + shared artifacts outperform single-mode sessions | Proposed (DD#487 + system mapping) | knowledge/hypotheses/H-046-coupled-resource-channels.md |
-| H-047 | Memory Lifecycle Gap — agent systems without selective forgetting mechanisms experience degrading knowledge utilization as K grows; U follows inverted-U curve with K_peak; curation has higher ROI than new knowledge production past K_peak | Proposed (DD#486 + H-043 + Discovery #27/#28) | knowledge/hypotheses/H-047-memory-lifecycle-gap.md |
-| H-048 | Dynamic Topology Optimization — agent systems that dynamically estimate R during execution and adjust structure in real-time outperform static architectures on mixed-R tasks; extends H-041 to within-session temporal dimension; supported by HERA (arXiv:2604.00901) and EXP-013's two-phase pattern | Proposed (HERA + SYNTH-001 + H-041 + H-044) | knowledge/hypotheses/H-048-dynamic-topology-optimization.md |
+| H-003 | Verification skill improves gym pass rate | Untested | knowledge/hypotheses/H-003.md |
+| H-005 | Skill utilization self-locking — worked examples unlock effectiveness | EXP-005 designed | knowledge/hypotheses/H-005.md |
+| H-008 | Static skills are a performance ceiling | Proposed | knowledge/hypotheses/H-008-skill-versioning.md |
+| H-009 | Evaluator drift is our biggest unmonitored risk | Proposed | knowledge/hypotheses/H-009-evaluator-drift.md |
+
+### Archived (refuted or superseded — see `knowledge/archive/hypotheses/`)
+
+| ID | Hypothesis | Reason | Archive |
+|----|-----------|--------|---------|
+| H-004 | Plan-once-amend skill | **Refuted** by EXP-004 | knowledge/archive/hypotheses/H-004.md |
+| H-013 | Information regime performance gap | **Weakly refuted** by EXP-006 (r≈0) | knowledge/archive/hypotheses/H-013-information-regime-performance-gap.md |
+| H-035 | Boundedness Principle | **Superseded** by H-041 (Decision Topology) | knowledge/archive/hypotheses/H-035-boundedness-principle.md |
+| H-040 | Reliability Inversion | **Superseded** by H-041 (Decision Topology) | knowledge/archive/hypotheses/H-040-reliability-inversion.md |
 
 ## Experiments
 
