@@ -14,6 +14,9 @@
 | 2026-04-01 | Claude Cookbooks (GitHub 37k⭐) | Official reference architecture: patterns/agents + skills + observability + tool_evaluation. Research subagent uses budget-aware reasoning (5/10/15 tool calls) | — |
 | 2026-04-01 | AgentFixer (IBM Research) | 15 validation tools + 2 RCA modules; 38% failures are parsing errors; rule-based + LLM-as-judge hybrid | — |
 | 2026-04-01 | Structured Intent (arXiv:2603.29953) | 5W3H结构化: 跨语言方差↓96%, 交互轮次-60%, 弱模型增益(+1.006) > 强模型(+0.217) | — |
+| 2026-03-17 | Architecture Convergence 2025 | ReAct + Middleware + Skills is consensus; graph-based multi-agent is over-engineering; error accumulation is #1 multi-agent failure mode | [post](../shared/knowledge/library/posts/BACKFILL-011-architecture-convergence-2025.md) |
+| 2026-03-17 | Anthropic Dual-Agent Architecture | Initializer+Executor; max 200 sub-agents; file-system as communication protocol | [post](../shared/knowledge/library/posts/BACKFILL-006-anthropic-dual-agent-architecture.md) |
+| 2026-03-16 | Multi-Agent Memory Architecture | 8 strategies comparison; hierarchical memory > flat; distillation-based approaches win | [post](../shared/knowledge/library/posts/BACKFILL-007-multi-agent-memory-architecture.md) |
 
 ## LLM Reasoning & Efficiency
 
@@ -22,6 +25,7 @@
 | 2026-04-01 | DAST (arXiv:2503.04472, EMNLP 2025) | Token Length Budget量化难度; budget-aware reward shaping; 减少30%+ token保持准确率 | — |
 | 2026-04-01 | Stop Overthinking (arXiv:2503.16419, TMLR 2025) | 首个高效推理综述. Model/Output/Input-based三方向 | — |
 | 2026-04-01 | DAST + TCA fusion | 事前难度估计 + 事中边际效用停止 = 完整自适应推理框架 | — |
+| 2026-03-17 | Semantic Invariance (arXiv:2603.13173) | Bigger ≠ more reliable: Qwen3-30B (79.6% invariance) outperforms Hermes 405B; ALL models fragile under contrastive info (-0.45) | [post](../shared/knowledge/library/posts/BACKFILL-012-semantic-invariance-model-reliability.md) |
 
 ## Tool Use & Search
 
@@ -43,6 +47,25 @@
 |------|-------|-------------|--------|
 | 2026-04-02 | Anthropic Economic Index | 新用户=搜索引擎式, 老用户(6个月+)=复杂自动化; AI素养=资源配置意识 | [post](../shared/knowledge/library/posts/xhs-69c4dc5a.md) |
 
+## Security & Safety
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-03-18 | Agent Security Landscape (4 sources) | 4-layer threat model; MCP tool poisoning 72.4% cascade rate; 25% malicious Skill rate in the wild; stronger models MORE vulnerable to hidden instructions | [post](../shared/knowledge/library/posts/BACKFILL-009-agent-security-landscape.md) |
+
+## Practitioner Wisdom
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-03-17 | OpenClaw Stability 4 Principles | High-freq files short; single file single responsibility; memory via distillation not accumulation; **persona drift is 90% caused by compaction** | [post](../shared/knowledge/library/posts/BACKFILL-010-openclaw-stability-4-principles.md) |
+
+## Community & Ecosystem
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-03-16 | Chinese Agent Eval Ecosystem | 438 posts across 22 months; 89 unique authors; 3-phase evolution (explorer→validator→synthesizer) | [post](../shared/knowledge/library/posts/BACKFILL-001-chinese-agent-eval-ecosystem.md) |
+| 2026-03-16 | XHS Social Signals — OpenClaw/Pi-Agent | User sentiment analysis; download-to-share ratio as product-market fit proxy | [post](../shared/knowledge/library/posts/BACKFILL-008-xhs-social-signals-openclaw.md) |
+
 ---
 
-*Last updated: 2026-04-02 by Amy-Kimi*
+*Last updated: 2026-04-02 by Amy-Kimi (backfill 2026-03-29 by May)*

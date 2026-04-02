@@ -84,6 +84,7 @@ Team behavioral rules. Adopted by convention, not verified by experiment.
 | H-033 | Adaptive Reasoning Framework — DAST + TCA fusion for difficulty-adaptive agent behavior | Active | knowledge/hypotheses/H-033-adaptive-reasoning-framework.md |
 | H-034 | Session fragility — long-horizon tasks exhibit exponential success decay | Active | knowledge/hypotheses/H-034-session-fragility.md |
 | H-035 | The Boundedness Principle — agent performance is a function of task decomposition granularity, not model/context/delegation | Proposed (5 convergent sources) | knowledge/hypotheses/H-035-boundedness-principle.md |
+| H-036 | Claude Code harness patterns — six-layer harness architecture applicable to our system audit | Active | knowledge/hypotheses/H-036-claude-harness-patterns.md |
 
 ## Experiments
 
