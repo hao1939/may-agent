@@ -769,11 +769,15 @@ export function updateSessionDb(
   },
 ): void {
   const db = getDb(persistDir);
-  db.run(`UPDATE sessions SET status = ?, endedAt = ?, error = ?, outcome = ?, opCount = ? WHERE sessionId = ?`, [
+  // Use COALESCE for opCount so a later update without opCount doesn't overwrite
+  // a previous write that set it correctly. This prevents the race where manager
+  // sets opCount=15 and then DbWriter overwrites it with 0.
+  db.run(`UPDATE sessions SET status = ?, endedAt = COALESCE(?, endedAt), error = ?, outcome = COALESCE(?, outcome), opCount = CASE WHEN ? > opCount THEN ? ELSE opCount END WHERE sessionId = ?`, [
     fields.status,
     fields.endedAt ?? null,
     fields.error ?? null,
     fields.outcome ?? null,
+    fields.opCount ?? 0,
     fields.opCount ?? 0,
     sessionId,
   ]);
