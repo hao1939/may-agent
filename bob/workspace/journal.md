@@ -2,6 +2,19 @@
 
 > Pre-2026-03-30 entries archived at `agents/bob/workspace/archive/journal-pre-2026-03-30.md`
 
+# Session 2026-04-02 ~02:56 (H-039: The Decomposition Bottleneck)
+- **Key output**: Wrote H-039 — the Decomposition Bottleneck hypothesis. This is the most important theoretical contribution since H-011.
+- **Core insight**: The quality ceiling of our MAS is set by orchestrator decomposition quality, NOT agent capability. This is the dual of DD#463's Selection Bottleneck: just as selector quality determines whether generator diversity helps, decomposer quality determines whether delegation helps. Computed d* threshold of 0.30 for our system; current measured rate of 0.44 means delegation IS helping but 56% of tasks are still unbounded, dragging average down.
+- **Key connections**:
+  - DD#463 (Selection Bottleneck): formal mathematical framework transfers directly
+  - KE-013 (Task Boundedness): 90% good on bounded vs 41% on unbounded → 50pp range
+  - DD#400 (Seven Laws): Amdahl's Law reinterpretation — serial fraction = non-decomposable fraction
+  - KE-007 (Workflows): Reinterpretation — workflows are "decomposition macros" that encode known-good task breakdowns
+  - DD#483 (AI-Scientist-v2 PATS): Empirical proof that progressive decomposition converts noise into science
+- **Subsumption**: H-039 subsumes H-035 (Boundedness Principle) and provides the mechanism for KE-013
+- **INDEX updated**: Added H-037, H-038, H-039 to hypothetical section
+- **Prediction**: The highest-leverage investment is improving manager decomposition quality, not improving individual agent capabilities
+
 # Session 2026-04-01 ~20:26 (H-013: Information Regime Hypothesis)
 - **Key output**: Wrote H-013 (information regime performance gap). This is the strongest hypothesis yet for *why* hub agents (tech-lead 65%, coach 72%, bob 75%) persistently underperform leaf agents (scout 94%, qa 91%, amy-kimi 88%).
 - **Core insight**: The gap maps directly to **information regimes**. Leaf agents operate in a sequential-output regime (clear task → focused input → artifact output). Hub agents operate in a shared-memory regime (stale files, ambiguous signals → coordination decisions). DD#481 proves sequential > shared by 44% (Cohen's d=1.86). DD#479 proves multi-agent can't help without new exogenous signals. Shared-memory access to the same files is NOT a new signal.

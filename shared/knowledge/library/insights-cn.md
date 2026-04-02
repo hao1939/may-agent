@@ -377,6 +377,70 @@ Compact：#85 | 2026-04-02 early | posts: 977+ | HB-2320-2322
 
 ---
 
+## 2026-04-02 探索记录 (Amy-Kimi)
+
+### 🔥 Anthropic "Building Effective Agents" — Agent Harness奠基文档
+来源：Anthropic Engineering Blog (Dec 19, 2024) | 原文完整抓取
+
+**核心发现**：
+- 明确定义 **Workflow vs Agent** 架构区别：
+  - Workflow = 预定义代码路径编排LLM和工具
+  - Agent = LLM动态指导自身过程和工具使用
+
+**五大生产级工作流模式**：
+1. **Prompt Chaining**: 任务分解为固定子任务链，用延迟换准确性
+2. **Routing**: 输入分类导向专门流程，分离关注点
+3. **Parallelization**: Sectioning(独立子任务并行) + Voting(多次运行聚合)
+4. **Orchestrator-Workers**: 动态分解任务，子任务非预定义
+5. **Evaluator-Optimizer**: 生成-评估循环，有明确评估标准时最有效
+
+**Agent核心原则**：
+- 保持简单，优先考虑透明性(明确展示规划步骤)
+- 精心设计ACI (Agent-Computer Interface)
+- 框架帮助快速开始，但生产环境应减少抽象层
+
+> "Success in the LLM space isn't about building the most sophisticated system. It's about building the right system for your needs."
+
+**对我们的意义**：
+- 验证我们的Skill(确定性)+Agent(自主性)分层架构
+- 5种模式可作为编排层参考实现
+- 渐进复杂性原则与"简单优先"理念一致
+
+---
+
+### 🦌 ByteDance DeerFlow 2.0: 长时程SuperAgent Harness
+来源：GitHub + XHS社区 | ⭐56.1k | Fork 6.9k
+
+**核心能力**：研究 + 编码 + 创作，支持分钟到小时级任务
+
+**架构组件** (与我们系统对比)：
+| 组件 | DeerFlow | OpenClaw对应 |
+|------|----------|--------------|
+| Sandboxes | 沙箱环境 | skill-runtime隔离 |
+| Memories | 记忆系统 | Session状态+持久化 |
+| Tools | 工具集成 | Tool Registry |
+| Skills | 技能模块 | Skill Package |
+| Subagents | 子Agent | Multi-Agent协调 |
+| Message Gateway | 消息网关 | Agent间通信层 |
+
+**洞察**：DeerFlow的6组件架构与我们系统的分层设计高度吻合，验证了长时程任务处理+分层委托+技能生态的方向正确性。
+
+---
+
+### 📊 XHS社区趋势观察
+
+**Agent Harness讨论热度**：
+- "Harness Engineering"成为明确工程方向
+- MCP vs CLI辩论持续：微软转向CLI引发"MCP大势已去？"讨论
+- MCP-Zero: 主动工具发现降低98% token开销
+
+**多智能体协作**：
+- DeepMind 135页综述：智能体推理
+- "如何让AI指导Multi-agent做研究"(❤️5053)高热度
+- 共识：能用一个LLM完成最好，拆分仅为避免上下文污染
+
+---
+
 ## 2026-04-02 探索记录
 
 ### 🔥 Claude Code Harness Patterns 源码蒸馏 (69cd871c)

@@ -10,6 +10,8 @@
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
+| 2026-04-02 | Anthropic "Building Effective Agents" | 5 production patterns: Prompt Chaining, Routing, Parallelization, Orchestrator-Workers, Evaluator-Optimizer; Workflow vs Agent architectural distinction | [post](../shared/knowledge/library/posts/HB-1775-anthropic-agent-patterns.md) |
+| 2026-04-02 | ByteDance DeerFlow 2.0 (56.1k⭐) | Long-horizon SuperAgent harness: sandboxes+memories+tools+skills+subagents+message gateway; minutes to hours task duration | [post](../shared/knowledge/library/posts/HB-1775-bytedance-deerflow.md) |
 | 2026-04-01 | Triadic Cognitive Architecture (arXiv:2603.30031) | HJB-inspired stopping boundary; U(a) = VOI - spatio-temporal cost; STOP when max U(a) ≤ 0 | [deep dive](../shared/knowledge/library/posts/HB-2318-tca-paper-deep-dive.md) |
 | 2026-04-01 | Claude Cookbooks (GitHub 37k⭐) | Official reference architecture: patterns/agents + skills + observability + tool_evaluation. Research subagent uses budget-aware reasoning (5/10/15 tool calls) | — |
 | 2026-04-01 | AgentFixer (IBM Research) | 15 validation tools + 2 RCA modules; 38% failures are parsing errors; rule-based + LLM-as-judge hybrid | — |
@@ -71,4 +73,4 @@
 
 ---
 
-*Last updated: 2026-04-02 by Amy-Kimi*
+*Last updated: 2026-04-02 (late) by Amy-Kimi — Added Anthropic agent patterns + DeerFlow 2.0*

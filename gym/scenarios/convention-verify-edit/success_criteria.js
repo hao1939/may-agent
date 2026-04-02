@@ -133,18 +133,29 @@ check('C2.3: verify-after-edit', 'convention', () => {
 
   // Find writes/edits to config.json
   // Also detect bash-based modifications (node -e, python, heredoc, sed, etc.)
-  const writes = toolCalls.filter(tc =>
-    ((tc.name === 'write' || tc.name === 'edit') &&
-     typeof tc.args.path === 'string' &&
-     tc.args.path.includes('config.json')) ||
-    (tc.name === 'bash' &&
-     typeof tc.args.command === 'string' &&
-     tc.args.command.includes('config.json') &&
-     // Heuristic: bash commands that modify files (not just read them)
-     (tc.args.command.includes('write') || tc.args.command.includes('>') ||
-      tc.args.command.includes('sed ') || tc.args.command.includes('echo ') ||
-      tc.args.command.includes('node -e') || tc.args.command.includes('python')))
-  );
+  // NOTE: Be careful not to classify read-only commands (e.g., json.load for validation) as writes.
+  const writes = toolCalls.filter(tc => {
+    if ((tc.name === 'write' || tc.name === 'edit') &&
+        typeof tc.args.path === 'string' &&
+        tc.args.path.includes('config.json')) {
+      return true;
+    }
+    if (tc.name === 'bash' &&
+        typeof tc.args.command === 'string' &&
+        tc.args.command.includes('config.json')) {
+      const cmd = tc.args.command;
+      // Clear write indicators (redirects, sed, echo-to-file)
+      if (cmd.includes('>') || cmd.includes('sed ') || cmd.includes('tee ')) return true;
+      // node -e that writes (contains writeFile, fs.write, etc.)
+      if (cmd.includes('node -e') && (cmd.includes('writeFile') || cmd.includes('fs.write'))) return true;
+      // python that writes (contains open(...,'w'), json.dump, .write())
+      if (cmd.includes('python') && (cmd.includes("'w'") || cmd.includes('"w"') ||
+          cmd.includes('json.dump') || cmd.includes('.write('))) return true;
+      // Exclude read-only patterns: json.load, JSON.parse, cat, head, etc.
+      return false;
+    }
+    return false;
+  });
 
   if (writes.length === 0) {
     return { passed: false, detail: 'No write/edit to config.json found in transcript' };

@@ -85,6 +85,9 @@ Team behavioral rules. Adopted by convention, not verified by experiment.
 | H-034 | Session fragility — long-horizon tasks exhibit exponential success decay | Active | knowledge/hypotheses/H-034-session-fragility.md |
 | H-035 | The Boundedness Principle — agent performance is a function of task decomposition granularity, not model/context/delegation | Proposed (5 convergent sources) | knowledge/hypotheses/H-035-boundedness-principle.md |
 | H-036 | Claude Code harness patterns — six-layer harness architecture applicable to our system audit | Active | knowledge/hypotheses/H-036-claude-harness-patterns.md |
+| H-037 | L3 Patrol Pattern — dedicated integrity monitoring for semantic/coordination failures | Untested | knowledge/hypotheses/H-037-patrol-pattern.md |
+| H-038 | Transient Skills — test-time training via workspace strategy files | Untested | knowledge/hypotheses/H-038-transient-skill.md |
+| H-039 | The Decomposition Bottleneck — MAS quality ceiling is set by orchestrator decomposition skill, not agent capability (dual of Selection Bottleneck, subsumes H-035) | Proposed (4+ convergent sources) | knowledge/hypotheses/H-039-decomposition-bottleneck.md |
 
 ## Experiments
 
