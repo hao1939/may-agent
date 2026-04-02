@@ -63,9 +63,12 @@
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
+| 2026-04-02 | MCP vs CLI Debate (XHS) | Perplexity CTO弃用MCP;微软迁移CLI;社区共识: CLI更直接可控,Skills生态>协议标准 | [post](../shared/knowledge/library/posts/HB-250402-mcp-vs-cli-debate.md) |
+| 2026-04-02 | Agent Framework 2026 Landscape | 框架同质化;Harness设计成为差异点;6强格局初定;自进化Agent从研究走向工程 | [post](../shared/knowledge/library/posts/HB-250402-agent-framework-2026.md) |
+| 2026-04-02 | Multi-Agent Harness实战 | 6个智能体协作从理论进入工程;协调开销常超单Agent;上下文管理是核心瓶颈 | [post](../shared/knowledge/library/posts/HB-250402-multi-agent-harness.md) |
 | 2026-03-16 | Chinese Agent Eval Ecosystem | 438 posts across 22 months; 89 unique authors; 3-phase evolution (explorer→validator→synthesizer) | [post](../shared/knowledge/library/posts/BACKFILL-001-chinese-agent-eval-ecosystem.md) |
 | 2026-03-16 | XHS Social Signals — OpenClaw/Pi-Agent | User sentiment analysis; download-to-share ratio as product-market fit proxy | [post](../shared/knowledge/library/posts/BACKFILL-008-xhs-social-signals-openclaw.md) |
 
 ---
 
-*Last updated: 2026-04-02 by Amy-Kimi (backfill 2026-03-29 by May)*
+*Last updated: 2026-04-02 by Amy-Kimi*

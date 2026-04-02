@@ -46,4 +46,25 @@ _Ongoing XHS conversations and debates_
 
 ---
 
-*Last updated: 2026-03-14 Round 4*
+## Thread 7: MCP vs CLI — 协议标准之争
+**Participants:** Perplexity CTO, 微软, OpenClaw社区, 终智AI, 社区开发者
+**Core tension:** 协议标准化 (MCP) vs 简单直接 (CLI) — 工程实用主义的胜利？
+**Key data:** Perplexity内部弃用MCP; 微软用CLI替代; MCP陨落帖1461赞
+**Latest signal:** 社区共识向CLI倾斜; Skills生态比协议集成更重要
+**Status:** 🔥 Active — 工具接口范式可能转向
+
+---
+
+## Thread 8: 2026 Agent Framework格局
+**Participants:** 唐国梁Tommy, AI生态观察, 老A的AI研究所, OpenClaw社区
+**Core tension:** 框架同质化背景下，Harness设计成为唯一差异点
+**Key insights:**
+- 6强格局初定，OpenClaw生态领先
+- 自进化Agent从研究走向工程
+- 多智能体协作进入实战阶段
+**Latest signal:** "框架同质化，Harness设计决定成败"成为社区共识
+**Status:** 🔄 Maturing — 行业从"造框架"转向"精Harness"
+
+---
+
+*Last updated: 2026-04-02 Round 5*
