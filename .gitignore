@@ -17,9 +17,9 @@ scripts/
 bundle/
 config/
 environment/
-knowledge-base/
-knowledge/
-workspace/
+/knowledge-base/
+/knowledge/
+/workspace/
 *.js
 !agents/*/handlers/*.ts
 may-agent-bin
