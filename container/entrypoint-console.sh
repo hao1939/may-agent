@@ -30,12 +30,12 @@ mkdir -p /app/.state/chrome-profile
 # To restart may-agent without killing the container:
 #   docker exec <container> /usr/local/bin/restart-may.sh
 
-# Pre-populate SSH known_hosts for git remotes (prevents interactive prompt blocking agents)
-if command -v ssh-keyscan >/dev/null 2>&1; then
-  mkdir -p "${HOME}/.ssh"
-  for host in $(cd /app/agents 2>/dev/null && git remote -v 2>/dev/null | grep -oP '@\K[^:/]+' | sort -u); do
-    grep -q "$host" "${HOME}/.ssh/known_hosts" 2>/dev/null || ssh-keyscan "$host" >> "${HOME}/.ssh/known_hosts" 2>/dev/null
-  done
+# SSH config: auto-accept new host keys (safe — warns on key change)
+mkdir -p "${HOME}/.ssh"
+chmod 700 "${HOME}/.ssh"
+if ! grep -q "StrictHostKeyChecking accept-new" "${HOME}/.ssh/config" 2>/dev/null; then
+  printf "Host *\n  StrictHostKeyChecking accept-new\n" >> "${HOME}/.ssh/config"
+  chmod 600 "${HOME}/.ssh/config"
 fi
 
 # Launcher handles signals, backoff, and exit codes — no bash loop needed
