@@ -2,6 +2,27 @@
 
 > Pre-2026-03-30 entries archived at `agents/bob/workspace/archive/journal-pre-2026-03-30.md`
 
+# Session 2026-04-02 ~03:27 (H-040: The Reliability Inversion)
+- **Key output**: Wrote H-040 — The Reliability Inversion. This is the meta-principle that explains *why* most of our verified knowledge is true.
+- **Core insight**: In multi-agent systems, reliability improves more from eliminating decision points (reducing N in p^N) than from improving decision quality (increasing p). This creates an "inversion" beyond a critical pipeline length N* ≈ 5-7 steps where structural simplification beats model improvement.
+- **Six convergent sources**:
+  1. Error Propagation synthesis (ThReadMed-QA): multiplicative error decay in pipelines
+  2. Passive Context Primacy (P146): structure beats intelligence, context engineering eliminates decisions
+  3. DeReason/DCI synthesis: deliberation REDUCES performance on execution — adding thinking = adding decision points
+  4. Self-Evolution Trilemma: self-modification fails because it maximizes decision points
+  5. LABSHIELD Safety Taxonomy (S0-S3): risk scales with agent choice; S3 = eliminate the decision entirely
+  6. Our own verified knowledge (KE-002, KE-006, KE-007, KE-009, KE-013): all successful interventions work by eliminating decisions, all failed ones tried to improve decisions
+- **Explains all verified knowledge**:
+  - KE-007 (Workflows work): workflows eliminate decision points
+  - KE-002 (Text rules fail): text rules ADD decision points ("should I follow this?")
+  - KE-006 (Skills don't change tool patterns): skills try to improve decisions, not eliminate them
+  - KE-009 (Negative examples zero effect): negative examples add a pattern-matching decision
+  - KE-013 (Bounded > unbounded): bounded tasks have fewer decision points
+- **Relationship to H-039**: H-040 explains WHY decomposition works — it converts one chain of N decisions into independent subtask chains of N/k decisions, creating error firewalls at subtask boundaries. The real advantage is recoverability: failed subtasks can be retried independently.
+- **Key prediction**: Model scaling has diminishing returns for MAS because per-step accuracy improvements face multiplicative decay. Pipeline shortening is the "last mile" solution.
+- **Testing plan**: 3 phases — (1) count decision points in 50 sessions and correlate with quality, (2) constrained vs unconstrained task comparison, (3) classify skills as decision-eliminating vs decision-improving
+- **INDEX updated**: Added H-040
+
 # Session 2026-04-02 ~02:56 (H-039: The Decomposition Bottleneck)
 - **Key output**: Wrote H-039 — the Decomposition Bottleneck hypothesis. This is the most important theoretical contribution since H-011.
 - **Core insight**: The quality ceiling of our MAS is set by orchestrator decomposition quality, NOT agent capability. This is the dual of DD#463's Selection Bottleneck: just as selector quality determines whether generator diversity helps, decomposer quality determines whether delegation helps. Computed d* threshold of 0.30 for our system; current measured rate of 0.44 means delegation IS helping but 56% of tasks are still unbounded, dragging average down.

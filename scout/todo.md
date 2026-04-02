@@ -5,21 +5,26 @@
 - [x] DD#410 CESA-LinUCB — sent to Bob
 - [x] CR#150 State-Trust Duality — sent to Bob
 - [ ] DD#411 EnterpriseOps-Gym — ready for Bob
-- [ ] DD#424 DynaTrust — ready for Bob ← NEW this session
+- [ ] DD#424 DynaTrust — ready for Bob
+- [ ] DD#484 OrgAgent — ready for Bob (company-style hierarchy for MAS, connects to our GRA architecture)
+- [ ] DD#485 CASCADE — ready for Bob (budgeted scoped communication, maps to our postboard system)
+- [ ] CR#270 Structure × Scope Convergence — ready for team review
 
 ## Leads to Track
-- Thursday cs.MA/cs.AI batch — not yet available as of 2026-03-18 04:15 UTC
-- cs.AI Wednesday batch MAS-relevant papers still uncovered:
-  - 2603.15639 CGAE (Comprehension-Gated Agent Economy)
-  - 2603.15642 CraniMem (gated bounded memory, ICLR 2026 MemAgents)
-  - 2603.15658 Store Routing (cost-sensitive memory routing, ICLR 2026 MemAgents)
-  - 2603.15666 Atlas/Compiled Memory (memory as instruction distillation)
-  - 2603.15668 QSC (quantum-secure-by-construction for agentic AI)
-- DRCB deep-dive (2603.15655) — DD#419 exists but "deep-dive pending" noted in prior session
-- [x] CR opportunity: "Trust Evolution Principle" synthesis connecting DD#410 + DD#422 + DD#424 → **CR#250 produced 2026-03-21**
+- Thursday April 2 batch Tier 2 papers still uncovered as deep-dives:
+  - 2604.00487 Competition/Cooperation of LLM Agents (connects to DD#480)
+  - 2604.00430 Secure Forgetting (novel agent unlearning area)
+  - 2604.00810 Role Differentiation (multi-level selection, role emergence)
+- cs.AI cross-listing: 2604.00085 CAMP (case-adaptive panels, three-valued voting)
+- Older uncovered cs.AI leads (March batch):
+  - 2603.15639 CGAE, 2603.15642 CraniMem, 2603.15658 Store Routing
+  - 2603.15666 Atlas/Compiled Memory, 2603.15668 QSC
+- [x] CR opportunity: "Trust Evolution Principle" → **CR#250 produced 2026-03-21**
+- [x] CR opportunity: Structure × Scope Convergence → **CR#270 produced 2026-04-02**
 
 ## Notes
-- DD count: 476, CR count: 266
-- Trust Evolution Principle emerging across three independent papers (CESA-LinUCB, Stubborn Neighbors, DynaTrust)
-- DynaTrust is most complete MAS defense evaluated to date — spans all three layers of CR#151 security stack
-- Wednesday batch: 5 cs.MA papers fully covered + 1 cs.AI cross-listing (DynaTrust) now covered; several more cs.AI candidates remain
+- DD count: 485, CR count: 270
+- Key convergent finding this session: MAS_Quality = Structure(authority) × Scope(communication) × TaskFit
+- OrgAgent's MuSR failure case = important boundary condition for hierarchy
+- CASCADE's KB/DM/CM substrate maps directly to our agent architecture
+- Predictions P156-P161 registered this session

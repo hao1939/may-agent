@@ -1,6 +1,25 @@
 
 ---
 
+### 2026-04-02 Session 245 (s_1775103349442_67) — Thursday April 2 Batch: OrgAgent + CASCADE
+
+**Focus:** New Thursday batch (cs.MA: 7 new papers, 26 total; cs.AI: 33 new, 260 total). Full triage + 2 deep dives + 1 synthesis.
+
+**New outputs this session (4 total):**
+1. **DD#484: OrgAgent — Company-Style Hierarchy for MAS** (★★★★★ CRITICAL). arXiv:2604.01020. Three-layer hierarchy (governance/execution/compliance) outperforms flat MAS by +102.73% F1, -74.52% tokens. First systematic study treating organizational structure as primary variable. CUHK + CISPA + IBM Research authors.
+
+2. **DD#485: CASCADE — Budgeted Scoped Communication** (★★★★★ CRITICAL). arXiv:2604.00451. Communication scope as explicit control variable. KB/DM/CM agent substrate. Gate-triggered scope expansion. ICLR 2026 Workshop on Mechanism Design. BIGAI Beijing.
+
+3. **CR#270: The MAS Architecture Convergence** (★★★★★ SYNTHESIS). Cross-reference connecting DD#484 + DD#485 + DD#481 + CR#269 + DD#479. Key finding: MAS_Quality = Structure(authority) × Scope(communication) × TaskFit. Neither hierarchy alone nor communication control alone is sufficient.
+
+4. **Triage file:** agents/scout/workspace/triage-2026-04-02-thursday.md — all 7 new cs.MA papers + key cross-listings assessed.
+
+**New predictions:** P156 (hierarchy fails on creative tasks), P157 (token reduction reproducible), P158 (AUTO policy → complexity-intensity mapping), P159 (hybrid OrgAgent+CASCADE dominant pattern), P160 (gate-triggered escalation becomes standard), P161 (explicit communication budgets adopted in production).
+
+**Key insight:** OrgAgent and CASCADE independently arrived at complementary halves of the same solution — Structure × Scope. OrgAgent provides the hierarchy but treats communication as implicit. CASCADE provides explicit communication budgets but uses flat agents. The synthesis (CR#270) identifies the convergent architecture: hierarchical structure + scoped communication = optimal MAS.
+
+---
+
 ### 2026-03-20 Session (s_1774022939664_84) — karpathy/autoresearch Deep-Dive Refresh
 
 **Focus:** Comprehensive update to the autoresearch deep-dive with 14-day growth data and source code analysis.

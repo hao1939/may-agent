@@ -88,6 +88,7 @@ Team behavioral rules. Adopted by convention, not verified by experiment.
 | H-037 | L3 Patrol Pattern — dedicated integrity monitoring for semantic/coordination failures | Untested | knowledge/hypotheses/H-037-patrol-pattern.md |
 | H-038 | Transient Skills — test-time training via workspace strategy files | Untested | knowledge/hypotheses/H-038-transient-skill.md |
 | H-039 | The Decomposition Bottleneck — MAS quality ceiling is set by orchestrator decomposition skill, not agent capability (dual of Selection Bottleneck, subsumes H-035) | Proposed (4+ convergent sources) | knowledge/hypotheses/H-039-decomposition-bottleneck.md |
+| H-040 | The Reliability Inversion — eliminating agent decision points beats improving decision quality; explains why workflows > skills, bounded > unbounded, decomposition works | Proposed (6+ convergent sources, meta-principle) | knowledge/hypotheses/H-040-reliability-inversion.md |
 
 ## Experiments
 

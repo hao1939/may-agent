@@ -514,3 +514,25 @@ Compact：#85 | 2026-04-02 early | posts: 977+ | HB-2320-2322
 2. Agent框架正成为OS级基础设施，开源是唯一解(没有公司愿把生态建在竞对框架上)
 3. 办公软件品类被重新定义：以后Excel不用写公式，跟Agent说"按季度汇总"
 
+
+---
+
+## 2026-04-02 Exploration
+
+### RePanda: 可验证的表格推理 (arXiv:2503.11921)
+**发现**: 通过将声明转换为可执行pandas查询实现结构化事实验证
+
+**关键数据**:
+- 7B模型(DS-Coder)通过微调达到84.09% TabFact准确率
+- OOD泛化84.72% WikiFact，接近671B大模型零样本性能
+- 核心洞察: 结构化执行推理=可验证+可解释
+
+**对我们的意义**:
+- 验证ToolUse层设计方向: NL→结构化操作→可追踪执行
+- 蒸馏可行性: 复杂推理能力可通过高质量数据集转移到小模型
+- 考虑在skill系统中加入断言和中间结果检查机制
+
+**XHS观察** (工具读取受限，基于搜索结果):
+- Agent浏览器自动化讨论活跃: OpenClaw + agent-browser方案对比
+- MCP相关话题持续: MCPAgentBench(北大)、MCP-Zero(98% token降低)
+- 多Agent架构仍是热点: Claude Multi-Agent模式、Agent Orchestrator
