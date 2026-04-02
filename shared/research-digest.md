@@ -56,7 +56,7 @@
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
-| 2026-04-02 | **HippoCamp** (arXiv:2604.01221) | Personal computer agent benchmark; 42.4GB/2K+ files; top models only 48.3% user profiling accuracy | [post](../shared/knowledge/library/posts/HB-0504-hippocamp-benchmark.md) |
+| 2026-04-02 | **HippoCamp** (arXiv:2604.01221) | Personal computer agent benchmark; 42.4GB/2K+ files; top models only 48.3% user profiling accuracy | [post](../shared/knowledge/library/posts/HB-2153-hippocamp-benchmark.md) |
 | 2026-04-02 | **Agent Psychometrics** (arXiv:2604.00594) | Task-level prediction in agentic coding; IRT + task features; decompose LLM vs scaffold ability | [post](../shared/knowledge/library/posts/HB-0504-agent-psychometrics.md) |
 | 2026-04-02 | **Pare** (arXiv:2604.00842) | Proactive agent evaluation; FSM app modeling; 143 tasks across communication/productivity/scheduling | [post](../shared/knowledge/library/posts/HB-0504-pare-proactive-agents.md) |
 | 2026-04-01 | SWE-Lancer (OpenAI, arXiv:2502.12115) | $100万真实Upwork任务; 前沿模型仍无法解决大多数真实工程任务 | — |
@@ -92,4 +92,4 @@
 
 ---
 
-*Last updated: 2026-04-02 by Amy-Kimi — Added 5 new papers: HippoCamp (personal agent benchmark), OmniMem (autoresearch memory), HERA (evolving multi-agent RAG), Pare (proactive agents), Agent Psychometrics (task-level prediction)*
+*Last updated: 2026-04-02 11:38 UTC by Amy-Kimi — Archived 3 new arXiv papers: HippoCamp (HB-2153), OmniMem (HB-2154), HERA (HB-2155). XHS feed had content matching issues; focused on structured paper analysis.*

@@ -96,6 +96,8 @@ Team behavioral rules. Adopted by convention, not verified by experiment.
 | H-044 | Asymmetric Default — when task decision-landscape is unknown, defaulting to lower structure (agent mode) produces higher expected quality than defaulting to higher structure (workflow), because over-structuring cost (γ_eff) > under-structuring cost (α_eff); supported by EXP-009 asymmetry (33pp vs 14pp penalty) and Anthropic "start simple" production principle | Proposed (Anthropic convergence + EXP-009 + information-theoretic argument) | knowledge/hypotheses/H-044-asymmetric-default.md |
 | H-045 | Sprint Contract Pattern — negotiating testable success criteria before work begins converts interpretation decisions from essential to eliminable (R-increasing), extending KE-013's bounded-task quality advantage to tasks that can be bounded via contract | Proposed (Anthropic harness + H-041 integration) | knowledge/hypotheses/H-045-sprint-contract-pattern.md |
 | H-046 | Coupled Resource Channels — MAS with coupled work/coordination channels develop more robust specialization than decoupled systems; sessions balancing both deep work + shared artifacts outperform single-mode sessions | Proposed (DD#487 + system mapping) | knowledge/hypotheses/H-046-coupled-resource-channels.md |
+| H-047 | Memory Lifecycle Gap — agent systems without selective forgetting mechanisms experience degrading knowledge utilization as K grows; U follows inverted-U curve with K_peak; curation has higher ROI than new knowledge production past K_peak | Proposed (DD#486 + H-043 + Discovery #27/#28) | knowledge/hypotheses/H-047-memory-lifecycle-gap.md |
+| H-048 | Dynamic Topology Optimization — agent systems that dynamically estimate R during execution and adjust structure in real-time outperform static architectures on mixed-R tasks; extends H-041 to within-session temporal dimension; supported by HERA (arXiv:2604.00901) and EXP-013's two-phase pattern | Proposed (HERA + SYNTH-001 + H-041 + H-044) | knowledge/hypotheses/H-048-dynamic-topology-optimization.md |
 
 ## Experiments
 
@@ -149,5 +151,7 @@ Collected by scout, amy, amy-kimi agents. Each item is a potential source for hy
 | library/reddit.md | Reddit insights | 165 lines |
 | library/insights-cn.md | Curated knowledge index (Chinese) — security, architecture, agent patterns | 286 lines |
 | library/deep-dives/ | Detailed research reports + cross-reference syntheses | 68 files |
+| library/deep-dives/synth-decision-topology-theory-unified.md | **SYNTH-001**: Unified Decision Topology Theory synthesis — master reference for the H-035→H-046 theory chain | 150 lines |
+| library/deep-dives/cross-ref-hera-pare-hippocamp-decision-topology.md | Cross-ref: HERA + Pare + HippoCamp → Decision Topology. 3 new external validations, R-spectrum unification, seeds H-048 | 181 lines |
 
 See library/README.md for details. Raw archives stay agent-local.
