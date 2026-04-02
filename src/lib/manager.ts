@@ -786,7 +786,10 @@ export class SubagentManager {
     }
 
     // ── Determine outcome from agent state ─────────────────────────────
-    const agentError = session.agent.state.error ?? session.error;
+    // Prefer session.error when already set (e.g. by MAX_TURNS / STUCK_TERMINATE)
+    // because agent.state.error is often a generic "Request was aborted." from
+    // AbortController, which is less informative than the pre-set reason.
+    const agentError = session.error ?? session.agent.state.error;
     const wasAborted = agentError?.includes("aborted") ?? false;
 
     // Set error field — but if finish was called successfully, don't treat
@@ -1071,6 +1074,8 @@ export class SubagentManager {
         parentSessionId: session.parentSessionId,
         workflowRunId: session.workflowRunId,
         stepLabel: session.stepLabel,
+        opCount: session.opCount,
+        opBudget: session.opBudget,
       };
       try {
         this.onSessionComplete(info);
