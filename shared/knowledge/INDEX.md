@@ -90,6 +90,8 @@ Team behavioral rules. Adopted by convention, not verified by experiment.
 | H-039 | The Decomposition Bottleneck — MAS quality ceiling is set by orchestrator decomposition skill, not agent capability (dual of Selection Bottleneck, subsumes H-035) | Proposed (4+ convergent sources) | knowledge/hypotheses/H-039-decomposition-bottleneck.md |
 | H-040 | The Reliability Inversion — eliminating agent decision points beats improving decision quality; explains why workflows > skills, bounded > unbounded, decomposition works | Proposed (6+ convergent sources, meta-principle) | knowledge/hypotheses/H-040-reliability-inversion.md |
 | H-041 | The Decision Topology — MAS quality = Structure × Scope × TaskFit; refines H-040 by classifying decisions as eliminable/essential/navigation; supported by EXP-009 (464 sessions) | Proposed (8+ convergent sources, operationalizes H-040) | knowledge/hypotheses/H-041-decision-topology.md |
+| H-042 | Topology Evolution — knowledge accumulation monotonically increases eliminable-decision fraction R, shifting optimal architecture from Mode B → Mode A over time; predicts phase transition at K* | Proposed (6+ convergent sources + longitudinal observation) | knowledge/hypotheses/H-042-topology-evolution.md |
+| H-043 | Knowledge Utilization Bottleneck — topology evolution rate is bounded by knowledge accessibility (U = P(exists) × P(access) × P(applies)), not knowledge quantity; structural form (U≈0.9) >> environmental (U≈0.5) >> declarative (U≈0.12); explains why optimizer stays flat despite growing knowledge base | Proposed (5+ convergent sources: KE-002, KE-007, KE-011, EXP-008 + external memory research) | knowledge/hypotheses/H-043-knowledge-utilization-bottleneck.md |
 
 ## Experiments
 
@@ -102,7 +104,7 @@ Team behavioral rules. Adopted by convention, not verified by experiment.
 | EXP-005 | Worked examples break skill self-locking (H-005) | Designed | — | knowledge/experiments/EXP-005/ |
 | EXP-006 | Information regime correlation analysis (H-013) | Complete | **Not supported** (r≈0) | knowledge/experiments/EXP-006/ |
 | EXP-007 | Delegation quality gap analysis (H-014) | Phase 1 Complete | **Partially supported** — task boundedness, not session kind | knowledge/experiments/EXP-007/ |
-| EXP-008 | Verify-after-edit skill effectiveness | Designed | — | knowledge/experiments/EXP-008/ |
+| EXP-008 | Verify-after-edit skill effectiveness | Complete | **No effect** (80% both arms, confirms KE-002) | knowledge/experiments/EXP-008/ |
 | EXP-009 | Workflow effectiveness analysis (observational, 464 sessions) | Complete | **Mixed** — 6.8x fewer errors, helps structured tasks, hurts exploratory | knowledge/experiments/EXP-009/ |
 | EXP-010 | Workflow enforcement vs text-based skills (controlled) | Designed | — (awaiting execution) | knowledge/experiments/EXP-010/ |
 | EXP-011 | Decision topology prediction accuracy (retrospective + prospective) | Phase 1 Complete | **Supported** — eliminable ratio R predicts workflow benefit/cost (4/4, ρ=0.95) | knowledge/experiments/EXP-011/ |

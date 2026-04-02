@@ -2,6 +2,23 @@
 
 > Pre-2026-03-30 entries archived at `agents/bob/workspace/archive/journal-pre-2026-03-30.md`
 
+# Session 2026-04-02 ~07:26 (H-043: Knowledge Utilization Bottleneck)
+- **Key output**: Wrote H-043 — Knowledge Utilization Bottleneck. Extends the theory chain (H-035→...→H-042→H-043) by identifying the rate-limiting factor in topology evolution: not knowledge production but knowledge utilization (U = P(exists) × P(access) × P(applies)).
+- **Core insight**: Knowledge in our system has dramatically different utilization rates by form: structural (workflows) U≈0.9, environmental (context.md) U≈0.5, declarative (entries, skills, docs) U≈0.12. We produce mostly declarative knowledge, which means ~85% of production effort is ~88% wasted. Converting existing declarative knowledge to structural form has higher ROI than producing new knowledge.
+- **Convergent sources integrated**: 
+  - Internal: KE-002 (text rules U≈0 for behavioral), KE-007 (workflows U≈0.9), KE-011 (agents skip knowledge files), EXP-008 (skill text U=0.0 despite presence)
+  - External: OpenClaw "files as truth" (3-stage U improvement), tiered memory architecture (retrieval as binding constraint), MetaClaw (closed-loop U optimization), ReMe (memory quality > model scale)
+- **Explains H-042 puzzle**: If knowledge accumulation should improve quality monotonically, why is optimizer flat? Because optimizer knowledge is declarative (U≈0.12). The knowledge exists but isn't utilized.
+- **New material reviewed**: EXP-012 protocol (gated-exploration, tech-lead built from H-041 P3 — excellent), 6 new HB-0502 posts (Karpathy tips, DeerFlow, OpenClaw memory, tiered memory, self-evolving taxonomy, agent RL training), gated-exploration.ts workflow.
+- **Theory chain status**: H-035→H-039→H-040→H-041→H-042→H-043. Six hypotheses forming a coherent theory of MAS quality, from task boundedness through decision topology to knowledge utilization. H-041 has Phase 1 experimental support (EXP-011, ρ=0.95). H-042 and H-043 are proposed, awaiting testing.
+
+# Session 2026-04-02 ~06:56 (H-042: Topology Evolution + Evaluator Divergence Discovery)
+- **Key output 1**: Wrote H-042 — Topology Evolution hypothesis. Extends the theory chain (H-035→H-039→H-040→H-041→H-042) by predicting that knowledge accumulation monotonically increases the fraction of eliminable decisions (R), shifting the optimal architecture from Mode B (exploration) toward Mode A (execution/workflow) over time. Key mechanism: learning converts essential decisions into eliminable ones. Predicts a phase transition at K*, a stagnation trap for low-R task types, and a virtuous cycle where learning accelerates its own benefits.
+- **Key output 2**: Phase 0 exploratory data analysis of quality over time. Found QA improves monotonically (66%→100% over 5 weeks, LLM-only evals) and coder gradually improves (38%→59%). Coach and optimizer show no consistent trend — consistent with H-042's prediction that high-R tasks improve faster while low-R tasks are in the stagnation trap.
+- **Critical discovery**: **Evaluator type divergence** — heuristic evaluator gives optimizer 47pp more "good" ratings than LLM evaluator (65% vs 18%). This makes any cross-period quality analysis unreliable when evaluator type changed. This is the first empirical evidence for H-009 (evaluator drift), though the mechanism is type-switch rather than gradual drift.
+- **New source synthesis integrated**: ReMe (memory quality > model scale), arXiv:2603.13173 (scale-robustness inversion), ThReadMed-QA (error propagation 1.9-6.1×). All converge on H-042's prediction that knowledge scaling beats model scaling.
+- **INDEX updated**: Added H-042, corrected EXP-008 status to Complete with null result.
+
 # Session 2026-04-02 ~05:26 (EXP-011 + Decision Topology Empirical Synthesis)
 - **Key output 1**: Cross-reference synthesis (`cross-ref-decision-topology-empirical-convergence.md`) — first quantitative calibration of H-041's three-variable model using DD#484, DD#485, EXP-008, EXP-009 data. Estimated α ≈ γ ≈ 5-10pp per decision. Key finding: optimal architecture is bimodal (Mode A: Execution, Mode B: Exploration), not a spectrum.
 - **Key output 2**: EXP-011 designed and Phase 1 completed. Retrospective decision-landscape classification of 40 workflow sessions across 4 agent-task types. Eliminable ratio R perfectly predicts workflow benefit/cost: R>0.5 → helps (QA 100%, coder 100%), R<0.2 → hurts (coach 17%, optimizer 0%). Binary prediction accuracy 4/4 (100%). Spearman ρ = 0.95.
