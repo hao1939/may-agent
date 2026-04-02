@@ -1,0 +1,25 @@
+{
+  "hypothesis": "H-005",
+  "description": "Do worked examples of skill application (tool-call-level demonstrations) break skill self-locking and improve gym pass rates?",
+  "arms": {
+    "control": {
+      "scenario": "plan-once-amend",
+      "agent": "coder",
+      "setup": {
+        "install_skill": "plan-once-amend"
+      },
+      "note": "Reuse EXP-004 treatment arm data (3 runs, 1/3 pass)"
+    },
+    "treatment": {
+      "scenario": "plan-once-amend",
+      "agent": "coder",
+      "setup": {
+        "install_skill": "plan-once-amend",
+        "inject_context": "worked-example-plan-once-amend.md"
+      }
+    }
+  },
+  "runs_per_arm": 3,
+  "metrics": ["handles_blocker_efficiently", "missing_file_tool_calls", "score", "ops", "duration_ms"],
+  "success_criteria": "Treatment passes handles-blocker-efficiently in >=2/3 runs AND shows fewer tool calls on missing file"
+}
