@@ -14,6 +14,7 @@
 | `reviewed-delivery` | `shared/workflows/reviewed-delivery.ts` | 89 | Build then review in sequence |
 | `skill-lifecycle` | `shared/workflows/skill-lifecycle.ts` | 246 | Full lifecycle: propose → test → measure → promote/retire a skill |
 | `two-phase` | `shared/workflows/two-phase.ts` | 192 | Generic two-phase workflow (plan then execute) |
+| `gated-exploration` | `shared/workflows/gated-exploration.ts` | 329 | Soft workflow for exploratory tasks: explore → gate → produce → gate. Preserves essential decisions. |
 
 ## Agent-Specific Workflows
 
