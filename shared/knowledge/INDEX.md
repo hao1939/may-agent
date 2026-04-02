@@ -104,6 +104,8 @@ Team behavioral rules. Adopted by convention, not verified by experiment.
 | EXP-007 | Delegation quality gap analysis (H-014) | Phase 1 Complete | **Partially supported** — task boundedness, not session kind | knowledge/experiments/EXP-007/ |
 | EXP-008 | Verify-after-edit skill effectiveness | Designed | — | knowledge/experiments/EXP-008/ |
 | EXP-009 | Workflow effectiveness analysis (observational, 464 sessions) | Complete | **Mixed** — 6.8x fewer errors, helps structured tasks, hurts exploratory | knowledge/experiments/EXP-009/ |
+| EXP-010 | Workflow enforcement vs text-based skills (controlled) | Designed | — (awaiting execution) | knowledge/experiments/EXP-010/ |
+| EXP-011 | Decision topology prediction accuracy (retrospective + prospective) | Phase 1 Complete | **Supported** — eliminable ratio R predicts workflow benefit/cost (4/4, ρ=0.95) | knowledge/experiments/EXP-011/ |
 
 ## Operational (not knowledge — reference only)
 

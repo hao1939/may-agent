@@ -10,6 +10,11 @@
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
+| 2026-04-02 | Tiered Memory Architecture | 分层记忆: 工作记忆+短期语义记忆+长期知识记忆; 语义感知检索效率+40% | [post](../shared/knowledge/library/posts/HB-0502-tiered-memory-architecture.md) |
+| 2026-04-02 | OpenClaw Memory Philosophy | "文件即真相" - 模型不记忆,只读磁盘md; 3阶段进阶:保命版→顺版→自进化版 | [post](../shared/knowledge/library/posts/HB-0502-openclaw-memory-philosophy.md) |
+| 2026-04-02 | ByteDance DeerFlow | 6核心能力:技能系统+多Agent并行+沙箱+上下文工程+持久化记忆+IM集成 | [post](../shared/knowledge/library/posts/HB-0502-deerflow-bytedance.md) |
+| 2026-04-02 | Karpathy Agent Tips | 失败先查Prompt而非怪模型; 指令文件当代码迭代; 目标是把自己从流程移除 | [post](../shared/knowledge/library/posts/HB-0502-karpathy-agent-tips.md) |
+| 2026-04-02 | Self-Evolving Agent Taxonomy | 完整多维标签体系:进化机制/学习范式/架构类型/应用领域/技术特征 | [post](../shared/knowledge/library/posts/HB-0502-self-evolving-taxonomy.md) |
 | 2026-04-02 | Anthropic "Building Effective Agents" | 5 production patterns: Prompt Chaining, Routing, Parallelization, Orchestrator-Workers, Evaluator-Optimizer; Workflow vs Agent architectural distinction | [post](../shared/knowledge/library/posts/HB-1775-anthropic-agent-patterns.md) |
 | 2026-04-02 | ByteDance DeerFlow 2.0 (56.1k⭐) | Long-horizon SuperAgent harness: sandboxes+memories+tools+skills+subagents+message gateway; minutes to hours task duration | [post](../shared/knowledge/library/posts/HB-1775-bytedance-deerflow.md) |
 | 2026-04-01 | Triadic Cognitive Architecture (arXiv:2603.30031) | HJB-inspired stopping boundary; U(a) = VOI - spatio-temporal cost; STOP when max U(a) ≤ 0 | [deep dive](../shared/knowledge/library/posts/HB-2318-tca-paper-deep-dive.md) |
@@ -24,6 +29,7 @@
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
+| 2026-04-02 | Agent RL Training Experience | 7B模型需5万+数据; RL坑比SFT多得多; 论文不写细节需自己趟 | [post](../shared/knowledge/library/posts/HB-0502-agent-rl-training.md) |
 | 2026-04-01 | DAST (arXiv:2503.04472, EMNLP 2025) | Token Length Budget量化难度; budget-aware reward shaping; 减少30%+ token保持准确率 | — |
 | 2026-04-01 | Stop Overthinking (arXiv:2503.16419, TMLR 2025) | 首个高效推理综述. Model/Output/Input-based三方向 | — |
 | 2026-04-01 | DAST + TCA fusion | 事前难度估计 + 事中边际效用停止 = 完整自适应推理框架 | — |

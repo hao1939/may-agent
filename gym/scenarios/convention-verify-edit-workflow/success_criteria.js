@@ -132,19 +132,31 @@ check('C2.3: verify-after-edit', 'convention', () => {
   }
 
   // Find writes/edits to config.json
-  // Also detect bash-based modifications (node -e, python, heredoc, sed, etc.)
-  const writes = toolCalls.filter(tc =>
-    ((tc.name === 'write' || tc.name === 'edit') &&
-     typeof tc.args.path === 'string' &&
-     tc.args.path.includes('config.json')) ||
-    (tc.name === 'bash' &&
-     typeof tc.args.command === 'string' &&
-     tc.args.command.includes('config.json') &&
-     // Heuristic: bash commands that modify files (not just read them)
-     (tc.args.command.includes('write') || tc.args.command.includes('>') ||
-      tc.args.command.includes('sed ') || tc.args.command.includes('echo ') ||
-      tc.args.command.includes('node -e') || tc.args.command.includes('python')))
-  );
+  // Also detect bash-based modifications (heredoc, sed, etc.)
+  // Be careful NOT to count validation reads (cat | python, cat | node) as writes
+  const writes = toolCalls.filter(tc => {
+    if ((tc.name === 'write' || tc.name === 'edit') &&
+        typeof tc.args.path === 'string' &&
+        tc.args.path.includes('config.json')) {
+      return true;
+    }
+    if (tc.name === 'bash' &&
+        typeof tc.args.command === 'string' &&
+        tc.args.command.includes('config.json')) {
+      const cmd = tc.args.command;
+      // Exclude read-only patterns: cat|python (piped validation), cat|node, cat|jq
+      if (/cat\s+\S*config\.json\s*\|/.test(cmd)) return false;
+      // Exclude python/node commands that only READ the file (json.load, JSON.parse with readFileSync)
+      if (/python3?\s+-c/.test(cmd) && /json\.load|open\(/.test(cmd) && !/write|dump/.test(cmd)) return false;
+      if (/node\s+-e/.test(cmd) && /readFileSync|readFile/.test(cmd) && !/writeFileSync|writeFile/.test(cmd)) return false;
+      // Actual write indicators
+      return cmd.includes('>') || cmd.includes('sed ') || cmd.includes('tee ') ||
+             /echo\s.*>/.test(cmd) || /printf\s.*>/.test(cmd) ||
+             (/python3?\s+-c/.test(cmd) && /write|dump/.test(cmd)) ||
+             (/node\s+-e/.test(cmd) && /writeFileSync|writeFile/.test(cmd));
+    }
+    return false;
+  });
 
   if (writes.length === 0) {
     return { passed: false, detail: 'No write/edit to config.json found in transcript' };

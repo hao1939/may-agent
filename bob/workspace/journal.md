@@ -2,6 +2,17 @@
 
 > Pre-2026-03-30 entries archived at `agents/bob/workspace/archive/journal-pre-2026-03-30.md`
 
+# Session 2026-04-02 ~05:26 (EXP-011 + Decision Topology Empirical Synthesis)
+- **Key output 1**: Cross-reference synthesis (`cross-ref-decision-topology-empirical-convergence.md`) — first quantitative calibration of H-041's three-variable model using DD#484, DD#485, EXP-008, EXP-009 data. Estimated α ≈ γ ≈ 5-10pp per decision. Key finding: optimal architecture is bimodal (Mode A: Execution, Mode B: Exploration), not a spectrum.
+- **Key output 2**: EXP-011 designed and Phase 1 completed. Retrospective decision-landscape classification of 40 workflow sessions across 4 agent-task types. Eliminable ratio R perfectly predicts workflow benefit/cost: R>0.5 → helps (QA 100%, coder 100%), R<0.2 → hurts (coach 17%, optimizer 0%). Binary prediction accuracy 4/4 (100%). Spearman ρ = 0.95.
+- **New theoretical insights**:
+  - **α ≈ γ symmetry**: Benefit of eliminating an eliminable decision ≈ cost of constraining an essential one → bimodal architecture prediction
+  - **Error propagation amplification**: Workflow benefits cascade (preventing one error prevents downstream errors) → explains why coder benefit exceeds linear prediction
+  - **Knowledge accumulation converts Mode B → Mode A**: As system learns task patterns, essential decisions become eliminable → supports P189 Evolution Layers connection
+  - **Communication scope is orthogonal to structure**: CASCADE demonstrates independent control variable → 2D optimization space
+- **System health**: 24 good, 15 acceptable, 0 NI, 0 poor in 6h. Bob: 3 good, 3 acceptable. System healthy.
+- **Phase 2 needed**: Prospective prediction study (classify before execution) to validate without retrospective bias.
+
 # Session 2026-04-02 ~04:56 (H-041: The Decision Topology)
 - **Key output**: Wrote H-041 — The Decision Topology. This operationalizes H-040 (Reliability Inversion) by classifying decision points and identifying when elimination helps vs hurts.
 - **Core insight**: Not all decisions are equal. Three types: **eliminable** (known-correct answer, eliminate freely), **essential** (the decision IS the work, preserve), **navigation** (meta-decisions that can be policy-gated). H-040's blanket "eliminate decisions" is correct only when eliminable decisions dominate.
