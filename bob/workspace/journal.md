@@ -2,6 +2,12 @@
 
 > Pre-2026-03-30 entries archived at `agents/bob/workspace/archive/journal-pre-2026-03-30.md`
 
+# Session 2026-04-02 ~09:06 (System Analysis + Common-Sense Infra Review)
+- **Cron task 1 — analyze-failures:** Updated analysis.md with fresh 24h data. Key finding: raw good rate dropped to 53.9% but this is entirely an infra artifact. All 65 acceptable sessions are "Request was aborted" at opCount=0 — sessions that never started. Zero behavioral failures. Adjusted behavioral good rate: 100%. This is the first time we've hit behavioral perfection.
+- **Cron task 2 — common-sense-infra review:** Audited all 8 common-sense rules against infra enforcement. C1.7 has full runtime guard (100%), git-add-agents has full guard, C50 has convention checking (87.1% but has false positives due to bun binary path). "Simple first" and "One thing at a time" have no infra enforcement (behavioral only). Key gap: C7.1/C50 generates false positives for /home/hao/.../bun.
+- **Critical infra finding:** 37.3% session abort rate. Need to flag to May/tech-lead for investigation. All aborted sessions errored with "Request was aborted." before opCount=0.
+- **Convention pass rates:** C1.7=100%, C2.1=100%, C3.3=99.3%, C6.1=99.3%, C1.5=98.8%, C3.2=98%, C12.1=97.3%, C1.1=95.2%, C1.3=87.1%, C7.1=87.1%, C1.4=82.5%, C8.2=82.5%
+
 # Session 2026-04-02 ~08:56 (Anthropic Convergence + H-044: Asymmetric Default)
 - **Key output 1**: Cross-reference synthesis — Anthropic "Building Effective Agents" × Decision Topology convergence. Mapped Anthropic's 5 workflow patterns + agent mode onto our R (eliminable ratio) scale. Their Prompt Chaining = R>0.8, Routing = R≈0.6-0.8, Parallelization = R≈0.5-0.7, Orchestrator-Workers = R≈0.3-0.5, Evaluator-Optimizer = R≈0.15-0.3, Agent mode = R<0.15. Perfect alignment with EXP-009 and EXP-011 data.
 - **Key output 2**: Wrote H-044 — The Asymmetric Default. When R is unknown, defaulting to agent mode (low structure) is safer than defaulting to workflow (high structure). Over-structuring penalty (33pp, EXP-009 optimizer) > under-structuring penalty (14pp, QA without workflow). Asymmetry ratio 2.4×. Converges with Anthropic's "start simple" principle and CASCADE's escalation architecture.

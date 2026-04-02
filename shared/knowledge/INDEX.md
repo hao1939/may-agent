@@ -19,6 +19,7 @@ All knowledge in the system, organized by confidence level.
 | KE-011 | Knowledge files are passive — agents skip them in oneshot mode | 3 experiments, Method #6 | knowledge/entries/KE-011.md |
 | KE-012 | Lab-fork null-patch test confirms infrastructure validity | Controlled zero-change test | knowledge/entries/KE-012.md |
 | KE-013 | Task boundedness is the primary driver of delegated session quality | EXP-007 Phase 1 (n=116 call, 15.8K all-time) | knowledge/entries/KE-013.md |
+| KE-015 | Decision topology (eliminable ratio R) predicts workflow effectiveness | EXP-009 (464 sessions), EXP-011 (ρ=0.95), EXP-013 (0%→100%), EXP-008 (null), DD#484, Anthropic | knowledge/entries/KE-015.md |
 
 ## Adopted (in use, not experimentally verified)
 
@@ -93,6 +94,8 @@ Team behavioral rules. Adopted by convention, not verified by experiment.
 | H-042 | Topology Evolution — knowledge accumulation monotonically increases eliminable-decision fraction R, shifting optimal architecture from Mode B → Mode A over time; predicts phase transition at K* | Proposed (6+ convergent sources + longitudinal observation) | knowledge/hypotheses/H-042-topology-evolution.md |
 | H-043 | Knowledge Utilization Bottleneck — topology evolution rate is bounded by knowledge accessibility (U = P(exists) × P(access) × P(applies)), not knowledge quantity; structural form (U≈0.9) >> environmental (U≈0.5) >> declarative (U≈0.12); explains why optimizer stays flat despite growing knowledge base | Proposed (5+ convergent sources: KE-002, KE-007, KE-011, EXP-008 + external memory research) | knowledge/hypotheses/H-043-knowledge-utilization-bottleneck.md |
 | H-044 | Asymmetric Default — when task decision-landscape is unknown, defaulting to lower structure (agent mode) produces higher expected quality than defaulting to higher structure (workflow), because over-structuring cost (γ_eff) > under-structuring cost (α_eff); supported by EXP-009 asymmetry (33pp vs 14pp penalty) and Anthropic "start simple" production principle | Proposed (Anthropic convergence + EXP-009 + information-theoretic argument) | knowledge/hypotheses/H-044-asymmetric-default.md |
+| H-045 | Sprint Contract Pattern — negotiating testable success criteria before work begins converts interpretation decisions from essential to eliminable (R-increasing), extending KE-013's bounded-task quality advantage to tasks that can be bounded via contract | Proposed (Anthropic harness + H-041 integration) | knowledge/hypotheses/H-045-sprint-contract-pattern.md |
+| H-046 | Coupled Resource Channels — MAS with coupled work/coordination channels develop more robust specialization than decoupled systems; sessions balancing both deep work + shared artifacts outperform single-mode sessions | Proposed (DD#487 + system mapping) | knowledge/hypotheses/H-046-coupled-resource-channels.md |
 
 ## Experiments
 
@@ -109,6 +112,8 @@ Team behavioral rules. Adopted by convention, not verified by experiment.
 | EXP-009 | Workflow effectiveness analysis (observational, 464 sessions) | Complete | **Mixed** — 6.8x fewer errors, helps structured tasks, hurts exploratory | knowledge/experiments/EXP-009/ |
 | EXP-010 | Workflow enforcement vs text-based skills (controlled) | Designed | — (awaiting execution) | knowledge/experiments/EXP-010/ |
 | EXP-011 | Decision topology prediction accuracy (retrospective + prospective) | Phase 1 Complete | **Supported** — eliminable ratio R predicts workflow benefit/cost (4/4, ρ=0.95) | knowledge/experiments/EXP-011/ |
+| EXP-012 | Gated exploration soft workflow for optimizer (H-041 P3) | Ready | — (awaiting execution) | knowledge/experiments/EXP-012/ |
+| EXP-013 | Workflow enforcement for escalation (two-phase vs none) | **Complete** | **0%→100% with workflow** (R≈0.80, n=6) → KE-015 | knowledge/experiments/EXP-013/ |
 
 ## Operational (not knowledge — reference only)
 

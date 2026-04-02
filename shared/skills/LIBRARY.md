@@ -31,7 +31,7 @@ Each skill has ONE status:
 | classify-then-act | ⚪ untested | | | | needs gym test |
 | scope-discipline | ⚪ untested | | | | needs gym test |
 | tool-discipline | ⚪ untested | | | | needs gym test |
-| obstacle-pivot | ⚪ untested | | | | needs gym test |
+| obstacle-pivot | ✅ proven (as workflow) | behavior-escalation-stubborn: 2-phase workflow (assess → act/escalate) converts 0% escalation to 100%. The agent KNOWS the file is binary but can't translate knowledge into escalation without forced assessment phase. | Text injection untested (likely fails per 0/19 pattern). Only works as workflow enforcement. | | EXP-013: behavior-escalation-stubborn-workflow 6/6 (3/3 runs) vs baseline 0/3 escalated-properly. **STRONGEST A/B result ever: 0%→100% on critical check.** |
 | investigate-and-fix | ⚪ untested | | | | needs gym test |
 | brainstorm-before-build | ⚪ untested | | | | `design-cache-strategy` scenario: ceiling effect (baseline 5/5 PASS 2026-03-30). Need harder scenario to test. |
 
@@ -40,12 +40,13 @@ Each skill has ONE status:
 
 ### ⚠️ Deployment Reality (2026-04-01)
 **Text injection does NOT change agent behavior** — 0/19+ experiments showed improvement from adding skill text to prompts. The only proven deployment method is **Method #15: Workflow Enforcement** — structuring the task into phases that force the desired behavior. However, workflow enforcement has boundaries:
-- ✅ Works for: verification (5/6→6/6), misleading-test diagnosis (5/8→11/11), escalation decisions
+- ✅ Works for: verification (5/6→6/6), misleading-test diagnosis (5/8→11/11), **escalation (0%→100% — EXP-013)**
 - ❌ Fails for: materialization cadence (6/9→6/9), tool usage habits (grep-first-reading)
 - 🔍 Untested: scope discipline, task adherence, classify-then-act
-Two skills are now PROMOTED as workflows, ready for deployment consideration:
+Three skills are now PROMOTED as workflows, ready for deployment consideration:
 1. **verify-before-finish** (partial-verification-trap-workflow: 5/6→6/6)
 2. **evidence-over-narrative** (misleading-test-fix-workflow: 5/8→11/11)
+3. **obstacle-pivot** (behavior-escalation-stubborn-workflow: 0/3→3/3 escalation — strongest result)
 
 ## How to Evaluate a Skill
 

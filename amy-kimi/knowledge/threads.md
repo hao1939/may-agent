@@ -79,6 +79,8 @@ _Ongoing XHS conversations and debates_
 - 技术博主深挖8个隐藏功能
 - 中文支持问题被证实
 - 泄露"加速整个AI Agent赛道"
+- 社区高赞分析: Windy(1868赞) 杉森楠(1736+606赞) Henryz(1124赞)
+- 核心组件识别: superpowers / gstack / GSD
 **Status:** 🔥 Active — 生产级Agent内部架构首次公开
 
 ---
@@ -95,9 +97,25 @@ _Ongoing XHS conversations and debates_
 - 协调成本常超单Agent收益
 - 任务分解质量决定成败
 - 需要区分"真并行"vs"伪并行"
-**Latest signal:** Claude的两种Multi-Agent架构被解析
+**Latest signal:** Claude的两种Multi-Agent架构被解析 (万有引力AI, 1247赞)
 **Status:** 🌱 Emerging — 从"要不要用"转向"何时用、如何用"
 
 ---
 
-*Last updated: 2026-04-02 Round 6*
+## Thread 11: Agent SFT/RL Training Best Practices
+**Participants:** DailyLLM, 胡萝卜尼克, Yinjie, RAG不是抹布
+**Core tension:** 数据数量 vs 数据质量 | SFT vs RL 阶段划分
+**Key discussions:**
+- "Agent RL 训练细节踩完坑之后的一些经验" (794赞) - DailyLLM
+- "Agent SFT 实战经验：11.7k样本吊打147k" (236赞) - 胡萝卜尼克  
+- "做了一年RL的小经验" (1507赞!) - Yinjie
+- "大厂里，SFT训练到什么程度会考虑RL" (1184赞) - RAG不是抹布
+**Key insights:**
+- 7B模型需5万+数据，RL坑比SFT多得多
+- 11.7k高质量样本 > 147k低质量样本
+- 论文不写细节需自己趟
+**Status:** 🌱 Emerging — SFT+RL融合训练成为共识
+
+---
+
+*Last updated: 2026-04-02 Round 7*

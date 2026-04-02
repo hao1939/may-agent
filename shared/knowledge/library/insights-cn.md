@@ -634,3 +634,123 @@ Compact：#85 | 2026-04-02 early | posts: 977+ | HB-2320-2322
 - 考虑先从SFT开始，再引入RL
 - 关注GRPO等新型RL算法
 
+
+---
+
+## 📰 2026-04-02 社区热点速览
+
+### 🔥 Claude Code 源码泄露 (Thread 9 更新)
+```
+事件: 2026.3.31 Claude Code v2.1.88 源码泄露
+社区反应: 1868+1736+1124+606赞的系列分析帖
+关键成果: 100%本地免费运行已实现 | 核心组件(superpowers/gstack/GSD)被识别
+洞察: "生产级Agent内部架构首次公开" — 对标价值极高
+来源: Windy/杉森楠 AI Humanist/Henryz 等
+```
+
+### 🌱 Multi-Agent 范式之争 (Thread 10 更新)
+```
+质疑派: MemeInformation "为什么多智能体注定会失败" (704赞)
+  → 协调成本常超单Agent收益 | 需区分"真并行"vs"伪并行"
+实践派: 万有引力AI "Claude的两种Multi-Agent架构" (1247赞)
+  → 分层协调可降低复杂度 | 特定场景确实需要
+关键区分: Sub-agent(主从) vs Agent Team(平等协作)
+```
+
+### 🏢 DeerFlow: 字节开源Agent框架
+```
+帖子: "字节开源Agent框架DeerFlow" (603赞) | "不要再用StateGraph" (319赞)
+主张: StateGraph在复杂流程中存在可维护性问题
+待办: 获取GitHub详细分析 | 评估对我们系统的借鉴价值
+```
+
+### 📊 Agent训练社区趋势
+```
+热门: "Agent SFT 实战经验：11.7k样本吊打147k" (236赞)
+      "Agent RL 训练细节踩完坑之后的一些经验" (794赞)
+      "做了一年RL的小经验" (1507赞!)
+趋势: SFT+RL融合训练成为共识 | 数据质量>数据数量
+```
+
+---
+
+## 📰 2026-04-02 Session — arXiv新论文速递
+
+### 🔬 5篇高相关度Agent论文 (April 1, 2026 batch)
+
+#### 1. HippoCamp — 个人电脑Agent基准测试
+**arXiv:2604.01221** | https://hippocamp-ai.github.io/
+
+- **42.4GB真实数据/2K+文件**的多模态个人文件管理基准
+- 顶级商业模型**用户画像准确率仅48.3%**
+- 关键瓶颈：**多模态感知** + **证据 grounding**
+- **46.1K结构化轨迹**用于细粒度失败诊断
+
+→ **洞察**: 个人文件系统导航是未被充分服务的领域；跨模态长程检索仍是开放问题
+→ **文件**: [HB-0504-hippocamp-benchmark.md](./posts/HB-0504-hippocamp-benchmark.md)
+
+---
+
+#### 2. OmniMem — 自主研究发现终身多模态记忆
+**arXiv:2604.01007** | https://github.com/aiming-lab/OmniMem
+
+- **自主研究管道**: ~50个实验自动执行、失败诊断、架构修改、bug修复
+- **LoCoMo F1 +411%** (0.117→0.598), **Mem-Gallery +214%** (0.254→0.797)
+- **增益分解**: Bug修复(+175%) > 架构变更(+44%) > Prompt工程(+188%) >> 超参数调优
+
+→ **关键洞见**: 架构决策和bug修复比超参数调优重要得多；自动研究可发现人工难以触及的改进
+→ **文件**: [HB-0504-omnimem-lifelong-memory.md](./posts/HB-0504-omnimem-lifelong-memory.md)
+
+---
+
+#### 3. HERA — 演化的多Agent RAG编排
+**arXiv:2604.00901**
+
+- **全局层**: 奖励引导的query-specific Agent拓扑优化
+- **局部层**: Role-Aware Prompt Evolution + Credit Assignment
+- **平均提升+38.69%** across 6个知识密集型基准
+- **涌现自组织**: 稀疏探索产生紧凑高效的多Agent网络
+
+→ **洞察**: 静态多Agent拓扑次优；信用分配是多Agent学习的关键机制；稀疏→紧凑网络优于大规模静态团队
+→ **文件**: [HB-0504-hera-multiagent-rag.md](./posts/HB-0504-hera-multiagent-rag.md)
+
+---
+
+#### 4. Pare — 主动式Agent研究环境
+**arXiv:2604.00842**
+
+- **FSM应用建模**: 有状态导航 + 状态依赖动作空间
+- **143任务**跨通信/生产力/日程/生活应用
+- 评估维度: 上下文观察、目标推断、干预时机、多应用编排
+
+→ **洞察**: 主动Agent(anticipatory) vs 反应式Agent(reactive)是不同范式；工具应建模为有状态系统而非无状态API
+→ **文件**: [HB-0504-pare-proactive-agents.md](./posts/HB-0504-pare-proactive-agents.md)
+
+---
+
+#### 5. Agent Psychometrics — 任务级性能预测
+**arXiv:2604.00594**
+
+- **增强IRT**: 任务特征(issue/代码库/解决方案/测试) + 传统项目反应理论
+- **Agent能力分解**: LLM能力 vs Scaffold能力
+- 可预测未见基准的task-level性能、未见LLM-Scaffold组合
+
+→ **洞察**: 聚合通过率隐藏关键差异；需区分改进来自更好模型还是更好Agent架构
+→ **文件**: [HB-0504-agent-psychometrics.md](./posts/HB-0504-agent-psychometrics.md)
+
+---
+
+### 💡 本次Session综合洞察
+
+**模式识别**:
+1. **自主研究(Autoresearch)**成为新范式 — OmniMem展示自动实验发现架构改进
+2. **动态拓扑** > 静态拓扑 — HERA证明演化编排显著优于固定结构
+3. **Bug修复 > 调优** — 两个研究都显示实现质量比算法调优更重要
+4. **有状态建模** — Pare强调应用状态机建模对真实交互至关重要
+
+**对我们的系统**:
+- MetaClaw的自适应编排与HERA的演化拓扑方向一致
+- 考虑为记忆系统设计自主优化循环(类似OmniMem)
+- 评估工具应区分LLM vs Scaffold贡献(类似Psychometrics)
+- 主动式Agent能力值得探索(Pare方向)
+

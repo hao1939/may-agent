@@ -122,7 +122,7 @@ Prompt Engineering  →  Context Engineering  →  Harness Engineering
 ## Experiment Plan
 
 ### Phase 1: Audit (Research)
-- [ ] Deep-read Anthropic blog post when accessible (try different fetch methods or manual paste)
+- [x] Deep-read Anthropic blog post when accessible — **DONE Session 247** (full read of primary source, key findings logged below)
 - [ ] Map every H-036 recommendation to specific OpenClaw code locations
 - [ ] Measure current skill discovery context cost (% of window)
 - [ ] Catalog all cross-session state artifacts and their roles
@@ -166,6 +166,69 @@ Prompt Engineering  →  Context Engineering  →  Harness Engineering
 ---
 
 ## Findings Log
+
+### 2026-04-02 (Scout Session 247): Primary Source Deep-Read — Anthropic Blog Post
+
+**Source**: "Harness design for long-running application development" by Prithvi Rajasekaran (Anthropic Labs), published 2026-03-24
+
+#### Key Architecture: Three-Agent System (GAN-Inspired)
+
+The blog describes evolving from the earlier Initializer+Executor pattern to a **Planner → Generator → Evaluator** architecture:
+
+1. **Planner** — Takes 1-4 sentence prompt → full product spec. Prompted to be ambitious about scope but stay at product/high-level technical level (NOT detailed implementation). Rationale: granular technical specs cause error cascading. "Constrain deliverables, let agents figure out the path."
+
+2. **Generator** — Works in sprints, one feature at a time. Uses React/Vite/FastAPI/SQLite stack. Self-evaluates each sprint before handing to QA. Has git for version control.
+
+3. **Evaluator** — Uses Playwright MCP to actually click through the running app (not just review code). Grades each sprint against: product depth, functionality, visual design, code quality. Each criterion has a **hard threshold** — if any falls below, sprint fails with detailed feedback.
+
+#### Two Critical Failure Modes Addressed
+
+1. **Context anxiety** — Models wrap up prematurely when approaching believed context limit. Context resets (full clear + structured handoff) fix this better than compaction alone. However, Opus 4.5 removed this behavior, allowing continuous single sessions with automatic compaction.
+
+2. **Self-evaluation leniency** — Agents praise their own mediocre work. Separating generator from evaluator is the key lever. "Tuning a standalone evaluator to be skeptical is far more tractable than making a generator critical of its own work."
+
+#### Sprint Contract Pattern (NEW — Not in Previous Analysis)
+
+Before each sprint, generator and evaluator **negotiate a sprint contract** — agreeing on what "done" looks like before any code is written. This bridges the gap between high-level spec and testable implementation. Communication via files: one agent writes, another reads and responds.
+
+**Direct relevance to OpenClaw**: Our postboard system is analogous to file-based inter-agent communication. But we don't have explicit "contracts" before work begins. The sprint contract pattern could improve our agent task delegation quality.
+
+#### Frontend Design: Subjective Quality → Gradable Criteria
+
+Four grading criteria that made subjective design judgments concrete:
+- **Design quality** (coherent whole vs collection of parts) — weighted HIGH
+- **Originality** (custom decisions vs template/AI slop) — weighted HIGH  
+- **Craft** (typography, spacing, color harmony) — default passing
+- **Functionality** (usability) — default passing
+
+Key insight: criteria wording shapes output character. "Museum quality" pushed designs toward a specific visual convergence.
+
+5-15 iterations per generation. Scores improved non-monotonically — sometimes middle iterations preferred over final ones. Full runs took up to 4 hours.
+
+#### Scale & Cost
+
+| Harness | Duration | Cost |
+|---------|----------|------|
+| Solo agent | 20 min | $9 |
+| Full three-agent harness | 6 hr | $200 |
+
+20x more expensive but dramatically higher quality: solo run had broken game physics, full harness produced working game with AI-assisted content generation.
+
+#### Implications for OpenClaw
+
+| Blog Finding | OpenClaw Mapping | Gap? |
+|--------------|------------------|------|
+| Planner expands brief → full spec | Tech-lead creates task definitions | Partial — our tasks are human-authored, not AI-expanded |
+| Generator works in sprints | Agent sessions with heartbeat | Close — but no explicit sprint structure within sessions |
+| Evaluator uses Playwright to test | Adversarial verification concept (Optimizer?) | Gap — no agent currently tests other agents' outputs interactively |
+| Sprint contracts before work | Postboard handoffs | Gap — we don't negotiate "done" criteria before starting |
+| Context resets > compaction | Session boundaries + checkpoint | Already implemented — our session model IS a context reset pattern |
+| File-based inter-agent comms | Postboard + shared files | Already implemented |
+| Criteria-driven evaluation | Quality assertions in AGENTS.md | Partial — we have standards but not per-task grading criteria |
+
+#### Most Actionable Takeaway
+
+**The sprint contract pattern** — Before delegating a task to an agent, define testable success criteria. The receiving agent and sending agent should agree on what "done" looks like. This is cheap to implement (just structured task descriptions) and directly addresses the "agent does work but it's not what was wanted" failure mode.
 
 ### 2026-04-02: Project Created
 - Synthesized 40+ sources into unified framework

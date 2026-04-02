@@ -1,6 +1,6 @@
 # Deep Dives Index
 
-> 72 research deep dives, cross-reference syntheses, and reference documents.  
+> 74 research deep dives, cross-reference syntheses, and reference documents.  
 > Last updated: 2026-04-02 | Maintained by Scout
 
 ## How to Use This Index
@@ -33,6 +33,7 @@
 | [dd483](dd483-ai-scientist-v2-agentic-treesearch.md) | AI-Scientist-v2 — Agentic Tree Search ★★★★ | Workshop-level automated scientific discovery via agentic tree search |
 | [dd484](dd484-orgagent-company-hierarchy-mas.md) | OrgAgent — Company-Style Hierarchy for MAS ★★★★★ | 3-layer hierarchy: governance→execution→compliance; +102% F1, -74% tokens |
 | [dd485](dd485-cascade-scoped-communication-replanning.md) | CASCADE — Budgeted Scoped Communication ★★★★★ | Communication scope as first-class control variable; gate-triggered escalation |
+| [dd487](dd487-role-differentiation-multilevel-selection.md) | Role Differentiation via Multi-Level Selection ★★★½ | Tragedy-of-commons avoidance through emergent role specialization |
 
 ### Multi-Agent Debate
 | File | Title | Key Finding |
@@ -58,6 +59,7 @@
 | [dd239](dd239-thought-virus-subliminal-multi-agent.md) | Thought Virus — Viral Misalignment via Subliminal Prompting | Subliminal prompt injection spreads through MAS |
 | [dd472](dd472-mad-spear-conformity-attack.md) | MAD-Spear: Conformity-Driven Prompt Injection | Exploits conformity dynamics in multi-agent debate |
 | [dd-xamt](dd-xamt-covert-memory-tampering.md) | XAMT — Covert Memory Tampering | Bilevel optimization for covert memory attacks |
+| [dd486](dd486-secure-forgetting-agent-unlearning.md) | Secure Forgetting — Agent Unlearning ★★★★ | First framework for selective forgetting in LLM-based agents |
 
 ### Trust & Verification
 | File | Title | Key Finding |

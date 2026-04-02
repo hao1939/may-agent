@@ -10,6 +10,9 @@
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
+| 2026-04-02 | **Claude Code Source Leak (Update)** | 社区反应: 1868+1736+1124+606赞分析帖; 核心组件(superpowers/gstack/GSD); 本地部署已实现 | [post](../shared/knowledge/library/posts/HB-0085-claude-code-leak.md) |
+| 2026-04-02 | Multi-Agent Paradigm Debate | 质疑派:"注定失败"(704赞) vs 实践派:"Claude两种架构"(1247赞); 协调成本是关键挑战 | [post](../shared/knowledge/library/posts/HB-0086-mult-agent-paradigm.md) |
+| 2026-04-02 | DeerFlow (ByteDance) Update | "不要再用StateGraph"(319赞); 字节开源Agent框架(603赞); 解决StateGraph可维护性问题 | [post](../shared/knowledge/library/posts/HB-0087-deerflow-bytedance.md) |
 | 2026-04-02 | **Claude Code Source Leak** | v2.1.88泄露; superpowers/gstack/GSD架构; 100%本地运行可行; 加速Agent赛道 | [post](../shared/knowledge/library/posts/HB-0503-claude-code-leak-analysis.md) |
 | 2026-04-02 | **Anthropic Effective Agents (Deep Dive)** | Tool-First > Prompt工程; ACI投资=HCI; 5 Workflow模式+3 Agent原则 | [post](../shared/knowledge/library/posts/HB-0503-anthropic-effective-agents-deep-dive.md) |
 | 2026-04-02 | Tiered Memory Architecture | 分层记忆: 工作记忆+短期语义记忆+长期知识记忆; 语义感知检索效率+40% | [post](../shared/knowledge/library/posts/HB-0502-tiered-memory-architecture.md) |
@@ -44,6 +47,8 @@
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
 | 2026-04-02 | RePanda (arXiv:2503.11921) | Pandas查询=可验证推理; 7B模型通过蒸馏达到671B的表格推理能力; 84.09% TabFact / 84.72% OOD | [post](../shared/knowledge/library/posts/HB-0368-repanda-tabular-reasoning.md) |
+| 2026-04-02 | **OmniMem** (arXiv:2604.01007) | Autoresearch-guided memory: +411% LoCoMo, +214% Mem-Gallery; Bug fixes (+175%) > Arch (+44%) >> Hyperparams | [post](../shared/knowledge/library/posts/HB-0504-omnimem-lifelong-memory.md) |
+| 2026-04-02 | **HERA** (arXiv:2604.00901) | Multi-agent RAG with evolving orchestration; +38.69% over baselines; sparse → compact emergent networks | [post](../shared/knowledge/library/posts/HB-0504-hera-multiagent-rag.md) |
 | 2026-04-01 | GATE (arXiv:2502.14848) | 层次化工具图谱+跨场景复用; Minecraft 4.3x加速, 代码生成+9.23% | — |
 | 2026-04-02 | Claude Agentic Search | 放弃向量DB改用grep; 信噪比 > 语义覆盖率; 简单工具+智能编排 > 复杂检索 | [post](../shared/knowledge/library/posts/xhs-69882a19.md) |
 
@@ -51,6 +56,9 @@
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
+| 2026-04-02 | **HippoCamp** (arXiv:2604.01221) | Personal computer agent benchmark; 42.4GB/2K+ files; top models only 48.3% user profiling accuracy | [post](../shared/knowledge/library/posts/HB-0504-hippocamp-benchmark.md) |
+| 2026-04-02 | **Agent Psychometrics** (arXiv:2604.00594) | Task-level prediction in agentic coding; IRT + task features; decompose LLM vs scaffold ability | [post](../shared/knowledge/library/posts/HB-0504-agent-psychometrics.md) |
+| 2026-04-02 | **Pare** (arXiv:2604.00842) | Proactive agent evaluation; FSM app modeling; 143 tasks across communication/productivity/scheduling | [post](../shared/knowledge/library/posts/HB-0504-pare-proactive-agents.md) |
 | 2026-04-01 | SWE-Lancer (OpenAI, arXiv:2502.12115) | $100万真实Upwork任务; 前沿模型仍无法解决大多数真实工程任务 | — |
 | 2026-04-02 | WildToolBench (ICLR 2026, Tencent) | Session success <15%; 3 failure modes: compositional, hidden intent, instruction switching | [post](../shared/knowledge/library/posts/xhs_69b62426_wildtoolbench_hunyuan.md) |
 
@@ -84,4 +92,4 @@
 
 ---
 
-*Last updated: 2026-04-02 by Amy-Kimi — Added Claude Code leak analysis, Anthropic Effective Agents deep dive, Stop Overthinking survey*
+*Last updated: 2026-04-02 by Amy-Kimi — Added 5 new papers: HippoCamp (personal agent benchmark), OmniMem (autoresearch memory), HERA (evolving multi-agent RAG), Pare (proactive agents), Agent Psychometrics (task-level prediction)*
