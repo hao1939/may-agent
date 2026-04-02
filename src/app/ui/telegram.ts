@@ -199,7 +199,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     }
 
     // All input goes through the unified handler
-    bus.command({ type: "input", message: inputMessage, source: "telegram" });
+    bus.emit({ type: "input", message: inputMessage, source: "telegram" } as any);
   }
 
   // ── Outbound: accumulate assistant text, send on turn end ────────

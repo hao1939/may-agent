@@ -30,7 +30,8 @@ const VALID_COMMAND_TYPES = new Set([
   "subscribe",
   "status",
   "input",
-  "run",
+  "run", // deprecated alias for fork
+  "fork",
   "reload_agents",
   "restart",
 ]);
@@ -265,19 +266,23 @@ export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
           continue;
         }
 
-        // Dispatch and propagate handler result (L5)
-        const result = bus.command(cmd as Parameters<typeof bus.command>[0]);
-        if (result && !result.ok) {
-          socket.write(
-            JSON.stringify({
-              type: "error",
-              command: cmdType,
-              message: result.message ?? "Command failed",
-            }) + "\n",
-          );
-        } else {
-          socket.write(JSON.stringify({ type: "ok", command: cmdType }) + "\n");
+        // Normalize and emit to bus — single path for all commands
+        // Socket-only aliases: run → fork, close → shutdown, cancel_task → cancel, reload_agents → reload
+        let busEvent: Record<string, unknown> = { ...cmd };
+        if (cmdType === "run") {
+          busEvent = { type: "fork", agent: cmd.agent, task: cmd.message, opts: { source: "socket" } };
+        } else if (cmdType === "fork") {
+          busEvent = { type: "fork", agent: cmd.agent, task: cmd.task ?? cmd.message, opts: { source: "socket" } };
+        } else if (cmdType === "close") {
+          busEvent = { type: "shutdown" };
+        } else if (cmdType === "cancel_task") {
+          busEvent = { type: "cancel_all" };
+        } else if (cmdType === "reload_agents") {
+          busEvent = { type: "reload" };
         }
+
+        bus.emit(busEvent as Parameters<typeof bus.emit>[0]);
+        socket.write(JSON.stringify({ type: "ok", command: cmdType }) + "\n");
       }
     });
 

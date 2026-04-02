@@ -286,6 +286,7 @@ const manager = new SubagentManager({
       status: info.status,
       duration: info.runtime,
       error: info.error,
+      opCount: info.opCount,
     });
 
     // Surface errors for completed task sessions
@@ -722,7 +723,22 @@ bus.subscribe((event) => {
         if (chatSession) {
           chatSession.handleInput(`@${event.agent} ${event.task}`, "socket");
         } else {
-          const sessionId = manager.run(event.agent, event.task, { kind: "job" });
+          let requestId: string | undefined;
+          try {
+            requestId = trackRequest(PERSIST_DIR, {
+              fromEntity: event.opts?.source ?? "agent",
+              toAgent: event.agent,
+              task: event.task,
+              method: "call",
+              source: event.opts?.source ?? "bus",
+            });
+          } catch {
+            /* non-fatal */
+          }
+          const sessionId = manager.run(event.agent, event.task, {
+            kind: (event.opts?.kind as "chat" | "job" | "call" | undefined) ?? "job",
+            requestId: event.opts?.requestId ?? requestId,
+          });
           bus.emit({ type: "log", level: "info", message: `[fork] Started ${event.agent} session: ${sessionId}` });
         }
       }
@@ -739,82 +755,10 @@ bus.subscribe((event) => {
   }
 });
 
-// ── Backward compat: old command handler for socket.ts ──────────────────
-// Socket.ts still uses bus.command() for request/response commands (status, subscribe).
-// These will be migrated to direct DB reads in a future phase.
-bus.onCommand((cmd) => {
-  switch (cmd.type) {
-    case "input":
-      handleInput((cmd as any).message ?? (cmd as any).text ?? "", (cmd as any).source);
-      return { ok: true };
-    case "steer": {
-      const targetSid = (cmd as any).sessionId;
-      const steerText = (cmd as any).message ?? (cmd as any).text ?? "";
-      if (!targetSid) return { ok: false, message: "steer requires sessionId" };
-      try {
-        const sessions = manager.status();
-        const target = sessions.find((s) => s.sessionId === targetSid);
-        if (target?.status === "idle") {
-          manager.input(targetSid, steerText);
-        } else {
-          manager.steer(targetSid, steerText, "human");
-        }
-        return { ok: true };
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        return { ok: false, message: msg };
-      }
-    }
-    case "cancel":
-      if ((cmd as any).sessionId) manager.cancel((cmd as any).sessionId);
-      return { ok: true };
-    case "cancel_all":
-      handleInput("cancel all");
-      return { ok: true };
-    case "cancel_task":
-      handleInput("cancel");
-      return { ok: true };
-    case "close":
-      gracefulShutdown();
-      return { ok: true };
-    case "status":
-      handleInput("status");
-      return { ok: true };
-    case "run": {
-      if (chatSession) {
-        chatSession.handleInput(`@${(cmd as any).agent} ${(cmd as any).message}`, "socket");
-      } else {
-        let requestId: string | undefined;
-        try {
-          requestId = trackRequest(PERSIST_DIR, {
-            fromEntity: "human",
-            toAgent: (cmd as any).agent,
-            task: (cmd as any).message,
-            method: "call",
-            source: "socket",
-          });
-        } catch {
-          /* non-fatal */
-        }
-        const sessionId = manager.run((cmd as any).agent, (cmd as any).message, { kind: "job", requestId });
-        bus.emit({
-          type: "log",
-          level: "info",
-          message: `[direct] Started ${(cmd as any).agent} session: ${sessionId}`,
-        });
-      }
-      return { ok: true };
-    }
-    case "reload_agents":
-      handleReload();
-      return { ok: true };
-    case "restart":
-      gracefulRestart();
-      return { ok: true };
-    default:
-      return { ok: false, message: `Unknown command type: ${(cmd as { type: string }).type}` };
-  }
-});
+// ── Backward compat: onCommand removed ──────────────────────────────────
+// All commands now flow through bus.subscribe() above.
+// Socket normalizes aliases (run→fork, close→shutdown, reload_agents→reload)
+// and emits directly to the bus.
 
 // ── Interface agent selection ──────────────────────────────────────────
 
