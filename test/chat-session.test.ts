@@ -72,7 +72,7 @@ describe("ChatSession", () => {
 
   it("handles status command directly (no LLM)", () => {
     const messages: string[] = [];
-    bus.on((event) => {
+    bus.subscribe((event) => {
       if (event.type === "info") messages.push(event.message);
     });
 
@@ -84,7 +84,7 @@ describe("ChatSession", () => {
 
   it("handles cancel command when no sessions", () => {
     const messages: string[] = [];
-    bus.on((event) => {
+    bus.subscribe((event) => {
       if (event.type === "info") messages.push(event.message);
     });
 
@@ -132,7 +132,7 @@ describe("ChatSession", () => {
 
   it("cancel all cancels running sessions", () => {
     const messages: string[] = [];
-    bus.on((event) => {
+    bus.subscribe((event) => {
       if (event.type === "info") messages.push(event.message);
     });
 
@@ -216,7 +216,7 @@ describe("ChatSession", () => {
     });
 
     const messages: string[] = [];
-    bus.on((event) => {
+    bus.subscribe((event) => {
       if (event.type === "info") messages.push(event.message);
     });
 
@@ -236,7 +236,7 @@ describe("ChatSession", () => {
 
   it("/new closes current session and allows fresh start", async () => {
     const messages: string[] = [];
-    bus.on((event) => {
+    bus.subscribe((event) => {
       if (event.type === "info") messages.push(event.message);
     });
 
