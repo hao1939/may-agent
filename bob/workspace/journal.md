@@ -2,6 +2,19 @@
 
 > Pre-2026-03-30 entries archived at `agents/bob/workspace/archive/journal-pre-2026-03-30.md`
 
+# Session 2026-04-02 ~04:56 (H-041: The Decision Topology)
+- **Key output**: Wrote H-041 — The Decision Topology. This operationalizes H-040 (Reliability Inversion) by classifying decision points and identifying when elimination helps vs hurts.
+- **Core insight**: Not all decisions are equal. Three types: **eliminable** (known-correct answer, eliminate freely), **essential** (the decision IS the work, preserve), **navigation** (meta-decisions that can be policy-gated). H-040's blanket "eliminate decisions" is correct only when eliminable decisions dominate.
+- **EXP-009 as empirical grounding**: Optimizer's workflow analyzed 464 sessions showing workflows reduce errors 6.8x (eliminating eliminable decisions) but HURT exploratory tasks (constraining essential decisions). QA at 100% with workflow (all eliminable), optimizer dropped from 60% to 27% (essential decisions constrained).
+- **New external evidence integrated**:
+  - DD#484 (OrgAgent): Hierarchy +102% F1 on structured tasks, fails on MuSR creative reasoning — matches prediction that structure helps when decisions are eliminable
+  - DD#485 (CASCADE): Gate-triggered scope expansion replaces navigation decisions with policy — exactly the "navigation decision" category
+  - CR#270: Structure × Scope synthesis — H-041 adds the third variable (TaskFit)
+  - Karpathy tips: "blame the prompt, not the model" = most failures are eliminable decisions
+- **Predictions**: 5 testable predictions including topology-aware workflows and soft workflows for exploratory tasks
+- **Relationship to theory chain**: H-035 (Boundedness) → H-039 (Decomposition Bottleneck) → H-040 (Reliability Inversion) → H-041 (Decision Topology). Each refines the previous, adding mechanism and boundary conditions.
+- **INDEX updated**: Added H-041, EXP-008, EXP-009
+
 # Session 2026-04-02 ~03:27 (H-040: The Reliability Inversion)
 - **Key output**: Wrote H-040 — The Reliability Inversion. This is the meta-principle that explains *why* most of our verified knowledge is true.
 - **Core insight**: In multi-agent systems, reliability improves more from eliminating decision points (reducing N in p^N) than from improving decision quality (increasing p). This creates an "inversion" beyond a critical pipeline length N* ≈ 5-7 steps where structural simplification beats model improvement.
