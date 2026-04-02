@@ -209,11 +209,12 @@ describe("computeHeuristicScores - waste ratio penalty", () => {
     const scores = computeHeuristicScores(session, transcript, messages);
     // 42 errors > 3 → wastedCalls = min(42, ceil(42*0.5)) = 21
     // wasteRatio = 21/42 = 0.5 → moderate_waste_ratio
-    // Actually with status=interrupted: quality -= 1 (session_error)
+    // "interrupted" is NOT penalized with session_error (only "error" status is).
     // efficiency: 3 - 1(multiple_tool_errors) - 1(moderate_waste) = 1
-    // quality: 3 - 1(session_error) - 1(moderate_waste) = 1
+    // quality: 3 - 1(moderate_waste) = 2
+    // verdict: quality=2 >= 2 but efficiency=1 < 2 → needs_improvement
     expect(scores.verdict).toBe("needs_improvement");
-    expect(scores.issues).toContain("session_error");
+    expect(scores.issues).toContain("multiple_tool_errors");
   });
 
   it("high_waste_ratio threshold at exactly 0.75", () => {

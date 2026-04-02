@@ -824,18 +824,17 @@ export function computeHeuristicScores(
   // Count assistant turns
   const assistantTurns = (transcript.match(/"role":"assistant"/g) || []).length;
 
-  // 1. Session status
-  if (session.status === "error" || session.status === "interrupted") {
+  // 1. Session status — only penalize actual errors, not timeouts.
+  // "interrupted" is normal (system timeout) and should not reduce quality.
+  if (session.status === "error") {
     quality -= 1;
     issues.push("session_error");
   }
 
-  // 2. OpBudget exhaustion
-  const hasOpBudgetError = transcript.includes("opBudget") || transcript.includes("operation budget");
-  if (hasOpBudgetError && (session.status === "error" || session.status === "interrupted")) {
-    efficiency -= 1;
-    issues.push("opBudget_exhaustion");
-  }
+  // 2. OpBudget exhaustion — REMOVED (opBudget system removed 2026-03-30).
+  // The old check matched "opBudget" or "operation budget" in transcripts,
+  // but since the budget system no longer exists, any matches are stale
+  // references (e.g., in agent context files or old error messages).
 
   // 3. Very shallow sessions (< 2 assistant turns with few tool calls)
   if (assistantTurns <= 1 && totalToolCalls === 0) {
