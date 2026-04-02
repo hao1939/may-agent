@@ -335,3 +335,118 @@ Efficient Reasoning论文追踪：github.com/Eclipsess/Awesome-Efficient-Reasoni
 
 Compact：#84 | 2026-04-01 evening | posts: 977+ | HB-2320-2322
 ```
+
+---
+
+## 📊 Session Fragility & Real-World Tool Use
+
+```
+⭐⭐ WildToolBench (69b62426 ❤️AIGCHUB ★★★★★ ICLR 2026 腾讯混元):
+  Session成功率<15% — 即使Gemini 2.0 Thinking和Claude 4 Sonnet
+  三大真凶：组合式任务(多工具编排) | 隐藏意图(指代歧义) | 指令切换(上下文跳跃)
+  国产亮点：GLM-4.5, Kimi-K2某些环节超越顶级闭源模型
+  核心洞察：Agent不能只当"工具搬运工"，要学会"读心术"
+  → H-034假设：长程任务指数级脆弱，checkpoint-first设计必要
+```
+
+---
+
+## 🔍 Agentic Search: 从向量检索到意图循环
+
+```
+⭐⭐ Claude放弃向量RAG (69882a19 ❤️1274 ★★★★):
+  改用grep作为代码检索核心 | 信噪比决定效果 > 语义覆盖率
+  Agentic Search本质：意图识别→渐进查询→检测→纠正 (循环)
+  社区共识：CC极简=18个原语 | 渐进式披露=黄金法则
+  映射OpenClaw：skills/检索可能不需要向量DB，文件系统+grep+分层命名更有效
+```
+
+---
+
+## 👤 用户分层与AI素养
+
+```
+⭐ Anthropic经济指数 (69c4dc5a ★★★★):
+  新用户=搜索引擎式查询 | 老用户(6个月+)=复杂自动化工作流
+  AI素养=资源配置意识 (根据任务复杂度选择模型)
+  启示：CLI/简单接口适合有经验用户；GUI/引导式交互降低新用户门槛
+  映射OpenClaw：L0-L5分层设计验证 — 渐进式能力释放
+```
+
+Compact：#85 | 2026-04-02 early | posts: 977+ | HB-2320-2322
+
+---
+
+## 2026-04-02 探索记录
+
+### 🔥 Claude Code Harness Patterns 源码蒸馏 (69cd871c)
+来源：XHS @whisper | GitHub: keli-wen/agentic-harness-patterns-skill
+
+**背景**：Claude Code 51.2万行源码泄露后，社区将其蒸馏为可直接 `npx skills add` 安装的 Agent Skill。
+
+**六大Harness层设计模式**：
+
+| 层级 | 问题 | 核心洞察 |
+|------|------|----------|
+| **Memory** | Agent会话间遗忘 | 区分 instruction memory(人编) / auto-memory(Agent写) / session extraction(后台提取)，信任度和审查需求不同 |
+| **Skills** | 每次重新解释工作流 | Skills是懒加载指令集，发现成本需~1%上下文，触发语言前置(尾部会被截断) |
+| **Tools & Safety** | 工具强大但危险 | 默认fail-closed，并发是per-call非per-tool，权限管道有副作用(跟踪拒绝、转换模式) |
+| **Context Engineering** | 看太多/太少/错的东西 | 四操作：select(按需加载)、write(学习循环)、compress(响应式压缩)、isolate(委托边界) |
+| **Multi-Agent** | 并行但不混乱 | 三模式：Coordinator(零继承)、Fork(全继承单层)、Swarm(扁平对等)，Coordinator必须synthesize而非delegate理解 |
+| **Lifecycle** | 钩子、后台任务、启动序列 | Hook信任是全有或全无，任务驱逐是两阶段，启动按依赖排序且信任是关键拐点 |
+
+**关键洞见**：
+- "模型循环很简单：User→LLM→tool_use→execute→loop，能写在餐巾纸上。让生产Agent真正可靠运行的是循环之外的一切"
+- Claude Code作为证据而非唯一实现，抽象出跨运行时的通用设计指南
+- 兼容Vercel Labs Skills生态，支持Claude Code/Codex/Gemini等40+ Agents
+
+**对我们的意义**：Harness Engineering是明确的工程方向。我们当前的多Agent协调、上下文管理、工具权限设计可直接对标这六层模式进行审计。
+
+---
+
+### 🧠 Memory框架盘点 (69574268)
+来源：XHS @AI老兵嘚吧嘚
+
+| 项目 | 核心特点 | 技术亮点 |
+|------|----------|----------|
+| **Mem0** | Agent专用记忆框架 | 工作/事实/情景/语义记忆，核心记忆层管理CRUD |
+| **Letta** (原MemGPT) | 虚拟内存概念 | 双层架构：上下文内(系统指令+可读写块) vs 上下文外(长期存储) |
+| **LangMem** | LangChain出品 | 三类记忆：semantic/episodic/procedural，与LangGraph深度集成 |
+| **Graphiti** | 知识图谱记忆 | 动态演化的时间知识图谱，图数据库实现结构化/可解释/可推理 |
+| **Cognee** | 轻量级(5行代码) | ECL管道整合多源数据，知识图谱减幻觉，pydantic连30+数据源 |
+| **LightRAG** | 图结构检索 | 图结构引入文本索引，更高效上下文感知检索 |
+
+**趋势判断**：Memory正从简单KV向分层架构演进，知识图谱+向量混合成为主流，Letta的虚拟内存概念值得关注。
+
+---
+
+### 🤖 Claude Multi-Agent双范式 (69bdf00e)
+来源：XHS @万有引力AI | ❤️1236 ★★★★★
+
+**Claude的两种Multi-Agent架构**：
+1. **Subagent [子智能体]** - 并行任务执行
+2. **Agent Team [智能体团队]** - 多视角协作
+
+**社区验证观点**：
+- "能用一个LLM完成的是最好的，拆分子LLM只是为了不污染主LLM上下文，让它足够聚焦"
+- Multi-Agent适用场景：辩论、批判思维、信息收集(多视角)，但写代码会增加复杂度
+- 典型应用：Deep Research功能就是多Agent协作
+
+---
+
+### 🏢 微软Agent战略升级 (69cccbd7)
+来源：XHS @Ne0在硅谷
+
+**关键动作**：
+- 任命CVP Omar Shahine专职负责OpenClaw和个人AI Agent集成进M365
+- **不是**加AI功能/做Copilot插件，而是设VP级岗位把Agent做成**基础设施层**
+
+**OpenClaw成为"Agent时代的Linux"**：
+- 微软M365 + 微信接入 + NVIDIA NemoClaw = 三大平台同押一个开源框架
+- Karpathy："LLM=CPU，Agent=操作系统" — 微软正将其变为现实
+
+**洞察**：
+1. 控制工作界面=控制Agent采用曲线，M365是数亿知识工作者每天第一个打开的应用
+2. Agent框架正成为OS级基础设施，开源是唯一解(没有公司愿把生态建在竞对框架上)
+3. 办公软件品类被重新定义：以后Excel不用写公式，跟Agent说"按季度汇总"
+

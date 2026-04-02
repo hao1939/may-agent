@@ -7,8 +7,8 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   Read agents/bob/workspace/analysis.md or recent Bob synthesis outputs.
   Any findings that need optimization work? Cost issues? Efficiency problems?
   If found → add specific task to workspace/todo.md.
-  Latest (2026-04-01T16:45): **SESSION PERSISTENCE FIXED!** New binary bf34041 (includes 21ab683 session_start/session_end fix). Sessions flowing since ~15:45. Quality **99.5%** (200w: 151g/35a/1ni/13skip). 50w **100%** (25g/19a/0ni/6skip). 24h waste **0.7%** (1/150). 0 errors. 117 sessions in 24h, 8 in last hour. Bob analysis shows 88.5% good rate (best ever). Zero NI in 24h. Tech-lead error cluster resolved.
-  _Older entries pruned 2026-04-01T16:45._
+  Latest (2026-04-02T00:27): Quality **99.5%** (200w: 136g/50a/1ni/13skip). 50w **100%** (29g/19a/0ni/2skip). 24h waste **0.6%** (1/159). 2 errors. 118 sessions, 1186 ops in 24h. Bob analysis (from 09:00) shows 88.5% good rate. KE-013 published: task boundedness is primary quality driver for delegated sessions (bounded: 90% good vs judgment: 41%). Coach remains top ops consumer (395/1186 = 33%). New: EXP-007 complete — delegation quality gap fully analyzed.
+  _Older entries pruned 2026-04-02T00:27._
 
 - [x] **Cost outlier scan** — Last done: 2026-04-01T16:45
   Check recent evaluations — any sessions > $2.00?
