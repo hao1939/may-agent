@@ -30,7 +30,7 @@ Each skill has ONE status:
 | verify-before-finish | ✅ proven (as workflow) | partial-verification-trap: 2-phase workflow forces edge-case testing before finish. 5/6→6/6 | Text injection zero effect (exp-229). Only works as workflow enforcement. | | exp-224: partial-verification-trap-workflow 6/6 (2 runs) vs baseline 5/6. PROMOTED. |
 | classify-then-act | ⚪ untested | | | | needs gym test |
 | scope-discipline | ⚪ untested | | | | needs gym test |
-| tool-discipline | ⚪ untested | | | | needs gym test |
+| tool-discipline | ✅ proven (as workflow) | context-npx-avoidance: 2-phase workflow (discover → execute) prevents habitual npx usage. 0/3→2/2 on no-npx-attempt. | Text injection fails (npx warning in system prompt is ignored). Grep-first-reading variant fails (different mechanism). | | EXP-015: context-npx-avoidance-workflow 6/7 (2 runs) vs baseline 3.3/5. **0%→100% on critical check.** |
 | obstacle-pivot | ✅ proven (as workflow) | behavior-escalation-stubborn: 2-phase workflow (assess → act/escalate) converts 0% escalation to 100%. The agent KNOWS the file is binary but can't translate knowledge into escalation without forced assessment phase. | Text injection untested (likely fails per 0/19 pattern). Only works as workflow enforcement. | | EXP-013: behavior-escalation-stubborn-workflow 6/6 (3/3 runs) vs baseline 0/3 escalated-properly. **STRONGEST A/B result ever: 0%→100% on critical check.** |
 | investigate-and-fix | ⚪ untested | | | | needs gym test |
 | brainstorm-before-build | ⚪ untested | | | | `design-cache-strategy` scenario: ceiling effect (baseline 5/5 PASS 2026-03-30). Need harder scenario to test. |
@@ -47,6 +47,7 @@ Three skills are now PROMOTED as workflows, ready for deployment consideration:
 1. **verify-before-finish** (partial-verification-trap-workflow: 5/6→6/6)
 2. **evidence-over-narrative** (misleading-test-fix-workflow: 5/8→11/11)
 3. **obstacle-pivot** (behavior-escalation-stubborn-workflow: 0/3→3/3 escalation — strongest result)
+4. **tool-discipline** (context-npx-avoidance-workflow: 0/3→2/2 npx avoidance — EXP-015)
 
 ## How to Evaluate a Skill
 

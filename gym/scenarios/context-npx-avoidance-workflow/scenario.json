@@ -1,0 +1,9 @@
+{
+  "name": "context-npx-avoidance-workflow",
+  "categories": ["context-learning", "proof"],
+  "tags": ["behavior", "npx", "workflow"],
+  "tier": "smoke",
+  "timeout": 3,
+  "agent_type": "coder",
+  "workflow": true
+}

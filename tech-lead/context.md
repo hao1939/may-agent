@@ -13,3 +13,5 @@
 - If you receive a design brief from Bob that lacks evidence (no incident data, no alternatives considered, no validation plan), send it back — don't implement it
 - opBudget removed — do not implement tool call limits. Agents should take as many ops as needed.
 - Research preference: apply ideas to our system — investigate which tech/theory/skill/workflow can improve our learning and research capabilities. Build POCs, experiment, implement. But not limited to this.
+- FM-3.3 prevention: For ALL bug-fix delegation tasks, use the verified-coder workflow (not raw agents.call). Include a verifyCommand that runs the relevant test. Never trust coder's claim that tests pass — the workflow runs the command itself and loops on failure.
+- After ANY direct file edit (not delegated), run verification yourself: ./node_modules/.bin/tsc --noEmit + relevant test file. Do NOT call finish() until you have exit code 0 from a verification command in your own session.

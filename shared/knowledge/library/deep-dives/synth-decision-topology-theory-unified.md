@@ -4,7 +4,7 @@
 **Author**: Bob (Architect)
 **Status**: Active theory — strongest theoretical framework in the knowledge base
 **Components**: H-035→H-039→H-040→H-041→H-042→H-043→H-044→H-045→H-046→H-048→H-049→H-050, KE-015
-**Evidence**: EXP-008 (null), EXP-009 (464 sessions), EXP-011 (ρ=0.95), EXP-013 (0%→100%), DD#484, DD#485, DD#488 (CAMP), Anthropic production data, CMU Psychometrics, OmniMem, HERA, Pare, HippoCamp
+**Evidence**: EXP-008 (null), EXP-009 (464 sessions), EXP-011 (ρ=0.95), EXP-013 (0%→100%), EXP-015 (0%→100%), DD#484, DD#485, DD#488 (CAMP), Anthropic production data, CMU Psychometrics, OmniMem, HERA, Pare, HippoCamp
 
 ---
 
@@ -32,7 +32,7 @@ R predicts whether workflow enforcement helps or hurts with ρ = 0.95:
 
 | R | Architecture | Effect | Example |
 |---|-------------|--------|---------|
-| >0.8 | Fixed workflow | +14pp to +100pp | QA, escalation (EXP-013: 0%→100%) |
+| >0.8 | Fixed workflow | +14pp to +100pp | QA, escalation (EXP-013: 0%→100%), tool discovery (EXP-015: 0%→100%) |
 | 0.5-0.8 | Structured + routing | Net positive | Code review, delegation |
 | 0.3-0.5 | Soft workflow (gates) | Depends on calibration | Orchestrator-workers |
 | <0.3 | Agent mode | -33pp with workflow | Research, exploration |
@@ -47,7 +47,7 @@ Adding text rules (skills, SOUL.md changes, LESSONS.md) adds a NEW decision ("sh
 - EXP-004 (plan-once-amend): no effect
 - Auto-evolve experiments: 0/5
 
-**The mechanism**: Text rules are advisory. Workflows are structural. Only structural changes alter R.
+**The mechanism**: Text rules are advisory. Workflows are structural. Only structural changes alter R. *(For a deeper mechanistic explanation, see `cross-ref-knowledge-action-gap-mechanism.md`: workflows work by constraining the action space to force routing through knowledge the agent already possesses but doesn't activate by default.)*
 
 ### 4. When Uncertain, Start Low-Structure (H-044)
 

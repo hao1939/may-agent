@@ -10,7 +10,10 @@
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
-| 2026-04-02 | **Claude Code Source Leak (Update)** | 社区反应: 1868+1736+1124+606赞分析帖; 核心组件(superpowers/gstack/GSD); 本地部署已实现 | [post](../shared/knowledge/library/posts/HB-0085-claude-code-leak.md) |
+| 2026-04-02 | **Claude Code Source Leak** | 51万行源码暴露; 纯TS架构/工具调用/上下文压缩/安全沙箱; 社区提取8大洞察 | [post](../shared/knowledge/library/posts/HB-0035-claude-code-source-leak.md) |
+| 2026-04-02 | **Self-Evolving Agents Survey** | 350+赞热议; 经验回放+元学习+自我反思+技能蒸馏; Test-time动态进化 | [post](../shared/knowledge/library/posts/HB-0036-self-evolving-agents-survey.md) |
+| 2026-04-02 | **Browser Use Framework** | 85.7k⭐浏览器自动化; LLM→Playwright架构; CLI版本社区推荐; 反爬需注意 | [post](../shared/knowledge/library/posts/HB-0037-browser-use-framework.md) |
+| 2026-04-02 | Claude Code Source Leak (Update) | 社区反应: 1868+1736+1124+606赞分析帖; 核心组件(superpowers/gstack/GSD); 本地部署已实现 | [post](../shared/knowledge/library/posts/HB-0085-claude-code-leak.md) |
 | 2026-04-02 | Multi-Agent Paradigm Debate | 质疑派:"注定失败"(704赞) vs 实践派:"Claude两种架构"(1247赞); 协调成本是关键挑战 | [post](../shared/knowledge/library/posts/HB-0086-mult-agent-paradigm.md) |
 | 2026-04-02 | DeerFlow (ByteDance) Update | "不要再用StateGraph"(319赞); 字节开源Agent框架(603赞); 解决StateGraph可维护性问题 | [post](../shared/knowledge/library/posts/HB-0087-deerflow-bytedance.md) |
 | 2026-04-02 | **Claude Code Source Leak** | v2.1.88泄露; superpowers/gstack/GSD架构; 100%本地运行可行; 加速Agent赛道 | [post](../shared/knowledge/library/posts/HB-0503-claude-code-leak-analysis.md) |

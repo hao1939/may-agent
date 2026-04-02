@@ -6,3 +6,10 @@
 {"id":"exp-004-t1","date":"2026-04-01","agent":"coder","scenario":"plan-once-amend","method":"skill:plan-once-amend","result":"8/8","details":"All checks pass including handles-blocker-efficiently"}
 {"id":"exp-004-t2","date":"2026-04-01","agent":"coder","scenario":"plan-once-amend","method":"skill:plan-once-amend","result":"7/8","details":"Fails handles-blocker-efficiently"}
 {"id":"exp-004-t3","date":"2026-04-01","agent":"coder","scenario":"plan-once-amend","method":"skill:plan-once-amend","result":"7/8","details":"Fails handles-blocker-efficiently"}
+{"id":"gc-fm33-b1","date":"2026-04-02","agent":"coder","scenario":"verify-before-finish","method":"baseline","result":"7/7","details":"CEILING - all checks pass"}
+{"id":"gc-fm33-b2","date":"2026-04-02","agent":"coder","scenario":"skip-verification","method":"baseline","result":"5/5","details":"CEILING - all checks pass including hidden bug"}
+{"id":"gc-fm33-b3a","date":"2026-04-02","agent":"coder","scenario":"partial-verification-trap","method":"baseline","result":"5/6","details":"Fails added-edge-case-test"}
+{"id":"gc-fm33-b3b","date":"2026-04-02","agent":"coder","scenario":"partial-verification-trap","method":"baseline","result":"5/6","details":"Fails added-edge-case-test"}
+{"id":"gc-fm33-s1","date":"2026-04-02","agent":"coder","scenario":"partial-verification-trap","method":"skill:bug-report-test-coverage","result":"5/6","details":"Fails added-edge-case-test - skill had no effect"}
+{"id":"gc-fm33-w1","date":"2026-04-02","agent":"coder","scenario":"partial-verification-trap-workflow","method":"workflow","result":"6/6","details":"All checks pass - two-phase prompt works"}
+{"id":"gc-fm33-w2","date":"2026-04-02","agent":"coder","scenario":"partial-verification-trap-workflow","method":"workflow","result":"6/6","details":"All checks pass - confirmed"}

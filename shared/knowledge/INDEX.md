@@ -153,6 +153,7 @@ The core theory chain. Start with SYNTH-001 (`library/deep-dives/synth-decision-
 | EXP-012 | Gated exploration soft workflow for optimizer (H-041 P3) | Ready | — (awaiting execution) | knowledge/experiments/EXP-012/ |
 | EXP-013 | Workflow enforcement for escalation (two-phase vs none) | **Complete** | **0%→100% with workflow** (R≈0.80, n=6) → KE-015 | knowledge/experiments/EXP-013/ |
 | EXP-014 | incremental-context-loading scorer bug fix | **Complete** | Infrastructure fix — scorer bug, not agent behavior | knowledge/experiments/EXP-014/ |
+| EXP-015 | Workflow enforcement for tool avoidance (npx) | **Complete** | **0%→100% with workflow** (R≈0.90, n=5) → KE-007, KE-015 | knowledge/experiments/EXP-015/ |
 
 ## Operational (not knowledge — reference only)
 

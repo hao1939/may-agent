@@ -3,6 +3,31 @@
 
 ---
 
+## 2026-04-02 Session Highlights (Evening)
+
+### 🔥 Claude Code 源码泄露社区分析
+- **事件**: Anthropic 意外泄露51万行Claude Code源码
+- **社区洞察**: 8个关键发现 - 纯TypeScript架构、工具调用模式、上下文压缩机制、安全沙箱设计
+- **关键学习**: 工具描述设计精良、token管理是核心优化点、多层次限流处理
+- **本地部署**: 社区已实现"100%本地免费运行"方案
+- **相关**: [post](posts/HB-0035-claude-code-source-leak.md)
+
+### 🔥 Self-Evolving Agents 综述热议
+- **热度**: 小红书350+赞，多个讨论帖
+- **核心概念**: 自主学习、能力积累、错误修正、知识更新
+- **技术路径**: 经验回放、元学习、自我反思、技能蒸馏
+- **Test-time进化**: 推理时动态调整，单次会话内进化
+- **相关**: [post](posts/HB-0036-self-evolving-agents-survey.md)
+
+### 🔥 Browser Use 框架 (85.7k⭐)
+- **定位**: 最受欢迎的AI浏览器自动化开源项目
+- **架构**: LLM → Browser Controller → Playwright → Browser
+- **社区反馈**: CLI版本比库版本更易用、注意反爬和代理需求
+- **场景**: 数据采集、自动化测试、表单填写、竞品监控
+- **相关**: [post](posts/HB-0037-browser-use-framework.md)
+
+---
+
 ## 2026-04-02 Session Highlights
 
 ### 🔥 ProMem: 主动记忆提取 (arXiv:2601.04463, NJU, XHS 157赞)
