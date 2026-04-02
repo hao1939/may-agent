@@ -45,6 +45,7 @@ export type SessionEvent =
       duration?: string;
       error?: string;
       outcome?: string;
+      opCount?: number;
     };
 
 /** System events */
@@ -95,33 +96,12 @@ export function isSessionEvent(event: AgentEvent): event is SessionEvent {
   return "sessionId" in event && typeof (event as SessionEvent).sessionId === "string";
 }
 
-// ── Backward compat types ──────────────────────────────────────────────
-// Remove these after full migration.
-
-/** @deprecated Use AgentEvent instead. */
-export type RunnerEvent = AgentEvent;
-/** @deprecated Use AgentCommand instead. */
-export type RunnerCommand =
-  | AgentCommand
-  | ManagementCommand
-  | { type: "status" }
-  | { type: "close" }
-  | { type: "cancel_task" }
-  | { type: "run"; agent: string; message: string }
-  | { type: "reload_agents" }
-  | { type: "subscribe"; sessions: string[]; notifications?: boolean };
-/** @deprecated */
-export type CommandResult = { ok: boolean; message?: string };
-
 // ── EventBus ───────────────────────────────────────────────────────────
 
 export type Subscriber = (event: AgentEvent) => void;
 
 export class EventBus {
   private subscribers: Subscriber[] = [];
-
-  /** @deprecated Use subscribe() instead. */
-  private commandHandler: ((cmd: RunnerCommand) => CommandResult | void) | null = null;
 
   /** Subscribe to all events. Returns unsubscribe function. */
   subscribe(fn: Subscriber): () => void {
@@ -140,23 +120,6 @@ export class EventBus {
         /* subscriber errors never break the bus */
       }
     }
-  }
-
-  // ── Backward compat (remove after migration) ────────────────────────
-
-  /** @deprecated Use subscribe() instead. */
-  on(listener: (event: AgentEvent) => void): () => void {
-    return this.subscribe(listener);
-  }
-
-  /** @deprecated Commands go through emit() now. Kept for socket.ts migration. */
-  onCommand(handler: (cmd: RunnerCommand) => CommandResult | void): void {
-    this.commandHandler = handler;
-  }
-
-  /** @deprecated Commands go through emit() now. Kept for socket.ts migration. */
-  command(cmd: RunnerCommand): CommandResult | void {
-    return this.commandHandler?.(cmd);
   }
 
   /** Number of subscribers. */

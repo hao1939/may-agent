@@ -1,5 +1,5 @@
 /**
- * Unix socket UI — streams RunnerEvents as JSON lines, accepts RunnerCommands.
+ * Unix socket UI — streams AgentEvents as JSON lines, accepts commands.
  *
  * Design: docs/socket-protocol.md
  *
@@ -16,7 +16,7 @@
 
 import { createServer, connect, type Server, type Socket } from "node:net";
 import { existsSync, unlinkSync } from "node:fs";
-import type { EventBus, RunnerEvent } from "../event-bus.js";
+import type { EventBus, AgentEvent } from "../event-bus.js";
 import type { SubagentManager } from "../../lib/index.js";
 
 // ── Valid command types (for validation) ────────────────────────────────
@@ -105,7 +105,7 @@ export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
   }
   const clients = new Map<Socket, ClientState>();
 
-  function shouldForward(client: ClientState, event: RunnerEvent): boolean {
+  function shouldForward(client: ClientState, event: AgentEvent): boolean {
     if (!client.filter) return true; // firehose — no filter
     if ("sessionId" in event && typeof event.sessionId === "string") {
       return client.filter.has(event.sessionId);
@@ -116,7 +116,7 @@ export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
     return false;
   }
 
-  function broadcast(event: RunnerEvent): void {
+  function broadcast(event: AgentEvent): void {
     if (clients.size === 0) return;
 
     // Chat-mode clients: keep filter in sync with the current chat session
@@ -153,7 +153,7 @@ export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
   }
 
   // Subscribe to all events
-  bus.on(broadcast);
+  bus.subscribe(broadcast);
 
   const server: Server = createServer((socket) => {
     clients.set(socket, { socket, filter: null, chatMode: false });

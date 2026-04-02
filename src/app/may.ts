@@ -475,7 +475,7 @@ const contextLearnAgents = new Set(
     .filter(Boolean),
 );
 
-bus.on((event) => {
+bus.subscribe((event) => {
   if (event.type !== "context-learn") return;
   const { agentName, sessionId, persistDir } = event;
 

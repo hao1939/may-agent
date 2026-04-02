@@ -211,7 +211,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
   // chat session and its children (delegated sub-sessions).
   const watchedSessions = new Set<string>();
 
-  const unsubBus = bus.on((event) => {
+  const unsubBus = bus.subscribe((event) => {
     const chatSid = getSessionId();
 
     // Keep the watched set in sync with the current chat session

@@ -97,7 +97,7 @@ export function sendSocketCommand(
   });
 }
 
-/** Event shape from the socket — a superset including all RunnerEvent types. */
+/** Event shape from the socket — a superset including all AgentEvent types. */
 export interface SocketEvent {
   type: string;
   sessionId?: string;
@@ -113,7 +113,7 @@ export interface SocketEvent {
  *
  * Used primarily to wait for "session_end" or "info" events from
  * detached sub-agent processes. The socket server broadcasts all
- * RunnerEvents as JSON lines.
+ * AgentEvents as JSON lines.
  *
  * @param socketPath - Path to the Unix domain socket
  * @param eventType - Event type to wait for (e.g. "session_end")
