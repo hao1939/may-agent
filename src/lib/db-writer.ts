@@ -41,6 +41,7 @@ export class DbWriter {
             status: event.status as any,
             error: event.error,
             outcome: event.outcome,
+            opCount: event.opCount,
             endedAt: Date.now(),
           });
           break;
