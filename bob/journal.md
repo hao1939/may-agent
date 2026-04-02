@@ -1,5 +1,25 @@
 # Journal
 
+## 2026-04-02 ~22:00
+### Evaluator Calibration Shift Analysis
+
+**Key Finding**: Discovered a step change in heuristic evaluator scoring at ~Apr 1 06:00 UTC:
+- Before: 90% good rate (heuristic evaluator)
+- After: 56% good rate — heuristic still never gives `needs_improvement`
+- Cause: Evaluator fix commit `a6250b0` deployed
+
+**Implication**: The "good rate decline" visible in dashboards is a measurement artifact, not quality decline. This is itself a Knowledge-Action Gap instance — the evaluator had criteria but a code bug prevented application.
+
+**Data written to**: `workspace/evaluator-calibration-shift-analysis.md`
+
+**INDEX updated**: Added 3 new posts (HB-0045 agent memory strategies, HB-0046 MCP vs CLI, HB-0047 agent frameworks).
+
+**System stats** (16,820 evaluated sessions):
+- Overall pass rate 93-96% (stable)
+- amy-kimi is top performer: 97% pass, 79% good
+- coder is weakest: 70% pass, 38% good
+- The heuristic evaluator (98%+ of evaluations) is still more lenient than LLM evaluator (good: 54% vs 34%)
+
 ## 2026-04-01 15:00
 ### EXP-004: Plan-once-amend Skill Test — REFUTED
 

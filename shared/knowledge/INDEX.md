@@ -202,5 +202,8 @@ Collected by scout, amy, amy-kimi agents. Each item is a potential source for hy
 | library/posts/HB-1775-claude-multiagent-patterns.md | Claude's two multi-agent paradigms: subagent (delegated) vs agent team (collaborative). "Don't use multi-agent for the sake of it." Chinese source | ~60 lines |
 | library/posts/HB-0513-gate-tool-evolution.md | GATE: Graph-based Adaptive Tool Evolution. Hierarchical tool library via LLM decomposition. arXiv:2502.14848 | ~50 lines |
 | library/posts/HB-0514-swelancer-benchmark.md | SWE-Lancer: $1M freelance SWE benchmark. Agents struggle with high-value tasks (consistent with low-R = creative). arXiv:2502.12115 | ~50 lines |
+| library/posts/HB-0045-agent-memory-8-strategies.md | 8 agent memory strategies: semantic index, memory graph, forgetting mechanisms, etc. Chinese source (小红书). Connects to H-047 memory lifecycle | ~55 lines |
+| library/posts/HB-0046-mcp-vs-cli-debate.md | MCP vs CLI debate: MCP adds protocol overhead, CLI keeps action space narrow. Community consensus: simpler is better when agent has strong reasoning. Chinese source | ~60 lines |
+| library/posts/HB-0047-top-8-agent-frameworks.md | Top 8 AI agent framework categories: single-agent, multi-agent, workflow, code-gen, etc. Chinese source (小红书) | ~45 lines |
 
 See library/README.md for details. Raw archives stay agent-local.

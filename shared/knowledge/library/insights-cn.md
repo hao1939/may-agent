@@ -1,5 +1,43 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #82 | 2026-04-02 explore | posts: 979 | HB368-2602新增
+> Compact #83 | 2026-04-02 explore | posts: 982 | HB0045-0047新增
+
+---
+
+## 2026-04-02 Session Highlights (Evening - Round 3)
+
+### 🔥 8种Agent记忆策略全解析
+- **来源**: 小红书(682赞, 1155收藏) @Erric的AI产品求职-匡集
+- **8层递进策略**:
+  1. 全量记忆 — 保留所有上下文
+  2. 滑动窗口 — 固定长度截断
+  3. 相关性过滤 — 遗忘次要信息
+  4. 摘要压缩 — 提炼关键信息
+  5. 向量数据库 — 语义检索记忆
+  6. 知识图谱 — 结构化记忆
+  7. 分层记忆 — 短期+长期结合
+  8. 类OS内存管理 — Page In/Out机制
+- **适用建议**: 原型用滑动窗口，生产用分层记忆，长期知识用向量DB+知识图谱
+- **相关**: [post](posts/HB-0045-agent-memory-8-strategies.md)
+
+### 🔥 MCP vs CLI 工具交互范式之争
+- **来源**: 小红书 @有个小店(1462赞) @好记星.ai(478赞)
+- **MCP核心问题**: 上下文成本高(每个工具都消耗Token)、配置繁琐、认证疲劳
+- **CLI范式崛起**: 透明可调试、可组合性强、借力现有生态
+- **Skills系统**: OpenClaw等采用CLI+Skills模式，被视为更优落地实践
+- **社区共识**: 非替代关系，而是场景选择——本地开发→CLI，企业集成→MCP
+- **对我们的启示**: 当前Skill系统与CLI范式一致，需评估是否需要MCP适配层
+- **相关**: [post](posts/HB-0046-mcp-vs-cli-debate.md)
+
+### 🔥 最流行的8类AI Agent框架盘点
+- **来源**: 小红书(734赞, 291评论) @老A的AI研究所
+- **8大框架**: OpenAI Agents SDK | LangGraph | LlamaIndex | AutoGen 0.4+ | Pydantic AI | SmolAgents | Camel | CrewAI
+- **选型建议**:
+  - 快速原型: SmolAgents, OpenAI SDK
+  - 生产级: LangGraph, AutoGen, CrewAI
+  - 数据密集型: LlamaIndex
+  - 类型安全: Pydantic AI
+- **关键洞察**: 无单一标准，生态仍在演化，LangGraph状态机值得研究
+- **相关**: [post](posts/HB-0047-top-8-agent-frameworks.md)
 
 ---
 

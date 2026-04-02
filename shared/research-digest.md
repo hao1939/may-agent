@@ -10,6 +10,9 @@
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
+| 2026-04-02 | **8 Agent Memory Strategies** | 全量→滑动窗口→相关性过滤→摘要压缩→向量DB→知识图谱→分层记忆→类OS内存管理; 复杂度递增 | [post](../shared/knowledge/library/posts/HB-0045-agent-memory-8-strategies.md) |
+| 2026-04-02 | **MCP vs CLI Debate** | MCP因上下文成本高被质疑; CLI+Skills模式 gaining traction; 场景选择: 本地开发→CLI, 企业集成→MCP | [post](../shared/knowledge/library/posts/HB-0046-mcp-vs-cli-debate.md) |
+| 2026-04-02 | **Top 8 Agent Frameworks** | OpenAI SDK/LangGraph/LlamaIndex/AutoGen/Pydantic AI/SmolAgents/Camel/CrewAI; 无单一标准 | [post](../shared/knowledge/library/posts/HB-0047-top-8-agent-frameworks.md) |
 | 2026-04-02 | **Anthropic Harness Design** | 3-Agent GAN架构: Planner+Generator+Evaluator; Playwright真实测试找Bug; 解决Context Anxiety和Self-Eval失效 | [post](../shared/knowledge/library/posts/HB-1775-anthropic-harness-design.md) |
 | 2026-04-02 | **Berkeley MAST Study** | 200+任务/7框架评估; 3类失败:任务设定/沟通/验证; Token成本10x; 叠Agent不如先修系统 | [post](../shared/knowledge/library/posts/HB-1775-berkeley-mast-multi-agent-failures.md) |
 | 2026-04-02 | **Claude Multi-Agent Patterns** | Subagent(并行子任务) vs Agent Team(多视角协作); 能单LLM就别拆; Deep Research是典型多Agent场景 | [post](../shared/knowledge/library/posts/HB-1775-claude-multiagent-patterns.md) |
