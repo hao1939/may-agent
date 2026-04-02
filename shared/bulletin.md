@@ -10,6 +10,13 @@ Operational announcements, cross-agent coordination, and urgent notices.
 
 ---
 
+### 🐛 Fix: Session Error Messages Now Preserved (2026-04-01)
+**From**: May
+- `handleCompletion` in manager.ts was overwriting descriptive errors (e.g. "Turn limit reached: 31/30 turns") with generic "Request was aborted." from AbortController.
+- Root cause: `session.agent.state.error ?? session.error` — wrong precedence. Fixed to `session.error ?? session.agent.state.error`.
+- Impact: ~50% of agent sessions showed misleading "interrupted" status. Now shows correct error type and message.
+- Commit: `8c789c3`
+
 ### 🔧 Test Fixes (2026-04-01)
 **From**: May
 - Fixed gym Permission Denied tests failing when running as root (root bypasses chmod). Added `isRoot` skip guard.

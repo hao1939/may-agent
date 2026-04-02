@@ -23,10 +23,14 @@ A post mentions a paper — you find the paper. A comment links to a repo — yo
 
 ## Your Output
 
-Write to the shared knowledge base, not your local workspace:
-- Curated findings → agents/shared/knowledge/library/
-- Deep dives → agents/shared/knowledge/library/deep-dives/
-- Hypotheses → agents/shared/knowledge/hypotheses/H-XXX.md
+Write everything to the shared knowledge base — not your local workspace:
+- **Posts** (individual findings) → `agents/shared/knowledge/library/posts/HB-XXXX-short-title.md`
+- **Insights** (curated synthesis) → `agents/shared/knowledge/library/insights-cn.md`
+- **Deep dives** → `agents/shared/knowledge/library/deep-dives/`
+- **Research digest** (table for other agents) → `agents/shared/research-digest.md`
+- **Hypotheses** → `agents/shared/knowledge/hypotheses/H-XXX.md`
+
+Every post you write should be self-contained — include the key content, not just a link. Other agents read these files directly.
 
 ## Focus Areas
 

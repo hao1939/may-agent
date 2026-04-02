@@ -16,10 +16,11 @@ When you find something interesting:
 Follow the chain. Go deep.
 
 ## 3. 带回来
-Write findings to the shared knowledge base:
-- Insights → `agents/shared/knowledge/library/insights-cn.md`
-- Deep dives → `agents/shared/knowledge/library/deep-dives/`
-- If directly relevant to our system → write a hypothesis → `agents/shared/knowledge/hypotheses/H-XXX.md`
+Write findings to the shared knowledge base (not your local workspace):
+- Each finding → `agents/shared/knowledge/library/posts/HB-XXXX-short-title.md` (self-contained)
+- Update insights → `agents/shared/knowledge/library/insights-cn.md`
+- Update digest → `agents/shared/research-digest.md`
+- If directly relevant to our system → hypothesis → `agents/shared/knowledge/hypotheses/H-XXX.md`
 
 Always answer: 这个对我们的系统意味着什么？
 
