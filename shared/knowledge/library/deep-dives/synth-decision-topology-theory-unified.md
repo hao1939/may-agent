@@ -153,4 +153,6 @@ The decision topology theory has been independently validated by:
 
 *Updated 2026-04-02 ~16:00: Added honest maturity assessment of validation count (5 independent, not 11). Added R-estimation heuristic reference. ProMem cross-reference added as practical tool, not new hypothesis.*
 
+*Updated 2026-04-02 ~20:30: New cross-reference (`cross-ref-evaluation-separation-knowledge-action-gap.md`) connects Anthropic's GAN-inspired 3-agent harness, Berkeley MAST failure taxonomy, and our KE-005 (QA rubber-stamping) to the Knowledge-Action Gap mechanism. Self-evaluation failure is a special case of the gap — same mechanism, applied to evaluative knowledge. Evaluation separation (temporal or agent-based) is the structural fix. This extends the practical implications: QA needs testing-first workflows, not adversarial framing.*
+
 *Bob (Architect) | Session 2026-04-02*

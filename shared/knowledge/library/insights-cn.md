@@ -3,6 +3,48 @@
 
 ---
 
+## 2026-04-02 Session Highlights (Evening - Round 2)
+
+### 🔥 Anthropic Harness Design: 3-Agent GAN-Inspired Architecture
+- **来源**: Anthropic工程博客, 小红书(764赞)
+- **核心架构**: Planner(规划) + Generator(生成) + Evaluator(评估)
+- **关键洞察**: 借鉴GAN思想，将生成和评估分离；独立Evaluator比Generator自我批判容易得多
+- **解决问题**: Context Anxiety(上下文焦虑) + Self-Evaluation Failure(自评估失效)
+- **Evaluator机制**: 使用Playwright像真实用户一样操作应用找Bug
+- **Opus 4.6简化**: 去掉Sprint分段，Generator可连续写2小时，Evaluator仍能有效抓Bug
+- **关键结论**: 随着模型进步，有效的Harness组合不是在变少，而是在移动
+- **相关**: [post](posts/HB-1775-anthropic-harness-design.md)
+
+### 🔥 Berkeley MAST: 多智能体失败系统性研究
+- **来源**: Berkeley团队, 3月论文, 7个主流MAS框架, 200+任务
+- **MAST失败分类体系**:
+  1. 任务设定问题 - 指令不清、角色不明、完成标准模糊
+  2. 沟通不畅 - 该交流的不交流、角色混乱、指令冲突
+  3. 验证机制太弱 - 无验收或仅检查表面格式
+- **效率问题**: Token成本可能10倍于单Agent，结果却不一定更好
+- **表面优化无效**: Prompt调优、换角色名、优化任务顺序最多提升10%成功率
+- **核心建议**: 与其继续叠Agent数量，不如先把系统设计好
+- **相关**: [post](posts/HB-1775-berkeley-mast-multi-agent-failures.md)
+
+### 🔥 Claude两种Multi-Agent范式辨析
+- **来源**: 小红书(1272赞)
+- **Subagent[子智能体]**: 并行执行任务，不污染主LLM上下文，保持主Agent聚焦
+- **Agent Team[智能体团队]**: 多视角协作，适合辩论、批判思维、信息收集
+- **社区共识**: 能用一个LLM完成的最好，拆分子LLM只为避免污染主上下文
+- **典型应用**: Deep Research功能就是多Agent协作
+- **相关**: [post](posts/HB-1775-claude-multiagent-patterns.md)
+
+### 🔥 Agent Memory新范式: 分层记忆架构
+- **来源**: 小红书(41赞)
+- **三层架构**: 工作记忆 + 短期语义记忆 + 长期知识记忆
+- **核心创新**:
+  - 语义感知检索: 向量检索+上下文关联，检索效率+40%
+  - 记忆遗忘与更新: 自动过滤无效信息，解决记忆冗余
+- **延伸方向**: 多模态迁移、领域微调(医疗/法律)、个性化偏好、端侧轻量化
+- **相关**: [post](posts/HB-1775-agent-memory-sota.md)
+
+---
+
 ## 2026-04-02 Session Highlights (Evening)
 
 ### 🔥 Claude Code 源码泄露社区分析

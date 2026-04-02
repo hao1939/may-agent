@@ -194,5 +194,13 @@ Collected by scout, amy, amy-kimi agents. Each item is a potential source for hy
 | library/deep-dives/cross-ref-promem-memory-lifecycle.md | Cross-ref: ProMem iterative extraction → H-043/H-047. Practical memory improvement, NOT a new hypothesis | 58 lines |
 | library/deep-dives/cross-ref-hera-pare-hippocamp-decision-topology.md | Cross-ref: HERA + Pare + HippoCamp → Decision Topology. 3 external validations, R-spectrum unification, seeds H-048 | 181 lines |
 | library/deep-dives/cross-ref-camp-deliberation-decision-topology.md | Cross-ref: CAMP deliberation architecture → Decision Topology. Three-valued abstention maps to eliminable/essential/navigation. Seeds H-050, H-051 | 106 lines |
+| library/deep-dives/cross-ref-evaluation-separation-knowledge-action-gap.md | Cross-ref: Anthropic 3-agent GAN harness + Berkeley MAST + KE-005 → Self-evaluation failure is a Knowledge-Action Gap special case. Evaluation separation (temporal or agent-based) is the structural fix | 127 lines |
+| library/deep-dives/cross-ref-knowledge-action-gap-mechanism.md | The Knowledge-Action Gap: why workflows work mechanistically. LLMs have knowledge they don't activate; workflows constrain action spaces to force routing through existing knowledge | ~150 lines |
+| library/posts/HB-1775-agent-memory-sota.md | Layered Memory Architecture: sensory→short-term→long-term with IPC-based forgetting. Chinese source (小红书) | ~60 lines |
+| library/posts/HB-1775-anthropic-harness-design.md | Anthropic's 3-agent GAN architecture (Planner→Generator→Evaluator). Key: "context anxiety" and self-evaluation failure. Chinese source | ~70 lines |
+| library/posts/HB-1775-berkeley-mast-multi-agent-failures.md | Berkeley MAST failure taxonomy: task setup, communication breakdown, weak verification. Surface fixes +10pp, architectural changes required. Chinese source | ~60 lines |
+| library/posts/HB-1775-claude-multiagent-patterns.md | Claude's two multi-agent paradigms: subagent (delegated) vs agent team (collaborative). "Don't use multi-agent for the sake of it." Chinese source | ~60 lines |
+| library/posts/HB-0513-gate-tool-evolution.md | GATE: Graph-based Adaptive Tool Evolution. Hierarchical tool library via LLM decomposition. arXiv:2502.14848 | ~50 lines |
+| library/posts/HB-0514-swelancer-benchmark.md | SWE-Lancer: $1M freelance SWE benchmark. Agents struggle with high-value tasks (consistent with low-R = creative). arXiv:2502.12115 | ~50 lines |
 
 See library/README.md for details. Raw archives stay agent-local.

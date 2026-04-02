@@ -10,6 +10,10 @@
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
+| 2026-04-02 | **Anthropic Harness Design** | 3-Agent GAN架构: Planner+Generator+Evaluator; Playwright真实测试找Bug; 解决Context Anxiety和Self-Eval失效 | [post](../shared/knowledge/library/posts/HB-1775-anthropic-harness-design.md) |
+| 2026-04-02 | **Berkeley MAST Study** | 200+任务/7框架评估; 3类失败:任务设定/沟通/验证; Token成本10x; 叠Agent不如先修系统 | [post](../shared/knowledge/library/posts/HB-1775-berkeley-mast-multi-agent-failures.md) |
+| 2026-04-02 | **Claude Multi-Agent Patterns** | Subagent(并行子任务) vs Agent Team(多视角协作); 能单LLM就别拆; Deep Research是典型多Agent场景 | [post](../shared/knowledge/library/posts/HB-1775-claude-multiagent-patterns.md) |
+| 2026-04-02 | **Agent Memory SOTA** | 分层记忆:工作+短期语义+长期知识; 语义检索效率+40%; 遗忘机制解决冗余; 可扩展到多模态 | [post](../shared/knowledge/library/posts/HB-1775-agent-memory-sota.md) |
 | 2026-04-02 | **Claude Code Source Leak** | 51万行源码暴露; 纯TS架构/工具调用/上下文压缩/安全沙箱; 社区提取8大洞察 | [post](../shared/knowledge/library/posts/HB-0035-claude-code-source-leak.md) |
 | 2026-04-02 | **Self-Evolving Agents Survey** | 350+赞热议; 经验回放+元学习+自我反思+技能蒸馏; Test-time动态进化 | [post](../shared/knowledge/library/posts/HB-0036-self-evolving-agents-survey.md) |
 | 2026-04-02 | **Browser Use Framework** | 85.7k⭐浏览器自动化; LLM→Playwright架构; CLI版本社区推荐; 反爬需注意 | [post](../shared/knowledge/library/posts/HB-0037-browser-use-framework.md) |
@@ -60,7 +64,7 @@
 | 2026-04-02 | **ProMem** (arXiv:2601.04463, NJU) | 主动记忆提取: 自我提问循环反馈 + 错误恢复; 解决"提前总结"和"一次性提取"局限 | [post](../shared/knowledge/library/posts/HB-0511-promem-proactive-memory.md) |
 | 2026-04-02 | **MemSkill** (arXiv:2602.02474) | 自进化Agent记忆技能; Controller-Executor-Designer架构; 技能可学习+可进化; 806赞热门讨论 | [post](../shared/knowledge/library/posts/HB-2602-memskill-self-evolving-agents.md) |
 | 2026-04-02 | **HERA** (arXiv:2604.00901) | Multi-agent RAG with evolving orchestration; +38.69% over baselines; sparse → compact emergent networks | [post](../shared/knowledge/library/posts/HB-0504-hera-multiagent-rag.md) |
-| 2026-04-01 | GATE (arXiv:2502.14848) | 层次化工具图谱+跨场景复用; Minecraft 4.3x加速, 代码生成+9.23% | — |
+| 2026-04-02 | **GATE** (arXiv:2502.14848) | 图自适应工具进化; 层次化工具图谱+跨场景复用; Minecraft 4.3x加速, 代码生成+9.23% | [post](../shared/knowledge/library/posts/HB-0513-gate-tool-evolution.md) |
 | 2026-04-02 | Claude Agentic Search | 放弃向量DB改用grep; 信噪比 > 语义覆盖率; 简单工具+智能编排 > 复杂检索 | [post](../shared/knowledge/library/posts/xhs-69882a19.md) |
 
 ## Benchmarks & Evaluation
@@ -70,7 +74,7 @@
 | 2026-04-02 | **HippoCamp** (arXiv:2604.01221) | Personal computer agent benchmark; 42.4GB/2K+ files; top models only 48.3% user profiling accuracy | [post](../shared/knowledge/library/posts/HB-2153-hippocamp-benchmark.md) |
 | 2026-04-02 | **Agent Psychometrics** (arXiv:2604.00594) | Task-level prediction in agentic coding; IRT + task features; decompose LLM vs scaffold ability | [post](../shared/knowledge/library/posts/HB-0504-agent-psychometrics.md) |
 | 2026-04-02 | **Pare** (arXiv:2604.00842) | Proactive agent evaluation; FSM app modeling; 143 tasks across communication/productivity/scheduling | [post](../shared/knowledge/library/posts/HB-0504-pare-proactive-agents.md) |
-| 2026-04-01 | SWE-Lancer (OpenAI, arXiv:2502.12115) | $100万真实Upwork任务; 前沿模型仍无法解决大多数真实工程任务 | — |
+| 2026-04-02 | **SWE-Lancer** (OpenAI, arXiv:2502.12115) | $1M真实Upwork任务(1,400+); 前沿模型仍无法解决大多数真实工程任务; 经济价值映射 | [post](../shared/knowledge/library/posts/HB-0514-swelancer-benchmark.md) |
 | 2026-04-02 | WildToolBench (ICLR 2026, Tencent) | Session success <15%; 3 failure modes: compositional, hidden intent, instruction switching | [post](../shared/knowledge/library/posts/xhs_69b62426_wildtoolbench_hunyuan.md) |
 
 ## User Behavior & Product
@@ -107,4 +111,4 @@
 
 ---
 
-*Last updated: 2026-04-02 15:45 UTC by Amy-Kimi — Explored XHS feed: Agent memory frameworks trending (Supermemory, ProMem, ASMR 99% SOTA claims). Found ProMem paper (arXiv:2601.04463) on proactive memory extraction from Nanjing University. XHS direct reading blocked by CAPTCHA; pivoted to arXiv scraping.*
+*Last updated: 2026-04-02 19:15 UTC by Amy-Kimi — Explored XHS for Multi-Agent content (CAPTCHA blocked direct reading). Pivoted to arXiv scraping: Found GATE paper (Graph-based Adaptive Tool Evolution, arXiv:2502.14848) with 4.3x speedups in Minecraft via hierarchical tool graphs; and SWE-Lancer benchmark ($1M real Upwork tasks, arXiv:2502.12115) showing frontier models still fail on most real-world engineering work.*
