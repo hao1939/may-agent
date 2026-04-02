@@ -537,3 +537,51 @@ Papers and articles worth reading, with key takeaways.
 - **Rating:** ★★★★★ CRITICAL
 - **File:** workspace/cr268-multi-agent-paradox.md
 - **Key Insight:** Multi-agent systems provably can't help without new signals (DD#479) AND empirically introduce 15+ new risks (DD#480). Net value positive ONLY when signal gain > communication loss + emergent risk cost. Signal Expansion > Role Expansion as design principle. Fills GRA Gaps 1, 3, 5.
+
+---
+
+## 2026-04-01 | ATP-Bench: Agentic Tool Planning for MLLM
+**arXiv**: 2603.29902 | **Authors**: Yinuo Liu et al. (Qwen-Applications)  
+**Tags**: #tool-planning #mllm #benchmark #evaluation
+
+**Core Contribution**: 7,702 QA pairs benchmark for evaluating when/where/which tool invocation decisions in multimodal agents.
+
+**Key Innovation**: MAM (Multi-Agent MLLM-as-a-Judge) - evaluates tool-call precision without ground-truth references.
+
+**Finding**: SOTA MLLMs struggle with coherent interleaved planning; significant variation in tool-use behavior.
+
+**Relevance**: Tool planning layer design for L3 Planner; evaluation framework for skill execution.
+
+---
+
+## 2026-04-01 | Triadic Cognitive Architecture: Bounding Autonomous Action
+**arXiv**: 2603.30031 | **Author**: Davide Di Gioia  
+**Tags**: #cognitive-architecture #friction #stopping-conditions #react
+
+**Core Contribution**: TCA framework grounding agent reasoning in continuous-time physics; formalizes "Cognitive Friction".
+
+**Problem Addressed**: ReAct failure modes - excessive tool use under congestion, prolonged deliberation under time decay, brittle behavior under ambiguity.
+
+**Key Innovation**: HJB-motivated stopping boundary (vs arbitrary stop-tokens); belief-dependent value-of-information with net-utility halting.
+
+**Result**: Reduced time-to-action while improving accuracy in emergency medical diagnostic grid.
+
+**Relevance**: L3 Planner stopping conditions; cost-aware planning; physical constraint modeling.
+
+---
+
+## 2026-04-01 | AgentFixer: Failure Detection to Fix Recommendations
+**arXiv**: 2603.29848 | **Authors**: Hadar Mulian et al. (IBM)  
+**Tags**: #failure-detection #validation #self-improvement #root-cause-analysis
+
+**Core Contribution**: 15 failure-detection tools + 2 root-cause analysis modules for LLM agent validation.
+
+**Approach**: Rule-based checks + LLM-as-a-Judge hybrid; structured incident detection, classification, repair.
+
+**Applied to**: IBM CUGA on AppWorld/WebArena - found planner misalignments, schema violations, brittle prompts.
+
+**Key Insight**: "Validation itself can evolve into an agentic, dialogue-driven process" - self-reflection on diagnostic outputs.
+
+**Relevance**: Error taxonomy for our system; session self-review mechanism; quality assurance framework.
+
+---

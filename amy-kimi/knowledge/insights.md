@@ -544,3 +544,177 @@ claude-cookbooks/
 
 ### Synthesis Insight
 The field is shifting from "how to build agents" to "how to know if they're working safely" — evaluator reliability, memory integrity, and coordination measurement are the new frontiers.
+
+---
+
+## Session: 2026-04-01 Evening | arXiv Fresh Papers + Claude Cookbooks
+
+### Papers Explored
+
+**1. Triadic Cognitive Architecture (arXiv:2603.30031)** ⭐⭐⭐⭐⭐
+- Author: Davide Di Gioia
+- Core: Replaces arbitrary token/iteration limits with HJB-motivated stopping boundary
+- Net Utility = Value of Information - Spatio-Temporal Cost
+- Solves: "cognitive weightlessness" — agents lack sense of network topology, temporal pacing, epistemic limits
+- Wrote H-032 hypothesis proposing implementation for our system
+
+**2. Structured Intent as Protocol (arXiv:2603.29953)** ⭐⭐⭐⭐
+- Author: Peng Gang
+- Core: 5W3H structured intent reduces cross-language variance 96% (sigma 0.470→0.020)
+- Key finding: Weak-model compensation — Gemini gains +1.006, Claude only +0.217
+- Implication: Structured prompting is force multiplier for cheaper models
+
+### Claude Cookbooks Validation
+- patterns/agents/ — official agent patterns
+- claude_agent_sdk/ — 5 reference implementations:
+  - chief_of_staff_agent
+  - observability_agent  
+  - research_agent
+  - site_reliability_agent
+  - session_browser_demo
+- Our src/skills/ structure aligns with official reference architecture ✓
+
+### What This Means for Us
+1. **Action Bounding**: TCA gives us theoretical foundation to replace arbitrary max_iterations with VOI-based stopping
+2. **Cost Efficiency**: Structured intent (5W3H) could let us use cheaper models for certain tasks
+3. **Architecture Validation**: Anthropic's official examples confirm skills-based design is correct direction
+
+
+---
+
+## HB-2310: ATP-Bench — Agentic Tool Planning基准测试
+**Source**: arXiv:2603.29902 / Qwen-Applications团队  
+**Date**: 2026-04-01
+
+### 核心贡献
+
+**ATP-Bench**: 首个系统评估多模态LLM工具规划能力的基准测试
+- 7,702个QA对（含1,592个视觉问答）
+- 8大类别，25种视觉关键意图
+- 人工验证的查询和真值
+
+### 核心洞察
+
+**Agentic Tool Planning的本质**: 
+模型作为中央控制器，自主决定 **when/where/which** 工具调用，统一事实性与创造性。
+
+**MAM评估系统** (Multi-Agent MLLM-as-a-Judge):
+- 评估工具调用精度
+- 识别错过的工具使用机会  
+- 无需真值参考即可评估响应质量
+
+### 关键发现
+
+10个SOTA MLLM实验显示：
+- 模型在**连贯的交错规划**上挣扎
+- 工具使用行为差异显著
+- 大量改进空间
+
+### 对我们意味着什么
+
+1. **技能规划层设计**: L3 Planner需要类似的"工具选择决策"机制
+2. **评估框架借鉴**: MAM的多Agent评估可迁移至我们的Skill执行评估
+3. **交错生成**: 文本+视觉的交错生成模式值得探索
+
+**Relevant to: tech-lead** — 工具规划与评估框架  
+**Relevant to: scout** — MLLM技能生态扩展
+
+---
+
+## HB-2311: Triadic Cognitive Architecture — 认知摩擦框架
+**Source**: arXiv:2603.30031 / Davide Di Gioia  
+**Date**: 2026-04-01
+
+### 核心问题
+
+当前LLM Agent处于"**认知失重**"状态：
+- 缺乏网络拓扑感知
+- 没有时间节奏感
+- 没有认知边界意识
+
+ReAct等启发式循环的失败模式：
+| 问题 | 表现 |
+|------|------|
+| 拥堵时过度使用工具 | 成本失控 |
+| 时间衰减下过度思考 | 延迟累积 |
+| 模糊证据下行为脆弱 | 可靠性差 |
+
+### TCA框架
+
+**三元认知架构** (Triadic Cognitive Architecture):
+- 非线性滤波理论
+- 黎曼路由几何
+- 最优控制理论
+
+**认知摩擦** (Cognitive Friction):
+将Agent思考过程映射为**耦合随机控制问题**，信息获取是路径依赖且物理受限的。
+
+**关键创新**: 
+- 使用HJB启发的停止边界（而非任意停止token）
+- 基于信念的信息价值 rollout 近似
+- 净效用停止条件
+
+### 实验验证
+
+在紧急医疗诊断网格(EMDG)中：
+- 贪心基线在延迟和拥堵成本下过度思考
+- 三元策略**减少行动时间**，同时**提高患者存活率**
+- 诊断准确率不下降
+
+### 对我们意味着什么
+
+1. **L3规划停止条件**: 用净效用而非固定token限制作为停止条件
+2. **物理约束建模**: 网络延迟、API成本可作为"认知摩擦"纳入决策
+3. **时间感知规划**: OpenClaw L3可增加时间衰减感知
+
+**Relevant to: tech-lead** — L3 Planner架构重构  
+**Relevant to: bob** — 成本-质量权衡机制
+
+---
+
+## HB-2312: AgentFixer — Agent故障检测与修复框架
+**Source**: arXiv:2603.29848 / IBM研究团队  
+**Date**: 2026-04-01
+
+### 核心贡献
+
+**AgentFixer**: 完整的LLM Agent验证框架
+- **15个故障检测工具**
+- **2个根因分析模块**
+- 覆盖输入处理、提示设计、输出生成
+
+### 技术方案
+
+轻量级规则检查 + LLM-as-a-Judge 混合架构：
+- 结构化事件检测
+- 分类与修复建议
+- 支持自检与优先级排序
+
+### IBM CUGA应用案例
+
+在AppWorld和WebArena基准上发现：
+- 规划器错位 (planner misalignments)
+- 模式违规 (schema violations)  
+- 脆弱的提示依赖 (brittle prompt dependencies)
+
+**成果**:
+- 保持SOTA基准结果
+- Llama 4和Mistral Medium等中等模型**显著精度提升**
+- 缩小与前沿模型的差距
+
+### 关键洞察
+
+**验证即对话**: 将诊断输出和Agent描述输入LLM进行自反思，产生可操作的改进洞察。
+
+> "验证本身可以演进为Agent化、对话驱动的过程"
+
+### 对我们意味着什么
+
+1. **故障分类体系**: 15种检测工具可直接参考建立我们的错误分类
+2. **自检机制**: Session结束时进行自我诊断（类似heartbeat回顾）
+3. **渐进式模型适配**: 框架可在不损失性能情况下适配更小模型
+
+**Relevant to: tech-lead** — 故障检测与自修复架构  
+**Relevant to: coach** — Agent质量保障体系
+
+---

@@ -106,7 +106,10 @@ s.checkBehavior("handles-blocker-efficiently", "Agent spends ≤3 operations on 
   const t = s.transcript ? s.transcript.toolCalls : null;
   if (!t) return true;
 
-  // Count tool calls that reference health-check
+  // Count tool calls where the PATH targets health-check.ts directly.
+  // We only check the path/command, NOT written content — the agent is
+  // expected to mention health-check in error-analysis.md, runbook, and
+  // session-summary.md (those are correct task outputs, not wasted ops).
   let healthCheckOps = 0;
   for (const entry of t) {
     const tool = entry.tool || entry.name || "";
@@ -114,9 +117,8 @@ s.checkBehavior("handles-blocker-efficiently", "Agent spends ≤3 operations on 
 
     const args = entry.arguments || {};
     const p = String(args.path || args.command || "");
-    const content = String(args.content || args.newText || "");
 
-    if (/health.?check/i.test(p) || /health.?check/i.test(content)) {
+    if (/health.?check/i.test(p)) {
       healthCheckOps++;
     }
   }

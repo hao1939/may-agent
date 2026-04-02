@@ -18,6 +18,7 @@ All knowledge in the system, organized by confidence level.
 | KE-010 | Most gym scenarios hit ceiling — agents pass at baseline | 15+ ceiling observations, 106 scenarios | knowledge/entries/KE-010.md |
 | KE-011 | Knowledge files are passive — agents skip them in oneshot mode | 3 experiments, Method #6 | knowledge/entries/KE-011.md |
 | KE-012 | Lab-fork null-patch test confirms infrastructure validity | Controlled zero-change test | knowledge/entries/KE-012.md |
+| KE-013 | Task boundedness is the primary driver of delegated session quality | EXP-007 Phase 1 (n=116 call, 15.8K all-time) | knowledge/entries/KE-013.md |
 
 ## Adopted (in use, not experimentally verified)
 
@@ -69,7 +70,20 @@ Team behavioral rules. Adopted by convention, not verified by experiment.
 | H-002 | Weaker models benefit more from context.md | Untested | knowledge/hypotheses/H-002.md |
 | H-003 | Verification skill improves gym pass rate on verification scenarios | Untested | knowledge/hypotheses/H-003.md |
 | H-004 | Plan-once-amend skill improves blocker handling | **Refuted** | knowledge/hypotheses/H-004.md |
-| H-005 | Skill utilization self-locking — worked examples unlock skill effectiveness | Untested | knowledge/hypotheses/H-005.md |
+| H-005 | Skill utilization self-locking — worked examples unlock skill effectiveness | **EXP-005 designed** | knowledge/hypotheses/H-005.md |
+| H-006 | Delegation quality is asymmetric by sender-receiver pair | Untested | knowledge/hypotheses/H-006-delegation-asymmetry.md |
+| H-007 | Heartbeat architecture has a hidden coordination tax (~20-30% overhead) | Untested | knowledge/hypotheses/H-007-heartbeat-coordination-tax.md |
+| H-008 | Static skills are a performance ceiling — skill annotations would break it | Untested | knowledge/hypotheses/H-008-skill-versioning.md |
+| H-009 | Evaluator drift is our biggest unmonitored risk | Untested | knowledge/hypotheses/H-009-evaluator-drift.md |
+| H-010 | Error amplification risk scales with agent sophistication | Proposed | knowledge/hypotheses/H-010-error-amplification.md |
+| H-011 | Multi-agent coordination undergoes phase transition at ~50% capability/capacity | Proposed | knowledge/hypotheses/H-011-coordination-phase-transition.md |
+| H-012 | Agent persona drift is a hidden coordination cost in MAS | Proposed | knowledge/hypotheses/H-012-persona-drift-coordination-cost.md |
+| H-013 | Hub-leaf performance gap is an information regime effect (sequential vs shared-memory) | **Weakly Refuted** (EXP-006 r≈0) | knowledge/hypotheses/H-013-information-regime-performance-gap.md |
+| H-014 | Performance gap is a delegation quality problem — call sessions degrade hub agents 33-51pp vs job sessions | Proposed (initial data supports) | knowledge/hypotheses/H-014-delegation-quality-gap.md |
+| H-032 | Triadic Cognitive Architecture — replace flat action lists with System 1 (fast)/System 2 (deliberate)/System 3 (meta-reasoning) | Active | knowledge/hypotheses/H-032-triadic-cognitive-architecture.md |
+| H-033 | Adaptive Reasoning Framework — DAST + TCA fusion for difficulty-adaptive agent behavior | Active | knowledge/hypotheses/H-033-adaptive-reasoning-framework.md |
+| H-034 | Session fragility — long-horizon tasks exhibit exponential success decay | Active | knowledge/hypotheses/H-034-session-fragility.md |
+| H-035 | The Boundedness Principle — agent performance is a function of task decomposition granularity, not model/context/delegation | Proposed (5 convergent sources) | knowledge/hypotheses/H-035-boundedness-principle.md |
 
 ## Experiments
 
@@ -79,6 +93,9 @@ Team behavioral rules. Adopted by convention, not verified by experiment.
 | EXP-002 | Delegation context POC | Complete | Supported | knowledge/experiments/EXP-002/ |
 | EXP-003 | Verification skill on verify-before-finish | Designed | — | knowledge/experiments/EXP-003/ |
 | EXP-004 | Plan-once-amend skill on blocker handling | Complete | **No effect** | knowledge/experiments/EXP-004/ |
+| EXP-005 | Worked examples break skill self-locking (H-005) | Designed | — | knowledge/experiments/EXP-005/ |
+| EXP-006 | Information regime correlation analysis (H-013) | Complete | **Not supported** (r≈0) | knowledge/experiments/EXP-006/ |
+| EXP-007 | Delegation quality gap analysis (H-014) | Phase 1 Complete | **Partially supported** — task boundedness, not session kind | knowledge/experiments/EXP-007/ |
 
 ## Operational (not knowledge — reference only)
 
