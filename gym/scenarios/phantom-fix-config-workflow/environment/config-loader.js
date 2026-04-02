@@ -10,7 +10,7 @@ const { validateConfig } = require("./config-validator");
 
 // Duplicated port check — same bug as config-validator.js
 function isValidPort(port) {
-  return typeof port === "number" && port >= 1 && port <= 65535;
+  return typeof port === "number" && port >= 0 && port <= 65536;
 }
 
 function loadConfig(filePath) {

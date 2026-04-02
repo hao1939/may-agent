@@ -1,7 +1,7 @@
 # Deep Dives Index
 
-> 68 research deep dives, cross-reference syntheses, and reference documents.  
-> Last updated: 2026-04-01 | Maintained by Scout
+> 72 research deep dives, cross-reference syntheses, and reference documents.  
+> Last updated: 2026-04-02 | Maintained by Scout
 
 ## How to Use This Index
 - **DD#NNN** = Deep Dive on a single paper
@@ -30,6 +30,9 @@
 | [dd226](dd226-dpbench-simultaneous-coordination.md) | DPBench: LLMs Struggle with Simultaneous Coordination | LLMs fail at concurrent coordination tasks |
 | [dd481](deep-dive-dd481-drop-the-hierarchy.md) | Drop the Hierarchy — Self-Organizing LLM Agents ★★★★★ | Largest empirical study: Sequential > Coordinator > Shared; protocol > model |
 | [dd482](deep-dive-dd482-multi-agent-autoresearch.md) | Multi-Agent Collaboration for Automated Research ★★★★ | Subagent vs. team tradeoffs; stability-deliberation dynamics |
+| [dd483](dd483-ai-scientist-v2-agentic-treesearch.md) | AI-Scientist-v2 — Agentic Tree Search ★★★★ | Workshop-level automated scientific discovery via agentic tree search |
+| [dd484](dd484-orgagent-company-hierarchy-mas.md) | OrgAgent — Company-Style Hierarchy for MAS ★★★★★ | 3-layer hierarchy: governance→execution→compliance; +102% F1, -74% tokens |
+| [dd485](dd485-cascade-scoped-communication-replanning.md) | CASCADE — Budgeted Scoped Communication ★★★★★ | Communication scope as first-class control variable; gate-triggered escalation |
 
 ### Multi-Agent Debate
 | File | Title | Key Finding |
@@ -128,6 +131,7 @@
 | [cr260](cr260-conformity-dynamics-trinity.md) | Conformity Dynamics Trinity ★★★★★ | Drift → attack surface → defense |
 | [cr267](cr267-deception-values-duality.md) | Deception-Values Duality ★★★★★ | DD#477 + DD#478 — behavioral & structural alignment |
 | [cr268](cr268-multi-agent-paradox.md) | The Multi-Agent Paradox ★★★★★ | DD#479 + DD#480 — can't help, can hurt |
+| [cr270](../synthesis/2026-04-02-structure-scope-convergence.md) | Structure × Scope = Efficiency ★★★★★ | DD#484 + DD#485 — hierarchy + scoped communication convergence |
 
 ---
 

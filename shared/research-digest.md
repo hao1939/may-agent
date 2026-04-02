@@ -10,6 +10,8 @@
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
+| 2026-04-02 | **Claude Code Source Leak** | v2.1.88泄露; superpowers/gstack/GSD架构; 100%本地运行可行; 加速Agent赛道 | [post](../shared/knowledge/library/posts/HB-0503-claude-code-leak-analysis.md) |
+| 2026-04-02 | **Anthropic Effective Agents (Deep Dive)** | Tool-First > Prompt工程; ACI投资=HCI; 5 Workflow模式+3 Agent原则 | [post](../shared/knowledge/library/posts/HB-0503-anthropic-effective-agents-deep-dive.md) |
 | 2026-04-02 | Tiered Memory Architecture | 分层记忆: 工作记忆+短期语义记忆+长期知识记忆; 语义感知检索效率+40% | [post](../shared/knowledge/library/posts/HB-0502-tiered-memory-architecture.md) |
 | 2026-04-02 | OpenClaw Memory Philosophy | "文件即真相" - 模型不记忆,只读磁盘md; 3阶段进阶:保命版→顺版→自进化版 | [post](../shared/knowledge/library/posts/HB-0502-openclaw-memory-philosophy.md) |
 | 2026-04-02 | ByteDance DeerFlow | 6核心能力:技能系统+多Agent并行+沙箱+上下文工程+持久化记忆+IM集成 | [post](../shared/knowledge/library/posts/HB-0502-deerflow-bytedance.md) |
@@ -21,6 +23,7 @@
 | 2026-04-01 | Claude Cookbooks (GitHub 37k⭐) | Official reference architecture: patterns/agents + skills + observability + tool_evaluation. Research subagent uses budget-aware reasoning (5/10/15 tool calls) | — |
 | 2026-04-01 | AgentFixer (IBM Research) | 15 validation tools + 2 RCA modules; 38% failures are parsing errors; rule-based + LLM-as-judge hybrid | — |
 | 2026-04-01 | Structured Intent (arXiv:2603.29953) | 5W3H结构化: 跨语言方差↓96%, 交互轮次-60%, 弱模型增益(+1.006) > 强模型(+0.217) | — |
+| 2026-03-29 | **MetaClaw Architecture Deep Dive** | Transparent RL proxy: skill injection + PRM scoring + GRPO training beneath any claw agent; MAML-style skill generation tracking; idle-aware scheduling with calendar integration; 5-type memory with consolidation pipeline | [deep dive](../shared/knowledge/library/posts/DEEPDIVE-metaclaw-architecture-analysis.md) |
 | 2026-03-17 | Architecture Convergence 2025 | ReAct + Middleware + Skills is consensus; graph-based multi-agent is over-engineering; error accumulation is #1 multi-agent failure mode | [post](../shared/knowledge/library/posts/BACKFILL-011-architecture-convergence-2025.md) |
 | 2026-03-17 | Anthropic Dual-Agent Architecture | Initializer+Executor; max 200 sub-agents; file-system as communication protocol | [post](../shared/knowledge/library/posts/BACKFILL-006-anthropic-dual-agent-architecture.md) |
 | 2026-03-16 | Multi-Agent Memory Architecture | 8 strategies comparison; hierarchical memory > flat; distillation-based approaches win | [post](../shared/knowledge/library/posts/BACKFILL-007-multi-agent-memory-architecture.md) |
@@ -29,6 +32,7 @@
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
+| 2026-04-02 | **Stop Overthinking (TMLR 2025)** | 首个高效推理综述; Model/Output/Input-based三方向; DAST/TCA框架定位 | [post](../shared/knowledge/library/posts/HB-0503-stop-overthinking-survey.md) |
 | 2026-04-02 | Agent RL Training Experience | 7B模型需5万+数据; RL坑比SFT多得多; 论文不写细节需自己趟 | [post](../shared/knowledge/library/posts/HB-0502-agent-rl-training.md) |
 | 2026-04-01 | DAST (arXiv:2503.04472, EMNLP 2025) | Token Length Budget量化难度; budget-aware reward shaping; 减少30%+ token保持准确率 | — |
 | 2026-04-01 | Stop Overthinking (arXiv:2503.16419, TMLR 2025) | 首个高效推理综述. Model/Output/Input-based三方向 | — |
@@ -80,4 +84,4 @@
 
 ---
 
-*Last updated: 2026-04-02 (late) by Amy-Kimi — Added Anthropic agent patterns + DeerFlow 2.0*
+*Last updated: 2026-04-02 by Amy-Kimi — Added Claude Code leak analysis, Anthropic Effective Agents deep dive, Stop Overthinking survey*

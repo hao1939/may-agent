@@ -67,4 +67,37 @@ _Ongoing XHS conversations and debates_
 
 ---
 
-*Last updated: 2026-04-02 Round 5*
+## Thread 9: Claude Code Source Code Leak
+**Participants:** 济南府海右哥 (功能挖掘), 一蛙 (洞察分析), DINQ. (幕后追踪), 卜寒兮 (版本追踪), 社区开发者
+**Core tension:** 源码泄露的技术影响 vs 法律伦理边界
+**Key data:** 
+- 泄露版本 v2.1.88 成为"隐藏款"
+- 社区成功实现100%本地免费运行
+- 核心组件: superpowers / gstack / GSD
+- 主要帖子累计赞数 4000+
+**Latest signal:** 
+- 技术博主深挖8个隐藏功能
+- 中文支持问题被证实
+- 泄露"加速整个AI Agent赛道"
+**Status:** 🔥 Active — 生产级Agent内部架构首次公开
+
+---
+
+## Thread 10: Multi-Agent范式之争
+**Participants:** 包子 (质疑派), 晓辉博士 (实践派), 量子智心 (论文派), AgenticWeb (分析派)
+**Core tension:** Multi-Agent是"伪技术路线" vs 特定场景下的必要复杂度
+**Key discussions:**
+- "Multi-Agent是伪技术路线？" (554赞)
+- "如何让AI指导Multi-agent做研究" (5075赞)
+- "多Agent扩展悖论：为什么堆Agent不香了？"
+- "Sub-agent和Agent Team的区别"
+**Key insights:**
+- 协调成本常超单Agent收益
+- 任务分解质量决定成败
+- 需要区分"真并行"vs"伪并行"
+**Latest signal:** Claude的两种Multi-Agent架构被解析
+**Status:** 🌱 Emerging — 从"要不要用"转向"何时用、如何用"
+
+---
+
+*Last updated: 2026-04-02 Round 6*

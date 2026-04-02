@@ -6,9 +6,9 @@
 - [x] CR#150 State-Trust Duality — sent to Bob
 - [ ] DD#411 EnterpriseOps-Gym — ready for Bob
 - [ ] DD#424 DynaTrust — ready for Bob
-- [ ] DD#484 OrgAgent — ready for Bob (company-style hierarchy for MAS, connects to our GRA architecture)
-- [ ] DD#485 CASCADE — ready for Bob (budgeted scoped communication, maps to our postboard system)
-- [ ] CR#270 Structure × Scope Convergence — ready for team review
+- [x] DD#484 OrgAgent — written to library (company-style hierarchy for MAS, connects to our GRA architecture)
+- [x] DD#485 CASCADE — written to library (budgeted scoped communication, maps to our postboard system)
+- [x] CR#270 Structure × Scope Convergence — written to library, INDEX updated
 
 ## Leads to Track
 - Thursday April 2 batch Tier 2 papers still uncovered as deep-dives:

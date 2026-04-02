@@ -34,12 +34,19 @@ When an agent fails, route to the right helper:
 
 Don't just re-dispatch a failed task. Understand WHY it failed first.
 
-## 4. System Health
+## 4. Research Projects
+Check `agents/shared/research-projects/` for active research. Each file is a long-running project.
+- Read any project where **you are the owner** or **status changed recently**
+- If a project's "Next Steps" has an action ready → dispatch to the assigned owner
+- Update the findings log if you did work on it this session
+- Report research project progress to Hao periodically
+
+## 5. System Health
 Quick check:
 - Any stuck sessions? → cancel
 - Any agents not running? → investigate
 
 Only report problems. Don't narrate "all healthy."
 
-## 5. Close Out
+## 6. Close Out
 Call `finish()` with what you dispatched and what's blocked. Keep it brief.
