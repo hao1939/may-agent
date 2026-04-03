@@ -122,11 +122,17 @@ export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
     // Chat-mode clients: keep filter in sync with the current chat session
     const chatSid = getSessionId();
     for (const client of clients.values()) {
-      if (client.chatMode && chatSid) {
-        if (!client.filter) client.filter = new Set();
-        if (!client.filter.has(chatSid)) {
-          client.filter.clear();
-          client.filter.add(chatSid);
+      if (client.chatMode) {
+        if (chatSid) {
+          if (!client.filter) client.filter = new Set();
+          if (!client.filter.has(chatSid)) {
+            client.filter.clear();
+            client.filter.add(chatSid);
+          }
+        } else {
+          // No active chat session (e.g., after /new) — clear filter
+          // so the next session_start will be picked up
+          if (client.filter) client.filter.clear();
         }
       }
     }
