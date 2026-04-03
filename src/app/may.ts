@@ -206,12 +206,16 @@ import {
   createContextUpdater,
   createRequestTracker,
   createProgressWriter,
+  createStuckDetector,
 } from "../lib/session-subscribers.js";
 bus.subscribe(createActivityWriter(PROJECT_ROOT));
 bus.subscribe(createMemoryWriter(PERSIST_DIR));
 bus.subscribe(createContextUpdater(PROJECT_ROOT));
 bus.subscribe(createRequestTracker(PERSIST_DIR));
 bus.subscribe(createProgressWriter(PROJECT_ROOT));
+bus.subscribe(createStuckDetector((sessionId, reason) => {
+  bus.emit({ type: "cancel", sessionId } as any);
+}));
 
 setLogHandler((level, message) => {
   if (level === "debug") return; // debug logs don't reach the event system
@@ -467,6 +471,7 @@ const interfaceAgent = (() => {
 
 function attachAgentEvents(label: string, sessionId: string): void {
   let toolCalls = 0;
+  let turnErrors = 0;
   let turnStart = Date.now();
 
   manager.subscribe(sessionId, (event) => {
@@ -474,6 +479,7 @@ function attachAgentEvents(label: string, sessionId: string): void {
       case "turn_start":
         turnStart = Date.now();
         toolCalls = 0;
+        turnErrors = 0;
         break;
       case "tool_execution_start":
         toolCalls++;
@@ -490,19 +496,21 @@ function attachAgentEvents(label: string, sessionId: string): void {
           (b: any) => b?.type === "text" && !b.text?.startsWith("<tool_output") && b.text !== "</tool_output>",
         );
         const text = firstReal?.text ?? "";
+        const isError = !!event.isError;
+        if (isError) turnErrors++;
         bus.emit({
           type: "tool_result",
           sessionId,
           agent: label,
           tool: event.toolName,
           preview: text.slice(0, 200),
-          isError: !!event.isError,
+          isError,
         });
         break;
       }
       case "turn_end": {
         const durationMs = Date.now() - turnStart;
-        bus.emit({ type: "turn_end", sessionId, agent: label, toolCalls, durationMs });
+        bus.emit({ type: "turn_end", sessionId, agent: label, toolCalls, durationMs, errorCount: turnErrors });
         break;
       }
     }
