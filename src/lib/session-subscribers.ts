@@ -314,6 +314,8 @@ export function createAutoResume(
     if (event.type !== "session_end") return;
     if (event.status !== "interrupted") return;
     if ((event.turnCount ?? 0) === 0) return; // No work done — nothing to resume
+    // Deliberate close (e.g., /new command) — not a crash, don't resume
+    if (event.error === "Closed") return;
 
     const prev = attempts.get(event.sessionId) ?? 0;
     if (prev >= MAX_RESUME_ATTEMPTS) {
