@@ -335,10 +335,15 @@ describe("waitForDetached", () => {
   function writeArchivedSession(sessionId: string, data: Record<string, unknown>, messages: unknown[]) {
     // Write meta.json in the active session dir (for getSession to find)
     writeSessionMeta(sessionId, data);
-    // Write session.jsonl in history dir (for readArchivedSessionMessages)
+    // Write session.jsonl in both active and history dirs
+    // (readSessionMessages reads from active dir; readArchivedSessionMessages from history)
+    const activeDir = resolve(tmpDir, "sessions", sessionId);
+    mkdirSync(activeDir, { recursive: true });
+    const jsonlContent = messages.map((m) => JSON.stringify(m)).join("\n") + "\n";
+    writeFileSync(resolve(activeDir, "session.jsonl"), jsonlContent);
+    // Also write to history dir for backward compat
     const histDir = resolve(tmpDir, "sessions", "history", sessionId);
     mkdirSync(histDir, { recursive: true });
-    const jsonlContent = messages.map((m) => JSON.stringify(m)).join("\n") + "\n";
     writeFileSync(resolve(histDir, "session.jsonl"), jsonlContent);
   }
 

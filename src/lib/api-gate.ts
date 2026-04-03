@@ -220,7 +220,7 @@ export class ApiGate {
 
   /** Force-release all slots for a session (cleanup on cancel/error). */
   releaseAll(sessionId: string): void {
-    for (const [baseUrl, ep] of this.endpoints) {
+    for (const [_baseUrl, ep] of this.endpoints) {
       if (ep.holders.has(sessionId)) {
         ep.active--;
         ep.holders.delete(sessionId);

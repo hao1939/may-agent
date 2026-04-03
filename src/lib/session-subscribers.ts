@@ -7,7 +7,7 @@
  * Replaces inline side effects that were in manager.ts handleCompletion.
  */
 
-import { appendFileSync, mkdirSync, writeFileSync, readFileSync, existsSync } from "node:fs";
+import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import type { AgentEvent } from "../app/event-bus.js";
 import { appendActivity, truncateSummary } from "./activity.js";

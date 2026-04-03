@@ -25,11 +25,11 @@ function writeWorkflow(name: string, content: string): void {
   writeFileSync(join(workflowDir, name), content, "utf-8");
 }
 
-/** Create a fake archived session with the given assistant response.
- *  This mimics what handleCompletion() does: move session data to history/. */
+/** Create a fake session with the given assistant response.
+ *  Sessions stay in the active sessions dir (manager no longer archives to history/). */
 function createArchivedSession(sessionId: string, agentName: string, task: string, responseText: string): void {
-  const historySessionDir = join(persistDir, "sessions", "history", sessionId);
-  mkdirSync(historySessionDir, { recursive: true });
+  const sessionDir = join(persistDir, "sessions", sessionId);
+  mkdirSync(sessionDir, { recursive: true });
 
   const userMsg: AgentMessage = {
     role: "user",
@@ -43,14 +43,14 @@ function createArchivedSession(sessionId: string, agentName: string, task: strin
   };
 
   const jsonl = [JSON.stringify(userMsg), JSON.stringify(assistantMsg)].join("\n") + "\n";
-  writeFileSync(join(historySessionDir, "session.jsonl"), jsonl, "utf-8");
-  mkdirSync(join(historySessionDir, "output"), { recursive: true });
+  writeFileSync(join(sessionDir, "session.jsonl"), jsonl, "utf-8");
+  mkdirSync(join(sessionDir, "output"), { recursive: true });
 }
 
 /** Create a fake registry entry for a session using per-session meta.json. */
 function addToRegistry(sessionId: string, agentName: string, task: string, status: string): void {
-  const historySessionDir = join(persistDir, "sessions", "history", sessionId);
-  mkdirSync(historySessionDir, { recursive: true });
+  const sessionDir = join(persistDir, "sessions", sessionId);
+  mkdirSync(sessionDir, { recursive: true });
   const meta = {
     agent: agentName,
     task,
@@ -58,7 +58,7 @@ function addToRegistry(sessionId: string, agentName: string, task: string, statu
     startedAt: Date.now() - 10000,
     endedAt: Date.now() - 4000,
   };
-  writeFileSync(join(historySessionDir, "meta.json"), JSON.stringify(meta, null, 2), "utf-8");
+  writeFileSync(join(sessionDir, "meta.json"), JSON.stringify(meta, null, 2), "utf-8");
 }
 
 beforeEach(() => {

@@ -1,5 +1,4 @@
 import { readFileSync, existsSync } from "node:fs";
-import { join } from "node:path";
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { AssistantMessage } from "@mariozechner/pi-ai";
 import type { SubagentManager } from "./manager.js";
