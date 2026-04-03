@@ -691,6 +691,7 @@ export class SubagentManager {
       finishParams: info.finishParams,
       filesModified: info.filesModified,
       workspacePath: info.workspacePath,
+      parentSessionId: info.parentSessionId,
     });
     // Legacy callback (deprecated — use bus instead)
     if (this.onSessionComplete) {
@@ -1692,6 +1693,7 @@ export class SubagentManager {
       finishParams: closeInfo.finishParams,
       filesModified: closeInfo.filesModified,
       workspacePath: closeInfo.workspacePath,
+      parentSessionId: session.parentSessionId,
     });
     this.onSessionComplete?.(closeInfo as SessionInfo);
   }
