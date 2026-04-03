@@ -723,6 +723,7 @@ export async function loadAgentHandlers(
         bus.emit({ type: "notification", agent: agentName, text: msg });
       },
       triggerNow: (entryName: string) => cron.triggerNow(entryName),
+      emit: (event) => bus.emit(event as any),
       // Runtime APIs — provided by the binary so handlers don't import src/lib/
       getDb: () => getDb(persistDir),
       trackRequest: (reqOpts) => trackRequest(persistDir, reqOpts),
