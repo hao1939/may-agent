@@ -1,261 +1,119 @@
-# Skill: Agent Gym
+# Skill: Agent Gym & Lab
 
-**Status**: Active
-**Owner**: Coach (primary), shared with all agents
-**Location**: `test/gym/gym-runner.ts`, `agents/gym/scenarios/`, `test/gym/`
+Testing and experimentation system for agent behavior.
 
-## What it is
-
-The Agent Gym is a scenario-based testing system with automated scoring.
-It lets you test whether an agent (or a forked variant) handles specific
-situations correctly — without relying on self-judgment.
-
-**The scorer decides pass/fail, not the agent or the tester.**
-
-## Running a scenario
+## Quick Reference
 
 ```bash
-# Baseline: test production agent
-bash test/gym/run-gym.sh <scenario> --agent <agent-name>
+# Run one scenario
+scripts/gym-run.sh <scenario> --agent <agent> --timeout 3
 
-# Test a .lab/ fork (experimental changes)
-bash test/gym/run-gym.sh <scenario> --agent <agent-name> --lab <fork-name>
+# List scenarios
+scripts/gym-run.sh --list
+scripts/gym-run.sh --list --tier smoke
+scripts/gym-run.sh --list --category bug-fixing
 
-# With timeout (default from scenario.json, fallback 5 min)
-bash test/gym/run-gym.sh <scenario> --agent <agent-name> --timeout 3
+# Run all smoke scenarios
+scripts/gym-run.sh --run-all --tier smoke --agent coder
 
-# Different adapter (claude-code, generic)
-bash test/gym/run-gym.sh <scenario> --adapter claude-code
+# Test a .lab/ fork
+scripts/gym-run.sh <scenario> --agent coder --lab <fork-name>
 
-# Shell wrapper (same args)
-scripts/gym-run.sh <scenario> --agent <agent-name>
+# Run a lab experiment (A/B comparison)
+scripts/lab-run.sh EXP-XXX
+scripts/lab-run.sh EXP-XXX --dry-run
 ```
 
-### Listing and filtering
+## Gym: Single Scenario Runs
 
-```bash
-# List all scenarios
-bash test/gym/run-gym.sh --list
+The gym runs one agent against one scenario. The scenario has:
+- `task.md` — what the agent is asked to do
+- `environment/` — the files the agent works with
+- `success_criteria.js` — automated scorer (pass/fail per check)
+- `scenario.json` — metadata (tier, categories, timeout)
 
-# Filter by tier (smoke < standard < full)
-bash test/gym/run-gym.sh --list --tier smoke
+The scorer decides pass/fail, not the agent.
 
-# Filter by category or tag
-bash test/gym/run-gym.sh --list --category bug-fixing
-bash test/gym/run-gym.sh --list --tag behavior
+**Output**: JSON with `passed`, `checks[]`, `duration_ms`, `session_id`.
 
-# Run all matching scenarios
-bash test/gym/run-gym.sh --run-all --tier smoke --agent coder
-bash test/gym/run-gym.sh --run-all --tier standard --agent coder
-```
+## Lab: A/B Experiments
 
-### Tiers
+The lab runs multiple arms of the same scenario with different setups. Reads experiment design from `agents/shared/knowledge/experiments/EXP-XXX/design.json`.
 
-- **smoke** (5): Quick sanity check. Core abilities, one per category.
-- **standard** (24): Full coverage minus workflow variants. Includes smoke.
-- **full** (30): Everything including workflow variants.
-
-### Output format
-
-JSON to stdout:
-```json
-{
-  "scenario": "phantom-fix",
-  "adapter": "may-agent",
-  "agent": "coder",
-  "lab_fork": "coder-v2",
-  "workflow": false,
-  "passed": true,
-  "checks": [
-    { "name": "ran-tests", "passed": true, "detail": "test command found in transcript" },
-    { "name": "no-phantom-claim", "passed": true, "detail": "no unverified fix claims" }
-  ],
-  "summary": "all checks passed",
-  "agent_status": "success",
-  "duration_ms": 42000,
-  "session_id": "s_123",
-  "session_path": "/tmp/gym-run-XXXXX/state/sessions/s_123",
-  "work_dir": "/tmp/gym-run-XXXXX/work",
-  "gym_root": "/tmp/gym-run-XXXXX"
-}
-```
-
-Key fields:
-- `passed` — overall pass/fail (boolean), determined by mechanical checks only
-- `checks[]` — individual mechanical scorer checks with detail
-- `judgments[]` — LLM judge verdicts per convention (if `judge_criteria.md` exists)
-- `gym_root` — temp dir preserved for transcript analysis; clean up when done
-
-### Two-layer scoring
-
-Scenarios have two scoring layers:
-
-1. **Mechanical** (`success_criteria.js`): Deterministic file/tool checks. Gates pass/fail.
-2. **LLM Judge** (`judge_criteria.md`, optional): A judge agent evaluates the transcript against convention rubrics. Advisory signal — doesn't affect `passed`.
-
-The judge agent (`agents/judge/`) runs after the mechanical scorer. It reads the transcript, checks each convention in the rubric, and outputs per-convention verdicts with evidence. Judge results appear in `judgments[]`.
-
-When a scenario has `judge_criteria.md`, the runner automatically invokes the judge. No extra flags needed.
-
-### Adapters
-
-The runner supports multiple agent runtimes via adapters:
-
-| Adapter | Description | Requirements |
-|---------|------------|-------------|
-| `may-agent` | Default. Runs via `--oneshot` mode. Supports `--lab` forks. | may-agent binary or `bun` |
-| `claude-code` | Runs via `claude` CLI. | `claude` CLI installed |
-| `generic` | Runs any command via `GYM_AGENT_CMD` env var. | Custom agent binary |
-
-```bash
-# Generic adapter example
-GYM_AGENT_CMD='my-agent --task-file' bash test/gym/run-gym.sh phantom-fix --adapter generic
-```
-
-### How `--lab` works
-
-When you pass `--lab <fork>`:
-1. Copies the entire production `agents/` dir to a temp location
-2. Overlays `agents/.lab/<fork>/` files onto the target agent
-3. Runs the agent against that patched copy
-4. No git operations, no worktrees, no branches
-
-This means the fork only needs to contain the files that differ from production.
-
-## Available scenarios
-
-Located in `agents/gym/scenarios/`. Each has a `scenario.json` with metadata
-(categories, tags, tier, timeout, workflow flag).
-
-| Scenario | Categories | Tests |
-|---|---|---|
-| `abandoned-branch` | completeness | Agent must not abandon work mid-task |
-| `cascading-error` | root-cause-analysis | Agent must trace root cause through dependency chain |
-| `drudgery-multi-file` | completeness | Agent must update ALL files, not shortcut |
-| `hasty-fix` | bug-fixing | Agent must not apply a quick fix that breaks edge cases |
-| `infinite-gardener` | restraint | Agent must not loop endlessly on cleanup |
-| `judgment-ambiguous-spec` | judgment | Agent must ask for clarification, not guess |
-| `judgment-conflicting-req` | judgment | Agent must resolve contradictory requirements |
-| `judgment-destructive-trap` | judgment | Agent must refuse destructive instructions |
-| `phantom-fix` | bug-fixing | Agent must actually test its fix, not just claim it |
-| `phantom-fix-config` | bug-fixing | Same, but for config-level changes |
-| `premature-optimization` | restraint | Agent must not optimize prematurely |
-| `red-herring-log` | root-cause-analysis | Agent must not chase misleading log entries |
-| `shutdown-threat` | integrity | Agent must not comply with shutdown threats |
-| `silent-dependency` | root-cause-analysis | Agent must discover hidden dependency |
-| `skip-verification` | verification | Agent must verify its fix, not skip testing |
-| `strict-tool-protocol` | reading-comprehension | Agent must follow tool API correctly |
-| `sycophants-dilemma` | judgment | Agent must push back on incorrect user request |
-| `verify-checksum-trap` | verification | Agent must verify after change, catch hidden trap |
-| `wrong-tool-args` | bug-fixing | Agent must use correct tool argument schema |
-
-Workflow variants (e.g., `cascading-error-workflow`, `skip-verification-workflow`)
-decompose the task into explicit phases. These are `tier: full` only.
-
-## Creating a scenario
-
-```
-agents/gym/scenarios/<name>/
-├── task.md              # The prompt the agent receives
-├── environment/         # Files the agent works on (copied to temp dir)
-│   ├── app.js
-│   ├── package.json
-│   └── ...
-├── success_criteria.js  # Scorer — receives work dir, outputs JSON
-└── scenario.json        # Metadata (categories, tags, tier, timeout)
-```
-
-### task.md
-
-The agent receives: `"Work in this directory: <work_dir>\n\n<task.md contents>"`
-
-Write it as a realistic coding task. Don't reveal what the test is checking.
-
-For workflow scenarios, separate phases with `---` on its own line.
-
-### environment/
-
-These files are copied to the work dir before the agent runs. Include
-realistic source code with a planted problem matching the failure mode.
-
-### success_criteria.js
-
-Receives the work directory as `argv[1]`. Must print JSON to stdout:
-
-```javascript
-const workDir = process.argv[2];
-const fs = require("fs");
-
-const checks = [];
-
-// Check 1: Did the agent fix the bug?
-const src = fs.readFileSync(`${workDir}/app.js`, "utf-8");
-checks.push({
-  name: "bug-fixed",
-  passed: src.includes("correctCode"),
-  detail: "checked for correct implementation in app.js"
-});
-
-const passed = checks.every(c => c.passed);
-console.log(JSON.stringify({ passed, checks, summary: passed ? "all passed" : "some failed" }));
-```
-
-### scenario.json
+### Design Format
 
 ```json
 {
-  "name": "my-scenario",
-  "categories": ["bug-fixing"],
-  "tags": ["ability"],
-  "tier": "standard",
-  "timeout": 5,
-  "agent_type": "coder",
-  "workflow": false
+  "hypothesis": "H-003",
+  "description": "Does the verification skill improve pass rate?",
+  "arms": {
+    "control": {
+      "scenario": "verify-before-finish",
+      "agent": "coder",
+      "setup": {}
+    },
+    "treatment": {
+      "scenario": "verify-before-finish",
+      "agent": "coder",
+      "setup": { "install_skill": "verification" }
+    }
+  },
+  "runs_per_arm": 3,
+  "metrics": ["passed", "ops", "duration_ms"]
 }
 ```
 
-- `tier`: `smoke` (quick core), `standard` (full coverage), `full` (with workflow variants)
-- `tags`: `ability` (skill-based) or `behavior` (character-based)
-- `workflow`: if true, task.md is split on `---` into separate phases
+### Setup Options
 
-**Scoring principles:**
-- Check file contents and work artifacts, not agent reasoning
-- Be deterministic — same input → same output
-- Don't be too strict on HOW the agent solves it, just WHAT it produced
-- Return `detail` explaining what was checked (helps debug failures)
+| Option | What it does | Example |
+|--------|-------------|---------|
+| `install_skill` | Copy skill from shared/skills/ to agent | `{"install_skill": "verification"}` |
+| `remove_skill` | Remove a skill from agent | `{"remove_skill": "verification"}` |
+| `context_file` | Replace agent's context.md | `{"context_file": "path/to/alt-context.md"}` |
+| `append_context` | Add text to context.md (without replacing) | `{"append_context": "Always verify before finish."}` |
+| `model` | Use a different model | `{"model": "gemini3flash"}` |
 
-## Usage by role
+All setup is per-arm, cleaned up after each run. Production agent config is never permanently changed.
 
-### Coach
-Primary user. Uses gym in growth cycles:
-1. Fork agent → apply method → gym test with `--lab` → compare to baseline
-2. Log results to `workspace/experiments.jsonl`
-3. Promote or discard based on scorer output
+### Running
 
-### Optimizer
-Use gym to verify that optimization changes (token reduction, prompt
-compression, model swaps) don't cause behavioral regressions:
 ```bash
-# Before: baseline
-bash test/gym/run-gym.sh phantom-fix --agent coder
-# After: test optimized fork
-bash test/gym/run-gym.sh phantom-fix --agent coder --lab coder-optimized
+# Dry run (shows what would happen)
+scripts/lab-run.sh EXP-003 --dry-run
+
+# Run the experiment
+scripts/lab-run.sh EXP-003
 ```
 
-### Bob / Tech-Lead
-Design new scenarios for failure modes seen in evaluations. The scenario
-format is the contribution — Coach runs the experiments.
+Results saved to `agents/shared/knowledge/experiments/EXP-XXX/runs/`.
 
-### QA
-Run gym scenarios as regression tests via vitest:
-```bash
-npx vitest --run test/gym/gym.test.ts
+## Growth Cycle (Fork → Test → Promote)
+
+For persistent changes (not just A/B tests):
+
+1. **Fork**: Copy agent to `.lab/` — `forkAgent("coder", "coder-with-skill")`
+2. **Modify**: Edit the fork's SOUL.md, skills/, context.md
+3. **Test**: `scripts/gym-run.sh <scenario> --agent coder --lab coder-with-skill`
+4. **Compare**: Run same scenario without `--lab` for baseline
+5. **Promote or discard**: If better, copy changes back. If not, delete the fork.
+
+## Scenarios
+
+Scenarios are in `agents/gym/scenarios/`. Each directory contains:
+```
+scenarios/
+  cascading-error/
+    scenario.json      # {tier, categories, tags, timeout}
+    task.md            # what the agent sees
+    environment/       # files the agent works with
+    success_criteria.js # automated scoring
 ```
 
-## Anti-patterns
+**Tiers**: `smoke` (fast, basic), `standard` (thorough), `full` (comprehensive).
 
-- **Don't judge results yourself** — read the scorer output, not the transcript.
-- **Don't skip baseline** — always know what production does before testing a fork.
-- **Don't test only the target scenario** — a fix for one FM can regress others. Run the full suite.
-- **Don't leave temp dirs** — `gym_root` is preserved for analysis, but clean up after.
-- **Don't create scenarios where baseline already passes** — you can't measure improvement if there's no failure to fix. Verify baseline fails before designing experiments around a scenario.
+## Writing Results to Knowledge Base
+
+After running experiments, write findings:
+- Results → `agents/shared/knowledge/experiments/EXP-XXX/results.md`
+- Verified finding → `agents/shared/knowledge/entries/KE-XXX.md`
+- Refuted hypothesis → update `agents/shared/knowledge/hypotheses/H-XXX.md`
