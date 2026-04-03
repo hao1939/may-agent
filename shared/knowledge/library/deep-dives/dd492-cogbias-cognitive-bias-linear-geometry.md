@@ -63,9 +63,9 @@ Biases aren't just behavioral patterns — they're **geometric features** of the
 
 ## Predictions
 
-**P169**: In multi-agent deliberation, Social biases (conformity, authority) will compound multiplicatively — each agent's conformity bias amplifies the next agent's, creating an exponential convergence toward the first-mover's position. This will be measurable via activation probes showing increasing projection onto the "conformity direction" across successive agents in a deliberation chain.
+**P175**: In multi-agent deliberation, Social biases (conformity, authority) will compound multiplicatively — each agent's conformity bias amplifies the next agent's, creating an exponential convergence toward the first-mover's position. This will be measurable via activation probes showing increasing projection onto the "conformity direction" across successive agents in a deliberation chain.
 
-**P170**: Systems that implement activation-steering-based debiasing in multi-agent panels will show a "debiasing paradox": reducing Judgment biases improves individual accuracy but may reduce group diversity (agents converge on correct but homogeneous reasoning paths), creating a tradeoff between individual accuracy and collective epistemic diversity.
+**P176**: Systems that implement activation-steering-based debiasing in multi-agent panels will show a "debiasing paradox": reducing Judgment biases improves individual accuracy but may reduce group diversity (agents converge on correct but homogeneous reasoning paths), creating a tradeoff between individual accuracy and collective epistemic diversity.
 
 ## Assessment
 

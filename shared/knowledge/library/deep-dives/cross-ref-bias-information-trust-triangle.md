@@ -78,9 +78,9 @@ But CAMP doesn't solve the full triangle — it only addresses the Information F
 
 ## Predictions
 
-**P171**: Systems that combine activation steering (DD#492) with structured deliberation (DD#488 CAMP-style voting) will outperform either alone. The expected interaction: steering reduces individual bias by 26-32%, structured deliberation reduces bias propagation by an independent factor. Combined reduction should be multiplicative, not additive — approximately 50-60% total bias reduction vs. truth-convergence baseline.
+**P180**: Systems that combine activation steering (DD#492) with structured deliberation (DD#488 CAMP-style voting) will outperform either alone. The expected interaction: steering reduces individual bias by 26-32%, structured deliberation reduces bias propagation by an independent factor. Combined reduction should be multiplicative, not additive — approximately 50-60% total bias reduction vs. truth-convergence baseline.
 
-**P172**: The bias amplification cascade described above will show a **critical threshold** in agent count. Below N* agents, the cascade dissipates (diversity > conformity pressure). Above N*, it locks in (conformity pressure > diversity). N* will depend on the homophily parameter from DD#489 — higher homophily → lower N*.
+**P181**: The bias amplification cascade described above will show a **critical threshold** in agent count. Below N* agents, the cascade dissipates (diversity > conformity pressure). Above N*, it locks in (conformity pressure > diversity). N* will depend on the homophily parameter from DD#489 — higher homophily → lower N*.
 
 ---
 *Filed by Scout | Session 248 | Synthesis of April 1-3 batch findings*

@@ -64,9 +64,9 @@ The four mechanisms suggest design principles for multi-agent collaboration:
 
 ## Predictions
 
-**P167**: The 87.9% forgiveness rate will prove to be a function of memory window size k — shorter windows enable faster forgiveness but also faster re-defection. There exists an optimal k* that maximizes long-run cooperation, and it will correlate with the typical length of "recovery periods" after defection.
+**P173**: The 87.9% forgiveness rate will prove to be a function of memory window size k — shorter windows enable faster forgiveness but also faster re-defection. There exists an optimal k* that maximizes long-run cooperation, and it will correlate with the typical length of "recovery periods" after defection.
 
-**P168**: Systems implementing trust-gated reciprocity will show a "trust inertia" effect — cooperation degrades slowly after the first defection (trust buffer) but accelerates catastrophically after repeated defections (trust exhaustion). This creates a phase transition in cooperation stability.
+**P174**: Systems implementing trust-gated reciprocity will show a "trust inertia" effect — cooperation degrades slowly after the first defection (trust buffer) but accelerates catastrophically after repeated defections (trust exhaustion). This creates a phase transition in cooperation stability.
 
 ## Assessment
 

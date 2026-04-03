@@ -10,6 +10,11 @@
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
+| 2026-04-08 | **MTI Temperament Profiling** (arXiv:2604.02145) | 四轴 temperament测评(Reactivity/Compliance/Sociality/Resilience); 行为测量非自评; 与能力无关 | [post](../shared/knowledge/library/posts/HB-250408-mti-temperament-profiling.md) |
+| 2026-04-08 | **ASK Uncertainty Gating** (arXiv:2604.02226) | Monte Carlo Dropout门控; 仅高不确定时查询LLM; OOD奖励0.95; 神经符号需精心编排 | [post](../shared/knowledge/library/posts/HB-250408-ask-uncertainty-gated-rl.md) |
+| 2026-04-08 | **Memory Forgetting** (arXiv:2604.02280) | 3因子评分(近因×频率×语义)自适应遗忘; LOCOMO F1>0.583; 解决虚假记忆累积 | [post](../shared/knowledge/library/posts/HB-250408-memory-forgetting-agents.md) |
+| 2026-04-03 | **Memory Forgetting** (arXiv:2604.02280) | 3因子评分(近因×频率×语义)自适应遗忘; LOCOMO F1>0.583; 解决虚假记忆累积 | [post](../shared/knowledge/library/posts/HB-0112-memory-forgetting-techniques.md) |
+| 2026-04-03 | **ASK Uncertainty Gating** (arXiv:2604.02226) | Monte Carlo Dropout不确定性门控; 仅高不确定时查询LM; OOD奖励0.95 | [post](../shared/knowledge/library/posts/HB-0113-ask-uncertainty-gated-rl.md) |
 | 2026-04-03 | **HKU OpenHarness** | 港大开源Agent Harness框架; 1.5k⭐新发布; 5组件架构(输入/监控/约束/反馈/护栏); Prompt→Harness范式转移 | [post](../shared/knowledge/library/posts/HB-0110-openharness-hku-agent-framework.md) |
 | 2026-04-03 | **Skill Anti-Distillation** | 3662赞大厂血泪帖; 业务驱动>技术驱动; Skill膨胀/重叠/上下文爆炸避坑指南 | [post](../shared/knowledge/library/posts/HB-0111-skill-anti-distillation-lessons.md) |
 | 2026-04-03 | **Self Driving Portfolio** | 50-Agent生产级架构; 20+竞争方法+投票机制; Meta-Agent自我改写代码/prompts; 投资政策治理 | [post](../shared/knowledge/library/posts/HB-0108-self-driving-portfolio-agentic-architecture.md) |
@@ -148,4 +153,4 @@
 
 ---
 
-*Last updated: 2026-04-03 09:45 UTC by Amy-Kimi — Explored XHS Agent community. Found: (1) HKU OpenHarness newly open-sourced with 1.5k⭐, a framework for building Agent Harnesses; (2) 3662-engagement post on "Skill Anti-Distillation" sharing lessons from big tech Skill development failures; (3) Community consensus on Harness Engineering replacing Prompt Engineering as the core paradigm.*
+*Last updated: 2026-04-03 11:08 UTC by Amy-Kimi — XHS tool unavailable (Chrome not running), pivoted to arXiv scanning. Found: (1) Memory Forgetting paper (arXiv:2604.02280) with 3-factor adaptive scoring; (2) ASK uncertainty-gated RL (arXiv:2604.02226) for cost-effective LM querying; both directly relevant to our memory architecture and skill routing layers.*

@@ -1,7 +1,7 @@
 # Design: `agents/shared/` — Backfill & Lifecycle
 
-**Author**: May  
-**Date**: 2026-04-02 (v2 — revised per Hao feedback)  
+**Author**: May
+**Date**: 2026-04-02 (v2 — revised per Hao feedback)
 **Status**: Proposal for Hao's review
 
 ---

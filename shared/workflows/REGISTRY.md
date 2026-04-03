@@ -92,32 +92,41 @@
 
 ## Effectiveness Tracking
 
-**Last measured**: 2026-03-30T21:10 (all-time data, 177 workflow runs, 460 sessions)
+**Last measured**: 2026-04-03T10:20 (all-time data, 180 workflow runs, 464 sessions)
 
 ### Overall Metrics
-| Metric | Workflow Sessions | Non-Workflow Sessions |
-|--------|------------------|----------------------|
-| Quality (good+acc) | 70.7% (325/460) | 81.4% (12291/15108) |
-| Error rate | 2.6% (12/460) | 18.1% (2733/15112) |
-| Avg ops/session | 11.2 | — |
-| Run completion rate | 72.9% (129/177) | — |
-| Avg ops/completed run | 32.8 | — |
+| Metric | Workflow Sessions | Standalone Sessions | Delta |
+|--------|------------------|---------------------|-------|
+| Done rate | 91.7% (413/464) | 64.8% (4941 active) | **+26.9pp** |
+| Error rate | 1.5% (12/464) | 23.2% | **-21.7pp** |
+| Interrupt rate | 6.8% | 12.0% | -5.2pp |
+| Avg ops/session | 16.1 | 12.9 | +3.2 |
+| Run completion rate | 72.2% (130/180) | — | — |
 
-### Key Findings
-1. **Workflows reduce errors dramatically** (2.6% vs 18.1%) — structured multi-step execution prevents crashes
-2. **Quality is lower** (70.7% vs 81.4%) — driven by coach training workflows (68 NI) and coder sub-sessions (40 NI)
-3. **Coach is the biggest NI source** — 68/133 needs_improvement in workflows are coach sessions (TASK_NONCOMPLETION in sprint planning)
-4. **27.1% of runs interrupted** — 48/177 runs don't complete, wasting avg 19.1 ops each (total ~917 ops wasted)
-5. **Job-kind sessions** (124) have 0 ops but still evaluated — may inflate NI counts for sub-task dispatches
+### Per-Workflow Performance
+| Workflow | Runs | Completion | Avg Ops | Star? |
+|----------|------|-----------|---------|-------|
+| Code-review-loop | 60 | 85% (97% for 4-step) | 11 | ⭐ Best |
+| Two-phase (coach) | 65 | 63% | 38 | ⚠️ NI issues |
+| Training-sprint | 23 | 91% | 44 | OK |
+| Skill-lifecycle | 12 | 75% | 73 | OK |
+
+### Key Findings (updated 2026-04-03)
+1. **Workflows reduce errors 15x** (1.5% vs 23.2%) — structured execution prevents crashes
+2. **Code-review-loop is gold standard** — 97% completion for full 4-step runs, 100% in last 15 runs, 24 avg ops/cycle
+3. **Coach training workflows have 35% NI rate** — driven by TASK_NONCOMPLETION in sprint planning (too complex for turn budget)
+4. **Workflow usage declining** — from 12.5% of sessions (Mar 29) to 0% (Apr 3). Needs investigation.
+5. **QA sub-sessions in workflows: 100% done rate** at 2.6 avg ops (vs 5.5 standalone + 5% error rate)
+6. **Evaluation paradox** — workflows show 25% NI vs 3% standalone, but this is driven by coach sub-sessions being judged without workflow context
 
 ### Consolidation Priority Updates (validated 2026-03-30T21:10)
 - **P1 verify-and-finish**: Confirmed byte-identical (may vs tech-lead) ✓
 - **P2 verify-parallel**: may/optimizer identical; tech-lead has better QA prompt (Phase 1 DIAGNOSE / Phase 2 VERDICT, pre-existing failure detection) ✓
 - **P3 implement-and-review**: 3 versions divergent — tech-lead has best prompts (DIAGNOSE/VERDICT pattern + verification phase 4), may has "claims" framing note
 
-### Recommendations
-1. **Consolidate P1 immediately** — verify-and-finish is byte-identical, zero risk
-2. **Consolidate P2 with tech-lead's version** — strictly better QA prompts
-3. **Consolidate P3 by merging** — combine tech-lead's DIAGNOSE/VERDICT + may's "claims" note
-4. **Investigate coach training workflow NI rate** — 68 NI sessions suggest sprint planning prompts need improvement
-5. **Track interrupted runs** — 27% interruption rate means ops waste; consider timeout tuning
+### Recommendations (prioritized 2026-04-03)
+1. **Investigate workflow usage decline** — 12.5% → 0% in 5 days. Are agents avoiding workflows?
+2. **Expand code-review-loop** — Should be default for ANY code change, not just tech-lead dispatches
+3. **Fix coach sprint planning** — Break 8-step plan into 2 focused sub-workflows to fit turn budget
+4. **Consolidate P1 immediately** — verify-and-finish is byte-identical, zero risk
+5. **Fix evaluator for workflow sub-sessions** — Judge in context of multi-step workflow, not standalone

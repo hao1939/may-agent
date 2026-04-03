@@ -1,0 +1,19 @@
+{
+  "hypothesis": "Workflows improve session completion rates and reduce errors compared to standalone sessions. Code-review-loop is the most effective workflow type.",
+  "type": "observational",
+  "methodology": "Retrospective analysis of all sessions in may.db (n=16,118 sessions, 180 workflow runs). Compared workflow vs standalone sessions on done rate, error rate, interrupt rate, and ops efficiency.",
+  "arms": {
+    "standalone": {
+      "description": "Sessions without workflowRunId",
+      "n_sessions": 4941,
+      "note": "Filtered to opCount > 0 (active sessions)"
+    },
+    "workflow": {
+      "description": "Sessions with workflowRunId",
+      "n_sessions": 324,
+      "note": "Filtered to opCount > 0 (active sessions)"
+    }
+  },
+  "metrics": ["done_rate", "error_rate", "interrupt_rate", "avg_ops", "eval_verdict"],
+  "date": "2026-04-03"
+}
