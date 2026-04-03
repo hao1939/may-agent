@@ -130,7 +130,7 @@ import { log } from "./log.js";
  * ## Errors That Trigger Retries
  *
  *   1. **Empty response** — The LLM stream completes with `stopReason="stop"` but the
- *      assistant message contains no text and no tool calls (0 output tokens). This
+ *      assistant message contains no text and no turns (0 output tokens). This
  *      typically indicates a model/API/proxy issue (e.g., LiteLLM dropping the response).
  *
  *   2. **Silent stream error** — The agent loop finishes without error, but the last
@@ -875,13 +875,13 @@ export class SubagentManager {
       return;
     }
 
-    // ── Detect shallow heartbeats (zero tool calls) ────────────────────
+    // ── Detect shallow heartbeats (zero turns) ────────────────────
     // Heartbeat sessions MUST read files (heartbeat.md, etc.).
-    // If an agent completes a heartbeat with zero tool calls, it responded
+    // If an agent completes a heartbeat with zero turns, it responded
     // from compacted context without actually checking anything — flag it.
-    if (!wasAborted && !session.error && session.totalToolCalls === 0 && session.task.startsWith("[heartbeat]")) {
+    if (!wasAborted && !session.error && session.turnCount === 0 && session.task.startsWith("[heartbeat]")) {
       session.error =
-        "Shallow heartbeat: completed with zero tool calls. " +
+        "Shallow heartbeat: completed with zero turns. " +
         "Heartbeat sessions MUST use tools (read heartbeat.md, check health, etc.).";
       session.agent.state.error = session.error;
     }
@@ -983,9 +983,9 @@ export class SubagentManager {
 
     // ── Auto-resume interrupted sessions ────────────────────────────────
     // Any session interrupted involuntarily (did real work, didn't call finish())
-    // gets auto-resumed with full context. Uses totalToolCalls (includes reads)
-    // not opCount (only writes) — a session that read 10 files did real work.
-    if (archiveStatus === "interrupted" && session.totalToolCalls > 0) {
+    // gets auto-resumed with full context. Uses turnCount (LLM turns completed)
+    // as the work indicator — if the agent completed at least one turn, it was working.
+    if (archiveStatus === "interrupted" && session.turnCount > 0) {
       const attempts = this._resumeAttempts.get(session.sessionId) ?? 0;
       const registered = this.agents.get(session.agentName);
       if (attempts < SubagentManager.MAX_RESUME_ATTEMPTS && registered) {
@@ -993,7 +993,7 @@ export class SubagentManager {
         const delay = 10_000 * (attempts + 1); // 10s, 20s backoff
         log(
           "info",
-          `[resume] ${session.agentName} (${session.sessionId}) interrupted after ${session.totalToolCalls} tool calls — resuming in ${delay / 1000}s (attempt ${attempts + 1}/${SubagentManager.MAX_RESUME_ATTEMPTS})`,
+          `[resume] ${session.agentName} (${session.sessionId}) interrupted after ${session.turnCount} turns — resuming in ${delay / 1000}s (attempt ${attempts + 1}/${SubagentManager.MAX_RESUME_ATTEMPTS})`,
         );
 
         // Clean up active session state but keep session files on disk
@@ -1033,7 +1033,7 @@ export class SubagentManager {
       this.onSessionBlocked?.(
         session.agentName,
         session.sessionId,
-        `Interrupted ${SubagentManager.MAX_RESUME_ATTEMPTS + 1}x after ${session.totalToolCalls} tool calls. Last error: ${session.error?.slice(0, 200) ?? "unknown"}. Task: ${session.task.slice(0, 200)}`,
+        `Interrupted ${SubagentManager.MAX_RESUME_ATTEMPTS + 1}x after ${session.turnCount} turns. Last error: ${session.error?.slice(0, 200) ?? "unknown"}. Task: ${session.task.slice(0, 200)}`,
       );
     }
 
