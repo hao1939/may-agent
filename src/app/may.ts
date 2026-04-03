@@ -199,6 +199,20 @@ import { DbWriter } from "../lib/db-writer.js";
 const dbWriter = new DbWriter(PERSIST_DIR);
 bus.subscribe(dbWriter.handler);
 
+// Session lifecycle subscribers — decoupled side effects
+import {
+  createActivityWriter,
+  createMemoryWriter,
+  createContextUpdater,
+  createRequestTracker,
+  createProgressWriter,
+} from "../lib/session-subscribers.js";
+bus.subscribe(createActivityWriter(PROJECT_ROOT));
+bus.subscribe(createMemoryWriter(PERSIST_DIR));
+bus.subscribe(createContextUpdater(PROJECT_ROOT));
+bus.subscribe(createRequestTracker(PERSIST_DIR));
+bus.subscribe(createProgressWriter(PROJECT_ROOT));
+
 setLogHandler((level, message) => {
   if (level === "debug") return; // debug logs don't reach the event system
   bus.emit({ type: "log", level: level as "info" | "warn" | "error", message });
@@ -305,16 +319,21 @@ const manager = new SubagentManager({
   onSessionComplete: (info) => {
     runAgentCleanup(info.agent);
 
-    // Emit session_end so DbWriter persists to SQLite
+    // Emit session_end — all subscribers react (DbWriter, ActivityWriter, MemoryWriter, etc)
     bus.emit({
       type: "session_end",
       sessionId: info.sessionId,
       agent: info.agent,
       status: info.status,
+      task: info.task,
       duration: info.runtime,
       error: info.error,
       outcome: info.outcome,
       opCount: info.opCount,
+      turnCount: info.turnCount,
+      finishParams: info.finishParams,
+      filesModified: info.filesModified,
+      workspacePath: info.workspacePath,
     });
 
     // Surface errors for completed task sessions

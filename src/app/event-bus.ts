@@ -35,17 +35,25 @@ export type SessionEvent =
   | { type: "text"; sessionId: string; agent: string; text: string }
   | { type: "tool_call"; sessionId: string; agent: string; tool: string; args: unknown }
   | { type: "tool_result"; sessionId: string; agent: string; tool: string; preview: string; isError: boolean }
-  | { type: "turn_end"; sessionId: string; agent: string; toolCalls: number; durationMs: number }
-  | { type: "session_start"; sessionId: string; agent: string; task: string; parentSessionId?: string }
+  | { type: "turn_end"; sessionId: string; agent: string; toolCalls: number; durationMs: number; turnCount?: number }
+  | { type: "session_start"; sessionId: string; agent: string; task: string; parentSessionId?: string; workspacePath?: string }
   | {
       type: "session_end";
       sessionId: string;
       agent: string;
       status: string;
+      task?: string;
       duration?: string;
       error?: string;
       outcome?: string;
       opCount?: number;
+      turnCount?: number;
+      /** Structured finish() data — context_updates, completed_items, new_items, etc. */
+      finishParams?: Record<string, unknown>;
+      /** Files modified during the session. */
+      filesModified?: string[];
+      /** Workspace path for agent-specific file writes. */
+      workspacePath?: string;
     };
 
 /** System events */
