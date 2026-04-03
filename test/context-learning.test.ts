@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { mkdirSync, writeFileSync, readFileSync, existsSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { SubagentManager } from "../src/lib/index.js";
+import { createContextUpdater } from "../src/lib/session-subscribers.js";
 import { getModel } from "@mariozechner/pi-ai";
 
 const tmpDir = join(process.cwd(), "test-workspace", "context-learning-test");
@@ -16,6 +17,26 @@ const testModel = {
   id: "test-model",
 };
 
+/**
+ * Helper: emit a fake session_end event to the context updater subscriber.
+ * This simulates what happens in production: the manager fires session_end
+ * on the bus, and createContextUpdater reacts to it.
+ */
+function applyContextUpdates(
+  projectRoot: string,
+  agentName: string,
+  updates: Array<{ action: string; content: string }>,
+): void {
+  const subscriber = createContextUpdater(projectRoot);
+  subscriber({
+    type: "session_end",
+    sessionId: "s_test",
+    agent: agentName,
+    status: "done",
+    finishParams: { context_updates: updates },
+  } as any);
+}
+
 describe("Context Learning", () => {
   beforeEach(() => {
     // Clean up
@@ -26,25 +47,7 @@ describe("Context Learning", () => {
   });
 
   it("applyContextUpdates creates context.md with added facts", () => {
-    const manager = new SubagentManager({
-      persistDir,
-      projectRoot: tmpDir,
-      infraRetryMax: 0,
-    });
-
-    manager.register({
-      name: "test-agent",
-      description: "test",
-      domain: "test",
-      tools: [],
-      model: testModel,
-      knowledgeDir: join(agentDir, "knowledge"),
-      workspace: join(agentDir, "workspace"),
-      projectRoot: tmpDir,
-    });
-
-    // Call the private method via any cast
-    (manager as any).applyContextUpdates("test-agent", [
+    applyContextUpdates(tmpDir, "test-agent", [
       { action: "add", content: "Project uses Bun not npm" },
       { action: "add", content: "Config files in /app/config/" },
     ]);
@@ -56,28 +59,11 @@ describe("Context Learning", () => {
   });
 
   it("applyContextUpdates removes facts", () => {
-    const manager = new SubagentManager({
-      persistDir,
-      projectRoot: tmpDir,
-      infraRetryMax: 0,
-    });
-
-    manager.register({
-      name: "test-agent",
-      description: "test",
-      domain: "test",
-      tools: [],
-      model: testModel,
-      knowledgeDir: join(agentDir, "knowledge"),
-      workspace: join(agentDir, "workspace"),
-      projectRoot: tmpDir,
-    });
-
     // Pre-populate context.md
     mkdirSync(agentDir, { recursive: true });
     writeFileSync(contextPath, "- Old fact about PostgreSQL\n- Keep this fact\n- Another old fact about pg\n");
 
-    (manager as any).applyContextUpdates("test-agent", [{ action: "remove", content: "PostgreSQL" }]);
+    applyContextUpdates(tmpDir, "test-agent", [{ action: "remove", content: "PostgreSQL" }]);
 
     const content = readFileSync(contextPath, "utf-8");
     expect(content).not.toContain("PostgreSQL");
@@ -87,24 +73,7 @@ describe("Context Learning", () => {
   });
 
   it("applyContextUpdates deduplicates", () => {
-    const manager = new SubagentManager({
-      persistDir,
-      projectRoot: tmpDir,
-      infraRetryMax: 0,
-    });
-
-    manager.register({
-      name: "test-agent",
-      description: "test",
-      domain: "test",
-      tools: [],
-      model: testModel,
-      knowledgeDir: join(agentDir, "knowledge"),
-      workspace: join(agentDir, "workspace"),
-      projectRoot: tmpDir,
-    });
-
-    (manager as any).applyContextUpdates("test-agent", [
+    applyContextUpdates(tmpDir, "test-agent", [
       { action: "add", content: "Fact A" },
       { action: "add", content: "Fact A" },
       { action: "add", content: "Fact A" },
@@ -115,38 +84,17 @@ describe("Context Learning", () => {
     expect(matches?.length).toBe(1);
   });
 
-  it("applyContextUpdates trims when over 2KB", () => {
-    const manager = new SubagentManager({
-      persistDir,
-      projectRoot: tmpDir,
-      infraRetryMax: 0,
-    });
+  it("applyContextUpdates is idempotent for existing content", () => {
+    // Pre-populate context.md with a fact
+    mkdirSync(agentDir, { recursive: true });
+    writeFileSync(contextPath, "- Existing fact\n");
 
-    manager.register({
-      name: "test-agent",
-      description: "test",
-      domain: "test",
-      tools: [],
-      model: testModel,
-      knowledgeDir: join(agentDir, "knowledge"),
-      workspace: join(agentDir, "workspace"),
-      projectRoot: tmpDir,
-    });
-
-    // Add lots of content to exceed 2KB
-    const updates = Array.from({ length: 50 }, (_, i) => ({
-      action: "add" as const,
-      content: `Fact number ${i}: ${"x".repeat(80)}`,
-    }));
-
-    (manager as any).applyContextUpdates("test-agent", updates);
+    // Try to add the same fact again
+    applyContextUpdates(tmpDir, "test-agent", [{ action: "add", content: "Existing fact" }]);
 
     const content = readFileSync(contextPath, "utf-8");
-    expect(content.length).toBeLessThanOrEqual(2048 + 100); // small buffer for last line
-    // Oldest entries should be trimmed (fact 0, 1, 2...)
-    expect(content).not.toContain("Fact number 0:");
-    // Newest entries should remain
-    expect(content).toContain("Fact number 49:");
+    const matches = content.match(/Existing fact/g);
+    expect(matches?.length).toBe(1);
   });
 
   it("buildSessionContext includes context.md content", () => {

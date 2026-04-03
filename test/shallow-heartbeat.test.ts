@@ -14,11 +14,12 @@
 
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { SubagentManager } from "../src/lib/manager.js";
+import { readSessionMeta } from "../src/lib/persistence.js";
 import type { SubagentDefinition } from "../src/lib/types.js";
 import type { Model } from "@mariozechner/pi-ai";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { mkdtempSync, rmSync, readdirSync, readFileSync } from "node:fs";
+import { mkdtempSync, rmSync } from "node:fs";
 
 function fakeModel(): Model<any> {
   return {
@@ -66,16 +67,11 @@ describe("shallow heartbeat detection", () => {
     const sid = manager.run("bot", "[heartbeat] Read heartbeat.md and check health.");
     await manager.waitFor(sid);
 
-    // Session should be archived as error (either from connection failure
+    // Session should be error (either from connection failure
     // or from shallow heartbeat detection — both are error states)
-    const historyDir = join(dir, "sessions", "history");
-    const sessions = readdirSync(historyDir);
-    const sessionDir = sessions.find((d) => d.startsWith(sid));
-    expect(sessionDir).toBeDefined();
-
-    const metaPath = join(historyDir, sessionDir!, "meta.json");
-    const meta = JSON.parse(readFileSync(metaPath, "utf-8"));
-    expect(meta.status).toBe("error");
+    const meta = readSessionMeta(dir, sid);
+    expect(meta).toBeDefined();
+    expect(meta!.status).toBe("error");
   });
 
   it("non-heartbeat sessions with zero tool calls don't get shallow-heartbeat error", async () => {
@@ -84,16 +80,10 @@ describe("shallow heartbeat detection", () => {
     await manager.waitFor(sid);
 
     // Session should be error (from connection failure) but NOT mention "Shallow heartbeat"
-    const historyDir = join(dir, "sessions", "history");
-    const sessions = readdirSync(historyDir);
-    const sessionDir = sessions.find((d) => d.startsWith(sid));
-    expect(sessionDir).toBeDefined();
-
-    const metaPath = join(historyDir, sessionDir!, "meta.json");
-    const meta = JSON.parse(readFileSync(metaPath, "utf-8"));
-    // Should not have the shallow heartbeat error message
-    if (meta.error) {
-      expect(meta.error).not.toContain("Shallow heartbeat");
+    const meta = readSessionMeta(dir, sid);
+    expect(meta).toBeDefined();
+    if (meta!.error) {
+      expect(meta!.error).not.toContain("Shallow heartbeat");
     }
   });
 
@@ -104,16 +94,11 @@ describe("shallow heartbeat detection", () => {
     const sid = manager.run("bot", "Check the heartbeat system.");
     await manager.waitFor(sid);
 
-    const historyDir = join(dir, "sessions", "history");
-    const sessions = readdirSync(historyDir);
-    const sessionDir = sessions.find((d) => d.startsWith(sid));
-    expect(sessionDir).toBeDefined();
-
-    const metaPath = join(historyDir, sessionDir!, "meta.json");
-    const meta = JSON.parse(readFileSync(metaPath, "utf-8"));
+    const meta = readSessionMeta(dir, sid);
+    expect(meta).toBeDefined();
     // Should not mention shallow heartbeat — task doesn't start with [heartbeat]
-    if (meta.error) {
-      expect(meta.error).not.toContain("Shallow heartbeat");
+    if (meta!.error) {
+      expect(meta!.error).not.toContain("Shallow heartbeat");
     }
   });
 
@@ -123,9 +108,9 @@ describe("shallow heartbeat detection", () => {
     // responds successfully with text but zero tool calls (not testable with
     // a broken model). When it fires, the message should guide the agent.
     const expectedMessage =
-      "Shallow heartbeat: completed with zero tool calls. " +
+      "Shallow heartbeat: completed with zero turns. " +
       "Heartbeat sessions MUST use tools (read heartbeat.md, check health, etc.).";
-    expect(expectedMessage).toContain("zero tool calls");
+    expect(expectedMessage).toContain("zero turns");
     expect(expectedMessage).toContain("MUST use tools");
     expect(expectedMessage).toContain("heartbeat.md");
   });

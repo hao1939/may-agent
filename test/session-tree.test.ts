@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { SubagentManager } from "../src/lib/manager.js";
-import { RegistryStore, archiveSession, ensureSessionDir, appendSessionMessage } from "../src/lib/persistence.js";
+import { RegistryStore, ensureSessionDir, appendSessionMessage } from "../src/lib/persistence.js";
 import type { Model } from "@mariozechner/pi-ai";
 
 function fakeModel(): Model<any> {
@@ -263,7 +263,7 @@ describe("getSessionTree()", () => {
     expect(tree.status).toBe("running");
   });
 
-  it("includes result for completed archived sessions with messages", () => {
+  it("includes result for completed sessions with messages", () => {
     const registry = new RegistryStore(persistDir);
     const sid = "s_with_result_1";
     registry.saveSession(sid, {
@@ -274,14 +274,13 @@ describe("getSessionTree()", () => {
       endedAt: Date.now(),
     });
 
-    // Create session directory and add a message, then archive it
+    // Create session directory and add a message (sessions stay in active dir)
     ensureSessionDir(persistDir, sid);
     appendSessionMessage(persistDir, sid, {
       role: "assistant",
       content: [{ type: "text", text: "Here is the final answer." }],
       timestamp: Date.now(),
     });
-    archiveSession(persistDir, sid);
 
     const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
     const tree = manager.getSessionTree(sid);

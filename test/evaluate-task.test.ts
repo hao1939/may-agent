@@ -129,8 +129,8 @@ function makeRegistry(sessions: Record<string, Partial<PersistedSession>>): Reco
 }
 
 function writeSessionJsonl(persistDir: string, sessionId: string, messages: unknown[]): void {
-  // Write to history dir (archived sessions)
-  const dir = join(persistDir, "sessions", "history", sessionId);
+  // Write to active sessions dir (readSessionMessages reads from here)
+  const dir = join(persistDir, "sessions", sessionId);
   mkdirSync(dir, { recursive: true });
   const jsonl = messages.map((m) => JSON.stringify(m)).join("\n") + "\n";
   writeFileSync(join(dir, "session.jsonl"), jsonl, "utf-8");

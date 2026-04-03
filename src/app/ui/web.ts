@@ -10,6 +10,7 @@
 declare const Bun: {
   serve(opts: {
     port: number;
+    hostname?: string;
     fetch(req: Request, server: any): Response | undefined;
     websocket: { open(ws: any): void; message(ws: any, msg: any): void; close(ws: any): void };
   }): { port: number };
