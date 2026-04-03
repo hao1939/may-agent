@@ -178,6 +178,7 @@ export class SubagentManager {
   private onSessionComplete?: (info: SessionInfo) => void;
   private onSessionStart?: (agentName: string, sessionId: string) => void;
   private onSessionBlocked?: (agentName: string, sessionId: string, reason: string) => void;
+  private bus?: import("./manager-utils.js").ManagerEventBus;
   private startedAt = Date.now();
   private _projectRoot: string;
   /** Maximum call depth for callAgent chains. Prevents A→B→A infinite loops. */
@@ -207,7 +208,67 @@ export class SubagentManager {
     this.onSessionComplete = opts.onSessionComplete;
     this.onSessionStart = opts.onSessionStart;
     this.onSessionBlocked = opts.onSessionBlocked;
+    this.bus = opts.bus;
     this.apiGate = opts.apiGate;
+  }
+
+  /** Emit an event on the bus (no-op if bus not configured). */
+  private emit(event: Record<string, unknown>): void {
+    this.bus?.emit(event);
+  }
+
+  /**
+   * Subscribe to pi-agent-core events on a session and re-emit as bus events.
+   * Bridges low-level agent events (turn_start, message_update, tool_execution_*)
+   * to high-level bus events (text, tool_call, tool_result, turn_end).
+   */
+  private bridgeAgentEvents(agentName: string, sessionId: string): void {
+    if (!this.bus) return;
+    let toolCalls = 0;
+    let turnErrors = 0;
+    let turnStart = Date.now();
+
+    this.subscribe(sessionId, (event) => {
+      switch (event.type) {
+        case "turn_start":
+          turnStart = Date.now();
+          toolCalls = 0;
+          turnErrors = 0;
+          break;
+        case "tool_execution_start":
+          toolCalls++;
+          this.emit({ type: "tool_call", sessionId, agent: agentName, tool: event.toolName, args: event.args });
+          break;
+        case "message_update":
+          if (event.assistantMessageEvent.type === "text_delta") {
+            this.emit({ type: "text", sessionId, agent: agentName, text: event.assistantMessageEvent.delta });
+          }
+          break;
+        case "tool_execution_end": {
+          const blocks = event.result?.content ?? [];
+          const firstReal = blocks.find(
+            (b: any) => b?.type === "text" && !b.text?.startsWith("<tool_output") && b.text !== "</tool_output>",
+          );
+          const text = firstReal?.text ?? "";
+          const isError = !!event.isError;
+          if (isError) turnErrors++;
+          this.emit({
+            type: "tool_result",
+            sessionId,
+            agent: agentName,
+            tool: event.toolName,
+            preview: text.slice(0, 200),
+            isError,
+          });
+          break;
+        }
+        case "turn_end": {
+          const durationMs = Date.now() - turnStart;
+          this.emit({ type: "turn_end", sessionId, agent: agentName, toolCalls, durationMs, errorCount: turnErrors });
+          break;
+        }
+      }
+    });
   }
 
   /** Register a feature unit. */
@@ -613,8 +674,26 @@ export class SubagentManager {
     }
 
     // ── Notify completion ────────────────────────────────────────────
+    const info = buildSessionInfo(session, outcome, (name) => this.getWorkspacePath(name));
+
+    // Emit session_end on bus (subscribers handle recovery, eval, memory, etc.)
+    this.emit({
+      type: "session_end",
+      sessionId: info.sessionId,
+      agent: info.agent,
+      status: info.status,
+      task: info.task,
+      duration: info.runtime,
+      error: info.error,
+      outcome: info.outcome,
+      opCount: info.opCount,
+      turnCount: info.turnCount,
+      finishParams: info.finishParams,
+      filesModified: info.filesModified,
+      workspacePath: info.workspacePath,
+    });
+    // Legacy callback (deprecated — use bus instead)
     if (this.onSessionComplete) {
-      const info = buildSessionInfo(session, outcome, (name) => this.getWorkspacePath(name));
       try {
         this.onSessionComplete(info);
       } catch {
@@ -779,7 +858,17 @@ export class SubagentManager {
     // Add to activeSessions before notifying listener (subscribe() needs it)
     this.activeSessions.set(sessionId, session);
 
-    // Notify listener that a new session has started
+    // Emit session_start and bridge agent events to the bus
+    this.bridgeAgentEvents(name, sessionId);
+    const meta = readSessionMeta(this.registry.persistDir, sessionId);
+    this.emit({
+      type: "session_start",
+      sessionId,
+      agent: name,
+      task: meta?.task ?? task,
+      parentSessionId: opts?.parentSessionId,
+    });
+    // Legacy callback (deprecated — use bus instead)
     this.onSessionStart?.(name, sessionId);
 
     // Activity tracking handled by ActivityWriter subscriber (reacts to session_start event)
@@ -1066,6 +1155,17 @@ export class SubagentManager {
     this.subscribeForPersistence(session);
     this.setupTimeout(session, def.timeoutMs);
     this.activeSessions.set(sessionId, session);
+
+    // Emit session_start and bridge agent events to the bus
+    this.bridgeAgentEvents(persisted.agent, sessionId);
+    this.emit({
+      type: "session_start",
+      sessionId,
+      agent: persisted.agent,
+      task: persisted.task,
+      parentSessionId: persisted.parentSessionId,
+    });
+    // Legacy callback (deprecated — use bus instead)
     this.onSessionStart?.(persisted.agent, sessionId);
 
     // Continue the agent — either resume from a pending user message or
@@ -1566,8 +1666,8 @@ export class SubagentManager {
     this.cleanupSession(session);
     this.activeSessions.delete(sessionId);
 
-    // Emit session_end — subscribers handle memory, requests, activity, context
-    this.onSessionComplete?.({
+    // Emit session_end on bus + legacy callback
+    const closeInfo = {
       sessionId, agent: session.agentName, task: session.task,
       status: session.archiveStatus!, startedAt: session.startedAt,
       endedAt: session.endedAt, runtime: formatDuration(session.endedAt - session.startedAt),
@@ -1577,7 +1677,23 @@ export class SubagentManager {
       turnCount: session.turnCount, finishParams,
       filesModified: [...session.filesModified],
       workspacePath: this.getWorkspacePath(session.agentName),
+    };
+    this.emit({
+      type: "session_end",
+      sessionId: closeInfo.sessionId,
+      agent: closeInfo.agent,
+      status: closeInfo.status,
+      task: closeInfo.task,
+      duration: closeInfo.runtime,
+      error: closeInfo.error,
+      outcome: closeInfo.outcome,
+      opCount: closeInfo.opCount,
+      turnCount: closeInfo.turnCount,
+      finishParams: closeInfo.finishParams,
+      filesModified: closeInfo.filesModified,
+      workspacePath: closeInfo.workspacePath,
     });
+    this.onSessionComplete?.(closeInfo as SessionInfo);
   }
 
   /** Steer a running session mid-run.

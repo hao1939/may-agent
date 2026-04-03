@@ -214,11 +214,11 @@ bus.subscribe(createMemoryWriter(PERSIST_DIR));
 bus.subscribe(createContextUpdater(PROJECT_ROOT));
 bus.subscribe(createRequestTracker(PERSIST_DIR));
 bus.subscribe(createProgressWriter(PROJECT_ROOT));
-bus.subscribe(createStuckDetector((sessionId, reason) => {
+bus.subscribe(createStuckDetector((sessionId, _reason) => {
   bus.emit({ type: "cancel", sessionId } as any);
 }));
 bus.subscribe(createAutoResume(
-  (sessionId, agent, attempt) => {
+  (sessionId, agent, _attempt) => {
     const ok = manager.resumeInterrupted(sessionId);
     if (ok) {
       bus.emit({ type: "log", level: "info", message: `[resume] Resumed ${agent} session ${sessionId}` });
@@ -324,125 +324,114 @@ const manager = new SubagentManager({
   projectRoot: PROJECT_ROOT,
   infraRetryMax: 3,
   apiGate,
+  bus,
+  // Thin callbacks for agent-loader bookkeeping (not bus concerns)
   onSessionStart: (agentName, sessionId) => {
-    attachAgentEvents(agentName, sessionId);
     setAgentSessionId(agentName, sessionId);
-
-    // Emit session_start so DbWriter persists to SQLite
-    const meta = readSessionMeta(PERSIST_DIR, sessionId);
-    bus.emit({
-      type: "session_start",
-      sessionId,
-      agent: agentName,
-      task: meta?.task ?? "",
-      parentSessionId: meta?.parentSessionId,
-    });
   },
   onSessionComplete: (info) => {
     runAgentCleanup(info.agent);
+  },
+});
 
-    // Emit session_end — all subscribers react (DbWriter, ActivityWriter, MemoryWriter, etc)
+// ── Bus subscribers for session lifecycle (recovery, eval, escalation) ──
+
+// Session Drop Recovery (Ambulance Protocol — P62)
+bus.subscribe((event) => {
+  if (event.type !== "session_end") return;
+  const info = event as any;
+  if (!info.error || info.status !== "error") return;
+
+  const errorClass = classifyError(info.error);
+  if (errorClass !== "infra") return;
+
+  const rKey = recoveryKey(info.agent, info.task ?? "");
+  const attempts = recoveryAttempts.get(rKey) || 0;
+  if (attempts < MAX_RECOVERY_ATTEMPTS) {
+    try {
+      recoveryAttempts.set(rKey, attempts + 1);
+      const newSessionId = manager.run(info.agent, info.task, { kind: "job" });
+      bus.emit({
+        type: "info",
+        message: `[recovery] Requeued ${info.agent} session ${info.sessionId} → ${newSessionId} (infra error, attempt ${attempts + 1}/${MAX_RECOVERY_ATTEMPTS})`,
+      });
+    } catch (requeueErr) {
+      const msg = requeueErr instanceof Error ? requeueErr.message : String(requeueErr);
+      bus.emit({ type: "info", message: `[recovery] Failed to requeue ${info.agent}: ${msg}` });
+    }
+  } else {
     bus.emit({
-      type: "session_end",
-      sessionId: info.sessionId,
-      agent: info.agent,
-      status: info.status,
-      task: info.task,
-      duration: info.runtime,
-      error: info.error,
-      outcome: info.outcome,
-      opCount: info.opCount,
-      turnCount: info.turnCount,
-      finishParams: info.finishParams,
-      filesModified: info.filesModified,
-      workspacePath: info.workspacePath,
+      type: "info",
+      message: `[recovery] ${info.agent} exhausted ${MAX_RECOVERY_ATTEMPTS} recovery attempts for task — escalating`,
     });
+    escalateToHuman(info.agent, `exhausted ${MAX_RECOVERY_ATTEMPTS} recovery retries`);
+  }
+});
 
-    // Surface errors for completed task sessions
-    if (info.error && info.status === "error") {
-      bus.emit({ type: "info", message: `[${info.agent}] ⚠️ Session ${info.status}: ${info.error}` });
+// Auto-evaluate completed task trees
+bus.subscribe((event) => {
+  if (event.type !== "session_end") return;
+  const info = event as any;
+  if (!info.parentSessionId || !taskSessionId || info.parentSessionId !== taskSessionId) return;
 
-      // ── Session Drop Recovery (Ambulance Protocol — P62) ──
-      // If error is transient infrastructure failure, auto-requeue the task.
-      const errorClass = classifyError(info.error);
-      if (errorClass === "infra") {
-        const rKey = recoveryKey(info.agent, info.task);
-        const attempts = recoveryAttempts.get(rKey) || 0;
-        if (attempts < MAX_RECOVERY_ATTEMPTS) {
-          try {
-            recoveryAttempts.set(rKey, attempts + 1);
-            const newSessionId = manager.run(info.agent, info.task, { kind: "job" });
-            bus.emit({
-              type: "info",
-              message: `[recovery] 🚑 Requeued ${info.agent} session ${info.sessionId} → ${newSessionId} (infra error, attempt ${attempts + 1}/${MAX_RECOVERY_ATTEMPTS})`,
-            });
-          } catch (requeueErr) {
-            const msg = requeueErr instanceof Error ? requeueErr.message : String(requeueErr);
-            bus.emit({
-              type: "info",
-              message: `[recovery] ❌ Failed to requeue ${info.agent}: ${msg}`,
-            });
+  setTimeout(async () => {
+    try {
+      const result = await evaluateTask({
+        manager,
+        persistDir: PERSIST_DIR,
+        parentSessionId: info.parentSessionId,
+      });
+      if (result) {
+        const agentNames = Object.keys(result.agents).join(", ");
+        const verdict = result.overall.verdict;
+        bus.emit({
+          type: "info",
+          message: `[eval] Auto-evaluated ${result.sessionIds.length} session(s) (${agentNames}): ${verdict}`,
+        });
+
+        for (const sessionId of result.sessionIds) {
+          const meta = readSessionMeta(PERSIST_DIR, sessionId);
+          if (meta && meta.agent) {
+            bus.emit({ type: "context-learn", agentName: meta.agent, sessionId, persistDir: PERSIST_DIR });
           }
-        } else {
-          bus.emit({
-            type: "info",
-            message: `[recovery] ⛔ ${info.agent} exhausted ${MAX_RECOVERY_ATTEMPTS} recovery attempts for task — escalating`,
-          });
-          escalateToHuman(info.agent, `exhausted ${MAX_RECOVERY_ATTEMPTS} recovery retries`);
         }
       }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      bus.emit({ type: "info", message: `[eval] Auto-evaluation failed: ${msg}` });
     }
+  }, 3000);
+});
 
-    // Auto-evaluate completed task trees (children of task-mode sessions)
-    if (info.parentSessionId && taskSessionId && info.parentSessionId === taskSessionId) {
-      setTimeout(async () => {
-        try {
-          const result = await evaluateTask({
-            manager,
-            persistDir: PERSIST_DIR,
-            parentSessionId: info.parentSessionId!,
-          });
-          if (result) {
-            const agentNames = Object.keys(result.agents).join(", ");
-            const verdict = result.overall.verdict;
-            bus.emit({
-              type: "info",
-              message: `[eval] Auto-evaluated ${result.sessionIds.length} session(s) (${agentNames}): ${verdict}`,
-            });
+// Escalation: blocked sessions → Telegram + request tracking
+bus.subscribe((event) => {
+  if (event.type !== "session_end") return;
+  const info = event as any;
+  const fp = info.finishParams;
+  if (!fp || (fp.status !== "blocked" && fp.status !== "failure")) return;
 
-            // Emit context-learn events for each evaluated agent
-            for (const sessionId of result.sessionIds) {
-              const meta = readSessionMeta(PERSIST_DIR, sessionId);
-              if (meta && meta.agent) {
-                bus.emit({ type: "context-learn", agentName: meta.agent, sessionId, persistDir: PERSIST_DIR });
-              }
-            }
-          }
-        } catch (err) {
-          const msg = err instanceof Error ? err.message : String(err);
-          bus.emit({ type: "info", message: `[eval] Auto-evaluation failed: ${msg}` });
-        }
-      }, 3000);
-    }
-  },
-  onSessionBlocked: (agentName, sessionId, reason) => {
-    bus.emit({ type: "info", message: `[escalation] ⚠️ ${agentName} session ${sessionId} blocked/failed: ${reason}` });
-    // Track escalation as a request targeting May
-    try {
-      trackRequest(PERSIST_DIR, {
-        fromEntity: agentName,
-        toAgent: "may",
-        task: `[escalation] ${agentName} session ${sessionId} — ${reason}`,
-        method: "send",
-        sessionId,
-      });
-    } catch {
-      /* best-effort */
-    }
+  bus.emit({ type: "info", message: `[escalation] ${info.agent} session ${info.sessionId} ${fp.status}: ${fp.summary}` });
+  try {
+    trackRequest(PERSIST_DIR, {
+      fromEntity: info.agent,
+      toAgent: "may",
+      task: `[escalation] ${info.agent} session ${info.sessionId} — ${fp.status}: ${fp.summary}`,
+      method: "send",
+      sessionId: info.sessionId,
+    });
+  } catch {
+    /* best-effort */
+  }
+  escalateToHuman(info.agent, `${fp.status}: ${fp.summary}`);
+});
 
-    // Push notification to human via Telegram
-    escalateToHuman(agentName, reason);
-  },
+// Surface errors for completed task sessions
+bus.subscribe((event) => {
+  if (event.type !== "session_end") return;
+  const info = event as any;
+  if (info.error && info.status === "error") {
+    bus.emit({ type: "info", message: `[${info.agent}] Session ${info.status}: ${info.error}` });
+  }
 });
 
 // ── Load agents from agents/*/agent.json ────────────────────────────────
@@ -486,54 +475,6 @@ const interfaceAgent = (() => {
   if (idx !== -1 && process.argv[idx + 1]) return process.argv[idx + 1];
   return process.env.AGENT || "may";
 })();
-
-function attachAgentEvents(label: string, sessionId: string): void {
-  let toolCalls = 0;
-  let turnErrors = 0;
-  let turnStart = Date.now();
-
-  manager.subscribe(sessionId, (event) => {
-    switch (event.type) {
-      case "turn_start":
-        turnStart = Date.now();
-        toolCalls = 0;
-        turnErrors = 0;
-        break;
-      case "tool_execution_start":
-        toolCalls++;
-        bus.emit({ type: "tool_call", sessionId, agent: label, tool: event.toolName, args: event.args });
-        break;
-      case "message_update":
-        if (event.assistantMessageEvent.type === "text_delta") {
-          bus.emit({ type: "text", sessionId, agent: label, text: event.assistantMessageEvent.delta });
-        }
-        break;
-      case "tool_execution_end": {
-        const blocks = event.result?.content ?? [];
-        const firstReal = blocks.find(
-          (b: any) => b?.type === "text" && !b.text?.startsWith("<tool_output") && b.text !== "</tool_output>",
-        );
-        const text = firstReal?.text ?? "";
-        const isError = !!event.isError;
-        if (isError) turnErrors++;
-        bus.emit({
-          type: "tool_result",
-          sessionId,
-          agent: label,
-          tool: event.toolName,
-          preview: text.slice(0, 200),
-          isError,
-        });
-        break;
-      }
-      case "turn_end": {
-        const durationMs = Date.now() - turnStart;
-        bus.emit({ type: "turn_end", sessionId, agent: label, toolCalls, durationMs, errorCount: turnErrors });
-        break;
-      }
-    }
-  });
-}
 
 // ── Context Learning (event-driven) ────────────────────────────────────
 // Listen for "context-learn" events and extract durable facts from the session.
