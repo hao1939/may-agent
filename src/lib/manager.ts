@@ -982,9 +982,9 @@ export class SubagentManager {
     }
 
     // ── Auto-resume interrupted sessions ────────────────────────────────
-    // If interrupted by API abort (not deliberate cancel) and did real work,
-    // resume with full context instead of archiving. The agent picks up
-    // exactly where it stopped — all messages preserved in session.jsonl.
+    // Any session interrupted involuntarily (opCount > 0, didn't call finish())
+    // gets auto-resumed with full context. Not just research — bug fixes, reviews,
+    // any productive work. If retries exhausted, escalate immediately to May.
     if (archiveStatus === "interrupted" && session.opCount > 0) {
       const attempts = this._resumeAttempts.get(session.sessionId) ?? 0;
       const registered = this.agents.get(session.agentName);
@@ -1001,20 +1001,6 @@ export class SubagentManager {
         this.activeSessions.delete(session.sessionId);
         this.apiGate?.releaseAll(session.sessionId);
 
-        // Notify onSessionComplete for tracking (status stays "interrupted")
-        if (this.onSessionComplete) {
-          try {
-            this.onSessionComplete({
-              sessionId: session.sessionId, agent: session.agentName,
-              task: session.task, status: "interrupted",
-              startedAt: session.startedAt, endedAt: session.endedAt,
-              runtime: formatDuration(session.endedAt! - session.startedAt),
-              outputDir: session.outputDir, error: session.error,
-              outcome, opCount: session.opCount, opBudget: session.opBudget,
-            });
-          } catch { /* non-fatal */ }
-        }
-
         // Schedule resume after delay
         setTimeout(() => {
           try {
@@ -1023,31 +1009,32 @@ export class SubagentManager {
               log("warn", `[resume] Session ${session.sessionId} meta not found — cannot resume`);
               return;
             }
-            const agent = this.agents.get(session.agentName);
-            if (!agent) {
+            const agentReg = this.agents.get(session.agentName);
+            if (!agentReg) {
               log("warn", `[resume] Agent ${session.agentName} not registered — cannot resume`);
               return;
             }
-            this.resumeSession(session.sessionId, persisted, agent);
+            this.resumeSession(session.sessionId, persisted, agentReg);
             log("info", `[resume] Resumed ${session.agentName} session ${session.sessionId}`);
           } catch (err) {
             const msg = err instanceof Error ? err.message : String(err);
             log("warn", `[resume] Failed to resume ${session.sessionId}: ${msg}`);
-            // Clean up — archive the failed session
-            try {
-              this.archiveSessionDir(session);
-            } catch { /* best-effort */ }
+            try { this.archiveSessionDir(session); } catch { /* best-effort */ }
             this._resumeAttempts.delete(session.sessionId);
           }
         }, delay);
 
-        return; // Skip normal archive path
+        return; // Skip normal archive path — session files stay on disk
       }
-      // Exhausted retries — fall through to archive
-      if (attempts >= SubagentManager.MAX_RESUME_ATTEMPTS) {
-        log("warn", `[resume] ${session.agentName} exhausted ${SubagentManager.MAX_RESUME_ATTEMPTS} resume attempts — archiving`);
-      }
+
+      // Exhausted retries — escalate immediately, don't wait for heartbeat
       this._resumeAttempts.delete(session.sessionId);
+      log("warn", `[resume] ${session.agentName} exhausted ${SubagentManager.MAX_RESUME_ATTEMPTS} resume attempts — escalating`);
+      this.onSessionBlocked?.(
+        session.agentName,
+        session.sessionId,
+        `Interrupted ${SubagentManager.MAX_RESUME_ATTEMPTS + 1}x after ${session.opCount} ops. Last error: ${session.error?.slice(0, 200) ?? "unknown"}. Task: ${session.task.slice(0, 200)}`,
+      );
     }
 
     this.archiveSessionDir(session);
