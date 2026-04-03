@@ -7,7 +7,7 @@ services:
     hostname: litellm
     restart: unless-stopped
     ports:
-      - "${LITELLM_PORT:-4000}:4000"
+      - "127.0.0.1:${LITELLM_PORT:-4000}:4000"
     volumes:
       - ../litellm/config.yaml:/app/config.yaml:ro
       - ../litellm/github_copilot:/home/litellm/.config/litellm/github_copilot:rw
@@ -30,12 +30,12 @@ services:
     container_name: may-agent
     hostname: may-agent
     restart: unless-stopped
-    init: true
     env_file: ../.env
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
-      - "${NOVNC_PORT:-6080}:6080"
+      - "127.0.0.1:${NOVNC_PORT:-6080}:6080"
+      - "127.0.0.1:${MAY_WEB_PORT:-8082}:8080"
     volumes:
       - ..:/app
     environment:
@@ -51,16 +51,15 @@ services:
     container_name: may-console
     hostname: may-console
     profiles: ["console"]
-    init: true
     stdin_open: true
     tty: true
     env_file: ../.env
-    entrypoint: ["/usr/local/bin/entrypoint-console.sh"]
+    entrypoint: ["/app/container/entrypoint-console.sh"]
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
-      - "${CONSOLE_NOVNC_PORT:-6081}:6080"
-      - "${WEB_PORT:-8080}:8080"
+      - "127.0.0.1:${CONSOLE_NOVNC_PORT:-6081}:6080"
+      - "127.0.0.1:${WEB_PORT:-8080}:8080"
     volumes:
       - ..:/app
       - /home/example-user:/home/example-user:rw

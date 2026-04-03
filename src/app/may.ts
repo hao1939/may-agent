@@ -238,18 +238,8 @@ setLogHandler((level, message) => {
 });
 if (CONSOLE_ENABLED) attachConsoleUI(bus, () => taskSessionId ?? chatSession?.getSessionId() ?? null, CHAT_MODE);
 
-// Start web UI in-process (under the launcher supervisor — auto-restarts on crash)
-const WEB_PORT = parseInt(process.env.WEB_PORT ?? "8080", 10);
-if (WEB_PORT > 0) {
-  try {
-    const { startWebUI } = await import("./ui/web.js");
-    const { port } = startWebUI({ stateDir: PERSIST_DIR, port: WEB_PORT });
-    bus.emit({ type: "info", message: `[web] Started on port ${port}` });
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    bus.emit({ type: "info", message: `[web] Failed to start: ${msg}` });
-  }
-}
+// Web UI runs as a separate process under supervisord (container/supervisord.conf).
+// Decoupled from may.ts so web dashboard stays up even when the agent crashes.
 
 bus.emit({
   type: "info",

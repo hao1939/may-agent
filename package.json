@@ -11,7 +11,7 @@
     "up": "podman-compose -f ./container/compose.yml up -d",
     "down": "podman-compose -f ./container/compose.yml down",
     "logs": "podman-compose -f ./container/compose.yml logs -f",
-    "console": "podman-compose -f ./container/compose.yml run --rm --service-ports console",
+    "console": "podman-compose -f ./container/compose.yml --profile console run --rm --service-ports console",
     "reload": "podman exec may-console /usr/local/bin/restart-may.sh",
     "restart": "kill $(cat .state/instances/default/may.pid 2>/dev/null) 2>/dev/null || echo \"no pid\"",
     "lint": "eslint src/ test/",
