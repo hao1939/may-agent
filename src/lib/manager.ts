@@ -58,7 +58,6 @@ import {
   readSessionMessages,
   readArchivedSessionMessages,
   sessionOutputDir,
-  appendMemoryEntry,
   readMemoryEntries,
   memoryPath,
   archiveSession,
@@ -117,7 +116,7 @@ export {
   wrapToolsWithReceipts,
   getOpUsage,
 } from "./manager-receipts.js";
-import { appendActivity, truncateSummary, PROGRESS_INTERVAL } from "./activity.js";
+import { truncateSummary } from "./activity.js";
 import { log } from "./log.js";
 // ConcurrencyGate removed — see manager-receipts.ts comment.
 
@@ -303,29 +302,7 @@ export class SubagentManager {
             session.agent.abort();
           }
 
-          // Activity tracking: emit progress event every N turns
-          if (session.turnCount > 0 && session.turnCount % PROGRESS_INTERVAL === 0) {
-            const lastText = event.message.content
-              ? Array.isArray(event.message.content)
-                ? event.message.content
-                    .filter((b: any) => b.type === "text")
-                    .map((b: any) => b.text)
-                    .join(" ")
-                : String(event.message.content)
-              : "";
-            appendActivity(
-              this._projectRoot,
-              {
-                ts: Date.now(),
-                event: "progress",
-                sid: sessionId,
-                agent: session.agentName,
-                turns: session.turnCount,
-                summary: truncateSummary(lastText),
-              },
-              this.getWorkspacePath(session.agentName),
-            );
-          }
+          // Activity progress tracking moved to ActivityWriter subscriber
         }
       }
     });
@@ -567,148 +544,6 @@ export class SubagentManager {
     }
 
     return ctxLines.join("\n");
-  }
-
-  /** Apply context_updates from finish() to agents/<name>/context.md. */
-  private applyContextUpdates(agentName: string, updates: { action: string; content: string }[]): void {
-    const registered = this.agents.get(agentName);
-    const dir = registered?.definition.knowledgeDir
-      ? dirname(registered.definition.knowledgeDir)
-      : registered?.definition.workspace
-        ? dirname(registered.definition.workspace)
-        : undefined;
-    if (!dir) return;
-
-    const contextPath = join(dir, "context.md");
-    let lines: string[] = [];
-    try {
-      lines = readFileSync(contextPath, "utf-8").split("\n");
-    } catch {
-      /* file may not exist */
-    }
-
-    for (const u of updates) {
-      const trimmed = u.content.trim();
-      if (u.action === "add" && !lines.some((l) => l.includes(trimmed))) {
-        lines.push(`- ${trimmed}`);
-      } else if (u.action === "remove") {
-        lines = lines.filter((l) => !l.includes(trimmed));
-      }
-    }
-
-    // Trim if over 2KB
-    let content = lines.join("\n");
-    while (content.length > 2048) {
-      const idx = content.indexOf("\n", 1);
-      if (idx === -1) break;
-      content = content.slice(idx + 1);
-    }
-
-    mkdirSync(dirname(contextPath), { recursive: true });
-    writeFileSync(contextPath, content);
-  }
-
-  /** Append a memory entry after session completion.
-   *  Uses finish() structured data when available for richer summaries.
-   *  Falls back to extractLastAssistantText for unstructured sessions. */
-  private appendMemory(session: ActiveSession): void {
-    const messages = session.agent.state.messages;
-    const endTime = session.endedAt ?? Date.now();
-
-    // Prefer finish() structured data over raw last-assistant-text
-    const finishData = extractFinishParams(messages);
-    const summary = finishData?.summary ?? extractLastAssistantText(messages);
-
-    const entry: MemoryEntry = {
-      task: session.task,
-      status: finishData?.status ?? session.archiveStatus ?? session.status,
-      duration: formatDuration(endTime - session.startedAt),
-      summary,
-      timestamp: endTime,
-    };
-
-    // Enrich with finish() structured fields when available
-    if (finishData?.completed_items?.length) entry.completed = finishData.completed_items;
-    if (finishData?.new_items?.length) entry.newItems = finishData.new_items;
-    if (session.filesModified.size > 0) entry.files = [...session.filesModified];
-
-    appendMemoryEntry(this.registry.persistDir, session.agentName, entry);
-  }
-
-  /** Update request DB based on finish() completed_items and new_items.
-   *  Marks matching pending requests as COMPLETED and tracks new items as
-   *  self-assigned requests. Best-effort — never throws. */
-  private async updateTodoFromFinish(session: ActiveSession): Promise<void> {
-    try {
-      const finishData = extractFinishParams(session.agent.state.messages);
-      if (!finishData) return;
-
-      const completed = finishData.completed_items;
-      const newItems = finishData.new_items;
-      if ((!completed || completed.length === 0) && (!newItems || newItems.length === 0)) return;
-
-      const mod = await getRequestFns();
-      if (!mod) return;
-
-      const persistDir = this.registry.persistDir;
-
-      // Mark completed items: fuzzy-match against pending requests for this agent
-      if (completed && completed.length > 0) {
-        try {
-          const db = mod.getDb(persistDir);
-          const pending = db
-            .prepare(
-              `SELECT requestId, task FROM requests
-               WHERE toAgent = ? AND status IN ('CREATED', 'IN_PROGRESS') AND method = 'send'`,
-            )
-            .all(session.agentName) as { requestId: string; task: string }[];
-
-          for (const item of completed) {
-            const needle = item.trim().toLowerCase();
-            let bestId: string | null = null;
-            let bestScore = 0;
-            for (const req of pending) {
-              const reqText = req.task.toLowerCase();
-              if (reqText.includes(needle) || needle.includes(reqText)) {
-                const score = Math.min(reqText.length, needle.length) / Math.max(reqText.length, needle.length);
-                if (score > bestScore) {
-                  bestScore = score;
-                  bestId = req.requestId;
-                }
-              }
-            }
-            if (bestId && bestScore > 0.3) {
-              mod.updateRequest(persistDir, bestId, {
-                status: "COMPLETED",
-                summary: item,
-                completedAt: Date.now(),
-              });
-            }
-          }
-        } catch {
-          /* best-effort */
-        }
-      }
-
-      // Track new self-assigned items as requests
-      if (newItems && newItems.length > 0) {
-        for (const item of newItems) {
-          try {
-            mod.trackRequest(persistDir, {
-              fromEntity: session.agentName,
-              toAgent: session.agentName,
-              task: item,
-              method: "send",
-              sessionId: session.sessionId,
-            });
-          } catch {
-            /* best-effort */
-          }
-        }
-      }
-    } catch {
-      /* best-effort — todo update should never break session lifecycle */
-    }
   }
 
   /** Archive a session after completion: move to history. */
@@ -2033,13 +1868,38 @@ export class SubagentManager {
     session.archiveStatus = finishCalled ? "done" : "interrupted";
     session.error = finishCalled ? undefined : "Closed";
     this.registry.updateSessionStatus(sessionId, finishCalled ? "done" : "interrupted", session.error);
-    this.appendMemory(session);
-    // If finish() was called, process completed_items/new_items before archiving
+
+    // Extract outcome and finishParams for the session_end event
+    let outcome: string | undefined;
+    let finishParams: Record<string, unknown> | undefined;
     if (finishCalled) {
-      this.updateTodoFromFinish(session);
+      finishParams = extractFinishParams(session.agent.state.messages) ?? undefined;
+      outcome = (finishParams as any)?.summary;
     }
+    if (!outcome) {
+      const msgs = session.agent.state.messages;
+      for (let i = msgs.length - 1; i >= 0; i--) {
+        if (msgs[i].role === "assistant") {
+          const parts = (msgs[i].content as Array<{ type: string; text?: string }>)
+            .filter((c) => c.type === "text" && c.text).map((c) => c.text!);
+          if (parts.length > 0) { outcome = parts.join(" ").slice(0, 500); break; }
+        }
+      }
+    }
+
     this.archiveSessionDir(session);
     this.activeSessions.delete(sessionId);
+
+    // Emit session_end — subscribers handle memory, requests, activity, context
+    this.onSessionComplete?.({
+      sessionId, agent: session.agentName, task: session.task,
+      status: session.archiveStatus!, startedAt: session.startedAt,
+      endedAt: session.endedAt, runtime: formatDuration(session.endedAt - session.startedAt),
+      outputDir: session.outputDir, error: session.error, outcome,
+      turnCount: session.turnCount, finishParams,
+      filesModified: [...session.filesModified],
+      workspacePath: this.getWorkspacePath(session.agentName),
+    });
   }
 
   /** Steer a running session mid-run.
