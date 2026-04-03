@@ -982,10 +982,10 @@ export class SubagentManager {
     }
 
     // ── Auto-resume interrupted sessions ────────────────────────────────
-    // Any session interrupted involuntarily (opCount > 0, didn't call finish())
-    // gets auto-resumed with full context. Not just research — bug fixes, reviews,
-    // any productive work. If retries exhausted, escalate immediately to May.
-    if (archiveStatus === "interrupted" && session.opCount > 0) {
+    // Any session interrupted involuntarily (did real work, didn't call finish())
+    // gets auto-resumed with full context. Uses totalToolCalls (includes reads)
+    // not opCount (only writes) — a session that read 10 files did real work.
+    if (archiveStatus === "interrupted" && session.totalToolCalls > 0) {
       const attempts = this._resumeAttempts.get(session.sessionId) ?? 0;
       const registered = this.agents.get(session.agentName);
       if (attempts < SubagentManager.MAX_RESUME_ATTEMPTS && registered) {
@@ -993,7 +993,7 @@ export class SubagentManager {
         const delay = 10_000 * (attempts + 1); // 10s, 20s backoff
         log(
           "info",
-          `[resume] ${session.agentName} (${session.sessionId}) interrupted after ${session.opCount} ops — resuming in ${delay / 1000}s (attempt ${attempts + 1}/${SubagentManager.MAX_RESUME_ATTEMPTS})`,
+          `[resume] ${session.agentName} (${session.sessionId}) interrupted after ${session.totalToolCalls} tool calls — resuming in ${delay / 1000}s (attempt ${attempts + 1}/${SubagentManager.MAX_RESUME_ATTEMPTS})`,
         );
 
         // Clean up active session state but keep session files on disk
@@ -1033,7 +1033,7 @@ export class SubagentManager {
       this.onSessionBlocked?.(
         session.agentName,
         session.sessionId,
-        `Interrupted ${SubagentManager.MAX_RESUME_ATTEMPTS + 1}x after ${session.opCount} ops. Last error: ${session.error?.slice(0, 200) ?? "unknown"}. Task: ${session.task.slice(0, 200)}`,
+        `Interrupted ${SubagentManager.MAX_RESUME_ATTEMPTS + 1}x after ${session.totalToolCalls} tool calls. Last error: ${session.error?.slice(0, 200) ?? "unknown"}. Task: ${session.task.slice(0, 200)}`,
       );
     }
 
