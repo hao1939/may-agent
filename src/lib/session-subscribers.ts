@@ -297,3 +297,45 @@ export function createStuckDetector(
     }
   };
 }
+
+// ── Auto-Resume ─────────────────────────────────────────────────────────
+// Detects interrupted sessions that did real work and schedules a resume.
+// Emits a resume command after a backoff delay.
+
+const MAX_RESUME_ATTEMPTS = 2;
+
+export function createAutoResume(
+  emitResume: (sessionId: string, agent: string, attempt: number) => void,
+  emitEscalate: (agent: string, sessionId: string, reason: string) => void,
+): (event: AgentEvent) => void {
+  const attempts = new Map<string, number>();
+
+  return (event: AgentEvent) => {
+    if (event.type !== "session_end") return;
+    if (event.status !== "interrupted") return;
+    if ((event.turnCount ?? 0) === 0) return; // No work done — nothing to resume
+
+    const prev = attempts.get(event.sessionId) ?? 0;
+    if (prev >= MAX_RESUME_ATTEMPTS) {
+      // Exhausted retries — escalate immediately
+      attempts.delete(event.sessionId);
+      emitEscalate(
+        event.agent,
+        event.sessionId,
+        `Interrupted ${MAX_RESUME_ATTEMPTS + 1}x after ${event.turnCount ?? 0} turns. Error: ${event.error?.slice(0, 200) ?? "unknown"}. Task: ${(event.task ?? "").slice(0, 200)}`,
+      );
+      return;
+    }
+
+    attempts.set(event.sessionId, prev + 1);
+    const delay = 10_000 * (prev + 1); // 10s, 20s backoff
+    log(
+      "info",
+      `[resume] ${event.agent} (${event.sessionId}) interrupted after ${event.turnCount ?? 0} turns — resuming in ${delay / 1000}s (attempt ${prev + 1}/${MAX_RESUME_ATTEMPTS})`,
+    );
+
+    setTimeout(() => {
+      emitResume(event.sessionId, event.agent, prev + 1);
+    }, delay);
+  };
+}

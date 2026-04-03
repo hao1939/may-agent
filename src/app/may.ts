@@ -207,6 +207,7 @@ import {
   createRequestTracker,
   createProgressWriter,
   createStuckDetector,
+  createAutoResume,
 } from "../lib/session-subscribers.js";
 bus.subscribe(createActivityWriter(PROJECT_ROOT));
 bus.subscribe(createMemoryWriter(PERSIST_DIR));
@@ -216,6 +217,20 @@ bus.subscribe(createProgressWriter(PROJECT_ROOT));
 bus.subscribe(createStuckDetector((sessionId, reason) => {
   bus.emit({ type: "cancel", sessionId } as any);
 }));
+bus.subscribe(createAutoResume(
+  (sessionId, agent, attempt) => {
+    const ok = manager.resumeInterrupted(sessionId);
+    if (ok) {
+      bus.emit({ type: "log", level: "info", message: `[resume] Resumed ${agent} session ${sessionId}` });
+    } else {
+      bus.emit({ type: "log", level: "warn", message: `[resume] Failed to resume ${sessionId}` });
+    }
+  },
+  (agent, sessionId, reason) => {
+    bus.emit({ type: "log", level: "warn", message: `[resume] ${agent} exhausted resume attempts — escalating` });
+    escalateToHuman(agent, reason);
+  },
+));
 
 setLogHandler((level, message) => {
   if (level === "debug") return; // debug logs don't reach the event system
