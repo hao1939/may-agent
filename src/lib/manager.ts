@@ -20,12 +20,21 @@ import { createSessionReadGuard } from "./tools/session-read-guard.js";
 import { createScrapeDedupGuard } from "./tools/scrape-dedup-guard.js";
 import { createEmptyArgsGuard } from "./tools/empty-args-guard.js";
 import { composeGuards } from "./tools/compose-guards.js";
+import {
+  detectErrors,
+  clearPostFinishErrors,
+  handleOverflow,
+  detectShallowHeartbeat,
+  determineOutcome,
+  buildSessionInfo,
+} from "./completion.js";
 
 // Re-export everything from manager-utils so existing import paths don't break
 export {
   generateId,
   truncateForPrompt,
   computeToolArgsKey,
+  isToolError,
   STATE_CHANGING_TOOLS,
   INFRA_RETRY_MAX,
   TOOL_PIVOT_LIMIT,
@@ -61,17 +70,16 @@ import {
   saveWorkflowRun,
   readCompactedMessages,
 } from "./persistence.js";
-import type { MemoryEntry, PersistedSession, SessionKind } from "./persistence.js";
+import type { PersistedSession, SessionKind } from "./persistence.js";
 import type { SessionTrace } from "./workflow.js";
 import { join, dirname, relative, resolve } from "node:path";
-import { isOverflowError, extractProgress, writeProgressFile } from "./overflow.js";
 import { readIdentity } from "./detached.js";
 import { runActiveRecall, formatRecallWarnings } from "./active-recall.js";
 import { readLatestCheckpointForAgent, cleanupStepCounter } from "./tools/checkpoint.js";
 import { buildTrace } from "./manager-trace.js";
 import { hasFinishToolCall, extractFinishParams, runAgentWithRetry } from "./manager-retry.js";
 import { createAgentsTool as createAgentsToolFn, type CreateAgentsToolOptions } from "./manager-agents-tool.js";
-import { classifyError as classifyErrorFn } from "./classify-error.js";
+// classifyError is re-exported directly from classify-error.ts (no local import needed)
 
 // Lazy import for requests.ts (uses bun:sqlite, not available in vitest)
 let _requestsMod: typeof import("./requests.js") | null = null;
@@ -106,7 +114,7 @@ export {
   wrapToolsWithReceipts,
   getOpUsage,
 } from "./manager-receipts.js";
-import { truncateSummary } from "./activity.js";
+
 import { log } from "./log.js";
 // ConcurrencyGate removed — see manager-receipts.ts comment.
 
@@ -558,15 +566,11 @@ export class SubagentManager {
   /**
    * Common completion handler — called when the agent's turn settles (prompt()/continue() resolves).
    *
-   * finish() = turn complete. Session close = caller's decision (autoClose policy).
+   * Pipeline: detectErrors → clearPostFinishErrors → handleOverflow →
+   *           detectShallowHeartbeat → determineOutcome → archive/notify
    *
-   * Flow:
-   *   1. Extract finish() params if present (status, summary, deliverables, etc.)
-   *   2. Clear post-finish artifacts (abort errors from agent loop cleanup)
-   *   3. Determine session next state:
-   *      - autoClose "never" (chat): → idle, stay in activeSessions, await next input
-   *      - autoClose "immediate" (job/call): → archive, fire onSessionComplete
-   *   4. Fire hooks: memory, context-learn, request DB, escalation
+   * Chat sessions (autoClose="never") transition to "idle" and stay in memory.
+   * Task sessions (autoClose="immediate") are archived and removed.
    */
   private handleCompletion(session: ActiveSession): void {
     this.clearTimeout(session);
@@ -574,267 +578,94 @@ export class SubagentManager {
     // Guard: if close() already archived this session, skip.
     if (session.closed) return;
 
-    // ── Detect silent stream errors ────────────────────────────────────
-    // When the LLM stream function throws before yielding any events
-    // (e.g., missing API key, connection refused), the agent-core error
-    // path (terminateStreamOnError) emits agent_end but NOT turn_end,
-    // so agent.state.error is never set. Detect this by checking if
-    // the last message is still a user message (no assistant reply).
-    const messages = session.agent.state.messages;
-    const finishParams = extractFinishParams(messages);
-    const lastMsg = messages.length > 0 ? messages[messages.length - 1] : null;
-    if (!session.agent.state.error && !session.error && lastMsg?.role === "user") {
-      session.error = "Agent completed without producing a response (possible stream/API error)";
-      session.agent.state.error = session.error;
-    }
+    // ── Pipeline: detect and classify errors ──────────────────────────
+    detectErrors(session);
+    clearPostFinishErrors(session);
+    handleOverflow(session, this.agents);
 
-    // ── Detect empty assistant response ──────────────────────────────
-    // Some models (especially via LiteLLM proxies) return stopReason="stop"
-    // with empty content and 0 output tokens — effectively a silent no-op.
-    // The agent finishes without error but produces no useful output.
-    // Exception: if the agent called `finish`, the empty response after it
-    // is normal (model has nothing left to say after structured completion).
-    if (!session.agent.state.error && !session.error && lastMsg?.role === "assistant") {
-      const content = Array.isArray(lastMsg.content) ? lastMsg.content : [];
-      const hasSubstance = content.some(
-        (block: any) => (block?.type === "text" && block.text?.trim()) || block?.type === "toolCall",
-      );
-      if (!hasSubstance && !hasFinishToolCall(messages)) {
-        session.error =
-          "Model returned an empty response (0 output tokens). This usually indicates a model/API issue — try again or switch models.";
-        session.agent.state.error = session.error;
-      }
-    }
-
-    // ── Determine outcome from agent state ─────────────────────────────
-    // Prefer session.error when already set (e.g. by MAX_TURNS / STUCK_TERMINATE)
-    // because agent.state.error is often a generic "Request was aborted." from
-    // AbortController, which is less informative than the pre-set reason.
-    const agentError = session.error ?? session.agent.state.error;
-    const wasAborted = agentError?.includes("aborted") ?? false;
-
-    // Set error field — but if finish was called successfully, don't treat
-    // subsequent empty responses or transient model errors as session failures
-    // (the agent completed its work; the model just had a post-finish hiccup,
-    //  or we deliberately aborted after finish() to prevent re-invocation loops)
-    if (
-      agentError &&
-      hasFinishToolCall(messages) &&
-      (agentError.includes("empty response") ||
-        agentError.includes("0 output tokens") ||
-        agentError.includes("Unhandled stop reason") ||
-        agentError.includes("OpBudgetExceeded") ||
-        agentError.includes("aborted"))
-    ) {
-      session.error = undefined;
-      session.agent.state.error = undefined;
-    } else if (agentError) {
-      session.error = agentError;
-    }
-
-    // On context overflow, dump structured progress to workspace (best-effort)
-    if (session.error && isOverflowError(session.error)) {
-      const registered = this.agents.get(session.agentName);
-      const workspace = registered?.definition.workspace;
-      if (workspace) {
-        try {
-          writeProgressFile(workspace, extractProgress(session.task, session.agent.state.messages, session.error));
-        } catch {
-          /* best-effort */
-        }
-      }
-    }
-
-    // ── Final safety net: finish() clears post-finish errors ────────
-    // Defense-in-depth: if the agent successfully called finish(), any
-    // empty-response / 0-output-token / unhandled-stop-reason / abort error is
-    // a post-finish artifact, not a real failure. Clear it.
-    // This catches cases where the error was set by a code path that
-    // the earlier checks didn't cover (including the deliberate abort
-    // triggered by the finish-termination logic in manager-receipts.ts).
-    if (session.error && hasFinishToolCall(messages)) {
-      const e = session.error;
-      if (
-        e.includes("empty response") ||
-        e.includes("0 output tokens") ||
-        e.includes("Unhandled stop reason") ||
-        e.includes("OpBudgetExceeded") ||
-        e.includes("aborted")
-      ) {
-        session.error = undefined;
-        session.agent.state.error = undefined;
-      }
-    }
-
-    // ── Determine archive status, archive, remove ──────────────────────
-    // Recompute wasAborted from session.error (not the stale agentError captured
-    // before error-clearing). Post-finish aborts clear the error above, so
-    // wasAborted should be false for chat sessions that completed via finish().
+    // ── Chat sessions → idle ─────────────────────────────────────────
     const effectivelyAborted = session.error?.includes("aborted") ?? false;
     if (session.autoClose === "never" && !effectivelyAborted) {
-      // Interface session (Chat) — stays alive in "idle" state
       session.status = "idle";
       session.turnCount = 0;
-
       this.registry.updateSessionStatus(session.sessionId, "idle", session.error);
-
-      // Remove [STARTED] sentinel (session is not running)
-      try {
-        const sentinelPath = join(sessionDir(this.registry.persistDir, session.sessionId), "[STARTED]");
-        if (existsSync(sentinelPath)) unlinkSync(sentinelPath);
-      } catch {
-        /* best-effort */
-      }
-
-      // Do NOT remove from activeSessions
-      // Do NOT unsubscribe (we want to catch next turn's events)
+      this.removeSentinel(session.sessionId);
       return;
     }
 
-    // ── Detect shallow heartbeats (zero turns) ────────────────────
-    // Heartbeat sessions MUST read files (heartbeat.md, etc.).
-    // If an agent completes a heartbeat with zero turns, it responded
-    // from compacted context without actually checking anything — flag it.
-    if (!wasAborted && !session.error && session.turnCount === 0 && session.task.startsWith("[heartbeat]")) {
-      session.error =
-        "Shallow heartbeat: completed with zero turns. " +
-        "Heartbeat sessions MUST use tools (read heartbeat.md, check health, etc.).";
-      session.agent.state.error = session.error;
-    }
+    // ── Task sessions → archive ──────────────────────────────────────
+    detectShallowHeartbeat(session);
+    const outcome = determineOutcome(session);
 
-    // Task sessions (or aborted interface sessions) → archive and remove
-    // If finish() was called and the error was cleared (post-finish abort),
-    // treat as "done" — the abort was just the session cleanup, not a failure.
-    const archiveStatus: "done" | "error" | "interrupted" =
-      wasAborted && session.error ? "interrupted" : session.error ? "error" : "done";
-    session.archiveStatus = archiveStatus;
-    this.registry.updateSessionStatus(session.sessionId, archiveStatus, session.error);
+    session.archiveStatus = outcome.archiveStatus;
+    session.finishResult = outcome.finishResult;
+    this.registry.updateSessionStatus(session.sessionId, outcome.archiveStatus, session.error);
 
     session.unsubscribe?.();
     session.endedAt = Date.now();
+    this.removeSentinel(session.sessionId);
+    this.cleanupSession(session);
+    this.activeSessions.delete(session.sessionId);
 
-    // Extract last assistant text as outcome — used by resume and onSessionComplete
-    let outcome: string | undefined;
-    {
-      const msgs = session.agent.state.messages;
-      for (let i = msgs.length - 1; i >= 0; i--) {
-        if (msgs[i].role === "assistant") {
-          const textParts = (msgs[i].content as Array<{ type: string; text?: string }>)
-            .filter((c) => c.type === "text" && c.text)
-            .map((c) => c.text!);
-          if (textParts.length > 0) {
-            outcome = textParts.join(" ").slice(0, 500);
-            break;
-          }
-        }
-      }
+    // ── Escalation: blocked/failure → parent or May ──────────────────
+    if (outcome.finishParams && (outcome.finishParams.status === "blocked" || outcome.finishParams.status === "failure")) {
+      this.escalateBlockedSession(session, outcome.finishParams);
     }
 
-    // Remove [STARTED] sentinel on clean exit
+    // ── Notify completion ────────────────────────────────────────────
+    if (this.onSessionComplete) {
+      const info = buildSessionInfo(session, outcome, (name) => this.getWorkspacePath(name));
+      try {
+        this.onSessionComplete(info);
+      } catch {
+        /* best-effort */
+      }
+    }
+  }
+
+  /** Remove the [STARTED] sentinel file for a session. */
+  private removeSentinel(sessionId: string): void {
     try {
-      const sentinelPath = join(sessionDir(this.registry.persistDir, session.sessionId), "[STARTED]");
+      const sentinelPath = join(sessionDir(this.registry.persistDir, sessionId), "[STARTED]");
       if (existsSync(sentinelPath)) unlinkSync(sentinelPath);
     } catch {
       /* best-effort */
     }
+  }
 
+  /** Escalate a blocked/failed session to the parent agent or May. */
+  private escalateBlockedSession(
+    session: ActiveSession,
+    finishParams: { status: string; summary: string; blockers?: { reason: string; context: string }[] },
+  ): void {
+    const blockerText = finishParams.blockers?.map((b) => `${b.reason}: ${b.context}`).join("; ") ?? "";
+    const escalationTask = `[escalation] ${session.agentName} session ${session.sessionId} ended ${finishParams.status}: ${finishParams.summary}${blockerText ? ` | Blockers: ${blockerText}` : ""}`;
 
-
-    // context_updates handled by ContextUpdater subscriber
-
-    // Request tracking handled by RequestTracker subscriber
-
-    // Activity tracking handled by ActivityWriter subscriber
-    // Activity tracking, memory, context updates, request tracking, progress
-    // are all handled by bus subscribers (session-subscribers.ts).
-    // Manager only handles: archive, auto-resume, onSessionComplete callback.
-
-    // Auto-resume handled by createAutoResume subscriber (reacts to session_end event).
-
-    this.cleanupSession(session);
-    this.activeSessions.delete(session.sessionId);
-
-    // Request status and session DB outcome handled by DbWriter + RequestTracker subscribers.
-
-    // ── Auto-escalation: notify parent on blocked/failure (F5) ─────────
-    // When a session ends with finish(blocked) or finish(failure), track an
-    // escalation request to the parent agent (or fire onSessionBlocked for May).
-    {
-      if (finishParams && (finishParams.status === "blocked" || finishParams.status === "failure")) {
-        const blockerText = finishParams.blockers?.map((b) => `${b.reason}: ${b.context}`).join("; ") ?? "";
-        const escalationTask = `[escalation] ${session.agentName} session ${session.sessionId} ended ${finishParams.status}: ${finishParams.summary}${blockerText ? ` | Blockers: ${blockerText}` : ""}`;
-
-        // Try parent agent first, fall back to onSessionBlocked (May)
-        const parentName = session.parentAgentName;
-        if (parentName) {
-          getRequestFns().then((mod) => {
-            if (!mod) return;
-            try {
-              mod.trackRequest(this.registry.persistDir, {
-                fromEntity: session.agentName,
-                toAgent: parentName,
-                task: escalationTask,
-                method: "send",
-                sessionId: session.sessionId,
-              });
-            } catch {
-              /* best-effort */
-            }
+    const parentName = session.parentAgentName;
+    if (parentName) {
+      getRequestFns().then((mod) => {
+        if (!mod) return;
+        try {
+          mod.trackRequest(this.registry.persistDir, {
+            fromEntity: session.agentName,
+            toAgent: parentName,
+            task: escalationTask,
+            method: "send",
+            sessionId: session.sessionId,
           });
+        } catch {
+          /* best-effort */
         }
-
-        // Always fire onSessionBlocked so May can track it
-        if (this.onSessionBlocked) {
-          try {
-            this.onSessionBlocked(
-              session.agentName,
-              session.sessionId,
-              `${finishParams.status}: ${finishParams.summary}`,
-            );
-          } catch {
-            /* best-effort */
-          }
-        }
-      }
+      });
     }
 
-    // ── Extract structured finish data (F2: Structured Result Passing) ──
-    {
-      if (finishParams) {
-        session.finishResult = {
-          status: finishParams.status as "success" | "failure" | "blocked" | "partial",
-          summary: finishParams.summary,
-          deliverables: finishParams.deliverables,
-          blockers: finishParams.blockers,
-          next_steps: finishParams.next_steps,
-        };
-      }
-    }
-
-    if (this.onSessionComplete) {
-      const info: SessionInfo = {
-        sessionId: session.sessionId,
-        agent: session.agentName,
-        task: session.task,
-        status: archiveStatus,
-        startedAt: session.startedAt,
-        endedAt: session.endedAt,
-        runtime: formatDuration(session.endedAt - session.startedAt),
-        outputDir: session.outputDir,
-        error: session.error,
-        outcome,
-        parentSessionId: session.parentSessionId,
-        workflowRunId: session.workflowRunId,
-        stepLabel: session.stepLabel,
-        opCount: session.opCount,
-        opBudget: session.opBudget,
-        turnCount: session.turnCount,
-        finishParams: finishParams ?? undefined,
-        filesModified: [...session.filesModified],
-        workspacePath: this.getWorkspacePath(session.agentName),
-      };
+    if (this.onSessionBlocked) {
       try {
-        this.onSessionComplete(info);
+        this.onSessionBlocked(
+          session.agentName,
+          session.sessionId,
+          `${finishParams.status}: ${finishParams.summary}`,
+        );
       } catch {
         /* best-effort */
       }
