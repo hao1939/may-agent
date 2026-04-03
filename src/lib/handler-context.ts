@@ -72,8 +72,13 @@ export interface HandlerContext {
   /** Open (or return cached) SQLite database for the persist directory. */
   getDb: () => SqliteDb;
 
-  /** Track a request in the requests table. Returns the request ID. */
+  /** Track a request in the requests table. Returns the request ID.
+   * @deprecated Use ctx.emit({ type: "message_created", ... }) instead. */
   trackRequest: (opts: TrackRequestOpts) => string;
+
+  /** Emit an event on the EventBus. Handlers use this to send findings to agents
+   * instead of writing to files. The event flows through subscribers (DbWriter, etc). */
+  emit: (event: { type: string; [key: string]: unknown }) => void;
 
   /** Load all session metadata (active + archived). */
   loadAllSessionMetas: () => Record<string, PersistedSession>;
