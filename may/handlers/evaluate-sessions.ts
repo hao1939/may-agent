@@ -45,11 +45,12 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       const verdict = result.parentVerdicts[parentId];
       if (verdict === "needs_improvement") {
         try {
-          ctx.trackRequest({
-            fromEntity: "evaluate-sessions",
-            toAgent: "coach",
+          ctx.emit({
+            type: "message_created",
+            from: "evaluate-sessions",
+            to: "coach",
             task: `Review session ${parentId} (verdict: needs_improvement). Query evaluations table in .state/may.db for details. Identify which agent needs coaching and run a targeted exercise.`,
-            method: "send",
+            requestId: `eval-${Date.now()}-${parentId}`,
           });
         } catch { /* best-effort */ }
         triggered = true;

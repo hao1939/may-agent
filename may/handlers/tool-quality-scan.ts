@@ -130,14 +130,14 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       const summary = result.regressions.map(r =>
         `${r.category}: ${r.current} (was ${r.baseline}, +${r.deltaPercent.toFixed(0)}%)`
       ).join(", ");
-      const task = `- [ ] **[tool-quality-regression]** ${result.regressions.length} regressed: ${summary}. See tool-quality-report.md`;
-      try {
-        let todo = existsSync(optimizerTodoPath) ? readFileSync(optimizerTodoPath, "utf-8") : "";
-        if (!todo.includes("[tool-quality-regression]")) {
-          writeFileSync(optimizerTodoPath, todo + "\n" + task + "\n", "utf-8");
-          ctx.log(`[tool-quality-scan] ⚠️ ${result.regressions.length} regression(s) — injected optimizer task.`);
-        }
-      } catch { ctx.log("[tool-quality-scan] ⚠️ Failed to inject optimizer task."); }
+      ctx.emit({
+        type: "message_created",
+        from: "tool-quality-scan",
+        to: "optimizer",
+        task: `Tool quality regression: ${result.regressions.length} regressed — ${summary}. Investigate and propose a fix.`,
+        requestId: `tqs-${Date.now()}`,
+      });
+      ctx.log(`[tool-quality-scan] ⚠️ ${result.regressions.length} regression(s) — sent to optimizer.`);
     }
   };
 };

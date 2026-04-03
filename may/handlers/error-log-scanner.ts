@@ -217,14 +217,19 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       const task = `[cron:growth-trigger] Agent "${trigger.agent}" has ${trigger.count} repeated "${trigger.errorType}" errors in the last 7 days. Initiate Growth Cycle: fork → train → verify → promote/discard. Focus on this specific error pattern.`;
       ctx.log(`[error-log-scanner] 🚨 Triggering coach for ${trigger.agent}: ${trigger.count}× ${trigger.errorType}`);
       try {
-        await ctx.manager.run("coach", task, { kind: "job" });
+        ctx.emit({
+          type: "message_created",
+          from: "error-log-scanner",
+          to: "coach",
+          task,
+          requestId: `els-${Date.now()}-${trigger.agent}`,
+        });
         cooldowns[key] = now;
-        saveCooldowns(cooldownFile, cooldowns); // Persist immediately to prevent race conditions
+        saveCooldowns(cooldownFile, cooldowns);
       } catch (err) {
-        ctx.log(`[error-log-scanner] ⚠️ Failed to trigger coach for ${trigger.agent}: ${err instanceof Error ? err.message : String(err)}`);
-        // Still set cooldown on failure to prevent immediate re-trigger of broken patterns
+        ctx.log(`[error-log-scanner] ⚠️ Failed to emit for ${trigger.agent}: ${err instanceof Error ? err.message : String(err)}`);
         cooldowns[key] = now;
-        saveCooldowns(cooldownFile, cooldowns); // Persist immediately
+        saveCooldowns(cooldownFile, cooldowns);
       }
     }
 

@@ -73,14 +73,13 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
           if (newStaleChecks >= ESCALATE_AFTER) {
             ctx.log(`[focus-tracker] 🚨 ${id}: STALE — no activity for ${hoursSince.toFixed(0)}h (${newStaleChecks} stale checks)`);
-            try {
-              ctx.trackRequest({
-                fromEntity: "focus-tracker",
-                toAgent: "may",
-                task: `[focus-tracker] ${id} has had no activity for ${hoursSince.toFixed(0)}h. Review focus-tasks.md and push progress or acknowledge pause.`,
-                method: "send",
-              });
-            } catch { /* best-effort */ }
+            ctx.emit({
+              type: "message_created",
+              from: "focus-tracker",
+              to: "may",
+              task: `[focus-tracker] ${id} has had no activity for ${hoursSince.toFixed(0)}h. Review focus-tasks.md and push progress or acknowledge pause.`,
+              requestId: `ft-${Date.now()}-${id}`,
+            });
             ctx.triggerNow("heartbeat");
           } else {
             ctx.log(`[focus-tracker] ⚠️ ${id}: Quiet for ${hoursSince.toFixed(0)}h (stale ${newStaleChecks}/${ESCALATE_AFTER})`);

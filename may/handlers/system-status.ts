@@ -58,14 +58,13 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
     // Reactive trigger: anomalies → write to May's todo + trigger heartbeat
     if (result.anomalies.length > 0) {
-      try {
-        ctx.trackRequest({
-          fromEntity: "system-status",
-          toAgent: "may",
-          task: `[system-status] ${result.anomalies.length} anomaly(ies) detected: ${result.anomalies.map(a => a.slice(0, 80)).join("; ").slice(0, 300)}`,
-          method: "send",
-        });
-      } catch { /* best-effort */ }
+      ctx.emit({
+        type: "message_created",
+        from: "system-status",
+        to: "may",
+        task: `[system-status] ${result.anomalies.length} anomaly(ies) detected: ${result.anomalies.map(a => a.slice(0, 80)).join("; ").slice(0, 300)}`,
+        requestId: `ss-${Date.now()}`,
+      });
       ctx.triggerNow("heartbeat");
       ctx.log(`[system-status] ${result.anomalies.length} anomalies → triggered May heartbeat`);
     }

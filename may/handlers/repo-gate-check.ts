@@ -84,12 +84,12 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         `\n### Commits:\n${result.commitSummary}`,
       ].filter(Boolean).join("\n");
 
-      ctx.trackRequest({
-        fromEntity: "repo-gate",
-        toAgent: "qa",
+      ctx.emit({
+        type: "message_created",
+        from: "repo-gate",
+        to: "qa",
         task: `Review ${result.newCommitCount} new commit(s). Gate results: tsc=${result.tsc?.pass ? "PASS" : "FAIL"}, vitest=${result.vitest?.pass ? "PASS" : "FAIL"}. Full results in .state/qa-gate-results.json`,
-        method: "send",
-        context: gateContext,
+        requestId: `rg-${Date.now()}`,
       });
     } else {
       ctx.log(`[repo-gate] ⏭️ Skipping QA: ${result.reason}`);

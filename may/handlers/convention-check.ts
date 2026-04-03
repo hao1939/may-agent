@@ -126,6 +126,14 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
           `[convention-check] 🚨 Regression: ${reg.agent} ${reg.convention} ` +
             `dropped from ${reg.previousRate}% to ${reg.currentRate}%`
         );
+        // Send finding to coach via event bus
+        ctx.emit({
+          type: "message_created",
+          from: "convention-check",
+          to: "coach",
+          task: `Convention regression: ${reg.agent} ${reg.convention} dropped from ${reg.previousRate}% to ${reg.currentRate}%. Query convention_checks table in .state/may.db for details. Design a targeted skill or exercise.`,
+          requestId: `cc-${Date.now()}-${reg.convention}`,
+        });
       }
       ctx.triggerNow("heartbeat-coach");
     }
