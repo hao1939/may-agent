@@ -922,64 +922,16 @@ export class SubagentManager {
       /* best-effort */
     }
 
-    this.appendMemory(session);
 
-    // Apply context_updates from finish() to agents/<name>/context.md
-    if (finishParams?.context_updates?.length) {
-      try {
-        this.applyContextUpdates(session.agentName, finishParams.context_updates);
-      } catch {
-        /* non-fatal */
-      }
-    }
 
-    // Update request DB from finish() data (mark completed, track new items)
-    this.updateTodoFromFinish(session);
+    // context_updates handled by ContextUpdater subscriber
 
-    // Activity tracking: log session completion
-    {
-      const duration = formatDuration(session.endedAt! - session.startedAt);
-      const lastText = session.agent.state.messages.filter((m: any) => m.role === "assistant").pop()?.content;
-      const summaryText = Array.isArray(lastText)
-        ? lastText
-            .filter((b: any) => b.type === "text")
-            .map((b: any) => b.text)
-            .join(" ")
-        : typeof lastText === "string"
-          ? lastText
-          : "";
-      if (archiveStatus === "error") {
-        appendActivity(
-          this._projectRoot,
-          {
-            ts: Date.now(),
-            event: "error",
-            sid: session.sessionId,
-            agent: session.agentName,
-            turns: session.turnCount,
-            duration,
-            summary: truncateSummary(summaryText),
-            error: truncateSummary(session.error),
-          },
-          this.getWorkspacePath(session.agentName),
-        );
-      } else {
-        appendActivity(
-          this._projectRoot,
-          {
-            ts: Date.now(),
-            event: "done",
-            sid: session.sessionId,
-            agent: session.agentName,
-            turns: session.turnCount,
-            duration,
-            summary: truncateSummary(summaryText),
-            files: [...session.filesModified],
-          },
-          this.getWorkspacePath(session.agentName),
-        );
-      }
-    }
+    // Request tracking handled by RequestTracker subscriber
+
+    // Activity tracking handled by ActivityWriter subscriber
+    // Activity tracking, memory, context updates, request tracking, progress
+    // are all handled by bus subscribers (session-subscribers.ts).
+    // Manager only handles: archive, auto-resume, onSessionComplete callback.
 
     // ── Auto-resume interrupted sessions ────────────────────────────────
     // Any session interrupted involuntarily (did real work, didn't call finish())
@@ -1040,48 +992,7 @@ export class SubagentManager {
     this.archiveSessionDir(session);
     this.activeSessions.delete(session.sessionId);
 
-    // ── Update request status (unified request tracking) ───────────────
-    if (session.requestId) {
-      // Extract outcome summary from finish() data or last assistant text
-      const summary = finishParams?.summary ?? extractLastAssistantText(messages) ?? undefined;
-
-      getRequestFns().then((mod) => {
-        if (!mod) return;
-        try {
-          const durationMs = session.endedAt ? session.endedAt - session.startedAt : undefined;
-          mod.updateRequest(this.registry.persistDir, session.requestId!, {
-            status: archiveStatus === "done" ? "COMPLETED" : "FAILED",
-            sessionId: session.sessionId,
-            summary: summary?.slice(0, 500),
-            error: session.error ?? undefined,
-            errorClass: session.error ? classifyErrorFn(session.error) : undefined,
-            durationMs,
-            completedAt: Date.now(),
-          });
-        } catch {
-          /* non-fatal — don't block completion for request tracking */
-        }
-      });
-    }
-
-    // ── Update session outcome in DB ───────────────────────────────────
-    {
-      const outcome = finishParams?.summary ?? extractLastAssistantText(messages) ?? undefined;
-      if (outcome) {
-        try {
-          const { updateSessionDb } = require("./requests.js") as typeof import("./requests.js");
-          updateSessionDb(this.registry.persistDir, session.sessionId, {
-            status: archiveStatus,
-            endedAt: session.endedAt,
-            error: session.error,
-            outcome: outcome.slice(0, 500),
-            opCount: session.opCount,
-          });
-        } catch {
-          /* non-fatal */
-        }
-      }
-    }
+    // Request status and session DB outcome handled by DbWriter + RequestTracker subscribers.
 
     // ── Auto-escalation: notify parent on blocked/failure (F5) ─────────
     // When a session ends with finish(blocked) or finish(failure), track an
@@ -1155,6 +1066,10 @@ export class SubagentManager {
         stepLabel: session.stepLabel,
         opCount: session.opCount,
         opBudget: session.opBudget,
+        turnCount: session.turnCount,
+        finishParams: finishParams ?? undefined,
+        filesModified: [...session.filesModified],
+        workspacePath: this.getWorkspacePath(session.agentName),
       };
       try {
         this.onSessionComplete(info);
@@ -1314,18 +1229,7 @@ export class SubagentManager {
     // Notify listener that a new session has started
     this.onSessionStart?.(name, sessionId);
 
-    // Activity tracking: log session start
-    appendActivity(
-      this._projectRoot,
-      {
-        ts: Date.now(),
-        event: "start",
-        sid: sessionId,
-        agent: name,
-        task: truncateSummary(task, 500),
-      },
-      this.getWorkspacePath(name),
-    );
+    // Activity tracking handled by ActivityWriter subscriber (reacts to session_start event)
 
     // The initial user message is persisted via the message_end subscriber
     // when agentLoop emits it (before any LLM call). No explicit write here

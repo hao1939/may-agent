@@ -106,6 +106,14 @@ export interface SessionInfo {
   opCount?: number;
   /** Operation budget (0 = unlimited). */
   opBudget?: number;
+  /** LLM turns completed. */
+  turnCount?: number;
+  /** Structured finish() parameters (context_updates, completed_items, etc). */
+  finishParams?: Record<string, unknown>;
+  /** Files modified during the session. */
+  filesModified?: string[];
+  /** Workspace path for this agent. */
+  workspacePath?: string;
 }
 
 /** Result of a completed session. */

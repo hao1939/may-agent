@@ -1,0 +1,245 @@
+/**
+ * Session subscribers — event-driven side effects for session lifecycle.
+ *
+ * Each function returns a bus subscriber that reacts to session events.
+ * Decoupled from the manager — they only know events, not internals.
+ *
+ * Replaces inline side effects that were in manager.ts handleCompletion.
+ */
+
+import { appendFileSync, mkdirSync, writeFileSync, readFileSync, existsSync } from "node:fs";
+import { join, dirname } from "node:path";
+import type { AgentEvent } from "../app/event-bus.js";
+import { appendActivity, truncateSummary } from "./activity.js";
+import { appendMemoryEntry } from "./persistence.js";
+import { log } from "./log.js";
+
+// ── Activity Writer ─────────────────────────────────────────────────────
+// Writes session lifecycle events to agents/<name>/workspace/activity.jsonl
+// so agents can see what happened recently.
+
+export function createActivityWriter(projectRoot: string): (event: AgentEvent) => void {
+  return (event: AgentEvent) => {
+    switch (event.type) {
+      case "session_start":
+        appendActivity(
+          projectRoot,
+          { ts: Date.now(), event: "start", sid: event.sessionId, agent: event.agent, task: truncateSummary(event.task, 500) },
+          event.workspacePath,
+        );
+        break;
+
+      case "session_end": {
+        const summary = truncateSummary(event.outcome);
+        if (event.status === "error" || event.status === "interrupted") {
+          appendActivity(
+            projectRoot,
+            {
+              ts: Date.now(), event: "error", sid: event.sessionId, agent: event.agent,
+              turns: event.turnCount ?? 0, duration: event.duration ?? "?",
+              summary, error: truncateSummary(event.error),
+            },
+            event.workspacePath,
+          );
+        } else {
+          appendActivity(
+            projectRoot,
+            {
+              ts: Date.now(), event: "done", sid: event.sessionId, agent: event.agent,
+              turns: event.turnCount ?? 0, duration: event.duration ?? "?",
+              summary, files: event.filesModified ?? [],
+            },
+            event.workspacePath,
+          );
+        }
+        break;
+      }
+    }
+  };
+}
+
+// ── Memory Writer ───────────────────────────────────────────────────────
+// Appends a memory entry on session end so agents accumulate experience.
+
+export function createMemoryWriter(persistDir: string): (event: AgentEvent) => void {
+  return (event: AgentEvent) => {
+    if (event.type !== "session_end") return;
+    try {
+      const entry = {
+        timestamp: Date.now(),
+        sessionId: event.sessionId,
+        task: truncateSummary(event.task, 200),
+        status: event.status,
+        duration: event.duration ?? "?",
+        summary: truncateSummary(event.outcome, 300),
+        error: event.error ? truncateSummary(event.error, 200) : undefined,
+      };
+      appendMemoryEntry(persistDir, event.agent, entry);
+    } catch {
+      /* best-effort */
+    }
+  };
+}
+
+// ── Context Updater ─────────────────────────────────────────────────────
+// Applies context_updates from finish() to agents/<name>/context.md.
+
+export function createContextUpdater(projectRoot: string): (event: AgentEvent) => void {
+  return (event: AgentEvent) => {
+    if (event.type !== "session_end") return;
+    const updates = (event.finishParams as any)?.context_updates as
+      | Array<{ action: string; content: string }>
+      | undefined;
+    if (!updates?.length) return;
+
+    try {
+      const contextPath = join(projectRoot, "agents", event.agent, "context.md");
+      let content = "";
+      try {
+        content = readFileSync(contextPath, "utf-8");
+      } catch {
+        /* file doesn't exist yet */
+      }
+
+      for (const update of updates) {
+        const line = update.content.trim();
+        if (!line) continue;
+        if (update.action === "add" && !content.includes(line)) {
+          content = content.trimEnd() + "\n" + `- ${line}` + "\n";
+        } else if (update.action === "remove") {
+          content = content
+            .split("\n")
+            .filter((l) => !l.includes(line))
+            .join("\n");
+        }
+      }
+
+      mkdirSync(dirname(contextPath), { recursive: true });
+      writeFileSync(contextPath, content);
+    } catch {
+      /* best-effort */
+    }
+  };
+}
+
+// ── Request Tracker ─────────────────────────────────────────────────────
+// Updates request DB entries when sessions complete.
+// Handles: completed_items, new_items from finish(), and request status.
+
+export function createRequestTracker(persistDir: string): (event: AgentEvent) => void {
+  return (event: AgentEvent) => {
+    if (event.type !== "session_end") return;
+
+    const finishParams = event.finishParams as any;
+    if (!finishParams) return;
+
+    // Track new items from finish()
+    if (Array.isArray(finishParams.new_items) && finishParams.new_items.length > 0) {
+      import("./requests.js")
+        .then((mod) => {
+          for (const item of finishParams.new_items) {
+            try {
+              mod.trackRequest(persistDir, {
+                fromEntity: event.agent,
+                toAgent: event.agent,
+                task: String(item).slice(0, 500),
+                method: "send",
+                source: "finish",
+              });
+            } catch {
+              /* best-effort */
+            }
+          }
+        })
+        .catch(() => {});
+    }
+
+    // Mark completed items — fuzzy-match against pending requests
+    if (Array.isArray(finishParams.completed_items) && finishParams.completed_items.length > 0) {
+      import("./requests.js")
+        .then((mod) => {
+          try {
+            const db = mod.getDb(persistDir);
+            const pending = db
+              .prepare(
+                `SELECT requestId, task FROM requests
+                 WHERE toAgent = ? AND status IN ('CREATED', 'IN_PROGRESS') AND method = 'send'`,
+              )
+              .all(event.agent) as { requestId: string; task: string }[];
+
+            for (const item of finishParams.completed_items) {
+              const needle = String(item).trim().toLowerCase();
+              let bestId: string | null = null;
+              let bestScore = 0;
+              for (const req of pending) {
+                const reqText = req.task.toLowerCase();
+                // Simple overlap scoring
+                const words = needle.split(/\s+/);
+                const score = words.filter((w) => reqText.includes(w)).length / Math.max(words.length, 1);
+                if (score > bestScore && score > 0.3) {
+                  bestScore = score;
+                  bestId = req.requestId;
+                }
+              }
+              if (bestId) {
+                mod.updateRequest(persistDir, bestId, {
+                  status: "COMPLETED",
+                  completedAt: Date.now(),
+                  summary: `Completed by ${event.agent} in session ${event.sessionId}`,
+                });
+              }
+            }
+          } catch {
+            /* best-effort */
+          }
+        })
+        .catch(() => {});
+    }
+  };
+}
+
+// ── Progress Writer ─────────────────────────────────────────────────────
+// Writes workspace/progress.md on session end with task progress info.
+
+export function createProgressWriter(projectRoot: string): (event: AgentEvent) => void {
+  return (event: AgentEvent) => {
+    if (event.type !== "session_end") return;
+    if (event.status !== "done") return;
+
+    const finishParams = event.finishParams as any;
+    if (!finishParams) return;
+
+    try {
+      const workspace = join(projectRoot, "agents", event.agent, "workspace");
+      mkdirSync(workspace, { recursive: true });
+      const progressPath = join(workspace, "progress.md");
+
+      const lines: string[] = [
+        `# Progress — ${event.agent}`,
+        `Updated: ${new Date().toISOString().slice(0, 16)}`,
+        "",
+        `## Last Session`,
+        `- Task: ${truncateSummary(event.task, 200)}`,
+        `- Status: ${event.status}`,
+        `- Summary: ${truncateSummary(event.outcome, 300)}`,
+      ];
+
+      if (finishParams.completed_items?.length) {
+        lines.push("", "## Completed");
+        for (const item of finishParams.completed_items) {
+          lines.push(`- [x] ${item}`);
+        }
+      }
+      if (finishParams.new_items?.length) {
+        lines.push("", "## Next");
+        for (const item of finishParams.new_items) {
+          lines.push(`- [ ] ${item}`);
+        }
+      }
+
+      writeFileSync(progressPath, lines.join("\n") + "\n");
+    } catch {
+      /* best-effort */
+    }
+  };
+}
