@@ -9,7 +9,6 @@ import {
   readSessionMessages,
   sessionDir,
   sessionJsonlPath,
-  historyDir,
 } from "../src/lib/persistence.js";
 import { SubagentManager } from "../src/lib/manager.js";
 import type { Model } from "@mariozechner/pi-ai";
@@ -196,12 +195,11 @@ describe("Session JSONL persistence", () => {
       // Wait for the session to complete (will error or complete with fake model)
       await manager.waitFor(sessionId);
 
-      // After completion, session is archived to history/
-      // Read back the persisted messages from the archived location
-      const archivedJsonl = join(historyDir(persistDir), sessionId, "session.jsonl");
-      expect(existsSync(archivedJsonl)).toBe(true);
+      // After completion, session data stays in sessions/<id>/ (no archival to history/)
+      const sessionJsonl = join(sessionDir(persistDir, sessionId), "session.jsonl");
+      expect(existsSync(sessionJsonl)).toBe(true);
 
-      const raw = readFileSync(archivedJsonl, "utf-8");
+      const raw = readFileSync(sessionJsonl, "utf-8");
       const messages = raw
         .trim()
         .split("\n")
@@ -215,7 +213,7 @@ describe("Session JSONL persistence", () => {
       expect((messages[0] as any).content[0].text).toContain("do something");
     });
 
-    it("archives session directory to history after completion", async () => {
+    it("session directory persists after completion", async () => {
       const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
 
       manager.register({
@@ -231,16 +229,12 @@ describe("Session JSONL persistence", () => {
       const sessionId = manager.run("test-agent", "do something");
       await manager.waitFor(sessionId);
 
-      // Original session dir should no longer exist
-      expect(existsSync(sessionDir(persistDir, sessionId))).toBe(false);
+      // Session dir should still exist (manager no longer archives to history/)
+      expect(existsSync(sessionDir(persistDir, sessionId))).toBe(true);
 
-      // Archived session dir should exist in history
-      const archivedDir = join(historyDir(persistDir), sessionId);
-      expect(existsSync(archivedDir)).toBe(true);
-
-      // Output dir should exist in archived location
-      const archivedOutput = join(archivedDir, "output");
-      expect(existsSync(archivedOutput)).toBe(true);
+      // Output dir should exist inside the session directory
+      const outputDir = join(sessionDir(persistDir, sessionId), "output");
+      expect(existsSync(outputDir)).toBe(true);
     });
   });
 });
