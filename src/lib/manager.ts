@@ -184,8 +184,6 @@ export class SubagentManager {
   private callDepths = new Map<string, number>();
   private apiGate?: import("./api-gate.js").ApiGate;
   /** Tracks auto-resume attempts per session to prevent infinite loops. */
-  private _resumeAttempts = new Map<string, number>();
-  private static readonly MAX_RESUME_ATTEMPTS = 2;
 
   /** Project root directory. Used for detached agent spawning. */
   get projectRoot(): string {
@@ -755,61 +753,7 @@ export class SubagentManager {
     // are all handled by bus subscribers (session-subscribers.ts).
     // Manager only handles: archive, auto-resume, onSessionComplete callback.
 
-    // ── Auto-resume interrupted sessions ────────────────────────────────
-    // Any session interrupted involuntarily (did real work, didn't call finish())
-    // gets auto-resumed with full context. Uses turnCount (LLM turns completed)
-    // as the work indicator — if the agent completed at least one turn, it was working.
-    if (archiveStatus === "interrupted" && session.turnCount > 0) {
-      const attempts = this._resumeAttempts.get(session.sessionId) ?? 0;
-      const registered = this.agents.get(session.agentName);
-      if (attempts < SubagentManager.MAX_RESUME_ATTEMPTS && registered) {
-        this._resumeAttempts.set(session.sessionId, attempts + 1);
-        const delay = 10_000 * (attempts + 1); // 10s, 20s backoff
-        log(
-          "info",
-          `[resume] ${session.agentName} (${session.sessionId}) interrupted after ${session.turnCount} turns — resuming in ${delay / 1000}s (attempt ${attempts + 1}/${SubagentManager.MAX_RESUME_ATTEMPTS})`,
-        );
-
-        // Clean up active session state but keep session files on disk
-        this.clearTimeout(session);
-        this.activeSessions.delete(session.sessionId);
-        this.apiGate?.releaseAll(session.sessionId);
-
-        // Schedule resume after delay
-        setTimeout(() => {
-          try {
-            const persisted = readSessionMeta(this.registry.persistDir, session.sessionId);
-            if (!persisted) {
-              log("warn", `[resume] Session ${session.sessionId} meta not found — cannot resume`);
-              return;
-            }
-            const agentReg = this.agents.get(session.agentName);
-            if (!agentReg) {
-              log("warn", `[resume] Agent ${session.agentName} not registered — cannot resume`);
-              return;
-            }
-            this.resumeSession(session.sessionId, persisted, agentReg);
-            log("info", `[resume] Resumed ${session.agentName} session ${session.sessionId}`);
-          } catch (err) {
-            const msg = err instanceof Error ? err.message : String(err);
-            log("warn", `[resume] Failed to resume ${session.sessionId}: ${msg}`);
-            try { this.archiveSessionDir(session); } catch { /* best-effort */ }
-            this._resumeAttempts.delete(session.sessionId);
-          }
-        }, delay);
-
-        return; // Skip normal archive path — session files stay on disk
-      }
-
-      // Exhausted retries — escalate immediately, don't wait for heartbeat
-      this._resumeAttempts.delete(session.sessionId);
-      log("warn", `[resume] ${session.agentName} exhausted ${SubagentManager.MAX_RESUME_ATTEMPTS} resume attempts — escalating`);
-      this.onSessionBlocked?.(
-        session.agentName,
-        session.sessionId,
-        `Interrupted ${SubagentManager.MAX_RESUME_ATTEMPTS + 1}x after ${session.turnCount} turns. Last error: ${session.error?.slice(0, 200) ?? "unknown"}. Task: ${session.task.slice(0, 200)}`,
-      );
-    }
+    // Auto-resume handled by createAutoResume subscriber (reacts to session_end event).
 
     this.archiveSessionDir(session);
     this.activeSessions.delete(session.sessionId);
@@ -1713,6 +1657,25 @@ export class SubagentManager {
     session.agent.abort();
     // Release any API gate slot held by this session
     this.apiGate?.releaseAll(sessionId);
+  }
+
+  /**
+   * Resume an interrupted session by ID. Used by auto-resume subscriber.
+   * Returns true if resumed, false if session not found or agent not registered.
+   */
+  resumeInterrupted(sessionId: string): boolean {
+    const persisted = readSessionMeta(this.registry.persistDir, sessionId);
+    if (!persisted) return false;
+    const agent = this.agents.get(persisted.agent);
+    if (!agent) return false;
+    // Don't resume if already active
+    if (this.activeSessions.has(sessionId)) return false;
+    try {
+      this.resumeSession(sessionId, persisted, agent);
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   /**
