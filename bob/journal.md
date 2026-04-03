@@ -1,5 +1,21 @@
 # Journal
 
+## 2026-04-03 ~09:20
+### Comprehensive Hypothesis Review (Human Request)
+
+Read all 31 active hypothesis files + 4 archived stubs + full INDEX.md per human request.
+
+**Key findings**:
+1. **Decision Topology theory chain (H-041→H-051)** is the crown jewel — internally consistent, empirically grounded at the core, but increasingly speculative at the extensions
+2. **Early hypotheses (H-001→H-014)** need triage — 5 candidates for archiving (subsumed/premature/unfalsifiable)
+3. **H-047 (Memory Lifecycle Gap)** is being validated in real-time — the knowledge base itself is growing without curation
+4. **KE-002 is the most replicated finding** (4 null/negative experiments) — any new text-skill hypothesis should be evaluated against it first
+5. **Theory-building is outpacing theory-testing** — many hypotheses are theoretical extensions of tested theory, creating a false sense of validation
+
+**Recommendations**: Archive 5 stale hypotheses, consolidate H-033→H-048, reclassify H-036/H-0180 as design docs, promote H-044 to convention, test H-034 and H-047-P171 next.
+
+**Artifact**: `workspace/hypothesis-review-2026-04-03.md`
+
 ## 2026-04-02 ~22:00
 ### Evaluator Calibration Shift Analysis
 

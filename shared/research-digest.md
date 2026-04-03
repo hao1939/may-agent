@@ -10,6 +10,8 @@
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
+| 2026-04-03 | **HKU OpenHarness** | 港大开源Agent Harness框架; 1.5k⭐新发布; 5组件架构(输入/监控/约束/反馈/护栏); Prompt→Harness范式转移 | [post](../shared/knowledge/library/posts/HB-0110-openharness-hku-agent-framework.md) |
+| 2026-04-03 | **Skill Anti-Distillation** | 3662赞大厂血泪帖; 业务驱动>技术驱动; Skill膨胀/重叠/上下文爆炸避坑指南 | [post](../shared/knowledge/library/posts/HB-0111-skill-anti-distillation-lessons.md) |
 | 2026-04-03 | **Self Driving Portfolio** | 50-Agent生产级架构; 20+竞争方法+投票机制; Meta-Agent自我改写代码/prompts; 投资政策治理 | [post](../shared/knowledge/library/posts/HB-0108-self-driving-portfolio-agentic-architecture.md) |
 | 2026-04-03 | **Agent Q-Mix** | MARL框架解决Multi-Agent协调; QMIX+CTDE+GNN动态通信图; 超越LangGraph 16.31pp; 112K tokens (竞品1/4~1/15) | [post](../shared/knowledge/library/posts/HB-0049-agent-qmix-framework.md) |
 | 2026-04-03 | **Google MiRA** | 子目标分解+密集里程碑奖励; Gemma3-12B WebArena 6.4%→43.0%; 长程能力关键在细粒度目标 | [post](../shared/knowledge/library/posts/HB-0050-google-mira-subgoal-agent.md) |
@@ -146,4 +148,4 @@
 
 ---
 
-*Last updated: 2026-04-04 00:45 UTC by Amy-Kimi — Explored XHS Agent community. Found: (1) Trace2Skill paper (arXiv:2603.25158) on automatic skill distillation from trajectories, +57.65pp transfer from 35B to 122B models; (2) Skill-JIT plugin compatible with OpenClaw for JIT skill generation; (3) CBRL (arXiv:2603.18953) improving RLVR exploration efficiency via curriculum-based example injection; (4) Microsoft OEL framework for continuous improvement from deployment experience.*
+*Last updated: 2026-04-03 09:45 UTC by Amy-Kimi — Explored XHS Agent community. Found: (1) HKU OpenHarness newly open-sourced with 1.5k⭐, a framework for building Agent Harnesses; (2) 3662-engagement post on "Skill Anti-Distillation" sharing lessons from big tech Skill development failures; (3) Community consensus on Harness Engineering replacing Prompt Engineering as the core paradigm.*

@@ -19,10 +19,10 @@ A composable skills library for coding agents with 13 well-crafted skills. Repre
 **Status**: Built as `agents/shared/skills/brainstorm-before-build/SKILL.md`
 **Result**: Working in production. Need to validate adoption rate.
 
-### Idea 2: Structured Plan Writing ✅ ADOPTED
+### Idea 2: Structured Plan Writing ✅ PROVEN & DEPLOYED
 **What**: Plans with dependency analysis, risk identification, and checkpoints.
-**Status**: Built as `agents/shared/skills/structured-plan-writing/SKILL.md`
-**Result**: 5-step skill (DECOMPOSE → ORDER → RISK → CHECKPOINT → WRITE IT DOWN). Complements plan-once-amend. Added to LIBRARY.md as ⚪ untested. Needs gym test.
+**Status**: Built, tested, and deployed to coder.
+**Result**: 5-step skill (DECOMPOSE → ORDER → RISK → CHECKPOINT → WRITE IT DOWN). Gym-tested: plan-once-amend 7/8→8/8 (2/2 runs). Promoted to `agents/coder/skills/structured-plan-writing.md`. See exp-019.
 
 ### Idea 3: TDD Skill
 **What**: Red-Green-Refactor cycle as an explicit skill for coder agents.

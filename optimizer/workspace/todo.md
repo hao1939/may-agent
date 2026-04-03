@@ -11,8 +11,8 @@
 
 ## 🔴 ACTIVE
 
-- **Post-rebuild verification** — Binary **bf34041** ACTIVE (PID 74, started ~15:45). Session persistence FIXED (commit 21ab683). Gym baseline needed on bf34041.
-- ✅ **Evaluator heuristic fix** — Commit a6250b0: removed session_error penalty for interrupted sessions (normal timeout, not failure) and removed stale opBudget_exhaustion check (opBudget removed Mar 30). 64/65 acceptables in 24h were false positives from these tags. Projected good rate: 53.9% → 99.3%. Needs rebuild to deploy.
+- ✅ **Evaluator heuristic fix** — Commit a6250b0 DEPLOYED in current binary (confirmed 3/3 post-08:41 evals are `good`). Data repair added to `evaluate-sessions.ts` handler: Phase 1 reclassifies 146 interrupted 0-op sessions from `acceptable` → `skipped`; Phase 2 removes stale `opBudget_exhaustion` from 1,761 heuristic evals. Today's good rate: 45.5% → 74.5%, 7-day: 73.5% → 82.2%. Finding: `workspace/finding-eval-data-repair-0403.md`.
+- **Cost investigation** — Top consumers (3d): Bob 665 ops, Coach 495, Optimizer 404, Amy-kimi 306. Coach averages 40 ops/heartbeat (mostly bash DB queries). 51.2% of all heartbeats are idle (0 ops, properly skipIfIdle). Biggest savings: reduce per-session ops for expensive heartbeats.
 - **Skip rate investigation** — Skip rate stable: 50w 12%, 200w 6.5%. Monitoring continues.
 - **Skill lifecycle weekly** — Cooldown (last: Mar 30, next: Apr 6). 54 skills, 5 saturations. Weekly only.
 - **Workflow consolidation P1-P3** — From audit Mar 30. Next audit Apr 6.

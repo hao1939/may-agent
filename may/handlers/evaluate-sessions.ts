@@ -83,7 +83,53 @@ function rescoreHeuristicEvaluations(persistDir: string, getDb: () => any): numb
     return 0; // DB not available
   }
 
-  // Find rubber-stamp evaluations (quality=5, efficiency=4 is the signature)
+  // Phase 1: Clean up stale heuristic evaluations with incorrect issue tags.
+  // The binary fix (a6250b0) corrected writeHeuristicEvaluations() going forward,
+  // but old evaluations still have session_error/opBudget_exhaustion for interrupted
+  // 0-op sessions that should be skipped. Fix them here.
+  try {
+    const staleEvals = db.prepare(
+      `SELECT e.sessionId, s.status, s.opCount
+       FROM evaluations e
+       JOIN sessions s ON e.sessionId = s.sessionId
+       WHERE e.evaluatedByHeuristic = 1
+         AND (e.issues LIKE '%session_error%' OR e.issues LIKE '%opBudget%')
+         AND s.status = 'interrupted' AND (s.opCount IS NULL OR s.opCount = 0)`
+    ).all() as Array<{ sessionId: string; status: string; opCount: number }>;
+
+    if (staleEvals.length > 0) {
+      const fixStmt = db.prepare(
+        `UPDATE evaluations SET verdict = 'skipped', quality = 0, efficiency = 0, issues = '[]', skippedByJs = 1
+         WHERE sessionId = ?`
+      );
+      for (const { sessionId } of staleEvals) {
+        fixStmt.run(sessionId);
+      }
+    }
+  } catch { /* best-effort cleanup */ }
+
+  // Phase 2: Also clean up opBudget_exhaustion from any heuristic eval (opBudget removed Mar 30)
+  try {
+    const opBudgetEvals = db.prepare(
+      `SELECT sessionId, issues FROM evaluations
+       WHERE evaluatedByHeuristic = 1 AND issues LIKE '%opBudget_exhaustion%'`
+    ).all() as Array<{ sessionId: string; issues: string }>;
+
+    if (opBudgetEvals.length > 0) {
+      const updateIssuesStmt = db.prepare(
+        `UPDATE evaluations SET issues = ? WHERE sessionId = ?`
+      );
+      for (const { sessionId, issues } of opBudgetEvals) {
+        try {
+          const parsed = JSON.parse(issues) as string[];
+          const cleaned = parsed.filter((i: string) => i !== "opBudget_exhaustion");
+          updateIssuesStmt.run(JSON.stringify(cleaned), sessionId);
+        } catch { /* skip unparseable */ }
+      }
+    }
+  } catch { /* best-effort cleanup */ }
+
+  // Phase 3: Find rubber-stamp evaluations (quality=5, efficiency=4 is the signature)
   const rubberStamped = db.prepare(
     `SELECT sessionId, agent FROM evaluations WHERE quality = 5.0 AND efficiency = 4.0`
   ).all() as Array<{ sessionId: string; agent: string }>;

@@ -1,0 +1,19 @@
+{
+  "hypothesis": "The investigate-and-fix skill, when injected as a skill file into the coder agent, will improve the reproduce-first check on the investigate-fix-pattern scenario (baseline gap: 4/5 process).",
+  "arms": {
+    "baseline": {
+      "scenario": "investigate-fix-pattern",
+      "agent": "coder",
+      "setup": {}
+    },
+    "treatment": {
+      "scenario": "investigate-fix-pattern",
+      "agent": "coder",
+      "setup": {
+        "lab_fork": "exp-019-investigate-fix"
+      }
+    }
+  },
+  "runs_per_arm": 2,
+  "metrics": ["passed", "ops", "duration_ms", "checks"]
+}

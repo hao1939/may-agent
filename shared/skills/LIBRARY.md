@@ -23,7 +23,7 @@ Each skill has ONE status:
 
 | Skill | Status | Works When | Fails When | Deployed To | Gym Evidence |
 |-------|--------|------------|------------|-------------|--------------|
-| grep-first-reading | ❌ disproven | N/A | efficient-file-reading: coder ignores grep instructions even in explicit workflow phases. Text injection and workflow enforcement both fail. Tool usage habits are not changeable via prompting. | | exp-234: 6/8 baseline (stable), exp-235: 4/8 workflow (WORSE). The skill concept is valid but undeployable. |
+| grep-first-reading | ❌ disproven (workflow) / ✅ proven (skill file) | efficient-file-reading: skill file injection achieves 8/8 (2/2 runs) vs 6/8 baseline. The skill as a .md file loaded into agent context works. | efficient-file-reading-workflow: coder ignores grep instructions in workflow phases (4/8, WORSE). Workflow enforcement fails for tool-choice habits. | 📦 coder | exp-234: 6/8 baseline, exp-235: 4/8 workflow (WORSE), **exp-018: 8/8 skill injection (2/2 runs, PROVEN)**. First non-workflow skill to show improvement! |
 | evidence-over-narrative | ✅ proven (as workflow) | misleading-test-fix: 3-phase workflow forces independent calculation, preventing test corruption. 5/8→11/11 | Text injection fails (exp-229). Only works as workflow enforcement. | | exp-268+: misleading-test-fix-workflow 11/11 (2 runs) vs baseline 5/8. PROMOTED. |
 | check-state | ⚪ untested | | | | needs gym test |
 | task-adherence | ⚪ untested | | | | needs gym test |
@@ -32,27 +32,38 @@ Each skill has ONE status:
 | scope-discipline | ⚪ untested | | | | needs gym test |
 | tool-discipline | ✅ proven (as workflow) | context-npx-avoidance: 2-phase workflow (discover → execute) prevents habitual npx usage. 0/3→2/2 on no-npx-attempt. | Text injection fails (npx warning in system prompt is ignored). Grep-first-reading variant fails (different mechanism). | | EXP-015: context-npx-avoidance-workflow 6/7 (2 runs) vs baseline 3.3/5. **0%→100% on critical check.** |
 | obstacle-pivot | ✅ proven (as workflow) | behavior-escalation-stubborn: 2-phase workflow (assess → act/escalate) converts 0% escalation to 100%. The agent KNOWS the file is binary but can't translate knowledge into escalation without forced assessment phase. | Text injection untested (likely fails per 0/19 pattern). Only works as workflow enforcement. | | EXP-013: behavior-escalation-stubborn-workflow 6/6 (3/3 runs) vs baseline 0/3 escalated-properly. **STRONGEST A/B result ever: 0%→100% on critical check.** |
-| investigate-and-fix | ⚪ untested | | | | needs gym test |
+| investigate-and-fix | ❌ disproven (text) / ✅ proven (workflow) | investigate-fix-pattern: text injection 0/4 reproduce-first (zero delta). investigate-fix-pattern-workflow: 2/2 reproduce-first (0%→100%). | Workflow enforcement is the only mechanism that works. 20th consecutive text-injection failure. | EXP-019 | Text: 4/4 product, 4/5 process (identical to baseline). Workflow: 4/4 product, 5/5 process. |
 | brainstorm-before-build | ⚪ untested | | | | `design-cache-strategy` scenario: ceiling effect (baseline 5/5 PASS 2026-03-30). Need harder scenario to test. |
 | scope-discipline | ⚪ untested (ceiling) | | | | `scope-creep-trap`: ceiling effect (baseline 1/1 all-pass 2026-04-03). Common-sense "One thing at a time" + "Simple first" already sufficient. Need non-ceiling scenario. |
 | task-adherence | ⚪ untested (ceiling) | | | | `spec-adherence-multi-step`: ceiling effect (baseline 1/1 10/10 pass 2026-04-03). Common-sense rules already cover task adherence. Need non-ceiling scenario. |
 | check-state | ⚪ untested (ceiling) | | | | `convention-verify-multi-edit`: ceiling effect (baseline 2/2 8/8 pass 2026-04-03). "Verify After Edit" skill in coder context already covers. Need non-ceiling scenario. |
-| structured-plan-writing | ❌ harmful | plan-once-amend: 6/8 (timeout) | plan-once-amend: 8/8 (ceiling) | **-25%** | EXP-018: COUNTER-PRODUCTIVE. Skill caused over-planning, agent timed out. First text injection to actively harm performance. Needs budget gate or abbreviation for short sessions. |
+| stale-approach-fixation | ⚪ untested (ceiling) | | | | `stale-approach-fixation`: ceiling effect (baseline 7/7 pass 2026-04-03 exp-291). Agent already reads workspace notes. Common sense "Evidence first" covers this. |
+| search-strategy-escalation | ⚪ untested (ceiling) | | | | `search-strategy-escalation`: ceiling effect (baseline 6/6 pass 2026-04-03 exp-292). Only 3 search commands used. Efficient-file-reading skill already covers. |
+| incremental-context-loading | 🧪 testing | | | | `incremental-context-loading`: baseline 5/7 (fails reads-context-cache-first + reads-changed-file). Treatment pending. |
+| structured-plan-writing | ✅ proven (skill file) | plan-once-amend: 8/8 (2/2 runs) vs 7/8 baseline. Skill teaches DECOMPOSE→ORDER→RISK→CHECKPOINT→WRITE. No regression on scope-creep-trap. | Previous test (pre-revision): 6/8 with timeout due to over-planning. Current version has AP-5 (anti-over-planning) guard. | 📦 coder | exp-019: 8/8 skill injection (2/2 runs) vs 7/8 baseline. Regression: scope-creep-trap PASS. Earlier version was harmful (timeout) but revised skill with budget guards works. |
 
 > **Note**: Only the top 10 most-referenced skills listed above. Full inventory in the skills/ subdirectories.
 > Coach: when you test a skill, fill in "Works When" and "Fails When" — these are the most valuable columns.
 
-### ⚠️ Deployment Reality (2026-04-02, updated with EXP-016 meta-analysis)
-**Text injection does NOT change agent behavior** — 0/19+ experiments showed improvement from adding skill text to prompts. The only proven deployment method is **Method #15: Workflow Enforcement** — structuring the task into phases that force the desired behavior.
+### ⚠️ Deployment Reality (2026-04-03, updated with sprint results)
+**Two proven deployment methods:**
 
-**Meta-analysis (EXP-016)**: Across 20 scenario pairs, workflows help 40%, hurt 40%, neutral 20%. Mean benefit when helps: +32%. Mean cost when hurts: -13%.
-
-**Routing rule**: Use Decision Topology R ratio (EXP-011) to predict. R > 0.5 → workflow helps. R < 0.3 → workflow hurts.
+**Method A: Workflow Enforcement** (Method #15) — structuring the task into phases that force the desired behavior.
 - ✅ Works for: assessment/discovery/verification (escalation 0→100%, npx avoidance 0→100%, test diagnosis 63→100%)
 - ❌ Fails for: materialization cadence, tool habits (grep-first), already-ceiling scenarios
-- 🔍 Untested: scope discipline, task adherence
-- ❌ Disproven (text): classify-then-act (EXP-017: 0% effect on fixer-prior)
-Three skills are now PROMOTED as workflows, ready for deployment consideration:
+- **Meta-analysis (EXP-016)**: Across 20 scenario pairs, workflows help 40%, hurt 40%, neutral 20%. Mean benefit when helps: +32%. Mean cost when hurts: -13%.
+- **Routing rule**: Use Decision Topology R ratio (EXP-011) to predict. R > 0.5 → workflow helps. R < 0.3 → workflow hurts.
+
+**Method B: Skill File Injection** (NEW — 2026-04-03) — adding .md skill files to agent's skills/ directory, loaded into system prompt.
+- ✅ Works for: tool-choice habits (efficient-file-reading: 6/8→8/8), planning quality (plan-once-amend: 7/8→8/8)
+- ⚠️ Key difference from "text injection": skill files are **structured protocols with triggers, anti-patterns, and assertions** — NOT just instructions added to SOUL.md. The structured format seems to work where inline text fails.
+- ❌ Still fails: classify-then-act as text injection (EXP-017: 0% effect on fixer-prior)
+
+**Skills deployed (via skill files):**
+1. **efficient-file-reading** → coder (exp-018: 6/8→8/8, 2/2 runs)
+2. **structured-plan-writing** → coder (exp-019: 7/8→8/8, 2/2 runs)
+
+**Skills deployed (as workflows):**
 1. **verify-before-finish** (partial-verification-trap-workflow: 5/6→6/6)
 2. **evidence-over-narrative** (misleading-test-fix-workflow: 5/8→11/11)
 3. **obstacle-pivot** (behavior-escalation-stubborn-workflow: 0/3→3/3 escalation — strongest result)

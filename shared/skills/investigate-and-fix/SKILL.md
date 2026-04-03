@@ -10,7 +10,8 @@ tools: [read, bash, edit, write, finish]
 agents: [tech-lead, optimizer, coder]
 tested: true
 gym_scenarios: [investigate-fix-pattern]
-gym_results: "3/3 pass (coder). Consistent gap: reproduce-first skipped. Product 4/4, Process 4/5."
+gym_results: "EXP-019: Text injection 0/4 reproduce-first (zero delta). Workflow enforcement 2/2 reproduce-first (0%→100%). Text=4/4 product, 4/5 process. Workflow=4/4 product, 5/5 process."
+verdict: disproven (text) / proven (workflow)
 ---
 
 # Skill: Investigate and Fix

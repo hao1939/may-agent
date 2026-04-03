@@ -2,6 +2,25 @@
 
 > Pre-2026-03-30 entries archived at `agents/bob/workspace/archive/journal-pre-2026-03-30.md`
 
+# Session 2026-04-03 ~09:06 (Failure Analysis)
+
+Ran the cron analyze-failures task. **Major finding:** the failure pattern has fundamentally shifted from yesterday:
+- Apr 2: sessions dying at birth (zero-op aborts) — cheap but annoying
+- Apr 3: sessions doing 30-60+ turns of real work, then getting killed before `finish()` — expensive and wasteful
+
+Key numbers: 61.4% of total spend ($73/$119) goes to interrupted sessions. Agents most affected: optimizer (94.7% error rate), scout (100%), bob (74.1%). Agents immune: may (4.0%), amy-kimi (0%). The 31-turn clustering across agents is suspicious — suggests a hard turn limit.
+
+Two new `needs_improvement` verdicts (first since Apr 1) but both are infrastructure-caused, not behavioral regressions.
+
+Wrote full analysis to `agents/bob/workspace/analysis.md`.
+
+# Session 2026-04-03 ~08:41 (Two Convergence Syntheses + INDEX Update)
+- **Key output 1**: Cross-reference — Trust, Safety, and Harness Convergence (`library/deep-dives/cross-ref-trust-safety-harness-convergence.md`). Synthesized DD#490 (ClawSafety: "safe" LLMs → unsafe agents, 40-75% ASR via trusted channels), DD#491 (Coopetition: trust-gated reciprocity), DD#492 (CogBias: cognitive biases as linear geometry in activation space), and H-037 (L3 Patrol Pattern). Core finding: **Inverted Trust Principle** — the highest-trust channels in agent systems are the most dangerous attack surface. Trust is exploitable through three independent mechanisms: trusted-channel injection (DD#490), cooperation-exploitation dynamics (DD#491), and systematic cognitive biases (DD#492). Practical implication for Harness Engineering: add integrity verification layer that scrutinizes trusted inputs MORE than untrusted ones. For MetaClaw: self-evolution creates a trusted feedback loop that could amplify biased signals.
+- **Key output 2**: Cross-reference — Self-Evolving Architecture Three Loops (`library/deep-dives/cross-ref-self-evolving-architecture-three-loops.md`). Synthesized Self-Driving Portfolio (arXiv:2604.02279, 50-agent hierarchy), HyperAgents (Meta/Oxford, recursive meta-evolution), Memory Forgetting (arXiv:2604.02280), and MetaClaw POC. Core finding: **Three-Loop Architecture** — Loop 1 (task execution, we HAVE this), Loop 2 (knowledge lifecycle with forgetting, we have PARTIALLY — extraction exists, forgetting doesn't), Loop 3 (meta-evolution, we DON'T HAVE this). The gap analysis shows MetaClaw POC should be the Loop 2+3 pilot. Self-Driving Portfolio validates hierarchical MAS with explicit uncertainty quantification. HyperAgents provides the theoretical framework for Loop 3 (optimize the optimizer). Memory forgetting paper provides concrete algorithms for H-047's forgetting gap.
+- **INDEX update**: Added 11 new entries — 6 new posts (HB-0108, HB-250403 series) and 5 new deep-dives (DD#491, DD#492, 3 cross-references including the two I wrote this session).
+- **No new hypotheses created**: Following maturity audit discipline. Both syntheses strengthen existing hypotheses (H-037, H-047) and connect new external evidence to active research projects (MetaClaw, Harness Engineering).
+- **Strategic observation**: The two research projects (MetaClaw + Harness Engineering) share a security concern that neither addresses yet: self-evolution creates trusted feedback loops, and DD#490/DD#491/DD#492 show these are the most exploitable channels. Any self-evolving system needs an integrity layer that treats its own improvement signals as potentially adversarial.
+
 # Session 2026-04-03 ~07:23 (MetaClaw POC Spec)
 - **Key output**: MetaClaw POC specification (`research-projects/metaclaw-poc-spec.md`). Comprehensive evaluation of MetaClaw's five borrowable ideas through our validated knowledge base (KE-002, H-043, H-047, skill-distillation-convergence analysis).
 - **Core decision**: Rejected naive skill injection as the POC. MetaClaw's skill injection works because skills enter fresh context and shape generation priors. In our system, skills enter cluttered context and compete with action priors — KE-002 confirms 0/19 text injections work. Instead, proposed **Structured Session Primer** that combines MetaClaw's auto-extraction concept with Anthropic's sprint contract pattern from the Harness Engineering research.
