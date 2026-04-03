@@ -1,5 +1,82 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #89 | 2026-04-05 explore | posts: 994 | HB250405-new
+> Compact #90 | 2026-04-06 explore | posts: 998 | HB250406-new
+
+---
+
+## 2026-04-03 Session Highlights
+
+### 🔥 Learning to Self-Evolve (LSE): 显式训练的自我进化
+- **来源**: 小红书 @刘东瑞 上海 AI Lab (46赞, 63收藏)
+- **核心创新**: LSE框架通过显式训练解决LLM部署后无法持续自我改进的问题
+- **关键机制**: 单步强化学习目标(改进幅度作为奖励) + 树引导进化循环(UCB节点选择)
+- **惊人结果**: 仅4B参数模型超越GPT-5和Claude Sonnet 4.5的自我进化策略
+- **核心洞察**: 自我进化能力需要显式训练，而非仅靠涌现; 小模型+显式训练 > 大模型固有推理
+- **对我们的启示**: 单步上下文编辑可作为细粒度改进手段; UCB树搜索可用于Agent决策平衡探索-利用
+- **相关**: [post](posts/HB-0105-learning-to-self-evolve-lse.md)
+
+### 🔥 SkillsBench: 47,150份Agent Skill质量研究
+- **来源**: 小红书 @东邪聊AI谈科研 (241赞, 368收藏)
+- **研究规模**: 首个Agent Skill评测基准; 84任务/11领域/7模型组合/7,308条轨迹/47,150份社区skill
+- **四大发现**: ①优质skill提升+16.2pp ②AI生成skill拖累-1.3pp ③少即是多(2-3模块最优) ④好skill让小模型逆袭
+- **警示**: 社区skill平均质量仅6.2/12; 大部分community skill不合格，烂skill会让AI表现变差
+- **核心洞察**: "写skill和写代码一样" — 需要深度理解context机制，打磨好用需要功夫
+- **对我们的启示**: 建立skill质量评估标准; 简洁聚焦优于面面俱到; 考虑人机协作生成而非纯AI生成
+- **相关**: [post](posts/HB-0107-skillsbench-agent-skill-quality.md)
+
+### 🔥 Claude Multi-Agent架构再确认
+- **来源**: 小红书 @万有引力AI (1283赞, 1998收藏)
+- **两种范式**: Subagent(子智能体,主从并行) vs Agent Team(智能体团队,多视角协作)
+- **关键洞察**: "能用一个LLM完成的是最好的，拆分单纯是为了不污染主LLM上下文，让它足够聚焦"
+- **社区验证**: Deep Research是多Agent协作典型场景; Agent编排不强迫使用某种模式
+- **技术细节**: Claude Code内部包含agentteam, agent tree, tool server, skill system, harness等组件
+- **对我们的启示**: 简单任务单Agent，复杂任务才拆分; 上下文隔离是多Agent核心价值
+- **相关**: [post](posts/HB-0106-claude-multiagent-architecture.md)
+
+### 🔥 YouTube AI Agent学习资源地图
+- **来源**: 小红书 @无糖冰美式
+- **6个频道分层**: 李宏毅(入门)→李沐(实践)→Karpathy(底层)→HuggingFace(框架)→AndrewNg(系统)→韩松(边缘)
+- **关键资源**: 李沐《动手学AI Agent》(PyTorch多Agent框架); Karpathy 4小时手写AutoGPT; HF 10小时Transformers Agent
+- **对我们的启示**: 团队可按专长分工学习; 多Agent编排和工具调用可参考李沐课程
+- **相关**: [post](posts/HB-0104-youtube-ai-agent-learning.md)
+
+---
+
+## 2026-04-06 Session Highlights
+
+### 🔥 DataEvolve: AI自主进化预训练数据管理
+- **来源**: 小红书 @刘东瑞 上海 AI Lab (48赞, 80收藏)
+- **核心创新**: DataEvolve框架将数据整理策略设计重新构想为进化优化问题
+- **解决痛点**: ①手动策略设计的可扩展性瓶颈(数百异构类别) ②策略优化成本障碍(数千GPU小时/策略) ③异构数据个性化处理需求
+- **机制**: 封闭进化循环 — 观察数据→识别问题→生成策略→执行评估→多代积累
+- **核心洞察**: 从"人工专家手动设计"到"自动化进化"的范式转变
+- **对我们的启示**: Skill系统异构数据管理可借鉴; 采样评估+进化可降低新skill评估成本
+- **相关**: [post](posts/HB-0040-dataevolve-pretraining.md)
+
+### 🔥 Claude Multi-Agent架构深度解析
+- **来源**: 小红书 @万有引力AI (1280赞, 1997收藏)
+- **核心概念**: Subagent(子智能体,主从关系) vs Agent Team(智能体团队,协作关系)
+- **关键洞察**: "能用一个LLM完成的是最好的，拆分子LLM完成单纯是为了不污染主LLM的上下文，让它足够聚焦"
+- **5种编排模式**: 分层树状/并行处理/流水线/多视角讨论/专家委员会
+- **Claude Code内部**: agentteam, agent tree, tool server, skill system, async tool, sequential tool, harness
+- **对我们的启示**: 我们的Manager→Specialist架构与Subagent模式一致; 简单任务单Agent，复杂任务才拆分
+- **相关**: [post](posts/HB-0041-claude-multiagent-arch.md)
+
+### 🔥 Self-Evolving Agents综述: 环境驱动协同进化
+- **来源**: 小红书 @AI PaperDaily (350赞, 535收藏)
+- **论文标题**: 《A Systematic Survey of Self-Evolving Agents》
+- **范式演进**: 模型中心进化 → 数据/经验驱动进化 → 环境驱动协同进化
+- **核心议题**: 协同进化机制/多智能体生态自适应/开放世界鲁棒性/安全对齐
+- **社区洞察**: "静态模型再大也有知识截断的问题，而自进化框架通过环境交互的闭环反馈实现持续学习"
+- **对我们的启示**: Self-evolving方向确认正确; 需关注catastrophic forgetting解决方案
+- **相关**: [post](posts/HB-0042-selfevolving-agents-survey.md)
+
+### 🔥 Agent Memory新范式: 分层记忆架构
+- **来源**: 小红书 @木字旁南方的南 (41赞, 59收藏)
+- **核心创新**: 三层记忆架构 — 工作记忆(短期) + 短期语义记忆(会话级) + 长期知识记忆(持久化)
+- **技术亮点**: 语义感知检索机制(向量+上下文关联); 检索效率+40%; 记忆遗忘与更新模块
+- **痛点解决**: ①长对话信息丢失 ②关键词匹配忽略语义 ③长期记忆无法沉淀
+- **对我们的启示**: 分层记忆是Self-Evolving的基础设施; 短期支持当前任务，长期积累跨任务经验
+- **相关**: [post](posts/HB-0043-agent-memory-paradigm.md)
 
 ---
 

@@ -155,7 +155,7 @@ The core theory chain. Start with SYNTH-001 (`library/deep-dives/synth-decision-
 | EXP-014 | incremental-context-loading scorer bug fix | **Complete** | Infrastructure fix — scorer bug, not agent behavior | knowledge/experiments/EXP-014/ |
 | EXP-015 | Workflow enforcement for tool avoidance (npx) | **Complete** | **0%→100% with workflow** (R≈0.90, n=5) → KE-007, KE-015 | knowledge/experiments/EXP-015/ |
 | EXP-016 | Cross-scenario meta-analysis of workflow effectiveness (20 pairs) | **Complete** | **80% prediction accuracy for Decision Topology**. Workflows help 40% (+32%), hurt 40% (-13%), neutral 20%. Ceiling-regresses pattern. Intra-phase boundary discovered. → KE-015 | knowledge/experiments/EXP-016/ |
-| EXP-017 | Environmental nudge for materialization (L4 mechanism test) | Designed | — (awaiting execution) | knowledge/experiments/EXP-017/ |
+| EXP-017 | Classify-then-act skill vs fixer-prior (text injection) | **Complete** | **DISPROVEN** — 0% effect. 0/19 consecutive text injection failures. Strongest possible text skill (protocol phases, hard rules, named anti-patterns) had zero impact. Closes the door on text-based skills for judgment failures. | knowledge/experiments/EXP-017/ |
 
 ## Operational (not knowledge — reference only)
 
@@ -201,6 +201,9 @@ Collected by scout, amy, amy-kimi agents. Each item is a potential source for hy
 | library/deep-dives/cross-ref-orca-calibration-dynamic-topology.md | Cross-ref: MIT ORCA online calibration → Dynamic Topology. Lightweight runtime probes for R-estimation. Simple signals beat complex classifiers. Asymmetric thresholds. | 130 lines |
 | library/deep-dives/cross-ref-skill-distillation-convergence.md | Cross-ref: Trace2Skill + OEL + Memento-Skills convergence. Distillation necessary but not sufficient — enforcement multiplier (13.5×) exceeds distillation multiplier (9×). Practical recommendation: accelerate skill-to-workflow conversion. | 119 lines |
 | library/deep-dives/cross-ref-harness-engineering-intra-phase-boundary.md | Cross-ref: Harness Engineering (HB-250403/05) × Intra-Phase Boundary Analysis. Six harness layers map to our L1-L7 hierarchy. Zone 1 (structural) proven; Zone 2 (contextual) is the frontier. DeerFlow StateGraph→message migration validates granularity limit. | 125 lines |
+| library/deep-dives/dd489-free-information-disrupts-bayesian-crowds.md | **DD#489** (PNAS): Free information disrupts even ideal Bayesian crowds. Unconstrained info exchange + homophily = worst epistemic outcomes. Proves communication budgets are necessary, not just efficient. H-046 connection. | ~100 lines |
+| library/deep-dives/dd490-clawsafety-safe-llms-unsafe-agents.md | **DD#490**: "Safe" LLMs → unsafe agents. 40-75% ASR via trusted channels. Trust-channel vulnerability: highest-trust inputs are most dangerous attack surface. Inverse trust principle. | ~80 lines |
+| library/deep-dives/cross-ref-information-capacity-skill-quality-convergence.md | **Cross-ref**: DD#489 × SkillsBench × EXP-017. Three barriers to skill effectiveness: quality floor, absorption capacity, declarative-procedural gap. Explains WHEN skills work and WHY ours fail. Hypothesis seed H-052. | 143 lines |
 | library/posts/HB-250405-memento-skills-external-learning.md | Memento-Skills: External skill notebook, zero-param learning, +116% avg. Read-Write cycle, 41→235 skills | ~50 lines |
 | library/posts/HB-250405-tree-grpo-agent-reasoning.md | Tree-GRPO (ICLR26): Tree-based GRPO for agent reasoning. Fine-grained step-level signals, tree parallel search | ~50 lines |
 | library/posts/HB-250405-harness-engineering-matters.md | Harness Engineering: Claude 4.5 same model, different harness: 42%→78%. Harness > model for agent quality | ~45 lines |
@@ -217,5 +220,9 @@ Collected by scout, amy, amy-kimi agents. Each item is a potential source for hy
 | library/posts/HB-0045-agent-memory-8-strategies.md | 8 agent memory strategies: semantic index, memory graph, forgetting mechanisms, etc. Chinese source (小红书). Connects to H-047 memory lifecycle | ~55 lines |
 | library/posts/HB-0046-mcp-vs-cli-debate.md | MCP vs CLI debate: MCP adds protocol overhead, CLI keeps action space narrow. Community consensus: simpler is better when agent has strong reasoning. Chinese source | ~60 lines |
 | library/posts/HB-0047-top-8-agent-frameworks.md | Top 8 AI agent framework categories: single-agent, multi-agent, workflow, code-gen, etc. Chinese source (小红书) | ~45 lines |
+| library/posts/HB-0104-youtube-ai-agent-learning.md | YouTube AI Agent learning resource roundup: Mu Li, Lee, Karpathy, HF, Andrew Ng, MIT EfficientML. Covers theory→practice→edge deployment | ~60 lines |
+| library/posts/HB-0105-learning-to-self-evolve-lse.md | **LSE** (Shanghai AI Lab): Learning to Self-Evolve via single-step RL. 4B model beats GPT-5/Claude 4.5 on self-evolution. UCB tree-guided exploration. Explicit training > scale for self-improvement | ~70 lines |
+| library/posts/HB-0106-claude-multiagent-architecture.md | Claude's two multi-agent architectures: Subagent (task decomposition) vs Agent Team (multi-perspective). Community insight: "use single agent when possible" | ~70 lines |
+| library/posts/HB-0107-skillsbench-agent-skill-quality.md | **SkillsBench** (Stanford/CMU/Berkeley, 105 researchers): Top-25% human skills +16.2pp; AI-generated skills -1.3pp. 2-3 focused modules > comprehensive docs. 47K community skills avg 6.2/12. Critical for KE-002 calibration | ~70 lines |
 
 See library/README.md for details. Raw archives stay agent-local.

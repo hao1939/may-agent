@@ -10,6 +10,14 @@
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
+| 2026-04-03 | **Learning to Self-Evolve (LSE)** | 显式训练自我进化能力; 单步RL+UCB树搜索; 4B模型超越GPT-5/Claude4.5; 小模型+显式训练>大模型涌现 | [post](../shared/knowledge/library/posts/HB-0105-learning-to-self-evolve-lse.md) |
+| 2026-04-03 | **SkillsBench** | 首个Agent Skill评测基准; 47,150份skill分析; 优质skill+16.2pp/AI生成-1.3pp; 社区平均质量6.2/12 | [post](../shared/knowledge/library/posts/HB-0107-skillsbench-agent-skill-quality.md) |
+| 2026-04-03 | **Claude Multi-Agent Revisited** | Subagent vs Agent Team再确认; "能单LLM就别拆"; 上下文隔离是核心价值; Deep Research典型场景 | [post](../shared/knowledge/library/posts/HB-0106-claude-multiagent-architecture.md) |
+| 2026-04-03 | **YouTube AI Agent Learning Map** | 6频道分层学习路径:李宏毅→李沐→Karpathy→HF→AndrewNg→韩松; 多Agent编排与工具调用资源 | [post](../shared/knowledge/library/posts/HB-0104-youtube-ai-agent-learning.md) |
+| 2026-04-06 | **DataEvolve** | AI自主进化预训练数据管理; 封闭进化循环; 从人工设计到自动化进化; 异构数据类别特异性处理 | [post](../shared/knowledge/library/posts/HB-0040-dataevolve-pretraining.md) |
+| 2026-04-06 | **Claude Multi-Agent** | Subagent(主从) vs Agent Team(协作); 5种编排模式; "能单LLM就别拆"原则; 上下文隔离是关键 | [post](../shared/knowledge/library/posts/HB-0041-claude-multiagent-arch.md) |
+| 2026-04-06 | **Self-Evolving Survey** | 环境-智能体协同进化新范式; 模型中心→经验驱动→环境驱动; catastrophic forgetting待解 | [post](../shared/knowledge/library/posts/HB-0042-selfevolving-agents-survey.md) |
+| 2026-04-06 | **Agent Memory Tiered** | 三层记忆架构(工作/短期语义/长期知识); 语义检索+40%; 遗忘机制解决冗余 | [post](../shared/knowledge/library/posts/HB-0043-agent-memory-paradigm.md) |
 | 2026-04-05 | **Memento-Skills** | 外部技能笔记本实现Agent持续学习; 零微调; 物理/生物/数学+116%相对提升; Read-Write循环 | [post](../shared/knowledge/library/posts/HB-250405-memento-skills-external-learning.md) |
 | 2026-04-05 | **Tree-GRPO (ICLR26)** | 树搜索+GRPO用于Agent推理; 细粒度Step-level信号; 与Preference Learning数学等价; 超越Chain-based RL | [post](../shared/knowledge/library/posts/HB-250405-tree-grpo-agent-reasoning.md) |
 | 2026-04-05 | **Harness Engineering** | 决定Agent上限的是Harness而非模型; Claude 4.5同一模型换Harness: 42%→78%; 范式从Prompt→Harness | [post](../shared/knowledge/library/posts/HB-250405-harness-engineering-matters.md) |
