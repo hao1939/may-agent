@@ -70,7 +70,7 @@ for arm_name, arm_config in design['arms'].items():
         scenario = arm_config['scenario']
         agent = arm_config.get('agent', 'coder')
         
-        # Apply setup (e.g., copy context file, install skill)
+        # Apply setup (e.g., copy context file, install skill, override model)
         setup = arm_config.get('setup', {})
         if 'context_file' in setup:
             src = setup['context_file']
@@ -79,6 +79,13 @@ for arm_name, arm_config in design['arms'].items():
                 os.system(f'cp {src} {dst}')
             else:
                 os.system(f'rm -f {dst}')
+        if 'append_context' in setup:
+            dst = f'agents/{agent}/context.md'
+            existing = ''
+            try:
+                with open(dst) as f: existing = f.read()
+            except: pass
+            with open(dst, 'w') as f: f.write(existing.rstrip() + '\n' + setup['append_context'] + '\n')
         if 'install_skill' in setup:
             skill_name = setup['install_skill']
             src_dir = f'agents/shared/skills/{skill_name}'
@@ -86,6 +93,16 @@ for arm_name, arm_config in design['arms'].items():
             if os.path.isdir(src_dir):
                 os.makedirs(f'agents/{agent}/skills', exist_ok=True)
                 os.system(f'cp -r {src_dir} {dst_dir}')
+        if 'remove_skill' in setup:
+            skill_name = setup['remove_skill']
+            os.system(f'rm -rf agents/{agent}/skills/{skill_name}')
+        if 'model' in setup:
+            # Temporarily override model in agent.json
+            agent_json = f'agents/{agent}/agent.json'
+            with open(agent_json) as f: agent_cfg = json.load(f)
+            setup['_original_model'] = agent_cfg.get('model')
+            agent_cfg['model'] = setup['model']
+            with open(agent_json, 'w') as f: json.dump(agent_cfg, f, indent=2)
         
         print(f'  Run {run_idx + 1}/{design[\"runs_per_arm\"]}...', end=' ', flush=True)
         
@@ -127,11 +144,21 @@ for arm_name, arm_config in design['arms'].items():
 for arm_name, arm_config in design['arms'].items():
     setup = arm_config.get('setup', {})
     agent = arm_config.get('agent', 'coder')
-    if 'context_file' in setup:
+    if 'context_file' in setup or 'append_context' in setup:
         os.system(f'rm -f agents/{agent}/context.md')
     if 'install_skill' in setup:
         skill_name = setup['install_skill']
         os.system(f'rm -rf agents/{agent}/skills/{skill_name}')
+    if 'model' in setup and '_original_model' in setup:
+        agent_json = f'agents/{agent}/agent.json'
+        try:
+            with open(agent_json) as f: agent_cfg = json.load(f)
+            if setup['_original_model']:
+                agent_cfg['model'] = setup['_original_model']
+            else:
+                agent_cfg.pop('model', None)
+            with open(agent_json, 'w') as f: json.dump(agent_cfg, f, indent=2)
+        except: pass
 
 # Write results
 results_file = '$RESULTS_DIR/run-' + time.strftime('%Y%m%d-%H%M%S') + '.json'
