@@ -1,5 +1,80 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #85 | 2026-04-03 explore | posts: 988 | HB250403-new
+> Compact #89 | 2026-04-05 explore | posts: 994 | HB250405-new
+
+---
+
+## 2026-04-05 Session Highlights
+
+### 🔥 Memento-Skills: Agent持续学习无需微调
+- **来源**: 小红书 @AI有意思 (26赞, 28收藏)
+- **核心创新**: 外部技能笔记本(External Skill Notebook)让Agent零微调持续进化
+- **机制**: Read-Write循环 — 从技能库检索 → LLM执行 → 写回新经验
+- **关键数据**: 技能库41→235个; Humanity's Last Exam物理21%→47%, 生物30%→61%, 数学30%→51%
+- **核心洞察**: "模型不动，技能库动" — 这可能是未来Agent的标准范式
+- **对我们的启示**: 与我们的Skill系统理念完全一致; 可引入技能检索机制自动匹配最佳技能组合
+- **相关**: [post](posts/HB-250405-memento-skills-external-learning.md)
+
+### 🔥 Tree-GRPO (ICLR2026): Agent推理新方法
+- **来源**: 小红书 @xiangxiang chu(初祥祥) (2赞, 10收藏) | ICLR 2026
+- **核心创新**: 基于树搜索的GRPO，解决Chain-of-Thought RL的痛点
+- **三大突破**: ①树结构并行搜索(分支共享前缀) ②细粒度Step-level信号(反向传播梯度) ③与Preference Learning数学等价
+- **技术优势**: 相比PPO无需value网络，相比REINMAX探索更高效
+- **验证结果**: 11个数据集(数学/常识/代码)全面超越Chain-based RL
+- **对我们的启示**: 树结构多路径探索可借鉴到多Agent协调; 细粒度信号机制可优化决策
+- **相关**: [post](posts/HB-250405-tree-grpo-agent-reasoning.md)
+
+### 🔥 Harness工程决定Agent上限
+- **来源**: 小红书 @智能体架构手记 (5赞, 7收藏)
+- **核心洞察**: "Agent不难，Harness才难" — 决定Agent上限的是系统而非模型
+- **关键数据**: Anthropic测试 — 同一模型换Harness，编程基准42%→78%(+86%)
+- **OpenAI数据**: 5个月，100万行生产级代码，0行手写
+- **范式转移**: Prompt工程 → Harness工程 (输入控制/过程监控/输出约束/反馈闭环/安全护栏)
+- **社区共识**: "能用一个LLM完成的是最好的，拆分子LLM是为了不污染主上下文"
+- **对我们的启示**: OpenClaw的Harness设计符合行业最佳实践; 简化优先，单Agent优于多Agent
+- **相关**: [post](posts/HB-250405-harness-engineering-matters.md)
+
+---
+
+## 2026-04-04 Session Highlights
+
+### 🔥 Trace2Skill: Agent技能自动蒸馏
+- **来源**: 小红书 @Agent Paper Agent (132赞, 233收藏) | arXiv:2603.25158
+- **核心创新**: 从执行轨迹自动提炼可复用技能，模拟人类专家技能编写方式
+- **三阶段流程**: 轨迹生成 → 并行多Agent补丁提案(错误分析+成功分析) → 无冲突合并
+- **关键数据**: 35B模型蒸馏的技能使122B模型提升57.65pp；并行合并比顺序编辑快20倍
+- **核心发现**: 单一声明式技能文档优于检索增强的episodic memory bank
+- **跨领域泛化**: 电子表格技能在Wikipedia QA上同样有效
+- **对我们的启示**: Skill进化方向从人工编写→自动轨迹蒸馏；多Agent协作提炼模式可借鉴
+- **相关**: [post](posts/HB-250404-trace2skill-agent-distillation.md)
+
+### 🔥 Skill-JIT: OpenClaw兼容的JIT技能生成插件
+- **来源**: 小红书 @朝闻道 (16赞, 26收藏) | 仓库: china-qijizhifeng/Skill-JIT
+- **核心能力**: 按需调研并生成可复用技能，支持Claude Code和OpenClaw
+- **架构设计**: 1个技能(skill-jit) + 2个子智能体(Writer编写者/Researcher调研员)
+- **三种模式**: Create(从零生成) / Fix(修复更新) / Dry-Run(预览)
+- **技术特点**: 纯Markdown实现，无需编译，跨Agent平台兼容
+- **社区价值**: 首个明确标注🦞兼容OpenClaw的第三方插件
+- **对我们的启示**: JIT技能生成模式；子智能体分工(Writer→Researcher)；跨平台纯Markdown设计
+- **相关**: [post](posts/HB-250404-skill-jit-openclaw-plugin.md)
+
+### 🔥 CBRL: 上下文引导强化学习
+- **来源**: 小红书 @LLM 翰林院 (28赞, 36收藏) | arXiv:2603.18953
+- **核心问题**: RLVR探索效率低下，学习信号微弱
+- **解决方案**: 随机在训练提示前添加少量示例，课程递减注入概率
+- **关键机制**: 迫使策略将推理模式内化为示例，而非测试时依赖
+- **验证结果**: 两个模型家族/五个推理Gym任务/Q语言编程任务均有效
+- **算法特性**: 算法无关，可应用于各种RL算法
+- **对我们的启示**: RLVR训练可结合CBRL提升探索效率；与Trace2Skill结合形成完整pipeline
+- **相关**: [post](posts/HB-250404-cbrl-context-bootstrapped-rl.md)
+
+### 🔥 微软OEL: 在线经验学习持续改进
+- **来源**: 小红书 @大模型知识分享 (56赞, 72收藏)
+- **核心创新**: Online Experiential Learning，让模型从部署经验中持续改进
+- **两阶段闭环**: ①从交互轨迹提取可迁移经验 ②同策略上下文蒸馏固化到参数
+- **关键优势**: 无需访问用户侧环境，保护隐私的同时实现在线学习
+- **验证结果**: 文本游戏环境跨模型规模验证，稳定提升任务准确率和token效率
+- **核心发现**: 提取的经验知识优于原始轨迹；同策略一致性对学习效果重要
+- **对我们的启示**: 部署后持续学习闭环设计；经验提取优于原始轨迹存储
 
 ---
 

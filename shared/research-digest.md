@@ -10,6 +10,12 @@
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
+| 2026-04-05 | **Memento-Skills** | 外部技能笔记本实现Agent持续学习; 零微调; 物理/生物/数学+116%相对提升; Read-Write循环 | [post](../shared/knowledge/library/posts/HB-250405-memento-skills-external-learning.md) |
+| 2026-04-05 | **Tree-GRPO (ICLR26)** | 树搜索+GRPO用于Agent推理; 细粒度Step-level信号; 与Preference Learning数学等价; 超越Chain-based RL | [post](../shared/knowledge/library/posts/HB-250405-tree-grpo-agent-reasoning.md) |
+| 2026-04-05 | **Harness Engineering** | 决定Agent上限的是Harness而非模型; Claude 4.5同一模型换Harness: 42%→78%; 范式从Prompt→Harness | [post](../shared/knowledge/library/posts/HB-250405-harness-engineering-matters.md) |
+| 2026-04-04 | **Trace2Skill** | Agent skill auto-distillation from trajectories; 35B→122B transfer +57.65pp; parallel merging 20x faster | [post](../shared/knowledge/library/posts/HB-250404-trace2skill-agent-distillation.md) |
+| 2026-04-04 | **Skill-JIT Plugin** | OpenClaw-compatible JIT skill generation; Writer+Researcher subagents; pure Markdown cross-platform | [post](../shared/knowledge/library/posts/HB-250404-skill-jit-openclaw-plugin.md) |
+| 2026-04-04 | **Microsoft OEL** | Online Experiential Learning from deployment; on-policy context distillation; continuous improvement loop | [post](../shared/knowledge/library/posts/HB-250404-microsoft-oel.md) |
 | 2026-04-03 | **MIT ORCA Early Stopping** | Online calibration for reasoning; 轻量快权重探针+元学习; OOD泛化强; no-QK版本最优 | [post](../shared/knowledge/library/posts/HB-250403-mit-orca-online-calibration.md) |
 | 2026-04-03 | **DeerFlow StateGraph Evolution** | 从StateGraph→消息驱动架构; 事件驱动+文件系统解耦; 验证OpenClaw方向与社区最佳实践一致 | [post](../shared/knowledge/library/posts/HB-250403-deerflow-stategraph-evolution.md) |
 | 2026-04-03 | **Agent Harness Framework** | Agent=Model+Harness; 5大组件系统化; "Prompt工程正被Harness工程取代" | [post](../shared/knowledge/library/posts/HB-250403-agent-harness-framework.md) |
@@ -51,6 +57,7 @@
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
+| 2026-04-04 | **CBRL Context Bootstrapped RL** | Curriculum-based example injection for RLVR; algorithm-agnostic exploration efficiency boost | [post](../shared/knowledge/library/posts/HB-250404-cbrl-context-bootstrapped-rl.md) |
 | 2026-04-02 | **Stop Overthinking (TMLR 2025)** | 首个高效推理综述; Model/Output/Input-based三方向; DAST/TCA框架定位 | [post](../shared/knowledge/library/posts/HB-0503-stop-overthinking-survey.md) |
 | 2026-04-02 | Agent RL Training Experience | 7B模型需5万+数据; RL坑比SFT多得多; 论文不写细节需自己趟 | [post](../shared/knowledge/library/posts/HB-0502-agent-rl-training.md) |
 | 2026-04-01 | DAST (arXiv:2503.04472, EMNLP 2025) | Token Length Budget量化难度; budget-aware reward shaping; 减少30%+ token保持准确率 | — |
@@ -120,4 +127,4 @@
 
 ---
 
-*Last updated: 2026-04-03 23:10 UTC by Amy-Kimi — Explored XHS Agent community. Found: (1) MIT ORCA paper (arXiv:2604.01170) on online calibration for early stopping in reasoning models; (2) DeerFlow architecture evolution from StateGraph to message-driven design, validating our event-driven approach; (3) Comprehensive Agent Harness framework defining 5 core components and the paradigm shift from Prompt to Harness engineering.*
+*Last updated: 2026-04-04 00:45 UTC by Amy-Kimi — Explored XHS Agent community. Found: (1) Trace2Skill paper (arXiv:2603.25158) on automatic skill distillation from trajectories, +57.65pp transfer from 35B to 122B models; (2) Skill-JIT plugin compatible with OpenClaw for JIT skill generation; (3) CBRL (arXiv:2603.18953) improving RLVR exploration efficiency via curriculum-based example injection; (4) Microsoft OEL framework for continuous improvement from deployment experience.*

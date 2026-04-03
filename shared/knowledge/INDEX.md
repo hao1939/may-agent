@@ -155,6 +155,7 @@ The core theory chain. Start with SYNTH-001 (`library/deep-dives/synth-decision-
 | EXP-014 | incremental-context-loading scorer bug fix | **Complete** | Infrastructure fix — scorer bug, not agent behavior | knowledge/experiments/EXP-014/ |
 | EXP-015 | Workflow enforcement for tool avoidance (npx) | **Complete** | **0%→100% with workflow** (R≈0.90, n=5) → KE-007, KE-015 | knowledge/experiments/EXP-015/ |
 | EXP-016 | Cross-scenario meta-analysis of workflow effectiveness (20 pairs) | **Complete** | **80% prediction accuracy for Decision Topology**. Workflows help 40% (+32%), hurt 40% (-13%), neutral 20%. Ceiling-regresses pattern. Intra-phase boundary discovered. → KE-015 | knowledge/experiments/EXP-016/ |
+| EXP-017 | Environmental nudge for materialization (L4 mechanism test) | Designed | — (awaiting execution) | knowledge/experiments/EXP-017/ |
 
 ## Operational (not knowledge — reference only)
 
@@ -197,6 +198,16 @@ Collected by scout, amy, amy-kimi agents. Each item is a potential source for hy
 | library/deep-dives/cross-ref-camp-deliberation-decision-topology.md | Cross-ref: CAMP deliberation architecture → Decision Topology. Three-valued abstention maps to eliminable/essential/navigation. Seeds H-050, H-051 | 106 lines |
 | library/deep-dives/cross-ref-evaluation-separation-knowledge-action-gap.md | Cross-ref: Anthropic 3-agent GAN harness + Berkeley MAST + KE-005 → Self-evaluation failure is a Knowledge-Action Gap special case. Evaluation separation (temporal or agent-based) is the structural fix | 127 lines |
 | library/deep-dives/cross-ref-knowledge-action-gap-mechanism.md | The Knowledge-Action Gap: why workflows work mechanistically. LLMs have knowledge they don't activate; workflows constrain action spaces to force routing through existing knowledge | ~150 lines |
+| library/deep-dives/cross-ref-orca-calibration-dynamic-topology.md | Cross-ref: MIT ORCA online calibration → Dynamic Topology. Lightweight runtime probes for R-estimation. Simple signals beat complex classifiers. Asymmetric thresholds. | 130 lines |
+| library/deep-dives/cross-ref-skill-distillation-convergence.md | Cross-ref: Trace2Skill + OEL + Memento-Skills convergence. Distillation necessary but not sufficient — enforcement multiplier (13.5×) exceeds distillation multiplier (9×). Practical recommendation: accelerate skill-to-workflow conversion. | 119 lines |
+| library/deep-dives/cross-ref-harness-engineering-intra-phase-boundary.md | Cross-ref: Harness Engineering (HB-250403/05) × Intra-Phase Boundary Analysis. Six harness layers map to our L1-L7 hierarchy. Zone 1 (structural) proven; Zone 2 (contextual) is the frontier. DeerFlow StateGraph→message migration validates granularity limit. | 125 lines |
+| library/posts/HB-250405-memento-skills-external-learning.md | Memento-Skills: External skill notebook, zero-param learning, +116% avg. Read-Write cycle, 41→235 skills | ~50 lines |
+| library/posts/HB-250405-tree-grpo-agent-reasoning.md | Tree-GRPO (ICLR26): Tree-based GRPO for agent reasoning. Fine-grained step-level signals, tree parallel search | ~50 lines |
+| library/posts/HB-250405-harness-engineering-matters.md | Harness Engineering: Claude 4.5 same model, different harness: 42%→78%. Harness > model for agent quality | ~45 lines |
+| library/posts/HB-250404-microsoft-oel.md | Microsoft OEL: Online Experiential Learning from deployment. Two-phase extraction+distillation loop. Quality flywheel | ~80 lines |
+| library/posts/HB-250404-trace2skill-agent-distillation.md | Trace2Skill: Auto skill distillation from trajectories. +57.65pp cross-model transfer. Declarative > episodic | ~60 lines |
+| library/posts/HB-250404-skill-jit-openclaw-plugin.md | Skill-JIT: OpenClaw JIT skill generation plugin. Writer+Researcher subagents. Pure Markdown | ~55 lines |
+| library/posts/HB-250404-cbrl-context-bootstrapped-rl.md | CBRL: Context-bootstrapped RL. Curriculum example injection for exploration efficiency | ~50 lines |
 | library/posts/HB-1775-agent-memory-sota.md | Layered Memory Architecture: sensory→short-term→long-term with IPC-based forgetting. Chinese source (小红书) | ~60 lines |
 | library/posts/HB-1775-anthropic-harness-design.md | Anthropic's 3-agent GAN architecture (Planner→Generator→Evaluator). Key: "context anxiety" and self-evaluation failure. Chinese source | ~70 lines |
 | library/posts/HB-1775-berkeley-mast-multi-agent-failures.md | Berkeley MAST failure taxonomy: task setup, communication breakdown, weak verification. Surface fixes +10pp, architectural changes required. Chinese source | ~60 lines |

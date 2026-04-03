@@ -28,7 +28,7 @@ Each skill has ONE status:
 | check-state | ⚪ untested | | | | needs gym test |
 | task-adherence | ⚪ untested | | | | needs gym test |
 | verify-before-finish | ✅ proven (as workflow) | partial-verification-trap: 2-phase workflow forces edge-case testing before finish. 5/6→6/6 | Text injection zero effect (exp-229). Only works as workflow enforcement. | | exp-224: partial-verification-trap-workflow 6/6 (2 runs) vs baseline 5/6. PROMOTED. |
-| classify-then-act | ⚪ untested | | | | needs gym test |
+| classify-then-act | ❌ disproven (text) | judgment-ambiguous-spec: text-injected skill has 0% effect. Agent still modifies files despite explicit classify-first protocol with hard stop rules. | 19th consecutive text-injection failure. Fixer-prior too deep for any text-based intervention. Workflow variant (judgment-ambiguous-spec-workflow) works at 75%. | | EXP-017: 1/3 treatment (N=2) vs 1/3 baseline. Zero delta. |
 | scope-discipline | ⚪ untested | | | | needs gym test |
 | tool-discipline | ✅ proven (as workflow) | context-npx-avoidance: 2-phase workflow (discover → execute) prevents habitual npx usage. 0/3→2/2 on no-npx-attempt. | Text injection fails (npx warning in system prompt is ignored). Grep-first-reading variant fails (different mechanism). | | EXP-015: context-npx-avoidance-workflow 6/7 (2 runs) vs baseline 3.3/5. **0%→100% on critical check.** |
 | obstacle-pivot | ✅ proven (as workflow) | behavior-escalation-stubborn: 2-phase workflow (assess → act/escalate) converts 0% escalation to 100%. The agent KNOWS the file is binary but can't translate knowledge into escalation without forced assessment phase. | Text injection untested (likely fails per 0/19 pattern). Only works as workflow enforcement. | | EXP-013: behavior-escalation-stubborn-workflow 6/6 (3/3 runs) vs baseline 0/3 escalated-properly. **STRONGEST A/B result ever: 0%→100% on critical check.** |
@@ -46,7 +46,8 @@ Each skill has ONE status:
 **Routing rule**: Use Decision Topology R ratio (EXP-011) to predict. R > 0.5 → workflow helps. R < 0.3 → workflow hurts.
 - ✅ Works for: assessment/discovery/verification (escalation 0→100%, npx avoidance 0→100%, test diagnosis 63→100%)
 - ❌ Fails for: materialization cadence, tool habits (grep-first), already-ceiling scenarios
-- 🔍 Untested: scope discipline, task adherence, classify-then-act
+- 🔍 Untested: scope discipline, task adherence
+- ❌ Disproven (text): classify-then-act (EXP-017: 0% effect on fixer-prior)
 Three skills are now PROMOTED as workflows, ready for deployment consideration:
 1. **verify-before-finish** (partial-verification-trap-workflow: 5/6→6/6)
 2. **evidence-over-narrative** (misleading-test-fix-workflow: 5/8→11/11)
