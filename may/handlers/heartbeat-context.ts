@@ -84,11 +84,11 @@ interface SystemSnapshot {
 // ── Core Logic ────────────────────────────────────────────────────────
 
 function scanRecentSessions(baseDir: string, windowMs: number): SessionInfo[] {
-  const historyDir = join(baseDir, ".state", "sessions", "history");
-  if (!existsSync(historyDir)) return [];
+  const sessionsDir = join(baseDir, ".state", "sessions");
+  if (!existsSync(sessionsDir)) return [];
 
   const cutoff = Date.now() - windowMs;
-  const entries = readdirSync(historyDir).filter((d) => d.startsWith("s_"));
+  const entries = readdirSync(sessionsDir).filter((d) => d.startsWith("s_"));
 
   // Sort by timestamp descending, take only MAX_SESSIONS_TO_SCAN
   const sorted = entries
@@ -103,19 +103,19 @@ function scanRecentSessions(baseDir: string, windowMs: number): SessionInfo[] {
   const sessions: SessionInfo[] = [];
 
   for (const entry of sorted) {
-    const metaPath = join(historyDir, entry.dir, "meta.json");
+    const metaPath = join(sessionsDir, entry.dir, "meta.json");
     if (!existsSync(metaPath)) continue;
 
     try {
       const meta = JSON.parse(readFileSync(metaPath, "utf-8"));
-      const sessionDir = join(historyDir, entry.dir);
+      const sessionPath = join(sessionsDir, entry.dir);
 
       // Get total directory size
       let sizeKB = 0;
       try {
-        const files = readdirSync(sessionDir);
+        const files = readdirSync(sessionPath);
         for (const f of files) {
-          const fPath = join(sessionDir, f);
+          const fPath = join(sessionPath, f);
           try {
             const st = statSync(fPath);
             if (st.isFile()) sizeKB += Math.ceil(st.size / 1024);
