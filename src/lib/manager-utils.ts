@@ -287,20 +287,15 @@ export interface SubagentManagerOptions {
    *  Set to 0 to disable retries (useful in tests). */
   infraRetryMax?: number;
   /**
-   * Called after a task session completes (done/error/interrupted).
-   * Fires after archival. Use for post-session tasks like evaluation.
-   * NOT called for the chat session transitioning to "idle".
+   * @deprecated Use `bus` instead. Called after a task session completes.
    */
   onSessionComplete?: (info: SessionInfo) => void;
   /**
-   * Called when any new session starts (via run()).
-   * Use to subscribe to agent events for UI streaming.
-   * This is the single point where all session creation is observed.
+   * @deprecated Use `bus` instead. Called when any new session starts.
    */
   onSessionStart?: (agentName: string, sessionId: string) => void;
   /**
-   * Called when an agent reports being blocked (via report_blocked tool).
-   * Used to route escalations to May's session.
+   * @deprecated Use `bus` instead. Called when an agent reports being blocked.
    */
   onSessionBlocked?: (agentName: string, sessionId: string, reason: string) => void;
   /**
@@ -308,4 +303,18 @@ export interface SubagentManagerOptions {
    * per API endpoint to prevent rate limit aborts.
    */
   apiGate?: import("./api-gate.js").ApiGate;
+  /**
+   * EventBus for session lifecycle events. When set, the manager emits
+   * session_start, session_end, and agent streaming events directly
+   * instead of going through callbacks.
+   */
+  bus?: ManagerEventBus;
+}
+
+/**
+ * Minimal event bus interface — the manager only needs emit().
+ * Avoids coupling the library to the app's EventBus class.
+ */
+export interface ManagerEventBus {
+  emit(event: Record<string, unknown>): void;
 }
