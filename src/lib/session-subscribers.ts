@@ -243,3 +243,57 @@ export function createProgressWriter(projectRoot: string): (event: AgentEvent) =
     }
   };
 }
+
+// ── Stuck Detection ─────────────────────────────────────────────────────
+// Detects sessions making no progress (consecutive turns with only errors).
+// Emits cancel event on the bus when threshold is hit.
+
+const STUCK_WARNING_THRESHOLD = 4;
+const STUCK_TERMINATE_THRESHOLD = 6;
+
+interface StuckState {
+  consecutiveErrorTurns: number;
+  warned: boolean;
+}
+
+export function createStuckDetector(
+  emitCancel: (sessionId: string, reason: string) => void,
+): (event: AgentEvent) => void {
+  const state = new Map<string, StuckState>();
+
+  return (event: AgentEvent) => {
+    if (event.type === "session_start") {
+      state.set(event.sessionId, { consecutiveErrorTurns: 0, warned: false });
+      return;
+    }
+
+    if (event.type === "session_end") {
+      state.delete(event.sessionId);
+      return;
+    }
+
+    if (event.type !== "turn_end") return;
+    const s = state.get(event.sessionId);
+    if (!s) return;
+
+    const errorOnly = (event.errorCount ?? 0) > 0 && event.toolCalls === (event.errorCount ?? 0);
+
+    if (errorOnly) {
+      s.consecutiveErrorTurns++;
+    } else if (event.toolCalls > 0) {
+      s.consecutiveErrorTurns = 0;
+      s.warned = false;
+    }
+
+    if (s.consecutiveErrorTurns >= STUCK_WARNING_THRESHOLD && !s.warned) {
+      s.warned = true;
+      log("warn", `[stuck] ${event.agent} (${event.sessionId}) has ${s.consecutiveErrorTurns} consecutive error turns`);
+    }
+
+    if (s.consecutiveErrorTurns >= STUCK_TERMINATE_THRESHOLD) {
+      log("error", `[stuck] ${event.agent} (${event.sessionId}) stuck at ${s.consecutiveErrorTurns} error turns — cancelling`);
+      emitCancel(event.sessionId, `Stuck: ${s.consecutiveErrorTurns} consecutive error-only turns`);
+      state.delete(event.sessionId);
+    }
+  };
+}

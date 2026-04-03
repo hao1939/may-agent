@@ -35,7 +35,7 @@ export type SessionEvent =
   | { type: "text"; sessionId: string; agent: string; text: string }
   | { type: "tool_call"; sessionId: string; agent: string; tool: string; args: unknown }
   | { type: "tool_result"; sessionId: string; agent: string; tool: string; preview: string; isError: boolean }
-  | { type: "turn_end"; sessionId: string; agent: string; toolCalls: number; durationMs: number; turnCount?: number }
+  | { type: "turn_end"; sessionId: string; agent: string; toolCalls: number; durationMs: number; turnCount?: number; errorCount?: number }
   | { type: "session_start"; sessionId: string; agent: string; task: string; parentSessionId?: string; workspacePath?: string }
   | {
       type: "session_end";

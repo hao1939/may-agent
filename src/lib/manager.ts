@@ -8,13 +8,10 @@ import {
   formatMemoryTimestamp,
   isProcessAlive,
   truncateForPrompt,
-  isToolError,
   MEMORY_TASK_MAX,
   MEMORY_SUMMARY_MAX,
   INFRA_RETRY_MAX,
   TURN_BUDGET_WARNING_DEFAULT,
-  STUCK_WARNING_THRESHOLD,
-  STUCK_TERMINATE_THRESHOLD,
 } from "./manager-utils.js";
 import type { RegisteredAgent, ActiveSession, RunOptions, SubagentManagerOptions } from "./manager-utils.js";
 import { createFinishGuard } from "./tools/finish-guard.js";
@@ -28,14 +25,11 @@ import { composeGuards } from "./tools/compose-guards.js";
 export {
   generateId,
   truncateForPrompt,
-  isToolError,
   computeToolArgsKey,
   STATE_CHANGING_TOOLS,
   INFRA_RETRY_MAX,
   TOOL_PIVOT_LIMIT,
   TURN_BUDGET_WARNING_DEFAULT,
-  STUCK_WARNING_THRESHOLD,
-  STUCK_TERMINATE_THRESHOLD,
 } from "./manager-utils.js";
 export type { RegisteredAgent, ActiveSession, RunOptions, SubagentManagerOptions } from "./manager-utils.js";
 import type {
@@ -227,6 +221,7 @@ export class SubagentManager {
   }
 
   /** Subscribe to message_end events and persist messages to session JSONL. */
+  /** Subscribe to agent events for message persistence and turn counting. */
   private subscribeForPersistence(session: ActiveSession): void {
     const persistDir = this.registry.persistDir;
     const { sessionId } = session;
@@ -234,65 +229,10 @@ export class SubagentManager {
       if (event.type === "message_end") {
         appendSessionMessage(persistDir, sessionId, event.message);
 
-        // ── Count tool errors/successes from tool_result messages ──────
-        if (event.message.role === "user" && Array.isArray(event.message.content)) {
-          for (const block of event.message.content as any[]) {
-            if (block.type === "tool_result") {
-              const text =
-                typeof block.content === "string"
-                  ? block.content
-                  : Array.isArray(block.content)
-                    ? block.content
-                        .filter((b: any) => b.type === "text")
-                        .map((b: any) => b.text)
-                        .join(" ")
-                    : "";
-              if (block.is_error || isToolError(text)) {
-                session.currentTurnErrors++;
-              } else {
-                session.currentTurnSuccesses++;
-              }
-            }
-          }
-        }
-
         if (event.message.role === "assistant") {
           session.turnCount++;
 
-          // ── Stuck Detection ──────────────────────────────────────────
-          // At each turn boundary, check if the previous turn had only errors.
-          // If so, increment consecutiveErrorTurns. If it had any success, reset.
-          if (session.currentTurnErrors > 0 && session.currentTurnSuccesses === 0) {
-            session.consecutiveErrorTurns++;
-          } else if (session.currentTurnSuccesses > 0) {
-            session.consecutiveErrorTurns = 0;
-            session.stuckWarningInjected = false; // Reset warning if agent recovered
-          }
-          // Reset per-turn counters for the next turn
-          session.currentTurnErrors = 0;
-          session.currentTurnSuccesses = 0;
-
-          // Inject stuck warning at threshold
-          if (session.consecutiveErrorTurns >= STUCK_WARNING_THRESHOLD && !session.stuckWarningInjected) {
-            session.stuckWarningInjected = true;
-            log(
-              "warn",
-              `STUCK_WARNING: Agent ${session.agentName} (${sessionId}) has ${session.consecutiveErrorTurns} consecutive error turns. Warning injected.`,
-            );
-          }
-
-          // Auto-terminate at terminate threshold
-          if (session.consecutiveErrorTurns >= STUCK_TERMINATE_THRESHOLD) {
-            log(
-              "error",
-              `STUCK_TERMINATE: Agent ${session.agentName} (${sessionId}) has ${session.consecutiveErrorTurns} consecutive error turns. Auto-terminating.`,
-            );
-            session.error = `Stuck Detection: ${session.consecutiveErrorTurns} consecutive turns with only errors. Session auto-terminated.`;
-            session.agent.abort();
-          }
-
-          // ── maxTurns Enforcement ─────────────────────────────────────
-          // Gracefully terminate sessions that exceed their turn budget.
+          // maxTurns enforcement — gracefully terminate sessions exceeding budget
           if (session.maxTurns > 0 && session.turnCount >= session.maxTurns) {
             log(
               "warn",
@@ -301,8 +241,6 @@ export class SubagentManager {
             session.error = `Turn limit reached: ${session.turnCount}/${session.maxTurns} turns. Session terminated.`;
             session.agent.abort();
           }
-
-          // Activity progress tracking moved to ActivityWriter subscriber
         }
       }
     });
