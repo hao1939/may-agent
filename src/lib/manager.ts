@@ -1650,6 +1650,11 @@ export class SubagentManager {
     }));
   }
 
+  /** Get API gate status for observability. */
+  apiGateStatus(): import("./api-gate.js").ApiGateStatus[] {
+    return this.apiGate?.status() ?? [];
+  }
+
   /** List all registered agents (name, description, domain). */
   listAgents(): Array<{ name: string; description: string; domain: string }> {
     return Array.from(this.agents.values()).map((a) => ({
