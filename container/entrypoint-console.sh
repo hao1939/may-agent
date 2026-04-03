@@ -42,20 +42,8 @@ fi
 # Add host node bin to PATH for CLI coding agents (claude, codex, gemini)
 for d in /home/example-user/.nvm/versions/node/*/bin; do [ -d "$d" ] && export PATH="$d:$PATH" && break; done
 
-# Start web UI — prefer source (hot-reload), fall back to compiled binary
-WEB_SRC="${PROJECT_ROOT:-/app}/src/app/ui/web.ts"
-WEB_BIN="${PROJECT_ROOT:-/app}/bundle/may-agent-web"
-[ -x "$WEB_BIN" ] || WEB_BIN=/usr/local/bin/may-agent-web
-# Find bun from host mount
-BUN_CMD=""
-for d in /home/example-user/.bun/bin /app/.state/.bun/bin; do [ -x "$d/bun" ] && BUN_CMD="$d/bun" && break; done
-if [ -f "$WEB_SRC" ] && [ -n "$BUN_CMD" ]; then
-  "$BUN_CMD" "$WEB_SRC" --state-dir "${STATE_DIR:-/app/.state}" --port "${WEB_PORT:-8080}" &
-  echo "Web UI started from source on port ${WEB_PORT:-8080}"
-elif [ -x "$WEB_BIN" ]; then
-  "$WEB_BIN" --state-dir "${STATE_DIR:-/app/.state}" --port "${WEB_PORT:-8080}" &
-  echo "Web UI started on port ${WEB_PORT:-8080}"
-fi
+# Web UI now runs in-process (started by may.ts, supervised by launcher).
+# No separate background process needed.
 
 # Prefer bind-mounted binary (dev hot-reload), fall back to baked-in
 MAY_BIN="${PROJECT_ROOT:-/app}/bundle/may-agent"
