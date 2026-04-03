@@ -110,9 +110,10 @@
   .msg.assistant.md-rendered td, .msg.assistant.md-rendered th { padding: 4px 8px; border: 1px solid var(--border); }
   .msg.assistant.md-rendered strong { color: var(--fg); }
 </style>
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked@15.0.12/marked.min.js"></script>
 </head>
 <body>
+<div id="global-error" style="display:none;background:var(--red);color:white;padding:8px 16px;font-size:12px;position:fixed;top:0;left:0;right:0;z-index:999"></div>
 <div class="header">
   <h1>may-agent</h1>
   <div class="tabs">
@@ -173,6 +174,16 @@
 </div>
 
 <script>
+// ── Global error handler ──────────────────────────────────────────────
+window.onerror = function(msg, url, line, col, err) {
+  const errDiv = document.getElementById('global-error');
+  if (errDiv) {
+    errDiv.style.display = 'block';
+    errDiv.textContent = `JS Error: ${msg} (${url}:${line}:${col})`;
+  }
+  console.error('Global error:', msg, url, line, col, err);
+};
+
 // ── State ─────────────────────────────────────────────────────────────
 let currentTab = location.hash.slice(1) || 'dashboard';
 let offset = 0;
