@@ -1063,6 +1063,21 @@ export class SubagentManager {
     }
 
     if (this.onSessionComplete) {
+      // Extract last assistant text as outcome (useful for interrupted session recovery)
+      let outcome: string | undefined;
+      const messages = session.agent.state.messages;
+      for (let i = messages.length - 1; i >= 0; i--) {
+        if (messages[i].role === "assistant") {
+          const textParts = (messages[i].content as Array<{ type: string; text?: string }>)
+            .filter((c) => c.type === "text" && c.text)
+            .map((c) => c.text!);
+          if (textParts.length > 0) {
+            outcome = textParts.join(" ").slice(0, 500);
+            break;
+          }
+        }
+      }
+
       const info: SessionInfo = {
         sessionId: session.sessionId,
         agent: session.agentName,
@@ -1073,6 +1088,7 @@ export class SubagentManager {
         runtime: formatDuration(session.endedAt - session.startedAt),
         outputDir: session.outputDir,
         error: session.error,
+        outcome,
         parentSessionId: session.parentSessionId,
         workflowRunId: session.workflowRunId,
         stepLabel: session.stepLabel,

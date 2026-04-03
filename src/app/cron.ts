@@ -721,6 +721,46 @@ export class Cron {
 
         // common-sense.md is now loaded in the system prompt (manager.ts resolveSystemPrompt)
         // instead of here, so Anthropic prompt caching can cache it across sessions.
+
+        // Inject last interrupted session info — helps agents resume research
+        try {
+          const db = getDb(this.persistDir);
+          const lastInterrupted = db
+            .prepare(
+              `SELECT sessionId, task, outcome, error, opCount, startedAt
+               FROM sessions
+               WHERE agent = ? AND status = 'interrupted'
+               ORDER BY startedAt DESC LIMIT 1`,
+            )
+            .get(agentName) as {
+            sessionId: string;
+            task: string;
+            outcome: string | null;
+            error: string | null;
+            opCount: number | null;
+            startedAt: number;
+          } | null;
+
+          if (lastInterrupted) {
+            const ago = Math.round((Date.now() - lastInterrupted.startedAt) / 60000);
+            // Only inject if the interruption was recent (within 2 intervals)
+            if (ago < (entry.intervalMs / 60000) * 2) {
+              const lines = [
+                `Your last session (${ago}min ago) was interrupted after ${lastInterrupted.opCount ?? "?"} ops.`,
+                lastInterrupted.error ? `Reason: ${lastInterrupted.error.slice(0, 100)}` : "",
+                lastInterrupted.outcome ? `Last progress: ${lastInterrupted.outcome.slice(0, 200)}` : "",
+                `Consider resuming that work if it was valuable.`,
+              ]
+                .filter(Boolean)
+                .join("\n");
+              injections.push(
+                `## Injected: last session interrupted\n\n<retrieved_state source="session-db">\n${lines}\n</retrieved_state>`,
+              );
+            }
+          }
+        } catch {
+          // Non-fatal
+        }
       } catch {
         // Non-fatal
       }
