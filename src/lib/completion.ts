@@ -8,10 +8,9 @@
  * Pipeline: detectErrors → clearPostFinishErrors → handleOverflow → determineOutcome
  */
 
-import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { SessionInfo } from "./types.js";
 import type { ActiveSession, RegisteredAgent } from "./manager-utils.js";
-import { formatDuration, extractLastAssistantText } from "./manager-utils.js";
+import { formatDuration } from "./manager-utils.js";
 import { hasFinishToolCall, extractFinishParams } from "./manager-retry.js";
 import { isOverflowError, extractProgress, writeProgressFile } from "./overflow.js";
 

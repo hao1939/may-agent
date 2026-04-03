@@ -46,9 +46,9 @@ function makeContext(
 }
 
 describe("runWatchdog", () => {
-  it("cancels sessions exceeding default timeout (30 min)", () => {
+  it("cancels sessions exceeding default timeout (60 min)", () => {
     const now = Date.now();
-    const ctx = makeContext([{ agent: "coder", sessionId: "s1", status: "running", startedAt: now - 35 * 60 * 1000 }]);
+    const ctx = makeContext([{ agent: "coder", sessionId: "s1", status: "running", startedAt: now - 65 * 60 * 1000 }]);
     const result = runWatchdog(ctx, {});
 
     expect(result.checked).toBe(1);
@@ -70,8 +70,8 @@ describe("runWatchdog", () => {
 
   it("warns sessions at >75% of timeout", () => {
     const now = Date.now();
-    // 24 min = 80% of 30 min default
-    const ctx = makeContext([{ agent: "coder", sessionId: "s1", status: "running", startedAt: now - 24 * 60 * 1000 }]);
+    // 50 min = 83% of 60 min default
+    const ctx = makeContext([{ agent: "coder", sessionId: "s1", status: "running", startedAt: now - 50 * 60 * 1000 }]);
     const result = runWatchdog(ctx, {});
 
     expect(result.warned).toHaveLength(1);
@@ -122,10 +122,10 @@ describe("runWatchdog", () => {
   it("respects per-agent timeout overrides", () => {
     const now = Date.now();
     const ctx = makeContext([
-      // evaluator has 45 min default timeout — 35 min should be safe
-      { agent: "evaluator", sessionId: "s1", status: "running", startedAt: now - 35 * 60 * 1000 },
-      // coder has 30 min default — 35 min should be cancelled
-      { agent: "coder", sessionId: "s2", status: "running", startedAt: now - 35 * 60 * 1000 },
+      // evaluator has 90 min override — 65 min should be safe
+      { agent: "evaluator", sessionId: "s1", status: "running", startedAt: now - 65 * 60 * 1000 },
+      // coder has 60 min default — 65 min should be cancelled
+      { agent: "coder", sessionId: "s2", status: "running", startedAt: now - 65 * 60 * 1000 },
     ]);
     const result = runWatchdog(ctx, {});
 
