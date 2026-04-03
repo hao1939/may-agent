@@ -257,10 +257,37 @@ function escalateToHuman(agent: string, reason: string): void {
   telegramAlert(`⚠️ *Agent Blocked*\n${agent} — ${reason}`);
 }
 
+// ── API concurrency gate ───────────────────────────────────────────────
+import { ApiGate } from "../lib/api-gate.js";
+
+const apiGate = new ApiGate(
+  {
+    defaultConcurrency: parseInt(process.env.API_GATE_CONCURRENCY ?? "4", 10),
+    overrides: process.env.API_GATE_OVERRIDES ? JSON.parse(process.env.API_GATE_OVERRIDES) : undefined,
+  },
+  (event) => {
+    // Emit gate events on the bus for observability
+    if (event.action === "queued") {
+      bus.emit({
+        type: "log",
+        level: "info",
+        message: `[api-gate] ${event.agent} (${event.sessionId.slice(0, 12)}) queued for ${event.endpoint.slice(0, 30)}... (${event.active}/${event.active} active, ${event.queued} waiting)`,
+      });
+    } else if (event.action === "acquired" && event.waitMs) {
+      bus.emit({
+        type: "log",
+        level: "info",
+        message: `[api-gate] ${event.agent} acquired slot after ${event.waitMs}ms wait (${event.active} active, ${event.queued} waiting)`,
+      });
+    }
+  },
+);
+
 const manager = new SubagentManager({
   persistDir: PERSIST_DIR,
   projectRoot: PROJECT_ROOT,
   infraRetryMax: 3,
+  apiGate,
   onSessionStart: (agentName, sessionId) => {
     attachAgentEvents(agentName, sessionId);
     setAgentSessionId(agentName, sessionId);

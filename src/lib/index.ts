@@ -177,3 +177,5 @@ export type {
 } from "./context-learn.js";
 export { loadAgents, reloadAgents, validateAgentConfig } from "../app/agent-loader.js";
 export type { AgentConfig, AgentLoaderOptions, LoadResult, ValidationError } from "../app/agent-loader.js";
+export { ApiGate } from "./api-gate.js";
+export type { ApiGateConfig, ApiGateStatus } from "./api-gate.js";
