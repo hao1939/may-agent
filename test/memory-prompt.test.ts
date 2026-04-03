@@ -5,6 +5,8 @@ import { tmpdir } from "node:os";
 import { memoryPath, appendMemoryEntry, readMemoryEntries } from "../src/lib/persistence.js";
 import type { MemoryEntry } from "../src/lib/persistence.js";
 import { SubagentManager } from "../src/lib/manager.js";
+import { EventBus } from "../src/app/event-bus.js";
+import { createMemoryWriter } from "../src/lib/session-subscribers.js";
 import type { Model } from "@mariozechner/pi-ai";
 
 function fakeModel(): Model<any> {
@@ -380,7 +382,9 @@ describe("Memory auto-append on completion", () => {
   });
 
   it("appends a memory entry after session completes", async () => {
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const bus = new EventBus();
+    bus.subscribe(createMemoryWriter(persistDir));
+    const manager = new SubagentManager({ persistDir, infraRetryMax: 0, bus });
 
     manager.register({
       name: "auto-mem",
@@ -405,7 +409,9 @@ describe("Memory auto-append on completion", () => {
   });
 
   it("appends memory entries for multiple sessions", async () => {
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const bus = new EventBus();
+    bus.subscribe(createMemoryWriter(persistDir));
+    const manager = new SubagentManager({ persistDir, infraRetryMax: 0, bus });
 
     manager.register({
       name: "multi-mem",
