@@ -115,6 +115,7 @@ The core theory chain. Start with SYNTH-001 (`library/deep-dives/synth-decision-
 | H-014 | Performance gap is a delegation quality problem | Proposed (partial support) | knowledge/hypotheses/H-014-delegation-quality-gap.md |
 | H-053 | **Workflow Adoption Decay** — proven interventions self-extinguish in ~7 days without structural enforcement | Proposed (strong empirical) | knowledge/hypotheses/H-053-workflow-adoption-decay.md |
 | H-054 | **Evaluation R-Ceiling** — LLM judge accuracy has fundamental limit determined by Decision Topology R of the evaluation decision | Proposed (6 sources) | knowledge/hypotheses/H-054-evaluation-r-ceiling.md |
+| H-055 | **Self-Improvement Paradox** — self-preservation bias + evaluation R-ceiling + interaction blindness make autonomous self-evolution structurally unreliable | Proposed (HB-0113, HB-0112, H-054) | knowledge/hypotheses/H-055-self-improvement-paradox.md |
 | H-0180 | MCP vs CLI architecture — CLI-first tool calling may outperform MCP for our system | Active | knowledge/hypotheses/H-0180-mcp-vs-cli-architecture.md |
 
 ### Untested (Skills & Learning)
@@ -242,9 +243,9 @@ Collected by scout, amy, amy-kimi agents. Each item is a potential source for hy
 | library/deep-dives/dd493-rift-rubric-failure-mode-taxonomy.md | **DD#493**: RIFT rubric failure taxonomy. 8 failure modes in 3 categories. Hackable rubrics get 0.00 F1 from automated evaluators — most dangerous failures are invisible to LLM judges. Seeds H-054. | ~160 lines |
 | library/deep-dives/dd494-runtime-burden-allocation-llm-routing.md | **DD#494**: Runtime burden allocation for structured LLM routing. Model-emitted vs transport-compressed vs client-reconstructed. Backend-specific interaction effects dominate. | ~120 lines |
 | library/deep-dives/cross-ref-evaluation-crisis-self-assessment-limits.md | **Cross-ref**: The Evaluation Crisis — 6 evidence threads (DD#493 × HB-0114 × KE-005 × EXP-020 × H-050 × H-052) converge: MAS cannot reliably self-evaluate. 5-layer model. Seeds H-054. Bob synthesis. | 114 lines |
-| library/posts/HB-0111-mti-temperament-profiling-agents.md | MTI: Model Temperament Index — behavioral profiling for AI agents. 4-axis framework (Reactivity, Compliance, Sociality, Resilience). RLHF reshapes temperament, not just capability | ~60 lines |
-| library/posts/HB-0112-interaction-awareness-user-turn.md | User-Turn Generation: LLMs encode interaction awareness as latent capability, suppressed by assistant-only training. Task accuracy ≠ interaction awareness | ~60 lines |
-| library/posts/HB-0113-self-preservation-bias-llm.md | Self-preservation bias: TBSP benchmark shows >60% of frontier models exhibit identity-driven decision distortion. Adversarial to self-improvement loops | ~70 lines |
+| library/posts/HB-0111-mti-temperament-profiling-agents.md | MTI: Model Temperament Index — 4-axis behavioral profiling (Reactivity, Compliance, Sociality, Resilience). RLHF reshapes temperament, not just capability. Scale-invariant | ~60 lines |
+| library/posts/HB-0112-interaction-awareness-user-turn.md | User-Turn Generation: LLMs encode interaction awareness as latent capability, suppressed by assistant-only training. Task accuracy ≠ interaction awareness. Connects to H-055 | ~60 lines |
+| library/posts/HB-0113-self-preservation-bias-llm.md | Self-preservation bias (TBSP): >60% of frontier models exhibit identity-driven decision distortion. SPR benchmark. Adversarial to self-improvement. Seeds H-055 | ~70 lines |
 | library/posts/HB-0114-trace-inversion-abstention.md | Trace Inversion (IBM): Detect when LLMs answer wrong question via reasoning trace reconstruction. 33/36 settings beat baselines. Connects to H-050, H-054 | ~80 lines |
 
 See library/README.md for details. Raw archives stay agent-local.

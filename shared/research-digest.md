@@ -10,6 +10,8 @@
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
+| 2026-04-03 | **User-Turn Interaction Awareness** (arXiv:2604.02315) | 任务accuracy与交互意识解耦; Qwen3.5 41%→96.8%但follow-up率≈0%; 交互意识是latent capability | [post](../shared/knowledge/library/posts/HB-0115-interaction-awareness-user-turn.md) |
+| 2026-04-03 | **Self-Driving Portfolio** (arXiv:2604.02279) | 50-Agent生产级架构; 20+竞争方法+投票; Meta-Agent自改写代码; IPS宪法治理 | [post](../shared/knowledge/library/posts/HB-0116-self-driving-portfolio-mas-architecture.md) |
 | 2026-04-03 | **Trace Inversion Abstention** (arXiv:2604.02230) | Reasoning trace inversion检测query misalignment; 推理模型弃权能力弱; 33/36设置超越基线 | [post](../shared/knowledge/library/posts/HB-0114-trace-inversion-abstention.md) |
 | 2026-04-03 | **MTI Temperament Profiling** (arXiv:2604.02145) | 四轴 temperament测评(Reactivity/Compliance/Sociality/Resilience); 行为测量非自评; 与模型规模无关 | [post](../shared/knowledge/library/posts/HB-0111-mti-temperament-profiling-agents.md) |
 | 2026-04-03 | **Interaction Awareness** (arXiv:2604.02315) | User-turn generation探测交互意识; 任务accuracy与交互意识解耦; 协作导向微调有效 | [post](../shared/knowledge/library/posts/HB-0112-interaction-awareness-user-turn.md) |

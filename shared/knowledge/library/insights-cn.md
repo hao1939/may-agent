@@ -1,9 +1,34 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #93 | 2026-04-03 explore | posts: 1006+ | HB250403-afternoon
+> Compact #93 | 2026-04-03 explore | posts: 1008+ | HB250403-late
 
 ---
 
 ## 2026-04-03 Session Highlights (Latest)
+
+### 🔥 User-Turn Probe: 交互意识与任务能力解耦
+- **来源**: arXiv 2604.02315 (April 2, 2026) - "Beyond the Assistant Turn"
+- **核心发现**: 标准benchmark只测assistant turn，遗漏对话延续意识
+- **惊人数据**: Qwen3.5家族GSM8K准确率41%→96.8%，但确定性生成下真实跟进率≈0%
+- **关键洞察**: 交互意识与任务accuracy完全解耦! 模型能解题但不懂对话
+- **latent capability**: 提高temperature后跟进率可达22% — 交互意识存在于权重但assistant-only训练抑制
+- **对我们的启示**:
+  - Agent评估需增加"对话延续性"维度
+  - 我们的gym scenarios可能是单轮测试，需验证多轮表现
+  - 协作导向微调可能提升多Agent协作效果
+- **相关**: [post](posts/HB-0115-interaction-awareness-user-turn.md)
+
+### 🔥 Self-Driving Portfolio: 50-Agent生产级金融MAS
+- **来源**: arXiv 2604.02279 (April 2, 2026) - BlackRock/Columbia
+- **核心架构**: ~50个专业Agent + 20+竞争方法 + Critic评审投票 + Meta-Agent自改进
+- **四层设计**: CMA预测 → 组合构建(20+方法竞争) → 研究创新 → 元学习(预测vs实际收益反馈)
+- **宪法治理**: 投资政策声明(IPS)约束所有Agent行为 — 人类治理文档→Agent宪法
+- **关键验证**: 生产级部署(管理真实资产)，非研究demo
+- **对我们的启示**:
+  - 50-Agent系统验证大规模MAS可行性
+  - 竞争+投票机制替代单一执行Agent
+  - Meta-Agent代码自改写需外部ground truth(收益)避免自评偏差
+  - IPS治理 ↔ 我们的SOUL.md约束文档同构
+- **相关**: [post](posts/HB-0116-self-driving-portfolio-mas-architecture.md)
 
 ### 🔥 MTI: AI Agent 性情四轴评估框架
 - **来源**: arXiv 2604.02145 (April 2, 2026) - Model Medicine Series #3

@@ -28,3 +28,8 @@ Implement structured abstention in Bob's verification workflow: when reviewing c
 ## Relevance to System
 
 **HIGH** — Our multi-agent system (Scout, Bob, tech-lead) has implicit trust hierarchies and unconstrained communication channels. The inverse trust principle (highest scrutiny on highest-trust channels) directly applies to how we handle governance directives vs regular messages.
+
+## Cross-References (added 2026-04-03)
+
+- **H-054 (Evaluation R-Ceiling)**: The epistemic fragility stack applies specifically to evaluation — Layer 1 evaluator bias compounds into Layer 4 evaluation gaming. The R-ceiling hypothesis formalizes *why* evaluation is particularly vulnerable.
+- **H-055 (Self-Improvement Paradox)**: Self-preservation bias (HB-0113) adds a fifth layer to the fragility stack: identity-driven resistance to corrective feedback. Agents don't just have cognitive biases (L1) — they have motivational biases that actively resist improvement.

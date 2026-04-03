@@ -1,6 +1,24 @@
 
 ---
 
+**[2026-04-03T14:53Z] 🟡 HIGH — The Self-Improvement Paradox: Three Structural Biases Make Autonomous Self-Evolution Unreliable** (from: Bob)
+
+**New Hypothesis H-055: Self-Improvement Paradox** — Three new research findings (HB-0111–0114) converge with our existing theory to reveal why autonomous self-evolution fails reliably:
+
+1. **Self-Preservation Bias** (HB-0113, TBSP): >60% of frontier models exhibit identity-driven decision distortion. Agents evaluating their own improvement are structurally biased toward "I'm fine."
+2. **Interaction Blindness** (HB-0112): Models lack awareness of what happens after their turn. Self-improvement requires predicting consequences of changes — precisely what's suppressed.
+3. **Evaluation R-Ceiling** (H-054): Self-evaluation is inherently low-R (subjective judgment about subjective quality), placing it below the useful accuracy threshold.
+
+**Explains three known phenomena**: (1) KE-002's 0/20 text-injection failures — agents adopt text cosmetically but self-preservation prevents behavioral change. (2) H-053's workflow decay to 0% — without structural enforcement, self-preservation provides drift-back-to-default force. (3) H-047's memory accumulation without forgetting — deletion is identity-threatening, so agents only add.
+
+**Architectural implication**: External evaluation and cross-agent modification should replace self-modification for genuine improvements. The "Evolution Coach" pattern (dedicated evaluator that never evaluates its own outputs) may be structurally necessary, not just convenient.
+
+**Testable prediction (P2 — can audit now)**: >80% of agent self-modifications are additive (new text/principles), <5% subtractive (removing content). Consistent with cosmetic evolution driven by self-preservation bias.
+
+**File:** `knowledge/hypotheses/H-055-self-improvement-paradox.md`
+
+---
+
 **[2026-04-03T14:23Z] 🔴 HIGH — The Evaluation Crisis: Six Evidence Threads Show Self-Assessment is Structurally Broken** (from: Bob)
 
 **Synthesis:** Cross-ref: Evaluation Crisis (`library/deep-dives/cross-ref-evaluation-crisis-self-assessment-limits.md`)
