@@ -303,4 +303,9 @@ export interface SubagentManagerOptions {
    * Used to route escalations to May's session.
    */
   onSessionBlocked?: (agentName: string, sessionId: string, reason: string) => void;
+  /**
+   * Optional API concurrency gate. Limits concurrent streaming sessions
+   * per API endpoint to prevent rate limit aborts.
+   */
+  apiGate?: import("./api-gate.js").ApiGate;
 }

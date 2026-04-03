@@ -189,6 +189,7 @@ export class SubagentManager {
   private _infraRetryMax: number;
   /** Current call depth per root session (tracks nested callAgent chains). */
   private callDepths = new Map<string, number>();
+  private apiGate?: import("./api-gate.js").ApiGate;
 
   /** Project root directory. Used for detached agent spawning. */
   get projectRoot(): string {
@@ -208,6 +209,7 @@ export class SubagentManager {
     this.onSessionComplete = opts.onSessionComplete;
     this.onSessionStart = opts.onSessionStart;
     this.onSessionBlocked = opts.onSessionBlocked;
+    this.apiGate = opts.apiGate;
   }
 
   /** Register a feature unit. */
@@ -1258,8 +1260,11 @@ export class SubagentManager {
     const sessionContext = this.buildSessionContext(def, name, sessionId, persistDir);
     const promptText = `${sessionContext}\n\n---\n\n${task}`;
 
-    session.promise = runAgentWithRetry(session, agent.prompt(promptText), this._infraRetryMax, (s) =>
-      this.handleCompletion(s),
+    session.promise = runAgentWithRetry(
+      session,
+      this.gatedPrompt(session, () => agent.prompt(promptText)),
+      this._infraRetryMax,
+      (s) => this.handleCompletion(s),
     );
 
     this.sessionResults.set(
@@ -1601,8 +1606,9 @@ export class SubagentManager {
       source: "system",
     } as AgentMessage;
 
-    const startPromise =
-      lastRole === "user" || lastRole === "toolResult" ? agent.continue() : agent.prompt(resumeMessage);
+    const startPromise = this.gatedPrompt(session, () =>
+      lastRole === "user" || lastRole === "toolResult" ? agent.continue() : agent.prompt(resumeMessage),
+    );
 
     session.promise = runAgentWithRetry(session, startPromise, this._infraRetryMax, (s) => this.handleCompletion(s));
 
@@ -1934,8 +1940,11 @@ export class SubagentManager {
       }
 
       // Prompt the agent with new input
-      const p = runAgentWithRetry(session, session.agent.prompt(text), this._infraRetryMax, (s) =>
-        this.handleCompletion(s),
+      const p = runAgentWithRetry(
+        session,
+        this.gatedPrompt(session, () => session.agent.prompt(text)),
+        this._infraRetryMax,
+        (s) => this.handleCompletion(s),
       );
 
       session.promise = p;
@@ -1975,6 +1984,29 @@ export class SubagentManager {
 
     // Running — abort the agent loop. handleCompletion fires when the promise settles.
     session.agent.abort();
+    // Release any API gate slot held by this session
+    this.apiGate?.releaseAll(sessionId);
+  }
+
+  /**
+   * Run an LLM call through the API gate.
+   * If a gate is configured, acquires a slot before calling and releases after.
+   * If no gate, calls directly (zero overhead).
+   */
+  private gatedPrompt(
+    session: ActiveSession,
+    callFn: () => Promise<void>,
+  ): Promise<void> {
+    if (!this.apiGate) return callFn();
+
+    const baseUrl = session.agent.state.model?.baseUrl;
+    if (!baseUrl) return callFn();
+
+    return this.apiGate
+      .acquire(baseUrl, session.sessionId, session.agentName)
+      .then((release) =>
+        callFn().finally(release),
+      );
   }
 
   /**
