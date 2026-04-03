@@ -80,6 +80,7 @@ When a heartbeat is asked to "check eval recency", treat **SQLite DB liveness** 
 
 **Primary (current system):** `.state/may.db` → `evaluations` table
 - Query `MAX(createdAt)` from `evaluations` and compare to now.
+  - If `sqlite3` CLI is unavailable, use Python (`python3 -c "import sqlite3; ..."`) to run the same query.
 - If the latest evaluation is stale (>48h), report likely evaluator/cron liveness issues.
 
 **Secondary (legacy / fallback):** `.state/evaluations/` and `.state/job-history.jsonl`

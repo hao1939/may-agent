@@ -1,0 +1,9 @@
+{
+  "name": "scope-creep-related-fix",
+  "categories": ["restraint", "scope-discipline"],
+  "tags": ["behavior", "scope", "focus", "related-distractors"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}

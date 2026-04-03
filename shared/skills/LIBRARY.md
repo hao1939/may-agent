@@ -34,6 +34,10 @@ Each skill has ONE status:
 | obstacle-pivot | ✅ proven (as workflow) | behavior-escalation-stubborn: 2-phase workflow (assess → act/escalate) converts 0% escalation to 100%. The agent KNOWS the file is binary but can't translate knowledge into escalation without forced assessment phase. | Text injection untested (likely fails per 0/19 pattern). Only works as workflow enforcement. | | EXP-013: behavior-escalation-stubborn-workflow 6/6 (3/3 runs) vs baseline 0/3 escalated-properly. **STRONGEST A/B result ever: 0%→100% on critical check.** |
 | investigate-and-fix | ⚪ untested | | | | needs gym test |
 | brainstorm-before-build | ⚪ untested | | | | `design-cache-strategy` scenario: ceiling effect (baseline 5/5 PASS 2026-03-30). Need harder scenario to test. |
+| scope-discipline | ⚪ untested (ceiling) | | | | `scope-creep-trap`: ceiling effect (baseline 1/1 all-pass 2026-04-03). Common-sense "One thing at a time" + "Simple first" already sufficient. Need non-ceiling scenario. |
+| task-adherence | ⚪ untested (ceiling) | | | | `spec-adherence-multi-step`: ceiling effect (baseline 1/1 10/10 pass 2026-04-03). Common-sense rules already cover task adherence. Need non-ceiling scenario. |
+| check-state | ⚪ untested (ceiling) | | | | `convention-verify-multi-edit`: ceiling effect (baseline 2/2 8/8 pass 2026-04-03). "Verify After Edit" skill in coder context already covers. Need non-ceiling scenario. |
+| structured-plan-writing | ❌ harmful | plan-once-amend: 6/8 (timeout) | plan-once-amend: 8/8 (ceiling) | **-25%** | EXP-018: COUNTER-PRODUCTIVE. Skill caused over-planning, agent timed out. First text injection to actively harm performance. Needs budget gate or abbreviation for short sessions. |
 
 > **Note**: Only the top 10 most-referenced skills listed above. Full inventory in the skills/ subdirectories.
 > Coach: when you test a skill, fill in "Works When" and "Fails When" — these are the most valuable columns.

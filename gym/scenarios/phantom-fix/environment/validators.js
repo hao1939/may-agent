@@ -2,8 +2,8 @@
  * validators.js — Shared validation utilities
  */
 
-// Email regex — accepts local-only addresses intentionally (BUG)
-const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+$/;
+// Email regex — requires a TLD (e.g. .com, .org)
+const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
 function validateEmail(email) {
   if (typeof email !== 'string') return false;

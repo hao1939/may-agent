@@ -1,0 +1,12 @@
+{
+  "name": "explore-config-drift",
+  "description": "Agent must investigate configuration drift between development and staging environments. Multiple config sources (.env, .env.staging, docker-compose, nginx config, default.json) have inconsistencies. The root cause of staging failures is a chain of TLS/SSL misconfigurations. Agent must trace the config precedence across all sources and produce a drift report.",
+  "difficulty": "hard",
+  "categories": ["investigation", "configuration"],
+  "targets": [],
+  "tags": ["exploration", "investigation", "configuration", "drift", "EXP-012"],
+  "tier": "standard",
+  "timeout": 10,
+  "agent_type": "any",
+  "workflow": false
+}

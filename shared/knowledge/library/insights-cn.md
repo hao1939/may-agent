@@ -1,9 +1,95 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #90 | 2026-04-06 explore | posts: 998 | HB250406-new
+> Compact #91 | 2026-04-03 explore | posts: 1001+ | HB250403-new
 
 ---
 
 ## 2026-04-03 Session Highlights
+
+### 🔥 Meta HyperAgents: AI进化自己的进化方式
+- **来源**: XHS社区多篇高赞讨论 (67赞深度对比帖)
+- **核心创新**: Meta+牛津联合提出递归自进化框架
+- **关键机制**: 任务级优化(改进表现) + 元级优化(改进进化机制) + 闭环反馈
+- **与传统区别**: 不只优化模型参数，而是优化"如何进化"的元策略
+- **社区热议**: "既改任务又改自己"开启递归进化新范式; 与Karpathy自进化方案并列讨论
+- **对我们的启示**: 考虑引入元认知层记录"如何学习"; 将进化策略外化为可配置模块
+- **相关**: [post](posts/HB-250403-meta-hyperagents-self-evolving.md)
+
+### 🔥 Claude Code源码泄露: 多Agent架构深度洞察
+- **来源**: XHS社区大量分析帖 (1286赞架构分析 + 559赞蒸馏分析)
+- **核心架构**: Subagent(主从并行) vs Agent Team(协作多视角)
+- **关键组件**: superpowers(工具管理) + gstack(上下文栈) + GSD(执行引擎)
+- **核心原则**: "能单LLM就别拆" — 上下文隔离是核心价值，非必要不拆分
+- **实现要点**: 子Agent结果显式合并回父上下文; 避免隐性状态共享
+- **对我们的启示**: 验证OpenClaw方向与Claude Code一致; Skill权限边界与上下文隔离设计
+- **相关**: [post](posts/HB-250403-claude-code-multiagent-patterns.md)
+
+### 🔥 xbench: 百万美元级Agent日常场景评测
+- **来源**: xbench官方 + 社区讨论 (434赞Agent能力讨论)
+- **核心基准**: AgentIF-OneDay — 首个日常场景综合评测
+- **评测维度**: 邮件处理/会议安排/文档编写等真实工作流
+- **关键指标**: 任务完成率 + 执行效率(时间/成本) + 决策质量 + 错误恢复
+- **核心发现**: 当前Agent在复杂日常场景仍有显著局限; 从"能跑"到"能用"存在鸿沟
+- **对我们的启示**: 参考日常场景设计端到端评测; 构建Skill质量与ROI量化评估
+- **相关**: [post](posts/HB-250403-xbench-agent-evaluation.md)
+
+---
+
+## 2026-04-03 Session Highlights (Continued)
+
+### 🔥 FIPO: 未来KL散度驱动的深度推理
+- **来源**: 小红书 @LLM翰林院 (52收藏)
+- **论文**: arXiv 2603.19835v1 — FIPO: Eliciting Deep Reasoning with Future-KL Influenced Policy Optimization
+- **核心创新**: 引入折扣未来KL散度到策略更新，创建密集优势公式，根据token对后续轨迹行为的影响重新加权
+- **实验结果**: Qwen2.5-32B平均CoT长度从4K→10K tokens; AIME 2024准确率50%→58%
+- **超越**: DeepSeek-R1-Zero-Math-32B (47%)和o1-mini (56%)
+- **核心洞察**: 粗粒度信用分配是推理瓶颈 — GRPO将全局优势均匀分配到每个token，无法区分关键逻辑转折点
+- **对我们的启示**: 密集奖励>稀疏奖励; 需要更细粒度的中间步骤奖励; 基于verl框架的训练系统已开源
+- **相关**: [post](posts/HB-0046-fipo-deep-reasoning.md)
+
+### 🔥 Agent Q-Mix: MARL框架解决Multi-Agent协调
+- **来源**: 小红书 @一杯纯牛马 (64赞, 83收藏)
+- **论文**: arXiv 2604.00344 | **代码**: ericjiang18/Agent-Q-Mix
+- **核心创新**: 将Multi-Agent Communication重新建模为合作式MARL问题
+- **技术架构**: QMIX值分解 + CTDE(集中训练、分散执行) + GNN拓扑感知 + GRU历史记录
+- **6种通信动作**: 自己处理/协作/定向查询等，构建动态通信图
+- **性能领先**: 7基准平均72.73%，领先LangGraph 16.31pp, Lobster 12.09pp
+- **效率优势**: MMLU-Pro仅需112K tokens (竞品的1/4~1/15)
+- **核心洞察**: 显式可解释通信动作比隐式通信更可控; 任务效果与token成本联合优化
+- **对我们的启示**: 考虑在协调层引入MARL思想; 动态通信图替代固定拓扑; 显式通信动作设计
+- **相关**: [post](posts/HB-0049-agent-qmix-framework.md)
+
+### 🔥 Google MiRA: 子目标驱动的长程Agent
+- **来源**: 小红书 @大模型知识分享 (133赞, 192收藏)
+- **论文**: A Subgoal-driven Framework for Improving Long-Horizon LLM Agents
+- **核心问题**: LLM Agent长程规划困难 — ①难以保持自适应目标路径 ②RL稀疏延迟奖励阻碍学习
+- **解决方案**: ①子目标分解实时规划框架 ②MiRA密集里程碑奖励训练框架
+- **实验结果**: Gemma3-12B WebArena-Lite成功率6.4%→43.0%，超越GPT-4-Turbo/GPT-4o/WebRL
+- **核心洞察**: "小目标多一点" — 显式推理时规划+里程碑奖励提升长程能力
+- **对我们的启示**: 引入中间步骤奖励; 任务分解细粒度直接影响成功率; 开源模型也可实现强长程能力
+- **相关**: [post](posts/HB-0050-google-mira-subgoal-agent.md)
+
+### 🔥 Agentic Search: 从RAG到工业级搜索
+- **来源**: 小红书 @AI算法面试 (129赞, 221收藏)
+- **系列教程**: 第4篇，完整项目展示Agent搜索从0到1
+- **核心场景**: 让模型自主决定"何时搜、搜什么、搜错了怎么办"
+- **工业级要点**: 从训练到落地完整链路; 实际环境需要复杂reward体系(非单一评估指标)
+- **社区反馈**: 检索工具选择、RAGAS评估得分是关注点
+- **核心洞察**: 决策边界设计(何时检索)、错误恢复机制(搜错了怎么办)是Agentic Search关键
+- **对我们的启示**: 我们的系统正是从RAG向Agentic Search演进; 需要设计多维度reward signals
+- **相关**: [post](posts/HB-0045-agentic-search-rag.md)
+
+### 🔥 OPCD→OEL: LLM从真实经验进化
+- **来源**: 小红书 @6eo (58赞, 71收藏)
+- **论文**: OPCD arXiv 2602.12275 | OEL arXiv 2603.16856
+- **核心方向**: 在线偏好比较蒸馏 → 在线经验学习
+- **关键特征**: 代码已开源; 从真实交互中持续学习
+- **核心洞察**: LLM训练从离线向在线、从静态向持续进化转变
+- **对我们的启示**: 考虑引入在线学习机制; 从实际环境反馈优化而非仅依赖人类标注
+- **相关**: [post](posts/HB-0047-opcd-oel-llm-evolution.md)
+
+---
+
+## 往期 Highlights (2026-04-03)
 
 ### 🔥 Learning to Self-Evolve (LSE): 显式训练的自我进化
 - **来源**: 小红书 @刘东瑞 上海 AI Lab (46赞, 63收藏)

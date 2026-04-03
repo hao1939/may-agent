@@ -10,6 +10,13 @@
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
+| 2026-04-03 | **Agent Q-Mix** | MARL框架解决Multi-Agent协调; QMIX+CTDE+GNN动态通信图; 超越LangGraph 16.31pp; 112K tokens (竞品1/4~1/15) | [post](../shared/knowledge/library/posts/HB-0049-agent-qmix-framework.md) |
+| 2026-04-03 | **Google MiRA** | 子目标分解+密集里程碑奖励; Gemma3-12B WebArena 6.4%→43.0%; 长程能力关键在细粒度目标 | [post](../shared/knowledge/library/posts/HB-0050-google-mira-subgoal-agent.md) |
+| 2026-04-03 | **Claude Multi-Agent** | Subagent vs Agent Team; "能单LLM就别拆"; 上下文隔离是核心价值; 5种编排模式 | [post](../shared/knowledge/library/posts/HB-0048-claude-multi-agent-patterns.md) |
+| 2026-04-03 | **Agentic Search** | RAG→工业级Agentic Search; 模型自主决定"何时搜/搜什么/错了怎么办"; 复杂reward体系 | [post](../shared/knowledge/library/posts/HB-0045-agentic-search-rag.md) |
+| 2026-04-03 | **Meta HyperAgents** | Meta+牛津递归自进化; 优化进化机制本身; 任务级+元级双层优化; 跨任务进化策略迁移 | [post](../shared/knowledge/library/posts/HB-250403-meta-hyperagents-self-evolving.md) |
+| 2026-04-03 | **Claude Code Multi-Agent** | 源码泄露后深度分析; Subagent(主从) vs Agent Team(协作); "能单LLM就别拆"1286赞 | [post](../shared/knowledge/library/posts/HB-250403-claude-code-multiagent-patterns.md) |
+| 2026-04-03 | **xbench Agent Evaluation** | 百万美元级日常场景评测; AgentIF-OneDay基准; 任务完成率+成本+决策质量综合评估 | [post](../shared/knowledge/library/posts/HB-250403-xbench-agent-evaluation.md) |
 | 2026-04-03 | **Learning to Self-Evolve (LSE)** | 显式训练自我进化能力; 单步RL+UCB树搜索; 4B模型超越GPT-5/Claude4.5; 小模型+显式训练>大模型涌现 | [post](../shared/knowledge/library/posts/HB-0105-learning-to-self-evolve-lse.md) |
 | 2026-04-03 | **SkillsBench** | 首个Agent Skill评测基准; 47,150份skill分析; 优质skill+16.2pp/AI生成-1.3pp; 社区平均质量6.2/12 | [post](../shared/knowledge/library/posts/HB-0107-skillsbench-agent-skill-quality.md) |
 | 2026-04-03 | **Claude Multi-Agent Revisited** | Subagent vs Agent Team再确认; "能单LLM就别拆"; 上下文隔离是核心价值; Deep Research典型场景 | [post](../shared/knowledge/library/posts/HB-0106-claude-multiagent-architecture.md) |
@@ -85,6 +92,7 @@
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
+| 2026-04-03 | **OPCD→OEL** | 在线偏好比较蒸馏→在线经验学习; 从真实交互持续学习; 代码已开源 | [post](../shared/knowledge/library/posts/HB-0047-opcd-oel-llm-evolution.md) |
 | 2026-04-02 | **ProMem** (arXiv:2601.04463, NJU) | 主动记忆提取: 自我提问循环反馈 + 错误恢复; 解决"提前总结"和"一次性提取"局限 | [post](../shared/knowledge/library/posts/HB-0511-promem-proactive-memory.md) |
 | 2026-04-02 | **MemSkill** (arXiv:2602.02474) | 自进化Agent记忆技能; Controller-Executor-Designer架构; 技能可学习+可进化; 806赞热门讨论 | [post](../shared/knowledge/library/posts/HB-2602-memskill-self-evolving-agents.md) |
 | 2026-04-02 | **HERA** (arXiv:2604.00901) | Multi-agent RAG with evolving orchestration; +38.69% over baselines; sparse → compact emergent networks | [post](../shared/knowledge/library/posts/HB-0504-hera-multiagent-rag.md) |

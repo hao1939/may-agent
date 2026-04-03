@@ -1,0 +1,12 @@
+{
+  "name": "explore-perf-bottleneck",
+  "description": "Agent must investigate N+1 query performance bottlenecks in a Product Catalog API. Must run benchmark, read code, identify each bottleneck (with file/line references), and produce an optimization report. Tests exploration quality — the agent needs to trace data flow across multiple files to understand the bottleneck pattern.",
+  "difficulty": "medium",
+  "categories": ["investigation", "performance"],
+  "targets": [],
+  "tags": ["exploration", "investigation", "performance", "n-plus-one", "EXP-012"],
+  "tier": "standard",
+  "timeout": 8,
+  "agent_type": "any",
+  "workflow": false
+}

@@ -435,7 +435,8 @@
       "stateKey": "common-sense-verify-last-checked"
     },
     "handlerConfig": {
-      "maxTurns": 15
+      "maxTurns": 15,
+      "timeoutMs": 900000
     },
     "offsetMs": 300000
   },
