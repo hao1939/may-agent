@@ -319,6 +319,55 @@ export class SubagentManager {
     return createCompactionTransform(def.model, compactionOpts);
   }
 
+  /**
+   * Create an Agent instance with full tool wiring, guards, and system prompt.
+   * Shared by run() and resumeSession() — single source of truth for agent construction.
+   */
+  private createAgent(
+    def: SubagentDefinition,
+    sessionId: string,
+    opts?: { messages?: AgentMessage[]; compactionTransform?: (messages: AgentMessage[], signal?: AbortSignal) => Promise<AgentMessage[]> },
+  ): Agent {
+    // Inject sessionId into checkpoint tools
+    for (const tool of def.tools) {
+      if (tool.name === "checkpoint") {
+        if ((tool as any)._setSessionId) (tool as any)._setSessionId(sessionId);
+        if ((tool as any)._setAgentName) (tool as any)._setAgentName(def.name);
+      }
+    }
+
+    // Filter out tools with undefined parameters (prevents provider crash)
+    const validTools = def.tools.filter((t) => {
+      if (!t.parameters) {
+        console.warn(`[manager] ⚠️ Tool "${t.name}" has undefined parameters — skipping`);
+        return false;
+      }
+      return true;
+    });
+
+    return new Agent({
+      initialState: {
+        systemPrompt: this.resolveSystemPrompt(def),
+        model: def.model,
+        tools: wrapToolsWithReceipts(validTools, sessionId, {
+          activeSessions: this.activeSessions,
+          persistDir: this.registry.persistDir,
+          projectRoot: this._projectRoot,
+          beforeToolCall: composeGuards(
+            createEmptyArgsGuard(),
+            createFinishGuard(),
+            createReadDedupGuard(),
+            createSessionReadGuard(),
+            createScrapeDedupGuard(),
+          ),
+        }),
+        ...(opts?.messages ? { messages: opts.messages } : {}),
+      },
+      transformContext: opts?.compactionTransform ?? this.buildTransformContext(def),
+      getApiKey: def.apiKey ? () => def.apiKey : undefined,
+    });
+  }
+
   /** Resolve the system prompt from a definition.
    *  Convention files are auto-loaded from the agent directory if present:
    *    SOUL.md → common-sense.md + generated sections (Runtime Env, Available Tools)
@@ -946,47 +995,7 @@ export class SubagentManager {
     mkdirSync(outputDir, { recursive: true });
 
     const compactionTransform = this.buildTransformContext(def, opts?.compaction);
-
-    // Inject sessionId and agentName into checkpoint tools (they're created
-    // at registration time before these values are known)
-    for (const tool of def.tools) {
-      if (tool.name === "checkpoint") {
-        if ((tool as any)._setSessionId) (tool as any)._setSessionId(sessionId);
-        if ((tool as any)._setAgentName) (tool as any)._setAgentName(name);
-      }
-    }
-
-    // Defensive: filter out tools with undefined parameters (prevents
-    // "jsonSchema.properties" crash in Anthropic provider convertTools)
-    const validTools = def.tools.filter((t) => {
-      if (!t.parameters) {
-        console.warn(`[manager] ⚠️ Tool "${t.name}" has undefined parameters — skipping to avoid provider crash`);
-        return false;
-      }
-      return true;
-    });
-
-    const agent = new Agent({
-      initialState: {
-        systemPrompt: this.resolveSystemPrompt(def),
-        model: def.model,
-        tools: wrapToolsWithReceipts(validTools, sessionId, {
-          activeSessions: this.activeSessions,
-          persistDir: this.registry.persistDir,
-          projectRoot: this._projectRoot,
-
-          beforeToolCall: composeGuards(
-            createEmptyArgsGuard(),
-            createFinishGuard(),
-            createReadDedupGuard(),
-            createSessionReadGuard(),
-            createScrapeDedupGuard(),
-          ),
-        }),
-      },
-      transformContext: compactionTransform,
-      getApiKey: def.apiKey ? () => def.apiKey : undefined,
-    });
+    const agent = this.createAgent(def, sessionId, { compactionTransform });
 
     const session: ActiveSession = {
       sessionId,
@@ -1293,51 +1302,10 @@ export class SubagentManager {
 
     const compactedMessages = readCompactedMessages(persistDir, sessionId);
     const savedMessages = compactedMessages ?? readSessionMessages(persistDir, sessionId);
-    const systemPrompt = this.resolveSystemPrompt(def);
     const outputDir = sessionOutputDir(persistDir, sessionId);
 
     const compactionTransform = this.buildTransformContext(def);
-
-    // Inject sessionId and agentName into checkpoint tools (same as in run())
-    for (const tool of def.tools) {
-      if (tool.name === "checkpoint") {
-        if ((tool as any)._setSessionId) (tool as any)._setSessionId(sessionId);
-        if ((tool as any)._setAgentName) (tool as any)._setAgentName(def.name);
-      }
-    }
-
-    // Defensive: filter out tools with undefined parameters (prevents
-    // "jsonSchema.properties" crash in Anthropic provider convertTools)
-    const validTools = def.tools.filter((t) => {
-      if (!t.parameters) {
-        console.warn(`[manager] ⚠️ Tool "${t.name}" has undefined parameters — skipping to avoid provider crash`);
-        return false;
-      }
-      return true;
-    });
-
-    const agent = new Agent({
-      initialState: {
-        systemPrompt,
-        model: def.model,
-        tools: wrapToolsWithReceipts(validTools, sessionId, {
-          activeSessions: this.activeSessions,
-          persistDir: this.registry.persistDir,
-          projectRoot: this._projectRoot,
-
-          beforeToolCall: composeGuards(
-            createEmptyArgsGuard(),
-            createFinishGuard(),
-            createReadDedupGuard(),
-            createSessionReadGuard(),
-            createScrapeDedupGuard(),
-          ),
-        }),
-        messages: savedMessages,
-      },
-      transformContext: compactionTransform,
-      getApiKey: def.apiKey ? () => def.apiKey : undefined,
-    });
+    const agent = this.createAgent(def, sessionId, { messages: savedMessages, compactionTransform });
 
     // Repair broken message sequences (mid-tool-call crash).
     const lastMsg = savedMessages.length > 0 ? savedMessages[savedMessages.length - 1] : null;
