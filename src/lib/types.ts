@@ -90,6 +90,8 @@ export interface SessionInfo {
   runtime: string;
   outputDir: string;
   error?: string;
+  /** Last assistant text — useful for resuming interrupted sessions. */
+  outcome?: string;
   /** Session that spawned this one (e.g. May's session when a workflow runs a sub-agent). */
   parentSessionId?: string;
   /** Workflow execution that this session belongs to. */

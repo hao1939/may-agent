@@ -313,6 +313,7 @@ const manager = new SubagentManager({
       status: info.status,
       duration: info.runtime,
       error: info.error,
+      outcome: info.outcome,
       opCount: info.opCount,
     });
 
