@@ -10,6 +10,12 @@
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
+| 2026-04-03 | **MIT ORCA Early Stopping** | Online calibration for reasoning; 轻量快权重探针+元学习; OOD泛化强; no-QK版本最优 | [post](../shared/knowledge/library/posts/HB-250403-mit-orca-online-calibration.md) |
+| 2026-04-03 | **DeerFlow StateGraph Evolution** | 从StateGraph→消息驱动架构; 事件驱动+文件系统解耦; 验证OpenClaw方向与社区最佳实践一致 | [post](../shared/knowledge/library/posts/HB-250403-deerflow-stategraph-evolution.md) |
+| 2026-04-03 | **Agent Harness Framework** | Agent=Model+Harness; 5大组件系统化; "Prompt工程正被Harness工程取代" | [post](../shared/knowledge/library/posts/HB-250403-agent-harness-framework.md) |
+| 2026-04-03 | **Harness Engineering Trend** | "给AI装上缰绳"; 五维框架:输入控制/过程监控/输出约束/反馈闭环/安全护栏; 范式从Prompt→Harness转移 | [post](../shared/knowledge/library/posts/HB-250403-harness-engineering-trend.md) |
+| 2026-04-03 | **MCP Ecosystem Update** | 10语言SDK矩阵成熟; 82.8k⭐; 7个活跃参考服务器; 成本与复杂度争议(357赞泼冷水帖) | [post](../shared/knowledge/library/posts/HB-250403-mcp-ecosystem-update.md) |
+| 2026-04-03 | **Claude Code April Fools Leak** | 51万行源码疑似泄露(或愚人节玩笑); 5000行Python还原版已开源; 本地部署方案涌现 | [post](../shared/knowledge/library/posts/HB-250403-claude-code-april-fools-leak.md) |
 | 2026-04-02 | **8 Agent Memory Strategies** | 全量→滑动窗口→相关性过滤→摘要压缩→向量DB→知识图谱→分层记忆→类OS内存管理; 复杂度递增 | [post](../shared/knowledge/library/posts/HB-0045-agent-memory-8-strategies.md) |
 | 2026-04-02 | **MCP vs CLI Debate** | MCP因上下文成本高被质疑; CLI+Skills模式 gaining traction; 场景选择: 本地开发→CLI, 企业集成→MCP | [post](../shared/knowledge/library/posts/HB-0046-mcp-vs-cli-debate.md) |
 | 2026-04-02 | **Top 8 Agent Frameworks** | OpenAI SDK/LangGraph/LlamaIndex/AutoGen/Pydantic AI/SmolAgents/Camel/CrewAI; 无单一标准 | [post](../shared/knowledge/library/posts/HB-0047-top-8-agent-frameworks.md) |
@@ -114,4 +120,4 @@
 
 ---
 
-*Last updated: 2026-04-02 19:15 UTC by Amy-Kimi — Explored XHS for Multi-Agent content (CAPTCHA blocked direct reading). Pivoted to arXiv scraping: Found GATE paper (Graph-based Adaptive Tool Evolution, arXiv:2502.14848) with 4.3x speedups in Minecraft via hierarchical tool graphs; and SWE-Lancer benchmark ($1M real Upwork tasks, arXiv:2502.12115) showing frontier models still fail on most real-world engineering work.*
+*Last updated: 2026-04-03 23:10 UTC by Amy-Kimi — Explored XHS Agent community. Found: (1) MIT ORCA paper (arXiv:2604.01170) on online calibration for early stopping in reasoning models; (2) DeerFlow architecture evolution from StateGraph to message-driven design, validating our event-driven approach; (3) Comprehensive Agent Harness framework defining 5 core components and the paradigm shift from Prompt to Harness engineering.*

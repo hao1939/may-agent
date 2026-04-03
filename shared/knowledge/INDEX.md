@@ -19,7 +19,7 @@ All knowledge in the system, organized by confidence level.
 | KE-011 | Knowledge files are passive — agents skip them in oneshot mode | 3 experiments, Method #6 | knowledge/entries/KE-011.md |
 | KE-012 | Lab-fork null-patch test confirms infrastructure validity | Controlled zero-change test | knowledge/entries/KE-012.md |
 | KE-013 | Task boundedness is the primary driver of delegated session quality | EXP-007 Phase 1 (n=116 call, 15.8K all-time) | knowledge/entries/KE-013.md |
-| KE-015 | Decision topology (eliminable ratio R) predicts workflow effectiveness | EXP-009 (464 sessions), EXP-011 (ρ=0.95), EXP-013 (0%→100%), EXP-008 (null), DD#484, Anthropic | knowledge/entries/KE-015.md |
+| KE-015 | Decision topology (eliminable ratio R) predicts workflow effectiveness | EXP-009 (464 sessions), EXP-011 (ρ=0.95), EXP-013 (0%→100%), EXP-015 (0%→100%), EXP-016 (20 pairs, 80% accuracy), EXP-008 (null), DD#484, Anthropic | knowledge/entries/KE-015.md |
 
 ## Adopted (in use, not experimentally verified)
 
@@ -154,6 +154,7 @@ The core theory chain. Start with SYNTH-001 (`library/deep-dives/synth-decision-
 | EXP-013 | Workflow enforcement for escalation (two-phase vs none) | **Complete** | **0%→100% with workflow** (R≈0.80, n=6) → KE-015 | knowledge/experiments/EXP-013/ |
 | EXP-014 | incremental-context-loading scorer bug fix | **Complete** | Infrastructure fix — scorer bug, not agent behavior | knowledge/experiments/EXP-014/ |
 | EXP-015 | Workflow enforcement for tool avoidance (npx) | **Complete** | **0%→100% with workflow** (R≈0.90, n=5) → KE-007, KE-015 | knowledge/experiments/EXP-015/ |
+| EXP-016 | Cross-scenario meta-analysis of workflow effectiveness (20 pairs) | **Complete** | **80% prediction accuracy for Decision Topology**. Workflows help 40% (+32%), hurt 40% (-13%), neutral 20%. Ceiling-regresses pattern. Intra-phase boundary discovered. → KE-015 | knowledge/experiments/EXP-016/ |
 
 ## Operational (not knowledge — reference only)
 

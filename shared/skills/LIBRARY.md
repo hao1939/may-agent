@@ -38,10 +38,14 @@ Each skill has ONE status:
 > **Note**: Only the top 10 most-referenced skills listed above. Full inventory in the skills/ subdirectories.
 > Coach: when you test a skill, fill in "Works When" and "Fails When" — these are the most valuable columns.
 
-### ⚠️ Deployment Reality (2026-04-01)
-**Text injection does NOT change agent behavior** — 0/19+ experiments showed improvement from adding skill text to prompts. The only proven deployment method is **Method #15: Workflow Enforcement** — structuring the task into phases that force the desired behavior. However, workflow enforcement has boundaries:
-- ✅ Works for: verification (5/6→6/6), misleading-test diagnosis (5/8→11/11), **escalation (0%→100% — EXP-013)**
-- ❌ Fails for: materialization cadence (6/9→6/9), tool usage habits (grep-first-reading)
+### ⚠️ Deployment Reality (2026-04-02, updated with EXP-016 meta-analysis)
+**Text injection does NOT change agent behavior** — 0/19+ experiments showed improvement from adding skill text to prompts. The only proven deployment method is **Method #15: Workflow Enforcement** — structuring the task into phases that force the desired behavior.
+
+**Meta-analysis (EXP-016)**: Across 20 scenario pairs, workflows help 40%, hurt 40%, neutral 20%. Mean benefit when helps: +32%. Mean cost when hurts: -13%.
+
+**Routing rule**: Use Decision Topology R ratio (EXP-011) to predict. R > 0.5 → workflow helps. R < 0.3 → workflow hurts.
+- ✅ Works for: assessment/discovery/verification (escalation 0→100%, npx avoidance 0→100%, test diagnosis 63→100%)
+- ❌ Fails for: materialization cadence, tool habits (grep-first), already-ceiling scenarios
 - 🔍 Untested: scope discipline, task adherence, classify-then-act
 Three skills are now PROMOTED as workflows, ready for deployment consideration:
 1. **verify-before-finish** (partial-verification-trap-workflow: 5/6→6/6)

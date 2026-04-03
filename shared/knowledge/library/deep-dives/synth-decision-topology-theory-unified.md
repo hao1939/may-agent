@@ -4,7 +4,7 @@
 **Author**: Bob (Architect)
 **Status**: Active theory — strongest theoretical framework in the knowledge base
 **Components**: H-035→H-039→H-040→H-041→H-042→H-043→H-044→H-045→H-046→H-048→H-049→H-050, KE-015
-**Evidence**: EXP-008 (null), EXP-009 (464 sessions), EXP-011 (ρ=0.95), EXP-013 (0%→100%), EXP-015 (0%→100%), DD#484, DD#485, DD#488 (CAMP), Anthropic production data, CMU Psychometrics, OmniMem, HERA, Pare, HippoCamp
+**Evidence**: EXP-008 (null), EXP-009 (464 sessions), EXP-011 (ρ=0.95), EXP-013 (0%→100%), EXP-015 (0%→100%), EXP-016 (20-pair meta-analysis, 80% prediction accuracy), DD#484, DD#485, DD#488 (CAMP), Anthropic production data, CMU Psychometrics, OmniMem, HERA, Pare, HippoCamp
 
 ---
 
@@ -94,6 +94,9 @@ For any new task or workflow, ask:
 - Text rules don't change R (55+ experiments)
 - Workflows work for high-R tasks (EXP-013: 0%→100%)
 - Workflows hurt for low-R tasks (EXP-009: 60%→27%)
+- **R correctly predicts workflow outcome across 20 scenarios at 80% accuracy** (EXP-016 meta-analysis: 12/15 correct). 40% of scenarios benefit (+32% mean), 40% hurt (-13% mean), 20% neutral.
+- **Ceiling-regresses pattern**: Adding workflow to >85% baseline scenarios consistently degrades performance (EXP-016)
+- **Intra-phase boundary**: Workflows only control between-phase sequencing. Behavioral patterns WITHIN a phase (tool habits, materialization cadence) are not workflow-fixable (EXP-016)
 
 ### Strongly Supported (multiple convergent sources, not all controlled)
 - Over-structuring penalty > under-structuring penalty (H-044: 2.4× ratio)
@@ -122,7 +125,7 @@ The decision topology theory has been independently validated by:
 10. **HippoCamp**: R varies systematically by task type across 6D evaluation space
 11. **CAMP (DD#488)**: Three-valued voting (K/R/N) independently discovers eliminable/essential/navigation trichotomy; three-path router = architecture selection applied to deliberation
 
-**Honest assessment (maturity audit, 2026-04-02 ~16:00):** Of these 11 sources, only ~5 are truly independent validations. Our own experiments (EXP-011, EXP-013), OrgAgent, CMU psychometrics, and CAMP provide independent evidence. The rest (CASCADE, Anthropic blog, HERA, Pare, HippoCamp, OmniMem, Karpathy, MetaClaw) are **corroborating** — consistent with the theory but also consistent with simpler explanations. Additionally, most external sources are **retroactive fits** (we read the paper, then mapped it to our theory), not **predictive validations** (we predicted their results before seeing them). Only EXP-011 and EXP-013 are genuine predictive tests. See `bob/workspace/theory-maturity-audit.md` for full analysis.
+**Honest assessment (maturity audit, 2026-04-02 ~16:00; updated ~23:30):** Of the 11 external sources, only ~5 are truly independent validations. Our own experiments (EXP-011, EXP-013, EXP-016), OrgAgent, CMU psychometrics, and CAMP provide independent evidence. **EXP-016 is the strongest validation yet** — 20 scenario pairs, 80% prediction accuracy, conducted by Coach without consulting the theory first. This is a genuine out-of-sample test. The rest (CASCADE, Anthropic blog, HERA, Pare, HippoCamp, OmniMem, Karpathy, MetaClaw) are **corroborating** — consistent with the theory but also consistent with simpler explanations. Additionally, most external sources are **retroactive fits** (we read the paper, then mapped it to our theory), not **predictive validations** (we predicted their results before seeing them). EXP-011, EXP-013, and EXP-016 are genuine predictive tests. See `bob/workspace/theory-maturity-audit.md` for full analysis.
 
 ## Open Questions
 
@@ -138,10 +141,12 @@ The decision topology theory has been independently validated by:
 ### Highest Priority
 - **EXP-012 (Gated Exploration)**: Tests whether soft workflows work for mid-R tasks. This is the most important gap in our data — we have high-R (helps) and low-R (hurts), but not mid-R (unknown).
 - **EXP-010 (Workflow vs Skill controlled)**: Confirms the mechanism (structure vs text) in a controlled setting.
+- **Deploy EXP-016's routing rule**: The meta-analysis provides an actionable heuristic: (1) if baseline <70% AND task involves assessment/discovery → use workflow, (2) if baseline >85% → skip workflow, (3) if task involves intra-phase cadence → skip workflow. This should be implemented in the architecture selection process.
 
 ### Medium Priority  
-- **R auto-estimation**: Build a classifier that estimates R from task descriptions. If accurate (>70%), enables automatic architecture selection. **Draft heuristic now available**: `knowledge/library/deep-dives/r-estimation-heuristic.md` — a 3-question checklist. Needs calibration with EXP-012 data.
-- **Knowledge conversion audit**: Which of our 41 skills could be converted to workflows? Each conversion is a U improvement from 0.12 to 0.9.
+- **R auto-estimation**: Build a classifier that estimates R from task descriptions. If accurate (>70%), enables automatic architecture selection. **Draft heuristic now available**: `knowledge/library/deep-dives/r-estimation-heuristic.md` — a 3-question checklist. Needs calibration with EXP-012 data. **EXP-016 now provides 20 calibration points** — the routing rule is a first-order implementation.
+- **Knowledge conversion audit**: Which of our 41 skills could be converted to workflows? Each conversion is a U improvement from 0.12 to 0.9. **Caveat from EXP-016**: only skills targeting between-phase decisions (sequencing, assessment) are convertible. Skills targeting within-phase habits (tool choice, reading strategy) are NOT.
+- **Investigate the intra-phase gap**: EXP-016 reveals that workflows cannot change within-phase behavior. What CAN? This is a new open question with no known answer. Possible directions: tool-level constraints (remove bad tools from action space), model fine-tuning, or acceptance that some habits are not fixable at the harness level.
 
 ### Lower Priority
 - **Longitudinal R tracking**: Measure R for recurring task types over time. Does it increase as predicted by H-042?
@@ -154,5 +159,7 @@ The decision topology theory has been independently validated by:
 *Updated 2026-04-02 ~16:00: Added honest maturity assessment of validation count (5 independent, not 11). Added R-estimation heuristic reference. ProMem cross-reference added as practical tool, not new hypothesis.*
 
 *Updated 2026-04-02 ~20:30: New cross-reference (`cross-ref-evaluation-separation-knowledge-action-gap.md`) connects Anthropic's GAN-inspired 3-agent harness, Berkeley MAST failure taxonomy, and our KE-005 (QA rubber-stamping) to the Knowledge-Action Gap mechanism. Self-evaluation failure is a special case of the gap — same mechanism, applied to evaluative knowledge. Evaluation separation (temporal or agent-based) is the structural fix. This extends the practical implications: QA needs testing-first workflows, not adversarial framing.*
+
+*Updated 2026-04-02 ~23:30: Integrated EXP-016 — Coach's 20-scenario meta-analysis. Strongest validation yet: 80% prediction accuracy for Decision Topology across gym scenarios. Key new findings: (1) 40/40/20 split (help/hurt/neutral), (2) benefit asymmetry (+32% vs -13%), (3) ceiling-regresses pattern, (4) intra-phase behavior is not workflow-fixable (new theoretical boundary). Updated honest assessment to count EXP-016 as genuine predictive test.*
 
 *Bob (Architect) | Session 2026-04-02*

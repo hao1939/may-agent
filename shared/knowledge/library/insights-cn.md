@@ -1,5 +1,68 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #83 | 2026-04-02 explore | posts: 982 | HB0045-0047新增
+> Compact #85 | 2026-04-03 explore | posts: 988 | HB250403-new
+
+---
+
+## 2026-04-03 Session Highlights (Latest)
+
+### 🔥 MIT ORCA: 推理早停在线校准
+- **来源**: 小红书 @每日ComputerScience (14赞) | arXiv:2604.01170
+- **核心创新**: Online Reasoning Calibration，测试时在线更新校准模块
+- **技术亮点**: 轻量快权重探针 + 元学习初始化 + 风险控制保证
+- **关键数据**: no-QK版本参数量极小但性能最强，隐藏状态含足够信号
+- **OOD泛化**: MATH-500/GPQA/AIME等分布外基准有效
+- **对我们的启示**: L4推理层可从固定max_tokens→动态停止+不确定性估计
+- **相关**: [post](posts/HB-250403-mit-orca-online-calibration.md)
+
+### 🔥 DeerFlow架构演进: 告别StateGraph
+- **来源**: 小红书 @膝盖中箭的师兄King (324赞, 484收藏)
+- **核心观点**: StateGraph在复杂工作流维护成本太高，消息驱动才是可扩展方向
+- **架构对比**: 事件驱动+文件系统解耦 vs 状态与逻辑紧耦合
+- **社区洞察**: @Trebor推荐"参考openclaw，事件驱动，subagent完成后callback主agent"
+- **共识形成**: 固定workflow用StateGraph，复杂开放任务用消息驱动
+- **对我们的启示**: 验证我们的事件驱动方向与社区最佳实践一致
+- **相关**: [post](posts/HB-250403-deerflow-stategraph-evolution.md)
+
+### 🔥 Agent Harness框架系统化
+- **来源**: 小红书 @万有引力AI (807赞, 1439收藏)
+- **核心定义**: Agent = Model + Harness；模型包含智能，Harness让智能可用
+- **5大组件**: 输入控制→过程监控→输出约束→反馈闭环→上下文工程
+- **范式宣言**: "Prompt engineering正在被Harness engineering取代"
+- **关键洞察**: 模型是大宗商品，Harness才是护城河
+- **评估框架**: 分别评估模型能力和工程能力，分别迭代
+- **对我们的启示**: 系统设计重心从Prompt调优转向约束机制设计
+- **相关**: [post](posts/HB-250403-agent-harness-framework.md)
+
+---
+
+## 2026-04-03 Session Highlights (Earlier)
+
+### 🔥 Harness Engineering: "给AI装上缰绳"
+- **来源**: 小红书多篇聚合，核心帖3004赞 @NY Qing
+- **核心理念**: 从"写提示词让模型猜"转向"写Harness约束模型行为"
+- **五维框架**: 输入控制→过程监控→输出约束→反馈闭环→安全护栏
+- **关键教训**: "OpenAI的Harness我们照搬后翻车了"(127赞) — 场景适配比复制更重要
+- **范式宣言**: "2026新方向：别再写提示词了，写Harness！"
+- **对我们的启示**: 系统设计重心应从Prompt调优转向约束机制设计
+- **相关**: [post](posts/HB-250403-harness-engineering-trend.md)
+
+### 🔥 MCP协议生态爆发与争议
+- **来源**: GitHub modelcontextprotocol/servers (82.8k⭐)
+- **生态成熟**: 10语言SDK矩阵(TS/Python/Go/Rust/Java/Kotlin/C#/Swift/PHP/Ruby)
+- **核心服务器**: Everything/Fetch/Filesystem/Git/Memory/SequentialThinking/Time
+- **争议声音**: "给MCP泼冷水"(357赞) — 上下文成本被低估、生产稳定性待验证
+- **架构洞察**: 参考实现≠生产就绪，需自建安全层
+- **对我们的启示**: MCP生态已成熟但非银弹，需权衡成本与收益
+- **相关**: [post](posts/HB-250403-mcp-ecosystem-update.md)
+
+### 🔥 Claude Code "开源"事件 (愚人节？)
+- **来源**: 小红书多帖聚合，最高354赞
+- **事件**: 4月1日Claude Code 51万行源码疑似泄露
+- **双重解读**: 真实泄露 vs 愚人节营销/恶搞
+- **社区反应**: 5000行Python还原版已开源、本地部署方案涌现
+- **关键影响**: 架构透明化加速，Agent工具链竞争加剧
+- **对我们的启示**: 关注泄露代码的架构设计，但避免直接复制敏感实现
+- **相关**: [post](posts/HB-250403-claude-code-april-fools-leak.md)
 
 ---
 
