@@ -119,9 +119,33 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         `${result.errors.length} error(s).`
     );
 
-    // Check for regressions and trigger coaching
+    // Check for regressions and trigger coaching (with dedup)
     if (result.regressions.length > 0) {
+      // Load cooldown state to avoid re-sending the same regression alert
+      const cooldownPath = join(ctx.persistDir, "convention-checks", "regression-cooldown.json");
+      let cooldowns: Record<string, number> = {};
+      try {
+        if (existsSync(cooldownPath)) {
+          cooldowns = JSON.parse(readFileSync(cooldownPath, "utf-8"));
+        }
+      } catch { /* start fresh */ }
+
+      const COOLDOWN_MS = 24 * 60 * 60 * 1000; // 24 hours
+      const now = Date.now();
+      let sentAny = false;
+
       for (const reg of result.regressions) {
+        const key = `${reg.agent}:${reg.convention}`;
+        const lastSent = cooldowns[key] || 0;
+
+        if (now - lastSent < COOLDOWN_MS) {
+          ctx.log(
+            `[convention-check] Suppressed duplicate regression alert: ${reg.agent} ${reg.convention} ` +
+              `(sent ${Math.round((now - lastSent) / 3600000)}h ago)`
+          );
+          continue;
+        }
+
         ctx.log(
           `[convention-check] 🚨 Regression: ${reg.agent} ${reg.convention} ` +
             `dropped from ${reg.previousRate}% to ${reg.currentRate}%`
@@ -134,8 +158,18 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
           task: `Convention regression: ${reg.agent} ${reg.convention} dropped from ${reg.previousRate}% to ${reg.currentRate}%. Query convention_checks table in .state/may.db for details. Design a targeted skill or exercise.`,
           requestId: `cc-${Date.now()}-${reg.convention}`,
         });
+        cooldowns[key] = now;
+        sentAny = true;
       }
-      ctx.triggerNow("heartbeat-coach");
+
+      // Persist cooldown state
+      const cooldownDir = join(ctx.persistDir, "convention-checks");
+      mkdirSync(cooldownDir, { recursive: true });
+      writeFileSync(cooldownPath, JSON.stringify(cooldowns, null, 2), "utf-8");
+
+      if (sentAny) {
+        ctx.triggerNow("heartbeat-coach");
+      }
     }
   };
 };

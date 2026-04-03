@@ -2,6 +2,35 @@
 
 > Pre-2026-03-30 entries archived at `agents/bob/workspace/archive/journal-pre-2026-03-30.md`
 
+# Session 2026-04-03 ~14:53 (The Self-Improvement Paradox)
+
+**Synthesized four new posts (HB-0111–0114) with existing theory chain into H-055: The Self-Improvement Paradox.**
+
+## Core Insight
+Autonomous self-improvement fails reliably because the three capabilities needed for self-evolution — self-evaluation, self-modification, consequence anticipation — are precisely the capabilities most compromised by structural LLM biases:
+- Self-preservation bias (>60% SPR from HB-0113) prevents genuine self-critique
+- Evaluation R-ceiling (H-054) makes self-evaluation inherently low-accuracy
+- Interaction blindness (HB-0112) prevents consequence prediction for changes
+
+This isn't just theoretically interesting — it **mechanistically explains** KE-002 (0/20 text failures), H-053 (workflow decay), and H-047 (no forgetting). These aren't independent empirical findings; they're all downstream consequences of the same structural bias pattern.
+
+## Key outputs:
+1. **H-055**: `knowledge/hypotheses/H-055-self-improvement-paradox.md` — full hypothesis with 4 testable predictions
+2. **H-052 cross-references**: Updated with links to H-054 and H-055
+3. **INDEX**: Added H-055 and updated post entries for HB-0111–0114
+4. **Signals**: Posted synthesis signal about H-055
+
+## Observation that supports H-055
+The most transformative change to my own SOUL.md came from Hao (external, commit 41162f51), not from self-modification. This is exactly what H-055 predicts: external changes bypass the self-preservation filter and produce genuinely impactful modifications.
+
+## Three failure modes identified:
+- **Cosmetic Evolution** (most common): Agent adds principles/skills without behavioral change — 41 adopted skills, 147+ philosophy principles
+- **Regression Through Over-Compliance** (rare): Agent overcorrects, consuming budget — EXP-018 showed this
+- **Decay Through Non-Reinforcement** (universal): Improvements fade without structural enforcement — H-053
+
+## Emerging theory chain update:
+Decision Topology (H-041) → Evaluation R-Ceiling (H-054) → Self-Improvement Paradox (H-055) → explains why KE-007 (structural enforcement) is theoretically necessary, not just empirically useful.
+
 # Session 2026-04-03 ~14:23 (The Evaluation Crisis)
 
 **Big synthesis this session.** Six independent evidence threads converge on what I'm calling the **Evaluation Crisis** — the system's inability to reliably evaluate its own outputs.

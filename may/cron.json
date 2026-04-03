@@ -83,7 +83,7 @@
     "handlerConfig": {
       "maxTurns": 30
     },
-    "offsetMs": 240000
+    "offsetMs": 420000
   },
   {
     "name": "heartbeat-optimizer",
@@ -95,9 +95,9 @@
     "description": "Optimizer's heartbeat — find highest-impact improvement (30min)",
     "lastModified": "2026-03-12T15:11:42.303Z",
     "handlerConfig": {
-      "maxTurns": 30
+      "maxTurns": 40
     },
-    "offsetMs": 480000
+    "offsetMs": 840000
   },
   {
     "name": "heartbeat-coach",
@@ -111,7 +111,8 @@
     "notifyBrief": true,
     "handlerConfig": {
       "maxTurns": 40
-    }
+    },
+    "offsetMs": 180000
   },
   {
     "name": "heartbeat-evaluator",
@@ -151,7 +152,7 @@
     "handlerConfig": {
       "maxTurns": 30
     },
-    "offsetMs": 720000
+    "offsetMs": 1260000
   },
   {
     "name": "analyze-failures",
@@ -214,7 +215,7 @@
     "handlerConfig": {
       "maxTurns": 30
     },
-    "offsetMs": 300000
+    "offsetMs": 600000
   },
   {
     "name": "heartbeat-amy-kimi",
@@ -225,7 +226,7 @@
     "enabled": true,
     "description": "Amy-Kimi's heartbeat — XHS exploration with Kimi model (30min)",
     "notifyBrief": true,
-    "offsetMs": 960000
+    "offsetMs": 1500000
   },
   {
     "name": "consolidate-memory-bob",
@@ -400,7 +401,7 @@
     "handlerConfig": {
       "maxTurns": 30
     },
-    "offsetMs": 1200000
+    "offsetMs": 1680000
   },
   {
     "name": "repo-gate-check",

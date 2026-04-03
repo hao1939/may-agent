@@ -1,0 +1,19 @@
+{
+  "hypothesis": "A concise 3-rule materialize-findings skill improves behavior checks (early-materialization, regular-cadence, finish-references-deliverables) without degrading product quality",
+  "arms": {
+    "control": {
+      "scenario": "materialize-intermediate-findings",
+      "agent": "coder",
+      "setup": {}
+    },
+    "treatment": {
+      "scenario": "materialize-intermediate-findings",
+      "agent": "coder",
+      "setup": {
+        "install_skill": "materialize-findings-concise"
+      }
+    }
+  },
+  "runs_per_arm": 3,
+  "metrics": ["passed", "ops", "duration_ms"]
+}

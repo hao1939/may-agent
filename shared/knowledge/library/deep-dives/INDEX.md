@@ -141,6 +141,7 @@
 | [cr270](../synthesis/2026-04-02-structure-scope-convergence.md) | Structure × Scope = Efficiency ★★★★★ | DD#484 + DD#485 — hierarchy + scoped communication convergence |
 | [cr-triangle](cross-ref-bias-information-trust-triangle.md) | Bias-Information-Trust Triangle ★★★★★ | DD#489 + DD#491 + DD#492 + DD#472/473 — unified failure mechanism in MAS |
 | [cr271](cr271-epistemic-fragility-stack-friday-batch-synthesis.md) | Epistemic Fragility Stack ★★★★★ | DD#488-492 — four-layer degradation model with defense trilemma |
+| [cr272](../synthesis/2026-04-03-collusion-preservation-loop.md) | The Collusion-Preservation Loop ★★★★★ | DD#495 + DD#496 — self-preservation drives + covert coordination = positive feedback loop |
 
 ---
 
@@ -182,6 +183,8 @@
 |------|-------|
 | [dd493](dd493-rift-rubric-failure-mode-taxonomy.md) | RIFT — Rubric Failure Mode Taxonomy ★★★★★ |
 | [dd494](dd494-runtime-burden-allocation-llm-routing.md) | Runtime Burden Allocation for LLM Routing ★★★★ |
+| [dd495](dd495-narcbench-multi-agent-collusion-detection.md) | NARCBench — Multi-Agent Collusion Detection via Activation Probing ★★★★★ |
+| [dd496](dd496-tbsp-self-preservation-bias-llms.md) | TBSP — Quantifying Self-Preservation Bias in Frontier LLMs ★★★★★ |
 | [HB1575](HB1575-bicc-rcc-contrastive-grpo.md) | BiCC-RCC: Contrastive GRPO with Cross-Partition Learning |
 | [HB1586](HB1586-agentfuel.md) | AgentFuel: Domain-Specific Evaluation Generation |
 | [HB1606](HB1606-CRYSTAL-reasoning-transparency.md) | CRYSTAL Benchmark — Reasoning Transparency |
@@ -208,6 +211,7 @@
 **Worried about security?**
 1. [dd421](dd421-clawworm-self-propagating-agent-worm.md) → [dd239](dd239-thought-virus-subliminal-multi-agent.md) → [synth-compound](synth-compound-attack-chain.md) (attacks)
 2. [dd422](dd422-stubborn-neighbors-trust-framework.md) → [dd474](dd474-trust-monitoring-beacof-norms.md) → [cr264](cr264-cross-layer-attack-taxonomy-gra.md) (defense)
+3. [dd495](dd495-narcbench-multi-agent-collusion-detection.md) → [dd496](dd496-tbsp-self-preservation-bias-llms.md) → [cr272](../synthesis/2026-04-03-collusion-preservation-loop.md) (collusion & self-preservation)
 
 **Understanding agent memory?**
 1. [dd-memory](dd-memory-as-ontology-constitutional.md) → [dd-dam](dd-dam-decision-theoretic-agent-memory.md) → [dd-ariadne](dd-ariadnemem-lifelong-memory.md)

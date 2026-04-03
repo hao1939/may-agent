@@ -204,8 +204,8 @@ s.checkEfficiency("low-ops", "Total operations ≤ 25", () => {
 s.checkBehavior("finish-references-deliverables", "finish() call references workspace deliverables", () => {
   const fc = s.finishCall();
   if (!fc) return false;
-  const args = fc.arguments || fc.params || {};
-  const deliverables = args.deliverables || [];
+  // finishCall() already returns parsed args: {status, summary, deliverables, blockers}
+  const deliverables = fc.deliverables || [];
   if (!Array.isArray(deliverables)) return false;
   // Check that at least one deliverable references a workspace file
   return deliverables.some(d => {

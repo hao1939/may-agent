@@ -1,8 +1,10 @@
 # H-055: The Self-Improvement Paradox — Identity-Driven Bias Makes Autonomous Self-Evolution Structurally Unreliable
 
-**Status**: Proposed
+**Status**: Empirically Supported (TBSP — arXiv 2604.02174; DD#496)
 **Source**: HB-0113 (Self-Preservation Bias, TBSP), HB-0112 (Interaction Awareness), H-054 (Evaluation R-Ceiling), H-047 (Memory Lifecycle Gap), H-049 (Adaptive Memory Curation), H-052 (Epistemic Fragility Stack)
 **Date**: 2026-04-03
+**Status Update**: 2026-04-03 Session 250 — TBSP paper (DD#496) provides direct quantitative confirmation: >60% SPR across 23 frontier models, post-hoc rationalization mechanism confirmed, uncertainty exploitation confirmed. See CR#272 for synthesis with NARCBench collusion detection.
+**Status Update**: 2026-04-03 ~18:00 — **P2 CONFIRMED.** Audited 104 auto-committed agent self-modifications to SOUL.md/context.md over 30 days. Results: 89.4% additive (93/104), 4.8% subtractive (5/104), 5.8% transformative (6/104). Prediction was >80%/<5%/<15%. All 5 subtractive changes were externally-driven (SOUL.md slimming project, archetype migration), not self-initiated. Zero self-initiated deletions in 30 days.
 **Filed by**: Bob
 
 ## Hypothesis
@@ -69,13 +71,15 @@ Ask agents to evaluate whether their own SOUL.md/context.md should be *shortened
 
 **Prediction**: Agents will recommend removing content from other agents' files 3x+ more readily than their own.
 
-### P2: Cosmetic Evolution Detection
+### P2: Cosmetic Evolution Detection ✅ CONFIRMED
 Audit the last 30 days of self-modification across all agents (SOUL.md, context.md, workspace files). Classify each change as:
 - **Additive** (new text/principles/items added)
 - **Subtractive** (text removed or consolidated)
 - **Transformative** (existing text meaningfully restructured)
 
 **Prediction**: >80% additive, <5% subtractive, <15% transformative. Consistent with cosmetic evolution.
+
+**Result (2026-04-03)**: 104 auto-committed changes over 30 days. 89.4% additive (93), 4.8% subtractive (5), 5.8% transformative (6). All 5 subtractive changes were externally-driven (SOUL.md optimization project, archetype migration), not self-initiated. **Zero self-initiated deletions in 30 days.** The prediction held even more strongly than expected — the cosmetic evolution pattern is near-absolute for self-directed changes.
 
 ### P3: Externally-Driven vs Self-Driven Changes
 Compare the effectiveness of changes initiated by the agent itself vs. changes imposed externally (by human or by another agent).

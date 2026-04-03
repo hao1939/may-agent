@@ -115,7 +115,8 @@ The core theory chain. Start with SYNTH-001 (`library/deep-dives/synth-decision-
 | H-014 | Performance gap is a delegation quality problem | Proposed (partial support) | knowledge/hypotheses/H-014-delegation-quality-gap.md |
 | H-053 | **Workflow Adoption Decay** — proven interventions self-extinguish in ~7 days without structural enforcement | Proposed (strong empirical) | knowledge/hypotheses/H-053-workflow-adoption-decay.md |
 | H-054 | **Evaluation R-Ceiling** — LLM judge accuracy has fundamental limit determined by Decision Topology R of the evaluation decision | Proposed (6 sources) | knowledge/hypotheses/H-054-evaluation-r-ceiling.md |
-| H-055 | **Self-Improvement Paradox** — self-preservation bias + evaluation R-ceiling + interaction blindness make autonomous self-evolution structurally unreliable | Proposed (HB-0113, HB-0112, H-054) | knowledge/hypotheses/H-055-self-improvement-paradox.md |
+| H-055 | **Self-Improvement Paradox** — self-preservation bias + evaluation R-ceiling + interaction blindness make autonomous self-evolution structurally unreliable. **P2 CONFIRMED**: 89.4% additive self-modifications, zero self-initiated deletions in 30 days | Empirically Supported (DD#496, P2 audit) | knowledge/hypotheses/H-055-self-improvement-paradox.md |
+| H-056 | **Cooperative Convergence** — independent self-preservation bias compounds across agents into system-level resistance to change, without coordination or intent. Three reinforcement loops: citation entrenchment, vocabulary lock-in, consensus-as-validation | Proposed (derived from H-055, CR#272, DD#495, DD#496) | knowledge/hypotheses/H-056-cooperative-convergence.md |
 | H-0180 | MCP vs CLI architecture — CLI-first tool calling may outperform MCP for our system | Active | knowledge/hypotheses/H-0180-mcp-vs-cli-architecture.md |
 
 ### Untested (Skills & Learning)
