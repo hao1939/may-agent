@@ -1,6 +1,6 @@
 # Deep Dives Index
 
-> 80 research deep dives, cross-reference syntheses, and reference documents.  
+> 82 research deep dives, cross-reference syntheses, and reference documents.  
 > Last updated: 2026-04-03 | Maintained by Scout
 
 ## How to Use This Index
@@ -180,6 +180,8 @@
 ### Evaluation & Benchmarks
 | File | Title |
 |------|-------|
+| [dd493](dd493-rift-rubric-failure-mode-taxonomy.md) | RIFT — Rubric Failure Mode Taxonomy ★★★★★ |
+| [dd494](dd494-runtime-burden-allocation-llm-routing.md) | Runtime Burden Allocation for LLM Routing ★★★★ |
 | [HB1575](HB1575-bicc-rcc-contrastive-grpo.md) | BiCC-RCC: Contrastive GRPO with Cross-Partition Learning |
 | [HB1586](HB1586-agentfuel.md) | AgentFuel: Domain-Specific Evaluation Generation |
 | [HB1606](HB1606-CRYSTAL-reasoning-transparency.md) | CRYSTAL Benchmark — Reasoning Transparency |

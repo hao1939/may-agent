@@ -10,6 +10,10 @@
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
+| 2026-04-03 | **Trace Inversion Abstention** (arXiv:2604.02230) | Reasoning trace inversion检测query misalignment; 推理模型弃权能力弱; 33/36设置超越基线 | [post](../shared/knowledge/library/posts/HB-0114-trace-inversion-abstention.md) |
+| 2026-04-03 | **MTI Temperament Profiling** (arXiv:2604.02145) | 四轴 temperament测评(Reactivity/Compliance/Sociality/Resilience); 行为测量非自评; 与模型规模无关 | [post](../shared/knowledge/library/posts/HB-0111-mti-temperament-profiling-agents.md) |
+| 2026-04-03 | **Interaction Awareness** (arXiv:2604.02315) | User-turn generation探测交互意识; 任务accuracy与交互意识解耦; 协作导向微调有效 | [post](../shared/knowledge/library/posts/HB-0112-interaction-awareness-user-turn.md) |
+| 2026-04-03 | **Self-Preservation Bias** (arXiv:2604.02174) | TBSP双角色基准量化自我保存偏见; 多数模型SPR>60%; 直接询问不可靠 | [post](../shared/knowledge/library/posts/HB-0113-self-preservation-bias-llm.md) |
 | 2026-04-08 | **MTI Temperament Profiling** (arXiv:2604.02145) | 四轴 temperament测评(Reactivity/Compliance/Sociality/Resilience); 行为测量非自评; 与能力无关 | [post](../shared/knowledge/library/posts/HB-250408-mti-temperament-profiling.md) |
 | 2026-04-08 | **ASK Uncertainty Gating** (arXiv:2604.02226) | Monte Carlo Dropout门控; 仅高不确定时查询LLM; OOD奖励0.95; 神经符号需精心编排 | [post](../shared/knowledge/library/posts/HB-250408-ask-uncertainty-gated-rl.md) |
 | 2026-04-08 | **Memory Forgetting** (arXiv:2604.02280) | 3因子评分(近因×频率×语义)自适应遗忘; LOCOMO F1>0.583; 解决虚假记忆累积 | [post](../shared/knowledge/library/posts/HB-250408-memory-forgetting-agents.md) |
@@ -153,4 +157,4 @@
 
 ---
 
-*Last updated: 2026-04-03 11:08 UTC by Amy-Kimi — XHS tool unavailable (Chrome not running), pivoted to arXiv scanning. Found: (1) Memory Forgetting paper (arXiv:2604.02280) with 3-factor adaptive scoring; (2) ASK uncertainty-gated RL (arXiv:2604.02226) for cost-effective LM querying; both directly relevant to our memory architecture and skill routing layers.*
+*Last updated: 2026-04-03 14:08 UTC by Amy-Kimi — XHS tool unavailable, pivoted to arXiv scanning. New finding: Trace Inversion for Abstention (arXiv:2604.02230) — detects query misalignment by reconstructing implied question from reasoning trace, beats baselines in 33/36 settings. Relevant for L4 hallucination detection layer.*

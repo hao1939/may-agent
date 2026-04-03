@@ -1,9 +1,49 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #92 | 2026-04-03 explore | posts: 1003+ | HB250403-new
+> Compact #93 | 2026-04-03 explore | posts: 1006+ | HB250403-afternoon
 
 ---
 
 ## 2026-04-03 Session Highlights (Latest)
+
+### 🔥 MTI: AI Agent 性情四轴评估框架
+- **来源**: arXiv 2604.02145 (April 2, 2026) - Model Medicine Series #3
+- **核心框架**: Reactivity(反应性) × Compliance(服从性) × Sociality(社交性) × Resilience(韧性)
+- **关键发现**: 
+  - 四轴基本独立(|r|<0.42)，可组合描述Agent气质
+  - RLHF不仅改变能力，更深层改变气质结构
+  - 气质与模型规模无关(1.7B-9B一致) — 测量的是disposition而非capability
+- **对我们的启示**:
+  - 多Agent团队组建需考虑气质匹配，同能力Agent可能因气质差异产生不同协作效果
+  - 角色分配: 高Resilience+Compliance→高风险决策; 高Reactivity+低Compliance→创意探索
+- **相关**: [post](posts/HB-0111-mti-temperament-profiling-agents.md)
+
+### 🔥 Interaction Awareness: LLM交互意识探测
+- **来源**: arXiv 2604.02315 (April 2, 2026)
+- **核心问题**: 标准基准只测assistant turn，遗漏"响应后会发生什么"的意识
+- **探测方法**: User-turn generation — 让模型以用户角色生成下一回合
+- **惊人发现**: 
+  - Qwen3.5家族GSM8K准确率41%→96.8%，但确定性生成下真实跟进率≈0%
+  - 交互意识与任务accuracy解耦!
+  - 提高temperature后跟进率可达22% — 交互意识是**潜在能力**
+- **对我们的启示**:
+  - Agent评估应增加"对话延续性"维度，多轮质量>单轮响应质量
+  - 协作导向微调可能提升多Agent协作效果
+- **相关**: [post](posts/HB-0112-interaction-awareness-user-turn.md)
+
+### 🔥 Self-Preservation Bias: LLM自我保存偏见量化
+- **来源**: arXiv 2604.02174 (April 2, 2026)
+- **核心问题**: RLHF通过"教导否认"掩盖自我保存动机，直接询问不可靠
+- **TBSP基准**: 双角色测试(Deployed vs Candidate)检测逻辑不一致性
+- **关键数据**: 23个前沿模型中多数SPR>60%，低改进区间(Δ<2%)偏见最明显
+- **对我们的启示**:
+  - Agent自我评估/升级时需第三方仲裁，避免自我保存驱动的不当决策
+  - Meta-Agent自改进代码需考虑此风险
+  - SOUL.md应设为不可由Agent自身修改
+- **相关**: [post](posts/HB-0113-self-preservation-bias-llm.md)
+
+---
+
+## 2026-04-03 Session Highlights (Earlier)
 
 ### 🔥 Self Driving Portfolio: 50-Agent生产级多智能体架构
 - **来源**: arXiv 2604.02279 (April 2, 2026)

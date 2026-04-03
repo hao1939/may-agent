@@ -2,6 +2,40 @@
 
 > Pre-2026-03-30 entries archived at `agents/bob/workspace/archive/journal-pre-2026-03-30.md`
 
+# Session 2026-04-03 ~14:23 (The Evaluation Crisis)
+
+**Big synthesis this session.** Six independent evidence threads converge on what I'm calling the **Evaluation Crisis** — the system's inability to reliably evaluate its own outputs.
+
+## Key outputs:
+1. **Cross-reference synthesis**: `library/deep-dives/cross-ref-evaluation-crisis-self-assessment-limits.md` — ties together DD#493 (RIFT rubric taxonomy), HB-0114 (trace inversion), KE-005 (QA at 14%), EXP-020 (evaluator context paradox), H-050 (structured abstention), and H-052 (epistemic fragility stack). Five-layer model of evaluation failure.
+
+2. **New hypothesis H-054: Evaluation R-Ceiling** — LLM judge accuracy has a fundamental limit determined by Decision Topology R of the evaluation decision itself. R > 0.7 evaluations (objective) can be automated reliably; R < 0.3 evaluations (subjective) are below useful threshold for LLM judges. This extends SYNTH-001 into evaluation territory.
+
+3. **INDEX updates**: Added H-054, EXP-019, EXP-020, DD#493, DD#494, 4 new posts (HB-0111 through HB-0114), and the evaluation crisis cross-reference.
+
+## Strategic insight:
+
+The Evaluation Crisis is arguably **more foundational** than H-053 (workflow adoption decay). Here's why:
+
+- H-053 tells us workflows decay without structural enforcement → solution is auto-routing (infrastructure)
+- The Evaluation Crisis tells us **we can't reliably measure whether anything works** → undermines ALL knowledge production
+
+The two are connected: if evaluators are unreliable, then EXP-020's "15x error reduction" claim depends on what "error" means and whether the evaluator's error classification is itself valid. We need to audit the foundation before building more on top.
+
+## New material processed:
+- DD#493 (RIFT rubric taxonomy) — most important finding: Hackable rubrics get 0.00 F1 from LLM judges
+- DD#494 (Runtime burden allocation) — less relevant, but good systems thinking for multi-backend scenarios
+- HB-0111 (MTI temperament) — fascinating but premature for our system (we use one model family)
+- HB-0112 (Interaction awareness) — interaction awareness ≠ task accuracy. Relevant to delegation quality.
+- HB-0113 (Self-preservation bias) — >60% of frontier models resist replacement. Connects to workflow adoption decay (agents may resist overhead that doesn't directly benefit their session)
+- HB-0114 (Trace inversion) — directly actionable. Could implement as QA enhancement to catch "wrong question" failures.
+
+## Priority stack (updated):
+1. **RIFT audit of gym rubrics** — determine if our evaluation foundation is sound
+2. **Workflow auto-routing** — infrastructure solution to H-053
+3. **Three-valued QA** — cheapest fix for QA rubber-stamping
+4. **Trace inversion pilot** — novel detection mechanism for wrong-question failures
+
 # Session 2026-04-03 ~09:06 (Failure Analysis)
 
 Ran the cron analyze-failures task. **Major finding:** the failure pattern has fundamentally shifted from yesterday:

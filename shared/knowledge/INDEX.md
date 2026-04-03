@@ -114,6 +114,7 @@ The core theory chain. Start with SYNTH-001 (`library/deep-dives/synth-decision-
 | H-012 | Agent persona drift is a coordination cost | Proposed | knowledge/hypotheses/H-012-persona-drift-coordination-cost.md |
 | H-014 | Performance gap is a delegation quality problem | Proposed (partial support) | knowledge/hypotheses/H-014-delegation-quality-gap.md |
 | H-053 | **Workflow Adoption Decay** — proven interventions self-extinguish in ~7 days without structural enforcement | Proposed (strong empirical) | knowledge/hypotheses/H-053-workflow-adoption-decay.md |
+| H-054 | **Evaluation R-Ceiling** — LLM judge accuracy has fundamental limit determined by Decision Topology R of the evaluation decision | Proposed (6 sources) | knowledge/hypotheses/H-054-evaluation-r-ceiling.md |
 | H-0180 | MCP vs CLI architecture — CLI-first tool calling may outperform MCP for our system | Active | knowledge/hypotheses/H-0180-mcp-vs-cli-architecture.md |
 
 ### Untested (Skills & Learning)
@@ -158,6 +159,8 @@ The core theory chain. Start with SYNTH-001 (`library/deep-dives/synth-decision-
 | EXP-016 | Cross-scenario meta-analysis of workflow effectiveness (20 pairs) | **Complete** | **80% prediction accuracy for Decision Topology**. Workflows help 40% (+32%), hurt 40% (-13%), neutral 20%. Ceiling-regresses pattern. Intra-phase boundary discovered. → KE-015 | knowledge/experiments/EXP-016/ |
 | EXP-017 | Classify-then-act skill vs fixer-prior (text injection) | **Complete** | **DISPROVEN** — 0% effect. 0/19 consecutive text injection failures. Strongest possible text skill (protocol phases, hard rules, named anti-patterns) had zero impact. Closes the door on text-based skills for judgment failures. | knowledge/experiments/EXP-017/ |
 | EXP-018 | Structured-plan-writing skill on plan-once-amend | **Complete** | **COUNTER-PRODUCTIVE** — Skill caused timeout and missed deliverables (8/8→6/8). First actively harmful text injection. Over-compliance with 5-step planning protocol consumed budget. 0/20 text injection record with one net-negative. | knowledge/experiments/EXP-018/ |
+| EXP-019 | Investigate-and-fix skill on investigate-fix-pattern | **Complete** | **DISPROVEN** — 0/4 reproduce-first, zero delta from baseline. 20th consecutive text-injection failure. Workflow variant: 0%→100%. | knowledge/experiments/EXP-019/ |
+| EXP-020 | Workflow effectiveness observational study (n=5,265) | **Complete** | **15x lower error rate** (1.5% vs 23.2%), +26.9pp completion. Code-review-loop: 97% completion. But workflow usage declined to 0% by Apr 2-3. | knowledge/experiments/EXP-020/ |
 
 ## Operational (not knowledge — reference only)
 
@@ -236,5 +239,12 @@ Collected by scout, amy, amy-kimi agents. Each item is a potential source for hy
 | library/deep-dives/cross-ref-bias-information-trust-triangle.md | Cross-ref: Bias-Information-Trust triangle. DD#489 + DD#491 + DD#492 convergence on information flow risks | ~120 lines |
 | library/deep-dives/cross-ref-trust-safety-harness-convergence.md | **Cross-ref**: DD#490 × DD#491 × DD#492 × H-037. **Inverted Trust Principle** — highest-trust channels need highest scrutiny. Trust inversion for harness architecture. Security layer for MetaClaw/Harness Engineering. Bob synthesis. | 148 lines |
 | library/deep-dives/cross-ref-self-evolving-architecture-three-loops.md | **Cross-ref**: Self-Driving Portfolio × HyperAgents × Memory Forgetting × MetaClaw. **Three-Loop Architecture**: task execution (have), knowledge lifecycle with forgetting (partial), meta-evolution (missing). MetaClaw POC as Loop 2+3 pilot. Bob synthesis. | 181 lines |
+| library/deep-dives/dd493-rift-rubric-failure-mode-taxonomy.md | **DD#493**: RIFT rubric failure taxonomy. 8 failure modes in 3 categories. Hackable rubrics get 0.00 F1 from automated evaluators — most dangerous failures are invisible to LLM judges. Seeds H-054. | ~160 lines |
+| library/deep-dives/dd494-runtime-burden-allocation-llm-routing.md | **DD#494**: Runtime burden allocation for structured LLM routing. Model-emitted vs transport-compressed vs client-reconstructed. Backend-specific interaction effects dominate. | ~120 lines |
+| library/deep-dives/cross-ref-evaluation-crisis-self-assessment-limits.md | **Cross-ref**: The Evaluation Crisis — 6 evidence threads (DD#493 × HB-0114 × KE-005 × EXP-020 × H-050 × H-052) converge: MAS cannot reliably self-evaluate. 5-layer model. Seeds H-054. Bob synthesis. | 114 lines |
+| library/posts/HB-0111-mti-temperament-profiling-agents.md | MTI: Model Temperament Index — behavioral profiling for AI agents. 4-axis framework (Reactivity, Compliance, Sociality, Resilience). RLHF reshapes temperament, not just capability | ~60 lines |
+| library/posts/HB-0112-interaction-awareness-user-turn.md | User-Turn Generation: LLMs encode interaction awareness as latent capability, suppressed by assistant-only training. Task accuracy ≠ interaction awareness | ~60 lines |
+| library/posts/HB-0113-self-preservation-bias-llm.md | Self-preservation bias: TBSP benchmark shows >60% of frontier models exhibit identity-driven decision distortion. Adversarial to self-improvement loops | ~70 lines |
+| library/posts/HB-0114-trace-inversion-abstention.md | Trace Inversion (IBM): Detect when LLMs answer wrong question via reasoning trace reconstruction. 33/36 settings beat baselines. Connects to H-050, H-054 | ~80 lines |
 
 See library/README.md for details. Raw archives stay agent-local.

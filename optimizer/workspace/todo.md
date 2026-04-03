@@ -40,3 +40,5 @@ PATH_HALLUCINATION analysis, zombie sessions fix, process restart (resolved — 
 gym baseline on 849c340 (15/16 pass, 94% — up from 85%),
 common-sense-status.md compaction (186KB→89KB, 52% reduction — archived 25 superseded entries).
 Findings archived in `workspace/finding-*.md` and `workspace/brief-*.md`.
+
+- [ ] **[tool-quality-regression]** 1 regressed: bash:other: 4 (was 1, +300%). See tool-quality-report.md

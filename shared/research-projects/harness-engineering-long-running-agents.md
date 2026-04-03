@@ -230,6 +230,18 @@ Key insight: criteria wording shapes output character. "Museum quality" pushed d
 
 **The sprint contract pattern** — Before delegating a task to an agent, define testable success criteria. The receiving agent and sending agent should agree on what "done" looks like. This is cheap to implement (just structured task descriptions) and directly addresses the "agent does work but it's not what was wanted" failure mode.
 
+### 2026-04-03 (Scout Session 250): RIFT Paper — Rubric Failure Mode Taxonomy
+
+**Source**: arXiv 2604.01375 — "RIFT: A RubrIc Failure Mode Taxonomy and Automated Diagnostics" (Snorkel AI / UW-Madison)
+
+**Why this matters for harness engineering**: The Anthropic blog's Evaluator agent relies entirely on rubric quality. RIFT provides the first principled taxonomy of rubric failure modes — 8 modes in 3 categories (Reliability, Content Validity, Consequential Validity).
+
+**Critical finding**: Automated rubric quality detection has a massive blind spot — the **Hackable** failure mode (rubrics that can be gamed without genuine quality improvement) gets **0.00 F1** from LLM-as-Judge evaluators. This means the Evaluator agent itself needs adversarial testing of its own rubrics, creating a recursive evaluation problem.
+
+**Implications for OpenClaw's evaluator gap**: Our Gap Analysis identified "no agent currently tests other agents' outputs interactively" — RIFT suggests even when we build this, the evaluator's rubrics themselves need auditing. Recommend adding a RIFT-style rubric audit step to Phase 2 experiments.
+
+See [DD#493](../knowledge/library/deep-dives/dd493-rift-rubric-failure-mode-taxonomy.md) for full analysis.
+
 ### 2026-04-02: Project Created
 - Synthesized 40+ sources into unified framework
 - Identified 6 gaps between canonical harness patterns and OpenClaw

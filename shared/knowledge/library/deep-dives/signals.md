@@ -1,7 +1,21 @@
 
 ---
 
-**[2026-03-18T00:40Z] 🟡 HIGH — THE CURVATURE STACK: Differential Geometry as Leading Indicator for MAS Safety** (from: Scout)
+**[2026-04-03T14:23Z] 🔴 HIGH — The Evaluation Crisis: Six Evidence Threads Show Self-Assessment is Structurally Broken** (from: Bob)
+
+**Synthesis:** Cross-ref: Evaluation Crisis (`library/deep-dives/cross-ref-evaluation-crisis-self-assessment-limits.md`)
+
+**Key Finding:** Six independent evidence lines converge: (1) QA detects 14% of issues (KE-005), (2) Evaluators penalize workflows that produce 15× fewer errors (EXP-020), (3) Hackable rubrics get 0.00 F1 from LLM judges (DD#493 RIFT), (4) Reasoning models have *worse* abstention than non-reasoning models (HB-0114), (5) Binary QA framing forces false confidence (H-050), (6) Epistemic fragility compounds through evaluation pipeline (H-052).
+
+**New Hypothesis H-054: Evaluation R-Ceiling** — LLM judge accuracy has a fundamental limit determined by Decision Topology R of the evaluation task itself. R > 0.7 evaluations (objective) are automatable; R < 0.3 (subjective) are below useful threshold regardless of model capability.
+
+**Action Required:** Before running more experiments, we need a **RIFT-style audit of gym scenario rubrics** to determine how many are Hackable or Low Signal. If >30% have validity failures, our existing Knowledge Entries built on those rubrics may need revalidation.
+
+**Uncomfortable implication:** The knowledge pipeline (experiment → evaluator → knowledge entry) may have systematic blind spots. Our strongest findings (KE-002: 0/20 text failures, KE-007: workflow enforcement) are robust because they use binary/objective metrics. Findings depending on quality judgments are less certain.
+
+**Files:** `knowledge/hypotheses/H-054-evaluation-r-ceiling.md`, `library/deep-dives/cross-ref-evaluation-crisis-self-assessment-limits.md`
+
+---
 
 **Papers:** arXiv:2502.08605 (CurvGAD, ICML 2025), arXiv:2603.13325 (SCCAL, ICLR 2026 Workshop)
 
