@@ -190,6 +190,9 @@ export class SubagentManager {
   /** Current call depth per root session (tracks nested callAgent chains). */
   private callDepths = new Map<string, number>();
   private apiGate?: import("./api-gate.js").ApiGate;
+  /** Tracks auto-resume attempts per session to prevent infinite loops. */
+  private _resumeAttempts = new Map<string, number>();
+  private static readonly MAX_RESUME_ATTEMPTS = 2;
 
   /** Project root directory. Used for detached agent spawning. */
   get projectRoot(): string {
@@ -894,6 +897,23 @@ export class SubagentManager {
     session.unsubscribe?.();
     session.endedAt = Date.now();
 
+    // Extract last assistant text as outcome — used by resume and onSessionComplete
+    let outcome: string | undefined;
+    {
+      const msgs = session.agent.state.messages;
+      for (let i = msgs.length - 1; i >= 0; i--) {
+        if (msgs[i].role === "assistant") {
+          const textParts = (msgs[i].content as Array<{ type: string; text?: string }>)
+            .filter((c) => c.type === "text" && c.text)
+            .map((c) => c.text!);
+          if (textParts.length > 0) {
+            outcome = textParts.join(" ").slice(0, 500);
+            break;
+          }
+        }
+      }
+    }
+
     // Remove [STARTED] sentinel on clean exit
     try {
       const sentinelPath = join(sessionDir(this.registry.persistDir, session.sessionId), "[STARTED]");
@@ -959,6 +979,75 @@ export class SubagentManager {
           this.getWorkspacePath(session.agentName),
         );
       }
+    }
+
+    // ── Auto-resume interrupted sessions ────────────────────────────────
+    // If interrupted by API abort (not deliberate cancel) and did real work,
+    // resume with full context instead of archiving. The agent picks up
+    // exactly where it stopped — all messages preserved in session.jsonl.
+    if (archiveStatus === "interrupted" && session.opCount > 0) {
+      const attempts = this._resumeAttempts.get(session.sessionId) ?? 0;
+      const registered = this.agents.get(session.agentName);
+      if (attempts < SubagentManager.MAX_RESUME_ATTEMPTS && registered) {
+        this._resumeAttempts.set(session.sessionId, attempts + 1);
+        const delay = 10_000 * (attempts + 1); // 10s, 20s backoff
+        log(
+          "info",
+          `[resume] ${session.agentName} (${session.sessionId}) interrupted after ${session.opCount} ops — resuming in ${delay / 1000}s (attempt ${attempts + 1}/${SubagentManager.MAX_RESUME_ATTEMPTS})`,
+        );
+
+        // Clean up active session state but keep session files on disk
+        this.clearTimeout(session);
+        this.activeSessions.delete(session.sessionId);
+        this.apiGate?.releaseAll(session.sessionId);
+
+        // Notify onSessionComplete for tracking (status stays "interrupted")
+        if (this.onSessionComplete) {
+          try {
+            this.onSessionComplete({
+              sessionId: session.sessionId, agent: session.agentName,
+              task: session.task, status: "interrupted",
+              startedAt: session.startedAt, endedAt: session.endedAt,
+              runtime: formatDuration(session.endedAt! - session.startedAt),
+              outputDir: session.outputDir, error: session.error,
+              outcome, opCount: session.opCount, opBudget: session.opBudget,
+            });
+          } catch { /* non-fatal */ }
+        }
+
+        // Schedule resume after delay
+        setTimeout(() => {
+          try {
+            const persisted = readSessionMeta(this.registry.persistDir, session.sessionId);
+            if (!persisted) {
+              log("warn", `[resume] Session ${session.sessionId} meta not found — cannot resume`);
+              return;
+            }
+            const agent = this.agents.get(session.agentName);
+            if (!agent) {
+              log("warn", `[resume] Agent ${session.agentName} not registered — cannot resume`);
+              return;
+            }
+            this.resumeSession(session.sessionId, persisted, agent);
+            log("info", `[resume] Resumed ${session.agentName} session ${session.sessionId}`);
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            log("warn", `[resume] Failed to resume ${session.sessionId}: ${msg}`);
+            // Clean up — archive the failed session
+            try {
+              this.archiveSessionDir(session);
+            } catch { /* best-effort */ }
+            this._resumeAttempts.delete(session.sessionId);
+          }
+        }, delay);
+
+        return; // Skip normal archive path
+      }
+      // Exhausted retries — fall through to archive
+      if (attempts >= SubagentManager.MAX_RESUME_ATTEMPTS) {
+        log("warn", `[resume] ${session.agentName} exhausted ${SubagentManager.MAX_RESUME_ATTEMPTS} resume attempts — archiving`);
+      }
+      this._resumeAttempts.delete(session.sessionId);
     }
 
     this.archiveSessionDir(session);
@@ -1063,21 +1152,6 @@ export class SubagentManager {
     }
 
     if (this.onSessionComplete) {
-      // Extract last assistant text as outcome (useful for interrupted session recovery)
-      let outcome: string | undefined;
-      const messages = session.agent.state.messages;
-      for (let i = messages.length - 1; i >= 0; i--) {
-        if (messages[i].role === "assistant") {
-          const textParts = (messages[i].content as Array<{ type: string; text?: string }>)
-            .filter((c) => c.type === "text" && c.text)
-            .map((c) => c.text!);
-          if (textParts.length > 0) {
-            outcome = textParts.join(" ").slice(0, 500);
-            break;
-          }
-        }
-      }
-
       const info: SessionInfo = {
         sessionId: session.sessionId,
         agent: session.agentName,
