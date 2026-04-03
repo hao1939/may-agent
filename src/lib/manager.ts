@@ -2004,11 +2004,16 @@ export class SubagentManager {
   ): Promise<void> {
     if (!this.apiGate) return callFn();
 
-    const baseUrl = session.agent.state.model?.baseUrl;
-    if (!baseUrl) return callFn();
+    const model = session.agent.state.model;
+    if (!model?.baseUrl) return callFn();
+
+    // Key by provider, not just baseUrl. When multiple models go through
+    // the same proxy (e.g., LiteLLM), they hit different upstream providers
+    // with independent rate limits. Use "baseUrl::provider" as the gate key.
+    const gateKey = `${model.baseUrl}::${model.provider ?? "unknown"}`;
 
     return this.apiGate
-      .acquire(baseUrl, session.sessionId, session.agentName)
+      .acquire(gateKey, session.sessionId, session.agentName)
       .then((release) =>
         callFn().finally(release),
       );
