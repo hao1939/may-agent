@@ -325,13 +325,16 @@ const manager = new SubagentManager({
   infraRetryMax: 3,
   apiGate,
   bus,
-  // Thin callbacks for agent-loader bookkeeping (not bus concerns)
-  onSessionStart: (agentName, sessionId) => {
-    setAgentSessionId(agentName, sessionId);
-  },
-  onSessionComplete: (info) => {
-    runAgentCleanup(info.agent);
-  },
+});
+
+// Agent-loader bookkeeping (track active session IDs, run cleanup on completion)
+bus.subscribe((event) => {
+  if (event.type === "session_start" && "agent" in event && "sessionId" in event) {
+    setAgentSessionId(event.agent as string, event.sessionId as string);
+  }
+  if (event.type === "session_end" && "agent" in event) {
+    runAgentCleanup(event.agent as string);
+  }
 });
 
 // ── Bus subscribers for session lifecycle (recovery, eval, escalation) ──
