@@ -50,13 +50,9 @@ import {
   ensureSessionDir,
   appendSessionMessage,
   readSessionMessages,
-  readArchivedSessionMessages,
   sessionOutputDir,
   readMemoryEntries,
   memoryPath,
-  archiveSession,
-  restoreSessionFromArchive,
-  historyDir,
   listActiveSessionIds,
   readSessionMeta,
   writeSessionMeta,
@@ -532,12 +528,12 @@ export class SubagentManager {
   }
 
   /** Archive a session after completion: move to history. */
-  private archiveSessionDir(session: ActiveSession): void {
+  /** Clean up step counter on session completion. */
+  private cleanupSession(session: ActiveSession): void {
     try {
       cleanupStepCounter(session.sessionId);
-      archiveSession(this.registry.persistDir, session.sessionId);
     } catch {
-      // Session dir may not exist (e.g. no persistDir or already archived)
+      /* best-effort */
     }
   }
 
@@ -755,7 +751,7 @@ export class SubagentManager {
 
     // Auto-resume handled by createAutoResume subscriber (reacts to session_end event).
 
-    this.archiveSessionDir(session);
+    this.cleanupSession(session);
     this.activeSessions.delete(session.sessionId);
 
     // Request status and session DB outcome handled by DbWriter + RequestTracker subscribers.
@@ -1120,51 +1116,32 @@ export class SubagentManager {
   }
 
   /**
-   * Archive zombie session directories that have terminal status in meta.json
-   * but were never moved to history/. This happens when sessions are interrupted
-   * by a process shutdown and archiveSession() was never called.
-   *
-   * Skips sessions that are currently active in memory (in the activeSessions map).
-   * Returns the number of sessions archived.
+   * Mark orphaned sessions as interrupted. Called periodically.
+   * Sessions in .state/sessions/ with status "running" but not in activeSessions
+   * are orphans from a previous crash. Mark them interrupted so they're not resumed.
    */
   cleanupZombieSessions(): number {
     const persistDir = this.registry.persistDir;
     const activeIds = listActiveSessionIds(persistDir);
-    const terminalStatuses = new Set(["interrupted", "done", "error"]);
-    let archived = 0;
+    let cleaned = 0;
 
     for (const sessionId of activeIds) {
-      // Skip sessions that are currently active in memory
       if (this.activeSessions.has(sessionId)) continue;
-
       const meta = readSessionMeta(persistDir, sessionId);
-      if (!meta) continue; // unreadable meta — skip
+      if (!meta) continue;
 
-      if (terminalStatuses.has(meta.status)) {
-        try {
-          archiveSession(persistDir, sessionId);
-          archived++;
-        } catch {
-          // best-effort — dir may already be gone or locked
-        }
-      } else if (meta.status === "running") {
-        // Orphaned session: still "running" but not active in memory.
-        // If stale >30min, mark as interrupted and archive.
+      if (meta.status === "running") {
         const staleThresholdMs = 30 * 60 * 1000;
-        const lastActivity = meta.startedAt ?? 0;
-        if (Date.now() - lastActivity > staleThresholdMs) {
+        if (Date.now() - (meta.startedAt ?? 0) > staleThresholdMs) {
           try {
             writeSessionMeta(persistDir, sessionId, { ...meta, status: "interrupted" });
-            archiveSession(persistDir, sessionId);
-            archived++;
-          } catch {
-            // best-effort
-          }
+            this.registry.updateSessionStatus(sessionId, "interrupted", "Zombie cleanup");
+            cleaned++;
+          } catch { /* best-effort */ }
         }
       }
     }
-
-    return archived;
+    return cleaned;
   }
 
   /**
@@ -1180,7 +1157,6 @@ export class SubagentManager {
     const def = registered.definition;
 
     ensureSessionDir(persistDir, sessionId);
-    restoreSessionFromArchive(persistDir, sessionId);
 
     const compactedMessages = readCompactedMessages(persistDir, sessionId);
     const savedMessages = compactedMessages ?? readSessionMessages(persistDir, sessionId);
@@ -1391,7 +1367,7 @@ export class SubagentManager {
       }
       // Try archived messages
       try {
-        const messages = readArchivedSessionMessages(this.registry.persistDir, sid);
+        const messages = readSessionMessages(this.registry.persistDir, sid);
         if (messages.length > 0) {
           const text = extractLastAssistantText(messages);
           return text ?? undefined;
@@ -1475,7 +1451,7 @@ export class SubagentManager {
       if (!persisted) {
         throw new Error(`Session "${sessionId}" not found`);
       }
-      messages = readArchivedSessionMessages(this.registry.persistDir, sessionId);
+      messages = readSessionMessages(this.registry.persistDir, sessionId);
     }
     if (limit === undefined) return messages.slice();
     if (limit <= 0) return [];
@@ -1542,7 +1518,7 @@ export class SubagentManager {
     if (persisted.status === "running" || persisted.status === "idle") {
       throw new Error(`Session "${sessionId}" is still running (stale registry entry)`);
     }
-    const messages = readArchivedSessionMessages(this.registry.persistDir, sessionId);
+    const messages = readSessionMessages(this.registry.persistDir, sessionId);
     const duration = persisted.endedAt
       ? formatDuration(persisted.endedAt - persisted.startedAt)
       : formatDuration(Date.now() - persisted.startedAt);
@@ -1756,7 +1732,7 @@ export class SubagentManager {
       }
     }
 
-    this.archiveSessionDir(session);
+    this.cleanupSession(session);
     this.activeSessions.delete(sessionId);
 
     // Emit session_end — subscribers handle memory, requests, activity, context
@@ -1765,6 +1741,8 @@ export class SubagentManager {
       status: session.archiveStatus!, startedAt: session.startedAt,
       endedAt: session.endedAt, runtime: formatDuration(session.endedAt - session.startedAt),
       outputDir: session.outputDir, error: session.error, outcome,
+      opCount: session.opCount,
+      opBudget: session.opBudget,
       turnCount: session.turnCount, finishParams,
       filesModified: [...session.filesModified],
       workspacePath: this.getWorkspacePath(session.agentName),
@@ -1961,12 +1939,8 @@ export class SubagentManager {
     const session = this.activeSessions.get(sessionId);
     if (session) return session.outputDir;
 
-    // Check archived sessions in history
+    // Check session directory
     const persistDir = this.registry.persistDir;
-    const archivedOutputDir = join(historyDir(persistDir), sessionId, "output");
-    if (existsSync(archivedOutputDir)) return archivedOutputDir;
-
-    // Check if session exists in active sessions dir (not yet archived)
     const activeOutputDir = sessionOutputDir(persistDir, sessionId);
     if (existsSync(activeOutputDir)) return activeOutputDir;
 

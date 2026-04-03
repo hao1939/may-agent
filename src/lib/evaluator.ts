@@ -5,11 +5,10 @@ import type { AssistantMessage } from "@mariozechner/pi-ai";
 import type { SubagentManager } from "./manager.js";
 import {
   readSessionMessages,
-  readArchivedSessionMessages,
   loadAllSessionMetasAsync,
   listActiveSessionIdsAsync,
   listArchivedSessionIdsAsync,
-  historyDir,
+  sessionJsonlPath,
 } from "./persistence.js";
 import type { PersistedSession } from "./persistence.js";
 import { appendErrorLogs } from "./evaluator-error-log.js";
@@ -262,7 +261,7 @@ export function findUnevaluatedChildren(
     if (hasEvaluation(persistDir, sessionId)) continue;
 
     // Load transcript
-    let messages = readArchivedSessionMessages(persistDir, sessionId);
+    let messages = readSessionMessages(persistDir, sessionId);
     if (messages.length === 0) {
       messages = readSessionMessages(persistDir, sessionId);
     }
@@ -640,9 +639,8 @@ export async function writeSkippedEvaluations(
     if (skipAgents.has(session.agent)) {
       skipReason = `meta_agent_skipped (${session.agent})`;
     } else {
-      const activeJsonl = join(persistDir, "sessions", sessionId, "session.jsonl");
-      const archivedJsonl = join(historyDir(persistDir), sessionId, "session.jsonl");
-      if (!(await fileExists(activeJsonl)) && !(await fileExists(archivedJsonl))) {
+      const jsonlPath = sessionJsonlPath(persistDir, sessionId);
+      if (!(await fileExists(jsonlPath))) {
         skipReason = "no_transcript";
       }
     }
@@ -744,10 +742,8 @@ export async function writeHeuristicEvaluations(persistDir: string): Promise<num
     if (session.status === "running" || session.status === "idle") continue;
     if (session.agent === "evaluator") continue;
 
-    const activeJsonl = join(persistDir, "sessions", sessionId, "session.jsonl");
-    const archivedJsonl = join(historyDir(persistDir), sessionId, "session.jsonl");
-    const transcriptPath = existsSync(activeJsonl) ? activeJsonl : existsSync(archivedJsonl) ? archivedJsonl : null;
-    if (!transcriptPath) continue;
+    const transcriptPath = sessionJsonlPath(persistDir, sessionId);
+    if (!existsSync(transcriptPath)) continue;
 
     let transcriptText = "";
     try {

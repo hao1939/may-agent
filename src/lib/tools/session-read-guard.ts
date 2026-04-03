@@ -71,10 +71,10 @@ export function createSessionReadGuard(): (
         reason:
           `🚫 SESSION_READ: Reading session.jsonl files directly is blocked — they are 30-300KB+ ` +
           `and will waste your token budget. Instead, use bash with grep/jq to extract what you need:\n` +
-          `  • Find sessions: grep -l 'keyword' .state/sessions/history/*/session.jsonl\n` +
+          `  • Find sessions: grep -l 'keyword' .state/sessions/*/session.jsonl\n` +
           `  • Extract data: grep 'pattern' <file> | head -20\n` +
           `  • Parse JSON: jq 'select(.role=="assistant")' <file> | head -50\n` +
-          `  • Get metadata: cat .state/sessions/history/<id>/meta.json`,
+          `  • Get metadata: cat .state/sessions/<id>/meta.json`,
       };
     }
 
@@ -98,7 +98,7 @@ export function createSessionReadGuard(): (
             `  • grep 'pattern' <file> | head -20\n` +
             `  • jq 'select(.role=="assistant") | .content' <file> | head -50\n` +
             `  • grep -c 'pattern' <file>  (count only)\n` +
-            `  • cat .state/sessions/history/<id>/meta.json  (meta.json is fine — it's small)`,
+            `  • cat .state/sessions/<id>/meta.json  (meta.json is fine — it's small)`,
         };
       }
 
