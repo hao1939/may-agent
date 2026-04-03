@@ -37,6 +37,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     openssh-client \
     procps \
     socat \
+    supervisor \
     unzip \
     && rm -rf /var/lib/apt/lists/*
 
@@ -78,9 +79,12 @@ COPY --from=builder /build/may-agent-web /usr/local/bin/may-agent-web
 # Copy web UI static files (not embedded in compiled binary)
 COPY src/app/ui/web-static/ /usr/local/share/may-agent-web/web-static/
 
+# Copy supervisord config
+COPY container/supervisord.conf /etc/supervisord.conf
+
 # Copy entrypoints and helpers
-COPY container/entrypoint.sh container/entrypoint-console.sh container/restart-may.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/entrypoint-console.sh /usr/local/bin/restart-may.sh
+COPY container/entrypoint.sh container/entrypoint-console.sh container/restart-may.sh container/wait-for-web.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/entrypoint-console.sh /usr/local/bin/restart-may.sh /usr/local/bin/wait-for-web.sh
 
 # Create user for uid 1000 (SSH requires a passwd entry)
 RUN useradd -u 1000 -d /app/.state -s /bin/bash mayagent 2>/dev/null || true
@@ -100,6 +104,9 @@ ENV STATE_DIR=/app/.state
 
 # noVNC web interface
 EXPOSE 6080
+
+# Web UI dashboard
+EXPOSE 8080
 
 # Restart agent without restarting container:
 #   docker exec <container> restart-may.sh

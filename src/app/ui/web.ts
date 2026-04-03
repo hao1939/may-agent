@@ -468,6 +468,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
   const server = Bun.serve({
     port: PORT,
+    hostname: "0.0.0.0",
     fetch(req, server) {
       const url = new URL(req.url);
       if (url.pathname === "/ws") {
