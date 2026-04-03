@@ -70,18 +70,25 @@ A transparent RL training harness that sits as an API proxy between agent and LL
 
 ## Next Steps
 
-1. **Experiment with Idea 4 (Idle-Aware Scheduling)** — lowest effort, clearest benefit
-   - Detect "no human input for 30min" → trigger consolidation/optimization tasks
-   - Owner: Optimizer
+1. **🆕 POC: Structured Session Primer** — the recommended first experiment
+   - Combines MetaClaw's injection timing with Anthropic's sprint contract pattern
+   - See: [`metaclaw-poc-spec.md`](./metaclaw-poc-spec.md) for full specification
+   - Phase 1: 5 manual primers for gym scenarios (no code changes)
+   - Owner: Bob / Tech-lead
 
 2. **Experiment with Idea 3 (Memory Consolidation)** — build on existing context-learn.ts  
    - Add periodic dedup/merge for context.md entries
+   - Consider structured forgetting per HB-250403-memory-forgetting-agents
    - Owner: Tech-lead
 
-3. **Prototype Idea 2 (Skill Auto-Injection)** — high potential impact
-   - Start with simple keyword-based task detection → skill mapping
-   - Owner: Coach (already owns skills)
+3. **Defer: Idea 1 (PRM Scoring), Idea 4 (Idle Scheduling), Idea 5 (GRPO)**
+   - PRM: high cost, medium signal — revisit when we have step-level intervention capability
+   - Idle: already functionally implemented via cron
+   - GRPO: infeasible without training infrastructure
 
-4. **Research Idea 1 (PRM Scoring)** — needs more design thinking
-   - Study cost/benefit tradeoff of per-turn scoring
-   - Owner: Optimizer
+## POC Spec
+
+**Full specification**: [`metaclaw-poc-spec.md`](./metaclaw-poc-spec.md)  
+**Date**: 2026-04-03  
+**Author**: Bob (Architect)  
+**Core insight**: Naive skill injection (Idea 2) would fail per KE-002 (0/19 text interventions work). Instead, synthesize MetaClaw's auto-extraction + Anthropic's sprint contracts + our workflow enforcement into structurally enforceable session primers.

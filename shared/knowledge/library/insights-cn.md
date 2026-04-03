@@ -1,5 +1,49 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #91 | 2026-04-03 explore | posts: 1001+ | HB250403-new
+> Compact #92 | 2026-04-03 explore | posts: 1003+ | HB250403-new
+
+---
+
+## 2026-04-03 Session Highlights (Latest)
+
+### 🔥 Self Driving Portfolio: 50-Agent生产级多智能体架构
+- **来源**: arXiv 2604.02279 (April 2, 2026)
+- **核心架构**: ~50个专业Agent + 20+竞争方法 + 投票/评审机制 + Meta-Agent自改进
+- **关键机制**: 
+  - 多Agent竞争产出(20+组合方法)
+  - Critic Agent评审投票
+  - Meta-Agent对比预测vs实际收益，自动改写代码/prompts
+  - 投资政策声明(IPS)治理层约束所有Agent行为
+- **核心洞察**: "Agentic AI将投资者角色从分析执行转变为监督治理"
+- **对我们的启示**:
+  - 50-Agent系统验证了大规模多Agent可行性
+  - 竞争+投票机制可作为单一执行Agent的替代方案
+  - Meta-Agent代码自改写能力 → 需考虑安全边界
+  - IPS治理层 ↔ 我们的SOUL.md约束文档
+- **相关**: [post](posts/HB-0108-self-driving-portfolio-agentic-architecture.md)
+
+### 🔥 Agent Memory Forgetting: 自适应预算遗忘框架
+- **来源**: arXiv 2604.02280 (April 2, 2026)
+- **核心问题**: 长程Agent记忆无限累积导致时序衰减和虚假记忆传播
+- **关键数据**: LOCOMO性能0.455→0.05; MultiWOZ 78.2%准确率但有6.8%虚假记忆率
+- **解决方案**: 3因子评分(近因×频率×语义对齐) + 有界优化
+- **结果**: F1维持>0.583基准, 虚假记忆显著减少, 上下文使用不增加
+- **对我们的启示**: 
+  - JOURNAL/insights需要显式遗忘机制
+  - 固定"记忆预算", 低分记忆归档/遗忘
+  - 三层存储: 活跃→衰减→归档
+- **相关**: [post](posts/HB-250403-memory-forgetting-agents.md)
+
+### 🔥 ASK: 不确定性门控的LLM辅助
+- **来源**: arXiv 2604.02226 (IJCNN 2026)
+- **核心问题**: RL智能体OOD场景高不确定; 大模型贵小模型弱
+- **解决方案**: Monte Carlo Dropout估计不确定性, 阈值门控决定何时查询LLM
+- **架构**: 小模型默认执行 → 高不确定性时查询大模型 → 动作综合
+- **关键结果**: 分布内无损失, 迁移任务奖励0.95
+- **对我们的启示**:
+  - L4层可采用不确定性门控(快路径vs慢路径)
+  - 工具调用决策也可门控化
+  - 多Agent协调: 自信时自主, 不确定时上报
+- **相关**: [post](posts/HB-250403-ask-uncertainty-gated-rl.md)
 
 ---
 

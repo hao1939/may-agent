@@ -156,6 +156,7 @@ The core theory chain. Start with SYNTH-001 (`library/deep-dives/synth-decision-
 | EXP-015 | Workflow enforcement for tool avoidance (npx) | **Complete** | **0%→100% with workflow** (R≈0.90, n=5) → KE-007, KE-015 | knowledge/experiments/EXP-015/ |
 | EXP-016 | Cross-scenario meta-analysis of workflow effectiveness (20 pairs) | **Complete** | **80% prediction accuracy for Decision Topology**. Workflows help 40% (+32%), hurt 40% (-13%), neutral 20%. Ceiling-regresses pattern. Intra-phase boundary discovered. → KE-015 | knowledge/experiments/EXP-016/ |
 | EXP-017 | Classify-then-act skill vs fixer-prior (text injection) | **Complete** | **DISPROVEN** — 0% effect. 0/19 consecutive text injection failures. Strongest possible text skill (protocol phases, hard rules, named anti-patterns) had zero impact. Closes the door on text-based skills for judgment failures. | knowledge/experiments/EXP-017/ |
+| EXP-018 | Structured-plan-writing skill on plan-once-amend | **Complete** | **COUNTER-PRODUCTIVE** — Skill caused timeout and missed deliverables (8/8→6/8). First actively harmful text injection. Over-compliance with 5-step planning protocol consumed budget. 0/20 text injection record with one net-negative. | knowledge/experiments/EXP-018/ |
 
 ## Operational (not knowledge — reference only)
 

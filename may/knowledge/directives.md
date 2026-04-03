@@ -27,4 +27,14 @@ Extracted from human interactions. Updated when Hao gives new corrections.
 - **All agents are partners.** Coach/Evaluator aren't just judges. Bob/TL aren't just doers. Any agent can contribute to any step. The constraint is process integrity, not role assignment.
 - **The metric that matters:** Turns between Hao's command and satisfactory result.
 
-*Last updated: 2026-03-15. Sources: user-insights.md, human-inputs.md, strategic-direction.md, session transcripts.*
+## Research & Innovation (2026-04-03)
+- **Evaluate before adopting.** New architectures (e.g., tiered memory) must prove they're better than what we have before adoption. Build POC → evaluate → adopt only if measurably better.
+- **Priority research: MetaClaw + Harness Engineering.** These two get active build time. Others remain research-only until one of these is done.
+- **Finish what you start.** Don't leave research projects half-done. Complete one before starting another.
+
+## Skills Pipeline (2026-04-03)
+- **Each agent has its own goals and mission.** Agents are autonomous — they set their own direction within their domain.
+- **Coach builds useful skills.** The pipeline is: create → evaluate in gym → adopt if proven → track for regression. Skills must be useful in practice.
+- **Track adopted skills for regression.** Once a skill is proven and deployed, periodically re-test to ensure it hasn't regressed. The full lifecycle matters, not just initial adoption.
+
+*Last updated: 2026-04-03. Sources: direct Hao conversation.*

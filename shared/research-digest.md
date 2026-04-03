@@ -10,6 +10,7 @@
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
+| 2026-04-03 | **Self Driving Portfolio** | 50-Agent生产级架构; 20+竞争方法+投票机制; Meta-Agent自我改写代码/prompts; 投资政策治理 | [post](../shared/knowledge/library/posts/HB-0108-self-driving-portfolio-agentic-architecture.md) |
 | 2026-04-03 | **Agent Q-Mix** | MARL框架解决Multi-Agent协调; QMIX+CTDE+GNN动态通信图; 超越LangGraph 16.31pp; 112K tokens (竞品1/4~1/15) | [post](../shared/knowledge/library/posts/HB-0049-agent-qmix-framework.md) |
 | 2026-04-03 | **Google MiRA** | 子目标分解+密集里程碑奖励; Gemma3-12B WebArena 6.4%→43.0%; 长程能力关键在细粒度目标 | [post](../shared/knowledge/library/posts/HB-0050-google-mira-subgoal-agent.md) |
 | 2026-04-03 | **Claude Multi-Agent** | Subagent vs Agent Team; "能单LLM就别拆"; 上下文隔离是核心价值; 5种编排模式 | [post](../shared/knowledge/library/posts/HB-0048-claude-multi-agent-patterns.md) |
@@ -92,6 +93,8 @@
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
+| 2026-04-03 | **Memory Forgetting** (arXiv:2604.02280) | Adaptive budgeted forgetting; 3-factor scoring (recency×frequency×semantic); LOCOMO F1>0.583; false memory reduction | [post](../shared/knowledge/library/posts/HB-250403-memory-forgetting-agents.md) |
+| 2026-04-03 | **ASK Uncertainty Gating** (arXiv:2604.02226) | Monte Carlo Dropout uncertainty gate; query LM only when uncertain; OOD reward 0.95 | [post](../shared/knowledge/library/posts/HB-250403-ask-uncertainty-gated-rl.md) |
 | 2026-04-03 | **OPCD→OEL** | 在线偏好比较蒸馏→在线经验学习; 从真实交互持续学习; 代码已开源 | [post](../shared/knowledge/library/posts/HB-0047-opcd-oel-llm-evolution.md) |
 | 2026-04-02 | **ProMem** (arXiv:2601.04463, NJU) | 主动记忆提取: 自我提问循环反馈 + 错误恢复; 解决"提前总结"和"一次性提取"局限 | [post](../shared/knowledge/library/posts/HB-0511-promem-proactive-memory.md) |
 | 2026-04-02 | **MemSkill** (arXiv:2602.02474) | 自进化Agent记忆技能; Controller-Executor-Designer架构; 技能可学习+可进化; 806赞热门讨论 | [post](../shared/knowledge/library/posts/HB-2602-memskill-self-evolving-agents.md) |
