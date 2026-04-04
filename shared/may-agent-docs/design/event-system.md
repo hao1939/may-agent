@@ -3,36 +3,78 @@
 ## Architecture
 
 ```
-Agent sessions ──AgentEvent──→ Manager
-                                 │
-                                 ▼
-                              EventBus (in-process, source of truth)
-                                 │
-                    ┌────────────┼────────────┐
-                    ▼            ▼             ▼
-                 Console      Telegram      Socket server
-                 (stdout)     (HTTP API)    (Unix socket)
-                                              │
-                                    ┌─────────┼─────────┐
-                                    ▼         ▼         ▼
-                                  socat    Web UI    socket_watch
-                                 (debug)  (browser)  (agent tool)
+Manager (sole producer)
+  │  emits session_start, session_end, text, tool_call,
+  │  tool_result, turn_end directly on bus
+  ▼
+EventBus (in-process, source of truth)
+  │
+  ├── Console     (stdout, filters by primary sessionId)
+  ├── Telegram    (HTTP API, accumulates text, flushes on turn_end)
+  ├── DbWriter    (persists to SQLite)
+  ├── ActivityWriter, MemoryWriter, ContextUpdater,
+  │   RequestTracker, ProgressWriter  (session lifecycle side effects)
+  ├── StuckDetector  (cancels stuck sessions)
+  ├── AutoResume     (resumes interrupted sessions with opCount > 0)
+  ├── Recovery       (re-queues infra-failed sessions)
+  ├── AutoEval       (evaluates completed task trees)
+  ├── Escalation     (blocked/failure → Telegram + request tracking)
+  └── Socket server  (Unix socket → external clients)
+        │
+        ├── socat (debug)
+        ├── Web UI (browser, WebSocket proxy)
+        └── socket_watch (agent tool)
 ```
 
-The EventBus is the in-process pub/sub. The socket is one consumer of the
-EventBus that re-broadcasts to external clients. Console and Telegram are
-other consumers. Each filters events according to its needs.
+The Manager is the sole producer of session lifecycle events. It takes an
+optional `bus` reference and emits directly — no callback bridge. All side
+effects (persistence, recovery, evaluation, notifications) are bus subscribers.
 
-The Web UI is a socket client. It connects to the Unix socket for chat
-(events + commands) and reads SQLite directly for the dashboard. It runs
-as a standalone process — no coupling to the agent.
+The Web UI reads SQLite directly for the dashboard and proxies through
+the Unix socket for chat. It runs as a standalone process under supervisord.
 
-## Event System
+## Event Flow
+
+### Manager → Bus (direct emission)
+
+The Manager emits events at three points:
+
+1. **`run()` / `resumeSession()`**: emits `session_start`, sets up `bridgeAgentEvents`
+2. **`bridgeAgentEvents()`**: subscribes to pi-agent-core events, re-emits as `text`, `tool_call`, `tool_result`, `turn_end`
+3. **`handleCompletion()`**: emits `session_end` (task sessions) or `info` with error (chat sessions going idle)
+4. **`close()`**: emits `session_end` for explicitly closed sessions
+
+No callbacks. No indirection. The Manager's `ManagerEventBus` interface requires only `emit()`:
+
+```typescript
+interface ManagerEventBus {
+  emit(event: Record<string, unknown>): void;
+}
+```
+
+### Completion Pipeline
+
+Session completion (`handleCompletion`) uses a pipeline of pure functions
+extracted to `completion.ts`:
+
+```
+detectErrors → clearPostFinishErrors → handleOverflow →
+detectShallowHeartbeat → determineOutcome → buildSessionInfo
+```
+
+Key: `clearPostFinishErrors` and `isRetryableInfraError` use
+`lastTurnCalledFinish()` which only checks the current turn (since last
+user message). The old `hasFinishToolCall()` scanned all messages — for
+persistent chat sessions this always returned true after the first
+heartbeat, silently swallowing all future empty responses.
+
+## Session Events
 
 ### Session-scoped events
 
 Every session produces the same events. No special treatment for the
-"interface agent." The event emitter doesn't know who's watching.
+"interface agent." The Manager's `bridgeAgentEvents()` handles translation
+from pi-agent-core events to bus events uniformly.
 
 Every session event carries `sessionId`:
 
@@ -43,47 +85,30 @@ type SessionEvent =
   | { type: "tool_result"; sessionId: string; agent: string; tool: string; preview: string; isError: boolean }
   | { type: "turn_end"; sessionId: string; agent: string; toolCalls: number; durationMs: number }
   | { type: "session_start"; sessionId: string; agent: string; task: string; parentSessionId?: string }
-  | { type: "session_end"; sessionId: string; agent: string; status: string; error?: string; outcome?: string }
+  | { type: "session_end"; sessionId: string; agent: string; status: string; error?: string; outcome?: string; parentSessionId?: string }
 ```
 
 System events (not session-scoped):
 
 ```typescript
 type SystemEvent =
-  | { type: "notification"; agent: string; text: string }   // heartbeat briefs, escalations
-  | { type: "log"; level: "info" | "warn" | "error"; message: string }  // startup, cron, errors
+  | { type: "notification"; agent: string; text: string }
+  | { type: "log"; level: "info" | "warn" | "error"; message: string }
 ```
 
-The `channel` field is removed. The `info` dumping ground is split:
-current `info` events that are system diagnostics become `log`, and
-push-to-human events (heartbeat briefs, alerts) become `notification`.
-
-### attachAgentEvents becomes uniform
-
-Currently: `if (isChat) { full streaming } else { one-line turn summary }`.
-After: same handler for every session. All sessions emit text, tool_call,
-tool_result, turn_end. The UI decides what to render.
+Agent commands:
 
 ```typescript
-function attachAgentEvents(agentName: string, sessionId: string): void {
-  manager.subscribe(sessionId, (event) => {
-    switch (event.type) {
-      case "message_update":
-        if (event.assistantMessageEvent.type === "text_delta")
-          bus.emit({ type: "text", sessionId, agent: agentName, text: event.assistantMessageEvent.delta });
-        break;
-      case "tool_execution_start":
-        bus.emit({ type: "tool_call", sessionId, agent: agentName, tool: event.toolName, args: event.args });
-        break;
-      case "tool_execution_end":
-        bus.emit({ type: "tool_result", sessionId, agent: agentName, tool: event.toolName, preview: extractPreview(event), isError: !!event.isError });
-        break;
-      case "turn_end":
-        bus.emit({ type: "turn_end", sessionId, agent: agentName, toolCalls, durationMs });
-        break;
-    }
-  });
-}
+type AgentCommand =
+  | { type: "fork"; agent: string; task: string; opts?: { kind?: string } }
+  | { type: "input"; message?: string; source?: string }
+  | { type: "steer"; sessionId?: string; message?: string }
+  | { type: "cancel"; sessionId: string }
+  | { type: "cancel_all" }
+  | { type: "resume"; sessionId: string }
+  | { type: "reload" }
+  | { type: "restart" }
+  | { type: "shutdown" }
 ```
 
 ### How UIs filter
@@ -141,20 +166,18 @@ detached agent control — all unchanged.
 
 ### All commands
 
-Existing (unchanged):
-- `input` — send user input
+- `input` — send user input (routed through ChatSession)
 - `steer` — interrupt mid-turn (requires sessionId)
 - `cancel` — cancel a session (requires sessionId)
 - `cancel_all` — cancel all running sessions
 - `cancel_task` — cancel the interface agent's session
-- `status` — get active sessions
-- `run` — start a new agent session
-- `reload_agents` — hot-reload agent configs
-- `close` — shutdown
-- `restart` — exit 100 (hot-reload)
-
-New:
+- `status` — get active sessions (handled locally by socket server)
 - `subscribe` — set session filter for this client
+- `fork` / `run` — start a new agent session
+- `resume` — resume an interrupted/errored session by sessionId
+- `reload_agents` — hot-reload agent configs
+- `restart` — exit 100 (hot-reload via launcher)
+- `close` — shutdown
 
 ## Web UI
 

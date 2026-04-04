@@ -55,7 +55,13 @@ Every session has a `kind` field persisted in `meta.json`:
 
 ## Resume Logic
 
-`resumeStaleSessions(opts?)` handles crash recovery:
+Three resume mechanisms, layered:
+
+### 1. Startup Resume (infrastructure)
+
+`resumeStaleSessions()` runs at process startup. Picks up sessions left
+in `status: "running"` from a crashed process. Reloads JSONL, repairs
+broken tool calls, injects restart notice, continues the agent loop.
 
 ```typescript
 resumeStaleSessions(opts?: {
@@ -64,30 +70,49 @@ resumeStaleSessions(opts?: {
 }): { resumed: SessionInfo[]; interrupted: SessionInfo[] }
 ```
 
-- Scans sessions with status `running` or `idle` in meta.json
-- Skips detached sessions where `isProcessAlive(pid)` returns true
-- `kinds` filter: **only touches matching sessions** — non-matching left untouched
-- Resumes by reloading JSONL, repairing broken tool calls, injecting restart notice
+### 2. AutoResume (bus subscriber)
+
+Reacts to `session_end` events with `status: "interrupted"`. If the session
+did real work (`opCount > 0`), schedules a resume after 10-20s backoff.
+Escalates to human after 2 failed attempts.
+
+Key: uses `opCount` (persisted to meta.json), not `turnCount` (unreliable).
+Skips sessions closed deliberately (`error === "Closed"` from `/new` command).
+
+### 3. Manual Resume (socket command)
+
+```json
+{"type": "resume", "sessionId": "s_xxx"}
+```
+
+Calls `manager.resumeInterrupted(sessionId)` which works for any session
+regardless of status. Reloads JSONL, repairs messages, continues. Use for
+sessions that AutoResume skipped or that errored and need a retry after
+the underlying issue (API config, model name) is fixed.
 
 ### Startup Sequence
 
 ```
 1. if --cron: resumeStaleSessions({ kinds: ["job"] })
-   → Find all stale job sessions → resume each
+   → Find all stale job sessions (status: "running") → resume each
    → Chat and call sessions left untouched
 
-2. if --chat: ChatSession created
-   → Fresh session on first user message
-   → Does NOT auto-resume old chat sessions
+2. resumeStaleSessions({ abort: true, kinds: ["call"] })
+   → Clean up orphaned call sessions (parent is gone)
+
+3. if --chat:
+   → resumeStaleSessions({ kinds: ["chat"] }) to restore idle chat sessions
+   → ChatSession.resumeAfterLoad() attaches to the newest
 ```
 
 ### Why Not Resume `call` Sessions?
 
-Parent re-dispatches on its own resume. Resuming call sessions independently would complete them with no parent waiting.
+Parent re-dispatches on its own resume. Resuming call sessions independently
+would complete them with no parent waiting.
 
-### Why Not Resume `chat` Sessions?
+### Why Not Auto-Resume `chat` Sessions?
 
-Human-owned. User decides to continue or start fresh.
+Human-owned. User decides to continue or `/new`.
 
 ## Cron Backpressure
 

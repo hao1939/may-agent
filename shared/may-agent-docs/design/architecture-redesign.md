@@ -319,22 +319,27 @@ CREATE TABLE knowledge_entries (
 
 ## Current State
 
-### What exists today
-- EventBus: 147 lines, handles events + commands (needs cleanup)
-- Manager: 2400 lines, the core runtime (stays as-is internally)
-- Cron: 919 lines, direct manager dependency (needs decoupling)
-- may.ts: 1089 lines glue (needs thinning)
-- Knowledge base: 5 entries, 2 hypotheses, 2 experiments (seeded)
-- Lab runner: working, tested with EXP-001
-- Agent calling: call/fork/message implemented in agents tool
+### What exists today (implemented)
+- EventBus: simple pub-sub, all events flow through it
+- Manager: emits session_start/session_end/streaming events directly on bus (no callbacks)
+- Completion pipeline: pure functions in completion.ts (detectErrors → clearPostFinishErrors → handleOverflow → determineOutcome)
+- Session subscribers: factory functions for all side effects (ActivityWriter, MemoryWriter, ContextUpdater, RequestTracker, ProgressWriter, StuckDetector, AutoResume, Recovery, AutoEval, Escalation)
+- Agent-loader bookkeeping: bus subscribers (not callbacks)
+- Cron: 919 lines, circuit breaker with notification on trip
+- may.ts: thin wiring (~780 lines, down from 1224)
+- Socket: supports subscribe, resume, fork, steer, cancel commands
+- Manual session resume via `{"type": "resume", "sessionId": "..."}` socket command
+- AutoResume: uses opCount (not turnCount) for work detection
+- Container: supervisord manages all processes (xvfb, vnc, chrome, web, may-agent)
+- Web UI: standalone process, IPv4 binding, chat-mode filter sync on /new
+- SSH safety: stdin detachment in handlers + GIT_SSH_COMMAND with BatchMode=yes
+- Infrastructure retry: lastTurnCalledFinish() scopes to current turn (not full history)
 
-### What needs building
-- Phase 1: EventBus cleanup + core command subscriber
-- Phase 2: DB writer subscriber (extract from may.ts)
-- Phase 3: Thin startup (under 100 lines)
+### What's NOT built (from original design)
+- Phase 3: Thin startup (under 100 lines) — may.ts is ~780 lines, not 100
 - Advocate + Skeptic agents
-- Research workflow (discover → challenge → experiment → analyze)
 - Research events + DB tables
+- `info` → `log` + `notification` migration (info events still used extensively)
 
 ## Summary
 
