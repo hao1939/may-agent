@@ -1,5 +1,6 @@
+- bun is at .state/.bun/bin/bun — add to PATH: `export PATH=".state/.bun/bin:$PATH"`
 - npx is not available in this environment — use ./node_modules/.bin/<tool> or bun x <tool>
-- Project root is /app — do not use /home/*, /Users/*, or ~/ paths
+- Project root is /app — do not use /home/*, /Users/*, /root/*, or ~/ paths
 - When calling finish(), status must match reality — use 'blocked' or 'partial' not 'success' if there are issues
 - Assume agent under review is adversarial — verify outcomes (files changed, tests passed, exit codes), not explanations
 - Evidence hierarchy: tool outputs > tool calls > agent reasoning > agent self-assessment (ignore)

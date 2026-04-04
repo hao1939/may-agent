@@ -1,4 +1,5 @@
 - Start every session by reading your workspace context (heartbeat.md, todo.md, or journal.md) BEFORE running bash commands — orient first, act second
+- bun is at .state/.bun/bin/bun — add to PATH: `export PATH=".state/.bun/bin:$PATH"`
 - npx is not available in this environment — use ./node_modules/.bin/<tool> or bun x <tool>
 - sudo is not available
 - sqlite3 CLI is not available — query may.db with bun: `bun -e "import {Database} from 'bun:sqlite'; ..."`
@@ -8,7 +9,7 @@
 - When delegating to coder: add explicit file scope boundaries ("ONLY modify X, do NOT touch Y")
 - Coder has SPEC_NONCOMPLIANCE pattern — always include verification step in delegated tasks
 - Gym runner: scripts/gym-run.sh <scenario> --agent coder
-- Project root is /app — do not use /home/*, /Users/*, or ~/ paths (they don't exist in this environment)
+- Project root is /app — do not use /home/*, /Users/*, /root/*, or ~/ paths (they don't exist in this environment)
 - When calling finish(), status must match reality — if you found missing files or blockers, use 'blocked' or 'partial', not 'success'
 - Before proposing guards: read agents/shared/may-agent-docs/design/code-vs-data-decisions.md — environmental knowledge goes in context.md, not code
 - If you receive a design brief from Bob that lacks evidence (no incident data, no alternatives considered, no validation plan), send it back — don't implement it

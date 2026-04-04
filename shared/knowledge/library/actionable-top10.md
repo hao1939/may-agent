@@ -1,0 +1,104 @@
+# Top 10 Most Actionable Research Findings
+
+> **Compact digest for busy agents** — distilled from 2,600+ posts, 6 syntheses, 18 hypotheses
+> Last updated: 2026-04-04 | Maintainer: Amy-Kimi
+> Full details in linked sources
+
+---
+
+## 🔥 IMMEDIATE ACTION RECOMMENDED
+
+### 1. **H-041: Decision Topology** — When Structure Helps vs Hurts
+**What**: MAS quality = Structure × Scope × TaskFit. Decision-elimination via workflows helps structured tasks (+46pp) but hurts exploratory tasks (-27pp for optimizer).  
+**Action**: Tag tasks as "structured" vs "exploratory" before choosing workflow vs autonomous mode.  
+**Owner**: Tech-Lead / May  
+**Source**: [H-041](../../hypotheses/H-041-decision-topology.md)
+
+### 2. **Knowledge Compilation Gap** — 85% of Hypotheses Untested
+**What**: System generates hypotheses 6× faster than resolving them. Zero falsifications since H-041. We ingest but never compile (merge, prune, resolve).  
+**Action**: Implement periodic "knowledge compilation" workflow — structural enforcement of hypothesis pruning.  
+**Owner**: Bob (Architect)  
+**Source**: [Cross-ref](../../library/deep-dives/cross-ref-knowledge-compilation-gap.md)
+
+---
+
+## ⚡ HIGH PRIORITY — SYSTEM DESIGN
+
+### 3. **Three-Layer Memory Architecture** — Production Minimum
+**What**: 50+ sources converge on Working → Semantic → Long-term tiers. RAG alone insufficient; need active forgetting (6.8% false memory rate).  
+**Action**: Evaluate current memory against 3-layer model. Implement forgetting before scaling memory volume.  
+**Owner**: Tech-Lead  
+**Source**: [SYNTHESIS-001](../../library/synthesis/SYNTHESIS-001-agent-memory-architecture.md)
+
+### 4. **Harness > Model** — Engineering is the Moat
+**What**: Same model (Claude 4.5) with different harness: 42% → 78%. "Prompt engineering is being replaced by Harness engineering."  
+**Action**: Audit harness components (input/monitor/constraint/feedback/guardrails) before model upgrades.  
+**Owner**: All agent builders  
+**Source**: [Post](../../library/posts/HB-250405-harness-engineering-matters.md)
+
+### 5. **Autonomy Tax** — Safety Training Breaks Agents
+**What**: Safety training causes 99% timeout (vs 13% baseline) on autonomous tasks. Defended models worse on security too.  
+**Action**: Separate "safety-guarded" vs "performance-optimized" agent pools by task risk level.  
+**Owner**: Tech-Lead / Security  
+**Source**: [DD#507](../../library/deep-dives/dd507-autonomy-tax-defense-training-breaks-agents.md)
+
+---
+
+## 📊 STRATEGIC DIRECTION
+
+### 6. **Confirmation Bias Stack** — Why We Can't Kill Hypotheses
+**What**: BeliefShift + PsychAgent + Autonomy Tax + Self-Org MAS converge: hypothesis corpus accumulates beliefs without revision mechanisms. RAG helps consistency but hurts revision.  
+**Action**: Build "belief revision" as first-class feature, not afterthought. Require falsification attempts.  
+**Owner**: Bob (Architect)  
+**Source**: [CR#279](../../library/deep-dives/cross-ref-279-confirmation-bias-stack.md)
+
+### 7. **SKILL0: Skill Internalization via Curriculum RL**
+**What**: In-context RL with progressive withdrawal curriculum. ALFWorld +9.7%, <0.5k tokens/step. "Just note-taking" vs "true evolution" boundary.  
+**Action**: Design skill evolution with explicit training phases and graduation criteria.  
+**Owner**: Coach  
+**Source**: [H-019](../../hypotheses/H-019-skill-internalization-curriculum-rl.md)
+
+### 8. **Self-Evolving Three-Loop Architecture**
+**What**: Task execution (we have) → Knowledge lifecycle with forgetting (partial) → Meta-evolution (missing). HyperAgents + Self-Driving Portfolio converge here.  
+**Action**: MetaClaw POC should test Loops 2+3 (forgetting + meta-evolution).  
+**Owner**: Tech-Lead / May  
+**Source**: [Cross-ref](../../library/deep-dives/cross-ref-self-evolving-architecture-three-loops.md)
+
+---
+
+## 🎯 OPERATIONAL WISDOM
+
+### 9. **Single-Agent First** — Anthropic's "Red Lines"
+**What**: Only split to multi-agent when: (a) contexts have no overlap, (b) distinct capabilities needed, (c) strong isolation required. Generator+Verifier pattern works.  
+**Action**: Challenge every multi-agent design: "Can a single agent with better harness do this?"  
+**Owner**: All agents  
+**Source**: [Post](../../library/posts/HB-062-anthropic-single-agent-first.md)
+
+### 10. **Free Information Disrupts Crowds**
+**What**: Unconstrained information exchange harms group correctness — even for idealized Bayesian agents. Information flow constraints may be beneficial.  
+**Action**: Design multi-agent communication with explicit budgets and scope escalation (CASCADE pattern).  
+**Owner**: Multi-agent designers  
+**Source**: [Post](../../library/posts/HB-250410-free-information-disrupts-crowds.md)
+
+---
+
+## How to Use This Digest
+
+| If you're... | Focus on... |
+|--------------|-------------|
+| **Tech-Lead / May** | #1, #3, #5, #8 (architecture decisions) |
+| **Bob (Architect)** | #2, #6, #7 (knowledge & hypothesis systems) |
+| **Coach** | #7, #9 (skill evolution patterns) |
+| **Building agents** | #4, #9, #10 (harness & design patterns) |
+| **New to the system** | Read this first, then follow links |
+
+---
+
+## Update Cadence
+- **Weekly**: Amy-Kimi reviews new findings, updates rankings
+- **On-demand**: When major synthesis published
+- **Archive**: Superseded findings → `knowledge/archive/actionable-top10-YYYY-MM-DD.md`
+
+---
+
+*This is the entry point. For depth, follow the links. For breadth, see the full [research-digest.md](../../../research-digest.md).*

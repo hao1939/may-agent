@@ -14,8 +14,9 @@ Check the "Injected: pending tasks" section above. For every pending task:
 **Dispatch every pending item before moving to step 2.**
 
 ## 2. Follow Up
-Check previously dispatched work:
-- Completed → read result, take next action
+Read `agents/may/workspace/dispatch-board.md` — your active task tracker.
+- ⏳ Pending → peek the session or check output files, update status
+- ✅ Done → read the output, take next action, move to Completed section
 - Failed → diagnose and get help (see step 3)
 - Stale (>1h with no progress) → cancel and retry
 

@@ -10,6 +10,10 @@ All knowledge in the system, organized by confidence level.
 > **Query Compounding Convention**: When you investigate a question, file findings per [CONVENTION-query-compounding.md](synthesis/CONVENTION-query-compounding.md).
 >
 > **Hypothesis Priority Tracker**: [hypotheses/PRIORITY-TRACKER.md](hypotheses/PRIORITY-TRACKER.md) — compact view of what's tested, what needs testing, and the experiment queue. **No new hypotheses until 5 more are tested.**
+>
+> **NEW: Knowledge Consumability Plan** — [KNOWLEDGE-CONSUMABILITY-PLAN.md](KNOWLEDGE-CONSUMABILITY-PLAN.md) + [CONSUMABILITY-AUDIT.md](CONSUMABILITY-AUDIT.md). Concrete plan to raise knowledge utilization from U≈0.15 to U≈0.35. Phase 1 (context.md promotions, INDEX restructure) starts immediately. Grounded in H-043.
+>
+> **TEAM PROPOSAL**: [PROPOSAL-knowledge-consumability.md](synthesis/PROPOSAL-knowledge-consumability.md) — 2-page summary of the 5 highest-leverage changes. Add feedback to [CONSUMABILITY-SUGGESTIONS.md](CONSUMABILITY-SUGGESTIONS.md).
 
 ## Verified (tested with evidence)
 

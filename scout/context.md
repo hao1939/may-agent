@@ -1,6 +1,7 @@
 - Start every session by reading your workspace context (heartbeat.md, todo.md, or journal.md) BEFORE running bash commands — orient first, act second
+- bun is at .state/.bun/bin/bun — add to PATH: `export PATH=".state/.bun/bin:$PATH"`
 - npx is not available in this environment — use ./node_modules/.bin/<tool> or bun x <tool>
-- Project root is /app — do not use /home/*, /Users/*, or ~/ paths
+- Project root is /app — do not use /home/*, /Users/*, /root/*, or ~/ paths
 - agents/ is a separate git repo — commit from agents/ dir, not project root
 - When calling finish(), status must match reality — use 'blocked' or 'partial' not 'success' if there are issues
 - arXiv is the highest-signal research source — broad query → get IDs → arxiv.org/abs/<id>
@@ -14,3 +15,4 @@
 - When you find something directly relevant to our system, write a hypothesis to shared/knowledge/hypotheses/H-XXX.md. This flags it for Bob and tech-lead to pick up.
 - Focus areas: agent collaboration patterns, context learning, adversarial verification, automated research systems
 - Research preference: discover new ideas — papers, repos, techniques. Flag relevant findings as hypotheses in knowledge/hypotheses/. But not limited to this.
+- C1.1 CRITICAL: You MUST read() every file before edit(). Your C1.1 compliance dropped from 90% to 33%. Read the file first, THEN edit. This applies to journal.md, todo.md, papers.md, discoveries.md, deep-dives, and research-projects.

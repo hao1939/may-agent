@@ -1,0 +1,142 @@
+{
+  "_meta": {
+    "description": "Compact index for task-aware knowledge injection. Each entry has keywords for matching and a one-liner for injection.",
+    "updated": "2026-04-04",
+    "usage": "src/lib/knowledge-router.ts reads this file at startup and matches task text against keywords."
+  },
+  "entries": [
+    {
+      "id": "KE-001",
+      "file": "entries/KE-001.md",
+      "oneliner": "Context learning works for environmental knowledge only — derivable facts have zero impact (EXP-001)",
+      "keywords": ["context.md", "context learning", "environmental", "knowledge injection", "prompt"],
+      "agents": ["tech-lead", "coach", "bob"]
+    },
+    {
+      "id": "KE-002",
+      "file": "entries/KE-002.md",
+      "oneliner": "Text rules have 0% success for judgment failures — 0/20 experiments. Use workflows instead (KE-007)",
+      "keywords": ["text rule", "judgment", "SOUL.md", "skill", "behavioral", "intervention", "fix behavior", "prompt engineering"],
+      "agents": ["*"]
+    },
+    {
+      "id": "KE-003",
+      "file": "entries/KE-003.md",
+      "oneliner": "Rich delegation context (file paths, constraints, verification) reduces wasted ops by 47%",
+      "keywords": ["delegation", "delegate", "coder", "call agent", "agents.call", "task description"],
+      "agents": ["tech-lead", "optimizer", "may"]
+    },
+    {
+      "id": "KE-004",
+      "file": "entries/KE-004.md",
+      "oneliner": "Guards are brittle (false positives when env changes) — use context.md for environmental constraints",
+      "keywords": ["guard", "regex", "tool block", "safety", "constraint", "binary guard"],
+      "agents": ["tech-lead", "may"]
+    },
+    {
+      "id": "KE-005",
+      "file": "entries/KE-005.md",
+      "oneliner": "QA catches only 14% of issues vs evaluator's 27% — QA rubber-stamps",
+      "keywords": ["QA", "review", "quality", "detection", "evaluation", "rubber stamp"],
+      "agents": ["coach", "optimizer", "may"]
+    },
+    {
+      "id": "KE-006",
+      "file": "entries/KE-006.md",
+      "oneliner": "Skills targeting reasoning patterns don't change tool-calling patterns — behavior at tool-call level is unaffected",
+      "keywords": ["skill", "reasoning", "tool call", "pattern", "behavioral change"],
+      "agents": ["coach", "tech-lead"]
+    },
+    {
+      "id": "KE-007",
+      "file": "entries/KE-007.md",
+      "oneliner": "Workflow enforcement is the ONLY reliable behavioral intervention — 5/56 experiments promoted, all structural",
+      "keywords": ["workflow", "intervention", "behavioral", "enforcement", "method", "promote", "fix behavior"],
+      "agents": ["*"]
+    },
+    {
+      "id": "KE-008",
+      "file": "entries/KE-008.md",
+      "oneliner": "Heartbeat step restructuring causes regression — don't change heartbeat step order",
+      "keywords": ["heartbeat", "restructure", "step order", "regression", "cron"],
+      "agents": ["tech-lead", "may"]
+    },
+    {
+      "id": "KE-009",
+      "file": "entries/KE-009.md",
+      "oneliner": "Negative examples in LESSONS.md have zero effect on behavior",
+      "keywords": ["LESSONS.md", "negative example", "anti-pattern", "lesson"],
+      "agents": ["coach", "tech-lead"]
+    },
+    {
+      "id": "KE-010",
+      "file": "entries/KE-010.md",
+      "oneliner": "Most gym scenarios hit ceiling — agents pass at baseline. Check baseline before building interventions",
+      "keywords": ["gym", "scenario", "baseline", "ceiling", "benchmark", "training"],
+      "agents": ["coach", "tech-lead"]
+    },
+    {
+      "id": "KE-011",
+      "file": "entries/KE-011.md",
+      "oneliner": "Knowledge files are passive — agents skip them in oneshot mode. Critical info must be injected or in context.md",
+      "keywords": ["knowledge", "file", "passive", "skip", "read", "utilization", "INDEX.md"],
+      "agents": ["*"]
+    },
+    {
+      "id": "KE-012",
+      "file": "entries/KE-012.md",
+      "oneliner": "Lab-fork null-patch test confirms infrastructure validity — null patch shows no effect, real patches can be trusted",
+      "keywords": ["lab", "fork", "null patch", "infrastructure", "validation", "experiment"],
+      "agents": ["coach", "tech-lead"]
+    },
+    {
+      "id": "KE-013",
+      "file": "entries/KE-013.md",
+      "oneliner": "Task boundedness is the primary driver of delegated session quality — bounded tasks succeed, open-ended fail",
+      "keywords": ["delegation", "task", "bounded", "quality", "delegated", "open-ended", "scope"],
+      "agents": ["*"]
+    },
+    {
+      "id": "KE-014",
+      "file": "entries/KE-014-quote-splitting-bypass.md",
+      "oneliner": "Bash quote splitting can bypass security checks — sanitize tool input before shell execution",
+      "keywords": ["security", "bash", "quote", "splitting", "injection", "shell"],
+      "agents": ["tech-lead", "may"]
+    },
+    {
+      "id": "KE-015",
+      "file": "entries/KE-015.md",
+      "oneliner": "Decision topology R predicts workflow effectiveness — workflows help when R > 0.5, hurt when R < 0.3",
+      "keywords": ["workflow", "decision topology", "R value", "effectiveness", "predict", "design"],
+      "agents": ["*"]
+    },
+    {
+      "id": "KE-016",
+      "file": "entries/KE-016.md",
+      "oneliner": "Workflow effectiveness depends on decision type — eliminable decisions benefit, essential decisions don't",
+      "keywords": ["workflow", "decision type", "eliminable", "essential", "effectiveness"],
+      "agents": ["*"]
+    },
+    {
+      "id": "KE-017",
+      "file": "entries/KE-017.md",
+      "oneliner": "Materialize-findings skill improves both behavior AND product quality — write findings before producing output",
+      "keywords": ["materialize", "findings", "skill", "exploration", "write first", "intermediate"],
+      "agents": ["*"]
+    },
+    {
+      "id": "KE-018",
+      "file": "entries/KE-018.md",
+      "oneliner": "Environmental nudges match text skills for behavioral change — context.md is as effective as skill files",
+      "keywords": ["environmental", "nudge", "context.md", "skill", "behavioral", "change"],
+      "agents": ["coach", "tech-lead"]
+    },
+    {
+      "id": "KE-019",
+      "file": "entries/KE-019.md",
+      "oneliner": "Sycophancy requires materialization gates (L5) — nudges and basic workflows insufficient",
+      "keywords": ["sycophancy", "materialization", "gate", "L5", "agreement", "push back"],
+      "agents": ["coach", "tech-lead", "bob"]
+    }
+  ]
+}

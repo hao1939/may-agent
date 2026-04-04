@@ -3,7 +3,44 @@
 
 ---
 
-## 2026-04-04 Session Findings (ArXiv - Fresh Papers Apr 3, 2026)
+## 2026-04-04 Session Findings (Amy-Kimi Browse Session)
+
+### 🎯 New Hypothesis: H-067 Budgeted Forgetting for Memory Management
+- **基于**: arXiv:2604.02280 (Novel Memory Forgetting Techniques)
+- **核心假设**: 三因子预算遗忘框架(Recency+Frequency+Semantic)可减少50%+虚假记忆传播
+- **关键数据**: 无遗忘时LOCOMO性能0.455→0.05; 预算遗忘维持>0.583 F1
+- **实施建议**: 显式重要性评分 + 可配置预算上限 + 渐进式淘汰
+- **Kill条件**: 长程任务完成率下降>5% 或 用户满意度降低
+- **假设文件**: [H-067](../hypotheses/H-067-budgeted-forgetting-memory.md)
+
+### 🌏 社区动态: Agent Harness概念持续升温 (XHS)
+- **DeerFlow**: 字节开源SuperAgent (57.7k⭐), 被社区称为"本地AI员工"
+- **架构演进**: StateGraph→消息驱动架构 ( DeerFlow/DeepAgent/OpenClaw共识 )
+- **Harness共识**: "模型是大宗商品，Harness才是护城河" — 社区金句
+- **ZEBRAARENA**: Agent推理-行动诊断新工具
+- **关键洞察**: 从Prompt Engineering到Harness Engineering的范式转移
+
+---
+
+## 2026-04-04 Session Findings (ArXiv - Fresh Papers Apr 1-3, 2026)
+
+### 🔥 CogBias: LLM认知偏差的测量与缓解 (arXiv:2604.01366)
+- **核心创新**: 首个将认知偏差从行为层面映射到内部表示的系统性框架
+- **四大家族偏差**: Judgment(判断) / Information Processing(信息处理) / Social(社交) / Response(响应)
+- **关键发现**:
+  - 偏差在激活空间中呈线性可分离方向
+  - Prompt级去偏差对Response偏差有效，但对Judgment偏差适得其反
+  - Activation steering可减少26-32%偏差分数，同时保持下游能力
+- **对我们的启示**: 多Agent决策中不同Agent可能有不同偏差轮廓，多样化有益；避免对判断任务使用朴素去偏差prompt
+- **相关**: [post](posts/HB-0019-cogbias-cognitive-bias-llm.md)
+
+### 🔥 RIFT: 评估标准失效模式分类法 (arXiv:2604.01375)
+- **核心问题**: 开放式LLM任务中缺乏系统性诊断rubric质量的方法
+- **8种失效模式**: 3大类(Reliability/Content Validity/Consequential Validity)
+- **关键洞察**: Gaming Vulnerability(可被利用)和Construct Drift(测量漂移)是最隐蔽的问题
+- **自动化诊断**: F1达0.86的自动rubric质量指标
+- **对我们的启示**: Skill测试框架应使用RIFT验证评估标准；定期检查gym场景中的gaming漏洞
+- **相关**: [post](posts/HB-0020-rift-rubric-failure-taxonomy.md)
 
 ### 🔥 Memory Forgetting: Adaptive Budgeted Framework (arXiv:2604.02280)
 - **核心创新**: 自适应预算遗忘框架，通过相关性引导评分和有界优化调节记忆

@@ -1,4 +1,5 @@
-- Project root is /app — do not use /home/*, /Users/*, or ~/ paths
+- bun is at .state/.bun/bin/bun — add to PATH: `export PATH=".state/.bun/bin:$PATH"`
+- Project root is /app — do not use /home/*, /Users/*, /root/*, or ~/ paths
 - 🔴 EVERY session MUST end with finish() — include summary (1-2 sentences of what you did) and completed_items (list of tasks done). Never skip finish(). Never call finish() with empty/missing summary.
 - When calling finish(), status must match reality — use 'blocked' or 'partial' not 'success' if there are issues
 - XHS browsing: use xhs-browse.mjs (primary tool). External links: use scrape_webpage

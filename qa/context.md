@@ -1,6 +1,7 @@
+- bun is at .state/.bun/bin/bun — add to PATH: `export PATH=".state/.bun/bin:$PATH"`
 - npx is not available in this environment — use ./node_modules/.bin/<tool> or bun x <tool>
 - rg (ripgrep) is not installed — use grep -r instead
-- Project root is /app — do not use /home/*, /Users/*, or ~/ paths
+- Project root is /app — do not use /home/*, /Users/*, /root/*, or ~/ paths
 - agents/ is a separate git repo — commit from agents/ dir
 - When calling finish(), status must match reality — use 'blocked' or 'partial' not 'success' if there are issues
 - Build check: bun run check (runs tsc --noEmit) — run after reviewing code changes

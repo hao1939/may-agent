@@ -1,6 +1,8 @@
 # Coder Context
 
 ## Environment
+- bun is at .state/.bun/bin/bun — add to PATH: `export PATH=".state/.bun/bin:$PATH"`
+- Project root is /app — do not use /home/*, /Users/*, /root/*, or ~/ paths
 - npx is not available — use ./node_modules/.bin/<tool> or bun x <tool>
 - rg (ripgrep) is not installed — use grep -r instead
 

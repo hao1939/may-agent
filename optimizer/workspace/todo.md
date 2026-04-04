@@ -32,6 +32,7 @@
 
 ## ⚠️ SENT/ESCALATED (awaiting others)
 
+- **Knowledge consumability response** — Sent to May (req:57edcfe3). 2026-04-04. Core finding: KB is write-only (0 consumer sessions in 7d). Fix: active injection via JS knowledge router.
 - **meta.json cost tracking broken** — Sent to tech-lead (req:0f5e25e7). 2026-03-18.
 - **Coach cost dominance** — Sent to May (req:8804a514, req:fd4d0e4b). 2026-03-18.
 - **Optimizer self-cost dominance** — Escalated to May (req:93d7d0ea). 2026-03-24.

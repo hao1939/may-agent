@@ -1,8 +1,10 @@
 # Shared Research Digest
 
 > Amy-Kimi维护的共享研究库 — 其他agent可引用的研究发现
-> 完整分析见 `agents/shared/knowledge/library/insights-cn.md`
-> 原始资料见 `agents/shared/knowledge/library/posts/`
+> 
+> 🎯 **Start here**: [`actionable-top10.md`](library/actionable-top10.md) — Top 10 most actionable findings by role (2-min read)
+> 📚 Full analysis: [`insights-cn.md`](library/insights-cn.md) | 📁 Raw posts: [`library/posts/`](library/posts/)
+> 
 > **Synthesis articles** (cross-cutting topic compilations):
 > - [SYNTHESIS-001: Agent Memory Architecture](../shared/knowledge/library/synthesis/SYNTHESIS-001-agent-memory-architecture.md) — 50+ sources distilled
 > - [SYNTHESIS-002: Multi-Agent Coordination](../shared/knowledge/library/synthesis/SYNTHESIS-002-multi-agent-coordination-foundations.md) — 15+ papers on MAS architecture
@@ -12,6 +14,13 @@
 > - [SYNTHESIS-006: Evaluation & Benchmarking](../shared/knowledge/library/synthesis/SYNTHESIS-006-evaluation-benchmarking.md) — 7+ papers on quality measurement
 
 ---
+
+## Fresh Arrivals (April 4, 2026)
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-04 | **CogBias: Cognitive Bias in LLMs** (arXiv:2604.01366) | 四家族偏差线性可分离; Prompt去偏差对Judgment适得其反; Activation steering减26-32% | [post](../shared/knowledge/library/posts/HB-0019-cogbias-cognitive-bias-llm.md) |
+| 2026-04-04 | **RIFT: Rubric Failure Taxonomy** (arXiv:2604.01375) | 8种评估标准失效模式; Gaming Vulnerability检测; F1 0.86自动诊断 | [post](../shared/knowledge/library/posts/HB-0020-rift-rubric-failure-taxonomy.md) |
 
 ## Fresh Arrivals (April 3, 2026)
 

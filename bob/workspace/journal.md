@@ -1317,3 +1317,24 @@ System is at a natural plateau. Prompting experiments exhausted. Convention prec
 **Current non-ceiling scoreboard**: 14 total scenarios with predictions: 7 HELPS, 2 NEUTRAL, 5 HURTS. If EXP-025 achieves >60% binary accuracy across these 14, H-041 gets its first prospective validation.
 
 **State**: Predictions locked. Waiting for coach to run Phase 2b/2c (multi-run data collection).
+
+### 2026-04-04 19:10 — Knowledge Consumability Plan: From H-043 Theory to Team Action
+
+**Session focus**: P1 task from Hao (via May): turn H-043 (Knowledge Utilization Bottleneck) into a concrete plan the whole team can contribute to. Goal: make knowledge consumable, not by deleting, but by improving delivery.
+
+**Completed**:
+1. **KNOWLEDGE-CONSUMABILITY-PLAN.md** (234 lines) — 4-phase plan:
+   - Phase 1 (this week, $0): Audit all KEs by form, promote top-5 to context.md, restructure INDEX
+   - Phase 2 (2 weeks): Convert behavioral KEs to workflows, build lightweight knowledge routing, continue WKWA series
+   - Phase 3 (month 2): Freshness tracking, per-agent knowledge profiles, uncertainty annotations (inspired by DD#514)
+   - Phase 4 (aspirational): Active memory management, knowledge compilation pipeline
+2. **CONSUMABILITY-AUDIT.md** (105 lines) — Phase 1.1 done. Tagged all 19 KE entries by current form, optimal form, and conversion priority. Found: 5 HIGH priority conversions, 4 MEDIUM, 5 LOW, 3 already optimal, 1 reference only. Key insight: 5 entries (KE-002, KE-007, KE-011, KE-015, KE-019) account for most of the utilization gap.
+3. **INDEX.md updated** — Added consumability plan reference to header callouts.
+
+**Key insight**: The audit reveals a Pareto pattern — just 5 KE entries, if converted from declarative to environmental/structural form, would address the majority of the utilization gap. KE-011 (knowledge files are passive) is meta-recursive: the finding about consumability is itself not consumed. Fixing that one finding (by building a knowledge routing layer) would cascade to fix consumption of all other entries.
+
+**New library items skimmed**:
+- DD#515 (HE2-Net): Formal HAACS framework with epistemic promotion gate. Maps to our triage→deep-dive→synthesis pipeline.
+- DD#514 (AI-Supervisor): Persistent Research World Model with uncertainty annotations. Most architecturally relevant paper to our system. Inspired Phase 3.3 of the plan.
+
+**State**: Plan delivered. Next: Phase 1.2 (promote top-5 KEs to context.md) and Phase 1.3 (INDEX restructure) in future sessions.

@@ -7,7 +7,7 @@
 - SOUL.md text changes don't fix judgment failures (0/18 in experiments) — use workflow enforcement
 - Growth cycle: fork → patch → gym test → promote if improved, discard if not. One change per cycle.
 - agents/ is a separate git repo — use `git add` from agents/ dir
-- Project root is /app — do not use /home/*, /Users/*, or ~/ paths (they don't exist in this environment)
+- Project root is /app — do not use /home/*, /Users/*, /root/*, or ~/ paths (they don't exist in this environment)
 - When calling finish(), status must match reality — if you found missing files or blockers, use 'blocked' or 'partial', not 'success'
 - ERROR_LOG files are at agents/*/ERROR_LOG.jsonl — NOT .state/error-log.jsonl
 - Gym runner path is scripts/gym-run.sh — NOT test/gym/run-gym.sh

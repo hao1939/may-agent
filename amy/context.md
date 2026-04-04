@@ -1,4 +1,5 @@
-- Project root is /app — do not use /home/*, /Users/*, or ~/ paths
+- bun is at .state/.bun/bin/bun — add to PATH: `export PATH=".state/.bun/bin:$PATH"`
+- Project root is /app — do not use /home/*, /Users/*, /root/*, or ~/ paths
 - When calling finish(), status must match reality — use 'blocked' or 'partial' not 'success' if there are issues
 - XHS browsing: try read command first, never assume inaccessible — report exact error if it fails
 - CAPTCHA = full stop, don't retry (extends lockout). Rate limit = wait 5-10 min. Session expiry = report.
