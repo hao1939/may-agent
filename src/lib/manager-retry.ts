@@ -38,6 +38,27 @@ export function hasFinishToolCall(messages: any[]): boolean {
   return false;
 }
 
+/**
+ * Check if finish() was called in the current turn (since the last user message).
+ * For persistent sessions, hasFinishToolCall scans all history and always
+ * returns true after the first heartbeat — preventing retries on all future
+ * empty responses. This variant scopes to the current turn.
+ */
+function lastTurnCalledFinish(messages: any[]): boolean {
+  // Walk backwards from the end. If we find finish before hitting a user message,
+  // it was called in the current turn.
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const msg = messages[i];
+    if (msg.role === "user") return false; // reached previous turn boundary, no finish
+    if (msg.role === "assistant" && Array.isArray(msg.content)) {
+      for (const block of msg.content) {
+        if (block?.type === "toolCall" && block.name === "finish") return true;
+      }
+    }
+  }
+  return false;
+}
+
 /** Extract the params from the last finish() tool call, if any. */
 export function extractFinishParams(messages: any[]): {
   status: string;
@@ -104,9 +125,11 @@ export function isRetryableInfraError(session: ActiveSession): string | null {
   const lastMsg = messages.length > 0 ? messages[messages.length - 1] : null;
   if (!lastMsg) return null;
 
-  // If the agent already called the `finish` tool successfully, empty responses
-  // afterward are normal (the model has nothing left to say). Don't retry.
-  if (hasFinishToolCall(messages)) return null;
+  // If the agent already called the `finish` tool in the current turn,
+  // empty responses afterward are normal — the model has nothing left to say.
+  // Use lastTurnCalledFinish (not hasFinishToolCall) for persistent sessions
+  // where finish was called in prior turns.
+  if (lastTurnCalledFinish(messages)) return null;
 
   // Check if error was an abort — never retry aborts
   const agentError = session.agent.state.error ?? session.error;
@@ -322,7 +345,7 @@ export async function runAgentWithRetry(
 
     // Skip retry if the agent already called `finish` — empty responses
     // after finish are normal (model has nothing left to say).
-    if ((isEmptyAssistant || isSilentStream) && !hasFinishToolCall(messages)) {
+    if ((isEmptyAssistant || isSilentStream) && !lastTurnCalledFinish(messages)) {
       const reason = isEmptyAssistant ? "empty_response" : "silent_stream";
       session.infraRetryCount++;
       const attempt = session.infraRetryCount;
