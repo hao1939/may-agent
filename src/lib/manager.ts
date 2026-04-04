@@ -53,6 +53,7 @@ import type {
 } from "./types.js";
 import { createCompactionTransform } from "./compaction.js";
 import type { CompactionOptions } from "./compaction.js";
+import { getDb, updateSessionDb } from "./requests.js";
 import {
   RegistryStore,
   sessionDir,
@@ -851,6 +852,7 @@ export class SubagentManager {
       kind: session.kind,
       autoClose: session.autoClose,
       orderId: session.orderId,
+      maxTurns: session.maxTurns || undefined,
     });
 
     // Set up timeout if configured
@@ -1045,23 +1047,58 @@ export class SubagentManager {
     const persistDir = this.registry.persistDir;
     const activeIds = listActiveSessionIds(persistDir);
     let cleaned = 0;
+    const staleThresholdMs = 30 * 60 * 1000;
 
+    // Phase 1: Clean up active session dirs that aren't actually running
     for (const sessionId of activeIds) {
       if (this.activeSessions.has(sessionId)) continue;
       const meta = readSessionMeta(persistDir, sessionId);
       if (!meta) continue;
 
       if (meta.status === "running") {
-        const staleThresholdMs = 30 * 60 * 1000;
         if (Date.now() - (meta.startedAt ?? 0) > staleThresholdMs) {
           try {
             writeSessionMeta(persistDir, sessionId, { ...meta, status: "interrupted" });
             this.registry.updateSessionStatus(sessionId, "interrupted", "Zombie cleanup");
+            // Also update DB directly (updateSessionStatus only writes meta.json)
+            try {
+              updateSessionDb(persistDir, sessionId, {
+                status: "interrupted",
+                error: "Zombie cleanup",
+                endedAt: Date.now(),
+              });
+            } catch { /* best-effort DB update */ }
             cleaned++;
           } catch { /* best-effort */ }
         }
       }
     }
+
+    // Phase 2: Fix DB/disk mismatch — sessions in history/ with status=interrupted on disk
+    // but still "running" in the DB (e.g. from process crashes where archival happened
+    // but DB wasn't updated). Scan DB for running sessions not in activeSessions.
+    try {
+      const db = getDb(persistDir);
+      const dbRunning = db.prepare(
+        `SELECT sessionId, startedAt FROM sessions WHERE status = 'running' AND startedAt < ?`
+      ).all(Date.now() - staleThresholdMs) as Array<{ sessionId: string; startedAt: number }>;
+
+      for (const row of dbRunning) {
+        if (this.activeSessions.has(row.sessionId)) continue;
+        // Already cleaned in Phase 1?
+        if (activeIds.includes(row.sessionId)) continue;
+        // This session is "running" in DB but not active in memory or on disk — fix the DB
+        try {
+          updateSessionDb(persistDir, row.sessionId, {
+            status: "interrupted",
+            error: "Zombie cleanup (DB-only — session already archived)",
+            endedAt: Date.now(),
+          });
+          cleaned++;
+        } catch { /* best-effort */ }
+      }
+    } catch { /* DB query failed — skip phase 2 */ }
+
     return cleaned;
   }
 
@@ -1147,7 +1184,7 @@ export class SubagentManager {
       filesModified: new Set(),
       orderId: persisted.orderId,
       consecutiveErrorTurns: 0,
-      maxTurns: 0,
+      maxTurns: persisted.maxTurns ?? 0,
       stuckWarningInjected: false,
       currentTurnErrors: 0,
       currentTurnSuccesses: 0,

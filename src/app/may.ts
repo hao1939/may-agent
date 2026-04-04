@@ -147,13 +147,22 @@ const ANTHROPIC_DIRECT = process.env.ANTHROPIC_API_KEY
   : { baseUrl: MODEL_BASE_URL, apiKey: LITELLM_API_KEY };
 
 const models: Record<string, ModelWithApiKey> = {
-  opus: {
-    ...getModel("anthropic", "claude-sonnet-4-20250514"),
-    id: "claude-opus-4.6",
-    contextWindow: process.env.ANTHROPIC_API_KEY ? 200000 : 72000, // Direct API: full 200K; LiteLLM: 72K proxy limit
-    baseUrl: ANTHROPIC_DIRECT.baseUrl,
-    apiKey: ANTHROPIC_DIRECT.apiKey,
-  },
+  opus: process.env.ANTHROPIC_API_KEY
+    ? {
+        ...getModel("anthropic", "claude-sonnet-4-20250514"),
+        id: "claude-opus-4.6",
+        contextWindow: 200000,
+        baseUrl: ANTHROPIC_DIRECT.baseUrl,
+        apiKey: ANTHROPIC_DIRECT.apiKey,
+      }
+    : {
+        // Fallback: claude-opus-4.6 not available through LiteLLM proxy
+        // Use claude-sonnet via proxy instead (same provider, available model)
+        ...getModel("anthropic", "claude-sonnet-4-20250514"),
+        contextWindow: 72000,
+        baseUrl: MODEL_BASE_URL,
+        apiKey: LITELLM_API_KEY,
+      },
   gpt52: {
     ...getModel("openai", "gpt-5.2"),
     baseUrl: MODEL_BASE_URL,
