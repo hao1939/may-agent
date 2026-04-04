@@ -156,9 +156,8 @@ const models: Record<string, ModelWithApiKey> = {
         apiKey: ANTHROPIC_DIRECT.apiKey,
       }
     : {
-        // Fallback: claude-opus-4.6 not available through LiteLLM proxy
-        // Use claude-sonnet via proxy instead (same provider, available model)
         ...getModel("anthropic", "claude-sonnet-4-20250514"),
+        id: "claude-opus-4.6",
         contextWindow: 72000,
         baseUrl: MODEL_BASE_URL,
         apiKey: LITELLM_API_KEY,
