@@ -371,6 +371,50 @@ describe("Cron", () => {
     c.stop();
   });
 
+  it("reload detects handlerConfig changes (e.g. maxTurns)", async () => {
+    writeFileSync(
+      configPath,
+      JSON.stringify([
+        {
+          name: "hb-tl",
+          type: "heartbeat",
+          intervalMs: 60000,
+          agent: "tech-lead",
+          message: "wake up",
+          handlerConfig: { maxTurns: 40 },
+        },
+      ]),
+    );
+    const mgr = makeMockManager();
+    const reloadMessages: string[] = [];
+    const c = new Cron(configPath, mgr as any, () => "sid-1");
+    c.onError = (msg) => reloadMessages.push(msg);
+    c.start();
+
+    // Change only handlerConfig.maxTurns from 40 to 50
+    writeFileSync(
+      configPath,
+      JSON.stringify([
+        {
+          name: "hb-tl",
+          type: "heartbeat",
+          intervalMs: 60000,
+          agent: "tech-lead",
+          message: "wake up",
+          handlerConfig: { maxTurns: 50 },
+        },
+      ]),
+    );
+    c.reload();
+
+    // Should have detected the change and reloaded the entry
+    expect(reloadMessages.some((m) => m.includes('Reloaded "hb-tl"'))).toBe(true);
+    // Should NOT say "no entries changed"
+    expect(reloadMessages.some((m) => m.includes("no entries changed"))).toBe(false);
+
+    c.stop();
+  });
+
   // ── Heartbeat mode ──────────────────────────────────────────────────
 
   it("heartbeat: calls manager.run() with agent name and message", async () => {
