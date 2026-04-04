@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { SubagentManager } from "../src/lib/manager.js";
-import { sessionDir } from "../src/lib/persistence.js";
+import { sessionDir, historyDir } from "../src/lib/persistence.js";
 import type { Model } from "@mariozechner/pi-ai";
 
 function fakeModel(): Model<any> {
@@ -50,9 +50,13 @@ describe("session archival on completion", () => {
     const sessionId = manager.run("echo-agent", "task");
     await manager.waitFor(sessionId);
 
-    // Session data remains in sessions/<id>/ (manager no longer archives to history/)
+    // Session data is archived to sessions/history/<id>/ after completion
+    const archivedDir = join(historyDir(persistDir), sessionId);
+    expect(existsSync(archivedDir)).toBe(true);
+
+    // Active dir should no longer exist
     const activeDir = sessionDir(persistDir, sessionId);
-    expect(existsSync(activeDir)).toBe(true);
+    expect(existsSync(activeDir)).toBe(false);
 
     // Not in activeSessions (getSessionCount reflects only running sessions)
     expect(manager.getSessionCount()).toBe(0);

@@ -12,6 +12,7 @@ import {
   MEMORY_SUMMARY_MAX,
   INFRA_RETRY_MAX,
   TURN_BUDGET_WARNING_DEFAULT,
+  RESTORED_MAX_TURNS_FALLBACK,
 } from "./manager-utils.js";
 import type { RegisteredAgent, ActiveSession, RunOptions, SubagentManagerOptions } from "./manager-utils.js";
 import { createFinishGuard } from "./tools/finish-guard.js";
@@ -70,6 +71,9 @@ import {
   listWorkflowRuns,
   saveWorkflowRun,
   readCompactedMessages,
+  archiveSession,
+  readArchivedSessionMessages,
+  historyDir,
 } from "./persistence.js";
 import type { PersistedSession, SessionKind } from "./persistence.js";
 import type { SessionTrace } from "./workflow.js";
@@ -597,13 +601,18 @@ export class SubagentManager {
     return ctxLines.join("\n");
   }
 
-  /** Archive a session after completion: move to history. */
-  /** Clean up step counter on session completion. */
+  /** Archive a session after completion: move to history and clean up step counter. */
   private cleanupSession(session: ActiveSession): void {
     try {
       cleanupStepCounter(session.sessionId);
     } catch {
       /* best-effort */
+    }
+    // Move session directory from active (sessions/<id>) to history (sessions/history/<id>)
+    try {
+      archiveSession(this.registry.persistDir, session.sessionId);
+    } catch {
+      /* best-effort — zombie cleanup will catch it later */
     }
   }
 
@@ -1191,7 +1200,7 @@ export class SubagentManager {
       filesModified: new Set(),
       orderId: persisted.orderId,
       consecutiveErrorTurns: 0,
-      maxTurns: persisted.maxTurns ?? 0,
+      maxTurns: persisted.maxTurns ?? RESTORED_MAX_TURNS_FALLBACK,
       stuckWarningInjected: false,
       currentTurnErrors: 0,
       currentTurnSuccesses: 0,
@@ -1428,6 +1437,10 @@ export class SubagentManager {
         throw new Error(`Session "${sessionId}" not found`);
       }
       messages = readSessionMessages(this.registry.persistDir, sessionId);
+      // If no messages in active dir (session was archived), try history
+      if (messages.length === 0) {
+        messages = readArchivedSessionMessages(this.registry.persistDir, sessionId);
+      }
     }
     if (limit === undefined) return messages.slice();
     if (limit <= 0) return [];
@@ -1494,7 +1507,11 @@ export class SubagentManager {
     if (persisted.status === "running" || persisted.status === "idle") {
       throw new Error(`Session "${sessionId}" is still running (stale registry entry)`);
     }
-    const messages = readSessionMessages(this.registry.persistDir, sessionId);
+    let messages = readSessionMessages(this.registry.persistDir, sessionId);
+    // If no messages in active dir (session was archived to history), try history
+    if (messages.length === 0) {
+      messages = readArchivedSessionMessages(this.registry.persistDir, sessionId);
+    }
     const duration = persisted.endedAt
       ? formatDuration(persisted.endedAt - persisted.startedAt)
       : formatDuration(Date.now() - persisted.startedAt);
@@ -1932,10 +1949,14 @@ export class SubagentManager {
     const session = this.activeSessions.get(sessionId);
     if (session) return session.outputDir;
 
-    // Check session directory
+    // Check session directory (active location)
     const persistDir = this.registry.persistDir;
     const activeOutputDir = sessionOutputDir(persistDir, sessionId);
     if (existsSync(activeOutputDir)) return activeOutputDir;
+
+    // Check archived (history) location
+    const archivedOutputDir = join(historyDir(persistDir), sessionId, "output");
+    if (existsSync(archivedOutputDir)) return archivedOutputDir;
 
     return undefined;
   }

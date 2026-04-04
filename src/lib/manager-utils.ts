@@ -161,6 +161,11 @@ export const TOOL_PIVOT_LIMIT = 3;
 /** @deprecated Turn budget removed — always 0 (disabled). */
 export const TURN_BUDGET_WARNING_DEFAULT = 0;
 
+/** Default maxTurns for restored sessions that lack a persisted value.
+ *  Prevents runaway sessions when old meta.json doesn't include maxTurns.
+ *  Set to 0 to disable (unlimited). All cron entries currently use 40. */
+export const RESTORED_MAX_TURNS_FALLBACK = 40;
+
 /** Consecutive error turns before injecting a stuck warning. */
 export const STUCK_WARNING_THRESHOLD = 3;
 

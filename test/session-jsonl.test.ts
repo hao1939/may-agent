@@ -9,6 +9,7 @@ import {
   readSessionMessages,
   sessionDir,
   sessionJsonlPath,
+  historyDir,
 } from "../src/lib/persistence.js";
 import { SubagentManager } from "../src/lib/manager.js";
 import type { Model } from "@mariozechner/pi-ai";
@@ -195,8 +196,8 @@ describe("Session JSONL persistence", () => {
       // Wait for the session to complete (will error or complete with fake model)
       await manager.waitFor(sessionId);
 
-      // After completion, session data stays in sessions/<id>/ (no archival to history/)
-      const sessionJsonl = join(sessionDir(persistDir, sessionId), "session.jsonl");
+      // After completion, session data is archived to sessions/history/<id>/
+      const sessionJsonl = join(historyDir(persistDir), sessionId, "session.jsonl");
       expect(existsSync(sessionJsonl)).toBe(true);
 
       const raw = readFileSync(sessionJsonl, "utf-8");
@@ -229,11 +230,12 @@ describe("Session JSONL persistence", () => {
       const sessionId = manager.run("test-agent", "do something");
       await manager.waitFor(sessionId);
 
-      // Session dir should still exist (manager no longer archives to history/)
-      expect(existsSync(sessionDir(persistDir, sessionId))).toBe(true);
+      // Session dir should be archived to history/
+      const archivedDir = join(historyDir(persistDir), sessionId);
+      expect(existsSync(archivedDir)).toBe(true);
 
-      // Output dir should exist inside the session directory
-      const outputDir = join(sessionDir(persistDir, sessionId), "output");
+      // Output dir should exist inside the archived session directory
+      const outputDir = join(archivedDir, "output");
       expect(existsSync(outputDir)).toBe(true);
     });
   });
