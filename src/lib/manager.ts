@@ -81,6 +81,7 @@ import { join, dirname, relative, resolve } from "node:path";
 import { readIdentity } from "./detached.js";
 import { runActiveRecall, formatRecallWarnings } from "./active-recall.js";
 import { readLatestCheckpointForAgent, cleanupStepCounter } from "./tools/checkpoint.js";
+import { routeKnowledge } from "./knowledge-router.js";
 import { buildTrace } from "./manager-trace.js";
 import { hasFinishToolCall, extractFinishParams, runAgentWithRetry } from "./manager-retry.js";
 import { createAgentsTool as createAgentsToolFn, type CreateAgentsToolOptions } from "./manager-agents-tool.js";
@@ -524,6 +525,7 @@ export class SubagentManager {
     agentName: string,
     sessionId: string,
     persistDir: string,
+    taskText?: string,
   ): string {
     const ctxLines = [`# Session Context`, `- Session ID: ${sessionId}`, `- Current Time: ${new Date().toISOString()}`];
     const memoryLimit = def.memoryLimit ?? 20;
@@ -595,6 +597,18 @@ export class SubagentManager {
             ctxLines.push(``, `## What You Know (persistent context)`, ctxContent);
           }
         }
+      }
+    }
+
+    // Knowledge routing: inject relevant knowledge entry pointers based on task text.
+    // H-043: raising P(access) by auto-matching task keywords to verified entries.
+    // Per Hao's design decision: ONLY inject during heartbeat sessions — heartbeats
+    // are the natural "briefing" moment. Delegated tasks get context from the dispatcher.
+    const isHeartbeat = taskText?.startsWith("[heartbeat]") ?? false;
+    if (isHeartbeat && taskText && def.projectRoot) {
+      const knowledgeBlock = routeKnowledge(def.projectRoot, taskText, agentName, 3);
+      if (knowledgeBlock) {
+        ctxLines.push(``, knowledgeBlock);
       }
     }
 
@@ -899,7 +913,7 @@ export class SubagentManager {
     // Prepend session context (session ID + task history) to the first user
     // message.  This keeps the system prompt stable across sessions so that
     // Anthropic prompt caching produces cache reads.
-    const sessionContext = this.buildSessionContext(def, name, sessionId, persistDir);
+    const sessionContext = this.buildSessionContext(def, name, sessionId, persistDir, task);
     const promptText = `${sessionContext}\n\n---\n\n${task}`;
 
     session.promise = runAgentWithRetry(
@@ -1090,9 +1104,25 @@ export class SubagentManager {
       }
     }
 
-    // Phase 2: Fix DB/disk mismatch — sessions in history/ with status=interrupted on disk
-    // but still "running" in the DB (e.g. from process crashes where archival happened
-    // but DB wasn't updated). Scan DB for running sessions not in activeSessions.
+    // Phase 2: Archive terminal sessions still in the active directory.
+    // cleanupSession() moves dirs to history/, but if it fails (e.g. race condition,
+    // process crash), terminal sessions accumulate in sessions/ indefinitely.
+    // This phase catches those orphans.
+    for (const sessionId of activeIds) {
+      if (this.activeSessions.has(sessionId)) continue;
+      const meta = readSessionMeta(persistDir, sessionId);
+      if (!meta) continue;
+      const terminalStatuses = ["done", "error", "interrupted"];
+      if (terminalStatuses.includes(meta.status ?? "")) {
+        try {
+          archiveSession(persistDir, sessionId);
+          cleaned++;
+        } catch { /* best-effort — will retry next cycle */ }
+      }
+    }
+
+    // Phase 3: Fix DB/disk mismatch — sessions "running" in the DB but not in memory
+    // or on disk (e.g. from process crashes where archival happened but DB wasn't updated).
     try {
       const db = getDb(persistDir);
       const dbRunning = db.prepare(
@@ -1113,7 +1143,7 @@ export class SubagentManager {
           cleaned++;
         } catch { /* best-effort */ }
       }
-    } catch { /* DB query failed — skip phase 2 */ }
+    } catch { /* DB query failed — skip phase 3 */ }
 
     return cleaned;
   }
