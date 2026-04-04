@@ -313,7 +313,9 @@ export function createAutoResume(
   return (event: AgentEvent) => {
     if (event.type !== "session_end") return;
     if (event.status !== "interrupted") return;
-    if ((event.turnCount ?? 0) === 0) return; // No work done — nothing to resume
+    // Use opCount as the work indicator — turnCount is not reliably persisted
+    const workDone = (event.opCount ?? (event as any).turnCount ?? 0) > 0;
+    if (!workDone) return; // No work done — nothing to resume
     // Deliberate close (e.g., /new command) — not a crash, don't resume
     if (event.error === "Closed") return;
 
