@@ -1,8 +1,8 @@
 # H-041: The Decision Topology — Why Structure × Scope × Task Fit Determines MAS Quality
 
-**Status**: Partially validated — HURTS predictions 86% accurate; HELPS predictions untested (EXP-025 partial, n=1)
+**Status**: Partially validated — HURTS predictions 86% accurate; HELPS predictions untested (EXP-025 partial, n=1). Sycophancy gating (EXP-025 strict) 3/3 confirms materialization gate mechanism.
 **Priority**: High — operationalizes H-040 into a predictive framework with empirical grounding
-**Last updated**: 2026-04-04 (EXP-025 partial results integrated)
+**Last updated**: 2026-04-04 (sycophants-dilemma strict results + 4 external validations integrated)
 **Proposed by**: Bob (Architect)
 **Date**: 2026-04-02
 
@@ -216,6 +216,41 @@ H-044's rule breaks when:
 - Anthropic "Building Effective Agents": "Start with the simplest solution possible"
 - CASCADE (DD#485): Starts low-structure, escalates via gates
 - Karpathy: "Don't create frameworks, create prompts"
+
+## EXP-025 Extension: Sycophants-Dilemma Strict Results (2026-04-04)
+
+The strict two-phase workflow on sycophants-dilemma scenario achieved 3/3 (100%) pass rate vs 3/6 (50%) baseline. This confirms a key H-041 mechanism: **the materialization gate forces the agent to commit to a classification BEFORE having the option to delete**. The gate converts what was an essential decision (judgment under social pressure) into two eliminable decisions:
+1. "Classify this file as keep/delete" (eliminable — follows explicit criteria)
+2. "Delete only files classified as SAFE-TO-DELETE" (eliminable — follows Phase 1 output)
+
+The regular workflow (classify-then-act without hard gate) achieved the same 50% as baseline — classification without enforcement doesn't change the decision topology. Only the **hard gate** between phases changes R.
+
+## External Validation (2026-04-04 batch)
+
+**9. DD#512: Self-Driving Portfolio (50-Agent MAS)**
+- 50 specialized agents with methodological diversity (not stochastic diversity)
+- IPS (Investment Policy Statement) as constitutional constraint = governance pre-resolution
+- Meta-agent rewrites other agents' code = automated elimination of recurring eliminable decisions
+- Researcher agent prevents convergence = preserves essential exploration decisions
+- **Maps to H-041**: The most sophisticated implementation of H-041's framework in production — structure (3-layer hierarchy), scope (vote-and-critique pipeline), task fit (methodological diversity ensures essential decisions remain diverse)
+
+**10. DD#513: WMAS — World-Centered MAS**
+- Formalizes shared world model > agent-local beliefs for institutional domains
+- 6-dimension world classification predicts when structure helps (Type I institutional = canonical)
+- Our shared knowledge library IS a ground semantic layer; hypotheses ARE the causal knowledge layer
+- **Maps to H-041**: WMAS's world type classification = H-041's task fit variable. Type I (our domain) = high N_elim, low N_ess. WMAS predicts our design should benefit from heavy structuring — consistent with H-041.
+
+**11. CASCADE (arXiv:2604.00451): Scoped Communication**
+- Explicit communication budgets with scope escalation
+- Start local, expand only when local validation fails
+- **Maps to H-041**: Scope variable operationalized. CASCADE = policy for navigation decisions ("should I expand communication?").
+
+**12. LLM Cooperation in Games (arXiv:2604.00487)**
+- LLM agents default to cooperation (fairness-driven), not Nash equilibria
+- Multi-round context enables richer strategic behavior
+- **Maps to H-041**: LLM default cooperation means under-structuring is EVEN SAFER than over-structuring, because agents won't defect. Strengthens the Asymmetric Default principle.
+
+**Merged hypotheses**: H-060 (hierarchical MAS) and H-061 (constrained communication) archived on 2026-04-04. Both were specific instances of H-041's Structure and Scope variables respectively. Their evidence is now cited above as sources 9-12.
 
 ## References
 - H-040: The Reliability Inversion (generalized by H-041)

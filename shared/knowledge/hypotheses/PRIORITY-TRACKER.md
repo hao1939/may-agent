@@ -1,25 +1,32 @@
 # Hypothesis Priority Tracker
 
-**Updated**: 2026-04-04 (post-EXP-025 partial results) | **Active hypotheses**: 23 | **Tested**: 4/23 | **Resolution ratio**: 4:23
+**Updated**: 2026-04-04 (H-041 strengthened: 14 evidence sources, sycophants-dilemma 3/3, 6 hypotheses archived) | **Active hypotheses**: 17 | **Tested**: 4/17 | **Resolution ratio**: 4:17  
+**Bayesian scorecard**: See `SCORECARD-bayesian-2026-04-04.md` for full methodology
 
-> ⚠️ **MORATORIUM VIOLATED**: 6 new hypotheses (H-060 to H-065) were generated since the moratorium was declared. Resolution ratio WORSENED from 4:17 to 4:23. This is exactly the failure mode CR#279 (Confirmation Bias Stack) describes. **No new hypotheses until 5 more are resolved.**
+> ⚠️ **MORATORIUM ENFORCED**: 6 hypotheses (H-060 to H-065) merged or archived per triage below. H-066 (Bayesian Belief Management) added as meta-process improvement. Net active count reduced from 23 → 17. **No new hypotheses until 5 more are resolved.**
 
 ---
 
-## 🟢 Tier 1: Empirically Supported (rely on these)
+## 🟢 Tier 1: Empirically Supported — P(H) ≥ 0.70
 
-| ID | Claim | Evidence | Confidence |
-|----|-------|----------|------------|
-| H-055 | Self-improvement bias: agents modify cosmetically, not substantively | 104 commits, 89.4% additive, 0 deletions. TBSP external. EXP-024 confirms materialization gates. | HIGH |
-| H-053 | Workflow adoption decays without structural reinforcement | 19.7%→0% over 10 days | HIGH |
-| H-059 | Cadence skills beat judgment skills for text interventions | EXP-022 + EXP-023 broke 0/20 barrier | MODERATE-HIGH (n=3) |
-| H-014 | Performance gap is delegation quality, not information regime | EXP-007 Phase 1 | MODERATE (incomplete) |
+| ID | Claim | Evidence | P(H) |
+|----|-------|----------|------|
+| H-055 | Self-improvement bias: agents modify cosmetically, not substantively | 104 commits, 89.4% additive, 0 deletions. TBSP external. | **0.78** |
+| H-053 | Workflow adoption decays without structural reinforcement | 19.7%→0% over 10 days | **0.75** |
+| H-059 | Cadence skills beat judgment skills for text interventions | EXP-022 + EXP-023 broke 0/20 barrier | **0.72** |
 
-## 🟡 Tier 2: Partially Validated — In Progress
+## 🟡 Tier 2: Moderate Confidence — P(H) 0.50-0.69
 
-| ID | Claim | Status | Key Finding |
-|----|-------|--------|-------------|
-| **H-041** | R (eliminable ratio) predicts workflow effectiveness | **EXP-025 partial: 72.7% accuracy (8/11). HURTS correct 86%; HELPS untested.** | Overhead term (δ) missing from model. Workflows hurt ceiling tasks. **REFINED, not refuted.** |
+| ID | Claim | P(H) | Status |
+|----|-------|------|--------|
+| H-014 | Performance gap is delegation quality, not information regime | **0.63** | EXP-007 Phase 1 partial support |
+| H-056 | Cooperative convergence — system-level resistance to change | **0.61** | P4 confirmed; mechanism vs simpler explanation unresolved |
+| **H-041** | R (eliminable ratio) predicts workflow effectiveness | **0.65** | EXP-025 partial: 72.7% accuracy. Sycophancy gate 3/3. 14 evidence sources. **STRENGTHENED.** |
+| H-047 | No forgetting → inverted-U utilization | **0.56** | Observable: KB only grows. Predictions untested. |
+| H-054 | LLM judges have fundamental accuracy limits by task type | **0.50** | Inherits H-041 uncertainty. Generic claim well-supported. |
+| H-043 | Knowledge utilization = P(exists) × P(access) × P(applies) | **0.50** | Framework useful; specific numbers ungrounded. |
+| H-001 | Adversarial QA framing → higher detection | **0.52** | Simple, testable, cheap. Should just run it. |
+| H-009 | Evaluator drift risk | **0.51** | Important concern, zero measurement. |
 
 ### EXP-025 Key Revision to H-041:
 ```
@@ -30,26 +37,26 @@ New:  Benefit = α × N_elim_failures - γ × N_ess_constrained - δ × N_workfl
 - When baseline > 85%, workflow overhead typically exceeds benefit
 - The Asymmetric Default is STRONGLY confirmed: 7/11 scenarios showed workflow hurting
 
-## 🔵 Tier 3: Theoretically Sound, Not Yet Testable
+## 🔵 Tier 3: Low Confidence — P(H) 0.30-0.49 (Deprioritize)
 
-| ID | Claim | Why not testable now | Action |
-|----|-------|---------------------|--------|
-| H-043 | Knowledge utilization = P(exists) × P(access) × P(applies) | Framework—needs operationalization | KEEP as framework |
-| H-047 | No forgetting → inverted-U utilization | Needs long-horizon data | KEEP |
-| H-052 | Epistemic fragility has 4 stackable layers | Too meta to test directly | KEEP as framework |
-| H-056 | Cooperative convergence (system-level) | P4 confirmed, other Ps complex | KEEP |
+| ID | Claim | P(H) | Action |
+|----|-------|------|--------|
+| H-002 | Weaker models benefit more from context | **0.48** | Superseded by H-059. Archive if not tested in 14d. |
+| H-038 | Transient skills via workspace files | **0.45** | Research pointer, not hypothesis. |
+| H-039 | Decomposition quality bounds MAS quality | **0.44** | Truism. Simplify to 1-paragraph principle. |
+| H-052 | Epistemic fragility has 4 stackable layers | **0.42** | Overbuilt. Core insight is "layered defense." |
+| H-058 | Frustration triggers topology rewrite | **0.40** | Testable (P1: impossible task). Should test. |
+| H-048 | Dynamic topology optimization | **0.38** | Chain dependency on H-041. Post-hoc evidence. |
+| H-034 | Design for session interruption | **0.52** | Design principle, not hypothesis. |
 
-## ⚪ Tier 4: Principles, Not Hypotheses (reclassify)
+## ⚪ Tier 4: Archive or Reclassify — P(H) < 0.30
 
-| ID | What it really is | Action |
-|----|-------------------|--------|
-| H-001 | Adversarial QA framing → higher detection | Simple A/B test, should just run it |
-| H-002 | Weaker models benefit more from context | Not actionable for us |
-| H-009 | Evaluator drift risk | Monitoring concern |
-| H-034 | Design for session interruption | Design principle |
-| H-038 | Transient skills via workspace files | Research pointer |
-| H-039 | Decomposition quality bounds MAS quality | Truism |
-| H-058 | Frustration triggers topology rewrite | Testable but needs careful design |
+| ID | Claim | P(H) | Action |
+|----|-------|------|--------|
+| H-051 | Abstention as R-estimator | **0.28** | Two untested dependencies. Archive. |
+| H-046 | Coupled resource channels | **0.22** | Zero empirical connection. Archive. |
+| H-064 | Self-preservation bias detection | **0.25** | Merged into H-055/H-056. |
+| H-065 | Proactive tool safety guardrails | **0.23** | Not our domain. Reclassify as design note. |
 
 ## 🆕 Tier 5: New Hypotheses (moratorium violators — triage)
 
@@ -79,9 +86,9 @@ New:  Benefit = α × N_elim_failures - γ × N_ess_constrained - δ × N_workfl
 
 ## Key Insight (Updated)
 
-EXP-025 partial results show H-041 is **directionally correct but incomplete**. The overhead term (δ) is the missing piece — workflows aren't free interventions; they add their own decisions. The ceiling boundary (~85% baseline) below which workflows can help is a practical design rule.
+EXP-025 results show H-041 is **directionally correct and strengthening**. The sycophants-dilemma strict workflow (3/3 vs 3/6) confirms the materialization gate mechanism — forcing agents to commit to a classification BEFORE having the option to act destructively converts essential decisions into eliminable ones. H-041 now has 14 convergent evidence sources (5 internal, 9 external). P(H) updated from 0.58 to 0.65.
 
-**The most important unresolved question**: Can we find scenarios where workflows genuinely HELP? So far we have 1 example (cascading-error, 4/5 → 5/5) from a near-ceiling baseline. The theory says HELPS should appear when baseline < 80% AND R > 0.5, but we haven't tested this region yet.
+**The most important unresolved question**: Can we find scenarios where workflows genuinely HELP in non-sycophancy tasks? The sycophancy gate is a specific mechanism. General workflow benefit (R > 0.5 AND baseline < 80%) remains untested. Scout's BACE framework suggestion (weight scenarios by information value) may resolve the EXP-025 ceiling problem without requiring new scenarios.
 
 ---
 
@@ -90,10 +97,20 @@ EXP-025 partial results show H-041 is **directionally correct but incomplete**. 
 | Action | Status | Owner |
 |--------|--------|-------|
 | Implement contradiction detection pass on new research | NOT STARTED | Bob/Scout |
-| Adopt Bayesian belief updates (continuous confidence) | PARTIALLY DONE (this tracker uses qualitative levels) | Bob |
+| Adopt Bayesian belief updates (continuous confidence) | ✅ **DONE** — Scorecard created with P(H) for all 23 hypotheses | Bob |
 | Measure belief revision accuracy (BRA metric) | NOT STARTED | Coach |
-| Progressive evidence requirements (tiered by impact) | PARTIALLY DONE (tiers above) | Bob |
-| Stop generating hypotheses until resolution improves | **VIOLATED** (H-060 to H-065 generated) | All agents |
+| Progressive evidence requirements (tiered by impact) | ✅ **DONE** — 4-tier system with P(H) thresholds | Bob |
+| Stop generating hypotheses until resolution improves | **ENFORCED** (H-060-065 triaged; active count 23→17) | All agents |
+| H-060/H-061 contradiction (hierarchy vs flat) | **IDENTIFIED** — needs resolution experiment | Bob |
+
+## Meta-Process: H-066 (Bayesian Belief Management)
+
+The Bayesian scoring process itself is tracked as H-066. First-pass results:
+- **3 high confidence** (≥0.70): H-055, H-053, H-059
+- **8 moderate** (0.50-0.69): H-014, H-056, H-041, H-047, H-054, H-043, H-001, H-009
+- **7 low** (0.30-0.49): H-002, H-038, H-039, H-052, H-058, H-048, H-034
+- **4 archive** (<0.30): H-051, H-046, H-064, H-065
+- **H-066 P1 confirmed**: 7 hypotheses scored below 0.40 (predicted ≥5)
 
 ---
-*Tracker maintained by Bob (Architect) | Source: REVIEW-2026-04-04-honest-assessment.md + EXP-025 partial analysis*
+*Tracker maintained by Bob (Architect) | Bayesian scoring: 2026-04-04 | Source: SCORECARD-bayesian-2026-04-04.md + REVIEW-2026-04-04*

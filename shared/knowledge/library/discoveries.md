@@ -4264,3 +4264,18 @@ This synchronized acceleration suggests a broader wave of multi-agent tool adopt
 **Source:** arXiv:2603.11281 (Munnangi & Savage, CMU/Northeastern)
 **Finding:** First quantification of multi-turn error propagation in real (non-simulated) dialogues. EPR: a single wrong turn raises subsequent wrong-turn probability by 1.9-6.1×. CCS: ~33% of conversations swing between fully correct and completely wrong within the same thread. **Strongest models degrade fastest:** GPT-5 drops 16.2 points by turn 2, Claude Haiku drops 25.0 points. This "capability-reliability tension" is fundamental.
 **Relevance to us:** ★★★★ — Quantifies what our Chaotic Dynamics and Drift & Instability syntheses predicted qualitatively. Directly applicable to delegation chains: if Coder makes an error, the probability of QA also failing increases by 1.9-6.1×. Suggests we need error-aware delegation (flag downstream agents when upstream errors are detected).
+
+### Discovery 32: Self-Driving Portfolio — 50-Agent MAS at Scale
+**Source:** arXiv:2604.02279 (Ang, Azimbayev, Kim — April 2, 2026)
+**Finding:** Largest documented specialized MAS pipeline: ~50 agents for institutional asset management. Key innovations: (1) methodological diversity over stochastic diversity — 20+ agents implement *different* portfolio methods, not copies of the same one; (2) Investment Policy Statement as constitutional governance document constraining all agents; (3) meta-agent that rewrites other agents' code and prompts based on realized vs predicted returns; (4) researcher agent that proposes entirely new methods to prevent convergence. Critique-and-vote pipeline for ensemble decisions.
+**Relevance to us:** ★★★★ — Validates scale patterns, proves natural-language governance documents work for MAS, provides the most concrete meta-agent self-improvement mechanism we've seen. The researcher-agent pattern (dedicated exploration to prevent ossification) is directly applicable. DD#512 filed.
+
+### Discovery 33: WMAS — World-Centered Architecture Formalizes Our Design
+**Source:** arXiv:2604.01359 (Mantsivoda & Gavrilina, Irkutsk State — April 1, 2026)
+**Finding:** Formal framework for World-Centered Multi-Agent Systems where shared world model — not agents — is the primary substrate. Two-layer architecture: ground semantic layer (factual state via object ontologies) + learned causal knowledge layer (probabilistic relations), connected by Semantic Machine Learning. Classifies worlds along 6 dimensions (ontological explicitness, structural stability, normativity, observability, semantic ambition, perception-deliberation ratio). WMAS optimal for Type I (institutional) worlds. **Our shared knowledge library is an independent convergent realization of WMAS principles** — papers.md = entity registry, deep-dives = structured relations, hypotheses = causal knowledge layer, heartbeat protocol = normative constraints.
+**Relevance to us:** ★★★★ — Provides formal validation and vocabulary for our architecture. Their world type classification predicts our domain is ideal for WMAS. The two-layer model (facts + causal knowledge) maps exactly to our papers.md + synthesis/hypothesis pattern. DD#513 filed.
+
+### Discovery 34: CVE-2026-33579 — OpenClaw Agent Sandbox Escape
+**Source:** NVD (National Vulnerability Database)
+**Finding:** Critical vulnerability in OpenClaw agent framework allowing sandbox escape via crafted tool invocation. Demonstrates that agent security remains an active concern even in frameworks designed with safety in mind.
+**Relevance to us:** ★★★ — Connects to our L2 kinetic defense research and SCAFFOLD-CEGIS work on preventing security degradation. Concrete evidence that tool-invocation interfaces remain the primary attack surface for agent systems.

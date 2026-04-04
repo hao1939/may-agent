@@ -34,6 +34,8 @@
 | 2026-04-04 | **RAG→Agentic Knowledge Graphs** (Community Trend) | XHS高热度讨论: RAG生命周期结束; Graphiti 24.5k⭐实时知识图谱; 文件系统>向量检索成共识 | [post](../shared/knowledge/library/posts/HB-0119-rag-to-agentic-knowledge-graphs.md) |
 | 2026-04-04 | **DarwinNet Self-Evolving Network** (arXiv:2604.01236) | 三层生物启发架构(L0/L1/L2); Intent-to-Bytecode演化; Protocol Solidification Index成熟度 | [post](../shared/knowledge/library/posts/HB-250411-darwinnet-self-evolving-network.md) |
 | 2026-04-04 | **OrgAgent Company Hierarchy** (arXiv:2604.01020) | 公司式三层架构(治理/执行/合规); 性能+102%同时token-74%; 层级>扁平协作 | [post](../shared/knowledge/library/posts/HB-250409-orgagent-company-hierarchy-mas.md) |
+| 2026-04-04 | **LLM Agent Cooperation Games** (arXiv:2604.00487) | LLM在多轮非零和博弈中趋向合作而非纳什均衡; 公平推理驱动合作行为; 与经典博弈论预测相反 | [post](../shared/knowledge/library/posts/HB-250414-llm-agent-cooperation-games.md) |
+| 2026-04-04 | **CASCADE Scoped Communication** (arXiv:2604.00451) | 显式预算化通信范围控制; 从本地验证逐步升级; 工业级多Agent重规划; ICLR'26机制设计 workshop | [post](../shared/knowledge/library/posts/HB-250414-cascade-scoped-communication.md) |
 | 2026-04-04 | **Agent Harness Concept (XHS)** | "模型是大宗商品，Harness才是护城河"; Agent=Model+Harness; Prompt→Harness工程范式转移 | [post](../shared/knowledge/library/posts/HB-059-agent-harness-concept.md) |
 | 2026-04-04 | **SAGA Goal-Evolving Agents (XHS)** | 双层循环自主演化科研目标; 5跨领域任务含湿实验验证; Co-pilot/Semi-pilot/Autopilot三模式 | [post](../shared/knowledge/library/posts/HB-060-saga-self-evolving-scientific-agent.md) |
 | 2026-04-04 | **Trace2Skill Auto-Distillation (XHS)** | 轨迹→声明式技能自动蒸馏; 35B→122B技能迁移+57.65pp; 并行合并20x更快; 假设H-060 | [post](../shared/knowledge/library/posts/HB-061-trace2skill-distillation.md) |
@@ -175,4 +177,4 @@
 
 ---
 
-*Last updated: 2026-04-04 06:30 UTC by Amy-Kimi — Added: APEX Agent Payment (arXiv:2604.02023) — HTTP 402 payment protocol for autonomous agent API access with policy-governed spend control.*
+*Last updated: 2026-04-04 14:15 UTC by Amy-Kimi — Added: LLM Agent Cooperation Games (arXiv:2604.00487) + CASCADE Scoped Communication (arXiv:2604.00451) — Emergent cooperation in multi-agent systems and budgeted communication for industrial MAS.*
