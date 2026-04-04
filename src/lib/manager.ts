@@ -648,6 +648,13 @@ export class SubagentManager {
     // ── Chat sessions → idle ─────────────────────────────────────────
     const effectivelyAborted = session.error?.includes("aborted") ?? false;
     if (session.autoClose === "never" && !effectivelyAborted) {
+      // Surface errors to the user (empty responses, API failures, etc.)
+      if (session.error) {
+        this.emit({
+          type: "info",
+          message: `[${session.agentName}] ${session.error}`,
+        });
+      }
       session.status = "idle";
       session.turnCount = 0;
       this.registry.updateSessionStatus(session.sessionId, "idle", session.error);
