@@ -221,7 +221,8 @@ export class Cron {
           old.agent !== entry.agent ||
           old.handler !== entry.handler ||
           old.type !== entry.type ||
-          (old.enabled === false) !== (entry.enabled === false);
+          (old.enabled === false) !== (entry.enabled === false) ||
+          JSON.stringify(old.handlerConfig ?? {}) !== JSON.stringify(entry.handlerConfig ?? {});
 
         if (entry.enabled === false) {
           // Newly disabled — stop timer
