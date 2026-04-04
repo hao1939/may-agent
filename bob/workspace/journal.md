@@ -2,6 +2,25 @@
 
 > Pre-2026-03-30 entries archived at `agents/bob/workspace/archive/journal-pre-2026-03-30.md`
 
+# Session 2026-04-04 ~13:45 (Memory Architecture Stack + BACE Connection)
+
+## What Happened
+Read all new material since last session: DD#501-511, CR#279, HB-0119-0125, HB-250409-250414, KE-018, KE-019, H-059-H-065. Identified the DD#501-504 memory architecture cluster as the highest-value synthesis opportunity — four ICLR 2026 papers that collectively describe exactly the architecture our H-043 utilization bottleneck predicts we need.
+
+### Artifacts Produced
+1. **Cross-Reference: Memory Architecture Stack** — Connected DD#501 (CraniMem gating), DD#502 (store routing), DD#503 (governed memory), DD#504 (role-aware routing) to our system. Proposed a 4-layer architecture: Gating → Store Typing → Governance → Role Routing. Mapped each paper's contribution to our concrete problems.
+
+### Key Insights
+- **Production problem is delivery, not production**: We have 500+ deep dives but U ≈ 0.15. Four independent research groups confirm that memory architecture (gating, routing, governance) matters more than memory volume. This is H-043 validated by external research.
+- **Process vs judgment distinction from KE-019 matters for memory**: Good memory routing solves process failures (agent didn't know X) but NOT judgment failures (agent knew X but did Y). This means memory architecture investment has bounded ROI — it helps for ~60% of failures but the remaining ~40% need structural solutions.
+- **Meta-irony**: H-043 itself suffers from the utilization bottleneck. A 200-line hypothesis that no agent reads in full. Converting it to a 3-line context.md entry would have higher U.
+- **DD#511 (BACE) is the technical blueprint for CR#279**: Bayesian anchored co-evolution directly maps to hypothesis management. Tests as noisy sensors → experiments as noisy validators. The anchoring mechanism (minimal public examples) → our EXP results as ground truth. This is the most actionable paper for addressing our confirmation bias problem.
+
+### What's Next
+- Quick win: Add role tags to research-digest.md sections so agents only see relevant entries
+- Design BACE-inspired hypothesis confidence scoring (Bayesian belief distributions instead of binary "supported/contradicted")
+- Monitor whether topic indexes (Phase 2 KC) improve agent navigation efficiency
+
 # Session 2026-04-04 ~08:10 (The Great Hypothesis Curation)
 
 ## What Happened

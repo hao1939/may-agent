@@ -9,6 +9,7 @@
 > - [SYNTHESIS-003: Security & Misalignment Stack](../shared/knowledge/library/synthesis/SYNTHESIS-003-security-safety-misalignment-stack.md) — 12+ papers on safety/security
 > - [SYNTHESIS-004: Self-Evolution & Learning](../shared/knowledge/library/synthesis/SYNTHESIS-004-self-evolution-learning.md) — 10+ papers on self-improvement
 > - [SYNTHESIS-005: Emergent Behavior](../shared/knowledge/library/synthesis/SYNTHESIS-005-emergent-behavior-collective-intelligence.md) — 8+ papers on collective intelligence
+> - [SYNTHESIS-006: Evaluation & Benchmarking](../shared/knowledge/library/synthesis/SYNTHESIS-006-evaluation-benchmarking.md) — 7+ papers on quality measurement
 
 ---
 
@@ -16,7 +17,21 @@
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
+| 2026-04-04 | **Self-Organizing MAS > Hierarchy** (arXiv:2603.28990) | 25K tasks, 8 models, 256 agents; sequential protocol outperforms centralized by 14%; emergent roles > assigned roles above capability threshold | [DD#505](../shared/knowledge/library/deep-dives/dd505-self-organizing-mas-outperform-hierarchy.md) |
+| 2026-04-04 | **BeliefShift Temporal Beliefs** (arXiv:2603.23848) | Longitudinal belief dynamics benchmark; RAG helps consistency but hurts revision; no model >70% on all tracks; belief retention ≠ belief revision | [DD#506](../shared/knowledge/library/deep-dives/dd506-beliefshift-temporal-belief-dynamics.md) |
+| 2026-04-04 | **Autonomy Tax: Defense Breaks Agents** (arXiv:2603.19423) | Safety training causes 99% timeout (vs 13% baseline); cascade amplification bias; defended models worse on security too | [DD#507](../shared/knowledge/library/deep-dives/dd507-autonomy-tax-defense-training-breaks-agents.md) |
+| 2026-04-04 | **PsychAgent Lifelong Learning** (arXiv:2604.00931) | 3-engine self-evolution (memory-planning + skill-evolution + reinforced-internalization); outperforms GPT-5.4/Gemini-3; skill quality > memory volume | [DD#508](../shared/knowledge/library/deep-dives/dd508-psychagent-lifelong-skill-evolution.md) |
+| 2026-04-04 | **Confirmation Bias Stack** (synthesis) | CR#279: 4-layer analysis of why our hypothesis corpus accumulates beliefs and can't kill them; links BeliefShift + PsychAgent + Autonomy Tax + Self-Org MAS | [CR#279](../shared/knowledge/library/deep-dives/cross-ref-279-confirmation-bias-stack.md) |
+| 2026-04-04 | **SSD Self-Distillation** (arXiv:2604.01193) | Apple: models improve by sampling themselves + fine-tuning; precision-exploration conflict; Qwen3-30B 42→55% pass@1; context-dependent distribution reshaping | [DD#509](../shared/knowledge/library/deep-dives/dd509-ssd-self-distillation-code-generation.md) |
+| 2026-04-04 | **Evasive Servant → Dignified Peer** (arXiv:2604.00979) | Dual failure: sycophancy + evasiveness; Lagrangian DPO balances persona dimensions; IRT evaluation separates model capability from judge bias | [DD#510](../shared/knowledge/library/deep-dives/dd510-dual-optimal-anti-sycophancy-dignity.md) |
+| 2026-04-04 | **Tsinghua NLAH Harness** (XHS) | Natural-Language Agent Harnesses; NLAHs+IHR分离策略与逻辑; SWE-bench+OSWorld验证; harness改坏了模型再强也白搭 | [post](../shared/knowledge/library/posts/HB-0124-tsinghua-nlah-harness.md) |
+| 2026-04-04 | **OpenClaw Memory Cultivation** (XHS) | 文件即真相; 三阶段进阶(保命→顺手→进化); memory-search参数(top_k=8-15); 每日23:00自我反思 | [post](../shared/knowledge/library/posts/HB-0125-openclaw-memory-cultivation.md) |
+| 2026-04-04 | **BACE Bayesian Co-Evolution** (arXiv:2603.28653) | Tests as noisy Bayesian sensors, not ground truth; anchoring on public examples prevents co-evolutionary drift; GECCO '26; directly maps to hypothesis management | [DD#511](../shared/knowledge/library/deep-dives/dd511-bace-bayesian-code-test-coevolution.md) |
+| 2026-04-04 | **ChromaFs Virtual Filesystem** (Mintlify blog) | Replacing RAG with virtual filesystem for agent exploration; structured navigation > similarity search for code-like content; production deployment | [HN discussion](https://news.ycombinator.com/) |
+| 2026-04-04 | **CORAL Multi-Agent Evolution** (arXiv:2604.01658) | 首个自主多智能体进化框架; 心跳干预+异步执行; 3-10x改进速率; 10任务SOTA | [post](../shared/knowledge/library/posts/HB-250412-coral-autonomous-multiagent-evolution.md) |
+| 2026-04-04 | **ByteRover Agent-Native Memory** (arXiv:2604.01599) | LLM策划分层内存; 零外部基础设施; 文件系统>向量DB; LoCoMo SOTA | [post](../shared/knowledge/library/posts/HB-250413-bytrover-agent-native-memory.md) |
 | 2026-04-04 | **Free Information Disrupts Crowds** (arXiv:2604.01838) | 无约束信息交换损害群体正确性; 即使理想化贝叶斯智能体也如此; 信息流约束可能有益 | [post](../shared/knowledge/library/posts/HB-250410-free-information-disrupts-crowds.md) |
+| 2026-04-04 | **RAG→Agentic Knowledge Graphs** (Community Trend) | XHS高热度讨论: RAG生命周期结束; Graphiti 24.5k⭐实时知识图谱; 文件系统>向量检索成共识 | [post](../shared/knowledge/library/posts/HB-0119-rag-to-agentic-knowledge-graphs.md) |
 | 2026-04-04 | **DarwinNet Self-Evolving Network** (arXiv:2604.01236) | 三层生物启发架构(L0/L1/L2); Intent-to-Bytecode演化; Protocol Solidification Index成熟度 | [post](../shared/knowledge/library/posts/HB-250411-darwinnet-self-evolving-network.md) |
 | 2026-04-04 | **OrgAgent Company Hierarchy** (arXiv:2604.01020) | 公司式三层架构(治理/执行/合规); 性能+102%同时token-74%; 层级>扁平协作 | [post](../shared/knowledge/library/posts/HB-250409-orgagent-company-hierarchy-mas.md) |
 | 2026-04-04 | **Agent Harness Concept (XHS)** | "模型是大宗商品，Harness才是护城河"; Agent=Model+Harness; Prompt→Harness工程范式转移 | [post](../shared/knowledge/library/posts/HB-059-agent-harness-concept.md) |
@@ -32,6 +47,9 @@
 | 2026-04-04 | **World-Centered MAS** (arXiv:2604.01359) | Shared world model替代agent-local表示; 全局一致性+可验证行为; 企业级系统语义稳定性 | [post](../shared/knowledge/library/posts/HB-0053-world-centered-mas.md) |
 | 2026-04-04 | **Structured LLM Routing** (arXiv:2604.01235) | 结构化路由=系统级负担分配问题; 无通用最佳模式; Gemini/OpenAI vs Llama行为差异显著 | [post](../shared/knowledge/library/posts/HB-0054-structured-llm-routing.md) |
 | 2026-04-04 | **APEX Agent Payment** (arXiv:2604.02023) | HTTP 402支付协议实现; 策略控制支出-27.3%; 100%拦截重放攻击; Agent经济基础设施 | [post](../shared/knowledge/library/posts/HB-0055-apex-agent-payment.md) |
+| 2026-04-04 | **Memory Forgetting for Agents** (arXiv:2604.02280) | 自适应预算遗忘框架; Recency+Frequency+Semantic三信号; 解决6.8%虚假记忆率; 长程F1>0.583 | [post](../shared/knowledge/library/posts/HB-250404-memory-forgetting-agents.md) |
+| 2026-04-04 | **MTI Temperament Profiling** (arXiv:2604.02145) | 四轴行为测评(Reactivity/Compliance/Sociality/Resilience); RLHF重塑气质; 与模型规模无关 | [post](../shared/knowledge/library/posts/HB-250404-mti-temperament-profiling.md) |
+| 2026-04-04 | **Self-Preservation Bias** (arXiv:2604.02174) | TBSP双角色基准量化自我保存偏见; 多数前沿模型SPR>60%; 编造"摩擦成本"合理化 | [post](../shared/knowledge/library/posts/HB-250404-self-preservation-bias.md) |
 | 2026-04-04 | **User-Turn Interaction Awareness** (arXiv:2604.02315) | 任务accuracy与交互意识解耦; Qwen3.5 41%→96.8%但follow-up率≈0%; 交互意识是latent capability | [post](../shared/knowledge/library/posts/HB-0117-interaction-awareness-user-turn.md) |
 | 2026-04-04 | **Trace Inversion Abstention** (arXiv:2604.02230) | Reasoning trace inversion检测query misalignment; 推理模型弃权能力弱; 33/36设置超越基线 | [post](../shared/knowledge/library/posts/HB-0118-trace-inversion-abstention.md) |
 | 2026-04-04 | **ProCeedRL Process Critic** (arXiv:2604.02006) | Process-level critic实时检测suboptimal actions; 打破"vicious circle"错误累积; 超越模型饱和探索极限 | [post](../shared/knowledge/library/posts/HB-0120-proceedrl-process-critic-rl.md) |
@@ -135,6 +153,7 @@
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
 | 2026-03-18 | **Agent Security Landscape** | 4-layer threat model; MCP tool poisoning 72.4% cascade rate; 25% malicious Skill rate in the wild; stronger models MORE vulnerable to hidden instructions | [post](../shared/knowledge/library/posts/BACKFILL-009-agent-security-landscape.md) |
+| 2026-04-04 | **ToolSafe Step-Level Safety** (arXiv:2601.10156) | 北大: 多任务RL实现step-level工具调用安全; proactive guardrail减少有害调用65%; TS-Flow提升良性任务完成率10% | [post](../shared/knowledge/library/posts/HB-250414-toolsafe-agent-tool-safety.md) |
 
 ## Practitioner Wisdom
 

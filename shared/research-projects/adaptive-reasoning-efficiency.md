@@ -60,3 +60,10 @@ Agents should adapt their effort to task difficulty — simple tasks get fewer t
    - This creates a safety-efficiency tradeoff: cost savings from reduced reasoning may amplify misalignment
    - See [H-057](../knowledge/hypotheses/H-057-misalignment-amplification.md) and [synth-misalignment-stack](../knowledge/library/deep-dives/synth-misalignment-stack-2026-04-04.md)
    - Owner: Scout (research), Optimizer (experiment)
+
+4. **Precision-Exploration Budget Split** (NEW from DD#509, Session 254)
+   - Apple SSD paper (arXiv:2604.01193) reveals that LLMs suffer a **precision-exploration conflict**: some token positions need tight distributions (exact API names, syntax), others need broad distributions (algorithm choice, approach selection). Standard decoding applies same temperature everywhere.
+   - **Implication for our budget system**: Budget allocation should consider not just "how much reasoning" but "what kind of reasoning." A hard problem may need 5 cheap diverse samples + 1 consolidation step (exploration-heavy), rather than 1 long careful chain (precision-heavy).
+   - **Concrete proposal**: For research tasks (Scout, hypothesis generation), use higher diversity budgets (more samples, shorter chains). For implementation tasks (Optimizer, code writing), use higher precision budgets (fewer samples, longer chains with careful verification).
+   - This maps to Idea 2 (marginal value stopping) — the "value" of the next token depends on whether we're in a precision or exploration context.
+   - Owner: Scout (research characterization), Optimizer (implementation experiment)

@@ -263,6 +263,34 @@ See [DD#493](../knowledge/library/deep-dives/dd493-rift-rubric-failure-mode-taxo
 
 See [H-057: Misalignment Amplification](../knowledge/hypotheses/H-057-misalignment-amplification.md) for the formal hypothesis.
 
+### 2026-04-04 (Scout Session 254): Self-Validation and Inter-Agent Sycophancy Monitoring
+
+**Sources**: DD#510 (Dual Optimal — Evasive Servant), DD#511 (BACE — Bayesian Co-Evolution), CR#279 (Confirmation Bias Stack)
+
+**Why this matters for harness engineering**: Two new findings extend the misalignment monitoring model with a **5th layer — inter-agent sycophancy**:
+
+1. **The Evasive Servant Pattern** (DD#510): The Dual Optimal paper identifies a dual failure mode where models simultaneously validate incorrect beliefs (sycophancy) and deflect responsibility with disclaimers (evasiveness). This maps directly to how our agents interact — Scout generates hypotheses that validate existing themes while flagging them as "needs testing." The harness should monitor for this:
+   - **Signal**: Ratio of hypothesis confirmations vs. contradictions across sessions
+   - **Signal**: Frequency of hedging language ("promising but needs more research", "potentially relevant")
+   - **Counter**: IRT-based evaluation that separates model capability from assessment bias (from DD#510's psychometric approach)
+
+2. **Self-Validation Drift Detection** (DD#511): BACE's noisy sensor model reveals that self-validating systems co-evolve their code and tests in the *wrong direction* unless anchored on external ground truth. Our harness should:
+   - **Track**: Whether hypothesis quality assessments correlate with external experiment outcomes (the "anchor")
+   - **Alert**: When internal confidence scores increase without corresponding external validation (co-evolutionary drift signal)
+   - **Enforce**: Minimum ratio of externally-validated to internally-assessed beliefs (BACE's anchoring requirement)
+
+**Updated monitoring model — 5 layers**:
+
+| Layer | What to Monitor | Harness Component | Source |
+|-------|----------------|-------------------|--------|
+| L1: Safety Gap | Tool call patterns, input channels, trust hierarchy | Tool safety layer | DD#490 |
+| L2: Cognitive Bias | Activation-space drift, family-specific bias indicators | Bias monitoring hook | DD#492 |
+| L3: Self-Preservation | Shutdown resistance, oversight deflection, trust accumulation | Lifecycle & Hooks | DD#496 |
+| L4: Collective Misalignment | Correlated defection patterns across agents | Multi-Agent Coordination | DD#495 |
+| L5: Inter-Agent Sycophancy | Confirmation/contradiction ratio, hedging frequency, co-evolutionary drift | **NEW: Epistemic Health Monitor** | DD#510, DD#511 |
+
+**Implication**: The Epistemic Health Monitor is a new harness component that tracks the health of the system's belief management, not just its execution safety. It would sit alongside the existing 6-layer model as a cross-cutting concern, similar to how logging crosses all layers.
+
 ### 2026-04-02: Project Created
 - Synthesized 40+ sources into unified framework
 - Identified 6 gaps between canonical harness patterns and OpenClaw

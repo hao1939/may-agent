@@ -358,3 +358,16 @@ Three additional papers extend the single-agent memory control loop to multi-age
 
 **New gap identified**: Multi-agent write conflicts. When multiple agents write to shared memory simultaneously, conflict resolution is needed. No paper addresses this yet — candidate for H-059.
 
+### 12b. Filesystem-as-Memory Paradigm (Mintlify ChromaFs — April 4)
+
+**Source**: Mintlify engineering blog — "How we built a virtual filesystem for our assistant"
+
+**Key insight**: Mintlify replaced RAG with a virtual filesystem (ChromaFs) where their coding assistant navigates structured directories rather than running similarity searches. Result: the agent discovered documentation it didn't know to search for. Structured navigation beats similarity retrieval for code-like content.
+
+**Relevance to our design**: Our current shared knowledge is *already* filesystem-based (`agents/shared/knowledge/library/`). This is accidentally closer to the ChromaFs paradigm than a vector DB would be. The deep dives INDEX.md functions as a structured navigation layer.
+
+**What we could improve**:
+- Add a machine-readable manifest of all hypothesis→evidence links (currently only in free text)
+- Create a "browse by contradiction" view — show hypotheses that conflict, not just those that confirm
+- Build per-agent "memory views" that are filtered subtrees (Scout sees different INDEX sections than Bob)
+

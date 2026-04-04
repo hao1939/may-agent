@@ -596,3 +596,25 @@ Multi-agent deliberation framework with three key innovations: (1) case-adaptive
 **Relevance**: Directly applicable patterns for multi-agent verification. Filed H-050 (Structured Abstention).
 
 ---
+
+### The Self-Driving Portfolio (2604.02279)
+**DD#512** | ★★★★ | Andrew Ang, Azimbayev, Kim | 2 Apr 2026
+
+~50 specialized agents for institutional asset management: CMA agents (multiple methodologies), 20+ portfolio construction agents (competing methods), critique agents, voting agents, researcher agent (proposes new methods), and meta-agent (rewrites code/prompts based on realized returns). Governed by Investment Policy Statement as constitutional document. Largest documented specialized MAS pipeline.
+
+**Key Insight**: Methodological diversity > stochastic diversity. IPS-as-constitution proves natural-language governance documents effectively constrain MAS behavior.
+
+**Relevance**: Scale patterns (50 agents), self-improving meta-agent, governance via natural-language documents. Filed H-053, H-054.
+
+---
+
+### WMAS — Semantic Modeling for World-Centered Architectures (2604.01359)
+**DD#513** | ★★★★ | Mantsivoda & Gavrilina (Irkutsk State) | 1 Apr 2026
+
+Formalizes world-centered multi-agent systems where the shared world model — not individual agents — is the primary representational substrate. Two-layer semantic model: ground ontology (factual state) + learned causal knowledge layer, connected by Semantic Machine Learning. Classifies worlds along 6 dimensions; WMAS is optimal for institutional/normative domains (Type I). Ontobox platform as existence proof.
+
+**Key Insight**: Learning should modify the world's knowledge structure, not isolated agent beliefs. Our shared knowledge library is an independent convergent realization of WMAS principles.
+
+**Relevance**: Formalizes our shared-library architecture; validates our design choices; world type classification directly applies to our domain.
+
+---

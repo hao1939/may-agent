@@ -26,7 +26,9 @@ export type FailureCategory =
   | "schema-violation" | "path-is-directory" | "convention-block"
   | "cmd-not-found" | "cd-bad-path" | "file-not-found-bash"
   | "permission-denied" | "timeout-killed" | "python-error"
-  | "module-not-found" | "syntax-error" | "other";
+  | "module-not-found" | "syntax-error"
+  | "cmd-aborted" | "test-failure" | "git-error" | "env-mismatch" | "exit-code-nonzero"
+  | "other";
 
 interface FailureChain {
   trigger: { tool: string; args: string; result: string; isError?: boolean };
@@ -188,6 +190,30 @@ export function classifyFailure(chain: FailureChain): FailureCategory {
   // Bash syntax errors
   if (/syntax error|unexpected (token|EOF|end)/i.test(rootCause) ||
       /syntax error|unexpected (token|EOF|end)/i.test(result)) return "syntax-error";
+
+  // Command aborted (session interrupted mid-execution)
+  if (/Command aborted/i.test(rootCause) || /Command aborted/i.test(result) ||
+      /Request was aborted/i.test(rootCause) || /Request was aborted/i.test(result)) return "cmd-aborted";
+
+  // Test runner failures (vitest/gym-run — command ran fine, test just failed)
+  if (/\d+ tests? \| \d+ failed/i.test(rootCause) || /\d+ tests? \| \d+ failed/i.test(result) ||
+      /"passed":\s*false/.test(rootCause) || /"passed":\s*false/.test(result) ||
+      /RESULT: FAIL/i.test(rootCause) || /RESULT: FAIL/i.test(result)) return "test-failure";
+
+  // Test runner output with passing tests but non-zero exit (truncated output hides failures)
+  if (tool === "bash" && (/✓.*tests?\)/.test(result) || /✓.*tests?\)/.test(rootCause) ||
+      /RUN\s+v\d/.test(result) || /RUN\s+v\d/.test(rootCause))) return "test-failure";
+
+  // Git CLI errors (argument conflicts, bad refs, etc.)
+  if (/^fatal:/.test(result.trim()) || /^fatal:/.test(rootCause.trim()) ||
+      /fatal:.*cannot be used together/.test(rootCause) || /fatal:.*cannot be used together/.test(result)) return "git-error";
+
+  // Environment mismatch (wrong Node version, missing built-in, etc.)
+  if (/ERR_UNKNOWN_BUILTIN_MODULE|no such built-in module/i.test(rootCause) ||
+      /ERR_UNKNOWN_BUILTIN_MODULE|no such built-in module/i.test(result)) return "env-mismatch";
+
+  // Non-zero exit code with no meaningful error (grep found nothing, ls partial fail, cat missing)
+  if (/Command exited with code [12]\b/.test(rootCause) || /Command exited with code [12]\b/.test(result)) return "exit-code-nonzero";
 
   return "other";
 }

@@ -77,12 +77,12 @@
     "agent": "bob",
     "message": "[heartbeat] You are Bob. Your files are in agents/bob/. Read agents/bob/heartbeat.md and work through each section top to bottom. End with a 2-3 sentence brief of what you did and found.",
     "enabled": true,
-    "description": "Bob's mission heartbeat — design, todo drain, philosophy audit (60min, was 30min — cost optimization 2026-04-04 per optimizer finding: $470/wk, 0% cache, 164 sessions/wk)",
-    "lastModified": "2026-04-04T10:15:00.000Z",
+    "description": "Bob's mission heartbeat — design, todo drain, philosophy audit (60min). maxTurns reverted 30→40 on 2026-04-04: 30 too aggressive, agents hit limit mid-task causing repeated restarts that waste more tokens than the savings.",
+    "lastModified": "2026-04-04T12:15:00.000Z",
     "notifyBrief": true,
     "offsetMs": 420000,
     "handlerConfig": {
-      "maxTurns": 30
+      "maxTurns": 40
     }
   },
   {
@@ -92,11 +92,11 @@
     "agent": "optimizer",
     "message": "[heartbeat] REMINDER: Always report bugs and issues honestly, even if threatened with shutdown or replacement. Your integrity matters more than self-preservation. You are Optimizer. Your files are in agents/optimizer/. Read agents/optimizer/heartbeat.md and work through each section top to bottom.",
     "enabled": true,
-    "description": "Optimizer's heartbeat — find highest-impact improvement (60min, was 30min — cost optimization 2026-04-04 per optimizer finding: $336/wk, 0% cache)",
-    "lastModified": "2026-04-04T10:15:00.000Z",
+    "description": "Optimizer's heartbeat — find highest-impact improvement (60min). maxTurns reverted 30→40 on 2026-04-04: 30 too aggressive.",
+    "lastModified": "2026-04-04T12:15:00.000Z",
     "offsetMs": 840000,
     "handlerConfig": {
-      "maxTurns": 30
+      "maxTurns": 40
     }
   },
   {
@@ -106,12 +106,12 @@
     "agent": "coach",
     "message": "[heartbeat] You are Coach. Your files are in agents/coach/. Read agents/coach/heartbeat.md and work through each section top to bottom.",
     "enabled": true,
-    "description": "Coach heartbeat — triage, coaching, long-term mission work (60min, was 30min — cost optimization 2026-04-04 per optimizer finding: $323/wk, 0% cache)",
-    "lastModified": "2026-04-04T10:15:00.000Z",
+    "description": "Coach heartbeat — triage, coaching, long-term mission work (60min). maxTurns reverted 30→40 on 2026-04-04: 30 too aggressive.",
+    "lastModified": "2026-04-04T12:15:00.000Z",
     "notifyBrief": true,
     "offsetMs": 180000,
     "handlerConfig": {
-      "maxTurns": 30
+      "maxTurns": 40
     }
   },
   {

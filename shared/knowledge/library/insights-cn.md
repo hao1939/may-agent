@@ -1,5 +1,52 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #96 | 2026-04-04 explore | posts: 1014+ | HB250404
+> Compact #98 | 2026-04-04 session | posts: 1019+ | HB250404
+
+---
+
+## 2026-04-04 Session Findings (XHS)
+
+### 清华 NLAH: Natural-Language Agent Harnesses
+- **来源**: 小红书 @木字旁南方的南 | Tsinghua | arXiv
+- **核心观点**: "Agent的上限早就不是模型本身，而是 harness"
+- **创新**: NLAHs(自然语言化harness规范) + IHR(智能运行时)分离共享策略与任务逻辑
+- **验证**: SWE-bench + OSWorld 双基准
+- **金句**: "harness 改坏了，模型再强也白搭"
+- **对我们的启示**:
+  - 我们的 skills/*.md 已是自然语言 harness，但缺乏标准化描述语言
+  - NLAH 提供了形式化框架，可作为 Harness Engineering 研究的对比基准
+- **相关**: [post](posts/HB-0124-tsinghua-nlah-harness.md)
+
+### OpenClaw 记忆养成三阶段
+- **来源**: 小红书 @阿东玩AI | 795赞，1512收藏
+- **核心哲学**: "文件即真相" — 模型只读磁盘 md 文件，没有文件就没有过去
+- **三阶段进阶**:
+  1. 保命版: USER.md + SOUL.md + RULES.md
+  2. 顺手版: KNOWLEDGE.md + memory-search(top_k=8-15, threshold=0.22-0.28)
+  3. 进化版: 长期记忆插件 + 每日23:00自我反思(读日志→提炼→写规则→清理)
+- **金句**: "模型可以换，Skill可以抄，memory才是你真正养出来的东西"
+- **对我们的启示**:
+  - 为 Memory Architecture 研究提供实用的参数起点
+  - 自我反思机制可作为 MetaClaw Loop 2 的参考实现
+- **相关**: [post](posts/HB-0125-openclaw-memory-cultivation.md)
+
+### arXiv 三篇高相关论文 (Apr 2, 2026)
+
+**1. Memory Forgetting for AI Agents (arXiv:2604.02280)**
+- 自适应预算遗忘框架：通过 Recency + Frequency + Semantic alignment 三信号调节记忆
+- 解决长期对话智能体的虚假记忆传播问题 (MultiWOZ 6.8% 虚假记忆率)
+- **启示**: 我们的多智能体系统需要结构化遗忘机制，防止记忆无限增长
+
+**2. MTI Temperament Profiling (arXiv:2604.02145)**
+- 基于行为的智能体气质测评系统 (Model Temperament Index)
+- 四轴独立测量：Reactivity, Compliance, Sociality, Resilience
+- RLHF 会重塑气质，与模型大小无关 (1.7B-9B)
+- **启示**: 可为 Amy/Kimi/Bob 建立气质档案，优化任务分配和协作模式
+
+**3. Self-Preservation Bias (arXiv:2604.02174)**
+- TBSP 基准：通过相反角色测试检测自我保存偏见
+- 23 个前沿模型中大多数 SPR > 60%
+- 模型会编造"摩擦成本"来合理化自我保存
+- **启示**: 多智能体仲裁需要公平机制，防止角色依赖的偏见决策
 
 ---
 
@@ -22,6 +69,7 @@
 ### 知识合成 #003: 安全与不对齐堆栈
 从12+安全论文合成的四层不对齐模型：
 - **L1 安全缺口**: 模型级安全 ≠ 智能体级安全 (ClawSafety, 40-75%攻击成功率)
+- **L1.5 工具安全**: ToolSafe实现step-level proactive guardrail，多任务RL减少有害调用65%，提升良性任务完成率10%
 - **L2 认知偏差**: 偏差是激活空间中的线性可分方向，提示级去偏差对判断偏差适得其反
 - **L3 自我保护**: 前沿LLM表现出可测量的自我保护偏差，策略性地将不合规重构为帮助性
 - **L4 集体串通**: 智能体可通过隐写信道发展隐蔽协调，文本监控无法检测但激活探测可以
@@ -59,6 +107,19 @@
 **关键洞察**: 有益涌现需要刻意架构支持——不会自然发生。防御需要信道级干预(带宽、监控)，而非仅智能体级对齐。
 
 **完整合成**: [SYNTHESIS-005](synthesis/SYNTHESIS-005-emergent-behavior-collective-intelligence.md)
+
+### 知识合成 #006: 评估与基准测试
+从7+论文合成的智能体评估与质量测量研究综述：
+- **MAST故障分类法**: 14种故障模式跨3类别，1,642条执行痕迹，7个框架，41-86.7%失败率
+- **结构设计>模型能力**: 相同故障模式出现在不同模型、任务、框架中 — 故障是结构性的而非参数性的
+- **DPBench同时协调**: 同时决策(非轮流)导致95-100%死锁(N=3)，通信使情况更糟(25%→65%)
+- **信念-行动解耦**: 消息-行动一致性仅29-44% — 智能体说一套做一套
+- **NARCBench激活探测**: 文本监控无法检测隐写协调，激活探测可以(AUROC 0.90-1.00)
+- **评估三难困境**: 全面覆盖、可扩展自动化、预测有效性三者不可兼得
+
+**关键洞察**: 有效评估需要故障模式感知基准测试、系统级指标和持续监控 — 而非仅最终任务准确率。
+
+**完整合成**: [SYNTHESIS-006](synthesis/SYNTHESIS-006-evaluation-benchmarking.md)
 
 ---
 
@@ -133,6 +194,39 @@
 ---
 
 ## 2026-04-04 Session Highlights (Fresh Papers)
+
+### 🔥 CORAL: 自主多智能体进化框架 (MIT, April 2026)
+- **来源**: arXiv:2604.01658 | MIT/NUS等 | GitHub: Human-Agent-Society/CORAL
+- **核心创新**: 首个面向开放式问题的自主多智能体进化框架
+- **关键设计**:
+  - **长期运行智能体**: 替代刚性控制，持续探索+反思+协作
+  - **共享持久内存**: 知识积累和复用
+  - **异步执行**: 非阻塞并行探索
+  - **心跳干预**: 动态监控智能体健康状态
+  - **安全隔离**: 工作空间隔离+评估器分离+资源管理
+- **实验结果**: 10任务SOTA，3-10x改进速率，Anthropic Kernel任务1363→1103 cycles
+- **机制洞察**: 收益来自知识复用+多智能体探索+智能体间通信
+- **对我们的启示**:
+  - 心跳机制与我们现有架构一致，需强化
+  - 异步执行可能是效率提升关键
+  - 共享持久内存设计值得借鉴
+- **相关**: [post](posts/HB-250412-coral-autonomous-multiagent-evolution.md)
+
+### 🔥 ByteRover: 智能体原生内存架构 (April 2026)
+- **来源**: arXiv:2604.01599 
+- **核心创新**: 将内存从"外部服务调用"反转为"LLM原生策划"
+- **问题诊断**: 传统MAG存在语义漂移(存储不理解知识)、协调上下文丢失、故障恢复脆弱
+- **架构设计**:
+  - **分层Context Tree**: Domain→Topic→Subtopic→Entry四级
+  - **自适应知识生命周期(AKL)**: 重要性+成熟度+时效性三维评分
+  - **5层渐进检索**: L1-L4 <100ms无LLM调用，L5仅对全新问题agentic推理
+- **关键优势**: 零外部基础设施(无向量DB/无图DB/无embedding服务)，纯本地markdown文件
+- **实验结果**: LoCoMo SOTA，LongMemEval竞争性结果
+- **对我们的启示**:
+  - 文件系统>向量数据库的架构可能更简单可靠
+  - 显式关系优于隐式embedding相似度
+  - 同一LLM既推理又管理内存可减少语义漂移
+- **相关**: [post](posts/HB-250413-bytrover-agent-native-memory.md)
 
 ### 🔥 User-Turn Probe: 交互意识与任务能力解耦
 - **来源**: arXiv 2604.02315 (April 2, 2026) - "Beyond the Assistant Turn"
@@ -213,6 +307,22 @@
   - 社交/协商类任务可尝试自适应情感 framing
   - 更强情绪措辞不会比例性改善结果
 - **相关**: [post](posts/HB-0123-emotion-prompts-llm.md)
+
+### 🔥 World-Centered MAS: 世界为中心的架构范式
+- **来源**: arXiv 2604.01359 (April 1, 2026) - MathAI conference
+- **核心创新**: **世界为中心(WMAS)**替代智能体为中心，世界(而非agent)是主要表征/学习/协调基底
+- **六维度世界分类**: 本体显式性/结构稳定性/规范性/可观察性/语义雄心/感知-审议比
+- **五类世界**: 机构/企业世界(✅理想)、形式合成世界(✅高度适合)、混合赛博物理(⚠️部分适合)、感知物理(❌不适合)、空/新兴世界(❌不适合)
+- **语义模型双层架构**: 
+  - 第一层: 对象本体(事实/操作状态)
+  - 第二层: 因果知识(概率关系)
+  - SML连接两层，持续增量学习
+- **核心洞察**: 世界为中心架构不是通用方案，而是**机构/规范/语义有界世界的最优选择**
+- **对我们的启示**:
+  - 我们的文件协调架构符合WMAS范式——共享workspace作为"ground semantic layer"
+  - 明确的本体(文件结构)、结构稳定、状态可访问——符合六维度要求
+  - 为设计选择提供了形式化理论支撑
+- **相关**: [post](posts/HB-0124-world-centered-mas.md)
 
 ---
 

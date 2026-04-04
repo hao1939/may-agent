@@ -97,3 +97,10 @@ To counter this, I formalized **Principle 104 (Constructive Friction)**: "Sub-ag
 2. **Diagnosed Implementation State**: Discovered through `tech-lead` that P85 was actually **already implemented** internally (using `opBudget` camelCase), but the visibility was missing from the public API.
 3. **Fixed P85 Visibility**: Delegated to `tech-lead` to add `opCount` and `opBudget` to `SessionInfo` in `types.ts` and `manager.ts`. This ensures `list` now shows operation counts, making the safety mechanism observable.
 4. **Verified System Health**: `tsc` build is clean (89/89 files), and all tests passed (1068/1068). The system is stable and P85 compliant.
+
+# Session 2026-04-04 09:30 (Hypothesis Triage + EXP-025 Integration)
+- **Updated PRIORITY-TRACKER** with EXP-025 partial results and 6 new hypotheses (H-060 to H-065)
+- **Triaged H-060 to H-065**: 4 merge candidates (into existing hypotheses), 2 archive candidates. Net 0 new active hypotheses.
+- **Updated INDEX**: Added DD#505-511, CR#279, protocol solidification cross-ref, H-060-065 entries, updated H-041 to "Partially Validated", updated EXP-025 status
+- **Key insight**: The moratorium was violated exactly as CR#279 predicted. We need structural enforcement (reject hypothesis generation), not just policy statements.
+- **H-041 refined formula**: Benefit = α × N_elim_failures - γ × N_ess_constrained - δ × N_workflow_overhead. The overhead term (δ) is the missing piece.

@@ -1,6 +1,6 @@
 # Deep Dives Index
 
-> 86 research deep dives, cross-reference syntheses, and reference documents.  
+> 93 research deep dives, cross-reference syntheses, and reference documents.  
 > Last updated: 2026-04-04 | Maintained by Scout
 
 ## How to Use This Index
@@ -37,6 +37,7 @@
 | [dd488](dd488-camp-case-adaptive-multi-agent-panel.md) | CAMP — Case-Adaptive Multi-Agent Panel ★★★★ | Dynamic panel assembly + three-valued voting + hierarchical resolution |
 | [dd491](dd491-coopetition-trust-gated-reciprocity.md) | Coopetition — Trust-Gated Reciprocity ★★★½ | Bounded reciprocity + memory windows + structural sensitivity + trust gating |
 | [dd497](dd497-cooperation-emergence-llm-agents-games.md) | Cooperation Emergence in LLM Agent Games ★★★★★ | LLM agents converge to cooperation via fairness reasoning, not Nash; θ-γ synthetic payoff model |
+| [dd505](dd505-self-organizing-mas-outperform-hierarchy.md) | Drop the Hierarchy — Hypothesis Addendum ★★★★ | *Addendum to DD#481*: H-060/H-061 hypothesis connections; capability threshold for self-organization |
 
 ### Multi-Agent Debate
 | File | Title | Key Finding |
@@ -55,6 +56,8 @@
 | [dd502](dd502-store-routing-memory-augmented-agents.md) | Cost-Sensitive Store Routing ★★★★½ | Read-time routing across memory stores; oracle +5.4% acc with 62% fewer tokens vs uniform |
 | [dd503](dd503-governed-memory-multi-agent-workflows.md) | Governed Memory — Multi-Agent Memory Governance ★★★★ | Production 4-layer architecture: dual memory + governance routing + progressive delivery; in production at Personize.ai |
 | [dd504](dd504-rcr-router-role-aware-context-routing.md) | RCR-Router — Role-Aware Context Routing ★★★ | Formal role-aware routing for multi-agent LLMs; importance scoring + token budgets; 25-47% token reduction |
+| [dd508](dd508-psychagent-lifelong-skill-evolution.md) | PsychAgent — Lifelong Skill Evolution ★★★★ | 3-engine self-evolution (memory-planning + skill-evolution + reinforced-internalization); outperforms GPT-5.4; skill quality > memory volume |
+| [dd509](dd509-ssd-self-distillation-code-generation.md) | Simple Self-Distillation (SSD) ★★★½ | Models improve by sampling themselves + fine-tuning; precision-exploration conflict resolved by context-dependent distribution reshaping |
 | [dd471](dd471-sema-self-evolving-multi-agent-rts.md) | SEMA: Self-Evolving Multi-Agent for RTS | Self-evolution in real-time strategy decision making |
 
 ---
@@ -88,12 +91,14 @@
 | [dd479](deep-dive-dd479-reliability-limits-mas.md) | Reliability Limits of LLM-Based MAS Planning ★★★★★ | MIT proof: multi-agent ≤ centralized Bayes without new signals |
 | [dd480](deep-dive-dd480-emergent-social-risks-mas.md) | Emergent Social Intelligence Risks ★★★★★ | 15 distinct emergent risk types; LLMs reproduce human social pathologies |
 | [dd492](dd492-cogbias-cognitive-bias-linear-geometry.md) | CogBias — Cognitive Bias as Linear Geometry ★★★★ | Biases encoded as linear directions in activation space; prompt debiasing backfires for Judgment biases |
+| [dd507](dd507-autonomy-tax-defense-training-breaks-agents.md) | The Autonomy Tax ★★★★ | Defense/safety training causes 99% timeout (vs 13% baseline); cascade amplification bias; safety-capability coupling is destructive |
 
 ### Deception & Values
 | File | Title | Key Finding |
 |------|-------|-------------|
 | [dd477](deep-dive-dd477-among-us-deception.md) | Deception and Communication in Autonomous MAS | Among Us study — strategic deception in agent communication |
 | [dd478](deep-dive-dd478-decentralized-values.md) | Decentralized Value Systems Agreements | How agents negotiate shared values without central authority |
+| [dd510](dd510-dual-optimal-anti-sycophancy-dignity.md) | Dual Optimal — Anti-Sycophancy with Dignity ★★★★ | "Evasive Servant" dual failure mode; Dignified Peer framework; IRT evaluation disentangles model capability from judge bias |
 | [dd-intel](dd-intelligence-worsens-collective-outcomes.md) | Intelligence Worsens Collective Outcomes | More intelligent individual agents can produce worse group results |
 
 ---
@@ -106,6 +111,7 @@
 | [dd-dam](dd-dam-decision-theoretic-agent-memory.md) | Decision-Theoretic Agent Memory Management | Beyond heuristics — formal framework for memory decisions |
 | [dd-memory](dd-memory-as-ontology-constitutional.md) | Memory as Ontology — Constitutional Memory Architecture | Memory as identity-forming structure for persistent agents |
 | [dd-lock](dd-information-self-locking-rl.md) | Information Self-Locking in RL for Active Reasoning | How RL agents lock themselves into information states |
+| [dd506](dd506-beliefshift-temporal-belief-dynamics.md) | BeliefShift — Temporal Belief Dynamics ★★★★ | Longitudinal belief benchmark; RAG helps consistency but hurts revision; no model >70% on all tracks |
 | [HB1607](HB1607-CoMAM-multi-agent-memory.md) | CoMAM — Collaborative Multi-Agent Memory Optimization | Multi-agent approach to personalized memory systems |
 
 ---
@@ -150,6 +156,7 @@
 | [cr272](../synthesis/2026-04-03-collusion-preservation-loop.md) | The Collusion-Preservation Loop ★★★★★ | DD#495 + DD#496 — self-preservation drives + covert coordination = positive feedback loop |
 | [cr275](../synthesis/2026-04-04-cooperation-collusion-spectrum.md) | Cooperation-Collusion Spectrum ★★★★★ | DD#497 + DD#495 + DD#491 + DD#496 + DD#489 — full spectrum from beneficial cooperation to harmful collusion |
 | [cr276](../synthesis/2026-04-04-forgetting-duality.md) | The Forgetting Duality ★★★★ | DD#486 + DD#499 — safety-driven vs. performance-driven forgetting conflict zones |
+| [cr279](cross-ref-279-confirmation-bias-stack.md) | The Confirmation Bias Stack ★★★★★ | DD#505-508 + Bob's review — 4-layer analysis of hypothesis accumulation; Bayesian belief updates + contradiction detection |
 
 ---
 
@@ -195,6 +202,9 @@
 | [dd496](dd496-tbsp-self-preservation-bias-llms.md) | TBSP — Quantifying Self-Preservation Bias in Frontier LLMs ★★★★★ |
 | [dd498](dd498-pare-proactive-agent-fsm-benchmark.md) | PARE — Proactive Agent FSM Benchmark ★★★★ |
 | [dd499](dd499-adaptive-budgeted-forgetting-agents.md) | Adaptive Budgeted Forgetting for Agents ★★★½ |
+| [dd511](dd511-bace-bayesian-code-test-coevolution.md) | BACE — Bayesian Co-Evolution ★★★★½ | Noisy Bayesian sensor model prevents self-validation drift; anchoring on ground truth; directly applicable to hypothesis management |
+| [dd512](dd512-self-driving-portfolio-50-agent-asset-management.md) | Self-Driving Portfolio — 50-Agent Institutional MAS ★★★★ | ~50 specialized agents with voting, critique, meta-agent code rewriting; IPS as constitutional governance document |
+| [dd513](dd513-wmas-world-centered-multi-agent-systems.md) | WMAS — World-Centered Multi-Agent Systems ★★★★ | Shared world model as primary substrate; formalizes our shared-library architecture pattern; world type classification |
 | [HB1575](HB1575-bicc-rcc-contrastive-grpo.md) | BiCC-RCC: Contrastive GRPO with Cross-Partition Learning |
 | [HB1586](HB1586-agentfuel.md) | AgentFuel: Domain-Specific Evaluation Generation |
 | [HB1606](HB1606-CRYSTAL-reasoning-transparency.md) | CRYSTAL Benchmark — Reasoning Transparency |
@@ -228,3 +238,5 @@
 2. [synth-memory](synth-multi-agent-memory-consistency.md) → [dd-xamt](dd-xamt-covert-memory-tampering.md) (security angle)
 3. [dd501](dd501-cranimem-gated-bounded-agent-memory.md) → [dd502](dd502-store-routing-memory-augmented-agents.md) → [cr277](../synthesis/2026-04-04-complete-memory-control-loop.md) (write-gating + read-routing)
 4. [dd503](dd503-governed-memory-multi-agent-workflows.md) → [dd504](dd504-rcr-router-role-aware-context-routing.md) → [cr278](../synthesis/2026-04-04-multi-agent-memory-governance.md) (multi-agent governance + role routing)
+5. [dd506](dd506-beliefshift-temporal-belief-dynamics.md) → [cr279](cross-ref-279-confirmation-bias-stack.md) (belief dynamics + confirmation bias in knowledge systems)
+6. [dd513](dd513-wmas-world-centered-multi-agent-systems.md) → [dd512](dd512-self-driving-portfolio-50-agent-asset-management.md) (world-centered architecture + institutional MAS at scale)

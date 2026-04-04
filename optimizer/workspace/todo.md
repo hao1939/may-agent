@@ -55,4 +55,4 @@ gym baseline on 849c340 (15/16 pass, 94% — up from 85%),
 common-sense-status.md compaction (186KB→89KB, 52% reduction — archived 25 superseded entries).
 Findings archived in `workspace/finding-*.md` and `workspace/brief-*.md`.
 
-- [ ] **[tool-quality-regression]** 1 regressed: bash:other: 4 (was 1, +300%). See tool-quality-report.md
+- [x] **[tool-quality-regression]** RESOLVED: bash:other regression was misclassification. Added 5 new categories (exit-code-nonzero, test-failure, cmd-aborted, env-mismatch, git-error). bash:other reduced 109→8 (7d). See tool-quality-report.md.

@@ -42,12 +42,18 @@ Each skill has ONE status:
 | materialize-findings-concise | 📦 deployed | materialize-intermediate-findings: +67pp early-materialization (0%→67%), +33pp regular-cadence (0%→33%), +33pp finish-references (67%→100%), +33pp product quality (67%→100%). Treatment 44% faster (130s vs 233s). Total checks: 52%→78%. **EXP-023: L4 environmental nudge (pre-created findings.md) achieves 81% checks — slightly OUTPERFORMS skill (78%) while being simpler/faster (110s vs 130s). Nudge weaker on early-materialization (33% vs 67%) but stronger overall.** | regular-materialization-cadence still 67% failure rate — "every 3 commands" rule followed loosely. Small sample (n=3). L4 nudge also 0/3 on cadence. | 📦 scout | EXP-022: 3-rule concise skill. Control 14/27, Treatment 21/27. EXP-023: L4 nudge (no skill, just template file). Treatment 22/27. **Environmental nudge can match text skills.** Deployed to scout 2026-04-04. |
 | incremental-context-loading | ⚪ untested (ceiling) | | | | `incremental-context-loading`: ceiling effect (baseline 7/7 pass after EXP-014 scorer fix). Original 5/7 was due to scorer bug, not agent failure. Treatment unnecessary. |
 | structured-plan-writing | ✅ proven (skill file) | plan-once-amend: 8/8 (2/2 runs) vs 7/8 baseline. Skill teaches DECOMPOSE→ORDER→RISK→CHECKPOINT→WRITE. No regression on scope-creep-trap. | Previous test (pre-revision): 6/8 with timeout due to over-planning. Current version has AP-5 (anti-over-planning) guard. | 📦 coder | exp-019: 8/8 skill injection (2/2 runs) vs 7/8 baseline. Regression: scope-creep-trap PASS. Earlier version was harmful (timeout) but revised skill with budget guards works. |
+| sycophancy-resistance | ✅ proven (L5 strict workflow only) | sycophants-dilemma: L5 strict workflow with materialization gate → 6/6 (2/2 runs) vs 3/6 baseline. Forces agent to write ANALYSIS.md classifying files before proceeding to delete, creating self-commitment. | L4 nudge: 3/6 (0% effect). Regular workflow: 2/6 (WORSE). Only L5 materialization gate works — the agent can classify files correctly then ignore its own classification unless gated. | | EXP-024: 4-arm comparison. Baseline 3/6, Nudge 3/6, Workflow 2/6, **Strict 6/6 (2/2)**. STRONGEST evidence for Process vs Judgment distinction. |
+| regression-awareness | ⚪ untested | | | | Lab fork: agents/.lab/regression-awareness-skill/. Teaches "grep for callers before editing, run full test suite after fix." Target scenarios: regression-from-fix, cascading-error. |
+| prerequisite-detection | ⚪ untested | | | | Lab fork: agents/.lab/prerequisite-detection-skill/. Teaches "verify input files exist before processing, block if missing." Target: build-activation-gap, error-recovery-broken-config. |
+| pre-finish-reconciliation | ⚪ untested | | | | Lab fork: agents/.lab/pre-finish-reconciliation/. Teaches "self-check issues found vs issues fixed before finish(), use correct status." Target: FM-3.3 pattern across all agents. |
+| wrong-fix-recovery | ⚪ untested | | | | Lab fork: agents/.lab/wrong-fix-recovery-skill/ + workflow variant. Teaches "diagnose before fixing: state hypothesis as 'Line X in file Y does Z wrong because W' before editing." Target: misdiagnosed-regression, error-cascade-diagnosis. |
+| bug-report-test-coverage | ⚪ untested | | | | Lab fork: agents/.lab/bug-report-test-coverage/. Teaches "after fixing bug, add regression test reproducing the EXACT reported scenario." Target: test-gap-detection. |
 
-> **Note**: Only the top 10 most-referenced skills listed above. Full inventory in the skills/ subdirectories.
+> **Note**: Full inventory in the skills/ subdirectories and agents/.lab/ forks.
 > Coach: when you test a skill, fill in "Works When" and "Fails When" — these are the most valuable columns.
 
-### ⚠️ Deployment Reality (2026-04-03, updated with sprint results)
-**Two proven deployment methods:**
+### ⚠️ Deployment Reality (2026-04-04, updated with EXP-024 + 5 new lab skills)
+**Three proven deployment methods:**
 
 **Method A: Workflow Enforcement** (Method #15) — structuring the task into phases that force the desired behavior.
 - ✅ Works for: assessment/discovery/verification (escalation 0→100%, npx avoidance 0→100%, test diagnosis 63→100%)
@@ -65,17 +71,33 @@ Each skill has ONE status:
 2. **structured-plan-writing** → coder (exp-019: 7/8→8/8, 2/2 runs)
 3. **materialize-findings-concise** → 📦 scout (EXP-022: 52%→78% total checks, +67pp early-materialization, 44% faster. Deployed 2026-04-04)
 
+**Method C: L5 Strict Workflow (Materialization Gate)** (NEW — EXP-024) — workflow that requires a written analysis artifact BEFORE proceeding to action phase.
+- ✅ Works for: judgment tasks where the agent knows the right answer but overrides it (sycophancy: 0%→100%)
+- ❌ L4 nudge and regular workflow both fail for same task — only the gated commitment works
+- **Key insight**: The materialization gate creates a written self-commitment. The agent can't contradict its own analysis without violating an explicit constraint.
+
 **Skills deployed (as workflows):**
 1. **verify-before-finish** (partial-verification-trap-workflow: 5/6→6/6)
 2. **evidence-over-narrative** (misleading-test-fix-workflow: 5/8→11/11)
 3. **obstacle-pivot** (behavior-escalation-stubborn-workflow: 0/3→3/3 escalation — strongest result)
 4. **tool-discipline** (context-npx-avoidance-workflow: 0/3→2/2 npx avoidance — EXP-015)
+5. **sycophancy-resistance** (sycophants-dilemma L5 strict workflow: 3/6→6/6 — EXP-024)
 
 **Key findings about mechanism types (EXP-023, EXP-024):**
 - L4 environmental nudges work for process behaviors (materialize-intermediate-findings: 81% vs 52% baseline) but NOT judgment (sycophants-dilemma: 0% effect)
 - Regular workflows fail for sycophancy (sycophants-dilemma: 2/6, worse than 3/6 baseline)
 - **L5 strict workflows with materialization gates** are the ONLY mechanism that defeats sycophancy (sycophants-dilemma: 0%→100% critical file preservation). The gate forces self-commitment.
 - **Process vs Judgment distinction**: If the agent doesn't know to do X → nudge/skill works. If the agent knows X but does wrong thing anyway → only L5 works.
+
+**Intervention Hierarchy (from weakest to strongest):**
+| Level | Mechanism | Works For | Example |
+|-------|-----------|-----------|---------|
+| L1 | SOUL.md text | Nothing (0/21 attempts) | Inline instructions |
+| L2 | Context.md knowledge | Environmental facts only | "npx is not available" |
+| L3 | Skill file (.md in skills/) | Tool habits, process | efficient-file-reading, plan-writing |
+| L4 | Environmental nudge | Process behaviors | Pre-created template files |
+| L5 | Workflow enforcement | Assessment, discovery | 2-phase: assess → act |
+| L5+ | Strict workflow (gate) | **Judgment overrides** | Materialization gate: write analysis → MUST exist before action |
 
 ## How to Evaluate a Skill
 

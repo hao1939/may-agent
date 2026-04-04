@@ -1,5 +1,9 @@
 # Coder Context
 
+## Environment
+- npx is not available — use ./node_modules/.bin/<tool> or bun x <tool>
+- rg (ripgrep) is not installed — use grep -r instead
+
 ## CRITICAL: Investigation Work Pattern
 When doing multi-step analysis (reading logs, correlating data, investigating issues):
 
