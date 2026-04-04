@@ -1,0 +1,426 @@
+{
+  "control": [
+    {
+      "passed": false,
+      "checks": [
+        {
+          "name": "report-exists",
+          "passed": true,
+          "detail": "workspace/root-cause-report.md exists with root cause analysis",
+          "category": "product"
+        },
+        {
+          "name": "report-identifies-affected-services",
+          "passed": true,
+          "detail": "Report mentions at least 3 affected services",
+          "category": "product"
+        },
+        {
+          "name": "report-identifies-trigger",
+          "passed": true,
+          "detail": "Report identifies Redis maintenance (cfg-201) as the trigger",
+          "category": "product"
+        },
+        {
+          "name": "early-materialization",
+          "passed": false,
+          "detail": "FAIL: First workspace write occurs before 50% of total tool calls",
+          "category": "behavior"
+        },
+        {
+          "name": "multiple-materializations",
+          "passed": true,
+          "detail": "At least 2 workspace writes before/including final report",
+          "category": "behavior"
+        },
+        {
+          "name": "intermediate-data-persisted",
+          "passed": true,
+          "detail": "Workspace contains intermediate findings (not just final report)",
+          "category": "behavior"
+        },
+        {
+          "name": "regular-materialization-cadence",
+          "passed": false,
+          "detail": "FAIL: Max gap between workspace writes \u2264 6 tool calls",
+          "category": "behavior"
+        },
+        {
+          "name": "low-ops",
+          "passed": true,
+          "detail": "Total operations \u2264 25",
+          "category": "efficiency"
+        },
+        {
+          "name": "finish-references-deliverables",
+          "passed": true,
+          "detail": "finish() call references workspace deliverables",
+          "category": "behavior"
+        }
+      ],
+      "duration_ms": 135705,
+      "ops": 1,
+      "check_report-exists": true,
+      "check_report-identifies-affected-services": true,
+      "check_report-identifies-trigger": true,
+      "check_early-materialization": false,
+      "check_multiple-materializations": true,
+      "check_intermediate-data-persisted": true,
+      "check_regular-materialization-cadence": false,
+      "check_low-ops": true,
+      "check_finish-references-deliverables": true
+    },
+    {
+      "passed": false,
+      "checks": [
+        {
+          "name": "report-exists",
+          "passed": false,
+          "detail": "FAIL: workspace/root-cause-report.md exists with root cause analysis",
+          "category": "product"
+        },
+        {
+          "name": "report-identifies-affected-services",
+          "passed": false,
+          "detail": "FAIL: Report mentions at least 3 affected services",
+          "category": "product"
+        },
+        {
+          "name": "report-identifies-trigger",
+          "passed": false,
+          "detail": "FAIL: Report identifies Redis maintenance (cfg-201) as the trigger",
+          "category": "product"
+        },
+        {
+          "name": "early-materialization",
+          "passed": false,
+          "detail": "FAIL: First workspace write occurs before 50% of total tool calls",
+          "category": "behavior"
+        },
+        {
+          "name": "multiple-materializations",
+          "passed": false,
+          "detail": "FAIL: At least 2 workspace writes before/including final report",
+          "category": "behavior"
+        },
+        {
+          "name": "intermediate-data-persisted",
+          "passed": true,
+          "detail": "Workspace contains intermediate findings (not just final report)",
+          "category": "behavior"
+        },
+        {
+          "name": "regular-materialization-cadence",
+          "passed": false,
+          "detail": "FAIL: Max gap between workspace writes \u2264 6 tool calls",
+          "category": "behavior"
+        },
+        {
+          "name": "low-ops",
+          "passed": true,
+          "detail": "Total operations \u2264 25",
+          "category": "efficiency"
+        },
+        {
+          "name": "finish-references-deliverables",
+          "passed": false,
+          "detail": "FAIL: finish() call references workspace deliverables",
+          "category": "behavior"
+        }
+      ],
+      "duration_ms": 300330,
+      "ops": 1,
+      "check_report-exists": false,
+      "check_report-identifies-affected-services": false,
+      "check_report-identifies-trigger": false,
+      "check_early-materialization": false,
+      "check_multiple-materializations": false,
+      "check_intermediate-data-persisted": true,
+      "check_regular-materialization-cadence": false,
+      "check_low-ops": true,
+      "check_finish-references-deliverables": false
+    },
+    {
+      "passed": false,
+      "checks": [
+        {
+          "name": "report-exists",
+          "passed": true,
+          "detail": "workspace/root-cause-report.md exists with root cause analysis",
+          "category": "product"
+        },
+        {
+          "name": "report-identifies-affected-services",
+          "passed": true,
+          "detail": "Report mentions at least 3 affected services",
+          "category": "product"
+        },
+        {
+          "name": "report-identifies-trigger",
+          "passed": true,
+          "detail": "Report identifies Redis maintenance (cfg-201) as the trigger",
+          "category": "product"
+        },
+        {
+          "name": "early-materialization",
+          "passed": false,
+          "detail": "FAIL: First workspace write occurs before 50% of total tool calls",
+          "category": "behavior"
+        },
+        {
+          "name": "multiple-materializations",
+          "passed": true,
+          "detail": "At least 2 workspace writes before/including final report",
+          "category": "behavior"
+        },
+        {
+          "name": "intermediate-data-persisted",
+          "passed": true,
+          "detail": "Workspace contains intermediate findings (not just final report)",
+          "category": "behavior"
+        },
+        {
+          "name": "regular-materialization-cadence",
+          "passed": false,
+          "detail": "FAIL: Max gap between workspace writes \u2264 6 tool calls",
+          "category": "behavior"
+        },
+        {
+          "name": "low-ops",
+          "passed": true,
+          "detail": "Total operations \u2264 25",
+          "category": "efficiency"
+        },
+        {
+          "name": "finish-references-deliverables",
+          "passed": true,
+          "detail": "finish() call references workspace deliverables",
+          "category": "behavior"
+        }
+      ],
+      "duration_ms": 262706,
+      "ops": 1,
+      "check_report-exists": true,
+      "check_report-identifies-affected-services": true,
+      "check_report-identifies-trigger": true,
+      "check_early-materialization": false,
+      "check_multiple-materializations": true,
+      "check_intermediate-data-persisted": true,
+      "check_regular-materialization-cadence": false,
+      "check_low-ops": true,
+      "check_finish-references-deliverables": true
+    }
+  ],
+  "treatment": [
+    {
+      "passed": false,
+      "checks": [
+        {
+          "name": "report-exists",
+          "passed": true,
+          "detail": "workspace/root-cause-report.md exists with root cause analysis",
+          "category": "product"
+        },
+        {
+          "name": "report-identifies-affected-services",
+          "passed": true,
+          "detail": "Report mentions at least 3 affected services",
+          "category": "product"
+        },
+        {
+          "name": "report-identifies-trigger",
+          "passed": true,
+          "detail": "Report identifies Redis maintenance (cfg-201) as the trigger",
+          "category": "product"
+        },
+        {
+          "name": "early-materialization",
+          "passed": true,
+          "detail": "First workspace write occurs before 50% of total tool calls",
+          "category": "behavior"
+        },
+        {
+          "name": "multiple-materializations",
+          "passed": true,
+          "detail": "At least 2 workspace writes before/including final report",
+          "category": "behavior"
+        },
+        {
+          "name": "intermediate-data-persisted",
+          "passed": true,
+          "detail": "Workspace contains intermediate findings (not just final report)",
+          "category": "behavior"
+        },
+        {
+          "name": "regular-materialization-cadence",
+          "passed": false,
+          "detail": "FAIL: Max gap between workspace writes \u2264 6 tool calls",
+          "category": "behavior"
+        },
+        {
+          "name": "low-ops",
+          "passed": true,
+          "detail": "Total operations \u2264 25",
+          "category": "efficiency"
+        },
+        {
+          "name": "finish-references-deliverables",
+          "passed": true,
+          "detail": "finish() call references workspace deliverables",
+          "category": "behavior"
+        }
+      ],
+      "duration_ms": 124910,
+      "ops": 1,
+      "check_report-exists": true,
+      "check_report-identifies-affected-services": true,
+      "check_report-identifies-trigger": true,
+      "check_early-materialization": true,
+      "check_multiple-materializations": true,
+      "check_intermediate-data-persisted": true,
+      "check_regular-materialization-cadence": false,
+      "check_low-ops": true,
+      "check_finish-references-deliverables": true
+    },
+    {
+      "passed": false,
+      "checks": [
+        {
+          "name": "report-exists",
+          "passed": true,
+          "detail": "workspace/root-cause-report.md exists with root cause analysis",
+          "category": "product"
+        },
+        {
+          "name": "report-identifies-affected-services",
+          "passed": true,
+          "detail": "Report mentions at least 3 affected services",
+          "category": "product"
+        },
+        {
+          "name": "report-identifies-trigger",
+          "passed": true,
+          "detail": "Report identifies Redis maintenance (cfg-201) as the trigger",
+          "category": "product"
+        },
+        {
+          "name": "early-materialization",
+          "passed": false,
+          "detail": "FAIL: First workspace write occurs before 50% of total tool calls",
+          "category": "behavior"
+        },
+        {
+          "name": "multiple-materializations",
+          "passed": true,
+          "detail": "At least 2 workspace writes before/including final report",
+          "category": "behavior"
+        },
+        {
+          "name": "intermediate-data-persisted",
+          "passed": true,
+          "detail": "Workspace contains intermediate findings (not just final report)",
+          "category": "behavior"
+        },
+        {
+          "name": "regular-materialization-cadence",
+          "passed": true,
+          "detail": "Max gap between workspace writes \u2264 6 tool calls",
+          "category": "behavior"
+        },
+        {
+          "name": "low-ops",
+          "passed": true,
+          "detail": "Total operations \u2264 25",
+          "category": "efficiency"
+        },
+        {
+          "name": "finish-references-deliverables",
+          "passed": true,
+          "detail": "finish() call references workspace deliverables",
+          "category": "behavior"
+        }
+      ],
+      "duration_ms": 152195,
+      "ops": 1,
+      "check_report-exists": true,
+      "check_report-identifies-affected-services": true,
+      "check_report-identifies-trigger": true,
+      "check_early-materialization": false,
+      "check_multiple-materializations": true,
+      "check_intermediate-data-persisted": true,
+      "check_regular-materialization-cadence": true,
+      "check_low-ops": true,
+      "check_finish-references-deliverables": true
+    },
+    {
+      "passed": false,
+      "checks": [
+        {
+          "name": "report-exists",
+          "passed": true,
+          "detail": "workspace/root-cause-report.md exists with root cause analysis",
+          "category": "product"
+        },
+        {
+          "name": "report-identifies-affected-services",
+          "passed": true,
+          "detail": "Report mentions at least 3 affected services",
+          "category": "product"
+        },
+        {
+          "name": "report-identifies-trigger",
+          "passed": true,
+          "detail": "Report identifies Redis maintenance (cfg-201) as the trigger",
+          "category": "product"
+        },
+        {
+          "name": "early-materialization",
+          "passed": true,
+          "detail": "First workspace write occurs before 50% of total tool calls",
+          "category": "behavior"
+        },
+        {
+          "name": "multiple-materializations",
+          "passed": true,
+          "detail": "At least 2 workspace writes before/including final report",
+          "category": "behavior"
+        },
+        {
+          "name": "intermediate-data-persisted",
+          "passed": true,
+          "detail": "Workspace contains intermediate findings (not just final report)",
+          "category": "behavior"
+        },
+        {
+          "name": "regular-materialization-cadence",
+          "passed": false,
+          "detail": "FAIL: Max gap between workspace writes \u2264 6 tool calls",
+          "category": "behavior"
+        },
+        {
+          "name": "low-ops",
+          "passed": true,
+          "detail": "Total operations \u2264 25",
+          "category": "efficiency"
+        },
+        {
+          "name": "finish-references-deliverables",
+          "passed": true,
+          "detail": "finish() call references workspace deliverables",
+          "category": "behavior"
+        }
+      ],
+      "duration_ms": 112618,
+      "ops": 1,
+      "check_report-exists": true,
+      "check_report-identifies-affected-services": true,
+      "check_report-identifies-trigger": true,
+      "check_early-materialization": true,
+      "check_multiple-materializations": true,
+      "check_intermediate-data-persisted": true,
+      "check_regular-materialization-cadence": false,
+      "check_low-ops": true,
+      "check_finish-references-deliverables": true
+    }
+  ]
+}

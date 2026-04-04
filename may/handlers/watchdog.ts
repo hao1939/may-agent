@@ -17,15 +17,17 @@
 import type { HandlerContext, HandlerModule } from "../../../src/lib/handler-context.js";
 import type { CronEntry } from "../../../src/lib/cron-tool.js";
 
-/** Default max runtime for any session (30 minutes). */
-const DEFAULT_TIMEOUT_MS = 30 * 60 * 1000;
+/** Default max runtime for any session (60 minutes). */
+const DEFAULT_TIMEOUT_MS = 60 * 60 * 1000;
 
 /** Per-agent overrides — agents that do heavier work get more time. */
 const DEFAULT_AGENT_TIMEOUTS: Record<string, number> = {
-  evaluator: 45 * 60 * 1000,   // evaluator can be slower (LLM-as-judge)
-  optimizer: 45 * 60 * 1000,   // optimizer does complex refactoring
-  bob: 45 * 60 * 1000,         // bob does analysis + multi-file changes
-  coach: 45 * 60 * 1000,       // coach runs exercises with sub-agents
+  evaluator: 90 * 60 * 1000,   // evaluator can be slower (LLM-as-judge)
+  optimizer: 90 * 60 * 1000,   // optimizer does complex refactoring
+  bob: 90 * 60 * 1000,         // bob does analysis + multi-file changes
+  coach: 90 * 60 * 1000,       // coach runs exercises with sub-agents
+  scout: 90 * 60 * 1000,       // scout does deep research that takes time
+  "tech-lead": 90 * 60 * 1000, // tech-lead reviews can be thorough
 };
 
 export interface WatchdogResult {

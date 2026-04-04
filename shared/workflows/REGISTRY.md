@@ -92,14 +92,14 @@
 
 ## Effectiveness Tracking
 
-**Last measured**: 2026-04-03T10:20 (all-time data, 180 workflow runs, 464 sessions)
+**Last measured**: 2026-04-04T06:20 (all-time data, 180 workflow runs, 464 sessions)
 
 ### Overall Metrics
 | Metric | Workflow Sessions | Standalone Sessions | Delta |
 |--------|------------------|---------------------|-------|
-| Done rate | 91.7% (413/464) | 64.8% (4941 active) | **+26.9pp** |
+| Done rate | 89.0% (413/464) | 64.8% (4941 active) | **+24.2pp** |
 | Error rate | 1.5% (12/464) | 23.2% | **-21.7pp** |
-| Interrupt rate | 6.8% | 12.0% | -5.2pp |
+| Interrupt rate | 6.8% | 14.9% (160/1074 last 7d) | -8.1pp |
 | Avg ops/session | 16.1 | 12.9 | +3.2 |
 | Run completion rate | 72.2% (130/180) | — | — |
 
@@ -111,22 +111,35 @@
 | Training-sprint | 23 | 91% | 44 | OK |
 | Skill-lifecycle | 12 | 75% | 73 | OK |
 
-### Key Findings (updated 2026-04-03)
+### Workflow Usage Collapse (investigated 2026-04-04)
+| Week | Workflow Sessions | Standalone | WF% |
+|------|------------------|-----------|-----|
+| W12 (Mar 25-31) | 187 | 1039 | 15.2% |
+| W13 (Apr 1+) | 12 | 785 | 1.5% |
+| Last 3 days | 0 | ~400 | 0% |
+
+**Root Cause**: NOT agent avoidance — no production code work is happening:
+1. Tech-lead idle since Mar 29 (no new tasks → no code-review-loop)
+2. Coach training-sprint 60% interrupted (3/5 failed from request aborted)
+3. Recent coder sessions are gym runs (correctly don't use workflows)
+
+### Key Findings (updated 2026-04-04)
 1. **Workflows reduce errors 15x** (1.5% vs 23.2%) — structured execution prevents crashes
-2. **Code-review-loop is gold standard** — 97% completion for full 4-step runs, 100% in last 15 runs, 24 avg ops/cycle
-3. **Coach training workflows have 35% NI rate** — driven by TASK_NONCOMPLETION in sprint planning (too complex for turn budget)
-4. **Workflow usage declining** — from 12.5% of sessions (Mar 29) to 0% (Apr 3). Needs investigation.
-5. **QA sub-sessions in workflows: 100% done rate** at 2.6 avg ops (vs 5.5 standalone + 5% error rate)
-6. **Evaluation paradox** — workflows show 25% NI vs 3% standalone, but this is driven by coach sub-sessions being judged without workflow context
+2. **Code-review-loop is gold standard** — 97% completion for full 4-step runs, 100% in last 15 runs
+3. **Coach training workflows have 35% NI rate** — driven by TASK_NONCOMPLETION in sprint planning
+4. **Workflow usage at 0% for 3 days** — caused by idle pipeline, not agent avoidance (see above)
+5. **34% of all sessions (360/1074) had 0 ops** — 13% true waste (after excluding skipIfIdle)
+6. **Request aborted** is the #1 waste cause — 90 sessions/week lost to platform interrupts
+7. **QA sub-sessions in workflows: 100% done rate** at 2.6 avg ops (vs 5.5 standalone)
 
 ### Consolidation Priority Updates (validated 2026-03-30T21:10)
 - **P1 verify-and-finish**: Confirmed byte-identical (may vs tech-lead) ✓
-- **P2 verify-parallel**: may/optimizer identical; tech-lead has better QA prompt (Phase 1 DIAGNOSE / Phase 2 VERDICT, pre-existing failure detection) ✓
-- **P3 implement-and-review**: 3 versions divergent — tech-lead has best prompts (DIAGNOSE/VERDICT pattern + verification phase 4), may has "claims" framing note
+- **P2 verify-parallel**: may/optimizer identical; tech-lead has better QA prompt ✓
+- **P3 implement-and-review**: 3 versions divergent — tech-lead has best prompts
 
-### Recommendations (prioritized 2026-04-03)
-1. **Investigate workflow usage decline** — 12.5% → 0% in 5 days. Are agents avoiding workflows?
-2. **Expand code-review-loop** — Should be default for ANY code change, not just tech-lead dispatches
-3. **Fix coach sprint planning** — Break 8-step plan into 2 focused sub-workflows to fit turn budget
-4. **Consolidate P1 immediately** — verify-and-finish is byte-identical, zero risk
-5. **Fix evaluator for workflow sub-sessions** — Judge in context of multi-step workflow, not standalone
+### Recommendations (updated 2026-04-04)
+1. **Fix coach training-sprint reliability** — 60% interrupt rate. Consider smaller phases or higher maxTurns
+2. **Address request-aborted problem** — 90 sessions/week lost. Needs checkpoint/resume or platform fix
+3. **Consolidate P1 immediately** — verify-and-finish is byte-identical, zero risk
+4. **Expand code-review-loop** — Should be default for ANY code change
+5. **Reactivate task pipeline** — Workflow usage will recover when tech-lead gets new implementation tasks

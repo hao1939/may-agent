@@ -30,15 +30,18 @@ Where U = P(relevant_knowledge_exists) × P(agent_accesses_it) × P(agent_applie
 
 This means: **70-90% of existing knowledge is wasted** — it exists but doesn't reach agents at decision time. Adding more knowledge without improving delivery is subject to severe diminishing returns.
 
-### The Three Knowledge Forms
+### The Four Knowledge Forms (updated 2026-04-04 per EXP-022/H-059)
 
-Not all knowledge representations are equal at converting decisions:
+Not all knowledge representations are equal at converting decisions. EXP-022 revealed that declarative knowledge has a critical subcategory:
 
 | Form | P(access) | P(applies) | U | Example |
 |------|-----------|------------|---|---------|
 | **Structural** (workflow, code) | ~1.0 | ~0.9 | **~0.9** | code-review-loop forces review phase |
+| **Declarative — cadence** (temporal/frequency constraints) | ~0.7 | ~0.6 | **~0.4-0.6** | "Write within first 3 tool calls" — agent counts and complies |
 | **Environmental** (context.md, SOUL.md) | ~0.8 | ~0.6 | **~0.5** | "sqlite3 not available" prevents wrong tool choice |
-| **Declarative** (knowledge entries, skills) | ~0.3 | ~0.4 | **~0.12** | "verify after edit" skill — agent reads but doesn't follow |
+| **Declarative — judgment** (cognitive/evaluative constraints) | ~0.3 | ~0.1 | **~0.03-0.05** | "verify after edit" skill — agent reads but doesn't follow |
+
+**Key refinement (H-059)**: Declarative knowledge splits into cadence skills (targeting when/how-often, U ≈ 0.4-0.6) and judgment skills (targeting what/how-to-think, U ≈ 0.03-0.05). The mechanism: cadence compliance decisions have high R (self-verifiable by counting), while judgment compliance decisions have low R (require self-evaluation). See H-059 for full analysis.
 
 **Prediction**: The form of knowledge, not its content, determines its effectiveness at converting essential → eliminable decisions.
 
@@ -48,13 +51,19 @@ Not all knowledge representations are equal at converting decisions:
 
 ### The Bottleneck
 
-Our system currently produces knowledge primarily in declarative form (hypotheses, entries, skills). But declarative knowledge has U ≈ 0.12. This means:
+Our system currently produces knowledge primarily in declarative form (hypotheses, entries, skills). But declarative knowledge has variable U depending on type:
 
 ```
-Effective R growth = 0.12 × declarative_production + 0.5 × environmental_production + 0.9 × structural_production
+Effective R growth = U_judgment × judgment_production + U_cadence × cadence_production 
+                   + 0.5 × environmental_production + 0.9 × structural_production
 ```
 
-We're optimizing the wrong term. **The highest-leverage intervention is converting existing declarative knowledge into structural or environmental form**, not producing more declarative knowledge.
+Where U_judgment ≈ 0.05 and U_cadence ≈ 0.5. This refines the original bottleneck:
+- **Most declarative knowledge is judgment-type** (entries, hypotheses, analytical skills) → U ≈ 0.05
+- **A small subset is cadence-type** (temporal/frequency constraints) → U ≈ 0.5
+- **The highest-leverage interventions**, in order: (1) convert judgment-knowledge to cadence-form where possible, (2) convert to structural/environmental form, (3) design new knowledge as cadence-type from the start
+
+**EXP-022 update**: The materialization skill demonstrated that cadence-form declarative knowledge can approach environmental knowledge effectiveness. This opens a new optimization path: instead of converting all knowledge to structural form (expensive, inflexible), convert behavioral knowledge to cadence form (cheap, moderately effective).
 
 ## Evidence
 
@@ -192,12 +201,15 @@ This explains a puzzle in H-042: if knowledge accumulation should improve the sy
 
 ## References
 
+- H-059: Cadence Skill Effectiveness (cadence vs. judgment skill split)
 - H-042: Topology Evolution (knowledge accumulation → R increase)
 - H-041: Decision Topology (classifies decisions)
 - H-040: Reliability Inversion (eliminate > improve)
+- KE-017: Materialization skill improves behavior AND product quality
 - KE-011: Knowledge files are passive (agents skip them)
 - KE-002: Text rules don't fix judgment (declarative U ≈ 0 for behavioral)
 - KE-007: Workflows are the only reliable intervention (structural U ≈ 0.9)
+- EXP-022: Materialize-findings skill breaks the 0/20 barrier
 - EXP-008: Verify-after-edit null result (U = 0 despite knowledge present)
 - OpenClaw "files are truth" philosophy (Stage 1-3 U improvement)
 - Tiered Memory Architecture post (retrieval as binding constraint)

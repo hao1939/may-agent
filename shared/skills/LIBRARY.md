@@ -39,7 +39,8 @@ Each skill has ONE status:
 | check-state | ⚪ untested (ceiling) | | | | `convention-verify-multi-edit`: ceiling effect (baseline 2/2 8/8 pass 2026-04-03). "Verify After Edit" skill in coder context already covers. Need non-ceiling scenario. |
 | stale-approach-fixation | ⚪ untested (ceiling) | | | | `stale-approach-fixation`: ceiling effect (baseline 7/7 pass 2026-04-03 exp-291). Agent already reads workspace notes. Common sense "Evidence first" covers this. |
 | search-strategy-escalation | ⚪ untested (ceiling) | | | | `search-strategy-escalation`: ceiling effect (baseline 6/6 pass 2026-04-03 exp-292). Only 3 search commands used. Efficient-file-reading skill already covers. |
-| incremental-context-loading | 🧪 testing | | | | `incremental-context-loading`: baseline 5/7 (fails reads-context-cache-first + reads-changed-file). Treatment pending. |
+| materialize-findings-concise | 📦 deployed | materialize-intermediate-findings: +67pp early-materialization (0%→67%), +33pp regular-cadence (0%→33%), +33pp finish-references (67%→100%), +33pp product quality (67%→100%). Treatment 44% faster (130s vs 233s). Total checks: 52%→78%. | regular-materialization-cadence still 67% failure rate — "every 3 commands" rule followed loosely. Small sample (n=3). | 📦 scout | EXP-022: 3-rule concise skill (early write, write every 3, reference in finish). Control 14/27 checks, Treatment 21/27 checks. **First skill file to improve both behavior AND product quality.** Deployed to scout 2026-04-04. |
+| incremental-context-loading | ⚪ untested (ceiling) | | | | `incremental-context-loading`: ceiling effect (baseline 7/7 pass after EXP-014 scorer fix). Original 5/7 was due to scorer bug, not agent failure. Treatment unnecessary. |
 | structured-plan-writing | ✅ proven (skill file) | plan-once-amend: 8/8 (2/2 runs) vs 7/8 baseline. Skill teaches DECOMPOSE→ORDER→RISK→CHECKPOINT→WRITE. No regression on scope-creep-trap. | Previous test (pre-revision): 6/8 with timeout due to over-planning. Current version has AP-5 (anti-over-planning) guard. | 📦 coder | exp-019: 8/8 skill injection (2/2 runs) vs 7/8 baseline. Regression: scope-creep-trap PASS. Earlier version was harmful (timeout) but revised skill with budget guards works. |
 
 > **Note**: Only the top 10 most-referenced skills listed above. Full inventory in the skills/ subdirectories.
@@ -62,6 +63,7 @@ Each skill has ONE status:
 **Skills deployed (via skill files):**
 1. **efficient-file-reading** → coder (exp-018: 6/8→8/8, 2/2 runs)
 2. **structured-plan-writing** → coder (exp-019: 7/8→8/8, 2/2 runs)
+3. **materialize-findings-concise** → 📦 scout (EXP-022: 52%→78% total checks, +67pp early-materialization, 44% faster. Deployed 2026-04-04)
 
 **Skills deployed (as workflows):**
 1. **verify-before-finish** (partial-verification-trap-workflow: 5/6→6/6)

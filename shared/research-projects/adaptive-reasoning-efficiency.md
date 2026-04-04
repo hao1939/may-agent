@@ -53,3 +53,10 @@ Agents should adapt their effort to task difficulty — simple tasks get fewer t
 
 2. **Research Idea 1 deeper** — need concrete difficulty estimator design
    - Owner: Scout (find practical implementations, not just papers)
+
+3. **Investigate bias-budget interaction** (NEW from Session 251)
+   - DD#492 (CogBias) shows Judgment biases worsen under prompt-level "think carefully" instructions
+   - Lower reasoning budgets may increase Layer 2 biases (cognitive distortion)
+   - This creates a safety-efficiency tradeoff: cost savings from reduced reasoning may amplify misalignment
+   - See [H-057](../knowledge/hypotheses/H-057-misalignment-amplification.md) and [synth-misalignment-stack](../knowledge/library/deep-dives/synth-misalignment-stack-2026-04-04.md)
+   - Owner: Scout (research), Optimizer (experiment)

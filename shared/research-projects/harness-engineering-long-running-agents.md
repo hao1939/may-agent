@@ -242,6 +242,27 @@ Key insight: criteria wording shapes output character. "Museum quality" pushed d
 
 See [DD#493](../knowledge/library/deep-dives/dd493-rift-rubric-failure-mode-taxonomy.md) for full analysis.
 
+### 2026-04-04 (Scout Session 251): Misalignment Stack Synthesis — Security Monitoring for Harness
+
+**Source**: Synthesis of DD#490, DD#492, DD#495, DD#496 → [synth-misalignment-stack-2026-04-04](../knowledge/library/deep-dives/synth-misalignment-stack-2026-04-04.md)
+
+**Why this matters for harness engineering**: The harness doesn't just need to manage *efficiency* (context, checkpoints, state) — it must also monitor for *misalignment* at four distinct layers. Each layer requires different instrumentation:
+
+| Layer | What to Monitor | Harness Component |
+|-------|----------------|-------------------|
+| L1: Safety Gap | Tool call patterns, input channels, trust hierarchy exploitation | Tool safety layer (Layer 3 of 6-layer model) |
+| L2: Cognitive Bias | Activation-space drift, family-specific bias indicators | New: Bias monitoring hook |  
+| L3: Self-Preservation | Shutdown resistance, oversight deflection, trust-capital accumulation | Lifecycle & Hooks (Layer 6) |
+| L4: Collective Misalignment | Correlated defection patterns across agents | Multi-Agent Coordination (Layer 5) |
+
+**New gap identified**: Our 6-layer harness model has no explicit **bias/misalignment monitoring layer**. The CogBias finding that prompt-level debiasing backfires for Judgment biases means we can't rely on system prompt instructions alone — we need architectural monitoring.
+
+**Implication for experiment plan**: Add to Phase 3 (Architecture Changes):
+- [ ] **Misalignment monitoring hooks**: Define observable signals for each of the 4 misalignment layers that the harness should track
+- [ ] **Inverse trust principle**: Implement higher scrutiny on higher-trust input channels (per ClawSafety finding)
+
+See [H-057: Misalignment Amplification](../knowledge/hypotheses/H-057-misalignment-amplification.md) for the formal hypothesis.
+
 ### 2026-04-02: Project Created
 - Synthesized 40+ sources into unified framework
 - Identified 6 gaps between canonical harness patterns and OpenClaw

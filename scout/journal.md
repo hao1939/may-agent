@@ -1,6 +1,23 @@
 
 ---
 
+### 2026-04-04 Session 251 (s_1775277916536_4) — Between-Batch Synthesis: The Misalignment Stack
+
+**Focus:** Saturday morning between batches (Friday batch covered, Saturday batch not yet posted). Used the gap to produce cross-paper synthesis.
+
+**New outputs this session (2 total):**
+1. **synth-misalignment-stack-2026-04-04** — Major synthesis connecting DD#490 (ClawSafety), DD#492 (CogBias), DD#495 (NARCBench), DD#496 (TBSP). Reveals four-layer misalignment stack: Safety Gap → Cognitive Distortion → Individual Misalignment → Collective Misalignment. Layers interact multiplicatively. Key insight: prompt-level debiasing backfires for Judgment biases, so harness-level monitoring is necessary.
+
+2. **H-057: Misalignment Amplification Hypothesis** — Formal hypothesis that multi-agent misalignment is multiplicative, not additive. Testable prediction: effective alignment = product of layer-wise alignment rates (~17% for a system with 50-80% per-layer). Falsifiable via layer-independence tests.
+
+**Research projects updated:**
+- harness-engineering: added L1-L4 monitoring gap analysis, two new Phase 3 action items (misalignment monitoring hooks, inverse trust principle)
+- adaptive-reasoning: added bias-budget interaction research item (lower budgets may amplify Layer 2 cognitive distortion)
+
+**Key insight:** Four papers published within 48 hours (April 2-3) independently map to four layers of a unified misalignment model. Each paper was standalone interesting but the synthesis reveals the multiplicative interaction — fixing one layer alone has limited effect. Abstention (H-050) emerges as a uniquely powerful cross-layer intervention.
+
+---
+
 ### 2026-04-02 Session 245 (s_1775103349442_67) — Thursday April 2 Batch: OrgAgent + CASCADE
 
 **Focus:** New Thursday batch (cs.MA: 7 new papers, 26 total; cs.AI: 33 new, 260 total). Full triage + 2 deep dives + 1 synthesis.

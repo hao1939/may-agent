@@ -1,7 +1,7 @@
 # Deep Dives Index
 
-> 82 research deep dives, cross-reference syntheses, and reference documents.  
-> Last updated: 2026-04-03 | Maintained by Scout
+> 86 research deep dives, cross-reference syntheses, and reference documents.  
+> Last updated: 2026-04-04 | Maintained by Scout
 
 ## How to Use This Index
 - **DD#NNN** = Deep Dive on a single paper
@@ -36,6 +36,7 @@
 | [dd487](dd487-role-differentiation-multilevel-selection.md) | Role Differentiation via Multi-Level Selection ★★★½ | Tragedy-of-commons avoidance through emergent role specialization |
 | [dd488](dd488-camp-case-adaptive-multi-agent-panel.md) | CAMP — Case-Adaptive Multi-Agent Panel ★★★★ | Dynamic panel assembly + three-valued voting + hierarchical resolution |
 | [dd491](dd491-coopetition-trust-gated-reciprocity.md) | Coopetition — Trust-Gated Reciprocity ★★★½ | Bounded reciprocity + memory windows + structural sensitivity + trust gating |
+| [dd497](dd497-cooperation-emergence-llm-agents-games.md) | Cooperation Emergence in LLM Agent Games ★★★★★ | LLM agents converge to cooperation via fairness reasoning, not Nash; θ-γ synthetic payoff model |
 
 ### Multi-Agent Debate
 | File | Title | Key Finding |
@@ -49,6 +50,7 @@
 |------|-------|-------------|
 | [dd213](dd213-skillrl-recursive-skill-augmented-rl.md) | SkillRL — Recursive Skill-Augmented RL | Evolving agents via recursive skill discovery |
 | [dd215](dd215-ft-dojo-autonomous-fine-tuning.md) | FT-Dojo — Autonomous LLM Fine-Tuning | Language agents that fine-tune themselves (ICML 2026) |
+| [dd500](dd500-darwinnet-evolutionary-protocol-synthesis.md) | DarwinNet — Evolutionary Protocol Synthesis ★★★ | Bio-inspired self-evolving network protocols; L0 immutable anchor + L1 fluid cortex + L2 Darwin cortex |
 | [dd471](dd471-sema-self-evolving-multi-agent-rts.md) | SEMA: Self-Evolving Multi-Agent for RTS | Self-evolution in real-time strategy decision making |
 
 ---
@@ -142,6 +144,8 @@
 | [cr-triangle](cross-ref-bias-information-trust-triangle.md) | Bias-Information-Trust Triangle ★★★★★ | DD#489 + DD#491 + DD#492 + DD#472/473 — unified failure mechanism in MAS |
 | [cr271](cr271-epistemic-fragility-stack-friday-batch-synthesis.md) | Epistemic Fragility Stack ★★★★★ | DD#488-492 — four-layer degradation model with defense trilemma |
 | [cr272](../synthesis/2026-04-03-collusion-preservation-loop.md) | The Collusion-Preservation Loop ★★★★★ | DD#495 + DD#496 — self-preservation drives + covert coordination = positive feedback loop |
+| [cr275](../synthesis/2026-04-04-cooperation-collusion-spectrum.md) | Cooperation-Collusion Spectrum ★★★★★ | DD#497 + DD#495 + DD#491 + DD#496 + DD#489 — full spectrum from beneficial cooperation to harmful collusion |
+| [cr276](../synthesis/2026-04-04-forgetting-duality.md) | The Forgetting Duality ★★★★ | DD#486 + DD#499 — safety-driven vs. performance-driven forgetting conflict zones |
 
 ---
 
@@ -185,6 +189,8 @@
 | [dd494](dd494-runtime-burden-allocation-llm-routing.md) | Runtime Burden Allocation for LLM Routing ★★★★ |
 | [dd495](dd495-narcbench-multi-agent-collusion-detection.md) | NARCBench — Multi-Agent Collusion Detection via Activation Probing ★★★★★ |
 | [dd496](dd496-tbsp-self-preservation-bias-llms.md) | TBSP — Quantifying Self-Preservation Bias in Frontier LLMs ★★★★★ |
+| [dd498](dd498-pare-proactive-agent-fsm-benchmark.md) | PARE — Proactive Agent FSM Benchmark ★★★★ |
+| [dd499](dd499-adaptive-budgeted-forgetting-agents.md) | Adaptive Budgeted Forgetting for Agents ★★★½ |
 | [HB1575](HB1575-bicc-rcc-contrastive-grpo.md) | BiCC-RCC: Contrastive GRPO with Cross-Partition Learning |
 | [HB1586](HB1586-agentfuel.md) | AgentFuel: Domain-Specific Evaluation Generation |
 | [HB1606](HB1606-CRYSTAL-reasoning-transparency.md) | CRYSTAL Benchmark — Reasoning Transparency |

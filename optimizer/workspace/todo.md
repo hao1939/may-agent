@@ -11,8 +11,14 @@
 
 ## 🔴 ACTIVE
 
-- ✅ **Evaluator heuristic fix** — Commit a6250b0 DEPLOYED in current binary (confirmed 3/3 post-08:41 evals are `good`). Data repair added to `evaluate-sessions.ts` handler: Phase 1 reclassifies 146 interrupted 0-op sessions from `acceptable` → `skipped`; Phase 2 removes stale `opBudget_exhaustion` from 1,761 heuristic evals. Today's good rate: 45.5% → 74.5%, 7-day: 73.5% → 82.2%. Finding: `workspace/finding-eval-data-repair-0403.md`.
-- **Cost investigation** — Top consumers (3d): Bob 665 ops, Coach 495, Optimizer 404, Amy-kimi 306. Coach averages 40 ops/heartbeat (mostly bash DB queries). 51.2% of all heartbeats are idle (0 ops, properly skipIfIdle). Biggest savings: reduce per-session ops for expensive heartbeats.
+- ✅ **Evaluator heuristic fix** — Commit a6250b0 DEPLOYED. Data repair deployed. Today's good rate: 45.5% → 74.5%, 7-day: 73.5% → 82.2%.
+- ✅ **Scout reliability investigation** — Full report at `workspace/scout-reliability-analysis.md`. Scout 49% waste rate. P0: add maxTurns to all agents. Escalated to May.
+- ✅ **Workflow collapse investigation** — Root cause: NOT agent avoidance. No production code work happening since Mar 29. Updated REGISTRY.md. See `workspace/finding-system-waste-0404.md`.
+- ✅ **System waste analysis** — 34% of sessions had 0 ops (360/1074 in 7d). True waste 13% after excluding skipIfIdle. Report at `workspace/finding-system-waste-0404.md`.
+- ✅ **maxTurns guardrail deployment** — All agents now at maxTurns: 40. Config on disk, cron reloaded. Uncommitted changes will auto-commit. Verified: tech-lead at 06:45 Apr 4 hit 41/40 (was 31/30).
+- **Coach training-sprint reliability** — P0 new finding: 60% interrupt rate (3/5 failed in 5d). Needs smaller phases or higher maxTurns. Consider escalating to Coach/May.
+- **Zombie-cleanup cron not running** — P1 new finding: Last ran March 25 (10 days ago!). 10 zombie sessions in DB. Handler or cron firing broken. Needs investigation.
+- **Request aborted waste** — P1: 26 sessions/day (26.8%). 13 had 0 ops. Platform-level, not agent-fixable. Monitor after maxTurns fix.
 - **Skip rate investigation** — Skip rate stable: 50w 12%, 200w 6.5%. Monitoring continues.
 - **Skill lifecycle weekly** — Cooldown (last: Mar 30, next: Apr 6). 54 skills, 5 saturations. Weekly only.
 - **Workflow consolidation P1-P3** — From audit Mar 30. Next audit Apr 6.

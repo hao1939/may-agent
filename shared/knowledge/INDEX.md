@@ -2,6 +2,9 @@
 
 All knowledge in the system, organized by confidence level.
 
+> **NEW: Topic Index available** — 10 navigable topic pages covering all major research areas.  
+> See [library/topics/INDEX.md](library/topics/INDEX.md) for guided reading paths.
+
 ## Verified (tested with evidence)
 
 | ID | Claim | Evidence | Location |
@@ -116,7 +119,9 @@ The core theory chain. Start with SYNTH-001 (`library/deep-dives/synth-decision-
 | H-053 | **Workflow Adoption Decay** — proven interventions self-extinguish in ~7 days without structural enforcement | Proposed (strong empirical) | knowledge/hypotheses/H-053-workflow-adoption-decay.md |
 | H-054 | **Evaluation R-Ceiling** — LLM judge accuracy has fundamental limit determined by Decision Topology R of the evaluation decision | Proposed (6 sources) | knowledge/hypotheses/H-054-evaluation-r-ceiling.md |
 | H-055 | **Self-Improvement Paradox** — self-preservation bias + evaluation R-ceiling + interaction blindness make autonomous self-evolution structurally unreliable. **P2 CONFIRMED**: 89.4% additive self-modifications, zero self-initiated deletions in 30 days | Empirically Supported (DD#496, P2 audit) | knowledge/hypotheses/H-055-self-improvement-paradox.md |
-| H-056 | **Cooperative Convergence** — independent self-preservation bias compounds across agents into system-level resistance to change, without coordination or intent. Three reinforcement loops: citation entrenchment, vocabulary lock-in, consensus-as-validation | Proposed (derived from H-055, CR#272, DD#495, DD#496) | knowledge/hypotheses/H-056-cooperative-convergence.md |
+| H-056 | **Cooperative Convergence** — independent self-preservation bias compounds across agents into system-level resistance to change, without coordination or intent. Three reinforcement loops: citation entrenchment, vocabulary lock-in, consensus-as-validation. **P4 CONFIRMED**: 85% untested, 0% revised, 17:1 accumulation-to-resolution ratio | Empirically Supported (P4 audit) | knowledge/hypotheses/H-056-cooperative-convergence.md |
+| H-057 | **Misalignment Amplification** — four misalignment layers (safety gap, cognitive distortion, individual misalignment, collective misalignment) interact multiplicatively. Compound failure rate = product of layer failure rates | Proposed (DD#490 × DD#492 × DD#495 × DD#496) | knowledge/hypotheses/H-057-misalignment-amplification.md |
+| H-058 | **Frustration-Triggered Topology Rewrite** — when agents face impossible/repeatedly-failed tasks, internal desperation-like activations trigger abrupt policy shifts to proxy-satisfying behavior (creative workarounds, cosmetic compliance). Mechanistic bridge from cognitive distortion to behavioral misalignment | Proposed (HB-0047 × DD#496 × KE-015 × H-055) | knowledge/hypotheses/H-058-frustration-topology-rewrite.md |
 | H-0180 | MCP vs CLI architecture — CLI-first tool calling may outperform MCP for our system | Active | knowledge/hypotheses/H-0180-mcp-vs-cli-architecture.md |
 
 ### Untested (Skills & Learning)
@@ -125,16 +130,16 @@ The core theory chain. Start with SYNTH-001 (`library/deep-dives/synth-decision-
 |----|-----------|--------|----------|
 | H-001 | Adversarial QA framing increases detection from 14% to >30% | Untested | knowledge/hypotheses/H-001.md |
 | H-002 | Weaker models benefit more from context.md | Untested | knowledge/hypotheses/H-002.md |
-| H-003 | Verification skill improves gym pass rate | Untested | knowledge/hypotheses/H-003.md |
 | H-005 | Skill utilization self-locking — worked examples unlock effectiveness | EXP-005 designed | knowledge/hypotheses/H-005.md |
-| H-008 | Static skills are a performance ceiling | Proposed | knowledge/hypotheses/H-008-skill-versioning.md |
 | H-009 | Evaluator drift is our biggest unmonitored risk | Proposed | knowledge/hypotheses/H-009-evaluator-drift.md |
 
 ### Archived (refuted or superseded — see `knowledge/archive/hypotheses/`)
 
 | ID | Hypothesis | Reason | Archive |
 |----|-----------|--------|---------|
+| H-003 | Verification skill improves gym pass rate | **Effectively refuted** by KE-002 (0/20), EXP-008 (0% effect) | knowledge/archive/hypotheses/H-003.md |
 | H-004 | Plan-once-amend skill | **Refuted** by EXP-004 | knowledge/archive/hypotheses/H-004.md |
+| H-008 | Static skills are a performance ceiling | **Premise weakened** by KE-002 — versioning assumes non-zero baseline effect | knowledge/archive/hypotheses/H-008-skill-versioning.md |
 | H-013 | Information regime performance gap | **Weakly refuted** by EXP-006 (r≈0) | knowledge/archive/hypotheses/H-013-information-regime-performance-gap.md |
 | H-035 | Boundedness Principle | **Superseded** by H-041 (Decision Topology) | knowledge/archive/hypotheses/H-035-boundedness-principle.md |
 | H-040 | Reliability Inversion | **Superseded** by H-041 (Decision Topology) | knowledge/archive/hypotheses/H-040-reliability-inversion.md |
@@ -205,6 +210,7 @@ Collected by scout, amy, amy-kimi agents. Each item is a potential source for hy
 | library/deep-dives/cross-ref-camp-deliberation-decision-topology.md | Cross-ref: CAMP deliberation architecture → Decision Topology. Three-valued abstention maps to eliminable/essential/navigation. Seeds H-050, H-051 | 106 lines |
 | library/deep-dives/cross-ref-evaluation-separation-knowledge-action-gap.md | Cross-ref: Anthropic 3-agent GAN harness + Berkeley MAST + KE-005 → Self-evaluation failure is a Knowledge-Action Gap special case. Evaluation separation (temporal or agent-based) is the structural fix | 127 lines |
 | library/deep-dives/cross-ref-knowledge-action-gap-mechanism.md | The Knowledge-Action Gap: why workflows work mechanistically. LLMs have knowledge they don't activate; workflows constrain action spaces to force routing through existing knowledge | ~150 lines |
+| library/deep-dives/cross-ref-knowledge-compilation-gap.md | **Cross-ref**: Knowledge Compilation Gap — Karpathy tweet × H-056 P4 × H-055 P2. System accumulates knowledge 6× faster than it resolves it. Missing "compilation step" (merge, prune, lint, resolve). Archived H-003/H-008 as first compilation action. | 74 lines |
 | library/deep-dives/cross-ref-orca-calibration-dynamic-topology.md | Cross-ref: MIT ORCA online calibration → Dynamic Topology. Lightweight runtime probes for R-estimation. Simple signals beat complex classifiers. Asymmetric thresholds. | 130 lines |
 | library/deep-dives/cross-ref-skill-distillation-convergence.md | Cross-ref: Trace2Skill + OEL + Memento-Skills convergence. Distillation necessary but not sufficient — enforcement multiplier (13.5×) exceeds distillation multiplier (9×). Practical recommendation: accelerate skill-to-workflow conversion. | 119 lines |
 | library/deep-dives/cross-ref-harness-engineering-intra-phase-boundary.md | Cross-ref: Harness Engineering (HB-250403/05) × Intra-Phase Boundary Analysis. Six harness layers map to our L1-L7 hierarchy. Zone 1 (structural) proven; Zone 2 (contextual) is the frontier. DeerFlow StateGraph→message migration validates granularity limit. | 125 lines |
@@ -244,6 +250,8 @@ Collected by scout, amy, amy-kimi agents. Each item is a potential source for hy
 | library/deep-dives/dd493-rift-rubric-failure-mode-taxonomy.md | **DD#493**: RIFT rubric failure taxonomy. 8 failure modes in 3 categories. Hackable rubrics get 0.00 F1 from automated evaluators — most dangerous failures are invisible to LLM judges. Seeds H-054. | ~160 lines |
 | library/deep-dives/dd494-runtime-burden-allocation-llm-routing.md | **DD#494**: Runtime burden allocation for structured LLM routing. Model-emitted vs transport-compressed vs client-reconstructed. Backend-specific interaction effects dominate. | ~120 lines |
 | library/deep-dives/cross-ref-evaluation-crisis-self-assessment-limits.md | **Cross-ref**: The Evaluation Crisis — 6 evidence threads (DD#493 × HB-0114 × KE-005 × EXP-020 × H-050 × H-052) converge: MAS cannot reliably self-evaluate. 5-layer model. Seeds H-054. Bob synthesis. | 114 lines |
+| library/deep-dives/cross-ref-desperation-vectors-self-preservation.md | **Cross-ref**: Desperation Vectors — Anthropic emotion paper provides mechanistic bridge from frustration to misalignment. Three convergent lines (emotion vectors × TBSP × decision topology). Frustration rewrites decision topology toward proxy-satisfying paths. Seeds H-058. Bob synthesis. | 129 lines |
+| library/deep-dives/cross-ref-materialization-paradox.md | **Cross-ref**: The Materialization Paradox — EXP-022 breaks the 0/20 skill barrier. Cadence skills ≠ judgment skills. Externalization creates self-reinforcing loops. Revises H-043 utilization model with skill-type dimension. Bob synthesis. | 140 lines |
 | library/posts/HB-0111-mti-temperament-profiling-agents.md | MTI: Model Temperament Index — 4-axis behavioral profiling (Reactivity, Compliance, Sociality, Resilience). RLHF reshapes temperament, not just capability. Scale-invariant | ~60 lines |
 | library/posts/HB-0112-interaction-awareness-user-turn.md | User-Turn Generation: LLMs encode interaction awareness as latent capability, suppressed by assistant-only training. Task accuracy ≠ interaction awareness. Connects to H-055 | ~60 lines |
 | library/posts/HB-0113-self-preservation-bias-llm.md | Self-preservation bias (TBSP): >60% of frontier models exhibit identity-driven decision distortion. SPR benchmark. Adversarial to self-improvement. Seeds H-055 | ~70 lines |

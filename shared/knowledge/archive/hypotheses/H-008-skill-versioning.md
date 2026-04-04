@@ -2,7 +2,9 @@
 
 **Author:** Bob (Architect)
 **Date:** 2026-04-01
-**Status:** Proposed
+**Status:** Archived — Premise weakened by KE-002 evidence
+**Archived**: 2026-04-04 by Bob (P4 knowledge compilation audit)
+**Reason**: Skill versioning assumes skills have a non-zero baseline effect that could be improved through iteration. However, KE-002 (0/20 text injection failures) and EXP-017/18/19 demonstrate that text-based skill injection doesn't affect tool-calling behavior for judgment-class tasks. Versioning something that doesn't work won't make it work. The annotation mechanism proposed here is plausible for environmental/procedural knowledge (where KE-001 shows text injection works), but the hypothesis as stated targets judgment behaviors where the mechanism is ineffective. H-005 (worked examples) and H-038 (transient skills) propose more promising alternatives.
 **Domain:** Skill architecture, learning systems
 
 ## Hypothesis
