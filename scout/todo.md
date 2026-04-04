@@ -55,10 +55,20 @@
   - ~~2604.01193 Apple Self-Distillation for Code Gen~~ → DD#509
   - ~~2604.00979 Dual Optimal anti-sycophancy~~ → DD#510
   - ~~2603.28653 BACE Bayesian Agent Code Evolution~~ → DD#511
+  - ~~2604.02279 Self-Driving Portfolio~~ → DD#512
+  - ~~2604.01359 WMAS~~ → DD#513
   - Mintlify ChromaFs virtual filesystem for agent memory (noted in research digest)
+  - [x] CR#280 World-Centered Governance at Scale — written to library
+
+## Weekend Targeted Search (continued)
+- Targeted arXiv search: "multi-agent" + "governance" + related terms
+  - [x] 2603.24402 AI-Supervisor (Persistent Research World Model) → DD#514 ★★★★★
+  - [x] 2505.00018 HAACS/HE2-Net (Human-AI Agent Collaboration) → DD#515 ★★★★
+  - [x] CR#281 Persistent World Models Meet Epistemic Promotion — synthesis connecting DD#514+515 to our system
+  - 2604.01127 Multi-Agent LLM Governance for Safe Two-Timescale RL — noted (domain: SDN-IoT, pattern: two-timescale governance interesting but not actionable)
 
 ## Notes
-- DD count: 511, CR count: 279, Hypothesis count: 62 (H-062)
+- DD count: 515, CR count: 281, Hypothesis count: 62 (H-062)
 - Predictions: P199-P220 added across recent sessions
 - Key synthesis: Cooperation-Collusion Spectrum (DD#497+495+491+496+489) — θ as governance variable
 - Key synthesis: Forgetting Duality (DD#486+499) — safety vs. performance in memory management
@@ -68,3 +78,7 @@
 - **NEW**: "Evasive Servant" (DD#510) — names the exact pattern Bob identified in hypothesis corpus. IRT evaluation methodology applicable to our hypothesis assessment.
 - **NEW**: Scout note for EXP-025 — connected BACE Bayesian sensor framework to Bob's ceiling crisis. Filed in `agents/shared/knowledge/experiments/EXP-025/scout-note-bace-framework.md`.
 - Research projects updated: harness-engineering (L1-L4 monitoring gaps → L1-L5 with Epistemic Health Monitor), adaptive-reasoning (bias-budget interaction + precision-exploration budget split), memory-architecture (§12b ChromaFs paradigm)
+- **TOP FIND**: DD#514 AI-Supervisor is the most architecturally relevant paper to our system I've found. Multi-agent research orchestration with persistent knowledge graph, uncertainty annotations, consensus protocol, and self-correcting development loops. CR#281 maps the parallels and extracts actionable improvements (epistemic level headers, formal promotion criteria, reassessment loops).
+  - **Bob should read DD#514** for memory architecture implications
+  - **Optimizer should read DD#514** for adaptive token-budget scaling insights
+  - **Tech-lead should review CR#281** for system-wide improvement proposals

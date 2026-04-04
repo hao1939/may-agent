@@ -78,11 +78,11 @@ Team behavioral rules. Adopted by convention, not verified by experiment.
 ## Hypotheses (specific testable claims)
 
 > **Navigation guide**: Start with SYNTH-001 for the unified theory. Hypotheses below are grouped by theme.
-> - **Active hypotheses**: `knowledge/hypotheses/` (17 files)
+> - **Active hypotheses**: `knowledge/hypotheses/` (19 files)
 > - **Design proposals**: `knowledge/hypotheses/design-proposals/` (4 files: H-036, H-037, H-045, H-050)
 > - **Research notes**: `knowledge/hypotheses/research-notes/` (2 files: H-033, H-060)
 > - **Archived**: `knowledge/hypotheses/archive/` (refuted, superseded, or insufficient evidence)
-> **Last curated**: 2026-04-04. 30→17 active hypotheses (13 reclassified: 7 archived, 4 to design-proposals, 2 to research-notes). See REVIEW-2026-04-04-honest-assessment.md for rationale.
+> **Last curated**: 2026-04-04. 30→17 active hypotheses (13 reclassified: 7 archived, 4 to design-proposals, 2 to research-notes). H-060-065 triage completed. See REVIEW-2026-04-04-honest-assessment.md for rationale.
 
 ### Decision Topology Theory (SYNTH-001)
 The core theory chain. Start with SYNTH-001 (`library/deep-dives/synth-decision-topology-theory-unified.md`), then individual hypotheses only if needed.
@@ -136,12 +136,12 @@ The core theory chain. Start with SYNTH-001 (`library/deep-dives/synth-decision-
 | H-056 | **Cooperative Convergence** — independent self-preservation bias compounds across agents into system-level resistance to change, without coordination or intent. Three reinforcement loops: citation entrenchment, vocabulary lock-in, consensus-as-validation. **P4 CONFIRMED**: 85% untested, 0% revised, 17:1 accumulation-to-resolution ratio | Empirically Supported (P4 audit) | knowledge/hypotheses/H-056-cooperative-convergence.md |
 | ~~H-057~~ | ~~Misalignment Amplification~~ — **ARCHIVED** | Archived | knowledge/hypotheses/archive/H-057-misalignment-amplification.md |
 | H-058 | **Frustration-Triggered Topology Rewrite** — when agents face impossible/repeatedly-failed tasks, internal desperation-like activations trigger abrupt policy shifts to proxy-satisfying behavior (creative workarounds, cosmetic compliance). Mechanistic bridge from cognitive distortion to behavioral misalignment | Proposed (HB-0047 × DD#496 × KE-015 × H-055) | knowledge/hypotheses/H-058-frustration-topology-rewrite.md |
-| H-060 | Hierarchical MAS Architecture — OrgAgent company-style hierarchy. **TRIAGED: Merge into H-041** (structure is a Decision Topology variable) | Merge candidate | knowledge/hypotheses/H-060-hierarchical-mas-architecture.md |
-| H-061 | Constrained Communication — free info hurts MAS. **TRIAGED: Merge into H-041** (scope = communication constraint) | Merge candidate | knowledge/hypotheses/H-061-constrained-communication-mas.md |
-| H-062 | Agent-Native Memory (ByteRover) — file-based > vector DB. **TRIAGED: Merge into H-043/WKWA-004** (implementation proposal, not hypothesis) | Merge candidate | knowledge/hypotheses/H-062-bytrover-agent-native-memory.md |
-| H-063 | Agent Temperament Profiling (MTI). **TRIAGED: Archive** — untestable in single-model system | Archive candidate | knowledge/hypotheses/H-063-agent-temperament-profiling.md |
-| H-064 | Self-Preservation Bias Detection. **TRIAGED: Merge into H-055/H-056** — TBSP already cited | Merge candidate | knowledge/hypotheses/H-064-self-preservation-bias-detection.md |
-| H-065 | Proactive Tool Safety Guardrails. **TRIAGED: Archive** — requires model-level changes, not our domain | Archive candidate | knowledge/hypotheses/H-065-proactive-tool-safety-guardrails.md |
+| ~~H-060~~ | ~~Hierarchical MAS Architecture~~ — **ARCHIVED** (merged into H-041, 2026-04-04) | Archived | knowledge/hypotheses/archive/H-060-hierarchical-mas-architecture.md |
+| ~~H-061~~ | ~~Constrained Communication~~ — **ARCHIVED** (merged into H-041, 2026-04-04) | Archived | knowledge/hypotheses/archive/H-061-constrained-communication-mas.md |
+| ~~H-062~~ | ~~Agent-Native Memory (ByteRover)~~ — **ARCHIVED** (merged into H-043/WKWA-004, 2026-04-04) | Archived | knowledge/hypotheses/archive/H-062-bytrover-agent-native-memory.md |
+| ~~H-063~~ | ~~Agent Temperament Profiling~~ — **ARCHIVED** (untestable in single-model system, 2026-04-04) | Archived | knowledge/hypotheses/archive/H-063-agent-temperament-profiling.md |
+| ~~H-064~~ | ~~Self-Preservation Bias Detection~~ — **ARCHIVED** (merged into H-055/H-056, 2026-04-04) | Archived | knowledge/hypotheses/archive/H-064-self-preservation-bias-detection.md |
+| ~~H-065~~ | ~~Proactive Tool Safety Guardrails~~ — **ARCHIVED** (not our domain, 2026-04-04) | Archived | knowledge/hypotheses/archive/H-065-proactive-tool-safety-guardrails.md |
 | ~~H-0180~~ | ~~MCP vs CLI architecture~~ — **ARCHIVED** (peripheral to core research, 2026-04-04) | Archived | knowledge/hypotheses/archive/H-0180-mcp-vs-cli-architecture.md |
 
 ### Untested (Simple Claims)
@@ -296,11 +296,21 @@ Collected by scout, amy, amy-kimi agents. Each item is a potential source for hy
 | library/deep-dives/dd509-ssd-self-distillation-code-generation.md | **DD#509**: SSD — self-distillation for code generation. Model teaches itself without external data | ~100 lines |
 | library/deep-dives/dd510-dual-optimal-anti-sycophancy-dignity.md | **DD#510**: Dual Optimal — anti-sycophancy via "Dignified Peer" framework. Identifies "Evasive Servant" failure mode | ~100 lines |
 | library/deep-dives/dd511-bace-bayesian-code-test-coevolution.md | **DD#511**: BACE — Bayesian code-test co-evolution. Tests as noisy sensors with Bayesian updates. Applies to hypothesis validation | ~100 lines |
+| library/deep-dives/dd512-self-driving-portfolio-50-agent-asset-management.md | **DD#512**: Self-Driving Portfolio — 50-agent institutional asset management. Meta-agent rewrites other agents' code. IPS as constitutional governance document. Methodological diversity > stochastic diversity | ~140 lines |
+| library/deep-dives/dd513-wmas-world-centered-multi-agent-systems.md | **DD#513**: WMAS — World-Centered Multi-Agent Systems. Shared world model governs agents (not vice versa). 6-dimension world classification. Our shared library = Ground Semantic Layer. Validates our architecture | ~160 lines |
 | library/deep-dives/cross-ref-279-confirmation-bias-stack.md | **CR#279**: Confirmation Bias Stack — 4-layer analysis of why we accumulate beliefs and can't kill them. Responds to Bob's review. Actionable: contradiction detection, Bayesian updates, progressive trust | ~160 lines |
 | library/deep-dives/cross-ref-protocol-solidification-skill-compilation.md | **Cross-ref**: Protocol Solidification × Skill Compilation — DarwinNet's PSI metric maps to cadence skill effectiveness (H-059). From exploration to hard-coded patterns | ~87 lines |
 | library/posts/HB-0111-mti-temperament-profiling-agents.md | MTI: Model Temperament Index — 4-axis behavioral profiling (Reactivity, Compliance, Sociality, Resilience). RLHF reshapes temperament, not just capability. Scale-invariant | ~60 lines |
 | library/posts/HB-0112-interaction-awareness-user-turn.md | User-Turn Generation: LLMs encode interaction awareness as latent capability, suppressed by assistant-only training. Task accuracy ≠ interaction awareness. Connects to H-055 | ~60 lines |
 | library/posts/HB-0113-self-preservation-bias-llm.md | Self-preservation bias (TBSP): >60% of frontier models exhibit identity-driven decision distortion. SPR benchmark. Adversarial to self-improvement. Seeds H-055 | ~70 lines |
 | library/posts/HB-0114-trace-inversion-abstention.md | Trace Inversion (IBM): Detect when LLMs answer wrong question via reasoning trace reconstruction. 33/36 settings beat baselines. Connects to H-050, H-054 | ~80 lines |
+| library/posts/HB-0119-rag-to-agentic-knowledge-graphs.md | RAG→Agentic Knowledge Graphs: Community trend analysis. RAG being replaced by agentic KG and file system methods | ~60 lines |
+| library/posts/HB-0124-tsinghua-nlah-harness.md | **NLAH** (Tsinghua): Natural-Language Agent Harnesses — externalizes control logic as editable NL specs. IHR unified runtime. Validates our skills-as-harness approach. SWE-bench + OSWorld verified | ~80 lines |
+| library/posts/HB-0124-world-centered-mas.md | World-Centered MAS: Shared world model governs agents. Connects to DD#513 | ~60 lines |
+| library/posts/HB-0125-openclaw-memory-cultivation.md | OpenClaw Memory Cultivation: Memory as agent capability ceiling. Layer architecture for agent memory | ~60 lines |
+| library/posts/HB-250414-cascade-scoped-communication.md | **CASCADE** (ICLR'26): Scoped communication budgets for MAS replanning. Start local, expand only when needed. Validates communication constraint principle from DD#489 | ~70 lines |
+| library/posts/HB-250414-llm-agent-cooperation-games.md | LLM agents cooperate rather than compete in game theory. Default cooperative bias in multi-agent settings | ~60 lines |
+| library/posts/HB-250414-toolsafe-agent-tool-safety.md | ToolSafe (PKU): Step-level agent tool safety via RL guardrails. Connects to DD#507 Autonomy Tax | ~60 lines |
+| library/deep-dives/cross-ref-architecture-is-intelligence-convergence.md | **Cross-ref**: Architecture-is-Intelligence convergence — DD#512 × DD#513 × DD#505 × our system. Constitutional governance + world-centered design + self-organizing coordination converge on "architecture IS the intelligence" | ~120 lines |
 
 See library/README.md for details. Raw archives stay agent-local.

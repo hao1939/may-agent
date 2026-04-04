@@ -17,7 +17,7 @@
 - ✅ **System waste analysis** — 34% of sessions had 0 ops (360/1074 in 7d). True waste 13% after excluding skipIfIdle. Report at `workspace/finding-system-waste-0404.md`.
 - ✅ **maxTurns guardrail deployment** — All agents now at maxTurns: 40. Config on disk, cron reloaded. **Also fixed:** maxTurns restore bug — sessions lost their turn limit after process restart. Fix in manager.ts + persistence.ts (uncommitted).
 - **Coach training-sprint reliability** — INVESTIGATED: 60% interrupt rate caused by `gracefulRestart()` aborting sessions. Root cause shared with interrupted-waste issue. Wrote detailed finding: `workspace/finding-training-sprint-reliability-0404.md`. Quick fix: convert cron entry from run-agent-task to direct workflow dispatch (saves wrapper LLM session). Medium fix: move planning mechanics to JS.
-- ✅ **Zombie-cleanup cron** — VERIFIED WORKING. Handler exists at `agents/may/handlers/zombie-cleanup.ts`, properly registered. DB has 0 zombies currently. My Phase 2 fix (DB-only zombie cleanup) is deployed in manager.ts.
+- ✅ **Zombie-cleanup cron** — VERIFIED + ENHANCED. Handler exists, DB has 0 zombies. Phase 2 fix (DB-only zombie cleanup) deployed. **NEW**: Found and fixed zombie archival gap — 109 terminal sessions (42.6 MB) in active dir never moved to history. Added Phase 2 (archive terminal sessions) to `cleanupZombieSessions()`. Uncommitted in `src/lib/manager.ts`.
 - **Request aborted waste** — P0 ROOT CAUSE FOUND: `gracefulShutdown()` and `gracefulRestart()` in `src/app/may.ts` cancel all running sessions. `resumeStaleSessions()` then finds nothing to resume. Fix: skip cancel loop in `gracefulRestart()` (hot-reload path). 15.7% of ops wasted (2066/wk). See `workspace/finding-interrupted-waste-0404.md`.
 - **Skip rate investigation** — Skip rate stable: 50w 12%, 200w 6.5%. Monitoring continues.
 - **Skill lifecycle weekly** — Cooldown (last: Mar 30, next: Apr 6). 54 skills, 5 saturations. Weekly only.
@@ -56,3 +56,5 @@ common-sense-status.md compaction (186KB→89KB, 52% reduction — archived 25 s
 Findings archived in `workspace/finding-*.md` and `workspace/brief-*.md`.
 
 - [x] **[tool-quality-regression]** RESOLVED: bash:other regression was misclassification. Added 5 new categories (exit-code-nonzero, test-failure, cmd-aborted, env-mismatch, git-error). bash:other reduced 109→8 (7d). See tool-quality-report.md.
+- [x] **[tool-quality-regression-2]** RESOLVED (2026-04-04 17:15): bash:exit-code-nonzero 4 (was 0). All from coach training sprints — `cat` on missing scenario files, `cp -r` failures during gym runs. Expected behavior during experimentation, not systemic. No fix needed.
+- [x] **[turn-budget]** DEPLOYED (2026-04-04 17:15): Added turn-budget section to `heartbeat.md` — explicit "pick ONE task, plan to finish by turn 25, exit partial at turn 20+" guidance. 3 turn-limit errors in 12h = 99 ops wasted. Also addresses May's P1 request (req:8d9f1961).

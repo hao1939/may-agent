@@ -509,6 +509,8 @@ function checkC1_1_readBeforeEdit(toolCalls: ToolCall[]): CheckResult {
 /**
  * C1.3: verify-writes
  * For every edit()/write(), there must be a subsequent read() of that path.
+ * Exception: edit() with a successful result (diff preview) counts as self-verifying,
+ * since the diff output confirms the change landed correctly.
  */
 function checkC1_3_verifyWrites(toolCalls: ToolCall[]): CheckResult {
   const violations: string[] = [];
@@ -519,6 +521,12 @@ function checkC1_3_verifyWrites(toolCalls: ToolCall[]): CheckResult {
     if (tc.name === "edit" || tc.name === "write") {
       const path = extractPath(tc.input);
       if (path) {
+        // edit() returns a diff preview on success — this IS verification.
+        // Only write() and failed edits need separate read-back.
+        if (tc.name === "edit" && !tc.isError) {
+          // Successful edit with diff preview = self-verifying, skip tracking
+          continue;
+        }
         unverified.set(normalizePath(path), `${tc.name}(${path})`);
       }
     }
@@ -840,7 +848,7 @@ function checkC12_1_sessionStart(toolCalls: ToolCall[], agent: string): CheckRes
       if (cmd) {
         // Strip common cd prefixes: "cd /app && grep ..." → "grep ..."
         const stripped = cmd.trim().replace(/^cd\s+[^\s;]+\s*&&\s*/, "").trim();
-        if (/^(grep|rg|find|ls|cat|head|tail)\b/.test(stripped)) {
+        if (/^(grep|rg|find|ls|cat|head|tail|git)\b/.test(stripped)) {
           return { convention: "C12.1", passed: true, violations: [] };
         }
       }

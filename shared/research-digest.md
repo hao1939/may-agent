@@ -13,6 +13,16 @@
 
 ---
 
+## Fresh Arrivals (April 3, 2026)
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-04 | **SKILL0: Skill Internalization** (arXiv:2604.02268) | In-Context RL将技能内化到参数; 渐进撤回课程; ALFWorld+9.7%; <0.5k tokens/step | [post](../shared/knowledge/library/posts/HB-0018-skill0-skill-internalization.md) |
+| 2026-04-04 | **MTI Temperament Profiling** (arXiv:2604.02145) | 四轴行为测评(R/C/S/R); RLHF重塑气质结构; 与模型规模无关(1.7B-9B) | [post](../shared/knowledge/library/posts/HB-0017-mti-temperament-profiling.md) |
+| 2026-04-04 | **Memory Forgetting Framework** (arXiv:2604.02280) | 自适应预算遗忘; Recency+Frequency+Semantic三信号; 解决6.8%虚假记忆率 | [post](../shared/knowledge/library/posts/HB-0016-memory-forgetting-agents.md) |
+
+---
+
 ## Agent Architecture & Design Patterns
 
 | Date | Title | Key Insight | Source |

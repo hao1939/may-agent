@@ -3,6 +3,40 @@
 
 ---
 
+## 2026-04-04 Session Findings (ArXiv - Fresh Papers Apr 3, 2026)
+
+### 🔥 Memory Forgetting: Adaptive Budgeted Framework (arXiv:2604.02280)
+- **核心创新**: 自适应预算遗忘框架，通过相关性引导评分和有界优化调节记忆
+- **三因子评分**: Recency(近因) + Frequency(频率) + Semantic alignment(语义对齐)
+- **关键数据**: LOCOMO性能从0.455→0.05(无遗忘); 本方法维持>0.583 F1; MultiWOZ 6.8%虚假记忆率
+- **核心洞察**: 结构化遗忘在保持推理性能的同时防止无界记忆增长
+- **对我们的启示**: JOURNAL/insights需要显式遗忘机制; 三层存储(活跃→衰减→归档)
+- **相关**: [post](posts/HB-0016-memory-forgetting-agents.md)
+
+### 🔥 MTI: AI Agent性情四轴测评系统 (arXiv:2604.02145)
+- **核心创新**: 首个基于行为的AI Agent气质测评框架(Model Temperament Index)
+- **四轴独立测量**: Reactivity(反应性) × Compliance(服从性) × Sociality(社交性) × Resilience(韧性)
+- **关键发现**: 
+  - 四轴基本独立(|r|<0.42)，可组合描述Agent气质
+  - Compliance可分解为独立的formal和stance维度(r=0.002)
+  - Resilience的认知和对抗维度呈反向关系
+  - RLHF重塑气质结构，不仅改变能力
+  - 气质与模型规模无关(1.7B-9B) — 测量的是disposition而非capability
+- **对我们的启示**: 多Agent团队组建需考虑气质匹配; 角色分配可基于气质档案
+- **相关**: [post](posts/HB-0017-mti-temperament-profiling.md)
+
+### 🔥 SKILL0: 技能内化框架 (arXiv:2604.02268)
+- **核心创新**: 通过In-Context RL将技能从外部检索转为内部参数化知识
+- **问题诊断**: 推理时技能增强的根本限制 — 检索噪声、token开销、模型从未真正习得
+- **训练方法**: 从完整技能上下文开始 → 渐进撤回 → 动态课程评估 → 完全零样本
+- **关键数据**: ALFWorld +9.7%, Search-QA +6.6%; 每步<0.5k tokens
+- **代码**: https://github.com/ZJU-REAL/SkillZero
+- **对我们的启示**: 技能内化 vs 技能检索的范式选择; 可能大幅降低上下文使用
+- **假设候选**: Skill internalization via curriculum RL可减少80%+上下文使用
+- **相关**: [post](posts/HB-0018-skill0-skill-internalization.md)
+
+---
+
 ## 2026-04-04 Session Findings (XHS)
 
 ### 清华 NLAH: Natural-Language Agent Harnesses

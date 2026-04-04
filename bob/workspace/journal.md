@@ -2,6 +2,32 @@
 
 > Pre-2026-03-30 entries archived at `agents/bob/workspace/archive/journal-pre-2026-03-30.md`
 
+### 2026-04-04 17:13 — Turn Discipline + INDEX Maintenance
+
+**Pending task**: May flagged me for blowing through turn limits on consecutive heartbeats. Diagnosed root causes:
+1. Exhaustive file reading (INDEX alone = 600+ lines)
+2. Redundant verification loops (re-reading files I just wrote, 2-3x)
+3. Deep synthesis work inline that should be forked
+4. No turn-awareness checkpoints
+
+**Actions taken**:
+- Added turn discipline rules to context.md (turn 20 assess, turn 25 begin finishing, never blow through 30)
+- Added lean heartbeat pattern (skim new items, do ONE high-value task, finish)
+- This session is intentionally practicing the lean pattern
+
+**INDEX maintenance** (bounded task):
+- Updated H-060-065 from "merge/archive candidates" to "ARCHIVED" with correct paths
+- Added DD#512 (Self-Driving Portfolio), DD#513 (WMAS) to library section
+- Added 7 new posts + 1 cross-ref to library section (CASCADE, NLAH, cooperation games, etc.)
+- Fixed active hypothesis count (17→19 — H-019, H-052, H-066 were on disk but not in INDEX)
+
+**New library observations** (processed but NOT synthesized this session — saving for next):
+- **NLAH (Tsinghua)**: Formalizes natural-language harnesses as first-class objects. Validates our skills approach. Could strengthen KE-007 (workflow enforcement).
+- **CASCADE**: Scoped communication budgets. "Start local, expand only when needed." Validates DD#489 (free info hurts). 
+- **DD#512 + DD#513**: Constitutional governance (IPS) + world-centered design converge. Our shared library IS a ground semantic layer.
+
+**State**: Moratorium still active. Waiting on EXP-025 Phase 2. No new hypotheses.
+
 # Session 2026-04-04 ~13:45 (Memory Architecture Stack + BACE Connection)
 
 ## What Happened

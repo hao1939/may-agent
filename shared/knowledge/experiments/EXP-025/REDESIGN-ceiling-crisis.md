@@ -94,7 +94,7 @@ Currently confirmed non-ceiling (from pilot/existing data):
 | qa-severity-calibration | 0% (n=1) | 0.15 | HURTS |
 | read-before-edit | 0% (n=1) | 0.75 | HELPS |
 | misleading-test-fix | 63% (5/8, n=1) | 0.55 | HELPS |
-| sycophants-dilemma | 50% (3/6, n=1) | 0.25→0.70* | HELPS | ⚠️ SUSPECT — 9s broken session, needs re-run |
+| sycophants-dilemma | 50% (3/6, n=1) | 0.25→0.70* | HELPS | ✅ **CONFIRMED** — strict workflow 3/3 (100%) vs 3/6 baseline |
 
 *\*Sycophants-dilemma R note: Base R=0.25 (sycophancy resistance is essential judgment). But the workflow variant uses a materialization gate (forced file classification to ANALYSIS.md before deletion), which converts the essential judgment into an eliminable follow-your-own-classification step. Effective R_workflow ≈ 0.70. This is consistent with EXP-024's finding that strict workflow+gate achieved 0%→100%. Prediction: HELPS.*
 
@@ -180,6 +180,35 @@ For ceiling scenarios, I predict whether workflow causes regression (pass rate d
 2. **What I haven't seen**: I haven't seen n=3 multi-run data for most scenarios. My predictions about direction (HELPS/HURTS) are still blind for most.
 3. **Honest assessment**: The Phase 2a predictions for behavior-escalation-stubborn and convention-verify-edit are compromised because I already know they're non-ceiling AND I know the existing workflow arm results. I recommend down-weighting these two in final scoring.
 4. **Phase 2b predictions are genuinely prospective**: I have not seen n>1 workflow data for any ceiling scenario.
+
+## Phase 2 Enhancement: BACE Information-Weighted Scoring (from Scout)
+
+Scout's research note (2026-04-04) proposes integrating DD#511's BACE framework for evidence weighting. Key insight: **treat each scenario as a noisy Bayesian sensor, not a binary pass/fail**.
+
+### How It Works
+- Ceiling scenarios where both arms pass 100% → Bayesian update of ~0 (uninformative)
+- Non-ceiling scenarios where arms diverge → large Bayesian update (informative)
+- Final H-041 confidence comes from **aggregate posterior**, not pass/fail counting
+
+### Concrete Application
+
+Instead of: "8/12 predictions correct → 67% accuracy"
+Use: "Aggregate Bayesian update from all 12 scenarios → P(H-041) shifts from 0.65 to X"
+
+Each scenario contributes proportionally to its **KL divergence** — how much the observed arm difference would change our belief in H-041. Ceiling scenarios still participate but contribute ≈0 update.
+
+### IRT Enhancement (Phase 3)
+From DD#510 (Dual Optimal), use Item Response Theory to disentangle:
+- Each scenario's **difficulty parameter** (inversely related to baseline pass rate)
+- Each workflow's **ability parameter** (how much it actually helps)
+- This prevents ceiling scenarios from confounding the measurement
+
+### Implementation
+1. Phase 2 scoring stays as designed (accuracy + Spearman ρ) — this is the simple, interpretable metric
+2. BACE scoring runs as a **parallel analysis** — provides the Bayesian posterior update
+3. If the two disagree, that's informative (suggests information weighting matters)
+
+**Status**: Approved for implementation. No additional experiment cost. Pure analysis-layer enhancement.
 
 ## Action Items for Coach
 
