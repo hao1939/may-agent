@@ -132,11 +132,15 @@ export class ChatSession {
       return;
     }
 
-    // ── @agent prefix — direct agent invocation (ephemeral) ──────────
+    // ── @agent prefix — route through May's session for orchestration ─
     const [targetAgent, agentMessage] = parseAgentPrefix(trimmed);
     if (targetAgent) {
       this.logHumanInput(trimmed, source, targetAgent);
-      this.startDirectSession(targetAgent, agentMessage, source);
+      // Route through May so she can orchestrate via `agents fork`.
+      // Fork keeps May responsive; she can peek/monitor and report back.
+      const delegationMsg = `[Human asked @${targetAgent}]: ${agentMessage}\n\nFork ${targetAgent} to handle this. Use \`agents fork\` so you stay responsive, then peek at the result and report back to me.`;
+      this.sendRetryDepth = 0;
+      this.sendMessage(delegationMsg, source);
       return;
     }
 
