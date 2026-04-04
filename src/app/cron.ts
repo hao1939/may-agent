@@ -493,9 +493,10 @@ export class Cron {
     }
     const current = this.agentErrors.get(agentName)!;
     if (current.count === Cron.CB_TRIP_THRESHOLD) {
-      this.onError?.(
-        `Circuit breaker TRIPPED for ${agentName} — ${current.count} consecutive errors. Backing off for ${Cron.CB_PROBE_INTERVAL_MS / 60000}m.`,
-      );
+      const msg = `Circuit breaker TRIPPED for ${agentName} — ${current.count} consecutive errors. Backing off for ${Cron.CB_PROBE_INTERVAL_MS / 60000}m.`;
+      this.onError?.(msg);
+      // Push notification so May/human sees it (not just a log line)
+      this.notify?.(msg);
     }
   }
 
