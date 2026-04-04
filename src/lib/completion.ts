@@ -11,7 +11,7 @@
 import type { SessionInfo } from "./types.js";
 import type { ActiveSession, RegisteredAgent } from "./manager-utils.js";
 import { formatDuration } from "./manager-utils.js";
-import { hasFinishToolCall, extractFinishParams } from "./manager-retry.js";
+import { extractFinishParams } from "./manager-retry.js";
 import { isOverflowError, extractProgress, writeProgressFile } from "./overflow.js";
 
 // ── Error patterns that are post-finish artifacts (not real failures) ──
@@ -54,7 +54,7 @@ export function detectErrors(session: ActiveSession): void {
     const hasSubstance = content.some(
       (block: any) => (block?.type === "text" && block.text?.trim()) || block?.type === "toolCall",
     );
-    if (!hasSubstance && !hasFinishToolCall(messages)) {
+    if (!hasSubstance && !lastTurnCalledFinish(messages)) {
       const err =
         "Model returned an empty response (0 output tokens). This usually indicates a model/API issue — try again or switch models.";
       session.error = err;
@@ -66,15 +66,36 @@ export function detectErrors(session: ActiveSession): void {
 // ── Step 2: Clear errors that are post-finish artifacts ───────────────
 
 /**
- * If the agent successfully called finish(), certain errors are artifacts
- * of the post-finish cleanup (deliberate abort, empty trailing response, etc.)
- * and should not be treated as session failures.
+ * Check if the last assistant message in the conversation called finish().
+ * Unlike hasFinishToolCall() which scans all messages, this only checks
+ * the most recent assistant turn — critical for persistent/chat sessions
+ * where finish() may have been called in earlier turns.
+ */
+function lastTurnCalledFinish(messages: any[]): boolean {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const msg = messages[i];
+    if (msg.role === "assistant" && Array.isArray(msg.content)) {
+      for (const block of msg.content) {
+        if (block?.type === "toolCall" && block.name === "finish") return true;
+      }
+      return false; // Found the last assistant message, finish not in it
+    }
+  }
+  return false;
+}
+
+/**
+ * If the agent successfully called finish() in the current turn, certain
+ * errors are artifacts of the post-finish cleanup (deliberate abort, empty
+ * trailing response, etc.) and should not be treated as session failures.
  *
- * Single-pass replacement for the three scattered clearing blocks.
+ * Only checks the last assistant turn — not the full history. This prevents
+ * persistent/chat sessions from silently swallowing empty responses on
+ * subsequent turns just because finish() was called in a prior turn.
  */
 export function clearPostFinishErrors(session: ActiveSession): void {
   const messages = session.agent.state.messages;
-  if (!hasFinishToolCall(messages)) return;
+  if (!lastTurnCalledFinish(messages)) return;
 
   // Merge: prefer session.error (set by MAX_TURNS, STUCK_TERMINATE) over
   // the generic "Request was aborted." from AbortController.
