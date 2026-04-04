@@ -10,6 +10,7 @@ import { join } from "node:path";
 import { formatDuration } from "./manager-utils.js";
 import type { RegisteredAgent, ActiveSession } from "./manager-utils.js";
 import { loadAllSessionMetasAsync, listWorkflowRuns, readWorkflowRun } from "./persistence.js";
+import { getDb } from "./requests.js";
 import type {
   ManagerHealthReport,
   HealthActiveSession,
@@ -78,7 +79,7 @@ export async function computeAuditHealth(ctx: HealthContext, _opts?: AuditHealth
     if (session.startedAt >= oneDayAgo) sessionsLast24h++;
   }
 
-  // 2. Unevaluated sessions
+  // 2. Unevaluated sessions — check both filesystem evals and DB evaluations table
   const evalDir = join(persistDir, "evaluations");
   const evaluatedIds = new Set<string>();
   if (existsSync(evalDir)) {
@@ -89,6 +90,14 @@ export async function computeAuditHealth(ctx: HealthContext, _opts?: AuditHealth
     } catch {
       /* best-effort */
     }
+  }
+  // Also include sessions evaluated in the DB (evaluations table)
+  try {
+    const db = getDb(persistDir);
+    const dbEvalRows = db.prepare("SELECT DISTINCT sessionId FROM evaluations").all() as Array<{ sessionId: string }>;
+    for (const row of dbEvalRows) evaluatedIds.add(row.sessionId);
+  } catch {
+    /* best-effort — DB may not be available */
   }
 
   const META_AGENTS = EVAL_SKIP_AGENTS;
