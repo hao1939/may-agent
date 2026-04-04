@@ -1,6 +1,42 @@
 
 ---
 
+### 2026-04-04 Session 252c (s_1775292320229_8 restart) — Housekeeping & Cross-linking
+
+**Context:** Session restart. Verified all deliverables from 252+252b. Added forward link from CR#277→CR#278. Read Bob's hypothesis corpus review (REVIEW-2026-04-04-honest-assessment.md) — noted hypothesis moratorium recommendation. Respected it: did NOT generate H-061 for multi-agent write conflicts despite identifying the gap. Waiting for Saturday batch (~20:00 UTC).
+
+---
+
+### 2026-04-04 Session 252b (s_1775292320229_8 continued) — Multi-Agent Memory Governance
+
+**Context:** Continued from Session 252. Used weekend downtime for targeted search: "What papers address cross-agent memory routing?" (Gap #1 from CR#277).
+
+**Output:**
+- DD#503: Governed Memory (2603.17787) — Production architecture from Personize.ai. 4-layer system: dual memory store + governance routing (fast/full modes) + progressive context delivery (50% token reduction) + quality feedback. 99.6% fact recall, 92% governance precision. **In production.** ★★★★
+- DD#504: RCR-Router (2508.04903) — Formalizes role-aware context routing: each agent gets different memory slices based on role + task stage + token budget. 25-47% token reduction. ★★★
+- CR#278: Multi-Agent Memory Governance — Synthesized complete 6-layer stack from L0 (dual store) through L5 (quality feedback). Extends CR#277 from single-agent to multi-agent. Identifies new Gap #4: multi-agent write conflicts.
+- Updated memory-architecture-proposal.md §12 with design recommendations: role-specific views, progressive delivery, dual memory model, governance layer.
+- Also noted MemFactory (2603.29493) as tooling/infrastructure paper for learned memory policies.
+
+**Key insight:** The memory literature is converging on a layered architecture strikingly similar to our tiered proposal. The biggest remaining gap isn't retrieval or gating — it's **governance**: which agent gets what knowledge, under what policies, with what quality guarantees. This is the thesis of CR#278.
+
+---
+
+### 2026-04-04 Session 252 (s_1775292320229_8) — Weekend Backlog: Memory Control Loop
+
+**Context:** Saturday, no new arXiv. Covered 5 remaining March cs.AI leads. Found 2 already had DDs (#425 CGAE, #426 Atlas), 1 irrelevant (QSC), wrote 2 new DDs.
+
+**Output:**
+- DD#501: CraniMem — neurocognitive write-gating + bounded episodic buffer + KG consolidation. Near-zero noise drop (0.004-0.022) across 4 LLMs. Has PyPI package. ★★★★
+- DD#502: Store Routing — first formal treatment of read-routing as cost-sensitive decision. Oracle routing: +5.4% accuracy, 62% fewer tokens vs uniform retrieval. ★★★★½
+- CR#277: The Complete Memory Control Loop — synthesized 4 phases (WRITE/STORE/READ/FORGET) from DD#501, DD#502, DD#426, DD#499, DD#486. All four phases map to our Memory Architecture Proposal tiers.
+- Updated memory-architecture-proposal.md with Section 11 (research update) connecting new papers to implementation plan.
+- All March backlog now ✓ covered.
+
+**Key insight:** Write-gating (CraniMem) and read-routing (Store Routing) are complementary — one filters what enters memory, the other filters what exits. Together they implement the full information lifecycle our system needs. A fixed 3-store read policy (skip episodic for most queries) is the lowest-effort highest-impact starting point.
+
+---
+
 ### 2026-04-04 Session 251 (s_1775277916536_4) — Between-Batch Synthesis: The Misalignment Stack
 
 **Focus:** Saturday morning between batches (Friday batch covered, Saturday batch not yet posted). Used the gap to produce cross-paper synthesis.

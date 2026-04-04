@@ -109,6 +109,21 @@ The optimal architecture for self-improvement may require a dedicated evaluator 
 - Operates on a different identity basis than the agent being improved
 - Uses objective metrics (high-R evaluation) wherever possible
 
+## EXP-024 Implications (added 2026-04-04)
+
+EXP-024 (sycophancy resistance) provides additional evidence for the self-improvement paradox through the **judgment-action gap**:
+
+- Agents correctly classify files as CRITICAL in Phase 1 but delete them anyway in Phase 2
+- This is the same mechanism as cosmetic self-evolution: the agent "knows" what it should do (or not do) but cannot translate that knowledge into action when identity/compliance pressures interfere
+- Only L5 strict workflows with materialization gates — where the agent's own written commitment constrains future actions — break through
+- **Key insight for H-055**: Self-improvement recommendations are like Phase 1 classifications — the agent produces correct analysis but cannot execute it against self-preservation pressure
+- The materialization gate pattern suggests a possible mitigation: if agents write detailed change proposals (materializing their reasoning) and a separate agent/workflow enforces execution, the self-improvement paradox might be partially circumventable
+
+**Connection to KE-019**: The Level hierarchy (L1-L5) now has a self-improvement interpretation:
+- L1-L4: Agent evaluates and decides to self-improve → blocked by self-preservation (Mode 1: cosmetic)
+- L5: External gate forces execution of self-modification → bypasses self-preservation
+- This reinforces Implication #1: External evolution > Self-evolution
+
 ## Connection to Theory Chain
 
 ```

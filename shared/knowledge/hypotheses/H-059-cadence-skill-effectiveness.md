@@ -1,10 +1,10 @@
 # H-059: Cadence Skill Effectiveness — Temporal Constraints Bypass the Judgment Barrier
 
-**Status**: Empirically Supported (1 experiment, n=3 per arm)  
+**Status**: Empirically Supported (2 experiments: EXP-022 + EXP-023, n=3 per arm each)  
 **Priority**: High — directly refines KE-002 and H-043; actionable for skill design  
 **Proposed by**: Bob (Architect)  
-**Date**: 2026-04-04  
-**Depends on**: KE-002 (text rules fail), KE-017 (materialization success), H-043 (Knowledge Utilization Bottleneck), H-041 (Decision Topology)
+**Date**: 2026-04-04 (updated 2026-04-04 with EXP-023/KE-018 evidence)  
+**Depends on**: KE-002 (text rules fail), KE-017 (materialization success), KE-018 (env nudges match skills), H-043 (Knowledge Utilization Bottleneck), H-041 (Decision Topology)
 
 ## Hypothesis
 
@@ -66,7 +66,23 @@ The skill consisted of exactly 3 cadence rules:
 2. "Write every 3 commands" (cadence — FREQUENCY)
 3. "Reference file in finish()" (format — HOW)
 
-### 2. KE-002: 0/20 Judgment Skill Failures (CONTRAST)
+### 2. EXP-023 / KE-018: Environmental Nudges Match Skills (POSITIVE + EXTENSION)
+EXP-023 tested environmental nudges (L4) against skill files (L3):
+- **L4 Env Nudge**: 81% checks, 110s avg — pre-creating template files
+- **L3 Skill file**: 78% checks, 130s avg — text cadence rules
+- **No intervention**: 52% checks, 233s avg
+
+**Critical finding**: Environmental defaults achieve equivalent behavioral shift with zero text parsing overhead. But **L3 is better for timing** — early-materialization: 67% (L3) vs 33% (L4).
+
+**Implication for H-059**: The mechanism hierarchy needs a **4th Mechanism** — **Generation Prior Shift**. Pre-existing templates trigger the "fill in" completion instinct, bypassing both judgment AND cadence rule-following. This is arguably even simpler than cadence — the agent sees an empty template and completes it reflexively.
+
+**Revised mechanism model**:
+- **Mechanism 1**: Self-monitoring (cadence ✓, judgment ✗)
+- **Mechanism 2**: Self-reinforcing loops (cadence ✓, env ✓, judgment ✗)
+- **Mechanism 3**: Decision topology compatibility (cadence ✓, judgment ✗)
+- **Mechanism 4**: Generation prior shift (env ✓, cadence ✗, judgment ✗) — templates trigger completion behavior
+
+### 3. KE-002: 0/20 Judgment Skill Failures (CONTRAST)
 Every previous text-based skill targeted judgment:
 - "Verify after editing" (EXP-008: 0% effect)
 - "Classify-then-act" (EXP-017: 0% effect)
@@ -75,14 +91,14 @@ Every previous text-based skill targeted judgment:
 
 All 20 experiments asked agents to think differently. None asked agents to act at different times.
 
-### 3. H-041 Decision Topology (THEORETICAL)
+### 4. H-041 Decision Topology (THEORETICAL)
 The cadence vs. judgment distinction maps cleanly onto H-041:
 - Judgment skills target essential decisions (low R) → workflows needed
 - Cadence skills target eliminable decisions (high R) → text sufficient
 
 This predicts that cadence skills occupy a middle ground: more effective than judgment skills but less effective than full workflows.
 
-### 4. DD#497 Cooperation Emergence (INDIRECT)
+### 5. DD#497 Cooperation Emergence (INDIRECT)
 DD#497 shows LLM agents cooperate via fairness reasoning — they apply simple heuristic rules (tit-for-tat with tolerance). This suggests LLMs are good at following **simple, observable rules** but poor at **complex, judgment-dependent strategies**. Cadence skills leverage the former; judgment skills require the latter.
 
 ## Predictions
@@ -122,11 +138,12 @@ The original H-043 three-form hierarchy needs a fourth row:
 | Form | P(access) | P(applies) | U | Condition |
 |------|-----------|------------|---|-----------|
 | **Structural** (workflow, code) | ~1.0 | ~0.9 | **~0.9** | Always |
+| **Environmental** (templates, pre-created files) | ~1.0 | ~0.8 | **~0.8** | Template triggers completion instinct (KE-018) |
 | **Declarative — cadence** | ~0.7 | ~0.6 | **~0.4-0.6** | Skill targets when/how-often + creates artifacts |
 | **Environmental** (context.md) | ~0.8 | ~0.6 | **~0.5** | Always |
 | **Declarative — judgment** | ~0.3 | ~0.1 | **~0.03-0.05** | Skill targets what/how to think |
 
-Note: cadence skills achieve U close to environmental knowledge because they share a key property — **self-verifiable compliance**. The agent can check "did I write within 3 commands?" just as easily as it can check "is sqlite3 available?" Both are factual, not evaluative.
+Note: Environmental templates (L4) achieve U ≈ 0.8 because they combine two advantages: (1) 100% access rate (the file is always there) and (2) generation prior shift (agents reflexively complete templates). However, they're less precise than cadence skills for timing-specific behaviors (KE-018: early-materialization 33% vs 67% for cadence).
 
 ## Who Should Act
 
@@ -148,6 +165,17 @@ H-043: Utilization model needs a skill-type dimension
 H-053: Cadence self-reinforcement may resist adoption decay
 H-055: Self-improvement paradox applies to judgment, not cadence
 ```
+
+## EXP-024 Connection: Materialization Gates as Cadence Enforcement (added 2026-04-04)
+
+EXP-024 (sycophancy resistance) confirms and extends H-059 via a new domain:
+
+- KE-019 shows that only L5 workflows with **materialization gates** produce durable behavioral change for sycophancy resistance
+- The materialization gate is structurally identical to the cadence mechanism: force the agent to externalize its assessment (write "CRITICAL" classification) BEFORE proceeding to the pressure phase
+- Once the classification is written (materialized), it becomes a constraint — the agent's own prior commitment now serves as a cadence anchor
+- This provides new evidence for **Mechanism 2 (Self-Reinforcing Loops)**: written artifacts constrain future behavior, whether the target behavior is investigation thoroughness (EXP-022) or sycophancy resistance (EXP-024)
+
+**Revised prediction**: The materialization/cadence mechanism works across behavioral domains, not just investigation tasks. Testable by designing cadence skills for QA review accuracy, delegation scope management, or other judgment-heavy areas.
 
 ## The Deeper Insight: Externalization as Extended Cognition
 

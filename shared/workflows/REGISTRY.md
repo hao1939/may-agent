@@ -1,20 +1,30 @@
 # Workflow Registry
 
 **Owner**: Optimizer (accountable for quality, deduplication, effectiveness tracking)
-**Last audit**: 2026-03-30T21:10
+**Last audit**: 2026-04-04T09:30
 
-## Shared Workflows (available to all agents)
+## Shared Workflows (active — available to all agents)
 
 | Name | File | Lines | Purpose |
 |------|------|-------|---------|
-| `code-review-loop` | `shared/workflows/code-review-loop.ts` | 134 | Delegate code to coder, QA reviews, retry once on fixable issues |
-| `context-learn` | `shared/workflows/context-learn.ts` | 276 | Extract and persist lessons from completed work |
-| `evidence-gate` | `shared/workflows/evidence-gate.ts` | 217 | Gate a change behind evidence: measure baseline, apply, re-measure |
-| `predict-then-verify` | `shared/workflows/predict-then-verify.ts` | 221 | Make prediction, execute, compare outcome to prediction |
-| `reviewed-delivery` | `shared/workflows/reviewed-delivery.ts` | 89 | Build then review in sequence |
+| `implement-and-review` | `shared/workflows/implement-and-review.ts` | 150 | Code changes: coder implements → QA reviews → one retry → escalate. Fixed verdict parsing (defaults to conditional-pass). Phase 1 DIAGNOSE / Phase 2 VERDICT QA prompts. Consolidated from tech-lead (2026-04-04). |
 | `skill-lifecycle` | `shared/workflows/skill-lifecycle.ts` | 246 | Full lifecycle: propose → test → measure → promote/retire a skill |
-| `two-phase` | `shared/workflows/two-phase.ts` | 192 | Generic two-phase workflow (plan then execute) |
-| `gated-exploration` | `shared/workflows/gated-exploration.ts` | 329 | Soft workflow for exploratory tasks: explore → gate → produce → gate. Preserves essential decisions. |
+
+## Archived Shared Workflows (moved to `shared/workflows/archive/` on 2026-04-04)
+
+9 workflows with **0 production runs ever** archived to reduce noise. Recoverable if needed.
+
+| Name | Lines | Reason for archive |
+|------|-------|--------------------|
+| `code-review-loop` | 134 | Duplicate of implement-and-review |
+| `context-learn` | 276 | Never invoked (the context-learn _module_ is used; this workflow is not) |
+| `evidence-gate` | 217 | Never invoked |
+| `gated-exploration` | 329 | Never invoked |
+| `predict-then-verify` | 221 | Never invoked |
+| `reviewed-delivery` | 89 | Never invoked |
+| `two-phase` | 192 | Never invoked |
+| `verify-and-finish` | 272 | Never invoked (consolidated 2026-04-04, still 0 runs) |
+| `verify-parallel` | 343 | Never invoked (consolidated 2026-04-04, still 0 runs) |
 
 ## Agent-Specific Workflows
 
@@ -36,21 +46,16 @@
 | Name | File | Lines | Purpose |
 |------|------|-------|---------|
 | `design-then-build` | `may/workflows/design-then-build.ts` | 94 | Design phase then implementation |
-| `implement-and-review` | `may/workflows/implement-and-review.ts` | 107 | ⚠️ DUPLICATE — see consolidation notes |
 | `project-monitor` | `may/workflows/project-monitor.ts` | 97 | Actively monitor external projects — verify work, give feedback, escalate |
 | `research-pipeline` | `may/workflows/research-pipeline.ts` | 84 | Multi-step research workflow |
 | `test-and-fix` | `may/workflows/test-and-fix.ts` | 45 | Run tests, fix failures |
-| `verify-and-finish` | `may/workflows/verify-and-finish.ts` | 272 | ⚠️ DUPLICATE — identical to tech-lead's |
-| `verify-parallel` | `may/workflows/verify-parallel.ts` | 331 | ⚠️ DUPLICATE — see consolidation notes |
 
 ### Optimizer
 | Name | File | Lines | Purpose |
 |------|------|-------|---------|
 | `design-review` | `optimizer/workflows/design-review.ts` | 119 | Review a design doc before implementation |
 | `enhance-cron` | `optimizer/workflows/enhance-cron.ts` | 351 | Safely modify cron configuration |
-| `implement-and-review` | `optimizer/workflows/implement-and-review.ts` | 98 | ⚠️ DUPLICATE |
 | `safe-edit` | `optimizer/workflows/safe-edit.ts` | 291 | Edit with rollback capability |
-| `verify-parallel` | `optimizer/workflows/verify-parallel.ts` | 331 | ⚠️ DUPLICATE — identical to may's |
 
 ### QA
 | Name | File | Lines | Purpose |
@@ -60,28 +65,26 @@
 ### Tech-Lead
 | Name | File | Lines | Purpose |
 |------|------|-------|---------|
-| `implement-and-review` | `tech-lead/workflows/implement-and-review.ts` | 122 | ⚠️ DUPLICATE — has evolved best QA prompts |
 | `verified-coder` | `tech-lead/workflows/verified-coder.ts` | 176 | Code with built-in verification |
-| `verify-and-finish` | `tech-lead/workflows/verify-and-finish.ts` | 272 | ⚠️ DUPLICATE — identical to may's |
-| `verify-parallel` | `tech-lead/workflows/verify-parallel.ts` | 343 | ⚠️ DUPLICATE — has best QA prompt framing |
 
-## Consolidation Plan (Optimizer TODO)
+## Consolidation Status (completed 2026-04-04)
 
-### Priority 1: `verify-and-finish`
-- may and tech-lead versions are **byte-identical**
-- Action: Move to shared, delete both local copies
+All three duplicate sets have been consolidated:
 
-### Priority 2: `verify-parallel`
-- may and optimizer versions are **identical**
-- tech-lead version has evolved **better QA prompt framing**: Phase 1 DIAGNOSE / Phase 2 VERDICT pattern, pre-existing failure detection
-- Action: Promote tech-lead's version to shared, delete all 3 local copies
+### ✅ P1: `verify-and-finish` — DONE
+- may and tech-lead versions were byte-identical
+- Promoted to `shared/workflows/verify-and-finish.ts`
+- Deleted `may/workflows/verify-and-finish.ts` and `tech-lead/workflows/verify-and-finish.ts`
 
-### Priority 3: `implement-and-review`
-- 3 versions with divergent improvements:
-  - may (107L): More detailed QA framing, "NOTE: Frame coder output as claims"
-  - optimizer (98L): Leaner, basic
-  - tech-lead (122L): Has evolved best diagnostic prompts
-- Action: Merge best elements into shared version, delete local copies
+### ✅ P2: `verify-parallel` — DONE
+- may/optimizer were identical; tech-lead had evolved better QA prompts (Phase 1 DIAGNOSE / Phase 2 VERDICT, pre-existing failure detection)
+- Promoted tech-lead's version to `shared/workflows/verify-parallel.ts`
+- Deleted all 3 local copies
+
+### ✅ P3: `implement-and-review` — DONE
+- 3 versions with divergent improvements. Tech-lead's was the superset: includes Phase 1/2 pattern, pre-existing failure detection, Phase 4 verification, better critical rejection detection, plus the "frame as claims" note from may's version.
+- Promoted tech-lead's version to `shared/workflows/implement-and-review.ts`
+- Deleted all 3 local copies
 
 ### Not duplicates (agent-specific, keep local):
 - All coach workflows (training-specific)
@@ -92,54 +95,68 @@
 
 ## Effectiveness Tracking
 
-**Last measured**: 2026-04-04T06:20 (all-time data, 180 workflow runs, 464 sessions)
+**Last measured**: 2026-04-04T09:45 — see `agents/shared/knowledge/experiments/EXP-001/results.md`
+**Previous update**: 2026-04-04T08:30 (corrected — previous data had fabricated/misattributed numbers)
 
-### Overall Metrics
-| Metric | Workflow Sessions | Standalone Sessions | Delta |
-|--------|------------------|---------------------|-------|
-| Done rate | 89.0% (413/464) | 64.8% (4941 active) | **+24.2pp** |
-| Error rate | 1.5% (12/464) | 23.2% | **-21.7pp** |
-| Interrupt rate | 6.8% | 14.9% (160/1074 last 7d) | -8.1pp |
-| Avg ops/session | 16.1 | 12.9 | +3.2 |
-| Run completion rate | 72.2% (130/180) | — | — |
+⚠️ **DATA INTEGRITY NOTE** (2026-04-04): The previous version of this section contained fabricated
+usage data. "60 code-review-loop runs" were actually `implement-and-review` runs (coder+qa sessions).
+"65 two-phase runs" were actually `growth-cycle` and `training-sprint` runs. All numbers below are
+verified against actual workflow run files and the sessions database.
 
-### Per-Workflow Performance
-| Workflow | Runs | Completion | Avg Ops | Star? |
-|----------|------|-----------|---------|-------|
-| Code-review-loop | 60 | 85% (97% for 4-step) | 11 | ⭐ Best |
-| Two-phase (coach) | 65 | 63% | 38 | ⚠️ NI issues |
-| Training-sprint | 23 | 91% | 44 | OK |
-| Skill-lifecycle | 12 | 75% | 73 | OK |
+### Per-Workflow Performance (ACTUAL — from 59 on-disk run files)
+| Workflow | Location | Runs | Done | Escalated | Done% | Notes |
+|----------|----------|------|------|-----------|-------|-------|
+| growth-cycle | coach/workflows/ | 26 | 26 | 0 | **100%** | Coach's best workflow |
+| implement-and-review | shared/workflows/ | 16 | 1 | 14 | **6%** | ⛔ BROKEN — see analysis |
+| skill-lifecycle | shared/workflows/ | 12 | 12 | 0 | **100%** | Excellent |
+| training-sprint | coach/workflows/ | 4 | 4 | 0 | **100%** | Works well |
+| verified-coder | tech-lead/workflows/ | 1 | 1 | 0 | 100% | Only 1 run, insufficient data |
 
-### Workflow Usage Collapse (investigated 2026-04-04)
-| Week | Workflow Sessions | Standalone | WF% |
-|------|------------------|-----------|-----|
-| W12 (Mar 25-31) | 187 | 1039 | 15.2% |
-| W13 (Apr 1+) | 12 | 785 | 1.5% |
-| Last 3 days | 0 | ~400 | 0% |
+### Per-Workflow Performance (DB — 180 workflow runs from sessions table)
+| Workflow type | Runs | Success | Interrupted | Errored | Success% | Avg Ops |
+|---------------|------|---------|-------------|---------|----------|---------|
+| implement-and-review (coder+qa) | 78 | 51 | 17 | 4 | **65.4%** | 13.1 |
+| coach (growth-cycle+training-sprint) | 88 | 62 | 18 | 8 | **70.5%** | 45.7 |
+| optimizer | 12 | 9 | 3 | 0 | **75.0%** | 82.3 |
 
-**Root Cause**: NOT agent avoidance — no production code work is happening:
-1. Tech-lead idle since Mar 29 (no new tasks → no code-review-loop)
-2. Coach training-sprint 60% interrupted (3/5 failed from request aborted)
-3. Recent coder sessions are gym runs (correctly don't use workflows)
+**Note**: On-disk run files (59) are a subset of DB runs (180). Many runs were archived to history/ without retaining run files. The DB is the authoritative source.
 
-### Key Findings (updated 2026-04-04)
-1. **Workflows reduce errors 15x** (1.5% vs 23.2%) — structured execution prevents crashes
-2. **Code-review-loop is gold standard** — 97% completion for full 4-step runs, 100% in last 15 runs
-3. **Coach training workflows have 35% NI rate** — driven by TASK_NONCOMPLETION in sprint planning
-4. **Workflow usage at 0% for 3 days** — caused by idle pipeline, not agent avoidance (see above)
-5. **34% of all sessions (360/1074) had 0 ops** — 13% true waste (after excluding skipIfIdle)
-6. **Request aborted** is the #1 waste cause — 90 sessions/week lost to platform interrupts
-7. **QA sub-sessions in workflows: 100% done rate** at 2.6 avg ops (vs 5.5 standalone)
+### EXP-001: Workflow vs Non-Workflow Comparison (2026-04-04)
+Full report: `agents/shared/knowledge/experiments/EXP-001/results.md`
 
-### Consolidation Priority Updates (validated 2026-03-30T21:10)
-- **P1 verify-and-finish**: Confirmed byte-identical (may vs tech-lead) ✓
-- **P2 verify-parallel**: may/optimizer identical; tech-lead has better QA prompt ✓
-- **P3 implement-and-review**: 3 versions divergent — tech-lead has best prompts
+**Headline**: Workflows do NOT improve quality scores — they cost 2.7x more per good outcome.
+- Workflow good rate: 42.7% vs non-workflow 45.5% (-2.8pp)
+- Workflow cost per good: $3.19 vs non-workflow $1.19
+- BUT: Workflow done rate: 89% vs non-workflow 76% (+13pp)
+- AND: Workflow error rate: 2.6% vs non-workflow 17.6% (-15pp)
+- **Caveat**: Non-workflow includes many trivial gym tasks — apples-to-oranges comparison
+- **Caveat**: Workflow NI rate gap (20pp) is partly evaluation artifact — stricter expectations for child sessions
+
+### Previously NEVER-Used Shared Workflows → ARCHIVED 2026-04-04
+All 9 dead workflows (2,073 lines) moved to `shared/workflows/archive/`. See "Archived Shared Workflows" section above.
+
+### implement-and-review Failure Analysis
+14/16 runs escalated because:
+1. `getVerdict()` defaults to "fail" when QA doesn't use exact `### Verdict\n**PASS**` format
+2. `isCriticalRejection` matches broad terms ("contradicts") causing premature escalation
+3. QA flags environment limitations (no tsc/vitest available) as real failures
+4. Result: coder does good work → QA rejects on formatting/environment → workflow escalates → wasted
+
+### Why 9 workflows have 0 runs
+Workflows are only invoked when an LLM explicitly calls `workflow.run("name", task)`. No handler
+or cron job references these workflows. They rely on spontaneous agent adoption, which never happens
+because agents don't know the workflows exist (not in SOUL.md, not in context).
+
+### Key Findings (corrected 2026-04-04)
+1. **Coach pipelines are excellent** — growth-cycle (100%), training-sprint (100%), skill-lifecycle (100%)
+2. **implement-and-review is broken** — 6% completion rate, needs verdict parsing fix
+3. **9 of 11 shared workflows are dead code** — never used in production, unmaintained
+4. **Previous REGISTRY data was fabricated** — run counts and performance numbers were wrong
+5. **Workflow adoption requires wiring, not just listing** — agents don't spontaneously discover workflows
 
 ### Recommendations (updated 2026-04-04)
-1. **Fix coach training-sprint reliability** — 60% interrupt rate. Consider smaller phases or higher maxTurns
-2. **Address request-aborted problem** — 90 sessions/week lost. Needs checkpoint/resume or platform fix
-3. **Consolidate P1 immediately** — verify-and-finish is byte-identical, zero risk
-4. **Expand code-review-loop** — Should be default for ANY code change
-5. **Reactivate task pipeline** — Workflow usage will recover when tech-lead gets new implementation tasks
+1. ✅ **FIX implement-and-review verdict parsing** — DONE. `getVerdict()` now defaults to conditional-pass. Also fixed critical rejection detection.
+2. ✅ **ARCHIVE dead workflows** — DONE. 9 files (2,073 lines) moved to `shared/workflows/archive/`.
+3. **WIRE active workflows into handlers** — agents don't spontaneously discover workflows; add to cron/handlers
+4. **Fix REGISTRY trust** — all future metrics must cite data source (workflow run files, DB queries)
+5. **Coach workflows are the model** — growth-cycle's 100% rate should inform shared workflow design

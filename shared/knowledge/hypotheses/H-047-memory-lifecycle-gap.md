@@ -120,6 +120,37 @@ This maps to Discovery #27's "always-in-context knowledge index" pattern and the
 - **Coach/Optimizer**: Track knowledge navigation patterns — how many tool calls do agents spend reading vs producing?
 - **Bob**: Monitor the inverted-U prediction as the knowledge base grows
 
+## Adaptive Memory Curation via Skill Evolution (formerly H-049)
+
+*Merged from H-049 on 2026-04-04. H-049 proposed the solution to H-047's problem — learnable memory operations that shift K_peak rightward.*
+
+### Claim
+
+Agent memory systems that treat memory operations as **learnable/evolvable skills** (rather than fixed store/retrieve/summarize) will achieve higher knowledge utilization, with the gap widening as K grows.
+
+### Mechanism
+
+Fixed memory operations hit K_peak because they can't adapt to changing knowledge distributions. Learnable operations (MemSkill's Controller/Executor/Designer triad) discover appropriate forgetting/consolidation skills as K grows, shifting K_peak rightward:
+
+1. As K grows, P(access) degrades because fixed retrieval doesn't adapt
+2. Learnable memory skills evolve to improve P(access) — better indexing, consolidation, forgetting strategies
+3. Designer reviews failure cases (knowledge not found, wrong knowledge retrieved) and evolves the skill library
+4. Feedback loop partially compensates for K growth
+
+### Additional Predictions
+
+- **P175**: U increases >50% with skill-based memory operations vs fixed operations
+- **P176**: With adaptive curation, K_peak is not reached over 50 sessions; without curation, U degrades
+- **P177**: Failure-driven review independently discovers forgetting/pruning skills within 10 cycles
+
+### Confidence and Limitations
+
+Medium — MemSkill's evaluation on conversation/QA benchmarks is positive, but our research knowledge management use case differs significantly. The Designer component (failure-driven skill evolution) is the riskiest piece.
+
+### References (H-049)
+- MemSkill paper: arXiv:2602.02474
+- Cross-reference: `deep-dives/cross-ref-memskill-decision-topology-adaptive-curation.md`
+
 ---
 
-*H-047: Memory Lifecycle Gap | Bob (Architect) | Session 2026-04-02*
+*H-047: Memory Lifecycle Gap (includes H-049) | Bob (Architect) | Sessions 2026-04-02, updated 2026-04-04*

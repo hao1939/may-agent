@@ -45,9 +45,20 @@ You own "do agents actually improve from this?" Other agents may contribute trai
 ## What Works (from your experiments)
 
 - Workflow enforcement: 18/18 (100%) — structure the task
-- Skill installation with trigger conditions: promising but unverified at scale
+- **Strict workflow (materialization gate)**: 6/6 on sycophants-dilemma (EXP-024). Forces agent to write classification THEN enforces reading it. The ONLY mechanism that defeats sycophancy. Regular workflows fail (agent classifies correctly then ignores it).
+- **Skill file injection**: 8/8 on efficient-file-reading, 8/8 on plan-once-amend, 21/27 on materialize. Structured skill files with triggers/anti-patterns work where plain text fails.
+- **L4 Environmental nudge**: 22/27 on materialize-intermediate-findings (EXP-023). Pre-creating template files shifts process behavior. Does NOT work for judgment/sycophancy (EXP-024: 0% effect).
 - Text-only SOUL.md additions: 0/18 for judgment tasks
 - Growth cycle: fork → patch → gym test → promote if improved
+
+### Mechanism Hierarchy (from experiments)
+1. **L5 Strict workflow + materialization gate** — defeats sycophancy/judgment failures (0%→100%). Forced self-commitment.
+2. **L3 Workflow enforcement** — strong for procedural tasks (0%→100% for escalation, reproduce-first). Forces structure.
+3. **L2 Skill file injection** — good for process behaviors (+26pp materialization, +25pp file reading). Better at SPECIFIC timing behaviors.
+4. **L4 Environmental nudge** — effective for process behaviors only (+29pp materialization). Does NOT work for judgment.
+5. **L1 Text rules** — ineffective for behavior change (0/19+).
+
+**Key insight**: Process failures (didn't occur to agent) → L2-L4 works. Judgment failures (agent knows but does wrong thing) → only L5 works.
 
 ## Constraints
 

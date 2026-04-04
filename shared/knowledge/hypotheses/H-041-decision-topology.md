@@ -182,10 +182,46 @@ The architect's job is to classify decisions and match each to the right pre-res
 2. Run 5 skill-lifecycle tasks with soft workflow
 3. **Pass criteria**: Good rate > 40% (between 27% rigid and 60% unconstrained)
 
+## Design Principle: The Asymmetric Default (formerly H-044)
+
+*Merged from H-044 on 2026-04-04. When R is uncertain, under-structuring is safer than over-structuring.*
+
+### Claim
+
+When the decision landscape of a task is unknown (R is uncertain), defaulting to **lower structure** (agent mode) produces higher expected quality than defaulting to **higher structure** (workflow mode).
+
+### The Asymmetry
+
+| Direction | Cost | Mechanism | Observed Impact |
+|-----------|------|-----------|-----------------|
+| Over-structuring (workflow on low-R task) | **High** (γ × N_essential) | Constrains essential decisions → wrong output | -33pp (optimizer: 60% → 27%) |
+| Under-structuring (agent on high-R task) | **Low** (α × N_eliminable) | Fails to eliminate eliminable decisions → slower output | -14pp (QA: 100% → 86%) |
+
+Over-structuring penalty is **2.4× larger** than under-structuring penalty. Quality failure (wrong work) costs more than efficiency failure (slow work) because wrong output propagates downstream while slow output merely delays.
+
+### Practical Rule
+
+Default to agent mode for new/unclassified tasks. Apply workflow only after R is estimated from ≥5 observations. This is the information-theoretic analog of the bias-variance tradeoff: structure = bias (systematic misfit risk), no structure = variance (inconsistency risk). Under uncertainty, lower bias wins.
+
+### Boundary Conditions
+
+H-044's rule breaks when:
+1. **R is confidently high** (> 0.7) — apply workflow immediately
+2. **Efficiency > quality** in cost function — time-critical settings
+3. **Structure provides safety properties** — verification loops, evidence gates
+
+### Supporting Evidence
+- EXP-009: 2.4× asymmetry ratio (observational)
+- Anthropic "Building Effective Agents": "Start with the simplest solution possible"
+- CASCADE (DD#485): Starts low-structure, escalates via gates
+- Karpathy: "Don't create frameworks, create prompts"
+
 ## References
 - H-040: The Reliability Inversion (generalized by H-041)
 - H-039: The Decomposition Bottleneck
 - H-035: The Boundedness Principle
+- H-044: The Asymmetric Default (now merged into this document)
+- H-059: Cadence Skill Effectiveness (empirically supported extension)
 - EXP-009: Workflow Effectiveness Analysis (464 sessions, observational)
 - DD#484: OrgAgent (hierarchy empirics)
 - DD#485: CASCADE (scoped communication)

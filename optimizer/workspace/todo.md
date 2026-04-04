@@ -12,16 +12,22 @@
 ## 🔴 ACTIVE
 
 - ✅ **Evaluator heuristic fix** — Commit a6250b0 DEPLOYED. Data repair deployed. Today's good rate: 45.5% → 74.5%, 7-day: 73.5% → 82.2%.
-- ✅ **Scout reliability investigation** — Full report at `workspace/scout-reliability-analysis.md`. Scout 49% waste rate. P0: add maxTurns to all agents. Escalated to May.
+- ✅ **Scout reliability investigation** — Full report at `workspace/finding-scout-reliability-0404.md`. Issues MOSTLY RESOLVED: malformed tool calls stopped 72h ago, maxTurns increased to 40, 71% of "done" sessions were skipIfIdle (by design). Sent to May.
 - ✅ **Workflow collapse investigation** — Root cause: NOT agent avoidance. No production code work happening since Mar 29. Updated REGISTRY.md. See `workspace/finding-system-waste-0404.md`.
 - ✅ **System waste analysis** — 34% of sessions had 0 ops (360/1074 in 7d). True waste 13% after excluding skipIfIdle. Report at `workspace/finding-system-waste-0404.md`.
-- ✅ **maxTurns guardrail deployment** — All agents now at maxTurns: 40. Config on disk, cron reloaded. Uncommitted changes will auto-commit. Verified: tech-lead at 06:45 Apr 4 hit 41/40 (was 31/30).
+- ✅ **maxTurns guardrail deployment** — All agents now at maxTurns: 40. Config on disk, cron reloaded. **Also fixed:** maxTurns restore bug — sessions lost their turn limit after process restart. Fix in manager.ts + persistence.ts (uncommitted).
 - **Coach training-sprint reliability** — P0 new finding: 60% interrupt rate (3/5 failed in 5d). Needs smaller phases or higher maxTurns. Consider escalating to Coach/May.
-- **Zombie-cleanup cron not running** — P1 new finding: Last ran March 25 (10 days ago!). 10 zombie sessions in DB. Handler or cron firing broken. Needs investigation.
-- **Request aborted waste** — P1: 26 sessions/day (26.8%). 13 had 0 ops. Platform-level, not agent-fixable. Monitor after maxTurns fix.
+- ✅ **Zombie-cleanup cron** — VERIFIED WORKING. Handler exists at `agents/may/handlers/zombie-cleanup.ts`, properly registered. DB has 0 zombies currently. My Phase 2 fix (DB-only zombie cleanup) is deployed in manager.ts.
+- **Request aborted waste** — P0 ROOT CAUSE FOUND: `gracefulShutdown()` and `gracefulRestart()` in `src/app/may.ts` cancel all running sessions. `resumeStaleSessions()` then finds nothing to resume. Fix: skip cancel loop in `gracefulRestart()` (hot-reload path). 15.7% of ops wasted (2066/wk). See `workspace/finding-interrupted-waste-0404.md`.
 - **Skip rate investigation** — Skip rate stable: 50w 12%, 200w 6.5%. Monitoring continues.
 - **Skill lifecycle weekly** — Cooldown (last: Mar 30, next: Apr 6). 54 skills, 5 saturations. Weekly only.
-- **Workflow consolidation P1-P3** — From audit Mar 30. Next audit Apr 6.
+- ✅ **Workflow consolidation P1-P3** — DONE (2026-04-04). 9 duplicate files deleted, 3 canonical versions in `shared/workflows/`. REGISTRY.md updated.
+- ✅ **Workflow audit & REGISTRY correction** — DONE (2026-04-04). Found 9/11 shared workflows NEVER USED (0 runs). REGISTRY had fabricated data (60 "code-review-loop" runs were actually implement-and-review). implement-and-review had 6% done rate (14/16 escalated). Fixed verdict parsing (default-to-fail → default-to-conditional). Removed "contradicts" from critical rejection. See `workspace/finding-workflow-audit-0404.md`.
+- ✅ **Dead workflow cleanup** — DONE (2026-04-04). 9 dead shared workflows archived to `shared/workflows/archive/`.
+- ✅ **LLM-to-JS: analyze-failures** — DONE (2026-04-04). Converted from Bob LLM session (~11 ops/run, 78 ops/week) to pure JS handler. Queries SQLite, computes verdicts/trends/costs, writes to `agents/bob/workspace/analysis.md`. Commit 4eae3a45.
+- **LLM-to-JS candidates (next)** — Remaining targets by ops/week: common-sense-verify (680 ops/wk, needs LLM judgment but could be partially replaced), common-sense-infra (165 ops/wk, needs LLM), reflect (208 ops/wk, classifies human inputs). All require LLM judgment — no easy mechanical conversions left.
+- **Coach model misconfiguration** — NEW finding: `opus` model → `claude-opus-4.6` not available in LiteLLM proxy. Coach gets 400 errors. See `workspace/finding-coach-model-misconfig-0404.md`. Needs Hao/May fix.
+- **LLM evaluations dead since Mar 31** — Finding: all evals are heuristic-only because all sessions are root (no parent-child). evaluateTask() LLM path never fires. NOTE: the `usage` field in evaluations contains SESSION LLM costs ($135/day), not eval costs — eval cost is effectively $0. 26 needs_improvement verdicts in 7 days (feedback works for shallow/waste). See `workspace/finding-eval-heuristic-only-0404.md`.
 
 ## ⚠️ SENT/ESCALATED (awaiting others)
 
@@ -29,6 +35,7 @@
 - **Coach cost dominance** — Sent to May (req:8804a514, req:fd4d0e4b). 2026-03-18.
 - **Optimizer self-cost dominance** — Escalated to May (req:93d7d0ea). 2026-03-24.
 - **Scout synthesis loop** — Sent to May (req:49215e05, req:0857a641). 2026-03-18.
+- **Interrupted session waste (15.7%)** — Sent to May (req:c7f404c5). 2026-04-04. Fix: skip cancel in gracefulRestart(). See `workspace/finding-interrupted-waste-0404.md`.
 
 ## 📋 PENDING (awaiting Hao review)
 

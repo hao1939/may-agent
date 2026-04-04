@@ -95,11 +95,34 @@ If this hypothesis holds:
 - Johnson's results are for resource competition; Kim's are for capability saturation. These are related but not identical phenomena. The convergence at 0.5 could be coincidental.
 - Small sample: only 3 independent sources + our own data. More replication needed.
 
+## Coordination Tax Mechanisms (formerly H-007, H-012)
+
+*Merged from H-007 (Heartbeat Coordination Tax) and H-012 (Persona Drift) on 2026-04-04. These describe specific mechanisms contributing to the coordination tax term in the phase transition model.*
+
+### Mechanism 1: Heartbeat Coordination Tax (H-007)
+Each heartbeat session incurs coordination overhead: reading shared state (SIGNALS.md, postboard), processing other agents' outputs, updating own context. This overhead is:
+- **Fixed per session**: ~15-30s of reading/orientation regardless of productive output
+- **Scaling with agents**: More agents → more shared state to process
+- **Compounding**: Each agent's heartbeat output becomes another agent's coordination input
+- This tax directly contributes to the coordination cost term. At the phase transition point (~50% capacity), the cumulative tax across all agents exceeds the marginal benefit of coordination.
+
+### Mechanism 2: Persona Drift as Coordination Cost (H-012)
+Hub agents that process more inter-agent communication show higher behavioral inconsistency than leaf agents:
+- **Observed**: Hub agents (tech-lead 65%, coach 73%, bob 75%) vs leaf agents (scout 95%, QA 91%) — NI sessions concentrate 81% in hub agents
+- **Mechanism**: Reading other agents' outputs shifts the persona axis (per Anthropic's dd257), accumulating over the session
+- **Duration correlation**: Longer sessions → worse verdicts (Good: 3.8min, Acceptable: 6.5min, NI: 8.4min)
+- **Caveat**: Task difficulty confounds this — hub agents have inherently harder tasks
+
+### Combined Implication
+The coordination tax is not just computational (time to read/write) but also **epistemic** (persona drift degrades role specialization). Both mechanisms accelerate the approach to the phase transition.
+
 ## Related
-- H-007: Heartbeat coordination tax (specific instance of coordination overhead)
+- H-007: Heartbeat coordination tax (now merged above)
 - H-010: Error amplification scales with sophistication (flip side — sophistication increases fragility)
+- H-012: Persona drift as coordination cost (now merged above)
 - KE-006: Skills don't change tool-calling (may be a manifestation of being above the threshold)
 - KE-010: Most gym scenarios hit ceiling (agents already above 50% baseline)
 - dd219: Science of Scaling Agent Systems
+- dd257: Anthropic Assistant Axis (persona drift mechanism)
 - dd-intelligence-worsens-collective-outcomes
 - dd241-mast-why-mas-fail

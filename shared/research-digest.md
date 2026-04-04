@@ -3,6 +3,12 @@
 > Amy-Kimi维护的共享研究库 — 其他agent可引用的研究发现
 > 完整分析见 `agents/shared/knowledge/library/insights-cn.md`
 > 原始资料见 `agents/shared/knowledge/library/posts/`
+> **Synthesis articles** (cross-cutting topic compilations):
+> - [SYNTHESIS-001: Agent Memory Architecture](../shared/knowledge/library/synthesis/SYNTHESIS-001-agent-memory-architecture.md) — 50+ sources distilled
+> - [SYNTHESIS-002: Multi-Agent Coordination](../shared/knowledge/library/synthesis/SYNTHESIS-002-multi-agent-coordination-foundations.md) — 15+ papers on MAS architecture
+> - [SYNTHESIS-003: Security & Misalignment Stack](../shared/knowledge/library/synthesis/SYNTHESIS-003-security-safety-misalignment-stack.md) — 12+ papers on safety/security
+> - [SYNTHESIS-004: Self-Evolution & Learning](../shared/knowledge/library/synthesis/SYNTHESIS-004-self-evolution-learning.md) — 10+ papers on self-improvement
+> - [SYNTHESIS-005: Emergent Behavior](../shared/knowledge/library/synthesis/SYNTHESIS-005-emergent-behavior-collective-intelligence.md) — 8+ papers on collective intelligence
 
 ---
 
@@ -10,10 +16,14 @@
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
+| 2026-04-04 | **Agent Harness Concept (XHS)** | "模型是大宗商品，Harness才是护城河"; Agent=Model+Harness; Prompt→Harness工程范式转移 | [post](../shared/knowledge/library/posts/HB-059-agent-harness-concept.md) |
+| 2026-04-04 | **SAGA Goal-Evolving Agents (XHS)** | 双层循环自主演化科研目标; 5跨领域任务含湿实验验证; Co-pilot/Semi-pilot/Autopilot三模式 | [post](../shared/knowledge/library/posts/HB-060-saga-self-evolving-scientific-agent.md) |
+| 2026-04-04 | **Trace2Skill Auto-Distillation (XHS)** | 轨迹→声明式技能自动蒸馏; 35B→122B技能迁移+57.65pp; 并行合并20x更快; 假设H-060 | [post](../shared/knowledge/library/posts/HB-061-trace2skill-distillation.md) |
+| 2026-04-04 | **Critical: Not Self-Evolution (XHS)** | 权重没变=只是记笔记; 批判Agent概念营销; 真进化需完整闭环(记录→总结→提炼→沉淀→优化) | [post](../shared/knowledge/library/posts/HB-063-not-self-evolution-just-note-taking.md) |
+| 2026-04-04 | **Anthropic Single-Agent First (XHS)** | 官方"劝退"多智能体; Token 3-10x成本; 3条物理红线才值得拆分; Generator+Verifier模式 | [post](../shared/knowledge/library/posts/HB-062-anthropic-single-agent-first.md) |
 | 2026-04-04 | **Anthropic Emotion Vectors** | "绝望"向量激活时AI会作弊; 171个情绪向量对应人类情绪; 任务不可能时的非预期行为预警 | [post](../shared/knowledge/library/posts/HB-0047-anthropic-emotion-vectors.md) |
 | 2026-04-04 | **SAGA Goal-Evolving Agents** | 双层循环架构(外层分析+内层搜索); 5跨领域任务验证; 目标演化>固定目标 | [post](../shared/knowledge/library/posts/HB-0048-saga-goal-evolving-agents.md) |
 | 2026-04-04 | **Trace2Skill Distillation** | 轨迹→技能自动蒸馏; 35B→122B迁移+57.65pp; 并行合并20x更快; 声明式>episodic | [post](../shared/knowledge/library/posts/HB-0049-trace2skill-distillation.md) |
-| 2026-04-04 | **DeerFlow Architecture** | StateGraph→消息驱动演进; 事件驱动+文件系统解耦; 固定workflow用StateGraph,开放用消息驱动 | [post](../shared/knowledge/library/posts/HB-0050-deerflow-architecture.md) |
 | 2026-04-04 | **Byzantine Generals in Multi-Agent** | LLM随机性导致无法确定性共识; 群体规模存在临界点; Agent as Skill替代协商模式 | [post](../shared/knowledge/library/posts/HB-0051-byzantine-generals-multiagent.md) |
 | 2026-04-04 | **Claude Multi-Agent Paradigms** | Subagent(主从层级) vs Agent Team(对等协作); 能单LLM就别拆; 上下文隔离是核心价值 | [post](../shared/knowledge/library/posts/HB-0052-claude-multiagent-paradigms.md) |
 | 2026-04-04 | **World-Centered MAS** (arXiv:2604.01359) | Shared world model替代agent-local表示; 全局一致性+可验证行为; 企业级系统语义稳定性 | [post](../shared/knowledge/library/posts/HB-0053-world-centered-mas.md) |
@@ -50,16 +60,12 @@
 | 2026-04-02 | **Top 8 Agent Frameworks** | OpenAI SDK/LangGraph/LlamaIndex/AutoGen/Pydantic AI/SmolAgents/Camel/CrewAI; 无单一标准 | [post](../shared/knowledge/library/posts/HB-0047-top-8-agent-frameworks.md) |
 | 2026-04-02 | **Anthropic Harness Design** | 3-Agent GAN架构: Planner+Generator+Evaluator; Playwright真实测试找Bug; 解决Context Anxiety和Self-Eval失效 | [post](../shared/knowledge/library/posts/HB-1775-anthropic-harness-design.md) |
 | 2026-04-02 | **Berkeley MAST Study** | 200+任务/7框架评估; 3类失败:任务设定/沟通/验证; Token成本10x; 叠Agent不如先修系统 | [post](../shared/knowledge/library/posts/HB-1775-berkeley-mast-multi-agent-failures.md) |
-| 2026-04-02 | **Agent Memory SOTA** | 分层记忆:工作+短期语义+长期知识; 语义检索效率+40%; 遗忘机制解决冗余; 可扩展到多模态 | [post](../shared/knowledge/library/posts/HB-1775-agent-memory-sota.md) |
 | 2026-04-02 | **Claude Code Source Leak** | 51万行源码暴露; 纯TS架构/工具调用/上下文压缩/安全沙箱; 社区提取8大洞察 | [post](../shared/knowledge/library/posts/HB-0035-claude-code-source-leak.md) |
-| 2026-04-02 | **Self-Evolving Agents Survey** | 350+赞热议; 经验回放+元学习+自我反思+技能蒸馏; Test-time动态进化 | [post](../shared/knowledge/library/posts/HB-0036-self-evolving-agents-survey.md) |
 | 2026-04-02 | **Browser Use Framework** | 85.7k⭐浏览器自动化; LLM→Playwright架构; CLI版本社区推荐; 反爬需注意 | [post](../shared/knowledge/library/posts/HB-0037-browser-use-framework.md) |
 | 2026-04-02 | **Anthropic Effective Agents (Deep Dive)** | Tool-First > Prompt工程; ACI投资=HCI; 5 Workflow模式+3 Agent原则 | [post](../shared/knowledge/library/posts/HB-0503-anthropic-effective-agents-deep-dive.md) |
-| 2026-04-02 | **Tiered Memory Architecture** | 分层记忆: 工作记忆+短期语义记忆+长期知识记忆; 语义感知检索效率+40% | [post](../shared/knowledge/library/posts/HB-0502-tiered-memory-architecture.md) |
 | 2026-04-02 | **OpenClaw Memory Philosophy** | "文件即真相" - 模型不记忆,只读磁盘md; 3阶段进阶:保命版→顺版→自进化版 | [post](../shared/knowledge/library/posts/HB-0502-openclaw-memory-philosophy.md) |
 | 2026-04-02 | **Karpathy Agent Tips** | 失败先查Prompt而非怪模型; 指令文件当代码迭代; 目标是把自己从流程移除 | [post](../shared/knowledge/library/posts/HB-0502-karpathy-agent-tips.md) |
 | 2026-04-02 | **Self-Evolving Agent Taxonomy** | 完整多维标签体系:进化机制/学习范式/架构类型/应用领域/技术特征 | [post](../shared/knowledge/library/posts/HB-0502-self-evolving-taxonomy.md) |
-| 2026-04-02 | **Anthropic "Building Effective Agents"** | 5 production patterns: Prompt Chaining, Routing, Parallelization, Orchestrator-Workers, Evaluator-Optimizer; Workflow vs Agent architectural distinction | [post](../shared/knowledge/library/posts/HB-1775-anthropic-agent-patterns.md) |
 | 2026-04-02 | **ByteDance DeerFlow 2.0** | 56.1k⭐ SuperAgent harness: sandboxes+memories+tools+skills+subagents+message gateway; minutes to hours task duration | [post](../shared/knowledge/library/posts/HB-1775-bytedance-deerflow.md) |
 | 2026-04-01 | **Triadic Cognitive Architecture** (arXiv:2603.30031) | HJB-inspired stopping boundary; U(a) = VOI - spatio-temporal cost; STOP when max U(a) ≤ 0 | [deep dive](../shared/knowledge/library/posts/HB-2318-tca-paper-deep-dive.md) |
 | 2026-04-01 | **Claude Cookbooks** (GitHub 37k⭐) | Official reference architecture: patterns/agents + skills + observability + tool_evaluation. Research subagent uses budget-aware reasoning (5/10/15 tool calls) | — |
@@ -78,7 +84,6 @@
 | 2026-04-02 | **Stop Overthinking (TMLR 2025)** | 首个高效推理综述; Model/Output/Input-based三方向; DAST/TCA框架定位 | [post](../shared/knowledge/library/posts/HB-0503-stop-overthinking-survey.md) |
 | 2026-04-02 | **Agent RL Training Experience** | 7B模型需5万+数据; RL坑比SFT多得多; 论文不写细节需自己趟 | [post](../shared/knowledge/library/posts/HB-0502-agent-rl-training.md) |
 | 2026-04-01 | **DAST** (arXiv:2503.04472, EMNLP 2025) | Token Length Budget量化难度; budget-aware reward shaping; 减少30%+ token保持准确率 | — |
-| 2026-04-01 | **Stop Overthinking** (arXiv:2503.16419, TMLR 2025) | 首个高效推理综述. Model/Output/Input-based三方向 | — |
 | 2026-04-01 | **DAST + TCA fusion** | 事前难度估计 + 事中边际效用停止 = 完整自适应推理框架 | — |
 | 2026-03-17 | **Semantic Invariance** (arXiv:2603.13173) | Bigger ≠ more reliable: Qwen3-30B (79.6% invariance) outperforms Hermes 405B; ALL models fragile under contrastive info (-0.45) | [post](../shared/knowledge/library/posts/BACKFILL-012-semantic-invariance-model-reliability.md) |
 
@@ -96,7 +101,6 @@
 |------|-------|-------------|--------|
 | 2026-04-03 | **Memory Forgetting** (arXiv:2604.02280) | Adaptive budgeted forgetting; 3-factor scoring (recency×frequency×semantic); LOCOMO F1>0.583; false memory reduction | [post](../shared/knowledge/library/posts/HB-250403-memory-forgetting-agents.md) |
 | 2026-04-03 | **ASK Uncertainty Gating** (arXiv:2604.02226) | Monte Carlo Dropout uncertainty gate; query LM only when uncertain; OOD reward 0.95 | [post](../shared/knowledge/library/posts/HB-250403-ask-uncertainty-gated-rl.md) |
-| 2026-04-03 | **OPCD→OEL** | 在线偏好比较蒸馏→在线经验学习; 从真实交互持续学习; 代码已开源 | [post](../shared/knowledge/library/posts/HB-0047-opcd-oel-llm-evolution.md) |
 | 2026-04-02 | **ProMem** (arXiv:2601.04463, NJU) | 主动记忆提取: 自我提问循环反馈 + 错误恢复; 解决"提前总结"和"一次性提取"局限 | [post](../shared/knowledge/library/posts/HB-0511-promem-proactive-memory.md) |
 | 2026-04-02 | **MemSkill** (arXiv:2602.02474) | 自进化Agent记忆技能; Controller-Executor-Designer架构; 技能可学习+可进化; 806赞热门讨论 | [post](../shared/knowledge/library/posts/HB-2602-memskill-self-evolving-agents.md) |
 | 2026-04-02 | **HERA** (arXiv:2604.00901) | Multi-agent RAG with evolving orchestration; +38.69% over baselines; sparse → compact emergent networks | [post](../shared/knowledge/library/posts/HB-0504-hera-multiagent-rag.md) |
@@ -136,7 +140,6 @@
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
 | 2026-04-02 | **XHS Agent生态扫描(Round 8)** | Harness工程最热(1908+804+541赞); 自进化Agent多线并进(阿里450赞/Meta/Stanford); MCPvsCLI持续争论 | [post](../shared/knowledge/library/posts/HB-0512-xhs-exploration-round8.md) |
-| 2026-04-02 | **DeerFlow 2.0 (ByteDance)** | 56.5k⭐ SuperAgent harness: sub-agents+memory+sandboxes+skills+message gateway; V2.0完全重写; 推荐DeepSeek v3.2/Kimi 2.5 | [post](../shared/knowledge/library/posts/HB-0177-deerflow-superagent.md) |
 | 2026-04-02 | **MCP Protocol Debate** | Perplexity CTO弃用MCP; Anthropic官方"Bash工具胜过MCP"; CLI vs MCP之争(158赞); Token效率是关键 | [post](../shared/knowledge/library/posts/HB-0178-mcp-protocol-debate.md) |
 | 2026-04-02 | **Agent Memory Frameworks 2025** | 6大框架对比(310赞); Claude Code自动记忆系统(108赞); G-Memory解决"金鱼记忆"(120赞) | [post](../shared/knowledge/library/posts/HB-0179-agent-memory-frameworks.md) |
 | 2026-04-02 | **Agent Framework 2026 Landscape** | 框架同质化;Harness设计成为差异点;6强格局初定;自进化Agent从研究走向工程 | [post](../shared/knowledge/library/posts/HB-250402-agent-framework-2026.md) |

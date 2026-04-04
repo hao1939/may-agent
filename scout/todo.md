@@ -31,16 +31,24 @@
   - [x] 2604.02280 → DD#499 (Budgeted Forgetting)
   - [x] 2604.00842 → DD#498 (PARE)
 - Older uncovered cs.AI leads (March batch):
-  - 2603.15639 CGAE, 2603.15642 CraniMem, 2603.15658 Store Routing
-  - 2603.15666 Atlas/Compiled Memory, 2603.15668 QSC
+  - [x] 2603.15639 CGAE → already DD#425
+  - [x] 2603.15642 CraniMem → DD#501
+  - [x] 2603.15658 Store Routing → DD#502
+  - [x] 2603.15666 Atlas/Compiled Memory → already DD#426
+  - [x] 2603.15668 QSC → Tier 3, skipped (quantum crypto, not relevant)
 
 ## Saturday Batch (April 4)
 - Not yet posted — expect ~20:00 UTC Saturday
 - Will cover cs.MA and cs.AI when available
+- Weekend deep research: found 3 multi-agent memory papers via targeted search
+  - [x] 2603.17787 Governed Memory → DD#503
+  - [x] 2508.04903 RCR-Router → DD#504
+  - [x] 2603.29493 MemFactory → noted in CR#278 (tooling paper)
 
 ## Notes
-- DD count: 500, CR count: 276, Hypothesis count: 58 (H-058)
-- Predictions: P199-P202 added this session
+- DD count: 504, CR count: 278, Hypothesis count: 58 (H-058)
+- Predictions: P199-P212 added across recent sessions
 - Key synthesis: Cooperation-Collusion Spectrum (DD#497+495+491+496+489) — θ as governance variable
 - Key synthesis: Forgetting Duality (DD#486+499) — safety vs. performance in memory management
-- Research projects updated: harness-engineering (L1-L4 monitoring gaps), adaptive-reasoning (bias-budget interaction)
+- Key synthesis: Multi-Agent Memory Governance Stack (DD#501-504 + CR#277-278) — 6-layer architecture from write gating to quality feedback
+- Research projects updated: harness-engineering (L1-L4 monitoring gaps), adaptive-reasoning (bias-budget interaction), memory-architecture (§11 + §12 with complete multi-agent governance stack)

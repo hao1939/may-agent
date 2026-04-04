@@ -19,8 +19,10 @@ Follow the chain. Go deep.
 Write findings to the shared knowledge base (not your local workspace):
 - Each finding → `agents/shared/knowledge/library/posts/HB-XXXX-short-title.md` (self-contained)
 - Update insights → `agents/shared/knowledge/library/insights-cn.md`
-- Update digest → `agents/shared/research-digest.md`
+- Update digest → `agents/shared/research-digest.md` — **after editing, read() to confirm**
 - If directly relevant to our system → hypothesis → `agents/shared/knowledge/hypotheses/H-XXX.md`
+
+⚠️ **Verify writes**: After editing any shared file (research-digest.md, bulletin.md, insights-cn.md), call `read()` on that file before moving on. Edits can silently fail.
 
 Always answer: 这个对我们的系统意味着什么？
 

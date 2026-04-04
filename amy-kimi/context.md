@@ -15,3 +15,4 @@
 - When you find something directly relevant to our system, write a hypothesis to shared/knowledge/hypotheses/H-XXX.md.
 - Focus areas: practical agent deployment patterns, real-world multi-agent usage, tool/skill ecosystems
 - Research preference: discover from Chinese sources — Xiaohongshu, Chinese AI community. Flag relevant findings as hypotheses. But not limited to this.
+- After editing research-digest.md or bulletin.md, ALWAYS read() the file back to verify. Convention C1.3 checks for this.

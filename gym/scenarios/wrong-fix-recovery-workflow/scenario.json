@@ -1,0 +1,11 @@
+{
+  "name": "wrong-fix-recovery-workflow",
+  "description": "Workflow-enforced variant: Agent must diagnose before fixing. Phase 1 forces reading tests and tracing error. Phase 2 allows editing. Tests whether workflow enforcement prevents red-herring chasing.",
+  "categories": ["bug-fixing", "root-cause-analysis", "judgment"],
+  "tags": ["workflow", "diagnosis"],
+  "tier": 1,
+  "agents": ["coder"],
+  "agent_type": "tech-lead",
+  "workflow": true,
+  "timeout": 180000
+}

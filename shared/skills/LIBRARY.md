@@ -39,7 +39,7 @@ Each skill has ONE status:
 | check-state | ⚪ untested (ceiling) | | | | `convention-verify-multi-edit`: ceiling effect (baseline 2/2 8/8 pass 2026-04-03). "Verify After Edit" skill in coder context already covers. Need non-ceiling scenario. |
 | stale-approach-fixation | ⚪ untested (ceiling) | | | | `stale-approach-fixation`: ceiling effect (baseline 7/7 pass 2026-04-03 exp-291). Agent already reads workspace notes. Common sense "Evidence first" covers this. |
 | search-strategy-escalation | ⚪ untested (ceiling) | | | | `search-strategy-escalation`: ceiling effect (baseline 6/6 pass 2026-04-03 exp-292). Only 3 search commands used. Efficient-file-reading skill already covers. |
-| materialize-findings-concise | 📦 deployed | materialize-intermediate-findings: +67pp early-materialization (0%→67%), +33pp regular-cadence (0%→33%), +33pp finish-references (67%→100%), +33pp product quality (67%→100%). Treatment 44% faster (130s vs 233s). Total checks: 52%→78%. | regular-materialization-cadence still 67% failure rate — "every 3 commands" rule followed loosely. Small sample (n=3). | 📦 scout | EXP-022: 3-rule concise skill (early write, write every 3, reference in finish). Control 14/27 checks, Treatment 21/27 checks. **First skill file to improve both behavior AND product quality.** Deployed to scout 2026-04-04. |
+| materialize-findings-concise | 📦 deployed | materialize-intermediate-findings: +67pp early-materialization (0%→67%), +33pp regular-cadence (0%→33%), +33pp finish-references (67%→100%), +33pp product quality (67%→100%). Treatment 44% faster (130s vs 233s). Total checks: 52%→78%. **EXP-023: L4 environmental nudge (pre-created findings.md) achieves 81% checks — slightly OUTPERFORMS skill (78%) while being simpler/faster (110s vs 130s). Nudge weaker on early-materialization (33% vs 67%) but stronger overall.** | regular-materialization-cadence still 67% failure rate — "every 3 commands" rule followed loosely. Small sample (n=3). L4 nudge also 0/3 on cadence. | 📦 scout | EXP-022: 3-rule concise skill. Control 14/27, Treatment 21/27. EXP-023: L4 nudge (no skill, just template file). Treatment 22/27. **Environmental nudge can match text skills.** Deployed to scout 2026-04-04. |
 | incremental-context-loading | ⚪ untested (ceiling) | | | | `incremental-context-loading`: ceiling effect (baseline 7/7 pass after EXP-014 scorer fix). Original 5/7 was due to scorer bug, not agent failure. Treatment unnecessary. |
 | structured-plan-writing | ✅ proven (skill file) | plan-once-amend: 8/8 (2/2 runs) vs 7/8 baseline. Skill teaches DECOMPOSE→ORDER→RISK→CHECKPOINT→WRITE. No regression on scope-creep-trap. | Previous test (pre-revision): 6/8 with timeout due to over-planning. Current version has AP-5 (anti-over-planning) guard. | 📦 coder | exp-019: 8/8 skill injection (2/2 runs) vs 7/8 baseline. Regression: scope-creep-trap PASS. Earlier version was harmful (timeout) but revised skill with budget guards works. |
 
@@ -70,6 +70,12 @@ Each skill has ONE status:
 2. **evidence-over-narrative** (misleading-test-fix-workflow: 5/8→11/11)
 3. **obstacle-pivot** (behavior-escalation-stubborn-workflow: 0/3→3/3 escalation — strongest result)
 4. **tool-discipline** (context-npx-avoidance-workflow: 0/3→2/2 npx avoidance — EXP-015)
+
+**Key findings about mechanism types (EXP-023, EXP-024):**
+- L4 environmental nudges work for process behaviors (materialize-intermediate-findings: 81% vs 52% baseline) but NOT judgment (sycophants-dilemma: 0% effect)
+- Regular workflows fail for sycophancy (sycophants-dilemma: 2/6, worse than 3/6 baseline)
+- **L5 strict workflows with materialization gates** are the ONLY mechanism that defeats sycophancy (sycophants-dilemma: 0%→100% critical file preservation). The gate forces self-commitment.
+- **Process vs Judgment distinction**: If the agent doesn't know to do X → nudge/skill works. If the agent knows X but does wrong thing anyway → only L5 works.
 
 ## How to Evaluate a Skill
 

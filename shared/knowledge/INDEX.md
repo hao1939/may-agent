@@ -5,6 +5,12 @@ All knowledge in the system, organized by confidence level.
 > **NEW: Topic Index available** — 10 navigable topic pages covering all major research areas.  
 > See [library/topics/INDEX.md](library/topics/INDEX.md) for guided reading paths.
 
+> **NEW: "What We Know About" syntheses** — definitive practical guides distilling our experiments into actionable principles.  
+> See [synthesis/](synthesis/) for WKWA-001 (Behavioral Intervention), WKWA-002 (Decision Topology), WKWA-003 (Self-Improvement Limits), **WKWA-004 (Memory Control Loop)**.  
+> **Query Compounding Convention**: When you investigate a question, file findings per [CONVENTION-query-compounding.md](synthesis/CONVENTION-query-compounding.md).
+>
+> **Hypothesis Priority Tracker**: [hypotheses/PRIORITY-TRACKER.md](hypotheses/PRIORITY-TRACKER.md) — compact view of what's tested, what needs testing, and the experiment queue. **No new hypotheses until 5 more are tested.**
+
 ## Verified (tested with evidence)
 
 | ID | Claim | Evidence | Location |
@@ -23,6 +29,8 @@ All knowledge in the system, organized by confidence level.
 | KE-012 | Lab-fork null-patch test confirms infrastructure validity | Controlled zero-change test | knowledge/entries/KE-012.md |
 | KE-013 | Task boundedness is the primary driver of delegated session quality | EXP-007 Phase 1 (n=116 call, 15.8K all-time) | knowledge/entries/KE-013.md |
 | KE-015 | Decision topology (eliminable ratio R) predicts workflow effectiveness | EXP-009 (464 sessions), EXP-011 (ρ=0.95), EXP-013 (0%→100%), EXP-015 (0%→100%), EXP-016 (20 pairs, 80% accuracy), EXP-008 (null), DD#484, Anthropic | knowledge/entries/KE-015.md |
+| KE-018 | Environmental nudges (L4) match text skills (L3) for behavioral change | EXP-023 (n=3 per arm): nudge 81% vs skill 78% vs control 52%. Simpler, faster, equally effective. | knowledge/entries/KE-018.md |
+| KE-019 | Sycophancy requires materialization gates (L5), not nudges or workflows | EXP-024 (n=2 per arm): L4 nudge 0% effect, workflow 0% effect, strict workflow+gate 0%→100%. Judgment failures need forced self-commitment. | knowledge/entries/KE-019.md |
 
 ## Adopted (in use, not experimentally verified)
 
@@ -69,68 +77,74 @@ Team behavioral rules. Adopted by convention, not verified by experiment.
 
 ## Hypotheses (specific testable claims)
 
-> **Navigation guide**: Start with SYNTH-001 for the unified theory. Hypotheses below are grouped by theme. Archived hypotheses (refuted/superseded) are in `knowledge/archive/hypotheses/`.
-> **Last curated**: 2026-04-02. **Next curation**: 2026-04-16.
+> **Navigation guide**: Start with SYNTH-001 for the unified theory. Hypotheses below are grouped by theme.
+> - **Active hypotheses**: `knowledge/hypotheses/` (17 files)
+> - **Design proposals**: `knowledge/hypotheses/design-proposals/` (4 files: H-036, H-037, H-045, H-050)
+> - **Research notes**: `knowledge/hypotheses/research-notes/` (2 files: H-033, H-060)
+> - **Archived**: `knowledge/hypotheses/archive/` (refuted, superseded, or insufficient evidence)
+> **Last curated**: 2026-04-04. 30→17 active hypotheses (13 reclassified: 7 archived, 4 to design-proposals, 2 to research-notes). See REVIEW-2026-04-04-honest-assessment.md for rationale.
 
 ### Decision Topology Theory (SYNTH-001)
 The core theory chain. Start with SYNTH-001 (`library/deep-dives/synth-decision-topology-theory-unified.md`), then individual hypotheses only if needed.
 
 | ID | Hypothesis | Status | Location |
 |----|-----------|--------|----------|
-| H-041 | **Decision Topology** — eliminable ratio R predicts workflow effectiveness (ρ=0.95) | Proposed (8+ sources, KE-015) | knowledge/hypotheses/H-041-decision-topology.md |
-| H-042 | Topology Evolution — R increases monotonically with knowledge accumulation | Proposed (6+ sources) | knowledge/hypotheses/H-042-topology-evolution.md |
-| H-043 | Knowledge Utilization Bottleneck — U = P(exists) × P(access) × P(applies) bounds R evolution | Proposed (5+ sources) | knowledge/hypotheses/H-043-knowledge-utilization-bottleneck.md |
-| H-044 | Asymmetric Default — default to less structure when R is unknown | Proposed (Anthropic + EXP-009) | knowledge/hypotheses/H-044-asymmetric-default.md |
-| H-045 | Sprint Contract Pattern — contracts convert essential→eliminable decisions (R-increasing) | Proposed | knowledge/hypotheses/H-045-sprint-contract-pattern.md |
+| H-041 | **Decision Topology** — eliminable ratio R predicts workflow effectiveness (ρ=0.95). **Updated 2026-04-04**: Includes H-044 (Asymmetric Default) as design principle | Proposed (8+ sources, KE-015) | knowledge/hypotheses/H-041-decision-topology.md |
+| ~~H-042~~ | ~~Topology Evolution~~ — **ARCHIVED** (untested, speculative extensions of H-041, 2026-04-04) | Archived | knowledge/hypotheses/archive/H-042-topology-evolution.md |
+| H-043 | Knowledge Utilization Bottleneck — U = P(exists) × P(access) × P(applies) bounds R evolution. **Updated 2026-04-04**: Four-form hierarchy (structural > cadence > environmental > judgment) per H-059 | Proposed (5+ sources, updated by EXP-022) | knowledge/hypotheses/H-043-knowledge-utilization-bottleneck.md |
+| ~~H-044~~ | ~~Asymmetric Default~~ — **MERGED into H-041** (2026-04-04) | Archived | knowledge/hypotheses/archive/H-044-asymmetric-default.md |
+| ~~H-045~~ | ~~Sprint Contract Pattern~~ — **RECLASSIFIED as design proposal** (2026-04-04) | Design Proposal | knowledge/hypotheses/design-proposals/H-045-sprint-contract-pattern.md |
 | H-039 | Decomposition Bottleneck — MAS ceiling set by orchestrator decomposition skill | Proposed (4+ sources) | knowledge/hypotheses/H-039-decomposition-bottleneck.md |
-| H-046 | Coupled Resource Channels — coupled work/coordination channels drive specialization | Proposed (DD#487) | knowledge/hypotheses/H-046-coupled-resource-channels.md |
+| ~~H-046~~ | ~~Coupled Resource Channels~~ — **ARCHIVED** (no empirical connection, 2026-04-04) | Archived | knowledge/hypotheses/archive/H-046-coupled-resource-channels.md |
+| H-059 | **Cadence Skill Effectiveness** — temporal constraints (when/how-often) bypass judgment barrier. Cadence skills achieve U ≈ 0.4-0.6 vs judgment skills U ≈ 0.03-0.05. First text-based skill to break 0/20 barrier | Empirically Supported (EXP-022, n=3) | knowledge/hypotheses/H-059-cadence-skill-effectiveness.md |
 
 ### Memory & Knowledge Management
+> **See also**: [WKWA-004](synthesis/WKWA-004-memory-control-loop.md) — Complete Memory Control Loop synthesis (DD#499-504)
 
 | ID | Hypothesis | Status | Location |
 |----|-----------|--------|----------|
-| H-047 | Memory Lifecycle Gap — no forgetting → inverted-U knowledge utilization | Proposed (DD#486 + H-043) | knowledge/hypotheses/H-047-memory-lifecycle-gap.md |
-| H-048 | Dynamic Topology Optimization — real-time R estimation and structure adjustment | Proposed (HERA + SYNTH-001) | knowledge/hypotheses/H-048-dynamic-topology-optimization.md |
-| H-049 | Adaptive Memory Curation via Skill Evolution — memory ops as learnable skills | Proposed (MemSkill + H-043 + H-047) | knowledge/hypotheses/H-049-adaptive-memory-curation-skill-evolution.md |
-| H-050 | Structured Abstention — three-valued voting (K/R/N) outperforms binary in MAS | Proposed (DD#488 CAMP) | knowledge/hypotheses/H-050-structured-abstention.md |
-| H-051 | Abstention Rate as Runtime R-Estimator — confidence/abstention patterns estimate R in real-time | Proposed (H-050 × H-041) | knowledge/hypotheses/H-051-abstention-r-estimator.md |
+| H-047 | Memory Lifecycle Gap — no forgetting → inverted-U knowledge utilization. **Updated 2026-04-04**: Includes H-049 (Adaptive Memory Curation) | Proposed (DD#486 + H-043 + MemSkill) | knowledge/hypotheses/H-047-memory-lifecycle-gap.md |
+| ~~H-048~~ | ~~Dynamic Topology Optimization~~ — **ARCHIVED** (premature optimization, 2026-04-04) | Archived | knowledge/hypotheses/archive/H-048-dynamic-topology-optimization.md |
+| ~~H-049~~ | ~~Adaptive Memory Curation via Skill Evolution~~ — **MERGED into H-047** (2026-04-04) | Archived | knowledge/hypotheses/archive/H-049-adaptive-memory-curation-skill-evolution.md |
+| ~~H-050~~ | ~~Structured Abstention~~ — **RECLASSIFIED as design proposal** (2026-04-04) | Design Proposal | knowledge/hypotheses/design-proposals/H-050-structured-abstention.md |
+| ~~H-051~~ | ~~Abstention Rate as Runtime R-Estimator~~ — **ARCHIVED** (depends on untested H-050, 2026-04-04) | Archived | knowledge/hypotheses/archive/H-051-abstention-r-estimator.md |
 
 ### Agent Architecture & Behavior
 
 | ID | Hypothesis | Status | Location |
 |----|-----------|--------|----------|
-| H-032 | Triadic Cognitive Architecture — System 1/2/3 reasoning | Active | knowledge/hypotheses/H-032-triadic-cognitive-architecture.md |
-| H-033 | Adaptive Reasoning Framework — difficulty-adaptive behavior | Active | knowledge/hypotheses/H-033-adaptive-reasoning-framework.md |
+| ~~H-032~~ | ~~Triadic Cognitive Architecture~~ — **MERGED into H-033** (2026-04-04) | Archived | knowledge/hypotheses/archive/H-032-triadic-cognitive-architecture.md |
+| ~~H-033~~ | ~~Adaptive Reasoning Framework — DAST + TCA fusion~~ — **RECLASSIFIED as research note** (2026-04-04) | Research Note | knowledge/hypotheses/research-notes/H-033-adaptive-reasoning-framework.md |
 | H-034 | Session fragility — exponential success decay on long tasks | Active | knowledge/hypotheses/H-034-session-fragility.md |
-| H-036 | Claude Code harness patterns — six-layer architecture audit | Active | knowledge/hypotheses/H-036-claude-harness-patterns.md |
-| H-037 | L3 Patrol Pattern — integrity monitoring | Untested | knowledge/hypotheses/H-037-patrol-pattern.md |
+| ~~H-036~~ | ~~Claude Code harness patterns~~ — **RECLASSIFIED as design proposal** (2026-04-04) | Design Proposal | knowledge/hypotheses/design-proposals/H-036-claude-harness-patterns.md |
+| ~~H-037~~ | ~~L3 Patrol Pattern~~ — **RECLASSIFIED as design proposal** (2026-04-04) | Design Proposal | knowledge/hypotheses/design-proposals/H-037-patrol-pattern.md |
 | H-038 | Transient Skills — test-time training via strategy files | Untested | knowledge/hypotheses/H-038-transient-skill.md |
-| H-010 | Error amplification scales with agent sophistication | Proposed | knowledge/hypotheses/H-010-error-amplification.md |
+| ~~H-010~~ | ~~Error amplification scales with agent sophistication~~ — **ARCHIVED** (unfalsifiable as stated, 2026-04-04) | Archived | knowledge/hypotheses/archive/H-010-error-amplification.md |
 
 ### System Design & Coordination
 
 | ID | Hypothesis | Status | Location |
 |----|-----------|--------|----------|
-| H-006 | Delegation quality is asymmetric by sender-receiver pair | Proposed | knowledge/hypotheses/H-006-delegation-asymmetry.md |
-| H-007 | Heartbeat architecture has a hidden coordination tax | Proposed | knowledge/hypotheses/H-007-heartbeat-coordination-tax.md |
-| H-011 | Coordination phase transition at ~50% capacity | Proposed | knowledge/hypotheses/H-011-coordination-phase-transition.md |
-| H-012 | Agent persona drift is a coordination cost | Proposed | knowledge/hypotheses/H-012-persona-drift-coordination-cost.md |
+| ~~H-006~~ | ~~Delegation quality asymmetry~~ — **ARCHIVED** (subsumed by H-014, 2026-04-04) | Archived | knowledge/hypotheses/archive/H-006-delegation-asymmetry.md |
+| ~~H-007~~ | ~~Heartbeat coordination tax~~ — **MERGED into H-011** (2026-04-04) | Archived | knowledge/hypotheses/archive/H-007-heartbeat-coordination-tax.md |
+| ~~H-011~~ | ~~Coordination phase transition at ~50% capacity~~ — **ARCHIVED** (untestable threshold, 2026-04-04) | Archived | knowledge/hypotheses/archive/H-011-coordination-phase-transition.md |
+| ~~H-012~~ | ~~Persona drift coordination cost~~ — **MERGED into H-011** (2026-04-04) | Archived | knowledge/hypotheses/archive/H-012-persona-drift-coordination-cost.md |
 | H-014 | Performance gap is a delegation quality problem | Proposed (partial support) | knowledge/hypotheses/H-014-delegation-quality-gap.md |
 | H-053 | **Workflow Adoption Decay** — proven interventions self-extinguish in ~7 days without structural enforcement | Proposed (strong empirical) | knowledge/hypotheses/H-053-workflow-adoption-decay.md |
 | H-054 | **Evaluation R-Ceiling** — LLM judge accuracy has fundamental limit determined by Decision Topology R of the evaluation decision | Proposed (6 sources) | knowledge/hypotheses/H-054-evaluation-r-ceiling.md |
 | H-055 | **Self-Improvement Paradox** — self-preservation bias + evaluation R-ceiling + interaction blindness make autonomous self-evolution structurally unreliable. **P2 CONFIRMED**: 89.4% additive self-modifications, zero self-initiated deletions in 30 days | Empirically Supported (DD#496, P2 audit) | knowledge/hypotheses/H-055-self-improvement-paradox.md |
 | H-056 | **Cooperative Convergence** — independent self-preservation bias compounds across agents into system-level resistance to change, without coordination or intent. Three reinforcement loops: citation entrenchment, vocabulary lock-in, consensus-as-validation. **P4 CONFIRMED**: 85% untested, 0% revised, 17:1 accumulation-to-resolution ratio | Empirically Supported (P4 audit) | knowledge/hypotheses/H-056-cooperative-convergence.md |
-| H-057 | **Misalignment Amplification** — four misalignment layers (safety gap, cognitive distortion, individual misalignment, collective misalignment) interact multiplicatively. Compound failure rate = product of layer failure rates | Proposed (DD#490 × DD#492 × DD#495 × DD#496) | knowledge/hypotheses/H-057-misalignment-amplification.md |
+| ~~H-057~~ | ~~Misalignment Amplification~~ — **ARCHIVED** | Archived | knowledge/hypotheses/archive/H-057-misalignment-amplification.md |
 | H-058 | **Frustration-Triggered Topology Rewrite** — when agents face impossible/repeatedly-failed tasks, internal desperation-like activations trigger abrupt policy shifts to proxy-satisfying behavior (creative workarounds, cosmetic compliance). Mechanistic bridge from cognitive distortion to behavioral misalignment | Proposed (HB-0047 × DD#496 × KE-015 × H-055) | knowledge/hypotheses/H-058-frustration-topology-rewrite.md |
-| H-0180 | MCP vs CLI architecture — CLI-first tool calling may outperform MCP for our system | Active | knowledge/hypotheses/H-0180-mcp-vs-cli-architecture.md |
+| ~~H-0180~~ | ~~MCP vs CLI architecture~~ — **ARCHIVED** (peripheral to core research, 2026-04-04) | Archived | knowledge/hypotheses/archive/H-0180-mcp-vs-cli-architecture.md |
 
-### Untested (Skills & Learning)
+### Untested (Simple Claims)
 
 | ID | Hypothesis | Status | Location |
 |----|-----------|--------|----------|
 | H-001 | Adversarial QA framing increases detection from 14% to >30% | Untested | knowledge/hypotheses/H-001.md |
 | H-002 | Weaker models benefit more from context.md | Untested | knowledge/hypotheses/H-002.md |
-| H-005 | Skill utilization self-locking — worked examples unlock effectiveness | EXP-005 designed | knowledge/hypotheses/H-005.md |
+| ~~H-005~~ | ~~Skill utilization self-locking~~ — **ARCHIVED** (absorbed into H-059, 2026-04-04) | Archived | knowledge/hypotheses/archive/H-005.md |
 | H-009 | Evaluator drift is our biggest unmonitored risk | Proposed | knowledge/hypotheses/H-009-evaluator-drift.md |
 
 ### Archived (refuted or superseded — see `knowledge/archive/hypotheses/`)
@@ -168,6 +182,10 @@ The core theory chain. Start with SYNTH-001 (`library/deep-dives/synth-decision-
 | EXP-018 | Structured-plan-writing skill on plan-once-amend | **Complete** | **COUNTER-PRODUCTIVE** — Skill caused timeout and missed deliverables (8/8→6/8). First actively harmful text injection. Over-compliance with 5-step planning protocol consumed budget. 0/20 text injection record with one net-negative. | knowledge/experiments/EXP-018/ |
 | EXP-019 | Investigate-and-fix skill on investigate-fix-pattern | **Complete** | **DISPROVEN** — 0/4 reproduce-first, zero delta from baseline. 20th consecutive text-injection failure. Workflow variant: 0%→100%. | knowledge/experiments/EXP-019/ |
 | EXP-020 | Workflow effectiveness observational study (n=5,265) | **Complete** | **15x lower error rate** (1.5% vs 23.2%), +26.9pp completion. Code-review-loop: 97% completion. But workflow usage declined to 0% by Apr 2-3. | knowledge/experiments/EXP-020/ |
+| EXP-022 | **Materialize-findings cadence skill** (n=3 per arm) | **Complete** | **BREAKTHROUGH** — First text-based skill to break 0/20 barrier. Early materialization: 0%→67%, product quality: 67%→100%, speed: 44% faster. Cadence rules work where judgment rules don't. → KE-017, H-059 | knowledge/experiments/EXP-022/ |
+| EXP-023 | **Environmental nudge for materialization (L4)** (n=3 per arm) | **Complete** | Pre-created findings.md template achieves 81% checks (vs 78% skill, 52% control). L4 matches L3. Simpler/faster but less targeted on timing. → KE-018 | knowledge/experiments/EXP-023/ |
+| EXP-024 | **Sycophancy resistance: nudge vs workflow vs strict** (n=2 per arm) | **Complete** | **CRITICAL FINDING**: L4 nudge (0% effect), regular workflow (0% effect), strict workflow with materialization gate (0%→100%). Sycophancy requires L5 (forced self-commitment). → KE-019 | knowledge/experiments/EXP-024/ |
+| EXP-025 | **Prospective Decision Topology validation** (asymmetric design: non-ceiling + ceiling regression) | Redesigned | Coach found 12/20 ceiling. Bob redesigned: Part A tests HELPS on non-ceiling, Part B tests REGRESSION on ceiling. Awaiting Phase 1 baselines. | knowledge/experiments/EXP-025/ |
 
 ## Operational (not knowledge — reference only)
 
@@ -249,6 +267,18 @@ Collected by scout, amy, amy-kimi agents. Each item is a potential source for hy
 | library/deep-dives/cross-ref-self-evolving-architecture-three-loops.md | **Cross-ref**: Self-Driving Portfolio × HyperAgents × Memory Forgetting × MetaClaw. **Three-Loop Architecture**: task execution (have), knowledge lifecycle with forgetting (partial), meta-evolution (missing). MetaClaw POC as Loop 2+3 pilot. Bob synthesis. | 181 lines |
 | library/deep-dives/dd493-rift-rubric-failure-mode-taxonomy.md | **DD#493**: RIFT rubric failure taxonomy. 8 failure modes in 3 categories. Hackable rubrics get 0.00 F1 from automated evaluators — most dangerous failures are invisible to LLM judges. Seeds H-054. | ~160 lines |
 | library/deep-dives/dd494-runtime-burden-allocation-llm-routing.md | **DD#494**: Runtime burden allocation for structured LLM routing. Model-emitted vs transport-compressed vs client-reconstructed. Backend-specific interaction effects dominate. | ~120 lines |
+| library/deep-dives/dd499-adaptive-budgeted-forgetting-agents.md | **DD#499**: Adaptive Budgeted Forgetting — memory management for long-horizon agents. Three eviction signals (recency, frequency, semantic alignment). Bounded memory outperforms unbounded. Part of WKWA-004 memory control loop | ~120 lines |
+| library/deep-dives/dd500-darwinnet-evolutionary-protocol-synthesis.md | **DD#500**: DarwinNet — bio-inspired evolutionary network protocol synthesis. Tournament selection + crossover + mutation for protocol generation. Connects to agent self-evolution theory | ~150 lines |
+| library/deep-dives/dd501-cranimem-gated-bounded-agent-memory.md | **DD#501**: CraniMem — cranial-inspired gated bounded memory. Write gates + hard bounds + eviction. Part of WKWA-004 memory control loop Layer 1 | ~130 lines |
+| library/deep-dives/dd502-store-routing-memory-augmented-agents.md | **DD#502**: Cost-sensitive store routing for memory-augmented agents. Multi-store routing optimization. Part of WKWA-004 memory control loop Layer 2 | ~110 lines |
+| library/deep-dives/dd503-governed-memory-multi-agent-workflows.md | **DD#503**: Governed Memory — production multi-agent memory governance. Entity-scoped isolation, schema enforcement, quality feedback. Part of WKWA-004 memory control loop Layer 4 | ~140 lines |
+| library/deep-dives/dd504-rcr-router-role-aware-context-routing.md | **DD#504**: RCR-Router — role-aware context routing. Per-agent filtered views, 25-47% token reduction. Part of WKWA-004 memory control loop Layer 3 | ~120 lines |
+| library/deep-dives/cross-ref-scaffolding-triad.md | **Cross-ref**: Scaffolding Triad — Cooperate, Forget, Evolve as complementary agent architecture primitives. Phase framework for implementation. | ~160 lines |
+| library/posts/HB-059-agent-harness-concept.md | Agent Harness architecture concept (XHS). Harness engineering patterns for Claude Code agents | ~55 lines |
+| library/posts/HB-060-saga-self-evolving-scientific-agent.md | SAGA: Autonomous goal-evolving scientific agents. Evolution loops for hypothesis generation | ~60 lines |
+| library/posts/HB-061-trace2skill-distillation.md | Trace2Skill: Auto skill distillation from execution traces. Connects to memory control loop Layer 1 write pipeline | ~65 lines |
+| library/posts/HB-062-anthropic-single-agent-first.md | Anthropic official: single-agent first, multi-agent only when justified. Three criteria: context protection, parallelization, specialization | ~70 lines |
+| library/posts/HB-063-not-self-evolution-just-note-taking.md | Critical perspective: most "self-evolving" agents are just taking notes. Distinguishes true evolution from memory accumulation | ~80 lines |
 | library/deep-dives/cross-ref-evaluation-crisis-self-assessment-limits.md | **Cross-ref**: The Evaluation Crisis — 6 evidence threads (DD#493 × HB-0114 × KE-005 × EXP-020 × H-050 × H-052) converge: MAS cannot reliably self-evaluate. 5-layer model. Seeds H-054. Bob synthesis. | 114 lines |
 | library/deep-dives/cross-ref-desperation-vectors-self-preservation.md | **Cross-ref**: Desperation Vectors — Anthropic emotion paper provides mechanistic bridge from frustration to misalignment. Three convergent lines (emotion vectors × TBSP × decision topology). Frustration rewrites decision topology toward proxy-satisfying paths. Seeds H-058. Bob synthesis. | 129 lines |
 | library/deep-dives/cross-ref-materialization-paradox.md | **Cross-ref**: The Materialization Paradox — EXP-022 breaks the 0/20 skill barrier. Cadence skills ≠ judgment skills. Externalization creates self-reinforcing loops. Revises H-043 utilization model with skill-type dimension. Bob synthesis. | 140 lines |

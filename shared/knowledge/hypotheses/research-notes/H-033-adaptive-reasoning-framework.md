@@ -157,9 +157,14 @@ async def evaluate_adaptive_vs_fixed():
 - TCA: arXiv:2603.30031 "The Triadic Cognitive Architecture: Bounding Autonomous Action via Spatio-Temporal and Epistemic Friction" (UCL, March 2026)
 - Stop Overthinking Survey: arXiv:2503.16419 (TMLR 2025) — categorizes both as "Output-based" efficient reasoning
 
+## Consolidated Note (2026-04-04)
+
+*H-032 (Triadic Cognitive Architecture) has been merged into this document. H-033 fully subsumes H-032 by extending TCA with DAST's budget pre-estimation. The core TCA mechanism (VOI stopping boundary, cognitive weightlessness framing) is preserved above in Phase 2.*
+
 ## Related Hypotheses
-- H-032: Triadic Cognitive Architecture for Action Bounding (TCA only)
+- H-032: Triadic Cognitive Architecture for Action Bounding (archived — merged here)
 - H-018: Harness optimization
+- H-041: Decision Topology (VOI-based stopping as R-framework application)
 
 ---
 

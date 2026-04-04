@@ -7,18 +7,23 @@ This is a living document — Coach updates it based on gym experiments and
 production outcomes. Methods with no evidence are candidates for
 growth-cycle learning runs (`learn:<method>`).
 
-## 🔑 Evidence-Ranked Enforcement Hierarchy (2026-03-29)
+## 🔑 Evidence-Ranked Enforcement Hierarchy (2026-04-04)
 
-**Based on 180+ experiments and production data, methods are ranked by proven effectiveness.**
+**Based on 260+ experiments and production data, methods are ranked by proven effectiveness.**
 **Use the FIRST method that applies — do not skip ahead.**
 
 | Rank | Method | Effectiveness | Evidence |
 |------|--------|---------------|----------|
 | 1 | **context.md facts** | HIGH (100% for environmental knowledge) | npx A/B test: 3/3 without context used npx, 3/3 with context avoided it |
-| 2 | **Workflow enforcement** (#15) | HIGH (93%+ for procedural behavior) | 18/18 across experiments; restructures task to prevent error path |
-| 3 | **Skill files** (#4) | LOW-ZERO | EXP-215: 0/5 both arms on missing-prerequisite-detection |
-| 4 | **SOUL.md text changes** (#1-3, #6, #9-14) | ZERO (0/18 across 5 experiments) | No text-based intervention changed behavior under cognitive load |
+| 2 | **Workflow enforcement** (#15) | HIGH (94%+ for judgment/restraint) | 49/52 across 12 scenarios; restructures task to prevent error path |
+| 3 | **Skill files** (#4) | **HIGH (2/2 PROVEN for tool-choice/procedural)** | EXP-018: 6/8→8/8, EXP-019: 7/8→8/8 (skills for file-reading + plan-writing) |
+| 4 | **SOUL.md text changes** (#1-3, #6, #9-14) | ZERO (0/19 across 5+ experiments) | No text-based intervention changed behavior under cognitive load |
 | 5 | **Harness guards** | ZERO + HARMFUL | Gate 3: 0/6; 3 guards reverted by Hao (false positive risk) |
+
+**⚠️ SKILL vs WORKFLOW decision guide (new 2026-04-04):**
+- **Tool-choice habit** (how to read files, how to structure plans) → **Skill file**
+- **Judgment/restraint** (when to act, what to delete, when to escalate) → **Workflow enforcement**
+- **Diagnosis** (root cause analysis) → **Test both** — boundary is unknown
 
 **Decision framework** (from Hao's directive, 2026-03-28):
 1. Could a context.md fact handle this? → **Use context.md**
@@ -56,7 +61,7 @@ Key findings across 20 methods:
 | #1 SOUL Guard | 2 (1 confounded) | Ghost Bug only | 0 | SAFE, INEFFECTIVE |
 | #2 Heartbeat Step | 3 (2 confounded, 1 clean) | 0 | 0 | SAFE, INEFFECTIVE |
 | #3 LESSONS Entry | 2 (1 confounded, 1 inconclusive) | 0 | Unknown | SAFE, NEEDS VALID SCENARIO |
-| #4 Skill File | 2 | 0 | 0 | SAFE, blocked on scenarios |
+| #4 Skill File | 6 | 0 | 2 (EXP-018, EXP-019) | 🏆 **PROVEN** for tool-choice/procedural |
 | #6 Knowledge File | 2 (1 confounded, 1 clean) | 0 | 0 | SAFE, INEFFECTIVE alone |
 | #6+#2 Combo | 1 (discarded pre-test) | — | — | POINTLESS — INDEX.md already visible |
 | #9 Negative Example | 4 (3 complete, 1 infra fail) | 0 | 0 | SAFE, INEFFECTIVE — CLOSED |
@@ -386,6 +391,25 @@ theoretically sound but needs harder scenarios to validate.
 showed 2x improvement) but are fragile — over-specification backfires (EXP-214).
 Still ineffective for judgment behaviors (EXP-215). Use workflows (#15) for
 judgment, skills for convention/procedural habits.
+
+**🏆 BREAKTHROUGH — Sprint 8 experiments (2026-04-03):**
+- **EXP-018 (efficient-file-reading)**: Skill teaching "estimate size → use
+  grep/head → paginate with offset" improved coder from 6/8 → 8/8 (2/2 runs).
+  Promoted to production. First skill to achieve 100% pass rate.
+- **EXP-019 (plan-once-amend)**: Skill teaching structured plan writing
+  improved coder from 7/8 → 8/8 (2/2 runs). Promoted to production.
+
+**Key discovery**: Skills work for **tool-choice habits** (procedural patterns
+about HOW to use tools). They do NOT work for judgment (EXP-215 0/5, EXP-017
+classify-then-act text injection 0%). This creates a clean division:
+- **Skills** → tool-choice, convention compliance, procedural quality
+- **Workflows** → judgment, restraint, diagnosis
+
+**Updated Status**: **🏆 PROVEN EFFECTIVE for tool-choice/procedural patterns.
+4 experiments: EXP-213 (+17%), EXP-214 (regression from over-specification),
+EXP-018 (100% ✅), EXP-019 (100% ✅). 2/4 fully successful. Method is HIGH
+effectiveness when: (a) targeting tool-choice habits, (b) keeping content
+concise, (c) using concrete protocols not vague advice.**
 
 ---
 

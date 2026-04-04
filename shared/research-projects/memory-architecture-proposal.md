@@ -309,3 +309,52 @@ This architecture operationalizes several theoretical frameworks:
 ---
 
 *This proposal synthesizes: H-043 (Knowledge Utilization Bottleneck), H-047 (Memory Lifecycle Gap), CR#57 (Memory Grand Unification), CR#78 (Memory Lifecycle Problem), CR#88 (Memory Engineering Stack), CR#175 (MemOS v2), HB-2602 (MemSkill), SYNTH-001 (Decision Topology Theory), and our system's verified knowledge entries (KE-002, KE-007, KE-008, KE-011).*
+
+---
+
+## 11. Research Update — April 4, 2026
+
+**New evidence from ICLR 2026 MemAgents Workshop:**
+
+Three papers provide implementable mechanisms for this proposal's architecture:
+
+1. **DD#501 CraniMem** (2603.15642) — Implements **write-gating** via cosine similarity filtering + utility scoring (importance/surprise/emotion). Achieves near-zero noise drop (0.004-0.022) across 4 LLMs. Directly provides the Tier 0 admission control mechanism. Has PyPI package (`cranimem`).
+
+2. **DD#502 Store Routing** (2603.15658) — Formalizes **read-routing** as cost-sensitive subset selection: π*(q) = argmax[Acc - λ·cost]. Oracle routing achieves +5.4% accuracy with 62% fewer tokens. A fixed 3-store policy (STM+Summary+LTM) nearly matches oracle — simple starting point for our tier routing.
+
+3. **DD#426 Atlas/Compiled Memory** (2603.15666) — Compiles experience into instruction rewrites. Memory as behavioral modification, not storage. Provides the Tier 1→behavioral-compilation pathway.
+
+**CR#277 (Complete Memory Control Loop)** synthesizes these into the four-phase lifecycle our proposal needs:
+- WRITE (CraniMem gating) → STORE (Atlas compilation + CraniMem consolidation) → READ (Store routing) → FORGET (DD#499 budgeted forgetting)
+
+**Projected combined impact**: ~2x utilization improvement (U: 0.12 → 0.25+) if all four phases implemented.
+
+**Recommended priority**: Start with read-routing (Phase 3 of this proposal) — fixed 3-store policy is zero-cost to implement and offers the largest immediate gain.
+
+---
+
+## 12. Research Update — April 4, 2026 (Multi-Agent Governance)
+
+**New evidence addressing Gap #1 (cross-agent memory routing):**
+
+Three additional papers extend the single-agent memory control loop to multi-agent systems:
+
+1. **DD#503 Governed Memory** (2603.17787) — **Production architecture** from Personize.ai for multi-agent memory governance. Four layers: dual memory store (open-set facts + schema-enforced properties), governance routing (fast ~850ms / full ~2-5s modes), progressive context delivery (50% token reduction via session-aware delta injection), schema quality feedback. Achieves 99.6% fact recall, 92% governance precision. **In production.**
+
+2. **DD#504 RCR-Router** (2508.04903) — Formalizes **role-aware context routing**: each agent gets different memory slices based on role + task stage + token budget. Bᵢ = β_base + β_role(Rᵢ). Achieves 25-47% token reduction on multi-hop QA while maintaining quality.
+
+3. **MemFactory** (2603.29493) — Unified framework for training memory policies via GRPO. Relevant for future learned routing/gating policies.
+
+**CR#278 (Multi-Agent Memory Governance)** synthesizes the complete 6-layer stack:
+- L0: Dual Memory Store → L1: Write Gating → L2: Query-Type Store Selection → L3: Role-Aware Agent Routing → L4: Governance Policy Injection → L5: Quality Feedback
+
+**Design recommendations for our system:**
+1. **Role-specific memory views**: Scout sees papers/hypotheses, Bob sees designs/implementations, each agent gets a filtered slice
+2. **Progressive delivery**: Track what context was already delivered per session; inject only deltas
+3. **Dual memory model**: Separate T1 into "open-set facts" (vector-indexed) + "structured properties" (typed, queryable)
+4. **Governance layer**: Route organizational policies (research project status, hypothesis states) to agents that need them
+
+**Projected additional impact**: Role-aware routing could save 20-35% tokens per agent invocation. Progressive delivery could save another 50% on multi-step tasks. Combined with CR#277 mechanisms: potentially 50-65% total token reduction.
+
+**New gap identified**: Multi-agent write conflicts. When multiple agents write to shared memory simultaneously, conflict resolution is needed. No paper addresses this yet — candidate for H-059.
+
