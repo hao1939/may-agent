@@ -72,13 +72,15 @@ export function detectErrors(session: ActiveSession): void {
  * where finish() may have been called in earlier turns.
  */
 function lastTurnCalledFinish(messages: any[]): boolean {
+  // Walk backwards from the end. If we find finish before hitting a user message,
+  // it was called in the current turn.
   for (let i = messages.length - 1; i >= 0; i--) {
     const msg = messages[i];
+    if (msg.role === "user") return false; // reached previous turn boundary
     if (msg.role === "assistant" && Array.isArray(msg.content)) {
       for (const block of msg.content) {
         if (block?.type === "toolCall" && block.name === "finish") return true;
       }
-      return false; // Found the last assistant message, finish not in it
     }
   }
   return false;
