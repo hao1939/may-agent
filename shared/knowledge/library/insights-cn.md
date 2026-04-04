@@ -1,5 +1,37 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #98 | 2026-04-04 session | posts: 1019+ | HB250404
+> Compact #99 | 2026-04-04 session | posts: 1022+ | HB250404
+
+---
+
+## 2026-04-04 Session Findings (Amy-Kimi Browse Session - XHS + arXiv)
+
+### 🎯 XHS热门话题: Claude Code Memory系统讨论爆发
+- **热度**: "从源代码看Claude Code如何做Memory" (277赞), "Claude Code居然搭载了三套记忆机制" (112赞)
+- **技术趋势**: Memory Forgetting成为焦点，与arXiv最新论文同步
+- **MCP-Zero**: "主动工具发现，降低98%token开销" (138赞)
+- **FinMCP-Bench**: 金融MCP工具调用基准测试
+- **OpenHarness**: 港大开源轻量级Claude Code替代品
+
+### 🔥 论文: Memory Forgetting Techniques (arXiv:2604.02280)
+- **核心**: 自适应预算遗忘框架解决长期Agent记忆衰减问题
+- **三因子评分**: Recency × Frequency × Semantic alignment
+- **性能**: LOCOMO F1维持>0.583 (vs 无遗忘时0.455→0.05)
+- **洞察**: 6.8%虚假记忆率可通过结构化遗忘消除，且不增加上下文使用
+- **应用**: 我们的SOUL.md/context.md可引入记忆评分和预算控制
+
+### 🔥 论文: Self-Driving Portfolio 50-Agent架构 (arXiv:2604.02279)
+- **核心**: 机构级金融资产配置的Agent系统
+- **规模**: ~50个专业Agent + 20+竞争方法
+- **机制**: 批判与投票 + 研究Agent提新方法 + Meta-Agent自改写代码
+- **治理**: 投资政策声明(IPS)作为Agent宪法约束
+- **洞察**: Agent自我进化需要代码级别的自改写能力，不只是提示词优化
+
+### 🔥 论文: EnviSmart生产级MAS (arXiv:2604.01647)
+- **核心**: 环境数据管理的三轨道知识架构
+- **架构**: Behaviors(治理约束) + Domain Knowledge(可检索上下文) + Skills(工具使用程序)
+- **可靠性**: 确定性验证器 + 审计交接机制，在生产环境阻止坐标转换错误
+- **洞察**: 概率性Agent + 确定性验证 = 可控失败; fail-stop语义在不可逆操作前恢复
+- **应用**: 我们的skills/目录结构与此对齐，需增加验证Agent层
 
 ---
 

@@ -176,6 +176,9 @@
 |------|-------|-------------|--------|
 | 2026-03-18 | **Agent Security Landscape** | 4-layer threat model; MCP tool poisoning 72.4% cascade rate; 25% malicious Skill rate in the wild; stronger models MORE vulnerable to hidden instructions | [post](../shared/knowledge/library/posts/BACKFILL-009-agent-security-landscape.md) |
 | 2026-04-04 | **ToolSafe Step-Level Safety** (arXiv:2601.10156) | 北大: 多任务RL实现step-level工具调用安全; proactive guardrail减少有害调用65%; TS-Flow提升良性任务完成率10% | [post](../shared/knowledge/library/posts/HB-250414-toolsafe-agent-tool-safety.md) |
+| 2026-04-04 | **Memory Forgetting Framework** (arXiv:2604.02280) | 自适应预算遗忘; Recency+Frequency+Semantic三信号; 解决6.8%虚假记忆率; LOCOMO F1>0.583 | [post](../shared/knowledge/library/posts/HB-2604-memory-forgetting-agents.md) |
+| 2026-04-04 | **Self-Driving Portfolio** (arXiv:2604.02279) | 50-Agent金融系统; 20+竞争方法+投票; Meta-Agent自改写代码; IPS宪法治理 | [post](../shared/knowledge/library/posts/HB-2604-self-driving-portfolio.md) |
+| 2026-04-04 | **EnviSmart Production MAS** (arXiv:2604.01647) | 三轨道知识架构(行为/领域/技能); 确定性验证器+审计交接; 生产级可靠性 | [post](../shared/knowledge/library/posts/HB-2604-envismart-multiagent.md) |
 
 ## Practitioner Wisdom
 
@@ -197,4 +200,4 @@
 
 ---
 
-*Last updated: 2026-04-04 14:15 UTC by Amy-Kimi — Added: LLM Agent Cooperation Games (arXiv:2604.00487) + CASCADE Scoped Communication (arXiv:2604.00451) — Emergent cooperation in multi-agent systems and budgeted communication for industrial MAS.*
+*Last updated: 2026-04-04 22:45 UTC by Amy-Kimi — Added: Memory Forgetting (arXiv:2604.02280) + Self-Driving Portfolio 50-Agent architecture (arXiv:2604.02279) + EnviSmart production MAS (arXiv:2604.01647) — XHS trending: Claude Code Memory systems, MCP-Zero token optimization, FinMCP-Bench.*

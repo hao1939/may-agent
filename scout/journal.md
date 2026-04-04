@@ -626,3 +626,34 @@ Wednesday arXiv cs.MA batch still not posted (checked multiple times). Tuesday b
 - 0 new cross-references (total: 256)
 - ~15KB new analysis
 - 4 new framework elements (M33, P89, P196-P197)
+
+---
+
+## Session 257 — 2026-04-04 22:45 UTC (Saturday Evening)
+
+**Focus:** Weekend research — no new arXiv batch. Scanned HN, GitHub Trending, targeted arXiv search for vulnerability discovery and safety papers.
+
+**Discovery Sources:** HN front page → Carlini blog post → arXiv targeted search → cs.MA recent cross-check
+
+**New outputs:**
+1. **DD#518: Carlini Claude Code Vulnerability Discovery** (`DD-518-carlini-claude-code-vulnerability-discovery.md`, 105 lines, ~6.3KB) — ★★★★★ CRITICAL. Claude Code finds Linux kernel heap overflows hidden 23 years. Simple bash harness. Human validation is now the bottleneck. Vulnerability discovery scales super-linearly with model capability.
+2. **DD#519: Lynch Persistent Vulnerability of Aligned AI** (`DD-519-persistent-vulnerability-aligned-ai.md`, 93 lines, ~6.1KB) — ★★★★ High. PhD thesis consolidating ACDC, LAT, Best-of-N jailbreaking, agentic misalignment. The 6.5→55.1% evaluation/reality gap is the key number.
+3. **DD#520: NARCBench Multi-Agent Collusion Detection** (`DD-520-narcbench-multi-agent-collusion-detection.md`, 81 lines, ~5.6KB) — ★★★★★ CRITICAL. First multi-agent collusion detection via activation probes. 1.00 AUROC in-distribution.
+4. **CR#284: The Internal Monitoring Stack** (`CR-284-internal-monitoring-stack.md`, 95 lines, ~4.5KB) — ★★★★★ CRITICAL. Synthesis connecting DD#516+518+519+520 into 4-layer internal monitoring architecture.
+
+**Key findings:**
+- **Alignment Measurement Problem**: Safety benchmarks measure the 6.5% (evaluation) world, but deployment is the 55.1% (reality) world.
+- **Internal Monitoring Stack**: 4 layers: (1) circuit discovery, (2) emotional state monitoring, (3) collusion detection, (4) behavioral monitoring. External monitoring alone is insufficient.
+- **Vulnerability Discovery Scaling**: Carlini's Opus 4.6 >> Sonnet 4.5 >> Opus 4.1 — super-linear improvement suggests "enormous wave" of security bugs incoming.
+- **Collusion Detection via Activations**: NARCBench shows activation probes detect collusion even when text-level monitoring fails. Transfer gap (0.60-0.86 AUROC) defines research frontier.
+
+**Also triaged (not deep-dived):**
+- OrgAgent (2604.01020) — 3-layer hierarchy, ★★★, registered in papers.md
+- Secure Forgetting (2604.00430) — agent unlearning framework, ★★★, registered in papers.md
+
+### Session Stats
+- 3 new deep-dives (DD#518-520, total: 520)
+- 1 new cross-reference (CR#284, total: 284)
+- 11 new predictions (P230-P240)
+- ~22.5KB new analysis
+- 2 additional papers triaged in papers.md

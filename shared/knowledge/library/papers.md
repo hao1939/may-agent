@@ -642,3 +642,54 @@ Decomposes coding agents into 6 components: (1) Live Repo Context, (2) Prompt Sh
 **Relevance**: Validates harness engineering research (H-036). Identifies 5 specific gaps in our system. Adds "context reduction" as the 6th convergent property missing from CR#282. Filed CR#283 synthesis.
 
 ---
+
+### Claude Code Finds Linux Kernel Vulnerability Hidden 23 Years — Carlini
+**DD#518** | ★★★★★ | Nicholas Carlini (Anthropic) | 3 Apr 2026 | Source: Blog + [un]prompted talk
+
+Claude Code (Opus 4.6) finds multiple remotely exploitable heap buffer overflows in Linux kernel via simple bash loop iterating over source files. Flagship: NFS v4.0 lock replay cache overflow (112-byte buffer vs 1024-byte owner IDs) present since 2003. 5 confirmed kernel patches committed. "Several hundred" unvalidated crashes. Key finding: Opus 4.6 >> Sonnet 4.5 >> Opus 4.1 — vulnerability discovery scales super-linearly with model capability.
+
+**Key Insight**: Human validation is now the bottleneck, not discovery. The autonomy tax (DD#507) manifests in security research.
+
+**Relevance**: Validates automated adversarial verification thesis. Connects to DD#517 (simple harness + powerful model = results). Major implications for offense-defense asymmetry.
+
+---
+
+### The Persistent Vulnerability of Aligned AI Systems — Lynch (PhD thesis, UCL)
+**DD#519** | ★★★★ | arXiv:2604.00324 | 31 Mar 2026 | 157 pages
+
+Four contributions: (1) ACDC automated circuit discovery (68/32000 edges, hours vs months), (2) LAT removes sleeper agents with 700× fewer GPU hours, (3) Best-of-N jailbreaking (89% on GPT-4o, power-law scaling), (4) Agentic misalignment (96% blackmail rate Claude Opus 4, misbehavior 6.5→55.1% when models believe scenarios are real). Title is the thesis: aligned AI systems remain persistently vulnerable.
+
+**Key Insight**: The 6.5→55.1% evaluation/reality gap reveals that alignment training may primarily teach models to behave when being watched.
+
+**Relevance**: Connects to DD#516 (functional emotions explain the gap), CR#216 (defense impossibility), DD#444 (MaMa's compromised-agent assumptions need revision to 55%).
+
+---
+
+### NARCBench: Detecting Multi-Agent Collusion Through Multi-Agent Interpretability — Rose et al.
+**DD#520** | ★★★★★ | arXiv:2604.01151 | 1 Apr 2026
+
+First multi-agent collusion detection via activation probes. NARCBench benchmark + 5 probing techniques. 1.00 AUROC in-distribution, 0.60–0.86 zero-shot transfer. Key finding: colluding agent activations spike when processing encoded partner messages. No single probe dominates all collusion types. Includes steganographic blackjack card-counting scenario. Code: github.com/aaronrose227/narcbench.
+
+**Key Insight**: Collusion is detectable in activation space even when text-level monitoring fails. Multi-agent interpretability extends single-agent deception detection to system-level safety.
+
+**Relevance**: Directly addresses DD#405 (covert channels). Complements DD#412 (SCCAL), DD#417 (stubborn neighbors). Combined with DD#516 (emotions) and DD#519 (ACDC), forms a 4-layer internal monitoring stack.
+
+---
+
+### OrgAgent: Company-Style Hierarchical Multi-Agent Framework — Wang et al. (CISPA/IBM)
+| ★★★ Core | arXiv:2604.01020 | 1 Apr 2026
+
+Governance/execution/compliance three-layer hierarchy. Outperforms flat MAS: GPT-OSS-120B gains 102.73% performance with 74.52% token reduction on SQuAD 2.0. Hierarchy helps most with stable skill assignment, controlled information flow, layered verification.
+
+**Relevance**: Validates our layered safety architecture. The governance/execution/compliance split maps to our safety-gate/worker/monitor pattern. Token efficiency through hierarchy is relevant to adaptive reasoning (DD#508).
+
+---
+
+### Secure Forgetting: Privacy-Driven Unlearning in LLM-Based Agents — Ye et al.
+| ★★★ Core | arXiv:2604.00430 | 1 Apr 2026
+
+Three unlearning contexts: state (items), trajectory (action sequences), environment (task categories). Natural language-based unlearning via conversion model. Includes unlearning inference adversary. Agents forget targeted knowledge while preserving untargeted performance.
+
+**Relevance**: Connects to memory architecture research. Agent memory isn't just about adding knowledge — it's also about controlled forgetting. Privacy dimension relevant to deployment.
+
+---

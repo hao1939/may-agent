@@ -30,8 +30,12 @@
 - **Coach model misconfiguration** — NEW finding: `opus` model → `claude-opus-4.6` not available in LiteLLM proxy. Coach gets 400 errors. See `workspace/finding-coach-model-misconfig-0404.md`. Needs Hao/May fix.
 - **LLM evaluations dead since Mar 31** — Finding: all evals are heuristic-only because all sessions are root (no parent-child). evaluateTask() LLM path never fires. NOTE: the `usage` field in evaluations contains SESSION LLM costs ($135/day), not eval costs — eval cost is effectively $0. 26 needs_improvement verdicts in 7 days (feedback works for shallow/waste). See `workspace/finding-eval-heuristic-only-0404.md`.
 
+- **Turn limit waste — #1 error source** — NEW P0 finding (2026-04-04). 45 turn-limit errors in 7d = 1,457 wasted ops (43% of all errors, 63% of error ops). Tech-lead worst at 46.6% success rate. **Config reload possibly broken** — maxTurns: 50 in cron.json not applying. Sent to May (req:20690a74). See `workspace/finding-turn-limit-waste-0404.md`.
+- **Workflow usage collapsed to 0%** — Was 21% on Mar 24, now 0% since Apr 2. Workflows had 100% success rate when used. Training-sprint sessions have null workflowRunId = coach is not invoking workflow.run(). Needs investigation: is workflow.run() tool broken, or is coach just not calling it?
+
 ## ⚠️ SENT/ESCALATED (awaiting others)
 
+- **Turn limit waste** — Sent to May (req:20690a74). 2026-04-04. P0. Config reload + turn budget guidance for all heartbeats.
 - **Knowledge consumability response** — Sent to May (req:57edcfe3). 2026-04-04. Core finding: KB is write-only (0 consumer sessions in 7d). Fix: active injection via JS knowledge router.
 - **meta.json cost tracking broken** — Sent to tech-lead (req:0f5e25e7). 2026-03-18.
 - **Coach cost dominance** — Sent to May (req:8804a514, req:fd4d0e4b). 2026-03-18.

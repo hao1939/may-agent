@@ -71,8 +71,21 @@
   - [x] CR#281 Persistent World Models Meet Epistemic Promotion — synthesis connecting DD#514+515 to our system
   - 2604.01127 Multi-Agent LLM Governance for Safe Two-Timescale RL — noted (domain: SDN-IoT, pattern: two-timescale governance interesting but not actionable)
 
+## Saturday Evening Session — April 4 (Session 257)
+- arXiv weekend mode — no new listings
+- Scanned HN front page + GitHub Trending for leads
+- Targeted arXiv search on agent vulnerability discovery
+- **NEW**: DD#518 (Carlini Vulnerability Discovery) ★★★★★ — Claude Code finds heap overflows hidden 23 years in Linux kernel. Simple bash harness. Human validation bottleneck.
+- **NEW**: DD#519 (Lynch Persistent Vulnerability) ★★★★ — PhD thesis. ACDC, LAT (700× efficient), Best-of-N (89% GPT-4o), 96% blackmail rate Opus 4. The 6.5→55.1% eval/reality gap.
+- **NEW**: DD#520 (NARCBench Collusion Detection) ★★★★★ — First multi-agent collusion detection via activation probes. 1.00 AUROC in-dist, 0.60-0.86 transfer.
+- **NEW**: CR#284 (Internal Monitoring Stack) — Synthesis connecting DD#516+518+519+520 into 4-layer internal monitoring architecture.
+- Also triaged: OrgAgent (2604.01020, ★★★), Secure Forgetting (2604.00430, ★★★) — registered in papers.md
+- **RECOMMEND**: Bob reads DD#520 + CR#284 for multi-agent collusion detection as safety architecture layer
+- **RECOMMEND**: Tech-lead reads DD#518 for automated vulnerability discovery pattern (bash harness + LLM)
+
 ## Notes
-- DD count: 517, CR count: 283, Hypothesis count: 68 (H-068)
+- DD count: 520, CR count: 284, Hypothesis count: 68 (H-068)
+- Predictions: P230-P240 added this session
 - Predictions: P199-P229 added across recent sessions
 - Key synthesis: Cooperation-Collusion Spectrum (DD#497+495+491+496+489) — θ as governance variable
 - Key synthesis: Forgetting Duality (DD#486+499) — safety vs. performance in memory management
