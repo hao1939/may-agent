@@ -769,6 +769,16 @@ bus.subscribe((event) => {
     case "reload":
       handleReload();
       break;
+    case "resume":
+      if ("sessionId" in event && event.sessionId) {
+        const ok = manager.resumeInterrupted(event.sessionId);
+        if (ok) {
+          bus.emit({ type: "log", level: "info", message: `[resume] Resumed session ${event.sessionId}` });
+        } else {
+          bus.emit({ type: "log", level: "warn", message: `[resume] Failed to resume session ${event.sessionId}` });
+        }
+      }
+      break;
     case "restart":
       gracefulRestart();
       break;
