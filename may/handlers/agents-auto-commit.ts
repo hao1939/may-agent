@@ -17,10 +17,19 @@
  * Exports create() conforming to HandlerModule.
  */
 
-import { execSync } from "node:child_process";
+import { execSync, type ExecSyncOptions } from "node:child_process";
 import { resolve } from "node:path";
 import type { HandlerContext, HandlerModule } from "../../../src/lib/handler-context.js";
 import type { CronEntry } from "../../../src/lib/cron-tool.js";
+
+/**
+ * execSync wrapper that detaches stdin. Prevents SSH/git prompts from
+ * sending SIGTTIN to the process group (which freezes everything under supervisord).
+ */
+function git(command: string, opts: ExecSyncOptions): string {
+  const result = execSync(command, { ...opts, stdio: ["ignore", "pipe", "pipe"] });
+  return typeof result === "string" ? result : result?.toString("utf-8") ?? "";
+}
 
 // ── File classification ───────────────────────────────────────────────
 
@@ -126,9 +135,8 @@ function groupByAgent(files: string[]): AgentChanges[] {
 /** Returns the name of the first configured remote, or null. */
 function getRemote(agentsDir: string): string | null {
   try {
-    const out = execSync("git remote", {
+    const out = git("git remote", {
       cwd: agentsDir,
-      encoding: "utf-8",
       timeout: 5_000,
     }).trim();
     return out ? out.split("\n")[0]! : null;
@@ -144,49 +152,45 @@ function getRemote(agentsDir: string): string | null {
  */
 function tryPull(agentsDir: string, remote: string, log: (msg: string) => void): void {
   try {
-    execSync(`git fetch ${remote} main`, {
+    git(`git fetch ${remote} main`, {
       cwd: agentsDir,
       timeout: 15_000,
-      encoding: "utf-8",
     });
 
-    const behind = execSync(`git rev-list --count HEAD..${remote}/main`, {
+    const behind = git(`git rev-list --count HEAD..${remote}/main`, {
       cwd: agentsDir,
-      encoding: "utf-8",
       timeout: 5_000,
     }).trim();
 
     if (behind === "0") return;
 
-    const hasChanges = execSync("git status --porcelain", {
+    const hasChanges = git("git status --porcelain", {
       cwd: agentsDir,
-      encoding: "utf-8",
       timeout: 5_000,
     }).trim();
 
     if (hasChanges) {
-      execSync("git stash --include-untracked", { cwd: agentsDir, timeout: 10_000 });
+      git("git stash --include-untracked", { cwd: agentsDir, timeout: 10_000 });
     }
 
     try {
-      execSync(`git rebase ${remote}/main`, {
+      git(`git rebase ${remote}/main`, {
         cwd: agentsDir,
         timeout: 30_000,
-        encoding: "utf-8",
       });
       log(`[agents-auto-commit] pulled ${behind} commit(s) from ${remote}`);
     } catch {
-      execSync("git rebase --abort", { cwd: agentsDir, timeout: 5_000 });
+      git("git rebase --abort", { cwd: agentsDir, timeout: 5_000 });
       log(`[agents-auto-commit] rebase conflict during pull — skipped`);
     }
 
     if (hasChanges) {
       try {
-        execSync("git stash pop", { cwd: agentsDir, timeout: 10_000 });
+        git("git stash pop", { cwd: agentsDir, timeout: 10_000 });
       } catch {
         // Stash pop conflict — drop it, the files are already on disk
-        execSync("git checkout -- .", { cwd: agentsDir, timeout: 5_000 });
-        execSync("git stash drop", { cwd: agentsDir, timeout: 5_000 });
+        git("git checkout -- .", { cwd: agentsDir, timeout: 5_000 });
+        git("git stash drop", { cwd: agentsDir, timeout: 5_000 });
         log(`[agents-auto-commit] stash pop conflict — dropped stash`);
       }
     }
@@ -202,10 +206,9 @@ function tryPull(agentsDir: string, remote: string, log: (msg: string) => void):
  */
 function tryPush(agentsDir: string, remote: string, log: (msg: string) => void): void {
   try {
-    execSync(`git push ${remote} main`, {
+    git(`git push ${remote} main`, {
       cwd: agentsDir,
       timeout: 30_000,
-      encoding: "utf-8",
     });
     log(`[agents-auto-commit] pushed to ${remote}`);
   } catch (err) {
@@ -228,9 +231,8 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
     try {
       // Check for changes (tracked + untracked)
-      const status = execSync("git status --porcelain", {
+      const status = git("git status --porcelain", {
         cwd: agentsDir,
-        encoding: "utf-8",
         timeout: 10_000,
       }).trim();
 
@@ -258,23 +260,22 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
           try {
             // Stage only this agent's files
             for (const file of group.files) {
-              execSync(`git add -- "${file}"`, {
+              git(`git add -- "${file}"`, {
                 cwd: agentsDir,
                 timeout: 5_000,
               });
             }
 
             // Check if anything was actually staged
-            const staged = execSync("git diff --cached --name-only", {
+            const staged = git("git diff --cached --name-only", {
               cwd: agentsDir,
-              encoding: "utf-8",
               timeout: 5_000,
             }).trim();
 
             if (!staged) continue;
 
             const msg = buildCommitMessage([group]);
-            execSync(
+            git(
               `git commit -m "chore(auto): ${msg}" --no-verify`,
               { cwd: agentsDir, timeout: 15_000 },
             );
@@ -289,13 +290,13 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         }
       } else {
         // Batch commit — many agents changed
-        execSync("git add -A", {
+        git("git add -A", {
           cwd: agentsDir,
           timeout: 10_000,
         });
 
         const msg = buildCommitMessage(groups);
-        execSync(
+        git(
           `git commit -m "chore(auto): ${msg}" --no-verify`,
           { cwd: agentsDir, timeout: 15_000 },
         );
