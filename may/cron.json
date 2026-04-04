@@ -161,16 +161,12 @@
     "name": "analyze-failures",
     "type": "job",
     "intervalMs": 86400000,
-    "agent": "bob",
-    "message": "[cron:analyze-failures] Analyze recent evaluation data. Run: node -e \"const{getDb}=require('./src/lib/requests.js');const db=getDb('.state');const rows=db.prepare('SELECT sessionId,agent,verdict,score,summary,createdAt FROM evaluations ORDER BY createdAt DESC LIMIT 10').all();console.log(JSON.stringify(rows,null,2));\" to get the last 10 evaluations from SQLite. Identify the top recurring pattern. Write findings to agents/bob/workspace/analysis.md. Compare against previous analysis — did targeted fixes help? If same issue persists, recommend a different approach.",
+    "message": "[cron:analyze-failures] Generate failure analysis report.",
     "enabled": true,
-    "description": "Bob analyzes evaluation patterns daily (via run-agent-task). Updated 2026-03-21: preflight removed and message updated — evaluations moved from .state/evaluations/ dir to SQLite DB.",
-    "handler": "run-agent-task",
-    "lastModified": "2026-03-21T03:06:00.000Z",
-    "offsetMs": 300000,
-    "handlerConfig": {
-      "maxTurns": 40
-    }
+    "description": "Daily failure analysis — verdict distributions, per-agent breakdowns, cost analysis, trends. Pure JS handler (was LLM via run-agent-task, converted 2026-04-04: saves ~78 ops/week). Writes to agents/bob/workspace/analysis.md.",
+    "handler": "analyze-failures",
+    "lastModified": "2026-04-04T09:06:00.000Z",
+    "offsetMs": 300000
   },
   {
     "name": "optimize",
