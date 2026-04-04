@@ -925,3 +925,12 @@ SoLA (arXiv:2603.11239) proposes semantic-routing-based LoRA modules where each 
 - **Why it matters:** **131k stars is extraordinary** — makes this one of the most-starred repos on all of GitHub. The "agent harness" concept treats the entire project as an optimized environment for AI coding agents. Cross-platform support (Claude Code + Codex + Cursor + Gemini + OpenCode + Trae) is notable — not locked to one tool. "Research-first development" and research/ directory suggest a knowledge-driven approach similar to our Scout system.
 - **Connects to:** Agent skills ecosystem convergence (HF skills, muratcankoylan). Our own architecture (contexts ≈ our shared knowledge, skills ≈ our library). The multi-platform approach validates the "agent-portable" skill format.
 - **Status:** watching closely — study SOUL.md and WORKING-CONTEXT.md patterns for our own system. Added 2026-04-01.
+
+## rasbt/mini-coding-agent ★108 (+trending HN front page) — Minimal Coding Agent Harness
+- **URL:** https://github.com/rasbt/mini-coding-agent
+- **Stars:** 108 (17 forks) | New (5 commits, created 4 Apr 2026)
+- **What it does:** Minimal standalone coding agent in Python with: workspace snapshot collection, stable prompt + turn state, structured tools, approval handling for risky tools, transcript and memory persistence, bounded delegation. Uses Ollama backend. Single file: `mini_coding_agent.py`.
+- **Why it matters:** Cleanest pedagogical implementation of agent harness architecture. Accompanies Raschka's "Components of a Coding Agent" article (DD#517). The 6-component decomposition maps perfectly to both our system and the CR#282 convergent properties. Worth studying line-by-line as a reference implementation.
+- **Connects to:** DD#517 (Raschka article), CR#282 (Dispatch Board Patterns), everything-claude-code (maximalist version of same concept), oh-my-claudecode (another harness approach).
+- **Status:** watching — study as reference implementation for harness engineering improvements. Added 2026-04-04.
+

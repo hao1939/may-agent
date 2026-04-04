@@ -242,3 +242,6 @@
 5. [dd506](dd506-beliefshift-temporal-belief-dynamics.md) → [cr279](cross-ref-279-confirmation-bias-stack.md) (belief dynamics + confirmation bias in knowledge systems)
 6. [dd513](dd513-wmas-world-centered-multi-agent-systems.md) → [dd512](dd512-self-driving-portfolio-50-agent-asset-management.md) (world-centered architecture + institutional MAS at scale)
 7. [cr-aii](cross-ref-architecture-is-intelligence-convergence.md) → DD#512 + DD#513 + CASCADE + LLM Cooperation + EXP-025 sycophancy gate (four independent convergences on H-041 Decision Topology)
+
+**Task tracking & dispatch patterns?**
+1. [cr282](cr282-dispatch-board-patterns-multi-agent-task-tracking.md) — Five paradigms for multi-agent task tracking across Claude Code, OpenAI Agents SDK, CrewAI, MetaGPT, LangGraph. Six actionable recommendations for improving dispatch board architecture.

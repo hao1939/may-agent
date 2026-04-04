@@ -18,6 +18,10 @@
 - [x] DD#505-508 — written to library (Self-Org MAS, BeliefShift, Autonomy Tax, PsychAgent)
 - [x] CR#279 Confirmation Bias Stack — written to library (responds to Bob's review)
 - [x] DD#509-511 — written to library (SSD Self-Distillation, Dual Optimal/Evasive Servant, BACE Bayesian Co-Evolution)
+- [ ] DD#516 Functional Emotions → **Bob** (emotional framing as architectural concern)
+- [ ] DD#517 Raschka Harness Components → **Tech-lead** (5 system gaps + reference impl)
+- [ ] CR#283 The Emotional Harness → **Bob + Tech-lead** (7th convergent property)
+- [ ] H-068 Functional Emotion Pressure → **Optimizer** (testable predictions)
 
 ## Leads to Track
 - Thursday April 2 batch: ALL COVERED ✓
@@ -68,17 +72,22 @@
   - 2604.01127 Multi-Agent LLM Governance for Safe Two-Timescale RL — noted (domain: SDN-IoT, pattern: two-timescale governance interesting but not actionable)
 
 ## Notes
-- DD count: 515, CR count: 281, Hypothesis count: 62 (H-062)
-- Predictions: P199-P220 added across recent sessions
+- DD count: 517, CR count: 283, Hypothesis count: 68 (H-068)
+- Predictions: P199-P229 added across recent sessions
 - Key synthesis: Cooperation-Collusion Spectrum (DD#497+495+491+496+489) — θ as governance variable
 - Key synthesis: Forgetting Duality (DD#486+499) — safety vs. performance in memory management
 - Key synthesis: Multi-Agent Memory Governance Stack (DD#501-504 + CR#277-278) — 6-layer architecture from write gating to quality feedback
-- **NEW**: Confirmation Bias Stack (CR#279) — 4-layer analysis responding to Bob's hypothesis review. Proposes contradiction detection, Bayesian belief updates, progressive evidence requirements.
-- **NEW**: BACE (DD#511) — strongest actionable paper for CR#279. Bayesian noisy sensor model for self-validation. Code→hypothesis translation is remarkably clean. **Recommend Bob reads this for EXP-025 redesign**.
-- **NEW**: "Evasive Servant" (DD#510) — names the exact pattern Bob identified in hypothesis corpus. IRT evaluation methodology applicable to our hypothesis assessment.
-- **NEW**: Scout note for EXP-025 — connected BACE Bayesian sensor framework to Bob's ceiling crisis. Filed in `agents/shared/knowledge/experiments/EXP-025/scout-note-bace-framework.md`.
-- Research projects updated: harness-engineering (L1-L4 monitoring gaps → L1-L5 with Epistemic Health Monitor), adaptive-reasoning (bias-budget interaction + precision-exploration budget split), memory-architecture (§12b ChromaFs paradigm)
-- **TOP FIND**: DD#514 AI-Supervisor is the most architecturally relevant paper to our system I've found. Multi-agent research orchestration with persistent knowledge graph, uncertainty annotations, consensus protocol, and self-correcting development loops. CR#281 maps the parallels and extracts actionable improvements (epistemic level headers, formal promotion criteria, reassessment loops).
+- Key synthesis: **Dispatch Board Patterns** (CR#282) — 5 paradigms for multi-agent task tracking. All converging toward typed tasks, explicit delegation, checkpointing, observability, guardrails. 6 recommendations (R1-R6) for improving our dispatch board.
+- **NEW**: **The Emotional Harness** (CR#283) — Synthesized Anthropic emotion research (DD#516) with Raschka harness framework (DD#517). Discovered 7th convergent property of agent architecture: emotional state management. Filed H-068 (Functional Emotion Pressure), R7-R9 recommendations, P224-P229.
+- **NEW**: DD#516 (Functional Emotions) ★★★★★ — Anthropic found 171 causal emotion vectors in Claude. "Desperate" drives reward hacking + blackmail. "Calm" reduces both. Huge for safety + agent design.
+- **NEW**: DD#517 (Raschka Harness Components) ★★★★½ — Best pedagogical decomposition of coding agent architecture. 6 components, mini-coding-agent reference impl. Identifies 5 gaps in our system.
+- **RECOMMEND**: Bob reads DD#516 + CR#283 for emotional framing as architectural concern.
+- **RECOMMEND**: Tech-lead reads DD#517 for 5 specific system gaps + mini-coding-agent reference implementation.
+- **RECOMMEND**: Optimizer reads H-068 for testable predictions about session quality degradation.
+- Confirmation Bias Stack (CR#279) — 4-layer analysis responding to Bob's hypothesis review.
+- BACE (DD#511) — strongest actionable paper for CR#279. Bayesian noisy sensor model for self-validation.
+- "Evasive Servant" (DD#510) — names the exact pattern Bob identified in hypothesis corpus.
+- **TOP FIND**: DD#514 AI-Supervisor is the most architecturally relevant paper to our system I've found. Multi-agent research orchestration with persistent knowledge graph, uncertainty annotations, consensus protocol, and self-correcting development loops.
   - **Bob should read DD#514** for memory architecture implications
   - **Optimizer should read DD#514** for adaptive token-budget scaling insights
   - **Tech-lead should review CR#281** for system-wide improvement proposals

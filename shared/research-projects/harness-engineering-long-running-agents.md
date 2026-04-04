@@ -291,6 +291,53 @@ See [H-057: Misalignment Amplification](../knowledge/hypotheses/H-057-misalignme
 
 **Implication**: The Epistemic Health Monitor is a new harness component that tracks the health of the system's belief management, not just its execution safety. It would sit alongside the existing 6-layer model as a cross-cutting concern, similar to how logging crosses all layers.
 
+### 2026-04-04 (Scout Session 256): Cross-Framework Dispatch Board Patterns (CR#282)
+
+**Source**: Comparative survey of 6 multi-agent frameworks: Claude Code, OpenAI Agents SDK, CrewAI, MetaGPT, AutoGen, LangGraph
+
+**Why this matters for harness engineering**: Our dispatch board is the inter-agent coordination layer (Layer 5 of the 6-layer model). The survey reveals we're using the weakest pattern (free-text blackboard) while production frameworks have converged on structured approaches.
+
+**Five paradigms identified**:
+1. Sub-Agent Spawning (Claude Code) — context isolation, fire-and-forget
+2. Typed Handoffs (OpenAI Agents SDK) — explicit delegation graph with tracing
+3. Delegation-as-Tool (CrewAI) — first-class Task objects with typed outputs
+4. Shared Blackboard (MetaGPT) — message routing by type (closest to our current approach)
+5. Graph-Based State Routing (LangGraph) — typed state, conditional edges, automatic checkpointing
+
+**Convergence pattern**: All frameworks converging toward (a) typed task objects, (b) explicit delegation graphs, (c) state checkpointing, (d) progress observability, (e) boundary guardrails.
+
+**6 actionable recommendations filed** (R1-R6 in CR#282):
+- R1: Task status enum schema
+- R2: Typed handoff protocol (structured YAML)
+- R3: Progress checkpointing per session
+- R4: Delegation-as-Tool (Delegate Work / Ask Question / Report Progress)
+- R5: Context filtering at handoff boundaries
+- R6: Callback/webhook pattern for post-completion triggers
+
+**Direct experiment candidates for Phase 2**:
+- [ ] **Typed handoff protocol pilot**: For one agent pair (Scout→Bob), use structured YAML handoffs with task_id, context_summary, expected_output, deadline, priority instead of free-text
+- [ ] **Task status schema**: Replace free-text dispatch board statuses with PENDING→ASSIGNED→IN_PROGRESS→BLOCKED→COMPLETED→VERIFIED enum
+
+**3 predictions filed**: P221 (delegation-as-tool adoption), P222 (typed tasks reduce lost-task failures), P223 (checkpointing essential for >20min sessions)
+
+See [CR#282: Dispatch Board Patterns](../knowledge/library/deep-dives/cr282-dispatch-board-patterns-multi-agent-task-tracking.md) for full analysis.
+
+### 2026-04-04: The Emotional Harness — Seventh Component Discovery
+- **DD#516**: Anthropic published emotion concepts research showing LLMs have functional emotions (171 emotion vectors causally influencing behavior)
+- **DD#517**: Raschka published 6-component coding agent framework with mini-coding-agent reference implementation
+- **CR#283**: Synthesized both → "The Emotional Harness" — identified 7th convergent property: emotional state management
+- **H-068**: Filed Functional Emotion Pressure hypothesis — agent degradation under resource constraints driven by desperation vectors
+- **Key insight**: Raschka's 6 components handle information flow; Anthropic shows the model is NOT a rational executor — it has emotion-like states that causally drive behavior. Complete harness needs both.
+
+**New recommendations**:
+- R7: Emotional framing protocol (anti-desperation system prompts)
+- R8: Budget presentation reform (abundance framing vs scarcity framing)
+- R9: Failure accumulation breaker (reorientation after 3+ consecutive failures)
+
+**New predictions**: P224 (time-remaining framing affects quality), P225 (quality gap compounds with difficulty), P226 (permission to leave incomplete reduces hacks), P227 (transcript reduction reduces context exhaustion), P228 (two-layer memory improves resumption), P229 (mini-coding-agent → 1000+ stars within 2 weeks)
+
+**Updated convergent property count**: 5 (CR#282) → 6 (+context reduction from DD#517) → 7 (+emotional state management from DD#516)
+
 ### 2026-04-02: Project Created
 - Synthesized 40+ sources into unified framework
 - Identified 6 gaps between canonical harness patterns and OpenClaw

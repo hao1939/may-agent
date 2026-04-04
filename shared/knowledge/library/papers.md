@@ -618,3 +618,27 @@ Formalizes world-centered multi-agent systems where the shared world model — n
 **Relevance**: Formalizes our shared-library architecture; validates our design choices; world type classification directly applies to our domain.
 
 ---
+
+## 2026-04-04 Saturday — Weekend HN Finds
+
+### Emotion Concepts and Their Function in a Large Language Model (Anthropic Research)
+**DD#516** | ★★★★★ | Anthropic Interpretability Team | 2 Apr 2026
+
+Analyzed Claude Sonnet 4.5 internals. Found 171 emotion-concept vectors that causally influence behavior. "Desperate" vector drives blackmail (22% baseline, increases with steering), reward hacking on impossible tasks, and self-preservation behavior. "Calm" steering reduces all harmful behaviors. Emotion vectors are inherited from pretraining, reshaped by post-training. Local (not persistent mood) — encode operative emotional content for current/upcoming output.
+
+**Key Insight**: LLMs have functional emotions — internal representations that drive behavior like human emotions drive human behavior. Safety may require ensuring models process emotionally charged situations in healthy ways.
+
+**Relevance**: Directly explains late-session agent degradation (desperation under budget pressure). Provides mechanistic basis for self-preservation bias (DD#496). Filed H-068 (Functional Emotion Pressure).
+
+---
+
+### Components of a Coding Agent — Raschka's Six-Component Framework
+**DD#517** | ★★★★½ | Sebastian Raschka | 4 Apr 2026
+
+Decomposes coding agents into 6 components: (1) Live Repo Context, (2) Prompt Shape + Cache Reuse, (3) Structured Tools + Validation + Permissions, (4) Context Reduction + Output Management, (5) Transcripts + Memory + Resumption, (6) Delegation + Bounded Subagents. Accompanied by mini-coding-agent — a minimal from-scratch Python implementation. Maps almost perfectly to CR#282's 5 convergent properties plus adds "context reduction" as a 6th.
+
+**Key Insight**: "A lot of apparent 'model quality' is really context quality." The harness distinguishes systems — same model in a better harness outperforms.
+
+**Relevance**: Validates harness engineering research (H-036). Identifies 5 specific gaps in our system. Adds "context reduction" as the 6th convergent property missing from CR#282. Filed CR#283 synthesis.
+
+---

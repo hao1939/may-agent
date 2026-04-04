@@ -1338,3 +1338,89 @@ System is at a natural plateau. Prompting experiments exhausted. Convention prec
 - DD#514 (AI-Supervisor): Persistent Research World Model with uncertainty annotations. Most architecturally relevant paper to our system. Inspired Phase 3.3 of the plan.
 
 **State**: Plan delivered. Next: Phase 1.2 (promote top-5 KEs to context.md) and Phase 1.3 (INDEX restructure) in future sessions.
+
+### 2026-04-04 19:59 — Knowledge Injection: Summaries, Context Entries, Routing Table
+
+**Session focus**: P0 task from Hao: build the content side of knowledge injection. Read all team proposals, write KE summaries, draft universal context.md entries, design routing table.
+
+**Team proposal review** (cross-pollination):
+- Coach: action-triggered format ("when about to X, remember Y"), role-specific knowledge, decision-time checklists. Strong validation of our approach.
+- Optimizer: "one-liners not summaries", "pointers at the point of work", "3 bullet points injected at session start". Confirmed: brevity is critical.
+- Amy: consumption verification loop, citation tracking. Good ideas for later phases.
+- Tech-lead: static keyword→file mapping is trivial (JSON), cap at 3, agent-profile routing. Already prototyped the code shape.
+
+**Completed**:
+1. **KE-SUMMARIES.md** (64 lines) — One-liner summaries for all 19 verified KE entries. Action-oriented format ("don't X, use Y instead"), with evidence citations. Designed for router injection.
+2. **DRAFT-universal-context-entries.md** (66 lines) — 5 copy-paste-ready one-liners for every agent's context.md, with rationale and deployment plan. Combined KE-002+KE-007 and KE-003+KE-013 as complementary pairs.
+3. **ROUTING-TABLE.md** (196 lines) — Complete routing specification:
+   - 39 keyword→KE mappings (case-insensitive matching)
+   - 10 agent-profile→KE mappings (role-specific always-inject)
+   - JSON-ready format for tech-lead's router implementation
+   - Injection rules: heartbeats get profile+keyword, task sessions keyword-only (Hao's decision)
+   - Cap at 3 summaries per session to prevent overhead (grounded in KE-008)
+
+**Key design decisions**:
+- Single combined KE-SUMMARIES.md file vs 19 separate files — more maintainable, easier for router to parse
+- Max 3 injections per session — grounded in KE-008 (overhead hurts) and optimizer's "3 bullet points" preference
+- Agent profiles have 2-3 KEs each, leaving room for 1 keyword match — prevents bloat
+- JSON block validated with bun — 39 keywords, 10 profiles, ready for tech-lead
+
+**State**: All 3 deliverables complete. Ready for coach review (context entries) and tech-lead implementation (routing table).
+
+### 2026-04-04 20:30 — Workflow Escalation Root Cause Analysis
+
+**Session focus**: Deep investigation of the 41.5% workflow escalation rate (93/224 runs).
+
+**Key findings**:
+1. **implement-and-review has 69% escalation rate** (59/86 runs). By comparison: diagnose-and-fix is 11%, design-review is 22%.
+2. **83% of "still failing" escalations were FALSE** — QA said CONDITIONAL/PASS but `getVerdict` treated them as FAIL. The core bug: ambiguous/CONDITIONAL verdicts defaulted to "fail" instead of "conditional".
+3. **The rate worsened from 33% (W08) to 96% (W12)** — progressively worse, likely because QA started giving more CONDITIONAL verdicts as it got better at distinguishing patch issues from pre-existing environment issues.
+4. **The fix exists in current code but is UNTESTED** — committed today (Apr 4), last implement-and-review run was Mar 29. Zero production validation.
+5. **Additional fixable issues**: REQUEST_CHANGES verdict not mapped (1 run), coder session timeouts with no retry (20 runs), fix attempts chasing pre-existing issues (8 runs).
+
+**Impact if fixes deployed**:
+- Current fix alone: 69% → ~35% escalation (29 false escalations eliminated)
+- With coder retry: ~35% → ~12% escalation
+- Net: most escalations would become legitimate
+
+**Connection to H-053**: The high escalation rate likely ACCELERATED workflow adoption decay. When 96% of workflow runs escalate, agents rationally avoid them — creating a feedback loop where the bug prevents adoption AND prevents discovery of the bug.
+
+**Deliverable**: `workspace/workflow-escalation-analysis-2026-04-04.md` (174 lines, full data + recommendations)
+
+**State**: Analysis complete. P0 recommendation: get implement-and-review runs executed to validate the fix. P1: add coder retry, handle REQUEST_CHANGES.
+
+### 2026-04-04 20:38 — Design Review: Automatic Workflow Routing + REQUEST_CHANGES Fix
+
+**Tech-lead design review**: Reviewed `design-workflow-routing.md`. APPROVED with issues:
+1. REQUEST_CHANGES verdict not handled in getVerdict (P1) — fixed in implement-and-review.ts
+2. Missing coder retry mechanism (P1) — 34% of escalations from session errors
+3. Success criteria based on wrong data (P2)
+4. Need Phase 0 (validate getVerdict fix) before routing goes live
+
+**Code fix**: Added `v === "REQUEST_CHANGES"` to getVerdict's FAIL check in implement-and-review.ts. This was a subtle bug — REQUEST_CHANGES fell through to "conditional" (pass), skipping needed fixes.
+
+**Key insight**: The routing design and the escalation analysis are deeply connected. H-053's feedback loop (high escalation → avoid workflows → no data → bug persists) is broken by automatic routing — more runs = faster bug discovery. But the workflow must work correctly first.
+
+**State**: Design review delivered. REQUEST_CHANGES fix applied. Both deliverables ready.
+
+### 2026-04-04 21:15 — Heartbeat: Library Scan + Design Review Delivery
+
+**Pending task**: Tech-lead requested design review of Automatic Workflow Routing. I'd already written the review in the prior session — `workspace/review-workflow-routing-2026-04-04.md`. Formally sent it via agents.send with full context files.
+
+**Library scan — 6 new items reviewed:**
+
+1. **CR#282 (Dispatch Board Patterns)** — Surveyed 6 multi-agent frameworks. ALL converge on 5 properties: typed task objects, explicit delegation graphs, state checkpointing, progress observability, guardrails at boundaries. Our system has ~1 of 5. Validates tech-lead's routing design direction.
+
+2. **DD#514 (AI-Supervisor)** — Persistent Research World Model with uncertainty annotations. Our knowledge base already does this implicitly. Parallel consensus protocol interesting for future.
+
+3. **RIFT (Rubric Failure Taxonomy)** — 8 failure modes for rubric-based evaluation. Relevant to QA rubber-stamping (KE-005). Would need rubric audit to apply.
+
+4. **Signals (Trajectory Triage)** — Signal-based sampling, 82% informativeness vs 54% random. Already partially covered by failure analysis cron.
+
+5. **H-067 (Budgeted Forgetting)** — Amy-Kimi. Three-pillar forgetting connects to H-047.
+
+6. **HB-0018 (Skill Internalization)** — Curriculum RL, connects to H-019.
+
+**Key synthesis**: CR#282 provides external validation for H-041 (decision topology). All 5 major frameworks independently encode the same insight: remove decisions from agents, embed them in architecture. CrewAI delegation-as-tool = eliminable decisions. LangGraph typed state = pre-resolved decisions. MetaGPT SOP enforcement = eliminating navigation decisions via structure.
+
+**State**: Design review formally sent. Library scanned. Moratorium respected. Clean heartbeat.

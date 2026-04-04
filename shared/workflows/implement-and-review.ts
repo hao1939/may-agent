@@ -8,10 +8,15 @@ export const description: string =
   "One retry for fixable issues. Escalates if QA rejects twice.";
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
-  // Step 1: Coder implements
-  const coder = await ctx.runAgent("coder", ctx.task);
+  // Step 1: Coder implements (with one retry on session error)
+  let coder = await ctx.runAgent("coder", ctx.task);
   if (coder.status === "error") {
-    return ctx.escalate("coder failed", { error: coder.error });
+    // 34% of historical escalations were coder session errors (timeouts,
+    // interruptions). Retry once before escalating — many are transient.
+    coder = await ctx.runAgent("coder", ctx.task);
+    if (coder.status === "error") {
+      return ctx.escalate("coder failed after retry", { error: coder.error });
+    }
   }
 
   // Step 2: QA evaluates independently
@@ -47,7 +52,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       const v = verdictMatch[1].toUpperCase();
       if (v === "PASS") return "pass";
       if (v === "CONDITIONAL") return "conditional";
-      if (v === "FAIL") return "fail";
+      if (v === "FAIL" || v === "REQUEST_CHANGES") return "fail";
     }
     const u = text.toUpperCase();
     if (u.includes("**CONDITIONAL**")) return "conditional";
@@ -103,10 +108,16 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   // Step 4: One iteration — send feedback to coder for fixable issues
   const fixTask =
     `Fix these issues from QA:\n\n${reviewText}\n\n` +
-    `Original task: ${ctx.task}`;
-  const fix = await ctx.runAgent("coder", fixTask);
+    `Original task: ${ctx.task}\n\n` +
+    `IMPORTANT: Address ONLY the specific issues QA raised above. ` +
+    `Do not fix pre-existing tsc/vitest failures that were not introduced by this patch.`;
+  let fix = await ctx.runAgent("coder", fixTask);
   if (fix.status === "error") {
-    return ctx.escalate("coder fix attempt failed", { error: fix.error, reviewFeedback: reviewText });
+    // Retry once on transient session errors
+    fix = await ctx.runAgent("coder", fixTask);
+    if (fix.status === "error") {
+      return ctx.escalate("coder fix attempt failed after retry", { error: fix.error, reviewFeedback: reviewText });
+    }
   }
 
   // Step 5: Re-review

@@ -19,6 +19,7 @@
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
+| 2026-04-04 | **Signals: Trajectory Triage** (arXiv:2604.00356) | 轻量级信号框架筛选Agent轨迹; 82%信息丰富率vs随机54%; 1.52x效率增益 | [post](../shared/knowledge/library/posts/HB-0126-signals-trajectory-triage-agentic.md) |
 | 2026-04-04 | **CogBias: Cognitive Bias in LLMs** (arXiv:2604.01366) | 四家族偏差线性可分离; Prompt去偏差对Judgment适得其反; Activation steering减26-32% | [post](../shared/knowledge/library/posts/HB-0019-cogbias-cognitive-bias-llm.md) |
 | 2026-04-04 | **RIFT: Rubric Failure Taxonomy** (arXiv:2604.01375) | 8种评估标准失效模式; Gaming Vulnerability检测; F1 0.86自动诊断 | [post](../shared/knowledge/library/posts/HB-0020-rift-rubric-failure-taxonomy.md) |
 
