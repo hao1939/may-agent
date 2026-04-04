@@ -235,3 +235,105 @@ describe("computeHeuristicScores - waste ratio penalty", () => {
     expect(scores.issues).toContain("high_waste_ratio");
   });
 });
+
+describe("computeHeuristicScores - error type differentiation", () => {
+  it("turn limit hit does NOT penalize quality, only mild efficiency penalty", () => {
+    const messages = [
+      assistantMsg(5),
+      toolResult("ok"),
+      toolResult("ok"),
+      toolResult("ok"),
+      toolResult("ok"),
+      toolResult("ok"),
+    ];
+    const transcript = toTranscript(messages);
+    const session = makeSession({
+      status: "error",
+      error: "Turn limit reached: 41/40 turns. Session terminated.",
+    });
+    const scores = computeHeuristicScores(session, transcript, messages);
+    // Quality should NOT be penalized — agent was doing good work
+    expect(scores.quality).toBeGreaterThanOrEqual(3);
+    // Efficiency gets mild -1 penalty for not finishing within budget
+    expect(scores.issues).toContain("turn_limit_hit");
+    expect(scores.issues).not.toContain("session_error");
+    // Should still be "acceptable" or "good", not dragged down
+    expect(scores.verdict).not.toBe("needs_improvement");
+  });
+
+  it("provider/LiteLLM error does NOT penalize quality OR efficiency", () => {
+    const messages = [assistantMsg(1), toolResult("ok")];
+    const transcript = toTranscript(messages);
+    const session = makeSession({
+      status: "error",
+      error: '400 {"error":{"message":"litellm.BadRequestError: Github_copilotException - The requested model is not supported.. Received Model Group=claude-sonnet-4-20250514"}}',
+    });
+    const scores = computeHeuristicScores(session, transcript, messages);
+    // No quality or efficiency penalty for provider errors
+    expect(scores.issues).toContain("provider_error");
+    expect(scores.issues).not.toContain("session_error");
+    expect(scores.quality).toBeGreaterThanOrEqual(3);
+  });
+
+  it("genuine agent error still penalizes quality as before", () => {
+    const messages = [
+      assistantMsg(3),
+      toolResult("ok"),
+      toolResult("ok"),
+      toolResult("ok"),
+    ];
+    const transcript = toTranscript(messages);
+    const session = makeSession({
+      status: "error",
+      error: "TypeError: Cannot read properties of undefined (reading 'map')",
+    });
+    const scores = computeHeuristicScores(session, transcript, messages);
+    // Genuine error → quality penalty still applies
+    expect(scores.issues).toContain("session_error");
+    expect(scores.issues).not.toContain("turn_limit_hit");
+    expect(scores.issues).not.toContain("provider_error");
+  });
+
+  it("error session with no error message falls through to session_error", () => {
+    const messages = [assistantMsg(1), toolResult("ok")];
+    const transcript = toTranscript(messages);
+    const session = makeSession({ status: "error" });
+    // error field is undefined
+    const scores = computeHeuristicScores(session, transcript, messages);
+    expect(scores.issues).toContain("session_error");
+  });
+
+  it("turn limit hit with good work still scores well overall", () => {
+    // Simulate a 40-turn session that did lots of productive work
+    const messages: any[] = [];
+    for (let i = 0; i < 20; i++) {
+      messages.push(assistantMsg(2));
+      messages.push(toolResult("file contents here..."));
+      messages.push(toolResult("command output ok"));
+    }
+    const transcript = toTranscript(messages);
+    const session = makeSession({
+      status: "error",
+      error: "Turn limit reached: 41/40 turns. Session terminated.",
+    });
+    const scores = computeHeuristicScores(session, transcript, messages);
+    // Should get good quality for productive work despite turn limit
+    expect(scores.quality).toBeGreaterThanOrEqual(3);
+    expect(scores.productiveCalls).toBe(40);
+    expect(scores.wastedCalls).toBe(0);
+    expect(scores.issues).toContain("turn_limit_hit");
+    expect(scores.issues).not.toContain("session_error");
+  });
+
+  it("BadRequestError with claude-opus model is classified as provider_error", () => {
+    const messages = [assistantMsg(1), toolResult("ok")];
+    const transcript = toTranscript(messages);
+    const session = makeSession({
+      status: "error",
+      error: '400 {"error":{"message":"litellm.BadRequestError: Github_copilotException - Bad Request. Received Model Group=claude-opus-4.6"}}',
+    });
+    const scores = computeHeuristicScores(session, transcript, messages);
+    expect(scores.issues).toContain("provider_error");
+    expect(scores.issues).not.toContain("session_error");
+  });
+});

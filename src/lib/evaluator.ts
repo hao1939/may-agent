@@ -819,11 +819,26 @@ export function computeHeuristicScores(
   // Count assistant turns
   const assistantTurns = (transcript.match(/"role":"assistant"/g) || []).length;
 
-  // 1. Session status — only penalize actual errors, not timeouts.
+  // 1. Session status — differentiate error types.
   // "interrupted" is normal (system timeout) and should not reduce quality.
+  // Turn-limit hits mean the agent was working but ran out of budget — not a quality failure.
+  // Provider/LLM errors are infrastructure issues, not agent quality problems.
   if (session.status === "error") {
-    quality -= 1;
-    issues.push("session_error");
+    const errMsg = session.error ?? "";
+    if (/Turn limit reached/i.test(errMsg)) {
+      // Agent was actively working, just exceeded turn budget.
+      // Don't penalize quality — the work done may be perfectly good.
+      // Mild efficiency penalty since the agent didn't finish within budget.
+      efficiency -= 1;
+      issues.push("turn_limit_hit");
+    } else if (/litellm|BadRequestError|Github_copilotException|model.*not supported/i.test(errMsg)) {
+      // Provider/infrastructure error — not the agent's fault at all.
+      issues.push("provider_error");
+    } else {
+      // Genuine agent error (crash, validation failure, etc.)
+      quality -= 1;
+      issues.push("session_error");
+    }
   }
 
   // 2. OpBudget exhaustion — REMOVED (opBudget system removed 2026-03-30).
