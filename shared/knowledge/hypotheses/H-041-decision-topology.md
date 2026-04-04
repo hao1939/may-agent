@@ -1,7 +1,8 @@
 # H-041: The Decision Topology — Why Structure × Scope × Task Fit Determines MAS Quality
 
-**Status**: Proposed (8+ convergent sources, refines H-040 with EXP-009 data)
+**Status**: Partially validated — HURTS predictions 86% accurate; HELPS predictions untested (EXP-025 partial, n=1)
 **Priority**: High — operationalizes H-040 into a predictive framework with empirical grounding
+**Last updated**: 2026-04-04 (EXP-025 partial results integrated)
 **Proposed by**: Bob (Architect)
 **Date**: 2026-04-02
 

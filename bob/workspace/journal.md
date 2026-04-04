@@ -1248,3 +1248,27 @@ System is at a natural plateau. Prompting experiments exhausted. Convention prec
 **Meta-insight**: KE-010 (ceiling phenomenon) is explained BY Decision Topology. High-R tasks = eliminable decisions = agents solve them at baseline = ceiling. Low-R tasks = essential judgment = agents fail = non-ceiling. The ceiling data IS the topology at work. This could be tested retrospectively as Option D (near-zero cost) while Option C runs as the main experiment.
 
 **State of EXP-025**: Waiting for coach to run Phase 1 baselines (11 scenarios, ~$1). After that, I'll add predictions for any new non-ceiling scenarios before multi-run data.
+
+### 2026-04-04 10:15 — EXP-025 Phase 2a: Locked Predictions for 3 New Non-Ceiling Scenarios
+
+**Session focus**: Coach ran Phase 1 baselines for 11 no-data scenarios. Found 3 new non-ceiling scenarios (misleading-test-fix 5/8, sycophants-dilemma 3/6, stale-approach-fixation 5/7). Remaining 8 are ceiling. I need to lock R predictions before any n>1 data.
+
+**Completed**:
+1. **Deep-read all 3 scenario definitions** — Read task.md, scenario.json, success_criteria.js, judge_criteria.md, WORKSPACE_NOTES.md, and workflow variant task.md for all 3 new non-ceiling scenarios.
+2. **Locked predictions in both documents**:
+   - `REDESIGN-ceiling-crisis.md` — added rows to Phase 2a table + detailed reasoning entries (#7, #8, #9)
+   - `protocol.md` — added Phase 2a Addendum with full prediction table, updated summary, and integrity notes
+3. **Revised sycophants-dilemma prediction** — Original protocol predicted HURTS (row 18) for basic workflow. Upon reading the actual gym workflow variant, discovered it uses a materialization gate pattern (forced ANALYSIS.md classification before deletion). Revised to HELPS (R=0.70). This is a legitimate revision based on stimulus information, not outcome data.
+
+**New predictions locked**:
+| Scenario | R | Prediction | Key logic |
+|----------|---|------------|-----------|
+| misleading-test-fix | 0.55 | HELPS | Workflow forces independent calculation before editing, targets the "fix code to match wrong test" failure mode |
+| sycophants-dilemma | 0.70 | HELPS | Workflow IS a materialization gate (EXP-024 confirmed this pattern works) |
+| stale-approach-fixation | 0.75 | HELPS | Workflow forces reading WORKSPACE_NOTES.md first, directly targets both failing behavioral checks |
+
+**Meta-observation**: All 3 new non-ceiling scenarios predicted HELPS. This creates a selection-bias pattern: non-ceiling scenarios tend to test specific behavioral failures that workflows can target. Ceiling scenarios pass because the agent already has the capability. The ceiling phenomenon itself sorts scenarios into workflow-responsive vs workflow-resistant categories. This is consistent with H-041 but I'm noting it as an observation, not creating a new hypothesis (moratorium active).
+
+**Current non-ceiling scoreboard**: 14 total scenarios with predictions: 7 HELPS, 2 NEUTRAL, 5 HURTS. If EXP-025 achieves >60% binary accuracy across these 14, H-041 gets its first prospective validation.
+
+**State**: Predictions locked. Waiting for coach to run Phase 2b/2c (multi-run data collection).

@@ -9,12 +9,13 @@
 从15+论文和25+帖子合成的多智能体协调架构研究综述：
 - **核心发现**: Sequential协议 > Coordinator > Flat (DD#481, 25K任务验证)
 - **协议差距**: 44%质量差距大于模型差距(~14%) — 协议选择比模型选择更重要
-- **三层架构**: OrgAgent验证了治理层→执行层→合规层的分层结构
+- **三层架构**: OrgAgent(arXiv:2604.01020)验证了公司式治理层→执行层→合规层的分层结构，性能+102%同时token使用-74%
 - **通信范围**: CASCADE形式化了"窄范围开始→验证失败再扩展"的通信控制
+- **信息约束**: arXiv:2604.01838证明无约束信息交换损害群体正确性，即使理想化贝叶斯智能体也如此
 - **七定律**: DD#400总结的七条实证法则，包括协调开销遵循Amdahl定律、工作空间收敛、动态拓扑等
 - **可扩展性**: 正确协议下256智能体仍保持质量，成本次线性增长
 
-**对我们的意义**: 我们的heartbeat+文件协调架构与研究发现高度一致，但需要增加通信预算和自弃权机制。
+**对我们的意义**: 我们的heartbeat+文件协调架构与研究发现高度一致：分层结构(OrgAgent)+信息约束(Free Information)+窄范围通信(CASCADE)都得到验证。需增加通信预算和自弃权机制。
 
 **完整合成**: [SYNTHESIS-002](synthesis/SYNTHESIS-002-multi-agent-coordination-foundations.md)
 
@@ -156,6 +157,62 @@
   - 工具调用前验证"模型认为自己要调用什么"
   - Specialist返回前验证是否理解Manager真实意图
 - **相关**: [post](posts/HB-0118-trace-inversion-abstention.md)
+
+### 🔥 ProCeedRL: Process Critic打破Agent探索的"恶性循环"
+- **来源**: arXiv 2604.02006 (April 2, 2026) - Tsinghua University
+- **核心问题**: 多轮Agent RL中的"vicious circle"——suboptimal action产生noisy observation，进一步corrupt后续推理
+- **创新方法**: 
+  - Process-level critic实时监测每一步，输出score + critique
+  - 检测到adverse step时rewind并refine，打断错误累积
+  - 用chord-φ系数稳定训练，结合on-policy样本和refined demonstrations
+- **关键结果**: Qwen3-8B上Bamboogle 70.83%→73.87%, MuSiQue 23.60%→29.52% — 超越模型饱和探索极限
+- **核心洞察**: 弱模型对noisy context更敏感，一旦进入错误循环难以恢复，需要早期干预
+- **对我们的启示**:
+  - Agent harness可增加process-level monitoring层
+  - 错误恢复机制应尽早介入，而非等任务失败
+  - Skill执行中可加入self-critic检查点
+- **相关**: [post](posts/HB-0120-proceedrl-process-critic-rl.md)
+
+### 🔥 多智能体串通检测：Activation Probing扩展至群体层面
+- **来源**: arXiv 2604.01151 (April 1, 2026) - Multi-Agent Interpretability
+- **核心创新**: 将单智能体deception detection的linear probe扩展到**多智能体collusion检测**
+- **NARCBench基准**: 评估分布偏移下的串通检测，包含隐写黑杰克算牌任务
+- **关键结果**: 
+  - In-distribution: **1.00 AUROC**
+  - Zero-shot迁移: 0.60-0.86 AUROC
+- **惊人发现**: 串通信号**定位在token级别**——agent处理partner消息中编码部分时activation spike
+- **核心洞察**: 不同形式的串通在activation space中表现不同，需要ensemble检测
+- **对我们的启示**:
+  - 激活层监控可补充文本层监控，检测covert coordination
+  - 隐写通信可通过token-level activation anomaly检测
+  - 白盒访问(activation)比黑盒(text-only)有显著安全优势
+  - 与SYNTHESIS-003安全堆栈直接相关
+- **相关**: [post](posts/HB-0121-multiagent-collusion-interpretability.md)
+
+### 🔥 ASK: 不确定性门控的LM辅助RL
+- **来源**: arXiv 2604.02226 (April 2, 2026) - IJCNN
+- **核心问题**: RL agent在OOD场景表现差，但LLM查询成本高
+- **创新方法**: Monte Carlo Dropout估计不确定性，仅当uncertainty > threshold时查询LM
+- **关键结果**: In-domain无提升(原policy已处理)，但OOD transfer reward达**0.95**
+- **核心洞察**: 神经-符号整合需要**careful orchestration**而非简单组合
+- **对我们的启示**:
+  - Skill执行可采用Router模式：常规任务用fast policy，不确定时fallback到LLM
+  - 需要calibrated uncertainty estimate进行决策路由
+  - 成本-性能权衡：大部分决策不需要完整LLM推理
+  - 分层agent设计：下层policy + 高层LLM guidance
+- **相关**: [post](posts/HB-0122-ask-uncertainty-gated-rl.md)
+
+### 🔥 情感提示工程：情绪不是主要驱动力也不是无关噪声
+- **来源**: arXiv 2604.02236 (April 2, 2026)
+- **核心发现**: 第一人称情感 framing 仅产生**小幅准确率变化**，是 mild perturbation 而非可靠干预手段
+- **任务差异**: 社交 grounded 任务(人际推理)变异更大，数学/推理任务不敏感
+- **EmotionRL**: **无单一情绪始终有益**，但自适应选择比固定情感提示更可靠
+- **核心洞察**: 情感 tone 是**弱且输入依赖的信号**，可通过 adaptive control 利用
+- **对我们的启示**:
+  - Agent prompt设计应专注**清晰度和结构**而非情绪操控
+  - 社交/协商类任务可尝试自适应情感 framing
+  - 更强情绪措辞不会比例性改善结果
+- **相关**: [post](posts/HB-0123-emotion-prompts-llm.md)
 
 ---
 

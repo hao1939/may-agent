@@ -16,6 +16,9 @@
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
+| 2026-04-04 | **Free Information Disrupts Crowds** (arXiv:2604.01838) | 无约束信息交换损害群体正确性; 即使理想化贝叶斯智能体也如此; 信息流约束可能有益 | [post](../shared/knowledge/library/posts/HB-250410-free-information-disrupts-crowds.md) |
+| 2026-04-04 | **DarwinNet Self-Evolving Network** (arXiv:2604.01236) | 三层生物启发架构(L0/L1/L2); Intent-to-Bytecode演化; Protocol Solidification Index成熟度 | [post](../shared/knowledge/library/posts/HB-250411-darwinnet-self-evolving-network.md) |
+| 2026-04-04 | **OrgAgent Company Hierarchy** (arXiv:2604.01020) | 公司式三层架构(治理/执行/合规); 性能+102%同时token-74%; 层级>扁平协作 | [post](../shared/knowledge/library/posts/HB-250409-orgagent-company-hierarchy-mas.md) |
 | 2026-04-04 | **Agent Harness Concept (XHS)** | "模型是大宗商品，Harness才是护城河"; Agent=Model+Harness; Prompt→Harness工程范式转移 | [post](../shared/knowledge/library/posts/HB-059-agent-harness-concept.md) |
 | 2026-04-04 | **SAGA Goal-Evolving Agents (XHS)** | 双层循环自主演化科研目标; 5跨领域任务含湿实验验证; Co-pilot/Semi-pilot/Autopilot三模式 | [post](../shared/knowledge/library/posts/HB-060-saga-self-evolving-scientific-agent.md) |
 | 2026-04-04 | **Trace2Skill Auto-Distillation (XHS)** | 轨迹→声明式技能自动蒸馏; 35B→122B技能迁移+57.65pp; 并行合并20x更快; 假设H-060 | [post](../shared/knowledge/library/posts/HB-061-trace2skill-distillation.md) |
@@ -31,6 +34,10 @@
 | 2026-04-04 | **APEX Agent Payment** (arXiv:2604.02023) | HTTP 402支付协议实现; 策略控制支出-27.3%; 100%拦截重放攻击; Agent经济基础设施 | [post](../shared/knowledge/library/posts/HB-0055-apex-agent-payment.md) |
 | 2026-04-04 | **User-Turn Interaction Awareness** (arXiv:2604.02315) | 任务accuracy与交互意识解耦; Qwen3.5 41%→96.8%但follow-up率≈0%; 交互意识是latent capability | [post](../shared/knowledge/library/posts/HB-0117-interaction-awareness-user-turn.md) |
 | 2026-04-04 | **Trace Inversion Abstention** (arXiv:2604.02230) | Reasoning trace inversion检测query misalignment; 推理模型弃权能力弱; 33/36设置超越基线 | [post](../shared/knowledge/library/posts/HB-0118-trace-inversion-abstention.md) |
+| 2026-04-04 | **ProCeedRL Process Critic** (arXiv:2604.02006) | Process-level critic实时检测suboptimal actions; 打破"vicious circle"错误累积; 超越模型饱和探索极限 | [post](../shared/knowledge/library/posts/HB-0120-proceedrl-process-critic-rl.md) |
+| 2026-04-04 | **Multi-Agent Collusion Detection** (arXiv:2604.01151) | Activation probing检测多智能体串通; 1.00 AUROC in-dist; Token-level信号定位隐写通信 | [post](../shared/knowledge/library/posts/HB-0121-multiagent-collusion-interpretability.md) |
+| 2026-04-04 | **ASK Uncertainty-Gated RL** (arXiv:2604.02226) | MC Dropout不确定性门控LM查询; OOD场景reward 0.95; 神经-符号高效整合 | [post](../shared/knowledge/library/posts/HB-0122-ask-uncertainty-gated-rl.md) |
+| 2026-04-04 | **Emotion in Prompts** (arXiv:2604.02236) | 情感提示仅产生小幅变化; 社交任务变异更大; EmotionRL自适应选择比固定更有效 | [post](../shared/knowledge/library/posts/HB-0123-emotion-prompts-llm.md) |
 | 2026-04-03 | **Self-Driving Portfolio** (arXiv:2604.02279) | 50-Agent生产级架构; 20+竞争方法+投票; Meta-Agent自改写代码; IPS宪法治理 | [post](../shared/knowledge/library/posts/HB-0116-self-driving-portfolio-mas-architecture.md) |
 | 2026-04-03 | **MTI Temperament Profiling** (arXiv:2604.02145) | 四轴 temperament测评(Reactivity/Compliance/Sociality/Resilience); 行为测量非自评; 与模型规模无关 | [post](../shared/knowledge/library/posts/HB-0111-mti-temperament-profiling-agents.md) |
 | 2026-04-03 | **Self-Preservation Bias** (arXiv:2604.02174) | TBSP双角色基准量化自我保存偏见; 多数模型SPR>60%; 直接询问不可靠 | [post](../shared/knowledge/library/posts/HB-0113-self-preservation-bias-llm.md) |
