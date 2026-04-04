@@ -25,7 +25,8 @@ export type AgentCommand =
   | { type: "input"; sessionId?: string; text?: string; message?: string; source?: string }
   | { type: "steer"; sessionId?: string; text?: string; message?: string; source?: string }
   | { type: "cancel"; sessionId: string }
-  | { type: "cancel_all" };
+  | { type: "cancel_all" }
+  | { type: "resume"; sessionId: string };
 
 /** Management commands (to core / launcher) */
 export type ManagementCommand = { type: "reload" } | { type: "restart" } | { type: "shutdown" };
