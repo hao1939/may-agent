@@ -612,12 +612,9 @@ function gracefulRestart() {
     activeRL.close();
     activeRL = null;
   }
-  chatSession?.cancelAll();
-  for (const s of manager.status()) {
-    if (s.status === "running") {
-      manager.cancel(s.sessionId);
-    }
-  }
+  // NOTE: Do NOT cancel running sessions here. Leave them as status:"running"
+  // so resumeStaleSessions() picks them up after the process restarts.
+  // gracefulShutdown() (SIGINT/SIGTERM) still cancels — a real shutdown won't restart.
 
   process.exit(EXIT_RELOAD);
 }
