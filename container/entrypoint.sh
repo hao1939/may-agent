@@ -41,6 +41,10 @@ if ! grep -q "StrictHostKeyChecking accept-new" "${HOME}/.ssh/config" 2>/dev/nul
   chmod 600 "${HOME}/.ssh/config"
 fi
 
+# Force SSH to use the right key, accept new host keys, and never prompt.
+# Prevents SIGTTIN when git spawns SSH under supervisord (no TTY available).
+export GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=accept-new -o BatchMode=yes -i ${HOME}/.ssh/id_rsa"
+
 # Add host node bin to PATH for CLI coding agents (claude, codex, gemini)
 for d in /home/hao/.nvm/versions/node/*/bin; do [ -d "$d" ] && export PATH="$d:$PATH" && break; done
 
