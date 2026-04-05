@@ -4,7 +4,7 @@
  * Background: When the LLM stream function throws before yielding any events
  * (e.g., missing API key, connection refused), the error goes through
  * terminateStreamOnError() which only emits agent_end — no message_end,
- * no turn_end. This means agent.state.error is not set by the agent-core.
+ * no turn_end. This means agent.state.errorMessage is not set by the agent-core.
  *
  * The manager's handleCompletion() detects this case: if the agent completed
  * but the last message is still a user message (no assistant reply), it

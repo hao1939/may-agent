@@ -6,7 +6,7 @@ import { extractKeyFacts } from "./compaction.js";
 /**
  * Regex patterns for detecting context overflow from error strings.
  * Matches the same patterns as pi-ai's isContextOverflow but works on raw error strings
- * (since agent.state.error is a string, not an AssistantMessage).
+ * (since agent.state.errorMessage is a string, not an AssistantMessage).
  */
 const OVERFLOW_PATTERNS = [
   /prompt is too long/i,

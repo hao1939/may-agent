@@ -136,7 +136,7 @@ export function isRetryableInfraError(session: ActiveSession): string | null {
   if (lastTurnCalledFinish(messages)) return null;
 
   // Check if error was an abort — never retry aborts
-  const agentError = session.agent.state.error ?? session.error;
+  const agentError = session.agent.state.errorMessage ?? session.error;
   if (agentError?.includes("aborted")) return null;
 
   // Check for context overflow — never retry, won't help
@@ -306,7 +306,7 @@ export async function runAgentWithRetry(
     const lastMsg = messages.length > 0 ? messages[messages.length - 1] : null;
     if (lastMsg?.role === "assistant") {
       messages.pop();
-      session.agent.replaceMessages(messages);
+      session.agent.state.messages = messages;
     }
 
     // Guard: after popping, ensure we don't end on an assistant message
@@ -314,7 +314,7 @@ export async function runAgentWithRetry(
     // If the list is empty or still ends with assistant, inject a retry prompt.
     const lastAfterPop = messages.length > 0 ? messages[messages.length - 1] : null;
     if (!lastAfterPop || lastAfterPop.role === "assistant") {
-      session.agent.appendMessage({
+      session.agent.state.messages.push({
         role: "user",
         content: [{ type: "text", text: "Please continue." }],
         timestamp: Date.now(),
@@ -325,13 +325,13 @@ export async function runAgentWithRetry(
     // Capture error text BEFORE clearing it for the rate-limit check.
     // Rate limit / provider outage: 15s, 30s, 30s, 30s, 30s (capped at MAX_RETRY_DELAY_MS)
     // Stream errors: 1s, 2s, 4s, 8s, 16s
-    const errorText = session.error ?? session.agent.state.error ?? "";
+    const errorText = session.error ?? session.agent.state.errorMessage ?? "";
     const rateLimit = retryReason === "http_retryable" && isRateLimitError(errorText);
     const providerOutage = retryReason === "provider_outage";
 
     // Clear error state for the retry
     session.error = undefined;
-    session.agent.state.error = undefined;
+    (session.agent.state as any).errorMessage = undefined;
 
     const longBackoff = rateLimit || providerOutage;
     const baseDelay = longBackoff ? 15_000 : INFRA_RETRY_BASE_DELAY_MS;
@@ -359,7 +359,7 @@ export async function runAgentWithRetry(
   if (!session.closed && session.infraRetryCount < infraRetryMax) {
     const messages = session.agent.state.messages;
     const lastMsg = messages.length > 0 ? messages[messages.length - 1] : null;
-    const agentError = session.agent.state.error ?? session.error;
+    const agentError = session.agent.state.errorMessage ?? session.error;
 
     // Check for empty assistant response (no text, no tool calls)
     const isEmptyAssistant =
@@ -386,13 +386,13 @@ export async function runAgentWithRetry(
       // Clean up: remove empty assistant message if present
       if (isEmptyAssistant && lastMsg?.role === "assistant") {
         messages.pop();
-        session.agent.replaceMessages(messages);
+        session.agent.state.messages = messages;
       }
 
       // Ensure we end on a user message for agent.continue()
       const lastAfterClean = messages.length > 0 ? messages[messages.length - 1] : null;
       if (!lastAfterClean || lastAfterClean.role === "assistant") {
-        session.agent.appendMessage({
+        session.agent.state.messages.push({
           role: "user",
           content: [{ type: "text", text: "Please continue." }],
           timestamp: Date.now(),
@@ -400,7 +400,7 @@ export async function runAgentWithRetry(
       }
 
       session.error = undefined;
-      session.agent.state.error = undefined;
+      (session.agent.state as any).errorMessage = undefined;
 
       const delayMs =
         Math.min(INFRA_RETRY_BASE_DELAY_MS * Math.pow(2, attempt - 1), MAX_RETRY_DELAY_MS) +

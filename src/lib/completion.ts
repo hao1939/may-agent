@@ -32,24 +32,24 @@ function isPostFinishArtifact(error: string): boolean {
 
 /**
  * Detect silent stream errors and empty responses that agent-core doesn't flag.
- * Mutates session.error and session.agent.state.error when issues are found.
+ * Mutates session.error and session.agent.state.errorMessage when issues are found.
  */
 export function detectErrors(session: ActiveSession): void {
   const messages = session.agent.state.messages;
   const lastMsg = messages.length > 0 ? messages[messages.length - 1] : null;
 
   // Silent stream: LLM stream threw before yielding any events.
-  // agent.state.error is never set, but the last message is still the user's.
-  if (!session.agent.state.error && !session.error && lastMsg?.role === "user") {
+  // agent.state.errorMessage is never set, but the last message is still the user's.
+  if (!session.agent.state.errorMessage && !session.error && lastMsg?.role === "user") {
     const err = "Agent completed without producing a response (possible stream/API error)";
     session.error = err;
-    session.agent.state.error = err;
+    (session.agent.state as any).errorMessage = err;
     return;
   }
 
   // Empty assistant response: stopReason="stop" with no content (0 output tokens).
   // Exception: if finish() was already called, the empty trailing response is normal.
-  if (!session.agent.state.error && !session.error && lastMsg?.role === "assistant") {
+  if (!session.agent.state.errorMessage && !session.error && lastMsg?.role === "assistant") {
     const content = Array.isArray(lastMsg.content) ? lastMsg.content : [];
     const hasSubstance = content.some(
       (block: any) => (block?.type === "text" && block.text?.trim()) || block?.type === "toolCall",
@@ -58,7 +58,7 @@ export function detectErrors(session: ActiveSession): void {
       const err =
         "Model returned an empty response (0 output tokens). This usually indicates a model/API issue — try again or switch models.";
       session.error = err;
-      session.agent.state.error = err;
+      (session.agent.state as any).errorMessage = err;
     }
   }
 }
@@ -101,12 +101,12 @@ export function clearPostFinishErrors(session: ActiveSession): void {
 
   // Merge: prefer session.error (set by MAX_TURNS, STUCK_TERMINATE) over
   // the generic "Request was aborted." from AbortController.
-  const error = session.error ?? session.agent.state.error;
+  const error = session.error ?? session.agent.state.errorMessage;
   if (!error) return;
 
   if (isPostFinishArtifact(error)) {
     session.error = undefined;
-    session.agent.state.error = undefined;
+    (session.agent.state as any).errorMessage = undefined;
   }
 }
 
@@ -147,7 +147,7 @@ export function detectShallowHeartbeat(session: ActiveSession): void {
       "Shallow heartbeat: completed with zero turns. " +
       "Heartbeat sessions MUST use tools (read heartbeat.md, check health, etc.).";
     session.error = err;
-    session.agent.state.error = err;
+    (session.agent.state as any).errorMessage = err;
   }
 }
 
@@ -173,8 +173,8 @@ export function determineOutcome(session: ActiveSession): SessionOutcome {
   const finishParams = extractFinishParams(messages);
 
   // Merge agent error into session (prefer pre-set session.error)
-  if (!session.error && session.agent.state.error) {
-    session.error = session.agent.state.error;
+  if (!session.error && session.agent.state.errorMessage) {
+    session.error = session.agent.state.errorMessage;
   }
 
   const wasAborted = session.error?.includes("aborted") ?? false;

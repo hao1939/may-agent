@@ -21,9 +21,8 @@ function mockSession(overrides: {
     agent: {
       state: {
         messages,
-        error: overrides.agentError,
+        errorMessage: overrides.agentError,
       },
-      replaceMessages: () => {},
     } as any,
     promise: Promise.resolve(),
     task: "test task",
@@ -91,7 +90,7 @@ describe("P93 Infrastructure Resilience — Infra Retry", () => {
   });
 
   // ------ Guard: abort errors are never retried ------
-  it('returns null when agent.state.error contains "aborted"', () => {
+  it('returns null when agent.state.errorMessage contains "aborted"', () => {
     const session = mockSession({
       status: "running",
       messages: [{ role: "user" }],
@@ -101,13 +100,13 @@ describe("P93 Infrastructure Resilience — Infra Retry", () => {
   });
 
   it('returns null when session.error contains "aborted" (fallback path)', () => {
-    // agent.state.error ?? session.error — tests the fallback
+    // agent.state.errorMessage ?? session.error — tests the fallback
     const s = mockSession({
       status: "running",
       messages: [{ role: "user" }],
     });
     s.error = "aborted by user";
-    s.agent.state.error = undefined;
+    (s.agent.state as any).errorMessage = undefined;
     expect(isRetryableInfraError(s)).toBeNull();
   });
 
