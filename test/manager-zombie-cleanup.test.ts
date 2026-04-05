@@ -72,40 +72,41 @@ describe("SubagentManager.cleanupZombieSessions()", () => {
     }
   });
 
-  it("does not touch sessions with 'interrupted' status", () => {
+  it("archives sessions with 'interrupted' status (Phase 2)", () => {
     createZombieSession(persistDir, "s_zombie_1", "interrupted");
 
     expect(listActiveSessionIds(persistDir)).toContain("s_zombie_1");
-    const archived = manager.cleanupZombieSessions();
-    // cleanupZombieSessions only handles stale 'running' sessions
-    expect(archived).toBe(0);
-    expect(listActiveSessionIds(persistDir)).toContain("s_zombie_1");
+    const cleaned = manager.cleanupZombieSessions();
+    // Phase 2 archives terminal sessions (done/error/interrupted) from sessions/ to history/
+    expect(cleaned).toBe(1);
+    expect(listActiveSessionIds(persistDir)).not.toContain("s_zombie_1");
   });
 
-  it("does not touch sessions with 'done' status", () => {
+  it("archives sessions with 'done' status (Phase 2)", () => {
     createZombieSession(persistDir, "s_zombie_done", "done");
 
-    const archived = manager.cleanupZombieSessions();
-    expect(archived).toBe(0);
+    const cleaned = manager.cleanupZombieSessions();
+    expect(cleaned).toBe(1);
+    expect(listActiveSessionIds(persistDir)).not.toContain("s_zombie_done");
   });
 
-  it("does not touch sessions with 'error' status", () => {
+  it("archives sessions with 'error' status (Phase 2)", () => {
     createZombieSession(persistDir, "s_zombie_err", "error");
 
-    const archived = manager.cleanupZombieSessions();
-    expect(archived).toBe(0);
+    const cleaned = manager.cleanupZombieSessions();
+    expect(cleaned).toBe(1);
+    expect(listActiveSessionIds(persistDir)).not.toContain("s_zombie_err");
   });
 
-  it("marks stale 'running' sessions (>30min) as interrupted", () => {
+  it("marks stale 'running' sessions (>30min) as interrupted then archives", () => {
     // createZombieSession sets startedAt to 1 hour ago — qualifies as stale
     createZombieSession(persistDir, "s_running", "running");
 
-    const archived = manager.cleanupZombieSessions();
-    expect(archived).toBe(1);
-    // Session still exists in sessions dir but status changed
-    expect(listActiveSessionIds(persistDir)).toContain("s_running");
-    const meta = readSessionMeta(persistDir, "s_running");
-    expect(meta!.status).toBe("interrupted");
+    const cleaned = manager.cleanupZombieSessions();
+    // Phase 1: mark interrupted (+1), Phase 2: archive (+1) = 2 total
+    expect(cleaned).toBe(2);
+    // Session is archived (moved to history/)
+    expect(listActiveSessionIds(persistDir)).not.toContain("s_running");
   });
 
   it("does NOT mark recent 'running' sessions (<30min)", () => {
@@ -136,12 +137,11 @@ describe("SubagentManager.cleanupZombieSessions()", () => {
     createZombieSession(persistDir, "s_r1", "running");
     createZombieSession(persistDir, "s_r2", "running");
 
-    const archived = manager.cleanupZombieSessions();
-    expect(archived).toBe(2);
-    const meta1 = readSessionMeta(persistDir, "s_r1");
-    const meta2 = readSessionMeta(persistDir, "s_r2");
-    expect(meta1!.status).toBe("interrupted");
-    expect(meta2!.status).toBe("interrupted");
+    const cleaned = manager.cleanupZombieSessions();
+    // Phase 1: 2 marked interrupted, Phase 2: 2 archived = 4 total
+    expect(cleaned).toBe(4);
+    expect(listActiveSessionIds(persistDir)).not.toContain("s_r1");
+    expect(listActiveSessionIds(persistDir)).not.toContain("s_r2");
   });
 
   it("returns 0 when no zombie sessions exist", () => {

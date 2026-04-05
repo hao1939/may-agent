@@ -120,13 +120,13 @@ describe("V2 agents tool", () => {
 
   it("send without agent or message returns error", async () => {
     const tool = manager.createAgentsTool({ agentsRoot });
-    const result = await callTool(tool, { action: "send", agent: "coder" });
+    const result = await callTool(tool, { action: "message", agent: "coder" });
     expect(result.error).toContain("requires");
   });
 
   it("send to unregistered agent returns error", async () => {
     const tool = manager.createAgentsTool({ agentsRoot });
-    const result = await callTool(tool, { action: "send", agent: "nonexistent", message: "do stuff" });
+    const result = await callTool(tool, { action: "message", agent: "nonexistent", message: "do stuff" });
     expect(result.error).toContain("not registered");
   });
 
@@ -144,7 +144,7 @@ describe("V2 agents tool", () => {
       getCallerAgentName: () => "may",
     });
 
-    const result = await callTool(tool, { action: "send", agent: "coder", message: "fix the login bug" });
+    const result = await callTool(tool, { action: "message", agent: "coder", message: "fix the login bug" });
     expect(result.sent).toBe("coder");
     expect(result.message).toBe("fix the login bug");
   });
@@ -163,8 +163,8 @@ describe("V2 agents tool", () => {
       getCallerAgentName: () => "bob",
     });
 
-    const r1 = await callTool(tool, { action: "send", agent: "coder", message: "first task" });
-    const r2 = await callTool(tool, { action: "send", agent: "coder", message: "second task" });
+    const r1 = await callTool(tool, { action: "message", agent: "coder", message: "first task" });
+    const r2 = await callTool(tool, { action: "message", agent: "coder", message: "second task" });
     expect(r1.sent).toBe("coder");
     expect(r2.sent).toBe("coder");
     expect(r1.message).toBe("first task");
@@ -189,7 +189,7 @@ describe("V2 agents tool", () => {
       },
     });
 
-    const result = await callTool(tool, { action: "send", agent: "coder", message: "do stuff" });
+    const result = await callTool(tool, { action: "message", agent: "coder", message: "do stuff" });
     expect(triggeredAgent).toBe("coder");
     expect(result.heartbeatTriggered).toBe(true);
   });
@@ -204,7 +204,7 @@ describe("V2 agents tool", () => {
     });
 
     const tool = manager.createAgentsTool(); // no agentsRoot
-    const result = await callTool(tool, { action: "send", agent: "coder", message: "do stuff" });
+    const result = await callTool(tool, { action: "message", agent: "coder", message: "do stuff" });
     expect(result.error).toContain("agentsRoot");
   });
 
@@ -271,7 +271,7 @@ describe("V2 agents tool", () => {
     });
 
     // "checkpoint" is NOT a registered agent, but IS a tool in bob's toolset
-    const result = await callTool(tool, { action: "send", agent: "checkpoint", message: "save state" });
+    const result = await callTool(tool, { action: "message", agent: "checkpoint", message: "save state" });
     expect(result.error).toContain("is a tool, not an agent");
     expect(result.error).toContain("checkpoint({ ... })");
   });
