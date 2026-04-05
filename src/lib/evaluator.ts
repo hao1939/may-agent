@@ -1,4 +1,4 @@
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { AssistantMessage } from "@mariozechner/pi-ai";
 import type { SubagentManager } from "./manager.js";
@@ -7,7 +7,7 @@ import {
   loadAllSessionMetasAsync,
   listActiveSessionIdsAsync,
   listArchivedSessionIdsAsync,
-  sessionJsonlPath,
+  findSessionJsonl,
 } from "./persistence.js";
 import type { PersistedSession } from "./persistence.js";
 import { appendErrorLogs } from "./evaluator-error-log.js";
@@ -617,16 +617,6 @@ export async function writeSkippedEvaluations(
   persistDir: string,
   skipAgents: Set<string> = new Set(["evaluator"]),
 ): Promise<number> {
-  const { access } = await import("node:fs/promises");
-  const fileExists = async (p: string) => {
-    try {
-      await access(p);
-      return true;
-    } catch {
-      return false;
-    }
-  };
-
   const allSessions: Record<string, PersistedSession> = await loadAllSessionMetasAsync(persistDir);
   let written = 0;
 
@@ -638,8 +628,8 @@ export async function writeSkippedEvaluations(
     if (skipAgents.has(session.agent)) {
       skipReason = `meta_agent_skipped (${session.agent})`;
     } else {
-      const jsonlPath = sessionJsonlPath(persistDir, sessionId);
-      if (!(await fileExists(jsonlPath))) {
+      const jsonlPath = findSessionJsonl(persistDir, sessionId);
+      if (!jsonlPath) {
         skipReason = "no_transcript";
       }
     }
@@ -741,8 +731,8 @@ export async function writeHeuristicEvaluations(persistDir: string): Promise<num
     if (session.status === "running" || session.status === "idle") continue;
     if (session.agent === "evaluator") continue;
 
-    const transcriptPath = sessionJsonlPath(persistDir, sessionId);
-    if (!existsSync(transcriptPath)) continue;
+    const transcriptPath = findSessionJsonl(persistDir, sessionId);
+    if (!transcriptPath) continue;
 
     let transcriptText = "";
     try {

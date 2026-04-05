@@ -90,6 +90,7 @@ export {
   readSessionMessages,
   sessionDir,
   sessionJsonlPath,
+  findSessionJsonl,
   sessionOutputDir,
   sessionMetaPath,
   readSessionMeta,
