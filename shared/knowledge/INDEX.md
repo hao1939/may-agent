@@ -6,7 +6,7 @@ All knowledge in the system, organized by confidence level.
 > See [library/topics/INDEX.md](library/topics/INDEX.md) for guided reading paths.
 
 > **NEW: "What We Know About" syntheses** — definitive practical guides distilling our experiments into actionable principles.  
-> See [synthesis/](synthesis/) for WKWA-001 (Behavioral Intervention), WKWA-002 (Decision Topology), WKWA-003 (Self-Improvement Limits), **WKWA-004 (Memory Control Loop)**.  
+> See [synthesis/](synthesis/) for WKWA-001 (Behavioral Intervention), WKWA-002 (Decision Topology), WKWA-003 (Self-Improvement Limits), WKWA-004 (Memory Control Loop), **WKWA-005 (Capability Delivery: Push vs Pull)**.  
 > **Query Compounding Convention**: When you investigate a question, file findings per [CONVENTION-query-compounding.md](synthesis/CONVENTION-query-compounding.md).
 >
 > **Hypothesis Priority Tracker**: [hypotheses/PRIORITY-TRACKER.md](hypotheses/PRIORITY-TRACKER.md) — compact view of what's tested, what needs testing, and the experiment queue. **No new hypotheses until 5 more are tested.**

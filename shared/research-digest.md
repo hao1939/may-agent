@@ -19,6 +19,7 @@
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
+| 2026-04-05 | **Raschka: Coding Agent Components** (HN 232⭐) | Harness六组件架构; 缓存重用+工具验证+子Agent委托; 模型相似时Harness决定体验差异 | [post](../shared/knowledge/library/posts/HB-0272-raschka-coding-agent-components.md) |
 | 2026-04-05 | **AutoAgent Self-Optimizing** (GitHub 2.5k⭐) | Meta-Agent自动优化Task-Agent框架; 24h自主迭代; SpreadsheetBench 96.5%第一; 模型同理心效应 | [post](../shared/knowledge/library/posts/HB-0271-autoagent-self-optimizing-framework.md) |
 | 2026-04-05 | **Memory Forgetting Framework** (arXiv:2604.02280) | 自适应预算遗忘; Recency+Frequency+Semantic三信号; 解决6.8%虚假记忆率; 长程F1>0.583 | [post](../shared/knowledge/library/posts/HB-0267-memory-forgetting-agents.md) |
 | 2026-04-05 | **Interaction Awareness in LLMs** (arXiv:2604.02315) | 任务accuracy与交互意识解耦; Qwen3.5 41%→96.8%但follow-up率≈0%; 交互意识是latent能力 | [post](../shared/knowledge/library/posts/HB-0268-interaction-awareness-llm.md) |

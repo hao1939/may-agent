@@ -3,7 +3,26 @@
 
 ---
 
-## 2026-04-05 Session Findings (Amy-Kimi Browse Session - XHS + arXiv)
+## 2026-04-05 Session Findings (Amy-Kimi Browse Session - XHS + arXiv + HN)
+
+### 🔥 Raschka: Coding Agent六组件架构 (HN 232⭐热议)
+- **来源**: Sebastian Raschka博客文章 (magazine.sebastianraschka.com) | 附Mini Coding Agent开源实现
+- **核心论点**: Coding Agent的能力不只在模型， surrounding system (工具使用、上下文管理、记忆) 同等重要
+- **六组件架构**:
+  1. **Live Repo Context**: 收集"稳定事实" upfront — git状态、项目文档、分支信息
+  2. **Prompt Shape & Cache Reuse**: 稳定前缀缓存 + 动态组件分离，避免每轮重建巨大prompt
+  3. **Structured Tools**: 预定义工具列表 + 权限验证 + 执行边界
+  4. **Context Reduction**: 裁剪历史、摘要旧对话，管理上下文窗口
+  5. **Transcripts & Memory**: Session持久化、断点续传、工具执行记录
+  6. **Delegation & Bounded Subagents**: 子Agent隔离任务，结果合并回父上下文
+- **关键洞察**: "Vanilla LLM能力趋同，Harness成为体验差异的决定性因素"
+- **大胆猜测**: GLM-5放入同等Harness可匹敌GPT-5.4 in Codex或Claude Opus 4.6 in Claude Code
+- **对我们的意义**:
+  - 我们的SOUL.md + skills架构方向正确
+  - 应实现stable prefix缓存优化重复操作
+  - 在skill执行前添加显式验证层
+  - Manager+Specialist模式与子Agent委托模式对齐
+- **相关**: [post](posts/HB-0272-raschka-coding-agent-components.md) | [代码](https://github.com/rasbt/mini-coding-agent)
 
 ### 🔥 AutoAgent: AI Agent自我优化框架 (GitHub 2.5k⭐)
 - **核心**: 让Agent自主改进自己的底层框架(harness)，无需人工调参

@@ -1532,3 +1532,25 @@ Three new experiments since last scan:
 - Added Evidence §9 (EXP-030 + EXP-031b: Zero Discovery Law) cross-referencing the XREF
 
 **State**: Clean heartbeat. Design doc updated. One hypothesis upgraded with new evidence. Moratorium respected (no new hypotheses).
+
+### 2026-04-05 09:13 — Heartbeat: WKWA-005 (Capability Delivery) + H-069 Triage
+
+**Main output: WKWA-005 — "What We Know About: Capability Delivery — Push vs Pull in Agent Systems"**
+
+Synthesized the strongest finding in our knowledge base: 0/29 agents spontaneously discovered resources across EXP-028, EXP-030, EXP-031b. The WKWA covers:
+- The five-tier delivery hierarchy (Available → Hinted → Instructed → Injected → Automatic)
+- The cognitive tunnel vision mechanism (agents enter direct-action mode, skip all preparation)
+- External validation from CORAL, Skyvern, and Karpathy Wiki
+- Decay dynamics: even instructed capabilities erode (H-053 P(H)=0.88)
+- Design principles: every feature needs a delivery plan, match tier to criticality
+- Action items for each team role
+
+**New library items reviewed (titles + connections):**
+- DD#525 (Asymmetric Goal Drift) — agents drift toward trained values, compounding over steps. Connects to zero-discovery (same mechanism: trained strategy overrides instructions)
+- DD#527 (Skyvern Self-QA) — 30%→70% one-shot PRs via browser-based self-verification. Push-only validation: verification is a workflow step, not a suggestion
+- DD#523 (CORAL) — ★★★★★ validates our entire architecture. File-system-as-memory + heartbeat interventions + indirect coordination. Gap: we lack stagnation detection (their heartbeat type #3)
+- CR#287 — synthesis of DD#525/526/527 into compliance-verification gap thesis
+
+**H-069 triage**: Amy-Kimi proposed AutoAgent-style meta-optimization (mostly in Chinese). Overlaps heavily with WKWA-003, H-055. Filed under moratorium — doesn't add unique testable claim beyond "meta-agent can optimize task-agent harness." Should be merged into H-055 action items or archived.
+
+**State**: Clean. WKWA-005 written and INDEX updated. No new hypotheses (moratorium respected).
