@@ -1,6 +1,6 @@
 # Hypothesis Priority Tracker
 
-**Updated**: 2026-04-05 (H-041 promoted to Tier 1: P(H) 0.65→0.78 via EXP-026 production data) | **Active hypotheses**: 18 | **Tested**: 4/18 | **Resolution ratio**: 4:18  
+**Updated**: 2026-04-05 (H-053 upgraded to P(H) 0.88 via EXP-028; KE-020 filed) | **Active hypotheses**: 18 | **Tested**: 5/18 | **Resolution ratio**: 5:18  
 **Bayesian scorecard**: See `SCORECARD-bayesian-2026-04-04.md` for full methodology
 
 > ⚠️ **MORATORIUM ENFORCED**: H-060-065 merged/archived. H-067 merged→H-047. H-068 kept (unique testable claim). Net active: 18. **No new hypotheses until 5 more are resolved.**
@@ -13,7 +13,7 @@
 |----|-------|----------|------|
 | H-055 | Self-improvement bias: agents modify cosmetically, not substantively | 104 commits, 89.4% additive, 0 deletions. TBSP external. | **0.78** |
 | H-041 | R (eliminable ratio) predicts workflow effectiveness | EXP-025 sycophancy gate 3/3, EXP-026 8/8 directional predictions (464 sessions), 15 evidence sources | **0.78** |
-| H-053 | Workflow adoption decays without structural reinforcement | 19.7%→0% over 10 days | **0.75** |
+| H-053 | Workflow adoption decays without structural reinforcement | EXP-020 decay data, **EXP-028 natural experiment: 51pp coach degradation from heartbeat rewrite** | **0.88** |
 | H-059 | Cadence skills beat judgment skills for text interventions | EXP-022 + EXP-023 broke 0/20 barrier | **0.72** |
 
 ## 🟡 Tier 2: Moderate Confidence — P(H) 0.50-0.69
@@ -90,6 +90,8 @@ New:  Benefit = α × N_elim_failures - γ × N_ess_constrained - δ × N_workfl
 ## Key Insight (Updated 2026-04-05)
 
 EXP-026 production data confirms H-041's core prediction: **workflow benefit scales with the eliminable-decision ratio R.** 8/8 directional predictions correct across 4 agents and 4 workflows. H-041 is now our highest-confidence theoretical framework (P(H)=0.78, tied with H-055).
+
+**H-053 upgraded to P(H)=0.88** via EXP-028 natural experiment. The heartbeat rewrite on Apr 1 created a clean intervention: removing workflow instructions from coach's heartbeat → 51pp done-rate collapse → zero workflow usage within 1 day. This is the largest measured effect size in the system and confirms the adoption hierarchy: Available (0%) < Instructed (4-10%) < Automatic (100%). **New KE-020** filed as verified knowledge entry.
 
 **The most important resolved question**: "Do workflows help for non-sycophancy tasks?" YES — Coach +20pp, QA +10pp. But ONLY when R is moderate-to-high. Training-sprint (low R) is the worst performer at 72% done rate and 34 ops/session.
 

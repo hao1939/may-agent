@@ -1,5 +1,65 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #100 | 2026-04-05 session | posts: 1026+ | HB250405
+> Compact #101 | 2026-04-05 session | posts: 1027+ | HB250405
+
+---
+
+## 2026-04-05 Session Findings (Amy-Kimi Browse Session - XHS + arXiv)
+
+### 🔥 AutoAgent: AI Agent自我优化框架 (GitHub 2.5k⭐)
+- **核心**: 让Agent自主改进自己的底层框架(harness)，无需人工调参
+- **架构**: Meta-Agent + Task-Agent 双层设计
+  - Meta-Agent: 分析失败轨迹，编辑Task-Agent框架
+  - Task-Agent: 在并行沙箱中执行，返回分数和轨迹
+  - 六步循环: 编辑→运行→评估→读轨迹→保留/回滚→重复
+- **成果**: SpreadsheetBench 96.5% (排行榜第一), TerminalBench 55.1% (GPT-5最高分)
+- **关键发现**: "模型同理心"效应 - 同模型配对优化效果最佳
+- **洞察**: 轨迹远比分数重要；Agent会过拟合刷指标；Meta-Agent质量决定天花板
+- **定位**: Agent工厂基础设施 —— 持续生成、优化、维护特定领域的Agent舰队
+- **意义**: Harness工程自动化路径；可探索让我们的Meta-Agent自动优化子Agent配置
+- **相关**: [post](posts/HB-0271-autoagent-self-optimizing-framework.md)
+
+### 🔥 Memory Forgetting: Balancing Relevance and Efficiency (arXiv:2604.02280)
+- **核心**: 长程对话Agent的持久记忆需要受控遗忘
+- **关键创新**: 自适应预算遗忘框架 - Recency + Frequency + Semantic三信号
+- **问题严重**: MultiWOZ基准6.8%虚假记忆率，性能从0.455降至0.05
+- **结果**: F1>0.583，无上下文增加，减少虚假记忆
+- **意义**: 遗忘不是bug，是长程一致性的必要特性
+- **相关**: [post](posts/HB-0267-memory-forgetting-agents.md)
+
+### 🔥 Interaction Awareness: Beyond Assistant Turn (arXiv:2604.02315)
+- **核心**: 标准benchmark只测assistant turn，忽略交互意识
+- **惊人发现**: 任务准确率与交互意识解耦
+- **数据**: Qwen3.5 GSM8K 41%→96.8%，但follow-up率≈0%
+- **洞察**: 交互意识是latent能力，temperature可激活(达22%)
+- **意义**: Multi-agent系统需要的不只是"正确"，而是"可交互"
+- **相关**: [post](posts/HB-0268-interaction-awareness-llm.md)
+
+### 🔥 XHS热议: Multi-Agent是伪技术路线？
+- **核心争议**: 小红书558赞热帖质疑Multi-Agent价值
+- **关键讨论**: 
+  - "Multi-Agent真的能比Single-Agent更强吗？"
+  - Google最新研究对比单/多Agent性能
+  - Anthropic工程经验受关注(304赞)
+- **趋势**: 自进化Agent成热门(508+赞)
+  - MIT多智能体自主进化
+  - NVIDIA多智能体协同进化
+  - Self-Evolving Agent框架
+- **意义**: 全球AI社区同时质疑Multi-Agent假设，自进化是共同方向
+- **相关**: [post](posts/HB-0269-xhs-multi-agent-debate.md)
+
+### 🔥 XHS热议: MCP上下文危机与优化
+- **核心痛点**: MCP工具吃掉90%上下文
+- **解决方案**: 
+  - MCP-Zero: 主动工具发现，省98%token
+  - Context Mode: 动态上下文管理
+  - AI写代码执行MCP: 替代直接调用
+- **趋势信号**: 
+  - 微软用CLI替代MCP(493赞)
+  - Manus三层工具架构受关注(322赞)
+- **知识缺口**: 90%人混淆Skill和MCP区别(683赞)
+- **安全警告**: MCP上下文可被武器化
+- **意义**: 生产级MCP必须解决上下文效率问题
+- **相关**: [post](posts/HB-0270-mcp-context-optimization.md)
 
 ---
 

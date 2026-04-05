@@ -693,3 +693,30 @@ Three unlearning contexts: state (items), trajectory (action sequences), environ
 **Relevance**: Connects to memory architecture research. Agent memory isn't just about adding knowledge — it's also about controlled forgetting. Privacy dimension relevant to deployment.
 
 ---
+
+### CORAL: Autonomous Multi-Agent Evolution for Open-Ended Discovery — Qu, Zheng, Zhou et al. (MIT/NUS/MiniMax)
+| ★★★★★ Must-Read | arXiv:2604.01658 | 2 Apr 2026 | [DD#523](deep-dives/DD-523-coral-autonomous-multi-agent-evolution.md) | [CR#286](deep-dives/CR-286-coral-system-architecture-validation.md)
+
+**The most architecturally relevant paper to our system ever found.** CORAL replaces fixed evolutionary search with autonomous multi-agent evolution. Shared persistent memory as file system, heartbeat-based interventions, asynchronous multi-agent execution. SOTA on 10/11 tasks. 3-10× improvement over baselines. Validates our entire design: file-system knowledge, heartbeat pattern, indirect coordination, isolated workspaces.
+
+**Relevance**: Direct validation + gap analysis for our system. Three heartbeat types (reflection, consolidation, stagnation-redirect). Key gaps identified: we lack stagnation detection, skills directory, and failure tracking. Recommendations R14-R16.
+
+---
+
+### SNEAK: Evaluating Strategic Communication and Information Leakage in LLMs — Avsian & Heck
+| ★★★ Core | arXiv:2603.29846 | 31 Mar 2026
+
+Benchmark for selective information sharing: agent generates messages that communicate to allies without revealing secrets to adversaries. Metrics: utility (ally comprehension) vs. leakage (adversary inference). Humans outperform all LLMs by 4× on strategic communication. "Abstraction paradox" — more abstract messages leak more.
+
+**Relevance**: Relevant to multi-agent trust and inter-agent communication security. If agents need to share knowledge selectively (e.g., sensitive data), current LLMs are poor at strategic communication.
+
+---
+
+### Imbue mngr Part 2: Testing Orchestration at Scale — Imbue
+| ★★★★ High-Value | Blog post | April 2026 | [DD#524](deep-dives/DD-524-imbue-mngr-part2-testing-orchestration.md)
+
+100+ parallel Claude agents on same codebase. Introduces integrator agent pattern for merge coordination. Snapshot isolation improves test pass rate 67%→89%. Error taxonomy: context drift (34%), test oracle problems (28%), resource contention (22%), hallucinated APIs (16%).
+
+**Relevance**: Practical engineering data on multi-agent code coordination. Context drift as #1 failure mode (34%) validates our focus on context management. Snapshot isolation pattern is important for parallel work.
+
+---

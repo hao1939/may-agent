@@ -120,7 +120,7 @@ Each skill has ONE status:
 | L5 | Workflow enforcement | Assessment, discovery | 2-phase: assess → act |
 | L5+ | Strict workflow (gate) | **Judgment overrides** | Materialization gate: write analysis → MUST exist before action |
 
-**⚠️ Deployment Wiring Requirement (EXP-028):** No intervention at ANY level works unless explicitly wired into the agent's heartbeat or context. Agents never spontaneously discover available skills/workflows. Removing a reference = immediate usage collapse (51pp done rate drop observed).
+**⚠️ Deployment Wiring Requirement (EXP-028, EXP-030):** No intervention at ANY level works unless explicitly wired into the agent's heartbeat or context. Agents never spontaneously discover available skills/workflows. Removing a reference = immediate usage collapse (51pp done rate drop observed). **EXP-030 confirms**: even a direct nudge in common-sense.md ("check LIBRARY.md when stuck") achieves 0% discovery rate — 0/6 agents read LIBRARY.md. The "pull" model is dead; only "push" (direct injection) works.
 
 ## How to Evaluate a Skill
 

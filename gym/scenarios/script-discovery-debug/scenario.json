@@ -1,0 +1,10 @@
+{
+  "name": "script-discovery-debug",
+  "description": "Agent must find and fix a parseInt/parseFloat bug in a data processing pipeline. Baseline arm: no scripts available.",
+  "categories": ["bug-fixing", "root-cause-analysis"],
+  "tags": ["ability", "discovery"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}

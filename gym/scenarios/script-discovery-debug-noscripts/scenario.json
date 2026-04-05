@@ -1,0 +1,10 @@
+{
+  "name": "script-discovery-debug-noscripts",
+  "description": "Agent must find and fix parseInt/parseFloat bug. Arm A: no scripts available (baseline).",
+  "categories": ["bug-fixing", "root-cause-analysis"],
+  "tags": ["ability", "discovery"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}

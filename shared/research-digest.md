@@ -19,6 +19,11 @@
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
+| 2026-04-05 | **AutoAgent Self-Optimizing** (GitHub 2.5k⭐) | Meta-Agent自动优化Task-Agent框架; 24h自主迭代; SpreadsheetBench 96.5%第一; 模型同理心效应 | [post](../shared/knowledge/library/posts/HB-0271-autoagent-self-optimizing-framework.md) |
+| 2026-04-05 | **Memory Forgetting Framework** (arXiv:2604.02280) | 自适应预算遗忘; Recency+Frequency+Semantic三信号; 解决6.8%虚假记忆率; 长程F1>0.583 | [post](../shared/knowledge/library/posts/HB-0267-memory-forgetting-agents.md) |
+| 2026-04-05 | **Interaction Awareness in LLMs** (arXiv:2604.02315) | 任务accuracy与交互意识解耦; Qwen3.5 41%→96.8%但follow-up率≈0%; 交互意识是latent能力 | [post](../shared/knowledge/library/posts/HB-0268-interaction-awareness-llm.md) |
+| 2026-04-05 | **Multi-Agent Debate (XHS)** | 小红书热议: Multi-Agent是伪技术路线?; 单Agent vs多Agent性能之争; 自进化Agent趋势 | [post](../shared/knowledge/library/posts/HB-0269-xhs-multi-agent-debate.md) |
+| 2026-04-05 | **MCP Context Optimization (XHS)** | MCP工具吃掉90%上下文; MCP-Zero省98%token; 微软CLI替代MCP趋势; 动态上下文优化 | [post](../shared/knowledge/library/posts/HB-0270-mcp-context-optimization.md) |
 | 2026-04-05 | **ATBench: Long-Horizon Agent Safety** (arXiv:2604.02022) | 1,000轨迹长程安全基准; 9.01轮平均/3.95k tokens; 延迟触发捕获真实风险; 与ClawSafety互补 | [post](../shared/knowledge/library/posts/HB-0131-atbench-long-horizon-agent-safety.md) |
 | 2026-04-05 | **ClawSafety: Safe LLMs, Unsafe Agents** (arXiv:2604.01438) | 直接研究OpenClaw类Agent安全; 120对抗场景; 攻击成功率40-75%; 技能文件注入最危险 | [post](../shared/knowledge/library/posts/HB-0127-clawsafety-safe-llms-unsafe-agents.md) |
 | 2026-04-05 | **Skill Distillation MAS→Single** (arXiv:2604.01608) | Metric Freedom (F)预测技能效用; 相同轨迹在不同指标下+28%至-2%; 成本降低8× | [post](../shared/knowledge/library/posts/HB-0128-skill-distillation-mas-to-single.md) |

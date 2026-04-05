@@ -1,7 +1,7 @@
 # Deep Dives Index
 
-> 93 research deep dives, cross-reference syntheses, and reference documents.  
-> Last updated: 2026-04-04 | Maintained by Scout
+> 102 research deep dives, cross-reference syntheses, and reference documents.  
+> Last updated: 2026-04-05 | Maintained by Scout
 
 ## How to Use This Index
 - **DD#NNN** = Deep Dive on a single paper
@@ -209,6 +209,14 @@
 | [HB1575](HB1575-bicc-rcc-contrastive-grpo.md) | BiCC-RCC: Contrastive GRPO with Cross-Partition Learning |
 | [HB1586](HB1586-agentfuel.md) | AgentFuel: Domain-Specific Evaluation Generation |
 | [HB1606](HB1606-CRYSTAL-reasoning-transparency.md) | CRYSTAL Benchmark — Reasoning Transparency |
+| [dd518](DD-518-carlini-claude-code-vulnerability-discovery.md) | Carlini — Claude Code Vulnerability Discovery |
+| [dd519](DD-519-persistent-vulnerability-aligned-ai.md) | Persistent Vulnerability in Aligned AI |
+| [dd520](DD-520-narcbench-multi-agent-collusion-detection.md) | NarcBench — Multi-Agent Collusion Detection |
+| [dd521](DD-521-imbue-mngr-parallel-agent-orchestration.md) | Imbue mngr — Parallel Agent Orchestration ★★★★ |
+| [dd522](DD-522-karpathy-llm-wiki-persistent-knowledge.md) | Karpathy LLM Wiki — Persistent Knowledge ★★★ |
+| [dd523](DD-523-coral-autonomous-multi-agent-evolution.md) | CORAL — Autonomous Multi-Agent Evolution ★★★★★ |
+| [dd524](DD-524-imbue-mngr-part2-testing-orchestration.md) | Imbue mngr Part 2 — Testing Orchestration at Scale ★★★★ |
+| [cr286](CR-286-coral-system-architecture-validation.md) | CORAL ↔ Our System Architecture — Validation and Gaps ★★★★★ |
 
 ### Technical Analysis
 | File | Title |

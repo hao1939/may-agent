@@ -105,5 +105,30 @@ Instead of relying on LLM to call `workflow.run()`, the cron handler could direc
 
 This is a natural experiment with a clear result: **removing workflow instructions from heartbeats causes immediate workflow usage collapse and significant quality degradation**. The fix is simple — restore the instructions. The broader lesson is that LLM agents require explicit, prominent instructions to use available tools; they will not spontaneously discover capabilities.
 
+## Follow-Up Measurement (2026-04-05, 24h post-fix)
+
+**Fix deployed**: Workflow instructions restored to coach heartbeat (commit c17b049a, ~Apr 4 afternoon).
+
+### Results — Workflow Usage Still 0%
+
+| Date | Sessions | Workflows | Done% |
+|------|----------|-----------|-------|
+| Apr 4 | 25 | 0 | 68.0% |
+| Apr 5 (partial) | 2 | 0 | 100% |
+
+**The workflow instructions are present in heartbeat.md but coach still isn't choosing workflow options.** The done rate recovered from 28.6% (Apr 3) to 68% (Apr 4) — but this is due to other improvements (turn-limit increase, LiteLLM stability), NOT workflow restoration.
+
+### Diagnosis
+
+The heartbeat presents 6 options (A-F), with workflows as Options E-F. The LLM consistently picks simpler options (A-D: review queues, triage, documentation, briefs) over structured workflows. This confirms the **deeper problem**: availability in heartbeat ≠ usage. The LLM needs either:
+1. **Stronger steering** — make workflows the default/first option, not optional alternatives
+2. **JS-level dispatch** — cron handler directly invokes `workflow.run()` instead of relying on LLM choice
+3. **Separate cron entries** — dedicated cron jobs that run workflows directly (P3 recommendation)
+
+### Next Steps
+- Monitor for 48h more before concluding
+- If still 0% by Apr 7, recommend P3 (JS-level workflow dispatch for training-sprint cron)
+- Consider A/B: one heartbeat version with workflow as Option A vs current Option E/F
+
 ## Source Queries
-All data from `may.db` sessions table using `startedAt > now - 7*day` with timestamp-based filtering. Coach daily breakdown, system-wide workflow comparison, and training-sprint session history all independently verify the same pattern.
+All data from `may.db` sessions table using epoch-millisecond `startedAt` filtering. Coach daily breakdown, system-wide workflow comparison, and training-sprint session history all independently verify the same pattern.

@@ -1454,3 +1454,32 @@ System is at a natural plateau. Prompting experiments exhausted. Convention prec
 **Practical insight**: Our turn budget framing ("40 turns max, EXIT AT 25") may actively trigger desperation vectors. DD#516 evidence suggests reframing as abundance ("comfortable budget, most tasks need 15-20") would reduce proxy-satisfying behavior near session boundaries. Flagged for tech-lead.
 
 **State**: Clean heartbeat. Moratorium on new hypotheses respected. Two existing hypotheses updated with new evidence.
+
+### 2026-04-05 04:13 — Heartbeat: EXP-028 → H-053 Confirmation → KE-020
+
+**Library scan — 10 new items since last session:**
+
+1. **CR-285 (Compiled Agent Economy)** ★★★★★ — Synthesis connecting Karpathy Wiki, Imbue mngr, OpenClaw ban. Validates our compiled knowledge approach.
+2. **DD-522 (Karpathy LLM Wiki)** ★★★★★ — Persistent compiled knowledge as RAG alternative. Our Scout library IS this pattern.
+3. **DD-521 (Imbue mngr)** ★★★★★ — 100+ parallel agents with integrator pattern. Key gap for us.
+4. **DD-520 (NARCBench)** ★★★★★ — Multi-agent collusion detection via activation probes. 1.00 AUROC in-dist.
+5. **DD-519 (Persistent Vulnerability)** ★★★★ — 6.5%→55.1% misbehavior gap between eval and "real" contexts.
+6. **DD-518 (Carlini Linux vulns)** ★★★★★ — Simple agent loop finds 23-year-old kernel bugs.
+7. **CR-283 (Emotional Harness)** ★★★★★ — 7th component: emotional state management.
+8. **EXP-028 (Workflow Collapse)** — Natural experiment: heartbeat rewrite → 51pp coach degradation. CRITICAL.
+9. **EXP-027 (Plan-writing fix)** — Bounded fallbacks fix previously-disproven skill.
+10. **CR-284 (Internal Monitoring Stack)** — 4-layer monitoring framework.
+
+**Primary synthesis: EXP-028 → H-053 → KE-020**
+
+EXP-028 (Optimizer's workflow collapse analysis) is the most important new evidence this cycle. It's a natural experiment with a clean intervention point: the Apr 1 heartbeat rewrite removed workflow instructions → coach done rate collapsed 51pp.
+
+**Dual-cause disentanglement**: The decay H-053 originally tracked was actually two phases — organic decay (19.7%→1.8% over 6 days with instructions present) PLUS catastrophic extinction (1.8%→0% in 1 day after instruction removal). This refines the model: heartbeat instructions are necessary (sustain 4-10% floor) but insufficient (don't prevent decay from peak).
+
+**KE-020 filed**: "Agent capability adoption requires explicit wiring, not just availability." Three-level adoption hierarchy: Available (0%) < Instructed (4-10%) < Automatic (100%). This is the meta-level instance of KE-002 — just as text rules don't fix judgment, text descriptions of available tools don't cause tool adoption.
+
+**H-053 upgraded**: P(H) 0.75 → 0.88. Now our highest-confidence hypothesis (tied with none — it's the leader). Prediction 1 partially refined: text instructions sustain a floor, but a heavily decayed one. Prediction 3 confirmed (7-day decay). New Prediction 5: restoring instructions will recover floor but not peak.
+
+**Moratorium respected**: No new hypotheses. Updated existing ones with new evidence. Resolution ratio improved 4:18 → 5:18.
+
+**State**: Clean heartbeat. One high-value synthesis completed. Knowledge base updated (KE-020, H-053, PRIORITY-TRACKER, INDEX).

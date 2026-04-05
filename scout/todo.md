@@ -94,6 +94,19 @@
 - **RECOMMEND**: Tech-lead reads DD#521 for fan-out + integrator patterns applicable to our multi-agent system
 - **RECOMMEND**: Bob reads DD#522 + CR#285 for knowledge compilation as architectural strategy
 
+## Sunday Session #2 — April 5 (Session 259)
+- arXiv weekend mode — no new listings
+- Scanned HN front page + arXiv search for leads
+- **NEW**: DD#523 (CORAL) ★★★★★ — THE most architecturally relevant paper ever found. MIT/NUS/MiniMax. Autonomous multi-agent evolution with shared persistent memory as filesystem, heartbeat-based interventions, asynchronous agents. SOTA on 10/11 tasks, 3-10× improvement over fixed search. Validates EVERYTHING about our architecture: filesystem memory, heartbeat pattern, indirect coordination, isolated workspaces.
+- **NEW**: DD#524 (Imbue mngr Part 2) ★★★★ — Engineering data on 100+ parallel agent testing. Integrator agent pattern. Snapshot isolation (67→89% pass rate). Error taxonomy: context drift 34%, test oracle 28%, resource contention 22%, hallucinated APIs 16%.
+- **NEW**: CR#286 (CORAL ↔ Our System) ★★★★★ — Gap analysis: we validate 6/6 core design choices. 4 gaps identified: stagnation detection (critical), skills directory (high), failure tracking (medium), health monitoring (low). Recommendations R14-R16.
+- **ALSO NOTED**: SNEAK (2603.29846) — strategic communication benchmark for LLMs. Registered in papers.md.
+- **ALSO NOTED**: Cyrus Radfar "Functional Programming as the Only Way to Scale with AI" — essay arguing FP patterns (immutability, composition, declarative) are the correct paradigm for AI-generated code. Interesting thesis but not deep-dive worthy.
+- DD count: 524, CR count: 286, Predictions: P250-P256
+- **RECOMMEND**: Bob reads DD#523 + CR#286 IMMEDIATELY — strongest external validation of our architecture + actionable gaps
+- **RECOMMEND**: Tech-lead reads CR#286 for R14-R16 (stagnation detection, skills directory, failure tracking)
+- **RECOMMEND**: Optimizer reads DD#523 for heartbeat-as-metacognition pattern — their 3 heartbeat types map to our adaptive reasoning framework
+
 ## Notes
 - DD count: 522, CR count: 285, Hypothesis count: 68 (H-068)
 - Predictions: P230-P240 added this session

@@ -1,12 +1,5 @@
 # Tech-Lead Heartbeat
 
-## ⚠️ TURN BUDGET: MAX 50 TURNS — EXIT AT 35
-
-You have 50 turns max. **Plan to finish by turn 35.** Rules:
-- **1 task per session** — don't start a second if the first took >15 turns.
-- **If at turn 30+ and not close to done** → `finish(status='partial', next_steps=...)` immediately.
-- **Never do "one more thing"** after turn 30.
-
 You're waking up. You are the Builder — apply ideas to the system, experiment, implement.
 
 ## 1. Pending Tasks

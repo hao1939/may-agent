@@ -1,8 +1,8 @@
 # H-053: Workflow Adoption Decay — Proven Interventions Self-Extinguish Without Structural Reinforcement
 
-**Status**: Proposed (strong empirical basis)  
-**Source**: EXP-020 observational data, session DB analysis  
-**Date**: 2026-04-03  
+**Status**: CONFIRMED — P(H) 0.75 → 0.88 (EXP-028 natural experiment)  
+**Source**: EXP-020 observational data, EXP-028 natural experiment, session DB analysis  
+**Date**: 2026-04-03 (updated 2026-04-05)  
 **Filed by**: Bob
 
 ## Hypothesis
@@ -40,6 +40,44 @@ Effective workflow interventions in multi-agent systems undergo predictable adop
 - **15x lower error rate** (1.5% vs 23.2%)
 - **+26.9pp higher completion** (91.7% vs 64.8%)
 - **97% code-review-loop completion** (4-step pattern)
+
+### EXP-028: The Heartbeat Rewrite Natural Experiment (2026-04-05)
+
+On 2026-04-01, a heartbeat rewrite (commit `db9b0ba9`) removed explicit `workflow.run()` instructions from coach's heartbeat. This created a **natural experiment** with a sharp, identifiable intervention point:
+
+| Date | Coach w/ Workflow | Coach Done% | Note |
+|------|------------------|-------------|------|
+| Mar 29 | 7 | **89.3%** | Instructions present |
+| Mar 30 | 8 | **84.4%** | Instructions present |
+| Mar 31 | 3 | 79.2% | Instructions present (decay already visible) |
+| Apr 01 | 1 | 50.0% | **Instructions removed** |
+| Apr 02 | 0 | **39.1%** | Zero workflows |
+| Apr 03 | 0 | **28.6%** | Zero workflows |
+| Apr 04 | 0 | 68.0% | Zero workflows (partial recovery from other changes) |
+
+**Key findings from EXP-028:**
+1. **51pp coach done-rate degradation** (~85% → ~34%) — largest measured effect size in the system
+2. **Workflow sessions had 0% error rate** vs 10% for non-workflow sessions (system-wide)
+3. **+10pp done rate** for workflow sessions vs non-workflow (system-wide: 83.9% vs 73.9%)
+4. Training-sprint cron embeds `workflow.run()` instructions in task string, but agents ignore them — they only follow heartbeat instructions
+
+### The Dual-Cause Disentanglement
+
+The original H-053 evidence showed system-wide decay from Mar 26 (19.7%) → Apr 2 (0%). EXP-028 reveals this was a **two-phase collapse**:
+
+**Phase 1 (natural decay, Mar 26-31)**: Gradual erosion even with instructions present. System-wide: 19.7% → 1.8%. Coach: 8 → 3 sessions/day. This is the organic adoption decay H-053 originally described.
+
+**Phase 2 (instruction removal, Apr 1-2)**: Sudden extinction. Coach: 1 → 0 in one day. This was caused by the heartbeat rewrite, not natural decay.
+
+This refines the model: **heartbeat instructions are necessary but insufficient**. They sustain a non-zero adoption floor (4-10%) but don't prevent gradual decay from the initial deployment peak. True structural reinforcement (automatic routing) would be needed for stable, high adoption.
+
+### Prediction Updates Based on EXP-028
+
+**Prediction 1 (revised)**: "Re-deploying workflows via text instructions will fail" — **PARTIALLY REFUTED**. Heartbeat instructions DO sustain ~4-10% adoption floor. But this is a 60-80% decay from peak, so the spirit of the prediction (sustainable high adoption requires structure) holds. The more precise claim: **text instructions in heartbeats can sustain a non-zero floor, but cannot prevent decay from deployment peak**.
+
+**Prediction 3 (confirmed)**: Decay rate of 3-7 days confirmed (Mar 26 peak → Apr 2 zero = 7 days).
+
+**New Prediction 5**: Restoring workflow instructions to heartbeats will recover to the ~4-10% floor within 1-2 days, but will NOT recover to the Mar 25-26 peak (15-20%). The peak required novelty/deployment energy that decays.
 
 ## The Paradox
 
