@@ -650,14 +650,13 @@ function gracefulShutdown() {
   setTimeout(() => process.exit(0), 2000);
 }
 
-const EXIT_RELOAD = 100;
 
 function gracefulRestart() {
   if (shuttingDown) {
-    process.exit(EXIT_RELOAD);
+    process.exit(0);
   }
   shuttingDown = true;
-  bus.emit({ type: "info", message: "Restarting (hot-reload)..." });
+  bus.emit({ type: "info", message: "Restarting..." });
 
   for (const cron of getAgentCrons().values()) {
     cron.stop();
@@ -671,7 +670,7 @@ function gracefulRestart() {
   // so resumeStaleSessions() picks them up after the process restarts.
   // gracefulShutdown() (SIGINT/SIGTERM) still cancels — a real shutdown won't restart.
 
-  process.exit(EXIT_RELOAD);
+  process.exit(0); // supervisord restarts the process
 }
 
 async function handleReload(): Promise<void> {
@@ -1058,7 +1057,7 @@ if (ONESHOT_MODE) {
       gracefulShutdown();
     },
     onRestart: () => {
-      bus.emit({ type: "info", message: "[cmd] Restarting (exit 100 for launcher hot-reload)..." });
+      bus.emit({ type: "info", message: "[cmd] Restarting (supervisord will restart)..." });
       gracefulRestart();
     },
   });
