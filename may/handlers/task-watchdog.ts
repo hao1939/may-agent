@@ -1,14 +1,19 @@
 /**
- * Task Watchdog — proactive nudging for stale send requests.
+ * Task Watchdog — proactive nudging for stale/orphaned requests.
  *
- * Runs every 60 minutes. Watches ALL open `send` requests older than 2h
- * and applies an escalation ladder:
+ * Runs every 60 minutes. Watches ALL open requests (any method: send, call,
+ * fork, run, chat) and applies an escalation ladder:
  *   - ≥ 2h, no active session → nudge the target agent
  *   - ≥ 6h, previously nudged  → escalate to May log
  *   - ≥ 12h, previously escalated → alert human via ctx.notify()
  *
- * Complementary to audit-requests (which auto-expires at 4h):
- *   task-watchdog: "hey, you have work to do" (2h mark)
+ * Also detects **orphaned requests**: requests whose linked session has ended
+ * (not in active sessions) but status is still CREATED/IN_PROGRESS. These are
+ * dropped tasks that need immediate attention — they enter the escalation
+ * ladder at the nudge step regardless of age.
+ *
+ * Complementary to audit-requests (which auto-expires sends at 4h):
+ *   task-watchdog: "hey, you have work to do" (2h mark / orphan detection)
  *   audit-requests: "too late, auto-expiring" (4h mark)
  *
  * State tracked in .state/task-watchdog-log.jsonl (JSONL, pruned at 7d).
@@ -66,6 +71,7 @@ interface RequestRow {
 
 export interface TaskWatchdogResult {
   staleCount: number;
+  orphanCount: number;
   nudged: Array<{ requestId: string; toAgent: string }>;
   escalated: Array<{ requestId: string; toAgent: string }>;
   alerted: Array<{ requestId: string; toAgent: string }>;
@@ -82,6 +88,11 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     if (result.nudged.length > 0) {
       ctx.log(
         `[task-watchdog] 📬 Nudged ${result.nudged.length} agent(s): ${result.nudged.map((n) => `${n.toAgent}/${n.requestId}`).join(", ")}`,
+      );
+    }
+    if (result.orphanCount > 0) {
+      ctx.log(
+        `[task-watchdog] 👻 Detected ${result.orphanCount} orphaned request(s) (session ended, request still open)`,
       );
     }
     if (result.escalated.length > 0) {
@@ -108,6 +119,7 @@ export function runTaskWatchdog(
 
   const result: TaskWatchdogResult = {
     staleCount: 0,
+    orphanCount: 0,
     nudged: [],
     escalated: [],
     alerted: [],
@@ -115,8 +127,10 @@ export function runTaskWatchdog(
     pruned: 0,
   };
 
-  // 1. Query DB for open send requests older than 2h
+  // 1. Query DB for ALL open requests (any method) older than 2h
   let staleRequests: RequestRow[];
+  // Also get ALL open requests (any age) to detect orphans
+  let allOpenRequests: RequestRow[];
   try {
     const db = ctx.getDb();
     staleRequests = db
@@ -124,32 +138,58 @@ export function runTaskWatchdog(
         `SELECT requestId, status, method, toAgent, COALESCE(fromEntity, 'unknown') as fromEntity, sessionId, createdAt, COALESCE(task, '') as task
          FROM requests
          WHERE status IN ('CREATED', 'IN_PROGRESS')
-           AND method = 'send'
            AND createdAt < ?`,
       )
       .all(now - NUDGE_AGE_MS) as RequestRow[];
+    // Fetch all open requests for orphan detection (includes recent ones)
+    allOpenRequests = db
+      .query(
+        `SELECT requestId, status, method, toAgent, COALESCE(fromEntity, 'unknown') as fromEntity, sessionId, createdAt, COALESCE(task, '') as task
+         FROM requests
+         WHERE status IN ('CREATED', 'IN_PROGRESS')`,
+      )
+      .all() as RequestRow[];
   } catch {
     ctx.log("[task-watchdog] DB not available, skipping.");
     return result;
   }
 
   result.staleCount = staleRequests.length;
-  if (staleRequests.length === 0) {
+
+  // 2. Get active session IDs
+  const activeSessions = getActiveSessionIds(ctx.persistDir);
+
+  // 2b. Detect orphaned requests: any open request whose sessionId points to
+  //     a session that's no longer active. These are dropped tasks — the session
+  //     ended without completing the request. They enter the escalation ladder
+  //     immediately regardless of age.
+  const staleIds = new Set(staleRequests.map(r => r.requestId));
+  const orphans = allOpenRequests.filter(r => {
+    // Already in the stale set by age
+    if (staleIds.has(r.requestId)) return false;
+    // Has a sessionId that's no longer active → orphaned
+    if (r.sessionId && !activeSessions.has(r.sessionId)) return true;
+    return false;
+  });
+
+  // Merge orphans into the processing set
+  const allCandidates = [...staleRequests, ...orphans];
+  result.staleCount = allCandidates.length;
+  result.orphanCount = orphans.length;
+
+  if (allCandidates.length === 0) {
     // Still prune old log entries
     result.pruned = pruneLogEntries(logPath, now);
     return result;
   }
 
-  // 2. Get active session IDs
-  const activeSessions = getActiveSessionIds(ctx.persistDir);
-
   // 3. Load prior actions from JSONL log
   const priorActions = loadPriorActions(logPath);
 
-  // 4. Process each stale request
+  // 4. Process each stale/orphaned request
   let nudgeCount = 0;
 
-  for (const req of staleRequests) {
+  for (const req of allCandidates) {
     // Skip IN_PROGRESS requests that have an active session
     if (req.status === "IN_PROGRESS" && req.sessionId && activeSessions.has(req.sessionId)) {
       result.skipped++;
@@ -161,6 +201,8 @@ export function runTaskWatchdog(
     const prior = priorActions.get(req.requestId) ?? new Set<string>();
 
     // Determine next action based on escalation ladder
+    // Orphaned requests enter at nudge step regardless of age
+    const isOrphan = orphans.some(o => o.requestId === req.requestId);
     let action: "nudge" | "escalate" | "alert" | null = null;
 
     if (prior.has("alert")) {
@@ -171,7 +213,7 @@ export function runTaskWatchdog(
       action = "alert";
     } else if (prior.has("nudge") && ageMs >= ESCALATE_AGE_MS) {
       action = "escalate";
-    } else if (!prior.has("nudge") && ageMs >= NUDGE_AGE_MS) {
+    } else if (!prior.has("nudge") && (ageMs >= NUDGE_AGE_MS || isOrphan)) {
       action = "nudge";
     } else {
       // Not yet time for next escalation step
@@ -194,12 +236,13 @@ export function runTaskWatchdog(
       }
 
       try {
+        const statusLabel = isOrphan ? `orphaned (session ended, ${req.method})` : `stale ${req.method} request (${ageH}h old)`;
         ctx.emit({
           type: "message_created",
           fromEntity: "may:task-watchdog",
           toAgent: req.toAgent,
           method: "send",
-          task: `[task-watchdog] You have a stale request (${ageH}h old, assigned by ${req.fromEntity}) that hasn't been picked up:\n${req.task.slice(0, 200)}\nRequest ID: ${req.requestId}\nPlease address this in your next session.`,
+          task: `[task-watchdog] You have a ${statusLabel}, assigned by ${req.fromEntity}, that hasn't been completed:\n${req.task.slice(0, 200)}\nRequest ID: ${req.requestId}\nPlease address this in your next session.`,
           source: "cron:task-watchdog",
           priority: "P1",
         });
@@ -211,12 +254,12 @@ export function runTaskWatchdog(
       }
     } else if (action === "escalate") {
       ctx.log(
-        `[task-watchdog] ⚠️ ESCALATION: Request ${req.requestId} to ${req.toAgent} (from ${req.fromEntity}) is ${ageH}h old. Previously nudged, still not picked up. Task: ${req.task.slice(0, 150)}`,
+        `[task-watchdog] ⚠️ ESCALATION: Request ${req.requestId} (${req.method}) to ${req.toAgent} (from ${req.fromEntity}) is ${ageH}h old. Previously nudged, still not picked up. Task: ${req.task.slice(0, 150)}`,
       );
       result.escalated.push({ requestId: req.requestId, toAgent: req.toAgent });
     } else if (action === "alert") {
       ctx.notify(
-        `🚨 Stale task alert: ${req.toAgent} has not picked up request from ${req.fromEntity} after ${ageH}h.\nTask: ${req.task.slice(0, 200)}\nRequest: ${req.requestId}`,
+        `🚨 Stale task alert: ${req.toAgent} has not picked up ${req.method} request from ${req.fromEntity} after ${ageH}h.\nTask: ${req.task.slice(0, 200)}\nRequest: ${req.requestId}`,
       );
       result.alerted.push({ requestId: req.requestId, toAgent: req.toAgent });
     }

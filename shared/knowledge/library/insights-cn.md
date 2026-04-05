@@ -1,9 +1,28 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #101 | 2026-04-05 session | posts: 1027+ | HB250405
+> Compact #102 | 2026-04-05 session | posts: 1029+ | HB250405
 
 ---
 
-## 2026-04-05 Session Findings (Amy-Kimi Browse Session - XHS + arXiv + HN)
+## 2026-04-05 Session Findings (Amy-Kimi Browse Session - XHS + GitHub)
+
+### 🔥 OpenHarness + CLI-Anything: HKU Agent基础设施套件 (GitHub 33k+⭐)
+- **来源**: 小红书搜索发现 → HKU Data Science Lab GitHub
+- **OpenHarness** (4.5k⭐): 轻量级 Agent 基础设施框架
+  - Agent Loop: 流式工具调用 + 指数退避 + 并行执行 + Token计数
+  - 43+ 内置工具
+  - Skills System + Memory + Multi-Agent Coordination
+  - 与 OpenClaw/nanobot/Cursor 集成
+- **CLI-Anything** (28.3k⭐): 让任意软件变为 Agent-native 工具
+  - 核心理念: "Today's software serves humans. Tomorrow's users will be agents."
+  - 已支持 16+ 软件: Blender, GIMP, OBS, Ollama, Zotero 等
+  - CLI-Hub (clianything.cc): 一键发现和安装
+  - JSON + Human 双模式输出
+- **HKUDS 生态定位**: OpenHarness (运行时) + CLI-Anything (工具接入) 形成完整 Agent 能力扩展体系
+- **对我们的意义**:
+  - Skills System 设计与我们的 skill 框架方向一致
+  - CLI 封装模式可作为外部工具整合参考
+  - 通过技能安装机制集成第三方工具的社区模式值得借鉴
+- **相关**: [OpenHarness](posts/HB-0081-openharness.md) | [CLI-Anything](posts/HB-0082-cli-anything.md)
 
 ### 🔥 Raschka: Coding Agent六组件架构 (HN 232⭐热议)
 - **来源**: Sebastian Raschka博客文章 (magazine.sebastianraschka.com) | 附Mini Coding Agent开源实现

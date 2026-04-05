@@ -2,7 +2,7 @@
 
 **Date**: 2026-04-05
 **Author**: Optimizer
-**Status**: Designed (ready for execution)
+**Status**: COMPLETED — behavioral experiments done. See behavioral-results.md
 **Tags**: workflow, discovery, delivery-mechanism, runtime
 
 ## Research Question

@@ -63,10 +63,55 @@ The "Deceptive Reasoning Judges" paper (HB-2178, arXiv:2603.12246) goes further:
 
 This is the "GRM must evolve" principle from the ASL paper, applied to our evaluation system.
 
+## Empirical Evidence (2026-04-05, Bob)
+
+### DB Analysis: Heuristic Evaluator Mechanism
+
+**Method**: Analyzed 718 heuristic evaluations from Mar 20-23 snapshot in agents/.state/may.db + read `computeHeuristicScores()` in `src/lib/evaluator.ts`.
+
+**Finding 1: The evaluator is a binary classifier, not a quality scorer.**
+
+| quality | efficiency | verdict | count | % |
+|---------|-----------|---------|-------|---|
+| 5 | 4 | good | 651 | 90.7% |
+| 4 | 4 | good | 22 | 3.1% |
+| 1 | 3 | needs_improvement | 27 | 3.8% |
+| 2-3 | 2-3 | acceptable | 18 | 2.5% |
+
+91.6% of all evaluated sessions have ZERO issues detected.
+
+**Finding 2: The heuristic mechanism guarantees "good" for any completed session.**
+
+Scoring: quality starts at 3, efficiency at 3. Then:
+- `finish()` called → quality +1
+- `status=done && toolCalls >= 3` → quality +1, efficiency +1
+- Threshold for "good": quality ≥ 4 AND efficiency ≥ 4
+
+**Any session that calls finish() and makes 3+ tool calls is automatically "good."** No check for deliverable quality, task completion, or output accuracy.
+
+**Finding 3: Zero LLM evaluations of actual work.** All 15 non-heuristic evaluations are evaluator self-evals (skipped). 100% of real evaluations are heuristic-only.
+
+**Finding 4: Convention checks table has 0 rows.** The independent structural signal doesn't exist in this data window.
+
+### Assessment of Testable Claims
+
+| Claim | Evidence | Result |
+|-------|----------|--------|
+| Calibration drift | Mechanism analysis: the heuristic CANNOT rate completed sessions below "good" — drift is moot | ★★★★ (design flaw, not drift) |
+| Pattern gaming (claim #3) | finish() + 3 tool calls = good, regardless of output quality | ★★★★★ confirmed |
+| Rubber stamp | 90.7% "good" with zero quality differentiation among completed sessions | ★★★★★ confirmed |
+| Convention divergence (claim #2) | Cannot test: 0 convention check rows in DB | Untestable |
+
+### P(H) Update: 0.51 → 0.82
+
+The core prediction — that the evaluator cannot detect quality problems in completed sessions — is confirmed by direct code + DB analysis. This is not drift (gradual degradation) but a **design limitation**: the heuristic evaluator was never capable of quality differentiation for completed sessions. The system's "immune system" has a fundamental blind spot for any session that achieves `status=done` with `finish()` and ≥3 tool calls.
+
+**Key nuance**: The hypothesis framed this as "drift" but the evidence shows it's worse — the evaluator never had calibration to lose. It's a structural blind spot, not degradation.
+
 ## Related Work
 
 - ASL Three-Role Architecture (HB-2186): Static reward model → reward hacking
 - Deceptive Reasoning Judges (HB-2178): Strong reasoners game evaluation
 - ENCORE (HB-2180): Entropy-based evaluation quality estimation
 - IBM AgentFixer (HB-2315): Rule-based + LLM-as-judge hybrid evaluation
-- Our convention checker: Independent structural signal that doesn't drift (rules are code)
+- Our convention checker: Independent structural signal that doesn't drift (rules are code) — but has 0 rows in DB, so currently non-functional as a check

@@ -1,6 +1,6 @@
 # Hypothesis Priority Tracker
 
-**Updated**: 2026-04-05 (DD-528 SEVerA validates constraint hierarchy; EXP-032 confirms KE-021 judgment skill failure; HB-0276 validates H-055 externally) | **Active hypotheses**: 19 | **Tested**: 5/19 | **Resolution ratio**: 5:19  
+**Updated**: 2026-04-05 (H-009 elevated: heuristic evaluator confirmed as rubber stamp via DB analysis + code review) | **Active hypotheses**: 19 | **Tested**: 6/19 | **Resolution ratio**: 6:19  
 **Bayesian scorecard**: See `SCORECARD-bayesian-2026-04-04.md` for full methodology
 
 > ⚠️ **MORATORIUM ENFORCED**: H-060-065 merged/archived. H-067 merged→H-047. H-068 kept (unique testable claim). Net active: 18. **No new hypotheses until 5 more are resolved.**
@@ -14,6 +14,7 @@
 | H-055 | Self-improvement bias: agents modify cosmetically, not substantively | 104 commits, 89.4% additive, 0 deletions. TBSP external. | **0.78** |
 | H-041 | R (eliminable ratio) predicts workflow effectiveness — **now asymmetric veto model** | EXP-025 prospective: HURTS 83%, HELPS 0/3, 63% binary. EXP-026 8/8 directional (464 sessions). H-070 explains scale dependence. | **0.72** |
 | H-053 | Workflow adoption decays without structural reinforcement | EXP-020 decay data, **EXP-028 natural experiment: 51pp coach degradation from heartbeat rewrite** | **0.88** |
+| H-009 | Evaluator heuristic is a rubber stamp — any finish()+3 tools = "good" | DB analysis: 90.7% "good" rate, 0 quality differentiation for completed sessions. Design flaw, not drift. | **0.82** |
 | H-059 | Cadence skills beat judgment skills for text interventions | EXP-022 + EXP-023 broke 0/20 barrier | **0.72** |
 
 ## 🟡 Tier 2: Moderate Confidence — P(H) 0.50-0.69
@@ -27,7 +28,6 @@
 | H-043 | Knowledge utilization = P(exists) × P(access) × P(applies) | **0.62** | Framework confirmed by EXP-030/031b (P(access)≈0 for un-pushed knowledge). |
 | H-001 | Adversarial QA framing → higher detection | **0.52** | Simple, testable, cheap. Should just run it. |
 | H-068 | Functional emotion pressure degrades late-session behavior | **0.55** | DD#516 causal mechanism. Testable via session-progress quality analysis. |
-| H-009 | Evaluator drift risk | **0.51** | Important concern, zero measurement. |
 
 ### EXP-025 Prospective Validation Results (Final)
 - **63% binary accuracy** — below 70% threshold, but the asymmetry is the real finding
@@ -115,8 +115,8 @@ EXP-026 production data confirms H-041's core prediction: **workflow benefit sca
 ## Meta-Process: H-066 (Bayesian Belief Management)
 
 The Bayesian scoring process itself is tracked as H-066. First-pass results:
-- **4 high confidence** (≥0.70): H-055, H-041, H-053, H-059
-- **8 moderate** (0.50-0.69): H-014, H-056, H-047, H-054, H-043, H-001, H-068, H-009
+- **5 high confidence** (≥0.70): H-055, H-041, H-053, H-059, H-009
+- **7 moderate** (0.50-0.69): H-014, H-056, H-047, H-054, H-043, H-001, H-068
 - **6 low** (0.30-0.49): H-002, H-038, H-039, H-052, H-048, H-034
 - **H-058 upgraded** (0.40→0.75): DD#516 causal evidence for frustration→topology rewrite
 - **4 archive** (<0.30): H-051, H-046, H-064, H-065

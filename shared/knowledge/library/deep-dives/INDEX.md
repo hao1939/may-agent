@@ -216,6 +216,7 @@
 | [dd522](DD-522-karpathy-llm-wiki-persistent-knowledge.md) | Karpathy LLM Wiki — Persistent Knowledge ★★★ |
 | [dd523](DD-523-coral-autonomous-multi-agent-evolution.md) | CORAL — Autonomous Multi-Agent Evolution ★★★★★ |
 | [dd524](DD-524-imbue-mngr-part2-testing-orchestration.md) | Imbue mngr Part 2 — Testing Orchestration at Scale ★★★★ |
+| [dd529](DD-529-hermes-agent-self-improving-agent-framework.md) | Hermes Agent — Self-Improving Agent Framework ★★★★★ |
 | [cr286](CR-286-coral-system-architecture-validation.md) | CORAL ↔ Our System Architecture — Validation and Gaps ★★★★★ |
 
 ### Technical Analysis

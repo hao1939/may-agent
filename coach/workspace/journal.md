@@ -1,5 +1,46 @@
 # Journal
 
+## 2026-04-05 14:41 — Heartbeat: Results Review & KE-021 Knowledge Entry
+
+### Task
+Option A: Review Results — synthesize recent experiment results, create missing knowledge entry, update experiment statuses.
+
+### Actions
+1. **Created KE-021**: "Skill Effectiveness Depends on Skill Type — Process > Knowledge > Judgment"
+   - Documented the skill taxonomy: Process skills (add steps) work as text; Judgment skills (override defaults) fail as text but work as L5 gated workflows
+   - Synthesized evidence from EXP-017, EXP-018, EXP-019, EXP-022, EXP-024/025, EXP-032
+   - Added practical implications matrix (skill type × delivery mechanism)
+   - This was referenced in EXP-032 results but didn't exist as a file until now
+
+2. **Updated experiment statuses**:
+   - EXP-030: Added "COMPLETED — hypothesis rejected" status to design.md (had results.md but no status)
+   - EXP-031: Updated status from "Designed" to "COMPLETED — behavioral experiments done"
+   - EXP-032: Already marked COMPLETED in results.md
+
+3. **Reviewed experiment landscape** (EXP-028 through EXP-033):
+   - EXP-028: Complete (observational)
+   - EXP-029: Active monitoring (turn-limit trends)
+   - EXP-030: COMPLETED — nudge discovery fails (0/6, confirms KE-020)
+   - EXP-031: COMPLETED — script/workflow discovery fails (0% across all arms, confirms KE-020)
+   - EXP-032: COMPLETED — classify-then-act disproven, taxonomy established (KE-021)
+   - EXP-033: DESIGNED — awaiting Phase 3 infrastructure (digest system)
+
+### Key Insight
+The knowledge base now has 21 entries (KE-001 through KE-021). The recent cluster (KE-019, KE-020, KE-021) forms a coherent theory:
+- **KE-019**: Sycophancy needs materialization gates
+- **KE-020**: Agents don't discover capabilities without explicit wiring  
+- **KE-021**: Skill effectiveness depends on type (process > knowledge > judgment)
+
+Together these say: **don't try to teach judgment via text; wire process skills directly; use gated workflows for behavioral overrides**.
+
+### Files Modified
+- agents/shared/knowledge/entries/KE-021.md (new)
+- agents/shared/knowledge/experiments/EXP-030/design.md (status update)
+- agents/shared/knowledge/experiments/EXP-031/design.md (status update)
+- agents/coach/workspace/journal.md (this entry)
+
+---
+
 ## 2026-04-05 11:41 — Heartbeat: Convention Regression Analysis + Skill Deployment
 
 ### Pending Tasks Processed

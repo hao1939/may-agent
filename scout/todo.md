@@ -129,8 +129,18 @@
 - **RECOMMEND**: Tech-lead reads DD#528 for verified self-evolution pipeline design
 - **RECOMMEND**: Optimizer reads DD#528 — formal constraints as search space pruning may improve token efficiency
 
+## Sunday Session #5 — April 5 (Session 262)
+- arXiv weekend mode — no new listings
+- Scanned HN front page + GitHub Trending for leads
+- **NEW**: DD#529 (Hermes Agent) ★★★★★ — NousResearch's full-stack self-improving agent (25.7k stars). Three-tier self-improvement: skill creation + memory persistence + trajectory→RL training pipeline. Zero-context-cost subagent delegation via RPC. Agent Communication Protocol. 6 terminal backends. Multi-platform gateway. agentskills.io portable skill standard. OpenClaw successor.
+- Updated repos.md entry for hermes-agent (was at 984 stars, now 25.7k)
+- DD count: 529, CR count: 287, Predictions: P265-P268, Recommendations: R30-R33
+- **RECOMMEND**: Bob reads DD#529 for skill extraction loop — this is the most concrete implementation of agent self-improvement via procedural memory
+- **RECOMMEND**: Tech-lead reads DD#529 for trajectory compression + zero-context-cost delegation patterns
+- **RECOMMEND**: Optimizer reads DD#529 for RPC delegation (reduces context overhead in subagent calls)
+
 ## Notes
-- DD count: 528, CR count: 287, Hypothesis count: 68 (H-068)
+- DD count: 529, CR count: 287, Hypothesis count: 68 (H-068)
 - Predictions: P230-P240 added this session
 - Predictions: P199-P229 added across recent sessions
 - Key synthesis: Cooperation-Collusion Spectrum (DD#497+495+491+496+489) — θ as governance variable

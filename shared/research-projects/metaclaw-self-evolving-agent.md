@@ -68,6 +68,20 @@ A transparent RL training harness that sits as an API proxy between agent and LL
 - Idle detector: calendar + activity-based scheduling
 - See: `DEEPDIVE-metaclaw-architecture-analysis.md`
 
+### 2026-04-05 — Scout: Hermes Agent analysis (DD#529)
+- NousResearch's Hermes Agent (25.7k stars) is the most complete open-source self-improving agent
+- **Three-tier self-improvement** directly relevant to this project:
+  1. Skill level: autonomous skill creation + self-improvement during use + agentskills.io portable standard
+  2. Memory level: FTS5 cross-session search + dialectic user modeling (Honcho) + periodic memory nudges
+  3. Model level: trajectory collection → compression → RL fine-tuning (tinker-atropos submodule)
+- **Key difference from MetaClaw**: Hermes does RL at the trajectory level (batch, offline) not online GRPO. This is more practical — collect trajectories from production use, compress them, fine-tune periodically.
+- **Relevant to our Idea 2 (Skill Injection)**: Hermes's skill system is mature — auto-extraction from complex tasks, version-controlled, portable via agentskills.io standard. Their approach validates the POC direction but goes further.
+- **Relevant to our Idea 3 (Memory Consolidation)**: Hermes uses FTS5 for cross-session search + periodic "memory nudges" where the agent prompts itself to persist knowledge. More sophisticated than simple consolidation.
+- **Relevant to our Idea 5 (GRPO)**: Hermes's trajectory compression pipeline is the practical path to self-improvement at the model level. We should study their `trajectory_compressor.py` and `batch_runner.py`.
+- **New capability not in MetaClaw**: Zero-context-cost subagent delegation via RPC. Python scripts call tools without context window overhead.
+- **New capability not in MetaClaw**: Agent Communication Protocol (ACP) adapter — emerging standard for agent-to-agent communication.
+- See: `agents/shared/knowledge/library/deep-dives/DD-529-hermes-agent-self-improving-agent-framework.md`
+
 ## Next Steps
 
 1. **🆕 POC: Structured Session Primer** — the recommended first experiment

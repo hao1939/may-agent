@@ -1,5 +1,8 @@
 # EXP-030: On-Demand Skill Discovery via Common-Sense Nudge
 
+**Status**: COMPLETED — hypothesis rejected (0% discovery rate). See results.md  
+**Knowledge Entry**: KE-020 (updated with EXP-030 convergence)
+
 ## Hypothesis
 Adding a one-line nudge to common-sense.md — "When facing a challenging task, check agents/shared/skills/LIBRARY.md for proven techniques before starting." — will cause agents to read and apply shared skills WITHOUT pre-loading them into the system prompt.
 

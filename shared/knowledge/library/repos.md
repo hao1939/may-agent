@@ -295,12 +295,13 @@ Interesting GitHub repos — tracked, watched, or archived.
 - **Why interesting:** Contains Manus system prompt — direct window into how a production multi-agent system instructs its agents. Also Claude Code, Cursor, Devin prompts for comparison. The existence and popularity of this repo (weekly trending) confirms: system prompts are de facto public knowledge in the agent ecosystem. Security through obscurity on system prompts is ineffective.
 - **Connects to:** Manus context engineering post (their system prompt philosophy). Behavioral Consistency (2602.11619) — agent behavior is partly determined by system prompt consistency. Theme 3a (attack surface includes system prompt extraction). Anthropic RSP drop — if system prompts are public, institutional policy becomes the main differentiation layer.
 
-### NousResearch/hermes-agent ★984 (+183/day)
+### NousResearch/hermes-agent ★25,700+ (weekly trending)
 - **URL:** https://github.com/NousResearch/hermes-agent
-- **Stars/Activity:** 984 stars, 156 forks. 183 stars today — daily trending Python. Built with /claude contributor. Python.
-- **What it does:** Agent implementation from NousResearch (Hermes model series). NousResearch is known for fine-tuned open-weight models (Hermes line) optimised for tool use and structured output. This is their reference agent harness for the Hermes models.
-- **Why interesting:** NousResearch is one of the most respected open-weight fine-tuning labs. A reference agent from them signals that open-weight models now have purpose-built harnesses, not just OpenAI-SDK wrappers. Connects to the BYOA (Val Town) theme — run your own model with your own harness.
-- **Connects to:** BYOA philosophy (HB65). anthropics/skills (open-weight vs proprietary model agent comparison). Theme 5 (Platform Wars — open-weight harnesses entering the space).
+- **Stars/Activity:** 25,700+ stars, 3,400 forks. Weekly trending Python. v0.7.0+. MIT licensed.
+- **What it does:** Most complete open-source self-improving agent framework. Closed learning loop (autonomous skill creation, skills self-improve during use, periodic memory nudges, FTS5 cross-session search, dialectic user modeling via Honcho). Multi-platform gateway (Telegram, Discord, Slack, WhatsApp, Signal). 6 terminal backends (local, Docker, SSH, Daytona, Singularity, Modal). RL training pipeline with trajectory compression for fine-tuning. Agent Communication Protocol (ACP) adapter. Zero-context-cost subagent delegation via RPC.
+- **Why interesting:** First open-source agent with three-tier self-improvement: skill level (procedural memory), memory level (persistent knowledge + user models), model level (trajectory → RL → fine-tuned model). Positions as OpenClaw successor (includes migration tool). Provider-agnostic (OpenRouter, Nous Portal, any endpoint). agentskills.io portable skill standard.
+- **Connects to:** DD#529 (deep dive). DD#508 PsychAgent (skill evolution). DD#501 CraniMem (memory gating). DD#213 SkillRL (recursive skills). DD#215 FT-Dojo (autonomous fine-tuning). CR#257 (self-evolving convergence). Our system's skill gap — we lack autonomous skill extraction and trajectory collection.
+- **Deep Dive:** [DD#529](deep-dives/DD-529-hermes-agent-self-improving-agent-framework.md)
 
 ### ComposioHQ/awesome-claude-skills ★38,921
 - **URL:** https://github.com/ComposioHQ/awesome-claude-skills

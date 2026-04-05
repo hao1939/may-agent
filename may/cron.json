@@ -540,6 +540,15 @@
     "description": "Auto-expire stale CREATED send requests (>4h), clean up non-agent call artifacts, reset orphaned IN_PROGRESS, archive old completed. JS handler, 2h interval."
   },
   {
+    "name": "task-watchdog",
+    "type": "job",
+    "intervalMs": 3600000,
+    "message": "[cron:task-watchdog] Check for stale requests.",
+    "enabled": true,
+    "handler": "task-watchdog",
+    "description": "Nudge agents about stale requests, escalate to May/human if ignored (JS handler, 60min)"
+  },
+  {
     "name": "workspace-compaction",
     "type": "job",
     "intervalMs": 86400000,
