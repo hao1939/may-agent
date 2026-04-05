@@ -314,8 +314,17 @@ export function createStuckDetector(
 
     if (s.consecutiveErrorTurns >= STUCK_TERMINATE_THRESHOLD) {
       const reason = `Stuck: ${s.consecutiveErrorTurns} consecutive error-only turns`;
-      log("error", `[stuck] ${event.agent} (${event.sessionId}) stuck at ${s.consecutiveErrorTurns} error turns — cancelling`);
-      // Digest: circuit_break (kill) — pass manager for LLM synthesis + classification
+      log("error", `[stuck] ${event.agent} (${event.sessionId}) stuck at ${s.consecutiveErrorTurns} error turns — evaluating`);
+
+      // Phase 4a: Use digest classifier to decide action instead of always killing
+      const fallbackKill = () => {
+        log("info", `[stuck] decision=kill source=fallback session=${event.sessionId} agent=${event.agent}`);
+        emitCancel(event.sessionId, reason);
+        if (onCircuitBreak) {
+          try { onCircuitBreak(event.agent, event.sessionId, reason); } catch { /* best-effort */ }
+        }
+      };
+
       if (persistDir) {
         upsertDigest(persistDir, {
           sessionId: event.sessionId,
@@ -323,14 +332,27 @@ export function createStuckDetector(
           trigger: "circuit_break",
           details: { consecutiveErrorTurns: s.consecutiveErrorTurns, reason },
         }, getManager()).then(digest => {
-          // Shadow comparison: existing system always kills on circuit_break
-          logShadowComparison(event.sessionId, "circuit_break", "kill", digest);
-        }).catch(err => log("warn", `[digest] circuit_break failed: ${err}`));
-      }
-      emitCancel(event.sessionId, reason);
-      // Notify for diagnosis (Task B: circuit-breaker → diagnosis feedback loop)
-      if (onCircuitBreak) {
-        try { onCircuitBreak(event.agent, event.sessionId, reason); } catch { /* best-effort */ }
+          const action = digest?.action ?? "kill";
+          log("info", `[stuck] decision=${action} source=digest session=${event.sessionId} agent=${event.agent}`);
+          if (action === "kill" || action === "nothing") {
+            emitCancel(event.sessionId, reason);
+            if (onCircuitBreak) {
+              try { onCircuitBreak(event.agent, event.sessionId, reason); } catch { /* best-effort */ }
+            }
+          } else if (action === "escalate") {
+            emitCancel(event.sessionId, reason);
+            if (onCircuitBreak) {
+              try { onCircuitBreak(event.agent, event.sessionId, `${reason} (escalated by classifier)`); } catch { /* best-effort */ }
+            }
+          }
+          // "resume" or "requeue" → don't cancel, classifier says session has recoverable work
+          // The session will continue running, and the auto-resume or P62 recovery will handle it
+        }).catch(err => {
+          log("warn", `[digest] circuit_break failed: ${err}`);
+          fallbackKill();
+        });
+      } else {
+        fallbackKill();
       }
       state.delete(event.sessionId);
     }
