@@ -771,7 +771,10 @@ export class Cron {
         taskMessage = `${entry.message ?? ""}\n\n---\n${injections.join("\n\n---\n")}`;
       }
 
-      // maxTurns removed — watchdog handles runaway sessions via time-based timeout.
+      // DO NOT add maxTurns back. Turn limits were intentionally removed (commit c183312).
+      // The watchdog (60-90min timeout) handles runaway sessions.
+      // Turn limits killed 36 sessions mid-work with useful progress (up to 198 ops).
+      // If you see turn limit errors in the DB, they are from old sessions before deployment.
       const sessionId = this.manager.run(agentName, taskMessage, {
         kind: "job",
       });
