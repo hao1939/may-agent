@@ -15,6 +15,7 @@ import { Type } from "@mariozechner/pi-ai";
 import type { TSchema } from "@mariozechner/pi-ai";
 import { mkdirSync, appendFileSync, readFileSync, writeFileSync, existsSync } from "fs";
 import { resolve } from "path";
+import { createCheckpointDigest } from "../session-digest.js";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -202,6 +203,16 @@ export function createCheckpointTool(options: CheckpointToolOptions): AgentTool<
       // Build response
       const dataKeys = data ? Object.keys(data) : [];
       const dataInfo = dataKeys.length > 0 ? ` Data keys: ${dataKeys.join(", ")}.` : "";
+
+      // ── Trigger checkpoint digest (Phase 1: session digest system) ────
+      try {
+        createCheckpointDigest(persistDir, sid, entry.agentName, {
+          summary: summary.trim(),
+          data: data ?? {},
+        });
+      } catch {
+        /* best-effort — digest system shouldn't break checkpoints */
+      }
 
       return {
         content: [

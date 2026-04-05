@@ -13,6 +13,7 @@ import type { AgentEvent } from "../app/event-bus.js";
 import { appendActivity, truncateSummary } from "./activity.js";
 import { appendMemoryEntry } from "./persistence.js";
 import { log } from "./log.js";
+import { createStartDigest, createEndDigest } from "./session-digest.js";
 
 // ── Activity Writer ─────────────────────────────────────────────────────
 // Writes session lifecycle events to agents/<name>/workspace/activity.jsonl
@@ -258,6 +259,8 @@ interface StuckState {
 
 export function createStuckDetector(
   emitCancel: (sessionId: string, reason: string) => void,
+  /** Optional: called when circuit breaker fires so the system can diagnose the failure. */
+  onCircuitBreak?: (agent: string, sessionId: string, reason: string) => void,
 ): (event: AgentEvent) => void {
   const state = new Map<string, StuckState>();
 
@@ -291,8 +294,13 @@ export function createStuckDetector(
     }
 
     if (s.consecutiveErrorTurns >= STUCK_TERMINATE_THRESHOLD) {
+      const reason = `Stuck: ${s.consecutiveErrorTurns} consecutive error-only turns`;
       log("error", `[stuck] ${event.agent} (${event.sessionId}) stuck at ${s.consecutiveErrorTurns} error turns — cancelling`);
-      emitCancel(event.sessionId, `Stuck: ${s.consecutiveErrorTurns} consecutive error-only turns`);
+      emitCancel(event.sessionId, reason);
+      // Notify for diagnosis (Task B: circuit-breaker → diagnosis feedback loop)
+      if (onCircuitBreak) {
+        try { onCircuitBreak(event.agent, event.sessionId, reason); } catch { /* best-effort */ }
+      }
       state.delete(event.sessionId);
     }
   };
@@ -343,3 +351,60 @@ export function createAutoResume(
     }, delay);
   };
 }
+
+// ── Digest Writer ───────────────────────────────────────────────────────
+// Creates session digest entries on session lifecycle events.
+// Phase 1: session_start (CREATE) and session_end (END digest).
+
+export function createDigestWriter(persistDir: string): (event: AgentEvent) => void {
+  return (event: AgentEvent) => {
+    if (event.type === "session_start") {
+      try {
+        createStartDigest(persistDir, event.sessionId, event.agent, event.task ?? "");
+      } catch (err) {
+        /* best-effort — digest system shouldn't break sessions */
+        try { log("warn", `[digest-subscriber] start failed: ${err}`); } catch {}
+      }
+      return;
+    }
+
+    if (event.type === "session_end") {
+      try {
+        const finishParams = event.finishParams as any;
+        const summary = finishParams?.summary ?? event.outcome ?? "";
+        const status = finishParams?.status ?? event.status ?? "interrupted";
+        const filesModified = finishParams?.deliverables?.map((d: any) => d.path).filter(Boolean) ?? event.filesModified ?? [];
+        const nextSteps = finishParams?.next_steps ?? finishParams?.blockers?.map((b: any) => b.reason).join("; ") ?? null;
+
+        // Map finish status to digest outcome
+        const outcomeMap: Record<string, string> = {
+          success: "success",
+          partial: "partial",
+          failure: "failure",
+          blocked: "failure",
+          done: "success",
+          error: "failure",
+          interrupted: "interrupted",
+        };
+        const outcome = outcomeMap[status] ?? "interrupted";
+
+        createEndDigest(persistDir, event.sessionId, event.agent, {
+          what_happened: summary,
+          outcome,
+          still_open: nextSteps,
+          files_modified: filesModified,
+          details: {
+            duration: event.duration,
+            turnCount: event.turnCount,
+            opCount: event.opCount,
+            error: event.error,
+          },
+        });
+      } catch (err) {
+        /* best-effort */
+        try { log("warn", `[digest-subscriber] end failed: ${err}`); } catch {}
+      }
+    }
+  };
+}
+
