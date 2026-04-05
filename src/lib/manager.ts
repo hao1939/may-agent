@@ -301,6 +301,30 @@ export class SubagentManager {
         if (event.message.role === "assistant") {
           session.turnCount++;
 
+          // Turn budget warning — inject a soft "wrap up" message before the hard limit
+          if (!session.turnBudgetWarned && session.maxTurns > 0) {
+            // Compute effective warning turn: use explicit value, or 80% of maxTurns
+            const warnAt = session.turnBudgetWarningAt > 0
+              ? session.turnBudgetWarningAt
+              : Math.floor(session.maxTurns * 0.8);
+            if (warnAt > 0 && session.turnCount >= warnAt) {
+              session.turnBudgetWarned = true;
+              const remaining = session.maxTurns - session.turnCount;
+              log(
+                "info",
+                `TURN_BUDGET_WARNING: Agent ${session.agentName} (${sessionId}) at turn ${session.turnCount}/${session.maxTurns}. Warning injected, ${remaining} turns remaining.`,
+              );
+              session.agent.followUp({
+                role: "user",
+                content: [{
+                  type: "text",
+                  text: `⚠️ TURN BUDGET WARNING: You have used ${session.turnCount} of ${session.maxTurns} turns (${remaining} remaining). Please wrap up your current work and call finish() soon. It is better to save partial progress with finish(status='partial') than to be terminated mid-work.`,
+                }],
+                timestamp: Date.now(),
+              });
+            }
+          }
+
           // maxTurns enforcement — gracefully terminate sessions exceeding budget
           if (session.maxTurns > 0 && session.turnCount >= session.maxTurns) {
             log(

@@ -158,7 +158,11 @@ export const INFRA_RETRY_BASE_DELAY_MS = 1000;
 /** Maximum identical failed tool calls before blocking. */
 export const TOOL_PIVOT_LIMIT = 3;
 
-/** @deprecated Turn budget removed — always 0 (disabled). */
+/**
+ * Default turn budget warning threshold.
+ * 0 = auto-compute from maxTurns (80% of maxTurns).
+ * Positive number = explicit turn at which to warn.
+ */
 export const TURN_BUDGET_WARNING_DEFAULT = 0;
 
 /** Default maxTurns for restored sessions that lack a persisted value.
