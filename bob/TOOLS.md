@@ -39,4 +39,4 @@ Signal structured completion of a task. Call as the last action in a session.
 
 ## Key Constraints
 - ❌ No `handoff`, `workflow`, or `cron` tools.
-- For artifact transfers: write the file first, then `agents.send(target, "task description. Artifact: path/to/file")`.
+- For artifact transfers: write the file first, then `agents.message(target, "task description. Artifact: path/to/file")`.

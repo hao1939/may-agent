@@ -85,7 +85,7 @@ finish({
 **agents** — call/send to other agents:
 ```
 agents({
-  action: "send",
+  action: "message",
   agent: "tech-lead",
   message: "Please implement X"
 })

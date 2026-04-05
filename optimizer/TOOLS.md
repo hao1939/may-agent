@@ -46,6 +46,6 @@ checkpoint({ summary: "What I accomplished so far", data: { key: "value" } })
 
 ## Key Constraints
 - ❌ No `handoff`, `cron`, `scrape_webpage`, `scrape`, `exec`, or `discard_agent` tools. These do NOT exist.
-- For artifact transfers: write the file first, then `agents.send(target, "task. Artifact: path/to/file")`.
+- For artifact transfers: write the file first, then `agents.message(target, "task. Artifact: path/to/file")`.
 - If you need web content, use `bash` with `curl`.
 - ✅ Your ONLY tools are: `read`, `write`, `edit`, `bash`, `agents`, `workflow`, `checkpoint`.

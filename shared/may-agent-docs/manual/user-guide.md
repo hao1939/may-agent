@@ -211,7 +211,7 @@ socat - UNIX-CONNECT:.state/instances/default/may.sock
 echo '{"type":"input","message":"check status"}' | socat - UNIX-CONNECT:.state/instances/default/may.sock
 
 # Run a specific agent
-echo '{"type":"run","agent":"coder","message":"fix the test"}' | socat - UNIX-CONNECT:.state/instances/default/may.sock
+echo '{"type":"fork","agent":"coder","message":"fix the test"}' | socat - UNIX-CONNECT:.state/instances/default/may.sock
 
 # Status
 echo '{"type":"status"}' | socat - UNIX-CONNECT:.state/instances/default/may.sock

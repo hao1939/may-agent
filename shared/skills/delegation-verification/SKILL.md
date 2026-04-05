@@ -2,7 +2,7 @@
 name: delegation-verification
 description: >
   Verify delegated work is registered before closing your session. When agents use
-  `agents({ action: "send" })` to delegate tasks, 73% of delegations are fire-and-forget —
+  `agents({ action: "message" })` to delegate tasks, 73% of delegations are fire-and-forget —
   the sending agent never confirms the request was tracked. This leads to ghost requests,
   broken delegation chains, and duplicated work. This skill enforces: send, record, verify,
   document — so every delegation has a paper trail and a confirmation of receipt.
@@ -15,10 +15,10 @@ evidence: 11 delegations analyzed across 6 agents (2026-03-22); 8/11 unverified
 
 ## When to Apply
 
-Apply this skill **every time you use `agents({ action: "send" })` to delegate
+Apply this skill **every time you use `agents({ action: "message" })` to delegate
 work to another agent**. Specific triggers:
 
-- **You just called `agents({ action: "send" })`** — the send returned a response,
+- **You just called `agents({ action: "message" })`** — the send returned a response,
   and you're about to move on to other work or close your session. Stop. Verify first.
 - **You're about to call `finish()`** and you delegated work earlier in this session —
   before closing, confirm all delegations are tracked in the request DB.
@@ -38,7 +38,7 @@ work to another agent**. Specific triggers:
 
 ## Why This Matters
 
-Async delegation via `agents({ action: "send" })` is the primary way agents
+Async delegation via `agents({ action: "message" })` is the primary way agents
 coordinate work. But the send-and-forget pattern creates a dangerous gap: the sender
 *assumes* the request was received and will be acted on, but has no confirmation.
 
@@ -61,7 +61,7 @@ coordinate work. But the send-and-forget pattern creates a dangerous gap: the se
   435/437, 451/452). Without verification, senders can't detect that a duplicate
   request already exists, compounding the coordinator's deduplication problem.
 
-**Why this happens**: `agents({ action: "send" })` returns immediately with a
+**Why this happens**: `agents({ action: "message" })` returns immediately with a
 confirmation-like response. This feels like "done" — the agent's instinct is to
 move on. But the response only confirms the *send* succeeded, not that the target
 agent will *process* it. The gap between "sent" and "processed" is where requests
@@ -77,7 +77,7 @@ the entire chain.
 
 ### Step 1: SEND — Delegate with a clear, specific message
 
-When delegating work via `agents({ action: "send" })`:
+When delegating work via `agents({ action: "message" })`:
 
 - **Be specific about what you need done**: "Update agents/bob/knowledge/INDEX.md
   to include the new skill reference" beats "update Bob's config."
@@ -149,7 +149,7 @@ see what was delegated, to whom, and whether follow-up is needed.
 
 ## Assertions
 
-1. After every `agents({ action: "send" })` call, the agent acknowledges the
+1. After every `agents({ action: "message" })` call, the agent acknowledges the
    delegation in its reasoning — noting the target agent and what was requested.
    No silent sends where the delegation is fired without any acknowledgment.
 
@@ -173,7 +173,7 @@ see what was delegated, to whom, and whether follow-up is needed.
 
 ### AP-1: Fire-and-Forget ("send() returned success, so we're done")
 
-The agent calls `agents({ action: "send" })`, sees the response, and immediately
+The agent calls `agents({ action: "message" })`, sees the response, and immediately
 moves on or calls `finish()`. No verification, no documentation, no follow-up plan.
 The request enters a void — maybe it'll be processed, maybe it won't.
 

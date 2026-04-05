@@ -34,7 +34,7 @@ One place to ask: what was this session about, what happened, what's the result,
 
 The original ask was "how do we make sure agents follow orders?" We explored:
 
-- **Directive tracking system** — a new DB table for human orders with status tracking. Rejected: over-engineered for the problem. The agents already have `send()` for task assignment and the requests DB for tracking.
+- **Directive tracking system** — a new DB table for human orders with status tracking. Rejected: over-engineered for the problem. The agents already have `message()` for task assignment and the requests DB for tracking.
 
 - **orders.md / directives.md** — May writes directives to a file, reads it on every heartbeat. Rejected: goes backwards from DB-based tracking. Also, text rules don't change behavior (KE-002, 0/19). May would forget to maintain the file.
 

@@ -18,4 +18,4 @@ No pending reviews? Do ONE of these (rotate):
 - **Code quality sweep** — pick a source file from `src/lib/`. Read it. Error handling gaps? Silent failures?
 
 ## 3. Close Out
-Write findings to `workspace/journal.md`. If you found issues, notify tech-lead via `agents.send`. Call `finish()`.
+Write findings to `workspace/journal.md`. If you found issues, notify tech-lead via `agents.message`. Call `finish()`.

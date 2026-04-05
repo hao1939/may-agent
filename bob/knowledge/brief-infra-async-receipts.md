@@ -5,7 +5,7 @@
 **Target**: Tech-Lead
 
 ## 1. The Problem
-The `agents.send(agent, message)` tool is currently **fire-and-forget**.
+The `agents.message(agent, message)` tool is currently **fire-and-forget**.
 - The sender adds a todo item to the receiver.
 - The sender gets no feedback when the item is completed.
 - To know if it's done, the sender must manually poll the receiver's `todo.md` or wait for a human to intervene.
@@ -16,7 +16,7 @@ This violates **C40 (Promise-Deliver-Report)** at the system level: we have Prom
 Upgrade the `send()` mechanism to support a "Receipt Request" pattern.
 
 ### Mechanism
-1. **Sender**: `agents.send("may", "Update roadmap...", { track: true })`
+1. **Sender**: `agents.message("may", "Update roadmap...", { track: true })`
    - System generates a `trackingId` (e.g., `req_123`).
    - System appends to May's todo: `[ ] Update roadmap... (req_123)`.
    - Tool returns: `Pending: req_123`.
@@ -39,8 +39,8 @@ Upgrade the `send()` mechanism to support a "Receipt Request" pattern.
 ## 3. Implementation Plan
 
 ### Phase 1: Tracking IDs (Low Effort)
-- Update `agents.send()` to append a unique ID `(req_<hash>)` to the message string.
-- Update `agents.send()` return value to include this ID.
+- Update `agents.message()` to append a unique ID `(req_<hash>)` to the message string.
+- Update `agents.message()` return value to include this ID.
 
 ### Phase 2: Receipt Scanner (Medium Effort)
 - Create a simple cron job (`agents/may/handlers/scan-receipts.ts`).

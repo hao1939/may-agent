@@ -228,7 +228,7 @@ Cancels every running session managed by this process.
 #### `run` — Start a new agent session
 
 ```json
-{ "type": "run", "agent": "coder", "message": "fix the login bug" }
+{ "type": "fork", "agent": "coder", "message": "fix the login bug" }
 ```
 
 Starts a new `kind: "job"` session for the named agent. The session runs

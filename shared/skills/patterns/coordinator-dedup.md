@@ -17,7 +17,7 @@ again — caught it only because she checked `agents.requests()` first.
 
 ## The Pattern
 
-### Before Every `agents.send()` or `agents.call()`
+### Before Every `agents.message()` or `agents.call()`
 ```
 # Step 1: Check active requests for the target agent
 agents("requests", agent="TARGET_AGENT", filter="active")
