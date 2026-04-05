@@ -13,7 +13,8 @@ import type { AgentEvent } from "../app/event-bus.js";
 import { appendActivity, truncateSummary } from "./activity.js";
 import { appendMemoryEntry } from "./persistence.js";
 import { log } from "./log.js";
-import { createStartDigest, createEndDigest, upsertDigest } from "./session-digest.js";
+import { createStartDigest, createEndDigest, upsertDigest, logShadowComparison } from "./session-digest.js";
+import type { SubagentManager } from "./manager.js";
 
 // ── Activity Writer ─────────────────────────────────────────────────────
 // Writes session lifecycle events to agents/<name>/workspace/activity.jsonl
@@ -263,7 +264,11 @@ export function createStuckDetector(
   onCircuitBreak?: (agent: string, sessionId: string, reason: string) => void,
   /** Optional: persistDir for digest writes. */
   persistDir?: string,
+  /** Optional: manager for LLM synthesis in digest classification (Phase 3 shadow classifier). Accepts a getter for deferred initialization. */
+  managerOrGetter?: SubagentManager | (() => SubagentManager | undefined),
 ): (event: AgentEvent) => void {
+  const getManager = () =>
+    typeof managerOrGetter === "function" ? managerOrGetter() : managerOrGetter;
   const state = new Map<string, StuckState>();
 
   return (event: AgentEvent) => {
@@ -293,13 +298,16 @@ export function createStuckDetector(
     if (s.consecutiveErrorTurns >= STUCK_WARNING_THRESHOLD && !s.warned) {
       s.warned = true;
       log("warn", `[stuck] ${event.agent} (${event.sessionId}) has ${s.consecutiveErrorTurns} consecutive error turns`);
-      // Digest: stuck_detected (warning, not kill yet)
+      // Digest: stuck_detected (warning, not kill yet) — pass manager for LLM synthesis + classification
       if (persistDir) {
         upsertDigest(persistDir, {
           sessionId: event.sessionId,
           agent: event.agent,
           trigger: "stuck_detected",
           details: { consecutiveErrorTurns: s.consecutiveErrorTurns },
+        }, getManager()).then(digest => {
+          // Shadow comparison: existing system only warns on stuck_detected (no action)
+          logShadowComparison(event.sessionId, "stuck_detected", "nothing", digest);
         }).catch(err => log("warn", `[digest] stuck_detected failed: ${err}`));
       }
     }
@@ -307,13 +315,16 @@ export function createStuckDetector(
     if (s.consecutiveErrorTurns >= STUCK_TERMINATE_THRESHOLD) {
       const reason = `Stuck: ${s.consecutiveErrorTurns} consecutive error-only turns`;
       log("error", `[stuck] ${event.agent} (${event.sessionId}) stuck at ${s.consecutiveErrorTurns} error turns — cancelling`);
-      // Digest: circuit_break (kill)
+      // Digest: circuit_break (kill) — pass manager for LLM synthesis + classification
       if (persistDir) {
         upsertDigest(persistDir, {
           sessionId: event.sessionId,
           agent: event.agent,
           trigger: "circuit_break",
           details: { consecutiveErrorTurns: s.consecutiveErrorTurns, reason },
+        }, getManager()).then(digest => {
+          // Shadow comparison: existing system always kills on circuit_break
+          logShadowComparison(event.sessionId, "circuit_break", "kill", digest);
         }).catch(err => log("warn", `[digest] circuit_break failed: ${err}`));
       }
       emitCancel(event.sessionId, reason);
@@ -337,7 +348,11 @@ export function createAutoResume(
   emitEscalate: (agent: string, sessionId: string, reason: string) => void,
   /** Optional: persistDir for digest writes. */
   persistDir?: string,
+  /** Optional: manager for LLM synthesis in digest classification (Phase 3 shadow classifier). Accepts a getter for deferred initialization. */
+  managerOrGetter?: SubagentManager | (() => SubagentManager | undefined),
 ): (event: AgentEvent) => void {
+  const getManager = () =>
+    typeof managerOrGetter === "function" ? managerOrGetter() : managerOrGetter;
   const attempts = new Map<string, number>();
 
   return (event: AgentEvent) => {
@@ -353,13 +368,16 @@ export function createAutoResume(
     if (prev >= MAX_RESUME_ATTEMPTS) {
       // Exhausted retries — escalate immediately
       const reason = `Interrupted ${MAX_RESUME_ATTEMPTS + 1}x after ${event.turnCount ?? 0} turns. Error: ${event.error?.slice(0, 200) ?? "unknown"}. Task: ${(event.task ?? "").slice(0, 200)}`;
-      // Digest: resume_exhausted
+      // Digest: resume_exhausted — pass manager for LLM synthesis + classification
       if (persistDir) {
         upsertDigest(persistDir, {
           sessionId: event.sessionId,
           agent: event.agent,
           trigger: "resume_exhausted",
           details: { attempts: prev + 1, maxAttempts: MAX_RESUME_ATTEMPTS, error: event.error?.slice(0, 200), turnCount: event.turnCount },
+        }, getManager()).then(digest => {
+          // Shadow comparison: existing system always escalates on resume_exhausted
+          logShadowComparison(event.sessionId, "resume_exhausted", "escalate", digest);
         }).catch(err => log("warn", `[digest] resume_exhausted failed: ${err}`));
       }
       attempts.delete(event.sessionId);

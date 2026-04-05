@@ -390,6 +390,29 @@ export function classifyDigest(
   }
 }
 
+// ── Shadow Comparison Logging ───────────────────────────────────────────
+
+/**
+ * Log a shadow comparison between the existing recovery action and the digest classifier's recommendation.
+ * Used during Phase 3 to observe classifier accuracy before switchover.
+ */
+export function logShadowComparison(
+  sessionId: string,
+  trigger: string,
+  existingAction: string,
+  digest: DigestRow | null,
+): void {
+  try {
+    const classifierAction = digest?.action ?? "none(no_digest)";
+    const match = existingAction === classifierAction;
+    log("info",
+      `[digest-shadow] ${sessionId} trigger=${trigger} existing_action=${existingAction} classifier_action=${classifierAction} match=${match}`,
+    );
+  } catch {
+    /* best-effort — shadow logging must never crash */
+  }
+}
+
 // ── Core Entry Point ───────────────────────────────────────────────────
 
 /**
@@ -435,13 +458,19 @@ export async function upsertDigest(
     let still_open = input.still_open ?? null;
     let files_modified = input.files_modified ?? null;
 
+    // Read transcript delta once — reused for both LLM synthesis and file extraction
+    const needsLlm = !what_happened && manager;
+    const needsFiles = !files_modified;
+    const delta = (needsLlm || needsFiles)
+      ? readTranscriptDelta(persistDir, input.sessionId, last?.step ?? 0)
+      : null;
+
     // If what_happened is already provided (e.g., piggybacked on eval), skip LLM
-    if (!what_happened && manager) {
-      const delta = readTranscriptDelta(persistDir, input.sessionId, last?.step ?? 0);
+    if (needsLlm && delta) {
       const transcript = formatTranscriptCompact(delta.messages);
 
       if (transcript.length > 0) {
-        const synthesized = await llmSynthesize(manager, {
+        const synthesized = await llmSynthesize(manager!, {
           agent: input.agent,
           trigger: input.trigger,
           previous: last?.what_happened,
@@ -454,9 +483,8 @@ export async function upsertDigest(
       }
     }
 
-    // Extract files if not provided
-    if (!files_modified) {
-      const delta = readTranscriptDelta(persistDir, input.sessionId, last?.step ?? 0);
+    // Extract files if not provided (reuse delta from above)
+    if (needsFiles && delta) {
       files_modified = extractFilesModified(delta.messages);
     }
 
@@ -469,7 +497,7 @@ export async function upsertDigest(
       what_happened,
       outcome,
       still_open,
-      files_modified: files_modified.length > 0 ? files_modified : null,
+      files_modified: files_modified && files_modified.length > 0 ? files_modified : null,
       details: input.details ?? null,
       created_at: now,
     });

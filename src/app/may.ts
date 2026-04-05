@@ -242,6 +242,7 @@ bus.subscribe(createStuckDetector(
     } as any);
   },
   PERSIST_DIR,
+  () => manager,
 ));
 bus.subscribe(createAutoResume(
   (sessionId, agent, _attempt) => {
@@ -257,6 +258,7 @@ bus.subscribe(createAutoResume(
     escalateToHuman(agent, reason);
   },
   PERSIST_DIR,
+  () => manager,
 ));
 
 setLogHandler((level, message) => {
