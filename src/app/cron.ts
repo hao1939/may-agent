@@ -771,9 +771,12 @@ export class Cron {
         taskMessage = `${entry.message ?? ""}\n\n---\n${injections.join("\n\n---\n")}`;
       }
 
-      // maxTurns removed — watchdog handles runaway sessions via time-based timeout.
+      // Pass maxTurns from handlerConfig so our code can enforce graceful shutdown
+      // before the platform's hard turn limit kills the session.
+      const maxTurns = typeof entry.handlerConfig?.maxTurns === "number" ? entry.handlerConfig.maxTurns : undefined;
       const sessionId = this.manager.run(agentName, taskMessage, {
         kind: "job",
+        ...(maxTurns ? { maxTurns } : {}),
       });
       updateRequest(this.persistDir, requestId, { sessionId });
 
