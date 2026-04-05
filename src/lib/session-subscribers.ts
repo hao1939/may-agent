@@ -13,7 +13,7 @@ import type { AgentEvent } from "../app/event-bus.js";
 import { appendActivity, truncateSummary } from "./activity.js";
 import { appendMemoryEntry } from "./persistence.js";
 import { log } from "./log.js";
-import { createStartDigest, createEndDigest } from "./session-digest.js";
+import { createStartDigest, createEndDigest, upsertDigest } from "./session-digest.js";
 
 // ── Activity Writer ─────────────────────────────────────────────────────
 // Writes session lifecycle events to agents/<name>/workspace/activity.jsonl
@@ -261,6 +261,8 @@ export function createStuckDetector(
   emitCancel: (sessionId: string, reason: string) => void,
   /** Optional: called when circuit breaker fires so the system can diagnose the failure. */
   onCircuitBreak?: (agent: string, sessionId: string, reason: string) => void,
+  /** Optional: persistDir for digest writes. */
+  persistDir?: string,
 ): (event: AgentEvent) => void {
   const state = new Map<string, StuckState>();
 
@@ -291,11 +293,29 @@ export function createStuckDetector(
     if (s.consecutiveErrorTurns >= STUCK_WARNING_THRESHOLD && !s.warned) {
       s.warned = true;
       log("warn", `[stuck] ${event.agent} (${event.sessionId}) has ${s.consecutiveErrorTurns} consecutive error turns`);
+      // Digest: stuck_detected (warning, not kill yet)
+      if (persistDir) {
+        upsertDigest(persistDir, {
+          sessionId: event.sessionId,
+          agent: event.agent,
+          trigger: "stuck_detected",
+          details: { consecutiveErrorTurns: s.consecutiveErrorTurns },
+        }).catch(err => log("warn", `[digest] stuck_detected failed: ${err}`));
+      }
     }
 
     if (s.consecutiveErrorTurns >= STUCK_TERMINATE_THRESHOLD) {
       const reason = `Stuck: ${s.consecutiveErrorTurns} consecutive error-only turns`;
       log("error", `[stuck] ${event.agent} (${event.sessionId}) stuck at ${s.consecutiveErrorTurns} error turns — cancelling`);
+      // Digest: circuit_break (kill)
+      if (persistDir) {
+        upsertDigest(persistDir, {
+          sessionId: event.sessionId,
+          agent: event.agent,
+          trigger: "circuit_break",
+          details: { consecutiveErrorTurns: s.consecutiveErrorTurns, reason },
+        }).catch(err => log("warn", `[digest] circuit_break failed: ${err}`));
+      }
       emitCancel(event.sessionId, reason);
       // Notify for diagnosis (Task B: circuit-breaker → diagnosis feedback loop)
       if (onCircuitBreak) {
@@ -315,6 +335,8 @@ const MAX_RESUME_ATTEMPTS = 2;
 export function createAutoResume(
   emitResume: (sessionId: string, agent: string, attempt: number) => void,
   emitEscalate: (agent: string, sessionId: string, reason: string) => void,
+  /** Optional: persistDir for digest writes. */
+  persistDir?: string,
 ): (event: AgentEvent) => void {
   const attempts = new Map<string, number>();
 
@@ -330,12 +352,18 @@ export function createAutoResume(
     const prev = attempts.get(event.sessionId) ?? 0;
     if (prev >= MAX_RESUME_ATTEMPTS) {
       // Exhausted retries — escalate immediately
+      const reason = `Interrupted ${MAX_RESUME_ATTEMPTS + 1}x after ${event.turnCount ?? 0} turns. Error: ${event.error?.slice(0, 200) ?? "unknown"}. Task: ${(event.task ?? "").slice(0, 200)}`;
+      // Digest: resume_exhausted
+      if (persistDir) {
+        upsertDigest(persistDir, {
+          sessionId: event.sessionId,
+          agent: event.agent,
+          trigger: "resume_exhausted",
+          details: { attempts: prev + 1, maxAttempts: MAX_RESUME_ATTEMPTS, error: event.error?.slice(0, 200), turnCount: event.turnCount },
+        }).catch(err => log("warn", `[digest] resume_exhausted failed: ${err}`));
+      }
       attempts.delete(event.sessionId);
-      emitEscalate(
-        event.agent,
-        event.sessionId,
-        `Interrupted ${MAX_RESUME_ATTEMPTS + 1}x after ${event.turnCount ?? 0} turns. Error: ${event.error?.slice(0, 200) ?? "unknown"}. Task: ${(event.task ?? "").slice(0, 200)}`,
-      );
+      emitEscalate(event.agent, event.sessionId, reason);
       return;
     }
 
@@ -345,6 +373,16 @@ export function createAutoResume(
       "info",
       `[resume] ${event.agent} (${event.sessionId}) interrupted after ${event.turnCount ?? 0} turns — resuming in ${delay / 1000}s (attempt ${prev + 1}/${MAX_RESUME_ATTEMPTS})`,
     );
+
+    // Digest: auto_resume
+    if (persistDir) {
+      upsertDigest(persistDir, {
+        sessionId: event.sessionId,
+        agent: event.agent,
+        trigger: "auto_resume",
+        details: { attempt: prev + 1, maxAttempts: MAX_RESUME_ATTEMPTS, delayMs: delay, error: event.error?.slice(0, 200), turnCount: event.turnCount },
+      }).catch(err => log("warn", `[digest] auto_resume failed: ${err}`));
+    }
 
     setTimeout(() => {
       emitResume(event.sessionId, event.agent, prev + 1);

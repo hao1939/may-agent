@@ -32,6 +32,7 @@ import {
 import { resolveProjectRoot } from "./bundle-mode.js";
 import { trackRequest } from "../lib/requests.js";
 import { setLogHandler } from "../lib/log.js";
+import { upsertDigest } from "../lib/session-digest.js";
 
 // ── --version / -v: print version + git SHA and exit immediately ────────
 if (process.argv.includes("--version") || process.argv.includes("-v")) {
@@ -240,6 +241,7 @@ bus.subscribe(createStuckDetector(
       priority: "P1",
     } as any);
   },
+  PERSIST_DIR,
 ));
 bus.subscribe(createAutoResume(
   (sessionId, agent, _attempt) => {
@@ -254,6 +256,7 @@ bus.subscribe(createAutoResume(
     bus.emit({ type: "log", level: "warn", message: `[resume] ${agent} exhausted resume attempts — escalating` });
     escalateToHuman(agent, reason);
   },
+  PERSIST_DIR,
 ));
 
 setLogHandler((level, message) => {
@@ -378,6 +381,13 @@ bus.subscribe((event) => {
     try {
       recoveryAttempts.set(rKey, attempts + 1);
       const newSessionId = manager.run(info.agent, info.task, { kind: "job" });
+      // Digest: recovery_requeue
+      upsertDigest(PERSIST_DIR, {
+        sessionId: info.sessionId,
+        agent: info.agent,
+        trigger: "recovery_requeue",
+        details: { attempt: attempts + 1, maxAttempts: MAX_RECOVERY_ATTEMPTS, newSessionId, error: (info.error ?? "").slice(0, 300) },
+      }).catch(() => { /* best-effort */ });
       bus.emit({
         type: "info",
         message: `[recovery] Requeued ${info.agent} session ${info.sessionId} → ${newSessionId} (infra error, attempt ${attempts + 1}/${MAX_RECOVERY_ATTEMPTS})`,
