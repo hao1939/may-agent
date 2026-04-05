@@ -53,7 +53,7 @@ Each skill has ONE status:
 > **Note**: Full inventory in the skills/ subdirectories and agents/.lab/ forks.
 > Coach: when you test a skill, fill in "Works When" and "Fails When" — these are the most valuable columns.
 
-### ⚠️ Deployment Reality (2026-04-04, updated with EXP-024 + 5 new lab skills)
+### ⚠️ Deployment Reality (2026-04-05, updated with EXP-028 workflow collapse findings)
 **Three proven deployment methods:**
 
 **Method A: Workflow Enforcement** (Method #15) — structuring the task into phases that force the desired behavior.
@@ -92,6 +92,13 @@ Each skill has ONE status:
 - Coach benefits most from workflows (+20pp done rate). QA near-perfect in workflows (99%).
 - Evaluation system doesn't capture workflow value (per-session heuristics miss run-level benefits).
 
+**EXP-028 Workflow Usage Collapse (Optimizer, 2026-04-05):**
+- Heartbeat rewrite on Apr 1 removed `workflow.run()` instructions → workflow usage dropped to 0 by Apr 2.
+- Coach done rate collapsed: **~85% → ~34%** (51pp degradation) over Apr 2-3.
+- System-wide: workflow sessions have **83.9% done rate** vs 73.9% without, and **0% error rate** vs 10%.
+- **Key deployment insight**: Agents don't spontaneously discover workflows. Workflow adoption requires explicit wiring in heartbeats — availability alone is insufficient.
+- **Lesson for skill deployment**: Any skill or workflow must be wired into the agent's heartbeat/context to be used. Removing references = immediate usage collapse.
+
 **EXP-025 Decision Topology Validation (In Progress):**
 - Phase 1 complete: discovered 12-13 non-ceiling scenario pairs for prospective testing.
 - Bob's R predictions locked before seeing results. Awaiting Phase 2 (n=3 per arm runs).
@@ -112,6 +119,8 @@ Each skill has ONE status:
 | L4 | Environmental nudge | Process behaviors | Pre-created template files |
 | L5 | Workflow enforcement | Assessment, discovery | 2-phase: assess → act |
 | L5+ | Strict workflow (gate) | **Judgment overrides** | Materialization gate: write analysis → MUST exist before action |
+
+**⚠️ Deployment Wiring Requirement (EXP-028):** No intervention at ANY level works unless explicitly wired into the agent's heartbeat or context. Agents never spontaneously discover available skills/workflows. Removing a reference = immediate usage collapse (51pp done rate drop observed).
 
 ## How to Evaluate a Skill
 

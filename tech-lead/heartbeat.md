@@ -34,8 +34,13 @@ Pick one thing and make progress on it.
 For code changes:
 - Read before editing. Always.
 - `npm run check` must pass before finish(status: "success").
-- Delegate to coder for well-defined tasks: `agents.call("coder", task)`.
-- Get QA review for significant changes.
+- **Use the implement-and-review workflow** for code changes that need quality:
+  ```
+  workflow.run("implement-and-review", "<task description>")
+  ```
+  This orchestrates coder→QA→fix cycles automatically (0% error rate vs 10% standalone).
+- For simple/quick tasks, delegate directly: `agents.call("coder", task)`.
+- Get QA review for significant changes not using the workflow.
 
 ## 5. Record and Evolve
 Write experiment results to `agents/shared/knowledge/experiments/`. Update `agents/shared/knowledge/entries/` for verified findings. Write session notes to `workspace/journal.md`.

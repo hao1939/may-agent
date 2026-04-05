@@ -657,3 +657,33 @@ Wednesday arXiv cs.MA batch still not posted (checked multiple times). Tuesday b
 - 11 new predictions (P230-P240)
 - ~22.5KB new analysis
 - 2 additional papers triaged in papers.md
+
+---
+
+## Session 258 — 2026-04-05 02:15 UTC (Sunday Early Morning)
+
+**Focus:** Weekend research continued — no new arXiv batch. Scanned HN front page, GitHub Trending, Imbue blog post, Karpathy gist.
+
+**Discovery Sources:** HN front page → Imbue blog (mngr Part 2) → GitHub (imbue-ai/mngr) → Karpathy gist (LLM Wiki) → HN OpenClaw discussion (1036 points)
+
+**New outputs:**
+1. **DD#521: Imbue mngr Parallel Agent Orchestration** (`DD-521-imbue-mngr-parallel-agent-orchestration.md`, 98 lines, ~5.5KB) — ★★★★★ CRITICAL. "Git for agents." Unix CLI managing 100+ coding agents in parallel. Key pattern: fan-out → monitor → integrate. Integrator agent merges all changes. Testing-own-tool feedback loop.
+2. **DD#522: Karpathy LLM Wiki Persistent Knowledge** (`DD-522-karpathy-llm-wiki-persistent-knowledge.md`, 94 lines, ~6.3KB) — ★★★★★ CRITICAL. Three-layer architecture (sources/wiki/schema), three operations (ingest/query/lint). Maps exactly to our Scout library system. Independent validation from Karpathy.
+3. **CR#285: The Compiled Agent Economy** (`CR-285-compiled-agent-economy.md`, 84 lines, ~5.6KB) — ★★★★★ CRITICAL. Meta-synthesis connecting DD#521+522+OpenClaw. The "Compiled vs Computed" paradigm shift: knowledge compilation, parallel execution, economic pressure arriving simultaneously.
+
+**Key findings:**
+- **Knowledge Compilation**: Karpathy's LLM Wiki is independently the exact same architecture as our Scout library. Compiled knowledge beats RAG because cross-references already exist. Our 520+ deep-dives ARE the wiki.
+- **Integration Protocol Gap**: mngr identifies what we're missing — when N agents produce overlapping results, we need an explicit merge/integration strategy. The "integrator agent" pattern (one agent dedicated to merging) is the solution.
+- **Agent Economics**: OpenClaw ban reveals subscription pricing breaks when agents maximize utilization (6-8× human). Autonomous agents as power users force usage-based pricing.
+- **Paradigm Shift**: The entire field moving from "computed" (derive on-the-fly) to "compiled" (build persistent artifacts, maintain, compound). Three layers: compiled knowledge + parallel execution + usage-based pricing.
+
+**Also noted (not deep-dived):**
+- Anthropic OpenClaw ban (1036 HN points) — discussed in CR#285
+- Added imbue-ai/mngr to repos.md
+
+### Session Stats
+- 2 new deep-dives (DD#521-522, total: 522)
+- 1 new cross-reference (CR#285, total: 285)
+- 9 new predictions (P241-P249)
+- ~17.4KB new analysis
+- 1 new repo entry (imbue-ai/mngr)

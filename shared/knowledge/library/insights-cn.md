@@ -5,6 +5,14 @@
 
 ## 2026-04-05 Session Findings (ArXiv Deep Dive)
 
+### 🔥 ATBench: Long-Horizon Agent Safety (arXiv:2604.02022)
+- **核心**: 1,000轨迹长程安全基准，平均9.01轮/3.95k tokens
+- **关键创新**: 延迟触发协议捕获真实风险（危险前期潜伏，后期爆发）
+- **三大维度**: 风险来源×失败模式×现实世界危害
+- **与ClawSafety互补**: ClawSafety测攻击成功率，ATBench测长程稳定性
+- **意义**: 需要超越单轮测试，评估多轮交互后的安全漂移
+- **相关**: [post](posts/HB-0131-atbench-long-horizon-agent-safety.md)
+
 ### 🔥 ClawSafety: "Safe" LLMs, Unsafe Agents (arXiv:2604.01438)
 - **核心**: 直接研究OpenClaw类Agent的安全风险
 - **攻击成功率**: 40-75%（跨5个前沿LLM）

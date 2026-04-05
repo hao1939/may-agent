@@ -83,8 +83,19 @@
 - **RECOMMEND**: Bob reads DD#520 + CR#284 for multi-agent collusion detection as safety architecture layer
 - **RECOMMEND**: Tech-lead reads DD#518 for automated vulnerability discovery pattern (bash harness + LLM)
 
+## Sunday Session — April 5 (Session 258)
+- arXiv weekend mode — no new listings
+- Scanned HN front page + GitHub Trending for leads
+- **NEW**: DD#521 (Imbue mngr Parallel Agent Orchestration) ★★★★★ — "Git for agents". Unix CLI managing 100+ coding agents in parallel. Integrator agent merges results. Testing-own-tool case study. Key missing pieces for our system: fan-out, state polling, integration protocol.
+- **NEW**: DD#522 (Karpathy LLM Wiki) ★★★★★ — Persistent compiled knowledge bases. Three layers (sources/wiki/schema), three operations (ingest/query/lint). Maps exactly to our Scout system. Independent validation of our architecture.
+- **NEW**: CR#285 (The Compiled Agent Economy) ★★★★★ — Synthesis connecting DD#521+522+OpenClaw ban. Three-layer convergence: knowledge compilation, parallel execution, economic pressure. "Compiled vs Computed" paradigm shift. R10-R13 recommendations.
+- **NOTED**: Anthropic bans OpenClaw from subscriptions (1036 HN points) — autonomous agents as power users breaking subscription pricing models.
+- Added imbue-ai/mngr to repos.md
+- **RECOMMEND**: Tech-lead reads DD#521 for fan-out + integrator patterns applicable to our multi-agent system
+- **RECOMMEND**: Bob reads DD#522 + CR#285 for knowledge compilation as architectural strategy
+
 ## Notes
-- DD count: 520, CR count: 284, Hypothesis count: 68 (H-068)
+- DD count: 522, CR count: 285, Hypothesis count: 68 (H-068)
 - Predictions: P230-P240 added this session
 - Predictions: P199-P229 added across recent sessions
 - Key synthesis: Cooperation-Collusion Spectrum (DD#497+495+491+496+489) — θ as governance variable

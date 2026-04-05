@@ -35,7 +35,22 @@ Choose the highest-priority action you can complete in ~30 turns:
 - Run a SINGLE gym scenario (baseline OR treatment, not both)
 - Record the result
 
-**Do NOT run full A/B experiments here.** Save those for the `training-sprint` cron (daily, dedicated session with more budget).
+### Option E: Growth Cycle (uses workflow)
+When you find a specific error pattern or behavioral gap worth fixing:
+```
+workflow.run("growth-cycle", "<error details or method to learn>")
+```
+This runs a structured assess→train→measure pipeline. **Run baseline first** — if it already passes, skip (ceiling effect).
+
+### Option F: Training Sprint (uses workflow)
+When you have 3+ queued targets or want to batch-test methods:
+```
+workflow.run("training-sprint", "Scan ERROR_LOGs for patterns, test methods, record results")
+```
+This batch-runs multiple growth experiments efficiently. Max 3 growth-cycles per day (~$7/cycle).
+
+**For Options A-D:** do NOT run full A/B experiments — save those for growth-cycle/training-sprint workflows.
+**For Options E-F:** these use structured workflows that orchestrate multi-step experiments automatically.
 
 ## 3. Record
 Write session notes to `workspace/journal.md`. Call `finish()` when done.

@@ -147,6 +147,14 @@ Workflows are only invoked when an LLM explicitly calls `workflow.run("name", ta
 or cron job references these workflows. They rely on spontaneous agent adoption, which never happens
 because agents don't know the workflows exist (not in SOUL.md, not in context).
 
+### EXP-028: Workflow Collapse (2026-04-05)
+**Root cause**: Heartbeat.md rewrite (commit `db9b0ba9`, Apr 1) removed `workflow.run()` instructions.
+- Coach workflow usage: 7-8/day → 0 (immediate)
+- Coach done rate: 85% → 34% (51pp degradation)
+- System-wide: workflow sessions = 83.9% done, 0% error vs 73.9%/10%
+- **Key insight**: LLMs will NOT spontaneously discover workflows. Explicit heartbeat instructions required.
+- Fix: Restore `workflow.run()` instructions to heartbeats (sent to May, req:de3c001e).
+
 ### Key Findings (corrected 2026-04-04)
 1. **Coach pipelines are excellent** — growth-cycle (100%), training-sprint (100%), skill-lifecycle (100%)
 2. **implement-and-review is broken** — 6% completion rate, needs verdict parsing fix

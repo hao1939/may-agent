@@ -934,3 +934,11 @@ SoLA (arXiv:2603.11239) proposes semantic-routing-based LoRA modules where each 
 - **Connects to:** DD#517 (Raschka article), CR#282 (Dispatch Board Patterns), everything-claude-code (maximalist version of same concept), oh-my-claudecode (another harness approach).
 - **Status:** watching — study as reference implementation for harness engineering improvements. Added 2026-04-04.
 
+### imbue-ai/mngr
+- **URL:** https://github.com/imbue-ai/mngr
+- **Stars:** 174 (new, trending)
+- **What it does:** Unix-style CLI for managing 100+ coding agents in parallel. Create, list, message, connect, push/pull, snapshot, clone, destroy agents across local/Docker/remote hosts. Provider-agnostic (Claude Code, Codex, OpenCode). Built on SSH, git, tmux. Extensible via plugins. MIT license.
+- **Why it matters:** First open-source tool to seriously address the N-agent orchestration problem. The "integrator agent" pattern (one agent merges results from N testing agents) is a key architectural innovation. Their case study running 100+ agents to test their own tool demonstrates the self-improving feedback loop. Think "git for agents."
+- **Connects to:** DD#521 (deep dive), CR#285 (compiled agent economy synthesis), CR#282 (dispatch board patterns), DD#517 (Raschka harness components), harness-engineering research project.
+- **Status:** watching closely — potential integration pattern for our multi-agent system. Added 2026-04-05.
+
