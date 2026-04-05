@@ -206,7 +206,7 @@ describe("ChatSession", () => {
     expect(restartCalled).toBe(true);
   });
 
-  it("handles @agent prefix for direct invocation", () => {
+  it("handles @agent prefix by routing through May's session", () => {
     manager.register({
       name: "coder",
       description: "Writes code",
@@ -215,23 +215,17 @@ describe("ChatSession", () => {
       tools: [echoTool()],
     });
 
-    const messages: string[] = [];
-    bus.subscribe((event) => {
-      if (event.type === "info") messages.push(event.message);
-    });
-
     const session = new ChatSession({ manager, bus, agentName: "may", persistDir });
     session.handleInput("@coder fix the type error");
 
-    // Direct sessions should be kind: "job", not "chat"
+    // @agent prefix now routes through May's chat session (she forks the target agent)
     const status = manager.status();
     expect(status.length).toBe(1);
-    expect(status[0].agent).toBe("coder");
-    expect(status[0].kind).toBe("job");
-    expect(messages.some((m) => m.includes("[direct]"))).toBe(true);
+    expect(status[0].agent).toBe("may");
+    expect(status[0].kind).toBe("chat");
 
-    // Chat session ID should still be null (direct sessions don't set it)
-    expect(session.getSessionId()).toBeNull();
+    // May's session is now active (not null)
+    expect(session.getSessionId()).toBeTruthy();
   });
 
   it("/new closes current session and allows fresh start", async () => {

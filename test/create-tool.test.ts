@@ -156,7 +156,7 @@ describe("createAgentsTool()", () => {
       });
 
       const result = await tool.execute("tc1", {
-        action: "send",
+        action: "message",
         agent: "researcher",
         message: "review the API docs",
       });
@@ -171,8 +171,8 @@ describe("createAgentsTool()", () => {
         getCallerAgentName: () => "bob",
       });
 
-      const r1 = parseResult(await tool.execute("tc1", { action: "send", agent: "researcher", message: "first" }));
-      const r2 = parseResult(await tool.execute("tc2", { action: "send", agent: "researcher", message: "second" }));
+      const r1 = parseResult(await tool.execute("tc1", { action: "message", agent: "researcher", message: "first" }));
+      const r2 = parseResult(await tool.execute("tc2", { action: "message", agent: "researcher", message: "second" }));
       expect(r1.sent).toBe("researcher");
       expect(r2.sent).toBe("researcher");
     });
@@ -188,7 +188,7 @@ describe("createAgentsTool()", () => {
       });
 
       const result = await tool.execute("tc1", {
-        action: "send",
+        action: "message",
         agent: "researcher",
         message: "do stuff",
       });
@@ -200,17 +200,17 @@ describe("createAgentsTool()", () => {
     it("returns error when agent or message missing", async () => {
       const tool = manager.createAgentsTool({ agentsRoot });
 
-      const r1 = await tool.execute("tc1", { action: "send", agent: "researcher" });
+      const r1 = await tool.execute("tc1", { action: "message", agent: "researcher" });
       expect(parseResult(r1).error).toContain("requires");
 
-      const r2 = await tool.execute("tc2", { action: "send", message: "hi" });
+      const r2 = await tool.execute("tc2", { action: "message", message: "hi" });
       expect(parseResult(r2).error).toContain("requires");
     });
 
     it("returns error for unregistered agent", async () => {
       const tool = manager.createAgentsTool({ agentsRoot });
       const result = await tool.execute("tc1", {
-        action: "send",
+        action: "message",
         agent: "nonexistent",
         message: "do stuff",
       });
@@ -220,7 +220,7 @@ describe("createAgentsTool()", () => {
     it("returns error when agentsRoot not configured", async () => {
       const tool = manager.createAgentsTool(); // no agentsRoot
       const result = await tool.execute("tc1", {
-        action: "send",
+        action: "message",
         agent: "researcher",
         message: "do stuff",
       });
