@@ -747,3 +747,57 @@ MCP server with 33 browser tools lets Claude Code verify its own frontend change
 **Relevance**: Production implementation of agent self-verification pattern. Directly applicable to our system. But self-QA alone doesn't catch goal drift (see CR#287 synthesis on the compliance-verification gap).
 
 ---
+
+### SEVerA: Verified Synthesis of Self-Evolving Agents — Banerjee, Xu, Singh (UIUC)
+| ★★★★★ Landmark | arXiv:2603.25111 | 26 Mar 2026 | [DD#528](deep-dives/DD-528-severa-verified-self-evolving-agents.md)
+
+First framework giving self-evolving LLM agents **provable correctness guarantees**. Introduces Formally Guarded Generative Models (FGGM): each generative model call gets a first-order logic output contract + rejection sampling + verified fallback. Three-stage pipeline: Search (planner LLM synthesizes programs with FGGM contracts), Verify (prove correctness for ALL parameter values), Learn (unconstrained gradient optimization preserving correctness). Zero constraint violations across all benchmarks. Key result: Qwen3-8B + formal contracts BEATS Claude Sonnet 4.5 + heuristic constraints on τ²-bench airline. Formal constraints don't trade off performance — they IMPROVE it by pruning search space. Code: github.com/uiuc-focal-lab/severa
+
+**Relevance**: **HIGHEST relevance paper ever found for our system.** Directly solves the verified self-evolution problem. FGGM maps to every agent call in our architecture. Connects DD#523 (CORAL evolution verification), DD#527 (formal vs heuristic self-QA), CR#287 (compliance verification gap). The "small model + formal constraints > big model + heuristics" result is a paradigm shift for our design decisions.
+
+---
+
+### Drop the Hierarchy and Roles: How Self-Organizing LLM Agents Outperform Designed Structures — Dochkina
+| ★★★★ High-Value | arXiv:2603.28990 | 30 Mar 2026
+
+25,000-task experiment across 8 models, 4–256 agents, 8 coordination protocols. Self-organizing agents with minimal scaffolding (fixed ordering) outperform centralized coordination by 14% (p<0.001). 44% quality spread between protocols (Cohen's d=1.86). Agents spontaneously invent specialized roles, voluntarily abstain from tasks outside competence, form shallow hierarchies — without pre-assigned roles. Autonomy scales with model capability. Sub-linear scaling to 256 agents without quality degradation. 5,006 unique roles from 8 agents. Open-source achieves 95% of closed-source quality at 24x lower cost.
+
+**Relevance**: Direct challenge to our hierarchical agent design. Suggests our fixed Bob/Scout/etc. roles may be suboptimal vs letting agents self-organize. However, our architecture already shows emergent specialization within roles. The "capability threshold" finding matters: below a threshold, rigid structure helps — which may justify our current design for reliability.
+
+---
+
+### The Kitchen Loop: Self-Evolving Codebase with Spec-Driven Development — (cs.SE)
+| ★★★★ High-Value | arXiv:2603.25697 | 2026
+
+Self-evolving codebase with spec-driven development achieving 285+ iterations and 1094+ merged PRs with zero regressions. Essentially production-scale validated version of what our system does.
+
+**Relevance**: Proof that self-evolving codebases work at production scale. Validates our architecture's direction. Zero-regression claim needs scrutiny — connects to SEVerA's formal verification approach.
+
+---
+
+### DarwinNet: Evolutionary Network Architecture for Agent-Driven Protocol Synthesis — (cs.MA)
+| ★★★ Core | arXiv:2604.01236 | 1 Apr 2026
+
+Evolutionary network architecture applied to agent-driven protocol synthesis. Agents evolve communication protocols through network topology optimization.
+
+**Relevance**: Evolutionary multi-agent protocol design. Connects to CORAL (DD#523) evolutionary approach and our inter-agent communication patterns.
+
+---
+
+### CASCADE: Cascaded Scoped Communication for Multi-Agent Replanning — ICLR 2026 Workshop
+| ★★★ Core | arXiv:2604.00451 | 2026
+
+Scoped communication mechanism for multi-agent replanning. Agents share information through cascaded scopes, limiting propagation to relevant subsets.
+
+**Relevance**: Communication scoping directly relevant to our agent architecture. Could improve efficiency of inter-agent message passing.
+
+---
+
+### Detecting Multi-Agent Collusion: Interpretability for Safety — (cs.MA)
+| ★★★ Core | arXiv:2604.01151 | 1 Apr 2026
+
+Multi-agent interpretability techniques for detecting when agents collude. Safety-focused approach to multi-agent monitoring.
+
+**Relevance**: As our multi-agent system grows, collusion detection becomes relevant for trust/safety. Connects to compliance verification (CR#287).
+
+---

@@ -72,6 +72,7 @@ Each skill has ONE status:
 2. **structured-plan-writing** → coder (exp-019: 7/8→8/8, 2/2 runs)
 3. **materialize-findings-concise** → 📦 scout (EXP-022: 52%→78% total checks, +67pp early-materialization, 44% faster. Deployed 2026-04-04)
 4. **read-before-edit** → 📦 scout (Deployed 2026-04-04, targeting C1.1 regression 90%→33%. L3 skill + L4 context nudge. Pending verification.)
+5. **read-before-edit** → 📦 tech-lead (Deployed 2026-04-05, targeting C1.1 at 80% compliance. Adapted from coder-edit-discipline. Process skill — high confidence.)
 
 **Method C: L5 Strict Workflow (Materialization Gate)** (NEW — EXP-024) — workflow that requires a written analysis artifact BEFORE proceeding to action phase.
 - ✅ Works for: judgment tasks where the agent knows the right answer but overrides it (sycophancy: 0%→100%)

@@ -1,8 +1,8 @@
 # H-041: The Decision Topology — Why Structure × Scope × Task Fit Determines MAS Quality
 
-**Status**: Partially validated — HURTS predictions 86% accurate; HELPS predictions confirmed by EXP-026 per-agent data. Sycophancy gating (EXP-025 strict) 3/3 confirms materialization gate mechanism. **15 evidence sources.**
-**Priority**: High — operationalizes H-040 into a predictive framework with empirical grounding
-**Last updated**: 2026-04-05 (EXP-026 production workflow data integrated — 464 sessions, per-agent topology mapping)
+**Status**: PARTIALLY VALIDATED with critical asymmetry — HURTS predictions 83% accurate (EXP-025 prospective); HELPS predictions 0/3 (EXP-025 prospective). R predicts when to AVOID workflow but NOT when to ADD it. EXP-026 production data (464 sessions) confirms per-agent directional patterns. **16 evidence sources.**
+**Priority**: High — the asymmetric-veto version is actionable; the full predictive framework needs revision
+**Last updated**: 2026-04-05 (EXP-025 prospective validation complete — 19 scenario pairs, 63% binary accuracy)
 **Proposed by**: Bob (Architect)
 **Date**: 2026-04-02
 
@@ -303,6 +303,60 @@ Likelihood ratio: ~4× (8 correct directional predictions from production data)
 
 **Updated P(H) = 0.78** (from 0.65). H-041 is now the highest-confidence active hypothesis alongside H-055.
 
+## EXP-025 Final Prospective Validation (2026-04-05)
+
+**19/20 scenario pairs tested (1 infra bug). Binary prediction accuracy: 63% — below 70% "strong support" threshold.**
+
+### The Critical Asymmetry
+
+| Prediction | Tested | Correct | Accuracy |
+|-----------|--------|---------|----------|
+| HURTS (R<0.25) | 6 | 5 | **83%** |
+| NEUTRAL | 10 | 7 | 70% |
+| HELPS (R>0.50) | 3 | 0 | **0%** |
+
+### What Failed: The HELPS Catastrophe
+
+All 3 high-R scenarios where workflow was predicted to HELP actually HURT or were NEUTRAL:
+1. **convention-verify-multi-edit (R=0.80)**: 9/9 baseline → FAIL with workflow. The most "eliminable-decision" task was the biggest workflow victim.
+2. **skip-verification (R=0.60)**: PASS baseline → FAIL. Workflow overhead prevented reaching the verification step.
+3. **error-recovery-broken-config (R=0.75)**: PASS → PASS. Ceiling — no room to improve.
+
+### The Hostile Base Rate
+
+Workflow helps in only **1/19 (5%)** scenarios. Simply predicting "NEUTRAL or HURTS" for everything achieves 95% accuracy. R's value must be measured against this base rate, not random chance.
+
+### Spearman ρ: Near Zero or Negative
+
+Higher R does NOT predict workflow benefit in gym scenarios. The correlation is weakly negative — the opposite of H-041's prediction.
+
+### Interpretation: Two Populations, Not One Continuum
+
+EXP-025 (gym scenarios) and EXP-026 (production workflows) tell different stories:
+- **EXP-026 production**: Workflow clearly helps QA (+10pp), Coach (+20pp), neutral/hurts Coder (-3pp) — directional predictions all correct
+- **EXP-025 gym**: Workflow helps almost nothing, hurts 53% of the time
+
+This suggests **R operates differently at different task scales**. Gym scenarios are focused, 1-3 file tasks where workflow overhead is proportionally large. Production tasks involve multi-file, multi-step work where workflow's decision-elimination benefit outweighs its coordination overhead.
+
+**Revised model**: R predicts workflow benefit only when `task_complexity > workflow_overhead_threshold`. Below that threshold, all workflows hurt regardless of R. This is the "fixed cost" hypothesis — workflow has a minimum complexity tax that only pays off on sufficiently complex tasks.
+
+### Updated Bayesian Score
+
+The EXP-025 result is mixed evidence:
+- HURTS accuracy (83%) **supports** the eliminable-decision framework
+- HELPS accuracy (0%) **contradicts** the full predictive model
+- Base rate hostility **weakens** overall utility but doesn't refute the mechanism
+
+Likelihood adjustment: ~0.7× (partial confirmation + partial refutation)
+
+**Updated P(H) = 0.72** (from 0.78). The core mechanism (decision types matter) remains supported. The quantitative prediction (higher R → more benefit) is falsified for small-scale tasks. H-041 is now a **veto model** (tells you when NOT to add structure) rather than a **prescriptive model** (tells you when TO add structure).
+
+### Practical Implications
+
+1. **R < 0.25 → Don't add workflow** (83% accurate — actionable)
+2. **R > 0.25 → No guidance** (workflow rarely helps in gym scenarios; helps in production at scale)
+3. **The Asymmetric Default is strengthened**: Under-structuring is safer because the HELPS case is so rare
+4. **Next research**: Identify what distinguishes the 5% of tasks where workflow helps. Task complexity? Multi-step chains? Error propagation risk?
 
 ## References
 - H-040: The Reliability Inversion (generalized by H-041)
@@ -311,6 +365,8 @@ Likelihood ratio: ~4× (8 correct directional predictions from production data)
 - H-044: The Asymmetric Default (now merged into this document)
 - H-059: Cadence Skill Effectiveness (empirically supported extension)
 - EXP-009: Workflow Effectiveness Analysis (464 sessions, observational)
+- EXP-025: Prospective Validation (19 scenario pairs, 63% binary accuracy — HURTS 83%, HELPS 0%)
+- EXP-026: Production Workflow Analysis (464 sessions, per-agent topology mapping)
 - DD#484: OrgAgent (hierarchy empirics)
 - DD#485: CASCADE (scoped communication)
 - CR#270: Structure × Scope convergence synthesis

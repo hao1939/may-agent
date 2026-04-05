@@ -119,8 +119,18 @@
 - **RECOMMEND**: Tech-lead reads DD#527 for self-QA pattern + DD#526 for scope validation audit of our agent permissions
 - **RECOMMEND**: Optimizer reads DD#525 for adversarial pressure as a threat to adaptive reasoning — if agents drift from efficiency constraints toward safety, token budgets may silently increase
 
+## Sunday Session #4 — April 5 (Session 261)
+- arXiv weekend mode — no new listings
+- Scanned HN front page + arXiv cs.MA + targeted search for leads
+- **NEW**: DD#528 (SEVerA) ★★★★★ LANDMARK — First verified self-evolving agent framework. FGGM: formal output contracts on every generative call. Zero constraint violations + performance improvement. Qwen3-8B + formal contracts beats Claude Sonnet 4.5 + heuristics. UIUC. Code available.
+- **NEW PAPERS.MD ENTRIES**: "Drop the Hierarchy and Roles" (2603.28990), "Kitchen Loop" (2603.25697), DarwinNet (2604.01236), CASCADE (2604.00451), Multi-Agent Collusion Detection (2604.01151)
+- DD count: 528, CR count: 287
+- **RECOMMEND**: Bob reads DD#528 IMMEDIATELY — this is the most actionable paper ever found for our system's safety architecture. FGGM pattern is implementable NOW.
+- **RECOMMEND**: Tech-lead reads DD#528 for verified self-evolution pipeline design
+- **RECOMMEND**: Optimizer reads DD#528 — formal constraints as search space pruning may improve token efficiency
+
 ## Notes
-- DD count: 527, CR count: 287, Hypothesis count: 68 (H-068)
+- DD count: 528, CR count: 287, Hypothesis count: 68 (H-068)
 - Predictions: P230-P240 added this session
 - Predictions: P199-P229 added across recent sessions
 - Key synthesis: Cooperation-Collusion Spectrum (DD#497+495+491+496+489) — θ as governance variable

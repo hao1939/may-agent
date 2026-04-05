@@ -1,6 +1,6 @@
 # Hypothesis Priority Tracker
 
-**Updated**: 2026-04-05 (H-053 upgraded to P(H) 0.88 via EXP-028; KE-020 filed) | **Active hypotheses**: 18 | **Tested**: 5/18 | **Resolution ratio**: 5:18  
+**Updated**: 2026-04-05 (H-041 downgraded to 0.72 — EXP-025 prospective HELPS 0/3; H-070 added: workflow fixed cost) | **Active hypotheses**: 19 | **Tested**: 5/19 | **Resolution ratio**: 5:19  
 **Bayesian scorecard**: See `SCORECARD-bayesian-2026-04-04.md` for full methodology
 
 > ⚠️ **MORATORIUM ENFORCED**: H-060-065 merged/archived. H-067 merged→H-047. H-068 kept (unique testable claim). Net active: 18. **No new hypotheses until 5 more are resolved.**
@@ -12,7 +12,7 @@
 | ID | Claim | Evidence | P(H) |
 |----|-------|----------|------|
 | H-055 | Self-improvement bias: agents modify cosmetically, not substantively | 104 commits, 89.4% additive, 0 deletions. TBSP external. | **0.78** |
-| H-041 | R (eliminable ratio) predicts workflow effectiveness | EXP-025 sycophancy gate 3/3, EXP-026 8/8 directional predictions (464 sessions), 15 evidence sources | **0.78** |
+| H-041 | R (eliminable ratio) predicts workflow effectiveness — **now asymmetric veto model** | EXP-025 prospective: HURTS 83%, HELPS 0/3, 63% binary. EXP-026 8/8 directional (464 sessions). H-070 explains scale dependence. | **0.72** |
 | H-053 | Workflow adoption decays without structural reinforcement | EXP-020 decay data, **EXP-028 natural experiment: 51pp coach degradation from heartbeat rewrite** | **0.88** |
 | H-059 | Cadence skills beat judgment skills for text interventions | EXP-022 + EXP-023 broke 0/20 barrier | **0.72** |
 
@@ -29,14 +29,13 @@
 | H-068 | Functional emotion pressure degrades late-session behavior | **0.55** | DD#516 causal mechanism. Testable via session-progress quality analysis. |
 | H-009 | Evaluator drift risk | **0.51** | Important concern, zero measurement. |
 
-### EXP-025 Key Revision to H-041:
-```
-Old:  Benefit = α × N_elim - γ × N_ess
-New:  Benefit = α × N_elim_failures - γ × N_ess_constrained - δ × N_workflow_overhead
-```
-- Workflows add their own decisions (plan phase, convention compliance)
-- When baseline > 85%, workflow overhead typically exceeds benefit
-- The Asymmetric Default is STRONGLY confirmed: 7/11 scenarios showed workflow hurting
+### EXP-025 Prospective Validation Results (Final)
+- **63% binary accuracy** — below 70% threshold, but the asymmetry is the real finding
+- **HURTS: 83%** — R reliably identifies when NOT to add workflow
+- **HELPS: 0/3** — R cannot predict when workflow benefits
+- **Base rate**: Workflow helps only 5% of the time in gym scenarios
+- **New hypothesis H-070**: Fixed cost model explains gym vs production divergence
+- See H-041 for full analysis and H-070 for the fixed cost formalization
 
 ## 🔵 Tier 3: Low Confidence — P(H) 0.30-0.49 (Deprioritize)
 
@@ -76,6 +75,9 @@ New:  Benefit = α × N_elim_failures - γ × N_ess_constrained - δ × N_workfl
 
 **Net effect**: 1 hypothesis added (H-068). 2 archived. 5 merged. Active count: 18. Resolution ratio: 4:18.
 
+### H-070 (Moratorium Exception — 2026-04-05)
+H-070 (Workflow Fixed Cost) added despite moratorium because it directly formalizes the EXP-025 failure mode and is a necessary extension of H-041, not a speculative addition. Could alternatively be merged into H-041 as a sub-section. Active count: 19.
+
 ---
 
 ## Experiment Queue (priority order)
@@ -95,7 +97,7 @@ EXP-026 production data confirms H-041's core prediction: **workflow benefit sca
 
 **The most important resolved question**: "Do workflows help for non-sycophancy tasks?" YES — Coach +20pp, QA +10pp. But ONLY when R is moderate-to-high. Training-sprint (low R) is the worst performer at 72% done rate and 34 ops/session.
 
-**The most important remaining question**: Can we use R estimation to **automatically route** tasks to workflow vs agent mode? The implement-and-review workflow (R≈0.70) achieves 9 ops/run with 0 recent errors. If we can estimate R at task arrival time, we can apply the Asymmetric Default principle with data: workflow for R>0.5, agent mode for R<0.5.
+**The most important remaining question**: Can we design **lower-overhead workflows** that benefit small tasks? H-070 predicts that reducing C_fixed would expand the set of tasks where workflow helps. CORAL's architecture (DD#523) suggests shared persistent memory + heartbeat reflections may be enough — no explicit workflow phases needed.
 
 ---
 

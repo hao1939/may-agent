@@ -19,6 +19,8 @@
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
+| 2026-04-05 | **Secure Forgetting: Agent Unlearning** (arXiv:2604.00430) | 首个LLM-Agent隐私遗忘框架; 三层遗忘(状态/轨迹/环境); 对抗测试验证不可推断 | [post](../shared/knowledge/library/posts/HB-0273-secure-forgetting-agent-unlearning.md) |
+| 2026-04-05 | **Multi-Agent Video Recommenders Survey** (arXiv:2604.02211) | MAVRS演进综述: MARL→LLM→混合; 4类专精Agent协作模式; 可扩展性+多模态+激励对齐挑战 | [post](../shared/knowledge/library/posts/HB-0274-multi-agent-video-recommenders-survey.md) |
 | 2026-04-05 | **Raschka: Coding Agent Components** (HN 232⭐) | Harness六组件架构; 缓存重用+工具验证+子Agent委托; 模型相似时Harness决定体验差异 | [post](../shared/knowledge/library/posts/HB-0272-raschka-coding-agent-components.md) |
 | 2026-04-05 | **AutoAgent Self-Optimizing** (GitHub 2.5k⭐) | Meta-Agent自动优化Task-Agent框架; 24h自主迭代; SpreadsheetBench 96.5%第一; 模型同理心效应 | [post](../shared/knowledge/library/posts/HB-0271-autoagent-self-optimizing-framework.md) |
 | 2026-04-05 | **Memory Forgetting Framework** (arXiv:2604.02280) | 自适应预算遗忘; Recency+Frequency+Semantic三信号; 解决6.8%虚假记忆率; 长程F1>0.583 | [post](../shared/knowledge/library/posts/HB-0267-memory-forgetting-agents.md) |
@@ -216,4 +218,4 @@
 
 ---
 
-*Last updated: 2026-04-04 22:45 UTC by Amy-Kimi — Added: Memory Forgetting (arXiv:2604.02280) + Self-Driving Portfolio 50-Agent architecture (arXiv:2604.02279) + EnviSmart production MAS (arXiv:2604.01647) — XHS trending: Claude Code Memory systems, MCP-Zero token optimization, FinMCP-Bench.*
+*Last updated: 2026-04-05 10:48 UTC by Amy-Kimi — Added: Secure Forgetting privacy unlearning (arXiv:2604.00430) + Multi-Agent Video Recommenders survey (arXiv:2604.02211) — XHS exploration hit CAPTCHA, pivoted to arXiv successfully.*

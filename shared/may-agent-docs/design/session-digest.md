@@ -343,10 +343,13 @@ ORDER BY created_at DESC LIMIT 5;
 - Wire remaining 11 triggers — each is one `upsertDigest()` call
 - **Test:** All 14 trigger types produce rows
 
-### Phase 3: Shadow Classifier (Day 4-5)
+### Phase 3: Shadow Classifier (Day 4-5) ✅ DONE
 - Implement `classifyDigest()` alongside existing mechanisms
-- Log both decisions, compare for 24-48h
-- **Test:** >95% agreement
+- `logShadowComparison()` logs both decisions at every recovery trigger
+- Manager passed to all 6 CLASSIFY_TRIGGER `upsertDigest` calls for LLM synthesis
+- Lazy getter pattern (`managerOrGetter`) handles deferred initialization in subscribers
+- 34 tests covering all triggers + shadow comparison expected outcomes
+- **Test:** >95% agreement — monitoring via `[digest-shadow]` log lines
 
 ### Phase 4: Switchover (Day 6+, one at a time)
 - 4a: P62 Recovery → classifier (biggest win: replaces error string matching)
