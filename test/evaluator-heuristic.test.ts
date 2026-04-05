@@ -482,7 +482,7 @@ describe("computeHeuristicScores - finish status differentiation (H-009)", () =>
       toolResult("ok"),
       finishMsg({
         status: "success",
-        summary: "Done",
+        summary: "Implemented the feature and verified all tests pass correctly",
       }),
       finishResult(),
     ];
@@ -561,8 +561,8 @@ describe("computeHeuristicScores - finish status differentiation (H-009)", () =>
       toolResult("ok"),
       finishMsg({
         status: "success",
-        summary: "Done",
-        verification_evidence: ["Step 3: test passed"],
+        summary: "Completed the task and verified all tests pass successfully",
+        verification_evidence: ["Step 3: bash test suite completed with exit code 0"],
       }),
       finishResult(),
     ];
@@ -571,7 +571,7 @@ describe("computeHeuristicScores - finish status differentiation (H-009)", () =>
       toolResult("ok"),
       finishMsg({
         status: "success",
-        summary: "Done",
+        summary: "Completed the task and verified all tests pass successfully",
       }),
       finishResult(),
     ];
@@ -614,6 +614,133 @@ describe("computeHeuristicScores - finish status differentiation (H-009)", () =>
     expect(scores.issues).not.toContain("finish_partial");
     expect(scores.issues).not.toContain("finish_failure");
     expect(scores.issues).not.toContain("finish_blocked");
+  });
+});
+
+describe("computeHeuristicScores - Phase 2 semantic quality (H-009)", () => {
+  it("hollow summary (< 30 chars) on success → quality penalty", () => {
+    const messages = [
+      assistantMsg(3),
+      toolResult("ok"),
+      toolResult("ok"),
+      toolResult("ok"),
+      finishMsg({
+        status: "success",
+        summary: "Done",
+        verification_evidence: ["Step 5: bash vitest run test/foo.test.ts exit code 0"],
+        deliverables: [{ path: "src/foo.ts", description: "Updated" }],
+      }),
+      finishResult(),
+    ];
+    const transcript = toTranscript(messages);
+    const scores = computeHeuristicScores(makeSession(), transcript, messages);
+    expect(scores.issues).toContain("hollow_summary");
+    // Base 3 + 2 (verified) - 1 (hollow_summary) + 1 (done+3tools) = 5
+    expect(scores.quality).toBe(5);
+  });
+
+  it("good summary (≥ 30 chars) → no hollow_summary issue", () => {
+    const messages = [
+      assistantMsg(3),
+      toolResult("ok"),
+      toolResult("ok"),
+      toolResult("ok"),
+      finishMsg({
+        status: "success",
+        summary: "Refactored evaluator scoring to check finish status and evidence quality",
+        verification_evidence: ["Step 8: bash vitest run returned all 31 tests passing"],
+        deliverables: [{ path: "src/lib/evaluator.ts", description: "Phase 2 heuristics" }],
+      }),
+      finishResult(),
+    ];
+    const transcript = toTranscript(messages);
+    const scores = computeHeuristicScores(makeSession(), transcript, messages);
+    expect(scores.issues).not.toContain("hollow_summary");
+  });
+
+  it("vague verification evidence → quality penalty", () => {
+    const messages = [
+      assistantMsg(3),
+      toolResult("ok"),
+      toolResult("ok"),
+      toolResult("ok"),
+      finishMsg({
+        status: "success",
+        summary: "Implemented the feature and verified everything works correctly",
+        verification_evidence: ["verified", "looks good"],
+        deliverables: [{ path: "src/foo.ts", description: "Feature" }],
+      }),
+      finishResult(),
+    ];
+    const transcript = toTranscript(messages);
+    const scores = computeHeuristicScores(makeSession(), transcript, messages);
+    expect(scores.issues).toContain("vague_verification_evidence");
+    // Base 3 + 2 (verified — has evidence array) - 1 (vague evidence) + 1 (done+3tools) = 5
+    expect(scores.quality).toBe(5);
+  });
+
+  it("mixed evidence (some specific, some vague) → mostly_vague if majority vague", () => {
+    const messages = [
+      assistantMsg(3),
+      toolResult("ok"),
+      toolResult("ok"),
+      toolResult("ok"),
+      finishMsg({
+        status: "success",
+        summary: "Implemented the feature and verified everything works correctly",
+        verification_evidence: [
+          "verified",
+          "looks good",
+          "Step 12: bash vitest run returned exit code 0 with all 31 tests passing",
+        ],
+      }),
+      finishResult(),
+    ];
+    const transcript = toTranscript(messages);
+    const scores = computeHeuristicScores(makeSession(), transcript, messages);
+    expect(scores.issues).toContain("mostly_vague_evidence");
+    // Not all vague, so no quality penalty
+    expect(scores.issues).not.toContain("vague_verification_evidence");
+  });
+
+  it("success without deliverables on long session → tracks issue (no penalty)", () => {
+    const messages = [
+      assistantMsg(5),
+      toolResult("ok"),
+      toolResult("ok"),
+      toolResult("ok"),
+      toolResult("ok"),
+      toolResult("ok"),
+      finishMsg({
+        status: "success",
+        summary: "Analyzed the codebase and documented all architectural patterns found",
+        verification_evidence: ["Step 10: read confirmed the analysis file was written correctly"],
+      }),
+      finishResult(),
+    ];
+    const transcript = toTranscript(messages);
+    const scores = computeHeuristicScores(makeSession(), transcript, messages);
+    expect(scores.issues).toContain("success_no_deliverables");
+    // Info-only — should not affect quality compared to same session with deliverables
+  });
+
+  it("partial/failure status → no Phase 2 checks applied", () => {
+    const messages = [
+      assistantMsg(3),
+      toolResult("ok"),
+      toolResult("ok"),
+      toolResult("ok"),
+      finishMsg({
+        status: "partial",
+        summary: "Halfway",
+      }),
+      finishResult(),
+    ];
+    const transcript = toTranscript(messages);
+    const scores = computeHeuristicScores(makeSession(), transcript, messages);
+    // Phase 2 checks only apply to success status
+    expect(scores.issues).not.toContain("hollow_summary");
+    expect(scores.issues).not.toContain("vague_verification_evidence");
   });
 });
 
