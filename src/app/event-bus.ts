@@ -21,7 +21,7 @@ export type AgentCommand =
       originSessionId?: string;
       opts?: { kind?: string; requestId?: string; source?: string };
     }
-  | { type: "message"; from: string; to: string; task: string; priority?: string }
+  | { type: "message"; from: string; to: string; task: string; priority?: string; source?: string }
   | { type: "input"; sessionId?: string; text?: string; message?: string; source?: string }
   | { type: "steer"; sessionId?: string; text?: string; message?: string; source?: string }
   | { type: "cancel"; sessionId: string }

@@ -187,7 +187,7 @@ async function buildTools(config: AgentConfig, opts: AgentLoaderOptions): Promis
         break;
 
       case "agents": {
-        // V2 agents tool — 5 actions: call, send, list, peek, cancel
+        // Agents cooperation tool — actions: call, fork, message, list, peek, cancel, context, requests
         const denyConfig = config.delegateDeny;
         tools.push(
           manager.createAgentsTool({
@@ -204,6 +204,7 @@ async function buildTools(config: AgentConfig, opts: AgentLoaderOptions): Promis
               }
               return false;
             },
+            bus: opts.bus,
           }),
         );
         break;

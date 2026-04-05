@@ -824,6 +824,30 @@ bus.subscribe((event) => {
     case "reload":
       handleReload();
       break;
+    case "message":
+      if ("from" in event && "to" in event && "task" in event) {
+        try {
+          const requestId = trackRequest(PERSIST_DIR, {
+            fromEntity: (event as any).from ?? "human",
+            toAgent: (event as any).to,
+            task: (event as any).task,
+            method: "message",
+            source: (event as any).source ?? "socket",
+          });
+          bus.emit({
+            type: "message_created",
+            from: (event as any).from ?? "human",
+            to: (event as any).to,
+            task: (event as any).task,
+            requestId,
+          });
+          bus.emit({ type: "log", level: "info", message: `[message] ${(event as any).from ?? "human"} → ${(event as any).to}: ${((event as any).task as string).slice(0, 80)}` });
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          bus.emit({ type: "log", level: "error", message: `[message] Failed: ${msg}` });
+        }
+      }
+      break;
     case "resume":
       if ("sessionId" in event && event.sessionId) {
         const ok = manager.resumeInterrupted(event.sessionId);
