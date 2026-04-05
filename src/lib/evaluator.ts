@@ -950,6 +950,48 @@ export function computeHeuristicScores(
     quality += 1;
   }
 
+  // 5b. H-009 Phase 2: Semantic quality signals for finish(success)
+  //
+  // Phase 1 differentiated by finish status. Phase 2 checks whether the
+  // claimed success has substance: non-trivial summary, deliverables with
+  // paths, and verification evidence that references actual tool output.
+  if (finishParams && finishParams.status === "success") {
+    const summary = finishParams.summary ?? "";
+    const evidence = finishParams.verification_evidence ?? [];
+    const deliverables = finishParams.deliverables ?? [];
+
+    // 5b-i. Hollow success: claims success but summary is trivially short
+    if (summary.length < 30) {
+      quality -= 1;
+      issues.push("hollow_summary");
+    }
+
+    // 5b-ii. Success without deliverables (for sessions with 5+ tool calls)
+    // Short sessions (< 5 tool calls) may be quick fixes that don't need explicit deliverables
+    if (totalToolCalls >= 5 && deliverables.length === 0) {
+      issues.push("success_no_deliverables");
+      // Info-only for now — no quality penalty. Track to measure prevalence.
+    }
+
+    // 5b-iii. Verification evidence quality
+    // Good evidence references specific tool outputs ("Step 8: bash test exit code 0")
+    // Bad evidence is vague ("verified", "looks good", "checked")
+    if (evidence.length > 0) {
+      const vagueEvidence = evidence.filter((e: unknown) => {
+        const s = typeof e === "string" ? e : "";
+        // Vague if < 20 chars or doesn't reference a tool/step/file/output
+        return s.length < 20 || !/step|bash|read|edit|write|test|output|exit|pass|fail|confirm/i.test(s);
+      });
+      if (vagueEvidence.length === evidence.length) {
+        // ALL evidence items are vague — this is a quality concern
+        quality -= 1;
+        issues.push("vague_verification_evidence");
+      } else if (vagueEvidence.length > evidence.length / 2) {
+        issues.push("mostly_vague_evidence");
+      }
+    }
+  }
+
   // 6. High error count suggests wasteful retries
   // Only count actual tool failures — not informational messages or content being analyzed.
   // BUG FIX: Previously matched error strings anywhere in the transcript, including inside
