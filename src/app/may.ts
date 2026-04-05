@@ -306,7 +306,7 @@ import { ApiGate } from "../lib/api-gate.js";
 
 const apiGate = new ApiGate(
   {
-    defaultConcurrency: parseInt(process.env.API_GATE_CONCURRENCY ?? "4", 10),
+    defaultConcurrency: parseInt(process.env.API_GATE_CONCURRENCY ?? "8", 10),
     overrides: process.env.API_GATE_OVERRIDES ? JSON.parse(process.env.API_GATE_OVERRIDES) : undefined,
   },
   (event) => {
