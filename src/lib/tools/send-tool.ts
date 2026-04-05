@@ -1,5 +1,5 @@
 /**
- * send-tool.ts — Lightweight send-only tool for leaf agents
+ * message-tool.ts — Lightweight message-only tool for leaf agents
  *
  * Lets leaf agents (coder, evaluator, qa, amy-kimi) send messages
  * and deliver artifacts to other agents WITHOUT call/peek/cancel capability.
@@ -77,7 +77,7 @@ function textResult(text: string): AgentToolResult<undefined> {
 }
 
 /**
- * Create a send-only tool for leaf agents.
+ * Create a message-only tool for leaf agents.
  * Supports sending messages and optional artifact paths.
  */
 export function createSendTool(opts: SendToolOptions): AgentTool {
@@ -135,7 +135,7 @@ export function createSendTool(opts: SendToolOptions): AgentTool {
           }
         } catch (e) {
           // Non-fatal: dedup is best-effort (DB may not be available)
-          if (process.env.DEBUG) console.warn(`[send-tool] dedup check failed: ${e}`);
+          if (process.env.DEBUG) console.warn(`[message-tool] dedup check failed: ${e}`);
         }
       }
 
@@ -166,7 +166,7 @@ export function createSendTool(opts: SendToolOptions): AgentTool {
         });
       } catch (e) {
         // Non-fatal: tracking is best-effort (DB may not be available)
-        if (process.env.DEBUG) console.warn(`[send-tool] tracking failed: ${e}`);
+        if (process.env.DEBUG) console.warn(`[message-tool] tracking failed: ${e}`);
       }
 
       // Trigger heartbeat

@@ -121,7 +121,7 @@ const AgentsToolParams = Type.Object({
   agent: Type.Optional(
     Type.String({
       description:
-        "Target agent name. Required for 'call' and 'send'. Optional for 'requests' (filters by agent). Use 'list' first to see available agents if unsure.",
+        "Target agent name. Required for 'call' and 'message'. Optional for 'requests' (filters by agent). Use 'list' first to see available agents if unsure.",
     }),
   ),
   task: Type.Optional(
@@ -133,7 +133,7 @@ const AgentsToolParams = Type.Object({
   message: Type.Optional(
     Type.String({
       description:
-        "Message to send for 'send'. Creates a tracked request in the DB and triggers the target agent's next heartbeat. Include artifact file paths if the agent needs to read your output.",
+        "Message to send for 'message'. Creates a tracked request in the DB and triggers the target agent's next heartbeat. Include artifact file paths if the agent needs to read your output.",
     }),
   ),
   sessionId: Type.Optional(
@@ -154,24 +154,24 @@ const AgentsToolParams = Type.Object({
   force: Type.Optional(
     Type.Boolean({
       description:
-        "For 'send' only: skip duplicate detection. Use when you intentionally want to re-send a similar message to the same agent.",
+        "For 'message' only: skip duplicate detection. Use when you intentionally want to re-send a similar message to the same agent.",
     }),
   ),
   context_files: Type.Optional(
     Type.Array(Type.String(), {
       description:
-        "For 'send'/'call': file paths the receiver MUST read for context. Included in the tracked request and appended to the message.",
+        "For 'message'/'call': file paths the receiver MUST read for context. Included in the tracked request and appended to the message.",
     }),
   ),
   success_criteria: Type.Optional(
     Type.Array(Type.String(), {
       description:
-        "For 'send'/'call': bullet points describing how to verify the task is done correctly. Included in the tracked request.",
+        "For 'message'/'call': bullet points describing how to verify the task is done correctly. Included in the tracked request.",
     }),
   ),
   priority: Type.Optional(
     StringEnum(["P0", "P1", "P2"] as const, {
-      description: "For 'send': task priority. P0 = urgent/blocking, P1 = important, P2 = nice-to-have. Default: P1.",
+      description: "For 'message': task priority. P0 = urgent/blocking, P1 = important, P2 = nice-to-have. Default: P1.",
     }),
   ),
   scope: Type.Optional(
@@ -214,7 +214,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
     name: "agents",
     label: "Agents",
     description:
-      "Cooperate with other agents. Use 'list' to see available agents, 'call' to run one synchronously, 'run' to start one in the background (non-blocking), 'send' to dispatch async work, 'peek'/'cancel' to monitor sessions, 'requests' to query the tracking DB.",
+      "Cooperate with other agents. Use 'list' to see available agents, 'call' to run one synchronously, 'fork' to start one in the background, 'message' to dispatch async work, 'peek'/'cancel' to monitor sessions, 'requests' to query the tracking DB.",
     parameters: AgentsToolParams,
     execute: async (_toolCallId, _params) => {
       const params = _params as AgentsToolParamsType;
@@ -403,7 +403,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
 
           case "message": {
             if (!params.agent || !params.message) {
-              return textResult(JSON.stringify({ error: "'send' requires 'agent' and 'message'" }));
+              return textResult(JSON.stringify({ error: "'message' requires 'agent' and 'message'" }));
             }
 
             const caller = getCallerAgentName?.() ?? "unknown";
