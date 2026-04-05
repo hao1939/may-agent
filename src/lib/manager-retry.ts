@@ -12,6 +12,7 @@ import { isOverflowError } from "./overflow.js";
 import { INFRA_RETRY_BASE_DELAY_MS } from "./manager-utils.js";
 import type { ActiveSession } from "./manager-utils.js";
 import { log } from "./log.js";
+import { upsertDigest } from "./session-digest.js";
 
 /** Case-insensitive rate limit / throttle detection. */
 const RATE_LIMIT_RE = /rate.?limit|throttl/i;
@@ -266,6 +267,8 @@ export async function runAgentWithRetry(
   initialCall: Promise<void>,
   infraRetryMax: number,
   onComplete: (session: ActiveSession) => void,
+  /** Optional: persistDir for digest writes on retry. */
+  persistDir?: string,
 ): Promise<void> {
   // Run the initial call
   try {
@@ -287,6 +290,16 @@ export async function runAgentWithRetry(
       "info",
       `[manager] Infrastructure retry ${attempt}/${infraRetryMax} for session ${session.sessionId} (${retryReason})`,
     );
+
+    // Digest: infra_retry
+    if (persistDir) {
+      upsertDigest(persistDir, {
+        sessionId: session.sessionId,
+        agent: session.agentName,
+        trigger: "infra_retry",
+        details: { attempt, maxAttempts: infraRetryMax, reason: retryReason },
+      }).catch(err => log("warn", `[digest] infra_retry failed: ${err}`));
+    }
 
     // Clean up bad state: remove empty/malformed assistant message
     const messages = session.agent.state.messages;

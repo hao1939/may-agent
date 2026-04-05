@@ -85,6 +85,8 @@ import { routeKnowledge } from "./knowledge-router.js";
 import { buildTrace } from "./manager-trace.js";
 import { hasFinishToolCall, extractFinishParams, runAgentWithRetry } from "./manager-retry.js";
 import { createAgentsTool as createAgentsToolFn, type CreateAgentsToolOptions } from "./manager-agents-tool.js";
+import { upsertDigest } from "./session-digest.js";
+import { isOverflowError } from "./overflow.js";
 // classifyError is re-exported directly from classify-error.ts (no local import needed)
 
 // Lazy import for requests.ts (uses bun:sqlite, not available in vitest)
@@ -625,6 +627,13 @@ export class SubagentManager {
     if (!timeoutMs || timeoutMs <= 0) return;
     session.timeoutTimer = setTimeout(() => {
       if (session.status === "running") {
+        // Digest: timeout
+        upsertDigest(this.registry.persistDir, {
+          sessionId: session.sessionId,
+          agent: session.agentName,
+          trigger: "timeout",
+          details: { timeoutMs, elapsedMs: Date.now() - session.startedAt, turnCount: session.turnCount },
+        }).catch(err => log("warn", `[digest] timeout failed: ${err}`));
         this.cancel(session.sessionId);
       }
     }, timeoutMs);
@@ -658,6 +667,16 @@ export class SubagentManager {
     clearPostFinishErrors(session);
     handleOverflow(session, this.agents);
 
+    // Digest: overflow (after handleOverflow detects it)
+    if (session.error && isOverflowError(session.error)) {
+      upsertDigest(this.registry.persistDir, {
+        sessionId: session.sessionId,
+        agent: session.agentName,
+        trigger: "overflow",
+        details: { error: session.error.slice(0, 300), turnCount: session.turnCount },
+      }).catch(err => log("warn", `[digest] overflow failed: ${err}`));
+    }
+
     // ── Chat sessions → idle ─────────────────────────────────────────
     const effectivelyAborted = session.error?.includes("aborted") ?? false;
     if (session.autoClose === "never" && !effectivelyAborted) {
@@ -676,7 +695,17 @@ export class SubagentManager {
     }
 
     // ── Task sessions → archive ──────────────────────────────────────
+    const hadErrorBeforeShallowCheck = !!session.error;
     detectShallowHeartbeat(session);
+    // Digest: shallow_heartbeat (if detectShallowHeartbeat just set the error)
+    if (!hadErrorBeforeShallowCheck && session.error?.includes("Shallow heartbeat")) {
+      upsertDigest(this.registry.persistDir, {
+        sessionId: session.sessionId,
+        agent: session.agentName,
+        trigger: "shallow_heartbeat",
+        details: { turnCount: session.turnCount, task: session.task.slice(0, 200) },
+      }).catch(err => log("warn", `[digest] shallow_heartbeat failed: ${err}`));
+    }
     const outcome = determineOutcome(session);
 
     session.archiveStatus = outcome.archiveStatus;
@@ -741,6 +770,14 @@ export class SubagentManager {
   ): void {
     const blockerText = finishParams.blockers?.map((b) => `${b.reason}: ${b.context}`).join("; ") ?? "";
     const escalationTask = `[escalation] ${session.agentName} session ${session.sessionId} ended ${finishParams.status}: ${finishParams.summary}${blockerText ? ` | Blockers: ${blockerText}` : ""}`;
+
+    // Digest: escalation
+    upsertDigest(this.registry.persistDir, {
+      sessionId: session.sessionId,
+      agent: session.agentName,
+      trigger: "escalation",
+      details: { status: finishParams.status, summary: finishParams.summary.slice(0, 300), blockers: blockerText.slice(0, 300) },
+    }).catch(err => log("warn", `[digest] escalation failed: ${err}`));
 
     const parentName = session.parentAgentName;
     if (parentName) {
@@ -911,6 +948,7 @@ export class SubagentManager {
       this.gatedPrompt(session, () => agent.prompt(promptText)),
       this._infraRetryMax,
       (s) => this.handleCompletion(s),
+      this.registry.persistDir,
     );
 
     this.sessionResults.set(
@@ -1088,6 +1126,13 @@ export class SubagentManager {
                 endedAt: Date.now(),
               });
             } catch { /* best-effort DB update */ }
+            // Digest: zombie_cleanup
+            upsertDigest(persistDir, {
+              sessionId,
+              agent: meta.agent ?? "unknown",
+              trigger: "zombie_cleanup",
+              details: { startedAt: meta.startedAt, staleMs: Date.now() - (meta.startedAt ?? 0) },
+            }).catch(err => log("warn", `[digest] zombie_cleanup failed: ${err}`));
             cleaned++;
           } catch { /* best-effort */ }
         }
@@ -1257,7 +1302,7 @@ export class SubagentManager {
       lastRole === "user" || lastRole === "toolResult" ? agent.continue() : agent.prompt(resumeMessage),
     );
 
-    session.promise = runAgentWithRetry(session, startPromise, this._infraRetryMax, (s) => this.handleCompletion(s));
+    session.promise = runAgentWithRetry(session, startPromise, this._infraRetryMax, (s) => this.handleCompletion(s), this.registry.persistDir);
 
     this.sessionResults.set(
       sessionId,
@@ -1605,6 +1650,7 @@ export class SubagentManager {
         this.gatedPrompt(session, () => session.agent.prompt(text)),
         this._infraRetryMax,
         (s) => this.handleCompletion(s),
+        this.registry.persistDir,
       );
 
       session.promise = p;
