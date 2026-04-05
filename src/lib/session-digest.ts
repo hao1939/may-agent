@@ -104,6 +104,75 @@ export function getRecentDigests(
 }
 
 /**
+ * Format recent digests into a context block for injection into agent sessions.
+ * Replaces the memory-based "Recent Task History" with richer digest data.
+ *
+ * Output format per entry:
+ *   - YYYY-MM-DD HH:MM: "task summary" — status (duration) — what happened
+ *     [files: a.ts, b.ts] [open: still unfinished work]
+ */
+export function formatDigestContext(
+  digests: DigestRow[],
+): string | null {
+  if (digests.length === 0) return null;
+
+  // Reverse so oldest is first (digests come in DESC order from getRecentDigests)
+  const ordered = [...digests].reverse();
+
+  const lines: string[] = [];
+  for (const d of ordered) {
+    const ts = formatDigestTimestamp(d.created_at);
+    const taskStr = truncateStr(d.task ?? "unknown task", 120);
+    const details: Record<string, unknown> = d.details ? JSON.parse(d.details) : {};
+    const duration = (details.duration as string) ?? "";
+    const outcome = d.outcome ?? d.trigger;
+    const durationStr = duration ? ` (${duration})` : "";
+
+    // Main line: timestamp, task, outcome, duration
+    let line = `- ${ts}: "${taskStr}" — ${outcome}${durationStr}`;
+
+    // what_happened gives the real substance
+    if (d.what_happened) {
+      line += ` — ${truncateStr(d.what_happened, 200)}`;
+    }
+
+    lines.push(line);
+
+    // Sub-details on next lines if present
+    const extras: string[] = [];
+    if (d.files_modified) {
+      try {
+        const files = JSON.parse(d.files_modified) as string[];
+        if (files.length > 0) {
+          extras.push(`files: ${files.slice(0, 5).join(", ")}${files.length > 5 ? "..." : ""}`);
+        }
+      } catch { /* skip */ }
+    }
+    if (d.still_open) {
+      extras.push(`open: ${truncateStr(d.still_open, 100)}`);
+    }
+    if (extras.length > 0) {
+      lines.push(`  [${extras.join("] [")}]`);
+    }
+  }
+
+  return lines.join("\n");
+}
+
+/** Format epoch ms → "YYYY-MM-DD HH:MM" in UTC. */
+function formatDigestTimestamp(epochMs: number): string {
+  const d = new Date(epochMs);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
+}
+
+/** Truncate a string to maxLen chars, adding "…" if truncated. */
+function truncateStr(s: string, maxLen: number): string {
+  if (s.length <= maxLen) return s;
+  return s.slice(0, maxLen - 1) + "…";
+}
+
+/**
  * Insert a new digest row. Returns the auto-generated ID.
  */
 function insertDigest(

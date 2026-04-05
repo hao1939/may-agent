@@ -85,7 +85,7 @@ import { routeKnowledge } from "./knowledge-router.js";
 import { buildTrace } from "./manager-trace.js";
 import { hasFinishToolCall, extractFinishParams, runAgentWithRetry } from "./manager-retry.js";
 import { createAgentsTool as createAgentsToolFn, type CreateAgentsToolOptions } from "./manager-agents-tool.js";
-import { upsertDigest, logShadowComparison } from "./session-digest.js";
+import { upsertDigest, logShadowComparison, getRecentDigests, formatDigestContext } from "./session-digest.js";
 import { isOverflowError } from "./overflow.js";
 // classifyError is re-exported directly from classify-error.ts (no local import needed)
 
@@ -522,18 +522,34 @@ export class SubagentManager {
     const ctxLines = [`# Session Context`, `- Session ID: ${sessionId}`, `- Current Time: ${new Date().toISOString()}`];
     const memoryLimit = def.memoryLimit ?? 20;
     if (memoryLimit > 0) {
-      const entries = readMemoryEntries(persistDir, agentName, memoryLimit);
-      if (entries.length > 0) {
+      // Phase 5: Prefer digest-based context (richer: what_happened, outcome, files_modified)
+      // Falls back to memory JSONL if no digests found (cold-start or pre-digest sessions)
+      let historyBlock: string | null = null;
+      try {
+        const digests = getRecentDigests(persistDir, agentName, memoryLimit);
+        historyBlock = formatDigestContext(digests);
+      } catch {
+        // DB not available (e.g., vitest) — fall through to memory
+      }
+
+      if (historyBlock) {
         ctxLines.push(``, `## Recent Task History`);
-        for (const e of entries) {
-          const ts = formatMemoryTimestamp(e.timestamp);
-          const taskText = truncateForPrompt(e.task, MEMORY_TASK_MAX);
-          const summary = e.summary ? ` — ${truncateForPrompt(e.summary, MEMORY_SUMMARY_MAX)}` : "";
-          let extra = "";
-          if (e.completed?.length) extra += ` | done: ${e.completed.join(", ")}`;
-          if (e.newItems?.length) extra += ` | added: ${e.newItems.join(", ")}`;
-          if (e.files?.length) extra += ` | files: ${e.files.slice(0, 5).join(", ")}${e.files.length > 5 ? "..." : ""}`;
-          ctxLines.push(`- ${ts}: "${taskText}" — ${e.status} (${e.duration})${summary}${extra}`);
+        ctxLines.push(historyBlock);
+      } else {
+        // Fallback: memory JSONL (pre-digest data)
+        const entries = readMemoryEntries(persistDir, agentName, memoryLimit);
+        if (entries.length > 0) {
+          ctxLines.push(``, `## Recent Task History`);
+          for (const e of entries) {
+            const ts = formatMemoryTimestamp(e.timestamp);
+            const taskText = truncateForPrompt(e.task, MEMORY_TASK_MAX);
+            const summary = e.summary ? ` — ${truncateForPrompt(e.summary, MEMORY_SUMMARY_MAX)}` : "";
+            let extra = "";
+            if (e.completed?.length) extra += ` | done: ${e.completed.join(", ")}`;
+            if (e.newItems?.length) extra += ` | added: ${e.newItems.join(", ")}`;
+            if (e.files?.length) extra += ` | files: ${e.files.slice(0, 5).join(", ")}${e.files.length > 5 ? "..." : ""}`;
+            ctxLines.push(`- ${ts}: "${taskText}" — ${e.status} (${e.duration})${summary}${extra}`);
+          }
         }
       }
     }
