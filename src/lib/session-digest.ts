@@ -235,6 +235,25 @@ function readTranscriptDelta(
  * Extract files modified from tool calls in messages.
  */
 function extractFilesModified(messages: AgentMessage[]): string[] {
+  // Known file extensions for project files
+  const FILE_EXTS = new Set([
+    "ts", "js", "tsx", "jsx", "json", "md", "yaml", "yml", "toml",
+    "css", "html", "sh", "sql", "txt", "env", "lock", "jsonl",
+  ]);
+
+  function isLikelyFilePath(s: string): boolean {
+    // Must contain a / (real paths) or start with known project dirs
+    if (!s.includes("/") && !s.startsWith("package.")) return false;
+    // Must have a known extension
+    const ext = s.split(".").pop()?.toLowerCase() ?? "";
+    if (!FILE_EXTS.has(ext)) return false;
+    // Reject paths with spaces or special chars
+    if (/\s|[(){}[\]|;`]/.test(s)) return false;
+    // Reject very short segments (t.name, s.time, etc.)
+    if (!s.includes("/") && s.split(".")[0].length <= 2) return false;
+    return true;
+  }
+
   const files = new Set<string>();
   for (const msg of messages) {
     if (!("role" in msg) || msg.role !== "assistant") continue;
@@ -243,18 +262,19 @@ function extractFilesModified(messages: AgentMessage[]): string[] {
     for (const block of content) {
       if (block?.type === "toolCall") {
         const args = block.arguments ?? {};
-        // Common patterns: edit(path), write(path), read(path)
+        // Common patterns: edit(path), write(path)
         if (typeof args.path === "string" && ["edit", "write"].includes(block.name)) {
           files.add(args.path);
         }
-        // bash commands — extract file paths from common patterns
+        // bash commands — extract file paths from write operations
         if (block.name === "bash" && typeof args.command === "string") {
-          // Simple heuristic: look for file extensions in write operations
           const writePatterns = args.command.match(/(?:>\s*|tee\s+|cp\s+\S+\s+)([\w./-]+\.\w+)/g);
           if (writePatterns) {
             for (const match of writePatterns) {
               const file = match.replace(/^[>|\s]+|^tee\s+|^cp\s+\S+\s+/, "").trim();
-              if (file && !file.startsWith("-")) files.add(file);
+              if (file && !file.startsWith("-") && isLikelyFilePath(file)) {
+                files.add(file);
+              }
             }
           }
         }
