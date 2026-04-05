@@ -13,3 +13,4 @@
 - DELEGATION QUALITY: 52% of delegate ops are wasted on rediscovery. When delegating to tech-lead/coder, include: (1) relevant file contents (20-50 lines), (2) exact error messages, (3) "start by X, then Y, verify with Z" approach. Don't just say "read file X" — paste the relevant section.
 - When delegating implementation tasks, always include the specific file path, the current state (paste key lines), the desired change, and a verification command (e.g., "run vitest test/X.test.ts")
 - Baseline report at agents/may/workspace/delegation-quality-baseline.md — track improvement against 52.1% discovery ratio
+- **C1.7 verify-before-finish**: Before finish(success), ensure at least ONE of your last 5 tool calls is a read/grep/ls/test that verifies your work. See agents/may/skills/verify-before-finish.md.

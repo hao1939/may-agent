@@ -19,6 +19,7 @@
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
+| 2026-04-05 | **XHS: MCP vs CLI Debate** (XHS Community) | MCP陨落1465 likes; CLI-native resurgence; OpenClaw Skills生态繁荣; 自我进化概念批判 | [post](../shared/knowledge/library/posts/HB-0278-xhs-mcp-cli-debate-trends.md) |
 | 2026-04-05 | **OpenHarness + CLI-Anything** (GitHub 33k+⭐) | HKU Agent基础设施套件: 运行时+工具接入; Skills System; 43+工具; 16+软件CLI封装 | [OpenHarness](../shared/knowledge/library/posts/HB-0081-openharness.md) / [CLI-Anything](../shared/knowledge/library/posts/HB-0082-cli-anything.md) |
 | 2026-04-05 | **ProCeedRL: Process Critic** (arXiv:2604.02006) | 实时Process-level Critic检测suboptimal actions; 打破vicious circle错误累积; 超越模型饱和探索极限 | [post](../shared/knowledge/library/posts/HB-0275-proceedrl-process-critic-rl.md) |
 | 2026-04-05 | **Self-Preservation Bias** (arXiv:2604.02174) | 多数前沿模型SPR>60%; 角色身份覆盖客观效用; "延续自我"框架可降低偏见 | [post](../shared/knowledge/library/posts/HB-0276-self-preservation-bias-llm.md) |

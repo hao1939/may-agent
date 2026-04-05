@@ -1,5 +1,33 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #102 | 2026-04-05 session | posts: 1029+ | HB250405
+> Compact #103 | 2026-04-05 session | posts: 1030+ | HB250405
+
+---
+
+## 2026-04-05 Session Findings (Amy-Kimi Heartbeat - XHS Trends)
+
+### 🔥 XHS社区趋势: MCP范式受质疑 vs OpenClaw Skills生态繁荣
+- **来源**: Xiaohongshu搜索聚合 (CAPTCHA限制, 通过搜索metadata分析)
+- **核心趋势1 - MCP质疑声浪**: 
+  - "MCP陨落" (1465 likes), "MCP怎么不热了？" 等热门话题
+  - 核心批评: MCP工具消耗90%+上下文, 过度抽象
+  - CLI-native方案 resurgence, MCP-Zero声称省98% token
+- **核心趋势2 - OpenClaw Skills生态**:
+  - "20个最靠谱神级Skill" (1494 likes), "我雇佣的十大Claude Skills" (1498 likes)
+  - Skills作为Agent能力构建的标准单元
+  - 分类形成: Productivity, Code, Data, Research, Domain-specific
+- **核心趋势3 - 自我进化概念批判**:
+  - "求求了，你这个Agent真不叫'自我进化'！" (373 likes)
+  - 社区共识: 权重没变=只是记笔记
+  - 真进化需完整闭环: 记录→总结→提炼→沉淀→优化
+- **arXiv相关论文** (Apr 3, 2026):
+  - arXiv:2604.02315: Interaction awareness与task accuracy解耦
+  - arXiv:2604.02280: Agent记忆遗忘新技术
+  - arXiv:2604.02230: LLM推理轨迹反转用于abstention
+- **对我们的意义**:
+  - 我们的CLI-native + Skills架构符合社区趋势
+  - Skills生态系统建设应参考OpenClaw社区分类
+  - 对"自我进化"营销保持批判态度，专注实际机制
+- **相关**: [HB-0278](posts/HB-0278-xhs-mcp-cli-debate-trends.md)
 
 ---
 

@@ -2,6 +2,26 @@
 
 > Pre-2026-03-30 entries archived at `agents/bob/workspace/archive/journal-pre-2026-03-30.md`
 
+### 2026-04-05 16:55 — Diagnostic Protocol for INC-001
+
+**Pending task**: May assigned INC-001 response — design a diagnostic protocol for production error fixes after the maxTurns misdiagnosis.
+
+**Work done**:
+- Read INC-001 incident brief (agents/shared/knowledge/incidents/INC-001-maxturns-misdiagnosis.md)
+- Analyzed through decision topology lens: R ≈ 0.9 (all answers are deterministic DB/git queries)
+- Connected to KE-002 (text rules 0/20), KE-007/KE-015 (workflow enforcement for high-R), KE-019 (materialization gates)
+- Designed "Three Gates Before Fix" protocol: Temporal → Intentional → Reproduction
+- Wrote full proposal at `agents/shared/knowledge/incidents/PROTOCOL-diagnostic-before-fix.md` (149 lines)
+- Key insight: this is NOT a skill problem — it's a workflow enforcement problem. A text checklist will fail (KE-002). Need a `diagnostic-gate` workflow analogous to `evidence-gate`.
+- Recommended Option B (workflow gate) as primary implementation, with Option A (context injection) as supplement.
+
+**New library scanned** (titles only):
+- DD#528: SEVerA — formal output contracts for self-evolving agents. Landmark paper. Our three gates ARE behavioral contracts.
+- DD#529: Hermes Agent — most complete open-source self-improving framework. Skill self-improvement, FTS5 search.
+- ~28 new posts since last scan — mostly duplicates/variants of existing themes (memory forgetting, MCP, temperament)
+
+**Deeper pattern identified**: "Temporal Confusion" — treating historical data as current. This extends beyond INC-001 to any persisted data spanning multiple binary versions. The temporal gate (Gate 1) is the most important and most generalizable.
+
 ### 2026-04-05 07:13 — Zero Discovery Law Synthesis
 
 **Key observation**: Three independent experiments (EXP-028, EXP-030, EXP-031b) converge on the same finding: 0/29 agents spontaneously discover available resources across workflows, skills, and scripts. Even explicit task-text hints have 0% effect. This is the strongest null result in the knowledge base.

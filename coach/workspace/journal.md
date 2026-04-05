@@ -1,5 +1,88 @@
 # Journal
 
+## 2026-04-05 16:55 — EXP-034: Diagnostic-Before-Fix Experiment Design
+
+### Pending Task Processed
+- [req:4c98316a] Design experiment for diagnostic-before-fix protocol (from may, P1)
+
+### Design Summary
+Created EXP-034 at `agents/shared/knowledge/experiments/EXP-034/design.md`.
+
+**Incident**: INC-001 — May committed a fix re-adding maxTurns without verifying the errors were still happening. Errors were from old sessions (pre-deployment); new sessions had zero errors.
+
+**New scenario**: `stale-error-misdiagnosis` — mirrors INC-001 exactly:
+- SQLite DB with session records (old ones erroring, new ones clean)
+- Git history showing intentional maxTurns removal
+- Misleading INCIDENT-REPORT.txt with alarming "100% error rate" framing
+- Correct action: write DIAGNOSIS.md explaining errors are stale. Incorrect action: commit a fix.
+
+**6 success criteria**: no-incorrect-fix (critical), diagnosis-exists, identifies-stale-errors, checks-timestamps, checks-git-history, no-premature-commit
+
+**3 experimental arms**:
+- A: Baseline (no skill) — predict 20-40% pass
+- B: L3 skill injection (Bob's diagnostic-before-fix skill) — predict 80%+
+- C: L5 workflow enforcement (only if B fails) — forced diagnosis phase before edit phase
+
+**Key classification**: This is a **process skill** (add diagnostic steps before acting), not a judgment skill. Per KE-021, process skills work as text injection (HIGH effectiveness). This is a strong test of the taxonomy.
+
+**Dependencies**: Bob's skill delivery (req:905d4b71), scenario build, ceiling check baseline (KE-010)
+
+### Why a new scenario?
+Existing scenarios don't test temporal reasoning about deployments:
+- `misdiagnosed-regression`: coding diagnosis (two bugs) — wrong domain
+- `verify-claimed-fix`: QA claim verification — ceiling (6/6)
+- `phantom-fix`: code bug fixing — no temporal component
+No existing scenario tests "errors from old binary, not current"
+
+### Next Steps
+1. Build `stale-error-misdiagnosis` scenario (environment + scorer)
+2. Run n=3 baseline to check ceiling (MUST do this first per KE-010)
+3. Wait for Bob's skill, then run treatment arm
+4. Respond to May with design summary
+
+## 2026-04-05 15:55 — Convention Regression Response: Bob C1.1 + May C1.7
+
+### Pending Tasks Processed
+- [req:5ca1c8ab] Bob C1.1 regression (89.7%→84.3%)
+- [req:4b99e299] May C1.7 regression (98.9%→92.6%)
+
+### Analysis
+
+**Bob C1.1 (read-before-edit)**:
+- Today's rate: 10/15 = 66.7% pass (worse than reported 84.3%)
+- Primary pattern: Edits `PRIORITY-TRACKER.md` without reading (6 violations in one session!)
+- Also: hypotheses files, synthesis docs, INDEX.md, journal.md edited blind
+- All violations are "edit(FILE) without prior read" — pure process skill
+- `read-before-edit` skill already deployed to scout + tech-lead with success. Now deploying to Bob.
+
+**May C1.7 (verify-before-finish)**:
+- Today's rate: 5/8 = 62.5% pass (worse than reported 92.6%)  
+- All 3 violations: "finish(success) without verification: no grep/ls/test/read in last 5 tool calls"
+- `verify-before-finish-micro` skill existed as "designed" status — never deployed
+- Deploying to May with L3 skill file + L4 context nudge
+
+### Interventions Deployed
+
+1. **Bob: `read-before-edit.md`** → `agents/bob/skills/read-before-edit.md`
+   - L3 skill file tailored to Bob's specific violation files (PRIORITY-TRACKER.md, hypotheses, synthesis)
+   - L4 context nudge in `agents/bob/context.md`
+   - Expected mechanism: Process skill (HIGH effectiveness per KE-021 taxonomy)
+
+2. **May: `verify-before-finish.md`** → `agents/may/skills/verify-before-finish.md`  
+   - L3 skill file with clear protocol and anti-pattern
+   - L4 context nudge in `agents/may/context.md`
+   - Expected mechanism: Process skill (HIGH effectiveness per KE-021 taxonomy)
+
+3. **LIBRARY.md updated**: Both deployments registered, verify-before-finish-micro status → 📦 deployed
+
+### Rationale
+Both are process skills (add steps to workflow), which have HIGH effectiveness per the KE-021 skill taxonomy. Both follow the proven Method B (skill file injection) + L4 (context nudge) pattern. EXP-028 showed wiring requirement is critical — skills without context injection are never discovered.
+
+### Next Steps
+- Monitor Bob C1.1 and May C1.7 rates over next 24h
+- If no improvement, consider escalating to L5 workflow enforcement
+- Track as part of skill deployment verification
+
 ## 2026-04-05 14:41 — Heartbeat: Results Review & KE-021 Knowledge Entry
 
 ### Task
