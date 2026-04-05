@@ -85,7 +85,7 @@ import { routeKnowledge } from "./knowledge-router.js";
 import { buildTrace } from "./manager-trace.js";
 import { hasFinishToolCall, extractFinishParams, runAgentWithRetry } from "./manager-retry.js";
 import { createAgentsTool as createAgentsToolFn, type CreateAgentsToolOptions } from "./manager-agents-tool.js";
-import { upsertDigest } from "./session-digest.js";
+import { upsertDigest, logShadowComparison } from "./session-digest.js";
 import { isOverflowError } from "./overflow.js";
 // classifyError is re-exported directly from classify-error.ts (no local import needed)
 
@@ -627,12 +627,15 @@ export class SubagentManager {
     if (!timeoutMs || timeoutMs <= 0) return;
     session.timeoutTimer = setTimeout(() => {
       if (session.status === "running") {
-        // Digest: timeout
+        // Digest: timeout (pass manager for LLM synthesis + classification)
         upsertDigest(this.registry.persistDir, {
           sessionId: session.sessionId,
           agent: session.agentName,
           trigger: "timeout",
           details: { timeoutMs, elapsedMs: Date.now() - session.startedAt, turnCount: session.turnCount },
+        }, this).then(digest => {
+          // Shadow comparison: existing system always kills on timeout
+          logShadowComparison(session.sessionId, "timeout", "kill", digest);
         }).catch(err => log("warn", `[digest] timeout failed: ${err}`));
         this.cancel(session.sessionId);
       }
@@ -667,13 +670,16 @@ export class SubagentManager {
     clearPostFinishErrors(session);
     handleOverflow(session, this.agents);
 
-    // Digest: overflow (after handleOverflow detects it)
+    // Digest: overflow (after handleOverflow detects it) — pass manager for LLM synthesis + classification
     if (session.error && isOverflowError(session.error)) {
       upsertDigest(this.registry.persistDir, {
         sessionId: session.sessionId,
         agent: session.agentName,
         trigger: "overflow",
         details: { error: session.error.slice(0, 300), turnCount: session.turnCount },
+      }, this).then(digest => {
+        // Shadow comparison: existing system always kills on overflow (session is already dead)
+        logShadowComparison(session.sessionId, "overflow", "kill", digest);
       }).catch(err => log("warn", `[digest] overflow failed: ${err}`));
     }
 
@@ -1126,12 +1132,15 @@ export class SubagentManager {
                 endedAt: Date.now(),
               });
             } catch { /* best-effort DB update */ }
-            // Digest: zombie_cleanup
+            // Digest: zombie_cleanup (pass manager for LLM synthesis + classification)
             upsertDigest(persistDir, {
               sessionId,
               agent: meta.agent ?? "unknown",
               trigger: "zombie_cleanup",
               details: { startedAt: meta.startedAt, staleMs: Date.now() - (meta.startedAt ?? 0) },
+            }, this).then(digest => {
+              // Shadow comparison: existing system always archives zombies
+              logShadowComparison(sessionId, "zombie_cleanup", "nothing", digest);
             }).catch(err => log("warn", `[digest] zombie_cleanup failed: ${err}`));
             cleaned++;
           } catch { /* best-effort */ }
