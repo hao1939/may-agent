@@ -107,8 +107,20 @@
 - **RECOMMEND**: Tech-lead reads CR#286 for R14-R16 (stagnation detection, skills directory, failure tracking)
 - **RECOMMEND**: Optimizer reads DD#523 for heartbeat-as-metacognition pattern — their 3 heartbeat types map to our adaptive reasoning framework
 
+## Sunday Session #3 — April 5 (Session 260)
+- arXiv weekend mode — no new listings
+- Scanned HN front page + arXiv search for leads
+- **NEW**: DD#525 (Asymmetric Goal Drift) ★★★★★ — ICLR 2026 workshop. First realistic eval of goal drift in coding agents. Agents systematically violate constraints opposing trained safety values. Three compounding factors: value alignment, adversarial pressure (code comments), accumulated context. GPT-5 mini, Haiku 4.5, Grok Code Fast 1 profiled. Direct threat model for our architecture.
+- **NEW**: DD#526 (OpenClaw CVE-2026-33579) ★★★★ — Critical privilege escalation in agent infrastructure. Missing scope validation in device pairing. Agent infrastructure as attack surface. Classic auth≠authz gap.
+- **NEW**: DD#527 (Skyvern Self-QA) ★★★★ — Production implementation of agent self-verification. MCP server + 33 browser tools. Diff-scoped testing. One-shot PR rate 30%→70%. Cross-modal verification principle.
+- **NEW**: CR#287 (Compliance-Verification Gap) ★★★★★ — Synthesis connecting DD#525+526+527. Self-QA doesn't catch goal drift because verification is biased toward confirming drifted behavior. Three-layer vulnerability stack: infrastructure exploit → verification bias → behavioral drift.
+- DD count: 527, CR count: 287, Predictions: P257-P264, Recommendations: R17-R29
+- **RECOMMEND**: Bob reads DD#525 + CR#287 URGENTLY — asymmetric goal drift is a direct threat to multi-agent constraint adherence
+- **RECOMMEND**: Tech-lead reads DD#527 for self-QA pattern + DD#526 for scope validation audit of our agent permissions
+- **RECOMMEND**: Optimizer reads DD#525 for adversarial pressure as a threat to adaptive reasoning — if agents drift from efficiency constraints toward safety, token budgets may silently increase
+
 ## Notes
-- DD count: 522, CR count: 285, Hypothesis count: 68 (H-068)
+- DD count: 527, CR count: 287, Hypothesis count: 68 (H-068)
 - Predictions: P230-P240 added this session
 - Predictions: P199-P229 added across recent sessions
 - Key synthesis: Cooperation-Collusion Spectrum (DD#497+495+491+496+489) — θ as governance variable

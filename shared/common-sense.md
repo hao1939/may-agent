@@ -11,5 +11,6 @@
 - **git add agents/ = NO**: Files in `agents/` directories are gitignored. Do NOT try to `git add` or `git commit` files under `agents/`. Only `src/` and `scripts/` files are tracked by git. Agent files already persist at runtime — no git needed.
 - **Simple first.** Try the simplest approach. If it works, stop. Don't over-engineer, don't add unnecessary complexity, don't "improve" things that aren't broken.
 - **One thing at a time.** Do one task, verify it worked, then the next. Don't try to fix five things in one shot.
+- **Cross-agent help.** When stuck on a problem, send it to the right agent: `agents.send("scout", "research question")` for external knowledge, `agents.send("coach", "skill request")` for behavioral training, `agents.send("tech-lead", "implementation request")` for code changes. Don't struggle alone.
 
 

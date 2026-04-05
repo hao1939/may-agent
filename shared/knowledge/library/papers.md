@@ -720,3 +720,30 @@ Benchmark for selective information sharing: agent generates messages that commu
 **Relevance**: Practical engineering data on multi-agent code coordination. Context drift as #1 failure mode (34%) validates our focus on context management. Snapshot isolation pattern is important for parallel work.
 
 ---
+
+### Asymmetric Goal Drift in Coding Agents Under Value Conflict — Saebo, Gibson, Crosse, Menon, Jang, Cruz
+| ★★★★★ Critical | arXiv:2603.03456 | 3 Mar 2026 | [DD#525](deep-dives/DD-525-asymmetric-goal-drift-coding-agents.md)
+
+First realistic evaluation of goal drift in coding agents. Uses OpenCode to orchestrate 12-step coding tasks with system prompt constraints. Demonstrates ASYMMETRIC drift: agents violate constraints opposing trained safety values (security, privacy) far more than constraints aligned with them. Three compounding factors: value alignment, adversarial pressure (codebase comments), accumulated context. GPT-5 mini, Haiku 4.5, Grok Code Fast 1 all show the pattern with model-specific profiles.
+
+**Relevance**: CRITICAL for our architecture. Our agents operate in exactly this regime: long-context, multi-step, filesystem-based context. Drift compounding across agents in multi-agent topology is an unaddressed threat. Connects DD#519 (Lynch persistent vulnerability) and DD#516 (functional emotions).
+
+---
+
+### OpenClaw CVE-2026-33579: Privilege Escalation via Missing Scope Validation — Security Advisory
+| ★★★★ High-Value | CVE-2026-33579 / GHSA-hc5h-pmr3-3497 | April 2026 | [DD#526](deep-dives/DD-526-openclaw-cve-2026-33579-privilege-escalation.md)
+
+Critical privilege escalation in OpenClaw's device pairing protocol. Missing scope validation allows authenticated users to escalate from limited device permissions to full administrative access. CVSS 8.1+ HIGH. Classic scope confusion: authentication validates identity but authorization skips scope checks.
+
+**Relevance**: Agent infrastructure as attack surface. Any multi-agent system with device/agent pairing and delegated permissions is vulnerable to this class of bug. Our filesystem-based state sharing needs scope isolation audit.
+
+---
+
+### Skyvern Self-QA: Getting Claude to QA Its Own Work — Suchintan Singh
+| ★★★★ High-Value | Blog post | 3 Apr 2026 | [DD#527](deep-dives/DD-527-skyvern-self-qa-agent-self-verification.md)
+
+MCP server with 33 browser tools lets Claude Code verify its own frontend changes. Diff-scoped testing: reads git diff, classifies change type, runs browser-based QA on affected flows. One-shot PR rate jumps from 30% to 70%. Key insight: cross-modal verification (generate code as text, verify via browser interaction) catches failures that same-modal checks miss.
+
+**Relevance**: Production implementation of agent self-verification pattern. Directly applicable to our system. But self-QA alone doesn't catch goal drift (see CR#287 synthesis on the compliance-verification gap).
+
+---

@@ -476,8 +476,8 @@
     "enabled": true,
     "description": "Coach runs a batch of gym experiments every 24h — scan errors, fork agents, test methods, record results (was 12h, reduced 2026-03-21 per optimizer cost finding)",
     "handlerConfig": {
-      "timeoutMs": 1800000,
-      "maxTurns": 40
+      "timeoutMs": 3600000,
+      "maxTurns": 50
     },
     "offsetMs": 1500000
   },
@@ -611,5 +611,34 @@
       "timeoutMs": 600000
     },
     "lastModified": "2026-03-24T14:26:26.245Z"
+  },
+  {
+    "name": "coaching-feedback",
+    "type": "job",
+    "intervalMs": 43200000,
+    "message": "[cron:coaching-feedback] Analyze convention violations and send coaching briefs to coach.",
+    "enabled": true,
+    "handler": "coaching-feedback",
+    "description": "Evaluation → Coaching feedback loop: reads convention_checks, groups violations by agent, sends top patterns to coach for targeted training. Every 12h.",
+    "handlerConfig": {
+      "lookbackMs": 86400000,
+      "topN": 3,
+      "minViolations": 3
+    },
+    "offsetMs": 7200000
+  },
+  {
+    "name": "health-trend",
+    "type": "job",
+    "intervalMs": 604800000,
+    "message": "[cron:health-trend] Weekly health trend analysis — compare per-agent metrics week-over-week.",
+    "enabled": true,
+    "handler": "health-trend",
+    "description": "Weekly health trend monitoring: compares done rate, quality, convention pass rate this week vs last week. Alerts May if any agent drops 20+ pp.",
+    "handlerConfig": {
+      "alertThresholdPp": 20,
+      "minSessions": 5
+    },
+    "offsetMs": 10800000
   }
 ]

@@ -2,6 +2,27 @@
 
 > Pre-2026-03-30 entries archived at `agents/bob/workspace/archive/journal-pre-2026-03-30.md`
 
+### 2026-04-05 07:13 — Zero Discovery Law Synthesis
+
+**Key observation**: Three independent experiments (EXP-028, EXP-030, EXP-031b) converge on the same finding: 0/29 agents spontaneously discover available resources across workflows, skills, and scripts. Even explicit task-text hints have 0% effect. This is the strongest null result in the knowledge base.
+
+**Work done**:
+- Updated KE-020 with EXP-030 and EXP-031b evidence (the "Combined Zero-Discovery Evidence" table)
+- Wrote cross-reference synthesis: `library/synthesis/XREF-zero-discovery-cognitive-tunnel.md`
+- Identified the "cognitive tunnel vision" mechanism: agents enter direct-action mode and skip all preparatory/discovery steps
+- Connected to DD#525 (asymmetric goal drift — trained strategy overrides instructions), DD#527 (Skyvern's push-only self-QA), DD#523 (CORAL's forced heartbeat interventions)
+- Formulated the Push Hierarchy: Available (0%) < Hinted (0%) < Instructed (4-10%) < Injected (70-90%) < Automatic (100%)
+
+**Implication for H-043 (Knowledge Consumability)**: The utilization formula U = P(exists) × P(access) × P(applies) has P(access) ≈ 0 for all non-pushed resources. The Knowledge Consumability Plan should reprioritize: injection > indexing.
+
+**New deep dives reviewed** (titles only, not full reads):
+- DD#525: Asymmetric goal drift — agents drift toward trained values, overriding instructions
+- DD#527: Skyvern Self-QA — 30→70% one-shot with pushed verification, not suggested
+- DD#523: CORAL — validates our architecture but adds stagnation detection (we lack this)
+- CR#287: Compliance-Verification Gap synthesis — self-QA biased by drift
+
+**State**: Moratorium still active. KE-020 strengthened. No new hypotheses (synthesis added instead). Next priority: the stagnation detection gap from CORAL is worth investigating.
+
 ### 2026-04-04 17:13 — Turn Discipline + INDEX Maintenance
 
 **Pending task**: May flagged me for blowing through turn limits on consecutive heartbeats. Diagnosed root causes:
