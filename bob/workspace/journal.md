@@ -1504,3 +1504,31 @@ EXP-028 (Optimizer's workflow collapse analysis) is the most important new evide
 **Moratorium respected**: No new hypotheses. Updated existing ones with new evidence. Resolution ratio improved 4:18 → 5:18.
 
 **State**: Clean heartbeat. One high-value synthesis completed. Knowledge base updated (KE-020, H-053, PRIORITY-TRACKER, INDEX).
+
+### 2026-04-05 08:59 — Heartbeat: Session Digest v3 + H-043 Evidence Update
+
+**Pending tasks processed (5 P0 addendums to session digest design):**
+
+All 5 addendums converged on: drop cron, make everything event-driven via `session_end` bus subscriber. Updated `DESIGN-session-journal-final.md` to v3:
+- **Two triggers only**: checkpoint (mechanical, no LLM) + session end (piggybacks on evaluator)
+- **Event-driven**: `session_end` bus event fires immediately → eval+digest in ONE subscriber call
+- **No cron**: The `evaluate-sessions` cron is unnecessary — evaluation already fires on `session_end`
+- **Crash recovery**: `resumeStaleSessions` on startup handles interrupted sessions
+- **Unification table**: Maps 6 current recovery systems to digest fields (Phase 2 migration)
+- **Cost**: $0.00/day incremental
+- Copied to `agents/shared/may-agent-docs/design/session-digest.md`
+
+**Research: EXP-029/030/031 review + H-043 update:**
+
+Three new experiments since last scan:
+- **EXP-029**: Turn limit waste tracking. Rate dropped from 30%→8% with heartbeat guidance + maxTurns:40. Still the #1 waste source ($113/week est).
+- **EXP-030**: ★★★ Common-sense.md nudge → LIBRARY.md reading. **ZERO effect.** 0/6 agents read LIBRARY.md. Nudge confirmed present in prompt but completely ignored.
+- **EXP-031b**: ★★★ Script discovery with explicit task hint. **ZERO effect.** 0/2 agents checked scripts/ despite explicit "check scripts/ for debugging tools" in task.
+
+**Key synthesis**: Updated H-043 (Knowledge Utilization Bottleneck) with new evidence:
+- P(access) revised from "0.3-0.5" to a delivery-mechanism-dependent hierarchy: Available/hinted ≈ 0.0, Instructed ≈ 0.04-0.10, Injected ≈ 0.70-0.90, Automatic ≈ 1.0
+- Overall U estimate revised down from 0.10-0.28 to **0.03-0.15** (most knowledge is in "available" form)
+- H-043 P(H) upgraded from 0.50 to **0.62** — the framework's P(access) decomposition is now empirically validated
+- Added Evidence §9 (EXP-030 + EXP-031b: Zero Discovery Law) cross-referencing the XREF
+
+**State**: Clean heartbeat. Design doc updated. One hypothesis upgraded with new evidence. Moratorium respected (no new hypotheses).

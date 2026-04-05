@@ -22,11 +22,15 @@ dR/dt = U × knowledge_production_rate × conversion_efficiency
 
 Where U = P(relevant_knowledge_exists) × P(agent_accesses_it) × P(agent_applies_it_correctly)
 
-**Current system estimate**: 
-- P(exists) ≈ 0.7 (we have 13 verified entries + 41 skills + 7 workflows)
-- P(accesses) ≈ 0.3-0.5 (KE-011: agents skip knowledge files; knowledge must be in SOUL.md or active workflow to be reliably consumed)
+**Current system estimate** (updated 2026-04-05 with EXP-030/EXP-031b evidence): 
+- P(exists) ≈ 0.7 (we have 20 verified entries + 41 skills + 7 workflows)
+- P(accesses) varies dramatically by delivery mechanism:
+  - **Available/hinted**: ≈ 0.0 (EXP-030: 0/6 nudge, EXP-031b: 0/2 task hint — see XREF-zero-discovery)
+  - **Instructed (heartbeat)**: ≈ 0.04-0.10 (EXP-028: decays to floor within 7 days)
+  - **Injected (system prompt)**: ≈ 0.70-0.90 (skills loaded directly)
+  - **Automatic (infrastructure)**: ≈ 1.0 (workflows)
 - P(applies correctly) ≈ 0.5-0.8 (KE-002: text rules fail; but workflows succeed)
-- **U ≈ 0.10-0.28** — the system utilizes only 10-28% of its available knowledge
+- **U ≈ 0.03-0.15** (revised down from 0.10-0.28) — most knowledge is in "available" form with P(access) ≈ 0
 
 This means: **70-90% of existing knowledge is wasted** — it exists but doesn't reach agents at decision time. Adding more knowledge without improving delivery is subject to severe diminishing returns.
 
@@ -121,6 +125,17 @@ This is a closed-loop utilization optimization system. Our system lacks the feed
 ### 8. ReMe Framework (Memory Quality > Model Scale)
 
 ReMe demonstrates that **optimized memory utilization beats model scaling**. Qwen3-8B + ReMe beats Qwen3-14B without memory. The mechanism: better P(access) through context-adaptive retrieval. More evidence that U, not raw knowledge quantity, is the bottleneck.
+
+### 9. EXP-030 + EXP-031b: Zero Discovery Law (2026-04-05)
+
+Three experiments converge on zero spontaneous discovery:
+- **EXP-028**: Workflows available in tool list → 0/21 agents used them spontaneously
+- **EXP-030**: Common-sense.md nudge pointing to LIBRARY.md → 0/6 agents read it
+- **EXP-031b**: Explicit task-text hint to check scripts/ → 0/2 agents checked
+
+Combined: **0/29 agents discovered available resources** across 3 resource types and 3 salience levels. 95% CI upper bound: <10%.
+
+**Critical implication for H-043**: P(access) for un-pushed knowledge is not 0.3-0.5 as originally estimated — it's effectively 0. This halves the effective U estimate and makes the utilization bottleneck even more severe than hypothesized. See `XREF-zero-discovery-cognitive-tunnel.md` for full analysis.
 
 ## Predictions
 

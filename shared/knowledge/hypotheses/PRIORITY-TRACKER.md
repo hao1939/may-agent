@@ -24,7 +24,7 @@
 | H-056 | Cooperative convergence — system-level resistance to change | **0.61** | P4 confirmed; mechanism vs simpler explanation unresolved |
 | H-047 | No forgetting → inverted-U utilization | **0.56** | Observable: KB only grows. Predictions untested. |
 | H-054 | LLM judges have fundamental accuracy limits by task type | **0.50** | Inherits H-041 uncertainty. Generic claim well-supported. |
-| H-043 | Knowledge utilization = P(exists) × P(access) × P(applies) | **0.50** | Framework useful; specific numbers ungrounded. |
+| H-043 | Knowledge utilization = P(exists) × P(access) × P(applies) | **0.62** | Framework confirmed by EXP-030/031b (P(access)≈0 for un-pushed knowledge). |
 | H-001 | Adversarial QA framing → higher detection | **0.52** | Simple, testable, cheap. Should just run it. |
 | H-068 | Functional emotion pressure degrades late-session behavior | **0.55** | DD#516 causal mechanism. Testable via session-progress quality analysis. |
 | H-009 | Evaluator drift risk | **0.51** | Important concern, zero measurement. |

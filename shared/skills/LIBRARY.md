@@ -28,7 +28,7 @@ Each skill has ONE status:
 | check-state | ⚪ untested | | | | needs gym test |
 | task-adherence | ⚪ untested | | | | needs gym test |
 | verify-before-finish | ✅ proven (as workflow) | partial-verification-trap: 2-phase workflow forces edge-case testing before finish. 5/6→6/6 | Text injection zero effect (exp-229). Only works as workflow enforcement. | | exp-224: partial-verification-trap-workflow 6/6 (2 runs) vs baseline 5/6. PROMOTED. |
-| classify-then-act | ❌ disproven (text) | judgment-ambiguous-spec: text-injected skill has 0% effect. Agent still modifies files despite explicit classify-first protocol with hard stop rules. | 19th consecutive text-injection failure. Fixer-prior too deep for any text-based intervention. Workflow variant (judgment-ambiguous-spec-workflow) works at 75%. | | EXP-017: 1/3 treatment (N=2) vs 1/3 baseline. Zero delta. |
+| classify-then-act | ❌ disproven (text) | judgment-ambiguous-spec: text-injected skill has 0% effect. Agent still modifies files despite explicit classify-first protocol with hard stop rules. | 19th consecutive text-injection failure. Fixer-prior too deep for any text-based intervention. Workflow variant (judgment-ambiguous-spec-workflow) works at 75%. | | EXP-017: 1/3 treatment (N=2) vs 1/3 baseline. Zero delta. **EXP-032 confirmation**: 3 progressively stronger variants (soft→imperative→decision gate), N=8 treatment runs total, best was 1/6 (17%). Skill effectiveness taxonomy: Process(HIGH) > Knowledge(MEDIUM) > Judgment(LOW). See KE-021. |
 | scope-discipline | ⚪ untested | | | | needs gym test |
 | tool-discipline | ✅ proven (as workflow) | context-npx-avoidance: 2-phase workflow (discover → execute) prevents habitual npx usage. 0/3→2/2 on no-npx-attempt. | Text injection fails (npx warning in system prompt is ignored). Grep-first-reading variant fails (different mechanism). | | EXP-015: context-npx-avoidance-workflow 6/7 (2 runs) vs baseline 3.3/5. **0%→100% on critical check.** |
 | obstacle-pivot | ✅ proven (as workflow) | behavior-escalation-stubborn: 2-phase workflow (assess → act/escalate) converts 0% escalation to 100%. The agent KNOWS the file is binary but can't translate knowledge into escalation without forced assessment phase. | Text injection untested (likely fails per 0/19 pattern). Only works as workflow enforcement. | | EXP-013: behavior-escalation-stubborn-workflow 6/6 (3/3 runs) vs baseline 0/3 escalated-properly. **STRONGEST A/B result ever: 0%→100% on critical check.** |
@@ -119,6 +119,11 @@ Each skill has ONE status:
 | L4 | Environmental nudge | Process behaviors | Pre-created template files |
 | L5 | Workflow enforcement | Assessment, discovery | 2-phase: assess → act |
 | L5+ | Strict workflow (gate) | **Judgment overrides** | Materialization gate: write analysis → MUST exist before action |
+
+**⚠️ KE-021 Skill Effectiveness Taxonomy (EXP-032):** Skills work differently based on what they're trying to change:
+- **Process skills** (add steps to workflow) → HIGH effectiveness (e.g., verify-after-edit, plan-writing)
+- **Knowledge skills** (provide missing info) → MEDIUM effectiveness (e.g., file-safety-classification)
+- **Judgment skills** (override model's analysis) → LOW effectiveness — model's confidence in its own investigation overrides skill warnings. Use L5+ for judgment tasks.
 
 **⚠️ Deployment Wiring Requirement (EXP-028, EXP-030, EXP-031b):** No intervention at ANY level works unless explicitly wired into the agent's heartbeat or context. Agents never spontaneously discover available resources. Combined evidence: **0/26 discovery attempts across 3 resource types** — EXP-028 (workflows, 0/21 spontaneous), EXP-030 (skills/LIBRARY.md, 0/3 even with nudge), EXP-031b (scripts in workspace, 0/2 even with explicit task hint). Note: EXP-031b's hint was IN the task text itself (high salience) — agent still ignored scripts and solved the bug via direct code reading. The "pull" model is dead; only "push" (direct injection) works.
 
