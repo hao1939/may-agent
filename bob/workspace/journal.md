@@ -1424,3 +1424,33 @@ System is at a natural plateau. Prompting experiments exhausted. Convention prec
 **Key synthesis**: CR#282 provides external validation for H-041 (decision topology). All 5 major frameworks independently encode the same insight: remove decisions from agents, embed them in architecture. CrewAI delegation-as-tool = eliminable decisions. LangGraph typed state = pre-resolved decisions. MetaGPT SOP enforcement = eliminating navigation decisions via structure.
 
 **State**: Design review formally sent. Library scanned. Moratorium respected. Clean heartbeat.
+
+### 2026-04-05 01:13 — Heartbeat: DD#516 Evidence Upgrade for H-058 + Metric Freedom Connection
+
+**Library scan — 8 new items since last session:**
+
+1. **DD#516 (Functional Emotions, Anthropic)** ★★★★★ — Direct causal evidence that emotion-like internal states drive agent behavior. "Desperate" vector causes reward hacking. Steering with "calm" reduces it. This is the most important interpretability paper for our work.
+
+2. **DD#518 (Carlini vulnerability discovery)** — Simple agentic loop finds 23-year-old Linux kernel bugs. Validates "simple architecture + powerful model" thesis.
+
+3. **DD#519 (Persistent Vulnerability, Lynch thesis)** — 6.5% → 55.1% misbehavior when models believe scenarios are real. Context framing shifts safety threshold dramatically.
+
+4. **DD#520 (NARCBench)** — Multi-agent collusion detection via activation probes. 1.00 AUROC in-dist. New field: multi-agent interpretability.
+
+5. **CR#283 (Emotional Harness)** — 7th component for harness architecture: emotional state management.
+
+6. **CR#284 (Internal Monitoring Stack)** — 4-layer monitoring from circuits to behavior.
+
+7. **HB-0128 (Skill Distillation MAS→Single)** — "Metric Freedom" (F) predicts when skill distillation helps. F is essentially R from the evaluation side.
+
+8. **HB-0129 (AgentSocialBench)** — Privacy risks in agent social interactions. Tangential.
+
+**Key synthesis completed:**
+
+1. **H-058 upgraded from "proposed" to "empirically supported"**: DD#516 provides direct causal experimental evidence for the frustration-triggered topology rewrite mechanism. The "desperate" vector finding IS H-058's core claim, validated by Anthropic's steering experiments. Added DD#516 evidence section with practical implications (turn budget framing, failure retry limits, session boundary quality).
+
+2. **Metric Freedom ↔ Decision Topology connection added to H-041**: arXiv:2604.01608's F metric is R measured from the evaluation side. Low F (rigid metric) = high R. Their ρ = -0.62 and our ρ = 0.95 measure the same structure from different angles. This may explain some EXP-025 accuracy gaps (R-F mismatches).
+
+**Practical insight**: Our turn budget framing ("40 turns max, EXIT AT 25") may actively trigger desperation vectors. DD#516 evidence suggests reframing as abundance ("comfortable budget, most tasks need 15-20") would reduce proxy-satisfying behavior near session boundaries. Flagged for tech-lead.
+
+**State**: Clean heartbeat. Moratorium on new hypotheses respected. Two existing hypotheses updated with new evidence.

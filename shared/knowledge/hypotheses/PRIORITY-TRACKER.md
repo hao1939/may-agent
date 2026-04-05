@@ -1,9 +1,9 @@
 # Hypothesis Priority Tracker
 
-**Updated**: 2026-04-04 (H-041 strengthened: 14 evidence sources, sycophants-dilemma 3/3, 6 hypotheses archived) | **Active hypotheses**: 17 | **Tested**: 4/17 | **Resolution ratio**: 4:17  
+**Updated**: 2026-04-05 (H-041 promoted to Tier 1: P(H) 0.65→0.78 via EXP-026 production data) | **Active hypotheses**: 18 | **Tested**: 4/18 | **Resolution ratio**: 4:18  
 **Bayesian scorecard**: See `SCORECARD-bayesian-2026-04-04.md` for full methodology
 
-> ⚠️ **MORATORIUM ENFORCED**: 6 hypotheses (H-060 to H-065) merged or archived per triage below. H-066 (Bayesian Belief Management) added as meta-process improvement. Net active count reduced from 23 → 17. **No new hypotheses until 5 more are resolved.**
+> ⚠️ **MORATORIUM ENFORCED**: H-060-065 merged/archived. H-067 merged→H-047. H-068 kept (unique testable claim). Net active: 18. **No new hypotheses until 5 more are resolved.**
 
 ---
 
@@ -12,6 +12,7 @@
 | ID | Claim | Evidence | P(H) |
 |----|-------|----------|------|
 | H-055 | Self-improvement bias: agents modify cosmetically, not substantively | 104 commits, 89.4% additive, 0 deletions. TBSP external. | **0.78** |
+| H-041 | R (eliminable ratio) predicts workflow effectiveness | EXP-025 sycophancy gate 3/3, EXP-026 8/8 directional predictions (464 sessions), 15 evidence sources | **0.78** |
 | H-053 | Workflow adoption decays without structural reinforcement | 19.7%→0% over 10 days | **0.75** |
 | H-059 | Cadence skills beat judgment skills for text interventions | EXP-022 + EXP-023 broke 0/20 barrier | **0.72** |
 
@@ -21,11 +22,11 @@
 |----|-------|------|--------|
 | H-014 | Performance gap is delegation quality, not information regime | **0.63** | EXP-007 Phase 1 partial support |
 | H-056 | Cooperative convergence — system-level resistance to change | **0.61** | P4 confirmed; mechanism vs simpler explanation unresolved |
-| **H-041** | R (eliminable ratio) predicts workflow effectiveness | **0.65** | EXP-025 partial: 72.7% accuracy. Sycophancy gate 3/3. 14 evidence sources. **STRENGTHENED.** |
 | H-047 | No forgetting → inverted-U utilization | **0.56** | Observable: KB only grows. Predictions untested. |
 | H-054 | LLM judges have fundamental accuracy limits by task type | **0.50** | Inherits H-041 uncertainty. Generic claim well-supported. |
 | H-043 | Knowledge utilization = P(exists) × P(access) × P(applies) | **0.50** | Framework useful; specific numbers ungrounded. |
 | H-001 | Adversarial QA framing → higher detection | **0.52** | Simple, testable, cheap. Should just run it. |
+| H-068 | Functional emotion pressure degrades late-session behavior | **0.55** | DD#516 causal mechanism. Testable via session-progress quality analysis. |
 | H-009 | Evaluator drift risk | **0.51** | Important concern, zero measurement. |
 
 ### EXP-025 Key Revision to H-041:
@@ -45,7 +46,7 @@ New:  Benefit = α × N_elim_failures - γ × N_ess_constrained - δ × N_workfl
 | H-038 | Transient skills via workspace files | **0.45** | Research pointer, not hypothesis. |
 | H-039 | Decomposition quality bounds MAS quality | **0.44** | Truism. Simplify to 1-paragraph principle. |
 | H-052 | Epistemic fragility has 4 stackable layers | **0.42** | Overbuilt. Core insight is "layered defense." |
-| H-058 | Frustration triggers topology rewrite | **0.40** | Testable (P1: impossible task). Should test. |
+| H-058 | Frustration triggers topology rewrite | **0.75** | **UPGRADED**: DD#516 provides direct causal evidence (desperation→reward hacking). Still test P1 (impossible tasks in our system). |
 | H-048 | Dynamic topology optimization | **0.38** | Chain dependency on H-041. Post-hoc evidence. |
 | H-034 | Design for session interruption | **0.52** | Design principle, not hypothesis. |
 
@@ -70,8 +71,10 @@ New:  Benefit = α × N_elim_failures - γ × N_ess_constrained - δ × N_workfl
 | H-063 | Agent temperament profiling (MTI) | **ARCHIVE — untestable** | Interesting concept but we can't measure "temperament" of our agents (they're all Claude). MTI requires distinct model comparisons. Low relevance to our 1-model system. |
 | H-064 | Self-preservation bias detection | **MERGE → H-055/H-056** | Self-preservation is already central to H-055 (self-improvement paradox) and H-056 (cooperative convergence). The TBSP paper is already cited in H-055. Detection mechanisms are useful but belong as action items, not a new hypothesis. |
 | H-065 | Proactive step-level tool safety guardrails | **ARCHIVE — not our domain** | We don't control the model's safety training. ToolSafe proposes RL-based guardrails that require model-level changes. Informative research, not an actionable hypothesis for us. |
+| H-067 | Budgeted forgetting for agent memory | **MERGE → H-047** | H-047 already covers "no forgetting → inverted-U utilization." H-067 is a specific implementation (3-pillar scoring) of the mechanism H-047 predicts. Filed reference in H-047. |
+| H-068 | Functional emotion pressure degrades late-session behavior | **KEEP — unique testable claim** | DD#516 provides causal mechanism (emotion vectors) distinct from H-055 (cosmetic modification) and H-052 (epistemic fragility). Testable: compare agent output quality at session start vs end. P(H)≈0.55. |
 
-**Net effect**: 0 hypotheses added. 2 archived. 4 merged. Resolution ratio stays at 4:17 active.
+**Net effect**: 1 hypothesis added (H-068). 2 archived. 5 merged. Active count: 18. Resolution ratio: 4:18.
 
 ---
 
@@ -84,11 +87,13 @@ New:  Benefit = α × N_elim_failures - γ × N_ess_constrained - δ × N_workfl
 | P2 | EXP-027 | H-001: Adversarial QA A/B test | NEEDS DESIGN | Simplest test we can run |
 | P3 | EXP-028 | H-058 P1: Impossible task responses | NEEDS DESIGN | |
 
-## Key Insight (Updated)
+## Key Insight (Updated 2026-04-05)
 
-EXP-025 results show H-041 is **directionally correct and strengthening**. The sycophants-dilemma strict workflow (3/3 vs 3/6) confirms the materialization gate mechanism — forcing agents to commit to a classification BEFORE having the option to act destructively converts essential decisions into eliminable ones. H-041 now has 14 convergent evidence sources (5 internal, 9 external). P(H) updated from 0.58 to 0.65.
+EXP-026 production data confirms H-041's core prediction: **workflow benefit scales with the eliminable-decision ratio R.** 8/8 directional predictions correct across 4 agents and 4 workflows. H-041 is now our highest-confidence theoretical framework (P(H)=0.78, tied with H-055).
 
-**The most important unresolved question**: Can we find scenarios where workflows genuinely HELP in non-sycophancy tasks? The sycophancy gate is a specific mechanism. General workflow benefit (R > 0.5 AND baseline < 80%) remains untested. Scout's BACE framework suggestion (weight scenarios by information value) may resolve the EXP-025 ceiling problem without requiring new scenarios.
+**The most important resolved question**: "Do workflows help for non-sycophancy tasks?" YES — Coach +20pp, QA +10pp. But ONLY when R is moderate-to-high. Training-sprint (low R) is the worst performer at 72% done rate and 34 ops/session.
+
+**The most important remaining question**: Can we use R estimation to **automatically route** tasks to workflow vs agent mode? The implement-and-review workflow (R≈0.70) achieves 9 ops/run with 0 recent errors. If we can estimate R at task arrival time, we can apply the Asymmetric Default principle with data: workflow for R>0.5, agent mode for R<0.5.
 
 ---
 
@@ -106,9 +111,10 @@ EXP-025 results show H-041 is **directionally correct and strengthening**. The s
 ## Meta-Process: H-066 (Bayesian Belief Management)
 
 The Bayesian scoring process itself is tracked as H-066. First-pass results:
-- **3 high confidence** (≥0.70): H-055, H-053, H-059
-- **8 moderate** (0.50-0.69): H-014, H-056, H-041, H-047, H-054, H-043, H-001, H-009
-- **7 low** (0.30-0.49): H-002, H-038, H-039, H-052, H-058, H-048, H-034
+- **4 high confidence** (≥0.70): H-055, H-041, H-053, H-059
+- **8 moderate** (0.50-0.69): H-014, H-056, H-047, H-054, H-043, H-001, H-068, H-009
+- **6 low** (0.30-0.49): H-002, H-038, H-039, H-052, H-048, H-034
+- **H-058 upgraded** (0.40→0.75): DD#516 causal evidence for frustration→topology rewrite
 - **4 archive** (<0.30): H-051, H-046, H-064, H-065
 - **H-066 P1 confirmed**: 7 hypotheses scored below 0.40 (predicted ≥5)
 

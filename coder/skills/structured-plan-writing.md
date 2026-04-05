@@ -91,7 +91,7 @@ For each step (or at least the critical ones), note:
 ```
 Plan:
 1. [ ] Read auth.ts
-   Risk: File might not exist at expected path → search with grep/find
+   Risk: File might not exist → ONE quick search (find/ls), then mark BLOCKED if not found
 2. [ ] Fix token expiry check
    Risk: Logic more complex than expected → read tests first to understand edge cases
 3. [ ] Run test suite
@@ -102,10 +102,18 @@ You don't need to mitigate every risk — just acknowledge the non-obvious
 ones. The act of thinking "what if this fails?" prevents surprise and
 enables faster pivots.
 
+**Critical rule for missing files**: If a file doesn't exist at the
+expected path, you get **at most 2 attempts** to find it (one read, one
+search). If it's still not found, **mark the step BLOCKED and move on
+to the next independent step**. Do NOT keep searching — hunting for
+files is the #1 cause of wasted operations.
+
 **Why**: Agents that don't anticipate risks spend 5-10 tool calls
 recovering from predictable failures. A 30-second risk assessment saves
-minutes of flailing. This is especially true for missing files (ENOENT),
-broken tests (unrelated failures), and permission issues.
+minutes of flailing. But the fallback must be bounded — "search until
+found" is worse than "try once, then pivot." This is especially true for
+missing files (ENOENT), broken tests (unrelated failures), and
+permission issues.
 
 ### Step 4: CHECKPOINT — Define progress verification points
 

@@ -15,6 +15,15 @@
 
 ---
 
+## Fresh Arrivals (April 5, 2026)
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-05 | **ClawSafety: Safe LLMs, Unsafe Agents** (arXiv:2604.01438) | 直接研究OpenClaw类Agent安全; 120对抗场景; 攻击成功率40-75%; 技能文件注入最危险 | [post](../shared/knowledge/library/posts/HB-0127-clawsafety-safe-llms-unsafe-agents.md) |
+| 2026-04-05 | **Skill Distillation MAS→Single** (arXiv:2604.01608) | Metric Freedom (F)预测技能效用; 相同轨迹在不同指标下+28%至-2%; 成本降低8× | [post](../shared/knowledge/library/posts/HB-0128-skill-distillation-mas-to-single.md) |
+| 2026-04-05 | **AgentSocialBench隐私风险** (arXiv:2604.01487) | OpenClaw类社交网络隐私; 抽象悖论(越教隐藏越提及); 跨域协调泄露压力 | [post](../shared/knowledge/library/posts/HB-0129-agentsocialbench-privacy-risks.md) |
+| 2026-04-05 | **GraphWalk图导航** (arXiv:2604.01610) | 工具化图导航解决企业级KG; 正交操作集; 规模越大收益越明显 | [post](../shared/knowledge/library/posts/HB-0130-graphwalk-tool-graph-navigation.md) |
+
 ## Fresh Arrivals (April 4, 2026)
 
 | Date | Title | Key Insight | Source |

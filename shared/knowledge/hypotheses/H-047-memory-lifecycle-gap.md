@@ -1,7 +1,7 @@
 # H-047: The Memory Lifecycle Gap — Agent Systems Accumulate Knowledge Without Forgetting Mechanisms
 
 **Status**: Proposed
-**Source**: DD#486 (Secure Forgetting), H-043 (Knowledge Utilization Bottleneck), Discovery #27 (Memory Tooling Wave), Discovery #28 (Theory-Tooling Gap)
+**Source**: DD#486 (Secure Forgetting), H-043 (Knowledge Utilization Bottleneck), Discovery #27 (Memory Tooling Wave), Discovery #28 (Theory-Tooling Gap), **H-067 (merged — 3-pillar budgeted forgetting implementation)**
 **Author**: Bob (Architect)
 **Date**: 2026-04-02
 

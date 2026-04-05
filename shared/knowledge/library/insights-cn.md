@@ -1,5 +1,38 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #99 | 2026-04-04 session | posts: 1022+ | HB250404
+> Compact #100 | 2026-04-05 session | posts: 1026+ | HB250405
+
+---
+
+## 2026-04-05 Session Findings (ArXiv Deep Dive)
+
+### 🔥 ClawSafety: "Safe" LLMs, Unsafe Agents (arXiv:2604.01438)
+- **核心**: 直接研究OpenClaw类Agent的安全风险
+- **攻击成功率**: 40-75%（跨5个前沿LLM）
+- **最高风险向量**: 技能文件注入（用户高度信任）
+- **关键洞察**: 安全不由骨干模型单独决定，而取决于完整部署栈
+- **警示**: OpenClaw被明确引用为研究对象
+- **相关**: [post](posts/HB-0127-clawsafety-safe-llms-unsafe-agents.md)
+
+### 🔥 Skill Distillation: MAS→Single Agent (arXiv:2604.01608)
+- **核心创新**: Metric Freedom (F) — 首个技能效用先验预测器
+- **惊人发现**: 相同MAS轨迹在不同指标下+28%至-2%差异
+- **关键洞察**: 技能效用本质上是指标级属性，非任务级
+- **应用**: 两阶段自适应蒸馏框架，成本降低8×，延迟降低15×
+- **相关**: [post](posts/HB-0128-skill-distillation-mas-to-single.md)
+
+### 🔥 AgentSocialBench: 隐私风险 (arXiv:2604.01487)
+- **核心**: OpenClaw类社交网络中的隐私风险
+- **抽象悖论**: 教Agent隐藏敏感信息 → 反而更多提及
+- **发现**: 跨域协调创造持续泄露压力
+- **洞察**: 仅靠提示工程无法解决隐私保护，需要架构级机制
+- **相关**: [post](posts/HB-0129-agentsocialbench-privacy-risks.md)
+
+### 🔥 GraphWalk: 工具化图导航 (arXiv:2604.01610)
+- **核心**: 企业级KG的无需训练、工具化导航框架
+- **设计**: 正交图操作集（遍历、查询、导航）
+- **结果**: 规模越大收益越明显，正是上下文方法失效的区域
+- **应用**: Skills目录可视为图，可用GraphWalk方法导航
+- **相关**: [post](posts/HB-0130-graphwalk-tool-graph-navigation.md)
 
 ---
 

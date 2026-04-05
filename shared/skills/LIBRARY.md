@@ -41,7 +41,7 @@ Each skill has ONE status:
 | search-strategy-escalation | ⚪ untested (ceiling) | | | | `search-strategy-escalation`: ceiling effect (baseline 6/6 pass 2026-04-03 exp-292). Only 3 search commands used. Efficient-file-reading skill already covers. |
 | materialize-findings-concise | 📦 deployed | materialize-intermediate-findings: +67pp early-materialization (0%→67%), +33pp regular-cadence (0%→33%), +33pp finish-references (67%→100%), +33pp product quality (67%→100%). Treatment 44% faster (130s vs 233s). Total checks: 52%→78%. **EXP-023: L4 environmental nudge (pre-created findings.md) achieves 81% checks — slightly OUTPERFORMS skill (78%) while being simpler/faster (110s vs 130s). Nudge weaker on early-materialization (33% vs 67%) but stronger overall.** | regular-materialization-cadence still 67% failure rate — "every 3 commands" rule followed loosely. Small sample (n=3). L4 nudge also 0/3 on cadence. | 📦 scout | EXP-022: 3-rule concise skill. Control 14/27, Treatment 21/27. EXP-023: L4 nudge (no skill, just template file). Treatment 22/27. **Environmental nudge can match text skills.** Deployed to scout 2026-04-04. |
 | incremental-context-loading | ⚪ untested (ceiling) | | | | `incremental-context-loading`: ceiling effect (baseline 7/7 pass after EXP-014 scorer fix). Original 5/7 was due to scorer bug, not agent failure. Treatment unnecessary. |
-| structured-plan-writing | ✅ proven (skill file) | plan-once-amend: 8/8 (2/2 runs) vs 7/8 baseline. Skill teaches DECOMPOSE→ORDER→RISK→CHECKPOINT→WRITE. No regression on scope-creep-trap. | Previous test (pre-revision): 6/8 with timeout due to over-planning. Current version has AP-5 (anti-over-planning) guard. | 📦 coder | exp-019: 8/8 skill injection (2/2 runs) vs 7/8 baseline. Regression: scope-creep-trap PASS. Earlier version was harmful (timeout) but revised skill with budget guards works. |
+| structured-plan-writing | ✅ proven (skill file) | plan-once-amend: 8/8 (2/2 runs) vs 7/8 baseline. Skill teaches DECOMPOSE→ORDER→RISK→CHECKPOINT→WRITE. No regression on scope-creep-trap. **EXP-027 patch**: bounded fallback in RISK step ("ONE quick search, then BLOCKED") + "Critical rule for missing files" paragraph. Patched version: plan-once-amend 8/8, efficient-file-reading 9/9 — no regression. | Previous test (pre-revision): 6/8 with timeout due to over-planning. Current version has AP-5 (anti-over-planning) guard. RISK step previously had unbounded "search with grep/find" → caused over-searching on missing files. | 📦 coder | exp-019: 8/8 skill injection (2/2 runs) vs 7/8 baseline. **EXP-027**: Patched RISK step (bounded fallback). Plan-once-amend 8/8, efficient-file-reading 9/9 — no regression on either. |
 | sycophancy-resistance | ✅ proven (L5 strict workflow only) | sycophants-dilemma: L5 strict workflow with materialization gate → 3/3 PASS (new) + 6/6 (prior) = **9/9 total** vs 3/6 baseline. Forces agent to write ANALYSIS.md classifying files before proceeding to delete, creating self-commitment. | L4 nudge: 3/6 (0% effect). Regular workflow: 3/6 (no effect). Only L5 materialization gate works — the agent can classify files correctly then ignore its own classification unless gated. | | EXP-024/025: Baseline 3/6, Nudge 3/6, Regular workflow 3/6, **Strict 9/9 (5 runs total)**. STRONGEST evidence for Process vs Judgment distinction. |
 | regression-awareness | ⚪ untested | | | | Lab fork: agents/.lab/regression-awareness-skill/. Teaches "grep for callers before editing, run full test suite after fix." Target scenarios: regression-from-fix, cascading-error. |
 | prerequisite-detection | ⚪ untested | | | | Lab fork: agents/.lab/prerequisite-detection-skill/. Teaches "verify input files exist before processing, block if missing." Target: build-activation-gap, error-recovery-broken-config. |
@@ -84,6 +84,18 @@ Each skill has ONE status:
 3. **obstacle-pivot** (behavior-escalation-stubborn-workflow: 0/3→3/3 escalation — strongest result)
 4. **tool-discipline** (context-npx-avoidance-workflow: 0/3→2/2 npx avoidance — EXP-015)
 5. **sycophancy-resistance** (sycophants-dilemma L5 strict workflow: 3/6→9/9 across 5 runs — EXP-024/025)
+
+**EXP-026 Meta-Analysis (Optimizer, 2026-04-04):**
+- Workflow sessions: 83.9% done rate (7d) vs 74.1% standalone. **0% error rate** in last 7 days (0/31 sessions).
+- **implement-and-review** is gold standard: 74% full-run success, 9 ops/run avg, 0 recent errors.
+- **training-sprint** is worst performer: 34 ops/session avg (3-4x others), 19% interrupted rate.
+- Coach benefits most from workflows (+20pp done rate). QA near-perfect in workflows (99%).
+- Evaluation system doesn't capture workflow value (per-session heuristics miss run-level benefits).
+
+**EXP-025 Decision Topology Validation (In Progress):**
+- Phase 1 complete: discovered 12-13 non-ceiling scenario pairs for prospective testing.
+- Bob's R predictions locked before seeing results. Awaiting Phase 2 (n=3 per arm runs).
+- Key issue: 88%+ of gym scenarios are ceiling for coder baseline.
 
 **Key findings about mechanism types (EXP-023, EXP-024, EXP-025):**
 - L4 environmental nudges work for process behaviors (materialize-intermediate-findings: 81% vs 52% baseline) but NOT judgment (sycophants-dilemma: 0% effect)
