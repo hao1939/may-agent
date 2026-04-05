@@ -6,6 +6,7 @@
  * for TSC to validate our code without the real package.
  *
  * WARNING: Keep in sync with the real package when updating pi-mono.
+ * Updated for pi-agent-core 0.65.0.
  */
 declare module "@mariozechner/pi-agent-core" {
   import type { TSchema, Model } from "@mariozechner/pi-ai";
@@ -21,11 +22,17 @@ declare module "@mariozechner/pi-agent-core" {
 
   // ── Agent events ─────────────────────────────────────────────────────
 
-  export interface AgentEvent {
-    type: string;
-    message: AgentMessage;
-    [key: string]: any;
-  }
+  export type AgentEvent =
+    | { type: "agent_start" }
+    | { type: "agent_end"; messages: AgentMessage[] }
+    | { type: "turn_start" }
+    | { type: "turn_end"; message: AgentMessage; toolResults: AgentMessage[] }
+    | { type: "message_start"; message: AgentMessage }
+    | { type: "message_update"; message: AgentMessage; assistantMessageEvent: any }
+    | { type: "message_end"; message: AgentMessage }
+    | { type: "tool_execution_start"; toolCallId: string; toolName: string; args: any }
+    | { type: "tool_execution_update"; toolCallId: string; toolName: string; args: any; partialResult: any }
+    | { type: "tool_execution_end"; toolCallId: string; toolName: string; result: any; isError: boolean };
 
   // ── Agent tool types ─────────────────────────────────────────────────
 
@@ -45,6 +52,7 @@ declare module "@mariozechner/pi-agent-core" {
     label?: string;
     description: string;
     parameters: TSchema;
+    prepareArguments?: (args: unknown) => any;
     execute(
       toolCallId: string,
       params: unknown,
@@ -60,34 +68,50 @@ declare module "@mariozechner/pi-agent-core" {
     systemPrompt: string;
     model: Model<any>;
     tools: AgentTool[];
+    /** Conversation transcript. Assigning replaces messages (copies the array). */
     messages: AgentMessage[];
-    error?: string;
+    /** Error message from the most recent failed or aborted turn, if any. Readonly. */
+    readonly errorMessage?: string;
+    /** Whether the agent is currently streaming a response. */
+    readonly isStreaming: boolean;
+    /** The message currently being streamed, if any. */
+    readonly streamingMessage?: AgentMessage;
+    /** Set of tool call IDs currently being executed. */
+    readonly pendingToolCalls: ReadonlySet<string>;
     [key: string]: any;
   }
 
   export interface AgentOptions {
-    initialState: {
+    initialState?: {
       systemPrompt: string;
       model: Model<any>;
       tools: AgentTool[];
       [key: string]: any;
     };
     transformContext?: (messages: AgentMessage[], signal?: AbortSignal) => Promise<AgentMessage[]>;
-    getApiKey?: () => string | undefined;
+    getApiKey?: (provider: string) => Promise<string | undefined> | string | undefined;
     beforeToolCall?: any;
+    afterToolCall?: any;
     [key: string]: any;
   }
 
   export class Agent {
-    constructor(options: AgentOptions);
+    constructor(options?: AgentOptions);
     state: AgentState;
-    prompt(text: string | AgentMessage): Promise<void>;
+    prompt(message: AgentMessage | AgentMessage[]): Promise<void>;
+    prompt(input: string, images?: any[]): Promise<void>;
     continue(): Promise<void>;
     abort(): void;
-    subscribe(fn: (event: AgentEvent) => void): () => void;
-    replaceMessages(messages: AgentMessage[]): void;
-    appendMessage(message: AgentMessage): void;
-    steer(message: string | AgentMessage): boolean;
-    followUp(text: string | AgentMessage): Promise<void>;
+    /** Subscribe to lifecycle events. Listener receives event and the run's abort signal. */
+    subscribe(listener: (event: AgentEvent, signal: AbortSignal) => Promise<void> | void): () => void;
+    steer(message: AgentMessage): void;
+    followUp(message: AgentMessage): void;
+    waitForIdle(): Promise<void>;
+    reset(): void;
+    clearSteeringQueue(): void;
+    clearFollowUpQueue(): void;
+    clearAllQueues(): void;
+    hasQueuedMessages(): boolean;
+    get signal(): AbortSignal | undefined;
   }
 }

@@ -296,7 +296,7 @@ export class SubagentManager {
   private subscribeForPersistence(session: ActiveSession): void {
     const persistDir = this.registry.persistDir;
     const { sessionId } = session;
-    session.unsubscribe = session.agent.subscribe((event: AgentEvent) => {
+    session.unsubscribe = session.agent.subscribe(async (event: AgentEvent, _signal: AbortSignal) => {
       if (event.type === "message_end") {
         appendSessionMessage(persistDir, sessionId, event.message);
 
@@ -1221,7 +1221,7 @@ export class SubagentManager {
       const toolCalls = (lastMsg.content as Array<{ type: string }>).filter((b) => b?.type === "toolCall");
       if (toolCalls.length > 0) {
         // Inject error tool results for each pending tool call.
-        // Use appendMessage (not followUp) so they appear in the message
+        // Use messages.push (not followUp) so they appear in the message
         // history immediately — followUp only queues for the *next* turn
         // boundary and would be lost if the LLM call fails immediately.
         for (const tc of toolCalls) {
@@ -1233,7 +1233,7 @@ export class SubagentManager {
             isError: true,
             timestamp: Date.now(),
           } as AgentMessage;
-          agent.appendMessage(errorResult);
+          agent.state.messages.push(errorResult);
         }
         // After appending tool results, the last role is now "toolResult",
         // so the resume path below will use agent.continue() correctly.
@@ -1241,7 +1241,7 @@ export class SubagentManager {
       } else if ((lastMsg as any).stopReason === "toolUse") {
         // Malformed response: stopReason says "toolUse" but no tool call content
         savedMessages.pop();
-        agent.replaceMessages(savedMessages);
+        agent.state.messages = savedMessages;
         lastRole = savedMessages.length > 0 ? savedMessages[savedMessages.length - 1].role : undefined;
       }
     }
@@ -1893,7 +1893,7 @@ export class SubagentManager {
   /** Subscribe to agent events for a running session. Returns unsubscribe function.
    *  Throws if session not found or not running.
    */
-  subscribe(sessionId: string, fn: (e: AgentEvent) => void): () => void {
+  subscribe(sessionId: string, fn: (e: AgentEvent, signal: AbortSignal) => Promise<void> | void): () => void {
     const session = this.activeSessions.get(sessionId);
     if (!session) {
       throw new Error(`Session "${sessionId}" not found or not running`);
