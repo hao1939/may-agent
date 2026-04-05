@@ -1,8 +1,8 @@
 /**
  * Binary entry point — compilation target for `bun build --compile`.
  *
- * This is the switchboard that routes between launcher (supervisor) and
- * may.ts (worker) modes when running as a compiled binary.
+ * Runs may.ts directly. Process supervision is handled by supervisord
+ * (container) or the OS process manager. No internal launcher layer.
  *
  * Compiled binary argv is [binaryPath, arg1, ...] (offset 1).
  * Node/bun dev argv is [runtime, script, arg1, ...] (offset 2).
@@ -20,13 +20,8 @@ async function main() {
   // Normalize argv: pad so process.argv.slice(2) works correctly
   process.argv = [process.argv[0], "binary-entry.ts", ...process.argv.slice(1)];
 
-  if (process.env.MAY_ROLE === "child" || process.argv.includes("--oneshot")) {
-    // Worker mode or oneshot: run may.ts logic directly
-    await import("./may.js");
-  } else {
-    // Supervisor mode: run launcher
-    await import("./launcher.js");
-  }
+  // Run may.ts directly — no launcher layer
+  await import("./may.js");
 }
 
 main().catch((err) => {
