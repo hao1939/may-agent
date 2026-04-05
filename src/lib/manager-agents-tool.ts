@@ -66,10 +66,12 @@ export interface CreateAgentsToolOptions {
   getCallerAgentName?: () => string | undefined;
   /** Agent names that cannot be called directly. Returns error with hint. */
   callDeny?: { agents: string[]; hint: string };
-  /** Root directory of agent definitions (for send action). */
+  /** Root directory of agent definitions (for message action). */
   agentsRoot?: string;
-  /** Trigger an agent's heartbeat cron (for send action). */
+  /** Trigger an agent's heartbeat cron (for message action). */
   triggerHeartbeat?: (agentName: string) => boolean;
+  /** EventBus for emitting message events. When set, message action emits on bus instead of writing to DB directly. */
+  bus?: { emit(event: Record<string, unknown>): void };
 }
 
 // ── Detached cancel helpers ────────────────────────────────────────────
@@ -209,6 +211,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
   const callDeny = opts?.callDeny;
   const agentsRoot = opts?.agentsRoot;
   const triggerHeartbeat = opts?.triggerHeartbeat;
+  const bus = opts?.bus;
 
   return {
     name: "agents",
@@ -484,11 +487,20 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
                 expectations: params.success_criteria ? JSON.stringify(params.success_criteria) : undefined,
               });
             } catch {
-              // Non-fatal: tracking failure shouldn't block send
+              // Non-fatal: tracking failure shouldn't block message
             }
 
             // Trigger target agent's heartbeat
             const triggered = triggerHeartbeat?.(params.agent) ?? false;
+
+            // Emit message_created for observability (bus subscribers can react)
+            bus?.emit({
+              type: "message_created",
+              from: caller,
+              to: params.agent,
+              task: structuredMessage,
+              requestId: requestId ?? "",
+            });
 
             return textResult(
               JSON.stringify({

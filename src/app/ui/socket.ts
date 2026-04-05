@@ -31,6 +31,7 @@ const VALID_COMMAND_TYPES = new Set([
   "status",
   "input",
   "fork",
+  "message",
   "reload_agents",
   "restart",
   "resume",
