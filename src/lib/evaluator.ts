@@ -790,8 +790,56 @@ export async function writeHeuristicEvaluations(persistDir: string): Promise<num
   return written;
 }
 
+// ── Finish() parameter extraction from messages ───────────────────────
+
+/**
+ * Extract the finish() tool call parameters from a session's messages.
+ * Searches for the last tool_call named "finish" in assistant messages
+ * and parses its JSON arguments.
+ *
+ * Returns null if no finish call is found or if parsing fails.
+ */
+export function extractFinishCallParams(
+  messages: AgentMessage[],
+): { status?: string; summary?: string; deliverables?: unknown[]; verification_evidence?: unknown[]; blockers?: unknown[] } | null {
+  // Walk messages in reverse to find the last finish tool call
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const msg = messages[i] as any;
+    if (msg.role !== "assistant") continue;
+    const content = msg.content;
+    if (!Array.isArray(content)) continue;
+
+    // Search content blocks in reverse (last finish call wins)
+    for (let j = content.length - 1; j >= 0; j--) {
+      const block = content[j];
+      if (block?.type !== "toolCall" || block?.name !== "finish") continue;
+
+      // Arguments may be an object (already parsed) or a string (needs parsing)
+      let args = block.arguments ?? block.input;
+      if (typeof args === "string") {
+        try { args = JSON.parse(args); } catch { continue; }
+      }
+      if (args && typeof args === "object") {
+        return args as {
+          status?: string;
+          summary?: string;
+          deliverables?: unknown[];
+          verification_evidence?: unknown[];
+          blockers?: unknown[];
+        };
+      }
+    }
+  }
+  return null;
+}
+
 /**
  * Deterministic scoring based on session metadata and transcript patterns.
+ *
+ * H-009 improvement: extracts finish() parameters from messages to differentiate
+ * quality based on declared outcome (success vs partial vs failure vs blocked),
+ * verification evidence, and deliverables. Previously, any session with finish()
+ * and 3+ tool calls auto-scored "good" regardless of outcome.
  */
 export function computeHeuristicScores(
   session: PersistedSession,
@@ -819,6 +867,9 @@ export function computeHeuristicScores(
   // Count assistant turns
   const assistantTurns = (transcript.match(/"role":"assistant"/g) || []).length;
 
+  // Extract finish() parameters from messages (H-009 enhancement)
+  const finishParams = messages ? extractFinishCallParams(messages) : null;
+
   // 1. Session status — differentiate error types.
   // "interrupted" is normal (system timeout) and should not reduce quality.
   // Turn-limit hits mean the agent was working but ran out of budget — not a quality failure.
@@ -842,9 +893,6 @@ export function computeHeuristicScores(
   }
 
   // 2. OpBudget exhaustion — REMOVED (opBudget system removed 2026-03-30).
-  // The old check matched "opBudget" or "operation budget" in transcripts,
-  // but since the budget system no longer exists, any matches are stale
-  // references (e.g., in agent context files or old error messages).
 
   // 3. Very shallow sessions (< 2 assistant turns with few tool calls)
   if (assistantTurns <= 1 && totalToolCalls === 0) {
@@ -852,10 +900,46 @@ export function computeHeuristicScores(
     issues.push("shallow_session");
   }
 
-  // 4. finish() tool usage
+  // 4. finish() tool usage — now differentiated by finish status (H-009)
+  //
+  // Old behavior: any finish() call → quality +1 (rubber stamp)
+  // New behavior: score based on what the agent actually reported:
+  //   - finish(success) with verification_evidence → quality +2 (real evidence of completion)
+  //   - finish(success) without evidence → quality +1 (claimed success, no proof)
+  //   - finish(partial) → quality +0 (acknowledged incomplete — neutral, not a bonus)
+  //   - finish(failure/blocked) → quality -1 (task failed)
+  //   - no finish() → no bonus (same as before)
   const hasFinishCall = transcript.includes('"finish"') || transcript.includes('"name":"finish"');
-  if (hasFinishCall) {
-    quality += 1; // Good completion practice
+
+  if (finishParams) {
+    const finishStatus = finishParams.status;
+    const hasEvidence = Array.isArray(finishParams.verification_evidence) && finishParams.verification_evidence.length > 0;
+    const hasDeliverables = Array.isArray(finishParams.deliverables) && finishParams.deliverables.length > 0;
+
+    if (finishStatus === "success") {
+      if (hasEvidence) {
+        // Verified success: best possible outcome
+        quality += 2;
+        issues.push("finish_success_verified");
+      } else {
+        // Claimed success without verification evidence
+        quality += 1;
+        issues.push("finish_success_unverified");
+      }
+      if (hasDeliverables) {
+        issues.push("has_deliverables");
+      }
+    } else if (finishStatus === "partial") {
+      // Partial completion — honest about incomplete work, no bonus
+      issues.push("finish_partial");
+    } else if (finishStatus === "failure" || finishStatus === "blocked") {
+      // Task failed or blocked — quality penalty
+      quality -= 1;
+      issues.push(`finish_${finishStatus}`);
+    }
+  } else if (hasFinishCall) {
+    // finish() was called but we couldn't parse params (legacy/fallback)
+    quality += 1;
   } else if (session.status === "done" && assistantTurns > 2) {
     issues.push("no_finish_call");
   }

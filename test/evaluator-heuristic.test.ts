@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { computeHeuristicScores } from "../src/lib/evaluator.js";
+import { computeHeuristicScores, extractFinishCallParams } from "../src/lib/evaluator.js";
 import type { PersistedSession } from "../src/lib/persistence.js";
 
 // Minimal session for testing
@@ -337,3 +337,283 @@ describe("computeHeuristicScores - error type differentiation", () => {
     expect(scores.issues).not.toContain("session_error");
   });
 });
+
+// Helper to create an assistant message containing a finish() tool call
+function finishMsg(params: Record<string, unknown>): any {
+  return {
+    role: "assistant",
+    content: [
+      { type: "toolCall", name: "finish", id: "tc_finish_1", arguments: params },
+    ],
+  };
+}
+
+// Helper to create a finish tool result
+function finishResult(): any {
+  return {
+    role: "toolResult",
+    toolCallId: "tc_finish_1",
+    toolName: "finish",
+    content: [{ type: "text", text: '{"status":"success"}' }],
+  };
+}
+
+describe("extractFinishCallParams", () => {
+  it("extracts finish params from a simple finish() call", () => {
+    const messages = [
+      assistantMsg(2),
+      toolResult("ok"),
+      toolResult("ok"),
+      finishMsg({ status: "success", summary: "All done" }),
+      finishResult(),
+    ];
+    const params = extractFinishCallParams(messages);
+    expect(params).not.toBeNull();
+    expect(params!.status).toBe("success");
+    expect(params!.summary).toBe("All done");
+  });
+
+  it("returns the LAST finish call when multiple exist", () => {
+    const messages = [
+      finishMsg({ status: "failure", summary: "First attempt failed" }),
+      finishResult(),
+      assistantMsg(1),
+      toolResult("fixed something"),
+      finishMsg({ status: "success", summary: "Second attempt succeeded" }),
+      finishResult(),
+    ];
+    const params = extractFinishCallParams(messages);
+    expect(params).not.toBeNull();
+    expect(params!.status).toBe("success");
+    expect(params!.summary).toBe("Second attempt succeeded");
+  });
+
+  it("returns null when no finish call exists", () => {
+    const messages = [
+      assistantMsg(3),
+      toolResult("ok"),
+      toolResult("ok"),
+      toolResult("ok"),
+    ];
+    const params = extractFinishCallParams(messages);
+    expect(params).toBeNull();
+  });
+
+  it("extracts verification_evidence and deliverables arrays", () => {
+    const messages = [
+      finishMsg({
+        status: "success",
+        summary: "Tests pass",
+        verification_evidence: ["Step 5: bash test exit code 0"],
+        deliverables: [{ path: "src/app.ts", description: "Added feature" }],
+      }),
+      finishResult(),
+    ];
+    const params = extractFinishCallParams(messages);
+    expect(params).not.toBeNull();
+    expect(params!.verification_evidence).toHaveLength(1);
+    expect(params!.deliverables).toHaveLength(1);
+  });
+
+  it("extracts blockers from failure/blocked status", () => {
+    const messages = [
+      finishMsg({
+        status: "blocked",
+        summary: "Need API key",
+        blockers: [{ reason: "Missing API key", context: "Tried env vars" }],
+      }),
+      finishResult(),
+    ];
+    const params = extractFinishCallParams(messages);
+    expect(params).not.toBeNull();
+    expect(params!.status).toBe("blocked");
+    expect(params!.blockers).toHaveLength(1);
+  });
+
+  it("handles string arguments (JSON string) in finish call", () => {
+    const messages = [
+      {
+        role: "assistant",
+        content: [
+          {
+            type: "toolCall",
+            name: "finish",
+            id: "tc_finish_str",
+            arguments: JSON.stringify({ status: "partial", summary: "Halfway done" }),
+          },
+        ],
+      },
+    ];
+    const params = extractFinishCallParams(messages);
+    expect(params).not.toBeNull();
+    expect(params!.status).toBe("partial");
+  });
+});
+
+describe("computeHeuristicScores - finish status differentiation (H-009)", () => {
+  it("finish(success) with verification_evidence → quality +2", () => {
+    const messages = [
+      assistantMsg(3),
+      toolResult("ok"),
+      toolResult("ok"),
+      toolResult("ok"),
+      finishMsg({
+        status: "success",
+        summary: "All tests pass",
+        verification_evidence: ["Step 5: vitest exit code 0"],
+        deliverables: [{ path: "src/foo.ts", description: "New feature" }],
+      }),
+      finishResult(),
+    ];
+    const transcript = toTranscript(messages);
+    const scores = computeHeuristicScores(makeSession(), transcript, messages);
+    // Base 3 + 2 (finish_success_verified) + 1 (done+3tools) = 6 → clamped to 5
+    expect(scores.quality).toBe(5);
+    expect(scores.issues).toContain("finish_success_verified");
+    expect(scores.issues).toContain("has_deliverables");
+    expect(scores.verdict).toBe("good");
+  });
+
+  it("finish(success) without evidence → quality +1", () => {
+    const messages = [
+      assistantMsg(3),
+      toolResult("ok"),
+      toolResult("ok"),
+      toolResult("ok"),
+      finishMsg({
+        status: "success",
+        summary: "Done",
+      }),
+      finishResult(),
+    ];
+    const transcript = toTranscript(messages);
+    const scores = computeHeuristicScores(makeSession(), transcript, messages);
+    // Base 3 + 1 (finish_success_unverified) + 1 (done+3tools) = 5
+    expect(scores.quality).toBe(5);
+    expect(scores.issues).toContain("finish_success_unverified");
+    expect(scores.issues).not.toContain("finish_success_verified");
+  });
+
+  it("finish(partial) → no quality bonus", () => {
+    const messages = [
+      assistantMsg(3),
+      toolResult("ok"),
+      toolResult("ok"),
+      toolResult("ok"),
+      finishMsg({
+        status: "partial",
+        summary: "Half done",
+        next_steps: "Continue tomorrow",
+      }),
+      finishResult(),
+    ];
+    const transcript = toTranscript(messages);
+    const scores = computeHeuristicScores(makeSession(), transcript, messages);
+    // Base 3 + 0 (partial = no bonus) + 1 (done+3tools) = 4
+    expect(scores.quality).toBe(4);
+    expect(scores.issues).toContain("finish_partial");
+  });
+
+  it("finish(failure) → quality -1 penalty", () => {
+    const messages = [
+      assistantMsg(3),
+      toolResult("ok"),
+      toolResult("ok"),
+      toolResult("ok"),
+      finishMsg({
+        status: "failure",
+        summary: "Could not complete",
+        blockers: [{ reason: "Dependency broken", context: "npm install fails" }],
+      }),
+      finishResult(),
+    ];
+    const transcript = toTranscript(messages);
+    const scores = computeHeuristicScores(makeSession(), transcript, messages);
+    // Base 3 - 1 (finish_failure) + 1 (done+3tools) = 3
+    expect(scores.quality).toBe(3);
+    expect(scores.issues).toContain("finish_failure");
+  });
+
+  it("finish(blocked) → quality -1 penalty", () => {
+    const messages = [
+      assistantMsg(3),
+      toolResult("ok"),
+      toolResult("ok"),
+      toolResult("ok"),
+      finishMsg({
+        status: "blocked",
+        summary: "Waiting for API key",
+        blockers: [{ reason: "Missing key", context: "Checked all envs" }],
+      }),
+      finishResult(),
+    ];
+    const transcript = toTranscript(messages);
+    const scores = computeHeuristicScores(makeSession(), transcript, messages);
+    // Base 3 - 1 (finish_blocked) + 1 (done+3tools) = 3
+    expect(scores.quality).toBe(3);
+    expect(scores.issues).toContain("finish_blocked");
+  });
+
+  it("finish(success) verified vs unverified yields different quality scores for shallow sessions", () => {
+    // With only 1 read tool call + finish (2 total < 3), the done+3tools bonus doesn't apply
+    const verifiedMessages = [
+      assistantMsg(1),
+      toolResult("ok"),
+      finishMsg({
+        status: "success",
+        summary: "Done",
+        verification_evidence: ["Step 3: test passed"],
+      }),
+      finishResult(),
+    ];
+    const unverifiedMessages = [
+      assistantMsg(1),
+      toolResult("ok"),
+      finishMsg({
+        status: "success",
+        summary: "Done",
+      }),
+      finishResult(),
+    ];
+
+    const verifiedScores = computeHeuristicScores(
+      makeSession(),
+      toTranscript(verifiedMessages),
+      verifiedMessages,
+    );
+    const unverifiedScores = computeHeuristicScores(
+      makeSession(),
+      toTranscript(unverifiedMessages),
+      unverifiedMessages,
+    );
+
+    // Verified gets +2, unverified gets +1
+    expect(verifiedScores.quality).toBeGreaterThan(unverifiedScores.quality);
+    expect(verifiedScores.issues).toContain("finish_success_verified");
+    expect(unverifiedScores.issues).toContain("finish_success_unverified");
+  });
+
+  it("no finish call + no parsed params → legacy behavior (no bonus from finish params branch)", () => {
+    // Use 3 assistant turns so the no_finish_call issue is triggered (requires assistantTurns > 2)
+    const messages = [
+      assistantMsg(2),
+      toolResult("ok"),
+      toolResult("ok"),
+      assistantMsg(1),
+      toolResult("ok"),
+      assistantMsg(1),
+      toolResult("ok"),
+    ];
+    const transcript = toTranscript(messages);
+    const scores = computeHeuristicScores(makeSession(), transcript, messages);
+    // Base 3 + 1 (done+3tools) = 4, no finish bonus
+    expect(scores.quality).toBe(4);
+    expect(scores.issues).toContain("no_finish_call");
+    expect(scores.issues).not.toContain("finish_success_verified");
+    expect(scores.issues).not.toContain("finish_success_unverified");
+    expect(scores.issues).not.toContain("finish_partial");
+    expect(scores.issues).not.toContain("finish_failure");
+    expect(scores.issues).not.toContain("finish_blocked");
+  });
+});
+
