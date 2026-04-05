@@ -794,7 +794,7 @@ export class SubagentManager {
             fromEntity: session.agentName,
             toAgent: parentName,
             task: escalationTask,
-            method: "send",
+            method: "message",
             sessionId: session.sessionId,
           });
         } catch {
@@ -1814,6 +1814,7 @@ export class SubagentManager {
       turnCount: session.turnCount, finishParams,
       filesModified: [...session.filesModified],
       workspacePath: this.getWorkspacePath(session.agentName),
+      requestId: session.requestId,
     };
     this.emit({
       type: "session_end",
@@ -1830,6 +1831,7 @@ export class SubagentManager {
       filesModified: closeInfo.filesModified,
       workspacePath: closeInfo.workspacePath,
       parentSessionId: session.parentSessionId,
+      requestId: closeInfo.requestId,
     });
     this.onSessionComplete?.(closeInfo as SessionInfo);
   }

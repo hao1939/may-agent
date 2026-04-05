@@ -385,76 +385,6 @@ export class Cron {
     }
   }
 
-  /**
-   * Pre-flight check: does an agent have pending work that justifies spawning
-   * a heartbeat session? Returns true if there are pending send() requests
-   * addressed to this agent.
-   *
-   * When false and skipIfIdle is enabled, the heartbeat is skipped to avoid
-   * near-empty sessions that burn context injection overhead for nothing.
-   */
-  private hasPendingWork(agentName: string): boolean {
-    try {
-      const db = getDb(this.persistDir);
-      const row = db
-        .prepare(
-          `SELECT 1 FROM requests
-           WHERE toAgent = ? AND status IN ('CREATED', 'IN_PROGRESS') AND method = 'send'
-           LIMIT 1`,
-        )
-        .get(agentName);
-      return row !== null;
-    } catch {
-      // DB unavailable → assume there's work (safe default)
-      return true;
-    }
-  }
-
-  /**
-   * Decide whether to skip a heartbeat for an idle agent.
-   * Every Nth heartbeat fires regardless (initiative cadence) so agents
-   * can still do initiative work like reviewing briefs or running health checks.
-   *
-   * Returns true if the heartbeat should be skipped.
-   */
-  private shouldSkipIdleHeartbeat(entry: CronEntry): boolean {
-    if (entry.skipIfIdle === false) return false; // explicitly disabled
-    const agentName = entry.agent || "may";
-    if (this.hasPendingWork(agentName)) return false; // has work → don't skip
-
-    // Allow every Nth heartbeat through for initiative work.
-    // Default: every 3rd fires (initiative cadence).
-    const initiativeCadence = entry.initiativeCadence ?? 3;
-    try {
-      const db = getDb(this.persistDir);
-      // Count recent completed heartbeats for this entry
-      const cutoff = Date.now() - entry.intervalMs * initiativeCadence * 2;
-      const row = db
-        .prepare(
-          `SELECT COUNT(*) as cnt FROM requests
-           WHERE artifact = ? AND status = 'COMPLETED' AND createdAt > ?`,
-        )
-        .get(entry.name, cutoff) as { cnt: number } | null;
-      const recentCount = row?.cnt ?? 0;
-      // Fire if we haven't had a successful heartbeat recently enough
-      if (recentCount < 1) return false; // no recent heartbeats → fire one
-      // Check if the last N heartbeats were all idle-skipped
-      const skippedRow = db
-        .prepare(
-          `SELECT COUNT(*) as cnt FROM requests
-           WHERE artifact = ? AND status = 'COMPLETED'
-             AND context LIKE '%"idle_skip":true%'
-             AND createdAt > ?`,
-        )
-        .get(entry.name, Date.now() - entry.intervalMs * initiativeCadence) as { cnt: number } | null;
-      const consecutiveSkips = skippedRow?.cnt ?? 0;
-      if (consecutiveSkips >= initiativeCadence - 1) return false; // time for initiative run
-      return true; // safe to skip
-    } catch {
-      return false; // DB error → don't skip (safe default)
-    }
-  }
-
   // ── Circuit breaker helpers ─────────────────────────────────────────
 
   /**
@@ -528,29 +458,6 @@ export class Cron {
         const agentName = entry.agent || "may";
         if (this.isAgentHeartbeatRunning(agentName)) {
           this.onError?.(`Cron "${entry.name}" skipped — ${agentName} heartbeat still running`);
-          return;
-        }
-        // Pre-flight: skip idle heartbeats to reduce session waste
-        if (this.shouldSkipIdleHeartbeat(entry)) {
-          // Track the skip so initiative cadence can count it
-          try {
-            const skipReqId = trackRequest(this.persistDir, {
-              fromEntity: "cron",
-              toAgent: agentName,
-              task: `Heartbeat skipped — no pending work for ${agentName}`,
-              method: "call",
-              artifact: entry.name,
-              context: JSON.stringify({ type: "heartbeat", idle_skip: true }),
-            });
-            updateRequest(this.persistDir, skipReqId, {
-              status: "COMPLETED",
-              completedAt: Date.now(),
-              durationMs: 0,
-              summary: `Idle skip — no pending send() requests for ${agentName}`,
-            });
-          } catch {
-            /* best-effort tracking */
-          }
           return;
         }
         // Circuit breaker: skip if agent has too many consecutive errors
@@ -703,7 +610,7 @@ export class Cron {
           const pending = db
             .prepare(
               `SELECT task, fromEntity, createdAt, requestId FROM requests
-               WHERE toAgent = ? AND status IN ('CREATED', 'IN_PROGRESS') AND method = 'send'
+               WHERE toAgent = ? AND status IN ('CREATED', 'IN_PROGRESS') AND method IN ('message', 'send', 'fork', 'run')
                ORDER BY createdAt ASC`,
             )
             .all(agentName) as { task: string; fromEntity: string; createdAt: number; requestId: string }[];

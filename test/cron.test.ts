@@ -593,81 +593,12 @@ describe("Cron", () => {
     c.stop();
   });
 
-  // ── Idle heartbeat skipping (pre-flight) ────────────────────────────
+  // ── Heartbeat always fires ───────────────────────────────────────────
 
-  it("heartbeat: skips when no pending send() requests (idle skip)", async () => {
+  it("heartbeat: fires every interval regardless of pending work", async () => {
     writeFileSync(
       configPath,
-      JSON.stringify([{ name: "hb-idle", type: "heartbeat", intervalMs: 10000, agent: "bob", message: "hb" }]),
-    );
-    const mgr = makeMockManager();
-    const c = new Cron(configPath, mgr as any, () => "sid-1");
-    c.start();
-
-    // First heartbeat: no prior history, so it should fire (no recent completed heartbeats → initiative fires)
-    await vi.advanceTimersByTimeAsync(10000);
-    await flush();
-
-    const runCalls1 = mgr.calls.filter((c) => c.method === "run");
-    expect(runCalls1).toHaveLength(1);
-
-    // Second heartbeat: no pending send() requests, recent completed heartbeat exists → should skip
-    await vi.advanceTimersByTimeAsync(10000);
-    await flush();
-
-    const runCalls2 = mgr.calls.filter((c) => c.method === "run");
-    // Should still be 1 (second was skipped)
-    expect(runCalls2).toHaveLength(1);
-
-    // The skip should be tracked in requests
-    const skipTracked = mockTrackRequest.mock.calls.find((call) => call[1].task?.includes("skipped"));
-    expect(skipTracked).toBeDefined();
-
-    c.stop();
-  });
-
-  it("heartbeat: fires when pending send() requests exist despite idle", async () => {
-    writeFileSync(
-      configPath,
-      JSON.stringify([{ name: "hb-busy", type: "heartbeat", intervalMs: 10000, agent: "bob", message: "hb" }]),
-    );
-    const mgr = makeMockManager();
-    const c = new Cron(configPath, mgr as any, () => "sid-1");
-    c.start();
-
-    // First heartbeat fires (initiative)
-    await vi.advanceTimersByTimeAsync(10000);
-    await flush();
-
-    // Add a pending send() request for bob
-    requestStore.set("pending-send-1", {
-      requestId: "pending-send-1",
-      artifact: "some-task",
-      status: "CREATED",
-      fromEntity: "may",
-      createdAt: Date.now(),
-      context: null,
-      sessionId: null,
-      toAgent: "bob",
-      method: "send",
-    });
-
-    // Second heartbeat: pending send() exists → should fire
-    await vi.advanceTimersByTimeAsync(10000);
-    await flush();
-
-    const runCalls = mgr.calls.filter((c) => c.method === "run");
-    expect(runCalls).toHaveLength(2);
-
-    c.stop();
-  });
-
-  it("heartbeat: skipIfIdle=false disables idle skipping", async () => {
-    writeFileSync(
-      configPath,
-      JSON.stringify([
-        { name: "hb-always", type: "heartbeat", intervalMs: 10000, agent: "bob", message: "hb", skipIfIdle: false },
-      ]),
+      JSON.stringify([{ name: "hb-always", type: "heartbeat", intervalMs: 10000, agent: "bob", message: "hb" }]),
     );
     const mgr = makeMockManager();
     const c = new Cron(configPath, mgr as any, () => "sid-1");

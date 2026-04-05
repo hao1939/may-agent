@@ -209,8 +209,8 @@ async function buildTools(config: AgentConfig, opts: AgentLoaderOptions): Promis
         break;
       }
 
-      case "send-only": {
-        // Lightweight send-only tool for leaf agents — no call/peek/cancel
+      case "message-only": {
+        // Lightweight message-only tool for leaf agents — no call/peek/cancel
         tools.push(
           createSendTool({
             agentName: config.name,
@@ -481,7 +481,7 @@ const VALID_TOOL_PRESETS = new Set([
   "checkpoint",
   "system-status",
   "system_status",
-  "send-only",
+  "message-only",
 ]);
 
 const REQUIRED_FIELDS: (keyof AgentConfig)[] = ["name", "description", "domain", "model", "tools"];

@@ -105,7 +105,7 @@ const SOCKET_ENABLED = process.argv.includes("--socket");
 const CHAT_MODE = process.argv.includes("--chat");
 const ONESHOT_MODE = process.argv.includes("--oneshot");
 const STATUS_MODE = process.argv.includes("--status");
-const SEND_MODE = process.argv.includes("--send");
+const MESSAGE_MODE = process.argv.includes("--message");
 const INITIAL_TASK = (() => {
   const idx = process.argv.indexOf("--task");
   if (idx !== -1 && process.argv[idx + 1]) return process.argv[idx + 1];
@@ -235,7 +235,7 @@ bus.subscribe(createStuckDetector(
       type: "message_created",
       fromEntity: "system:circuit-breaker",
       toAgent: "may",
-      method: "send",
+      method: "message",
       task: `[circuit-breaker] Agent "${agent}" terminated (session ${sessionId}): ${reason}. Investigate the root cause — check the session transcript, recent errors, and whether the agent needs guidance or a code fix.`,
       source: "circuit-breaker",
       priority: "P1",
@@ -482,7 +482,7 @@ bus.subscribe((event) => {
       fromEntity: info.agent,
       toAgent: "may",
       task: `[escalation] ${info.agent} session ${info.sessionId} — ${fp.status}: ${fp.summary}`,
-      method: "send",
+      method: "message",
       sessionId: info.sessionId,
     });
   } catch {
@@ -916,7 +916,7 @@ if (STATUS_MODE) {
   process.exit(0);
 }
 
-if (SEND_MODE) {
+if (MESSAGE_MODE) {
   // ── Send mode: deliver message to agent and exit ───────────────────
   const { parseSendArgs, cliSend } = await import("./cli-send.js");
   const sendOpts = parseSendArgs(process.argv);
@@ -929,7 +929,7 @@ if (SEND_MODE) {
 }
 
 if (!CHAT_MODE && !INITIAL_TASK && !CRON_ENABLED && !ONESHOT_MODE) {
-  console.error("Error: need --chat, --task, --oneshot, --status, --send, or --cron.");
+  console.error("Error: need --chat, --task, --oneshot, --status, --message, or --cron.");
   process.exit(1);
 }
 

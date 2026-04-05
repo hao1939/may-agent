@@ -1,10 +1,10 @@
 /**
- * cli-send.ts -- Send a message to an agent from the command line.
+ * cli-message.ts -- Send a message to an agent from the command line.
  *
  * Usage:
- *   bun src/app/may.ts --send bob --message "do the thing"
- *   bun src/app/may.ts --send bob --message-file /tmp/brief.txt
- *   bun src/app/may.ts --send bob --message "review this" --artifact docs/design/foo.md
+ *   bun src/app/may.ts --message bob --message "do the thing"
+ *   bun src/app/may.ts --message bob --message-file /tmp/brief.txt
+ *   bun src/app/may.ts --message bob --message "review this" --artifact docs/design/foo.md
  *
  * Delivery:
  *   1. Tracks the request in the SQLite DB (always)
@@ -68,7 +68,7 @@ function trackInDb(persistDir: string, agent: string, message: string): string |
       fromEntity: "human",
       toAgent: agent,
       task: message.slice(0, 500),
-      method: "send",
+      method: "message",
     });
   } catch {
     // DB unavailable — non-fatal
