@@ -32,7 +32,7 @@ import {
 import { resolveProjectRoot } from "./bundle-mode.js";
 import { trackRequest } from "../lib/requests.js";
 import { setLogHandler } from "../lib/log.js";
-import { upsertDigest } from "../lib/session-digest.js";
+import { upsertDigest, getLastDigest } from "../lib/session-digest.js";
 
 // ── --version / -v: print version + git SHA and exit immediately ────────
 if (process.argv.includes("--version") || process.argv.includes("-v")) {
@@ -369,42 +369,69 @@ bus.subscribe((event) => {
 // ── Bus subscribers for session lifecycle (recovery, eval, escalation) ──
 
 // Session Drop Recovery (Ambulance Protocol — P62)
+// Two-tier: digest classifier (structured understanding) → classifyError fallback (string matching)
 bus.subscribe((event) => {
   if (event.type !== "session_end") return;
   const info = event as any;
   if (!info.error || info.status !== "error") return;
 
-  const errorClass = classifyError(info.error);
-  if (errorClass !== "infra") return;
+  // ── Tier 1: Check digest classification ──────────────────────────
+  let action: string | null = null;
+  let source = "fallback";
+  try {
+    const digest = getLastDigest(PERSIST_DIR, info.sessionId);
+    if (digest?.action) {
+      action = digest.action;
+      source = "digest";
+    }
+  } catch { /* best-effort — digest system shouldn't break recovery */ }
 
-  const rKey = recoveryKey(info.agent, info.task ?? "");
-  const attempts = recoveryAttempts.get(rKey) || 0;
-  if (attempts < MAX_RECOVERY_ATTEMPTS) {
-    try {
-      recoveryAttempts.set(rKey, attempts + 1);
-      const newSessionId = manager.run(info.agent, info.task, { kind: "job" });
-      // Digest: recovery_requeue
-      upsertDigest(PERSIST_DIR, {
-        sessionId: info.sessionId,
-        agent: info.agent,
-        trigger: "recovery_requeue",
-        details: { attempt: attempts + 1, maxAttempts: MAX_RECOVERY_ATTEMPTS, newSessionId, error: (info.error ?? "").slice(0, 300) },
-      }).catch(() => { /* best-effort */ });
+  // ── Tier 2: Fall back to classifyError (backward compat) ─────────
+  if (!action) {
+    const errorClass = classifyError(info.error);
+    if (errorClass === "infra") action = "requeue";
+    else action = "nothing";
+  }
+
+  bus.emit({
+    type: "info",
+    message: `[recovery] decision=${action} source=${source} session=${info.sessionId} agent=${info.agent}`,
+  });
+
+  // ── Act on the decision ──────────────────────────────────────────
+  if (action === "resume" || action === "requeue") {
+    const rKey = recoveryKey(info.agent, info.task ?? "");
+    const attempts = recoveryAttempts.get(rKey) || 0;
+    if (attempts < MAX_RECOVERY_ATTEMPTS) {
+      try {
+        recoveryAttempts.set(rKey, attempts + 1);
+        const newSessionId = manager.run(info.agent, info.task, { kind: "job" });
+        // Digest: recovery_requeue
+        upsertDigest(PERSIST_DIR, {
+          sessionId: info.sessionId,
+          agent: info.agent,
+          trigger: "recovery_requeue",
+          details: { attempt: attempts + 1, maxAttempts: MAX_RECOVERY_ATTEMPTS, newSessionId, error: (info.error ?? "").slice(0, 300), decisionSource: source },
+        }).catch(() => { /* best-effort */ });
+        bus.emit({
+          type: "info",
+          message: `[recovery] Requeued ${info.agent} session ${info.sessionId} → ${newSessionId} (${source}, attempt ${attempts + 1}/${MAX_RECOVERY_ATTEMPTS})`,
+        });
+      } catch (requeueErr) {
+        const msg = requeueErr instanceof Error ? requeueErr.message : String(requeueErr);
+        bus.emit({ type: "info", message: `[recovery] Failed to requeue ${info.agent}: ${msg}` });
+      }
+    } else {
       bus.emit({
         type: "info",
-        message: `[recovery] Requeued ${info.agent} session ${info.sessionId} → ${newSessionId} (infra error, attempt ${attempts + 1}/${MAX_RECOVERY_ATTEMPTS})`,
+        message: `[recovery] ${info.agent} exhausted ${MAX_RECOVERY_ATTEMPTS} recovery attempts for task — escalating`,
       });
-    } catch (requeueErr) {
-      const msg = requeueErr instanceof Error ? requeueErr.message : String(requeueErr);
-      bus.emit({ type: "info", message: `[recovery] Failed to requeue ${info.agent}: ${msg}` });
+      escalateToHuman(info.agent, `exhausted ${MAX_RECOVERY_ATTEMPTS} recovery retries`);
     }
-  } else {
-    bus.emit({
-      type: "info",
-      message: `[recovery] ${info.agent} exhausted ${MAX_RECOVERY_ATTEMPTS} recovery attempts for task — escalating`,
-    });
-    escalateToHuman(info.agent, `exhausted ${MAX_RECOVERY_ATTEMPTS} recovery retries`);
+  } else if (action === "escalate") {
+    escalateToHuman(info.agent, `digest classifier recommended escalation for session ${info.sessionId}`);
   }
+  // "kill" and "nothing" → do nothing (session is dead or non-recoverable)
 });
 
 // Auto-evaluate completed task trees
