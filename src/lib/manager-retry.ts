@@ -297,6 +297,7 @@ export async function runAgentWithRetry(
         sessionId: session.sessionId,
         agent: session.agentName,
         trigger: "infra_retry",
+        what_happened: `Infrastructure retry ${attempt}/${infraRetryMax}: ${retryReason}`,
         details: { attempt, maxAttempts: infraRetryMax, reason: retryReason },
       }).catch(err => log("warn", `[digest] infra_retry failed: ${err}`));
     }

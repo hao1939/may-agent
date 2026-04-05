@@ -411,6 +411,7 @@ bus.subscribe((event) => {
           sessionId: info.sessionId,
           agent: info.agent,
           trigger: "recovery_requeue",
+          what_happened: `Recovery requeue attempt ${attempts + 1}/${MAX_RECOVERY_ATTEMPTS} (${source}): ${(info.error ?? "unknown error").slice(0, 200)}`,
           details: { attempt: attempts + 1, maxAttempts: MAX_RECOVERY_ATTEMPTS, newSessionId, error: (info.error ?? "").slice(0, 300), decisionSource: source },
         }).catch(() => { /* best-effort */ });
         bus.emit({

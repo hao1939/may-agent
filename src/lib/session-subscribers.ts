@@ -420,6 +420,7 @@ export function createAutoResume(
         sessionId: event.sessionId,
         agent: event.agent,
         trigger: "auto_resume",
+        what_happened: `Auto-resume attempt ${prev + 1}/${MAX_RESUME_ATTEMPTS} after ${delay}ms delay: ${(event.error ?? "unknown error").slice(0, 200)}`,
         details: { attempt: prev + 1, maxAttempts: MAX_RESUME_ATTEMPTS, delayMs: delay, error: event.error?.slice(0, 200), turnCount: event.turnCount },
       }).catch(err => log("warn", `[digest] auto_resume failed: ${err}`));
     }

@@ -709,6 +709,7 @@ export class SubagentManager {
         sessionId: session.sessionId,
         agent: session.agentName,
         trigger: "shallow_heartbeat",
+        what_happened: `Shallow heartbeat detected after ${session.turnCount} turns — agent finished too quickly without meaningful work`,
         details: { turnCount: session.turnCount, task: session.task.slice(0, 200) },
       }).catch(err => log("warn", `[digest] shallow_heartbeat failed: ${err}`));
     }
