@@ -220,6 +220,29 @@ CREATE INDEX IF NOT EXISTS idx_cc_conv  ON convention_checks(convention, checked
 CREATE INDEX IF NOT EXISTS idx_eval_agent_ts  ON evaluations(agent, createdAt);
 CREATE INDEX IF NOT EXISTS idx_eval_verdict   ON evaluations(verdict);
 CREATE INDEX IF NOT EXISTS idx_eval_created   ON evaluations(createdAt);
+
+-- Session Digests — structured lifecycle understanding per session
+CREATE TABLE IF NOT EXISTS session_digests (
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  sessionId      TEXT NOT NULL,
+  agent          TEXT NOT NULL,
+  trigger        TEXT NOT NULL,
+  step           INTEGER NOT NULL,
+  task           TEXT,
+  what_happened  TEXT,
+  outcome        TEXT,
+  still_open     TEXT,
+  files_modified TEXT,
+  details        TEXT,
+  action         TEXT,
+  action_reason  TEXT,
+  created_at     INTEGER NOT NULL,
+  UNIQUE(sessionId, step)
+);
+CREATE INDEX IF NOT EXISTS idx_sd_session ON session_digests(sessionId, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_sd_agent   ON session_digests(agent, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_sd_action  ON session_digests(action, created_at DESC)
+  WHERE action IS NOT NULL;
 `;
 
 // ── Database Management ────────────────────────────────────────────────
@@ -782,3 +805,5 @@ export function updateSessionDb(
     sessionId,
   ]);
 }
+
+

@@ -216,15 +216,31 @@ import {
   createProgressWriter,
   createStuckDetector,
   createAutoResume,
+  createDigestWriter,
 } from "../lib/session-subscribers.js";
 bus.subscribe(createActivityWriter(PROJECT_ROOT));
 bus.subscribe(createMemoryWriter(PERSIST_DIR));
 bus.subscribe(createContextUpdater(PROJECT_ROOT));
 bus.subscribe(createRequestTracker(PERSIST_DIR));
 bus.subscribe(createProgressWriter(PROJECT_ROOT));
-bus.subscribe(createStuckDetector((sessionId, _reason) => {
-  bus.emit({ type: "cancel", sessionId } as any);
-}));
+bus.subscribe(createDigestWriter(PERSIST_DIR));
+bus.subscribe(createStuckDetector(
+  (sessionId, _reason) => {
+    bus.emit({ type: "cancel", sessionId } as any);
+  },
+  (agent, sessionId, reason) => {
+    // Circuit-breaker → diagnosis feedback loop: notify May to investigate
+    bus.emit({
+      type: "message_created",
+      fromEntity: "system:circuit-breaker",
+      toAgent: "may",
+      method: "send",
+      task: `[circuit-breaker] Agent "${agent}" terminated (session ${sessionId}): ${reason}. Investigate the root cause — check the session transcript, recent errors, and whether the agent needs guidance or a code fix.`,
+      source: "circuit-breaker",
+      priority: "P1",
+    } as any);
+  },
+));
 bus.subscribe(createAutoResume(
   (sessionId, agent, _attempt) => {
     const ok = manager.resumeInterrupted(sessionId);
