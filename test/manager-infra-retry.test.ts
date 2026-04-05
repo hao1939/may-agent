@@ -256,6 +256,39 @@ describe("P93 Infrastructure Resilience — Infra Retry", () => {
     expect(isRetryableInfraError(session)).toBe(expected);
   });
 
+  // ------ Pattern 7: LiteLLM provider outage (transient 400s) ------
+  it.each([
+    [
+      '400 {"error":{"message":"litellm.BadRequestError: Github_copilotException - The requested model is not supported.. Received Model Group=claude-sonnet-4-20250514\\nAvailable Model Group Fallbacks=None"}}',
+      "provider_outage",
+    ],
+    [
+      '400 {"error":{"message":"litellm.BadRequestError: Github_copilotException - Bad Request. Received Model Group=claude-opus-4.6\\nAvailable Model Group Fallbacks=None"}}',
+      "provider_outage",
+    ],
+    [
+      "400 litellm.BadRequestError: Github_copilotException - The requested model is not supported.. Received Model Group=gemini-3-pro-preview",
+      "provider_outage",
+    ],
+  ])('returns "%s" → "%s"', (errorMsg, expected) => {
+    const session = mockSession({
+      status: "running",
+      messages: [{ role: "user" }],
+      agentError: errorMsg,
+    });
+    expect(isRetryableInfraError(session)).toBe(expected);
+  });
+
+  // ------ Non-provider-outage 400s should NOT be retried ------
+  it("does not retry 400 tool_call_id not found (not transient)", () => {
+    const session = mockSession({
+      status: "running",
+      messages: [{ role: "user" }],
+      agentError: "400 Invalid request: tool_call_id  is not found",
+    });
+    expect(isRetryableInfraError(session)).toBeNull();
+  });
+
   // ------ Non-matching errors do NOT trigger retry ------
   it.each([
     "API key invalid",

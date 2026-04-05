@@ -22,6 +22,7 @@
   "dependencies": {
     "@mariozechner/pi-agent-core": "^0.58.1",
     "@mariozechner/pi-ai": "^0.58.1",
+    "better-sqlite3": "^12.8.0",
     "diff": "^8.0.3"
   },
   "devDependencies": {

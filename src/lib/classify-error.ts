@@ -27,7 +27,9 @@ export function classifyError(error: string | undefined | null): ErrorClass {
     e.includes("rate limit") ||
     e.includes("timeout") ||
     e.includes("connection") ||
-    e.includes("network")
+    e.includes("network") ||
+    (e.includes("model is not supported") && e.includes("model group")) ||
+    (e.includes("bad request") && e.includes("model group"))
   ) {
     return "infra";
   }
