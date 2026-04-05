@@ -112,6 +112,9 @@ export function extractFinishParams(messages: any[]): {
  *     assistant with no text/toolCall content (0 output tokens).
  *   - "tool_use_missing": stopReason=toolUse but no tool calls in content.
  *   - "json_stream_error": JSON parse/EOF/stream corruption.
+ *   - "provider_outage": LiteLLM 400 errors from transient provider issues
+ *     (model temporarily unavailable, model group not found). These cluster
+ *     in bursts during provider outages and resolve within seconds/minutes.
  *   - "http_retryable": 429/502/503/500/ECONNRESET/ETIMEDOUT/socket hang up.
  *   - "empty_response" (5b): error text contains "empty response" / "0 output tokens"
  *     (thrown exception variant — complements Pattern 2's structural detection).
@@ -137,6 +140,20 @@ export function isRetryableInfraError(session: ActiveSession): string | null {
 
   // Check for context overflow — never retry, won't help
   if (agentError && isOverflowError(agentError)) return null;
+
+  // Pattern 7: LiteLLM provider outage — transient 400 errors where the provider
+  // temporarily cannot serve a model (e.g., GitHub Copilot backend stops supporting
+  // a model during deployment/outage). These cluster in bursts (7 errors in 5 seconds)
+  // and resolve within seconds to minutes. Safe to retry with longer backoff.
+  // NOT all 400 errors — only specific transient provider patterns.
+  if (agentError) {
+    const isProviderOutage =
+      (agentError.includes("model is not supported") && agentError.includes("Model Group")) ||
+      (agentError.includes("Bad Request") && agentError.includes("Model Group"));
+    if (isProviderOutage) {
+      return "provider_outage";
+    }
+  }
 
   // Pattern 4: JSON parse / stream corruption errors — transient proxy/network issues
   if (agentError) {
@@ -291,20 +308,22 @@ export async function runAgentWithRetry(
       });
     }
 
-    // Rate-limit errors (429) need much longer backoff than stream errors.
+    // Rate-limit errors (429) and provider outages need much longer backoff than stream errors.
     // Capture error text BEFORE clearing it for the rate-limit check.
-    // Rate limit: 15s, 30s, 30s, 30s, 30s (capped at MAX_RETRY_DELAY_MS)
+    // Rate limit / provider outage: 15s, 30s, 30s, 30s, 30s (capped at MAX_RETRY_DELAY_MS)
     // Stream errors: 1s, 2s, 4s, 8s, 16s
     const errorText = session.error ?? session.agent.state.error ?? "";
     const rateLimit = retryReason === "http_retryable" && isRateLimitError(errorText);
+    const providerOutage = retryReason === "provider_outage";
 
     // Clear error state for the retry
     session.error = undefined;
     session.agent.state.error = undefined;
 
-    const baseDelay = rateLimit ? 15_000 : INFRA_RETRY_BASE_DELAY_MS;
+    const longBackoff = rateLimit || providerOutage;
+    const baseDelay = longBackoff ? 15_000 : INFRA_RETRY_BASE_DELAY_MS;
     const exponentialDelay = Math.min(baseDelay * Math.pow(2, attempt - 1), MAX_RETRY_DELAY_MS);
-    const jitter = Math.floor(Math.random() * (rateLimit ? 5000 : 500));
+    const jitter = Math.floor(Math.random() * (longBackoff ? 5000 : 500));
     const delayMs = exponentialDelay + jitter;
     await new Promise((resolve) => setTimeout(resolve, delayMs));
 
