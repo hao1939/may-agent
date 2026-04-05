@@ -104,7 +104,7 @@ function textResult(text: string): AgentToolResult<string> {
 
 const AgentsToolParams = Type.Object({
   action: StringEnum(
-    ["call", "fork", "message", "context", "list", "peek", "cancel", "requests", "send", "run"] as const,
+    ["call", "fork", "message", "context", "list", "peek", "cancel", "requests"] as const,
     {
       description: [
         "'call': run an agent synchronously and get the result (blocks your session until the agent finishes). Creates a child session in your call tree.",
@@ -183,7 +183,7 @@ const AgentsToolParams = Type.Object({
 });
 
 interface AgentsToolParamsType {
-  action: "call" | "fork" | "message" | "context" | "send" | "run" | "list" | "peek" | "cancel" | "requests";
+  action: "call" | "fork" | "message" | "context" | "list" | "peek" | "cancel" | "requests";
   agent?: string;
   task?: string;
   message?: string;
@@ -299,8 +299,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
             return textResult(JSON.stringify(resultWithoutMessages, null, 2));
           }
 
-          case "fork":
-          case "run": {
+          case "fork": {
             if (!params.agent || !(params.task || params.message)) {
               return textResult(JSON.stringify({ error: "'fork' requires 'agent' and 'task'" }));
             }
@@ -341,7 +340,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
                 fromEntity: callerNameRun,
                 toAgent: params.agent,
                 task: forkTask,
-                method: "run",
+                method: "fork",
                 sessionId: parentSidRun,
                 context: params.context_files ? JSON.stringify(params.context_files) : undefined,
                 expectations: params.success_criteria ? JSON.stringify(params.success_criteria) : undefined,
@@ -402,8 +401,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
             }
           }
 
-          case "message":
-          case "send": {
+          case "message": {
             if (!params.agent || !params.message) {
               return textResult(JSON.stringify({ error: "'send' requires 'agent' and 'message'" }));
             }
@@ -418,7 +416,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
                 if (toolNames.includes(params.agent)) {
                   return textResult(
                     JSON.stringify({
-                      error: `"${params.agent}" is a tool, not an agent. Call it directly as: ${params.agent}({ ... }) — do NOT use agents.send("${params.agent}", ...).`,
+                      error: `"${params.agent}" is a tool, not an agent. Call it directly as: ${params.agent}({ ... }) — do NOT use agents.message("${params.agent}", ...).`,
                     }),
                   );
                 }
@@ -480,7 +478,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
                 fromEntity: caller,
                 toAgent: params.agent,
                 task: structuredMessage,
-                method: "send",
+                method: "message",
                 sessionId: getCallerSessionId?.(),
                 context: params.context_files ? JSON.stringify(params.context_files) : undefined,
                 expectations: params.success_criteria ? JSON.stringify(params.success_criteria) : undefined,

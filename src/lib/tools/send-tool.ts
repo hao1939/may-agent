@@ -82,7 +82,7 @@ function textResult(text: string): AgentToolResult<undefined> {
  */
 export function createSendTool(opts: SendToolOptions): AgentTool {
   return {
-    name: "send",
+    name: "message",
     label: "Send",
     description:
       "Send a message or artifact to another agent. The message is tracked in the request DB and injected into the target's next heartbeat. You cannot call, peek, or cancel — only send.",
@@ -158,7 +158,7 @@ export function createSendTool(opts: SendToolOptions): AgentTool {
           fromEntity: caller,
           toAgent: params.agent,
           task: structuredMessage,
-          method: "send",
+          method: "message",
           sessionId: opts.getCallerSessionId?.(),
           artifact: params.artifact,
           context: params.context_files ? JSON.stringify(params.context_files) : undefined,
