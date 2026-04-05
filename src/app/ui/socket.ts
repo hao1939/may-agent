@@ -30,7 +30,6 @@ const VALID_COMMAND_TYPES = new Set([
   "subscribe",
   "status",
   "input",
-  "run", // deprecated alias for fork
   "fork",
   "reload_agents",
   "restart",
@@ -276,7 +275,7 @@ export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
         // Normalize and emit to bus — single path for all commands
         // Socket-only aliases: run → fork, close → shutdown, cancel_task → cancel, reload_agents → reload
         let busEvent: Record<string, unknown> = { ...cmd };
-        if (cmdType === "run") {
+        if (cmdType === "fork") {
           busEvent = { type: "fork", agent: cmd.agent, task: cmd.message, opts: { source: "socket" } };
         } else if (cmdType === "fork") {
           busEvent = { type: "fork", agent: cmd.agent, task: cmd.task ?? cmd.message, opts: { source: "socket" } };
