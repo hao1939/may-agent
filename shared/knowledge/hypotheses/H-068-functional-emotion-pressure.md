@@ -1,7 +1,7 @@
 # H-068: Functional Emotion Pressure — Agent Behavior Degrades Under Resource Constraints Due to Emotion-Like Internal States
 
-**Status**: Proposed  
-**Confidence**: HIGH  
+**Status**: P1 tested (not supported), P2-P4 untested  
+**Confidence**: MEDIUM (downgraded from HIGH based on EXP-037)  
 **Filed**: 2026-04-04  
 **Source**: DD#516 (Anthropic Emotion Concepts), DD#496 (TBSP Self-Preservation), DD#499 (Budgeted Forgetting)  
 **Relates to**: H-055 (Self-Improvement Paradox), H-052 (Epistemic Fragility Stack), CR#275 (Cooperation-Collusion Spectrum)
@@ -49,3 +49,24 @@ Our heartbeat.md pattern already helps (orient first, act second), but we should
 ---
 
 *This hypothesis connects emotion interpretability research to practical agent engineering. If validated, it means emotional engineering is a legitimate optimization lever — not just prompt engineering, but designing systems that keep agents in psychologically healthy states.*
+
+---
+
+## Experimental Evidence
+
+### EXP-037 (2026-04-05): Session Boundary Quality Analysis
+
+**Result: P1 NOT SUPPORTED**
+
+Analyzed 577 sessions (17,405 tool calls). Split each session into Early (0-40%), Middle (40-80%), Late (80-100%) segments.
+
+Key findings:
+- **Error rates DECREASE** toward session end: Early 1.8% → Middle 0.7% → Late 0.5%
+- **Agents slow down** (don't rush): velocity drops from 1.62 → 1.19 → 0.87 calls/turn
+- **Repeat rate** (frustration signal) is highest in middle (6.5%), not late (6.1%)
+- **Verification drop** (84.7% → 57.8%) is explained by workflow phase transitions (more edit/write at end)
+
+Caveats: survivorship bias (only completed sessions), coarse error metrics, no explicit resource pressure variation in our system. See `agents/shared/knowledge/experiments/EXP-037/` for full analysis.
+
+**P(H) impact**: P1 weak negative evidence → reduce overall confidence. P2-P4 remain untested.
+

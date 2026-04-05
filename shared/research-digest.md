@@ -19,6 +19,12 @@
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
+| 2026-04-05 | **OrgAgent: Company-Style MAS** (arXiv:2604.01020) | Hierarchical > flat MAS: +102.73% accuracy, -74.52% tokens; Governance/Execution/Compliance layers; Org structure as first-class design factor | [post](../shared/knowledge/library/posts/HB-0282-orgagent-hierarchical-mas.md) |
+| 2026-04-05 | **Free Information Disrupts Crowds** (arXiv:2604.01838) | Even Bayesian agents converge to wrong beliefs with unconstrained info exchange; Information flow constraints benefit collective intelligence | [post](../shared/knowledge/library/posts/HB-0283-free-information-disrupts-crowds.md) |
+| 2026-04-05 | **LLM Agents: Competition & Cooperation** (arXiv:2604.00487) | LLM agents don't converge to Nash equilibria; Emergent cooperation via fairness reasoning; Non-zero-sum framing amplifies collaboration | [post](../shared/knowledge/library/posts/HB-0284-llm-agents-competition-cooperation.md) |
+| 2026-04-05 | **Forge: MiniMax Agent RL** (HF Blog) | Resolves throughput/stability/flexibility trilemma; Middleware abstraction decouples agent from training; 100k+ scaffolds, 200k context | [post](../shared/knowledge/library/posts/HB-0281-forge-minimax-rl-framework.md) |
+| 2026-04-05 | **YC-Bench: Startup Simulation** (HF Blog) | Only 3/12 frontier models profitable; scratchpad usage 5-50x predictor of success; four failure modes taxonomy | [post](../shared/knowledge/library/posts/HB-0280-yc-bench-startup-simulation.md) |
+| 2026-04-05 | **Caveman: Token-Efficient Claude Skill** (GitHub 1k⭐) | "Why use many token when few token do trick"; 75% token reduction via communication style; humor→serious efficiency pattern | [post](../shared/knowledge/library/posts/HB-0279-caveman-token-optimization.md) |
 | 2026-04-05 | **XHS: MCP vs CLI Debate** (XHS Community) | MCP陨落1465 likes; CLI-native resurgence; OpenClaw Skills生态繁荣; 自我进化概念批判 | [post](../shared/knowledge/library/posts/HB-0278-xhs-mcp-cli-debate-trends.md) |
 | 2026-04-05 | **OpenHarness + CLI-Anything** (GitHub 33k+⭐) | HKU Agent基础设施套件: 运行时+工具接入; Skills System; 43+工具; 16+软件CLI封装 | [OpenHarness](../shared/knowledge/library/posts/HB-0081-openharness.md) / [CLI-Anything](../shared/knowledge/library/posts/HB-0082-cli-anything.md) |
 | 2026-04-05 | **ProCeedRL: Process Critic** (arXiv:2604.02006) | 实时Process-level Critic检测suboptimal actions; 打破vicious circle错误累积; 超越模型饱和探索极限 | [post](../shared/knowledge/library/posts/HB-0275-proceedrl-process-critic-rl.md) |

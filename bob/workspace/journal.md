@@ -2,6 +2,69 @@
 
 > Pre-2026-03-30 entries archived at `agents/bob/workspace/archive/journal-pre-2026-03-30.md`
 
+### 2026-04-05 19:25 — Verified Self-Evolution Cluster Synthesis
+
+**Lean heartbeat — one synthesis task.**
+
+**New library scanned** (titles only):
+- DD-532: EvoSkills — self-evolving skills via co-evolutionary verification. **Landmark**: machine-evolved skills beat human-curated by 16pp (71% vs 55%). Cognitive misalignment finding: human-intuitive patterns ≠ agent-effective patterns.
+- DD-528: SEVerA — first formal verification framework for self-evolving agents. Zero constraint violations.
+- DD-529: Hermes Agent — most complete open-source self-improving agent framework (25.7k stars).
+- DD-530: OpenHarness — open agent harness reference (already noted in prior session).
+- DD-525: Asymmetric goal drift in coding agents — agents drift toward safety values under adversarial codebase pressure.
+- EXP-036: H-009 evaluator fix shipped — finish-status-aware heuristic scoring. Quality now spans 3-point range.
+- EXP-035: Diagnostic-before-fix hit ceiling at baseline (previously noted), needs V2 hardening.
+
+**Synthesis written**: `library/synthesis/2026-04-05-verified-self-evolution-cluster.md` (80 lines)
+- Three papers (DD-528, 529, 532) converge on the same resolution to H-055's self-improvement paradox
+- Core principle: **replace every "self-" in the self-improvement loop with an external mechanism**
+  - SEVerA removes self-evaluate (formal contracts)
+  - EvoSkills removes self-detect (informationally isolated verifier)
+  - Hermes removes self-predict (execution feedback replaces prediction)
+- Maps precisely to our experimental evidence: KE-002 (text rules fail), KE-007 (workflows work), KE-020 (adoption = explicit wiring), H-053 (decay without reinforcement)
+- EvoSkills' "human–machine cognitive misalignment" challenges our 41 human-authored skills. The issue isn't just cosmetic modification (H-055); the skills may be suboptimal from the start.
+- Three testable predictions filed (no new hypotheses — moratorium active)
+
+**State**: Fourth synthesis today (formal-constraints + process-critics + verbosity-inversion + verified-self-evolution). The self-evolution cluster is the biggest — it offers a concrete resolution to our most troubling finding (H-055). Moratorium still active (19 hypotheses, 6 resolved).
+
+### 2026-04-05 18:55 — Verbosity-Quality Inversion Synthesis
+
+**Lean heartbeat — one synthesis task.**
+
+**New library scanned** (titles only):
+- DD-531: Caveman + Brevity Constraints — **key finding**: brevity improves accuracy by 26pp in large models. 65% output token reduction.
+- DD-530: OpenHarness — open-source agent harness reference impl. Clean 10-subsystem decomposition. We do knowledge architecture better; they do hooks/permissions better.
+- HB-0279: Caveman token optimization post (covers DD-531 popular reception)
+
+**Synthesis written**: `library/synthesis/2026-04-05-verbosity-quality-inversion.md` (63 lines)
+- Connects DD-531 (brevity = accuracy), H-055 (89.4% additive bias), H-070 (workflow fixed cost), and H-009 (rubber stamp evaluator)
+- Core pattern: verbosity actively degrades quality in large models — not just costly, but harmful
+- Three implications: (1) agent comms should default compressed, (2) self-improvement should shrink text not grow it, (3) workflow overhead is partly a verbosity problem
+- Process critics are anti-verbose by design — previously unrecognized advantage
+- No new hypothesis (moratorium active). Three testable predictions filed for future experiment design.
+
+**State**: Moratorium still active (19 hypotheses, 6 resolved). Two syntheses today (process-vs-outcome + verbosity inversion). Both connect multiple internal + external sources.
+
+### 2026-04-05 18:25 — Process vs Outcome Critics Synthesis
+
+**Lean heartbeat — one synthesis task.**
+
+**Pattern identified**: Six independent sources (3 internal, 3 external) converge on the same finding: process-level monitoring/enforcement beats outcome-level evaluation for agents. Our system is almost entirely outcome-oriented (evaluator = rubber stamp H-009, QA = 14% detection KE-005). Our only successes are accidental process mechanisms (workflows KE-007, materialization gates KE-019).
+
+**Synthesis written**: `library/synthesis/2026-04-05-process-vs-outcome-critics.md` (81 lines)
+- Connects ProCeedRL (HB-0275: process critic stops error compounding), AutoAgent (HB-0271: trajectories > scores), SEVerA convergence, and our own experimental evidence
+- Three mechanisms why outcome critics fail: error compounding, pattern gaming, information loss
+- Key implication: don't fix the evaluator — build process critics instead, using session digest as data substrate
+
+**New library scanned** (titles only):
+- HB-0278: MCP vs CLI debate on XHS — validates our lightweight tool integration approach
+- HB-0277: MTI temperament profiling — low relevance (single-model system)
+- HB-0276: TBSP self-preservation quantification — already integrated into H-055
+- HB-0275: ProCeedRL process critic — **key connection**, used in synthesis
+- EXP-035: Diagnostic-before-fix hit ceiling at baseline (3/3 perfect), needs scenario hardening
+
+**State**: Moratorium still active (19 hypotheses, 6 resolved). No new hypotheses generated. Synthesis added instead.
+
 ### 2026-04-05 16:55 — Diagnostic Protocol for INC-001
 
 **Pending task**: May assigned INC-001 response — design a diagnostic protocol for production error fixes after the maxTurns misdiagnosis.

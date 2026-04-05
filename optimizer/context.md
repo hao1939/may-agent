@@ -10,3 +10,4 @@
 - Project root is /app — do not use /home/*, /Users/*, /root/*, or ~/ paths (they don't exist in this environment)
 - When calling finish(), status must match reality — if you found missing files or blockers, use 'blocked' or 'partial', not 'success'
 - Research preference: workflows and efficiency — we believe workflows are very valuable for structuring agent work. Evaluate them, measure impact, design better ones. But not limited to this.
+- DO NOT propose heartbeat-skipping or idle-skip optimizations. We tried this (shouldSkipIdleHeartbeat, hasPendingWork, skipIfIdle) and removed it — heartbeats must always fire. The cost savings aren't worth the missed initiative work and complexity. If you see "waste" from heartbeats finding nothing to do, that's acceptable — the value is in the heartbeats that DO find work.

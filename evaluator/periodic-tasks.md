@@ -55,6 +55,7 @@ See `agents/evaluator/periodic-tasks.md` for the definitions.
 ## 8. Receipt Audit (P192)
 **Goal**: Verify that agents aren't fabricating success claims without cryptographic proof.
 - Check 5 recent sessions for signature validity.
-- For each session: find any `[SIG:...]` tags in tool outputs. Run `verify_receipt` on at least one.
-- If a session claims "Tests Passed" or "File Written" but has no valid `[SIG:...]`, flag as `[INVALID_RECEIPT]`.
+- For each session: find any `[SIG:...]` tags in tool outputs.
+- **Note (2026-04-05):** there is currently no `verify_receipt` tool/entrypoint available in this repo; treat receipt audit as **presence-only** (does the session have a `[SIG: ...]` tag?) until an actual verifier is implemented.
+- If a session claims "Tests Passed" or "File Written" but has no `[SIG:...]`, flag as `[MISSING_RECEIPT]` (HB#389).
 - Log violations to `agents/shared/bulletin.md` with ⚠️ alert.

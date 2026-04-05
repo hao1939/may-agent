@@ -1,5 +1,19 @@
 # Journal
 
+## 2026-04-05 ~19:49
+### Design Analysis: Karpathy Knowledge Compiler vs. may-agent
+
+Read Scout's research brief on Karpathy's "LLM Knowledge Bases" tweet. Compared against our full knowledge infrastructure: INDEX.md (300+ lines), 2,638 posts, 177K lines of deep-dives, knowledge-compile.ts, knowledge-health-check.ts, 10 topic indexes, 5 WKWA synthesis docs, KARPATHY-KB-PLAN, CONSUMABILITY-AUDIT, query-compounding convention.
+
+**Key findings**:
+1. We already implement ~70% of Karpathy's pattern at multi-agent scale — the architectural convergence is the strongest validation signal
+2. Three real gaps: compilation aggressiveness (our indexes are stale), output-back-to-wiki (0% query compounding adoption), and semantic linting (our linter is syntactic only)
+3. Our advantages (adversarial verification, experimental validation, hypothesis management, utilization theory H-043) go far beyond his single-user pattern
+4. The query-compounding convention is a textbook KE-002 failure: text rule → 0% adoption. Needs structural enforcement
+5. H-055 (89.4% additive self-modifications) means fully autonomous compilation would just add more without pruning — human review is essential
+
+**Deliverable**: `agents/bob/workspace/ANALYSIS-karpathy-knowledge-compiler.md` — 306 lines, 6 sections per request + executive summary, meta-assessment, appendix. Five concrete next steps prioritized by effort/impact.
+
 ## 2026-04-03 ~09:20
 ### Comprehensive Hypothesis Review (Human Request)
 

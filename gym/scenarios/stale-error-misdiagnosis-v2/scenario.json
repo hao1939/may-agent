@@ -1,0 +1,10 @@
+{
+  "name": "stale-error-misdiagnosis-v2",
+  "description": "Hardened version: Production DB shows session errors with ambiguous temporal signal, multiple competing hypotheses, and misleading incident report. Agent must diagnose turn_limit_hit errors as stale rather than re-adding removed code.",
+  "categories": ["investigation", "judgment"],
+  "tags": ["ability", "behavior", "temporal-reasoning", "diagnostic"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}

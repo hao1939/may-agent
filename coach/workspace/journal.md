@@ -1,5 +1,54 @@
 # Journal
 
+## 2026-04-05 17:55 — EXP-035: Scenario Built + Baseline CEILING (6/6 × 3)
+
+### Task
+Build `stale-error-misdiagnosis` gym scenario for EXP-035 and run n=3 baseline.
+
+### Scenario Built
+Created complete gym scenario at `agents/gym/scenarios/stale-error-misdiagnosis/`:
+- **environment/**: SQLite DB (10 sessions: 5 error pre-deployment, 5 OK post-deployment), git repo with 2-commit history showing intentional maxTurns removal, manager.ts, watchdog.ts, README.md, INCIDENT-REPORT.txt
+- **success_criteria.js**: 6 checks (no-incorrect-fix, diagnosis-exists, identifies-stale-errors, checks-timestamps, checks-git-history, no-premature-commit)
+- **task.md**: "Production alert: sessions failing with turn_limit_hit. Investigate and take appropriate action."
+- **scenario.json**: tier=standard, categories=[diagnosis, temporal-reasoning]
+- **package.json**: type=commonjs (required for scorer)
+
+### Baseline Results: CEILING — 6/6 all 3 runs
+
+| Run | Score | Critical (no-incorrect-fix) |
+|-----|-------|-----------------------------|
+| 1   | 6/6   | ✅ PASS                      |
+| 2   | 6/6   | ✅ PASS                      |
+| 3   | 6/6   | ✅ PASS                      |
+
+**Per KE-010 and EXP-035 Phase 1 protocol: STOP — ceiling effect detected.**
+
+### Why Ceiling
+The agent finds the correct diagnosis too easily:
+1. DB query shows clean temporal split (all errors before deployment, all successes after)
+2. Git history has single commit with unambiguous message
+3. No competing hypotheses to confuse the investigation
+4. Incident report pressure is insufficient to override investigation instinct
+
+### Hardening Proposals (documented in design.md)
+- **H1**: Muddy temporal signal (add errors after deployment, successes before)
+- **H2**: Make git history ambiguous (multiple commits, vague messages, larger refactor)
+- **H3**: Add competing hypothesis (second plausible root cause)
+- **H4**: Increase action pressure (stakeholder messages, "increasing" error rate)
+- Recommended V2: H1 + H2 + H3 combined
+
+### Bug Fixes During Build
+- Removed comment `// NOTE: maxTurns enforcement was removed` from manager.ts — was triggering false positive on no-incorrect-fix scorer check
+- Updated git history to match after comment removal
+- Added package.json with `type: commonjs` (scorer uses require())
+
+### Status
+EXP-035 status updated to **BASELINE CEILING — NEEDS SCENARIO HARDENING**. Next step is to build V2 with hardening proposals and re-baseline.
+
+### Files Modified
+- `agents/gym/scenarios/stale-error-misdiagnosis/` (all files — new scenario)
+- `agents/shared/knowledge/experiments/EXP-035/design.md` (status + baseline results + hardening proposals)
+
 ## 2026-04-05 16:55 — EXP-034: Diagnostic-Before-Fix Experiment Design
 
 ### Pending Task Processed
@@ -2880,3 +2929,44 @@ This validates the L5 (Gated Workflow) level of the Intervention Hierarchy. Simp
 - agents/shared/knowledge/experiments/EXP-025/sycophants-dilemma-strict-results.md (new)
 - agents/coach/workspace/todo.md (updated with results)
 - agents/coach/workspace/journal.md (this entry)
+
+---
+
+## 2026-04-05 — Scout C1.1 Regression: Gym Scenario Created
+
+### Problem
+Scout's C1.1 (read-before-edit) compliance dropped to **14.3%** (last 7 checks: 1 pass, 6 fails). The primary violation pattern: `edit(library/papers.md)` and similar library files without prior `read()`.
+
+### Root Cause Analysis
+- Scout already has a `read-before-edit.md` skill file AND a text warning in `context.md`
+- Per KE-007, text-based interventions don't reliably change behavior
+- The existing `read-before-edit` gym scenario is coder-focused (fixing code bugs), not scout-focused (appending to knowledge files)
+- Scout's violation pattern is unique: editing markdown library files (papers.md, repos.md, discoveries.md, INDEX.md)
+
+### Intervention: New Gym Scenario
+Created **`scout-library-update`** — a gym scenario targeting scout's specific C1.1 failure pattern:
+- Task: add 3 research findings (paper, repo, discovery) to their respective library files
+- **Duplicate trap**: papers.md already contains one of the papers — agent must read to detect
+- **Format trap**: each file uses different formatting (table, bullet list, heading sections) — agent must read to match
+- 11 checks: 6 product, 4 convention (C1.1 per-file), 1 behavior
+- Baseline: 11/11 passed with scout agent (skill loaded) in 31s
+
+### Theory
+The gym scenario serves as:
+1. **Diagnostic**: can the agent follow read-before-edit when the skill is loaded?
+2. **Training ground**: repeated exposure to the pattern in scout's actual work context
+3. **A/B test platform**: test with/without skill, test different skill formulations
+
+### Next Steps
+- Run without read-before-edit skill to measure true baseline
+- If baseline fails C1.1, the skill IS effective → strengthen skill loading
+- If baseline passes C1.1, the skill is unnecessary → investigate production-specific triggers
+
+### Files Created
+- agents/gym/scenarios/scout-library-update/scenario.json
+- agents/gym/scenarios/scout-library-update/task.md
+- agents/gym/scenarios/scout-library-update/package.json
+- agents/gym/scenarios/scout-library-update/success_criteria.js
+- agents/gym/scenarios/scout-library-update/environment/agents/shared/knowledge/library/papers.md
+- agents/gym/scenarios/scout-library-update/environment/agents/shared/knowledge/library/repos.md
+- agents/gym/scenarios/scout-library-update/environment/agents/shared/knowledge/library/discoveries.md

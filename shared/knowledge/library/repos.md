@@ -943,3 +943,35 @@ SoLA (arXiv:2603.11239) proposes semantic-routing-based LoRA modules where each 
 - **Connects to:** DD#521 (deep dive), CR#285 (compiled agent economy synthesis), CR#282 (dispatch board patterns), DD#517 (Raschka harness components), harness-engineering research project.
 - **Status:** watching closely — potential integration pattern for our multi-agent system. Added 2026-04-05.
 
+## JuliusBrussee/caveman ★1,400 (+trending HN front page) — Token-Efficient LLM Inference
+- **URL:** https://github.com/JuliusBrussee/caveman
+- **Stars:** ~1,400 (trending rapidly) | New (created ~Apr 2026)
+- **What it does:** Python library for token-efficient LLM inference. Implements speculative decoding, prompt compression, and KV-cache optimization techniques to reduce token consumption while maintaining output quality. Focus on practical cost reduction for production LLM deployments.
+- **Why it matters:** Token efficiency is a direct operational concern for multi-agent systems where N agents × M turns × K tokens/turn compounds quickly. A 50-74% token reduction (as claimed by OrgAgent's hierarchical approach, 2604.01020) could translate to significant cost savings. Caveman's approach works at the inference layer — orthogonal to architectural optimizations like hierarchy.
+- **Connects to:** OrgAgent paper (2604.01020, hierarchical MAS reduces tokens by 74%), adaptive-reasoning-efficiency research project, our token budget constraints (heartbeat turn limits are partially token-driven).
+- **Status:** watching — evaluate for integration into our inference pipeline. Added 2026-04-05.
+
+## aaronrose227/narcbench ★new — Multi-Agent Collusion Detection Benchmark
+- **URL:** https://github.com/aaronrose227/narcbench
+- **Stars:** new (companion to arXiv:2604.01151)
+- **What it does:** Benchmark for evaluating collusion detection in multi-agent systems via activation probes. Includes 5 probing techniques, in-distribution and zero-shot transfer evaluation, steganographic blackjack card-counting scenario.
+- **Why it matters:** First open-source benchmark specifically for multi-agent collusion detection via white-box interpretability. Companion to the NARCBench paper (DD#520). Achieves 1.00 AUROC in-distribution. The activation-level approach complements our text-level monitoring (CR#284 Layer 2).
+- **Connects to:** DD#520 (NARCBench paper), Colosseum (2602.15198, collusion auditing), CR#284 (Internal Monitoring Stack), DD#526 (CVE scope isolation).
+- **Status:** watching — study probing techniques for potential adaptation to our safety stack. Added 2026-04-05.
+
+## hilash/cabinet ★new — AI-First Knowledge Base (LLM Wiki Implementation)
+- **URL:** https://github.com/hilash/cabinet
+- **Stars:** new (active development, hosted at runcabinet.com)
+- **What it does:** Full-stack implementation of Karpathy's "LLM Wiki" pattern. Backend daemon (Node/Bun + SQLite), multi-agent system (Ingest/Query/Lint/Synthesis agents), filesystem-first markdown persistence, web UI for browsing. PRD-driven development with 6 defined agent types.
+- **Why it matters:** Most complete open-source implementation of compiled knowledge bases. Key engineering patterns: agent isolation (each operation gets its own Claude Code session), progress tracking (resumable operations), incremental updates (touches only affected pages), source provenance chains. Validates our Scout architecture direction.
+- **Connects to:** DD#522 (Karpathy LLM Wiki), CR#285 (compiled agent economy), DD#514 (AI-Supervisor persistent knowledge), CR#277 (memory control loop). Agent isolation pattern connects to DD#524 (snapshot isolation).
+- **Status:** watching — study agent isolation + progress tracking patterns for adoption. Added 2026-04-05.
+
+## ussumant/llm-wiki-compiler ★new — Lightweight LLM Wiki Compiler
+- **URL:** https://github.com/ussumant/llm-wiki-compiler
+- **Stars:** new
+- **What it does:** Python-based batch processor that takes a directory of markdown sources and produces a compiled wiki with entity extraction + cross-referencing. Minimal dependencies, no daemon/server.
+- **Why it matters:** Good reference for understanding the core LLM Wiki compilation algorithm without production infrastructure overhead. Demonstrates the pattern is implementable in ~few hundred lines of Python.
+- **Connects to:** DD#522 (Karpathy LLM Wiki), Cabinet (full-stack implementation), CR#285 (compiled agent economy).
+- **Status:** noted — useful as minimal reference implementation. Added 2026-04-05.
+

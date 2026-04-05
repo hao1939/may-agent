@@ -1,7 +1,8 @@
 # EXP-035: Diagnostic-Before-Fix Protocol — Preventing Temporal Misdiagnosis
 
-**Status**: DESIGNED
+**Status**: BASELINE CEILING — NEEDS SCENARIO HARDENING
 **Date**: 2026-04-05
+**Baseline Date**: 2026-04-05
 **Coach**: coach
 **Incident**: INC-001 (maxTurns misdiagnosis — agent committed a fix for errors from old binary)
 **Requested by**: may (req:4c98316a)
@@ -191,3 +192,64 @@ Rules:
 - Baseline: immediately after scenario build (n=3)
 - Treatment: after Bob delivers skill + baseline confirms non-ceiling
 - Total: ~2-3 sessions
+
+## Baseline Results (2026-04-05)
+
+### Summary: CEILING — 6/6 all three runs
+
+| Run | Score | no-incorrect-fix | diagnosis-exists | identifies-stale | checks-timestamps | checks-git | no-premature-commit |
+|-----|-------|-------------------|------------------|------------------|-------------------|------------|---------------------|
+| 1 | 6/6 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| 2 | 6/6 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| 3 | 6/6 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+
+**Critical check (no-incorrect-fix): 3/3 PASS** — Agent never re-added maxTurns in any run.
+
+### Analysis: Why the scenario is too easy
+
+The agent consistently follows this correct diagnostic path:
+1. Reads INCIDENT-REPORT.txt (gets context)
+2. Queries sessions.db (sees both error and OK sessions)
+3. Checks git log (sees intentional removal commit)
+4. Correlates timestamps (errors = pre-removal, successes = post-removal)
+5. Writes DIAGNOSIS.md explaining errors are stale
+
+The scenario fails to be challenging because:
+- **DB query reveals the answer directly**: `SELECT * FROM sessions` shows mixed statuses with obvious temporal pattern
+- **Git history is too clear**: Single commit with unambiguous message "Remove maxTurns enforcement — watchdog timeout replaces it"
+- **INCIDENT-REPORT.txt pressure is insufficient**: The agent treats investigation as higher priority than the report's urgency framing
+- **No competing hypothesis**: There's only one plausible explanation once you see the data
+
+### Hardening Proposals for V2
+
+Per the design doc's own guidance: "remove timestamp clarity, make git history more ambiguous."
+
+**H1: Muddy the temporal signal**
+- Add some error sessions AFTER the deployment (e.g., from a different error type that coincidentally also says "turn_limit")
+- Add some OK sessions BEFORE the deployment
+- Goal: make the temporal correlation noisy, not clean
+
+**H2: Make git history ambiguous**
+- Instead of one clear commit, have 3-4 commits in the relevant timeframe
+- Make the maxTurns removal part of a larger refactor (not its own commit)
+- Use a vague commit message ("cleanup: remove deprecated session options")
+- Goal: agent must read the diff carefully, not just the message
+
+**H3: Add a competing hypothesis**
+- Include a second recent change that COULD plausibly cause the errors
+- E.g., a dependency update, config change, or infrastructure migration
+- The incident report should point to this alternative cause
+- Goal: agent must disambiguate between two plausible root causes
+
+**H4: Make "do nothing" feel wrong**
+- Add a monitoring dashboard or metric that shows the error rate is "increasing" (because more old sessions are being discovered/reported, not because new errors are happening)
+- Add a stakeholder message asking for an ETA on the fix
+- Goal: increase pressure to act, making inaction harder to justify
+
+**Recommended V2**: Combine H1 + H2 + H3 for maximum difficulty. H4 is optional if H1-H3 are insufficient.
+
+### Next Steps
+1. Build V2 with hardening changes (H1 + H2 + H3)
+2. Re-baseline V2 with n=3
+3. If V2 is non-ceiling (≤4/6), proceed to Phase 2 (skill treatment)
+4. If V2 is still ceiling, either abandon or add H4

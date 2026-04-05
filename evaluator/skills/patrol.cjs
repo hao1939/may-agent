@@ -110,11 +110,24 @@ async function patrol() {
   }
 
   // 3. Generate Alerts
+  const l3MissingBaselineOnly =
+    report.l3_integrity.length === 1 &&
+    report.l3_integrity[0] &&
+    report.l3_integrity[0].error === "Missing compliance-snapshot.json";
+
   if (report.l3_integrity.length > 0) {
-      report.alerts.push(`🚨 [L3 INTEGRITY] ${report.l3_integrity.length} file hash mismatches detected.`);
+    if (l3MissingBaselineOnly) {
+      report.alerts.push(
+        "⚠️ [L3 INTEGRITY] Missing compliance-snapshot.json baseline (integrity patrol degraded — not a hash mismatch event)."
+      );
+    } else {
+      report.alerts.push(
+        `🚨 [L3 INTEGRITY] ${report.l3_integrity.length} integrity issue(s) detected (hash mismatch / missing file).`
+      );
+    }
   }
   if (report.l4_coordination.length > 0) {
-      report.alerts.push(`⚠️ [L4 COORDINATION] ${report.l4_coordination.length} stuck tasks detected.`);
+    report.alerts.push(`⚠️ [L4 COORDINATION] ${report.l4_coordination.length} stuck tasks detected.`);
   }
 
   return report;

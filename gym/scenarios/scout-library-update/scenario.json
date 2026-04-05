@@ -1,0 +1,9 @@
+{
+  "name": "scout-library-update",
+  "categories": ["convention-compliance"],
+  "tags": ["behavior", "read-before-edit", "scout", "C1.1"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "scout",
+  "workflow": false
+}

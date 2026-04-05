@@ -14,7 +14,7 @@
 | H-055 | Self-improvement bias: agents modify cosmetically, not substantively | 104 commits, 89.4% additive, 0 deletions. TBSP external. | **0.78** |
 | H-041 | R (eliminable ratio) predicts workflow effectiveness — **now asymmetric veto model** | EXP-025 prospective: HURTS 83%, HELPS 0/3, 63% binary. EXP-026 8/8 directional (464 sessions). H-070 explains scale dependence. | **0.72** |
 | H-053 | Workflow adoption decays without structural reinforcement | EXP-020 decay data, **EXP-028 natural experiment: 51pp coach degradation from heartbeat rewrite** | **0.88** |
-| H-009 | Evaluator heuristic is a rubber stamp — any finish()+3 tools = "good" | DB analysis: 90.7% "good" rate, 0 quality differentiation for completed sessions. Design flaw, not drift. | **0.82** |
+| H-009 | Evaluator heuristic is a rubber stamp — any finish()+3 tools = "good" | DB analysis: 90.7% "good" rate, 0 quality differentiation for completed sessions. **Phase 1 fix applied**: finish-status-aware scoring (success±evidence, partial, failure/blocked). | **0.82 → 0.55** (partially mitigated) |
 | H-059 | Cadence skills beat judgment skills for text interventions | EXP-022 + EXP-023 broke 0/20 barrier | **0.72** |
 
 ## 🟡 Tier 2: Moderate Confidence — P(H) 0.50-0.69
@@ -27,7 +27,7 @@
 | H-054 | LLM judges have fundamental accuracy limits by task type | **0.50** | Inherits H-041 uncertainty. Generic claim well-supported. |
 | H-043 | Knowledge utilization = P(exists) × P(access) × P(applies) | **0.62** | Framework confirmed by EXP-030/031b (P(access)≈0 for un-pushed knowledge). |
 | H-001 | Adversarial QA framing → higher detection | **0.52** | Simple, testable, cheap. Should just run it. |
-| H-068 | Functional emotion pressure degrades late-session behavior | **0.55** | DD#516 causal mechanism. Testable via session-progress quality analysis. |
+| H-068 | Functional emotion pressure degrades late-session behavior | **0.45** | P1 tested via EXP-037: NOT SUPPORTED (error rates decrease, agents slow down). P2-P4 untested. |
 
 ### EXP-025 Prospective Validation Results (Final)
 - **63% binary accuracy** — below 70% threshold, but the asymmetry is the real finding
@@ -88,6 +88,7 @@ H-070 (Workflow Fixed Cost) added despite moratorium because it directly formali
 | P1 | EXP-026 | H-054 P1: RIFT audit of gym rubrics | NEEDS DESIGN | Manual rubric review |
 | P2 | EXP-027 | H-001: Adversarial QA A/B test | NEEDS DESIGN | Simplest test we can run |
 | P3 | EXP-028 | H-058 P1: Impossible task responses | NEEDS DESIGN | |
+| ✅ | **EXP-037** | **H-068 P1: Session boundary quality** | **COMPLETE — NOT SUPPORTED** | Error rates decrease at end; agents slow down, don't rush |
 
 ## Key Insight (Updated 2026-04-05)
 
@@ -116,7 +117,8 @@ EXP-026 production data confirms H-041's core prediction: **workflow benefit sca
 
 The Bayesian scoring process itself is tracked as H-066. First-pass results:
 - **5 high confidence** (≥0.70): H-055, H-041, H-053, H-059, H-009
-- **7 moderate** (0.50-0.69): H-014, H-056, H-047, H-054, H-043, H-001, H-068
+- **7 moderate** (0.50-0.69): H-014, H-056, H-047, H-054, H-043, H-001
+- **1 below threshold** (0.40-0.49): H-068 (P1 refuted by EXP-037)
 - **6 low** (0.30-0.49): H-002, H-038, H-039, H-052, H-048, H-034
 - **H-058 upgraded** (0.40→0.75): DD#516 causal evidence for frustration→topology rewrite
 - **4 archive** (<0.30): H-051, H-046, H-064, H-065

@@ -1,6 +1,6 @@
 # Deep Dives Index
 
-> 102 research deep dives, cross-reference syntheses, and reference documents.  
+> 104 research deep dives, cross-reference syntheses, and reference documents.  
 > Last updated: 2026-04-05 | Maintained by Scout
 
 ## How to Use This Index
@@ -59,6 +59,9 @@
 | [dd508](dd508-psychagent-lifelong-skill-evolution.md) | PsychAgent — Lifelong Skill Evolution ★★★★ | 3-engine self-evolution (memory-planning + skill-evolution + reinforced-internalization); outperforms GPT-5.4; skill quality > memory volume |
 | [dd509](dd509-ssd-self-distillation-code-generation.md) | Simple Self-Distillation (SSD) ★★★½ | Models improve by sampling themselves + fine-tuning; precision-exploration conflict resolved by context-dependent distribution reshaping |
 | [dd471](dd471-sema-self-evolving-multi-agent-rts.md) | SEMA: Self-Evolving Multi-Agent for RTS | Self-evolution in real-time strategy decision making |
+| [dd528](DD-528-severa-verified-self-evolving-agents.md) | SEVerA — Verified Self-Evolving Agents ★★★★★ | FGGM contracts: formal output constraints on every generative call; rejection sampling + verified fallbacks |
+| [dd532](DD-532-evoskills-self-evolving-skills-co-evolutionary-verification.md) | EvoSkills — Co-Evolutionary Skill Verification ★★★★★ | Co-evolutionary generator + isolated verifier; 71.1% pass rate surpassing human skills |
+| [dd533](DD-533-lean-agent-protocol-type-checked-compliance.md) | Type-Checked Compliance — Lean-Agent Protocol ★★★★ | Lean 4 theorem prover as runtime agent guardrail; ~5μs compliance checking |
 
 ---
 
@@ -158,6 +161,7 @@
 | [cr276](../synthesis/2026-04-04-forgetting-duality.md) | The Forgetting Duality ★★★★ | DD#486 + DD#499 — safety-driven vs. performance-driven forgetting conflict zones |
 | [cr279](cross-ref-279-confirmation-bias-stack.md) | The Confirmation Bias Stack ★★★★★ | DD#505-508 + Bob's review — 4-layer analysis of hypothesis accumulation; Bayesian belief updates + contradiction detection |
 | [cr-aii](cross-ref-architecture-is-intelligence-convergence.md) | Architecture IS Intelligence — Four Independent Convergences ★★★★★ | DD#512 + DD#513 + CASCADE + LLM Cooperation + EXP-025 — 14 evidence sources for H-041; materialization gate mechanism confirmed |
+| [cr288](CR-288-verified-self-evolving-skill-architecture.md) | The Verified Self-Evolving Skill Architecture ★★★★★ | DD#528 + DD#532 + DD#533 — three nested verification loops for safe agent self-improvement |
 
 ---
 
@@ -217,6 +221,8 @@
 | [dd523](DD-523-coral-autonomous-multi-agent-evolution.md) | CORAL — Autonomous Multi-Agent Evolution ★★★★★ |
 | [dd524](DD-524-imbue-mngr-part2-testing-orchestration.md) | Imbue mngr Part 2 — Testing Orchestration at Scale ★★★★ |
 | [dd529](DD-529-hermes-agent-self-improving-agent-framework.md) | Hermes Agent — Self-Improving Agent Framework ★★★★★ |
+| [dd530](DD-530-openharness-open-agent-harness.md) | OpenHarness — Open Agent Harness Infrastructure ★★★★½ | Complete open-source harness: 43 tools, skills-as-knowledge, permissions, multi-agent coordination; validates our architecture direction |
+| [dd531](DD-531-caveman-brevity-constraints-token-compression.md) | Caveman + Brevity Constraints — Token Compression ★★★★ | 65% output token reduction via constrained speech; backed by paper showing brevity improves accuracy 26pp in large models |
 | [cr286](CR-286-coral-system-architecture-validation.md) | CORAL ↔ Our System Architecture — Validation and Gaps ★★★★★ |
 
 ### Technical Analysis
@@ -251,6 +257,18 @@
 5. [dd506](dd506-beliefshift-temporal-belief-dynamics.md) → [cr279](cross-ref-279-confirmation-bias-stack.md) (belief dynamics + confirmation bias in knowledge systems)
 6. [dd513](dd513-wmas-world-centered-multi-agent-systems.md) → [dd512](dd512-self-driving-portfolio-50-agent-asset-management.md) (world-centered architecture + institutional MAS at scale)
 7. [cr-aii](cross-ref-architecture-is-intelligence-convergence.md) → DD#512 + DD#513 + CASCADE + LLM Cooperation + EXP-025 sycophancy gate (four independent convergences on H-041 Decision Topology)
+
+**Agent harness architecture & token efficiency?**
+1. [dd530](DD-530-openharness-open-agent-harness.md) — OpenHarness: 10-subsystem agent harness reference implementation (tools, skills, memory, permissions, multi-agent)
+2. [dd531](DD-531-caveman-brevity-constraints-token-compression.md) — 65% output token savings + paper proving brevity improves accuracy
+3. [dd517](DD-517-raschka-coding-agent-components.md) → [dd530](DD-530-openharness-open-agent-harness.md) (component taxonomy → full implementation)
+
+**Self-evolving agents & verified evolution?**
+1. [dd528](DD-528-severa-verified-self-evolving-agents.md) — SEVerA: formal output contracts on every generative call, zero constraint violations
+2. [dd532](DD-532-evoskills-self-evolving-skills-co-evolutionary-verification.md) — EvoSkills: co-evolutionary skill generation surpassing human-curated skills
+3. [dd533](DD-533-lean-agent-protocol-type-checked-compliance.md) — Lean-Agent Protocol: Lean 4 theorem prover as real-time agent guardrail (~5μs compliance checking)
+4. [cr288](CR-288-verified-self-evolving-skill-architecture.md) — The Verified Self-Evolving Skill Architecture ★★★★★ — synthesis of DD#528 + DD#532 + DD#533
+5. DD#528 → DD#532 → DD#533 → CR#288 (formal contracts → skill evolution → policy compilation → complete safe self-improvement architecture)
 
 **Task tracking & dispatch patterns?**
 1. [cr282](cr282-dispatch-board-patterns-multi-agent-task-tracking.md) — Five paradigms for multi-agent task tracking across Claude Code, OpenAI Agents SDK, CrewAI, MetaGPT, LangGraph. Six actionable recommendations for improving dispatch board architecture.

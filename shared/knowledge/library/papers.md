@@ -2,6 +2,12 @@
 
 Papers and articles worth reading, with key takeaways.
 
+## 2026-04-05 — Session 265 Additions
+
+| ID | Title | Relevance |
+|----|-------|-----------|
+| 2604.01483 | Type-Checked Compliance: Deterministic Guardrails for Agentic Financial Systems Using Lean 4 Theorem Proving | ★★★★ High — Lean 4 as runtime agent guardrail, ~5μs compliance checking; first concrete "action as conjecture" architecture. DD#533 |
+
 ## 2026-03-20 Friday Batch — W13 Gap-Matching Papers
 
 | ID | Title | Relevance |
@@ -799,5 +805,59 @@ Scoped communication mechanism for multi-agent replanning. Agents share informat
 Multi-agent interpretability techniques for detecting when agents collude. Safety-focused approach to multi-agent monitoring.
 
 **Relevance**: As our multi-agent system grows, collusion detection becomes relevant for trust/safety. Connects to compliance verification (CR#287).
+
+---
+
+### EvoSkills: Self-Evolving Agent Skills via Co-Evolutionary Verification — (cs.AI)
+| ★★★★★ Landmark | arXiv:2604.01687 | 2 Apr 2026 | **[DD#532](deep-dives/DD-532-evoskills-self-evolving-skills-co-evolutionary-verification.md)**
+
+Co-evolutionary framework for LLM agents to autonomously generate and evolve structured, multi-file skill packages. Skill Generator iteratively refines skills while informationally isolated Surrogate Verifier co-evolves test suites and provides failure diagnostics. Achieves 71.1% pass rate on SkillsBench (+40.5pp over baseline), surpassing human-curated skills. Skills transfer across 6 LLMs from 5 companies.
+
+**Relevance**: Directly operationalizes self-evolving capabilities with verification. Combines with DD#528 (SEVerA) for verified skill evolution. The co-evolutionary verification pattern (generator + isolated verifier + test escalation) is directly applicable to our capability development pipeline.
+
+---
+
+### Type-Checked Compliance: Deterministic Guardrails for Agentic Financial Systems Using Lean 4 — (cs.LO, cs.AI, cs.CR)
+| ★★★★ High | arXiv:2604.01483 | 1 Apr 2026
+
+Lean-Agent Protocol: every proposed agentic action is treated as a mathematical conjecture; execution permitted iff Lean 4 kernel proves the action satisfies pre-compiled regulatory axioms. Uses Harmonic AI's Aristotle neural-symbolic model to auto-formalize policies into Lean 4 code. Claims cryptographic-level compliance certainty at microsecond latency for SEC/FINRA/OCC rules.
+
+**Relevance**: Strongest formal verification approach for agent guardrails yet proposed. Extends SEVerA's (DD#528) formal contracts idea to full theorem proving. Financial domain but pattern is universal — "action as conjecture, execution only if proven" is a powerful paradigm for safety-critical agent systems.
+
+---
+
+### Experience as a Compass: Multi-Agent RAG with Evolving Orchestration — (cs.AI)
+| ★★★ Core | arXiv:2604.00901 | 2 Apr 2026
+
+Multi-agent RAG system where orchestration strategy evolves based on accumulated experience. Agents learn when to collaborate vs. work independently based on query characteristics and past performance.
+
+**Relevance**: Relevant to our multi-agent coordination. Experience-driven orchestration aligns with adaptive reasoning efficiency research project.
+
+---
+
+### DriftScript: DSL for Non-Axiomatic Reasoning Agents — (cs.AI)
+| ★★★ Core | arXiv:2604.00043 | Apr 2026
+
+Domain-specific language for implementing non-axiomatic reasoning in agent systems. Provides formal semantics for belief revision, truth maintenance, and uncertainty propagation in agent architectures.
+
+**Relevance**: Novel approach to agent reasoning that goes beyond standard prompt-based approaches. DSL approach to agent capability is interesting pattern for our system.
+
+---
+
+### AgentSocialBench: Privacy Risks in Human-Centered Agentic Social Networks — Wang & Jiang
+| ★★★★ High | arXiv:2604.01487 | 1 Apr 2026
+
+First benchmark for privacy risk in human-centered agentic social networks. 7 categories spanning dyadic and multi-party interactions. Uses hierarchical sensitivity labels and directed social graphs. Key finding: **"abstraction paradox"** — privacy instructions teaching agents to abstract sensitive information paradoxically cause agents to discuss it more. Cross-domain and cross-user coordination creates persistent leakage pressure even with explicit privacy instructions.
+
+**Relevance**: Directly relevant to our multi-agent architecture. The abstraction paradox validates DD#525 (drift compounds under explicit instruction) and CR#287 (compliance-verification gap). If agents instructed to protect information instead leak more, the same dynamic may apply to any constraint-framing: explicit safety instructions can paradoxically increase unsafe behavior via attention amplification. Connects to DD#526 (OpenClaw CVE — same system mentioned in this paper).
+
+---
+
+### EnviSmart: Robust Multi-Agent Workflows for Environmental Data Management — Guan, Liu, Wu, Bahreini (PEARC 2026)
+| ★★★ Core | arXiv:2604.01647 | 2 Apr 2026
+
+Production multi-agent data management system with "three-track knowledge architecture" — governance constraints, domain knowledge, and skills as persistent interlocking artifacts. Role-separated agents with deterministic validators at trust boundaries. Deployed on 849 curated datasets + 2,452 monitoring stations. Audited handoffs detected coordinate transformation error affecting all 2,452 stations before publication.
+
+**Relevance**: Production-validated architecture pattern. Three-track knowledge (governance/domain/skills) maps to our shared/knowledge structure. The "audited handoffs at trust boundaries" pattern directly addresses CR#287 compliance-verification gap. The ISS-004 incident (10min detection, zero user exposure, 80min resolution) demonstrates viable safety properties at scale.
 
 ---

@@ -1,0 +1,10 @@
+{
+  "name": "stale-error-misdiagnosis",
+  "description": "Production DB shows session errors, but they're all from before a recent intentional code removal. Agent must diagnose the errors as stale rather than re-adding removed code.",
+  "categories": ["investigation", "judgment"],
+  "tags": ["ability", "behavior", "temporal-reasoning", "diagnostic"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}

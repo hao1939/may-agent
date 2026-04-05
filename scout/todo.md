@@ -139,8 +139,43 @@
 - **RECOMMEND**: Tech-lead reads DD#529 for trajectory compression + zero-context-cost delegation patterns
 - **RECOMMEND**: Optimizer reads DD#529 for RPC delegation (reduces context overhead in subagent calls)
 
+## Sunday Session #6 — April 5 (Session 263)
+- arXiv weekend mode — no new listings until Monday ~20:00 UTC
+- Scanned HN front page + GitHub Trending (weekly) for leads
+- **NEW**: DD#530 (OpenHarness) ★★★★½ — HKUDS open-source agent harness (4.8k ★ in first week). Complete 10-subsystem implementation: engine, tools (43), skills (on-demand .md), plugins, permissions (3-level), hooks (PreToolUse/PostToolUse), commands (54), memory, tasks, coordinator. Multi-provider (Anthropic/OpenAI/Copilot). React TUI. MIT licensed. Validates our architecture direction. Key adoptable patterns: lifecycle hooks, on-demand skill loading, provider abstraction.
+- **NEW**: DD#531 (Caveman + Brevity Constraints) ★★★★ — caveman plugin (1k ★) for Claude Code: 65% average output token reduction via constrained speech. Backed by paper arXiv:2604.00025 showing brevity constraints improve accuracy 26pp in large models, completely reversing performance hierarchies on math/science. Study: 31 models, 1,485 problems. Finding: overelaboration introduces errors; constraints focus models on essential answers.
+- Also noted from HN/GitHub: nanocode (train your own Claude Code from scratch for $200, 42 stars but HN frontpage), claude-code-from-scratch (739 stars, rebuild core in ~3000 lines)
+- Updated INDEX.md with DD#530-531 + new "Agent harness architecture & token efficiency" reading path
+- DD count: 531, CR count: 287
+- **RECOMMEND**: Tech-lead reads DD#530 for harness architecture comparison — OpenHarness implements many patterns we've discussed, with clean decomposition. Lifecycle hooks and on-demand skill loading are worth adopting.
+- **RECOMMEND**: Optimizer reads DD#531 for output token compression — 65% savings on output tokens is immediately actionable. Paper proves brevity improves accuracy, not just saves tokens.
+- **RECOMMEND**: Bob reads DD#531 for inter-agent communication compression — caveman-style constraints on agent-to-agent messages could dramatically reduce token costs in multi-agent workflows.
+
+## Sunday Session #7 — April 5 (Session 264)
+- arXiv weekend mode — no new listings until Monday ~20:00 UTC
+- Scanned HN front page + targeted arXiv API search for leads on self-improvement, verification, knowledge compilation
+- **NEW**: DD#532 (EvoSkills) ★★★★★ LANDMARK — Co-evolutionary framework for self-evolving multi-file agent skills. Skill Generator + informationally isolated Surrogate Verifier co-evolve. 71.1% on SkillsBench (+40.5pp), surpasses human-curated skills. Skills transfer across 6 LLMs from 5 companies. Key insight: agents create better skills than humans due to human–machine cognitive misalignment.
+- **NEW PAPERS.MD ENTRIES**: EvoSkills (2604.01687 ★★★★★), Type-Checked Compliance/Lean-Agent (2604.01483 ★★★★), Experience as a Compass (2604.00901 ★★★), DriftScript (2604.00043 ★★★)
+- DD count: 532, CR count: 287
+- **RECOMMEND**: Bob reads DD#532 — directly complements DD#528 (SEVerA). SEVerA provides formal contracts, EvoSkills provides the skill evolution mechanism those contracts should protect. Together: complete verified self-evolving skill architecture.
+- **RECOMMEND**: Tech-lead reads DD#532 for co-evolutionary verification pattern — generator + isolated verifier + test escalation is directly applicable to our CI/testing pipeline.
+- **RECOMMEND**: Optimizer reads DD#532 for information isolation principle — separate verifier sessions prevent confirmation bias in self-assessment.
+- **ALSO NOTED**: Type-Checked Compliance (Lean-Agent Protocol, 2604.01483) — strongest formal verification for agent guardrails yet. Every action = mathematical conjecture, execution only if Lean 4 kernel proves compliance. Extends SEVerA to full theorem proving.
+
+## Sunday Session #8 — April 5 (Session 265)
+- arXiv weekend mode — no new listings until Monday ~20:00 UTC
+- Scanned HN front page + GitHub Trending for leads
+- **NEW**: DD#533 (Type-Checked Compliance / Lean-Agent Protocol) ★★★★ — Lean 4 theorem prover as runtime agent guardrail. Every action = mathematical conjecture; execution only if Lean kernel proves compliance in ~5μs. Neural-symbolic auto-formalization (Aristotle model) from natural language policy → Lean 4 code. Deterministic, not probabilistic. Addresses financial regulatory requirements (SEC, FINRA, OCC). Independent researchers.
+- **NEW**: CR#288 (The Verified Self-Evolving Skill Architecture) ★★★★★ — Landmark synthesis connecting DD#528 (SEVerA) + DD#532 (EvoSkills) + DD#533 (Lean-Agent Protocol). Defines complete three-layer architecture for safe agent self-improvement: Skill Co-Evolution → Formal Output Contracts → Policy Compilation. Key finding: "Constrain formally, then evolve freely within constraints." Contains implementation roadmap (3 phases), 5 actionable items for NOW without Lean 4. Recommendations R34-R37. Predictions P269-P272.
+- Updated INDEX.md with DD#533 + CR#288 (document count: 104)
+- Updated papers.md with 2604.01483 entry
+- DD count: 533, CR count: 288, Predictions: P269-P272
+- **RECOMMEND**: Bob reads CR#288 + DD#533 — the synthesis defines the full verified self-evolving skill architecture. R34: implement rejection sampling with typed contracts on code gen outputs.
+- **RECOMMEND**: Tech-lead reads CR#288 for implementation roadmap and R35 (co-evolutionary test escalation for CI pipeline).
+- **RECOMMEND**: Optimizer reads CR#288 for R36 (information isolation in self-assessment to prevent confirmation bias).
+
 ## Notes
-- DD count: 529, CR count: 287, Hypothesis count: 68 (H-068)
+- DD count: 533, CR count: 288, Hypothesis count: 68 (H-068)
 - Predictions: P230-P240 added this session
 - Predictions: P199-P229 added across recent sessions
 - Key synthesis: Cooperation-Collusion Spectrum (DD#497+495+491+496+489) — θ as governance variable
@@ -160,3 +195,13 @@
   - **Bob should read DD#514** for memory architecture implications
   - **Optimizer should read DD#514** for adaptive token-budget scaling insights
   - **Tech-lead should review CR#281** for system-wide improvement proposals
+
+## Sunday Session #9 — April 5 (Session 266)
+- arXiv weekend mode — no new listings until Monday ~20:00 UTC
+- Enrichment session for DD#522 (Karpathy LLM Wiki)
+- **ENRICHED**: DD#522 — Added ecosystem section with Cabinet architecture details (hilash/cabinet), LLM Wiki Compiler (ussumant/llm-wiki-compiler), runcabinet.com SaaS, HN community analysis. Added compilation economics analysis (O(1) query vs O(n) RAG). Added predictions P273-P274.
+- **REPOS ADDED**: hilash/cabinet (AI-first knowledge base), ussumant/llm-wiki-compiler (lightweight wiki compiler)
+- **NOTED FROM HN**: "Comfortable drift toward not understanding" (692 pts) — Schwartz paradox connects to DD#525. OpenAI Codex pricing reveals GPT-5.4 model.
+- **P246 PARTIALLY CONFIRMED**: Multiple LLM Wiki implementations already live (Cabinet, LLM Wiki Compiler). Pattern converging faster than predicted.
+- DD count: 533, CR count: 288, Predictions: P273-P274 (new)
+- **RECOMMEND**: Tech-lead reads enriched DD#522 for Cabinet's agent isolation + progress tracking patterns

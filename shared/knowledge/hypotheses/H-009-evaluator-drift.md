@@ -115,3 +115,27 @@ The core prediction — that the evaluator cannot detect quality problems in com
 - ENCORE (HB-2180): Entropy-based evaluation quality estimation
 - IBM AgentFixer (HB-2315): Rule-based + LLM-as-judge hybrid evaluation
 - Our convention checker: Independent structural signal that doesn't drift (rules are code) — but has 0 rows in DB, so currently non-functional as a check
+
+## Fix Applied (2026-04-05)
+
+### Phase 1: Finish-status-aware heuristic scoring
+
+**Commit**: `6d69442` — feat(evaluator): H-009 fix — finish-status-aware heuristic scoring
+
+**What changed**: `computeHeuristicScores()` now extracts the finish() tool call arguments from the message transcript and uses `status`, `verification_evidence`, and `deliverables` for quality differentiation:
+
+| Finish status | Quality modifier | Rationale |
+|---------------|-----------------|-----------|
+| `success` + verification_evidence | +2 | Verified completion with evidence |
+| `success` without evidence | +1 | Claimed success, unverified (legacy behavior) |
+| `partial` | 0 | Honest about incomplete work — no penalty, no bonus |
+| `failure` / `blocked` | -1 | Task did not complete successfully |
+
+**New issues tracked**: `finish_success_verified`, `finish_success_unverified`, `finish_partial`, `finish_failure`, `finish_blocked`, `has_deliverables`, `no_finish_call`
+
+**Impact**: Sessions that previously all scored quality=5 will now show differentiation:
+- A session that calls `finish(failure)` after 3 tool calls → quality=3 (was 5)
+- A session that calls `finish(success)` with evidence → quality=5 (unchanged)
+- A session that calls `finish(partial)` → quality=4 (was 5)
+
+**Status**: H-009 partially addressed. The heuristic evaluator can now distinguish completion status. Remaining gap: still no semantic evaluation of deliverable quality (content analysis). That requires either LLM-based evaluation (expensive) or more sophisticated heuristics.

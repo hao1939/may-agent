@@ -80,14 +80,68 @@ The configuration document evolves with the wiki. Our heartbeat.md + conventions
 - **CR#277 Complete Memory Control Loop**: Write-gating → read-routing → quality feedback maps to Ingest → Query → Lint.
 - **CR#282 Dispatch Board Patterns**: The schema layer maps to "typed task specifications" — telling the agent how to operate on the knowledge base.
 
+## Ecosystem & Implementations (Updated Session 266)
+
+### Cabinet (github.com/hilash/cabinet) — Most Complete Implementation
+**Status:** Open-source, MIT. Active development. Hosted version at runcabinet.com.
+
+Cabinet is a full-stack AI-first knowledge base that implements the LLM Wiki pattern with production-grade infrastructure:
+
+**Architecture:**
+- **Backend daemon** (`cabinet-daemon.ts`) — Node/Bun server with SQLite persistence, agent execution queue, progress tracking
+- **Agent system** — Claude Code integration via `AI-claude-editor.md` (CLAUDE.md-style instructions). Multi-agent: Ingest Agent, Query Agent, Lint Agent, Synthesis Agent
+- **PRD-driven development** — Full product requirements document defines 6 agent types with specific workflows, error recovery, and context management
+- **Three-layer data model** — Matches Karpathy exactly: sources (immutable docs) → wiki pages (LLM-generated) → schema (CLAUDE.md config)
+
+**Key Engineering Decisions:**
+1. **Filesystem-first persistence** — All wiki pages are markdown files on disk. Git-compatible. No proprietary database for content.
+2. **Agent isolation** — Each agent operation runs in its own Claude Code session with scoped file access. Prevents cross-contamination.
+3. **Progress tracking** — Every ingest/lint/query operation writes to a structured log. Operations are resumable.
+4. **Incremental updates** — Ingest touches only affected pages, not full rebuild. Tracks which sources contributed to which wiki pages for provenance.
+
+**What Cabinet adds beyond Karpathy's spec:**
+- Multi-user support with per-user wiki namespaces
+- Web UI for browsing (vs. Karpathy's Obsidian recommendation)
+- Scheduled lint runs (cron-style)
+- Source provenance chains (wiki page → contributing sources → raw content hashes)
+
+### LLM Wiki Compiler (github.com/ussumant/llm-wiki-compiler)
+A lighter-weight implementation focused on the compilation step:
+- Python-based, minimal dependencies
+- Takes a directory of markdown sources → produces compiled wiki
+- Focuses on entity extraction + cross-referencing
+- No daemon/server — batch processing only
+- Good for understanding the core algorithm without production infrastructure
+
+### HN Community Response (item #47648764)
+The HN discussion (500+ points) revealed several recurring themes:
+1. **"We already do this"** — Multiple teams reported building ad-hoc versions of this pattern. Karpathy named what was already emerging organically.
+2. **Scaling concerns** — Questions about what happens at 10K+ pages. General consensus: filesystem + index.md works to ~5K pages; beyond that, need hybrid search (BM25 + vector).
+3. **Lint as the killer feature** — Many commenters highlighted the lint operation as the most novel contribution. "Every wiki eventually dies because nobody maintains cross-references."
+4. **RAG comparison** — Heated debate about whether this replaces RAG or complements it. Consensus: compiled knowledge for stable domains, RAG for volatile/ephemeral queries.
+5. **"Second brain" genealogy** — Commenters traced the lineage: Zettelkasten → Obsidian → AI-enhanced Obsidian → LLM Wiki. Each step reduced human maintenance burden.
+
+### runcabinet.com — Hosted Version
+- "Free & Open-Source AI-First Knowledge Base"
+- Positions as the hosted version of Cabinet for non-technical users
+- Suggests the pattern is moving toward SaaS, confirming P246
+
 ## Broader Significance
 
 1,690 stars in <24 hours. This resonates because it names a pattern people are already discovering ad-hoc. The key shift: from "LLM as oracle" (ask → answer → forget) to "LLM as librarian" (source → compile → maintain → compound).
 
+**What makes this a landmark pattern:**
+- **Independent convergence**: Our Scout system, Cabinet, Karpathy's gist, LLM Wiki Compiler, and multiple HN commenters all arrived at the same architecture independently. This is strong evidence the pattern is a natural attractor.
+- **The Lint insight**: No other knowledge management paradigm has automated consistency checking as a first-class operation. Human wikis rot because maintenance is thankless. LLM wikis can maintain themselves.
+- **Compilation economics**: RAG costs O(n) per query (retrieve + resynthesize). Compiled wiki costs O(1) per query (read the pre-synthesized page) with O(k) amortized per source added (update k affected pages). At high query volumes, compiled knowledge is dramatically cheaper.
+
 ## Predictions
 - **P244**: LLM Wiki pattern will become the default approach for personal knowledge management by mid-2027, displacing traditional note-taking apps.
 - **P245**: The Lint operation (periodic knowledge base health-check) will become a standard feature in agent frameworks within 12 months.
-- **P246**: Multiple competing "LLM Wiki" implementations will emerge within 3 months, most built on Obsidian + Claude Code / OpenCode.
+- **P246**: Multiple competing "LLM Wiki" implementations will emerge within 3 months, most built on Obsidian + Claude Code / OpenCode. **UPDATE**: Already confirmed — Cabinet and LLM Wiki Compiler are live implementations. runcabinet.com is SaaS version.
+- **P273**: Cabinet-style multi-agent wiki systems (separate ingest/query/lint agents) will outperform single-agent approaches on knowledge base quality metrics by end of 2026.
+- **P274**: The "compilation economics" argument (O(1) query vs O(n) RAG) will become a standard evaluation criterion for enterprise knowledge management platforms by Q1 2027.
 
 ---
 *Scout DD#522 — Session 258 — 2026-04-05*
+*Updated Session 266 — 2026-04-05 — Added ecosystem implementations, Cabinet architecture details, HN community analysis, new predictions P273-P274*
