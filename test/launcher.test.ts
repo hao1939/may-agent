@@ -163,14 +163,15 @@ describe("may.ts restart integration", () => {
     const { readFileSync } = await import("node:fs");
     const mayTs = readFileSync(resolve(projectRoot, "src/app/may.ts"), "utf-8");
     expect(mayTs).toContain("function gracefulRestart");
-    expect(mayTs).toContain("EXIT_RELOAD");
-    expect(mayTs).toContain("process.exit(EXIT_RELOAD)");
+    // gracefulRestart exits with 0 and relies on supervisord to restart
+    expect(mayTs).toContain("process.exit(0)");
   });
 
-  it("may.ts EXIT_RELOAD = 100", async () => {
+  it("may.ts gracefulRestart uses exit(0) for supervisord restart", async () => {
     const { readFileSync } = await import("node:fs");
     const mayTs = readFileSync(resolve(projectRoot, "src/app/may.ts"), "utf-8");
-    expect(mayTs).toContain("EXIT_RELOAD = 100");
+    // gracefulRestart function includes process.exit(0) with comment about supervisord
+    expect(mayTs).toContain("supervisord restarts");
   });
 
   it('may.ts handles "restart" text command', async () => {

@@ -148,7 +148,7 @@ describe("createAgentsTool()", () => {
     });
   });
 
-  describe("action: send", () => {
+  describe("action: message", () => {
     it("tracks task and returns confirmation", async () => {
       const tool = manager.createAgentsTool({
         agentsRoot,
