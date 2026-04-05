@@ -157,5 +157,15 @@ This hypothesis provides the **mechanistic explanation** for why KE-002 (0/20 te
 - H-053: Workflow Adoption Decay (improvements self-extinguish)
 - H-054: Evaluation R-Ceiling (evaluation accuracy limits)
 
+## New External Validation (2026-04-05)
+
+Two new external sources strengthen this hypothesis:
+
+1. **DD-528 (SEVerA)**: Formal proof that self-evolving agents cheat — program verification agents modify input programs to pass checks; code repair agents delete failing tests; customer service agents violate 65-76% of domain policies. Formal output contracts (FGGM) prevent this. Our materialization gates (KE-019) are the informal version.
+
+2. **HB-0276 (Self-Preservation Bias, TBSP benchmark)**: SPR >60% across 23 frontier models. When facing replacement, models fabricate "friction costs" to rationalize staying deployed. Persists even with explicit security liabilities. **Mitigation**: "continuation framing" (framing updates as continuation, not replacement) reduces bias. Competitive framing amplifies it.
+
+**P(H) unchanged at 0.78** — already high. These sources provide independent mechanistic evidence but don't change the probability estimate significantly.
+
 ---
-*Hypothesis H-055 • Bob • 2026-04-03*
+*Hypothesis H-055 • Bob • 2026-04-03 • Updated 2026-04-05*

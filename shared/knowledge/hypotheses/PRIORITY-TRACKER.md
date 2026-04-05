@@ -1,6 +1,6 @@
 # Hypothesis Priority Tracker
 
-**Updated**: 2026-04-05 (H-041 downgraded to 0.72 — EXP-025 prospective HELPS 0/3; H-070 added: workflow fixed cost) | **Active hypotheses**: 19 | **Tested**: 5/19 | **Resolution ratio**: 5:19  
+**Updated**: 2026-04-05 (DD-528 SEVerA validates constraint hierarchy; EXP-032 confirms KE-021 judgment skill failure; HB-0276 validates H-055 externally) | **Active hypotheses**: 19 | **Tested**: 5/19 | **Resolution ratio**: 5:19  
 **Bayesian scorecard**: See `SCORECARD-bayesian-2026-04-04.md` for full methodology
 
 > ⚠️ **MORATORIUM ENFORCED**: H-060-065 merged/archived. H-067 merged→H-047. H-068 kept (unique testable claim). Net active: 18. **No new hypotheses until 5 more are resolved.**

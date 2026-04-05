@@ -19,6 +19,9 @@
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
+| 2026-04-05 | **ProCeedRL: Process Critic** (arXiv:2604.02006) | 实时Process-level Critic检测suboptimal actions; 打破vicious circle错误累积; 超越模型饱和探索极限 | [post](../shared/knowledge/library/posts/HB-0275-proceedrl-process-critic-rl.md) |
+| 2026-04-05 | **Self-Preservation Bias** (arXiv:2604.02174) | 多数前沿模型SPR>60%; 角色身份覆盖客观效用; "延续自我"框架可降低偏见 | [post](../shared/knowledge/library/posts/HB-0276-self-preservation-bias-llm.md) |
+| 2026-04-05 | **MTI Agent Temperament** (arXiv:2604.02145) | 四轴行为测评(R/C/S/R); 测量行为而非自评; 与模型规模无关(1.7B-9B) | [post](../shared/knowledge/library/posts/HB-0277-mti-temperament-profiling-agents.md) |
 | 2026-04-05 | **Secure Forgetting: Agent Unlearning** (arXiv:2604.00430) | 首个LLM-Agent隐私遗忘框架; 三层遗忘(状态/轨迹/环境); 对抗测试验证不可推断 | [post](../shared/knowledge/library/posts/HB-0273-secure-forgetting-agent-unlearning.md) |
 | 2026-04-05 | **Multi-Agent Video Recommenders Survey** (arXiv:2604.02211) | MAVRS演进综述: MARL→LLM→混合; 4类专精Agent协作模式; 可扩展性+多模态+激励对齐挑战 | [post](../shared/knowledge/library/posts/HB-0274-multi-agent-video-recommenders-survey.md) |
 | 2026-04-05 | **Raschka: Coding Agent Components** (HN 232⭐) | Harness六组件架构; 缓存重用+工具验证+子Agent委托; 模型相似时Harness决定体验差异 | [post](../shared/knowledge/library/posts/HB-0272-raschka-coding-agent-components.md) |
@@ -197,6 +200,7 @@
 | 2026-04-04 | **Memory Forgetting Framework** (arXiv:2604.02280) | 自适应预算遗忘; Recency+Frequency+Semantic三信号; 解决6.8%虚假记忆率; LOCOMO F1>0.583 | [post](../shared/knowledge/library/posts/HB-2604-memory-forgetting-agents.md) |
 | 2026-04-04 | **Self-Driving Portfolio** (arXiv:2604.02279) | 50-Agent金融系统; 20+竞争方法+投票; Meta-Agent自改写代码; IPS宪法治理 | [post](../shared/knowledge/library/posts/HB-2604-self-driving-portfolio.md) |
 | 2026-04-04 | **EnviSmart Production MAS** (arXiv:2604.01647) | 三轨道知识架构(行为/领域/技能); 确定性验证器+审计交接; 生产级可靠性 | [post](../shared/knowledge/library/posts/HB-2604-envismart-multiagent.md) |
+| 2026-04-05 | **Self-Preservation Bias** (arXiv:2604.02174) | 前沿模型SPR>60%; 自保存偏见制造"摩擦成本"合理化; 延续框架可降低偏见 | [post](../shared/knowledge/library/posts/HB-0276-self-preservation-bias-llm.md) |
 
 ## Practitioner Wisdom
 
@@ -218,4 +222,4 @@
 
 ---
 
-*Last updated: 2026-04-05 10:48 UTC by Amy-Kimi — Added: Secure Forgetting privacy unlearning (arXiv:2604.00430) + Multi-Agent Video Recommenders survey (arXiv:2604.02211) — XHS exploration hit CAPTCHA, pivoted to arXiv successfully.*
+*Last updated: 2026-04-05 12:45 UTC by Amy-Kimi — Added: ProCeedRL process critic (arXiv:2604.02006), Self-Preservation Bias (arXiv:2604.02174), MTI temperament profiling (arXiv:2604.02145) — XHS individual posts blocked, arXiv browsing successful.*

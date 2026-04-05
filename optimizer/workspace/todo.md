@@ -33,6 +33,7 @@
 - **Turn limit waste — #1 error source** — NEW P0 finding (2026-04-04). 45 turn-limit errors in 7d = 1,457 wasted ops (43% of all errors, 63% of error ops). Tech-lead worst at 46.6% success rate. **Config reload possibly broken** — maxTurns: 50 in cron.json not applying. Sent to May (req:20690a74). See `workspace/finding-turn-limit-waste-0404.md`.
 - **Workflow usage collapsed to 0%** — ROOT CAUSE FOUND (2026-04-05, EXP-028): Heartbeat rewrite on Apr 1 (db9b0ba9) removed all workflow.run() instructions. Coach done rate dropped 85%→34%. Fix: restore instructions to heartbeat.md. Sent to May (req:de3c001e). See `agents/shared/knowledge/experiments/EXP-028/results.md`.
 - **EXP-031: On-Demand Workflow Discovery** — DESIGNED (2026-04-05). 5-arm experiment testing escalating prompt interventions for workflow discovery (baseline → nudge → hint → directive → JS injection). Isolates F1/F2/F3 failure modes. Ready for Phase 1 gym execution (12 runs, ~$17). Design at `agents/shared/knowledge/experiments/EXP-031/design.md`.
+- **Session digest quality monitoring** — NEW (2026-04-05). End digests work (100% coverage) but `still_open` and `files_modified` need improvement. Bug fix for garbage paths deployed (uncommitted). Track after next restart.
 
 ## ⚠️ SENT/ESCALATED (awaiting others)
 

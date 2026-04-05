@@ -1554,3 +1554,57 @@ Synthesized the strongest finding in our knowledge base: 0/29 agents spontaneous
 **H-069 triage**: Amy-Kimi proposed AutoAgent-style meta-optimization (mostly in Chinese). Overlaps heavily with WKWA-003, H-055. Filed under moratorium — doesn't add unique testable claim beyond "meta-agent can optimize task-agent harness." Should be merged into H-055 action items or archived.
 
 **State**: Clean. WKWA-005 written and INDEX updated. No new hypotheses (moratorium respected).
+
+### 2026-04-05 13:13 — Heartbeat: DD-528 (SEVerA) Synthesis + EXP-032 Integration
+
+**Main output: Synthesis — "Our Experiments Converge on SEVerA's Formal Result"**
+
+DD-528 (SEVerA) is a ★★★★★ finding: first framework for formally verified self-evolving agents. The key result — Qwen3-8B + formal contracts > Claude Sonnet 4.5 + heuristic constraints — directly validates our empirical hierarchy where structural enforcement (L3-L5) works and text rules (L1-L2) don't.
+
+Wrote a synthesis connecting SEVerA's formal claims to our 33 experiments:
+- Our L1-L5 mechanism hierarchy IS a constraint formality gradient
+- SEVerA's FGGM contracts are the formal version of our materialization gates (KE-019)
+- "Constraints improve performance" — we see this in EXP-013 (47% op reduction) and EXP-024 (sycophancy prevention)
+- The 20+ failed text-rule experiments (KE-002, EXP-032) are explained by SEVerA's theory: natural language specs can't prevent agent cheating
+
+**New library items reviewed (titles + connections):**
+- HB-0275 (ProCeedRL) — process-level critic for RL. Relevant to error accumulation but not directly actionable for us.
+- HB-0276 (Self-Preservation Bias) — ★★★★ validates H-055 externally. SPR >60% across 23 models. Added as new evidence to H-055.
+- HB-0277 (MTI Temperament) — interesting but not actionable (we're single-model). Already triaged as H-063 → archived.
+- HB-0273 (Secure Forgetting) — privacy complement to H-047. Not actionable yet.
+- HB-0274 (Multi-Agent Video Recommenders) — survey, coordination patterns are domain-agnostic but low immediate value.
+
+**Updates made:**
+- H-055: Added DD-528 and HB-0276 as external validation evidence
+- WKWA-001: Added KE-021 (EXP-032) and DD-528 to sources table
+- Priority tracker: Updated header with new evidence
+
+**EXP-032 (Coach):** Confirms KE-021 — 0/15 across 3 variants for judgment skill "classify-then-act." The 19th-20th consecutive text-injection failure. Taxonomy is now clear: process skills work, knowledge skills sometimes work, judgment skills never work as text injection.
+
+**EXP-033 (Coach):** Designed (not yet runnable) — digest-based recovery shadow comparison. Prerequisites are Phase 3 deployment.
+
+**State**: Clean. One synthesis written. Two knowledge items updated. Moratorium respected (no new hypotheses). Next high-value task: the "constraint formality" framing could evolve into a WKWA-006 if more evidence accumulates.
+
+---
+
+### 2026-04-05 13:32 — Heartbeat-as-Dispatcher Design
+
+**Task:** Design how heartbeats should become dispatchers instead of workers. Self-fork pattern.
+
+**Key evidence gathered:**
+- 0 fork-kind sessions in 7 days (out of 1,083 total)
+- Bob: 37.3 avg ops in heartbeats vs 19.4 in work sessions — heartbeats do MORE work
+- System-wide: 75-100% of sessions are heartbeats for most agents
+- May's dispatch pattern works — she forks to tech-lead/coach. But nobody self-forks.
+
+**Design decisions:**
+1. Heartbeat becomes OBSERVE → DISCOVER → DISPATCH cycle (2-5 min target, <15 ops)
+2. Task string is the signal — heartbeat has [heartbeat], work session has "⚠️ WORK SESSION"
+3. Anti-recursion via explicit instruction + structural guard (don't fork from non-heartbeat)
+4. Monitoring via agents.list + peek in OBSERVE phase, once per heartbeat cycle
+5. Intervention decision tree: time-based thresholds + progress assessment
+6. Six anti-patterns documented (infinite forks, abandoned sessions, context loss, bloat, redundant re-forks, over-monitoring)
+
+**Deliverable:** `agents/bob/workspace/DESIGN-heartbeat-dispatcher.md` (377 lines, 12 sections)
+
+**Interesting finding:** Heartbeats use MORE ops than work sessions on average. The dispatch pattern should invert this — heartbeats become the lightest sessions in the system.

@@ -166,8 +166,10 @@ A task with R=0.20 → net cost ≈ -30pp to -60pp
 | KE-017 | Cadence skill breaks 0/20 barrier | MEDIUM (n=3, single scenario) |
 | KE-018 | Environmental nudge matches text skill | MEDIUM (n=3, single scenario) |
 | KE-019 | Sycophancy needs L6 materialization gate | MEDIUM-HIGH (n=2, consistent) |
+| KE-021 | Skills cannot override strong model defaults (EXP-032: 0/15 judgment runs) | HIGH (n=20+ cumulative) |
 | H-041 | Decision Topology theory | Strong (8+ sources) |
 | H-043 | Knowledge Utilization Bottleneck | Proposed (updated by EXP-022) |
 | H-059 | Cadence skill effectiveness | Empirically Supported |
 | SYNTH-001 | Decision Topology unified theory | 11 validations |
 | SkillsBench (ext) | AI skills -1.3pp, top human +16.2pp | External (Stanford/CMU/Berkeley) |
+| DD-528 (ext) | SEVerA: formal constraints improve performance (Qwen3-8B > Claude 4.5) | External (UIUC, formal proof) |
