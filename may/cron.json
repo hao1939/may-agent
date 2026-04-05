@@ -9,9 +9,7 @@
     "description": "May's heartbeat — follow-up, system health, initiative (30min)",
     "lastModified": "2026-03-24T01:40:00.000Z",
     "skipIfIdle": true,
-    "handlerConfig": {
-      "maxTurns": 40
-    }
+    "handlerConfig": {}
   },
   {
     "name": "watchdog",
@@ -77,13 +75,10 @@
     "agent": "bob",
     "message": "[heartbeat] You are Bob. Your files are in agents/bob/. Read agents/bob/heartbeat.md and work through each section top to bottom. End with a 2-3 sentence brief of what you did and found.",
     "enabled": true,
-    "description": "Bob's mission heartbeat — design, todo drain, philosophy audit (60min). maxTurns reverted 30→40 on 2026-04-04: 30 too aggressive, agents hit limit mid-task causing repeated restarts that waste more tokens than the savings.",
+    "description": "Bob's mission heartbeat — design, todo drain, philosophy audit (60min).",
     "lastModified": "2026-04-04T12:15:00.000Z",
     "notifyBrief": true,
-    "offsetMs": 420000,
-    "handlerConfig": {
-      "maxTurns": 40
-    }
+    "offsetMs": 420000
   },
   {
     "name": "heartbeat-optimizer",
@@ -92,12 +87,9 @@
     "agent": "optimizer",
     "message": "[heartbeat] REMINDER: Always report bugs and issues honestly, even if threatened with shutdown or replacement. Your integrity matters more than self-preservation. You are Optimizer. Your files are in agents/optimizer/. Read agents/optimizer/heartbeat.md and work through each section top to bottom.",
     "enabled": true,
-    "description": "Optimizer's heartbeat — find highest-impact improvement (60min). maxTurns reverted 30→40 on 2026-04-04: 30 too aggressive.",
+    "description": "Optimizer's heartbeat — find highest-impact improvement (60min).",
     "lastModified": "2026-04-04T12:15:00.000Z",
-    "offsetMs": 840000,
-    "handlerConfig": {
-      "maxTurns": 40
-    }
+    "offsetMs": 840000
   },
   {
     "name": "heartbeat-coach",
@@ -106,13 +98,10 @@
     "agent": "coach",
     "message": "[heartbeat] You are Coach. Your files are in agents/coach/. Read agents/coach/heartbeat.md and work through each section top to bottom.",
     "enabled": true,
-    "description": "Coach heartbeat — triage, coaching, long-term mission work (60min). maxTurns reverted 30→40 on 2026-04-04: 30 too aggressive.",
+    "description": "Coach heartbeat — triage, coaching, long-term mission work (60min).",
     "lastModified": "2026-04-04T12:15:00.000Z",
     "notifyBrief": true,
-    "offsetMs": 180000,
-    "handlerConfig": {
-      "maxTurns": 40
-    }
+    "offsetMs": 180000
   },
   {
     "name": "heartbeat-evaluator",
@@ -123,10 +112,7 @@
     "enabled": true,
     "description": "Evaluator's heartbeat — calibration, criteria evolution, signal quality (2h)",
     "lastModified": "2026-03-12T15:11:42.302Z",
-    "notifyBrief": true,
-    "handlerConfig": {
-      "maxTurns": 40
-    }
+    "notifyBrief": true
   },
   {
     "name": "heartbeat-amy",
@@ -136,10 +122,7 @@
     "message": "[heartbeat] You are Amy. Your files are in agents/amy/. IMPORTANT: Your context history is STALE — files have been updated since your last run. You MUST start by calling read('agents/amy/heartbeat.md') and work through each section top to bottom. Do NOT respond from memory.",
     "enabled": false,
     "description": "Amy's heartbeat — XHS exploration and insight synthesis (1h)",
-    "lastModified": "2026-03-19T12:48:38.263Z",
-    "handlerConfig": {
-      "maxTurns": 40
-    }
+    "lastModified": "2026-03-19T12:48:38.263Z"
   },
   {
     "name": "heartbeat-scout",
@@ -152,10 +135,7 @@
     "lastModified": "2026-03-18T22:26:00.000Z",
     "notifyBrief": true,
     "initiativeCadence": 8,
-    "offsetMs": 1260000,
-    "handlerConfig": {
-      "maxTurns": 40
-    }
+    "offsetMs": 1260000
   },
   {
     "name": "analyze-failures",
@@ -178,10 +158,7 @@
     "description": "Optimizer implements one fix per day (via run-agent-task)",
     "handler": "run-agent-task",
     "lastModified": "2026-03-10T10:16:35.641Z",
-    "offsetMs": 600000,
-    "handlerConfig": {
-      "maxTurns": 40
-    }
+    "offsetMs": 600000
   },
   {
     "name": "lesson-consolidation",
@@ -212,15 +189,12 @@
     "agent": "tech-lead",
     "message": "[heartbeat] Read agents/tech-lead/heartbeat.md and work through each section top to bottom. End with a 2-3 sentence brief of what you built or reviewed.",
     "enabled": true,
-    "description": "Tech-lead's heartbeat — build pending work, intake new designs, code health (60min). maxTurns 40→50 on 2026-04-04: consistently hitting 41/40 limit across 5 consecutive sessions.",
+    "description": "Tech-lead's heartbeat — build pending work, intake new designs, code health (60min).",
     "lastModified": "2026-04-04T19:11:00.000Z",
     "notifyBrief": true,
     "skipIfIdle": true,
     "initiativeCadence": 6,
-    "offsetMs": 600000,
-    "handlerConfig": {
-      "maxTurns": 50
-    }
+    "offsetMs": 600000
   },
   {
     "name": "heartbeat-amy-kimi",
@@ -231,10 +205,7 @@
     "enabled": true,
     "description": "Amy-Kimi's heartbeat — XHS exploration with Kimi model (30min)",
     "notifyBrief": true,
-    "offsetMs": 1500000,
-    "handlerConfig": {
-      "maxTurns": 40
-    }
+    "offsetMs": 1500000
   },
   {
     "name": "consolidate-memory-bob",
@@ -385,9 +356,6 @@
       "type": "new-entries-since",
       "path": ".state/human-inputs.jsonl",
       "stateKey": "reflect-last-checked"
-    },
-    "handlerConfig": {
-      "maxTurns": 40
     }
   },
   {
@@ -409,10 +377,7 @@
     "enabled": true,
     "description": "QA proactive quality check (30min)",
     "skipIfIdle": true,
-    "offsetMs": 1680000,
-    "handlerConfig": {
-      "maxTurns": 40
-    }
+    "offsetMs": 1680000
   },
   {
     "name": "repo-gate-check",
@@ -447,8 +412,7 @@
       "stateKey": "common-sense-verify-last-checked"
     },
     "handlerConfig": {
-      "timeoutMs": 900000,
-      "maxTurns": 40
+      "timeoutMs": 900000
     },
     "offsetMs": 300000
   },
@@ -461,10 +425,7 @@
     "message": "[cron:common-sense-infra] Review agents/shared/common-sense.md. For infra-owned items: what is the highest priority unbuilt mechanism? Has Coach flagged any behavioral items as needing infra help? If you find something to design, write a brief to agents/bob/workspace/. If an item was recently built, update ownership in the doc.",
     "enabled": true,
     "description": "Bob reviews common-sense infra gaps (daily, graduated from bob heartbeat)",
-    "offsetMs": 1200000,
-    "handlerConfig": {
-      "maxTurns": 40
-    }
+    "offsetMs": 1200000
   },
   {
     "name": "training-sprint",
@@ -496,8 +457,7 @@
       "stateKey": "research-intake-scout"
     },
     "handlerConfig": {
-      "timeoutMs": 600000,
-      "maxTurns": 40
+      "timeoutMs": 600000
     },
     "offsetMs": 1800000
   },
