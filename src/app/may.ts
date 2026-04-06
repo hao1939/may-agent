@@ -695,6 +695,7 @@ function gracefulRestart() {
   }
 
   // Don't cancel sessions — leave them as status:"running" for resumeStaleSessions().
+  // Exit 0 — supervisord restarts the process automatically.
   // Force-kill after 3s. process.exit() hangs in Bun when HTTP streams are open.
   setTimeout(() => process.kill(process.pid, "SIGKILL"), 3000).unref();
   process.exit(0);
