@@ -71,7 +71,6 @@ import {
   listWorkflowRuns,
   saveWorkflowRun,
   readCompactedMessages,
-  archiveSession,
   readArchivedSessionMessages,
   historyDir,
 } from "./persistence.js";
@@ -623,18 +622,12 @@ export class SubagentManager {
     return ctxLines.join("\n");
   }
 
-  /** Archive a session after completion: move to history and clean up step counter. */
+  /** Clean up step counter on session completion. Sessions stay in sessions/<id>/ — no archiving. */
   private cleanupSession(session: ActiveSession): void {
     try {
       cleanupStepCounter(session.sessionId);
     } catch {
       /* best-effort */
-    }
-    // Move session directory from active (sessions/<id>) to history (sessions/history/<id>)
-    try {
-      archiveSession(this.registry.persistDir, session.sessionId);
-    } catch {
-      /* best-effort — zombie cleanup will catch it later */
     }
   }
 
@@ -1175,10 +1168,9 @@ export class SubagentManager {
       if (!meta) continue;
       const terminalStatuses = ["done", "error", "interrupted"];
       if (terminalStatuses.includes(meta.status ?? "")) {
-        try {
-          archiveSession(persistDir, sessionId);
-          cleaned++;
-        } catch { /* best-effort — will retry next cycle */ }
+        // Sessions stay in sessions/<id>/ — no archiving to history/.
+        // Just count them as cleaned (zombie status resolved).
+        cleaned++;
       }
     }
 
