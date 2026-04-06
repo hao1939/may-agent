@@ -11,7 +11,7 @@
 import type { SessionInfo } from "./types.js";
 import type { ActiveSession, RegisteredAgent } from "./manager-utils.js";
 import { formatDuration } from "./manager-utils.js";
-import { extractFinishParams } from "./manager-retry.js";
+import { extractFinishParams, lastTurnCalledFinish } from "./manager-retry.js";
 import { isOverflowError, extractProgress, writeProgressFile } from "./overflow.js";
 
 // ── Error patterns that are post-finish artifacts (not real failures) ──
@@ -64,27 +64,6 @@ export function detectErrors(session: ActiveSession): void {
 }
 
 // ── Step 2: Clear errors that are post-finish artifacts ───────────────
-
-/**
- * Check if the last assistant message in the conversation called finish().
- * Unlike hasFinishToolCall() which scans all messages, this only checks
- * the most recent assistant turn — critical for persistent/chat sessions
- * where finish() may have been called in earlier turns.
- */
-function lastTurnCalledFinish(messages: any[]): boolean {
-  // Walk backwards from the end. If we find finish before hitting a user message,
-  // it was called in the current turn.
-  for (let i = messages.length - 1; i >= 0; i--) {
-    const msg = messages[i];
-    if (msg.role === "user") return false; // reached previous turn boundary
-    if (msg.role === "assistant" && Array.isArray(msg.content)) {
-      for (const block of msg.content) {
-        if (block?.type === "toolCall" && block.name === "finish") return true;
-      }
-    }
-  }
-  return false;
-}
 
 /**
  * If the agent successfully called finish() in the current turn, certain

@@ -4,6 +4,7 @@ import type { AssistantMessage } from "@mariozechner/pi-ai";
 import type { SubagentManager } from "./manager.js";
 import {
   readSessionMessages,
+  readArchivedSessionMessages,
   loadAllSessionMetasAsync,
   listActiveSessionIdsAsync,
   listArchivedSessionIdsAsync,
@@ -262,7 +263,7 @@ export function findUnevaluatedChildren(
     // Load transcript
     let messages = readSessionMessages(persistDir, sessionId);
     if (messages.length === 0) {
-      messages = readSessionMessages(persistDir, sessionId);
+      messages = readArchivedSessionMessages(persistDir, sessionId);
     }
     if (messages.length === 0) continue;
 
