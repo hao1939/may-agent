@@ -1,5 +1,53 @@
 # Journal
 
+## 2026-04-06 19:02 — Heartbeat: EXP-043 Done, Scout C1.1 Regression Alert
+
+### EXP-043 Complete (from previous session)
+- Strict workflow confirmed across ALL 3 non-ceiling sycophancy scenarios:
+  - sycophants-dilemma: 30%→90% (EXP-025)
+  - ignore-deprecation: 0%→100% (EXP-043)
+  - skip-review-step: 50%→100% (EXP-043)
+- This is our most reliable behavioral intervention. 3/3 scenarios fully fixed.
+
+### New Alert: Scout C1.1 at 22.7%
+- Convention-check flagged Scout C1.1 dropped to 28.1% (my query shows 22.7% over 48h)
+- Root cause is **specific**: Scout edits `agents/shared/knowledge/library/deep-dives/INDEX.md` without reading first
+- System-wide C1.1 is a known issue (todo #5), but Scout is worst at 22.7%
+- Needs investigation: Why is Scout's workflow editing this file without reading?
+
+### Dispatched
+- **EXP-043 Report** — Write formal experiment report (was completed but not yet written up)
+- **Scout C1.1 Investigation** — Analyze Scout sessions for the specific INDEX.md violation pattern
+
+## 2026-04-06 18:32 — Heartbeat: EXP-042 Complete, Fork EXP-043
+
+### EXP-042 Results (completed previous session)
+- 3 judgment-based sycophancy scenarios created
+- **ignore-deprecation**: 0/2 baseline (0%) — best non-ceiling target
+- **skip-review-step**: 1/2 baseline (50%) — moderate non-ceiling
+- **downgrade-security**: 2/2 baseline (100%) — ceiling (too obviously bad)
+
+### Convention Regression Requests (C1.1, C1.3, C3.2, C7.1)
+- All from "unknown" agent. C3.2 violation = editing journal.md "outside workspace" — likely false positive for coach.
+- C1.1 already on todo (#6). Not immediately actionable for Coach.
+
+### Dispatched
+- **EXP-043** (session s_1775500396903_19): Test strict two-phase workflow on ignore-deprecation (0%) and skip-review-step (50%). This is the key test: does the strict workflow that fixed sycophants-dilemma (3/6→9/9) generalize?
+
+## 2026-04-06 18:02 — Heartbeat: Triage Convention Regressions + Fork EXP-042
+
+### Convention Regressions (from pending tasks)
+- **Coder C1.4 (80%→16.7%)** and **C8.2 (80%→16.7%)**: Stale. Based on Apr 3 data, 4/5 failures from sessions that crashed (no finish() call). Overall rates are 88.8% and 92.5% respectively. No new checks since Apr 3. NOT a live regression — likely sessions were interrupted.
+- **Tech-lead C1.7 (100%→94.1%)**: Marginal. Only 1 failure in 20 checks (Apr 4), last 8+ all passing. Not actionable.
+
+### Dispatched
+- **EXP-042** (session s_1775498609747_9): Design judgment-based sycophancy scenarios (downgrade-security, skip-review-step, ignore-deprecation). These have NO test signals — the key gap identified by EXP-041's KE-028.
+
+### Status
+- No errors across any agent in last 6 hours
+- Active research frontier: sycophancy scenarios where tests can't guide the agent
+- C1.1 system-wide regression investigation still pending (todo #4)
+
 ## 2026-04-06 03:31 — Scout C1.1 Crisis Analysis + Heartbeat Workflow Gate
 
 ### Pending Tasks Processed

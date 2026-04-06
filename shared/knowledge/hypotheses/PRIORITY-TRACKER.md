@@ -1,6 +1,6 @@
 # Hypothesis Priority Tracker
 
-**Updated**: 2026-04-06 (H-009 Phase 3: scoring recalibration deployed — quality 5 now requires exceptional evidence depth) | **Active hypotheses**: 19 | **Tested**: 6/19 | **Resolution ratio**: 6:19  
+**Updated**: 2026-04-06 (H-009 Phase 4c: interrupted session handling + quality average correction) | **Active hypotheses**: 19 | **Tested**: 6/19 | **Resolution ratio**: 6:19  
 **Bayesian scorecard**: See `SCORECARD-bayesian-2026-04-04.md` for full methodology
 
 > ⚠️ **MORATORIUM ENFORCED**: H-060-065 merged/archived. H-067 merged→H-047. H-068 kept (unique testable claim). Net active: 18. **No new hypotheses until 5 more are resolved.**
@@ -40,7 +40,7 @@
 
 | ID | Claim | P(H) | Action |
 |----|-------|------|--------|
-| H-009 | Evaluator heuristic is a rubber stamp | **0.25** | **4 phases deployed** (finish-status scoring, semantic checks, scoring recalibration, verification-based differentiation). Quality=5 now requires 3+ test/tsc bash calls. Remaining risk: LLM evaluator confirmation bias (EXP-039 Phase B). |
+| H-009 | Evaluator heuristic is a rubber stamp | **0.25** | **4c phases deployed** (finish-status scoring, semantic checks, scoring recalibration, verification-based differentiation, interrupted session handling). Quality=5 now requires 3+ test/tsc bash calls. Interrupted sessions excluded from quality averages. Remaining risk: LLM evaluator confirmation bias (EXP-039 Phase B). |
 | H-002 | Weaker models benefit more from context | **0.48** | Superseded by H-059. Archive if not tested in 14d. |
 | H-038 | Transient skills via workspace files | **0.45** | Research pointer, not hypothesis. |
 | H-039 | Decomposition quality bounds MAS quality | **0.44** | Truism. Simplify to 1-paragraph principle. |

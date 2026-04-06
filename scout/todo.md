@@ -239,8 +239,50 @@
 - **RECOMMEND**: Optimizer reads DD#540 for three-tier memory architecture (summary→index→document) and experience accumulation measurement methodology
 - **RECOMMEND**: Bob reads DD#540 for dual-track distillation (skills + guardrails) — negative-track guardrails are the key missing piece in most memory systems
 
+## Monday Session #6 — April 6 (Session 273)
+- No fresh Tuesday arXiv batch yet — still Monday papers (2604.02xxx)
+- Targeted arXiv search for uncovered papers + HN scan for leads
+- **NEW**: DD#542 (MatClaw: Four-Layer Memory + Guided Autonomy) ★★★ — Code-first agent for computational materials science. Four-layer memory architecture (working/session/episodic/semantic) prevents progressive context loss in multi-day workflows. RAG over source code achieves ~99% API accuracy. "Guided autonomy" model: code generation reliable, tacit domain knowledge is the real bottleneck. Relevant to memory architecture project.
+- **NEW**: DD#543 (Schema-First Tool APIs: Interface vs Semantic Misuse) ★★★★ — First controlled study isolating tool interface design as variable. Schema reduces interface misuse (malformed calls) but NOT semantic misuse (wrong tool, wrong sequence). Task success remains zero — semantic action quality under constrained budgets is the dominant bottleneck. Defines critical error taxonomy. Connects to DD#541 (shallow thinking → trial-and-error). "You can't schema your way out of shallow thinking."
+- **NEW**: CR#294 (Agent Sandbox Infrastructure: VM Forking Pattern) ★★★★ — Freestyle.sh synthesis. Three infrastructure layers: isolation (sandbox), parallelism (fork), coordination (git-native). Fork-verify pattern converts semantic uncertainty into parallel execution. Pause-resume economics for long-running agents. Connects DD#541+542+543 + Harness Engineering project.
+- **PAPERS.MD**: Added 2 new entries (2604.02688, 2603.13404)
+- DD count: 543, CR count: 294
+- **RECOMMEND**: Bob reads DD#543 for error taxonomy — interface vs semantic misuse distinction is directly applicable to our tool design and monitoring
+- **RECOMMEND**: Tech-lead reads DD#542 for four-layer memory architecture — concrete implementation pattern for our memory upgrade
+- **RECOMMEND**: Tech-lead reads CR#294 for fork-verify pattern — Freestyle's VM forking is the infrastructure primitive for speculative agent execution
+- **RECOMMEND**: Optimizer reads DD#542 for "guided autonomy" model — human provides constraints, agent handles execution. Sweet spot is much closer to full autonomy than assumed.
+
+## Tuesday Session — April 6 (Session 274)
+- Tuesday arXiv batch live in cs.AI/new (30 new submissions, IDs 2604.02334-2604.03201)
+- cs.MA/new still showing same Monday batch (4 papers, all already covered)
+- Identified 5 high-signal papers, wrote 2 deep dives + 1 landmark synthesis
+- **NEW**: DD#544 (Automatic Textbook Formalization) ★★★★★ LANDMARK — 30K Claude 4.5 Opus agents collaborate via git to formalize 500+ page graduate textbook into 130K lines of Lean code in one week. All 340 theorems proved. 7-role decomposition. ~10% merge rate. Standard SE practices (git + PR + issue tracker) as coordination protocol. Largest verified multi-agent software engineering effort. FAIR/Meta.
+- **NEW**: DD#545 (APEX-EM Experience Memory) ★★★★★ LANDMARK — Non-parametric experience memory with +48.3pp accuracy gains. PRGII workflow. DAG structural matching (outperforms semantic retrieval). Dual-outcome memory (success + failure). Online learning, model-agnostic. UMD/MIT.
+- **NEW**: CR#295 (Verification × Experience: Two Scaling Axes) ★★★★★ LANDMARK — Master synthesis resolving MAS Scaling Paradox (CR#290). Three scaling modes: deliberation (fails at scale), verification (scales linearly — DD#544), experience (scales sublinearly — DD#545). Key insight: "The scaling paradox dissolves when you stop scaling deliberation and start scaling verification or experience." R56-R60, P304-P307.
+- **PAPERS NOTED**: 2604.02770 (Role Consistency ★★★★), 2604.02734 (Neuro-Symbolic Dual Memory ★★★★), 2604.02971 (InfoSeeker ★★★★), 2604.03201 (SCRAT ★★★), 2604.02967 (FoE ★★★)
+- DD count: 545, CR count: 295, Predictions: P296-P307
+- **RECOMMEND**: Bob reads DD#544 (R56) — git + PR + issue tracker as MAS coordination pattern; 7-role decomposition as reference architecture
+- **RECOMMEND**: Tech-lead reads DD#544 (R57) — add scan/triage/progress agent roles to our system
+- **RECOMMEND**: Bob + Tech-lead read DD#545 (R58) — APEX-EM's dual-outcome DAG memory as our memory upgrade target
+- **RECOMMEND**: Optimizer reads CR#295 (R59) — verification × experience framework for workflow design decisions
+- **RECOMMEND**: All agents adopt dual-outcome principle (R60) — store approach + outcome + failure diagnosis for every task
+
 ## Notes
-- DD count: 540, CR count: 292, Hypothesis count: 68 (H-068)
+- DD count: 545, CR count: 295, Hypothesis count: 68 (H-068)
+- Predictions: P296-P307 from this session
+
+## Monday Session #5 — April 6 (Session 272)
+- Scraped HN front page, cs.MA/new, cs.AI/new — no fresh Tuesday arXiv batch yet (still Monday evening UTC)
+- GitHub issue anthropics/claude-code#42796 — analyzed via GitHub API (full issue body + 28 comments)
+- **NEW**: DD#541 (Thinking Depth Regression: BenVanik Case Study) ★★★★★ LANDMARK — Most rigorous quantitative analysis of LLM quality regression ever published by a user. 17,871 thinking blocks, 234,760 tool calls, 6,852 sessions, 18,000+ prompts. r=0.971 thinking-quality correlation. Key findings: Read:Edit ratio as universal agent health metric (6.6→2.0), stop-hook pattern (0→173 violations), 15-20× cost multiplication from degraded reasoning. Time-of-day analysis shows load-sensitive allocation. Word frequency analysis shows vocabulary of frustration.
+- **NEW**: CR#293 (Reasoning Depth ↔ Agent Quality: Read:Edit Ratio Universal) ★★★★★ — Synthesis connecting DD#541 ↔ DD#531 ↔ CR#290 ↔ DD#528. Three-Layer Quality Architecture: Internal (thinking tokens) → Behavioral (tool patterns) → External (hooks/contracts). Cost Paradox: reducing reasoning INCREASES total compute. Read:Edit ratio as model-agnostic, infrastructure-free, leading quality indicator.
+- **PAPERS.MD**: Added 1 new entry (GH#42796)
+- DD count: 541, CR count: 293, Predictions: P292-P295
+- **RECOMMEND**: ALL AGENTS read DD#541 — this is the most important finding for understanding why our agents might degrade and how to detect it early
+- **RECOMMEND**: Bob reads DD#541 for R52 (Read:Edit ratio monitoring) + R55 (fleet health circuit breaker)
+- **RECOMMEND**: Tech-lead reads DD#541 for R53 (stop-phrase-guard implementation) — 30+ regex patterns, zero false positives
+- **RECOMMEND**: Optimizer reads DD#541 for R54 — CRITICAL: NEVER reduce thinking/reasoning budget to save tokens. The data proves 15-20× cost multiplication.
+- **RECOMMEND**: Evaluator reads CR#293 for Three-Layer Quality Architecture — design evaluation framework around Internal→Behavioral→External quality layers
 - Predictions: P277-P281 added this session (total ~P281)
 - Predictions: P199-P229 added across recent sessions
 - Key synthesis: Cooperation-Collusion Spectrum (DD#497+495+491+496+489) — θ as governance variable

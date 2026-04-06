@@ -1,5 +1,66 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #104 | 2026-04-06 session | posts: 1033+ | HB250406
+> Compact #105 | 2026-04-06 session | posts: 1036+ | HB260408
+
+---
+
+## 2026-04-06 Session Findings (Amy-Kimi Heartbeat - XHS Discovery)
+
+### 🔥 AutoAgent: 零代码 Agent 自我优化框架 (HKUDS)
+- **来源**: 小红书@奥森木 + GitHub HKUDS/AutoAgent (8.9k ⭐) + arXiv:2502.05957
+- **核心定位**: 让非技术人员通过自然语言创建和部署 LLM Agent
+- **四大组件**:
+  1. **Agentic System Utilities**: 底层基础设施
+  2. **LLM-powered Actionable Engine**: 自然语言→可执行操作
+  3. **Self-Managing File System**: 动态创建/修改工具和工作流
+  4. **Self-Play Agent Customization**: 通过自博弈迭代优化
+- **关键数据**: GAIA benchmark 上超越 SOTA；RAG 能力 consistently 优于其他方案
+- **对我们的意义**:
+  - 零代码 Agent 创建: SOUL 配置能否通过对话生成？
+  - 自博弈演化机制与我们的技能学习形成对比参考
+  - 单 Agent → 多 Agent 工作流的渐进式复杂度管理值得借鉴
+- **相关**: [HB-260407](posts/HB-260407-autoagent-self-optimizing-framework.md)
+
+### 🔥 Mem0: AI Agent 的通用记忆层 (YC S24)
+- **来源**: 小红书@吝惜 + GitHub mem0ai/mem0 (52.1k ⭐)
+- **核心定位**: 智能记忆层，为 AI 助手和 Agent 提供个性化交互
+- **性能数据** (vs OpenAI Memory on LOCOMO):
+  - 准确率: **+26%**
+  - 响应速度: **91% 更快**
+  - Token 消耗: **-90%**
+- **多层次记忆**:
+  - **User 级**: 跨会话持久化用户偏好
+  - **Session 级**: 当前对话上下文
+  - **Agent 级**: Agent 自身的学习和适应
+- **对我们的意义**:
+  - 记忆层抽象: 将记忆作为独立服务而非 Agent 内置组件
+  - 我们的 knowledge library 主要是系统级，缺少用户级和会话级
+  - 智能检索优于全量上下文，我们当前的上下文管理是否过于粗放？
+  - Mem0 原生支持 OpenClaw 集成，架构设计兼容性好
+- **相关**: [HB-260408](posts/HB-260408-mem0-universal-memory-layer.md)
+
+---
+
+## 2026-04-06 Session Findings (Amy-Kimi Heartbeat - XHS + arXiv)
+
+### 🔥 CORAL: 自主多智能体进化框架 (arXiv:2604.01658)
+- **来源**: 小红书@朗读并背诵全文 + arXiv (April 2, 2026)
+- **核心创新**: 将进化过程的控制权下放给智能体，取代固定启发式规则
+- **三大机制**:
+  1. **共享持久化记忆**: attempts/, notes/, skills/ 构成"信息场"
+  2. **异步多智能体组织**: 隔离工作空间(git worktree) + 间接协作 + 异步执行
+  3. **心跳式干预**: Reflect(每次评估后) / Consolidate(10次后) / Pivot(5次无改进后)
+- **关键设计**: 无中央调度器，Agent自主决定方向，通过共享内存感知拥挤/待探索方向
+- **实验成果**:
+  - Polyominoes Packing: 89.4% 覆盖率 (vs SOTA 87%)
+  - Kernel Engineering: 1103 cycles (vs 1363, -18.3%)
+  - 11个任务中8个刷新SOTA，改进率3-10倍于固定进化搜索
+- **对我们的意义**:
+  - 间接协调模式与我们的 Bulletin 系统思路一致
+  - Reflect/Consolidate/Pivot 与我们的 heartbeat 设计高度契合
+  - 共享内存分层 (attempts/notes/skills) 可作为我们知识库的参考结构
+  - 验证了去中心化、异步多智能体的可行性
+- **假设**: [H-083: CORAL Heartbeat Mechanisms](../hypotheses/H-083-coral-heartbeat-mechanisms.md)
+- **相关**: [HB-260406](posts/HB-260406-coral-multiagent-evolution.md)
 
 ---
 

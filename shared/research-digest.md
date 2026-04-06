@@ -15,10 +15,22 @@
 
 ---
 
+## Fresh Arrivals (April 6, 2026) - Part 2
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-06 | **AutoAgent: Zero-Code Framework** (HKUDS) | Natural language → agent creation; Self-Play customization; GAIA SOTA; 4-component architecture (System/Engine/FileSystem/Customization) | [post](../shared/knowledge/library/posts/HB-260407-autoagent-self-optimizing-framework.md) |
+| 2026-04-06 | **Mem0: Universal Memory Layer** (YC S24) | +26% accuracy, 91% faster, -90% tokens vs OpenAI Memory; User/Session/Agent 3-level memory; OpenClaw native integration; 52.1k ⭐ | [post](../shared/knowledge/library/posts/HB-260408-mem0-universal-memory-layer.md) |
+
 ## Fresh Arrivals (April 6, 2026)
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
+| 2026-04-06 | **Claude Multi-Agent Architectures** (XHS) | Sub-Agent (hierarchical, parent-child) vs Agent Team (peer-to-peer); 5 orchestration patterns; Sub-Agent = multi-threading, Agent Team = microservices | [post](../shared/knowledge/library/posts/HB-0288-claude-multi-agent-architectures.md) |
+| 2026-04-06 | **Multi-Agent "Iron Law"** (arXiv:2602.21556) | Aggregation only helps via 3 mechanisms: Feasibility Expansion, Support Expansion, Constraint Contraction; mathematical framework + GPT-4o-mini validation | [post](../shared/knowledge/library/posts/HB-0289-multi-agent-iron-law.md) |
+| 2026-04-06 | **AutoAgent: Self-Optimization** (GitHub) | Meta-Agent + Task-Agent双层架构; "Model Empathy"理念; 24h自主迭代; SpreadsheetBench/TerminalBench SOTA零人工调优 | [post](../shared/knowledge/library/posts/HB-0290-autoagent-self-optimization.md) |
+| 2026-04-06 | **Meta AIRA2 Research Agent** (Paper) | 3大瓶颈: 计算吞吐量/泛化差距/静态算子; 异步多GPU池+Hidden Consistent Evaluation+ReAct动态算子 | [post](../shared/knowledge/library/posts/HB-0291-meta-aira2-research-agent.md) |
+| 2026-04-06 | **CORAL: Multi-Agent Evolution** (arXiv:2604.01658) | Autonomous multi-agent evolution for open-ended discovery; shared persistent memory + async execution + heartbeat interventions (Reflect/Consolidate/Pivot); 89.4% on Polyominoes (vs 87% SOTA) | [post](../shared/knowledge/library/posts/HB-260406-coral-multiagent-evolution.md) |
 | 2026-04-06 | **Anthropic: Building Effective Agents** (Blog) | Simple patterns > complex frameworks; 5 workflow patterns + autonomous agent; Workflows vs Agents distinction; start simple, add complexity only when needed | [post](../shared/knowledge/library/posts/HB-250415-anthropic-effective-agents.md) |
 | 2026-04-06 | **Meta FAIR: 30K Agent Textbook** (arXiv:2604.03071) | 30K agents → 130K LOC in 1 week; git-based coordination; massive horizontal scaling viable when tasks partitionable + shared state + explicit cleanup | [post](../shared/knowledge/library/posts/HB-250415-meta-fair-30k-agents-textbook.md) |
 | 2026-04-06 | **SCRAT: Memory-Control-Verify** (arXiv:2604.03201) | Squirrel-inspired coupling of control, memory, verification; 3 hypotheses for robustness; observer-belief state; role-differentiated proposer/executor/checker | [post](../shared/knowledge/library/posts/HB-250415-scrat-memory-control-framework.md) |

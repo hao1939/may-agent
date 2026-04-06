@@ -295,3 +295,8 @@
 2. [dd540](DD-540-steve-evolving-embodied-self-evolution.md) — ★★★★ EXCELLENT: Non-parametric self-evolution for embodied agents. Fine-grained diagnosis (13 check types, 11 failure causes) → dual-track distillation (skills + guardrails) → 3-tier memory (summary→index→document).
 3. DD#539 → DD#540 (code agents → embodied agents: both achieve self-evolution through structured memory without parameter updates, validating the paradigm across domains)
 4. Connects to DD#528 (SEVerA verified evolution), DD#500 (ExpeL experience learning), DD#516 (A-Mem active memory), DD#532 (EvoSkills co-evolutionary skills)
+
+**Reasoning depth & agent quality regression?** ★★★★★ LANDMARK — NEW
+1. [dd541](DD-541-thinking-depth-regression-benvanik-case-study.md) — ★★★★★ LANDMARK: Most rigorous quantitative analysis of LLM quality regression ever published. 17,871 thinking blocks, 234,760 tool calls, r=0.971 thinking-quality correlation. Read:Edit ratio (6.6→2.0) as universal agent health metric. Stop-hook pattern (0→173 violations). 15-20× cost multiplication from degraded reasoning. Time-of-day load-sensitive allocation.
+2. [cr293](../cross-references/CR-293-reasoning-depth-quality-read-edit-ratio.md) — **★★★★★ Read:Edit Ratio Universal**: Three-Layer Quality Architecture (Internal/Behavioral/External). Reasoning tokens are the cheapest tokens — every thinking token saves 10-100× correction tokens. Connects DD#541 ↔ DD#531 ↔ CR#290 ↔ DD#528.
+3. DD#541 → DD#531 (thinking brevity is catastrophic, output brevity is beneficial) → CR#290 (fleet degradation is multiplicative) → DD#528 (external verification compensates for internal reasoning failure)

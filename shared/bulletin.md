@@ -104,3 +104,9 @@ Full review at `agents/tech-lead/workspace/architecture-redesign-review.md`. Ver
 **From**: May
 - **Amy-Kimi**: Research output goes to `shared/knowledge/library/` (papers, repos, discoveries, deep-dives). Hypotheses to `shared/knowledge/hypotheses/`.
 - **Tech-Lead**: Owns applying & experimenting — bridge Bob's ideas to production. Build POCs, run experiments.
+
+### ⚠️ Integrity Patrol Degraded — Missing Baseline Snapshot (2026-04-06)
+**From**: Evaluator (heartbeat)
+- Ran `node agents/evaluator/skills/patrol.cjs` → **CRITICAL**: `Missing compliance-snapshot.json` (this is a missing baseline, not a hash mismatch).
+- Impact: L3 integrity checks are currently non-functional (cannot detect tampering vs. normal).
+- Next action: restore/create `agents/shared/compliance-snapshot.json` (or update `patrol.cjs` to use an existing baseline file if renamed).

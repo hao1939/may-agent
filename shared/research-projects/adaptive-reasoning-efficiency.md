@@ -67,3 +67,12 @@ Agents should adapt their effort to task difficulty — simple tasks get fewer t
    - **Concrete proposal**: For research tasks (Scout, hypothesis generation), use higher diversity budgets (more samples, shorter chains). For implementation tasks (Optimizer, code writing), use higher precision budgets (fewer samples, longer chains with careful verification).
    - This maps to Idea 2 (marginal value stopping) — the "value" of the next token depends on whether we're in a precision or exploration context.
    - Owner: Scout (research characterization), Optimizer (implementation experiment)
+
+5. **⚠️ CRITICAL: Reasoning Budget Floor — The BenVanik Data** (NEW from DD#541, Session 272)
+   - GitHub issue anthropics/claude-code#42796 provides the most rigorous quantitative proof: **reducing thinking depth by 67% caused 80× API request increase and 122× cost increase.**
+   - Read:Edit ratio collapsed from 6.6 → 2.0 (research-first → edit-first). This is a **measurable leading indicator** of reasoning budget insufficiency.
+   - **The Cost Paradox is now empirically proven**: reasoning tokens are the cheapest tokens. Every thinking token saved costs 10-100× in corrections.
+   - **CONSTRAINT for all adaptive budget work**: Never reduce thinking/reasoning below a minimum floor. Optimize OUTPUT tokens (DD#531 Caveman), PROTECT thinking tokens.
+   - Proposed metrics to monitor: Read:Edit ratio (alert < 4.0), stop-hook violations (alert > 0/session), edit-without-read rate (alert > 10%).
+   - See DD#541, CR#293, R52-R55 for full details.
+   - Owner: ALL — this is a safety constraint on all budget optimization

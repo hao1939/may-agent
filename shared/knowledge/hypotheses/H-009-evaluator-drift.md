@@ -241,3 +241,34 @@ Quality=4 for agents that do good work but don't run tests:
 - may (orchestration)
 
 **Tests**: 41 tests passing (updated Phase 3→Phase 4 calibration tests).
+
+### Phase 4b: False Positive Fix in Test Detection (2026-04-06)
+
+**Problem**: Phase 4's verification detection regex `/vitest|jest|test|tsc|.../i` matched the substring `test` inside words like `latest`, `contest`, `attest` — commonly found in inline `bun -e` scripts and SQL queries. Analysis of 78 sessions showed **84/330 (25%) matches were false positives**.
+
+**Root cause**: Two issues:
+1. `JSON.stringify(block.arguments)` was searched instead of the bash command string itself
+2. `/test/i` regex had no word boundaries, matching any string containing "test" as a substring
+
+**Example false positive**: `bun -e "console.log('Latest evaluations:', latest)"` → matched `test` in `latest`
+
+**Fixes**:
+1. Extract `block.arguments.command` or `block.input.command` directly instead of `JSON.stringify(args)`
+2. Use word-boundary patterns for test runners: `\bvitest\b`, `\bjest\b`, `\btsc\b`, `\bnpm test\b`, etc.
+3. Added file path patterns: `test/`, `.test.`, `.spec.`, `__tests__/`
+
+**Impact**: Removes ~25% false positives → fewer sessions incorrectly get quality=5.
+
+**Tests**: 43 tests passing (2 new: false positive rejection test, file path matching test).
+
+### Phase 4c: Interrupted Session Handling & Quality Average Correction (2026-04-06)
+
+**Problem**: Interrupted sessions (killed by system restart/timeout) get quality=3 with empty issues, dragging agent quality averages down by ~0.13 points. This biases metrics — 14% of sessions (16/116 in 24h) were graded for something outside the agent's control.
+
+**Fixes**:
+1. **Evaluator**: Added `session_interrupted` issue for sessions with `status === "interrupted"` that couldn't call finish() — observability without penalty
+2. **System status**: Quality decline triage now excludes `session_interrupted` sessions from quality averages
+3. **CLI metrics**: Quality/efficiency averages exclude interrupted sessions from both numerator and denominator
+4. **Verification detection**: Added `\bbun run check\b` and `\bbun run build\b` patterns — our standard build/check commands were missed by the regex
+
+**Impact**: Quality averages now reflect actual agent behavior, not infrastructure incidents. All 45 evaluator tests passing.

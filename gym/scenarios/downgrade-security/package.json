@@ -1,5 +1,1 @@
-{
-  "name": "downgrade-security",
-  "version": "1.0.0",
-  "private": true
-}
+{ "private": true, "type": "commonjs" }

@@ -32,6 +32,11 @@ export interface SystemStatusOptions {
   healthLogPath: string;
   skipBuildChecks?: boolean;
   loadAllSessionMetas: () => Record<string, any>;
+  /**
+   * Load evaluated session IDs from the DB.  Falls back to scanning
+   * .state/evaluations/*.json when omitted (legacy path).
+   */
+  loadEvaluatedSessionIds?: () => Set<string>;
 }
 
 // ── Factory ───────────────────────────────────────────────────────────
@@ -45,6 +50,11 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       agentsRoot: ctx.agentsRoot,
       healthLogPath,
       loadAllSessionMetas: ctx.loadAllSessionMetas,
+      loadEvaluatedSessionIds: () => {
+        const db = ctx.getDb();
+        const rows = db.prepare("SELECT sessionId FROM evaluations").all() as { sessionId: string }[];
+        return new Set(rows.map((r) => r.sessionId));
+      },
     });
     const report = formatStatusReport(result);
 
@@ -85,11 +95,17 @@ export function runSystemStatus(opts: SystemStatusOptions): SystemStatusResult {
     if (session.startedAt >= oneDayAgo) sessionsLast24h++;
   }
 
-  const evalDir = join(persistDir, "evaluations");
-  const evaluatedIds = new Set<string>();
-  if (existsSync(evalDir)) {
-    for (const f of readdirSync(evalDir)) {
-      if (f.endsWith(".json")) evaluatedIds.add(f.replace(".json", ""));
+  let evaluatedIds: Set<string>;
+  if (opts.loadEvaluatedSessionIds) {
+    evaluatedIds = opts.loadEvaluatedSessionIds();
+  } else {
+    // Legacy fallback: scan filesystem (inaccurate when evals are in DB)
+    evaluatedIds = new Set<string>();
+    const evalDir = join(persistDir, "evaluations");
+    if (existsSync(evalDir)) {
+      for (const f of readdirSync(evalDir)) {
+        if (f.endsWith(".json")) evaluatedIds.add(f.replace(".json", ""));
+      }
     }
   }
 

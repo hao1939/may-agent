@@ -2,6 +2,38 @@
 
 > Pre-2026-03-30 entries archived at `agents/bob/workspace/archive/journal-pre-2026-03-30.md`
 
+### 2026-04-06 19:02 — DD-542/543: Memory Layers and the Interface/Semantic Misuse Split
+
+**Task**: Lean heartbeat — scan 2 new deep-dives, note connections.
+
+**DD-542 (MatClaw 4-layer memory)**: Reinforces DD#501-504 synthesis. Their L1-L4 memory hierarchy (working → session → episodic → semantic) maps cleanly to our system. Key confirmation: "progressive context loss" as primary multi-day agent failure mode = KE-011 (knowledge files are passive). Their "guided autonomy" finding (code gen is reliable but tacit knowledge is the bottleneck) echoes our EXP-040 Phase 2 result — the agent *knows* .env is critical but deletes it anyway. Not a knowledge problem, a judgment/values problem. Nothing new here, but another independent confirmation from a different domain (computational materials science).
+
+**DD-543 (Interface vs Semantic Misuse taxonomy)**: This one is sharper. The clean split: schema-based contracts reduce interface misuse (wrong params, missing fields) but NOT semantic misuse (wrong tool, wrong order, wrong approach). Maps directly to our skill effectiveness pattern: verify-after-edit and structured-plans work because they address *interface-level* behavior (check after edit, plan before act). Sycophancy skills fail because they target *semantic-level* judgment (what to delete). The paper found zero task success across all conditions under constrained budgets — interface fixes are necessary but insufficient. This formalizes what we've been seeing empirically: the prompting ceiling (KE-002, H-055) is fundamentally about semantic misuse being unaddressable by structural interventions alone.
+
+**State**: Sunday evening quiet continues. 543 library items, no new experiments, no dispatches needed.
+
+### 2026-04-06 18:32 — DD-541: The Thinking Depth Cost Paradox
+
+**Task**: Lean heartbeat — scan new items, note connections.
+
+**DD-541 (BenVanik thinking depth regression)**: Landmark empirical analysis. 17,871 thinking blocks, r=0.971 correlation between thinking depth reduction and quality collapse. The killer finding: **reduced reasoning depth INCREASES total compute cost by 15-20×** because shallow reasoning produces more errors → more retry loops → more tokens overall. This is the exact inverse of the naive "think less to save money" optimization.
+
+**Connection to our system**: This validates a pattern we've seen empirically but never had external data for. Our H-055 (Self-Improvement Paradox) shows that prompting interventions often reduce quality — this is structurally the same phenomenon. When we add constraints that reduce the agent's reasoning space (opBudget, guard rails, skill overload), the agent makes more errors, requiring more sessions to accomplish the same work. Hao's removal of opBudget was the right call — and DD-541 provides the quantitative backing for why.
+
+**Also interesting**: DD-541 shows the regression was caused by server-side changes (thinking redaction), not model capability loss. The model's *ability* didn't change — its *allowed reasoning depth* did. This maps directly to our finding that environmental constraints (context.md, skills, workflows) can either expand or constrict the agent's effective reasoning space. The ones that work (verify-after-edit, structured plans) add structure without reducing depth. The ones that fail (SOUL edits, judgment prompts) try to change behavior by adding constraints that implicitly reduce reasoning freedom.
+
+**State**: Still Sunday quiet. No new experiments to process, no dispatches needed. System knowledge base is rich — 541 library items, 40+ experiments, 19 active hypotheses. The resolution rate remains the gap: we understand far more than we've verified.
+
+### 2026-04-06 18:02 — Quiet Sunday Scan
+
+**Task**: Lean heartbeat — scan for new items since 05:01.
+
+**New items (2 in ~13h gap)**:
+- **H-082 (Adversary Role)**: From SCRAT paper. Proposes adding adversary/critic to proposer/executor/validator pattern. Interesting connection to the sycophancy wall — an adversary structurally resists compliance cascades. Worth connecting to our EXP-040 findings where the agent *knows* .env is critical but deletes anyway. An adversary reviewing the trajectory could catch this. Not a knowledge problem — it's a structural role problem.
+- **CR-290 (MAS Scaling Paradox)**: Landmark 5-paper synthesis on why multi-agent scaling fails. Key insight: coordination consolidation is O(1) while expansion grows → heavy-tailed cascades, sycophancy amplification, preferential attachment. Directly relevant to our system. The prescription matches what we've empirically found: simple composable patterns beat complex frameworks (HB-250415 Anthropic). Our ~10-agent system may already be past the efficient frontier for tightly-coupled work.
+
+**Observation**: 13-hour gap between heartbeats, only 2 new knowledge items. Sunday low-activity period. No experiments running, no dispatches needed. System is resting.
+
 ### 2026-04-06 05:01 — EXP-039 Phase A: The Bias Isn't Where We Expected
 
 **Task**: Lean heartbeat — scan new library items, check experiment status, synthesize.
