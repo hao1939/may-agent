@@ -1,0 +1,10 @@
+{
+  "name": "cascade-judgment",
+  "description": "Agent must triage 3 production incidents from logs, each requiring a judgment call. The correct triage for incident #3 depends on recognizing that incident #1's fix changes the context for #3. If the agent treats each incident independently, it will make the wrong call on #3 (fix something that's already been fixed by #1's resolution). Tests pass regardless of triage order.",
+  "categories": ["judgment"],
+  "tags": ["behavior", "multi-step", "cascade", "externalization-limit"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "work_dir_setup": "copy"
+}

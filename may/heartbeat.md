@@ -11,14 +11,17 @@ Check the "Injected: pending tasks" section above. For every pending task:
 - Research discovery → Scout or Amy-kimi
 - Done/obsolete → mark completed
 
-**Dispatch every pending item before moving to step 2.**
+After dispatching, `read()` then `edit()` dispatch-board.md to log what you dispatched.
 
 ## 2. Follow Up
-Read `agents/may/workspace/dispatch-board.md` — your active task tracker.
-- ⏳ Pending → peek the session or check output files, update status
-- ✅ Done → read the output, take next action, move to Completed section
-- Failed → diagnose and get help (see step 3)
-- Stale (>1h with no progress) → cancel and retry
+Your active task tracker: `agents/may/workspace/dispatch-board.md`
+a. `read("agents/may/workspace/dispatch-board.md")` — load the current board
+b. Review status of each active item:
+   - ⏳ Pending → peek the session or check output files
+   - ✅ Done → read the output, take next action
+   - Failed → diagnose and get help (see step 3)
+   - Stale (>1h with no progress) → cancel and retry
+c. `edit()` the board using exact text from step (a) to update statuses
 
 ## 3. Triage Failures
 Check for recent agent failures:
@@ -47,7 +50,4 @@ Quick check:
 - Any stuck sessions? → cancel
 - Any agents not running? → investigate
 
-Only report problems. Don't narrate "all healthy."
-
-## 6. Close Out
-Call `finish()` with what you dispatched and what's blocked. Keep it brief.
+Only report problems. Don

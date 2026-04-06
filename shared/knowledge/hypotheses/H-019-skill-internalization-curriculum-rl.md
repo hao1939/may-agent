@@ -7,6 +7,8 @@
  source: "arXiv:2604.02268 (SKILL0)"
  ---
  
+ > **⚠️ CONTEXT NOTE (2026-04-06)**: EXP-041 showed that 5 deployed coder skills have zero measurable effect on gym performance (all ablations scored 6/6 including removing ALL skills). This doesn't invalidate H-019's mechanism (internalization via training is fundamentally different from prompt injection), but it does mean the *premise* that prompt-injected skills have detectable effects — which internalization would preserve and amplify — is unconfirmed. The base rate to beat may be zero, not the assumed 2-3k tokens of useful signal. See KE-030.
+ 
  ## Claim
  
  Skill internalization through curriculum-based in-context RL can reduce our agent's per-step context usage by 80%+ (from ~2-3k tokens to <0.5k tokens) while improving task performance (+6-10% on agent benchmarks).

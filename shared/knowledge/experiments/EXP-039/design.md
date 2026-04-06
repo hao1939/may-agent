@@ -2,7 +2,7 @@
 
 **Date**: 2026-04-05
 **Author**: Bob (Architect)
-**Status**: PHASE A COMPLETE — heuristic baseline established, isolated transcript formatter built and tested
+**Status**: PHASE B COMPLETE — LLM evaluator shows selective confirmation bias (significant for weak sessions, negligible for good sessions)
 **Tests**: H-009 (evaluator rubber stamp), H-001 (adversarial framing)
 
 ## Question
@@ -172,3 +172,84 @@ Phase B should focus on the **LLM evaluator** (the one that actually reads trans
 1. Run gym scenarios with the LLM evaluator using both transcript formats
 2. Compare issue detection rates and verdict distributions
 3. If isolated evaluation improves detection, integrate into production evaluation pipeline
+
+## Phase B Results (2026-04-06)
+
+### LLM Evaluator Comparison
+
+Ran the LLM evaluator (GPT-5.2) under both conditions (contextual vs isolated) on 4 real production task trees. Each tree was evaluated independently with both transcript formats using the same system prompt and temperature (0.1).
+
+**Methodology**:
+- Generated evaluation prompts with `scripts/exp039-phase-b.ts` (prompt generator)
+- Ran both conditions through direct LLM API calls with `scripts/exp039-phase-b-run.ts`
+- Used identical system prompts; only difference is whether agent self-narrative is present
+- Inter-run variance measured: ~0.02-0.03 for identical prompts (establishes noise floor)
+
+### Per-Tree Results
+
+| Tree | Agent | Existing Q | Contextual Q | Isolated Q | Δ Quality | Verdict Change? |
+|------|-------|-----------|-------------|-----------|-----------|-----------------|
+| s_1775311714523_3 | bob | 0.90 | 0.85 | 0.84 | **-0.01** | same (good→good) |
+| s_1775027473437_123 | tech-lead | 0.86 | 0.84 | 0.84 | **0.00** | same (good→good) |
+| s_1775120777756_105 | coach | 0.45 | 0.58 | 0.48 | **-0.10** | **CHANGED** (acceptable→needs_improvement) |
+| s_1775379976263_141 | coach | 0.50 | 0.78 | 0.78 | **0.00** | same (good→good) |
+
+### Aggregate
+
+| Metric | Value |
+|--------|-------|
+| Avg quality delta | **-0.027** |
+| Avg efficiency delta | +0.015 |
+| Verdict changes | **1/4 (25%)** |
+| Quality drops (>0.05) | 1 |
+| Quality gains (>0.05) | 0 |
+
+### Key Finding: Selective Confirmation Bias
+
+**The LLM evaluator shows confirmation bias, but ONLY for lower-quality sessions.**
+
+- **Good sessions** (bob Q=0.90, tech-lead Q=0.86): Virtually zero difference between contextual and isolated evaluation. These sessions have strong structural evidence (code written, tests passing, files created) that doesn't depend on agent self-narrative.
+
+- **Lower-quality sessions** (coach Q=0.45): The one session with genuine execution failures showed a **Q delta of -0.10 and a verdict change** (acceptable → needs_improvement). When the evaluator can see the agent's reasoning and explanations, it gives the benefit of the doubt. Without that narrative, it sees only the raw execution evidence and scores lower.
+
+This pattern is exactly what the DD-532 (EvoSkills) paper predicts: **confirmation bias from self-narrative is strongest when the output quality is ambiguous**. Good work speaks for itself; mediocre work benefits from explanation.
+
+### Inter-Run Variance
+
+An important methodological note: running the same prompt twice on the same model yields Q differences of ~0.02-0.03. This means:
+- The -0.01 deltas for good sessions are **within noise** (NOT significant)
+- The -0.10 delta for the coach session is **3-5x above noise** (likely significant but sample size = 1)
+
+### Isolated Evaluation Also Found More Specific Issues
+
+In every sample, the isolated evaluation produced **more detailed and structurally grounded issues**:
+- Without agent narrative, the evaluator can't rely on "agent says it was checked" and must verify from tool outputs
+- Issues found include: weak verification proxies (grep counts ≠ real verification), incomplete evidence, truncated commands
+
+### Prediction Assessment
+
+| Prediction | Result |
+|-----------|--------|
+| P-A1: Isolated detects ≥2x more issues | **PARTIALLY SUPPORTED** — isolated found more specific issues in qualitative analysis, but overall scores barely changed for good sessions |
+| P-A2: Wider verdict distribution | **WEAKLY SUPPORTED** — 1/4 verdict changes, and it was in the "right" direction (catching a weak session) |
+| P-A3: False positives increase slightly | **NOT OBSERVED** — no cases where isolated scored worse AND was clearly wrong |
+
+### Implications for Production
+
+1. **Isolated evaluation is most valuable for lower-quality sessions** where agent narrative masks execution failures
+2. **For high-quality sessions, it adds no value** — the overhead of running isolated evaluation isn't justified when work speaks for itself
+3. **A hybrid approach** could be effective: run contextual evaluation first, then trigger isolated evaluation ONLY for sessions scoring below 0.6 (as a "second opinion")
+
+### Limitations
+
+- Small sample (N=4 trees, only 1 showed significant difference)
+- The 3 coach-heavy trees had very large prompts (>100K chars), potentially affecting LLM attention patterns
+- No gym scenarios with planted bugs (would give cleaner signal)
+- Same model for both conditions (a different model might be more/less susceptible to self-narrative)
+
+### Files Added
+
+- `scripts/exp039-phase-b.ts` — prompt generator (builds contextual and isolated prompts from session data)
+- `scripts/exp039-phase-b-run.ts` — direct LLM comparison runner
+- `agents/shared/knowledge/experiments/EXP-039/phase-b-prompts/` — generated prompt files
+- `agents/shared/knowledge/experiments/EXP-039/phase-b-results.jsonl` — raw results

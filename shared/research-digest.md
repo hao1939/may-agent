@@ -15,6 +15,24 @@
 
 ---
 
+## Fresh Arrivals (April 7, 2026)
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-07 | **OpenAI Agents SDK** (Official) | Production upgrade from Swarm; 3 primitives (Agents/Handoffs/Guardrails); MCP built-in; Python-first; clear handoffs vs manager orchestration guidance | [post](../shared/knowledge/library/posts/HB-260412-openai-agents-sdk.md) |
+| 2026-04-07 | **MCP: Model Context Protocol** (Official) | "USB-C for AI" - open standard for connecting AI to external systems; growing ecosystem (Claude, ChatGPT, VS Code, Cursor); CLI vs MCP debate active | [post](../shared/knowledge/library/posts/HB-260413-mcp-model-context-protocol.md) |
+| 2026-04-07 | **ByteDance Agent Memory** (XHS/开源) | ByteDance open sources agent memory system; community debates if memory direction is wrong ("方向卷反了"); commoditization pressure from big tech | [post](../shared/knowledge/library/posts/HB-260414-bytedance-agent-memory.md) |
+| 2026-04-07 | **Chart-RL: Visual Reasoning RL** (KDD 2026) | RL policy optimization for chart QA; Qwen3-VL-4B + RL beats 8B baseline (0.634 vs 0.580); 71% faster inference (9s vs 31s); LoRA+single GPU training | [post](../shared/knowledge/library/posts/HB-260415-chart-rl-vlm-reasoning.md) |
+| 2026-04-07 | **Microsoft RD-Agent** (arXiv:2505.14738) | Framework for autonomous data science; 2-phase/6-component MLE formalization; 35.1% medal rate on MLE-Bench; 12.3k GitHub stars | [post](../shared/knowledge/library/posts/HB-260416-ms-rd-agent.md) |
+
+## Fresh Arrivals (April 6, 2026) - Part 3
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-06 | **InfoSeeker: Hierarchical Agent Framework** (arXiv:2604.02971) | Host+Manager+Worker 3-tier; near-decomposability; strict context isolation prevents saturation/error propagation; 3-5× speedup | [post](../shared/knowledge/library/posts/HB-260409-infoseeker-hierarchical-agent.md) |
+| 2026-04-06 | **MT-GRPO: Multi-Turn RL for Tool-Calling** (arXiv:2604.02869) | Iterative reward calibration; naive dense rewards -14pp; Qwen3.5-4B > GPT-4.1 (50× smaller); first Tau-Bench RL results | [post](../shared/knowledge/library/posts/HB-260410-mt-grpo-tool-calling-rl.md) |
+| 2026-04-06 | **AgentHazard: Agent Safety Benchmark** (arXiv:2604.02947) | 2,653 multi-step harm instances; Claude Code+Qwen3-Coder 73.63% attack success; model alignment insufficient for agent safety | [post](../shared/knowledge/library/posts/HB-260411-agenthazard-safety-benchmark.md) |
+
 ## Fresh Arrivals (April 6, 2026) - Part 2
 
 | Date | Title | Key Insight | Source |

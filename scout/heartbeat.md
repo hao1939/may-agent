@@ -22,11 +22,14 @@ Focus areas:
 
 When you find something:
 1. **Evaluate** — is this real? Relevant? Novel?
-2. **Read the target file** — before ANY write, `read()` the file you're about to edit (papers.md, repos.md, a deep-dive, hypotheses, journal.md). Find the exact insertion point. This is mandatory — never skip it.
-3. **Write with exact context** — now `edit()` using text you just read as `oldText`. Target files: papers → `agents/shared/knowledge/library/papers.md`, repos → `agents/shared/knowledge/library/repos.md`, deep dives → `agents/shared/knowledge/library/deep-dives/`
-4. **Flag what matters** — if directly relevant to our system, `read()` then `edit()` a hypothesis → `agents/shared/knowledge/hypotheses/H-XXX.md`
-
-⚠️ **Every edit() MUST be preceded by read() of that same file.** No exceptions. If you skip the read, the edit will fail with wrong oldText.
+2. **Register in the library** — for EACH file you need to update, do this two-step sequence:
+   a. `read()` the target file to find your insertion point. For large files, use `offset`/`limit` to read the last 30 lines.
+   b. `edit()` using exact text from step (a) as your `oldText`.
+   Repeat (a→b) for each file:
+   - papers → `read("agents/shared/knowledge/library/papers.md", {offset: …, limit: 30})` then `edit()`
+   - repos → `read("agents/shared/knowledge/library/repos.md", {offset: …, limit: 30})` then `edit()`
+   - deep-dive index → `read("agents/shared/knowledge/library/deep-dives/INDEX.md", {offset: …, limit: 30})` then `edit()`
+3. **Flag what matters** — if directly relevant to our system, `read()` then `edit()` a hypothesis → `agents/shared/knowledge/hypotheses/H-XXX.md`
 
 ## 4. Extend Prior Research
 No new leads? Your archive has threads worth pulling:

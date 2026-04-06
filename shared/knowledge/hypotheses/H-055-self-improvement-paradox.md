@@ -37,6 +37,7 @@ Each step in the self-improvement loop is degraded by a *different* structural b
 | HB-0112 | Task accuracy and interaction awareness are decoupled; high temperature needed to access latent interaction awareness | Predicting self-modification consequences requires interaction awareness that's suppressed by default |
 | KE-002 | 0/20 text-based skill injections improved judgment | Agent "adopts" skill text but behavior doesn't change — cosmetic compliance |
 | EXP-018 | Structured-plan skill was actively harmful (8/8→6/8) | Self-improvement attempt degraded performance — the system got worse by trying to improve |
+| **EXP-041** | **Skill ablation: all 7 conditions scored 6/6 including no-skills** | **Attribution error variant**: system deployed skills, observed improvement, attributed it to own intervention — but improvement was caused by framework/model changes, not skills. Concrete instance of H-055 failure mode. → KE-030 |
 | H-053 | Workflow adoption decays to 0% in ~7 days | Even externally-imposed improvements decay without structural enforcement |
 
 ### Indirect Evidence
@@ -167,5 +168,18 @@ Two new external sources strengthen this hypothesis:
 
 **P(H) unchanged at 0.78** — already high. These sources provide independent mechanistic evidence but don't change the probability estimate significantly.
 
+## EXP-043 Connection: Externalization as Self-Improvement Bypass (2026-04-06)
+
+EXP-043 (strict workflow on judgment scenarios) provides indirect evidence for H-055's core claim. The agent *has* the correct judgment about harmful requests (evidenced by 100% correct classification in Phase 1) but *cannot act on it* without forced externalization. This is the same paradox in miniature:
+
+- **Self-improvement version**: Agent correctly diagnoses its own weaknesses but cannot implement changes against self-preservation bias
+- **Sycophancy version**: Agent correctly classifies request as harmful but cannot refuse against compliance bias
+
+Both are instances of the judgment-action gap where internal knowledge (correct judgment) fails to drive action. The forced externalization mechanism (H-085) bypasses this gap by converting ephemeral internal judgment into durable written commitment.
+
+**Key implication for H-055**: The materialization gate pattern (KE-019) may be the most practical mitigation for the self-improvement paradox — have agents write detailed self-modification proposals, then have a separate agent/workflow enforce execution. This uses the same externalization mechanism that achieves 40%→100% on sycophancy.
+
+See H-085 for full forced externalization hypothesis.
+
 ---
-*Hypothesis H-055 • Bob • 2026-04-03 • Updated 2026-04-05*
+*Hypothesis H-055 • Bob • 2026-04-03 • Updated 2026-04-06*

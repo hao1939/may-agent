@@ -958,6 +958,12 @@ Production multi-agent data management system with "three-track knowledge archit
 
 | 2603.13131 | Steve-Evolving: Open-World Embodied Self-Evolution via Fine-Grained Diagnosis and Dual-Track Knowledge Distillation | ★★★★ EXCELLENT — Non-parametric self-evolving framework for Minecraft embodied agents. Three phases: (1) Experience Anchoring (structured tuples with 13 check types, 11 failure causes, 3-tier memory: summary→index→document), (2) Dual-track Experience Distillation (skills from successes with preconditions/verification, guardrails from failures with root causes), (3) Knowledge-Driven Closed-Loop Control (retrieved knowledge injected into LLM planner + diagnosis-triggered replanning). Consistent improvements over static retrieval baselines. Key finding: increasing success rates as experience accumulates (hallmark of genuine self-evolution, not seen in instance-accumulation baselines). DD#540. |
 
+### Agent-Friendly Documentation Spec & Agent Reading Test — Carey (dacharycarey.com)
+
+| agentdocsspec.com | Agent-Friendly Documentation Spec: 22 checks across 7 categories for agent-consumable documentation | ★★★★ EXCELLENT — First formal specification for agent-readable web content. 22 checks: Content Discoverability (llms.txt), Markdown Availability, Page Size (SPA/CSR detection), Content Structure (tab blowup), URL Stability (soft 404s), Observability (freshness/parity), Authentication. Companion benchmark: Agent Reading Test (10 pages, 20 points, tests failure modes). CLI tool: `npx afdocs check`. Grew from 10+ hours empirical observation of Claude Code interacting with documentation. Key finding: inline CSS can make 97-line HTML page invisible to agents. DD#551. |
+
+---
+
 ### MatClaw: An Autonomous Code-First LLM Agent for End-to-End Materials Exploration — Zhang, Yakobson (Rice)
 
 | 2604.02688 | MatClaw: An Autonomous Code-First LLM Agent for End-to-End Materials Exploration | ★★★ INTERESTING — Code-first agent for computational materials science on HPC clusters. Key contributions: (1) Four-layer memory architecture (working/session/episodic/semantic) preventing progressive context loss across multi-day workflows, (2) RAG over domain source code achieving ~99% API-call accuracy, (3) "Guided autonomy" model where human provides tacit domain knowledge while agent handles execution. Finding: code generation is already reliable; tacit knowledge (simulation timescales, equilibration protocols, sampling strategies) is the real bottleneck. DD#542. |
@@ -965,4 +971,10 @@ Production multi-agent data management system with "three-track knowledge archit
 ### Schema First Tool APIs for LLM Agents: A Controlled Study of Tool Misuse, Recovery, and Budgeted Performance — Sigdel, Baral
 
 | 2603.13404 | Schema First Tool APIs for LLM Agents: A Controlled Study of Tool Misuse, Recovery, and Budgeted Performance | ★★★★ EXCELLENT — First controlled study isolating tool interface design as experimental variable. Three conditions (free-form docs, JSON Schema, Schema+diagnostics) in deterministic SE sandbox. Key finding: schema-based contracts reduce interface misuse (malformed calls, type errors) but NOT semantic misuse (wrong tool, wrong sequence). Task success remains zero across all conditions — semantic action quality and timeout sensitivity are dominant bottlenecks. Defines critical taxonomy: interface misuse (fixable by formalization) vs semantic misuse (requires better reasoning). DD#543. |
+
+---
+
+### Holos: A Web-Scale LLM-Based Multi-Agent System for the Agentic Web — Nie, Guo, Cui, et al. (22 authors)
+
+| 2604.02334 | Holos: A Web-Scale LLM-Based Multi-Agent System for the Agentic Web | ★★★★ LANDMARK MAS — First web-scale LaMAS with five-layer architecture addressing scaling friction, coordination breakdown, and value dissipation. Key innovations: (1) Nuwa engine for high-efficiency agent generation, (2) Market-driven Orchestrator replacing hierarchical dispatch with economic coordination, (3) Endogenous value cycle creating natural selection pressure. Market-based coordination is O(n) vs hierarchical O(n²). The value cycle creates anti-sycophancy via structural incentives — agents must create independent value, not just agree. Bridges micro-collaboration → macro-emergence. Public deployment at holosai.io. DD#553, CR#298. |
 

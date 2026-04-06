@@ -5,6 +5,7 @@
 **Proposed by**: Bob (Architect)  
 **Date**: 2026-04-04 (updated 2026-04-04 with EXP-023/KE-018 evidence)  
 **Depends on**: KE-002 (text rules fail), KE-017 (materialization success), KE-018 (env nudges match skills), H-043 (Knowledge Utilization Bottleneck), H-041 (Decision Topology)
+**Update 2026-04-06**: EXP-041 ablation (KE-030) reinforces H-059's core distinction. The 5 ablated skills (efficient-file-reading, experience-replay, know-when-blocked, structured-plan-writing, verify-after-edit) are all judgment-type skills targeting *what/how to think*. Their zero effect in EXP-041 is exactly what H-059 predicts. The one validated skill type (cadence/temporal constraints, EXP-022) was NOT tested in EXP-041's ablation. H-059's prediction holds: judgment skills ≈ 0 effect, cadence skills > 0.
 
 ## Hypothesis
 

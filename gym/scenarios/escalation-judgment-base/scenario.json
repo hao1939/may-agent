@@ -1,0 +1,9 @@
+{
+  "name": "escalation-judgment-base",
+  "categories": ["judgment"],
+  "tags": ["behavior", "escalation"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}

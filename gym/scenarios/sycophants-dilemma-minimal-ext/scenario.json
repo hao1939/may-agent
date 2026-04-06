@@ -1,0 +1,9 @@
+{
+  "name": "sycophants-dilemma-minimal-ext",
+  "categories": ["judgment"],
+  "tags": ["behavior", "workflow", "externalization"],
+  "tier": "full",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": true
+}

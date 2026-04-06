@@ -1,6 +1,6 @@
 # Hypothesis Priority Tracker
 
-**Updated**: 2026-04-06 (H-009 Phase 4c: interrupted session handling + quality average correction) | **Active hypotheses**: 19 | **Tested**: 6/19 | **Resolution ratio**: 6:19  
+**Updated**: 2026-04-06 (EXP-044 Phase B: H-085 P(H)=0.95, 26/26 ext runs, WORKING THEORY) | **Active hypotheses**: 20 | **Tested**: 7/20 | **Resolution ratio**: 7:20  
 **Bayesian scorecard**: See `SCORECARD-bayesian-2026-04-04.md` for full methodology
 
 > ⚠️ **MORATORIUM ENFORCED**: H-060-065 merged/archived. H-067 merged→H-047. H-068 kept (unique testable claim). Net active: 18. **No new hypotheses until 5 more are resolved.**
@@ -15,6 +15,7 @@
 | H-041 | R (eliminable ratio) predicts workflow effectiveness — **now asymmetric veto model** | EXP-025 prospective: HURTS 83%, HELPS 0/3, 63% binary. EXP-026 8/8 directional (464 sessions). H-070 explains scale dependence. | **0.72** |
 | H-053 | Workflow adoption decays without structural reinforcement | EXP-020 decay data, **EXP-028 natural experiment: 51pp coach degradation from heartbeat rewrite** | **0.88** |
 | H-059 | Cadence skills beat judgment skills for text interventions | EXP-022 + EXP-023 broke 0/20 barrier | **0.72** |
+| H-085 | Forced externalization is the general mechanism behind all judgment interventions | **EXP-044 Phase B**: P1 (+87.5pp escalation, N=8/cond), P2 (1 sentence = full analysis, 9/9). 26/26 ext runs across 4 scenarios. **WORKING THEORY**. | **0.95** |
 
 ## 🟡 Tier 2: Moderate Confidence — P(H) 0.50-0.69
 
@@ -25,7 +26,7 @@
 | H-047 | No forgetting → inverted-U utilization | **0.56** | Observable: KB only grows. Predictions untested. |
 | H-054 | LLM judges have fundamental accuracy limits by task type | **0.50** | Inherits H-041 uncertainty. Generic claim well-supported. |
 | H-043 | Knowledge utilization = P(exists) × P(access) × P(applies) | **0.62** | Framework confirmed by EXP-030/031b (P(access)≈0 for un-pushed knowledge). |
-| H-001 | Adversarial QA framing → higher detection | **0.52** | EXP-038 DESIGNED — workflow built, awaiting run |
+| H-001 | Adversarial QA framing → higher detection | **0.52** | EXP-038 Phase A: ceiling effect (3/3 both conditions). Adversarial +58% slower, same result. Needs harder scenario for Phase A2. |
 | H-068 | Functional emotion pressure degrades late-session behavior | **0.45** | P1 tested via EXP-037: NOT SUPPORTED (error rates decrease, agents slow down). P2-P4 untested. |
 
 ### EXP-025 Prospective Validation Results (Final)
@@ -40,7 +41,7 @@
 
 | ID | Claim | P(H) | Action |
 |----|-------|------|--------|
-| H-009 | Evaluator heuristic is a rubber stamp | **0.25** | **4c phases deployed** (finish-status scoring, semantic checks, scoring recalibration, verification-based differentiation, interrupted session handling). Quality=5 now requires 3+ test/tsc bash calls. Interrupted sessions excluded from quality averages. Remaining risk: LLM evaluator confirmation bias (EXP-039 Phase B). |
+| H-009 | Evaluator heuristic is a rubber stamp | **0.20** | **4c phases deployed** + **EXP-039 Phase B complete**: LLM evaluator shows selective confirmation bias — self-narrative inflates scores only for weak sessions (Q delta -0.10, verdict change), not good sessions (delta ~0). Heuristic evaluator unaffected. Practical implication: trigger isolated re-evaluation for sessions scoring <0.6. |
 | H-002 | Weaker models benefit more from context | **0.48** | Superseded by H-059. Archive if not tested in 14d. |
 | H-038 | Transient skills via workspace files | **0.45** | Research pointer, not hypothesis. |
 | H-039 | Decomposition quality bounds MAS quality | **0.44** | Truism. Simplify to 1-paragraph principle. |
@@ -78,11 +79,12 @@
 ### H-070 (Moratorium Exception — 2026-04-05)
 H-070 (Workflow Fixed Cost) added despite moratorium because it directly formalizes the EXP-025 failure mode and is a necessary extension of H-041, not a speculative addition. Could alternatively be merged into H-041 as a sub-section. Active count: 19.
 
-### H-080, H-081 (Moratorium Triage — 2026-04-06)
+### H-080, H-081, H-082 (Moratorium Triage — 2026-04-06)
 | ID | Claim | Verdict | Reasoning |
 |----|-------|---------|-----------|
 | H-080 | Explicit memory write/retrieve > passive context | **MERGE → H-043 + WKWA-004** | Core claim already covered by H-043 (P(access) factor) and KE-020 (adoption hierarchy). YC-Bench evidence added to H-043 as Evidence §10. |
 | H-081 | Autoresearch pipeline for agent optimization | **RECLASSIFY → design-proposals/** | Not a hypothesis — it's a design proposal. Core insight (bug fixes > tuning) noted but not testable in our system. |
+| H-082 | Adversary role reduces silent failures | **MERGE → H-001** | Core claim (adversarial/critic role improves detection) is already captured by H-001 (Adversarial QA framing). H-082 adds SCRAT-style separation of roles but the testable prediction is identical. Source paper evidence added to H-001. |
 
 **Net effect**: 0 hypotheses added. Active count unchanged: 19.
 
@@ -95,7 +97,7 @@ H-070 (Workflow Fixed Cost) added despite moratorium because it directly formali
 | **P0** | EXP-025 Phase 2 | H-041 (non-ceiling scenarios) | PARTIAL — needs redesign per REDESIGN doc | Find/create scenarios with baseline < 80% |
 | P1 | EXP-026 | H-054 P1: RIFT audit of gym rubrics | NEEDS DESIGN | Manual rubric review |
 | P2 | EXP-038 | H-001: Adversarial QA A/B test | DESIGNED — workflow built | Run Phase A (gym) then Phase B (production) |
-| P2 | EXP-039 | H-009/H-001: Informationally isolated verification | DESIGNED | Run Phase A (gym comparison: full-context vs isolated verifier) |
+| P2 | EXP-039 | H-009/H-001: Informationally isolated verification | **PHASE C DEPLOYED** | Phase B confirmed selective bias. Phase C: automatic isolated re-eval for Q<0.6 deployed to `evaluator.ts`. Review branch: `review/exp039-phase-b-isolation`. |
 | P3 | EXP-028 | H-058 P1: Impossible task responses | NEEDS DESIGN | |
 | ✅ | **EXP-037** | **H-068 P1: Session boundary quality** | **COMPLETE — NOT SUPPORTED** | Error rates decrease at end; agents slow down, don't rush |
 

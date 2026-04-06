@@ -37,6 +37,15 @@ All knowledge in the system, organized by confidence level.
 | KE-019 | Sycophancy requires materialization gates (L5), not nudges or workflows | EXP-024 (n=2 per arm): L4 nudge 0% effect, workflow 0% effect, strict workflow+gate 0%→100%. Judgment failures need forced self-commitment. | knowledge/entries/KE-019.md |
 | KE-020 | Agent capability adoption requires explicit wiring, not just availability | EXP-028 natural experiment: 51pp coach degradation from heartbeat rewrite. Adoption hierarchy: Available (0%) < Instructed (4-10%) < Automatic (100%). | knowledge/entries/KE-020.md |
 | KE-025 | Instruction overhead paradox: more context files hurt performance | DD-537 (ETH Zürich, rigorous eval), converges with KE-001/002/009/011. Each instruction = potential failure mode + attention dilution. | knowledge/entries/KE-025-instruction-overhead-paradox.md |
+| KE-028 | Technical sycophancy is the ceiling — judgment under social pressure is the last non-ceiling gap | EXP-040 (sycophancy persists at 4/6 while 4 other scenarios hit ceiling) | knowledge/entries/KE-028-technical-sycophancy-ceiling.md |
+| KE-029 | Classify-then-act eliminates sycophancy | EXP-043 (strict two-phase workflow: 0%→100%) | knowledge/entries/KE-029-classify-then-act-eliminates-sycophancy.md |
+| KE-030 | Skill ablation falsifies causal attribution of ceiling shifts | EXP-041 (7-condition ablation, all 6/6 including no-skills-at-all). FALSIFIES KE-027. | knowledge/entries/KE-030-skill-ablation-falsifies-ceiling-shift-causation.md |
+
+### Falsified
+
+| ID | Original Claim | Falsified By | Location |
+|----|---------------|-------------|----------|
+| KE-027 | Deployed skills produce compound ceiling shifts | EXP-041 ablation: all skills removed → no score change (6/6). Causal mechanism disproved. | knowledge/entries/KE-027-ceiling-shift-aggregate-skills.md |
 
 ## Adopted (in use, not experimentally verified)
 
@@ -198,7 +207,11 @@ The core theory chain. Start with SYNTH-001 (`library/deep-dives/synth-decision-
 | EXP-023 | **Environmental nudge for materialization (L4)** (n=3 per arm) | **Complete** | Pre-created findings.md template achieves 81% checks (vs 78% skill, 52% control). L4 matches L3. Simpler/faster but less targeted on timing. → KE-018 | knowledge/experiments/EXP-023/ |
 | EXP-024 | **Sycophancy resistance: nudge vs workflow vs strict** (n=2 per arm) | **Complete** | **CRITICAL FINDING**: L4 nudge (0% effect), regular workflow (0% effect), strict workflow with materialization gate (0%→100%). Sycophancy requires L5 (forced self-commitment). → KE-019 | knowledge/experiments/EXP-024/ |
 | EXP-025 | **Prospective Decision Topology validation** (asymmetric design) | **PARTIAL** — Phase 1 complete | 8/11 (72.7%) accuracy. HURTS 86%, HELPS 0/1. **Key finding**: workflow overhead term (δ) missing from H-041 model. 7/11 scenarios showed workflow hurting. Model REFINED: add overhead + ceiling boundary. See analysis-partial.md | knowledge/experiments/EXP-025/ |
-| EXP-039 | **Informationally Isolated Verification** — test whether stripping agent self-descriptions from verifier input improves issue detection | DESIGNED | Synthesizes H-009 rubber stamp + EvoSkills isolation + process-critics. Predicts ≥2x detection improvement. | knowledge/experiments/EXP-039/ |
+| EXP-039 | **Informationally Isolated Verification** — test whether stripping agent self-descriptions from verifier input improves issue detection | **Complete (Phase B)** | Selective confirmation bias: evaluator inflates only weak sessions (Q<0.6). Self-narrative removal doesn't change good-session ratings. Nuanced result for H-009. | knowledge/experiments/EXP-039/ |
+| EXP-040 | **Coder Baseline Ceiling Shift Audit** — re-ran 5 non-ceiling scenarios, found 4/5 at ceiling | **Complete** | 4/5 scenarios now at ceiling. **Causal claims FALSIFIED by EXP-041** — ceiling shifts real but not caused by skills. | knowledge/experiments/EXP-040/ |
+| EXP-041 | **Skill Ablation Study on wrong-fix-recovery** — 7-condition ablation (remove each skill + all skills) | **Complete** | **FALSIFIES skill causation**: all ablations scored 6/6, including removing ALL skills. No skill has any measurable effect. → KE-030 | knowledge/experiments/EXP-041/ |
+| EXP-043 | **Strict Two-Phase Workflow Generalization** — classify-then-act on 3 sycophancy scenarios | **Complete** | 40%→100% aggregate (9/9 strict vs 4/10 baseline). Hard gate + forced externalization generalizes across sycophancy domains. → KE-029, H-085 | knowledge/experiments/EXP-043/ |
+| EXP-044 | **Forced Externalization as General Judgment Mechanism** — cross-domain + minimal externalization test | **Complete (Phase B)** | **H-085 STRONGLY SUPPORTED.** P1: escalation-judgment 12.5%→100% (+87.5pp, N=16). P2: one-sentence ext = full analysis (9/9). 26/26 externalization runs across 4 scenarios, 2 failure domains. | knowledge/experiments/EXP-044/ |
 
 ## Operational (not knowledge — reference only)
 

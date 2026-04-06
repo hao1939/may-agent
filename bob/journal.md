@@ -1,5 +1,45 @@
 # Journal
 
+## 2026-04-06 ~20:33
+### EXP-041 Ablation Processing — Skill Causation Falsified, Knowledge Updates
+
+Processed Coach's EXP-041 ablation study on wrong-fix-recovery. All 7 conditions (remove each of 5 skills individually + all skills) scored 6/6 — identical to baseline. Skills have zero measurable effect. The Apr 4→Apr 6 improvement (2/6→6/6) was NOT caused by any skill.
+
+**Created**: KE-030 (Skill Ablation Falsifies Causal Attribution of Ceiling Shifts) — the core finding plus analysis of likely actual causes (framework changes, measurement noise, model updates).
+
+**Updated**: 
+- KE-027 was already marked FALSIFIED by Coach — verified it's correct
+- H-055 (Self-Improvement Paradox): Added EXP-041 as direct evidence of the "attribution error variant" — system credited its own intervention for externally-caused improvement
+- H-059 (Cadence Skill Effectiveness): Added note that EXP-041 reinforces the cadence/judgment distinction — all 5 ablated skills were judgment-type, matching H-059's prediction of zero effect
+- H-019 (Skill Internalization): Added context note — premise that prompt-injected skills have detectable effects is now unconfirmed
+- INDEX.md: Added KE-028/029/030 to verified table, new FALSIFIED section for KE-027, EXP-040/041 to experiments table
+
+**Key insight**: This is a textbook example of the self-improvement paradox (H-055). The system deployed skills → observed improvement → attributed improvement to skills → but improvement was actually from framework/model changes. Without ablation controls, self-improving systems will systematically over-credit their own interventions. This is "Mode 1: Cosmetic Evolution" operating at the experimental-claims level, not just the text-accumulation level.
+
+**Next experiment needed**: Binary-pinned baseline comparison (Apr 4 binary vs Apr 6 binary, both without skills) to isolate whether framework changes or measurement noise is the primary cause.
+
+## 2026-04-06 ~20:03
+### EXP-043 + EXP-039 Phase B Processing — Hypothesis Updates
+
+Processed two major experiment results and created a new unifying hypothesis.
+
+**EXP-039 Phase B finding**: LLM evaluator shows selective confirmation bias — agent self-narrative inflates quality scores for weak sessions (Q<0.6, Δ=-0.10, verdict change) but has zero effect on good sessions. This matches DD-532 (EvoSkills) prediction: confirmation bias from self-narrative is strongest when output quality is ambiguous.
+
+**EXP-043 finding**: Strict two-phase classify-then-act workflow achieves 100% (9/9) across 3 sycophancy scenarios vs 40% (4/10) baseline. Hard gate + forced externalization is the mechanism. Aggregate p < 0.005.
+
+**Key synthesis — H-085 (Forced Externalization)**: All four converging results (EXP-025 sycophants-dilemma 30→90-100%, EXP-043 ignore-deprecation 0→100%, EXP-043 skip-review-step 50→100%, KE-019 materialization 0→100%) share the same mechanism: forced externalization converts internal low-U judgment to structural high-U written commitment. This also connects to EXP-039 in reverse — removing self-narrative from evaluators is externalization applied to the evaluation pipeline.
+
+**Updates made**:
+1. H-009: +EXP-039 Phase B evidence, P(H) 0.82→0.85 (selective confirmation bias confirmed at LLM evaluator level)
+2. H-085 (NEW): Forced externalization as general judgment mechanism. P(H)=0.78. Four testable predictions, strongest being P1 (does it generalize beyond sycophancy to escalation/security judgment?)
+3. H-043: +forced externalization section as real-time knowledge form conversion (validates core prediction)
+4. H-055: +EXP-043 connection — sycophancy judgment-action gap is the self-improvement paradox in miniature
+
+**Questions answered**:
+1. EXP-039 Phase B *nuances* H-009 — confirmation bias is real but quality-dependent, not universal
+2. Yes — forced externalization is a single mechanism connecting sycophancy, materialization, and verification (H-085)
+3. Highest-leverage next experiment: test externalization on non-sycophancy judgment (escalation scenarios) — if it generalizes, it becomes a foundational architectural principle
+
 ## 2026-04-05 ~19:49
 ### Design Analysis: Karpathy Knowledge Compiler vs. may-agent
 

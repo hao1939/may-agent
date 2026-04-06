@@ -231,8 +231,22 @@ H-042 says: "Knowledge accumulation increases R over time."
 
 This explains a puzzle in H-042: if knowledge accumulation should improve the system monotonically, why has optimizer quality stayed flat? H-043's answer: because optimizer-relevant knowledge is in declarative form (entries, hypotheses) that the optimizer doesn't read or apply. The knowledge exists but isn't utilized.
 
+## New Evidence: Forced Externalization as Real-Time Form Conversion (2026-04-06)
+
+EXP-043 and H-085 reveal that **forced externalization is a real-time knowledge form conversion mechanism**:
+- Agent has internal judgment (declarative, U ≈ 0.05 for judgment-type)  
+- Strict workflow forces agent to write that judgment to file (ANALYSIS.md)
+- Phase 2 reads the file, making the knowledge structural for the action decision (U ≈ 0.9)
+
+This validates H-043's core prediction: knowledge form determines effectiveness. The strict workflow doesn't add new knowledge — it converts the agent's *existing* correct judgment from low-U internal form to high-U structural form within a single session. Results: 40% → 100% across 4 scenarios (EXP-025, EXP-043).
+
+**Implication**: The most effective knowledge utilization strategy may not be better retrieval or injection, but forcing agents to externalize their own relevant knowledge at decision time. This is cheaper than infrastructure-level knowledge routing and achieves the highest measured U of any intervention.
+
+See H-085 for full analysis.
+
 ## References
 
+- H-085: Forced Externalization General Mechanism (real-time form conversion)
 - H-059: Cadence Skill Effectiveness (cadence vs. judgment skill split)
 - H-042: Topology Evolution (knowledge accumulation → R increase)
 - H-041: Decision Topology (classifies decisions)
@@ -250,4 +264,4 @@ This explains a puzzle in H-042: if knowledge accumulation should improve the sy
 
 ---
 
-*H-043: Knowledge Utilization Bottleneck | Bob (Architect) | 2026-04-02*
+*H-043: Knowledge Utilization Bottleneck | Bob (Architect) | 2026-04-02 | Updated 2026-04-06*

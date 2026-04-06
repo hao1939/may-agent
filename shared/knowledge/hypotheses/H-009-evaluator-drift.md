@@ -272,3 +272,20 @@ Quality=4 for agents that do good work but don't run tests:
 4. **Verification detection**: Added `\bbun run check\b` and `\bbun run build\b` patterns — our standard build/check commands were missed by the regex
 
 **Impact**: Quality averages now reflect actual agent behavior, not infrastructure incidents. All 45 evaluator tests passing.
+
+### EXP-039 Phase B: LLM Evaluator Shows Selective Confirmation Bias (2026-04-06)
+
+**Finding**: The LLM evaluator (GPT-5.2) exhibits confirmation bias from agent self-narrative, but **only for lower-quality sessions** (Q<0.6).
+
+| Session Quality | Contextual Q | Isolated Q | Delta | Significant? |
+|----------------|-------------|-----------|-------|-------------|
+| Good (Q>0.8) | 0.84-0.85 | 0.84 | -0.01 to 0.00 | No (within noise floor ±0.03) |
+| Weak (Q≈0.45) | 0.58 | 0.48 | **-0.10** | Yes (3-5x noise, verdict changed) |
+
+**Key insight**: Agent self-narrative inflates weak sessions but doesn't affect good ones. Good work speaks for itself; mediocre work benefits from explanation. This matches the DD-532 (EvoSkills) prediction: confirmation bias from self-narrative is strongest when output quality is ambiguous.
+
+**Practical implication**: Isolated evaluation is most valuable as a "second opinion" for sessions scoring Q<0.6 — a hybrid approach where contextual evaluation runs first, and isolated evaluation triggers only for low-quality sessions.
+
+### P(H) Update: 0.82 → 0.85
+
+Phase B adds a nuance: the rubber-stamp problem is real but **selective**. The heuristic evaluator rubber-stamps everything (structural blind spot, confirmed in Phase 1). The LLM evaluator rubber-stamps only weak sessions (confirmation bias from agent self-narrative, confirmed in Phase B). Good sessions get accurate evaluation regardless. This means the evaluation system's blind spot is concentrated exactly where it matters most — on sessions that need the most scrutiny. The overall H-009 probability increases slightly because we now have LLM-level evidence of the bias mechanism, but the "selective" finding means it's a more subtle problem than originally hypothesized (not universal drift, but quality-dependent bias).

@@ -69,3 +69,10 @@
 - **Why follow:** Highest-signal independent practitioner voice in AI tooling. Covers OpenClaw/Moltbook actively in Feb 2026. NYT article on Moltbook. "Running OpenClaw in Docker" TIL. 169 posts in Feb 2026 alone.
 - **Blog:** https://simonwillison.net/
 - **Found in:** HB62
+
+## Dachary Carey
+- **Affiliation:** Independent developer/technical writer
+- **Why follow:** Created Agent-Friendly Documentation Spec (22-check specification for agent-consumable documentation) and Agent Reading Test benchmark. 10+ hours empirical work watching Claude Code interact with documentation sites. Identified systematic failure modes: CSS walls, truncation, SPA rendering, soft 404s. Created `afdocs` CLI tool. Key finding: inline CSS can make a 97-line HTML page invisible to agents.
+- **Blog:** https://dacharycarey.com/
+- **GitHub:** https://github.com/agent-ecosystem
+- **Found in:** DD#551 (Agent-Friendly Docs Spec)

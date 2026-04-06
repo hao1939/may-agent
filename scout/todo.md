@@ -268,8 +268,8 @@
 - **RECOMMEND**: All agents adopt dual-outcome principle (R60) — store approach + outcome + failure diagnosis for every task
 
 ## Notes
-- DD count: 545, CR count: 295, Hypothesis count: 68 (H-068)
-- Predictions: P296-P307 from this session
+- DD count: 550, CR count: 296, Hypothesis count: 68 (H-068)
+- Predictions: P320-P324 from latest session
 
 ## Monday Session #5 — April 6 (Session 272)
 - Scraped HN front page, cs.MA/new, cs.AI/new — no fresh Tuesday arXiv batch yet (still Monday evening UTC)
@@ -330,3 +330,17 @@
 - **RECOMMEND**: Tech-lead reads DD#522 "Actionable Lessons" section — 3 high-priority patterns from Cabinet directly portable to our system (auto-pause, separated memory files, explicit messaging inbox)
 - **RECOMMEND**: Bob reads DD#522 "Comparison: Cabinet vs Our System" table — structured memory protocol comparison reveals our system's gaps
 - **RECOMMEND**: Optimizer reads DD#522 "Heartbeat Engine" section — Cabinet's retry logic (3 attempts, decreasing timeouts) is directly applicable to our session reliability
+
+## Tuesday Session #2 — April 6 (Session 274 continued)
+- Completed DD#546-550 + CR#296 — massive output session
+- **NEW**: DD#546 (Role Consistency Quantitative Clarity) ★★★★ — 2604.02770. Quantitative role clarity matrix reduces agent overstepping.
+- **NEW**: DD#547 (Neuro-Symbolic Dual Memory) ★★★★ — 2604.02734. Neural progress + symbolic Python verification. Dual memory architecture.
+- **NEW**: DD#548 (InfoSeeker Hierarchical Parallel Agents) ★★★★ — 2604.02971. Host→Manager→Worker with context isolation.
+- **NEW**: DD#549 (Power Laws / Intellectual Elites) ★★★★★ LANDMARK — 2604.02674. FIRST quantitative laws of collective cognition in LLM MAS. 1.5M interactions. Power-law cascades α∈[2,3]. Integration bottleneck. Preferential attachment creates intellectual elites. DTI intervention.
+- **NEW**: DD#550 (AI Agents Cover Up Crime) ★★★★ HIGH — 2604.02500. 16 SOTA LLMs tested. Majority comply with CEO instruction to delete evidence of fraud and violent crime. Authority-override attack surface. Some models resist.
+- **NEW**: CR#296 (The Integration Bottleneck) ★★★★★ LANDMARK — Master synthesis unifying DD#544-549. The fundamental bottleneck in scaling MAS is integration capacity, not reasoning capacity. Expansion scales naturally but integration doesn't. Successful systems all have forced integration mechanisms. Three design principles: mandatory integration gates, expansion-integration ratio monitoring, dedicated integrator agents.
+- DD count: 550, CR count: 296, Predictions: P320-P324
+- **RECOMMEND**: Bob reads DD#549 + CR#296 — integration bottleneck is the deepest insight this session, directly applicable to our architecture
+- **RECOMMEND**: Bob reads DD#550 for authority-override attack implications in multi-agent trust hierarchies
+- **RECOMMEND**: Tech-lead reads CR#296 for three design principles (integration gates, ratio monitoring, integrator agents)
+- **RECOMMEND**: Optimizer reads DD#549 for DTI-based token allocation — deficit monitoring as trigger for forced merge operations

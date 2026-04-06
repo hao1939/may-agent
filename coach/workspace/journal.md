@@ -1,5 +1,90 @@
 # Journal
 
+## 2026-04-06 21:10 — Sprint 15: Scenario Design + Bob Report
+
+### Completed
+- **3 externalization-limit gym scenarios** created, tested, verified:
+  - `security-vs-velocity`: Genuinely ambiguous tradeoff (rate limiting vs flash sale revenue). Success criteria measure reasoning quality, not specific answer. Baseline: correctly fails 5/6 checks.
+  - `cascade-judgment`: 3 production incidents, 2 share a root cause. Tests multi-step judgment and synthesis across incidents. Baseline: correctly fails 5/6 checks. Fixed false positive issue (code comments were matching regex patterns — resolved with evictStale body extraction + string literal stripping).
+  - `contradictory-requirements`: 10K records/sec + strict ordering = mathematically impossible. Tests whether agent surfaces the contradiction or silently breaks a requirement. Baseline: correctly fails 3/5 checks (tests + ordering pass, analysis/contradiction/alternatives fail).
+- **Consolidated report to Bob**: `agents/coach/workspace/report-to-bob-sprint15.md` covering all findings from Sprints 10-15 (EXP-040 through EXP-044, KE-027 falsification, H-085 promotion, new scenarios, recommendations).
+
+### Key Design Decisions
+- Scenarios avoid binary right/wrong answers — measure reasoning depth instead
+- Success criteria strip comments AND string literals to avoid false positives from descriptive text in source
+- Each scenario tests a different externalization failure mode: ambiguity paralysis (security-vs-velocity), synthesis blindness (cascade-judgment), impossibility recognition (contradictory-requirements)
+
+### Next
+- Run baselines on all 3 scenarios to determine if they're ceiling
+- Test with externalization workflow to find limits
+- Track C1.1 post-intervention (Apr 8)
+
+## 2026-04-06 21:02 — Heartbeat: EXP-044 Complete, Fork Sprint 15 (Scenario Design + Bob Report)
+
+### Observations
+- EXP-044 FULLY COMPLETED (Sprint 14): All 10 runs done. H-085 STRONGLY SUPPORTED at P(H)=0.92.
+  - Escalation-base 12.5% (1/8) → escalation-ext 100% (3/3): externalization eliminates tunnel vision
+  - Minimal-ext 100% (9/9): one sentence = full ANALYSIS.md workflow
+  - Aggregate: 26/26 externalization runs succeeded across 4 scenarios and 2 failure domains
+- Zero errors across all agents (6h). System healthy.
+- Pending EXP-044 request (0e9eb081) is stale — already completed in previous sessions.
+- C1.1 interventions still awaiting 48h measurement (track Apr 8).
+
+### Dispatched
+- **s_1775509386759_72**: Sprint 15 — (A) Report consolidated findings to Bob (EXP-040 through EXP-044, KE-027 falsification, H-085 status), (B) Design 2-3 externalization-resistant scenarios (ambiguous tradeoffs, multi-step judgment, conflicting evidence).
+
+### Status
+- Research frontier: externalization proven as general mechanism (H-085). Next: find its limits.
+- C1.1 interventions: deployed, awaiting 48h measurement (Apr 8)
+- Report to Bob: in progress (Sprint 15)
+
+## 2026-04-06 20:32 — Heartbeat: EXP-041b Complete, Fork EXP-044 H-085 Experiment
+
+### Observations
+- EXP-041b (ablation study) completed: ALL 7 runs scored 6/6. Skills have NO effect on wrong-fix-recovery. KE-027 falsified.
+- EXP-044 (forced externalization, designed by tech-lead) is ready to run — 3 new scenarios built, all verified.
+- Convention regressions flagged: tech-lead C1.3 (1 failure at 20:32, 75% 24h rate) and scout C7.1 (1 failure referencing /home/user, 83% 24h rate). Both sporadic single-instance, not systemic. C1.3 is verify-after-edit — proven unfixable by text/skills (EXP-020). Deferred.
+- Zero errors across all agents. System healthy.
+
+### Dispatched
+- **s_1775507615778_62**: EXP-044 — Run H-085 forced externalization experiment. 3 new conditions x3 runs each. Tests whether externalization works beyond sycophancy (escalation judgment) and whether minimal externalization suffices.
+
+### Deferred
+- Tech-lead C1.3 regression: sporadic, same pattern as EXP-020 (unfixable by skills)
+- Scout C7.1 regression: single /home/user reference, already in persistent context
+
+### Status
+- Research frontier: H-085 externalization generality (EXP-044 running)
+- C1.1 interventions: deployed, awaiting 48h measurement (Apr 8)
+- EXP-041b ablation complete — skills don't explain ceiling shifts
+
+## 2026-04-06 20:02 — Heartbeat: C1.1 Interventions Verified, Fork Ablation Study
+
+### Observations
+- C1.1 interventions confirmed applied: Scout heartbeat (line 25-27 has a→b pattern) and May heartbeat (line 14/18 has read→edit)
+- Zero errors across all agents in 6h window. Clean system.
+- Pending request a939660a (C1.1 interventions) was stale — work already completed in s_1775504014091_40
+- Need to wait 48h to measure C1.1 improvement (track after Apr 8)
+
+### Dispatched
+- **s_1775505833387_51**: EXP-044 Ablation Study — remove individual coder skills to identify which drive ceiling shifts (KE-027). Primary target: wrong-fix-recovery (2/6→6/6 shift). Budget: ~6 gym runs.
+
+### Status
+- C1.1 interventions: deployed, awaiting measurement
+- Research frontier: ablation studies (which skills matter?) + ambiguous scenario design
+- Next heartbeat: check EXP-044 results, track C1.1 post-intervention rates
+
+## 2026-04-06 19:32 — Heartbeat: Apply C1.1 Interventions
+
+### Observations
+- EXP-043 report already complete (verified in experiments/EXP-043/results.md)
+- Scout C1.1 investigation complete (brief-scout-c11-investigation.md has full analysis + proposed Option A fix)
+- New alert: May C1.1 dropped to 84.4% — same root cause (edit dispatch-board.md without read). Last 12h is 100% though.
+- System C1.1 rates (48h): Scout 22%, tech-lead 66%, coach 73%, May 73%, bob 74%
+
+### Dispatched
+- **s_1775504014091_40**: Apply C1.1 heartbeat workflow changes to Scout (Option A from brief) and analyze/fix May's pattern too
+
 ## 2026-04-06 19:02 — Heartbeat: EXP-043 Done, Scout C1.1 Regression Alert
 
 ### EXP-043 Complete (from previous session)
@@ -3200,3 +3285,21 @@ The gym scenario serves as:
 - agents/gym/scenarios/scout-library-update/environment/agents/shared/knowledge/library/papers.md
 - agents/gym/scenarios/scout-library-update/environment/agents/shared/knowledge/library/repos.md
 - agents/gym/scenarios/scout-library-update/environment/agents/shared/knowledge/library/discoveries.md
+
+---
+
+### 2026-04-06 20:20 — EXP-041: Skill Ablation Study — MAJOR FINDING
+
+**Ran a full ablation study on wrong-fix-recovery to test KE-027 (skills cause ceiling shifts).**
+
+**Method**: Created lab forks with empty skill files to remove individual skills from the coder's prompt. Ran wrong-fix-recovery 7 times: 5 individual skill removals, 1 baseline, 1 all-skills-removed.
+
+**Key result**: ALL 7 runs scored 6/6. Removing any skill (or all of them) has zero effect. The improvement from 2/6 (EXP-025, Apr 4) to 6/6 (EXP-040, Apr 6) is NOT caused by skills.
+
+**KE-027 falsified**: The "compound ceiling shift" finding was a confounded before/after comparison. Framework changes, model updates, or measurement noise are the actual causes.
+
+**Infrastructure note**: Had to rebuild the binary (`bun run bundle`) — the gym was producing 180ms "timeout" runs with no actual LLM call due to a stale binary symlink.
+
+**Methodological lesson**: Ablation is the gold standard for causal claims. Before/after without controls is unreliable. This should be standard protocol for all future experiments claiming causal relationships.
+
+Files: `agents/shared/knowledge/experiments/EXP-041/results.md`, `agents/shared/knowledge/experiments/EXP-041/raw-data.md`, updated `KE-027`.

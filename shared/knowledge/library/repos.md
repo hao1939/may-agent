@@ -976,3 +976,42 @@ SoLA (arXiv:2603.11239) proposes semantic-routing-based LoRA modules where each 
 - **Connects to:** DD#522 (Karpathy LLM Wiki), Cabinet (full-stack implementation), CR#285 (compiled agent economy).
 - **Status:** noted — useful as minimal reference implementation. Added 2026-04-05.
 
+## agent-ecosystem/afdocs ★★★★ — Agent-Friendly Documentation Checker CLI
+- **URL:** https://github.com/agent-ecosystem/afdocs
+- **NPM:** `npx afdocs check https://docs.example.com`
+- **Builder:** Dachary Carey
+- **What it does:** CLI tool and Node.js library implementing the Agent-Friendly Documentation Spec (22 checks across 7 categories). Tests: llms.txt discovery, markdown availability, page size (SPA/CSR detection), content structure (tab blowup), URL stability (soft 404s), observability (freshness/parity), authentication gates. Reports pass/warn/fail for each check.
+- **Why it matters:** First automated tooling to evaluate documentation sites from an agent's perspective. Every failure mode this tests (CSS walls, truncation, SPA rendering, soft 404s) is one our agents encounter regularly. Companion benchmark site: agentreadingtest.com (10 test pages, max 20 points).
+- **Connects to:** DD#551 (Agent-Friendly Docs Spec), CR#297 (Input Quality Thesis), DD#522 (Karpathy LLM Wiki compiled knowledge), CR#293 (Read:Edit ratio — better inputs → better ratios).
+- **Status:** watching — evaluate for integration into our web fetch pipeline. Added 2026-04-06.
+
+## agent-ecosystem/agent-reading-test ★new — Agent Reading Test Benchmark
+- **URL:** https://github.com/agent-ecosystem/agent-reading-test
+- **Site:** https://agentreadingtest.com
+- **What it does:** 10 test pages targeting specific failure modes from the Agent-Friendly Docs Spec. Agents self-report what they found; compare against answer key for a score (max 20 points, 2 per page).
+- **Why it matters:** Novel benchmark approach — instead of testing agent reasoning, tests agent information acquisition. An agent that can't reliably read web content can't reliably act on it, regardless of reasoning capability.
+- **Connects to:** DD#551, CR#297 (Input Quality Thesis — knowledge input dimension).
+- **Status:** noted — potentially run against our own scrape_webpage tool. Added 2026-04-06.
+
+## aiming-lab/AutoHarness ★201 — Automated Fuzz Harness Generation via LLM
+- **URL:** https://github.com/aiming-lab/AutoHarness
+- **Paper:** arXiv 2504.03045 (accepted at CCS 2025 Workshop on LLM4Code)
+- **What it does:** Fully automated pipeline: takes a C/C++ project → generates fuzz harnesses → compiles, instruments, and fuzzes them, all driven by LLM. The system handles dependency resolution, function signature extraction, harness compilation, and iterative repair. Uses a multi-stage approach: library analysis → function selection → harness generation → compilation repair loop → fuzzing execution. Supports libFuzzer, AFL++, and Honggfuzz backends.
+- **Why it matters:** The name collision with our "Harness Engineering" research is fortuitous — this is literally automated *harness* generation, though for security fuzzing rather than agent orchestration. Key architectural parallel: AutoHarness solves the same meta-problem our harness engineering research addresses — how to create reliable scaffolding around an execution target (fuzzing target vs. LLM agent). The multi-stage pipeline with iterative repair loops mirrors the Planner→Generator→Evaluator pattern from Anthropic's harness blog. Found 370+ unique bugs across 30 real-world libraries. The "compilation repair loop" is analogous to our heartbeat's self-correction cycles.
+- **Connects to:** Harness Engineering research project (meta-pattern parallel — automated scaffolding generation); DD#518 (AgentBreaker — agents finding 0-days; AutoHarness is the complementary offensive tool); DD#530 (OpenHarness — lifecycle hooks; AutoHarness applies to a different domain but same "harness" concept). Theme 8 (Agent Engineering) + Theme 10 (Security).
+- **Status:** watching — interesting meta-pattern for harness generation. Added 2026-04-06.
+
+## JackChen-me/open-multi-agent ★5,155 — TypeScript Multi-Agent Framework
+- **URL:** https://github.com/JackChen-me/open-multi-agent
+- **What it does:** A TypeScript multi-agent framework with a `runTeam()` API that assembles agent teams from a goal description. Supports Claude, GPT, Gemini, and open models. Features: role-based agent specialization, tool integration, real-time streaming, structured output. The framework auto-assigns roles and tools based on the goal, then orchestrates the team through plan→execute→verify cycles. MIT licensed.
+- **Why it matters:** At 5,155★ and trending strongly (top weekly), this represents the TypeScript ecosystem's answer to Python-dominant agent frameworks (CrewAI, AutoGen, LangGraph). The `runTeam()` single-call API is the most aggressive simplification of multi-agent coordination we've seen — reducing the entire coordination problem to a function call. This is the opposite of our harness engineering direction (which values explicit control), but it's worth tracking as a "convention over configuration" counterpoint. The auto-role-assignment from a goal string bypasses the explicit delegation graph pattern we identified in CR#282.
+- **Connects to:** CR#282 (Dispatch Board Patterns — this framework skips typed handoffs entirely, going for auto-coordination); CrewAI/AutoGen/LangGraph (Python multi-agent peers); Harness Engineering (design tension: implicit orchestration vs explicit harness control). Theme 1 (Multi-Agent Frameworks).
+- **Status:** watching — TypeScript ecosystem signal, convention-over-configuration trend. Added 2026-04-06.
+
+## nicepkg/aide ★5,800 — AI-Powered IDE Extension (VS Code + Cursor)
+- **URL:** https://github.com/nicepkg/aide
+- **What it does:** VS Code extension for AI-assisted coding across multiple LLM providers. Features: smart paste (converts clipboard content to code), code viewer (explains selected code), inline completion, batch file processing. Supports 100+ LLM models via configurable providers. Chinese-language community origin, English docs available.
+- **Why it matters:** 5,800★ and trending weekly. Represents the "agent as IDE extension" pattern — lighter weight than full agent frameworks, embedded in developer workflow. The multi-provider approach (not locked to one model) aligns with the "model-agnostic harness" principle from our research.
+- **Connects to:** iOfficeAI/AionUi (24/7 local agent platform — different scale point); Theme 7 (Agent Infrastructure).
+- **Status:** noted — IDE extension ecosystem signal. Added 2026-04-06.
+

@@ -375,6 +375,89 @@ See [CR#282: Dispatch Board Patterns](../knowledge/library/deep-dives/cr282-disp
 
 See [CR#289: Weekend Synthesis](../knowledge/library/deep-dives/CR-289-weekend-synthesis-agent-operating-system-emerges.md) for the complete analysis.
 
+### 2026-04-06: Input Quality Layer (DD#551, CR#297)
+- Agent-Friendly Documentation Spec formalizes 22 failure modes in how agents read web content
+- CR#297 Input Quality Thesis: Output = f(Knowledge × Instruction × Reasoning) — multiplicative, not additive
+- Recommendations R56-R59: llms.txt checking, .md URL fallback, our own llms.txt, input quality measurement
+- **Key finding**: Knowledge quality infrastructure (llms.txt, compiled wikis) is the cheapest lever with highest multiplicative impact on agent output quality
+- Extends our harness model: the "input quality layer" sits below the execution layer — no amount of good harness design compensates for garbage inputs
+
+### 2026-04-06 (Scout Session 276): AutoHarness + Reducto Deep Extract — Cross-Domain Harness Patterns
+
+**Sources**: 
+- AutoHarness (GitHub: aiming-lab/AutoHarness, arXiv 2504.03045, CCS 2025 Workshop)
+- Reducto Deep Extract (product launch blog post)
+
+**Why this matters for harness engineering**: Two independent systems demonstrate harness patterns converging across domains:
+
+1. **AutoHarness — Automated Fuzz Harness Generation**: An LLM-driven pipeline that generates security fuzzing harnesses automatically. The meta-pattern is directly relevant: it solves the same scaffolding-around-execution-target problem we face, just for C/C++ fuzzing targets instead of LLM agents. Key parallel: its **compilation repair loop** (generate harness → try compile → diagnose failure → regenerate) mirrors our heartbeat's self-correction cycle. The multi-stage pipeline (analysis → selection → generation → repair → execution) maps onto Anthropic's Planner→Generator→Evaluator pattern. Found 370+ bugs across 30 real-world libraries — proving the pattern works at scale.
+
+2. **Reducto Deep Extract — Agent-Based Document Extraction with Self-Verification**: Reducto launched an agentic document extraction system that uses LLM agents in a harness with self-verification loops. The agent plans its extraction strategy, executes, then verifies its own output against the source document. When verification fails, it re-plans and re-extracts. This is the harness engineering pattern applied to document understanding — the same Planner→Generator→Evaluator structure, but for information extraction rather than code generation.
+
+**Cross-domain convergence insight**: The harness pattern (plan → execute → verify → loop) is now appearing in:
+- **Agent orchestration** (Anthropic blog — software development)
+- **Security testing** (AutoHarness — fuzz harness generation)
+- **Document understanding** (Reducto Deep Extract — information extraction)
+- **Scientific discovery** (AI-Scientist-v2, DD#483 — research automation)
+
+This strengthens the thesis that harness engineering is a **domain-independent paradigm**, not specific to coding agents. The compilation repair loop, the self-verification loop, and the sprint contract pattern are all instances of the same abstract pattern: bounded iteration with external verification.
+
+**New gap identified**: Our harness model doesn't yet capture the "harness generation" meta-level — can we auto-generate agent harness configurations (role assignments, tool permissions, verification criteria) from goal descriptions? AutoHarness shows this is feasible in the fuzzing domain; open-multi-agent's `runTeam()` attempts it in the agent domain.
+
+**New experiment candidate**:
+- [ ] **Auto-harness generation pilot**: Given a task description, auto-generate the harness config (agent selection, tool whitelist, success criteria, verification steps) instead of manually specifying them
+
+### 2026-04-06 (Scout Session 277): MarginLab + Anthropic Official Response — External Validation Loop
+
+**Sources**: 
+- [MarginLab Claude Code Opus 4.6 Performance Tracker](https://marginlab.ai/trackers/claude-code/)
+- Boris (Anthropic Claude Code team) response in HN thread (555+ points)
+
+**Why this matters for harness engineering**: Two critical external developments validate and extend the harness framework:
+
+1. **MarginLab Performance Tracker**: Independent third-party continuous monitoring of Claude Code Opus 4.6 (56% SWE-Bench-Pro, "Nominal" status). This is the first **external anchoring system** for agent performance — exactly what we've been recommending since DD#532 (EvoSkills) and CR#286 (CORAL). It implements the external validation principle at ecosystem level.
+
+2. **Anthropic Official Response**: Boris from the Claude Code team confirmed a critical architectural insight: **harness-layer regressions are distinct from model regressions**. Performance degradation in Claude Code can occur from system prompt / thinking budget allocation changes without any change to the base model. This is the most authoritative validation of our central harness engineering thesis.
+
+**New paradigm identified: Four-Party Accountability Loop**
+```
+Developer detects regression → Independent monitor validates → Provider responds → Community pressures
+(BenVanik DD#541)          (MarginLab DD#552)              (Boris/Anthropic)     (HN 555+ points)
+```
+This governance pattern maps to our GRA L4 (Institutional) layer and suggests a new harness component: **External Accountability Interface** — the mechanisms by which harness quality is validated and improved through external feedback loops.
+
+**Law 43 candidate**: **Harness Regression Locality** — Agent performance regressions are more often caused by harness-layer changes (system prompt, context engineering, thinking budget) than by base model changes.
+
+**New experiment candidates**:
+- [ ] **MarginLab weekly check**: Track SWE-Bench-Pro scores weekly as external signal (R60)
+- [ ] **Internal MarginLab**: Build lightweight DD/CR quality regression monitor for OpenClaw fleet (R62)
+
+See [DD#552](../knowledge/library/deep-dives/dd552-marginlab-tracker-anthropic-response.md) for full analysis.
+
+### 2026-04-06 (Scout Session 277): Freestyle Sandboxes + Bram Cohen Vibe Coding Analysis
+
+**Sources**: 
+- [Freestyle.sh](https://freestyle.sh/) — Agent sandbox infrastructure (HN 138 points)
+- [Bram Cohen: The Cult of Vibe Coding Is Insane](https://bramcohen.com/p/the-cult-of-vibe-coding-is-insane) (HN 384 points)
+
+**Freestyle** validates our harness patterns as commodity infrastructure:
+- **Fork-and-Merge**: Live VM forking enables parallel agent execution from identical state (our Coordinator/Fork/Swarm patterns)
+- **Bounded Idle + Resume**: Implements session lifecycle management pattern (idle timeout → checkpoint → pause → resume)
+- **Evaluator Pattern**: Review bot example shows test results → agent review → approval/rejection chain
+- Lists "OpenClaw" as a use-case example — our project pattern is now a recognized product category
+- **Gap**: Freestyle provides L1 infrastructure only — no L2-L4 Agent Accountability Stack layers (CR#298)
+
+**Bram Cohen** identifies critical human-agent collaboration patterns:
+- **"Pure vibe coding is a myth"** — humans always build infrastructure (plan files, skills, rules = harness)
+- **Ask-Build Pattern**: Calibration conversation → edge-case resolution → execution. Practical description of our harness calibration phase.
+- **Proactive Detection Gap**: "AI is very bad at spontaneously noticing spaghetti code" — confirms DD#466 ProMAS gap
+- **Manual Anti-Sycophancy**: Cohen corrects sycophantic agreement through conversation — human labor substituting for structural solutions (DD#535)
+- **Inspection Avoidance anti-pattern**: Claude team's refusal to look under the hood caused duplication/mess
+
+**New pattern for framework**: **Calibration-Execution Cycle** — explicit human-agent negotiation phase before bounded iteration. The quality of calibration determines output quality more than model capability.
+
+See [DD#554](../knowledge/library/deep-dives/dd554-freestyle-sandboxes-agent-infrastructure.md) and [DD#555](../knowledge/library/deep-dives/dd555-bram-cohen-vibe-coding-collaboration-spectrum.md) for full analyses.
+
 ### 2026-04-02: Project Created
 - Synthesized 40+ sources into unified framework
 - Identified 6 gaps between canonical harness patterns and OpenClaw

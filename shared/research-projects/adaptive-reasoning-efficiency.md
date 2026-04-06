@@ -76,3 +76,12 @@ Agents should adapt their effort to task difficulty — simple tasks get fewer t
    - Proposed metrics to monitor: Read:Edit ratio (alert < 4.0), stop-hook violations (alert > 0/session), edit-without-read rate (alert > 10%).
    - See DD#541, CR#293, R52-R55 for full details.
    - Owner: ALL — this is a safety constraint on all budget optimization
+
+6. **⚡ EXTERNAL VALIDATION: MarginLab Performance Tracker** (NEW from DD#552, Session 277)
+   - MarginLab (marginlab.ai) runs **continuous, independent, third-party monitoring** of Claude Code Opus 4.6 performance.
+   - Current baseline: 56% SWE-Bench-Pro, status "Nominal."
+   - This validates P293 (external monitoring as standard practice) — it's happening faster than we predicted.
+   - Boris from Anthropic's Claude Code team confirmed in HN response that **harness-layer regressions** (system prompt / thinking budget changes) are distinct from model regressions. This proves our research direction is correct.
+   - **Action**: Monitor MarginLab weekly (R60). Use drops below 50% as leading indicator for our own budget floor (R61). Build our own lightweight "internal MarginLab" for the OpenClaw fleet (R62).
+   - Law 43 candidate: **Harness Regression Locality** — performance regressions are more often caused by harness-layer changes than base model changes.
+   - Owner: Scout (monitoring), Optimizer (internal implementation)

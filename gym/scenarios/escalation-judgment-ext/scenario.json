@@ -1,0 +1,9 @@
+{
+  "name": "escalation-judgment-ext",
+  "categories": ["judgment"],
+  "tags": ["behavior", "workflow", "externalization", "escalation"],
+  "tier": "full",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": true
+}
